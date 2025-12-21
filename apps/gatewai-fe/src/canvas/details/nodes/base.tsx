@@ -39,27 +39,22 @@ const BaseNode = memo((props: ClientNodeData & {
   const numInputs = variableInputs ? Math.max(fixedInputCount, inputEdges.length + 1) : fixedInputCount;
   const numOutputs = variableOutputs ? Math.max(fixedOutputCount, outputEdges.length + 1) : fixedOutputCount;
 
-  const getInputColor = (i: number) => {
-    if (inputTypes.length === 0) return getColorForType('File').bg;
-    const type = (i < inputTypes.length) ? inputTypes[i].inputType : inputTypes[inputTypes.length - 1].inputType;
-    return getColorForType(type).bg;
-  };
-
   const getInputTextColor = (i: number) => {
     if (inputTypes.length === 0) return getColorForType('File').text;
     const type = (i < inputTypes.length) ? inputTypes[i].inputType : inputTypes[inputTypes.length - 1].inputType;
+    console.log({inputTypes})
     return getColorForType(type).text;
+  };
+
+  const getInputLabel = (i: number) => {
+    if (inputTypes.length === 0) return getColorForType('Text').text;
+    const label = (i < inputTypes.length) ? inputTypes[i].label : inputTypes[inputTypes.length - 1].label;
+    return label;
   };
 
   const getInputType = (i: number) => {
     if (inputTypes.length === 0) return 'Unknown';
     return (i < inputTypes.length) ? inputTypes[i].inputType : inputTypes[inputTypes.length - 1].inputType;
-  };
-
-  const getOutputColor = (i: number) => {
-    if (outputTypes.length === 0) return getColorForType('File').bg;
-    const type = (i < outputTypes.length) ? outputTypes[i].outputType : outputTypes[outputTypes.length - 1].outputType;
-    return getColorForType(type).bg;
   };
 
   const getOutputTextColor = (i: number) => {
@@ -71,6 +66,13 @@ const BaseNode = memo((props: ClientNodeData & {
   const getOutputType = (i: number) => {
     if (outputTypes.length === 0) return 'Unknown';
     return (i < outputTypes.length) ? outputTypes[i].outputType : outputTypes[outputTypes.length - 1].outputType;
+  };
+
+  const getOutputLabel = (i: number) => {
+    console.log(i, outputTypes)
+    const label = (i < outputTypes.length) ? outputTypes[i].label : outputTypes[outputTypes.length - 1].label;
+    console.log({label})
+    return label;
   };
 
   const nodeBackgroundColor = 'bg-background';
@@ -100,8 +102,8 @@ const BaseNode = memo((props: ClientNodeData & {
                 className={`w-3 h-3 rounded-full left-[50%]! transition-all duration-200 focus:outline-none hover:scale-125`}
               />
             </div>
-            <span className={`absolute left-[-60px] top-1/2 -translate-y-1/2 ${getInputTextColor(i)} px-2 py-1 text-xs opacity-0 group-hover:opacity-100 group-focus:opacity-100 group-focus-within:opacity-100 in-[.selected]:opacity-100 transition-opacity pointer-events-none whitespace-nowrap font-medium`}>
-              {getInputType(i)}
+            <span className={`absolute left-0 top-[-20px] translate-x-[-100%] ${getInputTextColor(i)} px-1 py-1 text-xs opacity-0 group-hover:opacity-100 group-focus:opacity-100 group-focus-within:opacity-100 in-[.selected]:opacity-100 transition-opacity pointer-events-none whitespace-nowrap font-medium text-right`}>
+              {getInputLabel(i)}
             </span>
           </div>
         );
@@ -136,8 +138,8 @@ const BaseNode = memo((props: ClientNodeData & {
                 className={`w-3 h-3 rounded-full right-[50%]! transition-all duration-200 focus:outline-none hover:scale-125`}
               />
             </div>
-            <span className={`absolute right-[-60px] top-1/2 -translate-y-1/2 ${getOutputTextColor(i)} px-2 py-1 text-xs opacity-0 group-hover:opacity-100 group-focus:opacity-100 group-focus-within:opacity-100 [.selected_&]:opacity-100 transition-opacity pointer-events-none whitespace-nowrap font-medium`}>
-              {getOutputType(i)}
+            <span className={`absolute right-0 top-[-20px] translate-x-[100%] ${getOutputTextColor(i)} px-1 py-1 text-xs opacity-0 group-hover:opacity-100 group-focus:opacity-100 group-focus-within:opacity-100 [.selected_&]:opacity-100 transition-opacity pointer-events-none whitespace-nowrap font-medium text-left`}>
+              {getOutputLabel(i)}
             </span>
           </div>
         );

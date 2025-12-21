@@ -23,6 +23,7 @@ import type {
   TextNodeData,
   ThreeDNodeData,
   LLMResult,
+  GPTImage1Result,
 } from '@gatewai/types';
 import { PixiApplication } from './pixi-app';
 import { Button } from '@/components/ui/button';
@@ -164,7 +165,7 @@ const TextNodeComponent = memo((props: NodeProps<TextNode>) => {
       <Textarea
         value={content}
         onChange={handleChange}
-        className="w-full h-full max-h-full overflow-auto p-2 border rounded text-gray-100 resize-none"
+        className="w-full h-full max-h-full overflow-auto p-2 border rounded text-gray-100 resize-none text-xs!"
         placeholder="Enter text..."
       />
     </BaseNode>
@@ -209,20 +210,43 @@ CrawlerNodeComponent.displayName = 'CrawlerNode';
 const LlmNodeComponent = memo((props: NodeProps<LLMNode>) => {
   const result = props.data?.data.result as LLMResult || '';
   const text = result.parts[0].data;
+  const { runNodes } = useCanvasCtx();
   return (
     <BaseNode {...props}>
-      <div className='flex flex-col gap-2 items-end nodrag'>
+      <div className='flex flex-col gap-2 items-end'>
         <p
-          className="w-full min-h-[200px] max-h-full nowheel overflow-auto p-2 border rounded text-gray-100 resize-none"
+          className="w-full text-xs min-h-[200px] max-h-full nowheel overflow-auto p-2 border rounded text-gray-100 resize-none"
         >
           {text}
         </p>
-        <Button variant="default" size="sm" type='button'><PlayIcon /> <span className='text-xs'>Run Model</span></Button>
+        <Button onClick={() => runNodes([props.data.id])} variant="secondary" size="xs" type='button'><PlayIcon /><span className='text-xs'>Run Model</span></Button>
       </div>
     </BaseNode>
   );
 });
-TextNodeComponent.displayName = 'TextNode';
+LlmNodeComponent.displayName = 'LLMNode';
+
+const GPTImage1NodeComponent = memo((props: NodeProps<LLMNode>) => {
+  const result = props.data?.data.result as GPTImage1Result || '';
+  const parts = result.parts;
+  const { runNodes } = useCanvasCtx();
+  const selectedPart = parts[result.selectedIndex];
+
+  return (
+    <BaseNode {...props}>
+      <div className='flex flex-col gap-2 items-end'>
+        <div className='relative h-full w-full'>
+          <div className='absolute top-2 left-2 p-1 bg-black/10 rounded text-[8px]'>
+            {result.selectedIndex + 1} / {parts.length}
+          </div>
+          <img src={selectedPart.data.url} alt={selectedPart.data.name} className='w-full h-full' />
+        </div>
+        <Button onClick={() => runNodes([props.data.id])} variant="secondary" size="xs" type='button'><PlayIcon /><span className='text-xs'>Run Model</span></Button>
+      </div>
+    </BaseNode>
+  );
+});
+GPTImage1NodeComponent.displayName = 'GPTIMage1Node';
 
 // Group Node
 const GroupNodeComponent = memo((props: NodeProps<GroupNode>) => {
@@ -515,6 +539,7 @@ const nodeTypes = {
   Router: RouterNodeComponent,
   Text: TextNodeComponent,
   ThreeD: ThreeDNodeComponent,
+  GPTImage1: GPTImage1NodeComponent
 };
 
 // Export components
@@ -532,6 +557,7 @@ export {
   BlurNodeComponent ,
   CompositorNodeComponent ,
   DescriberNodeComponent ,
+  GPTImage1NodeComponent,
   RouterNodeComponent,
   ArrayNodeComponent ,
   ResizeNodeComponent,

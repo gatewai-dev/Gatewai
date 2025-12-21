@@ -13,7 +13,7 @@ import {
   type OnNodesChange,
   type XYPosition
 } from '@xyflow/react';
-import type {DataType, Edge as DbEdge, Node as DbNode, LLMResult, NodeData, NodeType, NodeWithFileType } from '@gatewai/types';
+import type {DataType, Edge as DbEdge, Node as DbNode, GPTImage1Result, LLMResult, NodeData, NodeType, NodeWithFileType } from '@gatewai/types';
 
 // Assuming a basic structure for the fetched canvas data
 interface CanvasResponse {
@@ -42,6 +42,7 @@ interface CanvasContextType {
   onConnect: OnConnect;
   onNodeDragStart: (event: MouseEvent, node: Node, nodes: Node[]) => void;
   updateNodeCustomData: (nodeId: string, updates: Partial<NodeData>) => void;
+  runNodes: (nodeIds: Node["id"][]) => Promise<void>;
 }
 
 const CanvasContext = createContext<CanvasContextType | undefined>(undefined);
@@ -76,6 +77,7 @@ const mock_nodes: Node[] = [
           {
             "id": "i22",
             outputType: 'Text',
+            label: 'Text',
           }
         ]
       }
@@ -101,12 +103,52 @@ const mock_nodes: Node[] = [
           {
             "id": "s1",
             inputType: 'Text',
+            label: 'Prompt',
           }
         ],
         outputTypes: [
           {
             "id": "i22",
             outputType: 'Text',
+            label: 'Output',
+          }
+        ]
+      }
+    }
+  },
+  {
+    id: "3",
+    position: {
+      x: 700,
+      y: 760,
+    },
+    width: 300,
+    type: 'GPTImage1',
+    data: {
+      data: {
+        result: {
+          selectedIndex: 0,
+          parts: [{
+            type: 'Image',
+            data: {
+              size: 1200,
+              mimeType: 'image/png',
+              url: "https://placehold.co/512x512",
+            }
+          }]
+        } as GPTImage1Result,
+        inputTypes: [
+          {
+            "id": "s13",
+            inputType: 'Text',
+            label: 'Prompt',
+          }
+        ],
+        outputTypes: [
+          {
+            "id": "i232",
+            outputType: 'Image',
+            label: 'Image',
           }
         ]
       }
@@ -168,7 +210,7 @@ const CanvasProvider = ({
   const [tool, setTool] = useState<'select' | 'pan'>('select');
   const timeoutRef = useRef<NodeJS.Timeout | null>(null);
 
-  const { mutate: patchCanvas } = useMutation({
+  const { mutate: patchCanvas, mutateAsync: patchCanvasAsync } = useMutation({
     mutationFn: async (body: { nodes: Partial<DbNode>[]; edges: Partial<DbEdge>[] }) => {
       const response = await fetch(`/api/v1/canvas/${canvasId}`, {
         method: 'PATCH',
@@ -181,7 +223,29 @@ const CanvasProvider = ({
       return response.json();
     },
     onSuccess: () => {
-      // Optional: You can add logging or notifications here if needed
+      console.log("Save success")
+    },
+    onError: (error) => {
+      console.error('Save failed:', error);
+    },
+  });
+
+
+
+  const { mutate: runNodesMutate, } = useMutation({
+    mutationFn: async (body: { nodeIds: DbNode["id"][] }) => {
+      const response = await fetch(`/api/v1/canvas/${canvasId}/process`, {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify(body),
+      });
+      if (!response.ok) {
+        throw new Error(await response.text());
+      }
+      return response.json();
+    },
+    onSuccess: () => {
+      console.log('Run initiated successfully');
     },
     onError: (error) => {
       console.error('Save failed:', error);
@@ -224,8 +288,8 @@ const CanvasProvider = ({
       edges: currentDbEdges,
     };
 
-    patchCanvas(body);
-  }, [canvasId, nodes, edges, patchCanvas]);
+    return patchCanvasAsync(body);
+  }, [canvasId, nodes, edges, patchCanvasAsync]);
 
   const scheduleSave = useCallback(() => {
     if (timeoutRef.current) {
@@ -404,6 +468,11 @@ const CanvasProvider = ({
     scheduleSave();
   }, [nodes, edges, setNodes, scheduleSave]);
 
+  const runNodes = useCallback(async (nodeIds: Node["id"][]) => {
+    await save();
+    runNodesMutate({ nodeIds });
+  }, [runNodesMutate, save])
+
   // Uncomment when ready to use actual data
   // useEffect(() => {
   //   if (initialNodes) setNodes(initialNodes);
@@ -439,6 +508,7 @@ const CanvasProvider = ({
     onConnect,
     onNodeDragStart,
     updateNodeCustomData,
+    runNodes,
   };
 
   return <CanvasContext.Provider value={value}>{children}</CanvasContext.Provider>;

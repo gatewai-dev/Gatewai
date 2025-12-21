@@ -68,6 +68,8 @@ function ReactflowContainer({ children }: ReactFlowProps) {
         onNodesChange={onNodesChange}
         nodesDraggable={tool === 'select'}
         elementsSelectable={tool === 'select'}
+        maxZoom={4}
+        minZoom={0.1}
         panOnDrag={tool === 'pan'}
         selectionOnDrag={tool === 'select'}
         selectNodesOnDrag

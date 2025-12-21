@@ -32,7 +32,7 @@ enum NodeType {
   Note
   Number
 
-  GPTImage1 @map("GPT-Image-1")
+  GPTImage1
   LLM
 }
 
