@@ -5,6 +5,9 @@ import { streamSSE } from 'hono/streaming'
 import { HTTPException } from "hono/http-exception";
 import { prisma } from "@gatewai/db";
 import type { AuthHonoTypes } from "../../auth.js";
+import { tasks } from "@trigger.dev/sdk";
+import type { TASK_runLLM } from "../../trigger/llm.js";
+import type { TextNodeData } from "@gatewai/types";
 
 const canvasRoutes = new Hono<{Variables: AuthHonoTypes}>({
     strict: false,
@@ -73,6 +76,10 @@ const createEdgeSchema = z.object({
     sourceHandle: z.string().optional(),
     targetHandle: z.string().optional(),
     dataType: z.enum(['Text', 'Number', 'Boolean', 'Image', 'Video', 'Audio', 'File']),
+});
+
+const processSchema = z.object({
+    node_ids: z.array(z.string()).min(1),
 });
 
 const batchEdgesSchema = z.object({
@@ -539,5 +546,51 @@ canvasRoutes.post('/:id/duplicate', async (c) => {
 
     return c.json({ canvas: duplicate }, 201);
 });
+
+canvasRoutes.post('/:canvasId/process',
+    zValidator('json', processSchema),
+    async (c) => {
+        const canvasId = c.req.param('canvasId');
+        const validated = c.req.valid('json');
+        const user = c.get('user');
+
+        const nodes = await prisma.node.findMany({
+            where: {
+                id: { in: validated.node_ids },
+                canvasId,
+                canvas: {
+                    userId: user?.id
+                }
+            }
+        });
+
+        // TODO: batch process nodes
+        nodes.forEach(async node => {
+            const nodeData = node.data as TextNodeData;
+            if (!nodeData.content) {
+                throw new HTTPException(400, { message: `Node ${node.id} does not have a prompt defined.` });
+            }
+            const taskHandle = tasks.trigger<typeof TASK_runLLM>('run-llm', {
+                nodeId: node.id,
+                model: 'gpt-4o',
+                prompt: nodeData.content,
+            });
+
+            const task = await prisma.task.create({
+                data: {
+                    canvasId: canvasId,
+                    userId: user!.id,
+                    nodeId: node.id,
+                }
+            });
+        });
+
+        if (nodes.length < 1) {
+            throw new HTTPException(400, { message: 'Invalid source or target node' });
+        }
+
+        return c.json({ edge }, 201);
+    }
+);
 
 export { canvasRoutes };

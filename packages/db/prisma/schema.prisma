@@ -70,6 +70,7 @@ model User {
   accounts      Account[]
 
   canvases      Canvas[]
+  tasks         Task[]
   tokens        Int?
 
   @@unique([email])
@@ -233,7 +234,6 @@ model Canvas {
   nodes          Node[]
   aiSessions     AISession[]
   tasks          Task[]
-  taskManagers   TaskManager[]
   user           User         @relation(fields: [userId], references: [id], onDelete: Cascade)
   userId         String
 
@@ -265,22 +265,9 @@ model Task {
   canvasId        String
   node            Node?        @relation(fields: [nodeId], references: [id], onDelete: SetNull)
   nodeId          String?
-  taskManager     TaskManager? @relation(fields: [taskManagerId], references: [id], onDelete: SetNull)
-  taskManagerId   String?
+
+  user            User         @relation(fields: [userId], references: [id], onDelete: Cascade)
+  userId          String
 
   @@map("task")
-}
-
-model TaskManager {
-  id          String   @id @default(cuid())
-  name        String
-  // Timestamps - DB managed
-  createdAt   DateTime @default(now())
-  updatedAt   DateTime @updatedAt
-  // Relationships
-  tasks       Task[]
-  canvas      Canvas   @relation(fields: [canvasId], references: [id], onDelete: Cascade)
-  canvasId    String
-
-  @@map("taskmanager")
 }
