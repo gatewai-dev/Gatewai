@@ -123,8 +123,7 @@ model Node {
   name           String
   type           NodeType
   // React Flow position
-  x              Float
-  y              Float
+  position      Json           // To store position as { x: number, y: number }
   // React Flow dimensions (optional, can be auto-calculated)
   width          Float?
   height         Float?
@@ -143,7 +142,7 @@ model Node {
   */
   fileData       Json?           // For file metadata (e.g., gcs Url, bucket, etc.)
   data           Json?           // Additional data for React Flow node (labels, configs, etc.)
-  isDirty        Boolean        @default(false) // Whether or not previous results or data/config changed
+  isDirty        Boolean         @default(false) // Whether or not previous results or data/config changed
   result         Json?           // Node processing result
   processEnvironment ProcessEnvironment
   // Visual properties

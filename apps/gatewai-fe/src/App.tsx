@@ -9,7 +9,6 @@ import {
 const queryClient = new QueryClient()
 
 function App() {
-  console.log({queryClient})
   return (
     <QueryClientProvider client={queryClient}>
       <AppRouter />

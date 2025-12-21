@@ -1,5 +1,5 @@
-import { useQuery } from '@tanstack/react-query';
-import { createContext, useCallback, useContext, useMemo, useRef, useState, type Dispatch, type MouseEvent, type PropsWithChildren, type SetStateAction } from 'react';
+import { useMutation, useQuery } from '@tanstack/react-query';
+import { createContext, useCallback, useContext, useEffect, useMemo, useRef, useState, type Dispatch, type MouseEvent, type PropsWithChildren, type SetStateAction, type Partial } from 'react';
 import {
   useEdgesState,
   useNodesState,
@@ -12,19 +12,7 @@ import {
   type OnEdgesChange,
   type OnNodesChange
 } from '@xyflow/react';
-import type { NodeData, NodeWithFileType } from '@gatewai/types';
-
-// Updated Edge type from database with handle support
-interface DbEdge {
-  id: string;
-  source: string;
-  target: string;
-  sourceHandle?: string | null;
-  targetHandle?: string | null;
-  dataType: string;
-  createdAt: Date;
-  updatedAt: Date;
-}
+import type {Edge as DbEdge, Node as DbNode, NodeData, NodeWithFileType } from '@gatewai/types';
 
 // Assuming a basic structure for the fetched canvas data
 interface CanvasResponse {
@@ -52,6 +40,7 @@ interface CanvasContextType {
   canRedo: boolean;
   onConnect: OnConnect;
   onNodeDragStart: (event: MouseEvent, node: Node, nodes: Node[]) => void;
+  updateNodeCustomData: (nodeId: string, updates: Partial<NodeData>) => void;
 }
 
 const CanvasContext = createContext<CanvasContextType | undefined>(undefined);
@@ -85,7 +74,7 @@ const mock_nodes: Node[] = [
         outputTypes: [
           {
             "id": "i22",
-            outputType: 'Prompt',
+            outputType: 'Text',
           }
         ]
       }
@@ -106,13 +95,13 @@ const mock_nodes: Node[] = [
         inputTypes: [
           {
             "id": "s",
-            inputType: 'Prompt',
+            inputType: 'Text',
           }
         ],
         outputTypes: [
           {
             "id": "i22",
-            outputType: 'Prompt',
+            outputType: 'Text',
           }
         ]
       }
@@ -147,6 +136,11 @@ const CanvasProvider = ({
       },
       data: node,
       type: node.type,
+      width: node.width ?? undefined,
+      height: node.height ?? undefined,
+      draggable: node.draggable ?? true,
+      selectable: node.selectable ?? true,
+      deletable: node.deletable ?? true,
     }));
 
     // Map backend edges to React Flow edges with handle support
@@ -156,6 +150,7 @@ const CanvasProvider = ({
       target: edge.target,
       sourceHandle: edge.sourceHandle || undefined,
       targetHandle: edge.targetHandle || undefined,
+      data: { dataType: edge.dataType },
     }));
 
     return { initialEdges, initialNodes };
@@ -163,13 +158,79 @@ const CanvasProvider = ({
 
   const [nodes, setNodes, onNodesChangeBase] = useNodesState<Node>(mock_nodes);
   const [edges, setEdges, onEdgesChangeBase] = useEdgesState<Edge>([]);
-
   const past = useRef<Array<{ nodes: Node[]; edges: Edge[] }>>([]);
   const future = useRef<Array<{ nodes: Node[]; edges: Edge[] }>>([]);
   const isRestoring = useRef(false);
   const [canUndo, setCanUndo] = useState(false);
   const [canRedo, setCanRedo] = useState(false);
   const [tool, setTool] = useState<'select' | 'pan'>('select');
+  const timeoutRef = useRef<NodeJS.Timeout | null>(null);
+
+  const { mutate: patchCanvas } = useMutation({
+    mutationFn: async (body: { nodes: DbNode[]; edges: DbEdge[] }) => {
+      const response = await fetch(`/api/v1/canvas/${canvasId}`, {
+        method: 'PATCH',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify(body),
+      });
+      if (!response.ok) {
+        throw new Error(await response.text());
+      }
+      return response.json();
+    },
+    onSuccess: () => {
+      // Optional: You can add logging or notifications here if needed
+    },
+    onError: (error) => {
+      console.error('Save failed:', error);
+    },
+  });
+
+  const save = useCallback(() => {
+    if (!canvasId) return;
+
+    const currentDbNodes: DbNode[] = nodes.map((n) => ({
+      id: n.id,
+      name: n.data.name,
+      type: n.type,
+      x: n.position.x,
+      y: n.position.y,
+      width: n.width ?? undefined,
+      height: n.height ?? undefined,
+      draggable: n.draggable ?? true,
+      selectable: n.selectable ?? true,
+      deletable: n.deletable ?? true,
+      fileData: n.data.fileData,
+      data: n.data.data,
+      visible: n.data.visible ?? true,
+      zIndex: n.data.zIndex,
+    }));
+
+    const currentDbEdges: DbEdge[] = edges.map((e) => ({
+      id: e.id,
+      source: e.source,
+      target: e.target,
+      sourceHandle: e.sourceHandle || undefined,
+      targetHandle: e.targetHandle || undefined,
+      dataType: e.data?.dataType || 'Text',
+    }));
+
+    const body = {
+      nodes: currentDbNodes,
+      edges: currentDbEdges,
+    };
+
+    patchCanvas(body);
+  }, [canvasId, nodes, edges, patchCanvas]);
+
+  const scheduleSave = useCallback(() => {
+    if (timeoutRef.current) {
+      clearTimeout(timeoutRef.current);
+    }
+    timeoutRef.current = setTimeout(() => {
+      save();
+    }, 5000);
+  }, [save]);
 
   const onNodeDragStart = useCallback((_event: MouseEvent, _node: Node, _draggedNodes: Node[]) => {
     if (isRestoring.current) return;
@@ -205,8 +266,11 @@ const CanvasProvider = ({
       setCanRedo(false);
 
       onNodesChangeBase(changes);
+
+      // Schedule save for meaningful changes
+      scheduleSave();
     },
-    [nodes, edges, onNodesChangeBase]
+    [nodes, edges, onNodesChangeBase, scheduleSave]
   );
 
   const onEdgesChange = useCallback(
@@ -231,8 +295,11 @@ const CanvasProvider = ({
       setCanRedo(false);
 
       onEdgesChangeBase(changes);
+
+      // Schedule save for meaningful changes
+      scheduleSave();
     },
-    [nodes, edges, onEdgesChangeBase]
+    [nodes, edges, onEdgesChangeBase, scheduleSave]
   );
 
   const onConnect = useCallback(
@@ -244,6 +311,11 @@ const CanvasProvider = ({
       setCanUndo(past.current.length > 0);
       setCanRedo(false);
 
+      // Determine dataType based on source handle
+      const sourceNode = nodes.find(n => n.id === params.source);
+      const output = sourceNode?.data.template?.outputTypes?.find((o: any) => o.id === params.sourceHandle);
+      const dataType = output?.outputType || 'Text';
+
       // The params object from React Flow already includes sourceHandle and targetHandle
       setEdges(eds => [
         ...eds,
@@ -253,10 +325,14 @@ const CanvasProvider = ({
           target: params.target,
           sourceHandle: params.sourceHandle || undefined,
           targetHandle: params.targetHandle || undefined,
+          data: { dataType },
         } as Edge,
       ]);
+
+      // Schedule save after connect
+      scheduleSave();
     },
-    [nodes, edges, setEdges]
+    [nodes, edges, setEdges, scheduleSave]
   );
 
   const undo = useCallback(() => {
@@ -272,7 +348,10 @@ const CanvasProvider = ({
 
     setCanUndo(past.current.length > 0);
     setCanRedo(true);
-  }, [nodes, edges, setNodes, setEdges]);
+
+    // Schedule save after undo
+    scheduleSave();
+  }, [nodes, edges, setNodes, setEdges, scheduleSave]);
 
   const redo = useCallback(() => {
     if (future.current.length === 0) return;
@@ -287,13 +366,54 @@ const CanvasProvider = ({
 
     setCanRedo(future.current.length > 0);
     setCanUndo(true);
-  }, [nodes, edges, setNodes, setEdges]);
+
+    // Schedule save after redo
+    scheduleSave();
+  }, [nodes, edges, setNodes, setEdges, scheduleSave]);
+
+  const updateNodeCustomData = useCallback((nodeId: string, updates: Partial<NodeData>) => {
+    if (isRestoring.current) return;
+
+    past.current = [...past.current, { nodes: [...nodes], edges: [...edges] }];
+    future.current = [];
+    setCanUndo(past.current.length > 0);
+    setCanRedo(false);
+
+    setNodes((nds) =>
+      nds.map((n) => {
+        if (n.id === nodeId) {
+          return {
+            ...n,
+            data: {
+              ...n.data,
+              data: {
+                ...n.data.data as object,
+                ...updates,
+              },
+            },
+          };
+        }
+        return n;
+      })
+    );
+
+    scheduleSave();
+  }, [nodes, edges, setNodes, scheduleSave]);
 
   // Uncomment when ready to use actual data
   // useEffect(() => {
   //   if (initialNodes) setNodes(initialNodes);
   //   if (initialEdges) setEdges(initialEdges)
   // }, [initialNodes, initialEdges, setNodes, setEdges])
+
+  useEffect(() => {
+    setNodes(initialNodes);
+    setEdges(initialEdges);
+    past.current = [];
+    future.current = [];
+    setCanUndo(false);
+    setCanRedo(false);
+  }, [initialNodes, initialEdges, setNodes, setEdges]);
 
   const value = {
     canvas,
@@ -313,6 +433,7 @@ const CanvasProvider = ({
     canRedo,
     onConnect,
     onNodeDragStart,
+    updateNodeCustomData,
   };
 
   return <CanvasContext.Provider value={value}>{children}</CanvasContext.Provider>;
