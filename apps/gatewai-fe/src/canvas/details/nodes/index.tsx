@@ -1,3 +1,4 @@
+/* eslint-disable react-refresh/only-export-components */
 import { memo, useCallback, useEffect } from 'react';
 import { useReactFlow, type NodeProps, type Node } from '@xyflow/react';
 import * as PIXI from 'pixi.js';
@@ -13,7 +14,6 @@ import type {
   DescriberNodeData,
   FileNodeData,
   GroupNodeData,
-  PreviewNodeData,
   CrawlerNodeData,
   MaskNodeData,
   NodeWithFileType,
@@ -28,7 +28,6 @@ import { PixiApplication } from './pixi-app';
 
 // Define typed node components
 export type PromptNode = Node<NodeWithFileType<PromptNodeData>, 'Prompt'>;
-export type PreviewNode = Node<NodeWithFileType<PreviewNodeData>, 'Preview'>;
 export type VideoNode = Node<NodeWithFileType<VideoNodeData>, 'Video'>;
 export type AudioNode = Node<NodeWithFileType<AudioNodeData>, 'Audio'>;
 export type FileNode = Node<NodeWithFileType<FileNodeData>, 'File'>;
@@ -185,22 +184,6 @@ const PromptNodeComponent = memo((props: NodeProps<PromptNode>) => {
   );
 });
 PromptNodeComponent.displayName = 'PromptNode';
-
-// Preview Node (formerly Image)
-const PreviewNodeComponent = memo((props: NodeProps<PreviewNode>) => {
-  return (
-    <BaseNode {...props}>
-      {props.data?.fileData?.url ? (
-        <PixiApplication className="w-[200px] h-[200px]">
-          <ImagePreview nodeId={props.id} />
-        </PixiApplication>
-      ) : (
-        <div className="text-gray-500">No image</div>
-      )}
-    </BaseNode>
-  );
-});
-PreviewNodeComponent.displayName = 'PreviewNode';
 
 // Video Node
 const VideoNodeComponent = memo((props: NodeProps<VideoNode>) => {
@@ -541,7 +524,7 @@ const ResizeNodeComponent = memo((props: NodeProps<ResizeNode>) => {
 ResizeNodeComponent.displayName = 'ResizeNode';
 
 // Node types mapping
-export const nodeTypes = {
+const nodeTypes = {
   Agent: AgentNodeComponent,
   Array: ArrayNodeComponent,
   Audio: AudioNodeComponent,
@@ -550,7 +533,6 @@ export const nodeTypes = {
   Describer: DescriberNodeComponent,
   File: FileNodeComponent,
   Group: GroupNodeComponent,
-  Preview: PreviewNodeComponent,
   Crawler: CrawlerNodeComponent,
   Mask: MaskNodeComponent,
   Painter: PainterNodeComponent,
@@ -563,8 +545,8 @@ export const nodeTypes = {
 
 // Export components
 export {
+  nodeTypes,
   PromptNodeComponent as PromptNode,
-  PreviewNodeComponent as PreviewNode,
   VideoNodeComponent as VideoNode,
   AudioNodeComponent as AudioNode,
   FileNodeComponent as FileNode,

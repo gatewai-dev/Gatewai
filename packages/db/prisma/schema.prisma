@@ -19,6 +19,7 @@ enum NodeType {
   Audio
   File
   Export
+  Toggle
   Crawler
   Resize
   Group
@@ -35,7 +36,7 @@ enum NodeType {
 enum DataType {
   Text
   Number
-  Toggle
+  Boolean
   Image
   Video
   Audio
@@ -156,17 +157,20 @@ model Node {
 }
 
 model NodeTemplate {
-  id              String                 @id @default(cuid())
-  type            NodeType               @unique
-  displayName     String
-  description     String?
-  inputTypes      NodeTemplateInput[]
-  outputTypes     NodeTemplateOutput[]
-  variableInputs  Boolean                @default(false)
-  variableOutputs Boolean                @default(false)
-  createdAt       DateTime               @default(now())
-  updatedAt       DateTime               @updatedAt
-  nodes           Node[]
+  id                  String                 @id @default(cuid())
+  type                NodeType               @unique
+  displayName         String
+  description         String?
+  inputTypes          NodeTemplateInput[]
+  outputTypes         NodeTemplateOutput[]
+  variableInputs      Boolean                @default(false)
+  variableOutputs     Boolean                @default(false)
+  category            String?
+  subcategory         String?
+  showInQuickAccess   Boolean                @default(false)
+  createdAt           DateTime               @default(now())
+  updatedAt           DateTime               @updatedAt
+  nodes               Node[]
 
   @@map("node_template")
 }
