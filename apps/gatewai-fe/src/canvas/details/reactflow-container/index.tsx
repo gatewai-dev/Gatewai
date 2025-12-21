@@ -25,7 +25,6 @@ function ReactflowContainer({ children }: ReactFlowProps) {
     clientEdges,
     tool,
     onConnect,
-    onNodeDragStart,
     onNodeDragStop
   } = useCanvasCtx();
 
@@ -80,7 +79,6 @@ function ReactflowContainer({ children }: ReactFlowProps) {
         connectionMode={ConnectionMode.Loose}
         onConnect={onConnect}
         isValidConnection={isValidConnection}
-        onNodeDragStart={onNodeDragStart}
         onNodeDragStop={onNodeDragStop}
       >
         {children}

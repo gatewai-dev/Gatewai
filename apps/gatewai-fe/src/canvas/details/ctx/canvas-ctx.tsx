@@ -213,6 +213,8 @@ const CanvasProvider = ({
       deletable: node.deletable ?? true,
     }));
 
+    const initialDbResults: DbNode[] = canvas.nodes;
+
     // Map backend edges to React Flow edges with handle support
     const initialEdges: Edge[] = canvas.edges.map((edge) => ({
       id: edge.id,
@@ -257,7 +259,7 @@ const CanvasProvider = ({
   });
 
 
-  const { mutateAsync: runNodesMutateAsync, isError: runError, isPending: isRunPending} = useMutation({
+  const { mutateAsync: runNodesMutateAsync } = useMutation({
     mutationFn: async (body: { nodeIds: DbNode["id"][] }) => {
       const response = await fetch(`/api/v1/canvas/${canvasId}/process`, {
         method: 'POST',
