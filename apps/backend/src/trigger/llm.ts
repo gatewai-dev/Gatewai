@@ -10,7 +10,7 @@ const RunLLMPayloadSchema = z.object({
 
 export type RunLLMNodeTaskPayload = z.infer<typeof RunLLMPayloadSchema>;
 
-export const TASK_runLLM = task({
+export const TASK_LLM = task({
   id: "run-llm",
   // Set an optional maxDuration to prevent tasks from running indefinitely
   maxDuration: 300, // Stop executing after 300 secs (5 mins) of compute

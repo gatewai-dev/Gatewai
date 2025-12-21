@@ -3,10 +3,10 @@ import { zValidator } from '@hono/zod-validator'
 import z from "zod";
 import { streamSSE } from 'hono/streaming'
 import { HTTPException } from "hono/http-exception";
-import { prisma } from "@gatewai/db";
+import { prisma, type Task } from "@gatewai/db";
 import type { AuthHonoTypes } from "../../auth.js";
 import { tasks } from "@trigger.dev/sdk";
-import type { TASK_runLLM } from "../../trigger/llm.js";
+import type { TASK_LLM } from "../../trigger/llm.js";
 import type { TextNodeData } from "@gatewai/types";
 
 const canvasRoutes = new Hono<{Variables: AuthHonoTypes}>({
@@ -560,17 +560,30 @@ canvasRoutes.post('/:canvasId/process',
                 canvasId,
                 canvas: {
                     userId: user?.id
-                }
+                },
+            },
+            include: {
+                template: true,
             }
         });
 
-        // TODO: batch process nodes
+        if (nodes.length < 1) {
+            throw new HTTPException(400, { message: 'Invalid source or target node' });
+        }
+        
+        const clientProcessNodes = nodes.filter(node => node.template.processEnvironment === 'Browser');
+        if (clientProcessNodes.length > 0) {
+            throw new HTTPException(400, { message: 'Some nodes are set to be processed in the client environment.' });
+        }
+
+        const createdTasks: Task[] = [];
+
         nodes.forEach(async node => {
             const nodeData = node.data as TextNodeData;
             if (!nodeData.content) {
                 throw new HTTPException(400, { message: `Node ${node.id} does not have a prompt defined.` });
             }
-            const taskHandle = tasks.trigger<typeof TASK_runLLM>('run-llm', {
+            const taskHandle = await tasks.trigger<typeof TASK_LLM>('run-llm', {
                 nodeId: node.id,
                 model: 'gpt-4o',
                 prompt: nodeData.content,
@@ -581,15 +594,16 @@ canvasRoutes.post('/:canvasId/process',
                     canvasId: canvasId,
                     userId: user!.id,
                     nodeId: node.id,
+                    publicAccessToken: taskHandle.publicAccessToken,
+                    taskId: taskHandle.id,
+                    name: taskHandle.taskIdentifier,
                 }
             });
+
+            createdTasks.push(task);
         });
 
-        if (nodes.length < 1) {
-            throw new HTTPException(400, { message: 'Invalid source or target node' });
-        }
-
-        return c.json({ edge }, 201);
+        return c.json({ createdTasks }, 201);
     }
 );
 
