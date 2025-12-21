@@ -128,11 +128,11 @@ const ImagePreview = memo(({ nodeId }: { nodeId: string }) => {
 
 // Text Node
 const TextNodeComponent = memo((props: NodeProps<TextNode>) => {
-  const { updateNodeCustomData } = useCanvasCtx();
+  const { updateNodeResult } = useCanvasCtx();
   const result = props.data?.result as LLMResult || '';
   const text = result.parts[0].data;
   const handleChange = (e: React.ChangeEvent<HTMLTextAreaElement>) => {
-    updateNodeCustomData((props.id), {...props.data, content: e.target.value});
+    updateNodeResult((props.id), {parts: [{type: 'Text', data: e.target.value}] } as LLMResult);
   };
 
   return (
