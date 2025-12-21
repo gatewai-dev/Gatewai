@@ -1,0 +1,17 @@
+.DS_Store
+node_modules
+.turbo
+*.log
+.next
+dist
+dist-ssr
+*.local
+.env
+.cache
+server/dist
+public/dist
+.turbo
+*/**/game.db
+
+*/**/dungeon-master-prompt_*.txt
+gatewai-466716-f81dd5a1fa74.json

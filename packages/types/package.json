@@ -1,0 +1,33 @@
+{
+  "name": "@gatewai/types",
+  "version": "0.0.0",
+  "main": "./dist/index.js",
+  "module": "./dist/index.mjs",
+  "types": "./dist/index.d.ts",
+  "type": "module",
+  "sideEffects": false,
+  "license": "MIT",
+  "files": [
+    "dist/**"
+  ],
+  "scripts": {
+    "build": "tsup src/index.ts --format esm",
+    "dev": "tsup src/index.ts --format esm --watch",
+    "lint": "eslint \"src/**/*.ts*\"",
+    "clean": "rm -rf .turbo && rm -rf node_modules && rm -rf dist"
+  },
+  "devDependencies": {
+    "@eslint/eslintrc": "^3.3.1",
+    "@eslint/js": "^9.31.0",
+    "@gatewai/db": "workspace:*",
+    "@gatewai/eslint-config": "workspace:*",
+    
+    "@gatewai/tsconfig": "workspace:*",
+    "@types/data-urls": "^3.0.4",
+    "@types/node": "^24.0.4",
+    "eslint": "^9.29.0",
+    "install": "^0.13.0",
+    "tsup": "^8.5.0",
+    "typescript": "5.5.4"
+  }
+}

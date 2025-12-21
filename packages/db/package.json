@@ -1,0 +1,45 @@
+{
+  "name": "@gatewai/db",
+  "version": "0.0.0",
+  "type": "module",
+  "main": "./dist/index.js",
+  "module": "./dist/index.mjs",
+  "types": "./dist/index.d.ts",
+  "sideEffects": false,
+  "files": [
+    "dist/**"
+  ],
+  "exports": {
+    ".": {
+      "types": "./dist/index.d.ts",
+      "import": "./dist/index.js",
+      "require": "./dist/index.cjs"
+    }
+  },
+  "scripts": {
+    "build": "pnpm db:generate && tsup src/index.ts",
+    "postinstall": "pnpm db:generate",
+    "db:generate": "prisma generate",
+    "db:migrate": "prisma migrate dev",
+    "db:deploy": "prisma migrate deploy",
+    "db:studio": "prisma studio",
+    "db:reset": "prisma migrate reset --force --skip-seed"
+  },
+  "keywords": [],
+  "author": "Okan Aslankan <okn.aslnkn@gmail.com>",
+  "license": "ISC",
+  "devDependencies": {
+    "@prisma/adapter-better-sqlite3": "^6.10.1",
+    "@types/node": "^24.0.4",
+		"@gatewai/eslint-config": "workspace:*",
+    "@gatewai/tsconfig": "workspace:*",
+    "better-sqlite3": "^11.9.0",
+    "prisma": "^6.10.1",
+    "tsup": "^8.5.0",
+    "tsx": "^4.20.3",
+    "typescript": "^5.8.3"
+  },
+  "dependencies": {
+    "@prisma/client": "6.10.1"
+  }
+}

@@ -1,0 +1,27 @@
+{
+  "name": "@gatewai/backend",
+  "type": "module",
+  "scripts": {
+    "dev": "tsx watch src/index.ts",
+    "build": "tsc",
+    "start": "node dist/index.js"
+  },
+  "dependencies": {
+    "@better-auth/expo": "^1.3.2",
+    "@gatewai/db": "workspace:*",
+    "@gatewai/tsconfig": "workspace:*",
+    "@hono/node-server": "^1.17.1",
+    "@hono/zod-validator": "^0.7.2",
+    "@polar-sh/better-auth": "^1.1.0",
+    "@polar-sh/sdk": "^0.34.8",
+    "better-auth": "^1.3.3",
+    "dotenv": "^17.0.1",
+    "hono": "^4.8.5",
+    "zod": "3.25.67"
+  },
+  "devDependencies": {
+    "@types/node": "^20.11.17",
+    "tsx": "^4.7.1",
+    "typescript": "^5.8.3"
+  }
+}

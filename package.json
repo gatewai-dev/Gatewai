@@ -1,0 +1,28 @@
+{
+  "private": false,
+  "scripts": {
+    "build": "turbo run build --force",
+    "dev": "turbo run dev",
+    "lint": "turbo run lint",
+    "clean": "turbo run clean && rm -rf node_modules",
+    "format": "prettier --write \"**/*.{ts,tsx,md}\"",
+    "changeset": "changeset",
+    "version-packages": "changeset version",
+    "release": "turbo run build --filter=@gatewai/docs^... && changeset publish",
+    "start": "turbo run build && turbo run start-cli"
+  },
+  "devDependencies": {
+    "@changesets/cli": "^2.29.5",
+    "eslint": "^9.29.0",
+    "prettier": "^3.2.5",
+    "turbo": "^2.5.4"
+  },
+  "packageManager": "pnpm@10.13.1",
+  "engines": {
+    "node": ">=18"
+  },
+  "bin": {
+    "cli": "./apps/cli/dist/cli.js"
+  },
+  "name": "gatewai"
+}

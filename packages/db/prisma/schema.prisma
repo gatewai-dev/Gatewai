@@ -1,0 +1,268 @@
+// This is your Prisma schema file,
+// learn more about it in the docs: https://pris.ly/d/prisma-schema
+
+generator client {
+  provider        = "prisma-client"
+  previewFeatures = ["driverAdapters"]
+  output          = "../generated/client"
+}
+
+datasource db {
+  provider = "sqlite"
+  url      = "file:./game.db"
+}
+
+enum NodeType {
+  Prompt
+  Preview
+  Video
+  Audio
+  File
+  Export
+  Crawler
+  Resize
+  Group
+  Agent
+  ThreeD
+  Mask
+  Painter
+  Blur
+  Compositor
+  Describer
+  Router
+}
+
+enum DataType {
+  Text
+  Number
+  Toggle
+  Image
+  Video
+  Audio
+  File
+}
+
+enum TaskStatus {
+  Pending
+  InProgress
+  Completed
+  Failed
+}
+
+model User {
+  id            String    @id
+  name          String
+  email         String
+  emailVerified Boolean
+  image         String?
+  createdAt     DateTime
+  updatedAt     DateTime
+  sessions      Session[]
+  accounts      Account[]
+
+  canvases      Canvas[]
+  tokens        Int?
+
+  @@unique([email])
+  @@map("user")
+}
+
+model Session {
+  id        String   @id
+  expiresAt DateTime
+  token     String
+  createdAt DateTime
+  updatedAt DateTime
+  ipAddress String?
+  userAgent String?
+  userId    String
+  user      User     @relation(fields: [userId], references: [id], onDelete: Cascade)
+
+  @@unique([token])
+  @@map("session")
+}
+
+model Account {
+  id                    String    @id
+  accountId             String
+  providerId            String
+  userId                String
+  user                  User      @relation(fields: [userId], references: [id], onDelete: Cascade)
+  accessToken           String?
+  refreshToken          String?
+  idToken               String?
+  accessTokenExpiresAt  DateTime?
+  refreshTokenExpiresAt DateTime?
+  scope                 String?
+  password              String?
+  createdAt             DateTime
+  updatedAt             DateTime
+
+  @@map("account")
+}
+
+model Verification {
+  id         String    @id
+  identifier String
+  value      String
+  expiresAt  DateTime
+  createdAt  DateTime?
+  updatedAt  DateTime?
+
+  @@map("verification")
+}
+
+model Node {
+  id             String          @id @default(cuid())
+  name           String
+  type           NodeType
+  // React Flow position
+  x              Float
+  y              Float
+  // React Flow dimensions (optional, can be auto-calculated)
+  width          Float?
+  height         Float?
+  // React Flow specific properties
+  draggable      Boolean         @default(true)
+  selectable     Boolean         @default(true)
+  deletable      Boolean         @default(true)
+  /*
+  export interface FileData {
+    url: string;
+    name: string;
+    bucket: string;
+    mimeType: string;
+    size: number;
+  }
+  */
+  fileData       Json?           // For file metadata (e.g., gcs Url, bucket, etc.)
+  data           Json?           // Additional data for React Flow node (labels, configs, etc.)
+  // Visual properties
+  visible        Boolean         @default(true)
+  zIndex         Int?            // For layering
+  // Timestamps - DB managed
+  createdAt      DateTime        @default(now())
+  updatedAt      DateTime        @updatedAt
+  // Relationships
+  edgesFrom      Edge[]          @relation("EdgesFrom")
+  edgesTo        Edge[]          @relation("EdgesTo")
+  canvas         Canvas          @relation(fields: [canvasId], references: [id], onDelete: Cascade)
+  canvasId       String
+  tasks          Task[]
+  templateId     String
+  template       NodeTemplate    @relation(fields: [templateId], references: [id], onDelete: Restrict)
+
+  @@map("node")
+}
+
+model NodeTemplate {
+  id              String                 @id @default(cuid())
+  type            NodeType               @unique
+  displayName     String
+  description     String?
+  inputTypes      NodeTemplateInput[]
+  outputTypes     NodeTemplateOutput[]
+  variableInputs  Boolean                @default(false)
+  variableOutputs Boolean                @default(false)
+  createdAt       DateTime               @default(now())
+  updatedAt       DateTime               @updatedAt
+  nodes           Node[]
+
+  @@map("node_template")
+}
+
+model NodeTemplateInput {
+  id          String       @id @default(cuid())
+  templateId  String
+  required    Boolean
+  inputType   DataType
+  template    NodeTemplate @relation(fields: [templateId], references: [id], onDelete: Cascade)
+
+  @@map("node_template_input")
+}
+
+model NodeTemplateOutput {
+  id          String       @id @default(cuid())
+  templateId  String
+  required    Boolean
+  outputType  DataType
+  template    NodeTemplate @relation(fields: [templateId], references: [id], onDelete: Cascade)
+
+  @@map("node_template_output")
+}
+
+model Edge {
+  id         String   @id @default(cuid())
+  source     String
+  target     String
+  dataType   DataType
+  createdAt  DateTime @default(now())
+  updatedAt  DateTime @updatedAt
+
+  sourceNode Node @relation("EdgesFrom", fields: [source], references: [id], onDelete: Cascade)
+  targetNode Node @relation("EdgesTo", fields: [target], references: [id], onDelete: Cascade)
+
+  @@unique([source, target]) // Prevent duplicate edges
+  @@map("edge")
+}
+
+model Canvas {
+  id             String       @id @default(cuid())
+  name           String
+  // Timestamps - DB managed
+  createdAt      DateTime     @default(now())
+  updatedAt      DateTime     @updatedAt
+  nodes          Node[]
+  aiSessions     AISession[]
+  tasks          Task[]
+  taskManagers   TaskManager[]
+  user           User         @relation(fields: [userId], references: [id], onDelete: Cascade)
+  userId         String
+
+  @@map("canvas")
+}
+
+model AISession {
+  id        String   @id @default(cuid())
+  messages  Json
+  // Timestamps - DB managed
+  createdAt DateTime @default(now())
+  updatedAt DateTime @updatedAt
+  canvas    Canvas   @relation(fields: [canvasId], references: [id], onDelete: Cascade)
+  canvasId  String
+
+  @@map("aisession")
+}
+
+model Task {
+  id              String       @id @default(cuid())
+  name            String
+  description     String?
+  status          TaskStatus   @default(Pending)
+  // Timestamps - DB managed
+  createdAt       DateTime     @default(now())
+  updatedAt       DateTime     @updatedAt
+  // Relationships
+  canvas          Canvas       @relation(fields: [canvasId], references: [id], onDelete: Cascade)
+  canvasId        String
+  node            Node?        @relation(fields: [nodeId], references: [id], onDelete: SetNull)
+  nodeId          String?
+  taskManager     TaskManager? @relation(fields: [taskManagerId], references: [id], onDelete: SetNull)
+  taskManagerId   String?
+
+  @@map("task")
+}
+
+model TaskManager {
+  id          String   @id @default(cuid())
+  name        String
+  // Timestamps - DB managed
+  createdAt   DateTime @default(now())
+  updatedAt   DateTime @updatedAt
+  // Relationships
+  tasks       Task[]
+  canvas      Canvas   @relation(fields: [canvasId], references: [id], onDelete: Cascade)
+  canvasId    String
+
+  @@map("taskmanager")
+}
