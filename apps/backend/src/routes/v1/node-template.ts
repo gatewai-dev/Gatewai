@@ -1,9 +1,3 @@
-// =====================
-// Node Templates Route
-// =====================
-
-// Add this to your API routes file, e.g., alongside canvasRoutes
-
 import { Hono } from "hono";
 import { prisma } from "@gatewai/db";
 import type { AuthHonoTypes } from "../../auth.js";

@@ -501,7 +501,6 @@ canvasRoutes.post('/:id/duplicate', async (c) => {
                     deletable: node.deletable,
                     fileData: node.fileData ?? {},
                     data: node.data ?? {},
-                    visible: node.visible,
                     zIndex: node.zIndex,
                     template: {
                         connect: {
