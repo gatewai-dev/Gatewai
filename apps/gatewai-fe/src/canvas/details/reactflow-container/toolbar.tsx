@@ -1,5 +1,6 @@
 import { Pointer, Hand, Undo2, Redo2 } from 'lucide-react';
 import { useReactFlow, useViewport } from '@xyflow/react';
+import { useHotkeys } from 'react-hotkeys-hook';
 import { useCanvasCtx } from '../ctx/canvas-ctx';
 import {
   Menubar,
@@ -10,12 +11,29 @@ import {
 } from '@/components/ui/menubar';
 import { ToggleGroup, ToggleGroupItem } from '@/components/ui/toggle-group';
 import { Toggle } from '@/components/ui/toggle';
+import { useZoomHotkeys } from './use-zoom-hotkeys';
 
 function Toolbar() {
   const { tool, setTool, undo, redo, canUndo, canRedo } = useCanvasCtx();
   const { zoom } = useViewport();
   const { zoomIn, zoomOut, zoomTo, fitView } = useReactFlow();
   const zoomPercentage = Math.round(zoom * 100) + '%';
+
+
+  // Tool selection hotkeys
+  useHotkeys('v', () => setTool('select'), [setTool]);
+  useHotkeys('h', () => setTool('pan'), [setTool]);
+
+  // Undo/Redo hotkeys
+  useHotkeys('ctrl+z, meta+z', () => {
+    if (canUndo) undo();
+  }, [canUndo, undo]);
+  
+  useHotkeys('ctrl+shift+z, meta+shift+z, ctrl+y, meta+y', () => {
+    if (canRedo) redo();
+  }, [canRedo, redo]);
+
+  useZoomHotkeys();
 
   return (
     <Menubar className="border-0 bg-background px-2 py-1 rounded-md shadow-md">
@@ -25,10 +43,10 @@ function Toolbar() {
         onValueChange={(value) => value && setTool(value as "select" | 'pan')}
         className="gap-1"
       >
-        <ToggleGroupItem value="select" aria-label="Select tool" size="sm">
+        <ToggleGroupItem value="select" aria-label="Select tool (V)" size="sm">
           <Pointer size={18} />
         </ToggleGroupItem>
-        <ToggleGroupItem value="pan" aria-label="Pan tool" size="sm">
+        <ToggleGroupItem value="pan" aria-label="Pan tool (H)" size="sm">
           <Hand size={18} />
         </ToggleGroupItem>
       </ToggleGroup>
@@ -40,7 +58,7 @@ function Toolbar() {
           pressed={false}
           onClick={undo}
           disabled={!canUndo}
-          aria-label="Undo"
+          aria-label="Undo (Ctrl+Z)"
           size="sm"
         >
           <Undo2 size={18} />
@@ -49,7 +67,7 @@ function Toolbar() {
           pressed={false}
           onClick={redo}
           disabled={!canRedo}
-          aria-label="Redo"
+          aria-label="Redo (Ctrl+Shift+Z)"
           size="sm"
         >
           <Redo2 size={18} />

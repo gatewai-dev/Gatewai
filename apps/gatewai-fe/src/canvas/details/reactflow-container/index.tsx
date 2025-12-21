@@ -31,6 +31,11 @@ function ReactflowContainer({
       >
         {children}
         <Background />
+        <Panel position="top-left" className=" bg-background left-0 top-0 m-0! h-full w-[60px] flex flex-col">
+          <div className=" text-sm ">
+            <strong className="font-medium">Tool:</strong>
+          </div>
+        </Panel>
         <Panel position="bottom-center">
           <Toolbar />
         </Panel>

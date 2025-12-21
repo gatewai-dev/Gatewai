@@ -1,4 +1,4 @@
-/* eslint-disable react-refresh/only-export-components */
+
 import { memo, useCallback, useEffect } from 'react';
 import { useReactFlow, type NodeProps, type Node } from '@xyflow/react';
 import * as PIXI from 'pixi.js';

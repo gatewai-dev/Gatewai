@@ -5,7 +5,7 @@ import { useRef, type ReactNode } from "react";
 function PixiApplication({children, className}: {children: ReactNode, className?: string}) {
     const parentRef = useRef(null);
     return (
-        <div ref={parentRef} className={cn(className)}>
+        <div ref={parentRef} className={cn(className, "media-container")}>
             <Application resizeTo={parentRef}>
                 {children}
             </Application>
