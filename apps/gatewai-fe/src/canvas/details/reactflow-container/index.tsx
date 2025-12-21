@@ -1,15 +1,34 @@
-import { Background, Panel, ReactFlow, SelectionMode } from "@xyflow/react";
+import { Background, ConnectionMode, Panel, ReactFlow, SelectionMode } from "@xyflow/react";
 import { nodeTypes } from "../nodes";
 import { useCanvasCtx } from "../ctx/canvas-ctx";
 import { Toolbar } from "./toolbar";
+import { CustomEdge, CustomConnectionLine } from "../nodes/base";
+
+// Define edge types - you can add more custom edge types here if needed
+const edgeTypes = {
+  default: CustomEdge,
+  // You could also add other custom edge types:
+  // animated: AnimatedCustomEdge,
+  // straight: StraightCustomEdge,
+};
 
 function ReactflowContainer({
   children,
 }: {
   children?: React.ReactNode;
 }) {
-  const { clientNodes, onEdgesChange, onNodesChange,  clientEdges, tool, onConnect, onNodeDragStart } = useCanvasCtx();
-  console.log({clientEdges, clientNodes})
+  const { 
+    clientNodes,
+    onEdgesChange,
+    onNodesChange,
+    clientEdges,
+    tool,
+    onConnect,
+    onNodeDragStart
+  } = useCanvasCtx();
+  
+  console.log({clientEdges, clientNodes});
+  
   return (
     <div className="w-full h-screen bg-black">
       <ReactFlow
@@ -18,6 +37,8 @@ function ReactflowContainer({
         className="bg-black"
         fitView
         nodeTypes={nodeTypes}
+        edgeTypes={edgeTypes}
+        connectionLineComponent={CustomConnectionLine} // Add this line
         onEdgesChange={onEdgesChange}
         onNodesChange={onNodesChange}
         nodesDraggable={tool === 'select'}
@@ -26,6 +47,7 @@ function ReactflowContainer({
         selectionOnDrag={tool === 'select'}
         selectNodesOnDrag
         selectionMode={SelectionMode.Partial}
+        connectionMode={ConnectionMode.Loose}
         onConnect={onConnect}
         onNodeDragStart={onNodeDragStart}
       >

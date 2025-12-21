@@ -167,9 +167,10 @@ const ImagePreview = memo(({ nodeId }: { nodeId: string }) => {
 const PromptNodeComponent = memo((props: NodeProps<PromptNode>) => {
   const updateData = useUpdateNodeData(props.id);
   const content = props.data?.data?.content || '';
-
+  const prevData = (props.data.data ?? {}) as object;
+  console.log({props})
   const handleChange = (e: React.ChangeEvent<HTMLTextAreaElement>) => {
-    updateData({ content: e.target.value });
+    updateData({ data: {...prevData, content: e.target.value} });
   };
 
   return (
@@ -177,7 +178,7 @@ const PromptNodeComponent = memo((props: NodeProps<PromptNode>) => {
       <Textarea
         value={content}
         onChange={handleChange}
-        className="w-full h-full overflow-auto p-2 border rounded text-gray-100 resize-none"
+        className="w-full h-full max-h-full overflow-auto p-2 border rounded text-gray-100 resize-none"
         placeholder="Enter text..."
       />
     </BaseNode>
