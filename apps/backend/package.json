@@ -9,6 +9,7 @@
   "dependencies": {
     "@better-auth/expo": "^1.3.2",
     "@gatewai/db": "workspace:*",
+    "@gatewai/types": "workspace:*",
     "@gatewai/tsconfig": "workspace:*",
     "@hono/node-server": "^1.17.1",
     "@hono/zod-validator": "^0.7.2",
@@ -18,6 +19,7 @@
     "better-auth": "^1.3.3",
     "dotenv": "^17.0.1",
     "hono": "^4.8.5",
+    "openai": "^6.8.1",
     "zod": "3.25.67"
   },
   "devDependencies": {
