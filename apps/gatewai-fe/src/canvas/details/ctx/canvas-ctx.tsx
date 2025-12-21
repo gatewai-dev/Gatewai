@@ -131,11 +131,30 @@ const mock_nodes: Node[] = [
           parts: [{
             type: 'Image',
             data: {
-              size: 1200,
+              mediaSize: {
+                width: 512,
+                height: 512,
+              },
+              name: 'First Image',
+              bucket: 'default',
+              fileSize: 2048,
               mimeType: 'image/png',
               url: "https://placehold.co/512x512",
             }
-          }]
+          },{
+            type: 'Image',
+            data: {
+              mediaSize: {
+                width: 1024,
+                height: 1024,
+              },
+              name: 'Second Image',
+              bucket: 'default',
+              fileSize: 2048,
+              mimeType: 'image/png',
+              url: "https://placehold.co/1024x1024",
+            }
+          },]
         } as GPTImage1Result,
         inputTypes: [
           {
@@ -231,8 +250,7 @@ const CanvasProvider = ({
   });
 
 
-
-  const { mutate: runNodesMutate, } = useMutation({
+  const { mutateAsync: runNodesMutateAsync, isError: runError, isPending: isRunPending} = useMutation({
     mutationFn: async (body: { nodeIds: DbNode["id"][] }) => {
       const response = await fetch(`/api/v1/canvas/${canvasId}/process`, {
         method: 'POST',
@@ -469,9 +487,12 @@ const CanvasProvider = ({
   }, [nodes, edges, setNodes, scheduleSave]);
 
   const runNodes = useCallback(async (nodeIds: Node["id"][]) => {
+    // Save before running
     await save();
-    runNodesMutate({ nodeIds });
-  }, [runNodesMutate, save])
+
+    const resp = await runNodesMutateAsync({ nodeIds });
+    console.log({resp});
+  }, [runNodesMutateAsync, save])
 
   // Uncomment when ready to use actual data
   // useEffect(() => {

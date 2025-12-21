@@ -6,8 +6,13 @@ export type FileData = {
     name: string;
     bucket: string;
     mimeType: string;
-    size: number;
-}
+    fileSize: number;
+    mediaSize?: {
+      width: number;
+      height: number;
+    };
+    duration?: number; // in seconds
+  }
 
   export type OutputItem<T extends FileData | string | boolean | number, R extends DataType> = {
     type: R;
@@ -34,9 +39,11 @@ export type FileData = {
     parts: OutputItem<FileData, "File">[];
   }
 
-  export type GPTImage1Result = SelectItemType & {
+  export type ImagesResult = SelectItemType & {
     parts: OutputItem<FileData, "Image">[];
   }
+
+  export type GPTImage1Result = ImagesResult;
 
   export type MaskResult = SelectItemType & {
     parts: OutputItem<FileData, "Image">[];

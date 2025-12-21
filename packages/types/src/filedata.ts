@@ -10,6 +10,7 @@ const ImageNodeDataSchema = z.object({}).strict();
 
 // File Node
 const FileNodeDataSchema = z.object({}).strict();
+const GPTImage1NodeDataSchema = z.object({}).strict();
 
 // Crawler Node
 const CrawlerNodeDataSchema = z.object({
@@ -83,6 +84,7 @@ const ResizeNodeDataSchema = z.object({
 
 // Main node schema
 const NodeDataSchema = z.union([
+  GPTImage1NodeDataSchema,
   LLMNodeDataSchema,
   TextNodeDataSchema,
   ImageNodeDataSchema,
@@ -120,10 +122,11 @@ type RouterNodeData = z.infer<typeof RouterNodeDataSchema>;
 type ArrayNodeData = z.infer<typeof ArrayNodeDataSchema>;
 type ResizeNodeData = z.infer<typeof ResizeNodeDataSchema>;
 type NodeData = z.infer<typeof NodeDataSchema>;
-
+type GPTImage1Data = z.infer<typeof GPTImage1NodeDataSchema>;
 
 type AllNodeData =
   | TextNodeData
+  | GPTImage1Data
   | ImageNodeData
   | FileNodeData
   | CrawlerNodeData
@@ -179,6 +182,7 @@ export {
   type ArrayNodeData,
   type ResizeNodeData,
   type NodeData,
+  type GPTImage1Data,
   type AllNodeData,
 };
 

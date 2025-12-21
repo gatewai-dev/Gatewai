@@ -6,22 +6,9 @@ import { useApplication } from '@pixi/react';
 import { BaseNode } from './base';
 import { Textarea } from '@/components/ui/textarea';
 import type {
-  AgentNodeData,
-  ArrayNodeData,
   BlurNodeData,
-  CompositorNodeData,
-  DescriberNodeData,
-  FileNodeData,
-  GroupNodeData,
-  CrawlerNodeData,
-  MaskNodeData,
-  NodeWithFileType,
   PainterNodeData,
   ResizeNodeData,
-  RouterNodeData,
-  LLMNodeData,
-  TextNodeData,
-  ThreeDNodeData,
   LLMResult,
   GPTImage1Result,
 } from '@gatewai/types';
@@ -29,23 +16,10 @@ import { PixiApplication } from './pixi-app';
 import { Button } from '@/components/ui/button';
 import { PlayIcon } from 'lucide-react';
 import { useCanvasCtx } from '../ctx/canvas-ctx';
+import { MediaContent } from './media-content';
+import type { TextNode, FileNode, CrawlerNode, LLMNode, GPTImage1Node, GroupNode, AgentNode, ThreeDNode, MaskNode, PainterNode, BlurNode, CompositorNode, DescriberNode, RouterNode, ArrayNode, ResizeNode } from './node-props';
 
 // Define typed node components
-export type TextNode = Node<NodeWithFileType<TextNodeData>, 'Text'>;
-export type LLMNode = Node<NodeWithFileType<LLMNodeData>, 'LLM'>;
-export type FileNode = Node<NodeWithFileType<FileNodeData>, 'File'>;
-export type CrawlerNode = Node<NodeWithFileType<CrawlerNodeData>, 'Crawler'>;
-export type GroupNode = Node<NodeWithFileType<GroupNodeData>, 'Group'>;
-export type AgentNode = Node<NodeWithFileType<AgentNodeData>, 'Agent'>;
-export type ThreeDNode = Node<NodeWithFileType<ThreeDNodeData>, 'ThreeD'>;
-export type MaskNode = Node<NodeWithFileType<MaskNodeData>, 'Mask'>;
-export type PainterNode = Node<NodeWithFileType<PainterNodeData>, 'Painter'>;
-export type BlurNode = Node<NodeWithFileType<BlurNodeData>, 'Blur'>;
-export type CompositorNode = Node<NodeWithFileType<CompositorNodeData>, 'Compositor'>;
-export type DescriberNode = Node<NodeWithFileType<DescriberNodeData>, 'Describer'>;
-export type RouterNode = Node<NodeWithFileType<RouterNodeData>, 'Router'>;
-export type ArrayNode = Node<NodeWithFileType<ArrayNodeData>, 'Array'>;
-export type ResizeNode = Node<NodeWithFileType<ResizeNodeData>, 'Resize'>;
 
 
 // Common Preview Component for Image Processing Nodes
@@ -226,21 +200,13 @@ const LlmNodeComponent = memo((props: NodeProps<LLMNode>) => {
 });
 LlmNodeComponent.displayName = 'LLMNode';
 
-const GPTImage1NodeComponent = memo((props: NodeProps<LLMNode>) => {
-  const result = props.data?.data.result as GPTImage1Result || '';
-  const parts = result.parts;
+const GPTImage1NodeComponent = memo((props: NodeProps<GPTImage1Node>) => {
   const { runNodes } = useCanvasCtx();
-  const selectedPart = parts[result.selectedIndex];
-
+  const result = props.data?.data.result as GPTImage1Result || '';
   return (
     <BaseNode {...props}>
       <div className='flex flex-col gap-2 items-end'>
-        <div className='relative h-full w-full'>
-          <div className='absolute top-2 left-2 p-1 bg-black/10 rounded text-[8px]'>
-            {result.selectedIndex + 1} / {parts.length}
-          </div>
-          <img src={selectedPart.data.url} alt={selectedPart.data.name} className='w-full h-full' />
-        </div>
+        <MediaContent node={props} result={result} onChangeSelection={console.log} />
         <Button onClick={() => runNodes([props.data.id])} variant="secondary" size="xs" type='button'><PlayIcon /><span className='text-xs'>Run Model</span></Button>
       </div>
     </BaseNode>

@@ -10,6 +10,7 @@
     "preview": "vite preview"
   },
   "dependencies": {
+    "@fontsource/inter": "^5.2.8",
     "@milkdown/core": "^7.15.5",
     "@milkdown/kit": "^7.15.5",
     "@milkdown/plugin-listener": "^7.15.5",
