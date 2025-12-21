@@ -13,13 +13,13 @@ import {
   type OnNodesChange,
   type XYPosition
 } from '@xyflow/react';
-import type {DataType, Edge as DbEdge, Node as DbNode, GPTImage1Result, LLMResult, NodeData, NodeType, NodeWithFileType } from '@gatewai/types';
+import type {AllNodeConfig, DataType, Edge as DbEdge, Node as DbNode, GPTImage1Result, LLMResult, NodeResult, NodeType, NodeWithFileType } from '@gatewai/types';
 
 // Assuming a basic structure for the fetched canvas data
 interface CanvasResponse {
   id: string;
   name: string;
-  nodes: Array<NodeWithFileType<NodeData>>;
+  nodes: Array<NodeWithFileType<AllNodeConfig, NodeResult>>;
   edges: Array<DbEdge>;
 }
 
@@ -41,7 +41,9 @@ interface CanvasContextType {
   canRedo: boolean;
   onConnect: OnConnect;
   onNodeDragStart: (event: MouseEvent, node: Node, nodes: Node[]) => void;
-  updateNodeCustomData: (nodeId: string, updates: Partial<NodeData>) => void;
+  onNodeDragStop: (event: MouseEvent, node: Node, nodes: Node[]) => void;
+  updateNodeConfig: (nodeId: string, updates: Partial<AllNodeConfig>) => void;
+  updateNodeResult: (nodeId: string, updates: Partial<NodeResult>) => void;
   runNodes: (nodeIds: Node["id"][]) => Promise<void>;
 }
 
@@ -71,8 +73,13 @@ const mock_nodes: Node[] = [
     height: 200,
     type: 'Text',
     data: {
-      data: {
-        content: 'ww',
+      result: {
+        parts: [{
+          type: 'Text',
+          data: 'Create a text prompt for GTA 6 advertisement banner image.',
+        }]
+      } as LLMResult,
+      template: {
         outputTypes: [
           {
             "id": "i22",
@@ -92,13 +99,13 @@ const mock_nodes: Node[] = [
     width: 300,
     type: 'LLM',
     data: {
-      data: {
-        result: {
-          parts: [{
-            type: 'Text',
-            data: 'LLM output',
-          }]
-        } as LLMResult,
+      result: {
+        parts: [{
+          type: 'Text',
+          data: 'LLM output',
+        }]
+      } as LLMResult,
+      template: {
         inputTypes: [
           {
             "id": "s1",
@@ -125,8 +132,23 @@ const mock_nodes: Node[] = [
     width: 300,
     type: 'GPTImage1',
     data: {
-      data: {
-        result: {
+      template: {
+        inputTypes: [
+          {
+            "id": "s13",
+            inputType: 'Text',
+            label: 'Prompt',
+          }
+        ],
+        outputTypes: [
+          {
+            "id": "i232",
+            outputType: 'Image',
+            label: 'Image',
+          }
+        ]
+      },
+      result: {
           selectedIndex: 0,
           parts: [{
             type: 'Image',
@@ -156,21 +178,6 @@ const mock_nodes: Node[] = [
             }
           },]
         } as GPTImage1Result,
-        inputTypes: [
-          {
-            "id": "s13",
-            inputType: 'Text',
-            label: 'Prompt',
-          }
-        ],
-        outputTypes: [
-          {
-            "id": "i232",
-            outputType: 'Image',
-            label: 'Image',
-          }
-        ]
-      }
     }
   }
 ]
@@ -274,7 +281,7 @@ const CanvasProvider = ({
     if (!canvasId) return;
 
     const currentDbNodes: Partial<DbNode>[] = nodes.map((n) => {
-      const nodeData = n.data as NodeWithFileType<NodeData>;
+      const nodeData = n.data as NodeWithFileType<AllNodeConfig, NodeResult>;
 
       return {
         id: n.id,
@@ -286,9 +293,10 @@ const CanvasProvider = ({
         draggable: n.draggable ?? true,
         selectable: n.selectable ?? true,
         deletable: n.deletable ?? true,
-        fileData: nodeData.fileData as object | undefined,
-        data: nodeData.data as object,
+        config: nodeData.config as AllNodeConfig,
         zIndex: nodeData.zIndex,
+        result: nodeData.result as NodeResult,
+        isDirty: nodeData.isDirty ?? false,
       }
     });
 
@@ -320,12 +328,16 @@ const CanvasProvider = ({
 
   const onNodeDragStart = useCallback((_event: MouseEvent, _node: Node, _draggedNodes: Node[]) => {
     if (isRestoring.current) return;
-
     past.current = [...past.current, { nodes: [...nodes], edges: [...edges] }];
     future.current = [];
     setCanUndo(past.current.length > 0);
     setCanRedo(false);
   }, [nodes, edges]);
+
+  const onNodeDragStop = useCallback((_event: MouseEvent, _node: Node, _draggedNodes: Node[]) => {
+    if (isRestoring.current) return;
+    scheduleSave();
+  }, [scheduleSave]);
 
   const onNodesChange = useCallback(
     (changes: NodeChange<Node>[]) => {
@@ -337,10 +349,10 @@ const CanvasProvider = ({
       // Ignore pure selection changes for history
       const isOnlySelection = changes.every(c => c.type === 'select');
 
-      // Detect ongoing drag changes
-      const isOngoingDrag = changes.every(c => c.type === 'position' && 'dragging' in c && c.dragging);
+      // Ignore all position changes for history (handled in drag start/stop)
+      const isPositionChange = changes.every(c => c.type === 'position');
 
-      if (isOnlySelection || isOngoingDrag) {
+      if (isOnlySelection || isPositionChange) {
         onNodesChangeBase(changes);
         return;
       }
@@ -402,18 +414,34 @@ const CanvasProvider = ({
       const output = sourceNode?.data.template?.outputTypes?.find((o: any) => o.id === params.sourceHandle);
       const dataType = output?.outputType || 'Text';
 
-      // The params object from React Flow already includes sourceHandle and targetHandle
-      setEdges(eds => [
-        ...eds,
-        {
-          id: `e${params.source}-${params.target}-${Date.now()}`,
-          source: params.source,
-          target: params.target,
-          sourceHandle: params.sourceHandle || undefined,
-          targetHandle: params.targetHandle || undefined,
-          data: { dataType },
-        } as Edge,
-      ]);
+      setEdges((eds) => {
+        // Find if there's an existing edge connected to the same target and targetHandle
+        const existingEdge = eds.find(
+          (e) =>
+            e.target === params.target &&
+            e.targetHandle === (params.targetHandle || undefined)
+        );
+
+        // If found, remove the existing edge
+        let updatedEdges = existingEdge
+          ? eds.filter((e) => e.id !== existingEdge.id)
+          : eds;
+
+        // Add the new edge
+        updatedEdges = [
+          ...updatedEdges,
+          {
+            id: `e${params.source}-${params.target}-${Date.now()}`,
+            source: params.source,
+            target: params.target,
+            sourceHandle: params.sourceHandle || undefined,
+            targetHandle: params.targetHandle || undefined,
+            data: { dataType },
+          } as Edge,
+        ];
+
+        return updatedEdges;
+      });
 
       // Schedule save after connect
       scheduleSave();
@@ -457,7 +485,7 @@ const CanvasProvider = ({
     scheduleSave();
   }, [nodes, edges, setNodes, setEdges, scheduleSave]);
 
-  const updateNodeCustomData = useCallback((nodeId: string, updates: Partial<NodeData>) => {
+  const updateNodeConfig = useCallback((nodeId: string, updates: Partial<AllNodeConfig>) => {
     if (isRestoring.current) return;
 
     past.current = [...past.current, { nodes: [...nodes], edges: [...edges] }];
@@ -472,8 +500,37 @@ const CanvasProvider = ({
             ...n,
             data: {
               ...n.data,
-              data: {
-                ...n.data.data as object,
+              config: {
+                ...n.data.config as AllNodeConfig,
+                ...updates,
+              },
+            },
+          };
+        }
+        return n;
+      })
+    );
+
+    scheduleSave();
+  }, [nodes, edges, setNodes, scheduleSave]);
+
+  const updateNodeResult = useCallback((nodeId: string, updates: Partial<NodeResult>) => {
+    if (isRestoring.current) return;
+
+    past.current = [...past.current, { nodes: [...nodes], edges: [...edges] }];
+    future.current = [];
+    setCanUndo(past.current.length > 0);
+    setCanRedo(false);
+
+    setNodes((nds) =>
+      nds.map((n) => {
+        if (n.id === nodeId) {
+          return {
+            ...n,
+            data: {
+              ...n.data,
+              result: {
+                ...n.data.result as NodeResult,
                 ...updates,
               },
             },
@@ -528,7 +585,9 @@ const CanvasProvider = ({
     canRedo,
     onConnect,
     onNodeDragStart,
-    updateNodeCustomData,
+    onNodeDragStop,
+    updateNodeConfig,
+    updateNodeResult,
     runNodes,
   };
 
@@ -543,4 +602,4 @@ export function useCanvasCtx() {
   return ctx;
 }
 
-export { CanvasContext, CanvasProvider };
+export { CanvasContext, CanvasProvider }

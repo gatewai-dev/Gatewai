@@ -8,19 +8,19 @@ import { useCanvasCtx } from "../ctx/canvas-ctx";
 function MediaContent({node, result}: {node: NodeProps<GPTImage1Node>, result: ImagesResult}) {
     const parts = result.parts;
     const selectedPart = result.parts[result.selectedIndex];
-    const { updateNodeCustomData } = useCanvasCtx();
+    const { updateNodeResult } = useCanvasCtx();
     console.log({node})
     const incrementSelectedIndex = () => {
         const newIndex = result.selectedIndex + 1;
         const clampedIndex = Math.max(0, Math.min(newIndex, parts.length - 1));
         console.log({newIndex, clampedIndex, partsLength: parts.length});
-        updateNodeCustomData(node.id, { result: { ...result, selectedIndex: clampedIndex } });
+        updateNodeResult(node.id, { ...result, selectedIndex: clampedIndex });
     };
 
     const decrementSelectedIndex = () => {
         const newIndex = result.selectedIndex - 1;
         const clampedIndex = Math.max(0, Math.min(newIndex, parts.length - 1));
-        updateNodeCustomData(node.id, { result: { ...result, selectedIndex: clampedIndex } });
+        updateNodeResult(node.id, { ...result, selectedIndex: clampedIndex });
     }
 
     if (parts.length === 0) {

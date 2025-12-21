@@ -7,7 +7,7 @@ import { prisma, type Task } from "@gatewai/db";
 import type { AuthHonoTypes } from "../../auth.js";
 import { tasks } from "@trigger.dev/sdk";
 import type { TASK_LLM } from "../../trigger/llm.js";
-import type { TextNodeData } from "@gatewai/types";
+import type { TextNodeConfig } from "@gatewai/types";
 
 const canvasRoutes = new Hono<{Variables: AuthHonoTypes}>({
     strict: false,
@@ -499,8 +499,7 @@ canvasRoutes.post('/:id/duplicate', async (c) => {
                     draggable: node.draggable,
                     selectable: node.selectable,
                     deletable: node.deletable,
-                    fileData: node.fileData ?? {},
-                    data: node.data ?? {},
+                    config: node.config ?? {},
                     zIndex: node.zIndex,
                     template: {
                         connect: {
@@ -578,7 +577,7 @@ canvasRoutes.post('/:canvasId/process',
         const createdTasks: Task[] = [];
 
         nodes.forEach(async node => {
-            const nodeData = node.data as TextNodeData;
+            const nodeData = node.config as TextNodeConfig;
             if (!nodeData.content) {
                 throw new HTTPException(400, { message: `Node ${node.id} does not have a prompt defined.` });
             }

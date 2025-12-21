@@ -3,7 +3,6 @@
 
 generator client {
   provider        = "prisma-client"
-  previewFeatures = ["driverAdapters"]
   output          = "../generated/client"
 }
 
@@ -136,17 +135,8 @@ model Node {
   draggable      Boolean         @default(true)
   selectable     Boolean         @default(true)
   deletable      Boolean         @default(true)
-  /*
-  FileData {
-    url?: string; // Signed AWS S3 URL
-    name: string;
-    bucket: string;
-    mimeType: string;
-    size: number;
-  }
-  */
-  fileData       Json?           // For file metadata (e.g., gcs Url, bucket, etc.)
-  data           Json?           // Additional data for React Flow node (labels, configs, etc.)
+
+  config         Json?
   isDirty        Boolean         @default(false) // Whether or not previous results or data/config changed
   /*
   OutputItem {

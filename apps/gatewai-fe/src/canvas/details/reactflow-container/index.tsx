@@ -25,7 +25,8 @@ function ReactflowContainer({ children }: ReactFlowProps) {
     clientEdges,
     tool,
     onConnect,
-    onNodeDragStart
+    onNodeDragStart,
+    onNodeDragStop
   } = useCanvasCtx();
 
 
@@ -69,7 +70,9 @@ function ReactflowContainer({ children }: ReactFlowProps) {
         nodesDraggable={tool === 'select'}
         elementsSelectable={tool === 'select'}
         maxZoom={4}
+        zoomOnScroll={true}
         minZoom={0.1}
+        zoomOnPinch={true}
         panOnDrag={tool === 'pan'}
         selectionOnDrag={tool === 'select'}
         selectNodesOnDrag
@@ -78,6 +81,7 @@ function ReactflowContainer({ children }: ReactFlowProps) {
         onConnect={onConnect}
         isValidConnection={isValidConnection}
         onNodeDragStart={onNodeDragStart}
+        onNodeDragStop={onNodeDragStop}
       >
         {children}
         <Background />

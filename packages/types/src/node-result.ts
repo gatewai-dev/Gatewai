@@ -2,7 +2,10 @@ import type { DataType } from "@gatewai/db";
 
 
 export type FileData = {
-    url?: string; // Signed AWS S3 URL
+  /**
+   * Signed AWS/GCS URL
+   */
+    url?: string;
     name: string;
     bucket: string;
     mimeType: string;
@@ -25,10 +28,6 @@ export type FileData = {
 
   export type TextResult = {
     parts: [OutputItem<string, "Text">];
-  }
-
-  export type ImageResult = {
-    parts: [OutputItem<FileData, "Image">];
   }
 
   export type ToggleResult = {
@@ -76,3 +75,18 @@ export type FileData = {
   export type DescriberResult = {
     parts: [OutputItem<string, "Text">];
   }
+
+  export type NodeResult =
+    | TextResult
+    | ToggleResult
+    | FileResult
+    | ImagesResult
+    | GPTImage1Result
+    | MaskResult
+    | NumberResult
+    | LLMResult
+    | ResizeResult
+    | CrawlerResult
+    | BlurResult
+    | CompositorResult
+    | DescriberResult;

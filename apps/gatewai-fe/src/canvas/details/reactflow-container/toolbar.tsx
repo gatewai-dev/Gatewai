@@ -1,4 +1,4 @@
-import { Pointer, Hand, Undo2, Redo2 } from 'lucide-react';
+import { Pointer, Hand, Undo2, Redo2, MousePointer2 } from 'lucide-react';
 import { useReactFlow, useViewport } from '@xyflow/react';
 import { useHotkeys } from 'react-hotkeys-hook';
 import { useCanvasCtx } from '../ctx/canvas-ctx';
@@ -44,7 +44,7 @@ function Toolbar() {
         className="gap-1"
       >
         <ToggleGroupItem value="select" aria-label="Select tool (V)" size="sm">
-          <Pointer size={18} />
+          <MousePointer2 size={18} />
         </ToggleGroupItem>
         <ToggleGroupItem value="pan" aria-label="Pan tool (H)" size="sm">
           <Hand size={18} />

@@ -2,7 +2,7 @@ import type { Node } from "@gatewai/db";
 import { NodeProcessor, type NodeProcessResult } from "./node-processor.js";
 import { InvalidNodeError } from "../errors/index.js";
 import { openai } from "../ai/openai.js";
-import type { TextNodeData } from "@gatewai/types";
+import type { TextNodeConfig } from "@gatewai/types";
 
 export class LLMNodeProcessor extends NodeProcessor<string> {
     promptNode: Node;
@@ -14,7 +14,7 @@ export class LLMNodeProcessor extends NodeProcessor<string> {
         if (this.promptNode.type !== 'Text') {
             throw new InvalidNodeError("Invalid Node provided for prompt node", this.node, this.promptNode);
         }
-        const promptNodeData = this.promptNode.data as TextNodeData;
+        const promptNodeData = this.promptNode.config as TextNodeConfig;
         if (promptNodeData.content == null || promptNodeData.content.trim().length === 0) {
             throw new InvalidNodeError("Empty prompt provided.", this.node, this.promptNode);
         }

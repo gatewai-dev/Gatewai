@@ -1,45 +1,43 @@
 import { z } from 'zod';
 
 // Text Node
-const TextNodeDataSchema = z.object({
+const TextNodeConfigSchema = z.object({
   content: z.string().optional(),
 }).strict();
 
 // Image Node
-const ImageNodeDataSchema = z.object({}).strict();
+const ImageNodeConfigSchema = z.object({}).strict();
 
 // File Node
-const FileNodeDataSchema = z.object({}).strict();
-const GPTImage1NodeDataSchema = z.object({}).strict();
+const FileNodeConfigSchema = z.object({}).strict();
+const GPTImage1NodeConfigSchema = z.object({}).strict();
 
 // Crawler Node
-const CrawlerNodeDataSchema = z.object({
+const CrawlerNodeConfigSchema = z.object({
   url: z.string().url().optional(),
 }).strict();
 
-// Group Node
-const GroupNodeDataSchema = z.object({}).strict();
 
 // Agent Node
-const AgentNodeDataSchema = z.object({
+const AgentNodeConfigSchema = z.object({
   prompt: z.string().optional(),
 }).strict();
 
 // 3D Node
-const ThreeDNodeDataSchema = z.object({}).strict();
+const ThreeDNodeConfigSchema = z.object({}).strict();
 
 // Mask Node
-const MaskNodeDataSchema = z.object({}).strict();
+const MaskNodeConfigSchema = z.object({}).strict();
 
 // Painter Node
-const PainterNodeDataSchema = z.object({
+const PainterNodeConfigSchema = z.object({
   color: z.string().regex(/^#[0-9A-F]{6}$/i).optional(),
   size: z.number().int().min(0).max(100).optional(),
   bgColor: z.string().regex(/^#[0-9A-F]{6}$/i).optional(),
 }).strict();
 
 // Blur Node
-const BlurNodeDataSchema = z.object({
+const BlurNodeConfigSchema = z.object({
   blurType: z.enum(['Gaussian', 'Box', 'Motion']).optional(),
   size: z.number().min(0).max(10).optional(),
 }).strict();
@@ -57,139 +55,105 @@ const CompositorLayerUpdatesSchema = z.object({
   blendMode: z.string(),
 }).strict();
 
-const CompositorNodeDataSchema = z.object({
+const CompositorNodeConfigSchema = z.object({
   layerUpdates: z.array(CompositorLayerUpdatesSchema).optional(),
 }).strict();
 
 // Describer Node
-const DescriberNodeDataSchema = z.object({
+const DescriberNodeConfigSchema = z.object({
   prompt: z.string(),
   text: z.string(), // Output
 }).strict();
 
 // Router Node
-const RouterNodeDataSchema = z.object({
+const RouterNodeConfigSchema = z.object({
   invert: z.boolean().optional(),
 }).strict();
 
-const LLMNodeDataSchema = z.object({}).strict();
+const LLMNodeConfigSchema = z.object({}).strict();
 // Array Node
-const ArrayNodeDataSchema = z.object({}).strict();
+const ArrayNodeConfigSchema = z.object({}).strict();
 
 // Resize Node
-const ResizeNodeDataSchema = z.object({
+const ResizeNodeConfigSchema = z.object({
   width: z.number().int().positive().optional(),
   height: z.number().int().positive().optional(),
 }).strict();
 
 // Main node schema
-const NodeDataSchema = z.union([
-  GPTImage1NodeDataSchema,
-  LLMNodeDataSchema,
-  TextNodeDataSchema,
-  ImageNodeDataSchema,
-  FileNodeDataSchema,
-  CrawlerNodeDataSchema,
-  GroupNodeDataSchema,
-  AgentNodeDataSchema,
-  ThreeDNodeDataSchema,
-  MaskNodeDataSchema,
-  PainterNodeDataSchema,
-  BlurNodeDataSchema,
-  CompositorNodeDataSchema,
-  DescriberNodeDataSchema,
-  RouterNodeDataSchema,
-  ArrayNodeDataSchema,
-  ResizeNodeDataSchema,
+const NodeConfigSchema = z.union([
+  GPTImage1NodeConfigSchema,
+  LLMNodeConfigSchema,
+  TextNodeConfigSchema,
+  ImageNodeConfigSchema,
+  FileNodeConfigSchema,
+  CrawlerNodeConfigSchema,
+  AgentNodeConfigSchema,
+  ThreeDNodeConfigSchema,
+  MaskNodeConfigSchema,
+  PainterNodeConfigSchema,
+  BlurNodeConfigSchema,
+  CompositorNodeConfigSchema,
+  DescriberNodeConfigSchema,
+  RouterNodeConfigSchema,
+  ArrayNodeConfigSchema,
+  ResizeNodeConfigSchema,
 ]);
 
 // Inferred types
-type TextNodeData = z.infer<typeof TextNodeDataSchema>;
-type ImageNodeData = z.infer<typeof ImageNodeDataSchema>;
-type LLMNodeData = z.infer<typeof LLMNodeDataSchema>;
-type FileNodeData = z.infer<typeof FileNodeDataSchema>;
-type CrawlerNodeData = z.infer<typeof CrawlerNodeDataSchema>;
-type GroupNodeData = z.infer<typeof GroupNodeDataSchema>;
-type AgentNodeData = z.infer<typeof AgentNodeDataSchema>;
-type ThreeDNodeData = z.infer<typeof ThreeDNodeDataSchema>;
-type MaskNodeData = z.infer<typeof MaskNodeDataSchema>;
-type PainterNodeData = z.infer<typeof PainterNodeDataSchema>;
-type BlurNodeData = z.infer<typeof BlurNodeDataSchema>;
+type TextNodeConfig = z.infer<typeof TextNodeConfigSchema>;
+type ImageNodeConfig = z.infer<typeof ImageNodeConfigSchema>;
+type LLMNodeConfig = z.infer<typeof LLMNodeConfigSchema>;
+type FileNodeConfig = z.infer<typeof FileNodeConfigSchema>;
+type CrawlerNodeConfig = z.infer<typeof CrawlerNodeConfigSchema>;
+type AgentNodeConfig = z.infer<typeof AgentNodeConfigSchema>;
+type ThreeDNodeConfig = z.infer<typeof ThreeDNodeConfigSchema>;
+type MaskNodeConfig = z.infer<typeof MaskNodeConfigSchema>;
+type PainterNodeConfig = z.infer<typeof PainterNodeConfigSchema>;
+type BlurNodeConfig = z.infer<typeof BlurNodeConfigSchema>;
 type CompositorLayerUpdates = z.infer<typeof CompositorLayerUpdatesSchema>;
-type CompositorNodeData = z.infer<typeof CompositorNodeDataSchema>;
-type DescriberNodeData = z.infer<typeof DescriberNodeDataSchema>;
-type RouterNodeData = z.infer<typeof RouterNodeDataSchema>;
-type ArrayNodeData = z.infer<typeof ArrayNodeDataSchema>;
-type ResizeNodeData = z.infer<typeof ResizeNodeDataSchema>;
-type NodeData = z.infer<typeof NodeDataSchema>;
-type GPTImage1Data = z.infer<typeof GPTImage1NodeDataSchema>;
-
-type AllNodeData =
-  | TextNodeData
-  | GPTImage1Data
-  | ImageNodeData
-  | FileNodeData
-  | CrawlerNodeData
-  | GroupNodeData
-  | AgentNodeData
-  | ThreeDNodeData
-  | LLMNodeData
-  | MaskNodeData
-  | PainterNodeData
-  | BlurNodeData
-  | CompositorLayerUpdates
-  | CompositorNodeData
-  | DescriberNodeData
-  | RouterNodeData
-  | ArrayNodeData
-  | ResizeNodeData
-  | NodeData;
+type CompositorNodeConfig = z.infer<typeof CompositorNodeConfigSchema>;
+type DescriberNodeConfig = z.infer<typeof DescriberNodeConfigSchema>;
+type RouterNodeConfig = z.infer<typeof RouterNodeConfigSchema>;
+type ArrayNodeConfig = z.infer<typeof ArrayNodeConfigSchema>;
+type ResizeNodeConfig = z.infer<typeof ResizeNodeConfigSchema>;
+type AllNodeConfig = z.infer<typeof NodeConfigSchema>;
+type GPTImage1Config = z.infer<typeof GPTImage1NodeConfigSchema>;
 
 export {
-  NodeDataSchema,
-  TextNodeDataSchema,
-  ImageNodeDataSchema,
-  FileNodeDataSchema,
-  CrawlerNodeDataSchema,
-  GroupNodeDataSchema,
-  AgentNodeDataSchema,
-  ThreeDNodeDataSchema,
-  MaskNodeDataSchema,
-  PainterNodeDataSchema,
-  BlurNodeDataSchema,
-  CompositorNodeDataSchema,
-  DescriberNodeDataSchema,
-  LLMNodeDataSchema,
-  RouterNodeDataSchema,
-  ArrayNodeDataSchema,
-  ResizeNodeDataSchema,
+  NodeConfigSchema,
+  TextNodeConfigSchema,
+  ImageNodeConfigSchema,
+  FileNodeConfigSchema,
+  CrawlerNodeConfigSchema,
+  AgentNodeConfigSchema,
+  ThreeDNodeConfigSchema,
+  MaskNodeConfigSchema,
+  PainterNodeConfigSchema,
+  BlurNodeConfigSchema,
+  CompositorNodeConfigSchema,
+  DescriberNodeConfigSchema,
+  LLMNodeConfigSchema,
+  RouterNodeConfigSchema,
+  ArrayNodeConfigSchema,
+  ResizeNodeConfigSchema,
   CompositorLayerUpdatesSchema,
-  type TextNodeData,
-  type ImageNodeData,
-  type FileNodeData,
-  type CrawlerNodeData,
-  type GroupNodeData,
-  type AgentNodeData,
-  type ThreeDNodeData,
-  type LLMNodeData,
-  type MaskNodeData,
-  type PainterNodeData,
-  type BlurNodeData,
+  type TextNodeConfig,
+  type ImageNodeConfig,
+  type FileNodeConfig,
+  type CrawlerNodeConfig,
+  type AgentNodeConfig,
+  type ThreeDNodeConfig,
+  type LLMNodeConfig,
+  type MaskNodeConfig,
+  type PainterNodeConfig,
+  type BlurNodeConfig,
   type CompositorLayerUpdates,
-  type CompositorNodeData,
-  type DescriberNodeData,
-  type RouterNodeData,
-  type ArrayNodeData,
-  type ResizeNodeData,
-  type NodeData,
-  type GPTImage1Data,
-  type AllNodeData,
+  type CompositorNodeConfig,
+  type DescriberNodeConfig,
+  type RouterNodeConfig,
+  type ArrayNodeConfig,
+  type ResizeNodeConfig,
+  type AllNodeConfig,
+  type GPTImage1Config,
 };
-
-export interface FileDataInterface {
-  url: string;
-  name: string;
-  bucket: string;
-  mimeType: string;
-  size: number;
-}

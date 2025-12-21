@@ -1,10 +1,11 @@
 import type { Node, NodeTemplate, NodeType } from "@gatewai/db";
-import type { NodeData } from "./filedata.js";
-import type { FileData } from "./node-result.js";
+import type { AllNodeConfig } from "./filedata.js";
+import type { FileData, NodeResult } from "./node-result.js";
 
-export type NodeWithFileType<T extends NodeData> = Node & {
+export type NodeWithFileType<T extends AllNodeConfig, R extends NodeResult> = Node & {
   fileData: FileData | null;
-  data: T;
+  config: T;
+  result: R;
   template: NodeTemplate & {
     inputTypes: { inputType: NodeType }[];
     outputTypes: { outputType: NodeType }[];

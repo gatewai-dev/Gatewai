@@ -23,15 +23,14 @@ const BaseNode = memo((props: ClientNodeData & {
   const { getEdges } = useReactFlow();
   const edges = getEdges();
   const nodeId = props.id;
-
   // Handle optional inputTypes and outputTypes from template
-  const inputTypes = props.data?.data?.inputTypes ?? [];
-  const outputTypes = props.data?.data?.outputTypes ?? [];
+  const inputTypes = props.data?.template?.inputTypes ?? [];
+  const outputTypes = props.data?.template?.outputTypes ?? [];
 
   const fixedInputCount = inputTypes.length;
   const fixedOutputCount = outputTypes.length;
-  const variableInputs = props.data?.data?.variableInputs ?? false;
-  const variableOutputs = props.data?.data?.variableOutputs ?? false;
+  const variableInputs = props.data?.variableInputs ?? false;
+  const variableOutputs = props.data?.variableOutputs ?? false;
 
   const inputEdges = edges.filter((edge) => edge.target === nodeId);
   const outputEdges = edges.filter((edge) => edge.source === nodeId);
@@ -42,7 +41,6 @@ const BaseNode = memo((props: ClientNodeData & {
   const getInputTextColor = (i: number) => {
     if (inputTypes.length === 0) return getColorForType('File').text;
     const type = (i < inputTypes.length) ? inputTypes[i].inputType : inputTypes[inputTypes.length - 1].inputType;
-    console.log({inputTypes})
     return getColorForType(type).text;
   };
 
@@ -69,9 +67,7 @@ const BaseNode = memo((props: ClientNodeData & {
   };
 
   const getOutputLabel = (i: number) => {
-    console.log(i, outputTypes)
     const label = (i < outputTypes.length) ? outputTypes[i].label : outputTypes[outputTypes.length - 1].label;
-    console.log({label})
     return label;
   };
 
@@ -85,7 +81,7 @@ const BaseNode = memo((props: ClientNodeData & {
     >
 
       {Array.from({ length: numInputs }).map((_, i) => {
-        const inputTop = `${(i + 1) * (30)}px`;
+        const inputTop = `${(i + 1) * (30) + 20}px`;
         return (
           <div key={`target-wrapper-${i}`} className="absolute left-0 z-10" style={{ top: inputTop, transform: 'translateX(-50%)' }}>
             <div className={`w-4 h-4 ${nodeBackgroundColor} rounded-full flex items-center justify-center transition-all duration-200`}>
@@ -121,7 +117,7 @@ const BaseNode = memo((props: ClientNodeData & {
       </div>
 
       {Array.from({ length: numOutputs }).map((_, i) => {
-        const outputTop = `${(i + 1) * (30)}px`;
+        const outputTop = `${(i + 1) * (30) + 20}px`;
         return (
           <div key={`source-wrapper-${i}`} className="absolute right-0 z-10" style={{ top: outputTop, transform: 'translateX(50%)' }}>
             <div className={`w-4 h-4 ${nodeBackgroundColor} rounded-full flex items-center justify-center transition-all duration-200`}>

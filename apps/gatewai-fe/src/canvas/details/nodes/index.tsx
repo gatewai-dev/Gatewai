@@ -129,7 +129,8 @@ const ImagePreview = memo(({ nodeId }: { nodeId: string }) => {
 // Text Node
 const TextNodeComponent = memo((props: NodeProps<TextNode>) => {
   const { updateNodeCustomData } = useCanvasCtx();
-  const content = props.data?.data?.content || '';
+  const result = props.data?.result as LLMResult || '';
+  const text = result.parts[0].data;
   const handleChange = (e: React.ChangeEvent<HTMLTextAreaElement>) => {
     updateNodeCustomData((props.id), {...props.data, content: e.target.value});
   };
@@ -137,7 +138,7 @@ const TextNodeComponent = memo((props: NodeProps<TextNode>) => {
   return (
     <BaseNode {...props}>
       <Textarea
-        value={content}
+        value={text}
         onChange={handleChange}
         className="w-full h-full max-h-full overflow-auto p-2 border rounded text-gray-100 resize-none text-xs!"
         placeholder="Enter text..."
@@ -182,7 +183,7 @@ CrawlerNodeComponent.displayName = 'CrawlerNode';
 
 // Text Node
 const LlmNodeComponent = memo((props: NodeProps<LLMNode>) => {
-  const result = props.data?.data.result as LLMResult || '';
+  const result = props.data?.result as LLMResult || '';
   const text = result.parts[0].data;
   const { runNodes } = useCanvasCtx();
   return (
@@ -202,7 +203,7 @@ LlmNodeComponent.displayName = 'LLMNode';
 
 const GPTImage1NodeComponent = memo((props: NodeProps<GPTImage1Node>) => {
   const { runNodes } = useCanvasCtx();
-  const result = props.data?.data.result as GPTImage1Result || '';
+  const result = props.data?.result as GPTImage1Result || '';
   return (
     <BaseNode {...props}>
       <div className='flex flex-col gap-2 items-end'>
