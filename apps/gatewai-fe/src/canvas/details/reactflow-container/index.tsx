@@ -26,9 +26,7 @@ function ReactflowContainer({
     onConnect,
     onNodeDragStart
   } = useCanvasCtx();
-  
-  console.log({clientEdges, clientNodes});
-  
+
   return (
     <div className="w-full h-screen bg-black">
       <ReactFlow

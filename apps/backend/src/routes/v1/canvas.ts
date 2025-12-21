@@ -23,12 +23,14 @@ const createNodeSchema = z.object({
     id: z.string().optional(),
     name: z.string(),
     type: z.enum([
-        'Prompt', 'Preview', 'Video', 'Audio', 'File', 'Export', 
+        'Text', 'Preview', 'File', 'Export', 
         'Toggle', 'Crawler', 'Resize', 'Group', 'Agent', 'ThreeD',
         'Mask', 'Painter', 'Blur', 'Compositor', 'Describer', 'Router'
     ]),
-    x: z.number(),
-    y: z.number(),
+    position: z.object({
+        x: z.number(),
+        y: z.number(),
+    }),
     width: z.number().optional(),
     height: z.number().optional(),
     draggable: z.boolean().optional().default(true),
@@ -43,8 +45,10 @@ const createNodeSchema = z.object({
 
 const updateNodeSchema = z.object({
     name: z.string().optional(),
-    x: z.number().optional(),
-    y: z.number().optional(),
+    position: z.object({
+        x: z.number().optional(),
+        y: z.number().optional(),
+    }).optional(),
     width: z.number().optional(),
     height: z.number().optional(),
     draggable: z.boolean().optional(),
@@ -444,102 +448,5 @@ canvasRoutes.post('/:canvasId/edges',
     }
 );
 
-// =====================
-// Utility Operations
-// =====================
-
-// Duplicate a canvas
-canvasRoutes.post('/:id/duplicate', async (c) => {
-    const id = c.req.param('id');
-    const user = c.get('user');
-
-    // Get the original canvas with all its data
-    const original = await prisma.canvas.findFirst({
-        where: { id, userId: user?.id },
-        include: {
-            nodes: {
-                include: {
-                    template: true,
-                }
-            },
-        }
-    });
-
-    if (!original) {
-        throw new HTTPException(404, { message: 'Canvas not found' });
-    }
-
-    // Get edges separately
-    const originalEdges = await prisma.edge.findMany({
-        where: {
-            sourceNode: {
-                canvasId: id
-            }
-        }
-    });
-
-    // Create the duplicate canvas with nodes
-    const duplicate = await prisma.canvas.create({
-        data: {
-            name: `${original.name} (Copy)`,
-            userId: user!.id,
-            nodes: {
-                create: original.nodes.map(node => ({
-                    name: node.name,
-                    type: node.type,
-                    x: node.x + 50, // Offset position slightly
-                    y: node.y + 50,
-                    width: node.width,
-                    height: node.height,
-                    draggable: node.draggable,
-                    selectable: node.selectable,
-                    deletable: node.deletable,
-                    fileData: node.fileData ?? {},
-                    data: node.data ?? {},
-                    visible: node.visible,
-                    zIndex: node.zIndex,
-                    template: {
-                        connect: {
-                            id: node.templateId,
-                        }
-                    }
-                }))
-            }
-        },
-        include: {
-            nodes: true,
-        }
-    });
-
-    // Create a mapping of old node IDs to new node IDs
-    const nodeIdMap = new Map<string, string>();
-    original.nodes.forEach((oldNode, index) => {
-        nodeIdMap.set(oldNode.id, duplicate.nodes[index].id);
-    });
-
-    // Create edges with new node IDs
-    const edgeCreations = originalEdges.map(edge => {
-        const newSource = nodeIdMap.get(edge.source);
-        const newTarget = nodeIdMap.get(edge.target);
-        
-        if (!newSource || !newTarget) return null;
-
-        return prisma.edge.create({
-            data: {
-                source: newSource,
-                target: newTarget,
-                sourceHandle: edge.sourceHandle,
-                targetHandle: edge.targetHandle,
-                dataType: edge.dataType,
-            }
-        });
-    }).filter(Boolean);
-
-    if (edgeCreations.length > 0) {
-        await prisma.$transaction(edgeCreations as any[]);
-    }
-
-    return c.json({ canvas: duplicate }, 201);
-});
 
 export { canvasRoutes };

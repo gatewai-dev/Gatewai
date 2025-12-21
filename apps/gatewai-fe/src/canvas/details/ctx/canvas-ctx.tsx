@@ -68,7 +68,7 @@ const mock_nodes: Node[] = [
     },
     width: 300,
     height: 200,
-    type: 'Prompt',
+    type: 'Text',
     data: {
       data: {
         content: 'ww',

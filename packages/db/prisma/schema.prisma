@@ -13,10 +13,8 @@ datasource db {
 }
 
 enum NodeType {
-  Prompt
+  Text
   Preview
-  Video
-  Audio
   File
   Export
   Toggle
@@ -31,6 +29,11 @@ enum NodeType {
   Compositor
   Describer
   Router
+  Note
+  Number
+
+  GPTImage1 @map("GPT-Image-1")
+  LLM
 }
 
 enum DataType {
@@ -123,7 +126,7 @@ model Node {
   name           String
   type           NodeType
   // React Flow position
-  position      Json           // To store position as { x: number, y: number }
+  position       Json           // To store position as { x: number, y: number }
   // React Flow dimensions (optional, can be auto-calculated)
   width          Float?
   height         Float?
@@ -144,7 +147,6 @@ model Node {
   data           Json?           // Additional data for React Flow node (labels, configs, etc.)
   isDirty        Boolean         @default(false) // Whether or not previous results or data/config changed
   result         Json?           // Node processing result
-  processEnvironment ProcessEnvironment
   // Visual properties
   visible        Boolean         @default(true)
   zIndex         Int?            // For layering
@@ -170,6 +172,7 @@ model NodeTemplate {
   description         String?
   inputTypes          NodeTemplateInput[]
   outputTypes         NodeTemplateOutput[]
+  processEnvironment  ProcessEnvironment
   variableInputs      Boolean                @default(false)
   variableOutputs     Boolean                @default(false)
   category            String?

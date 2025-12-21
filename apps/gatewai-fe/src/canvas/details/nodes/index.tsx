@@ -8,7 +8,6 @@ import { Textarea } from '@/components/ui/textarea';
 import type {
   AgentNodeData,
   ArrayNodeData,
-  AudioNodeData,
   BlurNodeData,
   CompositorNodeData,
   DescriberNodeData,
@@ -20,16 +19,13 @@ import type {
   PainterNodeData,
   ResizeNodeData,
   RouterNodeData,
-  PromptNodeData,
+  TextNodeData,
   ThreeDNodeData,
-  VideoNodeData,
 } from '@gatewai/types';
 import { PixiApplication } from './pixi-app';
 
 // Define typed node components
-export type PromptNode = Node<NodeWithFileType<PromptNodeData>, 'Prompt'>;
-export type VideoNode = Node<NodeWithFileType<VideoNodeData>, 'Video'>;
-export type AudioNode = Node<NodeWithFileType<AudioNodeData>, 'Audio'>;
+export type TextNode = Node<NodeWithFileType<TextNodeData>, 'Text'>;
 export type FileNode = Node<NodeWithFileType<FileNodeData>, 'File'>;
 export type CrawlerNode = Node<NodeWithFileType<CrawlerNodeData>, 'Crawler'>;
 export type GroupNode = Node<NodeWithFileType<GroupNodeData>, 'Group'>;
@@ -164,11 +160,11 @@ const ImagePreview = memo(({ nodeId }: { nodeId: string }) => {
 });
 
 // Text Node
-const PromptNodeComponent = memo((props: NodeProps<PromptNode>) => {
+const TextNodeComponent = memo((props: NodeProps<TextNode>) => {
   const updateData = useUpdateNodeData(props.id);
   const content = props.data?.data?.content || '';
   const prevData = (props.data.data ?? {}) as object;
-  console.log({props})
+
   const handleChange = (e: React.ChangeEvent<HTMLTextAreaElement>) => {
     updateData({ data: {...prevData, content: e.target.value} });
   };
@@ -184,39 +180,7 @@ const PromptNodeComponent = memo((props: NodeProps<PromptNode>) => {
     </BaseNode>
   );
 });
-PromptNodeComponent.displayName = 'PromptNode';
-
-// Video Node
-const VideoNodeComponent = memo((props: NodeProps<VideoNode>) => {
-  return (
-    <BaseNode {...props}>
-      {props.data?.fileData?.url ? (
-        <video
-          src={props.data.fileData.url}
-          controls
-          className="w-full rounded max-h-40"
-        />
-      ) : (
-        <div className="text-gray-500">No video</div>
-      )}
-    </BaseNode>
-  );
-});
-VideoNodeComponent.displayName = 'VideoNode';
-
-// Audio Node
-const AudioNodeComponent = memo((props: NodeProps<AudioNode>) => {
-  return (
-    <BaseNode {...props}>
-      {props.data?.fileData?.url ? (
-        <audio src={props.data.fileData.url} controls className="w-full" />
-      ) : (
-        <div className="text-gray-500">No audio</div>
-      )}
-    </BaseNode>
-  );
-});
-AudioNodeComponent.displayName = 'AudioNode';
+TextNodeComponent.displayName = 'TextNode';
 
 // File Node
 const FileNodeComponent = memo((props: NodeProps<FileNode>) => {
@@ -528,7 +492,6 @@ ResizeNodeComponent.displayName = 'ResizeNode';
 const nodeTypes = {
   Agent: AgentNodeComponent,
   Array: ArrayNodeComponent,
-  Audio: AudioNodeComponent,
   Blur: BlurNodeComponent,
   Compositor: CompositorNodeComponent,
   Describer: DescriberNodeComponent,
@@ -539,17 +502,14 @@ const nodeTypes = {
   Painter: PainterNodeComponent,
   Resize: ResizeNodeComponent,
   Router: RouterNodeComponent,
-  Prompt: PromptNodeComponent,
+  Text: TextNodeComponent,
   ThreeD: ThreeDNodeComponent,
-  Video: VideoNodeComponent,
 };
 
 // Export components
 export {
   nodeTypes,
-  PromptNodeComponent as PromptNode,
-  VideoNodeComponent as VideoNode,
-  AudioNodeComponent as AudioNode,
+  TextNodeComponent as TextNode,
   FileNodeComponent as FileNode,
   CrawlerNodeComponent as CrawlerNode,
   GroupNodeComponent as GroupNode,

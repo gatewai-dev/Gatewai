@@ -6,19 +6,13 @@ const FileDataSchema = z.object({
   name: z.string().optional(),
 }).strict();
 
-// Prompt Node
-const PromptNodeDataSchema = z.object({
+// Text Node
+const TextNodeDataSchema = z.object({
   content: z.string().optional(),
 }).strict();
 
 // Image Node
 const ImageNodeDataSchema = z.object({}).strict();
-
-// Video Node
-const VideoNodeDataSchema = z.object({}).strict();
-
-// Audio Node
-const AudioNodeDataSchema = z.object({}).strict();
 
 // File Node
 const FileNodeDataSchema = z.object({}).strict();
@@ -94,10 +88,8 @@ const ResizeNodeDataSchema = z.object({
 
 // Main node schema
 const NodeDataSchema = z.union([
-  PromptNodeDataSchema,
+  TextNodeDataSchema,
   ImageNodeDataSchema,
-  VideoNodeDataSchema,
-  AudioNodeDataSchema,
   FileNodeDataSchema,
   CrawlerNodeDataSchema,
   GroupNodeDataSchema,
@@ -115,10 +107,8 @@ const NodeDataSchema = z.union([
 
 // Inferred types
 type FileData = z.infer<typeof FileDataSchema>;
-type PromptNodeData = z.infer<typeof PromptNodeDataSchema>;
+type TextNodeData = z.infer<typeof TextNodeDataSchema>;
 type ImageNodeData = z.infer<typeof ImageNodeDataSchema>;
-type VideoNodeData = z.infer<typeof VideoNodeDataSchema>;
-type AudioNodeData = z.infer<typeof AudioNodeDataSchema>;
 type FileNodeData = z.infer<typeof FileNodeDataSchema>;
 type CrawlerNodeData = z.infer<typeof CrawlerNodeDataSchema>;
 type GroupNodeData = z.infer<typeof GroupNodeDataSchema>;
@@ -138,10 +128,8 @@ type NodeData = z.infer<typeof NodeDataSchema>;
 
 type AllNodeData = 
   | FileData
-  | PromptNodeData
+  | TextNodeData
   | ImageNodeData
-  | VideoNodeData
-  | AudioNodeData
   | FileNodeData
   | CrawlerNodeData
   | GroupNodeData
@@ -160,10 +148,8 @@ type AllNodeData =
 
 export {
   NodeDataSchema,
-  PromptNodeDataSchema,
+  TextNodeDataSchema,
   ImageNodeDataSchema,
-  VideoNodeDataSchema,
-  AudioNodeDataSchema,
   FileNodeDataSchema,
   CrawlerNodeDataSchema,
   GroupNodeDataSchema,
@@ -180,10 +166,8 @@ export {
   FileDataSchema,
   CompositorLayerUpdatesSchema,
   type FileData,
-  type PromptNodeData,
+  type TextNodeData,
   type ImageNodeData,
-  type VideoNodeData,
-  type AudioNodeData,
   type FileNodeData,
   type CrawlerNodeData,
   type GroupNodeData,

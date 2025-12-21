@@ -2,15 +2,13 @@
 // Use this in your sidebar or toolbox component
 // Assumes you have lucide-react installed for icons
 
-import { useCanvasCtx } from './CanvasProvider'; // Adjust path
-import { Brush, Cube, Download, Eye, File, FileText, GitBranch, Group, Layers, Maximize, MessageSquare, Music, Spider, ToggleLeft, User, Video as VideoIcon, Blur as BlurIcon, Mask as MaskIcon } from 'lucide-react';
+import { useCanvasCtx } from '@/canvas/details/ctx/canvas-ctx';
+import { Brush, Cuboid, Download, Eye, File, FileText, GitBranch, Group, Layers, Maximize, MessageSquare, Music, Spider, ToggleLeft, User, Video as VideoIcon, Blur as BlurIcon, Mask as MaskIcon } from 'lucide-react';
 import type { DragEvent } from 'react';
 
 const iconMap: Record<string, React.ComponentType<{ className?: string }>> = {
-  Prompt: MessageSquare,
+  Text: MessageSquare,
   Preview: Eye,
-  Video: VideoIcon,
-  Audio: Music,
   File: File,
   Export: Download,
   Toggle: ToggleLeft,
@@ -18,7 +16,7 @@ const iconMap: Record<string, React.ComponentType<{ className?: string }>> = {
   Resize: Maximize,
   Group: Group,
   Agent: User,
-  ThreeD: Cube,
+  ThreeD: Cuboid,
   Mask: MaskIcon,
   Painter: Brush,
   Blur: BlurIcon,
