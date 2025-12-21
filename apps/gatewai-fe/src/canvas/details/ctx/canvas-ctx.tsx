@@ -210,7 +210,7 @@ const CanvasProvider = ({
   const [tool, setTool] = useState<'select' | 'pan'>('select');
   const timeoutRef = useRef<NodeJS.Timeout | null>(null);
 
-  const { mutate: patchCanvas, mutateAsync: patchCanvasAsync } = useMutation({
+  const { mutateAsync: patchCanvasAsync } = useMutation({
     mutationFn: async (body: { nodes: Partial<DbNode>[]; edges: Partial<DbEdge>[] }) => {
       const response = await fetch(`/api/v1/canvas/${canvasId}`, {
         method: 'PATCH',
