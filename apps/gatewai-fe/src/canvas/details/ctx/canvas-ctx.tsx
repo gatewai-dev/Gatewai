@@ -13,7 +13,9 @@ import {
   type OnNodesChange,
   type XYPosition
 } from '@xyflow/react';
-import type {AllNodeConfig, DataType, Edge as DbEdge, Node as DbNode, GPTImage1Result, LLMResult, NodeResult, NodeType, NodeWithFileType } from '@gatewai/types';
+import type {AllNodeConfig, DataType, Edge as DbEdge, Node as DbNode, LLMResult, NodeResult, NodeType, NodeWithFileType } from '@gatewai/types';
+import { useAppDispatch } from '@/store';
+import { setAllNodes } from '@/store/nodes';
 
 // Assuming a basic structure for the fetched canvas data
 interface CanvasResponse {
@@ -62,9 +64,19 @@ const fetchCanvas = async (canvasId: string): Promise<CanvasResponse> => {
   return response.json();
 };
 
-const mock_nodes: Node[] = [
+const mock_nodes: DbNode[] = [
   {
     id: "1",
+    name: "Text Node 1",
+    selectable: true,
+    deletable: true,
+    draggable: true,
+    createdAt: new Date(),
+    updatedAt: new Date(),
+    isDirty: false,
+    canvasId: "canvas1",
+    zIndex: 1,
+    templateId: "template1",
     position: {
       x: 300,
       y: 360,
@@ -72,13 +84,13 @@ const mock_nodes: Node[] = [
     width: 300,
     height: 200,
     type: 'Text',
-    data: {
-      result: {
-        parts: [{
-          type: 'Text',
-          data: 'Create a text prompt for GTA 6 advertisement banner image.',
-        }]
-      } as LLMResult,
+    result: {
+      parts: [{
+        type: 'Text',
+        data: 'Create a text prompt for GTA 6 advertisement banner image.',
+      }]
+    } as LLMResult, 
+    config: {
       template: {
         outputTypes: [
           {
@@ -90,102 +102,119 @@ const mock_nodes: Node[] = [
       }
     }
   },
-  {
-    id: "2",
-    position: {
-      x: 700,
-      y: 360,
-    },
-    width: 300,
-    type: 'LLM',
-    data: {
-      result: {
-        parts: [{
-          type: 'Text',
-          data: 'LLM output',
-        }]
-      } as LLMResult,
-      template: {
-        inputTypes: [
-          {
-            "id": "s1",
-            inputType: 'Text',
-            label: 'Prompt',
-          }
-        ],
-        outputTypes: [
-          {
-            "id": "i22",
-            outputType: 'Text',
-            label: 'Output',
-          }
-        ]
-      }
-    }
-  },
-  {
-    id: "3",
-    position: {
-      x: 700,
-      y: 760,
-    },
-    width: 300,
-    type: 'GPTImage1',
-    data: {
-      template: {
-        inputTypes: [
-          {
-            "id": "s13",
-            inputType: 'Text',
-            label: 'Prompt',
-          }
-        ],
-        outputTypes: [
-          {
-            "id": "i232",
-            outputType: 'Image',
-            label: 'Image',
-          }
-        ]
-      },
-      result: {
-          selectedIndex: 0,
-          parts: [{
-            type: 'Image',
-            data: {
-              mediaSize: {
-                width: 512,
-                height: 512,
-              },
-              name: 'First Image',
-              bucket: 'default',
-              fileSize: 2048,
-              mimeType: 'image/png',
-              url: "https://placehold.co/512x512",
-            }
-          },{
-            type: 'Image',
-            data: {
-              mediaSize: {
-                width: 1024,
-                height: 1024,
-              },
-              name: 'Second Image',
-              bucket: 'default',
-              fileSize: 2048,
-              mimeType: 'image/png',
-              url: "https://placehold.co/1024x1024",
-            }
-          },]
-        } as GPTImage1Result,
-    }
-  }
+  // {
+  //   id: "2",
+  //   position: {
+  //     x: 700,
+  //     y: 360,
+  //   },
+  //   width: 300,
+  //   type: 'LLM',
+  //   data: {
+  //     result: {
+  //       parts: [{
+  //         type: 'Text',
+  //         data: 'LLM output',
+  //       }]
+  //     } as LLMResult,
+  //     template: {
+  //       inputTypes: [
+  //         {
+  //           "id": "s1",
+  //           inputType: 'Text',
+  //           label: 'Prompt',
+  //         }
+  //       ],
+  //       outputTypes: [
+  //         {
+  //           "id": "i22",
+  //           outputType: 'Text',
+  //           label: 'Output',
+  //         }
+  //       ]
+  //     }
+  //   }
+  // },
+  // {
+  //   id: "3",
+  //   position: {
+  //     x: 700,
+  //     y: 760,
+  //   },
+  //   width: 300,
+  //   type: 'GPTImage1',
+  //   data: {
+  //     template: {
+  //       inputTypes: [
+  //         {
+  //           "id": "s13",
+  //           inputType: 'Text',
+  //           label: 'Prompt',
+  //         }
+  //       ],
+  //       outputTypes: [
+  //         {
+  //           "id": "i232",
+  //           outputType: 'Image',
+  //           label: 'Image',
+  //         }
+  //       ]
+  //     },
+  //     result: {
+  //         selectedIndex: 0,
+  //         parts: [{
+  //           type: 'Image',
+  //           data: {
+  //             mediaSize: {
+  //               width: 512,
+  //               height: 512,
+  //             },
+  //             name: 'First Image',
+  //             bucket: 'default',
+  //             fileSize: 2048,
+  //             mimeType: 'image/png',
+  //             url: "https://placehold.co/512x512",
+  //           }
+  //         },{
+  //           type: 'Image',
+  //           data: {
+  //             mediaSize: {
+  //               width: 1024,
+  //               height: 1024,
+  //             },
+  //             name: 'Second Image',
+  //             bucket: 'default',
+  //             fileSize: 2048,
+  //             mimeType: 'image/png',
+  //             url: "https://placehold.co/1024x1024",
+  //           }
+  //         },]
+  //       } as GPTImage1Result,
+  //   }
+  // }
 ]
+
+function convertToClientNode(dbNode: DbNode): Node {
+  return {
+    id: dbNode.id,
+    position: dbNode.position as XYPosition,
+    data: dbNode,
+    type: dbNode.type,
+    width: dbNode.width ?? undefined,
+    height: dbNode.height ?? undefined,
+    draggable: dbNode.draggable ?? true,
+    selectable: dbNode.selectable ?? true,
+    deletable: dbNode.deletable ?? true,
+  };
+}
 
 const CanvasProvider = ({
   canvasId,
   children,
 }: PropsWithChildren<CanvasProviderProps>) => {
+
+  const dispatch = useAppDispatch();
+
   const {
     data: canvas,
     isLoading,
@@ -213,8 +242,6 @@ const CanvasProvider = ({
       deletable: node.deletable ?? true,
     }));
 
-    const initialDbResults: DbNode[] = canvas.nodes;
-
     // Map backend edges to React Flow edges with handle support
     const initialEdges: Edge[] = canvas.edges.map((edge) => ({
       id: edge.id,
@@ -228,7 +255,15 @@ const CanvasProvider = ({
     return { initialEdges, initialNodes };
   }, [canvas]);
 
-  const [nodes, setNodes, onNodesChangeBase] = useNodesState<Node>(mock_nodes);
+  useEffect(() => {
+    // if (canvas?.nodes) {
+    //   dispatch(setAllNodes(canvas.nodes))
+    // }
+    console.log("Setting mock nodes in store")
+    dispatch(setAllNodes(mock_nodes as any))
+  }, [dispatch])
+
+  const [nodes, setNodes, onNodesChangeBase] = useNodesState<Node>(mock_nodes.map(convertToClientNode));
   const [edges, setEdges, onEdgesChangeBase] = useEdgesState<Edge>([]);
   const past = useRef<Array<{ nodes: Node[]; edges: Edge[] }>>([]);
   const future = useRef<Array<{ nodes: Node[]; edges: Edge[] }>>([]);
@@ -287,7 +322,7 @@ const CanvasProvider = ({
 
       return {
         id: n.id,
-        name: nodeData.name as string,
+        name: n.name as string,
         type: n.type as NodeType,
         position: n.position as XYPosition,
         width: n.width ?? undefined,
@@ -561,7 +596,7 @@ const CanvasProvider = ({
 
   useEffect(() => {
     // setNodes(initialNodes);
-    setNodes(mock_nodes)
+    setNodes(mock_nodes.map(convertToClientNode))
     setEdges(initialEdges);
     past.current = [];
     future.current = [];

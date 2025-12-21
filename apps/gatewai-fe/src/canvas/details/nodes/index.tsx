@@ -12,14 +12,28 @@ import { PlayIcon } from 'lucide-react';
 import { useCanvasCtx } from '../ctx/canvas-ctx';
 import { MediaContent } from './media-content';
 import type { TextNode, FileNode, LLMNode, GPTImage1Node } from './node-props';
+import { useAppDispatch, useAppSelector } from '@/store';
+import { updateTextNodeValue } from '@/store/nodes';
 
 // Text Node
-const TextNodeComponent = memo((props: NodeProps<TextNode>) => {
-  const { updateNodeResult } = useCanvasCtx();
-  const result = props.data?.result as LLMResult || '';
+const TextNodeComponent = (props: NodeProps<TextNode>) => {
+  const st = useAppSelector(state => state);
+  console.log(st)
+  const node = useAppSelector(state => state.nodes.entities[props.id]);
+  console.log({node, id: props.id})
+  const dispatch = useAppDispatch();
+  const result = node?.result as LLMResult;
+  console.log({result});
+  if (!result) {
+    return (
+      <BaseNode {...props}>
+        <div className="text-gray-500">No text</div>
+      </BaseNode>
+    );
+  }
   const text = result.parts[0].data;
   const handleChange = (e: React.ChangeEvent<HTMLTextAreaElement>) => {
-    updateNodeResult((props.id), {parts: [{type: 'Text', data: e.target.value}] } as LLMResult);
+    dispatch(updateTextNodeValue({ id: props.id, value: e.target.value }));
   };
 
   return (
@@ -32,7 +46,7 @@ const TextNodeComponent = memo((props: NodeProps<TextNode>) => {
       />
     </BaseNode>
   );
-});
+}
 TextNodeComponent.displayName = 'TextNode';
 
 // File Node
