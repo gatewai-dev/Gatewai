@@ -44,6 +44,7 @@ enum DataType {
   Video
   Audio
   File
+  Mask
 }
 
 enum TaskStatus {
@@ -136,8 +137,8 @@ model Node {
   selectable     Boolean         @default(true)
   deletable      Boolean         @default(true)
   /*
-  export interface FileData {
-    url: string;
+  FileData {
+    url?: string; // Signed AWS S3 URL
     name: string;
     bucket: string;
     mimeType: string;
@@ -147,9 +148,18 @@ model Node {
   fileData       Json?           // For file metadata (e.g., gcs Url, bucket, etc.)
   data           Json?           // Additional data for React Flow node (labels, configs, etc.)
   isDirty        Boolean         @default(false) // Whether or not previous results or data/config changed
+  /*
+  OutputItem {
+    type: DataType;
+    data: FileData | string | boolean | number;
+  }
+
+  Result {
+    parts: OutputItem[];
+  }
+  */
   result         Json?           // Node processing result
   // Visual properties
-  visible        Boolean         @default(true)
   zIndex         Int?            // For layering
   // Timestamps - DB managed
   createdAt      DateTime        @default(now())
@@ -192,6 +202,7 @@ model NodeTemplateInput {
   templateId  String
   required    Boolean
   inputType   DataType
+  label       String?
   template    NodeTemplate @relation(fields: [templateId], references: [id], onDelete: Cascade)
 
   @@map("node_template_input")
@@ -202,6 +213,7 @@ model NodeTemplateOutput {
   templateId  String
   required    Boolean
   outputType  DataType
+  label       String?
   template    NodeTemplate @relation(fields: [templateId], references: [id], onDelete: Cascade)
 
   @@map("node_template_output")

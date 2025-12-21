@@ -1,8 +1,9 @@
-import { Background, ConnectionMode, Panel, ReactFlow, SelectionMode } from "@xyflow/react";
+import { Background, ConnectionMode, getOutgoers, Panel, ReactFlow, SelectionMode, type Connection, type Edge, type Node } from "@xyflow/react";
 import { nodeTypes } from "../nodes";
 import { useCanvasCtx } from "../ctx/canvas-ctx";
 import { Toolbar } from "./toolbar";
 import { CustomEdge, CustomConnectionLine } from "../nodes/base";
+import { useCallback } from "react";
 
 // Define edge types - you can add more custom edge types here if needed
 const edgeTypes = {
@@ -12,12 +13,12 @@ const edgeTypes = {
   // straight: StraightCustomEdge,
 };
 
-function ReactflowContainer({
-  children,
-}: {
+type ReactFlowProps = {
   children?: React.ReactNode;
-}) {
-  const { 
+};
+
+function ReactflowContainer({ children }: ReactFlowProps) {
+  const {
     clientNodes,
     onEdgesChange,
     onNodesChange,
@@ -26,6 +27,32 @@ function ReactflowContainer({
     onConnect,
     onNodeDragStart
   } = useCanvasCtx();
+
+
+    const isValidConnection = useCallback(
+    (connection: Connection | Edge) => {
+      // we are using getNodes and getEdges helpers here
+      // to make sure we create isValidConnection function only once
+      const nodes = clientNodes;
+      const edges = clientEdges;
+      const target = nodes.find((node) => node.id === connection.target);
+      if (!target) return false;
+      const hasCycle = (node: Node, visited = new Set()) => {
+        if (visited.has(node.id)) return false;
+ 
+        visited.add(node.id);
+ 
+        for (const outgoer of getOutgoers(node, nodes, edges)) {
+          if (outgoer.id === connection.source) return true;
+          if (hasCycle(outgoer, visited)) return true;
+        }
+      };
+ 
+      if (target.id === connection.source) return false;
+      return !hasCycle(target);
+    },
+    [clientNodes, clientEdges],
+  );
 
   return (
     <div className="w-full h-screen bg-black">
@@ -47,13 +74,14 @@ function ReactflowContainer({
         selectionMode={SelectionMode.Partial}
         connectionMode={ConnectionMode.Loose}
         onConnect={onConnect}
+        isValidConnection={isValidConnection}
         onNodeDragStart={onNodeDragStart}
       >
         {children}
         <Background />
         <Panel position="top-left" className=" bg-background left-0 top-0 m-0! h-full w-[60px] flex flex-col">
-          <div className=" text-sm ">
-            <strong className="font-medium">Tool:</strong>
+          <div className=" text-sm">
+            <strong className="font-medium">Logo</strong>
           </div>
         </Panel>
         <Panel position="bottom-center">

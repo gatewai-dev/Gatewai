@@ -1,11 +1,5 @@
 import { z } from 'zod';
 
-// File data schema for nodes that handle files
-const FileDataSchema = z.object({
-  url: z.string().url(),
-  name: z.string().optional(),
-}).strict();
-
 // Text Node
 const TextNodeDataSchema = z.object({
   content: z.string().optional(),
@@ -106,7 +100,6 @@ const NodeDataSchema = z.union([
 ]);
 
 // Inferred types
-type FileData = z.infer<typeof FileDataSchema>;
 type TextNodeData = z.infer<typeof TextNodeDataSchema>;
 type ImageNodeData = z.infer<typeof ImageNodeDataSchema>;
 type FileNodeData = z.infer<typeof FileNodeDataSchema>;
@@ -126,8 +119,7 @@ type ResizeNodeData = z.infer<typeof ResizeNodeDataSchema>;
 type NodeData = z.infer<typeof NodeDataSchema>;
 
 
-type AllNodeData = 
-  | FileData
+type AllNodeData =
   | TextNodeData
   | ImageNodeData
   | FileNodeData
@@ -163,9 +155,7 @@ export {
   RouterNodeDataSchema,
   ArrayNodeDataSchema,
   ResizeNodeDataSchema,
-  FileDataSchema,
   CompositorLayerUpdatesSchema,
-  type FileData,
   type TextNodeData,
   type ImageNodeData,
   type FileNodeData,
