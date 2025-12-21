@@ -56,12 +56,6 @@ const BaseNode = memo((props: ClientNodeData & {
     return dataTypeColors[type] || 'bg-gray-500';
   };
 
-  const getOutputBorderColor = (i: number) => {
-    if (outputTypes.length === 0) return 'border-gray-500';
-    const type = (i < outputTypes.length) ? outputTypes[i].outputType : outputTypes[outputTypes.length - 1].outputType;
-    return dataTypeColors[type].replace('bg-', 'border-') || 'border-gray-500';
-  };
-
   const getOutputTextColor = (i: number) => {
     return getOutputColor(i).replace('bg-', 'text-');
   };
@@ -80,23 +74,26 @@ const BaseNode = memo((props: ClientNodeData & {
         ${props.selected ? 'selected' : ''}`}
     >
 
-      {Array.from({ length: numInputs }).map((_, i) => (
-        <div key={`target-wrapper-${i}`} className="absolute left-0 z-10" style={{ top: `${(i + 1) * (100 / (numInputs + 1))}%`, transform: 'translateX(-50%)' }}>
-          <div className={`w-6 h-6 ${nodeBackgroundColor} rounded-full flex items-center justify-center transition-all duration-200 border-2 border-gray-700`}>
-            <Handle
-              key={`target-${i}`}
-              id={`target-${i}`}
-              type="target"
-              position={Position.Left}
-              tabIndex={0}
-              className={`w-3 h-3 ${getInputColor(i)} border-2 border-white rounded-full left-[50%]! transition-all duration-200 focus:outline-none hover:scale-125`}
-            />
+      {Array.from({ length: numInputs }).map((_, i) => {
+        const inputTop = `${(i + 1) * (30)}px`;
+        return (
+          <div key={`target-wrapper-${i}`} className="absolute left-0 z-10" style={{ top: inputTop, transform: 'translateX(-50%)' }}>
+            <div className={`w-4 h-4 ${nodeBackgroundColor} rounded-full flex items-center justify-center transition-all duration-200`}>
+              <Handle
+                key={`target-${i}`}
+                id={`target-${i}`}
+                type="target"
+                position={Position.Left}
+                tabIndex={0}
+                className={`w-3 h-3 ${getInputColor(i)} border-2 border-white rounded-full left-[50%]! transition-all duration-200 focus:outline-none hover:scale-125`}
+              />
+            </div>
+            <span className={`absolute left-[-60px] top-1/2 -translate-y-1/2 ${getInputTextColor(i)} px-2 py-1 text-xs opacity-0 group-hover:opacity-100 group-focus:opacity-100 group-focus-within:opacity-100 in-[.selected]:opacity-100 transition-opacity pointer-events-none whitespace-nowrap font-medium`}>
+              {getInputType(i)}
+            </span>
           </div>
-          <span className={`absolute left-[-60px] top-1/2 -translate-y-1/2 ${getInputTextColor(i)} px-2 py-1 text-xs opacity-0 group-hover:opacity-100 group-focus:opacity-100 group-focus-within:opacity-100 [.selected_&]:opacity-100 transition-opacity pointer-events-none whitespace-nowrap font-medium`}>
-            {getInputType(i)}
-          </span>
-        </div>
-      ))}
+        );
+      })}
 
       <div className="p-2">
         <div className='header-section flex justify-between items-center mb-3'>
@@ -109,23 +106,26 @@ const BaseNode = memo((props: ClientNodeData & {
         </div>
       </div>
 
-      {Array.from({ length: numOutputs }).map((_, i) => (
-        <div key={`source-wrapper-${i}`} className="absolute right-0 z-10" style={{ top: `${(i + 1) * (100 / (numOutputs + 1))}%`, transform: 'translateX(50%)' }}>
-          <div className={`w-6 h-6 ${nodeBackgroundColor} rounded-full flex items-center justify-center transition-all duration-200 border-2 ${getOutputBorderColor(i)}`}>
-            <Handle
-              key={`source-${i}`}
-              id={`source-${i}`}
-              type="source"
-              position={Position.Right}
-              tabIndex={0}
-              className={`w-3 h-3 ${getOutputColor(i)} border-2 border-white rounded-full right-[50%]! transition-all duration-200 focus:outline-none hover:scale-125`}
-            />
+      {Array.from({ length: numOutputs }).map((_, i) => {
+        const outputTop = `${(i + 1) * (30)}px`;
+        return (
+          <div key={`source-wrapper-${i}`} className="absolute right-0 z-10" style={{ top: outputTop, transform: 'translateX(50%)' }}>
+            <div className={`w-4 h-4 ${nodeBackgroundColor} rounded-full flex items-center justify-center transition-all duration-200`}>
+              <Handle
+                key={`source-${i}`}
+                id={`source-${i}`}
+                type="source"
+                position={Position.Right}
+                tabIndex={0}
+                className={`w-3 h-3 ${getOutputColor(i)} border-2 border-white rounded-full right-[50%]! transition-all duration-200 focus:outline-none hover:scale-125`}
+              />
+            </div>
+            <span className={`absolute right-[-60px] top-1/2 -translate-y-1/2 ${getOutputTextColor(i)} px-2 py-1 text-xs opacity-0 group-hover:opacity-100 group-focus:opacity-100 group-focus-within:opacity-100 [.selected_&]:opacity-100 transition-opacity pointer-events-none whitespace-nowrap font-medium`}>
+              {getOutputType(i)}
+            </span>
           </div>
-          <span className={`absolute right-[-60px] top-1/2 -translate-y-1/2 ${getOutputTextColor(i)} px-2 py-1 text-xs opacity-0 group-hover:opacity-100 group-focus:opacity-100 group-focus-within:opacity-100 [.selected_&]:opacity-100 transition-opacity pointer-events-none whitespace-nowrap font-medium`}>
-            {getOutputType(i)}
-          </span>
-        </div>
-      ))}
+        );
+      })}
     </div>
   );
 });
@@ -167,7 +167,7 @@ const CustomEdge = ({
     <path
       id={id}
       style={style}
-      className="react-flow__edge-path stroke-[3px] stroke-zinc-300 fill-none transition-all duration-200 hover:stroke-purple-500 hover:stroke-[4px]"
+      className="react-flow__edge-path stroke-[5px] stroke-zinc-300 fill-none transition-all duration-200 hover:stroke-purple-500 hover:stroke-[4px]"
       d={edgePath}
       markerEnd={markerEnd}
     />

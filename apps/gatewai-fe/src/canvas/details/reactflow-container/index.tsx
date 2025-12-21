@@ -1,4 +1,4 @@
-import { Background, Panel, ReactFlow } from "@xyflow/react";
+import { Background, Panel, ReactFlow, SelectionMode } from "@xyflow/react";
 import { nodeTypes } from "../nodes";
 import { useCanvasCtx } from "../ctx/canvas-ctx";
 import { Toolbar } from "./toolbar";
@@ -8,7 +8,7 @@ function ReactflowContainer({
 }: {
   children?: React.ReactNode;
 }) {
-  const { clientNodes, setEdges, setNodes, onEdgesChange, onNodesChange,  clientEdges, tool } = useCanvasCtx();
+  const { clientNodes, setEdges, setNodes, onEdgesChange, onNodesChange,  clientEdges, tool, onConnect, onNodeDragStart } = useCanvasCtx();
 
   return (
     <div className="w-full h-screen">
@@ -23,6 +23,10 @@ function ReactflowContainer({
         elementsSelectable={tool === 'select'}
         panOnDrag={tool === 'pan'}
         selectionOnDrag={tool === 'select'}
+        selectNodesOnDrag
+        selectionMode={SelectionMode.Partial}
+        onConnect={onConnect}
+        onNodeDragStart={onNodeDragStart}
       >
         {children}
         <Background />

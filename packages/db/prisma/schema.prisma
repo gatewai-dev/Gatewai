@@ -50,6 +50,11 @@ enum TaskStatus {
   Failed
 }
 
+enum ProcessEnvironment {
+  Browser
+  Server
+}
+
 model User {
   id            String    @id
   name          String
@@ -138,6 +143,7 @@ model Node {
   */
   fileData       Json?           // For file metadata (e.g., gcs Url, bucket, etc.)
   data           Json?           // Additional data for React Flow node (labels, configs, etc.)
+  processEnvironment ProcessEnvironment
   // Visual properties
   visible        Boolean         @default(true)
   zIndex         Int?            // For layering
@@ -196,17 +202,21 @@ model NodeTemplateOutput {
 }
 
 model Edge {
-  id         String   @id @default(cuid())
-  source     String
-  target     String
-  dataType   DataType
-  createdAt  DateTime @default(now())
-  updatedAt  DateTime @updatedAt
+  id           String   @id @default(cuid())
+  source       String
+  target       String
+  // Handle IDs to track which specific input/output the edge connects to
+  sourceHandle String?  // e.g., "source-0", "source-1"
+  targetHandle String?  // e.g., "target-0", "target-1"
+  dataType     DataType
+  createdAt    DateTime @default(now())
+  updatedAt    DateTime @updatedAt
 
   sourceNode Node @relation("EdgesFrom", fields: [source], references: [id], onDelete: Cascade)
   targetNode Node @relation("EdgesTo", fields: [target], references: [id], onDelete: Cascade)
 
-  @@unique([source, target]) // Prevent duplicate edges
+  // Updated unique constraint to include handles - prevents duplicate connections to same handles
+  @@unique([source, sourceHandle, target, targetHandle])
   @@map("edge")
 }
 
