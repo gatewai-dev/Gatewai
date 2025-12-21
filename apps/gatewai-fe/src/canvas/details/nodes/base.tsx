@@ -65,7 +65,7 @@ const BaseNode = memo((props: ClientNodeData & {
     return (i < outputTypes.length) ? outputTypes[i].outputType : outputTypes[outputTypes.length - 1].outputType;
   };
 
-  const nodeBackgroundColor = 'bg-gray-800';
+  const nodeBackgroundColor = 'bg-background';
 
   return (
     <div

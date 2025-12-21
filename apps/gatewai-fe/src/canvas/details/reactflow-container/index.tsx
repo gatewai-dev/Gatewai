@@ -11,10 +11,11 @@ function ReactflowContainer({
   const { clientNodes, onEdgesChange, onNodesChange,  clientEdges, tool, onConnect, onNodeDragStart } = useCanvasCtx();
   console.log({clientEdges, clientNodes})
   return (
-    <div className="w-full h-screen">
+    <div className="w-full h-screen bg-black">
       <ReactFlow
         edges={clientEdges}
         nodes={clientNodes}
+        className="bg-black"
         fitView
         nodeTypes={nodeTypes}
         onEdgesChange={onEdgesChange}

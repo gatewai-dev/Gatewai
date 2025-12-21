@@ -1,5 +1,5 @@
 import { useMutation, useQuery } from '@tanstack/react-query';
-import { createContext, useCallback, useContext, useEffect, useMemo, useRef, useState, type Dispatch, type MouseEvent, type PropsWithChildren, type SetStateAction, type Partial } from 'react';
+import { createContext, useCallback, useContext, useEffect, useMemo, useRef, useState, type Dispatch, type MouseEvent, type PropsWithChildren, type SetStateAction } from 'react';
 import {
   useEdgesState,
   useNodesState,
@@ -10,9 +10,10 @@ import {
   type NodeChange,
   type OnConnect,
   type OnEdgesChange,
-  type OnNodesChange
+  type OnNodesChange,
+  type XYPosition
 } from '@xyflow/react';
-import type {Edge as DbEdge, Node as DbNode, NodeData, NodeWithFileType } from '@gatewai/types';
+import type {DataType, Edge as DbEdge, Node as DbNode, NodeData, NodeType, NodeWithFileType } from '@gatewai/types';
 
 // Assuming a basic structure for the fetched canvas data
 interface CanvasResponse {
@@ -130,7 +131,7 @@ const CanvasProvider = ({
     // Map your backend data to React Flow nodes
     const initialNodes: Node[] = canvas.nodes.map((node) => ({
       id: node.id,
-      position: node.position,
+      position: node.position as XYPosition,
       data: node,
       type: node.type,
       width: node.width ?? undefined,
@@ -164,7 +165,7 @@ const CanvasProvider = ({
   const timeoutRef = useRef<NodeJS.Timeout | null>(null);
 
   const { mutate: patchCanvas } = useMutation({
-    mutationFn: async (body: { nodes: DbNode[]; edges: DbEdge[] }) => {
+    mutationFn: async (body: { nodes: Partial<DbNode>[]; edges: Partial<DbEdge>[] }) => {
       const response = await fetch(`/api/v1/canvas/${canvasId}`, {
         method: 'PATCH',
         headers: { 'Content-Type': 'application/json' },
@@ -186,29 +187,33 @@ const CanvasProvider = ({
   const save = useCallback(() => {
     if (!canvasId) return;
 
-    const currentDbNodes: DbNode[] = nodes.map((n) => ({
-      id: n.id,
-      name: n.data.name,
-      type: n.type,
-      position: n.position,
-      width: n.width ?? undefined,
-      height: n.height ?? undefined,
-      draggable: n.draggable ?? true,
-      selectable: n.selectable ?? true,
-      deletable: n.deletable ?? true,
-      fileData: n.data.fileData,
-      data: n.data.data,
-      visible: n.data.visible ?? true,
-      zIndex: n.data.zIndex,
-    }));
+    const currentDbNodes: Partial<DbNode>[] = nodes.map((n) => {
+      const nodeData = n.data as NodeWithFileType<NodeData>;
 
-    const currentDbEdges: DbEdge[] = edges.map((e) => ({
+      return {
+        id: n.id,
+        name: nodeData.name as string,
+        type: n.type as NodeType,
+        position: n.position as XYPosition,
+        width: n.width ?? undefined,
+        height: n.height ?? undefined,
+        draggable: n.draggable ?? true,
+        selectable: n.selectable ?? true,
+        deletable: n.deletable ?? true,
+        fileData: nodeData.fileData as object | undefined,
+        data: nodeData.data as object,
+        visible: nodeData.visible ?? true,
+        zIndex: nodeData.zIndex,
+      }
+    });
+
+    const currentDbEdges: Partial<DbEdge>[] = edges.map((e) => ({
       id: e.id,
       source: e.source,
       target: e.target,
       sourceHandle: e.sourceHandle || undefined,
       targetHandle: e.targetHandle || undefined,
-      dataType: e.data?.dataType || 'Text',
+      dataType: (e.data?.dataType || 'Text') as DataType,
     }));
 
     const body = {
