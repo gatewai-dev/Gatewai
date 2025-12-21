@@ -19,13 +19,19 @@ import type {
   PainterNodeData,
   ResizeNodeData,
   RouterNodeData,
+  LLMNodeData,
   TextNodeData,
   ThreeDNodeData,
+  LLMResult,
 } from '@gatewai/types';
 import { PixiApplication } from './pixi-app';
+import { Button } from '@/components/ui/button';
+import { PlayIcon } from 'lucide-react';
+import { useCanvasCtx } from '../ctx/canvas-ctx';
 
 // Define typed node components
 export type TextNode = Node<NodeWithFileType<TextNodeData>, 'Text'>;
+export type LLMNode = Node<NodeWithFileType<LLMNodeData>, 'LLM'>;
 export type FileNode = Node<NodeWithFileType<FileNodeData>, 'File'>;
 export type CrawlerNode = Node<NodeWithFileType<CrawlerNodeData>, 'Crawler'>;
 export type GroupNode = Node<NodeWithFileType<GroupNodeData>, 'Group'>;
@@ -40,20 +46,6 @@ export type RouterNode = Node<NodeWithFileType<RouterNodeData>, 'Router'>;
 export type ArrayNode = Node<NodeWithFileType<ArrayNodeData>, 'Array'>;
 export type ResizeNode = Node<NodeWithFileType<ResizeNodeData>, 'Resize'>;
 
-// Helper to update node data
-const useUpdateNodeData = (nodeId: string) => {
-  const { setNodes } = useReactFlow();
-  return useCallback(
-    (updates: Record<string, any>) => {
-      setNodes((nds) =>
-        nds.map((n) =>
-          n.id === nodeId ? { ...n, data: { ...n.data, ...updates } } : n
-        )
-      );
-    },
-    [setNodes, nodeId]
-  );
-};
 
 // Common Preview Component for Image Processing Nodes
 const ImagePreview = memo(({ nodeId }: { nodeId: string }) => {
@@ -161,12 +153,10 @@ const ImagePreview = memo(({ nodeId }: { nodeId: string }) => {
 
 // Text Node
 const TextNodeComponent = memo((props: NodeProps<TextNode>) => {
-  const updateData = useUpdateNodeData(props.id);
+  const { updateNodeCustomData } = useCanvasCtx();
   const content = props.data?.data?.content || '';
-  const prevData = (props.data.data ?? {}) as object;
-
   const handleChange = (e: React.ChangeEvent<HTMLTextAreaElement>) => {
-    updateData({ data: {...prevData, content: e.target.value} });
+    updateNodeCustomData((props.id), {...props.data, content: e.target.value});
   };
 
   return (
@@ -213,6 +203,26 @@ const CrawlerNodeComponent = memo((props: NodeProps<CrawlerNode>) => {
   );
 });
 CrawlerNodeComponent.displayName = 'CrawlerNode';
+
+
+// Text Node
+const LlmNodeComponent = memo((props: NodeProps<LLMNode>) => {
+  const result = props.data?.data.result as LLMResult || '';
+  const text = result.parts[0].data;
+  return (
+    <BaseNode {...props}>
+      <div className='flex flex-col gap-2 items-end nodrag'>
+        <p
+          className="w-full min-h-[200px] max-h-full nowheel overflow-auto p-2 border rounded text-gray-100 resize-none"
+        >
+          {text}
+        </p>
+        <Button variant="default" size="sm" type='button'><PlayIcon /> <span className='text-xs'>Run Model</span></Button>
+      </div>
+    </BaseNode>
+  );
+});
+TextNodeComponent.displayName = 'TextNode';
 
 // Group Node
 const GroupNodeComponent = memo((props: NodeProps<GroupNode>) => {
@@ -490,6 +500,7 @@ ResizeNodeComponent.displayName = 'ResizeNode';
 
 // Node types mapping
 const nodeTypes = {
+  LLM: LlmNodeComponent,
   Agent: AgentNodeComponent,
   Array: ArrayNodeComponent,
   Blur: BlurNodeComponent,
@@ -509,18 +520,19 @@ const nodeTypes = {
 // Export components
 export {
   nodeTypes,
-  TextNodeComponent as TextNode,
-  FileNodeComponent as FileNode,
-  CrawlerNodeComponent as CrawlerNode,
-  GroupNodeComponent as GroupNode,
-  AgentNodeComponent as AgentNode,
-  ThreeDNodeComponent as ThreeDNode,
-  MaskNodeComponent as MaskNode,
-  PainterNodeComponent as PainterNode,
-  BlurNodeComponent as BlurNode,
-  CompositorNodeComponent as CompositorNode,
-  DescriberNodeComponent as Describer,
-  RouterNodeComponent as Router,
-  ArrayNodeComponent as Array,
-  ResizeNodeComponent as Resize,
+  LlmNodeComponent,
+  TextNodeComponent,
+  FileNodeComponent ,
+  CrawlerNodeComponent ,
+  GroupNodeComponent,
+  AgentNodeComponent ,
+  ThreeDNodeComponent ,
+  MaskNodeComponent ,
+  PainterNodeComponent ,
+  BlurNodeComponent ,
+  CompositorNodeComponent ,
+  DescriberNodeComponent ,
+  RouterNodeComponent,
+  ArrayNodeComponent ,
+  ResizeNodeComponent,
 };

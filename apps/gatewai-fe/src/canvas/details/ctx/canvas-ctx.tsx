@@ -13,7 +13,7 @@ import {
   type OnNodesChange,
   type XYPosition
 } from '@xyflow/react';
-import type {DataType, Edge as DbEdge, Node as DbNode, NodeData, NodeType, NodeWithFileType } from '@gatewai/types';
+import type {DataType, Edge as DbEdge, Node as DbNode, LLMResult, NodeData, NodeType, NodeWithFileType } from '@gatewai/types';
 
 // Assuming a basic structure for the fetched canvas data
 interface CanvasResponse {
@@ -88,14 +88,18 @@ const mock_nodes: Node[] = [
       y: 360,
     },
     width: 300,
-    height: 80,
-    type: 'Crawler',
+    type: 'LLM',
     data: {
       data: {
-        url: 'https://google.com',
+        result: {
+          parts: [{
+            type: 'Text',
+            data: 'LLM output',
+          }]
+        } as LLMResult,
         inputTypes: [
           {
-            "id": "s",
+            "id": "s1",
             inputType: 'Text',
           }
         ],
@@ -202,7 +206,6 @@ const CanvasProvider = ({
         deletable: n.deletable ?? true,
         fileData: nodeData.fileData as object | undefined,
         data: nodeData.data as object,
-        visible: nodeData.visible ?? true,
         zIndex: nodeData.zIndex,
       }
     });

@@ -71,6 +71,7 @@ const RouterNodeDataSchema = z.object({
   invert: z.boolean().optional(),
 }).strict();
 
+const LLMNodeDataSchema = z.object({}).strict();
 // Array Node
 const ArrayNodeDataSchema = z.object({}).strict();
 
@@ -82,6 +83,7 @@ const ResizeNodeDataSchema = z.object({
 
 // Main node schema
 const NodeDataSchema = z.union([
+  LLMNodeDataSchema,
   TextNodeDataSchema,
   ImageNodeDataSchema,
   FileNodeDataSchema,
@@ -102,6 +104,7 @@ const NodeDataSchema = z.union([
 // Inferred types
 type TextNodeData = z.infer<typeof TextNodeDataSchema>;
 type ImageNodeData = z.infer<typeof ImageNodeDataSchema>;
+type LLMNodeData = z.infer<typeof LLMNodeDataSchema>;
 type FileNodeData = z.infer<typeof FileNodeDataSchema>;
 type CrawlerNodeData = z.infer<typeof CrawlerNodeDataSchema>;
 type GroupNodeData = z.infer<typeof GroupNodeDataSchema>;
@@ -127,6 +130,7 @@ type AllNodeData =
   | GroupNodeData
   | AgentNodeData
   | ThreeDNodeData
+  | LLMNodeData
   | MaskNodeData
   | PainterNodeData
   | BlurNodeData
@@ -152,6 +156,7 @@ export {
   BlurNodeDataSchema,
   CompositorNodeDataSchema,
   DescriberNodeDataSchema,
+  LLMNodeDataSchema,
   RouterNodeDataSchema,
   ArrayNodeDataSchema,
   ResizeNodeDataSchema,
@@ -163,6 +168,7 @@ export {
   type GroupNodeData,
   type AgentNodeData,
   type ThreeDNodeData,
+  type LLMNodeData,
   type MaskNodeData,
   type PainterNodeData,
   type BlurNodeData,
