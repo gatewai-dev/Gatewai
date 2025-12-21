@@ -8,8 +8,8 @@ function ReactflowContainer({
 }: {
   children?: React.ReactNode;
 }) {
-  const { clientNodes, setEdges, setNodes, onEdgesChange, onNodesChange,  clientEdges, tool, onConnect, onNodeDragStart } = useCanvasCtx();
-
+  const { clientNodes, onEdgesChange, onNodesChange,  clientEdges, tool, onConnect, onNodeDragStart } = useCanvasCtx();
+  console.log({clientEdges, clientNodes})
   return (
     <div className="w-full h-screen">
       <ReactFlow

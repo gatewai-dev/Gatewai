@@ -130,10 +130,7 @@ const CanvasProvider = ({
     // Map your backend data to React Flow nodes
     const initialNodes: Node[] = canvas.nodes.map((node) => ({
       id: node.id,
-      position: {
-        x: node.x,
-        y: node.y,
-      },
+      position: node.position,
       data: node,
       type: node.type,
       width: node.width ?? undefined,
@@ -193,8 +190,7 @@ const CanvasProvider = ({
       id: n.id,
       name: n.data.name,
       type: n.type,
-      x: n.position.x,
-      y: n.position.y,
+      position: n.position,
       width: n.width ?? undefined,
       height: n.height ?? undefined,
       draggable: n.draggable ?? true,
@@ -407,14 +403,15 @@ const CanvasProvider = ({
   // }, [initialNodes, initialEdges, setNodes, setEdges])
 
   useEffect(() => {
-    setNodes(initialNodes);
+    // setNodes(initialNodes);
+    setNodes(mock_nodes)
     setEdges(initialEdges);
     past.current = [];
     future.current = [];
     setCanUndo(false);
     setCanRedo(false);
   }, [initialNodes, initialEdges, setNodes, setEdges]);
-
+  
   const value = {
     canvas,
     clientNodes: nodes,
