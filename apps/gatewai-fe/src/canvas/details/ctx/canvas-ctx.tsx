@@ -1,5 +1,5 @@
 import { useMutation, useQuery } from '@tanstack/react-query';
-import { createContext, useCallback, useContext, useEffect, useMemo, useRef, useState, type Dispatch, type MouseEvent, type PropsWithChildren, type SetStateAction } from 'react';
+import { createContext, useCallback, useContext, useEffect, useMemo, useRef, useState, type Dispatch, type MouseEvent, type PropsWithChildren, type RefObject, type SetStateAction } from 'react';
 import {
   useEdgesState,
   useNodesState,
@@ -11,11 +11,14 @@ import {
   type OnConnect,
   type OnEdgesChange,
   type OnNodesChange,
+  type ReactFlowInstance,
   type XYPosition
 } from '@xyflow/react';
 import type {AllNodeConfig, DataType, Edge as DbEdge, Node as DbNode, GPTImage1Result, LLMResult, NodeResult, NodeTemplate, NodeType, NodeWithFileType, TextResult } from '@gatewai/types';
 import { useAppDispatch } from '@/store';
 import { setAllNodes } from '@/store/nodes';
+import { generateId } from '@/lib/idgen';
+import { createNode } from '@/store/nodes';
 
 type DbNodeWithTemplate = DbNode & {
   template?: NodeTemplate & {
@@ -61,6 +64,8 @@ interface CanvasContextType {
   updateNodeConfig: (nodeId: string, updates: Partial<AllNodeConfig>) => void;
   updateNodeResult: (nodeId: string, updates: Partial<NodeResult>) => void;
   runNodes: (nodeIds: Node["id"][]) => Promise<void>;
+  rfInstance: RefObject<ReactFlowInstance | undefined>;
+  createNewNode: (template: NodeTemplate, position: XYPosition) => void;
 }
 
 const CanvasContext = createContext<CanvasContextType | undefined>(undefined);
@@ -116,6 +121,7 @@ const mock_nodes: DbNodeWithTemplate[] = [
       tokenPrice: 0,
       category: 'Toolbox',
       subcategory: 'Text tools',
+      defaultConfig: {},
       showInQuickAccess: true,
       createdAt: new Date(),
       updatedAt: new Date(),
@@ -168,6 +174,7 @@ const mock_nodes: DbNodeWithTemplate[] = [
       showInQuickAccess: true,
       createdAt: new Date(),
       updatedAt: new Date(),
+      defaultConfig: {},
       inputTypes: [
         {
           "id": "i222",
@@ -248,6 +255,7 @@ const mock_nodes: DbNodeWithTemplate[] = [
       showInQuickAccess: true,
       createdAt: new Date(),
       updatedAt: new Date(),
+      defaultConfig: {},
       inputTypes: [
         {
           "id": "s13",
@@ -286,6 +294,7 @@ const CanvasProvider = ({
 }: PropsWithChildren<CanvasProviderProps>) => {
 
   const dispatch = useAppDispatch();
+  const rfInstance = useRef<ReactFlowInstance | undefined>(undefined);
 
   const {
     data: canvas,
@@ -673,7 +682,47 @@ const CanvasProvider = ({
     future.current = [];
     setCanUndo(false);
     setCanRedo(false);
-  }, [initialNodes, initialEdges, setNodes, setEdges]);
+  }, [initialEdges, setNodes, setEdges]);
+
+  const createNewNode = useCallback((template: NodeTemplate, position: XYPosition) => {
+    const id = generateId();
+    const nodeEntity: DbNode = {
+      id,
+      name: template.displayName,
+      templateId: template.id,
+      type: template.type as NodeType,
+      position,
+      width: 300,
+      height: null,
+      createdAt: new Date(),
+      updatedAt: new Date(),
+      isDirty: false,
+      canvasId: canvasId,
+      zIndex: 1,
+      draggable: true,
+      selectable: true,
+      deletable: true,
+      config: template.defaultConfig || {},
+      result: {
+        selectedIndex: 0,
+        parts: [],
+      },
+    };
+    const newNode: Node = {
+      id,
+      position,
+      data: nodeEntity,
+      type: template.type as NodeType,
+      width: 300,
+      height: undefined,
+      draggable: true,
+      selectable: true,
+      deletable: true,
+    };
+    setNodes((nds) => [...nds, newNode]);
+    dispatch(createNode(nodeEntity));
+    scheduleSave();
+  }, [canvasId, setNodes, dispatch, scheduleSave]);
   
   const value = {
     canvas,
@@ -697,6 +746,8 @@ const CanvasProvider = ({
     updateNodeConfig,
     updateNodeResult,
     runNodes,
+    rfInstance,
+    createNewNode
   };
 
   return <CanvasContext.Provider value={value}>{children}</CanvasContext.Provider>;

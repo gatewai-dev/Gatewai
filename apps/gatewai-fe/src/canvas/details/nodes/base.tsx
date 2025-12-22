@@ -23,7 +23,6 @@ const BaseNode = memo((props: ClientNodeData & {
   const { getEdges } = useReactFlow();
   const edges = getEdges();
   const nodeId = props.id;
-  console.log({props})
   // Handle optional inputTypes and outputTypes from template
   const inputTypes = props.data?.template?.inputTypes ?? [];
   const outputTypes = props.data?.template?.outputTypes ?? [];

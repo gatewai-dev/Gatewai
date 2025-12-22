@@ -13,11 +13,11 @@ import { useCanvasCtx } from '../ctx/canvas-ctx';
 import { MediaContent } from './media-content';
 import type { TextNode, FileNode, LLMNode, GPTImage1Node } from './node-props';
 import { useAppDispatch, useAppSelector } from '@/store';
-import { updateTextNodeValue } from '@/store/nodes';
+import { updateTextNodeValue, makeSelectNodeById } from '@/store/nodes';
 
 // Text Node
 const TextNodeComponent = (props: NodeProps<TextNode>) => {
-  const node = useAppSelector(state => state.nodes.entities[props.id]);
+  const node = useAppSelector(makeSelectNodeById(props.id));
 
   const dispatch = useAppDispatch();
   const result = node?.result as LLMResult;
@@ -58,7 +58,7 @@ FileNodeComponent.displayName = 'FileNode';
 
 // Text Node
 const LlmNodeComponent = memo((props: NodeProps<LLMNode>) => {
-  const node = useAppSelector(state => state.nodes.entities[props.id]);
+  const node = useAppSelector(makeSelectNodeById(props.id));
   const result = node?.result as LLMResult;
   const text = result?.parts?.[0]?.data ?? '';
 
@@ -79,7 +79,7 @@ const LlmNodeComponent = memo((props: NodeProps<LLMNode>) => {
 LlmNodeComponent.displayName = 'LLMNode';
 
 const GPTImage1NodeComponent = memo((props: NodeProps<GPTImage1Node>) => {
-  const node = useAppSelector(state => state.nodes.entities[props.id]);
+  const node = useAppSelector(makeSelectNodeById(props.id));
 
   const result = node?.result as GPTImage1Result;
   const { runNodes } = useCanvasCtx();

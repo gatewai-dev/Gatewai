@@ -1,29 +1,69 @@
-// src/node-palette/NodeItem.tsx
-import type { DragEvent } from 'react';
+import { useRef, useState } from 'react';
 import type { NodeTemplate } from '@gatewai/types';
-import { useNodeTemplateDnD } from '@/node-templates/node-template-drag.ctx';
+import { Tooltip, TooltipContent, TooltipProvider, TooltipTrigger } from '@/components/ui/tooltip';
 import { iconMap } from './icon-map';
+import { useDraggable } from '@neodrag/react';
+import type { XYPosition } from '@xyflow/react';
+import { useCanvasCtx } from '@/canvas/details/ctx/canvas-ctx';
 
 export function NodeItem({ template }: { template: NodeTemplate }) {
-  const { setTemplate } = useNodeTemplateDnD();
+  const { rfInstance } = useCanvasCtx();
+  const draggableRef = useRef<HTMLDivElement>(null);
+  const [position, setPosition] = useState<XYPosition>({ x: 0, y: 0 });
 
-  const onDragStart = (event: DragEvent<HTMLDivElement>) => {
-    setTemplate(template);
-    event.dataTransfer.effectAllowed = 'move';
-  };
+  useDraggable(draggableRef, {
+    position: position,
+    onDrag: ({ offsetX, offsetY }) => {
+
+      console.log({ offsetX, offsetY });
+      // Calculate position relative to the viewport
+      setPosition({
+        x: offsetX,
+        y: offsetY,
+      });
+    },
+    onDragEnd: ({ event }) => {
+      setPosition({ x: 0, y: 0 });
+      const flow = document.querySelector('.react-flow-container');
+      const flowRect = flow?.getBoundingClientRect();
+      const screenPosition = { x: event.clientX, y: event.clientY };
+      const isInFlow =
+        flowRect &&
+        screenPosition.x >= flowRect.left &&
+        screenPosition.x <= flowRect.right &&
+        screenPosition.y >= flowRect.top &&
+        screenPosition.y <= flowRect.bottom;
+
+      // Create a new node and add it to the flow
+      if (isInFlow) {
+        const position = rfInstance.current?.screenToFlowPosition(screenPosition);
+
+        console.log({position, event, template})
+      }
+    },
+  });
 
   const Icon = iconMap[template.type] || iconMap.File;
 
   return (
-    <div
-      key={template.id}
-      className="node-item flex flex-col items-center p-2 bg-white border border-gray-300 rounded cursor-grab hover:bg-gray-50"
-      draggable
-      onDragStart={onDragStart}
-    >
-      <Icon className="w-8 h-8 mb-2 text-blue-500" />
-      <span className="text-sm font-medium">{template.displayName}</span>
-      {template.description && <span className="text-xs text-gray-500">{template.description}</span>}
-    </div>
+    <TooltipProvider delayDuration={500}>
+      <Tooltip>
+        <TooltipTrigger asChild>
+          <div
+            key={template.id}
+            className="node-item flex flex-col items-center p-2 border border-gray-600 rounded cursor-grab"
+            ref={draggableRef}
+          >
+            <Icon className="w-5 h-5 mb-2 text-gray-400" />
+            <span className="text-sm font-medium">{template.displayName}</span>
+          </div>
+        </TooltipTrigger>
+        {template.description && (
+          <TooltipContent>
+            <p>{template.description}</p>
+          </TooltipContent>
+        )}
+      </Tooltip>
+    </TooltipProvider>
   );
 }

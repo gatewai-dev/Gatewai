@@ -1,13 +1,12 @@
-// src/node-palette/NodeList.tsx
-import type { NodeTemplate } from '@gatewai/types';
-import { NodeItem } from './node-item';
-import { useNodePalette } from './node-palette.ctx';
+import { NodeItem } from "./node-item";
+import { useNodePalette } from "./node-palette.ctx";
+import type { NodeTemplateWithIO } from "@/types/node-template";
 
 interface NodeListProps {
-  templates: NodeTemplate[];
+  templates: NodeTemplateWithIO[];
 }
 
-function sortTemplates(templates: NodeTemplate[], sortBy: string): NodeTemplate[] {
+function sortTemplates(templates: NodeTemplateWithIO[], sortBy: string): NodeTemplateWithIO[] {
   const sorted = [...templates];
   if (sortBy === 'price_asc') {
     sorted.sort((a, b) => (a.tokenPrice || 0) - (b.tokenPrice || 0));
@@ -21,12 +20,20 @@ function sortTemplates(templates: NodeTemplate[], sortBy: string): NodeTemplate[
 }
 
 export function NodeTemplateList({ templates }: NodeListProps) {
-  const { searchQuery, selectedFilter, sortBy } = useNodePalette();
+  const { searchQuery, fromType, toTypes, sortBy } = useNodePalette();
 
   let filtered = templates;
 
-  if (selectedFilter !== 'All') {
-    filtered = filtered.filter((t) => t.category === selectedFilter);
+  if (fromType !== 'Input') {
+    filtered = filtered.filter((t) =>
+      t.inputTypes.some((inp) => inp.inputType === fromType)
+    );
+  }
+
+  if (toTypes.length > 0) {
+    filtered = filtered.filter((t) =>
+      t.outputTypes.some((out) => toTypes.includes(out.outputType))
+    );
   }
 
   if (searchQuery) {
@@ -39,7 +46,7 @@ export function NodeTemplateList({ templates }: NodeListProps) {
   }
 
   // Grouping: Quick Access if showInQuickAccess, else by category/subcategory
-  const groups: Record<string, Record<string, NodeTemplate[]>> = {};
+  const groups: Record<string, Record<string, NodeTemplateWithIO[]>> = {};
   filtered.forEach((t) => {
     let cat = t.category || 'Other';
     if (t.showInQuickAccess) {

@@ -56,16 +56,15 @@ CREATE TABLE "node" (
     "id" TEXT NOT NULL PRIMARY KEY,
     "name" TEXT NOT NULL,
     "type" TEXT NOT NULL,
-    "x" REAL NOT NULL,
-    "y" REAL NOT NULL,
+    "position" JSONB NOT NULL,
     "width" REAL,
     "height" REAL,
     "draggable" BOOLEAN NOT NULL DEFAULT true,
     "selectable" BOOLEAN NOT NULL DEFAULT true,
     "deletable" BOOLEAN NOT NULL DEFAULT true,
-    "fileData" JSONB,
-    "data" JSONB,
-    "visible" BOOLEAN NOT NULL DEFAULT true,
+    "config" JSONB,
+    "isDirty" BOOLEAN NOT NULL DEFAULT false,
+    "result" JSONB,
     "zIndex" INTEGER,
     "createdAt" DATETIME NOT NULL DEFAULT CURRENT_TIMESTAMP,
     "updatedAt" DATETIME NOT NULL,
@@ -81,17 +80,25 @@ CREATE TABLE "node_template" (
     "type" TEXT NOT NULL,
     "displayName" TEXT NOT NULL,
     "description" TEXT,
+    "processEnvironment" TEXT NOT NULL,
+    "tokenPrice" REAL DEFAULT 0.0,
     "variableInputs" BOOLEAN NOT NULL DEFAULT false,
     "variableOutputs" BOOLEAN NOT NULL DEFAULT false,
+    "category" TEXT,
+    "subcategory" TEXT,
+    "showInQuickAccess" BOOLEAN NOT NULL DEFAULT false,
     "createdAt" DATETIME NOT NULL DEFAULT CURRENT_TIMESTAMP,
-    "updatedAt" DATETIME NOT NULL
+    "updatedAt" DATETIME NOT NULL,
+    "defaultConfig" JSONB
 );
 
 -- CreateTable
 CREATE TABLE "node_template_input" (
     "id" TEXT NOT NULL PRIMARY KEY,
     "templateId" TEXT NOT NULL,
+    "required" BOOLEAN NOT NULL,
     "inputType" TEXT NOT NULL,
+    "label" TEXT,
     CONSTRAINT "node_template_input_templateId_fkey" FOREIGN KEY ("templateId") REFERENCES "node_template" ("id") ON DELETE CASCADE ON UPDATE CASCADE
 );
 
@@ -100,6 +107,7 @@ CREATE TABLE "node_template_output" (
     "id" TEXT NOT NULL PRIMARY KEY,
     "templateId" TEXT NOT NULL,
     "outputType" TEXT NOT NULL,
+    "label" TEXT,
     CONSTRAINT "node_template_output_templateId_fkey" FOREIGN KEY ("templateId") REFERENCES "node_template" ("id") ON DELETE CASCADE ON UPDATE CASCADE
 );
 
@@ -108,6 +116,9 @@ CREATE TABLE "edge" (
     "id" TEXT NOT NULL PRIMARY KEY,
     "source" TEXT NOT NULL,
     "target" TEXT NOT NULL,
+    "sourceHandle" TEXT,
+    "targetHandle" TEXT,
+    "dataType" TEXT NOT NULL,
     "createdAt" DATETIME NOT NULL DEFAULT CURRENT_TIMESTAMP,
     "updatedAt" DATETIME NOT NULL,
     CONSTRAINT "edge_source_fkey" FOREIGN KEY ("source") REFERENCES "node" ("id") ON DELETE CASCADE ON UPDATE CASCADE,
@@ -144,20 +155,12 @@ CREATE TABLE "task" (
     "updatedAt" DATETIME NOT NULL,
     "canvasId" TEXT NOT NULL,
     "nodeId" TEXT,
-    "taskManagerId" TEXT,
+    "userId" TEXT NOT NULL,
+    "publicAccessToken" TEXT,
+    "taskId" TEXT,
     CONSTRAINT "task_canvasId_fkey" FOREIGN KEY ("canvasId") REFERENCES "canvas" ("id") ON DELETE CASCADE ON UPDATE CASCADE,
     CONSTRAINT "task_nodeId_fkey" FOREIGN KEY ("nodeId") REFERENCES "node" ("id") ON DELETE SET NULL ON UPDATE CASCADE,
-    CONSTRAINT "task_taskManagerId_fkey" FOREIGN KEY ("taskManagerId") REFERENCES "taskmanager" ("id") ON DELETE SET NULL ON UPDATE CASCADE
-);
-
--- CreateTable
-CREATE TABLE "taskmanager" (
-    "id" TEXT NOT NULL PRIMARY KEY,
-    "name" TEXT NOT NULL,
-    "createdAt" DATETIME NOT NULL DEFAULT CURRENT_TIMESTAMP,
-    "updatedAt" DATETIME NOT NULL,
-    "canvasId" TEXT NOT NULL,
-    CONSTRAINT "taskmanager_canvasId_fkey" FOREIGN KEY ("canvasId") REFERENCES "canvas" ("id") ON DELETE CASCADE ON UPDATE CASCADE
+    CONSTRAINT "task_userId_fkey" FOREIGN KEY ("userId") REFERENCES "user" ("id") ON DELETE CASCADE ON UPDATE CASCADE
 );
 
 -- CreateIndex
@@ -170,4 +173,10 @@ CREATE UNIQUE INDEX "session_token_key" ON "session"("token");
 CREATE UNIQUE INDEX "node_template_type_key" ON "node_template"("type");
 
 -- CreateIndex
-CREATE UNIQUE INDEX "edge_source_target_key" ON "edge"("source", "target");
+CREATE UNIQUE INDEX "edge_source_sourceHandle_target_targetHandle_key" ON "edge"("source", "sourceHandle", "target", "targetHandle");
+
+-- CreateIndex
+CREATE UNIQUE INDEX "task_publicAccessToken_key" ON "task"("publicAccessToken");
+
+-- CreateIndex
+CREATE UNIQUE INDEX "task_taskId_key" ON "task"("taskId");

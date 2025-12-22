@@ -1,10 +1,9 @@
-import { Background, ConnectionMode, getOutgoers, Panel, ReactFlow, SelectionMode, type Connection, type Edge, type Node, type ReactFlowInstance } from "@xyflow/react";
+import { Background, ConnectionMode, getOutgoers, Panel, ReactFlow, SelectionMode, type Connection, type Edge, type Node } from "@xyflow/react";
 import { nodeTypes } from "../nodes";
 import { useCanvasCtx } from "../ctx/canvas-ctx";
 import { Toolbar } from "./toolbar";
 import { CustomEdge, CustomConnectionLine } from "../nodes/base";
-import { useCallback, useRef, type DragEventHandler } from "react";
-import { useNodeTemplateDnD } from "@/node-templates/node-template-drag.ctx";
+import { useCallback, type DragEventHandler } from "react";
 import { NodePalette } from "@/node-templates/node-palette";
 
 // Define edge types - you can add more custom edge types here if needed
@@ -24,16 +23,12 @@ function ReactflowContainer({ children }: ReactFlowProps) {
     clientEdges,
     tool,
     onConnect,
-    onNodeDragStop
+    onNodeDragStop,
+    rfInstance
   } = useCanvasCtx();
-  const rfInstance = useRef<ReactFlowInstance | undefined>(undefined);
-  const {template} = useNodeTemplateDnD();
-
 
     const isValidConnection = useCallback(
     (connection: Connection | Edge) => {
-      // we are using getNodes and getEdges helpers here
-      // to make sure we create isValidConnection function only once
       const nodes = clientNodes;
       const edges = clientEdges;
       const target = nodes.find((node) => node.id === connection.target);
@@ -55,28 +50,10 @@ function ReactflowContainer({ children }: ReactFlowProps) {
     [clientNodes, clientEdges],
   );
 
-  const onDrop: DragEventHandler<HTMLDivElement> = useCallback(
-    (event) => {
-      event.preventDefault();
-      if (!template || !rfInstance.current) return;
-      // project was renamed to screenToFlowPosition
-      // and you don't need to subtract the reactFlowBounds.left/top anymore
-      // details: https://reactflow.dev/whats-new/2023-11-10
-      const position = rfInstance.current.screenToFlowPosition({
-        x: event.clientX,
-        y: event.clientY,
-      });
-      const newNode = {
-        id: "w",
-        template,
-        position,
-        data: { label: `${template} node` },
-      };
-
-      console.log({newNode})
-    },
-    [template],
-  );
+  const onDragOver: DragEventHandler<HTMLDivElement> | undefined = (event) => {
+    event.preventDefault();
+    event.dataTransfer.dropEffect = 'move';
+  };
 
   return (
     <div className="w-full h-screen bg-black">
@@ -86,20 +63,20 @@ function ReactflowContainer({ children }: ReactFlowProps) {
         }}
         edges={clientEdges}
         nodes={clientNodes}
-        className="bg-black"
+        className="bg-black react-flow-container"
         fitView
         nodeTypes={nodeTypes}
         edgeTypes={edgeTypes}
-        connectionLineComponent={CustomConnectionLine} // Add this line
+        connectionLineComponent={CustomConnectionLine}
         onEdgesChange={onEdgesChange}
         onNodesChange={onNodesChange}
-        onDrop={onDrop}
-        nodesDraggable={tool === 'select'}
-        elementsSelectable={tool === 'select'}
+        onDragEnd={onDragOver}
         maxZoom={4}
-        zoomOnScroll={true}
         minZoom={0.1}
         zoomOnPinch={true}
+        zoomOnScroll={true}
+        nodesDraggable={tool === 'select'}
+        elementsSelectable={tool === 'select'}
         panOnDrag={tool === 'pan'}
         selectionOnDrag={tool === 'select'}
         selectNodesOnDrag

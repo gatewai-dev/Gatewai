@@ -183,6 +183,8 @@ model NodeTemplate {
   updatedAt           DateTime               @updatedAt
   nodes               Node[]
 
+  defaultConfig       Json?
+
   @@map("node_template")
 }
 

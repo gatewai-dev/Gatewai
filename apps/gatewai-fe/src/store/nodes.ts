@@ -1,8 +1,8 @@
-import type { Node as DBNode, NodeTemplate } from "@gatewai/types"
-import { createEntityAdapter, createSlice } from "@reduxjs/toolkit"
+import type { Node as DBNode } from "@gatewai/types"
+import { createEntityAdapter, createDraftSafeSelector, createSlice } from "@reduxjs/toolkit"
 
-const nodeAdapter = createEntityAdapter({
-  selectId: (node: NodeTemplate) => node.id,
+export const nodeAdapter = createEntityAdapter({
+  selectId: (node: DBNode) => node.id,
 })
 
 const nodesSlice = createSlice({
@@ -56,9 +56,22 @@ const nodesSlice = createSlice({
   },
 })
 
+type NodesState = ReturnType<typeof nodesSlice.reducer>;
+
+const nodeSelectors = nodeAdapter.getSelectors<{nodes: NodesState}>(
+  (state) => state.nodes
+);
+
+export const selectNodesState = (state: { nodes: NodesState }) => state.nodes;
+
+export const makeSelectNodeById = (id: string) => createDraftSafeSelector(
+  selectNodesState,
+  (nodes) => nodes.entities[id] as DBNode | undefined
+);
+
 // Extract the action creators object and the reducer
 const { actions, reducer: nodesReducer } = nodesSlice
 // Extract and export each action creator by name
 export const { createNode, updateNode, deleteNode, setAllNodes, updateTextNodeValue, incrementSelectedResultIndex, decrementSelectedResultIndex } = actions
 // Export the reducer, either as a default or named export
-export { nodesReducer}
+export { nodesReducer, nodeSelectors }

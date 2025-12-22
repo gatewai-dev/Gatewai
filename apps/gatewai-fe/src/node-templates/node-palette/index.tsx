@@ -1,6 +1,5 @@
 // src/node-palette/NodePalette.tsx
 import { useNodeTemplates } from '@/node-templates/node-templates.ctx';
-import type { NodeTemplate } from '@gatewai/types';
 import { NodePaletteProvider } from './node-palette.ctx';
 import { SearchInput } from './search';
 import { SortSelect } from './sort';
@@ -24,7 +23,7 @@ export function NodePalette() {
         <SearchInput />
         <DataTypeMultiSelect />
         <SortSelect />
-        <NodeTemplateList templates={nodeTemplates as NodeTemplate[]} />
+        <NodeTemplateList templates={nodeTemplates} />
       </div>
     </NodePaletteProvider>
   );

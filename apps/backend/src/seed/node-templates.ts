@@ -18,7 +18,8 @@ export async function SEED_createNodeTemplates(prisma: PrismaClient) {
         create: [
           { outputType: DataType.Text, label: null }
         ]
-      }
+      },
+      defaultConfig: null,
     }
   });
 
@@ -39,7 +40,8 @@ export async function SEED_createNodeTemplates(prisma: PrismaClient) {
       },
       outputTypes: {
         create: []
-      }
+      },
+      defaultConfig: null,
     }
   });
 
@@ -60,7 +62,8 @@ export async function SEED_createNodeTemplates(prisma: PrismaClient) {
         create: [
           { outputType: DataType.File, label: null }
         ]
-      }
+      },
+      defaultConfig: null,
     }
   });
 
@@ -81,7 +84,8 @@ export async function SEED_createNodeTemplates(prisma: PrismaClient) {
       },
       outputTypes: {
         create: []
-      }
+      },
+      defaultConfig: null,
     }
   });
 
@@ -102,7 +106,8 @@ export async function SEED_createNodeTemplates(prisma: PrismaClient) {
         create: [
           { outputType: DataType.Boolean, label: null }
         ]
-      }
+      },
+      defaultConfig: null,
     }
   });
 
@@ -125,7 +130,8 @@ export async function SEED_createNodeTemplates(prisma: PrismaClient) {
         create: [
           { outputType: DataType.Text, label: null }
         ]
-      }
+      },
+      defaultConfig: null,
     }
   });
 
@@ -148,7 +154,8 @@ export async function SEED_createNodeTemplates(prisma: PrismaClient) {
         create: [
           { outputType: DataType.File, label: null }
         ]
-      }
+      },
+      defaultConfig: {},
     }
   });
 
@@ -171,7 +178,8 @@ export async function SEED_createNodeTemplates(prisma: PrismaClient) {
         create: [
           { outputType: DataType.Text, label: null }
         ]
-      }
+      },
+      defaultConfig: null,
     }
   });
 
@@ -194,7 +202,8 @@ export async function SEED_createNodeTemplates(prisma: PrismaClient) {
         create: [
           { outputType: DataType.File, label: null }
         ]
-      }
+      },
+      defaultConfig: null,
     }
   });
 
@@ -217,7 +226,8 @@ export async function SEED_createNodeTemplates(prisma: PrismaClient) {
         create: [
           { outputType: DataType.Mask, label: null }
         ]
-      }
+      },
+      defaultConfig: null,
     }
   });
 
@@ -241,7 +251,8 @@ export async function SEED_createNodeTemplates(prisma: PrismaClient) {
           { outputType: DataType.Mask, label: null },
           { outputType: DataType.Image, label: null }
         ]
-      }
+      },
+      defaultConfig: null,
     }
   });
 
@@ -264,7 +275,10 @@ export async function SEED_createNodeTemplates(prisma: PrismaClient) {
         create: [
           { outputType: DataType.Image, label: null }
         ]
-      }
+      },
+      defaultConfig: {
+        blurAmount: 0
+      },
     }
   });
 
@@ -287,7 +301,11 @@ export async function SEED_createNodeTemplates(prisma: PrismaClient) {
         create: [
           { outputType: DataType.Image, label: null }
         ]
-      }
+      },
+      defaultConfig: {
+        canvasWidth: 512,
+        canvasHeight: 512
+      },
     }
   });
 
@@ -310,7 +328,8 @@ export async function SEED_createNodeTemplates(prisma: PrismaClient) {
         create: [
           { outputType: DataType.Text, label: null }
         ]
-      }
+      },
+      defaultConfig: null,
     }
   });
 
@@ -333,7 +352,8 @@ export async function SEED_createNodeTemplates(prisma: PrismaClient) {
         create: [
           { outputType: DataType.Text, label: null }
         ]
-      }
+      },
+      defaultConfig: null,
     }
   });
 
@@ -341,8 +361,8 @@ export async function SEED_createNodeTemplates(prisma: PrismaClient) {
   await prisma.nodeTemplate.create({
     data: {
       type: NodeType.Note,
-      displayName: 'Note',
-      description: 'A note node',
+      displayName: 'Sticky Note',
+      description: 'A sticky note',
       processEnvironment: ProcessEnvironment.Browser,
       tokenPrice: 0.0,
       variableInputs: false,
@@ -352,7 +372,11 @@ export async function SEED_createNodeTemplates(prisma: PrismaClient) {
       },
       outputTypes: {
         create: []
-      }
+      },
+      defaultConfig: {
+        backgroundColor: "#ffff88",
+        textColor: "#000000",
+      },
     }
   });
 
@@ -373,7 +397,8 @@ export async function SEED_createNodeTemplates(prisma: PrismaClient) {
         create: [
           { outputType: DataType.Number, label: null }
         ]
-      }
+      },
+      defaultConfig: null,
     }
   });
 
@@ -396,7 +421,12 @@ export async function SEED_createNodeTemplates(prisma: PrismaClient) {
         create: [
           { outputType: DataType.Image, label: null }
         ]
-      }
+      },
+      defaultConfig: {
+        transparentBackground: true,
+        quality: "auto",
+        size: "1024x1024",
+      },
     }
   });
 
@@ -421,7 +451,13 @@ export async function SEED_createNodeTemplates(prisma: PrismaClient) {
         create: [
           { outputType: DataType.Text, label: null }
         ]
-      }
+      },
+      defaultConfig: {
+        reasoning: {
+          effort: "low",
+        },
+        model: "gpt-5",
+      },
     }
   });
 }
