@@ -1,3 +1,4 @@
+import { Union } from './../../../../../../packages/db/generated/client/internal/prismaNamespace';
 import type { AgentNodeData, ThreeDResult, ArrayNodeData, BlurNodeData, BlurResult, CompositorNodeData, CompositorResult, PainterResult, DescriberNodeData, FileNodeData, FileResult, GPTImage1Data, GPTImage1Result, LLMNodeData, MaskNodeData, MaskResult, NodeWithFileType, PainterNodeData, ResizeNodeData, ResizeResult, RouterNodeData, TextNodeData, TextResult, ThreeDNodeData } from "@gatewai/types";
 import { type Node } from '@xyflow/react';
 
@@ -14,3 +15,19 @@ export type CompositorNode = Node<NodeWithFileType<CompositorNodeData, Composito
 export type RouterNode = Node<NodeWithFileType<RouterNodeData>, 'Router'>;
 export type ArrayNode = Node<NodeWithFileType<ArrayNodeData>, 'Array'>;
 export type ResizeNode = Node<NodeWithFileType<ResizeNodeData, ResizeResult>, 'Resize'>;
+
+
+export type AnyNode =
+    TextNode |
+    LLMNode |
+    GPTImage1Node |
+    FileNode |
+    AgentNode |
+    ThreeDNode |
+    MaskNode |
+    PainterNode |
+    BlurNode |
+    CompositorNode |
+    RouterNode |
+    ArrayNode |
+    ResizeNode;
