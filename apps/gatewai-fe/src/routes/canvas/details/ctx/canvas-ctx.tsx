@@ -14,26 +14,19 @@ import {
   type ReactFlowInstance,
   type XYPosition
 } from '@xyflow/react';
-import type {AllNodeConfig, DataType, Edge as DbEdge, Node as DbNode, GPTImage1Result, LLMResult, NodeResult, NodeTemplate, NodeType, NodeWithFileType, TextResult } from '@gatewai/types';
-import { useAppDispatch } from '@/store';
-import { setAllNodes } from '@/store/nodes';
+import type {AllNodeConfig, DataType, Edge as DbEdge, Node as DbNode, GPTImage1Result, LLMResult, NodeResult, NodeType, NodeWithFileType, TextResult } from '@gatewai/types';
+import { useAppDispatch, useAppSelector } from '@/store';
+import { setAllNodes, nodeSelectors } from '@/store/nodes';
 import { generateId } from '@/lib/idgen';
 import { createNode } from '@/store/nodes';
 import type { DbNodeWithTemplate } from '@/types/node';
 import type { NodeTemplateWithIO } from '@/types/node-template';
 import { rpcClient } from '@/rpc/client';
-import type { InferResponseType } from 'hono/client';
-
-// Assuming a basic structure for the fetched canvas data
-interface CanvasResponse {
-  id: string;
-  name: string;
-  nodes: Array<DbNodeWithTemplate>;
-  edges: Array<DbEdge>;
-}
+import type { CanvasDetailsRPC, PatchCanvasRPCReq } from '@/rpc/types';
+import throttle from 'lodash/throttle';
 
 interface CanvasContextType {
-  canvas: CanvasResponse | undefined;
+  canvas: CanvasDetailsRPC | undefined;
   clientNodes: Node[];
   setNodes: Dispatch<SetStateAction<Node[]>>;
   onNodesChange: OnNodesChange<Node>;
@@ -64,9 +57,7 @@ interface CanvasProviderProps {
   canvasId: string;
 }
 
-export type CanvasDetails = InferResponseType<typeof rpcClient.api.v1.canvas[':id']>
-
-const fetchCanvas = async (canvasId: string): Promise<CanvasDetails> => {
+const fetchCanvas = async (canvasId: string): Promise<CanvasDetailsRPC> => {
   // Replace with your actual API endpoint
   const response = await rpcClient.api.v1.canvas[':id'].$get({
     param: {
@@ -76,18 +67,9 @@ const fetchCanvas = async (canvasId: string): Promise<CanvasDetails> => {
   if (!response.ok) {
     throw new Error('Network response was not ok');
   }
-  const data: Promise<CanvasDetails> = response.json();
+  const data: Promise<CanvasDetailsRPC> = response.json();
 
   return data;
-};
-
-const fetchCanvas = async (canvasId: string): Promise<CanvasResponse> => {
-  // Replace with your actual API endpoint
-  const response = await fetch(`/api/v1/canvas/${canvasId}`);
-  if (!response.ok) {
-    throw new Error('Network response was not ok');
-  }
-  return response.json();
 };
 
 const mock_nodes: DbNodeWithTemplate[] = [
@@ -309,12 +291,13 @@ const CanvasProvider = ({
 
   const dispatch = useAppDispatch();
   const rfInstance = useRef<ReactFlowInstance | undefined>(undefined);
+  const storeNodes = useAppSelector(nodeSelectors.selectAll);
 
   const {
     data: canvas,
     isLoading,
     isError,
-  } = useQuery<CanvasResponse>({
+  } = useQuery<CanvasDetailsRPC>({
     queryKey: ['canvas', canvasId],
     queryFn: () => fetchCanvas(canvasId),
     refetchOnMount: false,
@@ -371,13 +354,16 @@ const CanvasProvider = ({
   const [tool, setTool] = useState<'select' | 'pan'>('select');
   const timeoutRef = useRef<NodeJS.Timeout | null>(null);
 
+  const throttledNodesChange = useMemo(() => throttle(onNodesChangeBase, 50), [onNodesChangeBase]); // Throttle to 50ms
+
   const { mutateAsync: patchCanvasAsync } = useMutation({
-    mutationFn: async (body: { nodes: Partial<DbNode>[]; edges: Partial<DbEdge>[] }) => {
-      const response = await fetch(`/api/v1/canvas/${canvasId}`, {
-        method: 'PATCH',
-        headers: { 'Content-Type': 'application/json' },
-        body: JSON.stringify(body),
-      });
+    mutationFn: async (body: PatchCanvasRPCReq["json"]) => {
+      const response = await rpcClient.api.v1.canvas[":id"]["$patch"]({
+        json: body,
+        param: {
+          id: canvasId
+        }
+      })
       if (!response.ok) {
         throw new Error(await response.text());
       }
@@ -415,22 +401,9 @@ const CanvasProvider = ({
   const save = useCallback(() => {
     if (!canvasId) return;
 
-    const currentDbNodes: Partial<DbNode>[] = nodes.map((n) => {
-      const nodeData = n.data as NodeWithFileType<AllNodeConfig, NodeResult>;
-
+    const currentDbNodes: Partial<DbNode>[] = storeNodes.map((n) => {
       return {
-        id: n.id,
-        type: n.type as NodeType,
-        position: n.position as XYPosition,
-        width: n.width ?? undefined,
-        height: n.height ?? undefined,
-        draggable: n.draggable ?? true,
-        selectable: n.selectable ?? true,
-        deletable: n.deletable ?? true,
-        config: nodeData.config as AllNodeConfig,
-        zIndex: nodeData.zIndex,
-        result: nodeData.result as NodeResult,
-        isDirty: nodeData.isDirty ?? false,
+        ...n,
       }
     });
 
@@ -449,7 +422,7 @@ const CanvasProvider = ({
     };
 
     return patchCanvasAsync(body);
-  }, [canvasId, nodes, edges, patchCanvasAsync]);
+  }, [canvasId, storeNodes, edges, patchCanvasAsync]);
 
   const scheduleSave = useCallback(() => {
     if (timeoutRef.current) {
@@ -460,7 +433,7 @@ const CanvasProvider = ({
     }, 5000);
   }, [save]);
 
-  const onNodeDragStart = useCallback((_event: MouseEvent, _node: Node, _draggedNodes: Node[]) => {
+  const onNodeDragStart = useCallback(() => {
     if (isRestoring.current) return;
     past.current = [...past.current, { nodes: [...nodes], edges: [...edges] }];
     future.current = [];
@@ -468,10 +441,17 @@ const CanvasProvider = ({
     setCanRedo(false);
   }, [nodes, edges]);
 
-  const onNodeDragStop = useCallback((_event: MouseEvent, _node: Node, _draggedNodes: Node[]) => {
+  const onNodeDragStop = useCallback((event: MouseEvent, node: Node, draggedNodes: Node[]) => {
     if (isRestoring.current) return;
+
+    // Update state with final positions from React Flow instance
+    if (rfInstance.current) {
+      const currentNodes = rfInstance.current.getNodes();
+      setNodes(currentNodes);
+    }
+
     scheduleSave();
-  }, [scheduleSave]);
+  }, [rfInstance, setNodes, scheduleSave]);
 
   const onNodesChange = useCallback(
     (changes: NodeChange<Node>[]) => {
@@ -483,11 +463,16 @@ const CanvasProvider = ({
       // Ignore pure selection changes for history
       const isOnlySelection = changes.every(c => c.type === 'select');
 
-      // Ignore all position changes for history (handled in drag start/stop)
+      // Handle position changes with throttle, but no history
       const isPositionChange = changes.every(c => c.type === 'position');
 
-      if (isOnlySelection || isPositionChange) {
+      if (isOnlySelection) {
         onNodesChangeBase(changes);
+        return;
+      }
+
+      if (isPositionChange) {
+        throttledNodesChange(changes);
         return;
       }
 
@@ -502,7 +487,7 @@ const CanvasProvider = ({
       // Schedule save for meaningful changes
       scheduleSave();
     },
-    [nodes, edges, onNodesChangeBase, scheduleSave]
+    [nodes, edges, onNodesChangeBase, throttledNodesChange, scheduleSave]
   );
 
   const onEdgesChange = useCallback(
@@ -698,10 +683,11 @@ const CanvasProvider = ({
     future.current = [];
     setCanUndo(false);
     setCanRedo(false);
-  }, [initialEdges, setNodes, setEdges]);
+  }, [initialEdges, setNodes, setEdges, initialNodes]);
 
   const createNewNode = useCallback((template: NodeTemplateWithIO, position: XYPosition) => {
     const id = generateId();
+    console.log({template})
     const nodeEntity: DbNodeWithTemplate = {
       id,
       name: template.displayName,
@@ -736,6 +722,7 @@ const CanvasProvider = ({
       selectable: true,
       deletable: true,
     };
+    console.log({nodeEntity})
     setNodes((nds) => [...nds, newNode]);
     dispatch(createNode(nodeEntity));
     scheduleSave();

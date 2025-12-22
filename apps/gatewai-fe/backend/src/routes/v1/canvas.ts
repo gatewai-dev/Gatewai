@@ -6,8 +6,8 @@ import { prisma, type Task } from "@gatewai/db";
 import type { AuthHonoTypes } from "../../auth.js";
 import { tasks } from "@trigger.dev/sdk";
 import type { TASK_LLM } from "../../trigger/llm.js";
-import type { TextNodeConfig } from "@gatewai/types";
-
+import type { EdgeCreateArgs, TextNodeConfig } from "@gatewai/types";
+import type { XYPosition } from '@xyflow/react';
 
 
 
@@ -17,21 +17,21 @@ const nodeSchema = z.object({
     type: z.enum([
         'Text', 'Preview', 'File', 'Export', 
         'Toggle', 'Crawler', 'Resize', 'Agent', 'ThreeD',
-        'Mask', 'Painter', 'Blur', 'Compositor', 'Describer', 'Router'
+        'Painter', 'Blur', 'Compositor', 'Describer', 'Router',
+        'Note', 'Number', 'GPTImage1', 'LLM'
     ]),
     position: z.object({
         x: z.number(),
         y: z.number(),
     }),
     width: z.number().optional(),
-    height: z.number().optional(),
+    height: z.number().optional().nullable(),
     draggable: z.boolean().optional().default(true),
     selectable: z.boolean().optional().default(true),
     deletable: z.boolean().optional().default(true),
-    fileData: z.any().optional(),
     result: z.any().optional(),
     config: z.any().optional(),
-    visible: z.boolean().optional().default(true),
+    isDirty: z.boolean().optional().default(false),
     zIndex: z.number().optional(),
     templateId: z.string(),
 });
@@ -42,7 +42,7 @@ const edgeSchema = z.object({
     target: z.string(),
     sourceHandle: z.string().optional(),
     targetHandle: z.string().optional(),
-    dataType: z.enum(['Text', 'Number', 'Boolean', 'Image', 'Video', 'Audio', 'File']),
+    dataType: z.enum(['Text', 'Number', 'Boolean', 'Image', 'Video', 'Audio', 'File', 'Mask']),
 });
 
 const processSchema = z.object({
@@ -141,10 +141,8 @@ const canvasRoutes = new Hono<{Variables: AuthHonoTypes}>({
     });
 
     return c.json({
-        canvas: {
-            ...canvas,
-            edges,
-        }
+        ...canvas,
+        edges,
     });
 })
 .patch('/:id',
@@ -165,7 +163,7 @@ const canvasRoutes = new Hono<{Variables: AuthHonoTypes}>({
             throw new HTTPException(404, { message: 'Canvas not found' });
         }
 
-        const transaction: any[] = [];
+        const transaction = [];
 
         if (validated.name !== undefined) {
             transaction.push(
@@ -176,9 +174,9 @@ const canvasRoutes = new Hono<{Variables: AuthHonoTypes}>({
             );
         }
 
-        let deleteEdgeOp: any = null;
-        let deleteNodeOp: any = null;
-        const updateCreateTransactions: any[] = [];
+        let deleteEdgeOp = null;
+        let deleteNodeOp = null;
+        const updateCreateTransactions = [];
 
         // Process nodes
         if (validated.nodes) {
@@ -215,7 +213,7 @@ const canvasRoutes = new Hono<{Variables: AuthHonoTypes}>({
                     );
                 } else {
                     // Create
-                    const createData: any = {
+                    const createData = {
                         ...updateData,
                         type,
                         templateId,
@@ -271,7 +269,7 @@ const canvasRoutes = new Hono<{Variables: AuthHonoTypes}>({
                     );
                 } else {
                     // Create
-                    const createData: any = updateData;
+                    const createData: EdgeCreateArgs["data"] = updateData;
                     if (edgeId) {
                         createData.id = edgeId;
                     }
@@ -312,7 +310,6 @@ const canvasRoutes = new Hono<{Variables: AuthHonoTypes}>({
                         }
                     }
                 },
-                
             }
         });
 
@@ -329,10 +326,8 @@ const canvasRoutes = new Hono<{Variables: AuthHonoTypes}>({
         });
 
         return c.json({
-            canvas: {
-                ...canvas,
-                edges,
-            }
+            ...canvas,
+            edges,
         });
     }
 )
@@ -469,13 +464,14 @@ const canvasRoutes = new Hono<{Variables: AuthHonoTypes}>({
                 create: original.nodes.map(node => ({
                     name: node.name,
                     type: node.type,
-                    position: node.position as any,
+                    position: node.position as XYPosition,
                     width: node.width,
                     height: node.height,
                     draggable: node.draggable,
                     selectable: node.selectable,
                     deletable: node.deletable,
                     config: node.config ?? {},
+                    isDirty: node.isDirty,
                     zIndex: node.zIndex,
                     template: {
                         connect: {
@@ -515,7 +511,7 @@ const canvasRoutes = new Hono<{Variables: AuthHonoTypes}>({
     }).filter(Boolean);
 
     if (edgeCreations.length > 0) {
-        await prisma.$transaction(edgeCreations as any[]);
+        await prisma.$transaction(edgeCreations);
     }
 
     return c.json({ canvas: duplicate }, 201);
