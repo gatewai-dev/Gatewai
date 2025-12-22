@@ -21,6 +21,8 @@ import { generateId } from '@/lib/idgen';
 import { createNode } from '@/store/nodes';
 import type { DbNodeWithTemplate } from '@/types/node';
 import type { NodeTemplateWithIO } from '@/types/node-template';
+import { rpcClient } from '@/rpc/client';
+import type { InferResponseType } from 'hono/client';
 
 // Assuming a basic structure for the fetched canvas data
 interface CanvasResponse {
@@ -61,6 +63,23 @@ const CanvasContext = createContext<CanvasContextType | undefined>(undefined);
 interface CanvasProviderProps {
   canvasId: string;
 }
+
+export type CanvasDetails = InferResponseType<typeof rpcClient.api.v1.canvas[':id']>
+
+const fetchCanvas = async (canvasId: string): Promise<CanvasDetails> => {
+  // Replace with your actual API endpoint
+  const response = await rpcClient.api.v1.canvas[':id'].$get({
+    param: {
+      id: canvasId,
+    }
+  });
+  if (!response.ok) {
+    throw new Error('Network response was not ok');
+  }
+  const data: Promise<CanvasDetails> = response.json();
+
+  return data;
+};
 
 const fetchCanvas = async (canvasId: string): Promise<CanvasResponse> => {
   // Replace with your actual API endpoint

@@ -1,10 +1,11 @@
 import { useQuery } from '@tanstack/react-query';
 import { createContext, useContext, useState, type Dispatch, type PropsWithChildren, type SetStateAction } from 'react';
 import type {Canvas } from '@gatewai/types';
-import qs from 'query-string';
+import { rpcClient } from '@/rpc/client';
+import type { InferResponseType } from 'hono';
 
 interface CanvasContextType {
-  canvasList: Canvas[] | undefined;
+  canvasList: CanvasList | undefined;
   isError: boolean;
   isLoading: boolean;
   searchQuery: string | undefined;
@@ -13,18 +14,21 @@ interface CanvasContextType {
 
 const CanvasListContext = createContext<CanvasContextType | undefined>(undefined);
 
-const fetchCanvasList = async (searchQuery?: string): Promise<Canvas[]> => {
+export type CanvasList = InferResponseType<typeof rpcClient.api.v1.canvas.$get>
+
+const fetchCanvasList = async (searchQuery?: string): Promise<CanvasList> => {
   // Replace with your actual API endpoint
-  let endpoint = `/api/v1/canvas`;
-  if (searchQuery && searchQuery.trim() !== "") {
-    const qStr = qs.stringify({q: searchQuery})
-    endpoint += `?${qStr}`;
-  }
-  const response = await fetch(endpoint);
+  const response = await rpcClient.api.v1.canvas.$get({
+    query: {
+      q: searchQuery
+    }
+  })
   if (!response.ok) {
     throw new Error('Network response was not ok');
   }
-  return response.json();
+  const data: Promise<CanvasList> = response.json();
+
+  return data;
 };
 
 const CanvasListProvider = ({

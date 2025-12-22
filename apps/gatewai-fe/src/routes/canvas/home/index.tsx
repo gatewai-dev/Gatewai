@@ -30,7 +30,7 @@ function CanvasHome() {
                     onClick={() => createCanvas('untitled')}
                     disabled={isCreating}
                 >
-                    + Create New Canvas
+                    + New Canvas
                 </Button>
             </div>
 

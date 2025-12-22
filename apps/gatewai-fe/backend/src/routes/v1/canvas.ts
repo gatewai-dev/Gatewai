@@ -76,6 +76,7 @@ const canvasRoutes = new Hono<{Variables: AuthHonoTypes}>({
             name: true,
             createdAt: true,
             updatedAt: true,
+            userId: true,
             _count: {
                 select: {
                     nodes: true,

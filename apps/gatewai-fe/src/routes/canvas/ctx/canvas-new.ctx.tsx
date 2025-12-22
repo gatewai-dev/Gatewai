@@ -1,16 +1,17 @@
 import { useMutation, useQueryClient } from '@tanstack/react-query';
 import { createContext, useContext, type PropsWithChildren } from 'react';
-import type { Canvas } from '@gatewai/types';
 import { useNavigate } from 'react-router';
+import { rpcClient } from '@/rpc/client';
+import type { InferResponseType } from 'hono';
 
-const createCanvas = async (name: string): Promise<Canvas> => {
-  const response = await fetch(`/api/v1/canvas`, {
-    method: 'POST',
-    headers: { 'Content-Type': 'application/json' },
-    body: JSON.stringify({ name }),
-  });
+
+export type CreateCanvasResponse = InferResponseType<typeof rpcClient.api.v1.canvas.$post>
+
+const createCanvas = async (): Promise<CreateCanvasResponse> => {
+  // Replace with your actual API endpoint
+  const response = await rpcClient.api.v1.canvas.$post()
   if (!response.ok) {
-    throw new Error('Failed to create canvas');
+    throw new Error('Network response was not ok');
   }
   return response.json();
 };
@@ -26,9 +27,9 @@ const CanvasCreationProvider = ({ children }: PropsWithChildren) => {
   const queryClient = useQueryClient();
   const nav = useNavigate();
 
-  const { mutate, isPending } = useMutation<Canvas, Error, string>({
+  const { mutate, isPending } = useMutation<CreateCanvasResponse, Error, string>({
     mutationFn: createCanvas,
-    onSuccess: (canvas: Canvas) => {
+    onSuccess: (canvas: CreateCanvasResponse) => {
       console.log({canvas})
       queryClient.invalidateQueries({ queryKey: ['canvasList'] });
       nav(`/canvas/${canvas.id}`);

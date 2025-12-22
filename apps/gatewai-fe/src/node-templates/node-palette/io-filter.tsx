@@ -21,7 +21,7 @@ export function DataTypeMultiSelect() {
     new Set(
       nodeTemplates
         ?.flatMap((template) =>
-          [...template.inputTypes.map((input) => input.inputType), ...template.outputTypes.map((output) => output.outputType)]
+          [...(template.inputTypes ?? []).map((input) => input.inputType), ...(template.outputTypes ?? []).map((output) => output.outputType)]
         ) || []
     )
   );
