@@ -8,9 +8,7 @@ import { tasks } from "@trigger.dev/sdk";
 import type { TASK_LLM } from "../../trigger/llm.js";
 import type { TextNodeConfig } from "@gatewai/types";
 
-const canvasRoutes = new Hono<{Variables: AuthHonoTypes}>({
-    strict: false,
-});
+
 
 
 const nodeSchema = z.object({
@@ -57,12 +55,10 @@ const bulkUpdateSchema = z.object({
     edges: z.array(edgeSchema).optional(),
 });
 
-// =====================
-// Canvas Operations
-// =====================
-
-// List all canvases for the authenticated user
-canvasRoutes.get('/', async (c) => {
+const canvasRoutes = new Hono<{Variables: AuthHonoTypes}>({
+    strict: false,
+})
+.get('/', async (c) => {
     const user = c.get('user');
     if (!user) {
         throw new HTTPException(401, { message: 'Unauthorized' });
@@ -89,10 +85,8 @@ canvasRoutes.get('/', async (c) => {
     });
 
     return c.json(canvases);
-});
-
-// Create a new canvas
-canvasRoutes.post('/',
+})
+.post('/',
     async (c) => {
         const user = c.get('user');
         if (!user) {
@@ -108,10 +102,8 @@ canvasRoutes.post('/',
 
         return c.json(canvas, 201);
     }
-);
-
-// Get a specific canvas with all nodes and edges
-canvasRoutes.get('/:id', async (c) => {
+)
+.get('/:id', async (c) => {
     const id = c.req.param('id');
     const user = c.get('user');
     
@@ -153,10 +145,8 @@ canvasRoutes.get('/:id', async (c) => {
             edges,
         }
     });
-});
-
-// Update a canvas (bulk update including nodes and edges)
-canvasRoutes.patch('/:id',
+})
+.patch('/:id',
     zValidator('json', bulkUpdateSchema),
     async (c) => {
         const id = c.req.param('id');
@@ -344,10 +334,8 @@ canvasRoutes.patch('/:id',
             }
         });
     }
-);
-
-// Delete a canvas
-canvasRoutes.delete('/:id', async (c) => {
+)
+.delete('/:id', async (c) => {
     const id = c.req.param('id');
     const user = c.get('user');
 
@@ -365,14 +353,8 @@ canvasRoutes.delete('/:id', async (c) => {
     });
 
     return c.json({ success: true });
-});
-
-// =====================
-// Node Operations
-// =====================
-
-// Create a new node in a canvas
-canvasRoutes.post('/:canvasId/nodes',
+})
+.post('/:canvasId/nodes',
     zValidator('json', nodeSchema),
     async (c) => {
         const canvasId = c.req.param('canvasId');
@@ -405,14 +387,7 @@ canvasRoutes.post('/:canvasId/nodes',
 
         return c.json({ node }, 201);
     }
-);
-
-// =====================
-// Edge Operations
-// =====================
-
-// Create a new edge
-canvasRoutes.post('/:canvasId/edges',
+).post('/:canvasId/edges',
     zValidator('json', edgeSchema),
     async (c) => {
         const canvasId = c.req.param('canvasId');
@@ -454,9 +429,8 @@ canvasRoutes.post('/:canvasId/edges',
 
         return c.json({ edge }, 201);
     }
-);
-
-canvasRoutes.post('/:id/duplicate', async (c) => {
+)
+.post('/:id/duplicate', async (c) => {
     const id = c.req.param('id');
     const user = c.get('user');
 
@@ -544,9 +518,8 @@ canvasRoutes.post('/:id/duplicate', async (c) => {
     }
 
     return c.json({ canvas: duplicate }, 201);
-});
-
-canvasRoutes.post('/:canvasId/process',
+})
+.post('/:canvasId/process',
     zValidator('json', processSchema),
     async (c) => {
         const canvasId = c.req.param('canvasId');

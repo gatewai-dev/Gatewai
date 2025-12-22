@@ -8,11 +8,9 @@ import { logger } from 'hono/logger'
 
 const app = new Hono<{
 	Variables: AuthHonoTypes
-}>();
-
-app.use(logger())
-
-app.use(
+}>()
+.use(logger())
+.use(
 	"/api/*",
 	cors({
 		origin: process.env.NODE_ENV === "production"
@@ -24,9 +22,8 @@ app.use(
 		maxAge: 600,
 		credentials: true,
 	}),
-);
-
-app.use("*", async (c, next) => {
+)
+.use("*", async (c, next) => {
 	const session = await auth.api.getSession({ headers: c.req.raw.headers });
   	if (!session) {
 		c.set("user", null);
@@ -36,15 +33,12 @@ app.use("*", async (c, next) => {
   	c.set("user", session.user);
   	c.set("session", session.session);
   	return next();
-});
-
-
-app.on(["POST", "GET"], "/api/auth/*", async (c) => {
+})
+.on(["POST", "GET"], "/api/auth/*", async (c) => {
 	console.log(c)
 	return await auth.handler(c.req.raw);
-});
-
-app.get("/session", (c) => {
+})
+.get("/session", (c) => {
 	const session = c.get("session") || null;
 	const user = c.get("user") || null;
 
@@ -54,9 +48,8 @@ app.get("/session", (c) => {
 		session,
 		user
 	});
-});
-
-app.route('/api/v1', v1Router)
+}).
+route('/api/v1', v1Router)
 
 serve({
   fetch: app.fetch,
