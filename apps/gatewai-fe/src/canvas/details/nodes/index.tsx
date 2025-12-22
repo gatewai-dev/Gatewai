@@ -17,21 +17,11 @@ import { updateTextNodeValue } from '@/store/nodes';
 
 // Text Node
 const TextNodeComponent = (props: NodeProps<TextNode>) => {
-  const st = useAppSelector(state => state);
-  console.log(st)
   const node = useAppSelector(state => state.nodes.entities[props.id]);
-  console.log({node, id: props.id})
+
   const dispatch = useAppDispatch();
   const result = node?.result as LLMResult;
-  console.log({result});
-  if (!result) {
-    return (
-      <BaseNode {...props}>
-        <div className="text-gray-500">No text</div>
-      </BaseNode>
-    );
-  }
-  const text = result.parts[0].data;
+  const text = result?.parts?.[0]?.data ?? '';
   const handleChange = (e: React.ChangeEvent<HTMLTextAreaElement>) => {
     dispatch(updateTextNodeValue({ id: props.id, value: e.target.value }));
   };
@@ -68,8 +58,10 @@ FileNodeComponent.displayName = 'FileNode';
 
 // Text Node
 const LlmNodeComponent = memo((props: NodeProps<LLMNode>) => {
-  const result = props.data?.result as LLMResult || '';
-  const text = result.parts[0].data;
+  const node = useAppSelector(state => state.nodes.entities[props.id]);
+  const result = node?.result as LLMResult;
+  const text = result?.parts?.[0]?.data ?? '';
+
   const { runNodes } = useCanvasCtx();
   return (
     <BaseNode {...props}>
@@ -79,7 +71,7 @@ const LlmNodeComponent = memo((props: NodeProps<LLMNode>) => {
         >
           {text}
         </p>
-        <Button onClick={() => runNodes([props.data.id])} variant="secondary" size="xs" type='button'><PlayIcon /><span className='text-xs'>Run Model</span></Button>
+        <Button onClick={() => runNodes([props.data.id])} variant="secondary" size="xs"><PlayIcon /><span className='text-xs'>Run Model</span></Button>
       </div>
     </BaseNode>
   );
@@ -87,13 +79,18 @@ const LlmNodeComponent = memo((props: NodeProps<LLMNode>) => {
 LlmNodeComponent.displayName = 'LLMNode';
 
 const GPTImage1NodeComponent = memo((props: NodeProps<GPTImage1Node>) => {
+  const node = useAppSelector(state => state.nodes.entities[props.id]);
+
+  const result = node?.result as GPTImage1Result;
   const { runNodes } = useCanvasCtx();
-  const result = props.data?.result as GPTImage1Result || '';
   return (
     <BaseNode {...props}>
       <div className='flex flex-col gap-2 items-end'>
-        <MediaContent node={props} result={result} onChangeSelection={console.log} />
-        <Button onClick={() => runNodes([props.data.id])} variant="secondary" size="xs" type='button'><PlayIcon /><span className='text-xs'>Run Model</span></Button>
+        {result && <MediaContent node={props} result={result} />}
+        <Button onClick={() => runNodes([props.data.id])} variant="secondary" size="xs" >
+          <PlayIcon />
+          <span className='text-xs'>Run Model</span>
+        </Button>
       </div>
     </BaseNode>
   );

@@ -19,7 +19,6 @@ enum NodeType {
   Toggle
   Crawler
   Resize
-  Group
   Agent
   ThreeD
   Mask
@@ -201,7 +200,6 @@ model NodeTemplateInput {
 model NodeTemplateOutput {
   id          String       @id @default(cuid())
   templateId  String
-  required    Boolean
   outputType  DataType
   label       String?
   template    NodeTemplate @relation(fields: [templateId], references: [id], onDelete: Cascade)

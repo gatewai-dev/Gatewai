@@ -27,7 +27,7 @@ const createNodeSchema = z.object({
     name: z.string(),
     type: z.enum([
         'Text', 'Preview', 'File', 'Export', 
-        'Toggle', 'Crawler', 'Resize', 'Group', 'Agent', 'ThreeD',
+        'Toggle', 'Crawler', 'Resize', 'Agent', 'ThreeD',
         'Mask', 'Painter', 'Blur', 'Compositor', 'Describer', 'Router'
     ]),
     position: z.object({

@@ -13,9 +13,9 @@ const queryClient = new QueryClient()
 function App() {
   return (
     <StoreProvider store={store} >
-    <QueryClientProvider client={queryClient}>
-      <AppRouter />
-    </QueryClientProvider>
+      <QueryClientProvider client={queryClient}>
+        <AppRouter />
+      </QueryClientProvider>
     </StoreProvider>
   )
 }

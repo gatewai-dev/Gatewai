@@ -3,24 +3,20 @@ import type { ImagesResult } from "@gatewai/types";
 import type { NodeProps } from "@xyflow/react";
 import { ChevronLeft, ChevronRight } from "lucide-react";
 import type { GPTImage1Node } from "./node-props";
-import { useCanvasCtx } from "../ctx/canvas-ctx";
+import { useAppDispatch } from "@/store";
+import { incrementSelectedResultIndex, decrementSelectedResultIndex } from "@/store/nodes";
 
 function MediaContent({node, result}: {node: NodeProps<GPTImage1Node>, result: ImagesResult}) {
     const parts = result.parts;
     const selectedPart = result.parts[result.selectedIndex];
-    const { updateNodeResult } = useCanvasCtx();
-    console.log({node})
+    const dispatch = useAppDispatch();
+
     const incrementSelectedIndex = () => {
-        const newIndex = result.selectedIndex + 1;
-        const clampedIndex = Math.max(0, Math.min(newIndex, parts.length - 1));
-        console.log({newIndex, clampedIndex, partsLength: parts.length});
-        updateNodeResult(node.id, { ...result, selectedIndex: clampedIndex });
+        dispatch(incrementSelectedResultIndex({ id: node.id }));
     };
 
     const decrementSelectedIndex = () => {
-        const newIndex = result.selectedIndex - 1;
-        const clampedIndex = Math.max(0, Math.min(newIndex, parts.length - 1));
-        updateNodeResult(node.id, { ...result, selectedIndex: clampedIndex });
+        dispatch(decrementSelectedResultIndex({ id: node.id }));
     }
 
     if (parts.length === 0) {

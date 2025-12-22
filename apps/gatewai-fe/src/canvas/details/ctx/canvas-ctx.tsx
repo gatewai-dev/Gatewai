@@ -13,10 +13,24 @@ import {
   type OnNodesChange,
   type XYPosition
 } from '@xyflow/react';
-import type {AllNodeConfig, DataType, Edge as DbEdge, Node as DbNode, LLMResult, NodeResult, NodeType, NodeWithFileType } from '@gatewai/types';
+import type {AllNodeConfig, DataType, Edge as DbEdge, Node as DbNode, GPTImage1Result, LLMResult, NodeResult, NodeTemplate, NodeType, NodeWithFileType, TextResult } from '@gatewai/types';
 import { useAppDispatch } from '@/store';
 import { setAllNodes } from '@/store/nodes';
 
+type DbNodeWithTemplate = DbNode & {
+  template?: NodeTemplate & {
+    outputTypes: Array<{
+      id: string;
+      outputType: DataType;
+      label: string;
+    }>;
+    inputTypes?: Array<{
+      id: string;
+      inputType: DataType;
+      label: string;
+    }>;
+  };
+};
 // Assuming a basic structure for the fetched canvas data
 interface CanvasResponse {
   id: string;
@@ -64,7 +78,7 @@ const fetchCanvas = async (canvasId: string): Promise<CanvasResponse> => {
   return response.json();
 };
 
-const mock_nodes: DbNode[] = [
+const mock_nodes: DbNodeWithTemplate[] = [
   {
     id: "1",
     name: "Text Node 1",
@@ -82,116 +96,174 @@ const mock_nodes: DbNode[] = [
       y: 360,
     },
     width: 300,
-    height: 200,
+    height: null,
     type: 'Text',
     result: {
       parts: [{
         type: 'Text',
         data: 'Create a text prompt for GTA 6 advertisement banner image.',
       }]
-    } as LLMResult, 
-    config: {
-      template: {
-        outputTypes: [
-          {
-            "id": "i22",
-            outputType: 'Text',
-            label: 'Text',
-          }
-        ]
-      }
+    } as TextResult,
+    config: {},
+    template: {
+      id: "template1",
+      type: 'Text',
+      displayName: 'Text',
+      description: 'A simple text node',
+      processEnvironment: 'Server',
+      variableInputs: false,
+      variableOutputs: false,
+      tokenPrice: 0,
+      category: 'Toolbox',
+      subcategory: 'Text tools',
+      showInQuickAccess: true,
+      createdAt: new Date(),
+      updatedAt: new Date(),
+      outputTypes: [
+        {
+          "id": "i22",
+          outputType: 'Text',
+          label: 'Text',
+        }
+      ]
     }
   },
-  // {
-  //   id: "2",
-  //   position: {
-  //     x: 700,
-  //     y: 360,
-  //   },
-  //   width: 300,
-  //   type: 'LLM',
-  //   data: {
-  //     result: {
-  //       parts: [{
-  //         type: 'Text',
-  //         data: 'LLM output',
-  //       }]
-  //     } as LLMResult,
-  //     template: {
-  //       inputTypes: [
-  //         {
-  //           "id": "s1",
-  //           inputType: 'Text',
-  //           label: 'Prompt',
-  //         }
-  //       ],
-  //       outputTypes: [
-  //         {
-  //           "id": "i22",
-  //           outputType: 'Text',
-  //           label: 'Output',
-  //         }
-  //       ]
-  //     }
-  //   }
-  // },
-  // {
-  //   id: "3",
-  //   position: {
-  //     x: 700,
-  //     y: 760,
-  //   },
-  //   width: 300,
-  //   type: 'GPTImage1',
-  //   data: {
-  //     template: {
-  //       inputTypes: [
-  //         {
-  //           "id": "s13",
-  //           inputType: 'Text',
-  //           label: 'Prompt',
-  //         }
-  //       ],
-  //       outputTypes: [
-  //         {
-  //           "id": "i232",
-  //           outputType: 'Image',
-  //           label: 'Image',
-  //         }
-  //       ]
-  //     },
-  //     result: {
-  //         selectedIndex: 0,
-  //         parts: [{
-  //           type: 'Image',
-  //           data: {
-  //             mediaSize: {
-  //               width: 512,
-  //               height: 512,
-  //             },
-  //             name: 'First Image',
-  //             bucket: 'default',
-  //             fileSize: 2048,
-  //             mimeType: 'image/png',
-  //             url: "https://placehold.co/512x512",
-  //           }
-  //         },{
-  //           type: 'Image',
-  //           data: {
-  //             mediaSize: {
-  //               width: 1024,
-  //               height: 1024,
-  //             },
-  //             name: 'Second Image',
-  //             bucket: 'default',
-  //             fileSize: 2048,
-  //             mimeType: 'image/png',
-  //             url: "https://placehold.co/1024x1024",
-  //           }
-  //         },]
-  //       } as GPTImage1Result,
-  //   }
-  // }
+  {
+    id: "2",
+    name: "LLM Node 1",
+    selectable: true,
+    deletable: true,
+    draggable: true,
+    createdAt: new Date(),
+    updatedAt: new Date(),
+    isDirty: false,
+    canvasId: "canvas1",
+    zIndex: 1,
+    templateId: "template2",
+    position: {
+      x: 400,
+      y: 680,
+    },
+    width: 300,
+    height: null,
+    type: 'LLM',
+    result: {
+      parts: [{
+        type: 'Text',
+        data: 'Semi realistic image of Roy, long haired man in miami beach with 3 other chatacters on sky.',
+      }]
+    } as LLMResult,
+    config: {},
+    template: {
+      id: "template1",
+      type: 'LLM',
+      displayName: 'LLM',
+      description: 'A node to run LLM inferences',
+      processEnvironment: 'Server',
+      variableInputs: false,
+      variableOutputs: false,
+      tokenPrice: 0,
+      category: 'LLMs',
+      subcategory: 'Language Models',
+      showInQuickAccess: true,
+      createdAt: new Date(),
+      updatedAt: new Date(),
+      inputTypes: [
+        {
+          "id": "i222",
+          inputType: 'Text',
+          label: 'Prompt',
+        }
+      ],
+      outputTypes: [
+        {
+          "id": "i222",
+          outputType: 'Text',
+          label: 'Output',
+        }
+      ]
+    }
+  },
+  {
+    id: "3",
+    name: "GPT IMG",
+    selectable: true,
+    deletable: true,
+    draggable: true,
+    createdAt: new Date(),
+    updatedAt: new Date(),
+    isDirty: false,
+    canvasId: "canvas1",
+    zIndex: 1,
+    templateId: "template2",
+    position: {
+      x: 800,
+      y: 1080,
+    },
+    width: 300,
+    height: null,
+    type: 'GPTImage1',
+    result: {
+      selectedIndex: 0,
+      parts: [{
+        type: 'Image',
+        data: {
+          mediaSize: {
+            width: 512,
+            height: 512,
+          },
+          name: 'First Image',
+          bucket: 'default',
+          fileSize: 2048,
+          mimeType: 'image/png',
+          url: "https://placehold.co/512x512",
+        }
+      },{
+        type: 'Image',
+        data: {
+          mediaSize: {
+            width: 1024,
+            height: 1024,
+          },
+          name: 'Second Image',
+          bucket: 'default',
+          fileSize: 2048,
+          mimeType: 'image/png',
+          url: "https://placehold.co/1024x1024",
+        }
+      }]
+    } as GPTImage1Result,
+    config: {},
+    template: {
+      id: "template3",
+      type: 'GPTImage1',
+      displayName: 'Gpt Image 1',
+      description: 'A node to run LLM inferences',
+      processEnvironment: 'Server',
+      variableInputs: false,
+      variableOutputs: false,
+      tokenPrice: 0,
+      category: 'Image',
+      subcategory: 'Image Generation',
+      showInQuickAccess: true,
+      createdAt: new Date(),
+      updatedAt: new Date(),
+      inputTypes: [
+        {
+          "id": "s13",
+          inputType: 'Text',
+          label: 'Prompt',
+        }
+      ],
+      outputTypes: [
+        {
+          "id": "i232",
+          outputType: 'Image',
+          label: 'Image',
+        }
+      ]
+    }
+  },
 ]
 
 function convertToClientNode(dbNode: DbNode): Node {
@@ -322,7 +394,6 @@ const CanvasProvider = ({
 
       return {
         id: n.id,
-        name: n.name as string,
         type: n.type as NodeType,
         position: n.position as XYPosition,
         width: n.width ?? undefined,

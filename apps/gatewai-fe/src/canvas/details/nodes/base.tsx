@@ -23,6 +23,7 @@ const BaseNode = memo((props: ClientNodeData & {
   const { getEdges } = useReactFlow();
   const edges = getEdges();
   const nodeId = props.id;
+  console.log({props})
   // Handle optional inputTypes and outputTypes from template
   const inputTypes = props.data?.template?.inputTypes ?? [];
   const outputTypes = props.data?.template?.outputTypes ?? [];
@@ -240,7 +241,10 @@ const CustomConnectionLine = ({
     if (outputTypes.length > 0) {
       // Get the type from the handle index, or use the last one for variable outputs
       const typeIndex = handleIndex < outputTypes.length ? handleIndex : outputTypes.length - 1;
-      dataType = outputTypes[typeIndex]?.outputType || 'File';
+      dataType = outputTypes[typeIndex]?.outputType;
+      if (!dataType) {
+        throw new Error("Output type not found for the given handle index");
+      }
     }
   }
 

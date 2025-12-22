@@ -12,7 +12,7 @@ const app = new Hono<{
 app.use(
 	"/api/*",
 	cors({
-		origin: "http://localhost:8081",
+		origin: "http://localhost:5173",
 		allowHeaders: ["Content-Type", "Authorization"],
 		allowMethods: ["POST", "GET", "OPTIONS"],
 		exposeHeaders: ["Content-Length"],
@@ -23,7 +23,7 @@ app.use(
 
 app.use("*", async (c, next) => {
 	const session = await auth.api.getSession({ headers: c.req.raw.headers });
- 
+	console.log(c);
   	if (!session) {
 		c.set("user", null);
 		c.set("session", null);
