@@ -7,7 +7,7 @@ import type { XYPosition } from '@xyflow/react';
 import { useCanvasCtx } from '@/canvas/details/ctx/canvas-ctx';
 
 export function NodeItem({ template }: { template: NodeTemplate }) {
-  const { rfInstance } = useCanvasCtx();
+  const { rfInstance, createNewNode } = useCanvasCtx();
   const draggableRef = useRef<HTMLDivElement>(null);
   const [position, setPosition] = useState<XYPosition>({ x: 0, y: 0 });
 
@@ -38,7 +38,7 @@ export function NodeItem({ template }: { template: NodeTemplate }) {
       if (isInFlow) {
         const position = rfInstance.current?.screenToFlowPosition(screenPosition);
 
-        console.log({position, event, template})
+        createNewNode(template, position || { x: 0, y: 0 });
       }
     },
   });
