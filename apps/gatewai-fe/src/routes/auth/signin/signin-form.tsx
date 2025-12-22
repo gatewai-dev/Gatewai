@@ -86,7 +86,6 @@ function SignInForm({ onSuccess, onError }: SignInFormProps) {
     try {
         const result = await authClient.signIn.social({
             provider: 'google',
-            callbackURL: window.location.origin + "/auth/callback",
         });
         if (result.error) {
             throw new Error(result.error.message);
@@ -111,7 +110,7 @@ function SignInForm({ onSuccess, onError }: SignInFormProps) {
   };
 
   return (
-    <div className="flex items-center justify-center min-h-screen bg-gradient-to-br from-slate-50 to-slate-100 p-4">
+    <div className="flex items-center justify-center min-h-screen p-4">
       <Card className="w-full max-w-md shadow-lg">
         <CardHeader className="space-y-1">
           <CardTitle className="text-2xl font-bold tracking-tight">
@@ -203,7 +202,7 @@ function SignInForm({ onSuccess, onError }: SignInFormProps) {
                   <span className="w-full border-t border-muted" />
                 </div>
                 <div className="relative flex justify-center text-sm uppercase">
-                  <span className="bg-background px-2 text-muted-foreground">Or continue with</span>
+                  <span className="bg-transparent px-2 text-muted-foreground">Or continue with</span>
                 </div>
               </div>
 

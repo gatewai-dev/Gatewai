@@ -15,7 +15,7 @@ const CanvasListContext = createContext<CanvasContextType | undefined>(undefined
 
 const fetchCanvasList = async (searchQuery?: string): Promise<Canvas[]> => {
   // Replace with your actual API endpoint
-  let endpoint = `${import.meta.env.VITE_API_URL}/canvas`;
+  let endpoint = `/api/v1/canvas`;
   if (searchQuery && searchQuery.trim() !== "") {
     const qStr = qs.stringify({q: searchQuery})
     endpoint += `?${qStr}`;

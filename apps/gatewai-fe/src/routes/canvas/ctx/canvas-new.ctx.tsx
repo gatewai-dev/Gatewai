@@ -3,7 +3,7 @@ import { createContext, useContext, type PropsWithChildren } from 'react';
 import type { Canvas } from '@gatewai/types';
 
 const createCanvas = async (name: string): Promise<Canvas> => {
-  const response = await fetch(`${import.meta.env.VITE_API_URL}/canvas`, {
+  const response = await fetch(`/api/v1/canvas`, {
     method: 'POST',
     headers: { 'Content-Type': 'application/json' },
     body: JSON.stringify({ name }),

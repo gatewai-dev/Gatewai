@@ -12,14 +12,13 @@ export const auth = betterAuth({
     trustedOrigins: process.env.NODE_ENV === "production"
     ? [process.env.FRONTEND_URL || ""]
     : ["http://localhost:5173"],
-    baseURL: process.env.BACKEND_URL || "http://localhost:8081",
+    baseURL: process.env.NODE_ENV === "development" ? process.env.FRONTEND_URL : process.env.BACKEND_URL,
     socialProviders: {
       google: {
         clientId: APP_CONFIG.GOOGLE_CLIENT_ID,
         clientSecret: APP_CONFIG.GOOGLE_CLIENT_SECRET,
         accessType: "offline",
         prompt: "select_account+consent",
-        redirectURI: "http://localhost:8081/api/auth/callback/google"
       },
     },
 }) as ReturnType<typeof betterAuth>
