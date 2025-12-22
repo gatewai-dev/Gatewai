@@ -7,7 +7,7 @@ interface CanvasContextType {
   canvasList: Canvas[] | undefined;
   isError: boolean;
   isLoading: boolean;
-  searchQuery: string | "";
+  searchQuery: string | undefined;
   setSearchQuery: Dispatch<SetStateAction<string | undefined>>
 }
 

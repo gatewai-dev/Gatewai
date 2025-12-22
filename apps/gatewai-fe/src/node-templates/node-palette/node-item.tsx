@@ -4,7 +4,7 @@ import { Tooltip, TooltipContent, TooltipProvider, TooltipTrigger } from '@/comp
 import { iconMap } from './icon-map';
 import { useDraggable } from '@neodrag/react';
 import type { XYPosition } from '@xyflow/react';
-import { useCanvasCtx } from '@/canvas/details/ctx/canvas-ctx';
+import { useCanvasCtx } from '@/routes/canvas/details/ctx/canvas-ctx';
 
 export function NodeItem({ template }: { template: NodeTemplate }) {
   const { rfInstance, createNewNode } = useCanvasCtx();

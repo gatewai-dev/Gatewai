@@ -7,8 +7,8 @@ import {
 } from '@tanstack/react-query'
 import { Provider as StoreProvider } from 'react-redux';
 import { store } from './store';
-import { CanvasListProvider } from './canvas/ctx/canvas-list.ctx';
-import { CanvasCreationProvider } from './canvas/ctx/canvas-new.ctx';
+import { CanvasListProvider } from './routes/canvas/ctx/canvas-list.ctx';
+import { CanvasCreationProvider } from './routes/canvas/ctx/canvas-new.ctx';
 
 const queryClient = new QueryClient()
 

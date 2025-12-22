@@ -12,7 +12,9 @@ const app = new Hono<{
 app.use(
 	"/api/*",
 	cors({
-		origin: "http://localhost:5173",
+    	origin: process.env.NODE_ENV === "production"
+    	  ? process.env.FRONTEND_URL || ""
+    	  : "http://localhost:5173",
 		allowHeaders: ["Content-Type", "Authorization"],
 		allowMethods: ["POST", "GET", "OPTIONS"],
 		exposeHeaders: ["Content-Length"],
@@ -36,8 +38,7 @@ app.use("*", async (c, next) => {
 });
 
 app.on(["POST", "GET"], "/api/auth/*", async (c) => {
-	const res = await auth.handler(c.req.raw);
-	return res;
+	return await auth.handler(c.req.raw);
 });
 
 app.get("/session", (c) => {

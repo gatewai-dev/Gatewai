@@ -25,18 +25,17 @@ function CanvasHome() {
     return (
         <div className="space-y-6 p-6 bg-background text-foreground">
             <div className="flex justify-between items-center">
-                <h1 className="text-xl font-semibold">Okan's Workspace</h1>
+                <h1 className="text-xl font-semibold">Your Workspace</h1>
                 <Button 
-                    onClick={() => createCanvas('untitled')} 
+                    onClick={() => createCanvas('untitled')}
                     disabled={isCreating}
-                    className="bg-blue-500 text-black hover:bg-blue-600"
                 >
                     + Create New Canvas
                 </Button>
             </div>
 
             <div className="flex flex-col sm:flex-row items-start sm:items-center justify-between space-y-4 sm:space-y-0">
-                <h2 className="text-xl font-bold tracking-tight">My Files</h2>
+                <h2 className="text-xl font-bold tracking-tight">My Canvases</h2>
                 <div className="flex items-center space-x-4 w-full sm:w-auto">
                     <Input
                         placeholder="Search"

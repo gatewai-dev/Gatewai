@@ -9,21 +9,19 @@ export const auth = betterAuth({
     database: prismaAdapter(prisma, {
       provider: "sqlite",
     }),
-    trustedOrigins: [
-      "gatewai://",
-      "gatewai-staging://",
-      "http://localhost:8081",
-    ],
+    trustedOrigins: process.env.NODE_ENV === "production"
+    ? [process.env.FRONTEND_URL || ""]
+    : ["http://localhost:5173"],
+    baseURL: process.env.BACKEND_URL || "http://localhost:8081",
     socialProviders: {
       google: {
         clientId: APP_CONFIG.GOOGLE_CLIENT_ID,
         clientSecret: APP_CONFIG.GOOGLE_CLIENT_SECRET,
         accessType: "offline",
         prompt: "select_account+consent",
-        redirectURI: "http://localhost:8081/google-callback"
+        redirectURI: "http://localhost:8081/api/auth/callback/google"
       },
     },
-    
 }) as ReturnType<typeof betterAuth>
 
 export const authMiddleware = createMiddleware(async (c, next) => {
