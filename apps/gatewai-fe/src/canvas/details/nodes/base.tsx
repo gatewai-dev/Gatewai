@@ -1,7 +1,6 @@
 import { memo, type JSX, type ReactNode } from 'react';
-import { Handle, Position, useReactFlow, getBezierPath, type EdgeProps, type NodeProps, type Node } from '@xyflow/react';
+import { Handle, Position, useReactFlow, getBezierPath, type EdgeProps, type NodeProps, type Node, type ConnectionLineComponentProps } from '@xyflow/react';
 import type { AnyNode } from './node-props';
-import type { AllNodeConfig, NodeResult, NodeWithFileType } from '@gatewai/types';
 // Updated color mapping for DataType enum from schema with actual hex colors
 const dataTypeColors: Record<string, { bg: string; stroke: string; hex: string; text: string }> = {
   'Text': { bg: 'bg-blue-500', stroke: 'stroke-blue-500', hex: '#3b82f6', text: 'text-blue-500' },
@@ -199,19 +198,6 @@ const CustomEdge = ({
   );
 };
 
-// Custom connection line component for drag preview
-interface ConnectionLineProps {
-  fromX: number;
-  fromY: number;
-  toX: number;
-  toY: number;
-  fromPosition: Position;
-  toPosition: Position;
-  connectionStatus: string | null;
-  fromNode?: Node<NodeWithFileType<AllNodeConfig, NodeResult>>;
-  fromHandle?: Handle;
-}
-
 const CustomConnectionLine = ({
   fromX,
   fromY,
@@ -221,7 +207,7 @@ const CustomConnectionLine = ({
   toPosition,
   fromNode,
   fromHandle,
-}: ConnectionLineProps): JSX.Element => {
+}: ConnectionLineComponentProps<Node>): JSX.Element => {
   const [edgePath] = getBezierPath({
     sourceX: fromX,
     sourceY: fromY,

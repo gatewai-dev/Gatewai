@@ -1,7 +1,6 @@
 import { Hono } from "hono";
 import { zValidator } from '@hono/zod-validator'
 import z from "zod";
-import { streamSSE } from 'hono/streaming'
 import { HTTPException } from "hono/http-exception";
 import { prisma, type Task } from "@gatewai/db";
 import type { AuthHonoTypes } from "../../auth.js";
@@ -11,14 +10,6 @@ import type { TextNodeConfig } from "@gatewai/types";
 
 const canvasRoutes = new Hono<{Variables: AuthHonoTypes}>({
     strict: false,
-});
-
-// =====================
-// Validation Schemas
-// =====================
-
-const createCanvasSchema = z.object({
-    name: z.string().min(1).max(20),
 });
 
 
@@ -103,15 +94,15 @@ const bulkUpdateSchema = z.object({
 
 // List all canvases for the authenticated user
 canvasRoutes.get('/', async (c) => {
-    const user = c.get('user');
-    if (!user) {
-        throw new HTTPException(401, { message: 'Unauthorized' });
-    }
+    //const user = c.get('user');
+    //if (!user) {
+    //    throw new HTTPException(401, { message: 'Unauthorized' });
+    //}
 
     const canvases = await prisma.canvas.findMany({
-        where: {
-            userId: user.id,
-        },
+        // where: {
+        //     userId: user.id,
+        // },
         orderBy: {
             updatedAt: 'desc',
         },
@@ -128,14 +119,12 @@ canvasRoutes.get('/', async (c) => {
         }
     });
 
-    return c.json({ canvases });
+    return c.json(canvases);
 });
 
 // Create a new canvas
 canvasRoutes.post('/',
-    zValidator('json', createCanvasSchema),
     async (c) => {
-        const validated = c.req.valid('json');
         const user = c.get('user');
         if (!user) {
             throw new HTTPException(401, { message: 'Unauthorized' });
@@ -144,7 +133,7 @@ canvasRoutes.post('/',
         const canvas = await prisma.canvas.create({
             data: {
                 userId: user.id,
-                name: validated.name,
+                name: 'New Canvas',
             },
         });
 

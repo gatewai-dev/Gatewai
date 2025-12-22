@@ -1,7 +1,6 @@
 import { Hono } from "hono";
 import { prisma } from "@gatewai/db";
 import type { AuthHonoTypes } from "../../auth.js";
-import { HTTPException } from "hono/http-exception";
 
 const nodeTemplatesRoutes = new Hono<{Variables: AuthHonoTypes}>();
 
