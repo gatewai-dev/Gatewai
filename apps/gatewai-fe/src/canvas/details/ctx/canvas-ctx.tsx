@@ -19,21 +19,9 @@ import { useAppDispatch } from '@/store';
 import { setAllNodes } from '@/store/nodes';
 import { generateId } from '@/lib/idgen';
 import { createNode } from '@/store/nodes';
+import type { DbNodeWithTemplate } from '@/types/node';
+import type { NodeTemplateWithIO } from '@/types/node-template';
 
-type DbNodeWithTemplate = DbNode & {
-  template?: NodeTemplate & {
-    outputTypes: Array<{
-      id: string;
-      outputType: DataType;
-      label: string;
-    }>;
-    inputTypes?: Array<{
-      id: string;
-      inputType: DataType;
-      label: string;
-    }>;
-  };
-};
 // Assuming a basic structure for the fetched canvas data
 interface CanvasResponse {
   id: string;
@@ -65,7 +53,7 @@ interface CanvasContextType {
   updateNodeResult: (nodeId: string, updates: Partial<NodeResult>) => void;
   runNodes: (nodeIds: Node["id"][]) => Promise<void>;
   rfInstance: RefObject<ReactFlowInstance | undefined>;
-  createNewNode: (template: NodeTemplate, position: XYPosition) => void;
+  createNewNode: (template: NodeTemplateWithIO, position: XYPosition) => void;
 }
 
 const CanvasContext = createContext<CanvasContextType | undefined>(undefined);
@@ -129,6 +117,7 @@ const mock_nodes: DbNodeWithTemplate[] = [
         {
           "id": "i22",
           outputType: 'Text',
+          templateId: "template1",
           label: 'Text',
         }
       ]
@@ -161,7 +150,7 @@ const mock_nodes: DbNodeWithTemplate[] = [
     } as LLMResult,
     config: {},
     template: {
-      id: "template1",
+      id: "template2",
       type: 'LLM',
       displayName: 'LLM',
       description: 'A node to run LLM inferences',
@@ -179,6 +168,8 @@ const mock_nodes: DbNodeWithTemplate[] = [
         {
           "id": "i222",
           inputType: 'Text',
+          templateId: 'template2',
+          required: true,
           label: 'Prompt',
         }
       ],
@@ -186,6 +177,7 @@ const mock_nodes: DbNodeWithTemplate[] = [
         {
           "id": "i222",
           outputType: 'Text',
+          templateId: 'template2',
           label: 'Output',
         }
       ]
@@ -259,6 +251,8 @@ const mock_nodes: DbNodeWithTemplate[] = [
       inputTypes: [
         {
           "id": "s13",
+          templateId: 'template3',
+          required: true,
           inputType: 'Text',
           label: 'Prompt',
         }
@@ -266,6 +260,7 @@ const mock_nodes: DbNodeWithTemplate[] = [
       outputTypes: [
         {
           "id": "i232",
+          templateId: 'template3',
           outputType: 'Image',
           label: 'Image',
         }
@@ -684,12 +679,13 @@ const CanvasProvider = ({
     setCanRedo(false);
   }, [initialEdges, setNodes, setEdges]);
 
-  const createNewNode = useCallback((template: NodeTemplate, position: XYPosition) => {
+  const createNewNode = useCallback((template: NodeTemplateWithIO, position: XYPosition) => {
     const id = generateId();
-    const nodeEntity: DbNode = {
+    const nodeEntity: DbNodeWithTemplate = {
       id,
       name: template.displayName,
       templateId: template.id,
+      template: template,
       type: template.type as NodeType,
       position,
       width: 300,

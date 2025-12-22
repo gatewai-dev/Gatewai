@@ -1,7 +1,6 @@
 import { memo, type JSX, type ReactNode } from 'react';
 import { Handle, Position, useReactFlow, getBezierPath, type EdgeProps } from '@xyflow/react';
-import type { ClientNodeData } from '../ctx/node-types';
-
+import type { ClientNode } from '@/types/node';
 // Updated color mapping for DataType enum from schema with actual hex colors
 const dataTypeColors: Record<string, { bg: string; stroke: string; hex: string; text: string }> = {
   'Text': { bg: 'bg-blue-500', stroke: 'stroke-blue-500', hex: '#3b82f6', text: 'text-blue-500' },
@@ -17,7 +16,7 @@ const getColorForType = (type: string) => {
   return dataTypeColors[type] || { bg: 'bg-gray-500', stroke: 'stroke-gray-500', hex: '#6b7280', text: 'text-gray-500' };
 };
 
-const BaseNode = memo((props: ClientNodeData & {
+const BaseNode = memo((props: ClientNode & {
   children?: ReactNode;
 }) => {
   const { getEdges } = useReactFlow();

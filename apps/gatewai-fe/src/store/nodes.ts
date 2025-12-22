@@ -1,8 +1,8 @@
-import type { Node as DBNode } from "@gatewai/types"
+import type { Node as DbNodeWithTemplate } from "@gatewai/types"
 import { createEntityAdapter, createDraftSafeSelector, createSlice } from "@reduxjs/toolkit"
 
 export const nodeAdapter = createEntityAdapter({
-  selectId: (node: DBNode) => node.id,
+  selectId: (node: DbNodeWithTemplate) => node.id,
 })
 
 const nodesSlice = createSlice({
@@ -27,7 +27,7 @@ const nodesSlice = createSlice({
     },
     incrementSelectedResultIndex: (state, action: {payload: {id: string}}) => {
       const { id } = action.payload;
-      const node = state.entities[id] as DBNode;
+      const node = state.entities[id] as DbNodeWithTemplate;
       const result = node.result as { selectedIndex?: number; parts?: unknown[] };
       if (!result) {
         throw new Error("Node result is undefined");
@@ -41,7 +41,7 @@ const nodesSlice = createSlice({
     },
     decrementSelectedResultIndex: (state, action: {payload: {id: string}}) => {
       const { id } = action.payload;
-      const node = state.entities[id] as DBNode;
+      const node = state.entities[id] as DbNodeWithTemplate;
       const result = node.result as { selectedIndex?: number; parts?: unknown[] };
       if (!result) {
         throw new Error("Node result is undefined");
@@ -66,7 +66,7 @@ export const selectNodesState = (state: { nodes: NodesState }) => state.nodes;
 
 export const makeSelectNodeById = (id: string) => createDraftSafeSelector(
   selectNodesState,
-  (nodes) => nodes.entities[id] as DBNode | undefined
+  (nodes) => nodes.entities[id] as DbNodeWithTemplate | undefined
 );
 
 // Extract the action creators object and the reducer

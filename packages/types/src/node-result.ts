@@ -60,8 +60,12 @@ export type FileData = {
     parts: [OutputItem<FileData, "Image" | "Video">];
   }
 
-  export type CrawlerResult = SelectItemType & {
-    parts: OutputItem<string, "Text">[];
+  export type ThreeDResult = SelectItemType & {
+    parts: [OutputItem<FileData, "File">];
+  }
+
+  export type PainterResult = {
+    parts: [OutputItem<FileData, "Image">, OutputItem<FileData, "Mask">,];
   }
 
   export type BlurResult = {
@@ -86,7 +90,8 @@ export type FileData = {
     | NumberResult
     | LLMResult
     | ResizeResult
-    | CrawlerResult
+    | ThreeDResult
+    | PainterResult
     | BlurResult
     | CompositorResult
     | DescriberResult;
