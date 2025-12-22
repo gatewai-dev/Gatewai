@@ -13,7 +13,7 @@ const canvasRoutes = new Hono<{Variables: AuthHonoTypes}>({
 });
 
 
-const createNodeSchema = z.object({
+const nodeSchema = z.object({
     id: z.string().optional(),
     name: z.string(),
     type: z.enum([
@@ -31,36 +31,14 @@ const createNodeSchema = z.object({
     selectable: z.boolean().optional().default(true),
     deletable: z.boolean().optional().default(true),
     fileData: z.any().optional(),
-    data: z.any().optional(),
+    result: z.any().optional(),
+    config: z.any().optional(),
     visible: z.boolean().optional().default(true),
     zIndex: z.number().optional(),
     templateId: z.string(),
 });
 
-const updateNodeSchema = z.object({
-    name: z.string().optional(),
-    position: z.object({
-        x: z.number().optional(),
-        y: z.number().optional(),
-    }).optional(),
-    width: z.number().optional(),
-    height: z.number().optional(),
-    draggable: z.boolean().optional(),
-    selectable: z.boolean().optional(),
-    deletable: z.boolean().optional(),
-    fileData: z.any().optional(),
-    data: z.any().optional(),
-    visible: z.boolean().optional(),
-    zIndex: z.number().optional(),
-});
-
-const batchUpdateNodesSchema = z.object({
-    updates: z.array(updateNodeSchema.extend({
-        id: z.string()
-    }))
-});
-
-const createEdgeSchema = z.object({
+const edgeSchema = z.object({
     id: z.string().optional(),
     source: z.string(),
     target: z.string(),
@@ -73,19 +51,10 @@ const processSchema = z.object({
     node_ids: z.array(z.string()).min(1),
 });
 
-const batchEdgesSchema = z.object({
-    create: z.array(createEdgeSchema).optional(),
-    delete: z.array(z.string()).optional(), // Array of edge IDs to delete
-});
-
 const bulkUpdateSchema = z.object({
     name: z.string().min(1).max(20).optional(),
-    nodes: z.object({
-        create: z.array(createNodeSchema).optional(),
-        update: batchUpdateNodesSchema.shape.updates.optional(),
-        delete: z.array(z.string()).optional(),
-    }).optional(),
-    edges: batchEdgesSchema.optional(),
+    nodes: z.array(nodeSchema).optional(),
+    edges: z.array(edgeSchema).optional(),
 });
 
 // =====================
@@ -94,15 +63,15 @@ const bulkUpdateSchema = z.object({
 
 // List all canvases for the authenticated user
 canvasRoutes.get('/', async (c) => {
-    //const user = c.get('user');
-    //if (!user) {
-    //    throw new HTTPException(401, { message: 'Unauthorized' });
-    //}
+    const user = c.get('user');
+    if (!user) {
+        throw new HTTPException(401, { message: 'Unauthorized' });
+    }
 
     const canvases = await prisma.canvas.findMany({
-        // where: {
-        //     userId: user.id,
-        // },
+        where: {
+            userId: user.id,
+        },
         orderBy: {
             updatedAt: 'desc',
         },
@@ -137,7 +106,7 @@ canvasRoutes.post('/',
             },
         });
 
-        return c.json({ canvas }, 201);
+        return c.json(canvas, 201);
     }
 );
 
@@ -216,79 +185,122 @@ canvasRoutes.patch('/:id',
             );
         }
 
+        let deleteEdgeOp: any = null;
+        let deleteNodeOp: any = null;
+        const updateCreateTransactions: any[] = [];
+
+        // Process nodes
         if (validated.nodes) {
-            const { create, update, delete: nodesToDelete } = validated.nodes;
+            const existingNodes = await prisma.node.findMany({
+                where: { canvasId: id },
+                select: { id: true }
+            });
+            const existingNodeIds = new Set(existingNodes.map(n => n.id));
 
-            if (nodesToDelete && nodesToDelete?.length > 0) {
-                transaction.push(
-                    prisma.node.deleteMany({
-                        where: {
-                            id: { in: nodesToDelete },
-                            canvasId: id,
-                        }
-                    })
-                );
+            const providedNodes = validated.nodes;
+            const providedNodeMap = new Map(providedNodes.filter(n => n.id).map(n => [n.id!, n] as [string, typeof n]));
+
+            const toDeleteNodes = existingNodes.filter(n => !providedNodeMap.has(n.id)).map(n => n.id);
+
+            if (toDeleteNodes.length > 0) {
+                deleteNodeOp = prisma.node.deleteMany({
+                    where: {
+                        id: { in: toDeleteNodes },
+                        canvasId: id,
+                    }
+                });
             }
 
-            if (update && update?.length > 0) {
-                for (const up of update) {
-                    transaction.push(
+            for (const node of providedNodes) {
+                const { id: nodeId, templateId, type, ...updateData } = node;
+
+                if (nodeId && existingNodeIds.has(nodeId)) {
+                    // Update (exclude type and templateId)
+                    updateCreateTransactions.push(
                         prisma.node.update({
-                            where: { id: up.id },
-                            data: up,
+                            where: { id: nodeId },
+                            data: updateData,
                         })
                     );
-                }
-            }
-
-            if (create && create?.length > 0) {
-                for (const cr of create) {
-                    transaction.push(
+                } else {
+                    // Create
+                    const createData: any = {
+                        ...updateData,
+                        type,
+                        templateId,
+                        canvasId: id,
+                    };
+                    if (nodeId) {
+                        createData.id = nodeId;
+                    }
+                    updateCreateTransactions.push(
                         prisma.node.create({
-                            data: {
-                                ...cr,
-                                canvasId: id,
-                            },
-                            include: {
-                                template: {
-                                    include: {
-                                        inputTypes: true,
-                                        outputTypes: true,
-                                    }
-                                }
-                            }
+                            data: createData,
                         })
                     );
                 }
             }
         }
 
+        // Process edges
         if (validated.edges) {
-            const { create, delete: edgesToDelete } = validated.edges;
+            const existingEdges = await prisma.edge.findMany({
+                where: {
+                    sourceNode: {
+                        canvasId: id
+                    }
+                },
+                select: { id: true }
+            });
+            const existingEdgeIds = new Set(existingEdges.map(e => e.id));
 
-            if (edgesToDelete && edgesToDelete?.length > 0) {
-                transaction.push(
-                    prisma.edge.deleteMany({
-                        where: {
-                            id: { in: edgesToDelete },
-                            sourceNode: {
-                                canvasId: id
-                            }
-                        }
-                    })
-                );
+            const providedEdges = validated.edges;
+            const providedEdgeMap = new Map(providedEdges.filter(e => e.id).map(e => [e.id!, e] as [string, typeof e]));
+
+            const toDeleteEdges = existingEdges.filter(e => !providedEdgeMap.has(e.id)).map(e => e.id);
+
+            if (toDeleteEdges.length > 0) {
+                deleteEdgeOp = prisma.edge.deleteMany({
+                    where: {
+                        id: { in: toDeleteEdges }
+                    }
+                });
             }
 
-            if (create && create?.length > 0) {
-                for (const cr of create) {
-                    transaction.push(
+            for (const edge of providedEdges) {
+                const { id: edgeId, ...updateData } = edge;
+
+                if (edgeId && existingEdgeIds.has(edgeId)) {
+                    // Update
+                    updateCreateTransactions.push(
+                        prisma.edge.update({
+                            where: { id: edgeId },
+                            data: updateData,
+                        })
+                    );
+                } else {
+                    // Create
+                    const createData: any = updateData;
+                    if (edgeId) {
+                        createData.id = edgeId;
+                    }
+                    updateCreateTransactions.push(
                         prisma.edge.create({
-                            data: cr,
+                            data: createData,
                         })
                     );
                 }
             }
         }
+
+        // Add delete operations in order: edges first, then nodes
+        if (deleteEdgeOp) {
+            transaction.push(deleteEdgeOp);
+        }
+        if (deleteNodeOp) {
+            transaction.push(deleteNodeOp);
+        }
+        transaction.push(...updateCreateTransactions);
 
         await prisma.$transaction(transaction);
 
@@ -361,7 +373,7 @@ canvasRoutes.delete('/:id', async (c) => {
 
 // Create a new node in a canvas
 canvasRoutes.post('/:canvasId/nodes',
-    zValidator('json', createNodeSchema),
+    zValidator('json', nodeSchema),
     async (c) => {
         const canvasId = c.req.param('canvasId');
         const validated = c.req.valid('json');
@@ -401,7 +413,7 @@ canvasRoutes.post('/:canvasId/nodes',
 
 // Create a new edge
 canvasRoutes.post('/:canvasId/edges',
-    zValidator('json', createEdgeSchema),
+    zValidator('json', edgeSchema),
     async (c) => {
         const canvasId = c.req.param('canvasId');
         const validated = c.req.valid('json');

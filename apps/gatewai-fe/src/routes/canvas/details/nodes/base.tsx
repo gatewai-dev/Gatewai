@@ -25,6 +25,7 @@ const BaseNode = memo((props: NodeProps<AnyNode> & {
   // Handle optional inputTypes and outputTypes from template
   const inputTypes = props.data?.template?.inputTypes ?? [];
   const outputTypes = props.data?.template?.outputTypes ?? [];
+  console.log({inputTypes, outputTypes})
 
   const fixedInputCount = inputTypes.length;
   const fixedOutputCount = outputTypes.length;
@@ -43,15 +44,18 @@ const BaseNode = memo((props: NodeProps<AnyNode> & {
     return getColorForType(type).text;
   };
 
-  const getInputLabel = (i: number) => {
-    if (inputTypes.length === 0) return 'Input';
-    const label = (i < inputTypes.length) ? inputTypes[i].label : inputTypes[inputTypes.length - 1].label;
-    return label;
-  };
-
   const getInputType = (i: number) => {
     if (inputTypes.length === 0) return 'Unknown';
     return (i < inputTypes.length) ? inputTypes[i].inputType : inputTypes[inputTypes.length - 1].inputType;
+  };
+
+  const getInputLabel = (i: number) => {
+    if (inputTypes.length === 0) return 'Input';
+    const label = (i < inputTypes.length) ? inputTypes[i].label : inputTypes[inputTypes.length - 1].label;
+    if (!label) {
+      return getInputType(i);
+    }
+    return label;
   };
 
   const getOutputTextColor = (i: number) => {
@@ -68,11 +72,15 @@ const BaseNode = memo((props: NodeProps<AnyNode> & {
   const getOutputLabel = (i: number) => {
     if (outputTypes.length === 0) return 'Output';
     const label = (i < outputTypes.length) ? outputTypes[i].label : outputTypes[outputTypes.length - 1].label;
+
+    if (!label) {
+      return getOutputType(i);
+    }
     return label;
   };
 
   const nodeBackgroundColor = 'bg-background';
-
+  console.log(getOutputLabel(0))
   return (
     <div
       tabIndex={0}

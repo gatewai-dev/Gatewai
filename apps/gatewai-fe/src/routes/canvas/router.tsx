@@ -3,7 +3,7 @@ import { CanvasDetails } from "./details";
 
 function CanvasRouter() {
   return (<Routes>
-    <Route path=":id" element={<CanvasDetails />} />
+    <Route path=":canvasId" element={<CanvasDetails />} />
   </Routes>);
 }
 

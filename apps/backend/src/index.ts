@@ -4,10 +4,13 @@ import { serve } from "@hono/node-server";
 import { cors } from "hono/cors";
 import { APP_CONFIG } from "./config.js";
 import { v1Router } from "./routes/v1/index.js";
+import { logger } from 'hono/logger'
 
 const app = new Hono<{
 	Variables: AuthHonoTypes
 }>();
+
+app.use(logger())
 
 app.use(
 	"/api/*",
@@ -63,3 +66,4 @@ serve({
 })
 
 export type AppType = typeof app
+

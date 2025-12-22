@@ -199,8 +199,22 @@
   }
 }
 
+:root {
+  --checker-size: 20px;
+  --checker-half: calc(var(--checker-size) / 2);
+  --checker-color: #4c4c4c;
+}
+
 .media-container {
-  background-image: linear-gradient(45deg, #4c4c4c 25%, transparent 25%), linear-gradient(-45deg, #4c4c4c 25%, transparent 25%), linear-gradient(45deg, transparent 75%, #4c4c4c 75%), linear-gradient(-45deg, transparent 75%, #4c4c4c 75%);
-  background-size: 20px 20px;
-  background-position: 0 0, 0 10px, 10px -10px, -10px 0px;
+  background-image:
+    linear-gradient(45deg, var(--checker-color) 25%, transparent 25%),
+    linear-gradient(-45deg, var(--checker-color) 25%, transparent 25%),
+    linear-gradient(45deg, transparent 75%, var(--checker-color) 75%),
+    linear-gradient(-45deg, transparent 75%, var(--checker-color) 75%);
+  background-size: var(--checker-size) var(--checker-size);
+  background-position:
+    0 0,
+    0 var(--checker-half),
+    var(--checker-half) calc(-1 * var(--checker-half)),
+    calc(-1 * var(--checker-half)) 0;
 }

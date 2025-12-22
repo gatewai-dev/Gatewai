@@ -1,6 +1,7 @@
 import { useMutation, useQueryClient } from '@tanstack/react-query';
 import { createContext, useContext, type PropsWithChildren } from 'react';
 import type { Canvas } from '@gatewai/types';
+import { useNavigate } from 'react-router';
 
 const createCanvas = async (name: string): Promise<Canvas> => {
   const response = await fetch(`/api/v1/canvas`, {
@@ -23,11 +24,14 @@ const CanvasCreationContext = createContext<CanvasCreationContextType | undefine
 
 const CanvasCreationProvider = ({ children }: PropsWithChildren) => {
   const queryClient = useQueryClient();
+  const nav = useNavigate();
 
   const { mutate, isPending } = useMutation<Canvas, Error, string>({
     mutationFn: createCanvas,
-    onSuccess: () => {
+    onSuccess: (canvas: Canvas) => {
+      console.log({canvas})
       queryClient.invalidateQueries({ queryKey: ['canvasList'] });
+      nav(`/canvas/${canvas.id}`);
     },
   });
 

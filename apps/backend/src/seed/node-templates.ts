@@ -16,10 +16,10 @@ export async function SEED_createNodeTemplates(prisma: PrismaClient) {
       },
       outputTypes: {
         create: [
-          { outputType: DataType.Text, label: null }
+          { outputType: DataType.Text, label: "Text" }
         ]
       },
-      defaultConfig: null,
+      defaultConfig: undefined,
     }
   });
 
@@ -41,7 +41,7 @@ export async function SEED_createNodeTemplates(prisma: PrismaClient) {
       outputTypes: {
         create: []
       },
-      defaultConfig: null,
+      defaultConfig: undefined,
     }
   });
 
@@ -60,10 +60,10 @@ export async function SEED_createNodeTemplates(prisma: PrismaClient) {
       },
       outputTypes: {
         create: [
-          { outputType: DataType.File, label: null }
+          { outputType: DataType.File, label: "File" }
         ]
       },
-      defaultConfig: null,
+      defaultConfig: undefined,
     }
   });
 
@@ -79,13 +79,13 @@ export async function SEED_createNodeTemplates(prisma: PrismaClient) {
       variableOutputs: false,
       inputTypes: {
         create: [
-          { inputType: DataType.File, required: true, label: null }
+          { inputType: DataType.File, required: true, label: "File" }
         ]
       },
       outputTypes: {
         create: []
       },
-      defaultConfig: null,
+      defaultConfig: undefined,
     }
   });
 
@@ -104,10 +104,10 @@ export async function SEED_createNodeTemplates(prisma: PrismaClient) {
       },
       outputTypes: {
         create: [
-          { outputType: DataType.Boolean, label: null }
+          { outputType: DataType.Boolean, label: "Yes/No" }
         ]
       },
-      defaultConfig: null,
+      defaultConfig: undefined,
     }
   });
 
@@ -123,15 +123,15 @@ export async function SEED_createNodeTemplates(prisma: PrismaClient) {
       variableOutputs: false,
       inputTypes: {
         create: [
-          { inputType: DataType.Text, required: true, label: null }
+          { inputType: DataType.Text, required: true, label: "Link" }
         ]
       },
       outputTypes: {
         create: [
-          { outputType: DataType.Text, label: null }
+          { outputType: DataType.Text, label: "HTML content (Text)" }
         ]
       },
-      defaultConfig: null,
+      defaultConfig: undefined,
     }
   });
 
@@ -147,12 +147,12 @@ export async function SEED_createNodeTemplates(prisma: PrismaClient) {
       variableOutputs: false,
       inputTypes: {
         create: [
-          { inputType: DataType.File, required: true, label: null }
+          { inputType: DataType.File, required: true, label: "Image/Video" }
         ]
       },
       outputTypes: {
         create: [
-          { outputType: DataType.File, label: null }
+          { outputType: DataType.File, label: "Resized Image/Video" }
         ]
       },
       defaultConfig: {},
@@ -171,15 +171,15 @@ export async function SEED_createNodeTemplates(prisma: PrismaClient) {
       variableOutputs: false,
       inputTypes: {
         create: [
-          { inputType: DataType.Text, required: true, label: 'Initial Text' }
+          { inputType: DataType.Text, required: true, label: 'Instructions' }
         ]
       },
       outputTypes: {
         create: [
-          { outputType: DataType.Text, label: null }
+          { outputType: DataType.Text, label: "Text Output" }
         ]
       },
-      defaultConfig: null,
+      defaultConfig: undefined,
     }
   });
 
@@ -195,39 +195,15 @@ export async function SEED_createNodeTemplates(prisma: PrismaClient) {
       variableOutputs: false,
       inputTypes: {
         create: [
-          { inputType: DataType.Text, required: true, label: null }
+          { inputType: DataType.Text, required: true, label: "Prompt" }
         ]
       },
       outputTypes: {
         create: [
-          { outputType: DataType.File, label: null }
+          { outputType: DataType.File, label: "3D File" }
         ]
       },
-      defaultConfig: null,
-    }
-  });
-
-  // Mask: not specified, assuming image input, mask output
-  await prisma.nodeTemplate.create({
-    data: {
-      type: NodeType.Mask,
-      displayName: 'Mask',
-      description: 'A mask generation node',
-      processEnvironment: ProcessEnvironment.Browser,
-      tokenPrice: 0.0,
-      variableInputs: false,
-      variableOutputs: false,
-      inputTypes: {
-        create: [
-          { inputType: DataType.Image, required: true, label: null }
-        ]
-      },
-      outputTypes: {
-        create: [
-          { outputType: DataType.Mask, label: null }
-        ]
-      },
-      defaultConfig: null,
+      defaultConfig: undefined,
     }
   });
 
@@ -252,7 +228,7 @@ export async function SEED_createNodeTemplates(prisma: PrismaClient) {
           { outputType: DataType.Image, label: null }
         ]
       },
-      defaultConfig: null,
+      defaultConfig: undefined,
     }
   });
 
@@ -273,7 +249,7 @@ export async function SEED_createNodeTemplates(prisma: PrismaClient) {
       },
       outputTypes: {
         create: [
-          { outputType: DataType.Image, label: null }
+          { outputType: DataType.Image, label: "Blurred Image" }
         ]
       },
       defaultConfig: {
@@ -294,12 +270,12 @@ export async function SEED_createNodeTemplates(prisma: PrismaClient) {
       variableOutputs: false,
       inputTypes: {
         create: [
-          { inputType: DataType.Image, required: true, label: 'Initial Image' }
+          { inputType: DataType.Image, required: true, label: 'Image' }
         ]
       },
       outputTypes: {
         create: [
-          { outputType: DataType.Image, label: null }
+          { outputType: DataType.Image, label: "Output Image" }
         ]
       },
       defaultConfig: {
@@ -329,7 +305,7 @@ export async function SEED_createNodeTemplates(prisma: PrismaClient) {
           { outputType: DataType.Text, label: null }
         ]
       },
-      defaultConfig: null,
+      defaultConfig: undefined,
     }
   });
 
@@ -353,7 +329,7 @@ export async function SEED_createNodeTemplates(prisma: PrismaClient) {
           { outputType: DataType.Text, label: null }
         ]
       },
-      defaultConfig: null,
+      defaultConfig: undefined,
     }
   });
 
@@ -398,7 +374,7 @@ export async function SEED_createNodeTemplates(prisma: PrismaClient) {
           { outputType: DataType.Number, label: null }
         ]
       },
-      defaultConfig: null,
+      defaultConfig: undefined,
     }
   });
 

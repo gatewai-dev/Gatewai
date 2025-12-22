@@ -26,7 +26,7 @@ import type { NodeTemplateWithIO } from '@/types/node-template';
 interface CanvasResponse {
   id: string;
   name: string;
-  nodes: Array<NodeWithFileType<AllNodeConfig, NodeResult>>;
+  nodes: Array<DbNodeWithTemplate>;
   edges: Array<DbEdge>;
 }
 
@@ -298,10 +298,14 @@ const CanvasProvider = ({
   } = useQuery<CanvasResponse>({
     queryKey: ['canvas', canvasId],
     queryFn: () => fetchCanvas(canvasId),
+    refetchOnMount: false,
+    refetchOnReconnect: false,
+    refetchOnWindowFocus: false,
+    refetchIntervalInBackground: false,
     enabled: !!canvasId,
   });
 
-  const { initialNodes, initialEdges } = useMemo(() => {
+  const { initialEdges, initialNodes } = useMemo(() => {
     if (!canvas?.nodes) {
       return { initialEdges: [], initialNodes: [] };
     }
@@ -332,12 +336,11 @@ const CanvasProvider = ({
   }, [canvas]);
 
   useEffect(() => {
-    // if (canvas?.nodes) {
-    //   dispatch(setAllNodes(canvas.nodes))
-    // }
+    if (canvas?.nodes) {
+      dispatch(setAllNodes(canvas.nodes))
+    }
     console.log("Setting mock nodes in store")
-    dispatch(setAllNodes(mock_nodes as any))
-  }, [dispatch])
+  }, [dispatch, canvas])
 
   const [nodes, setNodes, onNodesChangeBase] = useNodesState<Node>(mock_nodes.map(convertToClientNode));
   const [edges, setEdges, onEdgesChangeBase] = useEdgesState<Edge>([]);
@@ -670,8 +673,7 @@ const CanvasProvider = ({
   // }, [initialNodes, initialEdges, setNodes, setEdges])
 
   useEffect(() => {
-    // setNodes(initialNodes);
-    setNodes(mock_nodes.map(convertToClientNode))
+    setNodes(initialNodes);
     setEdges(initialEdges);
     past.current = [];
     future.current = [];

@@ -21,7 +21,6 @@ enum NodeType {
   Resize
   Agent
   ThreeD
-  Mask
   Painter
   Blur
   Compositor

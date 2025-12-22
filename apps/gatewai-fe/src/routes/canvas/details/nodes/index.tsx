@@ -71,7 +71,8 @@ const LlmNodeComponent = memo((props: NodeProps<LLMNode>) => {
         >
           {text}
         </p>
-        <Button onClick={() => runNodes([props.data.id])} variant="secondary" size="xs"><PlayIcon /><span className='text-xs'>Run Model</span></Button>
+        <Button onClick={() => runNodes([props.data.id])}  size="xs"><PlayIcon />
+        <span className='text-xs'>Run Node</span></Button>
       </div>
     </BaseNode>
   );
@@ -87,9 +88,9 @@ const GPTImage1NodeComponent = memo((props: NodeProps<GPTImage1Node>) => {
     <BaseNode {...props}>
       <div className='flex flex-col gap-2 items-end'>
         {result && <MediaContent node={props} result={result} />}
-        <Button onClick={() => runNodes([props.data.id])} variant="secondary" size="xs" >
+        <Button onClick={() => runNodes([props.data.id])} size="xs" >
           <PlayIcon />
-          <span className='text-xs'>Run Model</span>
+          <span className='text-xs'>Run Node</span>
         </Button>
       </div>
     </BaseNode>
