@@ -22,6 +22,7 @@ type ReactFlowProps = {
 function ReactflowContainer({ children }: ReactFlowProps) {
   const {
     onEdgesChange,
+    onNodesDelete,
     onNodesChange,
     onConnect,
     rfInstance
@@ -65,6 +66,8 @@ function ReactflowContainer({ children }: ReactFlowProps) {
         connectionMode={ConnectionMode.Loose}
         onConnect={onConnect}
         onSelectionChange={onSelectionChange}
+        onNodesDelete={onNodesDelete}
+        deleteKeyCode={"Delete"}
       >
         {children}
         <Background />

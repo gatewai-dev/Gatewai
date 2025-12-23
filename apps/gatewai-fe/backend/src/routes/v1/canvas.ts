@@ -24,7 +24,7 @@ const handleSchema = z.object({
     label: z.string().optional().nullable(),
     order: z.number().default(0),
     required: z.boolean().default(false),
-    templateHandleId: z.string().optional(),
+    templateHandleId: z.string().optional().nullable(),
 });
 
 const nodeSchema = z.object({
@@ -194,8 +194,10 @@ const canvasRoutes = new Hono<{Variables: AuthHonoTypes}>({
                 canvasId: id,
             }
         })
+        const nodesInPayload = validated.nodes;
 
-        const nodeIds = nodesInDB.map(m => m.id);
+        const nodeIdsInDB = nodesInDB.map(m => m.id);
+        const nodeIdsInPayload = nodesInPayload?.map(m => m.id).filter(Boolean) as string[] ?? [];
 
         const edgesInDB = await prisma.edge.findMany({
             where: {
@@ -203,14 +205,14 @@ const canvasRoutes = new Hono<{Variables: AuthHonoTypes}>({
                     {
                         targetNode: {
                             id: {
-                                in: nodeIds,
+                                in: nodeIdsInDB,
                             }
                         },
                     },
                     {
                         sourceNode: {
                             id: {
-                                in: nodeIds,
+                                in: nodeIdsInDB,
                             }
                         },
                     }
@@ -222,7 +224,7 @@ const canvasRoutes = new Hono<{Variables: AuthHonoTypes}>({
         const handlesInDB = await prisma.handle.findMany({
             where: {
                 nodeId: {
-                    in: nodeIds,
+                    in: nodeIdsInDB,
                 }
             }
         })
@@ -231,9 +233,8 @@ const canvasRoutes = new Hono<{Variables: AuthHonoTypes}>({
          * 2- Create transactions for removed edges
          */
 
-        const nodeIdsInPayload = validated.nodes?.map(m => m.id);
 
-        const removedNodeIds = nodesInDB.filter(f => !nodeIdsInPayload?.includes(f.id)).map(m => m.id);
+        const removedNodeIds = nodesInDB.filter(f => !nodeIdsInPayload.includes(f.id)).map(m => m.id);
 
         const removedNodeEdges = await prisma.edge.findMany({
             where: {
@@ -330,9 +331,7 @@ const canvasRoutes = new Hono<{Variables: AuthHonoTypes}>({
         // PUSH HANDLE DELETE TO TRANSACTIONS
         transactions.push(deleteHandleTransactions)
 
-
         // Prepare delete node transaction
-
         const deleteNodesTransaction = prisma.node.deleteMany({
             where: {
                 id: {
@@ -340,11 +339,46 @@ const canvasRoutes = new Hono<{Variables: AuthHonoTypes}>({
                 }
             }
         })
-        
+
         transactions.push(deleteNodesTransaction)
 
         const [deletedPostCount, deletedHandleCount, deletedNodeCount] = await prisma.$transaction(transactions)
         console.log({deletedPostCount, deletedHandleCount, deletedNodeCount});
+
+
+        // Node Creation
+        if (nodesInPayload && nodesInPayload.length > 0) {
+            const updatedNodes = nodesInPayload.filter(f => f.id && nodeIdsInDB.includes(f.id))
+            const createdNodes = nodesInPayload.filter(f => f.id && !nodeIdsInDB.includes(f.id))
+
+            console.log({updatedNodes, createdNodes})
+
+            const newNodesTransaction = prisma.node.createMany({
+                data: createdNodes.map((newNode) => ({
+                    id: newNode.id,
+                    result: newNode.result,
+                    config: newNode.config,
+                    name: newNode.name,
+                    type: newNode.type,
+                    templateId: newNode.templateId,
+                    position: newNode.position,
+                    canvasId: id,
+                })),
+            });
+
+            const updatedNodesTransactions = updatedNodes.map((uNode) => prisma.node.update({
+                data: {
+                    result: uNode.result,
+                    config: uNode.config,
+                    position: uNode.position,
+                    name: uNode.name,
+                },
+                where: {
+                    id: uNode.id,
+                }
+            }))
+        }
+
 
         return c.json({});
     }
@@ -492,7 +526,7 @@ const canvasRoutes = new Hono<{Variables: AuthHonoTypes}>({
     // Return the duplicate canvas with nodes (without re-fetching everything)
     return c.json({ canvas: { ...duplicate, nodes: newNodes } }, 201);
 })
-.post('/:canvasId/process',
+.post('/:id/process',
     zValidator('json', processSchema),
     async (c) => {
         const canvasId = c.req.param('canvasId');
