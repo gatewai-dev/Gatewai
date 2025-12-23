@@ -16,7 +16,7 @@ import { useAppDispatch, useAppSelector } from '@/store';
 import { updateTextNodeValue, makeSelectNodeById } from '@/store/nodes';
 
 // Text Node
-const TextNodeComponent = (props: NodeProps<TextNode>) => {
+const TextNodeComponent = memo((props: NodeProps<TextNode>) => {
   const node = useAppSelector(makeSelectNodeById(props.id));
 
   const dispatch = useAppDispatch();
@@ -36,7 +36,7 @@ const TextNodeComponent = (props: NodeProps<TextNode>) => {
       />
     </BaseNode>
   );
-}
+});
 TextNodeComponent.displayName = 'TextNode';
 
 // File Node

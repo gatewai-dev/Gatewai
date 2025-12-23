@@ -1,7 +1,7 @@
 import type { CanvasDetailsRPC } from "@/rpc/types";
 import { createEntityAdapter, createDraftSafeSelector, createSlice } from "@reduxjs/toolkit"
 
-type NodeEntityType = CanvasDetailsRPC["nodes"][number];
+export type NodeEntityType = CanvasDetailsRPC["nodes"][number];
 
 export const nodeAdapter = createEntityAdapter({
   selectId: (node: NodeEntityType) => node.id,
@@ -65,8 +65,6 @@ const nodeSelectors = nodeAdapter.getSelectors<{nodes: NodesState}>(
 );
 
 export const selectNodesState = (state: { nodes: NodesState }) => state.nodes;
-
-
 
 export const makeSelectNodeById = (id: string) => createDraftSafeSelector(
   selectNodesState,

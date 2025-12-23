@@ -3,10 +3,12 @@ import { useDispatch, useSelector } from 'react-redux'
 import { nodesReducer } from './nodes'
 import { nodeTemplatesAPI } from './node-templates'
 import { setupListeners } from '@reduxjs/toolkit/query'
+import { reactFlowReducer } from './rfstate'
 
 export const store = configureStore({
   reducer: {
     nodes: nodesReducer,
+    reactFlow: reactFlowReducer,
     [nodeTemplatesAPI.reducerPath]: nodeTemplatesAPI.reducer,
   },
   middleware: (getDefaultMiddleware) =>

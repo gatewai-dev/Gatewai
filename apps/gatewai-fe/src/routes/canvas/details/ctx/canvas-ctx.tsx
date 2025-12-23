@@ -24,6 +24,7 @@ import type { NodeTemplateWithIO } from '@/types/node-template';
 import { rpcClient } from '@/rpc/client';
 import type { CanvasDetailsRPC, PatchCanvasRPCReq } from '@/rpc/types';
 import throttle from 'lodash/throttle';
+import { onNodeChange, selectRFEdges, selectRFNodes, setEdges, setNodes } from '@/store/rfstate';
 
 interface CanvasContextType {
   canvas: CanvasDetailsRPC | undefined;
@@ -37,12 +38,7 @@ interface CanvasContextType {
   isError: boolean;
   tool: 'select' | 'pan';
   setTool: Dispatch<SetStateAction<'select' | 'pan'>>;
-  undo: () => void;
-  redo: () => void;
-  canUndo: boolean;
-  canRedo: boolean;
   onConnect: OnConnect;
-  onNodeDragStart: (event: MouseEvent, node: Node, nodes: Node[]) => void;
   onNodeDragStop: (event: MouseEvent, node: Node, nodes: Node[]) => void;
   updateNodeConfig: (nodeId: string, updates: Partial<AllNodeConfig>) => void;
   updateNodeResult: (nodeId: string, updates: Partial<NodeResult>) => void;
@@ -270,20 +266,6 @@ const mock_nodes: DbNodeWithTemplate[] = [
   },
 ]
 
-function convertToClientNode(dbNode: DbNode): Node {
-  return {
-    id: dbNode.id,
-    position: dbNode.position as XYPosition,
-    data: dbNode,
-    type: dbNode.type,
-    width: dbNode.width ?? undefined,
-    height: dbNode.height ?? undefined,
-    draggable: dbNode.draggable ?? true,
-    selectable: dbNode.selectable ?? true,
-    deletable: dbNode.deletable ?? true,
-  };
-}
-
 const CanvasProvider = ({
   canvasId,
   children,
@@ -344,17 +326,12 @@ const CanvasProvider = ({
     console.log("Setting mock nodes in store")
   }, [dispatch, canvas])
 
-  const [nodes, setNodes, onNodesChangeBase] = useNodesState<Node>(mock_nodes.map(convertToClientNode));
-  const [edges, setEdges, onEdgesChangeBase] = useEdgesState<Edge>([]);
-  const past = useRef<Array<{ nodes: Node[]; edges: Edge[] }>>([]);
-  const future = useRef<Array<{ nodes: Node[]; edges: Edge[] }>>([]);
+  const nodes = useAppSelector(selectRFNodes);
+  const edges = useAppSelector(selectRFEdges);
+
   const isRestoring = useRef(false);
-  const [canUndo, setCanUndo] = useState(false);
-  const [canRedo, setCanRedo] = useState(false);
   const [tool, setTool] = useState<'select' | 'pan'>('select');
   const timeoutRef = useRef<NodeJS.Timeout | null>(null);
-
-  const throttledNodesChange = useMemo(() => throttle(onNodesChangeBase, 50), [onNodesChangeBase]); // Throttle to 50ms
 
   const { mutateAsync: patchCanvasAsync } = useMutation({
     mutationFn: async (body: PatchCanvasRPCReq["json"]) => {
@@ -376,7 +353,6 @@ const CanvasProvider = ({
       console.error('Save failed:', error);
     },
   });
-
 
   const { mutateAsync: runNodesMutateAsync } = useMutation({
     mutationFn: async (body: { nodeIds: DbNode["id"][] }) => {
@@ -433,109 +409,31 @@ const CanvasProvider = ({
     }, 5000);
   }, [save]);
 
-  const onNodeDragStart = useCallback(() => {
-    if (isRestoring.current) return;
-    past.current = [...past.current, { nodes: [...nodes], edges: [...edges] }];
-    future.current = [];
-    setCanUndo(past.current.length > 0);
-    setCanRedo(false);
-  }, [nodes, edges]);
-
-  const onNodeDragStop = useCallback((event: MouseEvent, node: Node, draggedNodes: Node[]) => {
-    if (isRestoring.current) return;
-
-    // Update state with final positions from React Flow instance
-    if (rfInstance.current) {
-      const currentNodes = rfInstance.current.getNodes();
-      setNodes(currentNodes);
-    }
-
-    scheduleSave();
-  }, [rfInstance, setNodes, scheduleSave]);
-
   const onNodesChange = useCallback(
     (changes: NodeChange<Node>[]) => {
-      if (isRestoring.current) {
-        onNodesChangeBase(changes);
-        return;
-      }
-
-      // Ignore pure selection changes for history
-      const isOnlySelection = changes.every(c => c.type === 'select');
-
-      // Handle position changes with throttle, but no history
-      const isPositionChange = changes.every(c => c.type === 'position');
-
-      if (isOnlySelection) {
-        onNodesChangeBase(changes);
-        return;
-      }
-
-      if (isPositionChange) {
-        throttledNodesChange(changes);
-        return;
-      }
-
-      // Record history for other changes
-      past.current = [...past.current, { nodes: [...nodes], edges: [...edges] }];
-      future.current = [];
-      setCanUndo(past.current.length > 0);
-      setCanRedo(false);
-
-      onNodesChangeBase(changes);
-
-      // Schedule save for meaningful changes
-      scheduleSave();
+      onNodeChange(changes);
     },
-    [nodes, edges, onNodesChangeBase, throttledNodesChange, scheduleSave]
+    []
   );
 
   const onEdgesChange = useCallback(
     (changes: EdgeChange<Edge>[]) => {
-      if (isRestoring.current) {
-        onEdgesChangeBase(changes);
-        return;
-      }
-
-      // Ignore pure selection changes for history
-      const isOnlySelection = changes.every(c => c.type === 'select');
-
-      if (isOnlySelection) {
-        onEdgesChangeBase(changes);
-        return;
-      }
-
-      // Record history for other changes
-      past.current = [...past.current, { nodes: [...nodes], edges: [...edges] }];
-      future.current = [];
-      setCanUndo(past.current.length > 0);
-      setCanRedo(false);
-
-      onEdgesChangeBase(changes);
-
-      // Schedule save for meaningful changes
-      scheduleSave();
+        onEdgesChange(changes);
     },
-    [nodes, edges, onEdgesChangeBase, scheduleSave]
+    []
   );
 
   const onConnect = useCallback(
     (params: Connection) => {
       if (isRestoring.current) return;
 
-      past.current = [...past.current, { nodes: [...nodes], edges: [...edges] }];
-      future.current = [];
-      setCanUndo(past.current.length > 0);
-      setCanRedo(false);
-
       // Determine dataType based on source handle
       const sourceNode = nodes.find(n => n.id === params.source);
       const output = sourceNode?.data.template?.outputTypes?.find((o: any) => o.id === params.sourceHandle);
       const dataType = output?.outputType || 'Text';
-
-      setEdges((eds) => {
+      const newEdges = (() => {
         // Find if there's an existing edge connected to the same target and targetHandle
-        const existingEdge = eds.find(
+        const existingEdge = edges.find(
           (e) =>
             e.target === params.target &&
             e.targetHandle === (params.targetHandle || undefined)
@@ -543,8 +441,8 @@ const CanvasProvider = ({
 
         // If found, remove the existing edge
         let updatedEdges = existingEdge
-          ? eds.filter((e) => e.id !== existingEdge.id)
-          : eds;
+          ? edges.filter((e) => e.id !== existingEdge.id)
+          : edges;
 
         // Add the new edge
         updatedEdges = [
@@ -560,60 +458,21 @@ const CanvasProvider = ({
         ];
 
         return updatedEdges;
-      });
+      })();
+
+      setEdges(newEdges);
 
       // Schedule save after connect
       scheduleSave();
     },
-    [nodes, edges, setEdges, scheduleSave]
+    [nodes, edges, scheduleSave]
   );
-
-  const undo = useCallback(() => {
-    if (past.current.length === 0) return;
-
-    const last = past.current.pop()!;
-    future.current = [...future.current, { nodes: [...nodes], edges: [...edges] }];
-
-    isRestoring.current = true;
-    setNodes([...last.nodes]);
-    setEdges([...last.edges]);
-    isRestoring.current = false;
-
-    setCanUndo(past.current.length > 0);
-    setCanRedo(true);
-
-    // Schedule save after undo
-    scheduleSave();
-  }, [nodes, edges, setNodes, setEdges, scheduleSave]);
-
-  const redo = useCallback(() => {
-    if (future.current.length === 0) return;
-
-    const next = future.current.pop()!;
-    past.current = [...past.current, { nodes: [...nodes], edges: [...edges] }];
-
-    isRestoring.current = true;
-    setNodes([...next.nodes]);
-    setEdges([...next.edges]);
-    isRestoring.current = false;
-
-    setCanRedo(future.current.length > 0);
-    setCanUndo(true);
-
-    // Schedule save after redo
-    scheduleSave();
-  }, [nodes, edges, setNodes, setEdges, scheduleSave]);
 
   const updateNodeConfig = useCallback((nodeId: string, updates: Partial<AllNodeConfig>) => {
     if (isRestoring.current) return;
 
-    past.current = [...past.current, { nodes: [...nodes], edges: [...edges] }];
-    future.current = [];
-    setCanUndo(past.current.length > 0);
-    setCanRedo(false);
-
-    setNodes((nds) =>
-      nds.map((n) => {
+    setNodes(
+      nodes.map((n) => {
         if (n.id === nodeId) {
           return {
             ...n,
@@ -631,18 +490,13 @@ const CanvasProvider = ({
     );
 
     scheduleSave();
-  }, [nodes, edges, setNodes, scheduleSave]);
+  }, [nodes, scheduleSave]);
 
   const updateNodeResult = useCallback((nodeId: string, updates: Partial<NodeResult>) => {
     if (isRestoring.current) return;
 
-    past.current = [...past.current, { nodes: [...nodes], edges: [...edges] }];
-    future.current = [];
-    setCanUndo(past.current.length > 0);
-    setCanRedo(false);
-
-    setNodes((nds) =>
-      nds.map((n) => {
+    setNodes(
+      nodes.map((n) => {
         if (n.id === nodeId) {
           return {
             ...n,
@@ -660,7 +514,7 @@ const CanvasProvider = ({
     );
 
     scheduleSave();
-  }, [nodes, edges, setNodes, scheduleSave]);
+  }, [nodes, scheduleSave]);
 
   const runNodes = useCallback(async (nodeIds: Node["id"][]) => {
     // Save before running
@@ -670,20 +524,10 @@ const CanvasProvider = ({
     console.log({resp});
   }, [runNodesMutateAsync, save])
 
-  // Uncomment when ready to use actual data
-  // useEffect(() => {
-  //   if (initialNodes) setNodes(initialNodes);
-  //   if (initialEdges) setEdges(initialEdges)
-  // }, [initialNodes, initialEdges, setNodes, setEdges])
-
   useEffect(() => {
     setNodes(initialNodes);
     setEdges(initialEdges);
-    past.current = [];
-    future.current = [];
-    setCanUndo(false);
-    setCanRedo(false);
-  }, [initialEdges, setNodes, setEdges, initialNodes]);
+  }, [initialEdges, initialNodes]);
 
   const createNewNode = useCallback((template: NodeTemplateWithIO, position: XYPosition) => {
     const id = generateId();
@@ -723,10 +567,10 @@ const CanvasProvider = ({
       deletable: true,
     };
     console.log({nodeEntity})
-    setNodes((nds) => [...nds, newNode]);
+    setNodes([...nodes, newNode]);
     dispatch(createNode(nodeEntity));
     scheduleSave();
-  }, [canvasId, setNodes, dispatch, scheduleSave]);
+  }, [canvasId, dispatch, nodes, scheduleSave]);
   
   const value = {
     canvas,
@@ -740,13 +584,7 @@ const CanvasProvider = ({
     isError,
     tool,
     setTool,
-    undo,
-    redo,
-    canUndo,
-    canRedo,
     onConnect,
-    onNodeDragStart,
-    onNodeDragStop,
     updateNodeConfig,
     updateNodeResult,
     runNodes,

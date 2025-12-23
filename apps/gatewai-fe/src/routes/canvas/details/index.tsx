@@ -4,6 +4,7 @@ import { ReactflowContainer } from "./reactflow-container";
 import { NodeTemplateDnDProvider } from "@/node-templates/node-template-drag.ctx";
 import { useParams } from "react-router";
 import { SelectedEntitiesProvider } from "./ctx/selected-entity-ctx";
+import { ReactFlowProvider } from "@xyflow/react";
 
 function CanvasDetails() {
     const { canvasId } = useParams();
@@ -11,15 +12,17 @@ function CanvasDetails() {
         return <>Missing canvas identifier</>
     }
     return (
-    <NodeTemplateDnDProvider>
-        <NodeTemplatesProvider>
-            <SelectedEntitiesProvider>
-                <CanvasProvider canvasId={canvasId}>
-                    <ReactflowContainer />
-                </CanvasProvider>
-            </SelectedEntitiesProvider>
-        </NodeTemplatesProvider>
-    </NodeTemplateDnDProvider>);
+        <NodeTemplateDnDProvider>
+            <NodeTemplatesProvider>
+                <SelectedEntitiesProvider>
+                    <ReactFlowProvider>
+                        <CanvasProvider canvasId={canvasId}>
+                            <ReactflowContainer />
+                        </CanvasProvider>
+                    </ReactFlowProvider>
+                </SelectedEntitiesProvider>
+            </NodeTemplatesProvider>
+        </NodeTemplateDnDProvider>);
 }
 
 export { CanvasDetails };

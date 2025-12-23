@@ -6,6 +6,7 @@ import { CustomEdge, CustomConnectionLine } from "../nodes/base";
 import { useCallback, type DragEventHandler } from "react";
 import { NodePalette } from "@/node-templates/node-palette";
 import { useSelectedEntitiesCtx } from "../ctx/selected-entity-ctx";
+import { RightPanel } from "./right-panel";
 
 // Define edge types - you can add more custom edge types here if needed
 const edgeTypes = {
@@ -24,7 +25,6 @@ function ReactflowContainer({ children }: ReactFlowProps) {
     clientEdges,
     tool,
     onConnect,
-    onNodeDragStop,
     rfInstance
   } = useCanvasCtx();
   const { onSelectionChange } = useSelectedEntitiesCtx();
@@ -87,7 +87,6 @@ function ReactflowContainer({ children }: ReactFlowProps) {
         connectionMode={ConnectionMode.Loose}
         onConnect={onConnect}
         isValidConnection={isValidConnection}
-        onNodeDragStop={onNodeDragStop}
       >
         {children}
         <Background />
@@ -96,6 +95,9 @@ function ReactflowContainer({ children }: ReactFlowProps) {
         </Panel>
         <Panel position="bottom-center">
           <Toolbar />
+        </Panel>
+        <Panel position="center-right">
+          <RightPanel />
         </Panel>
       </ReactFlow>
     </div>

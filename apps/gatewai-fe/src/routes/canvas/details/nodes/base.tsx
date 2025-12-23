@@ -1,5 +1,5 @@
-import { memo, type JSX, type ReactNode } from 'react';
-import { Handle, Position, useReactFlow, getBezierPath, type EdgeProps, type NodeProps, type Node, type ConnectionLineComponentProps } from '@xyflow/react';
+import { memo, useCallback, useMemo, type JSX, type ReactNode } from 'react';
+import { Handle, Position, getBezierPath, type EdgeProps, type NodeProps, type Node, type ConnectionLineComponentProps, useStore } from '@xyflow/react';
 import type { AnyNode } from './node-props';
 // Updated color mapping for DataType enum from schema with actual hex colors
 const dataTypeColors: Record<string, { bg: string; stroke: string; hex: string; text: string }> = {
@@ -19,13 +19,11 @@ const getColorForType = (type: string) => {
 const BaseNode = memo((props: NodeProps<AnyNode> & {
   children?: ReactNode;
 }) => {
-  const { getEdges } = useReactFlow();
-  const edges = getEdges();
   const nodeId = props.id;
+  const edges = useStore((state) => state.edges);
   // Handle optional inputTypes and outputTypes from template
-  const inputTypes = props.data?.template?.inputTypes ?? [];
-  const outputTypes = props.data?.template?.outputTypes ?? [];
-  console.log({inputTypes, outputTypes})
+  const inputTypes = useMemo(() => props.data?.template?.inputTypes ?? [], [props.data?.template?.inputTypes]);
+  const outputTypes = useMemo(() => props.data?.template?.outputTypes ?? [], [props.data?.template?.outputTypes]);
 
   const fixedInputCount = inputTypes.length;
   const fixedOutputCount = outputTypes.length;
@@ -38,38 +36,26 @@ const BaseNode = memo((props: NodeProps<AnyNode> & {
   const numInputs = variableInputs ? Math.max(fixedInputCount, inputEdges.length + 1) : fixedInputCount;
   const numOutputs = variableOutputs ? Math.max(fixedOutputCount, outputEdges.length + 1) : fixedOutputCount;
 
-  const getInputTextColor = (i: number) => {
-    if (inputTypes.length === 0) return getColorForType('File').text;
-    const type = (i < inputTypes.length) ? inputTypes[i].inputType : inputTypes[inputTypes.length - 1].inputType;
-    return getColorForType(type).text;
-  };
-
-  const getInputType = (i: number) => {
+  const getInputType = useCallback((i: number) => {
     if (inputTypes.length === 0) return 'Unknown';
     return (i < inputTypes.length) ? inputTypes[i].inputType : inputTypes[inputTypes.length - 1].inputType;
-  };
+  }, [inputTypes])
 
-  const getInputLabel = (i: number) => {
+  const getInputLabel = useCallback((i: number) => {
     if (inputTypes.length === 0) return 'Input';
     const label = (i < inputTypes.length) ? inputTypes[i].label : inputTypes[inputTypes.length - 1].label;
     if (!label) {
       return getInputType(i);
     }
     return label;
-  };
+  }, [getInputType, inputTypes]);
 
-  const getOutputTextColor = (i: number) => {
-    if (outputTypes.length === 0) return getColorForType('File').text;
-    const type = (i < outputTypes.length) ? outputTypes[i].outputType : outputTypes[outputTypes.length - 1].outputType;
-    return getColorForType(type).text;
-  };
-
-  const getOutputType = (i: number) => {
+  const getOutputType = useCallback((i: number) => {
     if (outputTypes.length === 0) return 'Unknown';
     return (i < outputTypes.length) ? outputTypes[i].outputType : outputTypes[outputTypes.length - 1].outputType;
-  };
+  }, [outputTypes]);
 
-  const getOutputLabel = (i: number) => {
+  const getOutputLabel = useCallback((i: number) => {
     if (outputTypes.length === 0) return 'Output';
     const label = (i < outputTypes.length) ? outputTypes[i].label : outputTypes[outputTypes.length - 1].label;
 
@@ -77,10 +63,33 @@ const BaseNode = memo((props: NodeProps<AnyNode> & {
       return getOutputType(i);
     }
     return label;
-  };
+  }, [getOutputType, outputTypes]);
+
+  const inputConfigs = useMemo(() => {
+    return Array.from({ length: numInputs }).map((_, i) => {
+      const type = getInputType(i);
+      const color = getColorForType(type);
+      return {
+        label: getInputLabel(i),
+        textColorClass: color.text,
+        hex: color.hex,
+      };
+    });
+  }, [numInputs, getInputType, getInputLabel]);
+
+  const outputConfigs = useMemo(() => {
+    return Array.from({ length: numOutputs }).map((_, i) => {
+      const type = getOutputType(i);
+      const color = getColorForType(type);
+      return {
+        label: getOutputLabel(i),
+        textColorClass: color.text,
+        hex: color.hex,
+      };
+    });
+  }, [getOutputLabel, getOutputType, numOutputs]);
 
   const nodeBackgroundColor = 'bg-background';
-  console.log(getOutputLabel(0))
   return (
     <div
       tabIndex={0}
@@ -100,14 +109,18 @@ const BaseNode = memo((props: NodeProps<AnyNode> & {
                 position={Position.Left}
                 tabIndex={0}
                 style={{ 
-                  background: getColorForType(getInputType(i)).hex,
+                  background: inputConfigs[i].hex,
                   border: '2px solid white',
                 }}
                 className={`w-3 h-3 rounded-full left-[50%]! transition-all duration-200 focus:outline-none hover:scale-125`}
               />
             </div>
-            <span className={`absolute left-0 top-[-20px] translate-x-0 group-hover:translate-x-[-100%] group-focus:translate-x-[-100%] group-focus-within:translate-x-[-100%] [.selected_&]:translate-x-[-100%] ${getInputTextColor(i)} px-1 py-1 text-xs opacity-0 group-hover:opacity-100 group-focus:opacity-100 group-focus-within:opacity-100 [.selected_&]:opacity-100 transition-all duration-200 pointer-events-none whitespace-nowrap font-medium text-right`}>
-              {getInputLabel(i)}
+            <span className={`absolute left-0 -top-5 translate-x-0 group-hover:-translate-x-full 
+              group-focus:-translate-x-full group-focus-within:-translate-x-full in-[.selected]:-translate-x-full 
+              ${inputConfigs[i].textColorClass} px-1 py-1 text-xs opacity-0 group-hover:opacity-100 group-focus:opacity-100
+               group-focus-within:opacity-100 in-[.selected]:opacity-100 transition-all duration-200 pointer-events-none
+                whitespace-nowrap font-medium text-right`}>
+              {inputConfigs[i].label}
             </span>
           </div>
         );
@@ -136,14 +149,19 @@ const BaseNode = memo((props: NodeProps<AnyNode> & {
                 position={Position.Right}
                 tabIndex={0}
                 style={{ 
-                  background: getColorForType(getOutputType(i)).hex,
+                  background: outputConfigs[i].hex,
                   border: '2px solid white',
                 }}
                 className={`w-3 h-3 rounded-full right-[50%]! transition-all duration-200 focus:outline-none hover:scale-125`}
               />
             </div>
-            <span className={`absolute right-0 top-[-20px] translate-x-0 group-hover:translate-x-[100%] group-focus:translate-x-[100%] group-focus-within:translate-x-[100%] [.selected_&]:translate-x-[100%] ${getOutputTextColor(i)} px-1 py-1 text-xs opacity-0 group-hover:opacity-100 group-focus:opacity-100 group-focus-within:opacity-100 [.selected_&]:opacity-100 transition-all duration-200 pointer-events-none whitespace-nowrap font-medium text-left`}>
-              {getOutputLabel(i)}
+            <span className={`
+                absolute right-0 -top-5 translate-x-0 group-hover:translate-x-full 
+                group-focus:translate-x-full group-focus-within:translate-x-full in-[.selected]:translate-x-full
+                 ${outputConfigs[i].textColorClass} px-1 py-1 text-xs opacity-0 group-hover:opacity-100 
+                 group-focus:opacity-100 group-focus-within:opacity-100 in-[.selected]:opacity-100 
+                 transition-all duration-200 pointer-events-none whitespace-nowrap font-medium text-left`}>
+              {outputConfigs[i].label}
             </span>
           </div>
         );
@@ -166,7 +184,7 @@ interface CustomEdgeProps extends EdgeProps {
   data?: { dataType?: string };
 }
 
-const CustomEdge = ({
+const CustomEdge = memo(({
   id,
   sourceX,
   sourceY,
@@ -199,14 +217,14 @@ const CustomEdge = ({
         stroke: color,
         strokeWidth: 3,
       }}
-      className="react-flow__edge-path fill-none transition-all duration-200 hover:!stroke-[5px] hover:opacity-80"
+      className="react-flow__edge-path fill-none transition-all duration-200 hover:stroke-[5px]! hover:opacity-80"
       d={edgePath}
       markerEnd={markerEnd}
     />
   );
-};
+});
 
-const CustomConnectionLine = ({
+const CustomConnectionLine = memo(({
   fromX,
   fromY,
   toX,
@@ -259,6 +277,6 @@ const CustomConnectionLine = ({
       />
     </g>
   );
-};
+});
 
 export { BaseNode, CustomEdge, CustomConnectionLine };

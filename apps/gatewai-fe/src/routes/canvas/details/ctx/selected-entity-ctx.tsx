@@ -23,10 +23,11 @@ const SelectedEntitiesProvider = ({
   const [selectedEdgeIDs, setSelectedEdgeIDs] = useState<Edge["id"][]>([]);
 
   const onSelectionChange = useCallback(({ nodes, edges }: {nodes: ClientNode[], edges: ClientEdge[]}) => {
-    setSelectedEdgeIDs(nodes.map((node) => node.id));
+    setSelectedNodeIDs(nodes.map((node) => node.id));
     setSelectedEdgeIDs(edges.map((edge) => edge.id));
   }, []);
 
+  console.log({selectedNodeIDs})
   const value: SelectedEntitiesContextType = {
     selectedEdgeIDs,
     selectedNodeIDs,
