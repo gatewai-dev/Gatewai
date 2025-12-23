@@ -48,11 +48,31 @@ enum DataType {
   Any // For Input's that accept Any Data
 }
 
+enum Machine {
+  micro // 	0.25	0.25	10GB
+  small_1x
+  small_2x
+  medium_1x
+  medium_2x
+  large_1x
+  large_2x
+}
+
 enum TaskStatus {
-  Pending
-  InProgress
-  Completed
-  Failed
+  WAITING_FOR_DEPLOY
+  QUEUED
+  EXECUTING
+  REATTEMPTING
+  FROZEN
+  COMPLETED
+  CANCELED
+  FAILED
+  CRASHED
+  INTERRUPTED
+  SYSTEM_FAILURE
+  DELAYED
+  EXPIRED
+  TIMED_OUT
 }
 
 enum ProcessEnvironment {
@@ -277,13 +297,12 @@ model AISession {
 model Task {
   id              String       @id @default(cuid())
   name            String
-  description     String?
-  status          TaskStatus   @default(Pending)
   createdAt       DateTime     @default(now())
   updatedAt       DateTime     @updatedAt
   // Relationships
   canvas          Canvas       @relation(fields: [canvasId], references: [id], onDelete: Cascade)
   canvasId        String
+
   node            Node?        @relation(fields: [nodeId], references: [id], onDelete: SetNull)
   nodeId          String?
 
@@ -292,6 +311,25 @@ model Task {
 
   publicAccessToken String?    @unique
   taskId          String?      @unique
+  batchId         String?
+  payload         Json?
+  output          Json?
+  number          Float
+  status          TaskStatus?
+  durationMs      Float
+  costInCents     Float
+  baseCostInCents Float
+  tags            Json?
+  idempotencyKey  String?
+  ttl             String?
+  expiredAt       DateTime?
+  finishedAt      DateTime?
+  startedAt       DateTime?
+  delayedUntil    DateTime?
+  queuedAt        DateTime?
+  metadata        Json?
+  error           Json?
+  isTest          Boolean
 
   @@map("task")
 }

@@ -174,7 +174,7 @@ const canvasRoutes = new Hono<{Variables: AuthHonoTypes}>({
             );
         }
 
-        let deleteEdgeOp = null;
+        const deleteEdgeOp = null;
         let deleteNodeOp = null;
         const nodeUpdateCreateTransactions = [];
 
@@ -287,7 +287,7 @@ const canvasRoutes = new Hono<{Variables: AuthHonoTypes}>({
                         const clientHandle = nodeHandles.find(h => h.templateHandleId === th.id);
                         const handleId = clientHandle?.id; // Client-generated handle ID
                         
-                        const createHandleData: any = {
+                        const createHandleData = {
                             nodeId: newNode.id,
                             type: th.type,
                             dataType: th.dataType,
@@ -480,129 +480,6 @@ const canvasRoutes = new Hono<{Variables: AuthHonoTypes}>({
 
     return c.json({ success: true });
 })
-.post('/:canvasId/nodes',
-    zValidator('json', nodeSchema),
-    async (c) => {
-        const canvasId = c.req.param('canvasId');
-        const validated = c.req.valid('json');
-        const user = c.get('user');
-
-        // Verify canvas ownership
-        const canvas = await prisma.canvas.findFirst({
-            where: { id: canvasId, userId: user?.id }
-        });
-
-        if (!canvas) {
-            throw new HTTPException(404, { message: 'Canvas not found' });
-        }
-
-        // Fetch template
-        const template = await prisma.nodeTemplate.findUnique({
-            where: { id: validated.templateId },
-            include: { templateHandles: true }
-        });
-
-        if (!template) {
-            throw new HTTPException(400, { message: 'Invalid template' });
-        }
-
-        let node;
-        await prisma.$transaction(async (tx) => {
-            node = await tx.node.create({
-                data: {
-                    name: validated.name,
-                    type: validated.type,
-                    position: validated.position,
-                    width: validated.width,
-                    height: validated.height,
-                    draggable: validated.draggable,
-                    selectable: validated.selectable,
-                    deletable: validated.deletable,
-                    config: validated.config,
-                    result: validated.result,
-                    isDirty: validated.isDirty,
-                    zIndex: validated.zIndex,
-                    templateId: validated.templateId,
-                    canvasId,
-                }
-            });
-
-            // Sort templateHandles by id for consistent order
-            const sortedHandles = [...template.templateHandles].sort((a, b) => a.id.localeCompare(b.id));
-
-            for (let order = 0; order < sortedHandles.length; order++) {
-                const th = sortedHandles[order];
-                await tx.handle.create({
-                    data: {
-                        nodeId: node.id,
-                        type: th.type,
-                        dataType: th.dataType,
-                        label: th.label,
-                        order,
-                        required: th.required,
-                        templateHandleId: th.id,
-                    }
-                });
-            }
-        });
-
-        // Fetch the node with includes
-        node = await prisma.node.findUnique({
-            where: { id: node!.id },
-            include: {
-                template: {
-                    include: {
-                        templateHandles: true,
-                    }
-                }
-            }
-        });
-
-        return c.json({ node }, 201);
-    }
-).post('/:canvasId/edges',
-    zValidator('json', edgeSchema),
-    async (c) => {
-        const canvasId = c.req.param('canvasId');
-        const validated = c.req.valid('json');
-        const user = c.get('user');
-
-        // Verify canvas ownership and that both nodes exist in this canvas
-        const nodes = await prisma.node.findMany({
-            where: {
-                id: { in: [validated.source, validated.target] },
-                canvasId,
-                canvas: {
-                    userId: user?.id
-                }
-            }
-        });
-
-        if (nodes.length !== 2) {
-            throw new HTTPException(400, { message: 'Invalid source or target node' });
-        }
-
-        // Check if edge already exists (considering handles)
-        const existing = await prisma.edge.findFirst({
-            where: {
-                source: validated.source,
-                sourceHandleId: validated.sourceHandleId ?? undefined,
-                target: validated.target,
-                targetHandleId: validated.targetHandleId ?? undefined,
-            }
-        });
-
-        if (existing) {
-            throw new HTTPException(400, { message: 'Edge already exists' });
-        }
-
-        const edge = await prisma.edge.create({
-            data: validated,
-        });
-
-        return c.json({ edge }, 201);
-    }
-)
 .post('/:id/duplicate', async (c) => {
     const id = c.req.param('id');
     const user = c.get('user');

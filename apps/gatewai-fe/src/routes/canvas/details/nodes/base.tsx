@@ -1,5 +1,5 @@
 import { memo, useMemo, type JSX, type ReactNode } from 'react';
-import { Handle, Position, getBezierPath, type EdgeProps, type NodeProps, type Node, type ConnectionLineComponentProps } from '@xyflow/react';
+import { Handle, Position, getBezierPath, type EdgeProps, type NodeProps, type Node, type ConnectionLineComponentProps, useEdges } from '@xyflow/react';
 import type { CanvasDetailsNode } from '@/rpc/types';
 
 
@@ -23,7 +23,7 @@ const getColorForType = (type: string) => {
 const BaseNode = memo((props: NodeProps<Node<CanvasDetailsNode>> & {
   children?: ReactNode;
 }) => {
-  const { data, selected, type } = props;
+  const { data, selected, type, id } = props;
   // 1. Separate and Sort Handles
   // We use useMemo to avoid re-sorting on every render unless data.handles changes
   const { inputs, outputs } = useMemo(() => {
@@ -38,6 +38,8 @@ const BaseNode = memo((props: NodeProps<Node<CanvasDetailsNode>> & {
     };
   }, [data.handles]);
 
+  const edges = useEdges();
+
   const nodeBackgroundColor = 'bg-background';
 
   return (
@@ -51,6 +53,7 @@ const BaseNode = memo((props: NodeProps<Node<CanvasDetailsNode>> & {
         const color = getColorForType(handle.dataType);
         // Calculate dynamic top position
         const topPosition = `${(i + 1) * (30) + 20}px`;
+        const isConnected = edges.some(edge => edge.target === id && edge.targetHandle === handle.id);
         return (
           <div 
             key={handle.id} 
@@ -64,8 +67,8 @@ const BaseNode = memo((props: NodeProps<Node<CanvasDetailsNode>> & {
                 position={Position.Left}
                 tabIndex={0}
                 style={{ 
-                  background: color.hex,
-                  border: '2px solid white',
+                  background: isConnected ? color.hex : 'transparent',
+                  border: isConnected ? 'none' : `2px solid ${color.hex}`,
                 }}
                 className={`w-3 h-3 rounded-full left-[50%]! transition-all duration-200 focus:outline-none hover:scale-125`}
               />
@@ -76,7 +79,7 @@ const BaseNode = memo((props: NodeProps<Node<CanvasDetailsNode>> & {
               ${color.text} px-1 py-1 text-xs opacity-0 group-hover:opacity-100 group-focus:opacity-100
                 group-focus-within:opacity-100 in-[.selected]:opacity-100 transition-all duration-200 pointer-events-none
                 whitespace-nowrap font-medium text-right`}>
-              {handle.label || handle.dataType} {handle.required ?? <>*</>}
+              {handle.label || handle.dataType} {handle.required && '*'}
             </span>
           </div>
         );
@@ -99,6 +102,7 @@ const BaseNode = memo((props: NodeProps<Node<CanvasDetailsNode>> & {
         const color = getColorForType(handle.dataType);
         // Calculate dynamic top position
         const topPosition = `${(i + 1) * (30) + 20}px`;
+        const isConnected = edges.some(edge => edge.source === id && edge.sourceHandle === handle.id);
 
         return (
           <div 
@@ -113,8 +117,8 @@ const BaseNode = memo((props: NodeProps<Node<CanvasDetailsNode>> & {
                 position={Position.Right}
                 tabIndex={0}
                 style={{
-                  background: color.hex,
-                  border: '2px solid white',
+                  background: isConnected ? color.hex : 'transparent',
+                  border: isConnected ? 'none' : `2px solid ${color.hex}`,
                 }}
                 className={`w-3 h-3 rounded-full right-[50%]! transition-all duration-200 focus:outline-none hover:scale-125`}
               />
@@ -179,7 +183,7 @@ const CustomConnectionLine = memo(({
         className="animated"
         d={edgePath}
         style={{
-          animation: 'dashdraw 0.5s linear infinite',
+          animation: 'dashdraw 0.2s linear infinite',
           strokeDasharray: '5, 5',
         }}
       />
