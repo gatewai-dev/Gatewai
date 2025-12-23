@@ -292,7 +292,6 @@ const CanvasProvider = ({
   const dispatch = useAppDispatch();
   const rfInstance = useRef<ReactFlowInstance | undefined>(undefined);
   const storeNodes = useAppSelector(nodeSelectors.selectAll);
-  const [selectedNodes]
 
   const {
     data: canvas,

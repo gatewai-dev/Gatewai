@@ -5,6 +5,7 @@ import { Toolbar } from "./toolbar";
 import { CustomEdge, CustomConnectionLine } from "../nodes/base";
 import { useCallback, type DragEventHandler } from "react";
 import { NodePalette } from "@/node-templates/node-palette";
+import { useSelectedEntitiesCtx } from "../ctx/selected-entity-ctx";
 
 // Define edge types - you can add more custom edge types here if needed
 const edgeTypes = {
@@ -26,6 +27,7 @@ function ReactflowContainer({ children }: ReactFlowProps) {
     onNodeDragStop,
     rfInstance
   } = useCanvasCtx();
+  const { onSelectionChange } = useSelectedEntitiesCtx();
 
     const isValidConnection = useCallback(
     (connection: Connection | Edge) => {
@@ -76,6 +78,7 @@ function ReactflowContainer({ children }: ReactFlowProps) {
         zoomOnPinch={true}
         zoomOnScroll={true}
         nodesDraggable={tool === 'select'}
+        onSelectionChange={onSelectionChange}
         elementsSelectable={tool === 'select'}
         panOnDrag={tool === 'pan'}
         selectionOnDrag={tool === 'select'}
