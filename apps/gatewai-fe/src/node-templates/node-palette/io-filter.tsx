@@ -9,37 +9,28 @@ import { useNodePalette } from './node-palette.ctx';
 import { useNodeTemplates } from '../node-templates.ctx';
 
 export function DataTypeMultiSelect() {
-  const { fromType, toTypes, setFromType, setToTypes } = useNodePalette();
-  const [openInput, setOpenInput] = useState(false);
-  const [openOutput, setOpenOutput] = useState(false);
-  const [localFromType, setLocalFromType] = useState(fromType);
+  const { fromTypes, toTypes, setFromTypes, setToTypes } = useNodePalette();
+  const [open, setOpen] = useState(false);
+  const [localFromTypes, setLocalFromTypes] = useState(fromTypes);
   const [localToTypes, setLocalToTypes] = useState(toTypes);
   const { nodeTemplates } = useNodeTemplates();
 
   // Dynamically populate all unique data types from nodeTemplates
-  const allDataTypes = Array.from(
-    new Set(
-      nodeTemplates
-        ?.flatMap((template) =>
-          [...(template.inputTypes ?? []).map((input) => input.inputType), ...(template.outputTypes ?? []).map((output) => output.outputType)]
-        ) || []
-    )
-  );
+  const templateHandles = Array.from(new Set(nodeTemplates?.flatMap((tmp) => tmp.templateHandles)));
+  const inputDataTypes = new Set(templateHandles.filter(f => f.type === 'Input').map(m => m.dataType));
+  const outputDataTypes = new Set(templateHandles.filter(f => f.type === 'Output').map(m => m.dataType));
 
   useEffect(() => {
-    if (openInput) {
-      setLocalFromType(fromType);
-    }
-  }, [openInput, fromType]);
-
-  useEffect(() => {
-    if (openOutput) {
+    if (open) {
+      setLocalFromTypes(fromTypes);
       setLocalToTypes(toTypes);
     }
-  }, [openOutput, toTypes]);
+  }, [open, fromTypes, toTypes]);
 
   const toggleFromType = (type: string) => {
-    setLocalFromType(type);
+    setLocalFromTypes((prev) =>
+      prev.includes(type) ? prev.filter((t) => t !== type) : [...prev, type]
+    );
   };
 
   const toggleToType = (type: string) => {
@@ -48,94 +39,69 @@ export function DataTypeMultiSelect() {
     );
   };
 
-  const applyInputChanges = () => {
-    setFromType(localFromType);
-    setOpenInput(false);
-  };
-
-  const applyOutputChanges = () => {
+  const applyChanges = () => {
+    setFromTypes(localFromTypes);
     setToTypes(localToTypes);
-    setOpenOutput(false);
   };
 
-  const displayFrom = localFromType || 'Input';
-  const displayTo = localToTypes.length ? localToTypes.join(' ') : 'Output';
+  const displayFrom = fromTypes.length ? fromTypes.join(' ') : 'Input';
+  const displayTo = toTypes.length ? toTypes.join(' ') : 'Output';
 
   return (
-    <>
-      <Popover open={openInput} onOpenChange={setOpenInput}>
-        <PopoverTrigger asChild>
-          <Button
-            variant="outline"
-            role="combobox"
-            aria-expanded={openInput}
-            className="w-full justify-between mb-2"
-          >
-            From {displayFrom}
-            <ChevronsUpDown className="ml-2 h-4 w-4 shrink-0 opacity-50" />
-          </Button>
-        </PopoverTrigger>
-        <PopoverContent className="w-full p-0">
-          <Command>
-            <CommandGroup>
-              {allDataTypes.map((type) => (
-                <CommandItem
-                  key={type}
-                  onSelect={() => toggleFromType(type)}
-                >
-                  <Check
-                    className={cn(
-                      'mr-2 h-4 w-4',
-                      localFromType === type ? 'opacity-100' : 'opacity-0'
-                    )}
-                  />
-                  {type}
-                </CommandItem>
-              ))}
-              <CommandItem onSelect={applyInputChanges}>
-                Apply Input Filter
+    <Popover open={open} onOpenChange={(newOpen) => {
+      setOpen(newOpen);
+      if (!newOpen) {
+        applyChanges();
+      }
+    }}>
+      <PopoverTrigger asChild>
+        <Button
+          variant="outline"
+          size="sm"
+          role="combobox"
+          aria-expanded={open}
+          className="w-full justify-between"
+        >
+          From {displayFrom} to {displayTo}
+          <ChevronsUpDown className="ml-2 h-4 w-4 shrink-0 opacity-50" />
+        </Button>
+      </PopoverTrigger>
+      <PopoverContent className="w-full p-0">
+        <Command className="max-h-[400px] overflow-y-auto">
+          <CommandGroup heading="From">
+            {Array.from(inputDataTypes).map((type) => (
+              <CommandItem
+                key={type}
+                onSelect={() => toggleFromType(type)}
+              >
+                <Check
+                  className={cn(
+                    'mr-2 h-4 w-4',
+                    localFromTypes.includes(type) ? 'opacity-100' : 'opacity-0'
+                  )}
+                />
+                {type}
               </CommandItem>
-            </CommandGroup>
-          </Command>
-        </PopoverContent>
-      </Popover>
-
-      <Popover open={openOutput} onOpenChange={setOpenOutput}>
-        <PopoverTrigger asChild>
-          <Button
-            variant="outline"
-            role="combobox"
-            aria-expanded={openOutput}
-            className="w-full justify-between"
-          >
-            To {displayTo}
-            <ChevronsUpDown className="ml-2 h-4 w-4 shrink-0 opacity-50" />
-          </Button>
-        </PopoverTrigger>
-        <PopoverContent className="w-full p-0">
-          <Command>
-            <CommandGroup>
-              {allDataTypes.filter((type) => type !== localFromType).map((type) => (
-                <CommandItem
-                  key={type}
-                  onSelect={() => toggleToType(type)}
-                >
-                  <Check
-                    className={cn(
-                      'mr-2 h-4 w-4',
-                      localToTypes.includes(type) ? 'opacity-100' : 'opacity-0'
-                    )}
-                  />
-                  {type}
-                </CommandItem>
-              ))}
-              <CommandItem onSelect={applyOutputChanges}>
-                Match this search
+            ))}
+          </CommandGroup>
+          <CommandGroup heading="To">
+            {Array.from(outputDataTypes).map((type) => (
+              <CommandItem
+                key={type}
+                onSelect={() => toggleToType(type)}
+              >
+                <Check
+                  className={cn(
+                    'mr-2 h-4 w-4',
+                    localToTypes.includes(type) ? 'opacity-100' : 'opacity-0'
+                  )}
+                />
+                {type}
               </CommandItem>
-            </CommandGroup>
-          </Command>
-        </PopoverContent>
-      </Popover>
-    </>
+            ))}
+          </CommandGroup>
+        </Command>
+      </PopoverContent>
+    </Popover>
   );
 }

@@ -176,11 +176,12 @@ const canvasRoutes = new Hono<{Variables: AuthHonoTypes}>({
 
         let deleteEdgeOp = null;
         let deleteNodeOp = null;
-        const updateCreateTransactions = [];
+        const nodeUpdateCreateTransactions = [];
 
         // Collect templateIds for new nodes
         const templateIds = new Set<string>();
         const createIndices: number[] = [];
+        const newNodeIds: string[] = []; // Track new node IDs
 
         // Process nodes
         if (validated.nodes) {
@@ -209,7 +210,7 @@ const canvasRoutes = new Hono<{Variables: AuthHonoTypes}>({
 
                 if (nodeId && existingNodeIds.has(nodeId)) {
                     // Update (exclude type and templateId)
-                    updateCreateTransactions.push(
+                    nodeUpdateCreateTransactions.push(
                         prisma.node.update({
                             where: { id: nodeId },
                             data: updateData,
@@ -226,8 +227,9 @@ const canvasRoutes = new Hono<{Variables: AuthHonoTypes}>({
                     };
                     if (nodeId) {
                         createData.id = nodeId;
+                        newNodeIds.push(nodeId);
                     }
-                    updateCreateTransactions.push(
+                    nodeUpdateCreateTransactions.push(
                         prisma.node.create({
                             data: createData,
                         })
@@ -248,7 +250,100 @@ const canvasRoutes = new Hono<{Variables: AuthHonoTypes}>({
             templateMap = new Map(templates.map(t => [t.id, t]));
         }
 
-        // Process edges
+        // Add delete operations in order: edges first, then nodes
+        if (deleteEdgeOp) {
+            transaction.push(deleteEdgeOp);
+        }
+        if (deleteNodeOp) {
+            transaction.push(deleteNodeOp);
+        }
+        transaction.push(...nodeUpdateCreateTransactions);
+
+        const results = await prisma.$transaction(transaction);
+
+        // Extract update/create results (last part of results)
+        const nodeUpdateCreateResults = results.slice(results.length - nodeUpdateCreateTransactions.length);
+
+        // Create handles for new nodes
+        const handleTransactions = [];
+        const handleIdMap = new Map<string, string>(); // Map client handle IDs to DB handle IDs
+        
+        let resultIndex = 0;
+        for (const createIndex of createIndices) {
+            if (createIndex !== -1) {
+                const node = validated.nodes![createIndex];
+                const newNode = nodeUpdateCreateResults[resultIndex];
+                const template = templateMap.get(node.templateId);
+                
+                if (template) {
+                    // Sort templateHandles by id for consistent order
+                    const sortedHandles = [...template.templateHandles].sort((a, b) => a.id.localeCompare(b.id));
+                    
+                    // If the node has handles in the request, map them
+                    const nodeHandles = node.handles || [];
+                    
+                    sortedHandles.forEach((th, order) => {
+                        // Find matching handle from request by templateHandleId
+                        const clientHandle = nodeHandles.find(h => h.templateHandleId === th.id);
+                        const handleId = clientHandle?.id; // Client-generated handle ID
+                        
+                        const createHandleData: any = {
+                            nodeId: newNode.id,
+                            type: th.type,
+                            dataType: th.dataType,
+                            label: th.label,
+                            order,
+                            required: th.required,
+                            templateHandleId: th.id,
+                        };
+                        
+                        // Don't set the ID - let the database generate it
+                        // We'll map it after creation
+                        handleTransactions.push({
+                            operation: prisma.handle.create({
+                                data: createHandleData,
+                            }),
+                            clientHandleId: handleId,
+                        });
+                    });
+                }
+            }
+            resultIndex++;
+        }
+
+        // Execute handle creation and build ID mapping
+        if (handleTransactions.length > 0) {
+            const createdHandles = await prisma.$transaction(
+                handleTransactions.map(ht => ht.operation)
+            );
+            
+            // Build mapping from client handle IDs to database handle IDs
+            createdHandles.forEach((handle, index) => {
+                const clientHandleId = handleTransactions[index].clientHandleId;
+                if (clientHandleId) {
+                    handleIdMap.set(clientHandleId, handle.id);
+                }
+            });
+        }
+
+        // Now fetch all existing handles to complete the mapping
+        const allHandles = await prisma.handle.findMany({
+            where: {
+                node: {
+                    canvasId: id
+                }
+            }
+        });
+
+        // Add existing handles to the map (in case edges reference existing handles)
+        allHandles.forEach(handle => {
+            if (!handleIdMap.has(handle.id)) {
+                handleIdMap.set(handle.id, handle.id);
+            }
+        });
+
+        // Process edges AFTER handles are created
+        const edgeTransactions = [];
         if (validated.edges) {
             const existingEdges = await prisma.edge.findMany({
                 where: {
@@ -266,31 +361,55 @@ const canvasRoutes = new Hono<{Variables: AuthHonoTypes}>({
             const toDeleteEdges = existingEdges.filter(e => !providedEdgeMap.has(e.id)).map(e => e.id);
 
             if (toDeleteEdges.length > 0) {
-                deleteEdgeOp = prisma.edge.deleteMany({
-                    where: {
-                        id: { in: toDeleteEdges }
-                    }
-                });
+                edgeTransactions.push(
+                    prisma.edge.deleteMany({
+                        where: {
+                            id: { in: toDeleteEdges }
+                        }
+                    })
+                );
             }
 
             for (const edge of providedEdges) {
-                const { id: edgeId, ...updateData } = edge;
+                const { id: edgeId, sourceHandleId, targetHandleId, ...edgeData } = edge;
+
+                // Map client handle IDs to database handle IDs
+                const dbSourceHandleId = handleIdMap.get(sourceHandleId!) || sourceHandleId;
+                const dbTargetHandleId = handleIdMap.get(targetHandleId!) || targetHandleId;
+
+                if (!dbSourceHandleId || !dbTargetHandleId) {
+                    console.error(`Missing handle IDs for edge ${edgeId}:`, {
+                        sourceHandleId,
+                        targetHandleId,
+                        dbSourceHandleId,
+                        dbTargetHandleId
+                    });
+                    continue; // Skip this edge
+                }
 
                 if (edgeId && existingEdgeIds.has(edgeId)) {
                     // Update
-                    updateCreateTransactions.push(
+                    edgeTransactions.push(
                         prisma.edge.update({
                             where: { id: edgeId },
-                            data: updateData,
+                            data: {
+                                ...edgeData,
+                                sourceHandleId: dbSourceHandleId,
+                                targetHandleId: dbTargetHandleId,
+                            },
                         })
                     );
                 } else {
                     // Create
-                    const createData: EdgeCreateArgs["data"] = updateData;
+                    const createData: any = {
+                        ...edgeData,
+                        sourceHandleId: dbSourceHandleId,
+                        targetHandleId: dbTargetHandleId,
+                    };
                     if (edgeId) {
                         createData.id = edgeId;
                     }
-                    updateCreateTransactions.push(
+                    edgeTransactions.push(
                         prisma.edge.create({
                             data: createData,
                         })
@@ -299,53 +418,9 @@ const canvasRoutes = new Hono<{Variables: AuthHonoTypes}>({
             }
         }
 
-        // Add delete operations in order: edges first, then nodes
-        if (deleteEdgeOp) {
-            transaction.push(deleteEdgeOp);
-        }
-        if (deleteNodeOp) {
-            transaction.push(deleteNodeOp);
-        }
-        transaction.push(...updateCreateTransactions);
-
-        const results = await prisma.$transaction(transaction);
-
-        // Extract update/create results (last part of results)
-        const updateCreateResults = results.slice(results.length - updateCreateTransactions.length);
-
-        // Create handles for new nodes (outside transaction for simplicity)
-        const handleTransactions = [];
-        let resultIndex = 0;
-        for (const createIndex of createIndices) {
-            if (createIndex !== -1) {
-                const node = validated.nodes![createIndex];
-                const newNode = updateCreateResults[resultIndex];
-                const template = templateMap.get(node.templateId);
-                if (template) {
-                    // Sort templateHandles by id for consistent order
-                    const sortedHandles = [...template.templateHandles].sort((a, b) => a.id.localeCompare(b.id));
-                    sortedHandles.forEach((th, order) => {
-                        handleTransactions.push(
-                            prisma.handle.create({
-                                data: {
-                                    nodeId: newNode.id,
-                                    type: th.type,
-                                    dataType: th.dataType,
-                                    label: th.label,
-                                    order,
-                                    required: th.required,
-                                    templateHandleId: th.id,
-                                }
-                            })
-                        );
-                    });
-                }
-            }
-            resultIndex++;
-        }
-
-        if (handleTransactions.length > 0) {
-            await prisma.$transaction(handleTransactions);
+        // Execute edge transactions
+        if (edgeTransactions.length > 0) {
+            await prisma.$transaction(edgeTransactions);
         }
 
         // Fetch updated canvas

@@ -1,7 +1,6 @@
 import type { NodeTemplateListRPC } from "@/rpc/types";
 import { NodeItem } from "./node-item";
 import { useNodePalette } from "./node-palette.ctx";
-import { HandleType } from "@gatewai/db";
 
 interface NodeListProps {
   templates: NodeTemplateListRPC;
@@ -21,19 +20,19 @@ function sortTemplates(templates: NodeTemplateListRPC, sortBy: string): NodeTemp
 }
 
 export function NodeTemplateList({ templates }: NodeListProps) {
-  const { searchQuery, fromType, toTypes, sortBy } = useNodePalette();
+  const { searchQuery, fromTypes, toTypes, sortBy } = useNodePalette();
 
   let filtered = templates;
 
-  if (fromType !== 'Input') {
+  if (fromTypes.length > 0) {
     filtered = filtered.filter((t) =>
-      t.templateHandles.some((inp) => inp.dataType === fromType && inp.type === HandleType.Input)
+      t.templateHandles.some((inp) => fromTypes.includes(inp.dataType) && inp.type === "Input")
     );
   }
 
   if (toTypes.length > 0) {
     filtered = filtered.filter((t) =>
-      t.templateHandles.some((out) => toTypes.includes(out.dataType) && out.type === HandleType.Output)
+      t.templateHandles.some((out) => toTypes.includes(out.dataType) && out.type === "Output")
     );
   }
 

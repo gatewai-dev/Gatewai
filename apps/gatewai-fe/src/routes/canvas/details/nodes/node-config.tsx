@@ -1,6 +1,5 @@
 import { useAppDispatch } from "@/store";
 import type { NodeEntityType } from "@/store/nodes";
-import type { Node } from "@gatewai/db";
 import { zodResolver } from "@hookform/resolvers/zod";
 import { useForm } from "react-hook-form";
 

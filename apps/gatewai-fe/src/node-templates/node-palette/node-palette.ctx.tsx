@@ -4,8 +4,8 @@ import { createContext, useContext, useState, type ReactNode } from 'react';
 interface NodePaletteContextType {
   searchQuery: string;
   setSearchQuery: (query: string) => void;
-  fromType: string;
-  setFromType: (type: string) => void;
+  fromTypes: string[];
+  setFromTypes: (types: string[]) => void;
   toTypes: string[];
   setToTypes: (types: string[]) => void;
   sortBy: string;
@@ -16,13 +16,13 @@ const NodePaletteContext = createContext<NodePaletteContextType | undefined>(und
 
 export function NodePaletteProvider({ children }: { children: ReactNode }) {
   const [searchQuery, setSearchQuery] = useState('');
-  const [fromType, setFromType] = useState('Input');
+  const [fromTypes, setFromTypes] = useState<string[]>([]);
   const [toTypes, setToTypes] = useState<string[]>([]);
   const [sortBy, setSortBy] = useState('featured');
 
   return (
     <NodePaletteContext.Provider
-      value={{ searchQuery, setSearchQuery, fromType, setFromType, toTypes, setToTypes, sortBy, setSortBy }}
+      value={{ searchQuery, setSearchQuery, fromTypes, setFromTypes, toTypes, setToTypes, sortBy, setSortBy }}
     >
       {children}
     </NodePaletteContext.Provider>
