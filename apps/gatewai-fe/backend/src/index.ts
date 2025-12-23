@@ -35,7 +35,6 @@ const app = new Hono<{
   	return next();
 })
 .on(["POST", "GET"], "/api/auth/*", async (c) => {
-	console.log(c)
 	return await auth.handler(c.req.raw);
 })
 .get("/session", (c) => {

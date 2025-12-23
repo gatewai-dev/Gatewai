@@ -35,7 +35,6 @@ const GPTImage1NodeComponent = memo((props: NodeProps<GPTImage1Node>) => {
   const { runNodes } = useCanvasCtx();
   const showResult = hasResult(props);
 
-  console.log({showResult})
   return (
     <BaseNode {...props}>
       <div className='flex flex-col gap-2 items-end'>

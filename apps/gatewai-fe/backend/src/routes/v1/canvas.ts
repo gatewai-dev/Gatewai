@@ -25,6 +25,7 @@ const handleSchema = z.object({
     order: z.number().default(0),
     required: z.boolean().default(false),
     templateHandleId: z.string().optional().nullable(),
+    nodeId: z.string(),
 });
 
 const nodeSchema = z.object({
@@ -233,6 +234,8 @@ const canvasRoutes = new Hono<{Variables: AuthHonoTypes}>({
             }
         })
 
+        const handleIdsInDB = handlesInDB.map(m => m.id);
+
         /**
          * 2- Create transactions for removed edges
          */
@@ -348,7 +351,7 @@ const canvasRoutes = new Hono<{Variables: AuthHonoTypes}>({
         const [deletedPostCount, deletedHandleCount, deletedNodeCount] = await prisma.$transaction(transactions)
         console.log({deletedPostCount, deletedHandleCount, deletedNodeCount});
 
-        // Node Creation and Update transaction
+        // Node/Handle Creation and Update transaction
         let nodeCreationAndUpdateTransactions = [];
         if (nodesInPayload && nodesInPayload.length > 0) {
             const updatedNodes = nodesInPayload.filter(f => f.id && nodeIdsInDB.includes(f.id))
@@ -362,12 +365,34 @@ const canvasRoutes = new Hono<{Variables: AuthHonoTypes}>({
                     result: newNode.result,
                     config: newNode.config,
                     name: newNode.name,
+                    width: newNode.width,
+                    height: newNode.height,
                     type: newNode.type,
                     templateId: newNode.templateId,
                     position: newNode.position,
                     canvasId: id,
                 })),
             });
+            
+            if (handlesInPayload && handlesInPayload.length) {
+                const newHandles = handlesInPayload.filter(f => f.id && !handleIdsInDB.includes(f.id));
+
+                const newHandlesTransaction = prisma.handle.createMany({
+                    data: newHandles.map((newHandle) => ({
+                        id: newHandle.id,
+                        templateHandleId: newHandle.templateHandleId,
+                        type: newHandle.type,
+                        order: newHandle.order,
+                        dataType: newHandle.dataType,
+                        label: newHandle.label,
+                        required: newHandle.required,
+                        nodeId: newHandle.nodeId,
+                    }))
+                })
+
+                // STEP: New HANDLES
+                nodeCreationAndUpdateTransactions.push(newHandlesTransaction);
+            }
 
             const updatedNodesTransactions = updatedNodes.map((uNode) => prisma.node.update({
                 data: {
@@ -381,34 +406,58 @@ const canvasRoutes = new Hono<{Variables: AuthHonoTypes}>({
                 }
             }));
 
+
+            // STEP: UPDATED NODES
             nodeCreationAndUpdateTransactions = [newNodesTransaction, ...updatedNodesTransactions]
-            await prisma.$transaction(nodeCreationAndUpdateTransactions)
         }
 
-        /// Create Handles for new Nodes
+        // Add handles that are in payload but not in db
+        if (handleIdsInPayload) {
+            const handlesToCreate = handlesInPayload
+                ?.filter(handle => handle.id && !handleIdsInDB.includes(handle.id))
+                .filter(Boolean);
+            if (handlesToCreate && handlesToCreate.length > 0) {
+                const createHandlesTransaction = prisma.handle.createMany({
+                    data: handlesToCreate.map((nHandle) => ({
+                        id: nHandle.id,
+                        nodeId: nHandle.nodeId,
+                        required: nHandle.required,
+                        dataType: nHandle.dataType,
+                        label: nHandle.label,
+                        order: nHandle.order,
+                        templateHandleId: nHandle.templateHandleId,
+                        type: nHandle.type
+                    }))
+                })
+                nodeCreationAndUpdateTransactions = [...nodeCreationAndUpdateTransactions, createHandlesTransaction]
+            }
+        }
+
+        await prisma.$transaction(nodeCreationAndUpdateTransactions)
+
 
         /// Create & Update Edges
+
+        const deletedEdges = edgesInDB.filter(f => edgeIdsInPayload?.includes(f.id));
         let edgesTransactions = [];
         if (edgesInPayload && edgesInPayload.length > 0) {
             const updatedEdges = edgesInPayload.filter(f => f.id && edgeIdsInDB.includes(f.id))
             const createdEdges = edgesInPayload.filter(f => f.id && !edgeIdsInDB.includes(f.id))
-            const deletedEdges = edgesInDB.filter(f => edgeIdsInPayload?.includes(f.id));
 
             console.log({updatedEdges: updatedEdges.length, createdEdges: createdEdges.length, deletedEdges: deletedEdges.length})
 
-            const newNodesTransaction = prisma.edge.createMany({
+            const newEdgesTransaction = prisma.edge.createMany({
                 data: createdEdges.map((newEdge) => ({
                     id: newEdge.id,
                     source: newEdge.source,
                     sourceHandleId: newEdge.sourceHandleId!,
                     target: newEdge.target,
                     targetHandleId: newEdge.targetHandleId!,
-                    canvasId: id,
                     dataType: newEdge.dataType,
                 })),
             });
 
-            const updatedNodesTransactions = updatedEdges.map((uEdge) => prisma.edge.update({
+            const updatedEdgesTransactions = updatedEdges.map((uEdge) => prisma.edge.update({
                 data: {
                     source: uEdge.source,
                     sourceHandleId: uEdge.sourceHandleId!,
@@ -421,22 +470,66 @@ const canvasRoutes = new Hono<{Variables: AuthHonoTypes}>({
                 }
             }));
 
-            edgesTransactions = [newNodesTransaction, ...updatedNodesTransactions]
-
-            if (deletedEdges && deletedEdges.length > 0) {
-                const deletedEdgesTransaction = prisma.edge.deleteMany({
-                    where: {
-                        id: {
-                            in: deletedEdges.map(m => m.id)
-                        }
-                    }
-                })
-                edgesTransactions.push(deletedEdgesTransaction);
-            }
-            await prisma.$transaction(edgesTransactions)
+            edgesTransactions = [newEdgesTransaction, ...updatedEdgesTransactions]
         }
 
-        return c.json({});
+        if (deletedEdges && deletedEdges.length > 0) {
+            const deletedEdgesTransaction = prisma.edge.deleteMany({
+                where: {
+                    id: {
+                        in: deletedEdges.map(m => m.id)
+                    }
+                }
+            })
+            edgesTransactions.push(deletedEdgesTransaction);
+        }
+        await prisma.$transaction(edgesTransactions)
+
+
+
+        const canvas = await prisma.canvas.findFirst({
+            where: {
+                id,
+                userId: user?.id, // Ensure user owns the canvas
+            },
+        });
+
+        const nodes = await prisma.node.findMany({
+            where: {
+                canvasId: canvas?.id,
+            },
+            include: {
+                template: true
+            }
+        })
+
+        if (!canvas) {
+            throw new HTTPException(404, { message: 'Canvas not found' });
+        }
+
+        // Get all edges for this canvas separately for cleaner structure
+        const edges = await prisma.edge.findMany({
+            where: {
+                sourceNode: {
+                    canvasId: id
+                }
+            }
+        });
+
+        const handles = await prisma.handle.findMany({
+            where: {
+                nodeId: {
+                    in: nodes.map(m => m.id),
+                }
+            }
+        })
+
+        return c.json({
+            canvas: canvas,
+            edges,
+            nodes,
+            handles,
+        });
     }
 )
 .delete('/:id', async (c) => {

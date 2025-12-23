@@ -30,7 +30,6 @@ function ReactflowContainer({ children }: ReactFlowProps) {
   const { onSelectionChange } = useSelectedEntitiesCtx();
   const nodes = useAppSelector(selectRFNodes);
   const edges = useAppSelector(selectRFEdges);
-  console.log({nodes, edges});
 
   const onDragOver: DragEventHandler<HTMLDivElement> | undefined = (event) => {
     event.preventDefault();

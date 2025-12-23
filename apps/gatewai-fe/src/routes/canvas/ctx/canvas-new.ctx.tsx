@@ -27,7 +27,6 @@ const CanvasCreationProvider = ({ children }: PropsWithChildren) => {
   const { mutate, isPending } = useMutation<CreateCanvasRPC, Error, string>({
     mutationFn: createCanvas,
     onSuccess: (canvas: CreateCanvasRPC) => {
-      console.log({canvas})
       queryClient.invalidateQueries({ queryKey: ['canvasList'] });
       nav(`/canvas/${canvas.id}`);
     },

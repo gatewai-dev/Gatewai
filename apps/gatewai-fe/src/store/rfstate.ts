@@ -32,7 +32,6 @@ const reactFlowSlice = createSlice({
     },
     createNode: (state, action: PayloadAction<Node>) => {
       state.nodes = [...state.nodes, action.payload];
-      console.log(action.payload)
     },
     createEdge: (state, action: PayloadAction<Edge>) => {
       state.edges = [...state.edges, action.payload];

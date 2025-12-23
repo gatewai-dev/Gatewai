@@ -17,7 +17,6 @@ const NodeTemplatesProvider = ({
 }: PropsWithChildren) => {
 
   const { data, isLoading, isError } = useGetAllNodeTemplatesQuery(null);
-  console.log({data})
   const value: NodeTemplatesContextType = {
     nodeTemplates: data ?? [],
     isLoading,

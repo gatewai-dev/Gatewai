@@ -16,7 +16,7 @@ import {
 } from '@xyflow/react';
 import type { DataType, NodeResult, NodeType } from '@gatewai/types';
 import { useAppDispatch, useAppSelector } from '@/store';
-import { setAllNodeEntities, nodeSelectors, type NodeEntityType } from '@/store/nodes';
+import { setAllNodeEntities, nodeSelectors, type NodeEntityType, deleteManyNodeEntity } from '@/store/nodes';
 import { generateId } from '@/lib/idgen';
 import { createNodeEntity } from '@/store/nodes';
 import { rpcClient } from '@/rpc/client';
@@ -24,7 +24,7 @@ import type { CanvasDetailsNode, CanvasDetailsRPC, NodeTemplateListItemRPC, Patc
 import { createNode, onEdgeChange, onNodeChange, selectRFEdges, selectRFNodes, setEdges, setNodes } from '@/store/rfstate';
 import { toast } from 'sonner';
 import { addManyHandleEntities, deleteManyHandleEntity, handleSelectors, setAllHandleEntities } from '@/store/handles';
-import { setAllEdgeEntities } from '@/store/edges';
+import { edgeSelectors, setAllEdgeEntities } from '@/store/edges';
 
 interface CanvasContextType {
   canvas: CanvasDetailsRPC["canvas"] | undefined;
@@ -69,6 +69,7 @@ const CanvasProvider = ({
   const rfNodes = useAppSelector(selectRFNodes);
   const rfEdges = useAppSelector(selectRFEdges);
   const nodeEntities = useAppSelector(nodeSelectors.selectAll);
+  const edgeEntities = useAppSelector(edgeSelectors.selectAll);
   const handleEntities = useAppSelector(handleSelectors.selectAll);
   const {
     data: canvasDetailsResponse,
@@ -119,7 +120,6 @@ const CanvasProvider = ({
     if (canvasDetailsResponse?.nodes) {
       dispatch(setAllNodeEntities(canvasDetailsResponse.nodes))
       dispatch(setAllEdgeEntities(canvasDetailsResponse.edges));
-      console.log({s: canvasDetailsResponse.handles})
       dispatch(setAllHandleEntities(canvasDetailsResponse.handles));
     }
   }, [dispatch, canvasDetailsResponse])
@@ -171,7 +171,6 @@ const CanvasProvider = ({
 
   const save = useCallback(() => {
     if (!canvasId) return;
-
     const currentCanvasDetailsNodes = nodeEntities.map((n) => {
       const rfNode = rfNodes.find(f => f.id === n.id);
       if (!rfNode) {
@@ -181,21 +180,24 @@ const CanvasProvider = ({
         ...n,
         position: rfNode.position,
         width: rfNode.width ?? undefined,
+        height: rfNode.height ?? undefined,
         zIndex: (n.zIndex ?? undefined),
       }
     }).filter(f => !!f);
-
-    const currentDbEdges: PatchCanvasRPCReq["json"]["edges"] = edges.map((e) => {
-      if (!e.data?.dataType) {
-        throw new Error("Datatype is missing");
+    console.log({edges, edgeEntities})
+  
+    const currentDbEdges: PatchCanvasRPCReq["json"]["edges"] = edgeEntities.map((e) => {
+      const rfEdge = rfEdges.find(f => f.id === e.id);
+      if (!rfEdge || !e) {
+        return undefined;
       }
       return {
         id: e.id,
-        source: e.source,
-        target:e.target,
-        targetHandleId: e.targetHandle as string,
-        sourceHandleId: e.sourceHandle as string,
-        dataType: e.data.dataType as DataType,
+        source: rfEdge.source,
+        target: rfEdge.target,
+        targetHandleId: rfEdge.targetHandle as string,
+        sourceHandleId: rfEdge.sourceHandle as string,
+        dataType: e.dataType as DataType,
       };
     });
 
@@ -206,7 +208,8 @@ const CanvasProvider = ({
     };
 
     return patchCanvasAsync(body);
-  }, [canvasId, nodeEntities, handleEntities, edges, patchCanvasAsync, rfNodes]);
+  }, [canvasId, nodeEntities, edges, edgeEntities, rfEdges, handleEntities, patchCanvasAsync, rfNodes]);
+    console.log({edges, edgeEntities})
 
   const scheduleSave = useCallback(() => {
     if (timeoutRef.current) {
@@ -217,22 +220,15 @@ const CanvasProvider = ({
     }, 5000);
   }, [save]);
 
-  const onNodesChange = useCallback(
-    (changes: NodeChange<Node>[]) => {
-      console.log({changes})
-      dispatch(onNodeChange(changes));
-      scheduleSave();
-    },
-    [dispatch, scheduleSave]
-  );
+  const onNodesChange = useCallback((changes: NodeChange<Node>[]) => {
+    dispatch(onNodeChange(changes));
+    scheduleSave();
+  }, [dispatch, scheduleSave]);
 
-  const onEdgesChange = useCallback(
-    (changes: EdgeChange<Edge>[]) => {
-        dispatch(onEdgeChange(changes));
-      scheduleSave();
-    },
-    [dispatch, scheduleSave]
-  );
+  const onEdgesChange = useCallback((changes: EdgeChange<Edge>[]) => {
+    dispatch(onEdgeChange(changes));
+    scheduleSave();
+  }, [dispatch, scheduleSave]);
 
   
   const isValidConnection = useCallback(
@@ -362,29 +358,38 @@ const CanvasProvider = ({
       })();
 
       dispatch(setEdges(newEdges));
+      const newEdgeIds = newEdges.map(m => m.id);
+      const newDbEdges = edgeEntities.filter(f => newEdgeIds.includes(f.id))
+      dispatch(setAllEdgeEntities(newDbEdges))
 
       // Schedule save after connect
       scheduleSave();
     },
-    [isValidConnection, handleEntities, dispatch, scheduleSave, edges]
+    [isValidConnection, handleEntities, dispatch, edgeEntities, scheduleSave, edges]
   );
 
     const onNodesDelete = useCallback(
     (deleted: Node[]) => {
-      const edgesToRemove = getConnectedEdges(deleted, rfEdges);
 
       const deletedNodeIds = deleted.map(m => m.id);
       const newNodes = rfNodes.filter(f => !deletedNodeIds.includes(f.id));
+      console.log({deletedNodeIds})
       dispatch(setNodes(newNodes))
+      dispatch(deleteManyNodeEntity(deletedNodeIds))
 
+      const edgesToRemove = getConnectedEdges(deleted, rfEdges);
+      console.log({edgesToRemove})
       const deletedEdgeIds = edgesToRemove.map(m => m.id);
       const newEdges = rfEdges.filter(f => !deletedEdgeIds.includes(f.id));
       dispatch(setEdges(newEdges))
 
-      const deletedHandles = handleEntities.filter(m => deletedNodeIds.includes(m.id)).map(m => m.id);
-      dispatch(deleteManyHandleEntity(deletedHandles))
+      const deletedHandleIds = handleEntities.filter(m => deletedNodeIds.includes(m.nodeId)).map(m => m.id);
+      console.log({deletedHandleIds})
+      dispatch(deleteManyHandleEntity(deletedHandleIds))
+
+      scheduleSave();
     },
-    [rfEdges, rfNodes, dispatch, handleEntities],
+    [rfEdges, rfNodes, dispatch, handleEntities, scheduleSave],
   );
 
   const runNodes = useCallback(async (nodeIds: Node["id"][]) => {
@@ -392,7 +397,7 @@ const CanvasProvider = ({
     await save();
 
     await runNodesMutateAsync({ nodeIds });
-  }, [runNodesMutateAsync, save])
+  }, [save, runNodesMutateAsync]);
 
   useEffect(() => {
     dispatch(setNodes(initialNodes));
@@ -400,11 +405,11 @@ const CanvasProvider = ({
   }, [dispatch, initialEdges, initialNodes]);
 
   const createNewNode = useCallback((template: NodeTemplateListItemRPC, position: XYPosition) => {
-    const id = generateId();
+    const nodeId = generateId();
     let initialResult: NodeResult | null = null;
 
     const handles = template.templateHandles.map((tHandle, i) => ({
-        nodeId: id,
+        nodeId: nodeId,
         label: tHandle.label,
         order: i,
         templateHandleId: tHandle.id,
@@ -426,7 +431,7 @@ const CanvasProvider = ({
     }
 
     const nodeEntity: NodeEntityType = {
-      id,
+      id: nodeId,
       name: template.displayName,
       templateId: template.id,
       template: template,
@@ -445,7 +450,7 @@ const CanvasProvider = ({
       result: initialResult as unknown as NodeResult,
     };
     const newNode: Node = {
-      id,
+      id: nodeId,
       position,
       data: nodeEntity,
       type: template.type as NodeType,
@@ -455,14 +460,13 @@ const CanvasProvider = ({
       selectable: true,
       deletable: true,
     };
-    console.log({nodeEntity})
     dispatch(createNode(newNode));
     dispatch(createNodeEntity(nodeEntity));
     dispatch(addManyHandleEntities(handles))
     scheduleSave();
   }, [canvasId, dispatch, scheduleSave]);
   
-  const value = {
+  const value = useMemo(() => ({
     canvas: canvasDetailsResponse?.canvas,
     setNodes,
     onNodesChange,
@@ -474,7 +478,17 @@ const CanvasProvider = ({
     rfInstance,
     createNewNode,
     onNodesDelete
-  };
+  }), [
+    canvasDetailsResponse?.canvas,
+    onNodesChange,
+    onEdgesChange,
+    isLoading,
+    isError,
+    onConnect,
+    runNodes,
+    createNewNode,
+    onNodesDelete
+  ]);
 
   return <CanvasContext.Provider value={value}>{children}</CanvasContext.Provider>;
 };
