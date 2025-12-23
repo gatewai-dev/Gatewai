@@ -195,6 +195,8 @@ const canvasRoutes = new Hono<{Variables: AuthHonoTypes}>({
             }
         })
         const nodesInPayload = validated.nodes;
+        const edgesInPayload = validated.edges;
+        const handlesInPayload = validated.handles;
 
         const nodeIdsInDB = nodesInDB.map(m => m.id);
         const nodeIdsInPayload = nodesInPayload?.map(m => m.id).filter(Boolean) as string[] ?? [];
@@ -219,6 +221,8 @@ const canvasRoutes = new Hono<{Variables: AuthHonoTypes}>({
                 ]
             }
         })
+
+        const edgeIdsInDB = edgesInDB.map(m => m.id);
 
 
         const handlesInDB = await prisma.handle.findMany({
@@ -280,7 +284,6 @@ const canvasRoutes = new Hono<{Variables: AuthHonoTypes}>({
         }
 
 
-        // Handles
         let handleIdsToRemove: string[] = [];
         // 1- Handles in removed nodes
         const removedNodeHandle = await prisma.handle.findMany({
@@ -345,8 +348,8 @@ const canvasRoutes = new Hono<{Variables: AuthHonoTypes}>({
         const [deletedPostCount, deletedHandleCount, deletedNodeCount] = await prisma.$transaction(transactions)
         console.log({deletedPostCount, deletedHandleCount, deletedNodeCount});
 
-
-        // Node Creation
+        // Node Creation and Update transaction
+        let nodeCreationAndUpdateTransactions = [];
         if (nodesInPayload && nodesInPayload.length > 0) {
             const updatedNodes = nodesInPayload.filter(f => f.id && nodeIdsInDB.includes(f.id))
             const createdNodes = nodesInPayload.filter(f => f.id && !nodeIdsInDB.includes(f.id))
@@ -376,9 +379,62 @@ const canvasRoutes = new Hono<{Variables: AuthHonoTypes}>({
                 where: {
                     id: uNode.id,
                 }
-            }))
+            }));
+
+            nodeCreationAndUpdateTransactions = [newNodesTransaction, ...updatedNodesTransactions]
+            await prisma.$transaction(nodeCreationAndUpdateTransactions)
         }
 
+        /// Create Handles for new Nodes
+
+        /// Create & Update Edges
+        let edgesTransactions = [];
+        if (edgesInPayload && edgesInPayload.length > 0) {
+            const updatedEdges = edgesInPayload.filter(f => f.id && edgeIdsInDB.includes(f.id))
+            const createdEdges = edgesInPayload.filter(f => f.id && !edgeIdsInDB.includes(f.id))
+            const deletedEdges = edgesInDB.filter(f => edgeIdsInPayload?.includes(f.id));
+
+            console.log({updatedEdges: updatedEdges.length, createdEdges: createdEdges.length, deletedEdges: deletedEdges.length})
+
+            const newNodesTransaction = prisma.edge.createMany({
+                data: createdEdges.map((newEdge) => ({
+                    id: newEdge.id,
+                    source: newEdge.source,
+                    sourceHandleId: newEdge.sourceHandleId!,
+                    target: newEdge.target,
+                    targetHandleId: newEdge.targetHandleId!,
+                    canvasId: id,
+                    dataType: newEdge.dataType,
+                })),
+            });
+
+            const updatedNodesTransactions = updatedEdges.map((uEdge) => prisma.edge.update({
+                data: {
+                    source: uEdge.source,
+                    sourceHandleId: uEdge.sourceHandleId!,
+                    target: uEdge.target,
+                    targetHandleId: uEdge.targetHandleId!,
+                    dataType: uEdge.dataType,
+                },
+                where: {
+                    id: uEdge.id,
+                }
+            }));
+
+            edgesTransactions = [newNodesTransaction, ...updatedNodesTransactions]
+
+            if (deletedEdges && deletedEdges.length > 0) {
+                const deletedEdgesTransaction = prisma.edge.deleteMany({
+                    where: {
+                        id: {
+                            in: deletedEdges.map(m => m.id)
+                        }
+                    }
+                })
+                edgesTransactions.push(deletedEdgesTransaction);
+            }
+            await prisma.$transaction(edgesTransactions)
+        }
 
         return c.json({});
     }
