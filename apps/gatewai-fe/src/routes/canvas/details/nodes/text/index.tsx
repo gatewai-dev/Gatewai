@@ -9,7 +9,6 @@ import { updateTextNodeValue, makeSelectNodeById } from '@/store/nodes';
 import type { TextNode } from '../node-props';
 import { BaseNode } from '../base';
 
-// Text Node
 const TextNodeComponent = memo((props: NodeProps<TextNode>) => {
   const node = useAppSelector(makeSelectNodeById(props.id));
 
@@ -32,7 +31,7 @@ const TextNodeComponent = memo((props: NodeProps<TextNode>) => {
   );
 });
 TextNodeComponent.displayName = 'TextNode';
-// Export components
+
 export {
   TextNodeComponent,
 };

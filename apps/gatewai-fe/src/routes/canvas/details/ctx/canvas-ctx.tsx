@@ -1,6 +1,7 @@
 import { useMutation, useQuery } from '@tanstack/react-query';
 import { createContext, useCallback, useContext, useEffect, useMemo, useRef, useState, type Dispatch, type PropsWithChildren, type RefObject, type SetStateAction } from 'react';
 import {
+  getOutgoers,
   type Connection,
   type Edge,
   type EdgeChange,
@@ -12,14 +13,15 @@ import {
   type ReactFlowInstance,
   type XYPosition
 } from '@xyflow/react';
-import type { DataType, Node as DbNode, NodeResult, NodeType } from '@gatewai/types';
+import type { DataType, NodeResult, NodeType } from '@gatewai/types';
 import { useAppDispatch, useAppSelector } from '@/store';
 import { setAllNodeEntities, nodeSelectors, type NodeEntityType } from '@/store/nodes';
 import { generateId } from '@/lib/idgen';
 import { createNodeEntity } from '@/store/nodes';
 import { rpcClient } from '@/rpc/client';
-import type { CanvasDetailsRPC, NodeTemplateListItemRPC, PatchCanvasRPCReq } from '@/rpc/types';
+import type { CanvasDetailsNode, CanvasDetailsRPC, NodeTemplateListItemRPC, PatchCanvasRPCReq } from '@/rpc/types';
 import { createNode, onEdgeChange, onNodeChange, selectRFEdges, selectRFNodes, setEdges, setNodes } from '@/store/rfstate';
+import { toast } from 'sonner';
 
 interface CanvasContextType {
   canvas: CanvasDetailsRPC | undefined;
@@ -143,7 +145,7 @@ const CanvasProvider = ({
   });
 
   const { mutateAsync: runNodesMutateAsync } = useMutation({
-    mutationFn: async (body: { nodeIds: DbNode["id"][] }) => {
+    mutationFn: async (body: { nodeIds: CanvasDetailsNode["id"][] }) => {
       const response = await fetch(`/api/v1/canvas/${canvasId}/process`, {
         method: 'POST',
         headers: { 'Content-Type': 'application/json' },
@@ -165,7 +167,7 @@ const CanvasProvider = ({
   const save = useCallback(() => {
     if (!canvasId) return;
 
-    const currentDbNodes = nodeEntities.map((n) => {
+    const currentCanvasDetailsNodes = nodeEntities.map((n) => {
       const rfNode = rfNodes.find(f => f.id === n.id);
       if (!rfNode) {
         return undefined;
@@ -193,7 +195,7 @@ const CanvasProvider = ({
     });
 
     const body: PatchCanvasRPCReq["json"] = {
-      nodes: currentDbNodes,
+      nodes: currentCanvasDetailsNodes,
       edges: currentDbEdges,
     };
 
@@ -226,13 +228,112 @@ const CanvasProvider = ({
     [dispatch, scheduleSave]
   );
 
+  
+  const isValidConnection = useCallback(
+    (connection: Connection | Edge): { isValid: boolean; error?: string } => {
+      if (!connection.source || !connection.target) {
+        return { isValid: false, error: 'Target or source could not be found.' };
+      }
+
+      // Self-connection is always invalid
+      if (connection.source === connection.target) {
+        return { isValid: false, error: 'Self-connection is not a valid connection.' };
+      }
+
+      // Find source node
+      const sourceNode = nodes.find((n) => n.id === connection.source);
+      if (!sourceNode) {
+        return { isValid: false, error: 'Source node could not be found.' };
+      }
+
+      // Find target node
+      const targetNode = nodes.find((n) => n.id === connection.target);
+      if (!targetNode) {
+        return { isValid: false, error: 'Target node could not be found.' };
+      }
+
+      // Recursive function: does this node (or any of its descendants) include the target?
+      const hasOutgoerAsTarget = (node: Node, visited = new Set<string>()): boolean => {
+        if (visited.has(node.id)) return false;
+        visited.add(node.id);
+
+        const outgoers = getOutgoers(node, nodes, edges);
+
+        for (const outgoer of outgoers) {
+          if (outgoer.id === connection.target) return true;
+          if (hasOutgoerAsTarget(outgoer, visited)) return true;
+        }
+        return false;
+      };
+
+      // Invalid if the target is reachable downstream from the source (creates a cycle)
+      if (hasOutgoerAsTarget(sourceNode)) {
+        return { isValid: false, error: 'Looping connection is not valid.' };
+      }
+
+      // Validate if data types for handles match
+      const sourceDbNode = sourceNode.data as CanvasDetailsRPC["nodes"][0];
+      const sourceHandle = sourceDbNode.handles.find(h => h.id === connection.sourceHandle);
+
+      const targetDbNode = targetNode.data as CanvasDetailsRPC["nodes"][0];
+      const targetHandle = targetDbNode.handles.find(h => h.id === connection.targetHandle);
+
+      if (!sourceHandle || !targetHandle) {
+        return { isValid: false, error: 'Source or target handle could not be found.' };
+      }
+
+      const sourceDataType = sourceHandle.dataType;
+      const targetDataType = targetHandle.dataType;
+
+      // Handle 'Any' data type - accepts any connection
+      if (sourceDataType === 'Any' || targetDataType === 'Any') {
+        return { isValid: true };
+      }
+
+      // Handle VideoLayer - accepts Video or Audio
+      if (targetDataType === 'VideoLayer') {
+        if (sourceDataType === 'Video' || sourceDataType === 'Audio') {
+          return { isValid: true };
+        }
+        return { isValid: false, error: 'VideoLayer only accepts Video or Audio data types.' };
+      }
+
+      // Handle DesignLayer - accepts Text, Image, or Mask
+      if (targetDataType === 'DesignLayer') {
+        if (sourceDataType === 'Text' || sourceDataType === 'Image' || sourceDataType === 'Mask') {
+          return { isValid: true };
+        }
+        return { isValid: false, error: 'DesignLayer only accepts Text, Image, or Mask data types.' };
+      }
+
+      // For all other cases, data types must match exactly
+      if (sourceDataType !== targetDataType) {
+        return { isValid: false, error: `Data types do not match: ${sourceDataType} → ${targetDataType}` };
+      }
+
+      return { isValid: true };
+    },
+    [nodes, edges],
+  );
+
   const onConnect = useCallback(
     (params: Connection) => {
       console.log({params})
+      const { isValid, error } = isValidConnection(params);
+      if (!isValid) {
+        if (error) {
+          toast.error(error);
+        }
+        return;
+      }
       // Determine dataType based on source handle
       const sourceNode = nodes.find(n => n.id === params.source);
-      const output = sourceNode?.data.template?.outputTypes?.find((o: any) => o.id === params.sourceHandle);
-      const dataType = output?.outputType || 'Text';
+      const dbNode = sourceNode?.data as CanvasDetailsNode;
+      const sourceHandle = dbNode.handles.find(h => h.id === params.sourceHandle);
+      if (!sourceHandle) {
+        throw new Error("Source handle could not be found");
+      }
+      const dataType = sourceHandle.dataType;
       console.log(sourceNode?.data)
       const newEdges = (() => {
         // Find if there's an existing edge connected to the same target and targetHandle

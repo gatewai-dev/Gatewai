@@ -12,8 +12,6 @@ import type { LLMNode } from '../node-props';
 import { useCanvasCtx } from '../../ctx/canvas-ctx';
 import { BaseNode } from '../base';
 
-
-
 const LlmNodeComponent = memo((props: NodeProps<LLMNode>) => {
   const node = useAppSelector(makeSelectNodeById(props.id));
   const result = node?.result as unknown as LLMResult;
