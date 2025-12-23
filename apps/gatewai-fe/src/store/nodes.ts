@@ -1,3 +1,4 @@
+import type { TextResult } from '@gatewai/types';
 import type { CanvasDetailsRPC } from "@/rpc/types";
 import { createEntityAdapter, createDraftSafeSelector, createSlice } from "@reduxjs/toolkit"
 
@@ -18,11 +19,15 @@ const nodesSlice = createSlice({
     updateTextNodeValue: (state, action: {payload: {id: string, value: string}}) => {
       const { id, value } = action.payload;
       const node = state.entities[id];
+      const existingResult = node.result as TextResult;
       if (node) {
         node.result = {
-          parts: [{
-            type: 'Text',
-            data: value,
+          outputs: [{
+            items: [{
+              ...existingResult.outputs[0].items[0],
+              type: 'Text',
+              data: value,
+            }]
           }]
         };
       }
@@ -30,28 +35,28 @@ const nodesSlice = createSlice({
     incrementSelectedResultIndex: (state, action: {payload: {id: string}}) => {
       const { id } = action.payload;
       const node = state.entities[id] as NodeEntityType;
-      const result = node.result as { selectedIndex?: number; parts?: unknown[] };
+      const result = node.result as { selectedOutputIndex?: number; outputs?: unknown[] };
       if (!result) {
         throw new Error("Node result is undefined");
       }
       if (node) {
         node.result = {
           ...result,
-          selectedIndex: Math.min((result?.selectedIndex || 0) + 1, (result?.parts?.length || 1) - 1)
+          selectedOutputIndex: Math.min((result?.selectedOutputIndex || 0) + 1, (result?.outputs?.length || 1) - 1)
         };
       }
     },
     decrementSelectedResultIndex: (state, action: {payload: {id: string}}) => {
       const { id } = action.payload;
       const node = state.entities[id] as NodeEntityType;
-      const result = node.result as { selectedIndex?: number; parts?: unknown[] };
+      const result = node.result as { selectedOutputIndex?: number; outputs?: unknown[] };
       if (!result) {
         throw new Error("Node result is undefined");
       }
       if (node) {
         node.result = {
           ...result,
-          selectedIndex: Math.max((result?.selectedIndex || 0) - 1, 0)
+          selectedOutputIndex: Math.max((result?.selectedOutputIndex || 0) - 1, 0)
         };
       }
     },

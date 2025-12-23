@@ -16,15 +16,15 @@ const processors: Partial<Record<NodeType, NodeProcessor>> = {
   // Example for Text node: Outputs config.text or something similar.
   [NodeType.Text]: async (node) => {
     const textContent = node.result as TextResult
+    const outputHandleId = node.handles.find(h => h.type === 'Output')?.id;
+    if (!outputHandleId) {
+        throw new Error("Output handle could not be found");
+    }
     return {
-        [node.handles.find(h => h.type === 'Output')?.id || 'default']: { type: DataType.Text, data: node.result.text || '' } 
+        [outputHandleId]: { type: DataType.Text, data: textContent || '' } 
     };
   },
-  [NodeType.LLM]: async (node) => {
-    const config = 
-  }
   // Add implementations for other types like LLM (call API), etc.
-  // For now, placeholder: throw error if not implemented.
 };
 
 export class NodeWFProcessor {

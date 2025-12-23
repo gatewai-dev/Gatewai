@@ -32,62 +32,66 @@ export type FileData = {
     outputHandleId: string;
   }
 
+  export type Output = {
+    items: OutputItem<DataType>[];
+  }
+
   export type SelectItemType = {
-    selectedIndex: number;
+    selectedOutputIndex: number;
   }
 
   export type TextResult = {
-    parts: [OutputItem<"Text">];
+    outputs: [{ items: [OutputItem<"Text">] }];
   }
 
   export type ToggleResult = {
-    parts: [OutputItem<"Boolean">];
+    outputs: [{ items: [OutputItem<"Boolean">] }];
   }
 
   export type FileResult = SelectItemType & {
-    parts: OutputItem<"File">[];
+    outputs: { items: [OutputItem<"File">] }[];
   }
 
   export type ImagesResult = SelectItemType & {
-    parts: OutputItem<"Image">[];
+    outputs: { items: [OutputItem<"Image">] }[];
   }
 
   export type GPTImage1Result = ImagesResult;
 
   export type MaskResult = SelectItemType & {
-    parts: OutputItem<"Mask">[];
+    outputs: { items: [OutputItem<"Mask">] }[];
   }
 
   export type NumberResult = {
-    parts: [OutputItem<"Number">];
+    outputs: [{ items: [OutputItem<"Number">] }];
   }
 
   export type LLMResult = {
-    parts: [OutputItem<"Text">];
+    outputs: [{ items: [OutputItem<"Text">] }];
   }
 
   export type ResizeResult = {
-    parts: [OutputItem<"Image" | "Video">];
+    outputs: [{ items: [OutputItem<"Image" | "Video">] }];
   }
 
   export type ThreeDResult = SelectItemType & {
-    parts: [OutputItem<"File">];
+    outputs: { items: [OutputItem<"File">] }[];
   }
 
   export type PainterResult = {
-    parts: [OutputItem<"Image">, OutputItem<"Mask">];
+    outputs: [{ items: [OutputItem<"Image">, OutputItem<"Mask">] }];
   }
 
   export type BlurResult = {
-    parts: [OutputItem<"Image">];
+    outputs: [{ items: [OutputItem<"Image">] }];
   }
 
   export type CompositorResult = {
-    parts: [OutputItem<"Image">];
+    outputs: [{ items: [OutputItem<"Image">] }];
   }
 
   export type DescriberResult = {
-    parts: [OutputItem<"Text">];
+    outputs: [{ items: [OutputItem<"Text">] }];
   }
 
   export type NodeResult =

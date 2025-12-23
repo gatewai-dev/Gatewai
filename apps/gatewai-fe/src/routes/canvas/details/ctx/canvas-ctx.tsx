@@ -12,7 +12,7 @@ import {
   type ReactFlowInstance,
   type XYPosition
 } from '@xyflow/react';
-import type { DataType, Node as DbNode, NodeType } from '@gatewai/types';
+import type { DataType, Node as DbNode, NodeResult, NodeType } from '@gatewai/types';
 import { useAppDispatch, useAppSelector } from '@/store';
 import { setAllNodeEntities, nodeSelectors, type NodeEntityType } from '@/store/nodes';
 import { generateId } from '@/lib/idgen';
@@ -178,14 +178,19 @@ const CanvasProvider = ({
       }
     }).filter(f => !!f);
 
-    const currentDbEdges: PatchCanvasRPCReq["json"]["edges"] = edges.map((e) => ({
-      id: e.id,
-      source: e.source,
-      target:e.target,
-      targetHandleId: e.targetHandle as string,
-      sourceHandleId: e.sourceHandle as string,
-      dataType: (e.data?.dataType ?? 'Text') as DataType,
-    }));
+    const currentDbEdges: PatchCanvasRPCReq["json"]["edges"] = edges.map((e) => {
+      if (!e.data?.dataType) {
+        throw new Error("Datatype is missing");
+      }
+      return {
+        id: e.id,
+        source: e.source,
+        target:e.target,
+        targetHandleId: e.targetHandle as string,
+        sourceHandleId: e.sourceHandle as string,
+        dataType: e.data.dataType as DataType,
+      };
+    });
 
     const body: PatchCanvasRPCReq["json"] = {
       nodes: currentDbNodes,
@@ -280,6 +285,30 @@ const CanvasProvider = ({
 
   const createNewNode = useCallback((template: NodeTemplateListItemRPC, position: XYPosition) => {
     const id = generateId();
+    let initialResult: NodeResult | null = null;
+
+    const handles = template.templateHandles.map((tHandle, i) => ({
+        nodeId: id,
+        label: tHandle.label,
+        order: i,
+        templateHandleId: tHandle.id,
+        id: generateId(),
+        required: tHandle.required,
+        createdAt: new Date().toISOString(),
+        updatedAt: new Date().toISOString(),
+        type: tHandle.type,
+        dataType: tHandle.dataType,
+    }));
+
+    if (template.type === 'Text') {
+      initialResult = {
+        selectedOutputIndex: 0,
+        outputs: [{
+          items: [{type: 'Text', outputHandleId: handles[0].id, data: ''}]
+        }]
+      }
+    }
+
     const nodeEntity: NodeEntityType = {
       id,
       name: template.displayName,
@@ -294,24 +323,10 @@ const CanvasProvider = ({
       zIndex: 1,
       draggable: true,
       selectable: true,
-      handles: template.templateHandles.map((tHandle, i) => ({
-        nodeId: id,
-        label: tHandle.label,
-        order: i,
-        templateHandleId: tHandle.id,
-        id: generateId(),
-        required: tHandle.required,
-        createdAt: new Date().toISOString(),
-        updatedAt: new Date().toISOString(),
-        type: tHandle.type,
-        dataType: tHandle.dataType,
-      })),
+      handles,
       deletable: true,
       config: template.defaultConfig || {},
-      result: {
-        selectedIndex: 0,
-        parts: [],
-      },
+      result: initialResult as unknown,
     };
     const newNode: Node = {
       id,

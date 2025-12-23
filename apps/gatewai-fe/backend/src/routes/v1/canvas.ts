@@ -13,7 +13,7 @@ const NodeTypes = [
         'Toggle', 'Crawler', 'Resize', 'Agent', 'ThreeD',
         'Painter', 'Blur', 'Compositor', 'Describer', 'Router',
         'Note', 'Number', 'GPTImage1', 'LLM'
-    ] as const;
+] as const;
 
 const nodeSchema = z.object({
     id: z.string().optional(),
@@ -35,13 +35,15 @@ const nodeSchema = z.object({
     templateId: z.string(),
 });
 
+const DataTypes = ["Text", "Number","Boolean", "Image", "Video", "Audio", "File", "Mask", "VideoLayer", "DesignLayer", "Any"] as const
+
 const edgeSchema = z.object({
     id: z.string().optional(),
     source: z.string(),
     target: z.string(),
     sourceHandleId: z.string().optional(),
     targetHandleId: z.string().optional(),
-    dataType: z.enum(['Text', 'Number', 'Boolean', 'Image', 'Video', 'Audio', 'File', 'Mask']),
+    dataType: z.enum(DataTypes),
 });
 
 const processSchema = z.object({
