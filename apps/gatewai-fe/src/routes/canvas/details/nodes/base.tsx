@@ -1,20 +1,10 @@
 import { memo, useMemo, type JSX, type ReactNode } from 'react';
-import { Handle, Position, getBezierPath, type EdgeProps, type NodeProps, type Node, type ConnectionLineComponentProps, useEdges, BaseEdge } from '@xyflow/react';
+import { Handle, Position, getBezierPath, type EdgeProps, type NodeProps, type Node, type ConnectionLineComponentProps, useEdges, BaseEdge, getSmoothStepPath } from '@xyflow/react';
 import type { CanvasDetailsNode } from '@/rpc/types';
 import { useAppSelector } from '@/store';
 import { makeSelectHandleById, makeSelectHandleByNodeId } from '@/store/handles';
+import { dataTypeColors } from '@/config';
 
-const dataTypeColors: Record<string, { bg: string; stroke: string; hex: string; text: string }> = {
-  'Text': { bg: 'bg-blue-500', stroke: 'stroke-blue-500', hex: '#3b82f6', text: 'text-blue-500' },
-  'Number': { bg: 'bg-green-500', stroke: 'stroke-green-500', hex: '#22c55e', text: 'text-green-500' },
-  'Boolean': { bg: 'bg-yellow-500', stroke: 'stroke-yellow-500', hex: '#eab308', text: 'text-yellow-500' },
-  'Image': { bg: 'bg-purple-500', stroke: 'stroke-purple-500', hex: '#a855f7', text: 'text-purple-500' },
-  'Video': { bg: 'bg-red-500', stroke: 'stroke-red-500', hex: '#ef4444', text: 'text-red-500' },
-  'Audio': { bg: 'bg-orange-500', stroke: 'stroke-orange-500', hex: '#f97316', text: 'text-orange-500' },
-  'File': { bg: 'bg-gray-500', stroke: 'stroke-gray-500', hex: '#6b7280', text: 'text-gray-500' },
-  'Mask': { bg: 'bg-pink-500', stroke: 'stroke-pink-500', hex: '#ec4899', text: 'text-pink-500' },
-  'Any': { bg: 'bg-white-500', stroke: 'stroke-white-500', hex: '#fff', text: 'text-white-500' },
-};
 
 const getColorForType = (type: string) => {
   return dataTypeColors[type] || { bg: 'bg-gray-500', stroke: 'stroke-gray-500', hex: '#6b7280', text: 'text-gray-500' };
@@ -45,7 +35,7 @@ const BaseNode = memo((props: NodeProps<Node<CanvasDetailsNode>> & {
   return (
     <div
       tabIndex={0}
-      className={`relative drag-handle ${nodeBackgroundColor} rounded-lg shadow-md w-full h-full transition-all duration-200 group
+      className={`relative drag-handle ${nodeBackgroundColor} rounded-[16px] shadow-md w-full h-full transition-all duration-200 group
         ${selected ? 'selected' : ''}`}
     >
       {inputs.map((handle, i) => {
@@ -56,19 +46,19 @@ const BaseNode = memo((props: NodeProps<Node<CanvasDetailsNode>> & {
           <div 
             key={handle.id} 
             className="absolute left-0 z-10" 
-            style={{ top: topPosition, transform: 'translateX(-50%)' }}
+            style={{ top: topPosition, transform: 'translateX(-100%)' }}
           >
-            <div className={`w-4 h-4 ${nodeBackgroundColor} rounded-full flex items-center justify-center transition-all duration-200`}>
+            <div className={`w-4 h-4 ${nodeBackgroundColor} rounded-none flex items-center justify-center transition-all duration-200`}>
               <Handle
                 id={handle.id}
                 type="target"
                 position={Position.Left}
                 tabIndex={0}
                 style={{ 
-                  background: isConnected ? color.hex : 'transparent',
-                  border: isConnected ? 'none' : `2px solid ${color.hex}`,
+                  background: 'transparent',
+                  border: isConnected ? `2px solid ${color.hex}` : `2px dashed ${color.hex}`,
                 }}
-                className={`w-3 h-3 rounded-full left-[50%]! transition-all duration-200 focus:outline-none hover:scale-125`}
+                className={`w-3 h-3 rounded-none left-[50%]! transition-all duration-200 focus:outline-none hover:scale-125`}
               />
             </div>
             <span className={`absolute left-0 -top-5 translate-x-0 group-hover:-translate-x-full 
@@ -103,19 +93,19 @@ const BaseNode = memo((props: NodeProps<Node<CanvasDetailsNode>> & {
           <div
             key={handle.id}
             className="absolute right-0 z-10"
-            style={{ top: topPosition, transform: 'translateX(50%)' }}
+            style={{ top: topPosition, transform: 'translateX(100%)' }}
           >
-            <div className={`w-4 h-4 ${nodeBackgroundColor} rounded-full flex items-center justify-center transition-all duration-200`}>
+            <div className={`w-4 h-4 ${nodeBackgroundColor} rounded-none flex items-center justify-center transition-all duration-200`}>
               <Handle
                 id={handle.id}
                 type="source"
                 position={Position.Right}
                 tabIndex={0}
                 style={{
-                  background: isConnected ? color.hex : 'transparent',
-                  border: isConnected ? 'none' : `2px solid ${color.hex}`,
+                  background: 'transparent',
+                  border: isConnected ? `2px solid ${color.hex}` : `2px dashed ${color.hex}`,
                 }}
-                className={`w-3 h-3 rounded-full right-[50%]! transition-all duration-200 focus:outline-none hover:scale-125`}
+                className={`w-3 h-3 rounded-none right-[50%]! transition-all duration-200 focus:outline-none hover:scale-125`}
               />
             </div>
             <span className={`
@@ -135,7 +125,7 @@ const BaseNode = memo((props: NodeProps<Node<CanvasDetailsNode>> & {
 
 BaseNode.displayName = 'BaseNode';
 
-const PARTICLE_COUNT = 6;
+const PARTICLE_COUNT = 1;
 const ANIMATE_DURATION = 6;
 
 const CustomConnectionLine = memo(({
@@ -182,6 +172,7 @@ const CustomConnectionLine = memo(({
       {[...Array(PARTICLE_COUNT)].map((_, i) => (
         <ellipse
           key={`particle-${i}`}
+          r="5"
           rx="5"
           ry="1.2"
           fill={color}
@@ -225,7 +216,7 @@ const CustomEdge = memo(({
   markerEnd,
   data,
 }: CustomEdgeProps): JSX.Element => {
-  const [edgePath] = getBezierPath({
+  const [edgePath] = getSmoothStepPath({
     sourceX,
     sourceY,
     sourcePosition,
