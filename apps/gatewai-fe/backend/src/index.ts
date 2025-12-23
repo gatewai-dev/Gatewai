@@ -2,7 +2,7 @@ import { Hono } from "hono";
 import { auth, type AuthHonoTypes } from "./auth.js";
 import { serve } from "@hono/node-server";
 import { cors } from "hono/cors";
-import { APP_CONFIG } from "./config.js";
+import { ENV_CONFIG } from "./config.js";
 import { v1Router } from "./routes/v1/index.js";
 import { logger } from 'hono/logger'
 
@@ -53,7 +53,7 @@ route('/api/v1', v1Router)
 
 serve({
   fetch: app.fetch,
-  port: APP_CONFIG.PORT
+  port: ENV_CONFIG.PORT
 }, (info) => {
   console.log(`Server is running on http://localhost:${info.port}`)
 })

@@ -23,6 +23,9 @@ importers:
 
   apps/gatewai-fe:
     dependencies:
+      '@ai-sdk/google':
+        specifier: ^2.0.39
+        version: 2.0.39(zod@3.25.67)
       '@better-auth/expo':
         specifier: ^1.3.2
         version: 1.3.3(better-auth@1.3.3(react-dom@19.1.1(react@19.1.1))(react@19.1.1))
@@ -120,8 +123,8 @@ importers:
         specifier: ^5.86.0
         version: 5.86.0(react@19.1.1)
       '@trigger.dev/sdk':
-        specifier: ^4.0.6
-        version: 4.0.6(ai@5.0.96(zod@3.25.67))(zod@3.25.67)
+        specifier: 4.1.1
+        version: 4.1.1(ai@5.0.96(zod@3.25.67))(typescript@5.8.3)(zod@3.25.67)
       '@xyflow/react':
         specifier: ^12.8.4
         version: 12.8.4(@types/react@19.1.11)(immer@10.2.0)(react-dom@19.1.1(react@19.1.1))(react@19.1.1)
@@ -211,8 +214,8 @@ importers:
         specifier: ^9.33.0
         version: 9.34.0
       '@trigger.dev/build':
-        specifier: ^4.0.6
-        version: 4.0.6(typescript@5.8.3)
+        specifier: 4.1.1
+        version: 4.1.1(supports-color@10.2.2)(typescript@5.8.3)
       '@types/node':
         specifier: ^20.11.17
         version: 20.19.9
@@ -359,6 +362,12 @@ packages:
 
   '@ai-sdk/gateway@2.0.11':
     resolution: {integrity: sha512-B0Vt2Xv88Lo9rg861Oyzq/SdTmT4LiqdjkpOxpSPpNk8Ih5TXTgyDAsV/qW14N6asPdK1YI5PosFLnVzfK5LrA==}
+    engines: {node: '>=18'}
+    peerDependencies:
+      zod: ^3.25.76 || ^4.1.8
+
+  '@ai-sdk/google@2.0.39':
+    resolution: {integrity: sha512-uCqNNABzIvY6e4dutFO5P428HcaiwvgvBPUsqI2W7qB8ee+Oz5WtNGKPeR5gnf9736HaB3UrIUZFWGhr4/HwVQ==}
     engines: {node: '>=18'}
     peerDependencies:
       zod: ^3.25.76 || ^4.1.8
@@ -2455,16 +2464,8 @@ packages:
     resolution: {integrity: sha512-ldZXEhOBb8Is7xLs01fR3YEc3DERiz5silj8tnGkFZytt1abEvl/GhUmCE0PMLaMPTa3Jk4HbKmRlHmu+gCftg==}
     engines: {node: '>=12'}
 
-  '@trigger.dev/build@4.0.6':
-    resolution: {integrity: sha512-NJ7N50mNTW43h7jJ/ynsjX1xT+R7fisxVytmwnjb8ZaCgScNp1zDdzGlJjhIjiIWU7G83qpZE1H8eoqjo7tOyg==}
-    engines: {node: '>=18.20.0'}
-
   '@trigger.dev/build@4.1.1':
     resolution: {integrity: sha512-WGVod5JHIBW5ds0Nr4QbVTYNCRKj0bp62xuxcpZimzlHrIK17JDCHylvfqczua7P6k78x88FlvhwcdUvQvBuqQ==}
-    engines: {node: '>=18.20.0'}
-
-  '@trigger.dev/core@4.0.6':
-    resolution: {integrity: sha512-V4w0Wmvw4fst0dbQ7LjmYuaWyLVlwNcLc6f2EB39XqoS7PVQGfRm6KCFWc0sG5x9xa/RBpusXcwmRK0C5QgW9g==}
     engines: {node: '>=18.20.0'}
 
   '@trigger.dev/core@4.1.1':
@@ -2492,8 +2493,8 @@ packages:
       valibot:
         optional: true
 
-  '@trigger.dev/sdk@4.0.6':
-    resolution: {integrity: sha512-jf10/JLoU2Xl8lH5CNM1220PyUHSJiRWfheZBvPh9bu8u0/AvhhJMKqeo3gQyuFjV1xd3BKrMeMULaq2Uy2olQ==}
+  '@trigger.dev/sdk@4.1.1':
+    resolution: {integrity: sha512-wgO6zVW/TG+33F/Mxidn4rnkq7E0kZlBYwG8r1E3twDbvewtqAEVOtkuKfN13Q1sqryDbqCzpNvlLFe6gzNCmw==}
     engines: {node: '>=18.20.0'}
     peerDependencies:
       ai: ^4.2.0 || ^5.0.0
@@ -6684,6 +6685,12 @@ snapshots:
       '@vercel/oidc': 3.0.3
       zod: 3.25.67
 
+  '@ai-sdk/google@2.0.39(zod@3.25.67)':
+    dependencies:
+      '@ai-sdk/provider': 2.0.0
+      '@ai-sdk/provider-utils': 3.0.17(zod@3.25.67)
+      zod: 3.25.67
+
   '@ai-sdk/provider-utils@3.0.17(zod@3.25.67)':
     dependencies:
       '@ai-sdk/provider': 2.0.0
@@ -9214,18 +9221,6 @@ snapshots:
 
   '@tanstack/table-core@8.21.3': {}
 
-  '@trigger.dev/build@4.0.6(typescript@5.8.3)':
-    dependencies:
-      '@trigger.dev/core': 4.0.6
-      pkg-types: 1.3.1
-      tinyglobby: 0.2.14
-      tsconfck: 3.1.3(typescript@5.8.3)
-    transitivePeerDependencies:
-      - bufferutil
-      - supports-color
-      - typescript
-      - utf-8-validate
-
   '@trigger.dev/build@4.1.1(supports-color@10.2.2)(typescript@5.8.3)':
     dependencies:
       '@prisma/config': 6.12.0
@@ -9239,45 +9234,6 @@ snapshots:
       - bufferutil
       - supports-color
       - typescript
-      - utf-8-validate
-
-  '@trigger.dev/core@4.0.6':
-    dependencies:
-      '@bugsnag/cuid': 3.2.1
-      '@electric-sql/client': 1.0.14
-      '@google-cloud/precise-date': 4.0.0
-      '@jsonhero/path': 1.0.21
-      '@opentelemetry/api': 1.9.0
-      '@opentelemetry/api-logs': 0.203.0
-      '@opentelemetry/core': 2.0.1(@opentelemetry/api@1.9.0)
-      '@opentelemetry/exporter-logs-otlp-http': 0.203.0(@opentelemetry/api@1.9.0)
-      '@opentelemetry/exporter-trace-otlp-http': 0.203.0(@opentelemetry/api@1.9.0)
-      '@opentelemetry/instrumentation': 0.203.0(@opentelemetry/api@1.9.0)(supports-color@10.2.2)
-      '@opentelemetry/resources': 2.0.1(@opentelemetry/api@1.9.0)
-      '@opentelemetry/sdk-logs': 0.203.0(@opentelemetry/api@1.9.0)
-      '@opentelemetry/sdk-trace-base': 2.0.1(@opentelemetry/api@1.9.0)
-      '@opentelemetry/sdk-trace-node': 2.0.1(@opentelemetry/api@1.9.0)
-      '@opentelemetry/semantic-conventions': 1.36.0
-      dequal: 2.0.3
-      eventsource: 3.0.7
-      eventsource-parser: 3.0.6
-      execa: 8.0.1
-      humanize-duration: 3.33.1
-      jose: 5.10.0
-      nanoid: 3.3.8
-      prom-client: 15.1.3
-      socket.io: 4.7.4(supports-color@10.2.2)
-      socket.io-client: 4.7.5(supports-color@10.2.2)
-      std-env: 3.10.0
-      superjson: 2.2.5
-      tinyexec: 0.3.2
-      uncrypto: 0.1.3
-      zod: 3.25.76
-      zod-error: 1.5.0
-      zod-validation-error: 1.5.0(zod@3.25.76)
-    transitivePeerDependencies:
-      - bufferutil
-      - supports-color
       - utf-8-validate
 
   '@trigger.dev/core@4.1.1(supports-color@10.2.2)(typescript@5.8.3)':
@@ -9334,11 +9290,11 @@ snapshots:
       - typescript
       - utf-8-validate
 
-  '@trigger.dev/sdk@4.0.6(ai@5.0.96(zod@3.25.67))(zod@3.25.67)':
+  '@trigger.dev/sdk@4.1.1(ai@5.0.96(zod@3.25.67))(typescript@5.8.3)(zod@3.25.67)':
     dependencies:
       '@opentelemetry/api': 1.9.0
       '@opentelemetry/semantic-conventions': 1.36.0
-      '@trigger.dev/core': 4.0.6
+      '@trigger.dev/core': 4.1.1(supports-color@10.2.2)(typescript@5.8.3)
       chalk: 5.6.2
       cronstrue: 2.59.0
       debug: 4.4.1(supports-color@10.2.2)
@@ -9354,6 +9310,7 @@ snapshots:
     transitivePeerDependencies:
       - bufferutil
       - supports-color
+      - typescript
       - utf-8-validate
 
   '@tweenjs/tween.js@23.1.3': {}

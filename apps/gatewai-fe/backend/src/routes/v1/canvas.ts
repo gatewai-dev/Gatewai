@@ -4,7 +4,6 @@ import z from "zod";
 import { HTTPException } from "hono/http-exception";
 import { prisma, type Task } from "@gatewai/db";
 import type { AuthHonoTypes } from "../../auth.js";
-import { tasks } from "@trigger.dev/sdk";
 import type { TASK_LLM } from "../../trigger/llm.js";
 import type { TextNodeConfig } from "@gatewai/types";
 import type { XYPosition } from '@xyflow/react';

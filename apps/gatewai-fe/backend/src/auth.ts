@@ -1,7 +1,7 @@
 import { prisma } from "@gatewai/db";
 import { betterAuth } from "better-auth";
 import { prismaAdapter } from "better-auth/adapters/prisma";
-import { APP_CONFIG } from "./config.js";
+import { ENV_CONFIG } from "./config.js";
 import { createMiddleware } from 'hono/factory'
 import { HTTPException } from "hono/http-exception";
 
@@ -15,8 +15,8 @@ export const auth = betterAuth({
     baseURL: process.env.NODE_ENV === "development" ? process.env.FRONTEND_URL : process.env.BACKEND_URL,
     socialProviders: {
       google: {
-        clientId: APP_CONFIG.GOOGLE_CLIENT_ID,
-        clientSecret: APP_CONFIG.GOOGLE_CLIENT_SECRET,
+        clientId: ENV_CONFIG.GOOGLE_CLIENT_ID,
+        clientSecret: ENV_CONFIG.GOOGLE_CLIENT_SECRET,
         accessType: "offline",
         prompt: "select_account+consent",
       },

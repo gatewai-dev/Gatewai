@@ -1,6 +1,6 @@
 import { logger, task } from "@trigger.dev/sdk/v3";
 import { z } from "zod";
-import { openai } from "../ai/openai.js";
+import { generateText } from 'ai';
 import type { ResponseInput, ResponseInputMessageContentList } from "openai/resources/responses/responses.mjs";
 
 export const RunLLMPayloadSchema = z.object({
@@ -19,38 +19,17 @@ export const TASK_LLM = task({
   maxDuration: 300, // Stop executing after 300 secs (5 mins) of compute
   run: async (payload: RunLLMNodeTaskPayload, { ctx }) => {
 
-    const input: ResponseInput = [];
-
-    if (payload.systemPrompt) {
-      input.push({
-        role: "system",
-        content: payload.systemPrompt,
-      })
+    return {
+      result: 'Mock LLM Response',
     }
 
-    logger.log("Running LLM task", { payload, ctx });
-
-    const promptContent = [{ type: "input_text", text: payload.prompt }] as ResponseInputMessageContentList;
-    if (payload.imageUrl) {
-      const imagePart = {
-        type: "input_image" as const,
-        detail: "auto" as "auto" | "low" | "high",
-        image_url: payload.imageUrl,
-      };
-      promptContent.push(imagePart);
-    }
-
-    input.push({
-      role: 'user',
-      content: promptContent,
-    });
-
-    const result = await openai.responses.create({
-      input,
+    const result = await generateText({
+      prompt: payload.prompt,
+      system: payload.systemPrompt ?? undefined,
       model: payload.model,
     })
     return {
-      result: result.output_text,
+      result: result.text,
     }
   },
 });
