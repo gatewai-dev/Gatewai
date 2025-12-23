@@ -1,160 +1,217 @@
 import { useCanvasListCtx } from "../ctx/canvas-list.ctx";
-import { formatDistanceToNow } from 'date-fns';
-import { LayoutGrid, List, Network } from 'lucide-react';
+import { LayoutGrid, List, Network, Clock, Calendar, FileText, Sparkles } from 'lucide-react';
+
+// Helper function to format time distance
+const formatTimeAgo = (date: Date) => {
+    const seconds = Math.floor((new Date().getTime() - date.getTime()) / 1000);
+    const intervals = {
+        year: 31536000,
+        month: 2592000,
+        week: 604800,
+        day: 86400,
+        hour: 3600,
+        minute: 60
+    };
+    
+    for (const [unit, secondsInUnit] of Object.entries(intervals)) {
+        const interval = Math.floor(seconds / secondsInUnit);
+        if (interval >= 1) {
+            return `${interval} ${unit}${interval === 1 ? '' : 's'} ago`;
+        }
+    }
+    return 'just now';
+};
 import { useState } from 'react';
 import { Button } from "@/components/ui/button";
-import { Card, CardHeader, CardTitle, CardDescription } from "@/components/ui/card";
+import { Card, CardHeader, CardTitle, CardContent } from "@/components/ui/card";
 import { Input } from "@/components/ui/input";
 import { Skeleton } from "@/components/ui/skeleton";
-import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from "@/components/ui/table";
 import { useCanvasCreationCtx } from "../ctx/canvas-new.ctx";
+import { useNavigate } from "react-router";
 
 function CanvasHome() {
     const { canvasList, isLoading, isError, searchQuery, setSearchQuery } = useCanvasListCtx();
+    const nav = useNavigate();
     const { createCanvas, isCreating } = useCanvasCreationCtx();
-    const [view, setView] = useState<'grid' | 'list'>('list');
+    const [view, setView] = useState<'grid' | 'list'>('grid');
 
     if (isError) {
         return (
             <div className="flex flex-col items-center justify-center h-full text-red-500">
-                Error loading canvases. Please try again later.
+                <div className="text-center space-y-2">
+                    <p className="text-lg font-semibold">Something went wrong</p>
+                    <p className="text-sm text-muted-foreground">Unable to load your canvases. Please try again later.</p>
+                </div>
             </div>
         );
     }
 
     return (
-        <div className="space-y-6 p-6 bg-background text-foreground">
-            <div className="flex justify-between items-center">
-                <h1 className="text-xl font-semibold">Your Workspace</h1>
-                <Button 
-                    onClick={() => createCanvas('untitled')}
-                    disabled={isCreating}
-                >
-                    + New Canvas
-                </Button>
-            </div>
-
-            <div className="flex flex-col sm:flex-row items-start sm:items-center justify-between space-y-4 sm:space-y-0">
-                <h2 className="text-xl font-bold tracking-tight">My Canvases</h2>
-                <div className="flex items-center space-x-4 w-full sm:w-auto">
-                    <Input
-                        placeholder="Search"
-                        value={searchQuery || ''}
-                        onChange={(e) => setSearchQuery(e.target.value)}
-                        className="w-full sm:w-64"
-                    />
-                    <Button
-                        variant="ghost"
-                        size="icon"
-                        onClick={() => setView('grid')}
-                        className={view === 'grid' ? 'text-primary' : 'text-muted-foreground'}
+        <div className="min-h-screen bg-gradient-to-br from-background via-background to-muted/20">
+            <div className="max-w-7xl mx-auto p-8 space-y-8">
+                {/* Header Section */}
+                <div className="flex flex-col sm:flex-row justify-between items-start sm:items-center gap-4">
+                    <div className="space-y-1">
+                        <h1 className="text-3xl font-bold tracking-tight">Your Workspace</h1>
+                        <p className="text-muted-foreground">Manage and organize your creative canvases</p>
+                    </div>
+                    <Button 
+                        onClick={() => createCanvas('untitled')}
+                        disabled={isCreating}
+                        size="lg"
+                        className="bg-primary hover:bg-primary/90 shadow-lg hover:shadow-xl transition-all"
                     >
-                        <LayoutGrid className="h-5 w-5" />
-                    </Button>
-                    <Button
-                        variant="ghost"
-                        size="icon"
-                        onClick={() => setView('list')}
-                        className={view === 'list' ? 'text-primary' : 'text-muted-foreground'}
-                    >
-                        <List className="h-5 w-5" />
+                        <Sparkles className="h-4 w-4 mr-2" />
+                        New Canvas
                     </Button>
                 </div>
-            </div>
 
-            {isLoading ? (
-                view === 'grid' ? (
-                    <div className="grid grid-cols-1 sm:grid-cols-2 md:grid-cols-3 lg:grid-cols-4 gap-6">
-                        {[...Array(4)].map((_, i) => (
-                            <Skeleton key={i} className="h-32 rounded-lg" />
-                        ))}
+                {/* Search and View Controls */}
+                <div className="flex flex-col sm:flex-row items-start sm:items-center justify-between gap-4 bg-card/50 backdrop-blur-sm rounded-xl p-4 border">
+                    <h2 className="text-lg font-semibold">All Canvases ({canvasList?.length || 0})</h2>
+                    <div className="flex items-center gap-3 w-full sm:w-auto">
+                        <Input
+                            placeholder="Search canvases..."
+                            value={searchQuery || ''}
+                            onChange={(e) => setSearchQuery(e.target.value)}
+                            className="w-full sm:w-64 bg-background/50"
+                        />
+                        <div className="flex items-center gap-1 bg-muted/50 rounded-lg p-1">
+                            <Button
+                                variant="ghost"
+                                size="sm"
+                                onClick={() => setView('grid')}
+                                className={view === 'grid' ? 'bg-background shadow-sm' : ''}
+                            >
+                                <LayoutGrid className="h-4 w-4" />
+                            </Button>
+                            <Button
+                                variant="ghost"
+                                size="sm"
+                                onClick={() => setView('list')}
+                                className={view === 'list' ? 'bg-background shadow-sm' : ''}
+                            >
+                                <List className="h-4 w-4" />
+                            </Button>
+                        </div>
                     </div>
-                ) : (
-                    <Table>
-                        <TableHeader>
-                            <TableRow>
-                                <TableHead>Name</TableHead>
-                                <TableHead>Files</TableHead>
-                                <TableHead>Last modified</TableHead>
-                                <TableHead>Created at</TableHead>
-                            </TableRow>
-                        </TableHeader>
-                        <TableBody>
-                            {[...Array(4)].map((_, i) => (
-                                <TableRow key={i}>
-                                    <TableCell><Skeleton className="h-4 w-32" /></TableCell>
-                                    <TableCell><Skeleton className="h-4 w-8" /></TableCell>
-                                    <TableCell><Skeleton className="h-4 w-24" /></TableCell>
-                                    <TableCell><Skeleton className="h-4 w-24" /></TableCell>
-                                </TableRow>
-                            ))}
-                        </TableBody>
-                    </Table>
-                )
-            ) : canvasList && canvasList.length > 0 ? (
-                <>
-                    {view === 'grid' ? (
-                        <div className="grid grid-cols-1 sm:grid-cols-2 md:grid-cols-3 lg:grid-cols-4 gap-6">
-                            {canvasList.map((canvas) => (
-                                <Card
-                                    key={canvas.id}
-                                    className="hover:shadow-lg transition-shadow duration-200 cursor-pointer"
-                                >
-                                    <CardHeader className="text-center">
-                                        <div className="flex justify-center mb-2">
-                                            <Network className="h-8 w-8 text-muted-foreground" />
-                                        </div>
-                                        <CardTitle className="text-lg font-semibold truncate">
-                                            {canvas.name}
-                                        </CardTitle>
-                                        <CardDescription className="text-sm text-muted-foreground">
-                                            Last edited {formatDistanceToNow(new Date(canvas.updatedAt), { addSuffix: true })}
-                                        </CardDescription>
-                                    </CardHeader>
-                                </Card>
+                </div>
+
+                {/* Content Section */}
+                {isLoading ? (
+                    view === 'grid' ? (
+                        <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 xl:grid-cols-4 gap-6">
+                            {[...Array(8)].map((_, i) => (
+                                <Skeleton key={i} className="h-48 rounded-xl" />
                             ))}
                         </div>
                     ) : (
-                        <Table>
-                            <TableHeader>
-                                <TableRow>
-                                    <TableHead>Name</TableHead>
-                                    <TableHead>Files</TableHead>
-                                    <TableHead>Last modified</TableHead>
-                                    <TableHead>Created at</TableHead>
-                                </TableRow>
-                            </TableHeader>
-                            <TableBody>
+                        <div className="space-y-3">
+                            {[...Array(6)].map((_, i) => (
+                                <Skeleton key={i} className="h-24 rounded-xl" />
+                            ))}
+                        </div>
+                    )
+                ) : canvasList && canvasList.length > 0 ? (
+                    <>
+                        {view === 'grid' ? (
+                            <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 xl:grid-cols-4 gap-6">
                                 {canvasList.map((canvas) => (
-                                    <TableRow key={canvas.id} className="hover:bg-muted/50 cursor-pointer">
-                                        <TableCell className="font-medium">
-                                            <div className="flex items-center space-x-3">
-                                                <Network className="h-5 w-5 text-muted-foreground" />
-                                                <span>{canvas.name}</span>
+                                    <Card
+                                        key={canvas.id}
+                                        onClick={() => nav(`/canvas/${canvas.id}`)}
+                                        className="group hover:shadow-2xl hover:scale-[1.02] transition-all duration-300 cursor-pointer border-2 hover:border-primary/50 bg-gradient-to-br from-card to-card/50 overflow-hidden"
+                                    >
+                                        <CardHeader className="space-y-3">
+                                            <div className="flex justify-between items-start">
+                                                <div className="p-3 bg-primary/10 rounded-lg group-hover:bg-primary/20 transition-colors">
+                                                    <Network className="h-6 w-6 text-primary" />
+                                                </div>
+                                                <div className="flex items-center gap-1 text-xs text-muted-foreground">
+                                                    <FileText className="h-3 w-3" />
+                                                    <span>0</span>
+                                                </div>
                                             </div>
-                                        </TableCell>
-                                        <TableCell>-</TableCell>
-                                        <TableCell>
-                                            {formatDistanceToNow(new Date(canvas.updatedAt), { addSuffix: true })}
-                                        </TableCell>
-                                        <TableCell>
-                                            {formatDistanceToNow(new Date(canvas.createdAt), { addSuffix: true })}
-                                        </TableCell>
-                                    </TableRow>
+                                            <div className="space-y-2">
+                                                <CardTitle className="text-lg font-bold truncate group-hover:text-primary transition-colors">
+                                                    {canvas.name}
+                                                </CardTitle>
+                                                <div className="flex flex-col gap-1 text-xs text-muted-foreground">
+                                                    <div className="flex items-center gap-1.5">
+                                                        <Clock className="h-3 w-3" />
+                                                        <span>Edited {formatTimeAgo(new Date(canvas.updatedAt))}</span>
+                                                    </div>
+                                                    <div className="flex items-center gap-1.5">
+                                                        <Calendar className="h-3 w-3" />
+                                                        <span>Created {formatTimeAgo(new Date(canvas.createdAt))}</span>
+                                                    </div>
+                                                </div>
+                                            </div>
+                                        </CardHeader>
+                                    </Card>
                                 ))}
-                            </TableBody>
-                        </Table>
-                    )}
-                    <div className="flex justify-end text-sm text-muted-foreground mt-4">
-                        1-{canvasList?.length} of {canvasList?.length}
+                            </div>
+                        ) : (
+                            <div className="space-y-3">
+                                {canvasList.map((canvas) => (
+                                    <Card
+                                        key={canvas.id}
+                                        onClick={() => nav(`/canvas/${canvas.id}`)}
+                                        className="group hover:shadow-lg hover:border-primary/50 transition-all duration-200 cursor-pointer bg-gradient-to-r from-card to-card/50"
+                                    >
+                                        <CardContent className="p-6">
+                                            <div className="flex items-center justify-between">
+                                                <div className="flex items-center gap-4 flex-1 min-w-0">
+                                                    <div className="p-3 bg-primary/10 rounded-lg group-hover:bg-primary/20 transition-colors shrink-0">
+                                                        <Network className="h-5 w-5 text-primary" />
+                                                    </div>
+                                                    <div className="flex-1 min-w-0">
+                                                        <h3 className="font-bold text-lg truncate group-hover:text-primary transition-colors">
+                                                            {canvas.name}
+                                                        </h3>
+                                                        <div className="flex items-center gap-4 mt-1 text-sm text-muted-foreground">
+                                                            <div className="flex items-center gap-1.5">
+                                                                <Clock className="h-3.5 w-3.5" />
+                                                                <span>{formatTimeAgo(new Date(canvas.updatedAt))}</span>
+                                                            </div>
+                                                            <div className="flex items-center gap-1.5">
+                                                                <Calendar className="h-3.5 w-3.5" />
+                                                                <span>{formatTimeAgo(new Date(canvas.createdAt))}</span>
+                                                            </div>
+                                                        </div>
+                                                    </div>
+                                                </div>
+                                                <div className="flex items-center gap-2 text-sm text-muted-foreground shrink-0">
+                                                    <FileText className="h-4 w-4" />
+                                                    <span>0 files</span>
+                                                </div>
+                                            </div>
+                                        </CardContent>
+                                    </Card>
+                                ))}
+                            </div>
+                        )}
+                    </>
+                ) : (
+                    <div className="flex flex-col items-center justify-center h-96 text-center">
+                        <div className="p-6 bg-muted/30 rounded-full mb-6">
+                            <Network className="h-16 w-16 text-muted-foreground" />
+                        </div>
+                        <h3 className="text-xl font-semibold mb-2">No canvases yet</h3>
+                        <p className="text-muted-foreground mb-6 max-w-md">
+                            Get started by creating your first canvas and bring your ideas to life
+                        </p>
+                        <Button 
+                            onClick={() => createCanvas('untitled')}
+                            disabled={isCreating}
+                            size="lg"
+                        >
+                            <Sparkles className="h-4 w-4 mr-2" />
+                            Create Your First Canvas
+                        </Button>
                     </div>
-                </>
-            ) : (
-                <div className="flex flex-col items-center justify-center h-64 text-muted-foreground">
-                    <Network className="h-12 w-12 mb-4" />
-                    <p>No canvases found. Create your first one!</p>
-                </div>
-            )}
+                )}
+            </div>
         </div>
     );
 }

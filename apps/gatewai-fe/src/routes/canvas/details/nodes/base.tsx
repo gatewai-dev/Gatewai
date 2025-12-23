@@ -24,7 +24,6 @@ const BaseNode = memo((props: NodeProps<Node<CanvasDetailsNode>> & {
   children?: ReactNode;
 }) => {
   const { data, selected, type } = props;
-  console.log({props})
   // 1. Separate and Sort Handles
   // We use useMemo to avoid re-sorting on every render unless data.handles changes
   const { inputs, outputs } = useMemo(() => {
@@ -52,7 +51,6 @@ const BaseNode = memo((props: NodeProps<Node<CanvasDetailsNode>> & {
         const color = getColorForType(handle.dataType);
         // Calculate dynamic top position
         const topPosition = `${(i + 1) * (30) + 20}px`;
-        
         return (
           <div 
             key={handle.id} 
@@ -61,7 +59,7 @@ const BaseNode = memo((props: NodeProps<Node<CanvasDetailsNode>> & {
           >
             <div className={`w-4 h-4 ${nodeBackgroundColor} rounded-full flex items-center justify-center transition-all duration-200`}>
               <Handle
-                id={handle.id} // CRITICAL: This matches the DB Handle ID
+                id={handle.id}
                 type="target"
                 position={Position.Left}
                 tabIndex={0}
@@ -76,9 +74,9 @@ const BaseNode = memo((props: NodeProps<Node<CanvasDetailsNode>> & {
             <span className={`absolute left-0 -top-5 translate-x-0 group-hover:-translate-x-full 
               group-focus:-translate-x-full group-focus-within:-translate-x-full in-[.selected]:-translate-x-full 
               ${color.text} px-1 py-1 text-xs opacity-0 group-hover:opacity-100 group-focus:opacity-100
-               group-focus-within:opacity-100 in-[.selected]:opacity-100 transition-all duration-200 pointer-events-none
+                group-focus-within:opacity-100 in-[.selected]:opacity-100 transition-all duration-200 pointer-events-none
                 whitespace-nowrap font-medium text-right`}>
-              {handle.label || handle.dataType}
+              {handle.label || handle.dataType} {handle.required ?? <>*</>}
             </span>
           </div>
         );
@@ -104,7 +102,7 @@ const BaseNode = memo((props: NodeProps<Node<CanvasDetailsNode>> & {
 
         return (
           <div 
-            key={handle.id} 
+            key={handle.id}
             className="absolute right-0 z-10" 
             style={{ top: topPosition, transform: 'translateX(50%)' }}
           >
@@ -114,7 +112,7 @@ const BaseNode = memo((props: NodeProps<Node<CanvasDetailsNode>> & {
                 type="source"
                 position={Position.Right}
                 tabIndex={0}
-                style={{ 
+                style={{
                   background: color.hex,
                   border: '2px solid white',
                 }}
@@ -123,11 +121,11 @@ const BaseNode = memo((props: NodeProps<Node<CanvasDetailsNode>> & {
             </div>
             {/* Tooltip / Label */}
             <span className={`
-                absolute right-0 -top-5 translate-x-0 group-hover:translate-x-full 
+                absolute right-0 -top-5 translate-x-0 group-hover:translate-x-full
                 group-focus:translate-x-full group-focus-within:translate-x-full in-[.selected]:translate-x-full
-                 ${color.text} px-1 py-1 text-xs opacity-0 group-hover:opacity-100 
-                 group-focus:opacity-100 group-focus-within:opacity-100 in-[.selected]:opacity-100 
-                 transition-all duration-200 pointer-events-none whitespace-nowrap font-medium text-left`}>
+                ${color.text} px-1 py-1 text-xs opacity-0 group-hover:opacity-100
+                group-focus:opacity-100 group-focus-within:opacity-100 in-[.selected]:opacity-100
+                transition-all duration-200 pointer-events-none whitespace-nowrap font-medium text-left`}>
               {handle.label || handle.dataType}
             </span>
           </div>

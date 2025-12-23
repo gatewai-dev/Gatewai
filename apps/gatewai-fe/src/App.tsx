@@ -9,11 +9,12 @@ import { Provider as StoreProvider } from 'react-redux';
 import { store } from './store';
 import { CanvasListProvider } from './routes/canvas/ctx/canvas-list.ctx';
 import { CanvasCreationProvider } from './routes/canvas/ctx/canvas-new.ctx';
+import { Toaster } from './components/ui/sonner';
 
 const queryClient = new QueryClient()
 
 function App() {
-  return (
+  return (<>
     <StoreProvider store={store} >
       <QueryClientProvider client={queryClient}>
         <CanvasListProvider>
@@ -23,6 +24,8 @@ function App() {
         </CanvasListProvider>
       </QueryClientProvider>
     </StoreProvider>
+    <Toaster />
+    </>
   )
 }
 

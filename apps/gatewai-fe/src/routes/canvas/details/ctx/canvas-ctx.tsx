@@ -108,6 +108,7 @@ const CanvasProvider = ({
     return { initialEdges, initialNodes };
   }, [canvas]);
 
+  console.log({initialEdges})
   useEffect(() => {
     if (canvas?.nodes) {
       dispatch(setAllNodeEntities(canvas.nodes))
@@ -222,11 +223,12 @@ const CanvasProvider = ({
 
   const onConnect = useCallback(
     (params: Connection) => {
-
+      console.log({params})
       // Determine dataType based on source handle
       const sourceNode = nodes.find(n => n.id === params.source);
       const output = sourceNode?.data.template?.outputTypes?.find((o: any) => o.id === params.sourceHandle);
       const dataType = output?.outputType || 'Text';
+      console.log(sourceNode?.data)
       const newEdges = (() => {
         // Find if there's an existing edge connected to the same target and targetHandle
         const existingEdge = edges.find(

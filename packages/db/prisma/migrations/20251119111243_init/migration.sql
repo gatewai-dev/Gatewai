@@ -116,6 +116,8 @@ CREATE TABLE "node_template_handle" (
     "dataType" TEXT NOT NULL,
     "label" TEXT,
     "required" BOOLEAN NOT NULL DEFAULT false,
+    "createdAt" DATETIME NOT NULL DEFAULT CURRENT_TIMESTAMP,
+    "updatedAt" DATETIME NOT NULL,
     CONSTRAINT "node_template_handle_templateId_fkey" FOREIGN KEY ("templateId") REFERENCES "node_template" ("id") ON DELETE CASCADE ON UPDATE CASCADE
 );
 

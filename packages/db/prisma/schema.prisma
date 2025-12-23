@@ -42,6 +42,10 @@ enum DataType {
   Audio
   File
   Mask
+
+  VideoLayer // Video, Audio | Used By Dynamic Handles of Video Compositor Node(WIP)
+  DesignLayer // Text, Image, Mask | Used By Dynamic Handles of Design Compositor Node(WIP)
+  Any // For Input's that accept Any Data
 }
 
 enum TaskStatus {
@@ -219,6 +223,8 @@ model NodeTemplateHandle {
   label       String?
   required    Boolean       @default(false)
   handles     Handle[]
+  createdAt      DateTime     @default(now())
+  updatedAt      DateTime     @updatedAt
 
   @@map("node_template_handle")
 }
@@ -246,7 +252,6 @@ model Edge {
 model Canvas {
   id             String       @id @default(cuid())
   name           String
-  // Timestamps - DB managed
   createdAt      DateTime     @default(now())
   updatedAt      DateTime     @updatedAt
   nodes          Node[]
@@ -261,7 +266,6 @@ model Canvas {
 model AISession {
   id        String   @id @default(cuid())
   messages  Json
-  // Timestamps - DB managed
   createdAt DateTime @default(now())
   updatedAt DateTime @updatedAt
   canvas    Canvas   @relation(fields: [canvasId], references: [id], onDelete: Cascade)
@@ -275,7 +279,6 @@ model Task {
   name            String
   description     String?
   status          TaskStatus   @default(Pending)
-  // Timestamps - DB managed
   createdAt       DateTime     @default(now())
   updatedAt       DateTime     @updatedAt
   // Relationships
