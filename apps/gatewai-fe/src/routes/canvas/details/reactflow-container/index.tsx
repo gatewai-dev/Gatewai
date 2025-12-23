@@ -23,7 +23,6 @@ function ReactflowContainer({ children }: ReactFlowProps) {
   const {
     onEdgesChange,
     onNodesChange,
-    tool,
     onConnect,
     rfInstance
   } = useCanvasCtx();
@@ -57,10 +56,10 @@ function ReactflowContainer({ children }: ReactFlowProps) {
         minZoom={0.1}
         zoomOnPinch={true}
         zoomOnScroll={true}
-        nodesDraggable={tool === 'select'}
-        elementsSelectable={tool === 'select'}
-        panOnDrag={tool === 'pan'}
-        selectionOnDrag={tool === 'select'}
+        nodesDraggable={true}
+        elementsSelectable={true}
+        panOnDrag={true}
+        selectionOnDrag={true}
         selectNodesOnDrag
         selectionMode={SelectionMode.Partial}
         connectionMode={ConnectionMode.Loose}

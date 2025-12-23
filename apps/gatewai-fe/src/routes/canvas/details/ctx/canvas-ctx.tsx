@@ -31,8 +31,6 @@ interface CanvasContextType {
   onEdgesChange: OnEdgesChange<Edge>;
   isLoading: boolean;
   isError: boolean;
-  tool: 'select' | 'pan';
-  setTool: Dispatch<SetStateAction<'select' | 'pan'>>;
   onConnect: OnConnect;
   runNodes: (nodeIds: Node["id"][]) => Promise<void>;
   rfInstance: RefObject<ReactFlowInstance | undefined>;
@@ -125,7 +123,6 @@ const CanvasProvider = ({
 
   const nodes = useAppSelector(selectRFNodes);
   const edges = useAppSelector(selectRFEdges);
-  const [tool, setTool] = useState<'select' | 'pan'>('select');
   const timeoutRef = useRef<NodeJS.Timeout | null>(null);
 
   const { mutateAsync: patchCanvasAsync } = useMutation({
@@ -450,8 +447,6 @@ const CanvasProvider = ({
     onEdgesChange,
     isLoading,
     isError,
-    tool,
-    setTool,
     onConnect,
     runNodes,
     rfInstance,

@@ -48,7 +48,7 @@ const BaseNode = memo((props: NodeProps<Node<CanvasDetailsNode>> & {
             className="absolute left-0 z-10" 
             style={{ top: topPosition, transform: 'translateX(-100%)' }}
           >
-            <div className={`w-4 h-4 ${nodeBackgroundColor} rounded-none flex items-center justify-center transition-all duration-200`}>
+            <div className={`w-3 h-3 ${nodeBackgroundColor} ${isConnected ? color.bg : color.border} border-2 rounded-none flex items-center justify-center transition-all duration-200`}>
               <Handle
                 id={handle.id}
                 type="target"
@@ -95,7 +95,7 @@ const BaseNode = memo((props: NodeProps<Node<CanvasDetailsNode>> & {
             className="absolute right-0 z-10"
             style={{ top: topPosition, transform: 'translateX(100%)' }}
           >
-            <div className={`w-4 h-4 ${nodeBackgroundColor} rounded-none flex items-center justify-center transition-all duration-200`}>
+            <div className={`w-3 h-3 ${nodeBackgroundColor} rounded-none flex items-center justify-center transition-all duration-200`}>
               <Handle
                 id={handle.id}
                 type="source"

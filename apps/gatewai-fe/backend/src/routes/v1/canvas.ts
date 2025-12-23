@@ -65,6 +65,7 @@ const bulkUpdateSchema = z.object({
     name: z.string().min(1).max(20).optional(),
     nodes: z.array(nodeSchema).optional(),
     edges: z.array(edgeSchema).optional(),
+    handles: z.array(handleSchema).optional(),
 });
 
 const canvasRoutes = new Hono<{Variables: AuthHonoTypes}>({
@@ -184,341 +185,168 @@ const canvasRoutes = new Hono<{Variables: AuthHonoTypes}>({
         }
 
         // Prepare main transaction array
-        const transaction: any[] = [];
-
-        // Step 2: Handle name update if provided
-        if (validated.name !== undefined) {
-            transaction.push(
-                prisma.canvas.update({
-                    where: { id },
-                    data: { name: validated.name },
-                })
-            );
-        }
-
-        // Step 3: Process Nodes
-        // Fetch existing nodes for this canvas
-        const existingNodes = await prisma.node.findMany({
-            where: { canvasId: id },
-            select: { id: true, templateId: true } // Include templateId for later handle sync
-        });
-        const existingNodeIds = new Set(existingNodes.map(n => n.id));
-        const nodeIdToTemplateId = new Map(existingNodes.map(n => [n.id, n.templateId]));
-
-        let deleteNodeOp = null;
-        const nodeOperations: any[] = []; // For creates and updates
-        let toDeleteNodeIds: string[] = [];
-
-        if (validated.nodes) {
-            const providedNodes = validated.nodes;
-            const providedNodeMap = new Map(providedNodes.filter(n => n.id).map(n => [n.id!, n]));
-
-            // Identify nodes to delete
-            toDeleteNodeIds = existingNodes.filter(n => !providedNodeMap.has(n.id)).map(n => n.id);
-            if (toDeleteNodeIds.length > 0) {
-                deleteNodeOp = prisma.node.deleteMany({
-                    where: { id: { in: toDeleteNodeIds }, canvasId: id }
-                });
+        const transactions = [];
+        /**
+         * 1- Get canvas entities from DB
+         */
+        const nodesInDB = await prisma.node.findMany({
+            where: {
+                canvasId: id,
             }
+        })
 
-            // Process each provided node
-            for (const node of providedNodes) {
-                const { id: nodeId, templateId, type, handles: providedHandles, ...updateData } = node;
+        const nodeIds = nodesInDB.map(m => m.id);
 
-                if (nodeId && existingNodeIds.has(nodeId)) {
-                    // Update existing node (exclude immutable fields: type, templateId)
-                    nodeOperations.push(
-                        prisma.node.update({
-                            where: { id: nodeId },
-                            data: updateData,
-                        })
-                    );
-                } else {
-                    // Create new node
-                    const createData = {
-                        ...updateData,
-                        type,
-                        templateId,
-                        canvasId: id,
-                    };
-                    if (nodeId) createData.id = nodeId; // Use client-provided ID if present
-                    nodeOperations.push(
-                        prisma.node.create({
-                            data: createData,
-                        })
-                    );
-                }
-            }
-        }
-
-        // Add node delete to transaction (first, for cascades)
-        if (deleteNodeOp) transaction.push(deleteNodeOp);
-        // Add node creates/updates
-        transaction.push(...nodeOperations);
-
-        // Execute node-related transaction and get results
-        const results = await prisma.$transaction(transaction);
-        // Extract created/updated nodes (last N items where N = nodeOperations.length)
-        const nodeResults = results.slice(results.length - nodeOperations.length);
-
-        // Build map of all node IDs (old and new). For new nodes, map client ID (if provided) to DB ID
-        const nodeIdMap = new Map<string, string>();
-        let nodeResultIndex = 0;
-        if (validated.nodes) {
-            for (const node of validated.nodes) {
-                const resultNode = nodeResults[nodeResultIndex];
-                const clientId = node.id;
-                nodeIdMap.set(resultNode.id, resultNode.id);
-                if (clientId && clientId !== resultNode.id) {
-                    nodeIdMap.set(clientId, resultNode.id);
-                }
-                nodeResultIndex++;
-            }
-        }
-        // Add remaining existing nodes (not deleted)
-        existingNodes.forEach(n => {
-            if (!toDeleteNodeIds.includes(n.id)) {
-                nodeIdMap.set(n.id, n.id);
-            }
-        });
-
-        // Step 4: Process Handles
-        // First, fetch all templates needed (for sync if not variable)
-        const allTemplateIds = new Set([...existingNodes.map(n => n.templateId), ...(validated.nodes?.map(n => n.templateId) || [])]);
-        const templates = await prisma.nodeTemplate.findMany({
-            where: { id: { in: Array.from(allTemplateIds) } },
-            include: { templateHandles: true }
-        });
-        const templateMap = new Map(templates.map(t => [t.id, t]));
-
-        // Fetch all existing handles for the canvas
-        const existingHandles = await prisma.handle.findMany({
-            where: { node: { canvasId: id } },
-            select: { id: true, nodeId: true }
-        });
-        const existingHandleIdsByNode = new Map<string, Set<string>>(); // nodeId -> set of handleIds
-        existingHandles.forEach(h => {
-            if (!existingHandleIdsByNode.has(h.nodeId)) existingHandleIdsByNode.set(h.nodeId, new Set());
-            existingHandleIdsByNode.get(h.nodeId)!.add(h.id);
-        });
-
-        const handleOperations: any[] = [];
-        const handleIdMap = new Map<string, string>(); // clientHandleId -> dbHandleId (for edges)
-
-        // Process handles for each node (existing and new)
-        if (validated.nodes) {
-            let nodeIndex = 0;
-            for (const node of validated.nodes) {
-                const nodeId = node.id && existingNodeIds.has(node.id) ? node.id : nodeIdMap.get(node.id ?? nodeResults[nodeIndex].id)!;
-                const templateId = node.templateId || nodeIdToTemplateId.get(nodeId!); // For existing, use fetched
-                const template = templateMap.get(templateId);
-                const isVariable = template?.variableInputs || template?.variableOutputs || false;
-                const providedHandles = node.handles || [];
-
-                // Fetch existing handles for this node (if existing node)
-                const existingHandleIdsForNode = existingHandleIdsByNode.get(nodeId!) || new Set();
-
-                if (isVariable) {
-                    // Variable handles: Treat like nodes/edges - delete missing, create new, update existing
-                    const providedHandleMap = new Map(providedHandles.filter(h => h.id).map(h => [h.id!, h]));
-
-                    // Identify handles to delete
-                    const toDeleteHandleIds = Array.from(existingHandleIdsForNode).filter(hId => !providedHandleMap.has(hId));
-                    if (toDeleteHandleIds.length > 0) {
-                        handleOperations.push(
-                            prisma.handle.deleteMany({
-                                where: { id: { in: toDeleteHandleIds }, nodeId }
-                            })
-                        );
+        const edgesInDB = await prisma.edge.findMany({
+            where: {
+                OR: [
+                    {
+                        targetNode: {
+                            id: {
+                                in: nodeIds,
+                            }
+                        },
+                    },
+                    {
+                        sourceNode: {
+                            id: {
+                                in: nodeIds,
+                            }
+                        },
                     }
+                ]
+            }
+        })
 
-                    // Process provided handles
-                    for (const handle of providedHandles) {
-                        const { id: handleId, ...handleData } = handle;
-                        const createOrUpdateData = {
-                            ...handleData,
-                            nodeId,
-                        };
 
-                        if (handleId && existingHandleIdsForNode.has(handleId)) {
-                            // Update
-                            handleOperations.push(
-                                prisma.handle.update({
-                                    where: { id: handleId },
-                                    data: createOrUpdateData,
-                                })
-                            );
-                            handleIdMap.set(handleId, handleId);
-                        } else {
-                            // Create
-                            if (handleId) createOrUpdateData.id = handleId;
-                            const op = prisma.handle.create({
-                                data: createOrUpdateData,
-                            });
-                            handleOperations.push(op);
-                            // We'll map after execution
-                        }
+        const handlesInDB = await prisma.handle.findMany({
+            where: {
+                nodeId: {
+                    in: nodeIds,
+                }
+            }
+        })
+
+        /**
+         * 2- Create transactions for removed edges
+         */
+
+        const nodeIdsInPayload = validated.nodes?.map(m => m.id);
+
+        const removedNodeIds = nodesInDB.filter(f => !nodeIdsInPayload?.includes(f.id)).map(m => m.id);
+
+        const removedNodeEdges = await prisma.edge.findMany({
+            where: {
+                OR: [
+                    {
+                        targetNode: {
+                            id: {
+                                in: removedNodeIds,
+                            }
+                        },
+                    },
+                    {
+                        sourceNode: {
+                            id: {
+                                in: removedNodeIds,
+                            }
+                        },
                     }
-                } else {
-                    // Fixed handles: Sync to template (delete extras, create missing, update existing)
-                    if (!template) continue; // Skip if no template
-
-                    const sortedTemplateHandles = [...template.templateHandles].sort((a, b) => a.id.localeCompare(b.id));
-
-                    // Identify extras to delete (existing not in template)
-                    // For efficiency, perhaps fetch full handles earlier, but for now assume sync by recreating if changed
-
-                    // Create or update to match template
-                    sortedTemplateHandles.forEach((th, order) => {
-                        // Find matching provided or existing by templateHandleId
-                        const matchingProvided = providedHandles.find(h => h.templateHandleId === th.id);
-                        const createData = {
-                            nodeId,
-                            type: matchingProvided?.type || th.type,
-                            dataType: matchingProvided?.dataType || th.dataType,
-                            label: matchingProvided?.label || th.label,
-                            order: matchingProvided?.order || order,
-                            required: matchingProvided?.required || th.required,
-                            templateHandleId: th.id,
-                        };
-
-                        if (matchingProvided?.id && existingHandleIdsForNode.has(matchingProvided.id)) {
-                            // Update
-                            handleOperations.push(
-                                prisma.handle.update({
-                                    where: { id: matchingProvided.id },
-                                    data: createData,
-                                })
-                            );
-                            handleIdMap.set(matchingProvided.id, matchingProvided.id);
-                        } else {
-                            // Create
-                            if (matchingProvided?.id) createData.id = matchingProvided.id;
-                            handleOperations.push(
-                                prisma.handle.create({
-                                    data: createData,
-                                })
-                            );
-                            // Map after
-                        }
-                    });
-                }
-                nodeIndex++;
+                ]
             }
-        }
+        })
 
-        // Execute handle operations
-        if (handleOperations.length > 0) {
-            await prisma.$transaction(handleOperations);
-            // Build handleIdMap for new handles (assuming operations are in order, track creates)
-            // For simplicity, re-fetch all handles after
-            const allUpdatedHandles = await prisma.handle.findMany({
-                where: { node: { canvasId: id } }
-            });
-            allUpdatedHandles.forEach(h => handleIdMap.set(h.id, h.id)); // Existing are identity
-            // For new, if client provided id, but since we used it in create, it's the same
-            // If not, client didn't provide, so no need to map temp ids
-        }
+        const removedNodeEdgeIds = removedNodeEdges.map(m => m.id);
 
-        // Step 5: Process Edges
-        const existingEdges = await prisma.edge.findMany({
-            where: { sourceNode: { canvasId: id } },
-            select: { id: true }
-        });
-        const existingEdgeIds = new Set(existingEdges.map(e => e.id));
+        // Check if edge is sent from client
+        const edgeIdsInPayload = validated.edges?.map(m => m.id);
+        const edgeIdsNotInPayload = edgesInDB.filter(f => edgeIdsInPayload?.includes(f.id)).map(m => m.id)
 
-        let deleteEdgeOp = null;
-        const edgeOperations: any[] = [];
+        // Concat both edge ids that not found
+        const removedEdgeIds = [...removedNodeEdgeIds, ...edgeIdsNotInPayload];
+        const edgeIdsToDeleteFromDB = [...new Set(removedEdgeIds)];
 
-        if (validated.edges) {
-            const providedEdges = validated.edges;
-            const providedEdgeMap = new Map(providedEdges.filter(e => e.id).map(e => [e.id!, e]));
-
-            // Identify edges to delete
-            const toDeleteEdgeIds = existingEdges.filter(e => !providedEdgeMap.has(e.id)).map(e => e.id);
-            if (toDeleteEdgeIds.length > 0) {
-                deleteEdgeOp = prisma.edge.deleteMany({
-                    where: { id: { in: toDeleteEdgeIds } }
-                });
-            }
-
-            for (const edge of providedEdges) {
-                const { id: edgeId, source, target, sourceHandleId, targetHandleId, ...edgeData } = edge;
-
-                // Map node and handle IDs (source/target are nodeIds)
-                const dbSource = nodeIdMap.get(source) || source;
-                const dbTarget = nodeIdMap.get(target) || target;
-                const dbSourceHandleId = handleIdMap.get(sourceHandleId!) || sourceHandleId;
-                const dbTargetHandleId = handleIdMap.get(targetHandleId!) || targetHandleId;
-
-                if (!dbSource || !dbTarget || !dbSourceHandleId || !dbTargetHandleId) {
-                    console.error(`Skipping edge ${edgeId}: Missing mapped IDs`, { source, target, sourceHandleId, targetHandleId });
-                    continue;
-                }
-
-                const updateOrCreateData = {
-                    ...edgeData,
-                    source: dbSource,
-                    target: dbTarget,
-                    sourceHandleId: dbSourceHandleId,
-                    targetHandleId: dbTargetHandleId,
-                };
-
-                if (edgeId && existingEdgeIds.has(edgeId)) {
-                    // Update
-                    edgeOperations.push(
-                        prisma.edge.update({
-                            where: { id: edgeId },
-                            data: updateOrCreateData,
-                        })
-                    );
-                } else {
-                    // Create
-                    const createData = updateOrCreateData;
-                    if (edgeId) createData.id = edgeId;
-                    edgeOperations.push(
-                        prisma.edge.create({
-                            data: createData,
-                        })
-                    );
-                }
-            }
-        }
-
-        // Add edge delete (after handles, but deletes are safe)
-        if (deleteEdgeOp) await prisma.$transaction([deleteEdgeOp]);
-        // Execute edge operations
-        if (edgeOperations.length > 0) {
-            await prisma.$transaction(edgeOperations);
-        }
-
-        // Step 6: Re-fetch updated canvas
-        const updatedCanvas = await prisma.canvas.findFirst({
-            where: { id, userId: user.id },
-            include: {
-                nodes: {
-                    include: {
-                        handles: true,
-                        template: {
-                            include: { templateHandles: true }
-                        }
+        if (edgeIdsToDeleteFromDB.length > 0) {
+            const deleteEdgeTransaction = prisma.node.deleteMany({
+                where: {
+                    id: {
+                        in: edgeIdsToDeleteFromDB
                     }
                 }
-            }
-        });
+            })
 
-        const updatedEdges = await prisma.edge.findMany({
-            where: { sourceNode: { canvasId: id } }
-        });
-
-        if (!updatedCanvas) {
-            throw new HTTPException(404, { message: 'Canvas not found' });
+            transactions.push(deleteEdgeTransaction);
         }
 
-        return c.json({
-            ...updatedCanvas,
-            edges: updatedEdges,
-        });
+
+        // Handles
+        let handleIdsToRemove: string[] = [];
+        // 1- Handles in removed nodes
+        const removedNodeHandle = await prisma.handle.findMany({
+            select: {
+                id: true,
+            },
+            where: {
+                nodeId: {
+                    in: removedNodeIds
+                }
+            }
+        })
+
+        const removedNodeHandleIds = removedNodeHandle.map(m => m.id)
+        handleIdsToRemove = [...removedNodeHandleIds];
+
+        // 2- Handles that is not in payload
+        const handleIdsInPayload = validated.handles?.map(m => m.id).filter(f => f);
+        if (handleIdsInPayload && handleIdsInPayload.length) {
+            const removedDBHandles = await prisma.handle.findMany({
+                where: {
+                    AND: [
+                        {
+                            id: {
+                                notIn: handleIdsInPayload.filter(Boolean) as string[]
+                            }
+                        },
+                        {
+                            node: {
+                                canvasId: id,
+                            }
+                        }
+                    ]
+                }
+            })
+            const removedDBHandleIds = removedDBHandles.map(m => m.id);
+            handleIdsToRemove = [...removedDBHandleIds, ...handleIdsToRemove];
+        }
+        // Concat both as unique IDs
+        const uniqueHandleIdsToRemove = [...new Set(handleIdsToRemove)]
+        const deleteHandleTransactions = prisma.handle.deleteMany({
+            where: {
+                id: {
+                    in: uniqueHandleIdsToRemove
+                }
+            }
+        })
+        // PUSH HANDLE DELETE TO TRANSACTIONS
+        transactions.push(deleteHandleTransactions)
+
+
+        // Prepare delete node transaction
+
+        const deleteNodesTransaction = prisma.node.deleteMany({
+            where: {
+                id: {
+                    in: removedNodeIds,
+                }
+            }
+        })
+        
+        transactions.push(deleteNodesTransaction)
+
+        const [deletedPostCount, deletedHandleCount, deletedNodeCount] = await prisma.$transaction(transactions)
+        console.log({deletedPostCount, deletedHandleCount, deletedNodeCount});
+
+        return c.json({});
     }
 )
 .delete('/:id', async (c) => {

@@ -1,4 +1,4 @@
-import { Pointer, Hand, Undo2, Redo2, MousePointer2 } from 'lucide-react';
+import { Pointer, Hand, Undo2, Redo2, MousePointer2, ChevronDown } from 'lucide-react';
 import { useReactFlow, useViewport } from '@xyflow/react';
 import { useHotkeys } from 'react-hotkeys-hook';
 import { useCanvasCtx } from '../ctx/canvas-ctx';
@@ -28,7 +28,7 @@ function Toolbar() {
   useHotkeys('ctrl+z, meta+z', () => {
     if (canUndo) undo();
   }, [canUndo, undo]);
-  
+
   useHotkeys('ctrl+shift+z, meta+shift+z, ctrl+y, meta+y', () => {
     if (canRedo) redo();
   }, [canRedo, redo]);
@@ -37,22 +37,6 @@ function Toolbar() {
 
   return (
     <Menubar className="border-0 bg-background px-2 py-1 rounded-md shadow-md">
-      <ToggleGroup
-        type="single"
-        value={tool}
-        onValueChange={(value) => value && setTool(value as "select" | 'pan')}
-        className="gap-1"
-      >
-        <ToggleGroupItem value="select" aria-label="Select tool (V)" size="sm">
-          <MousePointer2 size={18} />
-        </ToggleGroupItem>
-        <ToggleGroupItem value="pan" aria-label="Pan tool (H)" size="sm">
-          <Hand size={18} />
-        </ToggleGroupItem>
-      </ToggleGroup>
-
-      <div className="w-px h-6 bg-border mx-2" />
-
       <div className="flex gap-1">
         <Toggle
           pressed={false}
@@ -74,11 +58,9 @@ function Toolbar() {
         </Toggle>
       </div>
 
-      <div className="flex-1" />
-
       <MenubarMenu>
-        <MenubarTrigger className="px-3 py-1 cursor-pointer">
-          {zoomPercentage} <span className="text-muted-foreground ml-1">▼</span>
+        <MenubarTrigger className="px-3 py-1 cursor-pointer text-xs">
+          {zoomPercentage} <ChevronDown className='w-5' />
         </MenubarTrigger>
         <MenubarContent align="end">
           <MenubarItem onClick={() => zoomIn()}>
