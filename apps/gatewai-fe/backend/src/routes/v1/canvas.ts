@@ -6,7 +6,7 @@ import { prisma, type Task } from "@gatewai/db";
 import type { AuthHonoTypes } from "../../auth.js";
 import { tasks } from "@trigger.dev/sdk";
 import type { TASK_LLM } from "../../trigger/llm.js";
-import type { EdgeCreateArgs, TextNodeConfig } from "@gatewai/types";
+import type { TextNodeConfig } from "@gatewai/types";
 import type { XYPosition } from '@xyflow/react';
 
 const NodeTypes = [
