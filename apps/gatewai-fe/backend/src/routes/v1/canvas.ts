@@ -9,17 +9,17 @@ import type { TASK_LLM } from "../../trigger/llm.js";
 import type { EdgeCreateArgs, TextNodeConfig } from "@gatewai/types";
 import type { XYPosition } from '@xyflow/react';
 
-
+const NodeTypes = [
+        'Text', 'Preview', 'File', 'Export',
+        'Toggle', 'Crawler', 'Resize', 'Agent', 'ThreeD',
+        'Painter', 'Blur', 'Compositor', 'Describer', 'Router',
+        'Note', 'Number', 'GPTImage1', 'LLM'
+    ] as const;
 
 const nodeSchema = z.object({
     id: z.string().optional(),
     name: z.string(),
-    type: z.enum([
-        'Text', 'Preview', 'File', 'Export', 
-        'Toggle', 'Crawler', 'Resize', 'Agent', 'ThreeD',
-        'Painter', 'Blur', 'Compositor', 'Describer', 'Router',
-        'Note', 'Number', 'GPTImage1', 'LLM'
-    ]),
+    type: z.enum(NodeTypes),
     position: z.object({
         x: z.number(),
         y: z.number(),

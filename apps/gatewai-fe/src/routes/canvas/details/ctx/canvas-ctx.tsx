@@ -292,6 +292,7 @@ const CanvasProvider = ({
   const dispatch = useAppDispatch();
   const rfInstance = useRef<ReactFlowInstance | undefined>(undefined);
   const storeNodes = useAppSelector(nodeSelectors.selectAll);
+  const [selectedNodes]
 
   const {
     data: canvas,
@@ -401,7 +402,7 @@ const CanvasProvider = ({
   const save = useCallback(() => {
     if (!canvasId) return;
 
-    const currentDbNodes: Partial<DbNode>[] = storeNodes.map((n) => {
+    const currentDbNodes = storeNodes.map((n) => {
       return {
         ...n,
       }
