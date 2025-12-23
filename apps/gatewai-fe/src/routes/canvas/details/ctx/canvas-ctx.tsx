@@ -12,21 +12,18 @@ import {
   type ReactFlowInstance,
   type XYPosition
 } from '@xyflow/react';
-import type {AllNodeConfig, DataType, Edge as DbEdge, Node as DbNode, NodeResult, NodeType } from '@gatewai/types';
+import type { DataType, Node as DbNode, NodeType } from '@gatewai/types';
 import { useAppDispatch, useAppSelector } from '@/store';
 import { setAllNodeEntities, nodeSelectors, type NodeEntityType } from '@/store/nodes';
 import { generateId } from '@/lib/idgen';
 import { createNodeEntity } from '@/store/nodes';
-import type { NodeTemplateWithIO } from '@/types/node-template';
 import { rpcClient } from '@/rpc/client';
-import type { CanvasDetailsRPC, PatchCanvasRPCReq } from '@/rpc/types';
+import type { CanvasDetailsRPC, NodeTemplateListItemRPC, PatchCanvasRPCReq } from '@/rpc/types';
 import { createNode, onEdgeChange, onNodeChange, selectRFEdges, selectRFNodes, setEdges, setNodes } from '@/store/rfstate';
 
 interface CanvasContextType {
   canvas: CanvasDetailsRPC | undefined;
-  setNodes: Dispatch<SetStateAction<Node[]>>;
   onNodesChange: OnNodesChange<Node>;
-  setEdges: Dispatch<SetStateAction<Edge[]>>;
   onEdgesChange: OnEdgesChange<Edge>;
   isLoading: boolean;
   isError: boolean;
@@ -35,14 +32,10 @@ interface CanvasContextType {
   onConnect: OnConnect;
   runNodes: (nodeIds: Node["id"][]) => Promise<void>;
   rfInstance: RefObject<ReactFlowInstance | undefined>;
-  createNewNode: (template: NodeTemplateWithIO, position: XYPosition) => void;
+  createNewNode: (template: NodeTemplateListItemRPC, position: XYPosition) => void;
 }
 
 const CanvasContext = createContext<CanvasContextType | undefined>(undefined);
-
-interface CanvasProviderProps {
-  canvasId: string;
-}
 
 const fetchCanvas = async (canvasId: string): Promise<CanvasDetailsRPC> => {
   // Replace with your actual API endpoint
@@ -63,12 +56,14 @@ const fetchCanvas = async (canvasId: string): Promise<CanvasDetailsRPC> => {
 const CanvasProvider = ({
   canvasId,
   children,
-}: PropsWithChildren<CanvasProviderProps>) => {
+}: PropsWithChildren<{
+  canvasId: string;
+}>) => {
 
   const dispatch = useAppDispatch();
   const rfInstance = useRef<ReactFlowInstance | undefined>(undefined);
   const nodeEntities = useAppSelector(nodeSelectors.selectAll);
-
+  const rfNodes = useAppSelector(selectRFNodes);
   const {
     data: canvas,
     isLoading,
@@ -105,8 +100,8 @@ const CanvasProvider = ({
       id: edge.id,
       source: edge.source,
       target: edge.target,
-      sourceHandle: edge.sourceHandle || undefined,
-      targetHandle: edge.targetHandle || undefined,
+      sourceHandle: edge.sourceHandleId || undefined,
+      targetHandle: edge.targetHandleId || undefined,
       data: { dataType: edge.dataType },
     }));
 
@@ -170,27 +165,34 @@ const CanvasProvider = ({
     if (!canvasId) return;
 
     const currentDbNodes = nodeEntities.map((n) => {
+      const rfNode = rfNodes.find(f => f.id === n.id);
+      if (!rfNode) {
+        return undefined;
+      }
       return {
         ...n,
+        position: rfNode.position,
+        width: rfNode.width ?? undefined,
+        zIndex: (n.zIndex ?? undefined),
       }
-    });
+    }).filter(f => !!f);
 
-    const currentDbEdges: Partial<DbEdge>[] = edges.map((e) => ({
+    const currentDbEdges: PatchCanvasRPCReq["json"]["edges"] = edges.map((e) => ({
       id: e.id,
       source: e.source,
-      target: e.target,
-      sourceHandle: e.sourceHandle || undefined,
-      targetHandle: e.targetHandle || undefined,
-      dataType: (e.data?.dataType || 'Text') as DataType,
+      target:e.target,
+      targetHandleId: e.targetHandle as string,
+      sourceHandleId: e.sourceHandle as string,
+      dataType: (e.data?.dataType ?? 'Text') as DataType,
     }));
 
-    const body = {
+    const body: PatchCanvasRPCReq["json"] = {
       nodes: currentDbNodes,
       edges: currentDbEdges,
     };
 
     return patchCanvasAsync(body);
-  }, [canvasId, nodeEntities, edges, patchCanvasAsync]);
+  }, [canvasId, nodeEntities, edges, patchCanvasAsync, rfNodes]);
 
   const scheduleSave = useCallback(() => {
     if (timeoutRef.current) {
@@ -205,15 +207,17 @@ const CanvasProvider = ({
     (changes: NodeChange<Node>[]) => {
       console.log({changes})
       dispatch(onNodeChange(changes));
+      scheduleSave();
     },
-    [dispatch]
+    [dispatch, scheduleSave]
   );
 
   const onEdgesChange = useCallback(
     (changes: EdgeChange<Edge>[]) => {
         dispatch(onEdgeChange(changes));
+      scheduleSave();
     },
-    [dispatch]
+    [dispatch, scheduleSave]
   );
 
   const onConnect = useCallback(
@@ -252,30 +256,28 @@ const CanvasProvider = ({
         return updatedEdges;
       })();
 
-      setEdges(newEdges);
+      dispatch(setEdges(newEdges));
 
       // Schedule save after connect
       scheduleSave();
     },
-    [nodes, edges, scheduleSave]
+    [nodes, dispatch, scheduleSave, edges]
   );
 
   const runNodes = useCallback(async (nodeIds: Node["id"][]) => {
     // Save before running
     await save();
 
-    const resp = await runNodesMutateAsync({ nodeIds });
-    console.log({resp});
+    await runNodesMutateAsync({ nodeIds });
   }, [runNodesMutateAsync, save])
 
   useEffect(() => {
-    setNodes(initialNodes);
-    setEdges(initialEdges);
-  }, [initialEdges, initialNodes]);
+    dispatch(setNodes(initialNodes));
+    dispatch(setEdges(initialEdges));
+  }, [dispatch, initialEdges, initialNodes]);
 
-  const createNewNode = useCallback((template: NodeTemplateWithIO, position: XYPosition) => {
+  const createNewNode = useCallback((template: NodeTemplateListItemRPC, position: XYPosition) => {
     const id = generateId();
-    console.log({template})
     const nodeEntity: NodeEntityType = {
       id,
       name: template.displayName,
@@ -290,8 +292,20 @@ const CanvasProvider = ({
       zIndex: 1,
       draggable: true,
       selectable: true,
+      handles: template.templateHandles.map((tHandle, i) => ({
+        nodeId: id,
+        label: tHandle.label,
+        order: i,
+        templateHandleId: tHandle.id,
+        id: generateId(),
+        required: tHandle.required,
+        createdAt: new Date().toISOString(),
+        updatedAt: new Date().toISOString(),
+        type: tHandle.type,
+        dataType: tHandle.dataType,
+      })),
       deletable: true,
-      config: template.defaultConfig as any || {},
+      config: template.defaultConfig || {},
       result: {
         selectedIndex: 0,
         parts: [],
@@ -318,7 +332,6 @@ const CanvasProvider = ({
     canvas,
     setNodes,
     onNodesChange,
-    setEdges,
     onEdgesChange,
     isLoading,
     isError,

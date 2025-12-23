@@ -1,12 +1,12 @@
 import { useRef, useState } from 'react';
-import type { NodeTemplate } from '@gatewai/types';
 import { Tooltip, TooltipContent, TooltipProvider, TooltipTrigger } from '@/components/ui/tooltip';
 import { iconMap } from './icon-map';
 import { useDraggable } from '@neodrag/react';
 import type { XYPosition } from '@xyflow/react';
 import { useCanvasCtx } from '@/routes/canvas/details/ctx/canvas-ctx';
+import type { NodeTemplateListItemRPC } from '@/rpc/types';
 
-export function NodeItem({ template }: { template: NodeTemplate }) {
+export function NodeItem({ template }: { template: NodeTemplateListItemRPC }) {
   const { rfInstance, createNewNode } = useCanvasCtx();
   const draggableRef = useRef<HTMLDivElement>(null);
   const [position, setPosition] = useState<XYPosition>({ x: 0, y: 0 });

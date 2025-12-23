@@ -1,12 +1,13 @@
+import type { NodeTemplateListRPC } from "@/rpc/types";
 import { NodeItem } from "./node-item";
 import { useNodePalette } from "./node-palette.ctx";
-import type { NodeTemplateWithIO } from "@/types/node-template";
+import { HandleType } from "@gatewai/db";
 
 interface NodeListProps {
-  templates: NodeTemplateWithIO[];
+  templates: NodeTemplateListRPC;
 }
 
-function sortTemplates(templates: NodeTemplateWithIO[], sortBy: string): NodeTemplateWithIO[] {
+function sortTemplates(templates: NodeTemplateListRPC, sortBy: string): NodeTemplateListRPC {
   const sorted = [...templates];
   if (sortBy === 'price_asc') {
     sorted.sort((a, b) => (a.tokenPrice || 0) - (b.tokenPrice || 0));
@@ -26,13 +27,13 @@ export function NodeTemplateList({ templates }: NodeListProps) {
 
   if (fromType !== 'Input') {
     filtered = filtered.filter((t) =>
-      t.inputTypes.some((inp) => inp.inputType === fromType)
+      t.templateHandles.some((inp) => inp.dataType === fromType && inp.type === HandleType.Input)
     );
   }
 
   if (toTypes.length > 0) {
     filtered = filtered.filter((t) =>
-      t.outputTypes.some((out) => toTypes.includes(out.outputType))
+      t.templateHandles.some((out) => toTypes.includes(out.dataType) && out.type === HandleType.Output)
     );
   }
 
@@ -46,7 +47,7 @@ export function NodeTemplateList({ templates }: NodeListProps) {
   }
 
   // Grouping: Quick Access if showInQuickAccess, else by category/subcategory
-  const groups: Record<string, Record<string, NodeTemplateWithIO[]>> = {};
+  const groups: Record<string, Record<string, NodeTemplateListRPC>> = {};
   filtered.forEach((t) => {
     let cat = t.category || 'Other';
     if (t.showInQuickAccess) {

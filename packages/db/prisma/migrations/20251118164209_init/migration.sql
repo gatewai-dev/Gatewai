@@ -75,6 +75,22 @@ CREATE TABLE "node" (
 );
 
 -- CreateTable
+CREATE TABLE "handle" (
+    "id" TEXT NOT NULL PRIMARY KEY,
+    "nodeId" TEXT NOT NULL,
+    "type" TEXT NOT NULL,
+    "dataType" TEXT NOT NULL,
+    "label" TEXT,
+    "order" INTEGER NOT NULL DEFAULT 0,
+    "required" BOOLEAN NOT NULL DEFAULT false,
+    "templateHandleId" TEXT,
+    "createdAt" DATETIME NOT NULL DEFAULT CURRENT_TIMESTAMP,
+    "updatedAt" DATETIME NOT NULL,
+    CONSTRAINT "handle_nodeId_fkey" FOREIGN KEY ("nodeId") REFERENCES "node" ("id") ON DELETE CASCADE ON UPDATE CASCADE,
+    CONSTRAINT "handle_templateHandleId_fkey" FOREIGN KEY ("templateHandleId") REFERENCES "node_template_handle" ("id") ON DELETE RESTRICT ON UPDATE CASCADE
+);
+
+-- CreateTable
 CREATE TABLE "node_template" (
     "id" TEXT NOT NULL PRIMARY KEY,
     "type" TEXT NOT NULL,
@@ -93,22 +109,14 @@ CREATE TABLE "node_template" (
 );
 
 -- CreateTable
-CREATE TABLE "node_template_input" (
+CREATE TABLE "node_template_handle" (
     "id" TEXT NOT NULL PRIMARY KEY,
     "templateId" TEXT NOT NULL,
-    "required" BOOLEAN NOT NULL,
-    "inputType" TEXT NOT NULL,
+    "type" TEXT NOT NULL,
+    "dataType" TEXT NOT NULL,
     "label" TEXT,
-    CONSTRAINT "node_template_input_templateId_fkey" FOREIGN KEY ("templateId") REFERENCES "node_template" ("id") ON DELETE CASCADE ON UPDATE CASCADE
-);
-
--- CreateTable
-CREATE TABLE "node_template_output" (
-    "id" TEXT NOT NULL PRIMARY KEY,
-    "templateId" TEXT NOT NULL,
-    "outputType" TEXT NOT NULL,
-    "label" TEXT,
-    CONSTRAINT "node_template_output_templateId_fkey" FOREIGN KEY ("templateId") REFERENCES "node_template" ("id") ON DELETE CASCADE ON UPDATE CASCADE
+    "required" BOOLEAN NOT NULL DEFAULT false,
+    CONSTRAINT "node_template_handle_templateId_fkey" FOREIGN KEY ("templateId") REFERENCES "node_template" ("id") ON DELETE CASCADE ON UPDATE CASCADE
 );
 
 -- CreateTable
@@ -116,13 +124,15 @@ CREATE TABLE "edge" (
     "id" TEXT NOT NULL PRIMARY KEY,
     "source" TEXT NOT NULL,
     "target" TEXT NOT NULL,
-    "sourceHandle" TEXT,
-    "targetHandle" TEXT,
+    "sourceHandleId" TEXT NOT NULL,
+    "targetHandleId" TEXT NOT NULL,
     "dataType" TEXT NOT NULL,
     "createdAt" DATETIME NOT NULL DEFAULT CURRENT_TIMESTAMP,
     "updatedAt" DATETIME NOT NULL,
     CONSTRAINT "edge_source_fkey" FOREIGN KEY ("source") REFERENCES "node" ("id") ON DELETE CASCADE ON UPDATE CASCADE,
-    CONSTRAINT "edge_target_fkey" FOREIGN KEY ("target") REFERENCES "node" ("id") ON DELETE CASCADE ON UPDATE CASCADE
+    CONSTRAINT "edge_target_fkey" FOREIGN KEY ("target") REFERENCES "node" ("id") ON DELETE CASCADE ON UPDATE CASCADE,
+    CONSTRAINT "edge_sourceHandleId_fkey" FOREIGN KEY ("sourceHandleId") REFERENCES "handle" ("id") ON DELETE CASCADE ON UPDATE CASCADE,
+    CONSTRAINT "edge_targetHandleId_fkey" FOREIGN KEY ("targetHandleId") REFERENCES "handle" ("id") ON DELETE CASCADE ON UPDATE CASCADE
 );
 
 -- CreateTable
@@ -173,7 +183,7 @@ CREATE UNIQUE INDEX "session_token_key" ON "session"("token");
 CREATE UNIQUE INDEX "node_template_type_key" ON "node_template"("type");
 
 -- CreateIndex
-CREATE UNIQUE INDEX "edge_source_sourceHandle_target_targetHandle_key" ON "edge"("source", "sourceHandle", "target", "targetHandle");
+CREATE UNIQUE INDEX "edge_sourceHandleId_targetHandleId_key" ON "edge"("sourceHandleId", "targetHandleId");
 
 -- CreateIndex
 CREATE UNIQUE INDEX "task_publicAccessToken_key" ON "task"("publicAccessToken");

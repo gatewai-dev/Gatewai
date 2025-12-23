@@ -1,4 +1,4 @@
-import { NodeType, ProcessEnvironment, DataType, PrismaClient } from "@gatewai/db";
+import { NodeType, ProcessEnvironment, DataType, HandleType, PrismaClient } from "@gatewai/db";
 
 export async function SEED_createNodeTemplates(prisma: PrismaClient) {
   // Text: no input, single output Text
@@ -11,12 +11,9 @@ export async function SEED_createNodeTemplates(prisma: PrismaClient) {
       tokenPrice: 0.0,
       variableInputs: false,
       variableOutputs: false,
-      inputTypes: {
-        create: []
-      },
-      outputTypes: {
+      templateHandles: {
         create: [
-          { outputType: DataType.Text, label: "Text" }
+          { type: HandleType.Output, dataType: DataType.Text, label: "Text" }
         ]
       },
       defaultConfig: undefined,
@@ -33,13 +30,10 @@ export async function SEED_createNodeTemplates(prisma: PrismaClient) {
       tokenPrice: 0.0,
       variableInputs: false,
       variableOutputs: false,
-      inputTypes: {
+      templateHandles: {
         create: [
-          { inputType: DataType.File, required: true, label: 'File (video/image)' }
+          { type: HandleType.Input, dataType: DataType.File, required: true, label: 'File (video/image)' }
         ]
-      },
-      outputTypes: {
-        create: []
       },
       defaultConfig: undefined,
     }
@@ -55,12 +49,9 @@ export async function SEED_createNodeTemplates(prisma: PrismaClient) {
       tokenPrice: 0.0,
       variableInputs: false,
       variableOutputs: false,
-      inputTypes: {
-        create: []
-      },
-      outputTypes: {
+      templateHandles: {
         create: [
-          { outputType: DataType.File, label: "File" }
+          { type: HandleType.Output, dataType: DataType.File, label: "File" }
         ]
       },
       defaultConfig: undefined,
@@ -77,13 +68,10 @@ export async function SEED_createNodeTemplates(prisma: PrismaClient) {
       tokenPrice: 0.0,
       variableInputs: false,
       variableOutputs: false,
-      inputTypes: {
+      templateHandles: {
         create: [
-          { inputType: DataType.File, required: true, label: "File" }
+          { type: HandleType.Input, dataType: DataType.File, required: true, label: "File" }
         ]
-      },
-      outputTypes: {
-        create: []
       },
       defaultConfig: undefined,
     }
@@ -99,12 +87,9 @@ export async function SEED_createNodeTemplates(prisma: PrismaClient) {
       tokenPrice: 0.0,
       variableInputs: false,
       variableOutputs: false,
-      inputTypes: {
-        create: []
-      },
-      outputTypes: {
+      templateHandles: {
         create: [
-          { outputType: DataType.Boolean, label: "Yes/No" }
+          { type: HandleType.Output, dataType: DataType.Boolean, label: "Yes/No" }
         ]
       },
       defaultConfig: undefined,
@@ -121,14 +106,10 @@ export async function SEED_createNodeTemplates(prisma: PrismaClient) {
       tokenPrice: 0.0,
       variableInputs: false,
       variableOutputs: false,
-      inputTypes: {
+      templateHandles: {
         create: [
-          { inputType: DataType.Text, required: true, label: "Link" }
-        ]
-      },
-      outputTypes: {
-        create: [
-          { outputType: DataType.Text, label: "HTML content (Text)" }
+          { type: HandleType.Input, dataType: DataType.Text, required: true, label: "Link" },
+          { type: HandleType.Output, dataType: DataType.Text, label: "HTML content (Text)" }
         ]
       },
       defaultConfig: undefined,
@@ -145,14 +126,10 @@ export async function SEED_createNodeTemplates(prisma: PrismaClient) {
       tokenPrice: 0.0,
       variableInputs: false,
       variableOutputs: false,
-      inputTypes: {
+      templateHandles: {
         create: [
-          { inputType: DataType.File, required: true, label: "Image/Video" }
-        ]
-      },
-      outputTypes: {
-        create: [
-          { outputType: DataType.File, label: "Resized Image/Video" }
+          { type: HandleType.Input, dataType: DataType.File, required: true, label: "Image/Video" },
+          { type: HandleType.Output, dataType: DataType.File, label: "Resized Image/Video" }
         ]
       },
       defaultConfig: {},
@@ -169,14 +146,10 @@ export async function SEED_createNodeTemplates(prisma: PrismaClient) {
       tokenPrice: 0.0,
       variableInputs: true,
       variableOutputs: false,
-      inputTypes: {
+      templateHandles: {
         create: [
-          { inputType: DataType.Text, required: true, label: 'Instructions' }
-        ]
-      },
-      outputTypes: {
-        create: [
-          { outputType: DataType.Text, label: "Text Output" }
+          { type: HandleType.Input, dataType: DataType.Text, required: true, label: 'Instructions' },
+          { type: HandleType.Output, dataType: DataType.Text, label: "Text Output" }
         ]
       },
       defaultConfig: undefined,
@@ -193,14 +166,10 @@ export async function SEED_createNodeTemplates(prisma: PrismaClient) {
       tokenPrice: 0.0,
       variableInputs: false,
       variableOutputs: false,
-      inputTypes: {
+      templateHandles: {
         create: [
-          { inputType: DataType.Text, required: true, label: "Prompt" }
-        ]
-      },
-      outputTypes: {
-        create: [
-          { outputType: DataType.File, label: "3D File" }
+          { type: HandleType.Input, dataType: DataType.Text, required: true, label: "Prompt" },
+          { type: HandleType.Output, dataType: DataType.File, label: "3D File" }
         ]
       },
       defaultConfig: undefined,
@@ -217,15 +186,11 @@ export async function SEED_createNodeTemplates(prisma: PrismaClient) {
       tokenPrice: 0.0,
       variableInputs: false,
       variableOutputs: false,
-      inputTypes: {
+      templateHandles: {
         create: [
-          { inputType: DataType.Image, required: true, label: null }
-        ]
-      },
-      outputTypes: {
-        create: [
-          { outputType: DataType.Mask, label: null },
-          { outputType: DataType.Image, label: null }
+          { type: HandleType.Input, dataType: DataType.Image, required: true, label: null },
+          { type: HandleType.Output, dataType: DataType.Mask, label: null },
+          { type: HandleType.Output, dataType: DataType.Image, label: null }
         ]
       },
       defaultConfig: undefined,
@@ -242,14 +207,10 @@ export async function SEED_createNodeTemplates(prisma: PrismaClient) {
       tokenPrice: 0.0,
       variableInputs: false,
       variableOutputs: false,
-      inputTypes: {
+      templateHandles: {
         create: [
-          { inputType: DataType.Image, required: true, label: null }
-        ]
-      },
-      outputTypes: {
-        create: [
-          { outputType: DataType.Image, label: "Blurred Image" }
+          { type: HandleType.Input, dataType: DataType.Image, required: true, label: null },
+          { type: HandleType.Output, dataType: DataType.Image, label: "Blurred Image" }
         ]
       },
       defaultConfig: {
@@ -268,14 +229,10 @@ export async function SEED_createNodeTemplates(prisma: PrismaClient) {
       tokenPrice: 0.0,
       variableInputs: true,
       variableOutputs: false,
-      inputTypes: {
+      templateHandles: {
         create: [
-          { inputType: DataType.Image, required: true, label: 'Image' }
-        ]
-      },
-      outputTypes: {
-        create: [
-          { outputType: DataType.Image, label: "Output Image" }
+          { type: HandleType.Input, dataType: DataType.Image, required: true, label: 'Image' },
+          { type: HandleType.Output, dataType: DataType.Image, label: "Output Image" }
         ]
       },
       defaultConfig: {
@@ -295,14 +252,10 @@ export async function SEED_createNodeTemplates(prisma: PrismaClient) {
       tokenPrice: 0.0,
       variableInputs: false,
       variableOutputs: false,
-      inputTypes: {
+      templateHandles: {
         create: [
-          { inputType: DataType.Image, required: true, label: null }
-        ]
-      },
-      outputTypes: {
-        create: [
-          { outputType: DataType.Text, label: null }
+          { type: HandleType.Input, dataType: DataType.Image, required: true, label: null },
+          { type: HandleType.Output, dataType: DataType.Text, label: null }
         ]
       },
       defaultConfig: undefined,
@@ -319,14 +272,10 @@ export async function SEED_createNodeTemplates(prisma: PrismaClient) {
       tokenPrice: 0.0,
       variableInputs: false,
       variableOutputs: false,
-      inputTypes: {
+      templateHandles: {
         create: [
-          { inputType: DataType.Text, required: true, label: null }
-        ]
-      },
-      outputTypes: {
-        create: [
-          { outputType: DataType.Text, label: null }
+          { type: HandleType.Input, dataType: DataType.Text, required: true, label: null },
+          { type: HandleType.Output, dataType: DataType.Text, label: null }
         ]
       },
       defaultConfig: undefined,
@@ -343,10 +292,7 @@ export async function SEED_createNodeTemplates(prisma: PrismaClient) {
       tokenPrice: 0.0,
       variableInputs: false,
       variableOutputs: false,
-      inputTypes: {
-        create: []
-      },
-      outputTypes: {
+      templateHandles: {
         create: []
       },
       defaultConfig: {
@@ -366,12 +312,9 @@ export async function SEED_createNodeTemplates(prisma: PrismaClient) {
       tokenPrice: 0.0,
       variableInputs: false,
       variableOutputs: false,
-      inputTypes: {
-        create: []
-      },
-      outputTypes: {
+      templateHandles: {
         create: [
-          { outputType: DataType.Number, label: null }
+          { type: HandleType.Output, dataType: DataType.Number, label: null }
         ]
       },
       defaultConfig: undefined,
@@ -388,14 +331,10 @@ export async function SEED_createNodeTemplates(prisma: PrismaClient) {
       tokenPrice: 0.0,
       variableInputs: false,
       variableOutputs: false,
-      inputTypes: {
+      templateHandles: {
         create: [
-          { inputType: DataType.Text, required: true, label: null }
-        ]
-      },
-      outputTypes: {
-        create: [
-          { outputType: DataType.Image, label: null }
+          { type: HandleType.Input, dataType: DataType.Text, required: true, label: null },
+          { type: HandleType.Output, dataType: DataType.Image, label: null }
         ]
       },
       defaultConfig: {
@@ -416,16 +355,12 @@ export async function SEED_createNodeTemplates(prisma: PrismaClient) {
       tokenPrice: 0.0,
       variableInputs: false,
       variableOutputs: false,
-      inputTypes: {
+      templateHandles: {
         create: [
-          { inputType: DataType.Text, required: true, label: 'Prompt' },
-          { inputType: DataType.Text, required: false, label: 'System Prompt' },
-          { inputType: DataType.Image, required: false, label: 'Image' }
-        ]
-      },
-      outputTypes: {
-        create: [
-          { outputType: DataType.Text, label: null }
+          { type: HandleType.Input, dataType: DataType.Text, required: true, label: 'Prompt' },
+          { type: HandleType.Input, dataType: DataType.Text, required: false, label: 'System Prompt' },
+          { type: HandleType.Input, dataType: DataType.Image, required: false, label: 'Image' },
+          { type: HandleType.Output, dataType: DataType.Text, label: null }
         ]
       },
       defaultConfig: {

@@ -6,15 +6,14 @@ const nodeTemplatesRoutes = new Hono<{Variables: AuthHonoTypes}>()
 .get('', async (c) => {
     const templates = await prisma.nodeTemplate.findMany({
         include: {
-            inputTypes: true,
-            outputTypes: true,
+            templateHandles: true,
         },
         orderBy: {
             displayName: 'asc',
         }
     });
 
-    return c.json({ templates });
+    return c.json(templates);
 });
 
 export { nodeTemplatesRoutes };

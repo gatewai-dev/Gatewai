@@ -1,11 +1,11 @@
 import { createContext, useContext, type PropsWithChildren } from 'react';
 import { useGetAllNodeTemplatesQuery } from '@/store/node-templates';
-import type { NodeTemplateWithIO } from '@/types/node-template';
+import type { NodeTemplateListRPC } from '@/rpc/types';
 
 
 
 interface NodeTemplatesContextType {
-  nodeTemplates: NodeTemplateWithIO[] | undefined;
+  nodeTemplates: NodeTemplateListRPC | undefined;
   isLoading: boolean;
   isError: boolean;
 }
@@ -19,7 +19,7 @@ const NodeTemplatesProvider = ({
   const { data, isLoading, isError } = useGetAllNodeTemplatesQuery(null);
   console.log({data})
   const value: NodeTemplatesContextType = {
-    nodeTemplates: data?.templates ?? [],
+    nodeTemplates: data ?? [],
     isLoading,
     isError,
   };

@@ -56,6 +56,11 @@ enum ProcessEnvironment {
   Server
 }
 
+enum HandleType {
+  Input
+  Output
+}
+
 model User {
   id            String    @id
   name          String
@@ -153,6 +158,7 @@ model Node {
   createdAt      DateTime        @default(now())
   updatedAt      DateTime        @updatedAt
   // Relationships
+  handles        Handle[]        @relation("NodeHandles")
   edgesFrom      Edge[]          @relation("EdgesFrom")
   edgesTo        Edge[]          @relation("EdgesTo")
   canvas         Canvas          @relation(fields: [canvasId], references: [id], onDelete: Cascade)
@@ -164,13 +170,31 @@ model Node {
   @@map("node")
 }
 
+model Handle {
+  id                 String              @id @default(cuid())
+  nodeId             String
+  node               Node                @relation("NodeHandles", fields: [nodeId], references: [id], onDelete: Cascade)
+  type               HandleType
+  dataType           DataType
+  label              String?
+  order              Int                 @default(0)
+  required           Boolean             @default(false)
+  templateHandleId   String?
+  templateHandle     NodeTemplateHandle? @relation(fields: [templateHandleId], references: [id], onDelete: Restrict)
+  createdAt          DateTime            @default(now())
+  updatedAt          DateTime            @updatedAt
+  sourceEdges        Edge[]              @relation("SourceHandle")
+  targetEdges        Edge[]              @relation("TargetHandle")
+
+  @@map("handle")
+}
+
 model NodeTemplate {
   id                  String                 @id @default(cuid())
   type                NodeType               @unique
   displayName         String
   description         String?
-  inputTypes          NodeTemplateInput[]
-  outputTypes         NodeTemplateOutput[]
+  templateHandles     NodeTemplateHandle[]
   processEnvironment  ProcessEnvironment
   tokenPrice          Float?                 @default(0.0)
   variableInputs      Boolean                @default(false)
@@ -181,49 +205,41 @@ model NodeTemplate {
   createdAt           DateTime               @default(now())
   updatedAt           DateTime               @updatedAt
   nodes               Node[]
-
   defaultConfig       Json?
 
   @@map("node_template")
 }
 
-model NodeTemplateInput {
-  id          String       @id @default(cuid())
+model NodeTemplateHandle {
+  id          String        @id @default(cuid())
   templateId  String
-  required    Boolean
-  inputType   DataType
+  template    NodeTemplate  @relation(fields: [templateId], references: [id], onDelete: Cascade)
+  type        HandleType
+  dataType    DataType
   label       String?
-  template    NodeTemplate @relation(fields: [templateId], references: [id], onDelete: Cascade)
+  required    Boolean       @default(false)
+  handles     Handle[]
 
-  @@map("node_template_input")
-}
-
-model NodeTemplateOutput {
-  id          String       @id @default(cuid())
-  templateId  String
-  outputType  DataType
-  label       String?
-  template    NodeTemplate @relation(fields: [templateId], references: [id], onDelete: Cascade)
-
-  @@map("node_template_output")
+  @@map("node_template_handle")
 }
 
 model Edge {
-  id           String   @id @default(cuid())
-  source       String
-  target       String
-  // Handle IDs to track which specific input/output the edge connects to
-  sourceHandle String?  // e.g., "source-0", "source-1"
-  targetHandle String?  // e.g., "target-0", "target-1"
-  dataType     DataType
-  createdAt    DateTime @default(now())
-  updatedAt    DateTime @updatedAt
+  id               String       @id @default(cuid())
+  source           String
+  target           String
+  sourceHandleId   String
+  targetHandleId   String
+  dataType         DataType
+  createdAt        DateTime     @default(now())
+  updatedAt        DateTime     @updatedAt
 
-  sourceNode Node @relation("EdgesFrom", fields: [source], references: [id], onDelete: Cascade)
-  targetNode Node @relation("EdgesTo", fields: [target], references: [id], onDelete: Cascade)
+  sourceNode       Node         @relation("EdgesFrom", fields: [source], references: [id], onDelete: Cascade)
+  targetNode       Node         @relation("EdgesTo", fields: [target], references: [id], onDelete: Cascade)
+  sourceHandle     Handle       @relation("SourceHandle", fields: [sourceHandleId], references: [id], onDelete: Cascade)
+  targetHandle     Handle       @relation("TargetHandle", fields: [targetHandleId], references: [id], onDelete: Cascade)
 
-  // Updated unique constraint to include handles - prevents duplicate connections to same handles
-  @@unique([source, sourceHandle, target, targetHandle])
+  // Updated unique constraint to prevent duplicate connections between same handles
+  @@unique([sourceHandleId, targetHandleId])
   @@map("edge")
 }
 

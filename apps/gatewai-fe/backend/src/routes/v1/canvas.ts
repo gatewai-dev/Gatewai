@@ -40,8 +40,8 @@ const edgeSchema = z.object({
     id: z.string().optional(),
     source: z.string(),
     target: z.string(),
-    sourceHandle: z.string().optional(),
-    targetHandle: z.string().optional(),
+    sourceHandleId: z.string().optional(),
+    targetHandleId: z.string().optional(),
     dataType: z.enum(['Text', 'Number', 'Boolean', 'Image', 'Video', 'Audio', 'File', 'Mask']),
 });
 
@@ -116,10 +116,10 @@ const canvasRoutes = new Hono<{Variables: AuthHonoTypes}>({
         include: {
             nodes: {
                 include: {
+                    handles: true,
                     template: {
                         include: {
-                            inputTypes: true,
-                            outputTypes: true,
+                            templateHandles: true,
                         }
                     }
                 }
@@ -178,6 +178,10 @@ const canvasRoutes = new Hono<{Variables: AuthHonoTypes}>({
         let deleteNodeOp = null;
         const updateCreateTransactions = [];
 
+        // Collect templateIds for new nodes
+        const templateIds = new Set<string>();
+        const createIndices: number[] = [];
+
         // Process nodes
         if (validated.nodes) {
             const existingNodes = await prisma.node.findMany({
@@ -200,7 +204,7 @@ const canvasRoutes = new Hono<{Variables: AuthHonoTypes}>({
                 });
             }
 
-            for (const node of providedNodes) {
+            providedNodes.forEach((node, index) => {
                 const { id: nodeId, templateId, type, ...updateData } = node;
 
                 if (nodeId && existingNodeIds.has(nodeId)) {
@@ -211,6 +215,7 @@ const canvasRoutes = new Hono<{Variables: AuthHonoTypes}>({
                             data: updateData,
                         })
                     );
+                    createIndices.push(-1); // Not a create
                 } else {
                     // Create
                     const createData = {
@@ -227,8 +232,20 @@ const canvasRoutes = new Hono<{Variables: AuthHonoTypes}>({
                             data: createData,
                         })
                     );
+                    createIndices.push(index);
+                    templateIds.add(templateId);
                 }
-            }
+            });
+        }
+
+        // Fetch templates for new nodes
+        let templateMap = new Map();
+        if (templateIds.size > 0) {
+            const templates = await prisma.nodeTemplate.findMany({
+                where: { id: { in: Array.from(templateIds) } },
+                include: { templateHandles: true }
+            });
+            templateMap = new Map(templates.map(t => [t.id, t]));
         }
 
         // Process edges
@@ -291,7 +308,45 @@ const canvasRoutes = new Hono<{Variables: AuthHonoTypes}>({
         }
         transaction.push(...updateCreateTransactions);
 
-        await prisma.$transaction(transaction);
+        const results = await prisma.$transaction(transaction);
+
+        // Extract update/create results (last part of results)
+        const updateCreateResults = results.slice(results.length - updateCreateTransactions.length);
+
+        // Create handles for new nodes (outside transaction for simplicity)
+        const handleTransactions = [];
+        let resultIndex = 0;
+        for (const createIndex of createIndices) {
+            if (createIndex !== -1) {
+                const node = validated.nodes![createIndex];
+                const newNode = updateCreateResults[resultIndex];
+                const template = templateMap.get(node.templateId);
+                if (template) {
+                    // Sort templateHandles by id for consistent order
+                    const sortedHandles = [...template.templateHandles].sort((a, b) => a.id.localeCompare(b.id));
+                    sortedHandles.forEach((th, order) => {
+                        handleTransactions.push(
+                            prisma.handle.create({
+                                data: {
+                                    nodeId: newNode.id,
+                                    type: th.type,
+                                    dataType: th.dataType,
+                                    label: th.label,
+                                    order,
+                                    required: th.required,
+                                    templateHandleId: th.id,
+                                }
+                            })
+                        );
+                    });
+                }
+            }
+            resultIndex++;
+        }
+
+        if (handleTransactions.length > 0) {
+            await prisma.$transaction(handleTransactions);
+        }
 
         // Fetch updated canvas
         const canvas = await prisma.canvas.findFirst({
@@ -302,10 +357,10 @@ const canvasRoutes = new Hono<{Variables: AuthHonoTypes}>({
             include: {
                 nodes: {
                     include: {
+                        handles: true,
                         template: {
                             include: {
-                                inputTypes: true,
-                                outputTypes: true,
+                                templateHandles: true,
                             }
                         }
                     }
@@ -366,16 +421,63 @@ const canvasRoutes = new Hono<{Variables: AuthHonoTypes}>({
             throw new HTTPException(404, { message: 'Canvas not found' });
         }
 
-        const node = await prisma.node.create({
-            data: {
-                ...validated,
-                canvasId,
-            },
+        // Fetch template
+        const template = await prisma.nodeTemplate.findUnique({
+            where: { id: validated.templateId },
+            include: { templateHandles: true }
+        });
+
+        if (!template) {
+            throw new HTTPException(400, { message: 'Invalid template' });
+        }
+
+        let node;
+        await prisma.$transaction(async (tx) => {
+            node = await tx.node.create({
+                data: {
+                    name: validated.name,
+                    type: validated.type,
+                    position: validated.position,
+                    width: validated.width,
+                    height: validated.height,
+                    draggable: validated.draggable,
+                    selectable: validated.selectable,
+                    deletable: validated.deletable,
+                    config: validated.config,
+                    result: validated.result,
+                    isDirty: validated.isDirty,
+                    zIndex: validated.zIndex,
+                    templateId: validated.templateId,
+                    canvasId,
+                }
+            });
+
+            // Sort templateHandles by id for consistent order
+            const sortedHandles = [...template.templateHandles].sort((a, b) => a.id.localeCompare(b.id));
+
+            for (let order = 0; order < sortedHandles.length; order++) {
+                const th = sortedHandles[order];
+                await tx.handle.create({
+                    data: {
+                        nodeId: node.id,
+                        type: th.type,
+                        dataType: th.dataType,
+                        label: th.label,
+                        order,
+                        required: th.required,
+                        templateHandleId: th.id,
+                    }
+                });
+            }
+        });
+
+        // Fetch the node with includes
+        node = await prisma.node.findUnique({
+            where: { id: node!.id },
             include: {
                 template: {
                     include: {
-                        inputTypes: true,
-                        outputTypes: true,
+                        templateHandles: true,
                     }
                 }
             }
@@ -409,9 +511,9 @@ const canvasRoutes = new Hono<{Variables: AuthHonoTypes}>({
         const existing = await prisma.edge.findFirst({
             where: {
                 source: validated.source,
-                sourceHandle: validated.sourceHandle || null,
+                sourceHandleId: validated.sourceHandleId ?? undefined,
                 target: validated.target,
-                targetHandle: validated.targetHandle || null,
+                targetHandleId: validated.targetHandleId ?? undefined,
             }
         });
 
@@ -437,6 +539,7 @@ const canvasRoutes = new Hono<{Variables: AuthHonoTypes}>({
             nodes: {
                 include: {
                     template: true,
+                    handles: true,
                 }
             },
         }
@@ -455,47 +558,79 @@ const canvasRoutes = new Hono<{Variables: AuthHonoTypes}>({
         }
     });
 
-    // Create the duplicate canvas with nodes
+    // Create the duplicate canvas
     const duplicate = await prisma.canvas.create({
         data: {
             name: `${original.name} (Copy)`,
             userId: user!.id,
-            nodes: {
-                create: original.nodes.map(node => ({
-                    name: node.name,
-                    type: node.type,
-                    position: node.position as XYPosition,
-                    width: node.width,
-                    height: node.height,
-                    draggable: node.draggable,
-                    selectable: node.selectable,
-                    deletable: node.deletable,
-                    config: node.config ?? {},
-                    isDirty: node.isDirty,
-                    zIndex: node.zIndex,
-                    template: {
-                        connect: {
-                            id: node.templateId,
-                        }
-                    }
-                }))
-            }
         },
-        include: {
-            nodes: true,
-        }
     });
 
-    // Create a mapping of old node IDs to new node IDs
+    // Create new nodes
+    const nodeCreations = original.nodes.map(node => prisma.node.create({
+        data: {
+            name: node.name,
+            type: node.type,
+            position: node.position as XYPosition,
+            width: node.width,
+            height: node.height,
+            draggable: node.draggable,
+            selectable: node.selectable,
+            deletable: node.deletable,
+            config: node.config ?? {},
+            isDirty: node.isDirty,
+            zIndex: node.zIndex,
+            templateId: node.templateId,
+            canvasId: duplicate.id,
+        }
+    }));
+
+    const newNodes = await prisma.$transaction(nodeCreations);
+
+    // Create nodeIdMap
     const nodeIdMap = new Map<string, string>();
     original.nodes.forEach((oldNode, index) => {
-        nodeIdMap.set(oldNode.id, duplicate.nodes[index].id);
+        nodeIdMap.set(oldNode.id, newNodes[index].id);
     });
 
-    // Create edges with new node IDs
+    // Create new handles
+    const handleCreations = [];
+    for (let i = 0; i < original.nodes.length; i++) {
+        const oldNode = original.nodes[i];
+        const newNodeId = newNodes[i].id;
+        for (const oldHandle of oldNode.handles) {
+            handleCreations.push(prisma.handle.create({
+                data: {
+                    nodeId: newNodeId,
+                    type: oldHandle.type,
+                    dataType: oldHandle.dataType,
+                    label: oldHandle.label,
+                    order: oldHandle.order,
+                    required: oldHandle.required,
+                    templateHandleId: oldHandle.templateHandleId,
+                }
+            }));
+        }
+    }
+
+    const newHandles = await prisma.$transaction(handleCreations);
+
+    // Create handleIdMap
+    const handleIdMap = new Map<string, string>();
+    let handleIndex = 0;
+    for (const oldNode of original.nodes) {
+        for (const oldHandle of oldNode.handles) {
+            handleIdMap.set(oldHandle.id, newHandles[handleIndex].id);
+            handleIndex++;
+        }
+    }
+
+    // Create edges with new node and handle IDs
     const edgeCreations = originalEdges.map(edge => {
         const newSource = nodeIdMap.get(edge.source);
         const newTarget = nodeIdMap.get(edge.target);
+        const newSourceHandleId = handleIdMap.get(edge.sourceHandleId);
+        const newTargetHandleId = handleIdMap.get(edge.targetHandleId);
         
         if (!newSource || !newTarget) return null;
 
@@ -503,8 +638,8 @@ const canvasRoutes = new Hono<{Variables: AuthHonoTypes}>({
             data: {
                 source: newSource,
                 target: newTarget,
-                sourceHandle: edge.sourceHandle,
-                targetHandle: edge.targetHandle,
+                sourceHandleId: newSourceHandleId,
+                targetHandleId: newTargetHandleId,
                 dataType: edge.dataType,
             }
         });
@@ -514,7 +649,8 @@ const canvasRoutes = new Hono<{Variables: AuthHonoTypes}>({
         await prisma.$transaction(edgeCreations);
     }
 
-    return c.json({ canvas: duplicate }, 201);
+    // Return the duplicate canvas with nodes (without re-fetching everything)
+    return c.json({ canvas: { ...duplicate, nodes: newNodes } }, 201);
 })
 .post('/:canvasId/process',
     zValidator('json', processSchema),
@@ -532,6 +668,7 @@ const canvasRoutes = new Hono<{Variables: AuthHonoTypes}>({
                 },
             },
             include: {
+                handles: true,
                 template: true,
             }
         });

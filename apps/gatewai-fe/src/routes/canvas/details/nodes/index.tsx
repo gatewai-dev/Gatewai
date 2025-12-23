@@ -6,6 +6,7 @@ import { Textarea } from '@/components/ui/textarea';
 import type {
   LLMResult,
   GPTImage1Result,
+  TextResult,
 } from '@gatewai/types';
 import { Button } from '@/components/ui/button';
 import { PlayIcon } from 'lucide-react';
@@ -20,7 +21,7 @@ const TextNodeComponent = memo((props: NodeProps<TextNode>) => {
   const node = useAppSelector(makeSelectNodeById(props.id));
 
   const dispatch = useAppDispatch();
-  const result = node?.result as LLMResult;
+  const result = node?.result as unknown as TextResult;
   const text = result?.parts?.[0]?.data ?? '';
   const handleChange = (e: React.ChangeEvent<HTMLTextAreaElement>) => {
     dispatch(updateTextNodeValue({ id: props.id, value: e.target.value }));
@@ -56,7 +57,6 @@ const FileNodeComponent = memo((props: NodeProps<FileNode>) => {
 FileNodeComponent.displayName = 'FileNode';
 
 
-// Text Node
 const LlmNodeComponent = memo((props: NodeProps<LLMNode>) => {
   const node = useAppSelector(makeSelectNodeById(props.id));
   const result = node?.result as LLMResult;
@@ -82,7 +82,7 @@ LlmNodeComponent.displayName = 'LLMNode';
 const GPTImage1NodeComponent = memo((props: NodeProps<GPTImage1Node>) => {
   const node = useAppSelector(makeSelectNodeById(props.id));
 
-  const result = node?.result as GPTImage1Result;
+  const result = node?.result as unknown as GPTImage1Result;
   const { runNodes } = useCanvasCtx();
   return (
     <BaseNode {...props}>
