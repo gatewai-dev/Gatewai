@@ -166,13 +166,20 @@ model Node {
   config         Json?
   isDirty        Boolean         @default(false) // Whether or not previous results or data/config changed
   /*
+
   OutputItem {
     type: DataType;
     data: FileData | string | boolean | number;
+    outputHandleId: string
+  }
+
+  Output {
+    items: OutputItem[]
   }
 
   Result {
-    parts: OutputItem[];
+    selectedOutputIndex?: number
+    outputs: Output[];
   }
   */
   result         Json?           // Node processing result
@@ -308,26 +315,13 @@ model Task {
 
   user            User         @relation(fields: [userId], references: [id], onDelete: Cascade)
   userId          String
-
-  publicAccessToken String?    @unique
-  taskId          String?      @unique
-  batchId         String?
   payload         Json?
   output          Json?
-  number          Float
   status          TaskStatus?
   durationMs      Float
-  costInCents     Float
-  baseCostInCents Float
-  tags            Json?
-  idempotencyKey  String?
-  ttl             String?
-  expiredAt       DateTime?
   finishedAt      DateTime?
+  expiredAt       DateTime?
   startedAt       DateTime?
-  delayedUntil    DateTime?
-  queuedAt        DateTime?
-  metadata        Json?
   error           Json?
   isTest          Boolean
 

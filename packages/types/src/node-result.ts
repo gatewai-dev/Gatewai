@@ -17,9 +17,19 @@ export type FileData = {
     duration?: number; // in seconds
   }
 
-  export type OutputItem<T extends FileData | string | boolean | number, R extends DataType> = {
+  export type DataForType<R extends DataType> =
+    R extends "Text" ? string :
+    R extends "Number" ? number :
+    R extends "Boolean" ? boolean :
+    R extends "Image" | "Video" | "Audio" | "File" | "Mask" | "VideoLayer" ? FileData :
+    R extends "DesignLayer" ? string | FileData :
+    R extends "Any" ? string | number | boolean | FileData :
+    never;
+
+  export type OutputItem<R extends DataType> = {
     type: R;
-    data: T;
+    data: DataForType<R>;
+    outputHandleId: string;
   }
 
   export type SelectItemType = {
@@ -27,57 +37,57 @@ export type FileData = {
   }
 
   export type TextResult = {
-    parts: [OutputItem<string, "Text">];
+    parts: [OutputItem<"Text">];
   }
 
   export type ToggleResult = {
-    parts: [OutputItem<boolean, "Boolean">];
+    parts: [OutputItem<"Boolean">];
   }
 
   export type FileResult = SelectItemType & {
-    parts: OutputItem<FileData, "File">[];
+    parts: OutputItem<"File">[];
   }
 
   export type ImagesResult = SelectItemType & {
-    parts: OutputItem<FileData, "Image">[];
+    parts: OutputItem<"Image">[];
   }
 
   export type GPTImage1Result = ImagesResult;
 
   export type MaskResult = SelectItemType & {
-    parts: OutputItem<FileData, "Image">[];
+    parts: OutputItem<"Mask">[];
   }
 
   export type NumberResult = {
-    parts: [OutputItem<number, "Number">];
+    parts: [OutputItem<"Number">];
   }
 
   export type LLMResult = {
-    parts: [OutputItem<string, "Text">];
+    parts: [OutputItem<"Text">];
   }
 
   export type ResizeResult = {
-    parts: [OutputItem<FileData, "Image" | "Video">];
+    parts: [OutputItem<"Image" | "Video">];
   }
 
   export type ThreeDResult = SelectItemType & {
-    parts: [OutputItem<FileData, "File">];
+    parts: [OutputItem<"File">];
   }
 
   export type PainterResult = {
-    parts: [OutputItem<FileData, "Image">, OutputItem<FileData, "Mask">,];
+    parts: [OutputItem<"Image">, OutputItem<"Mask">];
   }
 
   export type BlurResult = {
-    parts: [OutputItem<FileData, "Image">];
+    parts: [OutputItem<"Image">];
   }
 
   export type CompositorResult = {
-    parts: [OutputItem<FileData, "Image">];
+    parts: [OutputItem<"Image">];
   }
 
   export type DescriberResult = {
-    parts: [OutputItem<string, "Text">];
+    parts: [OutputItem<"Text">];
   }
 
   export type NodeResult =
