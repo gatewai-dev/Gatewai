@@ -26,7 +26,7 @@ import { handleSelectors, setAllHandleEntities } from '@/store/handles';
 import { setAllEdgeEntities } from '@/store/edges';
 
 interface CanvasContextType {
-  canvas: CanvasDetailsRPC | undefined;
+  canvas: CanvasDetailsRPC["canvas"] | undefined;
   onNodesChange: OnNodesChange<Node>;
   onEdgesChange: OnEdgesChange<Edge>;
   isLoading: boolean;
@@ -118,6 +118,7 @@ const CanvasProvider = ({
     if (canvasDetailsResponse?.nodes) {
       dispatch(setAllNodeEntities(canvasDetailsResponse.nodes))
       dispatch(setAllEdgeEntities(canvasDetailsResponse.edges));
+      console.log({s: canvasDetailsResponse.handles})
       dispatch(setAllHandleEntities(canvasDetailsResponse.handles));
     }
   }, [dispatch, canvasDetailsResponse])
@@ -276,11 +277,9 @@ const CanvasProvider = ({
       }
 
       // Validate if data types for handles match
-      const sourceDbNode = sourceNode.data as CanvasDetailsRPC["nodes"][0];
-      const sourceHandle = sourceDbNode.handles.find(h => h.id === connection.sourceHandle);
+      const sourceHandle = handleEntities.find(h => h.id === connection.sourceHandle);
 
-      const targetDbNode = targetNode.data as CanvasDetailsRPC["nodes"][0];
-      const targetHandle = targetDbNode.handles.find(h => h.id === connection.targetHandle);
+      const targetHandle = handleEntities.find(h => h.id === connection.targetHandle);
 
       if (!sourceHandle || !targetHandle) {
         return { isValid: false, error: 'Source or target handle could not be found.' };
@@ -317,7 +316,7 @@ const CanvasProvider = ({
 
       return { isValid: true };
     },
-    [nodes, edges],
+    [nodes, handleEntities, edges],
   );
 
   const onConnect = useCallback(
@@ -329,10 +328,7 @@ const CanvasProvider = ({
         }
         return;
       }
-      // Determine dataType based on source handle
-      const sourceNode = nodes.find(n => n.id === params.source);
-      const dbNode = sourceNode?.data as CanvasDetailsNode;
-      const sourceHandle = dbNode.handles.find(h => h.id === params.sourceHandle);
+      const sourceHandle = handleEntities.find(h => h.id === params.sourceHandle);
       if (!sourceHandle) {
         throw new Error("Source handle could not be found");
       }
@@ -370,7 +366,7 @@ const CanvasProvider = ({
       // Schedule save after connect
       scheduleSave();
     },
-    [isValidConnection, nodes, dispatch, scheduleSave, edges]
+    [isValidConnection, handleEntities, dispatch, scheduleSave, edges]
   );
 
   const runNodes = useCallback(async (nodeIds: Node["id"][]) => {
@@ -448,7 +444,7 @@ const CanvasProvider = ({
   }, [canvasId, dispatch, scheduleSave]);
   
   const value = {
-    canvas,
+    canvas: canvasDetailsResponse?.canvas,
     setNodes,
     onNodesChange,
     onEdgesChange,

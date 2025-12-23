@@ -31,6 +31,11 @@ export const makeSelectHandleById = (id: string) => createDraftSafeSelector(
   (handles) => handles.entities[id] as HandleEntityType | undefined
 );
 
+export const makeSelectHandleByNodeId = (nodeId: string) => createDraftSafeSelector(
+  selectHandlesState,
+  (handles) => Object.values(handles.entities).filter(f => f.nodeId === nodeId)
+);
+
 export const makeSelectAllHandles = () => handleSelectors.selectAll;
 
 // Extract the action creators object and the reducer

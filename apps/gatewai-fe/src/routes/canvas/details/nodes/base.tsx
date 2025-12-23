@@ -1,7 +1,8 @@
 import { memo, useMemo, type JSX, type ReactNode } from 'react';
-import { Handle, Position, getBezierPath, type EdgeProps, type NodeProps, type Node, type ConnectionLineComponentProps, useEdges } from '@xyflow/react';
+import { Handle, Position, getBezierPath, type EdgeProps, type NodeProps, type Node, type ConnectionLineComponentProps, useEdges, BaseEdge } from '@xyflow/react';
 import type { CanvasDetailsNode } from '@/rpc/types';
-
+import { useAppSelector } from '@/store';
+import { makeSelectHandleById, makeSelectHandleByNodeId } from '@/store/handles';
 
 const dataTypeColors: Record<string, { bg: string; stroke: string; hex: string; text: string }> = {
   'Text': { bg: 'bg-blue-500', stroke: 'stroke-blue-500', hex: '#3b82f6', text: 'text-blue-500' },
@@ -12,6 +13,7 @@ const dataTypeColors: Record<string, { bg: string; stroke: string; hex: string; 
   'Audio': { bg: 'bg-orange-500', stroke: 'stroke-orange-500', hex: '#f97316', text: 'text-orange-500' },
   'File': { bg: 'bg-gray-500', stroke: 'stroke-gray-500', hex: '#6b7280', text: 'text-gray-500' },
   'Mask': { bg: 'bg-pink-500', stroke: 'stroke-pink-500', hex: '#ec4899', text: 'text-pink-500' },
+  'Any': { bg: 'bg-white-500', stroke: 'stroke-white-500', hex: '#fff', text: 'text-white-500' },
 };
 
 const getColorForType = (type: string) => {
@@ -22,20 +24,19 @@ const getColorForType = (type: string) => {
 const BaseNode = memo((props: NodeProps<Node<CanvasDetailsNode>> & {
   children?: ReactNode;
 }) => {
-  const { data, selected, type, id } = props;
+  const { selected, type, id } = props;
+  const handles = useAppSelector(makeSelectHandleByNodeId(id));
   // 1. Separate and Sort Handles
   // We use useMemo to avoid re-sorting on every render unless data.handles changes
   const { inputs, outputs } = useMemo(() => {
-    const allHandles = data.handles || [];
-    
     // Sort by 'order' property from DB
-    const sorted = [...allHandles].sort((a, b) => a.order - b.order);
+    const sorted = handles.sort((a, b) => a.order - b.order);
     
     return {
       inputs: sorted.filter(h => h.type === 'Input'),
       outputs: sorted.filter(h => h.type === 'Output')
     };
-  }, [data.handles]);
+  }, [handles]);
 
   const edges = useEdges();
 
@@ -99,9 +100,9 @@ const BaseNode = memo((props: NodeProps<Node<CanvasDetailsNode>> & {
         const isConnected = edges.some(edge => edge.source === id && edge.sourceHandle === handle.id);
 
         return (
-          <div 
+          <div
             key={handle.id}
-            className="absolute right-0 z-10" 
+            className="absolute right-0 z-10"
             style={{ top: topPosition, transform: 'translateX(50%)' }}
           >
             <div className={`w-4 h-4 ${nodeBackgroundColor} rounded-full flex items-center justify-center transition-all duration-200`}>
@@ -134,6 +135,9 @@ const BaseNode = memo((props: NodeProps<Node<CanvasDetailsNode>> & {
 
 BaseNode.displayName = 'BaseNode';
 
+const PARTICLE_COUNT = 6;
+const ANIMATE_DURATION = 6;
+
 const CustomConnectionLine = memo(({
   fromX,
   fromY,
@@ -153,17 +157,19 @@ const CustomConnectionLine = memo(({
     targetPosition: toPosition,
   });
 
-  let dataType = 'File';
-  const fromDBNode = fromNode.data as CanvasDetailsNode;
+  let dataType = null;
+  const handle = useAppSelector(makeSelectHandleById(fromHandle.id!));
+  if (!fromHandle.id || !handle) {
+    return <></>;
+  }
   // Logic updated to find the specific handle in the handles array
   if (fromNode?.data?.handles && fromHandle?.id) {
-    const handle = fromDBNode.handles.find(h => h.id === fromHandle.id);
     if (handle) {
       dataType = handle.dataType;
     }
   }
 
-  const color = getColorForType(dataType).hex;
+  const color = getColorForType(dataType ?? 'Any').hex;
 
   return (
     <g>
@@ -171,17 +177,29 @@ const CustomConnectionLine = memo(({
         fill="none"
         stroke={color}
         strokeWidth={3}
-        className="animated"
         d={edgePath}
-        style={{
-          animation: 'dashdraw 0.2s linear infinite',
-          strokeDasharray: '5, 5',
-        }}
       />
+      {[...Array(PARTICLE_COUNT)].map((_, i) => (
+        <ellipse
+          key={`particle-${i}`}
+          rx="5"
+          ry="1.2"
+          fill={color}
+        >
+          <animateMotion
+            begin={`${i * (ANIMATE_DURATION / PARTICLE_COUNT)}s`}
+            dur={`${ANIMATE_DURATION}s`}
+            repeatCount="indefinite"
+            rotate="auto"
+            path={edgePath}
+            calcMode="spline"
+            keySplines="0.42, 0, 0.58, 1.0"
+          />
+        </ellipse>
+      ))}
     </g>
   );
 });
-
 
 interface CustomEdgeProps extends EdgeProps {
   sourceX: number;
@@ -216,21 +234,41 @@ const CustomEdge = memo(({
     targetPosition,
   });
 
-  const dataType = data?.dataType || 'File';
+  const dataType = data?.dataType || 'Any';
   const color = getColorForType(dataType).hex;
 
   return (
-    <path
-      id={id}
-      style={{
-        ...style,
-        stroke: color,
-        strokeWidth: 3,
-      }}
-      className="react-flow__edge-path fill-none transition-all duration-200 hover:stroke-[5px]! hover:opacity-80"
-      d={edgePath}
-      markerEnd={markerEnd}
-    />
+    <g>
+      <BaseEdge
+        id={id}
+        style={{
+          ...style,
+          stroke: color,
+          strokeWidth: 3,
+        }}
+        className="react-flow__edge-path fill-none hover:stroke-[5px]! hover:opacity-80"
+        path={edgePath}
+        markerEnd={markerEnd}
+      />
+      {[...Array(PARTICLE_COUNT)].map((_, i) => (
+        <ellipse
+          key={`particle-${i}`}
+          rx="5"
+          ry="1.2"
+          fill={color}
+        >
+          <animateMotion
+            begin={`${i * (ANIMATE_DURATION / PARTICLE_COUNT)}s`}
+            dur={`${ANIMATE_DURATION}s`}
+            repeatCount="indefinite"
+            rotate="auto"
+            path={edgePath}
+            calcMode="spline"
+            keySplines="0.42, 0, 0.58, 1.0"
+          />
+        </ellipse>
+      ))}
+    </g>
   );
 });
 
