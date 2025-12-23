@@ -7,6 +7,8 @@ import { useCallback, type DragEventHandler } from "react";
 import { NodePalette } from "@/node-templates/node-palette";
 import { useSelectedEntitiesCtx } from "../ctx/selected-entity-ctx";
 import { RightPanel } from "./right-panel";
+import { useAppSelector } from "@/store";
+import { selectRFEdges, selectRFNodes } from "@/store/rfstate";
 
 // Define edge types - you can add more custom edge types here if needed
 const edgeTypes = {
@@ -19,38 +21,47 @@ type ReactFlowProps = {
 
 function ReactflowContainer({ children }: ReactFlowProps) {
   const {
-    clientNodes,
     onEdgesChange,
     onNodesChange,
-    clientEdges,
     tool,
     onConnect,
     rfInstance
   } = useCanvasCtx();
   const { onSelectionChange } = useSelectedEntitiesCtx();
-
+  const nodes = useAppSelector(selectRFNodes);
+  const edges = useAppSelector(selectRFEdges);
+  console.log({nodes, edges});
     const isValidConnection = useCallback(
-    (connection: Connection | Edge) => {
-      const nodes = clientNodes;
-      const edges = clientEdges;
-      const target = nodes.find((node) => node.id === connection.target);
-      if (!target) return false;
-      const hasCycle = (node: Node, visited = new Set()) => {
-        if (visited.has(node.id)) return false;
- 
-        visited.add(node.id);
- 
-        for (const outgoer of getOutgoers(node, nodes, edges)) {
-          if (outgoer.id === connection.source) return true;
-          if (hasCycle(outgoer, visited)) return true;
-        }
-      };
- 
-      if (target.id === connection.source) return false;
-      return !hasCycle(target);
-    },
-    [clientNodes, clientEdges],
-  );
+  (connection: Connection | Edge) => {
+    if (!connection.source || !connection.target) return false;
+
+    // Self-connection is always invalid
+    if (connection.source === connection.target) return false;
+
+    // Find source node
+    const sourceNode = nodes.find((n) => n.id === connection.source);
+    if (!sourceNode) return false;
+
+    // Recursive function: does this node (or any of its descendants) include the target?
+    const hasOutgoerAsTarget = (node: Node, visited = new Set<string>()): boolean => {
+      if (visited.has(node.id)) return false;
+      visited.add(node.id);
+
+      const outgoers = getOutgoers(node, nodes, edges);
+
+      for (const outgoer of outgoers) {
+        if (outgoer.id === connection.target) return true;
+        if (hasOutgoerAsTarget(outgoer, visited)) return true;
+      }
+
+      return false;
+    };
+
+    // Invalid if the target is reachable downstream from the source
+    return !hasOutgoerAsTarget(sourceNode);
+  },
+  [nodes, edges],
+);
 
   const onDragOver: DragEventHandler<HTMLDivElement> | undefined = (event) => {
     event.preventDefault();
@@ -63,8 +74,8 @@ function ReactflowContainer({ children }: ReactFlowProps) {
         onInit={(flowInstance) => {
           rfInstance.current = flowInstance;
         }}
-        edges={clientEdges}
-        nodes={clientNodes}
+        nodes={nodes}
+        edges={edges}
         className="bg-black react-flow-container"
         fitView
         nodeTypes={nodeTypes}
@@ -78,7 +89,6 @@ function ReactflowContainer({ children }: ReactFlowProps) {
         zoomOnPinch={true}
         zoomOnScroll={true}
         nodesDraggable={tool === 'select'}
-        onSelectionChange={onSelectionChange}
         elementsSelectable={tool === 'select'}
         panOnDrag={tool === 'pan'}
         selectionOnDrag={tool === 'select'}
@@ -87,6 +97,7 @@ function ReactflowContainer({ children }: ReactFlowProps) {
         connectionMode={ConnectionMode.Loose}
         onConnect={onConnect}
         isValidConnection={isValidConnection}
+        onSelectionChange={onSelectionChange}
       >
         {children}
         <Background />

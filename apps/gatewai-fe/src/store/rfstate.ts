@@ -1,6 +1,5 @@
 import { createSelector, createSlice, type PayloadAction } from '@reduxjs/toolkit';
 import {
-  type Connection,
   type Edge,
   type EdgeChange,
   type Node,
@@ -31,10 +30,11 @@ const reactFlowSlice = createSlice({
     setEdges: (state, action: PayloadAction<Edge[]>) => {
       state.edges = action.payload;
     },
-    addNode: (state, action: PayloadAction<Node>) => {
+    createNode: (state, action: PayloadAction<Node>) => {
       state.nodes = [...state.nodes, action.payload];
+      console.log(action.payload)
     },
-    addEdge: (state, action: PayloadAction<Edge>) => {
+    createEdge: (state, action: PayloadAction<Edge>) => {
       state.edges = [...state.edges, action.payload];
     },
     onNodeChange: (state, action: PayloadAction<NodeChange<Node>[]>) => {
@@ -43,13 +43,15 @@ const reactFlowSlice = createSlice({
     onEdgeChange: (state, action: PayloadAction<EdgeChange<Edge>[]>) => {
       state.edges = applyEdgeChangesBase(action.payload, state.edges);
     },
-    addConnection: (state, action: PayloadAction<Connection>) => {
+    addConnection: (state, action: PayloadAction<Edge>) => {
       state.edges = addEdge(action.payload, state.edges);
     },
   },
 });
 
 export const {
+  createNode,
+  createEdge,
   setNodes,
   setEdges,
   addConnection,

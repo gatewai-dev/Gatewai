@@ -3,7 +3,7 @@ import type { Node } from '@xyflow/react';
 import type { NodeTemplateWithIO } from './node-template';
 
 export type DbNodeWithTemplate = DBNode & {
-  template?: NodeTemplateWithIO
+  template: NodeTemplateWithIO
 };
 
 export type ClientNode = Node<DbNodeWithTemplate>;

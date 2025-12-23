@@ -11,10 +11,10 @@ const nodesSlice = createSlice({
   name: 'nodes',
   initialState: nodeAdapter.getInitialState(),
   reducers: {
-    createNode: nodeAdapter.addOne,
-    updateNode: nodeAdapter.updateOne,
-    deleteNode: nodeAdapter.removeOne,
-    setAllNodes: nodeAdapter.setAll,
+    createNodeEntity: nodeAdapter.addOne,
+    updateNodeEntity: nodeAdapter.updateOne,
+    deleteNodeEntity: nodeAdapter.removeOne,
+    setAllNodeEntities: nodeAdapter.setAll,
     updateTextNodeValue: (state, action: {payload: {id: string, value: string}}) => {
       const { id, value } = action.payload;
       const node = state.entities[id];
@@ -76,6 +76,6 @@ export const makeSelectAllNodes = () => nodeSelectors.selectAll;
 // Extract the action creators object and the reducer
 const { actions, reducer: nodesReducer } = nodesSlice
 // Extract and export each action creator by name
-export const { createNode, updateNode, deleteNode, setAllNodes, updateTextNodeValue, incrementSelectedResultIndex, decrementSelectedResultIndex } = actions
+export const { createNodeEntity, updateNodeEntity, deleteNodeEntity, setAllNodeEntities, updateTextNodeValue, incrementSelectedResultIndex, decrementSelectedResultIndex } = actions
 // Export the reducer, either as a default or named export
 export { nodesReducer, nodeSelectors }

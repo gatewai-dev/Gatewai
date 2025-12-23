@@ -1,8 +1,6 @@
 import { useMutation, useQuery } from '@tanstack/react-query';
-import { createContext, useCallback, useContext, useEffect, useMemo, useRef, useState, type Dispatch, type MouseEvent, type PropsWithChildren, type RefObject, type SetStateAction } from 'react';
+import { createContext, useCallback, useContext, useEffect, useMemo, useRef, useState, type Dispatch, type PropsWithChildren, type RefObject, type SetStateAction } from 'react';
 import {
-  useEdgesState,
-  useNodesState,
   type Connection,
   type Edge,
   type EdgeChange,
@@ -14,34 +12,27 @@ import {
   type ReactFlowInstance,
   type XYPosition
 } from '@xyflow/react';
-import type {AllNodeConfig, DataType, Edge as DbEdge, Node as DbNode, GPTImage1Result, LLMResult, NodeResult, NodeType, NodeWithFileType, TextResult } from '@gatewai/types';
+import type {AllNodeConfig, DataType, Edge as DbEdge, Node as DbNode, NodeResult, NodeType } from '@gatewai/types';
 import { useAppDispatch, useAppSelector } from '@/store';
-import { setAllNodes, nodeSelectors } from '@/store/nodes';
+import { setAllNodeEntities, nodeSelectors, type NodeEntityType } from '@/store/nodes';
 import { generateId } from '@/lib/idgen';
-import { createNode } from '@/store/nodes';
-import type { DbNodeWithTemplate } from '@/types/node';
+import { createNodeEntity } from '@/store/nodes';
 import type { NodeTemplateWithIO } from '@/types/node-template';
 import { rpcClient } from '@/rpc/client';
 import type { CanvasDetailsRPC, PatchCanvasRPCReq } from '@/rpc/types';
-import throttle from 'lodash/throttle';
-import { onNodeChange, selectRFEdges, selectRFNodes, setEdges, setNodes } from '@/store/rfstate';
+import { createNode, onEdgeChange, onNodeChange, selectRFEdges, selectRFNodes, setEdges, setNodes } from '@/store/rfstate';
 
 interface CanvasContextType {
   canvas: CanvasDetailsRPC | undefined;
-  clientNodes: Node[];
   setNodes: Dispatch<SetStateAction<Node[]>>;
   onNodesChange: OnNodesChange<Node>;
   setEdges: Dispatch<SetStateAction<Edge[]>>;
   onEdgesChange: OnEdgesChange<Edge>;
-  clientEdges: Edge[];
   isLoading: boolean;
   isError: boolean;
   tool: 'select' | 'pan';
   setTool: Dispatch<SetStateAction<'select' | 'pan'>>;
   onConnect: OnConnect;
-  onNodeDragStop: (event: MouseEvent, node: Node, nodes: Node[]) => void;
-  updateNodeConfig: (nodeId: string, updates: Partial<AllNodeConfig>) => void;
-  updateNodeResult: (nodeId: string, updates: Partial<NodeResult>) => void;
   runNodes: (nodeIds: Node["id"][]) => Promise<void>;
   rfInstance: RefObject<ReactFlowInstance | undefined>;
   createNewNode: (template: NodeTemplateWithIO, position: XYPosition) => void;
@@ -68,203 +59,6 @@ const fetchCanvas = async (canvasId: string): Promise<CanvasDetailsRPC> => {
   return data;
 };
 
-const mock_nodes: DbNodeWithTemplate[] = [
-  {
-    id: "1",
-    name: "Text Node 1",
-    selectable: true,
-    deletable: true,
-    draggable: true,
-    createdAt: new Date(),
-    updatedAt: new Date(),
-    isDirty: false,
-    canvasId: "canvas1",
-    zIndex: 1,
-    templateId: "template1",
-    position: {
-      x: 300,
-      y: 360,
-    },
-    width: 300,
-    height: null,
-    type: 'Text',
-    result: {
-      parts: [{
-        type: 'Text',
-        data: 'Create a text prompt for GTA 6 advertisement banner image.',
-      }]
-    } as TextResult,
-    config: {},
-    template: {
-      id: "template1",
-      type: 'Text',
-      displayName: 'Text',
-      description: 'A simple text node',
-      processEnvironment: 'Server',
-      variableInputs: false,
-      variableOutputs: false,
-      tokenPrice: 0,
-      category: 'Toolbox',
-      subcategory: 'Text tools',
-      defaultConfig: {},
-      showInQuickAccess: true,
-      createdAt: new Date(),
-      updatedAt: new Date(),
-      outputTypes: [
-        {
-          "id": "i22",
-          outputType: 'Text',
-          templateId: "template1",
-          label: 'Text',
-        }
-      ]
-    }
-  },
-  {
-    id: "2",
-    name: "LLM Node 1",
-    selectable: true,
-    deletable: true,
-    draggable: true,
-    createdAt: new Date(),
-    updatedAt: new Date(),
-    isDirty: false,
-    canvasId: "canvas1",
-    zIndex: 1,
-    templateId: "template2",
-    position: {
-      x: 400,
-      y: 680,
-    },
-    width: 300,
-    height: null,
-    type: 'LLM',
-    result: {
-      parts: [{
-        type: 'Text',
-        data: 'Semi realistic image of Roy, long haired man in miami beach with 3 other chatacters on sky.',
-      }]
-    } as LLMResult,
-    config: {},
-    template: {
-      id: "template2",
-      type: 'LLM',
-      displayName: 'LLM',
-      description: 'A node to run LLM inferences',
-      processEnvironment: 'Server',
-      variableInputs: false,
-      variableOutputs: false,
-      tokenPrice: 0,
-      category: 'LLMs',
-      subcategory: 'Language Models',
-      showInQuickAccess: true,
-      createdAt: new Date(),
-      updatedAt: new Date(),
-      defaultConfig: {},
-      inputTypes: [
-        {
-          "id": "i222",
-          inputType: 'Text',
-          templateId: 'template2',
-          required: true,
-          label: 'Prompt',
-        }
-      ],
-      outputTypes: [
-        {
-          "id": "i222",
-          outputType: 'Text',
-          templateId: 'template2',
-          label: 'Output',
-        }
-      ]
-    }
-  },
-  {
-    id: "3",
-    name: "GPT IMG",
-    selectable: true,
-    deletable: true,
-    draggable: true,
-    createdAt: new Date(),
-    updatedAt: new Date(),
-    isDirty: false,
-    canvasId: "canvas1",
-    zIndex: 1,
-    templateId: "template2",
-    position: {
-      x: 800,
-      y: 1080,
-    },
-    width: 300,
-    height: null,
-    type: 'GPTImage1',
-    result: {
-      selectedIndex: 0,
-      parts: [{
-        type: 'Image',
-        data: {
-          mediaSize: {
-            width: 512,
-            height: 512,
-          },
-          name: 'First Image',
-          bucket: 'default',
-          fileSize: 2048,
-          mimeType: 'image/png',
-          url: "https://placehold.co/512x512",
-        }
-      },{
-        type: 'Image',
-        data: {
-          mediaSize: {
-            width: 1024,
-            height: 1024,
-          },
-          name: 'Second Image',
-          bucket: 'default',
-          fileSize: 2048,
-          mimeType: 'image/png',
-          url: "https://placehold.co/1024x1024",
-        }
-      }]
-    } as GPTImage1Result,
-    config: {},
-    template: {
-      id: "template3",
-      type: 'GPTImage1',
-      displayName: 'Gpt Image 1',
-      description: 'A node to run LLM inferences',
-      processEnvironment: 'Server',
-      variableInputs: false,
-      variableOutputs: false,
-      tokenPrice: 0,
-      category: 'Image',
-      subcategory: 'Image Generation',
-      showInQuickAccess: true,
-      createdAt: new Date(),
-      updatedAt: new Date(),
-      defaultConfig: {},
-      inputTypes: [
-        {
-          "id": "s13",
-          templateId: 'template3',
-          required: true,
-          inputType: 'Text',
-          label: 'Prompt',
-        }
-      ],
-      outputTypes: [
-        {
-          "id": "i232",
-          templateId: 'template3',
-          outputType: 'Image',
-          label: 'Image',
-        }
-      ]
-    }
-  },
-]
 
 const CanvasProvider = ({
   canvasId,
@@ -273,7 +67,7 @@ const CanvasProvider = ({
 
   const dispatch = useAppDispatch();
   const rfInstance = useRef<ReactFlowInstance | undefined>(undefined);
-  const storeNodes = useAppSelector(nodeSelectors.selectAll);
+  const nodeEntities = useAppSelector(nodeSelectors.selectAll);
 
   const {
     data: canvas,
@@ -321,15 +115,13 @@ const CanvasProvider = ({
 
   useEffect(() => {
     if (canvas?.nodes) {
-      dispatch(setAllNodes(canvas.nodes))
+      dispatch(setAllNodeEntities(canvas.nodes))
     }
     console.log("Setting mock nodes in store")
   }, [dispatch, canvas])
 
   const nodes = useAppSelector(selectRFNodes);
   const edges = useAppSelector(selectRFEdges);
-
-  const isRestoring = useRef(false);
   const [tool, setTool] = useState<'select' | 'pan'>('select');
   const timeoutRef = useRef<NodeJS.Timeout | null>(null);
 
@@ -377,7 +169,7 @@ const CanvasProvider = ({
   const save = useCallback(() => {
     if (!canvasId) return;
 
-    const currentDbNodes = storeNodes.map((n) => {
+    const currentDbNodes = nodeEntities.map((n) => {
       return {
         ...n,
       }
@@ -398,7 +190,7 @@ const CanvasProvider = ({
     };
 
     return patchCanvasAsync(body);
-  }, [canvasId, storeNodes, edges, patchCanvasAsync]);
+  }, [canvasId, nodeEntities, edges, patchCanvasAsync]);
 
   const scheduleSave = useCallback(() => {
     if (timeoutRef.current) {
@@ -411,21 +203,21 @@ const CanvasProvider = ({
 
   const onNodesChange = useCallback(
     (changes: NodeChange<Node>[]) => {
-      onNodeChange(changes);
+      console.log({changes})
+      dispatch(onNodeChange(changes));
     },
-    []
+    [dispatch]
   );
 
   const onEdgesChange = useCallback(
     (changes: EdgeChange<Edge>[]) => {
-        onEdgesChange(changes);
+        dispatch(onEdgeChange(changes));
     },
-    []
+    [dispatch]
   );
 
   const onConnect = useCallback(
     (params: Connection) => {
-      if (isRestoring.current) return;
 
       // Determine dataType based on source handle
       const sourceNode = nodes.find(n => n.id === params.source);
@@ -468,54 +260,6 @@ const CanvasProvider = ({
     [nodes, edges, scheduleSave]
   );
 
-  const updateNodeConfig = useCallback((nodeId: string, updates: Partial<AllNodeConfig>) => {
-    if (isRestoring.current) return;
-
-    setNodes(
-      nodes.map((n) => {
-        if (n.id === nodeId) {
-          return {
-            ...n,
-            data: {
-              ...n.data,
-              config: {
-                ...n.data.config as AllNodeConfig,
-                ...updates,
-              },
-            },
-          };
-        }
-        return n;
-      })
-    );
-
-    scheduleSave();
-  }, [nodes, scheduleSave]);
-
-  const updateNodeResult = useCallback((nodeId: string, updates: Partial<NodeResult>) => {
-    if (isRestoring.current) return;
-
-    setNodes(
-      nodes.map((n) => {
-        if (n.id === nodeId) {
-          return {
-            ...n,
-            data: {
-              ...n.data,
-              result: {
-                ...n.data.result as NodeResult,
-                ...updates,
-              },
-            },
-          };
-        }
-        return n;
-      })
-    );
-
-    scheduleSave();
-  }, [nodes, scheduleSave]);
-
   const runNodes = useCallback(async (nodeIds: Node["id"][]) => {
     // Save before running
     await save();
@@ -532,7 +276,7 @@ const CanvasProvider = ({
   const createNewNode = useCallback((template: NodeTemplateWithIO, position: XYPosition) => {
     const id = generateId();
     console.log({template})
-    const nodeEntity: DbNodeWithTemplate = {
+    const nodeEntity: NodeEntityType = {
       id,
       name: template.displayName,
       templateId: template.id,
@@ -541,15 +285,13 @@ const CanvasProvider = ({
       position,
       width: 300,
       height: null,
-      createdAt: new Date(),
-      updatedAt: new Date(),
       isDirty: false,
       canvasId: canvasId,
       zIndex: 1,
       draggable: true,
       selectable: true,
       deletable: true,
-      config: template.defaultConfig || {},
+      config: template.defaultConfig as any || {},
       result: {
         selectedIndex: 0,
         parts: [],
@@ -567,17 +309,15 @@ const CanvasProvider = ({
       deletable: true,
     };
     console.log({nodeEntity})
-    setNodes([...nodes, newNode]);
-    dispatch(createNode(nodeEntity));
+    dispatch(createNode(newNode));
+    dispatch(createNodeEntity(nodeEntity));
     scheduleSave();
-  }, [canvasId, dispatch, nodes, scheduleSave]);
+  }, [canvasId, dispatch, scheduleSave]);
   
   const value = {
     canvas,
-    clientNodes: nodes,
     setNodes,
     onNodesChange,
-    clientEdges: edges,
     setEdges,
     onEdgesChange,
     isLoading,
@@ -585,8 +325,6 @@ const CanvasProvider = ({
     tool,
     setTool,
     onConnect,
-    updateNodeConfig,
-    updateNodeResult,
     runNodes,
     rfInstance,
     createNewNode
