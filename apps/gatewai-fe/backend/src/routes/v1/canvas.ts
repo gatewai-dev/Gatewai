@@ -357,8 +357,6 @@ const canvasRoutes = new Hono<{Variables: AuthHonoTypes}>({
             const updatedNodes = nodesInPayload.filter(f => f.id && nodeIdsInDB.includes(f.id))
             const createdNodes = nodesInPayload.filter(f => f.id && !nodeIdsInDB.includes(f.id))
 
-            console.log({updatedNodes, createdNodes})
-
             const newNodesTransaction = prisma.node.createMany({
                 data: createdNodes.map((newNode) => ({
                     id: newNode.id,
@@ -436,10 +434,21 @@ const canvasRoutes = new Hono<{Variables: AuthHonoTypes}>({
         await prisma.$transaction(nodeCreationAndUpdateTransactions)
 
 
-        /// Create & Update Edges
-
-        const deletedEdges = edgesInDB.filter(f => edgeIdsInPayload?.includes(f.id));
+        /// CRUD Edges
         let edgesTransactions = [];
+
+        const deletedEdges = edgesInDB.filter(f => !edgeIdsInPayload?.includes(f.id));
+
+        if (deletedEdges && deletedEdges.length > 0) {
+            const deletedEdgesTransaction = prisma.edge.deleteMany({
+                where: {
+                    id: {
+                        in: deletedEdges.map(m => m.id)
+                    }
+                }
+            })
+            edgesTransactions.push(deletedEdgesTransaction);
+        }
         if (edgesInPayload && edgesInPayload.length > 0) {
             const updatedEdges = edgesInPayload.filter(f => f.id && edgeIdsInDB.includes(f.id))
             const createdEdges = edgesInPayload.filter(f => f.id && !edgeIdsInDB.includes(f.id))
@@ -471,17 +480,6 @@ const canvasRoutes = new Hono<{Variables: AuthHonoTypes}>({
             }));
 
             edgesTransactions = [newEdgesTransaction, ...updatedEdgesTransactions]
-        }
-
-        if (deletedEdges && deletedEdges.length > 0) {
-            const deletedEdgesTransaction = prisma.edge.deleteMany({
-                where: {
-                    id: {
-                        in: deletedEdges.map(m => m.id)
-                    }
-                }
-            })
-            edgesTransactions.push(deletedEdgesTransaction);
         }
         await prisma.$transaction(edgesTransactions)
 

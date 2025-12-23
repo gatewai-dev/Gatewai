@@ -15,7 +15,7 @@ import {
   type XYPosition
 } from '@xyflow/react';
 import type { DataType, NodeResult, NodeType } from '@gatewai/types';
-import { useAppDispatch, useAppSelector } from '@/store';
+import { useAppDispatch, useAppSelector, type RootState } from '@/store';
 import { setAllNodeEntities, nodeSelectors, type NodeEntityType, deleteManyNodeEntity } from '@/store/nodes';
 import { generateId } from '@/lib/idgen';
 import { createNodeEntity } from '@/store/nodes';
@@ -24,7 +24,8 @@ import type { CanvasDetailsNode, CanvasDetailsRPC, NodeTemplateListItemRPC, Patc
 import { createNode, onEdgeChange, onNodeChange, selectRFEdges, selectRFNodes, setEdges, setNodes } from '@/store/rfstate';
 import { toast } from 'sonner';
 import { addManyHandleEntities, deleteManyHandleEntity, handleSelectors, setAllHandleEntities } from '@/store/handles';
-import { edgeSelectors, setAllEdgeEntities } from '@/store/edges';
+import { edgeSelectors, setAllEdgeEntities, type EdgeEntityType } from '@/store/edges';
+import { useStore } from 'react-redux';
 
 interface CanvasContextType {
   canvas: CanvasDetailsRPC["canvas"] | undefined;
@@ -65,6 +66,7 @@ const CanvasProvider = ({
 }>) => {
 
   const dispatch = useAppDispatch();
+  const store = useStore();
   const rfInstance = useRef<ReactFlowInstance | undefined>(undefined);
   const rfNodes = useAppSelector(selectRFNodes);
   const rfEdges = useAppSelector(selectRFEdges);
@@ -171,8 +173,14 @@ const CanvasProvider = ({
 
   const save = useCallback(() => {
     if (!canvasId) return;
-    const currentCanvasDetailsNodes = nodeEntities.map((n) => {
-      const rfNode = rfNodes.find(f => f.id === n.id);
+    const state = store.getState() as RootState;
+    const currentNodeEntities = Object.values(state.nodes.entities);
+    const currentRfNodes = Object.values(state.reactFlow.nodes);
+    const currentEdgeEntities = Object.values(state.edges.entities);
+    const currentRfEdges = Object.values(state.reactFlow.edges);
+    const currentHandleEntities = Object.values(state.handles.entities);
+    const currentCanvasDetailsNodes = currentNodeEntities.map((n) => {
+      const rfNode = currentRfNodes.find(f => f.id === n.id);
       if (!rfNode) {
         return undefined;
       }
@@ -184,12 +192,11 @@ const CanvasProvider = ({
         zIndex: (n.zIndex ?? undefined),
       }
     }).filter(f => !!f);
-    console.log({edges, edgeEntities})
   
-    const currentDbEdges: PatchCanvasRPCReq["json"]["edges"] = edgeEntities.map((e) => {
-      const rfEdge = rfEdges.find(f => f.id === e.id);
+    const currentDbEdges: PatchCanvasRPCReq["json"]["edges"] = currentEdgeEntities.map((e) => {
+      const rfEdge = currentRfEdges.find(f => f.id === e.id);
       if (!rfEdge || !e) {
-        return undefined;
+        return null;
       }
       return {
         id: e.id,
@@ -199,17 +206,16 @@ const CanvasProvider = ({
         sourceHandleId: rfEdge.sourceHandle as string,
         dataType: e.dataType as DataType,
       };
-    });
+    }).filter(Boolean) as PatchCanvasRPCReq["json"]["edges"];
 
     const body: PatchCanvasRPCReq["json"] = {
       nodes: currentCanvasDetailsNodes,
       edges: currentDbEdges,
-      handles: handleEntities,
+      handles: currentHandleEntities,
     };
 
     return patchCanvasAsync(body);
-  }, [canvasId, nodeEntities, edges, edgeEntities, rfEdges, handleEntities, patchCanvasAsync, rfNodes]);
-    console.log({edges, edgeEntities})
+  }, [canvasId, patchCanvasAsync, store]);
 
   const scheduleSave = useCallback(() => {
     if (timeoutRef.current) {
@@ -358,14 +364,20 @@ const CanvasProvider = ({
       })();
 
       dispatch(setEdges(newEdges));
-      const newEdgeIds = newEdges.map(m => m.id);
-      const newDbEdges = edgeEntities.filter(f => newEdgeIds.includes(f.id))
-      dispatch(setAllEdgeEntities(newDbEdges))
-
-      // Schedule save after connect
+      const edgeEntities: EdgeEntityType[] = newEdges.map((ne) => ({
+        id: ne.id,
+        source: ne.source,
+        target: ne.target,
+        targetHandleId: ne.targetHandle!,
+        sourceHandleId: ne.sourceHandle!,
+        dataType: ne.data?.dataType as EdgeEntityType["dataType"],
+        createdAt: new Date().toISOString(),
+        updatedAt: new Date().toISOString(),
+      }))
+      dispatch(setAllEdgeEntities(edgeEntities))
       scheduleSave();
     },
-    [isValidConnection, handleEntities, dispatch, edgeEntities, scheduleSave, edges]
+    [isValidConnection, handleEntities, dispatch, scheduleSave, edges]
   );
 
     const onNodesDelete = useCallback(
@@ -373,18 +385,15 @@ const CanvasProvider = ({
 
       const deletedNodeIds = deleted.map(m => m.id);
       const newNodes = rfNodes.filter(f => !deletedNodeIds.includes(f.id));
-      console.log({deletedNodeIds})
       dispatch(setNodes(newNodes))
       dispatch(deleteManyNodeEntity(deletedNodeIds))
 
       const edgesToRemove = getConnectedEdges(deleted, rfEdges);
-      console.log({edgesToRemove})
       const deletedEdgeIds = edgesToRemove.map(m => m.id);
       const newEdges = rfEdges.filter(f => !deletedEdgeIds.includes(f.id));
       dispatch(setEdges(newEdges))
 
       const deletedHandleIds = handleEntities.filter(m => deletedNodeIds.includes(m.nodeId)).map(m => m.id);
-      console.log({deletedHandleIds})
       dispatch(deleteManyHandleEntity(deletedHandleIds))
 
       scheduleSave();
@@ -468,7 +477,6 @@ const CanvasProvider = ({
   
   const value = useMemo(() => ({
     canvas: canvasDetailsResponse?.canvas,
-    setNodes,
     onNodesChange,
     onEdgesChange,
     isLoading,
