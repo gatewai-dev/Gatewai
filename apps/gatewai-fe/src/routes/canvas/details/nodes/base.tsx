@@ -18,7 +18,6 @@ const getColorForType = (type: string) => {
   return dataTypeColors[type] || { bg: 'bg-gray-500', stroke: 'stroke-gray-500', hex: '#6b7280', text: 'text-gray-500' };
 };
 
-// --- Components ---
 
 const BaseNode = memo((props: NodeProps<Node<CanvasDetailsNode>> & {
   children?: ReactNode;
@@ -48,10 +47,8 @@ const BaseNode = memo((props: NodeProps<Node<CanvasDetailsNode>> & {
       className={`relative drag-handle ${nodeBackgroundColor} rounded-lg shadow-md w-full h-full transition-all duration-200 group
         ${selected ? 'selected' : ''}`}
     >
-      {/* --- INPUT HANDLES --- */}
       {inputs.map((handle, i) => {
         const color = getColorForType(handle.dataType);
-        // Calculate dynamic top position
         const topPosition = `${(i + 1) * (30) + 20}px`;
         const isConnected = edges.some(edge => edge.target === id && edge.targetHandle === handle.id);
         return (
@@ -73,7 +70,6 @@ const BaseNode = memo((props: NodeProps<Node<CanvasDetailsNode>> & {
                 className={`w-3 h-3 rounded-full left-[50%]! transition-all duration-200 focus:outline-none hover:scale-125`}
               />
             </div>
-            {/* Tooltip / Label */}
             <span className={`absolute left-0 -top-5 translate-x-0 group-hover:-translate-x-full 
               group-focus:-translate-x-full group-focus-within:-translate-x-full in-[.selected]:-translate-x-full 
               ${color.text} px-1 py-1 text-xs opacity-0 group-hover:opacity-100 group-focus:opacity-100
@@ -85,7 +81,6 @@ const BaseNode = memo((props: NodeProps<Node<CanvasDetailsNode>> & {
         );
       })}
 
-      {/* --- CONTENT --- */}
       <div className="p-2 h-[calc(100%-1rem)]">
         <div className='header-section flex justify-between items-center mb-3'>
           <div className="text-sm font-semibold text-node-title">
@@ -97,7 +92,6 @@ const BaseNode = memo((props: NodeProps<Node<CanvasDetailsNode>> & {
         </div>
       </div>
 
-      {/* --- OUTPUT HANDLES --- */}
       {outputs.map((handle, i) => {
         const color = getColorForType(handle.dataType);
         // Calculate dynamic top position
@@ -112,7 +106,7 @@ const BaseNode = memo((props: NodeProps<Node<CanvasDetailsNode>> & {
           >
             <div className={`w-4 h-4 ${nodeBackgroundColor} rounded-full flex items-center justify-center transition-all duration-200`}>
               <Handle
-                id={handle.id} // CRITICAL: This matches the DB Handle ID
+                id={handle.id}
                 type="source"
                 position={Position.Right}
                 tabIndex={0}
@@ -123,7 +117,6 @@ const BaseNode = memo((props: NodeProps<Node<CanvasDetailsNode>> & {
                 className={`w-3 h-3 rounded-full right-[50%]! transition-all duration-200 focus:outline-none hover:scale-125`}
               />
             </div>
-            {/* Tooltip / Label */}
             <span className={`
                 absolute right-0 -top-5 translate-x-0 group-hover:translate-x-full
                 group-focus:translate-x-full group-focus-within:translate-x-full in-[.selected]:translate-x-full
@@ -140,8 +133,6 @@ const BaseNode = memo((props: NodeProps<Node<CanvasDetailsNode>> & {
 });
 
 BaseNode.displayName = 'BaseNode';
-
-// --- Connection Line ---
 
 const CustomConnectionLine = memo(({
   fromX,
@@ -191,7 +182,6 @@ const CustomConnectionLine = memo(({
   );
 });
 
-// --- Edge --- 
 
 interface CustomEdgeProps extends EdgeProps {
   sourceX: number;

@@ -10,7 +10,7 @@ interface SelectedEntitiesContextType {
   onSelectionChange: ({ nodes, edges }: {
     nodes: ClientNode[];
     edges: ClientEdge[];
-}) => void
+  }) => void
 }
 
 const SelectedEntitiesContext = createContext<SelectedEntitiesContextType | undefined>(undefined);
@@ -27,7 +27,7 @@ const SelectedEntitiesProvider = ({
     setSelectedEdgeIDs(edges.map((edge) => edge.id));
   }, []);
 
-  console.log({selectedNodeIDs})
+
   const value: SelectedEntitiesContextType = {
     selectedEdgeIDs,
     selectedNodeIDs,

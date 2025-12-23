@@ -7,9 +7,11 @@ import { useAppDispatch } from "@/store";
 import { incrementSelectedResultIndex, decrementSelectedResultIndex } from "@/store/nodes";
 
 function MediaContent({node, result}: {node: NodeProps<GPTImage1Node>, result: ImagesResult}) {
-    const parts = result.parts;
-    const selectedPart = result.parts[result.selectedIndex];
     const dispatch = useAppDispatch();
+
+    const selectedOutput = result.outputs[result.selectedOutputIndex];
+
+    const imagePart = selectedOutput.items[0]
 
     const incrementSelectedIndex = () => {
         dispatch(incrementSelectedResultIndex({ id: node.id }));
@@ -17,10 +19,6 @@ function MediaContent({node, result}: {node: NodeProps<GPTImage1Node>, result: I
 
     const decrementSelectedIndex = () => {
         dispatch(decrementSelectedResultIndex({ id: node.id }));
-    }
-
-    if (parts.length === 0) {
-        return <div className="w-full media-container h-[280px]"></div>;
     }
 
     return (
@@ -33,7 +31,7 @@ function MediaContent({node, result}: {node: NodeProps<GPTImage1Node>, result: I
                         variant="ghost">
                         <ChevronLeft />
                     </Button>
-                    <span>{result.selectedIndex + 1} / {parts.length}</span>
+                    <span>{result.selectedOutputIndex + 1} / {result.outputs.length}</span>
                     <Button
                         size="xs"
                         onClick={() => incrementSelectedIndex()}
@@ -42,7 +40,7 @@ function MediaContent({node, result}: {node: NodeProps<GPTImage1Node>, result: I
                     </Button>
                 </div>
             </div>
-            <img src={selectedPart.data.url} alt={selectedPart.data.name} className='w-full h-full' />
+            <img src={imagePart.data.url} alt={imagePart.data.name} className='w-full h-full' />
         </div>
     );
 }

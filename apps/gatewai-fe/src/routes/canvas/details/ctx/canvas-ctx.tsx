@@ -22,6 +22,8 @@ import { rpcClient } from '@/rpc/client';
 import type { CanvasDetailsNode, CanvasDetailsRPC, NodeTemplateListItemRPC, PatchCanvasRPCReq } from '@/rpc/types';
 import { createNode, onEdgeChange, onNodeChange, selectRFEdges, selectRFNodes, setEdges, setNodes } from '@/store/rfstate';
 import { toast } from 'sonner';
+import { handleSelectors, setAllHandleEntities } from '@/store/handles';
+import { setAllEdgeEntities } from '@/store/edges';
 
 interface CanvasContextType {
   canvas: CanvasDetailsRPC | undefined;
@@ -64,10 +66,11 @@ const CanvasProvider = ({
 
   const dispatch = useAppDispatch();
   const rfInstance = useRef<ReactFlowInstance | undefined>(undefined);
-  const nodeEntities = useAppSelector(nodeSelectors.selectAll);
   const rfNodes = useAppSelector(selectRFNodes);
+  const nodeEntities = useAppSelector(nodeSelectors.selectAll);
+  const handleEntities = useAppSelector(handleSelectors.selectAll);
   const {
-    data: canvas,
+    data: canvasDetailsResponse,
     isLoading,
     isError,
   } = useQuery<CanvasDetailsRPC>({
@@ -81,11 +84,11 @@ const CanvasProvider = ({
   });
 
   const { initialEdges, initialNodes } = useMemo(() => {
-    if (!canvas?.nodes) {
+    if (!canvasDetailsResponse?.nodes) {
       return { initialEdges: [], initialNodes: [] };
     }
     // Map your backend data to React Flow nodes
-    const initialNodes: Node[] = canvas.nodes.map((node) => ({
+    const initialNodes: Node[] = canvasDetailsResponse.nodes.map((node) => ({
       id: node.id,
       position: node.position as XYPosition,
       data: node,
@@ -98,7 +101,7 @@ const CanvasProvider = ({
     }));
 
     // Map backend edges to React Flow edges with handle support
-    const initialEdges: Edge[] = canvas.edges.map((edge) => ({
+    const initialEdges: Edge[] = canvasDetailsResponse.edges.map((edge) => ({
       id: edge.id,
       source: edge.source,
       target: edge.target,
@@ -108,15 +111,16 @@ const CanvasProvider = ({
     }));
 
     return { initialEdges, initialNodes };
-  }, [canvas]);
+  }, [canvasDetailsResponse]);
 
-  console.log({initialEdges})
+
   useEffect(() => {
-    if (canvas?.nodes) {
-      dispatch(setAllNodeEntities(canvas.nodes))
+    if (canvasDetailsResponse?.nodes) {
+      dispatch(setAllNodeEntities(canvasDetailsResponse.nodes))
+      dispatch(setAllEdgeEntities(canvasDetailsResponse.edges));
+      dispatch(setAllHandleEntities(canvasDetailsResponse.handles));
     }
-    console.log("Setting mock nodes in store")
-  }, [dispatch, canvas])
+  }, [dispatch, canvasDetailsResponse])
 
   const nodes = useAppSelector(selectRFNodes);
   const edges = useAppSelector(selectRFEdges);
@@ -197,10 +201,11 @@ const CanvasProvider = ({
     const body: PatchCanvasRPCReq["json"] = {
       nodes: currentCanvasDetailsNodes,
       edges: currentDbEdges,
+      handles: handleEntities,
     };
 
     return patchCanvasAsync(body);
-  }, [canvasId, nodeEntities, edges, patchCanvasAsync, rfNodes]);
+  }, [canvasId, nodeEntities, handleEntities, edges, patchCanvasAsync, rfNodes]);
 
   const scheduleSave = useCallback(() => {
     if (timeoutRef.current) {
@@ -260,7 +265,6 @@ const CanvasProvider = ({
         const outgoers = getOutgoers(node, nodes, edges);
 
         for (const outgoer of outgoers) {
-          if (outgoer.id === connection.target) return true;
           if (hasOutgoerAsTarget(outgoer, visited)) return true;
         }
         return false;
@@ -318,7 +322,6 @@ const CanvasProvider = ({
 
   const onConnect = useCallback(
     (params: Connection) => {
-      console.log({params})
       const { isValid, error } = isValidConnection(params);
       if (!isValid) {
         if (error) {
@@ -334,13 +337,11 @@ const CanvasProvider = ({
         throw new Error("Source handle could not be found");
       }
       const dataType = sourceHandle.dataType;
-      console.log(sourceNode?.data)
       const newEdges = (() => {
         // Find if there's an existing edge connected to the same target and targetHandle
         const existingEdge = edges.find(
           (e) =>
-            e.target === params.target &&
-            e.targetHandle === (params.targetHandle || undefined)
+            e.target === params.target
         );
 
         // If found, remove the existing edge
@@ -369,7 +370,7 @@ const CanvasProvider = ({
       // Schedule save after connect
       scheduleSave();
     },
-    [nodes, dispatch, scheduleSave, edges]
+    [isValidConnection, nodes, dispatch, scheduleSave, edges]
   );
 
   const runNodes = useCallback(async (nodeIds: Node["id"][]) => {
@@ -427,7 +428,7 @@ const CanvasProvider = ({
       handles,
       deletable: true,
       config: template.defaultConfig || {},
-      result: initialResult as unknown,
+      result: initialResult as unknown as NodeResult,
     };
     const newNode: Node = {
       id,

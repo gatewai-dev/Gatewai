@@ -4,10 +4,14 @@ import { nodesReducer } from './nodes'
 import { nodeTemplatesAPI } from './node-templates'
 import { setupListeners } from '@reduxjs/toolkit/query'
 import { reactFlowReducer } from './rfstate'
+import { handlesReducer } from './handles'
+import { edgesReducer } from './edges'
 
 export const store = configureStore({
   reducer: {
     nodes: nodesReducer,
+    handles: handlesReducer,
+    edges: edgesReducer,
     reactFlow: reactFlowReducer,
     [nodeTemplatesAPI.reducerPath]: nodeTemplatesAPI.reducer,
   },
