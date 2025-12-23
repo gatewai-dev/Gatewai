@@ -453,8 +453,6 @@ const canvasRoutes = new Hono<{Variables: AuthHonoTypes}>({
             const updatedEdges = edgesInPayload.filter(f => f.id && edgeIdsInDB.includes(f.id))
             const createdEdges = edgesInPayload.filter(f => f.id && !edgeIdsInDB.includes(f.id))
 
-            console.log({updatedEdges: updatedEdges.length, createdEdges: createdEdges.length, deletedEdges: deletedEdges.length})
-
             const newEdgesTransaction = prisma.edge.createMany({
                 data: createdEdges.map((newEdge) => ({
                     id: newEdge.id,

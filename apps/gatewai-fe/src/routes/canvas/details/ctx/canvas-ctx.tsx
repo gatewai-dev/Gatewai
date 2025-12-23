@@ -70,9 +70,8 @@ const CanvasProvider = ({
   const rfInstance = useRef<ReactFlowInstance | undefined>(undefined);
   const rfNodes = useAppSelector(selectRFNodes);
   const rfEdges = useAppSelector(selectRFEdges);
-  const nodeEntities = useAppSelector(nodeSelectors.selectAll);
-  const edgeEntities = useAppSelector(edgeSelectors.selectAll);
   const handleEntities = useAppSelector(handleSelectors.selectAll);
+
   const {
     data: canvasDetailsResponse,
     isLoading,
@@ -260,21 +259,30 @@ const CanvasProvider = ({
         return { isValid: false, error: 'Target node could not be found.' };
       }
 
-      // Recursive function: does this node (or any of its descendants) include the target?
-      const hasOutgoerAsTarget = (node: Node, visited = new Set<string>()): boolean => {
-        if (visited.has(node.id)) return false;
-        visited.add(node.id);
+      // Check for cycles: adding this edge (source -> target) creates a cycle if there's already a path from target to source
+      const isReachable = (fromId: string, toId: string): boolean => {
+        const visited = new Set<string>();
 
-        const outgoers = getOutgoers(node, nodes, edges);
+        const dfs = (currentId: string): boolean => {
+          if (visited.has(currentId)) return false;
+          visited.add(currentId);
+          if (currentId === toId) return true;
 
-        for (const outgoer of outgoers) {
-          if (hasOutgoerAsTarget(outgoer, visited)) return true;
-        }
-        return false;
+          const currentNode = nodes.find(n => n.id === currentId);
+          if (!currentNode) return false;
+
+          const outgoers = getOutgoers(currentNode, nodes, edges);
+          for (const outgoer of outgoers) {
+            if (dfs(outgoer.id)) return true;
+          }
+
+          return false;
+        };
+
+        return dfs(fromId);
       };
 
-      // Invalid if the target is reachable downstream from the source (creates a cycle)
-      if (hasOutgoerAsTarget(sourceNode)) {
+      if (isReachable(targetNode.id, sourceNode.id)) {
         return { isValid: false, error: 'Looping connection is not valid.' };
       }
 
@@ -340,6 +348,7 @@ const CanvasProvider = ({
         const existingEdge = edges.find(
           (e) =>
             e.target === params.target
+            && e.targetHandle === params.targetHandle
         );
 
         // If found, remove the existing edge
