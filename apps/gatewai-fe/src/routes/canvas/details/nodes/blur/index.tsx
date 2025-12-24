@@ -2,12 +2,11 @@ import { memo, useEffect, useMemo, useRef, useCallback } from 'react';
 import { type NodeProps } from '@xyflow/react';
 import {
   type BlurNodeConfig,
-  type BlurResult,
   type FileData,
   type NodeResult,
 } from '@gatewai/types';
 import { useAppDispatch, useAppSelector } from '@/store';
-import { makeSelectAllNodes, makeSelectNodeById, updateNodeConfig, updateNodeResult } from '@/store/nodes';
+import { makeSelectAllNodes, makeSelectNodeById, updateNodeConfig } from '@/store/nodes';
 import { BaseNode } from '../base';
 import type { BlurNode } from '../node-props';
 import { makeSelectAllHandles, makeSelectHandleByNodeId } from '@/store/handles';
@@ -218,7 +217,6 @@ const BlurNodeComponent = memo((props: NodeProps<BlurNode>) => {
   const node = useAppSelector(makeSelectNodeById(props.id));
   const handles = useAppSelector(makeSelectHandleByNodeId(props.id));
   const allEdges = useAppSelector(makeSelectAllEdges);
-  const dispatch = useAppDispatch();
   
   const config: BlurNodeConfig = props.data.config;
   
@@ -259,36 +257,36 @@ const BlurNodeComponent = memo((props: NodeProps<BlurNode>) => {
     
     return { imageSourceNode, sourceHandle, edge, sourceOutput };
   }, [node, handles, allEdges, allHandles, allNodes]);
-  
+
   const showResult = context?.sourceOutput != null;
-  
+
   // Apply blur effect
   const applyBlur = useCallback(() => {
     const canvas = canvasRef.current;
     const img = imgRef.current;
-    
+
     if (!canvas || !img || !img.complete) {
       return;
     }
-    
+
     const ctx = canvas.getContext('2d');
     if (!ctx) {
       console.error('Canvas context not available');
       return;
     }
-    
+
     // Set canvas size to match image
     canvas.width = img.naturalWidth;
     canvas.height = img.naturalHeight;
-    
+
     // Draw original image
     ctx.drawImage(img, 0, 0);
-    
+
     // Apply blur if size > 0
     if (config.size && config.size > 0) {
       const imageData = ctx.getImageData(0, 0, canvas.width, canvas.height);
       let blurredData: ImageData;
-      
+
       try {
         if (config.blurType === 'Box') {
           blurredData = applyBoxBlur(imageData, config.size);
@@ -298,7 +296,7 @@ const BlurNodeComponent = memo((props: NodeProps<BlurNode>) => {
           // Fallback to no blur
           return;
         }
-        
+
         ctx.putImageData(blurredData, 0, 0);
       } catch (error) {
         console.error('Error applying blur:', error);
@@ -311,25 +309,25 @@ const BlurNodeComponent = memo((props: NodeProps<BlurNode>) => {
     if (!showResult || !context?.sourceOutput) {
       return;
     }
-    
+
     const imgUrl = (context.sourceOutput.data as FileData)?.url;
     if (!imgUrl) {
       return;
     }
-    
+
     // Create or reuse image element
     if (!imgRef.current) {
       imgRef.current = new Image();
     }
-    
+
     const img = imgRef.current;
-    
+
     const handleImageLoad = () => {
       applyBlur();
     };
-    
+
     img.addEventListener('load', handleImageLoad);
-    
+
     // Set source after adding event listener
     if (img.src !== imgUrl) {
       img.src = imgUrl;
@@ -337,45 +335,18 @@ const BlurNodeComponent = memo((props: NodeProps<BlurNode>) => {
       // Image already loaded
       applyBlur();
     }
-    
+
     return () => {
       img.removeEventListener('load', handleImageLoad);
     };
   }, [showResult, context?.sourceOutput, applyBlur]);
-  
-  // Reapply blur when config changes and store result
+
+  // Reapply blur when config changes
   useEffect(() => {
     if (showResult && imgRef.current?.complete) {
       applyBlur();
-      
-      // Convert canvas to blob and store result
-      const canvas = canvasRef.current;
-      if (canvas && config.size !== undefined) {
-        canvas.toBlob((blob) => {
-          if (blob) {
-            const file = new File([blob], `${props.id}-blurred-image.png`, { type: 'image/png' });
-            // Dispatch action to update node result
-            dispatch(updateNodeResult({
-              id: props.id,
-              newResult: {
-                outputs: [{
-                  items: [{
-                    outputHandleId: handles[0]?.id, // Use output handle ID
-                    data: {
-                      bucket: undefined,
-                      file,
-                      url: URL.createObjectURL(blob) // For frontend preview
-                    } as FileData
-                  }]
-                }],
-                selectedOutputIndex: 0
-              } as BlurResult
-            }));
-          }
-        }, 'image/png', 0.95);
-      }
     }
-  }, [config.size, config.blurType, showResult, applyBlur, props.id, handles, dispatch]);
+  }, [config.size, config.blurType, showResult, applyBlur]);
 
   return (
     <BaseNode {...props}>
@@ -391,7 +362,7 @@ const BlurNodeComponent = memo((props: NodeProps<BlurNode>) => {
           </div>
         )}
         <div className="flex gap-3 items-end">
-          <BlurTypeSelector {...props} />  
+          <BlurTypeSelector {...props} />
           <BlurValueSlider {...props} />
         </div>
       </div>
