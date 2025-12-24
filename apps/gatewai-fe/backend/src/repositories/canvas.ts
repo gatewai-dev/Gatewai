@@ -1,4 +1,5 @@
 import { type Canvas, prisma } from "@gatewai/db";
+import type { DataType, NodeResult } from "@gatewai/types";
 import type { User } from "better-auth";
 import { HTTPException } from "hono/http-exception";
 
@@ -45,4 +46,79 @@ async function GetCanvasEntities(id: Canvas["id"], user: User) {
 
 export type CanvasCtxData = Awaited<ReturnType<typeof GetCanvasEntities>>;
 
-export { GetCanvasEntities }
+/**
+ * Options for filtering inputs.
+ */
+type InputFilterOptions = {
+  dataType: DataType;
+  label?: string;
+};
+
+/**
+ * Resolve the actual data value that flows into a target node through an edge.
+ */
+function resolveSourceValue(
+  data: CanvasCtxData,
+  edge: CanvasCtxData['edges'][number]
+): any {
+  const sourceHandle = data.handles.find((h) => h.id === edge.sourceHandleId);
+  if (!sourceHandle) throw new Error('Source handle missing');
+
+  const sourceNode = data.nodes.find((n) => n.id === sourceHandle.nodeId);
+  if (!sourceNode) throw new Error('Source node missing');
+
+  const result = sourceNode.result as NodeResult | null;
+  if (!result || result.outputs.length === 0) return null;
+
+  const selected = result.outputs[result.selectedOutputIndex ?? 0];
+  const item = selected.items.find((i) => i.outputHandleId === edge.sourceHandleId);
+
+  return item?.data ?? null;
+}
+
+/**
+ * Get the input value for a given data type on a target node, with optional filters.
+ * - required = true → throws if missing
+ * - Allows optional inputs (system prompt, image, etc.)
+ * - Warns if multiple matching edges exist (takes the first)
+ * - If options.label is provided, matches on the target handle's label
+ */
+function getInputValue(
+  data: CanvasCtxData,
+  targetNodeId: string,
+  required: boolean = true,
+  options: InputFilterOptions
+): any {
+  let incoming = data.edges.filter(
+    (e) => e.target === targetNodeId && e.dataType === options.dataType
+  );
+
+  if (options.label) {
+    incoming = incoming.filter((e) => {
+      const targetHandle = data.handles.find((h) => h.id === e.targetHandleId);
+      return targetHandle?.label === options.label;
+    });
+  }
+
+  if (incoming.length === 0) {
+    if (required) {
+      throw new Error(`Required ${options.dataType} input${options.label ? ` with label "${options.label}"` : ''} not connected`);
+    }
+    return null;
+  }
+
+  if (incoming.length > 1) {
+    console.warn(
+      `Multiple ${options.dataType} edges${options.label ? ` with label "${options.label}"` : ''} connected to node ${targetNodeId}. Using the first one.`
+    );
+  }
+
+  const value = resolveSourceValue(data, incoming[0]);
+  if ((value === null || value === undefined) && required) {
+    throw new Error(`No value received from ${options.dataType} input${options.label ? ` with label "${options.label}"` : ''}`);
+  }
+
+  return value;
+}
+
+export { GetCanvasEntities, resolveSourceValue, getInputValue }

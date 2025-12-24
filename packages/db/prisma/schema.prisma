@@ -194,15 +194,15 @@ model Node {
 
 model Handle {
   id                 String              @id @default(cuid())
-  nodeId             String
-  node               Node                @relation("NodeHandles", fields: [nodeId], references: [id], onDelete: Cascade)
   type               HandleType
   dataType           DataType
-  label              String?
+  label              String
   order              Int                 @default(0)
   required           Boolean             @default(false)
   templateHandleId   String?
   templateHandle     NodeTemplateHandle? @relation(fields: [templateHandleId], references: [id], onDelete: Restrict)
+  nodeId             String
+  node               Node                @relation("NodeHandles", fields: [nodeId], references: [id], onDelete: Cascade)
   createdAt          DateTime            @default(now())
   updatedAt          DateTime            @updatedAt
   sourceEdges        Edge[]              @relation("SourceHandle")
@@ -233,16 +233,16 @@ model NodeTemplate {
 }
 
 model NodeTemplateHandle {
-  id          String        @id @default(cuid())
-  templateId  String
-  template    NodeTemplate  @relation(fields: [templateId], references: [id], onDelete: Cascade)
-  type        HandleType
-  dataType    DataType
-  label       String?
-  required    Boolean       @default(false)
-  handles     Handle[]
-  createdAt      DateTime     @default(now())
-  updatedAt      DateTime     @updatedAt
+  id              String        @id @default(cuid())
+  templateId      String
+  template        NodeTemplate  @relation(fields: [templateId], references: [id], onDelete: Cascade)
+  type            HandleType
+  dataType        DataType
+  label           String
+  required        Boolean       @default(false)
+  handles         Handle[]
+  createdAt       DateTime     @default(now())
+  updatedAt       DateTime     @updatedAt
 
   @@map("node_template_handle")
 }

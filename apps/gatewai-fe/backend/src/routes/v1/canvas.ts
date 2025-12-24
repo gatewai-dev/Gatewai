@@ -8,6 +8,7 @@ import type { TASK_LLM } from "../../trigger/llm.js";
 import type { TextNodeConfig } from "@gatewai/types";
 import type { XYPosition } from '@xyflow/react';
 import { GetCanvasEntities } from "../../repositories/canvas.js";
+import { NodeWFProcessor } from "../../tasks/node.js";
 
 const NodeTypes = [
         'Text', 'Preview', 'File', 'Export',
@@ -642,55 +643,13 @@ const canvasRoutes = new Hono<{Variables: AuthHonoTypes}>({
         const validated = c.req.valid('json');
         const user = c.get('user');
 
-        const nodes = await prisma.node.findMany({
-            where: {
-                id: { in: validated.node_ids },
-                canvasId,
-                canvas: {
-                    userId: user?.id
-                },
-            },
-            include: {
-                handles: true,
-                template: true,
-            }
-        });
-
-        if (nodes.length < 1) {
-            throw new HTTPException(400, { message: 'Invalid source or target node' });
-        }
-        
-        const clientProcessNodes = nodes.filter(node => node.template.processEnvironment === 'Browser');
-        if (clientProcessNodes.length > 0) {
-            throw new HTTPException(400, { message: 'Some nodes are set to be processed in the client environment.' });
+        if (!user) {
+            throw new HTTPException(401, { message: 'User is not found' });
         }
 
-        const createdTasks: Task[] = [];
+        const wfProcessor = new NodeWFProcessor(prisma);
 
-        nodes.forEach(async node => {
-            const nodeData = node.config as TextNodeConfig;
-            if (!nodeData.content) {
-                throw new HTTPException(400, { message: `Node ${node.id} does not have a prompt defined.` });
-            }
-            const taskHandle = await tasks.trigger<typeof TASK_LLM>('run-llm', {
-                nodeId: node.id,
-                model: 'gpt-4o',
-                prompt: nodeData.content,
-            });
-
-            const task = await prisma.task.create({
-                data: {
-                    canvasId: canvasId,
-                    userId: user!.id,
-                    nodeId: node.id,
-                    publicAccessToken: taskHandle.publicAccessToken,
-                    taskId: taskHandle.id,
-                    name: taskHandle.taskIdentifier,
-                }
-            });
-
-            createdTasks.push(task);
-        });
+        wfProcessor.processSelectedNodes(canvasId, validated.node_ids, user);
 
         return c.json({ createdTasks }, 201);
     }
