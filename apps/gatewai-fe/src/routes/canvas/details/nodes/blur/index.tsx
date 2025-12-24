@@ -1,74 +1,70 @@
 
-import { memo, useMemo } from 'react';
+import { memo, useEffect, useMemo, useRef } from 'react';
 import { type NodeProps } from '@xyflow/react';
-import type {
-  BlurResult,
-  ImagesResult,
-  NodeResult,
-  Output,
-  OutputItem
+import {
+  type NodeResult,
 } from '@gatewai/types';
-import { Button } from '@/components/ui/button';
-import { PlayIcon } from 'lucide-react';
 import { useAppSelector } from '@/store';
 import { makeSelectAllNodes, makeSelectNodeById } from '@/store/nodes';
-import { useCanvasCtx } from '../../ctx/canvas-ctx';
 import { BaseNode } from '../base';
-import { MediaContent } from '../media-content';
 import type { BlurNode } from '../node-props';
-import { makeSelectHandleByNodeId } from '@/store/handles';
+import { makeSelectAllHandles, makeSelectHandleByNodeId } from '@/store/handles';
 import { makeSelectAllEdges } from '@/store/edges';
 
 const ImagePlaceholder = () => {
     return (<div className="w-full media-container h-[280px]"></div>);
 }
 
-const hasResult = (nodeProps: NodeProps<BlurNode>) => {
-    const outputs = nodeProps.data?.result?.outputs;
-    const hasOutputs = outputs && outputs.length ;
-    if (hasOutputs) {
-        const hasItems = outputs[0].items && outputs[0].items.length;
-        return hasItems;
-    }
-
-    return false;
-}
-
 const BlurNodeComponent = memo((props: NodeProps<BlurNode>) => {
+    const canvasRef = useRef<HTMLCanvasElement | null>(null);
     const allNodes = useAppSelector(makeSelectAllNodes);
+    const allHandles = useAppSelector(makeSelectAllHandles);
     const node = useAppSelector(makeSelectNodeById(props.id));
     const handles = useAppSelector(makeSelectHandleByNodeId(props.id));
     const allEdges = useAppSelector(makeSelectAllEdges);
-    const imageSourceNode = useMemo(() => {
+    const context = useMemo(() => {
         if (!node) {
             return null;
         }
-        const edge = allEdges.find(f => f.target === node.id);
+        // Blur node has single input handle
+        const targetHandle = handles[0];
+        const edge = allEdges.find(f => f.target === node.id && f.targetHandleId === targetHandle.id);
         if (!edge) {
             return null;
         }
-        const sourceNode = allNodes.find(f => f.id === edge.source);
-
-        return sourceNode;
-    }, [node, allEdges, allNodes])
-    const result = node?.result as unknown as NodeResult;
-    let outputItem: OutputItem<"Image"> | null = useMemo(() => {
-        if (Object.hasOwn(result, "selectedOutputIndex")) {
-            const outputItem = result.outputs[result.selectedOutputIndex as unknown as number]
-        } else {
-            
+        const sourceHandle = allHandles.find(f => f.id === edge.sourceHandleId);
+        if (!sourceHandle) {
+            return null;
         }
-    }, [])
-    const showResult = hasResult(props);
+        const imageSourceNode = allNodes.find(f=> f.id === edge.source);
+
+        const nodeResult = imageSourceNode?.result as unknown as NodeResult;
+        const output = nodeResult.outputs[nodeResult.selectedOutputIndex];
+        const sourceOutput = output.items.find(f => f.outputHandleId === sourceHandle.id);
+
+        return {imageSourceNode, sourceHandle, edge, sourceOutput};
+    }, [node, handles, allEdges, allHandles, allNodes])
+
+    const showResult = context?.sourceOutput != null;
+
+    useEffect(() => {
+        const canvas = canvasRef.current
+        if (showResult && canvas) {
+            const canvasCtx = canvas.getContext('2d')
+            if (!canvasCtx) {
+                console.error('Canvas is missing')
+                return;
+            }
+            const img = new Image(canvas.width, canvas.height);
+            canvasCtx.drawImage(img ,0, 0)
+        }
+    }, [context?.sourceOutput?.data, showResult])
 
   return (
     <BaseNode {...props}>
       <div className='flex flex-col gap-2 items-end'>
         {!showResult && <ImagePlaceholder />}
-        <Button onClick={() => runNodes([props.data.id])} size="xs" >
-          <PlayIcon />
-          <span className='text-xs'>Run Node</span>
-        </Button>
+        {showResult && (<canvas className='w-full' ref={canvasRef}></canvas>)}
       </div>
     </BaseNode>
   );

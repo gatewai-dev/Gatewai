@@ -38,7 +38,7 @@ export const makeSelectHandleByNodeId = (nodeId: string) => createDraftSafeSelec
   (handles) => Object.values(handles.entities).filter(f => f.nodeId === nodeId)
 );
 
-export const makeSelectAllHandles = () => handleSelectors.selectAll;
+export const makeSelectAllHandles = handleSelectors.selectAll;
 
 // Extract the action creators object and the reducer
 const { actions, reducer: handlesReducer } = handlesSlice
