@@ -12,20 +12,10 @@ import { useCanvasCtx } from '../../ctx/canvas-ctx';
 import { BaseNode } from '../base';
 import { MediaContent } from '../media-content';
 import type { GPTImage1Node } from '../node-props';
+import { useHasOutputItems } from '@/routes/canvas/hooks';
 
 const ImagePlaceholder = () => {
     return (<div className="w-full media-container h-[280px]"></div>);
-}
-
-const hasResult = (nodeProps: NodeProps<GPTImage1Node>) => {
-    const outputs = nodeProps.data?.result?.outputs;
-    const hasOutputs = outputs && outputs.length ;
-    if (hasOutputs) {
-        const hasItems = outputs[0].items && outputs[0].items.length;
-        return hasItems;
-    }
-
-    return false;
 }
 
 const GPTImage1NodeComponent = memo((props: NodeProps<GPTImage1Node>) => {
@@ -33,7 +23,7 @@ const GPTImage1NodeComponent = memo((props: NodeProps<GPTImage1Node>) => {
 
   const result = node?.result as unknown as GPTImage1Result;
   const { runNodes } = useCanvasCtx();
-  const showResult = hasResult(props);
+  const showResult = useHasOutputItems(props);
 
   return (
     <BaseNode {...props}>

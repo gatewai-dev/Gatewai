@@ -11,6 +11,7 @@ import type { DataType, FileAsset } from "@gatewai/db";
     R extends "Boolean" ? boolean :
     R extends "Image" | "Video" | "Audio" | "File" | "Mask" | "VideoLayer" ? FileData :
     R extends "DesignLayer" ? string | FileData :
+    R extends "VideoLayer" ? FileData :
     R extends "Any" ? string | number | boolean | FileData :
     never;
 

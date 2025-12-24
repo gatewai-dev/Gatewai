@@ -4,7 +4,7 @@ import { ReactflowContainer } from "./reactflow-container";
 import { useParams } from "react-router";
 import { SelectedEntitiesProvider } from "./ctx/selected-entity-ctx";
 import { ReactFlowProvider } from "@xyflow/react";
-import { UserAssetsProvider } from "../assets/library.ctx";
+import { UserAssetsProvider } from "../assets/user-assets-ctx";
 import { NodeTemplateDnDProvider } from "../node-templates/node-template-drag.ctx";
 import { NodeTemplatesProvider } from "../node-templates/node-templates.ctx";
 

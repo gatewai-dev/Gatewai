@@ -1,5 +1,4 @@
 import { createContext, useContext, useState, type Dispatch, type PropsWithChildren, type SetStateAction } from 'react';
-import { useGetAllUserAssetsQuery } from '@/store/node-templates';
 import type { UserAssetsListRPC, UserAssetsListRPCParams } from '@/rpc/types';
 import { useGetUserAssetsQuery } from '@/store/assets';
 
@@ -26,6 +25,7 @@ const UserAssetsProvider = ({
   })
 
   const { data, isLoading, isError } = useGetUserAssetsQuery(queryParams);
+
   const value: UserAssetsContextType = {
     assets: data,
     isLoading,

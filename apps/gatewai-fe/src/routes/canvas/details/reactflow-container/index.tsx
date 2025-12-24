@@ -10,7 +10,6 @@ import { useAppSelector } from "@/store";
 import { selectRFEdges, selectRFNodes } from "@/store/rfstate";
 import { NodePalette } from "../../node-templates/node-palette";
 
-// Define edge types - you can add more custom edge types here if needed
 const edgeTypes = {
   default: CustomEdge,
 };
@@ -28,8 +27,8 @@ function ReactflowContainer({ children }: ReactFlowProps) {
     rfInstance
   } = useCanvasCtx();
   const { onSelectionChange } = useSelectedEntitiesCtx();
-  const nodes = useAppSelector(selectRFNodes);
-  const edges = useAppSelector(selectRFEdges);
+  const rfNodes = useAppSelector(selectRFNodes);
+  const rfEdges = useAppSelector(selectRFEdges);
 
   const onDragOver: DragEventHandler<HTMLDivElement> | undefined = (event) => {
     event.preventDefault();
@@ -42,8 +41,8 @@ function ReactflowContainer({ children }: ReactFlowProps) {
         onInit={(flowInstance) => {
           rfInstance.current = flowInstance;
         }}
-        nodes={nodes}
-        edges={edges}
+        nodes={rfNodes}
+        edges={rfEdges}
         className="bg-black react-flow-container"
         fitView
         nodeTypes={nodeTypes}

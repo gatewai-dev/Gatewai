@@ -3,6 +3,7 @@ import { TextNodeComponent } from './text';
 import { LlmNodeComponent } from './llm';
 import { GPTImage1NodeComponent } from './gpt-image';
 import { BlurNodeComponent } from './blur';
+import { FileNodeComponent } from './file';
 
 
 // Node types mapping
@@ -11,6 +12,7 @@ const nodeTypes = {
   Text: TextNodeComponent,
   GPTImage1: GPTImage1NodeComponent,
   Blur: BlurNodeComponent,
+  File: FileNodeComponent,
 };
 
 // Export components
@@ -20,4 +22,5 @@ export {
   TextNodeComponent,
   GPTImage1NodeComponent,
   BlurNodeComponent,
+  FileNodeComponent,
 };

@@ -1,6 +1,5 @@
-// assets-router.ts
 import { Hono } from "hono";
-import { prisma } from "@gatewai/db"; // Assuming FileAssetType is not in schema, but enum exists; if needed, add to model
+import { prisma } from "@gatewai/db";
 import type { AuthHonoTypes } from "../../auth.js";
 import { zValidator } from "@hono/zod-validator";
 import { z } from "zod/v4";
@@ -10,7 +9,7 @@ import sharp from "sharp";
 import { fileTypeFromBuffer } from "file-type";
 
 const uploadSchema = z.object({
-  file: z.any(), // We'll validate manually
+  file: z.any(),
 });
 
 const querySchema = z.object({
@@ -40,7 +39,6 @@ const assetsRouter = new Hono<{ Variables: AuthHonoTypes }>({
       userId: user.id,
       name: {
         contains: q,
-        mode: "insensitive",
       },
     } as const;
 
@@ -102,7 +100,7 @@ const assetsRouter = new Hono<{ Variables: AuthHonoTypes }>({
     try {
       await uploadToS3(buffer, key, contentType, bucket);
 
-      const expiresIn = 3600 * 24 * 30; // 30 day
+      const expiresIn = 3600 * 24 * 6.9; // A bit less than a week
       const signedUrl = await generateSignedUrl(key, bucket, expiresIn);
       const signedUrlExp = new Date(Date.now() + expiresIn * 1000);
 

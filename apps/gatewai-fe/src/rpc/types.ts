@@ -15,3 +15,5 @@ export type NodeTemplateListItemRPC = NodeTemplateListRPC[number];
 
 export type UserAssetsListRPC = InferResponseType<typeof rpcClient.api.v1.assets.$get>;
 export type UserAssetsListRPCParams = InferRequestType<typeof rpcClient.api.v1.assets.$get>
+
+export type UserAssetsUploadRPC = InferResponseType<typeof rpcClient.api.v1.assets.$post>

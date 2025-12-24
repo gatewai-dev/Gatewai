@@ -18,7 +18,9 @@ export const store = configureStore({
     [assetsAPI.reducerPath]: assetsAPI.reducer,
   },
   middleware: (getDefaultMiddleware) =>
-    getDefaultMiddleware().concat(nodeTemplatesAPI.middleware),
+    getDefaultMiddleware()
+      .concat(nodeTemplatesAPI.middleware)
+      .concat(assetsAPI.middleware),
 })
 
 setupListeners(store.dispatch)
