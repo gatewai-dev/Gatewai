@@ -7,6 +7,8 @@ import { reactFlowReducer } from './rfstate'
 import { handlesReducer } from './handles'
 import { edgesReducer } from './edges'
 import { assetsAPI } from './assets'
+import { canvasListAPI } from './canvas'
+import { tasksAPI } from './tasks'
 
 export const store = configureStore({
   reducer: {
@@ -16,11 +18,15 @@ export const store = configureStore({
     reactFlow: reactFlowReducer,
     [nodeTemplatesAPI.reducerPath]: nodeTemplatesAPI.reducer,
     [assetsAPI.reducerPath]: assetsAPI.reducer,
+    [canvasListAPI.reducerPath]: canvasListAPI.reducer,
+    [tasksAPI.reducerPath]: tasksAPI.reducer,
   },
   middleware: (getDefaultMiddleware) =>
     getDefaultMiddleware()
       .concat(nodeTemplatesAPI.middleware)
-      .concat(assetsAPI.middleware),
+      .concat(assetsAPI.middleware)
+      .concat(canvasListAPI.middleware)
+      .concat(tasksAPI.middleware)
 })
 
 setupListeners(store.dispatch)

@@ -77,17 +77,17 @@ CREATE TABLE "node" (
 -- CreateTable
 CREATE TABLE "handle" (
     "id" TEXT NOT NULL PRIMARY KEY,
-    "nodeId" TEXT NOT NULL,
     "type" TEXT NOT NULL,
     "dataType" TEXT NOT NULL,
-    "label" TEXT,
+    "label" TEXT NOT NULL,
     "order" INTEGER NOT NULL DEFAULT 0,
     "required" BOOLEAN NOT NULL DEFAULT false,
     "templateHandleId" TEXT,
+    "nodeId" TEXT NOT NULL,
     "createdAt" DATETIME NOT NULL DEFAULT CURRENT_TIMESTAMP,
     "updatedAt" DATETIME NOT NULL,
-    CONSTRAINT "handle_nodeId_fkey" FOREIGN KEY ("nodeId") REFERENCES "node" ("id") ON DELETE CASCADE ON UPDATE CASCADE,
-    CONSTRAINT "handle_templateHandleId_fkey" FOREIGN KEY ("templateHandleId") REFERENCES "node_template_handle" ("id") ON DELETE RESTRICT ON UPDATE CASCADE
+    CONSTRAINT "handle_templateHandleId_fkey" FOREIGN KEY ("templateHandleId") REFERENCES "node_template_handle" ("id") ON DELETE RESTRICT ON UPDATE CASCADE,
+    CONSTRAINT "handle_nodeId_fkey" FOREIGN KEY ("nodeId") REFERENCES "node" ("id") ON DELETE CASCADE ON UPDATE CASCADE
 );
 
 -- CreateTable
@@ -114,7 +114,7 @@ CREATE TABLE "node_template_handle" (
     "templateId" TEXT NOT NULL,
     "type" TEXT NOT NULL,
     "dataType" TEXT NOT NULL,
-    "label" TEXT,
+    "label" TEXT NOT NULL,
     "required" BOOLEAN NOT NULL DEFAULT false,
     "createdAt" DATETIME NOT NULL DEFAULT CURRENT_TIMESTAMP,
     "updatedAt" DATETIME NOT NULL,
@@ -161,18 +161,38 @@ CREATE TABLE "aisession" (
 CREATE TABLE "task" (
     "id" TEXT NOT NULL PRIMARY KEY,
     "name" TEXT NOT NULL,
-    "description" TEXT,
-    "status" TEXT NOT NULL DEFAULT 'Pending',
     "createdAt" DATETIME NOT NULL DEFAULT CURRENT_TIMESTAMP,
     "updatedAt" DATETIME NOT NULL,
     "canvasId" TEXT NOT NULL,
     "nodeId" TEXT,
     "userId" TEXT NOT NULL,
-    "publicAccessToken" TEXT,
-    "taskId" TEXT,
+    "status" TEXT,
+    "durationMs" REAL,
+    "finishedAt" DATETIME,
+    "expiredAt" DATETIME,
+    "startedAt" DATETIME,
+    "error" JSONB,
+    "isTest" BOOLEAN NOT NULL DEFAULT false,
     CONSTRAINT "task_canvasId_fkey" FOREIGN KEY ("canvasId") REFERENCES "canvas" ("id") ON DELETE CASCADE ON UPDATE CASCADE,
     CONSTRAINT "task_nodeId_fkey" FOREIGN KEY ("nodeId") REFERENCES "node" ("id") ON DELETE SET NULL ON UPDATE CASCADE,
     CONSTRAINT "task_userId_fkey" FOREIGN KEY ("userId") REFERENCES "user" ("id") ON DELETE CASCADE ON UPDATE CASCADE
+);
+
+-- CreateTable
+CREATE TABLE "FileAsset" (
+    "id" TEXT NOT NULL PRIMARY KEY,
+    "name" TEXT NOT NULL,
+    "createdAt" DATETIME NOT NULL DEFAULT CURRENT_TIMESTAMP,
+    "updatedAt" DATETIME NOT NULL,
+    "width" INTEGER,
+    "height" INTEGER,
+    "bucket" TEXT NOT NULL,
+    "mimeType" TEXT NOT NULL,
+    "key" TEXT NOT NULL,
+    "signedUrl" TEXT,
+    "signedUrlExp" DATETIME,
+    "userId" TEXT NOT NULL,
+    CONSTRAINT "FileAsset_userId_fkey" FOREIGN KEY ("userId") REFERENCES "user" ("id") ON DELETE CASCADE ON UPDATE CASCADE
 );
 
 -- CreateIndex
@@ -186,9 +206,3 @@ CREATE UNIQUE INDEX "node_template_type_key" ON "node_template"("type");
 
 -- CreateIndex
 CREATE UNIQUE INDEX "edge_sourceHandleId_targetHandleId_key" ON "edge"("sourceHandleId", "targetHandleId");
-
--- CreateIndex
-CREATE UNIQUE INDEX "task_publicAccessToken_key" ON "task"("publicAccessToken");
-
--- CreateIndex
-CREATE UNIQUE INDEX "task_taskId_key" ON "task"("taskId");

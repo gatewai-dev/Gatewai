@@ -1,5 +1,5 @@
 import type { FileData, NodeResult, Output } from '@gatewai/types';
-import { PrismaClient, NodeType, DataType } from '@gatewai/db';
+import { PrismaClient, NodeType, DataType, TaskStatus } from '@gatewai/db';
 import { GetCanvasEntities, getInputValue, type CanvasCtxData } from '../repositories/canvas.js';
 import { generateText, type ModelMessage, type UserContent } from 'ai';
 import { xai } from '../ai/xai.js';
@@ -155,10 +155,10 @@ export class NodeWFProcessor {
     return null;
   }
 
-  public async processSelectedNodes(canvasId: string, nodeIds: string[], user: User): Promise<void> {
+  public async processSelectedNodes(canvasId: string, nodeIds: string[], user: User): Promise<Task[]> {
     const data = await GetCanvasEntities(canvasId, user);
 
-    if (nodeIds.length === 0) return;
+    if (nodeIds.length === 0) return [];
 
     const selectedSet = new Set(nodeIds);
 
@@ -176,7 +176,8 @@ export class NodeWFProcessor {
       throw new Error('Cycle detected in selected nodes.');
     }
 
-    // Process each node in topological order
+    const tasks = [];
+
     for (const nodeId of topoOrder) {
       const node = data.nodes.find(n => n.id === nodeId)!;
       const processor = processors[node.type];
@@ -184,7 +185,52 @@ export class NodeWFProcessor {
         throw new Error(`No processor for node type ${node.type}.`);
       }
 
-      processor({ node, data, prisma: this.prisma });
+      // Create task before processing
+      const task = await this.prisma.task.create({
+        data: {
+          name: `Process node ${node.name || node.id}`,
+          canvasId,
+          nodeId,
+          userId: user.id,
+          status: TaskStatus.EXECUTING,
+          startedAt: new Date(),
+          isTest: false,
+        },
+        include: {
+          node: true,
+        },
+      });
+
+      tasks.push(task);
+
+      // Call processor without awaiting
+      processor({ node, data, prisma: this.prisma })
+        .then(async (result) => {
+          const finishedAt = new Date();
+          await this.prisma.task.update({
+            where: { id: task.id },
+            data: {
+              status: result.success ? TaskStatus.COMPLETED : TaskStatus.FAILED,
+              finishedAt,
+              durationMs: finishedAt.getTime() - task.startedAt!.getTime(),
+              error: result.error ? { message: result.error } : null,
+            },
+          });
+        })
+        .catch(async (err: unknown) => {
+          const finishedAt = new Date();
+          await this.prisma.task.update({
+            where: { id: task.id },
+            data: {
+              status: TaskStatus.FAILED,
+              finishedAt,
+              durationMs: finishedAt.getTime() - task.startedAt!.getTime(),
+              error: err instanceof Error ? { message: err.message } : { message: 'Unknown error' },
+            },
+          });
+        });
     }
+
+    return tasks;
   }
 }

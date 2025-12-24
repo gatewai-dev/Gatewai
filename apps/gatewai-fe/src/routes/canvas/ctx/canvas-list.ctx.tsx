@@ -1,7 +1,6 @@
-import { useQuery } from '@tanstack/react-query';
 import { createContext, useContext, useState, type Dispatch, type PropsWithChildren, type SetStateAction } from 'react';
-import { rpcClient } from '@/rpc/client';
 import type { CanvasListRPC } from '@/rpc/types';
+import { useGetCanvasListQuery } from '@/store/canvas';
 
 interface CanvasContextType {
   canvasList: CanvasListRPC | undefined;
@@ -13,38 +12,15 @@ interface CanvasContextType {
 
 const CanvasListContext = createContext<CanvasContextType | undefined>(undefined);
 
-const fetchCanvasList = async (searchQuery?: string): Promise<CanvasListRPC> => {
-  // Replace with your actual API endpoint
-  const response = await rpcClient.api.v1.canvas.$get({
-    query: {
-      q: searchQuery
-    }
-  })
-  if (!response.ok) {
-    throw new Error('Network response was not ok');
-  }
-  const data: Promise<CanvasListRPC> = response.json();
-
-  return data;
-};
-
 const CanvasListProvider = ({
   children,
 }: PropsWithChildren) => {
 
   const [searchQuery, setSearchQuery] = useState<string | undefined>(undefined);
-
-  const {
-    data: canvasList,
-    isLoading,
-    isError,
-  } = useQuery<CanvasListRPC>({
-    queryKey: ['canvasList'],
-    queryFn: () => fetchCanvasList(searchQuery),
-  });
+  const {data, isLoading, isError} = useGetCanvasListQuery({})
 
   const value = {
-    canvasList,
+    canvasList: data,
     isError,
     isLoading,
     searchQuery,

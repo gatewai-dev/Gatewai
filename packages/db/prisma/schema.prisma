@@ -306,15 +306,13 @@ model Task {
 
   user            User         @relation(fields: [userId], references: [id], onDelete: Cascade)
   userId          String
-  payload         Json?
-  output          Json?
   status          TaskStatus?
-  durationMs      Float
+  durationMs      Float?
   finishedAt      DateTime?
   expiredAt       DateTime?
   startedAt       DateTime?
   error           Json?
-  isTest          Boolean
+  isTest          Boolean     @default(false)
 
   @@map("task")
 }

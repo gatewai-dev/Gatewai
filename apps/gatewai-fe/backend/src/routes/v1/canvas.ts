@@ -649,9 +649,9 @@ const canvasRoutes = new Hono<{Variables: AuthHonoTypes}>({
 
         const wfProcessor = new NodeWFProcessor(prisma);
 
-        wfProcessor.processSelectedNodes(canvasId, validated.node_ids, user);
+        const tasks = wfProcessor.processSelectedNodes(canvasId, validated.node_ids, user);
 
-        return c.json({ createdTasks }, 201);
+        return c.json(tasks, 201);
     }
 );
 

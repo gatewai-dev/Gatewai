@@ -5,6 +5,8 @@ export type CanvasDetailsRPC = InferResponseType<typeof rpcClient.api.v1.canvas[
 export type CanvasDetailsNode = CanvasDetailsRPC["nodes"][number];
 
 export type CanvasListRPC = InferResponseType<typeof rpcClient.api.v1.canvas.$get>
+export type CanvasListRPCParams = InferRequestType<typeof rpcClient.api.v1.canvas.$get>
+
 export type CreateCanvasRPC = InferResponseType<typeof rpcClient.api.v1.canvas.$post>
 export type PatchCanvasRPC = InferResponseType<typeof rpcClient.api.v1.canvas[":id"]["$patch"]>
 export type PatchCanvasRPCReq = InferRequestType<typeof rpcClient.api.v1.canvas[":id"]["$patch"]>
@@ -17,3 +19,7 @@ export type UserAssetsListRPC = InferResponseType<typeof rpcClient.api.v1.assets
 export type UserAssetsListRPCParams = InferRequestType<typeof rpcClient.api.v1.assets.$get>
 
 export type UserAssetsUploadRPC = InferResponseType<typeof rpcClient.api.v1.assets.$post>
+
+
+export type CanvasTaskListRPC = InferResponseType<typeof rpcClient.api.v1.tasks[":canvasId"]["$get"]>;
+export type CanvasTaskListRPCParams = InferRequestType<typeof rpcClient.api.v1.tasks[":canvasId"]["$get"]>;
