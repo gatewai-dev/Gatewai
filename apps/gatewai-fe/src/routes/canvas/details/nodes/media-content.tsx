@@ -2,11 +2,11 @@ import { Button } from "@/components/ui/button";
 import type { ImagesResult } from "@gatewai/types";
 import type { NodeProps } from "@xyflow/react";
 import { ChevronLeft, ChevronRight } from "lucide-react";
-import type { GPTImage1Node } from "./node-props";
+import type { AnyNode } from "./node-props";
 import { useAppDispatch } from "@/store";
 import { incrementSelectedResultIndex, decrementSelectedResultIndex } from "@/store/nodes";
 
-function MediaContent({node, result}: {node: NodeProps<GPTImage1Node>, result: ImagesResult}) {
+function MediaContent({node, result}: {node: NodeProps<AnyNode>, result: ImagesResult}) {
     const dispatch = useAppDispatch();
 
     const selectedOutput = result.outputs[result.selectedOutputIndex];

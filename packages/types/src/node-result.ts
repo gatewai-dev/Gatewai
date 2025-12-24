@@ -36,61 +36,66 @@ export type FileData = {
     items: OutputItem<DataType>[];
   }
 
-  export type SelectItemType = {
+  export type MultipleOutputResult = {
     selectedOutputIndex: number;
   }
 
-  export type TextResult = {
+  // Just to avoid weird gymnastics about typing
+  export type SingleOutputResult = {
+    selectedOutputIndex: 0;
+  }
+
+  export type TextResult = SingleOutputResult & {
     outputs: [{ items: [OutputItem<"Text">] }];
   }
 
-  export type ToggleResult = {
+  export type ToggleResult = SingleOutputResult & {
     outputs: [{ items: [OutputItem<"Boolean">] }];
   }
 
-  export type FileResult = SelectItemType & {
+  export type FileResult = MultipleOutputResult & {
     outputs: { items: [OutputItem<"File">] }[];
   }
 
-  export type ImagesResult = SelectItemType & {
+  export type ImagesResult = MultipleOutputResult & {
     outputs: { items: [OutputItem<"Image">] }[];
   }
 
   export type GPTImage1Result = ImagesResult;
 
-  export type MaskResult = SelectItemType & {
+  export type MaskResult = MultipleOutputResult & {
     outputs: { items: [OutputItem<"Mask">] }[];
   }
 
-  export type NumberResult = {
+  export type NumberResult = SingleOutputResult & {
     outputs: [{ items: [OutputItem<"Number">] }];
   }
 
-  export type LLMResult = {
+  export type LLMResult = SingleOutputResult & {
     outputs: [{ items: [OutputItem<"Text">] }];
   }
 
-  export type ResizeResult = {
+  export type ResizeResult = SingleOutputResult & {
     outputs: [{ items: [OutputItem<"Image" | "Video">] }];
   }
 
-  export type ThreeDResult = SelectItemType & {
+  export type ThreeDResult = MultipleOutputResult & {
     outputs: { items: [OutputItem<"File">] }[];
   }
 
-  export type PainterResult = {
+  export type PainterResult = SingleOutputResult & {
     outputs: [{ items: [OutputItem<"Image">, OutputItem<"Mask">] }];
   }
 
-  export type BlurResult = {
+  export type BlurResult = SingleOutputResult & {
     outputs: [{ items: [OutputItem<"Image">] }];
   }
 
-  export type CompositorResult = {
+  export type CompositorResult = SingleOutputResult & {
     outputs: [{ items: [OutputItem<"Image">] }];
   }
 
-  export type DescriberResult = {
+  export type DescriberResult = SingleOutputResult& {
     outputs: [{ items: [OutputItem<"Text">] }];
   }
 

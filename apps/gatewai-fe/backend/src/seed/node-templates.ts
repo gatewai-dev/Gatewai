@@ -141,7 +141,7 @@ export async function SEED_createNodeTemplates(prisma: PrismaClient) {
     data: {
       type: NodeType.Agent,
       displayName: 'Agent',
-      description: 'An agent node with variable inputs starting with text',
+      description: 'A generalist agent capable of generating Text / Image / Audio / Video',
       processEnvironment: ProcessEnvironment.Server,
       tokenPrice: 0.0,
       variableInputs: true,
@@ -150,26 +150,6 @@ export async function SEED_createNodeTemplates(prisma: PrismaClient) {
         create: [
           { type: HandleType.Input, dataType: DataType.Text, required: true, label: 'Instructions' },
           { type: HandleType.Output, dataType: DataType.Text, label: "Text Output" }
-        ]
-      },
-      defaultConfig: undefined,
-    }
-  });
-
-  // ThreeD: not specified, assuming text input for description, file output for 3D model
-  await prisma.nodeTemplate.create({
-    data: {
-      type: NodeType.ThreeD,
-      displayName: 'ThreeD',
-      description: 'A 3D processing node',
-      processEnvironment: ProcessEnvironment.Browser,
-      tokenPrice: 0.0,
-      variableInputs: false,
-      variableOutputs: false,
-      templateHandles: {
-        create: [
-          { type: HandleType.Input, dataType: DataType.Text, required: true, label: "Prompt" },
-          { type: HandleType.Output, dataType: DataType.File, label: "3D File" }
         ]
       },
       defaultConfig: undefined,
@@ -188,7 +168,7 @@ export async function SEED_createNodeTemplates(prisma: PrismaClient) {
       variableOutputs: false,
       templateHandles: {
         create: [
-          { type: HandleType.Input, dataType: DataType.Image, required: true, label: null },
+          { type: HandleType.Input, dataType: DataType.Image, required: true, label: "Background" },
           { type: HandleType.Output, dataType: DataType.Mask, label: null },
           { type: HandleType.Output, dataType: DataType.Image, label: null }
         ]

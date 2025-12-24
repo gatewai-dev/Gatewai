@@ -31,7 +31,7 @@ export const makeSelectEdgeById = (id: string) => createDraftSafeSelector(
   (edges) => edges.entities[id] as EdgeEntityType | undefined
 );
 
-export const makeSelectAllEdges = () => edgeSelectors.selectAll;
+export const makeSelectAllEdges = edgeSelectors.selectAll;
 
 // Extract the action creators object and the reducer
 const { actions, reducer: edgesReducer } = edgesSlice

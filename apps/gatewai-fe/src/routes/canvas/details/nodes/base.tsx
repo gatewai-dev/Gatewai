@@ -43,12 +43,11 @@ const BaseNode = memo((props: NodeProps<Node<CanvasDetailsNode>> & {
         const topPosition = `${(i + 1) * (30) + 20}px`;
         const isConnected = edges.some(edge => edge.target === id && edge.targetHandle === handle.id);
         return (
-          <div 
-            key={handle.id} 
-            className="absolute left-0 z-10" 
+          <div
+            key={handle.id}
+            className="absolute left-0 z-10"
             style={{ top: topPosition, transform: 'translateX(-100%)' }}
           >
-            <div className={`w-3 h-3 ${nodeBackgroundColor} ${isConnected ? color.bg : color.border} border-2 rounded-none flex items-center justify-center transition-all duration-200`}>
               <Handle
                 id={handle.id}
                 type="target"
@@ -56,11 +55,10 @@ const BaseNode = memo((props: NodeProps<Node<CanvasDetailsNode>> & {
                 tabIndex={0}
                 style={{ 
                   background: 'transparent',
-                  border: isConnected ? `2px solid ${color.hex}` : `2px dashed ${color.hex}`,
+                  border: isConnected ? `4px solid ${color.hex}` : `2px dashed ${color.hex}`,
                 }}
-                className={`w-3 h-3 rounded-none left-[50%]! transition-all duration-200 focus:outline-none hover:scale-125`}
+                className={`w-5 h-5 ${color.bg} flex items-center justify-center transition-all duration-200 left-[50%]! rounded-none!`}
               />
-            </div>
             <span className={`absolute left-0 -top-5 translate-x-0 group-hover:-translate-x-full 
               group-focus:-translate-x-full group-focus-within:-translate-x-full in-[.selected]:-translate-x-full 
               ${color.text} px-1 py-1 text-xs opacity-0 group-hover:opacity-100 group-focus:opacity-100
@@ -94,9 +92,8 @@ const BaseNode = memo((props: NodeProps<Node<CanvasDetailsNode>> & {
           <div
             key={handle.id}
             className="absolute right-0 z-10"
-            style={{ top: topPosition, transform: 'translateX(100%)' }}
+            style={{ top: topPosition, }}
           >
-            <div className={`w-3 h-3 ${nodeBackgroundColor} rounded-none flex items-center justify-center transition-all duration-200`}>
               <Handle
                 id={handle.id}
                 type="source"
@@ -104,11 +101,10 @@ const BaseNode = memo((props: NodeProps<Node<CanvasDetailsNode>> & {
                 tabIndex={0}
                 style={{
                   background: 'transparent',
-                  border: isConnected ? `2px solid ${color.hex}` : `2px dashed ${color.hex}`,
+                  border: isConnected ? `4px solid ${color.hex}` : `2px dashed ${color.hex}`,
                 }}
-                className={`w-3 h-3 rounded-none right-[50%]! transition-all duration-200 focus:outline-none hover:scale-125`}
+                className={`w-5 h-5 ${color.bg} flex items-center justify-center transition-all duration-200 rounded-none! right-[50%]!`}
               />
-            </div>
             <span className={`
                 absolute right-0 -top-5 translate-x-0 group-hover:translate-x-full
                 group-focus:translate-x-full group-focus-within:translate-x-full in-[.selected]:translate-x-full
