@@ -4,19 +4,16 @@ import type { AuthHonoTypes } from "../../auth.js";
 import { zValidator } from "@hono/zod-validator";
 import { z } from "zod/v4";
 
-const tasksRouter = new Hono<{Variables: AuthHonoTypes}>({
-    strict: false,
-});
 
 const tasksQueryParams = z.object({
     status: z.string().optional(),
     fromDatetime: z.iso.datetime().optional(),
 })
 
-/**
- * Get tasks for a given canvas
- */
-tasksRouter.get('/:canvasId',
+const tasksRouter = new Hono<{Variables: AuthHonoTypes}>({
+    strict: false,
+})
+.get('/:canvasId',
     zValidator('query', tasksQueryParams),
     zValidator('param', z.object({
         canvasId: z.string(),

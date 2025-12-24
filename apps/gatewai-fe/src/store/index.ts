@@ -6,6 +6,7 @@ import { setupListeners } from '@reduxjs/toolkit/query'
 import { reactFlowReducer } from './rfstate'
 import { handlesReducer } from './handles'
 import { edgesReducer } from './edges'
+import { assetsAPI } from './assets'
 
 export const store = configureStore({
   reducer: {
@@ -14,6 +15,7 @@ export const store = configureStore({
     edges: edgesReducer,
     reactFlow: reactFlowReducer,
     [nodeTemplatesAPI.reducerPath]: nodeTemplatesAPI.reducer,
+    [assetsAPI.reducerPath]: assetsAPI.reducer,
   },
   middleware: (getDefaultMiddleware) =>
     getDefaultMiddleware().concat(nodeTemplatesAPI.middleware),

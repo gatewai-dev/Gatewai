@@ -32,7 +32,7 @@ const NodeMenu = memo((props: NodeProps<Node<CanvasDetailsNode>>) => {
             <DropdownMenuGroup>
                 <DropdownMenuItem onClick={deleteNode}>
                     Delete
-                    <DropdownMenuShortcut>DEL</DropdownMenuShortcut>
+                    <DropdownMenuShortcut className="italic">Delete</DropdownMenuShortcut>
                 </DropdownMenuItem>
             </DropdownMenuGroup>
             </DropdownMenuContent>

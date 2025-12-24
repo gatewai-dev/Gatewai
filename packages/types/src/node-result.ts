@@ -1,21 +1,8 @@
-import type { DataType } from "@gatewai/db";
+import type { DataType, FileAsset } from "@gatewai/db";
 
 
-export type FileData = {
-  /**
-   * Signed AWS/GCS URL
-   */
-    url?: string;
-    name?: string;
-    bucket?: string;
-    mimeType?: string;
-    fileSize?: number;
-    clientFile?: File;
-    mediaSize?: {
-      width: number;
-      height: number;
-    };
-    duration?: number; // in seconds
+  export type FileData = {
+    entity: FileAsset;
   }
 
   export type DataForType<R extends DataType> =

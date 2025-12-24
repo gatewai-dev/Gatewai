@@ -4,11 +4,11 @@ import { useCanvasCtx } from "../ctx/canvas-ctx";
 import { Toolbar } from "./toolbar";
 import { CustomEdge, CustomConnectionLine } from "../nodes/base";
 import { type DragEventHandler } from "react";
-import { NodePalette } from "@/node-templates/node-palette";
 import { useSelectedEntitiesCtx } from "../ctx/selected-entity-ctx";
 import { RightPanel } from "./right-panel";
 import { useAppSelector } from "@/store";
 import { selectRFEdges, selectRFNodes } from "@/store/rfstate";
+import { NodePalette } from "../../node-templates/node-palette";
 
 // Define edge types - you can add more custom edge types here if needed
 const edgeTypes = {

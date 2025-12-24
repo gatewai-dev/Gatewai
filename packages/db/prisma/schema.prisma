@@ -341,6 +341,7 @@ model FileAsset {
   width           Int?
   height          Int?
   bucket          String
+  mimeType        String
   key             String
   signedUrl       String?
   signedUrlExp    DateTime?
