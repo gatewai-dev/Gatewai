@@ -36,9 +36,10 @@ const PainterNodeConfigSchema = z.object({
   bgColor: z.string().regex(/^#[0-9A-F]{6}$/i).optional(),
 }).strict();
 
+const BLUR_TYPES = ['Gaussian', 'Box', 'Motion'] as const;
 // Blur Node
 const BlurNodeConfigSchema = z.object({
-  blurType: z.enum(['Gaussian', 'Box', 'Motion']).optional(),
+  blurType: z.enum(BLUR_TYPES).optional(),
   size: z.number().min(0).max(10).optional(),
 }).strict();
 
@@ -156,4 +157,6 @@ export {
   type ResizeNodeConfig,
   type AllNodeConfig,
   type GPTImage1Config,
+
+  BLUR_TYPES,
 };

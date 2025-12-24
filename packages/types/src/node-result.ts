@@ -6,10 +6,11 @@ export type FileData = {
    * Signed AWS/GCS URL
    */
     url?: string;
-    name: string;
-    bucket: string;
-    mimeType: string;
-    fileSize: number;
+    name?: string;
+    bucket?: string;
+    mimeType?: string;
+    fileSize?: number;
+    clientFile?: File;
     mediaSize?: {
       width: number;
       height: number;

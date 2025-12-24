@@ -1,4 +1,4 @@
-import type { TextResult } from '@gatewai/types';
+import type { AllNodeConfig, NodeResult, TextResult } from '@gatewai/types';
 import type { CanvasDetailsRPC } from "@/rpc/types";
 import { createEntityAdapter, createDraftSafeSelector, createSlice } from "@reduxjs/toolkit"
 
@@ -61,6 +61,24 @@ const nodesSlice = createSlice({
         };
       }
     },
+    updateNodeConfig: (state, action: {payload: {id: string, newConfig: Partial<AllNodeConfig>}}) => {
+      const { id, newConfig } = action.payload;
+      const node = state.entities[id];
+      const existingConfig = node.config as AllNodeConfig;
+      if (node) {
+        node.config = {
+          ...existingConfig,
+          ...newConfig
+        };
+      }
+    },
+    updateNodeResult: (state, action: {payload: {id: string, newResult: NodeResult}}) => {
+      const { id, newResult } = action.payload;
+      const node = state.entities[id];
+      if (node) {
+        node.result = newResult;
+      }
+    },
   },
 })
 
@@ -82,6 +100,6 @@ export const makeSelectAllNodes = nodeSelectors.selectAll;
 // Extract the action creators object and the reducer
 const { actions, reducer: nodesReducer } = nodesSlice
 // Extract and export each action creator by name
-export const { createNodeEntity, updateNodeEntity, deleteNodeEntity, deleteManyNodeEntity, setAllNodeEntities, updateTextNodeValue, incrementSelectedResultIndex, decrementSelectedResultIndex } = actions
+export const { createNodeEntity, updateNodeEntity, updateNodeResult, updateNodeConfig, deleteNodeEntity, deleteManyNodeEntity, setAllNodeEntities, updateTextNodeValue, incrementSelectedResultIndex, decrementSelectedResultIndex } = actions
 // Export the reducer, either as a default or named export
 export { nodesReducer, nodeSelectors }
