@@ -41,7 +41,6 @@ function CanvasHome() {
             nav(`/canvas/${result.id}`);
         } catch (error) {
             console.error('Failed to create canvas:', error);
-            // Optionally add user-facing error handling here
         }
     };
 
@@ -57,7 +56,7 @@ function CanvasHome() {
     }
 
     return (
-        <div className="min-h-screen bg-gradient-to-br from-background via-background to-muted/20">
+        <div className="min-h-screen bg-linear-to-br from-background via-background to-muted/20">
             <div className="max-w-7xl mx-auto p-8 space-y-8">
                 {/* Header Section */}
                 <div className="flex flex-col sm:flex-row justify-between items-start sm:items-center gap-4">
@@ -107,7 +106,6 @@ function CanvasHome() {
                     </div>
                 </div>
 
-                {/* Content Section */}
                 {isLoading ? (
                     view === 'grid' ? (
                         <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 xl:grid-cols-4 gap-6">
@@ -130,7 +128,7 @@ function CanvasHome() {
                                     <Card
                                         key={canvas.id}
                                         onClick={() => nav(`/canvas/${canvas.id}`)}
-                                        className="group hover:shadow-2xl hover:scale-[1.02] transition-all duration-300 cursor-pointer border-2 hover:border-primary/50 bg-gradient-to-br from-card to-card/50 overflow-hidden"
+                                        className="group hover:shadow-2xl hover:scale-[1.02] transition-all duration-300 cursor-pointer border-2 hover:border-primary/50 bg-linear-to-br from-card to-card/50 overflow-hidden"
                                     >
                                         <CardHeader className="space-y-3">
                                             <div className="flex justify-between items-start">
@@ -167,7 +165,7 @@ function CanvasHome() {
                                     <Card
                                         key={canvas.id}
                                         onClick={() => nav(`/canvas/${canvas.id}`)}
-                                        className="group hover:shadow-lg hover:border-primary/50 transition-all duration-200 cursor-pointer bg-gradient-to-r from-card to-card/50"
+                                        className="group hover:shadow-lg hover:border-primary/50 transition-all duration-200 cursor-pointer bg-linear-to-r from-card to-card/50"
                                     >
                                         <CardContent className="p-6">
                                             <div className="flex items-center justify-between">

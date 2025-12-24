@@ -31,7 +31,6 @@ function MediaContent({node, result}: {node: NodeProps<AnyNode>, result: ImagesR
                         slot="media"
                         src={outputItem.data.entity.signedUrl}
                         preload="auto"
-                        muted
                     />
                 </MediaController>
             </div>}
