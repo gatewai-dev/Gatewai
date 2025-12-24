@@ -1,18 +1,17 @@
 import { useCallback } from 'react';
-import { useDropzone } from 'react-dropzone';
+import { useDropzone, type Accept } from 'react-dropzone';
 import { UploadIcon } from 'lucide-react';
-import { Button } from '@/components/ui/button';
 import { useUploadAssetMutation } from '@/store/assets';
 import type { UserAssetsUploadRPC } from '@/rpc/types';
-
 
 interface DropzoneProps {
     className?: string;
     onUploadSuccess?: (asset: UserAssetsUploadRPC) => void;
     onUploadError?: (error: Error) => void;
+    accept?: Accept
 }
 
-export const UploadDropzone = ({ className, onUploadSuccess, onUploadError }: DropzoneProps) => {
+export const UploadDropzone = ({ className, onUploadSuccess, onUploadError, accept }: DropzoneProps) => {
   const [upload, { isLoading }] = useUploadAssetMutation();
 
   const onDrop = useCallback(
@@ -23,8 +22,9 @@ export const UploadDropzone = ({ className, onUploadSuccess, onUploadError }: Dr
         const asset = await upload(file).unwrap();
         onUploadSuccess?.(asset);
       } catch (error) {
+        console.error(error)
         if (error instanceof Error) {
-            onUploadError?.(error);
+          onUploadError?.(error);
         }
       }
     },
@@ -34,18 +34,17 @@ export const UploadDropzone = ({ className, onUploadSuccess, onUploadError }: Dr
   const { getRootProps, getInputProps, isDragActive } = useDropzone({
     onDrop,
     multiple: false,
+    accept
   });
 
   return (
     <div
       {...getRootProps()}
-      className={`flex justify-center items-center border-2 border-dashed rounded-md p-4 cursor-pointer ${className ?? ''}`}
+      className={`flex justify-center items-center border-2 border-dashed rounded-md p-4 text-xs cursor-pointer ${className ?? ''}`}
     >
       <input {...getInputProps()} />
-      <Button variant="ghost" disabled={isLoading}>
         <UploadIcon className="mr-2 h-4 w-4" />
-        {isLoading ? 'Uploading...' : isDragActive ? 'Drop the file here' : 'Upload file'}
-      </Button>
+        {isLoading ? 'Uploading...' : isDragActive ? 'Drop the file here' : 'Click or drag & drop a file here'}
     </div>
   );
 };

@@ -7,6 +7,7 @@ import type { AuthHonoTypes } from "../../auth.js";
 import type { TASK_LLM } from "../../trigger/llm.js";
 import type { TextNodeConfig } from "@gatewai/types";
 import type { XYPosition } from '@xyflow/react';
+import { GetCanvasEntities } from "../../repositories/canvas.js";
 
 const NodeTypes = [
         'Text', 'Preview', 'File', 'Export',
@@ -121,50 +122,13 @@ const canvasRoutes = new Hono<{Variables: AuthHonoTypes}>({
 .get('/:id', async (c) => {
     const id = c.req.param('id');
     const user = c.get('user');
-    
-    const canvas = await prisma.canvas.findFirst({
-        where: {
-            id,
-            userId: user?.id, // Ensure user owns the canvas
-        },
-    });
-
-    const nodes = await prisma.node.findMany({
-        where: {
-            canvasId: canvas?.id,
-        },
-        include: {
-            template: true
-        }
-    })
-
-    if (!canvas) {
-        throw new HTTPException(404, { message: 'Canvas not found' });
+    if (!user) {
+        throw new HTTPException(401, { message: 'User not found' });
     }
 
-    // Get all edges for this canvas separately for cleaner structure
-    const edges = await prisma.edge.findMany({
-        where: {
-            sourceNode: {
-                canvasId: id
-            }
-        }
-    });
+    const response = GetCanvasEntities(id, user);
 
-    const handles = await prisma.handle.findMany({
-        where: {
-            nodeId: {
-                in: nodes.map(m => m.id),
-            }
-        }
-    })
-
-    return c.json({
-        canvas: canvas,
-        edges,
-        nodes,
-        handles,
-    });
+    return c.json(response);
 })
 .patch('/:id',
     zValidator('json', bulkUpdateSchema),
@@ -674,7 +638,7 @@ const canvasRoutes = new Hono<{Variables: AuthHonoTypes}>({
 .post('/:id/process',
     zValidator('json', processSchema),
     async (c) => {
-        const canvasId = c.req.param('canvasId');
+        const canvasId = c.req.param('id');
         const validated = c.req.valid('json');
         const user = c.get('user');
 

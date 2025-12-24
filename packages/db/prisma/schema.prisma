@@ -48,16 +48,6 @@ enum DataType {
   Any // For Input's that accept Any Data
 }
 
-enum Machine {
-  micro // 	0.25	0.25	10GB
-  small_1x
-  small_2x
-  medium_1x
-  medium_2x
-  large_1x
-  large_2x
-}
-
 enum TaskStatus {
   WAITING_FOR_DEPLOY
   QUEUED
@@ -272,7 +262,7 @@ model Edge {
   sourceHandle     Handle       @relation("SourceHandle", fields: [sourceHandleId], references: [id], onDelete: Cascade)
   targetHandle     Handle       @relation("TargetHandle", fields: [targetHandleId], references: [id], onDelete: Cascade)
 
-  // Updated unique constraint to prevent duplicate connections between same handles
+  // Unique constraint to prevent duplicate connections between same handles
   @@unique([sourceHandleId, targetHandleId])
   @@map("edge")
 }

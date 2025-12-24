@@ -1,15 +1,17 @@
-import type { NodeProps } from "@xyflow/react";
 import { useMemo } from "react";
-import type { AnyNode } from "../details/nodes/node-props";
+import type { NodeEntityType } from "@/store/nodes";
 
-const useHasOutputItems = (nodeProps: NodeProps<AnyNode>) => useMemo(() => {
-    const outputs = nodeProps.data?.result?.outputs;
+const useHasOutputItems = (nodeEntity: NodeEntityType | undefined) => useMemo(() => {
+    if (!nodeEntity) {
+        return false;
+    }  
+    const outputs = nodeEntity?.result?.outputs;
     const hasOutputs = outputs && outputs.length ;
     if (hasOutputs) {
         const hasItems = outputs[0].items && outputs[0].items.length > 0;
         return hasItems;
     }
     return false;
-}, [nodeProps.data?.result?.outputs])
+}, [nodeEntity])
 
 export { useHasOutputItems }

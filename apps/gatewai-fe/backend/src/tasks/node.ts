@@ -1,30 +1,92 @@
-import type { TextResult } from '@gatewai/types';
+import type { FileData, NodeResult, Output } from '@gatewai/types';
 import { PrismaClient, type Node as PrismaNode, type Edge as PrismaEdge, type Handle as PrismaHandle, NodeType, DataType, TaskStatus, Prisma } from '@gatewai/db';
+import type { CanvasCtxData } from '../repositories/canvas.js';
+import { generateText, type ModelMessage } from 'ai';
+import { xai } from '../ai/xai.js';
 
-type NodeGetPayload = Prisma.NodeGetPayload<{
-    include: {
-        handles: true,
-        edgesFrom: true, // Outgoing edges (downstream)
-        edgesTo: true,   // Incoming edges (upstream)
-    }
-}>
+type NodeProcessorCtx = {
+  node: CanvasCtxData["nodes"][number]
+  data: CanvasCtxData;
+  prisma: PrismaClient;
+}
 // Assuming a separate processor map for node types. In a real system, this would be implemented or injected.
-type NodeProcessor = (node: NodeGetPayload, inputs: Record<string, any>) => Promise<Record<string, { type: DataType; data: any }>>;
+type NodeProcessor = (ctx: NodeProcessorCtx) => Promise<{success: boolean, error?: string}>;
 
 // Placeholder processors map. Implement actual logic for each NodeType as needed.
+// TODO: cleanup with helper functions
 const processors: Partial<Record<NodeType, NodeProcessor>> = {
   // Example for Text node: Outputs config.text or something similar.
-  [NodeType.Text]: async (node) => {
-    const textContent = node.result as TextResult
-    const outputHandleId = node.handles.find(h => h.type === 'Output')?.id;
-    if (!outputHandleId) {
-        throw new Error("Output handle could not be found");
+  [NodeType.LLM]: async ({node, data, prisma}) => {
+    const connectedEdges = data.edges.filter(f => f.target === node.id);
+    const textEdge = connectedEdges.find(f => f.dataType === 'Text');
+    if (!textEdge) {
+      return { success: false }
     }
+    const textEdgeHandle = data.handles.find(f => f.id === textEdge.sourceHandleId);
+    const textSourceNode = data.nodes.find(f => f.id === textEdgeHandle?.nodeId);
+    const nodeResult = textSourceNode?.result as NodeResult;
+    const outputInstance = nodeResult.outputs[nodeResult.selectedOutputIndex];
+    const outputItem = outputInstance.items.find(f => f.outputHandleId === textEdge.sourceHandleId);
+    const promptValue = outputItem?.data as string
+    const messages: ModelMessage[] = [{role: 'user', content: promptValue}];
+
+
+    const imageEdge = connectedEdges.find(f => f.dataType === 'Text');
+
+    // If an image is connected to node, add it to payload.
+    if (imageEdge != null) {
+      const imageEdge = connectedEdges.find(f => f.dataType === 'Image');
+      if (!imageEdge) {
+        throw new Error("Image edge could not be found.");
+      }
+      const imageEdgeHandle = data.handles.find(f => f.id === imageEdge.sourceHandleId);
+      const imageSourceNode = data.nodes.find(f => f.id === imageEdgeHandle?.nodeId);
+      const imageNodeResult = imageSourceNode?.result as NodeResult;
+      const imgOutputInstance = imageNodeResult.outputs[imageNodeResult.selectedOutputIndex];
+      const imgOutputItem = imgOutputInstance.items.find(f => f.outputHandleId === imageEdge.sourceHandleId);
+      const fileResult = imgOutputItem?.data as FileData;
+      if (!fileResult.entity.signedUrl) {
+        throw new Error("Image URL could not be found.");
+      }
+      const message: ModelMessage = {role: 'user', content: [{type: 'image', image: fileResult.entity.signedUrl}]}
+
+      messages.push(message);
+    }
+
+    const result = await generateText({
+      model: xai('grok-4-1'),
+      messages,
+    });
+
+    // There's only single output handle
+    const outputHandle = data.handles.find(f => f.nodeId === node.id && f.type === 'Output')
+    if (!outputHandle) {
+      throw new Error("Output handle is missing");
+    }
+    const prevResult = node.result as NodeResult;
+    const tempResult = {...prevResult};
+
+    const newGeneration: Output = {
+      items: [{type: 'Text', data: result.text, outputHandleId: outputHandle.id}]
+    }
+
+    tempResult.outputs.push(newGeneration)
+    tempResult.selectedOutputIndex = tempResult.outputs.length - 1;
+
+    // Update node and res
+    await prisma.node.update({
+      data: {
+        result: tempResult
+      },
+      where: {
+        id: node.id,
+      }
+    })
+
     return {
-        [outputHandleId]: { type: DataType.Text, data: textContent || '' } 
+      success: true,
     };
   },
-  // Add implementations for other types like LLM (call API), etc.
 };
 
 export class NodeWFProcessor {

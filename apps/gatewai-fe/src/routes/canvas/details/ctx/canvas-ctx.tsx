@@ -302,6 +302,9 @@ const CanvasProvider = ({
       if (sourceDataType === 'Any' || targetDataType === 'Any') {
         return { isValid: true };
       }
+      if (sourceDataType === 'File' && (targetDataType === 'Image' || targetDataType === 'Video')) {
+        return { isValid: true };
+      }
 
       // Handle VideoLayer - accepts Video or Audio
       if (targetDataType === 'VideoLayer') {

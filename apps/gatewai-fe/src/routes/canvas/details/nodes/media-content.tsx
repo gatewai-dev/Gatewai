@@ -1,9 +1,9 @@
-import type { ImagesResult } from "@gatewai/types";
+import type { FileResult, ImagesResult } from "@gatewai/types";
 import type { NodeProps } from "@xyflow/react";
 import type { AnyNode } from "./node-props";
 import { OutputSelector } from "./misc/output-selector";
 
-function MediaContent({node, result}: {node: NodeProps<AnyNode>, result: ImagesResult}) {
+function MediaContent({node, result}: {node: NodeProps<AnyNode>, result: ImagesResult | FileResult}) {
     const selectedOutput = result.outputs[result.selectedOutputIndex];
     const imagePart = selectedOutput.items[0]
     if (!imagePart.data.entity.signedUrl) {

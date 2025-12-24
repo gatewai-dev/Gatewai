@@ -23,7 +23,7 @@ const GPTImage1NodeComponent = memo((props: NodeProps<GPTImage1Node>) => {
 
   const result = node?.result as unknown as GPTImage1Result;
   const { runNodes } = useCanvasCtx();
-  const showResult = useHasOutputItems(props);
+  const showResult = useHasOutputItems(node);
 
   return (
     <BaseNode {...props}>

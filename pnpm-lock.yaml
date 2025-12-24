@@ -26,6 +26,9 @@ importers:
       '@ai-sdk/google':
         specifier: ^2.0.39
         version: 2.0.39(zod@3.25.67)
+      '@ai-sdk/xai':
+        specifier: ^2.0.38
+        version: 2.0.38(zod@3.25.67)
       '@aws-sdk/client-s3':
         specifier: ^3.937.0
         version: 3.937.0
@@ -390,6 +393,12 @@ packages:
     peerDependencies:
       zod: ^3.25.76 || ^4.1.8
 
+  '@ai-sdk/openai-compatible@1.0.27':
+    resolution: {integrity: sha512-bpYruxVLhrTbVH6CCq48zMJNeHu6FmHtEedl9FXckEgcIEAi036idFhJlcRwC1jNCwlacbzb8dPD7OAH1EKJaQ==}
+    engines: {node: '>=18'}
+    peerDependencies:
+      zod: ^3.25.76 || ^4.1.8
+
   '@ai-sdk/provider-utils@3.0.17':
     resolution: {integrity: sha512-TR3Gs4I3Tym4Ll+EPdzRdvo/rc8Js6c4nVhFLuvGLX/Y4V9ZcQMa/HTiYsHEgmYrf1zVi6Q145UEZUfleOwOjw==}
     engines: {node: '>=18'}
@@ -399,6 +408,12 @@ packages:
   '@ai-sdk/provider@2.0.0':
     resolution: {integrity: sha512-6o7Y2SeO9vFKB8lArHXehNuusnpddKPk7xqL7T2/b+OvXMRIXUO1rR4wcv1hAFUAT9avGZshty3Wlua/XA7TvA==}
     engines: {node: '>=18'}
+
+  '@ai-sdk/xai@2.0.38':
+    resolution: {integrity: sha512-K400Iywn0wkmYlzk/C7ZnQT49rr5LKPw2bFtsyAfdIAdIsEbvkGmnUIPWcBtq12Ao4c7+RAQmeip5KFB/DnsNQ==}
+    engines: {node: '>=18'}
+    peerDependencies:
+      zod: ^3.25.76 || ^4.1.8
 
   '@ampproject/remapping@2.3.0':
     resolution: {integrity: sha512-30iZtAPgz+LTIYoeivqYo853f02jBYSd5uGnGpkFV0M3xOt9aN73erkgYAmZU43x4VfqcnLxW9Kpg3R5LC4YYw==}
@@ -7317,6 +7332,12 @@ snapshots:
       '@ai-sdk/provider-utils': 3.0.17(zod@3.25.67)
       zod: 3.25.67
 
+  '@ai-sdk/openai-compatible@1.0.27(zod@3.25.67)':
+    dependencies:
+      '@ai-sdk/provider': 2.0.0
+      '@ai-sdk/provider-utils': 3.0.17(zod@3.25.67)
+      zod: 3.25.67
+
   '@ai-sdk/provider-utils@3.0.17(zod@3.25.67)':
     dependencies:
       '@ai-sdk/provider': 2.0.0
@@ -7327,6 +7348,13 @@ snapshots:
   '@ai-sdk/provider@2.0.0':
     dependencies:
       json-schema: 0.4.0
+
+  '@ai-sdk/xai@2.0.38(zod@3.25.67)':
+    dependencies:
+      '@ai-sdk/openai-compatible': 1.0.27(zod@3.25.67)
+      '@ai-sdk/provider': 2.0.0
+      '@ai-sdk/provider-utils': 3.0.17(zod@3.25.67)
+      zod: 3.25.67
 
   '@ampproject/remapping@2.3.0':
     dependencies:
