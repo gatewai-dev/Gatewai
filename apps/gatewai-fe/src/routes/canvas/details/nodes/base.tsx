@@ -5,6 +5,7 @@ import { useAppSelector } from '@/store';
 import { makeSelectHandleById, makeSelectHandleByNodeId } from '@/store/handles';
 import { dataTypeColors } from '@/config';
 import { NodeMenu } from './node-menu';
+import { makeSelectEdgeById } from '@/store/edges';
 
 
 const getColorForType = (type: string) => {
@@ -57,13 +58,14 @@ const BaseNode = memo((props: NodeProps<Node<CanvasDetailsNode>> & {
                   background: 'transparent',
                   border: isConnected ? `4px solid ${color.hex}` : `2px dashed ${color.hex}`,
                 }}
-                className={`w-5 h-5 ${color.bg} flex items-center justify-center transition-all duration-200 left-[50%]! rounded-none!`}
+                className={`w-5 h-5 flex items-center justify-center transition-all duration-200 left-[50%]! rounded-none!`}
               />
             <span className={`absolute left-0 -top-5 translate-x-0 group-hover:-translate-x-full 
               group-focus:-translate-x-full group-focus-within:-translate-x-full in-[.selected]:-translate-x-full 
-              ${color.text} px-1 py-1 text-xs opacity-0 group-hover:opacity-100 group-focus:opacity-100
+              px-1 py-1 text-xs opacity-0 group-hover:opacity-100 group-focus:opacity-100
                 group-focus-within:opacity-100 in-[.selected]:opacity-100 transition-all duration-200 pointer-events-none
-                whitespace-nowrap font-medium text-right`}>
+                whitespace-nowrap font-medium text-right`}
+                style={{ color: color.hex }}>
               {handle.label || handle.dataType} {handle.required && '*'}
             </span>
           </div>
@@ -103,14 +105,15 @@ const BaseNode = memo((props: NodeProps<Node<CanvasDetailsNode>> & {
                   background: 'transparent',
                   border: isConnected ? `4px solid ${color.hex}` : `2px dashed ${color.hex}`,
                 }}
-                className={`w-5 h-5 ${color.bg} flex items-center justify-center transition-all duration-200 rounded-none! right-[50%]!`}
+                className={`w-5 h-5 flex items-center justify-center transition-all duration-200 rounded-none! right-[50%]!`}
               />
             <span className={`
                 absolute right-0 -top-5 translate-x-0 group-hover:translate-x-full
                 group-focus:translate-x-full group-focus-within:translate-x-full in-[.selected]:translate-x-full
-                ${color.text} px-1 py-1 text-xs opacity-0 group-hover:opacity-100
+                px-1 py-1 text-xs opacity-0 group-hover:opacity-100
                 group-focus:opacity-100 group-focus-within:opacity-100 in-[.selected]:opacity-100
-                transition-all duration-200 pointer-events-none whitespace-nowrap font-medium text-left`}>
+                transition-all duration-200 pointer-events-none whitespace-nowrap font-medium text-left`}
+                style={{ color: color.hex }}>
               {handle.label || handle.dataType}
             </span>
           </div>
@@ -198,7 +201,6 @@ interface CustomEdgeProps extends EdgeProps {
   targetPosition: Position;
   style?: React.CSSProperties;
   markerEnd?: string;
-  data?: { dataType?: string };
 }
 
 const CustomEdge = memo(({
@@ -211,9 +213,8 @@ const CustomEdge = memo(({
   targetPosition,
   style = {},
   markerEnd,
-  data,
 }: CustomEdgeProps): JSX.Element => {
-  const [edgePath] = getSmoothStepPath({
+  const [edgePath] = getBezierPath({
     sourceX,
     sourceY,
     sourcePosition,
@@ -222,16 +223,30 @@ const CustomEdge = memo(({
     targetPosition,
   });
 
-  const dataType = data?.dataType || 'Any';
-  const color = getColorForType(dataType).hex;
+  const edge = useAppSelector(makeSelectEdgeById(id));
+
+  const sourceHandle = useAppSelector(makeSelectHandleById(edge?.sourceHandleId ?? undefined))
+  const targetHandle = useAppSelector(makeSelectHandleById(edge?.targetHandleId ?? undefined))
+
+  const sourceDataType = sourceHandle?.dataType || 'Any';
+  const targetDataType = targetHandle?.dataType || 'Any';
+  const sourceColor = getColorForType(sourceDataType).hex;
+  const targetColor = getColorForType(targetDataType).hex;
+  const gradientId = `gradient-${id}`;
 
   return (
     <g>
+      <defs>
+        <linearGradient id={gradientId} x1={sourceX} y1={sourceY} x2={targetX} y2={targetY} gradientUnits="userSpaceOnUse">
+          <stop offset="0%" stopColor={sourceColor} />
+          <stop offset="100%" stopColor={targetColor} />
+        </linearGradient>
+      </defs>
       <BaseEdge
         id={id}
         style={{
           ...style,
-          stroke: color,
+          stroke: `url(#${gradientId})`,
           strokeWidth: 3,
         }}
         className="react-flow__edge-path fill-none hover:stroke-[5px]! hover:opacity-80"
@@ -243,7 +258,7 @@ const CustomEdge = memo(({
           key={`particle-${i}`}
           rx="5"
           ry="1.2"
-          fill={color}
+          fill={sourceColor}
         >
           <animateMotion
             begin={`${i * (ANIMATE_DURATION / PARTICLE_COUNT)}s`}

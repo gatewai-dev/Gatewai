@@ -35,6 +35,16 @@ function CanvasHome() {
     const { createCanvas, isCreating } = useCanvasCreationCtx();
     const [view, setView] = useState<'grid' | 'list'>('grid');
 
+    const handleCreateCanvas = async () => {
+        try {
+            const result = await createCanvas('untitled').unwrap();
+            nav(`/canvas/${result.id}`);
+        } catch (error) {
+            console.error('Failed to create canvas:', error);
+            // Optionally add user-facing error handling here
+        }
+    };
+
     if (isError) {
         return (
             <div className="flex flex-col items-center justify-center h-full text-red-500">
@@ -56,7 +66,7 @@ function CanvasHome() {
                         <p className="text-muted-foreground">Manage and organize your creative canvases</p>
                     </div>
                     <Button 
-                        onClick={() => createCanvas('untitled')}
+                        onClick={handleCreateCanvas}
                         disabled={isCreating}
                         size="lg"
                         className="bg-primary hover:bg-primary/90 shadow-lg hover:shadow-xl transition-all"
@@ -202,7 +212,7 @@ function CanvasHome() {
                             Get started by creating your first canvas and bring your ideas to life
                         </p>
                         <Button 
-                            onClick={() => createCanvas('untitled')}
+                            onClick={handleCreateCanvas}
                             disabled={isCreating}
                             size="lg"
                         >

@@ -66,13 +66,11 @@ function resolveSourceValue(
 
   const sourceNode = data.nodes.find((n) => n.id === sourceHandle.nodeId);
   if (!sourceNode) throw new Error('Source node missing');
-
   const result = sourceNode.result as NodeResult | null;
   if (!result || result.outputs.length === 0) return null;
 
   const selected = result.outputs[result.selectedOutputIndex ?? 0];
   const item = selected.items.find((i) => i.outputHandleId === edge.sourceHandleId);
-
   return item?.data ?? null;
 }
 
@@ -90,8 +88,11 @@ function getInputValue(
   options: InputFilterOptions
 ): any {
   let incoming = data.edges.filter(
-    (e) => e.target === targetNodeId && e.dataType === options.dataType
-  );
+    (e) => e.target === targetNodeId
+  ).filter((e) => {
+    const targetHandle = data.handles.find((h) => h.id === e.targetHandleId);
+    return targetHandle?.dataType === options.dataType;
+  });
 
   if (options.label) {
     incoming = incoming.filter((e) => {
@@ -112,7 +113,6 @@ function getInputValue(
       `Multiple ${options.dataType} edges${options.label ? ` with label "${options.label}"` : ''} connected to node ${targetNodeId}. Using the first one.`
     );
   }
-
   const value = resolveSourceValue(data, incoming[0]);
   if ((value === null || value === undefined) && required) {
     throw new Error(`No value received from ${options.dataType} input${options.label ? ` with label "${options.label}"` : ''}`);

@@ -8,6 +8,9 @@ export type CanvasListRPC = InferResponseType<typeof rpcClient.api.v1.canvas.$ge
 export type CanvasListRPCParams = InferRequestType<typeof rpcClient.api.v1.canvas.$get>
 
 export type CreateCanvasRPC = InferResponseType<typeof rpcClient.api.v1.canvas.$post>
+export type CreateCanvasRPCParams = InferRequestType<typeof rpcClient.api.v1.canvas.$post>
+
+
 export type PatchCanvasRPC = InferResponseType<typeof rpcClient.api.v1.canvas[":id"]["$patch"]>
 export type PatchCanvasRPCReq = InferRequestType<typeof rpcClient.api.v1.canvas[":id"]["$patch"]>
 

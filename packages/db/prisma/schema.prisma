@@ -253,7 +253,6 @@ model Edge {
   target           String
   sourceHandleId   String
   targetHandleId   String
-  dataType         DataType
   createdAt        DateTime     @default(now())
   updatedAt        DateTime     @updatedAt
 

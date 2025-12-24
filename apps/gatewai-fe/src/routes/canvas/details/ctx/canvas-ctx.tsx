@@ -34,7 +34,7 @@ interface CanvasContextType {
   isLoading: boolean;
   isError: boolean;
   onConnect: OnConnect;
-  runNodes: (nodeIds: Node["id"][]) => Promise<void>;
+  runNodes: (node_ids: Node["id"][]) => Promise<void>;
   rfInstance: RefObject<ReactFlowInstance | undefined>;
   createNewNode: (template: NodeTemplateListItemRPC, position: XYPosition) => void;
   onNodesDelete: (deleted: Node[]) => void
@@ -151,7 +151,7 @@ const CanvasProvider = ({
   });
 
   const { mutateAsync: runNodesMutateAsync } = useMutation({
-    mutationFn: async (body: { nodeIds: CanvasDetailsNode["id"][] }) => {
+    mutationFn: async (body: { node_ids: CanvasDetailsNode["id"][] }) => {
       const response = await fetch(`/api/v1/canvas/${canvasId}/process`, {
         method: 'POST',
         headers: { 'Content-Type': 'application/json' },
@@ -345,7 +345,6 @@ const CanvasProvider = ({
       if (!sourceHandle) {
         throw new Error("Source handle could not be found");
       }
-      const dataType = sourceHandle.dataType;
       const newEdges = (() => {
         // Find if there's an existing edge connected to the same target and targetHandle
         const existingEdge = edges.find(
@@ -368,7 +367,6 @@ const CanvasProvider = ({
             target: params.target,
             sourceHandle: params.sourceHandle || undefined,
             targetHandle: params.targetHandle || undefined,
-            data: { dataType },
           } as Edge,
         ];
 
@@ -382,7 +380,6 @@ const CanvasProvider = ({
         target: ne.target,
         targetHandleId: ne.targetHandle!,
         sourceHandleId: ne.sourceHandle!,
-        dataType: ne.data?.dataType as EdgeEntityType["dataType"],
         createdAt: new Date().toISOString(),
         updatedAt: new Date().toISOString(),
       }))
@@ -413,11 +410,11 @@ const CanvasProvider = ({
     [rfEdges, rfNodes, dispatch, handleEntities, scheduleSave],
   );
 
-  const runNodes = useCallback(async (nodeIds: Node["id"][]) => {
+  const runNodes = useCallback(async (node_ids: Node["id"][]) => {
     // Save before running
     await save();
 
-    await runNodesMutateAsync({ nodeIds });
+    await runNodesMutateAsync({ node_ids });
   }, [save, runNodesMutateAsync]);
 
   useEffect(() => {

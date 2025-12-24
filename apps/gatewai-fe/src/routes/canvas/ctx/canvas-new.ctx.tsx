@@ -1,40 +1,18 @@
-import { useMutation, useQueryClient } from '@tanstack/react-query';
 import { createContext, useContext, type PropsWithChildren } from 'react';
-import { useNavigate } from 'react-router';
-import { rpcClient } from '@/rpc/client';
-import type { CreateCanvasRPC } from '@/rpc/types';
-
-const createCanvas = async (): Promise<CreateCanvasRPC> => {
-  // Replace with your actual API endpoint
-  const response = await rpcClient.api.v1.canvas.$post()
-  if (!response.ok) {
-    throw new Error('Network response was not ok');
-  }
-  return response.json();
-};
-
+import { useCreateCanvasMutation } from '@/store/canvas';
 interface CanvasCreationContextType {
-  createCanvas: (name: string) => void;
+  createCanvas: (name: string) => ReturnType<ReturnType<typeof useCreateCanvasMutation>[0]>;
   isCreating: boolean;
 }
 
 const CanvasCreationContext = createContext<CanvasCreationContextType | undefined>(undefined);
 
 const CanvasCreationProvider = ({ children }: PropsWithChildren) => {
-  const queryClient = useQueryClient();
-  const nav = useNavigate();
-
-  const { mutate, isPending } = useMutation<CreateCanvasRPC, Error, string>({
-    mutationFn: createCanvas,
-    onSuccess: (canvas: CreateCanvasRPC) => {
-      queryClient.invalidateQueries({ queryKey: ['canvasList'] });
-      nav(`/canvas/${canvas.id}`);
-    },
-  });
+  const [mutate, {isLoading}] = useCreateCanvasMutation();
 
   const value = {
     createCanvas: mutate,
-    isCreating: isPending,
+    isCreating: isLoading,
   };
 
   return <CanvasCreationContext.Provider value={value}>{children}</CanvasCreationContext.Provider>;

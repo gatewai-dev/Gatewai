@@ -1,7 +1,7 @@
-import type { FileData, NodeResult, Output } from '@gatewai/types';
+import type { FileData, NodeResult, Output, Task } from '@gatewai/types';
 import { PrismaClient, NodeType, DataType, TaskStatus } from '@gatewai/db';
 import { GetCanvasEntities, getInputValue, type CanvasCtxData } from '../repositories/canvas.js';
-import { generateText, type ModelMessage, type UserContent } from 'ai';
+import { generateText, type ModelMessage, type TextPart, type UserContent } from 'ai';
 import { xai } from '../ai/xai.js';
 import { type User } from "better-auth";
 
@@ -16,10 +16,11 @@ type NodeProcessor = (ctx: NodeProcessorCtx) => Promise<{ success: boolean, erro
 const processors: Partial<Record<NodeType, NodeProcessor>> = {
   [NodeType.LLM]: async ({ node, data, prisma }) => {
     try {
+      console.log('RUNNING LLM PROCESSOR')
       const systemPrompt = getInputValue(data, node.id, false, { dataType: DataType.Text, label: 'System Prompt' }) as string | null;
       const userPrompt = getInputValue(data, node.id, true, { dataType: DataType.Text, label: 'Prompt' }) as string;
-      const imageFileData = getInputValue(data, node.id, false, { dataType: DataType.Image }) as FileData | null;
-
+      const imageFileData = getInputValue(data, node.id, false, { dataType: DataType.Image, label: 'Image' }) as FileData | null;
+      console.log({userPrompt})
       // Build messages
       const messages: ModelMessage[] = [];
 
@@ -30,12 +31,15 @@ const processors: Partial<Record<NodeType, NodeProcessor>> = {
       const userContent: UserContent = [];
 
       if (userPrompt) {
-        messages.push({
-          role: 'user',
-          content: userPrompt
-        });
+        const textPart: TextPart = {
+          type: 'text',
+          text: userPrompt
+        }
+        userContent.push(textPart);
       }
+      console.log({imageFileData})
       if (imageFileData?.entity?.signedUrl) {
+        console.log({imageFileData, ww: imageFileData?.entity?.signedUrl})
         userContent.push({type: 'image', image: imageFileData?.entity?.signedUrl});
       }
 
@@ -50,11 +54,12 @@ const processors: Partial<Record<NodeType, NodeProcessor>> = {
             ? (userContent[0] as string)
             : userContent,
       });
-
+      console.log({messages})
       const result = await generateText({
-        model: xai('grok-4-1'),
+        model: xai('grok-4-1-fast-non-reasoning'),
         messages,
       });
+      console.log({result})
 
       const outputHandle = data.handles.find(
         (h) => h.nodeId === node.id && h.type === 'Output'
@@ -65,8 +70,8 @@ const processors: Partial<Record<NodeType, NodeProcessor>> = {
         outputs: [],
         selectedOutputIndex: 0,
       };
-      const newResult = structuredClone(prevResult);
-
+      const newResult =  structuredClone(prevResult);
+      console.log(result.text)
       const newGeneration: Output = {
         items: [
           {
@@ -179,6 +184,7 @@ export class NodeWFProcessor {
     const tasks = [];
 
     for (const nodeId of topoOrder) {
+      console.log({topoOrder})
       const node = data.nodes.find(n => n.id === nodeId)!;
       const processor = processors[node.type];
       if (!processor) {
@@ -206,6 +212,7 @@ export class NodeWFProcessor {
       // Call processor without awaiting
       processor({ node, data, prisma: this.prisma })
         .then(async (result) => {
+          console.log({result});
           const finishedAt = new Date();
           await this.prisma.task.update({
             where: { id: task.id },
@@ -218,6 +225,7 @@ export class NodeWFProcessor {
           });
         })
         .catch(async (err: unknown) => {
+          console.log({err});
           const finishedAt = new Date();
           await this.prisma.task.update({
             where: { id: task.id },

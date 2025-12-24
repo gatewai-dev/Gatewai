@@ -169,8 +169,8 @@ export async function SEED_createNodeTemplates(prisma: PrismaClient) {
       templateHandles: {
         create: [
           { type: HandleType.Input, dataType: DataType.Image, required: true, label: "Background" },
-          { type: HandleType.Output, dataType: DataType.Mask, label: null },
-          { type: HandleType.Output, dataType: DataType.Image, label: null }
+          { type: HandleType.Output, dataType: DataType.Mask, label: 'Mask' },
+          { type: HandleType.Output, dataType: DataType.Image, label: 'Image' }
         ]
       },
       defaultConfig: undefined,
@@ -189,7 +189,7 @@ export async function SEED_createNodeTemplates(prisma: PrismaClient) {
       variableOutputs: false,
       templateHandles: {
         create: [
-          { type: HandleType.Input, dataType: DataType.Image, required: true, label: null },
+          { type: HandleType.Input, dataType: DataType.Image, required: true, label: 'Image' },
           { type: HandleType.Output, dataType: DataType.Image, label: "Blurred Image" }
         ]
       },
@@ -234,8 +234,8 @@ export async function SEED_createNodeTemplates(prisma: PrismaClient) {
       variableOutputs: false,
       templateHandles: {
         create: [
-          { type: HandleType.Input, dataType: DataType.Image, required: true, label: null },
-          { type: HandleType.Output, dataType: DataType.Text, label: null }
+          { type: HandleType.Input, dataType: DataType.Image, required: true, label: 'Image' },
+          { type: HandleType.Output, dataType: DataType.Text, label: 'Text' }
         ]
       },
       defaultConfig: undefined,
@@ -254,8 +254,8 @@ export async function SEED_createNodeTemplates(prisma: PrismaClient) {
       variableOutputs: false,
       templateHandles: {
         create: [
-          { type: HandleType.Input, dataType: DataType.Text, required: true, label: null },
-          { type: HandleType.Output, dataType: DataType.Text, label: null }
+          { type: HandleType.Input, dataType: DataType.Text, required: true, label: 'Input' },
+          { type: HandleType.Output, dataType: DataType.Text, label: 'Output' }
         ]
       },
       defaultConfig: undefined,
@@ -294,7 +294,7 @@ export async function SEED_createNodeTemplates(prisma: PrismaClient) {
       variableOutputs: false,
       templateHandles: {
         create: [
-          { type: HandleType.Output, dataType: DataType.Number, label: null }
+          { type: HandleType.Output, dataType: DataType.Number, label: 'Number' }
         ]
       },
       defaultConfig: undefined,
@@ -313,8 +313,8 @@ export async function SEED_createNodeTemplates(prisma: PrismaClient) {
       variableOutputs: false,
       templateHandles: {
         create: [
-          { type: HandleType.Input, dataType: DataType.Text, required: true, label: null },
-          { type: HandleType.Output, dataType: DataType.Image, label: null }
+          { type: HandleType.Input, dataType: DataType.Text, required: true, label: 'Prompt' },
+          { type: HandleType.Output, dataType: DataType.Image, label: 'Image' }
         ]
       },
       defaultConfig: {
@@ -330,7 +330,7 @@ export async function SEED_createNodeTemplates(prisma: PrismaClient) {
     data: {
       type: NodeType.LLM,
       displayName: 'LLM',
-      description: 'An LLM node with prompt and optional inputs',
+      description: 'Run a LLM model',
       processEnvironment: ProcessEnvironment.Server,
       tokenPrice: 0.0,
       variableInputs: false,
@@ -340,7 +340,7 @@ export async function SEED_createNodeTemplates(prisma: PrismaClient) {
           { type: HandleType.Input, dataType: DataType.Text, required: true, label: 'Prompt' },
           { type: HandleType.Input, dataType: DataType.Text, required: false, label: 'System Prompt' },
           { type: HandleType.Input, dataType: DataType.Image, required: false, label: 'Image' },
-          { type: HandleType.Output, dataType: DataType.Text, label: null }
+          { type: HandleType.Output, dataType: DataType.Text, label: 'Text' }
         ]
       },
       defaultConfig: {

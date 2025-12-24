@@ -23,7 +23,7 @@ const handleSchema = z.object({
     id: z.string().optional(),
     type: z.enum(['Input', 'Output']), // From HandleType enum
     dataType: z.enum(DataTypes),
-    label: z.string().optional().nullable(),
+    label: z.string().optional(),
     order: z.number().default(0),
     required: z.boolean().default(false),
     templateHandleId: z.string().optional().nullable(),
@@ -57,7 +57,6 @@ const edgeSchema = z.object({
     target: z.string(),
     sourceHandleId: z.string().optional(),
     targetHandleId: z.string().optional(),
-    dataType: z.enum(DataTypes),
 });
 
 const processSchema = z.object({
@@ -127,7 +126,7 @@ const canvasRoutes = new Hono<{Variables: AuthHonoTypes}>({
         throw new HTTPException(401, { message: 'User not found' });
     }
 
-    const response = GetCanvasEntities(id, user);
+    const response = await GetCanvasEntities(id, user);
 
     return c.json(response);
 })
@@ -425,7 +424,6 @@ const canvasRoutes = new Hono<{Variables: AuthHonoTypes}>({
                     sourceHandleId: newEdge.sourceHandleId!,
                     target: newEdge.target,
                     targetHandleId: newEdge.targetHandleId!,
-                    dataType: newEdge.dataType,
                 })),
             });
 
@@ -435,7 +433,6 @@ const canvasRoutes = new Hono<{Variables: AuthHonoTypes}>({
                     sourceHandleId: uEdge.sourceHandleId!,
                     target: uEdge.target,
                     targetHandleId: uEdge.targetHandleId!,
-                    dataType: uEdge.dataType,
                 },
                 where: {
                     id: uEdge.id,
@@ -624,7 +621,6 @@ const canvasRoutes = new Hono<{Variables: AuthHonoTypes}>({
                 target: newTarget,
                 sourceHandleId: newSourceHandleId,
                 targetHandleId: newTargetHandleId,
-                dataType: edge.dataType,
             }
         });
     }).filter(Boolean);
@@ -649,7 +645,7 @@ const canvasRoutes = new Hono<{Variables: AuthHonoTypes}>({
 
         const wfProcessor = new NodeWFProcessor(prisma);
 
-        const tasks = wfProcessor.processSelectedNodes(canvasId, validated.node_ids, user);
+        const tasks = await wfProcessor.processSelectedNodes(canvasId, validated.node_ids, user);
 
         return c.json(tasks, 201);
     }
