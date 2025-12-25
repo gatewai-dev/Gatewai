@@ -1,17 +1,16 @@
 import { createApi, fetchBaseQuery } from '@reduxjs/toolkit/query/react'
 import { rpcClient } from '@/rpc/client'
-import type { CanvasListRPC, CanvasListRPCParams, CreateCanvasRPC, CreateCanvasRPCParams } from '@/rpc/types';
+import type { CanvasDetailsRPC, CanvasDetailsRPCParams, PatchCanvasRPC, PatchCanvasRPCParams, ProcessNodesRPC, ProcessNodesRPCParams } from '@/rpc/types';
 
-// Define a service using a base URL and expected endpoints
-export const canvasListAPI = createApi({
-    reducerPath: 'canvasListAPI',
+export const canvasDetailsAPI = createApi({
+    reducerPath: 'canvasDetailsAPI',
     baseQuery: fetchBaseQuery({
         baseUrl: `/api/v1/canvas`,
     }),
     endpoints: (build) => ({
-        getCanvasList: build.query<CanvasListRPC, CanvasListRPCParams>({
+        getCanvasDetails: build.query<CanvasDetailsRPC, CanvasDetailsRPCParams>({
             queryFn: async (params) => {
-                const response = await rpcClient.api.v1["canvas"].$get(params);
+                const response = await rpcClient.api.v1["canvas"][":id"].$get(params);
                 if (!response.ok) {
                     return { error: { status: response.status, data: await response.text() } };
                 }
@@ -19,9 +18,19 @@ export const canvasListAPI = createApi({
                 return { data };
             }
         }),
-        createCanvas: build.mutation<CreateCanvasRPC, CreateCanvasRPCParams>({
+        patchCanvas: build.mutation<PatchCanvasRPC, PatchCanvasRPCParams>({
             queryFn: async (params) => {
-                const response = await rpcClient.api.v1["canvas"].$post(params);
+                const response = await rpcClient.api.v1["canvas"][":id"].$patch(params);
+                if (!response.ok) {
+                    return { error: { status: response.status, data: await response.text() } };
+                }
+                const data = await response.json();
+                return { data };
+            }
+        }),
+        processNodesMutation: build.mutation<ProcessNodesRPC, ProcessNodesRPCParams>({
+            queryFn: async (params) => {
+                const response = await rpcClient.api.v1["canvas"][":id"]["process"].$post(params);
                 if (!response.ok) {
                     return { error: { status: response.status, data: await response.text() } };
                 }
@@ -32,6 +41,4 @@ export const canvasListAPI = createApi({
     }),
 })
 
-// Export hooks for usage in functional components, which are
-// auto-generated based on the defined endpoints
-export const { useGetCanvasListQuery, useCreateCanvasMutation } = canvasListAPI
+export const { useGetCanvasDetailsQuery, usePatchCanvasMutation, useProcessNodesMutationMutation } = canvasDetailsAPI

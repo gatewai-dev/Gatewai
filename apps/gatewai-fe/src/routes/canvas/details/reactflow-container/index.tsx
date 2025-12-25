@@ -57,7 +57,7 @@ function ReactflowContainer({ children }: ReactFlowProps) {
         zoomOnScroll={true}
         nodesDraggable={true}
         elementsSelectable={true}
-        panOnDrag={true}
+        panOnDrag={false}
         selectionOnDrag={true}
         selectNodesOnDrag
         selectionMode={SelectionMode.Partial}

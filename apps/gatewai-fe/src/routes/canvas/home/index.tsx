@@ -12,7 +12,7 @@ const formatTimeAgo = (date: Date) => {
         hour: 3600,
         minute: 60
     };
-    
+
     for (const [unit, secondsInUnit] of Object.entries(intervals)) {
         const interval = Math.floor(seconds / secondsInUnit);
         if (interval >= 1) {
@@ -26,13 +26,11 @@ import { Button } from "@/components/ui/button";
 import { Card, CardHeader, CardTitle, CardContent } from "@/components/ui/card";
 import { Input } from "@/components/ui/input";
 import { Skeleton } from "@/components/ui/skeleton";
-import { useCanvasCreationCtx } from "../ctx/canvas-new.ctx";
 import { useNavigate } from "react-router";
 
 function CanvasHome() {
-    const { canvasList, isLoading, isError, searchQuery, setSearchQuery } = useCanvasListCtx();
+    const { canvasList, isLoading, isError, searchQuery, setSearchQuery, createCanvas, isCreating } = useCanvasListCtx();
     const nav = useNavigate();
-    const { createCanvas, isCreating } = useCanvasCreationCtx();
     const [view, setView] = useState<'grid' | 'list'>('grid');
 
     const handleCreateCanvas = async () => {

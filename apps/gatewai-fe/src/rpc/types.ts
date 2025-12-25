@@ -2,6 +2,7 @@ import type { InferResponseType, InferRequestType } from "hono";
 import type { rpcClient } from "./client";
 
 export type CanvasDetailsRPC = InferResponseType<typeof rpcClient.api.v1.canvas[":id"]["$get"]>;
+export type CanvasDetailsRPCParams = InferRequestType<typeof rpcClient.api.v1.canvas[":id"]["$get"]>;
 export type CanvasDetailsNode = CanvasDetailsRPC["nodes"][number];
 
 export type CanvasListRPC = InferResponseType<typeof rpcClient.api.v1.canvas.$get>
@@ -12,7 +13,10 @@ export type CreateCanvasRPCParams = InferRequestType<typeof rpcClient.api.v1.can
 
 
 export type PatchCanvasRPC = InferResponseType<typeof rpcClient.api.v1.canvas[":id"]["$patch"]>
-export type PatchCanvasRPCReq = InferRequestType<typeof rpcClient.api.v1.canvas[":id"]["$patch"]>
+export type PatchCanvasRPCParams = InferRequestType<typeof rpcClient.api.v1.canvas[":id"]["$patch"]>
+
+export type ProcessNodesRPC = InferResponseType<typeof rpcClient.api.v1.canvas[":id"]["process"]["$post"]>
+export type ProcessNodesRPCParams = InferRequestType<typeof rpcClient.api.v1.canvas[":id"]["process"]["$post"]>
 
 export type NodeTemplateListRPC = InferResponseType<typeof rpcClient.api.v1["node-templates"]["$get"]>;
 export type NodeTemplateListItemRPC = NodeTemplateListRPC[number];

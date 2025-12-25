@@ -1,6 +1,6 @@
 import { createContext, useContext, useState, type Dispatch, type PropsWithChildren, type SetStateAction } from 'react';
 import type { CanvasListRPC } from '@/rpc/types';
-import { useGetCanvasListQuery } from '@/store/canvas';
+import { useCreateCanvasMutation, useGetCanvasListQuery } from '@/store/canvas-list';
 
 interface CanvasContextType {
   canvasList: CanvasListRPC | undefined;
@@ -8,6 +8,8 @@ interface CanvasContextType {
   isLoading: boolean;
   searchQuery: string | undefined;
   setSearchQuery: Dispatch<SetStateAction<string | undefined>>
+  createCanvas: (name: string) => ReturnType<ReturnType<typeof useCreateCanvasMutation>[0]>;
+  isCreating: boolean;
 }
 
 const CanvasListContext = createContext<CanvasContextType | undefined>(undefined);
@@ -18,13 +20,16 @@ const CanvasListProvider = ({
 
   const [searchQuery, setSearchQuery] = useState<string | undefined>(undefined);
   const {data, isLoading, isError} = useGetCanvasListQuery({})
+  const [mutate, {isLoading: isCreating}] = useCreateCanvasMutation();
 
   const value = {
     canvasList: data,
     isError,
     isLoading,
     searchQuery,
-    setSearchQuery
+    setSearchQuery,
+    createCanvas: mutate,
+    isCreating,
   };
 
   return <CanvasListContext.Provider value={value}>{children}</CanvasListContext.Provider>;

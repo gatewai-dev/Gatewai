@@ -1,4 +1,3 @@
-import { useMutation, useQuery } from '@tanstack/react-query';
 import { createContext, useCallback, useContext, useEffect, useMemo, useRef, type PropsWithChildren, type RefObject } from 'react';
 import {
   getConnectedEdges,
@@ -19,13 +18,13 @@ import { useAppDispatch, useAppSelector, type RootState } from '@/store';
 import { setAllNodeEntities, type NodeEntityType, deleteManyNodeEntity } from '@/store/nodes';
 import { generateId } from '@/lib/idgen';
 import { createNodeEntity } from '@/store/nodes';
-import { rpcClient } from '@/rpc/client';
-import type { CanvasDetailsNode, CanvasDetailsRPC, NodeTemplateListItemRPC, PatchCanvasRPCReq } from '@/rpc/types';
+import type { CanvasDetailsRPC, NodeTemplateListItemRPC, PatchCanvasRPCParams } from '@/rpc/types';
 import { createNode, onEdgeChange, onNodeChange, selectRFEdges, selectRFNodes, setEdges, setNodes } from '@/store/rfstate';
 import { toast } from 'sonner';
 import { addManyHandleEntities, deleteManyHandleEntity, handleSelectors, setAllHandleEntities } from '@/store/handles';
 import { setAllEdgeEntities, type EdgeEntityType } from '@/store/edges';
 import { useStore } from 'react-redux';
+import { useGetCanvasDetailsQuery, usePatchCanvasMutation, useProcessNodesMutationMutation } from '@/store/canvas';
 
 interface CanvasContextType {
   canvas: CanvasDetailsRPC["canvas"] | undefined;
@@ -41,22 +40,6 @@ interface CanvasContextType {
 }
 
 const CanvasContext = createContext<CanvasContextType | undefined>(undefined);
-
-const fetchCanvas = async (canvasId: string): Promise<CanvasDetailsRPC> => {
-  // Replace with your actual API endpoint
-  const response = await rpcClient.api.v1.canvas[':id'].$get({
-    param: {
-      id: canvasId,
-    }
-  });
-  if (!response.ok) {
-    throw new Error('Network response was not ok');
-  }
-  const data: Promise<CanvasDetailsRPC> = response.json();
-
-  return data;
-};
-
 
 const CanvasProvider = ({
   canvasId,
@@ -76,14 +59,10 @@ const CanvasProvider = ({
     data: canvasDetailsResponse,
     isLoading,
     isError,
-  } = useQuery<CanvasDetailsRPC>({
-    queryKey: ['canvas', canvasId],
-    queryFn: () => fetchCanvas(canvasId),
-    refetchOnMount: false,
-    refetchOnReconnect: false,
-    refetchOnWindowFocus: false,
-    refetchIntervalInBackground: false,
-    enabled: !!canvasId,
+  } = useGetCanvasDetailsQuery({
+    param: {
+      id: canvasId
+    }
   });
 
   const { initialEdges, initialNodes } = useMemo(() => {
@@ -128,46 +107,8 @@ const CanvasProvider = ({
   const edges = useAppSelector(selectRFEdges);
   const timeoutRef = useRef<NodeJS.Timeout | null>(null);
 
-  const { mutateAsync: patchCanvasAsync } = useMutation({
-    mutationFn: async (body: PatchCanvasRPCReq["json"]) => {
-      const response = await rpcClient.api.v1.canvas[":id"]["$patch"]({
-        json: body,
-        param: {
-          id: canvasId
-        }
-      })
-      if (!response.ok) {
-        throw new Error(await response.text());
-      }
-      return response.json();
-    },
-    onSuccess: () => {
-      console.log("Save success")
-    },
-    onError: (error) => {
-      console.error('Save failed:', error);
-    },
-  });
-
-  const { mutateAsync: runNodesMutateAsync } = useMutation({
-    mutationFn: async (body: { node_ids: CanvasDetailsNode["id"][] }) => {
-      const response = await fetch(`/api/v1/canvas/${canvasId}/process`, {
-        method: 'POST',
-        headers: { 'Content-Type': 'application/json' },
-        body: JSON.stringify(body),
-      });
-      if (!response.ok) {
-        throw new Error(await response.text());
-      }
-      return response.json();
-    },
-    onSuccess: () => {
-      console.log('Run initiated successfully');
-    },
-    onError: (error) => {
-      console.error('Save failed:', error);
-    },
-  });
+  const [patchCanvasAsync] = usePatchCanvasMutation()
+  const [runNodesMutateAsync] = useProcessNodesMutationMutation()
 
   const save = useCallback(() => {
     if (!canvasId) return;
@@ -191,7 +132,7 @@ const CanvasProvider = ({
       }
     }).filter(f => !!f);
   
-    const currentDbEdges: PatchCanvasRPCReq["json"]["edges"] = currentEdgeEntities.map((e) => {
+    const currentDbEdges: PatchCanvasRPCParams["json"]["edges"] = currentEdgeEntities.map((e) => {
       const rfEdge = currentRfEdges.find(f => f.id === e.id);
       if (!rfEdge || !e) {
         return null;
@@ -203,15 +144,20 @@ const CanvasProvider = ({
         targetHandleId: rfEdge.targetHandle as string,
         sourceHandleId: rfEdge.sourceHandle as string,
       };
-    }).filter(Boolean) as PatchCanvasRPCReq["json"]["edges"];
+    }).filter(Boolean) as PatchCanvasRPCParams["json"]["edges"];
 
-    const body: PatchCanvasRPCReq["json"] = {
+    const body: PatchCanvasRPCParams["json"] = {
       nodes: currentCanvasDetailsNodes,
       edges: currentDbEdges,
       handles: currentHandleEntities,
     };
 
-    return patchCanvasAsync(body);
+    return patchCanvasAsync({
+      json: body,
+      param: {
+        id: canvasId,
+      }
+    });
   }, [canvasId, patchCanvasAsync, store]);
 
   const scheduleSave = useCallback(() => {
@@ -220,7 +166,7 @@ const CanvasProvider = ({
     }
     timeoutRef.current = setTimeout(() => {
       save();
-    }, 5000);
+    }, 2000);
   }, [save]);
 
   const onNodesChange = useCallback((changes: NodeChange<Node>[]) => {
@@ -291,38 +237,6 @@ const CanvasProvider = ({
 
       if (!sourceHandle || !targetHandle) {
         return { isValid: false, error: 'Source or target handle could not be found.' };
-      }
-
-      const sourceDataType = sourceHandle.dataType;
-      const targetDataType = targetHandle.dataType;
-
-      // Handle 'Any' data type - accepts any connection
-      if (sourceDataType === 'Any' || targetDataType === 'Any') {
-        return { isValid: true };
-      }
-      if (sourceDataType === 'File' && (targetDataType === 'Image' || targetDataType === 'Video')) {
-        return { isValid: true };
-      }
-
-      // Handle VideoLayer - accepts Video or Audio
-      if (targetDataType === 'VideoLayer') {
-        if (sourceDataType === 'Video' || sourceDataType === 'Audio') {
-          return { isValid: true };
-        }
-        return { isValid: false, error: 'VideoLayer only accepts Video or Audio data types.' };
-      }
-
-      // Handle DesignLayer - accepts Text, Image, or Mask
-      if (targetDataType === 'DesignLayer') {
-        if (sourceDataType === 'Text' || sourceDataType === 'Image' || sourceDataType === 'Mask') {
-          return { isValid: true };
-        }
-        return { isValid: false, error: 'DesignLayer only accepts Text, Image, or Mask data types.' };
-      }
-
-      // For all other cases, data types must match exactly
-      if (sourceDataType !== targetDataType) {
-        return { isValid: false, error: `Data types do not match: ${sourceDataType} → ${targetDataType}` };
       }
 
       return { isValid: true };
@@ -412,8 +326,16 @@ const CanvasProvider = ({
     // Save before running
     await save();
 
-    await runNodesMutateAsync({ node_ids });
-  }, [save, runNodesMutateAsync]);
+    await runNodesMutateAsync(
+      {
+        param: {
+          id: canvasId,
+        },
+        json: {
+          node_ids
+        }
+      });
+  }, [save, runNodesMutateAsync, canvasId]);
 
   useEffect(() => {
     dispatch(setNodes(initialNodes));
