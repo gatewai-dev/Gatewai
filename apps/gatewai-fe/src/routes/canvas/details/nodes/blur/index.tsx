@@ -22,8 +22,8 @@ import type { FileAsset } from '@gatewai/db';
 
 const BLUR_TYPES = ['Box', 'Gaussian'] as const;
 
-// FAST: Stack blur - optimized separable blur
-const stackBlurCanvasRGB = (
+// Simple box blur implementation
+const boxBlurCanvasRGB = (
   ctx: CanvasRenderingContext2D,
   top_x: number,
   top_y: number,
@@ -37,220 +37,52 @@ const stackBlurCanvasRGB = (
   
   const imageData = ctx.getImageData(top_x, top_y, width, height);
   const pixels = imageData.data;
+  const tempPixels = new Uint8ClampedArray(pixels);
   
-  const div = 2 * radius + 1;
-  const w4 = width << 2;
-  const widthMinus1 = width - 1;
-  const heightMinus1 = height - 1;
-  const radiusPlus1 = radius + 1;
-  const sumFactor = radiusPlus1 * (radiusPlus1 + 1) / 2;
-  
-  const stackStart = { r: 0, g: 0, b: 0, next: null as any };
-  let stack = stackStart;
-  let stackEnd;
-  
-  for (let i = 1; i < div; i++) {
-    stack = stack.next = { r: 0, g: 0, b: 0, next: null };
-    if (i === radiusPlus1) stackEnd = stack;
-  }
-  stack.next = stackStart;
-  
-  let stackIn = null as any;
-  let stackOut = null as any;
-  
-  let yw = 0;
-  let yi = 0;
-  
-  // Horizontal blur
+  // Horizontal pass
   for (let y = 0; y < height; y++) {
-    let rInSum = 0, gInSum = 0, bInSum = 0;
-    let rOutSum = 0, gOutSum = 0, bOutSum = 0;
-    let rSum = 0, gSum = 0, bSum = 0;
-    
-    const p = yi << 2;
-    const r = pixels[p];
-    const g = pixels[p + 1];
-    const b = pixels[p + 2];
-    
-    rSum = radiusPlus1 * r;
-    gSum = radiusPlus1 * g;
-    bSum = radiusPlus1 * b;
-    
-    rInSum = r;
-    gInSum = g;
-    bInSum = b;
-    
-    stack = stackStart;
-    
-    for (let i = 0; i < radiusPlus1; i++) {
-      stack.r = r;
-      stack.g = g;
-      stack.b = b;
-      stack = stack.next;
-    }
-    
-    for (let i = 1; i < radiusPlus1; i++) {
-      const p2 = yi + ((widthMinus1 < i ? widthMinus1 : i) << 2);
-      const r2 = pixels[p2];
-      const g2 = pixels[p2 + 1];
-      const b2 = pixels[p2 + 2];
-      
-      stack.r = r2;
-      stack.g = g2;
-      stack.b = b2;
-      stack = stack.next;
-      
-      rSum += r2 * (radiusPlus1 - i);
-      gSum += g2 * (radiusPlus1 - i);
-      bSum += b2 * (radiusPlus1 - i);
-      
-      rOutSum += r2;
-      gOutSum += g2;
-      bOutSum += b2;
-    }
-    
-    stackIn = stackStart;
-    stackOut = stackEnd;
-    
     for (let x = 0; x < width; x++) {
-      const pa = yi << 2;
-      pixels[pa] = Math.round(rSum / sumFactor);
-      pixels[pa + 1] = Math.round(gSum / sumFactor);
-      pixels[pa + 2] = Math.round(bSum / sumFactor);
+      let r = 0, g = 0, b = 0, count = 0;
       
-      rSum -= rOutSum;
-      gSum -= gOutSum;
-      bSum -= bOutSum;
+      for (let kx = -radius; kx <= radius; kx++) {
+        const px = x + kx;
+        if (px >= 0 && px < width) {
+          const idx = (y * width + px) * 4;
+          r += pixels[idx];
+          g += pixels[idx + 1];
+          b += pixels[idx + 2];
+          count++;
+        }
+      }
       
-      rOutSum -= stackIn.r;
-      gOutSum -= stackIn.g;
-      bOutSum -= stackIn.b;
-      
-      let p = x + radius + 1;
-      const p3 = (yw + (p < widthMinus1 ? p : widthMinus1)) << 2;
-      
-      rInSum += (stackIn.r = pixels[p3]);
-      gInSum += (stackIn.g = pixels[p3 + 1]);
-      bInSum += (stackIn.b = pixels[p3 + 2]);
-      
-      rSum += rInSum;
-      gSum += gInSum;
-      bSum += bInSum;
-      
-      stackIn = stackIn.next;
-      
-      rOutSum += stackOut.r;
-      gOutSum += stackOut.g;
-      bOutSum += stackOut.b;
-      
-      rInSum -= stackOut.r;
-      gInSum -= stackOut.g;
-      bInSum -= stackOut.b;
-      
-      stackOut = stackOut.next;
-      
-      yi++;
+      const idx = (y * width + x) * 4;
+      tempPixels[idx] = r / count;
+      tempPixels[idx + 1] = g / count;
+      tempPixels[idx + 2] = b / count;
+      tempPixels[idx + 3] = pixels[idx + 3];
     }
-    yw += width;
   }
   
-  // Vertical blur
-  for (let x = 0; x < width; x++) {
-    let rInSum = 0, gInSum = 0, bInSum = 0;
-    let rOutSum = 0, gOutSum = 0, bOutSum = 0;
-    let rSum = 0, gSum = 0, bSum = 0;
-    
-    yi = x << 2;
-    const r = pixels[yi];
-    const g = pixels[yi + 1];
-    const b = pixels[yi + 2];
-    
-    rSum = radiusPlus1 * r;
-    gSum = radiusPlus1 * g;
-    bSum = radiusPlus1 * b;
-    
-    rInSum = r;
-    gInSum = g;
-    bInSum = b;
-    
-    stack = stackStart;
-    
-    for (let i = 0; i < radiusPlus1; i++) {
-      stack.r = r;
-      stack.g = g;
-      stack.b = b;
-      stack = stack.next;
-    }
-    
-    let yp = width;
-    
-    for (let i = 1; i < radiusPlus1; i++) {
-      yi = (yp + x) << 2;
+  // Vertical pass
+  for (let y = 0; y < height; y++) {
+    for (let x = 0; x < width; x++) {
+      let r = 0, g = 0, b = 0, count = 0;
       
-      const r2 = pixels[yi];
-      const g2 = pixels[yi + 1];
-      const b2 = pixels[yi + 2];
-      
-      stack.r = r2;
-      stack.g = g2;
-      stack.b = b2;
-      stack = stack.next;
-      
-      rSum += r2 * (radiusPlus1 - i);
-      gSum += g2 * (radiusPlus1 - i);
-      bSum += b2 * (radiusPlus1 - i);
-      
-      rOutSum += r2;
-      gOutSum += g2;
-      bOutSum += b2;
-      
-      if (i < heightMinus1) {
-        yp += width;
+      for (let ky = -radius; ky <= radius; ky++) {
+        const py = y + ky;
+        if (py >= 0 && py < height) {
+          const idx = (py * width + x) * 4;
+          r += tempPixels[idx];
+          g += tempPixels[idx + 1];
+          b += tempPixels[idx + 2];
+          count++;
+        }
       }
-    }
-    
-    yi = x;
-    stackIn = stackStart;
-    stackOut = stackEnd;
-    
-    for (let y = 0; y < height; y++) {
-      const p4 = yi << 2;
-      pixels[p4] = Math.round(rSum / sumFactor);
-      pixels[p4 + 1] = Math.round(gSum / sumFactor);
-      pixels[p4 + 2] = Math.round(bSum / sumFactor);
       
-      rSum -= rOutSum;
-      gSum -= gOutSum;
-      bSum -= bOutSum;
-      
-      rOutSum -= stackIn.r;
-      gOutSum -= stackIn.g;
-      bOutSum -= stackIn.b;
-      
-      let p = y + radiusPlus1;
-      const p5 = (x + (p < heightMinus1 ? p : heightMinus1) * width) << 2;
-      
-      rInSum += (stackIn.r = pixels[p5]);
-      gInSum += (stackIn.g = pixels[p5 + 1]);
-      bInSum += (stackIn.b = pixels[p5 + 2]);
-      
-      rSum += rInSum;
-      gSum += gInSum;
-      bSum += bInSum;
-      
-      stackIn = stackIn.next;
-      
-      rOutSum += stackOut.r;
-      gOutSum += stackOut.g;
-      bOutSum += stackOut.b;
-      
-      rInSum -= stackOut.r;
-      gInSum -= stackOut.g;
-      bInSum -= stackOut.b;
-      
-      stackOut = stackOut.next;
-      
-      yi += width;
+      const idx = (y * width + x) * 4;
+      pixels[idx] = r / count;
+      pixels[idx + 1] = g / count;
+      pixels[idx + 2] = b / count;
     }
   }
   
@@ -410,7 +242,7 @@ const BlurNodeComponent = memo((props: NodeProps<BlurNode>) => {
     else if (config.blurType === 'Box' && config.size && config.size > 0) {
       ctx.filter = 'none';
       ctx.drawImage(img, 0, 0, previewWidth, previewHeight);
-      stackBlurCanvasRGB(ctx, 0, 0, previewWidth, previewHeight, config.size);
+      boxBlurCanvasRGB(ctx, 0, 0, previewWidth, previewHeight, config.size);
     } 
     // No blur
     else {
