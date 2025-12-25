@@ -210,7 +210,6 @@ export class NodeWFProcessor {
       // Call processor without awaiting
       processor({ node, data, prisma: this.prisma })
         .then(async (result) => {
-          console.log({result});
           const finishedAt = new Date();
           await this.prisma.task.update({
             where: { id: task.id },

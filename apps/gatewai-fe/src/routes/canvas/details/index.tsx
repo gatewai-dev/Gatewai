@@ -7,6 +7,7 @@ import { ReactFlowProvider } from "@xyflow/react";
 import { UserAssetsProvider } from "../assets/user-assets-ctx";
 import { NodeTemplateDnDProvider } from "../node-templates/node-template-drag.ctx";
 import { NodeTemplatesProvider } from "../node-templates/node-templates.ctx";
+import { TaskManagerProvider } from "./ctx/task-manager-ctx";
 
 function CanvasDetails() {
     const { canvasId } = useParams();
@@ -15,17 +16,19 @@ function CanvasDetails() {
     }
     return (
         <NodeTemplateDnDProvider>
-            <NodeTemplatesProvider>
-                <UserAssetsProvider>
-                    <SelectedEntitiesProvider>
-                        <ReactFlowProvider>
-                            <CanvasProvider canvasId={canvasId}>
-                                <ReactflowContainer />
-                            </CanvasProvider>
-                        </ReactFlowProvider>
-                    </SelectedEntitiesProvider>
-                </UserAssetsProvider>
-            </NodeTemplatesProvider>
+            <TaskManagerProvider canvasId={canvasId}>
+                <NodeTemplatesProvider>
+                    <UserAssetsProvider>
+                        <SelectedEntitiesProvider>
+                            <ReactFlowProvider>
+                                <CanvasProvider canvasId={canvasId}>
+                                    <ReactflowContainer />
+                                </CanvasProvider>
+                            </ReactFlowProvider>
+                        </SelectedEntitiesProvider>
+                    </UserAssetsProvider>
+                </NodeTemplatesProvider>
+            </TaskManagerProvider>
         </NodeTemplateDnDProvider>);
 }
 

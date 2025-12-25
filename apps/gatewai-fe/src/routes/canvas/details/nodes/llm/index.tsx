@@ -20,7 +20,7 @@ const LlmNodeComponent = memo((props: NodeProps<LLMNode>) => {
 
   const textResult = useMemo(() => {
     return result?.outputs?.[result.selectedOutputIndex]?.items?.[0]?.data ?? null;
-  }, [result?.outputs, result.selectedOutputIndex])
+  }, [result?.outputs, result?.selectedOutputIndex])
 
 
   const { runNodes } = useCanvasCtx();

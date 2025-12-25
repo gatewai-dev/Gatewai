@@ -14,9 +14,9 @@ import {
   type ReactFlowInstance,
   type XYPosition
 } from '@xyflow/react';
-import type { DataType, NodeResult, NodeType } from '@gatewai/types';
+import type { NodeResult, NodeType } from '@gatewai/types';
 import { useAppDispatch, useAppSelector, type RootState } from '@/store';
-import { setAllNodeEntities, nodeSelectors, type NodeEntityType, deleteManyNodeEntity } from '@/store/nodes';
+import { setAllNodeEntities, type NodeEntityType, deleteManyNodeEntity } from '@/store/nodes';
 import { generateId } from '@/lib/idgen';
 import { createNodeEntity } from '@/store/nodes';
 import { rpcClient } from '@/rpc/client';
@@ -24,7 +24,7 @@ import type { CanvasDetailsNode, CanvasDetailsRPC, NodeTemplateListItemRPC, Patc
 import { createNode, onEdgeChange, onNodeChange, selectRFEdges, selectRFNodes, setEdges, setNodes } from '@/store/rfstate';
 import { toast } from 'sonner';
 import { addManyHandleEntities, deleteManyHandleEntity, handleSelectors, setAllHandleEntities } from '@/store/handles';
-import { edgeSelectors, setAllEdgeEntities, type EdgeEntityType } from '@/store/edges';
+import { setAllEdgeEntities, type EdgeEntityType } from '@/store/edges';
 import { useStore } from 'react-redux';
 
 interface CanvasContextType {
@@ -110,7 +110,6 @@ const CanvasProvider = ({
       target: edge.target,
       sourceHandle: edge.sourceHandleId || undefined,
       targetHandle: edge.targetHandleId || undefined,
-      data: { dataType: edge.dataType },
     }));
 
     return { initialEdges, initialNodes };
@@ -203,7 +202,6 @@ const CanvasProvider = ({
         target: rfEdge.target,
         targetHandleId: rfEdge.targetHandle as string,
         sourceHandleId: rfEdge.sourceHandle as string,
-        dataType: e.dataType as DataType,
       };
     }).filter(Boolean) as PatchCanvasRPCReq["json"]["edges"];
 
@@ -445,6 +443,11 @@ const CanvasProvider = ({
         outputs: [{
           items: [{type: 'Text', outputHandleId: handles[0].id, data: ''}]
         }]
+      }
+    } else {
+      initialResult = {
+        selectedOutputIndex: 0,
+        outputs: []
       }
     }
 
