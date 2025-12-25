@@ -2,26 +2,39 @@ import { Slider } from "@/components/ui/slider";
 import { useAppDispatch } from "@/store";
 import { type NodeEntityType, updateNodeConfig } from "@/store/nodes";
 import type { BlurNodeConfig } from "@gatewai/types";
-import { memo, useCallback } from "react";
+import { memo, useCallback, useEffect, useState } from "react";
 
 const BlurValueSlider = memo(({node}: {node: NodeEntityType}) => {
   const config: BlurNodeConfig = node.config as BlurNodeConfig;
   const dispatch = useAppDispatch();
-  
+  const [localSize, setLocalSize] = useState(config.size ?? 0);
+
+  useEffect(() => {
+    setLocalSize(config.size ?? 0);
+  }, [config.size]);
+
   const handleChange = useCallback((value: number[]) => {
-    dispatch(updateNodeConfig({
+    setLocalSize(value[0]);
+  }, []);
+
+  useEffect(() => {
+    const timer = setTimeout(() => {
+      dispatch(updateNodeConfig({
         id: node.id,
-        newConfig: { size: value[0] }
-    }));
-  }, [dispatch, node.id]);
+        newConfig: { size: localSize }
+      }));
+    }, 300);
+
+    return () => clearTimeout(timer);
+  }, [localSize, dispatch, node.id]);
   
   return (
     <div className="flex flex-col gap-1 flex-1">
-      <label className="text-xs text-gray-600">Blur Size: {config.size ?? 0}</label>
+      <label className="text-xs text-gray-600">Blur Size: {localSize}</label>
       <Slider
-        value={[config.size ?? 0]}
-        max={20}
-        min={0}
+        value={[localSize]}
+        max={100}
+        min={1}
         step={1}
         onValueChange={handleChange}
       />

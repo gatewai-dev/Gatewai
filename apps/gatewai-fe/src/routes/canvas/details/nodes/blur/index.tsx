@@ -2,19 +2,21 @@ import { memo, useEffect, useMemo, useRef, useState } from 'react';
 import { type NodeProps } from '@xyflow/react';
 import {
   type BlurNodeConfig,
-  type NodeResult,
   type FileData,
 } from '@gatewai/types';
 import { useAppSelector } from '@/store';
 import { makeSelectAllNodes, makeSelectNodeById } from '@/store/nodes';
 import { BaseNode } from '../base';
 import type { BlurNode } from '../node-props';
-import { makeSelectAllHandles, makeSelectHandleByNodeId } from '@/store/handles';
+import { makeSelectAllHandles } from '@/store/handles';
 import { makeSelectAllEdges } from '@/store/edges';
-import type { FileAsset } from '@gatewai/db';
+import { selectNodeResultByHandleId } from '@/store/selectors';
 import { BlurTypeSelector } from './type-selector';
 import { BlurValueSlider } from './blur-slider';
 import { browserNodeProcessors } from '../node-processors';
+import { useNodeContext } from '../hooks/use-node-ctx';
+import { useHandleValueResolver } from '../hooks/use-handle-value-resolver';
+
 
 const ImagePlaceholder = () => {
   return (
@@ -30,54 +32,18 @@ const BlurNodeComponent = memo((props: NodeProps<BlurNode>) => {
   const allNodes = useAppSelector(makeSelectAllNodes);
   const allHandles = useAppSelector(makeSelectAllHandles);
   const node = useAppSelector(makeSelectNodeById(props.id));
-  const handles = useAppSelector(makeSelectHandleByNodeId(props.id));
   const allEdges = useAppSelector(makeSelectAllEdges);
   
   const config: BlurNodeConfig = (node?.config ?? props.data.config) as BlurNodeConfig;
   
-  const context = useMemo(() => {
-    if (!node || !handles.length) {
-      return null;
-    }
-    
-    const targetHandle = handles.find(h => h.type === 'Input'); // Matching the processor's assumption
-    if (!targetHandle) {
-      return null;
-    }
-    
-    const edge = allEdges.find(
-      e => e.target === node.id && e.targetHandleId === targetHandle.id
-    );
-    
-    if (!edge) {
-      return null;
-    }
-    
-    const sourceHandle = allHandles.find(h => h.id === edge.sourceHandleId);
-    if (!sourceHandle) {
-      return null;
-    }
-    
-    const imageSourceNode = allNodes.find(n => n.id === edge.source);
-    if (!imageSourceNode) {
-      return null;
-    }
-    
-    const nodeResult = imageSourceNode.result as unknown as NodeResult;
-    if (!nodeResult?.outputs) {
-      return null;
-    }
-    
-    const output = nodeResult.outputs[nodeResult.selectedOutputIndex];
-    const sourceOutput = output?.items.find(
-      item => item.outputHandleId === sourceHandle.id
-    );
-    
-    return { imageSourceNode, sourceHandle, edge, sourceOutput };
-  }, [node, handles, allEdges, allHandles, allNodes]);
-  
-  const showResult = context?.sourceOutput != null;
-  const inputImageUrl = showResult ? (context!.sourceOutput!.data as FileData).dataUrl || (context!.sourceOutput!.data as FileData).entity?.signedUrl : null;
+  const context = useNodeContext({nodeId: props.id})
+
+  const output = useHandleValueResolver({handleId: context?.inputHandles[0].id ?? "0"})
+  console.log({output})
+  const showResult = output != null;
+  const inputImageUrl = useMemo(() => {
+    return (output?.data as FileData)?.dataUrl || (output?.data as FileData)?.entity?.signedUrl
+  }, [output?.data]);
 
   // Compute a key to detect changes in input or config
   const computeKey = useMemo(() => {

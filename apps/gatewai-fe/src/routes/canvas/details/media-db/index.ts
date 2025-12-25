@@ -1,7 +1,7 @@
 import type { NodeEntityType } from '@/store/nodes';
-import type { FileData, NodeResult } from '@gatewai/types';
+import type { AllNodeConfig, FileData, NodeResult } from '@gatewai/types';
 import { Dexie, type EntityTable } from 'dexie';
-
+import { useLiveQuery } from 'dexie-react-hooks';
 // Database entities
 export interface ClientNodeResult {
   /**
@@ -162,7 +162,7 @@ export async function nodeResultHashBuilder(node: NodeEntityType): Promise<strin
 /**
  * Synchronous config hash using djb2
  */
-export function hashConfigSync(config: any): string {
+export function hashConfigSync(config: AllNodeConfig): string {
   const str = JSON.stringify(config, Object.keys(config).sort());
   
   let hash = 5381;
@@ -201,6 +201,14 @@ export async function storeClientNodeResult(
  */
 export async function getClientNodeResultById(id: NodeEntityType["id"]) {
   return await db.clientNodeResults.where('id').equals(id).first();
+}
+
+export function useClientCacheNodeResultById(id: NodeEntityType["id"]) {
+  const nodeResult = useLiveQuery(() =>
+    db.clientNodeResults.where('id').equals(id).first()
+  );
+
+  return nodeResult;
 }
 
 /**
