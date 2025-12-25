@@ -4,8 +4,8 @@ import {
   type ResizeNodeConfig,
   type FileData,
 } from '@gatewai/types';
-import { useAppDispatch, useAppSelector } from '@/store';
-import { makeSelectAllNodes, makeSelectNodeById, updateNodeConfig } from '@/store/nodes';
+import { useAppSelector } from '@/store';
+import { makeSelectAllNodes, makeSelectNodeById } from '@/store/nodes';
 import { BaseNode } from '../base';
 import type { ResizeNode } from '../node-props';
 import { makeSelectAllHandles } from '@/store/handles';
@@ -35,7 +35,8 @@ const ResizeNodeComponent = memo((props: NodeProps<ResizeNode>) => {
   const config: ResizeNodeConfig = (node?.config ?? props.data.config) as ResizeNodeConfig;
 
   const context = useNodeContext({nodeId: props.id})
-  const output = useHandleValueResolver({handleId: context?.inputHandles[0].id ?? "0"})
+  const output = useHandleValueResolver({handleId: context?.inputHandles[0].id ?? "0", nodeId: props.id})
+  console.log({output, nodeId: props.id})
   const showResult = output != null;
   const nodeConfig = node?.config as ResizeNodeConfig;
 
@@ -51,7 +52,7 @@ const ResizeNodeComponent = memo((props: NodeProps<ResizeNode>) => {
     if (!inputImageUrl) return null;
     return inputImageUrl + JSON.stringify(config, Object.keys(config).sort());
   }, [inputImageUrl, config]);
-
+  console.log({computeKey, inputImageUrl})
   const [previewUrl, setPreviewUrl] = useState<string | null>(null);
   const [originalWidth, setOriginalWidth] = useState<number | null>(null);
   const [originalHeight, setOriginalHeight] = useState<number | null>(null);
@@ -129,7 +130,7 @@ const ResizeNodeComponent = memo((props: NodeProps<ResizeNode>) => {
     };
 
     compute();
-  }, [computeKey, showResult, node, allNodes, allEdges, allHandles, output, nodeConfig.width, nodeConfig.height, originalHeight, originalWidth, nodeConfig.maintainAspect]);
+  }, [computeKey, showResult, node, allNodes, allEdges, allHandles, output, nodeConfig?.width, nodeConfig?.height, originalHeight, originalWidth, nodeConfig?.maintainAspect]);
 
   return (
     <BaseNode {...props}>

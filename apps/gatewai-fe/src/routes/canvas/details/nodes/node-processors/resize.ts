@@ -18,7 +18,7 @@ const resizeProcessor: NodeProcessor<ResizeExtraArgs> = async ({ node, data, ext
       const imageUrl = inputFileData.dataUrl || inputFileData.entity?.signedUrl;
 
       if (!imageUrl) {
-          return { success: false, error: 'No image URL available' };
+        return { success: false, error: 'No image URL available' };
       }
 
       // Compute inputHash for caching (source result hash + config hash)

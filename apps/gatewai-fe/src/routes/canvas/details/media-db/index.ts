@@ -26,8 +26,8 @@ export const db = new Dexie('GatewaiClientDB') as Dexie & {
   clientNodeResults: EntityTable<ClientNodeResult, 'id'>;
 };
 
-db.version(2).stores({
-  clientNodeResults: 'id, hash, age, inputHash',
+db.version(1).stores({
+  clientNodeResults: 'id, hash, age, inputHash, [id+inputHash]',
 });
 
 // Creates a deterministic hash for NodeResult objects.
@@ -143,10 +143,6 @@ export async function getCacheKey(nodeId: string, result: NodeResult): Promise<s
   const hash = await hashNodeResultShort(result);
   return `${nodeId}-${hash}`;
 }
-
-// ============================================================================
-// IndexedDB Integration Functions
-// ============================================================================
 
 /**
  * Builds hash from node entity's result

@@ -9,7 +9,7 @@ import type { NodeResult } from "@gatewai/types";
  * @param handleId Source handle id
  * @returns NodeResult
  */
-function useHandleValueResolver({handleId}:{handleId: HandleEntityType["id"]}) {
+function useHandleValueResolver({handleId, nodeId}:{handleId: HandleEntityType["id"], nodeId?: string}) {
       const connectedNodeData = useAppSelector(selectConnectedNodeByHandleId(handleId ?? "0"))
       const cachedResult = useClientCacheNodeResultById(connectedNodeData?.node?.id ?? "0");
       const nodeResult = connectedNodeData?.node?.result as unknown as NodeResult;
