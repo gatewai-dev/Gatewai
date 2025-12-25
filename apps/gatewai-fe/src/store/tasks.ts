@@ -1,6 +1,6 @@
 import { createApi, fetchBaseQuery } from '@reduxjs/toolkit/query/react'
 import { rpcClient } from '@/rpc/client'
-import type { CanvasTaskListRPC, CanvasTaskListRPCParams } from '@/rpc/types';
+import type { ActiveCanvasBatchListRPC, ActiveCanvasBatchListRPCParams, BatchDetailsRPC, BatchDetailsRPCParams } from '@/rpc/types';
 
 // Define a service using a base URL and expected endpoints
 export const tasksAPI = createApi({
@@ -9,9 +9,19 @@ export const tasksAPI = createApi({
         baseUrl: `/api/v1/tasks`,
     }),
     endpoints: (build) => ({
-        getCanvasTasks: build.query<CanvasTaskListRPC, CanvasTaskListRPCParams>({
+        getActiveCanvasBatches: build.query<ActiveCanvasBatchListRPC, ActiveCanvasBatchListRPCParams>({
             queryFn: async (params) => {
                 const response = await rpcClient.api.v1.tasks[':canvasId'].$get(params);
+                if (!response.ok) {
+                    return { error: { status: response.status, data: await response.text() } };
+                }
+                const data = await response.json();
+                return { data };
+            }
+        }),
+        getBatchDetails: build.query<BatchDetailsRPC, BatchDetailsRPCParams>({
+            queryFn: async (params) => {
+                const response = await rpcClient.api.v1.tasks[':batchId'].$get(params);
                 if (!response.ok) {
                     return { error: { status: response.status, data: await response.text() } };
                 }
@@ -24,4 +34,4 @@ export const tasksAPI = createApi({
 
 // Export hooks for usage in functional components, which are
 // auto-generated based on the defined endpoints
-export const { useGetCanvasTasksQuery } = tasksAPI
+export const { useGetActiveCanvasBatchesQuery, useGetBatchDetailsQuery } = tasksAPI

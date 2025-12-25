@@ -1,16 +1,16 @@
 import { createContext, useContext, useState, type Dispatch, type PropsWithChildren, type SetStateAction } from 'react';
 import type { Canvas } from '@gatewai/types';
-import { useGetCanvasTasksQuery } from '@/store/tasks';
-import type { CanvasTaskListRPCParams, CanvasTaskListRPC } from '@/rpc/types';
+import { useGetActiveCanvasBatchesQuery } from '@/store/tasks';
+import type { ActiveCanvasBatchListRPC, ActiveCanvasBatchListRPCParams } from '@/rpc/types';
 
 interface TaskManagerContextType {
-  tasks: CanvasTaskListRPC | undefined;
+  tasks: ActiveCanvasBatchListRPC | undefined;
   isError: boolean;
   isLoading: boolean;
   pollingInterval: number;
   refetch: () => void;
   setPollingInterval: Dispatch<SetStateAction<number>>
-  tasksFilters: CanvasTaskListRPCParams["query"];
+  tasksFilters: ActiveCanvasBatchListRPCParams["query"];
   setTaskFilters: Dispatch<SetStateAction<{
     status?: string | undefined;
     fromDatetime?: string | undefined;
@@ -24,7 +24,7 @@ const TaskManagerProvider = ({
   children,
   canvasId,
 }: PropsWithChildren<{canvasId: Canvas["id"]}>) => {
-  const [tasksFilters, setTaskFilters] = useState<CanvasTaskListRPCParams["query"]>({
+  const [tasksFilters, setTaskFilters] = useState<ActiveCanvasBatchListRPCParams["query"]>({
     fromDatetime: undefined,
     taskStatus: ['EXECUTING', 'QUEUED', 'FAILED'],
   })
@@ -36,7 +36,7 @@ const TaskManagerProvider = ({
     refetch,
     isLoading,
     isError,
-  } = useGetCanvasTasksQuery({
+  } = useGetActiveCanvasBatchesQuery({
     param: {
       canvasId
     },

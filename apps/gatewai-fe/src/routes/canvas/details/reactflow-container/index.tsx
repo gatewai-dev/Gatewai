@@ -13,6 +13,7 @@ import { setSelectedEdgeIds } from "@/store/edges";
 import { NodePalette } from "../../node-templates/node-palette";
 import { useHotkeys } from "react-hotkeys-hook";
 import { useZoomHotkeys } from "./use-zoom-hotkeys";
+import { TopPanel } from "./top-panel";
 
 const edgeTypes = {
   default: CustomEdge,
@@ -161,6 +162,9 @@ function ReactflowContainer({ children }: ReactFlowProps) {
         >
           {children}
           <Background />
+          <Panel position="top-center" className=" bg-background flex flex-col">
+            <TopPanel />
+          </Panel>
           <Panel position="top-left" className=" bg-background left-0 top-0 m-0! h-full flex flex-col">
             <NodePalette />
           </Panel>

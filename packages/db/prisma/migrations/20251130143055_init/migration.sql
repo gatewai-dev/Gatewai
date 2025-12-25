@@ -2,7 +2,7 @@
 CREATE TYPE "NodeType" AS ENUM ('Text', 'Preview', 'File', 'Export', 'Toggle', 'Crawler', 'Resize', 'Agent', 'ThreeD', 'Painter', 'Blur', 'Compositor', 'Describer', 'Router', 'Note', 'Number', 'GPTImage1', 'LLM');
 
 -- CreateEnum
-CREATE TYPE "DataType" AS ENUM ('Text', 'Number', 'Boolean', 'Image', 'Video', 'Audio', 'File', 'Mask', 'VideoLayer', 'DesignLayer', 'Any');
+CREATE TYPE "DataType" AS ENUM ('Text', 'Number', 'Boolean', 'Image', 'Video', 'Audio', 'File', 'Mask');
 
 -- CreateEnum
 CREATE TYPE "TaskStatus" AS ENUM ('QUEUED', 'EXECUTING', 'FAILED', 'COMPLETED');
@@ -186,14 +186,24 @@ CREATE TABLE "aisession" (
 );
 
 -- CreateTable
+CREATE TABLE "taskBatch" (
+    "id" TEXT NOT NULL,
+    "createdAt" TIMESTAMP(3) NOT NULL DEFAULT CURRENT_TIMESTAMP,
+    "updatedAt" TIMESTAMP(3) NOT NULL,
+    "userId" TEXT NOT NULL,
+    "canvasId" TEXT NOT NULL,
+    "finishedAt" TIMESTAMP(3),
+
+    CONSTRAINT "taskBatch_pkey" PRIMARY KEY ("id")
+);
+
+-- CreateTable
 CREATE TABLE "task" (
     "id" TEXT NOT NULL,
     "name" TEXT NOT NULL,
     "createdAt" TIMESTAMP(3) NOT NULL DEFAULT CURRENT_TIMESTAMP,
     "updatedAt" TIMESTAMP(3) NOT NULL,
-    "canvasId" TEXT NOT NULL,
     "nodeId" TEXT,
-    "userId" TEXT NOT NULL,
     "status" "TaskStatus",
     "durationMs" DOUBLE PRECISION,
     "finishedAt" TIMESTAMP(3),
@@ -201,6 +211,7 @@ CREATE TABLE "task" (
     "startedAt" TIMESTAMP(3),
     "error" JSONB,
     "isTest" BOOLEAN NOT NULL DEFAULT false,
+    "batchId" TEXT NOT NULL,
 
     CONSTRAINT "task_pkey" PRIMARY KEY ("id")
 );
@@ -275,13 +286,16 @@ ALTER TABLE "canvas" ADD CONSTRAINT "canvas_userId_fkey" FOREIGN KEY ("userId") 
 ALTER TABLE "aisession" ADD CONSTRAINT "aisession_canvasId_fkey" FOREIGN KEY ("canvasId") REFERENCES "canvas"("id") ON DELETE CASCADE ON UPDATE CASCADE;
 
 -- AddForeignKey
-ALTER TABLE "task" ADD CONSTRAINT "task_canvasId_fkey" FOREIGN KEY ("canvasId") REFERENCES "canvas"("id") ON DELETE CASCADE ON UPDATE CASCADE;
+ALTER TABLE "taskBatch" ADD CONSTRAINT "taskBatch_userId_fkey" FOREIGN KEY ("userId") REFERENCES "user"("id") ON DELETE CASCADE ON UPDATE CASCADE;
+
+-- AddForeignKey
+ALTER TABLE "taskBatch" ADD CONSTRAINT "taskBatch_canvasId_fkey" FOREIGN KEY ("canvasId") REFERENCES "canvas"("id") ON DELETE CASCADE ON UPDATE CASCADE;
 
 -- AddForeignKey
 ALTER TABLE "task" ADD CONSTRAINT "task_nodeId_fkey" FOREIGN KEY ("nodeId") REFERENCES "node"("id") ON DELETE SET NULL ON UPDATE CASCADE;
 
 -- AddForeignKey
-ALTER TABLE "task" ADD CONSTRAINT "task_userId_fkey" FOREIGN KEY ("userId") REFERENCES "user"("id") ON DELETE CASCADE ON UPDATE CASCADE;
+ALTER TABLE "task" ADD CONSTRAINT "task_batchId_fkey" FOREIGN KEY ("batchId") REFERENCES "taskBatch"("id") ON DELETE CASCADE ON UPDATE CASCADE;
 
 -- AddForeignKey
 ALTER TABLE "FileAsset" ADD CONSTRAINT "FileAsset_userId_fkey" FOREIGN KEY ("userId") REFERENCES "user"("id") ON DELETE CASCADE ON UPDATE CASCADE;

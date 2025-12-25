@@ -72,7 +72,7 @@ model User {
   accounts      Account[]
 
   canvases      Canvas[]
-  tasks         Task[]
+  taskBatches         TaskBatch[]
   tokens        Int?
   fileAssets    FileAsset[]
 
@@ -260,7 +260,7 @@ model Canvas {
   updatedAt      DateTime     @updatedAt
   nodes          Node[]
   aiSessions     AISession[]
-  tasks          Task[]
+  taskBatches    TaskBatch[]
   user           User         @relation(fields: [userId], references: [id], onDelete: Cascade)
   userId         String
 
@@ -278,20 +278,30 @@ model AISession {
   @@map("aisession")
 }
 
+model TaskBatch {
+  id              String       @id @default(cuid())
+  createdAt       DateTime     @default(now())
+  updatedAt       DateTime     @updatedAt
+  user            User         @relation(fields: [userId], references: [id], onDelete: Cascade)
+  userId          String
+  tasks           Task[]
+  canvas          Canvas       @relation(fields: [canvasId], references: [id], onDelete: Cascade)
+  canvasId        String
+
+  finishedAt      DateTime?
+
+  @@map("taskBatch")
+}
+
 model Task {
   id              String       @id @default(cuid())
   name            String
   createdAt       DateTime     @default(now())
   updatedAt       DateTime     @updatedAt
-  // Relationships
-  canvas          Canvas       @relation(fields: [canvasId], references: [id], onDelete: Cascade)
-  canvasId        String
 
   node            Node?        @relation(fields: [nodeId], references: [id], onDelete: SetNull)
   nodeId          String?
 
-  user            User         @relation(fields: [userId], references: [id], onDelete: Cascade)
-  userId          String
   status          TaskStatus?
   durationMs      Float?
   finishedAt      DateTime?
@@ -299,6 +309,9 @@ model Task {
   startedAt       DateTime?
   error           Json?
   isTest          Boolean     @default(false)
+
+  batch          TaskBatch       @relation(fields: [batchId], references: [id], onDelete: Cascade)
+  batchId        String
 
   @@map("task")
 }

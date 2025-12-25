@@ -107,10 +107,16 @@ const canvasRoutes = new Hono<{Variables: AuthHonoTypes}>({
             throw new HTTPException(401, { message: 'Unauthorized' });
         }
 
+        const canvasCount = await prisma.canvas.count({
+            where: {
+                userId: user.id
+            }
+        })
+
         const canvas = await prisma.canvas.create({
             data: {
                 userId: user.id,
-                name: 'New Canvas',
+                name: `Canvas ${canvasCount + 1}`,
             },
         });
 
@@ -128,6 +134,30 @@ const canvasRoutes = new Hono<{Variables: AuthHonoTypes}>({
 
     return c.json(response);
 })
+.patch('/:id/update-name',
+    zValidator('json', z.object({
+        name: z.string()
+    })),
+    async (c) => {
+        const user = c.get('user');
+        const validated = c.req.valid('json');
+        const id = c.req.param('id');
+        if (!user) {
+            throw new HTTPException(401, { message: 'Unauthorized' });
+        }
+
+        const canvas = await prisma.canvas.update({
+            where: {
+                id,
+            },
+            data: {
+                name: validated.name
+            }
+        });
+
+        return c.json(canvas, 201);
+    }
+)
 .patch('/:id',
     zValidator('json', bulkUpdateSchema),
     async (c) => {

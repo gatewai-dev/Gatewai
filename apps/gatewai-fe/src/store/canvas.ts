@@ -1,14 +1,16 @@
 import { createApi, fetchBaseQuery } from '@reduxjs/toolkit/query/react'
 import { rpcClient } from '@/rpc/client'
-import type { CanvasDetailsRPC, CanvasDetailsRPCParams, PatchCanvasRPC, PatchCanvasRPCParams, ProcessNodesRPC, ProcessNodesRPCParams } from '@/rpc/types';
+import type { CanvasDetailsRPC, CanvasDetailsRPCParams, PatchCanvasRPC, PatchCanvasRPCParams, ProcessNodesRPC, ProcessNodesRPCParams, UpdateCanvasNameRPC, UpdateCanvasNameRPCParams } from '@/rpc/types';
 
 export const canvasDetailsAPI = createApi({
     reducerPath: 'canvasDetailsAPI',
     baseQuery: fetchBaseQuery({
         baseUrl: `/api/v1/canvas`,
     }),
+    tagTypes: ['canvasDetails'],
     endpoints: (build) => ({
         getCanvasDetails: build.query<CanvasDetailsRPC, CanvasDetailsRPCParams>({
+            providesTags: ['canvasDetails'],
             queryFn: async (params) => {
                 const response = await rpcClient.api.v1["canvas"][":id"].$get(params);
                 if (!response.ok) {
@@ -21,6 +23,17 @@ export const canvasDetailsAPI = createApi({
         patchCanvas: build.mutation<PatchCanvasRPC, PatchCanvasRPCParams>({
             queryFn: async (params) => {
                 const response = await rpcClient.api.v1["canvas"][":id"].$patch(params);
+                if (!response.ok) {
+                    return { error: { status: response.status, data: await response.text() } };
+                }
+                const data = await response.json();
+                return { data };
+            }
+        }),
+        updateName: build.mutation<UpdateCanvasNameRPC, UpdateCanvasNameRPCParams>({
+            invalidatesTags: ['canvasDetails'],
+            queryFn: async (params) => {
+                const response = await rpcClient.api.v1["canvas"][":id"]["update-name"].$patch(params);
                 if (!response.ok) {
                     return { error: { status: response.status, data: await response.text() } };
                 }
@@ -41,4 +54,4 @@ export const canvasDetailsAPI = createApi({
     }),
 })
 
-export const { useGetCanvasDetailsQuery, usePatchCanvasMutation, useProcessNodesMutationMutation } = canvasDetailsAPI
+export const { useGetCanvasDetailsQuery, usePatchCanvasMutation, useProcessNodesMutationMutation, useUpdateNameMutation } = canvasDetailsAPI

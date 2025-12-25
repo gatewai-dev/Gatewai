@@ -243,6 +243,8 @@ interface CustomEdgeProps extends EdgeProps {
   targetPosition: Position;
   style?: React.CSSProperties;
   markerEnd?: string;
+  sourceHandle: string;
+  targetHandle: string;
 }
 
 const CustomEdge = memo(({
@@ -256,7 +258,6 @@ const CustomEdge = memo(({
   style = {},
   markerEnd,
   source,
-  target,
   sourceHandle: sourceHandleId,
   targetHandle: targetHandleId,
 }: CustomEdgeProps): JSX.Element => {

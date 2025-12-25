@@ -280,20 +280,20 @@ const ResizeNodeComponent = memo((props: NodeProps<ResizeNode>) => {
           </div>
         )}
         <div className="flex gap-3">
-          <ResizeWidthInput 
+          <ResizeWidthInput
             node={node}
             originalWidth={originalWidth}
             originalHeight={originalHeight}
             maintainAspect={config.maintainAspect ?? true}
           />
-          <ResizeHeightInput 
+          <ResizeHeightInput
             node={node}
             originalWidth={originalWidth}
             originalHeight={originalHeight}
             maintainAspect={config.maintainAspect ?? true}
           />
         </div>
-        <AspectRatioSwitch 
+        <AspectRatioSwitch
           node={node}
           originalWidth={originalWidth}
           originalHeight={originalHeight}

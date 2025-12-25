@@ -1,5 +1,5 @@
 import { Hono } from "hono";
-import { prisma, TaskStatus, type TaskWhereInput } from "@gatewai/db";
+import { prisma, TaskStatus, type TaskBatchWhereInput, type TaskWhereInput } from "@gatewai/db";
 import type { AuthHonoTypes } from "../../auth.js";
 import { zValidator } from "@hono/zod-validator";
 import { z } from "zod/v4";
@@ -14,6 +14,7 @@ const tasksQueryParams = z.object({
 const tasksRouter = new Hono<{Variables: AuthHonoTypes}>({
     strict: false,
 })
+// Returns active batches for the canvas
 .get('/:canvasId',
     zValidator('query', tasksQueryParams),
     zValidator('param', z.object({
@@ -26,8 +27,6 @@ const tasksRouter = new Hono<{Variables: AuthHonoTypes}>({
         const user = c.get('user');
 
         const whereClause: TaskWhereInput = {
-            canvasId,
-            userId: user!.id,
         }
         if (dt) {
             whereClause.createdAt = { gte: dt }
@@ -39,10 +38,44 @@ const tasksRouter = new Hono<{Variables: AuthHonoTypes}>({
             };
         }
 
-        const tasks = await prisma.task.findMany({
-            where: whereClause
+        const batches = await prisma.taskBatch.findMany({
+            where: {
+                userId: user?.id,
+                canvasId,
+                tasks: {
+                    some: whereClause
+                }
+            },
+            include: {
+                tasks: {
+                    include: {
+                        node: true,
+                    }
+                }
+            }
         })
-        return c.json(tasks);
+        return c.json(batches);
+})
+.get('/:batchId',
+    zValidator('param', z.object({
+        batchId: z.string(),
+    })),
+    async (c) => {
+        const user = c.get('user');
+        const batchId = c.req.param('batchId');
+
+        const whereClause: TaskBatchWhereInput = {
+            id: batchId,
+            userId: user!.id,
+        }
+
+        const batch = await prisma.taskBatch.findFirstOrThrow({
+            where: whereClause,
+            include: {
+                tasks: true,
+            }
+        })
+        return c.json(batch);
     })
 
 export { tasksRouter };
