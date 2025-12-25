@@ -5,6 +5,10 @@ import { cors } from "hono/cors";
 import { ENV_CONFIG } from "./config.js";
 import { v1Router } from "./routes/v1/index.js";
 import { logger } from 'hono/logger'
+import { prisma } from "@gatewai/db";
+
+console.log(process.env.DATABASE_URL);
+prisma.canvas.count().then(console.log)
 
 const app = new Hono<{
 	Variables: AuthHonoTypes

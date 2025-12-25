@@ -2,13 +2,12 @@
 // learn more about it in the docs: https://pris.ly/d/prisma-schema
 
 generator client {
-  provider        = "prisma-client"
+  provider        = "prisma-client-js"
   output          = "../generated/client"
 }
 
 datasource db {
-  provider = "sqlite"
-  url      = "file:./game.db"
+  provider = "postgresql"
 }
 
 enum NodeType {
@@ -42,10 +41,6 @@ enum DataType {
   Audio
   File
   Mask
-
-  VideoLayer // Video, Audio | Used By Dynamic Handles of Video Compositor Node(WIP)
-  DesignLayer // Text, Image, Mask | Used By Dynamic Handles of Design Compositor Node(WIP)
-  Any // For Input's that accept Any Data
 }
 
 enum TaskStatus {
@@ -185,7 +180,7 @@ model Node {
 model Handle {
   id                 String              @id @default(cuid())
   type               HandleType
-  dataType           DataType
+  dataTypes           DataType[]
   label              String
   order              Int                 @default(0)
   required           Boolean             @default(false)
@@ -229,7 +224,7 @@ model NodeTemplateHandle {
   templateId      String
   template        NodeTemplate  @relation(fields: [templateId], references: [id], onDelete: Cascade)
   type            HandleType
-  dataType        DataType
+  dataTypes        DataType[]
   label           String
   required        Boolean       @default(false)
   handles         Handle[]

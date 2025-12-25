@@ -48,7 +48,7 @@ const BaseNode = memo((props: NodeProps<Node<CanvasDetailsNode>> & {
         const error = validationErrors.find(err => err.handleId === handle.id);
         const isInvalid = !!error;
         const borderStyle = isInvalid 
-          ? '4px solid red' 
+          ? '4px solid red'
           : isConnected ? `4px solid ${color.hex}` : `2px dashed ${color.hex}`;
         return (
           <div

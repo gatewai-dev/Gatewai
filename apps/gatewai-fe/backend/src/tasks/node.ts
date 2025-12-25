@@ -1,10 +1,10 @@
-import type { BlurNodeConfig, FileData, NodeResult, Output } from '@gatewai/types';
+import type { BlurNodeConfig, FileData, NodeResult, Output, ResizeNodeConfig } from '@gatewai/types';
 import { PrismaClient, NodeType, DataType, TaskStatus, Task } from '@gatewai/db';
 import { GetCanvasEntities, getInputValue, type CanvasCtxData } from '../repositories/canvas.js';
 import { generateText, type ModelMessage, type TextPart, type UserContent } from 'ai';
 import { xai } from '../ai/xai.js';
 import { type User } from "better-auth";
-import sharp from 'sharp';
+import { applyBlur, applyResize, bufferToDataUrl, getImageBuffer, getMimeType } from '../utils/image.js';
 
 type NodeProcessorCtx = {
   node: CanvasCtxData["nodes"][number]
@@ -34,44 +34,10 @@ const processors: Partial<Record<NodeType, NodeProcessor>> = {
         return { success: false, error: 'No image input provided' };
       }
 
-      // Fetch image buffer (handle signedUrl or dataUrl)
-      let buffer: Buffer;
-      if (imageInput.dataUrl) {
-        // Extract base64 from dataUrl
-        const base64 = imageInput.dataUrl.split(';base64,').pop() ?? '';
-        buffer = Buffer.from(base64, 'base64');
-      } else if (imageInput.entity?.signedUrl) {
-        // Download from signedUrl (use fetch or axios)
-        const response = await fetch(imageInput.entity.signedUrl);
-        buffer = Buffer.from(await response.arrayBuffer());
-      } else {
-        return { success: false, error: 'Invalid image input' };
-      }
-
-      let processedBuffer: Buffer;
-      if (blurAmount <= 0) {
-        processedBuffer = buffer;
-      } else if (blurType === 'Gaussian') {
-        processedBuffer = await sharp(buffer)
-          .blur(blurAmount)
-          .toBuffer();
-      } else if (blurType === 'Box') {
-        const kernelSize = Math.max(1, Math.round(blurAmount) * 2 + 1);
-        const kernel = new Array(kernelSize * kernelSize).fill(1 / (kernelSize * kernelSize));
-        processedBuffer = await sharp(buffer)
-          .convolve({
-            width: kernelSize,
-            height: kernelSize,
-            kernel,
-          })
-          .toBuffer();
-      } else {
-        return { success: false, error: 'Invalid blur type' };
-      }
-
-      // Convert to data URL for transient output
-      const mimeType = imageInput.entity?.mimeType;  // Or detect dynamically
-      const dataUrl = `data:${mimeType};base64,${processedBuffer.toString('base64')}`;
+      const buffer = await getImageBuffer(imageInput);
+      const processedBuffer = await applyBlur(buffer, blurAmount, blurType);
+      const mimeType = getMimeType(imageInput);
+      const dataUrl = bufferToDataUrl(processedBuffer, mimeType);
 
       // Build new result (similar to LLM)
       const outputHandle = data.handles.find(h => h.nodeId === node.id && h.type === 'Output');
@@ -98,6 +64,50 @@ const processors: Partial<Record<NodeType, NodeProcessor>> = {
       return { success: true, newResult };
     } catch (err: unknown) {
       return { success: false, error: err instanceof Error ? err.message : 'Blur processing failed' };
+    }
+  },
+  [NodeType.Resize]: async ({ node, data }) => {
+    try {
+      console.log('PROCESSING RESIZE')
+      const imageInput = getInputValue(data, node.id, true, { dataType: DataType.Image, label: 'Image' }) as FileData | null;
+      const resizeConfig = node.config as ResizeNodeConfig;
+      const width = resizeConfig.width ?? 0;
+      const height = resizeConfig.height ?? 0;
+
+      if (!imageInput) {
+        return { success: false, error: 'No image input provided' };
+      }
+
+      const buffer = await getImageBuffer(imageInput);
+      const processedBuffer = await applyResize(buffer, width, height);
+      const mimeType = getMimeType(imageInput);
+      const dataUrl = bufferToDataUrl(processedBuffer, mimeType);
+
+      // Build new result (similar to LLM)
+      const outputHandle = data.handles.find(h => h.nodeId === node.id && h.type === 'Output');
+      if (!outputHandle) throw new Error('Output handle is missing');
+
+      const newResult: NodeResult = structuredClone(node.result as NodeResult) ?? {
+        outputs: [],
+        selectedOutputIndex: 0,
+      };
+
+      const newGeneration: Output = {
+        items: [
+          {
+            type: DataType.Image,
+            data: { dataUrl },  // Transient data URL
+            outputHandleId: outputHandle.id,
+          },
+        ],
+      };
+
+      newResult.outputs.push(newGeneration);
+      newResult.selectedOutputIndex = newResult.outputs.length - 1;
+
+      return { success: true, newResult };
+    } catch (err: unknown) {
+      return { success: false, error: err instanceof Error ? err.message : 'Resize processing failed' };
     }
   },
   [NodeType.LLM]: async ({ node, data }) => {
@@ -246,7 +256,7 @@ export class NodeWFProcessor {
     if (nodeIds.length === 0) return [];
 
     const allNodeIds = data.nodes.map(n => n.id);
-    const { depGraph: fullDepGraph, revDepGraph: fullRevDepGraph } = this.buildDepGraphs(allNodeIds, data);
+    const { revDepGraph: fullRevDepGraph } = this.buildDepGraphs(allNodeIds, data);
 
     // Find all necessary nodes: selected + all upstream dependencies
     const necessary = new Set<string>();

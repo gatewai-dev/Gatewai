@@ -7,7 +7,8 @@ import { HTTPException } from "hono/http-exception";
 
 export const auth = betterAuth({
     database: prismaAdapter(prisma, {
-      provider: "sqlite",
+      provider: "postgresql",
+      debugLogs: true,
     }),
     trustedOrigins: process.env.NODE_ENV === "production"
     ? [process.env.FRONTEND_URL || ""]

@@ -15,7 +15,7 @@ const NodeTypes = [
         'Note', 'Number', 'GPTImage1', 'LLM'
 ] as const;
 
-const DataTypes = ["Text", "Number","Boolean", "Image", "Video", "Audio", "File", "Mask", "VideoLayer", "DesignLayer", "Any"] as const
+const DataTypes = ["Text", "Number","Boolean", "Image", "Video", "Audio", "File", "Mask"] as const
 
 const handleSchema = z.object({
     id: z.string().optional(),
