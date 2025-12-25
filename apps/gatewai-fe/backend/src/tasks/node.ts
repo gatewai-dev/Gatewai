@@ -111,11 +111,10 @@ const processors: Partial<Record<NodeType, NodeProcessor>> = {
   },
   [NodeType.LLM]: async ({ node, data }) => {
     try {
-      console.log('RUNNING LLM PROCESSOR')
       const systemPrompt = getInputValue(data, node.id, false, { dataType: DataType.Text, label: 'System Prompt' }) as string | null;
       const userPrompt = getInputValue(data, node.id, true, { dataType: DataType.Text, label: 'Prompt' }) as string;
       const imageFileData = getInputValue(data, node.id, false, { dataType: DataType.Image, label: 'Image' }) as FileData | null;
-      console.log({userPrompt})
+
       // Build messages
       const messages: ModelMessage[] = [];
 
@@ -253,16 +252,15 @@ export class NodeWFProcessor {
     const data = await GetCanvasEntities(canvasId, user);  // Load once, update in-memory as we go
 
     if (nodeIds.length === 0) {
-      const emptyBatch = await this.prisma.taskBatch.create({
-        data: {
-          userId: user.id,
-          canvasId,
-          finishedAt: new Date(),
-        },
-        include: { tasks: true },
-      });
-      return emptyBatch;
+      throw new Error("No node selected to process.");
     }
+
+    const batch = await this.prisma.taskBatch.create({
+      data: {
+        userId: user.id,
+        canvasId,
+      },
+    });
 
     const allNodeIds = data.nodes.map(n => n.id);
     const { revDepGraph: fullRevDepGraph } = this.buildDepGraphs(allNodeIds, data);
@@ -294,83 +292,80 @@ export class NodeWFProcessor {
       throw new Error('Some necessary nodes not found in canvas.');
     }
 
-    const batch = await this.prisma.taskBatch.create({
-      data: {
-        userId: user.id,
-        canvasId,
-      },
-    });
-
-    for (const nodeId of topoOrder) {
-      const node = data.nodes.find(n => n.id === nodeId)!;  // Use current in-memory data
-      const template = await this.prisma.nodeTemplate.findUnique({ where: { type: node.type } });  // Fetch template for isTransient
-      const processor = processors[node.type];
-      if (!processor) {
-        throw new Error(`No processor for node type ${node.type}.`);
-      }
-
-      // Create task before processing
-      const task = await this.prisma.task.create({
-        data: {
-          name: `Process node ${node.name || node.id}`,
-          nodeId,
-          status: TaskStatus.EXECUTING,
-          startedAt: new Date(),
-          isTest: false,
-          batchId: batch.id,
-        },
-      });
-
-      try {
-        // Await processor, pass current data
-        const { success, error, newResult } = await processor({ node, data, prisma: this.prisma });
-
-        if (newResult) {
-          // Update in-memory data for propagation to downstream nodes
-          const updatedNode = data.nodes.find(n => n.id === nodeId)!;
-          updatedNode.result = structuredClone(newResult);
+    const executer = async () => {
+      for (const nodeId of topoOrder) {
+        const node = data.nodes.find(n => n.id === nodeId)!;  // Use current in-memory data
+        const template = await this.prisma.nodeTemplate.findUnique({ where: { type: node.type } });  // Fetch template for isTransient
+        const processor = processors[node.type];
+        if (!processor) {
+          throw new Error(`No processor for node type ${node.type}.`);
         }
 
-        const finishedAt = new Date();
-        await this.prisma.task.update({
-          where: { id: task.id },
+        // Create task before processing
+        const task = await this.prisma.task.create({
           data: {
-            status: success ? TaskStatus.COMPLETED : TaskStatus.FAILED,
-            finishedAt,
-            durationMs: finishedAt.getTime() - task.startedAt!.getTime(),
-            error: error ? { message: error } : null,
+            name: `Process node ${node.name || node.id}`,
+            nodeId,
+            status: TaskStatus.EXECUTING,
+            startedAt: new Date(),
+            isTest: false,
+            batchId: batch.id,
           },
         });
 
-        // Persist to DB only if not transient
-        if (success && !template?.isTransient && newResult) {
-          await this.prisma.node.update({
-            where: { id: node.id },
-            data: { result: newResult as NodeResult },
+        try {
+          // Await processor, pass current data
+          const { success, error, newResult } = await processor({ node, data, prisma: this.prisma });
+
+          if (newResult) {
+            // Update in-memory data for propagation to downstream nodes
+            const updatedNode = data.nodes.find(n => n.id === nodeId)!;
+            updatedNode.result = structuredClone(newResult);
+          }
+
+          const finishedAt = new Date();
+          await this.prisma.task.update({
+            where: { id: task.id },
+            data: {
+              status: success ? TaskStatus.COMPLETED : TaskStatus.FAILED,
+              finishedAt,
+              durationMs: finishedAt.getTime() - task.startedAt!.getTime(),
+              error: error ? { message: error } : null,
+            },
+          });
+
+          // Persist to DB only if not transient
+          if (success && !template?.isTransient && newResult) {
+            await this.prisma.node.update({
+              where: { id: node.id },
+              data: { result: newResult as NodeResult },
+            });
+          }
+        } catch (err: unknown) {
+          console.log({ err });
+          const finishedAt = new Date();
+          await this.prisma.task.update({
+            where: { id: task.id },
+            data: {
+              status: TaskStatus.FAILED,
+              finishedAt,
+              durationMs: finishedAt.getTime() - task.startedAt!.getTime(),
+              error: err instanceof Error ? { message: err.message } : { message: 'Unknown error' },
+            },
           });
         }
-      } catch (err: unknown) {
-        console.log({ err });
-        const finishedAt = new Date();
-        await this.prisma.task.update({
-          where: { id: task.id },
-          data: {
-            status: TaskStatus.FAILED,
-            finishedAt,
-            durationMs: finishedAt.getTime() - task.startedAt!.getTime(),
-            error: err instanceof Error ? { message: err.message } : { message: 'Unknown error' },
-          },
-        });
       }
+
+      const batchFinishedAt = new Date();
+      await this.prisma.taskBatch.update({
+        where: { id: batch.id },
+        data: { finishedAt: batchFinishedAt },
+        include: { tasks: true },
+      });
     }
 
-    const batchFinishedAt = new Date();
-    const updatedBatch = await this.prisma.taskBatch.update({
-      where: { id: batch.id },
-      data: { finishedAt: batchFinishedAt },
-      include: { tasks: true },
-    });
+    executer();
 
-    return updatedBatch;
+    return batch;
   }
 }

@@ -5,7 +5,7 @@ import { type BlurNodeConfig, BLUR_TYPES } from "@gatewai/types";
 import { memo, useCallback } from "react";
 
 const BlurTypeSelector = memo(({node}: {node: NodeEntityType}) => {
-  const config = node.config as BlurNodeConfig;
+  const config = node?.config as BlurNodeConfig;
   const dispatch = useAppDispatch();
   
   const handleChange = useCallback((blurType: string) => {
@@ -17,7 +17,7 @@ const BlurTypeSelector = memo(({node}: {node: NodeEntityType}) => {
   
   return (
     <Select 
-      value={config.blurType ?? 'Box'}
+      value={config?.blurType ?? 'Box'}
       onValueChange={handleChange}
     >
       <SelectTrigger className="w-[140px]">

@@ -117,7 +117,10 @@ const blurProcessor: NodeProcessor<BlurExtraArgs> = async ({ node, data, extraAr
           return { success: false, error: 'Failed to get OffscreenCanvas context' };
       }
 
-      const config: BlurNodeConfig = node.config as BlurNodeConfig;
+      const config: BlurNodeConfig = (node.config ?? {
+        size: 1,
+        blurType: 'Box',
+      }) as BlurNodeConfig;
       if (!config) {
           throw new Error("Config is missing");
       }

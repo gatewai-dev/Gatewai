@@ -525,7 +525,7 @@ const canvasRoutes = new Hono<{Variables: AuthHonoTypes}>({
                 data: {
                     nodeId: newNodeId,
                     type: oldHandle.type,
-                    dataType: oldHandle.dataType,
+                    dataTypes: oldHandle.dataTypes,
                     label: oldHandle.label,
                     order: oldHandle.order,
                     required: oldHandle.required,
@@ -564,7 +564,7 @@ const canvasRoutes = new Hono<{Variables: AuthHonoTypes}>({
                 targetHandleId: newTargetHandleId!,
             }
         });
-    }).filter(Boolean) as any[];
+    }).filter(Boolean);
 
     if (edgeCreations.length > 0) {
         await prisma.$transaction(edgeCreations);
@@ -586,9 +586,11 @@ const canvasRoutes = new Hono<{Variables: AuthHonoTypes}>({
 
         const wfProcessor = new NodeWFProcessor(prisma);
 
-        const tasks = await wfProcessor.processSelectedNodes(canvasId, validated.node_ids, user);
+        // Starts processing but not await.
+        // Frontend starts polling when it get's response.
+        const taskBatch = await wfProcessor.processSelectedNodes(canvasId, validated.node_ids, user);
 
-        return c.json(tasks, 201);
+        return c.json(taskBatch, 201);
     }
 );
 

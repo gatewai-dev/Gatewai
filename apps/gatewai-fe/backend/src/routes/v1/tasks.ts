@@ -14,7 +14,6 @@ const tasksQueryParams = z.object({
 const tasksRouter = new Hono<{Variables: AuthHonoTypes}>({
     strict: false,
 })
-// Returns active batches for the canvas
 .get('/:canvasId',
     zValidator('query', tasksQueryParams),
     zValidator('param', z.object({

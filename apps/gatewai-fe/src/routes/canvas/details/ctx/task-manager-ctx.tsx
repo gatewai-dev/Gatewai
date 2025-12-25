@@ -1,20 +1,31 @@
-import { createContext, useContext, useState, type Dispatch, type PropsWithChildren, type SetStateAction } from 'react';
-import type { Canvas } from '@gatewai/types';
+import { createContext, useContext, useEffect, useMemo, useState, type Dispatch, type PropsWithChildren, type SetStateAction } from 'react';
+import type { Canvas, Node, Task, TaskBatch } from '@gatewai/db';
 import { useGetActiveCanvasBatchesQuery } from '@/store/tasks';
 import type { ActiveCanvasBatchListRPC, ActiveCanvasBatchListRPCParams } from '@/rpc/types';
 
 interface TaskManagerContextType {
-  tasks: ActiveCanvasBatchListRPC | undefined;
+  taskBatchs: ActiveCanvasBatchListRPC | undefined;
   isError: boolean;
   isLoading: boolean;
+  isFetching: boolean;
   pollingInterval: number;
-  refetch: () => void;
   setPollingInterval: Dispatch<SetStateAction<number>>
   tasksFilters: ActiveCanvasBatchListRPCParams["query"];
   setTaskFilters: Dispatch<SetStateAction<{
     status?: string | undefined;
     fromDatetime?: string | undefined;
   }>>;
+  initiatedBatches: TaskBatch[];
+  setInitiatedBatches: Dispatch<SetStateAction<{
+    id: string;
+    userId: string;
+    createdAt: Date;
+    updatedAt: Date;
+    canvasId: string;
+    finishedAt: Date | null;
+  }[]>>;
+
+  nodeTaskStatus: Record<Node["id"], ActiveCanvasBatchListRPC[number]["tasks"][number]>;
 }
 
 const TaskManagerContext = createContext<TaskManagerContextType | undefined>(undefined);
@@ -30,11 +41,12 @@ const TaskManagerProvider = ({
   })
 
   const [pollingInterval, setPollingInterval] = useState(0);
+  const [initiatedBatches, setInitiatedBatches] = useState<TaskBatch[]>([]);
 
   const {
-    data: tasks,
-    refetch,
+    data: taskBatchs,
     isLoading,
+    isFetching,
     isError,
   } = useGetActiveCanvasBatchesQuery({
     param: {
@@ -46,15 +58,39 @@ const TaskManagerProvider = ({
     pollingInterval,
   });
 
+  console.log({taskBatchs})
+
+  useEffect(() => {
+    if (taskBatchs?.length === 0) {
+      setPollingInterval(0);
+    }
+  }, [taskBatchs?.length]);
+  
+  const nodeTaskStatus = useMemo(() => {
+    const status: Record<Node["id"], ActiveCanvasBatchListRPC[number]["tasks"][number]> = {};
+    taskBatchs?.forEach((batch) => {
+      batch.tasks.forEach((task) => {
+        if (task.nodeId) {
+          status[task.nodeId] = task;
+        }
+      })
+    })
+
+    return status;
+  }, [taskBatchs])
+
   const value: TaskManagerContextType = {
-    tasks,
+    taskBatchs,
     isError,
     isLoading,
-    refetch,
+    isFetching,
     pollingInterval,
     setPollingInterval,
     tasksFilters,
     setTaskFilters,
+    initiatedBatches,
+    setInitiatedBatches,
+    nodeTaskStatus
   };
 
   return <TaskManagerContext.Provider value={value}>{children}</TaskManagerContext.Provider>;

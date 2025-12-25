@@ -1,6 +1,13 @@
 import { memo } from "react";
 import { useTaskManagerCtx } from "../../ctx/task-manager-ctx";
 import { Button } from "@/components/ui/button";
+import { Spinner } from "@/components/ui/spinner"
+import {
+  Item,
+  ItemContent,
+  ItemMedia,
+  ItemTitle,
+} from "@/components/ui/item"
 import {
   Popover,
   PopoverContent,
@@ -8,14 +15,14 @@ import {
 } from "@/components/ui/popover";
 
 const CanvasTasksPanel = memo(() => {
-    const { tasks } = useTaskManagerCtx();
-    if (!tasks) {
-        return <>Loading...</>
+    const { isLoading, taskBatchs } = useTaskManagerCtx();
+    if (isLoading) {
+        return <div className="flex items-center justify-center text-xs">Loading <Spinner /></div>
     }
-    const runningTasks = tasks.filter(
-      (task) => task.status === "QUEUED" || task.status === "EXECUTING"
-    );
-    const count = runningTasks.length;
+    const runningTaskBatchs = taskBatchs?.filter(
+      (taskBatch) => taskBatch.finishedAt == null);
+
+    const count = runningTaskBatchs?.length ?? 0;
     const indicatorColor = count === 0 ? "bg-green-500" : "bg-amber-500";
 
     return (
@@ -29,16 +36,21 @@ const CanvasTasksPanel = memo(() => {
         <PopoverContent className="w-80">
           <div className="space-y-2">
             <h4 className="font-medium leading-none">Running Tasks</h4>
-            {runningTasks.length === 0 ? (
+            {count === 0 ? (
               <p className="text-sm text-muted-foreground">No tasks running.</p>
             ) : (
-              <ul className="list-disc pl-4 space-y-1">
-                {runningTasks.map((task) => (
-                  <li key={task.id} className="text-sm">
-                    {task.name} - {task.status}
-                  </li>
+              <div className="flex w-full max-w-xs flex-col gap-4 [--radius:1rem]">
+                {runningTaskBatchs?.map((taskBatch) => (
+                <Item key={taskBatch.id} variant="muted">
+                  <ItemMedia>
+                    <Spinner />
+                  </ItemMedia>
+                  <ItemContent>
+                    <ItemTitle className="line-clamp-1">{taskBatch.tasks.length} Nodes</ItemTitle>
+                  </ItemContent>
+                </Item>
                 ))}
-              </ul>
+              </div>
             )}
           </div>
         </PopoverContent>

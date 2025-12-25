@@ -13,8 +13,11 @@ import { useCanvasCtx } from '../../ctx/canvas-ctx';
 import { BaseNode } from '../base';
 import Markdown from 'react-markdown'
 import remarkGfm from 'remark-gfm'
+import { useTaskManagerCtx } from '../../ctx/task-manager-ctx';
+import { Spinner } from '@/components/ui/spinner';
 
 const LlmNodeComponent = memo((props: NodeProps<LLMNode>) => {
+  const { nodeTaskStatus } = useTaskManagerCtx();
   const node = useAppSelector(makeSelectNodeById(props.id));
   const result = node?.result as unknown as LLMResult;
 
@@ -23,6 +26,13 @@ const LlmNodeComponent = memo((props: NodeProps<LLMNode>) => {
   }, [result?.outputs, result?.selectedOutputIndex])
 
   const { runNodes } = useCanvasCtx();
+
+  const isNodeRunning = useMemo(() => {
+    if (!node) {
+      return false;
+    }
+    return Object.hasOwn(nodeTaskStatus, node.id)
+  }, [node, nodeTaskStatus])
 
   return (
     <BaseNode {...props}>
@@ -38,8 +48,19 @@ const LlmNodeComponent = memo((props: NodeProps<LLMNode>) => {
             <p className='text-xs text-gray-500'>LLM result will display here.</p>
           </div>
         )}
-        <Button onClick={() => runNodes([props.data.id])} size="xs"><PlayIcon />
-        <span className='text-xs'>Run Node</span></Button>
+        <Button
+          className='w-24'
+          variant="outline"
+          disabled={isNodeRunning} 
+          onClick={() => runNodes([props.data.id])} size="sm">
+          {!isNodeRunning && (<>
+            <PlayIcon />
+            <span className='text-xs'>Run Node</span>
+          </>)}
+          {isNodeRunning && (<>
+            <Spinner className='size-3' />
+          </>)}
+        </Button>
       </div>
     </BaseNode>
   );

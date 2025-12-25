@@ -23,7 +23,7 @@ const BlurValueSlider = memo(({node}: {node: NodeEntityType}) => {
         id: node.id,
         newConfig: { size: localSize }
       }));
-    }, 300);
+    }, 100);
 
     return () => clearTimeout(timer);
   }, [localSize, dispatch, node.id]);

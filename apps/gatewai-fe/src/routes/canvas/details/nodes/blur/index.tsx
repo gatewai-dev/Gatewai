@@ -32,20 +32,20 @@ const BlurNodeComponent = memo((props: NodeProps<BlurNode>) => {
   const allHandles = useAppSelector(makeSelectAllHandles);
   const node = useAppSelector(makeSelectNodeById(props.id));
   const allEdges = useAppSelector(makeSelectAllEdges);
-  
+
   const config: BlurNodeConfig = (node?.config ?? props.data.config) as BlurNodeConfig;
-  
+
   const context = useNodeContext({nodeId: props.id})
   const output = useHandleValueResolver({handleId: context?.inputHandles[0].id ?? "0"})
-  console.log({output})
   const showResult = output != null;
+
   const inputImageUrl = useMemo(() => {
     const generation = output.outputs[output.selectedOutputIndex];
     if (!generation) return null;
     const genData = generation.items[0];
     return (genData?.data as FileData)?.dataUrl || (genData?.data as FileData)?.entity?.signedUrl
   }, [output.outputs, output.selectedOutputIndex]);
-  console.log({inputImageUrl})
+
   // Compute a key to detect changes in input or config
   const computeKey = useMemo(() => {
     if (!inputImageUrl) return null;

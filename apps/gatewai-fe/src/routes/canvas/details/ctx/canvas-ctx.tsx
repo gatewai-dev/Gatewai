@@ -50,7 +50,7 @@ const CanvasProvider = ({
   canvasId: string;
 }>) => {
 
-  const { refetch: refetchTasks, setPollingInterval: setTasksPollingInterval } = useTaskManagerCtx();
+  const { setPollingInterval: setTasksPollingInterval } = useTaskManagerCtx();
   const dispatch = useAppDispatch();
   const store = useStore();
   const rfInstance = useRef<ReactFlowInstance | undefined>(undefined);
@@ -357,9 +357,8 @@ const CanvasProvider = ({
           node_ids
         }
       });
-      refetchTasks();
       setTasksPollingInterval(2000);
-  }, [save, runNodesMutateAsync, refetchTasks, setTasksPollingInterval, canvasId]);
+  }, [save, runNodesMutateAsync, setTasksPollingInterval, canvasId]);
 
   useEffect(() => {
     dispatch(setNodes(initialNodes));
