@@ -160,7 +160,7 @@
 :root {
   --checker-size: 20px;
   --checker-half: calc(var(--checker-size) / 2);
-  --checker-color: #4c4c4c;
+  --checker-color: rgb(54, 54, 54);
 }
 
 .media-container {

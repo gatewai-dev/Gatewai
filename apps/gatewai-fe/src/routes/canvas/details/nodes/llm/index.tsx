@@ -22,7 +22,6 @@ const LlmNodeComponent = memo((props: NodeProps<LLMNode>) => {
     return result?.outputs?.[result.selectedOutputIndex]?.items?.[0]?.data ?? null;
   }, [result?.outputs, result?.selectedOutputIndex])
 
-
   const { runNodes } = useCanvasCtx();
 
   return (
@@ -39,7 +38,7 @@ const LlmNodeComponent = memo((props: NodeProps<LLMNode>) => {
             <p className='text-xs text-gray-500'>LLM result will display here.</p>
           </div>
         )}
-        <Button onClick={() => runNodes([props.data.id])}  size="xs"><PlayIcon />
+        <Button onClick={() => runNodes([props.data.id])} size="xs"><PlayIcon />
         <span className='text-xs'>Run Node</span></Button>
       </div>
     </BaseNode>

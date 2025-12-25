@@ -2,7 +2,8 @@ import type { DataType, FileAsset } from "@gatewai/db";
 
 
   export type FileData = {
-    entity: FileAsset;
+    entity?: FileAsset;
+    dataUrl?: string;
   }
 
   export type DataForType<R extends DataType> =

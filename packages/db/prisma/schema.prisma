@@ -219,6 +219,7 @@ model NodeTemplate {
   nodes               Node[]
   defaultConfig       Json?
   isTerminalNode      Boolean                @default(false)
+  isTransient         Boolean @default(false)
 
   @@map("node_template")
 }

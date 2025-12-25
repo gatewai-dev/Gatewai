@@ -106,7 +106,8 @@ CREATE TABLE "node_template" (
     "createdAt" DATETIME NOT NULL DEFAULT CURRENT_TIMESTAMP,
     "updatedAt" DATETIME NOT NULL,
     "defaultConfig" JSONB,
-    "isTerminalNode" BOOLEAN NOT NULL DEFAULT false
+    "isTerminalNode" BOOLEAN NOT NULL DEFAULT false,
+    "isTransient" BOOLEAN NOT NULL DEFAULT false
 );
 
 -- CreateTable

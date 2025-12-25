@@ -1,6 +1,6 @@
 import { useState } from 'react';
 import { Button } from '@/components/ui/button';
-import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '@/components/ui/card';
+import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
 import { AlertCircle, Loader2 } from 'lucide-react';
 import { authClient } from '@/lib/auth-client';
 import { Alert, AlertDescription } from '@/components/ui/alert';
@@ -18,20 +18,18 @@ function SignInForm({ onSuccess, onError }: SignInFormProps) {
     setIsLoading(true);
     setError(null);
     try {
-        const result = await authClient.signIn.social({
-            provider: 'google',
-        });
-        if (result.error) {
-            throw new Error(result.error.message);
-        }
-
-      console.log('Google sign in successful');
+      const result = await authClient.signIn.social({
+          provider: 'google',
+      });
+      if (result.error) {
+          throw new Error(result.error.message);
+      }
 
       // Handle successful sign in
       onSuccess?.();
 
     } catch (err) {
-      const errorMessage = err instanceof Error 
+      const errorMessage = err instanceof Error
         ? err.message 
         : 'Failed to sign in with Google.';
 

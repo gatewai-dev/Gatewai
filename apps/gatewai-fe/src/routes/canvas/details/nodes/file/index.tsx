@@ -91,7 +91,7 @@ const FileNodeComponent = memo((props: NodeProps<FileNode>) => {
         }
         {showResult &&
           <UploadButton
-            className='w-32 text-[8px] py-0'
+            className=' py-0'
             onUploadSuccess={onUploadSuccess}
             onUploadError={onUploadError}
             accept={buttonAccept}

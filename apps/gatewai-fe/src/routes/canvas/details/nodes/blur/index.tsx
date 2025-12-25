@@ -154,7 +154,7 @@ BlurTypeSelector.displayName = 'BlurTypeSelector';
 
 const ImagePlaceholder = () => {
   return (
-    <div className="w-full media-container h-[280px] flex items-center justify-center bg-gray-100 rounded">
+    <div className="w-full media-container h-[280px] flex items-center justify-center rounded">
       <span className="text-gray-400 text-sm">No image connected</span>
     </div>
   );

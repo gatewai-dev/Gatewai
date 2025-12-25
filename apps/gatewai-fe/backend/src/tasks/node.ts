@@ -1,9 +1,10 @@
-import type { FileData, NodeResult, Output, Task } from '@gatewai/types';
+import type { BlurNodeConfig, FileData, NodeResult, Output, Task } from '@gatewai/types';
 import { PrismaClient, NodeType, DataType, TaskStatus } from '@gatewai/db';
 import { GetCanvasEntities, getInputValue, type CanvasCtxData } from '../repositories/canvas.js';
 import { generateText, type ModelMessage, type TextPart, type UserContent } from 'ai';
 import { xai } from '../ai/xai.js';
 import { type User } from "better-auth";
+import sharp from 'sharp';
 
 type NodeProcessorCtx = {
   node: CanvasCtxData["nodes"][number]
@@ -11,10 +12,88 @@ type NodeProcessorCtx = {
   prisma: PrismaClient;
 }
 
-type NodeProcessor = (ctx: NodeProcessorCtx) => Promise<{ success: boolean, error?: string }>;
+type NodeProcessor = (ctx: NodeProcessorCtx) => Promise<{ success: boolean, error?: string, newResult?: NodeResult }>;
 
 const processors: Partial<Record<NodeType, NodeProcessor>> = {
-  [NodeType.LLM]: async ({ node, data, prisma }) => {
+  // 
+  [NodeType.Blur]: async ({ node, data, prisma }) => {
+    try {
+      const imageInput = getInputValue(data, node.id, true, { dataType: DataType.Image, label: 'Image' }) as FileData | null;
+      const blurConfig = node.config as BlurNodeConfig;
+      const blurAmount = blurConfig.size ?? 0;
+      const blurType = blurConfig.blurType ?? 'Box';
+
+      if (!imageInput) {
+        return { success: false, error: 'No image input provided' };
+      }
+
+      // Fetch image buffer (handle signedUrl or dataUrl)
+      let buffer: Buffer;
+      if (imageInput.dataUrl) {
+        // Extract base64 from dataUrl
+        const base64 = imageInput.dataUrl.split(';base64,').pop() ?? '';
+        buffer = Buffer.from(base64, 'base64');
+      } else if (imageInput.entity?.signedUrl) {
+        // Download from signedUrl (use fetch or axios)
+        const response = await fetch(imageInput.entity.signedUrl);
+        buffer = Buffer.from(await response.arrayBuffer());
+      } else {
+        return { success: false, error: 'Invalid image input' };
+      }
+
+      let processedBuffer: Buffer;
+      if (blurAmount <= 0) {
+        processedBuffer = buffer;
+      } else if (blurType === 'Gaussian') {
+        processedBuffer = await sharp(buffer)
+          .blur(blurAmount)
+          .toBuffer();
+      } else if (blurType === 'Box') {
+        const kernelSize = Math.max(1, Math.round(blurAmount) * 2 + 1);
+        const kernel = new Array(kernelSize * kernelSize).fill(1 / (kernelSize * kernelSize));
+        processedBuffer = await sharp(buffer)
+          .convolve({
+            width: kernelSize,
+            height: kernelSize,
+            kernel,
+          })
+          .toBuffer();
+      } else {
+        return { success: false, error: 'Invalid blur type' };
+      }
+
+      // Convert to data URL for transient output
+      const mimeType = imageInput.entity?.mimeType;  // Or detect dynamically
+      const dataUrl = `data:${mimeType};base64,${processedBuffer.toString('base64')}`;
+
+      // Build new result (similar to LLM)
+      const outputHandle = data.handles.find(h => h.nodeId === node.id && h.type === 'Output');
+      if (!outputHandle) throw new Error('Output handle is missing');
+
+      const newResult: NodeResult = structuredClone(node.result as NodeResult) ?? {
+        outputs: [],
+        selectedOutputIndex: 0,
+      };
+
+      const newGeneration: Output = {
+        items: [
+          {
+            type: DataType.Image,
+            data: { dataUrl },  // Transient data URL
+            outputHandleId: outputHandle.id,
+          },
+        ],
+      };
+
+      newResult.outputs.push(newGeneration);
+      newResult.selectedOutputIndex = newResult.outputs.length - 1;
+
+      return { success: true, newResult };
+    } catch (err: unknown) {
+      return { success: false, error: err instanceof Error ? err.message : 'Blur processing failed' };
+    }
+  },
+  [NodeType.LLM]: async ({ node, data }) => {
     try {
       console.log('RUNNING LLM PROCESSOR')
       const systemPrompt = getInputValue(data, node.id, false, { dataType: DataType.Text, label: 'System Prompt' }) as string | null;
@@ -38,7 +117,7 @@ const processors: Partial<Record<NodeType, NodeProcessor>> = {
         userContent.push(textPart);
       }
       if (imageFileData?.entity?.signedUrl) {
-        userContent.push({type: 'image', image: imageFileData?.entity?.signedUrl});
+        userContent.push({type: 'image', image: imageFileData?.entity?.signedUrl ?? imageFileData.dataUrl});
       }
 
       if (userContent.length === 0) {
@@ -64,11 +143,10 @@ const processors: Partial<Record<NodeType, NodeProcessor>> = {
       );
       if (!outputHandle) throw new Error('Output handle is missing');
 
-      const prevResult = (node.result as NodeResult) ?? {
+      const newResult = structuredClone(node.result as NodeResult) ?? {
         outputs: [],
         selectedOutputIndex: 0,
       };
-      const newResult =  structuredClone(prevResult);
 
       const newGeneration: Output = {
         items: [
@@ -83,12 +161,7 @@ const processors: Partial<Record<NodeType, NodeProcessor>> = {
       newResult.outputs.push(newGeneration);
       newResult.selectedOutputIndex = newResult.outputs.length - 1;
 
-      await prisma.node.update({
-        where: { id: node.id },
-        data: { result: newResult as NodeResult },
-      });
-
-      return { success: true };
+      return { success: true, newResult };
     } catch (err: unknown) {
       if (err instanceof Error) {
         return { success: false, error: err?.message ?? 'LLM processing failed' };
@@ -159,7 +232,7 @@ export class NodeWFProcessor {
   }
 
   public async processSelectedNodes(canvasId: string, nodeIds: string[], user: User): Promise<Task[]> {
-    const data = await GetCanvasEntities(canvasId, user);
+    const data = await GetCanvasEntities(canvasId, user);  // Load once, update in-memory as we go
 
     if (nodeIds.length === 0) return [];
 
@@ -182,8 +255,8 @@ export class NodeWFProcessor {
     const tasks = [];
 
     for (const nodeId of topoOrder) {
-      console.log({topoOrder})
-      const node = data.nodes.find(n => n.id === nodeId)!;
+      const node = data.nodes.find(n => n.id === nodeId)!;  // Use current in-memory data
+      const template = await this.prisma.nodeTemplate.findUnique({ where: { type: node.type } });  // Fetch template for isTransient
       const processor = processors[node.type];
       if (!processor) {
         throw new Error(`No processor for node type ${node.type}.`);
@@ -200,40 +273,51 @@ export class NodeWFProcessor {
           startedAt: new Date(),
           isTest: false,
         },
-        include: {
-          node: true,
-        },
+        include: { node: true },
       });
-
       tasks.push(task);
 
-      // Call processor without awaiting
-      processor({ node, data, prisma: this.prisma })
-        .then(async (result) => {
-          const finishedAt = new Date();
-          await this.prisma.task.update({
-            where: { id: task.id },
-            data: {
-              status: result.success ? TaskStatus.COMPLETED : TaskStatus.FAILED,
-              finishedAt,
-              durationMs: finishedAt.getTime() - task.startedAt!.getTime(),
-              error: result.error ? { message: result.error } : null,
-            },
-          });
-        })
-        .catch(async (err: unknown) => {
-          console.log({err});
-          const finishedAt = new Date();
-          await this.prisma.task.update({
-            where: { id: task.id },
-            data: {
-              status: TaskStatus.FAILED,
-              finishedAt,
-              durationMs: finishedAt.getTime() - task.startedAt!.getTime(),
-              error: err instanceof Error ? { message: err.message } : { message: 'Unknown error' },
-            },
-          });
+      try {
+        // Await processor, pass current data
+        const { success, error, newResult } = await processor({ node, data, prisma: this.prisma });
+
+        if (newResult) {
+          // Update in-memory data for propagation to downstream nodes
+          const updatedNode = data.nodes.find(n => n.id === nodeId)!;
+          updatedNode.result = structuredClone(newResult);
+        }
+
+        const finishedAt = new Date();
+        await this.prisma.task.update({
+          where: { id: task.id },
+          data: {
+            status: success ? TaskStatus.COMPLETED : TaskStatus.FAILED,
+            finishedAt,
+            durationMs: finishedAt.getTime() - task.startedAt!.getTime(),
+            error: error ? { message: error } : null,
+          },
         });
+
+        // Persist to DB only if not transient
+        if (success && !template?.isTransient && newResult) {
+          await this.prisma.node.update({
+            where: { id: node.id },
+            data: { result: newResult as NodeResult },
+          });
+        }
+      } catch (err: unknown) {
+        console.log({ err });
+        const finishedAt = new Date();
+        await this.prisma.task.update({
+          where: { id: task.id },
+          data: {
+            status: TaskStatus.FAILED,
+            finishedAt,
+            durationMs: finishedAt.getTime() - task.startedAt!.getTime(),
+            error: err instanceof Error ? { message: err.message } : { message: 'Unknown error' },
+          },
+        });
+      }
     }
 
     return tasks;
