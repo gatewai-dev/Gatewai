@@ -139,8 +139,6 @@ export {
   CompositorNodeConfigSchema,
   DescriberNodeConfigSchema,
   LLMNodeConfigSchema,
-  LLM_NODE_MODELS,
-
   RouterNodeConfigSchema,
   ArrayNodeConfigSchema,
   ResizeNodeConfigSchema,
@@ -165,4 +163,5 @@ export {
   type GPTImage1Config,
 
   BLUR_TYPES,
+  LLM_NODE_MODELS,
 };

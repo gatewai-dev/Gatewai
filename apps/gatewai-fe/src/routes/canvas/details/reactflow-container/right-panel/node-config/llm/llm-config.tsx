@@ -1,7 +1,7 @@
 import { useAppDispatch } from "@/store";
 import { updateNodeConfig, type NodeEntityType } from "@/store/nodes";
 import { memo, useCallback, useEffect } from "react";
-import { LLMNodeConfigSchema, type LLMNodeConfig } from '@gatewai/types';
+import { LLMNodeConfigSchema, type LLMNodeConfig, LLM_NODE_MODELS } from '@gatewai/types';
 import { useForm } from "react-hook-form";
 import { zodResolver } from "@hookform/resolvers/zod";
 import {
@@ -30,10 +30,10 @@ const LLMNodeConfigComponent = memo(({ node }: { node: NodeEntityType }) => {
   const form = useForm<LLMNodeConfig>({
     resolver: zodResolver(LLMNodeConfigSchema),
     defaultValues: {
-      model: "xai/grok-4-fast-non-reasoning",
+      model: LLM_NODE_MODELS[0],
     },
   });
-
+  
   useEffect(() => {
     if (node?.config) {
       form.reset(node.config as LLMNodeConfig);

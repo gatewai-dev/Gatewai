@@ -344,6 +344,10 @@ importers:
   packages/tsconfig: {}
 
   packages/types:
+    dependencies:
+      zod:
+        specifier: 3.25.67
+        version: 3.25.67
     devDependencies:
       '@eslint/eslintrc':
         specifier: ^3.3.1
