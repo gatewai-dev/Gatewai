@@ -1,4 +1,4 @@
-import { memo, useEffect, useMemo, useRef, useState } from 'react';
+import { memo, useEffect, useMemo, useState } from 'react';
 import { type NodeProps } from '@xyflow/react';
 import {
   type BlurNodeConfig,
@@ -55,6 +55,7 @@ const BlurNodeComponent = memo((props: NodeProps<BlurNode>) => {
 
   // Compute the blur using the processor
   useEffect(() => {
+    console.log({showResult, computeKey, node})
     if (!showResult || !computeKey || !node) {
       setPreviewUrl(null);
       return;
@@ -99,10 +100,10 @@ const BlurNodeComponent = memo((props: NodeProps<BlurNode>) => {
             />
           </div>
         )}
-        <div className="flex gap-3 items-end">
+        {node && <div className="flex gap-3 items-end">
           <BlurTypeSelector node={node} />
           <BlurValueSlider node={node} />
-        </div>
+        </div>}
       </div>
     </BaseNode>
   );

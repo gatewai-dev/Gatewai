@@ -1,13 +1,13 @@
 import { Input } from "@/components/ui/input";
-import { useAppDispatch } from "@/store";
-import { type NodeEntityType, updateNodeConfig } from "@/store/nodes";
+import { type NodeEntityType } from "@/store/nodes";
 import type { ResizeNodeConfig } from "@gatewai/types";
 import { memo, useCallback } from "react";
+import { useCanvasCtx } from "../../ctx/canvas-ctx";
 
 
 const ResizeHeightInput = memo(({node, originalWidth, originalHeight, maintainAspect}: {node: NodeEntityType, originalWidth: number | null, originalHeight: number | null, maintainAspect: boolean}) => {
-  const config: ResizeNodeConfig = node.config as ResizeNodeConfig;
-  const dispatch = useAppDispatch();
+  const config: ResizeNodeConfig = node?.config as ResizeNodeConfig;
+    const { onNodeConfigUpdate } = useCanvasCtx();
   
   const handleChange = useCallback((e: React.ChangeEvent<HTMLInputElement>) => {
     const valueStr = e.target.value;
@@ -21,17 +21,17 @@ const ResizeHeightInput = memo(({node, originalWidth, originalHeight, maintainAs
       updates = { ...updates, width: newWidth };
     }
     
-    dispatch(updateNodeConfig({
+    onNodeConfigUpdate({
       id: node.id,
       newConfig: updates
-    }));
-  }, [dispatch, node.id, maintainAspect, originalWidth, originalHeight]);
+    });
+  }, [maintainAspect, originalWidth, originalHeight, onNodeConfigUpdate, node.id]);
   
   const displayValue = config.height ?? originalHeight ?? 0;
   
   return (
-    <div className="flex flex-col gap-1 flex-1">
-      <label className="text-xs text-gray-600">Height: {displayValue}</label>
+    <div className="flex items-center gap-1 flex-1">
+      <label className="text-xs text-gray-600">Height</label>
       <Input
         type="text"
         inputMode="numeric"

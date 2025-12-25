@@ -1,5 +1,5 @@
 import type { NodeProcessor } from ".";
-import { db, storeClientNodeResult, hashNodeResult, hashConfigSync } from '../../media-db'; // Adjust import path as needed
+import { db, storeClientNodeResult, hashNodeResult, hashConfigSync, cleanupNodeResults } from '../../media-db'; // Adjust import path as needed
 import type { NodeResult, FileData, BlurNodeConfig, BlurResult } from "@gatewai/types";
 
 const boxBlurCanvasRGB = (
@@ -76,11 +76,12 @@ const blurProcessor: NodeProcessor<BlurExtraArgs> = async ({ node, data, extraAr
       const { handles } = data;
 
       // Extract input image from source result
-      const {resolvedInputResult} = extraArgs
+      const { resolvedInputResult } = extraArgs
       const inputFileData = resolvedInputResult.outputs[resolvedInputResult.selectedOutputIndex].items[0].data as FileData;
       const imageUrl = inputFileData.dataUrl || inputFileData.entity?.signedUrl;
       console.log({inputFileData})
       if (!imageUrl) {
+          await cleanupNodeResults(node.id);
           return { success: false, error: 'No image URL available' };
       }
 

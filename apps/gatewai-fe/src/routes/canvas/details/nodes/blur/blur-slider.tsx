@@ -1,14 +1,14 @@
 import { Slider } from "@/components/ui/slider";
-import { useAppDispatch } from "@/store";
-import { type NodeEntityType, updateNodeConfig } from "@/store/nodes";
+import { type NodeEntityType } from "@/store/nodes";
 import type { BlurNodeConfig } from "@gatewai/types";
 import { memo, useCallback, useEffect, useState } from "react";
+import { useCanvasCtx } from "../../ctx/canvas-ctx";
 
 const BlurValueSlider = memo(({node}: {node: NodeEntityType}) => {
   const config: BlurNodeConfig = node.config as BlurNodeConfig;
-  const dispatch = useAppDispatch();
   const [localSize, setLocalSize] = useState(config.size ?? 0);
-
+  const { onNodeConfigUpdate } = useCanvasCtx();
+  
   useEffect(() => {
     setLocalSize(config.size ?? 0);
   }, [config.size]);
@@ -19,14 +19,14 @@ const BlurValueSlider = memo(({node}: {node: NodeEntityType}) => {
 
   useEffect(() => {
     const timer = setTimeout(() => {
-      dispatch(updateNodeConfig({
+      onNodeConfigUpdate({
         id: node.id,
         newConfig: { size: localSize }
-      }));
+      });
     }, 100);
 
     return () => clearTimeout(timer);
-  }, [localSize, dispatch, node.id]);
+  }, [localSize, node.id, onNodeConfigUpdate]);
   
   return (
     <div className="flex flex-col gap-1 flex-1">

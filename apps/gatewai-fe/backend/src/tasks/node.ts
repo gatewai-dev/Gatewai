@@ -69,7 +69,7 @@ const processors: Partial<Record<NodeType, NodeProcessor>> = {
     try {
       console.log('PROCESSING RESIZE')
       const imageInput = getInputValue(data, node.id, true, { dataType: DataType.Image, label: 'Image' }) as FileData | null;
-      const resizeConfig = node.config as ResizeNodeConfig;
+      const resizeConfig = node?.config as ResizeNodeConfig;
       const width = resizeConfig.width ?? 0;
       const height = resizeConfig.height ?? 0;
 

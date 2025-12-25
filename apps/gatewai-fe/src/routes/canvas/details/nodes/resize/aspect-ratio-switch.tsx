@@ -1,15 +1,15 @@
 import { Label } from "@/components/ui/label";
 import { Switch } from "@/components/ui/switch";
-import { useAppDispatch } from "@/store";
-import { type NodeEntityType, updateNodeConfig } from "@/store/nodes";
+import { type NodeEntityType } from "@/store/nodes";
 import type { ResizeNodeConfig } from "@gatewai/types";
 import { memo, useCallback } from "react";
+import { useCanvasCtx } from "../../ctx/canvas-ctx";
 
 
 const AspectRatioSwitch = memo(({node, originalWidth, originalHeight}: {node: NodeEntityType, originalWidth: number | null, originalHeight: number | null}) => {
-  const config = node.config as ResizeNodeConfig & { maintainAspect?: boolean };
+  const config = node?.config as ResizeNodeConfig;
   const maintainAspect = config.maintainAspect ?? true;
-  const dispatch = useAppDispatch();
+    const { onNodeConfigUpdate } = useCanvasCtx();
   
   const handleChange = useCallback((checked: boolean) => {
     let updates: Partial<ResizeNodeConfig & { maintainAspect: boolean }> = { maintainAspect: checked };
@@ -19,11 +19,11 @@ const AspectRatioSwitch = memo(({node, originalWidth, originalHeight}: {node: No
       updates = { ...updates, height: newHeight };
     }
     
-    dispatch(updateNodeConfig({
+    onNodeConfigUpdate({
       id: node.id,
       newConfig: updates
-    }));
-  }, [dispatch, node.id, originalWidth, originalHeight, config.width]);
+    });
+  }, [originalWidth, originalHeight, onNodeConfigUpdate, node.id, config.width]);
   
   return (
     <div className="flex items-center gap-2">

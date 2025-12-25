@@ -266,11 +266,16 @@ export async function cleanupOldResults(maxAge: number = 3600000): Promise<numbe
 /**
  * Cleanup results for a specific node
  */
-export async function cleanupNodeResults(nodeId: string): Promise<number> {
+export async function cleanupNodeResults(nodeId: NodeEntityType["id"]): Promise<number> {
   return await db.clientNodeResults
     .where('id')
     .equals(nodeId)
     .delete();
+}
+
+export async function cleanupBulkNodeResults(nodeIds: NodeEntityType["id"][]): Promise<void> {
+  return await db.clientNodeResults
+    .bulkDelete(nodeIds)
 }
 
 /**

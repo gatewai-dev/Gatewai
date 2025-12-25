@@ -1,5 +1,5 @@
 import type { NodeProcessor } from ".";
-import { db, storeClientNodeResult, hashNodeResult, hashConfigSync } from '../../media-db'; // Adjust import path as needed
+import { db, storeClientNodeResult, hashNodeResult, hashConfigSync, cleanupNodeResults } from '../../media-db'; // Adjust import path as needed
 import type { NodeResult, FileData, ResizeNodeConfig, ResizeResult } from "@gatewai/types";
 
 export type ResizeExtraArgs = {
@@ -18,6 +18,7 @@ const resizeProcessor: NodeProcessor<ResizeExtraArgs> = async ({ node, data, ext
       const imageUrl = inputFileData.dataUrl || inputFileData.entity?.signedUrl;
 
       if (!imageUrl) {
+        await cleanupNodeResults(node.id);
         return { success: false, error: 'No image URL available' };
       }
 

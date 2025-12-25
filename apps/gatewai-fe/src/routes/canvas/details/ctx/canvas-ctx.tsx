@@ -13,9 +13,9 @@ import {
   type ReactFlowInstance,
   type XYPosition
 } from '@xyflow/react';
-import type { NodeResult } from '@gatewai/types';
+import type { AllNodeConfig, NodeResult } from '@gatewai/types';
 import { useAppDispatch, useAppSelector, type RootState } from '@/store';
-import { setAllNodeEntities, type NodeEntityType, deleteManyNodeEntity } from '@/store/nodes';
+import { setAllNodeEntities, type NodeEntityType, deleteManyNodeEntity, updateNodeConfig } from '@/store/nodes';
 import { generateId } from '@/lib/idgen';
 import { createNodeEntity } from '@/store/nodes';
 import type { CanvasDetailsRPC, NodeTemplateListItemRPC, PatchCanvasRPCParams } from '@/rpc/types';
@@ -27,6 +27,7 @@ import { useStore } from 'react-redux';
 import { useGetCanvasDetailsQuery, usePatchCanvasMutation, useProcessNodesMutationMutation } from '@/store/canvas';
 import { useTaskManagerCtx } from './task-manager-ctx';
 import type { NodeType } from '@gatewai/db';
+import { cleanupBulkNodeResults } from '../media-db';
 
 interface CanvasContextType {
   canvas: CanvasDetailsRPC["canvas"] | undefined;
@@ -39,6 +40,10 @@ interface CanvasContextType {
   rfInstance: RefObject<ReactFlowInstance | undefined>;
   createNewNode: (template: NodeTemplateListItemRPC, position: XYPosition) => void;
   onNodesDelete: (deleted: Node[]) => void
+  onNodeConfigUpdate: (payload: {
+    id: string;
+    newConfig: Partial<AllNodeConfig>;
+}) => void
 }
 
 const CanvasContext = createContext<CanvasContextType | undefined>(undefined);
@@ -176,6 +181,11 @@ const CanvasProvider = ({
     dispatch(onNodeChange(changes));
     scheduleSave();
   }, [dispatch, scheduleSave]);
+
+  const onNodeConfigUpdate = useCallback((payload: {id: string, newConfig: Partial<AllNodeConfig>}) => {
+    dispatch(updateNodeConfig(payload));
+    scheduleSave();
+  }, [dispatch, scheduleSave])
 
   const onEdgesChange = useCallback((changes: EdgeChange<Edge>[]) => {
     dispatch(onEdgeChange(changes));
@@ -325,7 +335,7 @@ const CanvasProvider = ({
   );
 
     const onNodesDelete = useCallback(
-    (deleted: Node[]) => {
+    async (deleted: Node[]) => {
 
       const deletedNodeIds = deleted.map(m => m.id);
       const newNodes = rfNodes.filter(f => !deletedNodeIds.includes(f.id));
@@ -333,7 +343,8 @@ const CanvasProvider = ({
       const deletedEdgeIds = edgesToRemove.map(m => m.id);
       const newEdges = rfEdges.filter(f => !deletedEdgeIds.includes(f.id));
       const deletedHandleIds = handleEntities.filter(m => deletedNodeIds.includes(m.nodeId)).map(m => m.id);
-      
+
+      await cleanupBulkNodeResults(deletedNodeIds);
       dispatch(setNodes(newNodes))
       dispatch(deleteManyNodeEntity(deletedNodeIds))
       dispatch(setEdges(newEdges))
@@ -442,7 +453,8 @@ const CanvasProvider = ({
     runNodes,
     rfInstance,
     createNewNode,
-    onNodesDelete
+    onNodesDelete,
+    onNodeConfigUpdate
   }), [
     canvasDetailsResponse?.canvas,
     onNodesChange,
@@ -452,7 +464,8 @@ const CanvasProvider = ({
     onConnect,
     runNodes,
     createNewNode,
-    onNodesDelete
+    onNodesDelete,
+    onNodeConfigUpdate
   ]);
 
   return <CanvasContext.Provider value={value}>{children}</CanvasContext.Provider>;

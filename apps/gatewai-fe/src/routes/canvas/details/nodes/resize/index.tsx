@@ -36,7 +36,7 @@ const ResizeNodeComponent = memo((props: NodeProps<ResizeNode>) => {
 
   const context = useNodeContext({nodeId: props.id})
   const output = useHandleValueResolver({handleId: context?.inputHandles[0].id ?? "0", nodeId: props.id})
-  console.log({output, nodeId: props.id})
+
   const showResult = output != null;
   const nodeConfig = node?.config as ResizeNodeConfig;
 
@@ -52,7 +52,7 @@ const ResizeNodeComponent = memo((props: NodeProps<ResizeNode>) => {
     if (!inputImageUrl) return null;
     return inputImageUrl + JSON.stringify(config, Object.keys(config).sort());
   }, [inputImageUrl, config]);
-  console.log({computeKey, inputImageUrl})
+
   const [previewUrl, setPreviewUrl] = useState<string | null>(null);
   const [originalWidth, setOriginalWidth] = useState<number | null>(null);
   const [originalHeight, setOriginalHeight] = useState<number | null>(null);
@@ -146,7 +146,7 @@ const ResizeNodeComponent = memo((props: NodeProps<ResizeNode>) => {
             />
           </div>
         )}
-        <div className="flex gap-3">
+        {node && <><div className="flex gap-3">
           <ResizeWidthInput
             node={node}
             originalWidth={originalWidth}
@@ -164,7 +164,7 @@ const ResizeNodeComponent = memo((props: NodeProps<ResizeNode>) => {
           node={node}
           originalWidth={originalWidth}
           originalHeight={originalHeight}
-        />
+        /></>}
       </div>
     </BaseNode>
   );
