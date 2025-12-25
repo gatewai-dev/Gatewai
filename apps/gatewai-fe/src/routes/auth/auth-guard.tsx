@@ -7,7 +7,7 @@ function AuthGuard({children}: {children: ReactNode}) {
         data: session,
         isPending
     } = authClient.useSession()
-    
+
     if (isPending) {
         return <>Loading...</>
     }

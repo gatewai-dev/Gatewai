@@ -1,11 +1,13 @@
-import { useSelectedEntitiesCtx } from '../ctx/selected-entity-ctx';
+
 import { memo } from 'react';
+import { CanvasTasksPanel } from './tasks';
+import { NodeConfigPanel } from './node-config';
 
 const RightPanel = memo(() => {
-  const { selectedEdgeIDs, selectedNodeIDs } = useSelectedEntitiesCtx();
   return (
     <div className="border-0 bg-background px-2 py-1 rounded-md shadow-md">
-      {JSON.stringify({selectedNodeIDs})}
+        <CanvasTasksPanel />
+        <NodeConfigPanel />
     </div>
   );
 })

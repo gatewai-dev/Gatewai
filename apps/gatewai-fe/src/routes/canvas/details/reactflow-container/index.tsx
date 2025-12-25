@@ -56,6 +56,7 @@ function ReactflowContainer({ children }: ReactFlowProps) {
     let isPanning = false;
     let startX = 0;
     let startY = 0;
+    let hasMoved = false;
 
     const onMouseDown = (e: MouseEvent) => {
       if (e.button !== 1) return;
@@ -63,6 +64,7 @@ function ReactflowContainer({ children }: ReactFlowProps) {
       isPanning = true;
       startX = e.clientX;
       startY = e.clientY;
+      hasMoved = false;
     };
 
     const onMouseMove = (e: MouseEvent) => {
@@ -70,13 +72,27 @@ function ReactflowContainer({ children }: ReactFlowProps) {
       e.preventDefault();
       const dx = e.clientX - startX;
       const dy = e.clientY - startY;
-      rfInstance.current?.panBy({ x: dx, y: dy });
+      const instance = rfInstance.current;
+      if (instance) {
+        const currentViewport = instance.getViewport();
+        instance.setViewport({
+          x: currentViewport.x + dx,
+          y: currentViewport.y + dy,
+          zoom: currentViewport.zoom,
+        });
+      }
+      if (!hasMoved && Math.abs(dx) + Math.abs(dy) > 5) {
+        hasMoved = true;
+      }
       startX = e.clientX;
       startY = e.clientY;
     };
 
     const onMouseUp = (e: MouseEvent) => {
       if (e.button !== 1) return;
+      if (!hasMoved) {
+        setMode((prev) => (prev === 'select' ? 'pan' : 'select'));
+      }
       isPanning = false;
     };
 

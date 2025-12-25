@@ -1,5 +1,5 @@
 import { createContext, useContext, useState, type Dispatch, type PropsWithChildren, type SetStateAction } from 'react';
-import type {Canvas } from '@gatewai/types';
+import type { Canvas } from '@gatewai/types';
 import { useGetCanvasTasksQuery } from '@/store/tasks';
 import type { CanvasTaskListRPCParams, CanvasTaskListRPC } from '@/rpc/types';
 
@@ -25,8 +25,8 @@ const TaskManagerProvider = ({
   canvasId,
 }: PropsWithChildren<{canvasId: Canvas["id"]}>) => {
   const [tasksFilters, setTaskFilters] = useState<CanvasTaskListRPCParams["query"]>({
-    fromDatetime: new Date().toISOString(),
-    status: undefined,
+    fromDatetime: undefined,
+    taskStatus: ['EXECUTING', 'QUEUED', 'FAILED'],
   })
 
   const [pollingInterval, setPollingInterval] = useState(0);
@@ -42,8 +42,8 @@ const TaskManagerProvider = ({
     },
     query: tasksFilters,
   }, {
-    refetchOnFocus: false,
-    pollingInterval
+    refetchOnFocus: true,
+    pollingInterval,
   });
 
   const value: TaskManagerContextType = {

@@ -1,6 +1,6 @@
 import type { AllNodeConfig, NodeResult, TextResult } from '@gatewai/types';
 import type { CanvasDetailsRPC } from "@/rpc/types";
-import { createEntityAdapter, createDraftSafeSelector, createSlice } from "@reduxjs/toolkit"
+import { createEntityAdapter, createDraftSafeSelector, createSlice, type PayloadAction } from "@reduxjs/toolkit"
 
 export type NodeEntityType = CanvasDetailsRPC["nodes"][number];
 
@@ -10,7 +10,9 @@ export const nodeAdapter = createEntityAdapter({
 
 const nodesSlice = createSlice({
   name: 'nodes',
-  initialState: nodeAdapter.getInitialState(),
+  initialState: nodeAdapter.getInitialState<{ selectedNodeIds: NodeEntityType["id"][] | null }>({
+    selectedNodeIds: null,
+  }),
   reducers: {
     createNodeEntity: nodeAdapter.addOne,
     updateNodeEntity: nodeAdapter.updateOne,
@@ -79,6 +81,9 @@ const nodesSlice = createSlice({
         node.result = newResult;
       }
     },
+    setSelectedNodeIds: (state, action: PayloadAction<NodeEntityType["id"][] | null>) => {
+      state.selectedNodeIds = action.payload;
+    },
   },
 })
 
@@ -98,9 +103,20 @@ export const makeSelectNodeById = (id: string) => createDraftSafeSelector(
 export const makeSelectAllNodes = nodeSelectors.selectAll;
 export const makeSelectAllNodeEntities = nodeSelectors.selectEntities;
 
+export const selectSelectedNodeIds = createDraftSafeSelector(
+  selectNodesState,
+  (nodes) => nodes.selectedNodeIds
+);
+
+export const selectSelectedNodes = createDraftSafeSelector(
+  selectSelectedNodeIds,
+  makeSelectAllNodes,
+  (nodeIds, nodes) => nodeIds ? nodes.filter(f => nodeIds.includes(f.id)) : undefined
+);
+
 // Extract the action creators object and the reducer
 const { actions, reducer: nodesReducer } = nodesSlice
 // Extract and export each action creator by name
-export const { createNodeEntity, updateNodeEntity, updateNodeResult, updateNodeConfig, deleteNodeEntity, deleteManyNodeEntity, setAllNodeEntities, updateTextNodeValue, incrementSelectedResultIndex, decrementSelectedResultIndex } = actions
+export const { createNodeEntity, updateNodeEntity, updateNodeResult, updateNodeConfig, deleteNodeEntity, deleteManyNodeEntity, setAllNodeEntities, updateTextNodeValue, incrementSelectedResultIndex, decrementSelectedResultIndex, setSelectedNodeIds } = actions
 // Export the reducer, either as a default or named export
 export { nodesReducer, nodeSelectors }

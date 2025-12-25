@@ -25,6 +25,7 @@ import { addManyHandleEntities, deleteManyHandleEntity, handleSelectors, setAllH
 import { setAllEdgeEntities, type EdgeEntityType } from '@/store/edges';
 import { useStore } from 'react-redux';
 import { useGetCanvasDetailsQuery, usePatchCanvasMutation, useProcessNodesMutationMutation } from '@/store/canvas';
+import { useTaskManagerCtx } from './task-manager-ctx';
 
 interface CanvasContextType {
   canvas: CanvasDetailsRPC["canvas"] | undefined;
@@ -48,6 +49,7 @@ const CanvasProvider = ({
   canvasId: string;
 }>) => {
 
+  const { refetch: refetchTasks, setPollingInterval: setTasksPollingInterval } = useTaskManagerCtx();
   const dispatch = useAppDispatch();
   const store = useStore();
   const rfInstance = useRef<ReactFlowInstance | undefined>(undefined);
@@ -335,7 +337,9 @@ const CanvasProvider = ({
           node_ids
         }
       });
-  }, [save, runNodesMutateAsync, canvasId]);
+      refetchTasks();
+      setTasksPollingInterval(2000);
+  }, [save, runNodesMutateAsync, refetchTasks, setTasksPollingInterval, canvasId]);
 
   useEffect(() => {
     dispatch(setNodes(initialNodes));

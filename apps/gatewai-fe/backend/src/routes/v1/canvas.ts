@@ -2,7 +2,7 @@ import { Hono } from "hono";
 import { zValidator } from '@hono/zod-validator'
 import z from "zod";
 import { HTTPException } from "hono/http-exception";
-import { prisma } from "@gatewai/db";
+import { prisma, type NodeUpdateInput } from "@gatewai/db";
 import type { AuthHonoTypes } from "../../auth.js";
 import type { XYPosition } from '@xyflow/react';
 import { GetCanvasEntities } from "../../repositories/canvas.js";
@@ -19,7 +19,7 @@ const DataTypes = ["Text", "Number","Boolean", "Image", "Video", "Audio", "File"
 
 const handleSchema = z.object({
     id: z.string().optional(),
-    type: z.enum(['Input', 'Output']), // From HandleType enum
+    type: z.enum(['Input', 'Output']),
     dataType: z.enum(DataTypes),
     label: z.string(),
     order: z.number().default(0),
@@ -202,7 +202,6 @@ const canvasRoutes = new Hono<{Variables: AuthHonoTypes}>({
          * 2- Create transactions for removed edges
          */
 
-
         const removedNodeIds = nodesInDB.filter(f => !nodeIdsInPayload.includes(f.id)).map(m => m.id);
 
         const removedNodeEdges = await prisma.edge.findMany({
@@ -310,8 +309,7 @@ const canvasRoutes = new Hono<{Variables: AuthHonoTypes}>({
 
         transactions.push(deleteNodesTransaction)
 
-        const [deletedPostCount, deletedHandleCount, deletedNodeCount] = await prisma.$transaction(transactions)
-        console.log({deletedPostCount, deletedHandleCount, deletedNodeCount});
+        await prisma.$transaction(transactions)
 
         // Node/Handle Creation and Update transaction
         let nodeCreationAndUpdateTransactions = [];
@@ -352,7 +350,7 @@ const canvasRoutes = new Hono<{Variables: AuthHonoTypes}>({
 
                 nodeCreationAndUpdateTransactions.push(newHandlesTransaction);
             }
-            const updatedNodeIds = updatedNodes?.map(m => m.id).filter(Boolean) as string[] ?? [] ;
+            const updatedNodeIds = updatedNodes?.map(m => m.templateId).filter(Boolean) as string[] ?? [] ;
             const updatedNodeTemplates = await prisma.nodeTemplate.findMany({
                 where: {
                     id: {
@@ -369,18 +367,22 @@ const canvasRoutes = new Hono<{Variables: AuthHonoTypes}>({
                 return nodeTemplate.isTerminalNode;
             }
 
-            const updatedNodesTransactions = updatedNodes.map((uNode) => prisma.node.update({
-                data: {
-                    // Do not update result if it is a terminal node.
-                    result: isTerminalNode(uNode.templateId) ? uNode.result : undefined,
+            const updatedNodesTransactions = updatedNodes.map((uNode) => {
+                const updateData: NodeUpdateInput = {
                     config: uNode.config,
                     position: uNode.position,
                     name: uNode.name,
-                },
-                where: {
-                    id: uNode.id,
                 }
-            }));
+                if (isTerminalNode(uNode.templateId)) {
+                    updateData.result = uNode.result;
+                }
+                return prisma.node.update({
+                    data: updateData,
+                    where: {
+                        id: uNode.id,
+                    }
+                })
+            });
 
 
             // STEP: UPDATED NODES
@@ -626,7 +628,7 @@ const canvasRoutes = new Hono<{Variables: AuthHonoTypes}>({
         const newTarget = nodeIdMap.get(edge.target);
         const newSourceHandleId = handleIdMap.get(edge.sourceHandleId);
         const newTargetHandleId = handleIdMap.get(edge.targetHandleId);
-        
+
         if (!newSource || !newTarget) return null;
 
         return prisma.edge.create({

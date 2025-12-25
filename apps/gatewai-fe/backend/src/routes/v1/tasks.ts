@@ -1,12 +1,13 @@
 import { Hono } from "hono";
-import { prisma, type TaskStatus, type TaskWhereInput } from "@gatewai/db";
+import { prisma, TaskStatus, type TaskWhereInput } from "@gatewai/db";
 import type { AuthHonoTypes } from "../../auth.js";
 import { zValidator } from "@hono/zod-validator";
 import { z } from "zod/v4";
 
+const TaskStatuses = [TaskStatus.COMPLETED, TaskStatus.FAILED, TaskStatus.EXECUTING, TaskStatus.QUEUED] as const
 
 const tasksQueryParams = z.object({
-    status: z.string().optional(),
+    taskStatus: z.array(z.enum(TaskStatuses)).optional(),
     fromDatetime: z.iso.datetime().optional(),
 })
 
@@ -20,7 +21,7 @@ const tasksRouter = new Hono<{Variables: AuthHonoTypes}>({
     })),
     async (c) => {
         const dt = c.req.query('fromDatetime')
-        const status = c.req.query('status') as TaskStatus | undefined;
+        const taskStatus = c.req.queries('taskStatus') as TaskStatus[] | undefined
         const canvasId = c.req.param('canvasId');
         const user = c.get('user');
 
@@ -32,8 +33,10 @@ const tasksRouter = new Hono<{Variables: AuthHonoTypes}>({
             whereClause.createdAt = { gte: dt }
         }
 
-        if (status) {
-            whereClause.status = status;
+        if (taskStatus && taskStatus.length) {
+            whereClause.status = {
+                in: taskStatus
+            };
         }
 
         const tasks = await prisma.task.findMany({

@@ -10,7 +10,7 @@ function AppRouter() {
       <Route index element={ <AuthGuard><CanvasHome /></AuthGuard>} />
       <Route path="/canvas/*" element={ <AuthGuard><CanvasRouter /></AuthGuard>} />
       <Route path="*" element={<AuthRouter />} />
-   </Routes>);
+    </Routes>);
 }
 
 export { AppRouter };
