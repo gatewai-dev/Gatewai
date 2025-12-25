@@ -3,7 +3,7 @@ import { SEED_createNodeTemplates } from "./node-templates.js";
 
 // Entry point for seeding the database
 async function main() {
-    SEED_createNodeTemplates(prisma);
+  await SEED_createNodeTemplates(prisma);
 }
 
 main()

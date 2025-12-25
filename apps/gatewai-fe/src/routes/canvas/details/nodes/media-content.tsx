@@ -22,11 +22,12 @@ function MediaContent({node, result}: {node: NodeProps<AnyNode>, result: ImagesR
     if (!outputItem.data.entity.signedUrl) {
         return null;
     }
+    const hasMoreThanOneOutput = result.outputs.length > 1;
     return (
         <div className='relative h-full w-full group'>
-            <div className="absolute top-1 left-1 z-10">
+            {hasMoreThanOneOutput && <div className="absolute top-1 left-1 z-10">
                 <OutputSelector node={node} />
-            </div>
+            </div>}
             {isImage && (<img
                 src={outputItem.data.entity.signedUrl}
                 alt={outputItem.data.entity.name}

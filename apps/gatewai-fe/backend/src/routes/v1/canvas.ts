@@ -20,7 +20,7 @@ const DataTypes = ["Text", "Number","Boolean", "Image", "Video", "Audio", "File"
 const handleSchema = z.object({
     id: z.string().optional(),
     type: z.enum(['Input', 'Output']),
-    dataType: z.enum(DataTypes),
+    dataTypes: z.array(z.enum(DataTypes)),
     label: z.string(),
     order: z.number().default(0),
     required: z.boolean().default(false),
@@ -300,7 +300,7 @@ const canvasRoutes = new Hono<{Variables: AuthHonoTypes}>({
                 id: nHandle.id!,
                 nodeId: nHandle.nodeId,
                 required: nHandle.required,
-                dataType: nHandle.dataType,
+                dataTypes: nHandle.dataTypes,
                 label: nHandle.label,
                 order: nHandle.order,
                 templateHandleId: nHandle.templateHandleId,
@@ -312,7 +312,7 @@ const canvasRoutes = new Hono<{Variables: AuthHonoTypes}>({
         const updatedHandlesTxs = updatedHandles.map((uHandle) => prisma.handle.update({
             data: {
                 type: uHandle.type,
-                dataType: uHandle.dataType,
+                dataTypes: uHandle.dataTypes,
                 label: uHandle.label,
                 order: uHandle.order,
                 required: uHandle.required,

@@ -43,11 +43,10 @@ const ResizeWidthInput = memo(({node, originalWidth, originalHeight, maintainAsp
     <div className="flex flex-col gap-1 flex-1">
       <label className="text-xs text-gray-600">Width: {displayValue}</label>
       <Input
-        type="number"
+        type="text"
+        inputMode="numeric"
+        pattern="[0-9]*"
         value={displayValue}
-        min={1}
-        max={2000}
-        step={1}
         onChange={handleChange}
       />
     </div>
@@ -84,11 +83,10 @@ const ResizeHeightInput = memo(({node, originalWidth, originalHeight, maintainAs
     <div className="flex flex-col gap-1 flex-1">
       <label className="text-xs text-gray-600">Height: {displayValue}</label>
       <Input
-        type="number"
+        type="text"
+        inputMode="numeric"
+        pattern="[0-9]*"
         value={displayValue}
-        min={1}
-        max={2000}
-        step={1}
         onChange={handleChange}
       />
     </div>

@@ -360,7 +360,7 @@ const CanvasProvider = ({
         createdAt: new Date().toISOString(),
         updatedAt: new Date().toISOString(),
         type: tHandle.type,
-        dataType: tHandle.dataType,
+        dataTypes: tHandle.dataTypes,
     }));
 
     if (template.type === 'Text') {

@@ -1,4 +1,4 @@
-import { DataType, HandleType, NodeType, ProcessEnvironment, type PrismaClient } from "../generated/client/client";
+import { DataType, HandleType, NodeType, ProcessEnvironment, type PrismaClient } from "../generated/client";
 
 
 export async function SEED_createNodeTemplates(prisma: PrismaClient) {
@@ -143,7 +143,7 @@ export async function SEED_createNodeTemplates(prisma: PrismaClient) {
       isTransient: true,
       templateHandles: {
         create: [
-          { type: HandleType.Input, dataTypes: [DataType.File], required: true, label: "Image/Video" },
+          { type: HandleType.Input, dataTypes: [DataType.Image, DataType.Video, DataType.Mask], required: true, label: "Image/Video" },
           { type: HandleType.Output, dataTypes: [DataType.File], label: "Resized Image/Video" }
         ]
       },

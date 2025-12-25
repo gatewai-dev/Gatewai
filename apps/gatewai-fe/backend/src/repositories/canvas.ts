@@ -91,7 +91,7 @@ function getInputValue(
     (e) => e.target === targetNodeId
   ).filter((e) => {
     const targetHandle = data.handles.find((h) => h.id === e.targetHandleId);
-    return targetHandle?.dataType === options.dataType;
+    return targetHandle?.dataType.includes(options.dataType);
   });
 
   if (options.label) {

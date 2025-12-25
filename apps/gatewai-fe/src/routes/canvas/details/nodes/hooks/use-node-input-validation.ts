@@ -34,7 +34,7 @@ function useNodeInputValidation(nodeId: Node["id"]): ValidationError[] {
                 }
                 const sourceResult = sourceNode.result as NodeResult;
                 const outputIndex = sourceResult?.selectedOutputIndex ?? 0;
-                console.log({sourceNode})
+
                 const selectedOutput = sourceResult.outputs[outputIndex];
                 if (!selectedOutput) {
                     return;
@@ -42,7 +42,7 @@ function useNodeInputValidation(nodeId: Node["id"]): ValidationError[] {
                 const outputItem = selectedOutput.items.find(f => f.outputHandleId === edge.sourceHandleId);
                 const outputItemType = outputItem?.type;
 
-                if (outputItemType !== targetHandle?.dataType) {
+                if (!targetHandle.dataTypes?.includes(outputItemType)) {
                     errors.push({
                         handleId: targetHandle.id,
                         error: `Invalid data type`

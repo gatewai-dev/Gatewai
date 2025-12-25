@@ -1,5 +1,5 @@
 import { memo, useMemo, type JSX, type ReactNode } from 'react';
-import { Handle, Position, getBezierPath, type EdgeProps, type NodeProps, type Node, type ConnectionLineComponentProps, useEdges, BaseEdge, getSmoothStepPath } from '@xyflow/react';
+import { Handle, Position, getBezierPath, type EdgeProps, type NodeProps, type Node, type ConnectionLineComponentProps, useEdges, BaseEdge } from '@xyflow/react';
 import type { CanvasDetailsNode } from '@/rpc/types';
 import { useAppSelector } from '@/store';
 import { makeSelectHandleById, makeSelectHandleByNodeId } from '@/store/handles';
@@ -7,6 +7,7 @@ import { dataTypeColors } from '@/config';
 import { NodeMenu } from './node-menu';
 import { makeSelectEdgeById } from '@/store/edges';
 import { useNodeInputValidation } from './hooks/use-node-input-validation';
+import { makeSelectAllNodeEntities } from '@/store/nodes';
 
 
 const getColorForType = (type: string) => {
@@ -19,6 +20,7 @@ const BaseNode = memo((props: NodeProps<Node<CanvasDetailsNode>> & {
 }) => {
   const { selected, type, id } = props;
   const handles = useAppSelector(makeSelectHandleByNodeId(id));
+  const allNodes = useAppSelector(makeSelectAllNodeEntities);
   // 1. Separate and Sort Handles
   // We use useMemo to avoid re-sorting on every render unless data.handles changes
   const { inputs, outputs } = useMemo(() => {
@@ -30,8 +32,19 @@ const BaseNode = memo((props: NodeProps<Node<CanvasDetailsNode>> & {
     };
   }, [handles]);
   const validationErrors = useNodeInputValidation(id);
-  console.log({validationErrors})
+
   const edges = useEdges();
+
+  const getActualType = (nodeId: string, handleId: string) => {
+    const node = allNodes[nodeId];
+    if (!node?.result) return null;
+    const result = node.result as any;
+    const selectedIndex = result.selectedOutputIndex ?? 0;
+    const output = result.outputs?.[selectedIndex];
+    if (!output) return null;
+    const item = output.items?.find((it: any) => it.outputHandleId === handleId);
+    return item?.type ?? null;
+  };
 
   const nodeBackgroundColor = 'bg-background';
 
@@ -42,9 +55,18 @@ const BaseNode = memo((props: NodeProps<Node<CanvasDetailsNode>> & {
         ${selected ? 'selected' : ''}`}
     >
       {inputs.map((handle, i) => {
-        const color = getColorForType(handle.dataType);
-        const topPosition = `${(i + 1) * (30) + 20}px`;
+        let actualType: string | null = null;
         const isConnected = edges.some(edge => edge.target === id && edge.targetHandle === handle.id);
+        if (isConnected) {
+          const edge = edges.find(edge => edge.target === id && edge.targetHandle === handle.id);
+          if (edge) {
+            actualType = getActualType(edge.source, edge.sourceHandle!);
+          }
+        }
+        const primaryType = handle.dataTypes.length > 1 ? 'Any' : handle.dataTypes[0] || 'Any';
+        const displayType = actualType ?? primaryType;
+        const color = getColorForType(displayType);
+        const topPosition = `${(i + 1) * (30) + 20}px`;
         const error = validationErrors.find(err => err.handleId === handle.id);
         const isInvalid = !!error;
         const borderStyle = isInvalid 
@@ -73,7 +95,7 @@ const BaseNode = memo((props: NodeProps<Node<CanvasDetailsNode>> & {
                 group-focus-within:opacity-100 in-[.selected]:opacity-100 transition-all duration-200 pointer-events-none
                 whitespace-nowrap font-medium text-right`}
                 style={{ color: isInvalid ? 'red' : color.hex }}>
-              {handle.label || handle.dataType} {handle.required && '*'}
+              {handle.label || handle.dataTypes.join(' | ')} {handle.required && '*'}
               {isInvalid && ` (${error.error})`}
             </span>
           </div>
@@ -93,7 +115,10 @@ const BaseNode = memo((props: NodeProps<Node<CanvasDetailsNode>> & {
       </div>
 
       {outputs.map((handle, i) => {
-        const color = getColorForType(handle.dataType);
+        const actualType = getActualType(id, handle.id);
+        const primaryType = handle.dataTypes.length > 1 ? 'Any' : handle.dataTypes[0] || 'Any';
+        const displayType = actualType ?? primaryType;
+        const color = getColorForType(displayType);
         // Calculate dynamic top position
         const topPosition = `${(i + 1) * (30) + 20}px`;
         const isConnected = edges.some(edge => edge.source === id && edge.sourceHandle === handle.id);
@@ -122,7 +147,7 @@ const BaseNode = memo((props: NodeProps<Node<CanvasDetailsNode>> & {
                 group-focus:opacity-100 group-focus-within:opacity-100 in-[.selected]:opacity-100
                 transition-all duration-200 pointer-events-none whitespace-nowrap font-medium text-left`}
                 style={{ color: color.hex }}>
-              {handle.label || handle.dataType}
+              {handle.label || handle.dataTypes.join(' | ')}
             </span>
           </div>
         );
@@ -155,19 +180,28 @@ const CustomConnectionLine = memo(({
     targetPosition: toPosition,
   });
 
-  let dataType = null;
   const handle = useAppSelector(makeSelectHandleById(fromHandle.id!));
-  if (!fromHandle.id || !handle) {
+  const allNodes = useAppSelector(makeSelectAllNodeEntities);
+
+  const getActualType = (nodeId: string, handleId: string) => {
+    const node = allNodes[nodeId];
+    if (!node?.result) return null;
+    const result = node.result as any;
+    const selectedIndex = result.selectedOutputIndex ?? 0;
+    const output = result.outputs?.[selectedIndex];
+    if (!output) return null;
+    const item = output.items?.find((it: any) => it.outputHandleId === handleId);
+    return item?.type ?? null;
+  };
+
+  if (!handle) {
     return <></>;
   }
-  // Logic updated to find the specific handle in the handles array
-  if (fromNode?.data?.handles && fromHandle?.id) {
-    if (handle) {
-      dataType = handle.dataType;
-    }
-  }
 
-  const color = getColorForType(dataType ?? 'Any').hex;
+  const primaryType = handle.dataTypes.length > 1 ? 'Any' : handle.dataTypes[0] || 'Any';
+  const actualType = handle.type === 'Output' ? getActualType(fromNode.id, fromHandle.id!) : null;
+  const displayType = actualType ?? primaryType;
+  const color = getColorForType(displayType).hex;
 
   return (
     <g>
@@ -221,6 +255,10 @@ const CustomEdge = memo(({
   targetPosition,
   style = {},
   markerEnd,
+  source,
+  target,
+  sourceHandle: sourceHandleId,
+  targetHandle: targetHandleId,
 }: CustomEdgeProps): JSX.Element => {
   const [edgePath] = getBezierPath({
     sourceX,
@@ -233,13 +271,32 @@ const CustomEdge = memo(({
 
   const edge = useAppSelector(makeSelectEdgeById(id));
 
-  const sourceHandle = useAppSelector(makeSelectHandleById(edge?.sourceHandleId ?? undefined))
-  const targetHandle = useAppSelector(makeSelectHandleById(edge?.targetHandleId ?? undefined))
+  const sourceHandle = useAppSelector(makeSelectHandleById(edge?.sourceHandleId ?? sourceHandleId ?? undefined))
+  const targetHandle = useAppSelector(makeSelectHandleById(edge?.targetHandleId ?? targetHandleId ?? undefined))
+  const allNodes = useAppSelector(makeSelectAllNodeEntities);
 
-  const sourceDataType = sourceHandle?.dataType || 'Any';
-  const targetDataType = targetHandle?.dataType || 'Any';
-  const sourceColor = getColorForType(sourceDataType).hex;
-  const targetColor = getColorForType(targetDataType).hex;
+  const getActualType = (nodeId: string, handleId: string) => {
+    const node = allNodes[nodeId];
+    if (!node?.result) return null;
+    const result = node.result as any;
+    const selectedIndex = result.selectedOutputIndex ?? 0;
+    const output = result.outputs?.[selectedIndex];
+    if (!output) return null;
+    const item = output.items?.find((it: any) => it.outputHandleId === handleId);
+    return item?.type ?? null;
+  };
+
+  if (!sourceHandle || !targetHandle) {
+    return <g></g>;
+  }
+
+  const sourcePrimary = sourceHandle.dataTypes.length > 1 ? 'Any' : sourceHandle.dataTypes[0] || 'Any';
+  const targetPrimary = targetHandle.dataTypes.length > 1 ? 'Any' : targetHandle.dataTypes[0] || 'Any';
+  const actualType = getActualType(source, sourceHandle.id);
+  const sourceDisplay = actualType ?? sourcePrimary;
+  const targetDisplay = actualType ?? targetPrimary;
+  const sourceColor = getColorForType(sourceDisplay).hex;
+  const targetColor = getColorForType(targetDisplay).hex;
   const gradientId = `gradient-${id}`;
 
   return (
@@ -261,24 +318,6 @@ const CustomEdge = memo(({
         path={edgePath}
         markerEnd={markerEnd}
       />
-      {[...Array(PARTICLE_COUNT)].map((_, i) => (
-        <ellipse
-          key={`particle-${i}`}
-          rx="5"
-          ry="1.2"
-          fill={sourceColor}
-        >
-          <animateMotion
-            begin={`${i * (ANIMATE_DURATION / PARTICLE_COUNT)}s`}
-            dur={`${ANIMATE_DURATION}s`}
-            repeatCount="indefinite"
-            rotate="auto"
-            path={edgePath}
-            calcMode="spline"
-            keySplines="0.42, 0, 0.58, 1.0"
-          />
-        </ellipse>
-      ))}
     </g>
   );
 });
