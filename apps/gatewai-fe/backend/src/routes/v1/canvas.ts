@@ -2,10 +2,8 @@ import { Hono } from "hono";
 import { zValidator } from '@hono/zod-validator'
 import z from "zod";
 import { HTTPException } from "hono/http-exception";
-import { prisma, type Task } from "@gatewai/db";
+import { prisma } from "@gatewai/db";
 import type { AuthHonoTypes } from "../../auth.js";
-import type { TASK_LLM } from "../../trigger/llm.js";
-import type { TextNodeConfig } from "@gatewai/types";
 import type { XYPosition } from '@xyflow/react';
 import { GetCanvasEntities } from "../../repositories/canvas.js";
 import { NodeWFProcessor } from "../../tasks/node.js";
@@ -23,7 +21,7 @@ const handleSchema = z.object({
     id: z.string().optional(),
     type: z.enum(['Input', 'Output']), // From HandleType enum
     dataType: z.enum(DataTypes),
-    label: z.string().optional(),
+    label: z.string(),
     order: z.number().default(0),
     required: z.boolean().default(false),
     templateHandleId: z.string().optional().nullable(),
@@ -352,13 +350,29 @@ const canvasRoutes = new Hono<{Variables: AuthHonoTypes}>({
                     }))
                 })
 
-                // STEP: New HANDLES
                 nodeCreationAndUpdateTransactions.push(newHandlesTransaction);
+            }
+            const updatedNodeIds = updatedNodes?.map(m => m.id).filter(Boolean) as string[] ?? [] ;
+            const updatedNodeTemplates = await prisma.nodeTemplate.findMany({
+                where: {
+                    id: {
+                        in: updatedNodeIds
+                    }
+                }
+            })
+
+            const isTerminalNode = (templateId: string) => {
+                const nodeTemplate = updatedNodeTemplates.find(f => f.id === templateId);
+                if (!nodeTemplate) {
+                    throw new Error("Node template not found for node");
+                }
+                return nodeTemplate.isTerminalNode;
             }
 
             const updatedNodesTransactions = updatedNodes.map((uNode) => prisma.node.update({
                 data: {
-                    result: uNode.result,
+                    // Do not update result if it is a terminal node.
+                    result: isTerminalNode(uNode.templateId) ? uNode.result : undefined,
                     config: uNode.config,
                     position: uNode.position,
                     name: uNode.name,

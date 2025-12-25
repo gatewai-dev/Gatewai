@@ -105,7 +105,8 @@ CREATE TABLE "node_template" (
     "showInQuickAccess" BOOLEAN NOT NULL DEFAULT false,
     "createdAt" DATETIME NOT NULL DEFAULT CURRENT_TIMESTAMP,
     "updatedAt" DATETIME NOT NULL,
-    "defaultConfig" JSONB
+    "defaultConfig" JSONB,
+    "isTerminalNode" BOOLEAN NOT NULL DEFAULT false
 );
 
 -- CreateTable
@@ -128,7 +129,6 @@ CREATE TABLE "edge" (
     "target" TEXT NOT NULL,
     "sourceHandleId" TEXT NOT NULL,
     "targetHandleId" TEXT NOT NULL,
-    "dataType" TEXT NOT NULL,
     "createdAt" DATETIME NOT NULL DEFAULT CURRENT_TIMESTAMP,
     "updatedAt" DATETIME NOT NULL,
     CONSTRAINT "edge_source_fkey" FOREIGN KEY ("source") REFERENCES "node" ("id") ON DELETE CASCADE ON UPDATE CASCADE,
