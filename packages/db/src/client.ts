@@ -1,21 +1,35 @@
-
 import { PrismaClient } from "../generated/client/client.js";
-import { PrismaPg } from '@prisma/adapter-pg'
+import { PrismaPg } from '@prisma/adapter-pg';
 
-console.log(process.env.DATABASE_URL);
-// Instantiate the extended Prisma client to infer its type
-const adapter = new PrismaPg({ connectionString: process.env.DATABASE_URL })
-const extendedPrisma = new PrismaClient({ adapter })
+export * from "../generated/client/client.js";
 
-// Use globalThis for broader environment compatibility
+let prismaInstance: PrismaClient | null = null;
+
+function createPrismaClient() {
+  if (!process.env.DATABASE_URL) {
+    throw new Error('DATABASE_URL environment variable is not set');
+  }
+  
+  console.log('Creating Prisma client with DATABASE_URL:', process.env.DATABASE_URL);
+  
+  const adapter = new PrismaPg({ connectionString: process.env.DATABASE_URL });
+  return new PrismaClient({ adapter });
+}
+
 const globalForPrisma = globalThis as typeof globalThis & {
   prisma?: PrismaClient;
 };
 
-// Named export with global memoization
-export const prisma: PrismaClient =
-  globalForPrisma.prisma ?? extendedPrisma;
-
-if (process.env.NODE_ENV !== "production") {
-  globalForPrisma.prisma = prisma;
-}
+export const prisma = new Proxy({} as PrismaClient, {
+  get(target, prop) {
+    if (!prismaInstance) {
+      prismaInstance = globalForPrisma.prisma ?? createPrismaClient();
+      
+      if (process.env.NODE_ENV !== "production") {
+        globalForPrisma.prisma = prismaInstance;
+      }
+    }
+    
+    return prismaInstance[prop as keyof PrismaClient];
+  }
+});

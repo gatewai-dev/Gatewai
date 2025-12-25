@@ -2,22 +2,21 @@
   "name": "@gatewai/db",
   "version": "0.0.0",
   "type": "module",
-  "main": "./dist/index.js",
   "module": "./dist/index.mjs",
-  "types": "./dist/index.d.ts",
+  "types": "./dist/index.d.mts",
   "sideEffects": false,
   "files": [
     "dist/**"
   ],
   "exports": {
     ".": {
-      "types": "./dist/index.d.ts",
-      "import": "./dist/index.js",
+      "types": "./dist/index.d.mts",
+      "import": "./dist/index.mjs",
       "require": "./dist/index.cjs"
     }
   },
   "scripts": {
-    "build": "pnpm db:generate && tsup src/index.ts",
+    "build": "pnpm db:generate && tsdown src/index.ts",
     "postinstall": "pnpm db:generate",
     "db:generate": "prisma generate",
     "db:migrate": "prisma migrate dev",
@@ -34,7 +33,7 @@
     "@gatewai/tsconfig": "workspace:*",
     "@types/node": "^24.0.4",
     "prisma": "^7.0.1",
-    "tsup": "^8.5.0",
+    "tsdown": "^0.17.0-beta.3",
     "tsx": "^4.20.3",
     "typescript": "^5.8.3"
   },

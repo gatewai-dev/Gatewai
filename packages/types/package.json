@@ -1,25 +1,23 @@
 {
   "name": "@gatewai/types",
   "version": "0.0.0",
-  "main": "./dist/index.js",
   "module": "./dist/index.mjs",
-  "types": "./dist/index.d.ts",
+  "types": "./dist/index.d.mts",
   "type": "module",
   "sideEffects": false,
   "license": "MIT",
   "exports": {
     ".": {
-      "types": "./dist/index.d.ts",
-      "import": "./dist/index.js",
-      "require": "./dist/index.cjs"
+      "types": "./dist/index.d.mts",
+      "import": "./dist/index.mjs"
     }
   },
   "files": [
     "dist/**"
   ],
   "scripts": {
-    "build": "tsup src/index.ts --format esm",
-    "dev": "tsup src/index.ts --format esm --watch",
+    "build": "tsdown src/index.ts --format esm",
+    "dev": "tsdown src/index.ts --format esm --watch",
     "lint": "eslint \"src/**/*.ts*\"",
     "clean": "rm -rf .turbo && rm -rf node_modules && rm -rf dist"
   },
@@ -33,7 +31,7 @@
     "@types/node": "^24.0.4",
     "eslint": "^9.29.0",
     "install": "^0.13.0",
-    "tsup": "^8.5.0",
+    "tsdown": "^0.17.0-beta.3",
     "typescript": "5.5.4"
   },
   "dependencies": {
