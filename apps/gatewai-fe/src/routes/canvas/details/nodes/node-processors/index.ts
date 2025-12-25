@@ -4,7 +4,7 @@ import type { NodeEntityType } from "@/store/nodes";
 import type { NodeType } from "@gatewai/db";
 import type { NodeResult } from "@gatewai/types";
 
-import blurNodeProcessor from './blur';
+import blurNodeProcessor, { type BlurExtraArgs } from './blur';
 
 export type CanvasCtxData = {
     nodes: NodeEntityType[];
@@ -12,15 +12,18 @@ export type CanvasCtxData = {
     handles: HandleEntityType[];
 }
 
-export type NodeProcessorCtx = {
+export type NodeProcessorCtx<T> = {
   node: NodeEntityType
   data: CanvasCtxData;
+  extraArgs: T
 }
 
-export type NodeProcessor = (ctx: NodeProcessorCtx) => Promise<{ success: boolean, error?: string, newResult?: NodeResult }>;
+type NodeProcessorExtraArgs = BlurExtraArgs;
 
-const browserNodeProcessors: Partial<Record<NodeType, NodeProcessor>> = {
-    ["Blur"]: blurNodeProcessor,
+export type NodeProcessor<T> = (ctx: NodeProcessorCtx<T>) => Promise<{ success: boolean, error?: string, newResult?: NodeResult }>;
+
+const browserNodeProcessors: Partial<Record<NodeType, NodeProcessor<NodeProcessorExtraArgs>>> = {
+  ["Blur"]: blurNodeProcessor,
 }
 
 export { browserNodeProcessors }

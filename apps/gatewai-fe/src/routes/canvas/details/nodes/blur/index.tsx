@@ -10,7 +10,6 @@ import { BaseNode } from '../base';
 import type { BlurNode } from '../node-props';
 import { makeSelectAllHandles } from '@/store/handles';
 import { makeSelectAllEdges } from '@/store/edges';
-import { selectNodeResultByHandleId } from '@/store/selectors';
 import { BlurTypeSelector } from './type-selector';
 import { BlurValueSlider } from './blur-slider';
 import { browserNodeProcessors } from '../node-processors';
@@ -37,14 +36,16 @@ const BlurNodeComponent = memo((props: NodeProps<BlurNode>) => {
   const config: BlurNodeConfig = (node?.config ?? props.data.config) as BlurNodeConfig;
   
   const context = useNodeContext({nodeId: props.id})
-
   const output = useHandleValueResolver({handleId: context?.inputHandles[0].id ?? "0"})
   console.log({output})
   const showResult = output != null;
   const inputImageUrl = useMemo(() => {
-    return (output?.data as FileData)?.dataUrl || (output?.data as FileData)?.entity?.signedUrl
-  }, [output?.data]);
-
+    const generation = output.outputs[output.selectedOutputIndex];
+    if (!generation) return null;
+    const genData = generation.items[0];
+    return (genData?.data as FileData)?.dataUrl || (genData?.data as FileData)?.entity?.signedUrl
+  }, [output.outputs, output.selectedOutputIndex]);
+  console.log({inputImageUrl})
   // Compute a key to detect changes in input or config
   const computeKey = useMemo(() => {
     if (!inputImageUrl) return null;
@@ -71,7 +72,9 @@ const BlurNodeComponent = memo((props: NodeProps<BlurNode>) => {
         console.error('Blur processor not found');
         return;
       }
-      const res = await processor({ node, data });
+      console.log({output})
+      const res = await processor({ node, data, extraArgs: { resolvedInputResult: output} });
+      console.log({res})
       if (res.success && res.newResult) {
         const dataUrl = (res.newResult.outputs[0].items[0].data as FileData).dataUrl;
         if (dataUrl) {
@@ -83,7 +86,7 @@ const BlurNodeComponent = memo((props: NodeProps<BlurNode>) => {
     };
 
     compute();
-  }, [computeKey, showResult, node, allNodes, allEdges, allHandles]);
+  }, [computeKey, showResult, node, allNodes, allEdges, allHandles, output]);
 
   // Draw the preview when previewUrl changes
   useEffect(() => {
@@ -129,7 +132,7 @@ const BlurNodeComponent = memo((props: NodeProps<BlurNode>) => {
         {!showResult && <ImagePlaceholder />}
         {showResult && (
           <div className="w-full overflow-hidden rounded">
-            <canvas 
+            <canvas
               ref={canvasRef}
               className="w-full h-auto"
               style={{ objectFit: 'contain' }}
