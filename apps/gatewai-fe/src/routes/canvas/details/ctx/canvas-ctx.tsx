@@ -308,15 +308,14 @@ const CanvasProvider = ({
 
       const deletedNodeIds = deleted.map(m => m.id);
       const newNodes = rfNodes.filter(f => !deletedNodeIds.includes(f.id));
-      dispatch(setNodes(newNodes))
-      dispatch(deleteManyNodeEntity(deletedNodeIds))
-
       const edgesToRemove = getConnectedEdges(deleted, rfEdges);
       const deletedEdgeIds = edgesToRemove.map(m => m.id);
       const newEdges = rfEdges.filter(f => !deletedEdgeIds.includes(f.id));
-      dispatch(setEdges(newEdges))
-
       const deletedHandleIds = handleEntities.filter(m => deletedNodeIds.includes(m.nodeId)).map(m => m.id);
+      
+      dispatch(setNodes(newNodes))
+      dispatch(deleteManyNodeEntity(deletedNodeIds))
+      dispatch(setEdges(newEdges))
       dispatch(deleteManyHandleEntity(deletedHandleIds))
 
       scheduleSave();

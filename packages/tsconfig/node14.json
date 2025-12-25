@@ -3,10 +3,8 @@
   "extends": "./base.json",
   "compilerOptions": {
     "lib": ["ES2020"],
-    "module": "ESNext",
+    "module": "es2022",
     "moduleResolution": "Node",
-    "target": "ES2023",
-    "esModuleInterop": true,
-    "strict": true
+    "target": "ES2020"
   }
 }

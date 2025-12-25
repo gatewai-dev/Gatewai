@@ -1,5 +1,5 @@
-import type { BlurNodeConfig, FileData, NodeResult, Output, ResizeNodeConfig } from '@gatewai/types';
-import { PrismaClient, NodeType, DataType, TaskStatus, Task } from '@gatewai/db';
+import type { BlurNodeConfig, FileData, NodeResult, Output, OutputItem, ResizeNodeConfig } from '@gatewai/types';
+import { PrismaClient, NodeType, DataType, TaskStatus, type TaskBatch } from '@gatewai/db';
 import { GetCanvasEntities, getInputValue, type CanvasCtxData } from '../repositories/canvas.js';
 import { generateText, type ModelMessage, type TextPart, type UserContent } from 'ai';
 import { xai } from '../ai/xai.js';
@@ -24,7 +24,6 @@ const processors: Partial<Record<NodeType, NodeProcessor>> = {
   },
   [NodeType.Blur]: async ({ node, data }) => {
     try {
-      console.log('PROCESSING BLUR')
       const imageInput = getInputValue(data, node.id, true, { dataType: DataType.Image, label: 'Image' }) as FileData | null;
       const blurConfig = node.config as BlurNodeConfig;
       const blurAmount = blurConfig.size ?? 0;
@@ -98,7 +97,7 @@ const processors: Partial<Record<NodeType, NodeProcessor>> = {
             type: DataType.Image,
             data: { dataUrl },  // Transient data URL
             outputHandleId: outputHandle.id,
-          },
+          } as OutputItem<"Image">,
         ],
       };
 
@@ -250,10 +249,20 @@ export class NodeWFProcessor {
     return null;
   }
 
-  public async processSelectedNodes(canvasId: string, nodeIds: string[], user: User): Promise<Task[]> {
+  public async processSelectedNodes(canvasId: string, nodeIds: string[], user: User): Promise<TaskBatch> {
     const data = await GetCanvasEntities(canvasId, user);  // Load once, update in-memory as we go
 
-    if (nodeIds.length === 0) return [];
+    if (nodeIds.length === 0) {
+      const emptyBatch = await this.prisma.taskBatch.create({
+        data: {
+          userId: user.id,
+          canvasId,
+          finishedAt: new Date(),
+        },
+        include: { tasks: true },
+      });
+      return emptyBatch;
+    }
 
     const allNodeIds = data.nodes.map(n => n.id);
     const { revDepGraph: fullRevDepGraph } = this.buildDepGraphs(allNodeIds, data);
@@ -285,7 +294,12 @@ export class NodeWFProcessor {
       throw new Error('Some necessary nodes not found in canvas.');
     }
 
-    const tasks = [];
+    const batch = await this.prisma.taskBatch.create({
+      data: {
+        userId: user.id,
+        canvasId,
+      },
+    });
 
     for (const nodeId of topoOrder) {
       const node = data.nodes.find(n => n.id === nodeId)!;  // Use current in-memory data
@@ -299,16 +313,13 @@ export class NodeWFProcessor {
       const task = await this.prisma.task.create({
         data: {
           name: `Process node ${node.name || node.id}`,
-          canvasId,
           nodeId,
-          userId: user.id,
           status: TaskStatus.EXECUTING,
           startedAt: new Date(),
           isTest: false,
+          batchId: batch.id,
         },
-        include: { node: true },
       });
-      tasks.push(task);
 
       try {
         // Await processor, pass current data
@@ -353,6 +364,13 @@ export class NodeWFProcessor {
       }
     }
 
-    return tasks;
+    const batchFinishedAt = new Date();
+    const updatedBatch = await this.prisma.taskBatch.update({
+      where: { id: batch.id },
+      data: { finishedAt: batchFinishedAt },
+      include: { tasks: true },
+    });
+
+    return updatedBatch;
   }
 }

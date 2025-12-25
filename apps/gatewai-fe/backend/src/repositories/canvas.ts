@@ -1,34 +1,34 @@
-import { type Canvas, prisma } from "@gatewai/db";
-import type { DataType, NodeResult } from "@gatewai/types";
+import { type Canvas, type DataType, prisma } from "@gatewai/db";
+import type { NodeResult } from "@gatewai/types";
 import type { User } from "better-auth";
 import { HTTPException } from "hono/http-exception";
 
 async function GetCanvasEntities(id: Canvas["id"], user: User) {
     const canvas = await prisma.canvas.findFirst({
         where: {
-            id,
-            userId: user?.id, // Ensure user owns the canvas
+          id,
+          userId: user?.id, // Ensure user owns the canvas
         },
     });
 
     const nodes = await prisma.node.findMany({
         where: {
-            canvasId: canvas?.id,
+          canvasId: canvas?.id,
         },
         include: {
-            template: true
+          template: true
         }
     })
 
     if (!canvas) {
         throw new HTTPException(404, { message: 'Canvas not found' });
     }
-
+    
     // Get all edges for this canvas separately for cleaner structure
     const edges = await prisma.edge.findMany({
         where: {
             sourceNode: {
-                canvasId: id
+              canvasId: id
             }
         }
     });
@@ -36,7 +36,7 @@ async function GetCanvasEntities(id: Canvas["id"], user: User) {
     const handles = await prisma.handle.findMany({
         where: {
             nodeId: {
-                in: nodes.map(m => m.id),
+              in: nodes.map(m => m.id),
             }
         }
     })

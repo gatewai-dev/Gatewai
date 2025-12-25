@@ -158,9 +158,6 @@ const BaseNode = memo((props: NodeProps<Node<CanvasDetailsNode>> & {
 
 BaseNode.displayName = 'BaseNode';
 
-const PARTICLE_COUNT = 1;
-const ANIMATE_DURATION = 6;
-
 const CustomConnectionLine = memo(({
   fromX,
   fromY,
@@ -210,26 +207,16 @@ const CustomConnectionLine = memo(({
         stroke={color}
         strokeWidth={3}
         d={edgePath}
-      />
-      {[...Array(PARTICLE_COUNT)].map((_, i) => (
-        <ellipse
-          key={`particle-${i}`}
-          r="5"
-          rx="5"
-          ry="1.2"
-          fill={color}
-        >
-          <animateMotion
-            begin={`${i * (ANIMATE_DURATION / PARTICLE_COUNT)}s`}
-            dur={`${ANIMATE_DURATION}s`}
-            repeatCount="indefinite"
-            rotate="auto"
-            path={edgePath}
-            calcMode="spline"
-            keySplines="0.42, 0, 0.58, 1.0"
-          />
-        </ellipse>
-      ))}
+        strokeDasharray="5 15"
+      >
+        <animate
+          attributeName="stroke-dashoffset"
+          values="0;-20"
+          dur="2s"
+          repeatCount="indefinite"
+          calcMode="linear"
+        />
+      </path>
     </g>
   );
 });
@@ -308,17 +295,26 @@ const CustomEdge = memo(({
           <stop offset="100%" stopColor={targetColor} />
         </linearGradient>
       </defs>
-      <BaseEdge
+      <path
         id={id}
         style={{
           ...style,
-          stroke: `url(#${gradientId})`,
           strokeWidth: 3,
         }}
         className="react-flow__edge-path fill-none hover:stroke-[5px]! hover:opacity-80"
-        path={edgePath}
+        d={edgePath}
+        stroke={`url(#${gradientId})`}
         markerEnd={markerEnd}
-      />
+        strokeDasharray="5 15"
+      >
+        <animate
+          attributeName="stroke-dashoffset"
+          values="0;-20"
+          dur="2s"
+          repeatCount="indefinite"
+          calcMode="linear"
+        />
+      </path>
     </g>
   );
 });

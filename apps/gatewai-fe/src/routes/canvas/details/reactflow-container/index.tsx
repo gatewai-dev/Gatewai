@@ -134,10 +134,13 @@ function ReactflowContainer({ children }: ReactFlowProps) {
           onInit={(flowInstance) => {
             rfInstance.current = flowInstance;
           }}
+          onlyRenderVisibleElements
           nodes={rfNodes}
           edges={rfEdges}
           className="react-flow-container"
           fitView
+          snapToGrid
+          snapGrid={[10, 10]}
           nodeTypes={nodeTypes}
           edgeTypes={edgeTypes}
           connectionLineComponent={CustomConnectionLine}

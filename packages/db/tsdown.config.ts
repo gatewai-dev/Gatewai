@@ -9,10 +9,6 @@ export default defineConfig({
   sourcemap: true,
   treeshake: true,
 
-  external: [
-    '@prisma/client',
-    '.prisma/client',
-  ],
 
   noExternal: [],
 });
