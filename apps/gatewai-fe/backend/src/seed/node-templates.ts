@@ -11,6 +11,7 @@ export async function SEED_createNodeTemplates(prisma: PrismaClient) {
       tokenPrice: 0.0,
       variableInputs: false,
       variableOutputs: false,
+      isTerminalNode: false,
       templateHandles: {
         create: [
           { type: HandleType.Output, dataType: DataType.Text, label: "Text" }
@@ -30,6 +31,7 @@ export async function SEED_createNodeTemplates(prisma: PrismaClient) {
       tokenPrice: 0.0,
       variableInputs: false,
       variableOutputs: false,
+      isTerminalNode: false,
       templateHandles: {
         create: [
           { type: HandleType.Input, dataType: DataType.File, required: true, label: 'File (video/image)' }
@@ -49,6 +51,7 @@ export async function SEED_createNodeTemplates(prisma: PrismaClient) {
       tokenPrice: 0.0,
       variableInputs: false,
       variableOutputs: false,
+      isTerminalNode: false,
       templateHandles: {
         create: [
           { type: HandleType.Output, dataType: DataType.File, label: "File" }
@@ -68,6 +71,7 @@ export async function SEED_createNodeTemplates(prisma: PrismaClient) {
       tokenPrice: 0.0,
       variableInputs: false,
       variableOutputs: false,
+      isTerminalNode: false,
       templateHandles: {
         create: [
           { type: HandleType.Input, dataType: DataType.File, required: true, label: "File" }
@@ -87,6 +91,7 @@ export async function SEED_createNodeTemplates(prisma: PrismaClient) {
       tokenPrice: 0.0,
       variableInputs: false,
       variableOutputs: false,
+      isTerminalNode: false,
       templateHandles: {
         create: [
           { type: HandleType.Output, dataType: DataType.Boolean, label: "Yes/No" }
@@ -106,6 +111,7 @@ export async function SEED_createNodeTemplates(prisma: PrismaClient) {
       tokenPrice: 0.0,
       variableInputs: false,
       variableOutputs: false,
+      isTerminalNode: true,
       templateHandles: {
         create: [
           { type: HandleType.Input, dataType: DataType.Text, required: true, label: "Link" },
@@ -126,6 +132,7 @@ export async function SEED_createNodeTemplates(prisma: PrismaClient) {
       tokenPrice: 0.0,
       variableInputs: false,
       variableOutputs: false,
+      isTerminalNode: false,
       templateHandles: {
         create: [
           { type: HandleType.Input, dataType: DataType.File, required: true, label: "Image/Video" },
@@ -146,6 +153,7 @@ export async function SEED_createNodeTemplates(prisma: PrismaClient) {
       tokenPrice: 0.0,
       variableInputs: true,
       variableOutputs: false,
+      isTerminalNode: true,
       templateHandles: {
         create: [
           { type: HandleType.Input, dataType: DataType.Text, required: true, label: 'Instructions' },
@@ -166,6 +174,7 @@ export async function SEED_createNodeTemplates(prisma: PrismaClient) {
       tokenPrice: 0.0,
       variableInputs: false,
       variableOutputs: false,
+      isTerminalNode: false,
       templateHandles: {
         create: [
           { type: HandleType.Input, dataType: DataType.Image, required: true, label: "Background" },
@@ -187,6 +196,7 @@ export async function SEED_createNodeTemplates(prisma: PrismaClient) {
       tokenPrice: 0.0,
       variableInputs: false,
       variableOutputs: false,
+      isTerminalNode: false,
       templateHandles: {
         create: [
           { type: HandleType.Input, dataType: DataType.Image, required: true, label: 'Image' },
@@ -209,6 +219,7 @@ export async function SEED_createNodeTemplates(prisma: PrismaClient) {
       tokenPrice: 0.0,
       variableInputs: true,
       variableOutputs: false,
+      isTerminalNode: false,
       templateHandles: {
         create: [
           { type: HandleType.Input, dataType: DataType.Image, required: true, label: 'Image' },
@@ -232,6 +243,7 @@ export async function SEED_createNodeTemplates(prisma: PrismaClient) {
       tokenPrice: 0.0,
       variableInputs: false,
       variableOutputs: false,
+      isTerminalNode: true,
       templateHandles: {
         create: [
           { type: HandleType.Input, dataType: DataType.Image, required: true, label: 'Image' },
@@ -252,6 +264,7 @@ export async function SEED_createNodeTemplates(prisma: PrismaClient) {
       tokenPrice: 0.0,
       variableInputs: false,
       variableOutputs: false,
+      isTerminalNode: false,
       templateHandles: {
         create: [
           { type: HandleType.Input, dataType: DataType.Text, required: true, label: 'Input' },
@@ -272,6 +285,7 @@ export async function SEED_createNodeTemplates(prisma: PrismaClient) {
       tokenPrice: 0.0,
       variableInputs: false,
       variableOutputs: false,
+      isTerminalNode: false,
       templateHandles: {
         create: []
       },
@@ -292,6 +306,7 @@ export async function SEED_createNodeTemplates(prisma: PrismaClient) {
       tokenPrice: 0.0,
       variableInputs: false,
       variableOutputs: false,
+      isTerminalNode: false,
       templateHandles: {
         create: [
           { type: HandleType.Output, dataType: DataType.Number, label: 'Number' }
@@ -311,6 +326,7 @@ export async function SEED_createNodeTemplates(prisma: PrismaClient) {
       tokenPrice: 0.0,
       variableInputs: false,
       variableOutputs: false,
+      isTerminalNode: true,
       templateHandles: {
         create: [
           { type: HandleType.Input, dataType: DataType.Text, required: true, label: 'Prompt' },
@@ -335,6 +351,7 @@ export async function SEED_createNodeTemplates(prisma: PrismaClient) {
       tokenPrice: 0.0,
       variableInputs: false,
       variableOutputs: false,
+      isTerminalNode: true,
       templateHandles: {
         create: [
           { type: HandleType.Input, dataType: DataType.Text, required: true, label: 'Prompt' },

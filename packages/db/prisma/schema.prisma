@@ -228,6 +228,7 @@ model NodeTemplate {
   updatedAt           DateTime               @updatedAt
   nodes               Node[]
   defaultConfig       Json?
+  isTerminalNode      Boolean                @default(false)
 
   @@map("node_template")
 }

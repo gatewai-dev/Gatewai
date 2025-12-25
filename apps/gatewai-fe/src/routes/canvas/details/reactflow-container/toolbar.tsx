@@ -1,7 +1,5 @@
-import { Pointer, Hand, Undo2, Redo2, MousePointer2, ChevronDown } from 'lucide-react';
+import { ChevronDown, Hand, MousePointer } from 'lucide-react';
 import { useReactFlow, useViewport } from '@xyflow/react';
-import { useHotkeys } from 'react-hotkeys-hook';
-import { useCanvasCtx } from '../ctx/canvas-ctx';
 import {
   Menubar,
   MenubarContent,
@@ -9,55 +7,26 @@ import {
   MenubarMenu,
   MenubarTrigger,
 } from '@/components/ui/menubar';
-import { ToggleGroup, ToggleGroupItem } from '@/components/ui/toggle-group';
-import { Toggle } from '@/components/ui/toggle';
-import { useZoomHotkeys } from './use-zoom-hotkeys';
+import { useContext } from 'react';
+import { ModeContext } from '.';
+import { Button } from '@/components/ui/button';
+import { Separator } from '@/components/ui/separator';
 
 function Toolbar() {
-  const { tool, setTool, undo, redo, canUndo, canRedo } = useCanvasCtx();
   const { zoom } = useViewport();
   const { zoomIn, zoomOut, zoomTo, fitView } = useReactFlow();
   const zoomPercentage = Math.round(zoom * 100) + '%';
-
-
-  // Tool selection hotkeys
-  useHotkeys('v', () => setTool('select'), [setTool]);
-  useHotkeys('h', () => setTool('pan'), [setTool]);
-
-  // Undo/Redo hotkeys
-  useHotkeys('ctrl+z, meta+z', () => {
-    if (canUndo) undo();
-  }, [canUndo, undo]);
-
-  useHotkeys('ctrl+shift+z, meta+shift+z, ctrl+y, meta+y', () => {
-    if (canRedo) redo();
-  }, [canRedo, redo]);
-
-  useZoomHotkeys();
+  const { mode, setMode } = useContext(ModeContext)!;
 
   return (
-    <Menubar className="border-0 bg-background px-2 py-1 rounded-md shadow-md">
-      <div className="flex gap-1">
-        <Toggle
-          pressed={false}
-          onClick={undo}
-          disabled={!canUndo}
-          aria-label="Undo (Ctrl+Z)"
-          size="sm"
-        >
-          <Undo2 size={18} />
-        </Toggle>
-        <Toggle
-          pressed={false}
-          onClick={redo}
-          disabled={!canRedo}
-          aria-label="Redo (Ctrl+Shift+Z)"
-          size="sm"
-        >
-          <Redo2 size={18} />
-        </Toggle>
-      </div>
-
+    <Menubar className="border-0 bg-background py-1 rounded-md shadow-md">
+      <Button title="Select" variant={mode === 'pan' ? 'ghost' : 'outline'} size="sm" onClick={() => setMode('select')}>
+        <MousePointer className="w-4" />
+      </Button>
+      <Button title='Pan' variant={mode === 'select' ? 'ghost' : 'outline'} size="sm" onClick={() => setMode('pan')}>
+        <Hand className="w-4" />
+      </Button>
+      <Separator orientation="vertical" />
       <MenubarMenu>
         <MenubarTrigger className="px-3 py-1 cursor-pointer text-xs">
           {zoomPercentage} <ChevronDown className='w-5' />
