@@ -8,6 +8,7 @@ import { NodeMenu } from './node-menu';
 import { makeSelectEdgeById } from '@/store/edges';
 import { useNodeInputValidation } from './hooks/use-node-input-validation';
 import { makeSelectAllNodeEntities } from '@/store/nodes';
+import type { NodeResult } from '@gatewai/types';
 
 
 const getColorForType = (type: string) => {
@@ -31,14 +32,14 @@ const BaseNode = memo((props: NodeProps<Node<CanvasDetailsNode>> & {
       outputs: sorted.filter(h => h.type === 'Output')
     };
   }, [handles]);
-  const validationErrors = useNodeInputValidation(id);
 
+  const validationErrors = useNodeInputValidation(id);
   const edges = useEdges();
 
   const getActualType = (nodeId: string, handleId: string) => {
     const node = allNodes[nodeId];
     if (!node?.result) return null;
-    const result = node.result as any;
+    const result = node.result as NodeResult;
     const selectedIndex = result.selectedOutputIndex ?? 0;
     const output = result.outputs?.[selectedIndex];
     if (!output) return null;
@@ -245,8 +246,6 @@ const CustomEdge = memo(({
   style = {},
   markerEnd,
   source,
-  sourceHandle: sourceHandleId,
-  targetHandle: targetHandleId,
 }: CustomEdgeProps): JSX.Element => {
   const [edgePath] = getBezierPath({
     sourceX,
@@ -259,8 +258,8 @@ const CustomEdge = memo(({
 
   const edge = useAppSelector(makeSelectEdgeById(id));
 
-  const sourceHandle = useAppSelector(makeSelectHandleById(edge?.sourceHandleId ?? sourceHandleId ?? undefined))
-  const targetHandle = useAppSelector(makeSelectHandleById(edge?.targetHandleId ?? targetHandleId ?? undefined))
+  const sourceHandle = useAppSelector(makeSelectHandleById(edge?.sourceHandleId))
+  const targetHandle = useAppSelector(makeSelectHandleById(edge?.targetHandleId))
   const allNodes = useAppSelector(makeSelectAllNodeEntities);
 
   const getActualType = (nodeId: string, handleId: string) => {
@@ -305,12 +304,12 @@ const CustomEdge = memo(({
         d={edgePath}
         stroke={`url(#${gradientId})`}
         markerEnd={markerEnd}
-        strokeDasharray="5 15"
+        strokeDasharray="12 0.1"
       >
         <animate
           attributeName="stroke-dashoffset"
           values="0;-20"
-          dur="2s"
+          dur="12s"
           repeatCount="indefinite"
           calcMode="linear"
         />

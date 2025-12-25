@@ -15,6 +15,8 @@ const CanvasName = memo(() => {
   }, [currentName]);
 
   const handleBlur = () => {
+    if (!localName || !canvas) return;
+
     const trimmed = localName.trim();
     if (trimmed === "") {
       setLocalName(currentName);

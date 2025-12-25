@@ -60,7 +60,7 @@ type InputFilterOptions = {
 function resolveSourceValue(
   data: CanvasCtxData,
   edge: CanvasCtxData['edges'][number]
-): any {
+) {
   const sourceHandle = data.handles.find((h) => h.id === edge.sourceHandleId);
   if (!sourceHandle) throw new Error('Source handle missing');
 
@@ -86,12 +86,12 @@ function getInputValue(
   targetNodeId: string,
   required: boolean = true,
   options: InputFilterOptions
-): any {
+) {
   let incoming = data.edges.filter(
     (e) => e.target === targetNodeId
   ).filter((e) => {
     const targetHandle = data.handles.find((h) => h.id === e.targetHandleId);
-    return targetHandle?.dataType.includes(options.dataType);
+    return targetHandle?.dataTypes.includes(options.dataType);
   });
 
   if (options.label) {

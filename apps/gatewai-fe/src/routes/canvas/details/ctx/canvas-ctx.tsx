@@ -13,7 +13,7 @@ import {
   type ReactFlowInstance,
   type XYPosition
 } from '@xyflow/react';
-import type { NodeResult, NodeType } from '@gatewai/types';
+import type { NodeResult } from '@gatewai/types';
 import { useAppDispatch, useAppSelector, type RootState } from '@/store';
 import { setAllNodeEntities, type NodeEntityType, deleteManyNodeEntity } from '@/store/nodes';
 import { generateId } from '@/lib/idgen';
@@ -26,6 +26,7 @@ import { setAllEdgeEntities, type EdgeEntityType } from '@/store/edges';
 import { useStore } from 'react-redux';
 import { useGetCanvasDetailsQuery, usePatchCanvasMutation, useProcessNodesMutationMutation } from '@/store/canvas';
 import { useTaskManagerCtx } from './task-manager-ctx';
+import type { NodeType } from '@gatewai/db';
 
 interface CanvasContextType {
   canvas: CanvasDetailsRPC["canvas"] | undefined;
@@ -239,6 +240,29 @@ const CanvasProvider = ({
 
       if (!sourceHandle || !targetHandle) {
         return { isValid: false, error: 'Source or target handle could not be found.' };
+      }
+
+      // Ensure source is output and target is input
+      if (sourceHandle.type !== 'Output' || targetHandle.type !== 'Input') {
+        return { isValid: false, error: 'Can only connect output to input.' };
+      }
+
+      // Check data type compatibility (assuming dataTypes are arrays and need non-empty intersection)
+      if (!sourceHandle.dataTypes.some(dt => targetHandle.dataTypes.includes(dt))) {
+        return { isValid: false, error: 'Data types do not match.' };
+      }
+
+      // Prevent one output handle from connecting to multiple inputs on the same target node
+      const existingToDifferentHandle = edges.some(
+        (e) =>
+          e.source === connection.source &&
+          e.sourceHandle === connection.sourceHandle &&
+          e.target === connection.target &&
+          e.targetHandle !== connection.targetHandle
+      );
+
+      if (existingToDifferentHandle) {
+        return { isValid: false, error: 'Cannot connect one output to multiple inputs on the same node.' };
       }
 
       return { isValid: true };

@@ -1,4 +1,5 @@
-import { DataType, HandleType, NodeType, ProcessEnvironment, type PrismaClient } from "../generated/client";
+import { DataType, HandleType, NodeType, ProcessEnvironment, type PrismaClient } from "./client";
+
 
 
 export async function SEED_createNodeTemplates(prisma: PrismaClient) {

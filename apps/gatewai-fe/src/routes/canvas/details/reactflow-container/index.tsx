@@ -134,7 +134,6 @@ function ReactflowContainer({ children }: ReactFlowProps) {
           onInit={(flowInstance) => {
             rfInstance.current = flowInstance;
           }}
-          onlyRenderVisibleElements
           nodes={rfNodes}
           edges={rfEdges}
           className="react-flow-container"

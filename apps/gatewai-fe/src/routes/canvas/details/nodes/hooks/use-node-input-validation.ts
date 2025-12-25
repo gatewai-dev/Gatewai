@@ -27,7 +27,6 @@ function useNodeInputValidation(nodeId: Node["id"]): ValidationError[] {
         connectedEdges.forEach(edge => {
             const sourceNode = nodeEntities[edge.source];
             const targetHandle = nodeHandles.find(f => f.id === edge.targetHandleId);
-            console.log({targetHandle})
             if (targetHandle) {
                 if (!sourceNode?.result) {
                     return;
