@@ -1,5 +1,6 @@
 import type { CanvasDetailsRPC } from "@/rpc/types";
 import { createEntityAdapter, createDraftSafeSelector, createSlice, type PayloadAction } from "@reduxjs/toolkit"
+import type { NodeEntityType } from "./nodes";
 
 export type EdgeEntityType = CanvasDetailsRPC["edges"][number];
 
@@ -36,6 +37,21 @@ export const makeSelectEdgeById = (id: EdgeEntityType["id"]) => createDraftSafeS
   (edges) => edges.entities[id] as EdgeEntityType | undefined
 );
 
+export const makeSelectEdgesByIds = (ids: EdgeEntityType["id"][]) => createDraftSafeSelector(
+  edgeSelectors.selectAll,
+  (edges) => edges.filter(f => ids.includes(f.targetHandleId) || ids.includes(f.sourceHandleId))
+);
+
+export const makeSelectEdgesByTargetNodeId = (id: NodeEntityType["id"]) => createDraftSafeSelector(
+  edgeSelectors.selectAll,
+  (edges) => edges.filter(f => f.target === id)
+);
+
+export const makeSelectEdgesBySourceNodeId = (id: NodeEntityType["id"]) => createDraftSafeSelector(
+  edgeSelectors.selectAll,
+  (edges) => edges.filter(f => f.source === id)
+);
+
 export const makeSelectAllEdges = edgeSelectors.selectAll;
 
 export const selectSelectedEdgeIds = createDraftSafeSelector(
@@ -45,7 +61,7 @@ export const selectSelectedEdgeIds = createDraftSafeSelector(
 
 export const selectSelectedEdges = createDraftSafeSelector(
   selectSelectedEdgeIds,
-  makeSelectAllEdges,
+  edgeSelectors.selectAll,
   (edgeIds, edges) => edgeIds? edges.filter(f => edgeIds.includes(f.id)) : undefined
 );
 

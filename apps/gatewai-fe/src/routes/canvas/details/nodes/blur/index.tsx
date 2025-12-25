@@ -14,7 +14,7 @@ import { BlurTypeSelector } from './type-selector';
 import { BlurValueSlider } from './blur-slider';
 import { browserNodeProcessors } from '../node-processors';
 import { useNodeContext } from '../hooks/use-node-ctx';
-import { useHandleValueResolver } from '../hooks/use-handle-value-resolver';
+import { useHandleValueResolver, useNodeInputValuesResolver } from '../hooks/use-handle-value-resolver';
 
 
 const ImagePlaceholder = () => {
@@ -35,6 +35,8 @@ const BlurNodeComponent = memo((props: NodeProps<BlurNode>) => {
 
   const context = useNodeContext({nodeId: props.id})
   const output = useHandleValueResolver({handleId: context?.inputHandles[0].id ?? "0"})
+  const inputResults = useNodeInputValuesResolver({nodeId: props.id})
+  console.log({inputResults});
   const showResult = output != null;
 
   const inputImageUrl = useMemo(() => {

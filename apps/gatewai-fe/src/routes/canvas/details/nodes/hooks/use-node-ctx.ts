@@ -1,6 +1,6 @@
 import { useAppSelector } from "@/store";
 import { makeSelectAllEdges } from "@/store/edges";
-import { makeSelectAllHandles, makeSelectHandleByNodeId } from "@/store/handles";
+import { makeSelectAllHandles, makeSelectHandlesByNodeId } from "@/store/handles";
 import { makeSelectAllNodes, type NodeEntityType, makeSelectNodeById } from "@/store/nodes";
 import { useMemo } from 'react';
 
@@ -8,7 +8,7 @@ function useNodeContext({nodeId}: {nodeId: NodeEntityType["id"]}) {
     const allNodes = useAppSelector(makeSelectAllNodes);
     const allHandles = useAppSelector(makeSelectAllHandles);
     const node = useAppSelector(makeSelectNodeById(nodeId));
-    const nodeHandles = useAppSelector(makeSelectHandleByNodeId(nodeId));
+    const nodeHandles = useAppSelector(makeSelectHandlesByNodeId(nodeId));
     const allEdges = useAppSelector(makeSelectAllEdges);
     const context = useMemo(() => {
         if (!node || !nodeHandles.length) {

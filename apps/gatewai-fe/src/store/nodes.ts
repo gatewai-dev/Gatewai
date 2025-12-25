@@ -100,6 +100,11 @@ export const makeSelectNodeById = (id: string) => createDraftSafeSelector(
   (nodes) => nodes.entities[id] as NodeEntityType | undefined
 );
 
+export const makeSelectNodesByIds = (ids: NodeEntityType["id"][]) => createDraftSafeSelector(
+  nodeSelectors.selectAll,
+  (nodes) => nodes.filter(f => ids.includes(f.id))
+);
+
 export const makeSelectAllNodes = nodeSelectors.selectAll;
 export const makeSelectAllNodeEntities = nodeSelectors.selectEntities;
 

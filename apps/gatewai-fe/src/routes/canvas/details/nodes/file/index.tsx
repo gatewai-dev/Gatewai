@@ -11,7 +11,7 @@ import type { FileNode } from '../node-props';
 import { useHasOutputItems } from '@/routes/canvas/hooks';
 import { useAppDispatch } from '@/store';
 import { UploadDropzone } from '@/components/util/file-dropzone';
-import { makeSelectHandleByNodeId } from '@/store/handles';
+import { makeSelectHandlesByNodeId } from '@/store/handles';
 import { toast } from 'sonner';
 import { UploadButton } from '@/components/util/file-button';
 import type { UserAssetsUploadRPC } from '@/rpc/types';
@@ -23,7 +23,7 @@ const FileNodeComponent = memo((props: NodeProps<FileNode>) => {
   const result = node?.result as unknown as FileResult;
   const showResult = useHasOutputItems(node);
   const dispatch = useAppDispatch();
-  const outputHandles = useAppSelector(makeSelectHandleByNodeId(props.id));
+  const outputHandles = useAppSelector(makeSelectHandlesByNodeId(props.id));
   const firstHandle = outputHandles[0];
 
   const existingMimeType = result?.outputs?.[0]?.items?.[0]?.data?.entity?.mimeType;

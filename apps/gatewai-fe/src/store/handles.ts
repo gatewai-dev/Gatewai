@@ -33,9 +33,9 @@ export const makeSelectHandleById = (id: string | undefined) => createDraftSafeS
   (handles) => id ? (handles.entities[id] as HandleEntityType | undefined) : undefined
 );
 
-export const makeSelectHandleByNodeId = (nodeId: string) => createDraftSafeSelector(
-  selectHandlesState,
-  (handles) => Object.values(handles.entities).filter(f => f.nodeId === nodeId)
+export const makeSelectHandlesByNodeId = (nodeId: string) => createDraftSafeSelector(
+  handleSelectors.selectAll,
+  (handles) => handles.filter(f => f.nodeId === nodeId)
 );
 
 

@@ -199,6 +199,8 @@ export async function getClientNodeResultById(id: NodeEntityType["id"]) {
   return await db.clientNodeResults.where('id').equals(id).first();
 }
 
+
+
 export function useClientCacheNodeResultById(id: NodeEntityType["id"]) {
   const nodeResult = useLiveQuery(() =>
     db.clientNodeResults.where('id').equals(id).first(),
@@ -207,6 +209,13 @@ export function useClientCacheNodeResultById(id: NodeEntityType["id"]) {
   return nodeResult;
 }
 
+export function useClientCacheNodeResults(ids: NodeEntityType["id"][]) {
+  const nodeResult = useLiveQuery(() =>
+    db.clientNodeResults.where('id').anyOf(ids).toArray(),
+    [...ids]
+  );
+  return nodeResult;
+}
 /**
  * Gets client node result by hash
  */

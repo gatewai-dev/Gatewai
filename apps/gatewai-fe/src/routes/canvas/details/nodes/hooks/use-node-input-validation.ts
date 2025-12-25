@@ -1,6 +1,6 @@
 import { useAppSelector } from "@/store";
 import { makeSelectAllEdges } from "@/store/edges";
-import { makeSelectHandleByNodeId } from "@/store/handles";
+import { makeSelectHandlesByNodeId } from "@/store/handles";
 import { makeSelectAllNodeEntities, makeSelectNodeById } from "@/store/nodes";
 import type { Handle } from "@gatewai/db";
 import type { NodeResult } from "@gatewai/types";
@@ -15,7 +15,7 @@ type ValidationError = {
 function useNodeInputValidation(nodeId: Node["id"]): ValidationError[] {
     const node = useAppSelector(makeSelectNodeById(nodeId));
     const nodeEntities = useAppSelector(makeSelectAllNodeEntities);
-    const nodeHandles = useAppSelector(makeSelectHandleByNodeId(nodeId));
+    const nodeHandles = useAppSelector(makeSelectHandlesByNodeId(nodeId));
     const edges = useAppSelector(makeSelectAllEdges);
 
     const validationResult = useMemo(() => {

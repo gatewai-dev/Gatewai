@@ -2,7 +2,7 @@ import { memo, useMemo, type JSX, type ReactNode } from 'react';
 import { Handle, Position, getBezierPath, type EdgeProps, type NodeProps, type Node, type ConnectionLineComponentProps, useEdges, BaseEdge } from '@xyflow/react';
 import type { CanvasDetailsNode } from '@/rpc/types';
 import { useAppSelector } from '@/store';
-import { makeSelectHandleById, makeSelectHandleByNodeId } from '@/store/handles';
+import { makeSelectHandleById, makeSelectHandlesByNodeId } from '@/store/handles';
 import { dataTypeColors } from '@/config';
 import { NodeMenu } from './node-menu';
 import { makeSelectEdgeById } from '@/store/edges';
@@ -20,7 +20,7 @@ const BaseNode = memo((props: NodeProps<Node<CanvasDetailsNode>> & {
   children?: ReactNode;
 }) => {
   const { selected, type, id } = props;
-  const handles = useAppSelector(makeSelectHandleByNodeId(id));
+  const handles = useAppSelector(makeSelectHandlesByNodeId(id));
   const allNodes = useAppSelector(makeSelectAllNodeEntities);
   // 1. Separate and Sort Handles
   // We use useMemo to avoid re-sorting on every render unless data.handles changes
@@ -110,7 +110,7 @@ const BaseNode = memo((props: NodeProps<Node<CanvasDetailsNode>> & {
           </div>
           <NodeMenu {...props} />
         </div>
-        <div className='nodrag h-[calc(100%-1rem)]'>
+        <div className='nodrag nopan nowheel pointer-events-auto! h-[calc(100%-1rem)]'>
           {props.children}
         </div>
       </div>

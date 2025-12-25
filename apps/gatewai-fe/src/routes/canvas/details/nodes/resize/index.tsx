@@ -35,7 +35,7 @@ const ResizeNodeComponent = memo((props: NodeProps<ResizeNode>) => {
   const config: ResizeNodeConfig = (node?.config ?? props.data.config) as ResizeNodeConfig;
 
   const context = useNodeContext({nodeId: props.id})
-  const output = useHandleValueResolver({handleId: context?.inputHandles[0].id ?? "0", nodeId: props.id})
+  const output = useHandleValueResolver({ handleId: context?.inputHandles[0].id ?? "0" })
 
   const showResult = output != null;
   const nodeConfig = node?.config as ResizeNodeConfig;
