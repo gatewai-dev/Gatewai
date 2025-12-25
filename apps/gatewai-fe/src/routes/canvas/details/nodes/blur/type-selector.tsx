@@ -20,7 +20,7 @@ const BlurTypeSelector = memo(({node}: {node: NodeEntityType}) => {
       value={config?.blurType ?? 'Box'}
       onValueChange={handleChange}
     >
-      <SelectTrigger className="w-[140px]">
+      <SelectTrigger className="w-[120px]">
         <SelectValue placeholder="Type" />
       </SelectTrigger>
       <SelectContent>

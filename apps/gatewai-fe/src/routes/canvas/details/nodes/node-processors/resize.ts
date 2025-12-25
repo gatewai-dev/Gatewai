@@ -1,85 +1,22 @@
 import type { NodeProcessor } from ".";
 import { db, storeClientNodeResult, hashNodeResult, hashConfigSync } from '../../media-db'; // Adjust import path as needed
-import type { NodeResult, FileData, BlurNodeConfig, BlurResult } from "@gatewai/types";
+import type { NodeResult, FileData, ResizeNodeConfig, ResizeResult } from "@gatewai/types";
 
-const boxBlurCanvasRGB = (
-  ctx: OffscreenCanvasRenderingContext2D,
-  top_x: number,
-  top_y: number,
-  width: number,
-  height: number,
-  radius: number
-) => {
-  if (radius < 1) return;
-  
-  radius = Math.floor(radius);
-  
-  const imageData = ctx.getImageData(top_x, top_y, width, height);
-  const pixels = imageData.data;
-  const tempPixels = new Uint8ClampedArray(pixels);
-  
-  // Horizontal pass
-  for (let y = 0; y < height; y++) {
-    for (let x = 0; x < width; x++) {
-      let r = 0, g = 0, b = 0, count = 0;
-      
-      for (let kx = -radius; kx <= radius; kx++) {
-        const px = x + kx;
-        if (px >= 0 && px < width) {
-          const idx = (y * width + px) * 4;
-          r += pixels[idx];
-          g += pixels[idx + 1];
-          b += pixels[idx + 2];
-          count++;
-        }
-      }
-      
-      const idx = (y * width + x) * 4;
-      tempPixels[idx] = r / count;
-      tempPixels[idx + 1] = g / count;
-      tempPixels[idx + 2] = b / count;
-      tempPixels[idx + 3] = pixels[idx + 3];
-    }
-  }
-  
-  // Vertical pass
-  for (let y = 0; y < height; y++) {
-    for (let x = 0; x < width; x++) {
-      let r = 0, g = 0, b = 0, count = 0;
-      
-      for (let ky = -radius; ky <= radius; ky++) {
-        const py = y + ky;
-        if (py >= 0 && py < height) {
-          const idx = (py * width + x) * 4;
-          r += tempPixels[idx];
-          g += tempPixels[idx + 1];
-          b += tempPixels[idx + 2];
-          count++;
-        }
-      }
-      
-      const idx = (y * width + x) * 4;
-      pixels[idx] = r / count;
-      pixels[idx + 1] = g / count;
-      pixels[idx + 2] = b / count;
-    }
-  }
-  
-  ctx.putImageData(imageData, top_x, top_y);
-};
-
-export type BlurExtraArgs = {
+export type ResizeExtraArgs = {
   resolvedInputResult: NodeResult;
+  originalWidth: number;
+  originalHeight: number;
+  maintainAspect: boolean;
 }
 
-const blurProcessor: NodeProcessor<BlurExtraArgs> = async ({ node, data, extraArgs }) => {
+const resizeProcessor: NodeProcessor<ResizeExtraArgs> = async ({ node, data, extraArgs }) => {
       const { handles } = data;
 
       // Extract input image from source result
-      const {resolvedInputResult} = extraArgs
+      const {resolvedInputResult, originalWidth, originalHeight, maintainAspect} = extraArgs
       const inputFileData = resolvedInputResult.outputs[resolvedInputResult.selectedOutputIndex].items[0].data as FileData;
       const imageUrl = inputFileData.dataUrl || inputFileData.entity?.signedUrl;
-      console.log({inputFileData})
+
       if (!imageUrl) {
           return { success: false, error: 'No image URL available' };
       }
@@ -111,28 +48,28 @@ const blurProcessor: NodeProcessor<BlurExtraArgs> = async ({ node, data, extraAr
           img.onerror = () => reject(new Error('Failed to load image'));
       });
 
-      const offscreen = new OffscreenCanvas(img.width, img.height);
+      const config = (node.config ?? {}) as ResizeNodeConfig;
+
+      const targetWidth = config.width ?? originalWidth;
+      const targetHeight = config.height ?? originalHeight;
+
+      const offscreen = new OffscreenCanvas(targetWidth, targetHeight);
       const ctx = offscreen.getContext('2d');
       if (!ctx) {
-        return { success: false, error: 'Failed to get OffscreenCanvas context' };
+          return { success: false, error: 'Failed to get OffscreenCanvas context' };
       }
       ctx.imageSmoothingEnabled = true;
       ctx.imageSmoothingQuality = 'high';
 
-      const config: BlurNodeConfig = (node.config ?? {
-        size: 1,
-        blurType: 'Box',
-      }) as BlurNodeConfig;
-      if (!config) {
-          throw new Error("Config is missing");
-      }
-      if (config.blurType === 'Gaussian' && config.size > 0) {
-          ctx.filter = `blur(${config.size}px)`;
-      }
-      ctx.drawImage(img, 0, 0);
-
-      if (config.blurType === 'Box' && config.size > 0) {
-          boxBlurCanvasRGB(ctx, 0, 0, img.width, img.height, config.size);
+      if (maintainAspect) {
+        const scale = Math.min(targetWidth / originalWidth, targetHeight / originalHeight);
+        const drawWidth = originalWidth * scale;
+        const drawHeight = originalHeight * scale;
+        const dx = (targetWidth - drawWidth) / 2;
+        const dy = (targetHeight - drawHeight) / 2;
+        ctx.drawImage(img, dx, dy, drawWidth, drawHeight);
+      } else {
+        ctx.drawImage(img, 0, 0, targetWidth, targetHeight);
       }
 
       // Convert to blob and then data URL
@@ -151,7 +88,7 @@ const blurProcessor: NodeProcessor<BlurExtraArgs> = async ({ node, data, extraAr
       }
 
       // Build new result
-      const newResult: BlurResult = {
+      const newResult: ResizeResult = {
           selectedOutputIndex: 0,
           outputs: [{
               items: [{
@@ -168,4 +105,4 @@ const blurProcessor: NodeProcessor<BlurExtraArgs> = async ({ node, data, extraAr
       return { success: true, newResult };
     }
 
-export default blurProcessor;
+export default resizeProcessor;

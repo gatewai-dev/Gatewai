@@ -83,6 +83,7 @@ const ArrayNodeConfigSchema = z.object({}).strict();
 const ResizeNodeConfigSchema = z.object({
   width: z.number().int().positive().optional(),
   height: z.number().int().positive().optional(),
+  maintainAspect: z.boolean().optional(),
 }).strict();
 
 // Main node schema

@@ -26,8 +26,6 @@ const ImagePlaceholder = () => {
 };
 
 const BlurNodeComponent = memo((props: NodeProps<BlurNode>) => {
-  const canvasRef = useRef<HTMLCanvasElement | null>(null);
-  const imgRef = useRef<HTMLImageElement | null>(null);
   const allNodes = useAppSelector(makeSelectAllNodes);
   const allHandles = useAppSelector(makeSelectAllHandles);
   const node = useAppSelector(makeSelectNodeById(props.id));
@@ -72,9 +70,7 @@ const BlurNodeComponent = memo((props: NodeProps<BlurNode>) => {
         console.error('Blur processor not found');
         return;
       }
-      console.log({output})
       const res = await processor({ node, data, extraArgs: { resolvedInputResult: output} });
-      console.log({res})
       if (res.success && res.newResult) {
         const dataUrl = (res.newResult.outputs[0].items[0].data as FileData).dataUrl;
         if (dataUrl) {
@@ -88,54 +84,17 @@ const BlurNodeComponent = memo((props: NodeProps<BlurNode>) => {
     compute();
   }, [computeKey, showResult, node, allNodes, allEdges, allHandles, output]);
 
-  // Draw the preview when previewUrl changes
-  useEffect(() => {
-    const canvas = canvasRef.current;
-    if (!canvas || !previewUrl) {
-      return;
-    }
-
-    if (!imgRef.current) {
-      imgRef.current = new Image();
-    }
-
-    const img = imgRef.current;
-    img.crossOrigin = 'anonymous';
-    img.src = previewUrl;
-
-    const handleLoad = () => {
-      const maxPreviewHeight = 280;
-      const scale = Math.min(1, maxPreviewHeight / img.naturalHeight);
-      const previewWidth = Math.floor(img.naturalWidth * scale);
-      const previewHeight = Math.floor(img.naturalHeight * scale);
-
-      canvas.width = previewWidth;
-      canvas.height = previewHeight;
-
-      const ctx = canvas.getContext('2d');
-      if (ctx) {
-        ctx.drawImage(img, 0, 0, previewWidth, previewHeight);
-      }
-    };
-
-    if (img.complete) {
-      handleLoad();
-    } else {
-      img.addEventListener('load', handleLoad);
-      return () => img.removeEventListener('load', handleLoad);
-    }
-  }, [previewUrl]);
-
   return (
     <BaseNode {...props}>
       <div className="flex flex-col gap-3">
         {!showResult && <ImagePlaceholder />}
-        {showResult && (
+        {showResult && previewUrl && (
           <div className="w-full overflow-hidden rounded">
-            <canvas
-              ref={canvasRef}
-              className="w-full h-auto"
-              style={{ objectFit: 'contain' }}
+            <img
+              src={previewUrl}
+              alt="Resized preview"
+              className="w-full h-full object-contain"
+              crossOrigin="anonymous"
             />
           </div>
         )}

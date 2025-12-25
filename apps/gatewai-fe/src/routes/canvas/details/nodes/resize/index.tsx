@@ -2,19 +2,20 @@ import { memo, useEffect, useMemo, useRef, useState } from 'react';
 import { type NodeProps } from '@xyflow/react';
 import {
   type ResizeNodeConfig,
-  type NodeResult,
   type FileData,
 } from '@gatewai/types';
-import { useAppSelector } from '@/store';
-import { makeSelectAllNodes, makeSelectNodeById } from '@/store/nodes';
+import { useAppDispatch, useAppSelector } from '@/store';
+import { makeSelectAllNodes, makeSelectNodeById, updateNodeConfig } from '@/store/nodes';
 import { BaseNode } from '../base';
 import type { ResizeNode } from '../node-props';
-import { makeSelectAllHandles, makeSelectHandleByNodeId } from '@/store/handles';
+import { makeSelectAllHandles } from '@/store/handles';
 import { makeSelectAllEdges } from '@/store/edges';
 import { AspectRatioSwitch } from './aspect-ratio-switch';
 import { ResizeHeightInput } from './height-input';
 import { ResizeWidthInput } from './width-input';
 import { browserNodeProcessors } from '../node-processors';
+import { useNodeContext } from '../hooks/use-node-ctx';
+import { useHandleValueResolver } from '../hooks/use-handle-value-resolver';
 
 const ImagePlaceholder = () => {
   return (
@@ -25,61 +26,25 @@ const ImagePlaceholder = () => {
 };
 
 const ResizeNodeComponent = memo((props: NodeProps<ResizeNode>) => {
-  const canvasRef = useRef<HTMLCanvasElement | null>(null);
   const imgRef = useRef<HTMLImageElement | null>(null);
-  const [originalWidth, setOriginalWidth] = useState<number | null>(null);
-  const [originalHeight, setOriginalHeight] = useState<number | null>(null);
   const allNodes = useAppSelector(makeSelectAllNodes);
   const allHandles = useAppSelector(makeSelectAllHandles);
   const node = useAppSelector(makeSelectNodeById(props.id));
-  const handles = useAppSelector(makeSelectHandleByNodeId(props.id));
   const allEdges = useAppSelector(makeSelectAllEdges);
-  
-  const config: ResizeNodeConfig & { maintainAspect?: boolean } = (node?.config ?? props.data.config) as ResizeNodeConfig & { maintainAspect?: boolean };
-  
-  const context = useMemo(() => {
-    if (!node || !handles.length) {
-      return null;
-    }
-    
-    const targetHandle = handles.find(h => h.type === 'Input'); // Matching the processor's assumption
-    if (!targetHandle) {
-      return null;
-    }
-    
-    const edge = allEdges.find(
-      e => e.target === node.id && e.targetHandleId === targetHandle.id
-    );
-    
-    if (!edge) {
-      return null;
-    }
-    
-    const sourceHandle = allHandles.find(h => h.id === edge.sourceHandleId);
-    if (!sourceHandle) {
-      return null;
-    }
-    
-    const imageSourceNode = allNodes.find(n => n.id === edge.source);
-    if (!imageSourceNode) {
-      return null;
-    }
-    
-    const nodeResult = imageSourceNode.result as unknown as NodeResult;
-    if (!nodeResult?.outputs) {
-      return null;
-    }
-    
-    const output = nodeResult.outputs[nodeResult.selectedOutputIndex];
-    const sourceOutput = output?.items.find(
-      item => item.outputHandleId === sourceHandle.id
-    );
-    
-    return { imageSourceNode, sourceHandle, edge, sourceOutput };
-  }, [node, handles, allEdges, allHandles, allNodes]);
-  
-  const showResult = context?.sourceOutput != null;
-  const inputImageUrl = showResult ? (context!.sourceOutput!.data as FileData).dataUrl || (context!.sourceOutput!.data as FileData).entity?.signedUrl : null;
+
+  const config: ResizeNodeConfig = (node?.config ?? props.data.config) as ResizeNodeConfig;
+
+  const context = useNodeContext({nodeId: props.id})
+  const output = useHandleValueResolver({handleId: context?.inputHandles[0].id ?? "0"})
+  const showResult = output != null;
+  const nodeConfig = node?.config as ResizeNodeConfig;
+
+  const inputImageUrl = useMemo(() => {
+    const generation = output?.outputs[output.selectedOutputIndex];
+    if (!generation) return null;
+    const genData = generation.items[0];
+    return (genData?.data as FileData)?.dataUrl || (genData?.data as FileData)?.entity?.signedUrl
+  }, [output]);
 
   // Compute a key to detect changes in input or config
   const computeKey = useMemo(() => {
@@ -88,6 +53,8 @@ const ResizeNodeComponent = memo((props: NodeProps<ResizeNode>) => {
   }, [inputImageUrl, config]);
 
   const [previewUrl, setPreviewUrl] = useState<string | null>(null);
+  const [originalWidth, setOriginalWidth] = useState<number | null>(null);
+  const [originalHeight, setOriginalHeight] = useState<number | null>(null);
 
   // Load input image to get original dimensions
   useEffect(() => {
@@ -141,7 +108,16 @@ const ResizeNodeComponent = memo((props: NodeProps<ResizeNode>) => {
         console.error('Resize processor not found');
         return;
       }
-      const res = await processor({ node, data });
+      if (!originalHeight || !originalWidth) {
+        return;
+      }
+      const res = await processor({ node, data, extraArgs: { 
+        resolvedInputResult: output,
+        originalHeight: originalHeight,
+        originalWidth: originalWidth,
+        maintainAspect: nodeConfig.maintainAspect ?? true
+      } });
+
       if (res.success && res.newResult) {
         const dataUrl = (res.newResult.outputs[0].items[0].data as FileData).dataUrl;
         if (dataUrl) {
@@ -153,52 +129,19 @@ const ResizeNodeComponent = memo((props: NodeProps<ResizeNode>) => {
     };
 
     compute();
-  }, [computeKey, showResult, node, allNodes, allEdges, allHandles]);
-
-  // Draw the preview when previewUrl changes
-  useEffect(() => {
-    const canvas = canvasRef.current;
-    if (!canvas || !previewUrl) {
-      return;
-    }
-
-    const previewImg = new Image();
-    previewImg.crossOrigin = 'anonymous';
-    previewImg.src = previewUrl;
-
-    const handleLoad = () => {
-      const maxPreviewHeight = 280;
-      const scale = Math.min(1, maxPreviewHeight / previewImg.naturalHeight);
-      const previewWidth = Math.floor(previewImg.naturalWidth * scale);
-      const previewHeight = Math.floor(previewImg.naturalHeight * scale);
-
-      canvas.width = previewWidth;
-      canvas.height = previewHeight;
-
-      const ctx = canvas.getContext('2d');
-      if (ctx) {
-        ctx.drawImage(previewImg, 0, 0, previewWidth, previewHeight);
-      }
-    };
-
-    if (previewImg.complete) {
-      handleLoad();
-    } else {
-      previewImg.addEventListener('load', handleLoad);
-      return () => previewImg.removeEventListener('load', handleLoad);
-    }
-  }, [previewUrl]);
+  }, [computeKey, showResult, node, allNodes, allEdges, allHandles, output, nodeConfig.width, nodeConfig.height, originalHeight, originalWidth, nodeConfig.maintainAspect]);
 
   return (
     <BaseNode {...props}>
       <div className="flex flex-col gap-3">
         {!showResult && <ImagePlaceholder />}
-        {showResult && (
-          <div className="w-full overflow-hidden rounded">
-            <canvas 
-              ref={canvasRef}
-              className="w-full h-auto"
-              style={{ objectFit: 'contain' }}
+        {showResult && previewUrl && (
+          <div className="w-full overflow-hidden rounded" style={{ height: '280px' }}>
+            <img
+              src={previewUrl}
+              alt="Resized preview"
+              className="w-full h-full object-contain"
+              crossOrigin="anonymous"
             />
           </div>
         )}

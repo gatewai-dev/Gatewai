@@ -14,7 +14,6 @@ const NodeConfigFormMap: Partial<Record<NodeType, (props: NodeConfigComponentPro
 
 const NodeConfigPanel = memo(() => {
   const selectedNodes = useAppSelector(selectSelectedNodes);
-  console.log({selectedNodes})
   if (!selectedNodes || selectedNodes.length === 0) {
     return null;
   }

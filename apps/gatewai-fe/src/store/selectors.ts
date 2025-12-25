@@ -15,7 +15,8 @@ export const selectConnectedNodeByHandleId = (handleId: HandleEntityType["id"]) 
             return null;
         }
         const sourceHandle = handles[sourceHandleId];
-        const node = nodes.find(f => f.id === sourceHandle.nodeId);
+        const node = nodes.find(f => f.id === sourceHandle?.nodeId);
+        if (!node) return null;
         return {node, sourceHandle};
     }
 )

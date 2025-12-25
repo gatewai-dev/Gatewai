@@ -14,8 +14,6 @@ export function NodeItem({ template }: { template: NodeTemplateListItemRPC }) {
   useDraggable(draggableRef, {
     position: position,
     onDrag: ({ offsetX, offsetY }) => {
-
-      console.log({ offsetX, offsetY });
       // Calculate position relative to the viewport
       setPosition({
         x: offsetX,
