@@ -1,5 +1,5 @@
-import type { BlurNodeConfig, FileData, NodeResult, Output, Task } from '@gatewai/types';
-import { PrismaClient, NodeType, DataType, TaskStatus } from '@gatewai/db';
+import type { BlurNodeConfig, FileData, NodeResult, Output } from '@gatewai/types';
+import { PrismaClient, NodeType, DataType, TaskStatus, Task } from '@gatewai/db';
 import { GetCanvasEntities, getInputValue, type CanvasCtxData } from '../repositories/canvas.js';
 import { generateText, type ModelMessage, type TextPart, type UserContent } from 'ai';
 import { xai } from '../ai/xai.js';
@@ -15,9 +15,16 @@ type NodeProcessorCtx = {
 type NodeProcessor = (ctx: NodeProcessorCtx) => Promise<{ success: boolean, error?: string, newResult?: NodeResult }>;
 
 const processors: Partial<Record<NodeType, NodeProcessor>> = {
-  // 
-  [NodeType.Blur]: async ({ node, data, prisma }) => {
+  //
+  [NodeType.File]: async ({ node }) => {
+    return { success: true, result: node.result };
+  },
+  [NodeType.Text]: async ({ node }) => {
+    return { success: true, result: node.result };
+  },
+  [NodeType.Blur]: async ({ node, data }) => {
     try {
+      console.log('PROCESSING BLUR')
       const imageInput = getInputValue(data, node.id, true, { dataType: DataType.Image, label: 'Image' }) as FileData | null;
       const blurConfig = node.config as BlurNodeConfig;
       const blurAmount = blurConfig.size ?? 0;
@@ -116,8 +123,10 @@ const processors: Partial<Record<NodeType, NodeProcessor>> = {
         }
         userContent.push(textPart);
       }
-      if (imageFileData?.entity?.signedUrl) {
-        userContent.push({type: 'image', image: imageFileData?.entity?.signedUrl ?? imageFileData.dataUrl});
+
+      const imageData = imageFileData?.entity?.signedUrl ?? imageFileData?.dataUrl;
+      if (imageData) {
+        userContent.push({type: 'image', image: imageData});
       }
 
       if (userContent.length === 0) {
@@ -236,20 +245,34 @@ export class NodeWFProcessor {
 
     if (nodeIds.length === 0) return [];
 
-    const selectedSet = new Set(nodeIds);
+    const allNodeIds = data.nodes.map(n => n.id);
+    const { depGraph: fullDepGraph, revDepGraph: fullRevDepGraph } = this.buildDepGraphs(allNodeIds, data);
 
-    // Validate selected nodes exist
-    const selectedNodes = data.nodes.filter(n => selectedSet.has(n.id));
-    if (selectedNodes.length !== nodeIds.length) {
-      throw new Error('Some selected nodes not found in canvas.');
+    // Find all necessary nodes: selected + all upstream dependencies
+    const necessary = new Set<string>();
+    const queue: string[] = [...nodeIds];
+    while (queue.length > 0) {
+      const curr = queue.shift()!;
+      if (necessary.has(curr)) continue;
+      necessary.add(curr);
+      const ups = fullRevDepGraph.get(curr) || [];
+      queue.push(...ups);
     }
 
-    // Build dependency graphs within selected
-    const { depGraph, revDepGraph } = this.buildDepGraphs(nodeIds, data);
+    const necessaryIds = Array.from(necessary);
 
-    const topoOrder = this.topologicalSort(nodeIds, depGraph, revDepGraph);
+    // Build subgraph for necessary nodes
+    const { depGraph, revDepGraph } = this.buildDepGraphs(necessaryIds, data);
+
+    const topoOrder = this.topologicalSort(necessaryIds, depGraph, revDepGraph);
     if (!topoOrder) {
-      throw new Error('Cycle detected in selected nodes.');
+      throw new Error('Cycle detected in necessary nodes.');
+    }
+
+    // Validate necessary nodes exist
+    const necessaryNodes = data.nodes.filter(n => necessary.has(n.id));
+    if (necessaryNodes.length !== necessary.size) {
+      throw new Error('Some necessary nodes not found in canvas.');
     }
 
     const tasks = [];
