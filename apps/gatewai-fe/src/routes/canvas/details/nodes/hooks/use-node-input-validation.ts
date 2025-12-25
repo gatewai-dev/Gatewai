@@ -46,7 +46,7 @@ function useNodeInputValidation(nodeId: Node["id"]): ValidationError[] {
                 }
             }
         });
-        console.log({errors})
+
         return errors;
     }, [edges, node, nodeEntities, nodeHandles]);
 

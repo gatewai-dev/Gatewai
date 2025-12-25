@@ -1,14 +1,15 @@
 import { createContext, useEffect, useRef, useState } from "react";
-import { Background, ConnectionMode, Panel, ReactFlow, SelectionMode } from "@xyflow/react";
+import { Background, ConnectionMode, Panel, ReactFlow, SelectionMode, type Edge, type Node } from "@xyflow/react";
 import { nodeTypes } from "../nodes";
 import { useCanvasCtx } from "../ctx/canvas-ctx";
 import { Toolbar } from "./toolbar";
 import { CustomEdge, CustomConnectionLine } from "../nodes/base";
 import { type DragEventHandler } from "react";
-import { useSelectedEntitiesCtx } from "../ctx/selected-entity-ctx";
 import { RightPanel } from "./right-panel";
-import { useAppSelector } from "@/store";
+import { useAppDispatch, useAppSelector } from "@/store";
 import { selectRFEdges, selectRFNodes } from "@/store/rfstate";
+import { setSelectedNodeIds } from "@/store/nodes";
+import { setSelectedEdgeIds } from "@/store/edges";
 import { NodePalette } from "../../node-templates/node-palette";
 import { useHotkeys } from "react-hotkeys-hook";
 import { useZoomHotkeys } from "./use-zoom-hotkeys";
@@ -34,7 +35,14 @@ function ReactflowContainer({ children }: ReactFlowProps) {
     onConnect,
     rfInstance
   } = useCanvasCtx();
-  const { onSelectionChange } = useSelectedEntitiesCtx();
+  const dispatch = useAppDispatch();
+  const onSelectionChange = ({ nodes, edges }: {
+    nodes: Node[];
+    edges: Edge[];
+  }) => {
+    dispatch(setSelectedNodeIds(nodes.map(m => m.id)))
+    dispatch(setSelectedEdgeIds(edges.map(m => m.id)))
+  }
   const rfNodes = useAppSelector(selectRFNodes);
   const rfEdges = useAppSelector(selectRFEdges);
 

@@ -1,22 +1,35 @@
 import { useAppSelector } from "@/store";
 import { memo, type ReactNode } from "react";
-import { selectSelectedNodes } from "@/store/nodes";
+import { selectSelectedNodes, type NodeEntityType } from "@/store/nodes";
 import type { NodeType } from "@gatewai/db";
 import { LLMNodeConfigComponent } from "./llm/llm-config";
 
-const NodeConfigFormMap: Partial<Record<NodeType, ReactNode>> = {
+type NodeConfigComponentProps = {
+  node: NodeEntityType;
+};
+
+const NodeConfigFormMap: Partial<Record<NodeType, (props: NodeConfigComponentProps) => ReactNode>> = {
   'LLM': LLMNodeConfigComponent
-}
+};
 
 const NodeConfigPanel = memo(() => {
-    const selectedNodes = useAppSelector(selectSelectedNodes);
-    if (!selectSelectedNodes || selectSelectedNodes.length === 0) {
-        return null
-    }
+  const selectedNodes = useAppSelector(selectSelectedNodes);
+  console.log({selectedNodes})
+  if (!selectedNodes || selectedNodes.length === 0) {
+    return null;
+  }
 
-    return (
-      <></>
-    );
+  return (
+    <div className="space-y-4">
+      {selectedNodes.map((node) => {
+        const ConfigComponent = NodeConfigFormMap[node.type] as ((props: NodeConfigComponentProps) => ReactNode) | undefined;
+        if (!ConfigComponent) {
+          return null;
+        }
+        return <ConfigComponent key={node.id} node={node} />;
+      })}
+    </div>
+  );
 });
 
 export { NodeConfigPanel };

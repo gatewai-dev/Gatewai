@@ -75,7 +75,7 @@ const CanvasProvider = ({
     const initialNodes: Node[] = canvasDetailsResponse.nodes.map((node) => ({
       id: node.id,
       position: node.position as XYPosition,
-      data: node,
+      data: node, // We're not using this but will track for id etc.
       type: node.type,
       width: node.width ?? undefined,
       height: node.height ?? undefined,

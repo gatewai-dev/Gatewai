@@ -71,7 +71,11 @@ const RouterNodeConfigSchema = z.object({
   invert: z.boolean().optional(),
 }).strict();
 
-const LLMNodeConfigSchema = z.object({}).strict();
+const LLM_NODE_MODELS = ['xai/grok-4-fast-non-reasoning', 'google/gemini-2.5-flash', 'openai/gpt-5'] as const
+
+const LLMNodeConfigSchema = z.object({
+  model: z.enum(LLM_NODE_MODELS)
+}).strict();
 // Array Node
 const ArrayNodeConfigSchema = z.object({}).strict();
 
@@ -135,6 +139,8 @@ export {
   CompositorNodeConfigSchema,
   DescriberNodeConfigSchema,
   LLMNodeConfigSchema,
+  LLM_NODE_MODELS,
+
   RouterNodeConfigSchema,
   ArrayNodeConfigSchema,
   ResizeNodeConfigSchema,
