@@ -12,8 +12,13 @@ import type { NodeResult } from "@gatewai/types";
 function useHandleValueResolver({handleId}:{handleId: HandleEntityType["id"]}) {
       const connectedNodeData = useAppSelector(selectConnectedNodeByHandleId(handleId ?? "0"))
       const cachedResult = useClientCacheNodeResultById(connectedNodeData?.node?.id ?? "0");
-      const result = (cachedResult?.result ?? connectedNodeData?.node?.result) as NodeResult;
-      return result;
+      const nodeResult = connectedNodeData?.node?.result as unknown as NodeResult;
+      const nodeResultOutput = nodeResult?.outputs[nodeResult.selectedOutputIndex]
+      const nodeResultHasItems = nodeResultOutput?.items?.length > 0;
+      if (nodeResultHasItems) {
+            return (connectedNodeData?.node?.result ?? cachedResult?.result) as NodeResult;
+      }
+      return (cachedResult?.result ?? connectedNodeData?.node?.result) as NodeResult;
 }
 
 export { useHandleValueResolver }

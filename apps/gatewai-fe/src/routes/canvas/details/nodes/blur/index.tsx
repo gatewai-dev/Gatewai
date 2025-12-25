@@ -38,11 +38,12 @@ const BlurNodeComponent = memo((props: NodeProps<BlurNode>) => {
   const showResult = output != null;
 
   const inputImageUrl = useMemo(() => {
+    if (!output?.outputs) return null;
     const generation = output.outputs[output.selectedOutputIndex];
     if (!generation) return null;
     const genData = generation.items[0];
     return (genData?.data as FileData)?.dataUrl || (genData?.data as FileData)?.entity?.signedUrl
-  }, [output.outputs, output.selectedOutputIndex]);
+  }, [output?.outputs, output?.selectedOutputIndex]);
 
   // Compute a key to detect changes in input or config
   const computeKey = useMemo(() => {
@@ -93,7 +94,7 @@ const BlurNodeComponent = memo((props: NodeProps<BlurNode>) => {
             <img
               src={previewUrl}
               alt="Resized preview"
-              className="w-full h-full object-contain"
+              className="w-full h-full object-cover"
               crossOrigin="anonymous"
             />
           </div>

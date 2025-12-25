@@ -2,7 +2,7 @@ import type { NodeEntityType } from '@/store/nodes';
 import type { AllNodeConfig, FileData, NodeResult } from '@gatewai/types';
 import { Dexie, type EntityTable } from 'dexie';
 import { useLiveQuery } from 'dexie-react-hooks';
-// Database entities
+
 export interface ClientNodeResult {
   /**
    * Node ID
@@ -205,9 +205,9 @@ export async function getClientNodeResultById(id: NodeEntityType["id"]) {
 
 export function useClientCacheNodeResultById(id: NodeEntityType["id"]) {
   const nodeResult = useLiveQuery(() =>
-    db.clientNodeResults.where('id').equals(id).first()
+    db.clientNodeResults.where('id').equals(id).first(),
+    [id]
   );
-
   return nodeResult;
 }
 
