@@ -1,6 +1,6 @@
 import { useCallback } from 'react';
 import { useDropzone, type Accept } from 'react-dropzone';
-import { UploadIcon } from 'lucide-react';
+import { UploadIcon, Loader2 } from 'lucide-react';
 import { useUploadAssetMutation } from '@/store/assets';
 import type { UserAssetsUploadRPC } from '@/rpc/types';
 
@@ -8,10 +8,12 @@ interface DropzoneProps {
     className?: string;
     onUploadSuccess?: (asset: UserAssetsUploadRPC) => void;
     onUploadError?: (error: Error) => void;
+    onUploadStart?: () => void;
     accept?: Accept
+    label?: string;
 }
 
-export const UploadDropzone = ({ className, onUploadSuccess, onUploadError, accept }: DropzoneProps) => {
+export const UploadDropzone = ({ className, onUploadStart, onUploadSuccess, onUploadError, accept, label }: DropzoneProps) => {
   const [upload, { isLoading }] = useUploadAssetMutation();
 
   const onDrop = useCallback(
@@ -19,6 +21,7 @@ export const UploadDropzone = ({ className, onUploadSuccess, onUploadError, acce
       if (acceptedFiles.length === 0) return;
       const file = acceptedFiles[0];
       try {
+        onUploadStart?.();
         const asset = await upload(file).unwrap();
         onUploadSuccess?.(asset);
       } catch (error) {
@@ -28,7 +31,7 @@ export const UploadDropzone = ({ className, onUploadSuccess, onUploadError, acce
         }
       }
     },
-    [upload, onUploadSuccess, onUploadError]
+    [onUploadStart, upload, onUploadSuccess, onUploadError]
   );
 
   const { getRootProps, getInputProps, isDragActive } = useDropzone({
@@ -43,8 +46,17 @@ export const UploadDropzone = ({ className, onUploadSuccess, onUploadError, acce
       className={`flex justify-center items-center border-2 border-dashed rounded-md p-4 text-xs cursor-pointer ${className ?? ''}`}
     >
       <input {...getInputProps()} />
-        <UploadIcon className="mr-2 h-4 w-4" />
-        {isLoading ? 'Uploading...' : isDragActive ? 'Drop the file here' : 'Click or drag & drop a file here'}
+      {isLoading ? (
+        <>
+          <Loader2 className="mr-2 h-4 w-4 animate-spin" />
+          Uploading...
+        </>
+      ) : (
+        <>
+          <UploadIcon className="mr-2 h-4 w-4" />
+          {isDragActive ? 'Drop the file here' : label ?? 'Click or drag & drop a file here'}
+        </>
+      )}
     </div>
   );
 };

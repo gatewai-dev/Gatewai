@@ -96,6 +96,7 @@ export const makeSelectNodeById = (id: string) => createDraftSafeSelector(
 );
 
 export const makeSelectAllNodes = nodeSelectors.selectAll;
+export const makeSelectAllNodeEntities = nodeSelectors.selectEntities;
 
 // Extract the action creators object and the reducer
 const { actions, reducer: nodesReducer } = nodesSlice

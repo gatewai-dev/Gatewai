@@ -1,42 +1,49 @@
-import { useQuery } from '@tanstack/react-query';
 import { createContext, useContext, useState, type Dispatch, type PropsWithChildren, type SetStateAction } from 'react';
-import type {Canvas, Task } from '@gatewai/types';
+import type {Canvas } from '@gatewai/types';
+import { useGetCanvasTasksQuery } from '@/store/tasks';
+import type { CanvasTaskListRPCParams, CanvasTaskListRPC } from '@/rpc/types';
 
 interface TaskManagerContextType {
-  tasks: Task[] | undefined;
+  tasks: CanvasTaskListRPC | undefined;
   isError: boolean;
   isLoading: boolean;
-  refetchInterval: number;
+  pollingInterval: number;
   refetch: () => void;
-  setRefetchInterval: Dispatch<SetStateAction<number>>
+  setPollingInterval: Dispatch<SetStateAction<number>>
+  tasksFilters: CanvasTaskListRPCParams["query"];
+  setTaskFilters: Dispatch<SetStateAction<{
+    status?: string | undefined;
+    fromDatetime?: string | undefined;
+  }>>;
 }
 
 const TaskManagerContext = createContext<TaskManagerContextType | undefined>(undefined);
 
-const fetchTasks = async (canvasId: Canvas["id"]): Promise<Task[]> => {
-  const response = await fetch(`/api/v1/tasks?canvasId=${canvasId}`);
-  if (!response.ok) {
-    throw new Error('Network response was not ok');
-  }
-  return response.json();
-};
 
 const TaskManagerProvider = ({
   children,
   canvasId,
 }: PropsWithChildren<{canvasId: Canvas["id"]}>) => {
+  const [tasksFilters, setTaskFilters] = useState<CanvasTaskListRPCParams["query"]>({
+    fromDatetime: new Date().toISOString(),
+    status: undefined,
+  })
 
-  const [refetchInterval, setRefetchInterval] = useState(0);
+  const [pollingInterval, setPollingInterval] = useState(0);
 
   const {
     data: tasks,
     refetch,
     isLoading,
     isError,
-  } = useQuery<Task[]>({
-    queryKey: ['canvasList'],
-    refetchInterval,
-    queryFn: () => fetchTasks(canvasId),
+  } = useGetCanvasTasksQuery({
+    param: {
+      canvasId
+    },
+    query: tasksFilters,
+  }, {
+    refetchOnFocus: false,
+    pollingInterval
   });
 
   const value: TaskManagerContextType = {
@@ -44,8 +51,10 @@ const TaskManagerProvider = ({
     isError,
     isLoading,
     refetch,
-    refetchInterval,
-    setRefetchInterval,
+    pollingInterval,
+    setPollingInterval,
+    tasksFilters,
+    setTaskFilters,
   };
 
   return <TaskManagerContext.Provider value={value}>{children}</TaskManagerContext.Provider>;

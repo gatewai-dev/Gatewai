@@ -1,5 +1,5 @@
 import { useRef } from 'react';
-import { PlusIcon } from 'lucide-react';
+import { PlusIcon, Loader2 } from 'lucide-react';
 import { useUploadAssetMutation } from '@/store/assets';
 import type { UserAssetsUploadRPC } from '@/rpc/types';
 import type { ChangeEvent } from 'react';
@@ -10,10 +10,12 @@ interface UploadButtonProps {
     className?: string;
     onUploadSuccess?: (asset: UserAssetsUploadRPC) => void;
     onUploadError?: (error: Error) => void;
+    onUploadStart?: () => void;
     accept?: string[];
+    label?: string;
 }
 
-export const UploadButton = ({ className, onUploadSuccess, onUploadError, accept }: UploadButtonProps) => {
+export const UploadButton = ({ className, onUploadStart, onUploadSuccess, onUploadError, accept, label }: UploadButtonProps) => {
   const [upload, { isLoading }] = useUploadAssetMutation();
   const inputRef = useRef<HTMLInputElement>(null);
 
@@ -27,6 +29,7 @@ export const UploadButton = ({ className, onUploadSuccess, onUploadError, accept
     const file = e.target.files?.[0];
     if (!file) return;
     try {
+      onUploadStart?.();
       const asset = await upload(file).unwrap();
       onUploadSuccess?.(asset);
     } catch (error) {
@@ -46,9 +49,18 @@ export const UploadButton = ({ className, onUploadSuccess, onUploadError, accept
         variant="outline"
         size="xs"
         className={cn(className)}
-        >
-        <PlusIcon className="h-3 w-3" size={0} />
-        {isLoading ? 'Uploading...' : 'Click to upload a file'}
+      >
+        {isLoading ? (
+          <>
+            <Loader2 className="h-3 w-3 animate-spin" />
+            Uploading...
+          </>
+        ) : (
+          <>
+            <PlusIcon className="h-3 w-3" />
+            {label ?? 'Click to upload a file'}
+          </>
+        )}
       </Button>
       <input
         type="file"

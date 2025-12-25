@@ -22,7 +22,7 @@ function OutputSelector({node}: {node: NodeProps<AnyNode>}) {
     }
 
     return (
-        <div className='absolute bg-background/20 top-1 left-1 text-white text-[8px] flex items-center gap-1'>
+        <div className='bg-background/20  text-white text-[8px] flex items-center gap-1'>
             <Button
                 size="xs"
                 onClick={() => decrementSelectedIndex()}

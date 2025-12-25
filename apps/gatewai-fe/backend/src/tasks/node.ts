@@ -37,9 +37,7 @@ const processors: Partial<Record<NodeType, NodeProcessor>> = {
         }
         userContent.push(textPart);
       }
-      console.log({imageFileData})
       if (imageFileData?.entity?.signedUrl) {
-        console.log({imageFileData, ww: imageFileData?.entity?.signedUrl})
         userContent.push({type: 'image', image: imageFileData?.entity?.signedUrl});
       }
 
@@ -54,7 +52,7 @@ const processors: Partial<Record<NodeType, NodeProcessor>> = {
             ? (userContent[0] as string)
             : userContent,
       });
-      console.log({messages})
+
       const result = await generateText({
         model: xai('grok-4-1-fast-non-reasoning'),
         messages,
@@ -71,7 +69,7 @@ const processors: Partial<Record<NodeType, NodeProcessor>> = {
         selectedOutputIndex: 0,
       };
       const newResult =  structuredClone(prevResult);
-      console.log(result.text)
+
       const newGeneration: Output = {
         items: [
           {

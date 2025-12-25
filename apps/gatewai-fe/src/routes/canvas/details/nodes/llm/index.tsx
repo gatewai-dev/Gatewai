@@ -24,6 +24,7 @@ const LlmNodeComponent = memo((props: NodeProps<LLMNode>) => {
 
 
   const { runNodes } = useCanvasCtx();
+
   return (
     <BaseNode {...props}>
       <div className='flex flex-col gap-2 items-end'>

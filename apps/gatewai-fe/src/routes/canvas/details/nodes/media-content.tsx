@@ -3,7 +3,15 @@ import type { NodeProps } from "@xyflow/react";
 import type { AnyNode } from "./node-props";
 import { OutputSelector } from "./misc/output-selector";
 import { FileIcon } from "lucide-react";
-import { MediaController } from 'media-chrome/react';
+import {
+  MediaController,
+  MediaControlBar,
+  MediaTimeRange,
+  MediaTimeDisplay,
+  MediaVolumeRange,
+  MediaPlayButton,
+  MediaMuteButton,
+} from 'media-chrome/react';
 
 function MediaContent({node, result}: {node: NodeProps<AnyNode>, result: ImagesResult | FileResult}) {
     const selectedOutput = result.outputs[result.selectedOutputIndex];
@@ -14,10 +22,9 @@ function MediaContent({node, result}: {node: NodeProps<AnyNode>, result: ImagesR
     if (!outputItem.data.entity.signedUrl) {
         return null;
     }
-
     return (
         <div className='relative h-full w-full group'>
-            <div className="absolute w-full h-full">
+            <div className="absolute top-1 left-1 z-10">
                 <OutputSelector node={node} />
             </div>
             {isImage && (<img
@@ -32,6 +39,13 @@ function MediaContent({node, result}: {node: NodeProps<AnyNode>, result: ImagesR
                         src={outputItem.data.entity.signedUrl}
                         preload="auto"
                     />
+                    <MediaControlBar>
+                        <MediaPlayButton></MediaPlayButton>
+                        <MediaTimeRange></MediaTimeRange>
+                        <MediaTimeDisplay showDuration></MediaTimeDisplay>
+                        <MediaMuteButton></MediaMuteButton>
+                        <MediaVolumeRange></MediaVolumeRange>
+                    </MediaControlBar>
                 </MediaController>
             </div>}
             {isOther && <div className="flex flex-col items-center gap-2">

@@ -6,6 +6,7 @@ import { makeSelectHandleById, makeSelectHandleByNodeId } from '@/store/handles'
 import { dataTypeColors } from '@/config';
 import { NodeMenu } from './node-menu';
 import { makeSelectEdgeById } from '@/store/edges';
+import { useNodeInputValidation } from './hooks/use-node-input-validation';
 
 
 const getColorForType = (type: string) => {
@@ -28,7 +29,8 @@ const BaseNode = memo((props: NodeProps<Node<CanvasDetailsNode>> & {
       outputs: sorted.filter(h => h.type === 'Output')
     };
   }, [handles]);
-
+  const validationErrors = useNodeInputValidation(id);
+  console.log({validationErrors})
   const edges = useEdges();
 
   const nodeBackgroundColor = 'bg-background';
@@ -43,6 +45,11 @@ const BaseNode = memo((props: NodeProps<Node<CanvasDetailsNode>> & {
         const color = getColorForType(handle.dataType);
         const topPosition = `${(i + 1) * (30) + 20}px`;
         const isConnected = edges.some(edge => edge.target === id && edge.targetHandle === handle.id);
+        const error = validationErrors.find(err => err.handleId === handle.id);
+        const isInvalid = !!error;
+        const borderStyle = isInvalid 
+          ? '4px solid red' 
+          : isConnected ? `4px solid ${color.hex}` : `2px dashed ${color.hex}`;
         return (
           <div
             key={handle.id}
@@ -54,9 +61,9 @@ const BaseNode = memo((props: NodeProps<Node<CanvasDetailsNode>> & {
                 type="target"
                 position={Position.Left}
                 tabIndex={0}
-                style={{ 
+                style={{
                   background: 'transparent',
-                  border: isConnected ? `4px solid ${color.hex}` : `2px dashed ${color.hex}`,
+                  border: borderStyle,
                 }}
                 className={`w-5 h-5 flex items-center justify-center transition-all duration-200 left-[50%]! rounded-none!`}
               />
@@ -65,8 +72,9 @@ const BaseNode = memo((props: NodeProps<Node<CanvasDetailsNode>> & {
               px-1 py-1 text-xs opacity-0 group-hover:opacity-100 group-focus:opacity-100
                 group-focus-within:opacity-100 in-[.selected]:opacity-100 transition-all duration-200 pointer-events-none
                 whitespace-nowrap font-medium text-right`}
-                style={{ color: color.hex }}>
+                style={{ color: isInvalid ? 'red' : color.hex }}>
               {handle.label || handle.dataType} {handle.required && '*'}
+              {isInvalid && ` (${error.error})`}
             </span>
           </div>
         );

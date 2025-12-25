@@ -1,0 +1,56 @@
+import { useAppSelector } from "@/store";
+import { makeSelectAllEdges } from "@/store/edges";
+import { makeSelectHandleByNodeId } from "@/store/handles";
+import { makeSelectAllNodeEntities, makeSelectNodeById } from "@/store/nodes";
+import type { Handle, NodeResult } from "@gatewai/types";
+import type { Node } from "@xyflow/react";
+import { useMemo } from "react";
+
+type ValidationError = {
+    handleId: Handle["id"];
+    error: string;
+}
+
+function useNodeInputValidation(nodeId: Node["id"]): ValidationError[] {
+    const node = useAppSelector(makeSelectNodeById(nodeId));
+    const nodeEntities = useAppSelector(makeSelectAllNodeEntities);
+    const nodeHandles = useAppSelector(makeSelectHandleByNodeId(nodeId));
+    const edges = useAppSelector(makeSelectAllEdges);
+
+    const validationResult = useMemo(() => {
+        if (!node) {
+            return [];
+        }
+        const connectedEdges = edges.filter(f => f.target === node.id);
+        const errors: ValidationError[] = [];
+        connectedEdges.forEach(edge => {
+            const sourceNode = nodeEntities[edge.source];
+            const targetHandle = nodeHandles.find(f => f.id === edge.targetHandleId);
+            console.log({targetHandle})
+            if (targetHandle) {
+                if (!sourceNode?.result) {
+                    return;
+                }
+                const sourceResult = sourceNode.result as NodeResult;
+                const outputIndex = sourceResult?.selectedOutputIndex ?? 0;
+                console.log({sourceNode})
+                const selectedOutput = sourceResult.outputs[outputIndex];
+                const outputItem = selectedOutput.items.find(f => f.outputHandleId === edge.sourceHandleId);
+                const outputItemType = outputItem?.type;
+                console.log({outputItemType, dat: targetHandle?.dataType})
+                if (outputItemType !== targetHandle?.dataType) {
+                    errors.push({
+                        handleId: targetHandle.id,
+                        error: `Invalid data type`
+                    })
+                }
+            }
+        });
+        console.log({errors})
+        return errors;
+    }, [edges, node, nodeEntities, nodeHandles]);
+
+    return validationResult;
+}
+
+export { useNodeInputValidation }
