@@ -1,5 +1,5 @@
 import { memo, useMemo, type JSX, type ReactNode } from 'react';
-import { Handle, Position, getBezierPath, type EdgeProps, type NodeProps, type Node, type ConnectionLineComponentProps, useEdges, BaseEdge } from '@xyflow/react';
+import { Handle, Position, getBezierPath, type EdgeProps, type NodeProps, type Node, type ConnectionLineComponentProps, useEdges } from '@xyflow/react';
 import type { CanvasDetailsNode } from '@/rpc/types';
 import { useAppSelector } from '@/store';
 import { makeSelectHandleById, makeSelectHandlesByNodeId } from '@/store/handles';
@@ -10,11 +10,9 @@ import { useNodeInputValidation } from './hooks/use-node-input-validation';
 import { makeSelectAllNodeEntities } from '@/store/nodes';
 import type { NodeResult } from '@gatewai/types';
 
-
 const getColorForType = (type: string) => {
   return dataTypeColors[type] || { bg: 'bg-gray-500', stroke: 'stroke-gray-500', hex: '#6b7280', text: 'text-gray-500' };
 };
-
 
 const BaseNode = memo((props: NodeProps<Node<CanvasDetailsNode>> & {
   children?: ReactNode;
@@ -39,11 +37,11 @@ const BaseNode = memo((props: NodeProps<Node<CanvasDetailsNode>> & {
   const getActualType = (nodeId: string, handleId: string) => {
     const node = allNodes[nodeId];
     if (!node?.result) return null;
-    const result = node.result as NodeResult;
+    const result = node.result as unknown as NodeResult;
     const selectedIndex = result.selectedOutputIndex ?? 0;
     const output = result.outputs?.[selectedIndex];
     if (!output) return null;
-    const item = output.items?.find((it: any) => it.outputHandleId === handleId);
+    const item = output.items?.find((it) => it.outputHandleId === handleId);
     return item?.type ?? null;
   };
 
@@ -184,11 +182,11 @@ const CustomConnectionLine = memo(({
   const getActualType = (nodeId: string, handleId: string) => {
     const node = allNodes[nodeId];
     if (!node?.result) return null;
-    const result = node.result as any;
+    const result = node.result as unknown as NodeResult;
     const selectedIndex = result.selectedOutputIndex ?? 0;
     const output = result.outputs?.[selectedIndex];
     if (!output) return null;
-    const item = output.items?.find((it: any) => it.outputHandleId === handleId);
+    const item = output.items?.find((it) => it.outputHandleId === handleId);
     return item?.type ?? null;
   };
 
@@ -265,11 +263,11 @@ const CustomEdge = memo(({
   const getActualType = (nodeId: string, handleId: string) => {
     const node = allNodes[nodeId];
     if (!node?.result) return null;
-    const result = node.result as any;
+    const result = node.result as unknown as NodeResult;
     const selectedIndex = result.selectedOutputIndex ?? 0;
     const output = result.outputs?.[selectedIndex];
     if (!output) return null;
-    const item = output.items?.find((it: any) => it.outputHandleId === handleId);
+    const item = output.items?.find((it) => it.outputHandleId === handleId);
     return item?.type ?? null;
   };
 

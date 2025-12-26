@@ -162,6 +162,7 @@ const blurProcessor: NodeProcessor<BlurExtraArgs> = async ({ node, data, extraAr
           }]
       }]
   };
+  await cleanupNodeResults(node.id);
 
   // Store in cache
   await storeClientNodeResult(node, newResult, inputHash);

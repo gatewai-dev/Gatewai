@@ -49,8 +49,7 @@ function useNodeInputValuesResolver({nodeId}: {nodeId: NodeEntityType["id"]}) {
       const sourceNodes = useAppSelector(makeSelectNodesByIds(sourceNodeIds));
       const cachedResults = useLiveQuery(() =>
           db.clientNodeResults.where('id').anyOf(sourceNodeIds).toArray(),
-        );
-
+      );
       const resp = useMemo(() => {
             const resultData: NodeInputContext = {}
             for (let i = 0; i < sourceNodes.length; i++) {
@@ -77,7 +76,6 @@ function useNodeInputValuesResolver({nodeId}: {nodeId: NodeEntityType["id"]}) {
             }
             return resultData;
       }, [cachedResults, edges, nodeId, sourceNodes])
-      console.log({cachedResults, sourceNodeIds})
       return resp;
 }
 

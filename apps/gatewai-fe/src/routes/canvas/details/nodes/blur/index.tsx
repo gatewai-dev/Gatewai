@@ -38,6 +38,18 @@ const BlurNodeComponent = memo((props: NodeProps<BlurNode>) => {
   const context = useNodeContext(resolverArgs)
   const nodeInputContext = useNodeInputValuesResolver(resolverArgs)
 
+  const shouldUseLocalImageData = useMemo(() => {
+    if (!context?.inputHandles[0].id) {
+      return false;
+    }
+    const imageHandleCtx = nodeInputContext[context?.inputHandles[0].id]
+    const cachedValue = imageHandleCtx?.cachedResultValue;
+    if (cachedValue && cachedValue.data) {
+      return true;
+    }
+    return false;
+  }, [context?.inputHandles, nodeInputContext])
+
   const inputImageResult = useMemo(() => {
     if (!context?.inputHandles[0].id) {
       return null;
@@ -64,15 +76,31 @@ const BlurNodeComponent = memo((props: NodeProps<BlurNode>) => {
   }, [inputImageResult]);
 
   // Compute a key to detect changes in input or config
-  const computeKey = useMemo(() => {
-    if (!inputImageUrl) return null;
-    return inputImageUrl + JSON.stringify(config, Object.keys(config).sort());
-  }, [inputImageUrl, config]);
+const computeKey = useMemo(() => {
+  if (!context?.inputHandles[0].id) {
+    return null;
+  }
+  if (!inputImageUrl) return null;
+  let computeKey = '';
+  if (shouldUseLocalImageData) {
+    const imageHandleCtx = nodeInputContext[context?.inputHandles[0].id]
+    const cachedResult = imageHandleCtx?.cachedResult;
+    const hash = cachedResult?.hash ?? '';
+    console.log({hash})
+    computeKey += hash;
+  } else {
+    computeKey += inputImageUrl;
+  }
+  computeKey += JSON.stringify(config, Object.keys(config).sort());
+  return computeKey;
+}, [context?.inputHandles, inputImageUrl, config, shouldUseLocalImageData, nodeInputContext]);
   const [previewUrl, setPreviewUrl] = useState<string | null>(null);
 
   // Compute the blur using the processor
   useEffect(() => {
+      console.log({nodeId: node?.id, qq:"wwe1", computeKey})
     if (!inputImageUrl || !computeKey || !node || !context?.inputHandles[0].id) {
+      console.log({nodeId: node?.id, qq:"wwe"})
       return;
     }
 
@@ -88,9 +116,11 @@ const BlurNodeComponent = memo((props: NodeProps<BlurNode>) => {
         return;
       }
       const res = await processor({ node, data, extraArgs: { nodeInputContextData: nodeInputContext[context?.inputHandles[0].id] } });
+      console.log({res, nodeId: node?.id, })
       if (res.success && res.newResult) {
         const dataUrl = (res.newResult.outputs[0].items[0].data as FileData).dataUrl;
-        if (dataUrl && previewUrl != dataUrl) {
+          console.log({nodeId: node?.id, ww: "wqe", qq: previewUrl !== dataUrl})
+        if (dataUrl && previewUrl !== dataUrl) {
           setPreviewUrl(dataUrl);
         }
       } else {
