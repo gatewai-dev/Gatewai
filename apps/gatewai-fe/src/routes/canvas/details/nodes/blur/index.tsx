@@ -33,20 +33,21 @@ const BlurNodeComponent = memo((props: NodeProps<BlurNode>) => {
 
   const config: BlurNodeConfig = (node?.config ?? props.data.config) as BlurNodeConfig;
 
-  const context = useNodeContext({nodeId: props.id})
-  const nodeInputContext = useNodeInputValuesResolver({nodeId: props.id})
-  console.log({nodeInputContext});
+  const resolverArgs = useMemo(() => ({ nodeId: props.id }), [props.id]);
+
+  const context = useNodeContext(resolverArgs)
+  const nodeInputContext = useNodeInputValuesResolver(resolverArgs)
 
   const inputImageResult = useMemo(() => {
     if (!context?.inputHandles[0].id) {
       return null;
     }
     const imageHandleCtx = nodeInputContext[context?.inputHandles[0].id]
-    const cachedValue = imageHandleCtx.cachedResultValue;
+    const cachedValue = imageHandleCtx?.cachedResultValue;
     if (cachedValue && cachedValue.data) {
       return cachedValue;
     }
-    const connectedNodeValue = imageHandleCtx.resultValue;
+    const connectedNodeValue = imageHandleCtx?.resultValue;
 
     if (connectedNodeValue && connectedNodeValue.data) {
       return connectedNodeValue;
@@ -67,14 +68,11 @@ const BlurNodeComponent = memo((props: NodeProps<BlurNode>) => {
     if (!inputImageUrl) return null;
     return inputImageUrl + JSON.stringify(config, Object.keys(config).sort());
   }, [inputImageUrl, config]);
-
   const [previewUrl, setPreviewUrl] = useState<string | null>(null);
 
   // Compute the blur using the processor
   useEffect(() => {
-    console.log({computeKey, node})
-    if (!inputImageUrl || !computeKey || !node) {
-      setPreviewUrl(null);
+    if (!inputImageUrl || !computeKey || !node || !context?.inputHandles[0].id) {
       return;
     }
 
@@ -92,7 +90,7 @@ const BlurNodeComponent = memo((props: NodeProps<BlurNode>) => {
       const res = await processor({ node, data, extraArgs: { nodeInputContextData: nodeInputContext[context?.inputHandles[0].id] } });
       if (res.success && res.newResult) {
         const dataUrl = (res.newResult.outputs[0].items[0].data as FileData).dataUrl;
-        if (dataUrl) {
+        if (dataUrl && previewUrl != dataUrl) {
           setPreviewUrl(dataUrl);
         }
       } else {
@@ -101,7 +99,7 @@ const BlurNodeComponent = memo((props: NodeProps<BlurNode>) => {
     };
 
     compute();
-  }, [computeKey, node, allNodes, allEdges, allHandles, inputImageUrl, nodeInputContext, context?.inputHandles]);
+  }, [allEdges, allHandles, allNodes, computeKey, context?.inputHandles, inputImageUrl, node, nodeInputContext, previewUrl]);
 
   return (
     <BaseNode {...props}>
@@ -112,7 +110,7 @@ const BlurNodeComponent = memo((props: NodeProps<BlurNode>) => {
             <img
               src={previewUrl}
               alt="Resized preview"
-              className="w-full h-full object-cover"
+              className="w-full h-full object-contain"
               crossOrigin="anonymous"
             />
           </div>

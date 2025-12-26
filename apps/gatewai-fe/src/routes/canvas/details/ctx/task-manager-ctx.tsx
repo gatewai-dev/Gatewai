@@ -58,7 +58,6 @@ const TaskManagerProvider = ({
     pollingInterval,
   });
 
-  console.log({taskBatchs})
 
   useEffect(() => {
     if (taskBatchs?.length === 0) {

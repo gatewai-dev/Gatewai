@@ -141,7 +141,7 @@ const ResizeNodeComponent = memo((props: NodeProps<ResizeNode>) => {
             <img
               src={previewUrl}
               alt="Resized preview"
-              className="w-full h-full object-cover"
+              className="w-full h-full object-contain"
               crossOrigin="anonymous"
             />
           </div>

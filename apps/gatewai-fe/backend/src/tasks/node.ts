@@ -153,7 +153,6 @@ const processors: Partial<Record<NodeType, NodeProcessor>> = {
         model: xai('grok-4-1-fast-non-reasoning'),
         messages,
       });
-      console.log({result})
 
       const outputHandle = data.handles.find(
         (h) => h.nodeId === node.id && h.type === 'Output'

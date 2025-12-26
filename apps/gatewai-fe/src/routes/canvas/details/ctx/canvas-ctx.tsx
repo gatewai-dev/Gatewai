@@ -256,8 +256,6 @@ const CanvasProvider = ({
       if (sourceHandle.type !== 'Output' || targetHandle.type !== 'Input') {
         return { isValid: false, error: 'Can only connect output to input.' };
       }
-      console.log(sourceHandle.dataTypes);
-      console.log(targetHandle.dataTypes);
 
       // Prevent one output handle from connecting to multiple inputs on the same target node
       const existingToDifferentHandle = edges.some(

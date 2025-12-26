@@ -16,9 +16,8 @@ function useNodeContext({nodeId}: {nodeId: NodeEntityType["id"]}) {
         }
         
         const inputHandles = nodeHandles.filter(h => h.type === 'Input');
-        if (!nodeHandles) {
-          return null;
-        }
+        // Removed redundant if (!nodeHandles) - it's always truthy here
+        
         const inputEdges = allEdges.filter(f => inputHandles.map(m => m.id).includes(f.targetHandleId));
         
         const sourceHandles = allHandles.filter(h => inputEdges.map(m => m.sourceHandleId).includes(h.id));

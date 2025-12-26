@@ -1,11 +1,13 @@
 import { useAppSelector } from "@/store";
 import { type HandleEntityType } from "@/store/handles";
 import { selectConnectedNodeByHandleId } from "@/store/selectors";
-import { useClientCacheNodeResultById, useClientCacheNodeResults, type ClientNodeResult } from "../../media-db";
+import { db, useClientCacheNodeResultById, useClientCacheNodeResults, type ClientNodeResult } from "../../media-db";
 import type { NodeResult, OutputItem } from "@gatewai/types";
 import { makeSelectNodesByIds, type NodeEntityType } from "@/store/nodes";
 import { makeSelectEdgesByTargetNodeId } from "@/store/edges";
 import type { DataType } from "@gatewai/db";
+import { useMemo } from 'react';
+import { useLiveQuery } from "dexie-react-hooks";
 
 /**
  * Returns result for the node that connected to source handle
@@ -18,10 +20,13 @@ function useHandleValueResolver({handleId}:{handleId: HandleEntityType["id"]}) {
       const nodeResult = connectedNodeData?.node?.result as unknown as NodeResult;
       const nodeResultOutput = nodeResult?.outputs[nodeResult.selectedOutputIndex]
       const nodeResultHasItems = nodeResultOutput?.items?.length > 0;
-      if (nodeResultHasItems) {
-            return (connectedNodeData?.node?.result ?? cachedResult?.result) as NodeResult;
-      }
-      return (cachedResult?.result ?? connectedNodeData?.node?.result) as NodeResult;
+
+      return useMemo(() => {
+            if (nodeResultHasItems) {
+                  return (connectedNodeData?.node?.result ?? cachedResult?.result) as NodeResult;
+            }
+            return (cachedResult?.result ?? connectedNodeData?.node?.result) as NodeResult;
+      }, [connectedNodeData, cachedResult, nodeResultHasItems]);
 }
 export type NodeInputContextData = {
             node: NodeEntityType | null,
@@ -40,35 +45,40 @@ export type NodeInputContext = Record<
  */
 function useNodeInputValuesResolver({nodeId}: {nodeId: NodeEntityType["id"]}) {
       const edges = useAppSelector(makeSelectEdgesByTargetNodeId(nodeId))
-      const sourceNodeIds = edges.map(m => m.source);
+      const sourceNodeIds = useMemo(() => edges.map(m => m.source), [edges]);
       const sourceNodes = useAppSelector(makeSelectNodesByIds(sourceNodeIds));
-      const cachedResults = useClientCacheNodeResults(sourceNodeIds);
-      const resultData: NodeInputContext = {}
+      const cachedResults = useLiveQuery(() =>
+          db.clientNodeResults.where('id').anyOf(sourceNodeIds).toArray(),
+        );
 
-      for (let i = 0; i < sourceNodes.length; i++) {
-            const node = sourceNodes[i];
-            const cachedResult = cachedResults?.find(f => f.id === node.id);
-            const edge = edges.find(f => f.source === node.id && f.target === nodeId);
-            const handleId = edge?.targetHandleId;
-            const nodeResult = node.result as unknown as NodeResult;
-            const currGen = nodeResult.outputs[nodeResult.selectedOutputIndex];
+      const resp = useMemo(() => {
+            const resultData: NodeInputContext = {}
+            for (let i = 0; i < sourceNodes.length; i++) {
+                  const node = sourceNodes[i];
+                  const cachedResult = cachedResults?.find(f => f.id === node.id);
+                  const edge = edges.find(f => f.source === node.id && f.target === nodeId);
+                  const handleId = edge?.targetHandleId;
+                  const nodeResult = node.result as unknown as NodeResult | null;
+                  const currGen = nodeResult?.outputs[nodeResult?.selectedOutputIndex];
 
-            const cachedResultGen = cachedResult?.result.outputs[cachedResult?.result.selectedOutputIndex];
+                  const cachedResultGen = cachedResult?.result.outputs[cachedResult?.result.selectedOutputIndex];
 
-            if (handleId) {
-                  const resultValue = currGen.items.find(f => f.outputHandleId === edge.sourceHandleId);
-                  const cachedResultValue = cachedResultGen?.items.find(f => f.outputHandleId === edge.sourceHandleId);
-                  resultData[handleId] = {
-                        resultValue,
-                        result: nodeResult,
-                        node,
-                        cachedResult,
-                        cachedResultValue,
-                  };
+                  if (handleId) {
+                        const resultValue = currGen?.items.find(f => f.outputHandleId === edge.sourceHandleId);
+                        const cachedResultValue = cachedResultGen?.items.find(f => f.outputHandleId === edge.sourceHandleId);
+                        resultData[handleId] = {
+                              resultValue,
+                              result: nodeResult,
+                              node,
+                              cachedResult,
+                              cachedResultValue,
+                        };
+                  }
             }
-      }
-
-      return resultData;
+            return resultData;
+      }, [cachedResults, edges, nodeId, sourceNodes])
+      console.log({cachedResults, sourceNodeIds})
+      return resp;
 }
 
 export { useHandleValueResolver, useNodeInputValuesResolver }

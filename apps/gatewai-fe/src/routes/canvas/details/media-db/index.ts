@@ -212,8 +212,9 @@ export function useClientCacheNodeResultById(id: NodeEntityType["id"]) {
 export function useClientCacheNodeResults(ids: NodeEntityType["id"][]) {
   const nodeResult = useLiveQuery(() =>
     db.clientNodeResults.where('id').anyOf(ids).toArray(),
-    [...ids]
+    []
   );
+  console.log({nodeResult})
   return nodeResult;
 }
 /**
