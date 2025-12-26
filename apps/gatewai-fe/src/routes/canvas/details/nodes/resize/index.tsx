@@ -13,7 +13,7 @@ import { makeSelectAllEdges } from '@/store/edges';
 import { AspectRatioSwitch } from './aspect-ratio-switch';
 import { ResizeHeightInput } from './height-input';
 import { ResizeWidthInput } from './width-input';
-import { browserNodeProcessors } from '../node-processors';
+import { browserNodeProcessors } from '../../node-processors';
 import { useNodeContext } from '../hooks/use-node-ctx';
 import { useNodeInputValuesResolver } from '../hooks/use-handle-value-resolver';
 

@@ -12,7 +12,7 @@ import { makeSelectAllHandles } from '@/store/handles';
 import { makeSelectAllEdges } from '@/store/edges';
 import { BlurTypeSelector } from './type-selector';
 import { BlurValueSlider } from './blur-slider';
-import { browserNodeProcessors } from '../node-processors';
+import { browserNodeProcessors } from '../../node-processors';
 import { useNodeContext } from '../hooks/use-node-ctx';
 import { useNodeInputValuesResolver } from '../hooks/use-handle-value-resolver';
 

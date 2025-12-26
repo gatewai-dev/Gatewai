@@ -1,8 +1,8 @@
 import type { NodeProcessor } from ".";
-import { db, storeClientNodeResult, hashNodeResult, hashConfigSync, cleanupNodeResults } from '../../media-db'; // Adjust import path as needed
+import { db, storeClientNodeResult, hashNodeResult, hashConfigSync, cleanupNodeResults } from '../media-db'; // Adjust import path as needed
 import type { NodeResult, FileData, ResizeNodeConfig, ResizeResult } from "@gatewai/types";
-import type { NodeInputContextData } from "../hooks/use-handle-value-resolver";
-import { getPhotonInstance } from "../../ctx/photon-loader";
+import type { NodeInputContextData } from "../nodes/hooks/use-handle-value-resolver";
+import { getPhotonInstance } from "../ctx/photon-loader";
 
 
 export type ResizeExtraArgs = {
