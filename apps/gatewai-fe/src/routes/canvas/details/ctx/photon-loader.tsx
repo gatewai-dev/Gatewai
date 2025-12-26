@@ -1,6 +1,7 @@
 import React, { createContext, useContext, useEffect, useState, type ReactNode } from 'react';
 
 type Photon = typeof import("@silvia-odwyer/photon");
+let photonInstance: Photon | undefined;
 
 interface PhotonContextValue {
   photon: Photon | null;
@@ -30,6 +31,8 @@ export const PhotonProvider: React.FC<PhotonProviderProps> = ({ children }) => {
         // Dynamic import of the browser-native module
         const photonModule = await import('@silvia-odwyer/photon');
         console.log({photonModule})
+        // Store it for module access
+        photonInstance = photonModule;
         if (!cancelled) {
           setPhoton(photonModule);
           setIsLoading(false);
