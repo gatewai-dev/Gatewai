@@ -1,6 +1,6 @@
 import React, { createContext, useContext, useEffect, useState, type ReactNode } from 'react';
 import { Loader2 } from "lucide-react";
-import init, { box_blur } from '@silvia-odwyer/photon'
+import init from '@silvia-odwyer/photon'
 import wasm from '@/assets/photon_rs_bg.wasm?url';
 
 type Photon = typeof import("@silvia-odwyer/photon");
@@ -37,9 +37,7 @@ export const PhotonProvider: React.FC<PhotonProviderProps> = ({ children }) => {
         setIsLoading(true);
         setError(null);
 
-        // Dynamic import of the browser-native module
         const photonModule = await init(wasm);
-        console.log({photonModule})
         // Store it for module access
         photonInstance = photonModule;
         if (!cancelled) {

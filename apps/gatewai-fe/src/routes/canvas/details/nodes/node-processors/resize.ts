@@ -1,109 +1,130 @@
 import type { NodeProcessor } from ".";
 import { db, storeClientNodeResult, hashNodeResult, hashConfigSync, cleanupNodeResults } from '../../media-db'; // Adjust import path as needed
 import type { NodeResult, FileData, ResizeNodeConfig, ResizeResult } from "@gatewai/types";
+import type { NodeInputContextData } from "../hooks/use-handle-value-resolver";
+import { getPhotonInstance } from "../../ctx/photon-loader";
+
 
 export type ResizeExtraArgs = {
-  resolvedInputResult: NodeResult;
-  originalWidth: number;
-  originalHeight: number;
-  maintainAspect: boolean;
+  nodeInputContextData: NodeInputContextData;
+  canvas?: HTMLCanvasElement;
 }
 
 const resizeProcessor: NodeProcessor<ResizeExtraArgs> = async ({ node, data, extraArgs }) => {
-      const { handles } = data;
+  const { handles } = data;
 
-      // Extract input image from source result
-      const {resolvedInputResult, originalWidth, originalHeight, maintainAspect} = extraArgs
-      const inputFileData = resolvedInputResult.outputs[resolvedInputResult.selectedOutputIndex].items[0].data as FileData;
-      const imageUrl = inputFileData.dataUrl || inputFileData.entity?.signedUrl;
+  // Extract input image from source result
+  const { nodeInputContextData: { result, cachedResult, resultValue, cachedResultValue }, canvas: providedCanvas } = extraArgs
+  const imageUrl = (resultValue?.data as FileData).entity?.signedUrl ?? (cachedResultValue?.data as FileData).dataUrl;
+  const resultToUse = (result ?? cachedResult) as NodeResult;
+  if (!imageUrl || !resultToUse) {
+      await cleanupNodeResults(node.id);
+      return { success: false, error: 'No image URL available' };
+  }
 
-      if (!imageUrl) {
-        await cleanupNodeResults(node.id);
-        return { success: false, error: 'No image URL available' };
+  // Compute inputHash for caching (source result hash + config hash)
+  const sourceHash = await hashNodeResult(resultToUse);
+  const configHash = hashConfigSync(node.config ?? {});
+  const inputStr = sourceHash + configHash;
+  const encoder = new TextEncoder();
+  const hashData = encoder.encode(inputStr);
+  const hashBuffer = await crypto.subtle.digest('SHA-256', hashData);
+  const hashArray = Array.from(new Uint8Array(hashBuffer));
+  const inputHash = hashArray.map(b => b.toString(16).padStart(2, '0')).join('');
+  // Check cache by node.id and inputHash
+  const cached = await db.clientNodeResults.where({ id: node.id, inputHash }).first();
+  if (cached) {
+      // If canvas provided, draw cached image on it
+      if (providedCanvas) {
+        const img = new Image();
+        img.crossOrigin = 'anonymous';
+        img.src = (cached.result.outputs[0].items[0].data as FileData).dataUrl;
+        await new Promise<void>((resolve, reject) => {
+            img.onload = () => resolve();
+            img.onerror = () => reject(new Error('Failed to load image'));
+        });
+        providedCanvas.width = img.width;
+        providedCanvas.height = img.height;
+        providedCanvas.style.width = '100%';
+        providedCanvas.style.height = 'auto';
+        const ctx = providedCanvas.getContext('2d', { willReadFrequently: true });
+        if (ctx) {
+          ctx.drawImage(img, 0, 0);
+        }
       }
 
-      // Compute inputHash for caching (source result hash + config hash)
-      const sourceHash = await hashNodeResult(resolvedInputResult);
-      const configHash = hashConfigSync(node.config ?? {});
-      const inputStr = sourceHash + configHash;
-      const encoder = new TextEncoder();
-      const hashData = encoder.encode(inputStr);
-      const hashBuffer = await crypto.subtle.digest('SHA-256', hashData);
-      const hashArray = Array.from(new Uint8Array(hashBuffer));
-      const inputHash = hashArray.map(b => b.toString(16).padStart(2, '0')).join('');
+      return { success: true, newResult: cached.result };
+  }
 
-      // Check cache by node.id and inputHash
-      const cached = await db.clientNodeResults.where({ id: node.id, inputHash }).first();
-      if (cached) {
-          // Update age for LRU-like cleanup
-          await db.clientNodeResults.update(cached.id, { age: Date.now() });
-          return { success: true, newResult: cached.result };
-      }
+  // No cache hit: load image and process with Canvas
+  const img = new Image();
+  img.crossOrigin = 'anonymous';
+  img.src = imageUrl;
+  await new Promise<void>((resolve, reject) => {
+      img.onload = () => resolve();
+      img.onerror = () => reject(new Error('Failed to load image'));
+  });
 
-      // No cache hit: load image and process with OffscreenCanvas
-      const img = new Image();
-      img.crossOrigin = 'anonymous';
-      img.src = imageUrl;
-      await new Promise<void>((resolve, reject) => {
-          img.onload = () => resolve();
-          img.onerror = () => reject(new Error('Failed to load image'));
-      });
+  const canvas = providedCanvas ?? document.createElement('canvas');
+  canvas.width = img.width;
+  canvas.height = img.height;
+  if (providedCanvas) {
+    canvas.style.width = '100%';
+    canvas.style.height = 'auto';
+  }
+  const ctx = canvas.getContext('2d', { willReadFrequently: true });
+  if (!ctx) {
+    return { success: false, error: 'Failed to get Canvas context' };
+  }
+  ctx.imageSmoothingEnabled = true;
+  ctx.imageSmoothingQuality = 'high';
 
-      const config = (node.config ?? {}) as ResizeNodeConfig;
+  const config: ResizeNodeConfig = (node.config as ResizeNodeConfig ?? {
+    height: 100,
+    maintainAspect: true,
+    width: 100,
+  });
+  if (!config) {
+      throw new Error("Config is missing");
+  }
 
-      const targetWidth = config.width ?? originalWidth;
-      const targetHeight = config.height ?? originalHeight;
+  ctx.drawImage(img, 0, 0);
+  const photonInstance = await getPhotonInstance();
 
-      const offscreen = new OffscreenCanvas(targetWidth, targetHeight);
-      const ctx = offscreen.getContext('2d');
-      if (!ctx) {
-          return { success: false, error: 'Failed to get OffscreenCanvas context' };
-      }
-      ctx.imageSmoothingEnabled = true;
-      ctx.imageSmoothingQuality = 'high';
+  if (!photonInstance) {
+    throw new Error("Photon instance not found");
+    
+  }
+  console.log({photonInstance})
+  const photonImage = photonInstance.open_image(canvas, ctx);
+  photonInstance.resize(photonImage, config.width, config.height, 4);
+  photonInstance.putImageData(canvas, ctx, photonImage);
 
-      if (maintainAspect) {
-        const scale = Math.min(targetWidth / originalWidth, targetHeight / originalHeight);
-        const drawWidth = originalWidth * scale;
-        const drawHeight = originalHeight * scale;
-        const dx = (targetWidth - drawWidth) / 2;
-        const dy = (targetHeight - drawHeight) / 2;
-        ctx.drawImage(img, dx, dy, drawWidth, drawHeight);
-      } else {
-        ctx.drawImage(img, 0, 0, targetWidth, targetHeight);
-      }
+  // Convert to data URL
+  const dataUrl = canvas.toDataURL('image/png');
 
-      // Convert to blob and then data URL
-      const blob = await offscreen.convertToBlob({ type: 'image/png' });
-      const dataUrl = await new Promise<string>((resolve, reject) => {
-          const reader = new FileReader();
-          reader.onload = () => resolve(reader.result as string);
-          reader.onerror = () => reject(new Error('Failed to read blob'));
-          reader.readAsDataURL(blob);
-      });
+  // Find output handle (assuming single source handle for output)
+  const outputHandle = handles.find(h => h.nodeId === node.id && h.type === 'Output');
+  if (!outputHandle) {
+      return { success: false, error: 'No output handle found' };
+  }
 
-      // Find output handle (assuming single source handle for output)
-      const outputHandle = handles.find(h => h.nodeId === node.id && h.type === 'Output');
-      if (!outputHandle) {
-          return { success: false, error: 'No output handle found' };
-      }
-
-      // Build new result
-      const newResult: ResizeResult = {
-          selectedOutputIndex: 0,
-          outputs: [{
-              items: [{
-                  type: 'Image',
-                  data: { dataUrl },
-                  outputHandleId: outputHandle.id
-              }]
+  // Build new result
+  const newResult: ResizeResult = {
+      selectedOutputIndex: 0,
+      outputs: [{
+          items: [{
+              type: 'Image',
+              data: { dataUrl },
+              outputHandleId: outputHandle.id
           }]
-      };
+      }]
+  };
 
-      // Store in cache
-      await storeClientNodeResult(node, newResult, inputHash);
+  // Store in cache
+  await storeClientNodeResult(node, newResult, inputHash);
 
-      return { success: true, newResult };
-    }
+  return { success: true, newResult };
+}
 
 export default resizeProcessor;

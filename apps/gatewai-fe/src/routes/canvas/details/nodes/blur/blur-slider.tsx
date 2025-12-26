@@ -18,10 +18,14 @@ const BlurValueSlider = memo(({node}: {node: NodeEntityType}) => {
   }, []);
 
   useEffect(() => {
+    const timer = setTimeout(() => {
       onNodeConfigUpdate({
         id: node.id,
         newConfig: { size: localSize }
       });
+    }, 50);
+
+    return () => clearTimeout(timer);
   }, [localSize, node.id, onNodeConfigUpdate]);
   
   return (

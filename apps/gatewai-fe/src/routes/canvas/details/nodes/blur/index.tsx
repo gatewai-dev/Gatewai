@@ -91,7 +91,7 @@ const BlurNodeComponent = memo((props: NodeProps<BlurNode>) => {
     computeKey += JSON.stringify(config, Object.keys(config).sort());
     return computeKey;
   }, [context?.inputHandles, inputImageUrl, config, shouldUseLocalImageData, nodeInputContext]);
-  const canvasRef = useRef<HTMLCanvasElement |undefined>();
+  const canvasRef = useRef<HTMLCanvasElement |undefined>(undefined);
 
   // Compute the blur using the processor
   useEffect(() => {
@@ -110,10 +110,8 @@ const BlurNodeComponent = memo((props: NodeProps<BlurNode>) => {
         console.error('Blur processor not found');
         return;
       }
-      const res = await processor({ node, data, extraArgs: { nodeInputContextData: nodeInputContext[context?.inputHandles[0].id], canvas: canvasRef.current } });
-      if (!res.success) {
-        console.error('Failed to process blur:', res.error);
-      }
+      processor({ node, data, extraArgs: { nodeInputContextData: nodeInputContext[context?.inputHandles[0].id], canvas: canvasRef.current } });
+      
     };
 
     compute();

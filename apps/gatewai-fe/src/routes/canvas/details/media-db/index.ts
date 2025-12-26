@@ -179,7 +179,7 @@ export async function storeClientNodeResult(
   inputHash: string
 ): Promise<string> {
   const hash = await hashNodeResult(result);
-  
+
   await db.clientNodeResults.put({
     id: node.id,
     name: node.name || 'Unnamed Node',

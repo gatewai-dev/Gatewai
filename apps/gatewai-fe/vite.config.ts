@@ -15,6 +15,9 @@ export default defineConfig({
     topLevelAwait(),
   ],
   server: {
+    watch: {
+      ignored: ["**/**-worker.ts"],
+    },
     proxy: {
       "/api": {
         target: "http://localhost:8081",
@@ -27,4 +30,8 @@ export default defineConfig({
       "@": path.resolve(__dirname, "./src"),
     },
   },
+  worker: {
+    plugins: () => [wasm(), topLevelAwait()],
+    format: 'es' // default is iife
+  }
 })

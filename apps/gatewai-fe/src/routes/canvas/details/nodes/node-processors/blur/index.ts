@@ -1,8 +1,8 @@
-import type { NodeProcessor } from ".";
-import { db, storeClientNodeResult, hashNodeResult, hashConfigSync, cleanupNodeResults } from '../../media-db'; // Adjust import path as needed
+import type { NodeProcessor } from "../";
+import { db, storeClientNodeResult, hashNodeResult, hashConfigSync, cleanupNodeResults } from '../../../media-db'; // Adjust import path as needed
 import type { NodeResult, FileData, BlurNodeConfig, BlurResult } from "@gatewai/types";
-import type { NodeInputContextData } from "../hooks/use-handle-value-resolver";
-import { getPhotonInstance } from "../../ctx/photon-loader";
+import type { NodeInputContextData } from "../../hooks/use-handle-value-resolver";
+import { getPhotonInstance } from "../../../ctx/photon-loader";
 
 
 export type BlurExtraArgs = {
@@ -50,7 +50,7 @@ const blurProcessor: NodeProcessor<BlurExtraArgs> = async ({ node, data, extraAr
         providedCanvas.height = img.height;
         providedCanvas.style.width = '100%';
         providedCanvas.style.height = 'auto';
-        const ctx = providedCanvas.getContext('2d');
+        const ctx = providedCanvas.getContext('2d', { willReadFrequently: true });
         if (ctx) {
           ctx.drawImage(img, 0, 0);
         }
@@ -75,7 +75,7 @@ const blurProcessor: NodeProcessor<BlurExtraArgs> = async ({ node, data, extraAr
     canvas.style.width = '100%';
     canvas.style.height = 'auto';
   }
-  const ctx = canvas.getContext('2d');
+  const ctx = canvas.getContext('2d', { willReadFrequently: true });
   if (!ctx) {
     return { success: false, error: 'Failed to get Canvas context' };
   }
@@ -98,8 +98,8 @@ const blurProcessor: NodeProcessor<BlurExtraArgs> = async ({ node, data, extraAr
     
   }
   console.log({photonInstance})
-  if (config.blurType === 'Gaussian' && config.size > 0) {
       const photonImage = photonInstance.open_image(canvas, ctx);
+  if (config.blurType === 'Gaussian' && config.size > 0) {
       photonInstance.gaussian_blur(photonImage, config.size);
       photonInstance.putImageData(canvas, ctx, photonImage);
   }
@@ -130,7 +130,6 @@ const blurProcessor: NodeProcessor<BlurExtraArgs> = async ({ node, data, extraAr
           }]
       }]
   };
-  await cleanupNodeResults(node.id);
 
   // Store in cache
   await storeClientNodeResult(node, newResult, inputHash);
