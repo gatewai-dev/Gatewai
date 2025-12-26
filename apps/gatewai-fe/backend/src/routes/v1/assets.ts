@@ -137,10 +137,10 @@ const assetsRouter = new Hono<{ Variables: AuthHonoTypes }>({
     const id = c.req.param("id");
 
     const asset = await prisma.fileAsset.findUnique({
-      where: { id },
+      where: { id, userId: user.id },
     });
 
-    if (!asset || asset.userId !== user.id) {
+    if (!asset) {
       return c.json({ error: "Asset not found" }, 404);
     }
 

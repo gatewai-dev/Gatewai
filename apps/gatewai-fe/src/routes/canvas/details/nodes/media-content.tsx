@@ -12,14 +12,16 @@ import {
   MediaPlayButton,
   MediaMuteButton,
 } from 'media-chrome/react';
+import { GetAssetEndpoint } from "@/utils/file";
+
 
 function MediaContent({node, result}: {node: NodeProps<AnyNode>, result: ImagesResult | FileResult}) {
     const selectedOutput = result.outputs[result.selectedOutputIndex];
     const outputItem = selectedOutput.items[0]
-    const isImage = outputItem.data.entity.mimeType.startsWith('image');
-    const isVideo = outputItem.data.entity.mimeType.startsWith('video');
+    const isImage = outputItem.data.entity?.mimeType.startsWith('image');
+    const isVideo = outputItem.data.entity?.mimeType.startsWith('video');
     const isOther = !isVideo && !isImage;
-    if (!outputItem.data.entity.signedUrl) {
+    if (!outputItem.data.entity?.signedUrl) {
         return null;
     }
     const hasMoreThanOneOutput = result.outputs.length > 1;
@@ -29,7 +31,7 @@ function MediaContent({node, result}: {node: NodeProps<AnyNode>, result: ImagesR
                 <OutputSelector node={node} />
             </div>}
             {isImage && (<img
-                src={outputItem.data.entity.signedUrl}
+                src={GetAssetEndpoint(outputItem.data.entity.id)}
                 alt={outputItem.data.entity.name}
                 className='w-full h-full' />
             )}
@@ -37,15 +39,15 @@ function MediaContent({node, result}: {node: NodeProps<AnyNode>, result: ImagesR
                 <MediaController>
                     <video
                         slot="media"
-                        src={outputItem.data.entity.signedUrl}
+                        src={GetAssetEndpoint(outputItem.data.entity.id)}
                         preload="auto"
                     />
                     <MediaControlBar>
-                        <MediaPlayButton></MediaPlayButton>
-                        <MediaTimeRange></MediaTimeRange>
-                        <MediaTimeDisplay showDuration></MediaTimeDisplay>
-                        <MediaMuteButton></MediaMuteButton>
-                        <MediaVolumeRange></MediaVolumeRange>
+                        <MediaPlayButton />
+                        <MediaTimeRange />
+                        <MediaTimeDisplay showDuration />
+                        <MediaMuteButton />
+                        <MediaVolumeRange />
                     </MediaControlBar>
                 </MediaController>
             </div>}

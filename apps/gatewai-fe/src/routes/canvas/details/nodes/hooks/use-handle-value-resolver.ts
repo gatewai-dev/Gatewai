@@ -48,8 +48,10 @@ function useNodeInputValuesResolver({nodeId}: {nodeId: NodeEntityType["id"]}) {
       const sourceNodeIds = useMemo(() => edges.map(m => m.source), [edges]);
       const sourceNodes = useAppSelector(makeSelectNodesByIds(sourceNodeIds));
       const cachedResults = useLiveQuery(() =>
-          db.clientNodeResults.where('id').anyOf(sourceNodeIds).toArray(),
+            db.clientNodeResults.where('id').anyOf(sourceNodeIds).toArray(),
+            [sourceNodeIds]
       );
+      console.log({sourceNodeIds, cachedResults, edges, nodeId})
       const resp = useMemo(() => {
             const resultData: NodeInputContext = {}
             for (let i = 0; i < sourceNodes.length; i++) {

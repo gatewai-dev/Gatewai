@@ -1,4 +1,4 @@
-import type { DataType } from "@gatewai/db";
+import type { DataType, FileAsset } from "@gatewai/db";
 
 function GetDataTypeFromMimetype(mimeType: string): DataType {
     if (mimeType.startsWith('audio/')) {
@@ -11,4 +11,11 @@ function GetDataTypeFromMimetype(mimeType: string): DataType {
         return 'File';
     }
 }
-export { GetDataTypeFromMimetype }
+
+const BACKEND_URL = import.meta.env.VITE_BASE_URL;
+
+function GetAssetEndpoint(id: FileAsset["id"]) {
+    return `${BACKEND_URL}/api/v1/assets/${id}`
+}
+
+export { GetDataTypeFromMimetype, GetAssetEndpoint }

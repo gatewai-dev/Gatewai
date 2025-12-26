@@ -66,7 +66,6 @@ const BlurNodeComponent = memo((props: NodeProps<BlurNode>) => {
     }
     return null;
   }, [context?.inputHandles, nodeInputContext]);
-
   const inputImageUrl = useMemo(() => {
     if (inputImageResult) {
       const fileData = inputImageResult.data as FileData;
@@ -74,6 +73,7 @@ const BlurNodeComponent = memo((props: NodeProps<BlurNode>) => {
     };
     return null;
   }, [inputImageResult]);
+  console.log({nodeInputContext, nodeid: node?.id, inputImageUrl})
 
   // Compute a key to detect changes in input or config
 const computeKey = useMemo(() => {
@@ -98,9 +98,7 @@ const computeKey = useMemo(() => {
 
   // Compute the blur using the processor
   useEffect(() => {
-      console.log({nodeId: node?.id, qq:"wwe1", computeKey})
     if (!inputImageUrl || !computeKey || !node || !context?.inputHandles[0].id) {
-      console.log({nodeId: node?.id, qq:"wwe"})
       return;
     }
 
