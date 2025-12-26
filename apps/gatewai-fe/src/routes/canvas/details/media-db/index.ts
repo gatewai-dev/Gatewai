@@ -214,7 +214,6 @@ export function useClientCacheNodeResults(ids: NodeEntityType["id"][]) {
     db.clientNodeResults.where('id').anyOf(ids).toArray(),
     []
   );
-  console.log({nodeResult})
   return nodeResult;
 }
 /**

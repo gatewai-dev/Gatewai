@@ -37,7 +37,6 @@ const BlurNodeComponent = memo((props: NodeProps<BlurNode>) => {
 
   const context = useNodeContext(resolverArgs)
   const nodeInputContext = useNodeInputValuesResolver(resolverArgs)
-  console.log({nodeInputContext, nodeId: props.id})
   const shouldUseLocalImageData = useMemo(() => {
     if (!context?.inputHandles[0].id) {
       return false;
@@ -73,7 +72,6 @@ const BlurNodeComponent = memo((props: NodeProps<BlurNode>) => {
     };
     return null;
   }, [inputImageResult]);
-  console.log({nodeInputContext, nodeid: node?.id, inputImageUrl})
 
   // Compute a key to detect changes in input or config
 const computeKey = useMemo(() => {
@@ -86,7 +84,6 @@ const computeKey = useMemo(() => {
     const imageHandleCtx = nodeInputContext[context?.inputHandles[0].id]
     const cachedResult = imageHandleCtx?.cachedResult;
     const hash = cachedResult?.hash ?? '';
-    console.log({hash})
     computeKey += hash;
   } else {
     computeKey += inputImageUrl;
@@ -114,10 +111,8 @@ const computeKey = useMemo(() => {
         return;
       }
       const res = await processor({ node, data, extraArgs: { nodeInputContextData: nodeInputContext[context?.inputHandles[0].id] } });
-      console.log({res, nodeId: node?.id, })
       if (res.success && res.newResult) {
         const dataUrl = (res.newResult.outputs[0].items[0].data as FileData).dataUrl;
-          console.log({nodeId: node?.id, ww: "wqe", qq: previewUrl !== dataUrl})
         if (dataUrl && previewUrl !== dataUrl) {
           setPreviewUrl(dataUrl);
         }

@@ -8,6 +8,7 @@ import { UserAssetsProvider } from "../assets/user-assets-ctx";
 import { NodeTemplateDnDProvider } from "../node-templates/node-template-drag.ctx";
 import { NodeTemplatesProvider } from "../node-templates/node-templates.ctx";
 import { TaskManagerProvider } from "./ctx/task-manager-ctx";
+import { PhotonProvider } from "./ctx/photon-loader";
 
 function CanvasDetails() {
     const { canvasId } = useParams();
@@ -16,6 +17,7 @@ function CanvasDetails() {
     }
     return (
         <NodeTemplateDnDProvider>
+            <PhotonProvider>
             <TaskManagerProvider canvasId={canvasId}>
                 <NodeTemplatesProvider>
                     <UserAssetsProvider>
@@ -29,6 +31,7 @@ function CanvasDetails() {
                     </UserAssetsProvider>
                 </NodeTemplatesProvider>
             </TaskManagerProvider>
+            </PhotonProvider>
         </NodeTemplateDnDProvider>);
 }
 

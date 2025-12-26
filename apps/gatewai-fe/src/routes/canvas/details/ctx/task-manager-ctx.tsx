@@ -1,5 +1,5 @@
 import { createContext, useContext, useEffect, useMemo, useState, type Dispatch, type PropsWithChildren, type SetStateAction } from 'react';
-import type { Canvas, Node, Task, TaskBatch } from '@gatewai/db';
+import type { Canvas, Node, TaskBatch } from '@gatewai/db';
 import { useGetActiveCanvasBatchesQuery } from '@/store/tasks';
 import type { ActiveCanvasBatchListRPC, ActiveCanvasBatchListRPCParams } from '@/rpc/types';
 
@@ -7,7 +7,7 @@ interface TaskManagerContextType {
   taskBatchs: ActiveCanvasBatchListRPC | undefined;
   isError: boolean;
   isLoading: boolean;
-  isFetching: boolean;
+  isFetching: boolean;  
   pollingInterval: number;
   setPollingInterval: Dispatch<SetStateAction<number>>
   tasksFilters: ActiveCanvasBatchListRPCParams["query"];

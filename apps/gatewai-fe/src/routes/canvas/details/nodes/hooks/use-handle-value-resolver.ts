@@ -1,7 +1,7 @@
 import { useAppSelector } from "@/store";
 import { type HandleEntityType } from "@/store/handles";
 import { selectConnectedNodeByHandleId } from "@/store/selectors";
-import { db, useClientCacheNodeResultById, useClientCacheNodeResults, type ClientNodeResult } from "../../media-db";
+import { db, useClientCacheNodeResultById, type ClientNodeResult } from "../../media-db";
 import type { NodeResult, OutputItem } from "@gatewai/types";
 import { makeSelectNodesByIds, type NodeEntityType } from "@/store/nodes";
 import { makeSelectEdgesByTargetNodeId } from "@/store/edges";
@@ -52,7 +52,6 @@ function useNodeInputValuesResolver({nodeId}: {nodeId: NodeEntityType["id"]}) {
             db.clientNodeResults.where('id').anyOf(sourceNodeIds).toArray(),
             [sourceNodeIdsKey]
       );
-      console.log({sourceNodeIds, cachedResults, edges, nodeId})
       const resp = useMemo(() => {
             const resultData: NodeInputContext = {}
             for (let i = 0; i < sourceNodes.length; i++) {

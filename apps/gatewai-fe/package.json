@@ -50,6 +50,7 @@
     "@radix-ui/react-toggle-group": "^1.1.11",
     "@radix-ui/react-tooltip": "^1.2.8",
     "@reduxjs/toolkit": "^2.10.1",
+    "@silvia-odwyer/photon": "^0.3.3",
     "@tailwindcss/vite": "^4.1.16",
     "@xyflow/react": "^12.8.4",
     "ai": "^5.0.96",
