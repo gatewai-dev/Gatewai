@@ -22,7 +22,7 @@
     "db:migrate": "prisma migrate dev",
     "db:deploy": "prisma migrate deploy",
     "db:studio": "prisma studio",
-    "db:seed": "prisma db seed",
+    "db:seed": "tsx src/seed.ts",
     "db:version": "prisma version",
     "db:reset": "prisma migrate reset"
   },
@@ -40,6 +40,7 @@
   },
   "dependencies": {
     "@prisma/adapter-pg": "^6.19.0",
-    "@prisma/client": "^6.19.0"
+    "@prisma/client": "^6.19.0",
+    "dotenv": "^17.2.0"
   }
 }

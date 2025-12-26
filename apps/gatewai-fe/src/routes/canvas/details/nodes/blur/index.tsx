@@ -37,7 +37,7 @@ const BlurNodeComponent = memo((props: NodeProps<BlurNode>) => {
 
   const context = useNodeContext(resolverArgs)
   const nodeInputContext = useNodeInputValuesResolver(resolverArgs)
-
+  console.log({nodeInputContext, nodeId: props.id})
   const shouldUseLocalImageData = useMemo(() => {
     if (!context?.inputHandles[0].id) {
       return false;

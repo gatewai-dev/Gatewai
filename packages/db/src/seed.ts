@@ -1,5 +1,7 @@
 import { prisma } from "./client.js";
 import { SEED_createNodeTemplates } from "./node-templates.js";
+import { config } from 'dotenv';
+config();
 
 // Entry point for seeding the database
 async function main() {
