@@ -91,7 +91,7 @@ const BlurNodeComponent = memo((props: NodeProps<BlurNode>) => {
     computeKey += JSON.stringify(config, Object.keys(config).sort());
     return computeKey;
   }, [context?.inputHandles, inputImageUrl, config, shouldUseLocalImageData, nodeInputContext]);
-  const canvasRef = useRef<HTMLCanvasElement>(null);
+  const canvasRef = useRef<HTMLCanvasElement |undefined>();
 
   // Compute the blur using the processor
   useEffect(() => {
