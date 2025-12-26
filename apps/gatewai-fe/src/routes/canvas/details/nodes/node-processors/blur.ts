@@ -1,6 +1,7 @@
 import type { NodeProcessor } from ".";
 import { db, storeClientNodeResult, hashNodeResult, hashConfigSync, cleanupNodeResults } from '../../media-db'; // Adjust import path as needed
 import type { NodeResult, FileData, BlurNodeConfig, BlurResult } from "@gatewai/types";
+import type { NodeInputContextData } from "../hooks/use-handle-value-resolver";
 
 const boxBlurCanvasRGB = (
   ctx: OffscreenCanvasRenderingContext2D,
@@ -69,24 +70,23 @@ const boxBlurCanvasRGB = (
 };
 
 export type BlurExtraArgs = {
-  resolvedInputResult: NodeResult;
+  nodeInputContextData: NodeInputContextData;
 }
 
 const blurProcessor: NodeProcessor<BlurExtraArgs> = async ({ node, data, extraArgs }) => {
   const { handles } = data;
 
   // Extract input image from source result
-  const { resolvedInputResult } = extraArgs
-  const inputFileData = resolvedInputResult.outputs[resolvedInputResult.selectedOutputIndex].items[0].data as FileData;
-  const imageUrl = inputFileData.dataUrl || inputFileData.entity?.signedUrl;
-  console.log({inputFileData})
-  if (!imageUrl) {
+  const { nodeInputContextData: { result, cachedResult, resultValue, cachedResultValue } } = extraArgs
+  const imageUrl = (resultValue?.data as FileData).entity?.signedUrl ?? (cachedResultValue?.data as FileData).dataUrl;
+  const resultToUse = (result ?? cachedResult) as NodeResult;
+  if (!imageUrl || !resultToUse) {
       await cleanupNodeResults(node.id);
       return { success: false, error: 'No image URL available' };
   }
 
   // Compute inputHash for caching (source result hash + config hash)
-  const sourceHash = await hashNodeResult(resolvedInputResult);
+  const sourceHash = await hashNodeResult(resultToUse);
   const configHash = hashConfigSync(node.config ?? {});
   const inputStr = sourceHash + configHash;
   const encoder = new TextEncoder();

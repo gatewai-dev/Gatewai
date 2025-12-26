@@ -14,7 +14,7 @@ import { BlurTypeSelector } from './type-selector';
 import { BlurValueSlider } from './blur-slider';
 import { browserNodeProcessors } from '../node-processors';
 import { useNodeContext } from '../hooks/use-node-ctx';
-import { useHandleValueResolver, useNodeInputValuesResolver } from '../hooks/use-handle-value-resolver';
+import { useNodeInputValuesResolver } from '../hooks/use-handle-value-resolver';
 
 
 const ImagePlaceholder = () => {
@@ -34,18 +34,33 @@ const BlurNodeComponent = memo((props: NodeProps<BlurNode>) => {
   const config: BlurNodeConfig = (node?.config ?? props.data.config) as BlurNodeConfig;
 
   const context = useNodeContext({nodeId: props.id})
-  const output = useHandleValueResolver({handleId: context?.inputHandles[0].id ?? "0"})
-  const inputResults = useNodeInputValuesResolver({nodeId: props.id})
-  console.log({inputResults});
-  const showResult = output != null;
+  const nodeInputContext = useNodeInputValuesResolver({nodeId: props.id})
+  console.log({nodeInputContext});
+
+  const inputImageResult = useMemo(() => {
+    if (!context?.inputHandles[0].id) {
+      return null;
+    }
+    const imageHandleCtx = nodeInputContext[context?.inputHandles[0].id]
+    const cachedValue = imageHandleCtx.cachedResultValue;
+    if (cachedValue && cachedValue.data) {
+      return cachedValue;
+    }
+    const connectedNodeValue = imageHandleCtx.resultValue;
+
+    if (connectedNodeValue && connectedNodeValue.data) {
+      return connectedNodeValue;
+    }
+    return null;
+  }, [context?.inputHandles, nodeInputContext]);
 
   const inputImageUrl = useMemo(() => {
-    if (!output?.outputs) return null;
-    const generation = output.outputs[output.selectedOutputIndex];
-    if (!generation) return null;
-    const genData = generation.items[0];
-    return (genData?.data as FileData)?.dataUrl || (genData?.data as FileData)?.entity?.signedUrl
-  }, [output?.outputs, output?.selectedOutputIndex]);
+    if (inputImageResult) {
+      const fileData = inputImageResult.data as FileData;
+      return fileData.entity?.signedUrl ?? fileData.dataUrl;
+    };
+    return null;
+  }, [inputImageResult]);
 
   // Compute a key to detect changes in input or config
   const computeKey = useMemo(() => {
@@ -57,8 +72,8 @@ const BlurNodeComponent = memo((props: NodeProps<BlurNode>) => {
 
   // Compute the blur using the processor
   useEffect(() => {
-    console.log({showResult, computeKey, node})
-    if (!showResult || !computeKey || !node) {
+    console.log({computeKey, node})
+    if (!inputImageUrl || !computeKey || !node) {
       setPreviewUrl(null);
       return;
     }
@@ -74,7 +89,7 @@ const BlurNodeComponent = memo((props: NodeProps<BlurNode>) => {
         console.error('Blur processor not found');
         return;
       }
-      const res = await processor({ node, data, extraArgs: { resolvedInputResult: output} });
+      const res = await processor({ node, data, extraArgs: { nodeInputContextData: nodeInputContext[context?.inputHandles[0].id] } });
       if (res.success && res.newResult) {
         const dataUrl = (res.newResult.outputs[0].items[0].data as FileData).dataUrl;
         if (dataUrl) {
@@ -86,13 +101,13 @@ const BlurNodeComponent = memo((props: NodeProps<BlurNode>) => {
     };
 
     compute();
-  }, [computeKey, showResult, node, allNodes, allEdges, allHandles, output]);
+  }, [computeKey, node, allNodes, allEdges, allHandles, inputImageUrl, nodeInputContext, context?.inputHandles]);
 
   return (
     <BaseNode {...props}>
       <div className="flex flex-col gap-3">
-        {!showResult && <ImagePlaceholder />}
-        {showResult && previewUrl && (
+        {!inputImageUrl && <ImagePlaceholder />}
+        {inputImageUrl && previewUrl && (
           <div className="w-full overflow-hidden rounded">
             <img
               src={previewUrl}
