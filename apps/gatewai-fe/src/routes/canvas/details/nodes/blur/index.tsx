@@ -37,7 +37,7 @@ const BlurNodeComponent = memo((props: NodeProps<BlurNode>) => {
 
   const context = useNodeContext(resolverArgs)
   const nodeInputContext = useNodeInputValuesResolver(resolverArgs)
-
+  console.log({nodeInputContext, nodeId: props.id})
   const shouldUseLocalImageData = useMemo(() => {
     if (!context?.inputHandles[0].id) {
       return false;
@@ -98,9 +98,7 @@ const computeKey = useMemo(() => {
 
   // Compute the blur using the processor
   useEffect(() => {
-      console.log({nodeId: node?.id, qq:"wwe1", computeKey})
     if (!inputImageUrl || !computeKey || !node || !context?.inputHandles[0].id) {
-      console.log({nodeId: node?.id, qq:"wwe"})
       return;
     }
 
