@@ -27,17 +27,9 @@ export function bufferToDataUrl(buffer: Buffer, mimeType: string): string {
   return `data:${mimeType};base64,${buffer.toString('base64')}`;
 }
 
-export async function applyBlur(buffer: Buffer, blurAmount: number, blurType: 'Gaussian' | 'Box'): Promise<Buffer> {
+export async function applyBlur(buffer: Buffer, blurAmount: number): Promise<Buffer> {
   if (blurAmount <= 0) return buffer;
-  if (blurType === 'Gaussian') {
-    return sharp(buffer).blur(blurAmount).toBuffer();
-  } else if (blurType === 'Box') {
-    const kernelSize = Math.max(1, Math.round(blurAmount) * 2 + 1);
-    const kernel = new Array(kernelSize * kernelSize).fill(1 / (kernelSize * kernelSize));
-    return sharp(buffer).convolve({ width: kernelSize, height: kernelSize, kernel }).toBuffer();
-  } else {
-    throw new Error('Invalid blur type');
-  }
+  return sharp(buffer).blur(blurAmount).toBuffer();
 }
 
 export async function applyResize(buffer: Buffer, width: number, height: number): Promise<Buffer> {

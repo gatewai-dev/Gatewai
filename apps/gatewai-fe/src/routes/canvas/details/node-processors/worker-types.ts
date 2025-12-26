@@ -18,7 +18,6 @@ export interface WorkerTask {
     width?: number;
     height?: number;
     blurSize?: number; // for blur
-    blurType?: typeof BLUR_TYPES[number]
   };
 }
 

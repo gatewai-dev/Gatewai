@@ -27,14 +27,13 @@ const processors: Partial<Record<NodeType, NodeProcessor>> = {
       const imageInput = getInputValue(data, node.id, true, { dataType: DataType.Image, label: 'Image' }) as FileData | null;
       const blurConfig = node.config as BlurNodeConfig;
       const blurAmount = blurConfig.size ?? 0;
-      const blurType = blurConfig.blurType ?? 'Box';
 
       if (!imageInput) {
         return { success: false, error: 'No image input provided' };
       }
 
       const buffer = await getImageBuffer(imageInput);
-      const processedBuffer = await applyBlur(buffer, blurAmount, blurType);
+      const processedBuffer = await applyBlur(buffer, blurAmount);
       const mimeType = getMimeType(imageInput);
       const dataUrl = bufferToDataUrl(processedBuffer, mimeType);
 

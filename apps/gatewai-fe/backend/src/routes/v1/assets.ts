@@ -129,15 +129,11 @@ const assetsRouter = new Hono<{ Variables: AuthHonoTypes }>({
   "/:id",
   zValidator("param", z.object({ id: z.string() })),
   async (c) => {
-    const user = c.get("user");
-    if (!user) {
-      return c.json({ error: "Unauthorized" }, 401);
-    }
 
     const id = c.req.param("id");
 
     const asset = await prisma.fileAsset.findUnique({
-      where: { id, userId: user.id },
+      where: { id },
     });
 
     if (!asset) {

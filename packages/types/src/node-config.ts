@@ -36,10 +36,8 @@ const PainterNodeConfigSchema = z.object({
   bgColor: z.string().regex(/^#[0-9A-F]{6}$/i).optional(),
 }).strict();
 
-const BLUR_TYPES = ['Gaussian', 'Box'] as const;
 // Blur Node
 const BlurNodeConfigSchema = z.object({
-  blurType: z.enum(BLUR_TYPES).optional(),
   size: z.number().min(0).max(10).optional(),
 }).strict();
 
