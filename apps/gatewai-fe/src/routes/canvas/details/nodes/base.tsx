@@ -51,7 +51,7 @@ const BaseNode = memo((props: NodeProps<Node<CanvasDetailsNode>> & {
     <div
       tabIndex={0}
       className={`relative drag-handle ${nodeBackgroundColor} rounded-2xl shadow-md w-full h-full transition-all duration-200 group
-        ${selected ? 'selected' : ''}`}
+        ${selected ? 'selected ring-primary/40 ring box-border' : ''}`}
     >
       {inputs.map((handle, i) => {
         let actualType: string | null = null;

@@ -3,7 +3,7 @@ import { type HandleEntityType } from "@/store/handles";
 import { selectConnectedNodeByHandleId } from "@/store/selectors";
 import { db, useClientCacheNodeResultById, type ClientNodeResult } from "../../media-db";
 import type { NodeResult, OutputItem } from "@gatewai/types";
-import { makeSelectNodesByIds, type NodeEntityType } from "@/store/nodes";
+import { makeSelectAllNodes, makeSelectNodesByIds, type NodeEntityType } from "@/store/nodes";
 import { makeSelectEdgesByTargetNodeId } from "@/store/edges";
 import type { DataType } from "@gatewai/db";
 import { useMemo } from 'react';
@@ -47,6 +47,7 @@ function useNodeInputValuesResolver({nodeId}: {nodeId: NodeEntityType["id"]}) {
       const edges = useAppSelector(makeSelectEdgesByTargetNodeId(nodeId))
       const sourceNodeIds = useMemo(() => edges.map(m => m.source), [edges]);
       const sourceNodes = useAppSelector(makeSelectNodesByIds(sourceNodeIds));
+      console.log({sourceNodes, nodeId})
       const sourceNodeIdsKey = sourceNodeIds.join(',');
       const cachedResults = useLiveQuery(() =>
             db.clientNodeResults.where('id').anyOf(sourceNodeIds).toArray(),
@@ -56,7 +57,9 @@ function useNodeInputValuesResolver({nodeId}: {nodeId: NodeEntityType["id"]}) {
             const resultData: NodeInputContext = {}
             for (let i = 0; i < sourceNodes.length; i++) {
                   const node = sourceNodes[i];
-                  const cachedResult = cachedResults?.find(f => f.id === node.id);
+                  const cachedResult = cachedResults
+                                    ?.filter(f => f.id === node.id)
+                                    .sort((a, b) => b.age - a.age)[0];
                   const edge = edges.find(f => f.source === node.id && f.target === nodeId);
                   const handleId = edge?.targetHandleId;
                   const nodeResult = node.result as unknown as NodeResult | null;

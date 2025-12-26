@@ -1,3 +1,4 @@
+import { BLUR_TYPES } from '@gatewai/types';
 // worker-types.ts
 
 export enum WorkerStatus {
@@ -16,7 +17,8 @@ export interface WorkerTask {
     // Union of all possible params
     width?: number;
     height?: number;
-    sigma?: number; // for blur
+    blurSize?: number; // for blur
+    blurType?: typeof BLUR_TYPES[number]
   };
 }
 

@@ -15,6 +15,7 @@ import { BlurValueSlider } from './blur-slider';
 import { browserNodeProcessors } from '../../node-processors';
 import { useNodeContext } from '../hooks/use-node-ctx';
 import { useNodeInputValuesResolver } from '../hooks/use-handle-value-resolver';
+import { GetAssetEndpoint } from '@/utils/file';
 
 
 const ImagePlaceholder = () => {
@@ -30,6 +31,7 @@ const BlurNodeComponent = memo((props: NodeProps<BlurNode>) => {
   const allHandles = useAppSelector(makeSelectAllHandles);
   const node = useAppSelector(makeSelectNodeById(props.id));
   const allEdges = useAppSelector(makeSelectAllEdges);
+  const canvasRef = useRef<HTMLCanvasElement | null>(null);
 
   const config: BlurNodeConfig = (node?.config ?? props.data.config) as BlurNodeConfig;
 
@@ -65,10 +67,14 @@ const BlurNodeComponent = memo((props: NodeProps<BlurNode>) => {
     }
     return null;
   }, [context?.inputHandles, nodeInputContext]);
+
   const inputImageUrl = useMemo(() => {
     if (inputImageResult) {
       const fileData = inputImageResult.data as FileData;
-      return fileData.entity?.signedUrl ?? fileData.dataUrl;
+      if (fileData?.entity?.id) {
+        return GetAssetEndpoint(fileData.entity.id)
+      }
+      return fileData.dataUrl;
     };
     return null;
   }, [inputImageResult]);
@@ -91,7 +97,6 @@ const BlurNodeComponent = memo((props: NodeProps<BlurNode>) => {
     computeKey += JSON.stringify(config, Object.keys(config).sort());
     return computeKey;
   }, [context?.inputHandles, inputImageUrl, config, shouldUseLocalImageData, nodeInputContext]);
-  const canvasRef = useRef<HTMLCanvasElement |undefined>(undefined);
 
   // Compute the blur using the processor
   useEffect(() => {
@@ -105,12 +110,13 @@ const BlurNodeComponent = memo((props: NodeProps<BlurNode>) => {
         edges: allEdges,
         handles: allHandles,
       };
+      console.log({data: nodeInputContext[context?.inputHandles[0].id], nodeId: props.id, computeKey})
       const processor = browserNodeProcessors['Blur'];
       if (!processor) {
         console.error('Blur processor not found');
         return;
       }
-      processor({ node, data, extraArgs: { nodeInputContextData: nodeInputContext[context?.inputHandles[0].id], canvas: canvasRef.current } });
+      processor({ node, data, extraArgs: { nodeInputContextData: nodeInputContext[context?.inputHandles[0].id], canvas: canvasRef.current, useWebGL: true } });
       
     };
 

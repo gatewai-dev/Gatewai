@@ -1,29 +1,22 @@
 import type { NodeProcessor } from "..";
 import { db, storeClientNodeResult, hashNodeResult, hashConfigSync, cleanupNodeResults } from '../../media-db';
-import type { NodeResult, FileData, BlurNodeConfig, BlurResult } from "@gatewai/types";
+import type { NodeResult, FileData, ResizeNodeConfig, ResizeResult } from "@gatewai/types";
 import type { NodeInputContextData } from "../../nodes/hooks/use-handle-value-resolver";
 import { photonPool } from "../photon-worker-pool";
-import { GetAssetEndpoint } from "@/utils/file";
 
-export type BlurExtraArgs = {
+export type ResizeExtraArgs = {
   nodeInputContextData: NodeInputContextData;
   canvas?: HTMLCanvasElement | null;
 }
 
-const blurProcessor: NodeProcessor<BlurExtraArgs> = async ({ node, data, extraArgs }) => {
+const resizeProcessor: NodeProcessor<ResizeExtraArgs> = async ({ node, data, extraArgs }) => {
   const { handles } = data;
 
   // 1. Extract input image URL
   const { nodeInputContextData: { result, cachedResult, resultValue, cachedResultValue }, canvas: providedCanvas } = extraArgs
-  let imageUrl: string | undefined;
-  const resultEntity = (resultValue?.data as FileData)?.entity;
-  if (resultEntity) {
-    imageUrl = GetAssetEndpoint(resultEntity.id);
-  } else {
-    imageUrl = (cachedResultValue?.data as FileData).dataUrl;
-  }
+  const imageUrl = (resultValue?.data as FileData).entity?.signedUrl ?? (cachedResultValue?.data as FileData).dataUrl;
   const resultToUse = (result ?? cachedResult) as NodeResult;
-  console.log({resultValue, cachedResult, nodeid: node.id})
+  
   if (!imageUrl || !resultToUse) {
       await cleanupNodeResults(node.id);
       return { success: false, error: 'No image URL available' };
@@ -37,10 +30,8 @@ const blurProcessor: NodeProcessor<BlurExtraArgs> = async ({ node, data, extraAr
   const hashData = encoder.encode(inputStr);
   const hashBuffer = await crypto.subtle.digest('SHA-256', hashData);
   const hashArray = Array.from(new Uint8Array(hashBuffer));
-  let inputHash = hashArray.map(b => b.toString(16).padStart(2, '0')).join('');
-  if (cachedResult?.hash) {
-    inputHash+=cachedResult?.hash;
-  }
+  const inputHash = hashArray.map(b => b.toString(16).padStart(2, '0')).join('');
+  
   const cached = await db.clientNodeResults.where({ id: node.id, inputHash }).first();
   
   if (cached) {
@@ -70,10 +61,10 @@ const blurProcessor: NodeProcessor<BlurExtraArgs> = async ({ node, data, extraAr
 
   // 3. Worker Processing (Cache Miss)
   try {
-    const config: BlurNodeConfig = (node.config ?? {
-      size: 1,
-      blurType: 'Box',
-    }) as BlurNodeConfig;
+    if (!node.config) {
+        throw new Error("Node config required");
+    }
+    const config: ResizeNodeConfig = node.config as ResizeNodeConfig;
   
     // Fetch the image as raw bytes (Uint8Array) to pass to Worker
     // This avoids decoding the image on the main thread
@@ -83,11 +74,9 @@ const blurProcessor: NodeProcessor<BlurExtraArgs> = async ({ node, data, extraAr
     const uint8Input = new Uint8Array(arrayBuffer);
 
     // Call the Worker Pool
-    // Note: Ensure your worker handles the specific blur type or map it here.
-    // Assuming 'BLUR' maps to Gaussian in worker. If you need Box, update worker-types.ts.
-    const resultBytes = await photonPool.process(uint8Input, 'BLUR', {
-      blurSize: config.size,
-      blurType: config.blurType,
+    const resultBytes = await photonPool.process(uint8Input, 'RESIZE', {
+      width: config.width,
+      height: config.height,
     });
 
     // 4. Handle Worker Result
@@ -123,9 +112,10 @@ const blurProcessor: NodeProcessor<BlurExtraArgs> = async ({ node, data, extraAr
     // 6. Return Result
     const outputHandle = handles.find(h => h.nodeId === node.id && h.type === 'Output');
     if (!outputHandle) {
-      return { success: false, error: 'No output handle found' };
+        return { success: false, error: 'No output handle found' };
     }
-    const newResult: BlurResult = {
+
+    const newResult: ResizeResult = {
       selectedOutputIndex: 0,
       outputs: [{
         items: [{
@@ -146,4 +136,4 @@ const blurProcessor: NodeProcessor<BlurExtraArgs> = async ({ node, data, extraAr
   }
 }
 
-export default blurProcessor;
+export default resizeProcessor;

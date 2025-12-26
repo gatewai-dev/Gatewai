@@ -16,6 +16,7 @@ import { ResizeWidthInput } from './width-input';
 import { browserNodeProcessors } from '../../node-processors';
 import { useNodeContext } from '../hooks/use-node-ctx';
 import { useNodeInputValuesResolver } from '../hooks/use-handle-value-resolver';
+import { GetAssetEndpoint } from '@/utils/file';
 
 const ImagePlaceholder = () => {
   return (
@@ -30,6 +31,7 @@ const ResizeNodeComponent = memo((props: NodeProps<ResizeNode>) => {
   const allHandles = useAppSelector(makeSelectAllHandles);
   const node = useAppSelector(makeSelectNodeById(props.id));
   const allEdges = useAppSelector(makeSelectAllEdges);
+  const canvasRef = useRef<HTMLCanvasElement | null>(null);
 
   const config: ResizeNodeConfig = (node?.config ?? props.data.config) as ResizeNodeConfig;
 
@@ -67,11 +69,15 @@ const ResizeNodeComponent = memo((props: NodeProps<ResizeNode>) => {
     return null;
   }, [context?.inputHandles, nodeInputContext]);
 
+
   const inputImageUrl = useMemo(() => {
     if (inputImageResult) {
       const fileData = inputImageResult.data as FileData;
-      return fileData.entity?.signedUrl ?? fileData.dataUrl;
-    }
+      if (fileData?.entity?.id) {
+        return GetAssetEndpoint(fileData.entity.id)
+      }
+      return fileData.dataUrl;
+    };
     return null;
   }, [inputImageResult]);
 
@@ -93,8 +99,6 @@ const ResizeNodeComponent = memo((props: NodeProps<ResizeNode>) => {
     computeKey += JSON.stringify(config, Object.keys(config).sort());
     return computeKey;
   }, [context?.inputHandles, inputImageUrl, config, shouldUseLocalImageData, nodeInputContext]);
-
-  const canvasRef = useRef<HTMLCanvasElement | undefined>(undefined);
 
   // Compute the resize using the processor
   useEffect(() => {
