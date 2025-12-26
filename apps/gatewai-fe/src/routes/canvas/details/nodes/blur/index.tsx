@@ -1,4 +1,4 @@
-import { memo, useEffect, useMemo, useState } from 'react';
+import { memo, useEffect, useMemo, useRef, useState } from 'react';
 import { type NodeProps } from '@xyflow/react';
 import {
   type BlurNodeConfig,
@@ -74,28 +74,28 @@ const BlurNodeComponent = memo((props: NodeProps<BlurNode>) => {
   }, [inputImageResult]);
 
   // Compute a key to detect changes in input or config
-const computeKey = useMemo(() => {
-  if (!context?.inputHandles[0].id) {
-    return null;
-  }
-  if (!inputImageUrl) return null;
-  let computeKey = '';
-  if (shouldUseLocalImageData) {
-    const imageHandleCtx = nodeInputContext[context?.inputHandles[0].id]
-    const cachedResult = imageHandleCtx?.cachedResult;
-    const hash = cachedResult?.hash ?? '';
-    computeKey += hash;
-  } else {
-    computeKey += inputImageUrl;
-  }
-  computeKey += JSON.stringify(config, Object.keys(config).sort());
-  return computeKey;
-}, [context?.inputHandles, inputImageUrl, config, shouldUseLocalImageData, nodeInputContext]);
-  const [previewUrl, setPreviewUrl] = useState<string | null>(null);
+  const computeKey = useMemo(() => {
+    if (!context?.inputHandles[0].id) {
+      return null;
+    }
+    if (!inputImageUrl) return null;
+    let computeKey = '';
+    if (shouldUseLocalImageData) {
+      const imageHandleCtx = nodeInputContext[context?.inputHandles[0].id]
+      const cachedResult = imageHandleCtx?.cachedResult;
+      const hash = cachedResult?.hash ?? '';
+      computeKey += hash;
+    } else {
+      computeKey += inputImageUrl;
+    }
+    computeKey += JSON.stringify(config, Object.keys(config).sort());
+    return computeKey;
+  }, [context?.inputHandles, inputImageUrl, config, shouldUseLocalImageData, nodeInputContext]);
+  const canvasRef = useRef<HTMLCanvasElement>(null);
 
   // Compute the blur using the processor
   useEffect(() => {
-    if (!inputImageUrl || !computeKey || !node || !context?.inputHandles[0].id) {
+    if (!inputImageUrl || !computeKey || !node || !context?.inputHandles[0].id || !canvasRef.current) {
       return;
     }
 
@@ -110,32 +110,22 @@ const computeKey = useMemo(() => {
         console.error('Blur processor not found');
         return;
       }
-      const res = await processor({ node, data, extraArgs: { nodeInputContextData: nodeInputContext[context?.inputHandles[0].id] } });
-      if (res.success && res.newResult) {
-        const dataUrl = (res.newResult.outputs[0].items[0].data as FileData).dataUrl;
-        if (dataUrl && previewUrl !== dataUrl) {
-          setPreviewUrl(dataUrl);
-        }
-      } else {
+      const res = await processor({ node, data, extraArgs: { nodeInputContextData: nodeInputContext[context?.inputHandles[0].id], canvas: canvasRef.current } });
+      if (!res.success) {
         console.error('Failed to process blur:', res.error);
       }
     };
 
     compute();
-  }, [allEdges, allHandles, allNodes, computeKey, context?.inputHandles, inputImageUrl, node, nodeInputContext, previewUrl]);
+  }, [allEdges, allHandles, allNodes, computeKey, context?.inputHandles, inputImageUrl, node, nodeInputContext]);
 
   return (
     <BaseNode {...props}>
       <div className="flex flex-col gap-3">
         {!inputImageUrl && <ImagePlaceholder />}
-        {inputImageUrl && previewUrl && (
+        {inputImageUrl && (
           <div className="w-full overflow-hidden rounded">
-            <img
-              src={previewUrl}
-              alt="Resized preview"
-              className="w-full h-full object-contain"
-              crossOrigin="anonymous"
-            />
+            <canvas ref={canvasRef} />
           </div>
         )}
         {node && <div className="flex gap-3 items-end">

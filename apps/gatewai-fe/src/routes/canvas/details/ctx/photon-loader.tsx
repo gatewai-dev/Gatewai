@@ -1,7 +1,17 @@
 import React, { createContext, useContext, useEffect, useState, type ReactNode } from 'react';
+import { Loader2 } from "lucide-react";
+import init from '@silvia-odwyer/photon';
 
 type Photon = typeof import("@silvia-odwyer/photon");
-let photonInstance: Photon | undefined;
+export let photonInstance: Photon | undefined;
+// In photon-loader.tsx or equivalent
+let cachedInstance: Photon | null = null; // Cache the resolved instance
+
+export function getPhotonInstance(): Promise<Photon | undefined> {
+  if (cachedInstance) {
+    return Promise.resolve(cachedInstance);
+  }
+}
 
 interface PhotonContextValue {
   photon: Photon | null;
@@ -30,6 +40,7 @@ export const PhotonProvider: React.FC<PhotonProviderProps> = ({ children }) => {
 
         // Dynamic import of the browser-native module
         const photonModule = await import('@silvia-odwyer/photon');
+        await photonModule.default();
         console.log({photonModule})
         // Store it for module access
         photonInstance = photonModule;
@@ -62,7 +73,17 @@ export const PhotonProvider: React.FC<PhotonProviderProps> = ({ children }) => {
 
   return (
     <PhotonContext.Provider value={value}>
-      {children}
+      {isLoading ? (
+        <div className="flex items-center justify-center h-screen">
+          <Loader2 className="h-12 w-12 animate-spin" />
+        </div>
+      ) : error ? (
+        <div className="flex items-center justify-center h-screen text-red-500">
+          Error loading Photon: {error.message}
+        </div>
+      ) : (
+        children
+      )}
     </PhotonContext.Provider>
   );
 };
