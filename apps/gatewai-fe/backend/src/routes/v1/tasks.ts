@@ -14,6 +14,33 @@ const tasksQueryParams = z.object({
 const tasksRouter = new Hono<{Variables: AuthHonoTypes}>({
     strict: false,
 })
+.get('/filterby-batch',
+    zValidator('query', z.object({
+        batchId: z.union([z.string(), z.array(z.string())]),
+    })),
+    async (c) => {
+        const user = c.get('user');
+        const batchIds = c.req.queries('batchId');
+        const batchId = c.req.query('batchId');
+        const whereClause: TaskBatchWhereInput = {
+            id: { in: batchIds ? batchIds : (batchId ? [batchId] : []) },
+            userId: user!.id,
+        }
+
+        const batches = await prisma.taskBatch.findMany({
+            where: whereClause,
+            include: {
+                tasks: {
+                    include: {
+                        node: true,
+                    }
+                },
+            }
+        })
+        return c.json({
+            batches,
+        });
+})
 .get('/:canvasId',
     zValidator('query', tasksQueryParams),
     zValidator('param', z.object({
@@ -53,34 +80,7 @@ const tasksRouter = new Hono<{Variables: AuthHonoTypes}>({
                 }
             }
         })
-        return c.json(batches);
+        return c.json({batches});
 })
-.get('/filterby-batch',
-    zValidator('query', z.object({
-        batchId: z.array(z.string()).min(1),
-    })),
-    async (c) => {
-        const user = c.get('user');
-        const batchIds = c.req.queries('batchId');
-
-        const whereClause: TaskBatchWhereInput = {
-            id: { in: batchIds },
-            userId: user!.id,
-        }
-
-        const batches = await prisma.taskBatch.findMany({
-            where: whereClause,
-            include: {
-                tasks: {
-                    include: {
-                        node: true,
-                    }
-                },
-            }
-        })
-        return c.json({
-            batches,
-        });
-    })
 
 export { tasksRouter };

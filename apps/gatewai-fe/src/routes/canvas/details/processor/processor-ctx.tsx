@@ -25,7 +25,6 @@ export function ProcessorProvider({ children }: { children: React.ReactNode }) {
   
   // Sync Redux store to processor
   useEffect(() => {
-    console.log('useEffect triggered - nodes ref changed:', nodes);
     processor.updateGraph({
       nodes: new Map(Object.entries(nodes).filter(([, v]) => v !== undefined) as [string, NodeEntityType][]),
       edges,

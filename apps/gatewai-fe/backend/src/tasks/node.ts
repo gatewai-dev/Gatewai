@@ -71,11 +71,18 @@ export class NodeWFProcessor {
       throw new Error("No node selected to process.");
     }
 
-    const batch = await this.prisma.taskBatch.create({
+    let batch = await this.prisma.taskBatch.create({
       data: {
         userId: user.id,
         canvasId,
       },
+      include: {
+        tasks: {
+          include: {
+            node: true
+          }
+        }
+      }
     });
 
     const allNodeIds = data.nodes.map(n => n.id);
@@ -108,26 +115,52 @@ export class NodeWFProcessor {
       throw new Error('Some necessary nodes not found in canvas.');
     }
 
+    // Create tasks upfront for all necessary nodes
+    const tasksMap = new Map<string, { id: string; nodeId: string }>();
+    for (const nodeId of topoOrder) {
+      const node = data.nodes.find(n => n.id === nodeId)!;
+      const task = await this.prisma.task.create({
+        data: {
+          name: `Process node ${node.name || node.id}`,
+          nodeId,
+          status: TaskStatus.QUEUED,
+          isTest: false,
+          batchId: batch.id,
+        },
+      });
+      tasksMap.set(nodeId, { id: task.id, nodeId });
+    }
+
+    // Refetch batch to include tasks
+    batch = await this.prisma.taskBatch.findUniqueOrThrow({
+      where: { id: batch.id },
+      include: {
+        tasks: {
+          include: {
+            node: true
+          }
+        }
+      }
+    });
+
     const executer = async () => {
       for (const nodeId of topoOrder) {
+        const task = tasksMap.get(nodeId)!;
+        const startedAt = new Date();
+        await this.prisma.task.update({
+          where: { id: task.id },
+          data: {
+            status: TaskStatus.EXECUTING,
+            startedAt,
+          },
+        });
+
         const node = data.nodes.find(n => n.id === nodeId)!;  // Use current in-memory data
         const template = await this.prisma.nodeTemplate.findUnique({ where: { type: node.type } });  // Fetch template for isTransient
         const processor = nodeProcessors[node.type];
         if (!processor) {
           throw new Error(`No processor for node type ${node.type}.`);
         }
-
-        // Create task before processing
-        const task = await this.prisma.task.create({
-          data: {
-            name: `Process node ${node.name || node.id}`,
-            nodeId,
-            status: TaskStatus.EXECUTING,
-            startedAt: new Date(),
-            isTest: false,
-            batchId: batch.id,
-          },
-        });
 
         try {
           // Await processor, pass current data
@@ -145,7 +178,7 @@ export class NodeWFProcessor {
             data: {
               status: success ? TaskStatus.COMPLETED : TaskStatus.FAILED,
               finishedAt,
-              durationMs: finishedAt.getTime() - task.startedAt!.getTime(),
+              durationMs: finishedAt.getTime() - startedAt.getTime(),
               error: error ? { message: error } : null,
             },
           });
@@ -165,7 +198,7 @@ export class NodeWFProcessor {
             data: {
               status: TaskStatus.FAILED,
               finishedAt,
-              durationMs: finishedAt.getTime() - task.startedAt!.getTime(),
+              durationMs: finishedAt.getTime() - startedAt.getTime(),
               error: err instanceof Error ? { message: err.message } : { message: 'Unknown error' },
             },
           });

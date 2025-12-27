@@ -74,7 +74,7 @@ export function NodeTemplateList({ templates }: NodeListProps) {
   }
 
   return (
-    <div className="flex flex-col gap-6">
+    <div className="flex flex-col gap-3">
       {catKeys.map((cat) => (
         <div key={cat}>
           <h2 className="text-xl font-bold mb-4">{cat}</h2>

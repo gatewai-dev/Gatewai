@@ -1,65 +1,72 @@
-import { createContext, useContext, useMemo, useState, type Dispatch, type PropsWithChildren, type SetStateAction } from 'react';
+import { createContext, useContext, useEffect, type Dispatch, type PropsWithChildren, type SetStateAction } from 'react';
 import type { Canvas, Node } from '@gatewai/db';
-import { useLazyGetBatchDetailsQuery } from '@/store/tasks';
+import { useDispatch, useSelector } from 'react-redux';
 import type { BatchDetailsRPC, BatchDetailsRPCParams } from '@/rpc/types';
+import { addBatchToPoll, getBatchDetails, getInitialBatches, selectBatchIdsToPoll, selectInitialLoading, selectNodeTaskStatus, selectPollingInterval, setPollingInterval } from '@/store/tasks';
+import { batchSelectors } from '@/store/tasks';
 
-type BatchNodeData = BatchDetailsRPC["batches"][number]["tasks"][number];
+type BatchEntity = BatchDetailsRPC["batches"][number];
+type BatchNodeData = BatchEntity["tasks"][number];
 interface TaskManagerContextType {
-  addBatchId: (batchId: string) => void
+  pollingInterval: number;
+  setPollingInterval: Dispatch<SetStateAction<number>>;
+  addBatch: (batch: BatchEntity) => void;
   nodeTaskStatus: Record<Node["id"], BatchNodeData[]>;
+  isLoading: boolean;
+  taskBatches: BatchEntity[];
 }
 
 const TaskManagerContext = createContext<TaskManagerContextType | undefined>(undefined);
 
-
 const TaskManagerProvider = ({
   children,
-}: PropsWithChildren<{canvasId: Canvas["id"]}>) => {
-  const [pollingInterval, setPollingInterval] = useState(0);
-  /**
-   * The batches created by user's actions on the canvas
-   */
-  const [localBatches, setLocalBatches] = useState<BatchDetailsRPC["batches"]>([]);
-  const [batchParams, setBatchParams] = useState<BatchDetailsRPCParams>({
-    query: {
-      batchId: [] as string[],
+  canvasId,
+}: PropsWithChildren<{ canvasId: Canvas["id"] }>) => {
+  const dispatch = useDispatch();
+  const pollingInterval = useSelector(selectPollingInterval);
+  const batchIdsToPoll = useSelector(selectBatchIdsToPoll);
+  const nodeTaskStatus = useSelector(selectNodeTaskStatus);
+  const isLoading = useSelector(selectInitialLoading);
+  const taskBatches = useSelector(batchSelectors.selectAll);
+
+  const setPollingIntervalHandler = (value: SetStateAction<number>) => {
+    if (typeof value === 'function') {
+      dispatch(setPollingInterval(value(pollingInterval)));
+    } else {
+      dispatch(setPollingInterval(value));
     }
-  })
+  };
 
-  const addBatchId = (batchId: string) => {
-    setBatchParams({
-      query: {
-        batchId: Array.from(new Set([...batchParams.query.batchId, batchId])),
-      }
-    })
-    setPollingInterval(2000);
-  }
+  const addBatch = (batchEntity: BatchEntity) => {
+    dispatch(addBatchToPoll(batchEntity));
+  };
 
-  const [trigger, batchList, lastPromiseInfo] = useLazyGetBatchDetailsQuery();
+  useEffect(() => {
+    dispatch(getInitialBatches({ canvasId }));
+  }, [dispatch, canvasId]);
 
+  useEffect(() => {
+    if (pollingInterval > 0) {
+      const intervalId = setInterval(() => {
+        const params: BatchDetailsRPCParams = {
+          query: {
+            batchId: batchIdsToPoll,
+          },
+        };
+        dispatch(getBatchDetails(params));
+      }, pollingInterval);
 
-  const nodeTaskStatus = useMemo(() => {
-    const status: Record<Node["id"], BatchNodeData[]> = {};
-    batchList.data?.batches?.forEach((batchDetails) => {
-      batchDetails?.tasks.forEach((task) => {
-        if (task.nodeId) {
-          if (status[task.nodeId]) {
-            status[task.nodeId].push(task);
-          } else {
-            status[task.nodeId] = [task];
-          }
-        }
-      })
-    });
-
-    return status;
-  }, [batchList])
+      return () => clearInterval(intervalId);
+    }
+  }, [pollingInterval, batchIdsToPoll, dispatch]);
 
   const value: TaskManagerContextType = {
     pollingInterval,
-    setPollingInterval,
-    addBatchId,
-    nodeTaskStatus
+    setPollingInterval: setPollingIntervalHandler,
+    addBatch,
+    nodeTaskStatus,
+    isLoading,
+    taskBatches,
   };
 
   return <TaskManagerContext.Provider value={value}>{children}</TaskManagerContext.Provider>;
@@ -73,4 +80,4 @@ export function useTaskManagerCtx() {
   return ctx;
 }
 
-export { TaskManagerContext, TaskManagerProvider }
+export { TaskManagerContext, TaskManagerProvider };

@@ -15,14 +15,15 @@ import {
 } from "@/components/ui/popover";
 
 const CanvasTasksPanel = memo(() => {
-    const { isLoading, taskBatchs } = useTaskManagerCtx();
+    const { isLoading, taskBatches } = useTaskManagerCtx();
     if (isLoading) {
         return <div className="flex items-center justify-center text-xs">Loading <Spinner /></div>
     }
-    const runningTaskBatchs = taskBatchs?.filter(
+    console.log({taskBatches})
+    const runningTaskBatches = taskBatches?.filter(
       (taskBatch) => taskBatch.finishedAt == null);
 
-    const count = runningTaskBatchs?.length ?? 0;
+    const count = runningTaskBatches?.length ?? 0;
     const indicatorColor = count === 0 ? "bg-green-500" : "bg-amber-500";
 
     return (
@@ -40,7 +41,7 @@ const CanvasTasksPanel = memo(() => {
               <p className="text-sm text-muted-foreground">No tasks running.</p>
             ) : (
               <div className="flex w-full max-w-xs flex-col gap-4 [--radius:1rem]">
-                {runningTaskBatchs?.map((taskBatch) => (
+                {runningTaskBatches?.map((taskBatch) => (
                 <Item key={taskBatch.id} variant="muted">
                   <ItemMedia>
                     <Spinner />

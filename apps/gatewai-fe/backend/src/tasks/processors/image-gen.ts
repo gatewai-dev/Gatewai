@@ -49,9 +49,8 @@ const imageGenProcessor: NodeProcessor = async ({ node, data }) => {
             ? (userContent[0] as string)
             : userContent,
       });
-      console.log({messages})
       const result = await generateText({
-        model: 'google/gemini-3-pro-image',
+        model: 'google/gemini-2.5-flash-image',
         messages,
       });
 

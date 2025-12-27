@@ -8,7 +8,7 @@ import { handlesReducer } from './handles'
 import { edgesReducer } from './edges'
 import { assetsAPI } from './assets'
 import { canvasListAPI } from './canvas-list'
-import { tasksAPI } from './tasks'
+import { tasksReducer } from './tasks'
 import { canvasDetailsAPI } from './canvas'
 
 export const store = configureStore({
@@ -17,10 +17,10 @@ export const store = configureStore({
     handles: handlesReducer,
     edges: edgesReducer,
     reactFlow: reactFlowReducer,
+    tasks: tasksReducer,
     [nodeTemplatesAPI.reducerPath]: nodeTemplatesAPI.reducer,
     [assetsAPI.reducerPath]: assetsAPI.reducer,
     [canvasListAPI.reducerPath]: canvasListAPI.reducer,
-    [tasksAPI.reducerPath]: tasksAPI.reducer,
     [canvasDetailsAPI.reducerPath]: canvasDetailsAPI.reducer,
   },
   middleware: (getDefaultMiddleware) =>
@@ -28,7 +28,6 @@ export const store = configureStore({
       .concat(nodeTemplatesAPI.middleware)
       .concat(assetsAPI.middleware)
       .concat(canvasListAPI.middleware)
-      .concat(tasksAPI.middleware)
       .concat(canvasDetailsAPI.middleware)
 })
 

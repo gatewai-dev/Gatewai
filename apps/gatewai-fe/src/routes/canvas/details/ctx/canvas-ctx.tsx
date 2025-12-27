@@ -28,6 +28,7 @@ import { useGetCanvasDetailsQuery, usePatchCanvasMutation, useProcessNodesMutati
 import { useTaskManagerCtx } from './task-manager-ctx';
 import type { NodeType } from '@gatewai/db';
 import { useNodeTemplates } from '../../node-templates/node-templates.ctx';
+import type { BatchEntity } from '@/store/tasks';
 
 interface CanvasContextType {
   canvas: CanvasDetailsRPC["canvas"] | undefined;
@@ -57,7 +58,7 @@ const CanvasProvider = ({
   canvasId: string;
 }>) => {
 
-  const { setPollingInterval: setTasksPollingInterval } = useTaskManagerCtx();
+  const { addBatch } = useTaskManagerCtx();
   const dispatch = useAppDispatch();
   const store = useStore();
   const rfInstance = useRef<ReactFlowInstance | undefined>(undefined);
@@ -360,7 +361,7 @@ const CanvasProvider = ({
     // Save before running
     await save();
 
-    await runNodesMutateAsync(
+    const resp = await runNodesMutateAsync(
       {
         param: {
           id: canvasId,
@@ -369,8 +370,8 @@ const CanvasProvider = ({
           node_ids
         }
       });
-      setTasksPollingInterval(2000);
-  }, [save, runNodesMutateAsync, setTasksPollingInterval, canvasId]);
+      addBatch(resp.data as BatchEntity);
+  }, [save, runNodesMutateAsync, canvasId, addBatch]);
 
   useEffect(() => {
     dispatch(setNodes(initialNodes));

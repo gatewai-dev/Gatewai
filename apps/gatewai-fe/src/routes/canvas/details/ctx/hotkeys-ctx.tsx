@@ -17,7 +17,7 @@ const ShortcutsProvider = ({
   useHotkeys('ctrl+d, meta+d', (event) => {
     event.preventDefault();
     selectedNodeIDs.forEach((id) => duplicateNode(id));
-  }, { enabled: selectedNodeIDs.length > 0 });
+  }, { enabled: selectedNodeIDs.length > 0, preventDefault: true });
 
   useHotkeys('backspace, delete', (event) => {
     event.preventDefault();
