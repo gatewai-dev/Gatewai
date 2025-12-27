@@ -97,7 +97,7 @@ class PixiProcessorService {
    */
   public async processResize(
     imageUrl: string,
-    options: { width: number; height: number },
+    options: { width?: number; height?: number },
     signal?: AbortSignal
   ): Promise<string> {
     if (signal?.aborted) {
@@ -123,12 +123,14 @@ class PixiProcessorService {
     // 2. Setup the Scene
     const sprite = new Sprite(texture);
     
-    // Set the desired dimensions for the sprite
-    sprite.width = options.width;
-    sprite.height = options.height;
-    
-    // Resize the renderer to match the target dimensions
-    app.renderer.resize(options.width, options.height);
+    if (options.width && options.height) {
+      // Set the desired dimensions for the sprite
+      sprite.width = options.width;
+      sprite.height = options.height;
+      console.log(`Resizing to ${options.width}x${options.height}`);
+      // Resize the renderer to match the target dimensions
+      app.renderer.resize(options.width, options.height);
+    }
 
     // 3. Render to Stage
     app.stage.removeChildren();

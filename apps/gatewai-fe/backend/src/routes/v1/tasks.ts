@@ -32,7 +32,11 @@ const tasksRouter = new Hono<{Variables: AuthHonoTypes}>({
             include: {
                 tasks: {
                     include: {
-                        node: true,
+                        node: {
+                            include: {
+                                template: true,
+                            }
+                        },
                     }
                 },
             }

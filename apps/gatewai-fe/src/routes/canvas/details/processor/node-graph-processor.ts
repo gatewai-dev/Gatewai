@@ -216,14 +216,14 @@ export class NodeGraphProcessor extends EventEmitter {
       const output = inputResult.outputs[inputResult.selectedOutputIndex ?? 0];
       const fileData = output?.items[0]?.data as FileData;
       const imageUrl = fileData?.entity?.signedUrl ?? fileData?.dataUrl;
-      
+
       if (!imageUrl) throw new Error('No image URL');
 
       // Process with Pixi
       const config = node.config as ResizeNodeConfig;
       const dataUrl = await pixiProcessor.processResize(
         imageUrl,
-        { width: config.width ?? 512, height: config.height ?? 512 },
+        { width: config.width, height: config.height },
         signal
       );
 
