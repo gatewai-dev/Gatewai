@@ -3,10 +3,13 @@ import type { NodeResult, FileData } from '@gatewai/types';
 import type { EdgeEntityType } from '@/store/edges';
 import type { NodeEntityType } from '@/store/nodes';
 import { pixiProcessor } from './pixi-service';
+import type { NodeType } from '@gatewai/db';
+import type { HandleEntityType } from '@/store/handles';
 
 interface ProcessorConfig {
   nodes: Map<string, NodeEntityType>;
   edges: EdgeEntityType[];
+  handles: HandleEntityType[];
 }
 
 interface NodeState {
@@ -29,6 +32,7 @@ type NodeProcessor = (params: {
 export class NodeGraphProcessor extends EventEmitter {
   private nodes = new Map<string, NodeEntityType>();
   private edges: EdgeEntityType[] = [];
+  private prevEdges: EdgeEntityType[] = []; // Added for edge change detection
   private nodeStates = new Map<string, NodeState>();
   private processors = new Map<string, NodeProcessor>();
   private dependencyGraph = new Map<string, Set<string>>(); // nodeId -> downstream nodeIds
@@ -45,21 +49,44 @@ export class NodeGraphProcessor extends EventEmitter {
    */
   updateGraph(config: ProcessorConfig): void {
     const prevNodes = new Map(this.nodes);
+    const prevEdges = [...this.prevEdges];
+
     this.nodes = config.nodes;
     this.edges = config.edges;
-    
+
     // Rebuild dependency graphs
     this.buildDependencyGraphs();
-    
+
     // Find changed nodes and mark as dirty
     config.nodes.forEach((node, id) => {
       const prev = prevNodes.get(id);
       this.getOrCreateNodeState(id);
-      
+
       if (!prev || this.hasNodeChanged(prev, node)) {
         this.markDirty(id, true);
       }
     });
+
+    // Detect added edges and mark targets dirty
+    const addedEdges = this.edges.filter(e => !prevEdges.some(pe => pe.id === e.id));
+    addedEdges.forEach(edge => {
+        this.markDirty(edge.source, true)
+        this.markDirty(edge.target, true)
+    });
+
+    // Detect removed edges and mark (previous) targets dirty
+    const removedEdges = prevEdges.filter(pe => !this.edges.some(e => e.id === e.id));
+    removedEdges.forEach(edge => this.markDirty(edge.target, true));
+
+    // Clean up states for deleted nodes
+    prevNodes.forEach((_, id) => {
+      if (!this.nodes.has(id)) {
+        this.nodeStates.delete(id);
+      }
+    });
+
+    // Update prevEdges
+    this.prevEdges = [...this.edges];
   }
 
   /**
@@ -87,7 +114,7 @@ export class NodeGraphProcessor extends EventEmitter {
   /**
    * Register a custom processor for a node type
    */
-  registerProcessor(nodeType: string, processor: NodeProcessor): void {
+  registerProcessor(nodeType: NodeType, processor: NodeProcessor): void {
     this.processors.set(nodeType, processor);
   }
 
@@ -141,7 +168,7 @@ export class NodeGraphProcessor extends EventEmitter {
       // If no cached, use existing node.result (assuming it's set)
       const result = node.result as unknown as NodeResult;
       if (!result) throw new Error('No result for File node');
-
+        console.log({node})
       return result;
     });
 
@@ -202,7 +229,12 @@ export class NodeGraphProcessor extends EventEmitter {
   }
 
   private hasNodeChanged(prev: NodeEntityType, curr: NodeEntityType): boolean {
-    return JSON.stringify(prev.config) !== JSON.stringify(curr.config);
+    // Compare config and result (for nodes like File where result represents source/input data)
+    const prevConfigStr = JSON.stringify(prev.config);
+    const currConfigStr = JSON.stringify(curr.config);
+    const prevResultStr = JSON.stringify(prev.result ?? null);
+    const currResultStr = JSON.stringify(curr.result ?? null);
+    return prevConfigStr !== currConfigStr || prevResultStr !== currResultStr;
   }
 
   private buildDependencyGraphs(): void {
@@ -282,6 +314,7 @@ export class NodeGraphProcessor extends EventEmitter {
     }
     
     state.isDirty = true;
+    state.result = null; // Added: Invalidate previous result on dirty
     
     // Cascade to downstream nodes
     if (cascade) {
@@ -331,11 +364,8 @@ export class NodeGraphProcessor extends EventEmitter {
           state.isDirty = true;
         }
       });
-
-      // Build subgraph dependency graphs
       const { depGraph, revDepGraph } = this.buildSubgraphDepGraphs(necessaryIds);
 
-      // Topological sort
       const topoOrder = this.topologicalSort(necessaryIds, depGraph, revDepGraph);
       if (!topoOrder) {
         this.emit('graph:error', { message: 'Cycle detected in dependency graph' });
@@ -349,7 +379,8 @@ export class NodeGraphProcessor extends EventEmitter {
 
         // Inputs should be ready due to topo order, but verify
         if (!this.ensureInputsReady(nodeId)) {
-          continue;  // Skip warning for now; see notes below
+            console.warn(`Inputs not ready for node ${nodeId}`);
+            continue;  // Skip warning for now; see notes below
         }
         if (state.isProcessing) continue;
 
