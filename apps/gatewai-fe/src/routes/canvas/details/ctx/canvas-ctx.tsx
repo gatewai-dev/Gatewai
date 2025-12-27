@@ -27,7 +27,6 @@ import { useStore } from 'react-redux';
 import { useGetCanvasDetailsQuery, usePatchCanvasMutation, useProcessNodesMutationMutation } from '@/store/canvas';
 import { useTaskManagerCtx } from './task-manager-ctx';
 import type { NodeType } from '@gatewai/db';
-import { cleanupBulkNodeResults } from '../media-db';
 import { useNodeTemplates } from '../../node-templates/node-templates.ctx';
 
 interface CanvasContextType {
@@ -341,8 +340,7 @@ const CanvasProvider = ({
       const deletedEdgeIds = edgesToRemove.map(m => m.id);
       const newEdges = rfEdges.filter(f => !deletedEdgeIds.includes(f.id));
       const deletedHandleIds = handleEntities.filter(m => deletedNodeIds.includes(m.nodeId)).map(m => m.id);
-
-      await cleanupBulkNodeResults(deletedNodeIds);
+      
       dispatch(setNodes(newNodes))
       dispatch(deleteManyNodeEntity(deletedNodeIds))
       dispatch(setEdges(newEdges))
