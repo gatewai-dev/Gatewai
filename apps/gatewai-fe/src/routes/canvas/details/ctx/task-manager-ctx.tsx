@@ -60,10 +60,10 @@ const TaskManagerProvider = ({
 
 
   useEffect(() => {
-    if (taskBatchs?.length === 0) {
+    if (taskBatchs?.length === 0 && pollingInterval !== 0) {
       setPollingInterval(0);
     }
-  }, [taskBatchs?.length]);
+  }, [taskBatchs?.length, pollingInterval]);
   
   const nodeTaskStatus = useMemo(() => {
     const status: Record<Node["id"], ActiveCanvasBatchListRPC[number]["tasks"][number]> = {};

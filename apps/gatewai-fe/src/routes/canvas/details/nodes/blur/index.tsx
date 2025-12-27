@@ -26,7 +26,7 @@ const BlurNodeComponent = memo((props: NodeProps<BlurNode>) => {
     if (!imageUrl || !canvasRef.current) return;
     
     const canvas = canvasRef.current;
-    const ctx = canvas.getContext('2d', { willReadFrequently: true });
+    const ctx = canvas.getContext('2d');
     if (!ctx) return;
     
     const img = new Image();

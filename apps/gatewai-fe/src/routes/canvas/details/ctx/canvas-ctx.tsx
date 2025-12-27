@@ -173,7 +173,7 @@ const CanvasProvider = ({
     }
     timeoutRef.current = setTimeout(() => {
       save();
-    }, 5000);
+    }, 2500);
   }, [save]);
 
   const onNodesChange = useCallback((changes: NodeChange<Node>[]) => {
