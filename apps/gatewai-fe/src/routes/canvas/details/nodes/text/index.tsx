@@ -4,8 +4,8 @@ import { Textarea } from '@/components/ui/textarea';
 import type {
   TextResult,
 } from '@gatewai/types';
-import { useAppDispatch, useAppSelector } from '@/store';
-import { updateTextNodeValue, makeSelectNodeById } from '@/store/nodes';
+import { useAppSelector } from '@/store';
+import { makeSelectNodeById } from '@/store/nodes';
 import type { TextNode } from '../node-props';
 import { BaseNode } from '../base';
 import { useCanvasCtx } from '../../ctx/canvas-ctx';

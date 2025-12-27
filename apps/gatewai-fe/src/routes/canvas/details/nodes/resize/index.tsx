@@ -1,13 +1,14 @@
 import { memo, useEffect, useRef } from 'react';
 import { type NodeProps } from '@xyflow/react';
-import { useAppSelector } from '@/store';
-import { makeSelectNodeById } from '@/store/nodes';
+import { useAppDispatch, useAppSelector } from '@/store';
+import { makeSelectNodeById, updateNodeConfig } from '@/store/nodes';
 import { BaseNode } from '../base';
 import type { ResizeNode } from '../node-props';
 import { AspectRatioSwitch } from './aspect-ratio-switch';
 import { ResizeHeightInput } from './height-input';
 import { ResizeWidthInput } from './width-input';
 import { useNodeResult, useNodeImageUrl } from '../../processor/processor-ctx';
+import type { ResizeNodeConfig } from '@gatewai/types';
 
 const ImagePlaceholder = () => {
   return (
@@ -19,15 +20,17 @@ const ImagePlaceholder = () => {
 
 const ResizeNodeComponent = memo((props: NodeProps<ResizeNode>) => {
   const node = useAppSelector(makeSelectNodeById(props.id));
+  const dispatch = useAppDispatch();
   const canvasRef = useRef<HTMLCanvasElement | null>(null);
   
   // Get processed result from processor
   const { result, isProcessing, error } = useNodeResult(props.id);
   const imageUrl = useNodeImageUrl(props.id);
   
+  const nodeConfig = node?.config as ResizeNodeConfig | null;
   // Draw to canvas when result is ready
   useEffect(() => {
-    if (!imageUrl || !canvasRef.current) return;
+    if (!imageUrl || !canvasRef.current || !node) return;
     
     const canvas = canvasRef.current;
     const ctx = canvas.getContext('2d');
@@ -44,8 +47,21 @@ const ResizeNodeComponent = memo((props: NodeProps<ResizeNode>) => {
       canvas.style.height = 'auto';
       ctx.clearRect(0, 0, canvas.width, canvas.height);
       ctx.drawImage(img, 0, 0);
+      console.log('ResizeNodeComponent loaded image', { img, nodeConfig });
+      if (nodeConfig?.originalHeight == null || nodeConfig?.originalWidth == null) {
+        console.log({ow: img.width, oh: img.height});
+        // Set original dimensions in node config
+        dispatch(updateNodeConfig({
+          id: node.id,
+          newConfig: {
+            ...nodeConfig,
+            originalWidth: img.width,
+            originalHeight: img.height,
+          },
+        }));
+      } 
     };
-  }, [imageUrl]);
+  }, [dispatch, imageUrl, node, nodeConfig]);
 
   return (
     <BaseNode {...props}>
@@ -69,20 +85,20 @@ const ResizeNodeComponent = memo((props: NodeProps<ResizeNode>) => {
             <div className="flex gap-3">
               <ResizeWidthInput
                 node={node}
-                originalWidth={null}
-                originalHeight={null}
-                maintainAspect={node.config?.maintainAspect ?? true}
+                originalWidth={nodeConfig?.originalWidth ?? null}
+                originalHeight={nodeConfig?.originalHeight ?? null}
+                maintainAspect={nodeConfig?.maintainAspect ?? true}
               />
               <ResizeHeightInput
                 node={node}
-                originalWidth={null}
-                originalHeight={null}
-                maintainAspect={node.config?.maintainAspect ?? true}
+                originalWidth={nodeConfig?.originalWidth ?? null}
+                originalHeight={nodeConfig?.originalHeight ?? null}
+                maintainAspect={nodeConfig?.maintainAspect ?? true}
               />
               <AspectRatioSwitch
                 node={node}
-                originalWidth={null}
-                originalHeight={null}
+                originalWidth={nodeConfig?.originalWidth ?? null}
+                originalHeight={nodeConfig?.originalHeight ?? null}
               />
             </div>
           </>

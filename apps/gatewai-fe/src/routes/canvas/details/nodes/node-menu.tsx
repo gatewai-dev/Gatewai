@@ -102,7 +102,7 @@ const NodeMenu = memo((props: NodeProps<Node<CanvasDetailsNode>>) => {
     const [renameOpen, setRenameOpen] = useState(false);
     const isMac = /Mac|iPod|iPhone|iPad/.test(navigator.userAgent);
     const node = useAppSelector(makeSelectNodeById(props.id));
-    const currentName = node.name || "";
+    const currentName = node?.name || "";
 
     return (
         <>
