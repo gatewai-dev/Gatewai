@@ -165,27 +165,6 @@ export async function SEED_createNodeTemplates(prisma: PrismaClient) {
     }
   });
 
-  // Agent: starts with single text input but user can add more inputs file / text etc., assuming one text output, variableInputs true
-  await prisma.nodeTemplate.create({
-    data: {
-      type: NodeType.Agent,
-      displayName: 'Agent',
-      description: 'A generalist agent capable of generating Text / Image / Audio / Video',
-      tokenPrice: 0.0,
-      variableInputs: true,
-      variableOutputs: false,
-      isTerminalNode: true,
-      isTransient: false,
-      templateHandles: {
-        create: [
-          { type: HandleType.Input, dataTypes: [DataType.Text], required: true, label: 'Instructions' },
-          { type: HandleType.Output, dataTypes: [DataType.Text], label: "Text Output" }
-        ]
-      },
-      defaultConfig: undefined,
-    }
-  });
-
   // Painter: image input, mask and image output
   await prisma.nodeTemplate.create({
     data: {

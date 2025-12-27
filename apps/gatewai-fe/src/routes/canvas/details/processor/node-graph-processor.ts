@@ -175,7 +175,6 @@ export class NodeGraphProcessor extends EventEmitter {
       return result;
     });
 
-    // File processor (no computation, just return existing; cache based on config if needed)
     this.registerProcessor('File', async ({ node }) => {
       // If no cached, use existing node.result (assuming it's set)
       const result = node.result as unknown as FileResult;
@@ -183,8 +182,13 @@ export class NodeGraphProcessor extends EventEmitter {
       return result;
     });
 
+    this.registerProcessor('Agent', async ({ node }) => {
+      // If no cached, use existing node.result (assuming it's set)
+      const result = node.result as unknown as FileResult;
+      if (!result) throw new Error('No result for File node');
+      return result;
+    });
 
-    // File processor (no computation, just return existing; cache based on config if needed)
     this.registerProcessor('Text', async ({ node }) => {
       // If no cached, use existing node.result (assuming it's set)
       const result = node.result as unknown as TextResult;

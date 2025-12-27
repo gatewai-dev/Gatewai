@@ -5,6 +5,7 @@ import { ImageGenNodeComponent } from './image-gen';
 import { BlurNodeComponent } from './blur';
 import { FileNodeComponent } from './file';
 import { ResizeNodeComponent } from './resize';
+import { AgentNodeComponent } from './agent';
 
 
 // Node types mapping
@@ -15,6 +16,7 @@ const nodeTypes = {
   Blur: BlurNodeComponent,
   Resize: ResizeNodeComponent,
   File: FileNodeComponent,
+  Agent: AgentNodeComponent,
 };
 
 // Export components
