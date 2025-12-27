@@ -60,8 +60,8 @@ export function useProcessor(): NodeGraphProcessor {
  * Subscribe to a specific node's result
  * Returns result and updates automatically when processing completes
  */
-export function useNodeResult(nodeId: string): {
-  result: NodeResult | null;
+export function useNodeResult<T extends NodeResult = NodeResult>(nodeId: string): {
+  result: T | null;
   isProcessing: boolean;
   error: string | null;
 } {
