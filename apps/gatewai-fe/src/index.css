@@ -5,6 +5,7 @@
 @custom-variant hover (&:hover);
 :root {
   --background: oklch(1.0000 0 0);
+  --background-selected: oklch(95.514% 0.00011 271.152);
   --foreground: oklch(0.2101 0.0318 264.6645);
   --card: oklch(1.0000 0 0);
   --card-foreground: oklch(0.2101 0.0318 264.6645);
@@ -53,6 +54,7 @@
 }
 .dark {
   --background: oklch(0.1797 0.0043 308.1928);
+  --background-selected: oklch(24.354% 0.00003 271.152);
   --foreground: oklch(0.8109 0 0);
   --card: oklch(0.1822 0 0);
   --card-foreground: oklch(0.8109 0 0);
@@ -99,6 +101,7 @@
 }
 @theme inline {
   --color-background: var(--background);
+  --color-background-selected: var(--background-selected);
   --color-foreground: var(--foreground);
   --color-card: var(--card);
   --color-card-foreground: var(--card-foreground);

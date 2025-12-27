@@ -12,11 +12,11 @@ const ShortcutsProvider = ({
 }: PropsWithChildren) => {
 
   const { selectedNodeIDs } = useSelectedEntitiesCtx();
-  const { duplicateNode, onNodesDelete } = useCanvasCtx();
+  const { duplicateNodes, onNodesDelete } = useCanvasCtx();
 
   useHotkeys('ctrl+d, meta+d', (event) => {
     event.preventDefault();
-    selectedNodeIDs.forEach((id) => duplicateNode(id));
+    duplicateNodes(selectedNodeIDs)
   }, { enabled: selectedNodeIDs.length > 0, preventDefault: true });
 
   useHotkeys('backspace, delete', (event) => {

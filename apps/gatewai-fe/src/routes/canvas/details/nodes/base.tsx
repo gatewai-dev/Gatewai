@@ -76,7 +76,7 @@ const BaseNode = memo((props: NodeProps<Node<CanvasDetailsNode>> & {
       tabIndex={0}
       className={cn(
         `relative drag-handle ${nodeBackgroundColor} rounded-2xl shadow-md w-full h-full transition-all duration-200 group`,
-        {'selected ring-primary/40 ring box-border': selected},
+        {'selected ring-primary/30 ring box-border bg-background-selected!': selected},
         props.className
       )}
     >

@@ -98,7 +98,7 @@ const RenameNodeDialog = memo(({
 })
 
 const NodeMenu = memo((props: NodeProps<Node<CanvasDetailsNode>>) => {
-    const { onNodesDelete, duplicateNode } = useCanvasCtx();
+    const { onNodesDelete, duplicateNodes } = useCanvasCtx();
     const [renameOpen, setRenameOpen] = useState(false);
     const isMac = /Mac|iPod|iPhone|iPad/.test(navigator.userAgent);
     const node = useAppSelector(makeSelectNodeById(props.id));
@@ -115,7 +115,7 @@ const NodeMenu = memo((props: NodeProps<Node<CanvasDetailsNode>>) => {
                 <DropdownMenuItem onClick={() => setRenameOpen(true)}>
                     Rename
                 </DropdownMenuItem>
-                <DropdownMenuItem onClick={() => duplicateNode(props.id)}>
+                <DropdownMenuItem onClick={() => duplicateNodes([props.id])}>
                     Duplicate
                     <DropdownMenuShortcut className="italic text-[11px]">{isMac ? '⌘ D' : 'ctrl + d'}</DropdownMenuShortcut>
                 </DropdownMenuItem>

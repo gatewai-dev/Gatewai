@@ -188,6 +188,8 @@ model Handle {
   type               HandleType
   dataTypes           DataType[]
   label              String
+  // Required for Agent nodes where handles can be dynamically added
+  description        String?
   order              Int                 @default(0)
   required           Boolean             @default(false)
   templateHandleId   String?

@@ -41,7 +41,7 @@ interface CanvasContextType {
   rfInstance: RefObject<ReactFlowInstance | undefined>;
   createNewNode: (template: NodeTemplateListItemRPC, position: XYPosition) => void;
   onNodesDelete: (nodeIds: Node["id"][]) => void
-  duplicateNode: (nodeId: Node["id"]) => void
+  duplicateNodes: (nodeIds: Node["id"][]) => void
   onNodeConfigUpdate: (payload: {
     id: string;
     newConfig: Partial<AllNodeConfig>;
@@ -456,94 +456,116 @@ const CanvasProvider = ({
 
 
 
-  const duplicateNode = useCallback((nodeId: Node["id"]) => {
-    const newNodeId = generateId();
-    let initialResult: NodeResult | null = null;
-    const rfNodeToDuplicate = rfNodes.find(n => n.id === nodeId);
-    if (!rfNodeToDuplicate) {
-      toast.error("Node to duplicate not found");
-      return;
-    }
+  const duplicateNodes = useCallback((nodeIds: Node["id"][]) => {
+    const newRfNodes: Node[] = [];
+    const newNodeEntities: NodeEntityType[] = [];
+    const allNewHandles: HandleEntityType[] = [];
 
     const rootState = store.getState() as RootState;
-    const nodeEntityToDuplicate = rootState.nodes.entities[nodeId];
-    if (!nodeEntityToDuplicate) {
-      toast.error("Node entity to duplicate not found");
-      return;
-    }
 
-    const template = nodeEntityToDuplicate.template;
-    const templateEntity = nodeTemplates?.find(f => f.id === template.id);
-    if (!templateEntity) {
-      toast.error("Node template to duplicate not found");
-      return;
-    }
-    const handles = templateEntity.templateHandles.map((tHandle, i) => ({
-        nodeId: newNodeId,
-        label: tHandle.label,
-        order: i,
-        templateHandleId: tHandle.id,
-        id: generateId(),
-        required: tHandle.required,
-        createdAt: new Date().toISOString(),
-        updatedAt: new Date().toISOString(),
-        type: tHandle.type,
-        dataTypes: tHandle.dataTypes,
-    }));
-
-    if (template.type === 'Text') {
-      initialResult = {
-        selectedOutputIndex: 0,
-        outputs: [{
-          items: [{type: 'Text', outputHandleId: handles[0].id, data: ''}]
-        }]
+    for (const nodeId of nodeIds) {
+      const rfNodeToDuplicate = rfNodes.find(n => n.id === nodeId);
+      if (!rfNodeToDuplicate) {
+        toast.error(`Node ${nodeId} to duplicate not found`);
+        continue;
       }
-    } else {
-      initialResult = {
-        selectedOutputIndex: 0,
-        outputs: []
+
+      const nodeEntityToDuplicate = rootState.nodes.entities[nodeId];
+      if (!nodeEntityToDuplicate) {
+        toast.error(`Node entity ${nodeId} to duplicate not found`);
+        continue;
       }
+
+      const template = nodeEntityToDuplicate.template;
+      const templateEntity = nodeTemplates?.find(f => f.id === template.id);
+      if (!templateEntity) {
+        toast.error(`Node template for ${nodeId} to duplicate not found`);
+        continue;
+      }
+
+      const newNodeId = generateId();
+      let initialResult: NodeResult | null = null;
+
+      const handles = templateEntity.templateHandles.map((tHandle, i) => ({
+          nodeId: newNodeId,
+          label: tHandle.label,
+          order: i,
+          templateHandleId: tHandle.id,
+          id: generateId(),
+          required: tHandle.required,
+          createdAt: new Date().toISOString(),
+          updatedAt: new Date().toISOString(),
+          type: tHandle.type,
+          dataTypes: tHandle.dataTypes,
+      }));
+
+      allNewHandles.push(...handles);
+
+      if (template.type === 'Text') {
+        initialResult = {
+          selectedOutputIndex: 0,
+          outputs: [{
+            items: [{type: 'Text', outputHandleId: handles[0].id, data: ''}]
+          }]
+        }
+      } else {
+        initialResult = {
+          selectedOutputIndex: 0,
+          outputs: []
+        }
+      }
+
+      const position = {
+          x: rfNodeToDuplicate.position.x + 320,
+          y: rfNodeToDuplicate.position.y + 320,
+      };
+
+      const nodeEntity: NodeEntityType = {
+        id: newNodeId,
+        name: template.displayName,
+        templateId: template.id,
+        template: template,
+        type: template.type as NodeType,
+        position,
+        width: 300,
+        height: null,
+        isDirty: false,
+        canvasId: canvasId,
+        zIndex: 1,
+        draggable: true,
+        selectable: true,
+        handles,
+        deletable: true,
+        config: template.defaultConfig || {},
+        result: initialResult as unknown as NodeResult,
+      };
+      const newNode: Node = {
+        id: newNodeId,
+        position,
+        data: nodeEntity,
+        type: template.type as NodeType,
+        width: 300,
+        height: undefined,
+        draggable: true,
+        selectable: true,
+        deletable: true,
+      };
+      newRfNodes.push(newNode);
+      newNodeEntities.push(nodeEntity);
     }
 
-    const position = {
-        x: rfNodeToDuplicate.position.x + 320,
-        y: rfNodeToDuplicate.position.y + 320,
-    };
-
-    const nodeEntity: NodeEntityType = {
-      id: newNodeId,
-      name: template.displayName,
-      templateId: template.id,
-      template: template,
-      type: template.type as NodeType,
-      position,
-      width: 300,
-      height: null,
-      isDirty: false,
-      canvasId: canvasId,
-      zIndex: 1,
-      draggable: true,
-      selectable: true,
-      handles,
-      deletable: true,
-      config: template.defaultConfig || {},
-      result: initialResult as unknown as NodeResult,
-    };
-    const newNode: Node = {
-      id: newNodeId,
-      position,
-      data: nodeEntity,
-      type: template.type as NodeType,
-      width: 300,
-      height: undefined,
-      draggable: true,
-      selectable: true,
-      deletable: true,
-    };
-    dispatch(createNode(newNode));
-    dispatch(createNodeEntity(nodeEntity));
-    dispatch(addManyHandleEntities(handles))
-    scheduleSave();
+    if (newRfNodes.length > 0) {
+      dispatch(setNodes([...rfNodes, ...newRfNodes]));
+    }
+    for (const newNodeEntity of newNodeEntities) {
+      dispatch(createNodeEntity(newNodeEntity));
+    }
+    if (allNewHandles.length > 0) {
+      dispatch(addManyHandleEntities(allNewHandles));
+    }
+    if (newRfNodes.length > 0) {
+      scheduleSave();
+    }
   }, [canvasId, dispatch, nodeTemplates, rfNodes, scheduleSave, store]);
   
   const value = useMemo(() => ({
@@ -556,7 +578,7 @@ const CanvasProvider = ({
     runNodes,
     rfInstance,
     createNewNode,
-    duplicateNode,
+    duplicateNodes,
     onNodesDelete,
     onNodeConfigUpdate,
     createNewHandle,
@@ -570,7 +592,7 @@ const CanvasProvider = ({
     onConnect,
     runNodes,
     createNewNode,
-    duplicateNode,
+    duplicateNodes,
     onNodesDelete,
     onNodeConfigUpdate,
     createNewHandle,
