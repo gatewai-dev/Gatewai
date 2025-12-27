@@ -33,7 +33,7 @@ export class NodeGraphProcessor extends EventEmitter {
   private nodeStates = new Map<string, NodeState>();
   private processors = new Map<string, NodeProcessor>();
   private dependencyGraph = new Map<string, Set<string>>(); // nodeId -> downstream nodeIds
-  private processingQueue: string[] = [];
+  private reverseDependencyGraph = new Map<string, Set<string>>(); // nodeId -> upstream nodeIds
   private isProcessing = false;
 
   constructor() {
@@ -49,13 +49,13 @@ export class NodeGraphProcessor extends EventEmitter {
     this.nodes = config.nodes;
     this.edges = config.edges;
     
-    // Rebuild dependency graph
-    this.buildDependencyGraph();
+    // Rebuild dependency graphs
+    this.buildDependencyGraphs();
     
     // Find changed nodes and mark as dirty
     config.nodes.forEach((node, id) => {
       const prev = prevNodes.get(id);
-      const state = this.getOrCreateNodeState(id);
+      this.getOrCreateNodeState(id);
       
       if (!prev || this.hasNodeChanged(prev, node)) {
         this.markDirty(id, true);
@@ -155,6 +155,12 @@ export class NodeGraphProcessor extends EventEmitter {
 
       return newResult;
     });
+    // Resize processor
+    this.registerProcessor('File', async ({ node }) => {
+      // Extract image URL
+      const result = node.result as unknown as NodeResult
+      return result;
+    });
 
     // Resize processor
     this.registerProcessor('Resize', async ({ node, inputs, signal }) => {
@@ -221,7 +227,7 @@ export class NodeGraphProcessor extends EventEmitter {
   private getOrCreateNodeState(nodeId: string): NodeState {
     if (!this.nodeStates.has(nodeId)) {
       this.nodeStates.set(nodeId, {
-        isDirty: true,
+        isDirty: false,
         isProcessing: false,
         result: null,
         error: null,
@@ -235,15 +241,71 @@ export class NodeGraphProcessor extends EventEmitter {
     return JSON.stringify(prev.config) !== JSON.stringify(curr.config);
   }
 
-  private buildDependencyGraph(): void {
+  private buildDependencyGraphs(): void {
     this.dependencyGraph.clear();
+    this.reverseDependencyGraph.clear();
+    
+    this.nodes.forEach((_, id) => {
+      this.dependencyGraph.set(id, new Set());
+      this.reverseDependencyGraph.set(id, new Set());
+    });
     
     this.edges.forEach(edge => {
-      if (!this.dependencyGraph.has(edge.source)) {
-        this.dependencyGraph.set(edge.source, new Set());
+      if (this.nodes.has(edge.source) && this.nodes.has(edge.target)) {
+        this.dependencyGraph.get(edge.source)!.add(edge.target);
+        this.reverseDependencyGraph.get(edge.target)!.add(edge.source);
       }
-      this.dependencyGraph.get(edge.source)!.add(edge.target);
     });
+  }
+
+  private buildSubgraphDepGraphs(necessaryIds: string[]): {
+    depGraph: Map<string, string[]>;
+    revDepGraph: Map<string, string[]>;
+  } {
+    const selectedSet = new Set(necessaryIds);
+    const depGraph = new Map(necessaryIds.map(id => [id, new Set<string>()]));
+    const revDepGraph = new Map(necessaryIds.map(id => [id, new Set<string>()]));
+
+    for (const edge of this.edges) {
+      if (selectedSet.has(edge.source) && selectedSet.has(edge.target)) {
+        depGraph.get(edge.source)!.add(edge.target);
+        revDepGraph.get(edge.target)!.add(edge.source);
+      }
+    }
+
+    // Convert Sets to arrays for topological sort
+    const depArray = new Map<string, string[]>();
+    const revArray = new Map<string, string[]>();
+    depGraph.forEach((value, key) => depArray.set(key, Array.from(value)));
+    revDepGraph.forEach((value, key) => revArray.set(key, Array.from(value)));
+
+    return { depGraph: depArray, revDepGraph: revArray };
+  }
+
+  private topologicalSort(
+    nodes: string[],
+    depGraph: Map<string, string[]>,
+    revDepGraph: Map<string, string[]>
+  ): string[] | null {
+    const indegree = new Map(nodes.map(id => [id, (revDepGraph.get(id) ?? []).length]));
+    const queue: string[] = nodes.filter(id => indegree.get(id)! === 0);
+    const order: string[] = [];
+
+    while (queue.length > 0) {
+      const current = queue.shift()!;
+      order.push(current);
+
+      const downstream = depGraph.get(current) ?? [];
+      for (const ds of downstream) {
+        const deg = indegree.get(ds)! - 1;
+        indegree.set(ds, deg);
+        if (deg === 0) {
+          queue.push(ds);
+        }
+      }
+    }
+
+    return order.length === nodes.length ? order : null;
   }
 
   private markDirty(nodeId: string, cascade: boolean): void {
@@ -257,14 +319,9 @@ export class NodeGraphProcessor extends EventEmitter {
     
     state.isDirty = true;
     
-    // Add to queue if not already there
-    if (!this.processingQueue.includes(nodeId)) {
-      this.processingQueue.push(nodeId);
-    }
-    
     // Cascade to downstream nodes
     if (cascade) {
-      const downstream = this.dependencyGraph.get(nodeId) ?? new Set();
+      const downstream = Array.from(this.dependencyGraph.get(nodeId) ?? new Set());
       downstream.forEach(downstreamId => this.markDirty(downstreamId, true));
     }
     
@@ -276,71 +333,115 @@ export class NodeGraphProcessor extends EventEmitter {
     if (this.isProcessing) return;
     this.isProcessing = true;
 
-    while (this.processingQueue.length > 0) {
-      const nodeId = this.processingQueue.shift()!;
-      const node = this.nodes.get(nodeId);
-      
-      if (!node) continue;
-      
-      const state = this.getOrCreateNodeState(nodeId);
-      if (!state.isDirty) continue;
+    try {
+      // Collect dirty node IDs
+      const dirtyIds = Array.from(this.nodeStates.entries())
+        .filter(([, state]) => state.isDirty)
+        .map(([id]) => id);
 
-      try {
-        // Ensure all inputs are ready
-        const inputsReady = await this.ensureInputsReady(nodeId);
-        if (!inputsReady) {
-          // Re-queue for later
-          this.processingQueue.push(nodeId);
+      if (dirtyIds.length === 0) return;
+
+      // Compute necessary nodes: dirty + upstream dependencies that need processing
+      const necessary = new Set<string>();
+      const queue: string[] = [...dirtyIds];
+      while (queue.length > 0) {
+        const curr = queue.shift()!;
+        if (necessary.has(curr)) continue;
+        necessary.add(curr);
+        const ups = Array.from(this.reverseDependencyGraph.get(curr) ?? []);
+        ups.forEach(up => {
+          const upState = this.getOrCreateNodeState(up);
+          if (!upState.result || upState.isDirty) {
+            queue.push(up);
+          }
+        });
+      }
+
+      const necessaryIds = Array.from(necessary);
+
+      // Mark upstream nodes as dirty if they lack results
+      necessaryIds.forEach(id => {
+        const state = this.getOrCreateNodeState(id);
+        if (!state.result) {
+          state.isDirty = true;
+        }
+      });
+
+      // Build subgraph dependency graphs
+      const { depGraph, revDepGraph } = this.buildSubgraphDepGraphs(necessaryIds);
+
+      // Topological sort
+      const topoOrder = this.topologicalSort(necessaryIds, depGraph, revDepGraph);
+      if (!topoOrder) {
+        this.emit('graph:error', { message: 'Cycle detected in dependency graph' });
+        return;
+      }
+
+      // Process nodes in topological order
+      for (const nodeId of topoOrder) {
+        const state = this.getOrCreateNodeState(nodeId);
+        if (!state.isDirty) continue;
+
+        // Inputs should be ready due to topo order, but verify
+        if (!this.ensureInputsReady(nodeId)) {
+          console.warn(`Inputs not ready for ${nodeId} despite topological order`);
           continue;
         }
 
-        // Process the node
+        // Skip if already processing
+        if (state.isProcessing) continue;
+
         state.isProcessing = true;
         state.abortController = new AbortController();
         state.error = null;
 
-        const processor = this.processors.get(node.type);
-        if (!processor) {
-          throw new Error(`No processor for node type: ${node.type}`);
-        }
+        try {
+          const node = this.nodes.get(nodeId);
+          if (!node) throw new Error(`Node ${nodeId} missing`);
 
-        const inputs = this.collectInputs(nodeId);
-        const result = await processor({
-          node,
-          inputs,
-          signal: state.abortController.signal
-        });
+          const processor = this.processors.get(node.type);
+          if (!processor) {
+            throw new Error(`No processor for node type: ${node.type}`);
+          }
 
-        state.result = result;
-        state.isDirty = false;
-        state.isProcessing = false;
-        
-        this.emit('node:processed', { nodeId, result });
-        
-      } catch (error) {
-        if (error instanceof DOMException && error.name === 'AbortError') {
-          // Cancelled - will be re-queued if needed
-          state.isDirty = true;
-        } else {
-          state.error = error instanceof Error ? error.message : 'Unknown error';
+          const inputs = this.collectInputs(nodeId);
+          const result = await processor({
+            node,
+            inputs,
+            signal: state.abortController.signal
+          });
+
+          state.result = result;
           state.isDirty = false;
+          
+          this.emit('node:processed', { nodeId, result });
+          
+        } catch (error) {
+          if (error instanceof DOMException && error.name === 'AbortError') {
+            // Cancelled - will be re-queued if needed via future markDirty
+            state.isDirty = true;
+          } else {
+            state.error = error instanceof Error ? error.message : 'Unknown error';
+            state.isDirty = false;
+          }
+          state.isProcessing = false;
+          
+          this.emit('node:error', { nodeId, error: state.error });
+        } finally {
+          state.abortController = null;
         }
-        state.isProcessing = false;
-        
-        this.emit('node:error', { nodeId, error: state.error });
-      } finally {
-        state.abortController = null;
       }
+    } finally {
+      this.isProcessing = false;
     }
-
-    this.isProcessing = false;
   }
 
-  private async ensureInputsReady(nodeId: string): Promise<boolean> {
+  private ensureInputsReady(nodeId: string): boolean {
     const sourceNodeIds = this.getSourceNodeIds(nodeId);
     
     for (const sourceId of sourceNodeIds) {
       const sourceState = this.nodeStates.get(sourceId);
+      console.log({sourceId, sourceState});
       if (!sourceState?.result || sourceState.isDirty || sourceState.isProcessing) {
         return false;
       }
@@ -416,7 +517,6 @@ export class NodeGraphProcessor extends EventEmitter {
       }
     });
     this.nodeStates.clear();
-    this.processingQueue = [];
     this.removeAllListeners();
   }
 }
