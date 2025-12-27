@@ -2,7 +2,6 @@ import { EventEmitter } from 'events';
 import type { NodeResult, FileData } from '@gatewai/types';
 import type { EdgeEntityType } from '@/store/edges';
 import type { NodeEntityType } from '@/store/nodes';
-import { hashConfigSync, hashNodeResult, getCachedNodeResult, updateCachedNodeResultAge, storeClientNodeResult } from '../media-db';
 import { pixiProcessor } from './pixi-service';
 
 interface ProcessorConfig {
@@ -113,14 +112,6 @@ export class NodeGraphProcessor extends EventEmitter {
       
       if (!imageUrl) throw new Error('No image URL');
 
-      // Check cache
-      const cacheKey = await this.computeCacheKey(node, inputs);
-      const cached = await getCachedNodeResult(node.id, cacheKey);
-      
-      if (cached) {
-        return cached.result;
-      }
-
       // Process with Pixi
       const config = node.config as { size?: number };
       const dataUrl = await pixiProcessor.processBlur(
@@ -142,29 +133,14 @@ export class NodeGraphProcessor extends EventEmitter {
         }]
       };
 
-      // Cache it
-      await storeClientNodeResult(node, newResult, cacheKey);
-
       return newResult;
     });
 
     // File processor (no computation, just return existing; cache based on config if needed)
     this.registerProcessor('File', async ({ node }) => {
-      // For File nodes, compute cacheKey based on config (file info), no inputs
-      const cacheKey = hashConfigSync(node.config ?? {});
-      const cached = await getCachedNodeResult(node.id, cacheKey);
-      
-      if (cached) {
-        await updateCachedNodeResultAge(cached);
-        return cached.result;
-      }
-
       // If no cached, use existing node.result (assuming it's set)
       const result = node.result as unknown as NodeResult;
       if (!result) throw new Error('No result for File node');
-
-      // Cache it
-      await storeClientNodeResult(node, result, cacheKey);
 
       return result;
     });
@@ -187,15 +163,6 @@ export class NodeGraphProcessor extends EventEmitter {
       
       if (!imageUrl) throw new Error('No image URL');
 
-      // Check cache
-      const cacheKey = await this.computeCacheKey(node, inputs);
-      const cached = await getCachedNodeResult(node.id, cacheKey);
-      
-      if (cached) {
-        await updateCachedNodeResultAge(cached);
-        return cached.result;
-      }
-
       // Process with Pixi
       const config = node.config as { width?: number; height?: number };
       const dataUrl = await pixiProcessor.processResize(
@@ -216,9 +183,6 @@ export class NodeGraphProcessor extends EventEmitter {
           }]
         }]
       };
-
-      // Cache it
-      storeClientNodeResult(node, newResult, cacheKey);
 
       return newResult;
     });
@@ -485,22 +449,6 @@ export class NodeGraphProcessor extends EventEmitter {
         .filter(e => e.source === nodeId)
         .map(e => e.sourceHandleId)
     ));
-  }
-
-  private async computeCacheKey(node: NodeEntityType, inputs: Map<string, NodeResult>): Promise<string> {
-    const sortedInputKeys = Array.from(inputs.keys()).sort((a, b) => a.localeCompare(b));
-    const inputHashes = await Promise.all(
-      sortedInputKeys.map(async (key) => `${key}:${await hashNodeResult(inputs.get(key)!)}`)
-    );
-    const inputsHash = inputHashes.join(',');
-    const configHash = hashConfigSync(node.config ?? {});
-    const inputStr = inputsHash + configHash;
-    
-    const encoder = new TextEncoder();
-    const hashData = encoder.encode(inputStr);
-    const hashBuffer = await crypto.subtle.digest('SHA-256', hashData);
-    const hashArray = Array.from(new Uint8Array(hashBuffer));
-    return hashArray.map(b => b.toString(16).padStart(2, '0')).join('');
   }
 
   /**
