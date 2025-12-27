@@ -2,7 +2,7 @@ import { EventEmitter } from 'events';
 import type { NodeResult, FileData } from '@gatewai/types';
 import type { EdgeEntityType } from '@/store/edges';
 import type { NodeEntityType } from '@/store/nodes';
-import { db, hashConfigSync, hashNodeResult } from '../media-db';
+import { hashConfigSync, hashNodeResult, getCachedNodeResult, updateCachedNodeResultAge, storeClientNodeResult } from '../media-db';
 import { pixiProcessor } from './pixi-service';
 
 interface ProcessorConfig {
@@ -45,6 +45,7 @@ export class NodeGraphProcessor extends EventEmitter {
    * Update graph structure from Redux store
    */
   updateGraph(config: ProcessorConfig): void {
+    console.log('updateGraph called - checking for changes');
     const prevNodes = new Map(this.nodes);
     this.nodes = config.nodes;
     this.edges = config.edges;
@@ -115,10 +116,10 @@ export class NodeGraphProcessor extends EventEmitter {
 
       // Check cache
       const cacheKey = await this.computeCacheKey(node, inputs);
-      const cached = await db.clientNodeResults.where({ id: node.id, inputHash: cacheKey }).first();
+      const cached = await getCachedNodeResult(node.id, cacheKey);
       
       if (cached) {
-        await db.clientNodeResults.update(cached.id, { age: Date.now() });
+        await updateCachedNodeResultAge(cached);
         return cached.result;
       }
 
@@ -144,21 +145,29 @@ export class NodeGraphProcessor extends EventEmitter {
       };
 
       // Cache it
-      await db.clientNodeResults.add({
-        id: node.id,
-        inputHash: cacheKey,
-        result: newResult,
-        name: node.name,
-        hash: await hashNodeResult(newResult),
-        age: Date.now()
-      });
+      await storeClientNodeResult(node, newResult, cacheKey);
 
       return newResult;
     });
-    // Resize processor
+
+    // File processor (no computation, just return existing; cache based on config if needed)
     this.registerProcessor('File', async ({ node }) => {
-      // Extract image URL
-      const result = node.result as unknown as NodeResult
+      // For File nodes, compute cacheKey based on config (file info), no inputs
+      const cacheKey = hashConfigSync(node.config ?? {});
+      const cached = await getCachedNodeResult(node.id, cacheKey);
+      
+      if (cached) {
+        await updateCachedNodeResultAge(cached);
+        return cached.result;
+      }
+
+      // If no cached, use existing node.result (assuming it's set)
+      const result = node.result as unknown as NodeResult;
+      if (!result) throw new Error('No result for File node');
+
+      // Cache it
+      await storeClientNodeResult(node, result, cacheKey);
+
       return result;
     });
 
@@ -182,10 +191,10 @@ export class NodeGraphProcessor extends EventEmitter {
 
       // Check cache
       const cacheKey = await this.computeCacheKey(node, inputs);
-      const cached = await db.clientNodeResults.where({ id: node.id, inputHash: cacheKey }).first();
+      const cached = await getCachedNodeResult(node.id, cacheKey);
       
       if (cached) {
-        await db.clientNodeResults.update(cached.id, { age: Date.now() });
+        await updateCachedNodeResultAge(cached);
         return cached.result;
       }
 
@@ -211,14 +220,7 @@ export class NodeGraphProcessor extends EventEmitter {
       };
 
       // Cache it
-      await db.clientNodeResults.add({
-        id: node.id,
-        inputHash: cacheKey,
-        result: newResult,
-        name: node.name,
-        hash: await hashNodeResult(newResult),
-        age: Date.now()
-      });
+      await storeClientNodeResult(node, newResult, cacheKey);
 
       return newResult;
     });
@@ -309,6 +311,7 @@ export class NodeGraphProcessor extends EventEmitter {
   }
 
   private markDirty(nodeId: string, cascade: boolean): void {
+    console.log(`Dirty marked for ${nodeId}, triggering startProcessing`);
     const state = this.getOrCreateNodeState(nodeId);
     
     // Cancel if already processing
@@ -387,8 +390,8 @@ export class NodeGraphProcessor extends EventEmitter {
           console.warn(`Inputs not ready for ${nodeId} despite topological order`);
           continue;
         }
-
         // Skip if already processing
+        console.log({state})
         if (state.isProcessing) continue;
 
         state.isProcessing = true;
@@ -413,7 +416,7 @@ export class NodeGraphProcessor extends EventEmitter {
 
           state.result = result;
           state.isDirty = false;
-          
+          console.log('node:processed', { nodeId, result })
           this.emit('node:processed', { nodeId, result });
           
         } catch (error) {
@@ -424,10 +427,10 @@ export class NodeGraphProcessor extends EventEmitter {
             state.error = error instanceof Error ? error.message : 'Unknown error';
             state.isDirty = false;
           }
-          state.isProcessing = false;
           
           this.emit('node:error', { nodeId, error: state.error });
         } finally {
+          state.isProcessing = false;
           state.abortController = null;
         }
       }
@@ -441,7 +444,6 @@ export class NodeGraphProcessor extends EventEmitter {
     
     for (const sourceId of sourceNodeIds) {
       const sourceState = this.nodeStates.get(sourceId);
-      console.log({sourceId, sourceState});
       if (!sourceState?.result || sourceState.isDirty || sourceState.isProcessing) {
         return false;
       }

@@ -296,3 +296,18 @@ export async function getStorageEstimate() {
   }
   return null;
 }
+
+/**
+ * Gets a cached node result by node ID and input hash (for cache invalidation).
+ */
+export async function getCachedNodeResult(nodeId: string, inputHash: string): Promise<ClientNodeResult | undefined> {
+  return await db.clientNodeResults.where('[id+inputHash]').equals([nodeId, inputHash]).first();
+}
+
+/**
+ * Updates the age (timestamp) of a specific cached node result.
+ * Assumes the primary key is `id` (node ID); if you have multiple results per node, consider changing the schema to use a composite primary key like `[id+inputHash]`.
+ */
+export async function updateCachedNodeResultAge(cached: ClientNodeResult): Promise<void> {
+  await db.clientNodeResults.update(cached.id, { age: Date.now() });
+}

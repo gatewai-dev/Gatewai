@@ -1,6 +1,6 @@
 import { createContext, useContext, useEffect, useRef, useSyncExternalStore } from 'react';
 import { useAppSelector } from '@/store';
-import { makeSelectAllNodeEntities } from '@/store/nodes';
+import { makeSelectAllNodeEntities, type NodeEntityType } from '@/store/nodes';
 import { makeSelectAllEdges } from '@/store/edges';
 import { NodeGraphProcessor } from './node-graph-processor';
 import type { NodeResult } from '@gatewai/types';
@@ -23,8 +23,9 @@ export function ProcessorProvider({ children }: { children: React.ReactNode }) {
   
   // Sync Redux store to processor
   useEffect(() => {
+    console.log('useEffect triggered - nodes ref changed:', nodes);
     processor.updateGraph({
-      nodes: new Map(Object.entries(nodes).filter(([_, v]) => v !== undefined) as [string, any][]),
+      nodes: new Map(Object.entries(nodes).filter(([, v]) => v !== undefined) as [string, NodeEntityType][]),
       edges
     });
   }, [nodes, edges, processor]);
