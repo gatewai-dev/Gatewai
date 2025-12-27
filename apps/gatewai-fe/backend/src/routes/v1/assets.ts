@@ -7,6 +7,7 @@ import { randomUUID } from "crypto";
 import { deleteFromS3, generateSignedUrl, uploadToS3, getFromS3 } from "../../utils/s3.js";
 import sharp from "sharp";
 import { fileTypeFromBuffer } from "file-type";
+import type { FileResult } from "@gatewai/types";
 
 const uploadSchema = z.object({
   file: z.any(),
@@ -121,6 +122,132 @@ const assetsRouter = new Hono<{ Variables: AuthHonoTypes }>({
       return c.json(asset);
     } catch (error) {
       console.error(error);
+      return c.json({ error: "Upload failed" }, 500);
+    }
+  }
+)
+.post(
+  "/node/:nodeId",
+  zValidator("form", uploadSchema),
+  async (c) => {
+    const user = c.get("user");
+    if (!user) {
+      return c.json({ error: "Unauthorized" }, 401);
+    }
+
+    const { nodeId } = c.req.param();
+
+    const node = await prisma.node.findUnique({
+      where: { id: nodeId },
+      include: {
+        canvas: true,
+        handles: {
+          where: { type: "Output" },
+          orderBy: { order: "asc" },
+        },
+      },
+    });
+
+    if (!node || node.canvas.userId !== user.id) {
+      return c.json({ error: "Node not found or unauthorized" }, 404);
+    }
+
+    const form = await c.req.formData();
+    const file = form.get("file");
+    if (!(file instanceof File)) {
+      return c.json({ error: "File is required" }, 400);
+    }
+
+    const buffer = Buffer.from(await file.arrayBuffer());
+    const filename = file.name;
+    const bucket = process.env.AWS_ASSETS_BUCKET ?? "default-bucket";
+    const key = `assets/${user.id}/${randomUUID()}-${filename}`;
+
+    const fileTypeResult = await fileTypeFromBuffer(buffer);
+    const contentType = fileTypeResult?.mime ?? file.type ?? 'application/octet-stream';
+
+    let width: number | null = null;
+    let height: number | null = null;
+
+    if (contentType.startsWith("image/")) {
+      try {
+        const metadata = await sharp(buffer).metadata();
+        width = metadata.width ?? null;
+        height = metadata.height ?? null;
+      } catch (error) {
+        console.error("Failed to compute image metadata:", error);
+      }
+    }
+
+    try {
+      await uploadToS3(buffer, key, contentType, bucket);
+
+      const expiresIn = 3600 * 24 * 6.9; // A bit less than a week
+      const signedUrl = await generateSignedUrl(key, bucket, expiresIn);
+      const signedUrlExp = new Date(Date.now() + expiresIn * 1000);
+
+      const asset = await prisma.fileAsset.create({
+        data: {
+          name: filename,
+          bucket,
+          key,
+          signedUrl,
+          signedUrlExp,
+          userId: user.id,
+          width,
+          height,
+          mimeType: contentType,
+        },
+      });
+
+      // Update node result
+      const currentResult = (node.result as unknown as FileResult) || { outputs: [] };
+      const outputs = currentResult.outputs || [];
+      const newIndex = outputs.length;
+
+      const outputHandle = node.handles[0];
+      if (!outputHandle) {
+        throw new Error("No output handle found for node");
+      }
+
+      let dataType: string;
+      if (contentType.startsWith("image/")) {
+        dataType = "Image";
+      } else if (contentType.startsWith("video/")) {
+        dataType = "Video";
+      } else {
+        dataType = "File";
+      }
+
+      const newOutput = {
+        items: [
+          {
+            outputHandleId: outputHandle.id,
+            data: {
+              entity: asset,
+            },
+            type: dataType,
+          },
+        ],
+      };
+
+      const updatedResult = {
+        ...currentResult,
+        selectedOutputIndex: newIndex,
+        outputs: [...outputs, newOutput],
+      };
+
+      const updatedNode = await prisma.node.update({
+        where: { id: nodeId },
+        data: { result: updatedResult },
+        include: {
+          handles: true,
+        },
+      });
+
+      return c.json(updatedNode);
+    } catch (error) {
+      console.error("Node asset upload failed:", error);
       return c.json({ error: "Upload failed" }, 500);
     }
   }

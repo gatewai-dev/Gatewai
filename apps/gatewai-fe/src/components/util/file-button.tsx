@@ -1,22 +1,24 @@
 import { useRef } from 'react';
 import { PlusIcon, Loader2 } from 'lucide-react';
-import { useUploadAssetMutation } from '@/store/assets';
-import type { UserAssetsUploadRPC } from '@/rpc/types';
+import { useUploadFileNodeAssetMutation } from '@/store/assets';
+import type { UploadFileNodeAssetRPC } from '@/rpc/types';
 import type { ChangeEvent } from 'react';
 import { Button } from '../ui/button';
 import { cn } from '@/lib/utils';
+import type { NodeEntityType } from '@/store/nodes';
 
 interface UploadButtonProps {
     className?: string;
-    onUploadSuccess?: (asset: UserAssetsUploadRPC) => void;
+    onUploadSuccess?: (resp: UploadFileNodeAssetRPC) => void;
     onUploadError?: (error: Error) => void;
     onUploadStart?: () => void;
     accept?: string[];
     label?: string;
+    nodeId: NodeEntityType["id"];
 }
 
-export const UploadButton = ({ className, onUploadStart, onUploadSuccess, onUploadError, accept, label }: UploadButtonProps) => {
-  const [upload, { isLoading }] = useUploadAssetMutation();
+export const UploadButton = ({ className, onUploadStart, onUploadSuccess, onUploadError, accept, label, nodeId }: UploadButtonProps) => {
+  const [upload, { isLoading }] = useUploadFileNodeAssetMutation();
   const inputRef = useRef<HTMLInputElement>(null);
 
   const handleClick = () => {
@@ -30,10 +32,18 @@ export const UploadButton = ({ className, onUploadStart, onUploadSuccess, onUplo
     if (!file) return;
     try {
       onUploadStart?.();
-      const asset = await upload(file).unwrap();
-      onUploadSuccess?.(asset);
+      const resp = await upload({
+        form: {
+          file,
+        },
+        param: {
+          nodeId
+        }
+      }
+      ).unwrap();
+      onUploadSuccess?.(resp);
     } catch (error) {
-      console.error(error);
+      console.error(error)
       if (error instanceof Error) {
         onUploadError?.(error);
       }

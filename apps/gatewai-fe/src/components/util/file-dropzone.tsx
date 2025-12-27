@@ -1,20 +1,22 @@
 import { useCallback } from 'react';
 import { useDropzone, type Accept } from 'react-dropzone';
 import { UploadIcon, Loader2 } from 'lucide-react';
-import { useUploadAssetMutation } from '@/store/assets';
-import type { UserAssetsUploadRPC } from '@/rpc/types';
+import { useUploadFileNodeAssetMutation } from '@/store/assets';
+import type { UploadFileNodeAssetRPC } from '@/rpc/types';
+import type { NodeEntityType } from '@/store/nodes';
 
 interface DropzoneProps {
     className?: string;
-    onUploadSuccess?: (asset: UserAssetsUploadRPC) => void;
+    onUploadSuccess?: (resp: UploadFileNodeAssetRPC) => void;
     onUploadError?: (error: Error) => void;
     onUploadStart?: () => void;
     accept?: Accept
     label?: string;
+    nodeId: NodeEntityType["id"];
 }
 
-export const UploadDropzone = ({ className, onUploadStart, onUploadSuccess, onUploadError, accept, label }: DropzoneProps) => {
-  const [upload, { isLoading }] = useUploadAssetMutation();
+export const UploadDropzone = ({ className, onUploadStart, onUploadSuccess, onUploadError, accept, label, nodeId }: DropzoneProps) => {
+  const [upload, { isLoading }] = useUploadFileNodeAssetMutation();
 
   const onDrop = useCallback(
     async (acceptedFiles: File[]) => {
@@ -22,7 +24,15 @@ export const UploadDropzone = ({ className, onUploadStart, onUploadSuccess, onUp
       const file = acceptedFiles[0];
       try {
         onUploadStart?.();
-        const asset = await upload(file).unwrap();
+        const asset = await upload({
+          form: {
+            file,
+          },
+          param: {
+            nodeId
+          }
+        }
+        ).unwrap();
         onUploadSuccess?.(asset);
       } catch (error) {
         console.error(error)
@@ -31,7 +41,7 @@ export const UploadDropzone = ({ className, onUploadStart, onUploadSuccess, onUp
         }
       }
     },
-    [onUploadStart, upload, onUploadSuccess, onUploadError]
+    [onUploadStart, upload, nodeId, onUploadSuccess, onUploadError]
   );
 
   const { getRootProps, getInputProps, isDragActive } = useDropzone({
