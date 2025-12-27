@@ -12,7 +12,7 @@ const NodeTypes = [
         'Text', 'Preview', 'File', 'Export',
         'Toggle', 'Crawler', 'Resize', 'Agent', 'ThreeD',
         'Painter', 'Blur', 'Compositor', 'Describer', 'Router',
-        'Note', 'Number', 'GPTImage1', 'LLM'
+        'Note', 'Number', 'ImageGen', 'LLM'
 ] as const;
 
 const DataTypes = ["Text", "Number","Boolean", "Image", "Video", "Audio", "File", "Mask"] as const

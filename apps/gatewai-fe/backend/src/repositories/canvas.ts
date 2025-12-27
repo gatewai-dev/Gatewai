@@ -121,4 +121,27 @@ function getInputValue(
   return value;
 }
 
-export { GetCanvasEntities, resolveSourceValue, getInputValue }
+function getInputValuesByType(
+  data: CanvasCtxData,
+  targetNodeId: string,
+  options: InputFilterOptions
+) {
+  let incoming = data.edges.filter(
+    (e) => e.target === targetNodeId
+  ).filter((e) => {
+    const targetHandle = data.handles.find((h) => h.id === e.targetHandleId);
+    return targetHandle?.dataTypes.includes(options.dataType);
+  });
+
+  if (options.label) {
+    incoming = incoming.filter((e) => {
+      const targetHandle = data.handles.find((h) => h.id === e.targetHandleId);
+      return targetHandle?.label === options.label;
+    });
+  }
+
+  const values = incoming.map(edge => resolveSourceValue(data, edge));
+  return values;
+}
+
+export { GetCanvasEntities, resolveSourceValue, getInputValue, getInputValuesByType }

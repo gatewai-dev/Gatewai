@@ -1,5 +1,5 @@
 -- CreateEnum
-CREATE TYPE "NodeType" AS ENUM ('Text', 'Preview', 'File', 'Export', 'Toggle', 'Crawler', 'Resize', 'Agent', 'ThreeD', 'Painter', 'Blur', 'Compositor', 'Describer', 'Router', 'Note', 'Number', 'GPTImage1', 'LLM');
+CREATE TYPE "NodeType" AS ENUM ('Text', 'Preview', 'File', 'Export', 'Toggle', 'Crawler', 'Resize', 'Agent', 'ThreeD', 'Painter', 'Blur', 'Compositor', 'Describer', 'Router', 'Note', 'Number', 'ImageGen', 'LLM');
 
 -- CreateEnum
 CREATE TYPE "DataType" AS ENUM ('Text', 'Number', 'Boolean', 'Image', 'Video', 'Audio', 'File', 'Mask');

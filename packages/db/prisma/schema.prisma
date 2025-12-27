@@ -30,7 +30,7 @@ enum NodeType {
   Note
   Number
 
-  GPTImage1
+  ImageGen
   LLM
 }
 
@@ -331,4 +331,7 @@ model FileAsset {
 
   user            User         @relation(fields: [userId], references: [id], onDelete: Cascade)
   userId          String
+
+  // Whether or not user is uploaded (true) or AI generated/System generated (false)
+  isUploaded      Boolean     @default(true)
 }

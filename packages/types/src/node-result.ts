@@ -51,7 +51,7 @@ import type { DataType, FileAsset } from "@gatewai/db";
     outputs: { items: [OutputItem<"Image">] }[];
   }
 
-  export type GPTImage1Result = ImagesResult;
+  export type ImageGenResult = ImagesResult;
 
   export type MaskResult = MultipleOutputResult & {
     outputs: { items: [OutputItem<"Mask">] }[];
@@ -94,7 +94,7 @@ import type { DataType, FileAsset } from "@gatewai/db";
     | ToggleResult
     | FileResult
     | ImagesResult
-    | GPTImage1Result
+    | ImageGenResult
     | MaskResult
     | NumberResult
     | LLMResult

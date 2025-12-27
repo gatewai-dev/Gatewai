@@ -2,7 +2,7 @@
 import { memo, useMemo } from 'react';
 import { type NodeProps } from '@xyflow/react';
 import { Button, type ButtonProps } from '@/components/ui/button';
-import { PlayIcon } from 'lucide-react';
+import { ForwardIcon, PlayIcon } from 'lucide-react';
 import { useCanvasCtx } from '../ctx/canvas-ctx';
 import type { AnyNode } from '../nodes/node-props';
 import { useTaskManagerCtx } from '../ctx/task-manager-ctx';
@@ -25,7 +25,7 @@ const RunNodeButton = memo(({nodeProps, ...buttonProps}: RunNodeButtonProps) => 
         disabled={isNodeRunning}
         onClick={() => runNodes([nodeProps.id])} size="sm">
         {!isNodeRunning && (<>
-          <PlayIcon />
+          <ForwardIcon />
           <span className='text-xs'>Run Node</span>
         </>)}
         {isNodeRunning && (<>

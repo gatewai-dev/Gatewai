@@ -1,7 +1,7 @@
 
 import { TextNodeComponent } from './text';
 import { LlmNodeComponent } from './llm';
-import { GPTImage1NodeComponent } from './gpt-image';
+import { ImageGenNodeComponent } from './image-gen';
 import { BlurNodeComponent } from './blur';
 import { FileNodeComponent } from './file';
 import { ResizeNodeComponent } from './resize';
@@ -11,7 +11,7 @@ import { ResizeNodeComponent } from './resize';
 const nodeTypes = {
   LLM: LlmNodeComponent,
   Text: TextNodeComponent,
-  GPTImage1: GPTImage1NodeComponent,
+  ImageGen: ImageGenNodeComponent,
   Blur: BlurNodeComponent,
   Resize: ResizeNodeComponent,
   File: FileNodeComponent,
@@ -23,7 +23,7 @@ export {
   LlmNodeComponent,
   TextNodeComponent,
   ResizeNodeComponent,
-  GPTImage1NodeComponent,
+  ImageGenNodeComponent,
   BlurNodeComponent,
   FileNodeComponent,
 };

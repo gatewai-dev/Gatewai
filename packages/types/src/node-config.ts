@@ -10,7 +10,7 @@ const ImageNodeConfigSchema = z.object({}).strict();
 
 // File Node
 const FileNodeConfigSchema = z.object({}).strict();
-const GPTImage1NodeConfigSchema = z.object({}).strict();
+const ImageGenNodeConfigSchema = z.object({}).strict();
 
 // Crawler Node
 const CrawlerNodeConfigSchema = z.object({
@@ -86,7 +86,7 @@ const ResizeNodeConfigSchema = z.object({
 
 // Main node schema
 const NodeConfigSchema = z.union([
-  GPTImage1NodeConfigSchema,
+  ImageGenNodeConfigSchema,
   LLMNodeConfigSchema,
   TextNodeConfigSchema,
   ImageNodeConfigSchema,
@@ -122,7 +122,7 @@ type RouterNodeConfig = z.infer<typeof RouterNodeConfigSchema>;
 type ArrayNodeConfig = z.infer<typeof ArrayNodeConfigSchema>;
 type ResizeNodeConfig = z.infer<typeof ResizeNodeConfigSchema>;
 type AllNodeConfig = z.infer<typeof NodeConfigSchema>;
-type GPTImage1Config = z.infer<typeof GPTImage1NodeConfigSchema>;
+type ImageGenConfig = z.infer<typeof ImageGenNodeConfigSchema>;
 
 export {
   NodeConfigSchema,
@@ -159,8 +159,6 @@ export {
   type ArrayNodeConfig,
   type ResizeNodeConfig,
   type AllNodeConfig,
-  type GPTImage1Config,
-
-  BLUR_TYPES,
+  type ImageGenConfig,
   LLM_NODE_MODELS,
 };

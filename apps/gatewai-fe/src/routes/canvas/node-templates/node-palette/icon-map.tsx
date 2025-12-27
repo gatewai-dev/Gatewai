@@ -20,6 +20,6 @@ export const iconMap: Record<string, React.ComponentType<{ className?: string }>
   // Add fallbacks or additional mappings as needed for other NodeTypes
   Note: FileText,
   Number: MarsStroke,
-  GPTImage1: ImageUp,
+  ImageGen: ImageUp,
   LLM: MessageSquare,
 };

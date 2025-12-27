@@ -4,7 +4,7 @@ import type {
   FileResult,
 } from '@gatewai/types';
 import { useAppSelector } from '@/store';
-import { makeSelectNodeById, updateNodeEntity, updateNodeResult } from '@/store/nodes';
+import { makeSelectNodeById, updateNodeResult } from '@/store/nodes';
 import { BaseNode } from '../base';
 import { MediaContent } from '../media-content';
 import type { FileNode } from '../node-props';
@@ -13,7 +13,7 @@ import { useAppDispatch } from '@/store';
 import { UploadDropzone } from '@/components/util/file-dropzone';
 import { toast } from 'sonner';
 import { UploadButton } from '@/components/util/file-button';
-import type { UploadFileNodeAssetRPC, UserAssetsUploadRPC } from '@/rpc/types';
+import type { UploadFileNodeAssetRPC } from '@/rpc/types';
 
 // Extract types that have specific success properties
 type SuccessfulUploadFileNodeAssetRPC = Extract<

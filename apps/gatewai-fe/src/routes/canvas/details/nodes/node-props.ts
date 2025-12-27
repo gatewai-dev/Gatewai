@@ -1,10 +1,10 @@
 import { Union } from '../../../../../../../packages/db/generated/client/internal/prismaNamespace';
-import type { AgentNodeConfig, ThreeDResult, ArrayNodeConfig, BlurNodeConfig, BlurResult, CompositorNodeConfig, CompositorResult, PainterResult, DescriberNodeData, FileNodeData, FileResult, GPTImage1Data, GPTImage1Result, LLMNodeData, MaskNodeData, MaskResult, NodeWithFileType, PainterNodeData, ResizeNodeData, ResizeResult, RouterNodeData, TextNodeData, TextResult, ThreeDNodeData, ThreeDNodeConfig, MaskNodeConfig, FileNodeConfig, GPTImage1Config, LLMNodeConfig, TextNodeConfig, RouterNodeConfig, PainterNodeConfig } from "@gatewai/types";
+import type { AgentNodeConfig, ThreeDResult, ArrayNodeConfig, BlurNodeConfig, BlurResult, CompositorNodeConfig, CompositorResult, PainterResult, DescriberNodeData, FileNodeData, FileResult, ImageGenData, ImageGenResult, LLMNodeData, MaskNodeData, MaskResult, NodeWithFileType, PainterNodeData, ResizeNodeData, ResizeResult, RouterNodeData, TextNodeData, TextResult, ThreeDNodeData, ThreeDNodeConfig, MaskNodeConfig, FileNodeConfig, ImageGenConfig, LLMNodeConfig, TextNodeConfig, RouterNodeConfig, PainterNodeConfig } from "@gatewai/types";
 import { type Node } from '@xyflow/react';
 
 export type TextNode = Node<NodeWithFileType<TextNodeConfig, TextResult>, 'Text'>;
 export type LLMNode = Node<NodeWithFileType<LLMNodeConfig, TextResult>, 'LLM'>;
-export type GPTImage1Node = Node<NodeWithFileType<GPTImage1Config, GPTImage1Result>, 'GPTImage1'>;
+export type ImageGenNode = Node<NodeWithFileType<ImageGenConfig, ImageGenResult>, 'ImageGen'>;
 export type FileNode = Node<NodeWithFileType<FileNodeConfig, FileResult>, 'File'>;
 export type AgentNode = Node<NodeWithFileType<AgentNodeConfig>, 'Agent'>;
 export type ThreeDNode = Node<NodeWithFileType<ThreeDNodeConfig, ThreeDResult>, 'ThreeD'>;
@@ -20,7 +20,7 @@ export type ResizeNode = Node<NodeWithFileType<ResizeNodeData, ResizeResult>, 'R
 export type AnyNode =
     TextNode |
     LLMNode |
-    GPTImage1Node |
+    ImageGenNode |
     FileNode |
     AgentNode |
     ThreeDNode |

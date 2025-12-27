@@ -36,3 +36,8 @@ export async function applyResize(buffer: Buffer, width: number, height: number)
   if (width <= 0 && height <= 0) return buffer;
   return sharp(buffer).resize(width, height).toBuffer();
 }
+
+export async function getImageDimensions(buffer: Buffer): Promise<{ width: number; height: number }> {
+  const metadata = await sharp(buffer).metadata();
+  return { width: metadata.width ?? 0, height: metadata.height ?? 0 };
+}

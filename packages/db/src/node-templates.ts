@@ -1,4 +1,4 @@
-import { DataType, HandleType, NodeType, ProcessEnvironment, type PrismaClient } from "./client";
+import { DataType, HandleType, NodeType, type PrismaClient } from "./client";
 
 
 
@@ -9,7 +9,7 @@ export async function SEED_createNodeTemplates(prisma: PrismaClient) {
       type: NodeType.Text,
       displayName: 'Text',
       description: 'A basic text node',
-      processEnvironment: ProcessEnvironment.Server,
+      
       tokenPrice: 0.0,
       variableInputs: false,
       variableOutputs: false,
@@ -30,7 +30,7 @@ export async function SEED_createNodeTemplates(prisma: PrismaClient) {
       type: NodeType.Preview,
       displayName: 'Preview',
       description: 'A preview node for files like video or image',
-      processEnvironment: ProcessEnvironment.Browser,
+      
       tokenPrice: 0.0,
       variableInputs: false,
       variableOutputs: false,
@@ -51,7 +51,7 @@ export async function SEED_createNodeTemplates(prisma: PrismaClient) {
       type: NodeType.File,
       displayName: 'File',
       description: 'A file output node',
-      processEnvironment: ProcessEnvironment.Server,
+      
       tokenPrice: 0.0,
       variableInputs: false,
       variableOutputs: false,
@@ -72,7 +72,7 @@ export async function SEED_createNodeTemplates(prisma: PrismaClient) {
       type: NodeType.Export,
       displayName: 'Export',
       description: 'An export node for files',
-      processEnvironment: ProcessEnvironment.Server,
+      
       tokenPrice: 0.0,
       variableInputs: false,
       variableOutputs: false,
@@ -93,7 +93,7 @@ export async function SEED_createNodeTemplates(prisma: PrismaClient) {
       type: NodeType.Toggle,
       displayName: 'Toggle',
       description: 'A toggle node for boolean output',
-      processEnvironment: ProcessEnvironment.Browser,
+      
       tokenPrice: 0.0,
       variableInputs: false,
       variableOutputs: false,
@@ -114,7 +114,7 @@ export async function SEED_createNodeTemplates(prisma: PrismaClient) {
       type: NodeType.Crawler,
       displayName: 'Crawler',
       description: 'A crawler node with text in/out',
-      processEnvironment: ProcessEnvironment.Server,
+      
       tokenPrice: 0.0,
       variableInputs: false,
       variableOutputs: false,
@@ -136,7 +136,7 @@ export async function SEED_createNodeTemplates(prisma: PrismaClient) {
       type: NodeType.Resize,
       displayName: 'Resize',
       description: 'A resize node for video/image files',
-      processEnvironment: ProcessEnvironment.Browser,
+      
       tokenPrice: 0.0,
       variableInputs: false,
       variableOutputs: false,
@@ -158,7 +158,7 @@ export async function SEED_createNodeTemplates(prisma: PrismaClient) {
       type: NodeType.Agent,
       displayName: 'Agent',
       description: 'A generalist agent capable of generating Text / Image / Audio / Video',
-      processEnvironment: ProcessEnvironment.Server,
+      
       tokenPrice: 0.0,
       variableInputs: true,
       variableOutputs: false,
@@ -180,7 +180,7 @@ export async function SEED_createNodeTemplates(prisma: PrismaClient) {
       type: NodeType.Painter,
       displayName: 'Painter',
       description: 'A painter node with image input and mask/image outputs',
-      processEnvironment: ProcessEnvironment.Browser,
+      
       tokenPrice: 0.0,
       variableInputs: false,
       variableOutputs: false,
@@ -203,7 +203,7 @@ export async function SEED_createNodeTemplates(prisma: PrismaClient) {
       type: NodeType.Blur,
       displayName: 'Blur',
       description: 'A blur effect node',
-      processEnvironment: ProcessEnvironment.Browser,
+      
       tokenPrice: 0.0,
       variableInputs: false,
       variableOutputs: false,
@@ -227,7 +227,7 @@ export async function SEED_createNodeTemplates(prisma: PrismaClient) {
       type: NodeType.Compositor,
       displayName: 'Compositor',
       description: 'A compositor node with multiple image inputs',
-      processEnvironment: ProcessEnvironment.Browser,
+      
       tokenPrice: 0.0,
       variableInputs: true,
       variableOutputs: false,
@@ -252,7 +252,7 @@ export async function SEED_createNodeTemplates(prisma: PrismaClient) {
       type: NodeType.Describer,
       displayName: 'Describer',
       description: 'A describer node for images',
-      processEnvironment: ProcessEnvironment.Server,
+      
       tokenPrice: 0.0,
       variableInputs: false,
       variableOutputs: false,
@@ -274,7 +274,7 @@ export async function SEED_createNodeTemplates(prisma: PrismaClient) {
       type: NodeType.Router,
       displayName: 'Router',
       description: 'A router node with text in/out',
-      processEnvironment: ProcessEnvironment.Server,
+      
       tokenPrice: 0.0,
       variableInputs: false,
       variableOutputs: false,
@@ -296,7 +296,7 @@ export async function SEED_createNodeTemplates(prisma: PrismaClient) {
       type: NodeType.Note,
       displayName: 'Sticky Note',
       description: 'A sticky note',
-      processEnvironment: ProcessEnvironment.Browser,
+      
       tokenPrice: 0.0,
       variableInputs: false,
       variableOutputs: false,
@@ -318,7 +318,7 @@ export async function SEED_createNodeTemplates(prisma: PrismaClient) {
       type: NodeType.Number,
       displayName: 'Number',
       description: 'A number output node',
-      processEnvironment: ProcessEnvironment.Server,
+      
       tokenPrice: 0.0,
       variableInputs: false,
       variableOutputs: false,
@@ -333,13 +333,12 @@ export async function SEED_createNodeTemplates(prisma: PrismaClient) {
     }
   });
 
-  // GPTImage1: one text input, one image output
+  // ImageGen: one text input, one image output
   await prisma.nodeTemplate.create({
     data: {
-      type: NodeType.GPTImage1,
-      displayName: 'GPT Image 1',
-      description: 'A GPT image generation node',
-      processEnvironment: ProcessEnvironment.Server,
+      type: NodeType.ImageGen,
+      displayName: 'Image Generation',
+      description: 'Generate images from text prompts and reference images',
       tokenPrice: 0.0,
       variableInputs: false,
       variableOutputs: false,
@@ -348,6 +347,7 @@ export async function SEED_createNodeTemplates(prisma: PrismaClient) {
       templateHandles: {
         create: [
           { type: HandleType.Input, dataTypes: [DataType.Text], required: true, label: 'Prompt' },
+          { type: HandleType.Input, dataTypes: [DataType.Image], required: false, label: 'Reference Image 1' },
           { type: HandleType.Output, dataTypes: [DataType.Image], label: 'Image' }
         ]
       },
@@ -365,7 +365,7 @@ export async function SEED_createNodeTemplates(prisma: PrismaClient) {
       type: NodeType.LLM,
       displayName: 'LLM',
       description: 'Run a LLM model',
-      processEnvironment: ProcessEnvironment.Server,
+      
       tokenPrice: 0.0,
       variableInputs: false,
       variableOutputs: false,

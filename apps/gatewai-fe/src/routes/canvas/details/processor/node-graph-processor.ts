@@ -1,5 +1,5 @@
 import { EventEmitter } from 'events';
-import type { NodeResult, FileData, LLMResult, TextResult, FileResult } from '@gatewai/types';
+import type { NodeResult, FileData, LLMResult, TextResult, FileResult, ImageGenResult } from '@gatewai/types';
 import type { EdgeEntityType } from '@/store/edges';
 import type { NodeEntityType } from '@/store/nodes';
 import { pixiProcessor } from './pixi-service';
@@ -165,6 +165,14 @@ export class NodeGraphProcessor extends EventEmitter {
       };
 
       return newResult;
+    });
+
+    // File processor (no computation, just return existing; cache based on config if needed)
+    this.registerProcessor('ImageGen', async ({ node }) => {
+      // If no cached, use existing node.result (assuming it's set)
+      const result = node.result as unknown as ImageGenResult;
+      if (!result) throw new Error('No result for ImageGen node');
+      return result;
     });
 
     // File processor (no computation, just return existing; cache based on config if needed)

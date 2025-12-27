@@ -21,7 +21,7 @@ import { createNodeEntity } from '@/store/nodes';
 import type { CanvasDetailsRPC, NodeTemplateListItemRPC, PatchCanvasRPCParams } from '@/rpc/types';
 import { createNode, onEdgeChange, onNodeChange, selectRFEdges, selectRFNodes, setEdges, setNodes } from '@/store/rfstate';
 import { toast } from 'sonner';
-import { addManyHandleEntities, deleteManyHandleEntity, handleSelectors, setAllHandleEntities } from '@/store/handles';
+import { addManyHandleEntities, createHandleEntity, deleteManyHandleEntity, handleSelectors, setAllHandleEntities, type HandleEntityType } from '@/store/handles';
 import { setAllEdgeEntities, type EdgeEntityType } from '@/store/edges';
 import { useStore } from 'react-redux';
 import { useGetCanvasDetailsQuery, usePatchCanvasMutation, useProcessNodesMutationMutation } from '@/store/canvas';
@@ -44,7 +44,8 @@ interface CanvasContextType {
   onNodeConfigUpdate: (payload: {
     id: string;
     newConfig: Partial<AllNodeConfig>;
-}) => void
+  }) => void
+  createNewHandle: (newHandle: HandleEntityType) => void;
 }
 
 const CanvasContext = createContext<CanvasContextType | undefined>(undefined);
@@ -175,6 +176,11 @@ const CanvasProvider = ({
       save();
     }, 2500);
   }, [save]);
+
+  const createNewHandle = useCallback((newHandle: HandleEntityType) => {
+    dispatch(createHandleEntity(newHandle));
+    scheduleSave();
+  }, [dispatch, scheduleSave]);
 
   const onNodesChange = useCallback((changes: NodeChange<Node>[]) => {
     dispatch(onNodeChange(changes));
@@ -542,7 +548,8 @@ const CanvasProvider = ({
     createNewNode,
     duplicateNode,
     onNodesDelete,
-    onNodeConfigUpdate
+    onNodeConfigUpdate,
+    createNewHandle
   }), [
     canvasDetailsResponse?.canvas,
     onNodesChange,
@@ -554,7 +561,8 @@ const CanvasProvider = ({
     createNewNode,
     duplicateNode,
     onNodesDelete,
-    onNodeConfigUpdate
+    onNodeConfigUpdate,
+    createNewHandle
   ]);
 
   return <CanvasContext.Provider value={value}>{children}</CanvasContext.Provider>;
