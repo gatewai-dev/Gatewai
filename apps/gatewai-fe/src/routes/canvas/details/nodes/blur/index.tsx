@@ -16,16 +16,14 @@ const ImagePlaceholder = () => (
 const BlurNodeComponent = memo((props: NodeProps<BlurNode>) => {
   const node = useAppSelector(makeSelectNodeById(props.id));
   const canvasRef = useRef<HTMLCanvasElement | null>(null);
-  const tempImageUrlRef = useRef<string | null>(null);
   
   // Get processed result from processor
-  const { isProcessing, error } = useNodeResult(props.id);
+  const { result, isProcessing, error } = useNodeResult(props.id);
   const imageUrl = useNodeImageUrl(props.id);
-  const imageToDisplay = imageUrl ?? tempImageUrlRef.current;
-  tempImageUrlRef.current = imageToDisplay;
+  
   // Draw to canvas when result is ready
   useEffect(() => {
-    if (!imageToDisplay || !canvasRef.current) return;
+    if (!imageUrl || !canvasRef.current) return;
     
     const canvas = canvasRef.current;
     const ctx = canvas.getContext('2d');
@@ -33,7 +31,7 @@ const BlurNodeComponent = memo((props: NodeProps<BlurNode>) => {
     
     const img = new Image();
     img.crossOrigin = 'anonymous';
-    img.src = imageToDisplay;
+    img.src = imageUrl;
     
     img.onload = () => {
       canvas.width = img.width;
@@ -43,12 +41,12 @@ const BlurNodeComponent = memo((props: NodeProps<BlurNode>) => {
       ctx.clearRect(0, 0, canvas.width, canvas.height);
       ctx.drawImage(img, 0, 0);
     };
-  }, [imageToDisplay]);
+  }, [imageUrl]);
   console.log('BlurNodeComponent render', { imageUrl, isProcessing, error });
   return (
     <BaseNode {...props}>
       <div className="flex flex-col gap-3">
-        {!imageToDisplay ? (
+        {!result ? (
           <ImagePlaceholder />
         ) : (
           <div className="w-full overflow-hidden rounded bg-black/5 min-h-[100px] relative">

@@ -334,9 +334,6 @@ export class NodeGraphProcessor extends EventEmitter {
   }
 
   private markDirty(nodeId: string, cascade: boolean): void {
-    const node = this.nodes.get(nodeId);
-    if (!node) return;
-
     const state = this.getOrCreateNodeState(nodeId);
     
     // Cancel if already processing
@@ -349,7 +346,7 @@ export class NodeGraphProcessor extends EventEmitter {
     state.result = null; // Added: Invalidate previous result on dirty
     
     // Cascade to downstream nodes
-    if (cascade && !(node.template?.isTerminalNode ?? false)) {
+    if (cascade) {
       const downstream = Array.from(this.dependencyGraph.get(nodeId) ?? new Set());
       downstream.forEach(downstreamId => this.markDirty(downstreamId, true));
     }
