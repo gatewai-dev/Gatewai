@@ -3,6 +3,7 @@ import { type NodeEntityType } from "@/store/nodes";
 import type { BlurNodeConfig } from "@gatewai/types";
 import { memo, useCallback, useEffect, useState } from "react";
 import { useCanvasCtx } from "../../ctx/canvas-ctx";
+import { Label } from "@/components/ui/label";
 
 const BlurValueSlider = memo(({node}: {node: NodeEntityType}) => {
   const config: BlurNodeConfig = node.config as BlurNodeConfig;
@@ -29,8 +30,8 @@ const BlurValueSlider = memo(({node}: {node: NodeEntityType}) => {
   }, [localSize, node.id, onNodeConfigUpdate]);
   
   return (
-    <div className="flex flex-col gap-1 flex-1">
-      <label className="text-xs text-gray-600">Blur Size: {localSize}</label>
+    <div className="flex gap-2 flex-1">
+      <Label className="text-xs text-gray-600">Size</Label>
       <Slider
         value={[localSize]}
         max={100}

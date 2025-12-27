@@ -29,7 +29,6 @@ class PixiProcessorService {
 
     // 1. Load the Texture
     const texture = await Assets.load(imageUrl);
-    console.log({texture, imageUrl})
     
     // 2. Setup the Scene
     const sprite = new Sprite(texture);
