@@ -55,26 +55,32 @@ const tasksRouter = new Hono<{Variables: AuthHonoTypes}>({
         })
         return c.json(batches);
 })
-.get('/:batchId',
-    zValidator('param', z.object({
-        batchId: z.string(),
+.get('/filterby-batch',
+    zValidator('query', z.object({
+        batchId: z.array(z.string()).min(1),
     })),
     async (c) => {
         const user = c.get('user');
-        const batchId = c.req.param('batchId');
+        const batchIds = c.req.queries('batchId');
 
         const whereClause: TaskBatchWhereInput = {
-            id: batchId,
+            id: { in: batchIds },
             userId: user!.id,
         }
 
-        const batch = await prisma.taskBatch.findFirstOrThrow({
+        const batches = await prisma.taskBatch.findMany({
             where: whereClause,
             include: {
-                tasks: true,
+                tasks: {
+                    include: {
+                        node: true,
+                    }
+                },
             }
         })
-        return c.json(batch);
+        return c.json({
+            batches,
+        });
     })
 
 export { tasksRouter };

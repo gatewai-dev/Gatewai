@@ -9,10 +9,10 @@ import { GetCanvasEntities } from "../../repositories/canvas.js";
 import { NodeWFProcessor } from "../../tasks/node.js";
 
 const NodeTypes = [
-        'Text', 'Preview', 'File', 'Export',
-        'Toggle', 'Crawler', 'Resize', 'Agent', 'ThreeD',
-        'Painter', 'Blur', 'Compositor', 'Describer', 'Router',
-        'Note', 'Number', 'ImageGen', 'LLM'
+    'Text', 'Preview', 'File', 'Export',
+    'Toggle', 'Crawler', 'Resize', 'Agent', 'Remote Agent', 'ThreeD',
+    'Painter', 'Blur', 'Compositor', 'Describer', 'Router',
+    'Note', 'Number', 'ImageGen', 'LLM'
 ] as const;
 
 const DataTypes = ["Text", "Number","Boolean", "Image", "Video", "Audio", "File", "Mask"] as const
@@ -586,8 +586,8 @@ const canvasRoutes = new Hono<{Variables: AuthHonoTypes}>({
 
         const wfProcessor = new NodeWFProcessor(prisma);
 
-        // Starts processing but not await.
-        // Frontend starts polling when it get's response.
+        // Starts processing but does not await.
+        // Frontend starts polling when it get's batch info response.
         const taskBatch = await wfProcessor.processSelectedNodes(canvasId, validated.node_ids, user);
 
         return c.json(taskBatch, 201);

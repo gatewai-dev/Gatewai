@@ -37,5 +37,5 @@ export type UploadFileNodeAssetRPCParams = InferRequestType<typeof rpcClient.api
 export type ActiveCanvasBatchListRPC = InferResponseType<typeof rpcClient.api.v1.tasks[":canvasId"]["$get"]>;
 export type ActiveCanvasBatchListRPCParams = InferRequestType<typeof rpcClient.api.v1.tasks[":canvasId"]["$get"]>;
 
-export type BatchDetailsRPC = InferResponseType<typeof rpcClient.api.v1.tasks[":batchId"]["$get"]>;
-export type BatchDetailsRPCParams = InferRequestType<typeof rpcClient.api.v1.tasks[":batchId"]["$get"]>;
+export type BatchDetailsRPC = InferResponseType<typeof rpcClient.api.v1.tasks["filterby-batch"]["$get"]>;
+export type BatchDetailsRPCParams = InferRequestType<typeof rpcClient.api.v1.tasks["filterby-batch"]["$get"]>;

@@ -21,7 +21,7 @@ export const tasksAPI = createApi({
         }),
         getBatchDetails: build.query<BatchDetailsRPC, BatchDetailsRPCParams>({
             queryFn: async (params) => {
-                const response = await rpcClient.api.v1.tasks[':batchId'].$get(params);
+                const response = await rpcClient.api.v1.tasks["filterby-batch"].$get(params);
                 if (!response.ok) {
                     return { error: { status: response.status, data: await response.text() } };
                 }
@@ -34,4 +34,4 @@ export const tasksAPI = createApi({
 
 // Export hooks for usage in functional components, which are
 // auto-generated based on the defined endpoints
-export const { useGetActiveCanvasBatchesQuery, useGetBatchDetailsQuery } = tasksAPI
+export const { useGetActiveCanvasBatchesQuery, useGetBatchDetailsQuery, useLazyGetBatchDetailsQuery } = tasksAPI

@@ -1,31 +1,12 @@
-import { createContext, useContext, useEffect, useMemo, useState, type Dispatch, type PropsWithChildren, type SetStateAction } from 'react';
-import type { Canvas, Node, TaskBatch } from '@gatewai/db';
-import { useGetActiveCanvasBatchesQuery } from '@/store/tasks';
-import type { ActiveCanvasBatchListRPC, ActiveCanvasBatchListRPCParams } from '@/rpc/types';
+import { createContext, useContext, useMemo, useState, type Dispatch, type PropsWithChildren, type SetStateAction } from 'react';
+import type { Canvas, Node } from '@gatewai/db';
+import { useLazyGetBatchDetailsQuery } from '@/store/tasks';
+import type { BatchDetailsRPC, BatchDetailsRPCParams } from '@/rpc/types';
 
+type BatchNodeData = BatchDetailsRPC["batches"][number]["tasks"][number];
 interface TaskManagerContextType {
-  taskBatchs: ActiveCanvasBatchListRPC | undefined;
-  isError: boolean;
-  isLoading: boolean;
-  isFetching: boolean;  
-  pollingInterval: number;
-  setPollingInterval: Dispatch<SetStateAction<number>>
-  tasksFilters: ActiveCanvasBatchListRPCParams["query"];
-  setTaskFilters: Dispatch<SetStateAction<{
-    status?: string | undefined;
-    fromDatetime?: string | undefined;
-  }>>;
-  initiatedBatches: TaskBatch[];
-  setInitiatedBatches: Dispatch<SetStateAction<{
-    id: string;
-    userId: string;
-    createdAt: Date;
-    updatedAt: Date;
-    canvasId: string;
-    finishedAt: Date | null;
-  }[]>>;
-
-  nodeTaskStatus: Record<Node["id"], ActiveCanvasBatchListRPC[number]["tasks"][number]>;
+  addBatchId: (batchId: string) => void
+  nodeTaskStatus: Record<Node["id"], BatchNodeData[]>;
 }
 
 const TaskManagerContext = createContext<TaskManagerContextType | undefined>(undefined);
@@ -33,62 +14,51 @@ const TaskManagerContext = createContext<TaskManagerContextType | undefined>(und
 
 const TaskManagerProvider = ({
   children,
-  canvasId,
 }: PropsWithChildren<{canvasId: Canvas["id"]}>) => {
-  const [tasksFilters, setTaskFilters] = useState<ActiveCanvasBatchListRPCParams["query"]>({
-    fromDatetime: undefined,
-    taskStatus: ['EXECUTING', 'QUEUED', 'FAILED'],
+  const [pollingInterval, setPollingInterval] = useState(0);
+  /**
+   * The batches created by user's actions on the canvas
+   */
+  const [localBatches, setLocalBatches] = useState<BatchDetailsRPC["batches"]>([]);
+  const [batchParams, setBatchParams] = useState<BatchDetailsRPCParams>({
+    query: {
+      batchId: [] as string[],
+    }
   })
 
-  const [pollingInterval, setPollingInterval] = useState(0);
-  const [initiatedBatches, setInitiatedBatches] = useState<TaskBatch[]>([]);
+  const addBatchId = (batchId: string) => {
+    setBatchParams({
+      query: {
+        batchId: Array.from(new Set([...batchParams.query.batchId, batchId])),
+      }
+    })
+    setPollingInterval(2000);
+  }
 
-  const {
-    data: taskBatchs,
-    isLoading,
-    isFetching,
-    isError,
-  } = useGetActiveCanvasBatchesQuery({
-    param: {
-      canvasId
-    },
-    query: tasksFilters,
-  }, {
-    refetchOnFocus: true,
-    pollingInterval,
-  });
+  const [trigger, batchList, lastPromiseInfo] = useLazyGetBatchDetailsQuery();
 
 
-  useEffect(() => {
-    if (taskBatchs?.length === 0 && pollingInterval !== 0) {
-      setPollingInterval(0);
-    }
-  }, [taskBatchs?.length, pollingInterval]);
-  
   const nodeTaskStatus = useMemo(() => {
-    const status: Record<Node["id"], ActiveCanvasBatchListRPC[number]["tasks"][number]> = {};
-    taskBatchs?.forEach((batch) => {
-      batch.tasks.forEach((task) => {
+    const status: Record<Node["id"], BatchNodeData[]> = {};
+    batchList.data?.batches?.forEach((batchDetails) => {
+      batchDetails?.tasks.forEach((task) => {
         if (task.nodeId) {
-          status[task.nodeId] = task;
+          if (status[task.nodeId]) {
+            status[task.nodeId].push(task);
+          } else {
+            status[task.nodeId] = [task];
+          }
         }
       })
-    })
+    });
 
     return status;
-  }, [taskBatchs])
+  }, [batchList])
 
   const value: TaskManagerContextType = {
-    taskBatchs,
-    isError,
-    isLoading,
-    isFetching,
     pollingInterval,
     setPollingInterval,
-    tasksFilters,
-    setTaskFilters,
-    initiatedBatches,
-    setInitiatedBatches,
+    addBatchId,
     nodeTaskStatus
   };
 
