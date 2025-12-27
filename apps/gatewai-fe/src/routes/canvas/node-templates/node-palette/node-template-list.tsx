@@ -1,6 +1,7 @@
 import type { NodeTemplateListRPC } from "@/rpc/types";
 import { NodeItem } from "./node-item";
 import { useNodePalette } from "./node-palette.ctx";
+import type { DataType } from "@gatewai/db";
 
 interface NodeListProps {
   templates: NodeTemplateListRPC;
@@ -26,13 +27,13 @@ export function NodeTemplateList({ templates }: NodeListProps) {
 
   if (fromTypes.length > 0) {
     filtered = filtered.filter((t) =>
-      t.templateHandles.some((inp) => fromTypes.includes(inp.dataType) && inp.type === "Input")
+      t.templateHandles.some((inp) => fromTypes.some(ft => inp.dataTypes.includes(ft as DataType)) && inp.type === "Input")
     );
   }
 
   if (toTypes.length > 0) {
     filtered = filtered.filter((t) =>
-      t.templateHandles.some((out) => toTypes.includes(out.dataType) && out.type === "Output")
+      t.templateHandles.some((out) => toTypes.some(ft => out.dataTypes.includes(ft as DataType)) && out.type === "Output")
     );
   }
 
@@ -82,7 +83,7 @@ export function NodeTemplateList({ templates }: NodeListProps) {
             .map(([sub, temps]) => (
               <div key={sub} className="mb-4">
                 {sub && <h3 className="text-lg font-semibold mb-2">{sub}</h3>}
-                <div className="grid grid-cols-2 gap-4">
+                <div className="grid grid-cols-1 gap-4">
                   {sortTemplates(temps, sortBy).map((t) => (
                     <NodeItem key={t.id} template={t} />
                   ))}
