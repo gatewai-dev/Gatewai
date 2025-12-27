@@ -13,7 +13,7 @@ function AuthGuard({children}: {children: ReactNode}) {
     }
 
     if (!session) {
-        return <Navigate to="signin" />
+        return <Navigate to="/signin" />
     }
     return (<>{children}</>);
 }
