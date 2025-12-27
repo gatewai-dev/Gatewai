@@ -156,6 +156,16 @@ model Node {
   }
   */
   result         Json?           // Node processing result
+  /*
+  Error {
+    message: string;
+    code?: string;
+    details?: any;
+    taskId?: string;
+    batchId?: string;
+  }
+  */
+  error          Json?           // Error message if processing failed
   // Visual properties
   zIndex         Int?            // For layering
   // Timestamps - DB managed

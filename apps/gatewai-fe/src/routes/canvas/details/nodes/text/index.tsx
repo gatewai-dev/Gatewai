@@ -20,7 +20,7 @@ const TextNodeComponent = memo((props: NodeProps<TextNode>) => {
   };
 
   return (
-    <BaseNode {...props}>
+    <BaseNode {...props} className='nowheel'>
       <Textarea
         value={text}
         onChange={handleChange}

@@ -1,4 +1,4 @@
-import { memo, useMemo, type JSX, type ReactNode } from 'react';
+import { memo, useMemo, useSyncExternalStore, type JSX, type ReactNode } from 'react';
 import { Handle, Position, getBezierPath, type EdgeProps, type NodeProps, type Node, type ConnectionLineComponentProps, useEdges } from '@xyflow/react';
 import type { CanvasDetailsNode } from '@/rpc/types';
 import { useAppSelector } from '@/store';
@@ -9,17 +9,33 @@ import { makeSelectEdgeById } from '@/store/edges';
 import { useNodeInputValidation } from './hooks/use-node-input-validation';
 import { makeSelectAllNodeEntities } from '@/store/nodes';
 import type { NodeResult } from '@gatewai/types';
+import { cn } from '@/lib/utils';
+import { useMultipleNodeResults, useNodeResult, useProcessor } from '../processor/processor-ctx';
 
 const getColorForType = (type: string) => {
   return dataTypeColors[type] || { bg: 'bg-gray-500', stroke: 'stroke-gray-500', hex: '#6b7280', text: 'text-gray-500' };
 };
 
+
+
+const getActualType = (result: NodeResult | null, handleId: string) => {
+  if (!result) return null;
+  const selectedIndex = result.selectedOutputIndex ?? 0;
+  const output = result.outputs?.[selectedIndex];
+  if (!output) return null;
+  const item = output.items?.find((it) => it.outputHandleId === handleId);
+  return item?.type ?? null;
+};
+
 const BaseNode = memo((props: NodeProps<Node<CanvasDetailsNode>> & {
   children?: ReactNode;
+  className?: string;
 }) => {
   const { selected, type, id } = props;
   const handles = useAppSelector(makeSelectHandlesByNodeId(id));
-  const allNodes = useAppSelector(makeSelectAllNodeEntities);
+  const validationErrors = useNodeInputValidation(id);
+  const edges = useEdges();
+
   // 1. Separate and Sort Handles
   // We use useMemo to avoid re-sorting on every render unless data.handles changes
   const { inputs, outputs } = useMemo(() => {
@@ -31,36 +47,46 @@ const BaseNode = memo((props: NodeProps<Node<CanvasDetailsNode>> & {
     };
   }, [handles]);
 
-  const validationErrors = useNodeInputValidation(id);
-  const edges = useEdges();
+  const connectedSources = useMemo(() => {
+    const sources: Record<string, string> = {};
+    inputs.forEach(handle => {
+      const edge = edges.find(e => e.target === id && e.targetHandle === handle.id);
+      if (edge) {
+        sources[handle.id] = edge.source;
+      }
+    });
+    return sources;
+  }, [inputs, edges, id]);
 
-  const getActualType = (nodeId: string, handleId: string) => {
-    const node = allNodes[nodeId];
-    if (!node?.result) return null;
-    const result = node.result as unknown as NodeResult;
-    const selectedIndex = result.selectedOutputIndex ?? 0;
-    const output = result.outputs?.[selectedIndex];
-    if (!output) return null;
-    const item = output.items?.find((it) => it.outputHandleId === handleId);
-    return item?.type ?? null;
-  };
+  const allRelevantNodeIds = useMemo(() => {
+    const ids = new Set<string>([id]);
+    Object.values(connectedSources).forEach(s => ids.add(s));
+    return Array.from(ids);
+  }, [id, connectedSources]);
+
+  const nodeStates = useMultipleNodeResults(allRelevantNodeIds);
+
+  const ownResult = nodeStates[id]?.result ?? null;
 
   const nodeBackgroundColor = 'bg-background';
 
   return (
     <div
       tabIndex={0}
-      className={`relative drag-handle ${nodeBackgroundColor} rounded-2xl shadow-md w-full h-full transition-all duration-200 group
-        ${selected ? 'selected ring-primary/40 ring box-border' : ''}`}
+      className={cn(
+        `relative drag-handle ${nodeBackgroundColor} rounded-2xl shadow-md w-full h-full transition-all duration-200 group`,
+        {'selected ring-primary/40 ring box-border': selected},
+        props.className
+      )}
     >
       {inputs.map((handle, i) => {
         let actualType: string | null = null;
-        const isConnected = edges.some(edge => edge.target === id && edge.targetHandle === handle.id);
-        if (isConnected) {
-          const edge = edges.find(edge => edge.target === id && edge.targetHandle === handle.id);
-          if (edge) {
-            actualType = getActualType(edge.source, edge.sourceHandle!);
-          }
+        const edge = edges.find(edge => edge.target === id && edge.targetHandle === handle.id);
+        const isConnected = !!edge;
+        if (isConnected && edge) {
+          const sourceNodeId = edge.source;
+          const sourceResult = nodeStates[sourceNodeId]?.result ?? null;
+          actualType = getActualType(sourceResult, edge.sourceHandle!);
         }
         const primaryType = handle.dataTypes.length > 1 ? 'Any' : handle.dataTypes[0] || 'Any';
         const displayType = actualType ?? primaryType;
@@ -108,13 +134,13 @@ const BaseNode = memo((props: NodeProps<Node<CanvasDetailsNode>> & {
           </div>
           <NodeMenu {...props} />
         </div>
-        <div className='nodrag nopan nowheel pointer-events-auto! h-[calc(100%-1rem)]'>
+        <div className='nodrag nopan pointer-events-auto! h-[calc(100%-1rem)]'>
           {props.children}
         </div>
       </div>
 
       {outputs.map((handle, i) => {
-        const actualType = getActualType(id, handle.id);
+        const actualType = getActualType(ownResult, handle.id);
         const primaryType = handle.dataTypes.length > 1 ? 'Any' : handle.dataTypes[0] || 'Any';
         const displayType = actualType ?? primaryType;
         const color = getColorForType(displayType);
@@ -177,25 +203,14 @@ const CustomConnectionLine = memo(({
   });
 
   const handle = useAppSelector(makeSelectHandleById(fromHandle.id!));
-  const allNodes = useAppSelector(makeSelectAllNodeEntities);
-
-  const getActualType = (nodeId: string, handleId: string) => {
-    const node = allNodes[nodeId];
-    if (!node?.result) return null;
-    const result = node.result as unknown as NodeResult;
-    const selectedIndex = result.selectedOutputIndex ?? 0;
-    const output = result.outputs?.[selectedIndex];
-    if (!output) return null;
-    const item = output.items?.find((it) => it.outputHandleId === handleId);
-    return item?.type ?? null;
-  };
+  const { result } = useNodeResult(fromNode.id);
 
   if (!handle) {
     return <></>;
   }
 
   const primaryType = handle.dataTypes.length > 1 ? 'Any' : handle.dataTypes[0] || 'Any';
-  const actualType = handle.type === 'Output' ? getActualType(fromNode.id, fromHandle.id!) : null;
+  const actualType = handle.type === 'Output' ? getActualType(result, fromHandle.id!) : null;
   const displayType = actualType ?? primaryType;
   const color = getColorForType(displayType).hex;
 
@@ -258,18 +273,7 @@ const CustomEdge = memo(({
 
   const sourceHandle = useAppSelector(makeSelectHandleById(edge?.sourceHandleId))
   const targetHandle = useAppSelector(makeSelectHandleById(edge?.targetHandleId))
-  const allNodes = useAppSelector(makeSelectAllNodeEntities);
-
-  const getActualType = (nodeId: string, handleId: string) => {
-    const node = allNodes[nodeId];
-    if (!node?.result) return null;
-    const result = node.result as unknown as NodeResult;
-    const selectedIndex = result.selectedOutputIndex ?? 0;
-    const output = result.outputs?.[selectedIndex];
-    if (!output) return null;
-    const item = output.items?.find((it) => it.outputHandleId === handleId);
-    return item?.type ?? null;
-  };
+  const { result } = useNodeResult(source);
 
   if (!sourceHandle || !targetHandle) {
     return <g></g>;
@@ -277,13 +281,13 @@ const CustomEdge = memo(({
 
   const sourcePrimary = sourceHandle.dataTypes.length > 1 ? 'Any' : sourceHandle.dataTypes[0] || 'Any';
   const targetPrimary = targetHandle.dataTypes.length > 1 ? 'Any' : targetHandle.dataTypes[0] || 'Any';
-  const actualType = getActualType(source, sourceHandle.id);
+  const actualType = getActualType(result, sourceHandle.id);
   const sourceDisplay = actualType ?? sourcePrimary;
   const targetDisplay = actualType ?? targetPrimary;
   const sourceColor = getColorForType(sourceDisplay).hex;
   const targetColor = getColorForType(targetDisplay).hex;
   const gradientId = `gradient-${id}`;
-
+  console.log({sourceColor, targetColor});
   return (
     <g>
       <defs>
@@ -298,11 +302,10 @@ const CustomEdge = memo(({
           ...style,
           strokeWidth: 3,
         }}
-        className="react-flow__edge-path fill-none hover:stroke-[5px]! hover:opacity-80"
+        className="react-flow__edge-path fill-none hover:stroke-[15px]! hover:opacity-80"
         d={edgePath}
         stroke={`url(#${gradientId})`}
         markerEnd={markerEnd}
-        strokeDasharray="12 0.1"
       >
         <animate
           attributeName="stroke-dashoffset"

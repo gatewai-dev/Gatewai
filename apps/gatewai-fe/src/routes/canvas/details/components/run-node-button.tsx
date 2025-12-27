@@ -19,8 +19,9 @@ const RunNodeButton = memo(({nodeProps, ...buttonProps}: RunNodeButtonProps) => 
   const isNodeRunning = useMemo(() => {
     const hasProp = Object.hasOwn(nodeTaskStatus, nodeProps.id)
     if (hasProp) {
-      const status = nodeTaskStatus[nodeProps.id];
-      return status.status === "EXECUTING" || status.status === "QUEUED";
+      const nodeTasks = nodeTaskStatus[nodeProps.id];
+      const isStillExecuting = nodeTasks.find(status => status.status === "EXECUTING" || status.status === "QUEUED");
+      return !!isStillExecuting;
     }
     return false;
   }, [nodeProps.id, nodeTaskStatus])

@@ -202,6 +202,11 @@ export class NodeWFProcessor {
               error: err instanceof Error ? { message: err.message } : { message: 'Unknown error' },
             },
           });
+
+          await this.prisma.node.update({
+            where: { id: node.id },
+            data: { error: err instanceof Error ? { message: err.message } : { message: 'Unknown error' } },
+          });
         }
       }
 

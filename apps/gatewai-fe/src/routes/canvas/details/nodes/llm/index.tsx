@@ -24,7 +24,7 @@ const LlmNodeComponent = memo((props: NodeProps<LLMNode>) => {
 
   return (
     <BaseNode {...props}>
-      <div className='flex flex-col gap-2 items-end'>
+      <div className='flex flex-col gap-2 items-end nowheel'>
         {llmTextContent && <MarkdownRenderer markdown={llmTextContent} />}
         {!llmTextContent && (
           <div className='min-h-[200px] w-full bg-input max-h-full p-2'>

@@ -118,3 +118,44 @@ export function useProcessNode(nodeId: string) {
   const processor = useProcessor();
   return () => processor.processNode(nodeId);
 }
+
+export const useMultipleNodeResults = (nodeIds: string[]) => {
+  const processor = useProcessor();
+
+  const subscribe = (callback: () => void) => {
+    const listeners: (() => void)[] = [];
+    nodeIds.forEach((nodeId) => {
+      if (!nodeId) return;
+      const onProcessed = (data: { nodeId: string }) => {
+        if (data.nodeId === nodeId) callback();
+      };
+      const onError = (data: { nodeId: string }) => {
+        if (data.nodeId === nodeId) callback();
+      };
+      processor.on('node:processed', onProcessed);
+      processor.on('node:error', onError);
+      listeners.push(() => {
+        processor.off('node:processed', onProcessed);
+        processor.off('node:error', onError);
+      });
+    });
+    return () => listeners.forEach((unsub) => unsub());
+  };
+
+  const getSnapshot = () => {
+    const states: Record<string, { result: NodeResult | null; isProcessing: boolean; error: string | null }> = {};
+    nodeIds.forEach((nodeId) => {
+      if (!nodeId) return;
+      const state = processor.getNodeState(nodeId);
+      states[nodeId] = {
+        result: state?.result ?? null,
+        isProcessing: state?.isProcessing ?? false,
+        error: state?.error ?? null,
+      };
+    });
+    return JSON.stringify(states);
+  };
+
+  const snapshot = useSyncExternalStore(subscribe, getSnapshot, getSnapshot);
+  return JSON.parse(snapshot) as Record<string, { result: NodeResult | null; isProcessing: boolean; error: string | null }>;
+};

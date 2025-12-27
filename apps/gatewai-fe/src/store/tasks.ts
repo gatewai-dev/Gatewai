@@ -71,10 +71,10 @@ const tasksSlice = createSlice({
   },
   extraReducers: (builder) => {
     builder
-      .addCase(getBatchDetails.pending, (state) => {
+      .addCase(getInitialBatches.pending, (state) => {
         state.initialLoading = true;
       })
-      .addCase(getBatchDetails.rejected, (state) => {
+      .addCase(getInitialBatches.rejected, (state) => {
         state.initialLoading = false;
       })
       .addCase(getInitialBatches.fulfilled, (state, action) => {
@@ -85,6 +85,7 @@ const tasksSlice = createSlice({
         if (runningBatchIds.length > 0) {
           state.pollingInterval = 3000;
         }
+        state.initialLoading = false;
       });
   },
 });
