@@ -52,12 +52,6 @@ const BlurNodeComponent = memo((props: NodeProps<BlurNode>) => {
           <div className="w-full overflow-hidden rounded bg-black/5 min-h-[100px] relative">
             <canvas ref={canvasRef} className="block w-full h-auto" />
             
-            {isProcessing && (
-              <div className="absolute inset-0 flex items-center justify-center bg-black/10">
-                <div className="text-sm text-gray-600">Processing...</div>
-              </div>
-            )}
-            
             {error && (
               <div className="absolute inset-0 flex items-center justify-center bg-red-50/90">
                 <div className="text-sm text-red-600">Error: {error}</div>

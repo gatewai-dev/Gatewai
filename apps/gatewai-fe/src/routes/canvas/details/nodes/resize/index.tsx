@@ -1,22 +1,14 @@
-import { memo, useEffect, useMemo, useRef } from 'react';
+import { memo, useEffect, useRef } from 'react';
 import { type NodeProps } from '@xyflow/react';
-import {
-  type ResizeNodeConfig,
-  type FileData,
-} from '@gatewai/types';
 import { useAppSelector } from '@/store';
-import { makeSelectAllNodes, makeSelectNodeById } from '@/store/nodes';
+import { makeSelectNodeById } from '@/store/nodes';
 import { BaseNode } from '../base';
 import type { ResizeNode } from '../node-props';
-import { makeSelectAllHandles } from '@/store/handles';
-import { makeSelectAllEdges } from '@/store/edges';
 import { AspectRatioSwitch } from './aspect-ratio-switch';
 import { ResizeHeightInput } from './height-input';
 import { ResizeWidthInput } from './width-input';
-import { browserNodeProcessors } from '../../node-processors';
-import { useNodeContext } from '../hooks/use-node-ctx';
-import { useNodeInputValuesResolver } from '../hooks/use-handle-value-resolver';
-import { GetAssetEndpoint } from '@/utils/file';
+import type { config } from 'process';
+import { useNodeResult, useNodeImageUrl } from '../../processor/processor-ctx';
 
 const ImagePlaceholder = () => {
   return (
@@ -27,116 +19,50 @@ const ImagePlaceholder = () => {
 };
 
 const ResizeNodeComponent = memo((props: NodeProps<ResizeNode>) => {
-  const allNodes = useAppSelector(makeSelectAllNodes);
-  const allHandles = useAppSelector(makeSelectAllHandles);
   const node = useAppSelector(makeSelectNodeById(props.id));
-  const allEdges = useAppSelector(makeSelectAllEdges);
   const canvasRef = useRef<HTMLCanvasElement | null>(null);
-
-  const config: ResizeNodeConfig = (node?.config ?? props.data.config) as ResizeNodeConfig;
-
-  const resolverArgs = useMemo(() => ({ nodeId: props.id }), [props.id]);
-
-  const context = useNodeContext(resolverArgs);
-  const nodeInputContext = useNodeInputValuesResolver(resolverArgs);
-
-  const shouldUseLocalImageData = useMemo(() => {
-    if (!context?.inputHandles[0].id) {
-      return false;
-    }
-    const imageHandleCtx = nodeInputContext[context?.inputHandles[0].id];
-    const cachedValue = imageHandleCtx?.cachedResultValue;
-    if (cachedValue && cachedValue.data) {
-      return true;
-    }
-    return false;
-  }, [context?.inputHandles, nodeInputContext]);
-
-  const inputImageResult = useMemo(() => {
-    if (!context?.inputHandles[0].id) {
-      return null;
-    }
-    const imageHandleCtx = nodeInputContext[context?.inputHandles[0].id];
-    const cachedValue = imageHandleCtx?.cachedResultValue;
-    if (cachedValue && cachedValue.data) {
-      return cachedValue;
-    }
-    const connectedNodeValue = imageHandleCtx?.resultValue;
-
-    if (connectedNodeValue && connectedNodeValue.data) {
-      return connectedNodeValue;
-    }
-    return null;
-  }, [context?.inputHandles, nodeInputContext]);
-
-
-  const inputImageUrl = useMemo(() => {
-    if (inputImageResult) {
-      const fileData = inputImageResult.data as FileData;
-      if (fileData?.entity?.id) {
-        return GetAssetEndpoint(fileData.entity.id)
-      }
-      return fileData.dataUrl;
-    };
-    return null;
-  }, [inputImageResult]);
-
-  // Compute a key to detect changes in input or config
-  const computeKey = useMemo(() => {
-    if (!context?.inputHandles[0].id) {
-      return null;
-    }
-    if (!inputImageUrl) return null;
-    let computeKey = '';
-    if (shouldUseLocalImageData) {
-      const imageHandleCtx = nodeInputContext[context?.inputHandles[0].id];
-      const cachedResult = imageHandleCtx?.cachedResult;
-      const hash = cachedResult?.hash ?? '';
-      computeKey += hash;
-    } else {
-      computeKey += inputImageUrl;
-    }
-    computeKey += JSON.stringify(config, Object.keys(config).sort());
-    return computeKey;
-  }, [context?.inputHandles, inputImageUrl, config, shouldUseLocalImageData, nodeInputContext]);
-
-  // Compute the resize using the processor
+  
+  // Get processed result from processor
+  const { result, isProcessing, error } = useNodeResult(props.id);
+  const imageUrl = useNodeImageUrl(props.id);
+  
+  // Draw to canvas when result is ready
   useEffect(() => {
-    if (!inputImageUrl || !computeKey || !node || !context?.inputHandles[0].id || !canvasRef.current) {
-      return;
-    }
-
-    const compute = async () => {
-      const data = {
-        nodes: allNodes,
-        edges: allEdges,
-        handles: allHandles,
-      };
-      const processor = browserNodeProcessors['Resize'];
-      if (!processor) {
-        console.error('Resize processor not found');
-        return;
-      }
-      processor({
-        node,
-        data,
-        extraArgs: {
-          nodeInputContextData: nodeInputContext[context?.inputHandles[0].id],
-          canvas: canvasRef.current
-        }
-      });
+    if (!imageUrl || !canvasRef.current) return;
+    
+    const canvas = canvasRef.current;
+    const ctx = canvas.getContext('2d', { willReadFrequently: true });
+    if (!ctx) return;
+    
+    const img = new Image();
+    img.crossOrigin = 'anonymous';
+    img.src = imageUrl;
+    
+    img.onload = () => {
+      canvas.width = img.width;
+      canvas.height = img.height;
+      canvas.style.width = '100%';
+      canvas.style.height = 'auto';
+      ctx.clearRect(0, 0, canvas.width, canvas.height);
+      ctx.drawImage(img, 0, 0);
     };
-
-    compute();
-  }, [allEdges, allHandles, allNodes, computeKey, context?.inputHandles, inputImageUrl, node, nodeInputContext]);
+  }, [imageUrl]);
 
   return (
     <BaseNode {...props}>
       <div className="flex flex-col gap-3">
-        {!inputImageUrl && <ImagePlaceholder />}
-        {inputImageUrl && (
-          <div className="w-full overflow-hidden rounded">
-            <canvas ref={canvasRef} />
+        
+        {!result && !isProcessing ? (
+          <ImagePlaceholder />
+        ) : (
+          <div className="w-full overflow-hidden rounded bg-black/5 min-h-[100px] relative">
+            <canvas ref={canvasRef} className="block w-full h-auto" />
+            
+            {error && (
+              <div className="absolute inset-0 flex items-center justify-center bg-red-50/90">
+                <div className="text-sm text-red-600">Error: {error}</div>
+              </div>
+            )}
           </div>
         )}
         {node && (
@@ -146,13 +72,13 @@ const ResizeNodeComponent = memo((props: NodeProps<ResizeNode>) => {
                 node={node}
                 originalWidth={null}
                 originalHeight={null}
-                maintainAspect={config.maintainAspect ?? true}
+                maintainAspect={node.config?.maintainAspect ?? true}
               />
               <ResizeHeightInput
                 node={node}
                 originalWidth={null}
                 originalHeight={null}
-                maintainAspect={config.maintainAspect ?? true}
+                maintainAspect={node.config?.maintainAspect ?? true}
               />
             </div>
             <AspectRatioSwitch

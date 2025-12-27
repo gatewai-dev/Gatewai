@@ -45,7 +45,6 @@ export class NodeGraphProcessor extends EventEmitter {
    * Update graph structure from Redux store
    */
   updateGraph(config: ProcessorConfig): void {
-    console.log('updateGraph called - checking for changes');
     const prevNodes = new Map(this.nodes);
     this.nodes = config.nodes;
     this.edges = config.edges;
@@ -119,7 +118,6 @@ export class NodeGraphProcessor extends EventEmitter {
       const cached = await getCachedNodeResult(node.id, cacheKey);
       
       if (cached) {
-        await updateCachedNodeResultAge(cached);
         return cached.result;
       }
 
@@ -220,7 +218,7 @@ export class NodeGraphProcessor extends EventEmitter {
       };
 
       // Cache it
-      await storeClientNodeResult(node, newResult, cacheKey);
+      storeClientNodeResult(node, newResult, cacheKey);
 
       return newResult;
     });
@@ -311,7 +309,6 @@ export class NodeGraphProcessor extends EventEmitter {
   }
 
   private markDirty(nodeId: string, cascade: boolean): void {
-    console.log(`Dirty marked for ${nodeId}, triggering startProcessing`);
     const state = this.getOrCreateNodeState(nodeId);
     
     // Cancel if already processing
@@ -333,16 +330,17 @@ export class NodeGraphProcessor extends EventEmitter {
   }
 
   private async startProcessing(): Promise<void> {
-    if (this.isProcessing) return;
-    this.isProcessing = true;
+  if (this.isProcessing) return;
+  this.isProcessing = true;
 
-    try {
+  try {
+    while (true) {
       // Collect dirty node IDs
       const dirtyIds = Array.from(this.nodeStates.entries())
         .filter(([, state]) => state.isDirty)
         .map(([id]) => id);
 
-      if (dirtyIds.length === 0) return;
+      if (dirtyIds.length === 0) break;
 
       // Compute necessary nodes: dirty + upstream dependencies that need processing
       const necessary = new Set<string>();
@@ -387,11 +385,8 @@ export class NodeGraphProcessor extends EventEmitter {
 
         // Inputs should be ready due to topo order, but verify
         if (!this.ensureInputsReady(nodeId)) {
-          console.warn(`Inputs not ready for ${nodeId} despite topological order`);
-          continue;
+          continue;  // Skip warning for now; see notes below
         }
-        // Skip if already processing
-        console.log({state})
         if (state.isProcessing) continue;
 
         state.isProcessing = true;
@@ -416,28 +411,27 @@ export class NodeGraphProcessor extends EventEmitter {
 
           state.result = result;
           state.isDirty = false;
-          console.log('node:processed', { nodeId, result })
           this.emit('node:processed', { nodeId, result });
           
         } catch (error) {
-          if (error instanceof DOMException && error.name === 'AbortError') {
-            // Cancelled - will be re-queued if needed via future markDirty
+          if (error instanceof Error && error.name === 'AbortError') {
+            // Cancelled - will be re-queued in next while iteration
             state.isDirty = true;
           } else {
             state.error = error instanceof Error ? error.message : 'Unknown error';
             state.isDirty = false;
           }
-          
           this.emit('node:error', { nodeId, error: state.error });
         } finally {
           state.isProcessing = false;
           state.abortController = null;
         }
       }
-    } finally {
-      this.isProcessing = false;
     }
+  } finally {
+    this.isProcessing = false;
   }
+}
 
   private ensureInputsReady(nodeId: string): boolean {
     const sourceNodeIds = this.getSourceNodeIds(nodeId);
