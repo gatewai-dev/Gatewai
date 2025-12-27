@@ -28,11 +28,9 @@ const handleSelectors = handleAdapter.getSelectors<{handles: HandlesState}>(
 
 export const selectHandlesState = (state: { handles: HandlesState }) => state.handles;
 
-export const makeSelectHandleById = (id: string | undefined) => createDraftSafeSelector(
-  selectHandlesState,
-  (handles) => id ? (handles.entities[id] as HandleEntityType | undefined) : undefined
-);
-
+export const makeSelectHandleById = (id: string) => {
+  return (state: { handles: HandlesState }) => handleSelectors.selectById(state, id);
+};
 export const makeSelectHandlesByNodeId = (nodeId: string) => createDraftSafeSelector(
   handleSelectors.selectAll,
   (handles) => handles.filter(f => f.nodeId === nodeId)

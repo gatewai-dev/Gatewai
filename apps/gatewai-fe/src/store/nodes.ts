@@ -95,15 +95,11 @@ const nodeSelectors = nodeAdapter.getSelectors<{nodes: NodesState}>(
 
 export const selectNodesState = (state: { nodes: NodesState }) => state.nodes;
 
-export const makeSelectNodeById = (id: string) => createDraftSafeSelector(
-  selectNodesState,
-  (nodes) => nodes.entities[id] as NodeEntityType | undefined
-);
+export const selectNodeById = nodeSelectors.selectById;
 
-export const makeSelectNodesByIds = (ids: NodeEntityType["id"][]) => createDraftSafeSelector(
-  nodeSelectors.selectAll,
-  (nodes) => nodes.filter(f => ids.includes(f.id))
-);
+export const makeSelectNodeById = (id: string) => {
+  return (state: { nodes: NodesState }) => nodeSelectors.selectById(state, id);
+};
 
 export const makeSelectAllNodes = nodeSelectors.selectAll;
 export const makeSelectAllNodeEntities = nodeSelectors.selectEntities;

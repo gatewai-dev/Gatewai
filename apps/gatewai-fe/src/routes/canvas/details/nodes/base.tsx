@@ -94,7 +94,7 @@ const BaseNode = memo((props: NodeProps<Node<CanvasDetailsNode>> & {
                 group-focus-within:opacity-100 in-[.selected]:opacity-100 transition-all duration-200 pointer-events-none
                 whitespace-nowrap font-medium text-right`}
                 style={{ color: isInvalid ? 'red' : color.hex }}>
-              {handle.label || handle.dataTypes.join(' | ')} {handle.required && '*'}
+              {handle.label || handle.dataTypes.join(' | ')}{handle.required && '*'}
               {isInvalid && ` (${error.error})`}
             </span>
           </div>

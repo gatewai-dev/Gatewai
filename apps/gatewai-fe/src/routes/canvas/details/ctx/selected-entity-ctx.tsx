@@ -1,12 +1,13 @@
 import { createContext, useCallback, useContext, useState, type Dispatch, type PropsWithChildren, type SetStateAction } from 'react';
-import type { Edge, Node } from '@gatewai/types';
 import type { Node as ClientNode, Edge as ClientEdge } from '@xyflow/react';
+import type { NodeEntityType } from '@/store/nodes';
+import type { EdgeEntityType } from '@/store/edges';
 
 interface SelectedEntitiesContextType {
-  selectedNodeIDs: Node["id"][],
-  setSelectedNodeIDs: Dispatch<SetStateAction<Node["id"][]>>
-  selectedEdgeIDs: Edge["id"][],
-  setSelectedEdgeIDs: Dispatch<SetStateAction<Edge["id"][]>>
+  selectedNodeIDs: NodeEntityType["id"][],
+  setSelectedNodeIDs: Dispatch<SetStateAction<NodeEntityType["id"][]>>
+  selectedEdgeIDs: EdgeEntityType["id"][],
+  setSelectedEdgeIDs: Dispatch<SetStateAction<EdgeEntityType["id"][]>>
   onSelectionChange: ({ nodes, edges }: {
     nodes: ClientNode[];
     edges: ClientEdge[];
@@ -19,8 +20,8 @@ const SelectedEntitiesProvider = ({
   children,
 }: PropsWithChildren) => {
 
-  const [selectedNodeIDs, setSelectedNodeIDs] = useState<Node["id"][]>([]);
-  const [selectedEdgeIDs, setSelectedEdgeIDs] = useState<Edge["id"][]>([]);
+  const [selectedNodeIDs, setSelectedNodeIDs] = useState<NodeEntityType["id"][]>([]);
+  const [selectedEdgeIDs, setSelectedEdgeIDs] = useState<EdgeEntityType["id"][]>([]);
 
   const onSelectionChange = useCallback(({ nodes, edges }: {nodes: ClientNode[], edges: ClientEdge[]}) => {
     setSelectedNodeIDs(nodes.map((node) => node.id));

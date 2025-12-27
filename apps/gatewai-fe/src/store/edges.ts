@@ -32,10 +32,9 @@ const edgeSelectors = edgeAdapter.getSelectors<{edges: EdgesState}>(
 
 export const selectEdgesState = (state: { edges: EdgesState }) => state.edges;
 
-export const makeSelectEdgeById = (id: EdgeEntityType["id"]) => createDraftSafeSelector(
-  selectEdgesState,
-  (edges) => edges.entities[id] as EdgeEntityType | undefined
-);
+export const makeSelectEdgeById = (id: string) => {
+  return (state: { edges: EdgesState }) => edgeSelectors.selectById(state, id);
+};
 
 export const makeSelectEdgesByIds = (ids: EdgeEntityType["id"][]) => createDraftSafeSelector(
   edgeSelectors.selectAll,

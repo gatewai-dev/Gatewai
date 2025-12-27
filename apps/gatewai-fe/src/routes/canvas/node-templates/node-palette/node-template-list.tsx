@@ -83,7 +83,7 @@ export function NodeTemplateList({ templates }: NodeListProps) {
             .map(([sub, temps]) => (
               <div key={sub} className="mb-4">
                 {sub && <h3 className="text-lg font-semibold mb-2">{sub}</h3>}
-                <div className="grid grid-cols-1 gap-4">
+                <div className="grid grid-cols-2 gap-4">
                   {sortTemplates(temps, sortBy).map((t) => (
                     <NodeItem key={t.id} template={t} />
                   ))}

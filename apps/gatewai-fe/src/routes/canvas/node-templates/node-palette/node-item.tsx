@@ -49,11 +49,11 @@ export function NodeItem({ template }: { template: NodeTemplateListItemRPC }) {
         <TooltipTrigger asChild>
           <div
             key={template.id}
-            className="node-item flex gap-2 items-center p-2 border border-gray-600 rounded cursor-grab"
+            className="node-item flex flex-col gap-2 items-center p-4 border border-gray-600 rounded cursor-grab"
             ref={draggableRef}
           >
-            <Icon className="w-5 h-5 text-gray-400 flex-shrink-0" />
-            <span className="text-sm font-medium">{template.displayName}</span>
+            <Icon className="w-5 h-5 text-gray-400 shrink-0 " />
+            <span className="text-xs font-medium">{template.displayName}</span>
           </div>
         </TooltipTrigger>
         {template.description && (

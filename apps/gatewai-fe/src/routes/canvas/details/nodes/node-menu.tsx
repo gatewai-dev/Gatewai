@@ -14,14 +14,8 @@ import {
 import { useCanvasCtx } from "../ctx/canvas-ctx"
 
 const NodeMenu = memo((props: NodeProps<Node<CanvasDetailsNode>>) => {
-    const { onNodesDelete, duplicateNode, rfInstance } = useCanvasCtx();
-
-    const deleteNode = () => {
-        const node = rfInstance.current?.getNode(props.id);
-        if (node) {
-            onNodesDelete([node]);
-        }
-    }
+    const { onNodesDelete, duplicateNode } = useCanvasCtx();
+    const isMac = /Mac|iPod|iPhone|iPad/.test(navigator.userAgent);
 
     return (
         <DropdownMenu>
@@ -32,9 +26,9 @@ const NodeMenu = memo((props: NodeProps<Node<CanvasDetailsNode>>) => {
             <DropdownMenuGroup>
                 <DropdownMenuItem onClick={() => duplicateNode(props.id)}>
                     Duplicate
-                    <DropdownMenuShortcut className="italic text-[11px]">ctrl + d</DropdownMenuShortcut>
+                    <DropdownMenuShortcut className="italic text-[11px]">{isMac ? '⌘ D' : 'ctrl + d'}</DropdownMenuShortcut>
                 </DropdownMenuItem>
-                <DropdownMenuItem onClick={deleteNode}>
+                <DropdownMenuItem onClick={() => onNodesDelete([props.id])}>
                     Delete
                     <DropdownMenuShortcut className="italic text-[11px]">delete / backspace</DropdownMenuShortcut>
                 </DropdownMenuItem>
@@ -44,4 +38,3 @@ const NodeMenu = memo((props: NodeProps<Node<CanvasDetailsNode>>) => {
 });
 
 export { NodeMenu };
-

@@ -41,6 +41,10 @@ export class NodeGraphProcessor extends EventEmitter {
 
   constructor() {
     super();
+    // Prevent EventEmitter memory leak warnings for many nodes
+    // It doesn lot leak currently, but throws a warning if >10 listeners are added
+    // The amount of listeners equals the amount of nodes being processed
+    this.setMaxListeners(Infinity)
     this.registerBuiltInProcessors();
   }
 

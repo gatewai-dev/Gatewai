@@ -11,10 +11,9 @@ import { makeSelectNodeById } from '@/store/nodes';
 import type { LLMNode } from '../node-props';
 import { useCanvasCtx } from '../../ctx/canvas-ctx';
 import { BaseNode } from '../base';
-import Markdown from 'react-markdown'
-import remarkGfm from 'remark-gfm'
 import { useTaskManagerCtx } from '../../ctx/task-manager-ctx';
 import { Spinner } from '@/components/ui/spinner';
+import { MarkdownRenderer } from '../../components/markdown-renderer';
 
 const LlmNodeComponent = memo((props: NodeProps<LLMNode>) => {
   const { nodeTaskStatus } = useTaskManagerCtx();
@@ -37,12 +36,7 @@ const LlmNodeComponent = memo((props: NodeProps<LLMNode>) => {
   return (
     <BaseNode {...props}>
       <div className='flex flex-col gap-2 items-end'>
-        {textResult && (
-          <div className='text-xs bg-input p-2 max-h-[350px] min-h-[200px] overflow-auto w-full'>
-            <Markdown remarkPlugins={[remarkGfm]}>{textResult}</Markdown>
-          </div>
-        )
-        }
+        {textResult && <MarkdownRenderer markdown={textResult} />}
         {!textResult && (
           <div className='min-h-[200px] w-full bg-input max-h-full p-2'>
             <p className='text-xs text-gray-500'>LLM result will display here.</p>

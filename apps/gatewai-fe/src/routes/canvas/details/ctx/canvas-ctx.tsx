@@ -39,7 +39,7 @@ interface CanvasContextType {
   runNodes: (node_ids: Node["id"][]) => Promise<void>;
   rfInstance: RefObject<ReactFlowInstance | undefined>;
   createNewNode: (template: NodeTemplateListItemRPC, position: XYPosition) => void;
-  onNodesDelete: (deleted: Node[]) => void
+  onNodesDelete: (nodeIds: Node["id"][]) => void
   duplicateNode: (nodeId: Node["id"]) => void
   onNodeConfigUpdate: (payload: {
     id: string;
@@ -332,17 +332,16 @@ const CanvasProvider = ({
   );
 
   const onNodesDelete = useCallback(
-    async (deleted: Node[]) => {
-
-      const deletedNodeIds = deleted.map(m => m.id);
-      const newNodes = rfNodes.filter(f => !deletedNodeIds.includes(f.id));
-      const edgesToRemove = getConnectedEdges(deleted, rfEdges);
+    async (nodeIds: NodeEntityType["id"][]) => {
+      const nodesToDelete = rfNodes.filter(n => nodeIds.includes(n.id));
+      const newNodes = rfNodes.filter(f => !nodeIds.includes(f.id));
+      const edgesToRemove = getConnectedEdges(nodesToDelete, rfEdges);
       const deletedEdgeIds = edgesToRemove.map(m => m.id);
       const newEdges = rfEdges.filter(f => !deletedEdgeIds.includes(f.id));
-      const deletedHandleIds = handleEntities.filter(m => deletedNodeIds.includes(m.nodeId)).map(m => m.id);
+      const deletedHandleIds = handleEntities.filter(m => nodeIds.includes(m.nodeId)).map(m => m.id);
       
       dispatch(setNodes(newNodes))
-      dispatch(deleteManyNodeEntity(deletedNodeIds))
+      dispatch(deleteManyNodeEntity(nodeIds))
       dispatch(setEdges(newEdges))
       dispatch(deleteManyHandleEntity(deletedHandleIds))
 
