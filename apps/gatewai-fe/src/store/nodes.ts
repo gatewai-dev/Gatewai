@@ -1,6 +1,7 @@
 import type { AllNodeConfig, NodeResult } from '@gatewai/types';
 import type { CanvasDetailsRPC } from "@/rpc/types";
 import { createEntityAdapter, createDraftSafeSelector, createSlice, type PayloadAction } from "@reduxjs/toolkit"
+import { getBatchDetails, type BatchEntity } from './tasks';
 
 export type NodeEntityType = CanvasDetailsRPC["nodes"][number];
 
@@ -68,6 +69,20 @@ const nodesSlice = createSlice({
     setSelectedNodeIds: (state, action: PayloadAction<NodeEntityType["id"][] | null>) => {
       state.selectedNodeIds = action.payload;
     },
+  },
+  extraReducers(builder) {
+    builder.addCase(getBatchDetails.fulfilled, (state, action) => {
+      const { batches } = action.payload;
+      const completedNodes: NodeEntityType[] = [];
+      batches.forEach(batch => {
+        batch?.tasks.forEach(task => {
+          if (task.finishedAt && task.status === 'COMPLETED' && task.node) {
+            completedNodes.push(task.node);
+          }
+        });
+      });
+      nodeAdapter.upsertMany(state, completedNodes);
+    });
   },
 })
 
