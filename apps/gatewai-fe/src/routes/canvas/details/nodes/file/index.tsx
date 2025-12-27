@@ -19,11 +19,11 @@ import { GetDataTypeFromMimetype } from '@/utils/file';
 
 const FileNodeComponent = memo((props: NodeProps<FileNode>) => {
   const node = useAppSelector(makeSelectNodeById(props.id));
-
-  const result = node?.result as unknown as FileResult;
   const showResult = useHasOutputItems(node);
   const dispatch = useAppDispatch();
   const outputHandles = useAppSelector(makeSelectHandlesByNodeId(props.id));
+
+  const result = node?.result as unknown as FileResult;
   const firstHandle = outputHandles[0];
 
   const existingMimeType = result?.outputs?.[0]?.items?.[0]?.data?.entity?.mimeType;
@@ -91,7 +91,7 @@ const FileNodeComponent = memo((props: NodeProps<FileNode>) => {
         }
         {showResult &&
           <UploadButton
-            className=' py-0'
+            className='py-0'
             onUploadSuccess={onUploadSuccess}
             onUploadError={onUploadError}
             accept={buttonAccept}

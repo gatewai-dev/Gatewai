@@ -20,6 +20,7 @@ enum NodeType {
   Crawler
   Resize
   Agent
+  RemoteAgent
   ThreeD
   Painter
   Blur
@@ -49,11 +50,6 @@ enum TaskStatus {
   EXECUTING
   FAILED
   COMPLETED
-}
-
-enum ProcessEnvironment {
-  Browser
-  Server
 }
 
 enum HandleType {
@@ -203,7 +199,6 @@ model NodeTemplate {
   displayName         String
   description         String?
   templateHandles     NodeTemplateHandle[]
-  processEnvironment  ProcessEnvironment
   tokenPrice          Float?                 @default(0.0)
   variableInputs      Boolean                @default(false)
   variableOutputs     Boolean                @default(false)
