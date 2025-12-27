@@ -28,6 +28,7 @@ import { useGetCanvasDetailsQuery, usePatchCanvasMutation, useProcessNodesMutati
 import { useTaskManagerCtx } from './task-manager-ctx';
 import type { NodeType } from '@gatewai/db';
 import { cleanupBulkNodeResults } from '../media-db';
+import { useNodeTemplates } from '../../node-templates/node-templates.ctx';
 
 interface CanvasContextType {
   canvas: CanvasDetailsRPC["canvas"] | undefined;
@@ -40,6 +41,7 @@ interface CanvasContextType {
   rfInstance: RefObject<ReactFlowInstance | undefined>;
   createNewNode: (template: NodeTemplateListItemRPC, position: XYPosition) => void;
   onNodesDelete: (deleted: Node[]) => void
+  duplicateNode: (nodeId: Node["id"]) => void
   onNodeConfigUpdate: (payload: {
     id: string;
     newConfig: Partial<AllNodeConfig>;
@@ -62,6 +64,7 @@ const CanvasProvider = ({
   const rfNodes = useAppSelector(selectRFNodes);
   const rfEdges = useAppSelector(selectRFEdges);
   const handleEntities = useAppSelector(handleSelectors.selectAll);
+  const { nodeTemplates } = useNodeTemplates();
 
   const {
     data: canvasDetailsResponse,
@@ -110,9 +113,6 @@ const CanvasProvider = ({
       dispatch(setAllHandleEntities(canvasDetailsResponse.handles));
     }
   }, [dispatch, canvasDetailsResponse])
-
-  const nodes = useAppSelector(selectRFNodes);
-  const edges = useAppSelector(selectRFEdges);
   const timeoutRef = useRef<NodeJS.Timeout | null>(null);
 
   const [patchCanvasAsync] = usePatchCanvasMutation()
@@ -174,7 +174,7 @@ const CanvasProvider = ({
     }
     timeoutRef.current = setTimeout(() => {
       save();
-    }, 2000);
+    }, 5000);
   }, [save]);
 
   const onNodesChange = useCallback((changes: NodeChange<Node>[]) => {
@@ -205,13 +205,13 @@ const CanvasProvider = ({
       }
 
       // Find source node
-      const sourceNode = nodes.find((n) => n.id === connection.source);
+      const sourceNode = rfNodes.find((n) => n.id === connection.source);
       if (!sourceNode) {
         return { isValid: false, error: 'Source node could not be found.' };
       }
 
       // Find target node
-      const targetNode = nodes.find((n) => n.id === connection.target);
+      const targetNode = rfNodes.find((n) => n.id === connection.target);
       if (!targetNode) {
         return { isValid: false, error: 'Target node could not be found.' };
       }
@@ -225,10 +225,10 @@ const CanvasProvider = ({
           visited.add(currentId);
           if (currentId === toId) return true;
 
-          const currentNode = nodes.find(n => n.id === currentId);
+          const currentNode = rfNodes.find(n => n.id === currentId);
           if (!currentNode) return false;
 
-          const outgoers = getOutgoers(currentNode, nodes, edges);
+          const outgoers = getOutgoers(currentNode, rfNodes, rfEdges);
           for (const outgoer of outgoers) {
             if (dfs(outgoer.id)) return true;
           }
@@ -258,7 +258,7 @@ const CanvasProvider = ({
       }
 
       // Prevent one output handle from connecting to multiple inputs on the same target node
-      const existingToDifferentHandle = edges.some(
+      const existingToDifferentHandle = rfEdges.some(
         (e) =>
           e.source === connection.source &&
           e.sourceHandle === connection.sourceHandle &&
@@ -272,7 +272,7 @@ const CanvasProvider = ({
 
       return { isValid: true };
     },
-    [nodes, handleEntities, edges],
+    [rfNodes, handleEntities, rfEdges],
   );
 
   const onConnect = useCallback(
@@ -290,7 +290,7 @@ const CanvasProvider = ({
       }
       const newEdges = (() => {
         // Find if there's an existing edge connected to the same target and targetHandle
-        const existingEdge = edges.find(
+        const existingEdge = rfEdges.find(
           (e) =>
             e.target === params.target
             && e.targetHandle === params.targetHandle
@@ -298,8 +298,8 @@ const CanvasProvider = ({
 
         // If found, remove the existing edge
         let updatedEdges = existingEdge
-          ? edges.filter((e) => e.id !== existingEdge.id)
-          : edges;
+          ? rfEdges.filter((e) => e.id !== existingEdge.id)
+          : rfEdges;
 
         // Add the new edge
         updatedEdges = [
@@ -329,10 +329,10 @@ const CanvasProvider = ({
       dispatch(setAllEdgeEntities(edgeEntities))
       scheduleSave();
     },
-    [isValidConnection, handleEntities, dispatch, scheduleSave, edges]
+    [isValidConnection, handleEntities, dispatch, scheduleSave, rfEdges]
   );
 
-    const onNodesDelete = useCallback(
+  const onNodesDelete = useCallback(
     async (deleted: Node[]) => {
 
       const deletedNodeIds = deleted.map(m => m.id);
@@ -440,6 +440,98 @@ const CanvasProvider = ({
     dispatch(addManyHandleEntities(handles))
     scheduleSave();
   }, [canvasId, dispatch, scheduleSave]);
+
+
+
+  const duplicateNode = useCallback((nodeId: Node["id"]) => {
+    const newNodeId = generateId();
+    let initialResult: NodeResult | null = null;
+    const rfNodeToDuplicate = rfNodes.find(n => n.id === nodeId);
+    if (!rfNodeToDuplicate) {
+      toast.error("Node to duplicate not found");
+      return;
+    }
+
+    const rootState = store.getState() as RootState;
+    const nodeEntityToDuplicate = rootState.nodes.entities[nodeId];
+    if (!nodeEntityToDuplicate) {
+      toast.error("Node entity to duplicate not found");
+      return;
+    }
+
+    const template = nodeEntityToDuplicate.template;
+    const templateEntity = nodeTemplates?.find(f => f.id === template.id);
+    if (!templateEntity) {
+      toast.error("Node template to duplicate not found");
+      return;
+    }
+    const handles = templateEntity.templateHandles.map((tHandle, i) => ({
+        nodeId: newNodeId,
+        label: tHandle.label,
+        order: i,
+        templateHandleId: tHandle.id,
+        id: generateId(),
+        required: tHandle.required,
+        createdAt: new Date().toISOString(),
+        updatedAt: new Date().toISOString(),
+        type: tHandle.type,
+        dataTypes: tHandle.dataTypes,
+    }));
+
+    if (template.type === 'Text') {
+      initialResult = {
+        selectedOutputIndex: 0,
+        outputs: [{
+          items: [{type: 'Text', outputHandleId: handles[0].id, data: ''}]
+        }]
+      }
+    } else {
+      initialResult = {
+        selectedOutputIndex: 0,
+        outputs: []
+      }
+    }
+
+    const position = {
+        x: rfNodeToDuplicate.position.x + 320,
+        y: rfNodeToDuplicate.position.y + 320,
+    };
+
+    const nodeEntity: NodeEntityType = {
+      id: newNodeId,
+      name: template.displayName,
+      templateId: template.id,
+      template: template,
+      type: template.type as NodeType,
+      position,
+      width: 300,
+      height: null,
+      isDirty: false,
+      canvasId: canvasId,
+      zIndex: 1,
+      draggable: true,
+      selectable: true,
+      handles,
+      deletable: true,
+      config: template.defaultConfig || {},
+      result: initialResult as unknown as NodeResult,
+    };
+    const newNode: Node = {
+      id: newNodeId,
+      position,
+      data: nodeEntity,
+      type: template.type as NodeType,
+      width: 300,
+      height: undefined,
+      draggable: true,
+      selectable: true,
+      deletable: true,
+    };
+    dispatch(createNode(newNode));
+    dispatch(createNodeEntity(nodeEntity));
+    dispatch(addManyHandleEntities(handles))
+    scheduleSave();
+  }, [canvasId, dispatch, nodeTemplates, rfNodes, scheduleSave, store]);
   
   const value = useMemo(() => ({
     canvas: canvasDetailsResponse?.canvas,
@@ -451,6 +543,7 @@ const CanvasProvider = ({
     runNodes,
     rfInstance,
     createNewNode,
+    duplicateNode,
     onNodesDelete,
     onNodeConfigUpdate
   }), [
@@ -462,6 +555,7 @@ const CanvasProvider = ({
     onConnect,
     runNodes,
     createNewNode,
+    duplicateNode,
     onNodesDelete,
     onNodeConfigUpdate
   ]);

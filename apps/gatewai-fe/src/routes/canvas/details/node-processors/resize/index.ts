@@ -2,7 +2,7 @@ import type { NodeProcessor } from "..";
 import { db, storeClientNodeResult, hashNodeResult, hashConfigSync, cleanupNodeResults } from '../../media-db';
 import type { NodeResult, FileData, ResizeNodeConfig, ResizeResult } from "@gatewai/types";
 import type { NodeInputContextData } from "../../nodes/hooks/use-handle-value-resolver";
-import { pixiProcessor } from "../../pixi-service";
+import { pixiProcessor } from "../../processor/pixi-service";
 
 export type ResizeExtraArgs = {
   nodeInputContextData: NodeInputContextData;
@@ -116,6 +116,7 @@ const resizeProcessor: NodeProcessor<ResizeExtraArgs> = async ({ node, data, ext
       }]
     };
 
+    console.log('End Process:', node.id);
     await storeClientNodeResult(node, newResult, inputHash);
 
     return { success: true, newResult };

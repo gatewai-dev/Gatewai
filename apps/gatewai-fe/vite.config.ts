@@ -4,6 +4,7 @@ import react from '@vitejs/plugin-react-swc'
 import { defineConfig } from "vite"
 import wasm from "vite-plugin-wasm";
 import topLevelAwait from "vite-plugin-top-level-await";
+import { nodePolyfills } from 'vite-plugin-node-polyfills'
 
 // https://vite.dev/config/
 export default defineConfig({
@@ -12,6 +13,9 @@ export default defineConfig({
     tailwindcss(),
     wasm(),
     topLevelAwait(),
+    nodePolyfills({
+      include: ['events'],
+    }),
   ],
   server: {
     proxy: {
@@ -25,9 +29,5 @@ export default defineConfig({
     alias: {
       "@": path.resolve(__dirname, "./src"),
     },
-  },
-  worker: {
-    plugins: () => [wasm(), topLevelAwait()],
-    format: 'es' // default is iife
   }
 })

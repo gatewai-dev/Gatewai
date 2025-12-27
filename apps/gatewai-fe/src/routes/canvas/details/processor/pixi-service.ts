@@ -11,25 +11,43 @@ class PixiProcessorService {
     this.app = new Application();
     
     await this.app.init({
-      width: 1024, // Default buffer size, will resize dynamically
+      width: 1024,
       height: 1024,
-      autoStart: false, // We only render on demand
+      autoStart: false,
       backgroundAlpha: 0,
-      preserveDrawingBuffer: true, // Required to extract data
-      preference: 'webgl',
+      preserveDrawingBuffer: true,
+      preference: 'webgpu',
     });
   }
 
+  /**
+   * Process blur with cancellation support
+   */
   public async processBlur(
     imageUrl: string, 
-    options: { blurSize: number }
+    options: { blurSize: number },
+    signal?: AbortSignal
   ): Promise<string> {
+    if (signal?.aborted) {
+      throw new DOMException('Operation cancelled', 'AbortError');
+    }
+
     if (!this.app) await this.init();
     const app = this.app!;
+
+    // Check cancellation before loading
+    if (signal?.aborted) {
+      throw new DOMException('Operation cancelled', 'AbortError');
+    }
 
     // 1. Load the Texture
     const texture = await Assets.load(imageUrl);
     
+    // Check cancellation after loading
+    if (signal?.aborted) {
+      throw new DOMException('Operation cancelled', 'AbortError');
+    }
+
     // 2. Setup the Scene
     const sprite = new Sprite(texture);
     
@@ -49,23 +67,58 @@ class PixiProcessorService {
     app.stage.removeChildren();
     app.stage.addChild(sprite);
     
+    // Check cancellation before rendering
+    if (signal?.aborted) {
+      app.stage.removeChildren();
+      throw new DOMException('Operation cancelled', 'AbortError');
+    }
+    
     app.render();
+
+    // Check cancellation before extraction
+    if (signal?.aborted) {
+      app.stage.removeChildren();
+      throw new DOMException('Operation cancelled', 'AbortError');
+    }
 
     // 5. Extract Result
     const dataUrl = await app.renderer.extract.base64(app.stage);
 
+    // Final cancellation check
+    if (signal?.aborted) {
+      throw new DOMException('Operation cancelled', 'AbortError');
+    }
+
     return dataUrl;
   }
 
+  /**
+   * Process resize with cancellation support
+   */
   public async processResize(
     imageUrl: string,
-    options: { width: number; height: number }
+    options: { width: number; height: number },
+    signal?: AbortSignal
   ): Promise<string> {
+    if (signal?.aborted) {
+      throw new DOMException('Operation cancelled', 'AbortError');
+    }
+
     if (!this.app) await this.init();
     const app = this.app!;
 
+    // Check cancellation before loading
+    if (signal?.aborted) {
+      throw new DOMException('Operation cancelled', 'AbortError');
+    }
+
     // 1. Load the Texture
     const texture = await Assets.load(imageUrl);
+
+    // Check cancellation after loading
+    if (signal?.aborted) {
+      throw new DOMException('Operation cancelled', 'AbortError');
+    }
 
     // 2. Setup the Scene
     const sprite = new Sprite(texture);
@@ -81,10 +134,27 @@ class PixiProcessorService {
     app.stage.removeChildren();
     app.stage.addChild(sprite);
     
+    // Check cancellation before rendering
+    if (signal?.aborted) {
+      app.stage.removeChildren();
+      throw new DOMException('Operation cancelled', 'AbortError');
+    }
+    
     app.render();
+
+    // Check cancellation before extraction
+    if (signal?.aborted) {
+      app.stage.removeChildren();
+      throw new DOMException('Operation cancelled', 'AbortError');
+    }
 
     // 4. Extract Result
     const dataUrl = await app.renderer.extract.base64(app.stage);
+
+    // Final cancellation check
+    if (signal?.aborted) {
+      throw new DOMException('Operation cancelled', 'AbortError');
+    }
 
     return dataUrl;
   }

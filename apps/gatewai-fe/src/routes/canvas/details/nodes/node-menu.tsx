@@ -14,7 +14,7 @@ import {
 import { useCanvasCtx } from "../ctx/canvas-ctx"
 
 const NodeMenu = memo((props: NodeProps<Node<CanvasDetailsNode>>) => {
-    const { onNodesDelete, rfInstance } = useCanvasCtx();
+    const { onNodesDelete, duplicateNode, rfInstance } = useCanvasCtx();
 
     const deleteNode = () => {
         const node = rfInstance.current?.getNode(props.id);
@@ -28,11 +28,15 @@ const NodeMenu = memo((props: NodeProps<Node<CanvasDetailsNode>>) => {
             <DropdownMenuTrigger asChild>
                 <Button size="xs" variant="ghost"><MenuIcon /> </Button>
             </DropdownMenuTrigger>
-            <DropdownMenuContent className="w-56" align="start">
+            <DropdownMenuContent className="w-64" align="start">
             <DropdownMenuGroup>
+                <DropdownMenuItem onClick={() => duplicateNode(props.id)}>
+                    Duplicate
+                    <DropdownMenuShortcut className="italic text-[11px]">ctrl + d</DropdownMenuShortcut>
+                </DropdownMenuItem>
                 <DropdownMenuItem onClick={deleteNode}>
                     Delete
-                    <DropdownMenuShortcut className="italic">Delete</DropdownMenuShortcut>
+                    <DropdownMenuShortcut className="italic text-[11px]">delete / backspace</DropdownMenuShortcut>
                 </DropdownMenuItem>
             </DropdownMenuGroup>
             </DropdownMenuContent>

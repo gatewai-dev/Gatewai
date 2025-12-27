@@ -8,6 +8,7 @@ import { UserAssetsProvider } from "../assets/user-assets-ctx";
 import { NodeTemplateDnDProvider } from "../node-templates/node-template-drag.ctx";
 import { NodeTemplatesProvider } from "../node-templates/node-templates.ctx";
 import { TaskManagerProvider } from "./ctx/task-manager-ctx";
+import { ProcessorProvider } from "./processor/processor-ctx";
 
 function CanvasDetails() {
     const { canvasId } = useParams();
@@ -22,7 +23,9 @@ function CanvasDetails() {
                         <SelectedEntitiesProvider>
                             <ReactFlowProvider>
                                 <CanvasProvider canvasId={canvasId}>
-                                    <ReactflowContainer />
+                                    <ProcessorProvider>
+                                        <ReactflowContainer />
+                                    </ProcessorProvider>
                                 </CanvasProvider>
                             </ReactFlowProvider>
                         </SelectedEntitiesProvider>

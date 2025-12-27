@@ -47,7 +47,6 @@ function useNodeInputValuesResolver({nodeId}: {nodeId: NodeEntityType["id"]}) {
       const edges = useAppSelector(makeSelectEdgesByTargetNodeId(nodeId))
       const sourceNodeIds = useMemo(() => edges.map(m => m.source), [edges]);
       const sourceNodes = useAppSelector(makeSelectNodesByIds(sourceNodeIds));
-      console.log({sourceNodes, nodeId})
       const sourceNodeIdsKey = sourceNodeIds.join(',');
       const cachedResults = useLiveQuery(() =>
             db.clientNodeResults.where('id').anyOf(sourceNodeIds).toArray(),

@@ -14,14 +14,17 @@ export type CanvasCtxData = {
 }
 
 export type NodeProcessorCtx<T> = {
-  node: NodeEntityType
+  node: NodeEntityType;
   data: CanvasCtxData;
-  extraArgs: T
+  extraArgs: T;
+  signal?: AbortSignal;
 }
 
 type NodeProcessorExtraArgs = BlurExtraArgs | ResizeExtraArgs;
 
-export type NodeProcessor<T> = (ctx: NodeProcessorCtx<T>) => Promise<{ success: boolean, error?: string, newResult?: NodeResult }>;
+export type NodeProcessor<T> = (
+  ctx: NodeProcessorCtx<T>
+) => Promise<{ success: boolean; error?: string; newResult?: NodeResult }>;
 
 const browserNodeProcessors: Partial<Record<NodeType, NodeProcessor<NodeProcessorExtraArgs>>> = {
   Resize: resizeProcessor as NodeProcessor<ResizeExtraArgs>,

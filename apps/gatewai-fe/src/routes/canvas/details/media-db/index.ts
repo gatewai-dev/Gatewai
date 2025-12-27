@@ -152,7 +152,7 @@ export async function nodeResultHashBuilder(node: NodeEntityType): Promise<strin
     return null;
   }
   
-  return await hashNodeResult(node.result as NodeResult);
+  return await hashNodeResult(node.result as unknown as NodeResult);
 }
 
 /**
