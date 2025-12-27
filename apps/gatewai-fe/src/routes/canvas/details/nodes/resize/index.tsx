@@ -7,7 +7,6 @@ import type { ResizeNode } from '../node-props';
 import { AspectRatioSwitch } from './aspect-ratio-switch';
 import { ResizeHeightInput } from './height-input';
 import { ResizeWidthInput } from './width-input';
-import type { config } from 'process';
 import { useNodeResult, useNodeImageUrl } from '../../processor/processor-ctx';
 
 const ImagePlaceholder = () => {
@@ -31,7 +30,7 @@ const ResizeNodeComponent = memo((props: NodeProps<ResizeNode>) => {
     if (!imageUrl || !canvasRef.current) return;
     
     const canvas = canvasRef.current;
-    const ctx = canvas.getContext('2d', { willReadFrequently: true });
+    const ctx = canvas.getContext('2d');
     if (!ctx) return;
     
     const img = new Image();
@@ -80,12 +79,12 @@ const ResizeNodeComponent = memo((props: NodeProps<ResizeNode>) => {
                 originalHeight={null}
                 maintainAspect={node.config?.maintainAspect ?? true}
               />
+              <AspectRatioSwitch
+                node={node}
+                originalWidth={null}
+                originalHeight={null}
+              />
             </div>
-            <AspectRatioSwitch
-              node={node}
-              originalWidth={null}
-              originalHeight={null}
-            />
           </>
         )}
       </div>

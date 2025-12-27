@@ -1,21 +1,38 @@
 import { Input } from "@/components/ui/input";
 import { type NodeEntityType } from "@/store/nodes";
 import type { ResizeNodeConfig } from "@gatewai/types";
-import { memo, useCallback } from "react";
+import { memo, useCallback, useState, useEffect } from "react";
 import { useCanvasCtx } from "../../ctx/canvas-ctx";
 
 
 const ResizeHeightInput = memo(({node, originalWidth, originalHeight, maintainAspect}: {node: NodeEntityType, originalWidth: number | null, originalHeight: number | null, maintainAspect: boolean}) => {
   const config: ResizeNodeConfig = node?.config as ResizeNodeConfig;
     const { onNodeConfigUpdate } = useCanvasCtx();
+
+  const displayValue = config.height ?? originalHeight ?? 0;
+  const [inputValue, setInputValue] = useState(displayValue.toString());
+
+  useEffect(() => {
+    setInputValue(displayValue.toString());
+  }, [displayValue]);
   
   const handleChange = useCallback((e: React.ChangeEvent<HTMLInputElement>) => {
-    const valueStr = e.target.value;
-    if (valueStr === '') return;
-    const value = parseInt(valueStr, 10);
-    if (isNaN(value) || value < 1 || value > 2000) return;
+    setInputValue(e.target.value);
+  }, []);
+
+  const handleBlur = useCallback(() => {
+    if (inputValue === '') {
+      setInputValue(displayValue.toString());
+      return;
+    }
+    const value = parseInt(inputValue, 10);
+    if (isNaN(value) || value < 1 || value > 2000) {
+      setInputValue(displayValue.toString());
+      return;
+    }
     
     let updates: Partial<ResizeNodeConfig> = { height: value };
+    console.log({maintainAspect})
     if (maintainAspect && originalWidth && originalHeight) {
       const newWidth = Math.round((originalWidth / originalHeight) * value);
       updates = { ...updates, width: newWidth };
@@ -25,9 +42,7 @@ const ResizeHeightInput = memo(({node, originalWidth, originalHeight, maintainAs
       id: node.id,
       newConfig: updates
     });
-  }, [maintainAspect, originalWidth, originalHeight, onNodeConfigUpdate, node.id]);
-  
-  const displayValue = config.height ?? originalHeight ?? 0;
+  }, [inputValue, maintainAspect, originalWidth, originalHeight, onNodeConfigUpdate, node.id, displayValue]);
   
   return (
     <div className="flex items-center gap-1 flex-1">
@@ -36,8 +51,9 @@ const ResizeHeightInput = memo(({node, originalWidth, originalHeight, maintainAs
         type="text"
         inputMode="numeric"
         pattern="[0-9]*"
-        value={displayValue}
+        value={inputValue}
         onChange={handleChange}
+        onBlur={handleBlur}
       />
     </div>
   );

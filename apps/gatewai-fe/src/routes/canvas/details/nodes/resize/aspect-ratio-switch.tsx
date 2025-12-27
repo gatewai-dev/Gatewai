@@ -1,7 +1,8 @@
-import { Label } from "@/components/ui/label";
-import { Switch } from "@/components/ui/switch";
+import { Button } from "@/components/ui/button";
+import { Tooltip, TooltipContent, TooltipProvider, TooltipTrigger } from "@/components/ui/tooltip";
 import { type NodeEntityType } from "@/store/nodes";
 import type { ResizeNodeConfig } from "@gatewai/types";
+import { Lock, Unlock } from "lucide-react";
 import { memo, useCallback } from "react";
 import { useCanvasCtx } from "../../ctx/canvas-ctx";
 
@@ -26,14 +27,22 @@ const AspectRatioSwitch = memo(({node, originalWidth, originalHeight}: {node: No
   }, [originalWidth, originalHeight, onNodeConfigUpdate, node.id, config.width]);
   
   return (
-    <div className="flex items-center gap-2">
-      <Switch
-        id="maintain-aspect"
-        checked={maintainAspect}
-        onCheckedChange={handleChange}
-      />
-      <Label htmlFor="maintain-aspect">Keep scaling</Label>
-    </div>
+    <TooltipProvider>
+      <Tooltip>
+        <TooltipTrigger asChild>
+          <Button
+            variant="outline"
+            size="icon"
+            onClick={() => handleChange(!maintainAspect)}
+          >
+            {maintainAspect ? <Lock className="h-4 w-4" /> : <Unlock className="h-4 w-4" />}
+          </Button>
+        </TooltipTrigger>
+        <TooltipContent>
+          <p>Lock Aspect Ratio</p>
+        </TooltipContent>
+      </Tooltip>
+    </TooltipProvider>
   );
 });
 

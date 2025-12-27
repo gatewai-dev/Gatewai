@@ -1,5 +1,5 @@
 import { EventEmitter } from 'events';
-import type { NodeResult, FileData, LLMResult, TextResult, FileResult, ImageGenResult } from '@gatewai/types';
+import type { NodeResult, FileData, LLMResult, TextResult, FileResult, ImageGenResult, ResizeNodeConfig } from '@gatewai/types';
 import type { EdgeEntityType } from '@/store/edges';
 import type { NodeEntityType } from '@/store/nodes';
 import { pixiProcessor } from './pixi-service';
@@ -79,7 +79,7 @@ export class NodeGraphProcessor extends EventEmitter {
     });
 
     // Detect removed edges and mark (previous) targets dirty
-    const removedEdges = prevEdges.filter(pe => !this.edges.some(e => e.id === e.id));
+    const removedEdges = prevEdges.filter(pe => !this.edges.some(e => e.id === pe.id));
     removedEdges.forEach(edge => this.markDirty(edge.target, true));
 
     // Clean up states for deleted nodes
@@ -220,7 +220,7 @@ export class NodeGraphProcessor extends EventEmitter {
       if (!imageUrl) throw new Error('No image URL');
 
       // Process with Pixi
-      const config = node.config as { width?: number; height?: number };
+      const config = node.config as ResizeNodeConfig;
       const dataUrl = await pixiProcessor.processResize(
         imageUrl,
         { width: config.width ?? 512, height: config.height ?? 512 },

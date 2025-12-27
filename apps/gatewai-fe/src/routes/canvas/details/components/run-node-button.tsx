@@ -2,7 +2,7 @@
 import { memo, useMemo } from 'react';
 import { type NodeProps } from '@xyflow/react';
 import { Button, type ButtonProps } from '@/components/ui/button';
-import { ForwardIcon, PlayIcon } from 'lucide-react';
+import { ForwardIcon } from 'lucide-react';
 import { useCanvasCtx } from '../ctx/canvas-ctx';
 import type { AnyNode } from '../nodes/node-props';
 import { useTaskManagerCtx } from '../ctx/task-manager-ctx';
@@ -17,7 +17,12 @@ const RunNodeButton = memo(({nodeProps, ...buttonProps}: RunNodeButtonProps) => 
   const { nodeTaskStatus } = useTaskManagerCtx();
 
   const isNodeRunning = useMemo(() => {
-    return Object.hasOwn(nodeTaskStatus, nodeProps.id)
+    const hasProp = Object.hasOwn(nodeTaskStatus, nodeProps.id)
+    if (hasProp) {
+      const status = nodeTaskStatus[nodeProps.id];
+      return status.status === "EXECUTING" || status.status === "QUEUED";
+    }
+    return false;
   }, [nodeProps.id, nodeTaskStatus])
 
   return (

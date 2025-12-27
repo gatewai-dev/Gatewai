@@ -337,7 +337,7 @@ export async function SEED_createNodeTemplates(prisma: PrismaClient) {
   await prisma.nodeTemplate.create({
     data: {
       type: NodeType.ImageGen,
-      displayName: 'Image Generation',
+      displayName: 'Multimodal Image Generation',
       description: 'Generate images from text prompts and reference images',
       tokenPrice: 0.0,
       variableInputs: false,
@@ -352,9 +352,7 @@ export async function SEED_createNodeTemplates(prisma: PrismaClient) {
         ]
       },
       defaultConfig: {
-        transparentBackground: true,
-        quality: "auto",
-        size: "1024x1024",
+        model: 'google/gemini-3-pro-image'
       },
     }
   });
@@ -365,7 +363,6 @@ export async function SEED_createNodeTemplates(prisma: PrismaClient) {
       type: NodeType.LLM,
       displayName: 'LLM',
       description: 'Run a LLM model',
-      
       tokenPrice: 0.0,
       variableInputs: false,
       variableOutputs: false,
@@ -380,10 +377,8 @@ export async function SEED_createNodeTemplates(prisma: PrismaClient) {
         ]
       },
       defaultConfig: {
-        reasoning: {
-          effort: "low",
-        },
-        model: "gpt-5",
+        model: "openai/gpt-5-chat",
+        temperature: 0,
       },
     }
   });

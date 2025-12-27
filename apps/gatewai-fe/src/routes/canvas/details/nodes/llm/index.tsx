@@ -4,8 +4,6 @@ import { type NodeProps } from '@xyflow/react';
 import type {
   LLMResult,
 } from '@gatewai/types';
-import { useAppSelector } from '@/store';
-import { makeSelectNodeById } from '@/store/nodes';
 import type { LLMNode } from '../node-props';
 import { BaseNode } from '../base';
 import { MarkdownRenderer } from '../../components/markdown-renderer';
@@ -13,8 +11,8 @@ import { RunNodeButton } from '../../components/run-node-button';
 import { useNodeResult } from '../../processor/processor-ctx';
 
 const LlmNodeComponent = memo((props: NodeProps<LLMNode>) => {
+  const { result } = useNodeResult<LLMResult>(props.id);
 
-  const { result, error } = useNodeResult<LLMResult>(props.id);
   const llmTextContent = useMemo(() => {
     if (!result || !result.outputs || result?.outputs?.length === 0) return null;
     const selectedGeneration = result.outputs[result.selectedOutputIndex || 0];
@@ -38,6 +36,5 @@ const LlmNodeComponent = memo((props: NodeProps<LLMNode>) => {
     </BaseNode>
   );
 });
-LlmNodeComponent.displayName = 'LLMNode';
 
 export { LlmNodeComponent };

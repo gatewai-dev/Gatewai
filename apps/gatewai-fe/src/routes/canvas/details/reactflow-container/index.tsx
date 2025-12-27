@@ -173,7 +173,7 @@ function ReactflowContainer({ children }: ReactFlowProps) {
           <Panel position="bottom-center">
             <Toolbar />
           </Panel>
-          <Panel position="bottom-right">
+          <Panel position="bottom-right" className="bg-background right-0 top-0 m-0! h-full flex flex-col">
             <RightPanel />
           </Panel>
         </ReactFlow>

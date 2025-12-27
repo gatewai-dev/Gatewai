@@ -28,6 +28,8 @@ function DebugPanel() {
     };
   }, [processor]);
 
+  const reversed = [...logs].reverse();
+
   return (
     <div className="">
       <Collapsible open={open} onOpenChange={setOpen} className="w-80">
@@ -44,7 +46,7 @@ function DebugPanel() {
 
           <CollapsibleContent>
             <CardContent className="max-h-64 overflow-auto space-y-1 text-xs">
-              {logs.reverse().map((log, i) => (
+              {reversed.map((log, i) => (
                 <div key={i} className="border-b border-muted pb-1">
                   {log}
                 </div>

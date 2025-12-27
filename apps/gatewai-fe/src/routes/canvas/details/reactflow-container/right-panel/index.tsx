@@ -5,9 +5,11 @@ import { DebugPanel } from '../../processor/debug-panel';
 
 const RightPanel = memo(() => {
   return (
-    <div className="border-0 bg-background px-2 py-1 rounded-md shadow-md">
+    <div className="border-0 bg-background p-4 rounded-md shadow-md flex flex-col justify-between grow">
+      <div>
         <NodeConfigPanel />
-        <DebugPanel />
+      </div>
+      <DebugPanel />
     </div>
   );
 })

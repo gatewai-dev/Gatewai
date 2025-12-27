@@ -62,7 +62,7 @@ import type { DataType, FileAsset } from "@gatewai/db";
   }
 
   export type LLMResult = MultipleOutputResult & {
-    outputs: [{ items: [OutputItem<"Text">] }];
+    outputs: { items: [OutputItem<"Text">] }[];
   }
 
   export type ResizeResult = SingleOutputResult & {

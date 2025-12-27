@@ -8,7 +8,7 @@ import { Button } from '@/components/ui/button';
 
 const TopPanel = memo(() => {
   return (
-    <div className="border-0 bg-background flex gap-1 rounded-md shadow-md">
+    <div className="border-0 bg-background gap-1 rounded-md shadow-md flex items-center">
         <CanvasName />
         <Separator orientation='vertical' />
         <CanvasTasksPanel />

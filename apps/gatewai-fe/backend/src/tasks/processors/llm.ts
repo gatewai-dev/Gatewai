@@ -1,5 +1,5 @@
 import { DataType } from '@gatewai/db';
-import type { FileData, NodeResult, Output } from '@gatewai/types';
+import type { FileData, LLMResult } from '@gatewai/types';
 import { getInputValue } from '../../repositories/canvas.js';
 import type { NodeProcessor } from './types.js';
 import { generateText, type ModelMessage, type TextPart, type UserContent } from 'ai';
@@ -43,9 +43,9 @@ const llmProcessor: NodeProcessor = async ({ node, data }) => {
             ? (userContent[0] as string)
             : userContent,
       });
-
+      console.log({userContent})
       const result = await generateText({
-        model: 'grok-4-1-fast-non-reasoning',
+        model: 'openai/gpt-5-chat',
         messages,
       });
 
@@ -54,12 +54,12 @@ const llmProcessor: NodeProcessor = async ({ node, data }) => {
       );
       if (!outputHandle) throw new Error('Output handle is missing');
 
-      const newResult = structuredClone(node.result as NodeResult) ?? {
+      const newResult = structuredClone(node.result as unknown as LLMResult) ?? {
         outputs: [],
         selectedOutputIndex: 0,
       };
-
-      const newGeneration: Output = {
+      console.log({result})
+      const newGeneration: LLMResult["outputs"][number] = {
         items: [
           {
             type: DataType.Text,

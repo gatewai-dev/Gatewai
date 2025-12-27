@@ -5,12 +5,18 @@ const TextNodeConfigSchema = z.object({
   content: z.string().optional(),
 }).strict();
 
-// Image Node
-const ImageNodeConfigSchema = z.object({}).strict();
 
 // File Node
 const FileNodeConfigSchema = z.object({}).strict();
-const ImageGenNodeConfigSchema = z.object({}).strict();
+
+const IMAGEGEN_NODE_MODELS = [
+  'google/gemini-3-pro-image',
+  'google/gemini-2.5-flash-image',
+  'openai/gpt-5'
+] as const
+const ImageGenNodeConfigSchema = z.object({
+  model: z.enum(IMAGEGEN_NODE_MODELS),
+}).strict();
 
 // Crawler Node
 const CrawlerNodeConfigSchema = z.object({
@@ -69,16 +75,37 @@ const RouterNodeConfigSchema = z.object({
   invert: z.boolean().optional(),
 }).strict();
 
-const LLM_NODE_MODELS = ['xai/grok-4-fast-non-reasoning', 'google/gemini-2.5-flash', 'openai/gpt-5'] as const
+const LLM_NODE_MODELS = [
+  'openai/gpt-5-chat',
+  'openai/gpt-5-pro',
+  'openai/gpt-5.1-instant',
+  'openai/gpt-5.1-thinking',
+  'xai/grok-4',
+  'xai/grok-4.1-fast-reasoning',
+  'xai/grok-4.1-fast-non-reasoning',
+  'anthropic/claude-opus-4.5',
+  'anthropic/claude-haiku-4.5',
+  'anthropic/claude-opus-4.1',
+  'anthropic/claude-opus-4',
+  'perplexity/sonar-pro',
+  'perplexity/sonar',
+  'perplexity/sonar-reasoning',
+  'amazon/nova-pro',
+  'meta/llama-3.3-70b',
+  'deepseek/deepseek-v3.2',
+] as const
 
 const LLMNodeConfigSchema = z.object({
-  model: z.enum(LLM_NODE_MODELS)
+  model: z.enum(LLM_NODE_MODELS),
+  temperature: z.number().min(0).max(2).optional().default(0),
 }).strict();
 // Array Node
 const ArrayNodeConfigSchema = z.object({}).strict();
 
 // Resize Node
 const ResizeNodeConfigSchema = z.object({
+  originalWidth: z.number().int().positive().optional(),
+  originalHeight: z.number().int().positive().optional(),
   width: z.number().int().positive().optional(),
   height: z.number().int().positive().optional(),
   maintainAspect: z.boolean().optional(),
@@ -89,7 +116,6 @@ const NodeConfigSchema = z.union([
   ImageGenNodeConfigSchema,
   LLMNodeConfigSchema,
   TextNodeConfigSchema,
-  ImageNodeConfigSchema,
   FileNodeConfigSchema,
   CrawlerNodeConfigSchema,
   AgentNodeConfigSchema,
@@ -106,7 +132,6 @@ const NodeConfigSchema = z.union([
 
 // Inferred types
 type TextNodeConfig = z.infer<typeof TextNodeConfigSchema>;
-type ImageNodeConfig = z.infer<typeof ImageNodeConfigSchema>;
 type LLMNodeConfig = z.infer<typeof LLMNodeConfigSchema>;
 type FileNodeConfig = z.infer<typeof FileNodeConfigSchema>;
 type CrawlerNodeConfig = z.infer<typeof CrawlerNodeConfigSchema>;
@@ -127,7 +152,6 @@ type ImageGenConfig = z.infer<typeof ImageGenNodeConfigSchema>;
 export {
   NodeConfigSchema,
   TextNodeConfigSchema,
-  ImageNodeConfigSchema,
   FileNodeConfigSchema,
   CrawlerNodeConfigSchema,
   AgentNodeConfigSchema,
@@ -143,7 +167,6 @@ export {
   ResizeNodeConfigSchema,
   CompositorLayerUpdatesSchema,
   type TextNodeConfig,
-  type ImageNodeConfig,
   type FileNodeConfig,
   type CrawlerNodeConfig,
   type AgentNodeConfig,
@@ -161,4 +184,5 @@ export {
   type AllNodeConfig,
   type ImageGenConfig,
   LLM_NODE_MODELS,
+  IMAGEGEN_NODE_MODELS,
 };

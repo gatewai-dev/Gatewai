@@ -3,7 +3,7 @@ import { useAppSelector } from '@/store';
 import { makeSelectAllNodeEntities, type NodeEntityType } from '@/store/nodes';
 import { makeSelectAllEdges } from '@/store/edges';
 import { NodeGraphProcessor } from './node-graph-processor';
-import type { NodeResult } from '@gatewai/types';
+import type { FileResult, NodeResult } from '@gatewai/types';
 import { makeSelectAllHandles } from '@/store/handles';
 
 const ProcessorContext = createContext<NodeGraphProcessor | null>(null);
@@ -108,7 +108,7 @@ export function useNodeImageUrl(nodeId: string): string | null {
   const output = result.outputs[result.selectedOutputIndex ?? 0];
   if (!output?.items[0]) return null;
   
-  const fileData = output.items[0].data as any;
+  const fileData = output.items[0].data as FileResult['outputs'][number]['items'][number]['data'];
   return fileData?.entity?.signedUrl ?? fileData?.dataUrl ?? null;
 }
 
