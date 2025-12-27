@@ -1,4 +1,4 @@
-import { memo, useMemo, useSyncExternalStore, type JSX, type ReactNode } from 'react';
+import { memo, useMemo, type JSX, type ReactNode } from 'react';
 import { Handle, Position, getBezierPath, type EdgeProps, type NodeProps, type Node, type ConnectionLineComponentProps, useEdges } from '@xyflow/react';
 import type { CanvasDetailsNode } from '@/rpc/types';
 import { useAppSelector } from '@/store';
@@ -7,10 +7,10 @@ import { dataTypeColors } from '@/config';
 import { NodeMenu } from './node-menu';
 import { makeSelectEdgeById } from '@/store/edges';
 import { useNodeInputValidation } from './hooks/use-node-input-validation';
-import { makeSelectAllNodeEntities } from '@/store/nodes';
 import type { NodeResult } from '@gatewai/types';
 import { cn } from '@/lib/utils';
-import { useMultipleNodeResults, useNodeResult, useProcessor } from '../processor/processor-ctx';
+import { useMultipleNodeResults, useNodeResult } from '../processor/processor-ctx';
+import { makeSelectNodeById } from '@/store/nodes';
 
 const getColorForType = (type: string) => {
   return dataTypeColors[type] || { bg: 'bg-gray-500', stroke: 'stroke-gray-500', hex: '#6b7280', text: 'text-gray-500' };
@@ -31,10 +31,11 @@ const BaseNode = memo((props: NodeProps<Node<CanvasDetailsNode>> & {
   children?: ReactNode;
   className?: string;
 }) => {
-  const { selected, type, id } = props;
+  const { selected, id } = props;
   const handles = useAppSelector(makeSelectHandlesByNodeId(id));
   const validationErrors = useNodeInputValidation(id);
   const edges = useEdges();
+  const node = useAppSelector(makeSelectNodeById(id));
 
   // 1. Separate and Sort Handles
   // We use useMemo to avoid re-sorting on every render unless data.handles changes
@@ -130,7 +131,7 @@ const BaseNode = memo((props: NodeProps<Node<CanvasDetailsNode>> & {
       <div className="px-2 py-2 h-[calc(100%-1rem)]">
         <div className='header-section flex justify-between items-center mb-3 px-1'>
           <div className="text-xs font-semibold text-node-title">
-            {type} {props.id}
+            {node.name} {props.id}
           </div>
           <NodeMenu {...props} />
         </div>

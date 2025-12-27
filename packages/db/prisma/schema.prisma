@@ -165,7 +165,6 @@ model Node {
     batchId?: string;
   }
   */
-  error          Json?           // Error message if processing failed
   // Visual properties
   zIndex         Int?            // For layering
   // Timestamps - DB managed

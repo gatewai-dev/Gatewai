@@ -80,10 +80,24 @@ const tasksSlice = createSlice({
       .addCase(getInitialBatches.fulfilled, (state, action) => {
         const { batches } = action.payload;
         batchAdapter.upsertMany(state, batches.filter((b): b is BatchEntity => b !== null));
-        const runningBatchIds = batches.map((b) => b.id);
+        const runningBatchIds = batches.filter(f => f.finishedAt == null).map((b) => b.id);
         state.batchIdsToPoll = [...new Set([...state.batchIdsToPoll, ...runningBatchIds])];
         if (runningBatchIds.length > 0) {
           state.pollingInterval = 3000;
+        } else {
+            state.pollingInterval = 0;
+        }
+        state.initialLoading = false;
+      })
+      .addCase(getBatchDetails.fulfilled, (state, action) => {
+        const { batches } = action.payload;
+        batchAdapter.upsertMany(state, batches.filter((b): b is BatchEntity => b !== null));
+        const runningBatchIds = batches.filter(f => f.finishedAt == null).map((b) => b.id);
+        state.batchIdsToPoll = [...new Set([...state.batchIdsToPoll, ...runningBatchIds])];
+        if (runningBatchIds.length > 0) {
+          state.pollingInterval = 3000;
+        } else {
+            state.pollingInterval = 0;
         }
         state.initialLoading = false;
       });

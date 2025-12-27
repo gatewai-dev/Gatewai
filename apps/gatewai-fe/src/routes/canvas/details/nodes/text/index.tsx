@@ -8,15 +8,25 @@ import { useAppDispatch, useAppSelector } from '@/store';
 import { updateTextNodeValue, makeSelectNodeById } from '@/store/nodes';
 import type { TextNode } from '../node-props';
 import { BaseNode } from '../base';
+import { useCanvasCtx } from '../../ctx/canvas-ctx';
 
 const TextNodeComponent = memo((props: NodeProps<TextNode>) => {
   const node = useAppSelector(makeSelectNodeById(props.id));
-
-  const dispatch = useAppDispatch();
+  const { onNodeResultUpdate } = useCanvasCtx();
   const result = node?.result as unknown as TextResult;
   const text = result?.outputs?.[0]?.items?.[0]?.data ?? '';
   const handleChange = (e: React.ChangeEvent<HTMLTextAreaElement>) => {
-    dispatch(updateTextNodeValue({ id: props.id, value: e.target.value }));
+    const newResult: TextResult = {
+      selectedOutputIndex: 0,
+      outputs: [{
+        items: [{
+          outputHandleId: result?.outputs?.[0]?.items?.[0]?.outputHandleId,
+          type: 'Text',
+          data: e.target.value,
+        }]
+      }]
+    };
+    onNodeResultUpdate({ id: props.id, newResult });
   };
 
   return (

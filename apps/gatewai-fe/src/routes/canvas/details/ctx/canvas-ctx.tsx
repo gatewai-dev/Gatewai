@@ -15,7 +15,7 @@ import {
 } from '@xyflow/react';
 import type { AllNodeConfig, NodeResult } from '@gatewai/types';
 import { useAppDispatch, useAppSelector, type RootState } from '@/store';
-import { setAllNodeEntities, type NodeEntityType, deleteManyNodeEntity, updateNodeConfig } from '@/store/nodes';
+import { setAllNodeEntities, type NodeEntityType, deleteManyNodeEntity, updateNodeConfig, updateNodeResult } from '@/store/nodes';
 import { generateId } from '@/lib/idgen';
 import { createNodeEntity } from '@/store/nodes';
 import type { CanvasDetailsRPC, NodeTemplateListItemRPC, PatchCanvasRPCParams } from '@/rpc/types';
@@ -47,6 +47,10 @@ interface CanvasContextType {
     newConfig: Partial<AllNodeConfig>;
   }) => void
   createNewHandle: (newHandle: HandleEntityType) => void;
+  onNodeResultUpdate: (payload: {
+    id: string;
+    newResult: NodeResult;
+  }) => void;
 }
 
 const CanvasContext = createContext<CanvasContextType | undefined>(undefined);
@@ -190,6 +194,11 @@ const CanvasProvider = ({
 
   const onNodeConfigUpdate = useCallback((payload: {id: string, newConfig: Partial<AllNodeConfig>}) => {
     dispatch(updateNodeConfig(payload));
+    scheduleSave();
+  }, [dispatch, scheduleSave])
+
+  const onNodeResultUpdate = useCallback((payload: {id: string, newResult: NodeResult}) => {
+    dispatch(updateNodeResult(payload));
     scheduleSave();
   }, [dispatch, scheduleSave])
 
@@ -550,7 +559,8 @@ const CanvasProvider = ({
     duplicateNode,
     onNodesDelete,
     onNodeConfigUpdate,
-    createNewHandle
+    createNewHandle,
+    onNodeResultUpdate
   }), [
     canvasDetailsResponse?.canvas,
     onNodesChange,
@@ -563,7 +573,8 @@ const CanvasProvider = ({
     duplicateNode,
     onNodesDelete,
     onNodeConfigUpdate,
-    createNewHandle
+    createNewHandle,
+    onNodeResultUpdate
   ]);
 
   return <CanvasContext.Provider value={value}>{children}</CanvasContext.Provider>;

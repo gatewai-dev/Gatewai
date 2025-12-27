@@ -32,7 +32,7 @@ const AspectRatioSwitch = memo(({node, originalWidth, originalHeight}: {node: No
         <TooltipTrigger asChild>
           <Button
             variant="outline"
-            size="icon"
+            size="icon-sm"
             onClick={() => handleChange(!maintainAspect)}
           >
             {maintainAspect ? <Lock className="h-4 w-4" /> : <Unlock className="h-4 w-4" />}

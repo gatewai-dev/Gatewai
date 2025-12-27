@@ -9,17 +9,13 @@ import { getImageDimensions } from '../../utils/image.js';
 import { randomUUID } from 'crypto';
 
 const imageGenProcessor: NodeProcessor = async ({ node, data }) => {
-    try {
-      const systemPrompt = getInputValue(data, node.id, false, { dataType: DataType.Text, label: 'System Prompt' }) as string | null;
-      const userPrompt = getInputValue(data, node.id, true, { dataType: DataType.Text, label: 'Prompt' }) as string;
+    try {const userPrompt = getInputValue(data, node.id, true, { dataType: DataType.Text, label: 'Prompt' }) as string;
       const imageFileData = getInputValuesByType(data, node.id, { dataType: DataType.Image }) as FileData[] | null;
 
       // Build messages
       const messages: ModelMessage[] = [];
-
-      if (systemPrompt) {
-        messages.push({ role: 'system', content: systemPrompt });
-      }
+      // IF USER DOESN'T PROVIDE PROMPT THAT REQUEST IMAGE, STILL FORCE TO GENERATE IMAGE
+      messages.push({ role: 'system', content: "Generate Image with user's request. WHATEVER entered, you must generate image." });
 
       const userContent: UserContent = [];
 

@@ -1,4 +1,4 @@
-import type { AllNodeConfig, NodeResult, TextResult } from '@gatewai/types';
+import type { AllNodeConfig, NodeResult } from '@gatewai/types';
 import type { CanvasDetailsRPC } from "@/rpc/types";
 import { createEntityAdapter, createDraftSafeSelector, createSlice, type PayloadAction } from "@reduxjs/toolkit"
 
@@ -19,22 +19,6 @@ const nodesSlice = createSlice({
     deleteNodeEntity: nodeAdapter.removeOne,
     deleteManyNodeEntity: nodeAdapter.removeMany,
     setAllNodeEntities: nodeAdapter.setAll,
-    updateTextNodeValue: (state, action: {payload: {id: string, value: string}}) => {
-      const { id, value } = action.payload;
-      const node = state.entities[id];
-      const existingResult = node.result as TextResult;
-      if (node) {
-        node.result = {
-          outputs: [{
-            items: [{
-              ...existingResult.outputs[0].items[0],
-              type: 'Text',
-              data: value,
-            }]
-          }]
-        };
-      }
-    },
     incrementSelectedResultIndex: (state, action: {payload: {id: string}}) => {
       const { id } = action.payload;
       const node = state.entities[id] as NodeEntityType;
