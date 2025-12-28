@@ -1,22 +1,22 @@
-import { EventEmitter } from "events";
+import type { NodeType } from "@gatewai/db";
 import type {
-	NodeResult,
-	FileData,
-	LLMResult,
-	TextResult,
-	FileResult,
-	ImageGenResult,
-	ResizeNodeConfig,
 	AgentResult,
 	CropNodeConfig,
+	FileData,
+	FileResult,
+	ImageGenResult,
+	LLMResult,
 	MaskResult,
+	NodeResult,
 	PaintResult,
+	ResizeNodeConfig,
+	TextResult,
 } from "@gatewai/types";
+import { EventEmitter } from "events";
 import type { EdgeEntityType } from "@/store/edges";
+import type { HandleEntityType } from "@/store/handles";
 import type { NodeEntityType } from "@/store/nodes";
 import { pixiProcessor } from "./pixi-service";
-import type { NodeType } from "@gatewai/db";
-import type { HandleEntityType } from "@/store/handles";
 
 interface ProcessorConfig {
 	nodes: Map<string, NodeEntityType>;

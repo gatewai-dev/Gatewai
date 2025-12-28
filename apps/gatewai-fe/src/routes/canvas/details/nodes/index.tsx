@@ -1,12 +1,12 @@
-import { TextNodeComponent } from "./text";
-import { LlmNodeComponent } from "./llm";
-import { ImageGenNodeComponent } from "./image-gen";
-import { BlurNodeComponent } from "./blur";
-import { FileNodeComponent } from "./file";
-import { ResizeNodeComponent } from "./resize";
 import { AgentNodeComponent } from "./agent";
+import { BlurNodeComponent } from "./blur";
 import { CropNodeComponent } from "./crop";
+import { FileNodeComponent } from "./file";
+import { ImageGenNodeComponent } from "./image-gen";
+import { LlmNodeComponent } from "./llm";
 import { PaintNodeComponent } from "./paint";
+import { ResizeNodeComponent } from "./resize";
+import { TextNodeComponent } from "./text";
 
 // Node types mapping
 const nodeTypes = {

@@ -1,8 +1,8 @@
-import { Routes, Route } from "react-router";
-import { CanvasRouter } from "./routes/canvas/router";
-import { CanvasHome } from "./routes/canvas/home";
-import { AuthRouter } from "./routes/auth/router";
+import { Route, Routes } from "react-router";
 import { AuthGuard } from "./routes/auth/auth-guard";
+import { AuthRouter } from "./routes/auth/router";
+import { CanvasHome } from "./routes/canvas/home";
+import { CanvasRouter } from "./routes/canvas/router";
 
 function AppRouter() {
 	return (

@@ -1,3 +1,4 @@
+import type { FileResult, NodeResult } from "@gatewai/types";
 import {
 	createContext,
 	useContext,
@@ -6,11 +7,10 @@ import {
 	useSyncExternalStore,
 } from "react";
 import { useAppSelector } from "@/store";
-import { makeSelectAllNodeEntities, type NodeEntityType } from "@/store/nodes";
 import { makeSelectAllEdges } from "@/store/edges";
-import { NodeGraphProcessor } from "./node-graph-processor";
-import type { FileResult, NodeResult } from "@gatewai/types";
 import { makeSelectAllHandles } from "@/store/handles";
+import { makeSelectAllNodeEntities, type NodeEntityType } from "@/store/nodes";
+import { NodeGraphProcessor } from "./node-graph-processor";
 
 const ProcessorContext = createContext<NodeGraphProcessor | null>(null);
 

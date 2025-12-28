@@ -1,10 +1,10 @@
-import { Hono } from "hono";
-import { auth, type AuthHonoTypes } from "./auth.js";
 import { serve } from "@hono/node-server";
+import { Hono } from "hono";
 import { cors } from "hono/cors";
+import { logger } from "hono/logger";
+import { type AuthHonoTypes, auth } from "./auth.js";
 import { ENV_CONFIG } from "./config.js";
 import { v1Router } from "./routes/v1/index.js";
-import { logger } from "hono/logger";
 
 const app = new Hono<{
 	Variables: AuthHonoTypes;

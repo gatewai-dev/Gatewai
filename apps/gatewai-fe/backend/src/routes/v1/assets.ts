@@ -1,18 +1,18 @@
-import { Hono } from "hono";
 import { prisma } from "@gatewai/db";
-import type { AuthHonoTypes } from "../../auth.js";
+import type { FileResult } from "@gatewai/types";
 import { zValidator } from "@hono/zod-validator";
-import { z } from "zod/v4";
 import { randomUUID } from "crypto";
+import { fileTypeFromBuffer } from "file-type";
+import { Hono } from "hono";
+import sharp from "sharp";
+import { z } from "zod/v4";
+import type { AuthHonoTypes } from "../../auth.js";
 import {
 	deleteFromS3,
 	generateSignedUrl,
-	uploadToS3,
 	getFromS3,
+	uploadToS3,
 } from "../../utils/s3.js";
-import sharp from "sharp";
-import { fileTypeFromBuffer } from "file-type";
-import type { FileResult } from "@gatewai/types";
 
 const uploadSchema = z.object({
 	file: z.any(),

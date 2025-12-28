@@ -1,10 +1,10 @@
+import type { NodeTemplate } from "@gatewai/types";
 import {
 	createContext,
+	type PropsWithChildren,
 	useContext,
 	useState,
-	type PropsWithChildren,
 } from "react";
-import type { NodeTemplate } from "@gatewai/types";
 
 interface NodeTemplateDnDContextType {
 	template: NodeTemplate | undefined;

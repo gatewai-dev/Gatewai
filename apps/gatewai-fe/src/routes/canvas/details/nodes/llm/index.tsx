@@ -1,11 +1,11 @@
-import { memo, useMemo } from "react";
-import { type NodeProps } from "@xyflow/react";
 import type { LLMResult } from "@gatewai/types";
-import type { LLMNode } from "../node-props";
-import { BaseNode } from "../base";
+import type { NodeProps } from "@xyflow/react";
+import { memo, useMemo } from "react";
 import { MarkdownRenderer } from "../../components/markdown-renderer";
 import { RunNodeButton } from "../../components/run-node-button";
 import { useNodeResult } from "../../processor/processor-ctx";
+import { BaseNode } from "../base";
+import type { LLMNode } from "../node-props";
 
 const LlmNodeComponent = memo((props: NodeProps<LLMNode>) => {
 	const { result } = useNodeResult<LLMResult>(props.id);

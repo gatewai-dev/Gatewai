@@ -1,13 +1,13 @@
+import type { CropNodeConfig } from "@gatewai/types";
+import type { NodeProps } from "@xyflow/react";
 import { memo, useCallback, useEffect, useMemo, useRef, useState } from "react";
-import { type NodeProps } from "@xyflow/react";
+import { cn } from "@/lib/utils";
 import { useAppDispatch, useAppSelector } from "@/store";
+import { makeSelectEdgesByTargetNodeId } from "@/store/edges";
 import { makeSelectNodeById, updateNodeConfig } from "@/store/nodes";
+import { useNodeImageUrl, useNodeResult } from "../../processor/processor-ctx";
 import { BaseNode } from "../base";
 import type { CropNode } from "../node-props";
-import { useNodeImageUrl, useNodeResult } from "../../processor/processor-ctx";
-import type { CropNodeConfig } from "@gatewai/types";
-import { makeSelectEdgesByTargetNodeId } from "@/store/edges";
-import { cn } from "@/lib/utils";
 
 type Crop = {
 	leftPercentage: number;

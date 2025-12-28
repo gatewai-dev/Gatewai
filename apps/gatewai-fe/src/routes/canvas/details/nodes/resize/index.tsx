@@ -1,12 +1,12 @@
+import type { ResizeNodeConfig } from "@gatewai/types";
+import type { NodeProps } from "@xyflow/react";
 import { memo, useEffect, useRef } from "react";
-import { type NodeProps } from "@xyflow/react";
 import { useAppDispatch, useAppSelector } from "@/store";
 import { makeSelectNodeById, updateNodeConfig } from "@/store/nodes";
+import { useNodeImageUrl, useNodeResult } from "../../processor/processor-ctx";
 import { BaseNode } from "../base";
-import type { ResizeNode } from "../node-props";
-import { useNodeResult, useNodeImageUrl } from "../../processor/processor-ctx";
-import type { ResizeNodeConfig } from "@gatewai/types";
 import { DimensionsConfig } from "../common/dimensions";
+import type { ResizeNode } from "../node-props";
 
 const ImagePlaceholder = () => {
 	return (

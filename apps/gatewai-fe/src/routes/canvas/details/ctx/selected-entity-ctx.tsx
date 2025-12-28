@@ -1,15 +1,15 @@
+import type { Edge as ClientEdge, Node as ClientNode } from "@xyflow/react";
 import {
 	createContext,
-	useCallback,
-	useContext,
-	useState,
 	type Dispatch,
 	type PropsWithChildren,
 	type SetStateAction,
+	useCallback,
+	useContext,
+	useState,
 } from "react";
-import type { Node as ClientNode, Edge as ClientEdge } from "@xyflow/react";
-import type { NodeEntityType } from "@/store/nodes";
 import type { EdgeEntityType } from "@/store/edges";
+import type { NodeEntityType } from "@/store/nodes";
 
 interface SelectedEntitiesContextType {
 	selectedNodeIDs: NodeEntityType["id"][];

@@ -1,10 +1,10 @@
-import { Button } from "@/components/ui/button";
 import type { NodeResult } from "@gatewai/types";
 import { ChevronLeft, ChevronRight } from "lucide-react";
+import { Button } from "@/components/ui/button";
 import { useAppDispatch } from "@/store";
 import {
-	incrementSelectedResultIndex,
 	decrementSelectedResultIndex,
+	incrementSelectedResultIndex,
 	type NodeEntityType,
 } from "@/store/nodes";
 

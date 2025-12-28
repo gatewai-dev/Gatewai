@@ -1,19 +1,19 @@
 import { DataType } from "@gatewai/db";
 import type {
+	CropNodeConfig,
 	FileData,
 	NodeResult,
 	Output,
 	OutputItem,
-	CropNodeConfig,
 } from "@gatewai/types";
 import {
-	getImageBuffer,
-	bufferToDataUrl,
-	getMimeType,
 	applyCrop,
+	bufferToDataUrl,
+	getImageBuffer,
+	getMimeType,
 } from "../../utils/image.js";
-import type { NodeProcessor } from "./types.js";
 import { getInputValue } from "../resolvers.js";
+import type { NodeProcessor } from "./types.js";
 
 const cropProcessor: NodeProcessor = async ({ node, data }) => {
 	try {

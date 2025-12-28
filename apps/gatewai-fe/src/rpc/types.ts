@@ -1,4 +1,4 @@
-import type { InferResponseType, InferRequestType } from "hono";
+import type { InferRequestType, InferResponseType } from "hono";
 import type { rpcClient } from "./client";
 
 export type CanvasDetailsRPC = InferResponseType<

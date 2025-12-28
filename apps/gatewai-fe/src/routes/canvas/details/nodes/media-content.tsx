@@ -1,18 +1,18 @@
 import type { FileResult, ImagesResult } from "@gatewai/types";
 import type { NodeProps } from "@xyflow/react";
-import type { AnyNode } from "./node-props";
-import { OutputSelector } from "./misc/output-selector";
 import { FileIcon } from "lucide-react";
 import {
-	MediaController,
 	MediaControlBar,
-	MediaTimeRange,
-	MediaTimeDisplay,
-	MediaVolumeRange,
-	MediaPlayButton,
+	MediaController,
 	MediaMuteButton,
+	MediaPlayButton,
+	MediaTimeDisplay,
+	MediaTimeRange,
+	MediaVolumeRange,
 } from "media-chrome/react";
 import { GetAssetEndpoint } from "@/utils/file";
+import { OutputSelector } from "./misc/output-selector";
+import type { AnyNode } from "./node-props";
 
 function MediaContent({
 	node,

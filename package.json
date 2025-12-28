@@ -3,8 +3,7 @@
 	"scripts": {
 		"build": "turbo run build --force",
 		"dev": "turbo run dev",
-		"lint": "turbo run lint",
-		"biome-format": "pnpm exec biome format --write",
+		"biome": "pnpm exec biome check --write",
 		"clean": "turbo run clean && rm -rf node_modules",
 		"format": "prettier --write \"**/*.{ts,tsx,md}\"",
 		"changeset": "changeset",

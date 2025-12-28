@@ -1,17 +1,17 @@
-import { memo, useCallback, useEffect, useMemo, useRef, useState } from "react";
-import { type NodeProps } from "@xyflow/react";
-import { useAppDispatch, useAppSelector } from "@/store";
-import { makeSelectNodeById, updateNodeResult } from "@/store/nodes";
-import { BaseNode } from "../base";
-import type { PaintNode } from "../node-props";
-import { useNodeImageUrl, useNodeResult } from "../../processor/processor-ctx";
 import type { OutputItem, PaintNodeConfig, PaintResult } from "@gatewai/types";
-import { makeSelectEdgesByTargetNodeId } from "@/store/edges";
-import { makeSelectHandlesByNodeId } from "@/store/handles";
+import type { NodeProps } from "@xyflow/react";
+import { Brush, Eraser } from "lucide-react";
+import { memo, useCallback, useEffect, useMemo, useRef, useState } from "react";
 import { Button } from "@/components/ui/button";
 import { Label } from "@/components/ui/label";
 import { Slider } from "@/components/ui/slider";
-import { Brush, Eraser } from "lucide-react";
+import { useAppDispatch, useAppSelector } from "@/store";
+import { makeSelectEdgesByTargetNodeId } from "@/store/edges";
+import { makeSelectHandlesByNodeId } from "@/store/handles";
+import { makeSelectNodeById, updateNodeResult } from "@/store/nodes";
+import { useNodeImageUrl, useNodeResult } from "../../processor/processor-ctx";
+import { BaseNode } from "../base";
+import type { PaintNode } from "../node-props";
 
 const PaintNodeComponent = memo((props: NodeProps<PaintNode>) => {
 	const dispatch = useAppDispatch();
@@ -61,7 +61,7 @@ const PaintNodeComponent = memo((props: NodeProps<PaintNode>) => {
 			const existingOutputItem = result?.outputs[
 				result.selectedOutputIndex
 			].items.find((f) => f.type === "Mask");
-			let newResult: PaintResult | undefined = undefined;
+			let newResult: PaintResult | undefined;
 			console.log(handles);
 			if (existingOutputItem) {
 				newResult = {

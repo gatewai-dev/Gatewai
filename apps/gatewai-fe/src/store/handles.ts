@@ -1,9 +1,9 @@
-import type { CanvasDetailsRPC } from "@/rpc/types";
 import {
-	createEntityAdapter,
 	createDraftSafeSelector,
+	createEntityAdapter,
 	createSlice,
 } from "@reduxjs/toolkit";
+import type { CanvasDetailsRPC } from "@/rpc/types";
 
 export type HandleEntityType = CanvasDetailsRPC["handles"][number];
 

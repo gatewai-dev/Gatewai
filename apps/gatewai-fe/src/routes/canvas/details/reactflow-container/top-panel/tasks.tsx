@@ -1,20 +1,20 @@
-import { memo } from "react";
-import { useTaskManagerCtx } from "../../ctx/task-manager-ctx";
-import { Button } from "@/components/ui/button";
-import { Spinner } from "@/components/ui/spinner";
-import { Item, ItemContent, ItemMedia, ItemTitle } from "@/components/ui/item";
-import {
-	Popover,
-	PopoverContent,
-	PopoverTrigger,
-} from "@/components/ui/popover";
 import { AlertCircle } from "lucide-react";
+import { memo } from "react";
 import {
 	Accordion,
 	AccordionContent,
 	AccordionItem,
 	AccordionTrigger,
 } from "@/components/ui/accordion";
+import { Button } from "@/components/ui/button";
+import { Item, ItemContent, ItemMedia, ItemTitle } from "@/components/ui/item";
+import {
+	Popover,
+	PopoverContent,
+	PopoverTrigger,
+} from "@/components/ui/popover";
+import { Spinner } from "@/components/ui/spinner";
+import { useTaskManagerCtx } from "../../ctx/task-manager-ctx";
 
 const CanvasTasksPanel = memo(() => {
 	const { isLoading, taskBatches } = useTaskManagerCtx();

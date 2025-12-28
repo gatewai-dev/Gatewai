@@ -1,9 +1,9 @@
-import { memo } from "react";
-import { CanvasTasksPanel } from "./tasks";
-import { CanvasName } from "./canvas-name";
-import { Separator } from "@/components/ui/separator";
 import { CoinsIcon } from "lucide-react";
+import { memo } from "react";
 import { Button } from "@/components/ui/button";
+import { Separator } from "@/components/ui/separator";
+import { CanvasName } from "./canvas-name";
+import { CanvasTasksPanel } from "./tasks";
 
 const TopPanel = memo(() => {
 	return (

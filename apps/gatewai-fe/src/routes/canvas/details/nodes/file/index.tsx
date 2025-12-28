@@ -1,17 +1,16 @@
-import { memo } from "react";
-import { type NodeProps } from "@xyflow/react";
 import type { FileResult } from "@gatewai/types";
-import { useAppSelector } from "@/store";
+import type { NodeProps } from "@xyflow/react";
+import { memo } from "react";
+import { toast } from "sonner";
+import { UploadButton } from "@/components/util/file-button";
+import { UploadDropzone } from "@/components/util/file-dropzone";
+import { useHasOutputItems } from "@/routes/canvas/hooks";
+import type { UploadFileNodeAssetRPC } from "@/rpc/types";
+import { useAppDispatch, useAppSelector } from "@/store";
 import { makeSelectNodeById, updateNodeResult } from "@/store/nodes";
 import { BaseNode } from "../base";
 import { MediaContent } from "../media-content";
 import type { FileNode } from "../node-props";
-import { useHasOutputItems } from "@/routes/canvas/hooks";
-import { useAppDispatch } from "@/store";
-import { UploadDropzone } from "@/components/util/file-dropzone";
-import { toast } from "sonner";
-import { UploadButton } from "@/components/util/file-button";
-import type { UploadFileNodeAssetRPC } from "@/rpc/types";
 
 // Extract types that have specific success properties
 type SuccessfulUploadFileNodeAssetRPC = Extract<

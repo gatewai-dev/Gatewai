@@ -1,10 +1,15 @@
-import type { NodeResult } from "@gatewai/types";
-import { PrismaClient, Prisma, TaskStatus, type TaskBatch } from "@gatewai/db";
 import {
-	GetCanvasEntities,
+	Prisma,
+	type PrismaClient,
+	type TaskBatch,
+	TaskStatus,
+} from "@gatewai/db";
+import type { NodeResult } from "@gatewai/types";
+import type { User } from "better-auth";
+import {
 	type CanvasCtxData,
+	GetCanvasEntities,
 } from "../repositories/canvas.js";
-import { type User } from "better-auth";
 import { nodeProcessors } from "./processors/index.js";
 
 export class NodeWFProcessor {

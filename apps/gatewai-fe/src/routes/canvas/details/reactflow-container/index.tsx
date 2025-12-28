@@ -1,27 +1,27 @@
-import { createContext, useEffect, useRef, useState } from "react";
 import {
 	Background,
 	ConnectionMode,
+	type Edge,
+	type Node,
 	Panel,
 	ReactFlow,
 	SelectionMode,
-	type Edge,
-	type Node,
 } from "@xyflow/react";
-import { nodeTypes } from "../nodes";
-import { useCanvasCtx } from "../ctx/canvas-ctx";
-import { Toolbar } from "./toolbar";
-import { CustomEdge, CustomConnectionLine } from "../nodes/base";
-import { type DragEventHandler } from "react";
-import { RightPanel } from "./right-panel";
-import { useAppDispatch, useAppSelector } from "@/store";
-import { selectRFEdges, selectRFNodes } from "@/store/rfstate";
-import { setSelectedNodeIds } from "@/store/nodes";
-import { setSelectedEdgeIds } from "@/store/edges";
-import { NodePalette } from "../../node-templates/node-palette";
+import type { DragEventHandler } from "react";
+import { createContext, useEffect, useRef, useState } from "react";
 import { useHotkeys } from "react-hotkeys-hook";
-import { useZoomHotkeys } from "./use-zoom-hotkeys";
+import { useAppDispatch, useAppSelector } from "@/store";
+import { setSelectedEdgeIds } from "@/store/edges";
+import { setSelectedNodeIds } from "@/store/nodes";
+import { selectRFEdges, selectRFNodes } from "@/store/rfstate";
+import { NodePalette } from "../../node-templates/node-palette";
+import { useCanvasCtx } from "../ctx/canvas-ctx";
+import { nodeTypes } from "../nodes";
+import { CustomConnectionLine, CustomEdge } from "../nodes/base";
+import { RightPanel } from "./right-panel";
+import { Toolbar } from "./toolbar";
 import { TopPanel } from "./top-panel";
+import { useZoomHotkeys } from "./use-zoom-hotkeys";
 
 const edgeTypes = {
 	default: CustomEdge,

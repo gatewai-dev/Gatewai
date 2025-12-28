@@ -1,6 +1,6 @@
-import { authClient } from "@/lib/auth-client";
 import type { ReactNode } from "react";
 import { Navigate } from "react-router";
+import { authClient } from "@/lib/auth-client";
 
 function AuthGuard({ children }: { children: ReactNode }) {
 	const { data: session, isPending } = authClient.useSession();

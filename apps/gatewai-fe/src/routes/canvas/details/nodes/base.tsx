@@ -1,31 +1,31 @@
-import { memo, useMemo, type JSX, type ReactNode } from "react";
+import type { NodeResult } from "@gatewai/types";
 import {
-	Handle,
-	Position,
-	getBezierPath,
-	type EdgeProps,
-	type NodeProps,
-	type Node,
 	type ConnectionLineComponentProps,
+	type EdgeProps,
+	getBezierPath,
+	Handle,
+	type Node,
+	type NodeProps,
+	Position,
 	useEdges,
 } from "@xyflow/react";
+import { type JSX, memo, type ReactNode, useMemo } from "react";
+import { dataTypeColors } from "@/config";
+import { cn } from "@/lib/utils";
 import type { CanvasDetailsNode } from "@/rpc/types";
 import { useAppSelector } from "@/store";
+import { makeSelectEdgeById } from "@/store/edges";
 import {
 	makeSelectHandleById,
 	makeSelectHandlesByNodeId,
 } from "@/store/handles";
-import { dataTypeColors } from "@/config";
-import { NodeMenu } from "./node-menu";
-import { makeSelectEdgeById } from "@/store/edges";
-import { useNodeInputValidation } from "./hooks/use-node-input-validation";
-import type { NodeResult } from "@gatewai/types";
-import { cn } from "@/lib/utils";
+import { makeSelectNodeById } from "@/store/nodes";
 import {
 	useMultipleNodeResults,
 	useNodeResult,
 } from "../processor/processor-ctx";
-import { makeSelectNodeById } from "@/store/nodes";
+import { useNodeInputValidation } from "./hooks/use-node-input-validation";
+import { NodeMenu } from "./node-menu";
 
 const getColorForType = (type: string) => {
 	return (

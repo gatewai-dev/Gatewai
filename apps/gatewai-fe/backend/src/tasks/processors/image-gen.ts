@@ -1,16 +1,16 @@
 import { DataType, prisma } from "@gatewai/db";
 import type { FileData, ImageGenConfig, ImageGenResult } from "@gatewai/types";
-import type { NodeProcessor } from "./types.js";
 import {
 	generateText,
 	type ModelMessage,
 	type TextPart,
 	type UserContent,
 } from "ai";
-import { generateSignedUrl, uploadToS3 } from "../../utils/s3.js";
+import { randomUUID } from "node:crypto";
 import { getImageDimensions } from "../../utils/image.js";
-import { randomUUID } from "crypto";
+import { generateSignedUrl, uploadToS3 } from "../../utils/s3.js";
 import { getInputValue, getInputValuesByType } from "../resolvers.js";
+import type { NodeProcessor } from "./types.js";
 
 const imageGenProcessor: NodeProcessor = async ({ node, data }) => {
 	try {

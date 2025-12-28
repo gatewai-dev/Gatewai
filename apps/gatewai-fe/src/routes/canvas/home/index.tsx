@@ -1,13 +1,13 @@
-import { useCanvasListCtx } from "../ctx/canvas-list.ctx";
 import {
+	Calendar,
+	Clock,
+	FileText,
 	LayoutGrid,
 	List,
 	Network,
-	Clock,
-	Calendar,
-	FileText,
 	Sparkles,
 } from "lucide-react";
+import { useCanvasListCtx } from "../ctx/canvas-list.ctx";
 
 // Helper function to format time distance
 const formatTimeAgo = (date: Date) => {
@@ -29,12 +29,13 @@ const formatTimeAgo = (date: Date) => {
 	}
 	return "just now";
 };
+
 import { useState } from "react";
+import { useNavigate } from "react-router";
 import { Button } from "@/components/ui/button";
-import { Card, CardHeader, CardTitle, CardContent } from "@/components/ui/card";
+import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { Input } from "@/components/ui/input";
 import { Skeleton } from "@/components/ui/skeleton";
-import { useNavigate } from "react-router";
 
 function CanvasHome() {
 	const {

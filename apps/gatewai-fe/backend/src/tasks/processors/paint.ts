@@ -1,13 +1,13 @@
 import { DataType } from "@gatewai/db";
 import type { FileData, PaintNodeConfig, PaintResult } from "@gatewai/types";
 import {
-	getImageBuffer,
 	applyPaint,
 	bufferToDataUrl,
+	getImageBuffer,
 	getMimeType,
 } from "../../utils/image.js";
-import type { NodeProcessor } from "./types.js";
 import { getInputValue } from "../resolvers.js";
+import type { NodeProcessor } from "./types.js";
 
 const paintProcessor: NodeProcessor = async ({ node, data }) => {
 	try {

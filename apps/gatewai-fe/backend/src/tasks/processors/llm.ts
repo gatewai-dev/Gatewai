@@ -1,6 +1,5 @@
 import { DataType } from "@gatewai/db";
 import type { FileData, LLMResult } from "@gatewai/types";
-import type { NodeProcessor } from "./types.js";
 import {
 	generateText,
 	type ModelMessage,
@@ -8,6 +7,7 @@ import {
 	type UserContent,
 } from "ai";
 import { getInputValue } from "../resolvers.js";
+import type { NodeProcessor } from "./types.js";
 
 const llmProcessor: NodeProcessor = async ({ node, data }) => {
 	try {

@@ -1,11 +1,11 @@
-import { useAppSelector } from "@/store";
-import { makeSelectAllEdges } from "@/store/edges";
-import { makeSelectHandlesByNodeId } from "@/store/handles";
-import { makeSelectAllNodeEntities, makeSelectNodeById } from "@/store/nodes";
 import type { Handle } from "@gatewai/db";
 import type { NodeResult } from "@gatewai/types";
 import type { Node } from "@xyflow/react";
 import { useMemo } from "react";
+import { useAppSelector } from "@/store";
+import { makeSelectAllEdges } from "@/store/edges";
+import { makeSelectHandlesByNodeId } from "@/store/handles";
+import { makeSelectAllNodeEntities, makeSelectNodeById } from "@/store/nodes";
 
 type ValidationError = {
 	handleId: Handle["id"];

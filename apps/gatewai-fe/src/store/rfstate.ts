@@ -4,13 +4,13 @@ import {
 	type PayloadAction,
 } from "@reduxjs/toolkit";
 import {
+	addEdge,
+	applyEdgeChanges as applyEdgeChangesBase,
+	applyNodeChanges as applyNodeChangesBase,
 	type Edge,
 	type EdgeChange,
 	type Node,
 	type NodeChange,
-	addEdge,
-	applyNodeChanges as applyNodeChangesBase,
-	applyEdgeChanges as applyEdgeChangesBase,
 } from "@xyflow/react";
 import type { RootState } from ".";
 

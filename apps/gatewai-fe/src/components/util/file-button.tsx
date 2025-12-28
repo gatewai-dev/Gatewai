@@ -1,11 +1,11 @@
-import { useRef } from "react";
-import { PlusIcon, Loader2 } from "lucide-react";
-import { useUploadFileNodeAssetMutation } from "@/store/assets";
-import type { UploadFileNodeAssetRPC } from "@/rpc/types";
+import { Loader2, PlusIcon } from "lucide-react";
 import type { ChangeEvent } from "react";
-import { Button } from "../ui/button";
+import { useRef } from "react";
 import { cn } from "@/lib/utils";
+import type { UploadFileNodeAssetRPC } from "@/rpc/types";
+import { useUploadFileNodeAssetMutation } from "@/store/assets";
 import type { NodeEntityType } from "@/store/nodes";
+import { Button } from "../ui/button";
 
 interface UploadButtonProps {
 	className?: string;

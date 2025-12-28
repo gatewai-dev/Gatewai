@@ -1,10 +1,10 @@
-import { Hono } from "hono";
+import { type NodeUpdateInput, prisma } from "@gatewai/db";
 import { zValidator } from "@hono/zod-validator";
-import z from "zod";
-import { HTTPException } from "hono/http-exception";
-import { prisma, type NodeUpdateInput } from "@gatewai/db";
-import type { AuthHonoTypes } from "../../auth.js";
 import type { XYPosition } from "@xyflow/react";
+import { Hono } from "hono";
+import { HTTPException } from "hono/http-exception";
+import z from "zod";
+import type { AuthHonoTypes } from "../../auth.js";
 import { GetCanvasEntities } from "../../repositories/canvas.js";
 import { NodeWFProcessor } from "../../tasks/node.js";
 

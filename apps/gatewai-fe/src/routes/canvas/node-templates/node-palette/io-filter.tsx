@@ -1,16 +1,17 @@
 // src/node-palette/DataTypeMultiSelect.tsx
+
+import { Check, ChevronsUpDown } from "lucide-react";
 import { useEffect, useState } from "react";
 import { Button } from "@/components/ui/button";
+import { Command, CommandGroup, CommandItem } from "@/components/ui/command";
 import {
 	Popover,
 	PopoverContent,
 	PopoverTrigger,
 } from "@/components/ui/popover";
-import { Command, CommandGroup, CommandItem } from "@/components/ui/command";
-import { Check, ChevronsUpDown } from "lucide-react";
 import { cn } from "@/lib/utils";
-import { useNodePalette } from "./node-palette.ctx";
 import { useNodeTemplates } from "../node-templates.ctx";
+import { useNodePalette } from "./node-palette.ctx";
 
 export function DataTypeMultiSelect() {
 	const { fromTypes, toTypes, setFromTypes, setToTypes } = useNodePalette();

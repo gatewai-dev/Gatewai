@@ -1,13 +1,13 @@
-import { Hono } from "hono";
 import {
 	prisma,
-	TaskStatus,
 	type TaskBatchWhereInput,
+	TaskStatus,
 	type TaskWhereInput,
 } from "@gatewai/db";
-import type { AuthHonoTypes } from "../../auth.js";
 import { zValidator } from "@hono/zod-validator";
+import { Hono } from "hono";
 import { z } from "zod/v4";
+import type { AuthHonoTypes } from "../../auth.js";
 
 const TaskStatuses = [
 	TaskStatus.COMPLETED,
@@ -82,7 +82,7 @@ const tasksRouter = new Hono<{ Variables: AuthHonoTypes }>({
 				whereClause.createdAt = { gte: dt };
 			}
 
-			if (taskStatus && taskStatus.length) {
+			if (taskStatus?.length) {
 				whereClause.status = {
 					in: taskStatus,
 				};

@@ -1,3 +1,4 @@
+import { useMemo } from "react";
 import { useAppSelector } from "@/store";
 import { makeSelectAllEdges } from "@/store/edges";
 import {
@@ -6,10 +7,9 @@ import {
 } from "@/store/handles";
 import {
 	makeSelectAllNodes,
-	type NodeEntityType,
 	makeSelectNodeById,
+	type NodeEntityType,
 } from "@/store/nodes";
-import { useMemo } from "react";
 
 function useNodeContext({ nodeId }: { nodeId: NodeEntityType["id"] }) {
 	const allNodes = useAppSelector(makeSelectAllNodes);

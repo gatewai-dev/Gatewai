@@ -1,6 +1,7 @@
 // imageUtils.ts
-import sharp from "sharp";
+
 import type { FileData } from "@gatewai/types";
+import sharp from "sharp";
 
 export async function getImageBuffer(imageInput: FileData): Promise<Buffer> {
 	if (imageInput.dataUrl) {

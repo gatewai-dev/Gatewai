@@ -1,3 +1,9 @@
+import { zodResolver } from "@hookform/resolvers/zod";
+import type { NodeProps } from "@xyflow/react";
+import { PlusIcon } from "lucide-react";
+import { useState } from "react";
+import { useForm } from "react-hook-form";
+import * as z from "zod";
 import { Button } from "@/components/ui/button";
 import {
 	Dialog,
@@ -7,15 +13,6 @@ import {
 	DialogTrigger,
 } from "@/components/ui/dialog";
 import {
-	Select,
-	SelectContent,
-	SelectItem,
-	SelectTrigger,
-	SelectValue,
-} from "@/components/ui/select";
-import { Input } from "@/components/ui/input";
-import { Textarea } from "@/components/ui/textarea";
-import {
 	Form,
 	FormControl,
 	FormDescription,
@@ -24,16 +21,19 @@ import {
 	FormLabel,
 	FormMessage,
 } from "@/components/ui/form";
-import type { HandleEntityType } from "@/store/handles";
-import type { AnyNode } from "../node-props";
-import type { NodeProps } from "@xyflow/react";
-import { useCanvasCtx } from "../../ctx/canvas-ctx";
-import { useForm } from "react-hook-form";
-import { zodResolver } from "@hookform/resolvers/zod";
-import * as z from "zod";
-import { useState } from "react";
-import { PlusIcon } from "lucide-react";
+import { Input } from "@/components/ui/input";
+import {
+	Select,
+	SelectContent,
+	SelectItem,
+	SelectTrigger,
+	SelectValue,
+} from "@/components/ui/select";
+import { Textarea } from "@/components/ui/textarea";
 import { generateId } from "@/lib/idgen";
+import type { HandleEntityType } from "@/store/handles";
+import { useCanvasCtx } from "../../ctx/canvas-ctx";
+import type { AnyNode } from "../node-props";
 
 const InputTypes = ["Image", "Text", "Audio", "Video", "File"] as const;
 const OutputTypes = ["Image", "Text", "Audio", "Video", "File"] as const;

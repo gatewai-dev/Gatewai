@@ -1,3 +1,6 @@
+import type { ResizeNodeConfig } from "@gatewai/types";
+import { Lock, Unlock } from "lucide-react";
+import { memo, useCallback } from "react";
 import { Button } from "@/components/ui/button";
 import {
 	Tooltip,
@@ -5,10 +8,7 @@ import {
 	TooltipProvider,
 	TooltipTrigger,
 } from "@/components/ui/tooltip";
-import { type NodeEntityType } from "@/store/nodes";
-import type { ResizeNodeConfig } from "@gatewai/types";
-import { Lock, Unlock } from "lucide-react";
-import { memo, useCallback } from "react";
+import type { NodeEntityType } from "@/store/nodes";
 import { useCanvasCtx } from "../../../ctx/canvas-ctx";
 
 const AspectRatioSwitch = memo(

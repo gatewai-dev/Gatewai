@@ -1,10 +1,10 @@
-import type { CanvasDetailsRPC } from "@/rpc/types";
 import {
-	createEntityAdapter,
 	createDraftSafeSelector,
+	createEntityAdapter,
 	createSlice,
 	type PayloadAction,
 } from "@reduxjs/toolkit";
+import type { CanvasDetailsRPC } from "@/rpc/types";
 import type { NodeEntityType } from "./nodes";
 
 export type EdgeEntityType = CanvasDetailsRPC["edges"][number];

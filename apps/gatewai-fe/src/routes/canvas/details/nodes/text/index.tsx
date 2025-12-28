@@ -1,12 +1,12 @@
-import { memo } from "react";
-import { type NodeProps } from "@xyflow/react";
-import { Textarea } from "@/components/ui/textarea";
 import type { TextResult } from "@gatewai/types";
+import type { NodeProps } from "@xyflow/react";
+import { memo } from "react";
+import { Textarea } from "@/components/ui/textarea";
 import { useAppSelector } from "@/store";
 import { makeSelectNodeById } from "@/store/nodes";
-import type { TextNode } from "../node-props";
-import { BaseNode } from "../base";
 import { useCanvasCtx } from "../../ctx/canvas-ctx";
+import { BaseNode } from "../base";
+import type { TextNode } from "../node-props";
 
 const TextNodeComponent = memo((props: NodeProps<TextNode>) => {
 	const node = useAppSelector(makeSelectNodeById(props.id));

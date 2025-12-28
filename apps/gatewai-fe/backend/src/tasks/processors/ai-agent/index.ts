@@ -1,3 +1,4 @@
+import type { DataType } from "@gatewai/db";
 import type {
 	AgentNodeConfig,
 	FileData,
@@ -5,17 +6,21 @@ import type {
 	Output,
 	OutputItem,
 } from "@gatewai/types";
-import type { NodeProcessor, NodeProcessorCtx } from "../types.js";
+import { Agent, type AgentInputItem, Runner } from "@openai/agents";
 import { aisdk } from "@openai/agents-extensions";
 import { gateway } from "ai";
-import { Agent, Runner, type AgentInputItem } from "@openai/agents";
-import { z, ZodObject, type UnknownKeysParam, type ZodRawShape } from "zod";
+import {
+	type UnknownKeysParam,
+	type ZodObject,
+	type ZodRawShape,
+	z,
+} from "zod";
 import {
 	getAllInputValuesWithHandle,
 	getAllOutputHandles,
 	resolveFileUrl,
 } from "../../resolvers.js";
-import type { DataType } from "@gatewai/db";
+import type { NodeProcessor, NodeProcessorCtx } from "../types.js";
 
 export const FileAssetSchema = z.object({
 	id: z.string().cuid(),
@@ -46,8 +51,7 @@ function CreateOutputZodSchema(
 	for (const handle of outputHandles) {
 		const outputHandleId = handle.id;
 		const dataType = handle.dataTypes[0];
-		let handleZodObject: ZodObject<ZodRawShape, UnknownKeysParam> | undefined =
-			undefined;
+		let handleZodObject: ZodObject<ZodRawShape, UnknownKeysParam> | undefined;
 		if (
 			dataType === "File" ||
 			dataType === "Image" ||
@@ -148,7 +152,6 @@ const aiAgentProcessor: NodeProcessor = async ({ node, data }) => {
 						},
 					],
 				});
-				continue;
 			} else if (input.handle.dataTypes[0] === "Image") {
 				const fileData = input.value as FileData;
 				const file_url = await resolveFileUrl(fileData);
@@ -158,7 +161,6 @@ const aiAgentProcessor: NodeProcessor = async ({ node, data }) => {
 						content: [{ type: "input_image", image: file_url }],
 					});
 				}
-				continue;
 			} else if (input.handle.dataTypes[0] === "File") {
 				const fileData = input.value as FileData;
 				const file_url = await resolveFileUrl(fileData);
@@ -168,7 +170,6 @@ const aiAgentProcessor: NodeProcessor = async ({ node, data }) => {
 						content: [{ type: "input_file", file: { url: file_url } }],
 					});
 				}
-				continue;
 			} else if (input.handle.dataTypes[0] === "Audio") {
 				const fileData = input.value as FileData;
 				const file_url = await resolveFileUrl(fileData);
@@ -178,7 +179,6 @@ const aiAgentProcessor: NodeProcessor = async ({ node, data }) => {
 						content: [{ type: "audio", audio: file_url }],
 					});
 				}
-				continue;
 			}
 		}
 

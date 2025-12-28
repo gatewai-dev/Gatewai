@@ -1,9 +1,9 @@
+import { useNodeTemplates } from "../node-templates.ctx";
+import { DataTypeMultiSelect } from "./io-filter";
+import { NodePaletteProvider } from "./node-palette.ctx";
+import { NodeTemplateList } from "./node-template-list";
 import { SearchInput } from "./search";
 import { SortSelect } from "./sort";
-import { NodeTemplateList } from "./node-template-list";
-import { DataTypeMultiSelect } from "./io-filter";
-import { useNodeTemplates } from "../node-templates.ctx";
-import { NodePaletteProvider } from "./node-palette.ctx";
 
 export function NodePalette() {
 	const { nodeTemplates, isError, isLoading } = useNodeTemplates();

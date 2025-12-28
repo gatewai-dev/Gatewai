@@ -1,12 +1,12 @@
 import type { AllNodeConfig, NodeResult } from "@gatewai/types";
-import type { CanvasDetailsRPC } from "@/rpc/types";
 import {
-	createEntityAdapter,
 	createDraftSafeSelector,
+	createEntityAdapter,
 	createSlice,
 	type PayloadAction,
 } from "@reduxjs/toolkit";
-import { getBatchDetails, type BatchEntity } from "./tasks";
+import type { CanvasDetailsRPC } from "@/rpc/types";
+import { type BatchEntity, getBatchDetails } from "./tasks";
 
 export type NodeEntityType = CanvasDetailsRPC["nodes"][number];
 

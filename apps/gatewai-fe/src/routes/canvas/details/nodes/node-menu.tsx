@@ -1,27 +1,25 @@
-import type { CanvasDetailsNode } from "@/rpc/types";
-import type { NodeProps, Node } from "@xyflow/react";
+import { zodResolver } from "@hookform/resolvers/zod";
+import type { Node, NodeProps } from "@xyflow/react";
 import { MenuIcon } from "lucide-react";
 import { memo, useState } from "react";
+import { useForm } from "react-hook-form";
+import { z } from "zod";
 import { Button } from "@/components/ui/button";
+import {
+	Dialog,
+	DialogContent,
+	DialogFooter,
+	DialogHeader,
+	DialogTitle,
+} from "@/components/ui/dialog";
 import {
 	DropdownMenu,
 	DropdownMenuContent,
 	DropdownMenuGroup,
-	DropdownMenuShortcut,
 	DropdownMenuItem,
+	DropdownMenuShortcut,
 	DropdownMenuTrigger,
 } from "@/components/ui/dropdown-menu";
-import { useCanvasCtx } from "../ctx/canvas-ctx";
-import { z } from "zod";
-import { useForm } from "react-hook-form";
-import { zodResolver } from "@hookform/resolvers/zod";
-import {
-	Dialog,
-	DialogContent,
-	DialogHeader,
-	DialogTitle,
-	DialogFooter,
-} from "@/components/ui/dialog";
 import {
 	Form,
 	FormControl,
@@ -31,8 +29,10 @@ import {
 	FormMessage,
 } from "@/components/ui/form";
 import { Input } from "@/components/ui/input";
+import type { CanvasDetailsNode } from "@/rpc/types";
 import { useAppDispatch, useAppSelector } from "@/store";
 import { makeSelectNodeById, updateNodeEntity } from "@/store/nodes";
+import { useCanvasCtx } from "../ctx/canvas-ctx";
 
 type RenameNodeDialogProps = {
 	nodeId: string;

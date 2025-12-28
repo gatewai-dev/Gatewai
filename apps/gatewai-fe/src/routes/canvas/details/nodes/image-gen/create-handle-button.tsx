@@ -1,10 +1,10 @@
+import type { NodeProps } from "@xyflow/react";
+import { PlusIcon } from "lucide-react";
 import { Button, type ButtonProps } from "@/components/ui/button";
 import { generateId } from "@/lib/idgen";
-import { type HandleEntityType } from "@/store/handles";
-import type { NodeProps } from "@xyflow/react";
-import type { ImageGenNode } from "../node-props";
-import { PlusIcon } from "lucide-react";
+import type { HandleEntityType } from "@/store/handles";
 import { useCanvasCtx } from "../../ctx/canvas-ctx";
+import type { ImageGenNode } from "../node-props";
 
 export type CreateHandleButtonProps = ButtonProps & {
 	nodeProps: NodeProps<ImageGenNode>;

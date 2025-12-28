@@ -1,3 +1,5 @@
+import { useDraggable } from "@neodrag/react";
+import type { XYPosition } from "@xyflow/react";
 import { useRef, useState } from "react";
 import {
 	Tooltip,
@@ -5,11 +7,9 @@ import {
 	TooltipProvider,
 	TooltipTrigger,
 } from "@/components/ui/tooltip";
-import { iconMap } from "./icon-map";
-import { useDraggable } from "@neodrag/react";
-import type { XYPosition } from "@xyflow/react";
 import { useCanvasCtx } from "@/routes/canvas/details/ctx/canvas-ctx";
 import type { NodeTemplateListItemRPC } from "@/rpc/types";
+import { iconMap } from "./icon-map";
 
 export function NodeItem({ template }: { template: NodeTemplateListItemRPC }) {
 	const { rfInstance, createNewNode } = useCanvasCtx();

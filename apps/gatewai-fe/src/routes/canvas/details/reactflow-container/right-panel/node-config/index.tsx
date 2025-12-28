@@ -1,7 +1,7 @@
-import { useAppSelector } from "@/store";
-import { memo, type ReactNode } from "react";
-import { selectSelectedNodes, type NodeEntityType } from "@/store/nodes";
 import type { NodeType } from "@gatewai/db";
+import { memo, type ReactNode } from "react";
+import { useAppSelector } from "@/store";
+import { type NodeEntityType, selectSelectedNodes } from "@/store/nodes";
 import { LLMNodeConfigComponent } from "./llm/llm-config";
 
 type NodeConfigComponentProps = {

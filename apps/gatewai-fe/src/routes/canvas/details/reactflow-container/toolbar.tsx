@@ -1,5 +1,7 @@
-import { ChevronDown, Hand, MousePointer } from "lucide-react";
 import { useReactFlow, useViewport } from "@xyflow/react";
+import { ChevronDown, Hand, MousePointer } from "lucide-react";
+import { useContext } from "react";
+import { Button } from "@/components/ui/button";
 import {
 	Menubar,
 	MenubarContent,
@@ -7,10 +9,8 @@ import {
 	MenubarMenu,
 	MenubarTrigger,
 } from "@/components/ui/menubar";
-import { useContext } from "react";
-import { ModeContext } from ".";
-import { Button } from "@/components/ui/button";
 import { Separator } from "@/components/ui/separator";
+import { ModeContext } from ".";
 
 function Toolbar() {
 	const { zoom } = useViewport();

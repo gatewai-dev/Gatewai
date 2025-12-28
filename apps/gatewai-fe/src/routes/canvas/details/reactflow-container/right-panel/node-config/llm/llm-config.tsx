@@ -1,13 +1,11 @@
-import { useAppDispatch } from "@/store";
-import { updateNodeConfig, type NodeEntityType } from "@/store/nodes";
-import { memo, useCallback, useEffect } from "react";
 import {
-	LLMNodeConfigSchema,
-	type LLMNodeConfig,
 	LLM_NODE_MODELS,
+	type LLMNodeConfig,
+	LLMNodeConfigSchema,
 } from "@gatewai/types";
-import { useForm } from "react-hook-form";
 import { zodResolver } from "@hookform/resolvers/zod";
+import { memo, useCallback, useEffect } from "react";
+import { useForm } from "react-hook-form";
 import {
 	Form,
 	FormControl,
@@ -23,6 +21,8 @@ import {
 	SelectTrigger,
 	SelectValue,
 } from "@/components/ui/select";
+import { useAppDispatch } from "@/store";
+import { type NodeEntityType, updateNodeConfig } from "@/store/nodes";
 
 const LLMNodeConfigComponent = memo(({ node }: { node: NodeEntityType }) => {
 	const dispatch = useAppDispatch();

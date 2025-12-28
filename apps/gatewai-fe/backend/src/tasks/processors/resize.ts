@@ -7,13 +7,13 @@ import type {
 	ResizeNodeConfig,
 } from "@gatewai/types";
 import {
-	getImageBuffer,
-	bufferToDataUrl,
-	getMimeType,
 	applyResize,
+	bufferToDataUrl,
+	getImageBuffer,
+	getMimeType,
 } from "../../utils/image.js";
-import type { NodeProcessor } from "./types.js";
 import { getInputValue } from "../resolvers.js";
+import type { NodeProcessor } from "./types.js";
 
 const resizeProcessor: NodeProcessor = async ({ node, data }) => {
 	try {

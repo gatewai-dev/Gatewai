@@ -1,15 +1,15 @@
 import { configureStore } from "@reduxjs/toolkit";
-import { useDispatch, useSelector } from "react-redux";
-import { nodesReducer } from "./nodes";
-import { nodeTemplatesAPI } from "./node-templates";
 import { setupListeners } from "@reduxjs/toolkit/query";
-import { reactFlowReducer } from "./rfstate";
-import { handlesReducer } from "./handles";
-import { edgesReducer } from "./edges";
+import { useDispatch, useSelector } from "react-redux";
 import { assetsAPI } from "./assets";
-import { canvasListAPI } from "./canvas-list";
-import { tasksReducer } from "./tasks";
 import { canvasDetailsAPI } from "./canvas";
+import { canvasListAPI } from "./canvas-list";
+import { edgesReducer } from "./edges";
+import { handlesReducer } from "./handles";
+import { nodeTemplatesAPI } from "./node-templates";
+import { nodesReducer } from "./nodes";
+import { reactFlowReducer } from "./rfstate";
+import { tasksReducer } from "./tasks";
 
 export const store = configureStore({
 	reducer: {

@@ -1,17 +1,19 @@
+import type { Canvas, Node } from "@gatewai/db";
 import {
 	createContext,
-	useContext,
-	useEffect,
-	useMemo,
 	type Dispatch,
 	type PropsWithChildren,
 	type SetStateAction,
+	useContext,
+	useEffect,
+	useMemo,
 } from "react";
-import type { Canvas, Node } from "@gatewai/db";
 import { useDispatch, useSelector } from "react-redux";
 import type { BatchDetailsRPC, BatchDetailsRPCParams } from "@/rpc/types";
+import type { NodeEntityType } from "@/store/nodes";
 import {
 	addBatchToPoll,
+	batchSelectors,
 	getBatchDetails,
 	getInitialBatches,
 	selectBatchIdsToPoll,
@@ -20,8 +22,6 @@ import {
 	selectPollingInterval,
 	setPollingInterval,
 } from "@/store/tasks";
-import { batchSelectors } from "@/store/tasks";
-import type { NodeEntityType } from "@/store/nodes";
 
 type BatchEntity = BatchDetailsRPC["batches"][number];
 type BatchNodeData = BatchEntity["tasks"][number];

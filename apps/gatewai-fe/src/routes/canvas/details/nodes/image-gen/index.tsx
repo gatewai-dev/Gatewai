@@ -1,13 +1,13 @@
+import type { NodeProps } from "@xyflow/react";
 import { memo, useEffect, useRef } from "react";
-import { type NodeProps } from "@xyflow/react";
 import { useAppSelector } from "@/store";
 import { makeSelectNodeById } from "@/store/nodes";
-import { BaseNode } from "../base";
-import type { ImageGenNode } from "../node-props";
 import { RunNodeButton } from "../../components/run-node-button";
-import { CreateHandleButton } from "./create-handle-button";
 import { useNodeImageUrl, useNodeResult } from "../../processor/processor-ctx";
+import { BaseNode } from "../base";
 import { OutputSelector } from "../misc/output-selector";
+import type { ImageGenNode } from "../node-props";
+import { CreateHandleButton } from "./create-handle-button";
 
 const ImagePlaceholder = () => (
 	<div className="w-full media-container h-[280px] flex items-center justify-center rounded bg-gray-50 dark:bg-gray-800 border border-dashed border-gray-300 dark:border-gray-700">

@@ -1,14 +1,14 @@
+import { ChevronDown, ChevronUp } from "lucide-react";
 import { useEffect, useState } from "react";
+import { Button } from "@/components/ui/button";
+import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import {
 	Collapsible,
-	CollapsibleTrigger,
 	CollapsibleContent,
+	CollapsibleTrigger,
 } from "@/components/ui/collapsible";
-import { Card, CardHeader, CardTitle, CardContent } from "@/components/ui/card";
-import { Button } from "@/components/ui/button";
-import { ChevronDown, ChevronUp } from "lucide-react";
-import { useProcessor } from "./processor-ctx";
 import type { NodeEntityType } from "@/store/nodes";
+import { useProcessor } from "./processor-ctx";
 
 function DebugPanel() {
 	const processor = useProcessor();

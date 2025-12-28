@@ -1,7 +1,7 @@
+import type { DataType } from "@gatewai/db";
 import type { NodeTemplateListRPC } from "@/rpc/types";
 import { NodeItem } from "./node-item";
 import { useNodePalette } from "./node-palette.ctx";
-import type { DataType } from "@gatewai/db";
 
 interface NodeListProps {
 	templates: NodeTemplateListRPC;

@@ -1,10 +1,10 @@
 import {
 	Application,
 	Assets,
-	Sprite,
 	BlurFilter,
 	Container,
 	Graphics,
+	Sprite,
 } from "pixi.js";
 
 class PixiProcessorService {

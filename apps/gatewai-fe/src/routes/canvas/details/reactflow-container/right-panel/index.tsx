@@ -1,6 +1,6 @@
 import { memo } from "react";
-import { NodeConfigPanel } from "./node-config";
 import { DebugPanel } from "../../processor/debug-panel";
+import { NodeConfigPanel } from "./node-config";
 
 const RightPanel = memo(() => {
 	return (

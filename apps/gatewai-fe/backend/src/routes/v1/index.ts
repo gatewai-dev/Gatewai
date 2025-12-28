@@ -1,8 +1,8 @@
 import { Hono } from "hono";
+import { assetsRouter } from "./assets.js";
 import { canvasRoutes } from "./canvas.js";
 import { nodeTemplatesRoutes } from "./node-templates.js";
 import { tasksRouter } from "./tasks.js";
-import { assetsRouter } from "./assets.js";
 
 const v1Router = new Hono()
 	.route("/canvas", canvasRoutes)

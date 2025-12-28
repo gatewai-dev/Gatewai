@@ -1,4 +1,4 @@
-import type { NodeWithFileType, NodeData } from "@gatewai/types";
+import type { NodeData, NodeWithFileType } from "@gatewai/types";
 import type { ReactNode } from "react";
 
 export type NodeComponentProps<T extends NodeData> = {

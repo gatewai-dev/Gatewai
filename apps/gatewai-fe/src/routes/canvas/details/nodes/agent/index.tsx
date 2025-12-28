@@ -1,23 +1,23 @@
-import { memo, useState } from "react";
-import { type NodeProps } from "@xyflow/react";
 import type { LLMResult } from "@gatewai/types";
-import type { LLMNode } from "../node-props";
-import { BaseNode } from "../base";
-import { RunNodeButton } from "../../components/run-node-button";
-import { useNodeResult } from "../../processor/processor-ctx";
-import { AddCustomHandleButton } from "./add-custom-handle";
-import { useAppSelector } from "@/store";
-import { makeSelectHandlesByNodeId } from "@/store/handles";
-import { Alert, AlertDescription } from "@/components/ui/alert";
+import type { NodeProps } from "@xyflow/react";
 import { InfoIcon } from "lucide-react";
-import { Separator } from "@/components/ui/separator";
+import { memo, useState } from "react";
 import {
 	Accordion,
 	AccordionContent,
 	AccordionItem,
 	AccordionTrigger,
 } from "@/components/ui/accordion";
+import { Alert, AlertDescription } from "@/components/ui/alert";
+import { Separator } from "@/components/ui/separator";
+import { useAppSelector } from "@/store";
+import { makeSelectHandlesByNodeId } from "@/store/handles";
+import { RunNodeButton } from "../../components/run-node-button";
 import { useNodeTaskRunning } from "../../ctx/task-manager-ctx";
+import { useNodeResult } from "../../processor/processor-ctx";
+import { BaseNode } from "../base";
+import type { LLMNode } from "../node-props";
+import { AddCustomHandleButton } from "./add-custom-handle";
 
 function AgentNodeHandbook() {
 	return (

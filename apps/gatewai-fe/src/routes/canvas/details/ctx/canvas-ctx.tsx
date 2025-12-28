@@ -1,44 +1,61 @@
+import type { NodeType } from "@gatewai/db";
+import type { AllNodeConfig, NodeResult } from "@gatewai/types";
 import {
-	createContext,
-	useCallback,
-	useContext,
-	useEffect,
-	useMemo,
-	useRef,
-	type PropsWithChildren,
-	type RefObject,
-} from "react";
-import {
-	getConnectedEdges,
-	getOutgoers,
-	useUpdateNodeInternals,
 	type Connection,
 	type Edge,
 	type EdgeChange,
+	getConnectedEdges,
+	getOutgoers,
 	type Node,
 	type NodeChange,
 	type OnConnect,
 	type OnEdgesChange,
 	type OnNodesChange,
 	type ReactFlowInstance,
+	useUpdateNodeInternals,
 	type XYPosition,
 } from "@xyflow/react";
-import type { AllNodeConfig, NodeResult } from "@gatewai/types";
-import { useAppDispatch, useAppSelector, type RootState } from "@/store";
 import {
-	setAllNodeEntities,
-	type NodeEntityType,
-	deleteManyNodeEntity,
-	updateNodeConfig,
-	updateNodeResult,
-} from "@/store/nodes";
+	createContext,
+	type PropsWithChildren,
+	type RefObject,
+	useCallback,
+	useContext,
+	useEffect,
+	useMemo,
+	useRef,
+} from "react";
+import { useStore } from "react-redux";
+import { toast } from "sonner";
 import { generateId } from "@/lib/idgen";
-import { createNodeEntity } from "@/store/nodes";
 import type {
 	CanvasDetailsRPC,
 	NodeTemplateListItemRPC,
 	PatchCanvasRPCParams,
 } from "@/rpc/types";
+import { type RootState, useAppDispatch, useAppSelector } from "@/store";
+import {
+	useGetCanvasDetailsQuery,
+	usePatchCanvasMutation,
+	useProcessNodesMutationMutation,
+} from "@/store/canvas";
+import { type EdgeEntityType, setAllEdgeEntities } from "@/store/edges";
+import {
+	addManyHandleEntities,
+	createHandleEntity,
+	deleteManyHandleEntity,
+	type HandleEntityType,
+	handleSelectors,
+	setAllHandleEntities,
+} from "@/store/handles";
+import {
+	createNodeEntity,
+	deleteManyNodeEntity,
+	type NodeEntityType,
+	setAllNodeEntities,
+	updateNodeConfig,
+	updateNodeResult,
+} from "@/store/nodes";
 import {
 	createNode,
 	onEdgeChange,
@@ -48,26 +65,9 @@ import {
 	setEdges,
 	setNodes,
 } from "@/store/rfstate";
-import { toast } from "sonner";
-import {
-	addManyHandleEntities,
-	createHandleEntity,
-	deleteManyHandleEntity,
-	handleSelectors,
-	setAllHandleEntities,
-	type HandleEntityType,
-} from "@/store/handles";
-import { setAllEdgeEntities, type EdgeEntityType } from "@/store/edges";
-import { useStore } from "react-redux";
-import {
-	useGetCanvasDetailsQuery,
-	usePatchCanvasMutation,
-	useProcessNodesMutationMutation,
-} from "@/store/canvas";
-import { useTaskManagerCtx } from "./task-manager-ctx";
-import type { NodeType } from "@gatewai/db";
-import { useNodeTemplates } from "../../node-templates/node-templates.ctx";
 import type { BatchEntity } from "@/store/tasks";
+import { useNodeTemplates } from "../../node-templates/node-templates.ctx";
+import { useTaskManagerCtx } from "./task-manager-ctx";
 
 interface CanvasContextType {
 	canvas: CanvasDetailsRPC["canvas"] | undefined;

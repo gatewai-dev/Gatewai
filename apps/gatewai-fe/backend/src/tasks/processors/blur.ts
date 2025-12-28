@@ -1,18 +1,18 @@
 import { DataType } from "@gatewai/db";
 import type {
-	FileData,
 	BlurNodeConfig,
+	FileData,
 	NodeResult,
 	Output,
 } from "@gatewai/types";
 import {
-	getImageBuffer,
 	applyBlur,
 	bufferToDataUrl,
+	getImageBuffer,
 	getMimeType,
 } from "../../utils/image.js";
-import type { NodeProcessor } from "./types.js";
 import { getInputValue } from "../resolvers.js";
+import type { NodeProcessor } from "./types.js";
 
 const blurProcessor: NodeProcessor = async ({ node, data }) => {
 	try {
