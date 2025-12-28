@@ -1,15 +1,12 @@
 import { Button } from "@/components/ui/button";
 import type { NodeResult } from "@gatewai/types";
-import type { NodeProps } from "@xyflow/react";
 import { ChevronLeft, ChevronRight } from "lucide-react";
-import { useAppDispatch, useAppSelector } from "@/store";
-import { incrementSelectedResultIndex, decrementSelectedResultIndex, makeSelectNodeById } from "@/store/nodes";
-import type { AnyNode } from "../node-props";
+import { useAppDispatch } from "@/store";
+import { incrementSelectedResultIndex, decrementSelectedResultIndex, type NodeEntityType } from "@/store/nodes";
 
-function OutputSelector({node}: {node: NodeProps<AnyNode>}) {
+function OutputSelector({node}: {node: NodeEntityType}) {
     const dispatch = useAppDispatch();
-    const nodeEntity = useAppSelector(makeSelectNodeById(node.id))
-    const result = nodeEntity?.result as unknown as NodeResult
+    const result = node?.result as unknown as NodeResult
     if (!result || isNaN(result.selectedOutputIndex)) {
         return null;
     }

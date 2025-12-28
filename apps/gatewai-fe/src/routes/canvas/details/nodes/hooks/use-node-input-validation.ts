@@ -31,7 +31,7 @@ function useNodeInputValidation(nodeId: Node["id"]): ValidationError[] {
                 if (!sourceNode?.result) {
                     return;
                 }
-                const sourceResult = sourceNode.result as NodeResult;
+                const sourceResult = sourceNode.result as unknown as NodeResult;
                 const outputIndex = sourceResult?.selectedOutputIndex ?? 0;
 
                 const selectedOutput = sourceResult.outputs[outputIndex];
@@ -40,7 +40,9 @@ function useNodeInputValidation(nodeId: Node["id"]): ValidationError[] {
                 }
                 const outputItem = selectedOutput.items.find(f => f.outputHandleId === edge.sourceHandleId);
                 const outputItemType = outputItem?.type;
-
+                if (!outputItemType) {
+                    return;
+                }
                 if (!targetHandle.dataTypes?.includes(outputItemType)) {
                     errors.push({
                         handleId: targetHandle.id,

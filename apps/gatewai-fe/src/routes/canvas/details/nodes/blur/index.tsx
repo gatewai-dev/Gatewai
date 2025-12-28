@@ -36,6 +36,7 @@ const BlurNodeComponent = memo((props: NodeProps<BlurNode>) => {
       ctx.drawImage(img, 0, 0);
     };
   }, [imageUrl]);
+
   console.log('BlurNodeComponent render', { imageUrl, isProcessing, error });
   return (
     <BaseNode {...props}>

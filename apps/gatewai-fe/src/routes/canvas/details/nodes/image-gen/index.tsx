@@ -55,12 +55,6 @@ const ImageGenNodeComponent = memo((props: NodeProps<ImageGenNode>) => {
                 <OutputSelector node={node} />
             </div>}
             <canvas ref={canvasRef} className="block w-full h-auto" />
-
-            {error && (
-              <div className="absolute inset-0 flex items-center justify-center bg-red-50/90">
-                <div className="text-sm text-red-600">Error: {error}</div>
-              </div>
-            )}
           </div>
         )}
 

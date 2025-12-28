@@ -38,10 +38,8 @@ const PaintNodeComponent = memo((props: NodeProps<PaintNode>) => {
   const inputImageUrl = useNodeImageUrl(inputNodeId);
   const handles = useAppSelector(makeSelectHandlesByNodeId(props.id));
 
-
   const imageRef = useRef<HTMLImageElement>(null);
   const canvasRef = useRef<HTMLCanvasElement>(null);
-
 
   const [brushSize, setBrushSize] = useState(20);
   const [brushColor, setBrushColor] = useState('#FFFFFF');
@@ -60,6 +58,7 @@ const PaintNodeComponent = memo((props: NodeProps<PaintNode>) => {
    const updateResult = useCallback((dataUrl: string) => {
     const existingOutputItem = result?.outputs[result.selectedOutputIndex].items.find(f => f.type === 'Mask')
     let newResult: PaintResult | undefined = undefined;
+      console.log(handles)
     if (existingOutputItem) {
       newResult = {
         outputs: [{
@@ -84,6 +83,7 @@ const PaintNodeComponent = memo((props: NodeProps<PaintNode>) => {
         console.error('Handle could not be found');
         return;
       }
+      console.log(handles)
       const newItems = (result?.outputs[0].items ?? []) as PaintResult["outputs"][number]["items"];
       newItems.push({
         type: 'Mask',
