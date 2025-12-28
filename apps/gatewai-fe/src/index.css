@@ -162,7 +162,7 @@
 :root {
   --checker-size: 20px;
   --checker-half: calc(var(--checker-size) / 2);
-  --checker-color: rgb(54, 54, 54);
+  --checker-color: rgb(0, 0, 0);
 }
 
 .media-container {

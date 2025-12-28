@@ -174,7 +174,6 @@ export class NodeGraphProcessor extends EventEmitter {
 
     this.registerProcessor('Paint', async ({ node, inputs, signal }) => {
       const config = node.config as { width?: number; height?: number; backgroundColor?: string };
-      const { width = 1024, height = 1024, backgroundColor = '#000000' } = config;
 
       const inputHandle = this.getInputHandles(node.id)[0];
       const sourceNodeId = inputHandle ? this.getSourceNodeId(node.id, inputHandle) : null;

@@ -74,7 +74,7 @@ import type { DataType, FileAsset } from "@gatewai/db";
   }
 
   export type PaintResult = SingleOutputResult & {
-    outputs: [{ items: [OutputItem<"Image">, OutputItem<"Mask">] }];
+    outputs: [{ items: [OutputItem<"Image">, OutputItem<"Mask">] | [OutputItem<"Mask">, OutputItem<"Image">] }];
   }
 
   export type BlurResult = SingleOutputResult & {

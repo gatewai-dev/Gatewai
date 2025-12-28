@@ -160,11 +160,11 @@ export async function SEED_createNodeTemplates(prisma: PrismaClient) {
       isTransient: true,
       templateHandles: {
         create: [
-          { type: HandleType.Input, dataTypes: [DataType.Image, DataType.Video, DataType.Mask], required: true, label: "Image/Video" },
-          { type: HandleType.Output, dataTypes: [DataType.File], label: "Resized Image/Video" }
+          { type: HandleType.Input, dataTypes: [DataType.Image, DataType.Video, DataType.Mask], required: true, label: "Image" },
+          { type: HandleType.Output, dataTypes: [DataType.File], label: "Result" }
         ]
       },
-      defaultConfig: {},
+      defaultConfig: undefined,
     }
   });
 

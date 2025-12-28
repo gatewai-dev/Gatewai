@@ -1,18 +1,17 @@
 import { memo, useCallback, useEffect, useMemo, useRef, useState } from 'react';
 import { type NodeProps } from '@xyflow/react';
 import { useAppDispatch, useAppSelector } from '@/store';
-import { updateNodeResult } from '@/store/nodes';
+import { makeSelectNodeById, updateNodeResult } from '@/store/nodes';
 import { BaseNode } from '../base';
 import type { PaintNode } from '../node-props';
 import { useNodeImageUrl, useNodeResult } from '../../processor/processor-ctx';
-import type { OutputItem, PaintResult } from '@gatewai/types';
+import type { OutputItem, PaintNodeConfig, PaintResult } from '@gatewai/types';
 import { makeSelectEdgesByTargetNodeId } from '@/store/edges';
 import { makeSelectHandlesByNodeId } from '@/store/handles';
 import { Button } from '@/components/ui/button';
 import { Label } from '@/components/ui/label';
 import { Slider } from '@/components/ui/slider';
 import { Brush, Eraser } from 'lucide-react';
-import { ColorPicker, ColorPickerAlpha, ColorPickerEyeDropper, ColorPickerFormat, ColorPickerHue, ColorPickerOutput, ColorPickerSelection } from '@/components/ui/color-picker';
 
 const PaintNodeComponent = memo((props: NodeProps<PaintNode>) => {
   const dispatch = useAppDispatch();
@@ -25,6 +24,7 @@ const PaintNodeComponent = memo((props: NodeProps<PaintNode>) => {
   }, [edges]);
 
   const { result, isProcessing, error } = useNodeResult(props.id);
+  const node = useAppSelector(makeSelectNodeById(props.id));
   const paintOutput = useMemo(() => {
     const maskResult = result as PaintResult;
     if (!maskResult || maskResult?.selectedOutputIndex == null) {
@@ -45,15 +45,13 @@ const PaintNodeComponent = memo((props: NodeProps<PaintNode>) => {
   const isDrawingRef = useRef(false);
   const lastPositionRef = useRef<{ x: number; y: number } | null>(null);
   const needsUpdateRef = useRef(false);
+  const initializedRef = useRef(false);
 
-  const { config } = props.data;
-  const { width = 1024, height = 1024, backgroundColor = '#000000' } = config ?? {};
+  const nodeConfig = node?.config as PaintNodeConfig;
 
-  const containerStyle = inputImageUrl ? undefined : { aspectRatio: `${width} / ${height}` };
-
-
-
-  const updateResult = useCallback((dataUrl: string) => {
+  const containerStyle = inputImageUrl ? undefined : { aspectRatio: `${nodeConfig?.width} / ${nodeConfig?.height}` };
+  console.log({inputImageUrl})
+   const updateResult = useCallback((dataUrl: string) => {
     const existingOutputItem = result?.outputs[result.selectedOutputIndex].items.find(f => f.type === 'Mask')
     let newResult: PaintResult | undefined = undefined;
     if (existingOutputItem) {
@@ -121,20 +119,20 @@ const PaintNodeComponent = memo((props: NodeProps<PaintNode>) => {
         ctx.drawImage(img, 0, 0, canvas.width, canvas.height);
       };
     } else {
-      ctx.fillStyle = backgroundColor;
-      ctx.fillRect(0, 0, canvas.width, canvas.height);
+      // Do not fill with backgroundColor when there's an input image; keep canvas transparent to show image underneath
       updateResult(canvas.toDataURL('image/png'));
     }
-  }, [paintOutput, backgroundColor, updateResult]);
+  }, [paintOutput, updateResult]);
 
   useEffect(() => {
     if (inputImageUrl) return;
+    if (initializedRef.current) return;
 
     const canvas = canvasRef.current;
     if (!canvas) return;
 
-    canvas.width = width;
-    canvas.height = height;
+    canvas.width = nodeConfig?.width;
+    canvas.height = nodeConfig?.height;
 
     const ctx = canvas.getContext('2d');
     if (!ctx) return;
@@ -148,14 +146,15 @@ const PaintNodeComponent = memo((props: NodeProps<PaintNode>) => {
       img.src = paintOutput?.data.dataUrl;
       img.onload = () => {
         ctx.drawImage(img, 0, 0, canvas.width, canvas.height);
+        initializedRef.current = true;
       };
     } else {
-      ctx.fillStyle = backgroundColor;
+      // ctx.fillStyle = backgroundColor;
       ctx.fillRect(0, 0, canvas.width, canvas.height);
       updateResult(canvas.toDataURL('image/png'));
+      initializedRef.current = true;
     }
-  }, [inputImageUrl, paintOutput, width, height, backgroundColor, updateResult]);
-
+  }, [inputImageUrl, paintOutput, nodeConfig?.width, nodeConfig?.height, updateResult]);
 
   const getScaledCoordinates = useCallback((e: React.MouseEvent<HTMLCanvasElement>) => {
     const canvas = canvasRef.current;
@@ -240,7 +239,7 @@ const PaintNodeComponent = memo((props: NodeProps<PaintNode>) => {
   return (
     <BaseNode {...props}>
       <div className="flex flex-col gap-3">
-        <div className="w-full overflow-hidden bg-black/5 min-h-[100px] relative select-none" style={containerStyle}>
+        <div className="w-full overflow-hidden bg-black/5 min-h-[100px] relative select-none" style={{ ...containerStyle, backgroundColor: inputImageUrl ? backgroundColor : undefined }}>
           {inputImageUrl && (
             <img
               ref={imageRef}
@@ -286,20 +285,14 @@ const PaintNodeComponent = memo((props: NodeProps<PaintNode>) => {
             </Button>
           </div>
           <div className="flex items-center gap-1">
-            <ColorPicker value={brushColor} onChange={setBrushColor} className="max-w-sm rounded-md border bg-background p-4 shadow-sm">
-              <ColorPickerSelection />
-              <div className="flex items-center gap-4">
-                <ColorPickerEyeDropper />
-                <div className="grid w-full gap-1">
-                  <ColorPickerHue />
-                  <ColorPickerAlpha />
-                </div>
-              </div>
-              <div className="flex items-center gap-2">
-                <ColorPickerOutput />
-                <ColorPickerFormat />
-              </div>
-            </ColorPicker>
+            <Label htmlFor="brush-color">Color</Label>
+            <input
+              id="brush-color"
+              type="color"
+              value={brushColor}
+              onChange={(e) => setBrushColor(e.target.value)}
+              className="w-8 h-8 p-1 rounded border bg-background"
+            />
           </div>
           <div className="flex items-center gap-1">
             <Label htmlFor="brush-size">Size</Label>

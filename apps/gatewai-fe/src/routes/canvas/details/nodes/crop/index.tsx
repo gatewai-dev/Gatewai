@@ -7,12 +7,7 @@ import type { CropNode } from '../node-props';
 import { useNodeImageUrl, useNodeResult } from '../../processor/processor-ctx';
 import type { CropNodeConfig } from '@gatewai/types';
 import { makeSelectEdgesByTargetNodeId } from '@/store/edges';
-
-const ImagePlaceholder = () => (
-  <div className="w-full media-container h-[280px] flex items-center justify-center rounded bg-gray-50 dark:bg-gray-800 border border-dashed border-gray-300 dark:border-gray-700">
-    <span className="text-gray-400 text-sm">No image connected</span>
-  </div>
-);
+import { MediaBackground } from '../common/media-background';
 
 type Crop = {
   leftPercentage: number;
@@ -38,9 +33,9 @@ const CropNodeComponent = memo((props: NodeProps<CropNode>) => {
     return edges[0].source;
   }, [edges])
 
+  const inputImageUrl = useNodeImageUrl(inputNodeId);
   const node = useAppSelector(makeSelectNodeById(props.id));
   const { isProcessing, error } = useNodeResult(props.id);
-  const inputImageUrl = useNodeImageUrl(inputNodeId);
   const imageRef = useRef<HTMLImageElement>(null);
   const nodeConfig = node?.config as CropNodeConfig;
   const [crop, setCrop] = useState<Crop>({
@@ -182,138 +177,126 @@ const CropNodeComponent = memo((props: NodeProps<CropNode>) => {
 
   return (
     <BaseNode {...props}>
-      <div className="flex flex-col gap-3">
-        {!inputImageUrl ? (
-          <ImagePlaceholder />
-        ) : (
-          <div className="w-full overflow-hidden bg-black/5 min-h-[100px] relative select-none">
-            <img
-              ref={imageRef}
-              src={inputImageUrl}
-              className="block w-full h-auto"
-              alt="Input image for cropping"
-              draggable={false}
-            />
-            
-            {/* Dark overlay for cropped-out areas */}
-            <div className="absolute inset-0 pointer-events-none">
-              <svg width="100%" height="100%" className="absolute inset-0">
-                <defs>
-                  <mask id={`crop-mask-${props.id}`}>
-                    <rect width="100%" height="100%" fill="white" />
-                    <rect
-                      x={`${crop.leftPercentage}%`}
-                      y={`${crop.topPercentage}%`}
-                      width={`${crop.widthPercentage}%`}
-                      height={`${crop.heightPercentage}%`}
-                      fill="black"
-                    />
-                  </mask>
-                </defs>
-                <rect
-                  width="100%"
-                  height="100%"
-                  fill="rgba(0, 0, 0, 0.6)"
-                  mask={`url(#crop-mask-${props.id})`}
-                />
-                {/* Marching ants border */}
+      <div className=" media-container w-full overflow-hidden bg-black/5 min-h-[100px] relative select-none">
+        <img
+          ref={imageRef}
+          src={inputImageUrl}
+          className="block w-full h-auto"
+          alt="Input image for cropping"
+          draggable={false}
+        />
+        
+        {/* Dark overlay for cropped-out areas */}
+        <div className="absolute inset-0 pointer-events-none">
+          <svg width="100%" height="100%" className="absolute inset-0">
+            <defs>
+              <mask id={`crop-mask-${props.id}`}>
+                <rect width="100%" height="100%" fill="white" />
                 <rect
                   x={`${crop.leftPercentage}%`}
                   y={`${crop.topPercentage}%`}
                   width={`${crop.widthPercentage}%`}
                   height={`${crop.heightPercentage}%`}
-                  fill="none"
-                  stroke="white"
-                  strokeWidth="2"
-                  strokeDasharray="5 5"
-                  pointerEvents="none"
-                >
-                  <animate
-                    attributeName="stroke-dashoffset"
-                    from="0"
-                    to="10"
-                    dur="0.3s"
-                    repeatCount="indefinite"
-                  />
-                </rect>
-              </svg>
-            </div>
-
-            {/* Crop selection box */}
-            <div
-              className="absolute box-border"
-              style={{
-                left: `${crop.leftPercentage}%`,
-                top: `${crop.topPercentage}%`,
-                width: `${crop.widthPercentage}%`,
-                height: `${crop.heightPercentage}%`,
-                cursor: dragState?.type === 'move' ? 'grabbing' : 'grab',
-              }}
-              onMouseDown={(e) => handleMouseDown(e, 'move')}
+                  fill="black"
+                />
+              </mask>
+            </defs>
+            <rect
+              width="100%"
+              height="100%"
+              fill="rgba(0, 0, 0, 0.6)"
+              mask={`url(#crop-mask-${props.id})`}
+            />
+            {/* Marching ants border */}
+            <rect
+              x={`${crop.leftPercentage}%`}
+              y={`${crop.topPercentage}%`}
+              width={`${crop.widthPercentage}%`}
+              height={`${crop.heightPercentage}%`}
+              fill="none"
+              stroke="white"
+              strokeWidth="2"
+              strokeDasharray="5 5"
+              pointerEvents="none"
             >
-              {/* Corner handles */}
-              <div
-                className="absolute -top-1 -left-1 w-2 h-2 bg-white/70 border border-blue-500/30 cursor-nw-resize shadow-md hover:scale-110 transition-transform"
-                onMouseDown={(e) => handleMouseDown(e, 'resize-nw')}
+              <animate
+                attributeName="stroke-dashoffset"
+                from="0"
+                to="10"
+                dur="0.3s"
+                repeatCount="indefinite"
               />
-              <div
-                className="absolute -top-1 -right-1 w-2 h-2 bg-white/70 border border-blue-500/30 cursor-ne-resize shadow-md hover:scale-110 transition-transform"
-                onMouseDown={(e) => handleMouseDown(e, 'resize-ne')}
-              />
-              <div
-                className="absolute -bottom-1 -left-1 w-2 h-2 bg-white/70 border border-blue-500/30 cursor-sw-resize shadow-md hover:scale-110 transition-transform"
-                onMouseDown={(e) => handleMouseDown(e, 'resize-sw')}
-              />
-              <div
-                className="absolute -bottom-1 -right-1 w-2 h-2 bg-white/70 border border-blue-500/30 cursor-se-resize shadow-md hover:scale-110 transition-transform"
-                onMouseDown={(e) => handleMouseDown(e, 'resize-se')}
-              />
-              
-              {/* Side handles - only show if crop box is large enough */}
-              {crop.widthPercentage > 15 && (
-                <>
-                  <div
-                    className="absolute -top-1 left-1/2 -ml-1 w-2 h-2 bg-white/70 border border-blue-500/30 cursor-n-resize shadow-md hover:scale-110 transition-transform"
-                    onMouseDown={(e) => handleMouseDown(e, 'resize-n')}
-                  />
-                  <div
-                    className="absolute -bottom-1 left-1/2 -ml-1 w-2 h-2 bg-white/70 border border-blue-500/30 cursor-s-resize shadow-md hover:scale-110 transition-transform"
-                    onMouseDown={(e) => handleMouseDown(e, 'resize-s')}
-                  />
-                </>
-              )}
-              {crop.heightPercentage > 15 && (
-                <>
-                  <div
-                    className="absolute top-1/2 -left-1 -mt-1 w-2 h-2 bg-white/70 border border-blue-500/30 cursor-w-resize shadow-md hover:scale-110 transition-transform"
-                    onMouseDown={(e) => handleMouseDown(e, 'resize-w')}
-                  />
-                  <div
-                    className="absolute top-1/2 -right-1 -mt-1 w-2 h-2 bg-white/70 border border-blue-500/30 cursor-e-resize shadow-md hover:scale-110 transition-transform"
-                    onMouseDown={(e) => handleMouseDown(e, 'resize-e')}
-                  />
-                </>
-              )}
+            </rect>
+          </svg>
+        </div>
 
-              {/* Rule of thirds grid lines */}
-              <div className="absolute inset-0 pointer-events-none opacity-50">
-                <div className="absolute left-1/3 top-0 bottom-0 w-px bg-white/50" />
-                <div className="absolute left-2/3 top-0 bottom-0 w-px bg-white/50" />
-                <div className="absolute top-1/3 left-0 right-0 h-px bg-white/50" />
-                <div className="absolute top-2/3 left-0 right-0 h-px bg-white/50" />
-              </div>
-            </div>
+        {/* Crop selection box */}
+        <div
+          className="absolute box-border"
+          style={{
+            left: `${crop.leftPercentage}%`,
+            top: `${crop.topPercentage}%`,
+            width: `${crop.widthPercentage}%`,
+            height: `${crop.heightPercentage}%`,
+            cursor: dragState?.type === 'move' ? 'grabbing' : 'grab',
+          }}
+          onMouseDown={(e) => handleMouseDown(e, 'move')}
+        >
+          {/* Corner handles */}
+          <div
+            className="absolute -top-1 -left-1 w-2 h-2 bg-white/70 border border-blue-500/30 cursor-nw-resize shadow-md hover:scale-110 transition-transform"
+            onMouseDown={(e) => handleMouseDown(e, 'resize-nw')}
+          />
+          <div
+            className="absolute -top-1 -right-1 w-2 h-2 bg-white/70 border border-blue-500/30 cursor-ne-resize shadow-md hover:scale-110 transition-transform"
+            onMouseDown={(e) => handleMouseDown(e, 'resize-ne')}
+          />
+          <div
+            className="absolute -bottom-1 -left-1 w-2 h-2 bg-white/70 border border-blue-500/30 cursor-sw-resize shadow-md hover:scale-110 transition-transform"
+            onMouseDown={(e) => handleMouseDown(e, 'resize-sw')}
+          />
+          <div
+            className="absolute -bottom-1 -right-1 w-2 h-2 bg-white/70 border border-blue-500/30 cursor-se-resize shadow-md hover:scale-110 transition-transform"
+            onMouseDown={(e) => handleMouseDown(e, 'resize-se')}
+          />
+          
+          {/* Side handles - only show if crop box is large enough */}
+          {crop.widthPercentage > 15 && (
+            <>
+              <div
+                className="absolute -top-1 left-1/2 -ml-1 w-2 h-2 bg-white/70 border border-blue-500/30 cursor-n-resize shadow-md hover:scale-110 transition-transform"
+                onMouseDown={(e) => handleMouseDown(e, 'resize-n')}
+              />
+              <div
+                className="absolute -bottom-1 left-1/2 -ml-1 w-2 h-2 bg-white/70 border border-blue-500/30 cursor-s-resize shadow-md hover:scale-110 transition-transform"
+                onMouseDown={(e) => handleMouseDown(e, 'resize-s')}
+              />
+            </>
+          )}
+          {crop.heightPercentage > 15 && (
+            <>
+              <div
+                className="absolute top-1/2 -left-1 -mt-1 w-2 h-2 bg-white/70 border border-blue-500/30 cursor-w-resize shadow-md hover:scale-110 transition-transform"
+                onMouseDown={(e) => handleMouseDown(e, 'resize-w')}
+              />
+              <div
+                className="absolute top-1/2 -right-1 -mt-1 w-2 h-2 bg-white/70 border border-blue-500/30 cursor-e-resize shadow-md hover:scale-110 transition-transform"
+                onMouseDown={(e) => handleMouseDown(e, 'resize-e')}
+              />
+            </>
+          )}
 
-            {isProcessing && (
-              <div className="absolute inset-0 flex items-center justify-center bg-white/50 backdrop-blur-sm">
-                <span className="text-sm text-gray-600 font-medium">Processing...</span>
-              </div>
-            )}
-            {error && (
-              <div className="absolute inset-0 flex items-center justify-center bg-red-50/90 backdrop-blur-sm">
-                <div className="text-sm text-red-600 font-medium">Error: {error}</div>
-              </div>
-            )}
+          {/* Rule of thirds grid lines */}
+          <div className="absolute inset-0 pointer-events-none opacity-50">
+            <div className="absolute left-1/3 top-0 bottom-0 w-px bg-white/50" />
+            <div className="absolute left-2/3 top-0 bottom-0 w-px bg-white/50" />
+            <div className="absolute top-1/3 left-0 right-0 h-px bg-white/50" />
+            <div className="absolute top-2/3 left-0 right-0 h-px bg-white/50" />
+          </div>
+        </div>
+        {error && (
+          <div className="absolute inset-0 flex items-center justify-center bg-red-50/90 backdrop-blur-sm">
+            <div className="text-sm text-red-600 font-medium">Error: {error}</div>
           </div>
         )}
       </div>
