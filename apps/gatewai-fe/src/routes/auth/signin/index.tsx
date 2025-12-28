@@ -1,11 +1,11 @@
 import { SignInForm } from "./signin-form";
 
 function SigninPage() {
-
-    return (<>
-        <SignInForm />
-        </>
-    );
+	return (
+		<>
+			<SignInForm />
+		</>
+	);
 }
 
 export { SigninPage };

@@ -1,5 +1,5 @@
 {
-  "extends": "@gatewai/tsconfig/node14.json",
-  "include": ["."],
-  "exclude": ["dist", "build", "node_modules"]
+	"extends": "@gatewai/tsconfig/node14.json",
+	"include": ["."],
+	"exclude": ["dist", "build", "node_modules"]
 }

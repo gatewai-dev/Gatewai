@@ -1,48 +1,58 @@
-import { createContext, useContext, useState, type Dispatch, type PropsWithChildren, type SetStateAction } from 'react';
-import type { UserAssetsListRPC, UserAssetsListRPCParams } from '@/rpc/types';
-import { useGetUserAssetsQuery } from '@/store/assets';
+import {
+	createContext,
+	useContext,
+	useState,
+	type Dispatch,
+	type PropsWithChildren,
+	type SetStateAction,
+} from "react";
+import type { UserAssetsListRPC, UserAssetsListRPCParams } from "@/rpc/types";
+import { useGetUserAssetsQuery } from "@/store/assets";
 
 interface UserAssetsContextType {
-  assets: UserAssetsListRPC | undefined;
-  isLoading: boolean;
-  isError: boolean;
-  queryParams: UserAssetsListRPCParams;
-  setQueryParams: Dispatch<SetStateAction<UserAssetsListRPCParams>>;
+	assets: UserAssetsListRPC | undefined;
+	isLoading: boolean;
+	isError: boolean;
+	queryParams: UserAssetsListRPCParams;
+	setQueryParams: Dispatch<SetStateAction<UserAssetsListRPCParams>>;
 }
 
-const UserAssetsContext = createContext<UserAssetsContextType | undefined>(undefined);
+const UserAssetsContext = createContext<UserAssetsContextType | undefined>(
+	undefined,
+);
 
-const UserAssetsProvider = ({
-  children,
-}: PropsWithChildren) => {
+const UserAssetsProvider = ({ children }: PropsWithChildren) => {
+	const [queryParams, setQueryParams] = useState<UserAssetsListRPCParams>({
+		query: {
+			pageIndex: "0",
+			pageSize: "50",
+			q: "",
+		},
+	});
 
-  const [queryParams, setQueryParams] = useState<UserAssetsListRPCParams>({
-    query: {
-        pageIndex: "0",
-        pageSize: "50",
-        q: ''
-    }
-  })
+	const { data, isLoading, isError } = useGetUserAssetsQuery(queryParams);
 
-  const { data, isLoading, isError } = useGetUserAssetsQuery(queryParams);
+	const value: UserAssetsContextType = {
+		assets: data,
+		isLoading,
+		isError,
+		setQueryParams,
+		queryParams,
+	};
 
-  const value: UserAssetsContextType = {
-    assets: data,
-    isLoading,
-    isError,
-    setQueryParams,
-    queryParams,
-  };
-
-  return <UserAssetsContext.Provider value={value}>{children}</UserAssetsContext.Provider>;
+	return (
+		<UserAssetsContext.Provider value={value}>
+			{children}
+		</UserAssetsContext.Provider>
+	);
 };
 
 export function useUserAssets() {
-  const ctx = useContext(UserAssetsContext);
-  if (!ctx) {
-    throw new Error('useUserAssets should used inside UserAssetsProvider');
-  }
-  return ctx;
+	const ctx = useContext(UserAssetsContext);
+	if (!ctx) {
+		throw new Error("useUserAssets should used inside UserAssetsProvider");
+	}
+	return ctx;
 }
 
-export { UserAssetsContext, UserAssetsProvider }
+export { UserAssetsContext, UserAssetsProvider };

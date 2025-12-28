@@ -1,21 +1,21 @@
 import type { DataType, FileAsset } from "@gatewai/db";
 
 function GetDataTypeFromMimetype(mimeType: string): DataType {
-    if (mimeType.startsWith('audio/')) {
-        return 'Audio';
-    } else if (mimeType.startsWith('video/')) {
-        return 'Video';
-    } else if (mimeType.startsWith('image/')) {
-        return 'Image';
-    } else {
-        return 'File';
-    }
+	if (mimeType.startsWith("audio/")) {
+		return "Audio";
+	} else if (mimeType.startsWith("video/")) {
+		return "Video";
+	} else if (mimeType.startsWith("image/")) {
+		return "Image";
+	} else {
+		return "File";
+	}
 }
 
 const BACKEND_URL = import.meta.env.VITE_BASE_URL;
 
 function GetAssetEndpoint(id: FileAsset["id"]) {
-    return `${BACKEND_URL}/api/v1/assets/${id}`
+	return `${BACKEND_URL}/api/v1/assets/${id}`;
 }
 
-export { GetDataTypeFromMimetype, GetAssetEndpoint }
+export { GetDataTypeFromMimetype, GetAssetEndpoint };

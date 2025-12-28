@@ -5,9 +5,9 @@ import { tasksRouter } from "./tasks.js";
 import { assetsRouter } from "./assets.js";
 
 const v1Router = new Hono()
-    .route('/canvas', canvasRoutes)
-    .route('/node-templates', nodeTemplatesRoutes)
-    .route('/tasks', tasksRouter)
-    .route('/assets', assetsRouter)
+	.route("/canvas", canvasRoutes)
+	.route("/node-templates", nodeTemplatesRoutes)
+	.route("/tasks", tasksRouter)
+	.route("/assets", assetsRouter);
 
 export { v1Router };

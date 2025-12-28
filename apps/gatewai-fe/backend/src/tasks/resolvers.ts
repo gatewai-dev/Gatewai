@@ -2,33 +2,35 @@ import { prisma, type DataType } from "@gatewai/db";
 import type { FileData, NodeResult } from "@gatewai/types";
 import type { CanvasCtxData } from "../repositories/canvas.js";
 import { generateSignedUrl } from "../utils/s3.js";
-import { add } from 'date-fns';
+import { add } from "date-fns";
 /**
  * Options for filtering inputs.
  */
 type InputFilterOptions = {
-  dataType: DataType;
-  label?: string;
+	dataType: DataType;
+	label?: string;
 };
 
 /**
  * Resolve the actual data value that flows into a target node through an edge.
  */
 function resolveSourceValue(
-  data: CanvasCtxData,
-  edge: CanvasCtxData['edges'][number]
+	data: CanvasCtxData,
+	edge: CanvasCtxData["edges"][number],
 ) {
-  const sourceHandle = data.handles.find((h) => h.id === edge.sourceHandleId);
-  if (!sourceHandle) throw new Error('Source handle missing');
+	const sourceHandle = data.handles.find((h) => h.id === edge.sourceHandleId);
+	if (!sourceHandle) throw new Error("Source handle missing");
 
-  const sourceNode = data.nodes.find((n) => n.id === sourceHandle.nodeId);
-  if (!sourceNode) throw new Error('Source node missing');
-  const result = sourceNode.result as NodeResult | null;
-  if (!result || result.outputs.length === 0) return null;
+	const sourceNode = data.nodes.find((n) => n.id === sourceHandle.nodeId);
+	if (!sourceNode) throw new Error("Source node missing");
+	const result = sourceNode.result as NodeResult | null;
+	if (!result || result.outputs.length === 0) return null;
 
-  const selected = result.outputs[result.selectedOutputIndex ?? 0];
-  const item = selected.items.find((i) => i.outputHandleId === edge.sourceHandleId);
-  return item?.data ?? null;
+	const selected = result.outputs[result.selectedOutputIndex ?? 0];
+	const item = selected.items.find(
+		(i) => i.outputHandleId === edge.sourceHandleId,
+	);
+	return item?.data ?? null;
 }
 
 /**
@@ -39,90 +41,87 @@ function resolveSourceValue(
  * - If options.label is provided, matches on the target handle's label
  */
 function getInputValue(
-  data: CanvasCtxData,
-  targetNodeId: string,
-  required: boolean = true,
-  options: InputFilterOptions
+	data: CanvasCtxData,
+	targetNodeId: string,
+	required: boolean = true,
+	options: InputFilterOptions,
 ) {
-  let incoming = data.edges.filter(
-    (e) => e.target === targetNodeId
-  ).filter((e) => {
-    const targetHandle = data.handles.find((h) => h.id === e.targetHandleId);
-    return targetHandle?.dataTypes.includes(options.dataType);
-  });
+	let incoming = data.edges
+		.filter((e) => e.target === targetNodeId)
+		.filter((e) => {
+			const targetHandle = data.handles.find((h) => h.id === e.targetHandleId);
+			return targetHandle?.dataTypes.includes(options.dataType);
+		});
 
-  if (options.label) {
-    incoming = incoming.filter((e) => {
-      const targetHandle = data.handles.find((h) => h.id === e.targetHandleId);
-      return targetHandle?.label === options.label;
-    });
-  }
+	if (options.label) {
+		incoming = incoming.filter((e) => {
+			const targetHandle = data.handles.find((h) => h.id === e.targetHandleId);
+			return targetHandle?.label === options.label;
+		});
+	}
 
-  if (incoming.length === 0) {
-    if (required) {
-      throw new Error(`Required ${options.dataType} input${options.label ? ` with label "${options.label}"` : ''} not connected`);
-    }
-    return null;
-  }
+	if (incoming.length === 0) {
+		if (required) {
+			throw new Error(
+				`Required ${options.dataType} input${options.label ? ` with label "${options.label}"` : ""} not connected`,
+			);
+		}
+		return null;
+	}
 
-  if (incoming.length > 1) {
-    console.warn(
-      `Multiple ${options.dataType} edges${options.label ? ` with label "${options.label}"` : ''} connected to node ${targetNodeId}. Using the first one.`
-    );
-  }
-  const value = resolveSourceValue(data, incoming[0]);
-  if ((value === null || value === undefined) && required) {
-    throw new Error(`No value received from ${options.dataType} input${options.label ? ` with label "${options.label}"` : ''}`);
-  }
+	if (incoming.length > 1) {
+		console.warn(
+			`Multiple ${options.dataType} edges${options.label ? ` with label "${options.label}"` : ""} connected to node ${targetNodeId}. Using the first one.`,
+		);
+	}
+	const value = resolveSourceValue(data, incoming[0]);
+	if ((value === null || value === undefined) && required) {
+		throw new Error(
+			`No value received from ${options.dataType} input${options.label ? ` with label "${options.label}"` : ""}`,
+		);
+	}
 
-  return value;
+	return value;
 }
 
 function getInputValuesByType(
-  data: CanvasCtxData,
-  targetNodeId: string,
-  options: InputFilterOptions
+	data: CanvasCtxData,
+	targetNodeId: string,
+	options: InputFilterOptions,
 ) {
-  let incoming = data.edges.filter(
-    (e) => e.target === targetNodeId
-  ).filter((e) => {
-    const targetHandle = data.handles.find((h) => h.id === e.targetHandleId);
-    return targetHandle?.dataTypes.includes(options.dataType);
-  });
+	let incoming = data.edges
+		.filter((e) => e.target === targetNodeId)
+		.filter((e) => {
+			const targetHandle = data.handles.find((h) => h.id === e.targetHandleId);
+			return targetHandle?.dataTypes.includes(options.dataType);
+		});
 
-  if (options.label) {
-    incoming = incoming.filter((e) => {
-      const targetHandle = data.handles.find((h) => h.id === e.targetHandleId);
-      return targetHandle?.label === options.label;
-    });
-  }
+	if (options.label) {
+		incoming = incoming.filter((e) => {
+			const targetHandle = data.handles.find((h) => h.id === e.targetHandleId);
+			return targetHandle?.label === options.label;
+		});
+	}
 
-  const values = incoming.map(edge => resolveSourceValue(data, edge));
-  return values;
+	const values = incoming.map((edge) => resolveSourceValue(data, edge));
+	return values;
 }
 
-function getAllOutputHandles(
-  data: CanvasCtxData,
-  nodeId: string,
-) {
-  return data.handles.filter(
-    (e) => e.nodeId === nodeId && e.type === 'Output'
-  )
+function getAllOutputHandles(data: CanvasCtxData, nodeId: string) {
+	return data.handles.filter((e) => e.nodeId === nodeId && e.type === "Output");
 }
 
 function getAllInputValuesWithHandle(
-  data: CanvasCtxData,
-  targetNodeId: string,
+	data: CanvasCtxData,
+	targetNodeId: string,
 ) {
-  const incoming = data.edges.filter(
-    (e) => e.target === targetNodeId
-  )
+	const incoming = data.edges.filter((e) => e.target === targetNodeId);
 
-  const values = incoming.map(edge => ({
-    handle: data.handles.find((h) => h.id === edge.targetHandleId),
-    value: resolveSourceValue(data, edge)
-  }));
-  return values;
+	const values = incoming.map((edge) => ({
+		handle: data.handles.find((h) => h.id === edge.targetHandleId),
+		value: resolveSourceValue(data, edge),
+	}));
+	return values;
 }
 
 /**
@@ -130,33 +129,44 @@ function getAllInputValuesWithHandle(
  * @returns A data url if exists, A new signed url if it doesn't exprired or signed url of unexpired signed url
  */
 async function resolveFileUrl(fileData: FileData) {
-    if (fileData.dataUrl) {
-        return fileData.dataUrl;
-    }
-    if (fileData.entity) {
-        const expiration = fileData.entity.signedUrlExp;
-        const now = new Date();
-        const dayLater = add(now, { days: 1 })
-        const isExpired = expiration == null || dayLater < new Date(expiration);
-        if (!isExpired) {
-            return fileData.entity.signedUrl;
-        }
-        const aWeekLater = add(now, { weeks: 1 })
+	if (fileData.dataUrl) {
+		return fileData.dataUrl;
+	}
+	if (fileData.entity) {
+		const expiration = fileData.entity.signedUrlExp;
+		const now = new Date();
+		const dayLater = add(now, { days: 1 });
+		const isExpired = expiration == null || dayLater < new Date(expiration);
+		if (!isExpired) {
+			return fileData.entity.signedUrl;
+		}
+		const aWeekLater = add(now, { weeks: 1 });
 
-        const A_WEEKISH = 3600 * 24 * 6.9; // A bit less than a week
-        const newUrl = await generateSignedUrl(fileData.entity.key, fileData.entity.bucket, A_WEEKISH)
-        await prisma.fileAsset.update({
-            data: {
-                signedUrl: newUrl,
-                signedUrlExp: aWeekLater
-            },
-            where: {
-                id: fileData.entity.id
-            }
-        })
+		const A_WEEKISH = 3600 * 24 * 6.9; // A bit less than a week
+		const newUrl = await generateSignedUrl(
+			fileData.entity.key,
+			fileData.entity.bucket,
+			A_WEEKISH,
+		);
+		await prisma.fileAsset.update({
+			data: {
+				signedUrl: newUrl,
+				signedUrlExp: aWeekLater,
+			},
+			where: {
+				id: fileData.entity.id,
+			},
+		});
 
-        return newUrl;
-    }
+		return newUrl;
+	}
 }
 
-export { resolveSourceValue, getInputValue, getAllOutputHandles, getAllInputValuesWithHandle, getInputValuesByType, resolveFileUrl }
+export {
+	resolveSourceValue,
+	getInputValue,
+	getAllOutputHandles,
+	getAllInputValuesWithHandle,
+	getInputValuesByType,
+	resolveFileUrl,
+};

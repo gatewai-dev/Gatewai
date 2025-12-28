@@ -1,306 +1,339 @@
-import { memo, useCallback, useEffect, useMemo, useRef, useState } from 'react';
-import { type NodeProps } from '@xyflow/react';
-import { useAppDispatch, useAppSelector } from '@/store';
-import { makeSelectNodeById, updateNodeConfig } from '@/store/nodes';
-import { BaseNode } from '../base';
-import type { CropNode } from '../node-props';
-import { useNodeImageUrl, useNodeResult } from '../../processor/processor-ctx';
-import type { CropNodeConfig } from '@gatewai/types';
-import { makeSelectEdgesByTargetNodeId } from '@/store/edges';
-import { cn } from '@/lib/utils';
+import { memo, useCallback, useEffect, useMemo, useRef, useState } from "react";
+import { type NodeProps } from "@xyflow/react";
+import { useAppDispatch, useAppSelector } from "@/store";
+import { makeSelectNodeById, updateNodeConfig } from "@/store/nodes";
+import { BaseNode } from "../base";
+import type { CropNode } from "../node-props";
+import { useNodeImageUrl, useNodeResult } from "../../processor/processor-ctx";
+import type { CropNodeConfig } from "@gatewai/types";
+import { makeSelectEdgesByTargetNodeId } from "@/store/edges";
+import { cn } from "@/lib/utils";
 
 type Crop = {
-  leftPercentage: number;
-  topPercentage: number;
-  widthPercentage: number;
-  heightPercentage: number;
+	leftPercentage: number;
+	topPercentage: number;
+	widthPercentage: number;
+	heightPercentage: number;
 };
 
 type DragState = {
-  type: 'move' | 'resize-nw' | 'resize-ne' | 'resize-sw' | 'resize-se' | 'resize-n' | 'resize-s' | 'resize-w' | 'resize-e';
-  startX: number;
-  startY: number;
-  startCrop: Crop;
+	type:
+		| "move"
+		| "resize-nw"
+		| "resize-ne"
+		| "resize-sw"
+		| "resize-se"
+		| "resize-n"
+		| "resize-s"
+		| "resize-w"
+		| "resize-e";
+	startX: number;
+	startY: number;
+	startCrop: Crop;
 };
 
 const CropNodeComponent = memo((props: NodeProps<CropNode>) => {
-  const dispatch = useAppDispatch();
-  const edges = useAppSelector(makeSelectEdgesByTargetNodeId(props.id));
-  const inputNodeId = useMemo(() => {
-    if (!edges || !edges[0]) {
-        return undefined;
-    }
-    return edges[0].source;
-  }, [edges])
+	const dispatch = useAppDispatch();
+	const edges = useAppSelector(makeSelectEdgesByTargetNodeId(props.id));
+	const inputNodeId = useMemo(() => {
+		if (!edges || !edges[0]) {
+			return undefined;
+		}
+		return edges[0].source;
+	}, [edges]);
 
-  const inputImageUrl = useNodeImageUrl(inputNodeId);
-  const node = useAppSelector(makeSelectNodeById(props.id));
-  const { isProcessing, error } = useNodeResult(props.id);
-  const imageRef = useRef<HTMLImageElement>(null);
-  const nodeConfig = node?.config as CropNodeConfig;
-  const [crop, setCrop] = useState<Crop>({
-    leftPercentage: nodeConfig?.leftPercentage ?? 0,
-    topPercentage: nodeConfig?.topPercentage ?? 0,
-    widthPercentage: nodeConfig?.widthPercentage ?? 100,
-    heightPercentage: nodeConfig?.heightPercentage ?? 100,
-  });
-  const [dragState, setDragState] = useState<DragState | null>(null);
-  const latestCropRef = useRef(crop);
+	const inputImageUrl = useNodeImageUrl(inputNodeId);
+	const node = useAppSelector(makeSelectNodeById(props.id));
+	const { isProcessing, error } = useNodeResult(props.id);
+	const imageRef = useRef<HTMLImageElement>(null);
+	const nodeConfig = node?.config as CropNodeConfig;
+	const [crop, setCrop] = useState<Crop>({
+		leftPercentage: nodeConfig?.leftPercentage ?? 0,
+		topPercentage: nodeConfig?.topPercentage ?? 0,
+		widthPercentage: nodeConfig?.widthPercentage ?? 100,
+		heightPercentage: nodeConfig?.heightPercentage ?? 100,
+	});
+	const [dragState, setDragState] = useState<DragState | null>(null);
+	const latestCropRef = useRef(crop);
 
-  // Keep ref in sync with crop state
-  useEffect(() => {
-    latestCropRef.current = crop;
-  }, [crop]);
+	// Keep ref in sync with crop state
+	useEffect(() => {
+		latestCropRef.current = crop;
+	}, [crop]);
 
-  // Sync local crop with node config
-  useEffect(() => {
-    if (nodeConfig) {
-      setCrop({
-        leftPercentage: nodeConfig.leftPercentage ?? 0,
-        topPercentage: nodeConfig.topPercentage ?? 0,
-        widthPercentage: nodeConfig.widthPercentage ?? 100,
-        heightPercentage: nodeConfig.heightPercentage ?? 100,
-      });
-    }
-  }, [nodeConfig]);
+	// Sync local crop with node config
+	useEffect(() => {
+		if (nodeConfig) {
+			setCrop({
+				leftPercentage: nodeConfig.leftPercentage ?? 0,
+				topPercentage: nodeConfig.topPercentage ?? 0,
+				widthPercentage: nodeConfig.widthPercentage ?? 100,
+				heightPercentage: nodeConfig.heightPercentage ?? 100,
+			});
+		}
+	}, [nodeConfig]);
 
-  const updateConfig = useCallback((newCrop: Crop) => {
-    dispatch(updateNodeConfig({ id: props.id, newConfig: newCrop }));
-  }, [dispatch, props.id]);
+	const updateConfig = useCallback(
+		(newCrop: Crop) => {
+			dispatch(updateNodeConfig({ id: props.id, newConfig: newCrop }));
+		},
+		[dispatch, props.id],
+	);
 
-  const constrainCrop = useCallback((newCrop: Crop): Crop => {
-    let { leftPercentage, topPercentage, widthPercentage, heightPercentage } = newCrop;
-    
-    // Ensure minimum dimensions
-    widthPercentage = Math.max(5, widthPercentage);
-    heightPercentage = Math.max(5, heightPercentage);
-    
-    // Clamp width and height to 100% max
-    widthPercentage = Math.min(100, widthPercentage);
-    heightPercentage = Math.min(100, heightPercentage);
-    
-    // Clamp position so crop box stays within image bounds
-    leftPercentage = Math.max(0, Math.min(100 - widthPercentage, leftPercentage));
-    topPercentage = Math.max(0, Math.min(100 - heightPercentage, topPercentage));
-    
-    return {
-      leftPercentage,
-      topPercentage,
-      widthPercentage,
-      heightPercentage,
-    };
-  }, []);
+	const constrainCrop = useCallback((newCrop: Crop): Crop => {
+		let { leftPercentage, topPercentage, widthPercentage, heightPercentage } =
+			newCrop;
 
-  const handleMouseDown = useCallback((e: React.MouseEvent, type: DragState["type"]) => {
-    e.preventDefault();
-    e.stopPropagation();
-    setDragState({
-      type,
-      startX: e.clientX,
-      startY: e.clientY,
-      startCrop: { ...crop },
-    });
-  }, [crop]);
+		// Ensure minimum dimensions
+		widthPercentage = Math.max(5, widthPercentage);
+		heightPercentage = Math.max(5, heightPercentage);
 
-  useEffect(() => {
-    if (!dragState || !imageRef.current) return;
+		// Clamp width and height to 100% max
+		widthPercentage = Math.min(100, widthPercentage);
+		heightPercentage = Math.min(100, heightPercentage);
 
-    const imageRect = imageRef.current.getBoundingClientRect();
+		// Clamp position so crop box stays within image bounds
+		leftPercentage = Math.max(
+			0,
+			Math.min(100 - widthPercentage, leftPercentage),
+		);
+		topPercentage = Math.max(
+			0,
+			Math.min(100 - heightPercentage, topPercentage),
+		);
 
-    const handleMouseMove = (e: MouseEvent) => {
-      e.preventDefault();
-      const dx = ((e.clientX - dragState.startX) / imageRect.width) * 100;
-      const dy = ((e.clientY - dragState.startY) / imageRect.height) * 100;
-      let newCrop = { ...dragState.startCrop };
+		return {
+			leftPercentage,
+			topPercentage,
+			widthPercentage,
+			heightPercentage,
+		};
+	}, []);
 
-      switch (dragState.type) {
-        case 'move':
-          newCrop.leftPercentage += dx;
-          newCrop.topPercentage += dy;
-          break;
-        case 'resize-nw':
-          newCrop.leftPercentage += dx;
-          newCrop.topPercentage += dy;
-          newCrop.widthPercentage -= dx;
-          newCrop.heightPercentage -= dy;
-          break;
-        case 'resize-ne':
-          newCrop.topPercentage += dy;
-          newCrop.widthPercentage += dx;
-          newCrop.heightPercentage -= dy;
-          break;
-        case 'resize-sw':
-          newCrop.leftPercentage += dx;
-          newCrop.widthPercentage -= dx;
-          newCrop.heightPercentage += dy;
-          break;
-        case 'resize-se':
-          newCrop.widthPercentage += dx;
-          newCrop.heightPercentage += dy;
-          break;
-        case 'resize-n':
-          newCrop.topPercentage += dy;
-          newCrop.heightPercentage -= dy;
-          break;
-        case 'resize-s':
-          newCrop.heightPercentage += dy;
-          break;
-        case 'resize-w':
-          newCrop.leftPercentage += dx;
-          newCrop.widthPercentage -= dx;
-          break;
-        case 'resize-e':
-          newCrop.widthPercentage += dx;
-          break;
-      }
+	const handleMouseDown = useCallback(
+		(e: React.MouseEvent, type: DragState["type"]) => {
+			e.preventDefault();
+			e.stopPropagation();
+			setDragState({
+				type,
+				startX: e.clientX,
+				startY: e.clientY,
+				startCrop: { ...crop },
+			});
+		},
+		[crop],
+	);
 
-      newCrop = constrainCrop(newCrop);
-      setCrop(newCrop);
-    };
+	useEffect(() => {
+		if (!dragState || !imageRef.current) return;
 
-    const handleMouseUp = () => {
-      // Use the latest crop value from ref to avoid stale closure
-      updateConfig(latestCropRef.current);
-      setDragState(null);
-    };
+		const imageRect = imageRef.current.getBoundingClientRect();
 
-    document.addEventListener('mousemove', handleMouseMove);
-    document.addEventListener('mouseup', handleMouseUp);
+		const handleMouseMove = (e: MouseEvent) => {
+			e.preventDefault();
+			const dx = ((e.clientX - dragState.startX) / imageRect.width) * 100;
+			const dy = ((e.clientY - dragState.startY) / imageRect.height) * 100;
+			let newCrop = { ...dragState.startCrop };
 
-    return () => {
-      document.removeEventListener('mousemove', handleMouseMove);
-      document.removeEventListener('mouseup', handleMouseUp);
-    };
-  }, [dragState, constrainCrop, updateConfig]);
+			switch (dragState.type) {
+				case "move":
+					newCrop.leftPercentage += dx;
+					newCrop.topPercentage += dy;
+					break;
+				case "resize-nw":
+					newCrop.leftPercentage += dx;
+					newCrop.topPercentage += dy;
+					newCrop.widthPercentage -= dx;
+					newCrop.heightPercentage -= dy;
+					break;
+				case "resize-ne":
+					newCrop.topPercentage += dy;
+					newCrop.widthPercentage += dx;
+					newCrop.heightPercentage -= dy;
+					break;
+				case "resize-sw":
+					newCrop.leftPercentage += dx;
+					newCrop.widthPercentage -= dx;
+					newCrop.heightPercentage += dy;
+					break;
+				case "resize-se":
+					newCrop.widthPercentage += dx;
+					newCrop.heightPercentage += dy;
+					break;
+				case "resize-n":
+					newCrop.topPercentage += dy;
+					newCrop.heightPercentage -= dy;
+					break;
+				case "resize-s":
+					newCrop.heightPercentage += dy;
+					break;
+				case "resize-w":
+					newCrop.leftPercentage += dx;
+					newCrop.widthPercentage -= dx;
+					break;
+				case "resize-e":
+					newCrop.widthPercentage += dx;
+					break;
+			}
 
-  console.log('CropNodeComponent render', { inputImageUrl, isProcessing, error });
+			newCrop = constrainCrop(newCrop);
+			setCrop(newCrop);
+		};
 
-  return (
-    <BaseNode {...props}>
-      <div className={cn("media-container w-full overflow-hidden bg-black/5 relative select-none", {
-        'min-h-64': !inputImageUrl
-      })}>
-        {inputImageUrl && <img
-          ref={imageRef}
-          src={inputImageUrl}
-          className="block w-full h-auto"
-          alt="Input image for cropping"
-          draggable={false}
-        />}
+		const handleMouseUp = () => {
+			// Use the latest crop value from ref to avoid stale closure
+			updateConfig(latestCropRef.current);
+			setDragState(null);
+		};
 
-        {/* Dark overlay for cropped-out areas */}
-        <div className="absolute inset-0 pointer-events-none">
-          <svg width="100%" height="100%" className="absolute inset-0">
-            <defs>
-              <mask id={`crop-mask-${props.id}`}>
-                <rect width="100%" height="100%" fill="white" />
-                <rect
-                  x={`${crop.leftPercentage}%`}
-                  y={`${crop.topPercentage}%`}
-                  width={`${crop.widthPercentage}%`}
-                  height={`${crop.heightPercentage}%`}
-                  fill="black"
-                />
-              </mask>
-            </defs>
-            <rect
-              width="100%"
-              height="100%"
-              fill="rgba(0, 0, 0, 0.6)"
-              mask={`url(#crop-mask-${props.id})`}
-            />
-            {/* Marching ants border */}
-            <rect
-              x={`${crop.leftPercentage}%`}
-              y={`${crop.topPercentage}%`}
-              width={`${crop.widthPercentage}%`}
-              height={`${crop.heightPercentage}%`}
-              fill="none"
-              stroke="white"
-              strokeWidth="2"
-              strokeDasharray="5 5"
-              pointerEvents="none"
-            >
-              <animate
-                attributeName="stroke-dashoffset"
-                from="0"
-                to="10"
-                dur="0.3s"
-                repeatCount="indefinite"
-              />
-            </rect>
-          </svg>
-        </div>
+		document.addEventListener("mousemove", handleMouseMove);
+		document.addEventListener("mouseup", handleMouseUp);
 
-        {/* Crop selection box */}
-        <div
-          className="absolute box-border"
-          style={{
-            left: `${crop.leftPercentage}%`,
-            top: `${crop.topPercentage}%`,
-            width: `${crop.widthPercentage}%`,
-            height: `${crop.heightPercentage}%`,
-            cursor: dragState?.type === 'move' ? 'grabbing' : 'grab',
-          }}
-          onMouseDown={(e) => handleMouseDown(e, 'move')}
-        >
-          {/* Corner handles */}
-          <div
-            className="absolute -top-1 -left-1 w-2 h-2 bg-white/70 border border-blue-500/30 cursor-nw-resize shadow-md hover:scale-110 transition-transform"
-            onMouseDown={(e) => handleMouseDown(e, 'resize-nw')}
-          />
-          <div
-            className="absolute -top-1 -right-1 w-2 h-2 bg-white/70 border border-blue-500/30 cursor-ne-resize shadow-md hover:scale-110 transition-transform"
-            onMouseDown={(e) => handleMouseDown(e, 'resize-ne')}
-          />
-          <div
-            className="absolute -bottom-1 -left-1 w-2 h-2 bg-white/70 border border-blue-500/30 cursor-sw-resize shadow-md hover:scale-110 transition-transform"
-            onMouseDown={(e) => handleMouseDown(e, 'resize-sw')}
-          />
-          <div
-            className="absolute -bottom-1 -right-1 w-2 h-2 bg-white/70 border border-blue-500/30 cursor-se-resize shadow-md hover:scale-110 transition-transform"
-            onMouseDown={(e) => handleMouseDown(e, 'resize-se')}
-          />
+		return () => {
+			document.removeEventListener("mousemove", handleMouseMove);
+			document.removeEventListener("mouseup", handleMouseUp);
+		};
+	}, [dragState, constrainCrop, updateConfig]);
 
-          {/* Side handles - only show if crop box is large enough */}
-          {crop.widthPercentage > 15 && (
-            <>
-              <div
-                className="absolute -top-1 left-1/2 -ml-1 w-2 h-2 bg-white/70 border border-blue-500/30 cursor-n-resize shadow-md hover:scale-110 transition-transform"
-                onMouseDown={(e) => handleMouseDown(e, 'resize-n')}
-              />
-              <div
-                className="absolute -bottom-1 left-1/2 -ml-1 w-2 h-2 bg-white/70 border border-blue-500/30 cursor-s-resize shadow-md hover:scale-110 transition-transform"
-                onMouseDown={(e) => handleMouseDown(e, 'resize-s')}
-              />
-            </>
-          )}
-          {crop.heightPercentage > 15 && (
-            <>
-              <div
-                className="absolute top-1/2 -left-1 -mt-1 w-2 h-2 bg-white/70 border border-blue-500/30 cursor-w-resize shadow-md hover:scale-110 transition-transform"
-                onMouseDown={(e) => handleMouseDown(e, 'resize-w')}
-              />
-              <div
-                className="absolute top-1/2 -right-1 -mt-1 w-2 h-2 bg-white/70 border border-blue-500/30 cursor-e-resize shadow-md hover:scale-110 transition-transform"
-                onMouseDown={(e) => handleMouseDown(e, 'resize-e')}
-              />
-            </>
-          )}
+	console.log("CropNodeComponent render", {
+		inputImageUrl,
+		isProcessing,
+		error,
+	});
 
-          {/* Rule of thirds grid lines */}
-          <div className="absolute inset-0 pointer-events-none opacity-50">
-            <div className="absolute left-1/3 top-0 bottom-0 w-px bg-white/50" />
-            <div className="absolute left-2/3 top-0 bottom-0 w-px bg-white/50" />
-            <div className="absolute top-1/3 left-0 right-0 h-px bg-white/50" />
-            <div className="absolute top-2/3 left-0 right-0 h-px bg-white/50" />
-          </div>
-        </div>
-      </div>
-    </BaseNode>
-  );
+	return (
+		<BaseNode {...props}>
+			<div
+				className={cn(
+					"media-container w-full overflow-hidden bg-black/5 relative select-none",
+					{
+						"min-h-64": !inputImageUrl,
+					},
+				)}
+			>
+				{inputImageUrl && (
+					<img
+						ref={imageRef}
+						src={inputImageUrl}
+						className="block w-full h-auto"
+						alt="Input image for cropping"
+						draggable={false}
+					/>
+				)}
+
+				{/* Dark overlay for cropped-out areas */}
+				<div className="absolute inset-0 pointer-events-none">
+					<svg width="100%" height="100%" className="absolute inset-0">
+						<defs>
+							<mask id={`crop-mask-${props.id}`}>
+								<rect width="100%" height="100%" fill="white" />
+								<rect
+									x={`${crop.leftPercentage}%`}
+									y={`${crop.topPercentage}%`}
+									width={`${crop.widthPercentage}%`}
+									height={`${crop.heightPercentage}%`}
+									fill="black"
+								/>
+							</mask>
+						</defs>
+						<rect
+							width="100%"
+							height="100%"
+							fill="rgba(0, 0, 0, 0.6)"
+							mask={`url(#crop-mask-${props.id})`}
+						/>
+						{/* Marching ants border */}
+						<rect
+							x={`${crop.leftPercentage}%`}
+							y={`${crop.topPercentage}%`}
+							width={`${crop.widthPercentage}%`}
+							height={`${crop.heightPercentage}%`}
+							fill="none"
+							stroke="white"
+							strokeWidth="2"
+							strokeDasharray="5 5"
+							pointerEvents="none"
+						>
+							<animate
+								attributeName="stroke-dashoffset"
+								from="0"
+								to="10"
+								dur="0.3s"
+								repeatCount="indefinite"
+							/>
+						</rect>
+					</svg>
+				</div>
+
+				{/* Crop selection box */}
+				<div
+					className="absolute box-border"
+					style={{
+						left: `${crop.leftPercentage}%`,
+						top: `${crop.topPercentage}%`,
+						width: `${crop.widthPercentage}%`,
+						height: `${crop.heightPercentage}%`,
+						cursor: dragState?.type === "move" ? "grabbing" : "grab",
+					}}
+					onMouseDown={(e) => handleMouseDown(e, "move")}
+				>
+					{/* Corner handles */}
+					<div
+						className="absolute -top-1 -left-1 w-2 h-2 bg-white/70 border border-blue-500/30 cursor-nw-resize shadow-md hover:scale-110 transition-transform"
+						onMouseDown={(e) => handleMouseDown(e, "resize-nw")}
+					/>
+					<div
+						className="absolute -top-1 -right-1 w-2 h-2 bg-white/70 border border-blue-500/30 cursor-ne-resize shadow-md hover:scale-110 transition-transform"
+						onMouseDown={(e) => handleMouseDown(e, "resize-ne")}
+					/>
+					<div
+						className="absolute -bottom-1 -left-1 w-2 h-2 bg-white/70 border border-blue-500/30 cursor-sw-resize shadow-md hover:scale-110 transition-transform"
+						onMouseDown={(e) => handleMouseDown(e, "resize-sw")}
+					/>
+					<div
+						className="absolute -bottom-1 -right-1 w-2 h-2 bg-white/70 border border-blue-500/30 cursor-se-resize shadow-md hover:scale-110 transition-transform"
+						onMouseDown={(e) => handleMouseDown(e, "resize-se")}
+					/>
+
+					{/* Side handles - only show if crop box is large enough */}
+					{crop.widthPercentage > 15 && (
+						<>
+							<div
+								className="absolute -top-1 left-1/2 -ml-1 w-2 h-2 bg-white/70 border border-blue-500/30 cursor-n-resize shadow-md hover:scale-110 transition-transform"
+								onMouseDown={(e) => handleMouseDown(e, "resize-n")}
+							/>
+							<div
+								className="absolute -bottom-1 left-1/2 -ml-1 w-2 h-2 bg-white/70 border border-blue-500/30 cursor-s-resize shadow-md hover:scale-110 transition-transform"
+								onMouseDown={(e) => handleMouseDown(e, "resize-s")}
+							/>
+						</>
+					)}
+					{crop.heightPercentage > 15 && (
+						<>
+							<div
+								className="absolute top-1/2 -left-1 -mt-1 w-2 h-2 bg-white/70 border border-blue-500/30 cursor-w-resize shadow-md hover:scale-110 transition-transform"
+								onMouseDown={(e) => handleMouseDown(e, "resize-w")}
+							/>
+							<div
+								className="absolute top-1/2 -right-1 -mt-1 w-2 h-2 bg-white/70 border border-blue-500/30 cursor-e-resize shadow-md hover:scale-110 transition-transform"
+								onMouseDown={(e) => handleMouseDown(e, "resize-e")}
+							/>
+						</>
+					)}
+
+					{/* Rule of thirds grid lines */}
+					<div className="absolute inset-0 pointer-events-none opacity-50">
+						<div className="absolute left-1/3 top-0 bottom-0 w-px bg-white/50" />
+						<div className="absolute left-2/3 top-0 bottom-0 w-px bg-white/50" />
+						<div className="absolute top-1/3 left-0 right-0 h-px bg-white/50" />
+						<div className="absolute top-2/3 left-0 right-0 h-px bg-white/50" />
+					</div>
+				</div>
+			</div>
+		</BaseNode>
+	);
 });
 
-CropNodeComponent.displayName = 'CropNodeComponent';
+CropNodeComponent.displayName = "CropNodeComponent";
 
 export { CropNodeComponent };

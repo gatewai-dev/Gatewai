@@ -1,60 +1,60 @@
-import { memo, useEffect, useRef } from 'react';
-import { type NodeProps } from '@xyflow/react';
-import { useAppSelector } from '@/store';
-import { makeSelectNodeById } from '@/store/nodes';
-import { BaseNode } from '../base';
-import type { BlurNode } from '../node-props';
-import { BlurValueSlider } from './blur-slider';
-import { useNodeImageUrl, useNodeResult } from '../../processor/processor-ctx';
+import { memo, useEffect, useRef } from "react";
+import { type NodeProps } from "@xyflow/react";
+import { useAppSelector } from "@/store";
+import { makeSelectNodeById } from "@/store/nodes";
+import { BaseNode } from "../base";
+import type { BlurNode } from "../node-props";
+import { BlurValueSlider } from "./blur-slider";
+import { useNodeImageUrl, useNodeResult } from "../../processor/processor-ctx";
 
 const BlurNodeComponent = memo((props: NodeProps<BlurNode>) => {
-  const node = useAppSelector(makeSelectNodeById(props.id));
-  const canvasRef = useRef<HTMLCanvasElement | null>(null);
-  
-  // Get processed result from processor
-  const { isProcessing, error } = useNodeResult(props.id);
-  const imageUrl = useNodeImageUrl(props.id);
-  
-  // Draw to canvas when result is ready
-  useEffect(() => {
-    if (!imageUrl || !canvasRef.current) return;
-    
-    const canvas = canvasRef.current;
-    const ctx = canvas.getContext('2d');
-    if (!ctx) return;
-    
-    const img = new Image();
-    img.crossOrigin = 'anonymous';
-    img.src = imageUrl;
-    
-    img.onload = () => {
-      canvas.width = img.width;
-      canvas.height = img.height;
-      canvas.style.width = '100%';
-      canvas.style.height = 'auto';
-      ctx.clearRect(0, 0, canvas.width, canvas.height);
-      ctx.drawImage(img, 0, 0);
-    };
-  }, [imageUrl]);
+	const node = useAppSelector(makeSelectNodeById(props.id));
+	const canvasRef = useRef<HTMLCanvasElement | null>(null);
 
-  console.log('BlurNodeComponent render', { imageUrl, isProcessing, error });
-  return (
-    <BaseNode {...props}>
-      <div className="flex flex-col gap-3 ">
-          <div className="w-full overflow-hidden rounded media-container relative">
-            <canvas ref={canvasRef} className="block w-full h-auto" />
-          </div>
+	// Get processed result from processor
+	const { isProcessing, error } = useNodeResult(props.id);
+	const imageUrl = useNodeImageUrl(props.id);
 
-        {node && (
-          <div className="flex gap-3 items-end p-1">
-            <BlurValueSlider node={node} />
-          </div>
-        )}
-      </div>
-    </BaseNode>
-  );
+	// Draw to canvas when result is ready
+	useEffect(() => {
+		if (!imageUrl || !canvasRef.current) return;
+
+		const canvas = canvasRef.current;
+		const ctx = canvas.getContext("2d");
+		if (!ctx) return;
+
+		const img = new Image();
+		img.crossOrigin = "anonymous";
+		img.src = imageUrl;
+
+		img.onload = () => {
+			canvas.width = img.width;
+			canvas.height = img.height;
+			canvas.style.width = "100%";
+			canvas.style.height = "auto";
+			ctx.clearRect(0, 0, canvas.width, canvas.height);
+			ctx.drawImage(img, 0, 0);
+		};
+	}, [imageUrl]);
+
+	console.log("BlurNodeComponent render", { imageUrl, isProcessing, error });
+	return (
+		<BaseNode {...props}>
+			<div className="flex flex-col gap-3 ">
+				<div className="w-full overflow-hidden rounded media-container relative">
+					<canvas ref={canvasRef} className="block w-full h-auto" />
+				</div>
+
+				{node && (
+					<div className="flex gap-3 items-end p-1">
+						<BlurValueSlider node={node} />
+					</div>
+				)}
+			</div>
+		</BaseNode>
+	);
 });
 
-BlurNodeComponent.displayName = 'BlurNodeComponent';
+BlurNodeComponent.displayName = "BlurNodeComponent";
 
 export { BlurNodeComponent };

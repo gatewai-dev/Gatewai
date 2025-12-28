@@ -1,154 +1,178 @@
-import { Button } from "@/components/ui/button"
+import { Button } from "@/components/ui/button";
 import {
-  Dialog,
-  DialogContent,
-  DialogHeader,
-  DialogTitle,
-  DialogTrigger,
-} from "@/components/ui/dialog"
+	Dialog,
+	DialogContent,
+	DialogHeader,
+	DialogTitle,
+	DialogTrigger,
+} from "@/components/ui/dialog";
 import {
-  Select,
-  SelectContent,
-  SelectItem,
-  SelectTrigger,
-  SelectValue,
-} from "@/components/ui/select"
-import { Input } from "@/components/ui/input"
-import { Textarea } from "@/components/ui/textarea"
-import { Form, FormControl, FormDescription, FormField, FormItem, FormLabel, FormMessage } from "@/components/ui/form"
+	Select,
+	SelectContent,
+	SelectItem,
+	SelectTrigger,
+	SelectValue,
+} from "@/components/ui/select";
+import { Input } from "@/components/ui/input";
+import { Textarea } from "@/components/ui/textarea";
+import {
+	Form,
+	FormControl,
+	FormDescription,
+	FormField,
+	FormItem,
+	FormLabel,
+	FormMessage,
+} from "@/components/ui/form";
 import type { HandleEntityType } from "@/store/handles";
 import type { AnyNode } from "../node-props";
 import type { NodeProps } from "@xyflow/react";
 import { useCanvasCtx } from "../../ctx/canvas-ctx";
-import { useForm } from "react-hook-form"
-import { zodResolver } from "@hookform/resolvers/zod"
-import * as z from "zod"
-import { useState } from "react"
-import { PlusIcon } from "lucide-react"
-import { generateId } from "@/lib/idgen"
+import { useForm } from "react-hook-form";
+import { zodResolver } from "@hookform/resolvers/zod";
+import * as z from "zod";
+import { useState } from "react";
+import { PlusIcon } from "lucide-react";
+import { generateId } from "@/lib/idgen";
 
-const InputTypes = ['Image', 'Text', 'Audio', 'Video', 'File'] as const;
-const OutputTypes = ['Image', 'Text', 'Audio', 'Video', 'File'] as const;
+const InputTypes = ["Image", "Text", "Audio", "Video", "File"] as const;
+const OutputTypes = ["Image", "Text", "Audio", "Video", "File"] as const;
 
 const LookupDataTypes = {
-    'Input': InputTypes,
-    'Output': OutputTypes,
+	Input: InputTypes,
+	Output: OutputTypes,
 } as const;
 
 type CustomHandleButtonProps = {
-    nodeProps: NodeProps<AnyNode>;
-    type: HandleEntityType["type"];
-}
+	nodeProps: NodeProps<AnyNode>;
+	type: HandleEntityType["type"];
+};
 
 function AddCustomHandleButton(props: CustomHandleButtonProps) {
-    const OPTIONS = LookupDataTypes[props.type];
-    const { createNewHandle } = useCanvasCtx();
-    const [open, setOpen] = useState(false);
+	const OPTIONS = LookupDataTypes[props.type];
+	const { createNewHandle } = useCanvasCtx();
+	const [open, setOpen] = useState(false);
 
-    const formSchema = z.object({
-        dataType: z.enum(OPTIONS),
-        label: z.string(),
-        description: z.string().optional(),
-    });
+	const formSchema = z.object({
+		dataType: z.enum(OPTIONS),
+		label: z.string(),
+		description: z.string().optional(),
+	});
 
-    type FormValues = z.infer<typeof formSchema>;
+	type FormValues = z.infer<typeof formSchema>;
 
-    const form = useForm<FormValues>({
-        resolver: zodResolver(formSchema),
-        defaultValues: {
-            dataType: OPTIONS[0],
-            label: "",
-            description: "",
-        },
-    });
+	const form = useForm<FormValues>({
+		resolver: zodResolver(formSchema),
+		defaultValues: {
+			dataType: OPTIONS[0],
+			label: "",
+			description: "",
+		},
+	});
 
-    const onSubmit = (values: FormValues) => {
-        const handleEntity: HandleEntityType = {
-            id: generateId(),
-            nodeId: props.nodeProps.id,
-            dataTypes: [values.dataType],
-            type: props.type,
-            required: false,
-            order: 2,
-            templateHandleId: null,
-            label: values.label,
-            description: values.description?.trim() || null,
-            createdAt: new Date().toISOString(),
-            updatedAt: new Date().toISOString(),
-        };
-        createNewHandle(handleEntity);
-        form.reset();
-        setOpen(false);
-    };
+	const onSubmit = (values: FormValues) => {
+		const handleEntity: HandleEntityType = {
+			id: generateId(),
+			nodeId: props.nodeProps.id,
+			dataTypes: [values.dataType],
+			type: props.type,
+			required: false,
+			order: 2,
+			templateHandleId: null,
+			label: values.label,
+			description: values.description?.trim() || null,
+			createdAt: new Date().toISOString(),
+			updatedAt: new Date().toISOString(),
+		};
+		createNewHandle(handleEntity);
+		form.reset();
+		setOpen(false);
+	};
 
-    return (
-        <Dialog open={open} onOpenChange={setOpen}>
-            <DialogTrigger asChild>
-                <Button variant="outline" size="sm"><PlusIcon /> Add {props.type}</Button>
-            </DialogTrigger>
-            <DialogContent>
-                <DialogHeader>
-                    <DialogTitle>New {props.type} Handle</DialogTitle>
-                </DialogHeader>
-                <Form {...form}>
-                    <form onSubmit={form.handleSubmit(onSubmit)} className="space-y-4">
-                        <FormField
-                            control={form.control}
-                            name="dataType"
-                            render={({ field }) => (
-                                <FormItem>
-                                    <FormLabel>Data Type</FormLabel>
-                                    <Select onValueChange={field.onChange} defaultValue={field.value}>
-                                        <FormControl>
-                                            <SelectTrigger>
-                                                <SelectValue placeholder="Select data type" />
-                                            </SelectTrigger>
-                                        </FormControl>
-                                        <SelectContent>
-                                            {OPTIONS.map((opt) => (
-                                                <SelectItem key={opt} value={opt}>
-                                                    {opt}
-                                                </SelectItem>
-                                            ))}
-                                        </SelectContent>
-                                    </Select>
-                                    <FormMessage />
-                                </FormItem>
-                            )}
-                        />
-                        <FormField
-                            control={form.control}
-                            name="label"
-                            render={({ field }) => (
-                                <FormItem>
-                                    <FormLabel>Label</FormLabel>
-                                    <FormControl>
-                                        <Input placeholder="E.g. Product Image" {...field} value={field.value ?? ""} />
-                                    </FormControl>
-                                    <FormMessage />
-                                </FormItem>
-                            )}
-                        />
-                        <FormField
-                            control={form.control}
-                            name="description"
-                            render={({ field }) => (
-                                <FormItem>
-                                    <FormLabel>Description</FormLabel>
-                                    <FormControl>
-                                        <Textarea placeholder="E.g. The image of product in lightning." {...field} value={field.value ?? ""} />
-                                    </FormControl>
-                                    <FormDescription>Please provide a precise description; the AI agent will use it to populate the data accurately.</FormDescription>
-                                    <FormMessage />
-                                </FormItem>
-                            )}
-                        />
-                        <Button type="submit">Create</Button>
-                    </form>
-                </Form>
-            </DialogContent>
-        </Dialog>
-    );
+	return (
+		<Dialog open={open} onOpenChange={setOpen}>
+			<DialogTrigger asChild>
+				<Button variant="outline" size="sm">
+					<PlusIcon /> Add {props.type}
+				</Button>
+			</DialogTrigger>
+			<DialogContent>
+				<DialogHeader>
+					<DialogTitle>New {props.type} Handle</DialogTitle>
+				</DialogHeader>
+				<Form {...form}>
+					<form onSubmit={form.handleSubmit(onSubmit)} className="space-y-4">
+						<FormField
+							control={form.control}
+							name="dataType"
+							render={({ field }) => (
+								<FormItem>
+									<FormLabel>Data Type</FormLabel>
+									<Select
+										onValueChange={field.onChange}
+										defaultValue={field.value}
+									>
+										<FormControl>
+											<SelectTrigger>
+												<SelectValue placeholder="Select data type" />
+											</SelectTrigger>
+										</FormControl>
+										<SelectContent>
+											{OPTIONS.map((opt) => (
+												<SelectItem key={opt} value={opt}>
+													{opt}
+												</SelectItem>
+											))}
+										</SelectContent>
+									</Select>
+									<FormMessage />
+								</FormItem>
+							)}
+						/>
+						<FormField
+							control={form.control}
+							name="label"
+							render={({ field }) => (
+								<FormItem>
+									<FormLabel>Label</FormLabel>
+									<FormControl>
+										<Input
+											placeholder="E.g. Product Image"
+											{...field}
+											value={field.value ?? ""}
+										/>
+									</FormControl>
+									<FormMessage />
+								</FormItem>
+							)}
+						/>
+						<FormField
+							control={form.control}
+							name="description"
+							render={({ field }) => (
+								<FormItem>
+									<FormLabel>Description</FormLabel>
+									<FormControl>
+										<Textarea
+											placeholder="E.g. The image of product in lightning."
+											{...field}
+											value={field.value ?? ""}
+										/>
+									</FormControl>
+									<FormDescription>
+										Please provide a precise description; the AI agent will use
+										it to populate the data accurately.
+									</FormDescription>
+									<FormMessage />
+								</FormItem>
+							)}
+						/>
+						<Button type="submit">Create</Button>
+					</form>
+				</Form>
+			</DialogContent>
+		</Dialog>
+	);
 }
 
 export { AddCustomHandleButton };

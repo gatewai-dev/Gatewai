@@ -1,46 +1,46 @@
 {
-  "name": "@gatewai/db",
-  "version": "0.0.0",
-  "type": "module",
-  "module": "./dist/index.mjs",
-  "types": "./dist/index.d.mts",
-  "sideEffects": false,
-  "files": [
-    "dist/**"
-  ],
-  "exports": {
-    ".": {
-      "types": "./dist/index.d.mts",
-      "import": "./dist/index.mjs",
-      "require": "./dist/index.cjs"
-    }
-  },
-  "scripts": {
-    "build": "pnpm db:generate && tsdown src/index.ts",
-    "postinstall": "pnpm db:generate",
-    "db:generate": "prisma generate",
-    "db:migrate": "prisma migrate dev",
-    "db:deploy": "prisma migrate deploy",
-    "db:studio": "prisma studio",
-    "db:seed": "tsx src/seed.ts",
-    "db:version": "prisma version",
-    "db:reset": "prisma migrate reset"
-  },
-  "keywords": [],
-  "author": "Okan Aslankan <okn.aslnkn@gmail.com>",
-  "license": "ISC",
-  "devDependencies": {
-    "@gatewai/tsconfig": "workspace:*",
-    "@types/node": "^24.0.4",
-    "prisma": "^6.19.0",
-    "tsdown": "^0.17.0-beta.3",
-    "tsx": "^4.20.3",
-    "typescript": "^5.8.3"
-  },
-  "dependencies": {
-    "@prisma/adapter-pg": "^6.19.0",
-    "@prisma/client": "^6.19.0",
-    "dotenv": "^17.2.0",
-    "json-schema-to-zod": "^2.7.0"
-  }
+	"name": "@gatewai/db",
+	"version": "0.0.0",
+	"type": "module",
+	"module": "./dist/index.mjs",
+	"types": "./dist/index.d.mts",
+	"sideEffects": false,
+	"files": [
+		"dist/**"
+	],
+	"exports": {
+		".": {
+			"types": "./dist/index.d.mts",
+			"import": "./dist/index.mjs",
+			"require": "./dist/index.cjs"
+		}
+	},
+	"scripts": {
+		"build": "pnpm db:generate && tsdown src/index.ts",
+		"postinstall": "pnpm db:generate",
+		"db:generate": "prisma generate",
+		"db:migrate": "prisma migrate dev",
+		"db:deploy": "prisma migrate deploy",
+		"db:studio": "prisma studio",
+		"db:seed": "tsx src/seed.ts",
+		"db:version": "prisma version",
+		"db:reset": "prisma migrate reset"
+	},
+	"keywords": [],
+	"author": "Okan Aslankan <okn.aslnkn@gmail.com>",
+	"license": "ISC",
+	"devDependencies": {
+		"@gatewai/tsconfig": "workspace:*",
+		"@types/node": "^24.0.4",
+		"prisma": "^6.19.0",
+		"tsdown": "^0.17.0-beta.3",
+		"tsx": "^4.20.3",
+		"typescript": "^5.8.3"
+	},
+	"dependencies": {
+		"@prisma/adapter-pg": "^6.19.0",
+		"@prisma/client": "^6.19.0",
+		"dotenv": "^17.2.0",
+		"json-schema-to-zod": "^2.7.0"
+	}
 }

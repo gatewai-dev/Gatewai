@@ -1,4 +1,3 @@
-
 import { CanvasProvider } from "./ctx/canvas-ctx";
 import { ReactflowContainer } from "./reactflow-container";
 import { useParams } from "react-router";
@@ -11,28 +10,29 @@ import { TaskManagerProvider } from "./ctx/task-manager-ctx";
 import { ProcessorProvider } from "./processor/processor-ctx";
 
 function CanvasDetails() {
-    const { canvasId } = useParams();
-    if (!canvasId) {
-        return <>Missing canvas identifier</>
-    }
-    return (
-        <NodeTemplateDnDProvider>
-            <TaskManagerProvider canvasId={canvasId}>
-                <NodeTemplatesProvider>
-                    <UserAssetsProvider>
-                        <SelectedEntitiesProvider>
-                            <ReactFlowProvider>
-                                <CanvasProvider canvasId={canvasId}>
-                                    <ProcessorProvider>
-                                        <ReactflowContainer />
-                                    </ProcessorProvider>
-                                </CanvasProvider>
-                            </ReactFlowProvider>
-                        </SelectedEntitiesProvider>
-                    </UserAssetsProvider>
-                </NodeTemplatesProvider>
-            </TaskManagerProvider>
-        </NodeTemplateDnDProvider>);
+	const { canvasId } = useParams();
+	if (!canvasId) {
+		return <>Missing canvas identifier</>;
+	}
+	return (
+		<NodeTemplateDnDProvider>
+			<TaskManagerProvider canvasId={canvasId}>
+				<NodeTemplatesProvider>
+					<UserAssetsProvider>
+						<SelectedEntitiesProvider>
+							<ReactFlowProvider>
+								<CanvasProvider canvasId={canvasId}>
+									<ProcessorProvider>
+										<ReactflowContainer />
+									</ProcessorProvider>
+								</CanvasProvider>
+							</ReactFlowProvider>
+						</SelectedEntitiesProvider>
+					</UserAssetsProvider>
+				</NodeTemplatesProvider>
+			</TaskManagerProvider>
+		</NodeTemplateDnDProvider>
+	);
 }
 
 export { CanvasDetails };
