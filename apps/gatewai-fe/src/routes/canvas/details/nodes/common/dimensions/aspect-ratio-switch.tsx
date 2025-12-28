@@ -4,7 +4,7 @@ import { type NodeEntityType } from "@/store/nodes";
 import type { ResizeNodeConfig } from "@gatewai/types";
 import { Lock, Unlock } from "lucide-react";
 import { memo, useCallback } from "react";
-import { useCanvasCtx } from "../../ctx/canvas-ctx";
+import { useCanvasCtx } from "../../../ctx/canvas-ctx";
 
 
 const AspectRatioSwitch = memo(({node, originalWidth, originalHeight}: {node: NodeEntityType, originalWidth: number | null, originalHeight: number | null}) => {
@@ -17,14 +17,14 @@ const AspectRatioSwitch = memo(({node, originalWidth, originalHeight}: {node: No
     if (checked && originalWidth && originalHeight) {
       const currentWidth = config.width ?? originalWidth;
       const newHeight = Math.round((originalHeight / originalWidth) * currentWidth);
-      updates = { ...updates, height: newHeight };
+      updates = { ...config, ...updates, height: newHeight };
     }
     
     onNodeConfigUpdate({
       id: node.id,
       newConfig: updates
     });
-  }, [originalWidth, originalHeight, onNodeConfigUpdate, node.id, config.width]);
+  }, [originalWidth, originalHeight, onNodeConfigUpdate, node.id, config]);
   
   return (
     <TooltipProvider>

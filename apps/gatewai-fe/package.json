@@ -61,6 +61,7 @@
     "class-variance-authority": "^0.7.1",
     "clsx": "^2.1.1",
     "cmdk": "^1.1.1",
+    "color": "^5.0.3",
     "date-fns": "^4.1.0",
     "dotenv": "^17.0.1",
     "file-type": "^21.1.1",
@@ -74,6 +75,7 @@
     "openai": "^6.9.0",
     "pixi.js": "^8.14.0",
     "query-string": "^9.3.1",
+    "radix-ui": "^1.4.3",
     "react": "^19.1.1",
     "react-dom": "^19.1.1",
     "react-dropzone": "^14.3.8",
@@ -96,6 +98,7 @@
   "devDependencies": {
     "@eslint/js": "^9.33.0",
     "@gatewai/types": "workspace:*",
+    "@types/color": "^4.2.0",
     "@types/node": "^20.11.17",
     "@types/react": "^19.1.10",
     "@types/react-dom": "^19.1.7",

@@ -177,16 +177,20 @@ export async function SEED_createNodeTemplates(prisma: PrismaClient) {
       tokenPrice: 0.0,
       variableInputs: false,
       variableOutputs: false,
-      isTerminalNode: true,
+      isTerminalNode: false,
       isTransient: false,
       templateHandles: {
         create: [
-          { type: HandleType.Input, dataTypes: [DataType.Image], required: true, label: "Background Image" },
+          { type: HandleType.Input, dataTypes: [DataType.Image], label: "Background Image" },
+          { type: HandleType.Output, dataTypes: [DataType.Image], label: 'Image' },
           { type: HandleType.Output, dataTypes: [DataType.Mask], label: 'Mask' },
-          { type: HandleType.Output, dataTypes: [DataType.Image], label: 'Image' }
         ]
       },
-      defaultConfig: undefined,
+      defaultConfig: {
+        width: 1024,
+        height: 1024,
+        backgroundColor: '#000'
+      },
     }
   });
 

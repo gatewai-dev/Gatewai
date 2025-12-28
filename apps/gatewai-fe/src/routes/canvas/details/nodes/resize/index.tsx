@@ -4,11 +4,9 @@ import { useAppDispatch, useAppSelector } from '@/store';
 import { makeSelectNodeById, updateNodeConfig } from '@/store/nodes';
 import { BaseNode } from '../base';
 import type { ResizeNode } from '../node-props';
-import { AspectRatioSwitch } from './aspect-ratio-switch';
-import { ResizeHeightInput } from './height-input';
-import { ResizeWidthInput } from './width-input';
 import { useNodeResult, useNodeImageUrl } from '../../processor/processor-ctx';
 import type { ResizeNodeConfig } from '@gatewai/types';
+import { DimensionsConfig } from '../common/dimensions';
 
 const ImagePlaceholder = () => {
   return (
@@ -66,13 +64,13 @@ const ResizeNodeComponent = memo((props: NodeProps<ResizeNode>) => {
   return (
     <BaseNode {...props}>
       <div className="flex flex-col gap-3">
-        
+
         {!result && !isProcessing ? (
           <ImagePlaceholder />
         ) : (
           <div className="w-full overflow-hidden rounded bg-black/5 min-h-[100px] relative">
             <canvas ref={canvasRef} className="block w-full h-auto" />
-            
+
             {error && (
               <div className="absolute inset-0 flex items-center justify-center bg-red-50/90">
                 <div className="text-sm text-red-600">Error: {error}</div>
@@ -80,29 +78,7 @@ const ResizeNodeComponent = memo((props: NodeProps<ResizeNode>) => {
             )}
           </div>
         )}
-        {node && (
-          <>
-            <div className="flex gap-3">
-              <ResizeWidthInput
-                node={node}
-                originalWidth={nodeConfig?.originalWidth ?? null}
-                originalHeight={nodeConfig?.originalHeight ?? null}
-                maintainAspect={nodeConfig?.maintainAspect ?? true}
-              />
-              <ResizeHeightInput
-                node={node}
-                originalWidth={nodeConfig?.originalWidth ?? null}
-                originalHeight={nodeConfig?.originalHeight ?? null}
-                maintainAspect={nodeConfig?.maintainAspect ?? true}
-              />
-              <AspectRatioSwitch
-                node={node}
-                originalWidth={nodeConfig?.originalWidth ?? null}
-                originalHeight={nodeConfig?.originalHeight ?? null}
-              />
-            </div>
-          </>
-        )}
+        {node && (<DimensionsConfig node={node} />)}
       </div>
     </BaseNode>
   );

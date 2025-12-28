@@ -247,13 +247,15 @@ class PixiProcessorService {
 
     return dataUrl;
   }
+
   /**
-   * Process mask with cancellation support
-   * Returns image with mask overlay and the mask alone
-   */
+ * Process mask
+ * Returns image with mask overlay and the mask alone
+ */
   public async processMask(
-    imageUrl: string,
+    imageUrl: string | undefined,
     maskUrl: string,
+    backgroundColor?: string,
     signal?: AbortSignal
   ): Promise<{ imageWithMask: string; onlyMask: string }> {
     if (signal?.aborted) {
@@ -267,32 +269,50 @@ class PixiProcessorService {
       throw new DOMException('Operation cancelled', 'AbortError');
     }
 
-    // 1. Load the Textures
-    const [texture, maskTexture] = await Promise.all([
-      Assets.load(imageUrl),
-      Assets.load(maskUrl)
-    ]);
+    // 1. Load the mask texture
+    const maskTexture = await Assets.load(maskUrl);
 
     if (signal?.aborted) {
       throw new DOMException('Operation cancelled', 'AbortError');
     }
 
-    if (texture.width !== maskTexture.width || texture.height !== maskTexture.height) {
-      throw new Error('Image and mask dimensions do not match');
+    let baseSprite: Sprite | Graphics;
+
+    // 2. Load image if provided, otherwise create colored background
+    if (imageUrl) {
+      const texture = await Assets.load(imageUrl);
+
+      if (signal?.aborted) {
+        throw new DOMException('Operation cancelled', 'AbortError');
+      }
+
+      if (texture.width !== maskTexture.width || texture.height !== maskTexture.height) {
+        throw new Error('Image and mask dimensions do not match');
+      }
+
+      baseSprite = new Sprite(texture);
+    } else if (backgroundColor) {
+      // Create a colored background using Graphics
+      const graphics = new Graphics();
+      graphics.beginFill(backgroundColor);
+      graphics.drawRect(0, 0, maskTexture.width, maskTexture.height);
+      graphics.endFill();
+      baseSprite = graphics;
+    } else {
+      throw new Error('Either imageUrl or backgroundColor must be provided');
     }
 
-    // Resize the renderer to match the image
-    app.renderer.resize(texture.width, texture.height);
+    // Resize the renderer to match dimensions
+    app.renderer.resize(maskTexture.width, maskTexture.height);
 
-    // 2. Setup the Scene with Container
+    // 3. Setup the Scene with Container
     const container = new Container();
-    const sprite = new Sprite(texture);
     const maskSprite = new Sprite(maskTexture);
 
-    container.addChild(sprite);
+    container.addChild(baseSprite);
     container.addChild(maskSprite);
 
-    // 3. Render to Stage for imageWithMask
+    // 4. Render to Stage for imageWithMask
     app.stage.removeChildren();
     app.stage.addChild(container);
 
@@ -315,8 +335,8 @@ class PixiProcessorService {
       throw new DOMException('Operation cancelled', 'AbortError');
     }
 
-    // 4. Modify for onlyMask
-    container.removeChild(sprite);
+    // 5. Modify for onlyMask
+    container.removeChild(baseSprite);
     maskSprite.alpha = 1.0; // Full opacity for mask alone
 
     app.render();

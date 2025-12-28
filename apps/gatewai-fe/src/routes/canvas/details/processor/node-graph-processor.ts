@@ -1,5 +1,5 @@
 import { EventEmitter } from 'events';
-import type { NodeResult, FileData, LLMResult, TextResult, FileResult, ImageGenResult, ResizeNodeConfig, AgentResult, CropNodeConfig, MaskResult} from '@gatewai/types';
+import type { NodeResult, FileData, LLMResult, TextResult, FileResult, ImageGenResult, ResizeNodeConfig, AgentResult, CropNodeConfig, MaskResult, PaintResult} from '@gatewai/types';
 import type { EdgeEntityType } from '@/store/edges';
 import type { NodeEntityType } from '@/store/nodes';
 import { pixiProcessor } from './pixi-service';
@@ -32,6 +32,7 @@ type NodeProcessor = (params: {
 export class NodeGraphProcessor extends EventEmitter {
   private nodes = new Map<string, NodeEntityType>();
   private edges: EdgeEntityType[] = [];
+  private handles: HandleEntityType[] = [];
   private prevEdges: EdgeEntityType[] = []; // Added for edge change detection
   private nodeStates = new Map<string, NodeState>();
   private processors = new Map<string, NodeProcessor>();
@@ -57,6 +58,7 @@ export class NodeGraphProcessor extends EventEmitter {
 
     this.nodes = config.nodes;
     this.edges = config.edges;
+    this.handles = config.handles;
 
     // Rebuild dependency graphs
     this.buildDependencyGraphs();
@@ -169,54 +171,75 @@ export class NodeGraphProcessor extends EventEmitter {
 
       return newResult;
     });
+
     this.registerProcessor('Paint', async ({ node, inputs, signal }) => {
+      const config = node.config as { width?: number; height?: number; backgroundColor?: string };
+      const { width = 1024, height = 1024, backgroundColor = '#000000' } = config;
+
       const inputHandle = this.getInputHandles(node.id)[0];
-      if (!inputHandle) throw new Error('No input handle');
+      const sourceNodeId = inputHandle ? this.getSourceNodeId(node.id, inputHandle) : null;
 
-      const sourceNodeId = this.getSourceNodeId(node.id, inputHandle);
-      if (!sourceNodeId) throw new Error('No connected source');
+      let imageUrl: string | undefined;
+      if (sourceNodeId) {
+        const inputResult = inputs.get(sourceNodeId);
+        if (!inputResult) throw new Error('No input result');
 
-      const inputResult = inputs.get(sourceNodeId);
-      if (!inputResult) throw new Error('No input result');
+        const output = inputResult.outputs[inputResult.selectedOutputIndex ?? 0];
+        const fileData = output?.items[0]?.data as FileData;
+        imageUrl = fileData?.entity?.signedUrl ?? fileData?.dataUrl;
 
-      // Extract image URL
-      const output = inputResult.outputs[inputResult.selectedOutputIndex ?? 0];
-      const fileData = output?.items[0]?.data as FileData;
-      const imageUrl = fileData?.entity?.signedUrl ?? fileData?.dataUrl;
+        if (!imageUrl) throw new Error('No image URL');
+      }
 
-      if (!imageUrl) throw new Error('No image URL');
-
-      // Process with Pixi
-      const result = node.result as unknown as MaskResult;
+      const result = node.result as unknown as PaintResult;
       const nodeOutput = result.outputs[result.selectedOutputIndex];
-      const nodeOutputItem = nodeOutput.items.find(f => f.type === 'Mask');
+      const nodeOutputItem = nodeOutput?.items?.find(f => f.type === 'Mask');
 
       if (!nodeOutputItem?.data.dataUrl) throw new Error('No mask data');
 
-      console.log({config})
-      const { imageWithMask, onlyMask } = await pixiProcessor.processMask(
-        imageUrl,
-        config.maskDataUrl,
-        signal
-      );
+      const outputHandles = this.getOutputHandleEntities(node.id);
+      const imageOutputHandle = outputHandles.find(f => f.dataTypes.includes('Image'));
+      const maskOutputHandle = outputHandles.find(f => f.dataTypes.includes('Mask'))
 
-      // Build result
-      const outputHandle = this.getOutputHandles(node.id)[0];
-      const newResult: NodeResult = {
+      if (!maskOutputHandle) {
+        throw new Error("Missing output handles");
+      }
+
+      const items: PaintResult["outputs"][number]["items"] = [];
+
+      let onlyMask = nodeOutputItem.data.dataUrl;
+      let imageWithMask: string | undefined;
+
+      if (sourceNodeId) {
+        if (!imageOutputHandle) throw new Error("Missing image output handle");
+
+        const { imageWithMask: processedImageWithMask, onlyMask: processedOnlyMask } = await pixiProcessor.processMask(
+          imageUrl,
+          nodeOutputItem?.data.dataUrl,
+          config.backgroundColor,
+          signal
+        );
+
+        imageWithMask = processedImageWithMask;
+        onlyMask = processedOnlyMask;
+
+        items.push({
+          type: 'Image',
+          data: { dataUrl: imageWithMask },
+          outputHandleId: imageOutputHandle.id
+        });
+      }
+
+      items.push({
+        type: 'Mask',
+        data: { dataUrl: onlyMask },
+        outputHandleId: maskOutputHandle.id
+      });
+
+      const newResult: PaintResult = {
         selectedOutputIndex: 0,
         outputs: [{
-          items: [
-            {
-              type: 'Image',
-              data: { dataUrl: imageWithMask },
-              outputHandleId: outputHandle
-            },
-            {
-              type: 'Image',
-              data: { dataUrl: onlyMask },
-              outputHandleId: outputHandle
-            }
-          ]
+          items
         }]
       };
 
@@ -608,6 +631,13 @@ export class NodeGraphProcessor extends EventEmitter {
       this.edges
         .filter(e => e.source === nodeId)
         .map(e => e.sourceHandleId)
+    ));
+  }
+
+  private getOutputHandleEntities(nodeId: string): HandleEntityType[] {
+    return Array.from(new Set(
+      this.handles
+        .filter(e => e.nodeId === nodeId)
     ));
   }
 

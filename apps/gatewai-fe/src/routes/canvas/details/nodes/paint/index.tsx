@@ -8,12 +8,11 @@ import { useNodeImageUrl, useNodeResult } from '../../processor/processor-ctx';
 import type { OutputItem, PaintResult } from '@gatewai/types';
 import { makeSelectEdgesByTargetNodeId } from '@/store/edges';
 import { makeSelectHandlesByNodeId } from '@/store/handles';
-
-const ImagePlaceholder = () => (
-  <div className="w-full media-container h-[280px] flex items-center justify-center rounded bg-gray-50 dark:bg-gray-800 border border-dashed border-gray-300 dark:border-gray-700">
-    <span className="text-gray-400 text-sm">No image connected</span>
-  </div>
-);
+import { Button } from '@/components/ui/button';
+import { Label } from '@/components/ui/label';
+import { Slider } from '@/components/ui/slider';
+import { Brush, Eraser } from 'lucide-react';
+import { ColorPicker, ColorPickerAlpha, ColorPickerEyeDropper, ColorPickerFormat, ColorPickerHue, ColorPickerOutput, ColorPickerSelection } from '@/components/ui/color-picker';
 
 const PaintNodeComponent = memo((props: NodeProps<PaintNode>) => {
   const dispatch = useAppDispatch();
@@ -42,47 +41,17 @@ const PaintNodeComponent = memo((props: NodeProps<PaintNode>) => {
   const canvasRef = useRef<HTMLCanvasElement>(null);
   const [brushSize, setBrushSize] = useState(20);
   const [brushColor, setBrushColor] = useState('#FFFFFF');
-  const [brushOpacity, setBrushOpacity] = useState(100);
   const [tool, setTool] = useState<'brush' | 'eraser'>('brush');
-  const [width, setWidth] = useState(0);
-  const [height, setHeight] = useState(0);
   const isDrawingRef = useRef(false);
   const lastPositionRef = useRef<{ x: number; y: number } | null>(null);
   const needsUpdateRef = useRef(false);
 
-  // Load existing mask if available
-  useEffect(() => {
-    const canvas = canvasRef.current;
-    const image = imageRef.current;
-    if (!canvas || !image || !paintOutput?.data.dataUrl) return;
+  const { config } = props.data;
+  const { width = 1024, height = 1024, backgroundColor = '#000000' } = config ?? {};
 
-    const img = new Image();
-    img.src = paintOutput?.data.dataUrl;
-    img.onload = () => {
-      const ctx = canvas.getContext('2d');
-      if (ctx) {
-        ctx.drawImage(img, 0, 0, canvas.width, canvas.height);
-      }
-    };
-  }, [paintOutput?.data.dataUrl, inputImageUrl]);
+  const containerStyle = inputImageUrl ? undefined : { aspectRatio: `${width} / ${height}` };
 
-  // Set up canvas dimensions on image load
-  const handleImageLoad = useCallback(() => {
-    const image = imageRef.current;
-    const canvas = canvasRef.current;
-    if (!image || !canvas) return;
 
-    canvas.width = image.naturalWidth;
-    canvas.height = image.naturalHeight;
-    setWidth(image.naturalWidth);
-    setHeight(image.naturalHeight);
-
-    const ctx = canvas.getContext('2d');
-    if (ctx) {
-      ctx.lineCap = 'round';
-      ctx.lineJoin = 'round';
-    }
-  }, []);
 
   const updateResult = useCallback((dataUrl: string) => {
     const existingOutputItem = result?.outputs[result.selectedOutputIndex].items.find(f => f.type === 'Mask')
@@ -121,13 +90,71 @@ const PaintNodeComponent = memo((props: NodeProps<PaintNode>) => {
       })
       newResult = {
         selectedOutputIndex: 0,
-        outputs: {
+        outputs: [{
           items: newItems
-        },
-      }
+        }],
+      } as PaintResult;
     }
-    dispatch(updateNodeResult({ id: props.id, newResult: newResult as PaintResult }));
+    dispatch(updateNodeResult({ id: props.id, newResult }));
   }, [result?.outputs, result?.selectedOutputIndex, dispatch, props.id, handles]);
+
+  // Set up canvas dimensions on image load
+  const handleImageLoad = useCallback(() => {
+    const image = imageRef.current;
+    const canvas = canvasRef.current;
+    if (!image || !canvas) return;
+
+    canvas.width = image.naturalWidth;
+    canvas.height = image.naturalHeight;
+
+    const ctx = canvas.getContext('2d');
+    if (!ctx) return;
+
+    ctx.clearRect(0, 0, canvas.width, canvas.height);
+    ctx.lineCap = 'round';
+    ctx.lineJoin = 'round';
+
+    if (paintOutput?.data.dataUrl) {
+      const img = new Image();
+      img.src = paintOutput?.data.dataUrl;
+      img.onload = () => {
+        ctx.drawImage(img, 0, 0, canvas.width, canvas.height);
+      };
+    } else {
+      ctx.fillStyle = backgroundColor;
+      ctx.fillRect(0, 0, canvas.width, canvas.height);
+      updateResult(canvas.toDataURL('image/png'));
+    }
+  }, [paintOutput, backgroundColor, updateResult]);
+
+  useEffect(() => {
+    if (inputImageUrl) return;
+
+    const canvas = canvasRef.current;
+    if (!canvas) return;
+
+    canvas.width = width;
+    canvas.height = height;
+
+    const ctx = canvas.getContext('2d');
+    if (!ctx) return;
+
+    ctx.clearRect(0, 0, canvas.width, canvas.height);
+    ctx.lineCap = 'round';
+    ctx.lineJoin = 'round';
+
+    if (paintOutput?.data.dataUrl) {
+      const img = new Image();
+      img.src = paintOutput?.data.dataUrl;
+      img.onload = () => {
+        ctx.drawImage(img, 0, 0, canvas.width, canvas.height);
+      };
+    } else {
+      ctx.fillStyle = backgroundColor;
+      ctx.fillRect(0, 0, canvas.width, canvas.height);
+      updateResult(canvas.toDataURL('image/png'));
+    }
+  }, [inputImageUrl, paintOutput, width, height, backgroundColor, updateResult]);
 
 
   const getScaledCoordinates = useCallback((e: React.MouseEvent<HTMLCanvasElement>) => {
@@ -154,7 +181,7 @@ const PaintNodeComponent = memo((props: NodeProps<PaintNode>) => {
     ctx.beginPath();
     ctx.moveTo(x, y);
     ctx.lineWidth = brushSize;
-    ctx.globalAlpha = brushOpacity / 100;
+    ctx.globalAlpha = 1;
     if (tool === 'brush') {
       ctx.globalCompositeOperation = 'source-over';
       ctx.strokeStyle = brushColor;
@@ -164,7 +191,7 @@ const PaintNodeComponent = memo((props: NodeProps<PaintNode>) => {
     isDrawingRef.current = true;
     lastPositionRef.current = { x, y };
     needsUpdateRef.current = true;
-  }, [brushSize, brushOpacity, tool, brushColor, getScaledCoordinates]);
+  }, [brushSize, tool, brushColor, getScaledCoordinates]);
 
   const handleMouseMove = useCallback((e: React.MouseEvent<HTMLCanvasElement>) => {
     if (!isDrawingRef.current) return;
@@ -188,7 +215,7 @@ const PaintNodeComponent = memo((props: NodeProps<PaintNode>) => {
       }
       needsUpdateRef.current = false;
     }
-  }, []);
+  }, [updateResult]);
 
   const handleClear = useCallback(() => {
     const canvas = canvasRef.current;
@@ -199,7 +226,7 @@ const PaintNodeComponent = memo((props: NodeProps<PaintNode>) => {
         updateResult(canvas.toDataURL('image/png'));
       }
     }
-  }, []);
+  }, [updateResult]);
 
   useEffect(() => {
     document.addEventListener('mouseup', handleMouseUp);
@@ -213,10 +240,8 @@ const PaintNodeComponent = memo((props: NodeProps<PaintNode>) => {
   return (
     <BaseNode {...props}>
       <div className="flex flex-col gap-3">
-        {!inputImageUrl ? (
-          <ImagePlaceholder />
-        ) : (
-          <div className="w-full overflow-hidden bg-black/5 min-h-[100px] relative select-none">
+        <div className="w-full overflow-hidden bg-black/5 min-h-[100px] relative select-none" style={containerStyle}>
+          {inputImageUrl && (
             <img
               ref={imageRef}
               src={inputImageUrl}
@@ -225,79 +250,77 @@ const PaintNodeComponent = memo((props: NodeProps<PaintNode>) => {
               draggable={false}
               onLoad={handleImageLoad}
             />
-            <canvas
-              ref={canvasRef}
-              className="absolute inset-0 w-full h-auto cursor-crosshair"
-              onMouseDown={handleMouseDown}
-              onMouseMove={handleMouseMove}
-            />
-            {isProcessing && (
-              <div className="absolute inset-0 flex items-center justify-center bg-white/50 backdrop-blur-sm">
-                <span className="text-sm text-gray-600 font-medium">Processing...</span>
-              </div>
-            )}
-            {error && (
-              <div className="absolute inset-0 flex items-center justify-center bg-red-50/90 backdrop-blur-sm">
-                <div className="text-sm text-red-600 font-medium">Error: {error}</div>
-              </div>
-            )}
-          </div>
-        )}
+          )}
+          <canvas
+            ref={canvasRef}
+            className="absolute inset-0 w-full h-auto cursor-crosshair z-10"
+            onMouseDown={handleMouseDown}
+            onMouseMove={handleMouseMove}
+          />
+          {isProcessing && (
+            <div className="absolute inset-0 flex items-center justify-center bg-white/50 backdrop-blur-sm">
+              <span className="text-sm text-gray-600 font-medium">Processing...</span>
+            </div>
+          )}
+          {error && (
+            <div className="absolute inset-0 flex items-center justify-center bg-red-50/90 backdrop-blur-sm">
+              <div className="text-sm text-red-600 font-medium">Error: {error}</div>
+            </div>
+          )}
+        </div>
         <div className="flex flex-wrap gap-4 items-center text-sm">
           <div className="flex gap-2">
-            <button
+            <Button
+              size="icon"
+              variant={tool === 'brush' ? 'default' : 'outline'}
               onClick={() => setTool('brush')}
-              className={`px-2 py-1 rounded ${tool === 'brush' ? 'bg-blue-500 text-white' : 'bg-gray-200'}`}
             >
-              Brush
-            </button>
-            <button
+              <Brush className="h-4 w-4" />
+            </Button>
+            <Button
+              size="icon"
+              variant={tool === 'eraser' ? 'default' : 'outline'}
               onClick={() => setTool('eraser')}
-              className={`px-2 py-1 rounded ${tool === 'eraser' ? 'bg-blue-500 text-white' : 'bg-gray-200'}`}
             >
-              Eraser
-            </button>
+              <Eraser className="h-4 w-4" />
+            </Button>
           </div>
-          <label className="flex items-center gap-1">
-            Color:
-            <input
-              type="color"
-              value={brushColor}
-              onChange={(e) => setBrushColor(e.target.value)}
-              className="w-8 h-6 border rounded"
-            />
-          </label>
-          <label className="flex items-center gap-1">
-            Opacity:
-            <input
-              type="range"
-              min={0}
-              max={100}
-              value={brushOpacity}
-              onChange={(e) => setBrushOpacity(parseInt(e.target.value))}
-              className="w-20"
-            />
-            {brushOpacity}%
-          </label>
-          <label className="flex items-center gap-1">
-            Size:
-            <input
-              type="range"
+          <div className="flex items-center gap-1">
+            <ColorPicker value={brushColor} onChange={setBrushColor} className="max-w-sm rounded-md border bg-background p-4 shadow-sm">
+              <ColorPickerSelection />
+              <div className="flex items-center gap-4">
+                <ColorPickerEyeDropper />
+                <div className="grid w-full gap-1">
+                  <ColorPickerHue />
+                  <ColorPickerAlpha />
+                </div>
+              </div>
+              <div className="flex items-center gap-2">
+                <ColorPickerOutput />
+                <ColorPickerFormat />
+              </div>
+            </ColorPicker>
+          </div>
+          <div className="flex items-center gap-1">
+            <Label htmlFor="brush-size">Size</Label>
+            <Slider
+              id="brush-size"
               min={1}
               max={100}
-              value={brushSize}
-              onChange={(e) => setBrushSize(parseInt(e.target.value))}
+              step={1}
+              value={[brushSize]}
+              onValueChange={(value) => setBrushSize(value[0])}
               className="w-20"
             />
-            {brushSize}
-          </label>
-          <button
+            <span>{brushSize}</span>
+          </div>
+          <Button
+            variant="outline"
             onClick={handleClear}
-            className="bg-red-500 text-white px-2 py-1 rounded hover:bg-red-600"
+            size="sm"
           >
             Clear
-          </button>
-          <span>W {width} H {height}</span>
+          </Button>
         </div>
       </div>
     </BaseNode>

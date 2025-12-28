@@ -31,9 +31,10 @@ const MaskNodeConfigSchema = z.object({}).strict();
 
 // Paint Node
 const PaintNodeConfigSchema = z.object({
-  color: z.string().regex(/^#[0-9A-F]{6}$/i).optional(),
-  size: z.number().int().min(0).max(100).optional(),
-  bgColor: z.string().regex(/^#[0-9A-F]{6}$/i).optional(),
+  width: z.number().int(),
+  height: z.number().int(),
+  maintainAspect: z.boolean(),
+  backgroundColor: z.string().regex(/^#[0-9A-F]{6}$/i).optional(),
 }).strict();
 
 // Blur Node

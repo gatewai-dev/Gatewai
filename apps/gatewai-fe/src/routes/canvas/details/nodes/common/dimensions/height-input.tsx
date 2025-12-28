@@ -2,16 +2,14 @@ import { Input } from "@/components/ui/input";
 import { type NodeEntityType } from "@/store/nodes";
 import type { ResizeNodeConfig } from "@gatewai/types";
 import { memo, useCallback, useState, useEffect } from "react";
-import { useCanvasCtx } from "../../ctx/canvas-ctx";
+import { useCanvasCtx } from "../../../ctx/canvas-ctx";
 
-const ResizeWidthInput = memo((
-  {node, originalWidth, originalHeight, maintainAspect}:
-  {node: NodeEntityType, originalWidth: number | null, originalHeight: number | null, maintainAspect: boolean}
-) => {
+
+const ResizeHeightInput = memo(({node, originalWidth, originalHeight, maintainAspect}: {node: NodeEntityType, originalWidth: number | null, originalHeight: number | null, maintainAspect: boolean}) => {
   const config: ResizeNodeConfig = node?.config as ResizeNodeConfig;
     const { onNodeConfigUpdate } = useCanvasCtx();
 
-  const displayValue = config.width ?? originalWidth ?? 0;
+  const displayValue = config.height ?? originalHeight ?? 0;
   const [inputValue, setInputValue] = useState(displayValue.toString());
 
   useEffect(() => {
@@ -33,21 +31,22 @@ const ResizeWidthInput = memo((
       return;
     }
     
-    let updates: Partial<ResizeNodeConfig> = { width: value };
+    let updates: Partial<ResizeNodeConfig> = { height: value };
+    console.log({maintainAspect})
     if (maintainAspect && originalWidth && originalHeight) {
-      const newHeight = Math.round((originalHeight / originalWidth) * value);
-      updates = { ...updates, height: newHeight };
+      const newWidth = Math.round((originalWidth / originalHeight) * value);
+      updates = { ...config, ...updates, width: newWidth };
     }
     
     onNodeConfigUpdate({
       id: node.id,
       newConfig: updates
     });
-  }, [inputValue, maintainAspect, originalWidth, originalHeight, onNodeConfigUpdate, node.id, displayValue]);
+  }, [inputValue, maintainAspect, originalWidth, originalHeight, onNodeConfigUpdate, node.id, displayValue, config]);
   
   return (
     <div className="flex items-center gap-1 flex-1">
-      <label className="text-xs text-gray-600">Width</label>
+      <label className="text-xs text-gray-600">Height</label>
       <Input
         type="text"
         inputMode="numeric"
@@ -60,4 +59,4 @@ const ResizeWidthInput = memo((
   );
 });
 
-export { ResizeWidthInput }
+export { ResizeHeightInput }
