@@ -38,8 +38,14 @@ export class NodeWFProcessor {
 
 		for (const edge of data.edges) {
 			if (selectedSet.has(edge.source) && selectedSet.has(edge.target)) {
-				depGraph.get(edge.source)!.push(edge.target);
-				revDepGraph.get(edge.target)!.push(edge.source);
+        const sourceDep = depGraph.get(edge.source);
+        if (sourceDep) {
+				  sourceDep.push(edge.target);
+        }
+        const revTargetDep = revDepGraph.get(edge.target);
+        if (revTargetDep) {
+				  revTargetDep.push(edge.source);
+        }
 			}
 		}
 

@@ -26,14 +26,15 @@ const PaintNodeComponent = memo((props: NodeProps<PaintNode>) => {
 	const { result, isProcessing, error } = useNodeResult(props.id);
 	const node = useAppSelector(makeSelectNodeById(props.id));
 	const paintOutput = useMemo(() => {
-		const maskResult = result as PaintResult;
+    console.log("qwe", node.result)
+		const maskResult = node.result as unknown as PaintResult;
 		if (!maskResult || maskResult?.selectedOutputIndex == null) {
 			return null;
 		}
 		const output = maskResult?.outputs[maskResult.selectedOutputIndex];
 		const outputItem = output?.items.find((f) => f.type === "Mask");
 		return outputItem;
-	}, [result]);
+	}, [node.result]);
 
 	const inputImageUrl = useNodeImageUrl(inputNodeId);
 	const handles = useAppSelector(makeSelectHandlesByNodeId(props.id));
@@ -156,7 +157,7 @@ const PaintNodeComponent = memo((props: NodeProps<PaintNode>) => {
 		ctx.clearRect(0, 0, canvas.width, canvas.height);
 		ctx.lineCap = "round";
 		ctx.lineJoin = "round";
-		console.log("paintOutput?.data.dataUrl", paintOutput?.data.dataUrl);
+		console.log("paintOutput?.data.dataUrl", paintOutput?.data.dataUrl, initializedRef.current);
 		if (paintOutput) {
 			if (paintOutput?.data.dataUrl) {
 				const img = new Image();
