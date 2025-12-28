@@ -1,5 +1,5 @@
 import type { NodeResult } from '@gatewai/types';
-import { PrismaClient, TaskStatus, type TaskBatch } from '@gatewai/db';
+import { PrismaClient, Prisma, TaskStatus, type TaskBatch } from '@gatewai/db';
 import { GetCanvasEntities, type CanvasCtxData } from '../repositories/canvas.js';
 import { type User } from "better-auth";
 import { nodeProcessors } from './processors/index.js';
@@ -146,6 +146,28 @@ export class NodeWFProcessor {
     const executer = async () => {
       for (const nodeId of topoOrder) {
         const task = tasksMap.get(nodeId)!;
+
+        // Defensive check: Ensure node still exists in DB before processing
+        const currentNode = await this.prisma.node.findUnique({
+          where: { id: nodeId },
+          select: { id: true, type: true, name: true },
+        });
+
+        if (!currentNode) {
+          const now = new Date();
+          await this.prisma.task.update({
+            where: { id: task.id },
+            data: {
+              status: TaskStatus.FAILED,
+              startedAt: now,
+              finishedAt: now,
+              durationMs: 0,
+              error: { message: 'Node removed before processing' },
+            },
+          });
+          continue;
+        }
+
         const startedAt = new Date();
         await this.prisma.task.update({
           where: { id: task.id },
@@ -156,7 +178,7 @@ export class NodeWFProcessor {
         });
 
         const node = data.nodes.find(n => n.id === nodeId)!;
-        const template = await this.prisma.nodeTemplate.findUnique({ where: { type: node.type } });
+        const template = await this.prisma.nodeTemplate.findUnique({ where: { type: currentNode.type } });
         const processor = nodeProcessors[node.type];
         if (!processor) {
           throw new Error(`No processor for node type ${node.type}.`);
@@ -179,16 +201,24 @@ export class NodeWFProcessor {
               status: success ? TaskStatus.COMPLETED : TaskStatus.FAILED,
               finishedAt,
               durationMs: finishedAt.getTime() - startedAt.getTime(),
-              error: error ? { message: error } : null,
+              error: error ? { message: error } : undefined,
             },
           });
 
           // Persist to DB only if not transient
           if (success && !template?.isTransient && newResult) {
-            await this.prisma.node.update({
-              where: { id: node.id },
-              data: { result: newResult as NodeResult },
-            });
+            try {
+              await this.prisma.node.update({
+                where: { id: node.id },
+                data: { result: newResult as NodeResult },
+              });
+            } catch (updateErr) {
+              if (updateErr instanceof Prisma.PrismaClientKnownRequestError && updateErr.code === 'P2025') {
+                console.log(`Node ${node.id} removed during processing, skipping result update`);
+              } else {
+                throw updateErr;
+              }
+            }
           }
         } catch (err: unknown) {
           console.log({ err });
@@ -201,11 +231,6 @@ export class NodeWFProcessor {
               durationMs: finishedAt.getTime() - startedAt.getTime(),
               error: err instanceof Error ? { message: err.message } : { message: 'Unknown error' },
             },
-          });
-
-          await this.prisma.node.update({
-            where: { id: node.id },
-            data: { error: err instanceof Error ? { message: err.message } : { message: 'Unknown error' } },
           });
         }
       }

@@ -76,7 +76,7 @@ const nodesSlice = createSlice({
       const completedNodes: NodeEntityType[] = [];
       batches.forEach(batch => {
         batch?.tasks.forEach(task => {
-          if (task.finishedAt && task.status === 'COMPLETED' && task.node) {
+          if (task.finishedAt && task.status === 'COMPLETED' && task.node && task.node.template.isTerminalNode) {
             completedNodes.push(task.node);
           }
         });
