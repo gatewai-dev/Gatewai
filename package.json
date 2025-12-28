@@ -10,7 +10,8 @@
 		"changeset": "changeset",
 		"version-packages": "changeset version",
 		"release": "turbo run build --filter=@gatewai/docs^... && changeset publish",
-		"start": "turbo run build && turbo run start-cli"
+		"start": "turbo run build && turbo run start-cli",
+    "lefthook-install": "lefthook install"
 	},
 	"devDependencies": {
 		"@biomejs/biome": "2.3.8",
