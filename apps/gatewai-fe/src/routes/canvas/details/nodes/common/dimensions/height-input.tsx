@@ -37,7 +37,7 @@ const ResizeHeightInput = memo(({node, originalWidth, originalHeight, maintainAs
       const newWidth = Math.round((originalWidth / originalHeight) * value);
       updates = { ...config, ...updates, width: newWidth };
     }
-    
+    console.log({updates});
     onNodeConfigUpdate({
       id: node.id,
       newConfig: updates

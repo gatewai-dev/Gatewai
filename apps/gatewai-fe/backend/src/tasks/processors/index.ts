@@ -6,7 +6,7 @@ import llmProcessor from "./llm.js";
 import imageGenProcessor from "./image-gen.js";
 import aiAgentProcessor from "./ai-agent/index.js";
 import cropProcessor from "./crop.js";
-
+import paintProcessor from "./paint.js";
 
 const nodeProcessors: Partial<Record<NodeType, NodeProcessor>> = {
   [NodeType.Blur]: blurProcessor,
@@ -15,6 +15,7 @@ const nodeProcessors: Partial<Record<NodeType, NodeProcessor>> = {
   [NodeType.ImageGen]: imageGenProcessor,
   [NodeType.Agent]: aiAgentProcessor,
   [NodeType.Crop]: cropProcessor,
+  [NodeType.Paint]: paintProcessor,
   // No processing needed for these node types
   [NodeType.File]: async ({ node }) => {
     return { success: true, result: node.result };

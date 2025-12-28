@@ -239,7 +239,8 @@ const PaintNodeComponent = memo((props: NodeProps<PaintNode>) => {
   return (
     <BaseNode {...props}>
       <div className="flex flex-col gap-3">
-        <div className="w-full overflow-hidden bg-black/5 min-h-[100px] relative select-none" style={{ ...containerStyle, backgroundColor: inputImageUrl ? backgroundColor : undefined }}>
+        <div className="w-full overflow-hidden bg-black/5 min-h-[100px] relative select-none"
+          style={{ ...containerStyle, backgroundColor: inputImageUrl ? nodeConfig.backgroundColor : undefined }}>
           {inputImageUrl && (
             <img
               ref={imageRef}

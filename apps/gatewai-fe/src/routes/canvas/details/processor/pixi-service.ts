@@ -1,4 +1,4 @@
-import { Application, Assets, Sprite, BlurFilter, Texture, Rectangle, Container, Graphics } from 'pixi.js';
+import { Application, Assets, Sprite, BlurFilter, Container, Graphics } from 'pixi.js';
 
 class PixiProcessorService {
   private app: Application | null = null;
@@ -17,6 +17,23 @@ class PixiProcessorService {
       backgroundAlpha: 0,
       preserveDrawingBuffer: true,
       preference: 'webgpu',
+      webgpu: {
+        skipExtensionImports: true,
+        eventMode: 'passive',
+        hello: true,
+        roundPixels: false,
+        textureGCActive: true,
+        antialias: false,
+        textureGCCheckCountMax: 300,
+        textureGCMaxIdle: 60,
+      },
+      webgl: {
+        skipExtensionImports: true,
+        eventMode: 'passive',
+        hello: true,
+        roundPixels: false,
+        antialias: false,
+      }
     });
   }
 

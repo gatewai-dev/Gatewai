@@ -294,11 +294,6 @@ const CropNodeComponent = memo((props: NodeProps<CropNode>) => {
             <div className="absolute top-2/3 left-0 right-0 h-px bg-white/50" />
           </div>
         </div>
-        {error && (
-          <div className="absolute inset-0 flex items-center justify-center bg-red-50/90 backdrop-blur-sm">
-            <div className="text-sm text-red-600 font-medium">Error: {error}</div>
-          </div>
-        )}
       </div>
     </BaseNode>
   );

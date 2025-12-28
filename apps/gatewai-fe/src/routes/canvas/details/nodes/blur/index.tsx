@@ -7,11 +7,6 @@ import type { BlurNode } from '../node-props';
 import { BlurValueSlider } from './blur-slider';
 import { useNodeImageUrl, useNodeResult } from '../../processor/processor-ctx';
 
-const ImagePlaceholder = () => (
-  <div className="w-full media-container h-[280px] flex items-center justify-center rounded bg-gray-50 dark:bg-gray-800 border border-dashed border-gray-300 dark:border-gray-700">
-    <span className="text-gray-400 text-sm">No image connected</span>
-  </div>
-);
 
 const BlurNodeComponent = memo((props: NodeProps<BlurNode>) => {
   const node = useAppSelector(makeSelectNodeById(props.id));
@@ -45,20 +40,10 @@ const BlurNodeComponent = memo((props: NodeProps<BlurNode>) => {
   console.log('BlurNodeComponent render', { imageUrl, isProcessing, error });
   return (
     <BaseNode {...props}>
-      <div className="flex flex-col gap-3">
-        {!result ? (
-          <ImagePlaceholder />
-        ) : (
-          <div className="w-full overflow-hidden rounded bg-black/5 min-h-[100px] relative">
+      <div className="flex flex-col gap-3 ">
+          <div className="w-full media-container overflow-hidden rounded bg-black/5 relative">
             <canvas ref={canvasRef} className="block w-full h-auto" />
-            
-            {error && (
-              <div className="absolute inset-0 flex items-center justify-center bg-red-50/90">
-                <div className="text-sm text-red-600">Error: {error}</div>
-              </div>
-            )}
           </div>
-        )}
 
         {node && (
           <div className="flex gap-3 items-end p-1">

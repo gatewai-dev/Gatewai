@@ -22,7 +22,7 @@ export async function SEED_createNodeTemplates(prisma: PrismaClient) {
       },
       defaultConfig: {
         maxTurns: 10,
-        model: "anthropic/claude-opus-4.5",
+        model: "anthropict/claude-opus-4.5",
       },
     }
   });
