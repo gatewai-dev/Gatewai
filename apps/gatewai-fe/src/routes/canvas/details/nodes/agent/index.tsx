@@ -31,7 +31,7 @@ function AgentNodeHandbook() {
                 <ul className="list-disc pl-4">
                   <li>Add inputs and outputs for the agent.</li>
                   <li>After running the node, the output handles will contain the data.</li>
-                  <li>Inputs and outputs cannot be added after the first generation.</li>
+                  <li>Inputs and outputs cannot be added after the first run.</li>
                   <li>The agent has the capabilities of almost all other nodes (e.g., image filters, image composition).</li>
                 </ul>
               </AlertDescription>

@@ -247,6 +247,93 @@ class PixiProcessorService {
 
     return dataUrl;
   }
+  /**
+   * Process mask with cancellation support
+   * Returns image with mask overlay and the mask alone
+   */
+  public async processMask(
+    imageUrl: string,
+    maskUrl: string,
+    signal?: AbortSignal
+  ): Promise<{ imageWithMask: string; onlyMask: string }> {
+    if (signal?.aborted) {
+      throw new DOMException('Operation cancelled', 'AbortError');
+    }
+
+    if (!this.app) await this.init();
+    const app = this.app!;
+
+    if (signal?.aborted) {
+      throw new DOMException('Operation cancelled', 'AbortError');
+    }
+
+    // 1. Load the Textures
+    const [texture, maskTexture] = await Promise.all([
+      Assets.load(imageUrl),
+      Assets.load(maskUrl)
+    ]);
+
+    if (signal?.aborted) {
+      throw new DOMException('Operation cancelled', 'AbortError');
+    }
+
+    if (texture.width !== maskTexture.width || texture.height !== maskTexture.height) {
+      throw new Error('Image and mask dimensions do not match');
+    }
+
+    // Resize the renderer to match the image
+    app.renderer.resize(texture.width, texture.height);
+
+    // 2. Setup the Scene with Container
+    const container = new Container();
+    const sprite = new Sprite(texture);
+    const maskSprite = new Sprite(maskTexture);
+
+    container.addChild(sprite);
+    container.addChild(maskSprite);
+
+    // 3. Render to Stage for imageWithMask
+    app.stage.removeChildren();
+    app.stage.addChild(container);
+
+    if (signal?.aborted) {
+      app.stage.removeChildren();
+      throw new DOMException('Operation cancelled', 'AbortError');
+    }
+
+    app.render();
+
+    if (signal?.aborted) {
+      app.stage.removeChildren();
+      throw new DOMException('Operation cancelled', 'AbortError');
+    }
+
+    const imageWithMask = await app.renderer.extract.base64(app.stage);
+
+    if (signal?.aborted) {
+      app.stage.removeChildren();
+      throw new DOMException('Operation cancelled', 'AbortError');
+    }
+
+    // 4. Modify for onlyMask
+    container.removeChild(sprite);
+    maskSprite.alpha = 1.0; // Full opacity for mask alone
+
+    app.render();
+
+    if (signal?.aborted) {
+      app.stage.removeChildren();
+      throw new DOMException('Operation cancelled', 'AbortError');
+    }
+
+    const onlyMask = await app.renderer.extract.base64(app.stage);
+
+    if (signal?.aborted) {
+      throw new DOMException('Operation cancelled', 'AbortError');
+    }
+
+    return { imageWithMask, onlyMask };
+  }
 }
 
 export const pixiProcessor = new PixiProcessorService();

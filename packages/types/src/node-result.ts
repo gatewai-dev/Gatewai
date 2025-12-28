@@ -53,8 +53,8 @@ import type { DataType, FileAsset } from "@gatewai/db";
 
   export type ImageGenResult = ImagesResult;
 
-  export type MaskResult = MultipleOutputResult & {
-    outputs: { items: [OutputItem<"Mask">] }[];
+  export type MaskResult = SingleOutputResult & {
+    outputs: { items: [OutputItem<"Mask">, OutputItem<"Image">] }[];
   }
 
   export type NumberResult = SingleOutputResult & {
@@ -73,7 +73,7 @@ import type { DataType, FileAsset } from "@gatewai/db";
     outputs: { items: [OutputItem<"File">] }[];
   }
 
-  export type PainterResult = SingleOutputResult & {
+  export type PaintResult = SingleOutputResult & {
     outputs: [{ items: [OutputItem<"Image">, OutputItem<"Mask">] }];
   }
 
@@ -111,7 +111,7 @@ import type { DataType, FileAsset } from "@gatewai/db";
     | LLMResult
     | ResizeResult
     | ThreeDResult
-    | PainterResult
+    | PaintResult
     | BlurResult
     | CompositorResult
     | DescriberResult;

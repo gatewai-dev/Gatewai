@@ -6,7 +6,6 @@ import { BaseNode } from '../base';
 import type { CropNode } from '../node-props';
 import { useNodeImageUrl, useNodeResult } from '../../processor/processor-ctx';
 import type { CropNodeConfig } from '@gatewai/types';
-import { makeSelectHandlesByNodeId } from '@/store/handles';
 import { makeSelectEdgesByTargetNodeId } from '@/store/edges';
 
 const ImagePlaceholder = () => (
@@ -187,7 +186,7 @@ const CropNodeComponent = memo((props: NodeProps<CropNode>) => {
         {!inputImageUrl ? (
           <ImagePlaceholder />
         ) : (
-          <div className="w-full overflow-hidden rounded bg-black/5 min-h-[100px] relative select-none">
+          <div className="w-full overflow-hidden bg-black/5 min-h-[100px] relative select-none">
             <img
               ref={imageRef}
               src={inputImageUrl}
@@ -217,37 +216,56 @@ const CropNodeComponent = memo((props: NodeProps<CropNode>) => {
                   fill="rgba(0, 0, 0, 0.6)"
                   mask={`url(#crop-mask-${props.id})`}
                 />
+                {/* Marching ants border */}
+                <rect
+                  x={`${crop.leftPercentage}%`}
+                  y={`${crop.topPercentage}%`}
+                  width={`${crop.widthPercentage}%`}
+                  height={`${crop.heightPercentage}%`}
+                  fill="none"
+                  stroke="white"
+                  strokeWidth="2"
+                  strokeDasharray="5 5"
+                  pointerEvents="none"
+                >
+                  <animate
+                    attributeName="stroke-dashoffset"
+                    from="0"
+                    to="10"
+                    dur="0.3s"
+                    repeatCount="indefinite"
+                  />
+                </rect>
               </svg>
             </div>
 
             {/* Crop selection box */}
             <div
-              className="absolute box-border border-2 border-white shadow-lg"
+              className="absolute box-border"
               style={{
                 left: `${crop.leftPercentage}%`,
                 top: `${crop.topPercentage}%`,
                 width: `${crop.widthPercentage}%`,
                 height: `${crop.heightPercentage}%`,
                 cursor: dragState?.type === 'move' ? 'grabbing' : 'grab',
-                boxShadow: '0 0 0 1px rgba(0, 0, 0, 0.5), 0 0 0 9999px rgba(0, 0, 0, 0)',
               }}
               onMouseDown={(e) => handleMouseDown(e, 'move')}
             >
               {/* Corner handles */}
               <div
-                className="absolute -top-2 -left-2 w-4 h-4 bg-white border-2 border-blue-500 rounded-full cursor-nw-resize shadow-md hover:scale-110 transition-transform"
+                className="absolute -top-1 -left-1 w-2 h-2 bg-white/70 border border-blue-500/30 cursor-nw-resize shadow-md hover:scale-110 transition-transform"
                 onMouseDown={(e) => handleMouseDown(e, 'resize-nw')}
               />
               <div
-                className="absolute -top-2 -right-2 w-4 h-4 bg-white border-2 border-blue-500 rounded-full cursor-ne-resize shadow-md hover:scale-110 transition-transform"
+                className="absolute -top-1 -right-1 w-2 h-2 bg-white/70 border border-blue-500/30 cursor-ne-resize shadow-md hover:scale-110 transition-transform"
                 onMouseDown={(e) => handleMouseDown(e, 'resize-ne')}
               />
               <div
-                className="absolute -bottom-2 -left-2 w-4 h-4 bg-white border-2 border-blue-500 rounded-full cursor-sw-resize shadow-md hover:scale-110 transition-transform"
+                className="absolute -bottom-1 -left-1 w-2 h-2 bg-white/70 border border-blue-500/30 cursor-sw-resize shadow-md hover:scale-110 transition-transform"
                 onMouseDown={(e) => handleMouseDown(e, 'resize-sw')}
               />
               <div
-                className="absolute -bottom-2 -right-2 w-4 h-4 bg-white border-2 border-blue-500 rounded-full cursor-se-resize shadow-md hover:scale-110 transition-transform"
+                className="absolute -bottom-1 -right-1 w-2 h-2 bg-white/70 border border-blue-500/30 cursor-se-resize shadow-md hover:scale-110 transition-transform"
                 onMouseDown={(e) => handleMouseDown(e, 'resize-se')}
               />
               
@@ -255,11 +273,11 @@ const CropNodeComponent = memo((props: NodeProps<CropNode>) => {
               {crop.widthPercentage > 15 && (
                 <>
                   <div
-                    className="absolute -top-2 left-1/2 -ml-2 w-4 h-4 bg-white border-2 border-blue-500 rounded-full cursor-n-resize shadow-md hover:scale-110 transition-transform"
+                    className="absolute -top-1 left-1/2 -ml-1 w-2 h-2 bg-white/70 border border-blue-500/30 cursor-n-resize shadow-md hover:scale-110 transition-transform"
                     onMouseDown={(e) => handleMouseDown(e, 'resize-n')}
                   />
                   <div
-                    className="absolute -bottom-2 left-1/2 -ml-2 w-4 h-4 bg-white border-2 border-blue-500 rounded-full cursor-s-resize shadow-md hover:scale-110 transition-transform"
+                    className="absolute -bottom-1 left-1/2 -ml-1 w-2 h-2 bg-white/70 border border-blue-500/30 cursor-s-resize shadow-md hover:scale-110 transition-transform"
                     onMouseDown={(e) => handleMouseDown(e, 'resize-s')}
                   />
                 </>
@@ -267,11 +285,11 @@ const CropNodeComponent = memo((props: NodeProps<CropNode>) => {
               {crop.heightPercentage > 15 && (
                 <>
                   <div
-                    className="absolute top-1/2 -left-2 -mt-2 w-4 h-4 bg-white border-2 border-blue-500 rounded-full cursor-w-resize shadow-md hover:scale-110 transition-transform"
+                    className="absolute top-1/2 -left-1 -mt-1 w-2 h-2 bg-white/70 border border-blue-500/30 cursor-w-resize shadow-md hover:scale-110 transition-transform"
                     onMouseDown={(e) => handleMouseDown(e, 'resize-w')}
                   />
                   <div
-                    className="absolute top-1/2 -right-2 -mt-2 w-4 h-4 bg-white border-2 border-blue-500 rounded-full cursor-e-resize shadow-md hover:scale-110 transition-transform"
+                    className="absolute top-1/2 -right-1 -mt-1 w-2 h-2 bg-white/70 border border-blue-500/30 cursor-e-resize shadow-md hover:scale-110 transition-transform"
                     onMouseDown={(e) => handleMouseDown(e, 'resize-e')}
                   />
                 </>

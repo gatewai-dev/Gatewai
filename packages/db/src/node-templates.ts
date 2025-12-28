@@ -168,11 +168,11 @@ export async function SEED_createNodeTemplates(prisma: PrismaClient) {
     }
   });
 
-  // Painter: image input, mask and image output
+  // Paint: image input, mask and image output
   await prisma.nodeTemplate.create({
     data: {
-      type: NodeType.Painter,
-      displayName: 'Painter',
+      type: NodeType.Paint,
+      displayName: 'Paint',
       description: 'A painter node with image input and mask/image outputs',
       tokenPrice: 0.0,
       variableInputs: false,
@@ -181,7 +181,7 @@ export async function SEED_createNodeTemplates(prisma: PrismaClient) {
       isTransient: false,
       templateHandles: {
         create: [
-          { type: HandleType.Input, dataTypes: [DataType.Image], required: true, label: "Background" },
+          { type: HandleType.Input, dataTypes: [DataType.Image], required: true, label: "Background Image" },
           { type: HandleType.Output, dataTypes: [DataType.Mask], label: 'Mask' },
           { type: HandleType.Output, dataTypes: [DataType.Image], label: 'Image' }
         ]

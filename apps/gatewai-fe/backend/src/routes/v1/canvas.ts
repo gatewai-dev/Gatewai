@@ -11,7 +11,7 @@ import { NodeWFProcessor } from "../../tasks/node.js";
 const NodeTypes = [
     'Text', 'Preview', 'File', 'Export',
     'Toggle', 'Crawler', 'Resize', 'Agent', 'ThreeD',
-    'Painter', 'Blur', 'Compositor', 'Describer', 'Router',
+    'Paint', 'Blur', 'Compositor', 'Describer', 'Router',
     'Note', 'Number', 'ImageGen', 'LLM', 'Crop'
 ] as const;
 

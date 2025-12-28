@@ -22,7 +22,7 @@ enum NodeType {
   Resize
   Agent
   ThreeD
-  Painter
+  Paint
   Blur
   Compositor
   Describer

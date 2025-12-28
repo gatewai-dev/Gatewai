@@ -1,5 +1,5 @@
 import { EventEmitter } from 'events';
-import type { NodeResult, FileData, LLMResult, TextResult, FileResult, ImageGenResult, ResizeNodeConfig, AgentResult, CropNodeConfig} from '@gatewai/types';
+import type { NodeResult, FileData, LLMResult, TextResult, FileResult, ImageGenResult, ResizeNodeConfig, AgentResult, CropNodeConfig, MaskResult} from '@gatewai/types';
 import type { EdgeEntityType } from '@/store/edges';
 import type { NodeEntityType } from '@/store/nodes';
 import { pixiProcessor } from './pixi-service';
@@ -164,6 +164,59 @@ export class NodeGraphProcessor extends EventEmitter {
             data: { dataUrl },
             outputHandleId: outputHandle
           }]
+        }]
+      };
+
+      return newResult;
+    });
+    this.registerProcessor('Paint', async ({ node, inputs, signal }) => {
+      const inputHandle = this.getInputHandles(node.id)[0];
+      if (!inputHandle) throw new Error('No input handle');
+
+      const sourceNodeId = this.getSourceNodeId(node.id, inputHandle);
+      if (!sourceNodeId) throw new Error('No connected source');
+
+      const inputResult = inputs.get(sourceNodeId);
+      if (!inputResult) throw new Error('No input result');
+
+      // Extract image URL
+      const output = inputResult.outputs[inputResult.selectedOutputIndex ?? 0];
+      const fileData = output?.items[0]?.data as FileData;
+      const imageUrl = fileData?.entity?.signedUrl ?? fileData?.dataUrl;
+
+      if (!imageUrl) throw new Error('No image URL');
+
+      // Process with Pixi
+      const result = node.result as unknown as MaskResult;
+      const nodeOutput = result.outputs[result.selectedOutputIndex];
+      const nodeOutputItem = nodeOutput.items.find(f => f.type === 'Mask');
+
+      if (!nodeOutputItem?.data.dataUrl) throw new Error('No mask data');
+
+      console.log({config})
+      const { imageWithMask, onlyMask } = await pixiProcessor.processMask(
+        imageUrl,
+        config.maskDataUrl,
+        signal
+      );
+
+      // Build result
+      const outputHandle = this.getOutputHandles(node.id)[0];
+      const newResult: NodeResult = {
+        selectedOutputIndex: 0,
+        outputs: [{
+          items: [
+            {
+              type: 'Image',
+              data: { dataUrl: imageWithMask },
+              outputHandleId: outputHandle
+            },
+            {
+              type: 'Image',
+              data: { dataUrl: onlyMask },
+              outputHandleId: outputHandle
+            }
+          ]
         }]
       };
 

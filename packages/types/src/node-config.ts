@@ -29,8 +29,8 @@ const ThreeDNodeConfigSchema = z.object({}).strict();
 // Mask Node
 const MaskNodeConfigSchema = z.object({}).strict();
 
-// Painter Node
-const PainterNodeConfigSchema = z.object({
+// Paint Node
+const PaintNodeConfigSchema = z.object({
   color: z.string().regex(/^#[0-9A-F]{6}$/i).optional(),
   size: z.number().int().min(0).max(100).optional(),
   bgColor: z.string().regex(/^#[0-9A-F]{6}$/i).optional(),
@@ -143,7 +143,7 @@ const NodeConfigSchema = z.union([
   AgentNodeConfigSchema,
   ThreeDNodeConfigSchema,
   MaskNodeConfigSchema,
-  PainterNodeConfigSchema,
+  PaintNodeConfigSchema,
   BlurNodeConfigSchema,
   CompositorNodeConfigSchema,
   DescriberNodeConfigSchema,
@@ -159,7 +159,7 @@ type FileNodeConfig = z.infer<typeof FileNodeConfigSchema>;
 type CrawlerNodeConfig = z.infer<typeof CrawlerNodeConfigSchema>;
 type ThreeDNodeConfig = z.infer<typeof ThreeDNodeConfigSchema>;
 type MaskNodeConfig = z.infer<typeof MaskNodeConfigSchema>;
-type PainterNodeConfig = z.infer<typeof PainterNodeConfigSchema>;
+type PaintNodeConfig = z.infer<typeof PaintNodeConfigSchema>;
 type BlurNodeConfig = z.infer<typeof BlurNodeConfigSchema>;
 type CompositorLayerUpdates = z.infer<typeof CompositorLayerUpdatesSchema>;
 type CompositorNodeConfig = z.infer<typeof CompositorNodeConfigSchema>;
@@ -179,7 +179,7 @@ export {
   AgentNodeConfigSchema,
   ThreeDNodeConfigSchema,
   MaskNodeConfigSchema,
-  PainterNodeConfigSchema,
+  PaintNodeConfigSchema,
   BlurNodeConfigSchema,
   CompositorNodeConfigSchema,
   DescriberNodeConfigSchema,
@@ -194,7 +194,7 @@ export {
   type ThreeDNodeConfig,
   type LLMNodeConfig,
   type MaskNodeConfig,
-  type PainterNodeConfig,
+  type PaintNodeConfig,
   type BlurNodeConfig,
   type CompositorLayerUpdates,
   type CompositorNodeConfig,

@@ -7,6 +7,7 @@ import { FileNodeComponent } from './file';
 import { ResizeNodeComponent } from './resize';
 import { AgentNodeComponent } from './agent';
 import { CropNodeComponent } from './crop';
+import { PaintNodeComponent } from './paint';
 
 
 // Node types mapping
@@ -19,6 +20,7 @@ const nodeTypes = {
   File: FileNodeComponent,
   Agent: AgentNodeComponent,
   Crop: CropNodeComponent,
+  Paint: PaintNodeComponent,
 };
 
 // Export components
@@ -31,4 +33,5 @@ export {
   BlurNodeComponent,
   CropNodeComponent,
   FileNodeComponent,
+  PaintNodeComponent,
 };
