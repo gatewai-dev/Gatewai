@@ -82,7 +82,6 @@ export function useTaskManagerCtx() {
 }
 
 export function useNodeTaskRunning(nodeId: NodeEntityType["id"]) {
-
     const { nodeTaskStatus } = useTaskManagerCtx();
     const isNodeRunning = useMemo(() => {
       const hasProp = Object.hasOwn(nodeTaskStatus, nodeId)

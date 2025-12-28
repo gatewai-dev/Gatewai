@@ -131,7 +131,7 @@ const BaseNode = memo((props: NodeProps<Node<CanvasDetailsNode>> & {
       <div className="px-2 py-2 h-[calc(100%-1rem)]">
         <div className='header-section flex justify-between items-center mb-3 px-1'>
           <div className="text-xs font-semibold text-node-title">
-            {node?.name}
+            {node?.name} {node?.id}
           </div>
           <NodeMenu {...props} />
         </div>

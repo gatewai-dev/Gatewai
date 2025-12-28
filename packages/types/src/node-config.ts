@@ -41,6 +41,13 @@ const BlurNodeConfigSchema = z.object({
   size: z.number().min(0).max(10).optional(),
 }).strict();
 
+const CropNodeConfigSchema = z.object({
+  leftPercentage: z.number().min(0).max(100),
+  topPercentage: z.number().min(0).max(100),
+  widthPercentage: z.number().min(0).max(100),
+  heightPercentage: z.number().min(0).max(100),
+}).strict();
+
 // Compositor Node
 const CompositorLayerUpdatesSchema = z.object({
   id: z.number(),
@@ -161,9 +168,11 @@ type RouterNodeConfig = z.infer<typeof RouterNodeConfigSchema>;
 type ResizeNodeConfig = z.infer<typeof ResizeNodeConfigSchema>;
 type AllNodeConfig = z.infer<typeof NodeConfigSchema>;
 type ImageGenConfig = z.infer<typeof ImageGenNodeConfigSchema>;
+type CropNodeConfig = z.infer<typeof CropNodeConfigSchema>;
 
 export {
   NodeConfigSchema,
+  CropNodeConfigSchema,
   TextNodeConfigSchema,
   FileNodeConfigSchema,
   CrawlerNodeConfigSchema,
@@ -194,6 +203,7 @@ export {
   type ResizeNodeConfig,
   type AllNodeConfig,
   type ImageGenConfig,
+  type CropNodeConfig,
   LLM_NODE_MODELS,
   IMAGEGEN_NODE_MODELS,
   AGENT_NODE_MODELS,

@@ -34,7 +34,7 @@ const resizeProcessor: NodeProcessor = async ({ node, data }) => {
         items: [
           {
             type: DataType.Image,
-            data: { dataUrl },  // Transient data URL
+            data: { dataUrl },
             outputHandleId: outputHandle.id,
           } as OutputItem<"Image">,
         ],

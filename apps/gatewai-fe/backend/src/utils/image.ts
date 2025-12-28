@@ -32,6 +32,25 @@ export async function applyBlur(buffer: Buffer, blurAmount: number): Promise<Buf
   return sharp(buffer).blur(blurAmount).toBuffer();
 }
 
+export const applyCrop = async (buffer: Buffer, leftPct: number, topPct: number, widthPct: number, heightPct: number): Promise<Buffer> => {
+  const image = sharp(buffer);
+  const metadata = await image.metadata();
+  if (!metadata.width || !metadata.height) {
+    throw new Error('Invalid image metadata');
+  }
+  const left = Math.floor((leftPct / 100) * metadata.width);
+  const top = Math.floor((topPct / 100) * metadata.height);
+  const cropWidth = Math.floor((widthPct / 100) * metadata.width);
+  const cropHeight = Math.floor((heightPct / 100) * metadata.height);
+
+  // Ensure crop dimensions are positive and within bounds
+  if (cropWidth <= 0 || cropHeight <= 0 || left < 0 || top < 0 || left + cropWidth > metadata.width || top + cropHeight > metadata.height) {
+    throw new Error('Invalid crop parameters');
+  }
+
+  return image.extract({ left, top, width: cropWidth, height: cropHeight }).toBuffer();
+};
+
 export async function applyResize(buffer: Buffer, width: number, height: number): Promise<Buffer> {
   if (width <= 0 && height <= 0) return buffer;
   return sharp(buffer).resize(width, height).toBuffer();

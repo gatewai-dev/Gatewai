@@ -1,10 +1,10 @@
 import type { AgentNodeConfig, FileData, NodeResult, Output, OutputItem } from '@gatewai/types';
-import type { NodeProcessor, NodeProcessorCtx } from './types.js';
+import type { NodeProcessor, NodeProcessorCtx } from '../types.js';
 import { aisdk } from '@openai/agents-extensions';
 import { gateway } from 'ai';
 import { Agent, Runner, type AgentInputItem } from '@openai/agents';
 import { z, ZodObject, type UnknownKeysParam, type ZodRawShape } from 'zod';
-import { getAllInputValuesWithHandle, getAllOutputHandles, resolveFileUrl } from '../resolvers.js';
+import { getAllInputValuesWithHandle, getAllOutputHandles, resolveFileUrl } from '../../resolvers.js';
 import type { DataType } from '@gatewai/db';
 
 export const FileAssetSchema = z.object({

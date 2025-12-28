@@ -17,6 +17,7 @@ enum NodeType {
   File
   Export
   Toggle
+  Crop
   Crawler
   Resize
   Agent

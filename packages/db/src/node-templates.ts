@@ -212,6 +212,30 @@ export async function SEED_createNodeTemplates(prisma: PrismaClient) {
       },
     }
   });
+  await prisma.nodeTemplate.create({
+    data: {
+      type: NodeType.Crop,
+      displayName: 'Crop',
+      description: 'Crop images',
+      tokenPrice: 0.0,
+      variableInputs: false,
+      variableOutputs: false,
+      isTerminalNode: true,
+      isTransient: true,
+      templateHandles: {
+        create: [
+          { type: HandleType.Input, dataTypes: [DataType.Image], required: true, label: 'Image' },
+          { type: HandleType.Output, dataTypes: [DataType.Image], label: "Cropped Image" }
+        ]
+      },
+      defaultConfig: {
+        leftPercentage: 0,
+        topPercentage: 0,
+        widthPercentage: 100,
+        heightPercentage: 100,
+      },
+    }
+  });
 
   // Compositor: multiple image / text inputs starts with single image, assuming variableInputs true, one image output
   await prisma.nodeTemplate.create({

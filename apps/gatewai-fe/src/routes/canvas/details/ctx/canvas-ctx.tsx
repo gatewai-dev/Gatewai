@@ -359,7 +359,7 @@ const CanvasProvider = ({
       const deletedEdgeIds = edgesToRemove.map(m => m.id);
       const newEdges = rfEdges.filter(f => !deletedEdgeIds.includes(f.id));
       const deletedHandleIds = handleEntities.filter(m => nodeIds.includes(m.nodeId)).map(m => m.id);
-      
+
       dispatch(setNodes(newNodes))
       dispatch(deleteManyNodeEntity(nodeIds))
       dispatch(setEdges(newEdges))

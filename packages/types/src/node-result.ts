@@ -81,6 +81,10 @@ import type { DataType, FileAsset } from "@gatewai/db";
     outputs: [{ items: [OutputItem<"Image">] }];
   }
 
+  export type CropResult = SingleOutputResult & {
+    outputs: [{ items: [OutputItem<"Image">] }];
+  }
+
   export type CompositorResult = SingleOutputResult & {
     outputs: [{ items: [OutputItem<"Image">] }];
   }
@@ -101,6 +105,7 @@ import type { DataType, FileAsset } from "@gatewai/db";
     | ImagesResult
     | ImageGenResult
     | AgentResult
+    | CropResult
     | MaskResult
     | NumberResult
     | LLMResult
