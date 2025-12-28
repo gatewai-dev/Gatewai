@@ -18,7 +18,7 @@ const globalForPrisma = globalThis as typeof globalThis & {
 };
 
 export const prisma = new Proxy({} as PrismaClient, {
-	get(target, prop) {
+	get(_target, prop) {
 		if (!prismaInstance) {
 			prismaInstance = globalForPrisma.prisma ?? createPrismaClient();
 

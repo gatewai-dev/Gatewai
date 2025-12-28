@@ -3,6 +3,7 @@ import { memo, useCallback, useEffect, useState } from "react";
 import { Input } from "@/components/ui/input";
 import type { NodeEntityType } from "@/store/nodes";
 import { useCanvasCtx } from "../../../ctx/canvas-ctx";
+import { Label } from "@/components/ui/label";
 
 const ResizeWidthInput = memo(
 	({
@@ -67,7 +68,7 @@ const ResizeWidthInput = memo(
 
 		return (
 			<div className="flex items-center gap-1 flex-1">
-				<label className="text-xs text-gray-600">Width</label>
+				<Label className="text-xs text-gray-600">Width</Label>
 				<Input
 					type="text"
 					inputMode="numeric"

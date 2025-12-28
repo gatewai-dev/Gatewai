@@ -12,9 +12,11 @@ import { makeSelectNodeById, updateNodeResult } from "@/store/nodes";
 import { useNodeImageUrl, useNodeResult } from "../../processor/processor-ctx";
 import { BaseNode } from "../base";
 import type { PaintNode } from "../node-props";
+import { useCanvasCtx } from "../../ctx/canvas-ctx";
 
 const PaintNodeComponent = memo((props: NodeProps<PaintNode>) => {
 	const dispatch = useAppDispatch();
+  const { onNodeResultUpdate } = useCanvasCtx();
 	const edges = useAppSelector(makeSelectEdgesByTargetNodeId(props.id));
 	const inputNodeId = useMemo(() => {
 		if (!edges || !edges[0]) {
@@ -111,7 +113,7 @@ const PaintNodeComponent = memo((props: NodeProps<PaintNode>) => {
 					],
 				} as PaintResult;
 			}
-			dispatch(updateNodeResult({ id: props.id, newResult }));
+			onNodeResultUpdate({ id: props.id, newResult });
 		},
 		[result?.outputs, result?.selectedOutputIndex, dispatch, props.id, handles],
 	);

@@ -480,7 +480,7 @@ export async function SEED_createNodeTemplates(prisma: PrismaClient) {
 						type: HandleType.Input,
 						dataTypes: [DataType.Image],
 						required: false,
-						label: "Reference Image 1",
+						label: "Reference Image",
 					},
 					{
 						type: HandleType.Output,
