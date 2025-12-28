@@ -89,7 +89,7 @@ import type { DataType, FileAsset } from "@gatewai/db";
     outputs: [{ items: [OutputItem<"Text">] }];
   }
 
-  type AgentOutputUnion = OutputItem<"Video"> | OutputItem<"Image"> | OutputItem<"Text"> | OutputItem<"Number"> | OutputItem<"Boolean"> | OutputItem<"Mask">;
+  export type AgentOutputUnion = OutputItem<"Video"> | OutputItem<"Image"> | OutputItem<"Text"> | OutputItem<"Number"> | OutputItem<"Boolean"> | OutputItem<"Mask">;
   export type AgentResult = MultipleOutputResult & {
     outputs: { items: AgentOutputUnion[] }[];
   }
@@ -100,6 +100,7 @@ import type { DataType, FileAsset } from "@gatewai/db";
     | FileResult
     | ImagesResult
     | ImageGenResult
+    | AgentResult
     | MaskResult
     | NumberResult
     | LLMResult

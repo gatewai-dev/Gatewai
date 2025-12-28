@@ -1,5 +1,5 @@
 import { EventEmitter } from 'events';
-import type { NodeResult, FileData, LLMResult, TextResult, FileResult, ImageGenResult, ResizeNodeConfig } from '@gatewai/types';
+import type { NodeResult, FileData, LLMResult, TextResult, FileResult, ImageGenResult, ResizeNodeConfig, AgentResult} from '@gatewai/types';
 import type { EdgeEntityType } from '@/store/edges';
 import type { NodeEntityType } from '@/store/nodes';
 import { pixiProcessor } from './pixi-service';
@@ -184,8 +184,8 @@ export class NodeGraphProcessor extends EventEmitter {
 
     this.registerProcessor('Agent', async ({ node }) => {
       // If no cached, use existing node.result (assuming it's set)
-      const result = node.result as unknown as FileResult;
-      if (!result) throw new Error('No result for File node');
+      const result = node.result as unknown as AgentResult;
+      if (!result) throw new Error('No result for Agent node');
       return result;
     });
 

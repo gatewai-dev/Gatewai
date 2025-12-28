@@ -5,7 +5,7 @@ import { Button, type ButtonProps } from '@/components/ui/button';
 import { ForwardIcon } from 'lucide-react';
 import { useCanvasCtx } from '../ctx/canvas-ctx';
 import type { AnyNode } from '../nodes/node-props';
-import { useTaskManagerCtx } from '../ctx/task-manager-ctx';
+import { useNodeTaskRunning, useTaskManagerCtx } from '../ctx/task-manager-ctx';
 import { Spinner } from '@/components/ui/spinner';
 
 export type RunNodeButtonProps = ButtonProps & {
@@ -14,17 +14,8 @@ export type RunNodeButtonProps = ButtonProps & {
 
 const RunNodeButton = memo(({nodeProps, ...buttonProps}: RunNodeButtonProps) => {
   const { runNodes } = useCanvasCtx();
-  const { nodeTaskStatus } = useTaskManagerCtx();
 
-  const isNodeRunning = useMemo(() => {
-    const hasProp = Object.hasOwn(nodeTaskStatus, nodeProps.id)
-    if (hasProp) {
-      const nodeTasks = nodeTaskStatus[nodeProps.id];
-      const isStillExecuting = nodeTasks.find(status => status.status === "EXECUTING" || status.status === "QUEUED");
-      return !!isStillExecuting;
-    }
-    return false;
-  }, [nodeProps.id, nodeTaskStatus])
+  const isNodeRunning = useNodeTaskRunning(nodeProps.id)
 
   return (
     <Button {...buttonProps}

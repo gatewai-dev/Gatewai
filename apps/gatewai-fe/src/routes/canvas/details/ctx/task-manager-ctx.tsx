@@ -1,9 +1,10 @@
-import { createContext, useContext, useEffect, type Dispatch, type PropsWithChildren, type SetStateAction } from 'react';
+import { createContext, useContext, useEffect, useMemo, type Dispatch, type PropsWithChildren, type SetStateAction } from 'react';
 import type { Canvas, Node } from '@gatewai/db';
 import { useDispatch, useSelector } from 'react-redux';
 import type { BatchDetailsRPC, BatchDetailsRPCParams } from '@/rpc/types';
 import { addBatchToPoll, getBatchDetails, getInitialBatches, selectBatchIdsToPoll, selectInitialLoading, selectNodeTaskStatus, selectPollingInterval, setPollingInterval } from '@/store/tasks';
 import { batchSelectors } from '@/store/tasks';
+import type { NodeEntityType } from '@/store/nodes';
 
 type BatchEntity = BatchDetailsRPC["batches"][number];
 type BatchNodeData = BatchEntity["tasks"][number];
@@ -78,6 +79,22 @@ export function useTaskManagerCtx() {
     throw new Error('useTaskManagerCtx should used inside TaskManagerProvider');
   }
   return ctx;
+}
+
+export function useNodeTaskRunning(nodeId: NodeEntityType["id"]) {
+
+    const { nodeTaskStatus } = useTaskManagerCtx();
+    const isNodeRunning = useMemo(() => {
+      const hasProp = Object.hasOwn(nodeTaskStatus, nodeId)
+      if (hasProp) {
+        const nodeTasks = nodeTaskStatus[nodeId];
+        const isStillExecuting = nodeTasks.find(status => status.status === "EXECUTING" || status.status === "QUEUED");
+        return !!isStillExecuting;
+      }
+      return false;
+    }, [nodeId, nodeTaskStatus])
+
+    return isNodeRunning;
 }
 
 export { TaskManagerContext, TaskManagerProvider };
