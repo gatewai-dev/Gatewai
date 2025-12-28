@@ -229,7 +229,7 @@ export async function SEED_createNodeTemplates(prisma: PrismaClient) {
       templateHandles: {
         create: [
           { type: HandleType.Input, dataTypes: [DataType.Image], required: true, label: 'Image' },
-          { type: HandleType.Output, dataTypes: [DataType.Image], label: "Cropped Image" }
+          { type: HandleType.Output, dataTypes: [DataType.Image], label: "Result" }
         ]
       },
       defaultConfig: {

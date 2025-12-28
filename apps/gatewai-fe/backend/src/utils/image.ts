@@ -48,11 +48,6 @@ export async function applyPaint(
     throw new Error('Invalid image dimensions');
   }
 
-  // Ensure dimensions match
-  if (baseMetadata.width !== maskMetadata.width || baseMetadata.height !== maskMetadata.height) {
-    throw new Error('Base image and mask dimensions do not match');
-  }
-
   // Composite mask onto base image
   const result = await baseImage
     .composite([{

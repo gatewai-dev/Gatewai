@@ -3,36 +3,22 @@ import { Application, Assets, Sprite, BlurFilter, Container, Graphics } from 'pi
 class PixiProcessorService {
   private app: Application | null = null;
 
-  // Initialize a single shared, background Pixi Application
   private async init() {
     if (this.app) return;
-    
-    // Use a background canvas that is never attached to the DOM
+
     this.app = new Application();
-    
+
     await this.app.init({
       width: 1024,
       height: 1024,
       autoStart: false,
       backgroundAlpha: 0,
-      preserveDrawingBuffer: true,
       preference: 'webgpu',
       webgpu: {
-        skipExtensionImports: true,
-        eventMode: 'passive',
         hello: true,
-        roundPixels: false,
-        textureGCActive: true,
-        antialias: false,
-        textureGCCheckCountMax: 300,
-        textureGCMaxIdle: 60,
       },
       webgl: {
-        skipExtensionImports: true,
-        eventMode: 'passive',
         hello: true,
-        roundPixels: false,
-        antialias: false,
       }
     });
   }

@@ -7,13 +7,12 @@ import type { BlurNode } from '../node-props';
 import { BlurValueSlider } from './blur-slider';
 import { useNodeImageUrl, useNodeResult } from '../../processor/processor-ctx';
 
-
 const BlurNodeComponent = memo((props: NodeProps<BlurNode>) => {
   const node = useAppSelector(makeSelectNodeById(props.id));
   const canvasRef = useRef<HTMLCanvasElement | null>(null);
   
   // Get processed result from processor
-  const { result, isProcessing, error } = useNodeResult(props.id);
+  const { isProcessing, error } = useNodeResult(props.id);
   const imageUrl = useNodeImageUrl(props.id);
   
   // Draw to canvas when result is ready
@@ -41,7 +40,7 @@ const BlurNodeComponent = memo((props: NodeProps<BlurNode>) => {
   return (
     <BaseNode {...props}>
       <div className="flex flex-col gap-3 ">
-          <div className="w-full media-container overflow-hidden rounded bg-black/5 relative">
+          <div className="w-full overflow-hidden rounded media-container relative">
             <canvas ref={canvasRef} className="block w-full h-auto" />
           </div>
 

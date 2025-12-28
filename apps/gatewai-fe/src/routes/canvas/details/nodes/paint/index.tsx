@@ -37,11 +37,17 @@ const PaintNodeComponent = memo((props: NodeProps<PaintNode>) => {
 
   const inputImageUrl = useNodeImageUrl(inputNodeId);
   const handles = useAppSelector(makeSelectHandlesByNodeId(props.id));
+
+
   const imageRef = useRef<HTMLImageElement>(null);
   const canvasRef = useRef<HTMLCanvasElement>(null);
+
+
   const [brushSize, setBrushSize] = useState(20);
   const [brushColor, setBrushColor] = useState('#FFFFFF');
   const [tool, setTool] = useState<'brush' | 'eraser'>('brush');
+
+
   const isDrawingRef = useRef(false);
   const lastPositionRef = useRef<{ x: number; y: number } | null>(null);
   const needsUpdateRef = useRef(false);
@@ -95,7 +101,7 @@ const PaintNodeComponent = memo((props: NodeProps<PaintNode>) => {
     }
     dispatch(updateNodeResult({ id: props.id, newResult }));
   }, [result?.outputs, result?.selectedOutputIndex, dispatch, props.id, handles]);
-
+  console.log({paintOutput})
   // Set up canvas dimensions on image load
   const handleImageLoad = useCallback(() => {
     const image = imageRef.current;
