@@ -27,7 +27,7 @@ type DragState = {
   startX: number;
   startY: number;
   startCrop: Crop;
-} | null;
+};
 
 const CropNodeComponent = memo((props: NodeProps<CropNode>) => {
   const dispatch = useAppDispatch();
@@ -50,12 +50,23 @@ const CropNodeComponent = memo((props: NodeProps<CropNode>) => {
     widthPercentage: nodeConfig?.widthPercentage ?? 100,
     heightPercentage: nodeConfig?.heightPercentage ?? 100,
   });
-  const [dragState, setDragState] = useState<DragState>(null);
+  const [dragState, setDragState] = useState<DragState | null>(null);
+  const latestCropRef = useRef(crop);
+
+  // Keep ref in sync with crop state
+  useEffect(() => {
+    latestCropRef.current = crop;
+  }, [crop]);
 
   // Sync local crop with node config
   useEffect(() => {
     if (nodeConfig) {
-      setCrop(nodeConfig);
+      setCrop({
+        leftPercentage: nodeConfig.leftPercentage ?? 0,
+        topPercentage: nodeConfig.topPercentage ?? 0,
+        widthPercentage: nodeConfig.widthPercentage ?? 100,
+        heightPercentage: nodeConfig.heightPercentage ?? 100,
+      });
     }
   }, [nodeConfig]);
 
@@ -63,14 +74,30 @@ const CropNodeComponent = memo((props: NodeProps<CropNode>) => {
     dispatch(updateNodeConfig({ id: props.id, newConfig: newCrop }));
   }, [dispatch, props.id]);
 
-  const constrainCrop = (newCrop: Crop): Crop => ({
-    leftPercentage: Math.max(0, Math.min(100 - newCrop.widthPercentage, newCrop.leftPercentage)),
-    topPercentage: Math.max(0, Math.min(100 - newCrop.heightPercentage, newCrop.topPercentage)),
-    widthPercentage: Math.max(1, Math.min(100 - newCrop.leftPercentage, newCrop.widthPercentage)), // Min 1% to avoid zero
-    heightPercentage: Math.max(1, Math.min(100 - newCrop.topPercentage, newCrop.heightPercentage)),
-  });
+  const constrainCrop = useCallback((newCrop: Crop): Crop => {
+    let { leftPercentage, topPercentage, widthPercentage, heightPercentage } = newCrop;
+    
+    // Ensure minimum dimensions
+    widthPercentage = Math.max(5, widthPercentage);
+    heightPercentage = Math.max(5, heightPercentage);
+    
+    // Clamp width and height to 100% max
+    widthPercentage = Math.min(100, widthPercentage);
+    heightPercentage = Math.min(100, heightPercentage);
+    
+    // Clamp position so crop box stays within image bounds
+    leftPercentage = Math.max(0, Math.min(100 - widthPercentage, leftPercentage));
+    topPercentage = Math.max(0, Math.min(100 - heightPercentage, topPercentage));
+    
+    return {
+      leftPercentage,
+      topPercentage,
+      widthPercentage,
+      heightPercentage,
+    };
+  }, []);
 
-  const handleMouseDown = useCallback((e: React.MouseEvent, type: DragState['type']) => {
+  const handleMouseDown = useCallback((e: React.MouseEvent, type: DragState["type"]) => {
     e.preventDefault();
     e.stopPropagation();
     setDragState({
@@ -138,7 +165,8 @@ const CropNodeComponent = memo((props: NodeProps<CropNode>) => {
     };
 
     const handleMouseUp = () => {
-      updateConfig(crop);
+      // Use the latest crop value from ref to avoid stale closure
+      updateConfig(latestCropRef.current);
       setDragState(null);
     };
 
@@ -149,7 +177,7 @@ const CropNodeComponent = memo((props: NodeProps<CropNode>) => {
       document.removeEventListener('mousemove', handleMouseMove);
       document.removeEventListener('mouseup', handleMouseUp);
     };
-  }, [dragState, crop, updateConfig]);
+  }, [dragState, constrainCrop, updateConfig]);
 
   console.log('CropNodeComponent render', { inputImageUrl, isProcessing, error });
 
@@ -167,61 +195,105 @@ const CropNodeComponent = memo((props: NodeProps<CropNode>) => {
               alt="Input image for cropping"
               draggable={false}
             />
+            
+            {/* Dark overlay for cropped-out areas */}
+            <div className="absolute inset-0 pointer-events-none">
+              <svg width="100%" height="100%" className="absolute inset-0">
+                <defs>
+                  <mask id={`crop-mask-${props.id}`}>
+                    <rect width="100%" height="100%" fill="white" />
+                    <rect
+                      x={`${crop.leftPercentage}%`}
+                      y={`${crop.topPercentage}%`}
+                      width={`${crop.widthPercentage}%`}
+                      height={`${crop.heightPercentage}%`}
+                      fill="black"
+                    />
+                  </mask>
+                </defs>
+                <rect
+                  width="100%"
+                  height="100%"
+                  fill="rgba(0, 0, 0, 0.6)"
+                  mask={`url(#crop-mask-${props.id})`}
+                />
+              </svg>
+            </div>
+
+            {/* Crop selection box */}
             <div
-              className="absolute box-border border-2 border-blue-500 bg-blue-200/10"
+              className="absolute box-border border-2 border-white shadow-lg"
               style={{
                 left: `${crop.leftPercentage}%`,
                 top: `${crop.topPercentage}%`,
                 width: `${crop.widthPercentage}%`,
                 height: `${crop.heightPercentage}%`,
                 cursor: dragState?.type === 'move' ? 'grabbing' : 'grab',
+                boxShadow: '0 0 0 1px rgba(0, 0, 0, 0.5), 0 0 0 9999px rgba(0, 0, 0, 0)',
               }}
               onMouseDown={(e) => handleMouseDown(e, 'move')}
             >
               {/* Corner handles */}
               <div
-                className="absolute -top-1.5 -left-1.5 w-3 h-3 bg-blue-500 rounded-full cursor-nw-resize"
+                className="absolute -top-2 -left-2 w-4 h-4 bg-white border-2 border-blue-500 rounded-full cursor-nw-resize shadow-md hover:scale-110 transition-transform"
                 onMouseDown={(e) => handleMouseDown(e, 'resize-nw')}
               />
               <div
-                className="absolute -top-1.5 -right-1.5 w-3 h-3 bg-blue-500 rounded-full cursor-ne-resize"
+                className="absolute -top-2 -right-2 w-4 h-4 bg-white border-2 border-blue-500 rounded-full cursor-ne-resize shadow-md hover:scale-110 transition-transform"
                 onMouseDown={(e) => handleMouseDown(e, 'resize-ne')}
               />
               <div
-                className="absolute -bottom-1.5 -left-1.5 w-3 h-3 bg-blue-500 rounded-full cursor-sw-resize"
+                className="absolute -bottom-2 -left-2 w-4 h-4 bg-white border-2 border-blue-500 rounded-full cursor-sw-resize shadow-md hover:scale-110 transition-transform"
                 onMouseDown={(e) => handleMouseDown(e, 'resize-sw')}
               />
               <div
-                className="absolute -bottom-1.5 -right-1.5 w-3 h-3 bg-blue-500 rounded-full cursor-se-resize"
+                className="absolute -bottom-2 -right-2 w-4 h-4 bg-white border-2 border-blue-500 rounded-full cursor-se-resize shadow-md hover:scale-110 transition-transform"
                 onMouseDown={(e) => handleMouseDown(e, 'resize-se')}
               />
-              {/* Side handles */}
-              <div
-                className="absolute -top-1.5 left-1/2 -ml-1.5 w-3 h-3 bg-blue-500 rounded-full cursor-n-resize"
-                onMouseDown={(e) => handleMouseDown(e, 'resize-n')}
-              />
-              <div
-                className="absolute -bottom-1.5 left-1/2 -ml-1.5 w-3 h-3 bg-blue-500 rounded-full cursor-s-resize"
-                onMouseDown={(e) => handleMouseDown(e, 'resize-s')}
-              />
-              <div
-                className="absolute top-1/2 -left-1.5 -mt-1.5 w-3 h-3 bg-blue-500 rounded-full cursor-w-resize"
-                onMouseDown={(e) => handleMouseDown(e, 'resize-w')}
-              />
-              <div
-                className="absolute top-1/2 -right-1.5 -mt-1.5 w-3 h-3 bg-blue-500 rounded-full cursor-e-resize"
-                onMouseDown={(e) => handleMouseDown(e, 'resize-e')}
-              />
+              
+              {/* Side handles - only show if crop box is large enough */}
+              {crop.widthPercentage > 15 && (
+                <>
+                  <div
+                    className="absolute -top-2 left-1/2 -ml-2 w-4 h-4 bg-white border-2 border-blue-500 rounded-full cursor-n-resize shadow-md hover:scale-110 transition-transform"
+                    onMouseDown={(e) => handleMouseDown(e, 'resize-n')}
+                  />
+                  <div
+                    className="absolute -bottom-2 left-1/2 -ml-2 w-4 h-4 bg-white border-2 border-blue-500 rounded-full cursor-s-resize shadow-md hover:scale-110 transition-transform"
+                    onMouseDown={(e) => handleMouseDown(e, 'resize-s')}
+                  />
+                </>
+              )}
+              {crop.heightPercentage > 15 && (
+                <>
+                  <div
+                    className="absolute top-1/2 -left-2 -mt-2 w-4 h-4 bg-white border-2 border-blue-500 rounded-full cursor-w-resize shadow-md hover:scale-110 transition-transform"
+                    onMouseDown={(e) => handleMouseDown(e, 'resize-w')}
+                  />
+                  <div
+                    className="absolute top-1/2 -right-2 -mt-2 w-4 h-4 bg-white border-2 border-blue-500 rounded-full cursor-e-resize shadow-md hover:scale-110 transition-transform"
+                    onMouseDown={(e) => handleMouseDown(e, 'resize-e')}
+                  />
+                </>
+              )}
+
+              {/* Rule of thirds grid lines */}
+              <div className="absolute inset-0 pointer-events-none opacity-50">
+                <div className="absolute left-1/3 top-0 bottom-0 w-px bg-white/50" />
+                <div className="absolute left-2/3 top-0 bottom-0 w-px bg-white/50" />
+                <div className="absolute top-1/3 left-0 right-0 h-px bg-white/50" />
+                <div className="absolute top-2/3 left-0 right-0 h-px bg-white/50" />
+              </div>
             </div>
 
             {isProcessing && (
-              <div className="absolute inset-0 flex items-center justify-center bg-white/50">
-                <span className="text-sm text-gray-600">Processing...</span>
+              <div className="absolute inset-0 flex items-center justify-center bg-white/50 backdrop-blur-sm">
+                <span className="text-sm text-gray-600 font-medium">Processing...</span>
               </div>
             )}
             {error && (
-              <div className="absolute inset-0 flex items-center justify-center bg-red-50/90">
-                <div className="text-sm text-red-600">Error: {error}</div>
+              <div className="absolute inset-0 flex items-center justify-center bg-red-50/90 backdrop-blur-sm">
+                <div className="text-sm text-red-600 font-medium">Error: {error}</div>
               </div>
             )}
           </div>
