@@ -146,20 +146,23 @@ const PaintNodeComponent = memo((props: NodeProps<PaintNode>) => {
     ctx.clearRect(0, 0, canvas.width, canvas.height);
     ctx.lineCap = 'round';
     ctx.lineJoin = 'round';
-
-    if (paintOutput?.data.dataUrl) {
-      const img = new Image();
-      img.src = paintOutput?.data.dataUrl;
-      img.onload = () => {
-        ctx.drawImage(img, 0, 0, canvas.width, canvas.height);
+    console.log('paintOutput?.data.dataUrl', paintOutput?.data.dataUrl)
+    if (paintOutput) {
+      if (paintOutput?.data.dataUrl) {
+        const img = new Image();
+        img.src = paintOutput?.data.dataUrl;
+        img.onload = () => {
+          ctx.drawImage(img, 0, 0, canvas.width, canvas.height);
+          initializedRef.current = true;
+        };
+      } else {
+        // ctx.fillStyle = backgroundColor;
+        ctx.fillRect(0, 0, canvas.width, canvas.height);
+        updateResult(canvas.toDataURL('image/png'));
         initializedRef.current = true;
-      };
-    } else {
-      // ctx.fillStyle = backgroundColor;
-      ctx.fillRect(0, 0, canvas.width, canvas.height);
-      updateResult(canvas.toDataURL('image/png'));
-      initializedRef.current = true;
+      }
     }
+    console.log({"init": "s"})
   }, [inputImageUrl, paintOutput, nodeConfig?.width, nodeConfig?.height, updateResult]);
 
   const getScaledCoordinates = useCallback((e: React.MouseEvent<HTMLCanvasElement>) => {

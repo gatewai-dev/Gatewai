@@ -3,6 +3,7 @@ import { Application, Assets, Sprite, BlurFilter, Container, Graphics } from 'pi
 class PixiProcessorService {
   private app: Application | null = null;
 
+  // Initialize a single shared, background Pixi Application
   private async init() {
     if (this.app) return;
 
