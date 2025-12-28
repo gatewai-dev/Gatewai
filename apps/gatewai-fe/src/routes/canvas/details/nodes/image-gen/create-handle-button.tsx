@@ -21,7 +21,7 @@ function CreateHandleButton({nodeProps, ...restProps}: CreateHandleButtonProps) 
             required: false,
             order: 2,
             templateHandleId: null,
-            label: 'Reference Image 2',
+            label: 'Reference Image',
             createdAt: new Date().toISOString(),
             updatedAt: new Date().toISOString(),
         };

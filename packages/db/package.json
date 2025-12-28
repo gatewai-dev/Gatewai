@@ -41,6 +41,7 @@
   "dependencies": {
     "@prisma/adapter-pg": "^6.19.0",
     "@prisma/client": "^6.19.0",
-    "dotenv": "^17.2.0"
+    "dotenv": "^17.2.0",
+    "json-schema-to-zod": "^2.7.0"
   }
 }

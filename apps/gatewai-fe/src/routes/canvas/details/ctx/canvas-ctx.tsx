@@ -2,6 +2,7 @@ import { createContext, useCallback, useContext, useEffect, useMemo, useRef, typ
 import {
   getConnectedEdges,
   getOutgoers,
+  useUpdateNodeInternals,
   type Connection,
   type Edge,
   type EdgeChange,
@@ -63,6 +64,7 @@ const CanvasProvider = ({
 }>) => {
 
   const { addBatch } = useTaskManagerCtx();
+  const updateNodeInternals = useUpdateNodeInternals();
   const dispatch = useAppDispatch();
   const store = useStore();
   const rfInstance = useRef<ReactFlowInstance | undefined>(undefined);
@@ -184,8 +186,10 @@ const CanvasProvider = ({
 
   const createNewHandle = useCallback((newHandle: HandleEntityType) => {
     dispatch(createHandleEntity(newHandle));
+    // When adding handles, we need to notify React Flow to update its internals
+    updateNodeInternals(newHandle.nodeId);
     scheduleSave();
-  }, [dispatch, scheduleSave]);
+  }, [dispatch, scheduleSave, updateNodeInternals]);
 
   const onNodesChange = useCallback((changes: NodeChange<Node>[]) => {
     dispatch(onNodeChange(changes));

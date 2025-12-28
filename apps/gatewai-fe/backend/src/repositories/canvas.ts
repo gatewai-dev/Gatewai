@@ -144,4 +144,28 @@ function getInputValuesByType(
   return values;
 }
 
-export { GetCanvasEntities, resolveSourceValue, getInputValue, getInputValuesByType }
+function getAllOutputHandles(
+  data: CanvasCtxData,
+  nodeId: string,
+) {
+  return data.handles.filter(
+    (e) => e.nodeId === nodeId
+  )
+}
+
+function getAllInputValuesWithHandle(
+  data: CanvasCtxData,
+  targetNodeId: string,
+) {
+  const incoming = data.edges.filter(
+    (e) => e.target === targetNodeId
+  )
+
+  const values = incoming.map(edge => ({
+    handle: data.handles.find((h) => h.id === edge.targetHandleId),
+    value: resolveSourceValue(data, edge)
+  }));
+  return values;
+}
+
+export { GetCanvasEntities, resolveSourceValue, getInputValue, getAllOutputHandles, getAllInputValuesWithHandle, getInputValuesByType }

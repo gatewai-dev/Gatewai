@@ -15,7 +15,7 @@ import {
 } from "@/components/ui/select"
 import { Input } from "@/components/ui/input"
 import { Textarea } from "@/components/ui/textarea"
-import { Form, FormControl, FormField, FormItem, FormLabel, FormMessage } from "@/components/ui/form"
+import { Form, FormControl, FormDescription, FormField, FormItem, FormLabel, FormMessage } from "@/components/ui/form"
 import type { HandleEntityType } from "@/store/handles";
 import type { AnyNode } from "../node-props";
 import type { NodeProps } from "@xyflow/react";
@@ -25,6 +25,7 @@ import { zodResolver } from "@hookform/resolvers/zod"
 import * as z from "zod"
 import { useState } from "react"
 import { PlusIcon } from "lucide-react"
+import { generateId } from "@/lib/idgen"
 
 const InputTypes = ['Image', 'Text', 'Audio', 'Video', 'File'] as const;
 const OutputTypes = ['Image', 'Text', 'Audio', 'Video', 'File'] as const;
@@ -63,7 +64,7 @@ function AddCustomHandleButton(props: CustomHandleButtonProps) {
 
     const onSubmit = (values: FormValues) => {
         const handleEntity: HandleEntityType = {
-            id: crypto.randomUUID(),
+            id: generateId(),
             nodeId: props.nodeProps.id,
             dataTypes: [values.dataType],
             type: props.type,
@@ -122,7 +123,7 @@ function AddCustomHandleButton(props: CustomHandleButtonProps) {
                                 <FormItem>
                                     <FormLabel>Label</FormLabel>
                                     <FormControl>
-                                        <Input placeholder="Enter label" {...field} value={field.value ?? ""} />
+                                        <Input placeholder="E.g. Product Image" {...field} value={field.value ?? ""} />
                                     </FormControl>
                                     <FormMessage />
                                 </FormItem>
@@ -135,8 +136,9 @@ function AddCustomHandleButton(props: CustomHandleButtonProps) {
                                 <FormItem>
                                     <FormLabel>Description</FormLabel>
                                     <FormControl>
-                                        <Textarea placeholder="Enter description" {...field} value={field.value ?? ""} />
+                                        <Textarea placeholder="E.g. The image of product in lightning." {...field} value={field.value ?? ""} />
                                     </FormControl>
+                                    <FormDescription>Please provide a precise description; the AI agent will use it to populate the data accurately.</FormDescription>
                                     <FormMessage />
                                 </FormItem>
                             )}

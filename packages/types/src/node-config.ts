@@ -23,12 +23,6 @@ const CrawlerNodeConfigSchema = z.object({
   url: z.string().url().optional(),
 }).strict();
 
-
-// Agent Node
-const AgentNodeConfigSchema = z.object({
-  prompt: z.string().optional(),
-}).strict();
-
 // 3D Node
 const ThreeDNodeConfigSchema = z.object({}).strict();
 
@@ -80,13 +74,15 @@ const LLM_NODE_MODELS = [
   'openai/gpt-5-pro',
   'openai/gpt-5.1-instant',
   'openai/gpt-5.1-thinking',
+  'google/gemini-3-pro-preview',
+  'google/gemini-2.5-flash',
   'xai/grok-4',
   'xai/grok-4.1-fast-reasoning',
   'xai/grok-4.1-fast-non-reasoning',
   'anthropic/claude-opus-4.5',
   'anthropic/claude-haiku-4.5',
+  'anthropic/claude-sonnet-4.5',
   'anthropic/claude-opus-4.1',
-  'anthropic/claude-opus-4',
   'perplexity/sonar-pro',
   'perplexity/sonar',
   'perplexity/sonar-reasoning',
@@ -99,8 +95,27 @@ const LLMNodeConfigSchema = z.object({
   model: z.enum(LLM_NODE_MODELS),
   temperature: z.number().min(0).max(2).optional().default(0),
 }).strict();
-// Array Node
-const ArrayNodeConfigSchema = z.object({}).strict();
+
+const AGENT_NODE_MODELS = [
+  'google/gemini-3-pro-preview',
+  'google/gemini-2.5-flash',
+  'openai/gpt-5-chat',
+  'openai/gpt-5-pro',
+  'openai/gpt-5.1-thinking',
+  'xai/grok-4.1-fast-reasoning',
+  'anthropic/claude-opus-4.5',
+  'anthropic/claude-opus-4.1',
+  'perplexity/sonar-pro',
+  'perplexity/sonar',
+  'perplexity/sonar-reasoning',
+  'meta/llama-3.3-70b',
+  'deepseek/deepseek-v3.2',
+] as const
+
+const AgentNodeConfigSchema = z.object({
+  model: z.enum(AGENT_NODE_MODELS),
+  maxTurns: z.number().int().min(1).optional().default(10),
+}).strict();
 
 // Resize Node
 const ResizeNodeConfigSchema = z.object({
@@ -126,16 +141,15 @@ const NodeConfigSchema = z.union([
   CompositorNodeConfigSchema,
   DescriberNodeConfigSchema,
   RouterNodeConfigSchema,
-  ArrayNodeConfigSchema,
   ResizeNodeConfigSchema,
 ]);
 
 // Inferred types
 type TextNodeConfig = z.infer<typeof TextNodeConfigSchema>;
+type AgentNodeConfig = z.infer<typeof AgentNodeConfigSchema>;
 type LLMNodeConfig = z.infer<typeof LLMNodeConfigSchema>;
 type FileNodeConfig = z.infer<typeof FileNodeConfigSchema>;
 type CrawlerNodeConfig = z.infer<typeof CrawlerNodeConfigSchema>;
-type AgentNodeConfig = z.infer<typeof AgentNodeConfigSchema>;
 type ThreeDNodeConfig = z.infer<typeof ThreeDNodeConfigSchema>;
 type MaskNodeConfig = z.infer<typeof MaskNodeConfigSchema>;
 type PainterNodeConfig = z.infer<typeof PainterNodeConfigSchema>;
@@ -144,7 +158,6 @@ type CompositorLayerUpdates = z.infer<typeof CompositorLayerUpdatesSchema>;
 type CompositorNodeConfig = z.infer<typeof CompositorNodeConfigSchema>;
 type DescriberNodeConfig = z.infer<typeof DescriberNodeConfigSchema>;
 type RouterNodeConfig = z.infer<typeof RouterNodeConfigSchema>;
-type ArrayNodeConfig = z.infer<typeof ArrayNodeConfigSchema>;
 type ResizeNodeConfig = z.infer<typeof ResizeNodeConfigSchema>;
 type AllNodeConfig = z.infer<typeof NodeConfigSchema>;
 type ImageGenConfig = z.infer<typeof ImageGenNodeConfigSchema>;
@@ -163,7 +176,6 @@ export {
   DescriberNodeConfigSchema,
   LLMNodeConfigSchema,
   RouterNodeConfigSchema,
-  ArrayNodeConfigSchema,
   ResizeNodeConfigSchema,
   CompositorLayerUpdatesSchema,
   type TextNodeConfig,
@@ -179,10 +191,10 @@ export {
   type CompositorNodeConfig,
   type DescriberNodeConfig,
   type RouterNodeConfig,
-  type ArrayNodeConfig,
   type ResizeNodeConfig,
   type AllNodeConfig,
   type ImageGenConfig,
   LLM_NODE_MODELS,
   IMAGEGEN_NODE_MODELS,
+  AGENT_NODE_MODELS,
 };

@@ -16,11 +16,14 @@ export async function SEED_createNodeTemplates(prisma: PrismaClient) {
       isTransient: false,
       templateHandles: {
         create: [
-          { type: HandleType.Input, dataTypes: [DataType.Text], label: "System Input", required: true },
-          { type: HandleType.Input, dataTypes: [DataType.Text], label: "Prompt", required: true },
+          { type: HandleType.Input, dataTypes: [DataType.Text], label: "System Prompt", required: true },
+          { type: HandleType.Input, dataTypes: [DataType.Text], label: "Instructions", required: true },
         ]
       },
-      defaultConfig: undefined,
+      defaultConfig: {
+        maxTurns: 10,
+        model: "anthropic/claude-opus-4.5",
+      },
     }
   });
   // Text: no input, single output Text
