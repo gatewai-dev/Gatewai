@@ -193,7 +193,7 @@ export class NodeGraphProcessor extends EventEmitter {
       const result = node.result as unknown as PaintResult;
       const nodeOutput = result.outputs[result.selectedOutputIndex];
       const nodeOutputItem = nodeOutput?.items?.find(f => f.type === 'Mask');
-
+      console.log({nodeOutputItem})
       if (!nodeOutputItem?.data.dataUrl) throw new Error('No mask data');
 
       const outputHandles = this.getOutputHandleEntities(node.id);

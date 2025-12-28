@@ -7,7 +7,7 @@ import type { CropNode } from '../node-props';
 import { useNodeImageUrl, useNodeResult } from '../../processor/processor-ctx';
 import type { CropNodeConfig } from '@gatewai/types';
 import { makeSelectEdgesByTargetNodeId } from '@/store/edges';
-import { MediaBackground } from '../common/media-background';
+import { cn } from '@/lib/utils';
 
 type Crop = {
   leftPercentage: number;
@@ -177,15 +177,17 @@ const CropNodeComponent = memo((props: NodeProps<CropNode>) => {
 
   return (
     <BaseNode {...props}>
-      <div className=" media-container w-full overflow-hidden bg-black/5 min-h-[100px] relative select-none">
-        <img
+      <div className={cn("media-container w-full overflow-hidden bg-black/5 relative select-none", {
+        'min-h-64': !inputImageUrl
+      })}>
+        {inputImageUrl && <img
           ref={imageRef}
           src={inputImageUrl}
           className="block w-full h-auto"
           alt="Input image for cropping"
           draggable={false}
-        />
-        
+        />}
+
         {/* Dark overlay for cropped-out areas */}
         <div className="absolute inset-0 pointer-events-none">
           <svg width="100%" height="100%" className="absolute inset-0">
@@ -259,7 +261,7 @@ const CropNodeComponent = memo((props: NodeProps<CropNode>) => {
             className="absolute -bottom-1 -right-1 w-2 h-2 bg-white/70 border border-blue-500/30 cursor-se-resize shadow-md hover:scale-110 transition-transform"
             onMouseDown={(e) => handleMouseDown(e, 'resize-se')}
           />
-          
+
           {/* Side handles - only show if crop box is large enough */}
           {crop.widthPercentage > 15 && (
             <>

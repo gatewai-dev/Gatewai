@@ -30,7 +30,6 @@
   "author": "Okan Aslankan <okn.aslnkn@gmail.com>",
   "license": "ISC",
   "devDependencies": {
-    "@gatewai/eslint-config": "workspace:*",
     "@gatewai/tsconfig": "workspace:*",
     "@types/node": "^24.0.4",
     "prisma": "^6.19.0",

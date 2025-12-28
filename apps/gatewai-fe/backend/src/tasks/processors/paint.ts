@@ -7,7 +7,7 @@ import { getInputValue } from '../resolvers.js';
 const paintProcessor: NodeProcessor = async ({ node, data }) => {
   try {
     // Get optional background image input
-    const backgroundInput = getInputValue(data, node.id, false, {
+    const backgroundInput = getInputValue(data, node.id, false, { 
       dataType: DataType.Image, 
       label: 'Background Image' 
     }) as FileData | null;

@@ -6,7 +6,6 @@
   "scripts": {
     "dev": "vite",
     "build": "tsc -b && vite build",
-    "lint": "eslint .",
     "preview": "vite preview",
     "be:dev": "tsx watch backend/src/index.ts",
     "be:build": "tsc ./backend",
@@ -97,7 +96,6 @@
     "zustand": "^5.0.8"
   },
   "devDependencies": {
-    "@eslint/js": "^9.33.0",
     "@gatewai/types": "workspace:*",
     "@types/color": "^4.2.0",
     "@types/node": "^20.11.17",
@@ -105,14 +103,10 @@
     "@types/react-dom": "^19.1.7",
     "@types/three": "^0.181.0",
     "@vitejs/plugin-react-swc": "^4.0.0",
-    "eslint": "^9.33.0",
-    "eslint-plugin-react-hooks": "^5.2.0",
-    "eslint-plugin-react-refresh": "^0.4.20",
     "globals": "^16.3.0",
     "tsx": "^4.20.3",
     "tw-animate-css": "^1.4.0",
     "typescript": "~5.8.3",
-    "typescript-eslint": "^8.39.1",
     "vite": "^7.1.2",
     "vite-plugin-wasm-pack": "^0.1.12"
   }

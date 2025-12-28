@@ -124,11 +124,8 @@ const PaintNodeComponent = memo((props: NodeProps<PaintNode>) => {
       img.onload = () => {
         ctx.drawImage(img, 0, 0, canvas.width, canvas.height);
       };
-    } else {
-      // Do not fill with backgroundColor when there's an input image; keep canvas transparent to show image underneath
-      updateResult(canvas.toDataURL('image/png'));
     }
-  }, [paintOutput, updateResult]);
+  }, [paintOutput]);
 
   useEffect(() => {
     if (inputImageUrl) return;
@@ -156,14 +153,14 @@ const PaintNodeComponent = memo((props: NodeProps<PaintNode>) => {
           initializedRef.current = true;
         };
       } else {
-        // ctx.fillStyle = backgroundColor;
+        if (nodeConfig?.backgroundColor) {
+          ctx.fillStyle = nodeConfig?.backgroundColor;
+        }
         ctx.fillRect(0, 0, canvas.width, canvas.height);
-        updateResult(canvas.toDataURL('image/png'));
-        initializedRef.current = true;
       }
     }
     console.log({"init": "s"})
-  }, [inputImageUrl, paintOutput, nodeConfig?.width, nodeConfig?.height, updateResult]);
+  }, [inputImageUrl, paintOutput, nodeConfig]);
 
   const getScaledCoordinates = useCallback((e: React.MouseEvent<HTMLCanvasElement>) => {
     const canvas = canvasRef.current;
@@ -266,16 +263,6 @@ const PaintNodeComponent = memo((props: NodeProps<PaintNode>) => {
             onMouseDown={handleMouseDown}
             onMouseMove={handleMouseMove}
           />
-          {isProcessing && (
-            <div className="absolute inset-0 flex items-center justify-center bg-white/50 backdrop-blur-sm">
-              <span className="text-sm text-gray-600 font-medium">Processing...</span>
-            </div>
-          )}
-          {error && (
-            <div className="absolute inset-0 flex items-center justify-center bg-red-50/90 backdrop-blur-sm">
-              <div className="text-sm text-red-600 font-medium">Error: {error}</div>
-            </div>
-          )}
         </div>
         <div className="flex flex-wrap gap-4 items-center text-sm">
           <div className="flex gap-2">
