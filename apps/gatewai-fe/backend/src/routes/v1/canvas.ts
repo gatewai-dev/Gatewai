@@ -10,7 +10,7 @@ import { NodeWFProcessor } from "../../tasks/node.js";
 
 const NodeTypes = [
     'Text', 'Preview', 'File', 'Export',
-    'Toggle', 'Crawler', 'Resize', 'Agent', 'Remote Agent', 'ThreeD',
+    'Toggle', 'Crawler', 'Resize', 'Agent', 'ThreeD',
     'Painter', 'Blur', 'Compositor', 'Describer', 'Router',
     'Note', 'Number', 'ImageGen', 'LLM'
 ] as const;
@@ -254,7 +254,7 @@ const canvasRoutes = new Hono<{Variables: AuthHonoTypes}>({
             }
         });
 
-        let txs: any[] = [deleteEdgesTx, deleteHandlesTx, deleteNodesTx];
+        const txs = [deleteEdgesTx, deleteHandlesTx, deleteNodesTx];
 
         // Canvas name update if provided
         let updateCanvasTx;

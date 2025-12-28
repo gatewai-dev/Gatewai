@@ -1,10 +1,11 @@
-import type { AgentNodeConfig, FileData, NodeResult } from '@gatewai/types';
+import type { AgentNodeConfig, FileData, NodeResult, Output, OutputItem } from '@gatewai/types';
 import type { NodeProcessor, NodeProcessorCtx } from './types.js';
 import { aisdk } from '@openai/agents-extensions';
 import { gateway } from 'ai';
 import { Agent, Runner, type AgentInputItem } from '@openai/agents';
 import { z, ZodObject, type UnknownKeysParam, type ZodRawShape } from 'zod';
 import { getAllInputValuesWithHandle, getAllOutputHandles, resolveFileUrl } from '../resolvers.js';
+import type { DataType } from '@gatewai/db';
 
 export const FileAssetSchema = z.object({
   id: z.string().cuid(),
@@ -37,16 +38,14 @@ function CreateOutputZodSchema(outputHandles: NodeProcessorCtx["data"]["handles"
     let handleZodObject: ZodObject<ZodRawShape, UnknownKeysParam> | undefined = undefined;
     if (dataType === 'File' || dataType === 'Image' || dataType === 'Audio' || dataType === 'Video') {
       handleZodObject = z.object({
-        items: z.array(z.object({
-          outputHandleId: z.literal(outputHandleId),
-          data: z.object({
-            file: z.object({
-              entity: FileAssetSchema.optional(),
-              dataUrl: z.string().optional(),
-            }),
+        outputHandleId: z.literal(outputHandleId),
+        data: z.object({
+          file: z.object({
+            entity: FileAssetSchema.optional(),
+            dataUrl: z.string().optional(),
           }),
-          type: z.literal(dataType),
-        }))
+        }),
+        type: z.literal(dataType),
       })
     } else {
       const zodType = typeMap[dataType];
@@ -54,11 +53,9 @@ function CreateOutputZodSchema(outputHandles: NodeProcessorCtx["data"]["handles"
         throw new Error(`Unsupported data type: ${dataType}`);
       }
       handleZodObject = z.object({
-        items: z.array(z.object({
-          outputHandleId: z.literal(outputHandleId),
-          data: zodType,
-          type: z.literal(dataType),
-        }))
+        outputHandleId: z.literal(outputHandleId),
+        data: zodType,
+        type: z.literal(dataType),
       })
     }
     const content = {
@@ -153,9 +150,22 @@ const aiAgentProcessor: NodeProcessor = async ({ node, data }) => {
      const run = await runner.run(agent, inputItems, {
         maxTurns: config.maxTurns || 10,
      });
-      const output = run.finalOutput as unknown as z.infer<ReturnType<typeof CreateOutputZodSchema>> as NodeResult;
-      const newResult = Object.keys(output);
-     console.log({newResult});
+      const output = run.finalOutput as unknown as z.infer<ReturnType<typeof CreateOutputZodSchema>>;
+      const newItems = Object.values(output) as OutputItem<DataType>[];
+      
+
+      const newResult: NodeResult = structuredClone(node.result as NodeResult) ?? {
+        outputs: [],
+        selectedOutputIndex: 0,
+      };
+
+      const newGeneration: Output = {
+        items: newItems,
+      };
+
+      newResult.outputs.push(newGeneration);
+      newResult.selectedOutputIndex = newResult.outputs.length - 1;
+    
       return { success: true, newResult };
     } catch (err: unknown) {
       if (err instanceof Error) {

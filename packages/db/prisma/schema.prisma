@@ -20,7 +20,6 @@ enum NodeType {
   Crawler
   Resize
   Agent
-  RemoteAgent
   ThreeD
   Painter
   Blur

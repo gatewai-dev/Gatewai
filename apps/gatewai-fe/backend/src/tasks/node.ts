@@ -155,8 +155,8 @@ export class NodeWFProcessor {
           },
         });
 
-        const node = data.nodes.find(n => n.id === nodeId)!;  // Use current in-memory data
-        const template = await this.prisma.nodeTemplate.findUnique({ where: { type: node.type } });  // Fetch template for isTransient
+        const node = data.nodes.find(n => n.id === nodeId)!;
+        const template = await this.prisma.nodeTemplate.findUnique({ where: { type: node.type } });
         const processor = nodeProcessors[node.type];
         if (!processor) {
           throw new Error(`No processor for node type ${node.type}.`);
