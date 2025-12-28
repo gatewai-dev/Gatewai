@@ -39,5 +39,5 @@ export async function applyResize(buffer: Buffer, width: number, height: number)
 
 export async function getImageDimensions(buffer: Buffer): Promise<{ width: number; height: number }> {
   const metadata = await sharp(buffer).metadata();
-  return { width: metadata.width ?? 0, height: metadata.height ?? 0 };
+  return { width: metadata.width, height: metadata.height };
 }

@@ -4,6 +4,7 @@ import type { NodeProcessor } from "./types.js";
 import resizeProcessor from "./resize.js";
 import llmProcessor from "./llm.js";
 import imageGenProcessor from "./image-gen.js";
+import aiAgentProcessor from "./ai-agent.js";
 
 
 const nodeProcessors: Partial<Record<NodeType, NodeProcessor>> = {
@@ -11,6 +12,7 @@ const nodeProcessors: Partial<Record<NodeType, NodeProcessor>> = {
   [NodeType.Resize]: resizeProcessor,
   [NodeType.LLM]: llmProcessor,
   [NodeType.ImageGen]: imageGenProcessor,
+  [NodeType.Agent]: aiAgentProcessor,
   // No processing needed for these node types
   [NodeType.File]: async ({ node }) => {
     return { success: true, result: node.result };

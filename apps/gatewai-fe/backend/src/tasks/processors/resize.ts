@@ -1,8 +1,8 @@
 import { DataType } from '@gatewai/db';
 import type { FileData, NodeResult, Output, OutputItem, ResizeNodeConfig } from '@gatewai/types';
-import { getInputValue } from '../../repositories/canvas.js';
 import { getImageBuffer, bufferToDataUrl, getMimeType, applyResize } from '../../utils/image.js';
 import type { NodeProcessor } from './types.js';
+import { getInputValue } from '../resolvers.js';
 
 const resizeProcessor: NodeProcessor = async ({ node, data }) => {
     try {

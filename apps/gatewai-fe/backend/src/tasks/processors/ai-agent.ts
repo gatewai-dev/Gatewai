@@ -1,10 +1,10 @@
-import type { AgentNodeConfig, FileResult } from '@gatewai/types';
-import { getAllInputValuesWithHandle, getAllOutputHandles } from '../../repositories/canvas.js';
+import type { AgentNodeConfig, FileData, NodeResult } from '@gatewai/types';
 import type { NodeProcessor, NodeProcessorCtx } from './types.js';
 import { aisdk } from '@openai/agents-extensions';
 import { gateway } from 'ai';
 import { Agent, Runner, type AgentInputItem } from '@openai/agents';
-import { z, ZodObject, ZodRawShape } from 'zod';
+import { z, ZodObject, type UnknownKeysParam, type ZodRawShape } from 'zod';
+import { getAllInputValuesWithHandle, getAllOutputHandles, resolveFileUrl } from '../resolvers.js';
 
 export const FileAssetSchema = z.object({
   id: z.string().cuid(),
@@ -23,34 +23,43 @@ export const FileAssetSchema = z.object({
 });
 
 function CreateOutputZodSchema(outputHandles: NodeProcessorCtx["data"]["handles"]) {
-  const dynamicSchema: Record<string, z.ZodTypeAny | FileResult> = {};
 
   const typeMap: Record<string, z.ZodTypeAny> = {
     'Text': z.string(),
-    'Image': z.string(),
-    'Audio': z.string(),
-    'Video': z.string(),
-    'File': z.string(),
+    'Number': z.number(),
+    'Boolean': z.boolean(),
   };
 
-    let fieldSchema: ZodRawShape = {};
+  let fieldSchema: ZodRawShape = {};
   for (const handle of outputHandles) {
     const outputHandleId = handle.id;
     const dataType = handle.dataTypes[0];
-    let handleZodObject: ZodObject | undefined = undefined;
+    let handleZodObject: ZodObject<ZodRawShape, UnknownKeysParam> | undefined = undefined;
     if (dataType === 'File' || dataType === 'Image' || dataType === 'Audio' || dataType === 'Video') {
-    handleZodObject = z.object({
-            items: z.array(z.object({
-                outputHandleId: z.literal(outputHandleId),
-                data: z.object({
-                    file: z.object({
-                        entity: FileAssetSchema.optional(),
-                        dataUrl: z.string().optional(),
-                    }),
-                }),
-                type: z.literal(dataType),
-            }))
-        })
+      handleZodObject = z.object({
+        items: z.array(z.object({
+          outputHandleId: z.literal(outputHandleId),
+          data: z.object({
+            file: z.object({
+              entity: FileAssetSchema.optional(),
+              dataUrl: z.string().optional(),
+            }),
+          }),
+          type: z.literal(dataType),
+        }))
+      })
+    } else {
+      const zodType = typeMap[dataType];
+      if (!zodType) {
+        throw new Error(`Unsupported data type: ${dataType}`);
+      }
+      handleZodObject = z.object({
+        items: z.array(z.object({
+          outputHandleId: z.literal(outputHandleId),
+          data: zodType,
+          type: z.literal(dataType),
+        }))
+      })
     }
     const content = {
         [outputHandleId]: handleZodObject
@@ -62,11 +71,10 @@ function CreateOutputZodSchema(outputHandles: NodeProcessorCtx["data"]["handles"
     }
   }
 
-  const resultSchema = z.object(fieldSchema);
-  return resultSchema;
+  return z.object(fieldSchema);
 }
 
-const llmProcessor: NodeProcessor = async ({ node, data }) => {
+const aiAgentProcessor: NodeProcessor = async ({ node, data }) => {
     try {
      const allInputs = getAllInputValuesWithHandle(data, node.id);
      const systemPromptData = allInputs.find(input => input?.handle?.label === 'System Prompt');
@@ -79,25 +87,20 @@ const llmProcessor: NodeProcessor = async ({ node, data }) => {
         return { success: false, error: 'Instructions is required' };
      }
 
+     const outputs = getAllOutputHandles(data, node.id);
+     const jsonSchema = CreateOutputZodSchema(outputs);
+     const config = node.config as unknown as AgentNodeConfig
      const dynamicInputs = allInputs.filter(input => {
         return input && input.handle && input.handle.id !== systemPromptData?.handle?.id && input.handle.id !== systemPromptData?.handle?.id;
      });
-
      type AgentContext = typeof dynamicInputs;
-
-     const outputs = getAllOutputHandles(data, node.id);
-
-     const jsonSchema = CreateOutputZodSchema(outputs);
-
-     const config = node.config as unknown as AgentNodeConfig
-
+  
      const agentModel = aisdk(gateway(config.model));
      const agent = new Agent<AgentContext>({
         instructions: systemPrompt,
-        model: agentModel,
         name: node.name,
+        outputType: jsonSchema,
      })
-
      const runner = new Runner({
         model: agentModel,
      })
@@ -106,11 +109,53 @@ const llmProcessor: NodeProcessor = async ({ node, data }) => {
         { role: 'user', content: [{type: 'input_text', text: prompt }] }
      ];
 
-     const run = await runner.run(agent, prompt, {
+     for (const input of dynamicInputs) {
+      if (!input.handle) continue;
+      if (input.handle.dataTypes[0] === 'Text' || input.handle.dataTypes[0] === 'Boolean' || input.handle.dataTypes[0] === 'Number') {
+        inputItems.push({
+          role: 'user',
+          content: [{ type: 'input_text', text: `${input.handle.label} ${input.handle.description}: ${input.value}` as string }]
+        });
+        continue;
+      } else if (input.handle.dataTypes[0] === 'Image') {
+        const fileData = input.value as FileData;
+        const file_url = await resolveFileUrl(fileData);
+        if (file_url) {
+          inputItems.push({
+            role: 'user',
+            content: [{ type: 'input_image', image: file_url}]
+          });
+        }
+        continue;
+      } else if (input.handle.dataTypes[0] === 'File') {
+        const fileData = input.value as FileData;
+        const file_url = await resolveFileUrl(fileData);
+        if (file_url) {
+          inputItems.push({
+            role: 'user',
+            content: [{ type: 'input_file', file: {url: file_url}}]
+          });
+        }
+        continue;
+      } else if (input.handle.dataTypes[0] === 'Audio') {
+        const fileData = input.value as FileData;
+        const file_url = await resolveFileUrl(fileData);
+        if (file_url) {
+          inputItems.push({
+            role: 'user',
+            content: [{ type: 'audio', audio: file_url}]
+          });
+        }
+        continue;
+      }
+     }
+
+     const run = await runner.run(agent, inputItems, {
         maxTurns: config.maxTurns || 10,
      });
-
-
+      const output = run.finalOutput as unknown as z.infer<ReturnType<typeof CreateOutputZodSchema>> as NodeResult;
+      const newResult = Object.keys(output);
+     console.log({newResult});
       return { success: true, newResult };
     } catch (err: unknown) {
       if (err instanceof Error) {
@@ -120,4 +165,4 @@ const llmProcessor: NodeProcessor = async ({ node, data }) => {
     }
   }
 
-  export default llmProcessor;
+  export default aiAgentProcessor;

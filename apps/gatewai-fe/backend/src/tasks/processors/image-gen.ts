@@ -1,12 +1,12 @@
 
 import { DataType, prisma } from '@gatewai/db';
-import type { FileData, ImageGenResult } from '@gatewai/types';
-import { getInputValue, getInputValuesByType } from '../../repositories/canvas.js';
+import type { FileData, ImageGenConfig, ImageGenResult } from '@gatewai/types';
 import type { NodeProcessor } from './types.js';
 import { generateText, type ModelMessage, type TextPart, type UserContent } from 'ai';
 import { generateSignedUrl, uploadToS3 } from '../../utils/s3.js';
 import { getImageDimensions } from '../../utils/image.js';
 import { randomUUID } from 'crypto';
+import { getInputValue, getInputValuesByType } from '../resolvers.js';
 
 const imageGenProcessor: NodeProcessor = async ({ node, data }) => {
     try {const userPrompt = getInputValue(data, node.id, true, { dataType: DataType.Text, label: 'Prompt' }) as string;
@@ -45,8 +45,11 @@ const imageGenProcessor: NodeProcessor = async ({ node, data }) => {
             ? (userContent[0] as string)
             : userContent,
       });
+
+      const config = node.config as ImageGenConfig;
+
       const result = await generateText({
-        model: 'google/gemini-2.5-flash-image',
+        model: config.model ?? 'google/gemini-2.5-flash-image',
         messages,
       });
 
