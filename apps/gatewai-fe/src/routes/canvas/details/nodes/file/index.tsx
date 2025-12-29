@@ -77,7 +77,7 @@ const FileNodeComponent = memo((props: NodeProps<FileNode>) => {
 	return (
 		<BaseNode {...props}>
 			<div className="flex flex-col gap-2">
-				{showResult && <MediaContent node={props} result={result} />}
+				{showResult && <MediaContent node={node} result={result} />}
 				{!showResult && (
 					<UploadDropzone
 						className="w-full py-16"

@@ -2,7 +2,7 @@ import type { NodeProps } from "@xyflow/react";
 import { memo, useEffect, useRef } from "react";
 import { useAppSelector } from "@/store";
 import { makeSelectNodeById } from "@/store/nodes";
-import { useNodeImageUrl, useNodeResult } from "../../processor/processor-ctx";
+import { useNodeImageUrl } from "../../processor/processor-ctx";
 import { BaseNode } from "../base";
 import type { BlurNode } from "../node-props";
 import { BlurValueSlider } from "./blur-slider";
@@ -10,9 +10,6 @@ import { BlurValueSlider } from "./blur-slider";
 const BlurNodeComponent = memo((props: NodeProps<BlurNode>) => {
 	const node = useAppSelector(makeSelectNodeById(props.id));
 	const canvasRef = useRef<HTMLCanvasElement | null>(null);
-
-	// Get processed result from processor
-	const { isProcessing, error } = useNodeResult(props.id);
 	const imageUrl = useNodeImageUrl(props.id);
 
 	// Draw to canvas when result is ready
@@ -26,7 +23,7 @@ const BlurNodeComponent = memo((props: NodeProps<BlurNode>) => {
 		const img = new Image();
 		img.crossOrigin = "anonymous";
 		img.src = imageUrl;
-
+		console.log('drw')
 		img.onload = () => {
 			canvas.width = img.width;
 			canvas.height = img.height;
@@ -37,7 +34,6 @@ const BlurNodeComponent = memo((props: NodeProps<BlurNode>) => {
 		};
 	}, [imageUrl]);
 
-	console.log("BlurNodeComponent render", { imageUrl, isProcessing, error });
 	return (
 		<BaseNode {...props}>
 			<div className="flex flex-col gap-3 ">

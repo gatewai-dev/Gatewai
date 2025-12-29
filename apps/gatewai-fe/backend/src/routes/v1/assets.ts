@@ -267,6 +267,7 @@ const assetsRouter = new Hono<{ Variables: AuthHonoTypes }>({
 			const headers = {
 				"Content-Type": asset.mimeType,
 				"Content-Disposition": `inline; filename="${asset.name}"`,
+				"Cache-Control": "public, max-age=31536000, immutable",
 			};
 			return c.body(buffer, { headers });
 		} catch (error) {

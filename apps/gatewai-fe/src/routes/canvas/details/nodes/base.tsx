@@ -1,4 +1,3 @@
-import type { NodeResult } from "@gatewai/types";
 import {
 	type ConnectionLineComponentProps,
 	type EdgeProps,
@@ -7,24 +6,14 @@ import {
 	type Node,
 	type NodeProps,
 	Position,
-	useEdges,
 } from "@xyflow/react";
 import { type JSX, memo, type ReactNode, useMemo } from "react";
 import { dataTypeColors } from "@/config";
 import { cn } from "@/lib/utils";
 import type { CanvasDetailsNode } from "@/rpc/types";
 import { useAppSelector } from "@/store";
-import { makeSelectEdgeById } from "@/store/edges";
-import {
-	makeSelectHandleById,
-	makeSelectHandlesByNodeId,
-} from "@/store/handles";
+import { makeSelectHandlesByNodeId } from "@/store/handles";
 import { makeSelectNodeById } from "@/store/nodes";
-import {
-	useMultipleNodeResults,
-	useNodeResult,
-} from "../processor/processor-ctx";
-import { useNodeInputValidation } from "./hooks/use-node-input-validation";
 import { NodeMenu } from "./node-menu";
 
 const getColorForType = (type: string) => {
@@ -38,15 +27,6 @@ const getColorForType = (type: string) => {
 	);
 };
 
-const getActualType = (result: NodeResult | null, handleId: string) => {
-	if (!result) return null;
-	const selectedIndex = result.selectedOutputIndex ?? 0;
-	const output = result.outputs?.[selectedIndex];
-	if (!output) return null;
-	const item = output.items?.find((it) => it.outputHandleId === handleId);
-	return item?.type ?? null;
-};
-
 const BaseNode = memo(
 	(
 		props: NodeProps<Node<CanvasDetailsNode>> & {
@@ -56,45 +36,16 @@ const BaseNode = memo(
 	) => {
 		const { selected, id } = props;
 		const handles = useAppSelector(makeSelectHandlesByNodeId(id));
-		const validationErrors = useNodeInputValidation(id);
-		const edges = useEdges();
 		const node = useAppSelector(makeSelectNodeById(id));
 
-		// 1. Separate and Sort Handles
-		// We use useMemo to avoid re-sorting on every render unless data.handles changes
+		// Sort handles by order
 		const { inputs, outputs } = useMemo(() => {
-			// Sort by 'order' property from DB
 			const sorted = handles.sort((a, b) => a.order - b.order);
 			return {
 				inputs: sorted.filter((h) => h.type === "Input"),
 				outputs: sorted.filter((h) => h.type === "Output"),
 			};
 		}, [handles]);
-
-		const connectedSources = useMemo(() => {
-			const sources: Record<string, string> = {};
-			inputs.forEach((handle) => {
-				const edge = edges.find(
-					(e) => e.target === id && e.targetHandle === handle.id,
-				);
-				if (edge) {
-					sources[handle.id] = edge.source;
-				}
-			});
-			return sources;
-		}, [inputs, edges, id]);
-
-		const allRelevantNodeIds = useMemo(() => {
-			const ids = new Set<string>([id]);
-			Object.values(connectedSources).forEach((s) => {
-				ids.add(s);
-			});
-			return Array.from(ids);
-		}, [id, connectedSources]);
-
-		const nodeStates = useMultipleNodeResults(allRelevantNodeIds);
-
-		const ownResult = nodeStates[id]?.result ?? null;
 
 		const nodeBackgroundColor = "bg-background";
 
@@ -110,30 +61,11 @@ const BaseNode = memo(
 				)}
 			>
 				{inputs.map((handle, i) => {
-					let actualType: string | null = null;
-					const edge = edges.find(
-						(edge) => edge.target === id && edge.targetHandle === handle.id,
-					);
-					const isConnected = !!edge;
-					if (isConnected && edge) {
-						const sourceNodeId = edge.source;
-						const sourceResult = nodeStates[sourceNodeId]?.result ?? null;
-						actualType = getActualType(sourceResult, edge.sourceHandle!);
-					}
 					const primaryType =
 						handle.dataTypes.length > 1 ? "Any" : handle.dataTypes[0] || "Any";
-					const displayType = actualType ?? primaryType;
-					const color = getColorForType(displayType);
-					const topPosition = `${(i + 1) * (30) + 20}px`;
-					const error = validationErrors.find(
-						(err) => err.handleId === handle.id,
-					);
-					const isInvalid = !!error;
-					const borderStyle = isInvalid
-						? "4px solid red"
-						: isConnected
-							? `4px solid ${color.hex}`
-							: `2px dashed ${color.hex}`;
+					const color = getColorForType(primaryType);
+					const topPosition = `${(i + 1) * 30 + 20}px`;
+
 					return (
 						<div
 							key={handle.id}
@@ -147,7 +79,7 @@ const BaseNode = memo(
 								tabIndex={0}
 								style={{
 									background: "transparent",
-									border: borderStyle,
+									border: `2px dashed ${color.hex}`,
 								}}
 								className={`w-5 h-5 flex items-center justify-center transition-all duration-200 left-[50%]! rounded-none!`}
 							/>
@@ -157,11 +89,10 @@ const BaseNode = memo(
               px-1 py-1 text-xs opacity-0 group-hover:opacity-100 group-focus:opacity-100
                 group-focus-within:opacity-100 in-[.selected]:opacity-100 transition-all duration-200 pointer-events-none
                 whitespace-nowrap font-medium text-right`}
-								style={{ color: isInvalid ? "red" : color.hex }}
+								style={{ color: color.hex }}
 							>
 								{handle.label || handle.dataTypes.join(" | ")}
 								{handle.required && "*"}
-								{isInvalid && ` (${error.error})`}
 							</span>
 						</div>
 					);
@@ -180,16 +111,10 @@ const BaseNode = memo(
 				</div>
 
 				{outputs.map((handle, i) => {
-					const actualType = getActualType(ownResult, handle.id);
 					const primaryType =
 						handle.dataTypes.length > 1 ? "Any" : handle.dataTypes[0] || "Any";
-					const displayType = actualType ?? primaryType;
-					const color = getColorForType(displayType);
-					// Calculate dynamic top position
-					const topPosition = `${(i + 1) * (30) + 20}px`;
-					const isConnected = edges.some(
-						(edge) => edge.source === id && edge.sourceHandle === handle.id,
-					);
+					const color = getColorForType(primaryType);
+					const topPosition = `${(i + 1) * 30 + 20}px`;
 
 					return (
 						<div
@@ -204,9 +129,7 @@ const BaseNode = memo(
 								tabIndex={0}
 								style={{
 									background: "transparent",
-									border: isConnected
-										? `4px solid ${color.hex}`
-										: `2px dashed ${color.hex}`,
+									border: `2px dashed ${color.hex}`,
 								}}
 								className={`w-5 h-5 flex items-center justify-center transition-all duration-200 rounded-none! right-[50%]!`}
 							/>
@@ -239,8 +162,6 @@ const CustomConnectionLine = memo(
 		toY,
 		fromPosition,
 		toPosition,
-		fromNode,
-		fromHandle,
 	}: ConnectionLineComponentProps<Node>): JSX.Element => {
 		const [edgePath] = getBezierPath({
 			sourceX: fromX,
@@ -251,25 +172,11 @@ const CustomConnectionLine = memo(
 			targetPosition: toPosition,
 		});
 
-		const handle = useAppSelector(makeSelectHandleById(fromHandle.id!));
-		const { result } = useNodeResult(fromNode.id);
-
-		if (!handle) {
-			return <></>;
-		}
-
-		const primaryType =
-			handle.dataTypes.length > 1 ? "Any" : handle.dataTypes[0] || "Any";
-		const actualType =
-			handle.type === "Output" ? getActualType(result, fromHandle.id!) : null;
-		const displayType = actualType ?? primaryType;
-		const color = getColorForType(displayType).hex;
-
 		return (
 			<g>
 				<path
 					fill="none"
-					stroke={color}
+					stroke="#6b7280"
 					strokeWidth={3}
 					d={edgePath}
 					strokeDasharray="5 15"
@@ -296,8 +203,6 @@ interface CustomEdgeProps extends EdgeProps {
 	targetPosition: Position;
 	style?: React.CSSProperties;
 	markerEnd?: string;
-	sourceHandle: string;
-	targetHandle: string;
 }
 
 const CustomEdge = memo(
@@ -311,7 +216,6 @@ const CustomEdge = memo(
 		targetPosition,
 		style = {},
 		markerEnd,
-		source,
 	}: CustomEdgeProps): JSX.Element => {
 		const [edgePath] = getBezierPath({
 			sourceX,
@@ -321,51 +225,8 @@ const CustomEdge = memo(
 			targetY,
 			targetPosition,
 		});
-
-		const edge = useAppSelector(makeSelectEdgeById(id));
-
-		const sourceHandle = useAppSelector(
-			makeSelectHandleById(edge?.sourceHandleId),
-		);
-		const targetHandle = useAppSelector(
-			makeSelectHandleById(edge?.targetHandleId),
-		);
-		const { result } = useNodeResult(source);
-
-		if (!sourceHandle || !targetHandle) {
-			return <g></g>;
-		}
-
-		const sourcePrimary =
-			sourceHandle.dataTypes.length > 1
-				? "Any"
-				: sourceHandle.dataTypes[0] || "Any";
-		const targetPrimary =
-			targetHandle.dataTypes.length > 1
-				? "Any"
-				: targetHandle.dataTypes[0] || "Any";
-		const actualType = getActualType(result, sourceHandle.id);
-		const sourceDisplay = actualType ?? sourcePrimary;
-		const targetDisplay = actualType ?? targetPrimary;
-		const sourceColor = getColorForType(sourceDisplay).hex;
-		const targetColor = getColorForType(targetDisplay).hex;
-		const gradientId = `gradient-${id}`;
-		console.log({ sourceColor, targetColor });
 		return (
 			<g>
-				<defs>
-					<linearGradient
-						id={gradientId}
-						x1={sourceX}
-						y1={sourceY}
-						x2={targetX}
-						y2={targetY}
-						gradientUnits="userSpaceOnUse"
-					>
-						<stop offset="0%" stopColor={sourceColor} />
-						<stop offset="100%" stopColor={targetColor} />
-					</linearGradient>
-				</defs>
 				<path
 					id={id}
 					style={{
@@ -374,17 +235,8 @@ const CustomEdge = memo(
 					}}
 					className="react-flow__edge-path fill-none hover:stroke-[15px]! hover:opacity-80"
 					d={edgePath}
-					stroke={`url(#${gradientId})`}
 					markerEnd={markerEnd}
-				>
-					<animate
-						attributeName="stroke-dashoffset"
-						values="0;-20"
-						dur="12s"
-						repeatCount="indefinite"
-						calcMode="linear"
-					/>
-				</path>
+				/>
 			</g>
 		);
 	},

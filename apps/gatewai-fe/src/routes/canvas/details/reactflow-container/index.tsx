@@ -1,5 +1,6 @@
 import {
 	Background,
+	BackgroundVariant,
 	ConnectionMode,
 	type Edge,
 	type Node,
@@ -145,7 +146,7 @@ function ReactflowContainer({ children }: ReactFlowProps) {
 					className="react-flow-container"
 					fitView
 					snapToGrid
-					snapGrid={[10, 10]}
+					snapGrid={[5, 5]}
 					nodeTypes={nodeTypes}
 					edgeTypes={edgeTypes}
 					connectionLineComponent={CustomConnectionLine}
@@ -169,7 +170,7 @@ function ReactflowContainer({ children }: ReactFlowProps) {
 					deleteKeyCode={"Delete"}
 				>
 					{children}
-					<Background />
+					<Background variant={BackgroundVariant.Dots} />
 					<Panel position="top-center" className=" bg-background flex flex-col">
 						<TopPanel />
 					</Panel>

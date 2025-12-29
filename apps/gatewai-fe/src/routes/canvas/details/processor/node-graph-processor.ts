@@ -218,7 +218,6 @@ export class NodeGraphProcessor extends EventEmitter {
 			}
 
 			const maskDataUrl = config.paintData;
-			if (!maskDataUrl) throw new Error("No mask data");
 
 			const outputHandles = this.getOutputHandleEntities(node.id);
 			const imageOutputHandle = outputHandles.find((f) =>

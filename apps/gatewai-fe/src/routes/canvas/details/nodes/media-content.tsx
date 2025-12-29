@@ -1,5 +1,4 @@
 import type { FileResult, ImagesResult } from "@gatewai/types";
-import type { NodeProps } from "@xyflow/react";
 import { FileIcon } from "lucide-react";
 import {
 	MediaControlBar,
@@ -12,13 +11,13 @@ import {
 } from "media-chrome/react";
 import { GetAssetEndpoint } from "@/utils/file";
 import { OutputSelector } from "./misc/output-selector";
-import type { AnyNode } from "./node-props";
+import type { NodeEntityType } from "@/store/nodes";
 
 function MediaContent({
 	node,
 	result,
 }: {
-	node: NodeProps<AnyNode>;
+	node: NodeEntityType;
 	result: ImagesResult | FileResult;
 }) {
 	const selectedOutput = result.outputs[result.selectedOutputIndex];

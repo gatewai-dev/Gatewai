@@ -1,6 +1,6 @@
 import { useReactFlow, useViewport } from "@xyflow/react";
 import { ChevronDown, Hand, MousePointer } from "lucide-react";
-import { useContext } from "react";
+import { memo, useContext } from "react";
 import { Button } from "@/components/ui/button";
 import {
 	Menubar,
@@ -12,7 +12,7 @@ import {
 import { Separator } from "@/components/ui/separator";
 import { ModeContext } from ".";
 
-function Toolbar() {
+const Toolbar = memo(() => {
 	const { zoom } = useViewport();
 	const { zoomIn, zoomOut, zoomTo, fitView } = useReactFlow();
 	const zoomPercentage = `${Math.round(zoom * 100)}%`;
@@ -62,6 +62,6 @@ function Toolbar() {
 			</MenubarMenu>
 		</Menubar>
 	);
-}
+})
 
 export { Toolbar };

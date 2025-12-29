@@ -32,22 +32,20 @@ const PaintNodeComponent = memo((props: NodeProps<PaintNode>) => {
 
 	const inputImageUrl = useNodeImageUrl(inputNodeId);
 
-	const imageRef = useRef<HTMLImageElement>(null);
 	const canvasRef = useRef<HTMLCanvasElement>(null);
 
 	const [brushSize, setBrushSize] = useState(20);
-	const [brushColor, setBrushColor] = useState("#444");
+	const [brushColor, setBrushColor] = useState("#444444");
 	const [tool, setTool] = useState<"brush" | "eraser">("brush");
+
+	const [containerStyle, setContainerStyle] = useState<React.CSSProperties | undefined>(undefined);
+	const [canvasStyle, setCanvasStyle] = useState<React.CSSProperties>({});
 
 	const isDrawingRef = useRef(false);
 	const lastPositionRef = useRef<{ x: number; y: number } | null>(null);
 	const needsUpdateRef = useRef(false);
 	const skipNextSyncRef = useRef(false);
 
-	const containerStyle = inputImageUrl
-		? undefined
-		: { aspectRatio: `${nodeConfig?.width} / ${nodeConfig?.height}` };
-	console.log({ inputImageUrl });
 	const updateConfig = useCallback(
 		(cfg: Partial<PaintNodeConfig>) => {
 			onNodeConfigUpdate({
@@ -89,42 +87,56 @@ const PaintNodeComponent = memo((props: NodeProps<PaintNode>) => {
 		}
 	}, [nodeConfig]);
 
-	// Set up canvas dimensions on image load
-	const handleImageLoad = useCallback(() => {
-		const image = imageRef.current;
-		const canvas = canvasRef.current;
-		if (!image || !canvas) return;
-
-		canvas.width = image.naturalWidth;
-		canvas.height = image.naturalHeight;
-
-		const ctx = canvas.getContext("2d");
-		if (!ctx) return;
-
-		ctx.lineCap = "round";
-		ctx.lineJoin = "round";
-
-		drawMask();
-	}, [drawMask]);
+	useEffect(() => {
+		if (!inputImageUrl && nodeConfig) {
+			setContainerStyle({
+				aspectRatio: `${nodeConfig.width} / ${nodeConfig.height}`,
+			});
+			setCanvasStyle({
+				backgroundColor: nodeConfig.backgroundColor,
+			});
+			const canvas = canvasRef.current;
+			if (canvas) {
+				canvas.width = nodeConfig.width;
+				canvas.height = nodeConfig.height;
+				const ctx = canvas.getContext("2d");
+				if (ctx) {
+					ctx.lineCap = "round";
+					ctx.lineJoin = "round";
+				}
+				drawMask();
+			}
+		}
+	}, [inputImageUrl, nodeConfig, drawMask]);
 
 	useEffect(() => {
-		if (inputImageUrl) return;
-		const canvas = canvasRef.current;
-		if (!canvas) return;
-
-		if (canvas.width !== nodeConfig?.width || canvas.height !== nodeConfig?.height) {
-			canvas.width = nodeConfig?.width;
-			canvas.height = nodeConfig?.height;
+		if (inputImageUrl) {
+			const img = new Image();
+			img.src = inputImageUrl;
+			img.onload = () => {
+				setContainerStyle({
+					aspectRatio: `${img.naturalWidth} / ${img.naturalHeight}`,
+				});
+				setCanvasStyle({
+					backgroundImage: `url(${inputImageUrl})`,
+					backgroundSize: "contain",
+					backgroundPosition: "center",
+					backgroundRepeat: "no-repeat",
+				});
+				const canvas = canvasRef.current;
+				if (canvas) {
+					canvas.width = img.naturalWidth;
+					canvas.height = img.naturalHeight;
+					const ctx = canvas.getContext("2d");
+					if (ctx) {
+						ctx.lineCap = "round";
+						ctx.lineJoin = "round";
+					}
+					drawMask();
+				}
+			};
 		}
-
-		const ctx = canvas.getContext("2d");
-		if (!ctx) return;
-
-		ctx.lineCap = "round";
-		ctx.lineJoin = "round";
-
-		drawMask();
-	}, [inputImageUrl, nodeConfig, drawMask]);
+	}, [inputImageUrl, drawMask]);
 
 	useEffect(() => {
 		if (skipNextSyncRef.current) {
@@ -223,35 +235,17 @@ const PaintNodeComponent = memo((props: NodeProps<PaintNode>) => {
 		};
 	}, [handleMouseUp]);
 
-	console.log("PaintNodeComponent render", {
-		inputImageUrl,
-	});
-
 	return (
 		<BaseNode {...props}>
 			<div className="flex flex-col gap-3">
 				<div
 					className="w-full overflow-hidden bg-black/5 min-h-[100px] relative select-none"
-					style={{
-						...containerStyle,
-						backgroundColor: inputImageUrl
-							? undefined
-							: nodeConfig.backgroundColor,
-					}}
+					style={containerStyle}
 				>
-					{inputImageUrl && (
-						<img
-							ref={imageRef}
-							src={inputImageUrl}
-							className="block w-full h-auto pointer-events-none"
-							alt="Input for masking"
-							draggable={false}
-							onLoad={handleImageLoad}
-						/>
-					)}
 					<canvas
 						ref={canvasRef}
 						className="absolute inset-0 w-full h-auto cursor-crosshair z-10"
+						style={canvasStyle}
 						onMouseDown={handleMouseDown}
 						onMouseMove={handleMouseMove}
 					/>
@@ -310,7 +304,7 @@ const PaintNodeComponent = memo((props: NodeProps<PaintNode>) => {
 					</div>
 				</div>
         <Separator />
-        <div className="flex items-center gap-2">
+        {node && <div className="flex items-center gap-2">
           <DimensionsConfig node={node} disabled={inputImageUrl != null} />
           <Separator orientation="vertical" className=" h-full" />
           <div className="flex flex-col items-start gap-1">
@@ -318,15 +312,15 @@ const PaintNodeComponent = memo((props: NodeProps<PaintNode>) => {
             <Input
               id="bg-color"
               type="color"
-              value={nodeConfig.backgroundColor}
+              value={nodeConfig?.backgroundColor}
               onChange={(e) => {
-				        updateConfig({backgroundColor: e.target.value});
+				updateConfig({backgroundColor: e.target.value});
               }}
               className="w-8 h-8 p-1 rounded border bg-background"
             />
           </div>
-        </div>
-			</div>
+        </div>}
+		</div>
 		</BaseNode>
 	);
 });
