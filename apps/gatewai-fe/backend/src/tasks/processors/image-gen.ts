@@ -11,6 +11,7 @@ import { getImageDimensions } from "../../utils/image.js";
 import { generateSignedUrl, uploadToS3 } from "../../utils/s3.js";
 import { getInputValue, getInputValuesByType } from "../resolvers.js";
 import type { NodeProcessor } from "./types.js";
+import { ENV_CONFIG } from "../../config.js";
 
 const imageGenProcessor: NodeProcessor = async ({ node, data }) => {
 	try {
@@ -85,7 +86,7 @@ const imageGenProcessor: NodeProcessor = async ({ node, data }) => {
 		const fileName = `imagegen_${randId}.${extension}`;
 		const key = `assets/${data.canvas.userId}/${fileName}`;
 		const contentType = file.mediaType;
-		const bucket = process.env.AWS_ASSETS_BUCKET!;
+		const bucket = ENV_CONFIG.AWS_ASSETS_BUCKET;
 		await uploadToS3(buffer, key, contentType, bucket);
 
 		const expiresIn = 3600 * 24 * 6.9; // A bit less than a week

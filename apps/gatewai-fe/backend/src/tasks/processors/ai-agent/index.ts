@@ -114,8 +114,7 @@ const aiAgentProcessor: NodeProcessor = async ({ node, data }) => {
 		const config = node.config as unknown as AgentNodeConfig;
 		const dynamicInputs = allInputs.filter((input) => {
 			return (
-				input &&
-				input.handle &&
+				input?.handle &&
 				input.handle.id !== systemPromptData?.handle?.id &&
 				input.handle.id !== systemPromptData?.handle?.id
 			);

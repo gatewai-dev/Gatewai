@@ -1,21 +1,6 @@
 # GATEWAI
 
-![Gatewai Wallpaper](/assets/wallpaper.png)
-
-Gatewai is an open source AI RPG Game Engine. It enables D&D style, turn based RPG game with NPC Agents, Environment Agents.
-
-## What's inside?
-
-This repository includes the following:
-
-### Apps and Packages
-
-- `@gatewai/engine`: Main game engine
-- `@gatewai/tsconfig`: shared `tsconfig.json`s used throughout the monorepo
-- `@gatewai/eslint-config`: ESLint preset
-- `@gatewai/cli`: CLI interface to play the game. - For development
-
-## Versioning and Publishing packages
+[![Checked with Biome](https://img.shields.io/badge/Checked_with-Biome-60a5fa?style=flat&logo=biome)](https://biomejs.dev)
 
 ## Asset Bucket CORS configuration
 

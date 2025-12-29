@@ -24,8 +24,5 @@
 	"engines": {
 		"node": ">=18"
 	},
-	"bin": {
-		"cli": "./apps/cli/dist/cli.js"
-	},
 	"name": "gatewai"
 }
