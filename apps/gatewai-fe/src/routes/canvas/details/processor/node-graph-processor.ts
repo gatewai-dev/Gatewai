@@ -100,7 +100,7 @@ export class NodeGraphProcessor extends EventEmitter {
 			(pe) => !this.edges.some((e) => e.id === pe.id),
 		);
 		removedEdges.forEach((edge) => {
-			this.markDirty(edge.target, true)
+			this.markDirty(edge.target, true);
 		});
 
 		// Clean up states for deleted nodes
@@ -445,7 +445,7 @@ export class NodeGraphProcessor extends EventEmitter {
 			if (this.nodes.has(edge.source) && this.nodes.has(edge.target)) {
 				const sourceSet = this.dependencyGraph.get(edge.source);
 				const targetSet = this.reverseDependencyGraph.get(edge.target);
-				
+
 				if (sourceSet && targetSet) {
 					sourceSet.add(edge.target);
 					targetSet.add(edge.source);
@@ -468,7 +468,7 @@ export class NodeGraphProcessor extends EventEmitter {
 			if (selectedSet.has(edge.source) && selectedSet.has(edge.target)) {
 				const sourceSet = depGraph.get(edge.source);
 				const targetSet = revDepGraph.get(edge.target);
-				
+
 				if (sourceSet && targetSet) {
 					sourceSet.add(edge.target);
 					targetSet.add(edge.source);
@@ -480,10 +480,10 @@ export class NodeGraphProcessor extends EventEmitter {
 		const depArray = new Map<string, string[]>();
 		const revArray = new Map<string, string[]>();
 		depGraph.forEach((value, key) => {
-			depArray.set(key, Array.from(value))
+			depArray.set(key, Array.from(value));
 		});
 		revDepGraph.forEach((value, key) => {
-			revArray.set(key, Array.from(value))
+			revArray.set(key, Array.from(value));
 		});
 
 		return { depGraph: depArray, revDepGraph: revArray };
@@ -506,7 +506,7 @@ export class NodeGraphProcessor extends EventEmitter {
 		while (queue.length > 0) {
 			const current = queue.shift();
 			if (!current) break;
-			
+
 			order.push(current);
 
 			const downstream = depGraph.get(current) ?? [];
@@ -543,8 +543,8 @@ export class NodeGraphProcessor extends EventEmitter {
 				this.dependencyGraph.get(nodeId) ?? new Set(),
 			);
 			downstream.forEach((downstreamId) => {
-				if (typeof downstreamId === 'string') {
-					this.markDirty(downstreamId, true)
+				if (typeof downstreamId === "string") {
+					this.markDirty(downstreamId, true);
 				} else {
 					throw new Error(`Invalid node Id detected: ${downstreamId}`);
 				}
@@ -575,7 +575,7 @@ export class NodeGraphProcessor extends EventEmitter {
 					const curr = queue.shift();
 					if (!curr) break;
 					if (necessary.has(curr)) continue;
-					
+
 					necessary.add(curr);
 					const ups = Array.from(this.reverseDependencyGraph.get(curr) ?? []);
 					ups.forEach((up) => {
@@ -676,7 +676,7 @@ export class NodeGraphProcessor extends EventEmitter {
 				sourceState.isDirty ||
 				sourceState.isProcessing
 			) {
-				console.log({sourceState: JSON.stringify(sourceState)})
+				console.log({ sourceState: JSON.stringify(sourceState) });
 				return false;
 			}
 		}

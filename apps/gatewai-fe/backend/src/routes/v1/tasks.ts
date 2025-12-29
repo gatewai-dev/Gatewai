@@ -38,7 +38,7 @@ const tasksRouter = new Hono<{ Variables: AuthHonoTypes }>({
 			const batchId = c.req.query("batchId");
 			const whereClause: TaskBatchWhereInput = {
 				id: { in: batchIds ? batchIds : batchId ? [batchId] : [] },
-				userId: user!.id,
+				userId: user?.id,
 			};
 
 			const batches = await prisma.taskBatch.findMany({

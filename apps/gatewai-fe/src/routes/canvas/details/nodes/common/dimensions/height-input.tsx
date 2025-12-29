@@ -1,9 +1,9 @@
 import type { ResizeNodeConfig } from "@gatewai/types";
 import { memo, useCallback, useEffect, useState } from "react";
 import { Input } from "@/components/ui/input";
+import { Label } from "@/components/ui/label";
 import type { NodeEntityType } from "@/store/nodes";
 import { useCanvasCtx } from "../../../ctx/canvas-ctx";
-import { Label } from "@/components/ui/label";
 
 const ResizeHeightInput = memo(
 	({

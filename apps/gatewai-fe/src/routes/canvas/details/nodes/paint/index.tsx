@@ -1,22 +1,21 @@
-import type { OutputItem, PaintNodeConfig, PaintResult } from "@gatewai/types";
+import type { PaintNodeConfig } from "@gatewai/types";
 import type { NodeProps } from "@xyflow/react";
 import { Brush, Eraser } from "lucide-react";
 import { memo, useCallback, useEffect, useMemo, useRef, useState } from "react";
 import { Button } from "@/components/ui/button";
+import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
 import { Slider } from "@/components/ui/slider";
 import { useAppSelector } from "@/store";
 import { makeSelectEdgesByTargetNodeId } from "@/store/edges";
-import { makeSelectHandlesByNodeId } from "@/store/handles";
-import { makeSelectNodeById, } from "@/store/nodes";
-import { useNodeImageUrl, useNodeResult } from "../../processor/processor-ctx";
+import { makeSelectNodeById } from "@/store/nodes";
+import { useCanvasCtx } from "../../ctx/canvas-ctx";
+import { useNodeImageUrl } from "../../processor/processor-ctx";
 import { BaseNode } from "../base";
 import type { PaintNode } from "../node-props";
-import { useCanvasCtx } from "../../ctx/canvas-ctx";
-import { Input } from "@/components/ui/input";
 
 const PaintNodeComponent = memo((props: NodeProps<PaintNode>) => {
-  const { onNodeResultUpdate, onNodeConfigUpdate } = useCanvasCtx();
+	const { onNodeConfigUpdate } = useCanvasCtx();
 	const edges = useAppSelector(makeSelectEdgesByTargetNodeId(props.id));
 	const inputNodeId = useMemo(() => {
 		if (!edges || !edges[0]) {
@@ -42,7 +41,7 @@ const PaintNodeComponent = memo((props: NodeProps<PaintNode>) => {
 	const lastPositionRef = useRef<{ x: number; y: number } | null>(null);
 	const needsUpdateRef = useRef(false);
 	const initializedRef = useRef(false);
-  	const skipNextSyncRef = useRef(false);
+	const skipNextSyncRef = useRef(false);
 
 	const containerStyle = inputImageUrl
 		? undefined
@@ -50,36 +49,49 @@ const PaintNodeComponent = memo((props: NodeProps<PaintNode>) => {
 	console.log({ inputImageUrl });
 	const updateConfig = useCallback(
 		(dataUrl: string) => {
-			onNodeConfigUpdate({ id: props.id, newConfig: { ...nodeConfig, paintData: dataUrl } });
+			onNodeConfigUpdate({
+				id: props.id,
+				newConfig: { ...nodeConfig, paintData: dataUrl },
+			});
 		},
 		[nodeConfig, onNodeConfigUpdate, props.id],
 	);
 
-  const drawMask = useCallback(() => {
-  const canvas = canvasRef.current;
-  if (!canvas) return;
-  const ctx = canvas.getContext("2d");
-  if (!ctx) return;
+	const drawMask = useCallback(() => {
+		const canvas = canvasRef.current;
+		if (!canvas) return;
+		const ctx = canvas.getContext("2d");
+		if (!ctx) return;
 
-  ctx.clearRect(0, 0, canvas.width, canvas.height);
+		ctx.clearRect(0, 0, canvas.width, canvas.height);
 
-  if (!inputImageUrl && nodeConfig?.backgroundColor) {
-    ctx.fillStyle = nodeConfig.backgroundColor;
-    ctx.fillRect(0, 0, canvas.width, canvas.height);
-  }
+		if (!inputImageUrl && nodeConfig?.backgroundColor) {
+			ctx.fillStyle = nodeConfig.backgroundColor;
+			ctx.fillRect(0, 0, canvas.width, canvas.height);
+		}
 
-  if (nodeConfig?.paintData) {
-    if (!maskImageRef.current || maskImageRef.current.src !== nodeConfig.paintData) {
-      maskImageRef.current = new Image();
-      maskImageRef.current.src = nodeConfig.paintData;
-      maskImageRef.current.onload = () => {
-        if (ctx) ctx.drawImage(maskImageRef.current, 0, 0, canvas.width, canvas.height);
-      };
-    } else if (maskImageRef.current && ctx) {
-      ctx.drawImage(maskImageRef.current, 0, 0, canvas.width, canvas.height);
-    }
-  }
-}, [inputImageUrl, nodeConfig]);
+		if (nodeConfig?.paintData) {
+			if (
+				!maskImageRef.current ||
+				maskImageRef.current.src !== nodeConfig.paintData
+			) {
+				maskImageRef.current = new Image();
+				maskImageRef.current.src = nodeConfig.paintData;
+				maskImageRef.current.onload = () => {
+					if (ctx && maskImageRef.current)
+						ctx.drawImage(
+							maskImageRef.current,
+							0,
+							0,
+							canvas.width,
+							canvas.height,
+						);
+				};
+			} else if (maskImageRef.current && ctx) {
+				ctx.drawImage(maskImageRef.current, 0, 0, canvas.width, canvas.height);
+			}
+		}
+	}, [inputImageUrl, nodeConfig]);
 
 	// Set up canvas dimensions on image load
 	const handleImageLoad = useCallback(() => {
@@ -96,7 +108,7 @@ const PaintNodeComponent = memo((props: NodeProps<PaintNode>) => {
 		ctx.lineCap = "round";
 		ctx.lineJoin = "round";
 
-    drawMask();
+		drawMask();
 	}, [drawMask]);
 
 	useEffect(() => {
@@ -115,18 +127,18 @@ const PaintNodeComponent = memo((props: NodeProps<PaintNode>) => {
 		ctx.lineCap = "round";
 		ctx.lineJoin = "round";
 
-    drawMask();
+		drawMask();
 		initializedRef.current = true;
 	}, [inputImageUrl, nodeConfig, drawMask]);
 
-  useEffect(() => {
-    if (skipNextSyncRef.current) {
-      skipNextSyncRef.current = false;
-      return;
-    }
+	useEffect(() => {
+		if (skipNextSyncRef.current) {
+			skipNextSyncRef.current = false;
+			return;
+		}
 
-    drawMask();
-  }, [drawMask]);
+		drawMask();
+	}, [drawMask]);
 
 	const getScaledCoordinates = useCallback(
 		(e: React.MouseEvent<HTMLCanvasElement>) => {
@@ -191,7 +203,7 @@ const PaintNodeComponent = memo((props: NodeProps<PaintNode>) => {
 		if (needsUpdateRef.current) {
 			const canvas = canvasRef.current;
 			if (canvas) {
-        		skipNextSyncRef.current = true;
+				skipNextSyncRef.current = true;
 				updateConfig(canvas.toDataURL("image/webp"));
 			}
 			needsUpdateRef.current = false;
@@ -204,7 +216,7 @@ const PaintNodeComponent = memo((props: NodeProps<PaintNode>) => {
 			const ctx = canvas.getContext("2d");
 			if (ctx) {
 				ctx.clearRect(0, 0, canvas.width, canvas.height);
-				console.log('UUU')
+				console.log("UUU");
 				updateConfig(canvas.toDataURL("image/webp"));
 			}
 		}
@@ -252,37 +264,42 @@ const PaintNodeComponent = memo((props: NodeProps<PaintNode>) => {
 				</div>
 				<div className="flex flex-col flex-wrap gap-4 items-start text-sm">
 					<div className="flex justift-between w-full">
-					<div className="grow">
-						<div className="flex gap-2">
-							<Button
-								size="icon"
-								variant={tool === "brush" ? "default" : "outline"}
-								onClick={() => setTool("brush")}
-							>
-								<Brush className="h-4 w-4" />
-							</Button>
-							<Button
-								size="icon"
-								variant={tool === "eraser" ? "default" : "outline"}
-								onClick={() => setTool("eraser")}
-							>
-								<Eraser className="h-4 w-4" />
-							</Button>
-							<div className="flex items-center gap-1">
-								<Label htmlFor="brush-color">Color</Label>
-								<Input
-									id="brush-color"
-									type="color"
-									value={brushColor}
-									onChange={(e) => setBrushColor(e.target.value)}
-									className="w-8 h-8 p-1 rounded border bg-background"
-								/>
+						<div className="grow">
+							<div className="flex gap-2">
+								<Button
+									size="icon"
+									variant={tool === "brush" ? "default" : "outline"}
+									onClick={() => setTool("brush")}
+								>
+									<Brush className="h-4 w-4" />
+								</Button>
+								<Button
+									size="icon"
+									variant={tool === "eraser" ? "default" : "outline"}
+									onClick={() => setTool("eraser")}
+								>
+									<Eraser className="h-4 w-4" />
+								</Button>
+								<div className="flex items-center gap-1">
+									<Label htmlFor="brush-color">Color</Label>
+									<Input
+										id="brush-color"
+										type="color"
+										value={brushColor}
+										onChange={(e) => setBrushColor(e.target.value)}
+										className="w-8 h-8 p-1 rounded border bg-background"
+									/>
+								</div>
 							</div>
 						</div>
-					</div>
-					<Button variant="link" className="underline text-xs" onClick={handleClear} size="sm">
-						Clear
-					</Button>
+						<Button
+							variant="link"
+							className="underline text-xs"
+							onClick={handleClear}
+							size="sm"
+						>
+							Clear
+						</Button>
 					</div>
 					<div className="flex items-center gap-1">
 						<Label htmlFor="brush-size">Size</Label>

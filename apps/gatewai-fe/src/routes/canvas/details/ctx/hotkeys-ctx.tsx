@@ -3,7 +3,7 @@ import { useHotkeys } from "react-hotkeys-hook";
 import { useCanvasCtx } from "./canvas-ctx";
 import { useSelectedEntitiesCtx } from "./selected-entity-ctx";
 
-type ShortcutsContextType = {};
+type ShortcutsContextType = null;
 
 const ShortcutsContext = createContext<ShortcutsContextType | undefined>(
 	undefined,

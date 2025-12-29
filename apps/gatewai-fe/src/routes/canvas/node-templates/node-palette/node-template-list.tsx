@@ -53,7 +53,7 @@ export function NodeTemplateList({ templates }: NodeListProps) {
 		filtered = filtered.filter(
 			(t) =>
 				t.displayName.toLowerCase().includes(q) ||
-				(t.description && t.description.toLowerCase().includes(q)),
+				t.description?.toLowerCase().includes(q),
 		);
 	}
 

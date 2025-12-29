@@ -1,5 +1,4 @@
-import { type Canvas, type DataType, prisma } from "@gatewai/db";
-import type { NodeResult } from "@gatewai/types";
+import { type Canvas, prisma } from "@gatewai/db";
 import type { User } from "better-auth";
 import { HTTPException } from "hono/http-exception";
 

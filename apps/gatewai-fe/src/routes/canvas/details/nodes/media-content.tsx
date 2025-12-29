@@ -47,6 +47,7 @@ function MediaContent({
 			{isVideo && (
 				<div className="flex flex-col items-center gap-2">
 					<MediaController>
+						{/** biome-ignore lint/a11y/useMediaCaption: Unknown track */}
 						<video
 							slot="media"
 							src={GetAssetEndpoint(outputItem.data.entity.id)}

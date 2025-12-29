@@ -61,7 +61,10 @@ function DebugPanel() {
 				<CollapsibleContent>
 					<CardContent className="max-h-64 overflow-auto space-y-1 text-xs">
 						{reversed.map((log, i) => (
-							<div key={log + i.toString()} className="border-b border-muted pb-1">
+							<div
+								key={log + i.toString()}
+								className="border-b border-muted pb-1"
+							>
 								{log}
 							</div>
 						))}

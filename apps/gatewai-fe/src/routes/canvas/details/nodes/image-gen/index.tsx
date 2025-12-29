@@ -18,7 +18,7 @@ const ImagePlaceholder = () => (
 const ImageGenNodeComponent = memo((props: NodeProps<ImageGenNode>) => {
 	const node = useAppSelector(makeSelectNodeById(props.id));
 
-	const { result, error } = useNodeResult(props.id);
+	const { result } = useNodeResult(props.id);
 	const imageUrl = useNodeImageUrl(props.id);
 	const canvasRef = useRef<HTMLCanvasElement | null>(null);
 

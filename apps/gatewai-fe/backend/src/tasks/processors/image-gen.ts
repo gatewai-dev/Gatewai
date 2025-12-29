@@ -1,3 +1,4 @@
+import { randomUUID } from "node:crypto";
 import { DataType, prisma } from "@gatewai/db";
 import type { FileData, ImageGenConfig, ImageGenResult } from "@gatewai/types";
 import {
@@ -6,12 +7,11 @@ import {
 	type TextPart,
 	type UserContent,
 } from "ai";
-import { randomUUID } from "node:crypto";
+import { ENV_CONFIG } from "../../config.js";
 import { getImageDimensions } from "../../utils/image.js";
 import { generateSignedUrl, uploadToS3 } from "../../utils/s3.js";
 import { getInputValue, getInputValuesByType } from "../resolvers.js";
 import type { NodeProcessor } from "./types.js";
-import { ENV_CONFIG } from "../../config.js";
 
 const imageGenProcessor: NodeProcessor = async ({ node, data }) => {
 	try {

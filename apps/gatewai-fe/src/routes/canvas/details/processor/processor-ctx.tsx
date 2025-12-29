@@ -153,7 +153,10 @@ export const useMultipleNodeResults = (nodeIds: string[]) => {
 				processor.off("node:error", onError);
 			});
 		});
-		return () => listeners.forEach((unsub) => unsub());
+		return () =>
+			listeners.forEach((unsub) => {
+				unsub();
+			});
 	};
 
 	const getSnapshot = () => {

@@ -1,7 +1,7 @@
 import type { LLMResult } from "@gatewai/types";
 import type { NodeProps } from "@xyflow/react";
 import { InfoIcon } from "lucide-react";
-import { memo, useState } from "react";
+import { memo } from "react";
 import {
 	Accordion,
 	AccordionContent,

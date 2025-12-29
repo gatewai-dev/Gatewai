@@ -1,7 +1,7 @@
+import { randomUUID } from "node:crypto";
 import { prisma } from "@gatewai/db";
 import type { FileResult } from "@gatewai/types";
 import { zValidator } from "@hono/zod-validator";
-import { randomUUID } from "crypto";
 import { fileTypeFromBuffer } from "file-type";
 import { Hono } from "hono";
 import sharp from "sharp";

@@ -247,13 +247,15 @@ const canvasRoutes = new Hono<{ Variables: AuthHonoTypes }>({
 
 		const nodeIdsInPayload = nodesInPayload
 			.map((m) => m.id)
-			.filter(Boolean) as string[];
+			.filter((id): id is string => !!id);
+
 		const edgeIdsInPayload = edgesInPayload
 			.map((m) => m.id)
-			.filter(Boolean) as string[];
+			.filter((id): id is string => !!id);
+
 		const handleIdsInPayload = handlesInPayload
 			.map((m) => m.id)
-			.filter(Boolean) as string[];
+			.filter((id): id is string => !!id);
 
 		// Deletions
 		const removedNodeIds = nodeIdsInDB.filter(
@@ -293,9 +295,8 @@ const canvasRoutes = new Hono<{ Variables: AuthHonoTypes }>({
 		const txs = [deleteEdgesTx, deleteHandlesTx, deleteNodesTx];
 
 		// Canvas name update if provided
-		let updateCanvasTx;
 		if (validated.name) {
-			updateCanvasTx = prisma.canvas.update({
+			const updateCanvasTx = prisma.canvas.update({
 				where: { id },
 				data: { name: validated.name },
 			});
@@ -304,15 +305,17 @@ const canvasRoutes = new Hono<{ Variables: AuthHonoTypes }>({
 
 		// Node creations and updates
 		const createdNodes = nodesInPayload.filter(
-			(n) => n.id && !nodeIdsInDB.includes(n.id),
+			(n): n is typeof n & { id: string } =>
+				!!n.id && !nodeIdsInDB.includes(n.id),
 		);
 		const updatedNodes = nodesInPayload.filter(
-			(n) => n.id && nodeIdsInDB.includes(n.id),
+			(n): n is typeof n & { id: string } =>
+				!!n.id && nodeIdsInDB.includes(n.id),
 		);
 
 		const createNodesTx = prisma.node.createMany({
 			data: createdNodes.map((newNode) => ({
-				id: newNode.id!,
+				id: newNode.id,
 				result: newNode.result,
 				config: newNode.config,
 				name: newNode.name,
@@ -328,7 +331,8 @@ const canvasRoutes = new Hono<{ Variables: AuthHonoTypes }>({
 
 		const updatedNodeTemplateIds = updatedNodes
 			.map((m) => m.templateId)
-			.filter(Boolean) as string[];
+			.filter((id): id is string => !!id);
+
 		const updatedNodeTemplates = await prisma.nodeTemplate.findMany({
 			where: {
 				id: {
@@ -359,7 +363,7 @@ const canvasRoutes = new Hono<{ Variables: AuthHonoTypes }>({
 			return prisma.node.update({
 				data: updateData,
 				where: {
-					id: uNode.id!,
+					id: uNode.id,
 				},
 			});
 		});
@@ -367,15 +371,17 @@ const canvasRoutes = new Hono<{ Variables: AuthHonoTypes }>({
 
 		// Handle creations and updates
 		const createdHandles = handlesInPayload.filter(
-			(h) => h.id && !handleIdsInDB.includes(h.id),
+			(h): h is typeof h & { id: string } =>
+				!!h.id && !handleIdsInDB.includes(h.id),
 		);
 		const updatedHandles = handlesInPayload.filter(
-			(h) => h.id && handleIdsInDB.includes(h.id),
+			(h): h is typeof h & { id: string } =>
+				!!h.id && handleIdsInDB.includes(h.id),
 		);
 
 		const createHandlesTx = prisma.handle.createMany({
 			data: createdHandles.map((nHandle) => ({
-				id: nHandle.id!,
+				id: nHandle.id,
 				nodeId: nHandle.nodeId,
 				required: nHandle.required,
 				dataTypes: nHandle.dataTypes,
@@ -398,7 +404,7 @@ const canvasRoutes = new Hono<{ Variables: AuthHonoTypes }>({
 					templateHandleId: uHandle.templateHandleId,
 				},
 				where: {
-					id: uHandle.id!,
+					id: uHandle.id,
 				},
 			}),
 		);
@@ -406,19 +412,39 @@ const canvasRoutes = new Hono<{ Variables: AuthHonoTypes }>({
 
 		// Edge creations and updates
 		const createdEdges = edgesInPayload.filter(
-			(e) => e.id && !edgeIdsInDB.includes(e.id),
+			(
+				e,
+			): e is typeof e & {
+				id: string;
+				sourceHandleId: string;
+				targetHandleId: string;
+			} =>
+				!!e.id &&
+				!!e.sourceHandleId &&
+				!!e.targetHandleId &&
+				!edgeIdsInDB.includes(e.id),
 		);
 		const updatedEdges = edgesInPayload.filter(
-			(e) => e.id && edgeIdsInDB.includes(e.id),
+			(
+				e,
+			): e is typeof e & {
+				id: string;
+				sourceHandleId: string;
+				targetHandleId: string;
+			} =>
+				!!e.id &&
+				!!e.sourceHandleId &&
+				!!e.targetHandleId &&
+				edgeIdsInDB.includes(e.id),
 		);
 
 		const createEdgesTx = prisma.edge.createMany({
 			data: createdEdges.map((newEdge) => ({
-				id: newEdge.id!,
+				id: newEdge.id,
 				source: newEdge.source,
-				sourceHandleId: newEdge.sourceHandleId!,
+				sourceHandleId: newEdge.sourceHandleId,
 				target: newEdge.target,
-				targetHandleId: newEdge.targetHandleId!,
+				targetHandleId: newEdge.targetHandleId,
 			})),
 		});
 		txs.push(createEdgesTx);
@@ -427,12 +453,12 @@ const canvasRoutes = new Hono<{ Variables: AuthHonoTypes }>({
 			prisma.edge.update({
 				data: {
 					source: uEdge.source,
-					sourceHandleId: uEdge.sourceHandleId!,
+					sourceHandleId: uEdge.sourceHandleId,
 					target: uEdge.target,
-					targetHandleId: uEdge.targetHandleId!,
+					targetHandleId: uEdge.targetHandleId,
 				},
 				where: {
-					id: uEdge.id!,
+					id: uEdge.id,
 				},
 			}),
 		);
@@ -509,9 +535,13 @@ const canvasRoutes = new Hono<{ Variables: AuthHonoTypes }>({
 		const id = c.req.param("id");
 		const user = c.get("user");
 
+		if (!user) {
+			throw new HTTPException(401, { message: "Unauthorized" });
+		}
+
 		// Get the original canvas with all its data
 		const original = await prisma.canvas.findFirst({
-			where: { id, userId: user?.id },
+			where: { id, userId: user.id },
 			include: {
 				nodes: {
 					include: {
@@ -539,7 +569,7 @@ const canvasRoutes = new Hono<{ Variables: AuthHonoTypes }>({
 		const duplicate = await prisma.canvas.create({
 			data: {
 				name: `${original.name} (Copy)`,
-				userId: user!.id,
+				userId: user.id,
 			},
 		});
 
@@ -614,14 +644,20 @@ const canvasRoutes = new Hono<{ Variables: AuthHonoTypes }>({
 				const newSourceHandleId = handleIdMap.get(edge.sourceHandleId);
 				const newTargetHandleId = handleIdMap.get(edge.targetHandleId);
 
-				if (!newSource || !newTarget) return null;
+				if (
+					!newSource ||
+					!newTarget ||
+					!newSourceHandleId ||
+					!newTargetHandleId
+				)
+					return null;
 
 				return prisma.edge.create({
 					data: {
 						source: newSource,
 						target: newTarget,
-						sourceHandleId: newSourceHandleId!,
-						targetHandleId: newTargetHandleId!,
+						sourceHandleId: newSourceHandleId,
+						targetHandleId: newTargetHandleId,
 					},
 				});
 			})

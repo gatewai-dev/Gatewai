@@ -86,7 +86,9 @@ const BaseNode = memo(
 
 		const allRelevantNodeIds = useMemo(() => {
 			const ids = new Set<string>([id]);
-			Object.values(connectedSources).forEach((s) => ids.add(s));
+			Object.values(connectedSources).forEach((s) => {
+				ids.add(s);
+			});
 			return Array.from(ids);
 		}, [id, connectedSources]);
 
@@ -98,7 +100,6 @@ const BaseNode = memo(
 
 		return (
 			<div
-				tabIndex={0}
 				className={cn(
 					`relative drag-handle ${nodeBackgroundColor} rounded-2xl shadow-md w-full h-full transition-all duration-200 group`,
 					{

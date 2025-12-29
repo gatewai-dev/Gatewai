@@ -15,24 +15,24 @@ import { ModeContext } from ".";
 function Toolbar() {
 	const { zoom } = useViewport();
 	const { zoomIn, zoomOut, zoomTo, fitView } = useReactFlow();
-	const zoomPercentage = Math.round(zoom * 100) + "%";
-	const { mode, setMode } = useContext(ModeContext)!;
+	const zoomPercentage = `${Math.round(zoom * 100)}%`;
+	const modeCtx = useContext(ModeContext);
 
 	return (
 		<Menubar className="border-0 bg-background py-1 rounded-md shadow-md">
 			<Button
 				title="Select"
-				variant={mode === "pan" ? "ghost" : "outline"}
+				variant={modeCtx?.mode === "pan" ? "ghost" : "outline"}
 				size="sm"
-				onClick={() => setMode("select")}
+				onClick={() => modeCtx?.setMode("select")}
 			>
 				<MousePointer className="w-4" />
 			</Button>
 			<Button
 				title="Pan"
-				variant={mode === "select" ? "ghost" : "outline"}
+				variant={modeCtx?.mode === "select" ? "ghost" : "outline"}
 				size="sm"
-				onClick={() => setMode("pan")}
+				onClick={() => modeCtx?.setMode("pan")}
 			>
 				<Hand className="w-4" />
 			</Button>

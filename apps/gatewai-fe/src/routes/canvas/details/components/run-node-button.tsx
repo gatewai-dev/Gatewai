@@ -1,10 +1,10 @@
 import type { NodeProps } from "@xyflow/react";
 import { ForwardIcon } from "lucide-react";
-import { memo, useMemo } from "react";
+import { memo } from "react";
 import { Button, type ButtonProps } from "@/components/ui/button";
 import { Spinner } from "@/components/ui/spinner";
 import { useCanvasCtx } from "../ctx/canvas-ctx";
-import { useNodeTaskRunning, useTaskManagerCtx } from "../ctx/task-manager-ctx";
+import { useNodeTaskRunning } from "../ctx/task-manager-ctx";
 import type { AnyNode } from "../nodes/node-props";
 
 export type RunNodeButtonProps = ButtonProps & {

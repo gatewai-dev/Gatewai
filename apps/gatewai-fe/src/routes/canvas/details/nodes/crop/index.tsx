@@ -224,6 +224,7 @@ const CropNodeComponent = memo((props: NodeProps<CropNode>) => {
 				{/* Dark overlay for cropped-out areas */}
 				<div className="absolute inset-0 pointer-events-none">
 					<svg width="100%" height="100%" className="absolute inset-0">
+						<title>Dark Overlay</title>
 						<defs>
 							<mask id={`crop-mask-${props.id}`}>
 								<rect width="100%" height="100%" fill="white" />
@@ -276,47 +277,66 @@ const CropNodeComponent = memo((props: NodeProps<CropNode>) => {
 						cursor: dragState?.type === "move" ? "grabbing" : "grab",
 					}}
 					onMouseDown={(e) => handleMouseDown(e, "move")}
+					role="button"
+					tabIndex={0}
+					aria-label="Move crop selection"
 				>
 					{/* Corner handles */}
-					<div
-						className="absolute -top-1 -left-1 w-2 h-2 bg-white/70 border border-blue-500/30 cursor-nw-resize shadow-md hover:scale-110 transition-transform"
+					<button
+						type="button"
+						className="appearance-none absolute -top-1 -left-1 w-2 h-2 bg-white/70 border border-blue-500/30 cursor-nw-resize shadow-md hover:scale-110 transition-transform"
 						onMouseDown={(e) => handleMouseDown(e, "resize-nw")}
+						aria-label="Resize top-left corner"
 					/>
-					<div
-						className="absolute -top-1 -right-1 w-2 h-2 bg-white/70 border border-blue-500/30 cursor-ne-resize shadow-md hover:scale-110 transition-transform"
+					<button
+						type="button"
+						className="appearance-none absolute -top-1 -right-1 w-2 h-2 bg-white/70 border border-blue-500/30 cursor-ne-resize shadow-md hover:scale-110 transition-transform"
 						onMouseDown={(e) => handleMouseDown(e, "resize-ne")}
+						aria-label="Resize top-right corner"
 					/>
-					<div
-						className="absolute -bottom-1 -left-1 w-2 h-2 bg-white/70 border border-blue-500/30 cursor-sw-resize shadow-md hover:scale-110 transition-transform"
+					<button
+						type="button"
+						className="appearance-none absolute -bottom-1 -left-1 w-2 h-2 bg-white/70 border border-blue-500/30 cursor-sw-resize shadow-md hover:scale-110 transition-transform"
 						onMouseDown={(e) => handleMouseDown(e, "resize-sw")}
+						aria-label="Resize bottom-left corner"
 					/>
-					<div
-						className="absolute -bottom-1 -right-1 w-2 h-2 bg-white/70 border border-blue-500/30 cursor-se-resize shadow-md hover:scale-110 transition-transform"
+					<button
+						type="button"
+						className="appearance-none absolute -bottom-1 -right-1 w-2 h-2 bg-white/70 border border-blue-500/30 cursor-se-resize shadow-md hover:scale-110 transition-transform"
 						onMouseDown={(e) => handleMouseDown(e, "resize-se")}
+						aria-label="Resize bottom-right corner"
 					/>
 
 					{/* Side handles - only show if crop box is large enough */}
 					{crop.widthPercentage > 15 && (
 						<>
-							<div
-								className="absolute -top-1 left-1/2 -ml-1 w-2 h-2 bg-white/70 border border-blue-500/30 cursor-n-resize shadow-md hover:scale-110 transition-transform"
+							<button
+								type="button"
+								className="appearance-none absolute -top-1 left-1/2 -ml-1 w-2 h-2 bg-white/70 border border-blue-500/30 cursor-n-resize shadow-md hover:scale-110 transition-transform"
 								onMouseDown={(e) => handleMouseDown(e, "resize-n")}
+								aria-label="Resize top side"
 							/>
-							<div
-								className="absolute -bottom-1 left-1/2 -ml-1 w-2 h-2 bg-white/70 border border-blue-500/30 cursor-s-resize shadow-md hover:scale-110 transition-transform"
+							<button
+								type="button"
+								className="appearance-none absolute -bottom-1 left-1/2 -ml-1 w-2 h-2 bg-white/70 border border-blue-500/30 cursor-s-resize shadow-md hover:scale-110 transition-transform"
 								onMouseDown={(e) => handleMouseDown(e, "resize-s")}
+								aria-label="Resize bottom side"
 							/>
 						</>
 					)}
 					{crop.heightPercentage > 15 && (
 						<>
-							<div
-								className="absolute top-1/2 -left-1 -mt-1 w-2 h-2 bg-white/70 border border-blue-500/30 cursor-w-resize shadow-md hover:scale-110 transition-transform"
+							<button
+								type="button"
+								className="appearance-none absolute top-1/2 -left-1 -mt-1 w-2 h-2 bg-white/70 border border-blue-500/30 cursor-w-resize shadow-md hover:scale-110 transition-transform"
 								onMouseDown={(e) => handleMouseDown(e, "resize-w")}
+								aria-label="Resize left side"
 							/>
-							<div
-								className="absolute top-1/2 -right-1 -mt-1 w-2 h-2 bg-white/70 border border-blue-500/30 cursor-e-resize shadow-md hover:scale-110 transition-transform"
+							<button
+								type="button"
+								className="appearance-none absolute top-1/2 -right-1 -mt-1 w-2 h-2 bg-white/70 border border-blue-500/30 cursor-e-resize shadow-md hover:scale-110 transition-transform"
 								onMouseDown={(e) => handleMouseDown(e, "resize-e")}
+								aria-label="Resize right side"
 							/>
 						</>
 					)}

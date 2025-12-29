@@ -38,14 +38,14 @@ export class NodeWFProcessor {
 
 		for (const edge of data.edges) {
 			if (selectedSet.has(edge.source) && selectedSet.has(edge.target)) {
-        const sourceDep = depGraph.get(edge.source);
-        if (sourceDep) {
-				  sourceDep.push(edge.target);
-        }
-        const revTargetDep = revDepGraph.get(edge.target);
-        if (revTargetDep) {
-				  revTargetDep.push(edge.source);
-        }
+				const sourceDep = depGraph.get(edge.source);
+				if (sourceDep) {
+					sourceDep.push(edge.target);
+				}
+				const revTargetDep = revDepGraph.get(edge.target);
+				if (revTargetDep) {
+					revTargetDep.push(edge.source);
+				}
 			}
 		}
 
@@ -59,18 +59,29 @@ export class NodeWFProcessor {
 		revDepGraph: Map<string, string[]>,
 	): string[] | null {
 		const indegree = new Map(
-			nodes.map((id) => [id, revDepGraph.get(id)!.length]),
+			nodes.map((id) => {
+				const deps = revDepGraph.get(id);
+				if (!deps) {
+					throw new Error(`Missing reverse dependencies for node ${id}`);
+				}
+				return [id, deps.length];
+			}),
 		);
 		const queue = nodes.filter((id) => indegree.get(id) === 0);
 		const order: string[] = [];
 
 		while (queue.length > 0) {
-			const current = queue.shift()!;
+			const current = queue.shift();
+			if (!current) break;
 			order.push(current);
 
 			const downstream = depGraph.get(current) || [];
 			for (const ds of downstream) {
-				const deg = indegree.get(ds)! - 1;
+				const currentDeg = indegree.get(ds);
+				if (currentDeg === undefined) {
+					throw new Error(`Missing indegree for node ${ds}`);
+				}
+				const deg = currentDeg - 1;
 				indegree.set(ds, deg);
 				if (deg === 0) {
 					queue.push(ds);
@@ -119,7 +130,8 @@ export class NodeWFProcessor {
 		const necessary = new Set<string>();
 		const queue: string[] = [...nodeIds];
 		while (queue.length > 0) {
-			const curr = queue.shift()!;
+			const curr = queue.shift();
+			if (!curr) break;
 			if (necessary.has(curr)) continue;
 			necessary.add(curr);
 			const ups = fullRevDepGraph.get(curr) || [];
@@ -145,7 +157,10 @@ export class NodeWFProcessor {
 		// Create tasks upfront for all necessary nodes
 		const tasksMap = new Map<string, { id: string; nodeId: string }>();
 		for (const nodeId of topoOrder) {
-			const node = data.nodes.find((n) => n.id === nodeId)!;
+			const node = data.nodes.find((n) => n.id === nodeId);
+			if (!node) {
+				throw new Error(`Node ${nodeId} not found in canvas data`);
+			}
 			const task = await this.prisma.task.create({
 				data: {
 					name: `Process node ${node.name || node.id}`,
@@ -172,7 +187,10 @@ export class NodeWFProcessor {
 
 		const executer = async () => {
 			for (const nodeId of topoOrder) {
-				const task = tasksMap.get(nodeId)!;
+				const task = tasksMap.get(nodeId);
+				if (!task) {
+					throw new Error(`Task not found for node ${nodeId}`);
+				}
 
 				// Defensive check: Ensure node still exists in DB before processing
 				const currentNode = await this.prisma.node.findUnique({
@@ -204,7 +222,10 @@ export class NodeWFProcessor {
 					},
 				});
 
-				const node = data.nodes.find((n) => n.id === nodeId)!;
+				const node = data.nodes.find((n) => n.id === nodeId);
+				if (!node) {
+					throw new Error("Node not found");
+				}
 				const template = await this.prisma.nodeTemplate.findUnique({
 					where: { type: currentNode.type },
 				});
@@ -223,8 +244,13 @@ export class NodeWFProcessor {
 
 					if (newResult) {
 						// Update in-memory data for propagation to downstream nodes
-						const updatedNode = data.nodes.find((n) => n.id === nodeId)!;
-						updatedNode.result = structuredClone(newResult);
+						const updatedNode = data.nodes.find((n) => n.id === nodeId);
+						if (!updatedNode) {
+							throw new Error("Node not found to update");
+						}
+						updatedNode.result = structuredClone(
+							newResult,
+						) as unknown as NodeResult;
 					}
 
 					const finishedAt = new Date();

@@ -33,12 +33,7 @@ export function bufferToDataUrl(buffer: Buffer, mimeType: string): string {
 export async function applyPaint(
 	baseBuffer: Buffer,
 	maskBuffer: Buffer,
-	options: {
-		backgroundColor?: string;
-	},
 ): Promise<Buffer> {
-	const { backgroundColor = "#000000" } = options;
-
 	// Get dimensions from both images
 	const baseImage = sharp(baseBuffer);
 	const baseMetadata = await baseImage.metadata();

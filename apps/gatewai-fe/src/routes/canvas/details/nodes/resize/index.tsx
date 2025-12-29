@@ -3,18 +3,10 @@ import type { NodeProps } from "@xyflow/react";
 import { memo, useEffect, useRef } from "react";
 import { useAppDispatch, useAppSelector } from "@/store";
 import { makeSelectNodeById, updateNodeConfig } from "@/store/nodes";
-import { useNodeImageUrl, useNodeResult } from "../../processor/processor-ctx";
+import { useNodeImageUrl } from "../../processor/processor-ctx";
 import { BaseNode } from "../base";
 import { DimensionsConfig } from "../common/dimensions";
 import type { ResizeNode } from "../node-props";
-
-const ImagePlaceholder = () => {
-	return (
-		<div className="w-full media-container h-[280px] flex items-center justify-center rounded">
-			<span className="text-gray-400 text-sm">No image connected</span>
-		</div>
-	);
-};
 
 const ResizeNodeComponent = memo((props: NodeProps<ResizeNode>) => {
 	const node = useAppSelector(makeSelectNodeById(props.id));
@@ -47,7 +39,6 @@ const ResizeNodeComponent = memo((props: NodeProps<ResizeNode>) => {
 				nodeConfig?.originalHeight == null ||
 				nodeConfig?.originalWidth == null
 			) {
-				console.log({ ow: img.width, oh: img.height });
 				// Set original dimensions in node config
 				dispatch(
 					updateNodeConfig({

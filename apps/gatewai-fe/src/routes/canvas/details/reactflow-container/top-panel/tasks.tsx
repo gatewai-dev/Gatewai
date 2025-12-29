@@ -47,7 +47,7 @@ const CanvasTasksPanel = memo(() => {
 	const failedCount = sortedFailedTaskBatches.length;
 	const totalCount = runningCount + failedCount;
 
-	let indicatorColor;
+	let indicatorColor: string;
 	if (failedCount > 0) {
 		indicatorColor = "bg-red-500";
 	} else if (runningCount > 0) {

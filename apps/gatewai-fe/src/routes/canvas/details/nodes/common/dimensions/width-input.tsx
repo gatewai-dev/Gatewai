@@ -1,9 +1,9 @@
 import type { ResizeNodeConfig } from "@gatewai/types";
 import { memo, useCallback, useEffect, useState } from "react";
 import { Input } from "@/components/ui/input";
+import { Label } from "@/components/ui/label";
 import type { NodeEntityType } from "@/store/nodes";
 import { useCanvasCtx } from "../../../ctx/canvas-ctx";
-import { Label } from "@/components/ui/label";
 
 const ResizeWidthInput = memo(
 	({
@@ -40,7 +40,7 @@ const ResizeWidthInput = memo(
 				return;
 			}
 			const value = parseInt(inputValue, 10);
-			if (isNaN(value) || value < 1 || value > 2000) {
+			if (Number.isNaN(value) || value < 1 || value > 2000) {
 				setInputValue(displayValue.toString());
 				return;
 			}
