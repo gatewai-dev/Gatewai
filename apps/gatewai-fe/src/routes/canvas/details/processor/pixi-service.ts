@@ -44,7 +44,8 @@ class PixiProcessorService {
 		}
 
 		if (!this.app) await this.init();
-		const app = this.app!;
+		if (!this.app) throw new Error("App is not initialized");
+		const app = this.app;
 
 		// Check cancellation before loading
 		if (signal?.aborted) {
@@ -116,7 +117,8 @@ class PixiProcessorService {
 		}
 
 		if (!this.app) await this.init();
-		const app = this.app!;
+		if (!this.app) throw new Error("App is not initialized");
+		const app = this.app;
 
 		// Check cancellation before loading
 		if (signal?.aborted) {
@@ -190,7 +192,8 @@ class PixiProcessorService {
 		}
 
 		if (!this.app) await this.init();
-		const app = this.app!;
+		if (!this.app) throw new Error("App is not initialized");
+		const app = this.app;
 
 		if (signal?.aborted) {
 			throw new DOMException("Operation cancelled", "AbortError");
@@ -286,7 +289,8 @@ class PixiProcessorService {
 		}
 
 		if (!this.app) await this.init();
-		const app = this.app!;
+		if (!this.app) throw new Error("App is not initialized");
+		const app = this.app;
 
 		if (signal?.aborted) {
 			throw new DOMException("Operation cancelled", "AbortError");

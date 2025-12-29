@@ -11,7 +11,7 @@ import {
 function OutputSelector({ node }: { node: NodeEntityType }) {
 	const dispatch = useAppDispatch();
 	const result = node?.result as unknown as NodeResult;
-	if (!result || isNaN(result.selectedOutputIndex)) {
+	if (!result || Number.isNaN(result.selectedOutputIndex)) {
 		return null;
 	}
 	const incrementSelectedIndex = () => {
@@ -23,7 +23,7 @@ function OutputSelector({ node }: { node: NodeEntityType }) {
 	};
 
 	return (
-		<div className="bg-background/20  text-white text-[8px] flex items-center gap-1">
+		<div className="bg-background/20 text-white text-[8px] flex items-center gap-1">
 			<Button
 				size="xs"
 				onClick={() => decrementSelectedIndex()}

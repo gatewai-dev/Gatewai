@@ -21,8 +21,6 @@ const ResizeNodeComponent = memo((props: NodeProps<ResizeNode>) => {
 	const dispatch = useAppDispatch();
 	const canvasRef = useRef<HTMLCanvasElement | null>(null);
 
-	// Get processed result from processor
-	const { result, isProcessing, error } = useNodeResult(props.id);
 	const imageUrl = useNodeImageUrl(props.id);
 
 	const nodeConfig = node?.config as ResizeNodeConfig | null;
@@ -45,7 +43,6 @@ const ResizeNodeComponent = memo((props: NodeProps<ResizeNode>) => {
 			canvas.style.height = "auto";
 			ctx.clearRect(0, 0, canvas.width, canvas.height);
 			ctx.drawImage(img, 0, 0);
-			console.log("ResizeNodeComponent loaded image", { img, nodeConfig });
 			if (
 				nodeConfig?.originalHeight == null ||
 				nodeConfig?.originalWidth == null
@@ -69,19 +66,9 @@ const ResizeNodeComponent = memo((props: NodeProps<ResizeNode>) => {
 	return (
 		<BaseNode {...props}>
 			<div className="flex flex-col gap-3">
-				{!result && !isProcessing ? (
-					<ImagePlaceholder />
-				) : (
-					<div className="w-full overflow-hidden rounded bg-black/5 min-h-[100px] relative">
-						<canvas ref={canvasRef} className="block w-full h-auto" />
-
-						{error && (
-							<div className="absolute inset-0 flex items-center justify-center bg-red-50/90">
-								<div className="text-sm text-red-600">Error: {error}</div>
-							</div>
-						)}
-					</div>
-				)}
+				<div className="w-full media-container overflow-hidden rounded bg-black/5 min-h-[100px] relative">
+					<canvas ref={canvasRef} className="block w-full h-auto" />
+				</div>
 				{node && <DimensionsConfig node={node} />}
 			</div>
 		</BaseNode>

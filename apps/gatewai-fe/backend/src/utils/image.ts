@@ -19,9 +19,11 @@ export function getMimeType(imageInput: FileData): string {
 	if (imageInput.entity?.mimeType) return imageInput.entity.mimeType;
 	if (imageInput.dataUrl) {
 		const match = imageInput.dataUrl.match(/^data:(image\/[^;]+);base64,/);
-		return match ? match[1] : "image/png";
+		if (match?.[1]) {
+			return match?.[1];
+		}
 	}
-	return "image/png";
+	throw new Error("Could not determine mime type");
 }
 
 export function bufferToDataUrl(buffer: Buffer, mimeType: string): string {

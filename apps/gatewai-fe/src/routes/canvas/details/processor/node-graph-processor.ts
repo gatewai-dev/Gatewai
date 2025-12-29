@@ -8,6 +8,7 @@ import type {
 	LLMResult,
 	MaskResult,
 	NodeResult,
+	PaintNodeConfig,
 	PaintResult,
 	ResizeNodeConfig,
 	TextResult,
@@ -98,7 +99,9 @@ export class NodeGraphProcessor extends EventEmitter {
 		const removedEdges = prevEdges.filter(
 			(pe) => !this.edges.some((e) => e.id === pe.id),
 		);
-		removedEdges.forEach((edge) => this.markDirty(edge.target, true));
+		removedEdges.forEach((edge) => {
+			this.markDirty(edge.target, true)
+		});
 
 		// Clean up states for deleted nodes
 		prevNodes.forEach((_, id) => {
@@ -194,11 +197,7 @@ export class NodeGraphProcessor extends EventEmitter {
 		});
 
 		this.registerProcessor("Paint", async ({ node, inputs, signal }) => {
-			const config = node.config as {
-				width?: number;
-				height?: number;
-				backgroundColor?: string;
-			};
+			const config = node.config as PaintNodeConfig;
 
 			const inputHandle = this.getInputHandles(node.id)[0];
 			const sourceNodeId = inputHandle
@@ -218,11 +217,8 @@ export class NodeGraphProcessor extends EventEmitter {
 				if (!imageUrl) throw new Error("No image URL");
 			}
 
-			const result = node.result as unknown as PaintResult;
-			const nodeOutput = result.outputs[result.selectedOutputIndex];
-			const nodeOutputItem = nodeOutput?.items?.find((f) => f.type === "Mask");
-			console.log({ nodeOutputItem });
-			if (!nodeOutputItem?.data.dataUrl) throw new Error("No mask data");
+			const maskDataUrl = config.paintData;
+			if (!maskDataUrl) throw new Error("No mask data");
 
 			const outputHandles = this.getOutputHandleEntities(node.id);
 			const imageOutputHandle = outputHandles.find((f) =>
@@ -238,7 +234,7 @@ export class NodeGraphProcessor extends EventEmitter {
 
 			const items: PaintResult["outputs"][number]["items"] = [];
 
-			let onlyMask = nodeOutputItem.data.dataUrl;
+			let onlyMask = maskDataUrl;
 			let imageWithMask: string | undefined;
 
 			if (sourceNodeId) {
@@ -249,7 +245,7 @@ export class NodeGraphProcessor extends EventEmitter {
 					onlyMask: processedOnlyMask,
 				} = await pixiProcessor.processMask(
 					imageUrl,
-					nodeOutputItem?.data.dataUrl,
+					maskDataUrl,
 					config.backgroundColor,
 					signal,
 				);
@@ -411,16 +407,20 @@ export class NodeGraphProcessor extends EventEmitter {
 	}
 
 	private getOrCreateNodeState(nodeId: string): NodeState {
-		if (!this.nodeStates.has(nodeId)) {
-			this.nodeStates.set(nodeId, {
-				isDirty: false,
-				isProcessing: false,
-				result: null,
-				error: null,
-				abortController: null,
-			});
+		const existing = this.nodeStates.get(nodeId);
+		if (existing) {
+			return existing;
 		}
-		return this.nodeStates.get(nodeId)!;
+
+		const newState: NodeState = {
+			isDirty: false,
+			isProcessing: false,
+			result: null,
+			error: null,
+			abortController: null,
+		};
+		this.nodeStates.set(nodeId, newState);
+		return newState;
 	}
 
 	private hasNodeChanged(prev: NodeEntityType, curr: NodeEntityType): boolean {
@@ -443,8 +443,13 @@ export class NodeGraphProcessor extends EventEmitter {
 
 		this.edges.forEach((edge) => {
 			if (this.nodes.has(edge.source) && this.nodes.has(edge.target)) {
-				this.dependencyGraph.get(edge.source)!.add(edge.target);
-				this.reverseDependencyGraph.get(edge.target)!.add(edge.source);
+				const sourceSet = this.dependencyGraph.get(edge.source);
+				const targetSet = this.reverseDependencyGraph.get(edge.target);
+				
+				if (sourceSet && targetSet) {
+					sourceSet.add(edge.target);
+					targetSet.add(edge.source);
+				}
 			}
 		});
 	}
@@ -461,16 +466,25 @@ export class NodeGraphProcessor extends EventEmitter {
 
 		for (const edge of this.edges) {
 			if (selectedSet.has(edge.source) && selectedSet.has(edge.target)) {
-				depGraph.get(edge.source)!.add(edge.target);
-				revDepGraph.get(edge.target)!.add(edge.source);
+				const sourceSet = depGraph.get(edge.source);
+				const targetSet = revDepGraph.get(edge.target);
+				
+				if (sourceSet && targetSet) {
+					sourceSet.add(edge.target);
+					targetSet.add(edge.source);
+				}
 			}
 		}
 
 		// Convert Sets to arrays for topological sort
 		const depArray = new Map<string, string[]>();
 		const revArray = new Map<string, string[]>();
-		depGraph.forEach((value, key) => depArray.set(key, Array.from(value)));
-		revDepGraph.forEach((value, key) => revArray.set(key, Array.from(value)));
+		depGraph.forEach((value, key) => {
+			depArray.set(key, Array.from(value))
+		});
+		revDepGraph.forEach((value, key) => {
+			revArray.set(key, Array.from(value))
+		});
 
 		return { depGraph: depArray, revDepGraph: revArray };
 	}
@@ -483,19 +497,27 @@ export class NodeGraphProcessor extends EventEmitter {
 		const indegree = new Map(
 			nodes.map((id) => [id, (revDepGraph.get(id) ?? []).length]),
 		);
-		const queue: string[] = nodes.filter((id) => indegree.get(id)! === 0);
+		const queue: string[] = nodes.filter((id) => {
+			const deg = indegree.get(id);
+			return deg !== undefined && deg === 0;
+		});
 		const order: string[] = [];
 
 		while (queue.length > 0) {
-			const current = queue.shift()!;
+			const current = queue.shift();
+			if (!current) break;
+			
 			order.push(current);
 
 			const downstream = depGraph.get(current) ?? [];
 			for (const ds of downstream) {
-				const deg = indegree.get(ds)! - 1;
-				indegree.set(ds, deg);
-				if (deg === 0) {
-					queue.push(ds);
+				const currentDeg = indegree.get(ds);
+				if (currentDeg !== undefined) {
+					const deg = currentDeg - 1;
+					indegree.set(ds, deg);
+					if (deg === 0) {
+						queue.push(ds);
+					}
 				}
 			}
 		}
@@ -520,7 +542,13 @@ export class NodeGraphProcessor extends EventEmitter {
 			const downstream = Array.from(
 				this.dependencyGraph.get(nodeId) ?? new Set(),
 			);
-			downstream.forEach((downstreamId) => this.markDirty(downstreamId, true));
+			downstream.forEach((downstreamId) => {
+				if (typeof downstreamId === 'string') {
+					this.markDirty(downstreamId, true)
+				} else {
+					throw new Error(`Invalid node Id detected: ${downstreamId}`);
+				}
+			});
 		}
 
 		// Trigger processing
@@ -544,8 +572,10 @@ export class NodeGraphProcessor extends EventEmitter {
 				const necessary = new Set<string>();
 				const queue: string[] = [...dirtyIds];
 				while (queue.length > 0) {
-					const curr = queue.shift()!;
+					const curr = queue.shift();
+					if (!curr) break;
 					if (necessary.has(curr)) continue;
+					
 					necessary.add(curr);
 					const ups = Array.from(this.reverseDependencyGraph.get(curr) ?? []);
 					ups.forEach((up) => {
@@ -646,6 +676,7 @@ export class NodeGraphProcessor extends EventEmitter {
 				sourceState.isDirty ||
 				sourceState.isProcessing
 			) {
+				console.log({sourceState: JSON.stringify(sourceState)})
 				return false;
 			}
 		}

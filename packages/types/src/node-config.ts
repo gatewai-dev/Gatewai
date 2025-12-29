@@ -44,6 +44,7 @@ const PaintNodeConfigSchema = z
 			.string()
 			.regex(/^#[0-9A-F]{6}$/i)
 			.optional(),
+		paintData: z.string().optional(),
 	})
 	.strict();
 

@@ -3,6 +3,7 @@ import { memo, useCallback, useEffect, useState } from "react";
 import { Input } from "@/components/ui/input";
 import type { NodeEntityType } from "@/store/nodes";
 import { useCanvasCtx } from "../../../ctx/canvas-ctx";
+import { Label } from "@/components/ui/label";
 
 const ResizeHeightInput = memo(
 	({
@@ -39,7 +40,7 @@ const ResizeHeightInput = memo(
 				return;
 			}
 			const value = parseInt(inputValue, 10);
-			if (isNaN(value) || value < 1 || value > 2000) {
+			if (Number.isNaN(value) || value < 1 || value > 2000) {
 				setInputValue(displayValue.toString());
 				return;
 			}
@@ -68,7 +69,7 @@ const ResizeHeightInput = memo(
 
 		return (
 			<div className="flex items-center gap-1 flex-1">
-				<label className="text-xs text-gray-600">Height</label>
+				<Label className="text-xs text-gray-600">Height</Label>
 				<Input
 					type="text"
 					inputMode="numeric"
