@@ -249,6 +249,7 @@ export async function SEED_createNodeTemplates(prisma: PrismaClient) {
 			defaultConfig: {
 				width: 1024,
 				height: 1024,
+        maintainAspect: true,
 				backgroundColor: "#000",
 			},
 		},

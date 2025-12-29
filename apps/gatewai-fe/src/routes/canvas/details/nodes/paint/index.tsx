@@ -42,7 +42,6 @@ const PaintNodeComponent = memo((props: NodeProps<PaintNode>) => {
 	const isDrawingRef = useRef(false);
 	const lastPositionRef = useRef<{ x: number; y: number } | null>(null);
 	const needsUpdateRef = useRef(false);
-	const initializedRef = useRef(false);
 	const skipNextSyncRef = useRef(false);
 
 	const containerStyle = inputImageUrl
@@ -67,11 +66,6 @@ const PaintNodeComponent = memo((props: NodeProps<PaintNode>) => {
 
 		ctx.clearRect(0, 0, canvas.width, canvas.height);
 
-		if (!inputImageUrl && nodeConfig?.backgroundColor) {
-			ctx.fillStyle = nodeConfig.backgroundColor;
-			ctx.fillRect(0, 0, canvas.width, canvas.height);
-		}
-
 		if (nodeConfig?.paintData) {
 			if (
 				!maskImageRef.current ||
@@ -93,7 +87,7 @@ const PaintNodeComponent = memo((props: NodeProps<PaintNode>) => {
 				ctx.drawImage(maskImageRef.current, 0, 0, canvas.width, canvas.height);
 			}
 		}
-	}, [inputImageUrl, nodeConfig]);
+	}, [nodeConfig]);
 
 	// Set up canvas dimensions on image load
 	const handleImageLoad = useCallback(() => {
@@ -115,13 +109,13 @@ const PaintNodeComponent = memo((props: NodeProps<PaintNode>) => {
 
 	useEffect(() => {
 		if (inputImageUrl) return;
-		if (initializedRef.current) return;
-
 		const canvas = canvasRef.current;
 		if (!canvas) return;
 
-		canvas.width = nodeConfig?.width;
-		canvas.height = nodeConfig?.height;
+		if (canvas.width !== nodeConfig?.width || canvas.height !== nodeConfig?.height) {
+			canvas.width = nodeConfig?.width;
+			canvas.height = nodeConfig?.height;
+		}
 
 		const ctx = canvas.getContext("2d");
 		if (!ctx) return;
@@ -130,7 +124,6 @@ const PaintNodeComponent = memo((props: NodeProps<PaintNode>) => {
 		ctx.lineJoin = "round";
 
 		drawMask();
-		initializedRef.current = true;
 	}, [inputImageUrl, nodeConfig, drawMask]);
 
 	useEffect(() => {
@@ -242,8 +235,8 @@ const PaintNodeComponent = memo((props: NodeProps<PaintNode>) => {
 					style={{
 						...containerStyle,
 						backgroundColor: inputImageUrl
-							? nodeConfig.backgroundColor
-							: undefined,
+							? undefined
+							: nodeConfig.backgroundColor,
 					}}
 				>
 					{inputImageUrl && (

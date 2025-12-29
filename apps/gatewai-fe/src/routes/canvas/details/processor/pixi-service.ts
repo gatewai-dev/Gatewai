@@ -1,3 +1,4 @@
+import type { PaintNodeConfig } from "@gatewai/types";
 import {
 	Application,
 	Assets,
@@ -281,12 +282,16 @@ class PixiProcessorService {
 	public async processMask(
 		imageUrl: string | undefined,
 		maskUrl: string,
-		backgroundColor?: string,
+		config: PaintNodeConfig,
 		signal?: AbortSignal,
 	): Promise<{ imageWithMask: string; onlyMask: string }> {
 		if (signal?.aborted) {
 			throw new DOMException("Operation cancelled", "AbortError");
 		}
+    const { width, height, backgroundColor } = config;
+
+    let widthToUse: number = width;
+    let heightToUse: number = height;
 
 		if (!this.app) await this.init();
 		if (!this.app) throw new Error("App is not initialized");
@@ -313,19 +318,15 @@ class PixiProcessorService {
 				throw new DOMException("Operation cancelled", "AbortError");
 			}
 
-			if (
-				texture.width !== maskTexture.width ||
-				texture.height !== maskTexture.height
-			) {
-				throw new Error("Image and mask dimensions do not match");
-			}
-
 			baseSprite = new Sprite(texture);
+      		widthToUse = texture.width;
+      		heightToUse = texture.height;
+
 		} else if (backgroundColor) {
 			// Create a colored background using Graphics
 			const graphics = new Graphics();
 			graphics.beginFill(backgroundColor);
-			graphics.drawRect(0, 0, maskTexture.width, maskTexture.height);
+			graphics.drawRect(0, 0, width, height);
 			graphics.endFill();
 			baseSprite = graphics;
 		} else {
@@ -333,7 +334,7 @@ class PixiProcessorService {
 		}
 
 		// Resize the renderer to match dimensions
-		app.renderer.resize(maskTexture.width, maskTexture.height);
+		app.renderer.resize(widthToUse, heightToUse);
 
 		// 3. Setup the Scene with Container
 		const container = new Container();
