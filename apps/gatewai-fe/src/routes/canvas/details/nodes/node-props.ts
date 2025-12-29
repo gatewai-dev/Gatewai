@@ -14,11 +14,13 @@ import type {
 	LLMNodeConfig,
 	MaskNodeConfig,
 	MaskResult,
+	NodeResult,
 	NodeWithFileType,
 	PaintNodeConfig,
 	PaintResult,
 	ResizeNodeConfig,
 	ResizeResult,
+	NoteNodeConfig,
 	TextNodeConfig,
 	TextResult,
 	ThreeDNodeConfig,
@@ -72,6 +74,11 @@ export type ResizeNode = Node<
 	"Resize"
 >;
 
+export type NoteNode = Node<
+	NodeWithFileType<NoteNodeConfig, NodeResult>,
+	"Note"
+>;
+
 export type AnyNode =
 	| TextNode
 	| LLMNode
@@ -80,6 +87,7 @@ export type AnyNode =
 	| AgentNode
 	| ThreeDNode
 	| MaskNode
+	| NoteNode
 	| PaintNode
 	| BlurNode
 	| CropNode

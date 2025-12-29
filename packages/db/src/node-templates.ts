@@ -63,7 +63,7 @@ export async function SEED_createNodeTemplates(prisma: PrismaClient) {
 		data: {
 			type: NodeType.Preview,
 			displayName: "Preview",
-			description: "A preview node for files like video or image",
+			description: "Preview your media",
 			tokenPrice: 0.0,
 			variableInputs: false,
 			variableOutputs: false,
@@ -87,8 +87,8 @@ export async function SEED_createNodeTemplates(prisma: PrismaClient) {
 	await prisma.nodeTemplate.create({
 		data: {
 			type: NodeType.File,
-			displayName: "File",
-			description: "A file output node",
+			displayName: "Import",
+			description: "Upload your media",
 			tokenPrice: 0.0,
 			variableInputs: false,
 			variableOutputs: false,
@@ -112,7 +112,7 @@ export async function SEED_createNodeTemplates(prisma: PrismaClient) {
 		data: {
 			type: NodeType.Export,
 			displayName: "Export",
-			description: "An export node for files",
+			description: "A download / output node",
 			tokenPrice: 0.0,
 			variableInputs: false,
 			variableOutputs: false,
@@ -137,7 +137,7 @@ export async function SEED_createNodeTemplates(prisma: PrismaClient) {
 		data: {
 			type: NodeType.Toggle,
 			displayName: "Toggle",
-			description: "A toggle node for boolean output",
+			description: "A toggle for True/False data type",
 			tokenPrice: 0.0,
 			variableInputs: false,
 			variableOutputs: false,
@@ -161,7 +161,7 @@ export async function SEED_createNodeTemplates(prisma: PrismaClient) {
 		data: {
 			type: NodeType.Crawler,
 			displayName: "Crawler",
-			description: "A crawler node with text in/out",
+			description: "A crawler agent",
 			tokenPrice: 0.0,
 			variableInputs: false,
 			variableOutputs: false,
@@ -191,7 +191,7 @@ export async function SEED_createNodeTemplates(prisma: PrismaClient) {
 		data: {
 			type: NodeType.Resize,
 			displayName: "Resize",
-			description: "A resize node for video/image files",
+			description: "Resize media",
 			tokenPrice: 0.0,
 			variableInputs: false,
 			variableOutputs: false,
@@ -221,7 +221,7 @@ export async function SEED_createNodeTemplates(prisma: PrismaClient) {
 		data: {
 			type: NodeType.Paint,
 			displayName: "Paint",
-			description: "A painter node with image input and mask/image outputs",
+			description: "Draw on media",
 			tokenPrice: 0.0,
 			variableInputs: false,
 			variableOutputs: false,
@@ -249,7 +249,7 @@ export async function SEED_createNodeTemplates(prisma: PrismaClient) {
 			defaultConfig: {
 				width: 1024,
 				height: 1024,
-        maintainAspect: true,
+        		maintainAspect: true,
 				backgroundColor: "#000",
 			},
 		},
@@ -260,7 +260,7 @@ export async function SEED_createNodeTemplates(prisma: PrismaClient) {
 		data: {
 			type: NodeType.Blur,
 			displayName: "Blur",
-			description: "A blur effect node",
+			description: "Apply blur to media",
 			tokenPrice: 0.0,
 			variableInputs: false,
 			variableOutputs: false,
@@ -290,7 +290,7 @@ export async function SEED_createNodeTemplates(prisma: PrismaClient) {
 		data: {
 			type: NodeType.Crop,
 			displayName: "Crop",
-			description: "Crop images",
+			description: "Crop media",
 			tokenPrice: 0.0,
 			variableInputs: false,
 			variableOutputs: false,
@@ -325,7 +325,7 @@ export async function SEED_createNodeTemplates(prisma: PrismaClient) {
 		data: {
 			type: NodeType.Compositor,
 			displayName: "Compositor",
-			description: "A compositor node with multiple image inputs",
+			description: "Compose an image using image or text",
 			tokenPrice: 0.0,
 			variableInputs: true,
 			variableOutputs: false,
@@ -358,7 +358,7 @@ export async function SEED_createNodeTemplates(prisma: PrismaClient) {
 		data: {
 			type: NodeType.Describer,
 			displayName: "Describer",
-			description: "A describer node for images",
+			description: "Describe image with AI",
 			tokenPrice: 0.0,
 			variableInputs: false,
 			variableOutputs: false,
@@ -388,7 +388,7 @@ export async function SEED_createNodeTemplates(prisma: PrismaClient) {
 		data: {
 			type: NodeType.Router,
 			displayName: "Router",
-			description: "A router node with text in/out",
+			description: "A router node for better graph layout",
 			tokenPrice: 0.0,
 			variableInputs: false,
 			variableOutputs: false,

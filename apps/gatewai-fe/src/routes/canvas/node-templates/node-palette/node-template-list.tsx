@@ -88,7 +88,7 @@ export function NodeTemplateList({ templates }: NodeListProps) {
 		<div className="flex flex-col gap-3 w-60">
 			{catKeys.map((cat) => (
 				<div key={cat}>
-					<h2 className="text-xl font-bold mb-4">{cat}</h2>
+					<h2 className="font-bold mb-4">{cat}</h2>
 					{Object.entries(groups[cat])
 						.sort(([subA], [subB]) => subA.localeCompare(subB))
 						.map(([sub, temps]) => (

@@ -6,6 +6,7 @@ import { ImageGenNodeComponent } from "./image-gen";
 import { LlmNodeComponent } from "./llm";
 import { PaintNodeComponent } from "./paint";
 import { ResizeNodeComponent } from "./resize";
+import { NoteNodeComponent } from "./sticky-note";
 import { TextNodeComponent } from "./text";
 
 // Node types mapping
@@ -19,6 +20,7 @@ const nodeTypes = {
 	Agent: AgentNodeComponent,
 	Crop: CropNodeComponent,
 	Paint: PaintNodeComponent,
+  Note: NoteNodeComponent,
 };
 
 // Export components
@@ -28,6 +30,7 @@ export {
 	TextNodeComponent,
 	ResizeNodeComponent,
 	ImageGenNodeComponent,
+  	NoteNodeComponent,
 	BlurNodeComponent,
 	CropNodeComponent,
 	FileNodeComponent,

@@ -47,18 +47,14 @@ const ImageGenNodeComponent = memo((props: NodeProps<ImageGenNode>) => {
 	return (
 		<BaseNode {...props}>
 			<div className="flex flex-col gap-3">
-				{!result ? (
-					<ImagePlaceholder />
-				) : (
-					<div className="w-full overflow-hidden rounded bg-black/5 min-h-[100px] relative">
-						{hasMoreThanOneOutput && (
-							<div className="absolute top-1 left-1 z-10">
-								<OutputSelector node={node} />
-							</div>
-						)}
-						<canvas ref={canvasRef} className="block w-full h-auto" />
-					</div>
-				)}
+				<div className="media-container w-full overflow-hidden rounded  min-h-[100px] relative">
+					{hasMoreThanOneOutput && (
+						<div className="absolute top-1 left-1 z-10">
+							<OutputSelector node={node} />
+						</div>
+					)}
+					<canvas ref={canvasRef} className="block w-full h-auto" />
+				</div>
 
 				<div className="flex justify-between items-center w-full">
 					<CreateHandleButton nodeProps={props} />

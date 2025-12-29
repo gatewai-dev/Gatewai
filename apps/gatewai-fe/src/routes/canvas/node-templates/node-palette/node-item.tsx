@@ -9,7 +9,7 @@ import {
 } from "@/components/ui/tooltip";
 import { useCanvasCtx } from "@/routes/canvas/details/ctx/canvas-ctx";
 import type { NodeTemplateListItemRPC } from "@/rpc/types";
-import { iconMap } from "./icon-map";
+import { NODE_ICON_MAP } from "./icon-map";
 
 export function NodeItem({ template }: { template: NodeTemplateListItemRPC }) {
 	const { rfInstance, createNewNode } = useCanvasCtx();
@@ -47,7 +47,7 @@ export function NodeItem({ template }: { template: NodeTemplateListItemRPC }) {
 		},
 	});
 
-	const Icon = iconMap[template.type] || iconMap.File;
+	const Icon = NODE_ICON_MAP[template.type] || NODE_ICON_MAP.File;
 
 	return (
 		<TooltipProvider delayDuration={500}>

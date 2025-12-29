@@ -1,8 +1,8 @@
-// src/node-palette/SearchInput.tsx
 import { Input } from "@/components/ui/input";
 import { useNodePalette } from "./node-palette.ctx";
+import { memo } from "react";
 
-export function SearchInput() {
+const SearchInput  = memo(() => {
 	const { searchQuery, setSearchQuery } = useNodePalette();
 
 	return (
@@ -12,4 +12,6 @@ export function SearchInput() {
 			onChange={(e) => setSearchQuery(e.target.value)}
 		/>
 	);
-}
+});
+
+export { SearchInput }

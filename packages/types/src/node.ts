@@ -4,7 +4,7 @@ import type { FileData, NodeResult } from "./node-result.js";
 
 export type NodeWithFileType<
 	T extends AllNodeConfig,
-	R extends NodeResult,
+	R extends (NodeResult | null),
 > = Node & {
 	fileData: FileData | null;
 	config: T;

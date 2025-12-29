@@ -243,9 +243,9 @@ export class NodeGraphProcessor extends EventEmitter {
 					imageWithMask: processedImageWithMask,
 					onlyMask: processedOnlyMask,
 				} = await pixiProcessor.processMask(
+					config,
 					imageUrl,
 					maskDataUrl,
-					config,
 					signal,
 				);
 

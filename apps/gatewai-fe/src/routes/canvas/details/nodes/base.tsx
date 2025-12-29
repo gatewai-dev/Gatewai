@@ -15,6 +15,7 @@ import { useAppSelector } from "@/store";
 import { makeSelectHandlesByNodeId } from "@/store/handles";
 import { makeSelectNodeById } from "@/store/nodes";
 import { NodeMenu } from "./node-menu";
+import { NODE_ICON_MAP } from "../../node-templates/node-palette/icon-map";
 
 const getColorForType = (type: string) => {
 	return (
@@ -48,6 +49,7 @@ const BaseNode = memo(
 		}, [handles]);
 
 		const nodeBackgroundColor = "bg-background";
+		const Icon = NODE_ICON_MAP[node?.type] || NODE_ICON_MAP.File;
 
 		return (
 			<div
@@ -100,8 +102,11 @@ const BaseNode = memo(
 
 				<div className="px-2 py-2 h-[calc(100%-1rem)]">
 					<div className="header-section flex justify-between items-center mb-3 px-1">
-						<div className="text-xs font-semibold text-node-title">
-							{node?.name} {node?.id}
+						<div className="flex items-center gap-2">
+							<Icon className="w-4 h-4 shrink-0 " />
+							<div className="text-xs font-semibold text-node-title">
+								{node?.name} {node?.id}
+							</div>
 						</div>
 						<NodeMenu {...props} />
 					</div>
