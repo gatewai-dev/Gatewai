@@ -6,11 +6,7 @@
 		"useIgnoreFile": true
 	},
 	"files": {
-		"ignoreUnknown": false,
-		"includes": [
-			"**",
-			"!**/generated"
-		]
+		"ignoreUnknown": false
 	},
 	"formatter": {
 		"enabled": true,
