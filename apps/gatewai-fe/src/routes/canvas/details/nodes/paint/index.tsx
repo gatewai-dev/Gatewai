@@ -13,6 +13,8 @@ import { useCanvasCtx } from "../../ctx/canvas-ctx";
 import { useNodeImageUrl } from "../../processor/processor-ctx";
 import { BaseNode } from "../base";
 import type { PaintNode } from "../node-props";
+import { Separator } from "@/components/ui/separator";
+import { DimensionsConfig } from "../common/dimensions";
 
 const PaintNodeComponent = memo((props: NodeProps<PaintNode>) => {
 	const { onNodeConfigUpdate } = useCanvasCtx();
@@ -48,10 +50,10 @@ const PaintNodeComponent = memo((props: NodeProps<PaintNode>) => {
 		: { aspectRatio: `${nodeConfig?.width} / ${nodeConfig?.height}` };
 	console.log({ inputImageUrl });
 	const updateConfig = useCallback(
-		(dataUrl: string) => {
+		(cfg: Partial<PaintNodeConfig>) => {
 			onNodeConfigUpdate({
 				id: props.id,
-				newConfig: { ...nodeConfig, paintData: dataUrl },
+				newConfig: { ...nodeConfig, ...cfg },
 			});
 		},
 		[nodeConfig, onNodeConfigUpdate, props.id],
@@ -204,7 +206,7 @@ const PaintNodeComponent = memo((props: NodeProps<PaintNode>) => {
 			const canvas = canvasRef.current;
 			if (canvas) {
 				skipNextSyncRef.current = true;
-				updateConfig(canvas.toDataURL("image/webp"));
+				updateConfig({paintData: canvas.toDataURL("image/webp")});
 			}
 			needsUpdateRef.current = false;
 		}
@@ -216,8 +218,7 @@ const PaintNodeComponent = memo((props: NodeProps<PaintNode>) => {
 			const ctx = canvas.getContext("2d");
 			if (ctx) {
 				ctx.clearRect(0, 0, canvas.width, canvas.height);
-				console.log("UUU");
-				updateConfig(canvas.toDataURL("image/webp"));
+				updateConfig({paintData: canvas.toDataURL("image/webp")});
 			}
 		}
 	}, [updateConfig]);
@@ -315,6 +316,23 @@ const PaintNodeComponent = memo((props: NodeProps<PaintNode>) => {
 						<span>{brushSize}</span>
 					</div>
 				</div>
+        <Separator />
+        <div className="flex items-center gap-2">
+          <DimensionsConfig node={node} disabled={inputImageUrl != null} />
+          <Separator orientation="vertical" className=" h-full" />
+          <div className="flex flex-col items-start gap-1">
+            <Label htmlFor="bg-color">Background</Label>
+            <Input
+              id="bg-color"
+              type="color"
+              value={nodeConfig.backgroundColor}
+              onChange={(e) => {
+				        updateConfig({backgroundColor: e.target.value});
+              }}
+              className="w-8 h-8 p-1 rounded border bg-background"
+            />
+          </div>
+        </div>
 			</div>
 		</BaseNode>
 	);

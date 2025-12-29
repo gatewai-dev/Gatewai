@@ -3,9 +3,12 @@ packages:
   - apps/*
 
 catalogs:
-  "genkit":
-    "genkit": ^1.13.0
-  "@genkit-ai/ai":
-    "@genkit-ai/ai": ^1.13.0
+  '@genkit-ai/ai':
+    '@genkit-ai/ai': ^1.13.0
+  genkit:
+    genkit: ^1.13.0
   prisma:
     prisma: latest
+
+onlyBuiltDependencies:
+  - lefthook

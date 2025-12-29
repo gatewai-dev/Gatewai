@@ -1,4 +1,4 @@
-import type { AllNodeConfig, NodeResult } from "@gatewai/types";
+import type { AllNodeConfig, NodeResult, Output } from "@gatewai/types";
 import {
 	createDraftSafeSelector,
 	createEntityAdapter,
@@ -6,7 +6,7 @@ import {
 	type PayloadAction,
 } from "@reduxjs/toolkit";
 import type { CanvasDetailsRPC } from "@/rpc/types";
-import { type BatchEntity, getBatchDetails } from "./tasks";
+import { getBatchDetails } from "./tasks";
 
 export type NodeEntityType = CanvasDetailsRPC["nodes"][number];
 
@@ -58,7 +58,7 @@ const nodesSlice = createSlice({
 			const node = state.entities[id] as NodeEntityType;
 			const result = node.result as {
 				selectedOutputIndex?: number;
-				outputs?: unknown[];
+				outputs?: Output[];
 			};
 			if (!result) {
 				throw new Error("Node result is undefined");
@@ -165,7 +165,6 @@ export const {
 	deleteNodeEntity,
 	deleteManyNodeEntity,
 	setAllNodeEntities,
-	updateTextNodeValue,
 	incrementSelectedResultIndex,
 	decrementSelectedResultIndex,
 	setSelectedNodeIds,

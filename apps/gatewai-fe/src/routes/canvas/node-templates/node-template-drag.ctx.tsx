@@ -1,4 +1,4 @@
-import type { NodeTemplate } from "@gatewai/types";
+import type { NodeTemplateListRPC } from "@/rpc/types";
 import {
 	createContext,
 	type PropsWithChildren,
@@ -6,9 +6,10 @@ import {
 	useState,
 } from "react";
 
+type NodeTemplateEntity = NodeTemplateListRPC[number]
 interface NodeTemplateDnDContextType {
-	template: NodeTemplate | undefined;
-	setTemplate: (template: NodeTemplate | undefined) => void;
+	template: NodeTemplateEntity | undefined;
+	setTemplate: (template: NodeTemplateEntity | undefined) => void;
 }
 
 const NodeTemplateDnDContext = createContext<
@@ -16,7 +17,7 @@ const NodeTemplateDnDContext = createContext<
 >(undefined);
 
 const NodeTemplateDnDProvider = ({ children }: PropsWithChildren) => {
-	const [template, setTemplate] = useState<NodeTemplate | undefined>();
+	const [template, setTemplate] = useState<NodeTemplateEntity | undefined>();
 
 	return (
 		<NodeTemplateDnDContext.Provider value={{ template, setTemplate }}>

@@ -17,7 +17,7 @@ import type {
 	NodeWithFileType,
 	PaintNodeConfig,
 	PaintResult,
-	ResizeNodeData,
+	ResizeNodeConfig,
 	ResizeResult,
 	TextNodeConfig,
 	TextResult,
@@ -68,7 +68,7 @@ export type CompositorNode = Node<
 	"Compositor"
 >;
 export type ResizeNode = Node<
-	NodeWithFileType<ResizeNodeData, ResizeResult>,
+	NodeWithFileType<ResizeNodeConfig, ResizeResult>,
 	"Resize"
 >;
 

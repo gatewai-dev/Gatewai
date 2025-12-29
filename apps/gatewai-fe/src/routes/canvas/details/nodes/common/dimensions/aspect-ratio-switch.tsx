@@ -16,10 +16,12 @@ const AspectRatioSwitch = memo(
 		node,
 		originalWidth,
 		originalHeight,
+		disabled,
 	}: {
 		node: NodeEntityType;
 		originalWidth: number | null;
 		originalHeight: number | null;
+		disabled?:boolean;
 	}) => {
 		const config = node?.config as ResizeNodeConfig;
 		const maintainAspect = config.maintainAspect ?? true;
@@ -52,6 +54,7 @@ const AspectRatioSwitch = memo(
 					<TooltipTrigger asChild>
 						<Button
 							variant="outline"
+							disabled={disabled}
 							size="icon-sm"
 							onClick={() => handleChange(!maintainAspect)}
 						>

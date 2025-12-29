@@ -636,12 +636,13 @@ export class NodeGraphProcessor extends EventEmitter {
 						}
 
 						const inputs = this.collectInputs(nodeId);
+						console.log("node:start", { nodeId, inputs })
 						const result = await processor({
 							node,
 							inputs,
 							signal: state.abortController.signal,
 						});
-
+						console.log("node:processed", { nodeId, result })
 						state.result = result;
 						state.isDirty = false;
 						this.emit("node:processed", { nodeId, result });

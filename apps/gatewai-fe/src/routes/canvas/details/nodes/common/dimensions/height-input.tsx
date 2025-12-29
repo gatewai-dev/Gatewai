@@ -11,11 +11,13 @@ const ResizeHeightInput = memo(
 		originalWidth,
 		originalHeight,
 		maintainAspect,
+		disabled,
 	}: {
 		node: NodeEntityType;
 		originalWidth: number | null;
 		originalHeight: number | null;
 		maintainAspect: boolean;
+		disabled?:boolean
 	}) => {
 		const config: ResizeNodeConfig = node?.config as ResizeNodeConfig;
 		const { onNodeConfigUpdate } = useCanvasCtx();
@@ -68,10 +70,11 @@ const ResizeHeightInput = memo(
 		]);
 
 		return (
-			<div className="flex items-center gap-1 flex-1">
+			<div className="flex flex-col gap-1 flex-1">
 				<Label className="text-xs text-gray-600">Height</Label>
 				<Input
 					type="text"
+					disabled={disabled}
 					inputMode="numeric"
 					pattern="[0-9]*"
 					value={inputValue}
