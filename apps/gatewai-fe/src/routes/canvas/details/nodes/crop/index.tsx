@@ -45,7 +45,7 @@ const CropNodeComponent = memo((props: NodeProps<CropNode>) => {
 	const inputImageUrl = useNodeImageUrl(inputNodeId);
 	const node = useAppSelector(makeSelectNodeById(props.id));
 	const { isProcessing, error } = useNodeResult(props.id);
-	const imageRef = useRef<HTMLImageElement>(null);
+	const canvasRef = useRef<HTMLCanvasElement>(null);
 	const nodeConfig = node?.config as CropNodeConfig;
 	const [crop, setCrop] = useState<Crop>({
 		leftPercentage: nodeConfig?.leftPercentage ?? 0,
@@ -55,6 +55,9 @@ const CropNodeComponent = memo((props: NodeProps<CropNode>) => {
 	});
 	const [dragState, setDragState] = useState<DragState | null>(null);
 	const latestCropRef = useRef(crop);
+
+	const [containerStyle, setContainerStyle] = useState<React.CSSProperties | undefined>(undefined);
+	const [canvasStyle, setCanvasStyle] = useState<React.CSSProperties>({});
 
 	// Keep ref in sync with crop state
 	useEffect(() => {
@@ -72,6 +75,30 @@ const CropNodeComponent = memo((props: NodeProps<CropNode>) => {
 			});
 		}
 	}, [nodeConfig]);
+
+	// Setup canvas when input image changes
+	useEffect(() => {
+		if (inputImageUrl) {
+			const img = new Image();
+			img.src = inputImageUrl;
+			img.onload = () => {
+				setContainerStyle({
+					aspectRatio: `${img.naturalWidth} / ${img.naturalHeight}`,
+				});
+				setCanvasStyle({
+					backgroundImage: `url(${inputImageUrl})`,
+					backgroundSize: "contain",
+					backgroundPosition: "center",
+					backgroundRepeat: "no-repeat",
+				});
+				const canvas = canvasRef.current;
+				if (canvas) {
+					canvas.width = img.naturalWidth;
+					canvas.height = img.naturalHeight;
+				}
+			};
+		}
+	}, [inputImageUrl]);
 
 	const updateConfig = useCallback(
 		(newCrop: Crop) => {
@@ -125,14 +152,14 @@ const CropNodeComponent = memo((props: NodeProps<CropNode>) => {
 	);
 
 	useEffect(() => {
-		if (!dragState || !imageRef.current) return;
+		if (!dragState || !canvasRef.current) return;
 
-		const imageRect = imageRef.current.getBoundingClientRect();
+		const canvasRect = canvasRef.current.getBoundingClientRect();
 
 		const handleMouseMove = (e: MouseEvent) => {
 			e.preventDefault();
-			const dx = ((e.clientX - dragState.startX) / imageRect.width) * 100;
-			const dy = ((e.clientY - dragState.startY) / imageRect.height) * 100;
+			const dx = ((e.clientX - dragState.startX) / canvasRect.width) * 100;
+			const dy = ((e.clientY - dragState.startY) / canvasRect.height) * 100;
 			let newCrop = { ...dragState.startCrop };
 
 			switch (dragState.type) {
@@ -210,21 +237,18 @@ const CropNodeComponent = memo((props: NodeProps<CropNode>) => {
 						"min-h-64": !inputImageUrl,
 					},
 				)}
+				style={containerStyle}
 			>
-				{inputImageUrl && (
-					<img
-						ref={imageRef}
-						src={inputImageUrl}
-						className="block w-full h-auto"
-						alt="Input image for cropping"
-						draggable={false}
-					/>
-				)}
+				<canvas
+					ref={canvasRef}
+					className="absolute inset-0 w-full h-auto"
+					style={canvasStyle}
+				/>
 
 				{/* Dark overlay for cropped-out areas */}
 				<div className="absolute inset-0 pointer-events-none">
 					<svg width="100%" height="100%" className="absolute inset-0">
-						<title>Dark Overlay</title>
+						<title>Dark</title>
 						<defs>
 							<mask id={`crop-mask-${props.id}`}>
 								<rect width="100%" height="100%" fill="white" />

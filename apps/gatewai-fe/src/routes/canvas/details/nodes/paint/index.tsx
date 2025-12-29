@@ -61,7 +61,7 @@ const PaintNodeComponent = memo((props: NodeProps<PaintNode>) => {
 		if (!canvas) return;
 		const ctx = canvas.getContext("2d");
 		if (!ctx) return;
-
+		console.log('DMS')
 		ctx.clearRect(0, 0, canvas.width, canvas.height);
 
 		if (nodeConfig?.paintData) {

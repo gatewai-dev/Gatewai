@@ -3,7 +3,7 @@ import type { AppType } from "./../../backend/src/index";
 
 const rpcClient = hc<AppType>("/", {
 	init: {
-		credentials: "include",
+		credentials: 'same-origin',
 	},
 });
 export { rpcClient };
