@@ -13,7 +13,6 @@ import {
 	PiHash,
 	PiMagnifyingGlass,
 	PiNote,
-	PiPaintBrush,
 	PiPaintBrushFill,
 	PiPaintBucket,
 	PiResize,

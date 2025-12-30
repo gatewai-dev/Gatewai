@@ -7,7 +7,7 @@ const useHasOutputItems = (nodeEntity: NodeEntityType | undefined) =>
 			return false;
 		}
 		const outputs = nodeEntity?.result?.outputs;
-		const hasOutputs = outputs && outputs?.length;
+		const hasOutputs = outputs?.length;
 		if (hasOutputs) {
 			const hasItems = outputs[0].items && outputs[0].items.length > 0;
 			return hasItems;
