@@ -242,7 +242,7 @@ const CropNodeComponent = memo((props: NodeProps<CropNode>) => {
 		<BaseNode {...props}>
 			<div
 				className={cn(
-					"media-container w-full overflow-hidden bg-black/5 relative select-none",
+					"media-container w-full overflow-hidden bg-black/5 min-h-12 relative select-none",
 					{
 						"min-h-64": !inputImageUrl,
 					},

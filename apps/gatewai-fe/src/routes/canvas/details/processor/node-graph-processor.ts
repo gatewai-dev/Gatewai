@@ -103,21 +103,21 @@ export class NodeGraphProcessor extends EventEmitter {
 	/**
 	 * Get current result for a node
 	 */
-	getNodeResult(nodeId: string): NodeResult | null {
+	getNodeResult(nodeId: NodeEntityType["id"]): NodeResult | null {
 		return this.nodeStates.get(nodeId)?.result ?? null;
 	}
 
 	/**
 	 * Get processing state for a node
 	 */
-	getNodeState(nodeId: string): NodeState | null {
+	getNodeState(nodeId: NodeEntityType["id"]): NodeState | null {
 		return this.nodeStates.get(nodeId) ?? null;
 	}
 
 	/**
 	 * Manually trigger processing for a node
 	 */
-	async processNode(nodeId: string): Promise<void> {
+	async processNode(nodeId: NodeEntityType["id"]): Promise<void> {
 		this.markDirty(nodeId, true);
 		await this.startProcessing();
 	}
@@ -164,6 +164,9 @@ export class NodeGraphProcessor extends EventEmitter {
 
 			// Build result
 			const outputHandle = this.getOutputHandleIDs(node.id)[0];
+			if (!outputHandle) {
+				throw new Error("Output handle not found");
+			}
 			const newResult: NodeResult = {
 				selectedOutputIndex: 0,
 				outputs: [
@@ -190,6 +193,7 @@ export class NodeGraphProcessor extends EventEmitter {
 				? this.getSourceNodeID(node.id, inputHandle)
 				: null;
 
+			const sourceHandleId = this.getSourceHandleId(inputHandle);
 			let imageUrl: string | undefined;
 			if (sourceNodeId) {
 				const inputResult = inputs.get(sourceNodeId);
@@ -197,7 +201,7 @@ export class NodeGraphProcessor extends EventEmitter {
 
 				const output =
 					inputResult.outputs[inputResult.selectedOutputIndex ?? 0];
-				const fileData = output?.items[0]?.data as FileData;
+				const fileData = output?.items.find(f => f.outputHandleId === sourceHandleId)?.data as FileData;
 				imageUrl = fileData?.entity?.signedUrl ?? fileData?.dataUrl;
 
 				if (!imageUrl) throw new Error("No image URL");
@@ -224,7 +228,6 @@ export class NodeGraphProcessor extends EventEmitter {
 
 			if (sourceNodeId) {
 				if (!imageOutputHandle) throw new Error("Missing image output handle");
-
 				const {
 					imageWithMask: processedImageWithMask,
 					onlyMask: processedOnlyMask,
@@ -264,20 +267,22 @@ export class NodeGraphProcessor extends EventEmitter {
 		});
 		// Blur processor
 		this.registerProcessor("Blur", async ({ node, inputs, signal }) => {
-			const inputHandle = this.getInputHandleIDs(node.id)[0];
-			if (!inputHandle) return null;
-
-			const sourceNodeId = this.getSourceNodeID(node.id, inputHandle);
+			const inputHandleId = this.getInputHandleIDs(node.id)[0];
+			if (!inputHandleId) return null;
+			
+			const sourceNodeId = this.getSourceNodeID(node.id, inputHandleId);
 			if (!sourceNodeId) return null;
 
 			const inputResult = inputs.get(sourceNodeId);
 			if (!inputResult) return null;
 
-			// Extract image URL
+			const sourceHandleId = this.getSourceHandleId(inputHandleId);
+			console.log({sourceHandleId})
+			// Get Image (or Mask)
 			const output = inputResult.outputs[inputResult.selectedOutputIndex ?? 0];
-			const fileData = output?.items[0]?.data as FileData;
-			const imageUrl = fileData?.entity?.signedUrl ?? fileData?.dataUrl;
-
+			const fileData = output?.items.find(f => f.outputHandleId === sourceHandleId)?.data as FileData;
+			const imageUrl = fileData?.dataUrl ?? fileData?.entity?.signedUrl;
+			console.log({imageUrl, oi: output?.items, sourceHandleId})
 			if (!imageUrl) return null;
 
 			// Process with Pixi
@@ -288,7 +293,7 @@ export class NodeGraphProcessor extends EventEmitter {
 				signal,
 			);
 
-			// Build result
+			// Attach to only output
 			const outputHandle = this.getOutputHandleIDs(node.id)[0];
 			const newResult: NodeResult = {
 				selectedOutputIndex: 0,
@@ -347,20 +352,22 @@ export class NodeGraphProcessor extends EventEmitter {
 
 		// Resize processor
 		this.registerProcessor("Resize", async ({ node, inputs, signal }) => {
-			const inputHandle = this.getInputHandleIDs(node.id)[0];
-			if (!inputHandle) return null;
+			const inputHandleId = this.getInputHandleIDs(node.id)[0];
+			if (!inputHandleId) return null;
 
-			const sourceNodeId = this.getSourceNodeID(node.id, inputHandle);
+			const sourceNodeId = this.getSourceNodeID(node.id, inputHandleId);
 			if (!sourceNodeId) return null;
+
 			const inputResult = inputs.get(sourceNodeId);
 			if (!inputResult) return null;
+			const sourceHandleId = this.getSourceHandleId(inputHandleId);
 
 			// Extract image URL
 			const output = inputResult.outputs[inputResult.selectedOutputIndex ?? 0];
-			const fileData = output?.items[0]?.data as FileData;
+			const fileData = output?.items.find(f => f.outputHandleId === sourceHandleId)?.data as FileData;
 			const imageUrl = fileData?.entity?.signedUrl ?? fileData?.dataUrl;
 
-			if (!imageUrl) throw new Error("No image URL");
+			if (!imageUrl) return null;
 
 			// Process with Pixi
 			const config = node.config as ResizeNodeConfig;
@@ -391,7 +398,7 @@ export class NodeGraphProcessor extends EventEmitter {
 		});
 	}
 
-	private getOrCreateNodeState(nodeId: string): NodeState {
+	private getOrCreateNodeState(nodeId: NodeEntityType["id"]): NodeState {
 		const existing = this.nodeStates.get(nodeId);
 		if (existing) {
 			return existing;
@@ -418,20 +425,20 @@ export class NodeGraphProcessor extends EventEmitter {
 	}
 
 	private hasNodeInputsChanged(
-		nodeId: string,
+		nodeId: NodeEntityType["id"],
 		prevEdges: EdgeEntityType[],
 	): boolean {
 		const prevInputs = new Map<string, string>(); // targetHandleId -> sourceNodeId
 		prevEdges.forEach((e) => {
 			if (e.target === nodeId) {
-				prevInputs.set(e.targetHandleId, e.source);
+				prevInputs.set(e.targetHandleId, e.sourceHandleId);
 			}
 		});
 
 		const currInputs = new Map<string, string>(); // targetHandleId -> sourceNodeId
 		this.edges.forEach((e) => {
 			if (e.target === nodeId) {
-				currInputs.set(e.targetHandleId, e.source);
+				currInputs.set(e.targetHandleId, e.sourceHandleId);
 			}
 		});
 		console.log({ nodeId, prevEdges, de: this.edges });
@@ -537,7 +544,7 @@ export class NodeGraphProcessor extends EventEmitter {
 		return order.length === nodes.length ? order : null;
 	}
 
-	private markDirty(nodeId: string, cascade: boolean): void {
+	private markDirty(nodeId: NodeEntityType["id"], cascade: boolean): void {
 		const state = this.getOrCreateNodeState(nodeId);
 
 		// Cancel if already processing
@@ -678,7 +685,7 @@ export class NodeGraphProcessor extends EventEmitter {
 		}
 	}
 
-	private ensureInputsReady(nodeId: string): boolean {
+	private ensureInputsReady(nodeId: NodeEntityType["id"]): boolean {
 		const sourceNodeIds = this.getSourceNodeIDs(nodeId);
 
 		for (const sourceId of sourceNodeIds) {
@@ -696,7 +703,7 @@ export class NodeGraphProcessor extends EventEmitter {
 		return true;
 	}
 
-	private collectInputs(nodeId: string): Map<string, NodeResult> {
+	private collectInputs(nodeId: NodeEntityType["id"]): Map<string, NodeResult> {
 		const inputs = new Map<string, NodeResult>();
 		const sourceNodeIds = this.getSourceNodeIDs(nodeId);
 
@@ -710,18 +717,22 @@ export class NodeGraphProcessor extends EventEmitter {
 		return inputs;
 	}
 
-	private getSourceNodeIDs(nodeId: string): string[] {
+	private getSourceNodeIDs(nodeId: NodeEntityType["id"]): string[] {
 		return this.edges.filter((e) => e.target === nodeId).map((e) => e.source);
 	}
 
-	private getSourceNodeID(nodeId: string, handleId: string): string | null {
+	private getSourceHandleId(targetHandleId: HandleEntityType["id"]) {
+		return this.edges.find(f => f.targetHandleId === targetHandleId)?.sourceHandleId;
+	}
+
+	private getSourceNodeID(nodeId: NodeEntityType["id"], handleId: HandleEntityType["id"]): string | null {
 		const edge = this.edges.find(
 			(e) => e.target === nodeId && e.targetHandleId === handleId,
 		);
 		return edge?.source ?? null;
 	}
 
-	private getInputHandleIDs(nodeId: string): string[] {
+	private getInputHandleIDs(nodeId: NodeEntityType["id"]): string[] {
 		return Array.from(
 			new Set(
 				this.edges
@@ -731,7 +742,7 @@ export class NodeGraphProcessor extends EventEmitter {
 		);
 	}
 
-	private getOutputHandleIDs(nodeId: string): string[] {
+	private getOutputHandleIDs(nodeId: NodeEntityType["id"]): string[] {
 		return Array.from(
 			new Set(
 				this.edges
@@ -741,7 +752,7 @@ export class NodeGraphProcessor extends EventEmitter {
 		);
 	}
 
-	private getOutputHandleEntities(nodeId: string): HandleEntityType[] {
+	private getOutputHandleEntities(nodeId: NodeEntityType["id"]): HandleEntityType[] {
 		return Array.from(new Set(this.handles.filter((e) => e.nodeId === nodeId)));
 	}
 

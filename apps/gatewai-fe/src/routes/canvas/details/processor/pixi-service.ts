@@ -312,8 +312,10 @@ class PixiProcessorService {
 			}
 
 			maskSprite = new Sprite(maskTexture);
-			widthToUse = maskTexture.width;
-			heightToUse = maskTexture.height;
+			if (!imageUrl) {
+				widthToUse = config.width;
+				heightToUse = config.height;
+			}
 		}
 
 		// Resize the renderer to match dimensions
@@ -347,7 +349,7 @@ class PixiProcessorService {
 			app.stage.removeChildren();
 			throw new DOMException("Operation cancelled", "AbortError");
 		}
-
+		console.log({onlyMask})
 		// 3. Now load/create the background and add it to the container
 		let baseSprite: Sprite | Graphics;
 

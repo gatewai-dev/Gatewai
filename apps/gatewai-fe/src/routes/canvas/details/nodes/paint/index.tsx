@@ -88,13 +88,14 @@ const PaintNodeComponent = memo((props: NodeProps<PaintNode>) => {
 		}
 	}, [nodeConfig]);
 
-	useEffect(() => {
+		useEffect(() => {
 		if (!inputImageUrl && nodeConfig) {
 			setContainerStyle({
 				aspectRatio: `${nodeConfig.width} / ${nodeConfig.height}`,
 			});
 			setCanvasStyle({
 				backgroundColor: nodeConfig.backgroundColor,
+				backgroundImage: "none",
 			});
 			const canvas = canvasRef.current;
 			if (canvas) {
@@ -120,6 +121,7 @@ const PaintNodeComponent = memo((props: NodeProps<PaintNode>) => {
 				});
 				setCanvasStyle({
 					backgroundImage: `url(${inputImageUrl})`,
+					backgroundColor: 'none',
 					backgroundSize: "contain",
 					backgroundPosition: "center",
 					backgroundRepeat: "no-repeat",
@@ -240,7 +242,7 @@ const PaintNodeComponent = memo((props: NodeProps<PaintNode>) => {
 		<BaseNode {...props}>
 			<div className="flex flex-col gap-3">
 				<div
-					className="media-container w-full overflow-hidden30 relative select-none"
+					className="media-container w-full overflow-hidden relative select-none"
 					style={containerStyle}
 				>
 					<canvas

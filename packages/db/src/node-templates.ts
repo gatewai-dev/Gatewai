@@ -112,7 +112,7 @@ export async function SEED_createNodeTemplates(prisma: PrismaClient) {
 		data: {
 			type: NodeType.Export,
 			displayName: "Export",
-			description: "A download / output node",
+			description: "A UI download / API output node",
 			tokenPrice: 0.0,
 			variableInputs: false,
 			variableOutputs: false,
@@ -462,8 +462,8 @@ export async function SEED_createNodeTemplates(prisma: PrismaClient) {
 	await prisma.nodeTemplate.create({
 		data: {
 			type: NodeType.ImageGen,
-			displayName: "Multimodal Image Generation",
-			description: "Generate images using text prompt and reference images",
+			displayName: "Multimodal Image",
+			description: "Generate images using text prompt and reference image(s)",
 			tokenPrice: 0.0,
 			variableInputs: false,
 			variableOutputs: false,
