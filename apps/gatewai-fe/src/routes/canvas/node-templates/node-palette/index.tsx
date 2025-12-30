@@ -18,15 +18,13 @@ export function NodePalette() {
 
 	return (
 		<NodePaletteProvider>
-			<div className="node-palette flex flex-col gap-2 p-4 max-h-full">
-				<div className="shrink-0 flex flex-col gap-2">
+			<div className="node-palette flex flex-col gap-2 p-4 max-h-full  relative">
+				<div className="shrink-0 flex flex-col gap-2 sticky">
 					<SearchInput />
 					<DataTypeMultiSelect />
 				</div>
 				<Separator />
-				<div className="grow overflow-auto">
-					<NodeTemplateList templates={nodeTemplates} />
-				</div>
+				<NodeTemplateList templates={nodeTemplates} />
 			</div>
 		</NodePaletteProvider>
 	);
