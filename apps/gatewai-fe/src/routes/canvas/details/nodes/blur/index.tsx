@@ -11,14 +11,20 @@ const BlurNodeComponent = memo((props: NodeProps<BlurNode>) => {
 	const node = useAppSelector(makeSelectNodeById(props.id));
 	const canvasRef = useRef<HTMLCanvasElement | null>(null);
 	const imageUrl = useNodeImageUrl(props.id);
-
+	console.log({imageUrl, id: node?.id})
+	
 	// Draw to canvas when result is ready
 	useEffect(() => {
-		if (!imageUrl || !canvasRef.current) return;
+		if (!canvasRef.current) return;
 
 		const canvas = canvasRef.current;
 		const ctx = canvas.getContext("2d");
 		if (!ctx) return;
+
+		if (!imageUrl) {
+			ctx.clearRect(0, 0, canvas.width, canvas.height);
+			return;
+		}
 
 		const img = new Image();
 		img.crossOrigin = "anonymous";

@@ -33,7 +33,7 @@ export function ProcessorProvider({ children }: { children: React.ReactNode }) {
 	useEffect(() => {
 		processor.updateGraph({
 			nodes: new Map(
-				Object.entries(nodes).filter(([, v]) => v !== undefined) as [
+				Object.entries(nodes).filter(([, v]) => v.type !== 'Note' &&  v !== undefined) as [
 					string,
 					NodeEntityType,
 				][],
@@ -114,7 +114,7 @@ export function useNodeResult<T extends NodeResult = NodeResult>(
  */
 export function useNodeImageUrl(nodeId: string): string | null {
 	const { result } = useNodeResult(nodeId);
-
+	console.log({result, nodeId})
 	if (!result) return null;
 
 	const output = result.outputs[result.selectedOutputIndex ?? 0];

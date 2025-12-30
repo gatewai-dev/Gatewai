@@ -39,7 +39,7 @@ import {
 	usePatchCanvasMutation,
 	useProcessNodesMutationMutation,
 } from "@/store/canvas";
-import { type EdgeEntityType, setAllEdgeEntities } from "@/store/edges";
+import { type EdgeEntityType, setAllEdgeEntities, deleteManyEdgeEntity } from "@/store/edges";
 import {
 	addManyHandleEntities,
 	createHandleEntity,
@@ -433,14 +433,15 @@ const CanvasProvider = ({
 			const nodesToDelete = rfNodes.filter((n) => nodeIds.includes(n.id));
 			const newNodes = rfNodes.filter((f) => !nodeIds.includes(f.id));
 			const edgesToRemove = getConnectedEdges(nodesToDelete, rfEdges);
+			console.log({edgesToRemove})
 			const deletedEdgeIds = edgesToRemove.map((m) => m.id);
 			const newEdges = rfEdges.filter((f) => !deletedEdgeIds.includes(f.id));
 			const deletedHandleIds = handleEntities
 				.filter((m) => nodeIds.includes(m.nodeId))
 				.map((m) => m.id);
-
-			dispatch(setNodes(newNodes));
+			dispatch(deleteManyEdgeEntity(deletedEdgeIds));
 			dispatch(deleteManyNodeEntity(nodeIds));
+			dispatch(setNodes(newNodes));
 			dispatch(setEdges(newEdges));
 			dispatch(deleteManyHandleEntity(deletedHandleIds));
 

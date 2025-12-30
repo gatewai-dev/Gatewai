@@ -17,7 +17,7 @@ export const canvasListAPI = createApi({
 		getCanvasList: build.query<CanvasListRPC, CanvasListRPCParams>({
 			providesTags: ["canvasList"],
 			queryFn: async (params) => {
-				const response = await rpcClient.api.v1["canvas"].$get(params);
+				const response = await rpcClient.api.v1.canvas.$get(params);
 				if (!response.ok) {
 					return {
 						error: { status: response.status, data: await response.text() },
@@ -30,7 +30,7 @@ export const canvasListAPI = createApi({
 		createCanvas: build.mutation<CreateCanvasRPC, CreateCanvasRPCParams>({
 			invalidatesTags: ["canvasList"],
 			queryFn: async (params) => {
-				const response = await rpcClient.api.v1["canvas"].$post(params);
+				const response = await rpcClient.api.v1.canvas.$post(params);
 				if (!response.ok) {
 					return {
 						error: { status: response.status, data: await response.text() },

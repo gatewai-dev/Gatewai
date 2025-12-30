@@ -80,26 +80,34 @@ const CropNodeComponent = memo((props: NodeProps<CropNode>) => {
 
 	// Setup canvas when input image changes
 	useEffect(() => {
-		if (inputImageUrl) {
-			const img = new Image();
-			img.src = inputImageUrl;
-			img.onload = () => {
-				setContainerStyle({
-					aspectRatio: `${img.naturalWidth} / ${img.naturalHeight}`,
-				});
-				setCanvasStyle({
-					backgroundImage: `url(${inputImageUrl})`,
-					backgroundSize: "contain",
-					backgroundPosition: "center",
-					backgroundRepeat: "no-repeat",
-				});
-				const canvas = canvasRef.current;
-				if (canvas) {
-					canvas.width = img.naturalWidth;
-					canvas.height = img.naturalHeight;
-				}
-			};
+		if (!canvasRef.current) return;
+
+		const canvas = canvasRef.current;
+		const ctx = canvas.getContext("2d");
+		if (!ctx) return;
+
+		if (!inputImageUrl) {
+			setContainerStyle(undefined);
+			setCanvasStyle({});
+			ctx.clearRect(0, 0, canvas.width, canvas.height);
+			return;
 		}
+
+		const img = new Image();
+		img.src = inputImageUrl;
+		img.onload = () => {
+			setContainerStyle({
+				aspectRatio: `${img.naturalWidth} / ${img.naturalHeight}`,
+			});
+			setCanvasStyle({
+				backgroundImage: `url(${inputImageUrl})`,
+				backgroundSize: "contain",
+				backgroundPosition: "center",
+				backgroundRepeat: "no-repeat",
+			});
+			canvas.width = img.naturalWidth;
+			canvas.height = img.naturalHeight;
+		};
 	}, [inputImageUrl]);
 
 	const updateConfig = useCallback(

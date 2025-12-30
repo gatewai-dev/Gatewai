@@ -31,7 +31,6 @@ const PaintNodeComponent = memo((props: NodeProps<PaintNode>) => {
 	const maskImageRef = useRef<HTMLImageElement | null>(null);
 
 	const inputImageUrl = useNodeImageUrl(inputNodeId);
-
 	const canvasRef = useRef<HTMLCanvasElement>(null);
 
 	const [brushSize, setBrushSize] = useState(20);
@@ -241,7 +240,7 @@ const PaintNodeComponent = memo((props: NodeProps<PaintNode>) => {
 		<BaseNode {...props}>
 			<div className="flex flex-col gap-3">
 				<div
-					className="w-full overflow-hidden bg-black/5 min-h-[100px] relative select-none"
+					className="media-container w-full overflow-hidden30 relative select-none"
 					style={containerStyle}
 				>
 					<canvas

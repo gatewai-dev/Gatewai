@@ -85,10 +85,10 @@ export function DataTypeMultiSelect() {
 				</Button>
 			</PopoverTrigger>
 			<PopoverContent className="w-full p-0">
-				<Command className="max-h-[400px] overflow-y-auto">
+				<Command className="overflow-y-auto">
 					<CommandGroup heading="From">
 						{Array.from(inputDataTypes).map((type) => (
-							<CommandItem key={type} onSelect={() => toggleFromType(type)}>
+							<CommandItem key={`${type}_i`} onSelect={() => toggleFromType(type)}>
 								<Check
 									className={cn(
 										"mr-2 h-4 w-4",
@@ -101,7 +101,7 @@ export function DataTypeMultiSelect() {
 					</CommandGroup>
 					<CommandGroup heading="To">
 						{Array.from(outputDataTypes).map((type) => (
-							<CommandItem key={type} onSelect={() => toggleToType(type)}>
+							<CommandItem key={`${type}_o`} onSelect={() => toggleToType(type)}>
 								<Check
 									className={cn(
 										"mr-2 h-4 w-4",

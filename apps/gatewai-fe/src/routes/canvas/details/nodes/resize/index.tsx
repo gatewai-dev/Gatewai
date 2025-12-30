@@ -18,11 +18,16 @@ const ResizeNodeComponent = memo((props: NodeProps<ResizeNode>) => {
 	const nodeConfig = node?.config as ResizeNodeConfig | null;
 	// Draw to canvas when result is ready
 	useEffect(() => {
-		if (!imageUrl || !canvasRef.current || !node) return;
+		if (!canvasRef.current) return;
 
 		const canvas = canvasRef.current;
 		const ctx = canvas.getContext("2d");
-		if (!ctx) return;
+		if (!ctx || !node) return;
+
+		if (!imageUrl) {
+			ctx.clearRect(0, 0, canvas.width, canvas.height);
+			return;
+		}
 
 		const img = new Image();
 		img.crossOrigin = "anonymous";

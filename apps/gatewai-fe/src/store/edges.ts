@@ -23,6 +23,7 @@ const edgesSlice = createSlice({
 	reducers: {
 		createEdgeEntity: edgeAdapter.addOne,
 		updateEdgeEntity: edgeAdapter.updateOne,
+		deleteManyEdgeEntity: edgeAdapter.removeMany,
 		deleteEdgeEntity: edgeAdapter.removeOne,
 		setAllEdgeEntities: edgeAdapter.setAll,
 		setSelectedEdgeIds: (
@@ -85,6 +86,7 @@ export const {
 	updateEdgeEntity,
 	deleteEdgeEntity,
 	setAllEdgeEntities,
+	deleteManyEdgeEntity,
 	setSelectedEdgeIds,
 } = actions;
 // Export the reducer, either as a default or named export

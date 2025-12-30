@@ -104,7 +104,7 @@ const BaseNode = memo(
 					<div className="header-section flex justify-between items-center mb-3 px-1">
 						<div className="flex items-center gap-2">
 							<Icon className="w-4 h-4 shrink-0 " />
-							<div className="text-xs font-semibold text-node-title">
+							<div className="text-xs text-node-title">
 								{node?.name} {node?.id}
 							</div>
 						</div>
