@@ -5,6 +5,7 @@
 ## Support
 
 Click that ⭐ button!
+
 ![Click](/assets/ddr.gif "Click"){width=250}
 
 ## Asset Bucket CORS configuration
