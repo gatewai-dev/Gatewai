@@ -17,7 +17,7 @@ const ResizeWidthInput = memo(
 		originalWidth: number | null;
 		originalHeight: number | null;
 		maintainAspect: boolean;
-		disabled?:boolean;
+		disabled?: boolean;
 	}) => {
 		const config: ResizeNodeConfig = node?.config as ResizeNodeConfig;
 		const { onNodeConfigUpdate } = useCanvasCtx();

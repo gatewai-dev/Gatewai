@@ -1,12 +1,12 @@
-import type { NodeTemplateListRPC } from "@/rpc/types";
 import {
 	createContext,
 	type PropsWithChildren,
 	useContext,
 	useState,
 } from "react";
+import type { NodeTemplateListRPC } from "@/rpc/types";
 
-type NodeTemplateEntity = NodeTemplateListRPC[number]
+type NodeTemplateEntity = NodeTemplateListRPC[number];
 interface NodeTemplateDnDContextType {
 	template: NodeTemplateEntity | undefined;
 	setTemplate: (template: NodeTemplateEntity | undefined) => void;

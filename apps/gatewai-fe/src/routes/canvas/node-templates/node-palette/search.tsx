@@ -1,8 +1,8 @@
+import { memo } from "react";
 import { Input } from "@/components/ui/input";
 import { useNodePalette } from "./node-palette.ctx";
-import { memo } from "react";
 
-const SearchInput  = memo(() => {
+const SearchInput = memo(() => {
 	const { searchQuery, setSearchQuery } = useNodePalette();
 
 	return (
@@ -14,4 +14,4 @@ const SearchInput  = memo(() => {
 	);
 });
 
-export { SearchInput }
+export { SearchInput };

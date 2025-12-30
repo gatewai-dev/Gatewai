@@ -5,6 +5,7 @@ import { memo, useCallback, useEffect, useMemo, useRef, useState } from "react";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
+import { Separator } from "@/components/ui/separator";
 import { Slider } from "@/components/ui/slider";
 import { useAppSelector } from "@/store";
 import { makeSelectEdgesByTargetNodeId } from "@/store/edges";
@@ -12,9 +13,8 @@ import { makeSelectNodeById } from "@/store/nodes";
 import { useCanvasCtx } from "../../ctx/canvas-ctx";
 import { useNodeImageUrl } from "../../processor/processor-ctx";
 import { BaseNode } from "../base";
-import type { PaintNode } from "../node-props";
-import { Separator } from "@/components/ui/separator";
 import { DimensionsConfig } from "../common/dimensions";
+import type { PaintNode } from "../node-props";
 
 const PaintNodeComponent = memo((props: NodeProps<PaintNode>) => {
 	const { onNodeConfigUpdate } = useCanvasCtx();
@@ -38,7 +38,9 @@ const PaintNodeComponent = memo((props: NodeProps<PaintNode>) => {
 	const [brushColor, setBrushColor] = useState("#444444");
 	const [tool, setTool] = useState<"brush" | "eraser">("brush");
 
-	const [containerStyle, setContainerStyle] = useState<React.CSSProperties | undefined>(undefined);
+	const [containerStyle, setContainerStyle] = useState<
+		React.CSSProperties | undefined
+	>(undefined);
 	const [canvasStyle, setCanvasStyle] = useState<React.CSSProperties>({});
 
 	const isDrawingRef = useRef(false);
@@ -61,7 +63,7 @@ const PaintNodeComponent = memo((props: NodeProps<PaintNode>) => {
 		if (!canvas) return;
 		const ctx = canvas.getContext("2d");
 		if (!ctx) return;
-		console.log('DMS')
+		console.log("DMS");
 		ctx.clearRect(0, 0, canvas.width, canvas.height);
 
 		if (nodeConfig?.paintData) {
@@ -211,7 +213,7 @@ const PaintNodeComponent = memo((props: NodeProps<PaintNode>) => {
 			const canvas = canvasRef.current;
 			if (canvas) {
 				skipNextSyncRef.current = true;
-				updateConfig({paintData: canvas.toDataURL("image/webp")});
+				updateConfig({ paintData: canvas.toDataURL("image/webp") });
 			}
 			needsUpdateRef.current = false;
 		}
@@ -223,7 +225,7 @@ const PaintNodeComponent = memo((props: NodeProps<PaintNode>) => {
 			const ctx = canvas.getContext("2d");
 			if (ctx) {
 				ctx.clearRect(0, 0, canvas.width, canvas.height);
-				updateConfig({paintData: canvas.toDataURL("image/webp")});
+				updateConfig({ paintData: canvas.toDataURL("image/webp") });
 			}
 		}
 	}, [updateConfig]);
@@ -303,24 +305,26 @@ const PaintNodeComponent = memo((props: NodeProps<PaintNode>) => {
 						<span>{brushSize}</span>
 					</div>
 				</div>
-        <Separator />
-        {node && <div className="flex items-center gap-2">
-          <DimensionsConfig node={node} disabled={inputImageUrl != null} />
-          <Separator orientation="vertical" className=" h-full" />
-          <div className="flex flex-col items-start gap-1">
-            <Label htmlFor="bg-color">Background</Label>
-            <Input
-              id="bg-color"
-              type="color"
-              value={nodeConfig?.backgroundColor}
-              onChange={(e) => {
-				updateConfig({backgroundColor: e.target.value});
-              }}
-              className="w-8 h-8 p-1 rounded border bg-background"
-            />
-          </div>
-        </div>}
-		</div>
+				<Separator />
+				{node && (
+					<div className="flex items-center gap-2">
+						<DimensionsConfig node={node} disabled={inputImageUrl != null} />
+						<Separator orientation="vertical" className=" h-full" />
+						<div className="flex flex-col items-start gap-1">
+							<Label htmlFor="bg-color">Background</Label>
+							<Input
+								id="bg-color"
+								type="color"
+								value={nodeConfig?.backgroundColor}
+								onChange={(e) => {
+									updateConfig({ backgroundColor: e.target.value });
+								}}
+								className="w-8 h-8 p-1 rounded border bg-background"
+							/>
+						</div>
+					</div>
+				)}
+			</div>
 		</BaseNode>
 	);
 });

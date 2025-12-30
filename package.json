@@ -4,7 +4,7 @@
 		"build": "turbo run build --force",
 		"dev": "turbo run dev",
 		"biome": "pnpm exec biome check --write",
-		"biome-hook": "pnpm exec biome check --write --no-errors-on-unmatched --files-ignore-unknown=true --colors=off {staged_files}",
+		"biome-hook": "pnpm exec biome check --write --no-errors-on-unmatched --files-ignore-unknown=true --colors=off",
 		"clean": "turbo run clean && rm -rf node_modules",
 		"format": "prettier --write \"**/*.{ts,tsx,md}\"",
 		"changeset": "changeset",

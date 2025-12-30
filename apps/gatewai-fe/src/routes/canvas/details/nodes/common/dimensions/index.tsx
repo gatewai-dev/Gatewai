@@ -4,7 +4,13 @@ import { AspectRatioSwitch } from "./aspect-ratio-switch";
 import { ResizeHeightInput } from "./height-input";
 import { ResizeWidthInput } from "./width-input";
 
-function DimensionsConfig({ node, disabled }: { node: NodeEntityType, disabled?: boolean }) {
+function DimensionsConfig({
+	node,
+	disabled,
+}: {
+	node: NodeEntityType;
+	disabled?: boolean;
+}) {
 	const nodeConfig = node.config as ResizeNodeConfig | PaintNodeConfig;
 	return (
 		<div className="flex items-end gap-2">

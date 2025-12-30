@@ -9,9 +9,9 @@ import {
 	MediaTimeRange,
 	MediaVolumeRange,
 } from "media-chrome/react";
+import type { NodeEntityType } from "@/store/nodes";
 import { GetAssetEndpoint } from "@/utils/file";
 import { OutputSelector } from "./misc/output-selector";
-import type { NodeEntityType } from "@/store/nodes";
 
 function MediaContent({
 	node,

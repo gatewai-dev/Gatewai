@@ -216,14 +216,17 @@ const CanvasProvider = ({
 		});
 	}, [canvasId, patchCanvasAsync, store]);
 
-	const scheduleSave = useCallback(() => {
-		if (timeoutRef.current) {
-			clearTimeout(timeoutRef.current);
-		}
-		timeoutRef.current = setTimeout(() => {
-			save();
-		}, 2500);
-	}, [save]);
+	const scheduleSave = useCallback(
+		(delay?: number) => {
+			if (timeoutRef.current) {
+				clearTimeout(timeoutRef.current);
+			}
+			timeoutRef.current = setTimeout(() => {
+				save();
+			}, delay ?? 2500);
+		},
+		[save],
+	);
 
 	const createNewHandle = useCallback(
 		(newHandle: HandleEntityType) => {
@@ -538,7 +541,12 @@ const CanvasProvider = ({
 			dispatch(createNode(newNode));
 			dispatch(createNodeEntity(nodeEntity));
 			dispatch(addManyHandleEntities(handles));
-			scheduleSave();
+			let saveDelay: number | undefined;
+			// I have a lidl suspicion that this will fucking bite me asp
+			if (template.type === "File") {
+				saveDelay = 50;
+			}
+			scheduleSave(saveDelay);
 		},
 		[canvasId, dispatch, scheduleSave],
 	);

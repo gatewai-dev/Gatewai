@@ -25,10 +25,14 @@ export function DataTypeMultiSelect() {
 		new Set(nodeTemplates?.flatMap((tmp) => tmp.templateHandles)),
 	);
 	const inputDataTypes = new Set(
-		templateHandles.filter((f) => f.type === "Input").flatMap((m) => m.dataTypes),
+		templateHandles
+			.filter((f) => f.type === "Input")
+			.flatMap((m) => m.dataTypes),
 	);
 	const outputDataTypes = new Set(
-		templateHandles.filter((f) => f.type === "Output").flatMap((m) => m.dataTypes),
+		templateHandles
+			.filter((f) => f.type === "Output")
+			.flatMap((m) => m.dataTypes),
 	);
 
 	useEffect(() => {

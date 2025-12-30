@@ -280,131 +280,130 @@ class PixiProcessorService {
 	 * Returns image with mask overlay and the mask alone
 	 */
 	public async processMask(
-	config: PaintNodeConfig,
-	imageUrl: string | undefined,
-	maskUrl?: string,
-	signal?: AbortSignal,
-): Promise<{ imageWithMask: string; onlyMask: string }> {
-	if (signal?.aborted) {
-		throw new DOMException("Operation cancelled", "AbortError");
-	}
-	const { width, height, backgroundColor } = config;
-
-	let widthToUse: number = width;
-	let heightToUse: number = height;
-
-	if (!this.app) await this.init();
-	if (!this.app) throw new Error("App is not initialized");
-	const app = this.app;
-
-	if (signal?.aborted) {
-		throw new DOMException("Operation cancelled", "AbortError");
-	}
-
-	// 1. Load the mask texture if provided
-	let maskTexture: any;
-	let maskSprite: Sprite | undefined;
-	if (maskUrl) {
-		maskTexture = await Assets.load(maskUrl);
-		
+		config: PaintNodeConfig,
+		imageUrl: string | undefined,
+		maskUrl?: string,
+		signal?: AbortSignal,
+	): Promise<{ imageWithMask: string; onlyMask: string }> {
 		if (signal?.aborted) {
 			throw new DOMException("Operation cancelled", "AbortError");
 		}
-		
-		maskSprite = new Sprite(maskTexture);
-		widthToUse = maskTexture.width;
-		heightToUse = maskTexture.height;
-	}
+		const { width, height, backgroundColor } = config;
 
-	// Resize the renderer to match dimensions
-	app.renderer.resize(widthToUse, heightToUse);
+		let widthToUse: number = width;
+		let heightToUse: number = height;
 
-	// 2. First, render and extract ONLY the mask
-	const container = new Container();
-	
-	if (maskSprite) {
-		container.addChild(maskSprite);
-	}
+		if (!this.app) await this.init();
+		if (!this.app) throw new Error("App is not initialized");
+		const app = this.app;
 
-	app.stage.removeChildren();
-	app.stage.addChild(container);
+		if (signal?.aborted) {
+			throw new DOMException("Operation cancelled", "AbortError");
+		}
 
-	if (signal?.aborted) {
+		// 1. Load the mask texture if provided
+		let maskTexture: any;
+		let maskSprite: Sprite | undefined;
+		if (maskUrl) {
+			maskTexture = await Assets.load(maskUrl);
+
+			if (signal?.aborted) {
+				throw new DOMException("Operation cancelled", "AbortError");
+			}
+
+			maskSprite = new Sprite(maskTexture);
+			widthToUse = maskTexture.width;
+			heightToUse = maskTexture.height;
+		}
+
+		// Resize the renderer to match dimensions
+		app.renderer.resize(widthToUse, heightToUse);
+
+		// 2. First, render and extract ONLY the mask
+		const container = new Container();
+
+		if (maskSprite) {
+			container.addChild(maskSprite);
+		}
+
 		app.stage.removeChildren();
-		throw new DOMException("Operation cancelled", "AbortError");
-	}
-
-	app.render();
-
-	if (signal?.aborted) {
-		app.stage.removeChildren();
-		throw new DOMException("Operation cancelled", "AbortError");
-	}
-
-	const onlyMask = await app.renderer.extract.base64(app.stage);
-
-	if (signal?.aborted) {
-		app.stage.removeChildren();
-		throw new DOMException("Operation cancelled", "AbortError");
-	}
-
-	// 3. Now load/create the background and add it to the container
-	let baseSprite: Sprite | Graphics;
-
-	if (imageUrl) {
-		const texture = await Assets.load(imageUrl);
+		app.stage.addChild(container);
 
 		if (signal?.aborted) {
 			app.stage.removeChildren();
 			throw new DOMException("Operation cancelled", "AbortError");
 		}
 
-		baseSprite = new Sprite(texture);
-		widthToUse = texture.width;
-		heightToUse = texture.height;
-		
-		// Resize renderer if image dimensions differ
-		app.renderer.resize(widthToUse, heightToUse);
+		app.render();
 
-	} else if (backgroundColor) {
-		// Create a colored background using Graphics
-		const graphics = new Graphics();
-		graphics.beginFill(backgroundColor);
-		graphics.drawRect(0, 0, widthToUse, heightToUse);
-		graphics.endFill();
-		baseSprite = graphics;
-	} else {
+		if (signal?.aborted) {
+			app.stage.removeChildren();
+			throw new DOMException("Operation cancelled", "AbortError");
+		}
+
+		const onlyMask = await app.renderer.extract.base64(app.stage);
+
+		if (signal?.aborted) {
+			app.stage.removeChildren();
+			throw new DOMException("Operation cancelled", "AbortError");
+		}
+
+		// 3. Now load/create the background and add it to the container
+		let baseSprite: Sprite | Graphics;
+
+		if (imageUrl) {
+			const texture = await Assets.load(imageUrl);
+
+			if (signal?.aborted) {
+				app.stage.removeChildren();
+				throw new DOMException("Operation cancelled", "AbortError");
+			}
+
+			baseSprite = new Sprite(texture);
+			widthToUse = texture.width;
+			heightToUse = texture.height;
+
+			// Resize renderer if image dimensions differ
+			app.renderer.resize(widthToUse, heightToUse);
+		} else if (backgroundColor) {
+			// Create a colored background using Graphics
+			const graphics = new Graphics();
+			graphics.beginFill(backgroundColor);
+			graphics.drawRect(0, 0, widthToUse, heightToUse);
+			graphics.endFill();
+			baseSprite = graphics;
+		} else {
+			app.stage.removeChildren();
+			throw new Error("Either imageUrl or backgroundColor must be provided");
+		}
+
+		// 4. Add base sprite to the beginning of container (behind mask)
+		container.addChildAt(baseSprite, 0);
+
+		if (signal?.aborted) {
+			app.stage.removeChildren();
+			throw new DOMException("Operation cancelled", "AbortError");
+		}
+
+		app.render();
+
+		if (signal?.aborted) {
+			app.stage.removeChildren();
+			throw new DOMException("Operation cancelled", "AbortError");
+		}
+
+		const imageWithMask = await app.renderer.extract.base64(app.stage);
+
+		if (signal?.aborted) {
+			app.stage.removeChildren();
+			throw new DOMException("Operation cancelled", "AbortError");
+		}
+
+		// Clean up
 		app.stage.removeChildren();
-		throw new Error("Either imageUrl or backgroundColor must be provided");
+
+		return { imageWithMask, onlyMask };
 	}
-
-	// 4. Add base sprite to the beginning of container (behind mask)
-	container.addChildAt(baseSprite, 0);
-
-	if (signal?.aborted) {
-		app.stage.removeChildren();
-		throw new DOMException("Operation cancelled", "AbortError");
-	}
-
-	app.render();
-
-	if (signal?.aborted) {
-		app.stage.removeChildren();
-		throw new DOMException("Operation cancelled", "AbortError");
-	}
-
-	const imageWithMask = await app.renderer.extract.base64(app.stage);
-
-	if (signal?.aborted) {
-		app.stage.removeChildren();
-		throw new DOMException("Operation cancelled", "AbortError");
-	}
-
-	// Clean up
-	app.stage.removeChildren();
-
-	return { imageWithMask, onlyMask };
-}
 }
 
 export const pixiProcessor = new PixiProcessorService();

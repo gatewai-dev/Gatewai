@@ -21,7 +21,7 @@ const AspectRatioSwitch = memo(
 		node: NodeEntityType;
 		originalWidth: number | null;
 		originalHeight: number | null;
-		disabled?:boolean;
+		disabled?: boolean;
 	}) => {
 		const config = node?.config as ResizeNodeConfig;
 		const maintainAspect = config.maintainAspect ?? true;

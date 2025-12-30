@@ -14,8 +14,8 @@ import type { CanvasDetailsNode } from "@/rpc/types";
 import { useAppSelector } from "@/store";
 import { makeSelectHandlesByNodeId } from "@/store/handles";
 import { makeSelectNodeById } from "@/store/nodes";
-import { NodeMenu } from "./node-menu";
 import { NODE_ICON_MAP } from "../../node-templates/node-palette/icon-map";
+import { NodeMenu } from "./node-menu";
 
 const getColorForType = (type: string) => {
 	return (

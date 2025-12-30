@@ -20,7 +20,7 @@ const nodeTypes = {
 	Agent: AgentNodeComponent,
 	Crop: CropNodeComponent,
 	Paint: PaintNodeComponent,
-  Note: NoteNodeComponent,
+	Note: NoteNodeComponent,
 };
 
 // Export components
@@ -30,7 +30,7 @@ export {
 	TextNodeComponent,
 	ResizeNodeComponent,
 	ImageGenNodeComponent,
-  	NoteNodeComponent,
+	NoteNodeComponent,
 	BlurNodeComponent,
 	CropNodeComponent,
 	FileNodeComponent,

@@ -62,6 +62,6 @@ const Toolbar = memo(() => {
 			</MenubarMenu>
 		</Menubar>
 	);
-})
+});
 
 export { Toolbar };

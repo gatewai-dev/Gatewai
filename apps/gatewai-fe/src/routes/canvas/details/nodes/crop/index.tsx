@@ -56,7 +56,9 @@ const CropNodeComponent = memo((props: NodeProps<CropNode>) => {
 	const [dragState, setDragState] = useState<DragState | null>(null);
 	const latestCropRef = useRef(crop);
 
-	const [containerStyle, setContainerStyle] = useState<React.CSSProperties | undefined>(undefined);
+	const [containerStyle, setContainerStyle] = useState<
+		React.CSSProperties | undefined
+	>(undefined);
 	const [canvasStyle, setCanvasStyle] = useState<React.CSSProperties>({});
 
 	// Keep ref in sync with crop state
@@ -291,8 +293,8 @@ const CropNodeComponent = memo((props: NodeProps<CropNode>) => {
 				</div>
 
 				{/* Crop selection box */}
-				<div
-					className="absolute box-border"
+				<button
+					className="appearance-none absolute box-border"
 					style={{
 						left: `${crop.leftPercentage}%`,
 						top: `${crop.topPercentage}%`,
@@ -301,7 +303,7 @@ const CropNodeComponent = memo((props: NodeProps<CropNode>) => {
 						cursor: dragState?.type === "move" ? "grabbing" : "grab",
 					}}
 					onMouseDown={(e) => handleMouseDown(e, "move")}
-					role="button"
+					type="button"
 					tabIndex={0}
 					aria-label="Move crop selection"
 				>
@@ -372,7 +374,7 @@ const CropNodeComponent = memo((props: NodeProps<CropNode>) => {
 						<div className="absolute top-1/3 left-0 right-0 h-px bg-white/50" />
 						<div className="absolute top-2/3 left-0 right-0 h-px bg-white/50" />
 					</div>
-				</div>
+				</button>
 			</div>
 		</BaseNode>
 	);
