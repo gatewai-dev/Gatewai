@@ -349,7 +349,7 @@ class PixiProcessorService {
 			app.stage.removeChildren();
 			throw new DOMException("Operation cancelled", "AbortError");
 		}
-		console.log({onlyMask})
+		console.log({ onlyMask });
 		// 3. Now load/create the background and add it to the container
 		let baseSprite: Sprite | Graphics;
 

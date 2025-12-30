@@ -58,8 +58,8 @@
 	--spacing: 0.25rem;
 }
 .dark {
-	--background: oklch(20.019% 0.00002 271.152);
-	--background-selected: oklch(14.479% 0.00002 271.152);
+	--background: oklch(17.764% 0.00002 271.152);
+	--background-selected: oklch(22.213% 0.00003 271.152);
 	--foreground: oklch(0.8109 0 0);
 	--card: oklch(0.1822 0 0);
 	--card-foreground: oklch(0.8109 0 0);

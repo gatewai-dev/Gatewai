@@ -88,7 +88,7 @@ const PaintNodeComponent = memo((props: NodeProps<PaintNode>) => {
 		}
 	}, [nodeConfig]);
 
-		useEffect(() => {
+	useEffect(() => {
 		if (!inputImageUrl && nodeConfig) {
 			setContainerStyle({
 				aspectRatio: `${nodeConfig.width} / ${nodeConfig.height}`,
@@ -121,7 +121,7 @@ const PaintNodeComponent = memo((props: NodeProps<PaintNode>) => {
 				});
 				setCanvasStyle({
 					backgroundImage: `url(${inputImageUrl})`,
-					backgroundColor: 'none',
+					backgroundColor: "none",
 					backgroundSize: "contain",
 					backgroundPosition: "center",
 					backgroundRepeat: "no-repeat",
