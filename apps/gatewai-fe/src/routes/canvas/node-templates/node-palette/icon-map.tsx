@@ -7,7 +7,6 @@ import {
 	PiDownloadSimple,
 	PiEye,
 	PiFaceMask,
-	PiFile,
 	PiFileText,
 	PiGitBranch,
 	PiHash,
@@ -20,6 +19,7 @@ import {
 	PiStack,
 	PiTextT,
 	PiToggleLeft,
+	PiUploadSimple,
 } from "react-icons/pi";
 
 export const NODE_ICON_MAP: Record<
@@ -28,7 +28,7 @@ export const NODE_ICON_MAP: Record<
 > = {
 	Text: PiTextT,
 	Preview: PiEye,
-	File: PiFile,
+	File: PiUploadSimple,
 	Export: PiDownloadSimple,
 	Toggle: PiToggleLeft,
 	Crawler: PiMagnifyingGlass,

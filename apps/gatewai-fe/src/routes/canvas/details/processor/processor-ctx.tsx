@@ -113,13 +113,14 @@ export function useNodeResult<T extends NodeResult = NodeResult>(
  */
 export function useNodeImageUrl(nodeId: string): string | null {
 	const { result } = useNodeResult(nodeId);
-	console.log({ result, nodeId });
+
 	if (!result) return null;
 
 	const output = result.outputs[result.selectedOutputIndex ?? 0];
-	if (!output?.items[0]) return null;
+	const outputItem = output?.items.find(f => f.type === 'Image');
+	if (!outputItem) return null;
 
-	const fileData = output.items[0]
+	const fileData = outputItem
 		.data as FileResult["outputs"][number]["items"][number]["data"];
 	return fileData?.entity?.signedUrl ?? fileData?.dataUrl ?? null;
 }

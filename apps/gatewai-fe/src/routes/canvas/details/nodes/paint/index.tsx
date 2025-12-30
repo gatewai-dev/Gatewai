@@ -214,7 +214,7 @@ const PaintNodeComponent = memo((props: NodeProps<PaintNode>) => {
 			const canvas = canvasRef.current;
 			if (canvas) {
 				skipNextSyncRef.current = true;
-				updateConfig({ paintData: canvas.toDataURL("image/webp") });
+				updateConfig({ paintData: canvas.toDataURL("image/png") });
 			}
 			needsUpdateRef.current = false;
 		}
@@ -226,7 +226,7 @@ const PaintNodeComponent = memo((props: NodeProps<PaintNode>) => {
 			const ctx = canvas.getContext("2d");
 			if (ctx) {
 				ctx.clearRect(0, 0, canvas.width, canvas.height);
-				updateConfig({ paintData: canvas.toDataURL("image/webp") });
+				updateConfig({ paintData: canvas.toDataURL("image/png") });
 			}
 		}
 	}, [updateConfig]);

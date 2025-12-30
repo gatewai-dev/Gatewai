@@ -2,6 +2,7 @@ import type { DataType } from "@gatewai/db";
 import type { NodeTemplateListRPC } from "@/rpc/types";
 import { NodeItem } from "./node-item";
 import { useNodePalette } from "./node-palette.ctx";
+import { memo } from "react";
 
 interface NodeListProps {
 	templates: NodeTemplateListRPC;
@@ -23,7 +24,7 @@ function sortTemplates(
 	return sorted;
 }
 
-export function NodeTemplateList({ templates }: NodeListProps) {
+const NodeTemplateList = memo(({ templates }: NodeListProps) => {
 	const { searchQuery, fromTypes, toTypes, sortBy } = useNodePalette();
 
 	let filtered = templates;
@@ -105,4 +106,6 @@ export function NodeTemplateList({ templates }: NodeListProps) {
 			))}
 		</div>
 	);
-}
+})
+
+export { NodeTemplateList }

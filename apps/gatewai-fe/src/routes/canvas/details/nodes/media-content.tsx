@@ -1,14 +1,5 @@
 import type { FileResult, ImagesResult } from "@gatewai/types";
 import { FileIcon } from "lucide-react";
-import {
-	MediaControlBar,
-	MediaController,
-	MediaMuteButton,
-	MediaPlayButton,
-	MediaTimeDisplay,
-	MediaTimeRange,
-	MediaVolumeRange,
-} from "media-chrome/react";
 import type { NodeEntityType } from "@/store/nodes";
 import { GetAssetEndpoint } from "@/utils/file";
 import { OutputSelector } from "./misc/output-selector";
@@ -23,8 +14,7 @@ function MediaContent({
 	const selectedOutput = result.outputs[result.selectedOutputIndex];
 	const outputItem = selectedOutput.items[0];
 	const isImage = outputItem.data.entity?.mimeType.startsWith("image");
-	const isVideo = outputItem.data.entity?.mimeType.startsWith("video");
-	const isOther = !isVideo && !isImage;
+	const isOther = !isImage;
 	if (!outputItem.data.entity?.signedUrl) {
 		return null;
 	}
@@ -42,25 +32,6 @@ function MediaContent({
 					alt={outputItem.data.entity.name}
 					className="w-full h-full"
 				/>
-			)}
-			{isVideo && (
-				<div className="flex flex-col items-center gap-2">
-					<MediaController>
-						{/** biome-ignore lint/a11y/useMediaCaption: Unknown track */}
-						<video
-							slot="media"
-							src={GetAssetEndpoint(outputItem.data.entity.id)}
-							preload="auto"
-						/>
-						<MediaControlBar>
-							<MediaPlayButton />
-							<MediaTimeRange />
-							<MediaTimeDisplay showDuration />
-							<MediaMuteButton />
-							<MediaVolumeRange />
-						</MediaControlBar>
-					</MediaController>
-				</div>
 			)}
 			{isOther && (
 				<div className="flex flex-col items-center gap-2">

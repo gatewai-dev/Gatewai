@@ -1,4 +1,5 @@
 import {
+	BaseEdge,
 	type ConnectionLineComponentProps,
 	type EdgeProps,
 	getBezierPath,
@@ -231,18 +232,15 @@ const CustomEdge = memo(
 			targetPosition,
 		});
 		return (
-			<g>
-				<path
-					id={id}
-					style={{
-						...style,
-						strokeWidth: 3,
-					}}
-					className="react-flow__edge-path fill-none hover:stroke-[15px]! hover:opacity-80"
-					d={edgePath}
-					markerEnd={markerEnd}
-				/>
-			</g>
+			<BaseEdge path={edgePath}
+				id={id}
+				style={{
+					...style,
+					strokeWidth: 3,
+				}}
+				className="react-flow__edge-path  hover:stroke-[15px]! hover:opacity-80"
+				markerEnd={markerEnd}
+			/>
 		);
 	},
 );

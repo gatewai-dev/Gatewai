@@ -38,14 +38,11 @@ type NodeProcessor = (params: {
 	signal: AbortSignal;
 }) => Promise<NodeResult | null>;
 
-/**
- * Centralized graph processor - handles all node computation outside React lifecycle
- */
 export class NodeGraphProcessor extends EventEmitter {
 	private nodes = new Map<string, NodeEntityType>();
 	private edges: EdgeEntityType[] = [];
 	private handles: HandleEntityType[] = [];
-	private prevEdges: EdgeEntityType[] = []; // Added for edge change detection
+	private prevEdges: EdgeEntityType[] = [];
 	private nodeStates = new Map<string, NodeState>();
 	private processors = new Map<string, NodeProcessor>();
 	private dependencyGraph = new Map<string, Set<string>>(); // nodeId -> downstream nodeIds
@@ -701,7 +698,6 @@ export class NodeGraphProcessor extends EventEmitter {
 				sourceState.isDirty ||
 				sourceState.isProcessing
 			) {
-				console.log({ sourceState: JSON.stringify(sourceState) });
 				return false;
 			}
 		}
@@ -745,9 +741,9 @@ export class NodeGraphProcessor extends EventEmitter {
 	private getInputHandleIDs(nodeId: NodeEntityType["id"]): string[] {
 		return Array.from(
 			new Set(
-				this.edges
-					.filter((e) => e.target === nodeId)
-					.map((e) => e.targetHandleId),
+				this.handles
+					.filter((e) => e.nodeId === nodeId && e.type === 'Input')
+					.map((e) => e.id),
 			),
 		);
 	}
@@ -756,7 +752,7 @@ export class NodeGraphProcessor extends EventEmitter {
 		return Array.from(
 			new Set(
 				this.handles
-					.filter((e) => e.nodeId === nodeId && e.type === 'Output')
+					.filter((e) => e.nodeId === nodeId && e.type === "Output")
 					.map((e) => e.id),
 			),
 		);
