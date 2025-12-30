@@ -16,10 +16,10 @@ import {
 	PiPaintBrushFill,
 	PiPaintBucket,
 	PiResize,
+	PiRobotLight,
 	PiStack,
 	PiTextT,
 	PiToggleLeft,
-	PiUser,
 } from "react-icons/pi";
 
 export const NODE_ICON_MAP: Record<
@@ -33,7 +33,7 @@ export const NODE_ICON_MAP: Record<
 	Toggle: PiToggleLeft,
 	Crawler: PiMagnifyingGlass,
 	Resize: PiResize,
-	Agent: PiUser,
+	Agent: PiRobotLight,
 	ThreeD: PiCube,
 	Mask: PiFaceMask,
 	Paint: PiPaintBrushFill,

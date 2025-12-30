@@ -156,15 +156,6 @@ model Node {
   }
   */
   result         Json?           // Node processing result
-  /*
-  Error {
-    message: string;
-    code?: string;
-    details?: any;
-    taskId?: string;
-    batchId?: string;
-  }
-  */
   // Visual properties
   zIndex         Int?            // For layering
   // Timestamps - DB managed
@@ -186,7 +177,7 @@ model Node {
 model Handle {
   id                 String              @id @default(cuid())
   type               HandleType
-  dataTypes           DataType[]
+  dataTypes          DataType[]
   label              String
   // Required for Agent nodes where handles can be dynamically added
   description        String?
