@@ -11,8 +11,8 @@ const BlurNodeComponent = memo((props: NodeProps<BlurNode>) => {
 	const node = useAppSelector(makeSelectNodeById(props.id));
 	const canvasRef = useRef<HTMLCanvasElement | null>(null);
 	const imageUrl = useNodeImageUrl(props.id);
-	console.log({imageUrl, id: node?.id})
-	
+	console.log({ imageUrl, id: node?.id });
+
 	// Draw to canvas when result is ready
 	useEffect(() => {
 		if (!canvasRef.current) return;

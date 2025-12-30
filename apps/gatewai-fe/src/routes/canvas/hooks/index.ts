@@ -1,6 +1,6 @@
+import type { NodeResult } from "@gatewai/types";
 import { useMemo } from "react";
 import type { NodeEntityType } from "@/store/nodes";
-import type { NodeResult } from "@gatewai/types";
 
 const useHasOutputItems = (nodeEntity: NodeEntityType | undefined) =>
 	useMemo(() => {

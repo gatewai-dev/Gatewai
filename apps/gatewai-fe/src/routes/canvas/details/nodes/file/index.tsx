@@ -27,14 +27,15 @@ const FileNodeComponent = memo((props: NodeProps<FileNode>) => {
 
 	const existingMimeType =
 		result?.outputs?.[0]?.items?.[0]?.data?.entity?.mimeType;
-	const existingType = existingMimeType?.startsWith("image/") && existingMimeType !== "image/gif"
-		? "image"
-		: null;
+	const existingType =
+		existingMimeType?.startsWith("image/") && existingMimeType !== "image/gif"
+			? "image"
+			: null;
 
 	const accept = {
 		"image/jpeg": [],
 		"image/png": [],
-		"image/webp": []
+		"image/webp": [],
 	};
 
 	const buttonAccept =

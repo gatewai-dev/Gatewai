@@ -1,3 +1,4 @@
+import { EventEmitter } from "node:events";
 import type { NodeType } from "@gatewai/db";
 import type {
 	AgentResult,
@@ -12,7 +13,6 @@ import type {
 	ResizeNodeConfig,
 	TextResult,
 } from "@gatewai/types";
-import { EventEmitter } from "node:events";
 import type { EdgeEntityType } from "@/store/edges";
 import type { HandleEntityType } from "@/store/handles";
 import type { NodeEntityType } from "@/store/nodes";
@@ -80,7 +80,11 @@ export class NodeGraphProcessor extends EventEmitter {
 			const prev = prevNodes.get(id);
 			this.getOrCreateNodeState(id);
 
-			if (!prev || this.hasNodeChanged(prev, node) || this.hasNodeInputsChanged(id, prevEdges)) {
+			if (
+				!prev ||
+				this.hasNodeChanged(prev, node) ||
+				this.hasNodeInputsChanged(id, prevEdges)
+			) {
 				this.markDirty(id, true);
 			}
 		});
@@ -130,7 +134,7 @@ export class NodeGraphProcessor extends EventEmitter {
 		this.registerProcessor("Crop", async ({ node, inputs, signal }) => {
 			const inputHandle = this.getInputHandleIDs(node.id)[0];
 			if (!inputHandle) return null;
-			
+
 			const sourceNodeId = this.getSourceNodeID(node.id, inputHandle);
 
 			if (!sourceNodeId) return null;
@@ -261,7 +265,7 @@ export class NodeGraphProcessor extends EventEmitter {
 		// Blur processor
 		this.registerProcessor("Blur", async ({ node, inputs, signal }) => {
 			const inputHandle = this.getInputHandleIDs(node.id)[0];
-			if (!inputHandle) return null
+			if (!inputHandle) return null;
 
 			const sourceNodeId = this.getSourceNodeID(node.id, inputHandle);
 			if (!sourceNodeId) return null;
@@ -413,7 +417,10 @@ export class NodeGraphProcessor extends EventEmitter {
 		return prevConfigStr !== currConfigStr || prevResultStr !== currResultStr;
 	}
 
-	private hasNodeInputsChanged(nodeId: string, prevEdges: EdgeEntityType[]): boolean {
+	private hasNodeInputsChanged(
+		nodeId: string,
+		prevEdges: EdgeEntityType[],
+	): boolean {
 		const prevInputs = new Map<string, string>(); // targetHandleId -> sourceNodeId
 		prevEdges.forEach((e) => {
 			if (e.target === nodeId) {
@@ -427,7 +434,7 @@ export class NodeGraphProcessor extends EventEmitter {
 				currInputs.set(e.targetHandleId, e.source);
 			}
 		});
-		console.log({nodeId, prevEdges, de: this.edges})
+		console.log({ nodeId, prevEdges, de: this.edges });
 
 		if (prevInputs.size !== currInputs.size) return true;
 
@@ -570,7 +577,7 @@ export class NodeGraphProcessor extends EventEmitter {
 				const dirtyIds = Array.from(this.nodeStates.entries())
 					.filter(([, state]) => state.isDirty)
 					.map(([id]) => id);
-				console.log({dirtyIds})
+				console.log({ dirtyIds });
 				if (dirtyIds.length === 0) break;
 
 				// Compute necessary nodes: dirty + upstream dependencies that need processing
