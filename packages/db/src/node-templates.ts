@@ -4,6 +4,18 @@ export async function SEED_createNodeTemplates(prisma: PrismaClient) {
 	// Text: no input, single output Text
 	await prisma.nodeTemplate.create({
 		data: {
+			type: NodeType.Fal,
+			displayName: "Fal AI Model",
+			description: "Run Fal AI Models",
+			tokenPrice: 0.0,
+			variableInputs: false,
+			variableOutputs: false,
+			isTerminalNode: true,
+			isTransient: false,
+		},
+	});
+	await prisma.nodeTemplate.create({
+		data: {
 			type: NodeType.Agent,
 			displayName: "AI Agent",
 			description: "A multi-modal AI agent.",

@@ -1,4 +1,4 @@
-// src/node-palette/iconMap.ts
+import { Fal } from '@lobehub/icons';
 import {
 	PiChats,
 	PiCloudFog,
@@ -24,7 +24,7 @@ import {
 
 export const NODE_ICON_MAP: Record<
 	string,
-	React.ComponentType<{ className?: string }>
+	React.ComponentType
 > = {
 	Text: PiTextT,
 	Preview: PiEye,
@@ -47,4 +47,5 @@ export const NODE_ICON_MAP: Record<
 	Number: PiHash,
 	ImageGen: PiPaintBucket,
 	LLM: PiChats,
+	Fal: () => <Fal.Color size={16} />,
 };

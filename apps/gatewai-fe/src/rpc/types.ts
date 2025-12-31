@@ -80,3 +80,11 @@ export type BatchDetailsRPC = InferResponseType<
 export type BatchDetailsRPCParams = InferRequestType<
 	(typeof rpcClient.api.v1.tasks)["filterby-batch"]["$get"]
 >;
+
+export type ImportFalAIModelRPC = InferResponseType<
+	(typeof rpcClient.api.v1.canvas[":id"]["add-fal-node"]["$post"])
+>;
+
+export type ImportFalAIModelRPCParams = InferRequestType<
+	(typeof rpcClient.api.v1.canvas[":id"]["add-fal-node"]["$post"])
+>;

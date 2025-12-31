@@ -1,4 +1,4 @@
-import { type NodeUpdateInput, prisma } from "@gatewai/db";
+import { type Handle, type NodeUpdateArgs, type NodeUpdateInput, prisma } from "@gatewai/db";
 import { zValidator } from "@hono/zod-validator";
 import type { XYPosition } from "@xyflow/react";
 import { Hono } from "hono";
@@ -690,6 +690,217 @@ const canvasRoutes = new Hono<{ Variables: AuthHonoTypes }>({
 		);
 
 		return c.json(taskBatch, 201);
-	});
+	})
+	.post(
+		"/:id/add-fal-node",
+		zValidator(
+			"json",
+			z.object({
+				modelUrl: z.string().url().min(1),
+				nodeId: z.string(),
+			}),
+		),
+		async (c) => {
+			const canvasId = c.req.param("id");
+			const validated = c.req.valid("json");
+			const user = c.get("user");
+
+			function extractFalModel(url: string): string | null {
+			  try {
+			    const { pathname } = new URL(url);
+			
+			    // Expected: /models/{org}/{model}
+			    const parts = pathname.split('/').filter(Boolean);
+			
+			    if (parts.length >= 3 && parts[0] === 'models') {
+			      return `${parts[1]}/${parts[2]}`;
+			    }
+			
+			    return null;
+			  } catch {
+    			// Invalid URL
+    			return null;
+			  }
+			}
+			const modelName = extractFalModel(validated.modelUrl)
+			if (!modelName) {
+				throw new HTTPException(400, { message: "Invalid model url" });
+			}
+
+			if (!user) {
+				throw new HTTPException(401, { message: "Unauthorized" });
+			}
+
+			const canvas = await prisma.canvas.findFirst({
+				where: { id: canvasId, userId: user.id },
+			});
+
+			if (!canvas) {
+				throw new HTTPException(404, { message: "Canvas not found" });
+			}
+
+			const apiUrl = `https://fal.ai/api/openapi/queue/openapi.json?endpoint_id=${modelName}`;
+			const apiResponse = await fetch(apiUrl);
+
+			if (!apiResponse.ok) {
+				throw new HTTPException(400, { message: "Failed to fetch OpenAPI schema" });
+			}
+
+			const openapi: any = await apiResponse.json();
+
+			const modelPath = `/${modelName}`;
+			if (!openapi.paths[modelPath] || !openapi.paths[modelPath].post) {
+				throw new HTTPException(400, { message: "Invalid model schema" });
+			}
+
+			const inputRef = openapi.paths[modelPath].post.requestBody.content["application/json"].schema.$ref;
+			const inputName = inputRef.split("/").pop();
+			const inputSchema = openapi.components.schemas[inputName];
+
+			if (!inputSchema) {
+				throw new HTTPException(400, { message: "Input schema not found" });
+			}
+
+			const resultPath = `${modelPath}/requests/{request_id}`;
+			if (!openapi.paths[resultPath] || !openapi.paths[resultPath].get) {
+				throw new HTTPException(400, { message: "Result schema not found" });
+			}
+
+			const outputRef = openapi.paths[resultPath].get.responses["200"].content["application/json"].schema.$ref;
+			const outputName = outputRef.split("/").pop();
+			const outputSchema = openapi.components.schemas[outputName];
+
+			if (!outputSchema) {
+				throw new HTTPException(400, { message: "Output schema not found" });
+			}
+				// Update mode
+			const node = await prisma.node.findUnique({
+				where: { id: validated.nodeId },
+				select: { id: true, type: true, canvasId: true },
+			});
+
+			if (!node || node.canvasId !== canvasId) {
+				throw new HTTPException(404, { message: "Node not found" });
+			}
+
+			if (node.type !== "Fal") {
+				throw new HTTPException(400, { message: "Node is not a Fal node" });
+			}
+
+			const updateData: NodeUpdateArgs["data"] = {
+				name: modelName.split("/").pop() || "Fal Node",
+				config: {
+					openapi,
+					model: modelName,
+				},
+				isDirty: true,
+			};
+
+			await prisma.node.update({
+				where: { id: validated.nodeId },
+				data: updateData,
+				include: {
+					template: true,
+				}
+			});
+
+			const getDataType = (schema: any, allSchemas: any): string[] => {
+				if (schema.$ref) {
+					const refName = schema.$ref.split("/").pop();
+					return getDataType(allSchemas[refName], allSchemas);
+				}
+
+				if (schema.anyOf) {
+					return getDataType(schema.anyOf[0], allSchemas);
+				}
+
+				if (schema.enum) {
+					return ["Text"];
+				}
+
+				switch (schema.type) {
+					case "string":
+						return ["Text"];
+					case "integer":
+					case "number":
+						return ["Number"];
+					case "boolean":
+						return ["Boolean"];
+					case "array":
+						if (schema.items) {
+							const itemTypes = getDataType(schema.items, allSchemas);
+							if (itemTypes.includes("Image")) {
+								return ["Image"];
+							}
+						}
+						return ["File"];
+					case "object":
+						if (schema.properties?.url && schema.properties?.width && schema.properties?.height) {
+							return ["Image"];
+						}
+						return ["File"];
+					default:
+						return ["Text"];
+				}
+			};
+
+			const inputOrder = inputSchema["x-fal-order-properties"] || Object.keys(inputSchema.properties);
+			const inputHandles = inputOrder
+				.map((key: string, index: number) => {
+					const prop = inputSchema.properties[key];
+					if (!prop) return null;
+					return {
+						type: "Input",
+						label: prop.title || key,
+						dataTypes: getDataType(prop, openapi.components.schemas),
+						required: inputSchema.required?.includes(key) || false,
+						order: index,
+						nodeId: validated.nodeId,
+					} as Handle;
+				})
+				.filter(Boolean);
+
+			const outputOrder = outputSchema["x-fal-order-properties"] || Object.keys(outputSchema.properties);
+			const outputHandles = outputOrder
+				.map((key: string, index: number) => {
+					const prop = outputSchema.properties[key];
+					if (!prop) return null;
+					return {
+						type: "Output",
+						label: prop.title || key,
+						dataTypes: getDataType(prop, openapi.components.schemas),
+						required: false,
+						order: index,
+						nodeId: validated.nodeId,
+					} as Handle;
+				})
+				.filter(Boolean);
+
+			await prisma.handle.createMany({
+				data: [...inputHandles, ...outputHandles],
+			});
+
+			const updatedNode = await prisma.node.findFirstOrThrow({
+				where: { id: validated.nodeId },
+				include: {
+					template: true,
+				}
+			});
+
+			const createdHandles = await prisma.handle.findMany({
+				where: {
+					nodeId: updatedNode.id,
+				},
+				include: {
+					templateHandle: true,
+				}
+			})
+
+			return c.json({
+				handles: createdHandles,
+				node: updatedNode
+			}, 201);
+		},
+	);
 
 export { canvasRoutes };
