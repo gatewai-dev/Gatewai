@@ -1,12 +1,12 @@
 import { EventEmitter } from "node:events";
 import type { DataType, NodeType } from "@gatewai/db";
 import type {
-    CropNodeConfig,
-    FileData,
-    NodeResult,
-    PaintNodeConfig,
-    PaintResult,
-    ResizeNodeConfig,
+	CropNodeConfig,
+	FileData,
+	NodeResult,
+	PaintNodeConfig,
+	PaintResult,
+	ResizeNodeConfig,
 } from "@gatewai/types";
 import type { EdgeEntityType } from "@/store/edges";
 import type { HandleEntityType } from "@/store/handles";
@@ -14,97 +14,102 @@ import type { NodeEntityType } from "@/store/nodes";
 import { pixiProcessor } from "./pixi-service";
 
 interface ProcessorConfig {
-    nodes: Map<string, NodeEntityType>;
-    edges: EdgeEntityType[];
-    handles: HandleEntityType[];
+	nodes: Map<string, NodeEntityType>;
+	edges: EdgeEntityType[];
+	handles: HandleEntityType[];
 }
 
 interface NodeState {
-    id: string;
-    isDirty: boolean;
-    isProcessing: boolean;
-    result: NodeResult | null;
-    error: string | null;
-    abortController: AbortController | null;
-    lastProcessedSignature: string | null;
+	id: string;
+	isDirty: boolean;
+	isProcessing: boolean;
+	result: NodeResult | null;
+	error: string | null;
+	abortController: AbortController | null;
+	lastProcessedSignature: string | null;
 }
 
 type NodeProcessorParams = {
-    node: NodeEntityType;
-    inputs: Map<string, NodeResult>;
-    signal: AbortSignal;
+	node: NodeEntityType;
+	inputs: Map<string, NodeResult>;
+	signal: AbortSignal;
 };
 
 type NodeProcessor = (
-    params: NodeProcessorParams,
+	params: NodeProcessorParams,
 ) => Promise<NodeResult | null>;
 
 export class NodeGraphProcessor extends EventEmitter {
-    private nodes = new Map<string, NodeEntityType>();
-    private edges: EdgeEntityType[] = [];
-    private handles: HandleEntityType[] = [];
+	private nodes = new Map<string, NodeEntityType>();
+	private edges: EdgeEntityType[] = [];
+	private handles: HandleEntityType[] = [];
 
-    // 1. NEW: Fast Lookup Index for Edges
-    // Key: Target Node ID -> Value: Array of Edges targeting this node
-    private edgesByTarget = new Map<string, EdgeEntityType[]>();
+	// 1. NEW: Fast Lookup Index for Edges
+	// Key: Target Node ID -> Value: Array of Edges targeting this node
+	private edgesByTarget = new Map<string, EdgeEntityType[]>();
 
-    private adjacency = new Map<string, Set<string>>();
-    private reverseAdjacency = new Map<string, Set<string>>();
+	private adjacency = new Map<string, Set<string>>();
+	private reverseAdjacency = new Map<string, Set<string>>();
 
-    private nodeStates = new Map<string, NodeState>();
-    private processors = new Map<string, NodeProcessor>();
-    private processingLoopActive = false;
-    private schedulePromise: Promise<void> | null = null;
+	private nodeStates = new Map<string, NodeState>();
+	private processors = new Map<string, NodeProcessor>();
+	private processingLoopActive = false;
+	private schedulePromise: Promise<void> | null = null;
 
-    constructor() {
-        super();
-        this.setMaxListeners(Infinity);
-        this.registerBuiltInProcessors();
-    }
+	constructor() {
+		super();
+		this.setMaxListeners(Infinity);
+		this.registerBuiltInProcessors();
+	}
 
-    updateGraph(config: ProcessorConfig): void {
-        const prevNodes = this.nodes;
-        const prevEdges = this.edges;
+	updateGraph(config: ProcessorConfig): void {
+		const prevNodes = this.nodes;
+		const prevEdges = this.edges;
 
-        // 1. Update Internal State
-        this.nodes = config.nodes;
-        this.edges = config.edges;
-        this.handles = config.handles;
+		// 1. Update Internal State
+		this.nodes = config.nodes;
+		this.edges = config.edges;
+		this.handles = config.handles;
 
-        // 2. Rebuild Topology Indices
-        this.buildAdjacencyAndIndices();
+		// 2. Rebuild Topology Indices
+		this.buildAdjacencyAndIndices();
 
-        const nodesToInvalidate = new Set<string>();
+		const nodesToInvalidate = new Set<string>();
 
-        // 3. Detect Intrinsic Node Changes (Config/Data/Index mismatch)
-        this.nodes.forEach((currNode, id) => {
-            const state = this.nodeStates.get(id);
-            const currHash = this.getNodeValueHash(currNode);
-            if (!state || state.lastProcessedSignature !== currHash) {
-                nodesToInvalidate.add(id);
-            }
-        });
+		// 3. Detect Intrinsic Node Changes (Config/Data/Index mismatch)
+		this.nodes.forEach((currNode, id) => {
+			const state = this.nodeStates.get(id);
+			const currHash = this.getNodeValueHash(currNode);
+			if (!state || state.lastProcessedSignature !== currHash) {
+				nodesToInvalidate.add(id);
+			}
+		});
 
-        // 4. Detect Extrinsic Input Changes (Edges or Upstream Values)
-        const inputChanges = this.detectInputChanges(prevEdges, this.edges, prevNodes, this.nodes);
-        inputChanges.forEach((nodeId) => {
-            nodesToInvalidate.add(nodeId);
-        });
+		// 4. Detect Extrinsic Input Changes (Edges or Upstream Values)
+		const inputChanges = this.detectInputChanges(
+			prevEdges,
+			this.edges,
+			prevNodes,
+			this.nodes,
+		);
+		inputChanges.forEach((nodeId) => {
+			nodesToInvalidate.add(nodeId);
+		});
 
-        // 5. Cleanup Removed Nodes
-        prevNodes.forEach((_, id) => {
-            if (!this.nodes.has(id)) {
-                const state = this.nodeStates.get(id);
-                state?.abortController?.abort();
-                this.nodeStates.delete(id);
-            }
-        });
+		// 5. Cleanup Removed Nodes
+		prevNodes.forEach((_, id) => {
+			if (!this.nodes.has(id)) {
+				const state = this.nodeStates.get(id);
+				state?.abortController?.abort();
+				this.nodeStates.delete(id);
+			}
+		});
 
-        // 6. Trigger Execution
-        if (nodesToInvalidate.size > 0) {
-            this.markNodesDirty(Array.from(nodesToInvalidate));
-        }
-    }
+		// 6. Trigger Execution
+		if (nodesToInvalidate.size > 0) {
+			this.markNodesDirty(Array.from(nodesToInvalidate));
+		}
+	}
 
 	getNodeResult(nodeId: string): NodeResult | null {
 		return this.nodeStates.get(nodeId)?.result ?? null;
@@ -119,38 +124,15 @@ export class NodeGraphProcessor extends EventEmitter {
 		await this.triggerProcessing();
 	}
 
-    // New method to handle selected output index changes without full graph update
-    updateSelectedOutputIndex(nodeId: string, newIndex: number): void {
-        const state = this.nodeStates.get(nodeId);
-        if (!state || !state.result || state.result.selectedOutputIndex === newIndex) {
-            return;
-        }
-
-        const oldHash = this.getNodeValueHash(this.nodes.get(nodeId)!);
-
-        state.result.selectedOutputIndex = newIndex;
-
-        const newHash = this.getNodeValueHash(this.nodes.get(nodeId)!);
-
-        if (oldHash !== newHash) {
-            state.lastProcessedSignature = newHash;
-            this.emit("node:processed", { nodeId, result: state.result });
-            const children = this.adjacency.get(nodeId);
-            if (children) {
-                this.markNodesDirty(Array.from(children));
-            }
-        }
-    }
-
-    // New method to retry a failed node
-    retryNode(nodeId: string): void {
-        const state = this.nodeStates.get(nodeId);
-        if (state) {
-            state.error = null;
-            state.isDirty = true;
-            this.triggerProcessing();
-        }
-    }
+	// New method to retry a failed node
+	retryNode(nodeId: string): void {
+		const state = this.nodeStates.get(nodeId);
+		if (state) {
+			state.error = null;
+			state.isDirty = true;
+			this.triggerProcessing();
+		}
+	}
 
 	registerProcessor(nodeType: NodeType, processor: NodeProcessor): void {
 		this.processors.set(nodeType, processor);
@@ -165,47 +147,47 @@ export class NodeGraphProcessor extends EventEmitter {
 	}
 
 	private markNodesDirty(startNodeIds: string[]): void {
-        const queue = [...startNodeIds];
-        const visited = new Set<string>();
+		const queue = [...startNodeIds];
+		const visited = new Set<string>();
 
-        while (queue.length > 0) {
-            const nodeId = queue.shift();
-            if (!nodeId) continue;
-            if (visited.has(nodeId)) continue;
-            visited.add(nodeId);
+		while (queue.length > 0) {
+			const nodeId = queue.shift();
+			if (!nodeId) continue;
+			if (visited.has(nodeId)) continue;
+			visited.add(nodeId);
 
-            const state = this.getOrCreateNodeState(nodeId);
+			const state = this.getOrCreateNodeState(nodeId);
 
-            // Abort current execution if it's already running
-            if (state.isProcessing && state.abortController) {
-                state.abortController.abort("Restarting due to graph update");
-                state.abortController = null;
-            }
+			// Abort current execution if it's already running
+			if (state.isProcessing && state.abortController) {
+				state.abortController.abort("Restarting due to graph update");
+				state.abortController = null;
+			}
 
-            state.isDirty = true;
-            state.error = null;
+			state.isDirty = true;
+			state.error = null;
 
-            // Propagate dirtiness to children
-            const children = this.adjacency.get(nodeId);
-            if (children) {
-                children.forEach((childId) => {
-                    queue.push(childId);
-                });
-            }
-        }
-        this.triggerProcessing();
-    }
+			// Propagate dirtiness to children
+			const children = this.adjacency.get(nodeId);
+			if (children) {
+				children.forEach((childId) => {
+					queue.push(childId);
+				});
+			}
+		}
+		this.triggerProcessing();
+	}
 
-    private async triggerProcessing(): Promise<void> {
-        if (this.processingLoopActive) return;
-        if (!this.schedulePromise) {
-            this.schedulePromise = Promise.resolve().then(() => {
-                this.schedulePromise = null;
-                return this.runProcessingLoop();
-            });
-        }
-        return this.schedulePromise;
-    }
+	private async triggerProcessing(): Promise<void> {
+		if (this.processingLoopActive) return;
+		if (!this.schedulePromise) {
+			this.schedulePromise = Promise.resolve().then(() => {
+				this.schedulePromise = null;
+				return this.runProcessingLoop();
+			});
+		}
+		return this.schedulePromise;
+	}
 
 	/**
 	 * The main execution loop.
@@ -213,387 +195,442 @@ export class NodeGraphProcessor extends EventEmitter {
 	 * Supports parallelism.
 	 */
 	private async runProcessingLoop(): Promise<void> {
-        if (this.processingLoopActive) return;
-        this.processingLoopActive = true;
-        try {
-            let hasWork = true;
-            while (hasWork) {
-                const dirtyNodes = Array.from(this.nodeStates.values()).filter(s => s.isDirty);
-                const readyNodes = dirtyNodes.filter(s => !s.isProcessing && this.areInputsReady(s.id));
+		if (this.processingLoopActive) return;
+		this.processingLoopActive = true;
+		try {
+			let hasWork = true;
+			while (hasWork) {
+				const dirtyNodes = Array.from(this.nodeStates.values()).filter(
+					(s) => s.isDirty,
+				);
+				const readyNodes = dirtyNodes.filter(
+					(s) => !s.isProcessing && this.areInputsReady(s.id),
+				);
 
-                if (readyNodes.length === 0) {
-                    hasWork = false;
-                    break;
-                }
+				if (readyNodes.length === 0) {
+					hasWork = false;
+					break;
+				}
 
-                await Promise.all(readyNodes.map(s => this.executeNode(s.id)));
-            }
-        } finally {
-            this.processingLoopActive = false;
-            // Catch trailing dirty states
-            if (Array.from(this.nodeStates.values()).some(s => s.isDirty && !s.isProcessing)) {
-                this.triggerProcessing();
-            }
-        }
-    }
+				await Promise.all(readyNodes.map((s) => this.executeNode(s.id)));
+			}
+		} finally {
+			this.processingLoopActive = false;
+			// Catch trailing dirty states
+			if (
+				Array.from(this.nodeStates.values()).some(
+					(s) => s.isDirty && !s.isProcessing,
+				)
+			) {
+				this.triggerProcessing();
+			}
+		}
+	}
 
-    private areInputsReady(nodeId: string): boolean {
-        const parents = this.reverseAdjacency.get(nodeId);
-        if (!parents || parents.size === 0) return true;
-        for (const parentId of parents) {
-            const parentState = this.nodeStates.get(parentId);
-            if (!parentState?.result || parentState.isDirty) return false;
-        }
-        return true;
-    }
+	private areInputsReady(nodeId: string): boolean {
+		const parents = this.reverseAdjacency.get(nodeId);
+		if (!parents || parents.size === 0) return true;
+		for (const parentId of parents) {
+			const parentState = this.nodeStates.get(parentId);
+			if (!parentState?.result || parentState.isDirty) return false;
+		}
+		return true;
+	}
 
 	private async executeNode(nodeId: string): Promise<void> {
-        const state = this.nodeStates.get(nodeId);
-        if (!state) return;
+		const state = this.nodeStates.get(nodeId);
+		if (!state) return;
 
-        const node = this.nodes.get(nodeId);
-        if (!node) return;
+		const node = this.nodes.get(nodeId);
+		if (!node) return;
 
-        const processor = this.processors.get(node.type);
-        if (!processor) {
-            state.error = `No processor found for type ${node.type}`;
-            state.isDirty = false; // Stop trying
-            this.emit("node:error", { nodeId, error: state.error });
-            return;
-        }
+		const processor = this.processors.get(node.type);
+		if (!processor) {
+			state.error = `No processor found for type ${node.type}`;
+			state.isDirty = false; // Stop trying
+			this.emit("node:error", { nodeId, error: state.error });
+			return;
+		}
 
-        state.isProcessing = true;
-        state.error = null;
-        state.abortController = new AbortController();
-        const signal = state.abortController.signal;
+		state.isProcessing = true;
+		state.error = null;
+		state.abortController = new AbortController();
+		const signal = state.abortController.signal;
 
-        try {
-            const inputs = this.collectInputs(nodeId);
-            this.emit("node:start", { nodeId });
+		try {
+			const inputs = this.collectInputs(nodeId);
+			this.emit("node:start", { nodeId });
 
-            const result = await processor({
-                node,
-                inputs,
-                signal,
-            });
+			const result = await processor({
+				node,
+				inputs,
+				signal,
+			});
 
-            if (signal.aborted) throw new Error("Aborted");
+			if (signal.aborted) throw new Error("Aborted");
 
-            state.result = result;
-            state.isDirty = false;
-            // Update the signature trace
-            state.lastProcessedSignature = this.getNodeValueHash(node);
-            
-            this.emit("node:processed", { nodeId, result });
-        } catch (error) {
-            const isAbort =
-                error instanceof Error &&
-                (error.name === "AbortError" || error.message === "Aborted");
+			state.result = result;
+			state.isDirty = false;
+			// Update the signature trace
+			state.lastProcessedSignature = this.getNodeValueHash(node);
 
-            if (isAbort) {
-                state.isProcessing = false;
-                state.abortController = null;
-                return;
-            }
+			this.emit("node:processed", { nodeId, result });
+		} catch (error) {
+			const isAbort =
+				error instanceof Error &&
+				(error.name === "AbortError" || error.message === "Aborted");
 
-            console.error(`Error processing node ${nodeId}:`, error);
-            state.error = error instanceof Error ? error.message : "Unknown error";
-            state.isDirty = false;
-            this.emit("node:error", { nodeId, error: state.error });
-        } finally {
-            state.isProcessing = false;
-            state.abortController = null;
-        }
-    }
+			if (isAbort) {
+				state.isProcessing = false;
+				state.abortController = null;
+				return;
+			}
 
-    private getOrCreateNodeState(id: string): NodeState {
-        let state = this.nodeStates.get(id);
-        if (!state) {
-            state = {
-                id,
-                isDirty: false,
-                isProcessing: false,
-                result: null,
-                error: null,
-                abortController: null,
-                lastProcessedSignature: null,
-            };
-            this.nodeStates.set(id, state);
-        }
-        return state;
-    }
+			console.error(`Error processing node ${nodeId}:`, error);
+			state.error = error instanceof Error ? error.message : "Unknown error";
+			state.isDirty = false;
+			this.emit("node:error", { nodeId, error: state.error });
+		} finally {
+			state.isProcessing = false;
+			state.abortController = null;
+		}
+	}
+
+	private getOrCreateNodeState(id: string): NodeState {
+		let state = this.nodeStates.get(id);
+		if (!state) {
+			state = {
+				id,
+				isDirty: false,
+				isProcessing: false,
+				result: null,
+				error: null,
+				abortController: null,
+				lastProcessedSignature: null,
+			};
+			this.nodeStates.set(id, state);
+		}
+		return state;
+	}
 
 	private buildAdjacencyAndIndices() {
-        this.adjacency.clear();
-        this.reverseAdjacency.clear();
-        this.edgesByTarget.clear();
+		this.adjacency.clear();
+		this.reverseAdjacency.clear();
+		this.edgesByTarget.clear();
 
-        this.nodes.forEach((_, id) => {
-            this.adjacency.set(id, new Set());
-            this.reverseAdjacency.set(id, new Set());
-            this.edgesByTarget.set(id, []);
-        });
+		this.nodes.forEach((_, id) => {
+			this.adjacency.set(id, new Set());
+			this.reverseAdjacency.set(id, new Set());
+			this.edgesByTarget.set(id, []);
+		});
 
-        for (const edge of this.edges) {
-            if (!this.nodes.has(edge.source) || !this.nodes.has(edge.target))
-                continue;
+		for (const edge of this.edges) {
+			if (!this.nodes.has(edge.source) || !this.nodes.has(edge.target))
+				continue;
 
-            this.adjacency.get(edge.source)?.add(edge.target);
-            this.reverseAdjacency.get(edge.target)?.add(edge.source);
-            this.edgesByTarget.get(edge.target)?.push(edge);
-        }
-    }
+			this.adjacency.get(edge.source)?.add(edge.target);
+			this.reverseAdjacency.get(edge.target)?.add(edge.source);
+			this.edgesByTarget.get(edge.target)?.push(edge);
+		}
+	}
 
 	private getNodeValueHash(node: NodeEntityType): string {
 		const result = node.result as unknown as NodeResult;
-        return JSON.stringify({
-            // Configuration parameters (e.g. crop coordinates)
-            c: node.config,
-            // Data payload (e.g. uploaded file object, signed URLs)
-            d: result?.outputs?.[result?.selectedOutputIndex ?? 0],
-        });
-    }
+		return JSON.stringify({
+			// Configuration parameters (e.g. crop coordinates)
+			c: node.config,
+			// Data payload (e.g. uploaded file object, signed URLs)
+			d: result?.outputs?.[result?.selectedOutputIndex ?? 0],
+		});
+	}
 
 	private detectInputChanges(
-        prevEdges: EdgeEntityType[],
-        currEdges: EdgeEntityType[],
-        prevNodes: Map<string, NodeEntityType>,
-        currNodes: Map<string, NodeEntityType>,
-    ): Set<string> {
-        const changedNodes = new Set<string>();
+		prevEdges: EdgeEntityType[],
+		currEdges: EdgeEntityType[],
+		prevNodes: Map<string, NodeEntityType>,
+		currNodes: Map<string, NodeEntityType>,
+	): Set<string> {
+		const changedNodes = new Set<string>();
 
-        // Helper to generate edge signatures
-        const getEdgeSigs = (edges: EdgeEntityType[]) => {
-            const map = new Map<string, Set<string>>();
-            edges.forEach((e) => {
-                if (!map.has(e.target)) map.set(e.target, new Set());
-                map.get(e.target)?.add(`${e.targetHandleId}|${e.source}|${e.sourceHandleId}`);
-            });
-            return map;
-        };
+		// Helper to generate edge signatures
+		const getEdgeSigs = (edges: EdgeEntityType[]) => {
+			const map = new Map<string, Set<string>>();
+			edges.forEach((e) => {
+				if (!map.has(e.target)) map.set(e.target, new Set());
+				map
+					.get(e.target)
+					?.add(`${e.targetHandleId}|${e.source}|${e.sourceHandleId}`);
+			});
+			return map;
+		};
 
-        const prevEdgeMap = getEdgeSigs(prevEdges);
-        const currEdgeMap = getEdgeSigs(currEdges);
+		const prevEdgeMap = getEdgeSigs(prevEdges);
+		const currEdgeMap = getEdgeSigs(currEdges);
 
-        // A. Structural Changes: Check if connections were added/removed/swapped
-        currEdgeMap.forEach((sigs, nodeId) => {
-            const prevSigs = prevEdgeMap.get(nodeId);
-            
-            // 1. New connection entirely
-            if (!prevSigs) {
-                changedNodes.add(nodeId);
-                return;
-            }
+		// A. Structural Changes: Check if connections were added/removed/swapped
+		currEdgeMap.forEach((sigs, nodeId) => {
+			const prevSigs = prevEdgeMap.get(nodeId);
 
-            // 2. Different set of connections
-            if (prevSigs.size !== sigs.size) {
-                changedNodes.add(nodeId);
-                return;
-            }
+			// 1. New connection entirely
+			if (!prevSigs) {
+				changedNodes.add(nodeId);
+				return;
+			}
 
-            for (const sig of sigs) {
-                if (!prevSigs.has(sig)) {
-                    changedNodes.add(nodeId);
-                    return;
-                }
-            }
-        });
+			// 2. Different set of connections
+			if (prevSigs.size !== sigs.size) {
+				changedNodes.add(nodeId);
+				return;
+			}
 
-        // B. Upstream Value Changes: Check if the connected source node changed value
-        // Even if the Edge is identical, if the Source Node has a new file or index,
-        // the Target Node must update.
-        // Note: This is somewhat redundant with intrinsic changes + propagation, but kept for clarity.
-        for (const edge of currEdges) {
-            const prevSource = prevNodes.get(edge.source);
-            const currSource = currNodes.get(edge.source);
+			for (const sig of sigs) {
+				if (!prevSigs.has(sig)) {
+					changedNodes.add(nodeId);
+					return;
+				}
+			}
+		});
 
-            if (prevSource && currSource) {
-                const prevHash = this.getNodeValueHash(prevSource);
-                const currHash = this.getNodeValueHash(currSource);
+		// B. Upstream Value Changes: Check if the connected source node changed value
+		// Even if the Edge is identical, if the Source Node has a new file or index,
+		// the Target Node must update.
+		// Note: This is somewhat redundant with intrinsic changes + propagation, but kept for clarity.
+		for (const edge of currEdges) {
+			const prevSource = prevNodes.get(edge.source);
+			const currSource = currNodes.get(edge.source);
 
-                if (prevHash !== currHash) {
-                    // The source changed, so the target receives new input
-                    changedNodes.add(edge.target);
-                }
-            }
-        }
+			if (prevSource && currSource) {
+				const prevHash = this.getNodeValueHash(prevSource);
+				const currHash = this.getNodeValueHash(currSource);
 
-        // C. Check for removed connections (orphaned nodes)
-        prevEdgeMap.forEach((_, nodeId) => {
-            if (!currEdgeMap.has(nodeId) && this.nodes.has(nodeId)) {
-                changedNodes.add(nodeId);
-            }
-        });
+				if (prevHash !== currHash) {
+					// The source changed, so the target receives new input
+					changedNodes.add(edge.target);
+				}
+			}
+		}
 
-        return changedNodes;
-    }
+		// C. Check for removed connections (orphaned nodes)
+		prevEdgeMap.forEach((_, nodeId) => {
+			if (!currEdgeMap.has(nodeId) && this.nodes.has(nodeId)) {
+				changedNodes.add(nodeId);
+			}
+		});
+
+		return changedNodes;
+	}
 
 	private collectInputs(nodeId: string): Map<string, NodeResult> {
-        const inputs = new Map<string, NodeResult>();
-        const parentIds = this.reverseAdjacency.get(nodeId);
+		const inputs = new Map<string, NodeResult>();
+		const parentIds = this.reverseAdjacency.get(nodeId);
 
-        if (parentIds) {
-            parentIds.forEach((parentId) => {
-                const res = this.nodeStates.get(parentId)?.result;
-                if (res) inputs.set(parentId, res);
-            });
-        }
-        return inputs;
-    }
+		if (parentIds) {
+			parentIds.forEach((parentId) => {
+				const res = this.nodeStates.get(parentId)?.result;
+				if (res) inputs.set(parentId, res);
+			});
+		}
+		return inputs;
+	}
 
 	private registerBuiltInProcessors(): void {
-        const findInputData = (
-            nodeId: string, 
-            inputs: Map<string, NodeResult>, 
-            requiredType: string = "Image",
-            handleLabel?: string
-        ) => {
-            const incomingEdges = this.edgesByTarget.get(nodeId) || [];
+		const findInputData = (
+			nodeId: string,
+			inputs: Map<string, NodeResult>,
+			requiredType: string = "Image",
+			handleLabel?: string,
+		) => {
+			const incomingEdges = this.edgesByTarget.get(nodeId) || [];
 
-            for (const edge of incomingEdges) {
-                const result = inputs.get(edge.source);
-                if (!result) continue; // Should not happen if collectInputs is correct
+			for (const edge of incomingEdges) {
+				const result = inputs.get(edge.source);
+				if (!result) continue; // Should not happen if collectInputs is correct
 
-                // Get the output item from the source
-                const outputItem = result.outputs[result.selectedOutputIndex ?? 0]
-                    ?.items.find((i) => i.outputHandleId === edge.sourceHandleId);
+				// Get the output item from the source
+				const outputItem = result.outputs[
+					result.selectedOutputIndex ?? 0
+				]?.items.find((i) => i.outputHandleId === edge.sourceHandleId);
 
-                if (!outputItem) continue;
+				if (!outputItem) continue;
 
-                const targetHandle = this.handles.find(h => h.id === edge.targetHandleId);
-                
-                if (targetHandle?.dataTypes.includes(requiredType as DataType)) {
-                    if (handleLabel && targetHandle.label !== handleLabel) continue;
+				const targetHandle = this.handles.find(
+					(h) => h.id === edge.targetHandleId,
+				);
 
-                    const fileData = outputItem.data as FileData;
-                    const url = fileData?.entity?.signedUrl ?? fileData?.dataUrl;
-                    if (url) return url;
-                }
-            }
-            return undefined;
-        };
+				if (targetHandle?.dataTypes.includes(requiredType as DataType)) {
+					if (handleLabel && targetHandle.label !== handleLabel) continue;
 
-        const getFirstOutputHandle = (nodeId: string, type: string = "Image") =>
-            this.handles.find(
-                (h) =>
-                    h.nodeId === nodeId &&
-                    h.type === "Output" &&
-                    h.dataTypes.includes(type as DataType),
-            )?.id;
+					const fileData = outputItem.data as FileData;
+					const url = fileData?.entity?.signedUrl ?? fileData?.dataUrl;
+					if (url) return url;
+				}
+			}
+			return undefined;
+		};
 
+		const getFirstOutputHandle = (nodeId: string, type: string = "Image") =>
+			this.handles.find(
+				(h) =>
+					h.nodeId === nodeId &&
+					h.type === "Output" &&
+					h.dataTypes.includes(type as DataType),
+			)?.id;
 
-        this.registerProcessor("Crop", async ({ node, inputs, signal }) => {
-            const imageUrl = findInputData(node.id, inputs, "Image");
-            
-            if (!imageUrl) throw new Error("Missing Input Image");
+		this.registerProcessor("Crop", async ({ node, inputs, signal }) => {
+			const imageUrl = findInputData(node.id, inputs, "Image");
 
-            const config = node.config as CropNodeConfig;
-            const dataUrl = await pixiProcessor.processCrop(
-                imageUrl,
-                {
-                    leftPercentage: config.leftPercentage,
-                    topPercentage: config.topPercentage,
-                    widthPercentage: config.widthPercentage,
-                    heightPercentage: config.heightPercentage,
-                },
-                signal,
-            );
+			if (!imageUrl) throw new Error("Missing Input Image");
 
-            const outputHandle = getFirstOutputHandle(node.id);
-            if (!outputHandle) throw new Error("Output handle missing");
+			const config = node.config as CropNodeConfig;
+			const dataUrl = await pixiProcessor.processCrop(
+				imageUrl,
+				{
+					leftPercentage: config.leftPercentage,
+					topPercentage: config.topPercentage,
+					widthPercentage: config.widthPercentage,
+					heightPercentage: config.heightPercentage,
+				},
+				signal,
+			);
 
-            return {
-                selectedOutputIndex: 0,
-                outputs: [{ items: [{ type: "Image", data: { dataUrl }, outputHandleId: outputHandle }] }],
-            };
-        });
+			const outputHandle = getFirstOutputHandle(node.id);
+			if (!outputHandle) throw new Error("Output handle missing");
 
-        this.registerProcessor("Paint", async ({ node, inputs, signal }) => {
-            const config = node.config as PaintNodeConfig;
-            
-            const imageUrl = findInputData(node.id, inputs, "Image"); 
-            
-            // Paint can handle empty input
-            const maskDataUrl = config.paintData;
-            const imageHandle = getFirstOutputHandle(node.id, "Image");
-            const maskHandle = getFirstOutputHandle(node.id, "Mask"); // Ensure this string matches DB Enum or logic
+			return {
+				selectedOutputIndex: 0,
+				outputs: [
+					{
+						items: [
+							{
+								type: "Image",
+								data: { dataUrl },
+								outputHandleId: outputHandle,
+							},
+						],
+					},
+				],
+			};
+		});
 
-            if (!maskHandle) throw new Error("Mask output handle missing");
+		this.registerProcessor("Paint", async ({ node, inputs, signal }) => {
+			const config = node.config as PaintNodeConfig;
 
-            const items: PaintResult["outputs"][number]["items"] = [];
+			const imageUrl = findInputData(node.id, inputs, "Image");
 
-            if (imageUrl && imageHandle) {
-                const { imageWithMask, onlyMask } = await pixiProcessor.processMask(
-                    config,
-                    imageUrl,
-                    maskDataUrl,
-                    signal,
-                );
-                items.push({ type: "Image", data: { dataUrl: imageWithMask }, outputHandleId: imageHandle });
-                items.push({ type: "Mask", data: { dataUrl: onlyMask }, outputHandleId: maskHandle });
-            } else {
-                items.push({ type: "Mask", data: { dataUrl: maskDataUrl }, outputHandleId: maskHandle });
-            }
+			// Paint can handle empty input
+			const maskDataUrl = config.paintData;
+			const imageHandle = getFirstOutputHandle(node.id, "Image");
+			const maskHandle = getFirstOutputHandle(node.id, "Mask"); // Ensure this string matches DB Enum or logic
 
-            return { selectedOutputIndex: 0, outputs: [{ items }] };
-        });
+			if (!maskHandle) throw new Error("Mask output handle missing");
 
-        this.registerProcessor("Blur", async ({ node, inputs, signal }) => {
-            const imageUrl = findInputData(node.id, inputs, "Image");
-            if (!imageUrl) throw new Error("Missing Input Image");
-            
-            const config = node.config as { size?: number };
-            const dataUrl = await pixiProcessor.processBlur(
-                imageUrl,
-                { blurSize: config.size ?? 1 },
-                signal,
-            );
-            
-            const outputHandle = getFirstOutputHandle(node.id);
+			const items: PaintResult["outputs"][number]["items"] = [];
+
+			if (imageUrl && imageHandle) {
+				const { imageWithMask, onlyMask } = await pixiProcessor.processMask(
+					config,
+					imageUrl,
+					maskDataUrl,
+					signal,
+				);
+				items.push({
+					type: "Image",
+					data: { dataUrl: imageWithMask },
+					outputHandleId: imageHandle,
+				});
+				items.push({
+					type: "Mask",
+					data: { dataUrl: onlyMask },
+					outputHandleId: maskHandle,
+				});
+			} else {
+				items.push({
+					type: "Mask",
+					data: { dataUrl: maskDataUrl },
+					outputHandleId: maskHandle,
+				});
+			}
+
+			return { selectedOutputIndex: 0, outputs: [{ items }] };
+		});
+
+		this.registerProcessor("Blur", async ({ node, inputs, signal }) => {
+			const imageUrl = findInputData(node.id, inputs, "Image");
+			if (!imageUrl) throw new Error("Missing Input Image");
+
+			const config = node.config as { size?: number };
+			const dataUrl = await pixiProcessor.processBlur(
+				imageUrl,
+				{ blurSize: config.size ?? 1 },
+				signal,
+			);
+
+			const outputHandle = getFirstOutputHandle(node.id);
 			if (!outputHandle) throw new Error("Missing output handle");
-            return {
-                selectedOutputIndex: 0,
-                outputs: [{ items: [{ type: "Image", data: { dataUrl }, outputHandleId: outputHandle }] }],
-            };
-        });
+			return {
+				selectedOutputIndex: 0,
+				outputs: [
+					{
+						items: [
+							{
+								type: "Image",
+								data: { dataUrl },
+								outputHandleId: outputHandle,
+							},
+						],
+					},
+				],
+			};
+		});
 
-        this.registerProcessor("Resize", async ({ node, inputs, signal }) => {
-            const imageUrl = findInputData(node.id, inputs, "Image");
-            if (!imageUrl) throw new Error("Missing Input Image");
+		this.registerProcessor("Resize", async ({ node, inputs, signal }) => {
+			const imageUrl = findInputData(node.id, inputs, "Image");
+			if (!imageUrl) throw new Error("Missing Input Image");
 
-            const config = node.config as ResizeNodeConfig;
-            const dataUrl = await pixiProcessor.processResize(
-                imageUrl,
-                { width: config.width, height: config.height },
-                signal,
-            );
+			const config = node.config as ResizeNodeConfig;
+			const dataUrl = await pixiProcessor.processResize(
+				imageUrl,
+				{ width: config.width, height: config.height },
+				signal,
+			);
 
-            const outputHandle = getFirstOutputHandle(node.id);
+			const outputHandle = getFirstOutputHandle(node.id);
 			if (!outputHandle) throw new Error("Missing output handle");
-            return {
-                selectedOutputIndex: 0,
-                outputs: [{ items: [{ type: "Image", data: { dataUrl }, outputHandleId: outputHandle }] }],
-            };
-        });
+			return {
+				selectedOutputIndex: 0,
+				outputs: [
+					{
+						items: [
+							{
+								type: "Image",
+								data: { dataUrl },
+								outputHandleId: outputHandle,
+							},
+						],
+					},
+				],
+			};
+		});
 
-        // Passthrough / Static Processors
-        const passthrough = async ({ node }: NodeProcessorParams) => node.result as unknown as NodeResult;
-        this.registerProcessor("ImageGen", passthrough);
-        this.registerProcessor("File", passthrough);
-        this.registerProcessor("Agent", passthrough);
-        this.registerProcessor("Text", passthrough);
-        this.registerProcessor("LLM", passthrough);
+		// Passthrough / Static Processors
+		const passthrough = async ({ node }: NodeProcessorParams) =>
+			node.result as unknown as NodeResult;
+		this.registerProcessor("ImageGen", passthrough);
+		this.registerProcessor("File", passthrough);
+		this.registerProcessor("Agent", passthrough);
+		this.registerProcessor("Text", passthrough);
+		this.registerProcessor("LLM", passthrough);
 
-        this.registerProcessor("Preview", async ({ node, inputs }) => {
-            // Preview is unique, it just needs ANY input.
-            const incomingEdges = this.edgesByTarget.get(node.id) || [];
-            if(incomingEdges.length === 0) throw new Error("Preview disconnected");
-            
-            // Just take the first valid result we find
-            const edge = incomingEdges[0];
-            const res = inputs.get(edge.source);
-            if (!res) throw new Error("Preview waiting for input");
-            return res;
-        });
-    }
+		this.registerProcessor("Preview", async ({ node, inputs }) => {
+			// Preview is unique, it just needs ANY input.
+			const incomingEdges = this.edgesByTarget.get(node.id) || [];
+			if (incomingEdges.length === 0) throw new Error("Preview disconnected");
+
+			// Just take the first valid result we find
+			const edge = incomingEdges[0];
+			const res = inputs.get(edge.source);
+			if (!res) throw new Error("Preview waiting for input");
+			return res;
+		});
+	}
 }
