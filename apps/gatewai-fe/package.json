@@ -103,6 +103,7 @@
 	},
 	"devDependencies": {
 		"@gatewai/types": "workspace:*",
+		"@tailwindcss/typography": "^0.5.19",
 		"@types/color": "^4.2.0",
 		"@types/node": "^20.11.17",
 		"@types/react": "^19.1.10",

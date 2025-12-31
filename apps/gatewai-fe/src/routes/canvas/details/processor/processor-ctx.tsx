@@ -111,7 +111,7 @@ export function useNodeResult<T extends NodeResult = NodeResult>(
 /**
  * Subscribe to a node's image output for canvas rendering
  */
-export function useNodeImageUrl(nodeId: string): string | null {
+export function useNodeFileOutputUrl(nodeId: string): string | null {
 	const { result } = useNodeResult(nodeId);
 
 	if (!result) return null;

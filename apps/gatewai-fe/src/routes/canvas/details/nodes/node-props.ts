@@ -25,6 +25,7 @@ import type {
 	TextResult,
 	ThreeDNodeConfig,
 	ThreeDResult,
+	PreviewNodeConfig,
 } from "@gatewai/types";
 import type { Node } from "@xyflow/react";
 
@@ -32,6 +33,11 @@ export type TextNode = Node<
 	NodeWithFileType<TextNodeConfig, TextResult>,
 	"Text"
 >;
+export type PreviewNode = Node<
+	NodeWithFileType<PreviewNodeConfig, NodeResult>,
+	"Preview"
+>;
+
 export type LLMNode = Node<NodeWithFileType<LLMNodeConfig, TextResult>, "LLM">;
 export type ImageGenNode = Node<
 	NodeWithFileType<ImageGenConfig, ImageGenResult>,

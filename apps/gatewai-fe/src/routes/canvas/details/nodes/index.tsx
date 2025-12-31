@@ -5,6 +5,7 @@ import { FileNodeComponent } from "./file";
 import { ImageGenNodeComponent } from "./image-gen";
 import { LlmNodeComponent } from "./llm";
 import { PaintNodeComponent } from "./paint";
+import { PreviewNodeComponent } from "./preview";
 import { ResizeNodeComponent } from "./resize";
 import { NoteNodeComponent } from "./sticky-note";
 import { TextNodeComponent } from "./text";
@@ -21,6 +22,7 @@ const nodeTypes = {
 	Crop: CropNodeComponent,
 	Paint: PaintNodeComponent,
 	Note: NoteNodeComponent,
+	Preview: PreviewNodeComponent,
 };
 
 // Export components
@@ -35,4 +37,5 @@ export {
 	CropNodeComponent,
 	FileNodeComponent,
 	PaintNodeComponent,
+	PreviewNodeComponent,
 };

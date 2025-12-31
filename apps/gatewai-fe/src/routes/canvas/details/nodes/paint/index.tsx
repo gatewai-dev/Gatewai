@@ -12,7 +12,7 @@ import { useAppSelector } from "@/store";
 import { makeSelectEdgesByTargetNodeId } from "@/store/edges";
 import { makeSelectNodeById } from "@/store/nodes";
 import { useCanvasCtx } from "../../ctx/canvas-ctx";
-import { useNodeImageUrl } from "../../processor/processor-ctx";
+import { useNodeFileOutputUrl } from "../../processor/processor-ctx";
 import { BaseNode } from "../base";
 import { DimensionsConfig } from "../common/dimensions";
 import type { PaintNode } from "../node-props";
@@ -31,7 +31,7 @@ const PaintNodeComponent = memo((props: NodeProps<PaintNode>) => {
 	const nodeConfig = node?.config as PaintNodeConfig;
 	const maskImageRef = useRef<HTMLImageElement | null>(null);
 
-	const inputImageUrl = useNodeImageUrl(inputNodeId);
+	const inputImageUrl = useNodeFileOutputUrl(inputNodeId);
 	const canvasRef = useRef<HTMLCanvasElement>(null);
 
 	const [brushSize, setBrushSize] = useState(20);

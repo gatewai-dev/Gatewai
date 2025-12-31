@@ -5,7 +5,7 @@ import { cn } from "@/lib/utils";
 import { useAppDispatch, useAppSelector } from "@/store";
 import { makeSelectEdgesByTargetNodeId } from "@/store/edges";
 import { makeSelectNodeById, updateNodeConfig } from "@/store/nodes";
-import { useNodeImageUrl } from "../../processor/processor-ctx";
+import { useNodeFileOutputUrl } from "../../processor/processor-ctx";
 import { BaseNode } from "../base";
 import type { CropNode } from "../node-props";
 
@@ -42,7 +42,7 @@ const CropNodeComponent = memo((props: NodeProps<CropNode>) => {
 		return edges[0].source;
 	}, [edges]);
 
-	const inputImageUrl = useNodeImageUrl(inputNodeId);
+	const inputImageUrl = useNodeFileOutputUrl(inputNodeId);
 	const node = useAppSelector(makeSelectNodeById(props.id));
 	const canvasRef = useRef<HTMLCanvasElement>(null);
 	const nodeConfig = node?.config as CropNodeConfig;

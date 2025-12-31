@@ -51,7 +51,7 @@ const BaseNode = memo(
 
 		const nodeBackgroundColor = "bg-background";
 		const Icon =
-			node && (NODE_ICON_MAP[node?.type](node) || NODE_ICON_MAP.File);
+			node && (NODE_ICON_MAP[node?.type](node) || NODE_ICON_MAP.File(node));
 
 		return (
 			<div
@@ -105,7 +105,7 @@ const BaseNode = memo(
 				<div className="px-2 py-2 h-[calc(100%-1rem)]">
 					<div className="header-section flex justify-between items-center mb-3 px-1">
 						<div className="flex items-center gap-2">
-							<Icon />
+							{Icon && <Icon />}
 							<div className="text-xs text-node-title">
 								{node?.name} {node?.id}
 							</div>

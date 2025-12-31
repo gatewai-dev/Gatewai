@@ -357,6 +357,20 @@ export class NodeGraphProcessor extends EventEmitter {
 			return result;
 		});
 
+		this.registerProcessor("Preview", async ({ node, inputs }) => {
+			
+			const inputHandleId = this.getInputHandleIDs(node.id)[0];
+			if (!inputHandleId) return null;
+
+			const sourceNodeId = this.getSourceNodeID(node.id, inputHandleId);
+			if (!sourceNodeId) return null;
+
+			const inputResult = inputs.get(sourceNodeId);
+			if (!inputResult) return null;
+
+			return inputResult;
+		});
+
 		this.registerProcessor("File", async ({ node }) => {
 			// If no cached, use existing node.result (assuming it's set)
 			const result = node.result as unknown as FileResult;
@@ -397,14 +411,12 @@ export class NodeGraphProcessor extends EventEmitter {
 			const inputResult = inputs.get(sourceNodeId);
 			if (!inputResult) return null;
 			const sourceHandleId = this.getSourceHandleId(inputHandleId);
-			console.log({ sourceHandleId });
 			// Extract image URL
 			const output = inputResult.outputs[inputResult.selectedOutputIndex ?? 0];
 			const fileData = output?.items.find(
 				(f) => f.outputHandleId === sourceHandleId,
 			)?.data as FileData;
 			const imageUrl = fileData?.entity?.signedUrl ?? fileData?.dataUrl;
-			console.log({ imageUrl });
 			if (!imageUrl) return null;
 
 			// Process with Pixi

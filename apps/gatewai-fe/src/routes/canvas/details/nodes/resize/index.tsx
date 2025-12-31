@@ -3,7 +3,7 @@ import type { NodeProps } from "@xyflow/react";
 import { memo, useEffect, useRef } from "react";
 import { useAppDispatch, useAppSelector } from "@/store";
 import { makeSelectNodeById, updateNodeConfig } from "@/store/nodes";
-import { useNodeImageUrl } from "../../processor/processor-ctx";
+import { useNodeFileOutputUrl } from "../../processor/processor-ctx";
 import { BaseNode } from "../base";
 import { DimensionsConfig } from "../common/dimensions";
 import type { ResizeNode } from "../node-props";
@@ -13,7 +13,7 @@ const ResizeNodeComponent = memo((props: NodeProps<ResizeNode>) => {
 	const dispatch = useAppDispatch();
 	const canvasRef = useRef<HTMLCanvasElement | null>(null);
 
-	const imageUrl = useNodeImageUrl(props.id);
+	const imageUrl = useNodeFileOutputUrl(props.id);
 
 	const nodeConfig = node?.config as ResizeNodeConfig | null;
 	// Draw to canvas when result is ready

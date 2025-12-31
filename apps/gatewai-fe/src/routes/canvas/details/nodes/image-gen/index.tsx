@@ -3,7 +3,7 @@ import { memo, useEffect, useRef } from "react";
 import { useAppSelector } from "@/store";
 import { makeSelectNodeById } from "@/store/nodes";
 import { RunNodeButton } from "../../components/run-node-button";
-import { useNodeImageUrl, useNodeResult } from "../../processor/processor-ctx";
+import { useNodeFileOutputUrl, useNodeResult } from "../../processor/processor-ctx";
 import { BaseNode } from "../base";
 import { OutputSelector } from "../misc/output-selector";
 import type { ImageGenNode } from "../node-props";
@@ -13,7 +13,7 @@ const ImageGenNodeComponent = memo((props: NodeProps<ImageGenNode>) => {
 	const node = useAppSelector(makeSelectNodeById(props.id));
 
 	const { result } = useNodeResult(props.id);
-	const imageUrl = useNodeImageUrl(props.id);
+	const imageUrl = useNodeFileOutputUrl(props.id);
 	const canvasRef = useRef<HTMLCanvasElement | null>(null);
 
 	useEffect(() => {

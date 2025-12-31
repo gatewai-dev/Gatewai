@@ -2,7 +2,7 @@ import type { NodeProps } from "@xyflow/react";
 import { memo, useEffect, useRef } from "react";
 import { useAppSelector } from "@/store";
 import { makeSelectNodeById } from "@/store/nodes";
-import { useNodeImageUrl } from "../../processor/processor-ctx";
+import { useNodeFileOutputUrl } from "../../processor/processor-ctx";
 import { BaseNode } from "../base";
 import type { BlurNode } from "../node-props";
 import { BlurValueSlider } from "./blur-slider";
@@ -10,7 +10,7 @@ import { BlurValueSlider } from "./blur-slider";
 const BlurNodeComponent = memo((props: NodeProps<BlurNode>) => {
 	const node = useAppSelector(makeSelectNodeById(props.id));
 	const canvasRef = useRef<HTMLCanvasElement | null>(null);
-	const imageUrl = useNodeImageUrl(props.id);
+	const imageUrl = useNodeFileOutputUrl(props.id);
 
 	// Draw to canvas when result is ready
 	useEffect(() => {

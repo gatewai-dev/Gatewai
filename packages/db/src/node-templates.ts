@@ -57,7 +57,6 @@ export async function SEED_createNodeTemplates(prisma: PrismaClient) {
 		},
 	});
 
-	// Preview: only file input (video, image), assuming no output, input File (generic for video/image)
 	await prisma.nodeTemplate.create({
 		data: {
 			type: NodeType.Preview,
