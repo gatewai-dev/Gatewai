@@ -19,11 +19,11 @@ import { NodePalette } from "../../node-templates/node-palette";
 import { useCanvasCtx } from "../ctx/canvas-ctx";
 import { nodeTypes } from "../nodes";
 import { CustomConnectionLine, CustomEdge } from "../nodes/base";
+import { ReactFlowPanels } from "./panels";
 import { RightPanel } from "./right-panel";
 import { Toolbar } from "./toolbar";
 import { TopPanel } from "./top-panel";
 import { useZoomHotkeys } from "./use-zoom-hotkeys";
-import { ReactFlowPanels } from "./panels";
 
 const edgeTypes = {
 	default: CustomEdge,

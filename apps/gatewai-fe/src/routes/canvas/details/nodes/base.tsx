@@ -232,7 +232,8 @@ const CustomEdge = memo(
 			targetPosition,
 		});
 		return (
-			<BaseEdge path={edgePath}
+			<BaseEdge
+				path={edgePath}
 				id={id}
 				style={{
 					...style,

@@ -117,11 +117,11 @@ export function useNodeImageUrl(nodeId: string): string | null {
 	if (!result) return null;
 
 	const output = result.outputs[result.selectedOutputIndex ?? 0];
-	const outputItem = output?.items.find(f => f.type === 'Image');
+	const outputItem = output?.items.find((f) => f.type === "Image");
 	if (!outputItem) return null;
 
-	const fileData = outputItem
-		.data as FileResult["outputs"][number]["items"][number]["data"];
+	const fileData =
+		outputItem.data as FileResult["outputs"][number]["items"][number]["data"];
 	return fileData?.entity?.signedUrl ?? fileData?.dataUrl ?? null;
 }
 

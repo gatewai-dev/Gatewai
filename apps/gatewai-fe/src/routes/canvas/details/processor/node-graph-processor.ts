@@ -742,7 +742,7 @@ export class NodeGraphProcessor extends EventEmitter {
 		return Array.from(
 			new Set(
 				this.handles
-					.filter((e) => e.nodeId === nodeId && e.type === 'Input')
+					.filter((e) => e.nodeId === nodeId && e.type === "Input")
 					.map((e) => e.id),
 			),
 		);

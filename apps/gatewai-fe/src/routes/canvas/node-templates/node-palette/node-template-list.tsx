@@ -1,8 +1,8 @@
 import type { DataType } from "@gatewai/db";
+import { memo } from "react";
 import type { NodeTemplateListRPC } from "@/rpc/types";
 import { NodeItem } from "./node-item";
 import { useNodePalette } from "./node-palette.ctx";
-import { memo } from "react";
 
 interface NodeListProps {
 	templates: NodeTemplateListRPC;
@@ -106,6 +106,6 @@ const NodeTemplateList = memo(({ templates }: NodeListProps) => {
 			))}
 		</div>
 	);
-})
+});
 
-export { NodeTemplateList }
+export { NodeTemplateList };
