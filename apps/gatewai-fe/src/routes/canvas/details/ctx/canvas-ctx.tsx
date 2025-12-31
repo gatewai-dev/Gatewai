@@ -417,20 +417,22 @@ const CanvasProvider = ({
 			})();
 
 			dispatch(setEdges(newEdges));
-			const edgeEntities: EdgeEntityType[] = newEdges.map((ne) => {
-				if (ne.sourceHandle && ne.targetHandle) {
-					return {
-						id: ne.id,
-						source: ne.source,
-						target: ne.target,
-						targetHandleId: ne.targetHandle,
-						sourceHandleId: ne.sourceHandle,
-						createdAt: new Date().toISOString(),
-						updatedAt: new Date().toISOString(),
+			const edgeEntities: EdgeEntityType[] = newEdges
+				.map((ne) => {
+					if (ne.sourceHandle && ne.targetHandle) {
+						return {
+							id: ne.id,
+							source: ne.source,
+							target: ne.target,
+							targetHandleId: ne.targetHandle,
+							sourceHandleId: ne.sourceHandle,
+							createdAt: new Date().toISOString(),
+							updatedAt: new Date().toISOString(),
+						};
 					}
-				}
-				return null;
-			}).filter(f => !!f);
+					return null;
+				})
+				.filter((f) => !!f);
 			dispatch(setAllEdgeEntities(edgeEntities));
 			scheduleSave();
 		},
