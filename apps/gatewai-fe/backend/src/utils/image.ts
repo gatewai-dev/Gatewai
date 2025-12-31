@@ -43,11 +43,11 @@ export async function applyHSL(
 	config: HSLNodeConfig,
 ): Promise<Buffer> {
 	const {
-		hue = 0,        // -180 to 180 degrees
+		hue = 0, // -180 to 180 degrees
 		saturation = 0, // -1 to 1
-		lightness = 0,  // -1 to 1
+		lightness = 0, // -1 to 1
 		colorize = false,
-		alpha = 1,      // 0 to 1
+		alpha = 1, // 0 to 1
 	} = config;
 
 	let pipeline = sharp(buffer);
@@ -55,9 +55,9 @@ export async function applyHSL(
 	// Apply HSL adjustments using modulate
 	if (hue !== 0 || saturation !== 0 || lightness !== 0) {
 		pipeline = pipeline.modulate({
-			hue: hue,                    // -180 to 180 degrees
-			saturation: 1 + saturation,  // convert -1..1 to 0..2 multiplier
-			lightness: 1 + lightness,    // convert -1..1 to 0..2 multiplier
+			hue: hue, // -180 to 180 degrees
+			saturation: 1 + saturation, // convert -1..1 to 0..2 multiplier
+			lightness: 1 + lightness, // convert -1..1 to 0..2 multiplier
 		});
 	}
 
@@ -77,7 +77,7 @@ export async function applyHSL(
 					channels: 4,
 				},
 				tile: true,
-				blend: 'dest-in',
+				blend: "dest-in",
 			},
 		]);
 	}

@@ -2,12 +2,12 @@ import { NodeType } from "@gatewai/db";
 import aiAgentProcessor from "./ai-agent/index.js";
 import blurProcessor from "./blur.js";
 import cropProcessor from "./crop.js";
+import hslProcessor from "./hsl.js";
 import imageGenProcessor from "./image-gen.js";
 import llmProcessor from "./llm.js";
 import paintProcessor from "./paint.js";
 import resizeProcessor from "./resize.js";
 import type { NodeProcessor } from "./types.js";
-import hslProcessor from "./hsl.js";
 
 const nodeProcessors: Partial<Record<NodeType, NodeProcessor>> = {
 	[NodeType.Blur]: blurProcessor,

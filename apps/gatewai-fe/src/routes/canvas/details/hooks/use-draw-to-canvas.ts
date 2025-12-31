@@ -1,7 +1,10 @@
 import { useEffect } from "react";
 
-function useDrawToCanvas(canvasRef: React.RefObject<HTMLCanvasElement | null>, imageUrl?: string | null) {
-    useEffect(() => {
+function useDrawToCanvas(
+	canvasRef: React.RefObject<HTMLCanvasElement | null>,
+	imageUrl?: string | null,
+) {
+	useEffect(() => {
 		if (!canvasRef.current) return;
 
 		const canvas = canvasRef.current;
@@ -28,4 +31,4 @@ function useDrawToCanvas(canvasRef: React.RefObject<HTMLCanvasElement | null>, i
 	}, [imageUrl, canvasRef.current]);
 }
 
-export { useDrawToCanvas }
+export { useDrawToCanvas };

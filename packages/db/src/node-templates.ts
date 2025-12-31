@@ -310,13 +310,13 @@ export async function SEED_createNodeTemplates(prisma: PrismaClient) {
 					},
 				],
 			},
-			defaultConfig:{
-			    hue: 0,
-			    saturation: 0,
-			    lightness: 0,
-			    colorize: 0,
-			    alpha: 0,
-			}
+			defaultConfig: {
+				hue: 0,
+				saturation: 0,
+				lightness: 0,
+				colorize: 0,
+				alpha: 0,
+			},
 		},
 	});
 

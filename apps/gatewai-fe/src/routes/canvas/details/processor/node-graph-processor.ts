@@ -78,7 +78,7 @@ export class NodeGraphProcessor extends EventEmitter {
 		// 2. Rebuild Topology Indices
 		this.buildAdjacencyAndIndices();
 
-		let nodesToInvalidate = new Set<string>();
+		const nodesToInvalidate = new Set<string>();
 
 		if (this.isInitial) {
 			this.isInitial = false;
@@ -469,7 +469,7 @@ export class NodeGraphProcessor extends EventEmitter {
 			handleLabel?: string,
 		) => {
 			const incomingEdges = this.edgesByTarget.get(nodeId) || [];
-			console.log({nodeId, incomingEdges})
+			console.log({ nodeId, incomingEdges });
 			for (const edge of incomingEdges) {
 				const result = inputs.get(edge.source);
 				if (!result) continue;
@@ -565,7 +565,7 @@ export class NodeGraphProcessor extends EventEmitter {
 					maskDataUrl,
 					signal,
 				);
-				console.log({maskHandle, imageHandle})
+				console.log({ maskHandle, imageHandle });
 				items.push({
 					type: "Image",
 					data: { dataUrl: imageWithMask },
@@ -621,11 +621,7 @@ export class NodeGraphProcessor extends EventEmitter {
 			if (!imageUrl) throw new Error("Missing Input Image");
 
 			const config = node.config as HSLNodeConfig;
-			const dataUrl = await pixiProcessor.processHSL(
-				imageUrl,
-				config,
-				signal,
-			);
+			const dataUrl = await pixiProcessor.processHSL(imageUrl, config, signal);
 
 			const outputHandle = getFirstOutputHandle(node.id);
 			if (!outputHandle) throw new Error("Missing output handle");

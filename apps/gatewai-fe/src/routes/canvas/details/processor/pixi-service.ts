@@ -1,4 +1,8 @@
-import { HSLNodeConfigSchema, type HSLNodeConfig, type PaintNodeConfig } from "@gatewai/types";
+import {
+	type HSLNodeConfig,
+	HSLNodeConfigSchema,
+	type PaintNodeConfig,
+} from "@gatewai/types";
 import {
 	Application,
 	Assets,
@@ -7,7 +11,7 @@ import {
 	Graphics,
 	Sprite,
 } from "pixi.js";
-import { HslAdjustmentFilter } from 'pixi-filters';
+import { HslAdjustmentFilter } from "pixi-filters";
 
 class PixiProcessorService {
 	private app: Application | null = null;
@@ -70,10 +74,10 @@ class PixiProcessorService {
 
 		// Resize the renderer to match the image exactly
 		app.renderer.resize(sprite.width, sprite.height);
-		
+
 		// 3. Apply Filter
 		const filter = new HslAdjustmentFilter({
-			...config
+			...config,
 		});
 
 		sprite.filters = [filter];

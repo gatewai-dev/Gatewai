@@ -2,11 +2,11 @@ import type { NodeProps } from "@xyflow/react";
 import { memo, useRef } from "react";
 import { useAppSelector } from "@/store";
 import { makeSelectNodeById } from "@/store/nodes";
+import { useDrawToCanvas } from "../../hooks/use-draw-to-canvas";
 import { useNodeFileOutputUrl } from "../../processor/processor-ctx";
 import { BaseNode } from "../base";
 import type { BlurNode } from "../node-props";
 import { BlurValueSlider } from "./blur-slider";
-import { useDrawToCanvas } from "../../hooks/use-draw-to-canvas";
 
 const BlurNodeComponent = memo((props: NodeProps<BlurNode>) => {
 	const node = useAppSelector(makeSelectNodeById(props.id));
