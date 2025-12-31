@@ -14,7 +14,6 @@ import {
 import { ModulateAdjustmentFilter } from "pixi-filters";
 import { ModulateFilter } from "./filters/modulate";
 
-
 class PixiProcessorService {
 	private app: Application | null = null;
 
@@ -102,7 +101,7 @@ class PixiProcessorService {
 
 		// 5. Extract Result
 		const dataUrl = await app.renderer.extract.base64(app.stage);
-		console.log({dataUrl})
+		console.log({ dataUrl });
 		// Final cancellation check
 		if (signal?.aborted) {
 			throw new DOMException("Operation cancelled", "AbortError");
@@ -110,7 +109,6 @@ class PixiProcessorService {
 
 		return dataUrl;
 	}
-
 
 	public async processBlur(
 		imageUrl: string,

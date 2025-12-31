@@ -55,10 +55,7 @@ const SwitchField = memo(
 							)}
 						</div>
 						<FormControl>
-							<Switch
-								checked={field.value}
-								onCheckedChange={field.onChange}
-							/>
+							<Switch checked={field.value} onCheckedChange={field.onChange} />
 						</FormControl>
 						<FormMessage />
 					</FormItem>

@@ -48,7 +48,9 @@ const SliderField = memo(
 				render={({ field }) => (
 					<FormItem>
 						<div className="flex items-center space-x-2">
-							<FormLabel>{label}: {field.value}</FormLabel>
+							<FormLabel>
+								{label}: {field.value}
+							</FormLabel>
 							{info && (
 								<TooltipProvider>
 									<Tooltip>

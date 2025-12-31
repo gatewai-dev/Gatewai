@@ -474,8 +474,8 @@ export class NodeGraphProcessor extends EventEmitter {
 
 			const result = inputs.get(incomingEdge.source);
 			return result;
-		}
-		
+		};
+
 		const findInputData = (
 			nodeId: string,
 			inputs: Map<string, NodeResult>,
@@ -634,7 +634,11 @@ export class NodeGraphProcessor extends EventEmitter {
 			if (!imageUrl) throw new Error("Missing Input Image");
 
 			const config = node.config as ModulateNodeConfig;
-			const dataUrl = await pixiProcessor.processModulate(imageUrl, config, signal);
+			const dataUrl = await pixiProcessor.processModulate(
+				imageUrl,
+				config,
+				signal,
+			);
 
 			const outputHandle = getFirstOutputHandle(node.id);
 			if (!outputHandle) throw new Error("Missing output handle");

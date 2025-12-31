@@ -1,10 +1,5 @@
-import type {
-	ModulateNodeConfig,
-} from "@gatewai/types";
-import {
-	Filter,
-	GlProgram,
-} from "pixi.js";
+import type { ModulateNodeConfig } from "@gatewai/types";
+import { Filter, GlProgram } from "pixi.js";
 
 // Custom Modulate Filter
 class ModulateFilter extends Filter {
@@ -180,4 +175,4 @@ class ModulateFilter extends Filter {
 	}
 }
 
-export { ModulateFilter }
+export { ModulateFilter };

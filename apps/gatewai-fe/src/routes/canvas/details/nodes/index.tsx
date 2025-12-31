@@ -1,16 +1,16 @@
 import { AgentNodeComponent } from "./agent";
 import { BlurNodeComponent } from "./blur";
 import { CropNodeComponent } from "./crop";
+import { ExportNodeComponent } from "./export";
 import { FileNodeComponent } from "./file";
-import { ModulateNodeComponent } from "./modulate";
 import { ImageGenNodeComponent } from "./image-gen";
 import { LlmNodeComponent } from "./llm";
+import { ModulateNodeComponent } from "./modulate";
 import { PaintNodeComponent } from "./paint";
 import { PreviewNodeComponent } from "./preview";
 import { ResizeNodeComponent } from "./resize";
 import { NoteNodeComponent } from "./sticky-note";
 import { TextNodeComponent } from "./text";
-import { ExportNodeComponent } from "./export";
 
 // Node types mapping
 const nodeTypes = {

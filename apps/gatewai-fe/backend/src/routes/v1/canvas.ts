@@ -1,7 +1,4 @@
-import {
-	type NodeUpdateInput,
-	prisma,
-} from "@gatewai/db";
+import { type NodeUpdateInput, prisma } from "@gatewai/db";
 import { zValidator } from "@hono/zod-validator";
 import type { XYPosition } from "@xyflow/react";
 import { Hono } from "hono";

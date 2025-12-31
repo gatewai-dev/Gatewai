@@ -5,6 +5,7 @@ import type {
 	NodeResult,
 	Output,
 } from "@gatewai/types";
+import { logMedia } from "../../media-logger.js";
 import {
 	applyModulate,
 	bufferToDataUrl,
@@ -13,7 +14,6 @@ import {
 } from "../../utils/image.js";
 import { getInputValue } from "../resolvers.js";
 import type { NodeProcessor } from "./types.js";
-import { logMedia } from '../../media-logger.js';
 
 const modulateProcessor: NodeProcessor = async ({ node, data }) => {
 	try {
