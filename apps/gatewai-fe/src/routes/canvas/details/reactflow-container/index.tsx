@@ -135,22 +135,22 @@ function ReactflowContainer({ children }: ReactFlowProps) {
 		<div ref={containerRef} className="w-full h-screen bg-black">
 			<ModeContext.Provider value={{ mode, setMode }}>
 				<ReactFlow
-            		disableKeyboardA11y={true}
+					disableKeyboardA11y={true}
 					onInit={(flowInstance) => {
 						rfInstance.current = flowInstance;
 					}}
 					nodes={rfNodes}
 					edges={rfEdges}
-            		multiSelectionKeyCode={null}
-            		nodeDragThreshold={1}
-            		fitViewOptions={{ padding: 0.2, maxZoom: 1 }}
+					multiSelectionKeyCode={null}
+					nodeDragThreshold={1}
+					fitViewOptions={{ padding: 0.2, maxZoom: 1 }}
 					className="react-flow-container"
 					fitView
 					snapToGrid
-            		connectionRadius={70}
-            		connectionLineType={ConnectionLineType.Bezier}
-            		deleteKeyCode={null}
-					snapGrid={[10,10]}
+					connectionRadius={70}
+					connectionLineType={ConnectionLineType.Bezier}
+					deleteKeyCode={null}
+					snapGrid={[10, 10]}
 					nodeTypes={nodeTypes}
 					edgeTypes={edgeTypes}
 					connectionLineComponent={CustomConnectionLine}
@@ -171,7 +171,7 @@ function ReactflowContainer({ children }: ReactFlowProps) {
 					connectionMode={ConnectionMode.Loose}
 					onConnect={onConnect}
 					onSelectionChange={onSelectionChange}
-            		proOptions={{ hideAttribution: false }}
+					proOptions={{ hideAttribution: false }}
 				>
 					{children}
 					<Background variant={BackgroundVariant.Dots} />

@@ -1,5 +1,14 @@
 import { DataType } from "@gatewai/db";
-import type { FileData, Output, PaintNodeConfig, PaintResult } from "@gatewai/types";
+import type {
+	FileData,
+	Output,
+	PaintNodeConfig,
+	PaintResult,
+} from "@gatewai/types";
+import fs from "fs/promises";
+import path from "path";
+import sharp from "sharp";
+import { logger } from "../../logger.js";
 import {
 	bufferToDataUrl,
 	getImageBuffer,
@@ -7,10 +16,6 @@ import {
 } from "../../utils/image.js";
 import { getInputValue } from "../resolvers.js";
 import type { NodeProcessor } from "./types.js";
-import sharp from "sharp";
-import fs from "fs/promises";
-import path from "path";
-import { logger } from "../../logger.js";
 
 const paintProcessor: NodeProcessor = async ({ node, data }) => {
 	try {
@@ -75,7 +80,11 @@ const paintProcessor: NodeProcessor = async ({ node, data }) => {
 			} else if (maskBuffer && maskMetadata?.width && maskMetadata?.height) {
 				dimensions = { width: maskMetadata.width, height: maskMetadata.height };
 			} else {
-				return { success: false, error: "No dimensions available: no background input, no config dimensions, and no mask" };
+				return {
+					success: false,
+					error:
+						"No dimensions available: no background input, no config dimensions, and no mask",
+				};
 			}
 
 			// Create solid color background buffer
@@ -144,10 +153,15 @@ const paintProcessor: NodeProcessor = async ({ node, data }) => {
 
 		// Convert buffers to data URLs
 		const imageDataUrl = bufferToDataUrl(compositedBuffer, mimeType);
-		const processedMaskDataUrl = bufferToDataUrl(processedMaskBuffer, "image/png");
+		const processedMaskDataUrl = bufferToDataUrl(
+			processedMaskBuffer,
+			"image/png",
+		);
 
 		// Build new result (cloning existing to preserve history)
-		const newResult = structuredClone(node.result as unknown as PaintResult) ?? {
+		const newResult = structuredClone(
+			node.result as unknown as PaintResult,
+		) ?? {
 			outputs: [],
 			selectedOutputIndex: 0,
 		};
@@ -171,7 +185,7 @@ const paintProcessor: NodeProcessor = async ({ node, data }) => {
 
 		return { success: true, newResult };
 	} catch (err: unknown) {
-		console.log({err})
+		console.log({ err });
 		return {
 			success: false,
 			error: err instanceof Error ? err.message : "Paint processing failed",

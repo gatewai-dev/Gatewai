@@ -8,11 +8,11 @@ import {
 	type UserContent,
 } from "ai";
 import { ENV_CONFIG } from "../../config.js";
+import { logger } from "../../logger.js";
 import { getImageDimensions } from "../../utils/image.js";
 import { generateSignedUrl, uploadToS3 } from "../../utils/s3.js";
 import { getInputValue, getInputValuesByType } from "../resolvers.js";
 import type { NodeProcessor } from "./types.js";
-import { logger } from "../../logger.js";
 
 const imageGenProcessor: NodeProcessor = async ({ node, data }) => {
 	try {
@@ -61,7 +61,7 @@ const imageGenProcessor: NodeProcessor = async ({ node, data }) => {
 		const result = await generateText({
 			model: config.model ?? "google/gemini-2.5-flash-image",
 			prompt: messages,
-			system: 'Generate image for the user.'
+			system: "Generate image for the user.",
 		});
 
 		const imageFiles = result.files.filter((f) =>
@@ -131,7 +131,7 @@ const imageGenProcessor: NodeProcessor = async ({ node, data }) => {
 	} catch (err: unknown) {
 		console.log(err);
 		if (err instanceof Error) {
-			logger.error(err.message)
+			logger.error(err.message);
 			return {
 				success: false,
 				error: err?.message ?? "ImageGen processing failed",
