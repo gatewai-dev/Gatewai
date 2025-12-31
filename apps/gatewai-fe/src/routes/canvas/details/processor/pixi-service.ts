@@ -288,10 +288,7 @@ class PixiProcessorService {
 		if (signal?.aborted) {
 			throw new DOMException("Operation cancelled", "AbortError");
 		}
-		const { width, height, backgroundColor } = config;
-
-		let widthToUse: number = width;
-		let heightToUse: number = height;
+		const { backgroundColor } = config;
 
 		if (!this.app) await this.init();
 		if (!this.app) throw new Error("App is not initialized");
@@ -301,29 +298,50 @@ class PixiProcessorService {
 			throw new DOMException("Operation cancelled", "AbortError");
 		}
 
-		// 1. Load the mask texture if provided
-		let maskTexture: any;
-		let maskSprite: Sprite | undefined;
-		if (maskUrl) {
-			maskTexture = await Assets.load(maskUrl);
+		// 1. Determine dimensions first
+		let widthToUse: number;
+		let heightToUse: number;
+		let baseSprite: Sprite | Graphics | undefined;
 
+		if (imageUrl) {
+			const texture = await Assets.load(imageUrl);
 			if (signal?.aborted) {
 				throw new DOMException("Operation cancelled", "AbortError");
 			}
-
-			maskSprite = new Sprite(maskTexture);
-			if (!imageUrl) {
-				widthToUse = config.width;
-				heightToUse = config.height;
-			}
+			widthToUse = texture.width;
+			heightToUse = texture.height;
+			baseSprite = new Sprite(texture);
+		} else if (backgroundColor) {
+			widthToUse = config.width;
+			heightToUse = config.height;
+			const graphics = new Graphics();
+			graphics.beginFill(backgroundColor);
+			graphics.drawRect(0, 0, widthToUse, heightToUse);
+			graphics.endFill();
+			baseSprite = graphics;
+		} else {
+			throw new Error("Either imageUrl or backgroundColor must be provided");
 		}
 
 		// Resize the renderer to match dimensions
 		app.renderer.resize(widthToUse, heightToUse);
 
-		// 2. First, render and extract ONLY the mask
+		// 2. Load the mask texture if provided and scale to dimensions
+		let maskSprite: Sprite | undefined;
+		if (maskUrl) {
+			const maskTexture = await Assets.load(maskUrl);
+			if (signal?.aborted) {
+				throw new DOMException("Operation cancelled", "AbortError");
+			}
+			maskSprite = new Sprite(maskTexture);
+			maskSprite.width = widthToUse;
+			maskSprite.height = heightToUse;
+		}
+
+		// 3. Setup container for rendering
 		const container = new Container();
 
+		// First, render and extract ONLY the mask (on transparent background)
 		if (maskSprite) {
 			container.addChild(maskSprite);
 		}
@@ -350,37 +368,11 @@ class PixiProcessorService {
 			throw new DOMException("Operation cancelled", "AbortError");
 		}
 		console.log({ onlyMask });
-		// 3. Now load/create the background and add it to the container
-		let baseSprite: Sprite | Graphics;
 
-		if (imageUrl) {
-			const texture = await Assets.load(imageUrl);
-
-			if (signal?.aborted) {
-				app.stage.removeChildren();
-				throw new DOMException("Operation cancelled", "AbortError");
-			}
-
-			baseSprite = new Sprite(texture);
-			widthToUse = texture.width;
-			heightToUse = texture.height;
-
-			// Resize renderer if image dimensions differ
-			app.renderer.resize(widthToUse, heightToUse);
-		} else if (backgroundColor) {
-			// Create a colored background using Graphics
-			const graphics = new Graphics();
-			graphics.beginFill(backgroundColor);
-			graphics.drawRect(0, 0, widthToUse, heightToUse);
-			graphics.endFill();
-			baseSprite = graphics;
-		} else {
-			app.stage.removeChildren();
-			throw new Error("Either imageUrl or backgroundColor must be provided");
+		// 4. Now add the base sprite behind the mask for imageWithMask
+		if (baseSprite) {
+			container.addChildAt(baseSprite, 0);
 		}
-
-		// 4. Add base sprite to the beginning of container (behind mask)
-		container.addChildAt(baseSprite, 0);
 
 		if (signal?.aborted) {
 			app.stage.removeChildren();
