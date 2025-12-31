@@ -20,16 +20,16 @@ const NoteNodeComponent = memo((props: NodeProps<NoteNode>) => {
 	};
 
 	return (
-			<Textarea
-				value={text}
-				onChange={handleChange}
-				style={{
-					color: nodeConfig?.textColor,
-					backgroundColor: nodeConfig?.backgroundColor,
-				}}
-				className="w-full h-full"
-				placeholder="Enter your notes"
-			/>
+		<Textarea
+			value={text}
+			onChange={handleChange}
+			style={{
+				color: nodeConfig?.textColor,
+				backgroundColor: nodeConfig?.backgroundColor,
+			}}
+			className="w-full h-full"
+			placeholder="Enter your notes"
+		/>
 	);
 });
 NoteNodeComponent.displayName = "NoteNode";
