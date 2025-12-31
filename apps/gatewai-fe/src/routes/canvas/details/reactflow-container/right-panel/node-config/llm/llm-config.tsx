@@ -9,8 +9,8 @@ import { useForm } from "react-hook-form";
 import { Form } from "@/components/ui/form";
 import { useCanvasCtx } from "@/routes/canvas/details/ctx/canvas-ctx";
 import type { NodeEntityType } from "@/store/nodes";
-import { SelectField } from "../fields/select";
-import { TemperatureField } from "../fields/temperature";
+import { SelectField } from "../../../../components/fields/select";
+import { TemperatureField } from "../../../../components/fields/temperature";
 
 const LLMNodeConfigComponent = memo(({ node }: { node: NodeEntityType }) => {
 	const { onNodeConfigUpdate } = useCanvasCtx();

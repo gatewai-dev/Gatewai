@@ -7,6 +7,7 @@ import llmProcessor from "./llm.js";
 import paintProcessor from "./paint.js";
 import resizeProcessor from "./resize.js";
 import type { NodeProcessor } from "./types.js";
+import hslProcessor from "./hsl.js";
 
 const nodeProcessors: Partial<Record<NodeType, NodeProcessor>> = {
 	[NodeType.Blur]: blurProcessor,
@@ -16,6 +17,7 @@ const nodeProcessors: Partial<Record<NodeType, NodeProcessor>> = {
 	[NodeType.Agent]: aiAgentProcessor,
 	[NodeType.Crop]: cropProcessor,
 	[NodeType.Paint]: paintProcessor,
+	[NodeType.HSL]: hslProcessor,
 	// No processing needed for these node types
 	[NodeType.File]: async ({ node }) => {
 		return { success: true, result: node.result };

@@ -74,6 +74,10 @@ export type ResizeResult = SingleOutputResult & {
 	outputs: [{ items: [OutputItem<"Image" | "Video">] }];
 };
 
+export type HSLResult = SingleOutputResult & {
+	outputs: [{ items: [OutputItem<"Image" | "Video">] }];
+};
+
 export type ThreeDResult = MultipleOutputResult & {
 	outputs: { items: [OutputItem<"File">] }[];
 };
@@ -131,4 +135,5 @@ export type NodeResult =
 	| PaintResult
 	| BlurResult
 	| CompositorResult
+	| HSLResult
 	| DescriberResult;

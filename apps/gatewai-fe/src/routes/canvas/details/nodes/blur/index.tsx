@@ -1,11 +1,12 @@
 import type { NodeProps } from "@xyflow/react";
-import { memo, useEffect, useRef } from "react";
+import { memo, useRef } from "react";
 import { useAppSelector } from "@/store";
 import { makeSelectNodeById } from "@/store/nodes";
 import { useNodeFileOutputUrl } from "../../processor/processor-ctx";
 import { BaseNode } from "../base";
 import type { BlurNode } from "../node-props";
 import { BlurValueSlider } from "./blur-slider";
+import { useDrawToCanvas } from "../../hooks/use-draw-to-canvas";
 
 const BlurNodeComponent = memo((props: NodeProps<BlurNode>) => {
 	const node = useAppSelector(makeSelectNodeById(props.id));
@@ -13,31 +14,7 @@ const BlurNodeComponent = memo((props: NodeProps<BlurNode>) => {
 	const imageUrl = useNodeFileOutputUrl(props.id);
 
 	// Draw to canvas when result is ready
-	useEffect(() => {
-		if (!canvasRef.current) return;
-
-		const canvas = canvasRef.current;
-		const ctx = canvas.getContext("2d");
-		if (!ctx) return;
-
-		if (!imageUrl) {
-			ctx.clearRect(0, 0, canvas.width, canvas.height);
-			return;
-		}
-
-		const img = new Image();
-		img.crossOrigin = "anonymous";
-		img.src = imageUrl;
-		console.log("drw");
-		img.onload = () => {
-			canvas.width = img.width;
-			canvas.height = img.height;
-			canvas.style.width = "100%";
-			canvas.style.height = "auto";
-			ctx.clearRect(0, 0, canvas.width, canvas.height);
-			ctx.drawImage(img, 0, 0);
-		};
-	}, [imageUrl]);
+	useDrawToCanvas(canvasRef, imageUrl);
 
 	return (
 		<BaseNode {...props}>

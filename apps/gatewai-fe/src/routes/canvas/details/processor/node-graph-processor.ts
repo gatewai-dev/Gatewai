@@ -1,8 +1,10 @@
 import { EventEmitter } from "node:events";
 import type { DataType, NodeType } from "@gatewai/db";
 import type {
+	BlurNodeConfig,
 	CropNodeConfig,
 	FileData,
+	HSLNodeConfig,
 	NodeResult,
 	PaintNodeConfig,
 	PaintResult,
@@ -56,6 +58,7 @@ export class NodeGraphProcessor extends EventEmitter {
 	private processors = new Map<string, NodeProcessor>();
 	private processingLoopActive = false;
 	private schedulePromise: Promise<void> | null = null;
+	private isInitial = true;
 
 	constructor() {
 		super();
@@ -75,27 +78,51 @@ export class NodeGraphProcessor extends EventEmitter {
 		// 2. Rebuild Topology Indices
 		this.buildAdjacencyAndIndices();
 
-		const nodesToInvalidate = new Set<string>();
+		let nodesToInvalidate = new Set<string>();
 
-		// 3. Detect Intrinsic Node Changes (Config/Data/Index mismatch)
-		this.nodes.forEach((currNode, id) => {
-			const state = this.nodeStates.get(id);
-			const currHash = this.getNodeValueHash(currNode);
-			if (!state || state.lastProcessedSignature !== currHash) {
-				nodesToInvalidate.add(id);
+		if (this.isInitial) {
+			this.isInitial = false;
+			const dirtyNodes: string[] = [];
+			this.nodes.forEach((currNode, id) => {
+				const state = this.getOrCreateNodeState(id);
+				state.error = null;
+				state.isProcessing = false;
+				state.abortController = null;
+				if (currNode.result) {
+					state.result = currNode.result as NodeResult;
+					state.lastProcessedSignature = this.getNodeValueHash(currNode);
+					state.isDirty = false;
+				} else {
+					state.result = null;
+					state.lastProcessedSignature = null;
+					state.isDirty = true;
+					dirtyNodes.push(id);
+				}
+			});
+			if (dirtyNodes.length > 0) {
+				this.markNodesDirty(dirtyNodes);
 			}
-		});
+		} else {
+			// 3. Detect Intrinsic Node Changes (Config/Data/Index mismatch)
+			this.nodes.forEach((currNode, id) => {
+				const state = this.nodeStates.get(id);
+				const currHash = this.getNodeValueHash(currNode);
+				if (!state || state.lastProcessedSignature !== currHash) {
+					nodesToInvalidate.add(id);
+				}
+			});
 
-		// 4. Detect Extrinsic Input Changes (Edges or Upstream Values)
-		const inputChanges = this.detectInputChanges(
-			prevEdges,
-			this.edges,
-			prevNodes,
-			this.nodes,
-		);
-		inputChanges.forEach((nodeId) => {
-			nodesToInvalidate.add(nodeId);
-		});
+			// 4. Detect Extrinsic Input Changes (Edges or Upstream Values)
+			const inputChanges = this.detectInputChanges(
+				prevEdges,
+				this.edges,
+				prevNodes,
+				this.nodes,
+			);
+			inputChanges.forEach((nodeId) => {
+				nodesToInvalidate.add(nodeId);
+			});
+		}
 
 		// 5. Cleanup Removed Nodes
 		prevNodes.forEach((_, id) => {
@@ -442,7 +469,7 @@ export class NodeGraphProcessor extends EventEmitter {
 			handleLabel?: string,
 		) => {
 			const incomingEdges = this.edgesByTarget.get(nodeId) || [];
-
+			console.log({nodeId, incomingEdges})
 			for (const edge of incomingEdges) {
 				const result = inputs.get(edge.source);
 				if (!result) continue;
@@ -453,6 +480,9 @@ export class NodeGraphProcessor extends EventEmitter {
 				]?.items.find((i) => i.outputHandleId === edge.sourceHandleId);
 
 				if (!outputItem) continue;
+
+				// Add type validation to ensure the output item matches the required type
+				if (outputItem.type !== requiredType) continue;
 
 				const targetHandle = this.handles.find(
 					(h) => h.id === edge.targetHandleId,
@@ -535,6 +565,7 @@ export class NodeGraphProcessor extends EventEmitter {
 					maskDataUrl,
 					signal,
 				);
+				console.log({maskHandle, imageHandle})
 				items.push({
 					type: "Image",
 					data: { dataUrl: imageWithMask },
@@ -560,10 +591,39 @@ export class NodeGraphProcessor extends EventEmitter {
 			const imageUrl = findInputData(node.id, inputs, "Image");
 			if (!imageUrl) throw new Error("Missing Input Image");
 
-			const config = node.config as { size?: number };
+			const config = node.config as BlurNodeConfig;
 			const dataUrl = await pixiProcessor.processBlur(
 				imageUrl,
 				{ blurSize: config.size ?? 1 },
+				signal,
+			);
+
+			const outputHandle = getFirstOutputHandle(node.id);
+			if (!outputHandle) throw new Error("Missing output handle");
+			return {
+				selectedOutputIndex: 0,
+				outputs: [
+					{
+						items: [
+							{
+								type: "Image",
+								data: { dataUrl },
+								outputHandleId: outputHandle,
+							},
+						],
+					},
+				],
+			};
+		});
+
+		this.registerProcessor("HSL", async ({ node, inputs, signal }) => {
+			const imageUrl = findInputData(node.id, inputs, "Image");
+			if (!imageUrl) throw new Error("Missing Input Image");
+
+			const config = node.config as HSLNodeConfig;
+			const dataUrl = await pixiProcessor.processHSL(
+				imageUrl,
+				config,
 				signal,
 			);
 

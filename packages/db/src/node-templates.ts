@@ -223,7 +223,7 @@ export async function SEED_createNodeTemplates(prisma: PrismaClient) {
 			variableInputs: false,
 			variableOutputs: false,
 			isTerminalNode: false,
-			isTransient: false,
+			isTransient: true,
 			templateHandles: {
 				create: [
 					{
@@ -283,6 +283,43 @@ export async function SEED_createNodeTemplates(prisma: PrismaClient) {
 			},
 		},
 	});
+
+	// Blur: image input, image output
+	await prisma.nodeTemplate.create({
+		data: {
+			type: NodeType.HSL,
+			displayName: "HSL Adjustment",
+			description: "Apply HSL adjustments to media",
+			tokenPrice: 0.0,
+			variableInputs: false,
+			variableOutputs: false,
+			isTerminalNode: false,
+			isTransient: true,
+			templateHandles: {
+				create: [
+					{
+						type: HandleType.Input,
+						dataTypes: [DataType.Image],
+						required: true,
+						label: "Image",
+					},
+					{
+						type: HandleType.Output,
+						dataTypes: [DataType.Image],
+						label: "Result",
+					},
+				],
+			},
+			defaultConfig:{
+			    hue: 0,
+			    saturation: 0,
+			    lightness: 0,
+			    colorize: 0,
+			    alpha: 0,
+			}
+		},
+	});
+
 	await prisma.nodeTemplate.create({
 		data: {
 			type: NodeType.Crop,
@@ -373,36 +410,6 @@ export async function SEED_createNodeTemplates(prisma: PrismaClient) {
 						type: HandleType.Output,
 						dataTypes: [DataType.Text],
 						label: "Text",
-					},
-				],
-			},
-			defaultConfig: undefined,
-		},
-	});
-
-	// Router: single input of any kind, single output of any kind, using Text for both
-	await prisma.nodeTemplate.create({
-		data: {
-			type: NodeType.Router,
-			displayName: "Router",
-			description: "A router node for better graph layout",
-			tokenPrice: 0.0,
-			variableInputs: false,
-			variableOutputs: false,
-			isTerminalNode: false,
-			isTransient: true,
-			templateHandles: {
-				create: [
-					{
-						type: HandleType.Input,
-						dataTypes: [DataType.Text],
-						required: true,
-						label: "Input",
-					},
-					{
-						type: HandleType.Output,
-						dataTypes: [DataType.Text],
-						label: "Output",
 					},
 				],
 			},

@@ -1,4 +1,4 @@
-import type { PaintNodeConfig } from "@gatewai/types";
+import { HSLNodeConfigSchema, type HSLNodeConfig, type PaintNodeConfig } from "@gatewai/types";
 import {
 	Application,
 	Assets,
@@ -7,6 +7,7 @@ import {
 	Graphics,
 	Sprite,
 } from "pixi.js";
+import { HslAdjustmentFilter } from 'pixi-filters';
 
 class PixiProcessorService {
 	private app: Application | null = null;
@@ -30,6 +31,80 @@ class PixiProcessorService {
 				hello: true,
 			},
 		});
+	}
+
+	/**
+	 * Process HSL adjustments
+	 */
+	public async processHSL(
+		imageUrl: string,
+		config: HSLNodeConfig,
+		signal?: AbortSignal,
+	): Promise<string> {
+		if (signal?.aborted) {
+			throw new DOMException("Operation cancelled", "AbortError");
+		}
+
+		if (!this.app) await this.init();
+		if (!this.app) throw new Error("App is not initialized");
+		const app = this.app;
+
+		// Check cancellation before loading
+		if (signal?.aborted) {
+			throw new DOMException("Operation cancelled", "AbortError");
+		}
+
+		// 1. Load the Texture
+		const texture = await Assets.load({
+			src: imageUrl,
+			parser: "texture",
+		});
+
+		// Check cancellation after loading
+		if (signal?.aborted) {
+			throw new DOMException("Operation cancelled", "AbortError");
+		}
+
+		// 2. Setup the Scene
+		const sprite = new Sprite(texture);
+
+		// Resize the renderer to match the image exactly
+		app.renderer.resize(sprite.width, sprite.height);
+		
+		// 3. Apply Filter
+		const filter = new HslAdjustmentFilter({
+			...config
+		});
+
+		sprite.filters = [filter];
+
+		// 4. Render to Stage
+		app.stage.removeChildren();
+		app.stage.addChild(sprite);
+
+		// Check cancellation before rendering
+		if (signal?.aborted) {
+			app.stage.removeChildren();
+			throw new DOMException("Operation cancelled", "AbortError");
+		}
+
+		app.render();
+
+		// Check cancellation before extraction
+		if (signal?.aborted) {
+			app.stage.removeChildren();
+			throw new DOMException("Operation cancelled", "AbortError");
+		}
+
+		// 5. Extract Result
+		const dataUrl = await app.renderer.extract.base64(app.stage);
+
+		// Final cancellation check
+		if (signal?.aborted) {
+			throw new DOMException("Operation cancelled", "AbortError");
+		}
+
+		return dataUrl;
 	}
 
 	/**
@@ -342,7 +417,7 @@ class PixiProcessorService {
 		let maskSprite: Sprite | undefined;
 		if (maskUrl) {
 			const maskTexture = await Assets.load({
-				src: imageUrl,
+				src: maskUrl,
 				parser: "texture",
 			});
 			if (signal?.aborted) {

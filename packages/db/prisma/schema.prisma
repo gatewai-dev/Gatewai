@@ -29,6 +29,7 @@ enum NodeType {
   Router
   Note
   Number
+  HSL
 
   ImageGen
   LLM

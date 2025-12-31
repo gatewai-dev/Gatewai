@@ -9,7 +9,7 @@ import { useForm } from "react-hook-form";
 import { Form } from "@/components/ui/form";
 import { useCanvasCtx } from "@/routes/canvas/details/ctx/canvas-ctx";
 import type { NodeEntityType } from "@/store/nodes";
-import { SelectField } from "../fields/select";
+import { SelectField } from "../../../../components/fields/select";
 
 const ImageGenNodeConfigComponent = memo(
 	({ node }: { node: NodeEntityType }) => {
