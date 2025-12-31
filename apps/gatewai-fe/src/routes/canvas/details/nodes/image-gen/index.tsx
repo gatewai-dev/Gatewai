@@ -3,7 +3,10 @@ import { memo, useEffect, useRef } from "react";
 import { useAppSelector } from "@/store";
 import { makeSelectNodeById } from "@/store/nodes";
 import { RunNodeButton } from "../../components/run-node-button";
-import { useNodeFileOutputUrl, useNodeResult } from "../../processor/processor-ctx";
+import {
+	useNodeFileOutputUrl,
+	useNodeResult,
+} from "../../processor/processor-ctx";
 import { BaseNode } from "../base";
 import { OutputSelector } from "../misc/output-selector";
 import type { ImageGenNode } from "../node-props";

@@ -19,13 +19,13 @@ import type {
 	NoteNodeConfig,
 	PaintNodeConfig,
 	PaintResult,
+	PreviewNodeConfig,
 	ResizeNodeConfig,
 	ResizeResult,
 	TextNodeConfig,
 	TextResult,
 	ThreeDNodeConfig,
 	ThreeDResult,
-	PreviewNodeConfig,
 } from "@gatewai/types";
 import type { Node } from "@xyflow/react";
 

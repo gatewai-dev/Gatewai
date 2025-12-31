@@ -3,9 +3,11 @@ import Markdown from "react-markdown";
 import remarkGfm from "remark-gfm";
 
 const MarkdownRenderer = memo(({ markdown }: { markdown: string }) => {
-	return (<div className="prose-sm prose-hr:my-3">
+	return (
+		<div className="prose-sm prose-hr:my-3">
 			<Markdown remarkPlugins={[remarkGfm]}>{markdown}</Markdown>
-			</div>);
+		</div>
+	);
 });
 
 export { MarkdownRenderer };
