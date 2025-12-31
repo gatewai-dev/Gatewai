@@ -1,6 +1,4 @@
-// imageUtils.ts
-
-import type { FileData, HSLNodeConfig } from "@gatewai/types";
+import type { FileData, ModulateNodeConfig } from "@gatewai/types";
 import sharp from "sharp";
 
 export async function getImageBuffer(imageInput: FileData): Promise<Buffer> {
@@ -38,48 +36,27 @@ export async function applyBlur(
 	return sharp(buffer).blur(blurAmount).toBuffer();
 }
 
-export async function applyHSL(
+export async function applyModulate(
 	buffer: Buffer,
-	config: HSLNodeConfig,
+	config: ModulateNodeConfig,
 ): Promise<Buffer> {
 	const {
 		hue = 0, // -180 to 180 degrees
 		saturation = 0, // -1 to 1
 		lightness = 0, // -1 to 1
-		colorize = false,
-		alpha = 1, // 0 to 1
+		brightness = 0,
 	} = config;
 
 	let pipeline = sharp(buffer);
 
-	// Apply HSL adjustments using modulate
+	// Apply Modulate adjustments using modulate
 	if (hue !== 0 || saturation !== 0 || lightness !== 0) {
 		pipeline = pipeline.modulate({
 			hue: hue, // -180 to 180 degrees
 			saturation: 1 + saturation, // convert -1..1 to 0..2 multiplier
 			lightness: 1 + lightness, // convert -1..1 to 0..2 multiplier
+			brightness: 1 + brightness,
 		});
-	}
-
-	// Apply colorize if needed (convert to grayscale then tint)
-	if (colorize) {
-		pipeline = pipeline.grayscale().tint({ r: 255, g: 255, b: 255 });
-	}
-
-	// Apply alpha/transparency
-	if (alpha < 1) {
-		pipeline = pipeline.composite([
-			{
-				input: Buffer.from([255, 255, 255, Math.round(alpha * 255)]),
-				raw: {
-					width: 1,
-					height: 1,
-					channels: 4,
-				},
-				tile: true,
-				blend: "dest-in",
-			},
-		]);
 	}
 
 	return pipeline.toBuffer();

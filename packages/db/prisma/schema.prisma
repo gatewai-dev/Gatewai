@@ -18,18 +18,14 @@ enum NodeType {
   Export
   Toggle
   Crop
-  Crawler
   Resize
   Agent
-  ThreeD
   Paint
   Blur
   Compositor
-  Describer
-  Router
   Note
   Number
-  HSL
+  Modulate
 
   ImageGen
   LLM

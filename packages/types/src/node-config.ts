@@ -54,13 +54,12 @@ const BlurNodeConfigSchema = z
 	})
 	.strict();
 
-const HSLNodeConfigSchema = z
+const ModulateNodeConfigSchema = z
 	.object({
-		hue: z.number().min(-180).max(180).optional(),
-		saturation: z.number().min(-1).max(1).optional(),
-		lightness: z.number().min(-1).max(1).optional(),
-		colorize: z.boolean().optional(),
-		alpha: z.number().min(0).max(1).optional(),
+		hue: z.number().min(0).max(360),
+		saturation: z.number().min(-1).max(1),
+		lightness: z.number().min(-1).max(1),
+		brightness: z.number().min(-1).max(1),
 	})
 	.strict();
 
@@ -195,7 +194,7 @@ const NodeConfigSchema = z.union([
 	RouterNodeConfigSchema,
 	ResizeNodeConfigSchema,
 	NoteNodeConfigSchema,
-	HSLNodeConfigSchema,
+	ModulateNodeConfigSchema,
 ]);
 
 // Inferred types
@@ -217,7 +216,7 @@ type AllNodeConfig = z.infer<typeof NodeConfigSchema>;
 type ImageGenConfig = z.infer<typeof ImageGenNodeConfigSchema>;
 type CropNodeConfig = z.infer<typeof CropNodeConfigSchema>;
 type NoteNodeConfig = z.infer<typeof NoteNodeConfigSchema>;
-type HSLNodeConfig = z.infer<typeof HSLNodeConfigSchema>;
+type ModulateNodeConfig = z.infer<typeof ModulateNodeConfigSchema>;
 
 export {
 	NodeConfigSchema,
@@ -238,7 +237,7 @@ export {
 	NoteNodeConfigSchema,
 	CompositorLayerUpdatesSchema,
 	ImageGenNodeConfigSchema,
-	HSLNodeConfigSchema,
+	ModulateNodeConfigSchema,
 	type TextNodeConfig,
 	type FileNodeConfig,
 	type CrawlerNodeConfig,
@@ -257,7 +256,7 @@ export {
 	type ImageGenConfig,
 	type CropNodeConfig,
 	type NoteNodeConfig,
-	type HSLNodeConfig,
+	type ModulateNodeConfig,
 	LLM_NODE_MODELS,
 	IMAGEGEN_NODE_MODELS,
 	AGENT_NODE_MODELS,

@@ -1,6 +1,4 @@
 import {
-	type Handle,
-	type NodeUpdateArgs,
 	type NodeUpdateInput,
 	prisma,
 } from "@gatewai/db";
@@ -33,7 +31,8 @@ const NodeTypes = [
 	"ImageGen",
 	"LLM",
 	"Crop",
-	"Fal",
+	"Modulate",
+	"Preview",
 ] as const;
 
 const DataTypes = [

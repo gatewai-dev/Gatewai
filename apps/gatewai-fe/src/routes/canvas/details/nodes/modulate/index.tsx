@@ -1,13 +1,14 @@
 import type { NodeProps } from "@xyflow/react";
-import { memo, useEffect, useRef } from "react";
+import { memo, useRef } from "react";
 import { useAppSelector } from "@/store";
 import { makeSelectNodeById } from "@/store/nodes";
 import { useDrawToCanvas } from "../../hooks/use-draw-to-canvas";
 import { useNodeFileOutputUrl } from "../../processor/processor-ctx";
 import { BaseNode } from "../base";
 import type { BlurNode } from "../node-props";
+import { ModulateNodeConfigComponent } from "./modulate-config";
 
-const BlurNodeComponent = memo((props: NodeProps<BlurNode>) => {
+const ModulateNodeComponent = memo((props: NodeProps<BlurNode>) => {
 	const node = useAppSelector(makeSelectNodeById(props.id));
 	const canvasRef = useRef<HTMLCanvasElement | null>(null);
 	const imageUrl = useNodeFileOutputUrl(props.id);
@@ -22,16 +23,12 @@ const BlurNodeComponent = memo((props: NodeProps<BlurNode>) => {
 					<canvas ref={canvasRef} className="block w-full h-auto" />
 				</div>
 
-				{node && (
-					<div className="flex gap-3 items-end p-1">
-						<BlurValueSlider node={node} />
-					</div>
-				)}
+				{node && <ModulateNodeConfigComponent node={node} />}
 			</div>
 		</BaseNode>
 	);
 });
 
-BlurNodeComponent.displayName = "BlurNodeComponent";
+ModulateNodeComponent.displayName = "ModulateNodeComponent";
 
-export { BlurNodeComponent };
+export { ModulateNodeComponent };

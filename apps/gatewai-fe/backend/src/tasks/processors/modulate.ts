@@ -1,38 +1,37 @@
 import { DataType } from "@gatewai/db";
 import type {
-	BlurNodeConfig,
 	FileData,
-	HSLNodeConfig,
+	ModulateNodeConfig,
 	NodeResult,
 	Output,
 } from "@gatewai/types";
 import {
-	applyBlur,
-	applyHSL,
+	applyModulate,
 	bufferToDataUrl,
 	getImageBuffer,
 	getMimeType,
 } from "../../utils/image.js";
 import { getInputValue } from "../resolvers.js";
 import type { NodeProcessor } from "./types.js";
+import { logMedia } from '../../media-logger.js';
 
-const hslProcessor: NodeProcessor = async ({ node, data }) => {
+const modulateProcessor: NodeProcessor = async ({ node, data }) => {
 	try {
 		const imageInput = getInputValue(data, node.id, true, {
 			dataType: DataType.Image,
 			label: "Image",
 		}) as FileData | null;
-		const hslConfig = node.config as HSLNodeConfig;
+		const modulateConfig = node.config as ModulateNodeConfig;
 
 		if (!imageInput) {
 			return { success: false, error: "No image input provided" };
 		}
 
 		const buffer = await getImageBuffer(imageInput);
-		const processedBuffer = await applyHSL(buffer, hslConfig);
+		const processedBuffer = await applyModulate(buffer, modulateConfig);
 		const mimeType = getMimeType(imageInput);
 		const dataUrl = bufferToDataUrl(processedBuffer, mimeType);
-
+		logMedia(processedBuffer, undefined, node.id);
 		// Build new result (similar to LLM)
 		const outputHandle = data.handles.find(
 			(h) => h.nodeId === node.id && h.type === "Output",
@@ -67,4 +66,4 @@ const hslProcessor: NodeProcessor = async ({ node, data }) => {
 	}
 };
 
-export default hslProcessor;
+export default modulateProcessor;

@@ -4,7 +4,7 @@ import type {
 	BlurNodeConfig,
 	CropNodeConfig,
 	FileData,
-	HSLNodeConfig,
+	ModulateNodeConfig,
 	NodeResult,
 	PaintNodeConfig,
 	PaintResult,
@@ -89,7 +89,7 @@ export class NodeGraphProcessor extends EventEmitter {
 				state.isProcessing = false;
 				state.abortController = null;
 				if (currNode.result) {
-					state.result = currNode.result as NodeResult;
+					state.result = currNode.result as unknown as NodeResult;
 					state.lastProcessedSignature = this.getNodeValueHash(currNode);
 					state.isDirty = false;
 				} else {
@@ -462,6 +462,20 @@ export class NodeGraphProcessor extends EventEmitter {
 	}
 
 	private registerBuiltInProcessors(): void {
+		const getFirstInputData = (
+			nodeId: string,
+			inputs: Map<string, NodeResult>,
+		) => {
+			const incomingEdges = this.edgesByTarget.get(nodeId) || [];
+			if (incomingEdges.length === 0) {
+				return null;
+			}
+			const incomingEdge = incomingEdges[0];
+
+			const result = inputs.get(incomingEdge.source);
+			return result;
+		}
+		
 		const findInputData = (
 			nodeId: string,
 			inputs: Map<string, NodeResult>,
@@ -469,7 +483,6 @@ export class NodeGraphProcessor extends EventEmitter {
 			handleLabel?: string,
 		) => {
 			const incomingEdges = this.edgesByTarget.get(nodeId) || [];
-			console.log({ nodeId, incomingEdges });
 			for (const edge of incomingEdges) {
 				const result = inputs.get(edge.source);
 				if (!result) continue;
@@ -616,12 +629,12 @@ export class NodeGraphProcessor extends EventEmitter {
 			};
 		});
 
-		this.registerProcessor("HSL", async ({ node, inputs, signal }) => {
+		this.registerProcessor("Modulate", async ({ node, inputs, signal }) => {
 			const imageUrl = findInputData(node.id, inputs, "Image");
 			if (!imageUrl) throw new Error("Missing Input Image");
 
-			const config = node.config as HSLNodeConfig;
-			const dataUrl = await pixiProcessor.processHSL(imageUrl, config, signal);
+			const config = node.config as ModulateNodeConfig;
+			const dataUrl = await pixiProcessor.processModulate(imageUrl, config, signal);
 
 			const outputHandle = getFirstOutputHandle(node.id);
 			if (!outputHandle) throw new Error("Missing output handle");
@@ -639,6 +652,11 @@ export class NodeGraphProcessor extends EventEmitter {
 					},
 				],
 			};
+		});
+
+		this.registerProcessor("Export", async ({ node, inputs }) => {
+			const result = getFirstInputData(node.id, inputs);
+			return result;
 		});
 
 		this.registerProcessor("Resize", async ({ node, inputs, signal }) => {
@@ -670,15 +688,6 @@ export class NodeGraphProcessor extends EventEmitter {
 			};
 		});
 
-		// Passthrough / Static Processors
-		const passthrough = async ({ node }: NodeProcessorParams) =>
-			node.result as unknown as NodeResult;
-		this.registerProcessor("ImageGen", passthrough);
-		this.registerProcessor("File", passthrough);
-		this.registerProcessor("Agent", passthrough);
-		this.registerProcessor("Text", passthrough);
-		this.registerProcessor("LLM", passthrough);
-
 		this.registerProcessor("Preview", async ({ node, inputs }) => {
 			// Preview is unique, it just needs ANY input.
 			const incomingEdges = this.edgesByTarget.get(node.id) || [];
@@ -690,5 +699,14 @@ export class NodeGraphProcessor extends EventEmitter {
 			if (!res) throw new Error("Preview waiting for input");
 			return res;
 		});
+
+		// Passthrough / Noop Processors
+		const passthrough = async ({ node }: NodeProcessorParams) =>
+			node.result as unknown as NodeResult;
+		this.registerProcessor("ImageGen", passthrough);
+		this.registerProcessor("File", passthrough);
+		this.registerProcessor("Agent", passthrough);
+		this.registerProcessor("Text", passthrough);
+		this.registerProcessor("LLM", passthrough);
 	}
 }

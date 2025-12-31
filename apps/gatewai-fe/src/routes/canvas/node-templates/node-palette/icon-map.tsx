@@ -15,6 +15,7 @@ import {
 	PiCropThin,
 	PiCube,
 	PiDownloadSimple,
+	PiDropDuotone,
 	PiEye,
 	PiFaceMask,
 	PiFileText,
@@ -56,6 +57,7 @@ export const NODE_ICON_MAP: Record<
 	// Add fallbacks or additional mappings as needed for other NodeTypes
 	Note: () => PiNote,
 	Number: () => PiHash,
+	Modulate: () => PiDropDuotone,
 	ImageGen: (node?: NodeEntityType) => {
 		const MODEL_ICON_MAP: Record<string, React.ComponentType> = {
 			openai: OpenAI,

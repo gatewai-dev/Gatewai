@@ -154,36 +154,6 @@ export async function SEED_createNodeTemplates(prisma: PrismaClient) {
 		},
 	});
 
-	// Crawler: one input Text, one output Text
-	await prisma.nodeTemplate.create({
-		data: {
-			type: NodeType.Crawler,
-			displayName: "Crawler",
-			description: "A crawler agent",
-			tokenPrice: 0.0,
-			variableInputs: false,
-			variableOutputs: false,
-			isTerminalNode: true,
-			isTransient: false,
-			templateHandles: {
-				create: [
-					{
-						type: HandleType.Input,
-						dataTypes: [DataType.Text],
-						required: true,
-						label: "Link",
-					},
-					{
-						type: HandleType.Output,
-						dataTypes: [DataType.Text],
-						label: "HTML content (Text)",
-					},
-				],
-			},
-			defaultConfig: undefined,
-		},
-	});
-
 	await prisma.nodeTemplate.create({
 		data: {
 			type: NodeType.Resize,
@@ -284,12 +254,11 @@ export async function SEED_createNodeTemplates(prisma: PrismaClient) {
 		},
 	});
 
-	// Blur: image input, image output
 	await prisma.nodeTemplate.create({
 		data: {
-			type: NodeType.HSL,
-			displayName: "HSL Adjustment",
-			description: "Apply HSL adjustments to media",
+			type: NodeType.Modulate,
+			displayName: "Modulate",
+			description: "Apply Modulate adjustments to a media",
 			tokenPrice: 0.0,
 			variableInputs: false,
 			variableOutputs: false,
@@ -314,8 +283,7 @@ export async function SEED_createNodeTemplates(prisma: PrismaClient) {
 				hue: 0,
 				saturation: 0,
 				lightness: 0,
-				colorize: 0,
-				alpha: 0,
+				brightness: 0,
 			},
 		},
 	});
@@ -387,36 +355,6 @@ export async function SEED_createNodeTemplates(prisma: PrismaClient) {
 		},
 	});
 
-	// Describer: not specified, assuming image input, text output (e.g., image describer)
-	await prisma.nodeTemplate.create({
-		data: {
-			type: NodeType.Describer,
-			displayName: "Describer",
-			description: "Describe image with AI",
-			tokenPrice: 0.0,
-			variableInputs: false,
-			variableOutputs: false,
-			isTerminalNode: true,
-			isTransient: false,
-			templateHandles: {
-				create: [
-					{
-						type: HandleType.Input,
-						dataTypes: [DataType.Image],
-						required: true,
-						label: "Image",
-					},
-					{
-						type: HandleType.Output,
-						dataTypes: [DataType.Text],
-						label: "Text",
-					},
-				],
-			},
-			defaultConfig: undefined,
-		},
-	});
-
 	// Note: no input or output
 	await prisma.nodeTemplate.create({
 		data: {
@@ -443,7 +381,7 @@ export async function SEED_createNodeTemplates(prisma: PrismaClient) {
 		data: {
 			type: NodeType.Number,
 			displayName: "Number",
-			description: "A number output node",
+			description: "A number input node",
 			tokenPrice: 0.0,
 			variableInputs: false,
 			variableOutputs: false,

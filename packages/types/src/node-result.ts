@@ -74,7 +74,7 @@ export type ResizeResult = SingleOutputResult & {
 	outputs: [{ items: [OutputItem<"Image" | "Video">] }];
 };
 
-export type HSLResult = SingleOutputResult & {
+export type ModulateResult = SingleOutputResult & {
 	outputs: [{ items: [OutputItem<"Image" | "Video">] }];
 };
 
@@ -135,5 +135,5 @@ export type NodeResult =
 	| PaintResult
 	| BlurResult
 	| CompositorResult
-	| HSLResult
+	| ModulateResult
 	| DescriberResult;

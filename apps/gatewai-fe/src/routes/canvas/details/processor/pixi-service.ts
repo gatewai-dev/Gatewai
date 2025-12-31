@@ -1,6 +1,6 @@
 import {
-	type HSLNodeConfig,
-	HSLNodeConfigSchema,
+	type ModulateNodeConfig,
+	ModulateNodeConfigSchema,
 	type PaintNodeConfig,
 } from "@gatewai/types";
 import {
@@ -11,7 +11,9 @@ import {
 	Graphics,
 	Sprite,
 } from "pixi.js";
-import { HslAdjustmentFilter } from "pixi-filters";
+import { ModulateAdjustmentFilter } from "pixi-filters";
+import { ModulateFilter } from "./filters/modulate";
+
 
 class PixiProcessorService {
 	private app: Application | null = null;
@@ -38,11 +40,11 @@ class PixiProcessorService {
 	}
 
 	/**
-	 * Process HSL adjustments
+	 * Process Modulate adjustments with custom modulate filter
 	 */
-	public async processHSL(
+	public async processModulate(
 		imageUrl: string,
-		config: HSLNodeConfig,
+		config: ModulateNodeConfig,
 		signal?: AbortSignal,
 	): Promise<string> {
 		if (signal?.aborted) {
@@ -75,10 +77,8 @@ class PixiProcessorService {
 		// Resize the renderer to match the image exactly
 		app.renderer.resize(sprite.width, sprite.height);
 
-		// 3. Apply Filter
-		const filter = new HslAdjustmentFilter({
-			...config,
-		});
+		// 3. Apply Custom Modulate Filter
+		const filter = new ModulateFilter(config);
 
 		sprite.filters = [filter];
 
@@ -102,7 +102,7 @@ class PixiProcessorService {
 
 		// 5. Extract Result
 		const dataUrl = await app.renderer.extract.base64(app.stage);
-
+		console.log({dataUrl})
 		// Final cancellation check
 		if (signal?.aborted) {
 			throw new DOMException("Operation cancelled", "AbortError");
@@ -111,9 +111,7 @@ class PixiProcessorService {
 		return dataUrl;
 	}
 
-	/**
-	 * Process blur with cancellation support
-	 */
+
 	public async processBlur(
 		imageUrl: string,
 		options: { blurSize: number },
