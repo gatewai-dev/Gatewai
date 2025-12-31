@@ -1,17 +1,12 @@
 import { EventEmitter } from "node:events";
-import type { NodeType } from "@gatewai/db";
+import type { DataType, NodeType } from "@gatewai/db";
 import type {
-	AgentResult,
-	CropNodeConfig,
-	FileData,
-	FileResult,
-	ImageGenResult,
-	LLMResult,
-	NodeResult,
-	PaintNodeConfig,
-	PaintResult,
-	ResizeNodeConfig,
-	TextResult,
+    CropNodeConfig,
+    FileData,
+    NodeResult,
+    PaintNodeConfig,
+    PaintResult,
+    ResizeNodeConfig,
 } from "@gatewai/types";
 import type { EdgeEntityType } from "@/store/edges";
 import type { HandleEntityType } from "@/store/handles";
@@ -19,808 +14,592 @@ import type { NodeEntityType } from "@/store/nodes";
 import { pixiProcessor } from "./pixi-service";
 
 interface ProcessorConfig {
-	nodes: Map<string, NodeEntityType>;
-	edges: EdgeEntityType[];
-	handles: HandleEntityType[];
+    nodes: Map<string, NodeEntityType>;
+    edges: EdgeEntityType[];
+    handles: HandleEntityType[];
 }
 
 interface NodeState {
-	isDirty: boolean;
-	isProcessing: boolean;
-	result: NodeResult | null;
-	error: string | null;
-	abortController: AbortController | null;
+    id: string;
+    isDirty: boolean;
+    isProcessing: boolean;
+    result: NodeResult | null;
+    error: string | null;
+    abortController: AbortController | null;
+    /** Tracks the configuration signature processed to detect changes */
+    lastProcessedSignature: string | null;
 }
 
-type NodeProcessor = (params: {
-	node: NodeEntityType;
-	inputs: Map<string, NodeResult>;
-	signal: AbortSignal;
-}) => Promise<NodeResult | null>;
+type NodeProcessorParams = {
+    node: NodeEntityType;
+    inputs: Map<string, NodeResult>;
+    signal: AbortSignal;
+};
+
+type NodeProcessor = (params: NodeProcessorParams) => Promise<NodeResult | null>;
 
 /**
  * Centralized graph processor - handles all node computation outside React lifecycle
+ * Optimized for parallel execution and robust abort handling.
  */
 export class NodeGraphProcessor extends EventEmitter {
-	private nodes = new Map<string, NodeEntityType>();
-	private edges: EdgeEntityType[] = [];
-	private handles: HandleEntityType[] = [];
-	private prevEdges: EdgeEntityType[] = []; // Added for edge change detection
-	private nodeStates = new Map<string, NodeState>();
-	private processors = new Map<string, NodeProcessor>();
-	private dependencyGraph = new Map<string, Set<string>>(); // nodeId -> downstream nodeIds
-	private reverseDependencyGraph = new Map<string, Set<string>>(); // nodeId -> upstream nodeIds
-	private isProcessing = false;
+    private nodes = new Map<string, NodeEntityType>();
+    private edges: EdgeEntityType[] = [];
+    private handles: HandleEntityType[] = [];
+    
+    // Adjacency lists for fast traversal (Adj: Parent -> Children, Rev: Child -> Parents)
+    private adjacency = new Map<string, Set<string>>();
+    private reverseAdjacency = new Map<string, Set<string>>();
+    
+    // State
+    private nodeStates = new Map<string, NodeState>();
+    private processors = new Map<string, NodeProcessor>();
+    private processingLoopActive = false;
+    private schedulePromise: Promise<void> | null = null;
 
-	constructor() {
-		super();
-		// Prevent EventEmitter memory leak warnings for many nodes
-		// It doesn't leak currently, but throws a warning if >10 listeners are added
-		// The amount of listeners equals the amount of nodes being processed
-		this.setMaxListeners(Infinity);
-		this.registerBuiltInProcessors();
-	}
+    constructor() {
+        super();
+        this.setMaxListeners(Infinity);
+        this.registerBuiltInProcessors();
+    }
 
-	/**
-	 * Update graph structure from Redux store
-	 */
-	updateGraph(config: ProcessorConfig): void {
-		const prevNodes = new Map(this.nodes);
-		const prevEdges = [...this.prevEdges];
+    // =========================================================================
+    // Public API
+    // =========================================================================
 
-		this.nodes = config.nodes;
-		this.edges = config.edges;
-		this.handles = config.handles;
+    /**
+     * Update graph structure from Redux store.
+     * Calculates diffs and triggers processing only for affected nodes.
+     */
+    updateGraph(config: ProcessorConfig): void {
+        const prevNodes = this.nodes;
+        const prevEdges = this.edges;
 
-		// Rebuild dependency graphs
-		this.buildDependencyGraphs();
+        this.nodes = config.nodes;
+        this.edges = config.edges;
+        this.handles = config.handles;
 
-		// Find changed nodes and mark as dirty
-		config.nodes.forEach((node, id) => {
-			const prev = prevNodes.get(id);
-			this.getOrCreateNodeState(id);
+        // 1. Rebuild Graph Topology (Fast)
+        this.buildAdjacencyLists();
 
-			if (
-				!prev ||
-				this.hasNodeChanged(prev, node) ||
-				this.hasNodeInputsChanged(id, prevEdges)
-			) {
-				this.markDirty(id, true);
-			}
+        // 2. Detect Changes
+        const nodesToInvalidate = new Set<string>();
+
+        // Check for node config changes
+        this.nodes.forEach((node, id) => {
+            const prev = prevNodes.get(id);
+            
+            // New node or config changed
+            if (!prev || this.hasNodeConfigChanged(prev, node)) {
+                nodesToInvalidate.add(id);
+            }
+        });
+
+        // Check for input/edge changes
+        const inputChanges = this.detectInputChanges(prevEdges, this.edges);
+        inputChanges.forEach(nodeId => {
+			nodesToInvalidate.add(nodeId)
 		});
 
-		// Clean up states for deleted nodes
-		prevNodes.forEach((_, id) => {
-			if (!this.nodes.has(id)) {
-				this.nodeStates.delete(id);
-			}
+        // 3. Cleanup deleted nodes
+        prevNodes.forEach((_, id) => {
+            if (!this.nodes.has(id)) {
+                const state = this.nodeStates.get(id);
+                state?.abortController?.abort();
+                this.nodeStates.delete(id);
+            }
+        });
+
+        // 4. Mark dirty and cascade
+        if (nodesToInvalidate.size > 0) {
+            this.markNodesDirty(Array.from(nodesToInvalidate));
+        }
+    }
+
+    getNodeResult(nodeId: string): NodeResult | null {
+        return this.nodeStates.get(nodeId)?.result ?? null;
+    }
+
+    getNodeState(nodeId: string): NodeState | null {
+        return this.nodeStates.get(nodeId) ?? null;
+    }
+
+    async processNode(nodeId: string): Promise<void> {
+        this.markNodesDirty([nodeId]);
+        await this.triggerProcessing();
+    }
+
+    registerProcessor(nodeType: NodeType, processor: NodeProcessor): void {
+        this.processors.set(nodeType, processor);
+    }
+
+    destroy(): void {
+        this.nodeStates.forEach((state) => {
+			state.abortController?.abort()
 		});
+        this.nodeStates.clear();
+        this.removeAllListeners();
+    }
 
-		// Update prevEdges
-		this.prevEdges = [...this.edges];
-	}
+    // =========================================================================
+    // Core Processing Engine
+    // =========================================================================
 
-	/**
-	 * Get current result for a node
-	 */
-	getNodeResult(nodeId: NodeEntityType["id"]): NodeResult | null {
-		return this.nodeStates.get(nodeId)?.result ?? null;
-	}
+    private markNodesDirty(startNodeIds: string[]): void {
+        const queue = [...startNodeIds];
+        const visited = new Set<string>();
 
-	/**
-	 * Get processing state for a node
-	 */
-	getNodeState(nodeId: NodeEntityType["id"]): NodeState | null {
-		return this.nodeStates.get(nodeId) ?? null;
-	}
+        while (queue.length > 0) {
+            const nodeId = queue.shift();
+			if (!nodeId) throw new Error("Queue emptied");
+            if (visited.has(nodeId)) continue;
+            visited.add(nodeId);
 
-	/**
-	 * Manually trigger processing for a node
-	 */
-	async processNode(nodeId: NodeEntityType["id"]): Promise<void> {
-		this.markDirty(nodeId, true);
-		await this.startProcessing();
-	}
+            const state = this.getOrCreateNodeState(nodeId);
 
-	/**
-	 * Register a custom processor for a node type
-	 */
-	registerProcessor(nodeType: NodeType, processor: NodeProcessor): void {
-		this.processors.set(nodeType, processor);
-	}
+            // Important: If currently processing, abort it.
+            // We do NOT set isDirty = false. It remains true so the loop picks it up again.
+            if (state.isProcessing && state.abortController) {
+                state.abortController.abort("Restarting due to graph update");
+                state.abortController = null;
+            }
 
-	private registerBuiltInProcessors(): void {
-		// Crop processor
-		this.registerProcessor("Crop", async ({ node, inputs, signal }) => {
-			const inputHandle = this.getInputHandleIDs(node.id)[0];
-			if (!inputHandle) return null;
+            state.isDirty = true;
+            state.error = null;
+            // Note: We don't clear state.result immediately to allow UI to show stale data 
+            // while reprocessing, but strictly speaking, it's invalid. 
+            // Depending on UX, you might want to set state.result = null here.
 
-			const sourceNodeId = this.getSourceNodeID(node.id, inputHandle);
-
-			if (!sourceNodeId) return null;
-			const inputResult = inputs.get(sourceNodeId);
-			if (!inputResult) return null;
-
-			// Extract image URL
-			const sourceHandleId = this.getSourceHandleId(inputHandle);
-
-			const output = inputResult.outputs[inputResult.selectedOutputIndex ?? 0];
-			const fileData = output?.items.find(
-				(f) => f.outputHandleId === sourceHandleId,
-			)?.data as FileData;
-			const imageUrl = fileData?.entity?.signedUrl ?? fileData?.dataUrl;
-
-			if (!imageUrl) throw new Error("No image URL");
-
-			// Process with Pixi
-			const config = node.config as CropNodeConfig;
-
-			const dataUrl = await pixiProcessor.processCrop(
-				imageUrl,
-				{
-					leftPercentage: config.leftPercentage,
-					topPercentage: config.topPercentage,
-					widthPercentage: config.widthPercentage,
-					heightPercentage: config.heightPercentage,
-				},
-				signal,
-			);
-
-			// Build result
-			const outputHandleEntity = this.getOutputHandleEntities(node.id).find(
-				(f) => f.dataTypes.includes("Image") && f.type === "Output",
-			);
-			if (!outputHandleEntity) {
-				throw new Error("Output handle not found");
-			}
-			console.log({ outputHandleEntity, node: node.id });
-			const outputHandle = outputHandleEntity.id;
-			const newResult: NodeResult = {
-				selectedOutputIndex: 0,
-				outputs: [
-					{
-						items: [
-							{
-								type: "Image",
-								data: { dataUrl },
-								outputHandleId: outputHandle,
-							},
-						],
-					},
-				],
-			};
-
-			return newResult;
-		});
-
-		this.registerProcessor("Paint", async ({ node, inputs, signal }) => {
-			const config = node.config as PaintNodeConfig;
-
-			const inputHandle = this.getInputHandleIDs(node.id)[0];
-			const sourceNodeId = inputHandle
-				? this.getSourceNodeID(node.id, inputHandle)
-				: null;
-
-			const sourceHandleId = this.getSourceHandleId(inputHandle);
-			let imageUrl: string | undefined | null;
-			if (sourceNodeId) {
-				const inputResult = inputs.get(sourceNodeId);
-				if (!inputResult) return null;
-
-				const output =
-					inputResult.outputs[inputResult.selectedOutputIndex ?? 0];
-				const fileData = output?.items.find(
-					(f) => f.outputHandleId === sourceHandleId,
-				)?.data as FileData;
-				imageUrl = fileData?.entity?.signedUrl ?? fileData?.dataUrl;
-
-				if (!imageUrl) {
-					console.log({ inputResult });
-					throw new Error("No image URL");
-				}
-			}
-
-			const maskDataUrl = config.paintData;
-
-			const outputHandles = this.getOutputHandleEntities(node.id);
-			const imageOutputHandle = outputHandles.find((f) =>
-				f.dataTypes.includes("Image"),
-			);
-			const maskOutputHandle = outputHandles.find((f) =>
-				f.dataTypes.includes("Mask"),
-			);
-
-			if (!maskOutputHandle) {
-				throw new Error("Missing output handles");
-			}
-
-			const items: PaintResult["outputs"][number]["items"] = [];
-
-			let onlyMask = maskDataUrl;
-			let imageWithMask: string | undefined;
-
-			if (sourceNodeId) {
-				if (!imageOutputHandle) throw new Error("Missing image output handle");
-				const {
-					imageWithMask: processedImageWithMask,
-					onlyMask: processedOnlyMask,
-				} = await pixiProcessor.processMask(
-					config,
-					imageUrl,
-					maskDataUrl,
-					signal,
-				);
-
-				imageWithMask = processedImageWithMask;
-				onlyMask = processedOnlyMask;
-
-				items.push({
-					type: "Image",
-					data: { dataUrl: imageWithMask },
-					outputHandleId: imageOutputHandle.id,
+            // Add downstream nodes to queue
+            const children = this.adjacency.get(nodeId);
+            if (children) {
+                children.forEach(childId => {
+					queue.push(childId);
 				});
-			}
-
-			items.push({
-				type: "Mask",
-				data: { dataUrl: onlyMask },
-				outputHandleId: maskOutputHandle.id,
-			});
-
-			const newResult: PaintResult = {
-				selectedOutputIndex: 0,
-				outputs: [
-					{
-						items,
-					},
-				],
-			};
-
-			return newResult;
-		});
-		// Blur processor
-		this.registerProcessor("Blur", async ({ node, inputs, signal }) => {
-			console.log({ node });
-			const inputHandleId = this.getInputHandleIDs(node.id)[0];
-			if (!inputHandleId) {
-				console.warn({ inputHandleId, nodeId: node.id });
-				return null;
-			}
-
-			const sourceNodeId = this.getSourceNodeID(node.id, inputHandleId);
-			if (!sourceNodeId) {
-				console.warn({ sourceNodeId, nodeId: node.id });
-				return null;
-			}
-
-			const inputResult = inputs.get(sourceNodeId);
-			if (!inputResult) {
-				console.warn({ inputResult, nodeId: node.id });
-				return null;
-			}
-
-			const sourceHandleId = this.getSourceHandleId(inputHandleId);
-
-			const output = inputResult.outputs[inputResult.selectedOutputIndex ?? 0];
-			const fileData = output?.items.find(
-				(f) => f.outputHandleId === sourceHandleId,
-			)?.data as FileData;
-			const imageUrl = fileData?.entity?.signedUrl ?? fileData?.dataUrl;
-
-			if (!imageUrl) throw new Error("No image URL");
-			console.log({
-				imageUrl,
-				nodeId: node.id,
-				ww: output?.items,
-				sourceHandleId,
-			});
-			if (!imageUrl) return null;
-			// Process with Pixi
-			const config = node.config as { size?: number };
-			const dataUrl = await pixiProcessor.processBlur(
-				imageUrl,
-				{ blurSize: config.size ?? 1 },
-				signal,
-			);
-
-			// Attach to only output
-			const outputHandleEntity = this.getOutputHandleEntities(node.id).find(
-				(f) => f.dataTypes.includes("Image"),
-			);
-			if (!outputHandleEntity) {
-				throw new Error("Output handle not found");
-			}
-			const outputHandle = outputHandleEntity.id;
-			const newResult: NodeResult = {
-				selectedOutputIndex: 0,
-				outputs: [
-					{
-						items: [
-							{
-								type: "Image",
-								data: { dataUrl },
-								outputHandleId: outputHandle,
-							},
-						],
-					},
-				],
-			};
-			console.log({ newResult });
-			return newResult;
-		});
-
-		// File processor (no computation, just return existing; cache based on config if needed)
-		this.registerProcessor("ImageGen", async ({ node }) => {
-			// If no cached, use existing node.result (assuming it's set)
-			const result = node.result as unknown as ImageGenResult;
-			if (!result) throw new Error("No result for ImageGen node");
-			return result;
-		});
-
-		this.registerProcessor("Preview", async ({ node, inputs }) => {
-			
-			const inputHandleId = this.getInputHandleIDs(node.id)[0];
-			if (!inputHandleId) return null;
-
-			const sourceNodeId = this.getSourceNodeID(node.id, inputHandleId);
-			if (!sourceNodeId) return null;
-
-			const inputResult = inputs.get(sourceNodeId);
-			if (!inputResult) return null;
-
-			return inputResult;
-		});
-
-		this.registerProcessor("File", async ({ node }) => {
-			// If no cached, use existing node.result (assuming it's set)
-			const result = node.result as unknown as FileResult;
-			if (!result) throw new Error("No result for File node");
-			return result;
-		});
-
-		this.registerProcessor("Agent", async ({ node }) => {
-			// If no cached, use existing node.result (assuming it's set)
-			const result = node.result as unknown as AgentResult;
-			if (!result) throw new Error("No result for Agent node");
-			return result;
-		});
-
-		this.registerProcessor("Text", async ({ node }) => {
-			// If no cached, use existing node.result (assuming it's set)
-			const result = node.result as unknown as TextResult;
-			if (!result) throw new Error("No result for Text node");
-			return result;
-		});
-
-		// File processor (no computation, just return existing; cache based on config if needed)
-		this.registerProcessor("LLM", async ({ node }) => {
-			// If no cached, use existing node.result (assuming it's set)
-			const result = node.result as unknown as LLMResult;
-			if (!result) throw new Error("No result for Text node");
-			return result;
-		});
-
-		// Resize processor
-		this.registerProcessor("Resize", async ({ node, inputs, signal }) => {
-			const inputHandleId = this.getInputHandleIDs(node.id)[0];
-			if (!inputHandleId) return null;
-
-			const sourceNodeId = this.getSourceNodeID(node.id, inputHandleId);
-			if (!sourceNodeId) return null;
-
-			const inputResult = inputs.get(sourceNodeId);
-			if (!inputResult) return null;
-			const sourceHandleId = this.getSourceHandleId(inputHandleId);
-			// Extract image URL
-			const output = inputResult.outputs[inputResult.selectedOutputIndex ?? 0];
-			const fileData = output?.items.find(
-				(f) => f.outputHandleId === sourceHandleId,
-			)?.data as FileData;
-			const imageUrl = fileData?.entity?.signedUrl ?? fileData?.dataUrl;
-			if (!imageUrl) return null;
-
-			// Process with Pixi
-			const config = node.config as ResizeNodeConfig;
-			const dataUrl = await pixiProcessor.processResize(
-				imageUrl,
-				{ width: config.width, height: config.height },
-				signal,
-			);
-
-			// Build result
-			const outputHandleEntity = this.getOutputHandleEntities(node.id).find(
-				(f) => f.dataTypes.includes("Image"),
-			);
-			if (!outputHandleEntity) {
-				throw new Error("Output handle not found");
-			}
-			const outputHandle = outputHandleEntity.id;
-			const newResult: NodeResult = {
-				selectedOutputIndex: 0,
-				outputs: [
-					{
-						items: [
-							{
-								type: "Image",
-								data: { dataUrl },
-								outputHandleId: outputHandle,
-							},
-						],
-					},
-				],
-			};
-
-			return newResult;
-		});
-	}
-
-	private getOrCreateNodeState(nodeId: NodeEntityType["id"]): NodeState {
-		const existing = this.nodeStates.get(nodeId);
-		if (existing) {
-			return existing;
-		}
-
-		const newState: NodeState = {
-			isDirty: false,
-			isProcessing: false,
-			result: null,
-			error: null,
-			abortController: null,
-		};
-		this.nodeStates.set(nodeId, newState);
-		return newState;
-	}
-
-	private hasNodeChanged(prev: NodeEntityType, curr: NodeEntityType): boolean {
-		// Compare config and result (for nodes like File where result represents source/input data)
-		const prevConfigStr = JSON.stringify(prev.config);
-		const currConfigStr = JSON.stringify(curr.config);
-		const prevResultStr = JSON.stringify(prev.result ?? null);
-		const currResultStr = JSON.stringify(curr.result ?? null);
-		return prevConfigStr !== currConfigStr || prevResultStr !== currResultStr;
-	}
-
-	private hasNodeInputsChanged(
-		nodeId: NodeEntityType["id"],
-		prevEdges: EdgeEntityType[],
-	): boolean {
-		const prevInputs = new Map<string, string>(); // targetHandleId -> sourceNodeId
-		prevEdges.forEach((e) => {
-			if (e.target === nodeId) {
-				prevInputs.set(e.targetHandleId, e.sourceHandleId);
-			}
-		});
-
-		const currInputs = new Map<string, string>(); // targetHandleId -> sourceNodeId
-		this.edges.forEach((e) => {
-			if (e.target === nodeId) {
-				currInputs.set(e.targetHandleId, e.sourceHandleId);
-			}
-		});
-		console.log({ nodeId, prevEdges, de: this.edges });
-
-		if (prevInputs.size !== currInputs.size) return true;
-
-		for (const [handleId, sourceId] of prevInputs) {
-			if (currInputs.get(handleId) !== sourceId) return true;
-		}
-		return false;
-	}
-
-	private buildDependencyGraphs(): void {
-		this.dependencyGraph.clear();
-		this.reverseDependencyGraph.clear();
-
-		this.nodes.forEach((_, id) => {
-			this.dependencyGraph.set(id, new Set());
-			this.reverseDependencyGraph.set(id, new Set());
-		});
-
-		this.edges.forEach((edge) => {
-			if (this.nodes.has(edge.source) && this.nodes.has(edge.target)) {
-				const sourceSet = this.dependencyGraph.get(edge.source);
-				const targetSet = this.reverseDependencyGraph.get(edge.target);
-
-				if (sourceSet && targetSet) {
-					sourceSet.add(edge.target);
-					targetSet.add(edge.source);
-				}
-			}
-		});
-	}
-
-	private buildSubgraphDepGraphs(necessaryIds: string[]): {
-		depGraph: Map<string, string[]>;
-		revDepGraph: Map<string, string[]>;
-	} {
-		const selectedSet = new Set(necessaryIds);
-		const depGraph = new Map(necessaryIds.map((id) => [id, new Set<string>()]));
-		const revDepGraph = new Map(
-			necessaryIds.map((id) => [id, new Set<string>()]),
-		);
-
-		for (const edge of this.edges) {
-			if (selectedSet.has(edge.source) && selectedSet.has(edge.target)) {
-				const sourceSet = depGraph.get(edge.source);
-				const targetSet = revDepGraph.get(edge.target);
-
-				if (sourceSet && targetSet) {
-					sourceSet.add(edge.target);
-					targetSet.add(edge.source);
-				}
-			}
-		}
-
-		// Convert Sets to arrays for topological sort
-		const depArray = new Map<string, string[]>();
-		const revArray = new Map<string, string[]>();
-		depGraph.forEach((value, key) => {
-			depArray.set(key, Array.from(value));
-		});
-		revDepGraph.forEach((value, key) => {
-			revArray.set(key, Array.from(value));
-		});
-
-		return { depGraph: depArray, revDepGraph: revArray };
-	}
-
-	private topologicalSort(
-		nodes: string[],
-		depGraph: Map<string, string[]>,
-		revDepGraph: Map<string, string[]>,
-	): string[] | null {
-		const indegree = new Map(
-			nodes.map((id) => [id, (revDepGraph.get(id) ?? []).length]),
-		);
-		const queue: string[] = nodes.filter((id) => {
-			const deg = indegree.get(id);
-			return deg !== undefined && deg === 0;
-		});
-		const order: string[] = [];
-
-		while (queue.length > 0) {
-			const current = queue.shift();
-			if (!current) break;
-
-			order.push(current);
-
-			const downstream = depGraph.get(current) ?? [];
-			for (const ds of downstream) {
-				const currentDeg = indegree.get(ds);
-				if (currentDeg !== undefined) {
-					const deg = currentDeg - 1;
-					indegree.set(ds, deg);
-					if (deg === 0) {
-						queue.push(ds);
-					}
-				}
-			}
-		}
-
-		return order.length === nodes.length ? order : null;
-	}
-
-	private markDirty(nodeId: NodeEntityType["id"], cascade: boolean): void {
-		const state = this.getOrCreateNodeState(nodeId);
-
-		// Cancel if already processing
-		if (state.isProcessing && state.abortController) {
-			state.abortController.abort();
-			state.isProcessing = false;
-		}
-
-		state.isDirty = true;
-		state.result = null; // Added: Invalidate previous result on dirty
-
-		// Cascade to downstream nodes
-		if (cascade) {
-			const downstream = Array.from(
-				this.dependencyGraph.get(nodeId) ?? new Set(),
-			);
-			downstream.forEach((downstreamId) => {
-				if (typeof downstreamId === "string") {
-					this.markDirty(downstreamId, true);
-				} else {
-					throw new Error(`Invalid node Id detected: ${downstreamId}`);
-				}
-			});
-		}
-
-		// Trigger processing
-		this.startProcessing();
-	}
-
-	private async startProcessing(): Promise<void> {
-		if (this.isProcessing) return;
-		this.isProcessing = true;
-
-		try {
-			while (true) {
-				// Collect dirty node IDs
-				const dirtyIds = Array.from(this.nodeStates.entries())
-					.filter(([, state]) => state.isDirty)
-					.map(([id]) => id);
-				console.log({ dirtyIds });
-				if (dirtyIds.length === 0) break;
-
-				// Compute necessary nodes: dirty + upstream dependencies that need processing
-				const necessary = new Set<string>();
-				const queue: string[] = [...dirtyIds];
-				while (queue.length > 0) {
-					const curr = queue.shift();
-					if (!curr) break;
-					if (necessary.has(curr)) continue;
-
-					necessary.add(curr);
-					const ups = Array.from(this.reverseDependencyGraph.get(curr) ?? []);
-					ups.forEach((up) => {
-						const upState = this.getOrCreateNodeState(up);
-						if (!upState.result || upState.isDirty) {
-							queue.push(up);
-						}
-					});
-				}
-
-				const necessaryIds = Array.from(necessary);
-
-				// Mark upstream nodes as dirty if they lack results
-				necessaryIds.forEach((id) => {
-					const state = this.getOrCreateNodeState(id);
-					if (!state.result) {
-						state.isDirty = true;
-					}
-				});
-				const { depGraph, revDepGraph } =
-					this.buildSubgraphDepGraphs(necessaryIds);
-
-				const topoOrder = this.topologicalSort(
-					necessaryIds,
-					depGraph,
-					revDepGraph,
-				);
-				if (!topoOrder) {
-					this.emit("graph:error", {
-						message: "Cycle detected in dependency graph",
-					});
-					return;
-				}
-
-				// Process nodes in topological order
-				for (const nodeId of topoOrder) {
-					const state = this.getOrCreateNodeState(nodeId);
-					if (!state.isDirty) continue;
-
-					// Inputs should be ready due to topo order, but verify
-					if (!this.ensureInputsReady(nodeId)) {
-						console.warn(`Inputs not ready for node ${nodeId}`);
-					}
-					if (state.isProcessing) continue;
-
-					state.isProcessing = true;
-					state.abortController = new AbortController();
-					state.error = null;
-
-					try {
-						const node = this.nodes.get(nodeId);
-						if (!node) throw new Error(`Node ${nodeId} missing`);
-
-						const processor = this.processors.get(node.type);
-						if (!processor) {
-							throw new Error(`No processor for node type: ${node.type}`);
-						}
-
-						const inputs = this.collectInputs(nodeId);
-						console.log("node:start", { nodeId, inputs });
-						const result = await processor({
-							node,
-							inputs,
-							signal: state.abortController.signal,
-						});
-						console.log("node:processed", { nodeId, result });
-						state.result = result;
-						state.isDirty = false;
-						this.emit("node:processed", { nodeId, result });
-					} catch (error) {
-						if (error instanceof Error && error.name === "AbortError") {
-							// Cancelled - will be re-queued in next while iteration
-							state.isDirty = false;
-						} else {
-							state.error =
-								error instanceof Error ? error.message : "Unknown error";
-							state.isDirty = false;
-						}
-						this.emit("node:error", { nodeId, error: state.error });
-					} finally {
-						state.isProcessing = false;
-						state.abortController = null;
-					}
-				}
-			}
-		} finally {
-			this.isProcessing = false;
-		}
-	}
-
-	private ensureInputsReady(nodeId: NodeEntityType["id"]): boolean {
-		const sourceNodeIds = this.getSourceNodeIDs(nodeId);
-
-		for (const sourceId of sourceNodeIds) {
-			const sourceState = this.nodeStates.get(sourceId);
-			if (
-				!sourceState?.result ||
-				sourceState.isDirty ||
-				sourceState.isProcessing
-			) {
-				return false;
-			}
-		}
-
-		return true;
-	}
-
-	private collectInputs(nodeId: NodeEntityType["id"]): Map<string, NodeResult> {
-		const inputs = new Map<string, NodeResult>();
-		const sourceNodeIds = this.getSourceNodeIDs(nodeId);
-
-		sourceNodeIds.forEach((sourceId) => {
-			const state = this.nodeStates.get(sourceId);
-			if (state?.result) {
-				inputs.set(sourceId, state.result);
-			}
-		});
-
-		return inputs;
-	}
-
-	private getSourceNodeIDs(nodeId: NodeEntityType["id"]): string[] {
-		return this.edges.filter((e) => e.target === nodeId).map((e) => e.source);
-	}
-
-	private getSourceHandleId(targetHandleId: HandleEntityType["id"]) {
-		return this.edges.find((f) => f.targetHandleId === targetHandleId)
-			?.sourceHandleId;
-	}
-
-	private getSourceNodeID(
-		nodeId: NodeEntityType["id"],
-		handleId: HandleEntityType["id"],
-	): string | null {
-		const edge = this.edges.find(
-			(e) => e.target === nodeId && e.targetHandleId === handleId,
-		);
-		return edge?.source ?? null;
-	}
-
-	private getInputHandleIDs(nodeId: NodeEntityType["id"]): string[] {
-		return Array.from(
-			new Set(
-				this.handles
-					.filter((e) => e.nodeId === nodeId && e.type === "Input")
-					.map((e) => e.id),
-			),
-		);
-	}
-
-	private getOutputHandleEntities(
-		nodeId: NodeEntityType["id"],
-	): HandleEntityType[] {
-		return Array.from(
-			new Set(
-				this.handles.filter((e) => e.nodeId === nodeId && e.type === "Output"),
-			),
-		);
-	}
-
-	/**
-	 * Clean up resources
-	 */
-	destroy(): void {
-		this.nodeStates.forEach((state) => {
-			if (state.abortController) {
-				state.abortController.abort();
-			}
-		});
-		this.nodeStates.clear();
-		this.removeAllListeners();
-	}
+            }
+        }
+
+        this.triggerProcessing();
+    }
+
+    /**
+     * Debounced trigger for the processing loop.
+     */
+    private async triggerProcessing(): Promise<void> {
+        if (this.processingLoopActive) return;
+        
+        // Return existing promise if already scheduling, or create new
+        if (!this.schedulePromise) {
+            this.schedulePromise = Promise.resolve().then(() => {
+                this.schedulePromise = null;
+                return this.runProcessingLoop();
+            });
+        }
+        return this.schedulePromise;
+    }
+
+    /**
+     * The main execution loop.
+     * Runs continuously as long as there are 'ready' nodes.
+     * Supports parallelism.
+     */
+    private async runProcessingLoop(): Promise<void> {
+        if (this.processingLoopActive) return;
+        this.processingLoopActive = true;
+
+        try {
+            let hasWork = true;
+
+            while (hasWork) {
+                // 1. Identify all nodes that CAN run right now
+                const readyNodes: string[] = [];
+                const dirtyNodes = Array.from(this.nodeStates.values()).filter(s => s.isDirty);
+                
+                if (dirtyNodes.length === 0) {
+                    hasWork = false;
+                    break;
+                }
+
+                let waitingCount = 0;
+
+                for (const state of dirtyNodes) {
+                    if (state.isProcessing) continue; // Already running
+
+                    if (this.areInputsReady(state.id)) {
+                        readyNodes.push(state.id);
+                    } else {
+                        waitingCount++;
+                    }
+                }
+
+                // If no nodes are ready but we have dirty nodes, and nothing is currently processing,
+                // we have a deadlock (cycle) or missing inputs.
+                const processingCount = Array.from(this.nodeStates.values()).filter(s => s.isProcessing).length;
+                if (readyNodes.length === 0 && waitingCount > 0 && processingCount === 0) {
+                    console.error("Graph deadlock detected: Cycles or missing upstream results.");
+                    this.emit("graph:error", { message: "Dependency cycle or missing inputs detected" });
+                    hasWork = false;
+                    break;
+                }
+
+                if (readyNodes.length === 0 && processingCount > 0) {
+                    // Wait for current batch to finish before checking again
+                    // We can break the tight loop here; the 'finally' of a processor will trigger this loop again.
+                    // But since we are in a while loop, we simply await a race of current processors?
+                    // Simpler: Just break loop, and let the finishing promise trigger a re-check.
+                    hasWork = false; 
+                    break;
+                }
+
+                // 2. Launch all ready nodes in parallel
+                const executions = readyNodes.map(nodeId => this.executeNode(nodeId));
+                
+                // Wait for THIS batch to complete (or at least one of them)
+                // Actually, to maximize parallelism, we shouldn't await all. 
+                // However, awaiting all simplifies state management for this implementation.
+                await Promise.all(executions);
+                
+                // Loop continues to check what unlocked
+            }
+        } finally {
+            this.processingLoopActive = false;
+            // Check if more work appeared while we were finishing
+            const remainingDirty = Array.from(this.nodeStates.values()).some(s => s.isDirty && !s.isProcessing);
+            if (remainingDirty) {
+                this.triggerProcessing();
+            }
+        }
+    }
+
+    private areInputsReady(nodeId: string): boolean {
+        const parents = this.reverseAdjacency.get(nodeId);
+        if (!parents || parents.size === 0) return true;
+
+        for (const parentId of parents) {
+            const parentState = this.nodeStates.get(parentId);
+            // If parent has no result, or is dirty (needs update), we aren't ready
+            if (!parentState?.result || parentState.isDirty) {
+                return false;
+            }
+        }
+        return true;
+    }
+
+    private async executeNode(nodeId: string): Promise<void> {
+        const state = this.nodeStates.get(nodeId);
+        if (!state) return;
+
+        const node = this.nodes.get(nodeId);
+        if (!node) return;
+
+        const processor = this.processors.get(node.type);
+        if (!processor) {
+            state.error = `No processor found for type ${node.type}`;
+            state.isDirty = false;
+            this.emit("node:error", { nodeId, error: state.error });
+            return;
+        }
+
+        // Setup Execution
+        state.isProcessing = true;
+        state.error = null;
+        state.abortController = new AbortController();
+        const signal = state.abortController.signal;
+
+        try {
+            const inputs = this.collectInputs(nodeId);
+            this.emit("node:start", { nodeId });
+            
+            // EXECUTE
+            const result = await processor({
+                node,
+                inputs,
+                signal
+            });
+
+            // If we are here, we finished successfully WITHOUT being aborted
+            if (signal.aborted) {
+                // This usually throws, but if a processor swallows abort, handle it here
+                throw new Error("Aborted"); 
+            }
+
+            state.result = result;
+            state.isDirty = false; // Clean!
+            state.lastProcessedSignature = JSON.stringify(node.config); // Simple versioning
+            
+            this.emit("node:processed", { nodeId, result });
+
+        } catch (error) {
+            const isAbort = error instanceof Error && (error.name === "AbortError" || error.message === "Aborted");
+            
+            if (isAbort) {
+                // CRITICAL FIX:
+                // If aborted, we check if it's still dirty.
+                // If it is dirty, it means it was invalidated during the run (Restart).
+                // If it's NOT dirty (rare manual abort), we leave it.
+                // In our `markNodesDirty` logic, we keep isDirty=true.
+                // So we simply do nothing here. The state remains isDirty=true, 
+                // and the main loop will pick it up again.
+                state.isProcessing = false;
+                state.abortController = null;
+                return; 
+            }
+
+            state.error = error instanceof Error ? error.message : "Unknown error";
+            state.isDirty = false; // Stop trying if it's a real error
+            this.emit("node:error", { nodeId, error: state.error });
+        } finally {
+            state.isProcessing = false;
+            state.abortController = null;
+        }
+    }
+
+    // =========================================================================
+    // Helpers & Graph Logic
+    // =========================================================================
+
+    private getOrCreateNodeState(id: string): NodeState {
+        let state = this.nodeStates.get(id);
+        if (!state) {
+            state = {
+                id,
+                isDirty: false,
+                isProcessing: false,
+                result: null,
+                error: null,
+                abortController: null,
+                lastProcessedSignature: null
+            };
+            this.nodeStates.set(id, state);
+        }
+        return state;
+    }
+
+    private buildAdjacencyLists() {
+        this.adjacency.clear();
+        this.reverseAdjacency.clear();
+
+        this.nodes.forEach((_, id) => {
+            this.adjacency.set(id, new Set());
+            this.reverseAdjacency.set(id, new Set());
+        });
+
+        for (const edge of this.edges) {
+            if (!this.nodes.has(edge.source) || !this.nodes.has(edge.target)) continue;
+            
+            this.adjacency.get(edge.source)?.add(edge.target);
+            this.reverseAdjacency.get(edge.target)?.add(edge.source);
+        }
+    }
+
+    private hasNodeConfigChanged(prev: NodeEntityType, curr: NodeEntityType): boolean {
+        // Deep comparison of config
+        return JSON.stringify(prev.config) !== JSON.stringify(curr.config);
+    }
+
+    private detectInputChanges(prevEdges: EdgeEntityType[], currEdges: EdgeEntityType[]): Set<string> {
+        const changedNodes = new Set<string>();
+        
+        // Build map "TargetNodeID -> Set<ConnectionSignature>"
+        const getSig = (edges: EdgeEntityType[]) => {
+            const map = new Map<string, Set<string>>();
+            edges.forEach(e => {
+                if (!map.has(e.target)) map.set(e.target, new Set());
+                // Signature: TargetHandle <- SourceNode:SourceHandle
+                map.get(e.target)?.add(`${e.targetHandleId}|${e.source}|${e.sourceHandleId}`);
+            });
+            return map;
+        };
+
+        const prevMap = getSig(prevEdges);
+        const currMap = getSig(currEdges);
+
+        // Check for added/changed connections
+        currMap.forEach((sigs, nodeId) => {
+            const prevSigs = prevMap.get(nodeId);
+            if (!prevSigs || prevSigs.size !== sigs.size) {
+                changedNodes.add(nodeId);
+            } else {
+                for (const sig of sigs) {
+                    if (!prevSigs.has(sig)) {
+                        changedNodes.add(nodeId);
+                        break;
+                    }
+                }
+            }
+        });
+
+        // Check for removed connections (nodes that existed in prev but lost edges)
+        prevMap.forEach((_, nodeId) => {
+            if (!currMap.has(nodeId) && this.nodes.has(nodeId)) {
+                changedNodes.add(nodeId);
+            }
+        });
+
+        return changedNodes;
+    }
+
+    private collectInputs(nodeId: string): Map<string, NodeResult> {
+        const inputs = new Map<string, NodeResult>();
+        const parentIds = this.reverseAdjacency.get(nodeId);
+        
+        if (parentIds) {
+            parentIds.forEach(parentId => {
+                const res = this.nodeStates.get(parentId)?.result;
+                if (res) inputs.set(parentId, res);
+            });
+        }
+        return inputs;
+    }
+
+
+    private registerBuiltInProcessors(): void {
+        const extractImage = (inputs: Map<string, NodeResult>, nodeId: string, inputHandleId?: string) => {
+            if (!inputHandleId) throw new Error(`Node ${nodeId}: No input handle provided`);
+            
+            // Find connection
+            const edge = this.edges.find(e => e.target === nodeId && e.targetHandleId === inputHandleId);
+            if (!edge) throw new Error(`Node ${nodeId}: Not connected`);
+            
+            const result = inputs.get(edge.source);
+            if (!result) throw new Error(`Node ${nodeId}: Missing input data from ${edge.source}`);
+
+            const outputItem = result.outputs[result.selectedOutputIndex ?? 0]?.items.find(
+                i => i.outputHandleId === edge.sourceHandleId
+            );
+            
+            const fileData = outputItem?.data as FileData;
+            const url = fileData?.entity?.signedUrl ?? fileData?.dataUrl;
+            
+            if (!url) throw new Error(`Node ${nodeId}: No image data found`);
+            return url;
+        };
+
+        const getFirstInputHandle = (nodeId: string) => 
+            this.handles.find(h => h.nodeId === nodeId && h.type === 'Input')?.id;
+
+        const getFirstOutputHandle = (nodeId: string, type: string = 'Image') =>
+            this.handles.find(h => h.nodeId === nodeId && h.type === 'Output' && h.dataTypes.includes(type as DataType))?.id;
+
+
+        // --- Processors ---
+
+        this.registerProcessor("Crop", async ({ node, inputs, signal }) => {
+            const inputHandle = getFirstInputHandle(node.id);
+            const imageUrl = extractImage(inputs, node.id, inputHandle);
+            const config = node.config as CropNodeConfig;
+
+            const dataUrl = await pixiProcessor.processCrop(
+                imageUrl,
+                {
+                    leftPercentage: config.leftPercentage,
+                    topPercentage: config.topPercentage,
+                    widthPercentage: config.widthPercentage,
+                    heightPercentage: config.heightPercentage,
+                },
+                signal
+            );
+
+            const outputHandle = getFirstOutputHandle(node.id);
+            if (!outputHandle) throw new Error("Output handle missing");
+
+            return {
+                selectedOutputIndex: 0,
+                outputs: [{ items: [{ type: "Image", data: { dataUrl }, outputHandleId: outputHandle }] }]
+            };
+        });
+
+        this.registerProcessor("Paint", async ({ node, inputs, signal }) => {
+            const config = node.config as PaintNodeConfig;
+            const inputHandle = getFirstInputHandle(node.id);
+            
+            // Paint can handle empty input (canvas only) or existing image
+            let imageUrl: string | undefined;
+            try {
+                if (inputHandle) imageUrl = extractImage(inputs, node.id, inputHandle);
+            } catch (e) { /* ignore if optional */ }
+
+            const maskDataUrl = config.paintData;
+            const imageHandle = getFirstOutputHandle(node.id, "Image");
+            const maskHandle = getFirstOutputHandle(node.id, "Mask");
+
+            if (!maskHandle) throw new Error("Mask output handle missing");
+
+            const items: PaintResult["outputs"][number]["items"] = [];
+
+            if (imageUrl && imageHandle) {
+                const { imageWithMask, onlyMask } = await pixiProcessor.processMask(
+                    config, imageUrl, maskDataUrl, signal
+                );
+                items.push({ type: "Image", data: { dataUrl: imageWithMask }, outputHandleId: imageHandle });
+                items.push({ type: "Mask", data: { dataUrl: onlyMask }, outputHandleId: maskHandle });
+            } else {
+                items.push({ type: "Mask", data: { dataUrl: maskDataUrl }, outputHandleId: maskHandle });
+            }
+
+            return { selectedOutputIndex: 0, outputs: [{ items }] };
+        });
+
+        this.registerProcessor("Blur", async ({ node, inputs, signal }) => {
+            const inputHandle = getFirstInputHandle(node.id);
+            const imageUrl = extractImage(inputs, node.id, inputHandle);
+            const config = node.config as { size?: number };
+
+            const dataUrl = await pixiProcessor.processBlur(
+                imageUrl,
+                { blurSize: config.size ?? 1 },
+                signal
+            );
+
+            const outputHandle = getFirstOutputHandle(node.id);
+            if (!outputHandle) throw new Error("Output handle missing");
+
+            return {
+                selectedOutputIndex: 0,
+                outputs: [{ items: [{ type: "Image", data: { dataUrl }, outputHandleId: outputHandle }] }]
+            };
+        });
+
+        this.registerProcessor("Resize", async ({ node, inputs, signal }) => {
+            const inputHandle = getFirstInputHandle(node.id);
+            const imageUrl = extractImage(inputs, node.id, inputHandle);
+            const config = node.config as ResizeNodeConfig;
+
+            const dataUrl = await pixiProcessor.processResize(
+                imageUrl,
+                { width: config.width, height: config.height },
+                signal
+            );
+
+            const outputHandle = getFirstOutputHandle(node.id);
+            if (!outputHandle) throw new Error("Output handle missing");
+
+            return {
+                selectedOutputIndex: 0,
+                outputs: [{ items: [{ type: "Image", data: { dataUrl }, outputHandleId: outputHandle }] }]
+            };
+        });
+
+        // Passthrough / Static Processors
+        const passthrough = async ({ node }: NodeProcessorParams) => node.result as unknown as NodeResult;
+        
+        this.registerProcessor("ImageGen", passthrough);
+        this.registerProcessor("File", passthrough);
+        this.registerProcessor("Agent", passthrough);
+        this.registerProcessor("Text", passthrough);
+        this.registerProcessor("LLM", passthrough);
+        
+        this.registerProcessor("Preview", async ({ node, inputs }) => {
+            const inputHandle = getFirstInputHandle(node.id);
+            if (!inputHandle) throw new Error("Preview disconnected");
+            
+            // Find source
+            const edge = this.edges.find(e => e.target === node.id && e.targetHandleId === inputHandle);
+            if (!edge) throw new Error("Preview disconnected");
+            
+            const res = inputs.get(edge.source);
+            if (!res) throw new Error("Preview waiting for input");
+            return res;
+        });
+    }
 }
