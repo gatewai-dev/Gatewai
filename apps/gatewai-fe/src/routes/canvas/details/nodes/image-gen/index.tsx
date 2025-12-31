@@ -9,12 +9,6 @@ import { OutputSelector } from "../misc/output-selector";
 import type { ImageGenNode } from "../node-props";
 import { CreateHandleButton } from "./create-handle-button";
 
-const ImagePlaceholder = () => (
-	<div className="w-full media-container h-[280px] flex items-center justify-center rounded bg-gray-50 dark:bg-gray-800 border border-dashed border-gray-300 dark:border-gray-700">
-		<span className="text-gray-400 text-sm">No image generated</span>
-	</div>
-);
-
 const ImageGenNodeComponent = memo((props: NodeProps<ImageGenNode>) => {
 	const node = useAppSelector(makeSelectNodeById(props.id));
 

@@ -47,7 +47,7 @@ export const canvasDetailsAPI = createApi({
 			invalidatesTags: ["canvasDetails"],
 			queryFn: async (params) => {
 				const response =
-					await rpcClient.api.v1["canvas"][":id"]["update-name"].$patch(params);
+					await rpcClient.api.v1.canvas[":id"]["update-name"].$patch(params);
 				if (!response.ok) {
 					return {
 						error: { status: response.status, data: await response.text() },
@@ -63,7 +63,7 @@ export const canvasDetailsAPI = createApi({
 		>({
 			queryFn: async (params) => {
 				const response =
-					await rpcClient.api.v1["canvas"][":id"]["process"].$post(params);
+					await rpcClient.api.v1.canvas[":id"].process.$post(params);
 				if (!response.ok) {
 					return {
 						error: { status: response.status, data: await response.text() },

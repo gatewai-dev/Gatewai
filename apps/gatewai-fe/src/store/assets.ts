@@ -40,7 +40,7 @@ export const assetsAPI = createApi({
 		>({
 			queryFn: async (payload) => {
 				const response =
-					await rpcClient.api.v1.assets.node[":nodeId"]["$post"](payload);
+					await rpcClient.api.v1.assets.node[":nodeId"].$post(payload);
 				const data = await response.json();
 				return { data };
 			},
