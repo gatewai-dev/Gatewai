@@ -48,6 +48,8 @@ export class NodeGraphProcessor extends EventEmitter {
 	private dependencyGraph = new Map<string, Set<string>>(); // nodeId -> downstream nodeIds
 	private reverseDependencyGraph = new Map<string, Set<string>>(); // nodeId -> upstream nodeIds
 	private isProcessing = false;
+	private pendingConfig: ProcessorConfig | null = null;
+	private processingAborted = false;
 
 	constructor() {
 		super();
@@ -62,6 +64,32 @@ export class NodeGraphProcessor extends EventEmitter {
 	 * Update graph structure from Redux store
 	 */
 	updateGraph(config: ProcessorConfig): void {
+		if (this.isProcessing) {
+			this.processingAborted = true;
+			this.nodeStates.forEach((state) => {
+				if (state.abortController) {
+					state.abortController.abort();
+				}
+				state.isDirty = false; // Prevent reprocessing old dirties
+			});
+		}
+
+		// NEW: Set (or override) pending config with the latest
+		this.pendingConfig = config;
+
+		// NEW: Apply immediately if not processing
+		if (!this.isProcessing) {
+			this.applyPending();
+		}
+	}
+
+	private applyPending(): void {
+		if (!this.pendingConfig) return;
+
+		const config = this.pendingConfig;
+		this.pendingConfig = null;
+
+		// Original update logic moved here
 		const prevNodes = new Map(this.nodes);
 		const prevEdges = [...this.prevEdges];
 
@@ -69,10 +97,8 @@ export class NodeGraphProcessor extends EventEmitter {
 		this.edges = config.edges;
 		this.handles = config.handles;
 
-		// Rebuild dependency graphs
 		this.buildDependencyGraphs();
 
-		// Find changed nodes and mark as dirty
 		config.nodes.forEach((node, id) => {
 			const prev = prevNodes.get(id);
 			this.getOrCreateNodeState(id);
@@ -86,14 +112,12 @@ export class NodeGraphProcessor extends EventEmitter {
 			}
 		});
 
-		// Clean up states for deleted nodes
 		prevNodes.forEach((_, id) => {
 			if (!this.nodes.has(id)) {
 				this.nodeStates.delete(id);
 			}
 		});
 
-		// Update prevEdges
 		this.prevEdges = [...this.edges];
 	}
 
@@ -550,16 +574,14 @@ export class NodeGraphProcessor extends EventEmitter {
 	private markDirty(nodeId: NodeEntityType["id"], cascade: boolean): void {
 		const state = this.getOrCreateNodeState(nodeId);
 
-		// Cancel if already processing
+		// MOD: Remove manual isProcessing=false set (let finally handle it)
 		if (state.isProcessing && state.abortController) {
 			state.abortController.abort();
-			state.isProcessing = false;
 		}
 
 		state.isDirty = true;
-		state.result = null; // Added: Invalidate previous result on dirty
+		state.result = null;
 
-		// Cascade to downstream nodes
 		if (cascade) {
 			const downstream = Array.from(
 				this.dependencyGraph.get(nodeId) ?? new Set(),
@@ -573,7 +595,6 @@ export class NodeGraphProcessor extends EventEmitter {
 			});
 		}
 
-		// Trigger processing
 		this.startProcessing();
 	}
 
@@ -581,16 +602,16 @@ export class NodeGraphProcessor extends EventEmitter {
 		if (this.isProcessing) return;
 		this.isProcessing = true;
 
+		// NEW: Reset abort flag at start
+		this.processingAborted = false;
+
 		try {
 			while (true) {
-				// Collect dirty node IDs
 				const dirtyIds = Array.from(this.nodeStates.entries())
 					.filter(([, state]) => state.isDirty)
 					.map(([id]) => id);
-				console.log({ dirtyIds });
 				if (dirtyIds.length === 0) break;
 
-				// Compute necessary nodes: dirty + upstream dependencies that need processing
 				const necessary = new Set<string>();
 				const queue: string[] = [...dirtyIds];
 				while (queue.length > 0) {
@@ -610,7 +631,6 @@ export class NodeGraphProcessor extends EventEmitter {
 
 				const necessaryIds = Array.from(necessary);
 
-				// Mark upstream nodes as dirty if they lack results
 				necessaryIds.forEach((id) => {
 					const state = this.getOrCreateNodeState(id);
 					if (!state.result) {
@@ -632,15 +652,13 @@ export class NodeGraphProcessor extends EventEmitter {
 					return;
 				}
 
-				// Process nodes in topological order
 				for (const nodeId of topoOrder) {
+					// NEW: Check for global abort and skip remaining nodes
+					if (this.processingAborted) break;
+
 					const state = this.getOrCreateNodeState(nodeId);
 					if (!state.isDirty) continue;
 
-					// Inputs should be ready due to topo order, but verify
-					if (!this.ensureInputsReady(nodeId)) {
-						console.warn(`Inputs not ready for node ${nodeId}`);
-					}
 					if (state.isProcessing) continue;
 
 					state.isProcessing = true;
@@ -657,20 +675,17 @@ export class NodeGraphProcessor extends EventEmitter {
 						}
 
 						const inputs = this.collectInputs(nodeId);
-						console.log("node:start", { nodeId, inputs });
 						const result = await processor({
 							node,
 							inputs,
 							signal: state.abortController.signal,
 						});
-						console.log("node:processed", { nodeId, result });
 						state.result = result;
 						state.isDirty = false;
 						this.emit("node:processed", { nodeId, result });
 					} catch (error) {
 						if (error instanceof Error && error.name === "AbortError") {
-							// Cancelled - will be re-queued in next while iteration
-							state.isDirty = false;
+							// MOD: Do not set isDirty=false on abort (handled by caller context)
 						} else {
 							state.error =
 								error instanceof Error ? error.message : "Unknown error";
@@ -685,6 +700,8 @@ export class NodeGraphProcessor extends EventEmitter {
 			}
 		} finally {
 			this.isProcessing = false;
+			// NEW: Apply any pending updates after finishing
+			this.applyPending();
 		}
 	}
 

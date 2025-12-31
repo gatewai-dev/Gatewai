@@ -17,317 +17,312 @@ import { DimensionsConfig } from "../common/dimensions";
 import type { PaintNode } from "../node-props";
 
 const PaintNodeComponent = memo((props: NodeProps<PaintNode>) => {
-	const { onNodeConfigUpdate } = useCanvasCtx();
-	const edges = useAppSelector(makeSelectEdgesByTargetNodeId(props.id));
-	const inputNodeId = useMemo(() => {
-		if (!edges || !edges[0]) {
-			return undefined;
-		}
-		return edges[0].source;
-	}, [edges]);
+  const { onNodeConfigUpdate } = useCanvasCtx();
+  const edges = useAppSelector(makeSelectEdgesByTargetNodeId(props.id));
+  const inputNodeId = useMemo(() => {
+    if (!edges || !edges[0]) {
+      return undefined;
+    }
+    return edges[0].source;
+  }, [edges]);
 
-	const node = useAppSelector(makeSelectNodeById(props.id));
-	const nodeConfig = node?.config as PaintNodeConfig;
-	const maskImageRef = useRef<HTMLImageElement | null>(null);
+  const node = useAppSelector(makeSelectNodeById(props.id));
+  const nodeConfig = node?.config as PaintNodeConfig;
+  const maskImageRef = useRef<HTMLImageElement | null>(null);
 
-	const inputImageUrl = useNodeImageUrl(inputNodeId);
-	const canvasRef = useRef<HTMLCanvasElement>(null);
+  const inputImageUrl = useNodeImageUrl(inputNodeId);
+  const canvasRef = useRef<HTMLCanvasElement>(null);
 
-	const [brushSize, setBrushSize] = useState(20);
-	const [brushColor, setBrushColor] = useState("#444444");
-	const [tool, setTool] = useState<"brush" | "eraser">("brush");
+  const [brushSize, setBrushSize] = useState(20);
+  const [brushColor, setBrushColor] = useState("#444444");
+  const [tool, setTool] = useState<"brush" | "eraser">("brush");
 
-	const [containerStyle, setContainerStyle] = useState<
-		React.CSSProperties | undefined
-	>(undefined);
-	const [canvasStyle, setCanvasStyle] = useState<React.CSSProperties>({});
+  const [containerStyle, setContainerStyle] = useState<
+    React.CSSProperties | undefined
+  >(undefined);
+  const [canvasStyle, setCanvasStyle] = useState<React.CSSProperties>({});
 
-	const isDrawingRef = useRef(false);
-	const lastPositionRef = useRef<{ x: number; y: number } | null>(null);
-	const needsUpdateRef = useRef(false);
-	const skipNextSyncRef = useRef(false);
+  const isDrawingRef = useRef(false);
+  const lastPositionRef = useRef<{ x: number; y: number } | null>(null);
+  const needsUpdateRef = useRef(false);
+  const skipNextSyncRef = useRef(false);
 
-	const updateConfig = useCallback(
-		(cfg: Partial<PaintNodeConfig>) => {
-			onNodeConfigUpdate({
-				id: props.id,
-				newConfig: { ...nodeConfig, ...cfg },
-			});
-		},
-		[nodeConfig, onNodeConfigUpdate, props.id],
-	);
+  const updateConfig = useCallback(
+    (cfg: Partial<PaintNodeConfig>) => {
+      onNodeConfigUpdate({
+        id: props.id,
+        newConfig: { ...nodeConfig, ...cfg },
+      });
+    },
+    [nodeConfig, onNodeConfigUpdate, props.id],
+  );
 
-	const drawMask = useCallback(() => {
-		const canvas = canvasRef.current;
-		if (!canvas) return;
-		const ctx = canvas.getContext("2d");
-		if (!ctx) return;
-		console.log("DMS");
-		ctx.clearRect(0, 0, canvas.width, canvas.height);
+  const drawMask = useCallback(() => {
+    const canvas = canvasRef.current;
+    if (!canvas) return;
+    const ctx = canvas.getContext("2d");
+    if (!ctx) return;
+    ctx.clearRect(0, 0, canvas.width, canvas.height);
 
-		if (nodeConfig?.paintData) {
-			if (
-				!maskImageRef.current ||
-				maskImageRef.current.src !== nodeConfig.paintData
-			) {
-				maskImageRef.current = new Image();
-				maskImageRef.current.src = nodeConfig.paintData;
-				maskImageRef.current.onload = () => {
-					if (ctx && maskImageRef.current)
-						ctx.drawImage(
-							maskImageRef.current,
-							0,
-							0,
-							canvas.width,
-							canvas.height,
-						);
-				};
-			} else if (maskImageRef.current && ctx) {
-				ctx.drawImage(maskImageRef.current, 0, 0, canvas.width, canvas.height);
-			}
-		}
-	}, [nodeConfig]);
+    if (nodeConfig?.paintData) {
+      if (
+        !maskImageRef.current ||
+        maskImageRef.current.src !== nodeConfig.paintData
+      ) {
+        maskImageRef.current = new Image();
+        maskImageRef.current.src = nodeConfig.paintData;
+        maskImageRef.current.onload = () => {
+          if (ctx && maskImageRef.current)
+            ctx.drawImage(
+              maskImageRef.current,
+              0,
+              0,
+              canvas.width,
+              canvas.height,
+            );
+        };
+      } else if (maskImageRef.current && ctx) {
+        ctx.drawImage(maskImageRef.current, 0, 0, canvas.width, canvas.height);
+      }
+    }
+  }, [nodeConfig]);
 
-	useEffect(() => {
-		if (!inputImageUrl && nodeConfig) {
-			setContainerStyle({
-				aspectRatio: `${nodeConfig.width} / ${nodeConfig.height}`,
-			});
-			setCanvasStyle({
-				backgroundColor: nodeConfig.backgroundColor,
-				backgroundImage: "none",
-			});
-			const canvas = canvasRef.current;
-			if (canvas) {
-				canvas.width = nodeConfig.width;
-				canvas.height = nodeConfig.height;
-				const ctx = canvas.getContext("2d");
-				if (ctx) {
-					ctx.lineCap = "round";
-					ctx.lineJoin = "round";
-				}
-				drawMask();
-			}
-		}
-	}, [inputImageUrl, nodeConfig, drawMask]);
+  useEffect(() => {
+    const setupCanvasAndStyles = async () => {
+      const canvas = canvasRef.current;
+      if (!canvas) return;
 
-	useEffect(() => {
-		if (inputImageUrl) {
-			const img = new Image();
-			img.src = inputImageUrl;
-			img.onload = () => {
-				setContainerStyle({
-					aspectRatio: `${img.naturalWidth} / ${img.naturalHeight}`,
-				});
-				setCanvasStyle({
-					backgroundImage: `url(${inputImageUrl})`,
-					backgroundColor: "none",
-					backgroundSize: "contain",
-					backgroundPosition: "center",
-					backgroundRepeat: "no-repeat",
-				});
-				const canvas = canvasRef.current;
-				if (canvas) {
-					canvas.width = img.naturalWidth;
-					canvas.height = img.naturalHeight;
-					const ctx = canvas.getContext("2d");
-					if (ctx) {
-						ctx.lineCap = "round";
-						ctx.lineJoin = "round";
-					}
-					drawMask();
-				}
-			};
-		}
-	}, [inputImageUrl, drawMask]);
+      const ctx = canvas.getContext("2d");
+      if (!ctx) return;
 
-	useEffect(() => {
-		if (skipNextSyncRef.current) {
-			skipNextSyncRef.current = false;
-			return;
-		}
+      ctx.lineCap = "round";
+      ctx.lineJoin = "round";
 
-		drawMask();
-	}, [drawMask]);
+      setCanvasStyle({ background: "transparent" });
 
-	const getScaledCoordinates = useCallback(
-		(e: React.MouseEvent<HTMLCanvasElement>) => {
-			const canvas = canvasRef.current;
-			if (!canvas) return { x: 0, y: 0 };
+      if (inputImageUrl) {
+        const img = new Image();
+        img.src = inputImageUrl;
+        await new Promise<void>((resolve, reject) => {
+          img.onload = () => resolve();
+          img.onerror = reject;
+        });
 
-			const rect = canvas.getBoundingClientRect();
-			const scaleX = canvas.width / rect.width;
-			const scaleY = canvas.height / rect.height;
+        setContainerStyle({
+          aspectRatio: `${img.naturalWidth} / ${img.naturalHeight}`,
+          backgroundImage: `url(${inputImageUrl})`,
+          backgroundColor: nodeConfig?.backgroundColor ?? "#ffffff",
+          backgroundSize: "contain",
+          backgroundPosition: "center",
+          backgroundRepeat: "no-repeat",
+        });
 
-			return {
-				x: (e.clientX - rect.left) * scaleX,
-				y: (e.clientY - rect.top) * scaleY,
-			};
-		},
-		[],
-	);
+        canvas.width = img.naturalWidth;
+        canvas.height = img.naturalHeight;
+      } else if (nodeConfig) {
+        setContainerStyle({
+          aspectRatio: `${nodeConfig.width} / ${nodeConfig.height}`,
+          backgroundColor: nodeConfig.backgroundColor,
+          backgroundImage: "none",
+        });
 
-	const handleMouseDown = useCallback(
-		(e: React.MouseEvent<HTMLCanvasElement>) => {
-			e.preventDefault();
-			e.stopPropagation();
-			const { x, y } = getScaledCoordinates(e);
-			const ctx = canvasRef.current?.getContext("2d");
-			if (!ctx) return;
+        canvas.width = nodeConfig.width;
+        canvas.height = nodeConfig.height;
+      }
 
-			ctx.beginPath();
-			ctx.moveTo(x, y);
-			ctx.lineWidth = brushSize;
-			ctx.globalAlpha = 1;
-			if (tool === "brush") {
-				ctx.globalCompositeOperation = "source-over";
-				ctx.strokeStyle = brushColor;
-			} else {
-				ctx.globalCompositeOperation = "destination-out";
-			}
-			isDrawingRef.current = true;
-			lastPositionRef.current = { x, y };
-			needsUpdateRef.current = true;
-		},
-		[brushSize, tool, brushColor, getScaledCoordinates],
-	);
+      drawMask();
+    };
 
-	const handleMouseMove = useCallback(
-		(e: React.MouseEvent<HTMLCanvasElement>) => {
-			if (!isDrawingRef.current) return;
+    setupCanvasAndStyles();
+  }, [inputImageUrl, nodeConfig, drawMask]);
 
-			const { x, y } = getScaledCoordinates(e);
-			const ctx = canvasRef.current?.getContext("2d");
-			if (!ctx || !lastPositionRef.current) return;
+  useEffect(() => {
+    if (skipNextSyncRef.current) {
+      skipNextSyncRef.current = false;
+      return;
+    }
 
-			ctx.lineTo(x, y);
-			ctx.stroke();
-			lastPositionRef.current = { x, y };
-		},
-		[getScaledCoordinates],
-	);
+    drawMask();
+  }, [drawMask]);
 
-	const handleMouseUp = useCallback(() => {
-		isDrawingRef.current = false;
-		lastPositionRef.current = null;
-		if (needsUpdateRef.current) {
-			const canvas = canvasRef.current;
-			if (canvas) {
-				skipNextSyncRef.current = true;
-				updateConfig({ paintData: canvas.toDataURL("image/png") });
-			}
-			needsUpdateRef.current = false;
-		}
-	}, [updateConfig]);
+  const getScaledCoordinates = useCallback(
+    (e: React.MouseEvent<HTMLCanvasElement>) => {
+      const canvas = canvasRef.current;
+      if (!canvas) return { x: 0, y: 0 };
 
-	const handleClear = useCallback(() => {
-		const canvas = canvasRef.current;
-		if (canvas) {
-			const ctx = canvas.getContext("2d");
-			if (ctx) {
-				ctx.clearRect(0, 0, canvas.width, canvas.height);
-				updateConfig({ paintData: canvas.toDataURL("image/png") });
-			}
-		}
-	}, [updateConfig]);
+      const rect = canvas.getBoundingClientRect();
+      const scaleX = canvas.width / rect.width;
+      const scaleY = canvas.height / rect.height;
 
-	useEffect(() => {
-		document.addEventListener("mouseup", handleMouseUp);
-		return () => {
-			document.removeEventListener("mouseup", handleMouseUp);
-		};
-	}, [handleMouseUp]);
+      return {
+        x: (e.clientX - rect.left) * scaleX,
+        y: (e.clientY - rect.top) * scaleY,
+      };
+    },
+    [],
+  );
 
-	return (
-		<BaseNode {...props}>
-			<div className="flex flex-col gap-3">
-				<div
-					className="media-container w-full overflow-hidden relative select-none"
-					style={containerStyle}
-				>
-					<canvas
-						ref={canvasRef}
-						className="absolute inset-0 w-full h-auto cursor-crosshair z-10"
-						style={canvasStyle}
-						onMouseDown={handleMouseDown}
-						onMouseMove={handleMouseMove}
-					/>
-				</div>
-				<div className="flex flex-col flex-wrap gap-4 items-start text-sm">
-					<div className="flex justift-between w-full">
-						<div className="grow">
-							<div className="flex gap-2">
-								<Button
-									size="icon"
-									variant={tool === "brush" ? "default" : "outline"}
-									onClick={() => setTool("brush")}
-								>
-									<Brush className="h-4 w-4" />
-								</Button>
-								<Button
-									size="icon"
-									variant={tool === "eraser" ? "default" : "outline"}
-									onClick={() => setTool("eraser")}
-								>
-									<Eraser className="h-4 w-4" />
-								</Button>
-								<div className="flex items-center gap-1">
-									<Label htmlFor="brush-color">Color</Label>
-									<Input
-										id="brush-color"
-										type="color"
-										value={brushColor}
-										onChange={(e) => setBrushColor(e.target.value)}
-										className="w-8 h-8 p-1 rounded border bg-background"
-									/>
-								</div>
-							</div>
-						</div>
-						<Button
-							variant="link"
-							className="underline text-xs"
-							onClick={handleClear}
-							size="sm"
-						>
-							Clear
-						</Button>
-					</div>
-					<div className="flex items-center gap-1">
-						<Label htmlFor="brush-size">Size</Label>
-						<Slider
-							id="brush-size"
-							min={1}
-							max={100}
-							step={1}
-							value={[brushSize]}
-							onValueChange={(value) => setBrushSize(value[0])}
-							className="w-20"
-						/>
-						<span>{brushSize}</span>
-					</div>
-				</div>
-				<Separator />
-				{node && (
-					<div className="flex items-center gap-2">
-						<DimensionsConfig node={node} disabled={inputImageUrl != null} />
-						<Separator orientation="vertical" className=" h-full" />
-						<div className="flex flex-col items-start gap-1">
-							<Label htmlFor="bg-color">Background</Label>
-							<Input
-								id="bg-color"
-								type="color"
-								value={nodeConfig?.backgroundColor}
-								onChange={(e) => {
-									updateConfig({ backgroundColor: e.target.value });
-								}}
-								className="w-8 h-8 p-1 rounded border bg-background"
-							/>
-						</div>
-					</div>
-				)}
-			</div>
-		</BaseNode>
-	);
+  const handleMouseDown = useCallback(
+    (e: React.MouseEvent<HTMLCanvasElement>) => {
+      e.preventDefault();
+      e.stopPropagation();
+      const { x, y } = getScaledCoordinates(e);
+      const ctx = canvasRef.current?.getContext("2d");
+      if (!ctx) return;
+
+      ctx.beginPath();
+      ctx.moveTo(x, y);
+      ctx.lineWidth = brushSize;
+      ctx.globalAlpha = 1;
+      if (tool === "brush") {
+        ctx.globalCompositeOperation = "source-over";
+        ctx.strokeStyle = brushColor;
+      } else {
+        ctx.globalCompositeOperation = "destination-out";
+      }
+      isDrawingRef.current = true;
+      lastPositionRef.current = { x, y };
+      needsUpdateRef.current = true;
+    },
+    [brushSize, tool, brushColor, getScaledCoordinates],
+  );
+
+  const handleMouseMove = useCallback(
+    (e: React.MouseEvent<HTMLCanvasElement>) => {
+      if (!isDrawingRef.current) return;
+
+      const { x, y } = getScaledCoordinates(e);
+      const ctx = canvasRef.current?.getContext("2d");
+      if (!ctx || !lastPositionRef.current) return;
+
+      ctx.lineTo(x, y);
+      ctx.stroke();
+      lastPositionRef.current = { x, y };
+    },
+    [getScaledCoordinates],
+  );
+
+  const handleMouseUp = useCallback(() => {
+    isDrawingRef.current = false;
+    lastPositionRef.current = null;
+    if (needsUpdateRef.current) {
+      const canvas = canvasRef.current;
+      if (canvas) {
+        skipNextSyncRef.current = true;
+        updateConfig({ paintData: canvas.toDataURL("image/png") });
+      }
+      needsUpdateRef.current = false;
+    }
+  }, [updateConfig]);
+
+  const handleClear = useCallback(() => {
+    const canvas = canvasRef.current;
+    if (canvas) {
+      const ctx = canvas.getContext("2d");
+      if (ctx) {
+        ctx.clearRect(0, 0, canvas.width, canvas.height);
+        updateConfig({ paintData: canvas.toDataURL("image/png") });
+      }
+    }
+  }, [updateConfig]);
+
+  useEffect(() => {
+    document.addEventListener("mouseup", handleMouseUp);
+    return () => {
+      document.removeEventListener("mouseup", handleMouseUp);
+    };
+  }, [handleMouseUp]);
+
+  return (
+    <BaseNode {...props}>
+      <div className="flex flex-col gap-3">
+        <div
+          className="media-container w-full overflow-hidden relative select-none"
+          style={containerStyle}
+        >
+          <canvas
+            ref={canvasRef}
+            className="absolute inset-0 w-full cursor-crosshair z-10"
+            style={canvasStyle}
+            onMouseDown={handleMouseDown}
+            onMouseMove={handleMouseMove}
+          />
+        </div>
+        <div className="flex flex-col flex-wrap gap-4 items-start text-sm">
+          <div className="flex justify-between w-full">
+            <div className="grow">
+              <div className="flex gap-2">
+                <Button
+                  size="icon"
+                  variant={tool === "brush" ? "default" : "outline"}
+                  onClick={() => setTool("brush")}
+                >
+                  <Brush className="h-4 w-4" />
+                </Button>
+                <Button
+                  size="icon"
+                  variant={tool === "eraser" ? "default" : "outline"}
+                  onClick={() => setTool("eraser")}
+                >
+                  <Eraser className="h-4 w-4" />
+                </Button>
+                <div className="flex items-center gap-1">
+                  <Label htmlFor="brush-color">Color</Label>
+                  <Input
+                    id="brush-color"
+                    type="color"
+                    value={brushColor}
+                    onChange={(e) => setBrushColor(e.target.value)}
+                    className="w-8 h-8 p-1 rounded border bg-background"
+                  />
+                </div>
+              </div>
+            </div>
+            <Button
+              variant="link"
+              className="underline text-xs"
+              onClick={handleClear}
+              size="sm"
+            >
+              Clear
+            </Button>
+          </div>
+          <div className="flex items-center gap-1">
+            <Label htmlFor="brush-size">Size</Label>
+            <Slider
+              id="brush-size"
+              min={1}
+              max={100}
+              step={1}
+              value={[brushSize]}
+              onValueChange={(value) => setBrushSize(value[0])}
+              className="w-20"
+            />
+            <span>{brushSize}</span>
+          </div>
+        </div>
+        <Separator />
+        {node && (
+          <div className="flex items-center gap-2">
+            <DimensionsConfig node={node} disabled={inputImageUrl != null} />
+            <Separator orientation="vertical" className=" h-full" />
+            <div className="flex flex-col items-start gap-1">
+              <Label htmlFor="bg-color">Background</Label>
+              <Input
+                id="bg-color"
+                type="color"
+                value={nodeConfig?.backgroundColor}
+                onChange={(e) => {
+                  updateConfig({ backgroundColor: e.target.value });
+                }}
+                className="w-8 h-8 p-1 rounded border bg-background"
+              />
+            </div>
+          </div>
+        )}
+      </div>
+    </BaseNode>
+  );
 });
 
 PaintNodeComponent.displayName = "PaintNodeComponent";

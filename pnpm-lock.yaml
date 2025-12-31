@@ -26,6 +26,9 @@ importers:
 
   apps/gatewai-fe:
     dependencies:
+      '@ai-sdk/fal':
+        specifier: ^1.0.25
+        version: 1.0.25(zod@3.25.67)
       '@ai-sdk/google':
         specifier: ^2.0.39
         version: 2.0.39(zod@3.25.67)
@@ -385,6 +388,12 @@ importers:
 
 packages:
 
+  '@ai-sdk/fal@1.0.25':
+    resolution: {integrity: sha512-now31VCFZ0bL10jWcG2nec54FlSHVHIufN47532dreX1wlqZD6zs/qyLhcrYFKyN3DChn9zxUTM8+0TMmNcLeA==}
+    engines: {node: '>=18'}
+    peerDependencies:
+      zod: ^3.25.76 || ^4.1.8
+
   '@ai-sdk/gateway@2.0.11':
     resolution: {integrity: sha512-B0Vt2Xv88Lo9rg861Oyzq/SdTmT4LiqdjkpOxpSPpNk8Ih5TXTgyDAsV/qW14N6asPdK1YI5PosFLnVzfK5LrA==}
     engines: {node: '>=18'}
@@ -405,6 +414,12 @@ packages:
 
   '@ai-sdk/provider-utils@3.0.17':
     resolution: {integrity: sha512-TR3Gs4I3Tym4Ll+EPdzRdvo/rc8Js6c4nVhFLuvGLX/Y4V9ZcQMa/HTiYsHEgmYrf1zVi6Q145UEZUfleOwOjw==}
+    engines: {node: '>=18'}
+    peerDependencies:
+      zod: ^3.25.76 || ^4.1.8
+
+  '@ai-sdk/provider-utils@3.0.19':
+    resolution: {integrity: sha512-W41Wc9/jbUVXVwCN/7bWa4IKe8MtxO3EyA0Hfhx6grnmiYlCvpI8neSYWFE0zScXJkgA/YK3BRybzgyiXuu6JA==}
     engines: {node: '>=18'}
     peerDependencies:
       zod: ^3.25.76 || ^4.1.8
@@ -5982,6 +5997,12 @@ packages:
 
 snapshots:
 
+  '@ai-sdk/fal@1.0.25(zod@3.25.67)':
+    dependencies:
+      '@ai-sdk/provider': 2.0.0
+      '@ai-sdk/provider-utils': 3.0.19(zod@3.25.67)
+      zod: 3.25.67
+
   '@ai-sdk/gateway@2.0.11(zod@3.25.67)':
     dependencies:
       '@ai-sdk/provider': 2.0.0
@@ -6002,6 +6023,13 @@ snapshots:
       zod: 3.25.67
 
   '@ai-sdk/provider-utils@3.0.17(zod@3.25.67)':
+    dependencies:
+      '@ai-sdk/provider': 2.0.0
+      '@standard-schema/spec': 1.0.0
+      eventsource-parser: 3.0.6
+      zod: 3.25.67
+
+  '@ai-sdk/provider-utils@3.0.19(zod@3.25.67)':
     dependencies:
       '@ai-sdk/provider': 2.0.0
       '@standard-schema/spec': 1.0.0

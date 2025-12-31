@@ -232,12 +232,6 @@ const CropNodeComponent = memo((props: NodeProps<CropNode>) => {
 		};
 	}, [dragState, constrainCrop, updateConfig]);
 
-	console.log("CropNodeComponent render", {
-		inputImageUrl,
-		isProcessing,
-		error,
-	});
-
 	return (
 		<BaseNode {...props}>
 			<div

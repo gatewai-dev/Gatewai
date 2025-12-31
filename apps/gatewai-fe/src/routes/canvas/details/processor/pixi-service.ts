@@ -72,7 +72,7 @@ class PixiProcessorService {
 
 		const blurFilter = new BlurFilter();
 		blurFilter.strength = strength;
-		blurFilter.quality = 4; // High quality
+		blurFilter.quality = 2
 
 		sprite.filters = [blurFilter];
 
