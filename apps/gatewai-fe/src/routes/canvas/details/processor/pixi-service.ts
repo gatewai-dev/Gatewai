@@ -56,7 +56,7 @@ class PixiProcessorService {
 		// 1. Load the Texture
 		const texture = await Assets.load({
 			src: imageUrl,
-			parser: 'texture',
+			parser: "texture",
 		});
 
 		// Check cancellation after loading
@@ -132,7 +132,7 @@ class PixiProcessorService {
 		// 1. Load the Texture
 		const texture = await Assets.load({
 			src: imageUrl,
-			parser: 'texture',
+			parser: "texture",
 		});
 
 		// Check cancellation after loading
@@ -209,7 +209,7 @@ class PixiProcessorService {
 		// 1. Load the Texture
 		const texture = await Assets.load({
 			src: imageUrl,
-			parser: 'texture',
+			parser: "texture",
 		});
 
 		if (signal?.aborted) {
@@ -315,7 +315,7 @@ class PixiProcessorService {
 		if (imageUrl) {
 			const texture = await Assets.load({
 				src: imageUrl,
-				parser: 'texture',
+				parser: "texture",
 			});
 			if (signal?.aborted) {
 				throw new DOMException("Operation cancelled", "AbortError");
@@ -343,7 +343,7 @@ class PixiProcessorService {
 		if (maskUrl) {
 			const maskTexture = await Assets.load({
 				src: imageUrl,
-				parser: 'texture',
+				parser: "texture",
 			});
 			if (signal?.aborted) {
 				throw new DOMException("Operation cancelled", "AbortError");
