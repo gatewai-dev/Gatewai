@@ -44,7 +44,6 @@ const CropNodeComponent = memo((props: NodeProps<CropNode>) => {
 
 	const inputImageUrl = useNodeImageUrl(inputNodeId);
 	const node = useAppSelector(makeSelectNodeById(props.id));
-	const { isProcessing, error } = useNodeResult(props.id);
 	const canvasRef = useRef<HTMLCanvasElement>(null);
 	const nodeConfig = node?.config as CropNodeConfig;
 	const [crop, setCrop] = useState<Crop>({
