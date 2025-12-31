@@ -2,7 +2,7 @@ import { randomUUID } from "node:crypto";
 import { DataType, prisma } from "@gatewai/db";
 import type { FileData, ImageGenConfig, ImageGenResult } from "@gatewai/types";
 import {
-	experimental_generateImage as generateImage,
+	generateText,
 	type ModelMessage,
 	type TextPart,
 	type UserContent,
@@ -12,6 +12,7 @@ import { getImageDimensions } from "../../utils/image.js";
 import { generateSignedUrl, uploadToS3 } from "../../utils/s3.js";
 import { getInputValue, getInputValuesByType } from "../resolvers.js";
 import type { NodeProcessor } from "./types.js";
+import { logger } from "../../logger.js";
 
 const imageGenProcessor: NodeProcessor = async ({ node, data }) => {
 	try {
@@ -35,7 +36,7 @@ const imageGenProcessor: NodeProcessor = async ({ node, data }) => {
 			};
 			userContent.push(textPart);
 		}
-
+		logger.info(`Number of reference images: ${imageFileData?.length}`);
 		for (const imgData of imageFileData || []) {
 			const imageData = imgData?.entity?.signedUrl ?? imgData?.dataUrl;
 			if (imageData) {
@@ -57,12 +58,13 @@ const imageGenProcessor: NodeProcessor = async ({ node, data }) => {
 
 		const config = node.config as ImageGenConfig;
 
-		const result = await generateImage({
+		const result = await generateText({
 			model: config.model ?? "google/gemini-2.5-flash-image",
-			prompt: userPrompt,
+			prompt: messages,
+			system: 'Generate image for the user.'
 		});
 
-		const imageFiles = result.images.filter((f) =>
+		const imageFiles = result.files.filter((f) =>
 			f.mediaType?.startsWith("image/"),
 		);
 
@@ -127,7 +129,9 @@ const imageGenProcessor: NodeProcessor = async ({ node, data }) => {
 
 		return { success: true, newResult };
 	} catch (err: unknown) {
+		console.log(err);
 		if (err instanceof Error) {
+			logger.error(err.message)
 			return {
 				success: false,
 				error: err?.message ?? "ImageGen processing failed",

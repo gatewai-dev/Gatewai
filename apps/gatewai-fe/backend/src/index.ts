@@ -6,6 +6,8 @@ import { type AuthHonoTypes, auth } from "./auth.js";
 import { ENV_CONFIG } from "./config.js";
 import { v1Router } from "./routes/v1/index.js";
 
+console.log(process.env);
+
 const app = new Hono<{
 	Variables: AuthHonoTypes;
 }>()

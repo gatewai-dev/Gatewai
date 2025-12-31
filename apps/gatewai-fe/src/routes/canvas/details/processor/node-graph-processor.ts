@@ -367,7 +367,7 @@ export class NodeGraphProcessor extends EventEmitter {
 		const prevEdgeMap = getEdgeSigs(prevEdges);
 		const currEdgeMap = getEdgeSigs(currEdges);
 
-		// A. Structural Changes: Check if connections were added/removed/swapped
+		// A. Check if connections were added/removed/swapped
 		currEdgeMap.forEach((sigs, nodeId) => {
 			const prevSigs = prevEdgeMap.get(nodeId);
 
@@ -391,7 +391,7 @@ export class NodeGraphProcessor extends EventEmitter {
 			}
 		});
 
-		// B. Upstream Value Changes: Check if the connected source node changed value
+		// B. Check if the connected source node changed value
 		// Even if the Edge is identical, if the Source Node has a new file or index,
 		// the Target Node must update.
 		// Note: This is somewhat redundant with intrinsic changes + propagation, but kept for clarity.
@@ -444,7 +444,7 @@ export class NodeGraphProcessor extends EventEmitter {
 
 			for (const edge of incomingEdges) {
 				const result = inputs.get(edge.source);
-				if (!result) continue; // Should not happen if collectInputs is correct
+				if (!result) continue;
 
 				// Get the output item from the source
 				const outputItem = result.outputs[
@@ -517,10 +517,9 @@ export class NodeGraphProcessor extends EventEmitter {
 
 			const imageUrl = findInputData(node.id, inputs, "Image");
 
-			// Paint can handle empty input
 			const maskDataUrl = config.paintData;
 			const imageHandle = getFirstOutputHandle(node.id, "Image");
-			const maskHandle = getFirstOutputHandle(node.id, "Mask"); // Ensure this string matches DB Enum or logic
+			const maskHandle = getFirstOutputHandle(node.id, "Mask");
 
 			if (!maskHandle) throw new Error("Mask output handle missing");
 

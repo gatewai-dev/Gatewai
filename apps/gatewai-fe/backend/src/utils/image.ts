@@ -30,39 +30,6 @@ export function bufferToDataUrl(buffer: Buffer, mimeType: string): string {
 	return `data:${mimeType};base64,${buffer.toString("base64")}`;
 }
 
-export async function applyPaint(
-	baseBuffer: Buffer,
-	maskBuffer: Buffer,
-): Promise<Buffer> {
-	// Get dimensions from both images
-	const baseImage = sharp(baseBuffer);
-	const baseMetadata = await baseImage.metadata();
-
-	const maskImage = sharp(maskBuffer);
-	const maskMetadata = await maskImage.metadata();
-
-	if (
-		!baseMetadata.width ||
-		!baseMetadata.height ||
-		!maskMetadata.width ||
-		!maskMetadata.height
-	) {
-		throw new Error("Invalid image dimensions");
-	}
-
-	// Composite mask onto base image
-	const result = await baseImage
-		.composite([
-			{
-				input: await maskImage.toBuffer(),
-				blend: "over",
-			},
-		])
-		.toBuffer();
-
-	return result;
-}
-
 export async function applyBlur(
 	buffer: Buffer,
 	blurAmount: number,
