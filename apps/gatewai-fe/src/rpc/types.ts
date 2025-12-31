@@ -82,9 +82,9 @@ export type BatchDetailsRPCParams = InferRequestType<
 >;
 
 export type ImportFalAIModelRPC = InferResponseType<
-	(typeof rpcClient.api.v1.canvas[":id"]["add-fal-node"]["$post"])
+	(typeof rpcClient.api.v1.canvas)[":id"]["add-fal-node"]["$post"]
 >;
 
 export type ImportFalAIModelRPCParams = InferRequestType<
-	(typeof rpcClient.api.v1.canvas[":id"]["add-fal-node"]["$post"])
+	(typeof rpcClient.api.v1.canvas)[":id"]["add-fal-node"]["$post"]
 >;

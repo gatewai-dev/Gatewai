@@ -1,4 +1,9 @@
-import { type Handle, type NodeUpdateArgs, type NodeUpdateInput, prisma } from "@gatewai/db";
+import {
+	type Handle,
+	type NodeUpdateArgs,
+	type NodeUpdateInput,
+	prisma,
+} from "@gatewai/db";
 import { zValidator } from "@hono/zod-validator";
 import type { XYPosition } from "@xyflow/react";
 import { Hono } from "hono";
@@ -706,23 +711,23 @@ const canvasRoutes = new Hono<{ Variables: AuthHonoTypes }>({
 			const user = c.get("user");
 
 			function extractFalModel(url: string): string | null {
-			  try {
-			    const { pathname } = new URL(url);
-			
-			    // Expected: /models/{org}/{model}
-			    const parts = pathname.split('/').filter(Boolean);
-			
-			    if (parts.length >= 3 && parts[0] === 'models') {
-			      return `${parts[1]}/${parts[2]}`;
-			    }
-			
-			    return null;
-			  } catch {
-    			// Invalid URL
-    			return null;
-			  }
+				try {
+					const { pathname } = new URL(url);
+
+					// Expected: /models/{org}/{model}
+					const parts = pathname.split("/").filter(Boolean);
+
+					if (parts.length >= 3 && parts[0] === "models") {
+						return `${parts[1]}/${parts[2]}`;
+					}
+
+					return null;
+				} catch {
+					// Invalid URL
+					return null;
+				}
 			}
-			const modelName = extractFalModel(validated.modelUrl)
+			const modelName = extractFalModel(validated.modelUrl);
 			if (!modelName) {
 				throw new HTTPException(400, { message: "Invalid model url" });
 			}
@@ -743,7 +748,9 @@ const canvasRoutes = new Hono<{ Variables: AuthHonoTypes }>({
 			const apiResponse = await fetch(apiUrl);
 
 			if (!apiResponse.ok) {
-				throw new HTTPException(400, { message: "Failed to fetch OpenAPI schema" });
+				throw new HTTPException(400, {
+					message: "Failed to fetch OpenAPI schema",
+				});
 			}
 
 			const openapi: any = await apiResponse.json();
@@ -753,7 +760,9 @@ const canvasRoutes = new Hono<{ Variables: AuthHonoTypes }>({
 				throw new HTTPException(400, { message: "Invalid model schema" });
 			}
 
-			const inputRef = openapi.paths[modelPath].post.requestBody.content["application/json"].schema.$ref;
+			const inputRef =
+				openapi.paths[modelPath].post.requestBody.content["application/json"]
+					.schema.$ref;
 			const inputName = inputRef.split("/").pop();
 			const inputSchema = openapi.components.schemas[inputName];
 
@@ -766,14 +775,17 @@ const canvasRoutes = new Hono<{ Variables: AuthHonoTypes }>({
 				throw new HTTPException(400, { message: "Result schema not found" });
 			}
 
-			const outputRef = openapi.paths[resultPath].get.responses["200"].content["application/json"].schema.$ref;
+			const outputRef =
+				openapi.paths[resultPath].get.responses["200"].content[
+					"application/json"
+				].schema.$ref;
 			const outputName = outputRef.split("/").pop();
 			const outputSchema = openapi.components.schemas[outputName];
 
 			if (!outputSchema) {
 				throw new HTTPException(400, { message: "Output schema not found" });
 			}
-				// Update mode
+			// Update mode
 			const node = await prisma.node.findUnique({
 				where: { id: validated.nodeId },
 				select: { id: true, type: true, canvasId: true },
@@ -801,7 +813,7 @@ const canvasRoutes = new Hono<{ Variables: AuthHonoTypes }>({
 				data: updateData,
 				include: {
 					template: true,
-				}
+				},
 			});
 
 			const getDataType = (schema: any, allSchemas: any): string[] => {
@@ -835,7 +847,11 @@ const canvasRoutes = new Hono<{ Variables: AuthHonoTypes }>({
 						}
 						return ["File"];
 					case "object":
-						if (schema.properties?.url && schema.properties?.width && schema.properties?.height) {
+						if (
+							schema.properties?.url &&
+							schema.properties?.width &&
+							schema.properties?.height
+						) {
 							return ["Image"];
 						}
 						return ["File"];
@@ -844,7 +860,9 @@ const canvasRoutes = new Hono<{ Variables: AuthHonoTypes }>({
 				}
 			};
 
-			const inputOrder = inputSchema["x-fal-order-properties"] || Object.keys(inputSchema.properties);
+			const inputOrder =
+				inputSchema["x-fal-order-properties"] ||
+				Object.keys(inputSchema.properties);
 			const inputHandles = inputOrder
 				.map((key: string, index: number) => {
 					const prop = inputSchema.properties[key];
@@ -860,7 +878,9 @@ const canvasRoutes = new Hono<{ Variables: AuthHonoTypes }>({
 				})
 				.filter(Boolean);
 
-			const outputOrder = outputSchema["x-fal-order-properties"] || Object.keys(outputSchema.properties);
+			const outputOrder =
+				outputSchema["x-fal-order-properties"] ||
+				Object.keys(outputSchema.properties);
 			const outputHandles = outputOrder
 				.map((key: string, index: number) => {
 					const prop = outputSchema.properties[key];
@@ -884,7 +904,7 @@ const canvasRoutes = new Hono<{ Variables: AuthHonoTypes }>({
 				where: { id: validated.nodeId },
 				include: {
 					template: true,
-				}
+				},
 			});
 
 			const createdHandles = await prisma.handle.findMany({
@@ -893,13 +913,16 @@ const canvasRoutes = new Hono<{ Variables: AuthHonoTypes }>({
 				},
 				include: {
 					templateHandle: true,
-				}
-			})
+				},
+			});
 
-			return c.json({
-				handles: createdHandles,
-				node: updatedNode
-			}, 201);
+			return c.json(
+				{
+					handles: createdHandles,
+					node: updatedNode,
+				},
+				201,
+			);
 		},
 	);
 

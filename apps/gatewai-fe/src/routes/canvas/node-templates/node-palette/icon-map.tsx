@@ -1,4 +1,4 @@
-import { Fal } from '@lobehub/icons';
+import { Fal } from "@lobehub/icons";
 import {
 	PiChats,
 	PiCloudFog,
@@ -22,10 +22,7 @@ import {
 	PiUploadSimple,
 } from "react-icons/pi";
 
-export const NODE_ICON_MAP: Record<
-	string,
-	React.ComponentType
-> = {
+export const NODE_ICON_MAP: Record<string, React.ComponentType> = {
 	Text: PiTextT,
 	Preview: PiEye,
 	File: PiUploadSimple,

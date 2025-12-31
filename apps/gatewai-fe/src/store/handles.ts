@@ -24,14 +24,10 @@ const handlesSlice = createSlice({
 		setAllHandleEntities: handleAdapter.setAll,
 	},
 	extraReducers(builder) {
-		builder
-			.addCase(importModelThunk.fulfilled, (state, action) => {
-				const { handles } = action.payload;
-				handleAdapter.upsertMany(
-					state,
-					handles,
-				);
-			})
+		builder.addCase(importModelThunk.fulfilled, (state, action) => {
+			const { handles } = action.payload;
+			handleAdapter.upsertMany(state, handles);
+		});
 	},
 });
 

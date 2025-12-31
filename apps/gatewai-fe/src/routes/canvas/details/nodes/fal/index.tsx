@@ -7,15 +7,14 @@ import { BaseNode } from "../base";
 import type { BlurNode } from "../node-props";
 
 const BlurNodeComponent = memo((props: NodeProps<BlurNode>) => {
-    const node = useAppSelector(makeSelectNodeById(props.id));
-    const canvasRef = useRef<HTMLCanvasElement | null>(null);
+	const node = useAppSelector(makeSelectNodeById(props.id));
+	const canvasRef = useRef<HTMLCanvasElement | null>(null);
 
-    return (
-        <BaseNode {...props}>
-            <div className="flex flex-col gap-3">
-            </div>
-        </BaseNode>
-    );
+	return (
+		<BaseNode {...props}>
+			<div className="flex flex-col gap-3"></div>
+		</BaseNode>
+	);
 });
 
 BlurNodeComponent.displayName = "BlurNodeComponent";
