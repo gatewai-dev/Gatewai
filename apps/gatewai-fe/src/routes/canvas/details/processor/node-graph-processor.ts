@@ -705,23 +705,6 @@ export class NodeGraphProcessor extends EventEmitter {
 		}
 	}
 
-	private ensureInputsReady(nodeId: NodeEntityType["id"]): boolean {
-		const sourceNodeIds = this.getSourceNodeIDs(nodeId);
-
-		for (const sourceId of sourceNodeIds) {
-			const sourceState = this.nodeStates.get(sourceId);
-			if (
-				!sourceState?.result ||
-				sourceState.isDirty ||
-				sourceState.isProcessing
-			) {
-				return false;
-			}
-		}
-
-		return true;
-	}
-
 	private collectInputs(nodeId: NodeEntityType["id"]): Map<string, NodeResult> {
 		const inputs = new Map<string, NodeResult>();
 		const sourceNodeIds = this.getSourceNodeIDs(nodeId);
