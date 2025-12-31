@@ -200,6 +200,9 @@ importers:
       json-schema-to-zod:
         specifier: ^2.7.0
         version: 2.7.0
+      konva:
+        specifier: ^10.0.12
+        version: 10.0.12
       lodash:
         specifier: ^4.17.21
         version: 4.17.21
@@ -351,6 +354,9 @@ importers:
       vite-plugin-wasm-pack:
         specifier: ^0.1.12
         version: 0.1.12
+      webfontloader:
+        specifier: ^1.6.28
+        version: 1.6.28
 
   packages/db:
     dependencies:
@@ -7537,6 +7543,9 @@ packages:
 
   web-namespaces@2.0.1:
     resolution: {integrity: sha512-bKr1DkiNa2krS7qxNtdrtHAmzuYGFQLiQ13TsorsdT6ULTkPLKuu5+GsFpDlg6JFjUTwX2DyhMPG2be8uPrqsQ==}
+
+  webfontloader@1.6.28:
+    resolution: {integrity: sha512-Egb0oFEga6f+nSgasH3E0M405Pzn6y3/9tOVanv/DLfa1YBIgcv90L18YyWnvXkRbIM17v5Kv6IT2N6g1x5tvQ==}
 
   webpack-virtual-modules@0.6.2:
     resolution: {integrity: sha512-66/V2i5hQanC51vBQKPH4aI8NMAcBW59FVBs+rC7eGHupMyfn34q7rZIE+ETlJ+XTevqfUhVVBgSUNSW2flEUQ==}
@@ -16947,6 +16956,8 @@ snapshots:
   w3c-keyname@2.2.8: {}
 
   web-namespaces@2.0.1: {}
+
+  webfontloader@1.6.28: {}
 
   webpack-virtual-modules@0.6.2:
     optional: true

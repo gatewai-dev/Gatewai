@@ -1,5 +1,19 @@
 import type { DataType, FileAsset } from "@gatewai/db";
-
+type FileAsset = {
+    name: string;
+    id: string;
+    createdAt: Date;
+    updatedAt: Date;
+    width: number | null;
+    height: number | null;
+    bucket: string;
+    mimeType: string;
+    key: string;
+    signedUrl: string | null;
+    signedUrlExp: Date | null;
+    userId: string;
+    isUploaded: boolean;
+}
 export type FileData = {
 	entity?: FileAsset;
 	dataUrl?: string;
@@ -11,7 +25,7 @@ export type DataForType<R extends DataType> = R extends "Text"
 		? number
 		: R extends "Boolean"
 			? boolean
-			: R extends "Image" | "Video" | "Audio" | "File" | "Mask" | "VideoLayer"
+			: R extends "Image" | "Audio" | "File" | "Mask" | "VideoLayer"
 				? FileData
 				: R extends "DesignLayer"
 					? string | FileData
@@ -71,15 +85,11 @@ export type LLMResult = MultipleOutputResult & {
 };
 
 export type ResizeResult = SingleOutputResult & {
-	outputs: [{ items: [OutputItem<"Image" | "Video">] }];
+	outputs: [{ items: [OutputItem<"Image">] }];
 };
 
 export type ModulateResult = SingleOutputResult & {
-	outputs: [{ items: [OutputItem<"Image" | "Video">] }];
-};
-
-export type ThreeDResult = MultipleOutputResult & {
-	outputs: { items: [OutputItem<"File">] }[];
+	outputs: [{ items: [OutputItem<"Image">] }];
 };
 
 export type PaintResult = SingleOutputResult & {
@@ -102,10 +112,6 @@ export type CropResult = SingleOutputResult & {
 
 export type CompositorResult = SingleOutputResult & {
 	outputs: [{ items: [OutputItem<"Image">] }];
-};
-
-export type DescriberResult = SingleOutputResult & {
-	outputs: [{ items: [OutputItem<"Text">] }];
 };
 
 export type AgentOutputUnion =

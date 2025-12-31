@@ -1,4 +1,3 @@
-import { Box, CircularProgress } from "@mui/material";
 import { X } from "lucide-react";
 import { useCallback, useEffect, useRef, useState } from "react";
 import { Group, Layer, Rect, Stage } from "react-konva";
