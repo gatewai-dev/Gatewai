@@ -12,6 +12,7 @@ import type { EdgeEntityType } from "@/store/edges";
 import type { HandleEntityType } from "@/store/handles";
 import type { NodeEntityType } from "@/store/nodes";
 import { pixiProcessor } from "./pixi-service";
+import { GetAssetEndpoint } from "@/utils/file";
 
 interface ProcessorConfig {
 	nodes: Map<string, NodeEntityType>;
@@ -461,7 +462,7 @@ export class NodeGraphProcessor extends EventEmitter {
 					if (handleLabel && targetHandle.label !== handleLabel) continue;
 
 					const fileData = outputItem.data as FileData;
-					const url = fileData?.entity?.signedUrl ?? fileData?.dataUrl;
+					const url =  fileData?.entity?.signedUrl ? GetAssetEndpoint(fileData?.entity.id) : fileData?.dataUrl;
 					if (url) return url;
 				}
 			}

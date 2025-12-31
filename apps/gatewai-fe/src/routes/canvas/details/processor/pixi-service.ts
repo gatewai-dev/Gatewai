@@ -54,7 +54,10 @@ class PixiProcessorService {
 		}
 
 		// 1. Load the Texture
-		const texture = await Assets.load(imageUrl);
+		const texture = await Assets.load({
+			src: imageUrl,
+			parser: 'texture',
+		});
 
 		// Check cancellation after loading
 		if (signal?.aborted) {
@@ -127,7 +130,10 @@ class PixiProcessorService {
 		}
 
 		// 1. Load the Texture
-		const texture = await Assets.load(imageUrl);
+		const texture = await Assets.load({
+			src: imageUrl,
+			parser: 'texture',
+		});
 
 		// Check cancellation after loading
 		if (signal?.aborted) {
@@ -201,7 +207,10 @@ class PixiProcessorService {
 		}
 
 		// 1. Load the Texture
-		const texture = await Assets.load(imageUrl);
+		const texture = await Assets.load({
+			src: imageUrl,
+			parser: 'texture',
+		});
 
 		if (signal?.aborted) {
 			throw new DOMException("Operation cancelled", "AbortError");
@@ -304,7 +313,10 @@ class PixiProcessorService {
 		let baseSprite: Sprite | Graphics | undefined;
 
 		if (imageUrl) {
-			const texture = await Assets.load(imageUrl);
+			const texture = await Assets.load({
+				src: imageUrl,
+				parser: 'texture',
+			});
 			if (signal?.aborted) {
 				throw new DOMException("Operation cancelled", "AbortError");
 			}
@@ -329,7 +341,10 @@ class PixiProcessorService {
 		// 2. Load the mask texture if provided and scale to dimensions
 		let maskSprite: Sprite | undefined;
 		if (maskUrl) {
-			const maskTexture = await Assets.load(maskUrl);
+			const maskTexture = await Assets.load({
+				src: imageUrl,
+				parser: 'texture',
+			});
 			if (signal?.aborted) {
 				throw new DOMException("Operation cancelled", "AbortError");
 			}
