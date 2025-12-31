@@ -11,9 +11,9 @@ const TextNodeConfigSchema = z
 const FileNodeConfigSchema = z.object({}).strict();
 
 const IMAGEGEN_NODE_MODELS = [
-	"google/gemini-3-pro-image",
-	"google/gemini-2.5-flash-image",
-	"openai/gpt-5",
+	"google/gemini-3-pro-image", // Nano banana pro
+	"google/gemini-2.5-flash-image", // Nano banana
+	"openai/gpt-5.2", // gpt-image-1.5
 ] as const;
 const ImageGenNodeConfigSchema = z
 	.object({
@@ -33,6 +33,17 @@ const ThreeDNodeConfigSchema = z.object({}).strict();
 
 // Mask Node
 const MaskNodeConfigSchema = z.object({}).strict();
+
+const ProcessedFalConfigSchema = z.object({
+	openapi: z.any(),
+	model: z.string(),
+});
+const UnprocessedFalConfigSchema = z.object({});
+
+const FalNodeConfigSchema = z.union([
+	ProcessedFalConfigSchema,
+	UnprocessedFalConfigSchema,
+]);
 
 // Paint Node
 const PaintNodeConfigSchema = z
@@ -108,8 +119,7 @@ const RouterNodeConfigSchema = z
 	.strict();
 
 const LLM_NODE_MODELS = [
-	"openai/gpt-5-chat",
-	"openai/gpt-5-pro",
+	"openai/gpt-5.2",
 	"openai/gpt-5.1-instant",
 	"openai/gpt-5.1-thinking",
 	"google/gemini-3-pro-preview",
@@ -120,7 +130,6 @@ const LLM_NODE_MODELS = [
 	"anthropic/claude-opus-4.5",
 	"anthropic/claude-haiku-4.5",
 	"anthropic/claude-sonnet-4.5",
-	"anthropic/claude-opus-4.1",
 	"perplexity/sonar-pro",
 	"perplexity/sonar",
 	"perplexity/sonar-reasoning",
@@ -208,6 +217,7 @@ type AllNodeConfig = z.infer<typeof NodeConfigSchema>;
 type ImageGenConfig = z.infer<typeof ImageGenNodeConfigSchema>;
 type CropNodeConfig = z.infer<typeof CropNodeConfigSchema>;
 type NoteNodeConfig = z.infer<typeof NoteNodeConfigSchema>;
+type FalNodeConfig = z.infer<typeof FalNodeConfigSchema>;
 
 export {
 	NodeConfigSchema,
@@ -227,6 +237,7 @@ export {
 	ResizeNodeConfigSchema,
 	NoteNodeConfigSchema,
 	CompositorLayerUpdatesSchema,
+	FalNodeConfigSchema,
 	type TextNodeConfig,
 	type FileNodeConfig,
 	type CrawlerNodeConfig,
@@ -245,6 +256,7 @@ export {
 	type ImageGenConfig,
 	type CropNodeConfig,
 	type NoteNodeConfig,
+	type FalNodeConfig,
 	LLM_NODE_MODELS,
 	IMAGEGEN_NODE_MODELS,
 	AGENT_NODE_MODELS,

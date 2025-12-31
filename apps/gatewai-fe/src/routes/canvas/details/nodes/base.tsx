@@ -50,7 +50,7 @@ const BaseNode = memo(
 		}, [handles]);
 
 		const nodeBackgroundColor = "bg-background";
-		const Icon = NODE_ICON_MAP[node?.type] || NODE_ICON_MAP.File;
+		const Icon = NODE_ICON_MAP[node?.type](node) || NODE_ICON_MAP.File;
 
 		return (
 			<div

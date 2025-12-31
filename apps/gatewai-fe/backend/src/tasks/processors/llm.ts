@@ -1,5 +1,5 @@
 import { DataType } from "@gatewai/db";
-import type { FileData, LLMResult } from "@gatewai/types";
+import type { FileData, LLMNodeConfig, LLMResult } from "@gatewai/types";
 import {
 	generateText,
 	type ModelMessage,
@@ -59,8 +59,9 @@ const llmProcessor: NodeProcessor = async ({ node, data }) => {
 					: userContent,
 		});
 		console.log({ userContent });
+		const nodeConfig = node.config as LLMNodeConfig;
 		const result = await generateText({
-			model: "openai/gpt-5-chat",
+			model: nodeConfig.model,
 			messages,
 		});
 

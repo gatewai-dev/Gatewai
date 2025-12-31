@@ -4,7 +4,6 @@ import {
 	createSlice,
 } from "@reduxjs/toolkit";
 import type { CanvasDetailsRPC } from "@/rpc/types";
-import { importModelThunk } from "./nodes";
 
 export type HandleEntityType = CanvasDetailsRPC["handles"][number];
 
@@ -22,12 +21,6 @@ const handlesSlice = createSlice({
 		deleteManyHandleEntity: handleAdapter.removeMany,
 		addManyHandleEntities: handleAdapter.addMany,
 		setAllHandleEntities: handleAdapter.setAll,
-	},
-	extraReducers(builder) {
-		builder.addCase(importModelThunk.fulfilled, (state, action) => {
-			const { handles } = action.payload;
-			handleAdapter.upsertMany(state, handles);
-		});
 	},
 });
 

@@ -1,4 +1,14 @@
-import { Fal } from "@lobehub/icons";
+import type { ImageGenConfig, LLMNodeConfig } from "@gatewai/types";
+import {
+	Claude,
+	DeepSeek,
+	Gemini,
+	Grok,
+	MetaAI,
+	Nova,
+	OpenAI,
+	Perplexity,
+} from "@lobehub/icons";
 import {
 	PiChats,
 	PiCloudFog,
@@ -10,10 +20,10 @@ import {
 	PiFileText,
 	PiGitBranch,
 	PiHash,
+	PiImages,
 	PiMagnifyingGlass,
 	PiNote,
 	PiPaintBrushFill,
-	PiPaintBucket,
 	PiResize,
 	PiRobotLight,
 	PiStack,
@@ -21,28 +31,60 @@ import {
 	PiToggleLeft,
 	PiUploadSimple,
 } from "react-icons/pi";
+import type { NodeEntityType } from "@/store/nodes";
 
-export const NODE_ICON_MAP: Record<string, React.ComponentType> = {
-	Text: PiTextT,
-	Preview: PiEye,
-	File: PiUploadSimple,
-	Export: PiDownloadSimple,
-	Toggle: PiToggleLeft,
-	Crawler: PiMagnifyingGlass,
-	Resize: PiResize,
-	Agent: PiRobotLight,
-	ThreeD: PiCube,
-	Mask: PiFaceMask,
-	Paint: PiPaintBrushFill,
-	Crop: PiCropThin,
-	Blur: PiCloudFog,
-	Compositor: PiStack,
-	Describer: PiFileText,
-	Router: PiGitBranch,
+export const NODE_ICON_MAP: Record<
+	string,
+	(node?: NodeEntityType) => React.ComponentType
+> = {
+	Text: () => PiTextT,
+	Preview: () => PiEye,
+	File: () => PiUploadSimple,
+	Export: () => PiDownloadSimple,
+	Toggle: () => PiToggleLeft,
+	Crawler: () => PiMagnifyingGlass,
+	Resize: () => PiResize,
+	Agent: () => PiRobotLight,
+	ThreeD: () => PiCube,
+	Mask: () => PiFaceMask,
+	Paint: () => PiPaintBrushFill,
+	Crop: () => PiCropThin,
+	Blur: () => PiCloudFog,
+	Compositor: () => PiStack,
+	Describer: () => PiFileText,
+	Router: () => PiGitBranch,
 	// Add fallbacks or additional mappings as needed for other NodeTypes
-	Note: PiNote,
-	Number: PiHash,
-	ImageGen: PiPaintBucket,
-	LLM: PiChats,
-	Fal: () => <Fal.Color size={16} />,
+	Note: () => PiNote,
+	Number: () => PiHash,
+	ImageGen: (node?: NodeEntityType) => {
+		const MODEL_ICON_MAP: Record<string, React.ComponentType> = {
+			"openai/gpt-5.2": OpenAI,
+			"google/gemini-2.5-flash-image": Gemini.Color,
+			"google/gemini-3-pro-image": Gemini.Color,
+		};
+		if (node && node.type === "ImageGen") {
+			const cfg = node.config as ImageGenConfig;
+			const provider = cfg.model.split("/")[0];
+			return MODEL_ICON_MAP[provider] ?? PiImages;
+		}
+		return PiImages;
+	},
+	LLM: (node?: NodeEntityType) => {
+		const MODEL_ICON_MAP: Record<string, React.ComponentType> = {
+			openai: OpenAI,
+			google: Gemini.Color,
+			xai: Grok,
+			anthropic: Claude.Color,
+			perplexity: Perplexity.Color,
+			amazon: Nova.Color,
+			meta: MetaAI.Color,
+			deepseek: DeepSeek.Color,
+		};
+		if (node && node.type === "LLM") {
+			const cfg = node.config as LLMNodeConfig;
+			const provider = cfg.model.split("/")[0];
+			return MODEL_ICON_MAP[provider] ?? PiChats;
+		}
+		return PiChats;
+	},
 };

@@ -1,19 +1,6 @@
 import { DataType, HandleType, NodeType, type PrismaClient } from "./client";
 
 export async function SEED_createNodeTemplates(prisma: PrismaClient) {
-	// Text: no input, single output Text
-	await prisma.nodeTemplate.create({
-		data: {
-			type: NodeType.Fal,
-			displayName: "Fal AI Model",
-			description: "Run Fal AI Models",
-			tokenPrice: 0.0,
-			variableInputs: false,
-			variableOutputs: false,
-			isTerminalNode: true,
-			isTransient: false,
-		},
-	});
 	await prisma.nodeTemplate.create({
 		data: {
 			type: NodeType.Agent,
@@ -547,7 +534,7 @@ export async function SEED_createNodeTemplates(prisma: PrismaClient) {
 				],
 			},
 			defaultConfig: {
-				model: "openai/gpt-5-chat",
+				model: "openai/gpt-5.2",
 				temperature: 0,
 			},
 		},

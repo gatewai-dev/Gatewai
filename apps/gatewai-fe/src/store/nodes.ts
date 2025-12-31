@@ -1,30 +1,12 @@
 import type { AllNodeConfig, NodeResult, Output } from "@gatewai/types";
 import {
-	createAsyncThunk,
 	createDraftSafeSelector,
 	createEntityAdapter,
 	createSlice,
 	type PayloadAction,
 } from "@reduxjs/toolkit";
-import { rpcClient } from "@/rpc/client";
-import type {
-	CanvasDetailsRPC,
-	ImportFalAIModelRPC,
-	ImportFalAIModelRPCParams,
-} from "@/rpc/types";
+import type { CanvasDetailsRPC } from "@/rpc/types";
 import { getBatchDetails } from "./tasks";
-
-export const importModelThunk = createAsyncThunk<
-	ImportFalAIModelRPC,
-	ImportFalAIModelRPCParams
->("nodes/importModelThunk", async (params) => {
-	const response =
-		await rpcClient.api.v1.canvas[":id"]["add-fal-node"].$post(params);
-	if (!response.ok) {
-		throw new Error(await response.text());
-	}
-	return await response.json();
-});
 
 export type NodeEntityType = CanvasDetailsRPC["nodes"][number];
 
@@ -142,26 +124,6 @@ const nodesSlice = createSlice({
 			});
 			nodeAdapter.upsertMany(state, completedNodes);
 		});
-
-		builder
-			.addCase(importModelThunk.pending, (state, action) => {
-				state.loadingNodeIds = [
-					...(state.loadingNodeIds ?? []),
-					action.meta.arg.json.nodeId,
-				];
-			})
-			.addCase(importModelThunk.rejected, (state, action) => {
-				state.loadingNodeIds = state.loadingNodeIds.filter(
-					(f) => f !== action.meta.arg.json.nodeId,
-				);
-			})
-			.addCase(importModelThunk.fulfilled, (state, action) => {
-				const { node } = action.payload;
-				nodeAdapter.upsertOne(state, node);
-				state.loadingNodeIds = state.loadingNodeIds.filter(
-					(f) => f !== action.meta.arg.json.nodeId,
-				);
-			});
 	},
 });
 
@@ -185,6 +147,11 @@ export const makeSelectAllNodeEntities = nodeSelectors.selectEntities;
 export const selectSelectedNodeIds = createDraftSafeSelector(
 	selectNodesState,
 	(nodes) => nodes.selectedNodeIds,
+);
+
+export const selectLoadingNodeIds = createDraftSafeSelector(
+	selectNodesState,
+	(nodes) => nodes.loadingNodeIds,
 );
 
 export const selectSelectedNodes = createDraftSafeSelector(

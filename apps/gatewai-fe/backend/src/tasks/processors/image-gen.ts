@@ -2,7 +2,7 @@ import { randomUUID } from "node:crypto";
 import { DataType, prisma } from "@gatewai/db";
 import type { FileData, ImageGenConfig, ImageGenResult } from "@gatewai/types";
 import {
-	generateText,
+	experimental_generateImage as generateImage,
 	type ModelMessage,
 	type TextPart,
 	type UserContent,
@@ -25,12 +25,6 @@ const imageGenProcessor: NodeProcessor = async ({ node, data }) => {
 
 		// Build messages
 		const messages: ModelMessage[] = [];
-		// IF USER DOESN'T PROVIDE PROMPT THAT REQUEST IMAGE, STILL FORCE TO GENERATE IMAGE
-		messages.push({
-			role: "system",
-			content:
-				"Generate Image with user's request. WHATEVER entered, you must generate image.",
-		});
 
 		const userContent: UserContent = [];
 
@@ -63,12 +57,12 @@ const imageGenProcessor: NodeProcessor = async ({ node, data }) => {
 
 		const config = node.config as ImageGenConfig;
 
-		const result = await generateText({
+		const result = await generateImage({
 			model: config.model ?? "google/gemini-2.5-flash-image",
-			messages,
+			prompt: userPrompt,
 		});
 
-		const imageFiles = result.files.filter((f) =>
+		const imageFiles = result.images.filter((f) =>
 			f.mediaType?.startsWith("image/"),
 		);
 

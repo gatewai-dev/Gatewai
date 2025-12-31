@@ -5,7 +5,7 @@ import { cn } from "@/lib/utils";
 import { useAppDispatch, useAppSelector } from "@/store";
 import { makeSelectEdgesByTargetNodeId } from "@/store/edges";
 import { makeSelectNodeById, updateNodeConfig } from "@/store/nodes";
-import { useNodeImageUrl, useNodeResult } from "../../processor/processor-ctx";
+import { useNodeImageUrl } from "../../processor/processor-ctx";
 import { BaseNode } from "../base";
 import type { CropNode } from "../node-props";
 

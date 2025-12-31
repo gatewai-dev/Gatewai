@@ -252,6 +252,7 @@ const CanvasProvider = ({
 
 	const onNodeConfigUpdate = useCallback(
 		(payload: { id: string; newConfig: Partial<AllNodeConfig> }) => {
+			console.log({ payload });
 			dispatch(updateNodeConfig(payload));
 			scheduleSave();
 		},

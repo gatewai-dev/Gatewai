@@ -6,38 +6,26 @@ import {
 import { zodResolver } from "@hookform/resolvers/zod";
 import { memo, useCallback, useEffect } from "react";
 import { useForm } from "react-hook-form";
-import {
-	Form,
-	FormControl,
-	FormField,
-	FormItem,
-	FormLabel,
-	FormMessage,
-} from "@/components/ui/form";
-import {
-	Select,
-	SelectContent,
-	SelectItem,
-	SelectTrigger,
-	SelectValue,
-} from "@/components/ui/select";
-import { useAppDispatch } from "@/store";
-import { type NodeEntityType, updateNodeConfig } from "@/store/nodes";
+import { Form } from "@/components/ui/form";
+import { useCanvasCtx } from "@/routes/canvas/details/ctx/canvas-ctx";
+import type { NodeEntityType } from "@/store/nodes";
+import { SelectField } from "../inputs/select";
+import { TemperatureField } from "../inputs/temperature";
 
 const LLMNodeConfigComponent = memo(({ node }: { node: NodeEntityType }) => {
-	const dispatch = useAppDispatch();
-
+	const { onNodeConfigUpdate } = useCanvasCtx();
 	const updateConfig = useCallback(
 		(cfg: LLMNodeConfig) => {
-			dispatch(updateNodeConfig({ id: node.id, newConfig: cfg }));
+			onNodeConfigUpdate({ id: node.id, newConfig: cfg });
 		},
-		[dispatch, node.id],
+		[node.id, onNodeConfigUpdate],
 	);
-
+	const nodeConfig = node.config as LLMNodeConfig;
 	const form = useForm<LLMNodeConfig>({
 		resolver: zodResolver(LLMNodeConfigSchema),
 		defaultValues: {
-			model: LLM_NODE_MODELS[0],
+			model: nodeConfig?.model,
+			temperature: nodeConfig?.temperature ?? 0,
 		},
 	});
 
@@ -49,37 +37,32 @@ const LLMNodeConfigComponent = memo(({ node }: { node: NodeEntityType }) => {
 
 	useEffect(() => {
 		const subscription = form.watch((value) => {
-			updateConfig(value as LLMNodeConfig);
+			const val = value as LLMNodeConfig;
+			if (
+				val.model !== nodeConfig?.model ||
+				val.temperature !== nodeConfig?.temperature
+			) {
+				updateConfig(val);
+			}
 		});
 		return () => subscription.unsubscribe();
-	}, [form, updateConfig]);
+	}, [form, updateConfig, nodeConfig?.model, nodeConfig?.temperature]);
 
 	return (
 		<Form {...form}>
 			<form className="space-y-6">
-				<FormField
+				<SelectField
 					control={form.control}
 					name="model"
-					render={({ field }) => (
-						<FormItem>
-							<FormLabel>Model</FormLabel>
-							<Select onValueChange={field.onChange} value={field.value}>
-								<FormControl>
-									<SelectTrigger>
-										<SelectValue placeholder="Select a model" />
-									</SelectTrigger>
-								</FormControl>
-								<SelectContent>
-									{LLM_NODE_MODELS.map((model) => (
-										<SelectItem key={model} value={model}>
-											{model}
-										</SelectItem>
-									))}
-								</SelectContent>
-							</Select>
-							<FormMessage />
-						</FormItem>
-					)}
+					label="Model"
+					placeholder="Select a model"
+					options={LLM_NODE_MODELS}
+				/>
+				<TemperatureField
+					control={form.control}
+					name="temperature"
+					info="Temperature is a value between 0 and 2 that influences the randomness of the generated text. A lower temperature (e.g., 0.2) makes the output more focused and deterministic, while a higher value (e.g., 1.0) increases creativity and variability."
+					label="Temperature"
 				/>
 			</form>
 		</Form>

@@ -29,7 +29,6 @@ enum NodeType {
   Router
   Note
   Number
-  Fal
 
   ImageGen
   LLM

@@ -34,7 +34,7 @@ export const ModeContext = createContext<{
 } | null>(null);
 
 function ReactflowContainer({ children }: ReactFlowProps) {
-	const { onEdgesChange, onNodesDelete, onNodesChange, onConnect, rfInstance } =
+	const { onEdgesChange, onNodesChange, onConnect, rfInstance } =
 		useCanvasCtx();
 	const dispatch = useAppDispatch();
 	const onSelectionChange = ({
@@ -162,7 +162,6 @@ function ReactflowContainer({ children }: ReactFlowProps) {
 					connectionMode={ConnectionMode.Loose}
 					onConnect={onConnect}
 					onSelectionChange={onSelectionChange}
-					onNodesDelete={onNodesDelete}
 					deleteKeyCode={"Delete"}
 				>
 					{children}

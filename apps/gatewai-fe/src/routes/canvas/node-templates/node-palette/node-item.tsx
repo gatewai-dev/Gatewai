@@ -47,7 +47,7 @@ export function NodeItem({ template }: { template: NodeTemplateListItemRPC }) {
 		},
 	});
 
-	const Icon = NODE_ICON_MAP[template.type] || NODE_ICON_MAP.File;
+	const Icon = NODE_ICON_MAP[template.type]() || NODE_ICON_MAP.File;
 
 	return (
 		<TooltipProvider delayDuration={500}>
@@ -58,7 +58,7 @@ export function NodeItem({ template }: { template: NodeTemplateListItemRPC }) {
 						className="node-item flex z-10 flex-col gap-2 items-center p-6 border text-center border-gray-600 rounded cursor-grab"
 						ref={draggableRef}
 					>
-						<Icon className="w-5 h-5 text-gray-400 shrink-0 " />
+						<Icon />
 						<span className="text-xs font-medium">{template.displayName}</span>
 					</div>
 				</TooltipTrigger>
