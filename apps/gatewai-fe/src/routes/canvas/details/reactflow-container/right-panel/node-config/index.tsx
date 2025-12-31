@@ -2,6 +2,7 @@ import type { NodeType } from "@gatewai/db";
 import { memo, type ReactNode } from "react";
 import { useAppSelector } from "@/store";
 import { type NodeEntityType, selectSelectedNodes } from "@/store/nodes";
+import { ImageGenNodeConfigComponent } from "./image-gen";
 import { LLMNodeConfigComponent } from "./llm/llm-config";
 
 type NodeConfigComponentProps = {
@@ -12,6 +13,7 @@ const NodeConfigFormMap: Partial<
 	Record<NodeType, (props: NodeConfigComponentProps) => ReactNode>
 > = {
 	LLM: LLMNodeConfigComponent,
+	ImageGen: ImageGenNodeConfigComponent,
 };
 
 const NodeConfigPanel = memo(() => {

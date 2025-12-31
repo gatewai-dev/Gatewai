@@ -185,7 +185,6 @@ export async function SEED_createNodeTemplates(prisma: PrismaClient) {
 		},
 	});
 
-	// Resize: file input / file output (video/image), using File for both
 	await prisma.nodeTemplate.create({
 		data: {
 			type: NodeType.Resize,
@@ -200,13 +199,13 @@ export async function SEED_createNodeTemplates(prisma: PrismaClient) {
 				create: [
 					{
 						type: HandleType.Input,
-						dataTypes: [DataType.Image, DataType.Video, DataType.Mask],
+						dataTypes: [DataType.Image],
 						required: true,
 						label: "Image",
 					},
 					{
 						type: HandleType.Output,
-						dataTypes: [DataType.File],
+						dataTypes: [DataType.Image],
 						label: "Result",
 					},
 				],

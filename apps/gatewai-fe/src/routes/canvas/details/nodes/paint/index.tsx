@@ -3,10 +3,11 @@ import type { NodeProps } from "@xyflow/react";
 import { Brush, Eraser } from "lucide-react";
 import { memo, useCallback, useEffect, useMemo, useRef, useState } from "react";
 import { Button } from "@/components/ui/button";
-import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
 import { Separator } from "@/components/ui/separator";
 import { Slider } from "@/components/ui/slider";
+import { ColorInput } from "@/components/util/color-input";
+import { cn } from "@/lib/utils";
 import { useAppSelector } from "@/store";
 import { makeSelectEdgesByTargetNodeId } from "@/store/edges";
 import { makeSelectNodeById } from "@/store/nodes";
@@ -268,11 +269,10 @@ const PaintNodeComponent = memo((props: NodeProps<PaintNode>) => {
 								</Button>
 								<div className="flex items-center gap-1">
 									<Label htmlFor="brush-color">Color</Label>
-									<Input
+									<ColorInput
 										id="brush-color"
-										type="color"
 										value={brushColor}
-										onChange={(e) => setBrushColor(e.target.value)}
+										onChange={(e) => setBrushColor(e)}
 										className="w-8 h-8 p-1 rounded border bg-background"
 									/>
 								</div>
@@ -302,18 +302,25 @@ const PaintNodeComponent = memo((props: NodeProps<PaintNode>) => {
 					</div>
 				</div>
 				<Separator />
-				{node && (
+				{node && nodeConfig?.backgroundColor && (
 					<div className="flex items-center gap-2">
 						<DimensionsConfig node={node} disabled={inputImageUrl != null} />
 						<Separator orientation="vertical" className=" h-full" />
 						<div className="flex flex-col items-start gap-1">
-							<Label htmlFor="bg-color">Background</Label>
-							<Input
+							<Label
+								htmlFor="bg-color"
+								className={cn({
+									"text-gray-600": inputImageUrl != null,
+								})}
+							>
+								Background
+							</Label>
+							<ColorInput
 								id="bg-color"
-								type="color"
+								disabled={inputImageUrl != null}
 								value={nodeConfig?.backgroundColor}
 								onChange={(e) => {
-									updateConfig({ backgroundColor: e.target.value });
+									updateConfig({ backgroundColor: e });
 								}}
 								className="w-8 h-8 p-1 rounded border bg-background"
 							/>

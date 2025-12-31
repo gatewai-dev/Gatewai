@@ -294,7 +294,7 @@ const CropNodeComponent = memo((props: NodeProps<CropNode>) => {
 				</div>
 
 				{/* Crop selection box */}
-				<button
+				<div
 					className="appearance-none absolute box-border"
 					style={{
 						left: `${crop.leftPercentage}%`,
@@ -375,7 +375,7 @@ const CropNodeComponent = memo((props: NodeProps<CropNode>) => {
 						<div className="absolute top-1/3 left-0 right-0 h-px bg-white/50" />
 						<div className="absolute top-2/3 left-0 right-0 h-px bg-white/50" />
 					</div>
-				</button>
+				</div>
 			</div>
 		</BaseNode>
 	);

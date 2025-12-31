@@ -38,18 +38,19 @@ type NodeProcessor = (params: {
 	signal: AbortSignal;
 }) => Promise<NodeResult | null>;
 
+/**
+ * Centralized graph processor - handles all node computation outside React lifecycle
+ */
 export class NodeGraphProcessor extends EventEmitter {
 	private nodes = new Map<string, NodeEntityType>();
 	private edges: EdgeEntityType[] = [];
 	private handles: HandleEntityType[] = [];
-	private prevEdges: EdgeEntityType[] = [];
+	private prevEdges: EdgeEntityType[] = []; // Added for edge change detection
 	private nodeStates = new Map<string, NodeState>();
 	private processors = new Map<string, NodeProcessor>();
 	private dependencyGraph = new Map<string, Set<string>>(); // nodeId -> downstream nodeIds
 	private reverseDependencyGraph = new Map<string, Set<string>>(); // nodeId -> upstream nodeIds
 	private isProcessing = false;
-	private pendingConfig: ProcessorConfig | null = null;
-	private processingAborted = false;
 
 	constructor() {
 		super();
@@ -64,32 +65,6 @@ export class NodeGraphProcessor extends EventEmitter {
 	 * Update graph structure from Redux store
 	 */
 	updateGraph(config: ProcessorConfig): void {
-		if (this.isProcessing) {
-			this.processingAborted = true;
-			this.nodeStates.forEach((state) => {
-				if (state.abortController) {
-					state.abortController.abort();
-				}
-				state.isDirty = false; // Prevent reprocessing old dirties
-			});
-		}
-
-		// NEW: Set (or override) pending config with the latest
-		this.pendingConfig = config;
-
-		// NEW: Apply immediately if not processing
-		if (!this.isProcessing) {
-			this.applyPending();
-		}
-	}
-
-	private applyPending(): void {
-		if (!this.pendingConfig) return;
-
-		const config = this.pendingConfig;
-		this.pendingConfig = null;
-
-		// Original update logic moved here
 		const prevNodes = new Map(this.nodes);
 		const prevEdges = [...this.prevEdges];
 
@@ -97,8 +72,10 @@ export class NodeGraphProcessor extends EventEmitter {
 		this.edges = config.edges;
 		this.handles = config.handles;
 
+		// Rebuild dependency graphs
 		this.buildDependencyGraphs();
 
+		// Find changed nodes and mark as dirty
 		config.nodes.forEach((node, id) => {
 			const prev = prevNodes.get(id);
 			this.getOrCreateNodeState(id);
@@ -112,12 +89,14 @@ export class NodeGraphProcessor extends EventEmitter {
 			}
 		});
 
+		// Clean up states for deleted nodes
 		prevNodes.forEach((_, id) => {
 			if (!this.nodes.has(id)) {
 				this.nodeStates.delete(id);
 			}
 		});
 
+		// Update prevEdges
 		this.prevEdges = [...this.edges];
 	}
 
@@ -163,8 +142,12 @@ export class NodeGraphProcessor extends EventEmitter {
 			if (!inputResult) return null;
 
 			// Extract image URL
+			const sourceHandleId = this.getSourceHandleId(inputHandle);
+
 			const output = inputResult.outputs[inputResult.selectedOutputIndex ?? 0];
-			const fileData = output?.items[0]?.data as FileData;
+			const fileData = output?.items.find(
+				(f) => f.outputHandleId === sourceHandleId,
+			)?.data as FileData;
 			const imageUrl = fileData?.entity?.signedUrl ?? fileData?.dataUrl;
 
 			if (!imageUrl) throw new Error("No image URL");
@@ -184,10 +167,14 @@ export class NodeGraphProcessor extends EventEmitter {
 			);
 
 			// Build result
-			const outputHandle = this.getOutputHandleIDs(node.id)[0];
-			if (!outputHandle) {
+			const outputHandleEntity = this.getOutputHandleEntities(node.id).find(
+				(f) => f.dataTypes.includes("Image") && f.type === "Output",
+			);
+			if (!outputHandleEntity) {
 				throw new Error("Output handle not found");
 			}
+			console.log({ outputHandleEntity, node: node.id });
+			const outputHandle = outputHandleEntity.id;
 			const newResult: NodeResult = {
 				selectedOutputIndex: 0,
 				outputs: [
@@ -215,7 +202,7 @@ export class NodeGraphProcessor extends EventEmitter {
 				: null;
 
 			const sourceHandleId = this.getSourceHandleId(inputHandle);
-			let imageUrl: string | undefined;
+			let imageUrl: string | undefined | null;
 			if (sourceNodeId) {
 				const inputResult = inputs.get(sourceNodeId);
 				if (!inputResult) return null;
@@ -227,7 +214,10 @@ export class NodeGraphProcessor extends EventEmitter {
 				)?.data as FileData;
 				imageUrl = fileData?.entity?.signedUrl ?? fileData?.dataUrl;
 
-				if (!imageUrl) throw new Error("No image URL");
+				if (!imageUrl) {
+					console.log({ inputResult });
+					throw new Error("No image URL");
+				}
 			}
 
 			const maskDataUrl = config.paintData;
@@ -290,26 +280,41 @@ export class NodeGraphProcessor extends EventEmitter {
 		});
 		// Blur processor
 		this.registerProcessor("Blur", async ({ node, inputs, signal }) => {
+			console.log({ node });
 			const inputHandleId = this.getInputHandleIDs(node.id)[0];
-			if (!inputHandleId) return null;
+			if (!inputHandleId) {
+				console.warn({ inputHandleId, nodeId: node.id });
+				return null;
+			}
 
 			const sourceNodeId = this.getSourceNodeID(node.id, inputHandleId);
-			if (!sourceNodeId) return null;
+			if (!sourceNodeId) {
+				console.warn({ sourceNodeId, nodeId: node.id });
+				return null;
+			}
 
 			const inputResult = inputs.get(sourceNodeId);
-			if (!inputResult) return null;
+			if (!inputResult) {
+				console.warn({ inputResult, nodeId: node.id });
+				return null;
+			}
 
 			const sourceHandleId = this.getSourceHandleId(inputHandleId);
-			console.log({ sourceHandleId });
-			// Get Image (or Mask)
+
 			const output = inputResult.outputs[inputResult.selectedOutputIndex ?? 0];
 			const fileData = output?.items.find(
 				(f) => f.outputHandleId === sourceHandleId,
 			)?.data as FileData;
-			const imageUrl = fileData?.dataUrl ?? fileData?.entity?.signedUrl;
-			console.log({ imageUrl, oi: output?.items, sourceHandleId });
-			if (!imageUrl) return null;
+			const imageUrl = fileData?.entity?.signedUrl ?? fileData?.dataUrl;
 
+			if (!imageUrl) throw new Error("No image URL");
+			console.log({
+				imageUrl,
+				nodeId: node.id,
+				ww: output?.items,
+				sourceHandleId,
+			});
+			if (!imageUrl) return null;
 			// Process with Pixi
 			const config = node.config as { size?: number };
 			const dataUrl = await pixiProcessor.processBlur(
@@ -319,7 +324,13 @@ export class NodeGraphProcessor extends EventEmitter {
 			);
 
 			// Attach to only output
-			const outputHandle = this.getOutputHandleIDs(node.id)[0];
+			const outputHandleEntity = this.getOutputHandleEntities(node.id).find(
+				(f) => f.dataTypes.includes("Image"),
+			);
+			if (!outputHandleEntity) {
+				throw new Error("Output handle not found");
+			}
+			const outputHandle = outputHandleEntity.id;
 			const newResult: NodeResult = {
 				selectedOutputIndex: 0,
 				outputs: [
@@ -334,7 +345,7 @@ export class NodeGraphProcessor extends EventEmitter {
 					},
 				],
 			};
-
+			console.log({ newResult });
 			return newResult;
 		});
 
@@ -386,14 +397,14 @@ export class NodeGraphProcessor extends EventEmitter {
 			const inputResult = inputs.get(sourceNodeId);
 			if (!inputResult) return null;
 			const sourceHandleId = this.getSourceHandleId(inputHandleId);
-
+			console.log({ sourceHandleId });
 			// Extract image URL
 			const output = inputResult.outputs[inputResult.selectedOutputIndex ?? 0];
 			const fileData = output?.items.find(
 				(f) => f.outputHandleId === sourceHandleId,
 			)?.data as FileData;
 			const imageUrl = fileData?.entity?.signedUrl ?? fileData?.dataUrl;
-
+			console.log({ imageUrl });
 			if (!imageUrl) return null;
 
 			// Process with Pixi
@@ -405,7 +416,13 @@ export class NodeGraphProcessor extends EventEmitter {
 			);
 
 			// Build result
-			const outputHandle = this.getOutputHandleIDs(node.id)[0];
+			const outputHandleEntity = this.getOutputHandleEntities(node.id).find(
+				(f) => f.dataTypes.includes("Image"),
+			);
+			if (!outputHandleEntity) {
+				throw new Error("Output handle not found");
+			}
+			const outputHandle = outputHandleEntity.id;
 			const newResult: NodeResult = {
 				selectedOutputIndex: 0,
 				outputs: [
@@ -574,14 +591,16 @@ export class NodeGraphProcessor extends EventEmitter {
 	private markDirty(nodeId: NodeEntityType["id"], cascade: boolean): void {
 		const state = this.getOrCreateNodeState(nodeId);
 
-		// MOD: Remove manual isProcessing=false set (let finally handle it)
+		// Cancel if already processing
 		if (state.isProcessing && state.abortController) {
 			state.abortController.abort();
+			state.isProcessing = false;
 		}
 
 		state.isDirty = true;
-		state.result = null;
+		state.result = null; // Added: Invalidate previous result on dirty
 
+		// Cascade to downstream nodes
 		if (cascade) {
 			const downstream = Array.from(
 				this.dependencyGraph.get(nodeId) ?? new Set(),
@@ -595,6 +614,7 @@ export class NodeGraphProcessor extends EventEmitter {
 			});
 		}
 
+		// Trigger processing
 		this.startProcessing();
 	}
 
@@ -602,16 +622,16 @@ export class NodeGraphProcessor extends EventEmitter {
 		if (this.isProcessing) return;
 		this.isProcessing = true;
 
-		// NEW: Reset abort flag at start
-		this.processingAborted = false;
-
 		try {
 			while (true) {
+				// Collect dirty node IDs
 				const dirtyIds = Array.from(this.nodeStates.entries())
 					.filter(([, state]) => state.isDirty)
 					.map(([id]) => id);
+				console.log({ dirtyIds });
 				if (dirtyIds.length === 0) break;
 
+				// Compute necessary nodes: dirty + upstream dependencies that need processing
 				const necessary = new Set<string>();
 				const queue: string[] = [...dirtyIds];
 				while (queue.length > 0) {
@@ -631,6 +651,7 @@ export class NodeGraphProcessor extends EventEmitter {
 
 				const necessaryIds = Array.from(necessary);
 
+				// Mark upstream nodes as dirty if they lack results
 				necessaryIds.forEach((id) => {
 					const state = this.getOrCreateNodeState(id);
 					if (!state.result) {
@@ -652,13 +673,15 @@ export class NodeGraphProcessor extends EventEmitter {
 					return;
 				}
 
+				// Process nodes in topological order
 				for (const nodeId of topoOrder) {
-					// NEW: Check for global abort and skip remaining nodes
-					if (this.processingAborted) break;
-
 					const state = this.getOrCreateNodeState(nodeId);
 					if (!state.isDirty) continue;
 
+					// Inputs should be ready due to topo order, but verify
+					if (!this.ensureInputsReady(nodeId)) {
+						console.warn(`Inputs not ready for node ${nodeId}`);
+					}
 					if (state.isProcessing) continue;
 
 					state.isProcessing = true;
@@ -675,17 +698,20 @@ export class NodeGraphProcessor extends EventEmitter {
 						}
 
 						const inputs = this.collectInputs(nodeId);
+						console.log("node:start", { nodeId, inputs });
 						const result = await processor({
 							node,
 							inputs,
 							signal: state.abortController.signal,
 						});
+						console.log("node:processed", { nodeId, result });
 						state.result = result;
 						state.isDirty = false;
 						this.emit("node:processed", { nodeId, result });
 					} catch (error) {
 						if (error instanceof Error && error.name === "AbortError") {
-							// MOD: Do not set isDirty=false on abort (handled by caller context)
+							// Cancelled - will be re-queued in next while iteration
+							state.isDirty = false;
 						} else {
 							state.error =
 								error instanceof Error ? error.message : "Unknown error";
@@ -700,9 +726,24 @@ export class NodeGraphProcessor extends EventEmitter {
 			}
 		} finally {
 			this.isProcessing = false;
-			// NEW: Apply any pending updates after finishing
-			this.applyPending();
 		}
+	}
+
+	private ensureInputsReady(nodeId: NodeEntityType["id"]): boolean {
+		const sourceNodeIds = this.getSourceNodeIDs(nodeId);
+
+		for (const sourceId of sourceNodeIds) {
+			const sourceState = this.nodeStates.get(sourceId);
+			if (
+				!sourceState?.result ||
+				sourceState.isDirty ||
+				sourceState.isProcessing
+			) {
+				return false;
+			}
+		}
+
+		return true;
 	}
 
 	private collectInputs(nodeId: NodeEntityType["id"]): Map<string, NodeResult> {
@@ -748,20 +789,14 @@ export class NodeGraphProcessor extends EventEmitter {
 		);
 	}
 
-	private getOutputHandleIDs(nodeId: NodeEntityType["id"]): string[] {
-		return Array.from(
-			new Set(
-				this.handles
-					.filter((e) => e.nodeId === nodeId && e.type === "Output")
-					.map((e) => e.id),
-			),
-		);
-	}
-
 	private getOutputHandleEntities(
 		nodeId: NodeEntityType["id"],
 	): HandleEntityType[] {
-		return Array.from(new Set(this.handles.filter((e) => e.nodeId === nodeId)));
+		return Array.from(
+			new Set(
+				this.handles.filter((e) => e.nodeId === nodeId && e.type === "Output"),
+			),
+		);
 	}
 
 	/**

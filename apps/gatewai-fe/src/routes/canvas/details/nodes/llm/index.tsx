@@ -1,6 +1,7 @@
 import type { LLMResult } from "@gatewai/types";
 import type { NodeProps } from "@xyflow/react";
 import { memo, useMemo } from "react";
+import { ScrollArea } from "@/components/ui/scroll-area";
 import { MarkdownRenderer } from "../../components/markdown-renderer";
 import { RunNodeButton } from "../../components/run-node-button";
 import { useNodeResult } from "../../processor/processor-ctx";
@@ -23,7 +24,14 @@ const LlmNodeComponent = memo((props: NodeProps<LLMNode>) => {
 	return (
 		<BaseNode {...props}>
 			<div className="flex flex-col gap-2 items-end nowheel">
-				{llmTextContent && <MarkdownRenderer markdown={llmTextContent} />}
+				{llmTextContent && (
+					<ScrollArea
+						viewPortCn="max-h-[350px]"
+						className="text-xs bg-input p-2  w-full "
+					>
+						<MarkdownRenderer markdown={llmTextContent} />
+					</ScrollArea>
+				)}
 				{!llmTextContent && (
 					<div className="min-h-[200px] w-full bg-input max-h-full p-2">
 						<p className="text-xs text-gray-500">

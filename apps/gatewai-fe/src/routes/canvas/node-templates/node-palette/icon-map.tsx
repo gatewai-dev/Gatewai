@@ -58,9 +58,8 @@ export const NODE_ICON_MAP: Record<
 	Number: () => PiHash,
 	ImageGen: (node?: NodeEntityType) => {
 		const MODEL_ICON_MAP: Record<string, React.ComponentType> = {
-			"openai/gpt-5.2": OpenAI,
-			"google/gemini-2.5-flash-image": Gemini.Color,
-			"google/gemini-3-pro-image": Gemini.Color,
+			openai: OpenAI,
+			google: Gemini.Color,
 		};
 		if (node && node.type === "ImageGen") {
 			const cfg = node.config as ImageGenConfig;
