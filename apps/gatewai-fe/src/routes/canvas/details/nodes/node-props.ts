@@ -19,12 +19,12 @@ import type {
 	NoteNodeConfig,
 	PaintNodeConfig,
 	PaintResult,
+	PreviewNodeConfig,
 	ResizeNodeConfig,
 	ResizeResult,
 	TextNodeConfig,
 	TextResult,
 	ThreeDNodeConfig,
-	PreviewNodeConfig,
 } from "@gatewai/types";
 import type { Node } from "@xyflow/react";
 
@@ -36,7 +36,6 @@ export type PreviewNode = Node<
 	NodeWithFileType<PreviewNodeConfig, NodeResult>,
 	"Preview"
 >;
-
 
 export type LLMNode = Node<NodeWithFileType<LLMNodeConfig, TextResult>, "LLM">;
 export type ImageGenNode = Node<
