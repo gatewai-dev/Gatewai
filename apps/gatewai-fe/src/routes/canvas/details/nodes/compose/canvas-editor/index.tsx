@@ -6,6 +6,7 @@ import type {
 	OutputItem,
 } from "@gatewai/types";
 import type Konva from "konva";
+import { ImageIcon, TextIcon } from "lucide-react";
 import type React from "react";
 import {
 	createContext,
@@ -26,8 +27,6 @@ import {
 	Transformer,
 } from "react-konva";
 import useImage from "use-image";
-import WebFont from "webfontloader";
-import { Checkbox } from "@/components/ui/checkbox";
 import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
 import {
@@ -37,7 +36,8 @@ import {
 	SelectTrigger,
 	SelectValue,
 } from "@/components/ui/select";
-import { generateId } from "@/lib/idgen";
+import { Slider } from "@/components/ui/slider";
+import { Switch } from "@/components/ui/switch";
 import { BLEND_MODES } from "@/routes/canvas/blend-modes";
 import type { HandleEntityType } from "@/store/handles";
 import type { NodeEntityType } from "@/store/nodes";
@@ -61,8 +61,9 @@ interface EditorContextType {
 	setEditingLayerId: (id: string | null) => void;
 	stageRef: React.RefObject<Konva.Stage | null>;
 
-	getTextData: (handleId: string) => string;
-	getImageUrl: (handleId: string) => string;
+	getTextData: (handleId: HandleEntityType["id"]) => string;
+	getImageData: (handleId: HandleEntityType["id"]) => FileData;
+	getImageUrl: (handleId: HandleEntityType["id"]) => string | undefined;
 }
 
 interface Guide {
@@ -80,21 +81,6 @@ const useEditor = () => {
 	return context;
 };
 
-// Font loading hook
-const useFontLoader = (fontFamilies: string[]) => {
-	useEffect(() => {
-		if (fontFamilies.length > 0) {
-			WebFont.load({
-				google: {
-					families: fontFamilies,
-				},
-				active: () => console.log("Fonts loaded"),
-				inactive: () => console.error("Fonts failed to load"),
-			});
-		}
-	}, [fontFamilies]);
-};
-
 // Snap logic hook
 const useSnap = () => {
 	const { layers, setLayers, viewportWidth, viewportHeight, setGuides } =
@@ -106,7 +92,7 @@ const useSnap = () => {
 			const hSnaps: number[] = [0, viewportHeight / 2, viewportHeight]; // Canvas edges and center
 			const vSnaps: number[] = [0, viewportWidth / 2, viewportWidth];
 			layers.forEach((layer) => {
-				if (layer.id !== excludeId) {
+				if (layer.id !== excludeId && layer.width && layer.height) {
 					const centerX = layer.x + (layer.width * layer.scaleX) / 2;
 					const centerY = layer.y + (layer.height * layer.scaleY) / 2;
 					vSnaps.push(layer.x, centerX, layer.x + layer.width * layer.scaleX);
@@ -227,7 +213,7 @@ const ImageLayer: React.FC<LayerProps> = ({
 	const [image] = useImage(url, "anonymous");
 
 	useEffect(() => {
-		if (image && (layer.width === 200 || layer.height === 200)) {
+		if (image && (!layer.width || !layer.height)) {
 			setLayers((prev) =>
 				prev.map((l) =>
 					l.id === layer.id
@@ -268,10 +254,10 @@ const ImageLayer: React.FC<LayerProps> = ({
 const TextLayer: React.FC<
 	LayerProps & { layer: CompositorLayer & { type: "Text" } }
 > = ({ layer, onDragMove, onDragEnd, onTransformEnd }) => {
-	const { setSelectedId, setIsEditingText, setEditingLayerId, getImageUrl } =
+	const { setSelectedId, setIsEditingText, setEditingLayerId, getTextData } =
 		useEditor();
 
-	const text = getImageUrl(layer.inputHandleId);
+	const text = getTextData(layer.inputHandleId);
 	const handleSelect = () => {
 		setSelectedId(layer.id);
 	};
@@ -289,9 +275,9 @@ const TextLayer: React.FC<
 			y={layer.y}
 			text={text as string}
 			fontSize={layer.fontSize || 24}
-			fontFamily={layer.fontFamily || "Arial"}
-			fill={layer.fill || "black"}
-			width={layer.width}
+			fontFamily={layer.fontFamily || "sans-serif"}
+			fill={layer.fill || "#000000"}
+			width={layer.width || 200}
 			height={layer.height}
 			rotation={layer.rotation}
 			scaleX={layer.scaleX}
@@ -324,39 +310,25 @@ const TransformerComponent: React.FC = () => {
 		}
 	}, [selectedId, stageRef]);
 
-	const handleTransform = useCallback(
-		(e: Konva.KonvaEventObject<Event>) => {
-			const node = e.target;
-			const layer = layers.find((l) => l.id === node.id());
-			if (
-				layer &&
-				layer.type === "Image" &&
-				layer.lockAspect &&
-				!(e.evt as MouseEvent).shiftKey
-			) {
-				// Maintain aspect ratio
-				const scaleX = node.scaleX();
-				const scaleY = node.scaleY();
-				const uniformScale = Math.max(scaleX, scaleY);
-				node.scaleX(uniformScale);
-				node.scaleY(uniformScale);
-			}
-		},
-		[layers],
-	);
+	const selectedLayer = layers.find((l) => l.id === selectedId);
 
 	return (
 		<Transformer
 			ref={trRef}
 			rotateEnabled
 			flipEnabled={false}
+			keepRatio={selectedLayer?.type === "Image" && selectedLayer.lockAspect}
+			enabledAnchors={
+				selectedLayer?.type === "Image" && selectedLayer.lockAspect
+					? ["top-left", "top-right", "bottom-left", "bottom-right"]
+					: undefined
+			}
 			boundBoxFunc={(oldBox, newBox) => {
 				if (newBox.width < 5 || newBox.height < 5) {
 					return oldBox;
 				}
 				return newBox;
 			}}
-			onTransform={handleTransform}
 		/>
 	);
 };
@@ -374,7 +346,7 @@ const Guides: React.FC = () => {
 							? [guide.position, 0, guide.position, viewportHeight]
 							: [0, guide.position, viewportWidth, guide.position]
 					}
-					stroke="blue"
+					stroke="#888888"
 					strokeWidth={1}
 					dash={[4, 4]}
 				/>
@@ -403,7 +375,7 @@ const Canvas: React.FC = () => {
 				ref={stageRef}
 				width={viewportWidth}
 				height={viewportHeight}
-				style={{ background: "transparent" }}
+				style={{ background: "transparent", cursor: "crosshair" }}
 				onClick={handleStageClick}
 				onTap={handleStageClick}
 			>
@@ -448,48 +420,13 @@ const Canvas: React.FC = () => {
 	);
 };
 
-// Viewport Controls
-const ViewportControls: React.FC = () => {
-	const { viewportWidth, setViewportWidth, viewportHeight, setViewportHeight } =
-		useEditor();
-	return (
-		<div style={{ position: "absolute", top: 10, right: 10, zIndex: 10 }}>
-			<Input
-				type="number"
-				value={viewportWidth}
-				onChange={(e) => setViewportWidth(parseInt(e.target.value, 10) || 800)}
-				placeholder="Width"
-				style={{ marginRight: "8px" }}
-			/>
-			<Input
-				type="number"
-				value={viewportHeight}
-				onChange={(e) => setViewportHeight(parseInt(e.target.value, 10) || 600)}
-				placeholder="Height"
-			/>
-		</div>
-	);
-};
-
 // Layers Panel (Left sidebar like Figma)
 const LayersPanel: React.FC = () => {
 	const { layers, setSelectedId, selectedId } = useEditor();
 	return (
-		<div
-			style={{
-				width: 200,
-				height: "100vh",
-				overflowY: "auto",
-				background: "#f0f0f0",
-				position: "absolute",
-				left: 0,
-				top: 0,
-				padding: "16px",
-				boxSizing: "border-box",
-			}}
-		>
-			<h3 style={{ marginBottom: "8px" }}>Layers</h3>
-			<ul style={{ listStyle: "none", padding: 0 }}>
+		<div className="absolute left-0 top-0 bottom-0 w-56 overflow-y-auto bg-background p-2 border border-gray-700 z-10 text-xs">
+			<h3 className="mb-4 text-xl font-bold text-gray-100">Layers</h3>
+			<ul className="space-y-2">
 				{layers.map((layer) => (
 					<li
 						key={layer.id}
@@ -501,12 +438,15 @@ const LayersPanel: React.FC = () => {
 						}}
 						tabIndex={0}
 						role="button"
-						style={{
-							cursor: "pointer",
-							padding: "4px",
-							background: layer.id === selectedId ? "#ddd" : "transparent",
-						}}
+						className={`cursor-pointer flex items-center gap-2 p-2 transition-colors duration-200 hover:bg-gray-800 ${
+							layer.id === selectedId ? "bg-gray-800" : ""
+						}`}
 					>
+						{layer.type === "Image" ? (
+							<ImageIcon className="size-4" />
+						) : (
+							<TextIcon className="size-4" />
+						)}{" "}
 						{layer.type.charAt(0).toUpperCase() + layer.type.slice(1)} -{" "}
 						{layer.id.slice(0, 6)}
 					</li>
@@ -516,12 +456,18 @@ const LayersPanel: React.FC = () => {
 	);
 };
 
-// Properties Panel (Right sidebar like Figma)
-const PropertiesPanel: React.FC = () => {
-	const { selectedId, layers, setLayers } = useEditor();
+// Inspector Panel (Right sidebar like Figma)
+const InspectorPanel: React.FC = () => {
+	const {
+		selectedId,
+		layers,
+		setLayers,
+		viewportWidth,
+		setViewportWidth,
+		viewportHeight,
+		setViewportHeight,
+	} = useEditor();
 	const selectedLayer = layers.find((l) => l.id === selectedId);
-
-	if (!selectedLayer) return null;
 
 	const updateLayer = (updates: Partial<CompositorLayer>) => {
 		setLayers((prev) =>
@@ -529,149 +475,191 @@ const PropertiesPanel: React.FC = () => {
 		);
 	};
 
+	let computedWidth = 0;
+	let computedHeight = 0;
+	if (selectedLayer) {
+		computedWidth = (selectedLayer.width ?? 0) * selectedLayer.scaleX;
+		computedHeight = (selectedLayer.height ?? 0) * selectedLayer.scaleY;
+	}
+
 	return (
-		<div
-			style={{
-				width: 200,
-				height: "100vh",
-				overflowY: "auto",
-				background: "#f0f0f0",
-				position: "absolute",
-				right: 0,
-				top: 0,
-				padding: "16px",
-				boxSizing: "border-box",
-			}}
-		>
-			<h3 style={{ marginBottom: "8px" }}>Properties</h3>
-			<div style={{ display: "flex", flexDirection: "column", gap: "8px" }}>
+		<div className="absolute right-0 top-0 bottom-0 w-56 overflow-y-auto bg-background p-4 border border-gray-700 z-10 text-gray-200">
+			<h3 className="mb-4 text-xl font-bold text-gray-100">Inspector</h3>
+			<div className="space-y-4">
 				<div className="flex flex-col gap-1">
-					<Label htmlFor="x">X:</Label>
+					<Label htmlFor="canvas-width">Canvas Width:</Label>
 					<Input
-						id="x"
-						type="number"
-						value={selectedLayer.x}
+						id="canvas-width"
+						type="text"
+						value={viewportWidth}
 						onChange={(e) =>
-							updateLayer({ x: parseFloat(e.target.value) || 0 })
+							setViewportWidth(parseFloat(e.target.value) || 800)
 						}
+						placeholder="Width"
+						className="w-full"
 					/>
 				</div>
 				<div className="flex flex-col gap-1">
-					<Label htmlFor="y">Y:</Label>
+					<Label htmlFor="canvas-height">Canvas Height:</Label>
 					<Input
-						id="y"
-						type="number"
-						value={selectedLayer.y}
+						id="canvas-height"
+						type="text"
+						value={viewportHeight}
 						onChange={(e) =>
-							updateLayer({ y: parseFloat(e.target.value) || 0 })
+							setViewportHeight(parseFloat(e.target.value) || 600)
 						}
+						placeholder="Height"
+						className="w-full"
 					/>
 				</div>
-				<div className="flex flex-col gap-1">
-					<Label htmlFor="width">Width:</Label>
-					<Input
-						id="width"
-						type="number"
-						value={selectedLayer.width * selectedLayer.scaleX}
-						onChange={(e) => {
-							const newWidth =
-								parseFloat(e.target.value) || selectedLayer.width;
-							updateLayer({ scaleX: newWidth / selectedLayer.width });
-						}}
-					/>
-				</div>
-				<div className="flex flex-col gap-1">
-					<Label htmlFor="height">Height:</Label>
-					<Input
-						id="height"
-						type="number"
-						value={selectedLayer.height * selectedLayer.scaleY}
-						onChange={(e) => {
-							const newHeight =
-								parseFloat(e.target.value) || selectedLayer.height;
-							updateLayer({ scaleY: newHeight / selectedLayer.height });
-						}}
-					/>
-				</div>
-				<div className="flex flex-col gap-1">
-					<Label htmlFor="rotation">Rotation:</Label>
-					<Input
-						id="rotation"
-						type="number"
-						value={selectedLayer.rotation}
-						onChange={(e) =>
-							updateLayer({ rotation: parseFloat(e.target.value) || 0 })
-						}
-					/>
-				</div>
-				<div className="flex flex-col gap-1">
-					<Label htmlFor="blendMode">Blending Mode:</Label>
-					<Select
-						value={selectedLayer.blendMode}
-						onValueChange={(value) => updateLayer({ blendMode: value })}
-					>
-						<SelectTrigger id="blendMode">
-							<SelectValue />
-						</SelectTrigger>
-						<SelectContent>
-							{blendModes.map((mode) => (
-								<SelectItem key={mode} value={mode}>
-									{mode}
-								</SelectItem>
-							))}
-						</SelectContent>
-					</Select>
-				</div>
-				{selectedLayer.type === "Text" && (
+				{selectedLayer && (
 					<>
+						<hr className="my-4 border-gray-600" />
+						<h4 className="mb-2 text-lg font-semibold text-gray-100">
+							Layer Properties
+						</h4>
 						<div className="flex flex-col gap-1">
-							<Label htmlFor="fontSize">Font Size:</Label>
+							<Label htmlFor="x">X:</Label>
 							<Input
-								id="fontSize"
-								type="number"
-								value={selectedLayer.fontSize}
+								id="x"
+								type="text"
+								value={selectedLayer.x}
 								onChange={(e) =>
-									updateLayer({ fontSize: parseFloat(e.target.value) || 24 })
+									updateLayer({ x: parseFloat(e.target.value) || 0 })
 								}
 							/>
 						</div>
 						<div className="flex flex-col gap-1">
-							<Label htmlFor="fontFamily">Font Family:</Label>
+							<Label htmlFor="y">Y:</Label>
 							<Input
-								id="fontFamily"
-								value={selectedLayer.fontFamily}
-								onChange={(e) => updateLayer({ fontFamily: e.target.value })}
+								id="y"
+								type="text"
+								value={selectedLayer.y}
+								onChange={(e) =>
+									updateLayer({ y: parseFloat(e.target.value) || 0 })
+								}
 							/>
 						</div>
 						<div className="flex flex-col gap-1">
-							<Label htmlFor="color">Color:</Label>
-							<input
-								id="color"
-								type="color"
-								value={selectedLayer.fill}
-								onChange={(e) => updateLayer({ fill: e.target.value })}
+							<Label htmlFor="width">Width:</Label>
+							<Input
+								id="width"
+								type="text"
+								value={computedWidth}
+								onChange={(e) => {
+									const newWidth =
+										parseFloat(e.target.value) ?? selectedLayer.width ?? 0;
+									updateLayer({
+										scaleX: newWidth / (selectedLayer.width ?? 1),
+									});
+								}}
 							/>
 						</div>
+						{selectedLayer.type === "Image" && (
+							<div className="flex flex-col gap-1">
+								<Label htmlFor="height">Height:</Label>
+								<Input
+									id="height"
+									type="text"
+									value={computedHeight}
+									onChange={(e) => {
+										const newHeight =
+											parseFloat(e.target.value) ?? selectedLayer.height ?? 0;
+										updateLayer({
+											scaleY: newHeight / (selectedLayer.height ?? 1),
+										});
+									}}
+								/>
+							</div>
+						)}
+						<div className="flex flex-col gap-1">
+							<Label htmlFor="rotation">Rotation:</Label>
+							<Slider
+								id="rotation"
+								value={[selectedLayer.rotation]}
+								onValueChange={(v) => updateLayer({ rotation: v[0] })}
+								min={-360}
+								max={360}
+								step={1}
+							/>
+							<div className="text-sm text-gray-400 mt-1">
+								{selectedLayer.rotation.toFixed(2)}°
+							</div>
+						</div>
+						<div className="flex flex-col gap-1">
+							<Label htmlFor="blendMode">Blending Mode:</Label>
+							<Select
+								value={selectedLayer.blendMode}
+								onValueChange={(value) => updateLayer({ blendMode: value })}
+							>
+								<SelectTrigger id="blendMode">
+									<SelectValue />
+								</SelectTrigger>
+								<SelectContent>
+									{blendModes.map((mode) => (
+										<SelectItem key={mode} value={mode}>
+											{mode}
+										</SelectItem>
+									))}
+								</SelectContent>
+							</Select>
+						</div>
+						{selectedLayer.type === "Text" && (
+							<>
+								<div className="flex flex-col gap-1">
+									<Label htmlFor="fontSize">Font Size:</Label>
+									<Slider
+										id="fontSize"
+										value={[selectedLayer.fontSize || 24]}
+										onValueChange={(v) => updateLayer({ fontSize: v[0] })}
+										min={8}
+										max={72}
+										step={1}
+									/>
+									<div className="text-sm text-gray-400 mt-1">
+										{(selectedLayer.fontSize || 24).toFixed(2)}px
+									</div>
+								</div>
+								<div className="flex flex-col gap-1">
+									<Label htmlFor="fontFamily">Font Family:</Label>
+									<Input
+										id="fontFamily"
+										value={selectedLayer.fontFamily}
+										onChange={(e) =>
+											updateLayer({ fontFamily: e.target.value })
+										}
+									/>
+								</div>
+								<div className="flex flex-col gap-1">
+									<Label htmlFor="color">Color:</Label>
+									<input
+										id="color"
+										type="color"
+										value={selectedLayer.fill}
+										onChange={(e) => updateLayer({ fill: e.target.value })}
+										className="w-full h-8 cursor-pointer"
+									/>
+								</div>
+							</>
+						)}
+						{selectedLayer.type === "Image" && (
+							<div className="flex items-center space-x-2">
+								<Switch
+									id="lockAspect"
+									checked={selectedLayer.lockAspect ?? true}
+									onCheckedChange={(checked) =>
+										updateLayer({ lockAspect: checked })
+									}
+								/>
+								<Label htmlFor="lockAspect">Lock Aspect Ratio</Label>
+							</div>
+						)}
 					</>
-				)}
-				{selectedLayer.type === "Image" && (
-					<div className="flex items-center space-x-2">
-						<Checkbox
-							id="lockAspect"
-							checked={selectedLayer.lockAspect ?? true}
-							onCheckedChange={(checked) =>
-								updateLayer({ lockAspect: checked as boolean })
-							}
-						/>
-						<Label htmlFor="lockAspect">Lock Aspect</Label>
-					</div>
 				)}
 			</div>
 		</div>
 	);
 };
-
-// Main Editor Component
 interface CanvasDesignerEditorProps {
 	initialLayers: Map<
 		HandleEntityType["id"],
@@ -701,26 +689,34 @@ export const CanvasDesignerEditor: React.FC<CanvasDesignerEditorProps> = ({
 		return layerData.data;
 	};
 
-	const getImageUrl = (handleId: string) => {
-		const layerData = initialLayers.get(handleId) as OutputItem<"Image">;
-		if (!layerData) {
-			return "";
-		}
-		if (layerData.data.processData?.dataUrl)
-			return layerData.data.processData?.dataUrl;
-		if (layerData.data.entity?.signedUrl) {
-			return GetAssetEndpoint(layerData.data.entity?.signedUrl);
-		}
-		throw new Error("Image data is missing");
-	};
+	const getImageData = useCallback(
+		(handleId: string) => {
+			const layerData = initialLayers.get(handleId) as OutputItem<"Image">;
+			return layerData?.data ?? {};
+		},
+		[initialLayers],
+	);
+
+	const getImageUrl = useCallback(
+		(handleId: string) => {
+			const layerData = initialLayers.get(handleId) as OutputItem<"Image">;
+			if (layerData?.data.entity) {
+				return GetAssetEndpoint(layerData.data.entity.id);
+			}
+			return layerData?.data?.processData?.dataUrl;
+		},
+		[initialLayers],
+	);
 
 	// Load initial layers
 	useEffect(() => {
-		const newLayers: CompositorLayer[] = [];
-		const existingConfig = node.config as CompositorNodeConfig;
-		const duplicateConfig = { ...existingConfig };
+		const existingConfig = (node.config as CompositorNodeConfig) ?? {
+			layerUpdates: {},
+		};
+		const layerUpdates = { ...existingConfig.layerUpdates };
+
 		initialLayers.forEach((output, handleId) => {
-			if (!duplicateConfig.layerUpdates[handleId]) {
+			if (!layerUpdates[handleId]) {
 				const newLayer: CompositorLayer = {
 					type: output.type,
 					scaleX: 1,
@@ -729,27 +725,38 @@ export const CanvasDesignerEditor: React.FC<CanvasDesignerEditorProps> = ({
 					height: undefined,
 					x: 0,
 					y: 0,
-					id: generateId(),
+					id: handleId,
 					inputHandleId: handleId,
 					rotation: 0,
-					lockAspect: false,
+					lockAspect: true,
 					blendMode: "source-over",
 				};
-				duplicateConfig.layerUpdates[handleId] = newLayer;
+				if (newLayer.type === "Text") {
+					newLayer.width = 200;
+					newLayer.fontSize = 24;
+					newLayer.fontFamily = "sans-serif";
+					newLayer.fill = "#000000";
+				}
+				if (newLayer.type === "Image") {
+					const fData = getImageData(handleId);
+					if (fData.entity) {
+						newLayer.width = fData.entity.width ?? 200;
+						newLayer.height = fData.entity.height ?? 200;
+					} else if (fData.processData) {
+						newLayer.width = fData.processData.width ?? 200;
+						newLayer.height = fData.processData.height ?? 200;
+					} else {
+						newLayer.width = 200;
+						newLayer.height = 200;
+					}
+				}
+				layerUpdates[handleId] = newLayer;
 			}
 		});
-		setLayers(newLayers);
-	}, [initialLayers, node.config]);
 
-	// Compute unique fonts from current layers and load them
-	const fonts = Array.from(
-		new Set(
-			layers
-				.filter((l) => l.type === "Text")
-				.map((l) => l.fontFamily || "Arial"),
-		),
-	);
-	useFontLoader(fonts);
+		setLayers(Object.values(layerUpdates));
+		// Note: In a full implementation, update node.config with layerUpdates on changes
+	}, [initialLayers, node.config, getImageData]);
 
 	return (
 		<EditorContext.Provider
@@ -770,38 +777,33 @@ export const CanvasDesignerEditor: React.FC<CanvasDesignerEditorProps> = ({
 				setEditingLayerId,
 				stageRef,
 				getTextData,
+				getImageData,
 				getImageUrl,
 			}}
 		>
-			<div
-				style={{
-					display: "flex",
-					justifyContent: "center",
-					alignItems: "center",
-					height: "100vh",
-					position: "relative",
-					overflow: "hidden",
-				}}
-			>
+			<div className="flex justify-center items-center h-screen w-screen bg-background overflow-hidden relative">
 				<LayersPanel />
 				<div
-					className="checkered-background"
+					className="relative border border-gray-700 overflow-hidden"
 					style={{
 						width: viewportWidth,
 						height: viewportHeight,
-						backgroundImage: `
-              linear-gradient(45deg, #ccc 25%, transparent 25%, transparent 75%, #ccc 75%),
-              linear-gradient(45deg, #ccc 25%, transparent 25%, transparent 75%, #ccc 75%)
-            `,
-						backgroundSize: "20px 20px",
-						backgroundPosition: "0 0, 10px 10px",
-						position: "relative",
 					}}
 				>
+					<div
+						className="absolute inset-0 checkered-background"
+						style={{
+							backgroundImage: `
+								linear-gradient(45deg, #333333 25%, #222222 25%, #222222 75%, #333333 75%),
+								linear-gradient(45deg, #333333 25%, #222222 25%, #222222 75%, #333333 75%)
+							`,
+							backgroundSize: "40px 40px",
+							backgroundPosition: "0 0, 20px 20px",
+						}}
+					/>
 					<Canvas />
 				</div>
-				<PropertiesPanel />
-				<ViewportControls />
+				<InspectorPanel />
 			</div>
 		</EditorContext.Provider>
 	);

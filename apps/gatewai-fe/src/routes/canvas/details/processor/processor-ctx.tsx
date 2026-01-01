@@ -1,4 +1,4 @@
-import type { FileResult, NodeResult } from "@gatewai/types";
+import type { AnyOutputItem, FileResult, NodeResult } from "@gatewai/types";
 import {
 	createContext,
 	useContext,
@@ -74,7 +74,10 @@ export function useNodeResult<T extends NodeResult = NodeResult>(
 	nodeId: string,
 ): {
 	result: T | null;
-	inputs: Map<string, NodeResult>;
+	inputs: Map<
+		string,
+		{ connectionValid: boolean; outputItem: AnyOutputItem | null }
+	>;
 	isProcessing: boolean;
 	error: string | null;
 } {
@@ -86,7 +89,10 @@ export function useNodeResult<T extends NodeResult = NodeResult>(
 		};
 		const onStart = (data: {
 			nodeId: string;
-			inputs: Map<string, NodeResult>;
+			inputs: Map<
+				string,
+				{ connectionValid: boolean; outputItem: AnyOutputItem | null }
+			>;
 		}) => {
 			if (data.nodeId === nodeId) callback();
 		};
@@ -122,19 +128,17 @@ export function useNodeResult<T extends NodeResult = NodeResult>(
 
 	const snapshot = useSyncExternalStore(subscribe, getSnapshot, getSnapshot);
 
-	// Optimization: Memoize parsing to prevent unnecessary object recreation
 	return useMemo(() => {
 		const parsed = JSON.parse(snapshot);
 		return {
 			...parsed,
-			// FIX: Hydrate the Array back into a Map
 			inputs: new Map(parsed.inputs),
 		};
 	}, [snapshot]);
 }
 
 /**
- * Subscribe to a node's image output for canvas rendering
+ * Subscribe to a node's image output for canvas rendering, used by crop etc
  */
 export function useNodeFileOutputUrl(nodeId: string): string | null {
 	const { result } = useNodeResult(nodeId);

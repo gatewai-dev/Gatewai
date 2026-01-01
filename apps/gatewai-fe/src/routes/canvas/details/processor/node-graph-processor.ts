@@ -1,6 +1,7 @@
 import { EventEmitter } from "node:events";
 import type { DataType, NodeType } from "@gatewai/db";
 import type {
+	AnyOutputItem,
 	BlurNodeConfig,
 	CropNodeConfig,
 	FileData,
@@ -30,12 +31,17 @@ interface NodeState {
 	error: string | null;
 	abortController: AbortController | null;
 	lastProcessedSignature: string | null;
-	inputs: Map<string, NodeResult> | null;
+	inputs: Map<string, ConnectedInput> | null;
 }
+
+type ConnectedInput = {
+	connectionValid: boolean;
+	outputItem: AnyOutputItem | null;
+};
 
 type NodeProcessorParams = {
 	node: NodeEntityType;
-	inputs: Map<string, NodeResult>;
+	inputs: Map<string, ConnectedInput>;
 	signal: AbortSignal;
 };
 
@@ -288,7 +294,13 @@ export class NodeGraphProcessor extends EventEmitter {
 
 		try {
 			const inputs = this.collectInputs(nodeId);
-			console.log({ inputs, nodeId });
+			const invalidConnections = Array.from(inputs.values()).filter(
+				(v) => !v.connectionValid,
+			);
+			if (invalidConnections.length > 0) {
+				throw new Error("Invalid input types for some connections");
+			}
+
 			state.inputs = inputs;
 			this.emit("node:start", { nodeId, inputs });
 
@@ -305,7 +317,7 @@ export class NodeGraphProcessor extends EventEmitter {
 			// Update the signature trace
 			state.lastProcessedSignature = this.getNodeValueHash(node);
 
-			this.emit("node:processed", { nodeId, result });
+			this.emit("node:processed", { nodeId, result, inputs });
 		} catch (error) {
 			const isAbort =
 				error instanceof Error &&
@@ -451,68 +463,84 @@ export class NodeGraphProcessor extends EventEmitter {
 		return changedNodes;
 	}
 
-	private collectInputs(nodeId: string): Map<string, NodeResult> {
-		const inputs = new Map<string, NodeResult>();
-		const parentIds = this.reverseAdjacency.get(nodeId);
+	private collectInputs(nodeId: string): Map<string, ConnectedInput> {
+		const inputs = new Map<string, ConnectedInput>();
+		const incomingEdges = this.edgesByTarget.get(nodeId) || [];
 
-		if (parentIds) {
-			parentIds.forEach((parentId) => {
-				const res = this.nodeStates.get(parentId)?.result;
-				if (res) inputs.set(parentId, res);
-			});
+		for (const edge of incomingEdges) {
+			const sourceState = this.nodeStates.get(edge.source);
+			if (!sourceState?.result) {
+				inputs.set(edge.targetHandleId, {
+					connectionValid: false,
+					outputItem: null,
+				});
+				continue;
+			}
+
+			const result = sourceState.result;
+			const selectedIndex = result.selectedOutputIndex ?? 0;
+			const output = result.outputs[selectedIndex];
+			if (!output) {
+				inputs.set(edge.targetHandleId, {
+					connectionValid: false,
+					outputItem: null,
+				});
+				continue;
+			}
+
+			const outputItem = output.items.find(
+				(i) => i.outputHandleId === edge.sourceHandleId,
+			);
+			if (!outputItem) {
+				inputs.set(edge.targetHandleId, {
+					connectionValid: false,
+					outputItem: null,
+				});
+				continue;
+			}
+
+			const targetHandle = this.handles.find(
+				(h) => h.id === edge.targetHandleId,
+			);
+			if (!targetHandle) {
+				inputs.set(edge.targetHandleId, {
+					connectionValid: false,
+					outputItem: null,
+				});
+				continue;
+			}
+
+			const connectionValid = targetHandle.dataTypes.includes(
+				outputItem.type as DataType,
+			);
+
+			inputs.set(edge.targetHandleId, { connectionValid, outputItem });
 		}
+
 		return inputs;
 	}
 
 	private registerBuiltInProcessors(): void {
-		const getFirstInputData = (
-			nodeId: string,
-			inputs: Map<string, NodeResult>,
-		) => {
-			const incomingEdges = this.edgesByTarget.get(nodeId) || [];
-			if (incomingEdges.length === 0) {
-				return null;
-			}
-			const incomingEdge = incomingEdges[0];
-
-			const result = inputs.get(incomingEdge.source);
-			return result;
-		};
-
 		const findInputData = (
 			nodeId: string,
-			inputs: Map<string, NodeResult>,
+			inputs: Map<string, ConnectedInput>,
 			requiredType: string = "Image",
 			handleLabel?: string,
-		) => {
-			const incomingEdges = this.edgesByTarget.get(nodeId) || [];
-			for (const edge of incomingEdges) {
-				const result = inputs.get(edge.source);
-				if (!result) continue;
-
-				// Get the output item from the source
-				const outputItem = result.outputs[
-					result.selectedOutputIndex ?? 0
-				]?.items.find((i) => i.outputHandleId === edge.sourceHandleId);
-
-				if (!outputItem) continue;
-
-				// Add type validation to ensure the output item matches the required type
+		): string | undefined => {
+			for (const [handleId, { connectionValid, outputItem }] of inputs) {
+				if (!connectionValid || !outputItem) continue;
 				if (outputItem.type !== requiredType) continue;
 
-				const targetHandle = this.handles.find(
-					(h) => h.id === edge.targetHandleId,
-				);
-
-				if (targetHandle?.dataTypes.includes(requiredType as DataType)) {
-					if (handleLabel && targetHandle.label !== handleLabel) continue;
-
-					const fileData = outputItem.data as FileData;
-					const url = fileData?.entity?.signedUrl
-						? GetAssetEndpoint(fileData?.entity.id)
-						: fileData?.processData?.dataUrl;
-					if (url) return url;
+				if (handleLabel) {
+					const handle = this.handles.find((h) => h.id === handleId);
+					if (handle?.label !== handleLabel) continue;
 				}
+
+				const fileData = outputItem.data as FileData;
+				const url = fileData?.entity?.signedUrl
+					? GetAssetEndpoint(fileData.entity.id)
+					: fileData?.processData?.dataUrl;
+				if (url) return url;
 			}
 			return undefined;
 		};
@@ -527,7 +555,6 @@ export class NodeGraphProcessor extends EventEmitter {
 
 		this.registerProcessor("Crop", async ({ node, inputs, signal }) => {
 			const imageUrl = findInputData(node.id, inputs, "Image");
-
 			if (!imageUrl) throw new Error("Missing Input Image");
 
 			const config = node.config as CropNodeConfig;
@@ -698,8 +725,30 @@ export class NodeGraphProcessor extends EventEmitter {
 		});
 
 		this.registerProcessor("Export", async ({ node, inputs }) => {
-			const result = getFirstInputData(node.id, inputs);
-			return result;
+			const inputEntries = Array.from(inputs.entries());
+			if (inputEntries.length === 0) {
+				throw new Error("Missing input for Export");
+			}
+			const [_, { outputItem }] = inputEntries[0];
+			if (!outputItem) throw new Error("No input item");
+
+			const outputHandleId = getFirstOutputHandle(node.id, outputItem.type);
+			if (!outputHandleId) throw new Error("Missing output handle");
+
+			return {
+				selectedOutputIndex: 0,
+				outputs: [
+					{
+						items: [
+							{
+								type: outputItem.type,
+								data: outputItem.data,
+								outputHandleId,
+							},
+						],
+					},
+				],
+			};
 		});
 
 		this.registerProcessor("Resize", async ({ node, inputs, signal }) => {
@@ -738,15 +787,30 @@ export class NodeGraphProcessor extends EventEmitter {
 		});
 
 		this.registerProcessor("Preview", async ({ node, inputs }) => {
-			// Preview is unique, it just needs ANY input.
-			const incomingEdges = this.edgesByTarget.get(node.id) || [];
-			if (incomingEdges.length === 0) throw new Error("Preview disconnected");
+			const inputEntries = Array.from(inputs.entries());
+			if (inputEntries.length === 0) {
+				throw new Error("Preview disconnected");
+			}
+			const [_, { outputItem }] = inputEntries[0];
+			if (!outputItem) throw new Error("No input item");
 
-			// Just take the first valid result we find
-			const edge = incomingEdges[0];
-			const res = inputs.get(edge.source);
-			if (!res) throw new Error("Preview waiting for input");
-			return res;
+			const outputHandleId = getFirstOutputHandle(node.id, outputItem.type);
+			if (!outputHandleId) throw new Error("Missing output handle");
+
+			return {
+				selectedOutputIndex: 0,
+				outputs: [
+					{
+						items: [
+							{
+								type: outputItem.type,
+								data: outputItem.data,
+								outputHandleId,
+							},
+						],
+					},
+				],
+			};
 		});
 
 		// Passthrough / Noop Processors

@@ -118,6 +118,16 @@ export type AgentResult = MultipleOutputResult & {
 	outputs: { items: AgentOutputUnion[] }[];
 };
 
+export type AnyOutputItem =
+	| OutputItem<"Audio">
+	| OutputItem<"Text">
+	| OutputItem<"Boolean">
+	| OutputItem<"File">
+	| OutputItem<"Image">
+	| OutputItem<"Video">
+	| OutputItem<"Mask">
+	| OutputItem<"Number">;
+
 export type NodeResult =
 	| TextResult
 	| ToggleResult
