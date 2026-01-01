@@ -29,12 +29,6 @@
 		"@hono/zod-validator": "^0.7.2",
 		"@hookform/resolvers": "^5.2.2",
 		"@lobehub/icons": "^2.48.0",
-		"@milkdown/core": "^7.15.5",
-		"@milkdown/kit": "^7.15.5",
-		"@milkdown/plugin-listener": "^7.15.5",
-		"@milkdown/preset-commonmark": "^7.15.5",
-		"@milkdown/react": "^7.15.5",
-		"@milkdown/theme-nord": "^7.15.5",
 		"@neodrag/react": "^2.3.1",
 		"@openai/agents": "^0.3.4",
 		"@openai/agents-core": "^0.3.4",
@@ -75,7 +69,6 @@
 		"file-type": "^21.1.1",
 		"framer-motion": "^12.23.26",
 		"generic-pool": "^3.9.0",
-		"gl": "^8.1.6",
 		"hono": "^4.8.5",
 		"json-schema-to-zod": "^2.7.0",
 		"konva": "^10.0.12",
@@ -116,8 +109,7 @@
 		"use-image": "^1.1.4",
 		"vite-plugin-node-polyfills": "^0.24.0",
 		"webfontloader": "^1.6.28",
-		"zod": "3.25.67",
-		"zustand": "^5.0.8"
+		"zod": "3.25.67"
 	},
 	"devDependencies": {
 		"@gatewai/types": "workspace:*",
