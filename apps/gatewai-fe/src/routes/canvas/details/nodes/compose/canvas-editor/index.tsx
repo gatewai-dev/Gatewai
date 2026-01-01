@@ -6,7 +6,14 @@ import type {
 	OutputItem,
 } from "@gatewai/types";
 import type Konva from "konva";
-import { ImageIcon, SaveAll, TextIcon } from "lucide-react";
+import {
+	ChevronDown,
+	Hand,
+	ImageIcon,
+	MousePointer,
+	SaveAll,
+	TextIcon,
+} from "lucide-react";
 import type React from "react";
 import {
 	createContext,
@@ -35,6 +42,13 @@ import useImage from "use-image";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
+import {
+	Menubar,
+	MenubarContent,
+	MenubarItem,
+	MenubarMenu,
+	MenubarTrigger,
+} from "@/components/ui/menubar";
 import {
 	Select,
 	SelectContent,
@@ -72,6 +86,17 @@ interface EditorContextType {
 	editingLayerId: string | null;
 	setEditingLayerId: (id: string | null) => void;
 	stageRef: MutableRefObject<Konva.Stage | null>;
+	mode: "select" | "pan";
+	setMode: Dispatch<SetStateAction<"select" | "pan">>;
+	scale: number;
+	setScale: Dispatch<SetStateAction<number>>;
+	stagePos: { x: number; y: number };
+	setStagePos: Dispatch<SetStateAction<{ x: number; y: number }>>;
+	zoomIn: () => void;
+	zoomOut: () => void;
+	zoomTo: (value: number) => void;
+	fitView: () => void;
+	zoomPercentage: string;
 
 	getTextData: (handleId: HandleEntityType["id"]) => string;
 	getImageData: (handleId: HandleEntityType["id"]) => FileData;
@@ -97,7 +122,7 @@ const useEditor = () => {
 const useSnap = () => {
 	const { layers, setLayers, viewportWidth, viewportHeight, setGuides } =
 		useEditor();
-	const SNAP_THRESHOLD = 3;
+	const SNAP_THRESHOLD = 5;
 
 	const getSnapPositions = useCallback(
 		(excludeId: string) => {
@@ -217,19 +242,23 @@ const blendModes = BLEND_MODES;
 // Layer Props
 interface LayerProps {
 	layer: CompositorLayer;
+	onDragStart: (e: Konva.KonvaEventObject<DragEvent>) => void;
 	onDragMove: (e: Konva.KonvaEventObject<DragEvent>) => void;
 	onDragEnd: (e: Konva.KonvaEventObject<DragEvent>) => void;
+	onTransformStart: (e: Konva.KonvaEventObject<Event>) => void;
 	onTransformEnd: (e: Konva.KonvaEventObject<Event>) => void;
 }
 
 // Image Layer Component
 const ImageLayer: React.FC<LayerProps> = ({
 	layer,
+	onDragStart,
 	onDragMove,
 	onDragEnd,
+	onTransformStart,
 	onTransformEnd,
 }) => {
-	const { setSelectedId, setLayers, getImageUrl } = useEditor();
+	const { setSelectedId, setLayers, getImageUrl, mode } = useEditor();
 	const url = getImageUrl(layer.inputHandleId);
 	const [image] = useImage(url ?? "", "anonymous");
 
@@ -260,11 +289,13 @@ const ImageLayer: React.FC<LayerProps> = ({
 			scaleY={layer.scaleY}
 			rotation={layer.rotation}
 			image={image}
-			draggable
+			draggable={mode === "select"}
 			onClick={handleSelect}
 			onTap={handleSelect}
+			onDragStart={onDragStart}
 			onDragMove={onDragMove}
 			onDragEnd={onDragEnd}
+			onTransformStart={onTransformStart}
 			onTransformEnd={onTransformEnd}
 			globalCompositeOperation={layer.blendMode as GlobalCompositeOperation}
 		/>
@@ -274,9 +305,21 @@ const ImageLayer: React.FC<LayerProps> = ({
 // Text Layer Component
 const TextLayer: React.FC<
 	LayerProps & { layer: CompositorLayer & { type: "Text" } }
-> = ({ layer, onDragMove, onDragEnd, onTransformEnd }) => {
-	const { setSelectedId, setIsEditingText, setEditingLayerId, getTextData } =
-		useEditor();
+> = ({
+	layer,
+	onDragStart,
+	onDragMove,
+	onDragEnd,
+	onTransformStart,
+	onTransformEnd,
+}) => {
+	const {
+		setSelectedId,
+		setIsEditingText,
+		setEditingLayerId,
+		getTextData,
+		mode,
+	} = useEditor();
 
 	const text = getTextData(layer.inputHandleId);
 	const handleSelect = () => {
@@ -303,13 +346,15 @@ const TextLayer: React.FC<
 			rotation={layer.rotation}
 			scaleX={layer.scaleX}
 			scaleY={layer.scaleY}
-			draggable
+			draggable={mode === "select"}
 			onClick={handleSelect}
 			onTap={handleSelect}
 			onDblClick={handleDoubleClick}
 			onDblTap={handleDoubleClick}
+			onDragStart={onDragStart}
 			onDragMove={onDragMove}
 			onDragEnd={onDragEnd}
+			onTransformStart={onTransformStart}
 			onTransformEnd={onTransformEnd}
 			globalCompositeOperation={layer.blendMode as GlobalCompositeOperation}
 		/>
@@ -318,18 +363,21 @@ const TextLayer: React.FC<
 
 // Transformer component
 const TransformerComponent: React.FC = () => {
-	const { selectedId, layers, stageRef } = useEditor();
+	const { selectedId, layers, stageRef, mode } = useEditor();
 	const trRef = useRef<Konva.Transformer>(null);
 
 	useEffect(() => {
-		if (selectedId && trRef.current && stageRef.current) {
+		if (selectedId && trRef.current && stageRef.current && mode === "select") {
 			const node = stageRef.current.findOne(`#${selectedId}`);
 			if (node) {
 				trRef.current.nodes([node]);
 				trRef.current.getLayer()?.batchDraw();
 			}
+		} else if (trRef.current) {
+			trRef.current.nodes([]);
+			trRef.current.getLayer()?.batchDraw();
 		}
-	}, [selectedId, stageRef]);
+	}, [selectedId, stageRef, mode]);
 
 	const selectedLayer = layers.find((l) => l.id === selectedId);
 
@@ -377,8 +425,18 @@ const Guides: React.FC = () => {
 };
 
 const Canvas: React.FC = () => {
-	const { layers, viewportWidth, viewportHeight, setSelectedId, stageRef } =
-		useEditor();
+	const {
+		layers,
+		viewportWidth,
+		viewportHeight,
+		setSelectedId,
+		stageRef,
+		mode,
+		scale,
+		stagePos,
+		setScale,
+		setStagePos,
+	} = useEditor();
 	const { handleDragMove, handleDragEnd, handleTransformEnd } = useSnap();
 
 	const handleStageClick = useCallback(
@@ -390,42 +448,95 @@ const Canvas: React.FC = () => {
 		[stageRef, setSelectedId],
 	);
 
+	const handleWheel = useCallback(
+		(e: Konva.KonvaEventObject<WheelEvent>) => {
+			e.evt.preventDefault();
+			const stage = stageRef.current;
+			if (!stage) return;
+
+			const oldScale = stage.scaleX();
+			const pointer = stage.getPointerPosition();
+			if (!pointer) return;
+
+			const mousePointTo = {
+				x: (pointer.x - stage.x()) / oldScale,
+				y: (pointer.y - stage.y()) / oldScale,
+			};
+
+			const direction = e.evt.deltaY > 0 ? -1 : 1;
+			const scaleBy = 1.1;
+			const newScale = direction > 0 ? oldScale * scaleBy : oldScale / scaleBy;
+
+			const newPos = {
+				x: pointer.x - mousePointTo.x * newScale,
+				y: pointer.y - mousePointTo.y * newScale,
+			};
+
+			stage.scale({ x: newScale, y: newScale });
+			stage.position(newPos);
+			stage.batchDraw();
+			setScale(newScale);
+			setStagePos(newPos);
+		},
+		[stageRef, setScale, setStagePos],
+	);
+
+	useEffect(() => {
+		const stage = stageRef.current;
+		if (!stage) return;
+
+		stage.scale({ x: scale, y: scale });
+		stage.position(stagePos);
+		stage.batchDraw();
+	}, [scale, stagePos, stageRef]);
+
+	useEffect(() => {
+		const stage = stageRef.current;
+		if (!stage) return;
+
+		const handleDragEnd = () => {
+			setStagePos(stage.position());
+		};
+
+		stage.on("dragend", handleDragEnd);
+		return () => {
+			stage.off("dragend", handleDragEnd);
+		};
+	}, [stageRef, setStagePos]);
+
+	const cursorStyle = mode === "pan" ? "grab" : "default";
+
 	return (
 		<div style={{ position: "relative" }}>
 			<Stage
 				ref={stageRef}
 				width={viewportWidth}
 				height={viewportHeight}
-				style={{ background: "transparent", cursor: "crosshair" }}
+				style={{ background: "transparent", cursor: cursorStyle }}
 				onClick={handleStageClick}
 				onTap={handleStageClick}
+				onWheel={handleWheel}
+				draggable={mode === "pan"}
 			>
 				<KonvaLayer>
 					{/* Background rect if needed, but transparent */}
 				</KonvaLayer>
 				<KonvaLayer>
 					{layers.map((layer) => {
+						const props = {
+							key: layer.id,
+							layer,
+							onDragStart: () => setSelectedId(layer.id),
+							onDragMove: handleDragMove,
+							onDragEnd: handleDragEnd,
+							onTransformStart: () => setSelectedId(layer.id),
+							onTransformEnd: handleTransformEnd,
+						};
 						if (layer.type === "Image") {
-							return (
-								<ImageLayer
-									key={layer.id}
-									layer={layer}
-									onDragMove={handleDragMove}
-									onDragEnd={handleDragEnd}
-									onTransformEnd={handleTransformEnd}
-								/>
-							);
+							return <ImageLayer {...props} />;
 						}
 						if (layer.type === "Text") {
-							return (
-								<TextLayer
-									key={layer.id}
-									layer={layer}
-									onDragMove={handleDragMove}
-									onDragEnd={handleDragEnd}
-									onTransformEnd={handleTransformEnd}
-								/>
-							);
+							return <TextLayer {...props} layer={layer} />;
 						}
 						return null;
 					})}
@@ -617,7 +728,7 @@ const InspectorPanel: React.FC = () => {
 
 	return (
 		<div className="absolute right-0 top-0 bottom-0 w-56 overflow-y-auto bg-background p-4 border-l border-gray-700 z-10 text-gray-200">
-			<h3 className="mb-4 text-xl font-bold text-gray-100">Inspector</h3>
+			<h3 className="mb-4 text-xl font-bold text-gray-100">Canvas</h3>
 			<div className="space-y-4">
 				<div className="flex flex-wrap gap-2 mb-4">
 					{aspectRatios.map((ratio) => (
@@ -640,31 +751,33 @@ const InspectorPanel: React.FC = () => {
 						</Tooltip>
 					))}
 				</div>
-				<div className="flex flex-col gap-1">
-					<Label htmlFor="canvas-width">Canvas Width:</Label>
-					<Input
-						id="canvas-width"
-						type="text"
-						value={viewportWidth}
-						onChange={(e) =>
-							setViewportWidth(parseFloat(e.target.value) || 800)
-						}
-						placeholder="Width"
-						className="w-full"
-					/>
-				</div>
-				<div className="flex flex-col gap-1">
-					<Label htmlFor="canvas-height">Canvas Height:</Label>
-					<Input
-						id="canvas-height"
-						type="text"
-						value={viewportHeight}
-						onChange={(e) =>
-							setViewportHeight(parseFloat(e.target.value) || 600)
-						}
-						placeholder="Height"
-						className="w-full"
-					/>
+				<div className="flex gap-2">
+					<div className="flex-1 flex flex-col gap-1">
+						<Label htmlFor="canvas-width">Width:</Label>
+						<Input
+							id="canvas-width"
+							type="text"
+							value={viewportWidth}
+							onChange={(e) =>
+								setViewportWidth(parseFloat(e.target.value) || 800)
+							}
+							placeholder="Width"
+							className="w-full"
+						/>
+					</div>
+					<div className="flex-1 flex flex-col gap-1">
+						<Label htmlFor="canvas-height">Height:</Label>
+						<Input
+							id="canvas-height"
+							type="text"
+							value={viewportHeight}
+							onChange={(e) =>
+								setViewportHeight(parseFloat(e.target.value) || 600)
+							}
+							placeholder="Height"
+							className="w-full"
+						/>
+					</div>
 				</div>
 				{selectedLayer && (
 					<>
@@ -842,6 +955,103 @@ export const CanvasDesignerEditor: React.FC<CanvasDesignerEditorProps> = ({
 	const [isEditingText, setIsEditingText] = useState(false);
 	const [editingLayerId, setEditingLayerId] = useState<string | null>(null);
 	const stageRef = useRef<Konva.Stage | null>(null);
+	const [mode, setMode] = useState<"select" | "pan">("select");
+	const [scale, setScale] = useState(1);
+	const [stagePos, setStagePos] = useState({ x: 0, y: 0 });
+
+	const zoomPercentage = `${Math.round(scale * 100)}%`;
+
+	const zoomIn = useCallback(() => {
+		const stage = stageRef.current;
+		if (!stage) return;
+
+		const oldScale = scale;
+		const center = { x: viewportWidth / 2, y: viewportHeight / 2 };
+		const mousePointTo = {
+			x: (center.x - stagePos.x) / oldScale,
+			y: (center.y - stagePos.y) / oldScale,
+		};
+		const newScale = oldScale * 1.2;
+		const newPos = {
+			x: center.x - mousePointTo.x * newScale,
+			y: center.y - mousePointTo.y * newScale,
+		};
+		setScale(newScale);
+		setStagePos(newPos);
+	}, [scale, stagePos, viewportWidth, viewportHeight]);
+
+	const zoomOut = useCallback(() => {
+		const stage = stageRef.current;
+		if (!stage) return;
+
+		const oldScale = scale;
+		const center = { x: viewportWidth / 2, y: viewportHeight / 2 };
+		const mousePointTo = {
+			x: (center.x - stagePos.x) / oldScale,
+			y: (center.y - stagePos.y) / oldScale,
+		};
+		const newScale = oldScale / 1.2;
+		const newPos = {
+			x: center.x - mousePointTo.x * newScale,
+			y: center.y - mousePointTo.y * newScale,
+		};
+		setScale(newScale);
+		setStagePos(newPos);
+	}, [scale, stagePos, viewportWidth, viewportHeight]);
+
+	const zoomTo = useCallback(
+		(value: number) => {
+			const stage = stageRef.current;
+			if (!stage) return;
+
+			const oldScale = scale;
+			const center = { x: viewportWidth / 2, y: viewportHeight / 2 };
+			const mousePointTo = {
+				x: (center.x - stagePos.x) / oldScale,
+				y: (center.y - stagePos.y) / oldScale,
+			};
+			const newScale = value;
+			const newPos = {
+				x: center.x - mousePointTo.x * newScale,
+				y: center.y - mousePointTo.y * newScale,
+			};
+			setScale(newScale);
+			setStagePos(newPos);
+		},
+		[scale, stagePos, viewportWidth, viewportHeight, stageRef],
+	);
+
+	const fitView = useCallback(() => {
+		if (layers.length === 0) return;
+
+		let minX = Infinity;
+		let minY = Infinity;
+		let maxX = -Infinity;
+		let maxY = -Infinity;
+
+		layers.forEach((layer) => {
+			const w = (layer.width || 0) * layer.scaleX;
+			const h = (layer.height || 0) * layer.scaleY;
+			minX = Math.min(minX, layer.x);
+			minY = Math.min(minY, layer.y);
+			maxX = Math.max(maxX, layer.x + w);
+			maxY = Math.max(maxY, layer.y + h);
+		});
+
+		const contentWidth = maxX - minX;
+		const contentHeight = maxY - minY;
+		const newScale =
+			Math.min(viewportWidth / contentWidth, viewportHeight / contentHeight) *
+			0.9; // 10% padding
+
+		const newPos = {
+			x: (viewportWidth - contentWidth * newScale) / 2 - minX * newScale,
+			y: (viewportHeight - contentHeight * newScale) / 2 - minY * newScale,
+		};
+
+		setScale(newScale);
+		setStagePos(newPos);
+	}, [layers, viewportWidth, viewportHeight]);
 
 	const getTextData = (handleId: string) => {
 		const layerData = initialLayers.get(handleId) as OutputItem<"Text">;
@@ -919,6 +1129,13 @@ export const CanvasDesignerEditor: React.FC<CanvasDesignerEditorProps> = ({
 		setLayers(Object.values(layerUpdates));
 	}, [initialLayers, node.config, getImageData]);
 
+	// Deselect when entering pan mode
+	useEffect(() => {
+		if (mode === "pan" && selectedId) {
+			setSelectedId(null);
+		}
+	}, [mode, selectedId, setSelectedId]);
+
 	const handleSave = useCallback(() => {
 		const layerUpdates = layers.reduce<Record<string, CompositorLayer>>(
 			(acc, layer) => {
@@ -949,6 +1166,17 @@ export const CanvasDesignerEditor: React.FC<CanvasDesignerEditorProps> = ({
 					editingLayerId,
 					setEditingLayerId,
 					stageRef,
+					mode,
+					setMode,
+					scale,
+					setScale,
+					stagePos,
+					setStagePos,
+					zoomIn,
+					zoomOut,
+					zoomTo,
+					fitView,
+					zoomPercentage,
 					getTextData,
 					getImageData,
 					getImageUrl,
@@ -956,25 +1184,79 @@ export const CanvasDesignerEditor: React.FC<CanvasDesignerEditorProps> = ({
 			>
 				<div className="flex justify-center items-center h-screen w-screen bg-background overflow-hidden relative">
 					<LayersPanel onSave={handleSave} onClose={onClose} />
-					<div
-						className="relative border border-gray-700 overflow-hidden"
-						style={{
-							width: viewportWidth,
-							height: viewportHeight,
-						}}
-					>
+					<div className="relative flex flex-col items-center">
+						<div className="absolute bottom-12 z-20">
+							<Menubar className="border-0 bg-background py-1 rounded-md shadow-md">
+								<Button
+									title="Select"
+									variant={mode === "pan" ? "ghost" : "outline"}
+									size="sm"
+									onClick={() => setMode("select")}
+								>
+									<MousePointer className="w-4" />
+								</Button>
+								<Button
+									title="Pan"
+									variant={mode === "select" ? "ghost" : "outline"}
+									size="sm"
+									onClick={() => setMode("pan")}
+								>
+									<Hand className="w-4" />
+								</Button>
+								<Separator orientation="vertical" />
+								<MenubarMenu>
+									<MenubarTrigger className="px-3 py-1 cursor-pointer text-xs">
+										{zoomPercentage} <ChevronDown className="w-5" />
+									</MenubarTrigger>
+									<MenubarContent align="end">
+										<MenubarItem onClick={() => zoomIn()}>
+											Zoom in{" "}
+											<span className="ml-auto text-muted-foreground">
+												Ctrl +
+											</span>
+										</MenubarItem>
+										<MenubarItem onClick={() => zoomOut()}>
+											Zoom out{" "}
+											<span className="ml-auto text-muted-foreground">
+												Ctrl -
+											</span>
+										</MenubarItem>
+										<MenubarItem onClick={() => zoomTo(1)}>
+											Zoom to 100%{" "}
+											<span className="ml-auto text-muted-foreground">
+												Ctrl 0
+											</span>
+										</MenubarItem>
+										<MenubarItem onClick={() => fitView()}>
+											Zoom to fit{" "}
+											<span className="ml-auto text-muted-foreground">
+												Ctrl 1
+											</span>
+										</MenubarItem>
+									</MenubarContent>
+								</MenubarMenu>
+							</Menubar>
+						</div>
 						<div
-							className="absolute inset-0 checkered-background"
+							className="relative border border-gray-700 overflow-hidden"
 							style={{
-								backgroundImage: `
+								width: viewportWidth,
+								height: viewportHeight,
+							}}
+						>
+							<div
+								className="absolute inset-0 checkered-background"
+								style={{
+									backgroundImage: `
 								linear-gradient(45deg, #333333 25%, #222222 25%, #222222 75%, #333333 75%),
 								linear-gradient(45deg, #333333 25%, #222222 25%, #222222 75%, #333333 75%)
 							`,
-								backgroundSize: "40px 40px",
-								backgroundPosition: "0 0, 20px 20px",
-							}}
-						/>
-						<Canvas />
+									backgroundSize: "40px 40px",
+									backgroundPosition: "0 0, 20px 20px",
+								}}
+							/>
+							<Canvas />
+						</div>
 					</div>
 					<InspectorPanel />
 				</div>
