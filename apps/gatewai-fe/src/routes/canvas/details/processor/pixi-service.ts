@@ -553,10 +553,13 @@ class PixiProcessorService {
 
 			app.renderer.resize(width, height);
 
-			// 2. Add Background Spacer
-			// This fixes the bug where Pixi only extracts the bounding box of the content.
-			// We force the stage to be at least (width x height)
 			this.forceStageSize(width, height, app);
+
+			const maskGraphics = new Graphics();
+			maskGraphics.beginFill(0xffffff);
+			maskGraphics.drawRect(0, 0, width, height);
+			maskGraphics.endFill();
+			app.stage.mask = maskGraphics;
 
 			const layers = Object.values(config.layerUpdates || {});
 
@@ -592,11 +595,16 @@ class PixiProcessorService {
 						console.warn(`Load failed: ${layer.id}`, e);
 					}
 				} else if (layer.type === "Text" && inputData.type === "Text") {
+					const fontSize = layer.fontSize ?? 24;
+					const lineHeight = layer.lineHeight ?? 1;
 					const style = new TextStyle({
 						fontFamily: layer.fontFamily ?? "sans-serif",
-						fontSize: layer.fontSize ?? 24,
-						fill: layer.fill ?? "#000000",
-						wordWrap: !!layer.width,
+						fontSize,
+						letterSpacing: layer.letterSpacing ?? 0,
+						lineHeight: fontSize * lineHeight,
+						align: layer.align ?? "left",
+						fill: layer.fill ?? "#fff",
+						wordWrap: true,
 						wordWrapWidth: layer.width ?? undefined,
 						breakWords: true,
 					});

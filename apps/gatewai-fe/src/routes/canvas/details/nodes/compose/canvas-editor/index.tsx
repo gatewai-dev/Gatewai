@@ -374,6 +374,8 @@ const TextLayer: React.FC<
 		layer.width,
 		layer.fontSize,
 		layer.fontFamily,
+		layer.letterSpacing,
+		layer.lineHeight,
 		stageRef,
 	]);
 	return (
@@ -403,7 +405,10 @@ const TextLayer: React.FC<
 			onTransformEnd={onTransformEnd}
 			globalCompositeOperation={layer.blendMode as GlobalCompositeOperation}
 			wrap="char" // Set to 'char' to break long words as per example
-			align="left"
+			align={layer.align || "left"}
+			verticalAlign={layer.verticalAlign || "top"}
+			letterSpacing={layer.letterSpacing || 0}
+			lineHeight={layer.lineHeight || 1}
 		/>
 	);
 };
@@ -988,6 +993,69 @@ const InspectorPanel: React.FC = () => {
 										className="w-full h-8 cursor-pointer"
 									/>
 								</div>
+								<hr className="my-4 border-gray-600" />
+								<div className="flex flex-col gap-1">
+									<Label htmlFor="letterSpacing">Letter Spacing:</Label>
+									<Slider
+										id="letterSpacing"
+										value={[selectedLayer.letterSpacing ?? 0]}
+										onValueChange={(v) => updateLayer({ letterSpacing: v[0] })}
+										min={-10}
+										max={50}
+										step={1}
+									/>
+									<div className="text-sm text-gray-400 mt-1">
+										{(selectedLayer.letterSpacing ?? 0).toFixed(0)}px
+									</div>
+								</div>
+								<div className="flex flex-col gap-1">
+									<Label htmlFor="lineHeight">Line Height:</Label>
+									<Slider
+										id="lineHeight"
+										value={[selectedLayer.lineHeight ?? 1]}
+										onValueChange={(v) => updateLayer({ lineHeight: v[0] })}
+										min={0.5}
+										max={3}
+										step={0.1}
+									/>
+									<div className="text-sm text-gray-400 mt-1">
+										{(selectedLayer.lineHeight ?? 1).toFixed(1)}
+									</div>
+								</div>
+								<div className="flex flex-col gap-1">
+									<Label htmlFor="align">Horizontal Alignment:</Label>
+									<Select
+										value={selectedLayer.align ?? "left"}
+										onValueChange={(value) => updateLayer({ align: value })}
+									>
+										<SelectTrigger id="align">
+											<SelectValue />
+										</SelectTrigger>
+										<SelectContent>
+											<SelectItem value="left">Left</SelectItem>
+											<SelectItem value="center">Center</SelectItem>
+											<SelectItem value="right">Right</SelectItem>
+										</SelectContent>
+									</Select>
+								</div>
+								<div className="flex flex-col gap-1">
+									<Label htmlFor="verticalAlign">Vertical Alignment:</Label>
+									<Select
+										value={selectedLayer.verticalAlign ?? "top"}
+										onValueChange={(value) =>
+											updateLayer({ verticalAlign: value })
+										}
+									>
+										<SelectTrigger id="verticalAlign">
+											<SelectValue />
+										</SelectTrigger>
+										<SelectContent>
+											<SelectItem value="top">Top</SelectItem>
+											<SelectItem value="middle">Middle</SelectItem>
+											<SelectItem value="bottom">Bottom</SelectItem>
+										</SelectContent>
+									</Select>
+								</div>
 							</>
 						)}
 						{selectedLayer.type === "Image" && (
@@ -1182,6 +1250,10 @@ export const CanvasDesignerEditor: React.FC<CanvasDesignerEditorProps> = ({
 					newLayer.fontSize = 24;
 					newLayer.fontFamily = "sans-serif";
 					newLayer.fill = "#000000";
+					newLayer.letterSpacing = 0;
+					newLayer.lineHeight = newLayer.fontSize;
+					newLayer.align = "left";
+					newLayer.verticalAlign = "top";
 				}
 				if (newLayer.type === "Image") {
 					const fData = getImageData(handleId);

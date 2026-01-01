@@ -94,6 +94,10 @@ const CompositorLayerSchema = z
 		fill: z.string().optional(),
 		lockAspect: z.boolean(),
 		blendMode: z.string(),
+		letterSpacing: z.number().optional(),
+		lineHeight: z.number().optional(),
+		align: z.enum(["left", "center", "right"]).optional(),
+		verticalAlign: z.enum(["top", "middle", "bottom"]).optional(),
 	})
 	.strict();
 
