@@ -1,5 +1,4 @@
 import * as fs from "node:fs/promises";
-import { readFile } from "node:fs/promises";
 import path from "node:path";
 import { fileURLToPath } from "node:url";
 import { DataType } from "@gatewai/db";
@@ -10,7 +9,13 @@ import type {
 	NodeResult,
 	Output,
 } from "@gatewai/types";
-import sharp, { type Blend, type OverlayOptions } from "sharp";
+import {
+	type CanvasRenderingContext2D,
+	createCanvas,
+	type GlobalCompositeOperation,
+	loadImage,
+	registerFont,
+} from "canvas";
 import { logMedia } from "../../media-logger.js";
 import {
 	bufferToDataUrl,
@@ -23,132 +28,122 @@ import type { NodeProcessor } from "./types.js";
 const __filename = fileURLToPath(import.meta.url);
 const __dirname = path.dirname(__filename);
 
-const getFontPath = async (fontName: string) => {
-	const fontDir = path.join(__dirname, "../../assets/fonts", fontName);
-	const files = await fs.readdir(fontDir);
-	const fontFile = files.find(
-		(f) =>
-			f.endsWith(".woff") ||
-			f.endsWith(".woff2") ||
-			f.endsWith(".ttf") ||
-			f.endsWith(".otf"),
-	);
-	if (!fontFile) {
-		throw new Error(`Font file not found ${fontName}`);
+// --- Utilities ---
+
+const getFontPath = async (fontName: string): Promise<string | null> => {
+	try {
+		const fontDir = path.join(__dirname, "../../assets/fonts", fontName);
+		const files = await fs.readdir(fontDir);
+		const fontFile = files.find((f) => /\.(woff|woff2|ttf|otf)$/i.test(f));
+		if (!fontFile) return null;
+		return path.join(fontDir, fontFile);
+	} catch (e) {
+		console.warn(`Font not found: ${fontName}`, e);
+		return null;
 	}
-	return path.join(fontDir, fontFile);
 };
 
-// Map Pixi/CSS blend modes to Sharp/Libvips blend modes
-const getBlendMode = (mode: string = "normal"): Blend => {
-	const map: Record<string, Blend> = {
-		normal: "over",
+const getCompositeOperation = (
+	mode: string = "normal",
+): GlobalCompositeOperation => {
+	const map: Record<string, GlobalCompositeOperation> = {
+		normal: "source-over",
 		multiply: "multiply",
 		screen: "screen",
 		overlay: "overlay",
 		darken: "darken",
 		lighten: "lighten",
-		"color-dodge": "colour-dodge",
-		"color-burn": "colour-burn",
+		"color-dodge": "color-dodge",
+		"color-burn": "color-burn",
 		"hard-light": "hard-light",
 		"soft-light": "soft-light",
 		difference: "difference",
 		exclusion: "exclusion",
-		// Fallbacks for modes not directly supported by composite ops
-		saturation: "over",
-		color: "over",
-		luminosity: "over",
+		hue: "hue",
+		saturation: "saturation",
+		color: "color",
+		luminosity: "luminosity",
 	};
-	return map[mode] ?? "over";
+	return map[mode] ?? "source-over";
 };
 
-// Helper: Load font file and convert to Base64 for SVG embedding
-async function getFontBase64(fontFamily: string): Promise<string | null> {
-	try {
-		const path = await getFontPath(fontFamily);
-		if (!path) return null;
+// --- Text Layout Logic ---
 
-		const buffer = await readFile(path);
+/**
+ * Wraps text into lines based on max width.
+ * Mimics standard Pixi/CSS word-wrap behavior.
+ */
+function wrapText(
+	ctx: CanvasRenderingContext2D,
+	text: string,
+	maxWidth: number,
+): string[] {
+	const words = text.split(" ");
+	const lines: string[] = [];
+	let currentLine = words[0];
 
-		return `data:font/${path.split(".").pop() ?? "ttf"};charset=utf-8;base64,${buffer.toString("base64")}`;
-	} catch (e) {
-		console.warn(`Failed to load font ${fontFamily}`, e);
-		return null;
+	for (let i = 1; i < words.length; i++) {
+		const word = words[i];
+		const width = ctx.measureText(currentLine + " " + word).width;
+		if (width < maxWidth) {
+			currentLine += " " + word;
+		} else {
+			lines.push(currentLine);
+			currentLine = word;
+		}
 	}
+	lines.push(currentLine);
+	return lines;
 }
 
-// Helper: Generate SVG for Text Layer
-async function generateTextSvg(
+const renderTextLayer = (
+	ctx: CanvasRenderingContext2D,
 	layer: CompositorLayer,
 	text: string,
-): Promise<Buffer> {
+) => {
 	const fontSize = layer.fontSize ?? 24;
-	const fontFamily = layer.fontFamily ?? "sans-serif";
+	const fontFamily = layer.fontFamily ?? "Geist";
 	const fill = layer.fill ?? "#ffffff";
-	const width = layer.width ? `width="${layer.width}"` : "";
-	const fontWeight = "normal"; // Defaulting as layer config usually specifies family directly
+	const align = layer.align ?? "left";
+	const lineHeight = (layer.lineHeight ?? 1) * fontSize;
+	const maxWidth = layer.width ?? 0;
 
-	// Try to load custom font
-	const fontBase64 = layer.fontFamily
-		? await getFontBase64(layer.fontFamily)
-		: null;
+	// 1. Configure Context
+	// We strictly quote the font family to handle names with spaces
+	ctx.font = `${fontSize}px "${fontFamily}"`;
+	ctx.fillStyle = fill;
+	ctx.textBaseline = "top";
 
-	const fontFace = fontBase64
-		? `@font-face { font-family: "${fontFamily}"; src: url("${fontBase64}"); }`
-		: "";
-
-	// Simple heuristic for word wrapping if width is set (SVG <text> doesn't auto-wrap easily)
-	// This is an approximation. For exact parity, more complex measurement is needed.
-	let content = text;
-	if (layer.width) {
-		const avgCharWidth = fontSize * 0.6;
-		const charsPerLine = Math.floor(layer.width / avgCharWidth);
-		const words = text.split(" ");
-		const lines: string[] = [];
-		let currentLine = words[0];
-
-		for (let i = 1; i < words.length; i++) {
-			if (currentLine.length + 1 + words[i].length < charsPerLine) {
-				currentLine += ` ${words[i]}`;
-			} else {
-				lines.push(currentLine);
-				currentLine = words[i];
-			}
-		}
-		lines.push(currentLine);
-
-		// Convert to tspan
-		const lineHeight = (layer.lineHeight ?? 1) * fontSize;
-		content = lines
-			.map(
-				(line, i) =>
-					`<tspan x="0" dy="${i === 0 ? fontSize : lineHeight}">${line}</tspan>`,
-			)
-			.join("");
-	} else {
-		// Single line, ensure baseline is correct
-		content = `<tspan x="0" dy="${fontSize}">${text}</tspan>`;
+	// 2. Handle Text Wrapping
+	let lines: string[] = [text];
+	if (maxWidth > 0) {
+		lines = wrapText(ctx, text, maxWidth);
 	}
 
-	const svg = `
-	<svg width="${layer.width || 1024}" height="${layer.height || 1024}" xmlns="http://www.w3.org/2000/svg">
-		<defs>
-			<style>
-				${fontFace}
-				.text-style {
-					font-family: "${fontFamily}", sans-serif;
-					font-size: ${fontSize}px;
-					fill: ${fill};
-					text-anchor: ${layer.align === "center" ? "middle" : layer.align === "right" ? "end" : "start"};
-				}
-			</style>
-		</defs>
-		<text x="${layer.align === "center" ? "50%" : layer.align === "right" ? "100%" : "0"}" y="0" class="text-style">${content}</text>
-	</svg>
-	`;
+	// 3. Draw Lines
+	// We draw relative to (0,0) because the context is already transformed (translated/rotated)
+	lines.forEach((line, i) => {
+		const y = i * lineHeight;
+		let x = 0;
 
-	return Buffer.from(svg);
-}
+		// Calculate alignment offset
+		if (maxWidth > 0) {
+			const lineWidth = ctx.measureText(line).width;
+			if (align === "center") {
+				x = (maxWidth - lineWidth) / 2;
+			} else if (align === "right") {
+				x = maxWidth - lineWidth;
+			}
+		} else {
+			// If no width constraint, simple alignment
+			if (align === "center") ctx.textAlign = "center";
+			else if (align === "right") ctx.textAlign = "right";
+			else ctx.textAlign = "left";
+		}
+
+		ctx.fillText(line, x, y);
+	});
+};
 
 const compositorProcessor: NodeProcessor = async ({ node, data }) => {
 	try {
@@ -156,131 +151,95 @@ const compositorProcessor: NodeProcessor = async ({ node, data }) => {
 		const width = config.width ?? 1024;
 		const height = config.height ?? 1024;
 
+		// 1. Initialize Canvas
+		const canvas = createCanvas(width, height);
+		const ctx = canvas.getContext("2d");
+
+		// 2. Resolve Inputs & Register Fonts
 		const inputHandlesWithValues = getAllInputValuesWithHandle(data, node.id);
-		// Initialize Stage (Background)
-		// We start with a transparent background of the target size
-		const baseComposite = sharp({
-			create: {
-				width,
-				height,
-				channels: 4,
-				background: { r: 0, g: 0, b: 0, alpha: 0 },
-			},
-		});
-
 		const layers = Object.values(config.layerUpdates || {});
-		const compositeOps: OverlayOptions[] = [];
 
-		// 2. Process Layers
+		// Pre-load custom fonts globally for the canvas environment
+		const fontPromises = layers
+			.filter((l) => l.type === "Text" && l.fontFamily)
+			.map(async (l) => {
+				if (!l.fontFamily) return;
+				const fp = await getFontPath(l.fontFamily);
+				if (fp) {
+					registerFont(fp, { family: l.fontFamily });
+				}
+			});
+		await Promise.all(fontPromises);
+
+		// 3. Render Loop
+		// Sort layers if order property exists, otherwise rely on object order (which is usually insertion order)
+		// Ensure strictly sorted by explicit z-index if available, or index.
+		// Assuming config.layerUpdates keys or array order dictates z-index.
+
 		for (const layer of layers) {
 			const inputHandleId = layer.inputHandleId;
-
-			// Resolve Input Data manually from the execution context inputs
-			// We look for the specific input handle ID in the supplied data inputs
 			const inputEntry = inputHandlesWithValues.find(
 				(f) => f.handle?.id === inputHandleId,
 			);
 
+			// Skip if no input, unless it's a pure decoration layer (logic depends on your app)
 			if (!inputEntry) continue;
-			const inputItem = inputEntry.value; // Value from Map
+			const inputItem = inputEntry.value;
 
-			let layerBuffer: Buffer | null = null;
-			let layerTop = Math.round(layer.y || 0);
-			let layerLeft = Math.round(layer.x || 0);
+			ctx.save();
 
+			// --- A. Transforms ---
+			// Standard order: Translate -> Rotate -> Scale
+			// Pixi/CSS rotation usually happens around the center if anchor is 0.5,
+			// or top-left if anchor is 0. Here we assume top-left origin (x,y)
+			const x = Math.round(layer.x ?? 0);
+			const y = Math.round(layer.y ?? 0);
+			const rotation = (layer.rotation ?? 0) * (Math.PI / 180); // Deg to Rad
+
+			// Move to layer origin
+			ctx.translate(x, y);
+			ctx.rotate(rotation);
+			// Note: We handle scale differently for Images vs Text below,
+			// or we could apply ctx.scale(layer.scaleX, layer.scaleY) here.
+			// Generally safer to apply scale via dimensions for images to avoid pixelation artifacts on some engines.
+
+			// --- B. Blending ---
+			ctx.globalCompositeOperation = getCompositeOperation(layer.blendMode);
+			ctx.globalAlpha = 1;
+
+			// --- C. Draw Content ---
 			if (layer.type === "Image" && inputItem?.type === DataType.Image) {
 				const fileData = inputItem.data as FileData;
-				const originalBuffer = await getImageBuffer(fileData);
+				const imgBuffer = await getImageBuffer(fileData);
+				const img = await loadImage(imgBuffer);
 
-				let pipeline = sharp(originalBuffer);
+				// Determine final draw dimensions
+				let drawW = img.width;
+				let drawH = img.height;
 
-				// Resize (Scale)
-				// If specific width/height set, force resize. Otherwise scale.
 				if (layer.width && layer.height) {
-					pipeline = pipeline.resize(
-						Math.round(layer.width),
-						Math.round(layer.height),
-						{ fit: "fill" },
-					);
-				} else if (layer.scaleX || layer.scaleY) {
-					// We need metadata to scale proportionally
-					const meta = await pipeline.metadata();
-					const newW = Math.round((meta.width ?? 100) * (layer.scaleX ?? 1));
-					const newH = Math.round((meta.height ?? 100) * (layer.scaleY ?? 1));
-					pipeline = pipeline.resize(newW, newH, { fit: "fill" });
+					// Force specific dimensions
+					drawW = layer.width;
+					drawH = layer.height;
+				} else {
+					// Apply scale factors
+					drawW = img.width * (layer.scaleX ?? 1);
+					drawH = img.height * (layer.scaleY ?? 1);
 				}
-
-				if (layer.rotation) {
-					pipeline = pipeline.rotate(layer.rotation, {
-						background: { r: 0, g: 0, b: 0, alpha: 0 },
-					});
-				}
-
-				layerBuffer = await pipeline.toBuffer();
+				console.log({ drawW, drawH });
+				ctx.drawImage(img, 0, 0, drawW, drawH);
 			} else if (layer.type === "Text" && inputItem?.type === DataType.Text) {
 				const textValue = String(inputItem.data);
-				layerBuffer = await generateTextSvg(layer, textValue);
-
-				// Apply rotation to the generated SVG if needed
-				if (layer.rotation) {
-					layerBuffer = await sharp(layerBuffer)
-						.rotate(layer.rotation, {
-							background: { r: 0, g: 0, b: 0, alpha: 0 },
-						})
-						.toBuffer();
-				}
+				renderTextLayer(ctx, layer, textValue);
 			}
 
-			if (layerBuffer) {
-				// Get layer dimensions
-				const metadata = await sharp(layerBuffer).metadata();
-				const layerW = metadata.width ?? 0;
-				const layerH = metadata.height ?? 0;
-
-				// Calculate crop offsets and visible dimensions to mask within canvas
-				const cropX = Math.max(0, -layerLeft);
-				const cropY = Math.max(0, -layerTop);
-				const visibleW = Math.min(
-					layerW - cropX,
-					width - Math.max(0, layerLeft),
-				);
-				const visibleH = Math.min(
-					layerH - cropY,
-					height - Math.max(0, layerTop),
-				);
-
-				if (visibleW <= 0 || visibleH <= 0) continue;
-
-				// Crop the layer buffer to the visible part
-				layerBuffer = await sharp(layerBuffer)
-					.extract({
-						left: cropX,
-						top: cropY,
-						width: visibleW,
-						height: visibleH,
-					})
-					.toBuffer();
-
-				// Adjust position to be within canvas
-				layerLeft = Math.max(0, layerLeft);
-				layerTop = Math.max(0, layerTop);
-
-				compositeOps.push({
-					input: layerBuffer,
-					top: layerTop,
-					left: layerLeft,
-					blend: getBlendMode(layer.blendMode),
-				});
-			}
+			ctx.restore();
 		}
 
-		// Composite All Layers
-		const resultBuffer = await baseComposite
-			.composite(compositeOps)
-			.png()
-			.toBuffer();
+		// 4. Output Generation
+		const resultBuffer = canvas.toBuffer("image/png");
 		logMedia(resultBuffer, undefined, node.id);
-		// Construct Result
+
 		const dimensions = getImageDimensions(resultBuffer);
 		const dataUrl = bufferToDataUrl(resultBuffer, "image/png");
 
@@ -306,7 +265,7 @@ const compositorProcessor: NodeProcessor = async ({ node, data }) => {
 			],
 		};
 
-		newResult.outputs = [newGeneration]; // Replace or push depending on logic, usually replace for compositor
+		newResult.outputs = [newGeneration];
 		newResult.selectedOutputIndex = 0;
 
 		return { success: true, newResult };

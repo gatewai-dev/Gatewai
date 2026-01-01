@@ -185,8 +185,16 @@ const useSnap = () => {
 	const SNAP_THRESHOLD = 5;
 	const getSnapPositions = useCallback(
 		(excludeId: string) => {
-			const hSnaps: number[] = [0, viewportHeight / 2, viewportHeight]; // Canvas edges and center
-			const vSnaps: number[] = [0, viewportWidth / 2, viewportWidth];
+			const hSnaps: number[] = [
+				0,
+				Math.round(viewportHeight / 2),
+				viewportHeight,
+			]; // Canvas edges and center
+			const vSnaps: number[] = [
+				0,
+				Math.round(viewportWidth / 2),
+				viewportWidth,
+			];
 			layers.forEach((layer) => {
 				if (
 					layer.id !== excludeId &&
@@ -194,13 +202,21 @@ const useSnap = () => {
 					(layer.height ?? layer.computedHeight)
 				) {
 					const effectiveHeight = layer.height ?? layer.computedHeight ?? 0;
-					const centerX = layer.x + (layer.width * layer.scaleX) / 2;
-					const centerY = layer.y + (effectiveHeight * layer.scaleY) / 2;
-					vSnaps.push(layer.x, centerX, layer.x + layer.width * layer.scaleX);
+					const centerX = Math.round(
+						layer.x + (layer.width * layer.scaleX) / 2,
+					);
+					const centerY = Math.round(
+						layer.y + (effectiveHeight * layer.scaleY) / 2,
+					);
+					vSnaps.push(
+						Math.round(layer.x),
+						centerX,
+						Math.round(layer.x + layer.width * layer.scaleX),
+					);
 					hSnaps.push(
-						layer.y,
+						Math.round(layer.y),
 						centerY,
-						layer.y + effectiveHeight * layer.scaleY,
+						Math.round(layer.y + effectiveHeight * layer.scaleY),
 					);
 				}
 			});
@@ -265,7 +281,11 @@ const useSnap = () => {
 			const node = e.target;
 			const id = node.id();
 			setLayers((prev) =>
-				prev.map((l) => (l.id === id ? { ...l, x: node.x(), y: node.y() } : l)),
+				prev.map((l) =>
+					l.id === id
+						? { ...l, x: Math.round(node.x()), y: Math.round(node.y()) }
+						: l,
+				),
 			);
 			setGuides([]);
 		},
@@ -280,12 +300,12 @@ const useSnap = () => {
 					l.id === id
 						? {
 								...l,
-								x: node.x(),
-								y: node.y(),
+								x: Math.round(node.x()),
+								y: Math.round(node.y()),
 								scaleX: node.scaleX(),
 								scaleY: node.scaleY(),
-								rotation: node.rotation(),
-								width: l.type === "Text" ? node.width() : l.width,
+								rotation: Math.round(node.rotation()),
+								width: l.type === "Text" ? Math.round(node.width()) : l.width,
 							}
 						: l,
 				),
@@ -323,7 +343,11 @@ const ImageLayer: React.FC<LayerProps> = ({
 			setLayers((prev) =>
 				prev.map((l) =>
 					l.id === layer.id
-						? { ...l, width: image.width, height: image.height }
+						? {
+								...l,
+								width: Math.round(image.width),
+								height: Math.round(image.height),
+							}
 						: l,
 				),
 			);
@@ -386,7 +410,7 @@ const TextLayer: React.FC<
 	};
 	const handleTransform = useCallback((e: Konva.KonvaEventObject<Event>) => {
 		const node = e.target as Konva.Text;
-		const newWidth = Math.max(20, node.width() * node.scaleX());
+		const newWidth = Math.max(20, Math.round(node.width() * node.scaleX()));
 		node.setAttrs({
 			width: newWidth,
 			scaleX: 1,
@@ -398,7 +422,7 @@ const TextLayer: React.FC<
 			| Konva.Text
 			| undefined;
 		if (node && layer.type === "Text") {
-			const newHeight = node.height();
+			const newHeight = Math.round(node.height());
 			if (newHeight !== layer.computedHeight) {
 				setLayers((prev) =>
 					prev.map((l) =>
@@ -415,7 +439,7 @@ const TextLayer: React.FC<
 			y={layer.y}
 			text={text as string}
 			fontSize={layer.fontSize ?? 24}
-			fontFamily={layer.fontFamily ?? "sans-serif"}
+			fontFamily={layer.fontFamily ?? "Geist"}
 			fill={layer.fill ?? "#000000"}
 			width={layer.width ?? 200}
 			height={layer.height}
@@ -858,10 +882,11 @@ const InspectorPanel: React.FC = () => {
 						<Label htmlFor="canvas-width">Width:</Label>
 						<Input
 							id="canvas-width"
-							type="text"
-							value={viewportWidth}
+							type="number"
+							step="1"
+							value={Math.round(viewportWidth)}
 							onChange={(e) =>
-								setViewportWidth(parseFloat(e.target.value) || 800)
+								setViewportWidth(parseInt(e.target.value) || 800)
 							}
 							placeholder="Width"
 							className="w-full"
@@ -871,10 +896,11 @@ const InspectorPanel: React.FC = () => {
 						<Label htmlFor="canvas-height">Height:</Label>
 						<Input
 							id="canvas-height"
-							type="text"
-							value={viewportHeight}
+							type="number"
+							step="1"
+							value={Math.round(viewportHeight)}
 							onChange={(e) =>
-								setViewportHeight(parseFloat(e.target.value) || 600)
+								setViewportHeight(parseInt(e.target.value) || 600)
 							}
 							placeholder="Height"
 							className="w-full"
@@ -892,10 +918,11 @@ const InspectorPanel: React.FC = () => {
 								<Label htmlFor="x">X:</Label>
 								<Input
 									id="x"
-									type="text"
-									value={selectedLayer.x}
+									type="number"
+									step="1"
+									value={Math.round(selectedLayer.x)}
 									onChange={(e) =>
-										updateLayer({ x: parseFloat(e.target.value) || 0 })
+										updateLayer({ x: Number(e.target.value) || 0 })
 									}
 								/>
 							</div>
@@ -903,10 +930,11 @@ const InspectorPanel: React.FC = () => {
 								<Label htmlFor="y">Y:</Label>
 								<Input
 									id="y"
-									type="text"
-									value={selectedLayer.y}
+									type="number"
+									step="1"
+									value={Math.round(selectedLayer.y)}
 									onChange={(e) =>
-										updateLayer({ y: parseFloat(e.target.value) || 0 })
+										updateLayer({ y: Number(e.target.value) || 0 })
 									}
 								/>
 							</div>
@@ -916,10 +944,11 @@ const InspectorPanel: React.FC = () => {
 								<Label htmlFor="width">Width:</Label>
 								<Input
 									id="width"
-									type="text"
-									value={computedWidth}
+									type="number"
+									step="1"
+									value={Math.round(computedWidth)}
 									onChange={(e) => {
-										const newWidth = parseFloat(e.target.value) ?? 0;
+										const newWidth = Number(e.target.value) || 0;
 										if (selectedLayer.type === "Text") {
 											updateLayer({ width: newWidth });
 										} else {
@@ -935,11 +964,12 @@ const InspectorPanel: React.FC = () => {
 									<Label htmlFor="height">Height:</Label>
 									<Input
 										id="height"
-										type="text"
-										value={computedHeight}
+										type="number"
+										step="1"
+										value={Math.round(computedHeight)}
 										onChange={(e) => {
 											const newHeight =
-												parseFloat(e.target.value) ?? selectedLayer.height ?? 0;
+												Number(e.target.value) || selectedLayer.height || 0;
 											updateLayer({
 												scaleY: newHeight / (selectedLayer.height ?? 1),
 											});
@@ -959,7 +989,7 @@ const InspectorPanel: React.FC = () => {
 								step={1}
 							/>
 							<div className="text-sm text-gray-400 mt-1">
-								{selectedLayer.rotation.toFixed(2)}°
+								{selectedLayer.rotation}°
 							</div>
 						</div>
 						<div className="flex flex-col gap-1">
@@ -999,7 +1029,7 @@ const InspectorPanel: React.FC = () => {
 								<div className="flex flex-col gap-1">
 									<Label htmlFor="fontFamily">Font Family:</Label>
 									<Select
-										value={selectedLayer.fontFamily || "sans-serif"}
+										value={selectedLayer.fontFamily || "Geist"}
 										onValueChange={(value) =>
 											updateLayer({ fontFamily: value })
 										}
@@ -1283,7 +1313,7 @@ export const CanvasDesignerEditor: React.FC<CanvasDesignerEditorProps> = ({
 					if (newLayer.type === "Text") {
 						newLayer.width = 200;
 						newLayer.fontSize = 24;
-						newLayer.fontFamily = "sans-serif";
+						newLayer.fontFamily = "Geist";
 						newLayer.fill = "#000000";
 						newLayer.letterSpacing = 0;
 						newLayer.lineHeight = newLayer.fontSize;
@@ -1293,11 +1323,11 @@ export const CanvasDesignerEditor: React.FC<CanvasDesignerEditorProps> = ({
 					if (newLayer.type === "Image") {
 						const fData = getImageData(handleId);
 						if (fData.entity) {
-							newLayer.width = fData.entity.width ?? 200;
-							newLayer.height = fData.entity.height ?? 200;
+							newLayer.width = Math.round(fData.entity.width ?? 200);
+							newLayer.height = Math.round(fData.entity.height ?? 200);
 						} else if (fData.processData) {
-							newLayer.width = fData.processData.width ?? 200;
-							newLayer.height = fData.processData.height ?? 200;
+							newLayer.width = Math.round(fData.processData.width ?? 200);
+							newLayer.height = Math.round(fData.processData.height ?? 200);
 						} else {
 							newLayer.width = 200;
 							newLayer.height = 200;

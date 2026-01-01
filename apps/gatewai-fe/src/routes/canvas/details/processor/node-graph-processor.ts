@@ -701,8 +701,8 @@ export class NodeGraphProcessor extends EventEmitter {
 				inputDataMap,
 				signal,
 			);
-			console.log({ result });
-			// 3. Find Output Handle (Standard "Image" output)
+
+			// Find Output Handle (Standard "Image" output)
 			const outputHandle = getFirstOutputHandle(node.id);
 			if (!outputHandle) throw new Error("Missing output handle");
 

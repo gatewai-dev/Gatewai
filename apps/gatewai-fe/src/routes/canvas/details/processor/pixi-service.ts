@@ -627,7 +627,7 @@ class PixiProcessorService {
 					const fontSize = layer.fontSize ?? 24;
 					const lineHeight = layer.lineHeight ?? 1;
 					const style = new TextStyle({
-						fontFamily: layer.fontFamily ?? "sans-serif",
+						fontFamily: layer.fontFamily ?? "Geist",
 						fontSize,
 						padding: 0,
 						letterSpacing: layer.letterSpacing ?? 0,

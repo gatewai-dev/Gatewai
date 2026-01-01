@@ -31,3 +31,14 @@ Click that      ⭐ button!
     }
 ]
 ```
+
+## Build node-canvas
+
+By default, "canvas" package is not being built with pnpm for security reasons.
+
+To make it build, run
+
+```sh
+cd apps/gatewai-fe
+pnpm approve-builds
+```

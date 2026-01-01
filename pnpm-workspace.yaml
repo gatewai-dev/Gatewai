@@ -11,4 +11,5 @@ catalogs:
     prisma: latest
 
 onlyBuiltDependencies:
+  - canvas
   - lefthook

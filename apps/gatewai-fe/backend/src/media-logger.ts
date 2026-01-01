@@ -14,7 +14,7 @@ async function logMedia(
 		if (!exists) {
 			mkdirSync(debug_path);
 		}
-		const filePath = `${process.cwd()}/debug_media/${new Date().toISOString()}_moderate_${nodeId ?? ""}${extension}`;
+		const filePath = `${process.cwd()}/debug_media/${new Date().toISOString()}_${nodeId ?? ""}${extension}`;
 		await sharp(buffer).toFile(filePath);
 	} catch (error) {
 		console.log(error);
