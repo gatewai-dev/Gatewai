@@ -1,14 +1,14 @@
 import type { ModulateNodeConfig } from "@gatewai/types";
 import { Filter, GlProgram } from "pixi.js";
 
-// Custom Modulate Filter
+// Custom Modulate Filter that matches sharp npm package
 class ModulateFilter extends Filter {
 	constructor(config: ModulateNodeConfig) {
 		const fragmentShader = `
 			precision mediump float;
-			
+
 			varying vec2 vTextureCoord;
-			
+
 			uniform sampler2D uTexture;
 			uniform float uBrightness;
 			uniform float uSaturation;
@@ -20,14 +20,14 @@ class ModulateFilter extends Filter {
 				float maxVal = max(max(color.r, color.g), color.b);
 				float minVal = min(min(color.r, color.g), color.b);
 				float delta = maxVal - minVal;
-				
+
 				float h = 0.0;
 				float s = 0.0;
 				float l = (maxVal + minVal) / 2.0;
-				
+
 				if (delta != 0.0) {
 					s = l < 0.5 ? delta / (maxVal + minVal) : delta / (2.0 - maxVal - minVal);
-					
+
 					if (color.r == maxVal) {
 						h = (color.g - color.b) / delta + (color.g < color.b ? 6.0 : 0.0);
 					} else if (color.g == maxVal) {
@@ -37,7 +37,7 @@ class ModulateFilter extends Filter {
 					}
 					h /= 6.0;
 				}
-				
+
 				return vec3(h, s, l);
 			}
 
@@ -55,14 +55,14 @@ class ModulateFilter extends Filter {
 				float h = hsl.x;
 				float s = hsl.y;
 				float l = hsl.z;
-				
+
 				if (s == 0.0) {
 					return vec3(l, l, l);
 				}
-				
+
 				float q = l < 0.5 ? l * (1.0 + s) : l + s - l * s;
 				float p = 2.0 * l - q;
-				
+
 				return vec3(
 					hue2rgb(p, q, h + 1.0/3.0),
 					hue2rgb(p, q, h),
@@ -72,28 +72,28 @@ class ModulateFilter extends Filter {
 
 			void main() {
 				vec4 color = texture2D(uTexture, vTextureCoord);
-				
+
 				// Convert to HSL
 				vec3 hsl = rgb2hsl(color.rgb);
-				
+
 				// Apply hue rotation (in degrees, convert to 0-1 range)
 				hsl.x = mod(hsl.x + uHue / 360.0, 1.0);
-				
+
 				// Apply saturation (additive, clamped)
 				hsl.y = clamp(hsl.y + uSaturation, 0.0, 1.0);
-				
+
 				// Apply lightness (additive, clamped)
 				hsl.z = clamp(hsl.z + uLightness, 0.0, 1.0);
-				
+
 				// Convert back to RGB
 				vec3 rgb = hsl2rgb(hsl);
-				
+
 				// Apply brightness (additive)
 				rgb += uBrightness;
-				
+
 				// Clamp to valid range
 				rgb = clamp(rgb, 0.0, 1.0);
-				
+
 				gl_FragColor = vec4(rgb, color.a);
 			}
 		`;
@@ -141,7 +141,6 @@ class ModulateFilter extends Filter {
 		});
 	}
 
-	// Getters and setters for dynamic updates
 	get brightness(): number {
 		return this.resources.modulateUniforms.uniforms.uBrightness;
 	}

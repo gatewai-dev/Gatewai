@@ -1,3 +1,20 @@
+import {
+	closestCenter,
+	DndContext,
+	DragEndEvent,
+	KeyboardSensor,
+	PointerSensor,
+	useSensor,
+	useSensors,
+} from "@dnd-kit/core";
+import {
+	arrayMove,
+	SortableContext,
+	sortableKeyboardCoordinates,
+	useSortable,
+	verticalListSortingStrategy,
+} from "@dnd-kit/sortable";
+import { CSS } from "@dnd-kit/utilities";
 import type {
 	CompositorLayer,
 	CompositorNodeConfig,
@@ -13,6 +30,7 @@ import {
 	MousePointer,
 	SaveAll,
 	TextIcon,
+	X,
 } from "lucide-react";
 import type React from "react";
 import {
@@ -435,6 +453,26 @@ const Guides: React.FC = () => {
 // The background "Paper" representing the viewport
 const ArtboardBackground: React.FC = () => {
 	const { viewportWidth, viewportHeight } = useEditor();
+
+	const patternImage = useMemo(() => {
+		const size = 20;
+		const half = size / 2;
+		const canvas = document.createElement("canvas");
+		canvas.width = size;
+		canvas.height = size;
+		const ctx = canvas.getContext("2d");
+		if (ctx) {
+			// Base fill (equivalent to transparent in CSS, but using white for opaque checkerboard)
+			ctx.fillStyle = "#ffffff";
+			ctx.fillRect(0, 0, size, size);
+			// Checker color squares (assuming --checker-color is a light gray)
+			ctx.fillStyle = "#cccccc";
+			ctx.fillRect(0, 0, half, half);
+			ctx.fillRect(half, half, half, half);
+		}
+		return canvas;
+	}, []);
+
 	return (
 		<Group>
 			{/* Shadow for depth effect */}
@@ -452,7 +490,8 @@ const ArtboardBackground: React.FC = () => {
 				y={0}
 				width={viewportWidth}
 				height={viewportHeight}
-				fill="#ffffff"
+				fillPatternImage={patternImage}
+				fillPatternRepeat="repeat"
 				shadowColor="black"
 				shadowBlur={20}
 				shadowOpacity={0.2}
@@ -570,10 +609,10 @@ const Canvas: React.FC = () => {
 						onTransformEnd: handleTransformEnd,
 					};
 					if (layer.type === "Image") {
-						return <ImageLayer {...props} />;
+						return <ImageLayer {...props} key={layer.id} />;
 					}
 					if (layer.type === "Text") {
-						return <TextLayer {...props} layer={layer} />;
+						return <TextLayer {...props} layer={layer} key={layer.id} />;
 					}
 					return null;
 				})}
@@ -588,83 +627,63 @@ const Canvas: React.FC = () => {
 	);
 };
 
-const LAYER_ITEM_TYPE = "LAYER";
-
 interface LayerItemProps {
 	layer: CompositorLayer;
 	selectedId: string | null;
 	setSelectedId: (id: string) => void;
-	moveLayer: (
-		draggedId: string,
-		targetId: string,
-		insertAfter: boolean,
-	) => void;
 }
 
 const LayerItem: React.FC<LayerItemProps> = ({
 	layer,
 	selectedId,
 	setSelectedId,
-	moveLayer,
 }) => {
-	const ref = useRef<HTMLButtonElement>(null);
+	const {
+		attributes,
+		listeners,
+		setNodeRef,
+		transform,
+		transition,
+		isDragging,
+	} = useSortable({ id: layer.id });
 
-	const [{ isDragging }, drag] = useDrag<
-		{ id: string },
-		unknown,
-		{ isDragging: boolean }
-	>(() => ({
-		type: LAYER_ITEM_TYPE,
-		item: { id: layer.id },
-		collect: (monitor) => ({
-			isDragging: monitor.isDragging(),
-		}),
-	}));
-
-	const [{ isOver }, drop] = useDrop<
-		{ id: string },
-		unknown,
-		{ isOver: boolean }
-	>(() => ({
-		accept: LAYER_ITEM_TYPE,
-		collect: (monitor) => ({
-			isOver: monitor.isOver(),
-		}),
-		drop: (item, monitor) => {
-			if (item.id === layer.id) return;
-			// Determine if drop is above or below the midpoint
-			const clientY = monitor.getClientOffset()?.y ?? 0;
-			const rect = ref.current?.getBoundingClientRect();
-			const midpoint = (rect?.top ?? 0) + (rect?.height ?? 0) / 2;
-			const insertAfter = clientY > midpoint;
-			moveLayer(item.id, layer.id, insertAfter);
-		},
-	}));
-
-	drag(drop(ref));
+	const style = {
+		transform: CSS.Transform.toString(transform),
+		transition,
+		zIndex: isDragging ? 9999 : "auto",
+		opacity: isDragging ? 0.5 : 1,
+	};
 
 	return (
-		<Button
-			ref={ref}
-			variant="ghost"
-			onClick={() => setSelectedId(layer.id)}
-			onKeyUp={(e) => {
-				if (e.key === "Enter") {
-					setSelectedId(layer.id);
-				}
-			}}
-			className={`cursor-pointer w-full flex items-center gap-2 p-2 transition-colors duration-200 hover:bg-gray-800 ${
-				layer.id === selectedId ? "bg-gray-800" : ""
-			} ${isDragging ? "opacity-50" : ""} ${isOver ? "border border-blue-500" : ""}`}
+		<div
+			ref={setNodeRef}
+			style={style}
+			{...attributes}
+			{...listeners}
+			className="mb-2"
 		>
-			{layer.type === "Image" ? (
-				<ImageIcon className="size-4" />
-			) : (
-				<TextIcon className="size-4" />
-			)}{" "}
-			{layer.type.charAt(0).toUpperCase() + layer.type.slice(1)} -{" "}
-			{layer.id.slice(0, 6)}
-		</Button>
+			<Button
+				variant="ghost"
+				onClick={() => {
+					// Prevent drag click from triggering select immediately if dragging
+					if (!isDragging) setSelectedId(layer.id);
+				}}
+				className={`cursor-pointer w-full rounded-sm flex items-center gap-2 p-2 transition-colors duration-200 hover:bg-gray-800 ${
+					layer.id === selectedId
+						? "bg-gray-800 border-l-2 border-blue-500"
+						: ""
+				}`}
+			>
+				{layer.type === "Image" ? (
+					<ImageIcon className="size-4 text-blue-400" />
+				) : (
+					<TextIcon className="size-4 text-green-400" />
+				)}{" "}
+				<span className="truncate flex-1 text-left">
+					{layer.type} - {layer.id.slice(0, 4)}
+				</span>
+			</Button>
+		</div>
 	);
 };
 
@@ -674,50 +693,64 @@ const LayersPanel: React.FC<{ onSave: () => void; onClose: () => void }> = ({
 }) => {
 	const { layers, setLayers, selectedId, setSelectedId } = useEditor();
 
-	const moveLayer = useCallback(
-		(draggedId: string, targetId: string, insertAfter: boolean) => {
-			const displayLayers = layers.slice();
-			const draggedIndex = displayLayers.findIndex((l) => l.id === draggedId);
-			let targetIndex = displayLayers.findIndex((l) => l.id === targetId);
-
-			if (draggedIndex < 0 || targetIndex < 0) return;
-
-			if (insertAfter) targetIndex += 1;
-
-			const newDisplayLayers = [...displayLayers];
-			const [moved] = newDisplayLayers.splice(draggedIndex, 1);
-			let adjustedTargetIndex = targetIndex;
-			if (draggedIndex < targetIndex) adjustedTargetIndex -= 1;
-			newDisplayLayers.splice(adjustedTargetIndex, 0, moved);
-
-			setLayers(newDisplayLayers);
-		},
-		[layers, setLayers],
+	const sensors = useSensors(
+		useSensor(PointerSensor, {
+			activationConstraint: { distance: 5 },
+		}),
+		useSensor(KeyboardSensor, {
+			coordinateGetter: sortableKeyboardCoordinates,
+		}),
 	);
 
 	return (
-		<div className="absolute left-0 top-0 bottom-0 w-56 overflow-y-auto bg-background p-2 border-r border-gray-700 z-10 text-xs">
-			<div className="flex justify-evenly my-4">
-				<Button onClick={onClose} variant="outline">
-					Close
-				</Button>
-				<Button onClick={onSave}>
-					<SaveAll className="size-4" /> Save
-				</Button>
+		<div className="absolute left-0 top-0 bottom-0 w-56 overflow-y-auto bg-background p-3 border-r border-gray-800 z-10 text-xs flex flex-col">
+			<div className="flex justify-between items-center mb-4">
+				<h3 className="font-bold text-gray-100">Layers</h3>
+				<div className="flex gap-1">
+					<Button onClick={onClose} size="icon" variant="ghost" title="Close">
+						<X className="size-4 rotate-90" />
+					</Button>
+					<Button onClick={onSave} size="icon" title="Save">
+						<SaveAll className="size-4" />
+					</Button>
+				</div>
 			</div>
-			<Separator className="my-4" />
-			<h3 className="mb-4 text-xl font-bold text-gray-100">Layers</h3>
-			<ul className="space-y-2">
-				{layers.map((layer) => (
-					<LayerItem
-						key={layer.id}
-						layer={layer}
-						selectedId={selectedId}
-						setSelectedId={setSelectedId}
-						moveLayer={moveLayer}
-					/>
-				))}
-			</ul>
+
+			<DndContext
+				sensors={sensors}
+				collisionDetection={closestCenter}
+				onDragEnd={(e) => {
+					// Logic to handle reverse mapping if necessary
+					const { active, over } = e;
+					if (over && active.id !== over.id) {
+						setLayers((currentLayers) => {
+							// Find indices in the original (non-reversed) array
+							const oldIndex = currentLayers.findIndex(
+								(l) => l.id === active.id,
+							);
+							const newIndex = currentLayers.findIndex((l) => l.id === over.id);
+							return arrayMove(currentLayers, oldIndex, newIndex);
+						});
+					}
+				}}
+			>
+				<SortableContext
+					items={layers.map((l) => l.id)}
+					strategy={verticalListSortingStrategy}
+				>
+					<div className="flex flex-col-reverse">
+						{/* Render normally, but style flex-col-reverse so visual top matches Z-index top */}
+						{layers.map((layer) => (
+							<LayerItem
+								key={layer.id}
+								layer={layer}
+								selectedId={selectedId}
+								setSelectedId={setSelectedId}
+							/>
+						))}
+					</div>
+				</SortableContext>
+			</DndContext>
 		</div>
 	);
 };
@@ -1024,8 +1057,7 @@ export const CanvasDesignerEditor: React.FC<CanvasDesignerEditorProps> = ({
 			const y = (screenHeight - viewportHeight) / 2;
 			setStagePos({ x, y });
 		}
-		// eslint-disable-next-line react-hooks/exhaustive-deps
-	}, [screenWidth, screenHeight, viewportHeight, viewportWidth]); // Run when screen size stabilizes
+	}, [screenWidth, screenHeight, viewportHeight, viewportWidth]);
 
 	const zoomIn = useCallback(() => {
 		const stage = stageRef.current;
@@ -1201,113 +1233,109 @@ export const CanvasDesignerEditor: React.FC<CanvasDesignerEditorProps> = ({
 	}, [layers, propOnSave, viewportHeight, viewportWidth]);
 
 	return (
-		<DndProvider backend={TouchBackend} options={{ enableMouseEvents: true }}>
-			<EditorContext.Provider
-				value={{
-					layers,
-					setLayers,
-					selectedId,
-					setSelectedId,
-					viewportWidth,
-					setViewportWidth,
-					viewportHeight,
-					setViewportHeight,
-					screenWidth,
-					screenHeight,
-					guides,
-					setGuides,
-					isEditingText,
-					setIsEditingText,
-					editingLayerId,
-					setEditingLayerId,
-					stageRef,
-					mode,
-					setMode,
-					scale,
-					setScale,
-					stagePos,
-					setStagePos,
-					zoomIn,
-					zoomOut,
-					zoomTo,
-					fitView,
-					zoomPercentage,
-					getTextData,
-					getImageData,
-					getImageUrl,
-				}}
-			>
-				<div className="flex flex-row h-screen w-screen bg-gray-950 overflow-hidden relative">
-					{/* Layers Sidebar - Fixed Width */}
-					<div className="relative w-56 shrink-0">
-						<LayersPanel onSave={handleSave} onClose={onClose} />
-					</div>
+		<EditorContext.Provider
+			value={{
+				layers,
+				setLayers,
+				selectedId,
+				setSelectedId,
+				viewportWidth,
+				setViewportWidth,
+				viewportHeight,
+				setViewportHeight,
+				screenWidth,
+				screenHeight,
+				guides,
+				setGuides,
+				isEditingText,
+				setIsEditingText,
+				editingLayerId,
+				setEditingLayerId,
+				stageRef,
+				mode,
+				setMode,
+				scale,
+				setScale,
+				stagePos,
+				setStagePos,
+				zoomIn,
+				zoomOut,
+				zoomTo,
+				fitView,
+				zoomPercentage,
+				getTextData,
+				getImageData,
+				getImageUrl,
+			}}
+		>
+			<div className="flex flex-row h-screen w-screen bg-gray-950 overflow-hidden relative">
+				{/* Layers Sidebar - Fixed Width */}
+				<div className="relative w-56 shrink-0">
+					<LayersPanel onSave={handleSave} onClose={onClose} />
+				</div>
 
-					{/* Main Canvas Area - Flexible */}
-					<div className="flex-1 flex flex-col relative min-w-0">
+				{/* Main Canvas Area - Flexible */}
+				<div className="flex-1 flex flex-col relative min-w-0">
+					<div
+						ref={containerRef}
+						className="flex-1 relative overflow-hidden bg-neutral-900"
+					>
 						<div
-							ref={containerRef}
-							className="flex-1 relative overflow-hidden bg-neutral-900"
-						>
-							<div
-								className="absolute inset-0 pointer-events-none"
-								style={{
-									backgroundImage: `
+							className="absolute inset-0 pointer-events-none"
+							style={{
+								backgroundImage: `
 										radial-gradient(circle, #333 1px, transparent 1px)
 									`,
-									backgroundSize: "20px 20px",
-									opacity: 0.5,
-								}}
-							/>
-							<Canvas />
-						</div>
-
-						{/* Bottom Toolbar */}
-						<div className="absolute bottom-6 left-1/2 -translate-x-1/2 z-20">
-							<Menubar className="border-0 bg-gray-800 py-1 rounded-md shadow-lg ring-1 ring-white/10">
-								<Button
-									title="Select"
-									variant={mode === "pan" ? "ghost" : "outline"}
-									size="sm"
-									onClick={() => setMode("select")}
-								>
-									<MousePointer className="w-4" />
-								</Button>
-								<Button
-									title="Pan"
-									variant={mode === "select" ? "ghost" : "outline"}
-									size="sm"
-									onClick={() => setMode("pan")}
-								>
-									<Hand className="w-4" />
-								</Button>
-								<Separator orientation="vertical" />
-								<MenubarMenu>
-									<MenubarTrigger className="px-3 py-1 cursor-pointer text-xs">
-										{zoomPercentage} <ChevronDown className="w-5" />
-									</MenubarTrigger>
-									<MenubarContent align="end">
-										<MenubarItem onClick={() => zoomIn()}>Zoom in</MenubarItem>
-										<MenubarItem onClick={() => zoomOut()}>
-											Zoom out
-										</MenubarItem>
-										<MenubarItem onClick={() => zoomTo(1)}>
-											Zoom to 100%
-										</MenubarItem>
-										<MenubarItem onClick={() => fitView()}>
-											Zoom to fit
-										</MenubarItem>
-									</MenubarContent>
-								</MenubarMenu>
-							</Menubar>
-						</div>
+								backgroundSize: "20px 20px",
+								opacity: 0.5,
+							}}
+						/>
+						<Canvas />
 					</div>
 
-					<div className="relative w-56 shrink-0">
-						<InspectorPanel />
+					{/* Bottom Toolbar */}
+					<div className="absolute bottom-6 left-1/2 -translate-x-1/2 z-20">
+						<Menubar className="border-0 bg-gray-800 py-1 rounded-md shadow-lg ring-1 ring-white/10">
+							<Button
+								title="Select"
+								variant={mode === "pan" ? "ghost" : "outline"}
+								size="sm"
+								onClick={() => setMode("select")}
+							>
+								<MousePointer className="w-4" />
+							</Button>
+							<Button
+								title="Pan"
+								variant={mode === "select" ? "ghost" : "outline"}
+								size="sm"
+								onClick={() => setMode("pan")}
+							>
+								<Hand className="w-4" />
+							</Button>
+							<Separator orientation="vertical" />
+							<MenubarMenu>
+								<MenubarTrigger className="px-3 py-1 cursor-pointer text-xs">
+									{zoomPercentage} <ChevronDown className="w-5" />
+								</MenubarTrigger>
+								<MenubarContent align="end">
+									<MenubarItem onClick={() => zoomIn()}>Zoom in</MenubarItem>
+									<MenubarItem onClick={() => zoomOut()}>Zoom out</MenubarItem>
+									<MenubarItem onClick={() => zoomTo(1)}>
+										Zoom to 100%
+									</MenubarItem>
+									<MenubarItem onClick={() => fitView()}>
+										Zoom to fit
+									</MenubarItem>
+								</MenubarContent>
+							</MenubarMenu>
+						</Menubar>
 					</div>
 				</div>
-			</EditorContext.Provider>
-		</DndProvider>
+
+				<div className="relative w-56 shrink-0">
+					<InspectorPanel />
+				</div>
+			</div>
+		</EditorContext.Provider>
 	);
 };

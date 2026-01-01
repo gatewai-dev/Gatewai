@@ -349,8 +349,8 @@ export async function SEED_createNodeTemplates(prisma: PrismaClient) {
 				],
 			},
 			defaultConfig: {
-				canvasWidth: 1024,
-				canvasHeight: 1024,
+				width: 1024,
+				height: 1024,
 			},
 		},
 	});
