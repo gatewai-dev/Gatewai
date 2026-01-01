@@ -5,6 +5,7 @@ import { assetsAPI } from "./assets";
 import { canvasDetailsAPI } from "./canvas";
 import { canvasListAPI } from "./canvas-list";
 import { edgesReducer } from "./edges";
+import { fontListAPI } from "./fonts";
 import { handlesReducer } from "./handles";
 import { nodeTemplatesAPI } from "./node-templates";
 import { nodesReducer } from "./nodes";
@@ -22,12 +23,14 @@ export const store = configureStore({
 		[assetsAPI.reducerPath]: assetsAPI.reducer,
 		[canvasListAPI.reducerPath]: canvasListAPI.reducer,
 		[canvasDetailsAPI.reducerPath]: canvasDetailsAPI.reducer,
+		[fontListAPI.reducerPath]: fontListAPI.reducer,
 	},
 	middleware: (getDefaultMiddleware) =>
 		getDefaultMiddleware()
 			.concat(nodeTemplatesAPI.middleware)
 			.concat(assetsAPI.middleware)
 			.concat(canvasListAPI.middleware)
+			.concat(fontListAPI.middleware)
 			.concat(canvasDetailsAPI.middleware),
 });
 

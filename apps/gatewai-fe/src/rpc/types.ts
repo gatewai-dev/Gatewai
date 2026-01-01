@@ -80,3 +80,9 @@ export type BatchDetailsRPC = InferResponseType<
 export type BatchDetailsRPCParams = InferRequestType<
 	(typeof rpcClient.api.v1.tasks)["filterby-batch"]["$get"]
 >;
+
+export type FontListRPC = InferResponseType<typeof rpcClient.api.v1.fonts.$get>;
+
+export type FontListRPCParams = InferRequestType<
+	typeof rpcClient.api.v1.fonts.$get
+>;

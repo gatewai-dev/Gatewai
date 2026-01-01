@@ -83,6 +83,7 @@ import {
 	TooltipTrigger,
 } from "@/components/ui/tooltip";
 import { BLEND_MODES } from "@/routes/canvas/blend-modes";
+import { useGetFontListQuery } from "@/store/fonts";
 import type { HandleEntityType } from "@/store/handles";
 import type { NodeEntityType } from "@/store/nodes";
 import { GetAssetEndpoint } from "@/utils/file";
@@ -741,6 +742,13 @@ const LayersPanel: React.FC<{ onSave: () => void; onClose: () => void }> = ({
 };
 // Inspector Panel (Right sidebar like Figma)
 const InspectorPanel: React.FC = () => {
+	const { data: fontList } = useGetFontListQuery({});
+	const fontNames = useMemo(() => {
+		if (Array.isArray(fontList) && (fontList as string[])?.length > 0) {
+			return fontList as string[];
+		}
+		return [];
+	}, [fontList]);
 	const {
 		selectedId,
 		layers,
@@ -954,20 +962,11 @@ const InspectorPanel: React.FC = () => {
 											<SelectValue />
 										</SelectTrigger>
 										<SelectContent>
-											<SelectItem value="Arial">Arial</SelectItem>
-											<SelectItem value="Montserrat">Montserrat</SelectItem>
-											<SelectItem value="Helvetica">Helvetica</SelectItem>
-											<SelectItem value="Times New Roman">
-												Times New Roman
-											</SelectItem>
-											<SelectItem value="Courier New">Courier New</SelectItem>
-											<SelectItem value="Verdana">Verdana</SelectItem>
-											<SelectItem value="Georgia">Georgia</SelectItem>
-											<SelectItem value="Roboto">Roboto</SelectItem>
-											<SelectItem value="Open Sans">Open Sans</SelectItem>
-											<SelectItem value="sans-serif">Sans Serif</SelectItem>
-											<SelectItem value="serif">Serif</SelectItem>
-											<SelectItem value="monospace">Monospace</SelectItem>
+											{fontNames.map((fontName) => (
+												<SelectItem key={`${fontName}_opt`} value={fontName}>
+													{fontName}
+												</SelectItem>
+											))}
 										</SelectContent>
 									</Select>
 								</div>

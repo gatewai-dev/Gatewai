@@ -10,6 +10,7 @@ const fontsRouter = new Hono({
 })
 	.get("/", async (c) => {
 		try {
+			console.log({ __dirname });
 			const assetsDir = path.join(__dirname, "../assets");
 			const dirents = await fs.readdir(assetsDir, { withFileTypes: true });
 			const fontNames = dirents
