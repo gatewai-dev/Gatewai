@@ -6,18 +6,23 @@ import type {
 	OutputItem,
 } from "@gatewai/types";
 import type Konva from "konva";
-import { ImageIcon, TextIcon } from "lucide-react";
+import { ImageIcon, SaveAll, TextIcon } from "lucide-react";
 import type React from "react";
 import {
 	createContext,
 	type Dispatch,
+	type MutableRefObject,
 	type SetStateAction,
 	useCallback,
 	useContext,
 	useEffect,
+	useMemo,
 	useRef,
 	useState,
 } from "react";
+import { DndProvider, useDrag, useDrop } from "react-dnd";
+import { TouchBackend } from "react-dnd-touch-backend";
+import { BsAspectRatio } from "react-icons/bs";
 import {
 	Image as KonvaImage,
 	Layer as KonvaLayer,
@@ -27,6 +32,7 @@ import {
 	Transformer,
 } from "react-konva";
 import useImage from "use-image";
+import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
 import {
@@ -36,8 +42,14 @@ import {
 	SelectTrigger,
 	SelectValue,
 } from "@/components/ui/select";
+import { Separator } from "@/components/ui/separator";
 import { Slider } from "@/components/ui/slider";
 import { Switch } from "@/components/ui/switch";
+import {
+	Tooltip,
+	TooltipContent,
+	TooltipTrigger,
+} from "@/components/ui/tooltip";
 import { BLEND_MODES } from "@/routes/canvas/blend-modes";
 import type { HandleEntityType } from "@/store/handles";
 import type { NodeEntityType } from "@/store/nodes";
@@ -59,7 +71,7 @@ interface EditorContextType {
 	setIsEditingText: (editing: boolean) => void;
 	editingLayerId: string | null;
 	setEditingLayerId: (id: string | null) => void;
-	stageRef: React.RefObject<Konva.Stage | null>;
+	stageRef: MutableRefObject<Konva.Stage | null>;
 
 	getTextData: (handleId: HandleEntityType["id"]) => string;
 	getImageData: (handleId: HandleEntityType["id"]) => FileData;
@@ -148,7 +160,16 @@ const useSnap = () => {
 			}
 
 			node.position({ x: newX, y: newY });
-			setGuides([...vGuides, ...hGuides]);
+
+			// Deduplicate guides
+			const guideMap = new Map<string, Guide>();
+			[...vGuides, ...hGuides].forEach((g) => {
+				const key = `${g.type}-${g.position}`;
+				if (!guideMap.has(key)) {
+					guideMap.set(key, g);
+				}
+			});
+			setGuides(Array.from(guideMap.values()));
 		},
 		[getSnapPositions, setGuides],
 	);
@@ -210,7 +231,7 @@ const ImageLayer: React.FC<LayerProps> = ({
 }) => {
 	const { setSelectedId, setLayers, getImageUrl } = useEditor();
 	const url = getImageUrl(layer.inputHandleId);
-	const [image] = useImage(url, "anonymous");
+	const [image] = useImage(url ?? "", "anonymous");
 
 	useEffect(() => {
 		if (image && (!layer.width || !layer.height)) {
@@ -338,9 +359,9 @@ const Guides: React.FC = () => {
 	const { guides, viewportWidth, viewportHeight } = useEditor();
 	return (
 		<>
-			{guides.map((guide) => (
+			{guides.map((guide, index) => (
 				<Line
-					key={guide.type + guide.position}
+					key={`${guide.type}-${guide.position}-${index}`}
 					points={
 						guide.type === "vertical"
 							? [guide.position, 0, guide.position, viewportHeight]
@@ -420,37 +441,138 @@ const Canvas: React.FC = () => {
 	);
 };
 
-// Layers Panel (Left sidebar like Figma)
-const LayersPanel: React.FC = () => {
-	const { layers, setSelectedId, selectedId } = useEditor();
+const LAYER_ITEM_TYPE = "LAYER";
+
+interface LayerItemProps {
+	layer: CompositorLayer;
+	selectedId: string | null;
+	setSelectedId: (id: string) => void;
+	moveLayer: (
+		draggedId: string,
+		targetId: string,
+		insertAfter: boolean,
+	) => void;
+}
+
+const LayerItem: React.FC<LayerItemProps> = ({
+	layer,
+	selectedId,
+	setSelectedId,
+	moveLayer,
+}) => {
+	const ref = useRef<HTMLButtonElement>(null);
+
+	const [{ isDragging }, drag] = useDrag<
+		{ id: string },
+		unknown,
+		{ isDragging: boolean }
+	>(() => ({
+		type: LAYER_ITEM_TYPE,
+		item: { id: layer.id },
+		collect: (monitor) => ({
+			isDragging: monitor.isDragging(),
+		}),
+	}));
+
+	const [{ isOver }, drop] = useDrop<
+		{ id: string },
+		unknown,
+		{ isOver: boolean }
+	>(() => ({
+		accept: LAYER_ITEM_TYPE,
+		collect: (monitor) => ({
+			isOver: monitor.isOver(),
+		}),
+		drop: (item, monitor) => {
+			if (item.id === layer.id) return;
+			// Determine if drop is above or below the midpoint
+			const clientY = monitor.getClientOffset()?.y ?? 0;
+			const rect = ref.current?.getBoundingClientRect();
+			const midpoint = (rect?.top ?? 0) + (rect?.height ?? 0) / 2;
+			const insertAfter = clientY > midpoint;
+			moveLayer(item.id, layer.id, insertAfter);
+		},
+	}));
+
+	drag(drop(ref));
+
 	return (
-		<div className="absolute left-0 top-0 bottom-0 w-56 overflow-y-auto bg-background p-2 border border-gray-700 z-10 text-xs">
+		<Button
+			ref={ref}
+			variant="ghost"
+			onClick={() => setSelectedId(layer.id)}
+			onKeyUp={(e) => {
+				if (e.key === "Enter") {
+					setSelectedId(layer.id);
+				}
+			}}
+			className={`cursor-pointer w-full flex items-center gap-2 p-2 transition-colors duration-200 hover:bg-gray-800 ${
+				layer.id === selectedId ? "bg-gray-800" : ""
+			} ${isDragging ? "opacity-50" : ""} ${isOver ? "border border-blue-500" : ""}`}
+		>
+			{layer.type === "Image" ? (
+				<ImageIcon className="size-4" />
+			) : (
+				<TextIcon className="size-4" />
+			)}{" "}
+			{layer.type.charAt(0).toUpperCase() + layer.type.slice(1)} -{" "}
+			{layer.id.slice(0, 6)}
+		</Button>
+	);
+};
+
+const LayersPanel: React.FC<{ onSave: () => void; onClose: () => void }> = ({
+	onSave,
+	onClose,
+}) => {
+	const { layers, setLayers, selectedId, setSelectedId } = useEditor();
+
+	const moveLayer = useCallback(
+		(draggedId: string, targetId: string, insertAfter: boolean) => {
+			const displayLayers = layers.slice().reverse();
+			const draggedIndex = displayLayers.findIndex((l) => l.id === draggedId);
+			let targetIndex = displayLayers.findIndex((l) => l.id === targetId);
+
+			if (draggedIndex < 0 || targetIndex < 0) return;
+
+			if (insertAfter) targetIndex += 1;
+
+			const newDisplayLayers = [...displayLayers];
+			const [moved] = newDisplayLayers.splice(draggedIndex, 1);
+			let adjustedTargetIndex = targetIndex;
+			if (draggedIndex < targetIndex) adjustedTargetIndex -= 1;
+			newDisplayLayers.splice(adjustedTargetIndex, 0, moved);
+
+			setLayers(newDisplayLayers.reverse());
+		},
+		[layers, setLayers],
+	);
+
+	return (
+		<div className="absolute left-0 top-0 bottom-0 w-56 overflow-y-auto bg-background p-2 border-r border-gray-700 z-10 text-xs">
+			<div className="flex justify-evenly my-4">
+				<Button onClick={onClose} variant="outline">
+					Close
+				</Button>
+				<Button onClick={onSave}>
+					<SaveAll className="size-4" /> Save
+				</Button>
+			</div>
+			<Separator className="my-4" />
 			<h3 className="mb-4 text-xl font-bold text-gray-100">Layers</h3>
 			<ul className="space-y-2">
-				{layers.map((layer) => (
-					<li
-						key={layer.id}
-						onClick={() => setSelectedId(layer.id)}
-						onKeyUp={(e) => {
-							if (e.key === "Enter") {
-								setSelectedId(layer.id);
-							}
-						}}
-						tabIndex={0}
-						role="button"
-						className={`cursor-pointer flex items-center gap-2 p-2 transition-colors duration-200 hover:bg-gray-800 ${
-							layer.id === selectedId ? "bg-gray-800" : ""
-						}`}
-					>
-						{layer.type === "Image" ? (
-							<ImageIcon className="size-4" />
-						) : (
-							<TextIcon className="size-4" />
-						)}{" "}
-						{layer.type.charAt(0).toUpperCase() + layer.type.slice(1)} -{" "}
-						{layer.id.slice(0, 6)}
-					</li>
-				))}
+				{layers
+					.slice()
+					.reverse()
+					.map((layer) => (
+						<LayerItem
+							key={layer.id}
+							layer={layer}
+							selectedId={selectedId}
+							setSelectedId={setSelectedId}
+							moveLayer={moveLayer}
+						/>
+					))}
 			</ul>
 		</div>
 	);
@@ -482,10 +604,42 @@ const InspectorPanel: React.FC = () => {
 		computedHeight = (selectedLayer.height ?? 0) * selectedLayer.scaleY;
 	}
 
+	const aspectRatios = useMemo(
+		() => [
+			{ label: "1:1", width: 800, height: 800 },
+			{ label: "16:9", width: 1280, height: 720 },
+			{ label: "9:16", width: 720, height: 1280 },
+			{ label: "4:3", width: 800, height: 600 },
+			{ label: "3:4", width: 600, height: 800 },
+		],
+		[],
+	);
+
 	return (
-		<div className="absolute right-0 top-0 bottom-0 w-56 overflow-y-auto bg-background p-4 border border-gray-700 z-10 text-gray-200">
+		<div className="absolute right-0 top-0 bottom-0 w-56 overflow-y-auto bg-background p-4 border-l border-gray-700 z-10 text-gray-200">
 			<h3 className="mb-4 text-xl font-bold text-gray-100">Inspector</h3>
 			<div className="space-y-4">
+				<div className="flex flex-wrap gap-2 mb-4">
+					{aspectRatios.map((ratio) => (
+						<Tooltip key={ratio.label}>
+							<TooltipTrigger asChild>
+								<Button
+									variant="outline"
+									onClick={() => {
+										setViewportWidth(ratio.width);
+										setViewportHeight(ratio.height);
+									}}
+									className="p-2"
+								>
+									<BsAspectRatio className="h-4 w-4" />
+								</Button>
+							</TooltipTrigger>
+							<TooltipContent>
+								<p>{ratio.label}</p>
+							</TooltipContent>
+						</Tooltip>
+					))}
+				</div>
 				<div className="flex flex-col gap-1">
 					<Label htmlFor="canvas-width">Canvas Width:</Label>
 					<Input
@@ -518,60 +672,64 @@ const InspectorPanel: React.FC = () => {
 						<h4 className="mb-2 text-lg font-semibold text-gray-100">
 							Layer Properties
 						</h4>
-						<div className="flex flex-col gap-1">
-							<Label htmlFor="x">X:</Label>
-							<Input
-								id="x"
-								type="text"
-								value={selectedLayer.x}
-								onChange={(e) =>
-									updateLayer({ x: parseFloat(e.target.value) || 0 })
-								}
-							/>
-						</div>
-						<div className="flex flex-col gap-1">
-							<Label htmlFor="y">Y:</Label>
-							<Input
-								id="y"
-								type="text"
-								value={selectedLayer.y}
-								onChange={(e) =>
-									updateLayer({ y: parseFloat(e.target.value) || 0 })
-								}
-							/>
-						</div>
-						<div className="flex flex-col gap-1">
-							<Label htmlFor="width">Width:</Label>
-							<Input
-								id="width"
-								type="text"
-								value={computedWidth}
-								onChange={(e) => {
-									const newWidth =
-										parseFloat(e.target.value) ?? selectedLayer.width ?? 0;
-									updateLayer({
-										scaleX: newWidth / (selectedLayer.width ?? 1),
-									});
-								}}
-							/>
-						</div>
-						{selectedLayer.type === "Image" && (
-							<div className="flex flex-col gap-1">
-								<Label htmlFor="height">Height:</Label>
+						<div className="flex gap-2">
+							<div className="flex-1 flex flex-col gap-1">
+								<Label htmlFor="x">X:</Label>
 								<Input
-									id="height"
+									id="x"
 									type="text"
-									value={computedHeight}
+									value={selectedLayer.x}
+									onChange={(e) =>
+										updateLayer({ x: parseFloat(e.target.value) || 0 })
+									}
+								/>
+							</div>
+							<div className="flex-1 flex flex-col gap-1">
+								<Label htmlFor="y">Y:</Label>
+								<Input
+									id="y"
+									type="text"
+									value={selectedLayer.y}
+									onChange={(e) =>
+										updateLayer({ y: parseFloat(e.target.value) || 0 })
+									}
+								/>
+							</div>
+						</div>
+						<div className="flex gap-2">
+							<div className="flex-1 flex flex-col gap-1">
+								<Label htmlFor="width">Width:</Label>
+								<Input
+									id="width"
+									type="text"
+									value={computedWidth}
 									onChange={(e) => {
-										const newHeight =
-											parseFloat(e.target.value) ?? selectedLayer.height ?? 0;
+										const newWidth =
+											parseFloat(e.target.value) ?? selectedLayer.width ?? 0;
 										updateLayer({
-											scaleY: newHeight / (selectedLayer.height ?? 1),
+											scaleX: newWidth / (selectedLayer.width ?? 1),
 										});
 									}}
 								/>
 							</div>
-						)}
+							{selectedLayer.type === "Image" && (
+								<div className="flex-1 flex flex-col gap-1">
+									<Label htmlFor="height">Height:</Label>
+									<Input
+										id="height"
+										type="text"
+										value={computedHeight}
+										onChange={(e) => {
+											const newHeight =
+												parseFloat(e.target.value) ?? selectedLayer.height ?? 0;
+											updateLayer({
+												scaleY: newHeight / (selectedLayer.height ?? 1),
+											});
+										}}
+									/>
+								</div>
+							)}
+						</div>
 						<div className="flex flex-col gap-1">
 							<Label htmlFor="rotation">Rotation:</Label>
 							<Slider
@@ -666,11 +824,15 @@ interface CanvasDesignerEditorProps {
 		OutputItem<"Text"> | OutputItem<"Image">
 	>;
 	node: NodeEntityType;
+	onClose: () => void;
+	onSave: (config: CompositorNodeConfig) => void;
 }
 
 export const CanvasDesignerEditor: React.FC<CanvasDesignerEditorProps> = ({
 	initialLayers,
 	node,
+	onClose,
+	onSave: propOnSave,
 }) => {
 	const [layers, setLayers] = useState<CompositorLayer[]>([]);
 	const [selectedId, setSelectedId] = useState<string | null>(null);
@@ -755,56 +917,68 @@ export const CanvasDesignerEditor: React.FC<CanvasDesignerEditorProps> = ({
 		});
 
 		setLayers(Object.values(layerUpdates));
-		// Note: In a full implementation, update node.config with layerUpdates on changes
 	}, [initialLayers, node.config, getImageData]);
 
+	const handleSave = useCallback(() => {
+		const layerUpdates = layers.reduce<Record<string, CompositorLayer>>(
+			(acc, layer) => {
+				acc[layer.inputHandleId] = layer;
+				return acc;
+			},
+			{},
+		);
+		propOnSave({ layerUpdates });
+	}, [layers, propOnSave]);
+
 	return (
-		<EditorContext.Provider
-			value={{
-				layers,
-				setLayers,
-				selectedId,
-				setSelectedId,
-				viewportWidth,
-				setViewportWidth,
-				viewportHeight,
-				setViewportHeight,
-				guides,
-				setGuides,
-				isEditingText,
-				setIsEditingText,
-				editingLayerId,
-				setEditingLayerId,
-				stageRef,
-				getTextData,
-				getImageData,
-				getImageUrl,
-			}}
-		>
-			<div className="flex justify-center items-center h-screen w-screen bg-background overflow-hidden relative">
-				<LayersPanel />
-				<div
-					className="relative border border-gray-700 overflow-hidden"
-					style={{
-						width: viewportWidth,
-						height: viewportHeight,
-					}}
-				>
+		<DndProvider backend={TouchBackend} options={{ enableMouseEvents: true }}>
+			<EditorContext.Provider
+				value={{
+					layers,
+					setLayers,
+					selectedId,
+					setSelectedId,
+					viewportWidth,
+					setViewportWidth,
+					viewportHeight,
+					setViewportHeight,
+					guides,
+					setGuides,
+					isEditingText,
+					setIsEditingText,
+					editingLayerId,
+					setEditingLayerId,
+					stageRef,
+					getTextData,
+					getImageData,
+					getImageUrl,
+				}}
+			>
+				<div className="flex justify-center items-center h-screen w-screen bg-background overflow-hidden relative">
+					<LayersPanel onSave={handleSave} onClose={onClose} />
 					<div
-						className="absolute inset-0 checkered-background"
+						className="relative border border-gray-700 overflow-hidden"
 						style={{
-							backgroundImage: `
+							width: viewportWidth,
+							height: viewportHeight,
+						}}
+					>
+						<div
+							className="absolute inset-0 checkered-background"
+							style={{
+								backgroundImage: `
 								linear-gradient(45deg, #333333 25%, #222222 25%, #222222 75%, #333333 75%),
 								linear-gradient(45deg, #333333 25%, #222222 25%, #222222 75%, #333333 75%)
 							`,
-							backgroundSize: "40px 40px",
-							backgroundPosition: "0 0, 20px 20px",
-						}}
-					/>
-					<Canvas />
+								backgroundSize: "40px 40px",
+								backgroundPosition: "0 0, 20px 20px",
+							}}
+						/>
+						<Canvas />
+					</div>
+					<InspectorPanel />
 				</div>
-				<InspectorPanel />
-			</div>
-		</EditorContext.Provider>
+			</EditorContext.Provider>
+		</DndProvider>
 	);
 };

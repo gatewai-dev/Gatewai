@@ -103,6 +103,8 @@ const CompositorNodeConfigSchema = z
 			z.string(), // Input Handle ID
 			CompositorLayerSchema,
 		),
+		width: z.number().optional(),
+		height: z.number().optional(),
 	})
 	.strict();
 
