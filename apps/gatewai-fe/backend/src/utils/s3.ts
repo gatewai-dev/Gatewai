@@ -1,4 +1,3 @@
-// s3-utils.ts
 import {
 	DeleteObjectCommand,
 	GetObjectCommand,

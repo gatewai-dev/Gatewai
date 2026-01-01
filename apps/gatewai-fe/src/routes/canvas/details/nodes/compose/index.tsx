@@ -29,7 +29,7 @@ const CompositorNodeComponent = memo((props: NodeProps<CompositorNode>) => {
 						nodeProps={props}
 						type="Input"
 					/>
-					<DesignDialog node={node} />
+					{node && <DesignDialog node={node} />}
 				</div>
 			</div>
 		</BaseNode>

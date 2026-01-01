@@ -3,6 +3,7 @@ import {
 	createContext,
 	useContext,
 	useEffect,
+	useMemo,
 	useRef,
 	useSyncExternalStore,
 } from "react";
@@ -87,7 +88,6 @@ export function useNodeResult<T extends NodeResult = NodeResult>(
 			nodeId: string;
 			inputs: Map<string, NodeResult>;
 		}) => {
-			console.log({ inputs: data.inputs, nodeId });
 			if (data.nodeId === nodeId) callback();
 		};
 		const onError = (data: { nodeId: string }) => {
@@ -107,16 +107,30 @@ export function useNodeResult<T extends NodeResult = NodeResult>(
 
 	const getSnapshot = () => {
 		const state = processor.getNodeState(nodeId);
+
+		const inputsAsArray = state?.inputs
+			? Array.from(state.inputs.entries())
+			: [];
+
 		return JSON.stringify({
 			result: state?.result ?? null,
-			inputs: state?.inputs ?? null,
+			inputs: inputsAsArray,
 			isProcessing: state?.isProcessing ?? false,
 			error: state?.error ?? null,
 		});
 	};
 
 	const snapshot = useSyncExternalStore(subscribe, getSnapshot, getSnapshot);
-	return JSON.parse(snapshot);
+
+	// Optimization: Memoize parsing to prevent unnecessary object recreation
+	return useMemo(() => {
+		const parsed = JSON.parse(snapshot);
+		return {
+			...parsed,
+			// FIX: Hydrate the Array back into a Map
+			inputs: new Map(parsed.inputs),
+		};
+	}, [snapshot]);
 }
 
 /**

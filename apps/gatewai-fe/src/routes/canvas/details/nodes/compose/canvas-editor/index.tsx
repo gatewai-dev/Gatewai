@@ -1,4 +1,3 @@
-import type { DataType } from "@gatewai/db";
 import type {
 	CompositorLayer,
 	CompositorResult,
@@ -39,6 +38,7 @@ import {
 } from "@/components/ui/select";
 import { generateId } from "@/lib/idgen";
 import { BLEND_MODES } from "@/routes/canvas/blend-modes";
+import type { HandleEntityType } from "@/store/handles";
 
 // Editor Context
 interface EditorContextType {
@@ -199,7 +199,7 @@ const useSnap = () => {
 };
 
 // Blending modes list
-const blendingModes = BLEND_MODES;
+const blendModes = BLEND_MODES;
 
 // Layer Props
 interface LayerProps {
@@ -256,7 +256,7 @@ const ImageLayer: React.FC<LayerProps> = ({
 			onDragMove={onDragMove}
 			onDragEnd={onDragEnd}
 			onTransformEnd={onTransformEnd}
-			globalCompositeOperation={layer.blendingMode as GlobalCompositeOperation}
+			globalCompositeOperation={layer.blendMode as GlobalCompositeOperation}
 		/>
 	);
 };
@@ -299,7 +299,7 @@ const TextLayer: React.FC<
 			onDragMove={onDragMove}
 			onDragEnd={onDragEnd}
 			onTransformEnd={onTransformEnd}
-			globalCompositeOperation={layer.blendingMode as GlobalCompositeOperation}
+			globalCompositeOperation={layer.blendMode as GlobalCompositeOperation}
 		/>
 	);
 };
@@ -601,16 +601,16 @@ const PropertiesPanel: React.FC = () => {
 					/>
 				</div>
 				<div className="flex flex-col gap-1">
-					<Label htmlFor="blendingMode">Blending Mode:</Label>
+					<Label htmlFor="blendMode">Blending Mode:</Label>
 					<Select
-						value={selectedLayer.blendingMode}
-						onValueChange={(value) => updateLayer({ blendingMode: value })}
+						value={selectedLayer.blendMode}
+						onValueChange={(value) => updateLayer({ blendMode: value })}
 					>
-						<SelectTrigger id="blendingMode">
+						<SelectTrigger id="blendMode">
 							<SelectValue />
 						</SelectTrigger>
 						<SelectContent>
-							{blendingModes.map((mode) => (
+							{blendModes.map((mode) => (
 								<SelectItem key={mode} value={mode}>
 									{mode}
 								</SelectItem>
@@ -669,7 +669,10 @@ const PropertiesPanel: React.FC = () => {
 
 // Main Editor Component
 interface CanvasDesignerEditorProps {
-	initialLayers: OutputItem<DataType>[];
+	initialLayers: Map<
+		HandleEntityType["id"],
+		OutputItem<"Text">[] | OutputItem<"Image">
+	>;
 	onSave: (result: CompositorResult) => void;
 }
 
@@ -689,51 +692,60 @@ export const CanvasDesignerEditor: React.FC<CanvasDesignerEditorProps> = ({
 
 	// Load initial layers
 	useEffect(() => {
-		const newLayers = initialLayers
-			.map((item, index) => {
-				const id = generateId();
-				const defaultX = 100 + index * 20;
-				const defaultY = 100 + index * 20;
-				if (item.type === "Text") {
-					return {
-						id,
-						type: "Text",
-						output: item,
-						x: defaultX,
-						y: defaultY,
-						width: 200,
-						height: 50,
-						rotation: 0,
-						scaleX: 1,
-						scaleY: 1,
-						fontFamily: "Arial",
-						fontSize: 24,
-						fill: "black",
-						blendingMode: "source-over",
-					};
-				} else if (item.type === "Image") {
-					const fileData = item.data as FileData;
-					const width = fileData.entity?.width || 200;
-					const height = fileData.entity?.height || 200;
-					return {
-						id,
-						type: "Image",
-						output: item,
-						x: defaultX,
-						y: defaultY,
-						width,
-						height,
-						rotation: 0,
-						scaleX: 1,
-						scaleY: 1,
-						lockAspect: true,
-						blendingMode: "source-over",
-					};
-				}
-				// Ignore other types for now
-				return null;
-			})
-			.filter((layer): layer is CompositorLayer => layer !== null);
+		const newLayers: CompositorLayer[] = [];
+		let index = 0;
+		initialLayers.forEach((output, handleId) => {
+			const items: OutputItem<"Text" | "Image">[] = Array.isArray(output)
+				? output
+				: [output];
+			items
+				.filter(
+					(item): item is OutputItem<"Text" | "Image"> =>
+						item.type === "Text" || item.type === "Image",
+				)
+				.forEach((item) => {
+					const id = generateId();
+					const defaultX = 100 + index * 20;
+					const defaultY = 100 + index * 20;
+					index++;
+					if (item.type === "Text") {
+						newLayers.push({
+							id,
+							type: "Text",
+							output: item,
+							x: defaultX,
+							y: defaultY,
+							width: 200,
+							height: 50,
+							rotation: 0,
+							scaleX: 1,
+							scaleY: 1,
+							fontFamily: "Arial",
+							fontSize: 24,
+							fill: "black",
+							blendMode: "source-over",
+						});
+					} else if (item.type === "Image") {
+						const fileData = item.data as FileData;
+						const width = fileData.entity?.width || 200;
+						const height = fileData.entity?.height || 200;
+						newLayers.push({
+							id,
+							type: "Image",
+							output: item,
+							x: defaultX,
+							y: defaultY,
+							width,
+							height,
+							rotation: 0,
+							scaleX: 1,
+							scaleY: 1,
+							lockAspect: true,
+							blendMode: "source-over",
+						});
+					}
+				});
+		});
 		setLayers(newLayers);
 	}, [initialLayers]);
 

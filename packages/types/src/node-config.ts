@@ -79,6 +79,7 @@ const CropNodeConfigSchema = z
 const CompositorLayerSchema = z
 	.object({
 		id: z.string(),
+		inputHandleId: z.string(),
 		type: z.enum(["Text", "Image"]),
 		name: z.string(),
 		x: z.number(),
@@ -99,7 +100,7 @@ const CompositorLayerSchema = z
 const CompositorNodeConfigSchema = z
 	.object({
 		layerUpdates: z.record(
-			z.string(), // Output Handle ID
+			z.string(), // Input Handle ID
 			CompositorLayerSchema,
 		),
 	})
