@@ -1,130 +1,38 @@
-import { Box } from "@mui/material";
-import { useCallback, useEffect } from "react";
-import { useTranslation } from "react-i18next";
-import { useUpdateNodeInternals } from "reactflow";
-import type { NodeId } from "web";
-import { I18N_KEYS } from "@/language/keys";
-import { useUserWorkflowRole } from "@/state/workflow.state";
-import type { CompositorNodeV3 } from "@/types/nodes/compositor";
-import { ButtonContained } from "@/UI/Buttons/AppButton";
-import { PencilLineIcon } from "@/UI/Icons/PencilLineIcon";
-import { Flex } from "@/UI/styles";
-import { useCompositorView } from "../Recipe/FlowContext";
-import { DynamicNode2 } from "./DynamicNode/DynamicNode2";
-import { NodeViewer } from "./Shared/FileViewer";
-import { hasEditingPermissions } from "./Utils";
+import type { NodeProps } from "@xyflow/react";
+import { memo, useRef } from "react";
+import { useAppSelector } from "@/store";
+import { makeSelectNodeById } from "@/store/nodes";
+import { useDrawToCanvas } from "../../hooks/use-draw-to-canvas";
+import { useNodeFileOutputUrl } from "../../processor/processor-ctx";
+import { BaseNode } from "../base";
+import type { CompositorNode } from "../node-props";
+import { DesignDialog } from "./design-dialog";
+import { Button } from "@/components/ui/button";
+import { PlusIcon } from "lucide-react";
 
-const TRANSITION_DURATION = "0.1s";
+const CompositorNodeComponent = memo((props: NodeProps<CompositorNode>) => {
+	const node = useAppSelector(makeSelectNodeById(props.id));
+	const canvasRef = useRef<HTMLCanvasElement | null>(null);
+	const imageUrl = useNodeFileOutputUrl(props.id);
 
-function CompNodeV3Content({
-	id,
-	data,
-	handleOpenEditWindow,
-	isSelected,
-	locked,
-	handleAddInputHandle,
-}: {
-	id: string;
-	data: CompositorNodeV3;
-	handleOpenEditWindow: () => void;
-	isSelected: boolean;
-	locked: boolean;
-	handleAddInputHandle: () => void;
-}) {
-	const { t } = useTranslation();
-	const { input } = data.data;
+	// Draw to canvas when result is ready
+	useDrawToCanvas(canvasRef, imageUrl);
 
 	return (
-		<>
-			<Flex
-				sx={{
-					cursor: "default",
-					position: "relative",
-					borderRadius: 2,
-					overflow: "hidden",
-					mb: 2,
-				}}
-			>
-				<NodeViewer id={id} />
-			</Flex>
-			{input.some(([_key, value]) => value != undefined) && !locked ? (
-				<Box
-					data-testid={`open-compositor-edit-button-container-${id}`}
-					sx={{
-						opacity: isSelected ? 1 : 0,
-						transition: `all ${TRANSITION_DURATION} ease-in-out`,
-						pointerEvents: isSelected ? "auto" : "none",
-						cursor: isSelected ? "auto" : "default",
-					}}
-				>
-					<Flex sx={{ justifyContent: "space-between", alignItems: "center" }}>
-						<ButtonContained
-							mode="text"
-							size="small"
-							onClick={handleAddInputHandle}
-						>
-							{t(I18N_KEYS.RECIPE_MAIN.NODES.COMPOSITOR.ADD_ANOTHER_LAYER_CTA)}
-						</ButtonContained>
-						<ButtonContained
-							mode="outlined"
-							onClick={handleOpenEditWindow}
-							sx={{ height: "36px", borderRadius: 2, px: 1.5, py: 1 }}
-							startIcon={<PencilLineIcon height="16px" width="16px" />}
-						>
-							{t(I18N_KEYS.RECIPE_MAIN.NODES.COMPOSITOR.EDIT_CTA)}
-						</ButtonContained>
-					</Flex>
-				</Box>
-			) : null}
-		</>
+		<BaseNode {...props}>
+			<div className="flex flex-col gap-3 ">
+				<div className="w-full overflow-hidden rounded media-container relative">
+					<canvas ref={canvasRef} className="block w-full h-auto" />
+				</div>
+				<div className="flex justify-between items-center">
+					<Button variant="outline" size="sm"><PlusIcon className="size-3" /> Add Layer</Button>
+					<DesignDialog node={node} />
+				</div>
+			</div>
+		</BaseNode>
 	);
-}
+});
 
-interface CompNodeV3Props {
-	id: NodeId;
-	data: CompositorNodeV3;
-	openEditWindow: (id: string) => void;
-	isSelected: boolean;
-}
+CompositorNodeComponent.displayName = "CompositorNodeComponent";
 
-export function CompNodeV3({
-	id,
-	data,
-	openEditWindow,
-	isSelected,
-}: CompNodeV3Props) {
-	const compositorView = useCompositorView(id);
-	const updateNodeInternals = useUpdateNodeInternals();
-
-	const role = useUserWorkflowRole();
-	const { handles } = data;
-
-	useEffect(() => {
-		updateNodeInternals(id);
-	}, [handles.input, id, updateNodeInternals]);
-
-	const handleAddInputHandle = useCallback(() => {
-		compositorView.addNodeInputHandle();
-	}, [compositorView]);
-
-	const handleOpenEditWindow = useCallback(() => {
-		openEditWindow(id);
-		compositorView.enableNodeEditor();
-		compositorView.setUndoBarrier();
-	}, [openEditWindow, id, compositorView]);
-
-	const locked = !hasEditingPermissions(role, data);
-
-	return (
-		<DynamicNode2 id={id} data={data} className="edit">
-			<CompNodeV3Content
-				id={id}
-				data={data}
-				handleOpenEditWindow={handleOpenEditWindow}
-				isSelected={isSelected}
-				locked={locked}
-				handleAddInputHandle={handleAddInputHandle}
-			/>
-		</DynamicNode2>
-	);
-}
+export { CompositorNodeComponent };

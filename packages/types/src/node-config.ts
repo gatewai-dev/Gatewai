@@ -15,21 +15,15 @@ const IMAGEGEN_NODE_MODELS = [
 	"google/gemini-2.5-flash-image", // Nano banana
 	"openai/gpt-5.2", // gpt-image-1.5
 ] as const;
+
 const ImageGenNodeConfigSchema = z
 	.object({
 		model: z.enum(IMAGEGEN_NODE_MODELS),
 	})
 	.strict();
 
-// Crawler Node
-const CrawlerNodeConfigSchema = z
-	.object({
-		url: z.string().url().optional(),
-	})
-	.strict();
-
 // 3D Node
-const ThreeDNodeConfigSchema = z.object({}).strict();
+const PreviewNodeConfigSchema = z.object({}).strict();
 
 // Mask Node
 const MaskNodeConfigSchema = z.object({}).strict();
@@ -183,9 +177,8 @@ const NodeConfigSchema = z.union([
 	LLMNodeConfigSchema,
 	TextNodeConfigSchema,
 	FileNodeConfigSchema,
-	CrawlerNodeConfigSchema,
 	AgentNodeConfigSchema,
-	ThreeDNodeConfigSchema,
+	PreviewNodeConfigSchema,
 	MaskNodeConfigSchema,
 	PaintNodeConfigSchema,
 	BlurNodeConfigSchema,
@@ -202,8 +195,7 @@ type TextNodeConfig = z.infer<typeof TextNodeConfigSchema>;
 type AgentNodeConfig = z.infer<typeof AgentNodeConfigSchema>;
 type LLMNodeConfig = z.infer<typeof LLMNodeConfigSchema>;
 type FileNodeConfig = z.infer<typeof FileNodeConfigSchema>;
-type CrawlerNodeConfig = z.infer<typeof CrawlerNodeConfigSchema>;
-type ThreeDNodeConfig = z.infer<typeof ThreeDNodeConfigSchema>;
+type PreviewNodeConfig = z.infer<typeof PreviewNodeConfigSchema>;
 type MaskNodeConfig = z.infer<typeof MaskNodeConfigSchema>;
 type PaintNodeConfig = z.infer<typeof PaintNodeConfigSchema>;
 type BlurNodeConfig = z.infer<typeof BlurNodeConfigSchema>;
@@ -223,9 +215,8 @@ export {
 	CropNodeConfigSchema,
 	TextNodeConfigSchema,
 	FileNodeConfigSchema,
-	CrawlerNodeConfigSchema,
 	AgentNodeConfigSchema,
-	ThreeDNodeConfigSchema,
+	PreviewNodeConfigSchema,
 	MaskNodeConfigSchema,
 	PaintNodeConfigSchema,
 	BlurNodeConfigSchema,
@@ -240,9 +231,8 @@ export {
 	ModulateNodeConfigSchema,
 	type TextNodeConfig,
 	type FileNodeConfig,
-	type CrawlerNodeConfig,
 	type AgentNodeConfig,
-	type ThreeDNodeConfig,
+	type PreviewNodeConfig,
 	type LLMNodeConfig,
 	type MaskNodeConfig,
 	type PaintNodeConfig,

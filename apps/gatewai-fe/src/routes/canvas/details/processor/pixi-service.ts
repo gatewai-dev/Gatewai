@@ -11,7 +11,7 @@ import {
 	Graphics,
 	Sprite,
 } from "pixi.js";
-import { ModulateAdjustmentFilter } from "pixi-filters";
+import 'pixi.js/advanced-blend-modes'
 import { ModulateFilter } from "./filters/modulate";
 
 class PixiProcessorService {

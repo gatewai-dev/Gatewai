@@ -1,5 +1,6 @@
 import { AgentNodeComponent } from "./agent";
 import { BlurNodeComponent } from "./blur";
+import { CompositorNodeComponent } from "./compose";
 import { CropNodeComponent } from "./crop";
 import { ExportNodeComponent } from "./export";
 import { FileNodeComponent } from "./file";
@@ -27,6 +28,7 @@ const nodeTypes = {
 	Preview: PreviewNodeComponent,
 	Modulate: ModulateNodeComponent,
 	Export: ExportNodeComponent,
+	Compositor: CompositorNodeComponent,
 };
 
 // Export components
@@ -44,4 +46,5 @@ export {
 	PreviewNodeComponent,
 	ModulateNodeComponent,
 	ExportNodeComponent,
+	CompositorNodeComponent,
 };
