@@ -3,6 +3,7 @@ import type { DataType, NodeType } from "@gatewai/db";
 import type {
 	AnyOutputItem,
 	BlurNodeConfig,
+	CompositorNodeConfig,
 	CropNodeConfig,
 	FileData,
 	ModulateNodeConfig,
@@ -522,7 +523,6 @@ export class NodeGraphProcessor extends EventEmitter {
 
 	private registerBuiltInProcessors(): void {
 		const findInputData = (
-			nodeId: string,
 			inputs: Map<string, ConnectedInput>,
 			requiredType: string = "Image",
 			handleLabel?: string,
@@ -545,6 +545,27 @@ export class NodeGraphProcessor extends EventEmitter {
 			return undefined;
 		};
 
+		const getConnectedInputData = (
+			inputs: Map<string, ConnectedInput>,
+			handleId: string,
+		): { type: "Image" | "Text"; value: string } | null => {
+			const input = inputs.get(handleId);
+			if (!input || !input.connectionValid || !input.outputItem) return null;
+
+			if (input.outputItem.type === "Image") {
+				const fileData = input.outputItem.data as FileData;
+				const url = fileData?.entity?.signedUrl
+					? GetAssetEndpoint(fileData.entity.id)
+					: fileData?.processData?.dataUrl;
+				if (url) return { type: "Image", value: url };
+			} else if (input.outputItem.type === "Text") {
+				const text = input.outputItem.data as string;
+				if (text !== undefined) return { type: "Text", value: String(text) };
+			}
+
+			return null;
+		};
+
 		const getFirstOutputHandle = (nodeId: string, type: string = "Image") =>
 			this.handles.find(
 				(h) =>
@@ -554,7 +575,7 @@ export class NodeGraphProcessor extends EventEmitter {
 			)?.id;
 
 		this.registerProcessor("Crop", async ({ node, inputs, signal }) => {
-			const imageUrl = findInputData(node.id, inputs, "Image");
+			const imageUrl = findInputData(inputs, "Image");
 			if (!imageUrl) throw new Error("Missing Input Image");
 
 			const config = node.config as CropNodeConfig;
@@ -597,7 +618,7 @@ export class NodeGraphProcessor extends EventEmitter {
 		this.registerProcessor("Paint", async ({ node, inputs, signal }) => {
 			const config = node.config as PaintNodeConfig;
 
-			const imageUrl = findInputData(node.id, inputs, "Image");
+			const imageUrl = findInputData(inputs, "Image");
 
 			const maskDataUrl = config.paintData;
 			const imageHandle = getFirstOutputHandle(node.id, "Image");
@@ -654,8 +675,61 @@ export class NodeGraphProcessor extends EventEmitter {
 			return { selectedOutputIndex: 0, outputs: [{ items }] };
 		});
 
+		this.registerProcessor("Compositor", async ({ node, inputs, signal }) => {
+			console.log("ANAN");
+			const config = node.config as CompositorNodeConfig;
+
+			// 1. Prepare Inputs for Pixi Service
+			// Map the Layer's Input Handle ID -> Actual Data (URL or Text)
+			const inputDataMap = new Map<
+				string,
+				{ type: "Image" | "Text"; value: string }
+			>();
+
+			if (config.layerUpdates) {
+				Object.values(config.layerUpdates).forEach((layer) => {
+					const data = getConnectedInputData(inputs, layer.inputHandleId);
+					if (data) {
+						inputDataMap.set(layer.inputHandleId, data);
+					}
+				});
+			}
+
+			// 2. Process with Pixi
+			const result = await pixiProcessor.processCompositor(
+				config,
+				inputDataMap,
+				signal,
+			);
+			console.log({ result });
+			// 3. Find Output Handle (Standard "Image" output)
+			const outputHandle = getFirstOutputHandle(node.id);
+			if (!outputHandle) throw new Error("Missing output handle");
+
+			return {
+				selectedOutputIndex: 0,
+				outputs: [
+					{
+						items: [
+							{
+								type: "Image",
+								data: {
+									processData: {
+										dataUrl: result.dataUrl,
+										width: result.width,
+										height: result.height,
+									},
+								},
+								outputHandleId: outputHandle,
+							},
+						],
+					},
+				],
+			};
+		});
+
 		this.registerProcessor("Blur", async ({ node, inputs, signal }) => {
-			const imageUrl = findInputData(node.id, inputs, "Image");
+			const imageUrl = findInputData(inputs, "Image");
 			if (!imageUrl) throw new Error("Missing Input Image");
 
 			const config = node.config as BlurNodeConfig;
@@ -690,7 +764,7 @@ export class NodeGraphProcessor extends EventEmitter {
 		});
 
 		this.registerProcessor("Modulate", async ({ node, inputs, signal }) => {
-			const imageUrl = findInputData(node.id, inputs, "Image");
+			const imageUrl = findInputData(inputs, "Image");
 			if (!imageUrl) throw new Error("Missing Input Image");
 
 			const config = node.config as ModulateNodeConfig;
@@ -752,7 +826,7 @@ export class NodeGraphProcessor extends EventEmitter {
 		});
 
 		this.registerProcessor("Resize", async ({ node, inputs, signal }) => {
-			const imageUrl = findInputData(node.id, inputs, "Image");
+			const imageUrl = findInputData(inputs, "Image");
 			if (!imageUrl) throw new Error("Missing Input Image");
 
 			const config = node.config as ResizeNodeConfig;
@@ -821,6 +895,5 @@ export class NodeGraphProcessor extends EventEmitter {
 		this.registerProcessor("Agent", passthrough);
 		this.registerProcessor("Text", passthrough);
 		this.registerProcessor("LLM", passthrough);
-		this.registerProcessor("Compositor", passthrough);
 	}
 }

@@ -31,10 +31,12 @@ import { DndProvider, useDrag, useDrop } from "react-dnd";
 import { TouchBackend } from "react-dnd-touch-backend";
 import { BsAspectRatio } from "react-icons/bs";
 import {
+	Group,
 	Image as KonvaImage,
 	Layer as KonvaLayer,
 	Text as KonvaText,
 	Line,
+	Rect,
 	Stage,
 	Transformer,
 } from "react-konva";
@@ -75,10 +77,17 @@ interface EditorContextType {
 	setLayers: Dispatch<SetStateAction<CompositorLayer[]>>;
 	selectedId: string | null;
 	setSelectedId: (id: string | null) => void;
+
+	// The dimensions of the "Artboard" (Output size)
 	viewportWidth: number;
 	viewportHeight: number;
 	setViewportWidth: (w: number) => void;
 	setViewportHeight: (h: number) => void;
+
+	// The dimensions of the visible window (Screen size)
+	screenWidth: number;
+	screenHeight: number;
+
 	guides: Guide[];
 	setGuides: Dispatch<SetStateAction<Guide[]>>;
 	isEditingText: boolean;
@@ -415,20 +424,50 @@ const Guides: React.FC = () => {
 							? [guide.position, 0, guide.position, viewportHeight]
 							: [0, guide.position, viewportWidth, guide.position]
 					}
-					stroke="#888888"
+					stroke="#ff00ff"
 					strokeWidth={1}
-					dash={[4, 4]}
 				/>
 			))}
 		</>
 	);
 };
 
+// The background "Paper" representing the viewport
+const ArtboardBackground: React.FC = () => {
+	const { viewportWidth, viewportHeight } = useEditor();
+	return (
+		<Group>
+			{/* Shadow for depth effect */}
+			<Rect
+				x={10}
+				y={10}
+				width={viewportWidth}
+				height={viewportHeight}
+				fill="rgba(0,0,0,0.3)"
+				listening={false}
+			/>
+			{/* The main artboard area */}
+			<Rect
+				x={0}
+				y={0}
+				width={viewportWidth}
+				height={viewportHeight}
+				fill="#ffffff"
+				shadowColor="black"
+				shadowBlur={20}
+				shadowOpacity={0.2}
+				listening={false}
+			/>
+			{/* Optional: Checkered pattern overlay if desired, but solid white is standard for output preview */}
+		</Group>
+	);
+};
+
 const Canvas: React.FC = () => {
 	const {
 		layers,
-		viewportWidth,
-		viewportHeight,
+		screenWidth,
+		screenHeight,
 		setSelectedId,
 		stageRef,
 		mode,
@@ -472,83 +511,81 @@ const Canvas: React.FC = () => {
 				y: pointer.y - mousePointTo.y * newScale,
 			};
 
-			stage.scale({ x: newScale, y: newScale });
-			stage.position(newPos);
-			stage.batchDraw();
 			setScale(newScale);
 			setStagePos(newPos);
 		},
 		[stageRef, setScale, setStagePos],
 	);
 
+	// Sync stage transform
 	useEffect(() => {
 		const stage = stageRef.current;
 		if (!stage) return;
-
 		stage.scale({ x: scale, y: scale });
 		stage.position(stagePos);
 		stage.batchDraw();
 	}, [scale, stagePos, stageRef]);
 
+	// Handle stage drag for panning
 	useEffect(() => {
 		const stage = stageRef.current;
 		if (!stage) return;
 
-		const handleDragEnd = () => {
+		const handleDragEndStage = () => {
 			setStagePos(stage.position());
 		};
 
-		stage.on("dragend", handleDragEnd);
+		stage.on("dragend", handleDragEndStage);
 		return () => {
-			stage.off("dragend", handleDragEnd);
+			stage.off("dragend", handleDragEndStage);
 		};
 	}, [stageRef, setStagePos]);
 
 	const cursorStyle = mode === "pan" ? "grab" : "default";
 
 	return (
-		<div style={{ position: "relative" }}>
-			<Stage
-				ref={stageRef}
-				width={viewportWidth}
-				height={viewportHeight}
-				style={{ background: "transparent", cursor: cursorStyle }}
-				onClick={handleStageClick}
-				onTap={handleStageClick}
-				onWheel={handleWheel}
-				draggable={mode === "pan"}
-			>
-				<KonvaLayer>
-					{/* Background rect if needed, but transparent */}
-				</KonvaLayer>
-				<KonvaLayer>
-					{layers.map((layer) => {
-						const props = {
-							key: layer.id,
-							layer,
-							onDragStart: () => setSelectedId(layer.id),
-							onDragMove: handleDragMove,
-							onDragEnd: handleDragEnd,
-							onTransformStart: () => setSelectedId(layer.id),
-							onTransformEnd: handleTransformEnd,
-						};
-						if (layer.type === "Image") {
-							return <ImageLayer {...props} />;
-						}
-						if (layer.type === "Text") {
-							return <TextLayer {...props} layer={layer} />;
-						}
-						return null;
-					})}
-				</KonvaLayer>
-				<KonvaLayer>
-					<TransformerComponent />
-				</KonvaLayer>
-				<KonvaLayer listening={false}>
-					<Guides />
-				</KonvaLayer>
-			</Stage>
-		</div>
+		<Stage
+			ref={stageRef}
+			width={screenWidth}
+			height={screenHeight}
+			style={{ background: "transparent", cursor: cursorStyle }}
+			onClick={handleStageClick}
+			onTap={handleStageClick}
+			onWheel={handleWheel}
+			draggable={mode === "pan"}
+		>
+			<KonvaLayer>
+				{/* The "Paper" Area - Visualizes the 0,0 to W,H coordinate system */}
+				<ArtboardBackground />
+			</KonvaLayer>
+
+			<KonvaLayer>
+				{layers.map((layer) => {
+					const props = {
+						key: layer.id,
+						layer,
+						onDragStart: () => setSelectedId(layer.id),
+						onDragMove: handleDragMove,
+						onDragEnd: handleDragEnd,
+						onTransformStart: () => setSelectedId(layer.id),
+						onTransformEnd: handleTransformEnd,
+					};
+					if (layer.type === "Image") {
+						return <ImageLayer {...props} />;
+					}
+					if (layer.type === "Text") {
+						return <TextLayer {...props} layer={layer} />;
+					}
+					return null;
+				})}
+			</KonvaLayer>
+			<KonvaLayer>
+				<TransformerComponent />
+			</KonvaLayer>
+			<KonvaLayer listening={false}>
+				<Guides />
+			</KonvaLayer>
+		</Stage>
 	);
 };
 
@@ -959,14 +996,44 @@ export const CanvasDesignerEditor: React.FC<CanvasDesignerEditorProps> = ({
 	const [scale, setScale] = useState(1);
 	const [stagePos, setStagePos] = useState({ x: 0, y: 0 });
 
+	const containerRef = useRef<HTMLDivElement>(null);
+	const [screenWidth, setScreenWidth] = useState(100);
+	const [screenHeight, setScreenHeight] = useState(100);
+
 	const zoomPercentage = `${Math.round(scale * 100)}%`;
+
+	// Resize observer to keep track of available screen space for the canvas
+	useEffect(() => {
+		const updateSize = () => {
+			if (containerRef.current) {
+				setScreenWidth(containerRef.current.offsetWidth);
+				setScreenHeight(containerRef.current.offsetHeight);
+			}
+		};
+
+		// Initial sizing
+		updateSize();
+
+		window.addEventListener("resize", updateSize);
+		return () => window.removeEventListener("resize", updateSize);
+	}, []);
+
+	// Center the artboard initially
+	useEffect(() => {
+		if (screenWidth > 100 && screenHeight > 100) {
+			const x = (screenWidth - viewportWidth) / 2;
+			const y = (screenHeight - viewportHeight) / 2;
+			setStagePos({ x, y });
+		}
+		// eslint-disable-next-line react-hooks/exhaustive-deps
+	}, [screenWidth, screenHeight, viewportHeight, viewportWidth]); // Run when screen size stabilizes
 
 	const zoomIn = useCallback(() => {
 		const stage = stageRef.current;
 		if (!stage) return;
 
 		const oldScale = scale;
-		const center = { x: viewportWidth / 2, y: viewportHeight / 2 };
+		const center = { x: screenWidth / 2, y: screenHeight / 2 };
 		const mousePointTo = {
 			x: (center.x - stagePos.x) / oldScale,
 			y: (center.y - stagePos.y) / oldScale,
@@ -978,14 +1045,14 @@ export const CanvasDesignerEditor: React.FC<CanvasDesignerEditorProps> = ({
 		};
 		setScale(newScale);
 		setStagePos(newPos);
-	}, [scale, stagePos, viewportWidth, viewportHeight]);
+	}, [scale, stagePos, screenWidth, screenHeight]);
 
 	const zoomOut = useCallback(() => {
 		const stage = stageRef.current;
 		if (!stage) return;
 
 		const oldScale = scale;
-		const center = { x: viewportWidth / 2, y: viewportHeight / 2 };
+		const center = { x: screenWidth / 2, y: screenHeight / 2 };
 		const mousePointTo = {
 			x: (center.x - stagePos.x) / oldScale,
 			y: (center.y - stagePos.y) / oldScale,
@@ -997,7 +1064,7 @@ export const CanvasDesignerEditor: React.FC<CanvasDesignerEditorProps> = ({
 		};
 		setScale(newScale);
 		setStagePos(newPos);
-	}, [scale, stagePos, viewportWidth, viewportHeight]);
+	}, [scale, stagePos, screenWidth, screenHeight]);
 
 	const zoomTo = useCallback(
 		(value: number) => {
@@ -1005,7 +1072,7 @@ export const CanvasDesignerEditor: React.FC<CanvasDesignerEditorProps> = ({
 			if (!stage) return;
 
 			const oldScale = scale;
-			const center = { x: viewportWidth / 2, y: viewportHeight / 2 };
+			const center = { x: screenWidth / 2, y: screenHeight / 2 };
 			const mousePointTo = {
 				x: (center.x - stagePos.x) / oldScale,
 				y: (center.y - stagePos.y) / oldScale,
@@ -1018,40 +1085,27 @@ export const CanvasDesignerEditor: React.FC<CanvasDesignerEditorProps> = ({
 			setScale(newScale);
 			setStagePos(newPos);
 		},
-		[scale, stagePos, viewportWidth, viewportHeight, stageRef],
+		[scale, stagePos, screenWidth, screenHeight],
 	);
 
 	const fitView = useCallback(() => {
-		if (layers.length === 0) return;
+		// Fit the Artboard (0,0 to ViewportW/H) into the Screen
+		const padding = 40;
+		const availableW = screenWidth - padding * 2;
+		const availableH = screenHeight - padding * 2;
 
-		let minX = Infinity;
-		let minY = Infinity;
-		let maxX = -Infinity;
-		let maxY = -Infinity;
-
-		layers.forEach((layer) => {
-			const w = (layer.width || 0) * layer.scaleX;
-			const h = (layer.height || 0) * layer.scaleY;
-			minX = Math.min(minX, layer.x);
-			minY = Math.min(minY, layer.y);
-			maxX = Math.max(maxX, layer.x + w);
-			maxY = Math.max(maxY, layer.y + h);
-		});
-
-		const contentWidth = maxX - minX;
-		const contentHeight = maxY - minY;
-		const newScale =
-			Math.min(viewportWidth / contentWidth, viewportHeight / contentHeight) *
-			0.9; // 10% padding
+		const scaleW = availableW / viewportWidth;
+		const scaleH = availableH / viewportHeight;
+		const newScale = Math.min(scaleW, scaleH);
 
 		const newPos = {
-			x: (viewportWidth - contentWidth * newScale) / 2 - minX * newScale,
-			y: (viewportHeight - contentHeight * newScale) / 2 - minY * newScale,
+			x: (screenWidth - viewportWidth * newScale) / 2,
+			y: (screenHeight - viewportHeight * newScale) / 2,
 		};
 
 		setScale(newScale);
 		setStagePos(newPos);
-	}, [layers, viewportWidth, viewportHeight]);
+	}, [viewportWidth, viewportHeight, screenWidth, screenHeight]);
 
 	const getTextData = (handleId: string) => {
 		const layerData = initialLayers.get(handleId) as OutputItem<"Text">;
@@ -1134,7 +1188,7 @@ export const CanvasDesignerEditor: React.FC<CanvasDesignerEditorProps> = ({
 		if (mode === "pan" && selectedId) {
 			setSelectedId(null);
 		}
-	}, [mode, selectedId, setSelectedId]);
+	}, [mode, selectedId]);
 
 	const handleSave = useCallback(() => {
 		const layerUpdates = layers.reduce<Record<string, CompositorLayer>>(
@@ -1144,8 +1198,8 @@ export const CanvasDesignerEditor: React.FC<CanvasDesignerEditorProps> = ({
 			},
 			{},
 		);
-		propOnSave({ layerUpdates });
-	}, [layers, propOnSave]);
+		propOnSave({ layerUpdates, width: viewportWidth, height: viewportHeight });
+	}, [layers, propOnSave, viewportHeight, viewportWidth]);
 
 	return (
 		<DndProvider backend={TouchBackend} options={{ enableMouseEvents: true }}>
@@ -1159,6 +1213,8 @@ export const CanvasDesignerEditor: React.FC<CanvasDesignerEditorProps> = ({
 					setViewportWidth,
 					viewportHeight,
 					setViewportHeight,
+					screenWidth,
+					screenHeight,
 					guides,
 					setGuides,
 					isEditingText,
@@ -1182,11 +1238,34 @@ export const CanvasDesignerEditor: React.FC<CanvasDesignerEditorProps> = ({
 					getImageUrl,
 				}}
 			>
-				<div className="flex justify-center items-center h-screen w-screen bg-background overflow-hidden relative">
-					<LayersPanel onSave={handleSave} onClose={onClose} />
-					<div className="relative flex flex-col items-center">
-						<div className="absolute bottom-12 z-20">
-							<Menubar className="border-0 bg-background py-1 rounded-md shadow-md">
+				<div className="flex flex-row h-screen w-screen bg-gray-950 overflow-hidden relative">
+					{/* Layers Sidebar - Fixed Width */}
+					<div className="relative w-56 shrink-0">
+						<LayersPanel onSave={handleSave} onClose={onClose} />
+					</div>
+
+					{/* Main Canvas Area - Flexible */}
+					<div className="flex-1 flex flex-col relative min-w-0">
+						<div
+							ref={containerRef}
+							className="flex-1 relative overflow-hidden bg-neutral-900"
+						>
+							<div
+								className="absolute inset-0 pointer-events-none"
+								style={{
+									backgroundImage: `
+										radial-gradient(circle, #333 1px, transparent 1px)
+									`,
+									backgroundSize: "20px 20px",
+									opacity: 0.5,
+								}}
+							/>
+							<Canvas />
+						</div>
+
+						{/* Bottom Toolbar */}
+						<div className="absolute bottom-6 left-1/2 -translate-x-1/2 z-20">
+							<Menubar className="border-0 bg-gray-800 py-1 rounded-md shadow-lg ring-1 ring-white/10">
 								<Button
 									title="Select"
 									variant={mode === "pan" ? "ghost" : "outline"}
@@ -1209,56 +1288,25 @@ export const CanvasDesignerEditor: React.FC<CanvasDesignerEditorProps> = ({
 										{zoomPercentage} <ChevronDown className="w-5" />
 									</MenubarTrigger>
 									<MenubarContent align="end">
-										<MenubarItem onClick={() => zoomIn()}>
-											Zoom in{" "}
-											<span className="ml-auto text-muted-foreground">
-												Ctrl +
-											</span>
-										</MenubarItem>
+										<MenubarItem onClick={() => zoomIn()}>Zoom in</MenubarItem>
 										<MenubarItem onClick={() => zoomOut()}>
-											Zoom out{" "}
-											<span className="ml-auto text-muted-foreground">
-												Ctrl -
-											</span>
+											Zoom out
 										</MenubarItem>
 										<MenubarItem onClick={() => zoomTo(1)}>
-											Zoom to 100%{" "}
-											<span className="ml-auto text-muted-foreground">
-												Ctrl 0
-											</span>
+											Zoom to 100%
 										</MenubarItem>
 										<MenubarItem onClick={() => fitView()}>
-											Zoom to fit{" "}
-											<span className="ml-auto text-muted-foreground">
-												Ctrl 1
-											</span>
+											Zoom to fit
 										</MenubarItem>
 									</MenubarContent>
 								</MenubarMenu>
 							</Menubar>
 						</div>
-						<div
-							className="relative border border-gray-700 overflow-hidden"
-							style={{
-								width: viewportWidth,
-								height: viewportHeight,
-							}}
-						>
-							<div
-								className="absolute inset-0 checkered-background"
-								style={{
-									backgroundImage: `
-								linear-gradient(45deg, #333333 25%, #222222 25%, #222222 75%, #333333 75%),
-								linear-gradient(45deg, #333333 25%, #222222 25%, #222222 75%, #333333 75%)
-							`,
-									backgroundSize: "40px 40px",
-									backgroundPosition: "0 0, 20px 20px",
-								}}
-							/>
-							<Canvas />
-						</div>
 					</div>
-					<InspectorPanel />
+
+					<div className="relative w-56 shrink-0">
+						<InspectorPanel />
+					</div>
 				</div>
 			</EditorContext.Provider>
 		</DndProvider>

@@ -1,11 +1,19 @@
-import type { ModulateNodeConfig, PaintNodeConfig } from "@gatewai/types";
+import type {
+	CompositorLayer,
+	CompositorNodeConfig,
+	ModulateNodeConfig,
+	PaintNodeConfig,
+} from "@gatewai/types";
 import {
 	Application,
 	Assets,
+	type BLEND_MODES,
 	BlurFilter,
 	Container,
 	Graphics,
 	Sprite,
+	Text,
+	TextStyle,
 } from "pixi.js";
 import "pixi.js/advanced-blend-modes";
 import { ModulateFilter } from "./filters/modulate";
@@ -504,6 +512,140 @@ class PixiProcessorService {
 				height: heightToUse,
 			},
 		};
+	}
+
+	public async processCompositor(
+		config: CompositorNodeConfig,
+		inputs: Map<string, { type: "Image" | "Text"; value: string }>,
+		signal?: AbortSignal,
+	): Promise<{ dataUrl: string; width: number; height: number }> {
+		console.log("PPWPWP");
+		if (signal?.aborted) {
+			throw new DOMException("Operation cancelled", "AbortError");
+		}
+		const getBlendMode = (mode: string): BLEND_MODES => {
+			const map: Record<string, BLEND_MODES> = {
+				"source-over": "normal",
+				multiply: "multiply",
+				screen: "screen",
+				overlay: "overlay",
+				darken: "darken",
+				lighten: "lighten",
+				"color-dodge": "color-dodge",
+				"color-burn": "color-burn",
+				"hard-light": "hard-light",
+				"soft-light": "soft-light",
+				difference: "difference",
+				exclusion: "exclusion",
+				saturation: "saturation",
+				color: "color",
+				luminosity: "luminosity",
+				normal: "normal",
+			};
+			return (map[mode] as BLEND_MODES) || "normal";
+		};
+
+		if (!this.app) await this.init();
+		if (!this.app) throw new Error("App is not initialized");
+		const app = this.app;
+
+		// 1. Setup Canvas Dimensions
+		// Default to 800x600 if not specified (matching UI default)
+		const width = config.width || 800;
+		const height = config.height || 600;
+
+		app.renderer.resize(width, height);
+		app.stage.removeChildren();
+
+		// 2. Iterate and Render Layers
+		// Note: We rely on Object.values() preserving insertion order for integer-like strings
+		// or standard string keys created during the UI save process.
+		const layers = Object.values(config.layerUpdates || {});
+		console.log({ config });
+		for (const layer of layers) {
+			if (signal?.aborted) break;
+
+			const inputData = inputs.get(layer.inputHandleId);
+			if (!inputData) continue; // Skip layers with missing inputs
+
+			const container = new Container();
+
+			// Common Transform Properties
+			container.x = layer.x || 0;
+			container.y = layer.y || 0;
+			container.scale.set(layer.scaleX || 1, layer.scaleY || 1);
+			// Konva uses degrees, Pixi uses radians
+			container.rotation = ((layer.rotation || 0) * Math.PI) / 180;
+
+			// Set Blend Mode
+			// Note: Blend modes in Pixi apply to the sprite/object, not the container usually,
+			// but Container supports it if using 'advanced-blend-modes' or standard ones.
+			// We will apply it to the child object for safety.
+			const blendMode = getBlendMode(layer.blendMode || "normal");
+
+			if (layer.type === "Image" && inputData.type === "Image") {
+				try {
+					const texture = await Assets.load({
+						src: inputData.value,
+						parser: "texture",
+					});
+
+					if (signal?.aborted) break;
+
+					const sprite = new Sprite(texture);
+
+					// Apply specific dimensions if they exist (override natural size)
+					// In the UI, width/height are often derived from the image,
+					// but if the user resized the handle without scaling, we might need this.
+					// However, the UI uses scaleX/scaleY primarily.
+					// We'll trust the container scaling unless width/height are explicit and differ from texture.
+
+					sprite.blendMode = blendMode;
+					container.addChild(sprite);
+					app.stage.addChild(container);
+				} catch (e) {
+					console.warn(`Failed to load texture for layer ${layer.id}`, e);
+				}
+			} else if (layer.type === "Text" && inputData.type === "Text") {
+				const style = new TextStyle({
+					fontFamily: layer.fontFamily || "sans-serif",
+					fontSize: layer.fontSize || 24,
+					fill: layer.fill || "#000000",
+				});
+
+				const text = new Text({ text: inputData.value, style });
+				text.blendMode = blendMode;
+
+				// Apply Width constraint if necessary (wrapping),
+				// though Konva usually handles text width differently.
+				if (layer.width) {
+					text.style.wordWrap = true;
+					text.style.wordWrapWidth = layer.width;
+				}
+
+				container.addChild(text);
+				app.stage.addChild(container);
+			}
+		}
+
+		if (signal?.aborted) {
+			app.stage.removeChildren();
+			throw new DOMException("Operation cancelled", "AbortError");
+		}
+
+		app.render();
+
+		if (signal?.aborted) {
+			app.stage.removeChildren();
+			throw new DOMException("Operation cancelled", "AbortError");
+		}
+
+		const dataUrl = await app.renderer.extract.base64(app.stage);
+
+		// Cleanup
+		app.stage.removeChildren();
+
+		return { dataUrl, width, height };
 	}
 }
 

@@ -4,7 +4,7 @@ import { CanvasDetails } from "./details";
 function CanvasRouter() {
 	return (
 		<Routes>
-			<Route path=":canvasId" element={<CanvasDetails />} />
+			<Route path=":canvasId/*" element={<CanvasDetails />} />
 		</Routes>
 	);
 }

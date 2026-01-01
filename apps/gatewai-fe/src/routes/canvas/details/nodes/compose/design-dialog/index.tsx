@@ -1,6 +1,6 @@
-import type { OutputItem } from "@gatewai/types";
+import type { CompositorNodeConfig, OutputItem } from "@gatewai/types";
 import { ImagesIcon } from "lucide-react";
-import { memo, useMemo } from "react";
+import { memo, useMemo, useState } from "react";
 import { Button } from "@/components/ui/button";
 import { Dialog, DialogContent, DialogTrigger } from "@/components/ui/dialog";
 import type { HandleEntityType } from "@/store/handles";
@@ -11,6 +11,7 @@ import { CanvasDesignerEditor } from "../canvas-editor";
 
 const DesignDialog = memo(({ node }: { node: NodeEntityType }) => {
 	const { inputs } = useNodeResult(node.id);
+	const [isOpen, setIsOpen] = useState(false);
 	const { onNodeConfigUpdate } = useCanvasCtx();
 	const initialLayers = useMemo(() => {
 		const items = new Map<
@@ -30,20 +31,26 @@ const DesignDialog = memo(({ node }: { node: NodeEntityType }) => {
 		return items;
 	}, [inputs]);
 
+	const onSave = (config: CompositorNodeConfig) => {
+		onNodeConfigUpdate({ id: node.id, newConfig: config });
+		setIsOpen(false);
+	};
+
 	return (
-		<Dialog>
-			<DialogTrigger asChild>
+		<Dialog defaultOpen={false} open={isOpen}>
+			<DialogTrigger asChild onClick={() => setIsOpen(true)}>
 				<Button size="sm">
 					<ImagesIcon /> Edit
 				</Button>
 			</DialogTrigger>
 			<DialogContent
+				showCloseButton={false}
 				onEscapeKeyDown={(e) => e.preventDefault()}
 				className="max-w-screen! h-screen w-screen! max-h-screen! p-0"
 			>
 				<CanvasDesignerEditor
-					onClose={console.log}
-					onSave={console.log}
+					onClose={() => setIsOpen(false)}
+					onSave={onSave}
 					initialLayers={initialLayers}
 					node={node}
 				/>
