@@ -23,11 +23,11 @@ class FontManager {
 		const style = document.createElement("style");
 		style.id = fontId;
 		style.innerHTML = `
-      @font-face {
-        font-family: "${family}";
-        src: url("${url}");
-      }
-    `;
+			@font-face {
+            	font-family: "${family}";
+            	src: url("${url}");
+			}
+        `;
 		document.head.appendChild(style);
 
 		try {

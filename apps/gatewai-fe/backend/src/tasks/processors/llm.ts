@@ -14,11 +14,11 @@ const llmProcessor: NodeProcessor = async ({ node, data }) => {
 		const systemPrompt = getInputValue(data, node.id, false, {
 			dataType: DataType.Text,
 			label: "System Prompt",
-		}) as string | null;
+		})?.data as string | null;
 		const userPrompt = getInputValue(data, node.id, true, {
 			dataType: DataType.Text,
 			label: "Prompt",
-		}) as string;
+		})?.data as string;
 		const imageFileData = getInputValue(data, node.id, false, {
 			dataType: DataType.Image,
 			label: "Image",

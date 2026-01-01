@@ -1,6 +1,7 @@
 import { NodeType } from "@gatewai/db";
 import aiAgentProcessor from "./ai-agent/index.js";
 import blurProcessor from "./blur.js";
+import compositorProcessor from "./compositor.js";
 import cropProcessor from "./crop.js";
 import imageGenProcessor from "./image-gen.js";
 import llmProcessor from "./llm.js";
@@ -18,6 +19,7 @@ const nodeProcessors: Partial<Record<NodeType, NodeProcessor>> = {
 	[NodeType.Crop]: cropProcessor,
 	[NodeType.Paint]: paintProcessor,
 	[NodeType.Modulate]: modulateProcessor,
+	[NodeType.Compositor]: compositorProcessor,
 	// No processing needed for these node types
 	[NodeType.File]: async ({ node }) => {
 		return { success: true, result: node.result };

@@ -1,4 +1,4 @@
-import { type DataType, prisma } from "@gatewai/db";
+import { type DataType, type Node, prisma } from "@gatewai/db";
 import type { FileData, NodeResult } from "@gatewai/types";
 import { add } from "date-fns";
 import type { CanvasCtxData } from "../repositories/canvas.js";
@@ -31,7 +31,7 @@ function resolveSourceValue(
 	const item = selected.items.find(
 		(i) => i.outputHandleId === edge.sourceHandleId,
 	);
-	return item?.data ?? null;
+	return item ?? null;
 }
 
 /**

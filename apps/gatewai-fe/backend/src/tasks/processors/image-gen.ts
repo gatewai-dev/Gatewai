@@ -19,10 +19,10 @@ const imageGenProcessor: NodeProcessor = async ({ node, data }) => {
 		const userPrompt = getInputValue(data, node.id, true, {
 			dataType: DataType.Text,
 			label: "Prompt",
-		}) as string;
+		})?.data as string;
 		const imageFileData = getInputValuesByType(data, node.id, {
 			dataType: DataType.Image,
-		}) as FileData[] | null;
+		}).map((m) => m?.data) as FileData[] | null;
 
 		// Build messages
 		const messages: ModelMessage[] = [];

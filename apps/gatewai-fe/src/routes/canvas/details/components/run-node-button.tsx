@@ -32,7 +32,8 @@ const RunNodeButton = memo(
 				)}
 				{isNodeRunning && (
 					<>
-						<Spinner className="size-3" /> Running...
+						<Spinner className="size-3" />
+						<span className="text-xs">Running...</span>
 					</>
 				)}
 			</Button>

@@ -1,201 +1,165 @@
-import fs from "fs/promises";
-import path from "path";
-import sharp from "sharp";
+import * as fs from "node:fs/promises";
+import { readFile } from "node:fs/promises";
+import path from "node:path";
+import { fileURLToPath } from "node:url";
+import { DataType } from "@gatewai/db";
+import type {
+	CompositorLayer,
+	CompositorNodeConfig,
+	FileData,
+	NodeResult,
+	Output,
+} from "@gatewai/types";
+import sharp, { type Blend, type OverlayOptions } from "sharp";
+import { logMedia } from "../../media-logger.js";
+import {
+	bufferToDataUrl,
+	getImageBuffer,
+	getImageDimensions,
+} from "../../utils/image.js";
+import { getAllInputValuesWithHandle } from "../resolvers.js";
+import type { NodeProcessor } from "./types.js";
 
-interface TextLayerConfig {
-	id: string;
-	type: "Text" | "Image";
-	inputHandleId: string;
-	x?: number;
-	y?: number;
-	width?: number;
-	height?: number;
-	scaleX?: number;
-	scaleY?: number;
-	rotation?: number;
-	fontSize?: number;
-	lineHeight?: number;
-	fontFamily?: string;
-	letterSpacing?: number;
-	align?: "left" | "center" | "right";
-	fill?: string;
-	blendMode?: string;
+const __filename = fileURLToPath(import.meta.url);
+const __dirname = path.dirname(__filename);
+
+const getFontPath = async (fontName: string) => {
+	const fontDir = path.join(__dirname, "../../assets/fonts", fontName);
+	const files = await fs.readdir(fontDir);
+	const fontFile = files.find(
+		(f) =>
+			f.endsWith(".woff") ||
+			f.endsWith(".woff2") ||
+			f.endsWith(".ttf") ||
+			f.endsWith(".otf"),
+	);
+	if (!fontFile) {
+		throw new Error(`Font file not found ${fontName}`);
+	}
+	return path.join(fontDir, fontFile);
+};
+
+// Map Pixi/CSS blend modes to Sharp/Libvips blend modes
+const getBlendMode = (mode: string = "normal"): Blend => {
+	const map: Record<string, Blend> = {
+		normal: "over",
+		multiply: "multiply",
+		screen: "screen",
+		overlay: "overlay",
+		darken: "darken",
+		lighten: "lighten",
+		"color-dodge": "colour-dodge",
+		"color-burn": "colour-burn",
+		"hard-light": "hard-light",
+		"soft-light": "soft-light",
+		difference: "difference",
+		exclusion: "exclusion",
+		// Fallbacks for modes not directly supported by composite ops
+		saturation: "over",
+		color: "over",
+		luminosity: "over",
+	};
+	return map[mode] ?? "over";
+};
+
+// Helper: Load font file and convert to Base64 for SVG embedding
+async function getFontBase64(fontFamily: string): Promise<string | null> {
+	try {
+		const path = await getFontPath(fontFamily);
+		if (!path) return null;
+
+		const buffer = await readFile(path);
+
+		return `data:font/${path.split(".").pop() ?? "ttf"};charset=utf-8;base64,${buffer.toString("base64")}`;
+	} catch (e) {
+		console.warn(`Failed to load font ${fontFamily}`, e);
+		return null;
+	}
 }
 
-interface CompositorNodeConfig {
-	width?: number;
-	height?: number;
-	layerUpdates?: Record<string, TextLayerConfig>;
-}
+// Helper: Generate SVG for Text Layer
+async function generateTextSvg(
+	layer: CompositorLayer,
+	text: string,
+): Promise<Buffer> {
+	const fontSize = layer.fontSize ?? 24;
+	const fontFamily = layer.fontFamily ?? "sans-serif";
+	const fill = layer.fill ?? "#ffffff";
+	const width = layer.width ? `width="${layer.width}"` : "";
+	const fontWeight = "normal"; // Defaulting as layer config usually specifies family directly
 
-class SharpCompositor {
-	private fontCache: Map<string, string> = new Map();
+	// Try to load custom font
+	const fontBase64 = layer.fontFamily
+		? await getFontBase64(layer.fontFamily)
+		: null;
 
-	/**
-	 * Load a font file and return base64 data URL
-	 */
-	async loadFont(fontPath: string, fontFamily: string): Promise<string> {
-		if (this.fontCache.has(fontFamily)) {
-			return this.fontCache.get(fontFamily) as string;
-		}
+	const fontFace = fontBase64
+		? `@font-face { font-family: "${fontFamily}"; src: url("${fontBase64}"); }`
+		: "";
 
-		try {
-			const fontBuffer = await fs.readFile(fontPath);
-			const base64 = fontBuffer.toString("base64");
-			const ext = path.extname(fontPath).toLowerCase();
-
-			let format = "truetype";
-			if (ext === ".woff") format = "woff";
-			else if (ext === ".woff2") format = "woff2";
-			else if (ext === ".otf") format = "opentype";
-
-			const dataUrl = `data:font/${format};base64,${base64}`;
-			this.fontCache.set(fontFamily, dataUrl);
-
-			return dataUrl;
-		} catch (error) {
-			console.warn(`Failed to load font ${fontPath}:`, error);
-			return "";
-		}
-	}
-
-	/**
-	 * Create SVG text element with proper styling and transforms
-	 */
-	private createTextSVG(
-		text: string,
-		layer: TextLayerConfig,
-		fontDataUrl?: string,
-	): string {
-		const fontSize = layer.fontSize ?? 24;
-		const lineHeight = layer.lineHeight ?? 1;
-		const fill = layer.fill ?? "#ffffff";
-		const fontFamily = layer.fontFamily ?? "sans-serif";
-		const letterSpacing = layer.letterSpacing ?? 0;
-		const align = layer.align ?? "left";
-
-		// Calculate text anchor based on alignment
-		const textAnchor =
-			align === "center" ? "middle" : align === "right" ? "end" : "start";
-
-		// Word wrap handling
-		const maxWidth = layer.width || 800;
-		const lines = this.wrapText(text, maxWidth, fontSize, fontFamily);
-
-		// Calculate SVG dimensions
-		const svgHeight = lines.length * fontSize * lineHeight + fontSize;
-		const svgWidth = maxWidth;
-
-		// Build font-face if custom font is provided
-		const fontFace = fontDataUrl
-			? `<defs>
-          <style>
-            @font-face {
-              font-family: '${fontFamily}';
-              src: url('${fontDataUrl}');
-            }
-          </style>
-        </defs>`
-			: "";
-
-		// Build text elements for each line
-		const textElements = lines
-			.map((line, i) => {
-				const y = fontSize + i * fontSize * lineHeight;
-				const x =
-					align === "center" ? svgWidth / 2 : align === "right" ? svgWidth : 0;
-
-				return `<text x="${x}" y="${y}" 
-                  font-family="${fontFamily}" 
-                  font-size="${fontSize}" 
-                  fill="${fill}"
-                  letter-spacing="${letterSpacing}"
-                  text-anchor="${textAnchor}">${this.escapeXml(line)}</text>`;
-			})
-			.join("\n");
-
-		return `<?xml version="1.0" encoding="UTF-8"?>
-<svg width="${svgWidth}" height="${svgHeight}" xmlns="http://www.w3.org/2000/svg">
-  ${fontFace}
-  ${textElements}
-</svg>`;
-	}
-
-	/**
-	 * Simple word wrap algorithm
-	 */
-	private wrapText(
-		text: string,
-		maxWidth: number,
-		fontSize: number,
-		fontFamily: string,
-	): string[] {
-		// Rough estimation: ~0.5 * fontSize per character for most fonts
-		const avgCharWidth = fontSize * 0.5;
-		const maxCharsPerLine = Math.floor(maxWidth / avgCharWidth);
-
-		const words = text.split(/\s+/);
+	// Simple heuristic for word wrapping if width is set (SVG <text> doesn't auto-wrap easily)
+	// This is an approximation. For exact parity, more complex measurement is needed.
+	let content = text;
+	if (layer.width) {
+		const avgCharWidth = fontSize * 0.6;
+		const charsPerLine = Math.floor(layer.width / avgCharWidth);
+		const words = text.split(" ");
 		const lines: string[] = [];
-		let currentLine = "";
+		let currentLine = words[0];
 
-		for (const word of words) {
-			const testLine = currentLine ? `${currentLine} ${word}` : word;
-
-			if (testLine.length * avgCharWidth <= maxWidth || !currentLine) {
-				currentLine = testLine;
+		for (let i = 1; i < words.length; i++) {
+			if (currentLine.length + 1 + words[i].length < charsPerLine) {
+				currentLine += ` ${words[i]}`;
 			} else {
 				lines.push(currentLine);
-				currentLine = word;
+				currentLine = words[i];
 			}
 		}
+		lines.push(currentLine);
 
-		if (currentLine) {
-			lines.push(currentLine);
-		}
-
-		return lines.length ? lines : [""];
+		// Convert to tspan
+		const lineHeight = (layer.lineHeight ?? 1) * fontSize;
+		content = lines
+			.map(
+				(line, i) =>
+					`<tspan x="0" dy="${i === 0 ? fontSize : lineHeight}">${line}</tspan>`,
+			)
+			.join("");
+	} else {
+		// Single line, ensure baseline is correct
+		content = `<tspan x="0" dy="${fontSize}">${text}</tspan>`;
 	}
 
-	/**
-	 * Escape XML special characters
-	 */
-	private escapeXml(text: string): string {
-		return text
-			.replace(/&/g, "&amp;")
-			.replace(/</g, "&lt;")
-			.replace(/>/g, "&gt;")
-			.replace(/"/g, "&quot;")
-			.replace(/'/g, "&apos;");
-	}
+	const svg = `
+	<svg width="${layer.width || 1024}" height="${layer.height || 1024}" xmlns="http://www.w3.org/2000/svg">
+		<defs>
+			<style>
+				${fontFace}
+				.text-style {
+					font-family: "${fontFamily}", sans-serif;
+					font-size: ${fontSize}px;
+					fill: ${fill};
+					text-anchor: ${layer.align === "center" ? "middle" : layer.align === "right" ? "end" : "start"};
+				}
+			</style>
+		</defs>
+		<text x="${layer.align === "center" ? "50%" : layer.align === "right" ? "100%" : "0"}" y="0" class="text-style">${content}</text>
+	</svg>
+	`;
 
-	/**
-	 * Convert blend mode to Sharp blend mode
-	 */
-	private getSharpBlendMode(blendMode: string): sharp.Blend {
-		const blendMap: Record<string, sharp.Blend> = {
-			normal: "over",
-			multiply: "multiply",
-			screen: "screen",
-			overlay: "overlay",
-			add: "add",
-		};
-		return (blendMap[blendMode] || "over") as sharp.Blend;
-	}
+	return Buffer.from(svg);
+}
 
-	/**
-	 * Main compositor function similar to PixiJS implementation
-	 */
-	async processCompositor(
-		config: CompositorNodeConfig,
-		inputs: Map<string, { type: "Image" | "Text"; value: string }>,
-		fontPaths?: Map<string, string>, // Map of fontFamily -> font file path
-		signal?: AbortSignal,
-	): Promise<{ dataUrl: string; width: number; height: number }> {
-		const width = config.width || 1024;
-		const height = config.height || 1024;
+const compositorProcessor: NodeProcessor = async ({ node, data }) => {
+	try {
+		const config = node.config as CompositorNodeConfig;
+		const width = config.width ?? 1024;
+		const height = config.height ?? 1024;
 
-		// Create base canvas
-		let canvas = sharp({
+		const inputHandlesWithValues = getAllInputValuesWithHandle(data, node.id);
+		// Initialize Stage (Background)
+		// We start with a transparent background of the target size
+		const baseComposite = sharp({
 			create: {
 				width,
 				height,
@@ -204,171 +168,156 @@ class SharpCompositor {
 			},
 		});
 
-		const composites: sharp.OverlayOptions[] = [];
 		const layers = Object.values(config.layerUpdates || {});
+		const compositeOps: OverlayOptions[] = [];
 
-		// Sort layers by z-index if available
-		// layers.sort((a, b) => (a.zIndex ?? 0) - (b.zIndex ?? 0));
-
+		// 2. Process Layers
 		for (const layer of layers) {
-			if (signal?.aborted) {
-				throw new DOMException("Cancelled", "AbortError");
-			}
+			const inputHandleId = layer.inputHandleId;
 
-			const inputData = inputs.get(layer.inputHandleId);
-			if (!inputData) continue;
+			// Resolve Input Data manually from the execution context inputs
+			// We look for the specific input handle ID in the supplied data inputs
+			const inputEntry = inputHandlesWithValues.find(
+				(f) => f.handle?.id === inputHandleId,
+			);
 
-			let inputBuffer: Buffer | null = null;
+			if (!inputEntry) continue;
+			const inputItem = inputEntry.value; // Value from Map
 
-			if (layer.type === "Image" && inputData.type === "Image") {
-				try {
-					// Load image from URL or file path or data URL
-					if (inputData.value.startsWith("data:")) {
-						const base64Data = inputData.value.split(",")[1];
-						inputBuffer = Buffer.from(base64Data, "base64");
-					} else if (inputData.value.startsWith("http")) {
-						const response = await fetch(inputData.value);
-						inputBuffer = Buffer.from(await response.arrayBuffer());
-					} else {
-						inputBuffer = await fs.readFile(inputData.value);
-					}
+			let layerBuffer: Buffer | null = null;
+			let layerTop = Math.round(layer.y || 0);
+			let layerLeft = Math.round(layer.x || 0);
 
-					// Resize if dimensions specified
-					let imageSharp = sharp(inputBuffer);
-					if (layer.width || layer.height) {
-						imageSharp = imageSharp.resize(layer.width, layer.height, {
-							fit: "fill",
-						});
-					}
+			if (layer.type === "Image" && inputItem?.type === DataType.Image) {
+				const fileData = inputItem.data as FileData;
+				const originalBuffer = await getImageBuffer(fileData);
 
-					inputBuffer = await imageSharp.png().toBuffer();
-				} catch (e) {
-					console.warn(`Load failed: ${layer.id}`, e);
-					continue;
+				let pipeline = sharp(originalBuffer);
+
+				// Resize (Scale)
+				// If specific width/height set, force resize. Otherwise scale.
+				if (layer.width && layer.height) {
+					pipeline = pipeline.resize(
+						Math.round(layer.width),
+						Math.round(layer.height),
+						{ fit: "fill" },
+					);
+				} else if (layer.scaleX || layer.scaleY) {
+					// We need metadata to scale proportionally
+					const meta = await pipeline.metadata();
+					const newW = Math.round((meta.width ?? 100) * (layer.scaleX ?? 1));
+					const newH = Math.round((meta.height ?? 100) * (layer.scaleY ?? 1));
+					pipeline = pipeline.resize(newW, newH, { fit: "fill" });
 				}
-			} else if (layer.type === "Text" && inputData.type === "Text") {
-				try {
-					// Load custom font if provided
-					let fontDataUrl: string | undefined;
-					if (layer.fontFamily && fontPaths?.has(layer.fontFamily)) {
-						fontDataUrl = await this.loadFont(
-							fontPaths.get(layer.fontFamily)!,
-							layer.fontFamily,
-						);
-					}
 
-					// Create SVG text
-					const svg = this.createTextSVG(inputData.value, layer, fontDataUrl);
-
-					// Convert SVG to PNG buffer
-					inputBuffer = await sharp(Buffer.from(svg)).png().toBuffer();
-				} catch (e) {
-					console.warn(`Text render failed: ${layer.id}`, e);
-					continue;
+				if (layer.rotation) {
+					pipeline = pipeline.rotate(layer.rotation, {
+						background: { r: 0, g: 0, b: 0, alpha: 0 },
+					});
 				}
-			}
 
-			if (inputBuffer) {
-				// Apply transforms
-				const scaleX = layer.scaleX ?? 1;
-				const scaleY = layer.scaleY ?? 1;
-				const rotation = layer.rotation ?? 0;
+				layerBuffer = await pipeline.toBuffer();
+			} else if (layer.type === "Text" && inputItem?.type === DataType.Text) {
+				const textValue = String(inputItem.data);
+				layerBuffer = await generateTextSvg(layer, textValue);
 
-				// Apply scaling and rotation if needed
-				if (scaleX !== 1 || scaleY !== 1 || rotation !== 0) {
-					const metadata = await sharp(inputBuffer).metadata();
-					const w = metadata.width!;
-					const h = metadata.height!;
-
-					// Calculate new dimensions after rotation
-					const rad = (rotation * Math.PI) / 180;
-					const cos = Math.abs(Math.cos(rad));
-					const sin = Math.abs(Math.sin(rad));
-					const newW = Math.ceil(w * cos + h * sin);
-					const newH = Math.ceil(w * sin + h * cos);
-
-					inputBuffer = await sharp(inputBuffer)
-						.resize(Math.round(w * scaleX), Math.round(h * scaleY))
-						.rotate(rotation, { background: { r: 0, g: 0, b: 0, alpha: 0 } })
+				// Apply rotation to the generated SVG if needed
+				if (layer.rotation) {
+					layerBuffer = await sharp(layerBuffer)
+						.rotate(layer.rotation, {
+							background: { r: 0, g: 0, b: 0, alpha: 0 },
+						})
 						.toBuffer();
 				}
+			}
 
-				composites.push({
-					input: inputBuffer,
-					top: Math.round(layer.y ?? 0),
-					left: Math.round(layer.x ?? 0),
-					blend: this.getSharpBlendMode(layer.blendMode || "normal"),
+			if (layerBuffer) {
+				// Get layer dimensions
+				const metadata = await sharp(layerBuffer).metadata();
+				const layerW = metadata.width ?? 0;
+				const layerH = metadata.height ?? 0;
+
+				// Calculate crop offsets and visible dimensions to mask within canvas
+				const cropX = Math.max(0, -layerLeft);
+				const cropY = Math.max(0, -layerTop);
+				const visibleW = Math.min(
+					layerW - cropX,
+					width - Math.max(0, layerLeft),
+				);
+				const visibleH = Math.min(
+					layerH - cropY,
+					height - Math.max(0, layerTop),
+				);
+
+				if (visibleW <= 0 || visibleH <= 0) continue;
+
+				// Crop the layer buffer to the visible part
+				layerBuffer = await sharp(layerBuffer)
+					.extract({
+						left: cropX,
+						top: cropY,
+						width: visibleW,
+						height: visibleH,
+					})
+					.toBuffer();
+
+				// Adjust position to be within canvas
+				layerLeft = Math.max(0, layerLeft);
+				layerTop = Math.max(0, layerTop);
+
+				compositeOps.push({
+					input: layerBuffer,
+					top: layerTop,
+					left: layerLeft,
+					blend: getBlendMode(layer.blendMode),
 				});
 			}
 		}
 
-		if (signal?.aborted) {
-			throw new DOMException("Cancelled", "AbortError");
-		}
+		// Composite All Layers
+		const resultBuffer = await baseComposite
+			.composite(compositeOps)
+			.png()
+			.toBuffer();
+		logMedia(resultBuffer, undefined, node.id);
+		// Construct Result
+		const dimensions = getImageDimensions(resultBuffer);
+		const dataUrl = bufferToDataUrl(resultBuffer, "image/png");
 
-		// Composite all layers
-		if (composites.length > 0) {
-			canvas = canvas.composite(composites);
-		}
+		const outputHandle = data.handles.find(
+			(h) => h.nodeId === node.id && h.type === "Output",
+		);
+		if (!outputHandle) throw new Error("Output handle is missing");
 
-		// Render to buffer
-		const outputBuffer = await canvas.png().toBuffer();
+		const newResult: NodeResult = structuredClone(
+			node.result as NodeResult,
+		) ?? {
+			outputs: [],
+			selectedOutputIndex: 0,
+		};
 
-		if (signal?.aborted) {
-			throw new DOMException("Cancelled", "AbortError");
-		}
+		const newGeneration: Output = {
+			items: [
+				{
+					type: DataType.Image,
+					data: { processData: { dataUrl, ...dimensions } },
+					outputHandleId: outputHandle.id,
+				},
+			],
+		};
 
-		// Convert to data URL
-		const dataUrl = `data:image/png;base64,${outputBuffer.toString("base64")}`;
+		newResult.outputs = [newGeneration]; // Replace or push depending on logic, usually replace for compositor
+		newResult.selectedOutputIndex = 0;
 
-		return { dataUrl, width, height };
+		return { success: true, newResult };
+	} catch (err: unknown) {
+		console.error("Compositor Processor Error:", err);
+		return {
+			success: false,
+			error:
+				err instanceof Error ? err.message : "Compositor processing failed",
+		};
 	}
-}
+};
 
-// Example usage
-async function example() {
-	const compositor = new SharpCompositor();
-
-	const config: CompositorNodeConfig = {
-		width: 1024,
-		height: 1024,
-		layerUpdates: {
-			layer1: {
-				id: "layer1",
-				type: "Text",
-				inputHandleId: "text1",
-				x: 100,
-				y: 100,
-				width: 800,
-				fontSize: 48,
-				fontFamily: "CustomFont",
-				fill: "#ffffff",
-				align: "center",
-				lineHeight: 1.5,
-			},
-		},
-	};
-
-	const inputs = new Map([
-		[
-			"text1",
-			{
-				type: "Text" as const,
-				value: "Hello World! This is a long text that will wrap.",
-			},
-		],
-	]);
-
-	// Optional: Provide custom font paths
-	const fontPaths = new Map([["CustomFont", "./fonts/MyFont.ttf"]]);
-
-	const result = await compositor.processCompositor(config, inputs, fontPaths);
-
-	console.log("Rendered:", result.width, "x", result.height);
-
-	// Save to file
-	const base64Data = result.dataUrl.split(",")[1];
-	await fs.writeFile("output.png", Buffer.from(base64Data, "base64"));
-}
-
-export { SharpCompositor };
+export default compositorProcessor;

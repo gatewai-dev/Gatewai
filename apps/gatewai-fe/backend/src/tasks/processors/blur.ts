@@ -20,7 +20,7 @@ const blurProcessor: NodeProcessor = async ({ node, data }) => {
 		const imageInput = getInputValue(data, node.id, true, {
 			dataType: DataType.Image,
 			label: "Image",
-		}) as FileData | null;
+		})?.data as FileData | null;
 		const blurConfig = node.config as BlurNodeConfig;
 		const blurAmount = blurConfig.size ?? 0;
 

@@ -25,7 +25,7 @@ const paintProcessor: NodeProcessor = async ({ node, data }) => {
 		const backgroundInput = getInputValue(data, node.id, false, {
 			dataType: DataType.Image,
 			label: "Background Image",
-		}) as FileData | null;
+		})?.data as FileData | null;
 
 		const paintConfig = node.config as PaintNodeConfig;
 		const { backgroundColor = "#000", width, height } = paintConfig;

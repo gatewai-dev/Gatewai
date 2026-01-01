@@ -16,8 +16,8 @@ async function logMedia(
 		}
 		const filePath = `${process.cwd()}/debug_media/${new Date().toISOString()}_moderate_${nodeId ?? ""}${extension}`;
 		await sharp(buffer).toFile(filePath);
-		logger.warn("Unable to save media");
 	} catch (error) {
+		console.log(error);
 		logger.warn("Unable to save media");
 		logger.error(error);
 	}

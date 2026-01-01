@@ -108,7 +108,7 @@ const aiAgentProcessor: NodeProcessor = async ({ node, data }) => {
 		}
 		const prompt = allInputs.find(
 			(input) => input?.handle?.label === "Instructions",
-		)?.value as string;
+		)?.value?.data as string;
 		if (!prompt) {
 			return { success: false, error: "Instructions is required" };
 		}

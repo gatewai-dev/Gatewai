@@ -82,6 +82,7 @@ import {
 	TooltipContent,
 	TooltipTrigger,
 } from "@/components/ui/tooltip";
+import { ColorInput } from "@/components/util/color-input";
 import { BLEND_MODES } from "@/routes/canvas/blend-modes";
 import { useGetFontListQuery } from "@/store/fonts";
 import type { HandleEntityType } from "@/store/handles";
@@ -1017,11 +1018,10 @@ const InspectorPanel: React.FC = () => {
 								</div>
 								<div className="flex flex-col gap-1">
 									<Label htmlFor="color">Color:</Label>
-									<input
+									<ColorInput
 										id="color"
-										type="color"
-										value={selectedLayer.fill}
-										onChange={(e) => updateLayer({ fill: e.target.value })}
+										value={selectedLayer.fill ?? "#fff"}
+										onChange={(e) => updateLayer({ fill: e })}
 										className="w-full h-8 cursor-pointer"
 									/>
 								</div>

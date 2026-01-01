@@ -22,7 +22,7 @@ const cropProcessor: NodeProcessor = async ({ node, data }) => {
 		const imageInput = getInputValue(data, node.id, true, {
 			dataType: DataType.Image,
 			label: "Image",
-		}) as FileData | null;
+		})?.data as FileData | null;
 		const cropConfig = node?.config as CropNodeConfig;
 		const { leftPercentage, topPercentage, widthPercentage, heightPercentage } =
 			cropConfig;

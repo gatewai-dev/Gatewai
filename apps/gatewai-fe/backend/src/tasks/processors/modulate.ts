@@ -21,7 +21,7 @@ const modulateProcessor: NodeProcessor = async ({ node, data }) => {
 		const imageInput = getInputValue(data, node.id, true, {
 			dataType: DataType.Image,
 			label: "Image",
-		}) as FileData | null;
+		})?.data as FileData | null;
 		const modulateConfig = node.config as ModulateNodeConfig;
 
 		if (!imageInput) {

@@ -22,7 +22,7 @@ const resizeProcessor: NodeProcessor = async ({ node, data }) => {
 		const imageInput = getInputValue(data, node.id, true, {
 			dataType: DataType.Image,
 			label: "Image",
-		}) as FileData | null;
+		})?.data as FileData | null;
 		const resizeConfig = node?.config as ResizeNodeConfig;
 		const width = resizeConfig.width ?? 0;
 		const height = resizeConfig.height ?? 0;
