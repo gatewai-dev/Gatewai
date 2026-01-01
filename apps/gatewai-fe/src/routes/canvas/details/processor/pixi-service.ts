@@ -22,6 +22,7 @@ import {
 	HardLightBlend,
 	LightenBlend,
 	LuminosityBlend,
+	loadWebFont,
 	OverlayBlend,
 	SaturationBlend,
 	SoftLightBlend,
@@ -31,6 +32,7 @@ import {
 	WebWorkerAdapter,
 } from "pixi.js";
 import "pixi.js/advanced-blend-modes";
+import { GetFontAssetUrl } from "@/utils/file";
 import { ModulateFilter } from "./filters/modulate";
 
 DOMAdapter.set(WebWorkerAdapter);
@@ -550,10 +552,8 @@ class PixiProcessorService {
 		signal?: AbortSignal,
 	): Promise<{ dataUrl: string; width: number; height: number }> {
 		return this.useApp(async (app) => {
-			// 1. Setup Canvas Dimensions from Config
-			// Use fallback 800x600 if 0 or undefined, but respect config if present.
-			const width = config.width || 1024;
-			const height = config.height || 1024;
+			const width = config.width ?? 1024;
+			const height = config.height ?? 1024;
 
 			app.renderer.resize(width, height);
 
@@ -566,6 +566,28 @@ class PixiProcessorService {
 			app.stage.mask = maskGraphics;
 
 			const layers = Object.values(config.layerUpdates || {});
+
+			const assetMap: Array<{ alias: string; src: string }> = [];
+
+			for (const layer of layers) {
+				const inputData = inputs.get(layer.inputHandleId);
+				if (!inputData) continue;
+
+				if (layer.type === "Image" && inputData.type === "Image") {
+					assetMap.push({ alias: `img_${layer.id}`, src: inputData.value });
+				} else if (layer.type === "Text" && layer.fontFamily) {
+					// Ensure the alias is the family name used in TextStyle
+					assetMap.push({
+						alias: layer.fontFamily,
+						src: GetFontAssetUrl(layer.fontFamily),
+					});
+				}
+			}
+
+			// Batch Load
+			if (assetMap.length > 0) {
+				await Assets.load(assetMap);
+			}
 
 			for (const layer of layers) {
 				if (signal?.aborted) {

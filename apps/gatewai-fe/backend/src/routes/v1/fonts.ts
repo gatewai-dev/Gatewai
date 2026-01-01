@@ -1,17 +1,20 @@
 import * as fs from "node:fs/promises";
 import * as path from "node:path";
+import { fileURLToPath } from "node:url";
 import { zValidator } from "@hono/zod-validator";
 import { fileTypeFromBuffer } from "file-type";
 import { Hono } from "hono";
 import { z } from "zod/v4";
+
+const __filename = fileURLToPath(import.meta.url);
+const __dirname = path.dirname(__filename);
 
 const fontsRouter = new Hono({
 	strict: false,
 })
 	.get("/", async (c) => {
 		try {
-			console.log({ __dirname });
-			const assetsDir = path.join(__dirname, "../assets");
+			const assetsDir = path.join(__dirname, "../../assets/fonts");
 			const dirents = await fs.readdir(assetsDir, { withFileTypes: true });
 			const fontNames = dirents
 				.filter((dirent) => dirent.isDirectory())
@@ -27,7 +30,7 @@ const fontsRouter = new Hono({
 		zValidator("param", z.object({ fontName: z.string() })),
 		async (c) => {
 			const fontName = c.req.param("fontName");
-			const fontDir = path.join(__dirname, "../assets", fontName);
+			const fontDir = path.join(__dirname, "../../assets/fonts", fontName);
 			try {
 				const files = await fs.readdir(fontDir);
 				const fontFile = files.find(

@@ -18,4 +18,8 @@ function GetAssetEndpoint(id: FileAsset["id"]) {
 	return `${BACKEND_URL}/api/v1/assets/${id}`;
 }
 
-export { GetDataTypeFromMimetype, GetAssetEndpoint };
+function GetFontAssetUrl(name: string) {
+	return `${BACKEND_URL}/api/v1/fonts/load/${name}`;
+}
+
+export { GetDataTypeFromMimetype, GetAssetEndpoint, GetFontAssetUrl };

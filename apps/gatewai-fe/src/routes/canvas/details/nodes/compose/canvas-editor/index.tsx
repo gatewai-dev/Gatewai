@@ -964,7 +964,7 @@ const InspectorPanel: React.FC = () => {
 										<SelectContent>
 											{fontNames.map((fontName) => (
 												<SelectItem key={`${fontName}_opt`} value={fontName}>
-													{fontName}
+													{fontName.replace("_", "")}
 												</SelectItem>
 											))}
 										</SelectContent>
