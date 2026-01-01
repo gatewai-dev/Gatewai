@@ -1,20 +1,5 @@
 import type { DataType, FileAsset } from "@gatewai/db";
 
-type FileAsset = {
-	name: string;
-	id: string;
-	createdAt: Date;
-	updatedAt: Date;
-	width: number | null;
-	height: number | null;
-	bucket: string;
-	mimeType: string;
-	key: string;
-	signedUrl: string | null;
-	signedUrlExp: Date | null;
-	userId: string;
-	isUploaded: boolean;
-};
 export type FileData = {
 	entity?: FileAsset;
 	dataUrl?: string;
