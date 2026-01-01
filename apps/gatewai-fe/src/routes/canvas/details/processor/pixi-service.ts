@@ -16,6 +16,20 @@ import {
 	TextStyle,
 } from "pixi.js";
 import "pixi.js/advanced-blend-modes";
+import {
+	ColorBlend,
+	ColorBurnBlend,
+	ColorDodgeBlend,
+	DarkenBlend,
+	DifferenceBlend,
+	ExclusionBlend,
+	HardLightBlend,
+	LightenBlend,
+	LuminosityBlend,
+	OverlayBlend,
+	SaturationBlend,
+	SoftLightBlend,
+} from "pixi.js";
 import { ModulateFilter } from "./filters/modulate";
 
 class PixiProcessorService {
@@ -39,6 +53,7 @@ class PixiProcessorService {
 			webgl: {
 				hello: true,
 			},
+			useBackBuffer: true,
 		});
 	}
 
@@ -545,6 +560,21 @@ class PixiProcessorService {
 			return (map[mode] as BLEND_MODES) || "normal";
 		};
 
+		const blendFilterMap: Record<string, new () => any> = {
+			color: ColorBlend,
+			"color-burn": ColorBurnBlend,
+			"color-dodge": ColorDodgeBlend,
+			darken: DarkenBlend,
+			difference: DifferenceBlend,
+			exclusion: ExclusionBlend,
+			"hard-light": HardLightBlend,
+			lighten: LightenBlend,
+			luminosity: LuminosityBlend,
+			overlay: OverlayBlend,
+			saturation: SaturationBlend,
+			"soft-light": SoftLightBlend,
+		};
+
 		if (!this.app) await this.init();
 		if (!this.app) throw new Error("App is not initialized");
 		const app = this.app;
@@ -577,11 +607,7 @@ class PixiProcessorService {
 			// Konva uses degrees, Pixi uses radians
 			container.rotation = ((layer.rotation || 0) * Math.PI) / 180;
 
-			// Set Blend Mode
-			// Note: Blend modes in Pixi apply to the sprite/object, not the container usually,
-			// but Container supports it if using 'advanced-blend-modes' or standard ones.
-			// We will apply it to the child object for safety.
-			const blendMode = getBlendMode(layer.blendMode || "normal");
+			let obj: Sprite | Text | null = null;
 
 			if (layer.type === "Image" && inputData.type === "Image") {
 				try {
@@ -600,9 +626,7 @@ class PixiProcessorService {
 					// However, the UI uses scaleX/scaleY primarily.
 					// We'll trust the container scaling unless width/height are explicit and differ from texture.
 
-					sprite.blendMode = blendMode;
-					container.addChild(sprite);
-					app.stage.addChild(container);
+					obj = sprite;
 				} catch (e) {
 					console.warn(`Failed to load texture for layer ${layer.id}`, e);
 				}
@@ -614,7 +638,6 @@ class PixiProcessorService {
 				});
 
 				const text = new Text({ text: inputData.value, style });
-				text.blendMode = blendMode;
 
 				// Apply Width constraint if necessary (wrapping),
 				// though Konva usually handles text width differently.
@@ -623,7 +646,30 @@ class PixiProcessorService {
 					text.style.wordWrapWidth = layer.width;
 				}
 
-				container.addChild(text);
+				obj = text;
+			}
+
+			if (obj) {
+				// Apply blend mode
+				const blendModeStr = layer.blendMode || "normal";
+				const pixiBlendMode = getBlendMode(blendModeStr);
+				const basicModes: BLEND_MODES[] = ["normal", "multiply", "screen"];
+
+				if (basicModes.includes(pixiBlendMode)) {
+					obj.blendMode = pixiBlendMode;
+				} else {
+					const FilterClass = blendFilterMap[pixiBlendMode];
+					if (FilterClass) {
+						const blendFilter = new FilterClass();
+						blendFilter.resolution = app.renderer.resolution;
+						obj.filters = [blendFilter];
+					} else {
+						console.warn(`Unsupported blend mode: ${blendModeStr}`);
+						obj.blendMode = "normal";
+					}
+				}
+
+				container.addChild(obj);
 				app.stage.addChild(container);
 			}
 		}

@@ -458,7 +458,6 @@ const ArtboardBackground: React.FC = () => {
 				shadowOpacity={0.2}
 				listening={false}
 			/>
-			{/* Optional: Checkered pattern overlay if desired, but solid white is standard for output preview */}
 		</Group>
 	);
 };
@@ -677,7 +676,7 @@ const LayersPanel: React.FC<{ onSave: () => void; onClose: () => void }> = ({
 
 	const moveLayer = useCallback(
 		(draggedId: string, targetId: string, insertAfter: boolean) => {
-			const displayLayers = layers.slice().reverse();
+			const displayLayers = layers.slice();
 			const draggedIndex = displayLayers.findIndex((l) => l.id === draggedId);
 			let targetIndex = displayLayers.findIndex((l) => l.id === targetId);
 
@@ -691,7 +690,7 @@ const LayersPanel: React.FC<{ onSave: () => void; onClose: () => void }> = ({
 			if (draggedIndex < targetIndex) adjustedTargetIndex -= 1;
 			newDisplayLayers.splice(adjustedTargetIndex, 0, moved);
 
-			setLayers(newDisplayLayers.reverse());
+			setLayers(newDisplayLayers);
 		},
 		[layers, setLayers],
 	);
@@ -709,18 +708,15 @@ const LayersPanel: React.FC<{ onSave: () => void; onClose: () => void }> = ({
 			<Separator className="my-4" />
 			<h3 className="mb-4 text-xl font-bold text-gray-100">Layers</h3>
 			<ul className="space-y-2">
-				{layers
-					.slice()
-					.reverse()
-					.map((layer) => (
-						<LayerItem
-							key={layer.id}
-							layer={layer}
-							selectedId={selectedId}
-							setSelectedId={setSelectedId}
-							moveLayer={moveLayer}
-						/>
-					))}
+				{layers.map((layer) => (
+					<LayerItem
+						key={layer.id}
+						layer={layer}
+						selectedId={selectedId}
+						setSelectedId={setSelectedId}
+						moveLayer={moveLayer}
+					/>
+				))}
 			</ul>
 		</div>
 	);
@@ -984,10 +980,13 @@ export const CanvasDesignerEditor: React.FC<CanvasDesignerEditorProps> = ({
 	onClose,
 	onSave: propOnSave,
 }) => {
+	const nodeConfig = node.config as CompositorNodeConfig;
 	const [layers, setLayers] = useState<CompositorLayer[]>([]);
 	const [selectedId, setSelectedId] = useState<string | null>(null);
-	const [viewportWidth, setViewportWidth] = useState(800);
-	const [viewportHeight, setViewportHeight] = useState(600);
+	const [viewportWidth, setViewportWidth] = useState(nodeConfig.width ?? 1024);
+	const [viewportHeight, setViewportHeight] = useState(
+		nodeConfig.height ?? 1024,
+	);
 	const [guides, setGuides] = useState<Guide[]>([]);
 	const [isEditingText, setIsEditingText] = useState(false);
 	const [editingLayerId, setEditingLayerId] = useState<string | null>(null);
