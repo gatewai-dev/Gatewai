@@ -107,6 +107,7 @@ export type AgentOutputUnion =
 	| OutputItem<"Number">
 	| OutputItem<"Boolean">
 	| OutputItem<"Mask">;
+
 export type AgentResult = MultipleOutputResult & {
 	outputs: { items: AgentOutputUnion[] }[];
 };
@@ -123,9 +124,7 @@ export type NodeResult =
 	| NumberResult
 	| LLMResult
 	| ResizeResult
-	| ThreeDResult
 	| PaintResult
 	| BlurResult
 	| CompositorResult
-	| ModulateResult
-	| DescriberResult;
+	| ModulateResult;

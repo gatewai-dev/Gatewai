@@ -1,20 +1,19 @@
 import { ImagesIcon } from "lucide-react";
-import { memo, useState } from "react";
+import { memo } from "react";
 import { Button } from "@/components/ui/button";
 import {
 	Dialog,
-	DialogClose,
 	DialogContent,
-	DialogDescription,
-	DialogFooter,
-	DialogHeader,
-	DialogTitle,
 	DialogTrigger,
 } from "@/components/ui/dialog";
 import type { NodeEntityType } from "@/store/nodes";
 import { CanvasDesignerEditor } from "../canvas-editor";
+import { useMultipleNodeResults, useNodeResult } from "../../../processor/processor-ctx";
 
 const DesignDialog = memo(({ node }: { node: NodeEntityType }) => {
+
+	const {inputs} = useNodeResult(node.id);
+	console.log({inputs});
 	return (
 		<Dialog>
 			<DialogTrigger asChild>

@@ -30,6 +30,7 @@ interface NodeState {
 	error: string | null;
 	abortController: AbortController | null;
 	lastProcessedSignature: string | null;
+	inputs: Map<string, NodeResult> | null;
 }
 
 type NodeProcessorParams = {
@@ -70,12 +71,12 @@ export class NodeGraphProcessor extends EventEmitter {
 		const prevNodes = this.nodes;
 		const prevEdges = this.edges;
 
-		// 1. Update Internal State
+		// Update Internal State
 		this.nodes = config.nodes;
 		this.edges = config.edges;
 		this.handles = config.handles;
 
-		// 2. Rebuild Topology Indices
+		// Rebuild Topology Indices
 		this.buildAdjacencyAndIndices();
 
 		const nodesToInvalidate = new Set<string>();
@@ -103,7 +104,7 @@ export class NodeGraphProcessor extends EventEmitter {
 				this.markNodesDirty(dirtyNodes);
 			}
 		} else {
-			// 3. Detect Intrinsic Node Changes (Config/Data/Index mismatch)
+			// Detect Intrinsic Node Changes (Config/Data/Index mismatch)
 			this.nodes.forEach((currNode, id) => {
 				const state = this.nodeStates.get(id);
 				const currHash = this.getNodeValueHash(currNode);
@@ -112,7 +113,7 @@ export class NodeGraphProcessor extends EventEmitter {
 				}
 			});
 
-			// 4. Detect Extrinsic Input Changes (Edges or Upstream Values)
+			// Detect Extrinsic Input Changes (Edges or Upstream Values)
 			const inputChanges = this.detectInputChanges(
 				prevEdges,
 				this.edges,
@@ -124,7 +125,7 @@ export class NodeGraphProcessor extends EventEmitter {
 			});
 		}
 
-		// 5. Cleanup Removed Nodes
+		//  Cleanup Removed Nodes
 		prevNodes.forEach((_, id) => {
 			if (!this.nodes.has(id)) {
 				const state = this.nodeStates.get(id);
@@ -287,7 +288,9 @@ export class NodeGraphProcessor extends EventEmitter {
 
 		try {
 			const inputs = this.collectInputs(nodeId);
-			this.emit("node:start", { nodeId });
+			console.log({inputs, nodeId})
+			state.inputs = inputs;
+			this.emit("node:start", { nodeId, inputs });
 
 			const result = await processor({
 				node,
@@ -332,6 +335,7 @@ export class NodeGraphProcessor extends EventEmitter {
 				isDirty: false,
 				isProcessing: false,
 				result: null,
+				inputs: null,
 				error: null,
 				abortController: null,
 				lastProcessedSignature: null,
@@ -395,17 +399,17 @@ export class NodeGraphProcessor extends EventEmitter {
 		const prevEdgeMap = getEdgeSigs(prevEdges);
 		const currEdgeMap = getEdgeSigs(currEdges);
 
-		// A. Check if connections were added/removed/swapped
+		// Check if connections were added/removed/swapped
 		currEdgeMap.forEach((sigs, nodeId) => {
 			const prevSigs = prevEdgeMap.get(nodeId);
 
-			// 1. New connection entirely
+			// New connection entirely
 			if (!prevSigs) {
 				changedNodes.add(nodeId);
 				return;
 			}
 
-			// 2. Different set of connections
+			// Different set of connections
 			if (prevSigs.size !== sigs.size) {
 				changedNodes.add(nodeId);
 				return;
@@ -419,10 +423,9 @@ export class NodeGraphProcessor extends EventEmitter {
 			}
 		});
 
-		// B. Check if the connected source node changed value
+		// # Check if the connected source node changed value
 		// Even if the Edge is identical, if the Source Node has a new file or index,
 		// the Target Node must update.
-		// Note: This is somewhat redundant with intrinsic changes + propagation, but kept for clarity.
 		for (const edge of currEdges) {
 			const prevSource = prevNodes.get(edge.source);
 			const currSource = currNodes.get(edge.source);
@@ -432,13 +435,13 @@ export class NodeGraphProcessor extends EventEmitter {
 				const currHash = this.getNodeValueHash(currSource);
 
 				if (prevHash !== currHash) {
-					// The source changed, so the target receives new input
+					// The source changed, so the target gets a new input
 					changedNodes.add(edge.target);
 				}
 			}
 		}
 
-		// C. Check for removed connections (orphaned nodes)
+		// # Check for removed connections (orphaned nodes)
 		prevEdgeMap.forEach((_, nodeId) => {
 			if (!currEdgeMap.has(nodeId) && this.nodes.has(nodeId)) {
 				changedNodes.add(nodeId);
@@ -712,5 +715,6 @@ export class NodeGraphProcessor extends EventEmitter {
 		this.registerProcessor("Agent", passthrough);
 		this.registerProcessor("Text", passthrough);
 		this.registerProcessor("LLM", passthrough);
+		this.registerProcessor("Compositor", passthrough);
 	}
 }

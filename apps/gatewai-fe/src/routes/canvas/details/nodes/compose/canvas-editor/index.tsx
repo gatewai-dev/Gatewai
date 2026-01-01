@@ -1,12 +1,11 @@
-import type { DataType, FileAsset } from "@gatewai/db"; // Assuming this is available
+import type { DataType } from "@gatewai/db";
 import type {
 	CompositorResult,
-	DataForType,
 	FileData,
+	CompositorLayer,
 	OutputItem,
-} from "@gatewai/types"; // Assuming the provided types are in a separate file, imported as needed
+} from "@gatewai/types";
 import type Konva from "konva";
-import type { KonvaEventObject } from "konva/lib/Node";
 import type React from "react";
 import {
 	createContext,
@@ -30,30 +29,15 @@ import useImage from "use-image";
 import WebFont from "webfontloader";
 import { generateId } from "@/lib/idgen";
 import { BLEND_MODES } from "@/routes/canvas/blend-modes";
-
-// Internal Layer type, extending OutputItem with transform properties
-interface InternalLayer {
-	id: string;
-	type: "text" | "image";
-	output: OutputItem<DataType>; // Original output item
-	x: number;
-	y: number;
-	width: number;
-	height: number;
-	rotation: number;
-	scaleX: number;
-	scaleY: number;
-	fontFamily?: string; // For text
-	fontSize?: number; // For text
-	fill?: string; // For text color
-	lockAspect?: boolean; // For images, default true
-	blendingMode: string; // Blending mode, default 'source-over'
-}
+import { Input } from "@/components/ui/input";
+import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
+import { Checkbox } from "@/components/ui/checkbox";
+import { Label } from "@/components/ui/label";
 
 // Editor Context
 interface EditorContextType {
-	layers: InternalLayer[];
-	setLayers: Dispatch<SetStateAction<InternalLayer[]>>;
+	layers: CompositorLayer[];
+	setLayers: Dispatch<SetStateAction<CompositorLayer[]>>;
 	selectedId: string | null;
 	setSelectedId: (id: string | null) => void;
 	viewportWidth: number;
@@ -66,7 +50,7 @@ interface EditorContextType {
 	setIsEditingText: (editing: boolean) => void;
 	editingLayerId: string | null;
 	setEditingLayerId: (id: string | null) => void;
-	stageRef: React.RefObject<Konva.Stage>;
+	stageRef: React.RefObject<Konva.Stage | null>;
 }
 
 interface Guide {
@@ -103,7 +87,7 @@ const useFontLoader = (fontFamilies: string[]) => {
 const useSnap = () => {
 	const { layers, setLayers, viewportWidth, viewportHeight, setGuides } =
 		useEditor();
-	const SNAP_THRESHOLD = 5;
+	const SNAP_THRESHOLD = 3;
 
 	const getSnapPositions = useCallback(
 		(excludeId: string) => {
@@ -123,7 +107,7 @@ const useSnap = () => {
 	);
 
 	const handleDragMove = useCallback(
-		(e: Konva.KonvaEventObject<"dragmove">) => {
+		(e: Konva.KonvaEventObject<DragEvent>) => {
 			const node = e.target;
 			const id = node.id();
 			const { hSnaps, vSnaps } = getSnapPositions(id);
@@ -172,7 +156,7 @@ const useSnap = () => {
 	);
 
 	const handleDragEnd = useCallback(
-		(e: Konva.KonvaEventObject<"dragend">) => {
+		(e: Konva.KonvaEventObject<DragEvent>) => {
 			const node = e.target;
 			const id = node.id();
 			setLayers((prev) =>
@@ -184,7 +168,7 @@ const useSnap = () => {
 	);
 
 	const handleTransformEnd = useCallback(
-		(e: Konva.KonvaEventObject<"transformend">) => {
+		(e: Konva.KonvaEventObject<Event>) => {
 			const node = e.target;
 			const id = node.id();
 			setLayers((prev) =>
@@ -213,15 +197,15 @@ const blendingModes = BLEND_MODES;
 
 // Layer Props
 interface LayerProps {
-	layer: InternalLayer;
-	onDragMove: (e: Konva.KonvaEventObject<"dragmove">) => void;
-	onDragEnd: (e: Konva.KonvaEventObject<"dragend">) => void;
-	onTransformEnd: (e: Konva.KonvaEventObject<"transformend">) => void;
+	layer: CompositorLayer;
+	onDragMove: (e: Konva.KonvaEventObject<DragEvent>) => void;
+	onDragEnd: (e: Konva.KonvaEventObject<DragEvent>) => void;
+	onTransformEnd: (e: Konva.KonvaEventObject<Event>) => void;
 }
 
 // Image Layer Component
 const ImageLayer: React.FC<
-	LayerProps & { layer: InternalLayer & { type: "image" } }
+	LayerProps
 > = ({ layer, onDragMove, onDragEnd, onTransformEnd }) => {
 	const { setSelectedId, setLayers } = useEditor();
 	const url =
@@ -270,7 +254,7 @@ const ImageLayer: React.FC<
 
 // Text Layer Component
 const TextLayer: React.FC<
-	LayerProps & { layer: InternalLayer & { type: "text" } }
+	LayerProps & { layer: CompositorLayer & { type: "Text" } }
 > = ({ layer, onDragMove, onDragEnd, onTransformEnd }) => {
 	const { setSelectedId, setIsEditingText, setEditingLayerId } = useEditor();
 
@@ -327,12 +311,12 @@ const TransformerComponent: React.FC = () => {
 	}, [selectedId, stageRef]);
 
 	const handleTransform = useCallback(
-		(e: Konva.KonvaEventObject<"transform">) => {
+		(e: Konva.KonvaEventObject<Event>) => {
 			const node = e.target;
 			const layer = layers.find((l) => l.id === node.id());
 			if (
 				layer &&
-				layer.type === "image" &&
+				layer.type === "Image" &&
 				layer.lockAspect &&
 				!(e.evt as MouseEvent).shiftKey
 			) {
@@ -363,74 +347,14 @@ const TransformerComponent: React.FC = () => {
 	);
 };
 
-// Text Editor Overlay
-const TextEditor: React.FC<{ layer: InternalLayer & { type: "text" } }> = ({
-	layer,
-}) => {
-	const { setLayers, setIsEditingText, setEditingLayerId, stageRef } =
-		useEditor();
-	const [text, setText] = useState(layer.output.data as string);
-	const textareaRef = useRef<HTMLTextAreaElement>(null);
-
-	useEffect(() => {
-		const textarea = textareaRef.current;
-		if (textarea) {
-			textarea.focus();
-			textarea.style.width = `${layer.width * layer.scaleX}px`;
-			textarea.style.height = `${layer.height * layer.scaleY}px`;
-			textarea.style.fontSize = `${(layer.fontSize || 24) * Math.min(layer.scaleX, layer.scaleY)}px`;
-			textarea.style.fontFamily = layer.fontFamily || "Arial";
-			textarea.style.color = layer.fill || "black";
-			// Position based on stage coords
-			const absPos = stageRef.current?.getAbsolutePosition() || { x: 0, y: 0 };
-			textarea.style.left = `${layer.x + absPos.x}px`;
-			textarea.style.top = `${layer.y + absPos.y}px`;
-			textarea.style.transform = `rotate(${layer.rotation}deg) scale(${layer.scaleX}, ${layer.scaleY})`;
-			textarea.style.transformOrigin = "top left";
-		}
-	}, [layer, stageRef]);
-
-	const handleChange = (e: React.ChangeEvent<HTMLTextAreaElement>) => {
-		setText(e.target.value);
-	};
-
-	const handleBlur = () => {
-		setLayers((prev) =>
-			prev.map((l) =>
-				l.id === layer.id ? { ...l, output: { ...l.output, data: text } } : l,
-			),
-		);
-		setIsEditingText(false);
-		setEditingLayerId(null);
-	};
-
-	return (
-		<textarea
-			ref={textareaRef}
-			value={text}
-			onChange={handleChange}
-			onBlur={handleBlur}
-			style={{
-				position: "absolute",
-				border: "none",
-				outline: "none",
-				resize: "none",
-				overflow: "hidden",
-				background: "transparent",
-				lineHeight: 1.2,
-			}}
-		/>
-	);
-};
-
 // Guides Component
 const Guides: React.FC = () => {
 	const { guides, viewportWidth, viewportHeight } = useEditor();
 	return (
 		<>
-			{guides.map((guide, i) => (
+			{guides.map((guide) => (
 				<Line
-					key={i}
+					key={guide.type + guide.position}
 					points={
 						guide.type === "vertical"
 							? [guide.position, 0, guide.position, viewportHeight]
@@ -451,23 +375,18 @@ const Canvas: React.FC = () => {
 		layers,
 		viewportWidth,
 		viewportHeight,
-		isEditingText,
-		editingLayerId,
+		setSelectedId,
 		stageRef,
 	} = useEditor();
 	const { handleDragMove, handleDragEnd, handleTransformEnd } = useSnap();
 
-	const editingLayer = layers.find((l) => l.id === editingLayerId) as
-		| (InternalLayer & { type: "text" })
-		| undefined;
-
 	const handleStageClick = useCallback(
-		(e: Konva.KonvaEventObject<"click">) => {
+		(e: Konva.KonvaEventObject<TouchEvent | MouseEvent>) => {
 			if (e.target === stageRef.current) {
-				useEditor().setSelectedId(null);
+				setSelectedId(null);
 			}
 		},
-		[stageRef],
+		[stageRef, setSelectedId],
 	);
 
 	return (
@@ -485,7 +404,7 @@ const Canvas: React.FC = () => {
 				</KonvaLayer>
 				<KonvaLayer>
 					{layers.map((layer) => {
-						if (layer.type === "image") {
+						if (layer.type === "Image") {
 							return (
 								<ImageLayer
 									key={layer.id}
@@ -496,7 +415,7 @@ const Canvas: React.FC = () => {
 								/>
 							);
 						}
-						if (layer.type === "text") {
+						if (layer.type === "Text") {
 							return (
 								<TextLayer
 									key={layer.id}
@@ -517,7 +436,6 @@ const Canvas: React.FC = () => {
 					<Guides />
 				</KonvaLayer>
 			</Stage>
-			{isEditingText && editingLayer && <TextEditor layer={editingLayer} />}
 		</div>
 	);
 };
@@ -528,14 +446,14 @@ const ViewportControls: React.FC = () => {
 		useEditor();
 	return (
 		<div style={{ position: "absolute", top: 10, right: 10, zIndex: 10 }}>
-			<input
+			<Input
 				type="number"
 				value={viewportWidth}
 				onChange={(e) => setViewportWidth(parseInt(e.target.value, 10) || 800)}
 				placeholder="Width"
 				style={{ marginRight: "8px" }}
 			/>
-			<input
+			<Input
 				type="number"
 				value={viewportHeight}
 				onChange={(e) => setViewportHeight(parseInt(e.target.value, 10) || 600)}
@@ -547,7 +465,7 @@ const ViewportControls: React.FC = () => {
 
 // Layers Panel (Left sidebar like Figma)
 const LayersPanel: React.FC = () => {
-	const { layers, setSelectedId } = useEditor();
+	const { layers, setSelectedId, selectedId } = useEditor();
 	return (
 		<div
 			style={{
@@ -579,7 +497,7 @@ const LayersPanel: React.FC = () => {
 							cursor: "pointer",
 							padding: "4px",
 							background:
-								layer.id === useEditor().selectedId ? "#ddd" : "transparent",
+								layer.id === selectedId ? "#ddd" : "transparent",
 						}}
 					>
 						{layer.type.charAt(0).toUpperCase() + layer.type.slice(1)} -{" "}
@@ -598,7 +516,7 @@ const PropertiesPanel: React.FC = () => {
 
 	if (!selectedLayer) return null;
 
-	const updateLayer = (updates: Partial<InternalLayer>) => {
+	const updateLayer = (updates: Partial<CompositorLayer>) => {
 		setLayers((prev) =>
 			prev.map((l) => (l.id === selectedId ? { ...l, ...updates } : l)),
 		);
@@ -620,29 +538,32 @@ const PropertiesPanel: React.FC = () => {
 		>
 			<h3 style={{ marginBottom: "8px" }}>Properties</h3>
 			<div style={{ display: "flex", flexDirection: "column", gap: "8px" }}>
-				<label>
-					X:{" "}
-					<input
+				<div className="flex flex-col gap-1">
+					<Label htmlFor="x">X:</Label>
+					<Input
+						id="x"
 						type="number"
 						value={selectedLayer.x}
 						onChange={(e) =>
 							updateLayer({ x: parseFloat(e.target.value) || 0 })
 						}
 					/>
-				</label>
-				<label>
-					Y:{" "}
-					<input
+				</div>
+				<div className="flex flex-col gap-1">
+					<Label htmlFor="y">Y:</Label>
+					<Input
+						id="y"
 						type="number"
 						value={selectedLayer.y}
 						onChange={(e) =>
 							updateLayer({ y: parseFloat(e.target.value) || 0 })
 						}
 					/>
-				</label>
-				<label>
-					Width:{" "}
-					<input
+				</div>
+				<div className="flex flex-col gap-1">
+					<Label htmlFor="width">Width:</Label>
+					<Input
+						id="width"
 						type="number"
 						value={selectedLayer.width * selectedLayer.scaleX}
 						onChange={(e) => {
@@ -651,10 +572,11 @@ const PropertiesPanel: React.FC = () => {
 							updateLayer({ scaleX: newWidth / selectedLayer.width });
 						}}
 					/>
-				</label>
-				<label>
-					Height:{" "}
-					<input
+				</div>
+				<div className="flex flex-col gap-1">
+					<Label htmlFor="height">Height:</Label>
+					<Input
+						id="height"
 						type="number"
 						value={selectedLayer.height * selectedLayer.scaleY}
 						onChange={(e) => {
@@ -663,68 +585,77 @@ const PropertiesPanel: React.FC = () => {
 							updateLayer({ scaleY: newHeight / selectedLayer.height });
 						}}
 					/>
-				</label>
-				<label>
-					Rotation:{" "}
-					<input
+				</div>
+				<div className="flex flex-col gap-1">
+					<Label htmlFor="rotation">Rotation:</Label>
+					<Input
+						id="rotation"
 						type="number"
 						value={selectedLayer.rotation}
 						onChange={(e) =>
 							updateLayer({ rotation: parseFloat(e.target.value) || 0 })
 						}
 					/>
-				</label>
-				<label>
-					Blending Mode:{" "}
-					<select
+				</div>
+				<div className="flex flex-col gap-1">
+					<Label htmlFor="blendingMode">Blending Mode:</Label>
+					<Select
 						value={selectedLayer.blendingMode}
-						onChange={(e) => updateLayer({ blendingMode: e.target.value })}
+						onValueChange={(value) => updateLayer({ blendingMode: value })}
 					>
-						{blendingModes.map((mode) => (
-							<option key={mode} value={mode}>
-								{mode}
-							</option>
-						))}
-					</select>
-				</label>
-				{selectedLayer.type === "text" && (
+						<SelectTrigger id="blendingMode">
+							<SelectValue />
+						</SelectTrigger>
+						<SelectContent>
+							{blendingModes.map((mode) => (
+								<SelectItem key={mode} value={mode}>
+									{mode}
+								</SelectItem>
+							))}
+						</SelectContent>
+					</Select>
+				</div>
+				{selectedLayer.type === "Text" && (
 					<>
-						<label>
-							Font Size:{" "}
-							<input
+						<div className="flex flex-col gap-1">
+							<Label htmlFor="fontSize">Font Size:</Label>
+							<Input
+								id="fontSize"
 								type="number"
 								value={selectedLayer.fontSize}
 								onChange={(e) =>
 									updateLayer({ fontSize: parseFloat(e.target.value) || 24 })
 								}
 							/>
-						</label>
-						<label>
-							Font Family:{" "}
-							<input
+						</div>
+						<div className="flex flex-col gap-1">
+							<Label htmlFor="fontFamily">Font Family:</Label>
+							<Input
+								id="fontFamily"
 								value={selectedLayer.fontFamily}
 								onChange={(e) => updateLayer({ fontFamily: e.target.value })}
 							/>
-						</label>
-						<label>
-							Color:{" "}
+						</div>
+						<div className="flex flex-col gap-1">
+							<Label htmlFor="color">Color:</Label>
 							<input
+								id="color"
 								type="color"
 								value={selectedLayer.fill}
 								onChange={(e) => updateLayer({ fill: e.target.value })}
 							/>
-						</label>
+						</div>
 					</>
 				)}
-				{selectedLayer.type === "image" && (
-					<label>
-						Lock Aspect:{" "}
-						<input
-							type="checkbox"
+				{selectedLayer.type === "Image" && (
+					<div className="flex items-center space-x-2">
+						<Checkbox
+							id="lockAspect"
 							checked={selectedLayer.lockAspect ?? true}
-							onChange={(e) => updateLayer({ lockAspect: e.target.checked })}
+							onCheckedChange={(checked) => updateLayer({ lockAspect: checked as boolean })}
 						/>
-					</label>
+						<Label htmlFor="lockAspect">Lock Aspect</Label>
+					</div>
 				)}
 			</div>
 		</div>
@@ -741,7 +672,7 @@ export const CanvasDesignerEditor: React.FC<CanvasDesignerEditorProps> = ({
 	initialLayers,
 	onSave,
 }) => {
-	const [layers, setLayers] = useState<InternalLayer[]>([]);
+	const [layers, setLayers] = useState<CompositorLayer[]>([]);
 	const [selectedId, setSelectedId] = useState<string | null>(null);
 	const [viewportWidth, setViewportWidth] = useState(800);
 	const [viewportHeight, setViewportHeight] = useState(600);
@@ -749,11 +680,11 @@ export const CanvasDesignerEditor: React.FC<CanvasDesignerEditorProps> = ({
 	const [isEditingText, setIsEditingText] = useState(false);
 	const [editingLayerId, setEditingLayerId] = useState<string | null>(null);
 	const [isSaving, setIsSaving] = useState(false);
-	const stageRef = useRef<Konva.Stage>(null);
+	const stageRef = useRef<Konva.Stage | null>(null);
 
 	// Load initial layers
 	useEffect(() => {
-		const newLayers: InternalLayer[] = initialLayers
+		const newLayers = initialLayers
 			.map((item, index) => {
 				const id = generateId();
 				const defaultX = 100 + index * 20;
@@ -761,7 +692,7 @@ export const CanvasDesignerEditor: React.FC<CanvasDesignerEditorProps> = ({
 				if (item.type === "Text") {
 					return {
 						id,
-						type: "text",
+						type: "Text",
 						output: item,
 						x: defaultX,
 						y: defaultY,
@@ -781,7 +712,7 @@ export const CanvasDesignerEditor: React.FC<CanvasDesignerEditorProps> = ({
 					const height = fileData.entity?.height || 200;
 					return {
 						id,
-						type: "image",
+						type: "Image",
 						output: item,
 						x: defaultX,
 						y: defaultY,
@@ -797,7 +728,7 @@ export const CanvasDesignerEditor: React.FC<CanvasDesignerEditorProps> = ({
 				// Ignore other types for now
 				return null;
 			})
-			.filter((layer): layer is InternalLayer => layer !== null);
+			.filter((layer): layer is CompositorLayer => layer !== null);
 		setLayers(newLayers);
 	}, [initialLayers]);
 
@@ -805,7 +736,7 @@ export const CanvasDesignerEditor: React.FC<CanvasDesignerEditorProps> = ({
 	const fonts = Array.from(
 		new Set(
 			layers
-				.filter((l) => l.type === "text")
+				.filter((l) => l.type === "Text")
 				.map((l) => l.fontFamily || "Arial"),
 		),
 	);
@@ -832,13 +763,6 @@ export const CanvasDesignerEditor: React.FC<CanvasDesignerEditorProps> = ({
 			setIsSaving(false);
 		}
 	}, [isSaving, onSave]);
-
-	const handleSave = () => {
-		// Hide guides and transformer for clean export
-		setGuides([]);
-		setSelectedId(null);
-		setIsSaving(true);
-	};
 
 	return (
 		<EditorContext.Provider
@@ -889,12 +813,6 @@ export const CanvasDesignerEditor: React.FC<CanvasDesignerEditorProps> = ({
 				</div>
 				<PropertiesPanel />
 				<ViewportControls />
-				<button
-					onClick={handleSave}
-					style={{ position: "absolute", bottom: 10, zIndex: 10 }}
-				>
-					Save
-				</button>
 			</div>
 		</EditorContext.Provider>
 	);

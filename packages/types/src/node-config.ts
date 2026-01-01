@@ -1,4 +1,6 @@
 import { z } from "zod";
+import type { OutputItem } from "./node-result.js";
+import type { DataType } from "@gatewai/db";
 
 // Text Node
 const TextNodeConfigSchema = z
@@ -73,25 +75,33 @@ const CropNodeConfigSchema = z
 		heightPercentage: z.number().min(0).max(100),
 	})
 	.strict();
-
 // Compositor Node
-const CompositorLayerUpdatesSchema = z
+const CompositorLayerSchema = z
 	.object({
-		id: z.number(),
+		id: z.string(),
+		type: z.enum(["Text", 'Image']),
 		name: z.string(),
 		x: z.number(),
 		y: z.number(),
-		rotation: z.number(),
 		width: z.number(),
 		height: z.number(),
-		opacity: z.number(),
+		rotation: z.number(),
+		scaleX: z.number(),
+		scaleY: z.number(),
+		fontFamily: z.string().optional(),
+		fontSize: z.number().optional(),
+		fill: z.string().optional(),
+		lockAspect: z.boolean(),
 		blendMode: z.string(),
 	})
 	.strict();
 
 const CompositorNodeConfigSchema = z
 	.object({
-		layerUpdates: z.array(CompositorLayerUpdatesSchema).optional(),
+		layerUpdates: z.record(
+			z.string(), // Output Handle ID
+			CompositorLayerSchema
+		),
 	})
 	.strict();
 
@@ -199,8 +209,8 @@ type PreviewNodeConfig = z.infer<typeof PreviewNodeConfigSchema>;
 type MaskNodeConfig = z.infer<typeof MaskNodeConfigSchema>;
 type PaintNodeConfig = z.infer<typeof PaintNodeConfigSchema>;
 type BlurNodeConfig = z.infer<typeof BlurNodeConfigSchema>;
-type CompositorLayerUpdates = z.infer<typeof CompositorLayerUpdatesSchema>;
 type CompositorNodeConfig = z.infer<typeof CompositorNodeConfigSchema>;
+type CompositorLayer = z.infer<typeof CompositorLayerSchema>;
 type DescriberNodeConfig = z.infer<typeof DescriberNodeConfigSchema>;
 type RouterNodeConfig = z.infer<typeof RouterNodeConfigSchema>;
 type ResizeNodeConfig = z.infer<typeof ResizeNodeConfigSchema>;
@@ -226,7 +236,7 @@ export {
 	RouterNodeConfigSchema,
 	ResizeNodeConfigSchema,
 	NoteNodeConfigSchema,
-	CompositorLayerUpdatesSchema,
+	CompositorLayerSchema,
 	ImageGenNodeConfigSchema,
 	ModulateNodeConfigSchema,
 	type TextNodeConfig,
@@ -237,7 +247,7 @@ export {
 	type MaskNodeConfig,
 	type PaintNodeConfig,
 	type BlurNodeConfig,
-	type CompositorLayerUpdates,
+	type CompositorLayer,
 	type CompositorNodeConfig,
 	type DescriberNodeConfig,
 	type RouterNodeConfig,

@@ -1,7 +1,7 @@
 import { zodResolver } from "@hookform/resolvers/zod";
 import type { NodeProps } from "@xyflow/react";
 import { PlusIcon } from "lucide-react";
-import { useState } from "react";
+import { useMemo, useState } from "react";
 import { useForm } from "react-hook-form";
 import * as z from "zod";
 import { Button } from "@/components/ui/button";
@@ -32,8 +32,9 @@ import {
 import { Textarea } from "@/components/ui/textarea";
 import { generateId } from "@/lib/idgen";
 import type { HandleEntityType } from "@/store/handles";
-import { useCanvasCtx } from "../../ctx/canvas-ctx";
-import type { AnyNode } from "../node-props";
+import { useCanvasCtx } from "../ctx/canvas-ctx";
+import type { AnyNode } from "../nodes/node-props";
+import type { DataType } from "@gatewai/db";
 
 const InputTypes = ["Image", "Text", "Audio", "Video", "File"] as const;
 const OutputTypes = ["Image", "Text", "Audio", "Video", "File"] as const;
@@ -46,15 +47,26 @@ const LookupDataTypes = {
 type CustomHandleButtonProps = {
 	nodeProps: NodeProps<AnyNode>;
 	type: HandleEntityType["type"];
+	dataTypes?: DataType[];
 };
 
 function AddCustomHandleButton(props: CustomHandleButtonProps) {
-	const OPTIONS = LookupDataTypes[props.type];
+	const isAgentNode = props.nodeProps.data.type === 'Agent';
+
+	const OPTIONS = useMemo(() => {
+		return (props.dataTypes) ?? LookupDataTypes[props.type];
+	}, [props.dataTypes, props.type]);
+
+	if (!OPTIONS || OPTIONS.length === 0) {
+		throw new Error("AddCustomHandleButton: OPTIONS must contain at least one dataType");
+	}
+	const enumValues = OPTIONS as unknown as [string, ...string[]];
+
 	const { createNewHandle } = useCanvasCtx();
 	const [open, setOpen] = useState(false);
 
 	const formSchema = z.object({
-		dataType: z.enum(OPTIONS),
+		dataType: z.enum(enumValues),
 		label: z.string(),
 		description: z.string().optional(),
 	});
@@ -74,7 +86,7 @@ function AddCustomHandleButton(props: CustomHandleButtonProps) {
 		const handleEntity: HandleEntityType = {
 			id: generateId(),
 			nodeId: props.nodeProps.id,
-			dataTypes: [values.dataType],
+			dataTypes: [values.dataType as DataType],
 			type: props.type,
 			required: false,
 			order: 2,
@@ -146,7 +158,7 @@ function AddCustomHandleButton(props: CustomHandleButtonProps) {
 								</FormItem>
 							)}
 						/>
-						<FormField
+						{isAgentNode && <FormField
 							control={form.control}
 							name="description"
 							render={({ field }) => (
@@ -166,7 +178,7 @@ function AddCustomHandleButton(props: CustomHandleButtonProps) {
 									<FormMessage />
 								</FormItem>
 							)}
-						/>
+						/>}
 						<Button type="submit">Create</Button>
 					</form>
 				</Form>

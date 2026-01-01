@@ -17,7 +17,7 @@ import { useNodeTaskRunning } from "../../ctx/task-manager-ctx";
 import { useNodeResult } from "../../processor/processor-ctx";
 import { BaseNode } from "../base";
 import type { LLMNode } from "../node-props";
-import { AddCustomHandleButton } from "./add-custom-handle";
+import { AddCustomHandleButton } from "../../components/add-custom-handle";
 
 function AgentNodeHandbook() {
 	return (
