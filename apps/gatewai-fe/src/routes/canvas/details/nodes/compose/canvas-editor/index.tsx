@@ -95,17 +95,14 @@ interface EditorContextType {
 	setLayers: Dispatch<SetStateAction<CompositorLayer[]>>;
 	selectedId: string | null;
 	setSelectedId: (id: string | null) => void;
-
 	// The dimensions of the "Artboard" (Output size)
 	viewportWidth: number;
 	viewportHeight: number;
 	setViewportWidth: (w: number) => void;
 	setViewportHeight: (h: number) => void;
-
 	// The dimensions of the visible window (Screen size)
 	screenWidth: number;
 	screenHeight: number;
-
 	guides: Guide[];
 	setGuides: Dispatch<SetStateAction<Guide[]>>;
 	isEditingText: boolean;
@@ -124,19 +121,15 @@ interface EditorContextType {
 	zoomTo: (value: number) => void;
 	fitView: () => void;
 	zoomPercentage: string;
-
 	getTextData: (handleId: HandleEntityType["id"]) => string;
 	getImageData: (handleId: HandleEntityType["id"]) => FileData;
 	getImageUrl: (handleId: HandleEntityType["id"]) => string | undefined;
 }
-
 interface Guide {
 	type: "horizontal" | "vertical";
 	position: number;
 }
-
 const EditorContext = createContext<EditorContextType | undefined>(undefined);
-
 const useEditor = () => {
 	const context = useContext(EditorContext);
 	if (!context) {
@@ -144,43 +137,47 @@ const useEditor = () => {
 	}
 	return context;
 };
-
 // Snap logic hook
 const useSnap = () => {
 	const { layers, setLayers, viewportWidth, viewportHeight, setGuides } =
 		useEditor();
 	const SNAP_THRESHOLD = 5;
-
 	const getSnapPositions = useCallback(
 		(excludeId: string) => {
 			const hSnaps: number[] = [0, viewportHeight / 2, viewportHeight]; // Canvas edges and center
 			const vSnaps: number[] = [0, viewportWidth / 2, viewportWidth];
 			layers.forEach((layer) => {
-				if (layer.id !== excludeId && layer.width && layer.height) {
+				if (
+					layer.id !== excludeId &&
+					layer.width &&
+					(layer.height ?? layer.computedHeight)
+				) {
+					const effectiveHeight = layer.height ?? layer.computedHeight ?? 0;
 					const centerX = layer.x + (layer.width * layer.scaleX) / 2;
-					const centerY = layer.y + (layer.height * layer.scaleY) / 2;
+					const centerY = layer.y + (effectiveHeight * layer.scaleY) / 2;
 					vSnaps.push(layer.x, centerX, layer.x + layer.width * layer.scaleX);
-					hSnaps.push(layer.y, centerY, layer.y + layer.height * layer.scaleY);
+					hSnaps.push(
+						layer.y,
+						centerY,
+						layer.y + effectiveHeight * layer.scaleY,
+					);
 				}
 			});
 			return { hSnaps, vSnaps };
 		},
 		[layers, viewportHeight, viewportWidth],
 	);
-
 	const handleDragMove = useCallback(
 		(e: Konva.KonvaEventObject<DragEvent>) => {
 			const node = e.target;
 			const id = node.id();
 			const { hSnaps, vSnaps } = getSnapPositions(id);
-
 			let newX = node.x();
 			let newY = node.y();
 			const centerX = newX + (node.width() * node.scaleX()) / 2;
 			const centerY = newY + (node.height() * node.scaleY()) / 2;
 			const right = newX + node.width() * node.scaleX();
 			const bottom = newY + node.height() * node.scaleY();
-
 			// Vertical snaps
 			const vGuides: Guide[] = [];
 			for (const snap of vSnaps) {
@@ -195,7 +192,6 @@ const useSnap = () => {
 					vGuides.push({ type: "vertical", position: snap });
 				}
 			}
-
 			// Horizontal snaps
 			const hGuides: Guide[] = [];
 			for (const snap of hSnaps) {
@@ -210,9 +206,7 @@ const useSnap = () => {
 					hGuides.push({ type: "horizontal", position: snap });
 				}
 			}
-
 			node.position({ x: newX, y: newY });
-
 			// Deduplicate guides
 			const guideMap = new Map<string, Guide>();
 			[...vGuides, ...hGuides].forEach((g) => {
@@ -225,7 +219,6 @@ const useSnap = () => {
 		},
 		[getSnapPositions, setGuides],
 	);
-
 	const handleDragEnd = useCallback(
 		(e: Konva.KonvaEventObject<DragEvent>) => {
 			const node = e.target;
@@ -237,7 +230,6 @@ const useSnap = () => {
 		},
 		[setLayers, setGuides],
 	);
-
 	const handleTransformEnd = useCallback(
 		(e: Konva.KonvaEventObject<Event>) => {
 			const node = e.target;
@@ -252,6 +244,7 @@ const useSnap = () => {
 								scaleX: node.scaleX(),
 								scaleY: node.scaleY(),
 								rotation: node.rotation(),
+								width: l.type === "Text" ? node.width() : l.width,
 							}
 						: l,
 				),
@@ -259,13 +252,10 @@ const useSnap = () => {
 		},
 		[setLayers],
 	);
-
 	return { handleDragMove, handleDragEnd, handleTransformEnd };
 };
-
 // Blending modes list
 const blendModes = BLEND_MODES;
-
 // Layer Props
 interface LayerProps {
 	layer: CompositorLayer;
@@ -275,7 +265,6 @@ interface LayerProps {
 	onTransformStart: (e: Konva.KonvaEventObject<Event>) => void;
 	onTransformEnd: (e: Konva.KonvaEventObject<Event>) => void;
 }
-
 // Image Layer Component
 const ImageLayer: React.FC<LayerProps> = ({
 	layer,
@@ -288,7 +277,6 @@ const ImageLayer: React.FC<LayerProps> = ({
 	const { setSelectedId, setLayers, getImageUrl, mode } = useEditor();
 	const url = getImageUrl(layer.inputHandleId);
 	const [image] = useImage(url ?? "", "anonymous");
-
 	useEffect(() => {
 		if (image && (!layer.width || !layer.height)) {
 			setLayers((prev) =>
@@ -300,11 +288,9 @@ const ImageLayer: React.FC<LayerProps> = ({
 			);
 		}
 	}, [image, layer.id, layer.width, layer.height, setLayers]);
-
 	const handleSelect = () => {
 		setSelectedId(layer.id);
 	};
-
 	return (
 		<KonvaImage
 			id={layer.id}
@@ -328,7 +314,6 @@ const ImageLayer: React.FC<LayerProps> = ({
 		/>
 	);
 };
-
 // Text Layer Component
 const TextLayer: React.FC<
 	LayerProps & { layer: CompositorLayer & { type: "Text" } }
@@ -346,19 +331,51 @@ const TextLayer: React.FC<
 		setEditingLayerId,
 		getTextData,
 		mode,
+		setLayers,
+		stageRef,
 	} = useEditor();
-
 	const text = getTextData(layer.inputHandleId);
 	const handleSelect = () => {
 		setSelectedId(layer.id);
 	};
-
 	const handleDoubleClick = () => {
 		setSelectedId(layer.id);
 		setIsEditingText(true);
 		setEditingLayerId(layer.id);
 	};
-
+	const handleTransform = useCallback((e: Konva.KonvaEventObject<Event>) => {
+		const node = e.target as Konva.Text;
+		const newWidth = Math.max(20, node.width() * node.scaleX()); // Min width to prevent collapse
+		node.setAttrs({
+			width: newWidth,
+			scaleX: 1,
+			scaleY: 1,
+		});
+	}, []);
+	useEffect(() => {
+		const node = stageRef.current?.findOne(`#${layer.id}`) as
+			| Konva.Text
+			| undefined;
+		if (node && layer.type === "Text") {
+			const newHeight = node.height();
+			if (newHeight !== layer.computedHeight) {
+				setLayers((prev) =>
+					prev.map((l) =>
+						l.id === layer.id ? { ...l, computedHeight: newHeight } : l,
+					),
+				);
+			}
+		}
+	}, [
+		layer.id,
+		layer.type,
+		setLayers,
+		text,
+		layer.width,
+		layer.fontSize,
+		layer.fontFamily,
+		stageRef,
+	]);
 	return (
 		<KonvaText
 			id={layer.id}
@@ -382,17 +399,18 @@ const TextLayer: React.FC<
 			onDragMove={onDragMove}
 			onDragEnd={onDragEnd}
 			onTransformStart={onTransformStart}
+			onTransform={handleTransform}
 			onTransformEnd={onTransformEnd}
 			globalCompositeOperation={layer.blendMode as GlobalCompositeOperation}
+			wrap="char" // Set to 'char' to break long words as per example
+			align="left"
 		/>
 	);
 };
-
 // Transformer component
 const TransformerComponent: React.FC = () => {
 	const { selectedId, layers, stageRef, mode } = useEditor();
 	const trRef = useRef<Konva.Transformer>(null);
-
 	useEffect(() => {
 		if (selectedId && trRef.current && stageRef.current && mode === "select") {
 			const node = stageRef.current.findOne(`#${selectedId}`);
@@ -405,9 +423,7 @@ const TransformerComponent: React.FC = () => {
 			trRef.current.getLayer()?.batchDraw();
 		}
 	}, [selectedId, stageRef, mode]);
-
 	const selectedLayer = layers.find((l) => l.id === selectedId);
-
 	return (
 		<Transformer
 			ref={trRef}
@@ -428,7 +444,6 @@ const TransformerComponent: React.FC = () => {
 		/>
 	);
 };
-
 // Guides Component
 const Guides: React.FC = () => {
 	const { guides, viewportWidth, viewportHeight } = useEditor();
@@ -442,18 +457,16 @@ const Guides: React.FC = () => {
 							? [guide.position, 0, guide.position, viewportHeight]
 							: [0, guide.position, viewportWidth, guide.position]
 					}
-					stroke="#ff00ff"
+					stroke="#ff4500"
 					strokeWidth={1}
 				/>
 			))}
 		</>
 	);
 };
-
 // The background "Paper" representing the viewport
 const ArtboardBackground: React.FC = () => {
 	const { viewportWidth, viewportHeight } = useEditor();
-
 	const patternImage = useMemo(() => {
 		const size = 20;
 		const half = size / 2;
@@ -472,7 +485,6 @@ const ArtboardBackground: React.FC = () => {
 		}
 		return canvas;
 	}, []);
-
 	return (
 		<Group>
 			{/* Shadow for depth effect */}
@@ -500,7 +512,6 @@ const ArtboardBackground: React.FC = () => {
 		</Group>
 	);
 };
-
 const Canvas: React.FC = () => {
 	const {
 		layers,
@@ -515,7 +526,6 @@ const Canvas: React.FC = () => {
 		setStagePos,
 	} = useEditor();
 	const { handleDragMove, handleDragEnd, handleTransformEnd } = useSnap();
-
 	const handleStageClick = useCallback(
 		(e: Konva.KonvaEventObject<TouchEvent | MouseEvent>) => {
 			if (e.target === stageRef.current) {
@@ -524,37 +534,30 @@ const Canvas: React.FC = () => {
 		},
 		[stageRef, setSelectedId],
 	);
-
 	const handleWheel = useCallback(
 		(e: Konva.KonvaEventObject<WheelEvent>) => {
 			e.evt.preventDefault();
 			const stage = stageRef.current;
 			if (!stage) return;
-
 			const oldScale = stage.scaleX();
 			const pointer = stage.getPointerPosition();
 			if (!pointer) return;
-
 			const mousePointTo = {
 				x: (pointer.x - stage.x()) / oldScale,
 				y: (pointer.y - stage.y()) / oldScale,
 			};
-
 			const direction = e.evt.deltaY > 0 ? -1 : 1;
 			const scaleBy = 1.1;
 			const newScale = direction > 0 ? oldScale * scaleBy : oldScale / scaleBy;
-
 			const newPos = {
 				x: pointer.x - mousePointTo.x * newScale,
 				y: pointer.y - mousePointTo.y * newScale,
 			};
-
 			setScale(newScale);
 			setStagePos(newPos);
 		},
 		[stageRef, setScale, setStagePos],
 	);
-
 	// Sync stage transform
 	useEffect(() => {
 		const stage = stageRef.current;
@@ -563,24 +566,19 @@ const Canvas: React.FC = () => {
 		stage.position(stagePos);
 		stage.batchDraw();
 	}, [scale, stagePos, stageRef]);
-
 	// Handle stage drag for panning
 	useEffect(() => {
 		const stage = stageRef.current;
 		if (!stage) return;
-
 		const handleDragEndStage = () => {
 			setStagePos(stage.position());
 		};
-
 		stage.on("dragend", handleDragEndStage);
 		return () => {
 			stage.off("dragend", handleDragEndStage);
 		};
 	}, [stageRef, setStagePos]);
-
 	const cursorStyle = mode === "pan" ? "grab" : "default";
-
 	return (
 		<Stage
 			ref={stageRef}
@@ -596,7 +594,6 @@ const Canvas: React.FC = () => {
 				{/* The "Paper" Area - Visualizes the 0,0 to W,H coordinate system */}
 				<ArtboardBackground />
 			</KonvaLayer>
-
 			<KonvaLayer>
 				{layers.map((layer) => {
 					const props = {
@@ -626,13 +623,11 @@ const Canvas: React.FC = () => {
 		</Stage>
 	);
 };
-
 interface LayerItemProps {
 	layer: CompositorLayer;
 	selectedId: string | null;
 	setSelectedId: (id: string) => void;
 }
-
 const LayerItem: React.FC<LayerItemProps> = ({
 	layer,
 	selectedId,
@@ -646,14 +641,12 @@ const LayerItem: React.FC<LayerItemProps> = ({
 		transition,
 		isDragging,
 	} = useSortable({ id: layer.id });
-
 	const style = {
 		transform: CSS.Transform.toString(transform),
 		transition,
 		zIndex: isDragging ? 9999 : "auto",
 		opacity: isDragging ? 0.5 : 1,
 	};
-
 	return (
 		<div
 			ref={setNodeRef}
@@ -686,13 +679,11 @@ const LayerItem: React.FC<LayerItemProps> = ({
 		</div>
 	);
 };
-
 const LayersPanel: React.FC<{ onSave: () => void; onClose: () => void }> = ({
 	onSave,
 	onClose,
 }) => {
 	const { layers, setLayers, selectedId, setSelectedId } = useEditor();
-
 	const sensors = useSensors(
 		useSensor(PointerSensor, {
 			activationConstraint: { distance: 5 },
@@ -701,7 +692,6 @@ const LayersPanel: React.FC<{ onSave: () => void; onClose: () => void }> = ({
 			coordinateGetter: sortableKeyboardCoordinates,
 		}),
 	);
-
 	return (
 		<div className="absolute left-0 top-0 bottom-0 w-56 overflow-y-auto bg-background p-3 border-r border-gray-800 z-10 text-xs flex flex-col">
 			<div className="flex justify-between items-center mb-4">
@@ -715,46 +705,47 @@ const LayersPanel: React.FC<{ onSave: () => void; onClose: () => void }> = ({
 					</Button>
 				</div>
 			</div>
-
 			<DndContext
 				sensors={sensors}
 				collisionDetection={closestCenter}
 				onDragEnd={(e) => {
-					// Logic to handle reverse mapping if necessary
 					const { active, over } = e;
 					if (over && active.id !== over.id) {
 						setLayers((currentLayers) => {
-							// Find indices in the original (non-reversed) array
-							const oldIndex = currentLayers.findIndex(
-								(l) => l.id === active.id,
-							);
-							const newIndex = currentLayers.findIndex((l) => l.id === over.id);
-							return arrayMove(currentLayers, oldIndex, newIndex);
+							const reversed = currentLayers.slice().reverse();
+							const oldIndexRev = reversed.findIndex((l) => l.id === active.id);
+							const newIndexRev = reversed.findIndex((l) => l.id === over.id);
+							const newReversed = arrayMove(reversed, oldIndexRev, newIndexRev);
+							return newReversed.reverse();
 						});
 					}
 				}}
 			>
 				<SortableContext
-					items={layers.map((l) => l.id)}
+					items={layers
+						.slice()
+						.reverse()
+						.map((l) => l.id)}
 					strategy={verticalListSortingStrategy}
 				>
-					<div className="flex flex-col-reverse">
-						{/* Render normally, but style flex-col-reverse so visual top matches Z-index top */}
-						{layers.map((layer) => (
-							<LayerItem
-								key={layer.id}
-								layer={layer}
-								selectedId={selectedId}
-								setSelectedId={setSelectedId}
-							/>
-						))}
+					<div className="flex flex-col">
+						{layers
+							.slice()
+							.reverse()
+							.map((layer) => (
+								<LayerItem
+									key={layer.id}
+									layer={layer}
+									selectedId={selectedId}
+									setSelectedId={setSelectedId}
+								/>
+							))}
 					</div>
 				</SortableContext>
 			</DndContext>
 		</div>
 	);
 };
-
 // Inspector Panel (Right sidebar like Figma)
 const InspectorPanel: React.FC = () => {
 	const {
@@ -767,20 +758,19 @@ const InspectorPanel: React.FC = () => {
 		setViewportHeight,
 	} = useEditor();
 	const selectedLayer = layers.find((l) => l.id === selectedId);
-
 	const updateLayer = (updates: Partial<CompositorLayer>) => {
 		setLayers((prev) =>
 			prev.map((l) => (l.id === selectedId ? { ...l, ...updates } : l)),
 		);
 	};
-
 	let computedWidth = 0;
 	let computedHeight = 0;
 	if (selectedLayer) {
 		computedWidth = (selectedLayer.width ?? 0) * selectedLayer.scaleX;
-		computedHeight = (selectedLayer.height ?? 0) * selectedLayer.scaleY;
+		computedHeight =
+			(selectedLayer.height ?? selectedLayer.computedHeight ?? 0) *
+			selectedLayer.scaleY;
 	}
-
 	const aspectRatios = useMemo(
 		() => [
 			{ label: "1:1", width: 800, height: 800 },
@@ -791,7 +781,6 @@ const InspectorPanel: React.FC = () => {
 		],
 		[],
 	);
-
 	return (
 		<div className="absolute right-0 top-0 bottom-0 w-56 overflow-y-auto bg-background p-4 border-l border-gray-700 z-10 text-gray-200">
 			<h3 className="mb-4 text-xl font-bold text-gray-100">Canvas</h3>
@@ -883,11 +872,14 @@ const InspectorPanel: React.FC = () => {
 									type="text"
 									value={computedWidth}
 									onChange={(e) => {
-										const newWidth =
-											parseFloat(e.target.value) ?? selectedLayer.width ?? 0;
-										updateLayer({
-											scaleX: newWidth / (selectedLayer.width ?? 1),
-										});
+										const newWidth = parseFloat(e.target.value) ?? 0;
+										if (selectedLayer.type === "Text") {
+											updateLayer({ width: newWidth });
+										} else {
+											updateLayer({
+												scaleX: newWidth / (selectedLayer.width ?? 1),
+											});
+										}
 									}}
 								/>
 							</div>
@@ -959,13 +951,32 @@ const InspectorPanel: React.FC = () => {
 								</div>
 								<div className="flex flex-col gap-1">
 									<Label htmlFor="fontFamily">Font Family:</Label>
-									<Input
-										id="fontFamily"
-										value={selectedLayer.fontFamily}
-										onChange={(e) =>
-											updateLayer({ fontFamily: e.target.value })
+									<Select
+										value={selectedLayer.fontFamily || "sans-serif"}
+										onValueChange={(value) =>
+											updateLayer({ fontFamily: value })
 										}
-									/>
+									>
+										<SelectTrigger id="fontFamily">
+											<SelectValue />
+										</SelectTrigger>
+										<SelectContent>
+											<SelectItem value="Arial">Arial</SelectItem>
+											<SelectItem value="Montserrat">Montserrat</SelectItem>
+											<SelectItem value="Helvetica">Helvetica</SelectItem>
+											<SelectItem value="Times New Roman">
+												Times New Roman
+											</SelectItem>
+											<SelectItem value="Courier New">Courier New</SelectItem>
+											<SelectItem value="Verdana">Verdana</SelectItem>
+											<SelectItem value="Georgia">Georgia</SelectItem>
+											<SelectItem value="Roboto">Roboto</SelectItem>
+											<SelectItem value="Open Sans">Open Sans</SelectItem>
+											<SelectItem value="sans-serif">Sans Serif</SelectItem>
+											<SelectItem value="serif">Serif</SelectItem>
+											<SelectItem value="monospace">Monospace</SelectItem>
+										</SelectContent>
+									</Select>
 								</div>
 								<div className="flex flex-col gap-1">
 									<Label htmlFor="color">Color:</Label>
@@ -1006,7 +1017,6 @@ interface CanvasDesignerEditorProps {
 	onClose: () => void;
 	onSave: (config: CompositorNodeConfig) => void;
 }
-
 export const CanvasDesignerEditor: React.FC<CanvasDesignerEditorProps> = ({
 	initialLayers,
 	node,
@@ -1027,13 +1037,10 @@ export const CanvasDesignerEditor: React.FC<CanvasDesignerEditorProps> = ({
 	const [mode, setMode] = useState<"select" | "pan">("select");
 	const [scale, setScale] = useState(1);
 	const [stagePos, setStagePos] = useState({ x: 0, y: 0 });
-
 	const containerRef = useRef<HTMLDivElement>(null);
 	const [screenWidth, setScreenWidth] = useState(100);
 	const [screenHeight, setScreenHeight] = useState(100);
-
 	const zoomPercentage = `${Math.round(scale * 100)}%`;
-
 	// Resize observer to keep track of available screen space for the canvas
 	useEffect(() => {
 		const updateSize = () => {
@@ -1042,14 +1049,11 @@ export const CanvasDesignerEditor: React.FC<CanvasDesignerEditorProps> = ({
 				setScreenHeight(containerRef.current.offsetHeight);
 			}
 		};
-
 		// Initial sizing
 		updateSize();
-
 		window.addEventListener("resize", updateSize);
 		return () => window.removeEventListener("resize", updateSize);
 	}, []);
-
 	// Center the artboard initially
 	useEffect(() => {
 		if (screenWidth > 100 && screenHeight > 100) {
@@ -1058,11 +1062,9 @@ export const CanvasDesignerEditor: React.FC<CanvasDesignerEditorProps> = ({
 			setStagePos({ x, y });
 		}
 	}, [screenWidth, screenHeight, viewportHeight, viewportWidth]);
-
 	const zoomIn = useCallback(() => {
 		const stage = stageRef.current;
 		if (!stage) return;
-
 		const oldScale = scale;
 		const center = { x: screenWidth / 2, y: screenHeight / 2 };
 		const mousePointTo = {
@@ -1077,11 +1079,9 @@ export const CanvasDesignerEditor: React.FC<CanvasDesignerEditorProps> = ({
 		setScale(newScale);
 		setStagePos(newPos);
 	}, [scale, stagePos, screenWidth, screenHeight]);
-
 	const zoomOut = useCallback(() => {
 		const stage = stageRef.current;
 		if (!stage) return;
-
 		const oldScale = scale;
 		const center = { x: screenWidth / 2, y: screenHeight / 2 };
 		const mousePointTo = {
@@ -1096,12 +1096,10 @@ export const CanvasDesignerEditor: React.FC<CanvasDesignerEditorProps> = ({
 		setScale(newScale);
 		setStagePos(newPos);
 	}, [scale, stagePos, screenWidth, screenHeight]);
-
 	const zoomTo = useCallback(
 		(value: number) => {
 			const stage = stageRef.current;
 			if (!stage) return;
-
 			const oldScale = scale;
 			const center = { x: screenWidth / 2, y: screenHeight / 2 };
 			const mousePointTo = {
@@ -1118,26 +1116,21 @@ export const CanvasDesignerEditor: React.FC<CanvasDesignerEditorProps> = ({
 		},
 		[scale, stagePos, screenWidth, screenHeight],
 	);
-
 	const fitView = useCallback(() => {
 		// Fit the Artboard (0,0 to ViewportW/H) into the Screen
 		const padding = 40;
 		const availableW = screenWidth - padding * 2;
 		const availableH = screenHeight - padding * 2;
-
 		const scaleW = availableW / viewportWidth;
 		const scaleH = availableH / viewportHeight;
 		const newScale = Math.min(scaleW, scaleH);
-
 		const newPos = {
 			x: (screenWidth - viewportWidth * newScale) / 2,
 			y: (screenHeight - viewportHeight * newScale) / 2,
 		};
-
 		setScale(newScale);
 		setStagePos(newPos);
 	}, [viewportWidth, viewportHeight, screenWidth, screenHeight]);
-
 	const getTextData = (handleId: string) => {
 		const layerData = initialLayers.get(handleId) as OutputItem<"Text">;
 		if (!layerData) {
@@ -1145,7 +1138,6 @@ export const CanvasDesignerEditor: React.FC<CanvasDesignerEditorProps> = ({
 		}
 		return layerData.data;
 	};
-
 	const getImageData = useCallback(
 		(handleId: string) => {
 			const layerData = initialLayers.get(handleId) as OutputItem<"Image">;
@@ -1153,7 +1145,6 @@ export const CanvasDesignerEditor: React.FC<CanvasDesignerEditorProps> = ({
 		},
 		[initialLayers],
 	);
-
 	const getImageUrl = useCallback(
 		(handleId: string) => {
 			const layerData = initialLayers.get(handleId) as OutputItem<"Image">;
@@ -1164,14 +1155,12 @@ export const CanvasDesignerEditor: React.FC<CanvasDesignerEditorProps> = ({
 		},
 		[initialLayers],
 	);
-
 	// Load initial layers
 	useEffect(() => {
 		const existingConfig = (node.config as CompositorNodeConfig) ?? {
 			layerUpdates: {},
 		};
 		const layerUpdates = { ...existingConfig.layerUpdates };
-
 		initialLayers.forEach((output, handleId) => {
 			if (!layerUpdates[handleId]) {
 				const newLayer: CompositorLayer = {
@@ -1210,17 +1199,14 @@ export const CanvasDesignerEditor: React.FC<CanvasDesignerEditorProps> = ({
 				layerUpdates[handleId] = newLayer;
 			}
 		});
-
 		setLayers(Object.values(layerUpdates));
 	}, [initialLayers, node.config, getImageData]);
-
 	// Deselect when entering pan mode
 	useEffect(() => {
 		if (mode === "pan" && selectedId) {
 			setSelectedId(null);
 		}
 	}, [mode, selectedId]);
-
 	const handleSave = useCallback(() => {
 		const layerUpdates = layers.reduce<Record<string, CompositorLayer>>(
 			(acc, layer) => {
@@ -1231,7 +1217,6 @@ export const CanvasDesignerEditor: React.FC<CanvasDesignerEditorProps> = ({
 		);
 		propOnSave({ layerUpdates, width: viewportWidth, height: viewportHeight });
 	}, [layers, propOnSave, viewportHeight, viewportWidth]);
-
 	return (
 		<EditorContext.Provider
 			value={{
@@ -1273,7 +1258,6 @@ export const CanvasDesignerEditor: React.FC<CanvasDesignerEditorProps> = ({
 				<div className="relative w-56 shrink-0">
 					<LayersPanel onSave={handleSave} onClose={onClose} />
 				</div>
-
 				{/* Main Canvas Area - Flexible */}
 				<div className="flex-1 flex flex-col relative min-w-0">
 					<div
@@ -1284,15 +1268,14 @@ export const CanvasDesignerEditor: React.FC<CanvasDesignerEditorProps> = ({
 							className="absolute inset-0 pointer-events-none"
 							style={{
 								backgroundImage: `
-										radial-gradient(circle, #333 1px, transparent 1px)
-									`,
+  radial-gradient(circle, #333 1px, transparent 1px)
+  `,
 								backgroundSize: "20px 20px",
 								opacity: 0.5,
 							}}
 						/>
 						<Canvas />
 					</div>
-
 					{/* Bottom Toolbar */}
 					<div className="absolute bottom-6 left-1/2 -translate-x-1/2 z-20">
 						<Menubar className="border-0 bg-gray-800 py-1 rounded-md shadow-lg ring-1 ring-white/10">
@@ -1331,7 +1314,6 @@ export const CanvasDesignerEditor: React.FC<CanvasDesignerEditorProps> = ({
 						</Menubar>
 					</div>
 				</div>
-
 				<div className="relative w-56 shrink-0">
 					<InspectorPanel />
 				</div>

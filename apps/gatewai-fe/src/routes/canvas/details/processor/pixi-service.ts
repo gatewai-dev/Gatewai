@@ -593,11 +593,12 @@ class PixiProcessorService {
 					}
 				} else if (layer.type === "Text" && inputData.type === "Text") {
 					const style = new TextStyle({
-						fontFamily: layer.fontFamily || "sans-serif",
-						fontSize: layer.fontSize || 24,
-						fill: layer.fill || "#000000",
+						fontFamily: layer.fontFamily ?? "sans-serif",
+						fontSize: layer.fontSize ?? 24,
+						fill: layer.fill ?? "#000000",
 						wordWrap: !!layer.width,
-						wordWrapWidth: layer.width || undefined,
+						wordWrapWidth: layer.width ?? undefined,
+						breakWords: true,
 					});
 					obj = new Text({ text: inputData.value, style });
 					obj.resolution = 2;
