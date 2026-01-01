@@ -16,6 +16,7 @@ import {
 	Container,
 	DarkenBlend,
 	DifferenceBlend,
+	DOMAdapter,
 	ExclusionBlend,
 	Graphics,
 	HardLightBlend,
@@ -27,9 +28,12 @@ import {
 	Sprite,
 	Text,
 	TextStyle,
+	WebWorkerAdapter,
 } from "pixi.js";
 import "pixi.js/advanced-blend-modes";
 import { ModulateFilter } from "./filters/modulate";
+
+DOMAdapter.set(WebWorkerAdapter);
 
 interface PixiResource {
 	app: Application;
@@ -600,12 +604,14 @@ class PixiProcessorService {
 					const style = new TextStyle({
 						fontFamily: layer.fontFamily ?? "sans-serif",
 						fontSize,
+						padding: 0,
 						letterSpacing: layer.letterSpacing ?? 0,
 						lineHeight: fontSize * lineHeight,
 						align: layer.align ?? "left",
 						fill: layer.fill ?? "#fff",
 						wordWrap: true,
-						wordWrapWidth: layer.width ?? undefined,
+						whiteSpace: "normal",
+						wordWrapWidth: layer.width ? layer.width : undefined,
 						breakWords: true,
 					});
 					obj = new Text({ text: inputData.value, style });

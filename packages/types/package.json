@@ -1,11 +1,11 @@
 {
 	"name": "@gatewai/types",
 	"version": "0.0.0",
-	"module": "./dist/index.mjs",
-	"types": "./dist/index.d.mts",
 	"type": "module",
 	"sideEffects": false,
 	"license": "MIT",
+	"module": "./dist/index.mjs",
+	"types": "./dist/index.d.mts",
 	"exports": {
 		".": {
 			"types": "./dist/index.d.mts",

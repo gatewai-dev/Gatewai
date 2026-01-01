@@ -1,7 +1,6 @@
 import {
 	closestCenter,
 	DndContext,
-	DragEndEvent,
 	KeyboardSensor,
 	PointerSensor,
 	useSensor,
@@ -18,7 +17,6 @@ import { CSS } from "@dnd-kit/utilities";
 import type {
 	CompositorLayer,
 	CompositorNodeConfig,
-	CompositorResult,
 	FileData,
 	OutputItem,
 } from "@gatewai/types";
@@ -345,7 +343,7 @@ const TextLayer: React.FC<
 	};
 	const handleTransform = useCallback((e: Konva.KonvaEventObject<Event>) => {
 		const node = e.target as Konva.Text;
-		const newWidth = Math.max(20, node.width() * node.scaleX()); // Min width to prevent collapse
+		const newWidth = Math.max(20, node.width() * node.scaleX());
 		node.setAttrs({
 			width: newWidth,
 			scaleX: 1,
@@ -366,28 +364,17 @@ const TextLayer: React.FC<
 				);
 			}
 		}
-	}, [
-		layer.id,
-		layer.type,
-		setLayers,
-		text,
-		layer.width,
-		layer.fontSize,
-		layer.fontFamily,
-		layer.letterSpacing,
-		layer.lineHeight,
-		stageRef,
-	]);
+	}, [layer.id, layer.type, setLayers, stageRef, layer.computedHeight]);
 	return (
 		<KonvaText
 			id={layer.id}
 			x={layer.x}
 			y={layer.y}
 			text={text as string}
-			fontSize={layer.fontSize || 24}
-			fontFamily={layer.fontFamily || "sans-serif"}
-			fill={layer.fill || "#000000"}
-			width={layer.width || 200}
+			fontSize={layer.fontSize ?? 24}
+			fontFamily={layer.fontFamily ?? "sans-serif"}
+			fill={layer.fill ?? "#000000"}
+			width={layer.width ?? 200}
 			height={layer.height}
 			rotation={layer.rotation}
 			scaleX={layer.scaleX}
@@ -401,14 +388,15 @@ const TextLayer: React.FC<
 			onDragMove={onDragMove}
 			onDragEnd={onDragEnd}
 			onTransformStart={onTransformStart}
+			padding={1} // This makes word wrap consistent with pixi js
 			onTransform={handleTransform}
 			onTransformEnd={onTransformEnd}
 			globalCompositeOperation={layer.blendMode as GlobalCompositeOperation}
-			wrap="char" // Set to 'char' to break long words as per example
+			wrap="word"
 			align={layer.align || "left"}
-			verticalAlign={layer.verticalAlign || "top"}
-			letterSpacing={layer.letterSpacing || 0}
-			lineHeight={layer.lineHeight || 1}
+			verticalAlign={layer.verticalAlign ?? "top"}
+			letterSpacing={layer.letterSpacing ?? 0}
+			lineHeight={layer.lineHeight ?? 1}
 		/>
 	);
 };
