@@ -12,6 +12,7 @@ import { logger } from "../../logger.js";
 import {
 	bufferToDataUrl,
 	getImageBuffer,
+	getImageDimensions,
 	getMimeType,
 } from "../../utils/image.js";
 import { getInputValue } from "../resolvers.js";
@@ -54,8 +55,8 @@ const paintProcessor: NodeProcessor = async ({ node, data }) => {
 
 		let maskBuffer: Buffer | null = null;
 		let maskMetadata: sharp.Metadata | null = null;
-		if (maskItem?.data?.dataUrl) {
-			const maskDataUrl = maskItem.data.dataUrl;
+		if (maskItem?.data?.processData?.dataUrl) {
+			const maskDataUrl = maskItem.data.processData.dataUrl;
 			const maskBase64 = maskDataUrl.split(";base64,").pop() ?? "";
 			maskBuffer = Buffer.from(maskBase64, "base64");
 			maskMetadata = await sharp(maskBuffer).metadata();
@@ -153,10 +154,12 @@ const paintProcessor: NodeProcessor = async ({ node, data }) => {
 
 		// Convert buffers to data URLs
 		const imageDataUrl = bufferToDataUrl(compositedBuffer, mimeType);
+		const imageDimensions = getImageDimensions(compositedBuffer);
 		const processedMaskDataUrl = bufferToDataUrl(
 			processedMaskBuffer,
 			"image/png",
 		);
+		const maskDimensions = getImageDimensions(processedMaskBuffer);
 
 		// Build new result (cloning existing to preserve history)
 		const newResult = structuredClone(
@@ -170,12 +173,14 @@ const paintProcessor: NodeProcessor = async ({ node, data }) => {
 			items: [
 				{
 					type: DataType.Image,
-					data: { dataUrl: imageDataUrl },
+					data: { processData: { dataUrl: imageDataUrl, ...imageDimensions } },
 					outputHandleId: imageOutputHandle.id,
 				},
 				{
 					type: DataType.Mask,
-					data: { dataUrl: processedMaskDataUrl },
+					data: {
+						processData: { dataUrl: processedMaskDataUrl, ...maskDimensions },
+					},
 					outputHandleId: maskOutputHandle.id,
 				},
 			],

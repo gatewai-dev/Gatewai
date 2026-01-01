@@ -38,7 +38,8 @@ const imageGenProcessor: NodeProcessor = async ({ node, data }) => {
 		}
 		logger.info(`Number of reference images: ${imageFileData?.length}`);
 		for (const imgData of imageFileData || []) {
-			const imageData = imgData?.entity?.signedUrl ?? imgData?.dataUrl;
+			const imageData =
+				imgData?.entity?.signedUrl ?? imgData?.processData?.dataUrl;
 			if (imageData) {
 				userContent.push({ type: "image", image: imageData });
 			}

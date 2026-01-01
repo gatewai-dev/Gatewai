@@ -1,3 +1,4 @@
+import type { FileData } from "@gatewai/types";
 import type { NodeProps } from "@xyflow/react";
 import { FileIcon } from "lucide-react";
 import {
@@ -20,11 +21,6 @@ import { useNodeResult } from "../../processor/processor-ctx";
 import { BaseNode } from "../base";
 import type { PreviewNode } from "../node-props";
 
-type FileData = {
-	entity?: { id: string; name: string; mimeType?: string };
-	dataUrl?: string;
-};
-
 const ImagePreview = memo(({ data }: { data: FileData }) => {
 	const canvasRef = useRef<HTMLCanvasElement | null>(null);
 
@@ -35,8 +31,8 @@ const ImagePreview = memo(({ data }: { data: FileData }) => {
 		let src: string | undefined;
 		if (data.entity) {
 			src = GetAssetEndpoint(data.entity.id);
-		} else if (data.dataUrl) {
-			src = data.dataUrl;
+		} else if (data.processData?.dataUrl) {
+			src = data.processData?.dataUrl;
 		}
 		if (!src) return;
 
@@ -87,8 +83,8 @@ const PreviewNodeComponent = memo((props: NodeProps<PreviewNode>) => {
 	const getMediaSource = (): string | undefined => {
 		if ("entity" in outputData && outputData.entity) {
 			return GetAssetEndpoint(outputData.entity.id);
-		} else if ("dataUrl" in outputData && outputData.dataUrl) {
-			return outputData.dataUrl;
+		} else if ("processData" in outputData && outputData.processData) {
+			return outputData.processData?.dataUrl;
 		}
 		return undefined;
 	};

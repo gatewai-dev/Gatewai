@@ -9,6 +9,7 @@ import {
 	applyBlur,
 	bufferToDataUrl,
 	getImageBuffer,
+	getImageDimensions,
 	getMimeType,
 } from "../../utils/image.js";
 import { getInputValue } from "../resolvers.js";
@@ -29,6 +30,7 @@ const blurProcessor: NodeProcessor = async ({ node, data }) => {
 
 		const buffer = await getImageBuffer(imageInput);
 		const processedBuffer = await applyBlur(buffer, blurAmount);
+		const dimensions = getImageDimensions(processedBuffer);
 		const mimeType = getMimeType(imageInput);
 		const dataUrl = bufferToDataUrl(processedBuffer, mimeType);
 
@@ -49,7 +51,7 @@ const blurProcessor: NodeProcessor = async ({ node, data }) => {
 			items: [
 				{
 					type: DataType.Image,
-					data: { dataUrl }, // Transient data URL
+					data: { processData: { dataUrl, ...dimensions } },
 					outputHandleId: outputHandle.id,
 				},
 			],

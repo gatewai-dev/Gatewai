@@ -147,7 +147,7 @@ export function useNodeFileOutputUrl(nodeId: string): string | null {
 
 	const fileData =
 		outputItem.data as FileResult["outputs"][number]["items"][number]["data"];
-	return fileData?.entity?.signedUrl ?? fileData?.dataUrl ?? null;
+	return fileData?.entity?.signedUrl ?? fileData?.processData?.dataUrl ?? null;
 }
 
 /**

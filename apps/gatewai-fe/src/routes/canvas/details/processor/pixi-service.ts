@@ -1,8 +1,4 @@
-import {
-	type ModulateNodeConfig,
-	ModulateNodeConfigSchema,
-	type PaintNodeConfig,
-} from "@gatewai/types";
+import type { ModulateNodeConfig, PaintNodeConfig } from "@gatewai/types";
 import {
 	Application,
 	Assets,
@@ -45,7 +41,7 @@ class PixiProcessorService {
 		imageUrl: string,
 		config: ModulateNodeConfig,
 		signal?: AbortSignal,
-	): Promise<string> {
+	): Promise<{ dataUrl: string; width: number; height: number }> {
 		if (signal?.aborted) {
 			throw new DOMException("Operation cancelled", "AbortError");
 		}
@@ -107,14 +103,14 @@ class PixiProcessorService {
 			throw new DOMException("Operation cancelled", "AbortError");
 		}
 
-		return dataUrl;
+		return { dataUrl, width: app.renderer.width, height: app.renderer.height };
 	}
 
 	public async processBlur(
 		imageUrl: string,
 		options: { blurSize: number },
 		signal?: AbortSignal,
-	): Promise<string> {
+	): Promise<{ dataUrl: string; width: number; height: number }> {
 		if (signal?.aborted) {
 			throw new DOMException("Operation cancelled", "AbortError");
 		}
@@ -180,7 +176,7 @@ class PixiProcessorService {
 			throw new DOMException("Operation cancelled", "AbortError");
 		}
 
-		return dataUrl;
+		return { dataUrl, width: app.renderer.width, height: app.renderer.height };
 	}
 
 	/**
@@ -190,7 +186,7 @@ class PixiProcessorService {
 		imageUrl: string,
 		options: { width?: number; height?: number },
 		signal?: AbortSignal,
-	): Promise<string> {
+	): Promise<{ dataUrl: string; width: number; height: number }> {
 		if (signal?.aborted) {
 			throw new DOMException("Operation cancelled", "AbortError");
 		}
@@ -218,13 +214,20 @@ class PixiProcessorService {
 		// 2. Setup the Scene
 		const sprite = new Sprite(texture);
 
+		let targetWidth = texture.width;
+		let targetHeight = texture.height;
+
 		if (options.width && options.height) {
 			// Set the desired dimensions for the sprite
 			sprite.width = options.width;
 			sprite.height = options.height;
+			targetWidth = options.width;
+			targetHeight = options.height;
 			console.log(`Resizing to ${options.width}x${options.height}`);
 			// Resize the renderer to match the target dimensions
 			app.renderer.resize(options.width, options.height);
+		} else {
+			app.renderer.resize(targetWidth, targetHeight);
 		}
 
 		// 3. Render to Stage
@@ -253,7 +256,7 @@ class PixiProcessorService {
 			throw new DOMException("Operation cancelled", "AbortError");
 		}
 
-		return dataUrl;
+		return { dataUrl, width: targetWidth, height: targetHeight };
 	}
 
 	/**
@@ -268,7 +271,7 @@ class PixiProcessorService {
 			heightPercentage: number;
 		},
 		signal?: AbortSignal,
-	): Promise<string> {
+	): Promise<{ dataUrl: string; width: number; height: number }> {
 		if (signal?.aborted) {
 			throw new DOMException("Operation cancelled", "AbortError");
 		}
@@ -356,7 +359,7 @@ class PixiProcessorService {
 			throw new DOMException("Operation cancelled", "AbortError");
 		}
 
-		return dataUrl;
+		return { dataUrl, width: widthPx, height: heightPx };
 	}
 
 	/**
@@ -368,7 +371,10 @@ class PixiProcessorService {
 		imageUrl: string | undefined,
 		maskUrl?: string,
 		signal?: AbortSignal,
-	): Promise<{ imageWithMask: string; onlyMask: string }> {
+	): Promise<{
+		imageWithMask: { dataUrl: string; width: number; height: number };
+		onlyMask: { dataUrl: string; width: number; height: number };
+	}> {
 		if (signal?.aborted) {
 			throw new DOMException("Operation cancelled", "AbortError");
 		}
@@ -451,13 +457,13 @@ class PixiProcessorService {
 			throw new DOMException("Operation cancelled", "AbortError");
 		}
 
-		const onlyMask = await app.renderer.extract.base64(app.stage);
+		const onlyMaskDataUrl = await app.renderer.extract.base64(app.stage);
 
 		if (signal?.aborted) {
 			app.stage.removeChildren();
 			throw new DOMException("Operation cancelled", "AbortError");
 		}
-		console.log({ onlyMask });
+		console.log({ onlyMask: onlyMaskDataUrl });
 
 		// 4. Now add the base sprite behind the mask for imageWithMask
 		if (baseSprite) {
@@ -476,7 +482,7 @@ class PixiProcessorService {
 			throw new DOMException("Operation cancelled", "AbortError");
 		}
 
-		const imageWithMask = await app.renderer.extract.base64(app.stage);
+		const imageWithMaskDataUrl = await app.renderer.extract.base64(app.stage);
 
 		if (signal?.aborted) {
 			app.stage.removeChildren();
@@ -486,7 +492,18 @@ class PixiProcessorService {
 		// Clean up
 		app.stage.removeChildren();
 
-		return { imageWithMask, onlyMask };
+		return {
+			imageWithMask: {
+				dataUrl: imageWithMaskDataUrl,
+				width: widthToUse,
+				height: heightToUse,
+			},
+			onlyMask: {
+				dataUrl: onlyMaskDataUrl,
+				width: widthToUse,
+				height: heightToUse,
+			},
+		};
 	}
 }
 

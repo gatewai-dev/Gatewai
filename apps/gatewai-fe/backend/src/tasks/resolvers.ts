@@ -130,8 +130,8 @@ function getAllInputValuesWithHandle(
  * @returns A data url if exists, A new signed url if it doesn't exprired or signed url of unexpired signed url
  */
 async function resolveFileUrl(fileData: FileData) {
-	if (fileData.dataUrl) {
-		return fileData.dataUrl;
+	if (fileData.processData?.dataUrl) {
+		return fileData.processData?.dataUrl;
 	}
 	if (fileData.entity) {
 		const expiration = fileData.entity.signedUrlExp;

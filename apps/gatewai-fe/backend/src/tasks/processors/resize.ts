@@ -10,6 +10,7 @@ import {
 	applyResize,
 	bufferToDataUrl,
 	getImageBuffer,
+	getImageDimensions,
 	getMimeType,
 } from "../../utils/image.js";
 import { getInputValue } from "../resolvers.js";
@@ -34,7 +35,7 @@ const resizeProcessor: NodeProcessor = async ({ node, data }) => {
 		const processedBuffer = await applyResize(buffer, width, height);
 		const mimeType = getMimeType(imageInput);
 		const dataUrl = bufferToDataUrl(processedBuffer, mimeType);
-
+		const dimensions = getImageDimensions(processedBuffer);
 		// Build new result (similar to LLM)
 		const outputHandle = data.handles.find(
 			(h) => h.nodeId === node.id && h.type === "Output",
@@ -52,7 +53,7 @@ const resizeProcessor: NodeProcessor = async ({ node, data }) => {
 			items: [
 				{
 					type: DataType.Image,
-					data: { dataUrl },
+					data: { processData: { dataUrl, ...dimensions } },
 					outputHandleId: outputHandle.id,
 				} as OutputItem<"Image">,
 			],

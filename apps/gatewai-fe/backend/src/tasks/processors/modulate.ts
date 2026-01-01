@@ -10,6 +10,7 @@ import {
 	applyModulate,
 	bufferToDataUrl,
 	getImageBuffer,
+	getImageDimensions,
 	getMimeType,
 } from "../../utils/image.js";
 import { getInputValue } from "../resolvers.js";
@@ -30,6 +31,7 @@ const modulateProcessor: NodeProcessor = async ({ node, data }) => {
 		const buffer = await getImageBuffer(imageInput);
 		const processedBuffer = await applyModulate(buffer, modulateConfig);
 		const mimeType = getMimeType(imageInput);
+		const dimensions = getImageDimensions(processedBuffer);
 		const dataUrl = bufferToDataUrl(processedBuffer, mimeType);
 		logMedia(processedBuffer, undefined, node.id);
 		// Build new result (similar to LLM)
@@ -49,7 +51,7 @@ const modulateProcessor: NodeProcessor = async ({ node, data }) => {
 			items: [
 				{
 					type: DataType.Image,
-					data: { dataUrl }, // Transient data URL
+					data: { processData: { dataUrl, ...dimensions } }, // Transient data URL
 					outputHandleId: outputHandle.id,
 				},
 			],

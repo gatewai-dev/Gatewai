@@ -1,8 +1,14 @@
 import type { DataType, FileAsset } from "@gatewai/db";
 
+export type ProcessData = {
+	dataUrl: string;
+	width?: number;
+	height?: number;
+};
+
 export type FileData = {
 	entity?: FileAsset;
-	dataUrl?: string;
+	processData?: ProcessData;
 };
 
 export type DataForType<R extends DataType> = R extends "Text"

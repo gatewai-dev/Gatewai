@@ -1,5 +1,6 @@
 import type {
 	CompositorLayer,
+	CompositorNodeConfig,
 	CompositorResult,
 	FileData,
 	OutputItem,
@@ -39,6 +40,8 @@ import {
 import { generateId } from "@/lib/idgen";
 import { BLEND_MODES } from "@/routes/canvas/blend-modes";
 import type { HandleEntityType } from "@/store/handles";
+import type { NodeEntityType } from "@/store/nodes";
+import { GetAssetEndpoint } from "@/utils/file";
 
 // Editor Context
 interface EditorContextType {
@@ -57,6 +60,9 @@ interface EditorContextType {
 	editingLayerId: string | null;
 	setEditingLayerId: (id: string | null) => void;
 	stageRef: React.RefObject<Konva.Stage | null>;
+
+	getTextData: (handleId: string) => string;
+	getImageUrl: (handleId: string) => string;
 }
 
 interface Guide {
@@ -216,11 +222,8 @@ const ImageLayer: React.FC<LayerProps> = ({
 	onDragEnd,
 	onTransformEnd,
 }) => {
-	const { setSelectedId, setLayers } = useEditor();
-	const url =
-		typeof layer.output.data === "object" && "dataUrl" in layer.output.data
-			? (layer.output.data as { dataUrl: string }).dataUrl
-			: (layer.output.data as FileData).entity?.signedUrl || "";
+	const { setSelectedId, setLayers, getImageUrl } = useEditor();
+	const url = getImageUrl(layer.inputHandleId);
 	const [image] = useImage(url, "anonymous");
 
 	useEffect(() => {
@@ -265,8 +268,10 @@ const ImageLayer: React.FC<LayerProps> = ({
 const TextLayer: React.FC<
 	LayerProps & { layer: CompositorLayer & { type: "Text" } }
 > = ({ layer, onDragMove, onDragEnd, onTransformEnd }) => {
-	const { setSelectedId, setIsEditingText, setEditingLayerId } = useEditor();
+	const { setSelectedId, setIsEditingText, setEditingLayerId, getImageUrl } =
+		useEditor();
 
+	const text = getImageUrl(layer.inputHandleId);
 	const handleSelect = () => {
 		setSelectedId(layer.id);
 	};
@@ -282,7 +287,7 @@ const TextLayer: React.FC<
 			id={layer.id}
 			x={layer.x}
 			y={layer.y}
-			text={layer.output.data as string}
+			text={text as string}
 			fontSize={layer.fontSize || 24}
 			fontFamily={layer.fontFamily || "Arial"}
 			fill={layer.fill || "black"}
@@ -378,7 +383,6 @@ const Guides: React.FC = () => {
 	);
 };
 
-// Main Canvas
 const Canvas: React.FC = () => {
 	const { layers, viewportWidth, viewportHeight, setSelectedId, stageRef } =
 		useEditor();
@@ -671,14 +675,14 @@ const PropertiesPanel: React.FC = () => {
 interface CanvasDesignerEditorProps {
 	initialLayers: Map<
 		HandleEntityType["id"],
-		OutputItem<"Text">[] | OutputItem<"Image">
+		OutputItem<"Text"> | OutputItem<"Image">
 	>;
-	onSave: (result: CompositorResult) => void;
+	node: NodeEntityType;
 }
 
 export const CanvasDesignerEditor: React.FC<CanvasDesignerEditorProps> = ({
 	initialLayers,
-	onSave,
+	node,
 }) => {
 	const [layers, setLayers] = useState<CompositorLayer[]>([]);
 	const [selectedId, setSelectedId] = useState<string | null>(null);
@@ -687,67 +691,55 @@ export const CanvasDesignerEditor: React.FC<CanvasDesignerEditorProps> = ({
 	const [guides, setGuides] = useState<Guide[]>([]);
 	const [isEditingText, setIsEditingText] = useState(false);
 	const [editingLayerId, setEditingLayerId] = useState<string | null>(null);
-	const [isSaving, setIsSaving] = useState(false);
 	const stageRef = useRef<Konva.Stage | null>(null);
+
+	const getTextData = (handleId: string) => {
+		const layerData = initialLayers.get(handleId) as OutputItem<"Text">;
+		if (!layerData) {
+			return "";
+		}
+		return layerData.data;
+	};
+
+	const getImageUrl = (handleId: string) => {
+		const layerData = initialLayers.get(handleId) as OutputItem<"Image">;
+		if (!layerData) {
+			return "";
+		}
+		if (layerData.data.processData?.dataUrl)
+			return layerData.data.processData?.dataUrl;
+		if (layerData.data.entity?.signedUrl) {
+			return GetAssetEndpoint(layerData.data.entity?.signedUrl);
+		}
+		throw new Error("Image data is missing");
+	};
 
 	// Load initial layers
 	useEffect(() => {
 		const newLayers: CompositorLayer[] = [];
-		let index = 0;
+		const existingConfig = node.config as CompositorNodeConfig;
+		const duplicateConfig = { ...existingConfig };
 		initialLayers.forEach((output, handleId) => {
-			const items: OutputItem<"Text" | "Image">[] = Array.isArray(output)
-				? output
-				: [output];
-			items
-				.filter(
-					(item): item is OutputItem<"Text" | "Image"> =>
-						item.type === "Text" || item.type === "Image",
-				)
-				.forEach((item) => {
-					const id = generateId();
-					const defaultX = 100 + index * 20;
-					const defaultY = 100 + index * 20;
-					index++;
-					if (item.type === "Text") {
-						newLayers.push({
-							id,
-							type: "Text",
-							output: item,
-							x: defaultX,
-							y: defaultY,
-							width: 200,
-							height: 50,
-							rotation: 0,
-							scaleX: 1,
-							scaleY: 1,
-							fontFamily: "Arial",
-							fontSize: 24,
-							fill: "black",
-							blendMode: "source-over",
-						});
-					} else if (item.type === "Image") {
-						const fileData = item.data as FileData;
-						const width = fileData.entity?.width || 200;
-						const height = fileData.entity?.height || 200;
-						newLayers.push({
-							id,
-							type: "Image",
-							output: item,
-							x: defaultX,
-							y: defaultY,
-							width,
-							height,
-							rotation: 0,
-							scaleX: 1,
-							scaleY: 1,
-							lockAspect: true,
-							blendMode: "source-over",
-						});
-					}
-				});
+			if (!duplicateConfig.layerUpdates[handleId]) {
+				const newLayer: CompositorLayer = {
+					type: output.type,
+					scaleX: 1,
+					scaleY: 1,
+					width: undefined,
+					height: undefined,
+					x: 0,
+					y: 0,
+					id: generateId(),
+					inputHandleId: handleId,
+					rotation: 0,
+					lockAspect: false,
+					blendMode: "source-over",
+				};
+				duplicateConfig.layerUpdates[handleId] = newLayer;
+			}
 		});
 		setLayers(newLayers);
-	}, [initialLayers]);
+	}, [initialLayers, node.config]);
 
 	// Compute unique fonts from current layers and load them
 	const fonts = Array.from(
@@ -758,28 +750,6 @@ export const CanvasDesignerEditor: React.FC<CanvasDesignerEditorProps> = ({
 		),
 	);
 	useFontLoader(fonts);
-
-	// Handle saving with proper render cycle
-	useEffect(() => {
-		if (isSaving && stageRef.current) {
-			const dataUrl = stageRef.current.toDataURL({
-				mimeType: "image/png",
-				pixelRatio: 2, // Higher quality
-			});
-			const fileData: FileData = { dataUrl: dataUrl ?? "" };
-			const outputItem: OutputItem<"Image"> = {
-				type: "Image",
-				data: fileData,
-				outputHandleId: "compositor_output",
-			};
-			const result: CompositorResult = {
-				selectedOutputIndex: 0,
-				outputs: [{ items: [outputItem] }],
-			};
-			onSave(result);
-			setIsSaving(false);
-		}
-	}, [isSaving, onSave]);
 
 	return (
 		<EditorContext.Provider
@@ -799,6 +769,8 @@ export const CanvasDesignerEditor: React.FC<CanvasDesignerEditorProps> = ({
 				editingLayerId,
 				setEditingLayerId,
 				stageRef,
+				getTextData,
+				getImageUrl,
 			}}
 		>
 			<div

@@ -10,6 +10,7 @@ import {
 	applyCrop,
 	bufferToDataUrl,
 	getImageBuffer,
+	getImageDimensions,
 	getMimeType,
 } from "../../utils/image.js";
 import { getInputValue } from "../resolvers.js";
@@ -39,6 +40,7 @@ const cropProcessor: NodeProcessor = async ({ node, data }) => {
 			heightPercentage,
 		);
 		const mimeType = getMimeType(imageInput);
+		const dimensions = getImageDimensions(processedBuffer);
 		const dataUrl = bufferToDataUrl(processedBuffer, mimeType);
 
 		// Build new result (similar to LLM)
@@ -58,7 +60,7 @@ const cropProcessor: NodeProcessor = async ({ node, data }) => {
 			items: [
 				{
 					type: DataType.Image,
-					data: { dataUrl }, // Transient data URL
+					data: { processData: { dataUrl, ...dimensions } }, // Transient data URL
 					outputHandleId: outputHandle.id,
 				} as OutputItem<"Image">,
 			],

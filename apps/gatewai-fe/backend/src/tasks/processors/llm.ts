@@ -42,7 +42,7 @@ const llmProcessor: NodeProcessor = async ({ node, data }) => {
 		}
 
 		const imageData =
-			imageFileData?.entity?.signedUrl ?? imageFileData?.dataUrl;
+			imageFileData?.entity?.signedUrl ?? imageFileData?.processData?.dataUrl;
 		if (imageData) {
 			userContent.push({ type: "image", image: imageData });
 		}

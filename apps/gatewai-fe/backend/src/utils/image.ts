@@ -2,8 +2,9 @@ import type { FileData, ModulateNodeConfig } from "@gatewai/types";
 import sharp from "sharp";
 
 export async function getImageBuffer(imageInput: FileData): Promise<Buffer> {
-	if (imageInput.dataUrl) {
-		const base64 = imageInput.dataUrl.split(";base64,").pop() ?? "";
+	if (imageInput.processData?.dataUrl) {
+		const base64 =
+			imageInput.processData?.dataUrl.split(";base64,").pop() ?? "";
 		return Buffer.from(base64, "base64");
 	} else if (imageInput.entity?.signedUrl) {
 		const response = await fetch(imageInput.entity.signedUrl);
@@ -15,8 +16,10 @@ export async function getImageBuffer(imageInput: FileData): Promise<Buffer> {
 
 export function getMimeType(imageInput: FileData): string {
 	if (imageInput.entity?.mimeType) return imageInput.entity.mimeType;
-	if (imageInput.dataUrl) {
-		const match = imageInput.dataUrl.match(/^data:(image\/[^;]+);base64,/);
+	if (imageInput.processData?.dataUrl) {
+		const match = imageInput.processData?.dataUrl.match(
+			/^data:(image\/[^;]+);base64,/,
+		);
 		if (match?.[1]) {
 			return match?.[1];
 		}

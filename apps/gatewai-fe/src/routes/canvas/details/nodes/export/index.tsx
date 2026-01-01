@@ -55,7 +55,7 @@ const isFileData = (data: unknown): data is FileData => {
 	return (
 		typeof data === "object" &&
 		data !== null &&
-		("dataUrl" in data || "entity" in data)
+		("processData" in data || "entity" in data)
 	);
 };
 
@@ -149,8 +149,8 @@ const ExportNodeComponent = memo((props: NodeProps<BlurNode>) => {
 		}
 
 		// Try to get extension from dataUrl
-		if (fileData?.dataUrl) {
-			const urlExt = extractExtension(fileData.dataUrl);
+		if (fileData?.processData?.dataUrl) {
+			const urlExt = extractExtension(fileData.processData?.dataUrl);
 			if (urlExt) {
 				extension = urlExt;
 			}
@@ -195,8 +195,8 @@ const ExportNodeComponent = memo((props: NodeProps<BlurNode>) => {
 
 		try {
 			// Priority 1: Use dataUrl if available
-			if (fileData.dataUrl) {
-				url = fileData.dataUrl;
+			if (fileData.processData?.dataUrl) {
+				url = fileData.processData?.dataUrl;
 				filename = generateFilename(dataType, fileData);
 
 				// If it's a base64 data URL, we can use it directly

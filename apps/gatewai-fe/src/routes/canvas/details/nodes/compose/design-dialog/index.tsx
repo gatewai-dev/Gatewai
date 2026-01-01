@@ -21,7 +21,7 @@ const DesignDialog = memo(({ node }: { node: NodeEntityType }) => {
 	const initialLayers = useMemo(() => {
 		const items = new Map<
 			HandleEntityType["id"],
-			OutputItem<"Text">[] | OutputItem<"Image">
+			OutputItem<"Text"> | OutputItem<"Image">
 		>();
 		for (const item of inputs) {
 			const handleId = item[0];
@@ -48,10 +48,7 @@ const DesignDialog = memo(({ node }: { node: NodeEntityType }) => {
 				</Button>
 			</DialogTrigger>
 			<DialogContent className="max-w-screen! h-screen w-screen! max-h-screen!">
-				<CanvasDesignerEditor
-					onSave={console.log}
-					initialLayers={initialLayers}
-				/>
+				<CanvasDesignerEditor initialLayers={initialLayers} node={node} />
 			</DialogContent>
 		</Dialog>
 	);

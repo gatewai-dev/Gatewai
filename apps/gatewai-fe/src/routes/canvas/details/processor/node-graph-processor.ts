@@ -510,7 +510,7 @@ export class NodeGraphProcessor extends EventEmitter {
 					const fileData = outputItem.data as FileData;
 					const url = fileData?.entity?.signedUrl
 						? GetAssetEndpoint(fileData?.entity.id)
-						: fileData?.dataUrl;
+						: fileData?.processData?.dataUrl;
 					if (url) return url;
 				}
 			}
@@ -531,7 +531,7 @@ export class NodeGraphProcessor extends EventEmitter {
 			if (!imageUrl) throw new Error("Missing Input Image");
 
 			const config = node.config as CropNodeConfig;
-			const dataUrl = await pixiProcessor.processCrop(
+			const result = await pixiProcessor.processCrop(
 				imageUrl,
 				{
 					leftPercentage: config.leftPercentage,
@@ -552,7 +552,13 @@ export class NodeGraphProcessor extends EventEmitter {
 						items: [
 							{
 								type: "Image",
-								data: { dataUrl },
+								data: {
+									processData: {
+										dataUrl: result.dataUrl,
+										width: result.width,
+										height: result.height,
+									},
+								},
 								outputHandleId: outputHandle,
 							},
 						],
@@ -572,30 +578,48 @@ export class NodeGraphProcessor extends EventEmitter {
 
 			if (!maskHandle) throw new Error("Mask output handle missing");
 
+			const { imageWithMask, onlyMask } = await pixiProcessor.processMask(
+				config,
+				imageUrl,
+				maskDataUrl,
+				signal,
+			);
+
 			const items: PaintResult["outputs"][number]["items"] = [];
 
-			if (imageUrl && imageHandle) {
-				const { imageWithMask, onlyMask } = await pixiProcessor.processMask(
-					config,
-					imageUrl,
-					maskDataUrl,
-					signal,
-				);
-				console.log({ maskHandle, imageHandle });
+			if (imageUrl && imageHandle && imageWithMask) {
 				items.push({
 					type: "Image",
-					data: { dataUrl: imageWithMask },
+					data: {
+						processData: {
+							dataUrl: imageWithMask.dataUrl,
+							width: imageWithMask.width,
+							height: imageWithMask.height,
+						},
+					},
 					outputHandleId: imageHandle,
 				});
 				items.push({
 					type: "Mask",
-					data: { dataUrl: onlyMask },
+					data: {
+						processData: {
+							dataUrl: onlyMask.dataUrl,
+							width: onlyMask.width,
+							height: onlyMask.height,
+						},
+					},
 					outputHandleId: maskHandle,
 				});
 			} else {
 				items.push({
 					type: "Mask",
-					data: { dataUrl: maskDataUrl },
+					data: {
+						processData: {
+							dataUrl: onlyMask.dataUrl,
+							width: onlyMask.width,
+							height: onlyMask.height,
+						},
+					},
 					outputHandleId: maskHandle,
 				});
 			}
@@ -608,7 +632,7 @@ export class NodeGraphProcessor extends EventEmitter {
 			if (!imageUrl) throw new Error("Missing Input Image");
 
 			const config = node.config as BlurNodeConfig;
-			const dataUrl = await pixiProcessor.processBlur(
+			const result = await pixiProcessor.processBlur(
 				imageUrl,
 				{ blurSize: config.size ?? 1 },
 				signal,
@@ -623,7 +647,13 @@ export class NodeGraphProcessor extends EventEmitter {
 						items: [
 							{
 								type: "Image",
-								data: { dataUrl },
+								data: {
+									processData: {
+										dataUrl: result.dataUrl,
+										width: result.width,
+										height: result.height,
+									},
+								},
 								outputHandleId: outputHandle,
 							},
 						],
@@ -637,7 +667,7 @@ export class NodeGraphProcessor extends EventEmitter {
 			if (!imageUrl) throw new Error("Missing Input Image");
 
 			const config = node.config as ModulateNodeConfig;
-			const dataUrl = await pixiProcessor.processModulate(
+			const result = await pixiProcessor.processModulate(
 				imageUrl,
 				config,
 				signal,
@@ -652,7 +682,13 @@ export class NodeGraphProcessor extends EventEmitter {
 						items: [
 							{
 								type: "Image",
-								data: { dataUrl },
+								data: {
+									processData: {
+										dataUrl: result.dataUrl,
+										width: result.width,
+										height: result.height,
+									},
+								},
 								outputHandleId: outputHandle,
 							},
 						],
@@ -671,7 +707,7 @@ export class NodeGraphProcessor extends EventEmitter {
 			if (!imageUrl) throw new Error("Missing Input Image");
 
 			const config = node.config as ResizeNodeConfig;
-			const dataUrl = await pixiProcessor.processResize(
+			const result = await pixiProcessor.processResize(
 				imageUrl,
 				{ width: config.width, height: config.height },
 				signal,
@@ -686,7 +722,13 @@ export class NodeGraphProcessor extends EventEmitter {
 						items: [
 							{
 								type: "Image",
-								data: { dataUrl },
+								data: {
+									processData: {
+										dataUrl: result.dataUrl,
+										width: result.width,
+										height: result.height,
+									},
+								},
 								outputHandleId: outputHandle,
 							},
 						],

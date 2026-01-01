@@ -63,7 +63,11 @@ function CreateOutputZodSchema(
 				data: z.object({
 					file: z.object({
 						entity: FileAssetSchema.optional(),
-						dataUrl: z.string().optional(),
+						processData: z.object({
+							dataUrl: z.string().optional(),
+							width: z.number().optional(),
+							height: z.number().optional(),
+						}),
 					}),
 				}),
 				type: z.literal(dataType),
