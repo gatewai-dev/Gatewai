@@ -86,7 +86,48 @@ import { BLEND_MODES } from "@/routes/canvas/blend-modes";
 import { useGetFontListQuery } from "@/store/fonts";
 import type { HandleEntityType } from "@/store/handles";
 import type { NodeEntityType } from "@/store/nodes";
-import { GetAssetEndpoint } from "@/utils/file";
+import { GetAssetEndpoint, GetFontAssetUrl } from "@/utils/file";
+
+class FontManager {
+	private static instance: FontManager | null = null;
+	private loadedFonts: Set<string> = new Set();
+
+	private constructor() {}
+
+	public static getInstance(): FontManager {
+		if (!FontManager.instance) {
+			FontManager.instance = new FontManager();
+		}
+		return FontManager.instance;
+	}
+
+	public async loadFont(family: string, url: string): Promise<void> {
+		if (this.loadedFonts.has(family)) return;
+
+		const fontId = `font-${family}`;
+		if (document.getElementById(fontId)) return;
+
+		const style = document.createElement("style");
+		style.id = fontId;
+		style.innerHTML = `
+      @font-face {
+        font-family: "${family}";
+        src: url("${url}");
+      }
+    `;
+		document.head.appendChild(style);
+
+		try {
+			await document.fonts.load(`1em "${family}"`);
+			await document.fonts.ready;
+			this.loadedFonts.add(family);
+		} catch (e) {
+			console.warn(`Font load failed for ${family}:`, e);
+		}
+	}
+}
+
+const fontManager = FontManager.getInstance();
 
 // Editor Context
 interface EditorContextType {
@@ -759,7 +800,11 @@ const InspectorPanel: React.FC = () => {
 		setViewportHeight,
 	} = useEditor();
 	const selectedLayer = layers.find((l) => l.id === selectedId);
-	const updateLayer = (updates: Partial<CompositorLayer>) => {
+	const updateLayer = async (updates: Partial<CompositorLayer>) => {
+		if (updates.fontFamily) {
+			const fontUrl = GetFontAssetUrl(updates.fontFamily);
+			await fontManager.loadFont(updates.fontFamily, fontUrl);
+		}
 		setLayers((prev) =>
 			prev.map((l) => (l.id === selectedId ? { ...l, ...updates } : l)),
 		);
@@ -964,7 +1009,7 @@ const InspectorPanel: React.FC = () => {
 										<SelectContent>
 											{fontNames.map((fontName) => (
 												<SelectItem key={`${fontName}_opt`} value={fontName}>
-													{fontName.replace("_", "")}
+													{fontName.replace("_", " ")}
 												</SelectItem>
 											))}
 										</SelectContent>
@@ -1210,55 +1255,69 @@ export const CanvasDesignerEditor: React.FC<CanvasDesignerEditorProps> = ({
 		},
 		[initialLayers],
 	);
-	// Load initial layers
+	// Load initial layers and fonts
 	useEffect(() => {
-		const existingConfig = (node.config as CompositorNodeConfig) ?? {
-			layerUpdates: {},
-		};
-		const layerUpdates = { ...existingConfig.layerUpdates };
-		initialLayers.forEach((output, handleId) => {
-			if (!layerUpdates[handleId]) {
-				const newLayer: CompositorLayer = {
-					type: output.type,
-					scaleX: 1,
-					scaleY: 1,
-					width: undefined,
-					height: undefined,
-					x: 0,
-					y: 0,
-					id: handleId,
-					inputHandleId: handleId,
-					rotation: 0,
-					lockAspect: true,
-					blendMode: "source-over",
-				};
-				if (newLayer.type === "Text") {
-					newLayer.width = 200;
-					newLayer.fontSize = 24;
-					newLayer.fontFamily = "sans-serif";
-					newLayer.fill = "#000000";
-					newLayer.letterSpacing = 0;
-					newLayer.lineHeight = newLayer.fontSize;
-					newLayer.align = "left";
-					newLayer.verticalAlign = "top";
-				}
-				if (newLayer.type === "Image") {
-					const fData = getImageData(handleId);
-					if (fData.entity) {
-						newLayer.width = fData.entity.width ?? 200;
-						newLayer.height = fData.entity.height ?? 200;
-					} else if (fData.processData) {
-						newLayer.width = fData.processData.width ?? 200;
-						newLayer.height = fData.processData.height ?? 200;
-					} else {
+		const loadInitialLayers = async () => {
+			const existingConfig = (node.config as CompositorNodeConfig) ?? {
+				layerUpdates: {},
+			};
+			const layerUpdates = { ...existingConfig.layerUpdates };
+			const fontPromises: Promise<void>[] = [];
+
+			initialLayers.forEach((output, handleId) => {
+				if (!layerUpdates[handleId]) {
+					const newLayer: CompositorLayer = {
+						type: output.type,
+						scaleX: 1,
+						scaleY: 1,
+						width: undefined,
+						height: undefined,
+						x: 0,
+						y: 0,
+						id: handleId,
+						inputHandleId: handleId,
+						rotation: 0,
+						lockAspect: true,
+						blendMode: "source-over",
+					};
+					if (newLayer.type === "Text") {
 						newLayer.width = 200;
-						newLayer.height = 200;
+						newLayer.fontSize = 24;
+						newLayer.fontFamily = "sans-serif";
+						newLayer.fill = "#000000";
+						newLayer.letterSpacing = 0;
+						newLayer.lineHeight = newLayer.fontSize;
+						newLayer.align = "left";
+						newLayer.verticalAlign = "top";
 					}
+					if (newLayer.type === "Image") {
+						const fData = getImageData(handleId);
+						if (fData.entity) {
+							newLayer.width = fData.entity.width ?? 200;
+							newLayer.height = fData.entity.height ?? 200;
+						} else if (fData.processData) {
+							newLayer.width = fData.processData.width ?? 200;
+							newLayer.height = fData.processData.height ?? 200;
+						} else {
+							newLayer.width = 200;
+							newLayer.height = 200;
+						}
+					}
+					layerUpdates[handleId] = newLayer;
 				}
-				layerUpdates[handleId] = newLayer;
-			}
-		});
-		setLayers(Object.values(layerUpdates));
+
+				const layer = layerUpdates[handleId];
+				if (layer.type === "Text" && layer.fontFamily) {
+					const fontUrl = GetFontAssetUrl(layer.fontFamily);
+					fontPromises.push(fontManager.loadFont(layer.fontFamily, fontUrl));
+				}
+			});
+
+			await Promise.all(fontPromises);
+			setLayers(Object.values(layerUpdates));
+		};
+
+		loadInitialLayers();
 	}, [initialLayers, node.config, getImageData]);
 	// Deselect when entering pan mode
 	useEffect(() => {

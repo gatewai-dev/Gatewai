@@ -22,7 +22,6 @@ import {
 	HardLightBlend,
 	LightenBlend,
 	LuminosityBlend,
-	loadWebFont,
 	OverlayBlend,
 	SaturationBlend,
 	SoftLightBlend,
@@ -32,6 +31,7 @@ import {
 	WebWorkerAdapter,
 } from "pixi.js";
 import "pixi.js/advanced-blend-modes";
+import { fontManager } from "@/lib/fonts";
 import { GetFontAssetUrl } from "@/utils/file";
 import { ModulateFilter } from "./filters/modulate";
 
@@ -567,23 +567,26 @@ class PixiProcessorService {
 
 			const layers = Object.values(config.layerUpdates || {});
 
-			const assetMap: Array<{ alias: string; src: string }> = [];
+			const assetMap: Array<{
+				alias: string;
+				src: string;
+				loadParser?: string;
+				format?: string;
+			}> = [];
 
 			for (const layer of layers) {
-				const inputData = inputs.get(layer.inputHandleId);
-				if (!inputData) continue;
-
-				if (layer.type === "Image" && inputData.type === "Image") {
-					assetMap.push({ alias: `img_${layer.id}`, src: inputData.value });
-				} else if (layer.type === "Text" && layer.fontFamily) {
-					// Ensure the alias is the family name used in TextStyle
-					assetMap.push({
-						alias: layer.fontFamily,
-						src: GetFontAssetUrl(layer.fontFamily),
+				if (layer.type === "Text" && layer.fontFamily) {
+					const fontUrl = GetFontAssetUrl(layer.fontFamily);
+					await fontManager.loadFont(layer.fontFamily, fontUrl);
+				} else if (layer.type === "Image") {
+					// Images still use Assets.load
+					await Assets.load({
+						alias: `img_${layer.id}`,
+						src: inputs.get(layer.inputHandleId)?.value,
 					});
 				}
 			}
-
+			console.log({ assetMap });
 			// Batch Load
 			if (assetMap.length > 0) {
 				await Assets.load(assetMap);
