@@ -1,8 +1,8 @@
 import type { DataType } from "@gatewai/db";
 import type {
+	CompositorLayer,
 	CompositorResult,
 	FileData,
-	CompositorLayer,
 	OutputItem,
 } from "@gatewai/types";
 import type Konva from "konva";
@@ -27,12 +27,18 @@ import {
 } from "react-konva";
 import useImage from "use-image";
 import WebFont from "webfontloader";
+import { Checkbox } from "@/components/ui/checkbox";
+import { Input } from "@/components/ui/input";
+import { Label } from "@/components/ui/label";
+import {
+	Select,
+	SelectContent,
+	SelectItem,
+	SelectTrigger,
+	SelectValue,
+} from "@/components/ui/select";
 import { generateId } from "@/lib/idgen";
 import { BLEND_MODES } from "@/routes/canvas/blend-modes";
-import { Input } from "@/components/ui/input";
-import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
-import { Checkbox } from "@/components/ui/checkbox";
-import { Label } from "@/components/ui/label";
 
 // Editor Context
 interface EditorContextType {
@@ -204,9 +210,12 @@ interface LayerProps {
 }
 
 // Image Layer Component
-const ImageLayer: React.FC<
-	LayerProps
-> = ({ layer, onDragMove, onDragEnd, onTransformEnd }) => {
+const ImageLayer: React.FC<LayerProps> = ({
+	layer,
+	onDragMove,
+	onDragEnd,
+	onTransformEnd,
+}) => {
 	const { setSelectedId, setLayers } = useEditor();
 	const url =
 		typeof layer.output.data === "object" && "dataUrl" in layer.output.data
@@ -371,13 +380,8 @@ const Guides: React.FC = () => {
 
 // Main Canvas
 const Canvas: React.FC = () => {
-	const {
-		layers,
-		viewportWidth,
-		viewportHeight,
-		setSelectedId,
-		stageRef,
-	} = useEditor();
+	const { layers, viewportWidth, viewportHeight, setSelectedId, stageRef } =
+		useEditor();
 	const { handleDragMove, handleDragEnd, handleTransformEnd } = useSnap();
 
 	const handleStageClick = useCallback(
@@ -496,8 +500,7 @@ const LayersPanel: React.FC = () => {
 						style={{
 							cursor: "pointer",
 							padding: "4px",
-							background:
-								layer.id === selectedId ? "#ddd" : "transparent",
+							background: layer.id === selectedId ? "#ddd" : "transparent",
 						}}
 					>
 						{layer.type.charAt(0).toUpperCase() + layer.type.slice(1)} -{" "}
@@ -652,7 +655,9 @@ const PropertiesPanel: React.FC = () => {
 						<Checkbox
 							id="lockAspect"
 							checked={selectedLayer.lockAspect ?? true}
-							onCheckedChange={(checked) => updateLayer({ lockAspect: checked as boolean })}
+							onCheckedChange={(checked) =>
+								updateLayer({ lockAspect: checked as boolean })
+							}
 						/>
 						<Label htmlFor="lockAspect">Lock Aspect</Label>
 					</div>

@@ -83,8 +83,11 @@ export function useNodeResult<T extends NodeResult = NodeResult>(
 		const onProcessed = (data: { nodeId: string }) => {
 			if (data.nodeId === nodeId) callback();
 		};
-		const onStart = (data: { nodeId: string, inputs: Map<string, NodeResult> }) => {
-			console.log({inputs: data.inputs, nodeId})
+		const onStart = (data: {
+			nodeId: string;
+			inputs: Map<string, NodeResult>;
+		}) => {
+			console.log({ inputs: data.inputs, nodeId });
 			if (data.nodeId === nodeId) callback();
 		};
 		const onError = (data: { nodeId: string }) => {

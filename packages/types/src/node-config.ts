@@ -1,6 +1,6 @@
+import type { DataType } from "@gatewai/db";
 import { z } from "zod";
 import type { OutputItem } from "./node-result.js";
-import type { DataType } from "@gatewai/db";
 
 // Text Node
 const TextNodeConfigSchema = z
@@ -79,7 +79,7 @@ const CropNodeConfigSchema = z
 const CompositorLayerSchema = z
 	.object({
 		id: z.string(),
-		type: z.enum(["Text", 'Image']),
+		type: z.enum(["Text", "Image"]),
 		name: z.string(),
 		x: z.number(),
 		y: z.number(),
@@ -100,7 +100,7 @@ const CompositorNodeConfigSchema = z
 	.object({
 		layerUpdates: z.record(
 			z.string(), // Output Handle ID
-			CompositorLayerSchema
+			CompositorLayerSchema,
 		),
 	})
 	.strict();

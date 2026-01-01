@@ -2,12 +2,12 @@ import type { NodeProps } from "@xyflow/react";
 import { memo, useRef } from "react";
 import { useAppSelector } from "@/store";
 import { makeSelectNodeById } from "@/store/nodes";
+import { AddCustomHandleButton } from "../../components/add-custom-handle";
 import { useDrawToCanvas } from "../../hooks/use-draw-to-canvas";
 import { useNodeFileOutputUrl } from "../../processor/processor-ctx";
 import { BaseNode } from "../base";
 import type { CompositorNode } from "../node-props";
 import { DesignDialog } from "./design-dialog";
-import { AddCustomHandleButton } from "../../components/add-custom-handle";
 
 const CompositorNodeComponent = memo((props: NodeProps<CompositorNode>) => {
 	const node = useAppSelector(makeSelectNodeById(props.id));
@@ -24,7 +24,11 @@ const CompositorNodeComponent = memo((props: NodeProps<CompositorNode>) => {
 					<canvas ref={canvasRef} className="block w-full h-auto" />
 				</div>
 				<div className="flex justify-between items-center">
-					<AddCustomHandleButton dataTypes={['Image', 'Text']} nodeProps={props} type="Input" />
+					<AddCustomHandleButton
+						dataTypes={["Image", "Text"]}
+						nodeProps={props}
+						type="Input"
+					/>
 					<DesignDialog node={node} />
 				</div>
 			</div>

@@ -288,7 +288,7 @@ export class NodeGraphProcessor extends EventEmitter {
 
 		try {
 			const inputs = this.collectInputs(nodeId);
-			console.log({inputs, nodeId})
+			console.log({ inputs, nodeId });
 			state.inputs = inputs;
 			this.emit("node:start", { nodeId, inputs });
 

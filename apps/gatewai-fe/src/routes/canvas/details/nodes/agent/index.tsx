@@ -12,12 +12,12 @@ import { Alert, AlertDescription } from "@/components/ui/alert";
 import { Separator } from "@/components/ui/separator";
 import { useAppSelector } from "@/store";
 import { makeSelectHandlesByNodeId } from "@/store/handles";
+import { AddCustomHandleButton } from "../../components/add-custom-handle";
 import { RunNodeButton } from "../../components/run-node-button";
 import { useNodeTaskRunning } from "../../ctx/task-manager-ctx";
 import { useNodeResult } from "../../processor/processor-ctx";
 import { BaseNode } from "../base";
 import type { LLMNode } from "../node-props";
-import { AddCustomHandleButton } from "../../components/add-custom-handle";
 
 function AgentNodeHandbook() {
 	return (

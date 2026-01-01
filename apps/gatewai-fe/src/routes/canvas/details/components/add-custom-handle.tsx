@@ -1,3 +1,4 @@
+import type { DataType } from "@gatewai/db";
 import { zodResolver } from "@hookform/resolvers/zod";
 import type { NodeProps } from "@xyflow/react";
 import { PlusIcon } from "lucide-react";
@@ -34,7 +35,6 @@ import { generateId } from "@/lib/idgen";
 import type { HandleEntityType } from "@/store/handles";
 import { useCanvasCtx } from "../ctx/canvas-ctx";
 import type { AnyNode } from "../nodes/node-props";
-import type { DataType } from "@gatewai/db";
 
 const InputTypes = ["Image", "Text", "Audio", "Video", "File"] as const;
 const OutputTypes = ["Image", "Text", "Audio", "Video", "File"] as const;
@@ -51,14 +51,16 @@ type CustomHandleButtonProps = {
 };
 
 function AddCustomHandleButton(props: CustomHandleButtonProps) {
-	const isAgentNode = props.nodeProps.data.type === 'Agent';
+	const isAgentNode = props.nodeProps.data.type === "Agent";
 
 	const OPTIONS = useMemo(() => {
-		return (props.dataTypes) ?? LookupDataTypes[props.type];
+		return props.dataTypes ?? LookupDataTypes[props.type];
 	}, [props.dataTypes, props.type]);
 
 	if (!OPTIONS || OPTIONS.length === 0) {
-		throw new Error("AddCustomHandleButton: OPTIONS must contain at least one dataType");
+		throw new Error(
+			"AddCustomHandleButton: OPTIONS must contain at least one dataType",
+		);
 	}
 	const enumValues = OPTIONS as unknown as [string, ...string[]];
 
@@ -158,27 +160,29 @@ function AddCustomHandleButton(props: CustomHandleButtonProps) {
 								</FormItem>
 							)}
 						/>
-						{isAgentNode && <FormField
-							control={form.control}
-							name="description"
-							render={({ field }) => (
-								<FormItem>
-									<FormLabel>Description</FormLabel>
-									<FormControl>
-										<Textarea
-											placeholder="E.g. The image of product in lightning."
-											{...field}
-											value={field.value ?? ""}
-										/>
-									</FormControl>
-									<FormDescription>
-										Please provide a precise description; the AI agent will use
-										it to populate the data accurately.
-									</FormDescription>
-									<FormMessage />
-								</FormItem>
-							)}
-						/>}
+						{isAgentNode && (
+							<FormField
+								control={form.control}
+								name="description"
+								render={({ field }) => (
+									<FormItem>
+										<FormLabel>Description</FormLabel>
+										<FormControl>
+											<Textarea
+												placeholder="E.g. The image of product in lightning."
+												{...field}
+												value={field.value ?? ""}
+											/>
+										</FormControl>
+										<FormDescription>
+											Please provide a precise description; the AI agent will
+											use it to populate the data accurately.
+										</FormDescription>
+										<FormMessage />
+									</FormItem>
+								)}
+							/>
+						)}
 						<Button type="submit">Create</Button>
 					</form>
 				</Form>
