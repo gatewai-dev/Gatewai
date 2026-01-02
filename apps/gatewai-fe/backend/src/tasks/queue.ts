@@ -1,5 +1,5 @@
 /**
- * A generic queue for unique IDs that prevents duplicates.
+ * A generic queue for unique IDs
  * Uses FIFO (First-In-First-Out) order.
  * IDs can be of any hashable type (e.g., string, number).
  */

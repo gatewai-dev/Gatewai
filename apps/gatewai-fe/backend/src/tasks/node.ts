@@ -1,6 +1,9 @@
 import {
+	type Canvas,
+	type Node,
 	Prisma,
 	type PrismaClient,
+	type Task,
 	type TaskBatch,
 	TaskStatus,
 } from "@gatewai/db";
@@ -12,6 +15,9 @@ import {
 } from "../repositories/canvas.js";
 import { nodeProcessors } from "./processors/index.js";
 
+/**
+ * Workflow processor for canvas
+ */
 export class NodeWFProcessor {
 	private prisma: PrismaClient;
 
@@ -21,15 +27,15 @@ export class NodeWFProcessor {
 
 	// Build dependency graphs within selected nodes.
 	private buildDepGraphs(
-		nodeIds: string[],
+		nodeIds: Node["id"][],
 		data: CanvasCtxData,
 	): {
-		depGraph: Map<string, string[]>; // nodeId -> downstream selected nodeIds
-		revDepGraph: Map<string, string[]>; // nodeId -> upstream selected nodeIds
+		depGraph: Map<Node["id"], Node["id"][]>; // nodeId -> downstream selected nodeIds
+		revDepGraph: Map<Node["id"], Node["id"][]>; // nodeId -> upstream selected nodeIds
 	} {
 		const selectedSet = new Set(nodeIds);
-		const depGraph = new Map<string, string[]>();
-		const revDepGraph = new Map<string, string[]>();
+		const depGraph = new Map<Node["id"], Node["id"][]>();
+		const revDepGraph = new Map<Node["id"], Node["id"][]>();
 
 		nodeIds.forEach((id) => {
 			depGraph.set(id, []);
@@ -55,8 +61,8 @@ export class NodeWFProcessor {
 	// Helper: Topological sort using Kahn's algorithm.
 	private topologicalSort(
 		nodes: string[],
-		depGraph: Map<string, string[]>,
-		revDepGraph: Map<string, string[]>,
+		depGraph: Map<Node["id"], Node["id"][]>,
+		revDepGraph: Map<Node["id"], Node["id"][]>,
 	): string[] | null {
 		const indegree = new Map(
 			nodes.map((id) => {
@@ -68,7 +74,7 @@ export class NodeWFProcessor {
 			}),
 		);
 		const queue = nodes.filter((id) => indegree.get(id) === 0);
-		const order: string[] = [];
+		const order: Node["id"][] = [];
 
 		while (queue.length > 0) {
 			const current = queue.shift();
@@ -96,8 +102,8 @@ export class NodeWFProcessor {
 	}
 
 	public async processSelectedNodes(
-		canvasId: string,
-		nodeIds: string[],
+		canvasId: Canvas["id"],
+		nodeIds: Node["id"][],
 		user: User,
 	): Promise<TaskBatch> {
 		const data = await GetCanvasEntities(canvasId, user); // Load once, update in-memory as we go
@@ -127,8 +133,8 @@ export class NodeWFProcessor {
 		);
 
 		// Find all necessary nodes: selected + all upstream dependencies
-		const necessary = new Set<string>();
-		const queue: string[] = [...nodeIds];
+		const necessary = new Set<Node["id"]>();
+		const queue: Node["id"][] = [...nodeIds];
 		while (queue.length > 0) {
 			const curr = queue.shift();
 			if (!curr) break;
@@ -155,7 +161,10 @@ export class NodeWFProcessor {
 		}
 
 		// Create tasks upfront for all necessary nodes
-		const tasksMap = new Map<string, { id: string; nodeId: string }>();
+		const tasksMap = new Map<
+			Node["id"],
+			{ id: Task["id"]; nodeId: Node["id"] }
+		>();
 		for (const nodeId of topoOrder) {
 			const node = data.nodes.find((n) => n.id === nodeId);
 			if (!node) {

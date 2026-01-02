@@ -30,6 +30,7 @@ const modulateProcessor: NodeProcessor = async ({ node, data }) => {
 
 		const buffer = await getImageBuffer(imageInput);
 		const processedBuffer = await applyModulate(buffer, modulateConfig);
+
 		const mimeType = getMimeType(imageInput);
 		const dimensions = getImageDimensions(processedBuffer);
 		const dataUrl = bufferToDataUrl(processedBuffer, mimeType);
