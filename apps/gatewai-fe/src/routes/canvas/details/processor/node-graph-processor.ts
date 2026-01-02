@@ -295,12 +295,6 @@ export class NodeGraphProcessor extends EventEmitter {
 
 		try {
 			const inputs = this.collectInputs(nodeId);
-			const invalidConnections = Array.from(inputs.values()).filter(
-				(v) => !v.connectionValid,
-			);
-			if (invalidConnections.length > 0) {
-				throw new Error("Invalid input types for some connections");
-			}
 
 			state.inputs = inputs;
 			this.emit("node:start", { nodeId, inputs });
@@ -860,16 +854,13 @@ export class NodeGraphProcessor extends EventEmitter {
 			};
 		});
 
-		this.registerProcessor("Preview", async ({ node, inputs }) => {
+		this.registerProcessor("Preview", async ({ inputs }) => {
 			const inputEntries = Array.from(inputs.entries());
 			if (inputEntries.length === 0) {
 				throw new Error("Preview disconnected");
 			}
 			const [_, { outputItem }] = inputEntries[0];
 			if (!outputItem) throw new Error("No input item");
-
-			const outputHandleId = getFirstOutputHandle(node.id, outputItem.type);
-			if (!outputHandleId) throw new Error("Missing output handle");
 
 			return {
 				selectedOutputIndex: 0,
@@ -879,7 +870,7 @@ export class NodeGraphProcessor extends EventEmitter {
 							{
 								type: outputItem.type,
 								data: outputItem.data,
-								outputHandleId,
+								outputHandleId: null,
 							},
 						],
 					},

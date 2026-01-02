@@ -5,14 +5,15 @@ import { Textarea } from "@/components/ui/textarea";
 import { useAppSelector } from "@/store";
 import { makeSelectNodeById } from "@/store/nodes";
 import { useCanvasCtx } from "../../ctx/canvas-ctx";
+import { useNodeResult } from "../../processor/processor-ctx";
 import { BaseNode } from "../base";
 import type { TextNode } from "../node-props";
 
 const TextNodeComponent = memo((props: NodeProps<TextNode>) => {
-	const node = useAppSelector(makeSelectNodeById(props.id));
 	const { onNodeResultUpdate } = useCanvasCtx();
-	const result = node?.result as unknown as TextResult;
-	const text = result?.outputs?.[0]?.items?.[0]?.data ?? "";
+	const { result } = useNodeResult(props.id);
+	const textResult = result as unknown as TextResult;
+	const text = textResult?.outputs?.[0]?.items?.[0]?.data ?? "";
 	const handleChange = (e: React.ChangeEvent<HTMLTextAreaElement>) => {
 		const newResult: TextResult = {
 			selectedOutputIndex: 0,
@@ -20,7 +21,8 @@ const TextNodeComponent = memo((props: NodeProps<TextNode>) => {
 				{
 					items: [
 						{
-							outputHandleId: result?.outputs?.[0]?.items?.[0]?.outputHandleId,
+							outputHandleId:
+								textResult?.outputs?.[0]?.items?.[0]?.outputHandleId,
 							type: "Text",
 							data: e.target.value,
 						},

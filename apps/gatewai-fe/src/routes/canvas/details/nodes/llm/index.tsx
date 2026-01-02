@@ -15,7 +15,10 @@ const LlmNodeComponent = memo((props: NodeProps<LLMNode>) => {
 		if (!result || !result.outputs || result?.outputs?.length === 0)
 			return null;
 		const selectedGeneration = result.outputs[result.selectedOutputIndex || 0];
-		if (typeof selectedGeneration.items[0].data === "string") {
+		if (
+			selectedGeneration?.items?.[0]?.data &&
+			typeof selectedGeneration.items[0].data === "string"
+		) {
 			return selectedGeneration.items[0].data;
 		}
 		return null;

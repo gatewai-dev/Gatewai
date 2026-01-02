@@ -42,26 +42,29 @@ const DesignDialog = memo(({ node }: { node: NodeEntityType }) => {
 	};
 
 	return (
-		<Dialog defaultOpen={false} open={isOpen}>
-			<DialogTrigger asChild onClick={() => setIsOpen(true)}>
-				<Button size="sm">
-					<ImagesIcon /> Edit
-				</Button>
-			</DialogTrigger>
-			<DialogDescription className="hidden">Design Node</DialogDescription>
-			<DialogContent
-				showCloseButton={false}
-				onEscapeKeyDown={(e) => e.preventDefault()}
-				className="max-w-screen! h-screen w-screen! max-h-screen! p-0"
-			>
-				<CanvasDesignerEditor
-					onClose={() => setIsOpen(false)}
-					onSave={onSave}
-					initialLayers={initialLayers}
-					node={node}
-				/>
-			</DialogContent>
-		</Dialog>
+		<>
+			<Button size="sm" onClick={() => setIsOpen(true)}>
+				<ImagesIcon /> Edit
+			</Button>
+			{isOpen && (
+				<Dialog defaultOpen={true} open={true}>
+					<DialogTrigger asChild></DialogTrigger>
+					<DialogDescription className="hidden">Design Node</DialogDescription>
+					<DialogContent
+						showCloseButton={false}
+						onEscapeKeyDown={(e) => e.preventDefault()}
+						className="max-w-screen! h-screen w-screen! max-h-screen! p-0"
+					>
+						<CanvasDesignerEditor
+							onClose={() => setIsOpen(false)}
+							onSave={onSave}
+							initialLayers={initialLayers}
+							node={node}
+						/>
+					</DialogContent>
+				</Dialog>
+			)}
+		</>
 	);
 });
 

@@ -1358,7 +1358,8 @@ export const CanvasDesignerEditor: React.FC<CanvasDesignerEditorProps> = ({
 						newLayer.fontFamily = "Geist";
 						newLayer.fill = "#000000";
 						newLayer.letterSpacing = 0;
-						newLayer.lineHeight = newLayer.fontSize;
+						newLayer.lineHeight = 1;
+						newLayer.height = newLayer.fontSize;
 						newLayer.align = "left";
 						newLayer.verticalAlign = "top";
 					}

@@ -352,23 +352,6 @@ const CanvasProvider = ({
 				return { isValid: false, error: "Can only connect output to input." };
 			}
 
-			// Prevent one output handle from connecting to multiple inputs on the same target node
-			const existingToDifferentHandle = rfEdges.some(
-				(e) =>
-					e.source === connection.source &&
-					e.sourceHandle === connection.sourceHandle &&
-					e.target === connection.target &&
-					e.targetHandle !== connection.targetHandle,
-			);
-
-			if (existingToDifferentHandle) {
-				return {
-					isValid: false,
-					error:
-						"Cannot connect one output to multiple inputs on the same node.",
-				};
-			}
-
 			return { isValid: true };
 		},
 		[rfNodes, handleEntities, rfEdges],
@@ -383,27 +366,31 @@ const CanvasProvider = ({
 				}
 				return;
 			}
+
 			const sourceHandle = handleEntities.find(
 				(h) => h.id === params.sourceHandle,
 			);
 			if (!sourceHandle) {
 				throw new Error("Source handle could not be found");
 			}
-			const newEdges = (() => {
-				// Find if there's an existing edge connected to the same target and targetHandle
-				const existingEdge = rfEdges.find(
-					(e) =>
-						e.target === params.target &&
-						e.targetHandle === params.targetHandle,
-				);
 
-				// If found, remove the existing edge
-				let updatedEdges = existingEdge
-					? rfEdges.filter((e) => e.id !== existingEdge.id)
-					: rfEdges;
+			const newEdges = (() => {
+				// 1. Remove edge if target handle is already occupied (existing logic)
+				// 2. Remove edge if source handle is already connected to THIS target node (new requirement)
+				const updatedEdges = rfEdges.filter((e) => {
+					const isSameTargetHandle =
+						e.target === params.target &&
+						e.targetHandle === params.targetHandle;
+					const isSameSourceToNode =
+						e.source === params.source &&
+						e.sourceHandle === params.sourceHandle &&
+						e.target === params.target;
+
+					return !isSameTargetHandle && !isSameSourceToNode;
+				});
 
 				// Add the new edge
-				updatedEdges = [
+				return [
 					...updatedEdges,
 					{
 						id: `e${params.source}-${params.target}-${Date.now()}`,
@@ -413,11 +400,9 @@ const CanvasProvider = ({
 						targetHandle: params.targetHandle || undefined,
 					} as Edge,
 				];
-
-				return updatedEdges;
 			})();
 
-			dispatch(setEdges(newEdges));
+			// Map to entities for DB sync
 			const edgeEntities: EdgeEntityType[] = newEdges
 				.map((ne) => {
 					if (ne.sourceHandle && ne.targetHandle) {
@@ -433,7 +418,9 @@ const CanvasProvider = ({
 					}
 					return null;
 				})
-				.filter((f) => !!f);
+				.filter((f): f is EdgeEntityType => !!f);
+
+			dispatch(setEdges(newEdges));
 			dispatch(setAllEdgeEntities(edgeEntities));
 			scheduleSave();
 		},

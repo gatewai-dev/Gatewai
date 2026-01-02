@@ -19,7 +19,6 @@ function useDrawToCanvas(
 		const img = new Image();
 		img.crossOrigin = "anonymous";
 		img.src = imageUrl;
-		console.log("drw");
 		img.onload = () => {
 			canvas.width = img.width;
 			canvas.height = img.height;
