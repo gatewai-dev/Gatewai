@@ -84,8 +84,6 @@ export const getHandleStyle = (
 	};
 };
 
-// --- Components ---
-
 const NodeHandle = memo(
 	({
 		handle,
@@ -138,12 +136,12 @@ const NodeHandle = memo(
 				{/* External Label */}
 				<div
 					className={cn(
-						"absolute whitespace-nowrap px-2.5 py-1 rounded-full transition-all duration-200 ease-out pointer-events-none",
+						"absolute -top-8 whitespace-nowrap py-0 px-4 rounded-lg transition-all duration-200 ease-out pointer-events-none",
 						isTarget
-							? "right-6 flex-row-reverse text-right origin-right"
-							: "left-6 text-left origin-left",
+							? "right-4  flex-row-reverse text-right origin-right"
+							: "left-4 text-left origin-left",
 						nodeSelected
-							? "bg-muted/40 backdrop-blur-md opacity-100 scale-100 shadow-sm"
+							? " backdrop-blur-md opacity-100 scale-110 shadow-sm"
 							: "opacity-40 scale-95",
 					)}
 				>
@@ -152,9 +150,7 @@ const NodeHandle = memo(
 						style={{ color: activeColor }}
 					>
 						{handle.label || connectedType || handle.dataTypes[0]}
-						{handle.required && (
-							<span className="text-destructive ml-0.5">*</span>
-						)}
+						{handle.required && <span className="ml-0.5">*</span>}
 					</span>
 				</div>
 

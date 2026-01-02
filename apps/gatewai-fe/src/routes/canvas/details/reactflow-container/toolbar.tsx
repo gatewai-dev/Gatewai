@@ -16,48 +16,49 @@ const Toolbar = memo(() => {
 	const { zoom } = useViewport();
 	const { zoomIn, zoomOut, zoomTo, fitView } = useReactFlow();
 	const zoomPercentage = `${Math.round(zoom * 100)}%`;
-	const modeCtx = useContext(ModeContext);
+	const ctx = useContext(ModeContext);
 
 	return (
-		<Menubar className="border-0 bg-background py-1 rounded-md shadow-md">
+		<Menubar className="border border-border/50 bg-background/80 backdrop-blur-md shadow-2xl rounded-full px-2 py-1 h-12 ring-1 ring-white/5">
 			<Button
-				title="Select"
-				variant={modeCtx?.mode === "pan" ? "ghost" : "outline"}
-				size="sm"
-				onClick={() => modeCtx?.setMode("select")}
+				title="Select (V)"
+				variant={ctx?.mode === "select" ? "secondary" : "ghost"}
+				size="icon"
+				className="rounded-full w-9 h-9"
+				onClick={() => ctx?.setMode("select")}
 			>
-				<MousePointer className="w-4" />
+				<MousePointer className="w-4 h-4" />
 			</Button>
 			<Button
-				title="Pan"
-				variant={modeCtx?.mode === "select" ? "ghost" : "outline"}
-				size="sm"
-				onClick={() => modeCtx?.setMode("pan")}
+				title="Pan (Space)"
+				variant={ctx?.mode === "pan" ? "secondary" : "ghost"}
+				size="icon"
+				className="rounded-full w-9 h-9"
+				onClick={() => ctx?.setMode("pan")}
 			>
-				<Hand className="w-4" />
+				<Hand className="w-4 h-4" />
 			</Button>
-			<Separator orientation="vertical" />
+
+			<div className="w-px h-5 bg-border mx-2" />
+
 			<MenubarMenu>
-				<MenubarTrigger className="px-3 py-1 cursor-pointer text-xs">
-					{zoomPercentage} <ChevronDown className="w-5" />
+				<MenubarTrigger asChild>
+					<Button
+						variant="ghost"
+						className="h-9 px-3 text-xs font-mono rounded-full"
+					>
+						{zoomPercentage} <ChevronDown className="w-3 h-3 ml-2 opacity-50" />
+					</Button>
 				</MenubarTrigger>
-				<MenubarContent align="end">
-					<MenubarItem onClick={() => zoomIn()}>
-						Zoom in{" "}
-						<span className="ml-auto text-muted-foreground">Ctrl +</span>
-					</MenubarItem>
-					<MenubarItem onClick={() => zoomOut()}>
-						Zoom out{" "}
-						<span className="ml-auto text-muted-foreground">Ctrl -</span>
-					</MenubarItem>
+				<MenubarContent align="center" className="min-w-[140px]">
+					<MenubarItem onClick={() => zoomIn()}>Zoom In</MenubarItem>
+					<MenubarItem onClick={() => zoomOut()}>Zoom Out</MenubarItem>
 					<MenubarItem onClick={() => zoomTo(1)}>
-						Zoom to 100%{" "}
-						<span className="ml-auto text-muted-foreground">Ctrl 0</span>
+						Actual Size (100%)
 					</MenubarItem>
-					<MenubarItem onClick={() => fitView()}>
-						Zoom to fit{" "}
-						<span className="ml-auto text-muted-foreground">Ctrl 1</span>
-					</MenubarItem>
+					<MenubarItem onClick={() => zoomTo(2)}>200%</MenubarItem>
+					<Separator className="my-1" />
+					<MenubarItem onClick={() => fitView()}>Fit to Screen</MenubarItem>
 				</MenubarContent>
 			</MenubarMenu>
 		</Menubar>
