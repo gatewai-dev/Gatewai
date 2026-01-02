@@ -17,14 +17,14 @@ const ReactFlowPanels = memo(() => {
 			>
 				<NodePalette />
 			</Panel>
-			<Panel position="bottom-center">
-				<Toolbar />
-			</Panel>
 			<Panel
 				position="bottom-right"
 				className="bg-background right-0 top-0 m-0! h-full flex flex-col"
 			>
 				<RightPanel />
+			</Panel>
+			<Panel position="bottom-center">
+				<Toolbar />
 			</Panel>
 		</>
 	);

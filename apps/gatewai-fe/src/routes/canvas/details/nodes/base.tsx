@@ -133,8 +133,10 @@ const BaseNode = memo(
 		},
 	) => {
 		const { selected, id } = props;
-		const handles = useAppSelector(makeSelectHandlesByNodeId(id));
-		const node = useAppSelector(makeSelectNodeById(id));
+		const selectHandles = useMemo(() => makeSelectHandlesByNodeId(id), [id]);
+		const handles = useAppSelector(selectHandles);
+		const selectNode = useMemo(() => makeSelectNodeById(id), [id]);
+		const node = useAppSelector(selectNode);
 		const { inputs } = useNodeResult(id);
 
 		const isValid = (id: HandleEntityType["id"]) => {

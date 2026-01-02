@@ -1,7 +1,7 @@
 import type { LLMResult } from "@gatewai/types";
 import type { NodeProps } from "@xyflow/react";
 import { InfoIcon } from "lucide-react";
-import { memo } from "react";
+import { memo, useMemo } from "react";
 import {
 	Accordion,
 	AccordionContent,
@@ -53,7 +53,11 @@ function AgentNodeHandbook() {
 
 const AgentNodeComponent = memo((props: NodeProps<LLMNode>) => {
 	const { result } = useNodeResult<LLMResult>(props.id);
-	const handles = useAppSelector(makeSelectHandlesByNodeId(props.id));
+	const selectHandles = useMemo(
+		() => makeSelectHandlesByNodeId(props.id),
+		[props.id],
+	);
+	const handles = useAppSelector(selectHandles);
 	const isNodeRunning = useNodeTaskRunning(props.id);
 	const numOutputHandles = handles.filter((h) => h.type === "Output").length;
 	const numInputHandles = handles.filter((h) => h.type === "Input").length;

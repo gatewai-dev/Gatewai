@@ -13,9 +13,14 @@ type ValidationError = {
 };
 
 function useNodeInputValidation(nodeId: Node["id"]): ValidationError[] {
-	const node = useAppSelector(makeSelectNodeById(nodeId));
+	const selectNode = useMemo(() => makeSelectNodeById(nodeId), [nodeId]);
+	const node = useAppSelector(selectNode);
 	const nodeEntities = useAppSelector(makeSelectAllNodeEntities);
-	const nodeHandles = useAppSelector(makeSelectHandlesByNodeId(nodeId));
+	const selectHandles = useMemo(
+		() => makeSelectHandlesByNodeId(nodeId),
+		[nodeId],
+	);
+	const nodeHandles = useAppSelector(selectHandles);
 	const edges = useAppSelector(makeSelectAllEdges);
 
 	const validationResult = useMemo(() => {

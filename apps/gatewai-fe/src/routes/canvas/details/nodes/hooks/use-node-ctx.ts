@@ -14,8 +14,13 @@ import {
 function useNodeContext({ nodeId }: { nodeId: NodeEntityType["id"] }) {
 	const allNodes = useAppSelector(makeSelectAllNodes);
 	const allHandles = useAppSelector(makeSelectAllHandles);
-	const node = useAppSelector(makeSelectNodeById(nodeId));
-	const nodeHandles = useAppSelector(makeSelectHandlesByNodeId(nodeId));
+	const selectNode = useMemo(() => makeSelectNodeById(nodeId), [nodeId]);
+	const node = useAppSelector(selectNode);
+	const selectHandles = useMemo(
+		() => makeSelectHandlesByNodeId(nodeId),
+		[nodeId],
+	);
+	const nodeHandles = useAppSelector(selectHandles);
 	const allEdges = useAppSelector(makeSelectAllEdges);
 	const context = useMemo(() => {
 		if (!node || !nodeHandles.length) {
