@@ -136,17 +136,17 @@ const NodeHandle = memo(
 				{/* External Label */}
 				<div
 					className={cn(
-						"absolute -top-8 whitespace-nowrap py-0 px-4 rounded-lg transition-all duration-200 ease-out pointer-events-none",
+						"absolute -top-8 whitespace-nowrap py-0 rounded-lg transition-all duration-200 ease-out pointer-events-none",
 						isTarget
-							? "right-4  flex-row-reverse text-right origin-right"
-							: "left-4 text-left origin-left",
+							? "right-2  flex-row-reverse text-right origin-right"
+							: "left-2 text-left origin-left",
 						nodeSelected
 							? " backdrop-blur-md opacity-100 scale-110 shadow-sm"
 							: "opacity-40 scale-95",
 					)}
 				>
 					<span
-						className="text-[9px] font-bold uppercase tracking-widest leading-none"
+						className="text-xs font-bold uppercase tracking-widest leading-none"
 						style={{ color: activeColor }}
 					>
 						{handle.label || connectedType || handle.dataTypes[0]}
@@ -203,7 +203,7 @@ const BaseNode = memo(
 		return (
 			<div
 				className={cn(
-					"relative flex flex-col w-full h-full transition-shadow duration-300 will-change-[transform,opacity]",
+					"relative flex flex-col w-full h-full transition-shadow duration-300",
 					"bg-card/75 backdrop-blur-2xl border border-border/40",
 					"rounded-3xl shadow-sm",
 					"group hover:border-border/80",
@@ -230,7 +230,7 @@ const BaseNode = memo(
 
 				{/* Content Container */}
 				<div className="flex flex-col h-full overflow-hidden p-1.5">
-					<div className="flex items-center justify-between px-4 py-3.5 mb-1 drag-handle cursor-grab active:cursor-grabbing border-b border-border/5">
+					<div className="flex items-center justify-between px-3 py-2.5 mb-1 drag-handle cursor-grab active:cursor-grabbing border-b border-border/5">
 						<div className="flex items-center gap-3 min-w-0">
 							{Icon && (
 								<div className="text-foreground/80 bg-muted/40 p-2 rounded-xl shadow-inner">
@@ -249,7 +249,7 @@ const BaseNode = memo(
 						<NodeMenu {...props} />
 					</div>
 
-					<div className="flex-1 px-1 nodrag nopan overflow-y-auto cursor-auto">
+					<div className="flex-1 px-1 nodrag nopan cursor-auto">
 						{props.children}
 					</div>
 				</div>

@@ -1,11 +1,13 @@
 import { DataType, HandleType, NodeType, type PrismaClient } from "./client";
 
 export async function SEED_createNodeTemplates(prisma: PrismaClient) {
-	await prisma.nodeTemplate.create({
-		data: {
+	const nodes = [
+		{
 			type: NodeType.Agent,
 			displayName: "AI Agent",
 			description: "A multi-modal AI agent.",
+			category: "AI",
+			subCategory: "General",
 			tokenPrice: 0.0,
 			variableInputs: false,
 			variableOutputs: false,
@@ -27,18 +29,14 @@ export async function SEED_createNodeTemplates(prisma: PrismaClient) {
 					},
 				],
 			},
-			defaultConfig: {
-				maxTurns: 10,
-				model: "anthropict/claude-opus-4.5",
-			},
+			defaultConfig: { maxTurns: 10, model: "anthropict/claude-opus-4.5" },
 		},
-	});
-	// Text: no input, single output Text
-	await prisma.nodeTemplate.create({
-		data: {
+		{
 			type: NodeType.Text,
 			displayName: "Text",
 			description: "A basic text node",
+			category: "Tools",
+			subCategory: null,
 			tokenPrice: 0.0,
 			variableInputs: false,
 			variableOutputs: false,
@@ -55,13 +53,12 @@ export async function SEED_createNodeTemplates(prisma: PrismaClient) {
 			},
 			defaultConfig: undefined,
 		},
-	});
-
-	await prisma.nodeTemplate.create({
-		data: {
+		{
 			type: NodeType.Preview,
 			displayName: "Preview",
 			description: "Preview your media",
+			category: "Tools",
+			subCategory: null,
 			tokenPrice: 0.0,
 			variableInputs: false,
 			variableOutputs: false,
@@ -84,14 +81,12 @@ export async function SEED_createNodeTemplates(prisma: PrismaClient) {
 			},
 			defaultConfig: undefined,
 		},
-	});
-
-	// File: no input, one output File
-	await prisma.nodeTemplate.create({
-		data: {
+		{
 			type: NodeType.File,
 			displayName: "Import",
 			description: "Upload your media",
+			category: "Tools",
+			subCategory: null,
 			tokenPrice: 0.0,
 			variableInputs: false,
 			variableOutputs: false,
@@ -108,14 +103,12 @@ export async function SEED_createNodeTemplates(prisma: PrismaClient) {
 			},
 			defaultConfig: undefined,
 		},
-	});
-
-	// Export: one input File, no output
-	await prisma.nodeTemplate.create({
-		data: {
+		{
 			type: NodeType.Export,
 			displayName: "Export",
 			description: "A UI download / API output node",
+			category: "Tools",
+			subCategory: null,
 			tokenPrice: 0.0,
 			variableInputs: false,
 			variableOutputs: false,
@@ -139,14 +132,12 @@ export async function SEED_createNodeTemplates(prisma: PrismaClient) {
 			},
 			defaultConfig: undefined,
 		},
-	});
-
-	// Toggle: no input, one output Boolean
-	await prisma.nodeTemplate.create({
-		data: {
+		{
 			type: NodeType.Toggle,
 			displayName: "Toggle",
 			description: "A toggle for True/False data type",
+			category: "Tools",
+			subCategory: null,
 			tokenPrice: 0.0,
 			variableInputs: false,
 			variableOutputs: false,
@@ -163,13 +154,12 @@ export async function SEED_createNodeTemplates(prisma: PrismaClient) {
 			},
 			defaultConfig: undefined,
 		},
-	});
-
-	await prisma.nodeTemplate.create({
-		data: {
+		{
 			type: NodeType.Resize,
 			displayName: "Resize",
 			description: "Resize media",
+			category: "Image",
+			subCategory: null,
 			tokenPrice: 0.0,
 			variableInputs: false,
 			variableOutputs: false,
@@ -192,14 +182,12 @@ export async function SEED_createNodeTemplates(prisma: PrismaClient) {
 			},
 			defaultConfig: undefined,
 		},
-	});
-
-	// Paint: image input, mask and image output
-	await prisma.nodeTemplate.create({
-		data: {
+		{
 			type: NodeType.Paint,
 			displayName: "Paint",
 			description: "Draw / Fill Mask on Image",
+			category: "Image",
+			subCategory: null,
 			tokenPrice: 0.0,
 			variableInputs: false,
 			variableOutputs: false,
@@ -231,14 +219,12 @@ export async function SEED_createNodeTemplates(prisma: PrismaClient) {
 				backgroundColor: "#000",
 			},
 		},
-	});
-
-	// Blur: image input, image output
-	await prisma.nodeTemplate.create({
-		data: {
+		{
 			type: NodeType.Blur,
 			displayName: "Blur",
 			description: "Apply blur to media",
+			category: "Image",
+			subCategory: null,
 			tokenPrice: 0.0,
 			variableInputs: false,
 			variableOutputs: false,
@@ -259,17 +245,14 @@ export async function SEED_createNodeTemplates(prisma: PrismaClient) {
 					},
 				],
 			},
-			defaultConfig: {
-				blurAmount: 0,
-			},
+			defaultConfig: { blurAmount: 0 },
 		},
-	});
-
-	await prisma.nodeTemplate.create({
-		data: {
+		{
 			type: NodeType.Modulate,
 			displayName: "Modulate",
 			description: "Apply Modulate adjustments to a media",
+			category: "Image",
+			subCategory: null,
 			tokenPrice: 0.0,
 			variableInputs: false,
 			variableOutputs: false,
@@ -290,20 +273,14 @@ export async function SEED_createNodeTemplates(prisma: PrismaClient) {
 					},
 				],
 			},
-			defaultConfig: {
-				hue: 0,
-				saturation: 1,
-				lightness: 1,
-				brightness: 1,
-			},
+			defaultConfig: { hue: 0, saturation: 1, lightness: 1, brightness: 1 },
 		},
-	});
-
-	await prisma.nodeTemplate.create({
-		data: {
+		{
 			type: NodeType.Crop,
 			displayName: "Crop",
 			description: "Crop media",
+			category: "Image",
+			subCategory: null,
 			tokenPrice: 0.0,
 			variableInputs: false,
 			variableOutputs: false,
@@ -331,14 +308,12 @@ export async function SEED_createNodeTemplates(prisma: PrismaClient) {
 				heightPercentage: 100,
 			},
 		},
-	});
-
-	// Compositor: multiple image / text inputs starts with single image, assuming variableInputs true, one image output
-	await prisma.nodeTemplate.create({
-		data: {
+		{
 			type: NodeType.Compositor,
 			displayName: "Compositor",
 			description: "Compose an image using image or text",
+			category: "Image",
+			subCategory: null,
 			tokenPrice: 0.0,
 			variableInputs: true,
 			variableOutputs: false,
@@ -359,40 +334,28 @@ export async function SEED_createNodeTemplates(prisma: PrismaClient) {
 					},
 				],
 			},
-			defaultConfig: {
-				width: 1024,
-				height: 1024,
-			},
+			defaultConfig: { width: 1024, height: 1024 },
 		},
-	});
-
-	// Note: no input or output
-	await prisma.nodeTemplate.create({
-		data: {
+		{
 			type: NodeType.Note,
 			displayName: "Sticky Note",
 			description: "A sticky note",
+			category: "Tools",
+			subCategory: null,
 			tokenPrice: 0.0,
 			variableInputs: false,
 			variableOutputs: false,
 			isTerminalNode: false,
 			isTransient: false,
-			templateHandles: {
-				create: [],
-			},
-			defaultConfig: {
-				backgroundColor: "#ffff88",
-				textColor: "#000000",
-			},
+			templateHandles: { create: [] },
+			defaultConfig: { backgroundColor: "#ffff88", textColor: "#000000" },
 		},
-	});
-
-	// Number: no input, one number output
-	await prisma.nodeTemplate.create({
-		data: {
+		{
 			type: NodeType.Number,
 			displayName: "Number",
 			description: "A number input node",
+			category: "Tools",
+			subCategory: null,
 			tokenPrice: 0.0,
 			variableInputs: false,
 			variableOutputs: false,
@@ -409,14 +372,12 @@ export async function SEED_createNodeTemplates(prisma: PrismaClient) {
 			},
 			defaultConfig: undefined,
 		},
-	});
-
-	// ImageGen: one text input, one image output
-	await prisma.nodeTemplate.create({
-		data: {
+		{
 			type: NodeType.ImageGen,
 			displayName: "Multimodal Image",
 			description: "Generate images using text prompt and reference image(s)",
+			category: "AI",
+			subCategory: "Image",
 			tokenPrice: 0.0,
 			variableInputs: false,
 			variableOutputs: false,
@@ -443,18 +404,14 @@ export async function SEED_createNodeTemplates(prisma: PrismaClient) {
 					},
 				],
 			},
-			defaultConfig: {
-				model: "google/gemini-3-pro-image",
-			},
+			defaultConfig: { model: "google/gemini-3-pro-image" },
 		},
-	});
-
-	// LLM: prompt input required (Text), system prompt input optional (Text), Image input optional, one text output
-	await prisma.nodeTemplate.create({
-		data: {
+		{
 			type: NodeType.LLM,
 			displayName: "LLM",
 			description: "Run a LLM model",
+			category: "AI",
+			subCategory: "Text",
 			tokenPrice: 0.0,
 			variableInputs: false,
 			variableOutputs: false,
@@ -487,10 +444,11 @@ export async function SEED_createNodeTemplates(prisma: PrismaClient) {
 					},
 				],
 			},
-			defaultConfig: {
-				model: "openai/gpt-5.2",
-				temperature: 0,
-			},
+			defaultConfig: { model: "openai/gpt-5.2", temperature: 0 },
 		},
-	});
+	];
+
+	for (const node of nodes) {
+		await prisma.nodeTemplate.create({ data: node });
+	}
 }
