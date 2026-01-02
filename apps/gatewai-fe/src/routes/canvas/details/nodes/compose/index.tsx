@@ -1,5 +1,8 @@
 import type { NodeProps } from "@xyflow/react";
+import { ImagesIcon } from "lucide-react";
 import { memo, useRef } from "react";
+import { useNavigate } from "react-router";
+import { Button } from "@/components/ui/button";
 import { useAppSelector } from "@/store";
 import { makeSelectNodeById } from "@/store/nodes";
 import { AddCustomHandleButton } from "../../components/add-custom-handle";
@@ -7,12 +10,12 @@ import { useDrawToCanvas } from "../../hooks/use-draw-to-canvas";
 import { useNodeFileOutputUrl } from "../../processor/processor-ctx";
 import { BaseNode } from "../base";
 import type { CompositorNode } from "../node-props";
-import { DesignDialog } from "./design-dialog";
 
 const CompositorNodeComponent = memo((props: NodeProps<CompositorNode>) => {
 	const node = useAppSelector(makeSelectNodeById(props.id));
 	const canvasRef = useRef<HTMLCanvasElement | null>(null);
 	const imageUrl = useNodeFileOutputUrl(props.id);
+	const nav = useNavigate();
 
 	// Draw to canvas when result is ready
 	useDrawToCanvas(canvasRef, imageUrl);
@@ -29,7 +32,11 @@ const CompositorNodeComponent = memo((props: NodeProps<CompositorNode>) => {
 						nodeProps={props}
 						type="Input"
 					/>
-					{node && <DesignDialog node={node} />}
+					{node && (
+						<Button onClick={() => nav(`designer/${node.id}`)} size="sm">
+							<ImagesIcon /> Edit
+						</Button>
+					)}
 				</div>
 			</div>
 		</BaseNode>

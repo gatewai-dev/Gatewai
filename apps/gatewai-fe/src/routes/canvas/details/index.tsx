@@ -1,5 +1,5 @@
 import { ReactFlowProvider } from "@xyflow/react";
-import { useParams } from "react-router";
+import { Outlet, useParams } from "react-router";
 import { UserAssetsProvider } from "../assets/user-assets-ctx";
 import { NodeTemplateDnDProvider } from "../node-templates/node-template-drag.ctx";
 import { NodeTemplatesProvider } from "../node-templates/node-templates.ctx";
@@ -7,9 +7,8 @@ import { CanvasProvider } from "./ctx/canvas-ctx";
 import { SelectedEntitiesProvider } from "./ctx/selected-entity-ctx";
 import { TaskManagerProvider } from "./ctx/task-manager-ctx";
 import { ProcessorProvider } from "./processor/processor-ctx";
-import { ReactflowContainer } from "./reactflow-container";
 
-function CanvasDetails() {
+function CanvasDetailsRoot() {
 	const { canvasId } = useParams();
 	if (!canvasId) {
 		return <>Missing canvas identifier</>;
@@ -23,7 +22,7 @@ function CanvasDetails() {
 							<ReactFlowProvider>
 								<CanvasProvider canvasId={canvasId}>
 									<ProcessorProvider>
-										<ReactflowContainer />
+										<Outlet />
 									</ProcessorProvider>
 								</CanvasProvider>
 							</ReactFlowProvider>
@@ -35,4 +34,4 @@ function CanvasDetails() {
 	);
 }
 
-export { CanvasDetails };
+export { CanvasDetailsRoot };

@@ -94,6 +94,13 @@ interface CanvasContextType {
 	}) => void;
 	createNewHandle: (newHandle: HandleEntityType) => void;
 	onNodeResultUpdate: (payload: { id: string; newResult: NodeResult }) => void;
+	moveViewportToNode: (
+		nodeId: string,
+		options?: {
+			zoom?: number;
+			duration?: number;
+		},
+	) => void;
 }
 
 const CanvasContext = createContext<CanvasContextType | undefined>(undefined);
@@ -273,6 +280,31 @@ const CanvasProvider = ({
 			scheduleSave();
 		},
 		[dispatch, scheduleSave],
+	);
+
+	const moveViewportToNode = useCallback(
+		(nodeId: string, options?: { zoom?: number; duration?: number }) => {
+			if (!rfInstance.current) {
+				toast.error("Canvas not initialized");
+				return;
+			}
+
+			const node = rfNodes.find((n) => n.id === nodeId);
+			if (!node) {
+				toast.error(`Node ${nodeId} not found`);
+				return;
+			}
+
+			// Calculate center position of the node
+			const x = node.position.x + (node.width ?? 300) / 2;
+			const y = node.position.y + (node.height ?? 200) / 2;
+
+			rfInstance.current.setCenter(x, y, {
+				zoom: options?.zoom ?? 1,
+				duration: options?.duration ?? 500,
+			});
+		},
+		[rfNodes],
 	);
 
 	const isValidConnection = useCallback(
@@ -685,6 +717,7 @@ const CanvasProvider = ({
 			onNodeConfigUpdate,
 			createNewHandle,
 			onNodeResultUpdate,
+			moveViewportToNode,
 		}),
 		[
 			canvasDetailsResponse?.canvas,
@@ -700,6 +733,7 @@ const CanvasProvider = ({
 			onNodeConfigUpdate,
 			createNewHandle,
 			onNodeResultUpdate,
+			moveViewportToNode,
 		],
 	);
 

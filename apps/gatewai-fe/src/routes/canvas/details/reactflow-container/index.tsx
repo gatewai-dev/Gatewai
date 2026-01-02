@@ -38,6 +38,7 @@ function ReactflowContainer({ children }: ReactFlowProps) {
 	const { onEdgesChange, onNodesChange, onConnect, rfInstance } =
 		useCanvasCtx();
 	const dispatch = useAppDispatch();
+
 	const onSelectionChange = ({
 		nodes,
 		edges,
@@ -161,7 +162,6 @@ function ReactflowContainer({ children }: ReactFlowProps) {
 					minZoom={0.1}
 					zoomOnPinch={true}
 					zoomOnScroll={true}
-					onlyRenderVisibleElements
 					nodesDraggable={true}
 					elementsSelectable={true}
 					panOnDrag={effectivePan}

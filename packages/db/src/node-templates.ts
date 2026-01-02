@@ -199,7 +199,7 @@ export async function SEED_createNodeTemplates(prisma: PrismaClient) {
 		data: {
 			type: NodeType.Paint,
 			displayName: "Paint",
-			description: "Draw on media",
+			description: "Draw / Fill Mask on Image",
 			tokenPrice: 0.0,
 			variableInputs: false,
 			variableOutputs: false,

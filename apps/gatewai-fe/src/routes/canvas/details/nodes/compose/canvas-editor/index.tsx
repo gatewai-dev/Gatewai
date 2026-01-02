@@ -536,11 +536,11 @@ const ArtboardBackground: React.FC = () => {
 		canvas.height = size;
 		const ctx = canvas.getContext("2d");
 		if (ctx) {
-			// Base fill (equivalent to transparent in CSS, but using white for opaque checkerboard)
-			ctx.fillStyle = "#ffffff";
+			// Base fill for dark mode (darker gray equivalent to 'transparent' in light mode contexts)
+			ctx.fillStyle = "#212121";
 			ctx.fillRect(0, 0, size, size);
-			// Checker color squares (assuming --checker-color is a light gray)
-			ctx.fillStyle = "#cccccc";
+			// Checker color squares for dark mode (lighter gray)
+			ctx.fillStyle = "#303030";
 			ctx.fillRect(0, 0, half, half);
 			ctx.fillRect(half, half, half, half);
 		}

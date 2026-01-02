@@ -1,6 +1,6 @@
 import type { PaintNodeConfig } from "@gatewai/types";
 import type { NodeProps } from "@xyflow/react";
-import { Brush, Eraser } from "lucide-react";
+import { Brush, Eraser, PaintBucket } from "lucide-react";
 import { memo, useCallback, useEffect, useMemo, useRef, useState } from "react";
 import { Button } from "@/components/ui/button";
 import { Label } from "@/components/ui/label";
@@ -33,10 +33,13 @@ const PaintNodeComponent = memo((props: NodeProps<PaintNode>) => {
 
 	const inputImageUrl = useNodeFileOutputUrl(inputNodeId);
 	const canvasRef = useRef<HTMLCanvasElement>(null);
+	const previewRef = useRef<HTMLCanvasElement>(null);
+	const inputCanvasRef = useRef<HTMLCanvasElement>(null);
 
 	const [brushSize, setBrushSize] = useState(20);
 	const [brushColor, setBrushColor] = useState("#444444");
-	const [tool, setTool] = useState<"brush" | "eraser">("brush");
+	const [tool, setTool] = useState<"brush" | "eraser" | "fill">("brush");
+	const [tolerance, setTolerance] = useState(40);
 
 	const [containerStyle, setContainerStyle] = useState<
 		React.CSSProperties | undefined
@@ -88,6 +91,152 @@ const PaintNodeComponent = memo((props: NodeProps<PaintNode>) => {
 		}
 	}, [nodeConfig]);
 
+	const hexToRgb = useCallback((hex: string): [number, number, number] => {
+		const result = /^#?([a-f\d]{2})([a-f\d]{2})([a-f\d]{2})$/i.exec(hex);
+		return result
+			? [
+					parseInt(result[1], 16),
+					parseInt(result[2], 16),
+					parseInt(result[3], 16),
+				]
+			: [0, 0, 0];
+	}, []);
+
+	const colorsSimilar = useCallback(
+		(
+			c1: [number, number, number, number],
+			c2: [number, number, number, number],
+			tol: number,
+		): boolean => {
+			return (
+				Math.max(
+					Math.abs(c1[0] - c2[0]),
+					Math.abs(c1[1] - c2[1]),
+					Math.abs(c1[2] - c2[2]),
+				) <= tol
+			);
+		},
+		[],
+	);
+
+	const getPixel = useCallback(
+		(
+			data: Uint8ClampedArray,
+			x: number,
+			y: number,
+			w: number,
+		): [number, number, number, number] => {
+			const i = (y * w + x) * 4;
+			return [data[i], data[i + 1], data[i + 2], data[i + 3]];
+		},
+		[],
+	);
+
+	const setPixel = useCallback(
+		(
+			data: Uint8ClampedArray,
+			x: number,
+			y: number,
+			w: number,
+			r: number,
+			g: number,
+			b: number,
+			a: number,
+		) => {
+			const i = (y * w + x) * 4;
+			data[i] = r;
+			data[i + 1] = g;
+			data[i + 2] = b;
+			data[i + 3] = a;
+		},
+		[],
+	);
+
+	const clearPreview = useCallback(() => {
+		const preview = previewRef.current;
+		if (!preview) return;
+		const ctx = preview.getContext("2d");
+		if (ctx) ctx.clearRect(0, 0, preview.width, preview.height);
+	}, []);
+
+	const performFloodFill = useCallback(
+		(isPreview: boolean, posX: number, posY: number) => {
+			const canvas = canvasRef.current;
+			if (!canvas) return;
+			const w = canvas.width;
+			const h = canvas.height;
+			const maskCtx = canvas.getContext("2d");
+			if (!maskCtx) return;
+
+			const inputCanvas = inputCanvasRef.current;
+			const useInput = !!inputImageUrl && inputCanvas;
+			const inputCtx = useInput ? inputCanvas.getContext("2d") : null;
+
+			const colorData =
+				useInput && inputCtx
+					? inputCtx.getImageData(0, 0, w, h).data
+					: maskCtx.getImageData(0, 0, w, h).data;
+
+			const targetColor = getPixel(colorData, posX, posY, w);
+			if (targetColor[3] === 0 && !useInput) return; // Skip transparent in mask if no input
+
+			const [brushR, brushG, brushB] = hexToRgb(brushColor);
+
+			const targetTol = tolerance; // 0-255
+
+			const stack: { x: number; y: number }[] = [{ x: posX, y: posY }];
+			const visited = new Uint8Array(w * h);
+
+			let dataToModify: Uint8ClampedArray;
+			let ctxToPut: CanvasRenderingContext2D;
+			let alpha = 255;
+
+			if (isPreview) {
+				const preview = previewRef.current;
+				if (!preview) return;
+				ctxToPut = preview.getContext("2d")!;
+				dataToModify = ctxToPut.createImageData(w, h).data;
+				alpha = 128; // Semi-transparent for preview
+			} else {
+				ctxToPut = maskCtx;
+				dataToModify = maskCtx.getImageData(0, 0, w, h).data;
+			}
+
+			while (stack.length > 0) {
+				const p = stack.pop()!;
+				const idx = p.y * w + p.x;
+				if (visited[idx]) continue;
+				visited[idx] = 1;
+
+				const currentColor = getPixel(colorData, p.x, p.y, w);
+
+				if (!colorsSimilar(currentColor, targetColor, targetTol)) continue;
+
+				setPixel(dataToModify, p.x, p.y, w, brushR, brushG, brushB, alpha);
+
+				if (p.x > 0) stack.push({ x: p.x - 1, y: p.y });
+				if (p.x < w - 1) stack.push({ x: p.x + 1, y: p.y });
+				if (p.y > 0) stack.push({ x: p.x, y: p.y - 1 });
+				if (p.y < h - 1) stack.push({ x: p.x, y: p.y + 1 });
+			}
+
+			ctxToPut.putImageData(new ImageData(dataToModify, w, h), 0, 0);
+
+			if (!isPreview) {
+				needsUpdateRef.current = true;
+			}
+		},
+		[
+			brushColor,
+			tolerance,
+			inputImageUrl,
+			getPixel,
+			setPixel,
+			hexToRgb,
+			colorsSimilar,
+		],
+	);
+
 	useEffect(() => {
 		const setupCanvasAndStyles = async () => {
 			const canvas = canvasRef.current;
@@ -101,12 +250,20 @@ const PaintNodeComponent = memo((props: NodeProps<PaintNode>) => {
 
 			setCanvasStyle({ background: "transparent" });
 
+			const preview = previewRef.current;
+			if (preview) {
+				preview.width = canvas.width;
+				preview.height = canvas.height;
+			}
+
+			let img: HTMLImageElement | undefined;
+
 			if (inputImageUrl) {
-				const img = new Image();
+				img = new Image();
 				img.src = inputImageUrl;
 				await new Promise<void>((resolve, reject) => {
-					img.onload = () => resolve();
-					img.onerror = reject;
+					img!.onload = () => resolve();
+					img!.onerror = reject;
 				});
 
 				setContainerStyle({
@@ -120,6 +277,22 @@ const PaintNodeComponent = memo((props: NodeProps<PaintNode>) => {
 
 				canvas.width = img.naturalWidth;
 				canvas.height = img.naturalHeight;
+
+				const inputCanvas = inputCanvasRef.current;
+				if (inputCanvas) {
+					inputCanvas.width = img.naturalWidth;
+					inputCanvas.height = img.naturalHeight;
+					const inputCtx = inputCanvas.getContext("2d");
+					if (inputCtx) {
+						inputCtx.drawImage(img, 0, 0);
+					}
+				}
+
+				const preview = previewRef.current;
+				if (preview) {
+					preview.width = img.naturalWidth;
+					preview.height = img.naturalHeight;
+				}
 			} else if (nodeConfig) {
 				setContainerStyle({
 					aspectRatio: `${nodeConfig.width} / ${nodeConfig.height}`,
@@ -129,6 +302,12 @@ const PaintNodeComponent = memo((props: NodeProps<PaintNode>) => {
 
 				canvas.width = nodeConfig.width;
 				canvas.height = nodeConfig.height;
+
+				const preview = previewRef.current;
+				if (preview) {
+					preview.width = nodeConfig.width;
+					preview.height = nodeConfig.height;
+				}
 			}
 
 			drawMask();
@@ -146,6 +325,12 @@ const PaintNodeComponent = memo((props: NodeProps<PaintNode>) => {
 		drawMask();
 	}, [drawMask]);
 
+	useEffect(() => {
+		if (tool !== "fill") {
+			clearPreview();
+		}
+	}, [tool, clearPreview]);
+
 	const getScaledCoordinates = useCallback(
 		(e: React.MouseEvent<HTMLCanvasElement>) => {
 			const canvas = canvasRef.current;
@@ -156,8 +341,8 @@ const PaintNodeComponent = memo((props: NodeProps<PaintNode>) => {
 			const scaleY = canvas.height / rect.height;
 
 			return {
-				x: (e.clientX - rect.left) * scaleX,
-				y: (e.clientY - rect.top) * scaleY,
+				x: Math.floor((e.clientX - rect.left) * scaleX),
+				y: Math.floor((e.clientY - rect.top) * scaleY),
 			};
 		},
 		[],
@@ -170,6 +355,12 @@ const PaintNodeComponent = memo((props: NodeProps<PaintNode>) => {
 			const { x, y } = getScaledCoordinates(e);
 			const ctx = canvasRef.current?.getContext("2d");
 			if (!ctx) return;
+
+			if (tool === "fill") {
+				performFloodFill(false, x, y);
+				clearPreview();
+				return;
+			}
 
 			ctx.beginPath();
 			ctx.moveTo(x, y);
@@ -185,14 +376,35 @@ const PaintNodeComponent = memo((props: NodeProps<PaintNode>) => {
 			lastPositionRef.current = { x, y };
 			needsUpdateRef.current = true;
 		},
-		[brushSize, tool, brushColor, getScaledCoordinates],
+		[
+			brushSize,
+			tool,
+			brushColor,
+			getScaledCoordinates,
+			performFloodFill,
+			clearPreview,
+		],
 	);
 
 	const handleMouseMove = useCallback(
 		(e: React.MouseEvent<HTMLCanvasElement>) => {
+			const { x, y } = getScaledCoordinates(e);
+
+			if (tool === "fill") {
+				clearPreview();
+				if (
+					x >= 0 &&
+					y >= 0 &&
+					x < (canvasRef.current?.width ?? 0) &&
+					y < (canvasRef.current?.height ?? 0)
+				) {
+					performFloodFill(true, x, y);
+				}
+				return;
+			}
+
 			if (!isDrawingRef.current) return;
 
-			const { x, y } = getScaledCoordinates(e);
 			const ctx = canvasRef.current?.getContext("2d");
 			if (!ctx || !lastPositionRef.current) return;
 
@@ -200,7 +412,7 @@ const PaintNodeComponent = memo((props: NodeProps<PaintNode>) => {
 			ctx.stroke();
 			lastPositionRef.current = { x, y };
 		},
-		[getScaledCoordinates],
+		[tool, getScaledCoordinates, performFloodFill, clearPreview],
 	);
 
 	const handleMouseUp = useCallback(() => {
@@ -215,6 +427,12 @@ const PaintNodeComponent = memo((props: NodeProps<PaintNode>) => {
 			needsUpdateRef.current = false;
 		}
 	}, [updateConfig]);
+
+	const handleMouseLeave = useCallback(() => {
+		if (tool === "fill") {
+			clearPreview();
+		}
+	}, [tool, clearPreview]);
 
 	const handleClear = useCallback(() => {
 		const canvas = canvasRef.current;
@@ -247,7 +465,13 @@ const PaintNodeComponent = memo((props: NodeProps<PaintNode>) => {
 						style={canvasStyle}
 						onMouseDown={handleMouseDown}
 						onMouseMove={handleMouseMove}
+						onMouseLeave={handleMouseLeave}
 					/>
+					<canvas
+						ref={previewRef}
+						className="absolute inset-0 w-full h-full pointer-events-none z-20"
+					/>
+					<canvas ref={inputCanvasRef} className="hidden" />
 				</div>
 				<div className="flex flex-col flex-wrap gap-4 items-start text-sm">
 					<div className="flex justify-between w-full">
@@ -266,6 +490,13 @@ const PaintNodeComponent = memo((props: NodeProps<PaintNode>) => {
 									onClick={() => setTool("eraser")}
 								>
 									<Eraser className="h-4 w-4" />
+								</Button>
+								<Button
+									size="icon"
+									variant={tool === "fill" ? "default" : "outline"}
+									onClick={() => setTool("fill")}
+								>
+									<PaintBucket className="h-4 w-4" />
 								</Button>
 								<div className="flex items-center gap-1">
 									<Label htmlFor="brush-color">Color</Label>
@@ -287,19 +518,36 @@ const PaintNodeComponent = memo((props: NodeProps<PaintNode>) => {
 							Clear
 						</Button>
 					</div>
-					<div className="flex items-center gap-1">
-						<Label htmlFor="brush-size">Size</Label>
-						<Slider
-							id="brush-size"
-							min={1}
-							max={100}
-							step={1}
-							value={[brushSize]}
-							onValueChange={(value) => setBrushSize(value[0])}
-							className="w-20"
-						/>
-						<span>{brushSize}</span>
-					</div>
+					{tool !== "fill" && (
+						<div className="flex items-center gap-1 text-xs">
+							<Label htmlFor="brush-size">Size</Label>
+							<Slider
+								id="brush-size"
+								min={1}
+								max={100}
+								step={1}
+								value={[brushSize]}
+								onValueChange={(value) => setBrushSize(value[0])}
+								className="w-20"
+							/>
+							<span>{brushSize}</span>
+						</div>
+					)}
+					{tool === "fill" && (
+						<div className={cn("flex items-center gap-1 text-xs")}>
+							<Label htmlFor="tolerance">Tolerance</Label>
+							<Slider
+								id="tolerance"
+								min={0}
+								max={255}
+								step={1}
+								value={[tolerance]}
+								onValueChange={(value) => setTolerance(value[0])}
+								className="w-20"
+							/>
+							<span>{tolerance}</span>
+						</div>
+					)}
 				</div>
 				<Separator />
 				{node && nodeConfig?.backgroundColor && (

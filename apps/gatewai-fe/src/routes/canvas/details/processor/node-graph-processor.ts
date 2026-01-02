@@ -857,7 +857,7 @@ export class NodeGraphProcessor extends EventEmitter {
 			};
 		});
 
-		this.registerProcessor("Preview", async ({ node, inputs }) => {
+		this.registerProcessor("Preview", async ({ inputs }) => {
 			const inputEntries = Array.from(inputs.entries());
 			if (inputEntries.length === 0) {
 				throw new Error("Preview disconnected");

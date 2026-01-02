@@ -56,6 +56,7 @@ class PixiProcessorService {
 						width: 1024,
 						height: 1024,
 						autoStart: false,
+						background: 0xffffff,
 						backgroundAlpha: 0,
 						preference: "webgl",
 						roundPixels: true,
@@ -131,7 +132,6 @@ class PixiProcessorService {
 
 			// 3. Apply Custom Modulate Filter
 			const filter = new ModulateFilter(config);
-			console.log({ filter });
 			sprite.filters = [filter];
 
 			// 4. Render to Stage
@@ -541,7 +541,7 @@ class PixiProcessorService {
 		// Create a transparent spacer that forces the bounds of the stage
 		// to match the requested width/height.
 		const spacer = new Graphics();
-		spacer.rect(0, 0, width, height).fill({ color: 0x000000 });
+		spacer.rect(0, 0, width, height).fill({ color: 0x000000, alpha: 0 });
 		app.stage.addChildAt(spacer, 0);
 	}
 
@@ -560,7 +560,9 @@ class PixiProcessorService {
 
 			// Ensure mask matches transparency requirements
 			const maskGraphics = new Graphics();
-			maskGraphics.rect(0, 0, width, height).fill({ color: 0xffffff });
+			maskGraphics
+				.rect(0, 0, width, height)
+				.fill({ color: 0xffffff, alpha: 0 });
 			app.stage.mask = maskGraphics;
 			app.stage.addChild(maskGraphics); // Mask usually needs to be in display list in some versions, but simpler to just assign property
 
