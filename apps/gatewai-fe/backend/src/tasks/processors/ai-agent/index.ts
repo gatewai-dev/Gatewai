@@ -102,7 +102,7 @@ const aiAgentProcessor: NodeProcessor = async ({ node, data }) => {
 		const systemPromptData = allInputs.find(
 			(input) => input?.handle?.label === "System Prompt",
 		);
-		const systemPrompt = systemPromptData?.value as string | null;
+		const systemPrompt = systemPromptData?.value?.data as string | null;
 		if (!systemPrompt) {
 			return { success: false, error: "System Prompt is required" };
 		}

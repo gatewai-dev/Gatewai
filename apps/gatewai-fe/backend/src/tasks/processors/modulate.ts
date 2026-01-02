@@ -51,7 +51,7 @@ const modulateProcessor: NodeProcessor = async ({ node, data }) => {
 			items: [
 				{
 					type: DataType.Image,
-					data: { processData: { dataUrl, ...dimensions } }, // Transient data URL
+					data: { processData: { dataUrl, ...dimensions } },
 					outputHandleId: outputHandle.id,
 				},
 			],

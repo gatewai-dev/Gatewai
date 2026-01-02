@@ -28,8 +28,6 @@ import type { NodeProcessor } from "./types.js";
 const __filename = fileURLToPath(import.meta.url);
 const __dirname = path.dirname(__filename);
 
-// --- Utilities ---
-
 const getFontPath = async (fontName: string): Promise<string | null> => {
 	try {
 		const fontDir = path.join(__dirname, "../../assets/fonts", fontName);
@@ -84,9 +82,9 @@ function wrapText(
 
 	for (let i = 1; i < words.length; i++) {
 		const word = words[i];
-		const width = ctx.measureText(currentLine + " " + word).width;
+		const width = ctx.measureText(`${currentLine} ${word}`).width;
 		if (width < maxWidth) {
-			currentLine += " " + word;
+			currentLine += ` ${word}`;
 		} else {
 			lines.push(currentLine);
 			currentLine = word;
@@ -171,12 +169,16 @@ const compositorProcessor: NodeProcessor = async ({ node, data }) => {
 			});
 		await Promise.all(fontPromises);
 
-		// 3. Render Loop
+		// Render Loop
 		// Sort layers if order property exists, otherwise rely on object order (which is usually insertion order)
 		// Ensure strictly sorted by explicit z-index if available, or index.
 		// Assuming config.layerUpdates keys or array order dictates z-index.
 
-		for (const layer of layers) {
+		for (const handleValue of inputHandlesWithValues) {
+			const layer = layers.find(
+				(f) => f.inputHandleId === handleValue?.handle?.id,
+			);
+			if (!layer) continue;
 			const inputHandleId = layer.inputHandleId;
 			const inputEntry = inputHandlesWithValues.find(
 				(f) => f.handle?.id === inputHandleId,
@@ -188,10 +190,6 @@ const compositorProcessor: NodeProcessor = async ({ node, data }) => {
 
 			ctx.save();
 
-			// --- A. Transforms ---
-			// Standard order: Translate -> Rotate -> Scale
-			// Pixi/CSS rotation usually happens around the center if anchor is 0.5,
-			// or top-left if anchor is 0. Here we assume top-left origin (x,y)
 			const x = Math.round(layer.x ?? 0);
 			const y = Math.round(layer.y ?? 0);
 			const rotation = (layer.rotation ?? 0) * (Math.PI / 180); // Deg to Rad
@@ -199,9 +197,6 @@ const compositorProcessor: NodeProcessor = async ({ node, data }) => {
 			// Move to layer origin
 			ctx.translate(x, y);
 			ctx.rotate(rotation);
-			// Note: We handle scale differently for Images vs Text below,
-			// or we could apply ctx.scale(layer.scaleX, layer.scaleY) here.
-			// Generally safer to apply scale via dimensions for images to avoid pixelation artifacts on some engines.
 
 			// --- B. Blending ---
 			ctx.globalCompositeOperation = getCompositeOperation(layer.blendMode);
@@ -214,19 +209,8 @@ const compositorProcessor: NodeProcessor = async ({ node, data }) => {
 				const img = await loadImage(imgBuffer);
 
 				// Determine final draw dimensions
-				let drawW = img.width;
-				let drawH = img.height;
-
-				if (layer.width && layer.height) {
-					// Force specific dimensions
-					drawW = layer.width;
-					drawH = layer.height;
-				} else {
-					// Apply scale factors
-					drawW = img.width * (layer.scaleX ?? 1);
-					drawH = img.height * (layer.scaleY ?? 1);
-				}
-				console.log({ drawW, drawH });
+				const drawW = layer.width ?? img.width * (layer.scaleX ?? 1);
+				const drawH = layer.height ?? img.height * (layer.scaleY ?? 1);
 				ctx.drawImage(img, 0, 0, drawW, drawH);
 			} else if (layer.type === "Text" && inputItem?.type === DataType.Text) {
 				const textValue = String(inputItem.data);

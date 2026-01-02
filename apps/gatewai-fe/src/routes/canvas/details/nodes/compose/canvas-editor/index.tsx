@@ -772,34 +772,28 @@ const LayersPanel: React.FC<{ onSave: () => void; onClose: () => void }> = ({
 					const { active, over } = e;
 					if (over && active.id !== over.id) {
 						setLayers((currentLayers) => {
-							const reversed = currentLayers.slice().reverse();
+							const reversed = currentLayers.slice();
 							const oldIndexRev = reversed.findIndex((l) => l.id === active.id);
 							const newIndexRev = reversed.findIndex((l) => l.id === over.id);
 							const newReversed = arrayMove(reversed, oldIndexRev, newIndexRev);
-							return newReversed.reverse();
+							return newReversed;
 						});
 					}
 				}}
 			>
 				<SortableContext
-					items={layers
-						.slice()
-						.reverse()
-						.map((l) => l.id)}
+					items={layers.slice().map((l) => l.id)}
 					strategy={verticalListSortingStrategy}
 				>
 					<div className="flex flex-col">
-						{layers
-							.slice()
-							.reverse()
-							.map((layer) => (
-								<LayerItem
-									key={layer.id}
-									layer={layer}
-									selectedId={selectedId}
-									setSelectedId={setSelectedId}
-								/>
-							))}
+						{layers.slice().map((layer) => (
+							<LayerItem
+								key={layer.id}
+								layer={layer}
+								selectedId={selectedId}
+								setSelectedId={setSelectedId}
+							/>
+						))}
 					</div>
 				</SortableContext>
 			</DndContext>

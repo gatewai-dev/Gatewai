@@ -281,9 +281,9 @@ export async function SEED_createNodeTemplates(prisma: PrismaClient) {
 			},
 			defaultConfig: {
 				hue: 0,
-				saturation: 0,
-				lightness: 0,
-				brightness: 0,
+				saturation: 1,
+				lightness: 1,
+				brightness: 1,
 			},
 		},
 	});

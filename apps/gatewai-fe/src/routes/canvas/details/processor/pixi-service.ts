@@ -60,7 +60,7 @@ class PixiProcessorService {
 						roundPixels: true,
 						useBackBuffer: true,
 					});
-					return { app, id: Math.random().toString(36).substr(2, 9) };
+					return { app, id: Math.random().toString(36).substring(2, 9) };
 				},
 				destroy: async (resource: PixiResource) => {
 					resource.app.destroy(true, { children: true, texture: true });
@@ -554,140 +554,114 @@ class PixiProcessorService {
 		return this.useApp(async (app) => {
 			const width = config.width ?? 1024;
 			const height = config.height ?? 1024;
+			const assetsToClean: string[] = [];
 
 			app.renderer.resize(width, height);
-
 			this.forceStageSize(width, height, app);
 
+			// Ensure mask matches transparency requirements
 			const maskGraphics = new Graphics();
-			maskGraphics.beginFill(0xffffff);
-			maskGraphics.drawRect(0, 0, width, height);
-			maskGraphics.endFill();
+			maskGraphics.rect(0, 0, width, height).fill({ color: 0xffffff });
 			app.stage.mask = maskGraphics;
+			app.stage.addChild(maskGraphics); // Mask usually needs to be in display list in some versions, but simpler to just assign property
 
-			// Create a map of layers by inputHandleId for quick lookup
-			const layerMap = new Map<string, (typeof config.layerUpdates)[string]>();
-			if (config.layerUpdates) {
-				for (const [key, layer] of Object.entries(config.layerUpdates)) {
-					if (layer.inputHandleId) {
-						layerMap.set(layer.inputHandleId, layer);
-					}
-				}
-			}
+			// 1. Identify Order and Preload
+			// We rely on config.layerUpdates being an array to determine Z-index order (0 is bottom, last is top)
+			const sortedLayers = Array.isArray(config.layerUpdates)
+				? config.layerUpdates
+				: Object.values(config.layerUpdates || {}); // Fallback if type mismatch
 
-			const assetMap: Array<{
-				alias: string;
-				src: string;
-				loadParser?: string;
-				format?: string;
-			}> = [];
-			// Preload fonts and images based on inputs and layers
-			for (const [inputHandleId, inputData] of Object.entries(inputs)) {
-				const layer = layerMap.get(inputHandleId);
-				if (layer?.type === "Text" && layer.fontFamily) {
+			// Preload Loop
+			for (const layer of sortedLayers) {
+				if (signal?.aborted) throw new DOMException("Cancelled", "AbortError");
+				if (!layer.inputHandleId || !inputs[layer.inputHandleId]) continue;
+
+				const inputData = inputs[layer.inputHandleId];
+
+				if (layer.type === "Text" && layer.fontFamily) {
 					const fontUrl = GetFontAssetUrl(layer.fontFamily);
 					await fontManager.loadFont(layer.fontFamily, fontUrl);
-				} else if (
-					(layer?.type === "Image" || !layer) &&
-					inputData.type === "Image"
-				) {
-					// Images still use Assets.load
+				} else if (inputData.type === "Image") {
+					// We strictly load what is needed for the layers
 					await Assets.load({
-						alias: `img_${inputHandleId}`,
-						parser: "texture",
+						alias: `img_${layer.inputHandleId}`,
 						src: inputData.value,
+						parser: "texture",
 					});
+					assetsToClean.push(inputData.value);
 				}
 			}
 
-			// Batch Load
-			if (assetMap.length > 0) {
-				await Assets.load(assetMap);
-			}
+			// 2. Render Loop (Strictly following array order)
+			for (const layer of sortedLayers) {
+				if (signal?.aborted) throw new DOMException("Cancelled", "AbortError");
 
-			console.log({ inputs });
-			for (const [inputHandleId, inputData] of Object.entries(inputs)) {
-				if (signal?.aborted) {
-					throw new DOMException("Cancelled", "AbortError");
-				}
+				const inputHandleId = layer.inputHandleId;
+				if (!inputHandleId || !inputs[inputHandleId]) continue;
 
-				const layer = layerMap.get(inputHandleId);
-
+				const inputData = inputs[inputHandleId];
 				const container = new Container();
-				console.log({ layer, inputData });
-				// Transforms - use layer if available, else defaults
-				container.x = layer?.x ?? 0;
-				container.y = layer?.y ?? 0;
-				container.scale.set(layer?.scaleX ?? 1, layer?.scaleY ?? 1);
-				container.rotation = ((layer?.rotation ?? 0) * Math.PI) / 180;
 
-				let obj: Sprite | Text | null = null;
+				// Apply Geometry Transforms
+				container.x = layer.x ?? 0;
+				container.y = layer.y ?? 0;
+				container.scale.set(layer.scaleX ?? 1, layer.scaleY ?? 1);
+				container.rotation = ((layer.rotation ?? 0) * Math.PI) / 180;
 
-				// Determine type: prefer layer.type if exists, else infer from inputData.type
-				const type = layer?.type ?? inputData.type;
+				let displayObject: Sprite | Text | null = null;
 
-				if (type === "Image" && inputData.type === "Image") {
+				if (inputData.type === "Image") {
 					try {
 						const texture = await Assets.load({
 							src: inputData.value,
 							parser: "texture",
 						});
 						const sprite = new Sprite(texture);
-						// Use layer width/height if provided, else use texture's natural size
-						if (layer?.width) sprite.width = layer.width;
-						else sprite.width = texture.width;
-						if (layer?.height) sprite.height = layer.height;
-						else sprite.height = texture.height;
-						obj = sprite;
+
+						// Dimensions
+						if (layer.width) sprite.width = layer.width;
+						else if (!layer.scaleX) sprite.width = texture.width; // Maintain aspect unless scaled
+
+						if (layer.height) sprite.height = layer.height;
+						else if (!layer.scaleY) sprite.height = texture.height;
+
+						displayObject = sprite;
 					} catch (e) {
-						console.warn(`Load failed: ${inputHandleId}`, e);
+						console.warn(`Layer render failed for ${inputHandleId}`, e);
 					}
-				} else if (type === "Text" && inputData.type === "Text") {
-					const fontSize = layer?.fontSize ?? 24;
-					const lineHeight = layer?.lineHeight ?? 1;
+				} else if (inputData.type === "Text") {
+					const fontSize = layer.fontSize ?? 24;
+					const lineHeight = layer.lineHeight ?? 1.2;
+
 					const style = new TextStyle({
-						fontFamily: layer?.fontFamily ?? "Geist",
+						fontFamily: layer.fontFamily ?? "Geist",
 						fontSize,
-						padding: 0,
-						letterSpacing: layer?.letterSpacing ?? 0,
+						padding: 1, // Avoid clipping ascenders/descenders
+						letterSpacing: layer.letterSpacing ?? 0,
 						lineHeight: fontSize * lineHeight,
-						align: layer?.align ?? "left",
-						fill: layer?.fill ?? "#fff",
+						align: layer.align ?? "left",
+						fill: layer.fill ?? "#fff",
 						wordWrap: true,
 						whiteSpace: "normal",
-						wordWrapWidth: layer?.width ? layer.width : undefined,
+						wordWrapWidth: layer.width ? layer.width : width - (layer.x || 0),
 						breakWords: true,
 					});
-					obj = new Text({ text: inputData.value, style });
-					obj.resolution = 2;
+
+					displayObject = new Text({ text: inputData.value, style });
+					displayObject.resolution = 2; // sharper text
 				}
 
-				if (obj) {
-					this.applyBlendMode(obj, layer?.blendMode || "normal", app);
-					container.addChild(obj);
+				if (displayObject) {
+					this.applyBlendMode(displayObject, layer.blendMode || "normal", app);
+					container.addChild(displayObject);
+					// addChild adds to the top of the stack, so iterating the array 0..N
+					// naturally places the last item visually on top.
 					app.stage.addChild(container);
 				}
 			}
 
-			// Check cancellation before rendering
-			if (signal?.aborted) {
-				throw new DOMException("Cancelled", "AbortError");
-			}
-
 			app.render();
-
-			// Check cancellation before extraction
-			if (signal?.aborted) {
-				throw new DOMException("Cancelled", "AbortError");
-			}
-
 			const dataUrl = await app.renderer.extract.base64(app.stage);
-
-			// Final cancellation check
-			if (signal?.aborted) {
-				throw new DOMException("Cancelled", "AbortError");
-			}
-
 			return { dataUrl, width, height };
 		}, signal);
 	}

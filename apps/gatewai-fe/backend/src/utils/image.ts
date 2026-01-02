@@ -44,21 +44,24 @@ export async function applyModulate(
 	config: ModulateNodeConfig,
 ): Promise<Buffer> {
 	const {
-		hue = 0, // -180 to 180 degrees
-		saturation = 0, // -1 to 1
-		lightness = 0, // -1 to 1
-		brightness = 0,
+		hue = 0, // Now 0 to 360 (or -180 to 180)
+		saturation = 1, // Now 0 to 2 multiplier
+		lightness = 1, // Now 0 to 2 multiplier
+		brightness = 1, // Now 0 to 2 multiplier
 	} = config;
 
 	let pipeline = sharp(buffer);
 
-	// Apply Modulate adjustments using modulate
-	if (hue !== 0 || saturation !== 0 || lightness !== 0) {
+	// Identity check: sharp's modulate identity is hue:0, others:1
+	if (hue !== 0 || saturation !== 1 || lightness !== 1 || brightness !== 1) {
 		pipeline = pipeline.modulate({
-			hue: hue, // -180 to 180 degrees
-			saturation: 1 + saturation, // convert -1..1 to 0..2 multiplier
-			lightness: 1 + lightness, // convert -1..1 to 0..2 multiplier
-			brightness: 1 + brightness,
+			hue: hue,
+			saturation: saturation,
+			brightness: brightness,
+			// Note: Sharp's 'lightness' in .modulate() is actually an
+			// additive L* offset in Lab space, not a multiplier.
+			// To match our Oklab filter's multiplicative logic exactly:
+			lightness: (lightness - 1) * 100,
 		});
 	}
 

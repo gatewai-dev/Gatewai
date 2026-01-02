@@ -52,10 +52,21 @@ const BlurNodeConfigSchema = z
 
 const ModulateNodeConfigSchema = z
 	.object({
-		hue: z.number().min(0).max(360),
-		saturation: z.number().min(-1).max(1),
-		lightness: z.number().min(-1).max(1),
-		brightness: z.number().min(-1).max(1),
+		// Hue is an additive rotation in degrees.
+		// 0 to 360 is standard, though sharp allows any number (it wraps).
+		hue: z.number().min(0).max(360).default(0),
+
+		// Saturation is a multiplier.
+		// 1.0 is identity. 0 is grayscale. 2.0 is double saturation.
+		saturation: z.number().min(0).max(10).default(1),
+
+		// Lightness is a multiplier on the L channel (perceptual).
+		// 1.0 is identity. 0 is black.
+		lightness: z.number().min(0).max(10).default(1),
+
+		// Brightness is a multiplier on the final RGB result.
+		// 1.0 is identity. 0 is black.
+		brightness: z.number().min(0).max(10).default(1),
 	})
 	.strict();
 

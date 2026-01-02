@@ -694,7 +694,6 @@ export class NodeGraphProcessor extends EventEmitter {
 					inputDataMap[inputHandleId] = data;
 				}
 			});
-			console.log({ inputs, inputDataMap });
 
 			// Process with Pixi
 			const result = await pixiProcessor.processCompositor(
