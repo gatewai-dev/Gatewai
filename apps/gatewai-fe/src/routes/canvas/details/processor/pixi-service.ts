@@ -57,7 +57,7 @@ class PixiProcessorService {
 						height: 1024,
 						autoStart: false,
 						backgroundAlpha: 0,
-						preference: "webgpu",
+						preference: "webgl",
 						roundPixels: true,
 						useBackBuffer: true,
 					});
@@ -131,7 +131,7 @@ class PixiProcessorService {
 
 			// 3. Apply Custom Modulate Filter
 			const filter = new ModulateFilter(config);
-
+			console.log({ filter });
 			sprite.filters = [filter];
 
 			// 4. Render to Stage
@@ -541,9 +541,7 @@ class PixiProcessorService {
 		// Create a transparent spacer that forces the bounds of the stage
 		// to match the requested width/height.
 		const spacer = new Graphics();
-		spacer.beginFill(0x000000, 0); // 0 alpha
-		spacer.drawRect(0, 0, width, height);
-		spacer.endFill();
+		spacer.rect(0, 0, width, height).fill({ color: 0x000000 });
 		app.stage.addChildAt(spacer, 0);
 	}
 

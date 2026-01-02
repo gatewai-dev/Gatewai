@@ -22,17 +22,6 @@ import { NODE_ICON_MAP } from "../../node-templates/node-palette/icon-map";
 import { useNodeResult } from "../processor/processor-ctx";
 import { NodeMenu } from "./node-menu";
 
-const getColorForType = (type: string) => {
-	return (
-		dataTypeColors[type] || {
-			bg: "bg-gray-500",
-			stroke: "stroke-gray-500",
-			hex: "#6b7280",
-			text: "text-gray-500",
-		}
-	);
-};
-
 export const getHandleStyle = (
 	types: string[],
 	isConnected: boolean,
@@ -115,7 +104,7 @@ const NodeHandle = memo(
 					position={isTarget ? Position.Left : Position.Right}
 					style={handleStyle}
 					className={cn(
-						"w-3.5! h-3.5! transition-all duration-300 hover:scale-125 border-none",
+						"w-3.5! h-3.5! border-none",
 						// Red pulse only if strictly invalid
 						isInvalid && "ring-2 ring-offset-2 ring-red-500 animate-pulse",
 					)}

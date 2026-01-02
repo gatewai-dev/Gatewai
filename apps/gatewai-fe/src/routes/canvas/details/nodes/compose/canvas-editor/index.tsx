@@ -75,7 +75,6 @@ import {
 	SelectValue,
 } from "@/components/ui/select";
 import { Separator } from "@/components/ui/separator";
-import { Slider } from "@/components/ui/slider";
 import { Switch } from "@/components/ui/switch";
 import {
 	Tooltip,
@@ -818,6 +817,68 @@ const LayersPanel: React.FC<{ onSave: () => void; onClose: () => void }> = ({
 		</div>
 	);
 };
+
+interface NumericInputProps {
+	value: number;
+	onChange: (value: number) => void;
+	allowDecimal?: boolean;
+	allowNegative?: boolean;
+	min?: number;
+	max?: number;
+}
+
+const NumericInput: React.FC<NumericInputProps> = ({
+	value,
+	onChange,
+	allowDecimal = false,
+	allowNegative = false,
+	min,
+	max,
+}) => {
+	const [text, setText] = useState(value.toString());
+
+	useEffect(() => {
+		setText(allowDecimal ? value.toString() : Math.round(value).toString());
+	}, [value, allowDecimal]);
+
+	const handleChange = (e: React.ChangeEvent<HTMLInputElement>) => {
+		const newText = e.target.value;
+		let regexStr = "^\\d*";
+		if (allowNegative) regexStr = "^-?" + regexStr;
+		if (allowDecimal) regexStr += "\\.?\\d*";
+		regexStr += "$";
+		const regex = new RegExp(regexStr);
+
+		if (
+			regex.test(newText) ||
+			newText === "" ||
+			(allowNegative && newText === "-")
+		) {
+			setText(newText);
+		}
+	};
+
+	const handleBlur = () => {
+		let num = allowDecimal ? parseFloat(text) : parseInt(text, 10);
+		if (isNaN(num)) num = 0;
+		if (min !== undefined) num = Math.max(min, num);
+		if (max !== undefined) num = Math.min(max, num);
+		if (!allowDecimal) num = Math.round(num);
+		onChange(num);
+		setText(allowDecimal ? num.toString() : Math.round(num).toString());
+	};
+
+	return (
+		<Input
+			type="text"
+			value={text}
+			onChange={handleChange}
+			onBlur={handleBlur}
+			className="w-full"
+		/>
+	);
+};
+
 // Inspector Panel (Right sidebar like Figma)
 const InspectorPanel: React.FC = () => {
 	const { data: fontList } = useGetFontListQuery({});
@@ -893,30 +954,20 @@ const InspectorPanel: React.FC = () => {
 				<div className="flex gap-2">
 					<div className="flex-1 flex flex-col gap-1">
 						<Label htmlFor="canvas-width">Width:</Label>
-						<Input
-							id="canvas-width"
-							type="number"
-							step="1"
+						<NumericInput
 							value={Math.round(viewportWidth)}
-							onChange={(e) =>
-								setViewportWidth(parseInt(e.target.value) || 800)
-							}
-							placeholder="Width"
-							className="w-full"
+							onChange={(v) => setViewportWidth(v || 800)}
+							allowNegative={false}
+							min={1}
 						/>
 					</div>
 					<div className="flex-1 flex flex-col gap-1">
 						<Label htmlFor="canvas-height">Height:</Label>
-						<Input
-							id="canvas-height"
-							type="number"
-							step="1"
+						<NumericInput
 							value={Math.round(viewportHeight)}
-							onChange={(e) =>
-								setViewportHeight(parseInt(e.target.value) || 600)
-							}
-							placeholder="Height"
-							className="w-full"
+							onChange={(v) => setViewportHeight(v || 600)}
+							allowNegative={false}
+							min={1}
 						/>
 					</div>
 				</div>
@@ -929,39 +980,27 @@ const InspectorPanel: React.FC = () => {
 						<div className="flex gap-2">
 							<div className="flex-1 flex flex-col gap-1">
 								<Label htmlFor="x">X:</Label>
-								<Input
-									id="x"
-									type="number"
-									step="1"
+								<NumericInput
 									value={Math.round(selectedLayer.x)}
-									onChange={(e) =>
-										updateLayer({ x: Number(e.target.value) || 0 })
-									}
+									onChange={(v) => updateLayer({ x: v || 0 })}
+									allowNegative={true}
 								/>
 							</div>
 							<div className="flex-1 flex flex-col gap-1">
 								<Label htmlFor="y">Y:</Label>
-								<Input
-									id="y"
-									type="number"
-									step="1"
+								<NumericInput
 									value={Math.round(selectedLayer.y)}
-									onChange={(e) =>
-										updateLayer({ y: Number(e.target.value) || 0 })
-									}
+									onChange={(v) => updateLayer({ y: v || 0 })}
+									allowNegative={true}
 								/>
 							</div>
 						</div>
 						<div className="flex gap-2">
 							<div className="flex-1 flex flex-col gap-1">
 								<Label htmlFor="width">Width:</Label>
-								<Input
-									id="width"
-									type="number"
-									step="1"
+								<NumericInput
 									value={Math.round(computedWidth)}
-									onChange={(e) => {
-										const newWidth = Number(e.target.value) || 0;
+									onChange={(newWidth) => {
 										if (selectedLayer.type === "Text") {
 											updateLayer({ width: newWidth });
 										} else {
@@ -978,18 +1017,16 @@ const InspectorPanel: React.FC = () => {
 											}
 										}
 									}}
+									allowNegative={false}
+									min={0}
 								/>
 							</div>
 							{selectedLayer.type === "Image" && (
 								<div className="flex-1 flex flex-col gap-1">
 									<Label htmlFor="height">Height:</Label>
-									<Input
-										id="height"
-										type="number"
-										step="1"
+									<NumericInput
 										value={Math.round(computedHeight)}
-										onChange={(e) => {
-											const newHeight = Number(e.target.value) || 0;
+										onChange={(newHeight) => {
 											if (selectedLayer.lockAspect) {
 												const oldWidth = selectedLayer.width ?? 1;
 												const oldHeight = selectedLayer.height ?? 1;
@@ -1002,23 +1039,21 @@ const InspectorPanel: React.FC = () => {
 												updateLayer({ height: newHeight });
 											}
 										}}
+										allowNegative={false}
+										min={0}
 									/>
 								</div>
 							)}
 						</div>
 						<div className="flex flex-col gap-1">
 							<Label htmlFor="rotation">Rotation:</Label>
-							<Slider
-								id="rotation"
-								value={[selectedLayer.rotation]}
-								onValueChange={(v) => updateLayer({ rotation: v[0] })}
+							<NumericInput
+								value={selectedLayer.rotation}
+								onChange={(v) => updateLayer({ rotation: v })}
 								min={-360}
 								max={360}
-								step={1}
+								allowNegative={true}
 							/>
-							<div className="text-sm text-gray-400 mt-1">
-								{selectedLayer.rotation}°
-							</div>
 						</div>
 						<div className="flex flex-col gap-1">
 							<Label htmlFor="blendMode">Blending Mode:</Label>
@@ -1040,30 +1075,23 @@ const InspectorPanel: React.FC = () => {
 						</div>
 						<div className="flex flex-col gap-1">
 							<Label htmlFor="zIndex">Z-Index:</Label>
-							<Input
-								id="zIndex"
-								type="number"
+							<NumericInput
 								value={selectedLayer.zIndex ?? 0}
-								onChange={(e) =>
-									updateLayer({ zIndex: Number(e.target.value) })
-								}
+								onChange={(v) => updateLayer({ zIndex: v })}
+								allowNegative={true}
 							/>
 						</div>
 						{selectedLayer.type === "Text" && (
 							<>
 								<div className="flex flex-col gap-1">
 									<Label htmlFor="fontSize">Font Size:</Label>
-									<Slider
-										id="fontSize"
-										value={[selectedLayer.fontSize || 24]}
-										onValueChange={(v) => updateLayer({ fontSize: v[0] })}
+									<NumericInput
+										value={selectedLayer.fontSize || 24}
+										onChange={(v) => updateLayer({ fontSize: v })}
 										min={8}
-										max={72}
-										step={1}
+										max={256}
+										allowNegative={false}
 									/>
-									<div className="text-sm text-gray-400 mt-1">
-										{(selectedLayer.fontSize || 24).toFixed(2)}px
-									</div>
 								</div>
 								<div className="flex flex-col gap-1">
 									<Label htmlFor="fontFamily">Font Family:</Label>
@@ -1097,31 +1125,24 @@ const InspectorPanel: React.FC = () => {
 								<hr className="my-4 border-gray-600" />
 								<div className="flex flex-col gap-1">
 									<Label htmlFor="letterSpacing">Letter Spacing:</Label>
-									<Slider
-										id="letterSpacing"
-										value={[selectedLayer.letterSpacing ?? 0]}
-										onValueChange={(v) => updateLayer({ letterSpacing: v[0] })}
+									<NumericInput
+										value={selectedLayer.letterSpacing ?? 0}
+										onChange={(v) => updateLayer({ letterSpacing: v })}
 										min={-10}
 										max={50}
-										step={1}
+										allowNegative={true}
 									/>
-									<div className="text-sm text-gray-400 mt-1">
-										{(selectedLayer.letterSpacing ?? 0).toFixed(0)}px
-									</div>
 								</div>
 								<div className="flex flex-col gap-1">
 									<Label htmlFor="lineHeight">Line Height:</Label>
-									<Slider
-										id="lineHeight"
-										value={[selectedLayer.lineHeight ?? 1]}
-										onValueChange={(v) => updateLayer({ lineHeight: v[0] })}
+									<NumericInput
+										value={selectedLayer.lineHeight ?? 1}
+										onChange={(v) => updateLayer({ lineHeight: v })}
 										min={0.5}
 										max={3}
-										step={0.1}
+										allowNegative={false}
+										allowDecimal={true}
 									/>
-									<div className="text-sm text-gray-400 mt-1">
-										{(selectedLayer.lineHeight ?? 1).toFixed(1)}
-									</div>
 								</div>
 								<div className="flex flex-col gap-1">
 									<Label htmlFor="align">Horizontal Alignment:</Label>
@@ -1223,14 +1244,39 @@ export const CanvasDesignerEditor: React.FC<CanvasDesignerEditorProps> = ({
 		window.addEventListener("resize", updateSize);
 		return () => window.removeEventListener("resize", updateSize);
 	}, []);
+
+	const fitView = useCallback(() => {
+		// Fit the Artboard (0,0 to ViewportW/H) into the Screen
+		const padding = 40;
+		const availableW = screenWidth - padding * 2;
+		const availableH = screenHeight - padding * 2;
+		const scaleW = availableW / viewportWidth;
+		const scaleH = availableH / viewportHeight;
+		const newScale = Math.min(scaleW, scaleH);
+		const newPos = {
+			x: (screenWidth - viewportWidth * newScale) / 2,
+			y: (screenHeight - viewportHeight * newScale) / 2,
+		};
+		setScale(newScale);
+		setStagePos(newPos);
+	}, [viewportWidth, viewportHeight, screenWidth, screenHeight]);
 	// Center the artboard initially
 	useEffect(() => {
 		if (screenWidth > 100 && screenHeight > 100) {
-			const x = (screenWidth - viewportWidth) / 2;
-			const y = (screenHeight - viewportHeight) / 2;
-			setStagePos({ x, y });
+			const padding = 40;
+			if (
+				viewportWidth > screenWidth - padding * 2 ||
+				viewportHeight > screenHeight - padding * 2
+			) {
+				fitView();
+			} else {
+				const x = (screenWidth - viewportWidth) / 2;
+				const y = (screenHeight - viewportHeight) / 2;
+				setStagePos({ x, y });
+				setScale(1);
+			}
 		}
-	}, [screenWidth, screenHeight, viewportHeight, viewportWidth]);
+	}, [screenWidth, screenHeight, viewportHeight, viewportWidth, fitView]);
 	const zoomIn = useCallback(() => {
 		const stage = stageRef.current;
 		if (!stage) return;
@@ -1285,21 +1331,6 @@ export const CanvasDesignerEditor: React.FC<CanvasDesignerEditorProps> = ({
 		},
 		[scale, stagePos, screenWidth, screenHeight],
 	);
-	const fitView = useCallback(() => {
-		// Fit the Artboard (0,0 to ViewportW/H) into the Screen
-		const padding = 40;
-		const availableW = screenWidth - padding * 2;
-		const availableH = screenHeight - padding * 2;
-		const scaleW = availableW / viewportWidth;
-		const scaleH = availableH / viewportHeight;
-		const newScale = Math.min(scaleW, scaleH);
-		const newPos = {
-			x: (screenWidth - viewportWidth * newScale) / 2,
-			y: (screenHeight - viewportHeight * newScale) / 2,
-		};
-		setScale(newScale);
-		setStagePos(newPos);
-	}, [viewportWidth, viewportHeight, screenWidth, screenHeight]);
 	const getTextData = (handleId: string) => {
 		const layerData = initialLayers.get(handleId) as OutputItem<"Text">;
 		if (!layerData) {
@@ -1356,10 +1387,10 @@ export const CanvasDesignerEditor: React.FC<CanvasDesignerEditorProps> = ({
 						newLayer.width = 200;
 						newLayer.fontSize = 24;
 						newLayer.fontFamily = "Geist";
-						newLayer.fill = "#000000";
+						newLayer.fill = "#ffffff";
 						newLayer.letterSpacing = 0;
 						newLayer.lineHeight = 1;
-						newLayer.height = newLayer.fontSize;
+						newLayer.height = newLayer.fontSize * 1.2;
 						newLayer.align = "left";
 						newLayer.verticalAlign = "top";
 					}
