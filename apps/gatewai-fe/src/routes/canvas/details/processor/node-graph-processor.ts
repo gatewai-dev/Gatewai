@@ -61,6 +61,7 @@ export class NodeGraphProcessor extends EventEmitter {
 
 	private adjacency = new Map<string, Set<string>>();
 	private reverseAdjacency = new Map<string, Set<string>>();
+	public graphValidation: Record<string, Record<string, string>> = {};
 
 	private nodeStates = new Map<string, NodeState>();
 	private processors = new Map<string, NodeProcessor>();
@@ -85,6 +86,9 @@ export class NodeGraphProcessor extends EventEmitter {
 
 		// Rebuild Topology Indices
 		this.buildAdjacencyAndIndices();
+
+		// Validate the graph first
+		this.validateGraph();
 
 		const nodesToInvalidate = new Set<string>();
 
@@ -153,6 +157,10 @@ export class NodeGraphProcessor extends EventEmitter {
 
 	getNodeState(nodeId: string): NodeState | null {
 		return this.nodeStates.get(nodeId) ?? null;
+	}
+
+	getNodeValidation(nodeId: NodeEntityType["id"]) {
+		return this.graphValidation[nodeId] ?? null;
 	}
 
 	async processNode(nodeId: string): Promise<void> {
@@ -519,6 +527,46 @@ export class NodeGraphProcessor extends EventEmitter {
 		}
 
 		return inputs;
+	}
+
+	private validateGraph(): void {
+		const validation: Record<string, Record<string, string>> = {};
+
+		this.nodes.forEach((node, nodeId) => {
+			const invalid: Record<string, string> = {};
+			const inputHandles = this.handles.filter(
+				(h) => h.nodeId === nodeId && h.type === "Input",
+			);
+
+			inputHandles.forEach((ih) => {
+				const edge = this.edges.find((e) => e.targetHandleId === ih.id);
+				if (!edge) {
+					invalid[ih.id] = "missing_connection";
+					return;
+				}
+
+				const sourceHandle = this.handles.find(
+					(h) => h.id === edge.sourceHandleId,
+				);
+				if (!sourceHandle) {
+					invalid[ih.id] = "invalid_source";
+					return;
+				}
+
+				const compatible = sourceHandle.dataTypes.some((t: DataType) =>
+					ih.dataTypes.includes(t),
+				);
+				if (!compatible) {
+					invalid[ih.id] = "type_mismatch";
+				}
+			});
+
+			if (Object.keys(invalid).length > 0) {
+				validation[nodeId] = invalid;
+			}
+		});
+		this.graphValidation = validation;
+		this.emit("graph:validated", { validation });
 	}
 
 	private registerBuiltInProcessors(): void {

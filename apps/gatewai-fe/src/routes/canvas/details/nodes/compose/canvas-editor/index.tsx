@@ -24,16 +24,11 @@ import type Konva from "konva";
 import {
 	AlignCenterHorizontal,
 	AlignCenterVertical,
-	ArrowDown,
-	ArrowLeft,
-	ArrowRight,
-	ArrowUp,
 	ChevronDown,
 	Hand,
 	ImageIcon,
 	MousePointer,
 	SaveAll,
-	Trash2,
 	Type,
 	X,
 } from "lucide-react";

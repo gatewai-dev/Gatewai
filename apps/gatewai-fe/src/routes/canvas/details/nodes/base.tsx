@@ -9,6 +9,12 @@ import {
 	Position,
 } from "@xyflow/react";
 import { type JSX, memo, type ReactNode, useMemo } from "react";
+import {
+	Tooltip,
+	TooltipContent,
+	TooltipProvider,
+	TooltipTrigger,
+} from "@/components/ui/tooltip";
 import { dataTypeColors } from "@/config";
 import { cn } from "@/lib/utils";
 import type { CanvasDetailsNode } from "@/rpc/types";
@@ -19,7 +25,7 @@ import {
 } from "@/store/handles";
 import { makeSelectNodeById } from "@/store/nodes";
 import { NODE_ICON_MAP } from "../../node-templates/node-palette/icon-map";
-import { useNodeResult } from "../processor/processor-ctx";
+import { useNodeResult, useNodeValidation } from "../processor/processor-ctx";
 import { NodeMenu } from "./node-menu";
 
 // --- Helpers ---
@@ -47,7 +53,6 @@ export const getHandleStyle = (
 		};
 	}
 
-	// 2. Connected/Has Value State (Solid Fill)
 	if (isConnected || connectedType) {
 		const color = getTypeColor(connectedType || types[0]);
 		return {
@@ -57,7 +62,6 @@ export const getHandleStyle = (
 		};
 	}
 
-	// 3. Unconnected Multi-Type State (Hollow with Conic Border)
 	if (types.length > 1) {
 		const segmentSize = 100 / types.length;
 		const gradientStops = types
@@ -76,7 +80,6 @@ export const getHandleStyle = (
 		};
 	}
 
-	// 4. Unconnected Single Type (Hollow Ring)
 	const color = getTypeColor(types[0]);
 	return {
 		backgroundColor: "var(--background)",
@@ -125,6 +128,20 @@ const NodeHandle = memo(
 
 		const topPosition = (index + 1) * 36 + 24;
 
+		const handleComponent = (
+			<Handle
+				id={handle.id}
+				type={type}
+				position={isTarget ? Position.Left : Position.Right}
+				style={handleStyle}
+				className={cn(
+					"w-4! h-4! rounded-full transition-shadow duration-200 border-none",
+					!isValid &&
+						"animate-pulse ring-2 ring-destructive ring-offset-2 ring-offset-background",
+				)}
+			/>
+		);
+
 		return (
 			<div
 				className={cn(
@@ -136,10 +153,10 @@ const NodeHandle = memo(
 				{/* External Label */}
 				<div
 					className={cn(
-						"absolute -top-8 whitespace-nowrap py-0 px-4 rounded-lg transition-all duration-200 ease-out pointer-events-none",
+						"absolute -top-8 whitespace-nowrap py-0 px-0 rounded-lg transition-all duration-200 ease-out pointer-events-none",
 						isTarget
-							? "right-4  flex-row-reverse text-right origin-right"
-							: "left-4 text-left origin-left",
+							? "right-1  flex-row-reverse text-right origin-right"
+							: "left-1 text-left origin-left",
 						nodeSelected
 							? " backdrop-blur-md opacity-100 scale-110 shadow-sm"
 							: "opacity-40 scale-95",
@@ -154,17 +171,22 @@ const NodeHandle = memo(
 					</span>
 				</div>
 
-				<Handle
-					id={handle.id}
-					type={type}
-					position={isTarget ? Position.Left : Position.Right}
-					style={handleStyle}
-					className={cn(
-						"w-4! h-4! rounded-full transition-shadow duration-200 border-none",
-						!isValid &&
-							"animate-pulse ring-2 ring-destructive ring-offset-2 ring-offset-background",
-					)}
-				/>
+				{!isValid ? (
+					<TooltipProvider delayDuration={0}>
+						<Tooltip>
+							<TooltipTrigger asChild>{handleComponent}</TooltipTrigger>
+							<TooltipContent
+								arrowPadding={120}
+								side={isTarget ? "left" : "right"}
+								className=" border-none font-bold text-[10px] uppercase"
+							>
+								Invalid data type
+							</TooltipContent>
+						</Tooltip>
+					</TooltipProvider>
+				) : (
+					handleComponent
+				)}
 			</div>
 		);
 	},
@@ -184,6 +206,10 @@ const BaseNode = memo(
 		const selectNode = useMemo(() => makeSelectNodeById(id), [id]);
 		const node = useAppSelector(selectNode);
 		const { inputs } = useNodeResult(id);
+		const validation = useNodeValidation(id);
+
+		const hasTypeMismatch = (handleId: HandleEntityType["id"]) =>
+			validation?.[handleId] === "type_mismatch";
 
 		const { inputHandles, outputHandles } = useMemo(() => {
 			const sorted = [...handles].sort((a, b) => a.order - b.order);
@@ -220,7 +246,7 @@ const BaseNode = memo(
 							handle={handle}
 							index={i}
 							type="target"
-							isValid={inputs.get(handle.id)?.connectionValid ?? true}
+							isValid={hasTypeMismatch(handle.id) === false}
 							hasValue={inputs.get(handle.id)?.outputItem?.data != null}
 							connectedType={inputs.get(handle.id)?.outputItem?.type}
 							nodeSelected={selected}

@@ -1,6 +1,7 @@
 import type { AnyOutputItem, FileResult, NodeResult } from "@gatewai/types";
 import {
 	createContext,
+	useCallback,
 	useContext,
 	useEffect,
 	useMemo,
@@ -137,6 +138,35 @@ export function useNodeResult<T extends NodeResult = NodeResult>(
 	}, [snapshot]);
 }
 
+// A simple deep equality helper (or use lodash.isEqual)
+const isDeepEqual = (a: any, b: any) => JSON.stringify(a) === JSON.stringify(b);
+
+export function useNodeValidation(nodeId: string): Record<string, string> {
+	const processor = useProcessor();
+	const lastSnapshot = useRef<Record<string, string>>({});
+
+	const subscribe = useCallback(
+		(callback: () => void) => {
+			const onValidated = () => callback();
+			processor.on("graph:validated", onValidated);
+			return () => processor.off("graph:validated", onValidated);
+		},
+		[processor],
+	);
+
+	const getSnapshot = () => {
+		const nextValue = processor.getNodeValidation(nodeId);
+
+		// Only update the reference if the content actually changed
+		if (!isDeepEqual(lastSnapshot.current, nextValue)) {
+			lastSnapshot.current = nextValue;
+		}
+
+		return lastSnapshot.current;
+	};
+
+	return useSyncExternalStore(subscribe, getSnapshot, getSnapshot);
+}
 /**
  * Subscribe to a node's image output for canvas rendering, used by crop etc
  */
