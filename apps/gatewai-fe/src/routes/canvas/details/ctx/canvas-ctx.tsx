@@ -135,11 +135,11 @@ const CanvasProvider = ({
 		if (!canvasDetailsResponse?.nodes) {
 			return { initialEdges: [], initialNodes: [] };
 		}
-		// Map backend data to React Flow nodes
+
 		const initialNodes: Node[] = canvasDetailsResponse.nodes.map((node) => ({
 			id: node.id,
 			position: node.position as XYPosition,
-			data: node, // We're not using this but will track for id etc.
+			data: node,
 			type: node.type,
 			width: node.width ?? undefined,
 			height: node.height ?? undefined,
