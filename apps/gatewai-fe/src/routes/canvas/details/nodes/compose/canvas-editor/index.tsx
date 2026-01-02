@@ -22,12 +22,19 @@ import type {
 } from "@gatewai/types";
 import type Konva from "konva";
 import {
+	AlignCenterHorizontal,
+	AlignCenterVertical,
+	ArrowDown,
+	ArrowLeft,
+	ArrowRight,
+	ArrowUp,
 	ChevronDown,
 	Hand,
 	ImageIcon,
 	MousePointer,
 	SaveAll,
-	TextIcon,
+	Trash2,
+	Type,
 	X,
 } from "lucide-react";
 import type React from "react";
@@ -43,8 +50,6 @@ import {
 	useRef,
 	useState,
 } from "react";
-import { DndProvider, useDrag, useDrop } from "react-dnd";
-import { TouchBackend } from "react-dnd-touch-backend";
 import { BsAspectRatio } from "react-icons/bs";
 import {
 	Group,
@@ -88,6 +93,7 @@ import type { HandleEntityType } from "@/store/handles";
 import type { NodeEntityType } from "@/store/nodes";
 import { GetAssetEndpoint, GetFontAssetUrl } from "@/utils/file";
 
+// --- Font Manager (Singleton) ---
 class FontManager {
 	private static instance: FontManager | null = null;
 	private loadedFonts: Set<string> = new Set();
@@ -129,18 +135,18 @@ class FontManager {
 
 const fontManager = FontManager.getInstance();
 
-// Editor Context
+// --- Editor Context ---
 interface EditorContextType {
 	layers: CompositorLayer[];
 	setLayers: Dispatch<SetStateAction<CompositorLayer[]>>;
 	selectedId: string | null;
 	setSelectedId: (id: string | null) => void;
-	// The dimensions of the "Artboard" (Output size)
+	// Artboard Dimensions
 	viewportWidth: number;
 	viewportHeight: number;
 	setViewportWidth: (w: number) => void;
 	setViewportHeight: (h: number) => void;
-	// The dimensions of the visible window (Screen size)
+	// Viewport/Screen Dimensions
 	screenWidth: number;
 	screenHeight: number;
 	guides: Guide[];
@@ -177,23 +183,28 @@ const useEditor = () => {
 	}
 	return context;
 };
-// Snap logic hook
+
+// --- Custom Hooks ---
+
+// Snap Logic
 const useSnap = () => {
 	const { layers, setLayers, viewportWidth, viewportHeight, setGuides } =
 		useEditor();
 	const SNAP_THRESHOLD = 5;
+
 	const getSnapPositions = useCallback(
 		(excludeId: string) => {
 			const hSnaps: number[] = [
 				0,
 				Math.round(viewportHeight / 2),
 				viewportHeight,
-			]; // Canvas edges and center
+			];
 			const vSnaps: number[] = [
 				0,
 				Math.round(viewportWidth / 2),
 				viewportWidth,
 			];
+
 			layers.forEach((layer) => {
 				if (
 					layer.id !== excludeId &&
@@ -219,6 +230,7 @@ const useSnap = () => {
 		},
 		[layers, viewportHeight, viewportWidth],
 	);
+
 	const handleDragMove = useCallback(
 		(e: Konva.KonvaEventObject<DragEvent>) => {
 			const node = e.target;
@@ -226,10 +238,12 @@ const useSnap = () => {
 			const { hSnaps, vSnaps } = getSnapPositions(id);
 			let newX = node.x();
 			let newY = node.y();
+
 			const centerX = newX + node.width() / 2;
 			const centerY = newY + node.height() / 2;
 			const right = newX + node.width();
 			const bottom = newY + node.height();
+
 			// Vertical snaps
 			const vGuides: Guide[] = [];
 			for (const snap of vSnaps) {
@@ -244,6 +258,7 @@ const useSnap = () => {
 					vGuides.push({ type: "vertical", position: snap });
 				}
 			}
+
 			// Horizontal snaps
 			const hGuides: Guide[] = [];
 			for (const snap of hSnaps) {
@@ -258,7 +273,9 @@ const useSnap = () => {
 					hGuides.push({ type: "horizontal", position: snap });
 				}
 			}
+
 			node.position({ x: newX, y: newY });
+
 			// Deduplicate guides
 			const guideMap = new Map<string, Guide>();
 			[...vGuides, ...hGuides].forEach((g) => {
@@ -271,6 +288,7 @@ const useSnap = () => {
 		},
 		[getSnapPositions, setGuides],
 	);
+
 	const handleDragEnd = useCallback(
 		(e: Konva.KonvaEventObject<DragEvent>) => {
 			const node = e.target;
@@ -286,6 +304,7 @@ const useSnap = () => {
 		},
 		[setLayers, setGuides],
 	);
+
 	const handleTransformEnd = useCallback(
 		(e: Konva.KonvaEventObject<Event>) => {
 			const node = e.target;
@@ -308,11 +327,11 @@ const useSnap = () => {
 		},
 		[setLayers],
 	);
+
 	return { handleDragMove, handleDragEnd, handleTransformEnd };
 };
-// Blending modes list
-const blendModes = BLEND_MODES;
-// Layer Props
+
+// --- Layer Components ---
 interface LayerProps {
 	layer: CompositorLayer;
 	onDragStart: (e: Konva.KonvaEventObject<DragEvent>) => void;
@@ -321,7 +340,7 @@ interface LayerProps {
 	onTransformStart: (e: Konva.KonvaEventObject<Event>) => void;
 	onTransformEnd: (e: Konva.KonvaEventObject<Event>) => void;
 }
-// Image Layer Component
+
 const ImageLayer: React.FC<LayerProps> = ({
 	layer,
 	onDragStart,
@@ -333,6 +352,7 @@ const ImageLayer: React.FC<LayerProps> = ({
 	const { setSelectedId, setLayers, getImageUrl, mode } = useEditor();
 	const url = getImageUrl(layer.inputHandleId);
 	const [image] = useImage(url ?? "", "anonymous");
+
 	useEffect(() => {
 		if (image && (!layer.width || !layer.height)) {
 			setLayers((prev) =>
@@ -348,9 +368,11 @@ const ImageLayer: React.FC<LayerProps> = ({
 			);
 		}
 	}, [image, layer.id, layer.width, layer.height, setLayers]);
+
 	const handleSelect = () => {
 		setSelectedId(layer.id);
 	};
+
 	const handleTransform = useCallback((e: Konva.KonvaEventObject<Event>) => {
 		const node = e.target as Konva.Image;
 		node.setAttrs({
@@ -360,6 +382,7 @@ const ImageLayer: React.FC<LayerProps> = ({
 			scaleY: 1,
 		});
 	}, []);
+
 	return (
 		<KonvaImage
 			id={layer.id}
@@ -382,7 +405,7 @@ const ImageLayer: React.FC<LayerProps> = ({
 		/>
 	);
 };
-// Text Layer Component
+
 const TextLayer: React.FC<
 	LayerProps & { layer: CompositorLayer & { type: "Text" } }
 > = ({
@@ -403,14 +426,17 @@ const TextLayer: React.FC<
 		stageRef,
 	} = useEditor();
 	const text = getTextData(layer.inputHandleId);
+
 	const handleSelect = () => {
 		setSelectedId(layer.id);
 	};
+
 	const handleDoubleClick = () => {
 		setSelectedId(layer.id);
 		setIsEditingText(true);
 		setEditingLayerId(layer.id);
 	};
+
 	const handleTransform = useCallback((e: Konva.KonvaEventObject<Event>) => {
 		const node = e.target as Konva.Text;
 		const newWidth = Math.max(20, Math.round(node.width() * node.scaleX()));
@@ -420,6 +446,7 @@ const TextLayer: React.FC<
 			scaleY: 1,
 		});
 	}, []);
+
 	useEffect(() => {
 		const node = stageRef.current?.findOne(`#${layer.id}`) as
 			| Konva.Text
@@ -435,6 +462,7 @@ const TextLayer: React.FC<
 			}
 		}
 	}, [layer.id, layer.type, setLayers, stageRef, layer.computedHeight]);
+
 	return (
 		<KonvaText
 			id={layer.id}
@@ -456,7 +484,7 @@ const TextLayer: React.FC<
 			onDragMove={onDragMove}
 			onDragEnd={onDragEnd}
 			onTransformStart={onTransformStart}
-			padding={1} // This makes word wrap consistent with pixi js
+			padding={1}
 			onTransform={handleTransform}
 			onTransformEnd={onTransformEnd}
 			globalCompositeOperation={layer.blendMode as GlobalCompositeOperation}
@@ -468,28 +496,40 @@ const TextLayer: React.FC<
 		/>
 	);
 };
-// Transformer component
+
+// --- Stage Components ---
+
 const TransformerComponent: React.FC = () => {
 	const { selectedId, layers, stageRef, mode } = useEditor();
 	const trRef = useRef<Konva.Transformer>(null);
+
 	useEffect(() => {
 		if (selectedId && trRef.current && stageRef.current && mode === "select") {
 			const node = stageRef.current.findOne(`#${selectedId}`);
 			if (node) {
 				trRef.current.nodes([node]);
 				trRef.current.getLayer()?.batchDraw();
+			} else {
+				trRef.current.nodes([]);
 			}
 		} else if (trRef.current) {
 			trRef.current.nodes([]);
 			trRef.current.getLayer()?.batchDraw();
 		}
-	}, [selectedId, stageRef, mode]);
+	}, [selectedId, stageRef, mode, layers]); // Added layers dep to re-attach if layer updates
+
 	const selectedLayer = layers.find((l) => l.id === selectedId);
+
 	return (
 		<Transformer
 			ref={trRef}
 			rotateEnabled
 			flipEnabled={false}
+			borderStroke="#3b82f6"
+			anchorStroke="#3b82f6"
+			anchorFill="#ffffff"
+			anchorSize={10}
+			anchorCornerRadius={2}
 			keepRatio={selectedLayer?.type === "Image" && selectedLayer.lockAspect}
 			enabledAnchors={
 				selectedLayer?.type === "Image" && selectedLayer.lockAspect
@@ -505,7 +545,7 @@ const TransformerComponent: React.FC = () => {
 		/>
 	);
 };
-// Guides Component
+
 const Guides: React.FC = () => {
 	const { guides, viewportWidth, viewportHeight } = useEditor();
 	return (
@@ -518,14 +558,15 @@ const Guides: React.FC = () => {
 							? [guide.position, 0, guide.position, viewportHeight]
 							: [0, guide.position, viewportWidth, guide.position]
 					}
-					stroke="#ff4500"
+					stroke="#f43f5e"
 					strokeWidth={1}
+					dash={[4, 4]}
 				/>
 			))}
 		</>
 	);
 };
-// The background "Paper" representing the viewport
+
 const ArtboardBackground: React.FC = () => {
 	const { viewportWidth, viewportHeight } = useEditor();
 	const patternImage = useMemo(() => {
@@ -536,25 +577,28 @@ const ArtboardBackground: React.FC = () => {
 		canvas.height = size;
 		const ctx = canvas.getContext("2d");
 		if (ctx) {
-			// Base fill for dark mode (darker gray equivalent to 'transparent' in light mode contexts)
-			ctx.fillStyle = "#212121";
+			ctx.fillStyle = "#1e1e1e"; // Slightly lighter than bg
 			ctx.fillRect(0, 0, size, size);
-			// Checker color squares for dark mode (lighter gray)
-			ctx.fillStyle = "#303030";
+			ctx.fillStyle = "#262626"; // Checker
 			ctx.fillRect(0, 0, half, half);
 			ctx.fillRect(half, half, half, half);
 		}
 		return canvas;
 	}, []);
+
 	return (
 		<Group>
-			{/* Shadow for depth effect */}
+			{/* Shadow for depth/elevation */}
 			<Rect
-				x={10}
-				y={10}
+				x={0}
+				y={0}
 				width={viewportWidth}
 				height={viewportHeight}
-				fill="rgba(0,0,0,0.3)"
+				fill="#000"
+				shadowColor="black"
+				shadowBlur={50}
+				shadowOpacity={0.5}
+				shadowOffset={{ x: 0, y: 10 }}
 				listening={false}
 			/>
 			{/* The main artboard area */}
@@ -565,14 +609,12 @@ const ArtboardBackground: React.FC = () => {
 				height={viewportHeight}
 				fillPatternImage={patternImage}
 				fillPatternRepeat="repeat"
-				shadowColor="black"
-				shadowBlur={20}
-				shadowOpacity={0.2}
 				listening={false}
 			/>
 		</Group>
 	);
 };
+
 const Canvas: React.FC = () => {
 	const {
 		layers,
@@ -587,18 +629,22 @@ const Canvas: React.FC = () => {
 		setStagePos,
 	} = useEditor();
 	const { handleDragMove, handleDragEnd, handleTransformEnd } = useSnap();
+
 	const sortedLayers = useMemo(
 		() => [...layers].sort((a, b) => (a.zIndex ?? 0) - (b.zIndex ?? 0)),
 		[layers],
 	);
+
 	const handleStageClick = useCallback(
 		(e: Konva.KonvaEventObject<TouchEvent | MouseEvent>) => {
-			if (e.target === stageRef.current) {
+			// Only deselect if clicking directly on stage or artboard (not layers)
+			if (e.target === stageRef.current || e.target.name() === "artboard-bg") {
 				setSelectedId(null);
 			}
 		},
 		[stageRef, setSelectedId],
 	);
+
 	const handleWheel = useCallback(
 		(e: Konva.KonvaEventObject<WheelEvent>) => {
 			e.evt.preventDefault();
@@ -607,22 +653,30 @@ const Canvas: React.FC = () => {
 			const oldScale = stage.scaleX();
 			const pointer = stage.getPointerPosition();
 			if (!pointer) return;
+
 			const mousePointTo = {
 				x: (pointer.x - stage.x()) / oldScale,
 				y: (pointer.y - stage.y()) / oldScale,
 			};
+
 			const direction = e.evt.deltaY > 0 ? -1 : 1;
 			const scaleBy = 1.1;
 			const newScale = direction > 0 ? oldScale * scaleBy : oldScale / scaleBy;
+
+			// Limit scale
+			if (newScale < 0.1 || newScale > 10) return;
+
 			const newPos = {
 				x: pointer.x - mousePointTo.x * newScale,
 				y: pointer.y - mousePointTo.y * newScale,
 			};
+
 			setScale(newScale);
 			setStagePos(newPos);
 		},
 		[stageRef, setScale, setStagePos],
 	);
+
 	// Sync stage transform
 	useEffect(() => {
 		const stage = stageRef.current;
@@ -631,7 +685,8 @@ const Canvas: React.FC = () => {
 		stage.position(stagePos);
 		stage.batchDraw();
 	}, [scale, stagePos, stageRef]);
-	// Handle stage drag for panning
+
+	// Handle stage drag for panning (manual hook to update state)
 	useEffect(() => {
 		const stage = stageRef.current;
 		if (!stage) return;
@@ -643,7 +698,9 @@ const Canvas: React.FC = () => {
 			stage.off("dragend", handleDragEndStage);
 		};
 	}, [stageRef, setStagePos]);
+
 	const cursorStyle = mode === "pan" ? "grab" : "default";
+
 	return (
 		<Stage
 			ref={stageRef}
@@ -655,8 +712,7 @@ const Canvas: React.FC = () => {
 			onWheel={handleWheel}
 			draggable={mode === "pan"}
 		>
-			<KonvaLayer>
-				{/* The "Paper" Area - Visualizes the 0,0 to W,H coordinate system */}
+			<KonvaLayer name="artboard-bg">
 				<ArtboardBackground />
 			</KonvaLayer>
 			<KonvaLayer>
@@ -688,11 +744,15 @@ const Canvas: React.FC = () => {
 		</Stage>
 	);
 };
+
+// --- Layers Panel ---
+
 interface LayerItemProps {
 	layer: CompositorLayer;
 	selectedId: string | null;
 	setSelectedId: (id: string) => void;
 }
+
 const LayerItem: React.FC<LayerItemProps> = ({
 	layer,
 	selectedId,
@@ -706,44 +766,52 @@ const LayerItem: React.FC<LayerItemProps> = ({
 		transition,
 		isDragging,
 	} = useSortable({ id: layer.id });
+
 	const style = {
 		transform: CSS.Transform.toString(transform),
 		transition,
 		zIndex: isDragging ? 9999 : "auto",
 		opacity: isDragging ? 0.5 : 1,
 	};
+
+	const isSelected = layer.id === selectedId;
+
 	return (
 		<div
 			ref={setNodeRef}
 			style={style}
 			{...attributes}
 			{...listeners}
-			className="mb-2"
+			className="mb-1"
 		>
 			<Button
 				variant="ghost"
 				onClick={() => {
-					// Prevent drag click from triggering select immediately if dragging
 					if (!isDragging) setSelectedId(layer.id);
 				}}
-				className={`cursor-pointer w-full rounded-sm flex items-center gap-2 p-2 transition-colors duration-200 hover:bg-gray-800 ${
-					layer.id === selectedId
-						? "bg-gray-800 border-l-2 border-blue-500"
-						: ""
-				}`}
+				className={`
+          cursor-pointer w-full rounded-md flex items-center gap-2 px-2 py-1.5 h-auto
+          transition-colors duration-200 border border-transparent
+          ${
+						isSelected
+							? "bg-blue-500/20 hover:bg-blue-500/30 border-blue-500/50 text-blue-100"
+							: "hover:bg-accent text-muted-foreground hover:text-foreground"
+					}
+        `}
 			>
 				{layer.type === "Image" ? (
-					<ImageIcon className="size-4 text-blue-400" />
+					<ImageIcon className="size-3.5 shrink-0 text-blue-400" />
 				) : (
-					<TextIcon className="size-4 text-green-400" />
-				)}{" "}
-				<span className="truncate flex-1 text-left">
-					{layer.type} - {layer.id.slice(0, 4)}
+					<Type className="size-3.5 shrink-0 text-green-400" />
+				)}
+				<span className="truncate flex-1 text-left text-xs font-medium">
+					{layer.id}
 				</span>
 			</Button>
 		</div>
 	);
 };
+
 const LayersPanel: React.FC<{ onSave: () => void; onClose: () => void }> = ({
 	onSave,
 	onClose,
@@ -753,6 +821,7 @@ const LayersPanel: React.FC<{ onSave: () => void; onClose: () => void }> = ({
 		() => [...layers].sort((a, b) => (b.zIndex ?? 0) - (a.zIndex ?? 0)),
 		[layers],
 	);
+
 	const sensors = useSensors(
 		useSensor(PointerSensor, {
 			activationConstraint: { distance: 5 },
@@ -761,62 +830,97 @@ const LayersPanel: React.FC<{ onSave: () => void; onClose: () => void }> = ({
 			coordinateGetter: sortableKeyboardCoordinates,
 		}),
 	);
+
 	return (
-		<div className="absolute left-0 top-0 bottom-0 w-56 overflow-y-auto bg-background p-3 border-r border-gray-800 z-10 text-xs flex flex-col">
-			<div className="flex justify-between items-center mb-4">
-				<h3 className="font-bold text-gray-100">Layers</h3>
-				<div className="flex gap-1">
-					<Button onClick={onClose} size="icon" variant="ghost" title="Close">
-						<X className="size-4 rotate-90" />
-					</Button>
-					<Button onClick={onSave} size="icon" title="Save">
-						<SaveAll className="size-4" />
-					</Button>
+		<div className="absolute left-0 top-0 bottom-0 w-60 bg-card border-r border-border z-10 flex flex-col shadow-xl">
+			<div className="flex items-center justify-between p-3 border-b border-border bg-muted/30">
+				<span className="text-xs font-semibold uppercase tracking-wider text-muted-foreground">
+					Layers
+				</span>
+				<div className="flex items-center gap-1">
+					<Tooltip>
+						<TooltipTrigger asChild>
+							<Button
+								onClick={onSave}
+								size="icon"
+								variant="ghost"
+								className="h-6 w-6 hover:bg-primary/20 hover:text-primary"
+							>
+								<SaveAll className="size-3.5" />
+							</Button>
+						</TooltipTrigger>
+						<TooltipContent>Save Changes</TooltipContent>
+					</Tooltip>
+					<Tooltip>
+						<TooltipTrigger asChild>
+							<Button
+								onClick={onClose}
+								size="icon"
+								variant="ghost"
+								className="h-6 w-6 hover:bg-destructive/20 hover:text-destructive"
+							>
+								<X className="size-3.5" />
+							</Button>
+						</TooltipTrigger>
+						<TooltipContent>Close</TooltipContent>
+					</Tooltip>
 				</div>
 			</div>
-			<DndContext
-				sensors={sensors}
-				collisionDetection={closestCenter}
-				onDragEnd={(e) => {
-					const { active, over } = e;
-					if (over && active.id !== over.id) {
-						setLayers((currentLayers) => {
-							const currentSorted = [...currentLayers].sort(
-								(a, b) => (b.zIndex ?? 0) - (a.zIndex ?? 0),
-							);
-							const oldIndex = currentSorted.findIndex(
-								(l) => l.id === active.id,
-							);
-							const newIndex = currentSorted.findIndex((l) => l.id === over.id);
-							const newSorted = arrayMove(currentSorted, oldIndex, newIndex);
-							const newLayers = currentLayers.map((l) => {
-								const pos = newSorted.findIndex((s) => s.id === l.id);
-								return { ...l, zIndex: newSorted.length - pos };
+
+			<div className="flex-1 overflow-y-auto p-2">
+				<DndContext
+					sensors={sensors}
+					collisionDetection={closestCenter}
+					onDragEnd={(e) => {
+						const { active, over } = e;
+						if (over && active.id !== over.id) {
+							setLayers((currentLayers) => {
+								const currentSorted = [...currentLayers].sort(
+									(a, b) => (b.zIndex ?? 0) - (a.zIndex ?? 0),
+								);
+								const oldIndex = currentSorted.findIndex(
+									(l) => l.id === active.id,
+								);
+								const newIndex = currentSorted.findIndex(
+									(l) => l.id === over.id,
+								);
+								const newSorted = arrayMove(currentSorted, oldIndex, newIndex);
+								// Reassign Z-indices based on new list order
+								return currentLayers.map((l) => {
+									const pos = newSorted.findIndex((s) => s.id === l.id);
+									return { ...l, zIndex: newSorted.length - pos };
+								});
 							});
-							return newLayers;
-						});
-					}
-				}}
-			>
-				<SortableContext
-					items={sortedLayers.map((l) => l.id)}
-					strategy={verticalListSortingStrategy}
+						}
+					}}
 				>
-					<div className="flex flex-col">
-						{sortedLayers.map((layer) => (
-							<LayerItem
-								key={layer.id}
-								layer={layer}
-								selectedId={selectedId}
-								setSelectedId={setSelectedId}
-							/>
-						))}
-					</div>
-				</SortableContext>
-			</DndContext>
+					<SortableContext
+						items={sortedLayers.map((l) => l.id)}
+						strategy={verticalListSortingStrategy}
+					>
+						<div className="flex flex-col space-y-0.5">
+							{sortedLayers.map((layer) => (
+								<LayerItem
+									key={layer.id}
+									layer={layer}
+									selectedId={selectedId}
+									setSelectedId={setSelectedId}
+								/>
+							))}
+							{sortedLayers.length === 0 && (
+								<div className="py-8 text-center text-xs text-muted-foreground italic">
+									No layers available
+								</div>
+							)}
+						</div>
+					</SortableContext>
+				</DndContext>
+			</div>
 		</div>
 	);
 };
+
+// --- Inspector Panel ---
 
 interface NumericInputProps {
 	value: number;
@@ -825,6 +929,7 @@ interface NumericInputProps {
 	allowNegative?: boolean;
 	min?: number;
 	max?: number;
+	label?: string;
 }
 
 const NumericInput: React.FC<NumericInputProps> = ({
@@ -841,25 +946,8 @@ const NumericInput: React.FC<NumericInputProps> = ({
 		setText(allowDecimal ? value.toString() : Math.round(value).toString());
 	}, [value, allowDecimal]);
 
-	const handleChange = (e: React.ChangeEvent<HTMLInputElement>) => {
-		const newText = e.target.value;
-		let regexStr = "^\\d*";
-		if (allowNegative) regexStr = "^-?" + regexStr;
-		if (allowDecimal) regexStr += "\\.?\\d*";
-		regexStr += "$";
-		const regex = new RegExp(regexStr);
-
-		if (
-			regex.test(newText) ||
-			newText === "" ||
-			(allowNegative && newText === "-")
-		) {
-			setText(newText);
-		}
-	};
-
-	const handleBlur = () => {
-		let num = allowDecimal ? parseFloat(text) : parseInt(text, 10);
+	const commit = (strVal: string) => {
+		let num = allowDecimal ? parseFloat(strVal) : parseInt(strVal, 10);
 		if (isNaN(num)) num = 0;
 		if (min !== undefined) num = Math.max(min, num);
 		if (max !== undefined) num = Math.min(max, num);
@@ -868,26 +956,43 @@ const NumericInput: React.FC<NumericInputProps> = ({
 		setText(allowDecimal ? num.toString() : Math.round(num).toString());
 	};
 
+	const handleBlur = () => commit(text);
+
+	const handleKeyDown = (e: React.KeyboardEvent<HTMLInputElement>) => {
+		if (e.key === "Enter") {
+			e.currentTarget.blur();
+		}
+		if (e.key === "ArrowUp") {
+			e.preventDefault();
+			commit((parseFloat(text) + 1).toString());
+		}
+		if (e.key === "ArrowDown") {
+			e.preventDefault();
+			commit((parseFloat(text) - 1).toString());
+		}
+	};
+
 	return (
 		<Input
 			type="text"
 			value={text}
-			onChange={handleChange}
+			onChange={(e) => setText(e.target.value)}
 			onBlur={handleBlur}
-			className="w-full"
+			onKeyDown={handleKeyDown}
+			className="h-8 text-xs font-mono"
 		/>
 	);
 };
 
-// Inspector Panel (Right sidebar like Figma)
 const InspectorPanel: React.FC = () => {
 	const { data: fontList } = useGetFontListQuery({});
 	const fontNames = useMemo(() => {
 		if (Array.isArray(fontList) && (fontList as string[])?.length > 0) {
 			return fontList as string[];
 		}
-		return [];
+		return ["Geist", "Inter", "Arial"];
 	}, [fontList]);
+
 	const {
 		selectedId,
 		layers,
@@ -897,117 +1002,161 @@ const InspectorPanel: React.FC = () => {
 		viewportHeight,
 		setViewportHeight,
 	} = useEditor();
+
 	const selectedLayer = layers.find((l) => l.id === selectedId);
-	const updateLayer = async (updates: Partial<CompositorLayer>) => {
+
+	const updateLayer = (updates: Partial<CompositorLayer>) => {
+		if (!selectedId) return;
 		if (updates.fontFamily) {
 			const fontUrl = GetFontAssetUrl(updates.fontFamily);
-			await fontManager.loadFont(updates.fontFamily, fontUrl);
+			fontManager.loadFont(updates.fontFamily, fontUrl);
 		}
 		setLayers((prev) =>
 			prev.map((l) => (l.id === selectedId ? { ...l, ...updates } : l)),
 		);
 	};
-	let computedWidth = 0;
-	let computedHeight = 0;
-	if (selectedLayer) {
-		computedWidth = selectedLayer.width ?? 0;
-		computedHeight =
-			selectedLayer.type === "Image"
-				? (selectedLayer.height ?? 0)
-				: (selectedLayer.computedHeight ?? 0);
-	}
+
+	const centerLayer = (axis: "x" | "y") => {
+		if (!selectedLayer) return;
+		if (axis === "x") {
+			const w = selectedLayer.width ?? 0;
+			updateLayer({ x: Math.round((viewportWidth - w) / 2) });
+		} else {
+			const h = selectedLayer.height ?? selectedLayer.computedHeight ?? 0;
+			updateLayer({ y: Math.round((viewportHeight - h) / 2) });
+		}
+	};
+
 	const aspectRatios = useMemo(
 		() => [
-			{ label: "1:1", width: 800, height: 800 },
-			{ label: "16:9", width: 1280, height: 720 },
-			{ label: "9:16", width: 720, height: 1280 },
-			{ label: "4:3", width: 800, height: 600 },
-			{ label: "3:4", width: 600, height: 800 },
+			{ label: "Instagram Square (1:1)", width: 1080, height: 1080 },
+			{ label: "Instagram Portrait (4:5)", width: 1080, height: 1350 },
+			{ label: "Story / 9:16", width: 1080, height: 1920 },
+			{ label: "Landscape (16:9)", width: 1920, height: 1080 },
 		],
 		[],
 	);
+
 	return (
-		<div className="absolute right-0 top-0 bottom-0 w-56 overflow-y-auto bg-background p-4 border-l border-gray-700 z-10 text-gray-200">
-			<h3 className="mb-4 text-xl font-bold text-gray-100">Canvas</h3>
-			<div className="space-y-4">
-				<div className="flex flex-wrap gap-2 mb-4">
-					{aspectRatios.map((ratio) => (
-						<Tooltip key={ratio.label}>
-							<TooltipTrigger asChild>
-								<Button
-									variant="outline"
-									onClick={() => {
-										setViewportWidth(ratio.width);
-										setViewportHeight(ratio.height);
-									}}
-									className="p-2"
-								>
-									<BsAspectRatio className="h-4 w-4" />
-								</Button>
-							</TooltipTrigger>
-							<TooltipContent>
-								<p>{ratio.label}</p>
-							</TooltipContent>
-						</Tooltip>
-					))}
-				</div>
-				<div className="flex gap-2">
-					<div className="flex-1 flex flex-col gap-1">
-						<Label htmlFor="canvas-width">Width:</Label>
-						<NumericInput
-							value={Math.round(viewportWidth)}
-							onChange={(v) => setViewportWidth(v || 800)}
-							allowNegative={false}
-							min={1}
-						/>
-					</div>
-					<div className="flex-1 flex flex-col gap-1">
-						<Label htmlFor="canvas-height">Height:</Label>
-						<NumericInput
-							value={Math.round(viewportHeight)}
-							onChange={(v) => setViewportHeight(v || 600)}
-							allowNegative={false}
-							min={1}
-						/>
-					</div>
-				</div>
-				{selectedLayer && (
-					<>
-						<hr className="my-4 border-gray-600" />
-						<h4 className="mb-2 text-lg font-semibold text-gray-100">
-							Layer Properties
-						</h4>
-						<div className="flex gap-2">
-							<div className="flex-1 flex flex-col gap-1">
-								<Label htmlFor="x">X:</Label>
-								<NumericInput
-									value={Math.round(selectedLayer.x)}
-									onChange={(v) => updateLayer({ x: v || 0 })}
-									allowNegative={true}
-								/>
-							</div>
-							<div className="flex-1 flex flex-col gap-1">
-								<Label htmlFor="y">Y:</Label>
-								<NumericInput
-									value={Math.round(selectedLayer.y)}
-									onChange={(v) => updateLayer({ y: v || 0 })}
-									allowNegative={true}
-								/>
-							</div>
+		<div className="absolute right-0 top-0 bottom-0 w-64 bg-card border-l border-border z-10 flex flex-col shadow-xl overflow-y-auto">
+			<div className="p-4 space-y-6">
+				{/* Canvas Settings */}
+				<section>
+					<h3 className="text-xs font-semibold uppercase tracking-wider text-muted-foreground mb-3">
+						Canvas
+					</h3>
+					<div className="grid grid-cols-2 gap-2 mb-3">
+						<div className="space-y-1">
+							<Label className="text-[10px] text-muted-foreground uppercase">
+								W
+							</Label>
+							<NumericInput
+								value={Math.round(viewportWidth)}
+								onChange={(v) => setViewportWidth(v || 800)}
+								min={1}
+							/>
 						</div>
-						<div className="flex gap-2">
-							<div className="flex-1 flex flex-col gap-1">
-								<Label htmlFor="width">Width:</Label>
-								<NumericInput
-									value={Math.round(computedWidth)}
-									onChange={(newWidth) => {
-										if (selectedLayer.type === "Text") {
-											updateLayer({ width: newWidth });
-										} else {
-											if (selectedLayer.lockAspect) {
-												const oldWidth = selectedLayer.width ?? 1;
-												const oldHeight = selectedLayer.height ?? 1;
-												const ratio = oldHeight / oldWidth;
+						<div className="space-y-1">
+							<Label className="text-[10px] text-muted-foreground uppercase">
+								H
+							</Label>
+							<NumericInput
+								value={Math.round(viewportHeight)}
+								onChange={(v) => setViewportHeight(v || 600)}
+								min={1}
+							/>
+						</div>
+					</div>
+
+					<Select
+						onValueChange={(val) => {
+							const preset = aspectRatios.find((r) => r.label === val);
+							if (preset) {
+								setViewportWidth(preset.width);
+								setViewportHeight(preset.height);
+							}
+						}}
+					>
+						<SelectTrigger className="h-8 text-xs">
+							<SelectValue placeholder="Presets" />
+						</SelectTrigger>
+						<SelectContent>
+							{aspectRatios.map((r) => (
+								<SelectItem key={r.label} value={r.label}>
+									{r.label}
+								</SelectItem>
+							))}
+						</SelectContent>
+					</Select>
+				</section>
+
+				<Separator />
+
+				{/* Layer Properties */}
+				{selectedLayer ? (
+					<>
+						<section>
+							<div className="flex items-center justify-between mb-3">
+								<h3 className="text-xs font-semibold uppercase tracking-wider text-muted-foreground">
+									Transform
+								</h3>
+								<div className="flex gap-1">
+									<Button
+										variant="ghost"
+										size="icon"
+										className="h-6 w-6"
+										onClick={() => centerLayer("x")}
+										title="Center Horizontally"
+									>
+										<AlignCenterHorizontal className="w-3 h-3" />
+									</Button>
+									<Button
+										variant="ghost"
+										size="icon"
+										className="h-6 w-6"
+										onClick={() => centerLayer("y")}
+										title="Center Vertically"
+									>
+										<AlignCenterVertical className="w-3 h-3" />
+									</Button>
+								</div>
+							</div>
+
+							<div className="grid grid-cols-2 gap-3 mb-3">
+								<div className="space-y-1">
+									<Label className="text-[10px] text-muted-foreground uppercase">
+										X
+									</Label>
+									<NumericInput
+										value={Math.round(selectedLayer.x)}
+										onChange={(v) => updateLayer({ x: v })}
+										allowNegative
+									/>
+								</div>
+								<div className="space-y-1">
+									<Label className="text-[10px] text-muted-foreground uppercase">
+										Y
+									</Label>
+									<NumericInput
+										value={Math.round(selectedLayer.y)}
+										onChange={(v) => updateLayer({ y: v })}
+										allowNegative
+									/>
+								</div>
+								<div className="space-y-1">
+									<Label className="text-[10px] text-muted-foreground uppercase">
+										W
+									</Label>
+									<NumericInput
+										value={Math.round(selectedLayer.width ?? 0)}
+										onChange={(newWidth) => {
+											if (
+												selectedLayer.type === "Image" &&
+												selectedLayer.lockAspect
+											) {
+												const oldW = selectedLayer.width ?? 1;
+												const oldH = selectedLayer.height ?? 1;
+												const ratio = oldH / oldW;
 												updateLayer({
 													width: newWidth,
 													height: newWidth * ratio,
@@ -1015,189 +1164,233 @@ const InspectorPanel: React.FC = () => {
 											} else {
 												updateLayer({ width: newWidth });
 											}
-										}
-									}}
-									allowNegative={false}
-									min={0}
-								/>
-							</div>
-							{selectedLayer.type === "Image" && (
-								<div className="flex-1 flex flex-col gap-1">
-									<Label htmlFor="height">Height:</Label>
-									<NumericInput
-										value={Math.round(computedHeight)}
-										onChange={(newHeight) => {
-											if (selectedLayer.lockAspect) {
-												const oldWidth = selectedLayer.width ?? 1;
-												const oldHeight = selectedLayer.height ?? 1;
-												const ratio = oldWidth / oldHeight;
-												updateLayer({
-													height: newHeight,
-													width: newHeight * ratio,
-												});
-											} else {
-												updateLayer({ height: newHeight });
-											}
 										}}
-										allowNegative={false}
-										min={0}
+										min={1}
 									/>
 								</div>
-							)}
-						</div>
-						<div className="flex flex-col gap-1">
-							<Label htmlFor="rotation">Rotation:</Label>
-							<NumericInput
-								value={selectedLayer.rotation}
-								onChange={(v) => updateLayer({ rotation: v })}
-								min={-360}
-								max={360}
-								allowNegative={true}
-							/>
-						</div>
-						<div className="flex flex-col gap-1">
-							<Label htmlFor="blendMode">Blending Mode:</Label>
+								<div className="space-y-1">
+									<Label className="text-[10px] text-muted-foreground uppercase">
+										H
+									</Label>
+									<NumericInput
+										value={Math.round(
+											selectedLayer.type === "Image"
+												? (selectedLayer.height ?? 0)
+												: (selectedLayer.computedHeight ?? 0),
+										)}
+										onChange={(newHeight) => {
+											if (selectedLayer.type === "Image") {
+												if (selectedLayer.lockAspect) {
+													const oldW = selectedLayer.width ?? 1;
+													const oldH = selectedLayer.height ?? 1;
+													const ratio = oldW / oldH;
+													updateLayer({
+														height: newHeight,
+														width: newHeight * ratio,
+													});
+												} else {
+													updateLayer({ height: newHeight });
+												}
+											}
+										}}
+										min={1}
+									/>
+								</div>
+							</div>
+							<div className="grid grid-cols-2 gap-3">
+								<div className="space-y-1">
+									<Label className="text-[10px] text-muted-foreground uppercase">
+										Rotation
+									</Label>
+									<div className="relative">
+										<NumericInput
+											value={selectedLayer.rotation}
+											onChange={(v) => updateLayer({ rotation: v })}
+											allowNegative
+										/>
+										<span className="absolute right-2 top-1.5 text-xs text-muted-foreground pointer-events-none">
+											°
+										</span>
+									</div>
+								</div>
+								<div className="space-y-1">
+									<Label className="text-[10px] text-muted-foreground uppercase">
+										Opacity
+									</Label>
+									<div className="relative">
+										{/* Mock opacity via blend mode if needed, but Konva supports opacity natively. 
+                        Assuming CompositorLayer doesn't have opacity field yet, skipping.
+                        Using Z-Index here as generic placeholder */}
+										<NumericInput
+											value={selectedLayer.zIndex ?? 0}
+											onChange={(v) => updateLayer({ zIndex: v })}
+										/>
+									</div>
+								</div>
+							</div>
+						</section>
+
+						{selectedLayer.type === "Image" && (
+							<section>
+								<div className="flex items-center space-x-2 mt-2">
+									<Switch
+										id="lockAspect"
+										checked={selectedLayer.lockAspect ?? true}
+										onCheckedChange={(checked) =>
+											updateLayer({ lockAspect: checked })
+										}
+									/>
+									<Label htmlFor="lockAspect" className="text-xs">
+										Lock Aspect Ratio
+									</Label>
+								</div>
+							</section>
+						)}
+
+						{selectedLayer.type === "Text" && (
+							<>
+								<Separator />
+								<section className="space-y-3">
+									<h3 className="text-xs font-semibold uppercase tracking-wider text-muted-foreground">
+										Typography
+									</h3>
+									<div className="space-y-1">
+										<Select
+											value={selectedLayer.fontFamily || "Geist"}
+											onValueChange={(val) => updateLayer({ fontFamily: val })}
+										>
+											<SelectTrigger className="h-8 text-xs">
+												<SelectValue />
+											</SelectTrigger>
+											<SelectContent>
+												{fontNames.map((f) => (
+													<SelectItem key={f} value={f}>
+														{f.replace("_", " ")}
+													</SelectItem>
+												))}
+											</SelectContent>
+										</Select>
+									</div>
+									<div className="grid grid-cols-2 gap-3">
+										<div className="space-y-1">
+											<Label className="text-[10px] text-muted-foreground uppercase">
+												Size
+											</Label>
+											<NumericInput
+												value={selectedLayer.fontSize || 24}
+												onChange={(v) => updateLayer({ fontSize: v })}
+												min={1}
+											/>
+										</div>
+										<div className="space-y-1">
+											<Label className="text-[10px] text-muted-foreground uppercase">
+												Color
+											</Label>
+											<ColorInput
+												id="fill"
+												value={selectedLayer.fill ?? "#ffffff"}
+												onChange={(e) => updateLayer({ fill: e })}
+												className="h-8 w-full"
+											/>
+										</div>
+									</div>
+
+									<div className="grid grid-cols-3 gap-1 bg-muted/50 p-1 rounded-md">
+										<Button
+											variant={
+												selectedLayer.align === "left" ? "secondary" : "ghost"
+											}
+											size="sm"
+											className="h-6 px-0"
+											onClick={() => updateLayer({ align: "left" })}
+										>
+											<span className="text-[10px]">Left</span>
+										</Button>
+										<Button
+											variant={
+												selectedLayer.align === "center" ? "secondary" : "ghost"
+											}
+											size="sm"
+											className="h-6 px-0"
+											onClick={() => updateLayer({ align: "center" })}
+										>
+											<span className="text-[10px]">Center</span>
+										</Button>
+										<Button
+											variant={
+												selectedLayer.align === "right" ? "secondary" : "ghost"
+											}
+											size="sm"
+											className="h-6 px-0"
+											onClick={() => updateLayer({ align: "right" })}
+										>
+											<span className="text-[10px]">Right</span>
+										</Button>
+									</div>
+
+									<div className="grid grid-cols-2 gap-3">
+										<div className="space-y-1">
+											<Label className="text-[10px] text-muted-foreground uppercase">
+												Spacing
+											</Label>
+											<NumericInput
+												value={selectedLayer.letterSpacing ?? 0}
+												onChange={(v) => updateLayer({ letterSpacing: v })}
+												allowNegative
+											/>
+										</div>
+										<div className="space-y-1">
+											<Label className="text-[10px] text-muted-foreground uppercase">
+												Line H
+											</Label>
+											<NumericInput
+												value={selectedLayer.lineHeight ?? 1}
+												onChange={(v) => updateLayer({ lineHeight: v })}
+												allowDecimal
+												min={0.1}
+											/>
+										</div>
+									</div>
+								</section>
+							</>
+						)}
+
+						<Separator />
+
+						<section className="space-y-3">
+							<h3 className="text-xs font-semibold uppercase tracking-wider text-muted-foreground">
+								Blending
+							</h3>
 							<Select
-								value={selectedLayer.blendMode}
-								onValueChange={(value) => updateLayer({ blendMode: value })}
+								value={selectedLayer.blendMode || "source-over"}
+								onValueChange={(val) => updateLayer({ blendMode: val })}
 							>
-								<SelectTrigger id="blendMode">
+								<SelectTrigger className="h-8 text-xs capitalize">
 									<SelectValue />
 								</SelectTrigger>
 								<SelectContent>
-									{blendModes.map((mode) => (
-										<SelectItem key={mode} value={mode}>
-											{mode}
+									{BLEND_MODES.map((m) => (
+										<SelectItem key={m} value={m} className="capitalize">
+											{m.replace("-", " ")}
 										</SelectItem>
 									))}
 								</SelectContent>
 							</Select>
-						</div>
-						<div className="flex flex-col gap-1">
-							<Label htmlFor="zIndex">Z-Index:</Label>
-							<NumericInput
-								value={selectedLayer.zIndex ?? 0}
-								onChange={(v) => updateLayer({ zIndex: v })}
-								allowNegative={true}
-							/>
-						</div>
-						{selectedLayer.type === "Text" && (
-							<>
-								<div className="flex flex-col gap-1">
-									<Label htmlFor="fontSize">Font Size:</Label>
-									<NumericInput
-										value={selectedLayer.fontSize || 24}
-										onChange={(v) => updateLayer({ fontSize: v })}
-										min={8}
-										max={256}
-										allowNegative={false}
-									/>
-								</div>
-								<div className="flex flex-col gap-1">
-									<Label htmlFor="fontFamily">Font Family:</Label>
-									<Select
-										value={selectedLayer.fontFamily || "Geist"}
-										onValueChange={(value) =>
-											updateLayer({ fontFamily: value })
-										}
-									>
-										<SelectTrigger id="fontFamily">
-											<SelectValue />
-										</SelectTrigger>
-										<SelectContent>
-											{fontNames.map((fontName) => (
-												<SelectItem key={`${fontName}_opt`} value={fontName}>
-													{fontName.replace("_", " ")}
-												</SelectItem>
-											))}
-										</SelectContent>
-									</Select>
-								</div>
-								<div className="flex flex-col gap-1">
-									<Label htmlFor="color">Color:</Label>
-									<ColorInput
-										id="color"
-										value={selectedLayer.fill ?? "#fff"}
-										onChange={(e) => updateLayer({ fill: e })}
-										className="w-full h-8 cursor-pointer"
-									/>
-								</div>
-								<hr className="my-4 border-gray-600" />
-								<div className="flex flex-col gap-1">
-									<Label htmlFor="letterSpacing">Letter Spacing:</Label>
-									<NumericInput
-										value={selectedLayer.letterSpacing ?? 0}
-										onChange={(v) => updateLayer({ letterSpacing: v })}
-										min={-10}
-										max={50}
-										allowNegative={true}
-									/>
-								</div>
-								<div className="flex flex-col gap-1">
-									<Label htmlFor="lineHeight">Line Height:</Label>
-									<NumericInput
-										value={selectedLayer.lineHeight ?? 1}
-										onChange={(v) => updateLayer({ lineHeight: v })}
-										min={0.5}
-										max={3}
-										allowNegative={false}
-										allowDecimal={true}
-									/>
-								</div>
-								<div className="flex flex-col gap-1">
-									<Label htmlFor="align">Horizontal Alignment:</Label>
-									<Select
-										value={selectedLayer.align ?? "left"}
-										onValueChange={(value) => updateLayer({ align: value })}
-									>
-										<SelectTrigger id="align">
-											<SelectValue />
-										</SelectTrigger>
-										<SelectContent>
-											<SelectItem value="left">Left</SelectItem>
-											<SelectItem value="center">Center</SelectItem>
-											<SelectItem value="right">Right</SelectItem>
-										</SelectContent>
-									</Select>
-								</div>
-								<div className="flex flex-col gap-1">
-									<Label htmlFor="verticalAlign">Vertical Alignment:</Label>
-									<Select
-										value={selectedLayer.verticalAlign ?? "top"}
-										onValueChange={(value) =>
-											updateLayer({ verticalAlign: value })
-										}
-									>
-										<SelectTrigger id="verticalAlign">
-											<SelectValue />
-										</SelectTrigger>
-										<SelectContent>
-											<SelectItem value="top">Top</SelectItem>
-											<SelectItem value="middle">Middle</SelectItem>
-											<SelectItem value="bottom">Bottom</SelectItem>
-										</SelectContent>
-									</Select>
-								</div>
-							</>
-						)}
-						{selectedLayer.type === "Image" && (
-							<div className="flex items-center space-x-2">
-								<Switch
-									id="lockAspect"
-									checked={selectedLayer.lockAspect ?? true}
-									onCheckedChange={(checked) =>
-										updateLayer({ lockAspect: checked })
-									}
-								/>
-								<Label htmlFor="lockAspect">Lock Aspect Ratio</Label>
-							</div>
-						)}
+						</section>
 					</>
+				) : (
+					<div className="flex flex-col items-center justify-center h-48 text-muted-foreground space-y-2 text-center opacity-50">
+						<MousePointer className="w-8 h-8" />
+						<p className="text-xs">Select a layer to edit properties</p>
+					</div>
 				)}
 			</div>
 		</div>
 	);
 };
+
+// --- Main Designer Component ---
+
 interface CanvasDesignerEditorProps {
 	initialLayers: Map<
 		HandleEntityType["id"],
@@ -1207,6 +1400,7 @@ interface CanvasDesignerEditorProps {
 	onClose: () => void;
 	onSave: (config: CompositorNodeConfig) => void;
 }
+
 export const CanvasDesignerEditor: React.FC<CanvasDesignerEditorProps> = ({
 	initialLayers,
 	node,
@@ -1224,14 +1418,20 @@ export const CanvasDesignerEditor: React.FC<CanvasDesignerEditorProps> = ({
 	const [isEditingText, setIsEditingText] = useState(false);
 	const [editingLayerId, setEditingLayerId] = useState<string | null>(null);
 	const stageRef = useRef<Konva.Stage | null>(null);
+
 	const [mode, setMode] = useState<"select" | "pan">("select");
+	// To track spacebar hold for temporary pan
+	const lastModeRef = useRef<"select" | "pan">("select");
+
 	const [scale, setScale] = useState(1);
 	const [stagePos, setStagePos] = useState({ x: 0, y: 0 });
 	const containerRef = useRef<HTMLDivElement>(null);
 	const [screenWidth, setScreenWidth] = useState(100);
 	const [screenHeight, setScreenHeight] = useState(100);
+
 	const zoomPercentage = `${Math.round(scale * 100)}%`;
-	// Resize observer to keep track of available screen space for the canvas
+
+	// Resize observer
 	useEffect(() => {
 		const updateSize = () => {
 			if (containerRef.current) {
@@ -1239,15 +1439,14 @@ export const CanvasDesignerEditor: React.FC<CanvasDesignerEditorProps> = ({
 				setScreenHeight(containerRef.current.offsetHeight);
 			}
 		};
-		// Initial sizing
 		updateSize();
 		window.addEventListener("resize", updateSize);
 		return () => window.removeEventListener("resize", updateSize);
 	}, []);
 
+	// Fit View
 	const fitView = useCallback(() => {
-		// Fit the Artboard (0,0 to ViewportW/H) into the Screen
-		const padding = 40;
+		const padding = 60;
 		const availableW = screenWidth - padding * 2;
 		const availableH = screenHeight - padding * 2;
 		const scaleW = availableW / viewportWidth;
@@ -1260,33 +1459,27 @@ export const CanvasDesignerEditor: React.FC<CanvasDesignerEditorProps> = ({
 		setScale(newScale);
 		setStagePos(newPos);
 	}, [viewportWidth, viewportHeight, screenWidth, screenHeight]);
-	// Center the artboard initially
+
+	// Initial Center
 	useEffect(() => {
-		if (screenWidth > 100 && screenHeight > 100) {
-			const padding = 40;
-			if (
-				viewportWidth > screenWidth - padding * 2 ||
-				viewportHeight > screenHeight - padding * 2
-			) {
-				fitView();
-			} else {
-				const x = (screenWidth - viewportWidth) / 2;
-				const y = (screenHeight - viewportHeight) / 2;
-				setStagePos({ x, y });
-				setScale(1);
-			}
+		if (
+			screenWidth > 100 &&
+			screenHeight > 100 &&
+			scale === 1 &&
+			stagePos.x === 0
+		) {
+			fitView();
 		}
-	}, [screenWidth, screenHeight, viewportHeight, viewportWidth, fitView]);
+	}, [screenWidth, screenHeight, fitView, scale, stagePos.x]);
+
+	// Zoom Helpers
 	const zoomIn = useCallback(() => {
-		const stage = stageRef.current;
-		if (!stage) return;
-		const oldScale = scale;
 		const center = { x: screenWidth / 2, y: screenHeight / 2 };
 		const mousePointTo = {
-			x: (center.x - stagePos.x) / oldScale,
-			y: (center.y - stagePos.y) / oldScale,
+			x: (center.x - stagePos.x) / scale,
+			y: (center.y - stagePos.y) / scale,
 		};
-		const newScale = oldScale * 1.2;
+		const newScale = scale * 1.2;
 		const newPos = {
 			x: center.x - mousePointTo.x * newScale,
 			y: center.y - mousePointTo.y * newScale,
@@ -1294,16 +1487,14 @@ export const CanvasDesignerEditor: React.FC<CanvasDesignerEditorProps> = ({
 		setScale(newScale);
 		setStagePos(newPos);
 	}, [scale, stagePos, screenWidth, screenHeight]);
+
 	const zoomOut = useCallback(() => {
-		const stage = stageRef.current;
-		if (!stage) return;
-		const oldScale = scale;
 		const center = { x: screenWidth / 2, y: screenHeight / 2 };
 		const mousePointTo = {
-			x: (center.x - stagePos.x) / oldScale,
-			y: (center.y - stagePos.y) / oldScale,
+			x: (center.x - stagePos.x) / scale,
+			y: (center.y - stagePos.y) / scale,
 		};
-		const newScale = oldScale / 1.2;
+		const newScale = scale / 1.2;
 		const newPos = {
 			x: center.x - mousePointTo.x * newScale,
 			y: center.y - mousePointTo.y * newScale,
@@ -1311,33 +1502,33 @@ export const CanvasDesignerEditor: React.FC<CanvasDesignerEditorProps> = ({
 		setScale(newScale);
 		setStagePos(newPos);
 	}, [scale, stagePos, screenWidth, screenHeight]);
+
 	const zoomTo = useCallback(
 		(value: number) => {
-			const stage = stageRef.current;
-			if (!stage) return;
-			const oldScale = scale;
 			const center = { x: screenWidth / 2, y: screenHeight / 2 };
 			const mousePointTo = {
-				x: (center.x - stagePos.x) / oldScale,
-				y: (center.y - stagePos.y) / oldScale,
+				x: (center.x - stagePos.x) / scale,
+				y: (center.y - stagePos.y) / scale,
 			};
-			const newScale = value;
 			const newPos = {
-				x: center.x - mousePointTo.x * newScale,
-				y: center.y - mousePointTo.y * newScale,
+				x: center.x - mousePointTo.x * value,
+				y: center.y - mousePointTo.y * value,
 			};
-			setScale(newScale);
+			setScale(value);
 			setStagePos(newPos);
 		},
 		[scale, stagePos, screenWidth, screenHeight],
 	);
-	const getTextData = (handleId: string) => {
-		const layerData = initialLayers.get(handleId) as OutputItem<"Text">;
-		if (!layerData) {
-			return "";
-		}
-		return layerData.data;
-	};
+
+	// Data Getters
+	const getTextData = useCallback(
+		(handleId: string) => {
+			const layerData = initialLayers.get(handleId) as OutputItem<"Text">;
+			return layerData?.data || "";
+		},
+		[initialLayers],
+	);
+
 	const getImageData = useCallback(
 		(handleId: string) => {
 			const layerData = initialLayers.get(handleId) as OutputItem<"Image">;
@@ -1345,6 +1536,7 @@ export const CanvasDesignerEditor: React.FC<CanvasDesignerEditorProps> = ({
 		},
 		[initialLayers],
 	);
+
 	const getImageUrl = useCallback(
 		(handleId: string) => {
 			const layerData = initialLayers.get(handleId) as OutputItem<"Image">;
@@ -1355,7 +1547,8 @@ export const CanvasDesignerEditor: React.FC<CanvasDesignerEditorProps> = ({
 		},
 		[initialLayers],
 	);
-	// Load initial layers and fonts
+
+	// Initialize Layers
 	useEffect(() => {
 		const loadInitialLayers = async () => {
 			const existingConfig = (node.config as CompositorNodeConfig) ?? {
@@ -1370,6 +1563,7 @@ export const CanvasDesignerEditor: React.FC<CanvasDesignerEditorProps> = ({
 
 			initialLayers.forEach((output, handleId) => {
 				if (!layerUpdates[handleId]) {
+					// New layer init
 					const newLayer: CompositorLayer = {
 						type: output.type,
 						width: undefined,
@@ -1383,28 +1577,30 @@ export const CanvasDesignerEditor: React.FC<CanvasDesignerEditorProps> = ({
 						blendMode: "source-over",
 						zIndex: ++maxZ,
 					};
+
 					if (newLayer.type === "Text") {
-						newLayer.width = 200;
-						newLayer.fontSize = 24;
+						newLayer.width = 300;
+						newLayer.fontSize = 40;
 						newLayer.fontFamily = "Geist";
 						newLayer.fill = "#ffffff";
 						newLayer.letterSpacing = 0;
-						newLayer.lineHeight = 1;
-						newLayer.height = newLayer.fontSize * 1.2;
+						newLayer.lineHeight = 1.2;
+						newLayer.height = undefined; // Text auto-height
 						newLayer.align = "left";
 						newLayer.verticalAlign = "top";
 					}
+
 					if (newLayer.type === "Image") {
 						const fData = getImageData(handleId);
 						if (fData.entity) {
-							newLayer.width = Math.round(fData.entity.width ?? 200);
-							newLayer.height = Math.round(fData.entity.height ?? 200);
+							newLayer.width = Math.round(fData.entity.width ?? 300);
+							newLayer.height = Math.round(fData.entity.height ?? 300);
 						} else if (fData.processData) {
-							newLayer.width = Math.round(fData.processData.width ?? 200);
-							newLayer.height = Math.round(fData.processData.height ?? 200);
+							newLayer.width = Math.round(fData.processData.width ?? 300);
+							newLayer.height = Math.round(fData.processData.height ?? 300);
 						} else {
-							newLayer.width = 200;
-							newLayer.height = 200;
+							newLayer.width = 300;
+							newLayer.height = 300;
 						}
 					}
 					layerUpdates[handleId] = newLayer;
@@ -1418,17 +1614,73 @@ export const CanvasDesignerEditor: React.FC<CanvasDesignerEditorProps> = ({
 			});
 
 			await Promise.all(fontPromises);
+			// Filter out layers that no longer exist in inputs?
+			// For now keep them to prevent data loss if disconnected briefly
 			setLayers(Object.values(layerUpdates));
 		};
-
 		loadInitialLayers();
 	}, [initialLayers, node.config, getImageData]);
-	// Deselect when entering pan mode
+
+	// Deselect on Pan
 	useEffect(() => {
 		if (mode === "pan" && selectedId) {
 			setSelectedId(null);
 		}
 	}, [mode, selectedId]);
+
+	// Global Keyboard Shortcuts (Space Pan, Arrows Nudge, Delete)
+	useEffect(() => {
+		const handleKeyDown = (e: KeyboardEvent) => {
+			const isInput =
+				document.activeElement?.tagName === "INPUT" ||
+				document.activeElement?.tagName === "TEXTAREA";
+			if (isInput) return;
+
+			// Spacebar Pan
+			if (e.code === "Space" && !e.repeat) {
+				e.preventDefault();
+				if (mode !== "pan") {
+					lastModeRef.current = mode;
+					setMode("pan");
+				}
+			}
+
+			// Arrow Nudge
+			if (
+				selectedId &&
+				["ArrowUp", "ArrowDown", "ArrowLeft", "ArrowRight"].includes(e.key)
+			) {
+				e.preventDefault();
+				const shift = e.shiftKey ? 10 : 1;
+				setLayers((prev) =>
+					prev.map((l) => {
+						if (l.id !== selectedId) return l;
+						const u = { ...l };
+						if (e.key === "ArrowUp") u.y -= shift;
+						if (e.key === "ArrowDown") u.y += shift;
+						if (e.key === "ArrowLeft") u.x -= shift;
+						if (e.key === "ArrowRight") u.x += shift;
+						return u;
+					}),
+				);
+			}
+		};
+
+		const handleKeyUp = (e: KeyboardEvent) => {
+			if (e.code === "Space") {
+				e.preventDefault();
+				setMode(lastModeRef.current); // Revert to previous mode
+			}
+		};
+
+		window.addEventListener("keydown", handleKeyDown);
+		window.addEventListener("keyup", handleKeyUp);
+		return () => {
+			window.removeEventListener("keydown", handleKeyDown);
+			window.removeEventListener("keyup", handleKeyUp);
+		};
+	}, [mode, selectedId]);
+
 	const handleSave = useCallback(() => {
 		const layerUpdates = layers.reduce<Record<string, CompositorLayer>>(
 			(acc, layer) => {
@@ -1439,6 +1691,7 @@ export const CanvasDesignerEditor: React.FC<CanvasDesignerEditorProps> = ({
 		);
 		propOnSave({ layerUpdates, width: viewportWidth, height: viewportHeight });
 	}, [layers, propOnSave, viewportHeight, viewportWidth]);
+
 	return (
 		<EditorContext.Provider
 			value={{
@@ -1475,68 +1728,81 @@ export const CanvasDesignerEditor: React.FC<CanvasDesignerEditorProps> = ({
 				getImageUrl,
 			}}
 		>
-			<div className="flex flex-row h-screen w-screen bg-gray-950 overflow-hidden relative">
-				{/* Layers Sidebar - Fixed Width */}
-				<div className="relative w-56 shrink-0">
+			<div className="flex h-screen w-screen bg-background overflow-hidden relative text-foreground">
+				<div className="relative shrink-0 z-20">
 					<LayersPanel onSave={handleSave} onClose={onClose} />
 				</div>
-				{/* Main Canvas Area - Flexible */}
-				<div className="flex-1 flex flex-col relative min-w-0">
+
+				<div className="flex-1 flex flex-col relative min-w-0 z-0">
 					<div
 						ref={containerRef}
-						className="flex-1 relative overflow-hidden bg-neutral-900"
+						className="flex-1 relative overflow-hidden bg-neutral-900/90"
 					>
+						{/* Grid Background */}
 						<div
 							className="absolute inset-0 pointer-events-none"
 							style={{
-								backgroundImage: `
-  radial-gradient(circle, #333 1px, transparent 1px)
-  `,
-								backgroundSize: "20px 20px",
-								opacity: 0.5,
+								backgroundImage:
+									"radial-gradient(circle, #404040 1px, transparent 1px)",
+								backgroundSize: "24px 24px",
+								opacity: 0.3,
 							}}
 						/>
 						<Canvas />
 					</div>
-					{/* Bottom Toolbar */}
-					<div className="absolute bottom-6 left-1/2 -translate-x-1/2 z-20">
-						<Menubar className="border-0 bg-gray-800 py-1 rounded-md shadow-lg ring-1 ring-white/10">
+
+					{/* Floating Toolbar */}
+					<div className="absolute bottom-8 left-1/2 -translate-x-1/2 z-50">
+						<Menubar className="border border-border/50 bg-background/80 backdrop-blur-md shadow-2xl rounded-full px-2 py-1 h-12 ring-1 ring-white/5">
 							<Button
-								title="Select"
-								variant={mode === "pan" ? "ghost" : "outline"}
-								size="sm"
+								title="Select (V)"
+								variant={mode === "select" ? "secondary" : "ghost"}
+								size="icon"
+								className="rounded-full w-9 h-9"
 								onClick={() => setMode("select")}
 							>
-								<MousePointer className="w-4" />
+								<MousePointer className="w-4 h-4" />
 							</Button>
 							<Button
-								title="Pan"
-								variant={mode === "select" ? "ghost" : "outline"}
-								size="sm"
+								title="Pan (Space)"
+								variant={mode === "pan" ? "secondary" : "ghost"}
+								size="icon"
+								className="rounded-full w-9 h-9"
 								onClick={() => setMode("pan")}
 							>
-								<Hand className="w-4" />
+								<Hand className="w-4 h-4" />
 							</Button>
-							<Separator orientation="vertical" />
+
+							<div className="w-px h-5 bg-border mx-2" />
+
 							<MenubarMenu>
-								<MenubarTrigger className="px-3 py-1 cursor-pointer text-xs">
-									{zoomPercentage} <ChevronDown className="w-5" />
+								<MenubarTrigger asChild>
+									<Button
+										variant="ghost"
+										className="h-9 px-3 text-xs font-mono rounded-full"
+									>
+										{zoomPercentage}{" "}
+										<ChevronDown className="w-3 h-3 ml-2 opacity-50" />
+									</Button>
 								</MenubarTrigger>
-								<MenubarContent align="end">
-									<MenubarItem onClick={() => zoomIn()}>Zoom in</MenubarItem>
-									<MenubarItem onClick={() => zoomOut()}>Zoom out</MenubarItem>
+								<MenubarContent align="center" className="min-w-[140px]">
+									<MenubarItem onClick={() => zoomIn()}>Zoom In</MenubarItem>
+									<MenubarItem onClick={() => zoomOut()}>Zoom Out</MenubarItem>
 									<MenubarItem onClick={() => zoomTo(1)}>
-										Zoom to 100%
+										Actual Size (100%)
 									</MenubarItem>
+									<MenubarItem onClick={() => zoomTo(2)}>200%</MenubarItem>
+									<Separator className="my-1" />
 									<MenubarItem onClick={() => fitView()}>
-										Zoom to fit
+										Fit to Screen
 									</MenubarItem>
 								</MenubarContent>
 							</MenubarMenu>
 						</Menubar>
 					</div>
 				</div>
-				<div className="relative w-56 shrink-0">
+
+				<div className="relative shrink-0 z-20">
 					<InspectorPanel />
 				</div>
 			</div>

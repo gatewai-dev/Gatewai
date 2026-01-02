@@ -22,42 +22,69 @@ import { NODE_ICON_MAP } from "../../node-templates/node-palette/icon-map";
 import { useNodeResult } from "../processor/processor-ctx";
 import { NodeMenu } from "./node-menu";
 
+// --- Helpers ---
+
+const DEFAULT_COLOR = "#9ca3af";
+
+const getTypeColor = (type?: string) =>
+	dataTypeColors[type || ""]?.hex || DEFAULT_COLOR;
+
+/**
+ * Optimizes handle styles by using CSS variables where possible
+ * and reducing object creation.
+ */
 export const getHandleStyle = (
 	types: string[],
 	isConnected: boolean,
-	connectedType?: string, // The type of the actual data currently in the handle
-	borderWidth: string = "2px",
+	connectedType?: string,
+	isValid: boolean = true,
 ): React.CSSProperties => {
-	// If connected, return a solid color style
-	if (isConnected && connectedType) {
-		const color = dataTypeColors[connectedType]?.hex || "#6b7280";
+	if (!isValid) {
 		return {
-			border: `${borderWidth} solid ${color}`,
-			backgroundColor: color,
+			backgroundColor: "var(--destructive)",
+			border: "2px solid var(--background)",
+			boxShadow: "0 0 0 2px var(--destructive), 0 0 8px var(--destructive)",
 		};
 	}
 
-	// If not connected, show the multi-color border
-	const segmentSize = 100 / Math.max(types.length, 1);
-	const gradientStops =
-		types.length > 0
-			? types
-					.map((type, index) => {
-						const color = dataTypeColors[type]?.hex || "#6b7280";
-						return `${color} ${index * segmentSize}% ${(index + 1) * segmentSize}%`;
-					})
-					.join(", ")
-			: "#6b7280 0% 100%";
+	// 2. Connected/Has Value State (Solid Fill)
+	if (isConnected || connectedType) {
+		const color = getTypeColor(connectedType || types[0]);
+		return {
+			backgroundColor: color,
+			border: "2px solid var(--background)",
+			boxShadow: `0 0 0 1px ${color}40`,
+		};
+	}
 
+	// 3. Unconnected Multi-Type State (Hollow with Conic Border)
+	if (types.length > 1) {
+		const segmentSize = 100 / types.length;
+		const gradientStops = types
+			.map((type, index) => {
+				const color = getTypeColor(type);
+				return `${color} ${index * segmentSize}% ${(index + 1) * segmentSize}%`;
+			})
+			.join(", ");
+
+		return {
+			backgroundColor: "var(--background)",
+			backgroundClip: "padding-box",
+			border: "3px solid transparent",
+			backgroundImage: `linear-gradient(var(--background), var(--background)), conic-gradient(${gradientStops})`,
+			backgroundOrigin: "border-box",
+		};
+	}
+
+	// 4. Unconnected Single Type (Hollow Ring)
+	const color = getTypeColor(types[0]);
 	return {
-		border: `${borderWidth} solid transparent`,
-		background: `
-            linear-gradient(white, white) padding-box, 
-            conic-gradient(${gradientStops}) border-box
-        `,
-		borderRadius: "9999px",
+		backgroundColor: "var(--background)",
+		border: `3px solid ${color}`,
 	};
 };
+
+// --- Components ---
 
 const NodeHandle = memo(
 	({
@@ -66,7 +93,8 @@ const NodeHandle = memo(
 		type,
 		isValid,
 		hasValue,
-		connectedType, // New prop
+		connectedType,
+		nodeSelected,
 	}: {
 		handle: HandleEntityType;
 		index: number;
@@ -74,52 +102,73 @@ const NodeHandle = memo(
 		isValid: boolean;
 		hasValue: boolean;
 		connectedType?: string;
+		nodeSelected?: boolean;
 	}) => {
 		const isTarget = type === "target";
-		const isInvalid = !isValid;
 
-		// Calculate style:
-		// If hasValue is true, it uses connectedType for solid color.
-		// If hasValue is false, it uses handle.dataTypes for multi-color border.
 		const handleStyle = useMemo(
-			() => getHandleStyle(handle.dataTypes, hasValue, connectedType),
-			[handle.dataTypes, hasValue, connectedType],
+			() =>
+				getHandleStyle(
+					handle.dataTypes,
+					hasValue || !isTarget,
+					connectedType,
+					isValid,
+				),
+			[handle.dataTypes, hasValue, isTarget, connectedType, isValid],
 		);
 
-		// For the label text color, use the active type or the first allowed type
-		const activeColor =
-			dataTypeColors[connectedType || handle.dataTypes[0] || "Any"]?.hex;
+		const activeColor = useMemo(
+			() =>
+				connectedType
+					? getTypeColor(connectedType)
+					: getTypeColor(handle.dataTypes[0]),
+			[connectedType, handle.dataTypes],
+		);
+
+		const topPosition = (index + 1) * 36 + 24;
 
 		return (
 			<div
 				className={cn(
-					"absolute z-10 flex items-center group",
-					isTarget ? "left-0 -translate-x-1/2" : "right-0 translate-x-1/2",
+					"absolute z-50 flex items-center group/handle will-change-transform",
+					isTarget ? "-left-[5px]" : "-right-[5px]",
 				)}
-				style={{ top: `${(index + 1) * 30 + 20}px` }}
+				style={{ top: `${topPosition}px` }}
 			>
+				{/* External Label */}
+				<div
+					className={cn(
+						"absolute whitespace-nowrap px-2.5 py-1 rounded-full transition-all duration-200 ease-out pointer-events-none",
+						isTarget
+							? "right-6 flex-row-reverse text-right origin-right"
+							: "left-6 text-left origin-left",
+						nodeSelected
+							? "bg-muted/40 backdrop-blur-md opacity-100 scale-100 shadow-sm"
+							: "opacity-40 scale-95",
+					)}
+				>
+					<span
+						className="text-[9px] font-bold uppercase tracking-widest leading-none"
+						style={{ color: activeColor }}
+					>
+						{handle.label || connectedType || handle.dataTypes[0]}
+						{handle.required && (
+							<span className="text-destructive ml-0.5">*</span>
+						)}
+					</span>
+				</div>
+
 				<Handle
 					id={handle.id}
 					type={type}
 					position={isTarget ? Position.Left : Position.Right}
 					style={handleStyle}
 					className={cn(
-						"w-3.5! h-3.5! border-none",
-						// Red pulse only if strictly invalid
-						isInvalid && "ring-2 ring-offset-2 ring-red-500 animate-pulse",
+						"w-4! h-4! rounded-full transition-shadow duration-200 border-none",
+						!isValid &&
+							"animate-pulse ring-2 ring-destructive ring-offset-2 ring-offset-background",
 					)}
 				/>
-
-				<span
-					className={cn(
-						"absolute whitespace-nowrap px-2 py-1 text-[10px] font-bold uppercase tracking-wider opacity-0 transition-all duration-200 pointer-events-none group-hover:opacity-100",
-						isTarget ? "right-5 text-right" : "left-5 text-left",
-					)}
-					style={{ color: activeColor }}
-				>
-					{handle.label || connectedType || handle.dataTypes[0]}
-					{handle.required && <span className="ml-0.5">*</span>}
-				</span>
 			</div>
 		);
 	},
@@ -133,84 +182,97 @@ const BaseNode = memo(
 		},
 	) => {
 		const { selected, id } = props;
+
 		const selectHandles = useMemo(() => makeSelectHandlesByNodeId(id), [id]);
 		const handles = useAppSelector(selectHandles);
 		const selectNode = useMemo(() => makeSelectNodeById(id), [id]);
 		const node = useAppSelector(selectNode);
 		const { inputs } = useNodeResult(id);
 
-		const isValid = (id: HandleEntityType["id"]) => {
-			const input = inputs.get(id);
-			return input?.connectionValid;
-		};
-
-		const hasValue = (id: HandleEntityType["id"]) => {
-			const input = inputs.get(id);
-			return input?.outputItem?.data != null;
-		};
-		// Sort handles by order
 		const { inputHandles, outputHandles } = useMemo(() => {
-			const sorted = handles.sort((a, b) => a.order - b.order);
+			const sorted = [...handles].sort((a, b) => a.order - b.order);
 			return {
 				inputHandles: sorted.filter((h) => h.type === "Input"),
 				outputHandles: sorted.filter((h) => h.type === "Output"),
 			};
 		}, [handles]);
 
-		const nodeBackgroundColor = "bg-background";
-		const Icon =
-			node && (NODE_ICON_MAP[node?.type](node) || NODE_ICON_MAP.File(node));
+		const Icon = useMemo(
+			() =>
+				node &&
+				(NODE_ICON_MAP[node?.type]?.(node) || NODE_ICON_MAP.File?.(node)),
+			[node],
+		);
 
 		return (
 			<div
 				className={cn(
-					`relative drag-handle ${nodeBackgroundColor} rounded-2xl shadow-md w-full h-full transition-all duration-200 group`,
-					{
-						"selected ring-primary/30 ring box-border bg-background-selected!":
-							selected,
-					},
+					"relative flex flex-col w-full h-full transition-shadow duration-300 will-change-[transform,opacity]",
+					"bg-card/75 backdrop-blur-2xl border border-border/40",
+					"rounded-3xl shadow-sm",
+					"group hover:border-border/80",
+					selected &&
+						"ring-2 ring-primary/40 ring-offset-4 ring-offset-background border-primary/50 shadow-lg",
 					props.className,
 				)}
 			>
-				{inputHandles.map((handle, i) => (
-					// Inside BaseNode.tsx mapping:
-					<NodeHandle
-						key={handle.id}
-						handle={handle}
-						index={i}
-						type="target"
-						isValid={isValid(handle.id) ?? true}
-						hasValue={hasValue(handle.id)}
-						// Pass the actual type from the processor result
-						connectedType={inputs.get(handle.id)?.outputItem?.type}
-					/>
-				))}
+				{/* Inputs */}
+				<div className="absolute inset-y-0 left-0 w-0">
+					{inputHandles.map((handle, i) => (
+						<NodeHandle
+							key={handle.id}
+							handle={handle}
+							index={i}
+							type="target"
+							isValid={inputs.get(handle.id)?.connectionValid ?? true}
+							hasValue={inputs.get(handle.id)?.outputItem?.data != null}
+							connectedType={inputs.get(handle.id)?.outputItem?.type}
+							nodeSelected={selected}
+						/>
+					))}
+				</div>
 
-				<div className="px-2 py-2 h-[calc(100%-1rem)]">
-					<div className="header-section flex justify-between items-center mb-3 px-1">
-						<div className="flex items-center gap-2">
-							{Icon && <Icon />}
-							<div className="text-xs text-node-title">
-								{node?.name} {node?.id}
+				{/* Content Container */}
+				<div className="flex flex-col h-full overflow-hidden p-1.5">
+					<div className="flex items-center justify-between px-4 py-3.5 mb-1 drag-handle cursor-grab active:cursor-grabbing border-b border-border/5">
+						<div className="flex items-center gap-3 min-w-0">
+							{Icon && (
+								<div className="text-foreground/80 bg-muted/40 p-2 rounded-xl shadow-inner">
+									<Icon className="w-4 h-4" />
+								</div>
+							)}
+							<div className="flex flex-col min-w-0">
+								<span className="text-[13px] font-bold tracking-tight text-foreground/90 truncate">
+									{node?.name}
+								</span>
+								<span className="text-[9px] text-muted-foreground font-mono opacity-50 uppercase tracking-tighter">
+									ID: {node?.id.slice(-6)}
+								</span>
 							</div>
 						</div>
 						<NodeMenu {...props} />
 					</div>
-					<div className="nodrag nopan pointer-events-auto! h-[calc(100%-1rem)]">
+
+					<div className="flex-1 px-1 nodrag nopan overflow-y-auto cursor-auto">
 						{props.children}
 					</div>
 				</div>
 
-				{outputHandles.map((handle, i) => (
-					<NodeHandle
-						key={handle.id}
-						handle={handle}
-						index={i}
-						type="source"
-						isValid={true}
-						hasValue={true}
-					/>
-				))}
+				{/* Outputs */}
+				<div className="absolute inset-y-0 right-0 w-0">
+					{outputHandles.map((handle, i) => (
+						<NodeHandle
+							key={handle.id}
+							handle={handle}
+							index={i}
+							type="source"
+							isValid={true}
+							hasValue={true}
+							connectedType={handle.dataTypes[0]}
+							nodeSelected={selected}
+						/>
+					))}
+				</div>
 			</div>
 		);
 	},
@@ -226,6 +288,7 @@ const CustomConnectionLine = memo(
 		toY,
 		fromPosition,
 		toPosition,
+		connectionStatus,
 	}: ConnectionLineComponentProps<Node>): JSX.Element => {
 		const [edgePath] = getBezierPath({
 			sourceX: fromX,
@@ -236,23 +299,30 @@ const CustomConnectionLine = memo(
 			targetPosition: toPosition,
 		});
 
+		const strokeColor =
+			connectionStatus === "valid"
+				? "var(--primary)"
+				: connectionStatus === "invalid"
+					? "var(--destructive)"
+					: "var(--muted-foreground)";
+
 		return (
-			<g>
+			<g className="pointer-events-none">
 				<path
 					fill="none"
-					stroke="#6b7280"
-					strokeWidth={3}
+					stroke={strokeColor}
+					strokeWidth={2}
 					d={edgePath}
-					strokeDasharray="5 15"
-				>
-					<animate
-						attributeName="stroke-dashoffset"
-						values="0;-20"
-						dur="2s"
-						repeatCount="indefinite"
-						calcMode="linear"
-					/>
-				</path>
+					strokeDasharray="4 6"
+					className="animate-[dash_1.5s_linear_infinite] opacity-50"
+				/>
+				<circle
+					cx={toX}
+					cy={toY}
+					r={5}
+					fill={strokeColor}
+					className="animate-pulse"
+				/>
 			</g>
 		);
 	},
@@ -266,7 +336,7 @@ interface CustomEdgeProps extends EdgeProps {
 	sourcePosition: Position;
 	targetPosition: Position;
 	style?: React.CSSProperties;
-	markerEnd?: string;
+	data?: { type?: string };
 }
 
 const CustomEdge = memo(
@@ -280,6 +350,8 @@ const CustomEdge = memo(
 		targetPosition,
 		style = {},
 		markerEnd,
+		selected,
+		data,
 	}: CustomEdgeProps): JSX.Element => {
 		const [edgePath] = getBezierPath({
 			sourceX,
@@ -289,17 +361,34 @@ const CustomEdge = memo(
 			targetY,
 			targetPosition,
 		});
+
+		const color = useMemo(
+			() =>
+				selected
+					? "var(--primary)"
+					: getTypeColor(data?.type) || "var(--border)",
+			[selected, data?.type],
+		);
+
 		return (
-			<BaseEdge
-				path={edgePath}
-				id={id}
-				style={{
-					...style,
-					strokeWidth: 3,
-				}}
-				className="react-flow__edge-path  hover:stroke-[15px]! hover:opacity-80"
-				markerEnd={markerEnd}
-			/>
+			<>
+				<BaseEdge
+					path={edgePath}
+					style={{ strokeWidth: 10, stroke: "transparent" }}
+				/>
+				<BaseEdge
+					id={id}
+					path={edgePath}
+					markerEnd={markerEnd}
+					style={{
+						...style,
+						strokeWidth: selected ? 3.5 : 2.5,
+						stroke: color,
+						opacity: selected ? 1 : 0.45,
+						transition: "opacity 0.2s ease, stroke-width 0.2s ease",
+					}}
+				/>
+			</>
 		);
 	},
 );
