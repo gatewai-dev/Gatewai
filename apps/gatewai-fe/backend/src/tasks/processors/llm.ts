@@ -22,8 +22,7 @@ const llmProcessor: NodeProcessor = async ({ node, data }) => {
 		const imageFileData = getInputValue(data, node.id, false, {
 			dataType: DataType.Image,
 			label: "Image",
-		}) as FileData | null;
-
+		})?.data as FileData | null;
 		// Build messages
 		const messages: ModelMessage[] = [];
 

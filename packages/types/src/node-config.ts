@@ -1,6 +1,4 @@
-import type { DataType } from "@gatewai/db";
 import { z } from "zod";
-import type { OutputItem } from "./node-result.js";
 
 // Text Node
 const TextNodeConfigSchema = z
@@ -154,8 +152,6 @@ const LLM_NODE_MODELS = [
 	"perplexity/sonar",
 	"perplexity/sonar-reasoning",
 	"amazon/nova-pro",
-	"meta/llama-3.3-70b",
-	"deepseek/deepseek-v3.2",
 ] as const;
 
 const LLMNodeConfigSchema = z
@@ -177,8 +173,6 @@ const AGENT_NODE_MODELS = [
 	"perplexity/sonar-pro",
 	"perplexity/sonar",
 	"perplexity/sonar-reasoning",
-	"meta/llama-3.3-70b",
-	"deepseek/deepseek-v3.2",
 ] as const;
 
 const AgentNodeConfigSchema = z
