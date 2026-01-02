@@ -125,9 +125,15 @@ export async function SEED_createNodeTemplates(prisma: PrismaClient) {
 				create: [
 					{
 						type: HandleType.Input,
-						dataTypes: [DataType.File],
+						dataTypes: [
+							DataType.Text,
+							DataType.Image,
+							DataType.Video,
+							DataType.Audio,
+							DataType.Mask,
+						],
 						required: true,
-						label: "File",
+						label: "Input",
 					},
 				],
 			},

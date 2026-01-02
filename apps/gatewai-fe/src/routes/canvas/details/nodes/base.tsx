@@ -33,29 +33,41 @@ const getColorForType = (type: string) => {
 	);
 };
 
-const getHandleStyles = (
-	type: string,
+export const getHandleStyle = (
+	types: string[],
 	isConnected: boolean,
-	isInvalid: boolean,
-) => {
-	const config = dataTypeColors[type] || dataTypeColors["Any"];
-	const isGenericLayer = ["DesignLayer", "VideoLayer", "File", "Any"].includes(
-		type,
-	);
+	connectedType?: string, // The type of the actual data currently in the handle
+	borderWidth: string = "2px",
+): React.CSSProperties => {
+	// If connected, return a solid color style
+	if (isConnected && connectedType) {
+		const color = dataTypeColors[connectedType]?.hex || "#6b7280";
+		return {
+			border: `${borderWidth} solid ${color}`,
+			backgroundColor: color,
+		};
+	}
 
-	return cn(
-		"w-3.5! h-3.5! transition-all duration-300 hover:scale-125 border-2",
-		// Invalid State: Red ring, no background, specific border
-		isInvalid
-			? "border-red-500 ring-4 ring-red-500/30 bg-transparent animate-pulse"
-			: "",
-		// Connection State Logic
-		!isInvalid && (isConnected ? "bg-current" : "bg-transparent"),
-		// Neutral state for specific types
-		!isInvalid && !isConnected && isGenericLayer
-			? "border-slate-200 bg-white"
-			: "",
-	);
+	// If not connected, show the multi-color border
+	const segmentSize = 100 / Math.max(types.length, 1);
+	const gradientStops =
+		types.length > 0
+			? types
+					.map((type, index) => {
+						const color = dataTypeColors[type]?.hex || "#6b7280";
+						return `${color} ${index * segmentSize}% ${(index + 1) * segmentSize}%`;
+					})
+					.join(", ")
+			: "#6b7280 0% 100%";
+
+	return {
+		border: `${borderWidth} solid transparent`,
+		background: `
+            linear-gradient(white, white) padding-box, 
+            conic-gradient(${gradientStops}) border-box
+        `,
+		borderRadius: "9999px",
+	};
 };
 
 const NodeHandle = memo(
@@ -65,31 +77,29 @@ const NodeHandle = memo(
 		type,
 		isValid,
 		hasValue,
+		connectedType, // New prop
 	}: {
 		handle: HandleEntityType;
 		index: number;
 		type: "source" | "target";
 		isValid: boolean;
 		hasValue: boolean;
+		connectedType?: string;
 	}) => {
-		const primaryType = handle.dataTypes[0] || "Any";
-		const color = getColorForType(primaryType);
 		const isTarget = type === "target";
 		const isInvalid = !isValid;
 
-		// Design Logic: Determine the colors based on state
-		// If invalid, force Red. Otherwise, use the data-type hex.
-		const borderColor = color.hex;
+		// Calculate style:
+		// If hasValue is true, it uses connectedType for solid color.
+		// If hasValue is false, it uses handle.dataTypes for multi-color border.
+		const handleStyle = useMemo(
+			() => getHandleStyle(handle.dataTypes, hasValue, connectedType),
+			[handle.dataTypes, hasValue, connectedType],
+		);
 
-		// Background logic:
-		// 1. Invalid = Transparent
-		// 2. Has Value = Solid Data Color
-		// 3. Empty = White
-		const backgroundColor = isInvalid
-			? "transparent"
-			: hasValue
-				? color.hex
-				: "transparent";
+		// For the label text color, use the active type or the first allowed type
+		const activeColor =
+			dataTypeColors[connectedType || handle.dataTypes[0] || "Any"]?.hex;
 
 		return (
 			<div
@@ -103,27 +113,22 @@ const NodeHandle = memo(
 					id={handle.id}
 					type={type}
 					position={isTarget ? Position.Left : Position.Right}
-					// Use inline styles for the dynamic hex colors to guarantee they render
-					style={{
-						border: `2px solid ${borderColor}`,
-						backgroundColor: backgroundColor,
-					}}
+					style={handleStyle}
 					className={cn(
-						"w-3.5! h-3.5! transition-all duration-300 hover:scale-125",
-						// Use Tailwind for the "System States" (Ring and Animation)
-						isInvalid && "ring-2 ring-offset-2 ring-red-500/70 animate-pulse",
+						"w-3.5! h-3.5! transition-all duration-300 hover:scale-125 border-none",
+						// Red pulse only if strictly invalid
+						isInvalid && "ring-2 ring-offset-2 ring-red-500 animate-pulse",
 					)}
 				/>
 
-				{/* Label Tooltip */}
 				<span
 					className={cn(
 						"absolute whitespace-nowrap px-2 py-1 text-[10px] font-bold uppercase tracking-wider opacity-0 transition-all duration-200 pointer-events-none group-hover:opacity-100",
 						isTarget ? "right-5 text-right" : "left-5 text-left",
 					)}
-					style={{ color: borderColor }}
+					style={{ color: activeColor }}
 				>
-					{handle.label || primaryType}
+					{handle.label || connectedType || handle.dataTypes[0]}
 					{handle.required && <span className="ml-0.5">*</span>}
 				</span>
 			</div>
@@ -145,7 +150,7 @@ const BaseNode = memo(
 
 		const isValid = (id: HandleEntityType["id"]) => {
 			const input = inputs.get(id);
-			return input?.connectionValid && input.outputItem != null;
+			return input?.connectionValid;
 		};
 
 		const hasValue = (id: HandleEntityType["id"]) => {
@@ -177,6 +182,7 @@ const BaseNode = memo(
 				)}
 			>
 				{inputHandles.map((handle, i) => (
+					// Inside BaseNode.tsx mapping:
 					<NodeHandle
 						key={handle.id}
 						handle={handle}
@@ -184,6 +190,8 @@ const BaseNode = memo(
 						type="target"
 						isValid={isValid(handle.id) ?? true}
 						hasValue={hasValue(handle.id)}
+						// Pass the actual type from the processor result
+						connectedType={inputs.get(handle.id)?.outputItem?.type}
 					/>
 				))}
 
