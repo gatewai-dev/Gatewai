@@ -679,23 +679,24 @@ export class NodeGraphProcessor extends EventEmitter {
 			console.log("ANAN");
 			const config = node.config as CompositorNodeConfig;
 
-			// 1. Prepare Inputs for Pixi Service
+			//  Prepare Inputs for Pixi Service
 			// Map the Layer's Input Handle ID -> Actual Data (URL or Text)
-			const inputDataMap = new Map<
+			const inputDataMap: Record<
 				string,
 				{ type: "Image" | "Text"; value: string }
-			>();
+			> = {};
+			console.log({ config, inputs });
 
-			if (config.layerUpdates) {
-				Object.values(config.layerUpdates).forEach((layer) => {
-					const data = getConnectedInputData(inputs, layer.inputHandleId);
-					if (data) {
-						inputDataMap.set(layer.inputHandleId, data);
-					}
-				});
-			}
+			inputs.forEach((value, inputHandleId) => {
+				console.log({ inputHandleId });
+				const data = getConnectedInputData(inputs, inputHandleId);
+				if (data) {
+					inputDataMap[inputHandleId] = data;
+				}
+			});
+			console.log({ inputs, inputDataMap });
 
-			// 2. Process with Pixi
+			// Process with Pixi
 			const result = await pixiProcessor.processCompositor(
 				config,
 				inputDataMap,

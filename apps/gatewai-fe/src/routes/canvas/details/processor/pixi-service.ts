@@ -548,7 +548,7 @@ class PixiProcessorService {
 
 	public async processCompositor(
 		config: CompositorNodeConfig,
-		inputs: Map<string, { type: "Image" | "Text"; value: string }>,
+		inputs: Record<string, { type: "Image" | "Text"; value: string }>,
 		signal?: AbortSignal,
 	): Promise<{ dataUrl: string; width: number; height: number }> {
 		return this.useApp(async (app) => {
@@ -565,7 +565,15 @@ class PixiProcessorService {
 			maskGraphics.endFill();
 			app.stage.mask = maskGraphics;
 
-			const layers = Object.values(config.layerUpdates || {});
+			// Create a map of layers by inputHandleId for quick lookup
+			const layerMap = new Map<string, (typeof config.layerUpdates)[string]>();
+			if (config.layerUpdates) {
+				for (const [key, layer] of Object.entries(config.layerUpdates)) {
+					if (layer.inputHandleId) {
+						layerMap.set(layer.inputHandleId, layer);
+					}
+				}
+			}
 
 			const assetMap: Array<{
 				alias: string;
@@ -573,70 +581,81 @@ class PixiProcessorService {
 				loadParser?: string;
 				format?: string;
 			}> = [];
-
-			for (const layer of layers) {
-				if (layer.type === "Text" && layer.fontFamily) {
+			// Preload fonts and images based on inputs and layers
+			for (const [inputHandleId, inputData] of Object.entries(inputs)) {
+				const layer = layerMap.get(inputHandleId);
+				if (layer?.type === "Text" && layer.fontFamily) {
 					const fontUrl = GetFontAssetUrl(layer.fontFamily);
 					await fontManager.loadFont(layer.fontFamily, fontUrl);
-				} else if (layer.type === "Image") {
+				} else if (
+					(layer?.type === "Image" || !layer) &&
+					inputData.type === "Image"
+				) {
 					// Images still use Assets.load
 					await Assets.load({
-						alias: `img_${layer.id}`,
-						src: inputs.get(layer.inputHandleId)?.value,
+						alias: `img_${inputHandleId}`,
+						parser: "texture",
+						src: inputData.value,
 					});
 				}
 			}
-			console.log({ assetMap });
+
 			// Batch Load
 			if (assetMap.length > 0) {
 				await Assets.load(assetMap);
 			}
 
-			for (const layer of layers) {
+			console.log({ inputs });
+			for (const [inputHandleId, inputData] of Object.entries(inputs)) {
 				if (signal?.aborted) {
 					throw new DOMException("Cancelled", "AbortError");
 				}
 
-				const inputData = inputs.get(layer.inputHandleId);
-				if (!inputData) continue;
+				const layer = layerMap.get(inputHandleId);
 
 				const container = new Container();
-
-				// Transforms
-				container.x = layer.x || 0;
-				container.y = layer.y || 0;
-				container.scale.set(layer.scaleX || 1, layer.scaleY || 1);
-				container.rotation = ((layer.rotation || 0) * Math.PI) / 180;
+				console.log({ layer, inputData });
+				// Transforms - use layer if available, else defaults
+				container.x = layer?.x ?? 0;
+				container.y = layer?.y ?? 0;
+				container.scale.set(layer?.scaleX ?? 1, layer?.scaleY ?? 1);
+				container.rotation = ((layer?.rotation ?? 0) * Math.PI) / 180;
 
 				let obj: Sprite | Text | null = null;
 
-				if (layer.type === "Image" && inputData.type === "Image") {
+				// Determine type: prefer layer.type if exists, else infer from inputData.type
+				const type = layer?.type ?? inputData.type;
+
+				if (type === "Image" && inputData.type === "Image") {
 					try {
 						const texture = await Assets.load({
 							src: inputData.value,
 							parser: "texture",
 						});
 						const sprite = new Sprite(texture);
-						if (layer.width) sprite.width = layer.width;
-						if (layer.height) sprite.height = layer.height;
+						// Use layer width/height if provided, else use texture's natural size
+						if (layer?.width) sprite.width = layer.width;
+						else sprite.width = texture.width;
+						if (layer?.height) sprite.height = layer.height;
+						else sprite.height = texture.height;
 						obj = sprite;
 					} catch (e) {
-						console.warn(`Load failed: ${layer.id}`, e);
+						console.warn(`Load failed: ${inputHandleId}`, e);
 					}
-				} else if (layer.type === "Text" && inputData.type === "Text") {
-					const fontSize = layer.fontSize ?? 24;
-					const lineHeight = layer.lineHeight ?? 1;
+				} else if (type === "Text" && inputData.type === "Text") {
+					const fontSize = layer?.fontSize ?? 24;
+					const lineHeight = layer?.lineHeight ?? 1;
 					const style = new TextStyle({
-						fontFamily: layer.fontFamily ?? "Geist",
+						fontFamily: layer?.fontFamily ?? "Geist",
 						fontSize,
 						padding: 0,
-						letterSpacing: layer.letterSpacing ?? 0,
+						letterSpacing: layer?.letterSpacing ?? 0,
 						lineHeight: fontSize * lineHeight,
-						align: layer.align ?? "left",
-						fill: layer.fill ?? "#fff",
+						align: layer?.align ?? "left",
+						fill: layer?.fill ?? "#fff",
 						wordWrap: true,
 						whiteSpace: "normal",
-						wordWrapWidth: layer.width ? layer.width : undefined,
+						wordWrapWidth: layer?.width ? layer.width : undefined,
 						breakWords: true,
 					});
 					obj = new Text({ text: inputData.value, style });
@@ -644,7 +663,7 @@ class PixiProcessorService {
 				}
 
 				if (obj) {
-					this.applyBlendMode(obj, layer.blendMode || "normal", app);
+					this.applyBlendMode(obj, layer?.blendMode || "normal", app);
 					container.addChild(obj);
 					app.stage.addChild(container);
 				}

@@ -2,7 +2,12 @@ import type { CompositorNodeConfig, OutputItem } from "@gatewai/types";
 import { ImagesIcon } from "lucide-react";
 import { memo, useMemo, useState } from "react";
 import { Button } from "@/components/ui/button";
-import { Dialog, DialogContent, DialogTrigger } from "@/components/ui/dialog";
+import {
+	Dialog,
+	DialogContent,
+	DialogDescription,
+	DialogTrigger,
+} from "@/components/ui/dialog";
 import type { HandleEntityType } from "@/store/handles";
 import type { NodeEntityType } from "@/store/nodes";
 import { useCanvasCtx } from "../../../ctx/canvas-ctx";
@@ -43,6 +48,7 @@ const DesignDialog = memo(({ node }: { node: NodeEntityType }) => {
 					<ImagesIcon /> Edit
 				</Button>
 			</DialogTrigger>
+			<DialogDescription className="hidden">Design Node</DialogDescription>
 			<DialogContent
 				showCloseButton={false}
 				onEscapeKeyDown={(e) => e.preventDefault()}
