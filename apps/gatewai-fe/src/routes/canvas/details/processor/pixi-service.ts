@@ -9,6 +9,7 @@ import {
 	Application,
 	Assets,
 	type BLEND_MODES,
+	type BlendModeFilter,
 	BlurFilter,
 	ColorBlend,
 	ColorBurnBlend,
@@ -70,8 +71,8 @@ class PixiProcessorService {
 				},
 			},
 			{
-				max: 3,
-				min: 1, // Keep 1 warm to reduce cold start latency
+				max: 4,
+				min: 2, // Keep 1 warm to reduce cold start latency
 				testOnBorrow: true,
 			},
 		);
@@ -197,7 +198,7 @@ class PixiProcessorService {
 
 			const blurFilter = new BlurFilter();
 			blurFilter.strength = strength;
-			blurFilter.quality = 2;
+			blurFilter.quality = 8;
 
 			sprite.filters = [blurFilter];
 
@@ -565,13 +566,46 @@ class PixiProcessorService {
 			app.stage.mask = maskGraphics;
 			app.stage.addChild(maskGraphics); // Mask usually needs to be in display list in some versions, but simpler to just assign property
 
-			// 1. Identify Order and Preload
-			// We rely on config.layerUpdates being an array to determine Z-index order (0 is bottom, last is top)
-			const sortedLayers = Array.isArray(config.layerUpdates)
-				? config.layerUpdates
-				: Object.values(config.layerUpdates || {}); // Fallback if type mismatch
+			// 1. Collect all layers, including defaults for inputs without explicit layer configs
+			const explicitLayers = Object.values(config.layerUpdates || {});
+			const allLayers = [...explicitLayers];
 
-			// Preload Loop
+			for (const [handleId, input] of Object.entries(inputs)) {
+				if (signal?.aborted) throw new DOMException("Cancelled", "AbortError");
+
+				if (!explicitLayers.some((l) => l.inputHandleId === handleId)) {
+					const defaultLayer = {
+						id: handleId,
+						inputHandleId: handleId,
+						type: input.type,
+						x: 0,
+						y: 0,
+						rotation: 0,
+						lockAspect: true,
+						blendMode: "normal",
+						...(input.type === "Text"
+							? {
+									fontFamily: "Geist",
+									fontSize: 24,
+									fill: "#fff",
+									letterSpacing: 0,
+									lineHeight: 1.2,
+									align: "left" as const,
+								}
+							: {}),
+					};
+					allLayers.push(defaultLayer);
+				}
+			}
+
+			// 2. Sort layers by zIndex (ascending, with undefined as Infinity/on top)
+			const sortedLayers = allLayers.sort((a, b) => {
+				const aZ = a.zIndex ?? Infinity;
+				const bZ = b.zIndex ?? Infinity;
+				return aZ - bZ;
+			});
+
+			// 3. Preload Loop
 			for (const layer of sortedLayers) {
 				if (signal?.aborted) throw new DOMException("Cancelled", "AbortError");
 				if (!layer.inputHandleId || !inputs[layer.inputHandleId]) continue;
@@ -592,7 +626,7 @@ class PixiProcessorService {
 				}
 			}
 
-			// 2. Render Loop (Strictly following array order)
+			// 4. Render Loop (in sorted order: lower zIndex first)
 			for (const layer of sortedLayers) {
 				if (signal?.aborted) throw new DOMException("Cancelled", "AbortError");
 
@@ -605,7 +639,6 @@ class PixiProcessorService {
 				// Apply Geometry Transforms
 				container.x = layer.x ?? 0;
 				container.y = layer.y ?? 0;
-				container.scale.set(layer.scaleX ?? 1, layer.scaleY ?? 1);
 				container.rotation = ((layer.rotation ?? 0) * Math.PI) / 180;
 
 				let displayObject: Sprite | Text | null = null;
@@ -620,10 +653,8 @@ class PixiProcessorService {
 
 						// Dimensions
 						if (layer.width) sprite.width = layer.width;
-						else if (!layer.scaleX) sprite.width = texture.width; // Maintain aspect unless scaled
 
 						if (layer.height) sprite.height = layer.height;
-						else if (!layer.scaleY) sprite.height = texture.height;
 
 						displayObject = sprite;
 					} catch (e) {
@@ -654,8 +685,8 @@ class PixiProcessorService {
 				if (displayObject) {
 					this.applyBlendMode(displayObject, layer.blendMode || "normal", app);
 					container.addChild(displayObject);
-					// addChild adds to the top of the stack, so iterating the array 0..N
-					// naturally places the last item visually on top.
+					// addChild adds to the top of the stack, so iterating sortedLayers (low to high z)
+					// naturally places higher z visually on top.
 					app.stage.addChild(container);
 				}
 			}
@@ -693,7 +724,7 @@ class PixiProcessorService {
 			obj.blendMode = pixiBlendMode;
 		} else {
 			// Advanced blend modes via filters
-			const blendFilterMap: Record<string, new () => any> = {
+			const blendFilterMap: Record<string, new () => BlendModeFilter> = {
 				color: ColorBlend,
 				"color-burn": ColorBurnBlend,
 				"color-dodge": ColorDodgeBlend,

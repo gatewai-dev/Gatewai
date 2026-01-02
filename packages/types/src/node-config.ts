@@ -96,8 +96,6 @@ const CompositorLayerSchema = z
 		width: z.number().optional(),
 		height: z.number().optional(),
 		rotation: z.number(),
-		scaleX: z.number(),
-		scaleY: z.number(),
 		fontFamily: z.string().optional(),
 		fontSize: z.number().optional(),
 		fill: z.string().optional(),
@@ -105,6 +103,7 @@ const CompositorLayerSchema = z
 		blendMode: z.string(),
 		letterSpacing: z.number().optional(),
 		lineHeight: z.number().optional(),
+		zIndex: z.number().optional(),
 		align: z.enum(["left", "center", "right"]).optional(),
 		verticalAlign: z.enum(["top", "middle", "bottom"]).optional(),
 	})

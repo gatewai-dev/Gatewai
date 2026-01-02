@@ -687,7 +687,7 @@ export class NodeGraphProcessor extends EventEmitter {
 			> = {};
 			console.log({ config, inputs });
 
-			inputs.forEach((value, inputHandleId) => {
+			inputs.forEach((_value, inputHandleId) => {
 				console.log({ inputHandleId });
 				const data = getConnectedInputData(inputs, inputHandleId);
 				if (data) {

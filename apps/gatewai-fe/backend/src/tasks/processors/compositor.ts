@@ -98,13 +98,14 @@ const renderTextLayer = (
 	ctx: CanvasRenderingContext2D,
 	layer: CompositorLayer,
 	text: string,
+	width: number,
 ) => {
 	const fontSize = layer.fontSize ?? 24;
 	const fontFamily = layer.fontFamily ?? "Geist";
 	const fill = layer.fill ?? "#ffffff";
 	const align = layer.align ?? "left";
 	const lineHeight = (layer.lineHeight ?? 1) * fontSize;
-	const maxWidth = layer.width ?? 0;
+	const maxWidth = layer.width ?? width - (layer.x ?? 0);
 
 	// 1. Configure Context
 	// We strictly quote the font family to handle names with spaces
@@ -153,12 +154,51 @@ const compositorProcessor: NodeProcessor = async ({ node, data }) => {
 		const canvas = createCanvas(width, height);
 		const ctx = canvas.getContext("2d");
 
-		// 2. Resolve Inputs & Register Fonts
+		// 2. Resolve Inputs
 		const inputHandlesWithValues = getAllInputValuesWithHandle(data, node.id);
-		const layers = Object.values(config.layerUpdates || {});
+		const explicitLayers = Object.values(config.layerUpdates || {});
+		const allLayers: CompositorLayer[] = [...explicitLayers];
 
+		// Add default layers for inputs without explicit configs
+		for (const inputEntry of inputHandlesWithValues) {
+			const handleId = inputEntry.handle?.id;
+			if (!handleId) continue;
+			if (explicitLayers.some((l) => l.inputHandleId === handleId)) continue;
+
+			const inputItem = inputEntry.value;
+			if (!inputItem) continue;
+
+			let type: "Image" | "Text" | undefined;
+			if (inputItem.type === DataType.Image) type = "Image";
+			else if (inputItem.type === DataType.Text) type = "Text";
+			else continue; // Skip unsupported types
+
+			const defaultLayer: CompositorLayer = {
+				id: handleId,
+				inputHandleId: handleId,
+				type,
+				x: 0,
+				y: 0,
+				rotation: 0,
+				lockAspect: true,
+				blendMode: "normal",
+				...(type === "Text"
+					? {
+							fontFamily: "Geist",
+							fontSize: 24,
+							fill: "#fff",
+							letterSpacing: 0,
+							lineHeight: 1.2,
+							align: "left",
+						}
+					: {}),
+			};
+			allLayers.push(defaultLayer);
+		}
+
+		// 3. Register Fonts
 		// Pre-load custom fonts globally for the canvas environment
-		const fontPromises = layers
+		const fontPromises = allLayers
 			.filter((l) => l.type === "Text" && l.fontFamily)
 			.map(async (l) => {
 				if (!l.fontFamily) return;
@@ -169,24 +209,21 @@ const compositorProcessor: NodeProcessor = async ({ node, data }) => {
 			});
 		await Promise.all(fontPromises);
 
-		// Render Loop
-		// Sort layers if order property exists, otherwise rely on object order (which is usually insertion order)
-		// Ensure strictly sorted by explicit z-index if available, or index.
-		// Assuming config.layerUpdates keys or array order dictates z-index.
+		// 4. Sort layers by zIndex (ascending, undefined as Infinity/on top)
+		const sortedLayers = allLayers.sort((a, b) => {
+			const aZ = a.zIndex ?? Infinity;
+			const bZ = b.zIndex ?? Infinity;
+			return aZ - bZ;
+		});
 
-		for (const handleValue of inputHandlesWithValues) {
-			const layer = layers.find(
-				(f) => f.inputHandleId === handleValue?.handle?.id,
-			);
-			if (!layer) continue;
-			const inputHandleId = layer.inputHandleId;
+		// 5. Render Layers in Order
+		for (const layer of sortedLayers) {
 			const inputEntry = inputHandlesWithValues.find(
-				(f) => f.handle?.id === inputHandleId,
+				(f) => f.handle?.id === layer.inputHandleId,
 			);
-
-			// Skip if no input, unless it's a pure decoration layer (logic depends on your app)
 			if (!inputEntry) continue;
 			const inputItem = inputEntry.value;
+			if (!inputItem) continue;
 
 			ctx.save();
 
@@ -207,20 +244,18 @@ const compositorProcessor: NodeProcessor = async ({ node, data }) => {
 				const fileData = inputItem.data as FileData;
 				const imgBuffer = await getImageBuffer(fileData);
 				const img = await loadImage(imgBuffer);
-
-				// Determine final draw dimensions
-				const drawW = layer.width ?? img.width * (layer.scaleX ?? 1);
-				const drawH = layer.height ?? img.height * (layer.scaleY ?? 1);
+				const drawW = layer.width ?? img.width;
+				const drawH = layer.height ?? img.height;
 				ctx.drawImage(img, 0, 0, drawW, drawH);
 			} else if (layer.type === "Text" && inputItem?.type === DataType.Text) {
 				const textValue = String(inputItem.data);
-				renderTextLayer(ctx, layer, textValue);
+				renderTextLayer(ctx, layer, textValue, width);
 			}
 
 			ctx.restore();
 		}
 
-		// 4. Output Generation
+		// 6. Output Generation
 		const resultBuffer = canvas.toBuffer("image/png");
 		logMedia(resultBuffer, undefined, node.id);
 

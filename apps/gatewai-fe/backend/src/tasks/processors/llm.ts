@@ -57,7 +57,6 @@ const llmProcessor: NodeProcessor = async ({ node, data }) => {
 					? (userContent[0] as string)
 					: userContent,
 		});
-		console.log({ userContent });
 		const nodeConfig = node.config as LLMNodeConfig;
 		const result = await generateText({
 			model: nodeConfig.model,

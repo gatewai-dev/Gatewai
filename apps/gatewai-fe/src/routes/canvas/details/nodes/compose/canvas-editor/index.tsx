@@ -202,21 +202,17 @@ const useSnap = () => {
 					(layer.height ?? layer.computedHeight)
 				) {
 					const effectiveHeight = layer.height ?? layer.computedHeight ?? 0;
-					const centerX = Math.round(
-						layer.x + (layer.width * layer.scaleX) / 2,
-					);
-					const centerY = Math.round(
-						layer.y + (effectiveHeight * layer.scaleY) / 2,
-					);
+					const centerX = Math.round(layer.x + layer.width / 2);
+					const centerY = Math.round(layer.y + effectiveHeight / 2);
 					vSnaps.push(
 						Math.round(layer.x),
 						centerX,
-						Math.round(layer.x + layer.width * layer.scaleX),
+						Math.round(layer.x + layer.width),
 					);
 					hSnaps.push(
 						Math.round(layer.y),
 						centerY,
-						Math.round(layer.y + effectiveHeight * layer.scaleY),
+						Math.round(layer.y + effectiveHeight),
 					);
 				}
 			});
@@ -231,10 +227,10 @@ const useSnap = () => {
 			const { hSnaps, vSnaps } = getSnapPositions(id);
 			let newX = node.x();
 			let newY = node.y();
-			const centerX = newX + (node.width() * node.scaleX()) / 2;
-			const centerY = newY + (node.height() * node.scaleY()) / 2;
-			const right = newX + node.width() * node.scaleX();
-			const bottom = newY + node.height() * node.scaleY();
+			const centerX = newX + node.width() / 2;
+			const centerY = newY + node.height() / 2;
+			const right = newX + node.width();
+			const bottom = newY + node.height();
 			// Vertical snaps
 			const vGuides: Guide[] = [];
 			for (const snap of vSnaps) {
@@ -242,10 +238,10 @@ const useSnap = () => {
 					newX = snap;
 					vGuides.push({ type: "vertical", position: snap });
 				} else if (Math.abs(centerX - snap) < SNAP_THRESHOLD) {
-					newX = snap - (node.width() * node.scaleX()) / 2;
+					newX = snap - node.width() / 2;
 					vGuides.push({ type: "vertical", position: snap });
 				} else if (Math.abs(right - snap) < SNAP_THRESHOLD) {
-					newX = snap - node.width() * node.scaleX();
+					newX = snap - node.width();
 					vGuides.push({ type: "vertical", position: snap });
 				}
 			}
@@ -256,10 +252,10 @@ const useSnap = () => {
 					newY = snap;
 					hGuides.push({ type: "horizontal", position: snap });
 				} else if (Math.abs(centerY - snap) < SNAP_THRESHOLD) {
-					newY = snap - (node.height() * node.scaleY()) / 2;
+					newY = snap - node.height() / 2;
 					hGuides.push({ type: "horizontal", position: snap });
 				} else if (Math.abs(bottom - snap) < SNAP_THRESHOLD) {
-					newY = snap - node.height() * node.scaleY();
+					newY = snap - node.height();
 					hGuides.push({ type: "horizontal", position: snap });
 				}
 			}
@@ -302,10 +298,10 @@ const useSnap = () => {
 								...l,
 								x: Math.round(node.x()),
 								y: Math.round(node.y()),
-								scaleX: node.scaleX(),
-								scaleY: node.scaleY(),
 								rotation: Math.round(node.rotation()),
-								width: l.type === "Text" ? Math.round(node.width()) : l.width,
+								width: Math.round(node.width()),
+								height:
+									l.type === "Image" ? Math.round(node.height()) : l.height,
 							}
 						: l,
 				),
@@ -356,6 +352,15 @@ const ImageLayer: React.FC<LayerProps> = ({
 	const handleSelect = () => {
 		setSelectedId(layer.id);
 	};
+	const handleTransform = useCallback((e: Konva.KonvaEventObject<Event>) => {
+		const node = e.target as Konva.Image;
+		node.setAttrs({
+			width: Math.max(20, node.width() * node.scaleX()),
+			height: Math.max(20, node.height() * node.scaleY()),
+			scaleX: 1,
+			scaleY: 1,
+		});
+	}, []);
 	return (
 		<KonvaImage
 			id={layer.id}
@@ -363,8 +368,6 @@ const ImageLayer: React.FC<LayerProps> = ({
 			y={layer.y}
 			width={layer.width}
 			height={layer.height}
-			scaleX={layer.scaleX}
-			scaleY={layer.scaleY}
 			rotation={layer.rotation}
 			image={image}
 			draggable={mode === "select"}
@@ -374,6 +377,7 @@ const ImageLayer: React.FC<LayerProps> = ({
 			onDragMove={onDragMove}
 			onDragEnd={onDragEnd}
 			onTransformStart={onTransformStart}
+			onTransform={handleTransform}
 			onTransformEnd={onTransformEnd}
 			globalCompositeOperation={layer.blendMode as GlobalCompositeOperation}
 		/>
@@ -444,8 +448,6 @@ const TextLayer: React.FC<
 			width={layer.width ?? 200}
 			height={layer.height}
 			rotation={layer.rotation}
-			scaleX={layer.scaleX}
-			scaleY={layer.scaleY}
 			draggable={mode === "select"}
 			onClick={handleSelect}
 			onTap={handleSelect}
@@ -586,6 +588,10 @@ const Canvas: React.FC = () => {
 		setStagePos,
 	} = useEditor();
 	const { handleDragMove, handleDragEnd, handleTransformEnd } = useSnap();
+	const sortedLayers = useMemo(
+		() => [...layers].sort((a, b) => (a.zIndex ?? 0) - (b.zIndex ?? 0)),
+		[layers],
+	);
 	const handleStageClick = useCallback(
 		(e: Konva.KonvaEventObject<TouchEvent | MouseEvent>) => {
 			if (e.target === stageRef.current) {
@@ -655,7 +661,7 @@ const Canvas: React.FC = () => {
 				<ArtboardBackground />
 			</KonvaLayer>
 			<KonvaLayer>
-				{layers.map((layer) => {
+				{sortedLayers.map((layer) => {
 					const props = {
 						key: layer.id,
 						layer,
@@ -744,6 +750,10 @@ const LayersPanel: React.FC<{ onSave: () => void; onClose: () => void }> = ({
 	onClose,
 }) => {
 	const { layers, setLayers, selectedId, setSelectedId } = useEditor();
+	const sortedLayers = useMemo(
+		() => [...layers].sort((a, b) => (b.zIndex ?? 0) - (a.zIndex ?? 0)),
+		[layers],
+	);
 	const sensors = useSensors(
 		useSensor(PointerSensor, {
 			activationConstraint: { distance: 5 },
@@ -772,21 +782,29 @@ const LayersPanel: React.FC<{ onSave: () => void; onClose: () => void }> = ({
 					const { active, over } = e;
 					if (over && active.id !== over.id) {
 						setLayers((currentLayers) => {
-							const reversed = currentLayers.slice();
-							const oldIndexRev = reversed.findIndex((l) => l.id === active.id);
-							const newIndexRev = reversed.findIndex((l) => l.id === over.id);
-							const newReversed = arrayMove(reversed, oldIndexRev, newIndexRev);
-							return newReversed;
+							const currentSorted = [...currentLayers].sort(
+								(a, b) => (b.zIndex ?? 0) - (a.zIndex ?? 0),
+							);
+							const oldIndex = currentSorted.findIndex(
+								(l) => l.id === active.id,
+							);
+							const newIndex = currentSorted.findIndex((l) => l.id === over.id);
+							const newSorted = arrayMove(currentSorted, oldIndex, newIndex);
+							const newLayers = currentLayers.map((l) => {
+								const pos = newSorted.findIndex((s) => s.id === l.id);
+								return { ...l, zIndex: newSorted.length - pos };
+							});
+							return newLayers;
 						});
 					}
 				}}
 			>
 				<SortableContext
-					items={layers.slice().map((l) => l.id)}
+					items={sortedLayers.map((l) => l.id)}
 					strategy={verticalListSortingStrategy}
 				>
 					<div className="flex flex-col">
-						{layers.slice().map((layer) => (
+						{sortedLayers.map((layer) => (
 							<LayerItem
 								key={layer.id}
 								layer={layer}
@@ -831,10 +849,11 @@ const InspectorPanel: React.FC = () => {
 	let computedWidth = 0;
 	let computedHeight = 0;
 	if (selectedLayer) {
-		computedWidth = (selectedLayer.width ?? 0) * selectedLayer.scaleX;
+		computedWidth = selectedLayer.width ?? 0;
 		computedHeight =
-			(selectedLayer.height ?? selectedLayer.computedHeight ?? 0) *
-			selectedLayer.scaleY;
+			selectedLayer.type === "Image"
+				? (selectedLayer.height ?? 0)
+				: (selectedLayer.computedHeight ?? 0);
 	}
 	const aspectRatios = useMemo(
 		() => [
@@ -946,9 +965,17 @@ const InspectorPanel: React.FC = () => {
 										if (selectedLayer.type === "Text") {
 											updateLayer({ width: newWidth });
 										} else {
-											updateLayer({
-												scaleX: newWidth / (selectedLayer.width ?? 1),
-											});
+											if (selectedLayer.lockAspect) {
+												const oldWidth = selectedLayer.width ?? 1;
+												const oldHeight = selectedLayer.height ?? 1;
+												const ratio = oldHeight / oldWidth;
+												updateLayer({
+													width: newWidth,
+													height: newWidth * ratio,
+												});
+											} else {
+												updateLayer({ width: newWidth });
+											}
 										}
 									}}
 								/>
@@ -962,11 +989,18 @@ const InspectorPanel: React.FC = () => {
 										step="1"
 										value={Math.round(computedHeight)}
 										onChange={(e) => {
-											const newHeight =
-												Number(e.target.value) || selectedLayer.height || 0;
-											updateLayer({
-												scaleY: newHeight / (selectedLayer.height ?? 1),
-											});
+											const newHeight = Number(e.target.value) || 0;
+											if (selectedLayer.lockAspect) {
+												const oldWidth = selectedLayer.width ?? 1;
+												const oldHeight = selectedLayer.height ?? 1;
+												const ratio = oldWidth / oldHeight;
+												updateLayer({
+													height: newHeight,
+													width: newHeight * ratio,
+												});
+											} else {
+												updateLayer({ height: newHeight });
+											}
 										}}
 									/>
 								</div>
@@ -1003,6 +1037,17 @@ const InspectorPanel: React.FC = () => {
 									))}
 								</SelectContent>
 							</Select>
+						</div>
+						<div className="flex flex-col gap-1">
+							<Label htmlFor="zIndex">Z-Index:</Label>
+							<Input
+								id="zIndex"
+								type="number"
+								value={selectedLayer.zIndex ?? 0}
+								onChange={(e) =>
+									updateLayer({ zIndex: Number(e.target.value) })
+								}
+							/>
 						</div>
 						{selectedLayer.type === "Text" && (
 							<>
@@ -1286,14 +1331,16 @@ export const CanvasDesignerEditor: React.FC<CanvasDesignerEditorProps> = ({
 				layerUpdates: {},
 			};
 			const layerUpdates = { ...existingConfig.layerUpdates };
+			let maxZ = Math.max(
+				...Object.values(layerUpdates).map((l) => l.zIndex ?? 0),
+				0,
+			);
 			const fontPromises: Promise<void>[] = [];
 
 			initialLayers.forEach((output, handleId) => {
 				if (!layerUpdates[handleId]) {
 					const newLayer: CompositorLayer = {
 						type: output.type,
-						scaleX: 1,
-						scaleY: 1,
 						width: undefined,
 						height: undefined,
 						x: 0,
@@ -1303,6 +1350,7 @@ export const CanvasDesignerEditor: React.FC<CanvasDesignerEditorProps> = ({
 						rotation: 0,
 						lockAspect: true,
 						blendMode: "source-over",
+						zIndex: ++maxZ,
 					};
 					if (newLayer.type === "Text") {
 						newLayer.width = 200;
