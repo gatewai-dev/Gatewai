@@ -2,6 +2,7 @@ import type { VideoGenResult } from "@gatewai/types";
 import { memo, useMemo } from "react";
 import { useAppSelector } from "@/store";
 import { makeSelectNodeById } from "@/store/nodes";
+import { GetAssetEndpoint } from "@/utils/file";
 import { RunNodeButton } from "../../components/run-node-button";
 import { useNodeResult } from "../../processor/processor-ctx";
 import { BaseNode } from "../base";
@@ -25,8 +26,9 @@ const VideoGenNodeComponent = memo(
 			return null;
 		}, [result]);
 
-		const videoSrc = videoOutputItem?.entity?.signedUrl;
-		console.log({ videoSrc });
+		const videoSrc = videoOutputItem?.entity?.id
+			? GetAssetEndpoint(videoOutputItem?.entity?.id)
+			: null;
 		return (
 			<BaseNode
 				selected={props.selected}
