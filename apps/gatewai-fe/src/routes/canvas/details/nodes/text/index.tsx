@@ -2,8 +2,6 @@ import type { TextResult } from "@gatewai/types";
 import type { NodeProps } from "@xyflow/react";
 import { memo } from "react";
 import { Textarea } from "@/components/ui/textarea";
-import { useAppSelector } from "@/store";
-import { makeSelectNodeById } from "@/store/nodes";
 import { useCanvasCtx } from "../../ctx/canvas-ctx";
 import { useNodeResult } from "../../processor/processor-ctx";
 import { BaseNode } from "../base";
@@ -14,6 +12,7 @@ const TextNodeComponent = memo((props: NodeProps<TextNode>) => {
 	const { result } = useNodeResult(props.id);
 	const textResult = result as unknown as TextResult;
 	const text = textResult?.outputs?.[0]?.items?.[0]?.data ?? "";
+
 	const handleChange = (e: React.ChangeEvent<HTMLTextAreaElement>) => {
 		const newResult: TextResult = {
 			selectedOutputIndex: 0,

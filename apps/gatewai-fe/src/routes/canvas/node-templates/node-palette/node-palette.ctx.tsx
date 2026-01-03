@@ -1,26 +1,32 @@
-// src/node-palette/NodePaletteContext.tsx
-import { createContext, type ReactNode, useContext, useState } from "react";
+import { createContext, useContext, useState } from "react";
 
 interface NodePaletteContextType {
 	searchQuery: string;
-	setSearchQuery: (query: string) => void;
+	setSearchQuery: (q: string) => void;
 	fromTypes: string[];
-	setFromTypes: (types: string[]) => void;
+	setFromTypes: (t: string[]) => void;
 	toTypes: string[];
-	setToTypes: (types: string[]) => void;
+	setToTypes: (t: string[]) => void;
 	sortBy: string;
-	setSortBy: (sort: string) => void;
+	setSortBy: (s: string) => void;
+	isCollapsed: boolean;
+	setIsCollapsed: (b: boolean) => void;
 }
 
 const NodePaletteContext = createContext<NodePaletteContextType | undefined>(
 	undefined,
 );
 
-export function NodePaletteProvider({ children }: { children: ReactNode }) {
+export function NodePaletteProvider({
+	children,
+}: {
+	children: React.ReactNode;
+}) {
 	const [searchQuery, setSearchQuery] = useState("");
 	const [fromTypes, setFromTypes] = useState<string[]>([]);
 	const [toTypes, setToTypes] = useState<string[]>([]);
 	const [sortBy, setSortBy] = useState("featured");
+	const [isCollapsed, setIsCollapsed] = useState(false);
 
 	return (
 		<NodePaletteContext.Provider
@@ -33,6 +39,8 @@ export function NodePaletteProvider({ children }: { children: ReactNode }) {
 				setToTypes,
 				sortBy,
 				setSortBy,
+				isCollapsed,
+				setIsCollapsed,
 			}}
 		>
 			{children}
@@ -40,10 +48,8 @@ export function NodePaletteProvider({ children }: { children: ReactNode }) {
 	);
 }
 
-export function useNodePalette() {
+export const useNodePalette = () => {
 	const context = useContext(NodePaletteContext);
-	if (!context) {
-		throw new Error("useNodePalette must be used within a NodePaletteProvider");
-	}
+	if (!context) throw new Error("useNodePalette must be inside provider");
 	return context;
-}
+};
