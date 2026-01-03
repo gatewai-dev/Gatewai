@@ -27,8 +27,11 @@ enum NodeType {
   Number
   Modulate
 
-  ImageGen
   LLM
+  ImageGen
+  VideoGen
+  VideoGenFirstLastFrame
+  VideoGenExtend
 }
 
 enum DataType {

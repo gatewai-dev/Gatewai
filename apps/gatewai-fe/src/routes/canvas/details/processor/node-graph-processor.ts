@@ -49,6 +49,46 @@ export class NodeGraphProcessor extends EventEmitter {
 		this.registerBuiltInProcessors();
 	}
 
+	private validateGraph(): void {
+		const validation: Record<string, Record<string, string>> = {};
+
+		this.nodes.forEach((_node, nodeId) => {
+			const invalid: Record<string, string> = {};
+			const inputHandles = this.handles.filter(
+				(h) => h.nodeId === nodeId && h.type === "Input",
+			);
+
+			inputHandles.forEach((ih) => {
+				const edge = this.edges.find((e) => e.targetHandleId === ih.id);
+				if (!edge && this.handles.find((f) => f.id === ih.id)?.required) {
+					invalid[ih.id] = "missing_connection";
+					return;
+				}
+
+				const sourceHandle = this.handles.find(
+					(h) => h.id === edge?.sourceHandleId,
+				);
+				if (!sourceHandle) {
+					invalid[ih.id] = "invalid_source";
+					return;
+				}
+
+				const compatible = sourceHandle.dataTypes.some((t: DataType) =>
+					ih.dataTypes.includes(t),
+				);
+				if (!compatible) {
+					invalid[ih.id] = "type_mismatch";
+				}
+			});
+
+			if (Object.keys(invalid).length > 0) {
+				validation[nodeId] = invalid;
+			}
+		});
+		this.graphValidation = validation;
+		this.emit("graph:validated", { validation });
+	}
+
 	updateGraph(config: ProcessorConfig): void {
 		const prevNodes = this.nodes;
 		const prevEdges = this.edges;

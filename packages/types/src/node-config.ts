@@ -13,7 +13,6 @@ const FileNodeConfigSchema = z.object({}).strict();
 const IMAGEGEN_NODE_MODELS = [
 	"google/gemini-3-pro-image", // Nano banana pro
 	"google/gemini-2.5-flash-image", // Nano banana
-	"openai/gpt-5.2", // gpt-image-1.5
 ] as const;
 
 const ImageGenNodeConfigSchema = z
@@ -136,21 +135,8 @@ const RouterNodeConfigSchema = z
 	.strict();
 
 const LLM_NODE_MODELS = [
-	"openai/gpt-5.2",
-	"openai/gpt-5.1-instant",
-	"openai/gpt-5.1-thinking",
 	"google/gemini-3-pro-preview",
 	"google/gemini-2.5-flash",
-	"xai/grok-4",
-	"xai/grok-4.1-fast-reasoning",
-	"xai/grok-4.1-fast-non-reasoning",
-	"anthropic/claude-opus-4.5",
-	"anthropic/claude-haiku-4.5",
-	"anthropic/claude-sonnet-4.5",
-	"perplexity/sonar-pro",
-	"perplexity/sonar",
-	"perplexity/sonar-reasoning",
-	"amazon/nova-pro",
 ] as const;
 
 const LLMNodeConfigSchema = z
@@ -163,15 +149,6 @@ const LLMNodeConfigSchema = z
 const AGENT_NODE_MODELS = [
 	"google/gemini-3-pro-preview",
 	"google/gemini-2.5-flash",
-	"openai/gpt-5-chat",
-	"openai/gpt-5-pro",
-	"openai/gpt-5.1-thinking",
-	"xai/grok-4.1-fast-reasoning",
-	"anthropic/claude-opus-4.5",
-	"anthropic/claude-opus-4.1",
-	"perplexity/sonar-pro",
-	"perplexity/sonar",
-	"perplexity/sonar-reasoning",
 ] as const;
 
 const AgentNodeConfigSchema = z
@@ -192,6 +169,16 @@ const ResizeNodeConfigSchema = z
 	})
 	.strict();
 
+const VIDEOGEN_NODE_MODELS = ["veo-3.1-generate-preview"] as const;
+
+const VideoGenBaseSchema = z.object({
+	model: z.enum(VIDEOGEN_NODE_MODELS),
+});
+
+const VideoGenNodeConfigSchema = VideoGenBaseSchema;
+const VideoGenFirstLastFrameNodeConfigSchema = VideoGenBaseSchema;
+const VideoGenExtendNodeConfigSchema = VideoGenBaseSchema;
+
 // Main node schema
 const NodeConfigSchema = z.union([
 	ImageGenNodeConfigSchema,
@@ -209,6 +196,7 @@ const NodeConfigSchema = z.union([
 	ResizeNodeConfigSchema,
 	NoteNodeConfigSchema,
 	ModulateNodeConfigSchema,
+	VideoGenNodeConfigSchema,
 ]);
 
 // Inferred types
@@ -230,6 +218,11 @@ type ImageGenConfig = z.infer<typeof ImageGenNodeConfigSchema>;
 type CropNodeConfig = z.infer<typeof CropNodeConfigSchema>;
 type NoteNodeConfig = z.infer<typeof NoteNodeConfigSchema>;
 type ModulateNodeConfig = z.infer<typeof ModulateNodeConfigSchema>;
+type VideoGenNodeConfig = z.infer<typeof VideoGenNodeConfigSchema>;
+type VideoGenExtendNodeConfig = z.infer<typeof VideoGenExtendNodeConfigSchema>;
+type VideoGenFirstLastFrameNodeConfig = z.infer<
+	typeof VideoGenFirstLastFrameNodeConfigSchema
+>;
 
 export {
 	NodeConfigSchema,
@@ -250,6 +243,7 @@ export {
 	CompositorLayerSchema,
 	ImageGenNodeConfigSchema,
 	ModulateNodeConfigSchema,
+	VideoGenNodeConfigSchema,
 	type TextNodeConfig,
 	type FileNodeConfig,
 	type AgentNodeConfig,
@@ -268,6 +262,9 @@ export {
 	type CropNodeConfig,
 	type NoteNodeConfig,
 	type ModulateNodeConfig,
+	type VideoGenNodeConfig,
+	type VideoGenExtendNodeConfig,
+	type VideoGenFirstLastFrameNodeConfig,
 	LLM_NODE_MODELS,
 	IMAGEGEN_NODE_MODELS,
 	AGENT_NODE_MODELS,

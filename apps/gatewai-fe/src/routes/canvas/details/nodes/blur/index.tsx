@@ -14,7 +14,7 @@ const BlurNodeComponent = memo((props: NodeProps<BlurNode>) => {
 	return (
 		<BaseNode selected={props.selected} id={props.id} dragging={props.dragging}>
 			<div className="flex flex-col gap-3 ">
-				<div className="w-full overflow-hidden rounded media-container relative">
+				<div className="w-full overflow-hidden min-h-32 rounded media-container relative">
 					{resultHash && <CanvasRenderer resultHash={resultHash} />}
 				</div>
 				{node && (

@@ -11,6 +11,7 @@ import {
 } from "@/components/ui/accordion";
 import { Alert, AlertDescription } from "@/components/ui/alert";
 import { Button } from "@/components/ui/button";
+import { Separator } from "@/components/ui/separator";
 import { GetAssetEndpoint } from "@/utils/file";
 import { useNodeResult } from "../../processor/processor-ctx";
 import { BaseNode } from "../base";
@@ -28,10 +29,8 @@ function ExportNodeHandbook() {
 					<Alert>
 						<InfoIcon className="size-3" />
 						<AlertDescription className="text-[8px]">
-							<p className="mb-2">
-								Connect a node and export (download) the result as a file.
-							</p>
-
+							<p className="mb-2">Connect a node and click Download button.</p>
+							<Separator />
 							<h2 className="font-semibold mt-3 mb-1">API Requests</h2>
 							<p className="mb-1">
 								When you run the workflow via API request, export node will put
@@ -252,7 +251,11 @@ const ExportNodeComponent = memo((props: NodeProps<BlurNode>) => {
 
 			// Cleanup
 			if (shouldRevokeUrl) {
-				setTimeout(() => URL.revokeObjectURL(url!), 100);
+				setTimeout(() => {
+					if (url) {
+						URL.revokeObjectURL(url);
+					}
+				}, 100);
 			}
 		} catch (err) {
 			throw new DownloadError(

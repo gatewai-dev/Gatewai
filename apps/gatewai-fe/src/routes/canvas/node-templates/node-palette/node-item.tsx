@@ -63,15 +63,14 @@ export function NodeItem({ template }: { template: NodeTemplateListItemRPC }) {
 							"cursor-grab active:cursor-grabbing select-none",
 							"hover:border-border/80 hover:shadow-md hover:-translate-y-0.5",
 
-							// Dragging State - "The Lift"
+							// Dragging State
 							isDragging && [
-								"z-[100] scale-110 shadow-2xl opacity-90",
+								"z-100 scale-110 shadow-2xl opacity-90",
 								"ring-2 ring-primary/40 ring-offset-4 ring-offset-background border-primary/50",
 								"cursor-grabbing",
 							],
 						)}
 					>
-						{/* Icon Container - Matching BaseNode header icon style */}
 						<div
 							className={cn(
 								"mb-3 p-2.5 rounded-xl transition-all duration-300",
@@ -83,18 +82,13 @@ export function NodeItem({ template }: { template: NodeTemplateListItemRPC }) {
 							<Icon className="w-5 h-5" />
 						</div>
 
-						{/* Label - Matching BaseNode title typography */}
 						<div className="flex flex-col items-center gap-0.5 px-1 w-full">
 							<span className="text-[12px] font-bold tracking-tight text-foreground/90 text-center line-clamp-1">
 								{template.displayName}
 							</span>
-							<span className="text-[8px] text-muted-foreground font-mono opacity-40 uppercase tracking-tighter">
-								{template.type}
-							</span>
 						</div>
 
-						{/* Visual Glow Effect on Hover */}
-						<div className="absolute inset-0 rounded-3xl bg-gradient-to-br from-primary/5 to-transparent opacity-0 group-hover:opacity-100 transition-opacity pointer-events-none" />
+						<div className="absolute inset-0 rounded-3xl bg-linear-to-br from-primary/5 to-transparent opacity-0 group-hover:opacity-100 transition-opacity pointer-events-none" />
 					</div>
 				</TooltipTrigger>
 

@@ -106,6 +106,14 @@ export type CompositorResult = SingleOutputResult & {
 	outputs: [{ items: [OutputItem<"Image">] }];
 };
 
+export type BaseVideoGenResult = SingleOutputResult & {
+	outputs: [{ items: [OutputItem<"Video">] }];
+};
+
+export type VideoGenResult = BaseVideoGenResult;
+export type VideoGenExtendResult = BaseVideoGenResult;
+export type VideoGenFirstLastFrameResult = BaseVideoGenResult;
+
 export type AgentOutputUnion =
 	| OutputItem<"Video">
 	| OutputItem<"Image">
@@ -143,4 +151,7 @@ export type NodeResult =
 	| PaintResult
 	| BlurResult
 	| CompositorResult
-	| ModulateResult;
+	| ModulateResult
+	| VideoGenResult
+	| VideoGenExtendResult
+	| VideoGenFirstLastFrameResult;

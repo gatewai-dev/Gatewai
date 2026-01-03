@@ -26,8 +26,6 @@ import { NODE_ICON_MAP } from "../../node-templates/node-palette/icon-map";
 import { useNodeResult, useNodeValidation } from "../processor/processor-ctx";
 import { NodeMenu } from "./node-menu";
 
-// --- Helpers ---
-
 const DEFAULT_COLOR = "#9ca3af";
 
 const getTypeColor = (type?: string) =>
@@ -65,23 +63,24 @@ export const getHandleStyle = (
 		const gradientStops = types
 			.map((type, index) => {
 				const color = getTypeColor(type);
-				return `${color} ${index * segmentSize}% ${(index + 1) * segmentSize}%`;
+				const start = index * segmentSize;
+				const end = (index + 1) * segmentSize;
+				return `${color} ${start}% ${end}%`;
 			})
 			.join(", ");
 
 		return {
-			backgroundColor: "var(--background)",
-			backgroundClip: "padding-box",
-			border: "3px solid transparent",
-			backgroundImage: `linear-gradient(var(--background), var(--background)), conic-gradient(${gradientStops})`,
-			backgroundOrigin: "border-box",
+			background: `conic-gradient(${gradientStops})`,
+			border: "3px solid var(--background)", // thick inner border to separate from node
+			boxShadow: "0 0 0 1px rgba(0,0,0,0.1)",
 		};
 	}
 
 	const color = getTypeColor(types[0]);
 	return {
-		backgroundColor: "var(--background)",
-		border: `3px solid ${color}`,
+		backgroundColor: color,
+		border: "2px solid var(--background)",
+		boxShadow: `0 0 0 1px ${color}40`,
 	};
 };
 
@@ -206,7 +205,6 @@ const BaseNode = memo(
 		const node = useAppSelector(selectNode);
 		const { inputs } = useNodeResult(id);
 		const validation = useNodeValidation(id);
-
 		const hasTypeMismatch = (handleId: HandleEntityType["id"]) =>
 			validation?.[handleId] === "type_mismatch";
 
@@ -251,7 +249,7 @@ const BaseNode = memo(
 							handle={handle}
 							index={i}
 							type="target"
-							isValid={inputs[handle.id]?.connectionValid ?? true}
+							isValid={!hasTypeMismatch(handle?.id)}
 							hasValue={inputs[handle.id]?.outputItem?.data != null}
 							connectedType={inputs[handle.id]?.outputItem?.type}
 							nodeSelected={selected}

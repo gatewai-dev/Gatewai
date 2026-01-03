@@ -366,9 +366,9 @@ class PixiProcessorService {
 
 			// Create a mask for the crop area
 			const mask = new Graphics();
-			mask.beginFill(0xffffff);
-			mask.drawRect(0, 0, widthPx, heightPx);
-			mask.endFill();
+			mask.rect(0, 0, widthPx, heightPx).fill({
+				color: 0xffffff,
+			});
 			container.mask = mask;
 			container.addChild(mask);
 
@@ -443,9 +443,9 @@ class PixiProcessorService {
 				widthToUse = config.width;
 				heightToUse = config.height;
 				const graphics = new Graphics();
-				graphics.beginFill(backgroundColor);
-				graphics.drawRect(0, 0, widthToUse, heightToUse);
-				graphics.endFill();
+				graphics.rect(0, 0, widthToUse, heightToUse).fill({
+					color: backgroundColor,
+				});
 				baseSprite = graphics;
 			} else {
 				throw new Error("Either imageUrl or backgroundColor must be provided");
@@ -492,11 +492,6 @@ class PixiProcessorService {
 			}
 
 			const onlyMaskDataUrl = await app.renderer.extract.base64(app.stage);
-
-			// Check cancellation after extraction
-			if (signal?.aborted) {
-				throw new DOMException("Operation cancelled", "AbortError");
-			}
 
 			// 4. Now add the base sprite behind the mask for imageWithMask
 			if (baseSprite) {
