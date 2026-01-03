@@ -18,7 +18,7 @@ const RunNodeButton = memo(({ nodeId, ...buttonProps }: RunNodeButtonProps) => {
 	const isNodeRunning = useNodeTaskRunning(nodeId);
 
 	const validation = useNodeValidation(nodeId);
-	const isInvalid = validation == null || Object.keys(validation).length > 0;
+	const isInvalid = validation && Object.keys(validation).length > 0;
 
 	console.log({ validation });
 	return (

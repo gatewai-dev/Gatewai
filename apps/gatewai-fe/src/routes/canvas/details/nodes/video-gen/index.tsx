@@ -16,7 +16,7 @@ const VideoGenNodeComponent = memo(
 		const { result } = useNodeResult(props.id);
 		const hasMoreThanOneOutput = result?.outputs && result?.outputs?.length > 1;
 
-		const videoSrc = useMemo(() => {
+		const videoOutputItem = useMemo(() => {
 			const nodeResult = result as VideoGenResult;
 			const outputItem = nodeResult?.outputs[nodeResult.selectedOutputIndex];
 			if (outputItem) {
@@ -25,6 +25,8 @@ const VideoGenNodeComponent = memo(
 			return null;
 		}, [result]);
 
+		const videoSrc = videoOutputItem?.entity?.signedUrl;
+		console.log({ videoSrc });
 		return (
 			<BaseNode
 				selected={props.selected}

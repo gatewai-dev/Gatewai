@@ -36,4 +36,10 @@ type NodeProcessor = (
 	params: NodeProcessorParams,
 ) => Promise<NodeResult | null>;
 
-export type { ProcessorConfig, NodeState, ConnectedInput, NodeProcessor };
+export type {
+	ProcessorConfig,
+	NodeState,
+	ConnectedInput,
+	NodeProcessor,
+	NodeProcessorParams,
+};

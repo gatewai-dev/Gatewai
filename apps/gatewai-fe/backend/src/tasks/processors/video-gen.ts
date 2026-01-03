@@ -6,7 +6,6 @@ import { DataType, prisma } from "@gatewai/db";
 import type { VideoGenResult } from "@gatewai/types";
 import { ENV_CONFIG } from "../../config.js";
 import { logger } from "../../logger.js";
-import { getImageDimensions } from "../../utils/image.js";
 import { generateSignedUrl, uploadToS3 } from "../../utils/s3.js";
 import type { NodeProcessor } from "./types.js";
 
@@ -18,9 +17,8 @@ const videoGenProcessor: NodeProcessor = async ({ node, data }) => {
 		const extension = "mp4";
 		const testPath = path.join(__dirname, "test-vid.mp4");
 		const fileBuffer = await readFile(testPath);
-		const dimensions = await getImageDimensions(fileBuffer);
 		const randId = randomUUID();
-		const fileName = `imagegen_${randId}.${extension}`;
+		const fileName = `videogen_${randId}.${extension}`;
 		const key = `assets/${data.canvas.userId}/${fileName}`;
 		const contentType = "video/mp4";
 		const bucket = ENV_CONFIG.AWS_ASSETS_BUCKET;
@@ -38,7 +36,6 @@ const videoGenProcessor: NodeProcessor = async ({ node, data }) => {
 				signedUrl,
 				signedUrlExp,
 				userId: data.canvas.userId,
-				...dimensions,
 				mimeType: contentType,
 			},
 		});

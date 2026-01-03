@@ -27,6 +27,11 @@ export async function SEED_createNodeTemplates(prisma: PrismaClient) {
 						label: "Negative Prompt",
 						required: false,
 					},
+					{
+						type: HandleType.Output,
+						dataTypes: [DataType.Video],
+						label: "Output",
+					},
 				],
 			},
 			defaultConfig: { model: "veo-3.1-generate-preview" },

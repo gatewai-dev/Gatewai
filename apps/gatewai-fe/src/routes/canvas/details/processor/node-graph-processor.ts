@@ -20,6 +20,7 @@ import { pixiProcessor } from "./pixi-service";
 import type {
 	ConnectedInput,
 	NodeProcessor,
+	NodeProcessorParams,
 	NodeState,
 	ProcessorConfig,
 } from "./types";
@@ -64,20 +65,23 @@ export class NodeGraphProcessor extends EventEmitter {
 					invalid[ih.id] = "missing_connection";
 					return;
 				}
-				console.log({ handles: this.handles, edge });
-				const sourceHandle = this.handles.find(
-					(h) => h.id === edge?.sourceHandleId,
-				);
-				if (!sourceHandle) {
-					invalid[ih.id] = "invalid_source";
-					return;
-				}
 
-				const compatible = sourceHandle.dataTypes.some((t: DataType) =>
-					ih.dataTypes.includes(t),
-				);
-				if (!compatible) {
-					invalid[ih.id] = "type_mismatch";
+				if (edge) {
+					const sourceHandle = this.handles.find(
+						(h) => h.id === edge.sourceHandleId,
+					);
+					if (!sourceHandle) {
+						invalid[ih.id] = "invalid_source";
+						return;
+					}
+
+					const compatible = sourceHandle.dataTypes.some((t: DataType) =>
+						ih.dataTypes.includes(t),
+					);
+					if (!compatible) {
+						invalid[ih.id] = "type_mismatch";
+						return;
+					}
 				}
 			});
 
@@ -954,5 +958,6 @@ export class NodeGraphProcessor extends EventEmitter {
 		this.registerProcessor("Agent", passthrough);
 		this.registerProcessor("Text", passthrough);
 		this.registerProcessor("LLM", passthrough);
+		this.registerProcessor("VideoGen", passthrough);
 	}
 }
