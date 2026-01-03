@@ -3,7 +3,15 @@
 // Define the message types for better internal clarity
 type WorkerMessage =
 	| { type: "INIT_CANVAS"; payload: { canvas: OffscreenCanvas } }
-	| { type: "DRAW_IMAGE"; payload: { imageUrl: string } }
+	| {
+			type: "DRAW_IMAGE";
+			payload: {
+				imageUrl: string;
+				zoom: number;
+				canvasWidth: number;
+				dpr: number;
+			};
+	  }
 	| { type: "CLEAR" };
 
 let canvas: OffscreenCanvas | null = null;
@@ -19,30 +27,43 @@ self.onmessage = async (e: MessageEvent<WorkerMessage>) => {
 			ctx = canvas.getContext("2d", { alpha: true });
 			break;
 
+		// canvas.worker.ts
+		// canvas.worker.ts
 		case "DRAW_IMAGE": {
 			if (!ctx || !canvas) return;
-			const { imageUrl } = e.data.payload;
+			const { imageUrl, canvasWidth, zoom, dpr } = e.data.payload;
 
 			try {
-				// Fetch image and convert to ImageBitmap (this happens off-thread!)
 				const response = await fetch(imageUrl);
 				const blob = await response.blob();
 				const bitmap = await createImageBitmap(blob);
 
-				// Update canvas dimensions to match the source image
-				if (canvas.width !== bitmap.width || canvas.height !== bitmap.height) {
-					canvas.width = bitmap.width;
-					canvas.height = bitmap.height;
-				}
+				const aspectRatio = bitmap.height / bitmap.width;
 
-				// Render
+				// 1. Calculate CSS dimensions (for the UI layout)
+				const cssHeight = canvasWidth * aspectRatio;
+
+				// 2. Calculate actual pixel dimensions (for sharpness)
+				// We multiply by zoom and DPR so it stays sharp when zoomed in
+				const drawingWidth = canvasWidth * zoom * dpr;
+				const drawingHeight = cssHeight * zoom * dpr;
+
+				// Update internal canvas resolution
+				canvas.width = drawingWidth;
+				canvas.height = drawingHeight;
+
 				ctx.clearRect(0, 0, canvas.width, canvas.height);
-				ctx.drawImage(bitmap, 0, 0);
+				ctx.drawImage(bitmap, 0, 0, drawingWidth, drawingHeight);
 
-				// Crucial: Close the bitmap to release GPU memory immediately
+				// Send back the CSS height (not the drawing height) to maintain layout
+				self.postMessage({
+					type: "CANVAS_INITIALIZED",
+					payload: { renderHeight: cssHeight },
+				});
+
 				bitmap.close();
 			} catch (err) {
-				console.error("Worker failed to fetch/draw image:", err);
+				console.error(err);
 			}
 			break;
 		}
@@ -55,5 +76,4 @@ self.onmessage = async (e: MessageEvent<WorkerMessage>) => {
 	}
 };
 
-// Export empty object to satisfy isolatedModules in tsconfig
 export {};

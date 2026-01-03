@@ -2,6 +2,7 @@ import type { FileResult, ImagesResult } from "@gatewai/types";
 import { FileIcon } from "lucide-react";
 import type { NodeEntityType } from "@/store/nodes";
 import { GetAssetEndpoint } from "@/utils/file";
+import { CanvasRenderer } from "./common/canvas-renderer";
 import { OutputSelector } from "./misc/output-selector";
 
 function MediaContent({
@@ -27,10 +28,8 @@ function MediaContent({
 				</div>
 			)}
 			{isImage && (
-				<img
-					src={GetAssetEndpoint(outputItem.data.entity.id)}
-					alt={outputItem.data.entity.name}
-					className="w-full h-full"
+				<CanvasRenderer
+					imageUrl={GetAssetEndpoint(outputItem.data.entity.id)}
 				/>
 			)}
 			{isOther && (
