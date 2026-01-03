@@ -65,7 +65,7 @@ export function NodeItem({ template }: { template: NodeTemplateListItemRPC }) {
 
 							// Dragging State
 							isDragging && [
-								"z-100 scale-110 shadow-2xl opacity-90",
+								"z-100 scale-110 shadow-2xl opacity-90 transition-none",
 								"ring-2 ring-primary/40 ring-offset-4 ring-offset-background border-primary/50",
 								"cursor-grabbing",
 							],
@@ -73,7 +73,7 @@ export function NodeItem({ template }: { template: NodeTemplateListItemRPC }) {
 					>
 						<div
 							className={cn(
-								"mb-3 p-2.5 rounded-xl transition-all duration-300",
+								"mb-3 p-2.5 rounded-xl transition-all transition-none duration-300",
 								"bg-muted/40 text-foreground/80 shadow-inner",
 								"group-hover:scale-110 group-hover:bg-muted/60",
 								isDragging && "shadow-none scale-100",

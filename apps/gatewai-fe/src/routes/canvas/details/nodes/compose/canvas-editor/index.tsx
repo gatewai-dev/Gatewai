@@ -14,7 +14,7 @@ import {
 	verticalListSortingStrategy,
 } from "@dnd-kit/sortable";
 import { CSS } from "@dnd-kit/utilities";
-// Removed external type imports
+
 import type Konva from "konva";
 import {
 	AlignCenterHorizontal,
@@ -100,8 +100,10 @@ import {
 	TooltipContent,
 	TooltipTrigger,
 } from "@/components/ui/tooltip";
+import { useGetFontListQuery } from "@/store/fonts";
 import type { HandleEntityType } from "@/store/handles";
 import type { NodeEntityType } from "@/store/nodes";
+import { GetAssetEndpoint, GetFontAssetUrl } from "@/utils/file";
 
 // Mocking ColorInput
 const ColorInput: React.FC<{
@@ -157,14 +159,6 @@ const BLEND_MODES = [
 	"color",
 	"luminosity",
 ];
-
-// Mocking Stores/Utils
-const useGetFontListQuery = (_: any) => ({
-	data: ["Geist", "Inter", "Arial", "Times New Roman", "Courier New"],
-});
-const GetAssetEndpoint = (id: string) =>
-	`https://via.placeholder.com/300?text=Asset-${id}`;
-const GetFontAssetUrl = (family: string) => "";
 
 // --- Font Manager (Singleton) ---
 class FontManager {
@@ -394,8 +388,7 @@ const useSnap = () => {
 								y: Math.round(node.y()),
 								rotation: Math.round(node.rotation()),
 								width: Math.round(node.width()),
-								height:
-									l.type === "Image" ? Math.round(node.height()) : l.height,
+								height: Math.round(node.height()),
 							}
 						: l,
 				),
@@ -518,13 +511,11 @@ const TextLayer: React.FC<
 	// Reset scale to 1 so font size doesn't change.
 	const handleTransform = useCallback((e: Konva.KonvaEventObject<Event>) => {
 		const node = e.target as Konva.Text;
-		const scaleX = node.scaleX();
-		// Calculate new width based on scale
-		const newWidth = Math.max(20, Math.round(node.width() * scaleX));
-
+		const newWidth = Math.max(20, node.width() * node.scaleX());
+		const newHeight = Math.max(20, node.height() * node.scaleY());
 		node.setAttrs({
 			width: newWidth,
-			// Reset scales to 1 to prevent font scaling
+			height: newHeight,
 			scaleX: 1,
 			scaleY: 1,
 		});
@@ -599,7 +590,7 @@ const TransformerComponent: React.FC = () => {
 			trRef.current.nodes([]);
 			trRef.current.getLayer()?.batchDraw();
 		}
-	}, [selectedId, stageRef, mode, layers]);
+	}, [selectedId, stageRef, mode]);
 
 	const selectedLayer = layers.find((l) => l.id === selectedId);
 
@@ -707,12 +698,14 @@ const Canvas: React.FC = () => {
 		setSelectedId,
 		stageRef,
 		mode,
+		setMode,
 		scale,
 		stagePos,
 		setScale,
 		setStagePos,
 	} = useEditor();
 	const { handleDragMove, handleDragEnd, handleTransformEnd } = useSnap();
+	const lastModeRef = useRef<"select" | "pan">("select");
 
 	const sortedLayers = useMemo(
 		() => [...layers].sort((a, b) => (a.zIndex ?? 0) - (b.zIndex ?? 0)),
@@ -726,6 +719,22 @@ const Canvas: React.FC = () => {
 			}
 		},
 		[stageRef, setSelectedId],
+	);
+
+	const handleStageMouseDown = useCallback(
+		(e: Konva.KonvaEventObject<MouseEvent>) => {
+			if (e.evt.button === 1) {
+				e.evt.preventDefault();
+				lastModeRef.current = mode;
+				setMode("pan");
+				const reset = () => {
+					setMode(lastModeRef.current);
+					window.removeEventListener("mouseup", reset);
+				};
+				window.addEventListener("mouseup", reset);
+			}
+		},
+		[mode, setMode],
 	);
 
 	const handleWheel = useCallback(
@@ -790,6 +799,7 @@ const Canvas: React.FC = () => {
 			onClick={handleStageClick}
 			onTap={handleStageClick}
 			onWheel={handleWheel}
+			onMouseDown={handleStageMouseDown}
 			draggable={mode === "pan"}
 		>
 			<KonvaLayer name="artboard-bg">
@@ -1299,9 +1309,7 @@ const InspectorPanel: React.FC = () => {
 									label="H"
 									icon={Minimize}
 									value={Math.round(
-										selectedLayer.type === "Image"
-											? (selectedLayer.height ?? 0)
-											: (selectedLayer.computedHeight ?? 0),
+										selectedLayer.height ?? selectedLayer.computedHeight ?? 0,
 									)}
 									onChange={(newHeight) => {
 										if (selectedLayer.type === "Image") {
@@ -1316,6 +1324,8 @@ const InspectorPanel: React.FC = () => {
 											} else {
 												updateLayer({ height: newHeight });
 											}
+										} else if (selectedLayer.type === "Text") {
+											updateLayer({ height: newHeight });
 										}
 									}}
 									min={1}

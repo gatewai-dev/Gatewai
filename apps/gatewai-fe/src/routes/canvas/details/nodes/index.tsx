@@ -13,6 +13,8 @@ import { ResizeNodeComponent } from "./resize";
 import { NoteNodeComponent } from "./sticky-note";
 import { TextNodeComponent } from "./text";
 import { VideoGenNodeComponent } from "./video-gen";
+import { VideoGenExtendNodeComponent } from "./video-gen-extend";
+import { VideoGenFirstLastFrameNodeComponent } from "./video-gen-first-last-frame";
 
 // Node types mapping
 const nodeTypes = {
@@ -31,6 +33,8 @@ const nodeTypes = {
 	Export: ExportNodeComponent,
 	Compositor: CompositorNodeComponent,
 	VideoGen: VideoGenNodeComponent,
+	VideoGenExtend: VideoGenExtendNodeComponent,
+	VideoGenFirstLastFrame: VideoGenFirstLastFrameNodeComponent,
 };
 
 // Export components
@@ -50,4 +54,6 @@ export {
 	ExportNodeComponent,
 	CompositorNodeComponent,
 	VideoGenNodeComponent,
+	VideoGenExtendNodeComponent,
+	VideoGenFirstLastFrameNodeComponent,
 };

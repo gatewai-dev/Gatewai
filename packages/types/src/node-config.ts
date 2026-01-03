@@ -136,7 +136,7 @@ const RouterNodeConfigSchema = z
 
 const LLM_NODE_MODELS = [
 	"google/gemini-3-pro-preview",
-	"google/gemini-2.5-flash",
+	"google/gemini-3-flash",
 ] as const;
 
 const LLMNodeConfigSchema = z
@@ -148,7 +148,7 @@ const LLMNodeConfigSchema = z
 
 const AGENT_NODE_MODELS = [
 	"google/gemini-3-pro-preview",
-	"google/gemini-2.5-flash",
+	"google/gemini-3-flash",
 ] as const;
 
 const AgentNodeConfigSchema = z
@@ -169,7 +169,10 @@ const ResizeNodeConfigSchema = z
 	})
 	.strict();
 
-const VIDEOGEN_NODE_MODELS = ["veo-3.1-generate-preview"] as const;
+const VIDEOGEN_NODE_MODELS = [
+	"veo-3.1-generate-preview",
+	"veo-3.1-fast-generate-preview",
+] as const;
 
 const VideoGenBaseSchema = z.object({
 	model: z.enum(VIDEOGEN_NODE_MODELS),

@@ -58,6 +58,7 @@ export const getHandleStyle = (
 		};
 	}
 
+	// Unconnected handles: border without background
 	if (types.length > 1) {
 		const segmentSize = 100 / types.length;
 		const gradientStops = types
@@ -68,18 +69,19 @@ export const getHandleStyle = (
 				return `${color} ${start}% ${end}%`;
 			})
 			.join(", ");
-
 		return {
-			background: `conic-gradient(${gradientStops})`,
-			border: "3px solid var(--background)", // thick inner border to separate from node
+			backgroundColor: "transparent",
+			border: "2px solid transparent",
+			borderImage: `conic-gradient(${gradientStops}) 1`,
+			borderImageSlice: 1,
 			boxShadow: "0 0 0 1px rgba(0,0,0,0.1)",
 		};
 	}
 
 	const color = getTypeColor(types[0]);
 	return {
-		backgroundColor: color,
-		border: "2px solid var(--background)",
+		backgroundColor: "transparent",
+		border: `2px solid ${color}`,
 		boxShadow: `0 0 0 1px ${color}40`,
 	};
 };
@@ -150,17 +152,15 @@ const NodeHandle = memo(
 				{/* External Label */}
 				<div
 					className={cn(
-						"absolute -top-8 whitespace-nowrap py-0 rounded-lg transition-all duration-200 ease-out pointer-events-none",
+						"absolute -top-8 whitespace-nowrap py-0 rounded-lg transition-all duration-200 ease-out pointer-events-none opacity-0 group-hover:opacity-100",
 						isTarget
 							? "right-2  flex-row-reverse text-right origin-right"
 							: "left-2 text-left origin-left",
-						nodeSelected
-							? " backdrop-blur-md opacity-100 scale-110 shadow-sm"
-							: "opacity-40 scale-95",
+						nodeSelected ? "opacity-100  scale-110 shadow-sm" : "scale-95",
 					)}
 				>
 					<span
-						className="text-xs font-bold uppercase tracking-widest leading-none"
+						className="text-[8px] font-bold uppercase tracking-widest leading-none"
 						style={{ color: activeColor }}
 					>
 						{handle.label || connectedType || handle.dataTypes[0]}
@@ -227,15 +227,13 @@ const BaseNode = memo(
 			<div
 				className={cn(
 					"relative flex flex-col w-full h-full",
-					// 2. Performance optimization: Disable transitions and blur during drag
 					!dragging && "transition-shadow duration-300",
 					dragging ? "bg-card shadow-md" : "bg-card/75 border-border/40",
-					"border rounded-3xl shadow-sm",
+					"border rounded-3xl",
 					"group hover:border-border/80",
 					selected &&
-						"ring-2 ring-primary/40 ring-offset-4 ring-offset-background border-primary/50 shadow-lg",
+						"ring-2 ring-primary/40 ring-offset-4 ring-offset-background border-primary/50 ",
 					// 3. Force GPU layer
-					"transform-gpu",
 					props.className,
 				)}
 				// Inline style for will-change to help the browser layerize the node

@@ -1,3 +1,4 @@
+import { ScrollArea } from "@radix-ui/react-scroll-area";
 import { ChevronLeft, ChevronRight } from "lucide-react";
 import { Button } from "@/components/ui/button";
 import { Separator } from "@/components/ui/separator";
@@ -46,7 +47,7 @@ function NodePaletteContent({ templates }: { templates: NodeTemplateListRPC }) {
 			className={cn(
 				"relative flex flex-col h-full transition-all duration-500 ease-[cubic-bezier(0.16,1,0.3,1)]",
 				"bg-background/80 backdrop-blur-xl border-r border-border/40 shadow-sm",
-				isCollapsed ? "w-[72px]" : "w-80",
+				isCollapsed ? "w-[72px]" : "w-68",
 			)}
 		>
 			{/* Header Area */}
@@ -77,9 +78,9 @@ function NodePaletteContent({ templates }: { templates: NodeTemplateListRPC }) {
 						<DataTypeMultiSelect />
 					</div>
 					<Separator className="opacity-50" />
-					<div className="flex-1 overflow-y-auto custom-scrollbar pt-4">
+					<ScrollArea className="flex-1 custom-scrollbar pt-4">
 						<NodeTemplateList templates={templates} />
-					</div>
+					</ScrollArea>
 				</div>
 			) : (
 				<div className="flex flex-col gap-5 mt-2 items-center">

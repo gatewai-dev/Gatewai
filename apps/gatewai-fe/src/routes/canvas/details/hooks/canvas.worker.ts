@@ -28,7 +28,6 @@ function createShader(gl: WebGLRenderingContext, type: number, source: string) {
 	return shader;
 }
 
-// Simple Vertex and Fragment Shaders
 const vsSource = `
     attribute vec2 a_position;
     attribute vec2 a_texCoord;
