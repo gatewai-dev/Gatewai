@@ -6,7 +6,7 @@ export async function SEED_createNodeTemplates(prisma: PrismaClient) {
 			type: NodeType.VideoGenExtend,
 			displayName: "Extend Video",
 			category: "AI",
-			description: "Extend videos up to 30 seconds",
+			description: "Extend videos up to 148 seconds",
 			subcategory: "Video",
 			tokenPrice: 0.0,
 			variableInputs: false,
@@ -40,7 +40,10 @@ export async function SEED_createNodeTemplates(prisma: PrismaClient) {
 					},
 				],
 			},
-			defaultConfig: { model: "veo-3.1-generate-preview" },
+			defaultConfig: {
+				model: "veo-3.1-generate-preview",
+				aspect_ratio: "16:9",
+			},
 		},
 		{
 			type: NodeType.VideoGenFirstLastFrame,
