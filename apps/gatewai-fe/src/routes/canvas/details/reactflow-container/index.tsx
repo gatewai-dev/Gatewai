@@ -167,6 +167,7 @@ function ReactflowContainer({ children }: ReactFlowProps) {
 					panOnDrag={effectivePan}
 					selectionOnDrag={!effectivePan}
 					selectNodesOnDrag
+					onlyRenderVisibleElements
 					selectionMode={SelectionMode.Partial}
 					connectionMode={ConnectionMode.Loose}
 					onConnect={onConnect}

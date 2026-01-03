@@ -24,7 +24,6 @@ import type {
 	ResizeResult,
 	TextNodeConfig,
 	TextResult,
-	ThreeDNodeConfig,
 } from "@gatewai/types";
 import type { Node } from "@xyflow/react";
 
@@ -49,10 +48,6 @@ export type FileNode = Node<
 export type AgentNode = Node<
 	NodeWithFileType<AgentNodeConfig, AgentResult>,
 	"Agent"
->;
-export type ThreeDNode = Node<
-	NodeWithFileType<ThreeDNodeConfig, ThreeDResult>,
-	"ThreeD"
 >;
 export type MaskNode = Node<
 	NodeWithFileType<MaskNodeConfig, MaskResult>,
@@ -90,7 +85,6 @@ export type AnyNode =
 	| ImageGenNode
 	| FileNode
 	| AgentNode
-	| ThreeDNode
 	| MaskNode
 	| NoteNode
 	| PaintNode

@@ -35,7 +35,8 @@ function AgentNodeHandbook() {
 								<li>Add inputs and outputs for the agent.</li>
 								<li>
 									After running the node, the output handles will contain the
-									data.
+									data. <br />
+									Tip: Use Preview Nodes to view outputs.
 								</li>
 								<li>Inputs and outputs cannot be added after the first run.</li>
 								<li>
@@ -65,7 +66,7 @@ const AgentNodeComponent = memo((props: NodeProps<LLMNode>) => {
 	const maxHandleNum = Math.max(numInputHandles, numOutputHandles);
 	const hasResult = result?.outputs && result?.outputs?.length > 0;
 	return (
-		<BaseNode {...props}>
+		<BaseNode selected={props.selected} id={props.id} dragging={props.dragging}>
 			<div
 				style={{
 					minHeight: 30 * maxHandleNum,

@@ -23,7 +23,8 @@ const CompositorView = memo(() => {
 			OutputItem<"Text"> | OutputItem<"Image">
 		>();
 
-		for (const [key, value] of inputs) {
+		for (const key of Object.keys(inputs)) {
+			const value = inputs[key];
 			const handleId = key;
 			if (value.outputItem) {
 				items.set(

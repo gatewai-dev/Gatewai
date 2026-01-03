@@ -1,14 +1,13 @@
 import { DataType, HandleType, NodeType, type PrismaClient } from "./client";
 
 export async function SEED_createNodeTemplates(prisma: PrismaClient) {
-	// GENERATIVE
-	await prisma.nodeTemplate.create({
-		data: {
+	const nodes = [
+		{
 			type: NodeType.Agent,
 			displayName: "AI Agent",
 			category: "Generative",
-			subcategory: "AI Models",
-			description: "A multi-modal AI agent.",
+			description: "A multi-modal AI agent with media editing capabilities.",
+			subCategory: null,
 			tokenPrice: 0.0,
 			variableInputs: false,
 			variableOutputs: false,
@@ -32,15 +31,12 @@ export async function SEED_createNodeTemplates(prisma: PrismaClient) {
 			},
 			defaultConfig: { maxTurns: 10, model: "anthropict/claude-opus-4.5" },
 		},
-	});
-
-	await prisma.nodeTemplate.create({
-		data: {
-			type: NodeType.LLM,
-			displayName: "LLM",
-			category: "Generative",
-			subcategory: "AI Models",
-			description: "Run a LLM model",
+		{
+			type: NodeType.Text,
+			displayName: "Text",
+			description: "A basic text node",
+			category: "Tools",
+			subCategory: null,
 			tokenPrice: 0.0,
 			variableInputs: false,
 			variableOutputs: false,
@@ -75,19 +71,44 @@ export async function SEED_createNodeTemplates(prisma: PrismaClient) {
 			},
 			defaultConfig: { model: "openai/gpt-5.2", temperature: 0 },
 		},
-	});
-
-	await prisma.nodeTemplate.create({
-		data: {
-			type: NodeType.ImageGen,
-			displayName: "Multimodal Image",
-			category: "Generative",
-			subcategory: "AI Models",
-			description: "Generate images using text prompt and reference image(s)",
+		{
+			type: NodeType.Preview,
+			displayName: "Preview",
+			description: "Preview your media",
+			category: "Tools",
+			subCategory: null,
 			tokenPrice: 0.0,
 			variableInputs: false,
 			variableOutputs: false,
-			isTerminalNode: true,
+			isTerminalNode: false,
+			isTransient: true,
+			templateHandles: {
+				create: [
+					{
+						type: HandleType.Input,
+						dataTypes: [
+							DataType.Video,
+							DataType.Image,
+							DataType.Text,
+							DataType.Audio,
+						],
+						required: true,
+						label: "Input (Text/Image/Audio/Video)",
+					},
+				],
+			},
+			defaultConfig: undefined,
+		},
+		{
+			type: NodeType.File,
+			displayName: "Import",
+			description: "Upload your media",
+			category: "Tools",
+			subCategory: null,
+			tokenPrice: 0.0,
+			variableInputs: false,
+			variableOutputs: false,
+			isTerminalNode: false,
 			isTransient: false,
 			templateHandles: {
 				create: [
@@ -112,64 +133,13 @@ export async function SEED_createNodeTemplates(prisma: PrismaClient) {
 			},
 			defaultConfig: { model: "google/gemini-3-pro-image" },
 		},
-	});
-
-	// INPUT/OUTPUT
-	const ioNodes = [
 		{
-			type: NodeType.Text,
-			name: "Text",
-			sub: "Data Entry",
-			out: DataType.Text,
-		},
-		{
-			type: NodeType.Number,
-			name: "Number",
-			sub: "Data Entry",
-			out: DataType.Number,
-		},
-		{
-			type: NodeType.Toggle,
-			name: "Toggle",
-			sub: "Data Entry",
-			out: DataType.Boolean,
-		},
-		{ type: NodeType.File, name: "Import", sub: "Files", out: DataType.File },
-	];
-
-	for (const node of ioNodes) {
-		await prisma.nodeTemplate.create({
-			data: {
-				type: node.type,
-				displayName: node.name,
-				category: "Input/Output",
-				subcategory: node.sub,
-				description: `A basic ${node.name.toLowerCase()} node`,
-				tokenPrice: 0.0,
-				variableInputs: false,
-				variableOutputs: false,
-				isTerminalNode: false,
-				isTransient: false,
-				templateHandles: {
-					create: [
-						{
-							type: HandleType.Output,
-							dataTypes: [node.out],
-							label: node.name,
-						},
-					],
-				},
-			},
-		});
-	}
-
-	await prisma.nodeTemplate.create({
-		data: {
 			type: NodeType.Export,
 			displayName: "Export",
-			category: "Input/Output",
-			subcategory: "Files",
+			subcategory: null,
 			description: "A UI download / API output node",
+			category: "Tools",
+			subCategory: null,
 			tokenPrice: 0.0,
 			variableInputs: false,
 			variableOutputs: false,
@@ -192,76 +162,61 @@ export async function SEED_createNodeTemplates(prisma: PrismaClient) {
 				],
 			},
 		},
-	});
-
-	// PROCESSING
-	const processingNodes = [
-		{ type: NodeType.Resize, name: "Resize", sub: "Image Labelling" },
 		{
-			type: NodeType.Blur,
-			name: "Blur",
-			sub: "Effects",
-			config: { blurAmount: 0 },
-		},
-		{
-			type: NodeType.Modulate,
-			name: "Modulate",
-			sub: "Effects",
-			config: { hue: 0, saturation: 1, lightness: 1, brightness: 1 },
-		},
-		{
-			type: NodeType.Crop,
-			name: "Crop",
-			sub: "Image Labelling",
-			config: {
-				leftPercentage: 0,
-				topPercentage: 0,
-				widthPercentage: 100,
-				heightPercentage: 100,
+			type: NodeType.Toggle,
+			displayName: "Toggle",
+			description: "A toggle for True/False data type",
+			category: "Tools",
+			subCategory: null,
+			tokenPrice: 0.0,
+			variableInputs: false,
+			variableOutputs: false,
+			isTerminalNode: false,
+			isTransient: false,
+			templateHandles: {
+				create: [
+					{
+						type: HandleType.Output,
+						dataTypes: [DataType.Boolean],
+						label: "Yes/No",
+					},
+				],
 			},
 		},
-	];
-
-	for (const node of processingNodes) {
-		await prisma.nodeTemplate.create({
-			data: {
-				type: node.type,
-				displayName: node.name,
-				category: "Processing",
-				subcategory: node.sub,
-				description: `${node.name} node`,
-				tokenPrice: 0.0,
-				variableInputs: false,
-				variableOutputs: false,
-				isTerminalNode: false,
-				isTransient: true,
-				templateHandles: {
-					create: [
-						{
-							type: HandleType.Input,
-							dataTypes: [DataType.Image],
-							required: true,
-							label: "Image",
-						},
-						{
-							type: HandleType.Output,
-							dataTypes: [DataType.Image],
-							label: "Result",
-						},
-					],
-				},
-				defaultConfig: node.config,
+		{
+			type: NodeType.Resize,
+			displayName: "Resize",
+			description: "Resize media",
+			category: "Image",
+			subCategory: null,
+			tokenPrice: 0.0,
+			variableInputs: false,
+			variableOutputs: false,
+			isTerminalNode: false,
+			isTransient: true,
+			templateHandles: {
+				create: [
+					{
+						type: HandleType.Input,
+						dataTypes: [DataType.Image],
+						required: true,
+						label: "Image",
+					},
+					{
+						type: HandleType.Output,
+						dataTypes: [DataType.Image],
+						label: "Result",
+					},
+				],
 			},
-		});
-	}
-
-	await prisma.nodeTemplate.create({
-		data: {
+			defaultConfig: undefined,
+		},
+		{
 			type: NodeType.Paint,
 			displayName: "Paint",
-			category: "Processing",
-			subcategory: "Image Labelling",
 			description: "Draw / Fill Mask on Image",
+			category: "Image",
+			subCategory: null,
 			tokenPrice: 0.0,
 			variableInputs: false,
 			variableOutputs: false,
@@ -293,16 +248,101 @@ export async function SEED_createNodeTemplates(prisma: PrismaClient) {
 				backgroundColor: "#000",
 			},
 		},
-	});
-
-	// LAYOUT / UTILS
-	await prisma.nodeTemplate.create({
-		data: {
+		{
+			type: NodeType.Blur,
+			displayName: "Blur",
+			description: "Apply blur to media",
+			category: "Image",
+			subCategory: null,
+			tokenPrice: 0.0,
+			variableInputs: false,
+			variableOutputs: false,
+			isTerminalNode: false,
+			isTransient: true,
+			templateHandles: {
+				create: [
+					{
+						type: HandleType.Input,
+						dataTypes: [DataType.Image],
+						required: true,
+						label: "Image",
+					},
+					{
+						type: HandleType.Output,
+						dataTypes: [DataType.Image],
+						label: "Image",
+					},
+				],
+			},
+			defaultConfig: { blurAmount: 0 },
+		},
+		{
+			type: NodeType.Modulate,
+			displayName: "Modulate",
+			description: "Apply Modulate adjustments to a media",
+			category: "Image",
+			subCategory: null,
+			tokenPrice: 0.0,
+			variableInputs: false,
+			variableOutputs: false,
+			isTerminalNode: false,
+			isTransient: true,
+			templateHandles: {
+				create: [
+					{
+						type: HandleType.Input,
+						dataTypes: [DataType.Image],
+						required: true,
+						label: "Image",
+					},
+					{
+						type: HandleType.Output,
+						dataTypes: [DataType.Image],
+						label: "Result",
+					},
+				],
+			},
+			defaultConfig: { hue: 0, saturation: 1, lightness: 1, brightness: 1 },
+		},
+		{
+			type: NodeType.Crop,
+			displayName: "Crop",
+			description: "Crop media",
+			category: "Image",
+			subCategory: null,
+			tokenPrice: 0.0,
+			variableInputs: false,
+			variableOutputs: false,
+			isTerminalNode: false,
+			isTransient: true,
+			templateHandles: {
+				create: [
+					{
+						type: HandleType.Input,
+						dataTypes: [DataType.Image],
+						required: true,
+						label: "Image",
+					},
+					{
+						type: HandleType.Output,
+						dataTypes: [DataType.Image],
+						label: "Result",
+					},
+				],
+			},
+			defaultConfig: {
+				leftPercentage: 0,
+				topPercentage: 0,
+				widthPercentage: 100,
+				heightPercentage: 100,
+			},
+		},
+		{
 			type: NodeType.Compositor,
 			displayName: "Compositor",
-			category: "Layout",
-			subcategory: "Composition",
 			description: "Compose an image using image or text",
+			category: "Image",
+			subCategory: null,
 			tokenPrice: 0.0,
 			variableInputs: true,
 			variableOutputs: false,
@@ -325,45 +365,12 @@ export async function SEED_createNodeTemplates(prisma: PrismaClient) {
 			},
 			defaultConfig: { width: 1024, height: 1024 },
 		},
-	});
-
-	await prisma.nodeTemplate.create({
-		data: {
-			type: NodeType.Preview,
-			displayName: "Preview",
-			category: "Layout",
-			subcategory: "Tools",
-			description: "Preview your media",
-			tokenPrice: 0.0,
-			variableInputs: false,
-			variableOutputs: false,
-			isTerminalNode: false,
-			isTransient: true,
-			templateHandles: {
-				create: [
-					{
-						type: HandleType.Input,
-						dataTypes: [
-							DataType.Video,
-							DataType.Image,
-							DataType.Text,
-							DataType.Audio,
-						],
-						required: true,
-						label: "Input",
-					},
-				],
-			},
-		},
-	});
-
-	await prisma.nodeTemplate.create({
-		data: {
+		{
 			type: NodeType.Note,
 			displayName: "Sticky Note",
-			category: "Layout",
-			subcategory: "Tools",
 			description: "A sticky note",
+			category: "Tools",
+			subCategory: null,
 			tokenPrice: 0.0,
 			variableInputs: false,
 			variableOutputs: false,
@@ -372,5 +379,105 @@ export async function SEED_createNodeTemplates(prisma: PrismaClient) {
 			templateHandles: { create: [] },
 			defaultConfig: { backgroundColor: "#ffff88", textColor: "#000000" },
 		},
-	});
+		{
+			type: NodeType.Number,
+			displayName: "Number",
+			description: "A number input node",
+			category: "Tools",
+			subCategory: null,
+			tokenPrice: 0.0,
+			variableInputs: false,
+			variableOutputs: false,
+			isTerminalNode: false,
+			isTransient: false,
+			templateHandles: {
+				create: [
+					{
+						type: HandleType.Output,
+						dataTypes: [DataType.Number],
+						label: "Number",
+					},
+				],
+			},
+			defaultConfig: undefined,
+		},
+		{
+			type: NodeType.ImageGen,
+			displayName: "Multimodal Image",
+			description: "Generate images using text prompt and reference image(s)",
+			category: "AI",
+			subCategory: "Image",
+			tokenPrice: 0.0,
+			variableInputs: false,
+			variableOutputs: false,
+			isTerminalNode: true,
+			isTransient: false,
+			templateHandles: {
+				create: [
+					{
+						type: HandleType.Input,
+						dataTypes: [DataType.Text],
+						required: true,
+						label: "Prompt",
+					},
+					{
+						type: HandleType.Input,
+						dataTypes: [DataType.Image],
+						required: false,
+						label: "Reference Image",
+					},
+					{
+						type: HandleType.Output,
+						dataTypes: [DataType.Image],
+						label: "Image",
+					},
+				],
+			},
+			defaultConfig: { model: "google/gemini-3-pro-image" },
+		},
+		{
+			type: NodeType.LLM,
+			displayName: "LLM",
+			description: "Run a LLM model",
+			category: "AI",
+			subCategory: "Text",
+			tokenPrice: 0.0,
+			variableInputs: false,
+			variableOutputs: false,
+			isTerminalNode: true,
+			isTransient: false,
+			templateHandles: {
+				create: [
+					{
+						type: HandleType.Input,
+						dataTypes: [DataType.Text],
+						required: true,
+						label: "Prompt",
+					},
+					{
+						type: HandleType.Input,
+						dataTypes: [DataType.Text],
+						required: false,
+						label: "System Prompt",
+					},
+					{
+						type: HandleType.Input,
+						dataTypes: [DataType.Image],
+						required: false,
+						label: "Image",
+					},
+					{
+						type: HandleType.Output,
+						dataTypes: [DataType.Text],
+						label: "Text",
+					},
+				],
+			},
+			defaultConfig: { model: "openai/gpt-5.2", temperature: 0 },
+		},
+	];
+
+	for (const node of nodes) {
+		await prisma.nodeTemplate.create({ data: node });
+	}
 }

@@ -1,58 +1,71 @@
-import { useEffect, useRef } from "react";
+import { useViewport } from "@xyflow/react";
+import { useEffect, useRef, useState } from "react";
+import { imageStore } from "../processor/image-store";
+import CanvasWorker from "./canvas.worker.ts?worker";
 
 function useDrawToCanvas(
 	canvasRef: React.RefObject<HTMLCanvasElement | null>,
-	imageUrl?: string | null,
+	resultHash?: string | null,
 ) {
-	// Keep track of the last processed image to prevent redundant draws
-	const lastImageSrc = useRef<string | null>(null);
+	const { zoom } = useViewport();
+	const workerRef = useRef<Worker | null>(null);
+	const [renderHeight, setRenderHeight] = useState<number | undefined>(
+		undefined,
+	);
+	const [containerWidth, setContainerWidth] = useState(0);
 
+	// Setup Worker and ResizeObserver
 	useEffect(() => {
+		if (!workerRef.current) {
+			workerRef.current = new CanvasWorker();
+			workerRef.current.onmessage = (e) => {
+				if (e.data.type === "CANVAS_INITIALIZED") {
+					setRenderHeight(e.data.payload.renderHeight);
+				}
+			};
+		}
+
 		const canvas = canvasRef.current;
 		if (!canvas) return;
 
-		const ctx = canvas.getContext("2d", { alpha: true });
-		if (!ctx) return;
-
-		// 1. Handle Empty State
-		if (!imageUrl) {
-			ctx.clearRect(0, 0, canvas.width, canvas.height);
-			lastImageSrc.current = null;
-			return;
+		// Initialize Offscreen
+		if (!canvas.getAttribute("data-offscreen-init")) {
+			const offscreen = canvas.transferControlToOffscreen();
+			workerRef.current.postMessage(
+				{ type: "INIT_CANVAS", payload: { canvas: offscreen } },
+				[offscreen],
+			);
+			canvas.setAttribute("data-offscreen-init", "true");
 		}
 
-		// 2. Prevent redundant loads if the URL hasn't changed
-		if (imageUrl === lastImageSrc.current) return;
-
-		const img = new Image();
-		img.crossOrigin = "anonymous";
-		img.src = imageUrl;
-
-		img.onload = () => {
-			// Update tracking ref
-			lastImageSrc.current = imageUrl;
-
-			// 3. Optimization: Only resize canvas if dimensions actually changed
-			// Resizing a canvas is expensive and clears the buffer automatically
-			if (canvas.width !== img.width || canvas.height !== img.height) {
-				canvas.width = img.width;
-				canvas.height = img.height;
-
-				// Set display styles once
-				canvas.style.width = "100%";
-				canvas.style.height = "auto";
+		// Track Resize
+		const resizeObserver = new ResizeObserver((entries) => {
+			for (const entry of entries) {
+				setContainerWidth(entry.contentRect.width);
 			}
+		});
 
-			// 4. Draw
-			ctx.clearRect(0, 0, canvas.width, canvas.height);
-			ctx.drawImage(img, 0, 0);
-		};
+		resizeObserver.observe(canvas);
+		return () => resizeObserver.disconnect();
+	}, [canvasRef.current]);
 
-		img.onerror = () => {
-			console.error("Failed to load image for canvas:", imageUrl);
-			lastImageSrc.current = null;
-		};
-	}, [imageUrl, canvasRef]);
+	// Redraw when image, width, or zoom changes
+	useEffect(() => {
+		if (resultHash && workerRef.current && containerWidth > 0) {
+			const imageUrl = imageStore.getDataUrlForHash(resultHash);
+			workerRef.current.postMessage({
+				type: "DRAW_IMAGE",
+				payload: {
+					imageUrl,
+					canvasWidth: containerWidth,
+					zoom: zoom,
+					dpr: window.devicePixelRatio || 1,
+				},
+			});
+		}
+	}, [resultHash, containerWidth, zoom]);
+
+	return { renderHeight };
 }
 
 export { useDrawToCanvas };

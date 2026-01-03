@@ -29,9 +29,12 @@ import {
 	FormMessage,
 } from "@/components/ui/form";
 import { Input } from "@/components/ui/input";
-import type { CanvasDetailsNode } from "@/rpc/types";
 import { useAppDispatch, useAppSelector } from "@/store";
-import { makeSelectNodeById, updateNodeEntity } from "@/store/nodes";
+import {
+	makeSelectNodeById,
+	type NodeEntityType,
+	updateNodeEntity,
+} from "@/store/nodes";
 import { useCanvasCtx } from "../ctx/canvas-ctx";
 
 type RenameNodeDialogProps = {
@@ -96,7 +99,7 @@ const RenameNodeDialog = memo(
 	},
 );
 
-const NodeMenu = memo((props: NodeProps<Node<CanvasDetailsNode>>) => {
+const NodeMenu = memo((props: { id: NodeEntityType["id"] }) => {
 	const { onNodesDelete, duplicateNodes } = useCanvasCtx();
 	const [renameOpen, setRenameOpen] = useState(false);
 	const isMac = /Mac|iPod|iPhone|iPad/.test(navigator.userAgent);

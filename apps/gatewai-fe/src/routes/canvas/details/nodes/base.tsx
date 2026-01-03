@@ -5,7 +5,6 @@ import {
 	getBezierPath,
 	Handle,
 	type Node,
-	type NodeProps,
 	Position,
 } from "@xyflow/react";
 import { type JSX, memo, type ReactNode, useMemo } from "react";
@@ -17,7 +16,6 @@ import {
 } from "@/components/ui/tooltip";
 import { dataTypeColors } from "@/config";
 import { cn } from "@/lib/utils";
-import type { CanvasDetailsNode } from "@/rpc/types";
 import { useAppSelector } from "@/store";
 import {
 	type HandleEntityType,
@@ -153,17 +151,17 @@ const NodeHandle = memo(
 				{/* External Label */}
 				<div
 					className={cn(
-						"absolute -top-8 whitespace-nowrap py-0 px-0 rounded-lg transition-all duration-200 ease-out pointer-events-none",
+						"absolute -top-8 whitespace-nowrap py-0 rounded-lg transition-all duration-200 ease-out pointer-events-none",
 						isTarget
-							? "right-1  flex-row-reverse text-right origin-right"
-							: "left-1 text-left origin-left",
+							? "right-2  flex-row-reverse text-right origin-right"
+							: "left-2 text-left origin-left",
 						nodeSelected
 							? " backdrop-blur-md opacity-100 scale-110 shadow-sm"
 							: "opacity-40 scale-95",
 					)}
 				>
 					<span
-						className="text-[9px] font-bold uppercase tracking-widest leading-none"
+						className="text-xs font-bold uppercase tracking-widest leading-none"
 						style={{ color: activeColor }}
 					>
 						{handle.label || connectedType || handle.dataTypes[0]}
@@ -193,13 +191,14 @@ const NodeHandle = memo(
 );
 
 const BaseNode = memo(
-	(
-		props: NodeProps<Node<CanvasDetailsNode>> & {
-			children?: ReactNode;
-			className?: string;
-		},
-	) => {
-		const { selected, id } = props;
+	(props: {
+		selected: boolean;
+		id: string;
+		dragging: boolean;
+		children?: ReactNode;
+		className?: string;
+	}) => {
+		const { selected, id, dragging } = props;
 
 		const selectHandles = useMemo(() => makeSelectHandlesByNodeId(id), [id]);
 		const handles = useAppSelector(selectHandles);
@@ -229,14 +228,20 @@ const BaseNode = memo(
 		return (
 			<div
 				className={cn(
-					"relative flex flex-col w-full h-full transition-shadow duration-300 will-change-[transform,opacity]",
-					"bg-card/75 backdrop-blur-2xl border border-border/40",
-					"rounded-3xl shadow-sm",
+					"relative flex flex-col w-full h-full",
+					// 2. Performance optimization: Disable transitions and blur during drag
+					!dragging && "transition-shadow duration-300",
+					dragging ? "bg-card shadow-md" : "bg-card/75 border-border/40",
+					"border rounded-3xl shadow-sm",
 					"group hover:border-border/80",
 					selected &&
 						"ring-2 ring-primary/40 ring-offset-4 ring-offset-background border-primary/50 shadow-lg",
+					// 3. Force GPU layer
+					"transform-gpu",
 					props.className,
 				)}
+				// Inline style for will-change to help the browser layerize the node
+				style={{ willChange: dragging ? "transform" : "auto" }}
 			>
 				{/* Inputs */}
 				<div className="absolute inset-y-0 left-0 w-0">
@@ -246,9 +251,9 @@ const BaseNode = memo(
 							handle={handle}
 							index={i}
 							type="target"
-							isValid={hasTypeMismatch(handle.id) === false}
-							hasValue={inputs.get(handle.id)?.outputItem?.data != null}
-							connectedType={inputs.get(handle.id)?.outputItem?.type}
+							isValid={inputs[handle.id]?.connectionValid ?? true}
+							hasValue={inputs[handle.id]?.outputItem?.data != null}
+							connectedType={inputs[handle.id]?.outputItem?.type}
 							nodeSelected={selected}
 						/>
 					))}
@@ -256,7 +261,7 @@ const BaseNode = memo(
 
 				{/* Content Container */}
 				<div className="flex flex-col h-full overflow-hidden p-1.5">
-					<div className="flex items-center justify-between px-4 py-3.5 mb-1 drag-handle cursor-grab active:cursor-grabbing border-b border-border/5">
+					<div className="flex items-center justify-between px-3 py-2.5 mb-1 drag-handle cursor-grab active:cursor-grabbing border-b border-border/5">
 						<div className="flex items-center gap-3 min-w-0">
 							{Icon && (
 								<div className="text-foreground/80 bg-muted/40 p-2 rounded-xl shadow-inner">
@@ -268,14 +273,14 @@ const BaseNode = memo(
 									{node?.name}
 								</span>
 								<span className="text-[9px] text-muted-foreground font-mono opacity-50 uppercase tracking-tighter">
-									ID: {node?.id.slice(-6)}
+									ID: {node?.id.slice(0, 6)}
 								</span>
 							</div>
 						</div>
-						<NodeMenu {...props} />
+						<NodeMenu id={props.id} />
 					</div>
 
-					<div className="flex-1 px-1 nodrag nopan overflow-y-auto cursor-auto">
+					<div className="flex-1 px-1 nodrag nopan cursor-auto">
 						{props.children}
 					</div>
 				</div>

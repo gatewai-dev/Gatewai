@@ -50,6 +50,7 @@ const PaintNodeComponent = memo((props: NodeProps<PaintNode>) => {
 	const lastPositionRef = useRef<{ x: number; y: number } | null>(null);
 	const needsUpdateRef = useRef(false);
 	const skipNextSyncRef = useRef(false);
+	const previewDebounceRef = useRef<number | null>(null); // New: For debouncing fill preview
 
 	const updateConfig = useCallback(
 		(cfg: Partial<PaintNodeConfig>) => {
@@ -91,15 +92,16 @@ const PaintNodeComponent = memo((props: NodeProps<PaintNode>) => {
 		}
 	}, [nodeConfig]);
 
-	const hexToRgb = useCallback((hex: string): [number, number, number] => {
-		const result = /^#?([a-f\d]{2})([a-f\d]{2})([a-f\d]{2})$/i.exec(hex);
-		return result
-			? [
-					parseInt(result[1], 16),
-					parseInt(result[2], 16),
-					parseInt(result[3], 16),
-				]
-			: [0, 0, 0];
+	const colorToRgb = useCallback((color: string): [number, number, number] => {
+		const canvas = document.createElement("canvas");
+		canvas.width = 1;
+		canvas.height = 1;
+		const ctx = canvas.getContext("2d");
+		if (!ctx) return [0, 0, 0];
+		ctx.fillStyle = color;
+		ctx.fillRect(0, 0, 1, 1);
+		const [r, g, b] = ctx.getImageData(0, 0, 1, 1).data;
+		return [r, g, b];
 	}, []);
 
 	const colorsSimilar = useCallback(
@@ -108,6 +110,9 @@ const PaintNodeComponent = memo((props: NodeProps<PaintNode>) => {
 			c2: [number, number, number, number],
 			tol: number,
 		): boolean => {
+			if (c1[3] === 0 || c2[3] === 0) {
+				return c1[3] === c2[3];
+			}
 			return (
 				Math.max(
 					Math.abs(c1[0] - c2[0]),
@@ -178,9 +183,8 @@ const PaintNodeComponent = memo((props: NodeProps<PaintNode>) => {
 					: maskCtx.getImageData(0, 0, w, h).data;
 
 			const targetColor = getPixel(colorData, posX, posY, w);
-			if (targetColor[3] === 0 && !useInput) return; // Skip transparent in mask if no input
 
-			const [brushR, brushG, brushB] = hexToRgb(brushColor);
+			const [brushR, brushG, brushB] = colorToRgb(brushColor);
 
 			const targetTol = tolerance; // 0-255
 
@@ -232,7 +236,7 @@ const PaintNodeComponent = memo((props: NodeProps<PaintNode>) => {
 			inputImageUrl,
 			getPixel,
 			setPixel,
-			hexToRgb,
+			colorToRgb,
 			colorsSimilar,
 		],
 	);
@@ -391,14 +395,23 @@ const PaintNodeComponent = memo((props: NodeProps<PaintNode>) => {
 			const { x, y } = getScaledCoordinates(e);
 
 			if (tool === "fill") {
+				// Performance fix: Clear preview immediately on move (cheap operation).
+				// Debounce the expensive flood fill to only run after 100ms of mouse inactivity.
+				// This prevents running flood fill on every mouse move event, which fires rapidly.
+				if (previewDebounceRef.current) {
+					clearTimeout(previewDebounceRef.current);
+				}
 				clearPreview();
-				if (
-					x >= 0 &&
-					y >= 0 &&
-					x < (canvasRef.current?.width ?? 0) &&
-					y < (canvasRef.current?.height ?? 0)
-				) {
-					performFloodFill(true, x, y);
+				const width = canvasRef.current?.width ?? 0;
+				const height = canvasRef.current?.height ?? 0;
+				const inBounds = x >= 0 && y >= 0 && x < width && y < height;
+				if (inBounds) {
+					previewDebounceRef.current = setTimeout(() => {
+						performFloodFill(true, x, y);
+						previewDebounceRef.current = null;
+					}, 100);
+				} else {
+					previewDebounceRef.current = null;
 				}
 				return;
 			}
@@ -412,7 +425,7 @@ const PaintNodeComponent = memo((props: NodeProps<PaintNode>) => {
 			ctx.stroke();
 			lastPositionRef.current = { x, y };
 		},
-		[tool, getScaledCoordinates, performFloodFill, clearPreview],
+		[tool, getScaledCoordinates, clearPreview, performFloodFill],
 	);
 
 	const handleMouseUp = useCallback(() => {
@@ -431,6 +444,10 @@ const PaintNodeComponent = memo((props: NodeProps<PaintNode>) => {
 	const handleMouseLeave = useCallback(() => {
 		if (tool === "fill") {
 			clearPreview();
+			if (previewDebounceRef.current) {
+				clearTimeout(previewDebounceRef.current);
+				previewDebounceRef.current = null;
+			}
 		}
 	}, [tool, clearPreview]);
 
@@ -451,6 +468,15 @@ const PaintNodeComponent = memo((props: NodeProps<PaintNode>) => {
 			document.removeEventListener("mouseup", handleMouseUp);
 		};
 	}, [handleMouseUp]);
+
+	// Cleanup debounce on unmount
+	useEffect(() => {
+		return () => {
+			if (previewDebounceRef.current) {
+				clearTimeout(previewDebounceRef.current);
+			}
+		};
+	}, []);
 
 	return (
 		<BaseNode {...props}>

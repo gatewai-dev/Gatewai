@@ -1,18 +1,19 @@
-import type { AnyOutputItem, FileResult, NodeResult } from "@gatewai/types";
+import type { FileResult, NodeResult } from "@gatewai/types";
 import {
 	createContext,
 	useCallback,
 	useContext,
 	useEffect,
-	useMemo,
 	useRef,
 	useSyncExternalStore,
 } from "react";
 import { useAppSelector } from "@/store";
 import { makeSelectAllEdges } from "@/store/edges";
-import { makeSelectAllHandles } from "@/store/handles";
+import { type HandleEntityType, makeSelectAllHandles } from "@/store/handles";
 import { makeSelectAllNodeEntities, type NodeEntityType } from "@/store/nodes";
+import { imageStore } from "./image-store";
 import { NodeGraphProcessor } from "./node-graph-processor";
+import type { ConnectedInput } from "./types";
 
 const ProcessorContext = createContext<NodeGraphProcessor | null>(null);
 
@@ -75,67 +76,70 @@ export function useNodeResult<T extends NodeResult = NodeResult>(
 	nodeId: string,
 ): {
 	result: T | null;
-	inputs: Map<
-		string,
-		{ connectionValid: boolean; outputItem: AnyOutputItem | null }
-	>;
+	inputs: Record<HandleEntityType["id"], ConnectedInput>;
 	isProcessing: boolean;
 	error: string | null;
 } {
 	const processor = useProcessor();
 
+	// Track the snapshot in a ref to ensure stable identity
+	const snapshotRef = useRef<{
+		result: T | null;
+		inputs: Record<HandleEntityType["id"], ConnectedInput>;
+		isProcessing: boolean;
+		error: string | null;
+	} | null>(null);
+
 	const subscribe = (callback: () => void) => {
-		const onProcessed = (data: { nodeId: string }) => {
-			if (data.nodeId === nodeId) callback();
-		};
-		const onStart = (data: {
-			nodeId: string;
-			inputs: Map<
-				string,
-				{ connectionValid: boolean; outputItem: AnyOutputItem | null }
-			>;
-		}) => {
-			if (data.nodeId === nodeId) callback();
-		};
-		const onError = (data: { nodeId: string }) => {
-			if (data.nodeId === nodeId) callback();
+		const handler = (data: { nodeId: string }) => {
+			if (data.nodeId === nodeId) {
+				// Force a recalculation of the snapshot before calling the callback
+				callback();
+			}
 		};
 
-		processor.on("node:start", onStart);
-		processor.on("node:processed", onProcessed);
-		processor.on("node:error", onError);
+		processor.on("node:start", handler);
+		processor.on("node:processed", handler);
+		processor.on("node:error", handler);
 
 		return () => {
-			processor.off("node:start", onStart);
-			processor.off("node:processed", onProcessed);
-			processor.off("node:error", onError);
+			processor.off("node:start", handler);
+			processor.off("node:processed", handler);
+			processor.off("node:error", handler);
 		};
 	};
 
 	const getSnapshot = () => {
 		const state = processor.getNodeState(nodeId);
 
-		const inputsAsArray = state?.inputs
-			? Array.from(state.inputs.entries())
-			: [];
+		const nextResult = state?.result ?? null;
+		const nextInputs = state?.inputs ?? {};
+		const nextIsProcessing = state?.isProcessing ?? false;
+		const nextError = state?.error ?? null;
 
-		return JSON.stringify({
-			result: state?.result ?? null,
-			inputs: inputsAsArray,
-			isProcessing: state?.isProcessing ?? false,
-			error: state?.error ?? null,
-		});
+		// Check if anything actually changed since the last snapshot
+		const hasChanged =
+			!snapshotRef.current ||
+			snapshotRef.current.result !== nextResult ||
+			snapshotRef.current.isProcessing !== nextIsProcessing ||
+			snapshotRef.current.error !== nextError ||
+			// If inputs is an object/map, compare size or specific keys
+			Object.keys(snapshotRef.current.inputs).length !==
+				Object.keys(nextInputs).length;
+
+		if (hasChanged) {
+			snapshotRef.current = {
+				result: nextResult as T,
+				inputs: nextInputs,
+				isProcessing: nextIsProcessing,
+				error: nextError,
+			};
+		}
+
+		return snapshotRef.current!;
 	};
 
-	const snapshot = useSyncExternalStore(subscribe, getSnapshot, getSnapshot);
-
-	return useMemo(() => {
-		const parsed = JSON.parse(snapshot);
-		return {
-			...parsed,
-			inputs: new Map(parsed.inputs),
-		};
-	}, [snapshot]);
+	return useSyncExternalStore(subscribe, getSnapshot, getSnapshot);
 }
 
 // A simple deep equality helper (or use lodash.isEqual)
@@ -190,4 +194,36 @@ export function useNodeFileOutputUrl(nodeId: string): string | null {
 export function useProcessNode(nodeId: string) {
 	const processor = useProcessor();
 	return () => processor.processNode(nodeId);
+}
+
+export function useNodeResultHash(nodeId: string): string | null {
+	const processor = useProcessor();
+
+	const subscribe = (callback: () => void) => {
+		const onProcessed = (data: { nodeId: string }) => {
+			if (data.nodeId === nodeId) callback();
+		};
+		const onStart = (data: { nodeId: string }) => {
+			if (data.nodeId === nodeId) callback();
+		};
+		const onError = (data: { nodeId: string }) => {
+			if (data.nodeId === nodeId) callback();
+		};
+
+		processor.on("node:start", onStart);
+		processor.on("node:processed", onProcessed);
+		processor.on("node:error", onError);
+
+		return () => {
+			processor.off("node:start", onStart);
+			processor.off("node:processed", onProcessed);
+			processor.off("node:error", onError);
+		};
+	};
+
+	const getSnapshot = () => {
+		return imageStore.getHashForNode(nodeId) ?? null;
+	};
+
+	return useSyncExternalStore(subscribe, getSnapshot, getSnapshot);
 }
