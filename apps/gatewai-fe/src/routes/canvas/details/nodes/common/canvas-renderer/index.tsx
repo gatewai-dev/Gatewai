@@ -11,7 +11,6 @@ const CanvasRenderer = memo(
 
 		// Sync the forwarded ref with our internal ref
 		useImperativeHandle(ref, () => internalRef.current!);
-
 		// Get the calculated height from the hook
 		const { renderHeight } = useDrawToCanvas(internalRef, imageUrl);
 

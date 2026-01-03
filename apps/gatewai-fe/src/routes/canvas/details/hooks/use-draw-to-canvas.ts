@@ -13,7 +13,7 @@ function useDrawToCanvas(
 	);
 	const [containerWidth, setContainerWidth] = useState(0);
 
-	// 1. Setup Worker and ResizeObserver
+	// Setup Worker and ResizeObserver
 	useEffect(() => {
 		if (!workerRef.current) {
 			workerRef.current = new CanvasWorker();
@@ -48,7 +48,7 @@ function useDrawToCanvas(
 		return () => resizeObserver.disconnect();
 	}, [canvasRef.current]);
 
-	// 2. Redraw when image, width, or zoom changes
+	// Redraw when image, width, or zoom changes
 	useEffect(() => {
 		if (imageUrl && workerRef.current && containerWidth > 0) {
 			workerRef.current.postMessage({

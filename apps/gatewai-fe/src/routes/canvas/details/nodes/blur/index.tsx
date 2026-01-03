@@ -11,7 +11,6 @@ import { BlurValueSlider } from "./blur-slider";
 const BlurNodeComponent = memo((props: NodeProps<BlurNode>) => {
 	const node = useAppSelector(makeSelectNodeById(props.id));
 	const imageUrl = useNodeFileOutputUrl(props.id);
-
 	return (
 		<BaseNode {...props}>
 			<div className="flex flex-col gap-3 ">

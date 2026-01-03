@@ -27,8 +27,6 @@ self.onmessage = async (e: MessageEvent<WorkerMessage>) => {
 			ctx = canvas.getContext("2d", { alpha: true });
 			break;
 
-		// canvas.worker.ts
-		// canvas.worker.ts
 		case "DRAW_IMAGE": {
 			if (!ctx || !canvas) return;
 			const { imageUrl, canvasWidth, zoom, dpr } = e.data.payload;
@@ -40,11 +38,8 @@ self.onmessage = async (e: MessageEvent<WorkerMessage>) => {
 
 				const aspectRatio = bitmap.height / bitmap.width;
 
-				// 1. Calculate CSS dimensions (for the UI layout)
 				const cssHeight = canvasWidth * aspectRatio;
 
-				// 2. Calculate actual pixel dimensions (for sharpness)
-				// We multiply by zoom and DPR so it stays sharp when zoomed in
 				const drawingWidth = canvasWidth * zoom * dpr;
 				const drawingHeight = cssHeight * zoom * dpr;
 

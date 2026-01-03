@@ -177,6 +177,7 @@ const BaseNode = memo(
 			className?: string;
 		},
 	) => {
+		const isDragging = props.dragging;
 		const { selected, id } = props;
 
 		const selectHandles = useMemo(() => makeSelectHandlesByNodeId(id), [id]);
@@ -203,14 +204,20 @@ const BaseNode = memo(
 		return (
 			<div
 				className={cn(
-					"relative flex flex-col w-full h-full transition-shadow duration-300",
-					"bg-card/75 backdrop-blur-2xl border border-border/40",
-					"rounded-3xl shadow-sm",
+					"relative flex flex-col w-full h-full",
+					// 2. Performance optimization: Disable transitions and blur during drag
+					!isDragging && "transition-shadow duration-300",
+					isDragging ? "bg-card shadow-md" : "bg-card/75 border-border/40",
+					"border rounded-3xl shadow-sm",
 					"group hover:border-border/80",
 					selected &&
 						"ring-2 ring-primary/40 ring-offset-4 ring-offset-background border-primary/50 shadow-lg",
+					// 3. Force GPU layer
+					"transform-gpu",
 					props.className,
 				)}
+				// Inline style for will-change to help the browser layerize the node
+				style={{ willChange: isDragging ? "transform" : "auto" }}
 			>
 				{/* Inputs */}
 				<div className="absolute inset-y-0 left-0 w-0">
@@ -242,7 +249,7 @@ const BaseNode = memo(
 									{node?.name}
 								</span>
 								<span className="text-[9px] text-muted-foreground font-mono opacity-50 uppercase tracking-tighter">
-									ID: {node?.id.slice(-6)}
+									ID: {node?.id.slice(0, 6)}
 								</span>
 							</div>
 						</div>

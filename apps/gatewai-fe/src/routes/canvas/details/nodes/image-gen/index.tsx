@@ -8,6 +8,7 @@ import {
 	useNodeResult,
 } from "../../processor/processor-ctx";
 import { BaseNode } from "../base";
+import { CanvasRenderer } from "../common/canvas-renderer";
 import { OutputSelector } from "../misc/output-selector";
 import type { ImageGenNode } from "../node-props";
 import { CreateHandleButton } from "./create-handle-button";
@@ -17,28 +18,6 @@ const ImageGenNodeComponent = memo((props: NodeProps<ImageGenNode>) => {
 
 	const { result } = useNodeResult(props.id);
 	const imageUrl = useNodeFileOutputUrl(props.id);
-	const canvasRef = useRef<HTMLCanvasElement | null>(null);
-
-	useEffect(() => {
-		if (!imageUrl || !canvasRef.current) return;
-
-		const canvas = canvasRef.current;
-		const ctx = canvas.getContext("2d");
-		if (!ctx) return;
-
-		const img = new Image();
-		img.crossOrigin = "anonymous";
-		img.src = imageUrl;
-
-		img.onload = () => {
-			canvas.width = img.width;
-			canvas.height = img.height;
-			canvas.style.width = "100%";
-			canvas.style.height = "auto";
-			ctx.clearRect(0, 0, canvas.width, canvas.height);
-			ctx.drawImage(img, 0, 0);
-		};
-	}, [imageUrl]);
 	const hasMoreThanOneOutput = result?.outputs && result?.outputs?.length > 1;
 
 	return (
@@ -50,7 +29,7 @@ const ImageGenNodeComponent = memo((props: NodeProps<ImageGenNode>) => {
 							<OutputSelector node={node} />
 						</div>
 					)}
-					<canvas ref={canvasRef} className="block w-full h-auto" />
+					{imageUrl && <CanvasRenderer imageUrl={imageUrl} />}
 				</div>
 
 				<div className="flex justify-between items-center w-full">

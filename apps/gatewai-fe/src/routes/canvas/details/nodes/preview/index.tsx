@@ -13,51 +13,25 @@ import {
 	MediaTimeRange,
 	MediaVolumeRange,
 } from "media-chrome";
-import { memo, useEffect, useRef } from "react";
+import { memo, useEffect, useMemo, useRef } from "react";
 import { ScrollArea } from "@/components/ui/scroll-area";
 import { GetAssetEndpoint } from "@/utils/file";
 import { MarkdownRenderer } from "../../components/markdown-renderer";
 import { useNodeResult } from "../../processor/processor-ctx";
 import { BaseNode } from "../base";
+import { CanvasRenderer } from "../common/canvas-renderer";
 import type { PreviewNode } from "../node-props";
 
 const ImagePreview = memo(({ data }: { data: FileData }) => {
-	const canvasRef = useRef<HTMLCanvasElement | null>(null);
-
-	useEffect(() => {
-		const canvas = canvasRef.current;
-		if (!canvas) return;
-
-		let src: string | undefined;
+	const imageUrl = useMemo(() => {
 		if (data.entity) {
-			src = GetAssetEndpoint(data.entity.id);
+			return GetAssetEndpoint(data.entity.id);
 		} else if (data.processData?.dataUrl) {
-			src = data.processData?.dataUrl;
+			return data.processData?.dataUrl;
 		}
-		if (!src) return;
-
-		const img = new Image();
-		img.crossOrigin = "anonymous";
-		img.src = src;
-
-		img.onload = () => {
-			canvas.width = img.width;
-			canvas.height = img.height;
-			canvas.style.width = "100%";
-			canvas.style.height = "auto";
-			const ctx = canvas.getContext("2d");
-			if (ctx) {
-				ctx.clearRect(0, 0, canvas.width, canvas.height);
-				ctx.drawImage(img, 0, 0);
-			}
-		};
-
-		img.onerror = (err) => {
-			console.error("Failed to load image for preview:", err);
-		};
 	}, [data]);
 
-	return <canvas ref={canvasRef} className="block w-full h-auto" />;
+	return <CanvasRenderer imageUrl={imageUrl} />;
 });
 
 ImagePreview.displayName = "ImagePreview";
