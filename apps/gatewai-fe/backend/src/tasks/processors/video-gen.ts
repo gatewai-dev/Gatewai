@@ -27,12 +27,6 @@ const videoGenProcessor: NodeProcessor = async ({ node, data }) => {
 			dataType: DataType.Image,
 		}).map((m) => m?.data) as FileData[] | null;
 
-		const referenceImages = imageFileData?.map((fileData) => {
-			const w: VideoGenerationReferenceImage = {
-				image: ,
-			}
-		})
-
 		const nodeConfig = VideoGenNodeConfigSchema.parse(node.config);
 		let operation = await genAI.models.generateVideos({
 			model: nodeConfig.model,

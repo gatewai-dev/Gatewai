@@ -7,7 +7,7 @@ import {
 	TooltipProvider,
 	TooltipTrigger,
 } from "@/components/ui/tooltip";
-import { cn } from "@/lib/utils"; // Assuming shadcn utility
+import { cn } from "@/lib/utils";
 import type { NodeTemplateListRPC } from "@/rpc/types";
 import { useNodeTemplates } from "../node-templates.ctx";
 import { CATEGORY_MAP } from "./category-icon-map";

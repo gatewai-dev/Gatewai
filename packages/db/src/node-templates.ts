@@ -4,7 +4,7 @@ export async function SEED_createNodeTemplates(prisma: PrismaClient) {
 	const nodes: NodeTemplateCreateInput[] = [
 		{
 			type: NodeType.VideoGenExtend,
-			displayName: "First - Last Frame Video Generation",
+			displayName: "Extend Video",
 			category: "AI",
 			description: "Extend videos up to 30 seconds",
 			subcategory: null,

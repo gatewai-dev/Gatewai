@@ -7,12 +7,13 @@ import { Hono } from "hono";
 import sharp from "sharp";
 import { z } from "zod/v4";
 import type { AuthHonoTypes } from "../../auth.js";
+import { ENV_CONFIG } from "../../config.js";
 import {
 	deleteFromS3,
 	generateSignedUrl,
 	getFromS3,
 	uploadToS3,
-} from "../../utils/s3.js";
+} from "../../utils/storage.js";
 
 const uploadSchema = z.object({
 	file: z.any(),
@@ -156,7 +157,7 @@ const assetsRouter = new Hono<{ Variables: AuthHonoTypes }>({
 
 		const buffer = Buffer.from(await file.arrayBuffer());
 		const filename = file.name;
-		const bucket = process.env.AWS_ASSETS_BUCKET ?? "default-bucket";
+		const bucket = ENV_CONFIG.GCS_ASSETS_BUCKET ?? "default-bucket";
 		const key = `assets/${user.id}/${randomUUID()}-${filename}`;
 
 		const fileTypeResult = await fileTypeFromBuffer(buffer);
