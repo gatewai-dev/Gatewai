@@ -75,7 +75,7 @@ const FileNodeComponent = memo((props: NodeProps<FileNode>) => {
 	};
 
 	return (
-		<BaseNode {...props}>
+		<BaseNode selected={props.selected} id={props.id} dragging={props.dragging}>
 			<div className="flex flex-col gap-2">
 				{showResult && <MediaContent node={node} result={result} />}
 				{!showResult && (

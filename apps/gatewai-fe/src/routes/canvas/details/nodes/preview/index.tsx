@@ -41,7 +41,11 @@ const PreviewNodeComponent = memo((props: NodeProps<PreviewNode>) => {
 
 	if (!result) {
 		return (
-			<BaseNode {...props}>
+			<BaseNode
+				selected={props.selected}
+				id={props.id}
+				dragging={props.dragging}
+			>
 				<div className="flex flex-col items-center justify-center h-32">
 					<p className="text-muted-foreground">Connect media to preview</p>
 				</div>
@@ -118,7 +122,7 @@ const PreviewNodeComponent = memo((props: NodeProps<PreviewNode>) => {
 	};
 
 	return (
-		<BaseNode {...props}>
+		<BaseNode selected={props.selected} id={props.id} dragging={props.dragging}>
 			<div className="w-full overflow-hidden rounded media-container relative">
 				<div className="relative h-full w-full group">{renderContent()}</div>
 			</div>

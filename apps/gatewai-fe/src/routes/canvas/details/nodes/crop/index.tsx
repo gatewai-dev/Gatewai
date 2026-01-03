@@ -5,7 +5,10 @@ import { cn } from "@/lib/utils";
 import { useAppDispatch, useAppSelector } from "@/store";
 import { makeSelectEdgesByTargetNodeId } from "@/store/edges";
 import { makeSelectNodeById, updateNodeConfig } from "@/store/nodes";
-import { useNodeFileOutputUrl } from "../../processor/processor-ctx";
+import {
+	useNodeFileOutputUrl,
+	useNodeResultHash,
+} from "../../processor/processor-ctx";
 import { BaseNode } from "../base";
 import { CanvasRenderer } from "../common/canvas-renderer";
 import type { CropNode } from "../node-props";
@@ -43,7 +46,7 @@ const CropNodeComponent = memo((props: NodeProps<CropNode>) => {
 		return edges[0].source;
 	}, [edges]);
 
-	const inputImageUrl = useNodeFileOutputUrl(inputNodeId);
+	const inputResultHash = useNodeResultHash(inputNodeId);
 	const node = useAppSelector(makeSelectNodeById(props.id));
 	const canvasRef = useRef<HTMLCanvasElement>(null);
 	const nodeConfig = node?.config as CropNodeConfig;
@@ -55,11 +58,6 @@ const CropNodeComponent = memo((props: NodeProps<CropNode>) => {
 	});
 	const [dragState, setDragState] = useState<DragState | null>(null);
 	const latestCropRef = useRef(crop);
-
-	const [containerStyle, setContainerStyle] = useState<
-		React.CSSProperties | undefined
-	>(undefined);
-	const [canvasStyle, setCanvasStyle] = useState<React.CSSProperties>({});
 
 	// Keep ref in sync with crop state
 	useEffect(() => {
@@ -201,18 +199,17 @@ const CropNodeComponent = memo((props: NodeProps<CropNode>) => {
 	}, [dragState, constrainCrop, updateConfig]);
 
 	return (
-		<BaseNode {...props}>
+		<BaseNode selected={props.selected} id={props.id} dragging={props.dragging}>
 			<div
 				className={cn(
 					"media-container w-full overflow-hidden bg-black/5 min-h-12 relative select-none",
 					{
-						"min-h-64": !inputImageUrl,
+						"min-h-64": !inputResultHash,
 					},
 				)}
-				style={containerStyle}
 			>
-				{inputImageUrl && (
-					<CanvasRenderer ref={canvasRef} imageUrl={inputImageUrl} />
+				{inputResultHash && (
+					<CanvasRenderer ref={canvasRef} resultHash={inputResultHash} />
 				)}
 
 				{/* Dark overlay for cropped-out areas */}

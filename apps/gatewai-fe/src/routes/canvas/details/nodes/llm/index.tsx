@@ -25,7 +25,7 @@ const LlmNodeComponent = memo((props: NodeProps<LLMNode>) => {
 	}, [result]);
 
 	return (
-		<BaseNode {...props}>
+		<BaseNode selected={props.selected} id={props.id} dragging={props.dragging}>
 			<div className="flex flex-col gap-2 items-end nowheel">
 				{llmTextContent && (
 					<ScrollArea

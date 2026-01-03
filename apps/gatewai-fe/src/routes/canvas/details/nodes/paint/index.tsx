@@ -92,15 +92,16 @@ const PaintNodeComponent = memo((props: NodeProps<PaintNode>) => {
 		}
 	}, [nodeConfig]);
 
-	const hexToRgb = useCallback((hex: string): [number, number, number] => {
-		const result = /^#?([a-f\d]{2})([a-f\d]{2})([a-f\d]{2})$/i.exec(hex);
-		return result
-			? [
-					parseInt(result[1], 16),
-					parseInt(result[2], 16),
-					parseInt(result[3], 16),
-				]
-			: [0, 0, 0];
+	const colorToRgb = useCallback((color: string): [number, number, number] => {
+		const canvas = document.createElement("canvas");
+		canvas.width = 1;
+		canvas.height = 1;
+		const ctx = canvas.getContext("2d");
+		if (!ctx) return [0, 0, 0];
+		ctx.fillStyle = color;
+		ctx.fillRect(0, 0, 1, 1);
+		const [r, g, b] = ctx.getImageData(0, 0, 1, 1).data;
+		return [r, g, b];
 	}, []);
 
 	const colorsSimilar = useCallback(
@@ -183,7 +184,7 @@ const PaintNodeComponent = memo((props: NodeProps<PaintNode>) => {
 
 			const targetColor = getPixel(colorData, posX, posY, w);
 
-			const [brushR, brushG, brushB] = hexToRgb(brushColor);
+			const [brushR, brushG, brushB] = colorToRgb(brushColor);
 
 			const targetTol = tolerance; // 0-255
 
@@ -235,7 +236,7 @@ const PaintNodeComponent = memo((props: NodeProps<PaintNode>) => {
 			inputImageUrl,
 			getPixel,
 			setPixel,
-			hexToRgb,
+			colorToRgb,
 			colorsSimilar,
 		],
 	);

@@ -65,7 +65,7 @@ const AgentNodeComponent = memo((props: NodeProps<LLMNode>) => {
 	const maxHandleNum = Math.max(numInputHandles, numOutputHandles);
 	const hasResult = result?.outputs && result?.outputs?.length > 0;
 	return (
-		<BaseNode {...props}>
+		<BaseNode selected={props.selected} id={props.id} dragging={props.dragging}>
 			<div
 				style={{
 					minHeight: 30 * maxHandleNum,

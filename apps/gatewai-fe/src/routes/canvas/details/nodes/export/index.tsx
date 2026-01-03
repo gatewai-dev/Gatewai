@@ -11,8 +11,6 @@ import {
 } from "@/components/ui/accordion";
 import { Alert, AlertDescription } from "@/components/ui/alert";
 import { Button } from "@/components/ui/button";
-import { useAppSelector } from "@/store";
-import { makeSelectNodeById } from "@/store/nodes";
 import { GetAssetEndpoint } from "@/utils/file";
 import { useNodeResult } from "../../processor/processor-ctx";
 import { BaseNode } from "../base";
@@ -313,7 +311,7 @@ const ExportNodeComponent = memo((props: NodeProps<BlurNode>) => {
 		result && result.outputs[result.selectedOutputIndex]?.items.length > 0;
 
 	return (
-		<BaseNode {...props}>
+		<BaseNode selected={props.selected} id={props.id} dragging={props.dragging}>
 			<div className="flex flex-col gap-3">
 				<ExportNodeHandbook />
 

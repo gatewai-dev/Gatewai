@@ -1,7 +1,7 @@
 import type { FileResult, ImagesResult } from "@gatewai/types";
 import { FileIcon } from "lucide-react";
 import type { NodeEntityType } from "@/store/nodes";
-import { GetAssetEndpoint } from "@/utils/file";
+import { useNodeResultHash } from "../processor/processor-ctx";
 import { CanvasRenderer } from "./common/canvas-renderer";
 import { OutputSelector } from "./misc/output-selector";
 
@@ -16,6 +16,8 @@ function MediaContent({
 	const outputItem = selectedOutput.items[0];
 	const isImage = outputItem.data.entity?.mimeType.startsWith("image");
 	const isOther = !isImage;
+	const resultHash = useNodeResultHash(node.id);
+	console.log("Fh", resultHash);
 	if (!outputItem.data.entity?.signedUrl) {
 		return null;
 	}
@@ -27,11 +29,7 @@ function MediaContent({
 					<OutputSelector node={node} />
 				</div>
 			)}
-			{isImage && (
-				<CanvasRenderer
-					imageUrl={GetAssetEndpoint(outputItem.data.entity.id)}
-				/>
-			)}
+			{isImage && resultHash && <CanvasRenderer resultHash={resultHash} />}
 			{isOther && (
 				<div className="flex flex-col items-center gap-2">
 					<FileIcon className="w-5 h-5" />{" "}

@@ -2,17 +2,17 @@ import { forwardRef, memo, useImperativeHandle, useRef } from "react";
 import { useDrawToCanvas } from "../../../hooks/use-draw-to-canvas";
 
 interface CanvasRendererProps {
-	imageUrl: string;
+	resultHash: string;
 }
 
 const CanvasRenderer = memo(
-	forwardRef<HTMLCanvasElement, CanvasRendererProps>(({ imageUrl }, ref) => {
+	forwardRef<HTMLCanvasElement, CanvasRendererProps>(({ resultHash }, ref) => {
 		const internalRef = useRef<HTMLCanvasElement | null>(null);
-
+		console.log({ resultHash }, 2);
 		// Sync the forwarded ref with our internal ref
 		useImperativeHandle(ref, () => internalRef.current!);
 		// Get the calculated height from the hook
-		const { renderHeight } = useDrawToCanvas(internalRef, imageUrl);
+		const { renderHeight } = useDrawToCanvas(internalRef, resultHash);
 
 		return (
 			<canvas

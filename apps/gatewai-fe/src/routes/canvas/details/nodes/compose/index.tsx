@@ -6,21 +6,20 @@ import { Button } from "@/components/ui/button";
 import { useAppSelector } from "@/store";
 import { makeSelectNodeById } from "@/store/nodes";
 import { AddCustomHandleButton } from "../../components/add-custom-handle";
-import { useNodeFileOutputUrl } from "../../processor/processor-ctx";
+import { useNodeResultHash } from "../../processor/processor-ctx";
 import { BaseNode } from "../base";
 import { CanvasRenderer } from "../common/canvas-renderer";
 import type { CompositorNode } from "../node-props";
 
 const CompositorNodeComponent = memo((props: NodeProps<CompositorNode>) => {
 	const node = useAppSelector(makeSelectNodeById(props.id));
-	const imageUrl = useNodeFileOutputUrl(props.id);
+	const resultHash = useNodeResultHash(props.id);
 	const nav = useNavigate();
-
 	return (
-		<BaseNode {...props}>
+		<BaseNode selected={props.selected} id={props.id} dragging={props.dragging}>
 			<div className="flex flex-col gap-3 ">
 				<div className="w-full overflow-hidden rounded media-container relative">
-					{imageUrl && <CanvasRenderer imageUrl={imageUrl} />}
+					{resultHash && <CanvasRenderer resultHash={resultHash} />}
 				</div>
 				<div className="flex justify-between items-center">
 					<AddCustomHandleButton

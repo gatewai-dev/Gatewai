@@ -4,8 +4,8 @@ import { useAppSelector } from "@/store";
 import { makeSelectNodeById } from "@/store/nodes";
 import { RunNodeButton } from "../../components/run-node-button";
 import {
-	useNodeFileOutputUrl,
 	useNodeResult,
+	useNodeResultHash,
 } from "../../processor/processor-ctx";
 import { BaseNode } from "../base";
 import { CanvasRenderer } from "../common/canvas-renderer";
@@ -17,11 +17,11 @@ const ImageGenNodeComponent = memo((props: NodeProps<ImageGenNode>) => {
 	const node = useAppSelector(makeSelectNodeById(props.id));
 
 	const { result } = useNodeResult(props.id);
-	const imageUrl = useNodeFileOutputUrl(props.id);
+	const resultHash = useNodeResultHash(props.id);
 	const hasMoreThanOneOutput = result?.outputs && result?.outputs?.length > 1;
 
 	return (
-		<BaseNode {...props}>
+		<BaseNode selected={props.selected} id={props.id} dragging={props.dragging}>
 			<div className="flex flex-col gap-3">
 				<div className="media-container w-full overflow-hidden rounded  min-h-[100px] relative">
 					{hasMoreThanOneOutput && (
@@ -29,7 +29,7 @@ const ImageGenNodeComponent = memo((props: NodeProps<ImageGenNode>) => {
 							<OutputSelector node={node} />
 						</div>
 					)}
-					{imageUrl && <CanvasRenderer imageUrl={imageUrl} />}
+					{resultHash && <CanvasRenderer resultHash={resultHash} />}
 				</div>
 
 				<div className="flex justify-between items-center w-full">

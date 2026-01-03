@@ -5,13 +5,11 @@ import {
 	getBezierPath,
 	Handle,
 	type Node,
-	type NodeProps,
 	Position,
 } from "@xyflow/react";
 import { type JSX, memo, type ReactNode, useMemo } from "react";
 import { dataTypeColors } from "@/config";
 import { cn } from "@/lib/utils";
-import type { CanvasDetailsNode } from "@/rpc/types";
 import { useAppSelector } from "@/store";
 import {
 	type HandleEntityType,
@@ -171,14 +169,14 @@ const NodeHandle = memo(
 );
 
 const BaseNode = memo(
-	(
-		props: NodeProps<Node<CanvasDetailsNode>> & {
-			children?: ReactNode;
-			className?: string;
-		},
-	) => {
-		const isDragging = props.dragging;
-		const { selected, id } = props;
+	(props: {
+		selected: boolean;
+		id: string;
+		dragging: boolean;
+		children?: ReactNode;
+		className?: string;
+	}) => {
+		const { selected, id, dragging } = props;
 
 		const selectHandles = useMemo(() => makeSelectHandlesByNodeId(id), [id]);
 		const handles = useAppSelector(selectHandles);
@@ -206,8 +204,8 @@ const BaseNode = memo(
 				className={cn(
 					"relative flex flex-col w-full h-full",
 					// 2. Performance optimization: Disable transitions and blur during drag
-					!isDragging && "transition-shadow duration-300",
-					isDragging ? "bg-card shadow-md" : "bg-card/75 border-border/40",
+					!dragging && "transition-shadow duration-300",
+					dragging ? "bg-card shadow-md" : "bg-card/75 border-border/40",
 					"border rounded-3xl shadow-sm",
 					"group hover:border-border/80",
 					selected &&
@@ -217,7 +215,7 @@ const BaseNode = memo(
 					props.className,
 				)}
 				// Inline style for will-change to help the browser layerize the node
-				style={{ willChange: isDragging ? "transform" : "auto" }}
+				style={{ willChange: dragging ? "transform" : "auto" }}
 			>
 				{/* Inputs */}
 				<div className="absolute inset-y-0 left-0 w-0">
@@ -227,9 +225,9 @@ const BaseNode = memo(
 							handle={handle}
 							index={i}
 							type="target"
-							isValid={inputs.get(handle.id)?.connectionValid ?? true}
-							hasValue={inputs.get(handle.id)?.outputItem?.data != null}
-							connectedType={inputs.get(handle.id)?.outputItem?.type}
+							isValid={inputs[handle.id]?.connectionValid ?? true}
+							hasValue={inputs[handle.id]?.outputItem?.data != null}
+							connectedType={inputs[handle.id]?.outputItem?.type}
 							nodeSelected={selected}
 						/>
 					))}
@@ -253,7 +251,7 @@ const BaseNode = memo(
 								</span>
 							</div>
 						</div>
-						<NodeMenu {...props} />
+						<NodeMenu id={props.id} />
 					</div>
 
 					<div className="flex-1 px-1 nodrag nopan cursor-auto">

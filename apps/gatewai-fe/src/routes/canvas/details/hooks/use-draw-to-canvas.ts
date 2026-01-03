@@ -1,10 +1,11 @@
 import { useViewport } from "@xyflow/react";
 import { useEffect, useRef, useState } from "react";
+import { imageStore } from "../processor/image-store";
 import CanvasWorker from "./canvas.worker.ts?worker";
 
 function useDrawToCanvas(
 	canvasRef: React.RefObject<HTMLCanvasElement | null>,
-	imageUrl?: string | null,
+	resultHash?: string | null,
 ) {
 	const { zoom } = useViewport();
 	const workerRef = useRef<Worker | null>(null);
@@ -50,7 +51,8 @@ function useDrawToCanvas(
 
 	// Redraw when image, width, or zoom changes
 	useEffect(() => {
-		if (imageUrl && workerRef.current && containerWidth > 0) {
+		if (resultHash && workerRef.current && containerWidth > 0) {
+			const imageUrl = imageStore.getDataUrlForHash(resultHash);
 			workerRef.current.postMessage({
 				type: "DRAW_IMAGE",
 				payload: {
@@ -61,7 +63,7 @@ function useDrawToCanvas(
 				},
 			});
 		}
-	}, [imageUrl, containerWidth, zoom]);
+	}, [resultHash, containerWidth, zoom]);
 
 	return { renderHeight };
 }
