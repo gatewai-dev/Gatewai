@@ -28,6 +28,9 @@ const NodeTypes = [
 	"Crop",
 	"Modulate",
 	"Preview",
+	"VideoGen",
+	"VideoGenFirstLastFrame",
+	"VideoGenExtend",
 ] as const;
 
 const DataTypes = [

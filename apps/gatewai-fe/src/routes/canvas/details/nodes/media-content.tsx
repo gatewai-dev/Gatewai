@@ -1,4 +1,4 @@
-import type { FileResult, ImagesResult } from "@gatewai/types";
+import type { FileResult, ImagesResult, VideoGenResult } from "@gatewai/types";
 import { FileIcon } from "lucide-react";
 import type { NodeEntityType } from "@/store/nodes";
 import { useNodeResultHash } from "../processor/processor-ctx";
@@ -10,14 +10,14 @@ function MediaContent({
 	result,
 }: {
 	node: NodeEntityType;
-	result: ImagesResult | FileResult;
+	result: ImagesResult | FileResult | VideoGenResult;
 }) {
 	const selectedOutput = result.outputs[result.selectedOutputIndex];
 	const outputItem = selectedOutput.items[0];
 	const isImage = outputItem.data.entity?.mimeType.startsWith("image");
 	const isOther = !isImage;
 	const resultHash = useNodeResultHash(node.id);
-	console.log("Fh", resultHash);
+
 	if (!outputItem.data.entity?.signedUrl) {
 		return null;
 	}

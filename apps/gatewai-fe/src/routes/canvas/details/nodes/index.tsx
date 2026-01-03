@@ -12,6 +12,7 @@ import { PreviewNodeComponent } from "./preview";
 import { ResizeNodeComponent } from "./resize";
 import { NoteNodeComponent } from "./sticky-note";
 import { TextNodeComponent } from "./text";
+import { VideoGenNodeComponent } from "./video-gen";
 
 // Node types mapping
 const nodeTypes = {
@@ -29,6 +30,7 @@ const nodeTypes = {
 	Modulate: ModulateNodeComponent,
 	Export: ExportNodeComponent,
 	Compositor: CompositorNodeComponent,
+	VideoGen: VideoGenNodeComponent,
 };
 
 // Export components
@@ -47,4 +49,5 @@ export {
 	ModulateNodeComponent,
 	ExportNodeComponent,
 	CompositorNodeComponent,
+	VideoGenNodeComponent,
 };

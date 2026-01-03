@@ -3,6 +3,35 @@ import { DataType, HandleType, NodeType, type PrismaClient } from "./client";
 export async function SEED_createNodeTemplates(prisma: PrismaClient) {
 	const nodes: NodeTemplateCreateInput[] = [
 		{
+			type: NodeType.VideoGen,
+			displayName: "Video Generation",
+			category: "AI",
+			description: "A video generation node.",
+			subcategory: null,
+			tokenPrice: 0.0,
+			variableInputs: false,
+			variableOutputs: false,
+			isTerminalNode: true,
+			isTransient: false,
+			templateHandles: {
+				create: [
+					{
+						type: HandleType.Input,
+						dataTypes: [DataType.Text],
+						label: "Prompt",
+						required: true,
+					},
+					{
+						type: HandleType.Input,
+						dataTypes: [DataType.Text],
+						label: "Negative Prompt",
+						required: false,
+					},
+				],
+			},
+			defaultConfig: { model: "veo-3.1-generate-preview" },
+		},
+		{
 			type: NodeType.Agent,
 			displayName: "AI Agent",
 			category: "AI",
@@ -44,24 +73,6 @@ export async function SEED_createNodeTemplates(prisma: PrismaClient) {
 			isTransient: false,
 			templateHandles: {
 				create: [
-					{
-						type: HandleType.Input,
-						dataTypes: [DataType.Text],
-						required: true,
-						label: "Prompt",
-					},
-					{
-						type: HandleType.Input,
-						dataTypes: [DataType.Text],
-						required: false,
-						label: "System Prompt",
-					},
-					{
-						type: HandleType.Input,
-						dataTypes: [DataType.Image],
-						required: false,
-						label: "Image",
-					},
 					{
 						type: HandleType.Output,
 						dataTypes: [DataType.Text],
@@ -115,21 +126,9 @@ export async function SEED_createNodeTemplates(prisma: PrismaClient) {
 			templateHandles: {
 				create: [
 					{
-						type: HandleType.Input,
-						dataTypes: [DataType.Text],
-						required: true,
-						label: "Prompt",
-					},
-					{
-						type: HandleType.Input,
-						dataTypes: [DataType.Image],
-						required: false,
-						label: "Reference Image",
-					},
-					{
 						type: HandleType.Output,
-						dataTypes: [DataType.Image],
-						label: "Image",
+						dataTypes: [DataType.File],
+						label: "File",
 					},
 				],
 			},
@@ -272,7 +271,7 @@ export async function SEED_createNodeTemplates(prisma: PrismaClient) {
 					{
 						type: HandleType.Output,
 						dataTypes: [DataType.Image],
-						label: "Image",
+						label: "Result",
 					},
 				],
 			},
@@ -361,7 +360,7 @@ export async function SEED_createNodeTemplates(prisma: PrismaClient) {
 					{
 						type: HandleType.Output,
 						dataTypes: [DataType.Image],
-						label: "Output Image",
+						label: "Result",
 					},
 				],
 			},

@@ -64,7 +64,7 @@ export class NodeGraphProcessor extends EventEmitter {
 					invalid[ih.id] = "missing_connection";
 					return;
 				}
-
+				console.log({ handles: this.handles, edge });
 				const sourceHandle = this.handles.find(
 					(h) => h.id === edge?.sourceHandleId,
 				);

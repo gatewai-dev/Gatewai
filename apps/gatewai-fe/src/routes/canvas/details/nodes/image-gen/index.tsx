@@ -9,9 +9,9 @@ import {
 } from "../../processor/processor-ctx";
 import { BaseNode } from "../base";
 import { CanvasRenderer } from "../common/canvas-renderer";
+import { CreateHandleButton } from "../common/create-handle-button";
 import { OutputSelector } from "../misc/output-selector";
 import type { ImageGenNode } from "../node-props";
-import { CreateHandleButton } from "./create-handle-button";
 
 const ImageGenNodeComponent = memo((props: NodeProps<ImageGenNode>) => {
 	const node = useAppSelector(makeSelectNodeById(props.id));

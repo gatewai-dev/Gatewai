@@ -1,24 +1,21 @@
-import type { NodeProps } from "@xyflow/react";
-import { PlusIcon } from "lucide-react";
+import { LuPlus } from "react-icons/lu";
 import { Button, type ButtonProps } from "@/components/ui/button";
 import { generateId } from "@/lib/idgen";
 import type { HandleEntityType } from "@/store/handles";
+import type { NodeEntityType } from "@/store/nodes";
 import { useCanvasCtx } from "../../ctx/canvas-ctx";
-import type { ImageGenNode } from "../node-props";
 
 export type CreateHandleButtonProps = ButtonProps & {
-	nodeProps: NodeProps<ImageGenNode>;
+	nodeId: NodeEntityType["id"];
 };
 
-function CreateHandleButton({
-	nodeProps,
-	...restProps
-}: CreateHandleButtonProps) {
+function CreateHandleButton({ nodeId, ...restProps }: CreateHandleButtonProps) {
 	const { createNewHandle } = useCanvasCtx();
 	const onClickButton = () => {
 		const handleEntity: HandleEntityType = {
 			id: generateId(),
-			nodeId: nodeProps.id,
+			nodeId,
+			description: null,
 			dataTypes: ["Image"],
 			type: "Input",
 			required: false,
@@ -37,7 +34,7 @@ function CreateHandleButton({
 			{...restProps}
 			onClick={() => onClickButton()}
 		>
-			<PlusIcon className="w-3 h-3" />
+			<LuPlus className="size-3" />
 			Reference Image
 		</Button>
 	);
