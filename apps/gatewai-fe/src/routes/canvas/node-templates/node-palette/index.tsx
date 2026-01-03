@@ -8,6 +8,7 @@ import {
 	TooltipTrigger,
 } from "@/components/ui/tooltip";
 import { cn } from "@/lib/utils"; // Assuming shadcn utility
+import type { NodeTemplateListRPC } from "@/rpc/types";
 import { useNodeTemplates } from "../node-templates.ctx";
 import { CATEGORY_MAP } from "./category-icon-map";
 import { DataTypeMultiSelect } from "./io-filter";
@@ -37,7 +38,7 @@ export function NodePalette() {
 	);
 }
 
-function NodePaletteContent({ templates }: { templates: any }) {
+function NodePaletteContent({ templates }: { templates: NodeTemplateListRPC }) {
 	const { isCollapsed, setIsCollapsed } = useNodePalette();
 
 	return (
