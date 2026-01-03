@@ -9,7 +9,9 @@ import modulateProcessor from "./modulate.js";
 import paintProcessor from "./paint.js";
 import resizeProcessor from "./resize.js";
 import type { NodeProcessor } from "./types.js";
+import videoGenExtendProcessor from "./vide-gen-extend.js";
 import videoGenProcessor from "./video-gen.js";
+import videoGenFirstLastFrameProcessor from "./video-gen-first-last-frame.js";
 
 const nodeProcessors: Partial<Record<NodeType, NodeProcessor>> = {
 	[NodeType.Blur]: blurProcessor,
@@ -22,6 +24,8 @@ const nodeProcessors: Partial<Record<NodeType, NodeProcessor>> = {
 	[NodeType.Modulate]: modulateProcessor,
 	[NodeType.Compositor]: compositorProcessor,
 	[NodeType.VideoGen]: videoGenProcessor,
+	[NodeType.VideoGenExtend]: videoGenExtendProcessor,
+	[NodeType.VideoGenFirstLastFrame]: videoGenFirstLastFrameProcessor,
 	// No processing needed for these node types
 	[NodeType.File]: async ({ node }) => {
 		return { success: true, result: node.result };

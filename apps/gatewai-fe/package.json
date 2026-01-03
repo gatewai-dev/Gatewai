@@ -25,6 +25,7 @@
 		"@gatewai/db": "workspace:*",
 		"@gatewai/tsconfig": "workspace:*",
 		"@gatewai/types": "workspace:*",
+		"@google-cloud/storage": "^7.18.0",
 		"@google/genai": "^1.34.0",
 		"@hono/node-server": "^1.17.1",
 		"@hono/zod-validator": "^0.7.2",

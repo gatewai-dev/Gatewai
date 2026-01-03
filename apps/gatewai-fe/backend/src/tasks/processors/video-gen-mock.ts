@@ -3,62 +3,17 @@ import { readFile } from "node:fs/promises";
 import path from "node:path";
 import { fileURLToPath } from "node:url";
 import { DataType, prisma } from "@gatewai/db";
-import { type FileData, type VideoGenNodeConfig, VideoGenNodeConfigSchema, type VideoGenResult } from "@gatewai/types";
-import type { VideoGenerationReferenceImage } from "@google/genai";
+import type { VideoGenResult } from "@gatewai/types";
 import { ENV_CONFIG } from "../../config.js";
-import { genAI } from "../../genai.js";
 import { logger } from "../../logger.js";
 import { generateSignedUrl, uploadToS3 } from "../../utils/s3.js";
-import { getInputValue, getInputValuesByType } from "../resolvers.js";
 import type { NodeProcessor } from "./types.js";
 
 const __filename = fileURLToPath(import.meta.url);
 const __dirname = path.dirname(__filename);
 
-const videoGenProcessor: NodeProcessor = async ({ node, data }) => {
+const videoGenMockProcessor: NodeProcessor = async ({ node, data }) => {
 	try {
-
-		const userPrompt = getInputValue(data, node.id, true, {
-			dataType: DataType.Text,
-			label: "Prompt",
-		})?.data as string;
-
-		const imageFileData = getInputValuesByType(data, node.id, {
-			dataType: DataType.Image,
-		}).map((m) => m?.data) as FileData[] | null;
-
-		const referenceImages = imageFileData?.map((fileData) => {
-			const w: VideoGenerationReferenceImage = {
-				image: ,
-			}
-		})
-
-		const nodeConfig = VideoGenNodeConfigSchema.parse(node.config);
-		let operation = await genAI.models.generateVideos({
-			model: nodeConfig.model,
-			prompt: userPrompt,
-			config: {
-				referenceImages: 
-			}
-		})
-
-		while (!operation.done) {
-		  console.log("Waiting for video generation to complete...")
-		  await new Promise((resolve) => setTimeout(resolve, 10000));
-		  operation = await genAI.operations.getVideosOperation({
-		    operation: operation,
-		  });
-		}
-
-		if (!operation.response?.generatedVideos) {
-			throw new Error("No video is generated");
-		}
-		// Download the video.
-		genAI.files.download({
-		    file: operation.response.generatedVideos[0].video,
-		    downloadPath: "veo3_with_image_input.mp4",
-		});
-
 		const extension = "mp4";
 		const testPath = path.join(__dirname, "test-vid.mp4");
 		const fileBuffer = await readFile(testPath);
@@ -124,4 +79,4 @@ const videoGenProcessor: NodeProcessor = async ({ node, data }) => {
 	}
 };
 
-export default videoGenProcessor;
+export default videoGenMockProcessor;
