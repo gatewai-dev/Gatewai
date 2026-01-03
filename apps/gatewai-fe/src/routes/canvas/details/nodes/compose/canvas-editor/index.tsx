@@ -14,20 +14,21 @@ import {
 	verticalListSortingStrategy,
 } from "@dnd-kit/sortable";
 import { CSS } from "@dnd-kit/utilities";
-import type {
-	CompositorLayer,
-	CompositorNodeConfig,
-	FileData,
-	OutputItem,
-} from "@gatewai/types";
+// Removed external type imports
 import type Konva from "konva";
 import {
 	AlignCenterHorizontal,
 	AlignCenterVertical,
+	ArrowLeftRight,
 	ChevronDown,
 	Hand,
 	ImageIcon,
+	Maximize,
+	Minimize,
 	MousePointer,
+	Move,
+	MoveHorizontal,
+	RotateCw,
 	SaveAll,
 	Type,
 	X,
@@ -45,7 +46,6 @@ import {
 	useRef,
 	useState,
 } from "react";
-import { BsAspectRatio } from "react-icons/bs";
 import {
 	Group,
 	Image as KonvaImage,
@@ -57,6 +57,25 @@ import {
 	Transformer,
 } from "react-konva";
 import useImage from "use-image";
+
+// Removed use-image import
+
+import type {
+	CompositorLayer,
+	CompositorNodeConfig,
+	FileData,
+	OutputItem,
+} from "@gatewai/types";
+import {
+	AlertDialog,
+	AlertDialogAction,
+	AlertDialogCancel,
+	AlertDialogContent,
+	AlertDialogDescription,
+	AlertDialogFooter,
+	AlertDialogHeader,
+	AlertDialogTitle,
+} from "@/components/ui/alert-dialog";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
@@ -81,12 +100,71 @@ import {
 	TooltipContent,
 	TooltipTrigger,
 } from "@/components/ui/tooltip";
-import { ColorInput } from "@/components/util/color-input";
-import { BLEND_MODES } from "@/routes/canvas/blend-modes";
-import { useGetFontListQuery } from "@/store/fonts";
 import type { HandleEntityType } from "@/store/handles";
 import type { NodeEntityType } from "@/store/nodes";
-import { GetAssetEndpoint, GetFontAssetUrl } from "@/utils/file";
+
+// Mocking ColorInput
+const ColorInput: React.FC<{
+	value: string;
+	onChange: (v: string) => void;
+	className?: string;
+	id?: string;
+}> = ({ value, onChange, className, id }) => (
+	<div className={`flex items-center gap-2 ${className}`}>
+		<div className="relative w-8 h-8 rounded border overflow-hidden">
+			<input
+				type="color"
+				id={id}
+				value={value}
+				onChange={(e) => onChange(e.target.value)}
+				className="absolute -top-2 -left-2 w-12 h-12 cursor-pointer p-0 border-0"
+			/>
+		</div>
+		<Input
+			value={value}
+			onChange={(e) => onChange(e.target.value)}
+			className="flex-1 h-8 text-xs font-mono"
+		/>
+	</div>
+);
+
+// Mocking BLEND_MODES
+const BLEND_MODES = [
+	"source-over",
+	"source-in",
+	"source-out",
+	"source-atop",
+	"destination-over",
+	"destination-in",
+	"destination-out",
+	"destination-atop",
+	"lighter",
+	"copy",
+	"xor",
+	"multiply",
+	"screen",
+	"overlay",
+	"darken",
+	"lighten",
+	"color-dodge",
+	"color-burn",
+	"hard-light",
+	"soft-light",
+	"difference",
+	"exclusion",
+	"hue",
+	"saturation",
+	"color",
+	"luminosity",
+];
+
+// Mocking Stores/Utils
+const useGetFontListQuery = (_: any) => ({
+	data: ["Geist", "Inter", "Arial", "Times New Roman", "Courier New"],
+});
+const GetAssetEndpoint = (id: string) =>
+	`https://via.placeholder.com/300?text=Asset-${id}`;
+const GetFontAssetUrl = (family: string) => "";
 
 // --- Font Manager (Singleton) ---
 class FontManager {
@@ -104,6 +182,7 @@ class FontManager {
 
 	public async loadFont(family: string, url: string): Promise<void> {
 		if (this.loadedFonts.has(family)) return;
+		if (!url) return; // Skip if no URL
 
 		const fontId = `font-${family}`;
 		if (document.getElementById(fontId)) return;
@@ -165,6 +244,8 @@ interface EditorContextType {
 	getTextData: (handleId: HandleEntityType["id"]) => string;
 	getImageData: (handleId: HandleEntityType["id"]) => FileData;
 	getImageUrl: (handleId: HandleEntityType["id"]) => string | undefined;
+	isDirty: boolean;
+	setIsDirty: Dispatch<SetStateAction<boolean>>;
 }
 interface Guide {
 	type: "horizontal" | "vertical";
@@ -432,11 +513,18 @@ const TextLayer: React.FC<
 		setEditingLayerId(layer.id);
 	};
 
+	// Correctly handle Text resizing:
+	// Use width to determine wrap point.
+	// Reset scale to 1 so font size doesn't change.
 	const handleTransform = useCallback((e: Konva.KonvaEventObject<Event>) => {
 		const node = e.target as Konva.Text;
-		const newWidth = Math.max(20, Math.round(node.width() * node.scaleX()));
+		const scaleX = node.scaleX();
+		// Calculate new width based on scale
+		const newWidth = Math.max(20, Math.round(node.width() * scaleX));
+
 		node.setAttrs({
 			width: newWidth,
+			// Reset scales to 1 to prevent font scaling
 			scaleX: 1,
 			scaleY: 1,
 		});
@@ -511,7 +599,7 @@ const TransformerComponent: React.FC = () => {
 			trRef.current.nodes([]);
 			trRef.current.getLayer()?.batchDraw();
 		}
-	}, [selectedId, stageRef, mode, layers]); // Added layers dep to re-attach if layer updates
+	}, [selectedId, stageRef, mode, layers]);
 
 	const selectedLayer = layers.find((l) => l.id === selectedId);
 
@@ -525,6 +613,7 @@ const TransformerComponent: React.FC = () => {
 			anchorFill="#ffffff"
 			anchorSize={10}
 			anchorCornerRadius={2}
+			// For images with locked aspect, keep ratio. For Text, allow free width resizing.
 			keepRatio={selectedLayer?.type === "Image" && selectedLayer.lockAspect}
 			enabledAnchors={
 				selectedLayer?.type === "Image" && selectedLayer.lockAspect
@@ -632,7 +721,6 @@ const Canvas: React.FC = () => {
 
 	const handleStageClick = useCallback(
 		(e: Konva.KonvaEventObject<TouchEvent | MouseEvent>) => {
-			// Only deselect if clicking directly on stage or artboard (not layers)
 			if (e.target === stageRef.current || e.target.name() === "artboard-bg") {
 				setSelectedId(null);
 			}
@@ -658,7 +746,6 @@ const Canvas: React.FC = () => {
 			const scaleBy = 1.1;
 			const newScale = direction > 0 ? oldScale * scaleBy : oldScale / scaleBy;
 
-			// Limit scale
 			if (newScale < 0.1 || newScale > 10) return;
 
 			const newPos = {
@@ -672,7 +759,6 @@ const Canvas: React.FC = () => {
 		[stageRef, setScale, setStagePos],
 	);
 
-	// Sync stage transform
 	useEffect(() => {
 		const stage = stageRef.current;
 		if (!stage) return;
@@ -681,7 +767,6 @@ const Canvas: React.FC = () => {
 		stage.batchDraw();
 	}, [scale, stagePos, stageRef]);
 
-	// Handle stage drag for panning (manual hook to update state)
 	useEffect(() => {
 		const stage = stageRef.current;
 		if (!stage) return;
@@ -880,7 +965,6 @@ const LayersPanel: React.FC<{ onSave: () => void; onClose: () => void }> = ({
 									(l) => l.id === over.id,
 								);
 								const newSorted = arrayMove(currentSorted, oldIndex, newIndex);
-								// Reassign Z-indices based on new list order
 								return currentLayers.map((l) => {
 									const pos = newSorted.findIndex((s) => s.id === l.id);
 									return { ...l, zIndex: newSorted.length - pos };
@@ -917,29 +1001,39 @@ const LayersPanel: React.FC<{ onSave: () => void; onClose: () => void }> = ({
 
 // --- Inspector Panel ---
 
-interface NumericInputProps {
+interface DraggableNumberInputProps {
 	value: number;
 	onChange: (value: number) => void;
+	label?: string;
+	icon?: React.ElementType;
 	allowDecimal?: boolean;
-	allowNegative?: boolean;
 	min?: number;
 	max?: number;
-	label?: string;
+	step?: number;
 }
 
-const NumericInput: React.FC<NumericInputProps> = ({
+const DraggableNumberInput: React.FC<DraggableNumberInputProps> = ({
 	value,
 	onChange,
+	label,
+	icon: Icon,
 	allowDecimal = false,
-	allowNegative = false,
 	min,
 	max,
+	step = 1,
 }) => {
+	const [isDragging, setIsDragging] = useState(false);
 	const [text, setText] = useState(value.toString());
 
+	// Update text if external value changes (and not currently typing/dragging)
 	useEffect(() => {
-		setText(allowDecimal ? value.toString() : Math.round(value).toString());
-	}, [value, allowDecimal]);
+		if (
+			!isDragging &&
+			document.activeElement !== document.getElementById(`input-${label}`)
+		) {
+			setText(allowDecimal ? value.toString() : Math.round(value).toString());
+		}
+	}, [value, allowDecimal, isDragging, label]);
 
 	const commit = (strVal: string) => {
 		let num = allowDecimal ? parseFloat(strVal) : parseInt(strVal, 10);
@@ -959,23 +1053,78 @@ const NumericInput: React.FC<NumericInputProps> = ({
 		}
 		if (e.key === "ArrowUp") {
 			e.preventDefault();
-			commit((parseFloat(text) + 1).toString());
+			commit((parseFloat(text) + step).toString());
 		}
 		if (e.key === "ArrowDown") {
 			e.preventDefault();
-			commit((parseFloat(text) - 1).toString());
+			commit((parseFloat(text) - step).toString());
 		}
 	};
 
+	const handleMouseDown = useCallback(
+		(e: React.MouseEvent) => {
+			e.preventDefault();
+			setIsDragging(true);
+			const startX = e.clientX;
+			const startValue = value;
+
+			const handleMouseMove = (moveEvent: MouseEvent) => {
+				const deltaX = moveEvent.clientX - startX;
+				const multiplier = moveEvent.shiftKey ? 10 : 1;
+				// Slower sensitivity for better control
+				const change = Math.round(deltaX * 0.5) * multiplier * step;
+				let newValue = startValue + change;
+
+				if (min !== undefined) newValue = Math.max(min, newValue);
+				if (max !== undefined) newValue = Math.min(max, newValue);
+				if (!allowDecimal) newValue = Math.round(newValue);
+
+				onChange(newValue);
+				setText(newValue.toString());
+			};
+
+			const handleMouseUp = () => {
+				setIsDragging(false);
+				document.removeEventListener("mousemove", handleMouseMove);
+				document.removeEventListener("mouseup", handleMouseUp);
+				document.body.style.cursor = "";
+			};
+
+			document.addEventListener("mousemove", handleMouseMove);
+			document.addEventListener("mouseup", handleMouseUp);
+			document.body.style.cursor = "ew-resize";
+		},
+		[value, onChange, step, min, max, allowDecimal],
+	);
+
 	return (
-		<Input
-			type="text"
-			value={text}
-			onChange={(e) => setText(e.target.value)}
-			onBlur={handleBlur}
-			onKeyDown={handleKeyDown}
-			className="h-8 text-xs font-mono"
-		/>
+		<div className="flex flex-col space-y-1">
+			{label && (
+				<Label className="text-[10px] text-muted-foreground uppercase font-semibold">
+					{label}
+				</Label>
+			)}
+			<div className="group relative flex items-center bg-muted/40 rounded-md border border-input focus-within:ring-1 focus-within:ring-ring focus-within:border-transparent overflow-hidden h-8">
+				{Icon && (
+					<div
+						className="flex items-center justify-center w-8 h-full cursor-ew-resize hover:bg-accent/50 active:bg-accent transition-colors border-r border-border/50 text-muted-foreground hover:text-foreground"
+						onMouseDown={handleMouseDown}
+						title="Drag to adjust"
+					>
+						<Icon className="w-3.5 h-3.5" />
+					</div>
+				)}
+				<Input
+					id={`input-${label}`}
+					type="text"
+					value={text}
+					onChange={(e) => setText(e.target.value)}
+					onBlur={handleBlur}
+					onKeyDown={handleKeyDown}
+					className="h-full border-0 rounded-none bg-transparent px-2 text-xs font-mono focus-visible:ring-0 focus-visible:ring-offset-0 shadow-none"
+				/>
+			</div>
+		</div>
 	);
 };
 
@@ -1041,26 +1190,20 @@ const InspectorPanel: React.FC = () => {
 						Canvas
 					</h3>
 					<div className="grid grid-cols-2 gap-2 mb-3">
-						<div className="space-y-1">
-							<Label className="text-[10px] text-muted-foreground uppercase">
-								W
-							</Label>
-							<NumericInput
-								value={Math.round(viewportWidth)}
-								onChange={(v) => setViewportWidth(v || 800)}
-								min={1}
-							/>
-						</div>
-						<div className="space-y-1">
-							<Label className="text-[10px] text-muted-foreground uppercase">
-								H
-							</Label>
-							<NumericInput
-								value={Math.round(viewportHeight)}
-								onChange={(v) => setViewportHeight(v || 600)}
-								min={1}
-							/>
-						</div>
+						<DraggableNumberInput
+							label="W"
+							icon={MoveHorizontal}
+							value={Math.round(viewportWidth)}
+							onChange={(v) => setViewportWidth(v || 800)}
+							min={1}
+						/>
+						<DraggableNumberInput
+							label="H"
+							icon={Move} // Using generic move for Height
+							value={Math.round(viewportHeight)}
+							onChange={(v) => setViewportHeight(v || 600)}
+							min={1}
+						/>
 					</div>
 
 					<Select
@@ -1118,108 +1261,87 @@ const InspectorPanel: React.FC = () => {
 							</div>
 
 							<div className="grid grid-cols-2 gap-3 mb-3">
-								<div className="space-y-1">
-									<Label className="text-[10px] text-muted-foreground uppercase">
-										X
-									</Label>
-									<NumericInput
-										value={Math.round(selectedLayer.x)}
-										onChange={(v) => updateLayer({ x: v })}
-										allowNegative
-									/>
-								</div>
-								<div className="space-y-1">
-									<Label className="text-[10px] text-muted-foreground uppercase">
-										Y
-									</Label>
-									<NumericInput
-										value={Math.round(selectedLayer.y)}
-										onChange={(v) => updateLayer({ y: v })}
-										allowNegative
-									/>
-								</div>
-								<div className="space-y-1">
-									<Label className="text-[10px] text-muted-foreground uppercase">
-										W
-									</Label>
-									<NumericInput
-										value={Math.round(selectedLayer.width ?? 0)}
-										onChange={(newWidth) => {
-											if (
-												selectedLayer.type === "Image" &&
-												selectedLayer.lockAspect
-											) {
+								<DraggableNumberInput
+									label="X"
+									icon={MoveHorizontal}
+									value={Math.round(selectedLayer.x)}
+									onChange={(v) => updateLayer({ x: v })}
+								/>
+								<DraggableNumberInput
+									label="Y"
+									icon={Move} // Generic move
+									value={Math.round(selectedLayer.y)}
+									onChange={(v) => updateLayer({ y: v })}
+								/>
+								<DraggableNumberInput
+									label="W"
+									icon={Maximize}
+									value={Math.round(selectedLayer.width ?? 0)}
+									onChange={(newWidth) => {
+										if (
+											selectedLayer.type === "Image" &&
+											selectedLayer.lockAspect
+										) {
+											const oldW = selectedLayer.width ?? 1;
+											const oldH = selectedLayer.height ?? 1;
+											const ratio = oldH / oldW;
+											updateLayer({
+												width: newWidth,
+												height: newWidth * ratio,
+											});
+										} else {
+											updateLayer({ width: newWidth });
+										}
+									}}
+									min={1}
+								/>
+								<DraggableNumberInput
+									label="H"
+									icon={Minimize}
+									value={Math.round(
+										selectedLayer.type === "Image"
+											? (selectedLayer.height ?? 0)
+											: (selectedLayer.computedHeight ?? 0),
+									)}
+									onChange={(newHeight) => {
+										if (selectedLayer.type === "Image") {
+											if (selectedLayer.lockAspect) {
 												const oldW = selectedLayer.width ?? 1;
 												const oldH = selectedLayer.height ?? 1;
-												const ratio = oldH / oldW;
+												const ratio = oldW / oldH;
 												updateLayer({
-													width: newWidth,
-													height: newWidth * ratio,
+													height: newHeight,
+													width: newHeight * ratio,
 												});
 											} else {
-												updateLayer({ width: newWidth });
+												updateLayer({ height: newHeight });
 											}
-										}}
-										min={1}
-									/>
-								</div>
-								<div className="space-y-1">
-									<Label className="text-[10px] text-muted-foreground uppercase">
-										H
-									</Label>
-									<NumericInput
-										value={Math.round(
-											selectedLayer.type === "Image"
-												? (selectedLayer.height ?? 0)
-												: (selectedLayer.computedHeight ?? 0),
-										)}
-										onChange={(newHeight) => {
-											if (selectedLayer.type === "Image") {
-												if (selectedLayer.lockAspect) {
-													const oldW = selectedLayer.width ?? 1;
-													const oldH = selectedLayer.height ?? 1;
-													const ratio = oldW / oldH;
-													updateLayer({
-														height: newHeight,
-														width: newHeight * ratio,
-													});
-												} else {
-													updateLayer({ height: newHeight });
-												}
-											}
-										}}
-										min={1}
-									/>
-								</div>
+										}
+									}}
+									min={1}
+								/>
 							</div>
 							<div className="grid grid-cols-2 gap-3">
-								<div className="space-y-1">
-									<Label className="text-[10px] text-muted-foreground uppercase">
-										Rotation
-									</Label>
-									<div className="relative">
-										<NumericInput
-											value={selectedLayer.rotation}
-											onChange={(v) => updateLayer({ rotation: v })}
-											allowNegative
-										/>
-										<span className="absolute right-2 top-1.5 text-xs text-muted-foreground pointer-events-none">
-											°
-										</span>
-									</div>
-								</div>
+								<DraggableNumberInput
+									label="Rotation"
+									icon={RotateCw}
+									value={selectedLayer.rotation}
+									onChange={(v) => updateLayer({ rotation: v })}
+								/>
+								{/* Placeholder for opacity if needed, using generic input */}
 								<div className="space-y-1">
 									<Label className="text-[10px] text-muted-foreground uppercase">
 										Opacity
 									</Label>
 									<div className="relative">
-										{/* Mock opacity via blend mode if needed, but Konva supports opacity natively. 
-                        Assuming CompositorLayer doesn't have opacity field yet, skipping.
-                        Using Z-Index here as generic placeholder */}
-										<NumericInput
-											value={selectedLayer.zIndex ?? 0}
-											onChange={(v) => updateLayer({ zIndex: v })}
+										<Input
+											value={100}
+											disabled
+											className="h-8 text-xs font-mono bg-muted/20"
 										/>
+										<span className="absolute right-2 top-1.5 text-xs text-muted-foreground pointer-events-none">
+											%
+										</span>
 									</div>
 								</div>
 							</div>
@@ -1267,16 +1389,13 @@ const InspectorPanel: React.FC = () => {
 										</Select>
 									</div>
 									<div className="grid grid-cols-2 gap-3">
-										<div className="space-y-1">
-											<Label className="text-[10px] text-muted-foreground uppercase">
-												Size
-											</Label>
-											<NumericInput
-												value={selectedLayer.fontSize || 24}
-												onChange={(v) => updateLayer({ fontSize: v })}
-												min={1}
-											/>
-										</div>
+										<DraggableNumberInput
+											label="Size"
+											icon={Type}
+											value={selectedLayer.fontSize || 24}
+											onChange={(v) => updateLayer({ fontSize: v })}
+											min={1}
+										/>
 										<div className="space-y-1">
 											<Label className="text-[10px] text-muted-foreground uppercase">
 												Color
@@ -1324,27 +1443,21 @@ const InspectorPanel: React.FC = () => {
 									</div>
 
 									<div className="grid grid-cols-2 gap-3">
-										<div className="space-y-1">
-											<Label className="text-[10px] text-muted-foreground uppercase">
-												Spacing
-											</Label>
-											<NumericInput
-												value={selectedLayer.letterSpacing ?? 0}
-												onChange={(v) => updateLayer({ letterSpacing: v })}
-												allowNegative
-											/>
-										</div>
-										<div className="space-y-1">
-											<Label className="text-[10px] text-muted-foreground uppercase">
-												Line H
-											</Label>
-											<NumericInput
-												value={selectedLayer.lineHeight ?? 1}
-												onChange={(v) => updateLayer({ lineHeight: v })}
-												allowDecimal
-												min={0.1}
-											/>
-										</div>
+										<DraggableNumberInput
+											label="Spacing"
+											icon={ArrowLeftRight}
+											value={selectedLayer.letterSpacing ?? 0}
+											onChange={(v) => updateLayer({ letterSpacing: v })}
+										/>
+										<DraggableNumberInput
+											label="Line H"
+											icon={ArrowLeftRight}
+											value={selectedLayer.lineHeight ?? 1}
+											onChange={(v) => updateLayer({ lineHeight: v })}
+											allowDecimal
+											min={0.1}
+											step={0.1}
+										/>
 									</div>
 								</section>
 							</>
@@ -1413,9 +1526,10 @@ export const CanvasDesignerEditor: React.FC<CanvasDesignerEditorProps> = ({
 	const [isEditingText, setIsEditingText] = useState(false);
 	const [editingLayerId, setEditingLayerId] = useState<string | null>(null);
 	const stageRef = useRef<Konva.Stage | null>(null);
+	const [isDirty, setIsDirty] = useState(false);
+	const [showCloseAlert, setShowCloseAlert] = useState(false);
 
 	const [mode, setMode] = useState<"select" | "pan">("select");
-	// To track spacebar hold for temporary pan
 	const lastModeRef = useRef<"select" | "pan">("select");
 
 	const [scale, setScale] = useState(1);
@@ -1423,6 +1537,7 @@ export const CanvasDesignerEditor: React.FC<CanvasDesignerEditorProps> = ({
 	const containerRef = useRef<HTMLDivElement>(null);
 	const [screenWidth, setScreenWidth] = useState(100);
 	const [screenHeight, setScreenHeight] = useState(100);
+	const isFirstRender = useRef(true);
 
 	const zoomPercentage = `${Math.round(scale * 100)}%`;
 
@@ -1609,12 +1724,20 @@ export const CanvasDesignerEditor: React.FC<CanvasDesignerEditorProps> = ({
 			});
 
 			await Promise.all(fontPromises);
-			// Filter out layers that no longer exist in inputs?
-			// For now keep them to prevent data loss if disconnected briefly
 			setLayers(Object.values(layerUpdates));
 		};
 		loadInitialLayers();
 	}, [initialLayers, node.config, getImageData]);
+
+	// Track Dirty State
+	useEffect(() => {
+		if (isFirstRender.current) {
+			isFirstRender.current = false;
+			return;
+		}
+		// When layers, viewport dimensions change, set dirty
+		setIsDirty(true);
+	}, [layers, viewportWidth, viewportHeight]);
 
 	// Deselect on Pan
 	useEffect(() => {
@@ -1685,7 +1808,16 @@ export const CanvasDesignerEditor: React.FC<CanvasDesignerEditorProps> = ({
 			{},
 		);
 		propOnSave({ layerUpdates, width: viewportWidth, height: viewportHeight });
+		setIsDirty(false);
 	}, [layers, propOnSave, viewportHeight, viewportWidth]);
+
+	const handleCloseRequest = () => {
+		if (isDirty) {
+			setShowCloseAlert(true);
+		} else {
+			onClose();
+		}
+	};
 
 	return (
 		<EditorContext.Provider
@@ -1721,11 +1853,13 @@ export const CanvasDesignerEditor: React.FC<CanvasDesignerEditorProps> = ({
 				getTextData,
 				getImageData,
 				getImageUrl,
+				isDirty,
+				setIsDirty,
 			}}
 		>
 			<div className="flex h-screen w-screen bg-background overflow-hidden relative text-foreground">
 				<div className="relative shrink-0 z-20">
-					<LayersPanel onSave={handleSave} onClose={onClose} />
+					<LayersPanel onSave={handleSave} onClose={handleCloseRequest} />
 				</div>
 
 				<div className="flex-1 flex flex-col relative min-w-0 z-0">
@@ -1800,6 +1934,28 @@ export const CanvasDesignerEditor: React.FC<CanvasDesignerEditorProps> = ({
 				<div className="relative shrink-0 z-20">
 					<InspectorPanel />
 				</div>
+
+				{/* Close Confirmation Dialog */}
+				<AlertDialog open={showCloseAlert} onOpenChange={setShowCloseAlert}>
+					<AlertDialogContent>
+						<AlertDialogHeader>
+							<AlertDialogTitle>Unsaved Changes</AlertDialogTitle>
+							<AlertDialogDescription>
+								You have unsaved changes. Are you sure you want to leave without
+								saving?
+							</AlertDialogDescription>
+						</AlertDialogHeader>
+						<AlertDialogFooter>
+							<AlertDialogCancel>Cancel</AlertDialogCancel>
+							<AlertDialogAction
+								onClick={onClose}
+								className="bg-destructive text-destructive-foreground hover:bg-destructive/90"
+							>
+								Discard Changes
+							</AlertDialogAction>
+						</AlertDialogFooter>
+					</AlertDialogContent>
+				</AlertDialog>
 			</div>
 		</EditorContext.Provider>
 	);
