@@ -1,58 +1,42 @@
 import { useEffect, useRef } from "react";
+import CanvasWorker from "./canvas.worker.ts?worker";
 
 function useDrawToCanvas(
 	canvasRef: React.RefObject<HTMLCanvasElement | null>,
 	imageUrl?: string | null,
 ) {
-	// Keep track of the last processed image to prevent redundant draws
-	const lastImageSrc = useRef<string | null>(null);
+	const workerRef = useRef<Worker | null>(null);
+	const isInitialized = useRef(false);
 
 	useEffect(() => {
-		const canvas = canvasRef.current;
-		if (!canvas) return;
-
-		const ctx = canvas.getContext("2d", { alpha: true });
-		if (!ctx) return;
-
-		// 1. Handle Empty State
-		if (!imageUrl) {
-			ctx.clearRect(0, 0, canvas.width, canvas.height);
-			lastImageSrc.current = null;
-			return;
+		// 2. Initialize using the Vite-imported constructor
+		if (!workerRef.current) {
+			workerRef.current = new CanvasWorker();
 		}
 
-		// 2. Prevent redundant loads if the URL hasn't changed
-		if (imageUrl === lastImageSrc.current) return;
-
-		const img = new Image();
-		img.crossOrigin = "anonymous";
-		img.src = imageUrl;
-
-		img.onload = () => {
-			// Update tracking ref
-			lastImageSrc.current = imageUrl;
-
-			// 3. Optimization: Only resize canvas if dimensions actually changed
-			// Resizing a canvas is expensive and clears the buffer automatically
-			if (canvas.width !== img.width || canvas.height !== img.height) {
-				canvas.width = img.width;
-				canvas.height = img.height;
-
-				// Set display styles once
-				canvas.style.width = "100%";
-				canvas.style.height = "auto";
+		const canvas = canvasRef.current;
+		// The rest of your logic...
+		if (canvas && !isInitialized.current) {
+			try {
+				const offscreen = canvas.transferControlToOffscreen();
+				workerRef.current.postMessage(
+					{ type: "INIT_CANVAS", payload: { canvas: offscreen } },
+					[offscreen],
+				);
+				isInitialized.current = true;
+			} catch (e) {
+				// Handle cases where transferControlToOffscreen might fail
+				console.warn("OffscreenCanvas not supported or already transferred", e);
 			}
+		}
 
-			// 4. Draw
-			ctx.clearRect(0, 0, canvas.width, canvas.height);
-			ctx.drawImage(img, 0, 0);
-		};
-
-		img.onerror = () => {
-			console.error("Failed to load image for canvas:", imageUrl);
-			lastImageSrc.current = null;
-		};
-	}, [imageUrl, canvasRef]);
+		if (imageUrl && workerRef.current) {
+			workerRef.current.postMessage({
+				type: "DRAW_IMAGE",
+				payload: { imageUrl },
+			});
+		}
+	}, [imageUrl, canvasRef.current]);
 }
 
 export { useDrawToCanvas };
