@@ -32,7 +32,6 @@ const VideoRenderer = memo(({ src }: { src: string }) => {
 					className="w-full h-full object-cover"
 				/>
 
-				{/* 1. CENTER PLAY BUTTON (Slightly smaller) */}
 				<div
 					slot="centered-chrome"
 					className="pointer-events-none absolute inset-0 flex items-center justify-center"
@@ -40,7 +39,6 @@ const VideoRenderer = memo(({ src }: { src: string }) => {
 					<MediaPlayButton className="w-10 h-10 p-2 rounded-full bg-black/30 backdrop-blur-sm border border-white/10 opacity-0 scale-90 group-hover:media-paused:opacity-100 group-hover:media-paused:scale-100 transition-all duration-300 pointer-events-auto" />
 				</div>
 
-				{/* 2. DOCKED BOTTOM CONTROLS */}
 				<div className="absolute inset-x-0 bottom-0 pointer-events-none">
 					<MediaControlBar
 						className={`

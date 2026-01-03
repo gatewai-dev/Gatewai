@@ -3,6 +3,92 @@ import { DataType, HandleType, NodeType, type PrismaClient } from "./client";
 export async function SEED_createNodeTemplates(prisma: PrismaClient) {
 	const nodes: NodeTemplateCreateInput[] = [
 		{
+			type: NodeType.VideoGenExtend,
+			displayName: "First - Last Frame Video Generation",
+			category: "AI",
+			description: "Extend videos up to 30 seconds",
+			subcategory: null,
+			tokenPrice: 0.0,
+			variableInputs: false,
+			variableOutputs: false,
+			isTerminalNode: true,
+			isTransient: false,
+			templateHandles: {
+				create: [
+					{
+						type: HandleType.Input,
+						dataTypes: [DataType.Video],
+						label: "Video to extend",
+						required: true,
+					},
+					{
+						type: HandleType.Input,
+						dataTypes: [DataType.Text],
+						label: "Prompt",
+						required: true,
+					},
+					{
+						type: HandleType.Input,
+						dataTypes: [DataType.Text],
+						label: "Negative Prompt",
+						required: false,
+					},
+					{
+						type: HandleType.Output,
+						dataTypes: [DataType.Video],
+						label: "Extended Video",
+					},
+				],
+			},
+			defaultConfig: { model: "veo-3.1-generate-preview" },
+		},
+		{
+			type: NodeType.VideoGenFirstLastFrame,
+			displayName: "First - Last Frame Video Generation",
+			category: "AI",
+			description: "Generate videos using first and last frame images",
+			subcategory: null,
+			tokenPrice: 0.0,
+			variableInputs: false,
+			variableOutputs: false,
+			isTerminalNode: true,
+			isTransient: false,
+			templateHandles: {
+				create: [
+					{
+						type: HandleType.Input,
+						dataTypes: [DataType.Text],
+						label: "Prompt",
+						required: true,
+					},
+					{
+						type: HandleType.Input,
+						dataTypes: [DataType.Text],
+						label: "Negative Prompt",
+						required: false,
+					},
+					{
+						type: HandleType.Input,
+						dataTypes: [DataType.Image],
+						label: "First Frame",
+						required: true,
+					},
+					{
+						type: HandleType.Input,
+						dataTypes: [DataType.Image],
+						label: "Last Frame",
+						required: true,
+					},
+					{
+						type: HandleType.Output,
+						dataTypes: [DataType.Video],
+						label: "Output",
+					},
+				],
+			},
+			defaultConfig: { model: "veo-3.1-generate-preview" },
+		},
+		{
 			type: NodeType.VideoGen,
 			displayName: "Video Generation",
 			category: "AI",

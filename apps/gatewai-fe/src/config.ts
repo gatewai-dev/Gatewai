@@ -31,11 +31,11 @@ export const dataTypeColors: Record<
 		border: "border-purple-500",
 	},
 	Video: {
-		bg: "bg-red-500",
-		stroke: "stroke-red-500",
-		hex: "#ef4444",
-		text: "text-red-500",
-		border: "border-red-500",
+		bg: "bg-teal-500",
+		stroke: "stroke-teal-500",
+		hex: "oklch(60% 0.118 184.704)",
+		text: "text-teal-500",
+		border: "border-teal-500",
 	},
 	Audio: {
 		bg: "bg-orange-500",

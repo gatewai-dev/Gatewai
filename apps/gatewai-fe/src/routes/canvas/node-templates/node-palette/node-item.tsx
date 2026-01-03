@@ -83,7 +83,7 @@ export function NodeItem({ template }: { template: NodeTemplateListItemRPC }) {
 						</div>
 
 						<div className="flex flex-col items-center gap-0.5 px-1 w-full">
-							<span className="text-[12px] font-bold tracking-tight text-foreground/90 text-center line-clamp-1">
+							<span className="text-[12px] font-bold tracking-tight text-foreground/90 text-center">
 								{template.displayName}
 							</span>
 						</div>

@@ -959,5 +959,7 @@ export class NodeGraphProcessor extends EventEmitter {
 		this.registerProcessor("Text", passthrough);
 		this.registerProcessor("LLM", passthrough);
 		this.registerProcessor("VideoGen", passthrough);
+		this.registerProcessor("VideoGenExtend", passthrough);
+		this.registerProcessor("VideoGenFirstLastFrame", passthrough);
 	}
 }
