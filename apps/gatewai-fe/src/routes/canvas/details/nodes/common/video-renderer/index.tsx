@@ -1,94 +1,87 @@
-import "media-chrome"; // registers <media-* /> elements
-import { memo, useRef } from "react";
+import {
+	MediaControlBar,
+	MediaController,
+	MediaFullscreenButton,
+	MediaMuteButton,
+	MediaPlayButton,
+	MediaTimeRange,
+} from "media-chrome/react";
+import React, { memo } from "react";
 
 const VideoRenderer = memo(({ src }: { src: string }) => {
-	const controllerRef = useRef<HTMLElement>(null);
-
 	return (
-		<div className="relative w-full max-w-4xl mx-auto aspect-video overflow-hidden rounded-3xl shadow-2xl bg-black group select-none ring-1 ring-white/10">
-			{/* @ts-ignore */}
-			<media-controller
-				ref={controllerRef}
+		<div className="relative w-full max-w-4xl mx-auto aspect-video overflow-hidden rounded-2xl shadow-2xl bg-black group select-none ring-1 ring-white/10">
+			<MediaController
 				className="w-full h-full block"
 				style={{
-					// Apple-style interaction colors
-					"--media-icon-color": "rgba(255, 255, 255, 0.9)",
-					"--media-range-track-height": "4px",
+					"--media-range-track-height": "2px", // Thinned track
 					"--media-range-thumb-background": "white",
-					"--media-range-thumb-width": "12px",
-					"--media-range-thumb-height": "12px",
+					"--media-range-thumb-width": "8px", // Thinned thumb
+					"--media-range-thumb-height": "8px",
 					"--media-range-bar-color": "rgba(255, 255, 255, 0.9)",
-					"--media-range-track-background": "rgba(255, 255, 255, 0.2)",
+					"--media-range-track-background": "rgba(255, 255, 255, 0.15)",
 					"--media-control-background": "transparent",
-					"--media-control-hover-background": "rgba(255, 255, 255, 0.1)",
+					"--media-control-hover-background": "rgba(255, 255, 255, 0.05)",
 				}}
 			>
 				<video
 					slot="media"
 					src={src}
-					preload="off"
+					preload="metadata"
 					playsInline
 					className="w-full h-full object-cover"
 				/>
+
+				{/* 1. CENTER PLAY BUTTON (Reduced to ~33%) */}
 				<div
 					slot="centered-chrome"
 					className="pointer-events-none absolute inset-0 flex items-center justify-center"
 				>
-					<media-play-button
+					<MediaPlayButton
 						className={`
-              w-8 h-8 
-			  p-1
-              rounded-full 
-              bg-black/20 backdrop-blur-md 
-              border border-white/10 
-              shadow-2xl 
-              transition-all duration-500 ease-out 
-              opacity-100 scale-100
-              hover:scale-105 hover:bg-black/30
-              media-playing:opacity-0 media-playing:scale-90 media-playing:pointer-events-none
-              pointer-events-auto
-            `}
+                            w-10 h-10 p-1.5
+                            rounded-full 
+                            bg-black/20 backdrop-blur-md 
+                            border-[0.5px] border-white/20 
+                            shadow-xl 
+                            transition-all duration-500 ease-out 
+                            opacity-0 scale-75
+                            group-hover:media-paused:opacity-100 group-hover:media-paused:scale-100
+                            hover:scale-105
+                            pointer-events-auto
+                        `}
 					/>
 				</div>
 
-				{/* 2. FLOATING CONTROL BAR (Glassmorphism Pill)
-          Appears on hover.
-        */}
-				<media-control-bar
-					slot="bottom-chrome"
+				{/* 2. MINI FLOATING CONTROL BAR */}
+				<MediaControlBar
 					className={`
-            absolute bottom-6 left-1/2 -translate-x-1/2
-            w-[90%] max-w-[600px]
-            flex items-center gap-4 px-4 py-2
-            rounded-full
-            bg-white/10 backdrop-blur-2xl saturate-150
-            border border-white/10 shadow-[0_8px_32px_rgba(0,0,0,0.3)]
-            opacity-0 translate-y-4
-            group-hover:opacity-100 group-hover:translate-y-0
-            transition-all duration-500 cubic-bezier(0.16, 1, 0.3, 1)
-          `}
+                        absolute bottom-4 left-1/2 -translate-x-1/2
+                        w-[70%] max-w-[400px] /* Narrower bar */
+                        h-8 /* Reduced height */
+                        flex items-center gap-2 px-3
+                        rounded-full
+                        bg-white/10 backdrop-blur-xl
+                        border border-white/5 shadow-lg
+                        
+                        opacity-0 translate-y-2
+                        group-hover:opacity-100 group-hover:translate-y-0
+                        transition-all duration-500 cubic-bezier(0.16, 1, 0.3, 1)
+                    `}
 				>
-					{/* Play/Pause (Mini) */}
-					<media-play-button className="w-8 h-8 opacity-90 hover:opacity-100 transition-opacity" />
+					{/* Icons reduced to w-5 (approx 20px) */}
+					<MediaPlayButton className="w-5 h-5 opacity-80 hover:opacity-100 transition-opacity" />
 
-					{/* Integrated Scrubber */}
-					<media-time-range className="flex-grow opacity-90 hover:opacity-100 transition-opacity" />
+					<MediaTimeRange className="grow opacity-80 hover:opacity-100 transition-opacity" />
 
-					{/* Mute Toggle */}
-					<media-mute-button className="w-8 h-8 opacity-90 hover:opacity-100 transition-opacity" />
+					<MediaMuteButton className="w-5 h-5 opacity-80 hover:opacity-100 transition-opacity" />
 
-					{/* Fullscreen */}
-					<media-fullscreen-button className="w-8 h-8 opacity-90 hover:opacity-100 transition-opacity" />
-				</media-control-bar>
+					<MediaFullscreenButton className="w-5 h-5 opacity-80 hover:opacity-100 transition-opacity" />
+				</MediaControlBar>
 
-				{/* 3. TOP GRADIENT (Optional)
-          Adds depth and makes top corners look premium 
-        */}
-				<div
-					slot="top-chrome"
-					className="w-full h-24 bg-gradient-to-b from-black/20 to-transparent opacity-0 group-hover:opacity-100 transition-opacity duration-500 pointer-events-none"
-				/>
-			</media-controller>
+				{/* 3. TOP GRADIENT (Subtle) */}
+				<div className="w-full h-16 bg-linear-to-b from-black/30 to-transparent opacity-0 group-hover:opacity-100 transition-opacity duration-500 pointer-events-none" />
+			</MediaController>
 		</div>
 	);
 });
