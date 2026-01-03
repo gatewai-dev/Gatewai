@@ -1,3 +1,5 @@
+import fs from "node:fs/promises";
+import path from "node:path";
 import { DataType } from "@gatewai/db";
 import type {
 	FileData,
@@ -5,10 +7,9 @@ import type {
 	PaintNodeConfig,
 	PaintResult,
 } from "@gatewai/types";
-import fs from "fs/promises";
-import path from "path";
 import sharp from "sharp";
 import { logger } from "../../logger.js";
+import { logMedia } from "../../media-logger.js";
 import {
 	bufferToDataUrl,
 	getImageBuffer,
@@ -155,6 +156,7 @@ const paintProcessor: NodeProcessor = async ({ node, data }) => {
 		// Convert buffers to data URLs
 		const imageDataUrl = bufferToDataUrl(compositedBuffer, mimeType);
 		const imageDimensions = getImageDimensions(compositedBuffer);
+		logMedia(compositedBuffer, ".png", node.id);
 		const processedMaskDataUrl = bufferToDataUrl(
 			processedMaskBuffer,
 			"image/png",

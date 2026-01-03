@@ -2,8 +2,6 @@ import type { TextResult } from "@gatewai/types";
 import type { NodeProps } from "@xyflow/react";
 import { memo } from "react";
 import { Textarea } from "@/components/ui/textarea";
-import { useAppSelector } from "@/store";
-import { makeSelectNodeById } from "@/store/nodes";
 import { useCanvasCtx } from "../../ctx/canvas-ctx";
 import { useNodeResult } from "../../processor/processor-ctx";
 import { BaseNode } from "../base";

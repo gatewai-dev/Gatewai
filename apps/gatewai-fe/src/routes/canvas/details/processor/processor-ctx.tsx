@@ -1,9 +1,8 @@
-import type { AnyOutputItem, FileResult, NodeResult } from "@gatewai/types";
+import type { FileResult, NodeResult } from "@gatewai/types";
 import {
 	createContext,
 	useContext,
 	useEffect,
-	useMemo,
 	useRef,
 	useSyncExternalStore,
 } from "react";
@@ -70,8 +69,6 @@ export function useProcessor(): NodeGraphProcessor {
 
 /**
  * Subscribe to a specific node's result
- * PERFORMANCE WARNING: BIG base64 data is blocks the main thread, DO NOT USE THIS HOOK
- * FOR BLUR MODULATE node components ETC..
  * Returns result and updates automatically when processing completes
  */
 export function useNodeResult<T extends NodeResult = NodeResult>(
