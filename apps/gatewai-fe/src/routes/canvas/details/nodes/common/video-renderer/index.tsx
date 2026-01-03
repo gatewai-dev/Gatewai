@@ -6,7 +6,7 @@ import {
 	MediaPlayButton,
 	MediaTimeRange,
 } from "media-chrome/react";
-import React, { memo } from "react";
+import { memo } from "react";
 
 const VideoRenderer = memo(({ src }: { src: string }) => {
 	return (
