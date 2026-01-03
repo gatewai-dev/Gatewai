@@ -53,7 +53,7 @@ const ResizeNodeComponent = memo((props: NodeProps<ResizeNode>) => {
 		<BaseNode selected={props.selected} id={props.id} dragging={props.dragging}>
 			<div className="flex flex-col gap-3">
 				<div className="w-full media-container overflow-hidden rounded min-h-[100px] relative">
-					<CanvasRenderer resultHash={resultHash} />
+					{resultHash && <CanvasRenderer resultHash={resultHash} />}
 				</div>
 				{node && <DimensionsConfig node={node} />}
 			</div>

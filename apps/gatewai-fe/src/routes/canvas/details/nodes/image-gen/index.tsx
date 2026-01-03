@@ -1,5 +1,5 @@
 import type { NodeProps } from "@xyflow/react";
-import { memo, useEffect, useRef } from "react";
+import { memo } from "react";
 import { useAppSelector } from "@/store";
 import { makeSelectNodeById } from "@/store/nodes";
 import { RunNodeButton } from "../../components/run-node-button";

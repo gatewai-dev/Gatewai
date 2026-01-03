@@ -35,7 +35,8 @@ function AgentNodeHandbook() {
 								<li>Add inputs and outputs for the agent.</li>
 								<li>
 									After running the node, the output handles will contain the
-									data.
+									data. <br />
+									Tip: Use Preview Nodes to view outputs.
 								</li>
 								<li>Inputs and outputs cannot be added after the first run.</li>
 								<li>

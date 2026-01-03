@@ -241,7 +241,7 @@ export async function SEED_createNodeTemplates(prisma: PrismaClient) {
 					{
 						type: HandleType.Output,
 						dataTypes: [DataType.Image],
-						label: "Blurred Image",
+						label: "Image",
 					},
 				],
 			},
