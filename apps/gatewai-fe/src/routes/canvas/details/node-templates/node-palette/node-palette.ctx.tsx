@@ -10,7 +10,7 @@ interface NodePaletteContextType {
 	setToTypes: (t: string[]) => void;
 	isCollapsed: boolean;
 	setIsCollapsed: (b: boolean) => void;
-	categoryRefs: React.MutableRefObject<
+	categoryRefs: React.RefObject<
 		Record<string, React.RefObject<HTMLDivElement | null>>
 	>;
 	activeCategory: string;
