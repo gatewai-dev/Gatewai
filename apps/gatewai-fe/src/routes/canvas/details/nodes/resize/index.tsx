@@ -1,6 +1,7 @@
 import type { ResizeNodeConfig } from "@gatewai/types";
 import type { NodeProps } from "@xyflow/react";
 import { memo, useEffect } from "react";
+import { cn } from "@/lib/utils";
 import { useAppDispatch, useAppSelector } from "@/store";
 import { makeSelectNodeById, updateNodeConfig } from "@/store/nodes";
 import { imageStore } from "../../processor/image-store";
@@ -52,7 +53,14 @@ const ResizeNodeComponent = memo((props: NodeProps<ResizeNode>) => {
 	return (
 		<BaseNode selected={props.selected} id={props.id} dragging={props.dragging}>
 			<div className="flex flex-col gap-3">
-				<div className="w-full media-container overflow-hidden rounded min-h-[100px] relative">
+				<div
+					className={cn(
+						"w-full media-container overflow-hidden rounded relative",
+						{
+							"h-92": resultHash == null,
+						},
+					)}
+				>
 					{resultHash && <CanvasRenderer resultHash={resultHash} />}
 				</div>
 				{node && <DimensionsConfig node={node} />}

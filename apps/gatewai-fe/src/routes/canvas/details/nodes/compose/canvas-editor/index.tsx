@@ -258,7 +258,10 @@ const useSnap = () => {
 					layer.width &&
 					(layer.height ?? layer.computedHeight)
 				) {
-					const effectiveHeight = layer.height ?? layer.computedHeight ?? 0;
+					const effectiveHeight =
+						layer.type === "Text"
+							? (layer.computedHeight ?? 0)
+							: (layer.height ?? 0);
 					const centerX = Math.round(layer.x + layer.width / 2);
 					const centerY = Math.round(layer.y + effectiveHeight / 2);
 					vSnaps.push(
@@ -486,33 +489,72 @@ const TextLayer: React.FC<
 	// Correctly handle Text resizing:
 	// Use width to determine wrap point.
 	// Reset scale to 1 so font size doesn't change.
-	const handleTransform = useCallback((e: Konva.KonvaEventObject<Event>) => {
-		const node = e.target as Konva.Text;
-		const newWidth = Math.max(20, node.width() * node.scaleX());
-		const newHeight = Math.max(20, node.height() * node.scaleY());
-		node.setAttrs({
-			width: newWidth,
-			height: newHeight,
-			scaleX: 1,
-			scaleY: 1,
-		});
-	}, []);
+	const handleTransform = useCallback(
+		(e: Konva.KonvaEventObject<Event>) => {
+			const node = e.target as Konva.Text;
+
+			// 1. Calculate the new width based on scale
+			const scaleX = node.scaleX() || 1;
+			const currentWidth = node.width() || 30;
+
+			// 2. Enforce a minimum width floor (e.g., 30px)
+			// This prevents the height from collapsing to 0 when width is too small.
+			const newWidth = Math.max(30, Math.round(currentWidth * scaleX));
+
+			// 3. Update the node immediately to force Konva to recalculate internal metrics
+			node.setAttrs({
+				width: newWidth,
+				scaleX: 1,
+				scaleY: 1,
+			});
+
+			// 4. Sync the true rendered height back to state
+			// node.height() will now return the correct value based on the newWidth
+			const actualHeight = Math.round(node.height());
+
+			setLayers((prev) =>
+				prev.map((l) =>
+					l.id === layer.id
+						? {
+								...l,
+								width: newWidth,
+								computedHeight:
+									actualHeight > 0 ? actualHeight : l.computedHeight,
+							}
+						: l,
+				),
+			);
+		},
+		[layer.id, setLayers],
+	);
 
 	useEffect(() => {
 		const node = stageRef.current?.findOne(`#${layer.id}`) as
 			| Konva.Text
 			| undefined;
-		if (node && layer.type === "Text") {
-			const newHeight = Math.round(node.height());
-			if (newHeight !== layer.computedHeight) {
+		if (node) {
+			const actualHeight = Math.round(node.height());
+			if (actualHeight !== layer.computedHeight) {
 				setLayers((prev) =>
 					prev.map((l) =>
-						l.id === layer.id ? { ...l, computedHeight: newHeight } : l,
+						l.id === layer.id ? { ...l, computedHeight: actualHeight } : l,
 					),
 				);
 			}
 		}
-	}, [layer.id, layer.type, setLayers, stageRef, layer.computedHeight]);
+	}, [text, layer.fontSize, layer.fontFamily, layer.width, layer.lineHeight]);
+
+	useEffect(() => {
+		if (layer.fontFamily) {
+			const fontUrl = GetFontAssetUrl(layer.fontFamily);
+			fontManager
+				.loadFont(layer.fontFamily, fontUrl)
+				.then(() => {
+					stageRef.current?.batchDraw();
+				})
+				.catch(() => {});
+		}
+	}, [layer.fontFamily, stageRef]);
 
 	return (
 		<KonvaText
@@ -524,7 +566,6 @@ const TextLayer: React.FC<
 			fontFamily={layer.fontFamily ?? "Geist"}
 			fill={layer.fill ?? "#000000"}
 			width={layer.width ?? 200}
-			height={layer.height}
 			rotation={layer.rotation}
 			draggable={mode === "select"}
 			onClick={handleSelect}
@@ -588,7 +629,8 @@ const TransformerComponent: React.FC = () => {
 					: undefined
 			}
 			boundBoxFunc={(oldBox, newBox) => {
-				if (newBox.width < 5 || newBox.height < 5) {
+				// Enforce minimum dimensions at the interaction level
+				if (newBox.width < 30 || newBox.height < 5) {
 					return oldBox;
 				}
 				return newBox;
@@ -884,7 +926,7 @@ const LayersPanel: React.FC<{ onSave: () => void; onClose: () => void }> = ({
 }) => {
 	const { layers, setLayers, selectedId, setSelectedId } = useEditor();
 	const sortedLayers = useMemo(
-		() => [...layers].sort((a, b) => (b.zIndex ?? 0) - (a.zIndex ?? 0)),
+		() => [...layers].sort((a, b) => (a.zIndex ?? 0) - (b.zIndex ?? 0)),
 		[layers],
 	);
 
@@ -1008,10 +1050,6 @@ const InspectorPanel: React.FC = () => {
 
 	const updateLayer = (updates: Partial<CompositorLayer>) => {
 		if (!selectedId) return;
-		if (updates.fontFamily) {
-			const fontUrl = GetFontAssetUrl(updates.fontFamily);
-			fontManager.loadFont(updates.fontFamily, fontUrl);
-		}
 		setLayers((prev) =>
 			prev.map((l) => (l.id === selectedId ? { ...l, ...updates } : l)),
 		);

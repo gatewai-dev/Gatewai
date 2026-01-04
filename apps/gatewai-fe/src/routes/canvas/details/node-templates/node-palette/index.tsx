@@ -1,6 +1,7 @@
 import { ChevronLeft } from "lucide-react";
 import { useEffect, useRef } from "react";
 import { Button } from "@/components/ui/button";
+import { YodesLogo } from "@/components/ui/logo";
 import { ScrollArea } from "@/components/ui/scroll-area";
 import { Separator } from "@/components/ui/separator";
 import {
@@ -93,11 +94,11 @@ function NodePaletteContent({ templates }: { templates: NodeTemplateListRPC }) {
 									size="icon"
 									onClick={() => setIsCollapsed(!isCollapsed)}
 									className={cn(
-										"h-10 w-10 rounded-xl transition-all duration-300",
-										isCollapsed && "rotate-180",
+										"h-12 w-12 rounded-xl transition-all duration-200",
+										isCollapsed ? "rotate-0 hover:rotate-270" : "rotate-90",
 									)}
 								>
-									<ChevronLeft className="h-5 w-5" />
+									<YodesLogo className="size-8" />
 								</Button>
 							</TooltipTrigger>
 							<TooltipContent side="right">

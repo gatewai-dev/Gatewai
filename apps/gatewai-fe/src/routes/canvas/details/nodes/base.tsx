@@ -1,6 +1,7 @@
 import {
 	BaseEdge,
 	type ConnectionLineComponentProps,
+	type EdgeProps,
 	getBezierPath,
 	Handle,
 	type Node,
@@ -166,10 +167,9 @@ const NodeHandle = memo(
 				)}
 				style={{ top: `${topPosition}px` }}
 			>
-				{/* External Label */}
 				<div
 					className={cn(
-						"absolute -top-4 pointer-events-none transition-opacity duration-200",
+						"absolute -top-4 pointer-events-none transition-opacity duration-200 w-auto",
 						// Hide by default, show on group hover or node selection
 						nodeSelected || "group-hover/handle:opacity-100 opacity-0",
 						isTarget
@@ -178,7 +178,7 @@ const NodeHandle = memo(
 					)}
 				>
 					<span
-						className="text-[9px] font-bold uppercase tracking-wider leading-none shadow-sm"
+						className="text-[9px] font-bold uppercase tracking-wider shadow-sm leading-none"
 						style={{
 							color: activeColor,
 							textShadow: "0 1px 2px rgba(0,0,0,0.1)",
@@ -379,8 +379,7 @@ const CustomEdge = memo(
 		style = {},
 		markerEnd,
 		selected,
-		data,
-	}: CustomEdgeProps): JSX.Element => {
+	}: EdgeProps): JSX.Element => {
 		const [edgePath] = getBezierPath({
 			sourceX,
 			sourceY,
@@ -391,11 +390,8 @@ const CustomEdge = memo(
 		});
 
 		const color = useMemo(
-			() =>
-				selected
-					? "var(--primary)"
-					: getTypeColor(data?.type) || "var(--border)",
-			[selected, data?.type],
+			() => (selected ? "var(--primary)" : undefined),
+			[selected],
 		);
 
 		return (
@@ -403,7 +399,7 @@ const CustomEdge = memo(
 				{/* Hit area */}
 				<BaseEdge
 					path={edgePath}
-					style={{ strokeWidth: 12, stroke: "transparent" }}
+					style={{ strokeWidth: 24, stroke: "transparent" }}
 				/>
 				<BaseEdge
 					id={id}
@@ -411,10 +407,9 @@ const CustomEdge = memo(
 					markerEnd={markerEnd}
 					style={{
 						...style,
-						strokeWidth: selected ? 2 : 1.5,
+						strokeWidth: selected ? 3 : 1.5,
 						stroke: color,
 						opacity: selected ? 1 : 0.6,
-						transition: "all 0.2s",
 					}}
 				/>
 			</>

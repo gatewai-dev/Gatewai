@@ -194,14 +194,13 @@ const CropNodeComponent = memo((props: NodeProps<CropNode>) => {
 			document.removeEventListener("mouseup", handleMouseUp);
 		};
 	}, [dragState, constrainCrop, updateConfig]);
-
 	return (
 		<BaseNode selected={props.selected} id={props.id} dragging={props.dragging}>
 			<div
 				className={cn(
-					"media-container w-full overflow-hidden bg-black/5 min-h-12 relative select-none",
+					"media-container w-full overflow-hidden bg-black/5 relative select-none",
 					{
-						"min-h-64": !inputResultHash,
+						"h-92": !inputResultHash,
 					},
 				)}
 			>

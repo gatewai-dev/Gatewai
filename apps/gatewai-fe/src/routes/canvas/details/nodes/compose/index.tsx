@@ -3,6 +3,7 @@ import { ImagesIcon } from "lucide-react";
 import { memo } from "react";
 import { useNavigate } from "react-router";
 import { Button } from "@/components/ui/button";
+import { cn } from "@/lib/utils";
 import { useAppSelector } from "@/store";
 import { makeSelectNodeById } from "@/store/nodes";
 import { AddCustomHandleButton } from "../../components/add-custom-handle";
@@ -18,7 +19,14 @@ const CompositorNodeComponent = memo((props: NodeProps<CompositorNode>) => {
 	return (
 		<BaseNode selected={props.selected} id={props.id} dragging={props.dragging}>
 			<div className="flex flex-col gap-3 ">
-				<div className="w-full overflow-hidden rounded media-container relative">
+				<div
+					className={cn(
+						"w-full overflow-hidden rounded media-container relative",
+						{
+							"h-92": !resultHash,
+						},
+					)}
+				>
 					{resultHash && <CanvasRenderer resultHash={resultHash} />}
 				</div>
 				<div className="flex justify-between items-center">
