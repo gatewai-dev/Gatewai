@@ -37,54 +37,40 @@ export type Output = {
 	items: OutputItem<DataType>[];
 };
 
-export type MultipleOutputResult = {
-	selectedOutputIndex: number;
-};
-
-// Just to avoid weird gymnastics about typing
-export type SingleOutputResult = {
+export type SingleOutputGeneric<T extends DataType> = {
 	selectedOutputIndex: 0;
+	outputs: [{ items: [OutputItem<T>] }];
 };
 
-export type TextResult = SingleOutputResult & {
-	outputs: [{ items: [OutputItem<"Text">] }];
+export type MultiOutputGeneric<T extends DataType> = {
+	selectedOutputIndex: number;
+	outputs: [{ items: [OutputItem<T>] }];
 };
 
-export type ToggleResult = SingleOutputResult & {
-	outputs: [{ items: [OutputItem<"Boolean">] }];
-};
+export type TextResult = SingleOutputGeneric<"Text">;
+export type ToggleResult = SingleOutputGeneric<"Boolean">;
 
-export type FileResult = MultipleOutputResult & {
-	outputs: { items: [OutputItem<"File">] }[];
-};
+export type FileResult = MultiOutputGeneric<"File">;
 
-export type ImagesResult = MultipleOutputResult & {
-	outputs: { items: [OutputItem<"Image">] }[];
-};
+export type ImagesResult = MultiOutputGeneric<"Image">;
 
 export type ImageGenResult = ImagesResult;
 
-export type MaskResult = SingleOutputResult & {
+export type MaskResult = {
+	selectedOutputIndex: 0;
 	outputs: { items: [OutputItem<"Mask">, OutputItem<"Image">] }[];
 };
 
-export type NumberResult = SingleOutputResult & {
-	outputs: [{ items: [OutputItem<"Number">] }];
-};
+export type NumberResult = SingleOutputGeneric<"Number">;
 
-export type LLMResult = MultipleOutputResult & {
-	outputs: { items: [OutputItem<"Text">] }[];
-};
+export type LLMResult = MultiOutputGeneric<"Text">;
 
-export type ResizeResult = SingleOutputResult & {
-	outputs: [{ items: [OutputItem<"Image">] }];
-};
+export type ResizeResult = SingleOutputGeneric<"Image">;
 
-export type ModulateResult = SingleOutputResult & {
-	outputs: [{ items: [OutputItem<"Image">] }];
-};
+export type ModulateResult = SingleOutputGeneric<"Image">;
 
-export type PaintResult = SingleOutputResult & {
+export type PaintResult = {
+	selectedOutputIndex: 0;
 	outputs: [
 		{
 			items:
@@ -94,21 +80,13 @@ export type PaintResult = SingleOutputResult & {
 	];
 };
 
-export type BlurResult = SingleOutputResult & {
-	outputs: [{ items: [OutputItem<"Image">] }];
-};
+export type BlurResult = SingleOutputGeneric<"Image">;
 
-export type CropResult = SingleOutputResult & {
-	outputs: [{ items: [OutputItem<"Image">] }];
-};
+export type CropResult = SingleOutputGeneric<"Image">;
 
-export type CompositorResult = SingleOutputResult & {
-	outputs: [{ items: [OutputItem<"Image">] }];
-};
+export type CompositorResult = SingleOutputGeneric<"Image">;
 
-export type BaseVideoGenResult = SingleOutputResult & {
-	outputs: [{ items: OutputItem<"Video">[] }];
-};
+export type BaseVideoGenResult = MultiOutputGeneric<"Video">;
 
 export type VideoGenResult = BaseVideoGenResult;
 export type VideoGenExtendResult = BaseVideoGenResult;
