@@ -520,7 +520,7 @@ export async function SEED_createNodeTemplates(prisma: PrismaClient) {
 		{
 			type: NodeType.ImageGen,
 			displayName: "Generate Image",
-			description: "Generate images using text prompt and reference image(s)",
+			description: "Generate images using prompt and reference image(s)",
 			category: "AI",
 			subcategory: null,
 			tokenPrice: 0.0,

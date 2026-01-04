@@ -2,6 +2,7 @@ import type { LLMResult } from "@gatewai/types";
 import type { NodeProps } from "@xyflow/react";
 import { memo, useMemo } from "react";
 import { ScrollArea } from "@/components/ui/scroll-area";
+import { cn } from "@/lib/utils";
 import { useAppSelector } from "@/store";
 import { makeSelectNodeById } from "@/store/nodes";
 import { MarkdownRenderer } from "../../components/markdown-renderer";
@@ -40,7 +41,9 @@ const LlmNodeComponent = memo((props: NodeProps<LLMNode>) => {
 				{llmTextContent && (
 					<ScrollArea
 						viewPortCn="max-h-[350px]"
-						className="text-xs bg-input p-2 pt-8 w-full "
+						className={cn("text-xs bg-input p-2 w-full", {
+							"pt-8": hasMoreThanOneOutput,
+						})}
 					>
 						<MarkdownRenderer markdown={llmTextContent} />
 					</ScrollArea>

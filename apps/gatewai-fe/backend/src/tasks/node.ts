@@ -17,6 +17,8 @@ import { nodeProcessors } from "./processors/index.js";
 
 /**
  * Workflow processor for canvas
+ * Refactored to support async, generation-based parallel processing
+ * similar to the frontend NodeGraphProcessor.
  */
 export class NodeWFProcessor {
 	private prisma: PrismaClient;
@@ -25,13 +27,15 @@ export class NodeWFProcessor {
 		this.prisma = prisma;
 	}
 
-	// Build dependency graphs within selected nodes.
+	/**
+	 * Builds dependency maps for a specific set of nodes.
+	 */
 	private buildDepGraphs(
 		nodeIds: Node["id"][],
 		data: CanvasCtxData,
 	): {
-		depGraph: Map<Node["id"], Node["id"][]>; // nodeId -> downstream selected nodeIds
-		revDepGraph: Map<Node["id"], Node["id"][]>; // nodeId -> upstream selected nodeIds
+		depGraph: Map<Node["id"], Node["id"][]>; // nodeId -> downstream (children)
+		revDepGraph: Map<Node["id"], Node["id"][]>; // nodeId -> upstream (parents)
 	} {
 		const selectedSet = new Set(nodeIds);
 		const depGraph = new Map<Node["id"], Node["id"][]>();
@@ -45,60 +49,14 @@ export class NodeWFProcessor {
 		for (const edge of data.edges) {
 			if (selectedSet.has(edge.source) && selectedSet.has(edge.target)) {
 				const sourceDep = depGraph.get(edge.source);
-				if (sourceDep) {
-					sourceDep.push(edge.target);
-				}
+				if (sourceDep) sourceDep.push(edge.target);
+
 				const revTargetDep = revDepGraph.get(edge.target);
-				if (revTargetDep) {
-					revTargetDep.push(edge.source);
-				}
+				if (revTargetDep) revTargetDep.push(edge.source);
 			}
 		}
 
 		return { depGraph, revDepGraph };
-	}
-
-	// Topo  sort using Kahn's algorithm.
-	private topologicalSort(
-		nodes: string[],
-		depGraph: Map<Node["id"], Node["id"][]>,
-		revDepGraph: Map<Node["id"], Node["id"][]>,
-	): string[] | null {
-		const indegree = new Map(
-			nodes.map((id) => {
-				const deps = revDepGraph.get(id);
-				if (!deps) {
-					throw new Error(`Missing reverse dependencies for node ${id}`);
-				}
-				return [id, deps.length];
-			}),
-		);
-		const queue = nodes.filter((id) => indegree.get(id) === 0);
-		const order: Node["id"][] = [];
-
-		while (queue.length > 0) {
-			const current = queue.shift();
-			if (!current) break;
-			order.push(current);
-
-			const downstream = depGraph.get(current) || [];
-			for (const ds of downstream) {
-				const currentDeg = indegree.get(ds);
-				if (currentDeg === undefined) {
-					throw new Error(`Missing indegree for node ${ds}`);
-				}
-				const deg = currentDeg - 1;
-				indegree.set(ds, deg);
-				if (deg === 0) {
-					queue.push(ds);
-				}
-			}
-		}
-
-		if (order.length === nodes.length) {
-			return order;
-		}
-		return null;
 	}
 
 	public async processNodes(
@@ -109,33 +67,21 @@ export class NodeWFProcessor {
 		 */
 		nodeIds?: Node["id"][],
 	): Promise<TaskBatch> {
-		const data = await GetCanvasEntities(canvasId, user);
-
-		let batch = await this.prisma.taskBatch.create({
-			data: {
-				userId: user.id,
-				canvasId,
-			},
-			include: {
-				tasks: {
-					include: {
-						node: true,
-					},
-				},
-			},
-		});
-
+		// 1. Fetch Context
+		const data = await GetCanvasEntities(canvasId);
 		const allNodeIds = data.nodes.map((n) => n.id);
+
+		// 2. Determine Subgraph (Target nodes + Ancestors)
 		const { revDepGraph: fullRevDepGraph } = this.buildDepGraphs(
 			allNodeIds,
 			data,
 		);
 
-		const nodeIdsToRun = nodeIds ?? allNodeIds;
-
-		// Find all necessary nodes: selected + all upstream dependencies
+		const targets = nodeIds ?? allNodeIds;
 		const necessary = new Set<Node["id"]>();
-		const queue: Node["id"][] = [...nodeIdsToRun];
+		const queue: Node["id"][] = [...targets];
+
+		// BFS to find all upstream dependencies
 		while (queue.length > 0) {
 			const curr = queue.shift();
 			if (!curr) break;
@@ -147,29 +93,26 @@ export class NodeWFProcessor {
 
 		const necessaryIds = Array.from(necessary);
 
-		// Build subgraph for necessary nodes
-		const { depGraph, revDepGraph } = this.buildDepGraphs(necessaryIds, data);
+		// 3. Create Batch & Tasks (Upfront for visibility)
+		let batch = await this.prisma.taskBatch.create({
+			data: {
+				userId: user.id,
+				canvasId,
+			},
+		});
 
-		const topoOrder = this.topologicalSort(necessaryIds, depGraph, revDepGraph);
-		if (!topoOrder) {
-			throw new Error("Cycle detected in necessary nodes.");
-		}
-
-		// Validate necessary nodes exist
-		const necessaryNodes = data.nodes.filter((n) => necessary.has(n.id));
-		if (necessaryNodes.length !== necessary.size) {
-			throw new Error("Some necessary nodes not found in canvas.");
-		}
-
-		// Create tasks upfront for all necessary nodes
+		// Verify all necessary nodes exist in data
 		const tasksMap = new Map<
 			Node["id"],
 			{ id: Task["id"]; nodeId: Node["id"] }
 		>();
-		for (const nodeId of topoOrder) {
+
+		// We create tasks for all necessary nodes
+		for (const nodeId of necessaryIds) {
 			const node = data.nodes.find((n) => n.id === nodeId);
 			if (!node) {
-				throw new Error(`Node ${nodeId} not found in canvas data`);
+				// Should technically not happen if graph integrity is maintained
+				throw new Error(`Node ${nodeId} missing in canvas data`);
 			}
 			const task = await this.prisma.task.create({
 				data: {
@@ -183,7 +126,7 @@ export class NodeWFProcessor {
 			tasksMap.set(nodeId, { id: task.id, nodeId });
 		}
 
-		// Refetch batch to include tasks
+		// Refetch batch to include tasks relation
 		batch = await this.prisma.taskBatch.findUniqueOrThrow({
 			where: { id: batch.id },
 			include: {
@@ -195,133 +138,239 @@ export class NodeWFProcessor {
 			},
 		});
 
-		const executer = async () => {
-			for (const nodeId of topoOrder) {
-				const task = tasksMap.get(nodeId);
-				if (!task) {
-					throw new Error(`Task not found for node ${nodeId}`);
+		// 4. Build Execution Graph for the Necessary Subgraph
+		const { revDepGraph } = this.buildDepGraphs(necessaryIds, data);
+
+		// 5. Execute Async Loop (Fire & Forget from caller's perspective, or await if needed)
+		// We wrap this in an async function to allow `processNodes` to return the batch immediately
+		// if we wanted to (though the original code awaited execution, so we will await here).
+		const executeGraph = async () => {
+			const taskStatusMap = new Map<Node["id"], TaskStatus>();
+			necessaryIds.forEach((id) => taskStatusMap.set(id, TaskStatus.QUEUED));
+
+			while (true) {
+				// Find nodes that are still queued
+				const pending = necessaryIds.filter(
+					(id) => taskStatusMap.get(id) === TaskStatus.QUEUED,
+				);
+
+				if (pending.length === 0) {
+					break; // All done
 				}
 
-				// Defensive check: Ensure node still exists in DB before processing
-				const currentNode = await this.prisma.node.findUnique({
-					where: { id: nodeId },
-					select: { id: true, type: true, name: true },
-				});
+				const ready: string[] = [];
+				const skipped: string[] = [];
 
-				if (!currentNode) {
-					const now = new Date();
-					await this.prisma.task.update({
-						where: { id: task.id },
-						data: {
-							status: TaskStatus.FAILED,
-							startedAt: now,
-							finishedAt: now,
-							durationMs: 0,
-							error: { message: "Node removed before processing" },
-						},
-					});
-					continue;
-				}
+				for (const id of pending) {
+					const parents = revDepGraph.get(id) || [];
+					const parentStatuses = parents.map((p) => taskStatusMap.get(p));
 
-				const startedAt = new Date();
-				await this.prisma.task.update({
-					where: { id: task.id },
-					data: {
-						status: TaskStatus.EXECUTING,
-						startedAt,
-					},
-				});
-
-				const node = data.nodes.find((n) => n.id === nodeId);
-				if (!node) {
-					throw new Error("Node not found");
-				}
-				const template = await this.prisma.nodeTemplate.findUnique({
-					where: { type: currentNode.type },
-				});
-				const processor = nodeProcessors[node.type];
-				if (!processor) {
-					throw new Error(`No processor for node type ${node.type}.`);
-				}
-
-				try {
-					// Await processor, pass current data
-					const { success, error, newResult } = await processor({
-						node,
-						data,
-						prisma: this.prisma,
-					});
-
-					if (newResult) {
-						// Update in-memory data for propagation to downstream nodes
-						const updatedNode = data.nodes.find((n) => n.id === nodeId);
-						if (!updatedNode) {
-							throw new Error("Node not found to update");
-						}
-						updatedNode.result = structuredClone(
-							newResult,
-						) as unknown as NodeResult;
+					// If any parent failed, this node cannot run
+					if (parentStatuses.some((s) => s === TaskStatus.FAILED)) {
+						skipped.push(id);
 					}
-
-					const finishedAt = new Date();
-					await this.prisma.task.update({
-						where: { id: task.id },
-						data: {
-							status: success ? TaskStatus.COMPLETED : TaskStatus.FAILED,
-							finishedAt,
-							durationMs: finishedAt.getTime() - startedAt.getTime(),
-							error: error ? { message: error } : undefined,
-						},
-					});
-
-					// Persist to DB only if not transient
-					if (success && !template?.isTransient && newResult) {
-						try {
-							await this.prisma.node.update({
-								where: { id: node.id },
-								data: { result: newResult as NodeResult },
-							});
-						} catch (updateErr) {
-							if (
-								updateErr instanceof Prisma.PrismaClientKnownRequestError &&
-								updateErr.code === "P2025"
-							) {
-								console.log(
-									`Node ${node.id} removed during processing, skipping result update`,
-								);
-							} else {
-								throw updateErr;
-							}
-						}
+					// If all parents are completed, this node is ready
+					else if (parentStatuses.every((s) => s === TaskStatus.COMPLETED)) {
+						ready.push(id);
 					}
-				} catch (err: unknown) {
-					console.log({ err });
-					const finishedAt = new Date();
-					await this.prisma.task.update({
-						where: { id: task.id },
-						data: {
-							status: TaskStatus.FAILED,
-							finishedAt,
-							durationMs: finishedAt.getTime() - startedAt.getTime(),
-							error:
-								err instanceof Error
-									? { message: err.message }
-									: { message: "Unknown error" },
-						},
-					});
+					// Otherwise, parents are still QUEUED or EXECUTING, so we wait
+				}
+
+				// Deadlock / Cycle Detection
+				if (ready.length === 0 && skipped.length === 0) {
+					// No nodes are ready, but there are pending nodes.
+					// This implies a cycle or a state inconsistency.
+					// Fail all remaining pending nodes.
+					await Promise.all(
+						pending.map((id) =>
+							this.failTask(
+								tasksMap.get(id)!.id,
+								"Dependency cycle or deadlock detected",
+								taskStatusMap,
+								id,
+							),
+						),
+					);
+					break;
+				}
+
+				// Process Skipped (Upstream Failure)
+				if (skipped.length > 0) {
+					await Promise.all(
+						skipped.map((id) =>
+							this.failTask(
+								tasksMap.get(id)!.id,
+								"Upstream dependency failed",
+								taskStatusMap,
+								id,
+							),
+						),
+					);
+				}
+
+				// Process Ready (Parallel Execution)
+				if (ready.length > 0) {
+					// Mark as executing locally before await to prevent re-selection in tight loops
+					// (Though currently we await Promise.all, so it's strictly generational)
+					ready.forEach((id) => taskStatusMap.set(id, TaskStatus.EXECUTING));
+
+					await Promise.all(
+						ready.map((id) =>
+							this.executeNode(id, data, tasksMap, taskStatusMap),
+						),
+					);
 				}
 			}
 
-			const batchFinishedAt = new Date();
+			// Finish Batch
 			await this.prisma.taskBatch.update({
 				where: { id: batch.id },
-				data: { finishedAt: batchFinishedAt },
-				include: { tasks: true },
+				data: { finishedAt: new Date() },
 			});
 		};
 
-		executer();
+		// Run execution
+		await executeGraph();
 
 		return batch;
+	}
+
+	/**
+	 * Executes a single node and updates its state and the shared data context.
+	 */
+	private async executeNode(
+		nodeId: string,
+		data: CanvasCtxData,
+		tasksMap: Map<string, { id: string; nodeId: string }>,
+		taskStatusMap: Map<string, TaskStatus>,
+	) {
+		const task = tasksMap.get(nodeId);
+		if (!task) return;
+
+		const startedAt = new Date();
+		await this.prisma.task.update({
+			where: { id: task.id },
+			data: { status: TaskStatus.EXECUTING, startedAt },
+		});
+
+		try {
+			// 1. Validation
+			const node = data.nodes.find((n) => n.id === nodeId);
+			if (!node) {
+				throw new Error("Node not found in context");
+			}
+
+			// DB Verification (ensure node wasn't deleted mid-process)
+			const dbNode = await this.prisma.node.findUnique({
+				where: { id: nodeId },
+				select: { id: true, type: true },
+			});
+
+			if (!dbNode) {
+				throw new Error("Node removed before processing");
+			}
+
+			const template = await this.prisma.nodeTemplate.findUnique({
+				where: { type: dbNode.type },
+			});
+
+			const processor = nodeProcessors[node.type];
+			if (!processor) {
+				throw new Error(`No processor for node type ${node.type}.`);
+			}
+
+			// 2. Execution
+			// Note: `data` is passed by reference. Processors read upstream results from `data.nodes`.
+			const { success, error, newResult } = await processor({
+				node,
+				data,
+				prisma: this.prisma,
+			});
+
+			if (!success) {
+				throw new Error(error || "Unknown processor error");
+			}
+
+			// 3. Update Shared Context (Memory)
+			// This is crucial for downstream nodes to see the result
+			if (newResult) {
+				const nodeRef = data.nodes.find((n) => n.id === nodeId);
+				if (nodeRef) {
+					nodeRef.result = structuredClone(newResult) as unknown as NodeResult;
+				}
+			}
+
+			// 4. Persist Result (DB)
+			if (!template?.isTransient && newResult) {
+				try {
+					await this.prisma.node.update({
+						where: { id: nodeId },
+						data: { result: newResult as NodeResult },
+					});
+				} catch (err) {
+					// Ignore P2025 (Record not found) in case of race condition deletion
+					if (
+						!(
+							err instanceof Prisma.PrismaClientKnownRequestError &&
+							err.code === "P2025"
+						)
+					) {
+						throw err;
+					}
+				}
+			}
+
+			// 5. Complete Task
+			const finishedAt = new Date();
+			await this.prisma.task.update({
+				where: { id: task.id },
+				data: {
+					status: TaskStatus.COMPLETED,
+					finishedAt,
+					durationMs: finishedAt.getTime() - startedAt.getTime(),
+				},
+			});
+
+			taskStatusMap.set(nodeId, TaskStatus.COMPLETED);
+		} catch (err: unknown) {
+			const finishedAt = new Date();
+			const message =
+				err instanceof Error ? err.message : "Unknown execution error";
+
+			await this.prisma.task.update({
+				where: { id: task.id },
+				data: {
+					status: TaskStatus.FAILED,
+					finishedAt,
+					durationMs: finishedAt.getTime() - startedAt.getTime(),
+					error: { message },
+				},
+			});
+
+			taskStatusMap.set(nodeId, TaskStatus.FAILED);
+		}
+	}
+
+	/**
+	 * Helper to mark a task as failed without running it
+	 */
+	private async failTask(
+		taskId: string,
+		reason: string,
+		taskStatusMap: Map<string, TaskStatus>,
+		nodeId: string,
+	) {
+		const now = new Date();
+		await this.prisma.task.update({
+			where: { id: taskId },
+			data: {
+				status: TaskStatus.FAILED,
+				startedAt: now,
+				finishedAt: now,
+				durationMs: 0,
+				error: { message: reason },
+			},
+		});
+		taskStatusMap.set(nodeId, TaskStatus.FAILED);
 	}
 }
