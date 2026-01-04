@@ -10,16 +10,44 @@ const TextNodeConfigSchema = z
 // File Node
 const FileNodeConfigSchema = z.object({}).strict();
 
+const IMAGEGEN_ASPECT_RATIOS = [
+	"1:1",
+	"2:3",
+	"3:2",
+	"3:4",
+	"4:3",
+	"4:5",
+	"5:4",
+	"9:16",
+	"16:9",
+	"21:9",
+] as const;
+
+const IMAGEGEN_IMAGE_SIZES = ["1K", "2K", "4K"] as const;
+
 const IMAGEGEN_NODE_MODELS = [
-	"google/gemini-3-pro-image", // Nano banana pro
-	"google/gemini-2.5-flash-image", // Nano banana
+	"google/gemini-3-pro-image",
+	"google/gemini-2.5-flash-image",
 ] as const;
 
 const ImageGenNodeConfigSchema = z
 	.object({
 		model: z.enum(IMAGEGEN_NODE_MODELS),
+		aspectRatio: z.enum(IMAGEGEN_ASPECT_RATIOS).default("1:1"),
+		imageSize: z.enum(IMAGEGEN_IMAGE_SIZES).default("1K"),
 	})
-	.strict();
+	.strict()
+	.refine(
+		(data) =>
+			!(
+				data.model === "google/gemini-2.5-flash-image" &&
+				data.imageSize !== "1K"
+			),
+		{
+			message: "Higher resolutions only supported by pro model",
+			path: ["imageSize"],
+		},
+	);
 
 // 3D Node
 const PreviewNodeConfigSchema = z.object({}).strict();
@@ -318,6 +346,8 @@ export {
 	type VideoGenFirstLastFrameNodeConfig,
 	LLM_NODE_MODELS,
 	IMAGEGEN_NODE_MODELS,
+	IMAGEGEN_ASPECT_RATIOS,
+	IMAGEGEN_IMAGE_SIZES,
 	AGENT_NODE_MODELS,
 	VIDEOGEN_NODE_MODELS,
 	VIDEOGEN_ASPECT_RATIOS,

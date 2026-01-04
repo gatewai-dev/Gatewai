@@ -4,6 +4,9 @@ import { useAppSelector } from "@/store";
 import { type NodeEntityType, selectSelectedNodes } from "@/store/nodes";
 import { ImageGenNodeConfigComponent } from "./image-gen";
 import { LLMNodeConfigComponent } from "./llm/llm-config";
+import { VideoGenNodeConfigComponent } from "./video-gen";
+import { VideoGenExtendNodeConfigComponent } from "./video-gen-extend";
+import { VideoGenFirstLastFrameNodeConfigComponent } from "./video-gen-first-last-frame";
 
 type NodeConfigComponentProps = {
 	node: NodeEntityType;
@@ -14,6 +17,9 @@ const NodeConfigFormMap: Partial<
 > = {
 	LLM: LLMNodeConfigComponent,
 	ImageGen: ImageGenNodeConfigComponent,
+	VideoGen: VideoGenNodeConfigComponent,
+	VideoGenExtend: VideoGenExtendNodeConfigComponent,
+	VideoGenFirstLastFrame: VideoGenFirstLastFrameNodeConfigComponent,
 };
 
 const NodeConfigPanel = memo(() => {

@@ -42,7 +42,10 @@ export async function SEED_createNodeTemplates(prisma: PrismaClient) {
 			},
 			defaultConfig: {
 				model: "veo-3.1-generate-preview",
-				aspect_ratio: "16:9",
+				aspectRatio: "16:9",
+				resolution: "720p",
+				durationSeconds: "8",
+				personGeneration: "allow_all",
 			},
 		},
 		{
@@ -89,7 +92,13 @@ export async function SEED_createNodeTemplates(prisma: PrismaClient) {
 					},
 				],
 			},
-			defaultConfig: { model: "veo-3.1-generate-preview" },
+			defaultConfig: {
+				model: "veo-3.1-generate-preview",
+				aspectRatio: "16:9",
+				resolution: "720p",
+				durationSeconds: "8",
+				personGeneration: "allow_adult",
+			},
 		},
 		{
 			type: NodeType.VideoGen,
@@ -123,7 +132,13 @@ export async function SEED_createNodeTemplates(prisma: PrismaClient) {
 					},
 				],
 			},
-			defaultConfig: { model: "veo-3.1-generate-preview" },
+			defaultConfig: {
+				model: "veo-3.1-generate-preview",
+				aspectRatio: "16:9",
+				resolution: "720p",
+				durationSeconds: "8",
+				personGeneration: "allow_all",
+			},
 		},
 		{
 			type: NodeType.Agent,
@@ -175,7 +190,7 @@ export async function SEED_createNodeTemplates(prisma: PrismaClient) {
 					},
 				],
 			},
-			defaultConfig: { model: "google/gemini-3-flash", temperature: 0 },
+			defaultConfig: { content: "" },
 		},
 		{
 			type: NodeType.Preview,
@@ -535,7 +550,7 @@ export async function SEED_createNodeTemplates(prisma: PrismaClient) {
 					},
 				],
 			},
-			defaultConfig: { model: "google/gemini-3-pro-image" },
+			defaultConfig: { model: "gemini-3-pro-image-preview" },
 		},
 		{
 			type: NodeType.LLM,
@@ -575,7 +590,7 @@ export async function SEED_createNodeTemplates(prisma: PrismaClient) {
 					},
 				],
 			},
-			defaultConfig: { model: "google/gemini-3-flash", temperature: 0 },
+			defaultConfig: { model: "gemini-3-flash-preview", temperature: 0 },
 		},
 	];
 

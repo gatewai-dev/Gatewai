@@ -1,7 +1,5 @@
 import {
-	VIDEOGEN_ASPECT_RATIOS,
 	VIDEOGEN_NODE_MODELS,
-	VIDEOGEN_PERSON_GENERATION_OPTIONS,
 	type VideoGenExtendNodeConfig,
 	VideoGenExtendNodeConfigSchema,
 } from "@gatewai/types";
@@ -63,20 +61,6 @@ const VideoGenExtendNodeConfigComponent = memo(
 						label="Model"
 						placeholder="Select a model"
 						options={VIDEOGEN_NODE_MODELS}
-					/>
-					<SelectField
-						control={form.control}
-						name="aspectRatio"
-						label="Aspect Ratio"
-						placeholder="Select aspect ratio"
-						options={VIDEOGEN_ASPECT_RATIOS}
-					/>
-					<SelectField
-						control={form.control}
-						name="personGeneration"
-						label="Person Generation"
-						placeholder="Select person generation option"
-						options={["allow_all"]} // Restricted per docs for extension
 					/>
 				</form>
 			</Form>

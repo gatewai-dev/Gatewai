@@ -80,13 +80,6 @@ const VideoGenFirstLastFrameNodeConfigComponent = memo(
 						placeholder="Select resolution"
 						options={VIDEOGEN_RESOLUTIONS}
 					/>
-					<SelectField
-						control={form.control}
-						name="personGeneration"
-						label="Person Generation"
-						placeholder="Select person generation option"
-						options={["allow_adult"]} // Restricted per docs for interpolation
-					/>
 				</form>
 			</Form>
 		);

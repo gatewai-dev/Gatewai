@@ -30,7 +30,7 @@ const VideoGenNodeConfigComponent = memo(
 			defaultValues: {
 				model: nodeConfig?.model ?? VIDEOGEN_NODE_MODELS[0],
 				aspectRatio: nodeConfig?.aspectRatio ?? "16:9",
-				resolution: nodeConfig?.resolution ?? "720p",
+				resolution: nodeConfig?.resolution ?? "1080p",
 				durationSeconds: nodeConfig?.durationSeconds ?? "8",
 				personGeneration: nodeConfig?.personGeneration ?? "allow_all", // Restricted to allow_all per docs for text-to-video
 			},
@@ -93,24 +93,10 @@ const VideoGenNodeConfigComponent = memo(
 					/>
 					<SelectField
 						control={form.control}
-						name="resolution"
-						label="Resolution"
-						placeholder="Select resolution"
-						options={VIDEOGEN_RESOLUTIONS}
-					/>
-					<SelectField
-						control={form.control}
-						name="durationSeconds"
-						label="Duration (seconds)"
-						placeholder="Select duration"
-						options={VIDEOGEN_DURATIONS}
-					/>
-					<SelectField
-						control={form.control}
 						name="personGeneration"
 						label="Person Generation"
 						placeholder="Select person generation option"
-						options={["allow_all"]} // Restricted per docs for text-to-video
+						options={["allow_all"]}
 					/>
 				</form>
 			</Form>

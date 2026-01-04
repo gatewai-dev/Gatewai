@@ -1,6 +1,11 @@
 import { randomUUID } from "node:crypto";
 import { DataType, prisma } from "@gatewai/db";
-import type { FileData, ImageGenConfig, ImageGenResult } from "@gatewai/types";
+import {
+	type FileData,
+	type ImageGenConfig,
+	ImageGenNodeConfigSchema,
+	type ImageGenResult,
+} from "@gatewai/types";
 import {
 	generateText,
 	type ModelMessage,
@@ -57,10 +62,10 @@ const imageGenProcessor: NodeProcessor = async ({ node, data }) => {
 					: userContent,
 		});
 
-		const config = node.config as ImageGenConfig;
+		const config = ImageGenNodeConfigSchema.parse(node.config);
 
 		const result = await generateText({
-			model: config.model ?? "google/gemini-2.5-flash-image",
+			model: config.model,
 			prompt: messages,
 			system: "Generate image for the user.",
 		});
@@ -83,7 +88,7 @@ const imageGenProcessor: NodeProcessor = async ({ node, data }) => {
 		const fileName = `imagegen_${randId}.${extension}`;
 		const key = `assets/${data.canvas.userId}/${fileName}`;
 		const contentType = file.mediaType;
-		const bucket = ENV_CONFIG.AWS_ASSETS_BUCKET;
+		const bucket = ENV_CONFIG.GCS_ASSETS_BUCKET;
 		await uploadToS3(buffer, key, contentType, bucket);
 
 		const expiresIn = 3600 * 24 * 6.9; // A bit less than a week

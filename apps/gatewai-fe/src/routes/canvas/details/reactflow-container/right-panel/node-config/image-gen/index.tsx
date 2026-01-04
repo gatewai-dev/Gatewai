@@ -1,4 +1,6 @@
 import {
+	IMAGEGEN_ASPECT_RATIOS,
+	IMAGEGEN_IMAGE_SIZES,
 	IMAGEGEN_NODE_MODELS,
 	type ImageGenConfig,
 	ImageGenNodeConfigSchema,
@@ -24,7 +26,9 @@ const ImageGenNodeConfigComponent = memo(
 		const form = useForm<ImageGenConfig>({
 			resolver: zodResolver(ImageGenNodeConfigSchema),
 			defaultValues: {
-				model: nodeConfig?.model,
+				model: nodeConfig?.model ?? IMAGEGEN_NODE_MODELS[0],
+				aspectRatio: nodeConfig?.aspectRatio ?? "1:1",
+				imageSize: nodeConfig?.imageSize ?? "1K",
 			},
 		});
 
@@ -37,12 +41,35 @@ const ImageGenNodeConfigComponent = memo(
 		useEffect(() => {
 			const subscription = form.watch((value) => {
 				const val = value as ImageGenConfig;
-				if (val.model !== nodeConfig?.model) {
+				if (
+					val.model !== nodeConfig?.model ||
+					val.aspectRatio !== nodeConfig?.aspectRatio ||
+					val.imageSize !== nodeConfig?.imageSize
+				) {
 					updateConfig(val);
 				}
 			});
 			return () => subscription.unsubscribe();
-		}, [form, updateConfig, nodeConfig?.model]);
+		}, [form, updateConfig, nodeConfig]);
+
+		// Handle edge case: Auto-assign imageSize to "1K" if model is flash and imageSize is not "1K"
+		useEffect(() => {
+			const sub = form.watch((value, { name }) => {
+				if (name === "model" || name === "imageSize") {
+					const val = value as ImageGenConfig;
+					if (
+						val.model === "google/gemini-2.5-flash-image" &&
+						val.imageSize !== "1K"
+					) {
+						form.setValue("imageSize", "1K", {
+							shouldValidate: true,
+							shouldDirty: true,
+						});
+					}
+				}
+			});
+			return () => sub.unsubscribe();
+		}, [form]);
 
 		return (
 			<Form {...form}>
@@ -54,6 +81,22 @@ const ImageGenNodeConfigComponent = memo(
 						placeholder="Select a model"
 						options={IMAGEGEN_NODE_MODELS}
 					/>
+					<div className="flex gap-4">
+						<SelectField
+							control={form.control}
+							name="aspectRatio"
+							label="Aspect Ratio"
+							placeholder="Select aspect ratio"
+							options={IMAGEGEN_ASPECT_RATIOS}
+						/>
+						<SelectField
+							control={form.control}
+							name="imageSize"
+							label="Image Size"
+							placeholder="Select image size"
+							options={IMAGEGEN_IMAGE_SIZES}
+						/>
+					</div>
 				</form>
 			</Form>
 		);
