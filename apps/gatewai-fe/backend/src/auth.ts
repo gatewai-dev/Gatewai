@@ -12,11 +12,11 @@ export const auth = betterAuth({
 	}),
 	trustedOrigins:
 		process.env.NODE_ENV === "production"
-			? [process.env.FRONTEND_URL || ""]
+			? [process.env.VITE_BASE_URL || ""]
 			: ["http://localhost:5173"],
 	baseURL:
 		process.env.NODE_ENV === "development"
-			? process.env.FRONTEND_URL
+			? process.env.VITE_BASE_URL
 			: process.env.BACKEND_URL,
 	socialProviders: {
 		google: {

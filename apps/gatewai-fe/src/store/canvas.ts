@@ -57,10 +57,7 @@ export const canvasDetailsAPI = createApi({
 				return { data };
 			},
 		}),
-		processNodesMutation: build.mutation<
-			ProcessNodesRPC,
-			ProcessNodesRPCParams
-		>({
+		processNodes: build.mutation<ProcessNodesRPC, ProcessNodesRPCParams>({
 			queryFn: async (params) => {
 				const response =
 					await rpcClient.api.v1.canvas[":id"].process.$post(params);
@@ -79,6 +76,6 @@ export const canvasDetailsAPI = createApi({
 export const {
 	useGetCanvasDetailsQuery,
 	usePatchCanvasMutation,
-	useProcessNodesMutationMutation,
+	useProcessNodesMutation,
 	useUpdateNameMutation,
 } = canvasDetailsAPI;

@@ -37,7 +37,7 @@ import { type RootState, useAppDispatch, useAppSelector } from "@/store";
 import {
 	useGetCanvasDetailsQuery,
 	usePatchCanvasMutation,
-	useProcessNodesMutationMutation,
+	useProcessNodesMutation,
 } from "@/store/canvas";
 import {
 	deleteManyEdgeEntity,
@@ -171,7 +171,7 @@ const CanvasProvider = ({
 	const timeoutRef = useRef<NodeJS.Timeout | null>(null);
 
 	const [patchCanvasAsync] = usePatchCanvasMutation();
-	const [runNodesMutateAsync] = useProcessNodesMutationMutation();
+	const [runNodesMutateAsync] = useProcessNodesMutation();
 
 	const save = useCallback(() => {
 		if (!canvasId) return;

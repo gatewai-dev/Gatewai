@@ -17,7 +17,7 @@ const app = new Hono<{
 		cors({
 			origin:
 				process.env.NODE_ENV === "production"
-					? process.env.FRONTEND_URL || ""
+					? process.env.VITE_BASE_URL || ""
 					: "http://localhost:5173",
 			allowHeaders: ["Content-Type", "Authorization"],
 			allowMethods: ["POST", "GET", "OPTIONS"],
