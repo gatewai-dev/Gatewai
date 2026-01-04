@@ -72,7 +72,6 @@ import {
 } from "@/store/rfstate";
 import type { BatchEntity } from "@/store/tasks";
 import { useNodeTemplates } from "../node-templates/node-templates.ctx";
-import { useSelectedEntitiesCtx } from "./selected-entity-ctx";
 import { useTaskManagerCtx } from "./task-manager-ctx";
 
 interface CanvasContextType {
@@ -82,7 +81,7 @@ interface CanvasContextType {
 	isLoading: boolean;
 	isError: boolean;
 	onConnect: OnConnect;
-	runNodes: (node_ids: Node["id"][]) => Promise<void>;
+	runNodes: (node_ids?: Node["id"][]) => Promise<void>;
 	rfInstance: RefObject<ReactFlowInstance | undefined>;
 	createNewNode: (
 		template: NodeTemplateListItemRPC,
@@ -482,7 +481,7 @@ const CanvasProvider = ({
 	);
 
 	const runNodes = useCallback(
-		async (node_ids: Node["id"][]) => {
+		async (node_ids?: Node["id"][]) => {
 			// Save before running
 			await save();
 

@@ -1,12 +1,10 @@
 import { type Canvas, prisma } from "@gatewai/db";
-import type { User } from "better-auth";
 import { HTTPException } from "hono/http-exception";
 
-async function GetCanvasEntities(id: Canvas["id"], user: User) {
+async function GetCanvasEntities(id: Canvas["id"]) {
 	const canvas = await prisma.canvas.findFirst({
 		where: {
 			id,
-			userId: user?.id, // Ensure user owns the canvas
 		},
 	});
 

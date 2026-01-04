@@ -21,7 +21,7 @@ const videoGenExtendProcessor: NodeProcessor = async ({ node, data }) => {
 		const fileName = `videogen_${randId}.${extension}`;
 		const key = `assets/${data.canvas.userId}/${fileName}`;
 		const contentType = "video/mp4";
-		const bucket = ENV_CONFIG.AWS_ASSETS_BUCKET;
+		const bucket = ENV_CONFIG.GCS_ASSETS_BUCKET;
 		await uploadToS3(fileBuffer, key, contentType, bucket);
 
 		const expiresIn = 3600 * 24 * 6.9; // A bit less than a week

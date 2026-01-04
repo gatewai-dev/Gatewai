@@ -85,7 +85,7 @@ const edgeSchema = z.object({
 });
 
 const processSchema = z.object({
-	node_ids: z.array(z.string()).min(1),
+	node_ids: z.array(z.string()).optional(),
 });
 
 const bulkUpdateSchema = z.object({
@@ -686,10 +686,10 @@ const canvasRoutes = new Hono<{ Variables: AuthHonoTypes }>({
 
 		// Starts processing but does not await.
 		// Frontend starts polling when it get's batch info response.
-		const taskBatch = await wfProcessor.processSelectedNodes(
+		const taskBatch = await wfProcessor.processNodes(
 			canvasId,
-			validated.node_ids,
 			user,
+			validated.node_ids,
 		);
 
 		return c.json(taskBatch, 201);

@@ -1,5 +1,5 @@
 import { useReactFlow, useViewport } from "@xyflow/react";
-import { ChevronDown, Hand, MousePointer } from "lucide-react";
+import { ChevronDown, ForwardIcon, Hand, MousePointer } from "lucide-react"; // Added ForwardIcon
 import { memo, useContext } from "react";
 import { Button } from "@/components/ui/button";
 import {
@@ -10,16 +10,22 @@ import {
 	MenubarTrigger,
 } from "@/components/ui/menubar";
 import { Separator } from "@/components/ui/separator";
+import { useCanvasCtx } from "../ctx/canvas-ctx";
 import { ModeContext } from ".";
 
 const Toolbar = memo(() => {
 	const { zoom } = useViewport();
-	const { zoomIn, zoomOut, zoomTo, fitView } = useReactFlow();
+	const { runNodes } = useCanvasCtx();
+	const { zoomIn, zoomOut, zoomTo, fitView } = useReactFlow(); // Added getNodes for context
 	const zoomPercentage = `${Math.round(zoom * 100)}%`;
 	const ctx = useContext(ModeContext);
 
+	const handleRunAll = () => {
+		runNodes();
+	};
+
 	return (
-		<Menubar className="border border-border/50 bg-background/80 backdrop-blur-md shadow-2xl rounded-full px-2 py-1 h-12 ring-1 ring-white/5">
+		<Menubar className="border border-border/50 bg-background/80 backdrop-blur-md shadow-2xl rounded-full px-2 py-1 h-12 ring-1 ring-white/5 flex items-center gap-1">
 			<Button
 				title="Select (V)"
 				variant={ctx?.mode === "select" ? "secondary" : "ghost"}
@@ -39,7 +45,7 @@ const Toolbar = memo(() => {
 				<Hand className="w-4 h-4" />
 			</Button>
 
-			<div className="w-px h-5 bg-border mx-2" />
+			<div className="w-px h-5 bg-border mx-1" />
 
 			<MenubarMenu>
 				<MenubarTrigger asChild>
@@ -61,6 +67,20 @@ const Toolbar = memo(() => {
 					<MenubarItem onClick={() => fitView()}>Fit to Screen</MenubarItem>
 				</MenubarContent>
 			</MenubarMenu>
+
+			{/* Separator before the Action Button */}
+			<div className="w-px h-5 bg-border mx-1" />
+
+			{/* Run All Nodes Button */}
+			<Button
+				variant="default"
+				size="sm"
+				className="rounded-full h-9 px-4 gap-2 shadow-sm transition-all"
+				onClick={handleRunAll}
+			>
+				<ForwardIcon className="w-4 h-4" />
+				<span className="text-xs">Run All</span>
+			</Button>
 		</Menubar>
 	);
 });

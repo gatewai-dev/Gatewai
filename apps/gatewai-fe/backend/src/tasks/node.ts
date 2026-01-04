@@ -58,7 +58,7 @@ export class NodeWFProcessor {
 		return { depGraph, revDepGraph };
 	}
 
-	// Helper: Topological sort using Kahn's algorithm.
+	// Topo  sort using Kahn's algorithm.
 	private topologicalSort(
 		nodes: string[],
 		depGraph: Map<Node["id"], Node["id"][]>,
@@ -101,16 +101,15 @@ export class NodeWFProcessor {
 		return null;
 	}
 
-	public async processSelectedNodes(
+	public async processNodes(
 		canvasId: Canvas["id"],
-		nodeIds: Node["id"][],
 		user: User,
+		/**
+		 * Node ID's to run - It'll run all of them in canvas if not provided
+		 */
+		nodeIds?: Node["id"][],
 	): Promise<TaskBatch> {
-		const data = await GetCanvasEntities(canvasId, user); // Load once, update in-memory as we go
-
-		if (nodeIds.length === 0) {
-			throw new Error("No node selected to process.");
-		}
+		const data = await GetCanvasEntities(canvasId, user);
 
 		let batch = await this.prisma.taskBatch.create({
 			data: {
@@ -132,9 +131,11 @@ export class NodeWFProcessor {
 			data,
 		);
 
+		const nodeIdsToRun = nodeIds ?? allNodeIds;
+
 		// Find all necessary nodes: selected + all upstream dependencies
 		const necessary = new Set<Node["id"]>();
-		const queue: Node["id"][] = [...nodeIds];
+		const queue: Node["id"][] = [...nodeIdsToRun];
 		while (queue.length > 0) {
 			const curr = queue.shift();
 			if (!curr) break;

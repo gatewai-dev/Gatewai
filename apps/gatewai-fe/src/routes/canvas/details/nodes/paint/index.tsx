@@ -1,7 +1,7 @@
 import type { PaintNodeConfig } from "@gatewai/types";
 import type { NodeProps } from "@xyflow/react";
 import { Brush, Eraser, PaintBucket } from "lucide-react";
-import { memo, useCallback, useEffect, useMemo, useRef, useState } from "react";
+import { memo, useCallback, useEffect, useRef, useState } from "react";
 import { Button } from "@/components/ui/button";
 import { Label } from "@/components/ui/label";
 import { Separator } from "@/components/ui/separator";
@@ -20,12 +20,12 @@ import type { PaintNode } from "../node-props";
 const PaintNodeComponent = memo((props: NodeProps<PaintNode>) => {
 	const { onNodeConfigUpdate } = useCanvasCtx();
 	const edges = useAppSelector(makeSelectEdgesByTargetNodeId(props.id));
-	const inputNodeId = useMemo(() => {
+	const inputNodeId = useCallback(() => {
 		if (!edges || !edges[0]) {
 			return undefined;
 		}
 		return edges[0].source;
-	}, [edges]);
+	}, [edges])();
 
 	const node = useAppSelector(makeSelectNodeById(props.id));
 	const nodeConfig = node?.config as PaintNodeConfig;
@@ -92,15 +92,14 @@ const PaintNodeComponent = memo((props: NodeProps<PaintNode>) => {
 		}
 	}, [nodeConfig]);
 
-	const colorToRgb = useCallback((color: string): [number, number, number] => {
-		const canvas = document.createElement("canvas");
-		canvas.width = 1;
-		canvas.height = 1;
-		const ctx = canvas.getContext("2d");
-		if (!ctx) return [0, 0, 0];
-		ctx.fillStyle = color;
-		ctx.fillRect(0, 0, 1, 1);
-		const [r, g, b] = ctx.getImageData(0, 0, 1, 1).data;
+	const hexToRgb = useCallback((hex: string): [number, number, number] => {
+		hex = hex.replace("#", "");
+		if (hex.length !== 6) {
+			return [0, 0, 0]; // Fallback for invalid hex
+		}
+		const r = parseInt(hex.substring(0, 2), 16);
+		const g = parseInt(hex.substring(2, 4), 16);
+		const b = parseInt(hex.substring(4, 6), 16);
 		return [r, g, b];
 	}, []);
 
@@ -173,6 +172,9 @@ const PaintNodeComponent = memo((props: NodeProps<PaintNode>) => {
 			const maskCtx = canvas.getContext("2d");
 			if (!maskCtx) return;
 
+			// Ensure position is within bounds
+			if (posX < 0 || posX >= w || posY < 0 || posY >= h) return;
+
 			const inputCanvas = inputCanvasRef.current;
 			const useInput = !!inputImageUrl && inputCanvas;
 			const inputCtx = useInput ? inputCanvas.getContext("2d") : null;
@@ -184,7 +186,7 @@ const PaintNodeComponent = memo((props: NodeProps<PaintNode>) => {
 
 			const targetColor = getPixel(colorData, posX, posY, w);
 
-			const [brushR, brushG, brushB] = colorToRgb(brushColor);
+			const [brushR, brushG, brushB] = hexToRgb(brushColor);
 
 			const targetTol = tolerance; // 0-255
 
@@ -236,7 +238,7 @@ const PaintNodeComponent = memo((props: NodeProps<PaintNode>) => {
 			inputImageUrl,
 			getPixel,
 			setPixel,
-			colorToRgb,
+			hexToRgb,
 			colorsSimilar,
 		],
 	);
@@ -345,8 +347,8 @@ const PaintNodeComponent = memo((props: NodeProps<PaintNode>) => {
 			const scaleY = canvas.height / rect.height;
 
 			return {
-				x: Math.floor((e.clientX - rect.left) * scaleX),
-				y: Math.floor((e.clientY - rect.top) * scaleY),
+				x: (e.clientX - rect.left) * scaleX,
+				y: (e.clientY - rect.top) * scaleY,
 			};
 		},
 		[],
@@ -361,13 +363,11 @@ const PaintNodeComponent = memo((props: NodeProps<PaintNode>) => {
 			if (!ctx) return;
 
 			if (tool === "fill") {
-				performFloodFill(false, x, y);
+				performFloodFill(false, Math.floor(x), Math.floor(y));
 				clearPreview();
 				return;
 			}
 
-			ctx.beginPath();
-			ctx.moveTo(x, y);
 			ctx.lineWidth = brushSize;
 			ctx.globalAlpha = 1;
 			if (tool === "brush") {
@@ -407,7 +407,7 @@ const PaintNodeComponent = memo((props: NodeProps<PaintNode>) => {
 				const inBounds = x >= 0 && y >= 0 && x < width && y < height;
 				if (inBounds) {
 					previewDebounceRef.current = setTimeout(() => {
-						performFloodFill(true, x, y);
+						performFloodFill(true, Math.floor(x), Math.floor(y));
 						previewDebounceRef.current = null;
 					}, 100);
 				} else {
@@ -421,8 +421,13 @@ const PaintNodeComponent = memo((props: NodeProps<PaintNode>) => {
 			const ctx = canvasRef.current?.getContext("2d");
 			if (!ctx || !lastPositionRef.current) return;
 
+			const last = lastPositionRef.current;
+
+			ctx.beginPath();
+			ctx.moveTo(last.x, last.y);
 			ctx.lineTo(x, y);
 			ctx.stroke();
+
 			lastPositionRef.current = { x, y };
 		},
 		[tool, getScaledCoordinates, clearPreview, performFloodFill],

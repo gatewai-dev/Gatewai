@@ -2,14 +2,19 @@ import type { LLMResult } from "@gatewai/types";
 import type { NodeProps } from "@xyflow/react";
 import { memo, useMemo } from "react";
 import { ScrollArea } from "@/components/ui/scroll-area";
+import { useAppSelector } from "@/store";
+import { makeSelectNodeById } from "@/store/nodes";
 import { MarkdownRenderer } from "../../components/markdown-renderer";
 import { RunNodeButton } from "../../components/run-node-button";
 import { useNodeResult } from "../../processor/processor-ctx";
 import { BaseNode } from "../base";
+import { OutputSelector } from "../misc/output-selector";
 import type { LLMNode } from "../node-props";
 
 const LlmNodeComponent = memo((props: NodeProps<LLMNode>) => {
 	const { result } = useNodeResult<LLMResult>(props.id);
+	const node = useAppSelector(makeSelectNodeById(props.id));
+	const hasMoreThanOneOutput = result?.outputs && result?.outputs?.length > 1;
 
 	const llmTextContent = useMemo(() => {
 		if (!result || !result.outputs || result?.outputs?.length === 0)
@@ -26,11 +31,16 @@ const LlmNodeComponent = memo((props: NodeProps<LLMNode>) => {
 
 	return (
 		<BaseNode selected={props.selected} id={props.id} dragging={props.dragging}>
-			<div className="flex flex-col gap-2 items-end nowheel">
+			<div className="flex flex-col gap-2 items-end nowheel relative">
+				{hasMoreThanOneOutput && (
+					<div className="absolute top-1 left-1 z-10">
+						<OutputSelector node={node} />
+					</div>
+				)}
 				{llmTextContent && (
 					<ScrollArea
 						viewPortCn="max-h-[350px]"
-						className="text-xs bg-input p-2  w-full "
+						className="text-xs bg-input p-2 pt-8 w-full "
 					>
 						<MarkdownRenderer markdown={llmTextContent} />
 					</ScrollArea>
@@ -42,7 +52,7 @@ const LlmNodeComponent = memo((props: NodeProps<LLMNode>) => {
 						</p>
 					</div>
 				)}
-				<RunNodeButton nodeProps={props} />
+				<RunNodeButton nodeId={props.id} />
 			</div>
 		</BaseNode>
 	);

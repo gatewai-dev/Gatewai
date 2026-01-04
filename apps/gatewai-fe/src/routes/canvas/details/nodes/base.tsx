@@ -149,10 +149,7 @@ const NodeHandle = memo(
 				position={isTarget ? Position.Left : Position.Right}
 				style={handleStyle}
 				className={cn(
-					// Removed 'border-none' as we handle borders in style
-					// Removed transition-shadow to avoid jitter on zoom
 					!isValid && "animate-pulse",
-					// Add hover effect
 					"hover:scale-110 transition-transform duration-75",
 				)}
 			/>
@@ -169,9 +166,10 @@ const NodeHandle = memo(
 			>
 				<div
 					className={cn(
-						"absolute -top-4 pointer-events-none transition-opacity duration-200 w-auto whitespace-nowrap",
-						// Hide by default, show on group hover or node selection
-						nodeSelected || "group-hover/handle:opacity-100 opacity-0",
+						"absolute -top-4 pointer-events-none opacity-0 transition-opacity duration-200 w-auto whitespace-nowrap",
+						// Logic: Show if handle is hovered OR if the whole node is hovered OR if node is selected
+						"group-hover/handle:opacity-100 group-hover/node:opacity-100",
+						{ "opacity-100": nodeSelected },
 						isTarget
 							? "right-3 text-right origin-right"
 							: "left-3 text-left origin-left",
@@ -195,7 +193,7 @@ const NodeHandle = memo(
 					<Tooltip>
 						<TooltipTrigger asChild>{handleComponent}</TooltipTrigger>
 						<TooltipContent
-							side={isTarget ? "left" : "right"}
+							side={"bottom"}
 							className="bg-destructive text-destructive-foreground border-none text-[10px] uppercase font-bold"
 						>
 							Invalid Type
@@ -246,13 +244,13 @@ const BaseNode = memo(
 		return (
 			<div
 				className={cn(
-					"relative flex flex-col w-full h-full",
+					"relative flex flex-col w-full h-full group/node",
 					// Use standard ease for cleaner motion
 					"transition-all duration-200 ease-out",
 					dragging ? "shadow-lg scale-[1.01]" : "shadow-sm",
 					"bg-card border border-border",
 					// Sharper corners for a more technical look to match rectangular handles
-					"rounded-lg",
+					"rounded-2xl",
 					selected && "ring-1 ring-primary border-primary",
 					props.className,
 				)}
@@ -291,7 +289,7 @@ const BaseNode = memo(
 						<NodeMenu id={props.id} />
 					</div>
 
-					<div className="flex-1 p-2 nodrag nopan cursor-auto bg-card/50">
+					<div className="flex-1 p-2 nodrag nopan cursor-auto bg-card/50 rounded-3xl">
 						{props.children}
 					</div>
 				</div>

@@ -34,6 +34,9 @@ const nodeProcessors: Partial<Record<NodeType, NodeProcessor>> = {
 	[NodeType.Text]: async ({ node }) => {
 		return { success: true, result: node.result };
 	},
+	[NodeType.Note]: async ({ node }) => {
+		return { success: true, result: node.result };
+	},
 };
 
 export { nodeProcessors };

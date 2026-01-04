@@ -6,8 +6,6 @@
 
 Join our Stargazers ⭐!
 
-![Click](/assets/ddr.gif "Click")
-
 ## Build node-canvas
 
 By default, "canvas" package is not being built with pnpm for security reasons.

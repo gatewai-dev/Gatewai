@@ -40,8 +40,7 @@ function AgentNodeHandbook() {
 								</li>
 								<li>Inputs and outputs cannot be added after the first run.</li>
 								<li>
-									The agent has the capabilities of almost all other nodes
-									(e.g., image filters, image composition).
+									The agent has the capabilities of almost all other nodes.
 								</li>
 							</ul>
 						</AlertDescription>
@@ -85,7 +84,7 @@ const AgentNodeComponent = memo((props: NodeProps<LLMNode>) => {
 			</div>
 			<Separator className="my-2" />
 			<div className="flex flex-col gap-2 items-end nowheel">
-				<RunNodeButton nodeProps={props} />
+				<RunNodeButton nodeId={props.id} />
 			</div>
 		</BaseNode>
 	);

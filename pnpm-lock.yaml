@@ -44,6 +44,9 @@ importers:
       '@dbos-inc/dbos-sdk':
         specifier: ^4.5.13
         version: 4.5.13
+      '@dbos-inc/prisma-datasource':
+        specifier: ^4.5.13
+        version: 4.5.13(@dbos-inc/dbos-sdk@4.5.13)
       '@dnd-kit/core':
         specifier: ^6.3.1
         version: 6.3.1(react-dom@19.1.1(react@19.1.1))(react@19.1.1)
@@ -938,6 +941,11 @@ packages:
     resolution: {integrity: sha512-BVcvxW7I45WwXSrs7vWYf8uUaZxRMWv+07ndtQ3IMPrEhUV7TbYjSAuzVdhcNaQKLpURwoKhdiOm7LbLbKzZtQ==}
     engines: {node: '>=20'}
     hasBin: true
+
+  '@dbos-inc/prisma-datasource@4.5.13':
+    resolution: {integrity: sha512-c246xnc+GL7hw2MD0XSSvJfxtTEvrS81OzxHKpyNL5BRxsoZZz1PmH913hBA/brQq5OLXTOulokN9r2NtsY+xg==}
+    peerDependencies:
+      '@dbos-inc/dbos-sdk': '*'
 
   '@dimforge/rapier3d-compat@0.12.0':
     resolution: {integrity: sha512-uekIGetywIgopfD97oDL5PfeezkFpNhwlzlaEYNOA0N6ghdsOvh/HYjSMek5Q2O1PYvRSDFcqFVJl4r4ZBwOow==}
@@ -8769,6 +8777,14 @@ snapshots:
       - bufferutil
       - pg-native
       - utf-8-validate
+
+  '@dbos-inc/prisma-datasource@4.5.13(@dbos-inc/dbos-sdk@4.5.13)':
+    dependencies:
+      '@dbos-inc/dbos-sdk': 4.5.13
+      pg: 8.16.3
+      superjson: 1.13.3
+    transitivePeerDependencies:
+      - pg-native
 
   '@dimforge/rapier3d-compat@0.12.0': {}
 

@@ -183,14 +183,17 @@ const fontManager = FontManager.getInstance();
 // --- Editor Context ---
 interface EditorContextType {
 	layers: CompositorLayer[];
-	setLayers: Dispatch<SetStateAction<CompositorLayer[]>>;
+	updateLayers: (
+		updater: SetStateAction<CompositorLayer[]>,
+		isUserChange?: boolean,
+	) => void;
 	selectedId: string | null;
 	setSelectedId: (id: string | null) => void;
 	// Artboard Dimensions
 	viewportWidth: number;
 	viewportHeight: number;
-	setViewportWidth: (w: number) => void;
-	setViewportHeight: (h: number) => void;
+	updateViewportWidth: (w: number) => void;
+	updateViewportHeight: (h: number) => void;
 	// Viewport/Screen Dimensions
 	screenWidth: number;
 	screenHeight: number;
@@ -235,7 +238,7 @@ const useEditor = () => {
 
 // Snap Logic
 const useSnap = () => {
-	const { layers, setLayers, viewportWidth, viewportHeight, setGuides } =
+	const { layers, updateLayers, viewportWidth, viewportHeight, setGuides } =
 		useEditor();
 	const SNAP_THRESHOLD = 5;
 
@@ -258,10 +261,7 @@ const useSnap = () => {
 					layer.width &&
 					(layer.height ?? layer.computedHeight)
 				) {
-					const effectiveHeight =
-						layer.type === "Text"
-							? (layer.computedHeight ?? 0)
-							: (layer.height ?? 0);
+					const effectiveHeight = layer.height ?? layer.computedHeight ?? 0;
 					const centerX = Math.round(layer.x + layer.width / 2);
 					const centerY = Math.round(layer.y + effectiveHeight / 2);
 					vSnaps.push(
@@ -343,7 +343,7 @@ const useSnap = () => {
 		(e: Konva.KonvaEventObject<DragEvent>) => {
 			const node = e.target;
 			const id = node.id();
-			setLayers((prev) =>
+			updateLayers((prev) =>
 				prev.map((l) =>
 					l.id === id
 						? { ...l, x: Math.round(node.x()), y: Math.round(node.y()) }
@@ -352,14 +352,14 @@ const useSnap = () => {
 			);
 			setGuides([]);
 		},
-		[setLayers, setGuides],
+		[updateLayers, setGuides],
 	);
 
 	const handleTransformEnd = useCallback(
 		(e: Konva.KonvaEventObject<Event>) => {
 			const node = e.target;
 			const id = node.id();
-			setLayers((prev) =>
+			updateLayers((prev) =>
 				prev.map((l) =>
 					l.id === id
 						? {
@@ -374,7 +374,7 @@ const useSnap = () => {
 				),
 			);
 		},
-		[setLayers],
+		[updateLayers],
 	);
 
 	return { handleDragMove, handleDragEnd, handleTransformEnd };
@@ -398,25 +398,27 @@ const ImageLayer: React.FC<LayerProps> = ({
 	onTransformStart,
 	onTransformEnd,
 }) => {
-	const { setSelectedId, setLayers, getImageUrl, mode } = useEditor();
+	const { setSelectedId, updateLayers, getImageUrl, mode } = useEditor();
 	const url = getImageUrl(layer.inputHandleId);
 	const [image] = useImage(url ?? "", "anonymous");
 
 	useEffect(() => {
 		if (image && (!layer.width || !layer.height)) {
-			setLayers((prev) =>
-				prev.map((l) =>
-					l.id === layer.id
-						? {
-								...l,
-								width: Math.round(image.width),
-								height: Math.round(image.height),
-							}
-						: l,
-				),
+			updateLayers(
+				(prev) =>
+					prev.map((l) =>
+						l.id === layer.id
+							? {
+									...l,
+									width: Math.round(image.width),
+									height: Math.round(image.height),
+								}
+							: l,
+					),
+				false,
 			);
 		}
-	}, [image, layer.id, layer.width, layer.height, setLayers]);
+	}, [image, layer.id, layer.width, layer.height, updateLayers]);
 
 	const handleSelect = () => {
 		setSelectedId(layer.id);
@@ -471,7 +473,7 @@ const TextLayer: React.FC<
 		setEditingLayerId,
 		getTextData,
 		mode,
-		setLayers,
+		updateLayers,
 		stageRef,
 	} = useEditor();
 	const text = getTextData(layer.inputHandleId);
@@ -489,60 +491,46 @@ const TextLayer: React.FC<
 	// Correctly handle Text resizing:
 	// Use width to determine wrap point.
 	// Reset scale to 1 so font size doesn't change.
-	const handleTransform = useCallback(
-		(e: Konva.KonvaEventObject<Event>) => {
-			const node = e.target as Konva.Text;
+	// Ensure height is at least the minimum required for the text content to prevent clipping.
+	const handleTransform = useCallback((e: Konva.KonvaEventObject<Event>) => {
+		const node = e.target as Konva.Text;
+		const newWidth = Math.max(20, node.width() * node.scaleX());
+		let newHeight = Math.max(20, node.height() * node.scaleY());
 
-			// 1. Calculate the new width based on scale
-			const scaleX = node.scaleX() || 1;
-			const currentWidth = node.width() || 30;
+		node.setAttrs({
+			width: newWidth,
+			scaleX: 1,
+			scaleY: 1,
+		});
 
-			// 2. Enforce a minimum width floor (e.g., 30px)
-			// This prevents the height from collapsing to 0 when width is too small.
-			const newWidth = Math.max(30, Math.round(currentWidth * scaleX));
+		// Temporarily unset height to compute the minimum required height for the new width
+		node.height(undefined);
+		const minHeight = node.height();
 
-			// 3. Update the node immediately to force Konva to recalculate internal metrics
-			node.setAttrs({
-				width: newWidth,
-				scaleX: 1,
-				scaleY: 1,
-			});
-
-			// 4. Sync the true rendered height back to state
-			// node.height() will now return the correct value based on the newWidth
-			const actualHeight = Math.round(node.height());
-
-			setLayers((prev) =>
-				prev.map((l) =>
-					l.id === layer.id
-						? {
-								...l,
-								width: newWidth,
-								computedHeight:
-									actualHeight > 0 ? actualHeight : l.computedHeight,
-							}
-						: l,
-				),
-			);
-		},
-		[layer.id, setLayers],
-	);
+		// Set height to max of proposed new height and min required to avoid clipping
+		newHeight = Math.max(minHeight, newHeight);
+		node.setAttrs({
+			height: newHeight,
+		});
+	}, []);
 
 	useEffect(() => {
 		const node = stageRef.current?.findOne(`#${layer.id}`) as
 			| Konva.Text
 			| undefined;
-		if (node) {
-			const actualHeight = Math.round(node.height());
-			if (actualHeight !== layer.computedHeight) {
-				setLayers((prev) =>
-					prev.map((l) =>
-						l.id === layer.id ? { ...l, computedHeight: actualHeight } : l,
-					),
+		if (node && layer.type === "Text") {
+			const newHeight = Math.round(node.height());
+			if (newHeight !== layer.computedHeight) {
+				updateLayers(
+					(prev) =>
+						prev.map((l) =>
+							l.id === layer.id ? { ...l, computedHeight: newHeight } : l,
+						),
+					false,
 				);
 			}
 		}
-	}, [text, layer.fontSize, layer.fontFamily, layer.width, layer.lineHeight]);
+	}, [layer.id, layer.type, updateLayers, stageRef, layer.computedHeight]);
 
 	useEffect(() => {
 		if (layer.fontFamily) {
@@ -566,6 +554,7 @@ const TextLayer: React.FC<
 			fontFamily={layer.fontFamily ?? "Geist"}
 			fill={layer.fill ?? "#000000"}
 			width={layer.width ?? 200}
+			height={layer.height}
 			rotation={layer.rotation}
 			draggable={mode === "select"}
 			onClick={handleSelect}
@@ -629,8 +618,7 @@ const TransformerComponent: React.FC = () => {
 					: undefined
 			}
 			boundBoxFunc={(oldBox, newBox) => {
-				// Enforce minimum dimensions at the interaction level
-				if (newBox.width < 30 || newBox.height < 5) {
+				if (newBox.width < 5 || newBox.height < 5) {
 					return oldBox;
 				}
 				return newBox;
@@ -924,7 +912,7 @@ const LayersPanel: React.FC<{ onSave: () => void; onClose: () => void }> = ({
 	onSave,
 	onClose,
 }) => {
-	const { layers, setLayers, selectedId, setSelectedId } = useEditor();
+	const { layers, updateLayers, selectedId, setSelectedId } = useEditor();
 	const sortedLayers = useMemo(
 		() => [...layers].sort((a, b) => (a.zIndex ?? 0) - (b.zIndex ?? 0)),
 		[layers],
@@ -982,7 +970,7 @@ const LayersPanel: React.FC<{ onSave: () => void; onClose: () => void }> = ({
 					onDragEnd={(e) => {
 						const { active, over } = e;
 						if (over && active.id !== over.id) {
-							setLayers((currentLayers) => {
+							updateLayers((currentLayers) => {
 								const currentSorted = [...currentLayers].sort(
 									(a, b) => (b.zIndex ?? 0) - (a.zIndex ?? 0),
 								);
@@ -1039,18 +1027,18 @@ const InspectorPanel: React.FC = () => {
 	const {
 		selectedId,
 		layers,
-		setLayers,
+		updateLayers,
 		viewportWidth,
-		setViewportWidth,
+		updateViewportWidth,
 		viewportHeight,
-		setViewportHeight,
+		updateViewportHeight,
 	} = useEditor();
 
 	const selectedLayer = layers.find((l) => l.id === selectedId);
 
 	const updateLayer = (updates: Partial<CompositorLayer>) => {
 		if (!selectedId) return;
-		setLayers((prev) =>
+		updateLayers((prev) =>
 			prev.map((l) => (l.id === selectedId ? { ...l, ...updates } : l)),
 		);
 	};
@@ -1089,14 +1077,14 @@ const InspectorPanel: React.FC = () => {
 							label="W"
 							icon={MoveHorizontal}
 							value={Math.round(viewportWidth)}
-							onChange={(v) => setViewportWidth(v || 800)}
+							onChange={(v) => updateViewportWidth(v || 800)}
 							min={1}
 						/>
 						<DraggableNumberInput
 							label="H"
 							icon={Move} // Using generic move for Height
 							value={Math.round(viewportHeight)}
-							onChange={(v) => setViewportHeight(v || 600)}
+							onChange={(v) => updateViewportHeight(v || 600)}
 							min={1}
 						/>
 					</div>
@@ -1105,8 +1093,8 @@ const InspectorPanel: React.FC = () => {
 						onValueChange={(val) => {
 							const preset = aspectRatios.find((r) => r.label === val);
 							if (preset) {
-								setViewportWidth(preset.width);
-								setViewportHeight(preset.height);
+								updateViewportWidth(preset.width);
+								updateViewportHeight(preset.height);
 							}
 						}}
 					>
@@ -1412,11 +1400,31 @@ export const CanvasDesignerEditor: React.FC<CanvasDesignerEditorProps> = ({
 }) => {
 	const nodeConfig = node.config as CompositorNodeConfig;
 	const [layers, setLayers] = useState<CompositorLayer[]>([]);
+	const updateLayers = useCallback(
+		(
+			updater: SetStateAction<CompositorLayer[]>,
+			isUserChange: boolean = true,
+		) => {
+			setLayers(updater);
+			if (isUserChange) {
+				setIsDirty(true);
+			}
+		},
+		[],
+	);
 	const [selectedId, setSelectedId] = useState<string | null>(null);
 	const [viewportWidth, setViewportWidth] = useState(nodeConfig.width ?? 1024);
+	const updateViewportWidth = useCallback((w: number) => {
+		setViewportWidth(w);
+		setIsDirty(true);
+	}, []);
 	const [viewportHeight, setViewportHeight] = useState(
 		nodeConfig.height ?? 1024,
 	);
+	const updateViewportHeight = useCallback((h: number) => {
+		setViewportHeight(h);
+		setIsDirty(true);
+	}, []);
 	const [guides, setGuides] = useState<Guide[]>([]);
 	const [isEditingText, setIsEditingText] = useState(false);
 	const [editingLayerId, setEditingLayerId] = useState<string | null>(null);
@@ -1432,7 +1440,6 @@ export const CanvasDesignerEditor: React.FC<CanvasDesignerEditorProps> = ({
 	const containerRef = useRef<HTMLDivElement>(null);
 	const [screenWidth, setScreenWidth] = useState(100);
 	const [screenHeight, setScreenHeight] = useState(100);
-	const isFirstRender = useRef(true);
 
 	const zoomPercentage = `${Math.round(scale * 100)}%`;
 
@@ -1619,20 +1626,10 @@ export const CanvasDesignerEditor: React.FC<CanvasDesignerEditorProps> = ({
 			});
 
 			await Promise.all(fontPromises);
-			setLayers(Object.values(layerUpdates));
+			updateLayers(Object.values(layerUpdates), false);
 		};
 		loadInitialLayers();
-	}, [initialLayers, node.config, getImageData]);
-
-	// Track Dirty State
-	useEffect(() => {
-		if (isFirstRender.current) {
-			isFirstRender.current = false;
-			return;
-		}
-		// When layers, viewport dimensions change, set dirty
-		setIsDirty(true);
-	}, [layers, viewportWidth, viewportHeight]);
+	}, [initialLayers, node.config, getImageData, updateLayers]);
 
 	// Deselect on Pan
 	useEffect(() => {
@@ -1665,7 +1662,7 @@ export const CanvasDesignerEditor: React.FC<CanvasDesignerEditorProps> = ({
 			) {
 				e.preventDefault();
 				const shift = e.shiftKey ? 10 : 1;
-				setLayers((prev) =>
+				updateLayers((prev) =>
 					prev.map((l) => {
 						if (l.id !== selectedId) return l;
 						const u = { ...l };
@@ -1692,7 +1689,7 @@ export const CanvasDesignerEditor: React.FC<CanvasDesignerEditorProps> = ({
 			window.removeEventListener("keydown", handleKeyDown);
 			window.removeEventListener("keyup", handleKeyUp);
 		};
-	}, [mode, selectedId]);
+	}, [mode, selectedId, updateLayers]);
 
 	const handleSave = useCallback(() => {
 		const layerUpdates = layers.reduce<Record<string, CompositorLayer>>(
@@ -1718,13 +1715,13 @@ export const CanvasDesignerEditor: React.FC<CanvasDesignerEditorProps> = ({
 		<EditorContext.Provider
 			value={{
 				layers,
-				setLayers,
+				updateLayers,
 				selectedId,
 				setSelectedId,
 				viewportWidth,
-				setViewportWidth,
+				updateViewportWidth,
 				viewportHeight,
-				setViewportHeight,
+				updateViewportHeight,
 				screenWidth,
 				screenHeight,
 				guides,

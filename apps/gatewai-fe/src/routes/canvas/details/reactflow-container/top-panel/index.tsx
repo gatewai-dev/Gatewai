@@ -8,7 +8,7 @@ const TopPanel = memo(() => {
 	return (
 		<Panel
 			position="top-center"
-			className=" bg-background left-0 top-0 m-0!  flex flex-col"
+			className=" bg-background left-0 top-0 m-0! flex flex-col"
 		>
 			<div className="border-0 bg-background gap-1 rounded-md shadow-md flex items-center">
 				<CanvasName />
