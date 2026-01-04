@@ -100,7 +100,8 @@ export type AgentOutputUnion =
 	| OutputItem<"Boolean">
 	| OutputItem<"Mask">;
 
-export type AgentResult = MultipleOutputResult & {
+export type AgentResult = {
+	selectedOutputIndex: number;
 	outputs: { items: AgentOutputUnion[] }[];
 };
 
