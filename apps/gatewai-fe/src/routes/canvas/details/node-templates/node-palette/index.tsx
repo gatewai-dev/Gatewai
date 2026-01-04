@@ -1,5 +1,4 @@
-import { ChevronLeft } from "lucide-react";
-import { useEffect, useRef } from "react";
+import { useRef } from "react";
 import { Button } from "@/components/ui/button";
 import { YodesLogo } from "@/components/ui/logo";
 import { ScrollArea } from "@/components/ui/scroll-area";
@@ -11,8 +10,8 @@ import {
 } from "@/components/ui/tooltip";
 import { cn } from "@/lib/utils";
 import type { NodeTemplateListRPC } from "@/rpc/types";
+import { CanvasName } from "../../reactflow-container/left-panel/canvas-name";
 import { useNodeTemplates } from "../node-templates.ctx";
-import { CATEGORY_MAP } from "./category-icon-map";
 import { NodePaletteProvider, useNodePalette } from "./node-palette.ctx";
 import { NodeTemplateList } from "./node-template-list";
 import { SearchInput } from "./search";
@@ -32,57 +31,20 @@ export function NodePalette() {
 }
 
 function NodePaletteContent({ templates }: { templates: NodeTemplateListRPC }) {
-	const {
-		isCollapsed,
-		setIsCollapsed,
-		categoryRefs,
-		activeCategory,
-		setActiveCategory,
-	} = useNodePalette();
+	const { isCollapsed, setIsCollapsed } = useNodePalette();
 	const scrollRef = useRef<HTMLDivElement>(null);
-
-	useEffect(() => {
-		const observer = new IntersectionObserver(
-			(entries) => {
-				let visibleCat: string | null = null;
-				let maxRatio = -1;
-				entries.forEach((entry) => {
-					if (entry.intersectionRatio > maxRatio) {
-						maxRatio = entry.intersectionRatio;
-						visibleCat = entry.target.getAttribute("data-category");
-					}
-				});
-				if (visibleCat) {
-					setActiveCategory(visibleCat);
-				}
-			},
-			{
-				root: scrollRef.current,
-				threshold: [0, 0.5, 1.0],
-			},
-		);
-
-		Object.values(categoryRefs.current).forEach((ref) => {
-			if (ref.current) {
-				observer.observe(ref.current);
-			}
-		});
-
-		return () => {
-			observer.disconnect();
-		};
-	}, [setActiveCategory, categoryRefs]);
 
 	return (
 		<div
 			className={cn(
 				"relative bg-transparent flex flex-col transition-all duration-500 ease-[cubic-bezier(0.16,1,0.3,1)]",
 				"bg-background/90 backdrop-blur-xl border-r border-border/40 shadow-sm h-screen",
-				isCollapsed ? "w-[50px]" : "w-76",
+				isCollapsed ? "w-[50px]" : "w-64",
 			)}
 		>
-			<div className="flex h-full overflow-hidden">
-				<div className="flex flex-col items-center w-[60px] border-r border-border/10 py-4 gap-4">
+			<div className="flex flex-col h-full overflow-hidden">
+				<div className="flex flex-row items-center border-r px-4 my-4 border-border/10 gap-4">
+					<CanvasName />
 					<Tooltip>
 						<TooltipTrigger asChild>
 							<Button
@@ -90,7 +52,7 @@ function NodePaletteContent({ templates }: { templates: NodeTemplateListRPC }) {
 								size="icon"
 								onClick={() => setIsCollapsed(!isCollapsed)}
 								className={cn(
-									"h-12 w-12 rounded-xl transition-all duration-200",
+									"h-10 w-10 rounded-xl transition-all duration-200",
 									isCollapsed ? "rotate-0 hover:rotate-270" : "rotate-90",
 								)}
 							>
@@ -98,63 +60,22 @@ function NodePaletteContent({ templates }: { templates: NodeTemplateListRPC }) {
 							</Button>
 						</TooltipTrigger>
 						<TooltipContent side="right">
-							{isCollapsed ? "Expand" : "Collapse"}
+							{isCollapsed ? "Expand Nodes" : "Collapse"}
 						</TooltipContent>
 					</Tooltip>
-
-					<Separator className="w-8 opacity-50" />
-
-					{/* Category Icons */}
-					<div className="flex flex-col gap-4 items-center">
-						{Object.entries(CATEGORY_MAP).map(
-							([cat, { icon: Icon, color }]) => (
-								<Tooltip key={cat}>
-									<TooltipTrigger asChild>
-										<Button
-											variant="ghost"
-											size="icon"
-											className={cn(
-												"h-10 w-10 rounded-xl transition-all",
-												activeCategory === cat
-													? "scale-110"
-													: "opacity-50 hover:opacity-100",
-											)}
-											style={{
-												backgroundColor:
-													activeCategory === cat ? `${color}33` : "transparent",
-											}}
-											onClick={() => {
-												if (isCollapsed) setIsCollapsed(false);
-												categoryRefs.current[cat]?.current?.scrollIntoView({
-													behavior: "smooth",
-													block: "start",
-												});
-											}}
-										>
-											<Icon className="h-5 w-5" style={{ color }} />
-										</Button>
-									</TooltipTrigger>
-									<TooltipContent side="right" className="font-medium">
-										{cat}
-									</TooltipContent>
-								</Tooltip>
-							),
-						)}
-					</div>
 				</div>
+				<Separator className="my-2 opacity-50" />
 
 				{/* Search and List Content */}
 				<div
 					className={cn(
-						"flex flex-col flex-1 px-4 h-screen transition-all duration-300",
+						"flex flex-col flex-1 mx-4 h-screen transition-all duration-300",
 						isCollapsed
 							? "opacity-0 invisible w-0"
 							: "opacity-100 visible w-auto",
 					)}
 				>
-					<div className="space-y-4 mb-4 mt-8">
-						<SearchInput />
-					</div>
+					{!isCollapsed && <SearchInput />}
 					<Separator className="opacity-50" />
 					<ScrollArea
 						ref={scrollRef}

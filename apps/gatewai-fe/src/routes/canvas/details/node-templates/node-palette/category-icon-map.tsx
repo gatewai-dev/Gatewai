@@ -2,12 +2,9 @@ import type { IconType } from "react-icons";
 import {
 	FiCpu,
 	FiCrop,
-	FiDatabase,
-	FiEdit3,
 	FiEye,
 	FiFilePlus,
 	FiGrid,
-	FiLayers,
 	FiType,
 	FiWind,
 } from "react-icons/fi";
@@ -22,30 +19,6 @@ export type NodeSubCategory =
 	| "Effects"
 	| "Composition"
 	| "Tools";
-
-interface CategoryMetadata {
-	icon: IconType;
-	color: string; // Useful for styling the sidebar or node headers
-}
-
-export const CATEGORY_MAP: Record<NodeCategory, CategoryMetadata> = {
-	"Quick Access": {
-		icon: FiGrid,
-		color: "#6B7280", // Gray
-	},
-	AI: {
-		icon: FiCpu,
-		color: "#8B5CF6", // Purple
-	},
-	Tools: {
-		icon: FiDatabase,
-		color: "#3B82F6", // Blue
-	},
-	Image: {
-		icon: FiCrop,
-		color: "#10B981", // Emerald
-	},
-};
 
 export const SUB_CATEGORY_MAP: Record<NodeSubCategory, IconType> = {
 	"AI Models": FiCpu,

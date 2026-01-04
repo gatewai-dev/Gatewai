@@ -2,8 +2,13 @@ import type { DataType, FileAsset } from "@gatewai/db";
 
 export type ProcessData = {
 	dataUrl: string;
+
+	// For the Image, Video media types
 	width?: number;
 	height?: number;
+
+	// For the Audio, Video media types
+	duration?: number;
 };
 
 export type FileData = {

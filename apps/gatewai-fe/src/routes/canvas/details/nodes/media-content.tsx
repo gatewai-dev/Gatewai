@@ -1,8 +1,10 @@
 import type { FileResult, ImagesResult, VideoGenResult } from "@gatewai/types";
 import { FileIcon } from "lucide-react";
+import { useMemo } from "react";
 import type { NodeEntityType } from "@/store/nodes";
-import { useNodeResultHash } from "../processor/processor-ctx";
+import { GetAssetEndpoint } from "@/utils/file";
 import { CanvasRenderer } from "./common/canvas-renderer";
+import { VideoRenderer } from "./common/video-renderer";
 import { OutputSelector } from "./misc/output-selector";
 
 function MediaContent({
@@ -15,13 +17,15 @@ function MediaContent({
 	const selectedOutput = result.outputs[result.selectedOutputIndex];
 	const outputItem = selectedOutput.items[0];
 	const isImage = outputItem.data.entity?.mimeType.startsWith("image");
-	const isOther = !isImage;
-	const resultHash = useNodeResultHash(node.id);
-
-	if (!outputItem.data.entity?.signedUrl) {
-		return null;
-	}
+	const isVideo = outputItem.data.entity?.mimeType.startsWith("video");
+	const isOther = !isImage && !isVideo;
 	const hasMoreThanOneOutput = result.outputs.length > 1;
+
+	const assetUrl = useMemo(() => {
+		if (!outputItem.data.entity?.id) return null;
+		return GetAssetEndpoint(outputItem.data.entity?.id);
+	}, [outputItem.data.entity?.id]);
+
 	return (
 		<div className="relative h-full w-full group">
 			{hasMoreThanOneOutput && (
@@ -29,11 +33,12 @@ function MediaContent({
 					<OutputSelector node={node} />
 				</div>
 			)}
-			{isImage && resultHash && <CanvasRenderer resultHash={resultHash} />}
+			{isImage && assetUrl && <CanvasRenderer imageUrl={assetUrl} />}
+			{isVideo && assetUrl && <VideoRenderer src={assetUrl} />}
 			{isOther && (
 				<div className="flex flex-col items-center gap-2">
 					<FileIcon className="w-5 h-5" />{" "}
-					<span>{outputItem.data.entity.name}</span>
+					<span>{outputItem.data.entity?.name}</span>
 				</div>
 			)}
 		</div>

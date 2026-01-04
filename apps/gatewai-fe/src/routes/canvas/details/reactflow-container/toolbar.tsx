@@ -12,6 +12,7 @@ import {
 import { Separator } from "@/components/ui/separator";
 import { useCanvasCtx } from "../ctx/canvas-ctx";
 import { ModeContext } from ".";
+import { CanvasTasksPanel } from "./tasks";
 
 const Toolbar = memo(() => {
 	const { zoom } = useViewport();
@@ -81,6 +82,7 @@ const Toolbar = memo(() => {
 				<ForwardIcon className="w-4 h-4" />
 				<span className="text-xs">Run All</span>
 			</Button>
+			<CanvasTasksPanel />
 		</Menubar>
 	);
 });

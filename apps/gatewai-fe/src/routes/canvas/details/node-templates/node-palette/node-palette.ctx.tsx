@@ -1,5 +1,4 @@
-import React, { createContext, useContext, useRef, useState } from "react";
-import { CATEGORY_MAP } from "./category-icon-map";
+import { createContext, type ReactNode, useContext, useState } from "react";
 
 interface NodePaletteContextType {
 	searchQuery: string;
@@ -10,36 +9,17 @@ interface NodePaletteContextType {
 	setToTypes: (t: string[]) => void;
 	isCollapsed: boolean;
 	setIsCollapsed: (b: boolean) => void;
-	categoryRefs: React.RefObject<
-		Record<string, React.RefObject<HTMLDivElement | null>>
-	>;
-	activeCategory: string;
-	setActiveCategory: (cat: string) => void;
 }
 
 const NodePaletteContext = createContext<NodePaletteContextType | undefined>(
 	undefined,
 );
 
-export function NodePaletteProvider({
-	children,
-}: {
-	children: React.ReactNode;
-}) {
+export function NodePaletteProvider({ children }: { children: ReactNode }) {
 	const [searchQuery, setSearchQuery] = useState("");
 	const [fromTypes, setFromTypes] = useState<string[]>([]);
 	const [toTypes, setToTypes] = useState<string[]>([]);
 	const [isCollapsed, setIsCollapsed] = useState(false);
-	const categoryRefs = useRef<
-		Record<string, React.RefObject<HTMLDivElement | null>>
-	>(
-		Object.fromEntries(
-			Object.keys(CATEGORY_MAP).map((cat) => [cat, React.createRef()]),
-		),
-	);
-	const [activeCategory, setActiveCategory] = useState(
-		Object.keys(CATEGORY_MAP)[0] || "",
-	);
 
 	return (
 		<NodePaletteContext.Provider
@@ -52,9 +32,6 @@ export function NodePaletteProvider({
 				setToTypes,
 				isCollapsed,
 				setIsCollapsed,
-				categoryRefs,
-				activeCategory,
-				setActiveCategory,
 			}}
 		>
 			{children}

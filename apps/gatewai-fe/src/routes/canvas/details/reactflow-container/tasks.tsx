@@ -14,7 +14,7 @@ import {
 	PopoverTrigger,
 } from "@/components/ui/popover";
 import { Spinner } from "@/components/ui/spinner";
-import { useTaskManagerCtx } from "../../ctx/task-manager-ctx";
+import { useTaskManagerCtx } from "../ctx/task-manager-ctx";
 
 const CanvasTasksPanel = memo(() => {
 	const { isLoading, taskBatches } = useTaskManagerCtx();
@@ -59,8 +59,11 @@ const CanvasTasksPanel = memo(() => {
 	return (
 		<Popover>
 			<PopoverTrigger asChild>
-				<Button variant="ghost" className="flex items-center">
-					<div className={`w-2 h-2 rounded-full ${indicatorColor} mr-2`} />
+				<Button
+					variant="ghost"
+					className="flex items-center rounded-full text-xs"
+				>
+					<div className={`w-2 h-2 rounded-full ${indicatorColor}`} />
 					{totalCount} Task{totalCount !== 1 ? "s" : ""}
 				</Button>
 			</PopoverTrigger>

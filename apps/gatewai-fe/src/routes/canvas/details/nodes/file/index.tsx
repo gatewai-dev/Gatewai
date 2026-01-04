@@ -27,15 +27,22 @@ const FileNodeComponent = memo((props: NodeProps<FileNode>) => {
 
 	const existingMimeType =
 		result?.outputs?.[0]?.items?.[0]?.data?.entity?.mimeType;
-	const existingType =
-		existingMimeType?.startsWith("image/") && existingMimeType !== "image/gif"
-			? "image"
+
+	// 1. Updated to detect both images and videos
+	const existingType = existingMimeType?.startsWith("image/")
+		? "image"
+		: existingMimeType?.startsWith("video/")
+			? "video"
 			: null;
 
+	// 2. Updated accept object to include video formats
 	const accept = {
 		"image/jpeg": [],
 		"image/png": [],
 		"image/webp": [],
+		"video/mp4": [],
+		"video/quicktime": [], // .mov
+		"video/webm": [],
 	};
 
 	const buttonAccept =
