@@ -12,12 +12,13 @@ import {
 import { Alert, AlertDescription } from "@/components/ui/alert";
 import { Button } from "@/components/ui/button";
 import { Separator } from "@/components/ui/separator";
+import type { NodeEntityType } from "@/store/nodes";
 import { GetAssetEndpoint } from "@/utils/file";
 import { useNodeResult } from "../../processor/processor-ctx";
 import { BaseNode } from "../base";
 import type { BlurNode } from "../node-props";
 
-function ExportNodeHandbook() {
+function ExportNodeHandbook({ nodeId }: { nodeId: NodeEntityType["id"] }) {
 	return (
 		<Accordion type="single" collapsible defaultValue="info">
 			<AccordionItem value="info">
@@ -33,11 +34,11 @@ function ExportNodeHandbook() {
 							<Separator />
 							<h2 className="font-semibold mt-3 mb-1">API Requests</h2>
 							<p className="mb-1">
-								When you run the workflow via API request, export node will put
-								the output inside "data".
+								When you run the workflow via API request, export node will
+								expose the output.
 							</p>
 							<code className="block bg-muted p-2 rounded text-[7px] mt-1">
-								{`{ "[Node ID]": "[FileData/Text/base64]" }`}
+								{`{ "${nodeId}": "[FileData/Text/base64]" }`}
 							</code>
 						</AlertDescription>
 					</Alert>
@@ -316,7 +317,7 @@ const ExportNodeComponent = memo((props: NodeProps<BlurNode>) => {
 	return (
 		<BaseNode selected={props.selected} id={props.id} dragging={props.dragging}>
 			<div className="flex flex-col gap-3">
-				<ExportNodeHandbook />
+				<ExportNodeHandbook nodeId={props.id} />
 
 				{error && (
 					<Alert variant="destructive">

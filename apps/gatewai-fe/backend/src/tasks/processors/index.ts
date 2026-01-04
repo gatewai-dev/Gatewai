@@ -25,8 +25,8 @@ const nodeProcessors: Partial<Record<NodeType, NodeProcessor>> = {
 	[NodeType.Modulate]: modulateProcessor,
 	[NodeType.Compositor]: compositorProcessor,
 	[NodeType.VideoGen]: videoGenMockProcessor,
-	[NodeType.VideoGenExtend]: videoGenExtendProcessor,
-	[NodeType.VideoGenFirstLastFrame]: videoGenFirstLastFrameProcessor,
+	[NodeType.VideoGenExtend]: videoGenMockProcessor,
+	[NodeType.VideoGenFirstLastFrame]: videoGenMockProcessor,
 	// No processing needed for these node types
 	[NodeType.File]: async ({ node }) => {
 		return { success: true, result: node.result };

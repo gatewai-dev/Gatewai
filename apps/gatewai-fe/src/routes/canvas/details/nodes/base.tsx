@@ -22,7 +22,7 @@ import {
 	makeSelectHandlesByNodeId,
 } from "@/store/handles";
 import { makeSelectNodeById } from "@/store/nodes";
-import { NODE_ICON_MAP } from "../../node-templates/node-palette/icon-map";
+import { NODE_ICON_MAP } from "../node-templates/node-palette/icon-map";
 import { useNodeResult, useNodeValidation } from "../processor/processor-ctx";
 import { NodeMenu } from "./node-menu";
 
@@ -62,9 +62,9 @@ export const getHandleStyle = (
 			backgroundColor: color,
 			border: "2px solid var(--background)",
 			boxShadow: `
-        0 0 0 2px ${color}80,
-        0 0 12px ${color}60
-      `,
+				0 0 0 2px ${color}80,
+				0 0 12px ${color}60
+			`,
 			transition: "all 0.18s ease",
 			backfaceVisibility: "hidden",
 			transform: "translateZ(0)",
@@ -174,10 +174,10 @@ const NodeHandle = memo(
 				{/* External Label */}
 				<div
 					className={cn(
-						"absolute -top-8 whitespace-nowrap py-0 rounded-lg transition-all duration-200 ease-out pointer-events-none opacity-0 group-hover:opacity-100",
+						"absolute -top-5 whitespace-nowrap py-0 rounded-lg transition-all duration-200 ease-out pointer-events-none opacity-0 group-hover:opacity-100",
 						isTarget
-							? "right-2  flex-row-reverse text-right origin-right"
-							: "left-2 text-left origin-left",
+							? "right-1  flex-row-reverse text-right origin-right"
+							: "left-1 text-left origin-left",
 						nodeSelected ? "opacity-100 scale-110 shadow-sm" : "scale-95",
 					)}
 				>

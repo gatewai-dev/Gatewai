@@ -70,7 +70,7 @@ import {
 	setNodes,
 } from "@/store/rfstate";
 import type { BatchEntity } from "@/store/tasks";
-import { useNodeTemplates } from "../../node-templates/node-templates.ctx";
+import { useNodeTemplates } from "../node-templates/node-templates.ctx";
 import { useTaskManagerCtx } from "./task-manager-ctx";
 
 interface CanvasContextType {

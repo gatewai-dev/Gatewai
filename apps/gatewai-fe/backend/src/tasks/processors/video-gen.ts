@@ -3,21 +3,38 @@ import { readFile } from "node:fs/promises";
 import path from "node:path";
 import { fileURLToPath } from "node:url";
 import { DataType, prisma } from "@gatewai/db";
-import { type FileData, type VideoGenNodeConfig, VideoGenNodeConfigSchema, type VideoGenResult } from "@gatewai/types";
+import {
+	type FileData,
+	VideoGenNodeConfigSchema,
+	type VideoGenResult,
+} from "@gatewai/types";
 import type { VideoGenerationReferenceImage } from "@google/genai";
 import { ENV_CONFIG } from "../../config.js";
 import { genAI } from "../../genai.js";
 import { logger } from "../../logger.js";
-import { generateSignedUrl, uploadToS3 } from "../../utils/storage.js";
+import {
+	generateSignedUrl,
+	getFromS3,
+	uploadToS3,
+} from "../../utils/storage.js";
 import { getInputValue, getInputValuesByType } from "../resolvers.js";
 import type { NodeProcessor } from "./types.js";
 
 const __filename = fileURLToPath(import.meta.url);
 const __dirname = path.dirname(__filename);
 
+async function ResolveImageData(fileData: FileData) {
+	if (fileData.entity) {
+		const buffer = await getFromS3(fileData.entity.key, fileData.entity.bucket);
+		return buffer.toString("base64");
+	}
+	if (fileData.processData) {
+		return fileData.processData.dataUrl;
+	}
+}
+
 const videoGenProcessor: NodeProcessor = async ({ node, data }) => {
 	try {
-
 		const userPrompt = getInputValue(data, node.id, true, {
 			dataType: DataType.Text,
 			label: "Prompt",
@@ -27,40 +44,65 @@ const videoGenProcessor: NodeProcessor = async ({ node, data }) => {
 			dataType: DataType.Image,
 		}).map((m) => m?.data) as FileData[] | null;
 
+		const LoadImageDataPromises = imageFileData?.map(async (fileData) => {
+			const base64Data = await ResolveImageData(fileData);
+			const refImg: VideoGenerationReferenceImage = {
+				image: {
+					imageBytes: base64Data,
+				},
+			};
+			return refImg;
+		});
+
+		let referenceImages: VideoGenerationReferenceImage[] | undefined;
+
+		if (LoadImageDataPromises) {
+			referenceImages = await Promise.all(LoadImageDataPromises);
+		}
+
 		const nodeConfig = VideoGenNodeConfigSchema.parse(node.config);
 		let operation = await genAI.models.generateVideos({
 			model: nodeConfig.model,
 			prompt: userPrompt,
 			config: {
-				referenceImages: 
-			}
-		})
+				referenceImages,
+				numberOfVideos: 1,
+			},
+		});
 
 		while (!operation.done) {
-		  console.log("Waiting for video generation to complete...")
-		  await new Promise((resolve) => setTimeout(resolve, 10000));
-		  operation = await genAI.operations.getVideosOperation({
-		    operation: operation,
-		  });
+			console.log("Waiting for video generation to complete...");
+			await new Promise((resolve) => setTimeout(resolve, 10000));
+			operation = await genAI.operations.getVideosOperation({
+				operation: operation,
+			});
 		}
 
 		if (!operation.response?.generatedVideos) {
 			throw new Error("No video is generated");
 		}
+		const extension = ".mp4";
+		const now = Date.now().toString();
+		const filePath = path.join(
+			__dirname,
+			`${node.id}_output`,
+			`${now}${extension}`,
+		);
 		// Download the video.
+		if (!operation.response.generatedVideos[0].video) {
+			throw new Error("Generate video response is empty");
+		}
 		genAI.files.download({
-		    file: operation.response.generatedVideos[0].video,
-		    downloadPath: "veo3_with_image_input.mp4",
+			file: operation.response.generatedVideos[0].video,
+			downloadPath: filePath,
 		});
 
-		const extension = "mp4";
-		const testPath = path.join(__dirname, "test-vid.mp4");
-		const fileBuffer = await readFile(testPath);
+		const fileBuffer = await readFile(filePath);
 		const randId = randomUUID();
 		const fileName = `videogen_${randId}.${extension}`;
 		const key = `assets/${data.canvas.userId}/${fileName}`;
 		const contentType = "video/mp4";
-		const bucket = ENV_CONFIG.AWS_ASSETS_BUCKET;
+		const bucket = ENV_CONFIG.GCS_ASSETS_BUCKET;
 		await uploadToS3(fileBuffer, key, contentType, bucket);
 
 		const expiresIn = 3600 * 24 * 6.9; // A bit less than a week

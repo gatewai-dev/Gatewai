@@ -32,7 +32,7 @@ const VideoGenNodeComponent = memo(
 				dragging={props.dragging}
 			>
 				<div className="flex flex-col gap-3">
-					<div className="media-container w-full rounded-xs min-h-[100px] relative">
+					<div className="media-container w-full rounded-xs min-h-[156px] relative">
 						{hasMoreThanOneOutput && (
 							<div className="absolute top-1 left-1 z-10">
 								<OutputSelector node={node} />

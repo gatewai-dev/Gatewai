@@ -100,35 +100,11 @@ import {
 	TooltipContent,
 	TooltipTrigger,
 } from "@/components/ui/tooltip";
+import { ColorInput } from "@/components/util/color-input";
 import { useGetFontListQuery } from "@/store/fonts";
 import type { HandleEntityType } from "@/store/handles";
 import type { NodeEntityType } from "@/store/nodes";
 import { GetAssetEndpoint, GetFontAssetUrl } from "@/utils/file";
-
-// Mocking ColorInput
-const ColorInput: React.FC<{
-	value: string;
-	onChange: (v: string) => void;
-	className?: string;
-	id?: string;
-}> = ({ value, onChange, className, id }) => (
-	<div className={`flex items-center gap-2 ${className}`}>
-		<div className="relative w-8 h-8 rounded border overflow-hidden">
-			<input
-				type="color"
-				id={id}
-				value={value}
-				onChange={(e) => onChange(e.target.value)}
-				className="absolute -top-2 -left-2 w-12 h-12 cursor-pointer p-0 border-0"
-			/>
-		</div>
-		<Input
-			value={value}
-			onChange={(e) => onChange(e.target.value)}
-			className="flex-1 h-8 text-xs font-mono"
-		/>
-	</div>
-);
 
 // Mocking BLEND_MODES
 const BLEND_MODES = [

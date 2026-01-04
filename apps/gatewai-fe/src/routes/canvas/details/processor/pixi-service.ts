@@ -515,20 +515,14 @@ class PixiProcessorService {
 		}, signal);
 	}
 
-	private forceStageSize(width: number, height: number, app: Application) {
-		// Create a transparent spacer that forces the bounds of the stage
-		// to match the requested width/height.
-		const spacer = new Graphics();
-		spacer.rect(0, 0, width, height).fill({ color: 0x000000, alpha: 0 });
-		app.stage.addChildAt(spacer, 0);
-	}
-
+	/**
+	 * This do not use pixi, there's some inconsistencies
+	 */
 	public async processCompositor(
 		config: CompositorNodeConfig,
 		inputs: Record<string, { type: "Image" | "Text"; value: string }>,
 		signal?: AbortSignal,
 	): Promise<{ dataUrl: string; width: number; height: number }> {
-		// We do not use the Pixi pool here to avoid WebGL text issues
 		if (signal?.aborted) throw new DOMException("Cancelled", "AbortError");
 
 		const width = config.width ?? 1024;
@@ -567,7 +561,7 @@ class PixiProcessorService {
 								fill: "#ffffff",
 							}
 						: {}),
-				} as any);
+				});
 			}
 		}
 

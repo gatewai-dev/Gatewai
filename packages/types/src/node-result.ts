@@ -107,7 +107,7 @@ export type CompositorResult = SingleOutputResult & {
 };
 
 export type BaseVideoGenResult = SingleOutputResult & {
-	outputs: [{ items: [OutputItem<"Video">] }];
+	outputs: [{ items: OutputItem<"Video">[] }];
 };
 
 export type VideoGenResult = BaseVideoGenResult;
