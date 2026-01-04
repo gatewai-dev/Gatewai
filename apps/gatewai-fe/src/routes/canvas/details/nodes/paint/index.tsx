@@ -13,13 +13,11 @@ import { makeSelectEdgesByTargetNodeId } from "@/store/edges";
 import { makeSelectNodeById } from "@/store/nodes";
 import { GetAssetEndpoint } from "@/utils/file";
 import { useCanvasCtx } from "../../ctx/canvas-ctx";
-import {
-	useNodeFileOutputUrl,
-	useNodeResult,
-} from "../../processor/processor-ctx";
+import { useNodeResult } from "../../processor/processor-ctx";
 import { BaseNode } from "../base";
 import { DimensionsConfig } from "../common/dimensions";
 import type { PaintNode } from "../node-props";
+import { colorsSimilar, colorToRgb, getPixel, setPixel } from "./utils";
 
 const PaintNodeComponent = memo((props: NodeProps<PaintNode>) => {
 	const { onNodeConfigUpdate } = useCanvasCtx();
@@ -114,71 +112,6 @@ const PaintNodeComponent = memo((props: NodeProps<PaintNode>) => {
 		}
 	}, [nodeConfig]);
 
-	const colorToRgb = useCallback((color: string): [number, number, number] => {
-		const canvas = document.createElement("canvas");
-		canvas.width = 1;
-		canvas.height = 1;
-		const ctx = canvas.getContext("2d");
-		if (!ctx) return [0, 0, 0];
-		ctx.fillStyle = color;
-		ctx.fillRect(0, 0, 1, 1);
-		const [r, g, b] = ctx.getImageData(0, 0, 1, 1).data;
-		return [r, g, b];
-	}, []);
-
-	const colorsSimilar = useCallback(
-		(
-			c1: [number, number, number, number],
-			c2: [number, number, number, number],
-			tol: number,
-		): boolean => {
-			if (c1[3] === 0 || c2[3] === 0) {
-				return c1[3] === c2[3];
-			}
-			return (
-				Math.max(
-					Math.abs(c1[0] - c2[0]),
-					Math.abs(c1[1] - c2[1]),
-					Math.abs(c1[2] - c2[2]),
-				) <= tol
-			);
-		},
-		[],
-	);
-
-	const getPixel = useCallback(
-		(
-			data: Uint8ClampedArray,
-			x: number,
-			y: number,
-			w: number,
-		): [number, number, number, number] => {
-			const i = (y * w + x) * 4;
-			return [data[i], data[i + 1], data[i + 2], data[i + 3]];
-		},
-		[],
-	);
-
-	const setPixel = useCallback(
-		(
-			data: Uint8ClampedArray,
-			x: number,
-			y: number,
-			w: number,
-			r: number,
-			g: number,
-			b: number,
-			a: number,
-		) => {
-			const i = (y * w + x) * 4;
-			data[i] = r;
-			data[i + 1] = g;
-			data[i + 2] = b;
-			data[i + 3] = a;
-		},
-		[],
-	);
-
 	const clearPreview = useCallback(() => {
 		const preview = previewRef.current;
 		if (!preview) return;
@@ -214,13 +147,14 @@ const PaintNodeComponent = memo((props: NodeProps<PaintNode>) => {
 			const visited = new Uint8Array(w * h);
 
 			let dataToModify: Uint8ClampedArray;
-			let ctxToPut: CanvasRenderingContext2D;
+			let ctxToPut: CanvasRenderingContext2D | null;
 			let alpha = 255;
 
 			if (isPreview) {
 				const preview = previewRef.current;
 				if (!preview) return;
-				ctxToPut = preview.getContext("2d")!;
+				ctxToPut = preview.getContext("2d");
+				if (!ctxToPut) throw new Error("Missing ctx for preview");
 				dataToModify = ctxToPut.createImageData(w, h).data;
 				alpha = 128; // Semi-transparent for preview
 			} else {
@@ -229,7 +163,8 @@ const PaintNodeComponent = memo((props: NodeProps<PaintNode>) => {
 			}
 
 			while (stack.length > 0) {
-				const p = stack.pop()!;
+				const p = stack.pop();
+				if (!p) throw new Error("Stack is empty");
 				const idx = p.y * w + p.x;
 				if (visited[idx]) continue;
 				visited[idx] = 1;
@@ -252,15 +187,7 @@ const PaintNodeComponent = memo((props: NodeProps<PaintNode>) => {
 				needsUpdateRef.current = true;
 			}
 		},
-		[
-			brushColor,
-			tolerance,
-			inputImageUrl,
-			getPixel,
-			setPixel,
-			colorToRgb,
-			colorsSimilar,
-		],
+		[brushColor, tolerance, inputImageUrl],
 	);
 
 	useEffect(() => {

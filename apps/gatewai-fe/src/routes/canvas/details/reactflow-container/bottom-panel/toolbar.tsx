@@ -10,20 +10,19 @@ import {
 	MenubarTrigger,
 } from "@/components/ui/menubar";
 import { Separator } from "@/components/ui/separator";
-import { useCanvasCtx } from "../ctx/canvas-ctx";
-import { ModeContext } from ".";
-import { CanvasTasksPanel } from "./tasks";
+import { useAppSelector } from "@/store";
+import { selectSelectedNodes } from "@/store/nodes";
+import { useCanvasCtx } from "../../ctx/canvas-ctx";
+import { ModeContext } from "..";
+import { CanvasTasksPanel } from "../tasks";
+import { RunWorkflowButton } from "./run-workflow-button";
 
 const Toolbar = memo(() => {
 	const { zoom } = useViewport();
-	const { runNodes } = useCanvasCtx();
+
 	const { zoomIn, zoomOut, zoomTo, fitView } = useReactFlow(); // Added getNodes for context
 	const zoomPercentage = `${Math.round(zoom * 100)}%`;
 	const ctx = useContext(ModeContext);
-
-	const handleRunAll = () => {
-		runNodes();
-	};
 
 	return (
 		<Menubar className="border border-border/50 bg-background/80 backdrop-blur-md shadow-2xl rounded-full px-2 py-1 h-12 ring-1 ring-white/5 flex items-center gap-1">
@@ -70,18 +69,9 @@ const Toolbar = memo(() => {
 			</MenubarMenu>
 
 			{/* Separator before the Action Button */}
-			<div className="w-px h-5 bg-border mx-1" />
+			<Separator orientation="vertical" className="mx-1" />
 
-			{/* Run All Nodes Button */}
-			<Button
-				variant="default"
-				size="sm"
-				className="rounded-full h-9 px-4 gap-2 shadow-sm transition-all"
-				onClick={handleRunAll}
-			>
-				<ForwardIcon className="w-4 h-4" />
-				<span className="text-xs">Run All</span>
-			</Button>
+			<RunWorkflowButton />
 			<CanvasTasksPanel />
 		</Menubar>
 	);
