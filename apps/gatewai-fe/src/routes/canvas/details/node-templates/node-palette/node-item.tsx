@@ -1,6 +1,6 @@
 import { useDraggable } from "@neodrag/react";
 import type { XYPosition } from "@xyflow/react";
-import { useRef, useState } from "react";
+import { memo, useRef, useState } from "react";
 import {
 	Tooltip,
 	TooltipContent,
@@ -12,45 +12,45 @@ import { useCanvasCtx } from "@/routes/canvas/details/ctx/canvas-ctx";
 import type { NodeTemplateListItemRPC } from "@/rpc/types";
 import { NODE_ICON_MAP } from "./icon-map";
 
-export function NodeItem({ template }: { template: NodeTemplateListItemRPC }) {
-	const { rfInstance, createNewNode } = useCanvasCtx();
-	const draggableRef = useRef<HTMLDivElement>(null);
-	const [position, setPosition] = useState<XYPosition>({ x: 0, y: 0 });
-	const [isDragging, setIsDragging] = useState(false);
+export const NodeItem = memo(
+	({ template }: { template: NodeTemplateListItemRPC }) => {
+		const { rfInstance, createNewNode } = useCanvasCtx();
+		const draggableRef = useRef<HTMLDivElement>(null);
+		const [position, setPosition] = useState<XYPosition>({ x: 0, y: 0 });
+		const [isDragging, setIsDragging] = useState(false);
 
-	useDraggable(draggableRef, {
-		position: position,
-		onDragStart: () => setIsDragging(true),
-		onDrag: ({ offsetX, offsetY }) => {
-			setPosition({ x: offsetX, y: offsetY });
-		},
-		onDragEnd: ({ event }) => {
-			setIsDragging(false);
-			setPosition({ x: 0, y: 0 });
+		useDraggable(draggableRef, {
+			position: position,
+			onDragStart: () => setIsDragging(true),
+			onDrag: ({ offsetX, offsetY }) => {
+				setPosition({ x: offsetX, y: offsetY });
+			},
+			onDragEnd: ({ event }) => {
+				setIsDragging(false);
+				setPosition({ x: 0, y: 0 });
 
-			const flow = document.querySelector(".react-flow-container");
-			const flowRect = flow?.getBoundingClientRect();
-			const screenPosition = { x: event.clientX, y: event.clientY };
+				const flow = document.querySelector(".react-flow-container");
+				const flowRect = flow?.getBoundingClientRect();
+				const screenPosition = { x: event.clientX, y: event.clientY };
 
-			const isInFlow =
-				flowRect &&
-				screenPosition.x >= flowRect.left &&
-				screenPosition.x <= flowRect.right &&
-				screenPosition.y >= flowRect.top &&
-				screenPosition.y <= flowRect.bottom;
+				const isInFlow =
+					flowRect &&
+					screenPosition.x >= flowRect.left &&
+					screenPosition.x <= flowRect.right &&
+					screenPosition.y >= flowRect.top &&
+					screenPosition.y <= flowRect.bottom;
 
-			if (isInFlow) {
-				const position =
-					rfInstance.current?.screenToFlowPosition(screenPosition);
-				createNewNode(template, position || { x: 0, y: 0 });
-			}
-		},
-	});
+				if (isInFlow) {
+					const position =
+						rfInstance.current?.screenToFlowPosition(screenPosition);
+					createNewNode(template, position || { x: 0, y: 0 });
+				}
+			},
+		});
 
-	const Icon = NODE_ICON_MAP[template.type]?.() || NODE_ICON_MAP.File;
+		const Icon = NODE_ICON_MAP[template.type]?.() || NODE_ICON_MAP.File;
 
-	return (
-		<TooltipProvider delayDuration={700}>
+		return (
 			<Tooltip>
 				<TooltipTrigger asChild>
 					<div
@@ -104,6 +104,6 @@ export function NodeItem({ template }: { template: NodeTemplateListItemRPC }) {
 					</TooltipContent>
 				)}
 			</Tooltip>
-		</TooltipProvider>
-	);
-}
+		);
+	},
+);

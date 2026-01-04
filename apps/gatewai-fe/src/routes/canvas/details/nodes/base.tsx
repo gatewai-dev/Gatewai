@@ -192,17 +192,15 @@ const NodeHandle = memo(
 				</div>
 
 				{!isValid ? (
-					<TooltipProvider delayDuration={0}>
-						<Tooltip>
-							<TooltipTrigger asChild>{handleComponent}</TooltipTrigger>
-							<TooltipContent
-								side={isTarget ? "left" : "right"}
-								className="bg-destructive text-destructive-foreground border-none text-[10px] uppercase font-bold"
-							>
-								Invalid Type
-							</TooltipContent>
-						</Tooltip>
-					</TooltipProvider>
+					<Tooltip>
+						<TooltipTrigger asChild>{handleComponent}</TooltipTrigger>
+						<TooltipContent
+							side={isTarget ? "left" : "right"}
+							className="bg-destructive text-destructive-foreground border-none text-[10px] uppercase font-bold"
+						>
+							Invalid Type
+						</TooltipContent>
+					</Tooltip>
 				) : (
 					handleComponent
 				)}

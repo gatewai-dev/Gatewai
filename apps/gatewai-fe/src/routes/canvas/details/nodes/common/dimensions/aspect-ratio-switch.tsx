@@ -49,27 +49,25 @@ const AspectRatioSwitch = memo(
 		);
 
 		return (
-			<TooltipProvider>
-				<Tooltip>
-					<TooltipTrigger asChild>
-						<Button
-							variant="outline"
-							disabled={disabled}
-							size="icon-sm"
-							onClick={() => handleChange(!maintainAspect)}
-						>
-							{maintainAspect ? (
-								<Lock className="h-4 w-4" />
-							) : (
-								<Unlock className="h-4 w-4" />
-							)}
-						</Button>
-					</TooltipTrigger>
-					<TooltipContent>
-						<p>Lock Aspect Ratio</p>
-					</TooltipContent>
-				</Tooltip>
-			</TooltipProvider>
+			<Tooltip>
+				<TooltipTrigger asChild>
+					<Button
+						variant="outline"
+						disabled={disabled}
+						size="icon-sm"
+						onClick={() => handleChange(!maintainAspect)}
+					>
+						{maintainAspect ? (
+							<Lock className="h-4 w-4" />
+						) : (
+							<Unlock className="h-4 w-4" />
+						)}
+					</Button>
+				</TooltipTrigger>
+				<TooltipContent>
+					<p>Lock Aspect Ratio</p>
+				</TooltipContent>
+			</Tooltip>
 		);
 	},
 );

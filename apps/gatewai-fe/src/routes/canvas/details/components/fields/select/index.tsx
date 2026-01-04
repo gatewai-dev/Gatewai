@@ -54,14 +54,12 @@ const SelectField = memo(
 						<div className="flex items-center space-x-2">
 							<FormLabel>{label}</FormLabel>
 							{info && (
-								<TooltipProvider>
-									<Tooltip>
-										<TooltipTrigger asChild>
-											<Info className="h-4 w-4 text-muted-foreground cursor-help" />
-										</TooltipTrigger>
-										<TooltipContent>{info}</TooltipContent>
-									</Tooltip>
-								</TooltipProvider>
+								<Tooltip>
+									<TooltipTrigger asChild>
+										<Info className="h-4 w-4 text-muted-foreground cursor-help" />
+									</TooltipTrigger>
+									<TooltipContent>{info}</TooltipContent>
+								</Tooltip>
 							)}
 						</div>
 						<Select onValueChange={field.onChange} value={field.value}>

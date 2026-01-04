@@ -7,7 +7,6 @@ import { Separator } from "@/components/ui/separator";
 import {
 	Tooltip,
 	TooltipContent,
-	TooltipProvider,
 	TooltipTrigger,
 } from "@/components/ui/tooltip";
 import { cn } from "@/lib/utils";
@@ -79,33 +78,29 @@ function NodePaletteContent({ templates }: { templates: NodeTemplateListRPC }) {
 			className={cn(
 				"relative bg-transparent flex flex-col transition-all duration-500 ease-[cubic-bezier(0.16,1,0.3,1)]",
 				"bg-background/90 backdrop-blur-xl border-r border-border/40 shadow-sm h-screen",
-				isCollapsed ? "w-[60px]" : "w-72",
+				isCollapsed ? "w-[60px]" : "w-76",
 			)}
 		>
 			<div className="flex h-full overflow-hidden">
-				{/* Fixed Left Sidebar Column */}
 				<div className="flex flex-col items-center w-[60px] border-r border-border/10 py-4 gap-4">
-					{/* --- TOGGLE BUTTON --- */}
-					<TooltipProvider delayDuration={0}>
-						<Tooltip>
-							<TooltipTrigger asChild>
-								<Button
-									variant={isCollapsed ? "ghost" : "default"}
-									size="icon"
-									onClick={() => setIsCollapsed(!isCollapsed)}
-									className={cn(
-										"h-12 w-12 rounded-xl transition-all duration-200",
-										isCollapsed ? "rotate-0 hover:rotate-270" : "rotate-90",
-									)}
-								>
-									<YodesLogo className="size-8" />
-								</Button>
-							</TooltipTrigger>
-							<TooltipContent side="right">
-								{isCollapsed ? "Expand" : "Collapse"}
-							</TooltipContent>
-						</Tooltip>
-					</TooltipProvider>
+					<Tooltip>
+						<TooltipTrigger asChild>
+							<Button
+								variant={isCollapsed ? "ghost" : "default"}
+								size="icon"
+								onClick={() => setIsCollapsed(!isCollapsed)}
+								className={cn(
+									"h-12 w-12 rounded-xl transition-all duration-200",
+									isCollapsed ? "rotate-0 hover:rotate-270" : "rotate-90",
+								)}
+							>
+								<YodesLogo className="size-8" />
+							</Button>
+						</TooltipTrigger>
+						<TooltipContent side="right">
+							{isCollapsed ? "Expand" : "Collapse"}
+						</TooltipContent>
+					</Tooltip>
 
 					<Separator className="w-8 opacity-50" />
 
@@ -113,40 +108,36 @@ function NodePaletteContent({ templates }: { templates: NodeTemplateListRPC }) {
 					<div className="flex flex-col gap-4 items-center">
 						{Object.entries(CATEGORY_MAP).map(
 							([cat, { icon: Icon, color }]) => (
-								<TooltipProvider key={cat} delayDuration={0}>
-									<Tooltip>
-										<TooltipTrigger asChild>
-											<Button
-												variant="ghost"
-												size="icon"
-												className={cn(
-													"h-10 w-10 rounded-xl transition-all",
-													activeCategory === cat
-														? "scale-110"
-														: "opacity-50 hover:opacity-100",
-												)}
-												style={{
-													backgroundColor:
-														activeCategory === cat
-															? `${color}33`
-															: "transparent",
-												}}
-												onClick={() => {
-													if (isCollapsed) setIsCollapsed(false);
-													categoryRefs.current[cat]?.current?.scrollIntoView({
-														behavior: "smooth",
-														block: "start",
-													});
-												}}
-											>
-												<Icon className="h-5 w-5" style={{ color }} />
-											</Button>
-										</TooltipTrigger>
-										<TooltipContent side="right" className="font-medium">
-											{cat}
-										</TooltipContent>
-									</Tooltip>
-								</TooltipProvider>
+								<Tooltip key={cat}>
+									<TooltipTrigger asChild>
+										<Button
+											variant="ghost"
+											size="icon"
+											className={cn(
+												"h-10 w-10 rounded-xl transition-all",
+												activeCategory === cat
+													? "scale-110"
+													: "opacity-50 hover:opacity-100",
+											)}
+											style={{
+												backgroundColor:
+													activeCategory === cat ? `${color}33` : "transparent",
+											}}
+											onClick={() => {
+												if (isCollapsed) setIsCollapsed(false);
+												categoryRefs.current[cat]?.current?.scrollIntoView({
+													behavior: "smooth",
+													block: "start",
+												});
+											}}
+										>
+											<Icon className="h-5 w-5" style={{ color }} />
+										</Button>
+									</TooltipTrigger>
+									<TooltipContent side="right" className="font-medium">
+										{cat}
+									</TooltipContent>
+								</Tooltip>
 							),
 						)}
 					</div>
