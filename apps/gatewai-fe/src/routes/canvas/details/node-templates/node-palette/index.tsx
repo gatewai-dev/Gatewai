@@ -63,26 +63,11 @@ function NodePaletteContent({ templates }: { templates: NodeTemplateListRPC }) {
 					className="hover:bg-accent/50 rounded-full h-8 w-8 ml-auto"
 					onClick={() => setIsCollapsed(!isCollapsed)}
 				>
-					{isCollapsed ? (
-						<ChevronRight className="h-4 w-4" />
-					) : (
-						<ChevronLeft className="h-4 w-4" />
-					)}
+					{isCollapsed && <ChevronRight className="h-4 w-4" />}
 				</Button>
 			</div>
 
-			{!isCollapsed ? (
-				<div className="flex flex-col flex-1 px-4 overflow-hidden">
-					<div className="space-y-4 mb-4">
-						<SearchInput />
-						<DataTypeMultiSelect />
-					</div>
-					<Separator className="opacity-50" />
-					<ScrollArea className="flex-1 custom-scrollbar pt-4">
-						<NodeTemplateList templates={templates} />
-					</ScrollArea>
-				</div>
-			) : (
+			<div className="flex items-stretch">
 				<div className="flex flex-col gap-5 mt-2 items-center">
 					{Object.entries(CATEGORY_MAP).map(([cat, { icon: Icon }]) => (
 						<TooltipProvider key={cat} delayDuration={0}>
@@ -104,7 +89,20 @@ function NodePaletteContent({ templates }: { templates: NodeTemplateListRPC }) {
 						</TooltipProvider>
 					))}
 				</div>
-			)}
+
+				{!isCollapsed && (
+					<div className="flex flex-col flex-1 px-4 overflow-hidden">
+						<div className="space-y-4 mb-4">
+							<SearchInput />
+							<DataTypeMultiSelect />
+						</div>
+						<Separator className="opacity-50" />
+						<ScrollArea className="flex-1 custom-scrollbar pt-4">
+							<NodeTemplateList templates={templates} />
+						</ScrollArea>
+					</div>
+				)}
+			</div>
 		</div>
 	);
 }

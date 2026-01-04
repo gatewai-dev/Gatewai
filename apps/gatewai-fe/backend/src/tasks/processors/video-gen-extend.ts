@@ -26,7 +26,7 @@ const videoGenExtendProcessor: NodeProcessor = async ({ node, data }) => {
 
 		const expiresIn = 3600 * 24 * 6.9; // A bit less than a week
 		const signedUrl = await generateSignedUrl(key, bucket, expiresIn);
-		const signedUrlExp = new Date(Date.now() + expiresIn * 1000);
+		const signedUrlExp = new Date(Date.now() + expiresIn);
 
 		const asset = await prisma.fileAsset.create({
 			data: {

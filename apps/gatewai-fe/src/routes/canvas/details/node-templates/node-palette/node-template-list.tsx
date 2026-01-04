@@ -86,7 +86,7 @@ const NodeTemplateList = memo(({ templates }: NodeListProps) => {
 	}
 
 	return (
-		<div className="flex flex-col gap-3 w-60">
+		<div className="flex flex-col gap-3 w-50">
 			{catKeys.map((cat) => (
 				<div key={cat}>
 					<h2 className="font-bold mb-4">{cat}</h2>
@@ -94,7 +94,7 @@ const NodeTemplateList = memo(({ templates }: NodeListProps) => {
 						.sort(([subA], [subB]) => subA.localeCompare(subB))
 						.map(([sub, temps]) => (
 							<div key={sub} className="mb-4">
-								{sub && <h3 className="text-lg font-semibold mb-2">{sub}</h3>}
+								{sub && <h3 className="text-sm font-semibold mb-2">{sub}</h3>}
 								<div className="grid grid-cols-2 gap-2">
 									{sortTemplates(temps, sortBy).map((t) => (
 										<NodeItem key={t.id} template={t} />
