@@ -29,7 +29,7 @@ export function NodePaletteProvider({
 	const [searchQuery, setSearchQuery] = useState("");
 	const [fromTypes, setFromTypes] = useState<string[]>([]);
 	const [toTypes, setToTypes] = useState<string[]>([]);
-	const [isCollapsed, setIsCollapsed] = useState(false);
+	const [isCollapsed, setIsCollapsed] = useState(true);
 	const categoryRefs = useRef<
 		Record<string, React.RefObject<HTMLDivElement | null>>
 	>(

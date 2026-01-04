@@ -57,6 +57,7 @@ import {
 	deleteManyNodeEntity,
 	type NodeEntityType,
 	setAllNodeEntities,
+	setSelectedNodeIds,
 	updateNodeConfig,
 	updateNodeResult,
 } from "@/store/nodes";
@@ -71,6 +72,7 @@ import {
 } from "@/store/rfstate";
 import type { BatchEntity } from "@/store/tasks";
 import { useNodeTemplates } from "../node-templates/node-templates.ctx";
+import { useSelectedEntitiesCtx } from "./selected-entity-ctx";
 import { useTaskManagerCtx } from "./task-manager-ctx";
 
 interface CanvasContextType {
@@ -259,7 +261,6 @@ const CanvasProvider = ({
 
 	const onNodeConfigUpdate = useCallback(
 		(payload: { id: string; newConfig: Partial<AllNodeConfig> }) => {
-			console.log({ payload });
 			dispatch(updateNodeConfig(payload));
 			scheduleSave();
 		},
@@ -577,6 +578,7 @@ const CanvasProvider = ({
 			if (template.type === "File") {
 				saveDelay = 50;
 			}
+			dispatch(setSelectedNodeIds([newNode.id]));
 			scheduleSave(saveDelay);
 		},
 		[canvasId, dispatch, scheduleSave],

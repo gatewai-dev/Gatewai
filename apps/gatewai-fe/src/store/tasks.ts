@@ -152,7 +152,6 @@ export const selectNodeTaskStatus = createDraftSafeSelector(
 	(batches) => {
 		const status: Record<string, BatchNodeData[]> = {};
 		batches.forEach((batch) => {
-			console.log({ batch });
 			batch.tasks.forEach((task) => {
 				if (task.nodeId) {
 					if (status[task.nodeId]) {

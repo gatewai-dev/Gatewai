@@ -2,7 +2,6 @@ import { ReactFlowProvider } from "@xyflow/react";
 import { Outlet, useParams } from "react-router";
 import { UserAssetsProvider } from "../assets/user-assets-ctx";
 import { CanvasProvider } from "./ctx/canvas-ctx";
-import { SelectedEntitiesProvider } from "./ctx/selected-entity-ctx";
 import { TaskManagerProvider } from "./ctx/task-manager-ctx";
 import { NodeTemplateDnDProvider } from "./node-templates/node-template-drag.ctx";
 import { NodeTemplatesProvider } from "./node-templates/node-templates.ctx";
@@ -18,15 +17,13 @@ function CanvasDetailsRoot() {
 			<TaskManagerProvider canvasId={canvasId}>
 				<NodeTemplatesProvider>
 					<UserAssetsProvider>
-						<SelectedEntitiesProvider>
-							<ReactFlowProvider>
-								<CanvasProvider canvasId={canvasId}>
-									<ProcessorProvider>
-										<Outlet />
-									</ProcessorProvider>
-								</CanvasProvider>
-							</ReactFlowProvider>
-						</SelectedEntitiesProvider>
+						<ReactFlowProvider>
+							<CanvasProvider canvasId={canvasId}>
+								<ProcessorProvider>
+									<Outlet />
+								</ProcessorProvider>
+							</CanvasProvider>
+						</ReactFlowProvider>
 					</UserAssetsProvider>
 				</NodeTemplatesProvider>
 			</TaskManagerProvider>

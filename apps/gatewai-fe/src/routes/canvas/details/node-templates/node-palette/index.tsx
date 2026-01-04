@@ -1,7 +1,6 @@
-import { ScrollArea } from "@radix-ui/react-scroll-area";
-import { ChevronLeft, ChevronRight } from "lucide-react";
-import { useEffect, useRef, useState } from "react";
+import { useEffect, useRef } from "react";
 import { Button } from "@/components/ui/button";
+import { ScrollArea } from "@/components/ui/scroll-area";
 import { Separator } from "@/components/ui/separator";
 import {
 	Tooltip,
@@ -19,19 +18,11 @@ import { NodeTemplateList } from "./node-template-list";
 import { SearchInput } from "./search";
 
 export function NodePalette() {
-	const { nodeTemplates, isError, isLoading } = useNodeTemplates();
+	const { nodeTemplates, isLoading } = useNodeTemplates();
 
 	if (isLoading || !nodeTemplates) {
-		return (
-			<div className="flex h-full items-center justify-center text-muted-foreground animate-pulse">
-				<span className="text-sm font-medium tracking-tight">
-					Synchronizing...
-				</span>
-			</div>
-		);
+		return null;
 	}
-
-	if (isError) return <div className="p-4 text-destructive">System Error</div>;
 
 	return (
 		<NodePaletteProvider>
@@ -80,34 +71,17 @@ function NodePaletteContent({ templates }: { templates: NodeTemplateListRPC }) {
 		return () => {
 			observer.disconnect();
 		};
-	}, [templates, setActiveCategory, categoryRefs]);
+	}, [setActiveCategory, categoryRefs]);
 
 	return (
 		<div
 			className={cn(
-				"relative flex flex-col h-full transition-all duration-500 ease-[cubic-bezier(0.16,1,0.3,1)]",
-				"bg-background/80 backdrop-blur-xl border-r border-border/40 shadow-sm",
-				isCollapsed ? "w-[72px]" : "w-68",
+				"relative bg-transparent flex flex-col transition-all duration-500 ease-[cubic-bezier(0.16,1,0.3,1)]",
+				"bg-background/90 backdrop-blur-xl border-r border-border/40 shadow-sm ",
+				isCollapsed ? "w-[42px]" : "w-72",
 			)}
 		>
-			{/* Header Area */}
-			<div className="flex items-center justify-between px-5 py-6">
-				{!isCollapsed && (
-					<span className="text-lg font-semibold tracking-tight opacity-90">
-						Library
-					</span>
-				)}
-				<Button
-					variant="ghost"
-					size="icon"
-					className="hover:bg-accent/50 rounded-full h-8 w-8 ml-auto"
-					onClick={() => setIsCollapsed(!isCollapsed)}
-				>
-					{isCollapsed && <ChevronRight className="h-4 w-4" />}
-				</Button>
-			</div>
-
-			<div className="flex items-stretch">
+			<div className="flex items-center">
 				<div className="flex flex-col gap-5 mt-2 items-center">
 					{Object.entries(CATEGORY_MAP).map(([cat, { icon: Icon, color }]) => (
 						<TooltipProvider key={cat} delayDuration={0}>
@@ -117,9 +91,15 @@ function NodePaletteContent({ templates }: { templates: NodeTemplateListRPC }) {
 										variant="ghost"
 										size="icon"
 										className={cn(
-											"h-10 w-10 rounded-xl hover:scale-110 active:scale-95 transition-all",
-											activeCategory === cat && `bg-[${color}/20]`,
+											"h-10 w-10 rounded-xl transition-all",
+											activeCategory === cat
+												? "scale-110"
+												: "opacity-50 hover:opacity-100",
 										)}
+										style={{
+											backgroundColor:
+												activeCategory === cat ? `${color}33` : "transparent", // 33 is 20% alpha in hex
+										}}
 										onClick={() => {
 											setIsCollapsed(false);
 											categoryRefs.current[cat]?.current?.scrollIntoView({
@@ -139,21 +119,23 @@ function NodePaletteContent({ templates }: { templates: NodeTemplateListRPC }) {
 					))}
 				</div>
 
-				{!isCollapsed && (
-					<div className="flex flex-col flex-1 px-4 overflow-hidden">
-						<div className="space-y-4 mb-4">
-							<SearchInput />
-							<DataTypeMultiSelect />
-						</div>
-						<Separator className="opacity-50" />
-						<ScrollArea
-							ref={scrollRef}
-							className="flex-1 custom-scrollbar pt-4"
-						>
-							<NodeTemplateList templates={templates} />
-						</ScrollArea>
+				<div
+					className={cn("flex flex-col flex-1 px-4 h-screen", {
+						hidden: isCollapsed,
+					})}
+				>
+					<div className="space-y-4 mb-4">
+						<SearchInput />
+						<DataTypeMultiSelect />
 					</div>
-				)}
+					<Separator className="opacity-50" />
+					<ScrollArea
+						ref={scrollRef}
+						className="flex-1 overflow-auto grow pt-4"
+					>
+						<NodeTemplateList templates={templates} />
+					</ScrollArea>
+				</div>
 			</div>
 		</div>
 	);

@@ -72,7 +72,7 @@ const llmProcessor: NodeProcessor = async ({ node, data }) => {
 			outputs: [],
 			selectedOutputIndex: 0,
 		};
-		console.log({ result });
+
 		const newGeneration: LLMResult["outputs"][number] = {
 			items: [
 				{

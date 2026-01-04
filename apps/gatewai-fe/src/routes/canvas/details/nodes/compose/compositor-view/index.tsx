@@ -35,7 +35,7 @@ const CompositorView = memo(() => {
 		}
 		return items;
 	}, [inputs]);
-	console.log({ initialLayers });
+
 	const closeAndFocusOnNode = () => {
 		nav(`/canvas/${canvasId}`);
 		setTimeout(() => {

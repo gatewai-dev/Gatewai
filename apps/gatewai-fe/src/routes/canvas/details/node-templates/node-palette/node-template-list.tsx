@@ -9,7 +9,7 @@ interface NodeListProps {
 }
 
 const NodeTemplateList = memo(({ templates }: NodeListProps) => {
-	const { searchQuery, fromTypes, toTypes } = useNodePalette();
+	const { searchQuery, fromTypes, toTypes, categoryRefs } = useNodePalette();
 
 	let filtered = templates;
 
@@ -79,7 +79,13 @@ const NodeTemplateList = memo(({ templates }: NodeListProps) => {
 	return (
 		<div className="flex flex-col gap-3 w-50">
 			{catKeys.map((cat) => (
-				<div key={cat}>
+				<div
+					key={cat}
+					// ATTACH REF HERE
+					ref={categoryRefs.current[cat]}
+					// ATTACH DATA ATTRIBUTE FOR OBSERVER
+					data-category={cat}
+				>
 					<h2 className="font-bold mb-4">{cat}</h2>
 					{Object.entries(groups[cat])
 						.sort(([subA], [subB]) => subA.localeCompare(subB))

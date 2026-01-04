@@ -8,7 +8,6 @@ interface CanvasRendererProps {
 const CanvasRenderer = memo(
 	forwardRef<HTMLCanvasElement, CanvasRendererProps>(({ resultHash }, ref) => {
 		const internalRef = useRef<HTMLCanvasElement | null>(null);
-		console.log({ resultHash }, 2);
 		// Sync the forwarded ref with our internal ref
 		useImperativeHandle(ref, () => internalRef.current!);
 		// Get the calculated height from the hook

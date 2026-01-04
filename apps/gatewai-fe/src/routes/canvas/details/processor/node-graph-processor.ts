@@ -754,10 +754,8 @@ export class NodeGraphProcessor extends EventEmitter {
 				string,
 				{ type: "Image" | "Text"; value: string }
 			> = {};
-			console.log({ config, inputs });
 
 			Object.entries(inputs).forEach(([inputHandleId, _value]) => {
-				console.log({ inputHandleId });
 				const data = getConnectedInputData(inputs, inputHandleId);
 				if (data) {
 					inputDataMap[inputHandleId] = data;

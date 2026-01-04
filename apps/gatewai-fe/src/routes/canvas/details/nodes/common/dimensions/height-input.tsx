@@ -48,12 +48,12 @@ const ResizeHeightInput = memo(
 			}
 
 			let updates: Partial<ResizeNodeConfig> = { height: value };
-			console.log({ maintainAspect });
+
 			if (maintainAspect && originalWidth && originalHeight) {
 				const newWidth = Math.round((originalWidth / originalHeight) * value);
 				updates = { ...config, ...updates, width: newWidth };
 			}
-			console.log({ updates });
+
 			onNodeConfigUpdate({
 				id: node.id,
 				newConfig: updates,
