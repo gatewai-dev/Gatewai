@@ -174,13 +174,59 @@ const VIDEOGEN_NODE_MODELS = [
 	"veo-3.1-fast-generate-preview",
 ] as const;
 
+const VIDEOGEN_ASPECT_RATIOS = ["16:9", "9:16"] as const;
+
+const VIDEOGEN_RESOLUTIONS = ["720p", "1080p"] as const;
+
+const VIDEOGEN_DURATIONS = ["4", "6", "8"] as const;
+
+const VIDEOGEN_PERSON_GENERATION_OPTIONS = [
+	"allow_all",
+	"allow_adult",
+	"dont_allow",
+] as const;
+
 const VideoGenBaseSchema = z.object({
 	model: z.enum(VIDEOGEN_NODE_MODELS),
+	aspectRatio: z.enum(VIDEOGEN_ASPECT_RATIOS).default("16:9"),
+	resolution: z.enum(VIDEOGEN_RESOLUTIONS).default("720p"),
+	personGeneration: z
+		.enum(VIDEOGEN_PERSON_GENERATION_OPTIONS)
+		.default("allow_adult"),
 });
 
-const VideoGenNodeConfigSchema = VideoGenBaseSchema;
-const VideoGenFirstLastFrameNodeConfigSchema = VideoGenBaseSchema;
-const VideoGenExtendNodeConfigSchema = VideoGenBaseSchema;
+/**
+ * Standard Text-to-Video
+ * Includes refinement: 1080p only supports 8s duration.
+ */
+const VideoGenNodeConfigSchema = VideoGenBaseSchema.extend({
+	durationSeconds: z.enum(VIDEOGEN_DURATIONS).default("8"),
+})
+	.strict()
+	.refine(
+		(data) => !(data.resolution === "1080p" && data.durationSeconds !== "8"),
+		{
+			message: "1080p resolution only supports 8s duration",
+			path: ["resolution"],
+		},
+	);
+
+/**
+ * Extension Schema
+ * Must be 8s, 720p only for extension mode.
+ */
+const VideoGenExtendNodeConfigSchema = VideoGenBaseSchema.extend({
+	durationSeconds: z.literal("8"),
+	resolution: z.literal("720p"),
+}).strict();
+
+/**
+ * Interpolation / First-Last Frame Schema
+ * Must be 8s.
+ */
+const VideoGenFirstLastFrameNodeConfigSchema = VideoGenBaseSchema.extend({
+	durationSeconds: z.literal("8"),
+}).strict();
 
 // Main node schema
 const NodeConfigSchema = z.union([
@@ -247,6 +293,8 @@ export {
 	ImageGenNodeConfigSchema,
 	ModulateNodeConfigSchema,
 	VideoGenNodeConfigSchema,
+	VideoGenExtendNodeConfigSchema,
+	VideoGenFirstLastFrameNodeConfigSchema,
 	type TextNodeConfig,
 	type FileNodeConfig,
 	type AgentNodeConfig,
@@ -271,4 +319,9 @@ export {
 	LLM_NODE_MODELS,
 	IMAGEGEN_NODE_MODELS,
 	AGENT_NODE_MODELS,
+	VIDEOGEN_NODE_MODELS,
+	VIDEOGEN_ASPECT_RATIOS,
+	VIDEOGEN_RESOLUTIONS,
+	VIDEOGEN_DURATIONS,
+	VIDEOGEN_PERSON_GENERATION_OPTIONS,
 };
