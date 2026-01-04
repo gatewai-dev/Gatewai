@@ -8,24 +8,8 @@ interface NodeListProps {
 	templates: NodeTemplateListRPC;
 }
 
-function sortTemplates(
-	templates: NodeTemplateListRPC,
-	sortBy: string,
-): NodeTemplateListRPC {
-	const sorted = [...templates];
-	if (sortBy === "price_asc") {
-		sorted.sort((a, b) => (a.tokenPrice || 0) - (b.tokenPrice || 0));
-	} else if (sortBy === "price_desc") {
-		sorted.sort((a, b) => (b.tokenPrice || 0) - (a.tokenPrice || 0));
-	} else {
-		// Default to alphabetical by displayName
-		sorted.sort((a, b) => a.displayName.localeCompare(b.displayName));
-	}
-	return sorted;
-}
-
 const NodeTemplateList = memo(({ templates }: NodeListProps) => {
-	const { searchQuery, fromTypes, toTypes, sortBy } = useNodePalette();
+	const { searchQuery, fromTypes, toTypes } = useNodePalette();
 
 	let filtered = templates;
 
@@ -60,30 +44,37 @@ const NodeTemplateList = memo(({ templates }: NodeListProps) => {
 
 	// Grouping: Quick Access if showInQuickAccess, else by category/subcategory
 	const groups: Record<string, Record<string, NodeTemplateListRPC>> = {};
+
+	// First — normal categories
 	filtered.forEach((t) => {
-		let cat = t.category || "Other";
-		if (t.showInQuickAccess) {
-			cat = "Quick Access";
-		}
+		const cat = t.category || "Other";
 		const sub = t.subcategory || "";
-		if (!groups[cat]) {
-			groups[cat] = {};
-		}
-		if (!groups[cat][sub]) {
-			groups[cat][sub] = [];
-		}
+
+		if (!groups[cat]) groups[cat] = {};
+		if (!groups[cat][sub]) groups[cat][sub] = [];
+
 		groups[cat][sub].push(t);
 	});
 
+	// Then — Quick Access (add copies of qualifying items)
+	filtered.forEach((t) => {
+		if (t.showInQuickAccess) {
+			const quickCat = "Quick Access";
+			const sub = ""; // usually no subcategory in quick access
+
+			if (!groups[quickCat]) groups[quickCat] = {};
+			if (!groups[quickCat][sub]) groups[quickCat][sub] = [];
+
+			groups[quickCat][sub].push(t);
+		}
+	});
+
 	// Sort category keys
-	let catKeys = Object.keys(groups).sort((a, b) => a.localeCompare(b));
-	if (sortBy === "featured") {
-		catKeys = Object.keys(groups).sort((a, b) => {
-			if (a === "Quick Access") return -1;
-			if (b === "Quick Access") return 1;
-			return a.localeCompare(b);
-		});
-	}
+	const catKeys = Object.keys(groups).sort((a, b) => {
+		if (a === "Quick Access") return -1;
+		if (b === "Quick Access") return 1;
+		return a.localeCompare(b);
+	});
 
 	return (
 		<div className="flex flex-col gap-3 w-50">
@@ -94,9 +85,13 @@ const NodeTemplateList = memo(({ templates }: NodeListProps) => {
 						.sort(([subA], [subB]) => subA.localeCompare(subB))
 						.map(([sub, temps]) => (
 							<div key={sub} className="mb-4">
-								{sub && <h3 className="text-sm font-semibold mb-2">{sub}</h3>}
+								{sub && (
+									<h3 className="text-xs font-light text-muted-foreground mb-2">
+										{sub}
+									</h3>
+								)}
 								<div className="grid grid-cols-2 gap-2">
-									{sortTemplates(temps, sortBy).map((t) => (
+									{temps.map((t) => (
 										<NodeItem key={t.id} template={t} />
 									))}
 								</div>

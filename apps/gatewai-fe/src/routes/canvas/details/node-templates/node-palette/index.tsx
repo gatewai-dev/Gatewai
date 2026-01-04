@@ -1,5 +1,6 @@
 import { ScrollArea } from "@radix-ui/react-scroll-area";
 import { ChevronLeft, ChevronRight } from "lucide-react";
+import { useEffect, useRef, useState } from "react";
 import { Button } from "@/components/ui/button";
 import { Separator } from "@/components/ui/separator";
 import {
@@ -40,7 +41,46 @@ export function NodePalette() {
 }
 
 function NodePaletteContent({ templates }: { templates: NodeTemplateListRPC }) {
-	const { isCollapsed, setIsCollapsed } = useNodePalette();
+	const {
+		isCollapsed,
+		setIsCollapsed,
+		categoryRefs,
+		activeCategory,
+		setActiveCategory,
+	} = useNodePalette();
+	const scrollRef = useRef<HTMLDivElement>(null);
+
+	useEffect(() => {
+		const observer = new IntersectionObserver(
+			(entries) => {
+				let visibleCat: string | null = null;
+				let maxRatio = -1;
+				entries.forEach((entry) => {
+					if (entry.intersectionRatio > maxRatio) {
+						maxRatio = entry.intersectionRatio;
+						visibleCat = entry.target.getAttribute("data-category");
+					}
+				});
+				if (visibleCat) {
+					setActiveCategory(visibleCat);
+				}
+			},
+			{
+				root: scrollRef.current,
+				threshold: [0, 0.5, 1.0],
+			},
+		);
+
+		Object.values(categoryRefs.current).forEach((ref) => {
+			if (ref.current) {
+				observer.observe(ref.current);
+			}
+		});
+
+		return () => {
+			observer.disconnect();
+		};
+	}, [templates, setActiveCategory, categoryRefs]);
 
 	return (
 		<div
@@ -69,17 +109,26 @@ function NodePaletteContent({ templates }: { templates: NodeTemplateListRPC }) {
 
 			<div className="flex items-stretch">
 				<div className="flex flex-col gap-5 mt-2 items-center">
-					{Object.entries(CATEGORY_MAP).map(([cat, { icon: Icon }]) => (
+					{Object.entries(CATEGORY_MAP).map(([cat, { icon: Icon, color }]) => (
 						<TooltipProvider key={cat} delayDuration={0}>
 							<Tooltip>
 								<TooltipTrigger asChild>
 									<Button
 										variant="ghost"
 										size="icon"
-										className="h-10 w-10 rounded-xl hover:scale-110 active:scale-95 transition-all"
-										onClick={() => setIsCollapsed(false)}
+										className={cn(
+											"h-10 w-10 rounded-xl hover:scale-110 active:scale-95 transition-all",
+											activeCategory === cat && `bg-[${color}/20]`,
+										)}
+										onClick={() => {
+											setIsCollapsed(false);
+											categoryRefs.current[cat]?.current?.scrollIntoView({
+												behavior: "smooth",
+												block: "start",
+											});
+										}}
 									>
-										<Icon className="h-5 w-5 text-muted-foreground" />
+										<Icon className="h-5 w-5" style={{ color }} />
 									</Button>
 								</TooltipTrigger>
 								<TooltipContent side="right" className="font-medium">
@@ -97,7 +146,10 @@ function NodePaletteContent({ templates }: { templates: NodeTemplateListRPC }) {
 							<DataTypeMultiSelect />
 						</div>
 						<Separator className="opacity-50" />
-						<ScrollArea className="flex-1 custom-scrollbar pt-4">
+						<ScrollArea
+							ref={scrollRef}
+							className="flex-1 custom-scrollbar pt-4"
+						>
 							<NodeTemplateList templates={templates} />
 						</ScrollArea>
 					</div>

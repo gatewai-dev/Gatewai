@@ -13,11 +13,7 @@ import {
 } from "react-icons/fi";
 
 // Define the Category type based on our seeding logic
-export type NodeCategory =
-	| "Generative"
-	| "Input/Output"
-	| "Processing"
-	| "Layout";
+export type NodeCategory = "Quick Access" | "AI" | "Tools" | "Image";
 export type NodeSubCategory =
 	| "AI Models"
 	| "Data Entry"
@@ -33,21 +29,21 @@ interface CategoryMetadata {
 }
 
 export const CATEGORY_MAP: Record<NodeCategory, CategoryMetadata> = {
-	Generative: {
+	"Quick Access": {
+		icon: FiGrid,
+		color: "#6B7280", // Gray
+	},
+	AI: {
 		icon: FiCpu,
 		color: "#8B5CF6", // Purple
 	},
-	"Input/Output": {
+	Tools: {
 		icon: FiDatabase,
 		color: "#3B82F6", // Blue
 	},
-	Processing: {
-		icon: FiEdit3,
+	Image: {
+		icon: FiCrop,
 		color: "#10B981", // Emerald
-	},
-	Layout: {
-		icon: FiLayers,
-		color: "#F59E0B", // Amber
 	},
 };
 
