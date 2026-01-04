@@ -1,14 +1,18 @@
-import { ForwardIcon } from "lucide-react"; // Added ForwardIcon
+import { ForwardIcon, Loader2 } from "lucide-react"; // Added Loader2
 import { memo, useMemo } from "react";
 import { Button } from "@/components/ui/button";
 import { useAppSelector } from "@/store";
 import { makeSelectAllNodes, selectSelectedNodes } from "@/store/nodes";
 import { useCanvasCtx } from "../../ctx/canvas-ctx";
+import { useTaskManagerCtx } from "../../ctx/task-manager-ctx"; // Import your context hook
 
 const RunWorkflowButton = memo(() => {
 	const { runNodes } = useCanvasCtx();
+	const { isAnyTaskRunning } = useTaskManagerCtx(); // Consume the running state
+
 	const selectedNodes = useAppSelector(selectSelectedNodes);
 	const nodes = useAppSelector(makeSelectAllNodes);
+
 	const selectedTerminalNodes = selectedNodes?.filter(
 		(f) => f.template.isTerminalNode,
 	);
@@ -20,29 +24,37 @@ const RunWorkflowButton = memo(() => {
 	);
 
 	const handleRunAll = () => {
+		if (isAnyTaskRunning) return; // Guard clause
 		if (selectedTerminalNodes?.length) {
 			const nodeIdsToRun = selectedTerminalNodes.map((m) => m.id);
 			runNodes(nodeIdsToRun);
+		} else {
+			runNodes();
 		}
-		runNodes();
 	};
 
 	const ButtonLabel = useMemo(() => {
+		if (isAnyTaskRunning) return "Running..."; // Optional: Change text while running
 		if (numberOfTerminalNodes == null || numberOfTerminalNodes === 0) {
 			return "Run Workflow";
 		}
 		return `Run ${numberOfTerminalNodes} Node${numberOfTerminalNodes > 1 ? "s" : ""}`;
-	}, [numberOfTerminalNodes]);
+	}, [numberOfTerminalNodes, isAnyTaskRunning]);
 
 	return (
 		<Button
 			variant="default"
 			size="sm"
-			disabled={!hasAnyTerminalNode}
+			// Disable if no terminal nodes OR if something is already running
+			disabled={!hasAnyTerminalNode || isAnyTaskRunning}
 			className="rounded-full px-4 gap-2 shadow-sm"
 			onClick={handleRunAll}
 		>
-			<ForwardIcon className="w-4 h-4" />
+			{isAnyTaskRunning ? (
+				<Loader2 className="w-4 h-4 animate-spin" />
+			) : (
+				<ForwardIcon className="w-4 h-4" />
+			)}
 			<span className="text-xs">{ButtonLabel}</span>
 		</Button>
 	);

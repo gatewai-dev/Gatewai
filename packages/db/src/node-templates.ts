@@ -130,7 +130,7 @@ export async function SEED_createNodeTemplates(prisma: PrismaClient) {
 			displayName: "AI Agent",
 			category: "AI",
 			description:
-				"A multi-modal AI agent capabilities. Edits images and generate images and videos.",
+				"A multi-modal AI agent. Capable of generating videos and images and also use image editing tools.",
 			subcategory: "General",
 			tokenPrice: 0.0,
 			variableInputs: false,

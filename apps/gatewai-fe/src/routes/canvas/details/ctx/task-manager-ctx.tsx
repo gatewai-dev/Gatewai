@@ -8,8 +8,8 @@ import {
 	useEffect,
 	useMemo,
 } from "react";
-import { useDispatch, useSelector } from "react-redux";
 import type { BatchDetailsRPC, BatchDetailsRPCParams } from "@/rpc/types";
+import { useAppDispatch, useAppSelector } from "@/store";
 import type { NodeEntityType } from "@/store/nodes";
 import {
 	addBatchToPoll,
@@ -18,6 +18,7 @@ import {
 	getInitialBatches,
 	selectBatchIdsToPoll,
 	selectInitialLoading,
+	selectLatestTasksFetchTime,
 	selectNodeTaskStatus,
 	selectPollingInterval,
 	setPollingInterval,
@@ -32,6 +33,8 @@ interface TaskManagerContextType {
 	nodeTaskStatus: Record<Node["id"], BatchNodeData[]>;
 	isLoading: boolean;
 	taskBatches: BatchEntity[];
+	latestTasksFetchTime: number | null;
+	isAnyTaskRunning: boolean;
 }
 
 const TaskManagerContext = createContext<TaskManagerContextType | undefined>(
@@ -42,12 +45,13 @@ const TaskManagerProvider = ({
 	children,
 	canvasId,
 }: PropsWithChildren<{ canvasId: Canvas["id"] }>) => {
-	const dispatch = useDispatch();
-	const pollingInterval = useSelector(selectPollingInterval);
-	const batchIdsToPoll = useSelector(selectBatchIdsToPoll);
-	const nodeTaskStatus = useSelector(selectNodeTaskStatus);
-	const isLoading = useSelector(selectInitialLoading);
-	const taskBatches = useSelector(batchSelectors.selectAll);
+	const dispatch = useAppDispatch();
+	const pollingInterval = useAppSelector(selectPollingInterval);
+	const batchIdsToPoll = useAppSelector(selectBatchIdsToPoll);
+	const nodeTaskStatus = useAppSelector(selectNodeTaskStatus);
+	const isLoading = useAppSelector(selectInitialLoading);
+	const taskBatches = useAppSelector(batchSelectors.selectAll);
+	const latestTasksFetchTime = useAppSelector(selectLatestTasksFetchTime);
 
 	const setPollingIntervalHandler = (value: SetStateAction<number>) => {
 		if (typeof value === "function") {
@@ -73,12 +77,23 @@ const TaskManagerProvider = ({
 						batchId: batchIdsToPoll,
 					},
 				};
-				dispatch(getBatchDetails(params));
+				dispatch(getBatchDetails(params))
+					.unwrap()
+					.then(() => {});
 			}, pollingInterval);
 
 			return () => clearInterval(intervalId);
 		}
 	}, [pollingInterval, batchIdsToPoll, dispatch]);
+
+	const isAnyTaskRunning = useMemo(() => {
+		// Check if any node in any batch is currently EXECUTING or QUEUED
+		return Object.values(nodeTaskStatus).some((tasks) =>
+			tasks.some(
+				(task) => task.status === "EXECUTING" || task.status === "QUEUED",
+			),
+		);
+	}, [nodeTaskStatus]);
 
 	const value: TaskManagerContextType = {
 		pollingInterval,
@@ -87,6 +102,8 @@ const TaskManagerProvider = ({
 		nodeTaskStatus,
 		isLoading,
 		taskBatches,
+		latestTasksFetchTime,
+		isAnyTaskRunning,
 	};
 
 	return (

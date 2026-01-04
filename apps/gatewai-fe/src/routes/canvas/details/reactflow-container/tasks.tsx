@@ -1,5 +1,8 @@
-import { AlertCircle } from "lucide-react";
+// 1. Import the helper from date-fns
+import { formatDistanceToNow } from "date-fns";
+import { AlertCircle, Clock } from "lucide-react";
 import { memo } from "react";
+
 import {
 	Accordion,
 	AccordionContent,
@@ -7,7 +10,6 @@ import {
 	AccordionTrigger,
 } from "@/components/ui/accordion";
 import { Button } from "@/components/ui/button";
-import { Item, ItemContent, ItemMedia, ItemTitle } from "@/components/ui/item";
 import {
 	Popover,
 	PopoverContent,
@@ -17,120 +19,155 @@ import { Spinner } from "@/components/ui/spinner";
 import { useTaskManagerCtx } from "../ctx/task-manager-ctx";
 
 const CanvasTasksPanel = memo(() => {
-	const { isLoading, taskBatches } = useTaskManagerCtx();
+	const { isLoading, taskBatches, latestTasksFetchTime } = useTaskManagerCtx();
+
 	if (isLoading) {
 		return (
-			<div className="flex items-center justify-center text-xs">
-				Loading <Spinner />
+			<div className="flex items-center gap-2 text-[11px] text-muted-foreground uppercase tracking-wider">
+				<Spinner className="h-3 w-3" /> Syncing...
 			</div>
 		);
 	}
+
 	const runningTaskBatches =
-		taskBatches?.filter((taskBatch) => taskBatch.finishedAt == null) ?? [];
+		taskBatches?.filter((tb) => tb.finishedAt == null) ?? [];
 	const oneHourAgo = new Date(Date.now() - 60 * 60 * 1000);
 	const failedTaskBatches =
 		taskBatches?.filter(
-			(taskBatch) =>
-				taskBatch.finishedAt != null &&
-				new Date(taskBatch.finishedAt) > oneHourAgo &&
-				taskBatch.tasks.some((t) => t.status === "FAILED"),
+			(tb) =>
+				tb.finishedAt != null &&
+				new Date(tb.finishedAt) > oneHourAgo &&
+				tb.tasks.some((t) => t.status === "FAILED"),
 		) ?? [];
 
-	const sortedRunningTaskBatches = [...runningTaskBatches].sort(
+	const sortedRunning = [...runningTaskBatches].sort(
 		(a, b) => new Date(b.createdAt).getTime() - new Date(a.createdAt).getTime(),
 	);
-	const sortedFailedTaskBatches = [...failedTaskBatches].sort(
+	const sortedFailed = [...failedTaskBatches].sort(
 		(a, b) => new Date(b.createdAt).getTime() - new Date(a.createdAt).getTime(),
 	);
 
-	const runningCount = sortedRunningTaskBatches.length;
-	const failedCount = sortedFailedTaskBatches.length;
+	const runningCount = sortedRunning.length;
+	const failedCount = sortedFailed.length;
 	const totalCount = runningCount + failedCount;
 
-	let indicatorColor: string;
-	if (failedCount > 0) {
-		indicatorColor = "bg-red-500";
-	} else if (runningCount > 0) {
-		indicatorColor = "bg-amber-500";
-	} else {
-		indicatorColor = "bg-green-500";
-	}
+	const indicatorColor =
+		failedCount > 0
+			? "bg-destructive"
+			: runningCount > 0
+				? "bg-amber-400"
+				: "bg-emerald-500";
 
 	return (
 		<Popover>
 			<PopoverTrigger asChild>
 				<Button
 					variant="ghost"
-					className="flex items-center rounded-full text-xs"
+					className="h-8 flex items-center gap-2 px-2 hover:bg-secondary/50 transition-colors"
 				>
-					<div className={`w-2 h-2 rounded-full ${indicatorColor}`} />
-					{totalCount} Task{totalCount !== 1 ? "s" : ""}
+					<span className={`h-1.5 w-1.5 rounded-full ${indicatorColor}`} />
+					<span className="text-[11px] font-medium tabular-nums text-muted-foreground uppercase">
+						{totalCount} Active
+					</span>
 				</Button>
 			</PopoverTrigger>
-			<PopoverContent className="w-80">
-				<div className="space-y-4">
-					<h4 className="font-medium leading-none">Tasks</h4>
+			<PopoverContent
+				className="w-72 p-0 overflow-hidden border-border/50 shadow-xl"
+				align="end"
+			>
+				<div className="flex items-center justify-between px-3 py-2 border-b bg-muted/30">
+					<h4 className="text-[11px] font-semibold uppercase tracking-tight text-muted-foreground">
+						Task Monitor
+					</h4>
+					{/* 2. Implementation of the relative time string */}
+					{latestTasksFetchTime && (
+						<span className="text-[10px] text-muted-foreground/60 tabular-nums">
+							Refreshed{" "}
+							{formatDistanceToNow(new Date(latestTasksFetchTime), {
+								addSuffix: true,
+							})}
+						</span>
+					)}
+				</div>
+
+				<div className="max-h-[400px] overflow-y-auto p-3 space-y-4">
 					{totalCount === 0 ? (
-						<p className="text-sm text-muted-foreground">No active tasks.</p>
+						<div className="py-4 text-center">
+							<p className="text-xs text-muted-foreground/60">
+								No pending operations
+							</p>
+						</div>
 					) : (
 						<>
 							{runningCount > 0 && (
-								<div className="space-y-2">
-									<h5 className="text-sm font-medium">Running Tasks</h5>
-									<div className="flex w-full max-w-xs flex-col gap-4 [--radius:1rem]">
-										{sortedRunningTaskBatches.map((taskBatch) => {
-											const executingCount = taskBatch.tasks.filter(
+								<section className="space-y-1.5">
+									<h5 className="text-[10px] font-bold text-muted-foreground/50 uppercase px-1">
+										Active Batches
+									</h5>
+									<div className="grid gap-1">
+										{sortedRunning.map((tb) => {
+											const exec = tb.tasks.filter(
 												(t) => t.status === "EXECUTING",
 											).length;
-											const queuedCount = taskBatch.tasks.filter(
+											const queued = tb.tasks.filter(
 												(t) => t.status === "QUEUED",
 											).length;
 											return (
-												<Item key={taskBatch.id} variant="muted">
-													<ItemMedia>
-														<Spinner />
-													</ItemMedia>
-													<ItemContent>
-														<ItemTitle className="line-clamp-1">
-															{executingCount} Executing, {queuedCount} Queued
-														</ItemTitle>
-													</ItemContent>
-												</Item>
+												<div
+													key={tb.id}
+													className="flex items-center gap-3 p-1.5 rounded-md border border-transparent bg-secondary/20"
+												>
+													<Spinner className="h-3 w-3 text-primary" />
+													<div className="flex flex-col">
+														<span className="text-xs font-medium tabular-nums">
+															{exec} Running
+														</span>
+														<span className="text-[10px] text-muted-foreground">
+															{queued} in queue
+														</span>
+													</div>
+												</div>
 											);
 										})}
 									</div>
-								</div>
+								</section>
 							)}
+
 							{failedCount > 0 && (
-								<div className="space-y-2">
-									<h5 className="text-sm font-medium">
-										Failed Tasks (Last Hour)
+								<section className="space-y-1.5">
+									<h5 className="text-[10px] font-bold text-destructive/70 uppercase px-1">
+										Incidents (Last 60m)
 									</h5>
-									<Accordion type="multiple" className="w-full">
-										{sortedFailedTaskBatches.map((taskBatch) => {
-											const failedTasks = taskBatch.tasks.filter(
+									<Accordion type="multiple" className="w-full space-y-1">
+										{sortedFailed.map((tb) => {
+											const failed = tb.tasks.filter(
 												(t) => t.status === "FAILED",
 											);
 											return (
-												<AccordionItem key={taskBatch.id} value={taskBatch.id}>
-													<AccordionTrigger>
-														<div className="flex items-center">
-															<AlertCircle className="h-4 w-4 text-red-500 mr-2" />
-															{failedTasks.length} / {taskBatch.tasks.length}{" "}
-															Failed Nodes
+												<AccordionItem
+													key={tb.id}
+													value={tb.id}
+													className="border rounded-md px-2 py-0 border-border/60"
+												>
+													<AccordionTrigger className="py-2 hover:no-underline">
+														<div className="flex items-center gap-2 text-xs">
+															<AlertCircle className="h-3 w-3 text-destructive" />
+															<span className="font-medium">
+																{failed.length} Nodes failed
+															</span>
 														</div>
 													</AccordionTrigger>
-													<AccordionContent>
-														{failedTasks.map((ft) => (
+													<AccordionContent className="pb-2 space-y-1">
+														{failed.map((ft) => (
 															<div
 																key={ft.id}
-																className="mb-2 p-2 bg-red-50 rounded-md"
+																className="pl-2 border-l-2 border-destructive/30 py-1 space-y-0.5"
 															>
-																<p className="text-sm font-medium">
-																	Node: {ft.nodeId ?? "Unknown"}
+																<p className="text-[10px] font-mono font-bold text-muted-foreground">
+																	ID: {ft.nodeId ?? "anonymous"}
 																</p>
-																<p className="text-sm text-red-600">
-																	{ft.error?.message ?? "Unknown error"}
+																<p className="text-[11px] text-foreground/80 leading-snug">
+																	{ft.error?.message ?? "Execution aborted"}
 																</p>
 															</div>
 														))}
@@ -139,7 +176,7 @@ const CanvasTasksPanel = memo(() => {
 											);
 										})}
 									</Accordion>
-								</div>
+								</section>
 							)}
 						</>
 					)}

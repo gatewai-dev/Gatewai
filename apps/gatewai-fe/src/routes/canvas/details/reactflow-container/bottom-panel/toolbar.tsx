@@ -1,5 +1,5 @@
 import { useReactFlow, useViewport } from "@xyflow/react";
-import { ChevronDown, ForwardIcon, Hand, MousePointer } from "lucide-react"; // Added ForwardIcon
+import { ChevronDown, Hand, MousePointer } from "lucide-react";
 import { memo, useContext } from "react";
 import { Button } from "@/components/ui/button";
 import {
@@ -10,9 +10,6 @@ import {
 	MenubarTrigger,
 } from "@/components/ui/menubar";
 import { Separator } from "@/components/ui/separator";
-import { useAppSelector } from "@/store";
-import { selectSelectedNodes } from "@/store/nodes";
-import { useCanvasCtx } from "../../ctx/canvas-ctx";
 import { ModeContext } from "..";
 import { CanvasTasksPanel } from "../tasks";
 import { RunWorkflowButton } from "./run-workflow-button";
@@ -20,7 +17,7 @@ import { RunWorkflowButton } from "./run-workflow-button";
 const Toolbar = memo(() => {
 	const { zoom } = useViewport();
 
-	const { zoomIn, zoomOut, zoomTo, fitView } = useReactFlow(); // Added getNodes for context
+	const { zoomIn, zoomOut, zoomTo, fitView } = useReactFlow();
 	const zoomPercentage = `${Math.round(zoom * 100)}%`;
 	const ctx = useContext(ModeContext);
 

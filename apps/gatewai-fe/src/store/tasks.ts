@@ -49,6 +49,7 @@ type TasksState = ReturnType<typeof batchAdapter.getInitialState> & {
 	pollingInterval: number;
 	batchIdsToPoll: string[];
 	initialLoading: boolean;
+	latestTasksFetchTime: number | null;
 };
 
 const initialState: TasksState = batchAdapter.getInitialState<TasksState>({
@@ -57,6 +58,7 @@ const initialState: TasksState = batchAdapter.getInitialState<TasksState>({
 	ids: [],
 	entities: {},
 	initialLoading: false,
+	latestTasksFetchTime: null,
 });
 
 const tasksSlice = createSlice({
@@ -101,6 +103,7 @@ const tasksSlice = createSlice({
 					state.pollingInterval = 0;
 				}
 				state.initialLoading = false;
+				state.latestTasksFetchTime = Date.now();
 			})
 			.addCase(getBatchDetails.fulfilled, (state, action) => {
 				const { batches } = action.payload;
@@ -120,6 +123,7 @@ const tasksSlice = createSlice({
 					state.pollingInterval = 0;
 				}
 				state.initialLoading = false;
+				state.latestTasksFetchTime = Date.now();
 			});
 	},
 });
@@ -140,6 +144,11 @@ export const selectPollingInterval = createDraftSafeSelector(
 export const selectBatchIdsToPoll = createDraftSafeSelector(
 	selectTasksState,
 	(tasks) => tasks.batchIdsToPoll,
+);
+
+export const selectLatestTasksFetchTime = createDraftSafeSelector(
+	selectTasksState,
+	(tasks) => tasks.latestTasksFetchTime,
 );
 
 export const selectInitialLoading = createDraftSafeSelector(
