@@ -12,15 +12,10 @@ const ReactFlowPanels = memo(() => {
 				position="top-left"
 				className=" bg-background left-0 top-0 m-0! h-full flex flex-col"
 			>
-				<TopPanel />
 				<NodePalette />
 			</Panel>
-			<Panel
-				position="bottom-right"
-				className="bg-background right-0 top-0 m-0! h-full flex flex-col"
-			>
-				<RightPanel />
-			</Panel>
+			<TopPanel />
+			<RightPanel />
 			<Panel position="bottom-center">
 				<Toolbar />
 			</Panel>

@@ -78,7 +78,7 @@ function NodePaletteContent({ templates }: { templates: NodeTemplateListRPC }) {
 						<DataTypeMultiSelect />
 					</div>
 					<Separator className="opacity-50" />
-					<ScrollArea className="flex-1 grow overflow-auto pt-4">
+					<ScrollArea className="flex-1 custom-scrollbar pt-4">
 						<NodeTemplateList templates={templates} />
 					</ScrollArea>
 				</div>

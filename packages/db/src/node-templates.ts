@@ -47,7 +47,7 @@ export async function SEED_createNodeTemplates(prisma: PrismaClient) {
 		},
 		{
 			type: NodeType.VideoGenFirstLastFrame,
-			displayName: "First - Last Frame",
+			displayName: "First - Last Frame Video",
 			category: "AI",
 			description: "Generate videos using first and last frame images",
 			subcategory: "Video",

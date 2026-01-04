@@ -8,32 +8,15 @@ import pLimit from "p-limit";
 import {
 	Application,
 	Assets,
-	type BLEND_MODES,
-	type BlendModeFilter,
 	BlurFilter,
-	ColorBlend,
-	ColorBurnBlend,
-	ColorDodgeBlend,
 	Container,
-	DarkenBlend,
-	DifferenceBlend,
 	DOMAdapter,
-	ExclusionBlend,
 	Graphics,
-	HardLightBlend,
-	LightenBlend,
-	LuminosityBlend,
-	OverlayBlend,
-	SaturationBlend,
-	SoftLightBlend,
 	Sprite,
-	Text,
-	TextStyle,
 	WebWorkerAdapter,
 } from "pixi.js";
 import "pixi.js/advanced-blend-modes";
-import { fontManager } from "@/lib/fonts";
-import { GetFontAssetUrl } from "@/utils/file";
+import Konva from "konva";
 import { ModulateFilter } from "./filters/modulate";
 
 DOMAdapter.set(WebWorkerAdapter);
@@ -545,204 +528,118 @@ class PixiProcessorService {
 		inputs: Record<string, { type: "Image" | "Text"; value: string }>,
 		signal?: AbortSignal,
 	): Promise<{ dataUrl: string; width: number; height: number }> {
-		return this.useApp(async (app) => {
-			const width = config.width ?? 1024;
-			const height = config.height ?? 1024;
-			const assetsToClean: string[] = [];
+		// We do not use the Pixi pool here to avoid WebGL text issues
+		if (signal?.aborted) throw new DOMException("Cancelled", "AbortError");
 
-			app.renderer.resize(width, height);
-			this.forceStageSize(width, height, app);
+		const width = config.width ?? 1024;
+		const height = config.height ?? 1024;
 
-			// Ensure mask matches transparency requirements
-			const maskGraphics = new Graphics();
-			maskGraphics
-				.rect(0, 0, width, height)
-				.fill({ color: 0xffffff, alpha: 0 });
-			app.stage.mask = maskGraphics;
-			app.stage.addChild(maskGraphics); // Mask usually needs to be in display list in some versions, but simpler to just assign property
+		// 1. Create a headless Konva Stage
+		const container = document.createElement("div");
+		const stage = new Konva.Stage({
+			container: container,
+			width: width,
+			height: height,
+		});
 
-			// 1. Collect all layers, including defaults for inputs without explicit layer configs
-			const explicitLayers = Object.values(config.layerUpdates || {});
-			const allLayers = [...explicitLayers];
+		const layer = new Konva.Layer();
+		stage.add(layer);
 
-			for (const [handleId, input] of Object.entries(inputs)) {
-				if (signal?.aborted) throw new DOMException("Cancelled", "AbortError");
+		// 2. Prepare Layers
+		const explicitLayers = Object.values(config.layerUpdates || {});
+		const allLayers = [...explicitLayers];
 
-				if (!explicitLayers.some((l) => l.inputHandleId === handleId)) {
-					const defaultLayer = {
-						id: handleId,
-						inputHandleId: handleId,
-						type: input.type,
-						x: 0,
-						y: 0,
-						rotation: 0,
-						lockAspect: true,
-						blendMode: "normal",
-						...(input.type === "Text"
-							? {
-									fontFamily: "Geist",
-									fontSize: 24,
-									fill: "#fff",
-									letterSpacing: 0,
-									lineHeight: 1.2,
-									align: "left" as const,
-								}
-							: {}),
-					};
-					allLayers.push(defaultLayer);
-				}
-			}
-
-			// 2. Sort layers by zIndex (ascending, with undefined as Infinity/on top)
-			const sortedLayers = allLayers.sort((a, b) => {
-				const aZ = a.zIndex ?? Infinity;
-				const bZ = b.zIndex ?? Infinity;
-				return aZ - bZ;
-			});
-
-			// 3. Preload Loop
-			for (const layer of sortedLayers) {
-				if (signal?.aborted) throw new DOMException("Cancelled", "AbortError");
-				if (!layer.inputHandleId || !inputs[layer.inputHandleId]) continue;
-
-				const inputData = inputs[layer.inputHandleId];
-
-				if (layer.type === "Text" && layer.fontFamily) {
-					const fontUrl = GetFontAssetUrl(layer.fontFamily);
-					await fontManager.loadFont(layer.fontFamily, fontUrl);
-				} else if (inputData.type === "Image") {
-					// We strictly load what is needed for the layers
-					await Assets.load({
-						alias: `img_${layer.inputHandleId}`,
-						src: inputData.value,
-						parser: "texture",
-					});
-					assetsToClean.push(inputData.value);
-				}
-			}
-
-			// 4. Render Loop (in sorted order: lower zIndex first)
-			for (const layer of sortedLayers) {
-				if (signal?.aborted) throw new DOMException("Cancelled", "AbortError");
-
-				const inputHandleId = layer.inputHandleId;
-				if (!inputHandleId || !inputs[inputHandleId]) continue;
-
-				const inputData = inputs[inputHandleId];
-				const container = new Container();
-
-				// Apply Geometry Transforms
-				container.x = layer.x ?? 0;
-				container.y = layer.y ?? 0;
-				container.rotation = ((layer.rotation ?? 0) * Math.PI) / 180;
-
-				let displayObject: Sprite | Text | null = null;
-
-				if (inputData.type === "Image") {
-					try {
-						const texture = await Assets.load({
-							src: inputData.value,
-							parser: "texture",
-						});
-						const sprite = new Sprite(texture);
-
-						// Dimensions
-						if (layer.width) sprite.width = layer.width;
-
-						if (layer.height) sprite.height = layer.height;
-
-						displayObject = sprite;
-					} catch (e) {
-						console.warn(`Layer render failed for ${inputHandleId}`, e);
-					}
-				} else if (inputData.type === "Text") {
-					const fontSize = layer.fontSize ?? 24;
-					const lineHeight = layer.lineHeight ?? 1.2;
-
-					const style = new TextStyle({
-						fontFamily: layer.fontFamily ?? "Geist",
-						fontSize,
-						padding: 1, // Avoid clipping ascenders/descenders
-						letterSpacing: layer.letterSpacing ?? 0,
-						lineHeight: fontSize * lineHeight,
-						align: layer.align ?? "left",
-						fill: layer.fill ?? "#fff",
-						wordWrap: true,
-						whiteSpace: "normal",
-						wordWrapWidth: layer.width ? layer.width : width - (layer.x || 0),
-						breakWords: true,
-					});
-
-					displayObject = new Text({ text: inputData.value, style });
-					displayObject.resolution = 2; // sharper text
-				}
-
-				if (displayObject) {
-					this.applyBlendMode(displayObject, layer.blendMode || "normal", app);
-					container.addChild(displayObject);
-					// addChild adds to the top of the stack, so iterating sortedLayers (low to high z)
-					// naturally places higher z visually on top.
-					app.stage.addChild(container);
-				}
-			}
-
-			app.render();
-			const dataUrl = await app.renderer.extract.base64(app.stage);
-			return { dataUrl, width, height };
-		}, signal);
-	}
-
-	private applyBlendMode(obj: any, mode: string, app: Application) {
-		const map: Record<string, BLEND_MODES> = {
-			"source-over": "normal",
-			multiply: "multiply",
-			screen: "screen",
-			overlay: "overlay",
-			darken: "darken",
-			lighten: "lighten",
-			"color-dodge": "color-dodge",
-			"color-burn": "color-burn",
-			"hard-light": "hard-light",
-			"soft-light": "soft-light",
-			difference: "difference",
-			exclusion: "exclusion",
-			saturation: "saturation",
-			color: "color",
-			luminosity: "luminosity",
-			normal: "normal",
-		};
-
-		const pixiBlendMode = map[mode] || "normal";
-		const standardModes: BLEND_MODES[] = ["normal", "multiply", "screen"];
-
-		if (standardModes.includes(pixiBlendMode)) {
-			obj.blendMode = pixiBlendMode;
-		} else {
-			// Advanced blend modes via filters
-			const blendFilterMap: Record<string, new () => BlendModeFilter> = {
-				color: ColorBlend,
-				"color-burn": ColorBurnBlend,
-				"color-dodge": ColorDodgeBlend,
-				darken: DarkenBlend,
-				difference: DifferenceBlend,
-				exclusion: ExclusionBlend,
-				"hard-light": HardLightBlend,
-				lighten: LightenBlend,
-				luminosity: LuminosityBlend,
-				overlay: OverlayBlend,
-				saturation: SaturationBlend,
-				"soft-light": SoftLightBlend,
-			};
-
-			const FilterClass = blendFilterMap[pixiBlendMode];
-			if (FilterClass) {
-				const blendFilter = new FilterClass();
-				blendFilter.resolution = app.renderer.resolution;
-				obj.filters = [blendFilter];
-			} else {
-				obj.blendMode = "normal";
+		for (const [handleId, input] of Object.entries(inputs)) {
+			if (!explicitLayers.some((l) => l.inputHandleId === handleId)) {
+				allLayers.push({
+					id: handleId,
+					inputHandleId: handleId,
+					type: input.type,
+					x: 0,
+					y: 0,
+					rotation: 0,
+					lockAspect: true,
+					blendMode: "source-over",
+					...(input.type === "Text"
+						? {
+								fontFamily: "Geist",
+								fontSize: 24,
+								fill: "#ffffff",
+							}
+						: {}),
+				} as any);
 			}
 		}
+
+		const sortedLayers = allLayers.sort(
+			(a, b) => (a.zIndex ?? 0) - (b.zIndex ?? 0),
+		);
+
+		// 3. Render Loop
+		for (const layerConfig of sortedLayers) {
+			if (signal?.aborted) throw new DOMException("Cancelled", "AbortError");
+
+			const inputData = inputs[layerConfig.inputHandleId];
+			if (!inputData) continue;
+
+			if (inputData.type === "Image") {
+				const img = new Image();
+				img.crossOrigin = "Anonymous";
+				img.src = inputData.value;
+
+				await new Promise((resolve, reject) => {
+					img.onload = resolve;
+					img.onerror = reject;
+				});
+
+				const kImage = new Konva.Image({
+					image: img,
+					x: layerConfig.x ?? 0,
+					y: layerConfig.y ?? 0,
+					width: layerConfig.width ?? img.width,
+					height: layerConfig.height ?? img.height,
+					rotation: layerConfig.rotation ?? 0,
+					globalCompositeOperation:
+						(layerConfig.blendMode as GlobalCompositeOperation) ??
+						"source-over",
+				});
+				layer.add(kImage);
+			} else if (inputData.type === "Text") {
+				const fontSize = layerConfig.fontSize ?? 24;
+
+				const kText = new Konva.Text({
+					text: inputData.value,
+					x: layerConfig.x ?? 0,
+					y: layerConfig.y ?? 0,
+					rotation: layerConfig.rotation ?? 0,
+					fontSize: fontSize,
+					fontFamily: layerConfig.fontFamily ?? "Geist",
+					fill: layerConfig.fill ?? "#ffffff",
+					align: layerConfig.align ?? "left",
+					letterSpacing: layerConfig.letterSpacing ?? 0,
+					lineHeight: layerConfig.lineHeight ?? 1.2,
+					width: layerConfig.width ?? width - (layerConfig.x ?? 0),
+					wrap: "word",
+					globalCompositeOperation:
+						(layerConfig.blendMode as GlobalCompositeOperation) ??
+						"source-over",
+				});
+
+				// Replicate high-resolution sharpening
+				kText.listening(false);
+				layer.add(kText);
+			}
+		}
+
+		layer.draw();
+
+		// 4. Extract Result
+		const dataUrl = stage.toDataURL({ pixelRatio: 2 }); // Use pixelRatio for high-res output
+
+		// Cleanup
+		stage.destroy();
+
+		return { dataUrl, width, height };
 	}
 }
 

@@ -4,7 +4,7 @@
 
 ## Support
 
-Click that      ⭐ button!
+Join our Stargazers ⭐!
 
 ![Click](/assets/ddr.gif "Click")
 
@@ -43,7 +43,7 @@ Storage Object Admin (Full control over objects, including upload/delete).
 
 Click Continue and then Done.
 
-1. Generate and Download the JSON Key
+3. Generate and Download the JSON Key
 In the list of service accounts, click on the Email address of the account you just created.
 
 Click on the Keys tab on the right menu.
@@ -56,7 +56,12 @@ A JSON file will automatically download to your computer. Move the downloaded fi
 
 ### In your .env file
 
-export GOOGLE_APPLICATION_CREDENTIALS="/name-of-the-file" e.g. /gatewai-466716-6a4cc3da9bc4.json
+```text
+GOOGLE_APPLICATION_CREDENTIALS="/name-of-the-file"
+```
+
+For example:
+GOOGLE_APPLICATION_CREDENTIALS=/gatewai-466716-6a4cc3da9bc4.json
 
 ⚠️ Security Warning
 Never commit your JSON key file to Git. Add the filename to your .gitignore immediately. If the key is leaked, anyone can access your storage buckets and potentially incur high costs or delete your data.

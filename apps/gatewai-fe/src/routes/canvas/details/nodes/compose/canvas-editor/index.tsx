@@ -558,7 +558,6 @@ const TextLayer: React.FC<
 			onDragMove={onDragMove}
 			onDragEnd={onDragEnd}
 			onTransformStart={onTransformStart}
-			padding={1}
 			onTransform={handleTransform}
 			onTransformEnd={onTransformEnd}
 			globalCompositeOperation={layer.blendMode as GlobalCompositeOperation}

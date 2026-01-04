@@ -58,7 +58,7 @@ export function NodeItem({ template }: { template: NodeTemplateListItemRPC }) {
 						className={cn(
 							// Base Layout - Matching BaseNode's "Card" aesthetic
 							"group relative flex flex-col items-center justify-center",
-							"aspect-square w-full p-3 transition-all duration-300 ease-out",
+							"aspect-square w-full p-1 transition-all duration-300 ease-out",
 							"bg-card/75 backdrop-blur-2xl border border-border/40 rounded-3xl shadow-sm",
 							"cursor-grab active:cursor-grabbing select-none",
 							"hover:border-border/80 hover:shadow-md hover:-translate-y-0.5",
@@ -73,7 +73,7 @@ export function NodeItem({ template }: { template: NodeTemplateListItemRPC }) {
 					>
 						<div
 							className={cn(
-								"mb-3 p-2.5 rounded-xl transition-all transition-none duration-300",
+								"mb-2 p-1 rounded-xl transition-all transition-none duration-300",
 								"bg-muted/40 text-foreground/80 shadow-inner",
 								"group-hover:scale-110 group-hover:bg-muted/60",
 								isDragging && "shadow-none scale-100",
@@ -96,7 +96,7 @@ export function NodeItem({ template }: { template: NodeTemplateListItemRPC }) {
 					<TooltipContent
 						side="right"
 						sideOffset={15}
-						className="max-w-[220px] bg-popover/90 backdrop-blur-md border-border/50 p-3 rounded-xl shadow-xl"
+						className="max-w-[220px] bg-popover/90 backdrop-blur-md border-border/50 p-1 rounded-xl shadow-xl"
 					>
 						<p className="text-[11px] leading-relaxed font-medium text-foreground/80">
 							{template.description}

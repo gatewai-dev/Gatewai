@@ -44,8 +44,12 @@ export const getHandleStyle = (
 	if (!isValid) {
 		return {
 			backgroundColor: "var(--destructive)",
-			border: "2.5px solid var(--background)",
+			border: "2px solid var(--background)",
 			boxShadow: "0 0 0 3px var(--destructive), 0 0 10px var(--destructive/60)",
+			width: "12px",
+			height: "12px",
+			backfaceVisibility: "hidden",
+			transform: "translateZ(0)",
 		};
 	}
 
@@ -53,15 +57,17 @@ export const getHandleStyle = (
 		const color = getTypeColor(connectedType || types[0]);
 
 		return {
-			width: "14px",
-			height: "14px",
+			width: "12px",
+			height: "12px",
 			backgroundColor: color,
-			border: "2.5px solid var(--background)",
+			border: "2px solid var(--background)",
 			boxShadow: `
         0 0 0 2px ${color}80,
         0 0 12px ${color}60
       `,
 			transition: "all 0.18s ease",
+			backfaceVisibility: "hidden",
+			transform: "translateZ(0)",
 		};
 	}
 
@@ -78,19 +84,27 @@ export const getHandleStyle = (
 			.join(", ");
 
 		return {
+			width: "12px",
+			height: "12px",
 			backgroundColor: "transparent",
 			border: "2px solid transparent",
 			borderImage: `conic-gradient(${gradientStops}) 1`,
 			borderImageSlice: 1,
-			boxShadow: "0 0 0 1.5px rgba(0,0,0,0.2)",
+			boxShadow: "0 0 0 1px rgba(0,0,0,0.2)",
+			backfaceVisibility: "hidden",
+			transform: "translateZ(0)",
 		};
 	}
 
 	const color = getTypeColor(types[0]);
 	return {
+		width: "12px",
+		height: "12px",
 		backgroundColor: "transparent",
-		border: `2.5px solid ${color}`,
-		boxShadow: `0 0 0 1.5px ${color}30`,
+		border: `2px solid ${color}`,
+		boxShadow: `0 0 0 1px ${color}30`,
+		backfaceVisibility: "hidden",
+		transform: "translateZ(0)",
 	};
 };
 
@@ -142,7 +156,7 @@ const NodeHandle = memo(
 				position={isTarget ? Position.Left : Position.Right}
 				style={handleStyle}
 				className={cn(
-					"w-3! h-3! transition-shadow duration-200 border-none",
+					"transition-shadow duration-200 border-none",
 					!isValid &&
 						"animate-pulse ring-2 ring-destructive ring-offset-2 ring-offset-background",
 				)}
@@ -153,7 +167,7 @@ const NodeHandle = memo(
 			<div
 				className={cn(
 					"absolute z-50 flex items-center group/handle will-change-transform",
-					isTarget ? "-left-[5px]" : "-right-[5px]",
+					isTarget ? "-left-1.5" : "-right-1.5",
 				)}
 				style={{ top: `${topPosition}px` }}
 			>
@@ -242,6 +256,7 @@ const BaseNode = memo(
 					selected &&
 						"ring-2 ring-primary/40 ring-offset-4 ring-offset-background border-primary/50 ",
 					// 3. Force GPU layer
+					"transform-gpu",
 					props.className,
 				)}
 				// Inline style for will-change to help the browser layerize the node
