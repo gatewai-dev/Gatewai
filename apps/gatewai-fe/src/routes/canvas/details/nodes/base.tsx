@@ -1,7 +1,6 @@
 import {
 	BaseEdge,
 	type ConnectionLineComponentProps,
-	type EdgeProps,
 	getBezierPath,
 	Handle,
 	type Node,
@@ -32,8 +31,9 @@ const getTypeColor = (type?: string) =>
 	dataTypeColors[type || ""]?.hex || DEFAULT_COLOR;
 
 /**
- * Optimizes handle styles by using CSS variables where possible
- * and reducing object creation.
+ * Generates styles for the handle.
+ * REMOVED: translateZ and backface-visibility to fix zoom blurriness.
+ * CHANGED: Logic to support rectangular 'pill' shapes.
  */
 export const getHandleStyle = (
 	types: string[],
@@ -41,39 +41,37 @@ export const getHandleStyle = (
 	connectedType?: string,
 	isValid: boolean = true,
 ): React.CSSProperties => {
+	const baseDimensions = {
+		width: "10px",
+		height: "18px", // Rectangular height
+		borderRadius: "2px", // Slight rounding for polish
+	};
+
 	if (!isValid) {
 		return {
+			...baseDimensions,
 			backgroundColor: "var(--destructive)",
-			border: "2px solid var(--background)",
-			boxShadow: "0 0 0 3px var(--destructive), 0 0 10px var(--destructive/60)",
-			width: "12px",
-			height: "12px",
-			backfaceVisibility: "hidden",
-			transform: "translateZ(0)",
+			border: "1px solid var(--background)",
+			boxShadow: "0 0 0 2px var(--destructive), 0 0 8px var(--destructive/50)",
 		};
 	}
 
 	if (isConnected || connectedType) {
 		const color = getTypeColor(connectedType || types[0]);
-
 		return {
-			width: "12px",
-			height: "12px",
+			...baseDimensions,
 			backgroundColor: color,
-			border: "2px solid var(--background)",
-			boxShadow: `
-				0 0 0 2px ${color}80,
-				0 0 12px ${color}60
-			`,
-			transition: "all 0.18s ease",
-			backfaceVisibility: "hidden",
-			transform: "translateZ(0)",
+			border: "1px solid var(--background)",
+			// Softer glow for connected state
+			boxShadow: `0 0 0 1px ${color}80`,
+			transition: "background-color 0.15s ease, box-shadow 0.15s ease",
 		};
 	}
 
-	// Unconnected handles
+	// Unconnected handles with multiple types
 	if (types.length > 1) {
 		const segmentSize = 100 / types.length;
+		// Linear gradient looks cleaner on rectangles than conic
 		const gradientStops = types
 			.map((type, index) => {
 				const color = getTypeColor(type);
@@ -84,27 +82,20 @@ export const getHandleStyle = (
 			.join(", ");
 
 		return {
-			width: "12px",
-			height: "12px",
-			backgroundColor: "transparent",
-			border: "2px solid transparent",
-			borderImage: `conic-gradient(${gradientStops}) 1`,
-			borderImageSlice: 1,
-			boxShadow: "0 0 0 1px rgba(0,0,0,0.2)",
-			backfaceVisibility: "hidden",
-			transform: "translateZ(0)",
+			...baseDimensions,
+			background: `linear-gradient(to bottom, ${gradientStops})`,
+			border: "1px solid var(--border)",
+			boxShadow: "0 1px 2px rgba(0,0,0,0.1)",
 		};
 	}
 
+	// Single type unconnected
 	const color = getTypeColor(types[0]);
 	return {
-		width: "12px",
-		height: "12px",
-		backgroundColor: "transparent",
+		...baseDimensions,
+		backgroundColor: "var(--card)", // Hollow look for unconnected
 		border: `2px solid ${color}`,
-		boxShadow: `0 0 0 1px ${color}30`,
-		backfaceVisibility: "hidden",
-		transform: "translateZ(0)",
+		boxShadow: "none",
 	};
 };
 
@@ -147,7 +138,8 @@ const NodeHandle = memo(
 			[connectedType, handle.dataTypes],
 		);
 
-		const topPosition = (index + 1) * 36 + 24;
+		// Adjust vertical spacing
+		const topPosition = (index + 1) * 32 + 20;
 
 		const handleComponent = (
 			<Handle
@@ -156,9 +148,11 @@ const NodeHandle = memo(
 				position={isTarget ? Position.Left : Position.Right}
 				style={handleStyle}
 				className={cn(
-					"transition-shadow duration-200 border-none",
-					!isValid &&
-						"animate-pulse ring-2 ring-destructive ring-offset-2 ring-offset-background",
+					// Removed 'border-none' as we handle borders in style
+					// Removed transition-shadow to avoid jitter on zoom
+					!isValid && "animate-pulse",
+					// Add hover effect
+					"hover:scale-110 transition-transform duration-75",
 				)}
 			/>
 		);
@@ -166,27 +160,34 @@ const NodeHandle = memo(
 		return (
 			<div
 				className={cn(
-					"absolute z-50 flex items-center group/handle will-change-transform",
-					isTarget ? "-left-1.5" : "-right-1.5",
+					"absolute z-50 flex items-center group/handle",
+					// Adjusted offsets for rectangular shape overlap
+					isTarget ? "-left-[5px]" : "-right-[5px]",
 				)}
 				style={{ top: `${topPosition}px` }}
 			>
 				{/* External Label */}
 				<div
 					className={cn(
-						"absolute -top-5 whitespace-nowrap py-0 rounded-lg transition-all duration-200 ease-out pointer-events-none opacity-0 group-hover:opacity-100",
+						"absolute -top-4 pointer-events-none transition-opacity duration-200",
+						// Hide by default, show on group hover or node selection
+						nodeSelected || "group-hover/handle:opacity-100 opacity-0",
 						isTarget
-							? "right-1  flex-row-reverse text-right origin-right"
-							: "left-1 text-left origin-left",
-						nodeSelected ? "opacity-100 scale-110 shadow-sm" : "scale-95",
+							? "right-3 text-right origin-right"
+							: "left-3 text-left origin-left",
 					)}
 				>
 					<span
-						className="text-[8px] font-bold uppercase tracking-widest leading-none"
-						style={{ color: activeColor }}
+						className="text-[9px] font-bold uppercase tracking-wider leading-none shadow-sm"
+						style={{
+							color: activeColor,
+							textShadow: "0 1px 2px rgba(0,0,0,0.1)",
+						}}
 					>
 						{handle.label || connectedType || handle.dataTypes[0]}
-						{handle.required && <span className="ml-0.5">*</span>}
+						{handle.required && (
+							<span className="text-destructive ml-0.5">*</span>
+						)}
 					</span>
 				</div>
 
@@ -195,11 +196,10 @@ const NodeHandle = memo(
 						<Tooltip>
 							<TooltipTrigger asChild>{handleComponent}</TooltipTrigger>
 							<TooltipContent
-								arrowPadding={120}
 								side={isTarget ? "left" : "right"}
-								className=" border-none font-bold text-[10px] uppercase"
+								className="bg-destructive text-destructive-foreground border-none text-[10px] uppercase font-bold"
 							>
-								Invalid data type
+								Invalid Type
 							</TooltipContent>
 						</Tooltip>
 					</TooltipProvider>
@@ -249,18 +249,15 @@ const BaseNode = memo(
 			<div
 				className={cn(
 					"relative flex flex-col w-full h-full",
-					!dragging && "transition-shadow duration-300",
-					dragging ? "bg-card/55 shadow-md" : "bg-card/95 border-border/40",
-					"border rounded-3xl",
-					"group hover:border-border/80",
-					selected &&
-						"ring-2 ring-primary/40 ring-offset-4 ring-offset-background border-primary/50 ",
-					// 3. Force GPU layer
-					"transform-gpu",
+					// Use standard ease for cleaner motion
+					"transition-all duration-200 ease-out",
+					dragging ? "shadow-lg scale-[1.01]" : "shadow-sm",
+					"bg-card border border-border",
+					// Sharper corners for a more technical look to match rectangular handles
+					"rounded-lg",
+					selected && "ring-1 ring-primary border-primary",
 					props.className,
 				)}
-				// Inline style for will-change to help the browser layerize the node
-				style={{ willChange: dragging ? "transform" : "auto" }}
 			>
 				{/* Inputs */}
 				<div className="absolute inset-y-0 left-0 w-0">
@@ -279,27 +276,24 @@ const BaseNode = memo(
 				</div>
 
 				{/* Content Container */}
-				<div className="flex flex-col h-full overflow-hidden p-1.5">
-					<div className="flex items-center justify-between px-3 py-2.5 mb-1 drag-handle cursor-grab active:cursor-grabbing border-b border-border/5">
-						<div className="flex items-center gap-3 min-w-0">
+				<div className="flex flex-col h-full overflow-hidden">
+					<div className="flex items-center justify-between px-3 py-2 border-b border-border/40 bg-muted/20 drag-handle cursor-grab active:cursor-grabbing">
+						<div className="flex items-center gap-2.5 min-w-0">
 							{Icon && (
-								<div className="text-foreground/80 bg-muted/40 p-2 rounded-xl shadow-inner">
-									<Icon className="w-4 h-4" />
+								<div className="text-foreground/70">
+									<Icon className="w-3.5 h-3.5" />
 								</div>
 							)}
 							<div className="flex flex-col min-w-0">
-								<span className="text-[13px] font-bold tracking-tight text-foreground/90 truncate">
+								<span className="text-xs font-semibold text-foreground truncate">
 									{node?.name}
-								</span>
-								<span className="text-[9px] text-muted-foreground font-mono opacity-50 uppercase tracking-tighter">
-									ID: {node?.id.slice(0, 6)}
 								</span>
 							</div>
 						</div>
 						<NodeMenu id={props.id} />
 					</div>
 
-					<div className="flex-1 px-1 nodrag nopan cursor-auto">
+					<div className="flex-1 p-2 nodrag nopan cursor-auto bg-card/50">
 						{props.children}
 					</div>
 				</div>
@@ -325,6 +319,10 @@ const BaseNode = memo(
 );
 
 BaseNode.displayName = "BaseNode";
+
+// ... CustomEdge and CustomConnectionLine remain largely unchanged
+// unless you want to match the edge termination style to the rectangles.
+// Assuming they are fine as is for now.
 
 const CustomConnectionLine = memo(
 	({
@@ -359,32 +357,16 @@ const CustomConnectionLine = memo(
 					stroke={strokeColor}
 					strokeWidth={2}
 					d={edgePath}
-					strokeDasharray="4 6"
-					className="animate-[dash_1.5s_linear_infinite] opacity-50"
+					strokeDasharray="4 4"
+					className="opacity-60"
 				/>
-				<circle
-					cx={toX}
-					cy={toY}
-					r={5}
-					fill={strokeColor}
-					className="animate-pulse"
-				/>
+				<circle cx={toX} cy={toY} r={3} fill={strokeColor} />
 			</g>
 		);
 	},
 );
 
-interface CustomEdgeProps extends EdgeProps {
-	sourceX: number;
-	sourceY: number;
-	targetX: number;
-	targetY: number;
-	sourcePosition: Position;
-	targetPosition: Position;
-	style?: React.CSSProperties;
-	data?: { type?: string };
-}
-
+// Re-exporting Edge for context, assuming no changes needed to logic
 const CustomEdge = memo(
 	({
 		id,
@@ -418,9 +400,10 @@ const CustomEdge = memo(
 
 		return (
 			<>
+				{/* Hit area */}
 				<BaseEdge
 					path={edgePath}
-					style={{ strokeWidth: 10, stroke: "transparent" }}
+					style={{ strokeWidth: 12, stroke: "transparent" }}
 				/>
 				<BaseEdge
 					id={id}
@@ -428,10 +411,10 @@ const CustomEdge = memo(
 					markerEnd={markerEnd}
 					style={{
 						...style,
-						strokeWidth: selected ? 3.5 : 2.5,
+						strokeWidth: selected ? 2 : 1.5,
 						stroke: color,
-						opacity: selected ? 1 : 0.45,
-						transition: "opacity 0.2s ease, stroke-width 0.2s ease",
+						opacity: selected ? 1 : 0.6,
+						transition: "all 0.2s",
 					}}
 				/>
 			</>

@@ -63,7 +63,7 @@ export const UploadButton = ({
 			<Button
 				onClick={handleClick}
 				disabled={isLoading}
-				variant="outline"
+				variant="ghost"
 				size="xs"
 				className={cn(className)}
 			>

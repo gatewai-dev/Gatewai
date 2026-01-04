@@ -106,7 +106,7 @@ function AddCustomHandleButton(props: CustomHandleButtonProps) {
 	return (
 		<Dialog open={open} onOpenChange={setOpen}>
 			<DialogTrigger asChild>
-				<Button variant="outline" size="sm">
+				<Button variant="ghost" size="sm">
 					<PlusIcon /> Add {props.type}
 				</Button>
 			</DialogTrigger>

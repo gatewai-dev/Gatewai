@@ -1,3 +1,4 @@
+import { ChevronLeft } from "lucide-react";
 import { useEffect, useRef } from "react";
 import { Button } from "@/components/ui/button";
 import { ScrollArea } from "@/components/ui/scroll-area";
@@ -12,7 +13,6 @@ import { cn } from "@/lib/utils";
 import type { NodeTemplateListRPC } from "@/rpc/types";
 import { useNodeTemplates } from "../node-templates.ctx";
 import { CATEGORY_MAP } from "./category-icon-map";
-import { DataTypeMultiSelect } from "./io-filter";
 import { NodePaletteProvider, useNodePalette } from "./node-palette.ctx";
 import { NodeTemplateList } from "./node-template-list";
 import { SearchInput } from "./search";
@@ -77,56 +77,91 @@ function NodePaletteContent({ templates }: { templates: NodeTemplateListRPC }) {
 		<div
 			className={cn(
 				"relative bg-transparent flex flex-col transition-all duration-500 ease-[cubic-bezier(0.16,1,0.3,1)]",
-				"bg-background/90 backdrop-blur-xl border-r border-border/40 shadow-sm ",
-				isCollapsed ? "w-[42px]" : "w-72",
+				"bg-background/90 backdrop-blur-xl border-r border-border/40 shadow-sm h-screen",
+				isCollapsed ? "w-[60px]" : "w-72",
 			)}
 		>
-			<div className="flex items-center">
-				<div className="flex flex-col gap-5 mt-2 items-center">
-					{Object.entries(CATEGORY_MAP).map(([cat, { icon: Icon, color }]) => (
-						<TooltipProvider key={cat} delayDuration={0}>
-							<Tooltip>
-								<TooltipTrigger asChild>
-									<Button
-										variant="ghost"
-										size="icon"
-										className={cn(
-											"h-10 w-10 rounded-xl transition-all",
-											activeCategory === cat
-												? "scale-110"
-												: "opacity-50 hover:opacity-100",
-										)}
-										style={{
-											backgroundColor:
-												activeCategory === cat ? `${color}33` : "transparent", // 33 is 20% alpha in hex
-										}}
-										onClick={() => {
-											setIsCollapsed(false);
-											categoryRefs.current[cat]?.current?.scrollIntoView({
-												behavior: "smooth",
-												block: "start",
-											});
-										}}
-									>
-										<Icon className="h-5 w-5" style={{ color }} />
-									</Button>
-								</TooltipTrigger>
-								<TooltipContent side="right" className="font-medium">
-									{cat}
-								</TooltipContent>
-							</Tooltip>
-						</TooltipProvider>
-					))}
+			<div className="flex h-full overflow-hidden">
+				{/* Fixed Left Sidebar Column */}
+				<div className="flex flex-col items-center w-[60px] border-r border-border/10 py-4 gap-4">
+					{/* --- TOGGLE BUTTON --- */}
+					<TooltipProvider delayDuration={0}>
+						<Tooltip>
+							<TooltipTrigger asChild>
+								<Button
+									variant={isCollapsed ? "ghost" : "default"}
+									size="icon"
+									onClick={() => setIsCollapsed(!isCollapsed)}
+									className={cn(
+										"h-10 w-10 rounded-xl transition-all duration-300",
+										isCollapsed && "rotate-180",
+									)}
+								>
+									<ChevronLeft className="h-5 w-5" />
+								</Button>
+							</TooltipTrigger>
+							<TooltipContent side="right">
+								{isCollapsed ? "Expand" : "Collapse"}
+							</TooltipContent>
+						</Tooltip>
+					</TooltipProvider>
+
+					<Separator className="w-8 opacity-50" />
+
+					{/* Category Icons */}
+					<div className="flex flex-col gap-4 items-center">
+						{Object.entries(CATEGORY_MAP).map(
+							([cat, { icon: Icon, color }]) => (
+								<TooltipProvider key={cat} delayDuration={0}>
+									<Tooltip>
+										<TooltipTrigger asChild>
+											<Button
+												variant="ghost"
+												size="icon"
+												className={cn(
+													"h-10 w-10 rounded-xl transition-all",
+													activeCategory === cat
+														? "scale-110"
+														: "opacity-50 hover:opacity-100",
+												)}
+												style={{
+													backgroundColor:
+														activeCategory === cat
+															? `${color}33`
+															: "transparent",
+												}}
+												onClick={() => {
+													if (isCollapsed) setIsCollapsed(false);
+													categoryRefs.current[cat]?.current?.scrollIntoView({
+														behavior: "smooth",
+														block: "start",
+													});
+												}}
+											>
+												<Icon className="h-5 w-5" style={{ color }} />
+											</Button>
+										</TooltipTrigger>
+										<TooltipContent side="right" className="font-medium">
+											{cat}
+										</TooltipContent>
+									</Tooltip>
+								</TooltipProvider>
+							),
+						)}
+					</div>
 				</div>
 
+				{/* Search and List Content */}
 				<div
-					className={cn("flex flex-col flex-1 px-4 h-screen", {
-						hidden: isCollapsed,
-					})}
+					className={cn(
+						"flex flex-col flex-1 px-4 h-screen transition-all duration-300",
+						isCollapsed
+							? "opacity-0 invisible w-0"
+							: "opacity-100 visible w-auto",
+					)}
 				>
-					<div className="space-y-4 mb-4">
+					<div className="space-y-4 mb-4 mt-8">
 						<SearchInput />
-						<DataTypeMultiSelect />
 					</div>
 					<Separator className="opacity-50" />
 					<ScrollArea

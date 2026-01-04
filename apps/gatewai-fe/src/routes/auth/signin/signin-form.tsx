@@ -54,7 +54,7 @@ function SignInForm({ onSuccess, onError }: SignInFormProps) {
 						</Alert>
 					)}
 					<Button
-						variant="outline"
+						variant="ghost"
 						type="button"
 						className="w-full"
 						disabled={isLoading}

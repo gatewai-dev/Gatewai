@@ -30,7 +30,7 @@ function CreateHandleButton({ nodeId, ...restProps }: CreateHandleButtonProps) {
 	return (
 		<Button
 			size="xs"
-			variant="outline"
+			variant="ghost"
 			{...restProps}
 			onClick={() => onClickButton()}
 		>

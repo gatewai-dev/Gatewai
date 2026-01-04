@@ -59,7 +59,7 @@ const CanvasTasksPanel = memo(() => {
 	return (
 		<Popover>
 			<PopoverTrigger asChild>
-				<Button variant="outline" className="flex items-center">
+				<Button variant="ghost" className="flex items-center">
 					<div className={`w-2 h-2 rounded-full ${indicatorColor} mr-2`} />
 					{totalCount} Task{totalCount !== 1 ? "s" : ""}
 				</Button>

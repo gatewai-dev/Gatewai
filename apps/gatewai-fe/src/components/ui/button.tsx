@@ -9,15 +9,18 @@ const buttonVariants = cva(
 	{
 		variants: {
 			variant: {
-				default: "bg-primary text-primary-foreground hover:bg-primary/90",
+				// Glass-filled primary
+				default:
+					"bg-primary/80 backdrop-blur-sm text-primary-foreground hover:bg-primary/90 shadow-md border border-white/10",
 				destructive:
-					"bg-destructive text-white hover:bg-destructive/90 focus-visible:ring-destructive/20 dark:focus-visible:ring-destructive/40 dark:bg-destructive/60",
+					"bg-destructive/80 backdrop-blur-sm text-white hover:bg-destructive/90 focus-visible:ring-destructive/20 dark:focus-visible:ring-destructive/40",
+				// The classic "Glass" look
 				outline:
-					"border bg-background shadow-xs hover:bg-accent hover:text-accent-foreground dark:bg-input/30 dark:border-input dark:hover:bg-input/50",
+					"border border-white/20 bg-white/10 dark:bg-white/5 backdrop-blur-md shadow-lg hover:bg-white/20 hover:text-accent-foreground",
 				secondary:
-					"bg-secondary text-secondary-foreground hover:bg-secondary/80",
+					"bg-secondary/70 backdrop-blur-sm text-secondary-foreground hover:bg-secondary/80",
 				ghost:
-					"hover:bg-accent hover:text-accent-foreground dark:hover:bg-accent/50",
+					"hover:bg-white/10 backdrop-blur-none hover:backdrop-blur-md dark:hover:bg-white/5",
 				link: "text-primary underline-offset-4 hover:underline",
 			},
 			size: {
