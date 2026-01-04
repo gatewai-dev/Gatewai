@@ -8,7 +8,7 @@ import type { VideoGenerationReferenceImage } from "@google/genai";
 import { ENV_CONFIG } from "../../config.js";
 import { genAI } from "../../genai.js";
 import { logger } from "../../logger.js";
-import { generateSignedUrl, uploadToS3 } from "../../utils/s3.js";
+import { generateSignedUrl, uploadToS3 } from "../../utils/storage.js";
 import { getInputValue, getInputValuesByType } from "../resolvers.js";
 import type { NodeProcessor } from "./types.js";
 

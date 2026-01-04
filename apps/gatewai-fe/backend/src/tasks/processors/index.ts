@@ -9,8 +9,8 @@ import modulateProcessor from "./modulate.js";
 import paintProcessor from "./paint.js";
 import resizeProcessor from "./resize.js";
 import type { NodeProcessor } from "./types.js";
-import videoGenExtendProcessor from "./vide-gen-extend.js";
 import videoGenProcessor from "./video-gen.js";
+import videoGenExtendProcessor from "./video-gen-extend.js";
 import videoGenFirstLastFrameProcessor from "./video-gen-first-last-frame.js";
 import videoGenMockProcessor from "./video-gen-mock.js";
 

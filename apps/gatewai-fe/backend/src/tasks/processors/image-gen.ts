@@ -10,7 +10,7 @@ import {
 import { ENV_CONFIG } from "../../config.js";
 import { logger } from "../../logger.js";
 import { getImageDimensions } from "../../utils/image.js";
-import { generateSignedUrl, uploadToS3 } from "../../utils/s3.js";
+import { generateSignedUrl, uploadToS3 } from "../../utils/storage.js";
 import { getInputValue, getInputValuesByType } from "../resolvers.js";
 import type { NodeProcessor } from "./types.js";
 

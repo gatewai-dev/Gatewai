@@ -6,7 +6,7 @@ import { DataType, prisma } from "@gatewai/db";
 import type { VideoGenFirstLastFrameResult } from "@gatewai/types";
 import { ENV_CONFIG } from "../../config.js";
 import { logger } from "../../logger.js";
-import { generateSignedUrl, uploadToS3 } from "../../utils/s3.js";
+import { generateSignedUrl, uploadToS3 } from "../../utils/storage.js";
 import type { NodeProcessor } from "./types.js";
 
 const __filename = fileURLToPath(import.meta.url);

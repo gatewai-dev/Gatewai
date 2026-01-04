@@ -8,13 +8,11 @@ import { TopPanel } from "./top-panel";
 const ReactFlowPanels = memo(() => {
 	return (
 		<>
-			<Panel position="top-center" className="bg-background flex flex-col">
-				<TopPanel />
-			</Panel>
 			<Panel
 				position="top-left"
 				className=" bg-background left-0 top-0 m-0! h-full flex flex-col"
 			>
+				<TopPanel />
 				<NodePalette />
 			</Panel>
 			<Panel

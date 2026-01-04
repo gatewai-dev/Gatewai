@@ -6,7 +6,7 @@ import { DataType, prisma } from "@gatewai/db";
 import type { VideoGenResult } from "@gatewai/types";
 import { ENV_CONFIG } from "../../config.js";
 import { logger } from "../../logger.js";
-import { generateSignedUrl, uploadToS3 } from "../../utils/s3.js";
+import { generateSignedUrl, uploadToS3 } from "../../utils/storage.js";
 import type { NodeProcessor } from "./types.js";
 
 const __filename = fileURLToPath(import.meta.url);
@@ -21,7 +21,7 @@ const videoGenMockProcessor: NodeProcessor = async ({ node, data }) => {
 		const fileName = `videogen_${randId}.${extension}`;
 		const key = `assets/${data.canvas.userId}/${fileName}`;
 		const contentType = "video/mp4";
-		const bucket = ENV_CONFIG.AWS_ASSETS_BUCKET;
+		const bucket = ENV_CONFIG.GCS_ASSETS_BUCKET;
 		await uploadToS3(fileBuffer, key, contentType, bucket);
 
 		const expiresIn = 3600 * 24 * 6.9; // A bit less than a week

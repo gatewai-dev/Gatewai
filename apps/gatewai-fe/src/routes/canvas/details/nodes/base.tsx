@@ -44,21 +44,28 @@ export const getHandleStyle = (
 	if (!isValid) {
 		return {
 			backgroundColor: "var(--destructive)",
-			border: "2px solid var(--background)",
-			boxShadow: "0 0 0 2px var(--destructive), 0 0 8px var(--destructive)",
+			border: "2.5px solid var(--background)",
+			boxShadow: "0 0 0 3px var(--destructive), 0 0 10px var(--destructive/60)",
 		};
 	}
 
 	if (isConnected || connectedType) {
 		const color = getTypeColor(connectedType || types[0]);
+
 		return {
+			width: "14px",
+			height: "14px",
 			backgroundColor: color,
-			border: "2px solid var(--background)",
-			boxShadow: `0 0 0 1px ${color}40`,
+			border: "2.5px solid var(--background)",
+			boxShadow: `
+        0 0 0 2px ${color}80,
+        0 0 12px ${color}60
+      `,
+			transition: "all 0.18s ease",
 		};
 	}
 
-	// Unconnected handles: border without background
+	// Unconnected handles
 	if (types.length > 1) {
 		const segmentSize = 100 / types.length;
 		const gradientStops = types
@@ -69,20 +76,21 @@ export const getHandleStyle = (
 				return `${color} ${start}% ${end}%`;
 			})
 			.join(", ");
+
 		return {
 			backgroundColor: "transparent",
 			border: "2px solid transparent",
 			borderImage: `conic-gradient(${gradientStops}) 1`,
 			borderImageSlice: 1,
-			boxShadow: "0 0 0 1px rgba(0,0,0,0.1)",
+			boxShadow: "0 0 0 1.5px rgba(0,0,0,0.2)",
 		};
 	}
 
 	const color = getTypeColor(types[0]);
 	return {
 		backgroundColor: "transparent",
-		border: `2px solid ${color}`,
-		boxShadow: `0 0 0 1px ${color}40`,
+		border: `2.5px solid ${color}`,
+		boxShadow: `0 0 0 1.5px ${color}30`,
 	};
 };
 
@@ -134,7 +142,7 @@ const NodeHandle = memo(
 				position={isTarget ? Position.Left : Position.Right}
 				style={handleStyle}
 				className={cn(
-					"w-4! h-4! rounded-full transition-shadow duration-200 border-none",
+					"w-3! h-3! transition-shadow duration-200 border-none",
 					!isValid &&
 						"animate-pulse ring-2 ring-destructive ring-offset-2 ring-offset-background",
 				)}
@@ -156,7 +164,7 @@ const NodeHandle = memo(
 						isTarget
 							? "right-2  flex-row-reverse text-right origin-right"
 							: "left-2 text-left origin-left",
-						nodeSelected ? "opacity-100  scale-110 shadow-sm" : "scale-95",
+						nodeSelected ? "opacity-100 scale-110 shadow-sm" : "scale-95",
 					)}
 				>
 					<span
@@ -228,7 +236,7 @@ const BaseNode = memo(
 				className={cn(
 					"relative flex flex-col w-full h-full",
 					!dragging && "transition-shadow duration-300",
-					dragging ? "bg-card shadow-md" : "bg-card/75 border-border/40",
+					dragging ? "bg-card/55 shadow-md" : "bg-card/95 border-border/40",
 					"border rounded-3xl",
 					"group hover:border-border/80",
 					selected &&
