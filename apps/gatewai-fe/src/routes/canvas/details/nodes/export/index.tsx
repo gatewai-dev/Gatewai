@@ -37,8 +37,13 @@ function ExportNodeHandbook({ nodeId }: { nodeId: NodeEntityType["id"] }) {
 								When you run the workflow via API request, export node will
 								expose the output.
 							</p>
-							<code className="block bg-muted p-2 rounded text-[7px] mt-1">
-								{`{ "${nodeId}": "[FileData/Text/base64]" }`}
+							<code className="block bg-muted p-2 rounded text-[7px] mt-1 whitespace-pre-wrap w-full">
+								{`{
+	...
+	"data": {
+		"${nodeId}": [data]
+	}
+}`}
 							</code>
 						</AlertDescription>
 					</Alert>

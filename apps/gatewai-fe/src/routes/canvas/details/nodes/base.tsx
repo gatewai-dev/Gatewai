@@ -169,7 +169,7 @@ const NodeHandle = memo(
 			>
 				<div
 					className={cn(
-						"absolute -top-4 pointer-events-none transition-opacity duration-200 w-auto",
+						"absolute -top-4 pointer-events-none transition-opacity duration-200 w-auto whitespace-nowrap",
 						// Hide by default, show on group hover or node selection
 						nodeSelected || "group-hover/handle:opacity-100 opacity-0",
 						isTarget

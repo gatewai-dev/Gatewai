@@ -78,7 +78,7 @@ function NodePaletteContent({ templates }: { templates: NodeTemplateListRPC }) {
 			className={cn(
 				"relative bg-transparent flex flex-col transition-all duration-500 ease-[cubic-bezier(0.16,1,0.3,1)]",
 				"bg-background/90 backdrop-blur-xl border-r border-border/40 shadow-sm h-screen",
-				isCollapsed ? "w-[60px]" : "w-76",
+				isCollapsed ? "w-[50px]" : "w-76",
 			)}
 		>
 			<div className="flex h-full overflow-hidden">
