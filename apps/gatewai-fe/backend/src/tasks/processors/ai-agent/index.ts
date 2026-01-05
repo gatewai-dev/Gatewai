@@ -36,6 +36,7 @@ export const FileAssetSchema = z.object({
 	signedUrlExp: z.date().nullable(),
 	userId: z.string(),
 	isUploaded: z.boolean().default(true),
+	duration: z.number().optional(),
 });
 
 function CreateOutputZodSchema(

@@ -2,7 +2,6 @@ import { randomUUID } from "node:crypto";
 import { DataType, prisma } from "@gatewai/db";
 import {
 	type FileData,
-	type ImageGenConfig,
 	ImageGenNodeConfigSchema,
 	type ImageGenResult,
 } from "@gatewai/types";
