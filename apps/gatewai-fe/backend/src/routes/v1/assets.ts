@@ -6,7 +6,6 @@ import { fileTypeFromBuffer } from "file-type";
 import { Hono } from "hono";
 import sharp from "sharp";
 import { z } from "zod/v4";
-import type { AuthHonoTypes } from "../../auth.js";
 import { ENV_CONFIG } from "../../config.js";
 import {
 	deleteFromS3,
@@ -25,22 +24,16 @@ const querySchema = z.object({
 	q: z.string().default(""),
 });
 
-const assetsRouter = new Hono<{ Variables: AuthHonoTypes }>({
+const assetsRouter = new Hono({
 	strict: false,
 })
 	.get("/", zValidator("query", querySchema), async (c) => {
-		const user = c.get("user");
-		if (!user) {
-			return c.json({ error: "Unauthorized" }, 401);
-		}
-
 		const { pageSize, pageIndex, q } = c.req.valid("query");
 
 		const skip = pageIndex * pageSize;
 		const take = pageSize;
 
 		const where = {
-			userId: user.id,
 			name: {
 				contains: q,
 			},
@@ -64,11 +57,6 @@ const assetsRouter = new Hono<{ Variables: AuthHonoTypes }>({
 		});
 	})
 	.post("/", zValidator("form", uploadSchema), async (c) => {
-		const user = c.get("user");
-		if (!user) {
-			return c.json({ error: "Unauthorized" }, 401);
-		}
-
 		const form = await c.req.formData();
 		const file = form.get("file");
 		if (!(file instanceof File)) {
@@ -78,7 +66,7 @@ const assetsRouter = new Hono<{ Variables: AuthHonoTypes }>({
 		const buffer = Buffer.from(await file.arrayBuffer());
 		const filename = file.name;
 		const bucket = process.env.AWS_ASSETS_BUCKET ?? "default-bucket";
-		const key = `assets/${user.id}/${randomUUID()}-${filename}`;
+		const key = `assets/${randomUUID()}-${filename}`;
 
 		// Detect MIME type from buffer using file-type
 		const fileTypeResult = await fileTypeFromBuffer(buffer);
@@ -113,7 +101,6 @@ const assetsRouter = new Hono<{ Variables: AuthHonoTypes }>({
 					isUploaded: true,
 					signedUrl,
 					signedUrlExp,
-					userId: user.id,
 					width,
 					height,
 					mimeType: contentType, // Add mimeType to FileAsset model in Prisma schema
@@ -127,11 +114,6 @@ const assetsRouter = new Hono<{ Variables: AuthHonoTypes }>({
 		}
 	})
 	.post("/node/:nodeId", zValidator("form", uploadSchema), async (c) => {
-		const user = c.get("user");
-		if (!user) {
-			return c.json({ error: "Unauthorized" }, 401);
-		}
-
 		const { nodeId } = c.req.param();
 
 		const node = await prisma.node.findUnique({
@@ -145,8 +127,8 @@ const assetsRouter = new Hono<{ Variables: AuthHonoTypes }>({
 			},
 		});
 
-		if (!node || node.canvas.userId !== user.id) {
-			return c.json({ error: "Node not found or unauthorized" }, 404);
+		if (!node) {
+			return c.json({ error: "Node not found" }, 404);
 		}
 
 		const form = await c.req.formData();
@@ -158,7 +140,7 @@ const assetsRouter = new Hono<{ Variables: AuthHonoTypes }>({
 		const buffer = Buffer.from(await file.arrayBuffer());
 		const filename = file.name;
 		const bucket = ENV_CONFIG.GCS_ASSETS_BUCKET ?? "default-bucket";
-		const key = `assets/${user.id}/${randomUUID()}-${filename}`;
+		const key = `assets/${randomUUID()}-${filename}`;
 
 		const fileTypeResult = await fileTypeFromBuffer(buffer);
 		const contentType =
@@ -192,7 +174,6 @@ const assetsRouter = new Hono<{ Variables: AuthHonoTypes }>({
 					signedUrl,
 					isUploaded: true,
 					signedUrlExp,
-					userId: user.id,
 					width,
 					height,
 					mimeType: contentType,
@@ -280,18 +261,13 @@ const assetsRouter = new Hono<{ Variables: AuthHonoTypes }>({
 		"/:id",
 		zValidator("param", z.object({ id: z.string() })),
 		async (c) => {
-			const user = c.get("user");
-			if (!user) {
-				return c.json({ error: "Unauthorized" }, 401);
-			}
-
 			const id = c.req.param("id");
 
 			const asset = await prisma.fileAsset.findUnique({
 				where: { id },
 			});
 
-			if (!asset || asset.userId !== user.id) {
+			if (!asset) {
 				return c.json({ error: "Asset not found" }, 404);
 			}
 

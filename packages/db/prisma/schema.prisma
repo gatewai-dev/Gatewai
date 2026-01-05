@@ -60,71 +60,6 @@ enum HandleType {
   Output
 }
 
-model User {
-  id            String    @id
-  name          String
-  email         String
-  emailVerified Boolean
-  image         String?
-  createdAt     DateTime
-  updatedAt     DateTime
-  sessions      Session[]
-  accounts      Account[]
-
-  canvases      Canvas[]
-  taskBatches         TaskBatch[]
-  tokens        Int?
-  fileAssets    FileAsset[]
-
-  @@unique([email])
-  @@map("user")
-}
-
-model Session {
-  id        String   @id
-  expiresAt DateTime
-  token     String
-  createdAt DateTime
-  updatedAt DateTime
-  ipAddress String?
-  userAgent String?
-  userId    String
-  user      User     @relation(fields: [userId], references: [id], onDelete: Cascade)
-
-  @@unique([token])
-  @@map("session")
-}
-
-model Account {
-  id                    String    @id
-  accountId             String
-  providerId            String
-  userId                String
-  user                  User      @relation(fields: [userId], references: [id], onDelete: Cascade)
-  accessToken           String?
-  refreshToken          String?
-  idToken               String?
-  accessTokenExpiresAt  DateTime?
-  refreshTokenExpiresAt DateTime?
-  scope                 String?
-  password              String?
-  createdAt             DateTime
-  updatedAt             DateTime
-
-  @@map("account")
-}
-
-model Verification {
-  id         String    @id
-  identifier String
-  value      String
-  expiresAt  DateTime
-  createdAt  DateTime?
-  updatedAt  DateTime?
-
-  @@map("verification")
-}
-
 model Node {
   id             String          @id @default(cuid())
   name           String
@@ -262,9 +197,6 @@ model Canvas {
   nodes          Node[]
   aiSessions     AISession[]
   taskBatches    TaskBatch[]
-  user           User         @relation(fields: [userId], references: [id], onDelete: Cascade)
-  userId         String
-
   @@map("canvas")
 }
 
@@ -283,8 +215,6 @@ model TaskBatch {
   id              String       @id @default(cuid())
   createdAt       DateTime     @default(now())
   updatedAt       DateTime     @updatedAt
-  user            User         @relation(fields: [userId], references: [id], onDelete: Cascade)
-  userId          String
   tasks           Task[]
   canvas          Canvas       @relation(fields: [canvasId], references: [id], onDelete: Cascade)
   canvasId        String
@@ -334,9 +264,6 @@ model FileAsset {
   key             String
   signedUrl       String?
   signedUrlExp    DateTime?
-
-  user            User         @relation(fields: [userId], references: [id], onDelete: Cascade)
-  userId          String
 
   // Whether or not user is uploaded (true) or AI generated/System generated (false)
   isUploaded      Boolean     @default(true)

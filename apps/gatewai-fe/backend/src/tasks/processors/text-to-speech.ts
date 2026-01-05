@@ -83,7 +83,7 @@ const textToSpeechProcessor: NodeProcessor = async ({ node, data }) => {
 
 		const randId = randomUUID();
 		const fileName = `text_to_speech_${randId}.${extension}`;
-		const key = `assets/${data.canvas.userId}/${fileName}`;
+		const key = `assets/${fileName}`;
 		const contentType = "video/wav";
 		const bucket = ENV_CONFIG.GCS_ASSETS_BUCKET;
 		await uploadToS3(audioBuffer, key, contentType, bucket);
@@ -99,7 +99,6 @@ const textToSpeechProcessor: NodeProcessor = async ({ node, data }) => {
 				key,
 				signedUrl,
 				signedUrlExp,
-				userId: data.canvas.userId,
 				mimeType: contentType,
 				duration,
 				metadata: metadata as object,

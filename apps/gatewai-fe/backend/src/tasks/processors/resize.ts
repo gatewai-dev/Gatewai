@@ -36,6 +36,7 @@ const resizeProcessor: NodeProcessor = async ({ node, data }) => {
 		const mimeType = getMimeType(imageInput);
 		const dataUrl = bufferToDataUrl(processedBuffer, mimeType);
 		const dimensions = getImageDimensions(processedBuffer);
+
 		// Build new result (similar to LLM)
 		const outputHandle = data.handles.find(
 			(h) => h.nodeId === node.id && h.type === "Output",

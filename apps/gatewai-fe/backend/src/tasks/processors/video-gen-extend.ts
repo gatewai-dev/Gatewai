@@ -19,7 +19,7 @@ const videoGenExtendProcessor: NodeProcessor = async ({ node, data }) => {
 		const fileBuffer = await readFile(testPath);
 		const randId = randomUUID();
 		const fileName = `videogen_${randId}.${extension}`;
-		const key = `assets/${data.canvas.userId}/${fileName}`;
+		const key = `assets/${fileName}`;
 		const contentType = "video/mp4";
 		const bucket = ENV_CONFIG.GCS_ASSETS_BUCKET;
 		await uploadToS3(fileBuffer, key, contentType, bucket);
@@ -35,7 +35,6 @@ const videoGenExtendProcessor: NodeProcessor = async ({ node, data }) => {
 				key,
 				signedUrl,
 				signedUrlExp,
-				userId: data.canvas.userId,
 				mimeType: contentType,
 			},
 		});

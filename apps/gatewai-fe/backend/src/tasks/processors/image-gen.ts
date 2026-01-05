@@ -125,7 +125,7 @@ const imageGenProcessor: NodeProcessor = async ({ node, data }) => {
 		const dimensions = await getImageDimensions(buffer);
 		const randId = randomUUID();
 		const fileName = `imagegen_${randId}.${extension}`;
-		const key = `assets/${data.canvas.userId}/${fileName}`;
+		const key = `assets/${fileName}`;
 		const bucket = ENV_CONFIG.GCS_ASSETS_BUCKET;
 
 		await uploadToS3(buffer, key, contentType, bucket);
@@ -141,7 +141,6 @@ const imageGenProcessor: NodeProcessor = async ({ node, data }) => {
 				key,
 				signedUrl,
 				signedUrlExp,
-				userId: data.canvas.userId,
 				...dimensions,
 				mimeType: contentType,
 			},

@@ -8,7 +8,6 @@ import {
 	TaskStatus,
 } from "@gatewai/db";
 import type { NodeResult } from "@gatewai/types";
-import type { User } from "better-auth";
 import { logger } from "../logger.js";
 import {
 	type CanvasCtxData,
@@ -104,7 +103,6 @@ export class NodeWFProcessor {
 
 	public async processNodes(
 		canvasId: Canvas["id"],
-		user: User,
 		/**
 		 * Node ID's to run - It'll run all of them in canvas if not provided
 		 */
@@ -114,7 +112,6 @@ export class NodeWFProcessor {
 
 		let batch = await this.prisma.taskBatch.create({
 			data: {
-				userId: user.id,
 				canvasId,
 			},
 			include: {

@@ -5,7 +5,6 @@ import type { XYPosition } from "@xyflow/react";
 import { Hono } from "hono";
 import { HTTPException } from "hono/http-exception";
 import z from "zod";
-import type { AuthHonoTypes } from "../../auth.js";
 import { GetCanvasEntities } from "../../repositories/canvas.js";
 import { NodeWFProcessor } from "../../tasks/node.js";
 
@@ -20,7 +19,6 @@ const NodeTypes = [
 	"Paint",
 	"Blur",
 	"Compositor",
-	"Describer",
 	"Router",
 	"Note",
 	"Number",
@@ -99,19 +97,11 @@ const bulkUpdateSchema = z.object({
 	handles: z.array(handleSchema).optional(),
 });
 
-const canvasRoutes = new Hono<{ Variables: AuthHonoTypes }>({
+const canvasRoutes = new Hono({
 	strict: false,
 })
 	.get("/", async (c) => {
-		const user = c.get("user");
-		if (!user) {
-			throw new HTTPException(401, { message: "Unauthorized" });
-		}
-
 		const canvases = await prisma.canvas.findMany({
-			where: {
-				userId: user.id,
-			},
 			orderBy: {
 				updatedAt: "desc",
 			},
@@ -120,7 +110,6 @@ const canvasRoutes = new Hono<{ Variables: AuthHonoTypes }>({
 				name: true,
 				createdAt: true,
 				updatedAt: true,
-				userId: true,
 				_count: {
 					select: {
 						nodes: true,
@@ -132,20 +121,10 @@ const canvasRoutes = new Hono<{ Variables: AuthHonoTypes }>({
 		return c.json(canvases);
 	})
 	.post("/", async (c) => {
-		const user = c.get("user");
-		if (!user) {
-			throw new HTTPException(401, { message: "Unauthorized" });
-		}
-
-		const canvasCount = await prisma.canvas.count({
-			where: {
-				userId: user.id,
-			},
-		});
+		const canvasCount = await prisma.canvas.count();
 
 		const canvas = await prisma.canvas.create({
 			data: {
-				userId: user.id,
 				name: `Canvas ${canvasCount + 1}`,
 			},
 		});
@@ -154,10 +133,6 @@ const canvasRoutes = new Hono<{ Variables: AuthHonoTypes }>({
 	})
 	.get("/:id", async (c) => {
 		const id = c.req.param("id");
-		const user = c.get("user");
-		if (!user) {
-			throw new HTTPException(401, { message: "User not found" });
-		}
 
 		const response = await GetCanvasEntities(id);
 
@@ -172,12 +147,8 @@ const canvasRoutes = new Hono<{ Variables: AuthHonoTypes }>({
 			}),
 		),
 		async (c) => {
-			const user = c.get("user");
 			const validated = c.req.valid("json");
 			const id = c.req.param("id");
-			if (!user) {
-				throw new HTTPException(401, { message: "Unauthorized" });
-			}
 
 			const canvas = await prisma.canvas.update({
 				where: {
@@ -192,16 +163,11 @@ const canvasRoutes = new Hono<{ Variables: AuthHonoTypes }>({
 		},
 	)
 	.patch("/:id", zValidator("json", bulkUpdateSchema), async (c) => {
-		// Step 1: Validate input and fetch user/canvas
 		const id = c.req.param("id");
 		const validated = c.req.valid("json");
-		const user = c.get("user");
-		if (!user) {
-			throw new HTTPException(401, { message: "Unauthorized" });
-		}
 
 		const existingCanvas = await prisma.canvas.findFirst({
-			where: { id, userId: user.id },
+			where: { id },
 		});
 
 		if (!existingCanvas) {
@@ -485,7 +451,6 @@ const canvasRoutes = new Hono<{ Variables: AuthHonoTypes }>({
 		const canvas = await prisma.canvas.findFirst({
 			where: {
 				id,
-				userId: user?.id, // Ensure user owns the canvas
 			},
 		});
 
@@ -528,11 +493,10 @@ const canvasRoutes = new Hono<{ Variables: AuthHonoTypes }>({
 	})
 	.delete("/:id", async (c) => {
 		const id = c.req.param("id");
-		const user = c.get("user");
 
 		// Verify ownership
 		const existing = await prisma.canvas.findFirst({
-			where: { id, userId: user?.id },
+			where: { id },
 		});
 
 		if (!existing) {
@@ -547,15 +511,10 @@ const canvasRoutes = new Hono<{ Variables: AuthHonoTypes }>({
 	})
 	.post("/:id/duplicate", async (c) => {
 		const id = c.req.param("id");
-		const user = c.get("user");
-
-		if (!user) {
-			throw new HTTPException(401, { message: "Unauthorized" });
-		}
 
 		// Get the original canvas with all its data
 		const original = await prisma.canvas.findFirst({
-			where: { id, userId: user.id },
+			where: { id },
 			include: {
 				nodes: {
 					include: {
@@ -583,7 +542,6 @@ const canvasRoutes = new Hono<{ Variables: AuthHonoTypes }>({
 		const duplicate = await prisma.canvas.create({
 			data: {
 				name: `${original.name} (Copy)`,
-				userId: user.id,
 			},
 		});
 
@@ -687,19 +645,13 @@ const canvasRoutes = new Hono<{ Variables: AuthHonoTypes }>({
 	.post("/:id/process", zValidator("json", processSchema), async (c) => {
 		const canvasId = c.req.param("id");
 		const validated = c.req.valid("json");
-		const user = c.get("user");
-
-		if (!user) {
-			throw new HTTPException(401, { message: "User is not found" });
-		}
 
 		const wfProcessor = new NodeWFProcessor(prisma);
 
-		// Starts processing but does not await.
+		// Starts processing but does not await*.
 		// Frontend starts polling when it get's batch info response.
 		const taskBatch = await wfProcessor.processNodes(
 			canvasId,
-			user,
 			validated.node_ids,
 		);
 

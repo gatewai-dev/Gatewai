@@ -7,7 +7,6 @@ import {
 import { zValidator } from "@hono/zod-validator";
 import { Hono } from "hono";
 import { z } from "zod/v4";
-import type { AuthHonoTypes } from "../../auth.js";
 
 const TaskStatuses = [
 	TaskStatus.COMPLETED,
@@ -21,7 +20,7 @@ const tasksQueryParams = z.object({
 	fromDatetime: z.iso.datetime().optional(),
 });
 
-const tasksRouter = new Hono<{ Variables: AuthHonoTypes }>({
+const tasksRouter = new Hono({
 	strict: false,
 })
 	.get(
@@ -33,12 +32,10 @@ const tasksRouter = new Hono<{ Variables: AuthHonoTypes }>({
 			}),
 		),
 		async (c) => {
-			const user = c.get("user");
 			const batchIds = c.req.queries("batchId");
 			const batchId = c.req.query("batchId");
 			const whereClause: TaskBatchWhereInput = {
 				id: { in: batchIds ? batchIds : batchId ? [batchId] : [] },
-				userId: user?.id,
 			};
 
 			const batches = await prisma.taskBatch.findMany({
@@ -75,7 +72,6 @@ const tasksRouter = new Hono<{ Variables: AuthHonoTypes }>({
 				| TaskStatus[]
 				| undefined;
 			const canvasId = c.req.param("canvasId");
-			const user = c.get("user");
 
 			const whereClause: TaskWhereInput = {};
 			if (dt) {
@@ -90,7 +86,6 @@ const tasksRouter = new Hono<{ Variables: AuthHonoTypes }>({
 
 			const batches = await prisma.taskBatch.findMany({
 				where: {
-					userId: user?.id,
 					canvasId,
 					tasks: {
 						some: whereClause,
