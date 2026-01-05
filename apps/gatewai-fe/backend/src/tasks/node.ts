@@ -139,7 +139,7 @@ export class NodeWFProcessor {
 		});
 
 		// 4. Build Execution Graph for the Necessary Subgraph
-		const { revDepGraph } = this.buildDepGraphs(necessaryIds, data);
+		const { depGraph, revDepGraph } = this.buildDepGraphs(necessaryIds, data);
 
 		// 5. Execute Async Loop (Fire & Forget from caller's perspective, or await if needed)
 		// We wrap this in an async function to allow `processNodes` to return the batch immediately
@@ -150,65 +150,59 @@ export class NodeWFProcessor {
 				taskStatusMap.set(id, TaskStatus.QUEUED);
 			});
 
-			while (true) {
-				// Find nodes that are still queued
-				const pending = necessaryIds.filter(
-					(id) => taskStatusMap.get(id) === TaskStatus.QUEUED,
+			const indegree = new Map<Node["id"], number>();
+			necessaryIds.forEach((id) => {
+				indegree.set(id, (revDepGraph.get(id) || []).length);
+			});
+
+			let queue: Node["id"][] = necessaryIds.filter(
+				(id) => indegree.get(id) === 0,
+			);
+
+			while (queue.length > 0) {
+				const currentLevel = [...queue];
+				queue = [];
+
+				currentLevel.forEach((id) => {
+					taskStatusMap.set(id, TaskStatus.EXECUTING);
+				});
+
+				await Promise.all(
+					currentLevel.map((id) =>
+						this.executeNode(id, data, tasksMap, taskStatusMap, targets),
+					),
 				);
 
-				if (pending.length === 0) {
-					break;
-				}
-
-				const ready: string[] = [];
-
-				for (const id of pending) {
-					const parents = revDepGraph.get(id) || [];
-					const parentStatuses = parents.map((p) => taskStatusMap.get(p));
-
-					// Ready if all parents have finished (completed or failed)
-					if (
-						parentStatuses.every(
-							(s) => s === TaskStatus.COMPLETED || s === TaskStatus.FAILED,
-						)
-					) {
-						ready.push(id);
+				for (const id of currentLevel) {
+					const status = taskStatusMap.get(id);
+					if (status === TaskStatus.COMPLETED || status === TaskStatus.FAILED) {
+						const children = depGraph.get(id) || [];
+						for (const child of children) {
+							const newDeg = indegree.get(child)! - 1;
+							indegree.set(child, newDeg);
+							if (newDeg === 0) {
+								queue.push(child);
+							}
+						}
 					}
-					// Otherwise, parents are still QUEUED or EXECUTING, so we wait
 				}
+			}
 
-				// Deadlock / Cycle Detection
-				if (ready.length === 0) {
-					// No nodes are ready, but there are pending nodes.
-					// This implies a cycle or a state inconsistency.
-					// Fail all remaining pending nodes.
-					await Promise.all(
-						pending.map((id) =>
-							this.failTask(
-								tasksMap.get(id)!.id,
-								"Dependency cycle or deadlock detected",
-								taskStatusMap,
-								id,
-							),
+			// Check for cycle/deadlock
+			const pending = necessaryIds.filter(
+				(id) => taskStatusMap.get(id) === TaskStatus.QUEUED,
+			);
+			if (pending.length > 0) {
+				await Promise.all(
+					pending.map((id) =>
+						this.failTask(
+							tasksMap.get(id)!.id,
+							"Dependency cycle or deadlock detected",
+							taskStatusMap,
+							id,
 						),
-					);
-					break;
-				}
-
-				// Process Ready (Parallel Execution)
-				if (ready.length > 0) {
-					// Mark as executing locally before await to prevent re-selection in tight loops
-					// (Though currently we await Promise.all, so it's strictly generational)
-					ready.forEach((id) => {
-						taskStatusMap.set(id, TaskStatus.EXECUTING);
-					});
-
-					await Promise.all(
-						ready.map((id) =>
-							this.executeNode(id, data, tasksMap, taskStatusMap, targets),
-						),
-					);
-				}
+					),
+				);
 			}
 
 			// Finish Batch

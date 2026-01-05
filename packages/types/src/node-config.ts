@@ -25,7 +25,10 @@ const IMAGEGEN_ASPECT_RATIOS = [
 
 const IMAGEGEN_IMAGE_SIZES = ["1K", "2K", "4K"] as const;
 
-const IMAGEGEN_NODE_MODELS = ["gemini-3-pro-image-preview"] as const;
+const IMAGEGEN_NODE_MODELS = [
+	"gemini-3-pro-image-preview",
+	"gemini-2.5-flash-image",
+] as const;
 
 const ImageGenNodeConfigSchema = z
 	.object({
@@ -33,7 +36,15 @@ const ImageGenNodeConfigSchema = z
 		aspectRatio: z.enum(IMAGEGEN_ASPECT_RATIOS).default("1:1"),
 		imageSize: z.enum(IMAGEGEN_IMAGE_SIZES).default("1K"),
 	})
-	.strict();
+	.strict()
+	.refine(
+		(data) =>
+			!(data.model === "gemini-2.5-flash-image" && data.imageSize !== "1K"),
+		{
+			message: "Higher resolutions only supported by pro model",
+			path: ["imageSize"],
+		},
+	);
 
 // 3D Node
 const PreviewNodeConfigSchema = z.object({}).strict();
@@ -148,7 +159,10 @@ const RouterNodeConfigSchema = z
 	})
 	.strict();
 
-const LLM_NODE_MODELS = ["gemini-3-pro-preview", "gemini-3-flash"] as const;
+const LLM_NODE_MODELS = [
+	"gemini-3-pro-preview",
+	"gemini-3-flash-preview",
+] as const;
 
 const LLMNodeConfigSchema = z
 	.object({
@@ -157,7 +171,10 @@ const LLMNodeConfigSchema = z
 	})
 	.strict();
 
-const AGENT_NODE_MODELS = ["gemini-3-pro-preview", "gemini-3-flash"] as const;
+const AGENT_NODE_MODELS = [
+	"gemini-3-pro-preview",
+	"gemini-3-flash-preview",
+] as const;
 
 const AgentNodeConfigSchema = z
 	.object({
