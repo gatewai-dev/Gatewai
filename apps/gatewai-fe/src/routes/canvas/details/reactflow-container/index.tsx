@@ -157,7 +157,7 @@ function ReactflowContainer({ children }: ReactFlowProps) {
 					onEdgesChange={onEdgesChange}
 					onNodesChange={onNodesChange}
 					onDragOver={onDragOver}
-					maxZoom={4}
+					maxZoom={12}
 					minZoom={0.1}
 					zoomOnPinch={true}
 					zoomOnScroll={true}

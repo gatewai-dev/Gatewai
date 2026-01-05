@@ -161,25 +161,24 @@ export class NodeWFProcessor {
 				}
 
 				const ready: string[] = [];
-				const skipped: string[] = [];
 
 				for (const id of pending) {
 					const parents = revDepGraph.get(id) || [];
 					const parentStatuses = parents.map((p) => taskStatusMap.get(p));
 
-					// If any parent failed, this node cannot run
-					if (parentStatuses.some((s) => s === TaskStatus.FAILED)) {
-						skipped.push(id);
-					}
-					// If all parents are completed, this node is ready
-					else if (parentStatuses.every((s) => s === TaskStatus.COMPLETED)) {
+					// Ready if all parents have finished (completed or failed)
+					if (
+						parentStatuses.every(
+							(s) => s === TaskStatus.COMPLETED || s === TaskStatus.FAILED,
+						)
+					) {
 						ready.push(id);
 					}
 					// Otherwise, parents are still QUEUED or EXECUTING, so we wait
 				}
 
 				// Deadlock / Cycle Detection
-				if (ready.length === 0 && skipped.length === 0) {
+				if (ready.length === 0) {
 					// No nodes are ready, but there are pending nodes.
 					// This implies a cycle or a state inconsistency.
 					// Fail all remaining pending nodes.
@@ -196,20 +195,6 @@ export class NodeWFProcessor {
 					break;
 				}
 
-				// Process Skipped (Upstream Failure)
-				if (skipped.length > 0) {
-					await Promise.all(
-						skipped.map((id) =>
-							this.failTask(
-								tasksMap.get(id)!.id,
-								"Upstream dependency failed",
-								taskStatusMap,
-								id,
-							),
-						),
-					);
-				}
-
 				// Process Ready (Parallel Execution)
 				if (ready.length > 0) {
 					// Mark as executing locally before await to prevent re-selection in tight loops
@@ -220,7 +205,7 @@ export class NodeWFProcessor {
 
 					await Promise.all(
 						ready.map((id) =>
-							this.executeNode(id, data, tasksMap, taskStatusMap),
+							this.executeNode(id, data, tasksMap, taskStatusMap, targets),
 						),
 					);
 				}
@@ -247,6 +232,7 @@ export class NodeWFProcessor {
 		data: CanvasCtxData,
 		tasksMap: Map<string, { id: string; nodeId: string }>,
 		taskStatusMap: Map<string, TaskStatus>,
+		targets: Node["id"][],
 	) {
 		const task = tasksMap.get(nodeId);
 		if (!task) return;
@@ -262,6 +248,21 @@ export class NodeWFProcessor {
 			const node = data.nodes.find((n) => n.id === nodeId);
 			if (!node) {
 				throw new Error("Node not found in context");
+			}
+
+			// Skip reprocessing for non-target nodes if not dirty and result exists
+			if (!targets.includes(nodeId) && !node.isDirty && node.result !== null) {
+				const finishedAt = new Date();
+				await this.prisma.task.update({
+					where: { id: task.id },
+					data: {
+						status: TaskStatus.COMPLETED,
+						finishedAt,
+						durationMs: finishedAt.getTime() - startedAt.getTime(),
+					},
+				});
+				taskStatusMap.set(nodeId, TaskStatus.COMPLETED);
+				return;
 			}
 
 			// DB Verification (ensure node wasn't deleted mid-process)
