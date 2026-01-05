@@ -1,7 +1,9 @@
 import type { NodeType } from "@gatewai/db";
 import { memo, type ReactNode } from "react";
+import { Separator } from "@/components/ui/separator";
 import { useAppSelector } from "@/store";
 import { type NodeEntityType, selectSelectedNodes } from "@/store/nodes";
+import { NODE_ICON_MAP } from "../../../node-templates/node-palette/icon-map";
 import { ImageGenNodeConfigComponent } from "./image-gen";
 import { LLMNodeConfigComponent } from "./llm/llm-config";
 import { VideoGenNodeConfigComponent } from "./video-gen";
@@ -37,7 +39,18 @@ const NodeConfigPanel = memo(() => {
 				if (!ConfigComponent) {
 					return null;
 				}
-				return <ConfigComponent key={node.id} node={node} />;
+				const Icon =
+					NODE_ICON_MAP[node?.type]?.(node) || NODE_ICON_MAP.File?.(node);
+				return (
+					<div className="flex flex-col" key={`${node.id}_cfg_component`}>
+						<div className="flex items-center gap-2">
+							<Icon />
+							<h3 className="text-sm">{node.name}</h3>
+						</div>
+						<Separator className="my-2" />
+						<ConfigComponent key={node.id} node={node} />
+					</div>
+				);
 			})}
 		</div>
 	);

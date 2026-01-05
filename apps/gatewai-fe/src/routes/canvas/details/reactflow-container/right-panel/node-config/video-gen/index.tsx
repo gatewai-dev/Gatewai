@@ -84,20 +84,22 @@ const VideoGenNodeConfigComponent = memo(
 						placeholder="Select a model"
 						options={VIDEOGEN_NODE_MODELS}
 					/>
-					<SelectField
-						control={form.control}
-						name="aspectRatio"
-						label="Aspect Ratio"
-						placeholder="Select aspect ratio"
-						options={VIDEOGEN_ASPECT_RATIOS}
-					/>
-					<SelectField
-						control={form.control}
-						name="personGeneration"
-						label="Person Generation"
-						placeholder="Select person generation option"
-						options={["allow_all"]}
-					/>
+					<div className="flex gap-4">
+						<SelectField
+							control={form.control}
+							name="aspectRatio"
+							label="Aspect Ratio"
+							placeholder="Select aspect ratio"
+							options={VIDEOGEN_ASPECT_RATIOS}
+						/>
+						<SelectField
+							control={form.control}
+							name="personGeneration"
+							label="Person Generation"
+							placeholder="Select person generation option"
+							options={["allow_all"]}
+						/>
+					</div>
 				</form>
 			</Form>
 		);

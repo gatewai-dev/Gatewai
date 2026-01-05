@@ -1,5 +1,4 @@
-import type { LLMResult } from "@gatewai/types";
-import type { NodeProps } from "@xyflow/react";
+import type { SpeechToTextResult } from "@gatewai/types";
 import { memo, useMemo } from "react";
 import { ScrollArea } from "@/components/ui/scroll-area";
 import { cn } from "@/lib/utils";
@@ -11,13 +10,13 @@ import { useNodeResult } from "../../processor/processor-ctx";
 import { BaseNode } from "../base";
 import { OutputSelector } from "../misc/output-selector";
 
-const LlmNodeComponent = memo(
+const SpeechToTextNodeComponent = memo(
 	(props: { selected: boolean; id: string; dragging: boolean }) => {
-		const { result } = useNodeResult<LLMResult>(props.id);
+		const { result } = useNodeResult<SpeechToTextResult>(props.id);
 		const node = useAppSelector(makeSelectNodeById(props.id));
 		const hasMoreThanOneOutput = result?.outputs && result?.outputs?.length > 1;
 
-		const llmTextContent = useMemo(() => {
+		const SpeechToTextTextContent = useMemo(() => {
 			if (!result || !result.outputs) return null;
 			const selectedGeneration =
 				result.outputs[result.selectedOutputIndex || 0];
@@ -42,20 +41,20 @@ const LlmNodeComponent = memo(
 							<OutputSelector node={node} />
 						</div>
 					)}
-					{llmTextContent && (
+					{SpeechToTextTextContent && (
 						<ScrollArea
 							viewPortCn="max-h-[350px]"
 							className={cn("text-xs bg-input p-2 w-full", {
 								"pt-8": hasMoreThanOneOutput,
 							})}
 						>
-							<MarkdownRenderer markdown={llmTextContent} />
+							<MarkdownRenderer markdown={SpeechToTextTextContent} />
 						</ScrollArea>
 					)}
-					{!llmTextContent && (
+					{!SpeechToTextTextContent && (
 						<div className="min-h-[200px] w-full bg-input max-h-full p-2">
 							<p className="text-xs text-gray-500">
-								LLM result will display here.
+								The result will display here.
 							</p>
 						</div>
 					)}
@@ -66,4 +65,4 @@ const LlmNodeComponent = memo(
 	},
 );
 
-export { LlmNodeComponent };
+export { SpeechToTextNodeComponent };

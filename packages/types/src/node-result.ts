@@ -97,9 +97,13 @@ export type VideoGenResult = BaseVideoGenResult;
 export type VideoGenExtendResult = BaseVideoGenResult;
 export type VideoGenFirstLastFrameResult = BaseVideoGenResult;
 
+export type TextToSpeechResult = MultiOutputGeneric<"Audio">;
+export type SpeechToTextResult = MultiOutputGeneric<"Text">;
+
 export type AgentOutputUnion =
 	| OutputItem<"Video">
 	| OutputItem<"Image">
+	| OutputItem<"Audio">
 	| OutputItem<"Text">
 	| OutputItem<"Number">
 	| OutputItem<"Boolean">
@@ -138,4 +142,6 @@ export type NodeResult =
 	| ModulateResult
 	| VideoGenResult
 	| VideoGenExtendResult
-	| VideoGenFirstLastFrameResult;
+	| VideoGenFirstLastFrameResult
+	| TextToSpeechResult
+	| SpeechToTextResult;

@@ -10,6 +10,7 @@ import { ModulateNodeComponent } from "./modulate";
 import { PaintNodeComponent } from "./paint";
 import { PreviewNodeComponent } from "./preview";
 import { ResizeNodeComponent } from "./resize";
+import { SpeechToTextNodeComponent } from "./speech-to-text";
 import { NoteNodeComponent } from "./sticky-note";
 import { TextNodeComponent } from "./text";
 import { VideoGenNodeComponent } from "./video-gen";
@@ -35,6 +36,7 @@ const nodeTypes = {
 	VideoGen: VideoGenNodeComponent,
 	VideoGenExtend: VideoGenExtendNodeComponent,
 	VideoGenFirstLastFrame: VideoGenFirstLastFrameNodeComponent,
+	SpeechToText: SpeechToTextNodeComponent,
 };
 
 // Export components
@@ -56,4 +58,5 @@ export {
 	VideoGenNodeComponent,
 	VideoGenExtendNodeComponent,
 	VideoGenFirstLastFrameNodeComponent,
+	SpeechToTextNodeComponent,
 };

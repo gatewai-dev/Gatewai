@@ -1,6 +1,8 @@
 {
 	"name": "@gatewai/db",
 	"version": "0.0.0",
+	"author": "Okan Aslankan <okn.aslnkn@gmail.com>",
+	"license": "ISC",
 	"type": "module",
 	"module": "./dist/index.mjs",
 	"types": "./dist/index.d.mts",
@@ -27,8 +29,6 @@
 		"db:reset": "prisma migrate reset"
 	},
 	"keywords": [],
-	"author": "Okan Aslankan <okn.aslnkn@gmail.com>",
-	"license": "ISC",
 	"devDependencies": {
 		"@gatewai/tsconfig": "workspace:*",
 		"@types/node": "^24.0.4",
@@ -40,7 +40,6 @@
 	"dependencies": {
 		"@prisma/adapter-pg": "^6.19.0",
 		"@prisma/client": "^6.19.0",
-		"dotenv": "^17.2.0",
-		"json-schema-to-zod": "^2.7.0"
+		"dotenv": "^17.2.0"
 	}
 }

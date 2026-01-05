@@ -256,6 +256,96 @@ const VideoGenFirstLastFrameNodeConfigSchema = VideoGenBaseSchema.extend({
 	durationSeconds: z.literal("8"),
 }).strict();
 
+// SpeechToText Node (based on Gemini audio understanding)
+const STT_NODE_MODELS = [
+	"google/gemini-2.5-flash",
+	"google/gemini-3-pro-preview", // Added pro for variety, assuming support
+] as const;
+
+const SpeechToTextNodeConfigSchema = z
+	.object({
+		model: z.enum(STT_NODE_MODELS).default("google/gemini-2.5-flash"),
+		languageCode: z.string().optional(), // Optional hint for primary language
+		enableSpeakerDiarization: z.boolean().default(false),
+		enableTimestamps: z.boolean().default(false),
+		enableEmotionDetection: z.boolean().default(false),
+	})
+	.strict();
+
+// TextToSpeech Node (based on Gemini TTS)
+const TTS_NODE_MODELS = [
+	"gemini-2.5-flash-preview-tts",
+	"gemini-2.5-pro-preview-tts",
+] as const;
+
+const TTS_VOICE_NAMES = [
+	"Zephyr",
+	"Puck",
+	"Charon",
+	"Kore",
+	"Fenrir",
+	"Leda",
+	"Orus",
+	"Aoede",
+	"Callirrhoe",
+	"Autonoe",
+	"Enceladus",
+	"Iapetus",
+	"Umbriel",
+	"Algieba",
+	"Despina",
+	"Erinome",
+	"Algenib",
+	"Rasalgethi",
+	"Laomedeia",
+	"Achernar",
+	"Alnilam",
+	"Schedar",
+	"Gacrux",
+	"Pulcherrima",
+	"Achird",
+	"Zubenelgenubi",
+	"Vindemiatrix",
+	"Sadachbia",
+	"Sadaltager",
+	"Sulafat",
+] as const;
+
+const TTS_LANGUAGES = [
+	"ar-EG",
+	"en-US",
+	"en-IN",
+	"fr-FR",
+	"de-DE",
+	"es-US",
+	"hi-IN",
+	"id-ID",
+	"it-IT",
+	"ja-JP",
+	"ko-KR",
+	"pt-BR",
+	"ru-RU",
+	"nl-NL",
+	"pl-PL",
+	"th-TH",
+	"tr-TR",
+	"vi-VN",
+	"ro-RO",
+	"uk-UA",
+	"bn-BD",
+	"mr-IN",
+	"ta-IN",
+	"te-IN",
+] as const;
+
+const TextToSpeechNodeConfigSchema = z
+	.object({
+		model: z.enum(TTS_NODE_MODELS).default("gemini-2.5-flash-preview-tts"),
+		voiceName: z.enum(TTS_VOICE_NAMES).default("Kore"),
+		languageCode: z.enum(TTS_LANGUAGES).optional(),
+	})
+	.strict();
+
 // Main node schema
 const NodeConfigSchema = z.union([
 	ImageGenNodeConfigSchema,
@@ -274,6 +364,8 @@ const NodeConfigSchema = z.union([
 	NoteNodeConfigSchema,
 	ModulateNodeConfigSchema,
 	VideoGenNodeConfigSchema,
+	SpeechToTextNodeConfigSchema,
+	TextToSpeechNodeConfigSchema,
 ]);
 
 // Inferred types
@@ -300,6 +392,8 @@ type VideoGenExtendNodeConfig = z.infer<typeof VideoGenExtendNodeConfigSchema>;
 type VideoGenFirstLastFrameNodeConfig = z.infer<
 	typeof VideoGenFirstLastFrameNodeConfigSchema
 >;
+type SpeechToTextNodeConfig = z.infer<typeof SpeechToTextNodeConfigSchema>;
+type TextToSpeechNodeConfig = z.infer<typeof TextToSpeechNodeConfigSchema>;
 
 export {
 	NodeConfigSchema,
@@ -323,6 +417,8 @@ export {
 	VideoGenNodeConfigSchema,
 	VideoGenExtendNodeConfigSchema,
 	VideoGenFirstLastFrameNodeConfigSchema,
+	SpeechToTextNodeConfigSchema,
+	TextToSpeechNodeConfigSchema,
 	type TextNodeConfig,
 	type FileNodeConfig,
 	type AgentNodeConfig,
@@ -344,6 +440,8 @@ export {
 	type VideoGenNodeConfig,
 	type VideoGenExtendNodeConfig,
 	type VideoGenFirstLastFrameNodeConfig,
+	type SpeechToTextNodeConfig,
+	type TextToSpeechNodeConfig,
 	LLM_NODE_MODELS,
 	IMAGEGEN_NODE_MODELS,
 	IMAGEGEN_ASPECT_RATIOS,
@@ -354,4 +452,8 @@ export {
 	VIDEOGEN_RESOLUTIONS,
 	VIDEOGEN_DURATIONS,
 	VIDEOGEN_PERSON_GENERATION_OPTIONS,
+	STT_NODE_MODELS,
+	TTS_NODE_MODELS,
+	TTS_VOICE_NAMES,
+	TTS_LANGUAGES,
 };

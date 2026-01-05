@@ -146,7 +146,9 @@ export class NodeWFProcessor {
 		// if we wanted to (though the original code awaited execution, so we will await here).
 		const executeGraph = async () => {
 			const taskStatusMap = new Map<Node["id"], TaskStatus>();
-			necessaryIds.forEach((id) => taskStatusMap.set(id, TaskStatus.QUEUED));
+			necessaryIds.forEach((id) => {
+				taskStatusMap.set(id, TaskStatus.QUEUED);
+			});
 
 			while (true) {
 				// Find nodes that are still queued
@@ -155,7 +157,7 @@ export class NodeWFProcessor {
 				);
 
 				if (pending.length === 0) {
-					break; // All done
+					break;
 				}
 
 				const ready: string[] = [];
@@ -212,7 +214,9 @@ export class NodeWFProcessor {
 				if (ready.length > 0) {
 					// Mark as executing locally before await to prevent re-selection in tight loops
 					// (Though currently we await Promise.all, so it's strictly generational)
-					ready.forEach((id) => taskStatusMap.set(id, TaskStatus.EXECUTING));
+					ready.forEach((id) => {
+						taskStatusMap.set(id, TaskStatus.EXECUTING);
+					});
 
 					await Promise.all(
 						ready.map((id) =>

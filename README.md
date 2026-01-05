@@ -6,6 +6,10 @@
 
 Join our Stargazers ⭐!
 
+## Community
+
+Join our discord server: https://discord.gg/phbS3XZb
+
 ## Build node-canvas
 
 By default, "canvas" package is not being built with pnpm for security reasons.
@@ -13,7 +17,7 @@ By default, "canvas" package is not being built with pnpm for security reasons.
 To make it build, run
 
 ```sh
-cd apps/gatewai-fe
+cd apps/yodes
 pnpm approve-builds
 ```
 
@@ -32,8 +36,8 @@ Click + Create Service Account at the top.
 
 Enter a name (e.g., "storage-manager") and click Create and Continue.
 
-1. Assign the Correct Permissions
-To make your code work, the service account needs permission to manage objects.
+2. Assign the Correct Permissions
+The service account needs permission to manage objects in created bucket.
 
 In the Role dropdown, search for and select:
 
@@ -50,7 +54,7 @@ Click Add Key > Create new key.
 
 Select JSON as the key type and click Create.
 
-A JSON file will automatically download to your computer. Move the downloaded file to /apps/gatewai-fe folder.
+A JSON file will automatically download to your computer. Move the downloaded file to /apps/yodes folder.
 
 ### In your .env file
 

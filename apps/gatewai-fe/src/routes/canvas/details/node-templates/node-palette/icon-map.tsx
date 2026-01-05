@@ -49,4 +49,6 @@ export const NODE_ICON_MAP: Record<
 	VideoGen: () => Gemini.Color,
 	VideoGenFirstLastFrame: () => Gemini.Color,
 	VideoGenExtend: () => Gemini.Color,
+	TextToSpeech: () => Gemini.Color,
+	SpeechToText: () => Gemini.Color,
 };

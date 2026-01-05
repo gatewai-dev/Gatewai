@@ -79,6 +79,11 @@ export type NoteNode = Node<
 	"Note"
 >;
 
+export type SpeechToTextNode = Node<
+	NodeWithFileType<NoteNodeConfig, NodeResult>,
+	"Note"
+>;
+
 export type AnyNode =
 	| TextNode
 	| LLMNode

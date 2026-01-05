@@ -32,6 +32,9 @@ enum NodeType {
   VideoGen
   VideoGenFirstLastFrame
   VideoGenExtend
+
+  TextToSpeech
+  SpeechToText
 }
 
 enum DataType {

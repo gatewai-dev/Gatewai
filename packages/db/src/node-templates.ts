@@ -592,6 +592,62 @@ export async function SEED_createNodeTemplates(prisma: PrismaClient) {
 			},
 			defaultConfig: { model: "gemini-3-flash-preview", temperature: 0 },
 		},
+		{
+			type: NodeType.TextToSpeech,
+			displayName: "Text to Speech",
+			description: "Create audio using text",
+			category: "AI",
+			subcategory: "Audio",
+			tokenPrice: 0.0,
+			variableInputs: false,
+			variableOutputs: false,
+			isTerminalNode: true,
+			isTransient: false,
+			templateHandles: {
+				create: [
+					{
+						type: HandleType.Input,
+						dataTypes: [DataType.Text],
+						required: true,
+						label: "Prompt",
+					},
+					{
+						type: HandleType.Output,
+						dataTypes: [DataType.Audio],
+						label: "Result",
+					},
+				],
+			},
+			defaultConfig: { model: "gemini-2.5-flash-preview-tts" },
+		},
+		{
+			type: NodeType.SpeechToText,
+			displayName: "Speech to Text",
+			description: "Create text transcript of an audio file",
+			category: "AI",
+			subcategory: "Audio",
+			tokenPrice: 0.0,
+			variableInputs: false,
+			variableOutputs: false,
+			isTerminalNode: true,
+			isTransient: false,
+			templateHandles: {
+				create: [
+					{
+						type: HandleType.Input,
+						dataTypes: [DataType.Audio],
+						required: true,
+						label: "Audio",
+					},
+					{
+						type: HandleType.Output,
+						dataTypes: [DataType.Text],
+						label: "Result",
+					},
+				],
+			},
+			defaultConfig: { model: "gemini-2.5-flash" },
+		},
 	];
 
 	for (const node of nodes) {
