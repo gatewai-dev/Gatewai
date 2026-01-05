@@ -81,22 +81,24 @@ const ImageGenNodeConfigComponent = memo(
 						placeholder="Select a model"
 						options={IMAGEGEN_NODE_MODELS}
 					/>
-					<div className="flex gap-4">
-						<SelectField
-							control={form.control}
-							name="aspectRatio"
-							label="Aspect Ratio"
-							placeholder="Select aspect ratio"
-							options={IMAGEGEN_ASPECT_RATIOS}
-						/>
-						<SelectField
-							control={form.control}
-							name="imageSize"
-							label="Image Size"
-							placeholder="Select image size"
-							options={IMAGEGEN_IMAGE_SIZES}
-						/>
-					</div>
+					{form.watch("model") === "gemini-3-pro-image-preview" && (
+						<div className="flex gap-4">
+							<SelectField
+								control={form.control}
+								name="aspectRatio"
+								label="Aspect Ratio"
+								placeholder="Select aspect ratio"
+								options={IMAGEGEN_ASPECT_RATIOS}
+							/>
+							<SelectField
+								control={form.control}
+								name="imageSize"
+								label="Image Size"
+								placeholder="Select image size"
+								options={IMAGEGEN_IMAGE_SIZES}
+							/>
+						</div>
+					)}
 				</form>
 			</Form>
 		);

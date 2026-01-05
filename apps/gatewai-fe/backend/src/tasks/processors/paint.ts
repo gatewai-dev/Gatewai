@@ -134,24 +134,22 @@ const paintProcessor: NodeProcessor = async ({ node, data }) => {
 			.toBuffer();
 
 		// Save images for debug if NODE_ENV is development
-		if (process.env.NODE_ENV === "development") {
-			const debugDir = path.join(__dirname, "debug_images");
-			logger.info(`Saving image output for debug to :${debugDir}`);
-			await fs.mkdir(debugDir, { recursive: true });
+		const debugDir = path.join(__dirname, "debug_images");
+		logger.info(`Saving image output for debug to :${debugDir}`);
+		await fs.mkdir(debugDir, { recursive: true });
 
-			const timestamp = Date.now();
-			const nodeId = node.id;
+		const timestamp = Date.now();
+		const nodeId = node.id;
 
-			await sharp(backgroundBuffer).toFile(
-				path.join(debugDir, `background_${nodeId}_${timestamp}.png`),
-			);
-			await sharp(processedMaskBuffer).toFile(
-				path.join(debugDir, `mask_${nodeId}_${timestamp}.png`),
-			);
-			await sharp(compositedBuffer).toFile(
-				path.join(debugDir, `composited_${nodeId}_${timestamp}.png`),
-			);
-		}
+		await sharp(backgroundBuffer).toFile(
+			path.join(debugDir, `background_${nodeId}_${timestamp}.png`),
+		);
+		await sharp(processedMaskBuffer).toFile(
+			path.join(debugDir, `mask_${nodeId}_${timestamp}.png`),
+		);
+		await sharp(compositedBuffer).toFile(
+			path.join(debugDir, `composited_${nodeId}_${timestamp}.png`),
+		);
 
 		// Convert buffers to data URLs
 		const imageDataUrl = bufferToDataUrl(compositedBuffer, mimeType);

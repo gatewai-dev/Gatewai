@@ -83,12 +83,13 @@ const imageGenProcessor: NodeProcessor = async ({ node, data }) => {
 			],
 			config: {
 				responseModalities: ["IMAGE"],
-				// Cast to any to bypass strict type checks if the SDK types
-				// haven't fully updated to include 'imageConfig' in GenerateContentConfig yet
-				imageConfig: {
-					aspectRatio: config.aspectRatio,
-					imageSize: config.imageSize,
-				},
+				imageConfig:
+					config.model === "gemini-3-pro-image-preview"
+						? {
+								aspectRatio: config.aspectRatio,
+								imageSize: config.imageSize,
+							}
+						: undefined,
 			},
 		});
 

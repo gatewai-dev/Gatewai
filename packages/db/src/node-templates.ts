@@ -550,7 +550,7 @@ export async function SEED_createNodeTemplates(prisma: PrismaClient) {
 					},
 				],
 			},
-			defaultConfig: { model: "gemini-3-pro-image" },
+			defaultConfig: { model: "gemini-3-pro-image-preview" },
 		},
 		{
 			type: NodeType.LLM,
