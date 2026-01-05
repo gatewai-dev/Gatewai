@@ -195,7 +195,7 @@ export async function SEED_createNodeTemplates(prisma: PrismaClient) {
 		{
 			type: NodeType.Preview,
 			displayName: "Preview",
-			description: "Preview output of a node",
+			description: "Preview an output of a node",
 			category: "Outputs",
 			subcategory: null,
 			tokenPrice: 0.0,
