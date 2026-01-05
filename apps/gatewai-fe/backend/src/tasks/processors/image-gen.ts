@@ -5,12 +5,7 @@ import {
 	ImageGenNodeConfigSchema,
 	type ImageGenResult,
 } from "@gatewai/types";
-import {
-	generateText,
-	type ModelMessage,
-	type TextPart,
-	type UserContent,
-} from "ai";
+import { GoogleGenAI, type Part } from "@google/genai";
 import { ENV_CONFIG } from "../../config.js";
 import { logger } from "../../logger.js";
 import { getImageDimensions } from "../../utils/image.js";
@@ -20,77 +15,121 @@ import type { NodeProcessor } from "./types.js";
 
 const imageGenProcessor: NodeProcessor = async ({ node, data }) => {
 	try {
+		const client = new GoogleGenAI({ apiKey: process.env.GOOGLE_API_KEY });
+
 		const userPrompt = getInputValue(data, node.id, true, {
 			dataType: DataType.Text,
 			label: "Prompt",
 		})?.data as string;
+
 		const imageFileData = getInputValuesByType(data, node.id, {
 			dataType: DataType.Image,
 		}).map((m) => m?.data) as FileData[] | null;
 
-		// Build messages
-		const messages: ModelMessage[] = [];
-
-		const userContent: UserContent = [];
+		// 1. Prepare Parts for the Model
+		const parts: Part[] = [];
 
 		if (userPrompt) {
-			const textPart: TextPart = {
-				type: "text",
-				text: userPrompt,
-			};
-			userContent.push(textPart);
+			parts.push({ text: userPrompt });
 		}
+
 		logger.info(`Number of reference images: ${imageFileData?.length}`);
+
+		// Convert reference images to inlineData for Google SDK
 		for (const imgData of imageFileData || []) {
 			const imageData =
 				imgData?.entity?.signedUrl ?? imgData?.processData?.dataUrl;
+
 			if (imageData) {
-				userContent.push({ type: "image", image: imageData });
+				let base64Data: string;
+				let mimeType: string;
+
+				if (imageData.startsWith("data:")) {
+					const matches = imageData.match(/^data:(.+);base64,(.+)$/);
+					if (matches && matches.length === 3) {
+						mimeType = matches[1];
+						base64Data = matches[2];
+					} else {
+						continue;
+					}
+				} else {
+					const response = await fetch(imageData);
+					if (!response.ok) continue;
+					const arrayBuffer = await response.arrayBuffer();
+					mimeType = response.headers.get("content-type") ?? "image/jpeg";
+					base64Data = Buffer.from(arrayBuffer).toString("base64");
+				}
+
+				parts.push({
+					inlineData: { mimeType, data: base64Data },
+				});
 			}
 		}
 
-		if (userContent.length === 0) {
+		if (parts.length === 0) {
 			return { success: false, error: "No user prompt or image provided" };
 		}
 
-		messages.push({
-			role: "user",
-			content:
-				userContent.length === 1 && typeof userContent[0] === "string"
-					? (userContent[0] as string)
-					: userContent,
-		});
-
 		const config = ImageGenNodeConfigSchema.parse(node.config);
 
-		const result = await generateText({
+		// 2. Execute Image Generation using generateContent
+		const response = await client.models.generateContent({
 			model: config.model,
-			prompt: messages,
-			system: "Generate image for the user.",
+			contents: [
+				{
+					role: "user",
+					parts: parts,
+				},
+			],
+			config: {
+				responseModalities: ["IMAGE"],
+				// Cast to any to bypass strict type checks if the SDK types
+				// haven't fully updated to include 'imageConfig' in GenerateContentConfig yet
+				imageConfig: {
+					aspectRatio: config.aspectRatio,
+					imageSize: config.imageSize,
+				},
+			},
 		});
 
-		const imageFiles = result.files.filter((f) =>
-			f.mediaType?.startsWith("image/"),
-		);
+		// 3. Process the Result
+		// We look for the first part containing inlineData (the generated image)
+		const candidate = response.candidates?.[0];
+		const contentParts = candidate?.content?.parts;
+		const imagePart = contentParts?.find((part) => part.inlineData);
 
-		if (imageFiles.length === 0) {
-			return { success: false, error: "No images generated" };
+		if (!imagePart || !imagePart.inlineData || !imagePart.inlineData.data) {
+			// Check if there's a text refusal/error message in the response
+			const textPart = contentParts?.find((part) => part.text)?.text;
+			if (textPart) {
+				return {
+					success: false,
+					error: `Model returned text instead of image: ${textPart}`,
+				};
+			}
+			return { success: false, error: "No image generated" };
 		}
 
-		const file = imageFiles[0];
+		const mimeType = imagePart.inlineData.mimeType ?? "image/png";
+		const buffer = Buffer.from(imagePart.inlineData.data, "base64");
 
-		const extension = file.mediaType?.split("/")[1] || "png";
+		// Determine extension based on mimeType
+		let extension = "png";
+		if (mimeType.includes("jpeg") || mimeType.includes("jpg"))
+			extension = "jpg";
+		else if (mimeType.includes("webp")) extension = "webp";
 
-		const buffer = Buffer.from(file.uint8Array.buffer);
+		const contentType = mimeType;
+
 		const dimensions = await getImageDimensions(buffer);
 		const randId = randomUUID();
 		const fileName = `imagegen_${randId}.${extension}`;
 		const key = `assets/${data.canvas.userId}/${fileName}`;
-		const contentType = file.mediaType;
 		const bucket = ENV_CONFIG.GCS_ASSETS_BUCKET;
+
 		await uploadToS3(buffer, key, contentType, bucket);
 
-		const expiresIn = 3600 * 24 * 6.9; // A bit less than a week
+		const expiresIn = 3600 * 24 * 6.9;
 		const signedUrl = await generateSignedUrl(key, bucket, expiresIn);
 		const signedUrlExp = new Date(Date.now() + expiresIn * 1000);
 
@@ -134,12 +173,12 @@ const imageGenProcessor: NodeProcessor = async ({ node, data }) => {
 
 		return { success: true, newResult };
 	} catch (err: unknown) {
-		console.log(err);
+		console.error(err);
 		if (err instanceof Error) {
 			logger.error(err.message);
 			return {
 				success: false,
-				error: err?.message ?? "ImageGen processing failed",
+				error: err.message ?? "ImageGen processing failed",
 			};
 		}
 		return { success: false, error: "ImageGen processing failed" };

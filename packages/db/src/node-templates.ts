@@ -168,7 +168,7 @@ export async function SEED_createNodeTemplates(prisma: PrismaClient) {
 					},
 				],
 			},
-			defaultConfig: { maxTurns: 20, model: "google/gemini-3-pro-preview" },
+			defaultConfig: { maxTurns: 20, model: "gemini-3-pro-preview" },
 		},
 		{
 			type: NodeType.Text,
@@ -550,7 +550,7 @@ export async function SEED_createNodeTemplates(prisma: PrismaClient) {
 					},
 				],
 			},
-			defaultConfig: { model: "gemini-3-pro-image-preview" },
+			defaultConfig: { model: "gemini-3-pro-image" },
 		},
 		{
 			type: NodeType.LLM,

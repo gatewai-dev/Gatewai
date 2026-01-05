@@ -25,10 +25,7 @@ const IMAGEGEN_ASPECT_RATIOS = [
 
 const IMAGEGEN_IMAGE_SIZES = ["1K", "2K", "4K"] as const;
 
-const IMAGEGEN_NODE_MODELS = [
-	"google/gemini-3-pro-image",
-	"google/gemini-2.5-flash-image",
-] as const;
+const IMAGEGEN_NODE_MODELS = ["gemini-3-pro-image-preview"] as const;
 
 const ImageGenNodeConfigSchema = z
 	.object({
@@ -36,18 +33,7 @@ const ImageGenNodeConfigSchema = z
 		aspectRatio: z.enum(IMAGEGEN_ASPECT_RATIOS).default("1:1"),
 		imageSize: z.enum(IMAGEGEN_IMAGE_SIZES).default("1K"),
 	})
-	.strict()
-	.refine(
-		(data) =>
-			!(
-				data.model === "google/gemini-2.5-flash-image" &&
-				data.imageSize !== "1K"
-			),
-		{
-			message: "Higher resolutions only supported by pro model",
-			path: ["imageSize"],
-		},
-	);
+	.strict();
 
 // 3D Node
 const PreviewNodeConfigSchema = z.object({}).strict();
@@ -162,10 +148,7 @@ const RouterNodeConfigSchema = z
 	})
 	.strict();
 
-const LLM_NODE_MODELS = [
-	"google/gemini-3-pro-preview",
-	"google/gemini-3-flash",
-] as const;
+const LLM_NODE_MODELS = ["gemini-3-pro-preview", "gemini-3-flash"] as const;
 
 const LLMNodeConfigSchema = z
 	.object({
@@ -174,10 +157,7 @@ const LLMNodeConfigSchema = z
 	})
 	.strict();
 
-const AGENT_NODE_MODELS = [
-	"google/gemini-3-pro-preview",
-	"google/gemini-3-flash",
-] as const;
+const AGENT_NODE_MODELS = ["gemini-3-pro-preview", "gemini-3-flash"] as const;
 
 const AgentNodeConfigSchema = z
 	.object({
@@ -258,13 +238,13 @@ const VideoGenFirstLastFrameNodeConfigSchema = VideoGenBaseSchema.extend({
 
 // SpeechToText Node (based on Gemini audio understanding)
 const STT_NODE_MODELS = [
-	"google/gemini-2.5-flash",
-	"google/gemini-3-pro-preview", // Added pro for variety, assuming support
+	"gemini-2.5-flash",
+	"gemini-3-pro-preview", // Added pro for variety, assuming support
 ] as const;
 
 const SpeechToTextNodeConfigSchema = z
 	.object({
-		model: z.enum(STT_NODE_MODELS).default("google/gemini-2.5-flash"),
+		model: z.enum(STT_NODE_MODELS).default("gemini-2.5-flash"),
 		languageCode: z.string().optional(), // Optional hint for primary language
 		enableSpeakerDiarization: z.boolean().default(false),
 		enableTimestamps: z.boolean().default(false),

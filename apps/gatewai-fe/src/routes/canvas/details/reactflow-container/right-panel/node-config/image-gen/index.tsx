@@ -58,7 +58,7 @@ const ImageGenNodeConfigComponent = memo(
 				if (name === "model" || name === "imageSize") {
 					const val = value as ImageGenConfig;
 					if (
-						val.model === "google/gemini-2.5-flash-image" &&
+						val.model === "gemini-2.5-flash-image" &&
 						val.imageSize !== "1K"
 					) {
 						form.setValue("imageSize", "1K", {
