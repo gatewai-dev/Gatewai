@@ -368,9 +368,11 @@ const canvasRoutes = new Hono<{ Variables: AuthHonoTypes }>({
 				updateData.result = uNode.result;
 			}
 			console.log({ uNode });
-			if (updateData.result) {
-				(updateData.result as NodeResult).selectedOutputIndex =
-					uNode.result.selectedOutputIndex;
+			if (uNode.result) {
+				updateData.result = {
+					selectedOutputIndex: uNode.result?.selectedOutputIndex,
+					outputs: (uNode.result as NodeResult).outputs,
+				} as NodeResult;
 			}
 			return prisma.node.update({
 				data: updateData,
