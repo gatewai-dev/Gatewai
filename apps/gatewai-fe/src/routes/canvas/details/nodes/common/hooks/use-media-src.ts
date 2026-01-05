@@ -4,17 +4,19 @@ import type { NodeEntityType } from "@/store/nodes";
 import { GetAssetEndpoint } from "@/utils/file";
 import { useNodeResult } from "../../../processor/processor-ctx";
 
-function useVideoSrc(nodeId: NodeEntityType["id"]) {
+type MediaTypes = "Image" | "Video" | "Audio";
+
+function useMediaInputSrc(nodeId: NodeEntityType["id"], type: MediaTypes) {
 	const { result } = useNodeResult(nodeId);
 
 	const videoOutputItem = useMemo(() => {
 		const nodeResult = result as VideoGenResult;
 		const outputItem = nodeResult?.outputs[nodeResult.selectedOutputIndex];
 		if (outputItem) {
-			return outputItem.items.find((f) => f.type === "Video")?.data;
+			return outputItem.items.find((f) => f.type === type)?.data;
 		}
 		return null;
-	}, [result]);
+	}, [result, type]);
 
 	const videoSrc = videoOutputItem?.entity?.id
 		? GetAssetEndpoint(videoOutputItem?.entity?.id)
@@ -23,4 +25,4 @@ function useVideoSrc(nodeId: NodeEntityType["id"]) {
 	return videoSrc;
 }
 
-export { useVideoSrc };
+export { useMediaInputSrc };

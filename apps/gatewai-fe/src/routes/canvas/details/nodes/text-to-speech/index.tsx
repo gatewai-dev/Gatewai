@@ -1,29 +1,20 @@
 import { memo } from "react";
 import { useAppSelector } from "@/store";
-import { makeSelectHandlesByNodeId } from "@/store/handles";
 import { makeSelectNodeById } from "@/store/nodes";
 import { RunNodeButton } from "../../components/run-node-button";
 import { useNodeResult } from "../../processor/processor-ctx";
 import { BaseNode } from "../base";
-import { CreateHandleButton } from "../common/create-handle-button";
+import { AudioRenderer } from "../common/audio-renderer";
 import { useMediaInputSrc } from "../common/hooks/use-media-src";
-import { VideoRenderer } from "../common/video-renderer";
 import { OutputSelector } from "../misc/output-selector";
 
-const VideoGenNodeComponent = memo(
+const TextToSpeechNodeComponent = memo(
 	(props: { selected: boolean; id: string; dragging: boolean }) => {
 		const node = useAppSelector(makeSelectNodeById(props.id));
 		const { result } = useNodeResult(props.id);
-		const selectHandles = useAppSelector(makeSelectHandlesByNodeId(props.id));
-		const inputHandles = selectHandles.filter((f) => f.type === "Input");
-		const referenceInputHandles = inputHandles.filter((f) =>
-			f.dataTypes.includes("Image"),
-		);
-
-		const hasThreeImageInputs = referenceInputHandles.length === 3;
 		const hasMoreThanOneOutput = result?.outputs && result?.outputs?.length > 1;
 
-		const videoSrc = useMediaInputSrc(props.id, "Video");
+		const audioSrc = useMediaInputSrc(props.id, "Audio");
 
 		return (
 			<BaseNode
@@ -32,25 +23,23 @@ const VideoGenNodeComponent = memo(
 				dragging={props.dragging}
 			>
 				<div className="flex flex-col gap-3">
-					<div className="media-container w-full rounded-xs min-h-[156px] relative">
+					<div className="w-full rounded-xs relative">
 						{hasMoreThanOneOutput && (
 							<div className="absolute top-1 left-1 z-10">
 								<OutputSelector node={node} />
 							</div>
 						)}
-						{videoSrc && <VideoRenderer src={videoSrc} />}
+						{audioSrc && <AudioRenderer src={audioSrc} />}
 					</div>
+					{!audioSrc && (
+						<div className="min-h-[50px] w-full bg-input max-h-full p-2">
+							<p className="text-xs text-gray-500">
+								Audio track will display here after generation
+							</p>
+						</div>
+					)}
 
-					<div className="flex justify-between items-center w-full">
-						<CreateHandleButton
-							title={
-								hasThreeImageInputs
-									? "Three is the max number of reference images that can be used."
-									: undefined
-							}
-							disabled={hasThreeImageInputs}
-							nodeId={props.id}
-						/>
+					<div className="flex justify-end items-center w-full">
 						<RunNodeButton nodeId={props.id} />
 					</div>
 				</div>
@@ -59,4 +48,4 @@ const VideoGenNodeComponent = memo(
 	},
 );
 
-export { VideoGenNodeComponent };
+export { TextToSpeechNodeComponent };

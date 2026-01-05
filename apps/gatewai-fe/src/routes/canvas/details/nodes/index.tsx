@@ -13,6 +13,7 @@ import { ResizeNodeComponent } from "./resize";
 import { SpeechToTextNodeComponent } from "./speech-to-text";
 import { NoteNodeComponent } from "./sticky-note";
 import { TextNodeComponent } from "./text";
+import { TextToSpeechNodeComponent } from "./text-to-speech";
 import { VideoGenNodeComponent } from "./video-gen";
 import { VideoGenExtendNodeComponent } from "./video-gen-extend";
 import { VideoGenFirstLastFrameNodeComponent } from "./video-gen-first-last-frame";
@@ -37,9 +38,9 @@ const nodeTypes = {
 	VideoGenExtend: VideoGenExtendNodeComponent,
 	VideoGenFirstLastFrame: VideoGenFirstLastFrameNodeComponent,
 	SpeechToText: SpeechToTextNodeComponent,
+	TextToSpeech: TextToSpeechNodeComponent,
 };
 
-// Export components
 export {
 	nodeTypes,
 	LlmNodeComponent,
@@ -59,4 +60,5 @@ export {
 	VideoGenExtendNodeComponent,
 	VideoGenFirstLastFrameNodeComponent,
 	SpeechToTextNodeComponent,
+	TextToSpeechNodeComponent,
 };

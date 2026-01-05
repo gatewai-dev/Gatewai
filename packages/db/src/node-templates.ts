@@ -456,7 +456,7 @@ export async function SEED_createNodeTemplates(prisma: PrismaClient) {
 		{
 			type: NodeType.Compositor,
 			displayName: "Compositor",
-			description: "Compose an image using image or text",
+			description: "Compose an image using images and text",
 			category: "Image",
 			subcategory: null,
 			tokenPrice: 0.0,

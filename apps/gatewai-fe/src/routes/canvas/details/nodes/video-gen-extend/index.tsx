@@ -4,7 +4,7 @@ import { makeSelectNodeById } from "@/store/nodes";
 import { RunNodeButton } from "../../components/run-node-button";
 import { useNodeResult } from "../../processor/processor-ctx";
 import { BaseNode } from "../base";
-import { useVideoSrc } from "../common/hooks/use-video-src";
+import { useMediaInputSrc } from "../common/hooks/use-media-src";
 import { VideoRenderer } from "../common/video-renderer";
 import { OutputSelector } from "../misc/output-selector";
 
@@ -15,7 +15,7 @@ const VideoGenExtendNodeComponent = memo(
 		const { result } = useNodeResult(props.id);
 		const hasMoreThanOneOutput = result?.outputs && result?.outputs?.length > 1;
 
-		const videoSrc = useVideoSrc(props.id);
+		const videoSrc = useMediaInputSrc(props.id, "Video");
 
 		return (
 			<BaseNode

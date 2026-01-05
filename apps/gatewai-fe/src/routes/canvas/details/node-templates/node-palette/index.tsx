@@ -60,7 +60,7 @@ function NodePaletteContent({ templates }: { templates: NodeTemplateListRPC }) {
 							</Button>
 						</TooltipTrigger>
 						<TooltipContent side="right">
-							{isCollapsed ? "Expand Nodes" : "Collapse"}
+							{isCollapsed ? "Expand Node Menu" : "Collapse"}
 						</TooltipContent>
 					</Tooltip>
 				</div>
@@ -69,7 +69,7 @@ function NodePaletteContent({ templates }: { templates: NodeTemplateListRPC }) {
 				{/* Search and List Content */}
 				<div
 					className={cn(
-						"flex flex-col flex-1 mx-4 h-screen transition-all duration-300",
+						"flex flex-col flex-1 mx-4 h-[calc(100%-16rem)] transition-all duration-300",
 						isCollapsed
 							? "opacity-0 invisible w-0"
 							: "opacity-100 visible w-auto",
