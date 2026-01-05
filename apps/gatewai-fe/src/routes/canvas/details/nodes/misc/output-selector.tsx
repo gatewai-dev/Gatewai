@@ -1,25 +1,44 @@
 import type { NodeResult } from "@gatewai/types";
 import { ChevronLeft, ChevronRight } from "lucide-react";
 import { Button } from "@/components/ui/button";
-import { useAppDispatch } from "@/store";
-import {
-	decrementSelectedResultIndex,
-	incrementSelectedResultIndex,
-	type NodeEntityType,
-} from "@/store/nodes";
+import type { NodeEntityType } from "@/store/nodes";
+import { useCanvasCtx } from "../../ctx/canvas-ctx";
 
 function OutputSelector({ node }: { node: NodeEntityType }) {
-	const dispatch = useAppDispatch();
+	const { onNodeResultUpdate } = useCanvasCtx();
 	const result = node?.result as unknown as NodeResult;
 	if (!result || Number.isNaN(result.selectedOutputIndex)) {
 		return null;
 	}
 	const incrementSelectedIndex = () => {
-		dispatch(incrementSelectedResultIndex({ id: node.id }));
+		if (!node.result) {
+			return;
+		}
+		const nodeResult = node.result as unknown as NodeResult;
+		onNodeResultUpdate({
+			id: node.id,
+			newResult: {
+				...nodeResult,
+				selectedOutputIndex: Math.min(
+					result.selectedOutputIndex + 1,
+					result.outputs.length - 1,
+				),
+			},
+		});
 	};
 
 	const decrementSelectedIndex = () => {
-		dispatch(decrementSelectedResultIndex({ id: node.id }));
+		if (!node.result) {
+			return;
+		}
+		const nodeResult = node.result as unknown as NodeResult;
+		onNodeResultUpdate({
+			id: node.id,
+			newResult: {
+				...nodeResult,
+				selectedOutputIndex: Math.max(result.selectedOutputIndex - 1, 0),
+			},
+		});
 	};
 
 	return (

@@ -71,7 +71,6 @@ const PaintNodeComponent = memo((props: NodeProps<PaintNode>) => {
 		}
 		return null;
 	}, [inputNodeResult]);
-	console.log({ inputImageUrl });
 	const updateConfig = useCallback(
 		(cfg: Partial<PaintNodeConfig>) => {
 			onNodeConfigUpdate({

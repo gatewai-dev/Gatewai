@@ -123,6 +123,7 @@
 		"@tailwindcss/typography": "^0.5.19",
 		"@types/color": "^4.2.0",
 		"@types/gl": "^6.0.5",
+		"@types/lodash": "^4.17.21",
 		"@types/node": "^20.11.17",
 		"@types/react": "^19.1.10",
 		"@types/react-dom": "^19.1.7",

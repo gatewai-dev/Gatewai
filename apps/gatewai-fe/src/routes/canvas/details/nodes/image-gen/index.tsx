@@ -1,4 +1,3 @@
-import type { NodeProps } from "@xyflow/react";
 import { memo } from "react";
 import { useAppSelector } from "@/store";
 import { makeSelectNodeById } from "@/store/nodes";
@@ -15,7 +14,6 @@ import { OutputSelector } from "../misc/output-selector";
 const ImageGenNodeComponent = memo(
 	(props: { selected: boolean; id: string; dragging: boolean }) => {
 		const node = useAppSelector(makeSelectNodeById(props.id));
-
 		const { result } = useNodeResult(props.id);
 		const resultHash = useNodeResultHash(props.id);
 		const hasMoreThanOneOutput = result?.outputs && result?.outputs?.length > 1;

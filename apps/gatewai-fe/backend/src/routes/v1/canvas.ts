@@ -1,4 +1,5 @@
 import { type NodeUpdateInput, prisma } from "@gatewai/db";
+import type { NodeResult } from "@gatewai/types";
 import { zValidator } from "@hono/zod-validator";
 import type { XYPosition } from "@xyflow/react";
 import { Hono } from "hono";
@@ -365,6 +366,10 @@ const canvasRoutes = new Hono<{ Variables: AuthHonoTypes }>({
 			};
 			if (!isTerminalNode(uNode.templateId)) {
 				updateData.result = uNode.result;
+			}
+			if (updateData.result) {
+				(updateData.result as NodeResult).selectedOutputIndex =
+					uNode.result.selectedOutputIndex;
 			}
 			return prisma.node.update({
 				data: updateData,

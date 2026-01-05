@@ -77,9 +77,7 @@ const TaskManagerProvider = ({
 						batchId: batchIdsToPoll,
 					},
 				};
-				dispatch(getBatchDetails(params))
-					.unwrap()
-					.then(() => {});
+				dispatch(getBatchDetails(params));
 			}, pollingInterval);
 
 			return () => clearInterval(intervalId);

@@ -56,7 +56,7 @@ const textToSpeechProcessor: NodeProcessor = async ({ node, data }) => {
 				},
 			};
 		}
-		console.log({ speechConfig });
+
 		const response = await genAI.models.generateContent({
 			model: nodeConfig.model,
 			contents: [{ parts: [{ text: userPrompt }] }],

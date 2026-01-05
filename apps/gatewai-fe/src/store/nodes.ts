@@ -29,6 +29,7 @@ const nodesSlice = createSlice({
 		updateNodeEntity: nodeAdapter.updateOne,
 		deleteNodeEntity: nodeAdapter.removeOne,
 		deleteManyNodeEntity: nodeAdapter.removeMany,
+		upsertManyNodeEntity: nodeAdapter.upsertMany,
 		setAllNodeEntities: nodeAdapter.setAll,
 		incrementSelectedResultIndex: (
 			state,
@@ -174,6 +175,7 @@ export const {
 	updateNodeConfig,
 	deleteNodeEntity,
 	deleteManyNodeEntity,
+	upsertManyNodeEntity,
 	setAllNodeEntities,
 	incrementSelectedResultIndex,
 	decrementSelectedResultIndex,

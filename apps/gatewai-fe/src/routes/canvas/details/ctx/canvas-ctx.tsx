@@ -193,6 +193,7 @@ const CanvasProvider = ({
 					width: rfNode.width ?? undefined,
 					height: rfNode.height ?? undefined,
 					zIndex: n.zIndex ?? undefined,
+					result: n.result ?? undefined,
 				};
 			})
 			.filter((f) => !!f);
@@ -219,7 +220,7 @@ const CanvasProvider = ({
 			edges: currentDbEdges,
 			handles: currentHandleEntities,
 		};
-
+		console.log({ currentCanvasDetailsNodes });
 		return patchCanvasAsync({
 			json: body,
 			param: {

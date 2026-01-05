@@ -1,4 +1,5 @@
 import type { FileResult, NodeResult } from "@gatewai/types";
+import { isEqual } from "lodash";
 import {
 	createContext,
 	useCallback,
@@ -142,9 +143,6 @@ export function useNodeResult<T extends NodeResult = NodeResult>(
 	return useSyncExternalStore(subscribe, getSnapshot, getSnapshot);
 }
 
-// A simple deep equality helper (or use lodash.isEqual)
-const isDeepEqual = (a: any, b: any) => JSON.stringify(a) === JSON.stringify(b);
-
 export function useNodeValidation(nodeId: string): Record<string, string> {
 	const processor = useProcessor();
 	const lastSnapshot = useRef<Record<string, string>>({});
@@ -162,7 +160,7 @@ export function useNodeValidation(nodeId: string): Record<string, string> {
 		const nextValue = processor.getNodeValidation(nodeId);
 
 		// Only update the reference if the content actually changed
-		if (!isDeepEqual(lastSnapshot.current, nextValue)) {
+		if (!isEqual(lastSnapshot.current, nextValue)) {
 			lastSnapshot.current = nextValue;
 		}
 
@@ -171,6 +169,7 @@ export function useNodeValidation(nodeId: string): Record<string, string> {
 
 	return useSyncExternalStore(subscribe, getSnapshot, getSnapshot);
 }
+
 /**
  * Subscribe to a node's image output for canvas rendering, used by crop etc
  */
