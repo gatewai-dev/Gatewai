@@ -367,6 +367,7 @@ const canvasRoutes = new Hono<{ Variables: AuthHonoTypes }>({
 			if (!isTerminalNode(uNode.templateId)) {
 				updateData.result = uNode.result;
 			}
+			console.log({ uNode });
 			if (updateData.result) {
 				(updateData.result as NodeResult).selectedOutputIndex =
 					uNode.result.selectedOutputIndex;

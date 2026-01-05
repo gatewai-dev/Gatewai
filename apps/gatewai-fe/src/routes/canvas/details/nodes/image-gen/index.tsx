@@ -17,7 +17,7 @@ const ImageGenNodeComponent = memo(
 		const { result } = useNodeResult(props.id);
 		const resultHash = useNodeResultHash(props.id);
 		const hasMoreThanOneOutput = result?.outputs && result?.outputs?.length > 1;
-
+		console.log({ result });
 		return (
 			<BaseNode
 				selected={props.selected}

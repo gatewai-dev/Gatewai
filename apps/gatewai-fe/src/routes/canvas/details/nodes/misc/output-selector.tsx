@@ -6,10 +6,12 @@ import { useCanvasCtx } from "../../ctx/canvas-ctx";
 
 function OutputSelector({ node }: { node: NodeEntityType }) {
 	const { onNodeResultUpdate } = useCanvasCtx();
+
 	const result = node?.result as unknown as NodeResult;
 	if (!result || Number.isNaN(result.selectedOutputIndex)) {
 		return null;
 	}
+
 	const incrementSelectedIndex = () => {
 		if (!node.result) {
 			return;

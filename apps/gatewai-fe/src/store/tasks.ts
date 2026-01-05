@@ -148,7 +148,7 @@ const tasksSlice = createSlice({
 						}
 					});
 				});
-				store.dispatch(upsertManyNodeEntity(completedNodes));
+				store.dispatch(nodeAdapter.upsertMany(state, completedNodes));
 			});
 	},
 });
