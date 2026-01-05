@@ -59,7 +59,7 @@ export class NodeWFProcessor {
 		return { depGraph, revDepGraph };
 	}
 
-	// Topo sort using Kahn's algorithm.
+	// Topo sort using Kahn's algo.
 	private topologicalSort(
 		nodes: string[],
 		depGraph: Map<Node["id"], Node["id"][]>,

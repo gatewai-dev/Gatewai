@@ -646,8 +646,7 @@ export async function SEED_createNodeTemplates(prisma: PrismaClient) {
 					},
 					{
 						type: HandleType.Input,
-						dataTypes: [DataType.Audio],
-						required: true,
+						dataTypes: [DataType.Text],
 						label: "Prompt",
 					},
 					{

@@ -159,7 +159,7 @@ const canvasRoutes = new Hono<{ Variables: AuthHonoTypes }>({
 			throw new HTTPException(401, { message: "User not found" });
 		}
 
-		const response = await GetCanvasEntities(id, user);
+		const response = await GetCanvasEntities(id);
 
 		return c.json(response);
 	})
@@ -367,7 +367,7 @@ const canvasRoutes = new Hono<{ Variables: AuthHonoTypes }>({
 			if (!isTerminalNode(uNode.templateId)) {
 				updateData.result = uNode.result;
 			}
-			console.log({ uNode });
+
 			if (uNode.result) {
 				updateData.result = {
 					selectedOutputIndex: uNode.result?.selectedOutputIndex,

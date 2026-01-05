@@ -12,7 +12,6 @@ import { BaseNode } from "../base";
 import { MediaContent } from "../media-content";
 import type { FileNode } from "../node-props";
 
-// Extract types that have specific success properties
 type SuccessfulUploadFileNodeAssetRPC = Extract<
 	UploadFileNodeAssetRPC,
 	{ handles: unknown } | { someOtherSuccessProperty: unknown }
@@ -28,44 +27,54 @@ const FileNodeComponent = memo((props: NodeProps<FileNode>) => {
 	const existingMimeType =
 		result?.outputs?.[0]?.items?.[0]?.data?.entity?.mimeType;
 
-	// 1. Updated to detect both images and videos
+	// 1. Updated to detect images, videos, AND audio
 	const existingType = existingMimeType?.startsWith("image/")
 		? "image"
 		: existingMimeType?.startsWith("video/")
 			? "video"
-			: null;
+			: existingMimeType?.startsWith("audio/")
+				? "audio"
+				: null;
 
-	// 2. Updated accept object to include video formats
+	// 2. Expanded accept object to include common audio formats
 	const accept = {
 		"image/jpeg": [],
 		"image/png": [],
 		"image/webp": [],
 		"video/mp4": [],
-		"video/quicktime": [], // .mov
+		"video/quicktime": [],
 		"video/webm": [],
+		"audio/mpeg": [], // .mp3
+		"audio/wav": [], // .wav
+		"audio/ogg": [], // .ogg
+		"audio/aac": [], // .aac
+		"audio/flac": [], // .flac
 	};
 
 	const buttonAccept =
-		showResult && existingType ? [`${existingType}/*`] : ["image/*", "video/*"];
+		showResult && existingType
+			? [`${existingType}/*`]
+			: ["image/*", "video/*", "audio/*"];
 
 	const buttonLabel =
 		showResult && existingType
 			? `Upload another ${existingType}`
 			: "Click to upload a file";
 
-	const dropzoneLabel = "Click or drag & drop an image or video here";
+	// 3. Updated Dropzone label to reflect audio support
+	const dropzoneLabel =
+		"Click or drag & drop an image, video, or audio file here";
 
 	const onUploadSuccess = (uploadResult: UploadFileNodeAssetRPC) => {
 		if (Object.hasOwn(uploadResult, "error")) {
 			const errorResult = uploadResult as { error: string };
 			console.error("Upload failed:", errorResult.error);
 			toast.error(
-				"An error occured when uploading file, please try again later.",
+				"An error occurred when uploading file, please try again later.",
 			);
 			return;
 		}
 		const successResult = uploadResult as SuccessfulUploadFileNodeAssetRPC;
-		// Assuming uploadResult is now the updated node
 		dispatch(
 			updateNodeResult({
 				id: props.id,
@@ -77,7 +86,7 @@ const FileNodeComponent = memo((props: NodeProps<FileNode>) => {
 	const onUploadError = (error: Error) => {
 		console.error("Upload failed:", error);
 		toast.error(
-			"An error occured when uploading file, please try again later.",
+			"An error occurred when uploading file, please try again later.",
 		);
 	};
 

@@ -7,12 +7,8 @@ import {
 } from "@reduxjs/toolkit";
 import { rpcClient } from "@/rpc/client";
 import type { BatchDetailsRPC, BatchDetailsRPCParams } from "@/rpc/types";
-import { type RootState, store, useAppDispatch } from "@/store"; // Adjust based on your store setup
-import {
-	type NodeEntityType,
-	nodeAdapter,
-	upsertManyNodeEntity,
-} from "./nodes";
+import { type RootState, store } from "@/store"; // Adjust based on your store setup
+import { type NodeEntityType, nodesSlice } from "./nodes";
 
 export type BatchEntity = BatchDetailsRPC["batches"][number];
 export type BatchNodeData = BatchEntity["tasks"][number];
@@ -148,7 +144,7 @@ const tasksSlice = createSlice({
 						}
 					});
 				});
-				store.dispatch(nodeAdapter.upsertMany(state, completedNodes));
+				store.dispatch(nodesSlice.actions.upsertManyNodeEntity(completedNodes));
 			});
 	},
 });

@@ -24,9 +24,11 @@ const SHARED_MEDIA_THEME = {
 const MediaShell = ({
 	children,
 	isAudio = false,
+	showControlsAlways = false, // Added prop
 }: {
 	children: ReactNode;
 	isAudio?: boolean;
+	showControlsAlways?: boolean;
 }) => (
 	<div
 		className={`
@@ -34,7 +36,12 @@ const MediaShell = ({
         ${isAudio ? "h-24" : "aspect-video"}
     `}
 	>
-		<MediaController className="w-full h-full block" style={SHARED_MEDIA_THEME}>
+		{/* Pass showControlsAlways as a data attribute or handle via class logic */}
+		<MediaController
+			className="w-full h-full block"
+			style={SHARED_MEDIA_THEME}
+			noHotkeys={isAudio}
+		>
 			{children}
 		</MediaController>
 	</div>
@@ -53,11 +60,22 @@ const CentralPlayButton = () => (
 // Shared Bottom Control Bar
 const SharedControlBar = ({
 	hideFullscreen = false,
+	showControlsAlways = false, // Added prop
 }: {
 	hideFullscreen?: boolean;
+	showControlsAlways?: boolean;
 }) => (
 	<div className="absolute inset-x-0 bottom-0 pointer-events-none">
-		<MediaControlBar className="w-full h-10 px-3 flex items-center gap-2 bg-linear-to-b from-black/20 via-black/10 pointer-events-auto translate-y-1 opacity-0 group-hover:translate-y-0 group-hover:opacity-100 transition-all duration-300">
+		<MediaControlBar
+			className={`
+                w-full h-10 px-3 flex items-center gap-2 bg-linear-to-b from-black/60 to-black/20 pointer-events-auto transition-all duration-300
+                ${
+									showControlsAlways
+										? "opacity-100 translate-y-0"
+										: "opacity-0 translate-y-1 group-hover:opacity-100 group-hover:translate-y-0"
+								}
+            `}
+		>
 			<MediaPlayButton className="w-4 h-4 text-white/90 hover:text-white transition-colors" />
 			<MediaTimeRange className="grow" />
 			<div className="flex items-center gap-2">

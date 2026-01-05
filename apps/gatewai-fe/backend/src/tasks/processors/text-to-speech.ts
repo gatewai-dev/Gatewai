@@ -4,6 +4,7 @@ import path from "node:path";
 import { fileURLToPath } from "node:url";
 import { DataType, prisma } from "@gatewai/db";
 import {
+	type TextToSpeechNodeConfig,
 	TextToSpeechNodeConfigSchema,
 	type TextToSpeechResult,
 } from "@gatewai/types";
@@ -26,7 +27,13 @@ const textToSpeechProcessor: NodeProcessor = async ({ node, data }) => {
 			label: "Prompt",
 		})?.data as string;
 
-		const nodeConfig = TextToSpeechNodeConfigSchema.parse(node.config);
+		let nodeConfig: TextToSpeechNodeConfig;
+		try {
+			nodeConfig = TextToSpeechNodeConfigSchema.parse(node.config);
+		} catch (error) {
+			logger.error(error);
+			return { success: false, error: "Anvalid config." };
+		}
 
 		let speechConfig: SpeechConfig = {
 			languageCode: nodeConfig.languageCode,
@@ -45,14 +52,10 @@ const textToSpeechProcessor: NodeProcessor = async ({ node, data }) => {
 				})),
 			};
 		} else {
-			const cfg = nodeConfig.speakerConfig?.[0];
-			if (!cfg) {
-				throw new Error("Missing speaker config");
-			}
 			speechConfig = {
 				...speechConfig,
 				voiceConfig: {
-					prebuiltVoiceConfig: { voiceName: cfg.voiceName },
+					prebuiltVoiceConfig: { voiceName: nodeConfig.voiceName },
 				},
 			};
 		}
@@ -69,7 +72,7 @@ const textToSpeechProcessor: NodeProcessor = async ({ node, data }) => {
 		const responseData =
 			response.candidates?.[0]?.content?.parts?.[0]?.inlineData?.data;
 		if (!responseData) {
-			throw new Error("Missing data from TTS endpoint");
+			return { success: false, error: "No data in response TTS result." };
 		}
 		const audioBuffer = Buffer.from(responseData, "base64");
 
@@ -77,20 +80,13 @@ const textToSpeechProcessor: NodeProcessor = async ({ node, data }) => {
 		const duration = metadata.format.duration ?? 0;
 
 		const extension = ".wav";
-		const now = Date.now().toString();
-		const filePath = path.join(
-			__dirname,
-			`${node.id}_output`,
-			`${now}${extension}`,
-		);
 
-		const fileBuffer = await readFile(filePath);
 		const randId = randomUUID();
 		const fileName = `text_to_speech_${randId}.${extension}`;
 		const key = `assets/${data.canvas.userId}/${fileName}`;
 		const contentType = "video/wav";
 		const bucket = ENV_CONFIG.GCS_ASSETS_BUCKET;
-		await uploadToS3(fileBuffer, key, contentType, bucket);
+		await uploadToS3(audioBuffer, key, contentType, bucket);
 
 		const expiresIn = 3600 * 24 * 6.9; // A bit less than a week
 		const signedUrl = await generateSignedUrl(key, bucket, expiresIn);
@@ -113,7 +109,8 @@ const textToSpeechProcessor: NodeProcessor = async ({ node, data }) => {
 		const outputHandle = data.handles.find(
 			(h) => h.nodeId === node.id && h.type === "Output",
 		);
-		if (!outputHandle) throw new Error("Output handle is missing");
+		if (!outputHandle)
+			return { success: false, error: "Output handle is missing." };
 
 		const newResult = structuredClone(
 			node.result as unknown as TextToSpeechResult,

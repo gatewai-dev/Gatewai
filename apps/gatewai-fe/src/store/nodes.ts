@@ -15,7 +15,7 @@ export const nodeAdapter = createEntityAdapter({
 	selectId: (node: NodeEntityType) => node.id,
 });
 
-const nodesSlice = createSlice({
+export const nodesSlice = createSlice({
 	name: "nodes",
 	initialState: nodeAdapter.getInitialState<{
 		selectedNodeIds: NodeEntityType["id"][] | null;
@@ -31,52 +31,6 @@ const nodesSlice = createSlice({
 		deleteManyNodeEntity: nodeAdapter.removeMany,
 		upsertManyNodeEntity: nodeAdapter.upsertMany,
 		setAllNodeEntities: nodeAdapter.setAll,
-		incrementSelectedResultIndex: (
-			state,
-			action: { payload: { id: string } },
-		) => {
-			const { id } = action.payload;
-			const node = state.entities[id] as NodeEntityType;
-			const result = node.result as {
-				selectedOutputIndex?: number;
-				outputs?: unknown[];
-			};
-			if (!result) {
-				throw new Error("Node result is undefined");
-			}
-			if (node) {
-				node.result = {
-					...result,
-					selectedOutputIndex: Math.min(
-						(result?.selectedOutputIndex || 0) + 1,
-						(result?.outputs?.length || 1) - 1,
-					),
-				};
-			}
-		},
-		decrementSelectedResultIndex: (
-			state,
-			action: { payload: { id: string } },
-		) => {
-			const { id } = action.payload;
-			const node = state.entities[id] as NodeEntityType;
-			const result = node.result as {
-				selectedOutputIndex?: number;
-				outputs?: Output[];
-			};
-			if (!result) {
-				throw new Error("Node result is undefined");
-			}
-			if (node) {
-				node.result = {
-					...result,
-					selectedOutputIndex: Math.max(
-						(result?.selectedOutputIndex || 0) - 1,
-						0,
-					),
-				};
-			}
-		},
 		updateNodeConfig: (
 			state,
 			action: { payload: { id: string; newConfig: Partial<AllNodeConfig> } },

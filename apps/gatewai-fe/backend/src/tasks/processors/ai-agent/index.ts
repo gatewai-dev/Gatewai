@@ -76,7 +76,7 @@ function CreateOutputZodSchema(
 		} else {
 			const zodType = typeMap[dataType];
 			if (!zodType) {
-				throw new Error(`Unsupported data type: ${dataType}`);
+				return { success: false, error: `Unsupported data type: ${dataType}` };
 			}
 			handleZodObject = z.object({
 				outputHandleId: z.literal(outputHandleId),

@@ -348,6 +348,7 @@ const TextToSpeechNodeConfigSchema = z
 	.object({
 		model: z.enum(TTS_NODE_MODELS).default("gemini-2.5-flash-preview-tts"),
 		languageCode: z.enum(TTS_LANGUAGES).optional(),
+		voiceName: z.string().optional(),
 		speakerConfig: z.array(SpeakerVoiceConfigSchema).max(2).optional(),
 	})
 	.strict();

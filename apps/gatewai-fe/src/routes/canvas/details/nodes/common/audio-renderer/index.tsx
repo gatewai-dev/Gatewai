@@ -6,12 +6,21 @@ import {
 } from "../media-chrome";
 
 const AudioRenderer = memo(
-	({ src, title }: { src: string; title?: string }) => {
+	({
+		src,
+		title,
+		showControlsAlways = false, // Added prop
+	}: {
+		src: string;
+		title?: string;
+		showControlsAlways?: boolean;
+	}) => {
 		return (
-			<MediaShell isAudio>
+			<MediaShell isAudio showControlsAlways={showControlsAlways}>
 				<audio slot="media" src={src} preload="metadata" />
 
-				<div className="absolute inset-0 flex items-center px-6 pb-6">
+				{/* Added pointer-events-none here to stop the overlay from blocking the progress bar */}
+				<div className="absolute inset-0 flex items-center px-6 pb-6 pointer-events-none">
 					<div className="flex flex-col">
 						<span className="text-white/40 text-xs font-medium uppercase tracking-widest">
 							Audio Track
@@ -23,7 +32,10 @@ const AudioRenderer = memo(
 				</div>
 
 				<CentralPlayButton />
-				<SharedControlBar hideFullscreen />
+				<SharedControlBar
+					hideFullscreen
+					showControlsAlways={showControlsAlways}
+				/>
 			</MediaShell>
 		);
 	},

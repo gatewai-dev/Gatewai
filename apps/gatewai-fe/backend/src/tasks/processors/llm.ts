@@ -102,7 +102,8 @@ const llmProcessor: NodeProcessor = async ({ node, data }) => {
 		const outputHandle = data.handles.find(
 			(h) => h.nodeId === node.id && h.type === "Output",
 		);
-		if (!outputHandle) throw new Error("Output handle is missing");
+		if (!outputHandle)
+			return { success: false, error: "Output handle is missing." };
 
 		const newResult = structuredClone(node.result as unknown as LLMResult) ?? {
 			outputs: [],

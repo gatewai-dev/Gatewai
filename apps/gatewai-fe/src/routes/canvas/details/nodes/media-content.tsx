@@ -3,6 +3,7 @@ import { FileIcon } from "lucide-react";
 import { useMemo } from "react";
 import type { NodeEntityType } from "@/store/nodes";
 import { GetAssetEndpoint } from "@/utils/file";
+import { AudioRenderer } from "./common/audio-renderer";
 import { CanvasRenderer } from "./common/canvas-renderer";
 import { VideoRenderer } from "./common/video-renderer";
 import { OutputSelector } from "./misc/output-selector";
@@ -18,7 +19,8 @@ function MediaContent({
 	const outputItem = selectedOutput.items[0];
 	const isImage = outputItem.data.entity?.mimeType.startsWith("image");
 	const isVideo = outputItem.data.entity?.mimeType.startsWith("video");
-	const isOther = !isImage && !isVideo;
+	const isAudio = outputItem.data.entity?.mimeType.startsWith("audio");
+	const isOther = !isImage && !isVideo && !isAudio;
 	const hasMoreThanOneOutput = result.outputs.length > 1;
 
 	const assetUrl = useMemo(() => {
@@ -35,6 +37,7 @@ function MediaContent({
 			)}
 			{isImage && assetUrl && <CanvasRenderer imageUrl={assetUrl} />}
 			{isVideo && assetUrl && <VideoRenderer src={assetUrl} />}
+			{isAudio && assetUrl && <AudioRenderer src={assetUrl} />}
 			{isOther && (
 				<div className="flex flex-col items-center gap-2">
 					<FileIcon className="w-5 h-5" />{" "}

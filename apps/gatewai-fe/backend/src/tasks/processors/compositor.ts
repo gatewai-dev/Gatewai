@@ -231,15 +231,12 @@ const compositorProcessor: NodeProcessor = async ({ node, data }) => {
 			const y = Math.round(layer.y ?? 0);
 			const rotation = (layer.rotation ?? 0) * (Math.PI / 180); // Deg to Rad
 
-			// Move to layer origin
 			ctx.translate(x, y);
 			ctx.rotate(rotation);
 
-			// --- B. Blending ---
 			ctx.globalCompositeOperation = getCompositeOperation(layer.blendMode);
 			ctx.globalAlpha = 1;
 
-			// --- C. Draw Content ---
 			if (layer.type === "Image" && inputItem?.type === DataType.Image) {
 				const fileData = inputItem.data as FileData;
 				const imgBuffer = await getImageBuffer(fileData);
@@ -265,7 +262,8 @@ const compositorProcessor: NodeProcessor = async ({ node, data }) => {
 		const outputHandle = data.handles.find(
 			(h) => h.nodeId === node.id && h.type === "Output",
 		);
-		if (!outputHandle) throw new Error("Output handle is missing");
+		if (!outputHandle)
+			return { success: false, error: "Output handle is missing." };
 
 		const newResult: NodeResult = structuredClone(
 			node.result as NodeResult,
