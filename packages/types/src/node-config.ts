@@ -338,11 +338,20 @@ const TTS_LANGUAGES = [
 	"te-IN",
 ] as const;
 
+const SpeakerVoiceConfigSchema = z
+	.object({
+		speaker: z
+			.string()
+			.describe("The name of the speaker as it appears in the text prompt"),
+		voiceName: z.enum(TTS_VOICE_NAMES),
+	})
+	.strict();
+
 const TextToSpeechNodeConfigSchema = z
 	.object({
 		model: z.enum(TTS_NODE_MODELS).default("gemini-2.5-flash-preview-tts"),
-		voiceName: z.enum(TTS_VOICE_NAMES).default("Kore"),
 		languageCode: z.enum(TTS_LANGUAGES).optional(),
+		speakerConfig: z.array(SpeakerVoiceConfigSchema).max(2).optional(),
 	})
 	.strict();
 

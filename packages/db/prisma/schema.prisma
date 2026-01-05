@@ -343,4 +343,7 @@ model FileAsset {
 
   // Duration by milliseconds
   duration        Float?
+
+  // Media metadata - optional
+  metadata        Json?
 }

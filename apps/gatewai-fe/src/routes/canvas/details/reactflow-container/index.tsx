@@ -136,7 +136,6 @@ function ReactflowContainer({ children }: ReactFlowProps) {
 		<div ref={containerRef} className="w-full h-screen bg-black">
 			<ModeContext.Provider value={{ mode, setMode }}>
 				<ReactFlow
-					disableKeyboardA11y={true}
 					onInit={(flowInstance) => {
 						rfInstance.current = flowInstance;
 					}}
@@ -166,7 +165,7 @@ function ReactflowContainer({ children }: ReactFlowProps) {
 					elementsSelectable={true}
 					panOnDrag={effectivePan}
 					selectionOnDrag={!effectivePan}
-					selectNodesOnDrag
+					selectNodesOnDrag={true}
 					onlyRenderVisibleElements
 					selectionMode={SelectionMode.Partial}
 					connectionMode={ConnectionMode.Loose}

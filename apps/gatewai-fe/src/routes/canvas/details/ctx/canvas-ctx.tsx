@@ -407,8 +407,8 @@ const CanvasProvider = ({
 			}
 
 			const newEdges = (() => {
-				// 1. Remove edge if target handle is already occupied (existing logic)
-				// 2. Remove edge if source handle is already connected to THIS target node (new requirement)
+				// Remove edge if target handle is already occupied (existing logic)
+				// Remove edge if source handle is already connected to THIS target node (new requirement)
 				const updatedEdges = rfEdges.filter((e) => {
 					const isSameTargetHandle =
 						e.target === params.target &&

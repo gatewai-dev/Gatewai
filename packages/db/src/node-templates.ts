@@ -618,12 +618,17 @@ export async function SEED_createNodeTemplates(prisma: PrismaClient) {
 					},
 				],
 			},
-			defaultConfig: { model: "gemini-2.5-flash-preview-tts" },
+			defaultConfig: {
+				model: "gemini-2.5-flash-preview-tts",
+				voiceName: "Kore",
+				languageCode: "en-US",
+			},
 		},
 		{
 			type: NodeType.SpeechToText,
 			displayName: "Speech to Text",
-			description: "Create text transcript of an audio file",
+			description:
+				"Create text transcript of or extract context from an audio file",
 			category: "AI",
 			subcategory: "Audio",
 			tokenPrice: 0.0,
@@ -638,6 +643,12 @@ export async function SEED_createNodeTemplates(prisma: PrismaClient) {
 						dataTypes: [DataType.Audio],
 						required: true,
 						label: "Audio",
+					},
+					{
+						type: HandleType.Input,
+						dataTypes: [DataType.Audio],
+						required: true,
+						label: "Prompt",
 					},
 					{
 						type: HandleType.Output,

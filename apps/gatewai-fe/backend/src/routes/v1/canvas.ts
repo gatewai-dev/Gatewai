@@ -31,6 +31,9 @@ const NodeTypes = [
 	"VideoGen",
 	"VideoGenFirstLastFrame",
 	"VideoGenExtend",
+
+	"TextToSpeech",
+	"SpeechToText",
 ] as const;
 
 const DataTypes = [

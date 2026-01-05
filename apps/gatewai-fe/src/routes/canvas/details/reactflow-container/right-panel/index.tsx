@@ -7,7 +7,7 @@ const RightPanel = memo(() => {
 	return (
 		<Panel
 			position="bottom-right"
-			className="bg-background right-0 top-0 m-0! h-full flex flex-col"
+			className="bg-background right-0 top-0 m-0! h-full flex flex-col max-w-96"
 		>
 			<div className="border-0 bg-background p-4 rounded-md shadow-md flex flex-col justify-between grow">
 				<div>

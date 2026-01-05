@@ -4,6 +4,7 @@ import {
 	createSlice,
 	type PayloadAction,
 } from "@reduxjs/toolkit";
+import { arrayEquals } from "@/lib/utils";
 import type { CanvasDetailsRPC } from "@/rpc/types";
 import type { NodeEntityType } from "./nodes";
 
@@ -30,7 +31,9 @@ const edgesSlice = createSlice({
 			state,
 			action: PayloadAction<EdgeEntityType["id"][] | null>,
 		) => {
-			state.selectedEdgeIds = action.payload;
+			if (!arrayEquals(state.selectedEdgeIds ?? [], action.payload ?? [])) {
+				state.selectedEdgeIds = action.payload;
+			}
 		},
 	},
 });

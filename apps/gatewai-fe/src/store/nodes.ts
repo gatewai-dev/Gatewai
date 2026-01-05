@@ -5,6 +5,7 @@ import {
 	createSlice,
 	type PayloadAction,
 } from "@reduxjs/toolkit";
+import { arrayEquals } from "@/lib/utils";
 import type { CanvasDetailsRPC } from "@/rpc/types";
 import { getBatchDetails } from "./tasks";
 
@@ -103,7 +104,9 @@ const nodesSlice = createSlice({
 			state,
 			action: PayloadAction<NodeEntityType["id"][] | null>,
 		) => {
-			state.selectedNodeIds = action.payload;
+			if (!arrayEquals(state.selectedNodeIds ?? [], action.payload ?? [])) {
+				state.selectedNodeIds = action.payload;
+			}
 		},
 	},
 	extraReducers(builder) {
