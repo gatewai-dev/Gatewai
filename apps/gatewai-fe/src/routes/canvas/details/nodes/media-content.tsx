@@ -37,7 +37,9 @@ function MediaContent({
 			)}
 			{isImage && assetUrl && <CanvasRenderer imageUrl={assetUrl} />}
 			{isVideo && assetUrl && <VideoRenderer src={assetUrl} />}
-			{isAudio && assetUrl && <AudioRenderer src={assetUrl} />}
+			{isAudio && assetUrl && (
+				<AudioRenderer showControlsAlways src={assetUrl} />
+			)}
 			{isOther && (
 				<div className="flex flex-col items-center gap-2">
 					<FileIcon className="w-5 h-5" />{" "}

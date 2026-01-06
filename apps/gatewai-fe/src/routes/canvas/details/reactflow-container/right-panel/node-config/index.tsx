@@ -1,4 +1,5 @@
 import type { NodeType } from "@gatewai/db";
+import { Panel } from "@xyflow/react";
 import { memo, type ReactNode, useMemo } from "react";
 import { Separator } from "@/components/ui/separator";
 import { useAppSelector } from "@/store";
@@ -51,18 +52,32 @@ const NodeConfigItem = memo(({ node }: NodeConfigComponentProps) => {
 	);
 });
 
+const NodesWithConfigForm = Object.keys(NodeConfigFormMap);
 const NodeConfigPanel = memo(() => {
 	const selectedNodes = useAppSelector(selectSelectedNodes);
-	if (!selectedNodes || selectedNodes.length === 0) {
+	if (
+		!selectedNodes ||
+		selectedNodes.length === 0 ||
+		!selectedNodes.some((n) => NodesWithConfigForm.includes(n.type))
+	) {
 		return null;
 	}
 
 	return (
-		<div className="space-y-4">
-			{selectedNodes.map((node) => (
-				<NodeConfigItem key={node.id} node={node} />
-			))}
-		</div>
+		<Panel
+			position="bottom-right"
+			className="bg-background right-0 top-0 m-0! flex flex-col max-w-96"
+		>
+			<div className="border-0 bg-background p-4 rounded-md shadow-md flex flex-col justify-between grow">
+				<div>
+					<div className="space-y-4">
+						{selectedNodes.map((node) => (
+							<NodeConfigItem key={node.id} node={node} />
+						))}
+					</div>
+				</div>
+			</div>
+		</Panel>
 	);
 });
 

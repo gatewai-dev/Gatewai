@@ -19,7 +19,9 @@ import { GetAssetEndpoint } from "@/utils/file";
 import { MarkdownRenderer } from "../../components/markdown-renderer";
 import { useNodeResult } from "../../processor/processor-ctx";
 import { BaseNode } from "../base";
+import { AudioRenderer } from "../common/audio-renderer";
 import { CanvasRenderer } from "../common/canvas-renderer";
+import { VideoRenderer } from "../common/video-renderer";
 import type { PreviewNode } from "../node-props";
 
 const ImagePreview = memo(({ data }: { data: FileData }) => {
@@ -70,7 +72,10 @@ const PreviewNodeComponent = memo((props: NodeProps<PreviewNode>) => {
 	const renderContent = () => {
 		if (outputType === "Text" && typeof outputData === "string") {
 			return (
-				<ScrollArea viewPortCn="max-h-[350px]" className="bg-input p-2 w-full ">
+				<ScrollArea
+					viewPortCn="max-h-[350px] overflow-auto"
+					className="bg-input p-2 w-full "
+				>
 					<MarkdownRenderer markdown={outputData} />
 				</ScrollArea>
 			);
@@ -84,28 +89,14 @@ const PreviewNodeComponent = memo((props: NodeProps<PreviewNode>) => {
 			const src = getMediaSource();
 			if (!src) return null;
 
-			return (
-				<MediaController className="w-full h-auto block">
-					<video
-						slot="media"
-						src={src}
-						preload="auto"
-						muted
-						playsInline
-						className="w-full h-auto"
-					/>
-					<MediaControlBar>
-						<MediaPlayButton></MediaPlayButton>
-						<MediaSeekBackwardButton></MediaSeekBackwardButton>
-						<MediaSeekForwardButton></MediaSeekForwardButton>
-						<MediaTimeDisplay></MediaTimeDisplay>
-						<MediaTimeRange></MediaTimeRange>
-						<MediaMuteButton></MediaMuteButton>
-						<MediaVolumeRange></MediaVolumeRange>
-						<MediaFullscreenButton></MediaFullscreenButton>
-					</MediaControlBar>
-				</MediaController>
-			);
+			return <VideoRenderer src={src} />;
+		}
+
+		if (outputType === "Audio") {
+			const src = getMediaSource();
+			if (!src) return null;
+
+			return <AudioRenderer showControlsAlways src={src} />;
 		}
 
 		// Fallback for other file types (e.g., "File", "Audio", etc.)

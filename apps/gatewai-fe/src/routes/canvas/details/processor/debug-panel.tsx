@@ -1,19 +1,19 @@
 import { ChevronDown, ChevronUp } from "lucide-react";
 import { useEffect, useState } from "react";
 import { Button } from "@/components/ui/button";
-import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
+import { CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import {
-	Collapsible,
-	CollapsibleContent,
-	CollapsibleTrigger,
-} from "@/components/ui/collapsible";
+	Popover,
+	PopoverContent,
+	PopoverTrigger,
+} from "@/components/ui/popover";
 import type { NodeEntityType } from "@/store/nodes";
 import { useProcessor } from "./processor-ctx";
 
 function DebugPanel() {
 	const processor = useProcessor();
 	const [logs, setLogs] = useState<string[]>([]);
-	const [open, setOpen] = useState(true);
+	const [open, setOpen] = useState(false);
 
 	useEffect(() => {
 		const onProcessed = ({ nodeId }: { nodeId: NodeEntityType["id"] }) => {
@@ -42,36 +42,50 @@ function DebugPanel() {
 	const reversed = [...logs].reverse();
 
 	return (
-		<Collapsible open={open} onOpenChange={setOpen} className="w-80">
-			<Card className="shadow-xl">
-				<CardHeader className="flex flex-row justify-between items-center py-3 px-4">
-					<CardTitle className="text-sm">Processing Log</CardTitle>
+		<Popover open={open} onOpenChange={setOpen}>
+			<PopoverTrigger asChild>
+				<Button variant="outline" className="gap-2">
+					{open ? "Hide Logs" : "Show Logs"}
+					{open ? (
+						<ChevronUp className="h-4 w-4" />
+					) : (
+						<ChevronDown className="h-4 w-4" />
+					)}
+				</Button>
+			</PopoverTrigger>
 
-					<CollapsibleTrigger asChild>
-						<Button variant="ghost" size="icon">
-							{open ? (
-								<ChevronUp className="h-4 w-4" />
-							) : (
-								<ChevronDown className="h-4 w-4" />
-							)}
-						</Button>
-					</CollapsibleTrigger>
+			<PopoverContent
+				side="top"
+				align="end"
+				className="w-80 p-0 shadow-xl"
+				// This prevents the popover from closing when clicking outside
+				onInteractOutside={(e) => e.preventDefault()}
+			>
+				<CardHeader className="flex flex-row justify-between items-center py-3 px-4 border-b">
+					<CardTitle className="text-sm">Processing Log</CardTitle>
+					<span className="text-[10px] text-muted-foreground uppercase font-bold">
+						{logs.length} events
+					</span>
 				</CardHeader>
 
-				<CollapsibleContent>
-					<CardContent className="max-h-64 overflow-auto space-y-1 text-xs">
-						{reversed.map((log, i) => (
+				<CardContent className="max-h-64 overflow-auto p-0 text-xs">
+					{reversed.length === 0 ? (
+						<div className="p-4 text-center text-muted-foreground italic">
+							No logs yet...
+						</div>
+					) : (
+						reversed.map((log, i) => (
 							<div
-								key={log + i.toString()}
-								className="border-b border-muted pb-1"
+								key={`${log}-${i}`}
+								className="px-4 py-2 border-b border-muted last:border-0 hover:bg-muted/50 transition-colors"
 							>
 								{log}
 							</div>
-						))}
-					</CardContent>
-				</CollapsibleContent>
-			</Card>
-		</Collapsible>
+						))
+					)}
+				</CardContent>
+			</PopoverContent>
+		</Popover>
 	);
 }
 

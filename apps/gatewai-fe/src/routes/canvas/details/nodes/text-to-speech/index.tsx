@@ -29,7 +29,7 @@ const TextToSpeechNodeComponent = memo(
 								<OutputSelector node={node} />
 							</div>
 						)}
-						{audioSrc && <AudioRenderer src={audioSrc} />}
+						{audioSrc && <AudioRenderer showControlsAlways src={audioSrc} />}
 					</div>
 					{!audioSrc && (
 						<div className="min-h-[50px] w-full bg-input max-h-full p-2">
