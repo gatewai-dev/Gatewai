@@ -36,6 +36,9 @@ const nodeProcessors: Partial<Record<NodeType, NodeProcessor>> = {
 	[NodeType.File]: async ({ node }) => {
 		return { success: true, result: node.result };
 	},
+	[NodeType.Export]: async ({ node }) => {
+		return { success: true, result: node.result };
+	},
 	[NodeType.Text]: async ({ node }) => {
 		return { success: true, result: node.result };
 	},

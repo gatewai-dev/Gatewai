@@ -1,15 +1,13 @@
 import { DataType } from "@gatewai/db";
 import type { FileData, LLMNodeConfig, LLMResult } from "@gatewai/types";
-import { GoogleGenAI, type Part } from "@google/genai";
+import type { Part } from "@google/genai";
+import { genAI } from "../../genai.js";
+import { getFromS3 } from "../../utils/storage.js";
 import { getInputValue } from "../resolvers.js";
 import type { NodeProcessor } from "./types.js";
 
 const llmProcessor: NodeProcessor = async ({ node, data }) => {
 	try {
-		// Initialize Google Client
-		// Ensure process.env.GOOGLE_API_KEY is set in your environment
-		const client = new GoogleGenAI({ apiKey: process.env.GOOGLE_API_KEY });
-
 		const systemPrompt = getInputValue(data, node.id, false, {
 			dataType: DataType.Text,
 			label: "System Prompt",
@@ -40,7 +38,7 @@ const llmProcessor: NodeProcessor = async ({ node, data }) => {
 			let base64Data: string;
 			let mimeType: string;
 
-			if (imageData.startsWith("data:")) {
+			if (imageFileData?.processData?.dataUrl) {
 				// Handle Data URL
 				const matches = imageData.match(/^data:(.+);base64,(.+)$/);
 				if (!matches || matches.length !== 3) {
@@ -48,17 +46,16 @@ const llmProcessor: NodeProcessor = async ({ node, data }) => {
 				}
 				mimeType = matches[1];
 				base64Data = matches[2];
-			} else {
-				// Handle Remote URL (Signed URL) - Must fetch and convert to buffer
-				const response = await fetch(imageData);
-				if (!response.ok) {
-					throw new Error(`Failed to fetch image: ${response.statusText}`);
-				}
-				const arrayBuffer = await response.arrayBuffer();
+			} else if (imageFileData?.entity?.signedUrl) {
+				const arrayBuffer = await getFromS3(
+					imageFileData?.entity?.key,
+					imageFileData?.entity?.bucket,
+				);
 				const buffer = Buffer.from(arrayBuffer);
-
-				mimeType = response.headers.get("content-type") ?? "image/png";
+				mimeType = imageFileData.entity.mimeType;
 				base64Data = buffer.toString("base64");
+			} else {
+				return { success: false, error: "Missing input image data" };
 			}
 
 			parts.push({
@@ -76,7 +73,7 @@ const llmProcessor: NodeProcessor = async ({ node, data }) => {
 		// 3. Generate Content
 		const nodeConfig = node.config as LLMNodeConfig;
 
-		const response = await client.models.generateContent({
+		const response = await genAI.models.generateContent({
 			model: nodeConfig.model,
 			contents: [
 				{

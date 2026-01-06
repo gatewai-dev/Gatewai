@@ -7,8 +7,7 @@ import {
 } from "@reduxjs/toolkit";
 import { rpcClient } from "@/rpc/client";
 import type { BatchDetailsRPC, BatchDetailsRPCParams } from "@/rpc/types";
-import { type RootState, store } from "@/store"; // Adjust based on your store setup
-import { type NodeEntityType, nodesSlice } from "./nodes";
+import type { RootState } from "@/store"; // Adjust based on your store setup
 
 export type BatchEntity = BatchDetailsRPC["batches"][number];
 export type BatchNodeData = BatchEntity["tasks"][number];
@@ -125,26 +124,6 @@ const tasksSlice = createSlice({
 				}
 				state.initialLoading = false;
 				state.latestTasksFetchTime = Date.now();
-
-				const completedNodes: NodeEntityType[] = [];
-				batches.forEach((batch) => {
-					const existingBatch = state.entities[batch.id];
-					batch?.tasks.forEach((task) => {
-						const existingTask = existingBatch.tasks.find(
-							(f) => f.id === task.id,
-						);
-						if (
-							task.finishedAt &&
-							(task.status === "COMPLETED" || task.status === "FAILED") &&
-							task.node &&
-							task.node.template.isTerminalNode &&
-							(existingTask == null || existingTask?.status !== task.status)
-						) {
-							completedNodes.push(task.node);
-						}
-					});
-				});
-				store.dispatch(nodesSlice.actions.upsertManyNodeEntity(completedNodes));
 			});
 	},
 });

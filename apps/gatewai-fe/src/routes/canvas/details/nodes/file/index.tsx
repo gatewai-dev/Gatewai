@@ -27,7 +27,6 @@ const FileNodeComponent = memo((props: NodeProps<FileNode>) => {
 	const existingMimeType =
 		result?.outputs?.[0]?.items?.[0]?.data?.entity?.mimeType;
 
-	// 1. Updated to detect images, videos, AND audio
 	const existingType = existingMimeType?.startsWith("image/")
 		? "image"
 		: existingMimeType?.startsWith("video/")
@@ -36,7 +35,6 @@ const FileNodeComponent = memo((props: NodeProps<FileNode>) => {
 				? "audio"
 				: null;
 
-	// 2. Expanded accept object to include common audio formats
 	const accept = {
 		"image/jpeg": [],
 		"image/png": [],
@@ -44,11 +42,11 @@ const FileNodeComponent = memo((props: NodeProps<FileNode>) => {
 		"video/mp4": [],
 		"video/quicktime": [],
 		"video/webm": [],
-		"audio/mpeg": [], // .mp3
-		"audio/wav": [], // .wav
-		"audio/ogg": [], // .ogg
-		"audio/aac": [], // .aac
-		"audio/flac": [], // .flac
+		"audio/mpeg": [],
+		"audio/wav": [],
+		"audio/ogg": [],
+		"audio/aac": [],
+		"audio/flac": [],
 	};
 
 	const buttonAccept =
@@ -61,7 +59,6 @@ const FileNodeComponent = memo((props: NodeProps<FileNode>) => {
 			? `Upload another ${existingType}`
 			: "Click to upload a file";
 
-	// 3. Updated Dropzone label to reflect audio support
 	const dropzoneLabel =
 		"Click or drag & drop an image, video, or audio file here";
 

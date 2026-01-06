@@ -143,7 +143,37 @@ export class NodeWFProcessor {
 			queue.push(...ups);
 		}
 
-		const necessaryIds = Array.from(necessary);
+		// Fetch templates to identify terminal nodes
+		// This prevents upstream terminal nodes from being added to the task list
+		// if they weren't explicitly selected by the user.
+		const nodeTypesInCanvas = Array.from(
+			new Set(data.nodes.map((n) => n.type)),
+		);
+		const templates = await this.prisma.nodeTemplate.findMany({
+			where: { type: { in: nodeTypesInCanvas } },
+			select: { type: true, isTerminalNode: true },
+		});
+		const terminalTypes = new Set(
+			templates.filter((t) => t.isTerminalNode).map((t) => t.type),
+		);
+
+		// Filter out unselected terminal nodes from necessary set
+		const filteredNecessary = new Set<Node["id"]>();
+		for (const nodeId of necessary) {
+			const node = data.nodes.find((n) => n.id === nodeId);
+			if (!node) continue;
+
+			const isExplicitlySelected = nodeIdsToRun.includes(nodeId);
+			const isTerminal = terminalTypes.has(node.type);
+
+			// Only keep the node if it's explicitly selected OR it's NOT a terminal node.
+			// This stops "ghost" tasks for unselected terminal nodes that are upstream.
+			if (isExplicitlySelected || !isTerminal) {
+				filteredNecessary.add(nodeId);
+			}
+		}
+
+		const necessaryIds = Array.from(filteredNecessary);
 
 		// Build subgraph for necessary nodes
 		const { depGraph, revDepGraph } = this.buildDepGraphs(necessaryIds, data);
@@ -154,8 +184,10 @@ export class NodeWFProcessor {
 		}
 
 		// Validate necessary nodes exist
-		const necessaryNodes = data.nodes.filter((n) => necessary.has(n.id));
-		if (necessaryNodes.length !== necessary.size) {
+		const necessaryNodes = data.nodes.filter((n) =>
+			filteredNecessary.has(n.id),
+		);
+		if (necessaryNodes.length !== filteredNecessary.size) {
 			throw new Error("Some necessary nodes not found in canvas.");
 		}
 
@@ -238,9 +270,11 @@ export class NodeWFProcessor {
 					where: { type: currentNode.type },
 				});
 
-				// Check if this is a terminal node and should be skipped
+				// (Optional) Double-check skipping logic if somehow a terminal node sneaked in,
+				// though `filteredNecessary` should prevent this.
 				const isTerminal = template?.isTerminalNode ?? false;
 				const isExplicitlySelected = nodeIds ? nodeIds.includes(nodeId) : true;
+
 				if (isTerminal && !isExplicitlySelected) {
 					logger.info(
 						`Skipping processing for terminal node: ${node.id} (type: ${node.type}) as it was not explicitly selected`,
@@ -254,7 +288,6 @@ export class NodeWFProcessor {
 							durationMs: finishedAt.getTime() - startedAt.getTime(),
 						},
 					});
-					// Skip processor execution; existing data in-memory will be passed downstream
 					continue;
 				}
 
@@ -271,7 +304,11 @@ export class NodeWFProcessor {
 						data,
 						prisma: this.prisma,
 					});
-					console.log(`${node.id}: Error: ${error}`);
+
+					if (error) {
+						console.log(`${node.id}: Error: ${error}`);
+					}
+
 					if (newResult) {
 						// Update in-memory data for propagation to downstream nodes
 						const updatedNode = data.nodes.find((n) => n.id === nodeId);

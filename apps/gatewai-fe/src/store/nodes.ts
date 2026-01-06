@@ -5,8 +5,10 @@ import {
 	createSlice,
 	type PayloadAction,
 } from "@reduxjs/toolkit";
+import { isEqual } from "lodash";
 import { arrayEquals } from "@/lib/utils";
 import type { CanvasDetailsRPC } from "@/rpc/types";
+import { getBatchDetails } from "./tasks";
 
 export type NodeEntityType = CanvasDetailsRPC["nodes"][number];
 
@@ -63,6 +65,28 @@ export const nodesSlice = createSlice({
 			}
 		},
 	},
+	extraReducers(builder) {
+		builder.addCase(getBatchDetails.fulfilled, (state, action) => {
+			const { batches } = action.payload;
+			const completedNodes: NodeEntityType[] = [];
+			batches.forEach((batch) => {
+				batch?.tasks.forEach((task) => {
+					if (
+						task.finishedAt &&
+						task.status === "COMPLETED" &&
+						task.node &&
+						task.node.template.isTerminalNode
+					) {
+						const existing = state.entities[task.node.id];
+						if (!isEqual(existing.result, task.node.result)) {
+							completedNodes.push(task.node);
+						}
+					}
+				});
+			});
+			nodeAdapter.upsertMany(state, completedNodes);
+		});
+	},
 });
 
 type NodesState = ReturnType<typeof nodesSlice.reducer>;
@@ -111,8 +135,6 @@ export const {
 	deleteManyNodeEntity,
 	upsertManyNodeEntity,
 	setAllNodeEntities,
-	incrementSelectedResultIndex,
-	decrementSelectedResultIndex,
 	setSelectedNodeIds,
 } = actions;
 // Export the reducer, either as a default or named export
