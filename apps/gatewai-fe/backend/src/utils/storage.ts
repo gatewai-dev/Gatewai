@@ -19,7 +19,7 @@ const storage = new Storage({
 	projectId: process.env.GCP_PROJECT_ID,
 });
 
-export async function uploadToS3(
+export async function uploadToGCS(
 	buffer: Buffer,
 	key: string,
 	contentType: string,
@@ -34,7 +34,7 @@ export async function uploadToS3(
 	});
 }
 
-export async function deleteFromS3(
+export async function deleteFromGCS(
 	key: string,
 	bucketName: string,
 ): Promise<void> {
@@ -60,7 +60,7 @@ export async function generateSignedUrl(
 	return url;
 }
 
-export async function getFromS3(
+export async function getFromGCS(
 	key: string,
 	bucketName: string,
 ): Promise<Buffer> {

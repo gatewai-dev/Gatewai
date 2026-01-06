@@ -2,7 +2,7 @@ import { DataType } from "@gatewai/db";
 import type { FileData, LLMNodeConfig, LLMResult } from "@gatewai/types";
 import type { Part } from "@google/genai";
 import { genAI } from "../../genai.js";
-import { getFromS3 } from "../../utils/storage.js";
+import { getFromGCS } from "../../utils/storage.js";
 import { getInputValue } from "../resolvers.js";
 import type { NodeProcessor } from "./types.js";
 
@@ -47,7 +47,7 @@ const llmProcessor: NodeProcessor = async ({ node, data }) => {
 				mimeType = matches[1];
 				base64Data = matches[2];
 			} else if (imageFileData?.entity?.signedUrl) {
-				const arrayBuffer = await getFromS3(
+				const arrayBuffer = await getFromGCS(
 					imageFileData?.entity?.key,
 					imageFileData?.entity?.bucket,
 				);

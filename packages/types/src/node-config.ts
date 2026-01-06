@@ -339,7 +339,7 @@ const VideoCompositorLayerSchema = z
 	.object({
 		id: z.string(),
 		inputHandleId: z.string(),
-		type: z.enum(["Text", "Image"]),
+		type: z.enum(["Text", "Image", "Video", "Audio"]),
 		name: z.string().optional(),
 		x: z.number(),
 		y: z.number(),
@@ -356,6 +356,13 @@ const VideoCompositorLayerSchema = z
 		zIndex: z.number().optional(),
 		align: z.enum(["left", "center", "right"]).optional(),
 		verticalAlign: z.enum(["top", "middle", "bottom"]).optional(),
+
+		startFrame: z.number().optional(),
+		durationInFrames: z.number().optional(),
+		duration: z.number().optional(),
+
+		src: z.string().optional(),
+		volume: z.number().optional(),
 	})
 	.strict();
 
@@ -369,6 +376,8 @@ const VideoCompositorNodeConfigSchema = z
 		width: z.number().optional(),
 		// Height of the canvas
 		height: z.number().optional(),
+		background: z.string().optional(),
+		FPS: z.number().optional(),
 	})
 	.strict();
 // Main node schema

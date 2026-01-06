@@ -18,8 +18,8 @@ import { genAI } from "../../genai.js";
 import { logger } from "../../logger.js";
 import {
 	generateSignedUrl,
-	getFromS3,
-	uploadToS3,
+	getFromGCS,
+	uploadToGCS,
 } from "../../utils/storage.js";
 import { getInputValue, getInputValuesByType } from "../resolvers.js";
 import type { NodeProcessor } from "./types.js";
@@ -29,7 +29,10 @@ const __dirname = path.dirname(__filename);
 
 async function ResolveImageData(fileData: FileData) {
 	if (fileData.entity) {
-		const buffer = await getFromS3(fileData.entity.key, fileData.entity.bucket);
+		const buffer = await getFromGCS(
+			fileData.entity.key,
+			fileData.entity.bucket,
+		);
 		return buffer.toString("base64");
 	}
 	if (fileData.processData) {
@@ -127,7 +130,7 @@ const videoGenProcessor: NodeProcessor = async ({ node, data }) => {
 		const key = `assets/${fileName}`;
 		const contentType = "video/mp4";
 		const bucket = ENV_CONFIG.GCS_ASSETS_BUCKET;
-		await uploadToS3(fileBuffer, key, contentType, bucket);
+		await uploadToGCS(fileBuffer, key, contentType, bucket);
 
 		const expiresIn = 3600 * 24 * 6.9; // A bit less than a week
 		const signedUrl = await generateSignedUrl(key, bucket, expiresIn);

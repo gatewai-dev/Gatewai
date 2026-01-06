@@ -13,6 +13,7 @@ type InputOutputItems =
 	| OutputItem<"Image">
 	| OutputItem<"Video">
 	| OutputItem<"Audio">;
+
 const VideoCompositorView = memo(() => {
 	const nav = useNavigate();
 	const { nodeId, canvasId } = useParams();
@@ -49,7 +50,7 @@ const VideoCompositorView = memo(() => {
 		}
 		closeAndFocusOnNode();
 	};
-
+	console.log({ inputs });
 	return (
 		<div className="inset-0 h-screen w-screen">
 			{node && (

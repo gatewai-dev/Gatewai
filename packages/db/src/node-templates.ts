@@ -18,7 +18,7 @@ export async function SEED_createNodeTemplates(prisma: PrismaClient) {
 					{
 						type: HandleType.Output,
 						dataTypes: [DataType.Video],
-						label: "Extended Video",
+						label: "Result",
 					},
 				],
 			},

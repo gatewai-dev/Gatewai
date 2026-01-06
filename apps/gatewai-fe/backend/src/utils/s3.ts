@@ -10,7 +10,7 @@ const s3Client = new S3Client({
 	region: process.env.AWS_REGION,
 });
 
-export async function uploadToS3(
+export async function uploadToGCS(
 	buffer: Buffer,
 	key: string,
 	contentType: string,
@@ -25,7 +25,10 @@ export async function uploadToS3(
 	await s3Client.send(command);
 }
 
-export async function deleteFromS3(key: string, bucket: string): Promise<void> {
+export async function deleteFromGCS(
+	key: string,
+	bucket: string,
+): Promise<void> {
 	const command = new DeleteObjectCommand({
 		Bucket: bucket,
 		Key: key,
@@ -45,7 +48,7 @@ export async function generateSignedUrl(
 	return await getSignedUrl(s3Client, command, { expiresIn });
 }
 
-export async function getFromS3(key: string, bucket: string): Promise<Buffer> {
+export async function getFromGCS(key: string, bucket: string): Promise<Buffer> {
 	const command = new GetObjectCommand({
 		Bucket: bucket,
 		Key: key,

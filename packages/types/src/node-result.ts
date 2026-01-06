@@ -9,6 +9,7 @@ export type ProcessData = {
 
 	// For the Audio, Video media types
 	duration?: number;
+	dps?: number;
 };
 
 export type FileData = {

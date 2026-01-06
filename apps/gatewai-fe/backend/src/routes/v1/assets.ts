@@ -8,10 +8,10 @@ import sharp from "sharp";
 import { z } from "zod";
 import { ENV_CONFIG } from "../../config.js";
 import {
-	deleteFromS3,
+	deleteFromGCS,
 	generateSignedUrl,
-	getFromS3,
-	uploadToS3,
+	getFromGCS,
+	uploadToGCS,
 } from "../../utils/storage.js";
 
 const uploadSchema = z.object({
@@ -87,7 +87,7 @@ const assetsRouter = new Hono({
 		}
 
 		try {
-			await uploadToS3(buffer, key, contentType, bucket);
+			await uploadToGCS(buffer, key, contentType, bucket);
 
 			const expiresIn = 3600 * 24 * 6.9; // A bit less than a week
 			const signedUrl = await generateSignedUrl(key, bucket, expiresIn);
@@ -160,7 +160,7 @@ const assetsRouter = new Hono({
 		}
 
 		try {
-			await uploadToS3(buffer, key, contentType, bucket);
+			await uploadToGCS(buffer, key, contentType, bucket);
 
 			const expiresIn = 3600 * 24 * 6.9; // A bit less than a week
 			const signedUrl = await generateSignedUrl(key, bucket, expiresIn);
@@ -245,7 +245,7 @@ const assetsRouter = new Hono({
 		}
 
 		try {
-			const buffer = await getFromS3(asset.key, asset.bucket);
+			const buffer = await getFromGCS(asset.key, asset.bucket);
 			const headers = {
 				"Content-Type": asset.mimeType,
 				"Content-Disposition": `inline; filename="${asset.name}"`,
@@ -272,7 +272,7 @@ const assetsRouter = new Hono({
 			}
 
 			try {
-				await deleteFromS3(asset.key, asset.bucket);
+				await deleteFromGCS(asset.key, asset.bucket);
 				await prisma.fileAsset.delete({
 					where: { id },
 				});

@@ -15,26 +15,14 @@ import { genAI } from "../../genai.js";
 import { logger } from "../../logger.js";
 import {
 	generateSignedUrl,
-	getFromS3,
-	uploadToS3,
+	getFromGCS,
+	uploadToGCS,
 } from "../../utils/storage.js";
 import { getInputValue } from "../resolvers.js";
 import type { NodeProcessor } from "./types.js";
 
 const __filename = fileURLToPath(import.meta.url);
 const __dirname = path.dirname(__filename);
-
-async function ResolveVideoData(fileData: FileData) {
-	if (fileData.entity) {
-		const buffer = await getFromS3(fileData.entity.key, fileData.entity.bucket);
-		return buffer.toString("base64").replace(/^data:video\/\w+;base64,/, "");
-	}
-	if (fileData.processData?.dataUrl) {
-		// STRIP PREFIX: Strips common video data URL headers
-		return fileData.processData.dataUrl.replace(/^data:video\/\w+;base64,/, "");
-	}
-	throw new Error("Unable to resolve video data");
-}
 
 const videoGenExtendProcessor: NodeProcessor = async ({ node, data }) => {
 	try {
@@ -55,7 +43,7 @@ const videoGenExtendProcessor: NodeProcessor = async ({ node, data }) => {
 
 		const videoInput = videoInputItem.data;
 		const config = VideoGenExtendNodeConfigSchema.parse(node.config);
-		console.log({ videoInput });
+
 		let fileBlob: Blob;
 		if (videoInput?.entity?.signedUrl) {
 			fileBlob = await (await fetch(videoInput.entity?.signedUrl)).blob();
@@ -118,7 +106,6 @@ const videoGenExtendProcessor: NodeProcessor = async ({ node, data }) => {
 			downloadPath: filePath,
 		});
 
-		// 8. Upload to Storage (S3/GCS) & DB Record
 		const fileBuffer = await readFile(filePath);
 		const randId = randomUUID();
 		const fileName = `videogen_extend_${randId}.${extension}`;
@@ -126,7 +113,7 @@ const videoGenExtendProcessor: NodeProcessor = async ({ node, data }) => {
 		const contentType = "video/mp4";
 		const bucket = ENV_CONFIG.GCS_ASSETS_BUCKET;
 
-		await uploadToS3(fileBuffer, key, contentType, bucket);
+		await uploadToGCS(fileBuffer, key, contentType, bucket);
 
 		const expiresIn = 3600 * 24 * 7;
 		const signedUrl = await generateSignedUrl(key, bucket, expiresIn);

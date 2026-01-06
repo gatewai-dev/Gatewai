@@ -9,7 +9,7 @@ import { GoogleGenAI, type Part } from "@google/genai";
 import { ENV_CONFIG } from "../../config.js";
 import { logger } from "../../logger.js";
 import { getImageDimensions } from "../../utils/image.js";
-import { generateSignedUrl, uploadToS3 } from "../../utils/storage.js";
+import { generateSignedUrl, uploadToGCS } from "../../utils/storage.js";
 import { getInputValue, getInputValuesByType } from "../resolvers.js";
 import type { NodeProcessor } from "./types.js";
 
@@ -133,7 +133,7 @@ const imageGenProcessor: NodeProcessor = async ({ node, data }) => {
 		const key = `assets/${fileName}`;
 		const bucket = ENV_CONFIG.GCS_ASSETS_BUCKET;
 
-		await uploadToS3(buffer, key, contentType, bucket);
+		await uploadToGCS(buffer, key, contentType, bucket);
 
 		const expiresIn = 3600 * 24 * 6.9;
 		const signedUrl = await generateSignedUrl(key, bucket, expiresIn);

@@ -10,6 +10,7 @@ import type {
 	PaintNodeConfig,
 	PaintResult,
 	ResizeNodeConfig,
+	VideoCompositorNodeConfig,
 } from "@gatewai/types";
 import type { EdgeEntityType } from "@/store/edges";
 import type { HandleEntityType } from "@/store/handles";
@@ -797,6 +798,59 @@ export class NodeGraphProcessor extends EventEmitter {
 				],
 			};
 		});
+
+		this.registerProcessor(
+			"VideoCompositor",
+			async ({ node, inputs, signal }) => {
+				const config = node.config as VideoCompositorNodeConfig;
+
+				//  Prepare Inputs for Pixi Service
+				// Map the Layer's Input Handle ID -> Actual Data (URL or Text)
+				const inputDataMap: Record<
+					string,
+					{ type: "Image" | "Text" | "Audio" | "Video"; value: string }
+				> = {};
+
+				Object.entries(inputs).forEach(([inputHandleId, _value]) => {
+					const data = getConnectedInputData(inputs, inputHandleId);
+					if (data) {
+						inputDataMap[inputHandleId] = data;
+					}
+				});
+
+				// Process with web renderer
+				const result = await remotionProcessor.processVideoCompositor(
+					config,
+					inputDataMap,
+					signal,
+				);
+
+				// Find Output Handle (Standard "Image" output)
+				const outputHandle = getFirstOutputHandle(node.id);
+				if (!outputHandle) throw new Error("Missing output handle");
+
+				return {
+					selectedOutputIndex: 0,
+					outputs: [
+						{
+							items: [
+								{
+									type: "Video",
+									data: {
+										processData: {
+											dataUrl: result.dataUrl,
+											width: result.width,
+											height: result.height,
+										},
+									},
+									outputHandleId: outputHandle,
+								},
+							],
+						},
+					],
+				};
+			},
+		);
 
 		this.registerProcessor("Blur", async ({ node, inputs, signal }) => {
 			const imageUrl = findInputData(inputs, "Image");

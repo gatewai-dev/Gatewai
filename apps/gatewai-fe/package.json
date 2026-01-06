@@ -61,6 +61,7 @@
 		"@remotion/cli": "4.0.397",
 		"@remotion/player": "4.0.397",
 		"@remotion/renderer": "4.0.397",
+		"@remotion/web-renderer": "^4.0.397",
 		"@tailwindcss/vite": "^4.1.16",
 		"@xyflow/react": "^12.8.4",
 		"ai": "^5.0.96",

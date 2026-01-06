@@ -11,7 +11,7 @@ import wav from "wav";
 import { ENV_CONFIG } from "../../config.js";
 import { genAI } from "../../genai.js";
 import { logger } from "../../logger.js";
-import { generateSignedUrl, uploadToS3 } from "../../utils/storage.js";
+import { generateSignedUrl, uploadToGCS } from "../../utils/storage.js";
 import { getInputValue } from "../resolvers.js";
 import type { NodeProcessor } from "./types.js";
 
@@ -107,7 +107,7 @@ const textToSpeechProcessor: NodeProcessor = async ({ node, data }) => {
 		const contentType = "audio/wav"; // Changed from video/wav
 		const bucket = ENV_CONFIG.GCS_ASSETS_BUCKET;
 
-		await uploadToS3(wavBuffer, key, contentType, bucket);
+		await uploadToGCS(wavBuffer, key, contentType, bucket);
 
 		// ... [Database and Signed URL logic remains the same] ...
 		const expiresIn = 3600 * 24 * 6.9;
