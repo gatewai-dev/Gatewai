@@ -14,7 +14,6 @@ import type { NodeProcessor } from "./types.js";
 import videoGenProcessor from "./video-gen.js";
 import videoGenExtendProcessor from "./video-gen-extend.js";
 import videoGenFirstLastFrameProcessor from "./video-gen-first-last-frame.js";
-import videoGenMockProcessor from "./video-gen-mock.js";
 
 const nodeProcessors: Partial<Record<NodeType, NodeProcessor>> = {
 	[NodeType.Blur]: blurProcessor,
@@ -27,7 +26,7 @@ const nodeProcessors: Partial<Record<NodeType, NodeProcessor>> = {
 	[NodeType.Modulate]: modulateProcessor,
 	[NodeType.Compositor]: compositorProcessor,
 	[NodeType.VideoGen]: videoGenProcessor,
-	[NodeType.VideoGenExtend]: videoGenMockProcessor,
+	[NodeType.VideoGenExtend]: videoGenExtendProcessor,
 	[NodeType.VideoGenFirstLastFrame]: videoGenFirstLastFrameProcessor,
 
 	[NodeType.TextToSpeech]: textToSpeechProcessor,
