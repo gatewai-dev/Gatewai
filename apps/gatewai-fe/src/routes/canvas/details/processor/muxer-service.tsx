@@ -222,7 +222,7 @@ export class RemotionWebProcessorService {
 		}
 
 		const durationInFrames = maxEndFrame ?? 0;
-
+		console.log({ inputDataMap });
 		// 2. Render Media using the browser's WebCodecs API
 		const { getBlob } = await renderMediaOnWeb({
 			onProgress: (p) =>
@@ -243,6 +243,7 @@ export class RemotionWebProcessorService {
 				// Pass data directly as props
 				defaultProps: { config, inputDataMap },
 			},
+			delayRenderTimeoutInMilliseconds: 5000,
 			inputProps: { config, inputDataMap },
 		});
 

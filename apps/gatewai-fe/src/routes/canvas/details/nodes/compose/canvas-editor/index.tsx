@@ -14,7 +14,12 @@ import {
 	verticalListSortingStrategy,
 } from "@dnd-kit/sortable";
 import { CSS } from "@dnd-kit/utilities";
-
+import type {
+	CompositorLayer,
+	CompositorNodeConfig,
+	FileData,
+	OutputItem,
+} from "@gatewai/types";
 import type Konva from "konva";
 import {
 	AlignCenterHorizontal,
@@ -57,15 +62,6 @@ import {
 	Transformer,
 } from "react-konva";
 import useImage from "use-image";
-
-// Removed use-image import
-
-import type {
-	CompositorLayer,
-	CompositorNodeConfig,
-	FileData,
-	OutputItem,
-} from "@gatewai/types";
 import {
 	AlertDialog,
 	AlertDialogAction,
@@ -761,8 +757,8 @@ const Canvas: React.FC = () => {
 			if (newScale < 0.1 || newScale > 10) return;
 
 			const newPos = {
-				x: pointer.x - mousePointTo.x * newScale,
-				y: pointer.y - mousePointTo.y * newScale,
+				x: Math.round(pointer.x - mousePointTo.x * newScale),
+				y: Math.round(pointer.y - mousePointTo.y * newScale),
 			};
 
 			setScale(newScale);
@@ -960,7 +956,7 @@ const LayersPanel: React.FC<{ onSave: () => void; onClose: () => void }> = ({
 				</div>
 			</div>
 
-			<div className="flex-1 overflow-y-auto p-2">
+			<div className="flex-1 overflow-y-auto p-2 scrollbar-thin scrollbar-thumb-rounded scrollbar-thumb-border scrollbar-track-transparent">
 				<DndContext
 					sensors={sensors}
 					collisionDetection={closestCenter}
@@ -1062,7 +1058,7 @@ const InspectorPanel: React.FC = () => {
 	);
 
 	return (
-		<div className="absolute right-0 top-0 bottom-0 w-64 bg-card border-l border-border z-10 flex flex-col shadow-xl overflow-y-auto">
+		<div className="absolute right-0 top-0 bottom-0 w-64 bg-card border-l border-border z-10 flex flex-col shadow-xl scrollbar-thin scrollbar-thumb-rounded scrollbar-thumb-border scrollbar-track-transparent overflow-y-auto">
 			<div className="p-4 space-y-6">
 				{/* Canvas Settings */}
 				<section>
@@ -1462,8 +1458,8 @@ export const CanvasDesignerEditor: React.FC<CanvasDesignerEditorProps> = ({
 		const scaleH = availableH / viewportHeight;
 		const newScale = Math.min(scaleW, scaleH);
 		const newPos = {
-			x: (screenWidth - viewportWidth * newScale) / 2,
-			y: (screenHeight - viewportHeight * newScale) / 2,
+			x: Math.round((screenWidth - viewportWidth * newScale) / 2),
+			y: Math.round((screenHeight - viewportHeight * newScale) / 2),
 		};
 		setScale(newScale);
 		setStagePos(newPos);
@@ -1483,51 +1479,18 @@ export const CanvasDesignerEditor: React.FC<CanvasDesignerEditorProps> = ({
 
 	// Zoom Helpers
 	const zoomIn = useCallback(() => {
-		const center = { x: screenWidth / 2, y: screenHeight / 2 };
-		const mousePointTo = {
-			x: (center.x - stagePos.x) / scale,
-			y: (center.y - stagePos.y) / scale,
-		};
 		const newScale = scale * 1.2;
-		const newPos = {
-			x: center.x - mousePointTo.x * newScale,
-			y: center.y - mousePointTo.y * newScale,
-		};
 		setScale(newScale);
-		setStagePos(newPos);
-	}, [scale, stagePos, screenWidth, screenHeight]);
+	}, [scale]);
 
 	const zoomOut = useCallback(() => {
-		const center = { x: screenWidth / 2, y: screenHeight / 2 };
-		const mousePointTo = {
-			x: (center.x - stagePos.x) / scale,
-			y: (center.y - stagePos.y) / scale,
-		};
 		const newScale = scale / 1.2;
-		const newPos = {
-			x: center.x - mousePointTo.x * newScale,
-			y: center.y - mousePointTo.y * newScale,
-		};
 		setScale(newScale);
-		setStagePos(newPos);
-	}, [scale, stagePos, screenWidth, screenHeight]);
+	}, [scale]);
 
-	const zoomTo = useCallback(
-		(value: number) => {
-			const center = { x: screenWidth / 2, y: screenHeight / 2 };
-			const mousePointTo = {
-				x: (center.x - stagePos.x) / scale,
-				y: (center.y - stagePos.y) / scale,
-			};
-			const newPos = {
-				x: center.x - mousePointTo.x * value,
-				y: center.y - mousePointTo.y * value,
-			};
-			setScale(value);
-			setStagePos(newPos);
-		},
-		[scale, stagePos, screenWidth, screenHeight],
-	);
+	const zoomTo = useCallback((value: number) => {
+		setScale(value);
+	}, []);
 
 	// Data Getters
 	const getTextData = useCallback(

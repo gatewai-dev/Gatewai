@@ -1467,24 +1467,41 @@ export const VideoDesignerEditor: React.FC<VideoDesignerEditorProps> = ({
 	// Wheel Zoom
 	const handleWheel = useCallback(
 		(e: WheelEvent) => {
+			// Only zoom if Cmd/Ctrl is held OR if using a trackpad (standardized check)
+			// If you want "scroll to zoom" as default, keep e.preventDefault()
 			e.preventDefault();
+
+			const el = containerRef.current;
+			if (!el) return;
+
+			const rect = el.getBoundingClientRect();
+			const pointerX = e.clientX - rect.left;
+			const pointerY = e.clientY - rect.top;
+
 			const oldZoom = zoom;
-			const pointerX = e.offsetX;
-			const pointerY = e.offsetY;
-			const mousePointTo = {
-				x: (pointerX - pan.x) / oldZoom,
-				y: (pointerY - pan.y) / oldZoom,
-			};
-			const direction = e.deltaY > 0 ? -1 : 1;
-			const scaleBy = 1.1;
-			const newZoom = direction > 0 ? oldZoom * scaleBy : oldZoom / scaleBy;
-			if (newZoom < 0.1 || newZoom > 3) return;
-			const newPan = {
-				x: pointerX - mousePointTo.x * newZoom,
-				y: pointerY - mousePointTo.y * newZoom,
-			};
-			setZoom(newZoom);
-			setPan(newPan);
+
+			// Calculate new zoom using an exponential curve
+			// deltaY is usually ~100 for mouse wheels, much smaller for trackpads
+			const zoomSensitivity = 0.0015;
+			const delta = -e.deltaY * zoomSensitivity;
+			const newZoom = Math.min(Math.max(oldZoom * Math.exp(delta), 0.1), 5);
+
+			if (newZoom !== oldZoom) {
+				// Calculate where the mouse is relative to the internal canvas coordinates
+				const mousePointTo = {
+					x: (pointerX - pan.x) / oldZoom,
+					y: (pointerY - pan.y) / oldZoom,
+				};
+
+				// Calculate new pan to keep the point under the mouse stationary
+				const newPan = {
+					x: pointerX - mousePointTo.x * newZoom,
+					y: pointerY - mousePointTo.y * newZoom,
+				};
+
+				setZoom(newZoom);
+				setPan(newPan);
+			}
 		},
 		[zoom, pan],
 	);
@@ -1704,7 +1721,7 @@ export const VideoDesignerEditor: React.FC<VideoDesignerEditorProps> = ({
 						/>
 
 						<div
-							className="absolute origin-top-left transition-transform duration-75 ease-out"
+							className="absolute origin-top-left"
 							style={{
 								transform: `translate(${pan.x}px, ${pan.y}px) scale(${zoom})`,
 								width: viewportWidth,
