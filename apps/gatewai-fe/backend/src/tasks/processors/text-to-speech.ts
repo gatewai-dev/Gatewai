@@ -1,7 +1,4 @@
 import { randomUUID } from "node:crypto";
-import { readFile } from "node:fs/promises";
-import path from "node:path";
-import { fileURLToPath } from "node:url";
 import { DataType, prisma } from "@gatewai/db";
 import {
 	type TextToSpeechNodeConfig,
@@ -10,6 +7,7 @@ import {
 } from "@gatewai/types";
 import type { SpeechConfig } from "@google/genai";
 import * as mm from "music-metadata";
+import wav from "wav";
 import { ENV_CONFIG } from "../../config.js";
 import { genAI } from "../../genai.js";
 import { logger } from "../../logger.js";
@@ -17,8 +15,24 @@ import { generateSignedUrl, uploadToS3 } from "../../utils/storage.js";
 import { getInputValue } from "../resolvers.js";
 import type { NodeProcessor } from "./types.js";
 
-const __filename = fileURLToPath(import.meta.url);
-const __dirname = path.dirname(__filename);
+// Helper to convert the Gemini PCM stream into a WAV Buffer
+async function encodeWavBuffer(pcmBuffer: Buffer): Promise<Buffer> {
+	return new Promise((resolve, reject) => {
+		const writer = new wav.Writer({
+			channels: 1,
+			sampleRate: 24000,
+			bitDepth: 16,
+		});
+
+		const chunks: Buffer[] = [];
+		writer.on("data", (chunk: Buffer<ArrayBufferLike>) => chunks.push(chunk));
+		writer.on("end", () => resolve(Buffer.concat(chunks)));
+		writer.on("error", reject);
+
+		writer.write(pcmBuffer);
+		writer.end();
+	});
+}
 
 const textToSpeechProcessor: NodeProcessor = async ({ node, data }) => {
 	try {
@@ -32,7 +46,7 @@ const textToSpeechProcessor: NodeProcessor = async ({ node, data }) => {
 			nodeConfig = TextToSpeechNodeConfigSchema.parse(node.config);
 		} catch (error) {
 			logger.error(error);
-			return { success: false, error: "Anvalid config." };
+			return { success: false, error: "Invalid config." };
 		}
 
 		let speechConfig: SpeechConfig = {
@@ -61,7 +75,7 @@ const textToSpeechProcessor: NodeProcessor = async ({ node, data }) => {
 		}
 
 		const response = await genAI.models.generateContent({
-			model: nodeConfig.model,
+			model: nodeConfig.model || "gemini-2.5-flash-tts", // Ensure compatible model
 			contents: [{ parts: [{ text: userPrompt }] }],
 			config: {
 				responseModalities: ["AUDIO"],
@@ -69,26 +83,34 @@ const textToSpeechProcessor: NodeProcessor = async ({ node, data }) => {
 			},
 		});
 
-		const responseData =
+		const rawPcmData =
 			response.candidates?.[0]?.content?.parts?.[0]?.inlineData?.data;
-		if (!responseData) {
-			return { success: false, error: "No data in response TTS result." };
+		if (!rawPcmData) {
+			return { success: false, error: "No audio data returned from Gemini." };
 		}
-		const audioBuffer = Buffer.from(responseData, "base64");
 
-		const metadata = await mm.parseBuffer(audioBuffer, "audio/wav");
+		// 1. Convert base64 to raw PCM buffer
+		const pcmBuffer = Buffer.from(rawPcmData, "base64");
+
+		// 2. Wrap PCM in a WAV container so players/metadata-readers can read it
+		const wavBuffer = await encodeWavBuffer(pcmBuffer);
+
+		// 3. Extract metadata from the now-valid WAV buffer
+		const metadata = await mm.parseBuffer(wavBuffer, "audio/wav");
 		const duration = metadata.format.duration ?? 0;
 
 		const extension = ".wav";
 
 		const randId = randomUUID();
-		const fileName = `text_to_speech_${randId}.${extension}`;
+		const fileName = `text_to_speech_${randId}${extension}`;
 		const key = `assets/${fileName}`;
-		const contentType = "video/wav";
+		const contentType = "audio/wav"; // Changed from video/wav
 		const bucket = ENV_CONFIG.GCS_ASSETS_BUCKET;
-		await uploadToS3(audioBuffer, key, contentType, bucket);
 
-		const expiresIn = 3600 * 24 * 6.9; // A bit less than a week
+		await uploadToS3(wavBuffer, key, contentType, bucket);
+
+		// ... [Database and Signed URL logic remains the same] ...
+		const expiresIn = 3600 * 24 * 6.9;
 		const signedUrl = await generateSignedUrl(key, bucket, expiresIn);
 		const signedUrlExp = new Date(Date.now() + expiresIn * 1000);
 
@@ -118,7 +140,7 @@ const textToSpeechProcessor: NodeProcessor = async ({ node, data }) => {
 			selectedOutputIndex: 0,
 		};
 
-		const newGeneration: TextToSpeechResult["outputs"][number] = {
+		newResult.outputs.push({
 			items: [
 				{
 					type: DataType.Audio,
@@ -126,21 +148,12 @@ const textToSpeechProcessor: NodeProcessor = async ({ node, data }) => {
 					outputHandleId: outputHandle.id,
 				},
 			],
-		};
-
-		newResult.outputs.push(newGeneration);
+		});
 		newResult.selectedOutputIndex = newResult.outputs.length - 1;
 
 		return { success: true, newResult };
 	} catch (err: unknown) {
-		console.log(err);
-		if (err instanceof Error) {
-			logger.error(err.message);
-			return {
-				success: false,
-				error: err?.message ?? "TextToSpeech processing failed",
-			};
-		}
+		logger.error(err instanceof Error ? err.message : "TTS Failed");
 		return { success: false, error: "TextToSpeech processing failed" };
 	}
 };

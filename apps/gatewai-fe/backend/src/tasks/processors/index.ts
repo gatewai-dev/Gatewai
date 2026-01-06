@@ -1,5 +1,6 @@
 import { NodeType } from "@gatewai/db";
 import aiAgentProcessor from "./ai-agent/index.js";
+import audioUnderstandingProcessor from "./audio-understanding.js";
 import blurProcessor from "./blur.js";
 import compositorProcessor from "./compositor.js";
 import cropProcessor from "./crop.js";
@@ -30,6 +31,7 @@ const nodeProcessors: Partial<Record<NodeType, NodeProcessor>> = {
 	[NodeType.VideoGenFirstLastFrame]: videoGenMockProcessor,
 
 	[NodeType.TextToSpeech]: textToSpeechProcessor,
+	[NodeType.SpeechToText]: audioUnderstandingProcessor,
 	// No processing needed for these node types
 	[NodeType.File]: async ({ node }) => {
 		return { success: true, result: node.result };

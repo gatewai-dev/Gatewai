@@ -65,8 +65,6 @@ const getCompositeOperation = (
 	return map[mode] ?? "source-over";
 };
 
-// --- Text Layout Logic ---
-
 /**
  * Wraps text into lines based on max width.
  * Mimics standard Pixi/CSS word-wrap behavior.

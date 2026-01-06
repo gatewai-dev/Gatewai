@@ -5,7 +5,7 @@ import { logger } from "./logger.js";
 
 async function logMedia(
 	buffer: Buffer,
-	extension: string = ".png",
+	extension: `.${string}` = ".png",
 	nodeId?: Node["id"],
 ) {
 	try {
