@@ -91,6 +91,23 @@ const DynamicComposition: React.FC<{
 	);
 };
 
+async function getMediaDuration(
+	url: string,
+	type: "Video" | "Audio",
+): Promise<number> {
+	return new Promise((resolve, reject) => {
+		const element = document.createElement(
+			type === "Video" ? "video" : "audio",
+		);
+		element.preload = "metadata";
+		element.onloadedmetadata = () => {
+			resolve(element.duration);
+		};
+		element.onerror = reject;
+		element.src = url;
+	});
+}
+
 export class RemotionWebProcessorService {
 	async processVideo(
 		config: VideoCompositorNodeConfig,
@@ -100,11 +117,84 @@ export class RemotionWebProcessorService {
 		const width = config.width ?? 1280;
 		const height = config.height ?? 720;
 		const fps = config.FPS ?? 24;
-		const durationInFrames = Math.floor((config.duration ?? 10) * fps);
+
+		// Compute effective durations and total durationInFrames
+		const layers = Object.values(config.layerUpdates ?? {});
+
+		const mediaDurationPromises: Promise<{
+			inputHandleId: string;
+			durFrames: number;
+		}>[] = [];
+
+		const effectiveLayers: {
+			layer: (typeof layers)[0];
+			durFrames: number;
+			startFrame: number;
+		}[] = [];
+
+		for (const layer of layers) {
+			const input = inputDataMap[layer.inputHandleId];
+			if (!input) continue;
+
+			const startFrame = layer.startFrame ?? 0;
+			let durFrames: number | undefined;
+
+			if (layer.durationInFrames != null) {
+				durFrames = layer.durationInFrames;
+			} else if (layer.duration != null) {
+				durFrames = Math.floor(layer.duration * fps);
+			} else if (input.type === "Video" || input.type === "Audio") {
+				const promise = getMediaDuration(input.data, input.type)
+					.then((durSec) => {
+						const df = Math.floor(durSec * fps);
+						return { inputHandleId: layer.inputHandleId, durFrames: df };
+					})
+					.catch((err) => {
+						console.error(
+							`Failed to get duration for ${input.data}: ${err.message}`,
+						);
+						return { inputHandleId: layer.inputHandleId, durFrames: 0 };
+					});
+				mediaDurationPromises.push(promise);
+				continue;
+			} else {
+				// Text or Image without duration: will use total durationInFrames, skip for max calc
+				continue;
+			}
+
+			effectiveLayers.push({ layer, durFrames, startFrame });
+		}
+
+		if (mediaDurationPromises.length > 0) {
+			const mediaDurs = await Promise.all(mediaDurationPromises);
+			for (const md of mediaDurs) {
+				const layer = layers.find((l) => l.inputHandleId === md.inputHandleId);
+				if (layer) {
+					layer.durationInFrames = md.durFrames;
+					const startFrame = layer.startFrame ?? 0;
+					effectiveLayers.push({
+						layer,
+						durFrames: md.durFrames,
+						startFrame,
+					});
+				}
+			}
+		}
+
+		let maxEndFrame = 0;
+		for (const el of effectiveLayers) {
+			const end = el.startFrame + el.durFrames;
+			maxEndFrame = Math.max(maxEndFrame, end);
+		}
+
+		const durationInFrames = maxEndFrame ?? 0;
 
 		// 2. Render Media using the browser's WebCodecs API
 		const { getBlob } = await renderMediaOnWeb({
-			onProgress: (p) => console.log(`Rendering: ${Math.round(p * 100)}%`),
+			onProgress: (p) =>
+				console.log(
+					`Rendering: ${Math.round((p.encodedFrames / p.renderedFrames) * 100)}%`,
+				),
 			// This is the "Muxer" part - it encodes frames into a container
 			codec: "h264",
 			licenseKey: "free-license",
