@@ -1,4 +1,8 @@
-import type { OutputItem, VideoCompositorNodeConfig } from "@gatewai/types";
+import type {
+	FileData,
+	OutputItem,
+	VideoCompositorNodeConfig,
+} from "@gatewai/types";
 import { renderMediaOnWeb } from "@remotion/web-renderer";
 import type React from "react";
 import {
@@ -9,6 +13,7 @@ import {
 	useVideoConfig,
 	Video,
 } from "remotion";
+import { GetAssetEndpoint } from "@/utils/file";
 
 type VideoCompositorInputItemTypes =
 	| OutputItem<"Video">
@@ -92,10 +97,21 @@ const DynamicComposition: React.FC<{
 };
 
 async function getMediaDuration(
-	url: string,
+	fileData: FileData,
 	type: "Video" | "Audio",
 ): Promise<number> {
 	return new Promise((resolve, reject) => {
+		const url = fileData.entity?.id
+			? GetAssetEndpoint(fileData.entity.id)
+			: fileData.processData?.dataUrl;
+		const existing =
+			fileData?.entity?.duration ?? fileData.processData?.duration ?? 0;
+		if (existing) {
+			resolve(existing);
+		}
+		if (!url) {
+			throw new Error("Missing url to get duration");
+		}
 		const element = document.createElement(
 			type === "Video" ? "video" : "audio",
 		);
@@ -144,7 +160,7 @@ export class RemotionWebProcessorService {
 			} else if (layer.duration != null) {
 				durFrames = Math.floor(layer.duration * fps);
 			} else if (input.type === "Video" || input.type === "Audio") {
-				const promise = getMediaDuration(input.data, input.type)
+				const promise = getMediaDuration(input.data as FileData, input.type)
 					.then((durSec) => {
 						const df = Math.floor(durSec * fps);
 						return { inputHandleId: layer.inputHandleId, durFrames: df };
