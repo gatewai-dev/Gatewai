@@ -104,7 +104,7 @@ const ExportNodeComponent = memo((props: NodeProps<BlurNode>) => {
 	const { result } = useNodeResult(props.id);
 	const [isDownloading, setIsDownloading] = useState(false);
 	const [error, setError] = useState<string | null>(null);
-
+	console.log({ result });
 	/**
 	 * Extract file extension from URL or data URL
 	 */
@@ -318,7 +318,7 @@ const ExportNodeComponent = memo((props: NodeProps<BlurNode>) => {
 
 	const hasResult =
 		result && result.outputs[result.selectedOutputIndex]?.items.length > 0;
-
+	console.log({ hasResult });
 	return (
 		<BaseNode selected={props.selected} id={props.id} dragging={props.dragging}>
 			<div className="flex flex-col gap-3">

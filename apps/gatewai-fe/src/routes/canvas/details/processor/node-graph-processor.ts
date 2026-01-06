@@ -199,6 +199,9 @@ export class NodeGraphProcessor extends EventEmitter {
 	}
 
 	registerProcessor(nodeType: NodeType, processor: NodeProcessor): void {
+		if (this.processors.has(nodeType)) {
+			throw new Error(`Processor for node type:${nodeType} is already set.`);
+		}
 		this.processors.set(nodeType, processor);
 	}
 
@@ -955,7 +958,6 @@ export class NodeGraphProcessor extends EventEmitter {
 		this.registerProcessor("File", passthrough);
 		this.registerProcessor("Agent", passthrough);
 		this.registerProcessor("Text", passthrough);
-		this.registerProcessor("Export", passthrough);
 		this.registerProcessor("LLM", passthrough);
 		this.registerProcessor("VideoGen", passthrough);
 		this.registerProcessor("VideoGenExtend", passthrough);

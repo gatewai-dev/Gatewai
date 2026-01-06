@@ -9,17 +9,16 @@ const AudioRenderer = memo(
 	({
 		src,
 		title,
-		showControlsAlways = false, // Added prop
+		showControlsAlways = false,
 	}: {
 		src: string;
 		title?: string;
 		showControlsAlways?: boolean;
 	}) => {
 		return (
-			<MediaShell isAudio showControlsAlways={showControlsAlways}>
+			<MediaShell isAudio>
+				{/** biome-ignore lint/a11y/useMediaCaption: No caption exists */}
 				<audio slot="media" src={src} preload="metadata" />
-
-				{/* Added pointer-events-none here to stop the overlay from blocking the progress bar */}
 				<div className="absolute inset-0 flex items-center px-6 pb-6 pointer-events-none">
 					<div className="flex flex-col">
 						<span className="text-white/40 text-xs font-medium uppercase tracking-widest">

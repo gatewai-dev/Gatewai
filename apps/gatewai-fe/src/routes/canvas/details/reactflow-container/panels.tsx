@@ -1,4 +1,6 @@
+import { Panel } from "@xyflow/react";
 import { memo } from "react";
+import { DebugPanel } from "../processor/debug-panel";
 import { BottomPanel } from "./bottom-panel";
 import { LeftPanel } from "./left-panel";
 import { NodeConfigPanel } from "./right-panel/node-config";
@@ -9,6 +11,10 @@ const ReactFlowPanels = memo(() => {
 			<LeftPanel />
 			<NodeConfigPanel />
 			<BottomPanel />
+
+			<Panel position="top-center">
+				<DebugPanel />
+			</Panel>
 		</>
 	);
 });

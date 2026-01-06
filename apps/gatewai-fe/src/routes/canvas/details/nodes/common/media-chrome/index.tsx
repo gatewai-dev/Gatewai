@@ -6,7 +6,7 @@ import {
 	MediaPlayButton,
 	MediaTimeRange,
 } from "media-chrome/react";
-import { memo, type ReactNode } from "react";
+import type { ReactNode } from "react";
 
 // Shared styles for the MediaController
 const SHARED_MEDIA_THEME = {
@@ -24,11 +24,9 @@ const SHARED_MEDIA_THEME = {
 const MediaShell = ({
 	children,
 	isAudio = false,
-	showControlsAlways = false, // Added prop
 }: {
 	children: ReactNode;
 	isAudio?: boolean;
-	showControlsAlways?: boolean;
 }) => (
 	<div
 		className={`
@@ -36,7 +34,6 @@ const MediaShell = ({
         ${isAudio ? "h-24" : "aspect-video"}
     `}
 	>
-		{/* Pass showControlsAlways as a data attribute or handle via class logic */}
 		<MediaController
 			className="w-full h-full block"
 			style={SHARED_MEDIA_THEME}

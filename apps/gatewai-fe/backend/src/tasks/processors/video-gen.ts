@@ -1,4 +1,5 @@
 import { randomUUID } from "node:crypto";
+import { existsSync, mkdirSync } from "node:fs";
 import { readFile } from "node:fs/promises";
 import path from "node:path";
 import { fileURLToPath } from "node:url";
@@ -8,7 +9,10 @@ import {
 	VideoGenNodeConfigSchema,
 	type VideoGenResult,
 } from "@gatewai/types";
-import type { VideoGenerationReferenceImage } from "@google/genai";
+import {
+	type VideoGenerationReferenceImage,
+	VideoGenerationReferenceType,
+} from "@google/genai";
 import { ENV_CONFIG } from "../../config.js";
 import { genAI } from "../../genai.js";
 import { logger } from "../../logger.js";
@@ -44,12 +48,16 @@ const videoGenProcessor: NodeProcessor = async ({ node, data }) => {
 			dataType: DataType.Image,
 		}).map((m) => m?.data) as FileData[] | null;
 
+		const config = VideoGenNodeConfigSchema.parse(node.config);
+
 		const LoadImageDataPromises = imageFileData?.map(async (fileData) => {
 			const base64Data = await ResolveImageData(fileData);
 			const refImg: VideoGenerationReferenceImage = {
 				image: {
 					imageBytes: base64Data,
+					mimeType: fileData.entity?.mimeType ?? "image/png",
 				},
+				referenceType: VideoGenerationReferenceType.ASSET,
 			};
 			return refImg;
 		});
@@ -65,6 +73,7 @@ const videoGenProcessor: NodeProcessor = async ({ node, data }) => {
 			model: nodeConfig.model,
 			prompt: userPrompt,
 			config: {
+				aspectRatio: config.aspectRatio,
 				referenceImages,
 				numberOfVideos: 1,
 			},
@@ -83,16 +92,17 @@ const videoGenProcessor: NodeProcessor = async ({ node, data }) => {
 		}
 		const extension = ".mp4";
 		const now = Date.now().toString();
-		const filePath = path.join(
-			__dirname,
-			`${node.id}_output`,
-			`${now}${extension}`,
-		);
+		const folderPath = path.join(__dirname, `${node.id}_output`);
+		const filePath = path.join(folderPath, `${now}${extension}`);
 		// Download the video.
 		if (!operation.response.generatedVideos[0].video) {
 			throw new Error("Generate video response is empty");
 		}
-		genAI.files.download({
+		if (!existsSync(folderPath)) {
+			mkdirSync(folderPath);
+		}
+
+		await genAI.files.download({
 			file: operation.response.generatedVideos[0].video,
 			downloadPath: filePath,
 		});

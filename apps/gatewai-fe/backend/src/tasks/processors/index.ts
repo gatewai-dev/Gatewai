@@ -26,7 +26,7 @@ const nodeProcessors: Partial<Record<NodeType, NodeProcessor>> = {
 	[NodeType.Paint]: paintProcessor,
 	[NodeType.Modulate]: modulateProcessor,
 	[NodeType.Compositor]: compositorProcessor,
-	[NodeType.VideoGen]: videoGenMockProcessor,
+	[NodeType.VideoGen]: videoGenProcessor,
 	[NodeType.VideoGenExtend]: videoGenMockProcessor,
 	[NodeType.VideoGenFirstLastFrame]: videoGenMockProcessor,
 
