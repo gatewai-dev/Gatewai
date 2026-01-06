@@ -69,7 +69,7 @@ const NodeConfigPanel = memo(() => {
 			<div
 				className={cn(
 					// Base Styles
-					"h-full w-96 bg-background border-l shadow-2xl p-4 overflow-y-auto pointer-events-auto",
+					"h-full w-80 bg-background border-l shadow-2xl p-4 overflow-y-auto pointer-events-auto",
 					// Animation Styles
 					"transition-all duration-500 ease-in-out transform",
 					// Toggle States
@@ -78,7 +78,7 @@ const NodeConfigPanel = memo(() => {
 						: "translate-x-full opacity-0",
 				)}
 			>
-				<div className="gap-2">
+				<div className="flex flex-col">
 					{/* We only map if visible to prevent unnecessary renders while hidden */}
 					{isVisible &&
 						selectedNodes?.map((node) => (
