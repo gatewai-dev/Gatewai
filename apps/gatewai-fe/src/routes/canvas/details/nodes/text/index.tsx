@@ -1,6 +1,6 @@
 import type { TextResult } from "@gatewai/types";
 import type { NodeProps } from "@xyflow/react";
-import { memo } from "react";
+import { memo, useCallback } from "react";
 import { Textarea } from "@/components/ui/textarea";
 import { useCanvasCtx } from "../../ctx/canvas-ctx";
 import { useNodeResult } from "../../processor/processor-ctx";
@@ -13,24 +13,31 @@ const TextNodeComponent = memo((props: NodeProps<TextNode>) => {
 	const textResult = result as unknown as TextResult;
 	const text = textResult?.outputs?.[0]?.items?.[0]?.data ?? "";
 
-	const handleChange = (e: React.ChangeEvent<HTMLTextAreaElement>) => {
-		const newResult: TextResult = {
-			selectedOutputIndex: 0,
-			outputs: [
-				{
-					items: [
-						{
-							outputHandleId:
-								textResult?.outputs?.[0]?.items?.[0]?.outputHandleId,
-							type: "Text",
-							data: e.target.value,
-						},
-					],
-				},
-			],
-		};
-		onNodeResultUpdate({ id: props.id, newResult });
-	};
+	const handleChange = useCallback(
+		(e: React.ChangeEvent<HTMLTextAreaElement>) => {
+			const newResult: TextResult = {
+				selectedOutputIndex: 0,
+				outputs: [
+					{
+						items: [
+							{
+								outputHandleId:
+									textResult?.outputs?.[0]?.items?.[0]?.outputHandleId,
+								type: "Text",
+								data: e.target.value,
+							},
+						],
+					},
+				],
+			};
+			onNodeResultUpdate({ id: props.id, newResult });
+		},
+		[
+			onNodeResultUpdate,
+			props.id,
+			textResult?.outputs?.[0]?.items?.[0]?.outputHandleId,
+		],
+	);
 
 	return (
 		<BaseNode {...props} className="nowheel">

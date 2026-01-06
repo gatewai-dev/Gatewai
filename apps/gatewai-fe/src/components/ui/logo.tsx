@@ -1,6 +1,14 @@
-import React, { forwardRef } from "react";
+import React, { forwardRef, type SVGProps } from "react";
 
-const YodesLogo = forwardRef(
+// 1. Define the interface for your custom props
+export interface YodesLogoProps extends SVGProps<SVGSVGElement> {
+	color?: string;
+	size?: string | number;
+	strokeWidth?: string | number;
+	className?: string;
+}
+
+const YodesLogo = forwardRef<SVGSVGElement, YodesLogoProps>(
 	(
 		{
 			color = "currentColor",
@@ -11,14 +19,13 @@ const YodesLogo = forwardRef(
 		},
 		ref,
 	) => {
-		// Lucide typically uses a 24x24 viewBox.
-		// I have scaled your 200x200 coordinates down to fit a 24x24 grid.
-
 		return (
 			<svg
 				ref={ref}
 				xmlns="http://www.w3.org/2000/svg"
 				width={size}
+				role="img"
+				aria-label="Yodes Logo"
 				height={size}
 				viewBox="0 0 24 24"
 				fill="none"
@@ -68,7 +75,6 @@ const YodesLogo = forwardRef(
 				<path d="M12 12 L12 18" />
 
 				{/* Central AI Node Accent */}
-				{/* We use a small circle. Note: 'secondaryColor' is handled by 'fill' or a custom prop */}
 				<circle cx="12" cy="12" r="1" fill="currentColor" stroke="none" />
 			</svg>
 		);

@@ -3,14 +3,8 @@ import { randomUUID } from "node:crypto";
 import fs from "node:fs/promises";
 import os from "node:os";
 import path from "node:path";
-import util from "node:util";
-import {
-	DataType,
-	type FileAsset,
-	type FileAssetCreateInput,
-	type PrismaClient,
-	prisma,
-} from "@gatewai/db";
+import { fileURLToPath } from "node:url";
+import { DataType, type FileAssetCreateInput, prisma } from "@gatewai/db";
 import {
 	type FileData,
 	VideoCompositorNodeConfigSchema,
@@ -18,49 +12,17 @@ import {
 } from "@gatewai/types";
 import { bundle } from "@remotion/bundler";
 import { renderMedia, selectComposition } from "@remotion/renderer";
-import { ENV_CONFIG } from "../../config.js";
-import { logger } from "../../logger.js";
-import { generateSignedUrl, uploadToGCS } from "../../utils/storage.js";
-import { getAllInputValuesWithHandle } from "../resolvers.js";
-import type { NodeProcessor } from "./types.js";
+import { ENV_CONFIG } from "../../../config.js";
+import { logger } from "../../../logger.js";
+import { generateSignedUrl, uploadToGCS } from "../../../utils/storage.js";
+import { getAllInputValuesWithHandle } from "../../resolvers.js";
+import type { NodeProcessor } from "./../types.js";
 
-const execPromise = util.promisify(exec);
+const __filename = fileURLToPath(import.meta.url);
+const __dirname = path.dirname(__filename);
 
-/**
- * Server-side equivalent of getMediaDuration using ffprobe.
- * Assumes ffmpeg/ffprobe is installed on the system.
- * Handles remote URLs (e.g., signed GCS URLs).
- */
-async function getMediaDuration(
-	fileData: FileData,
-	type: "Video" | "Audio",
-): Promise<number> {
-	const existing =
-		fileData?.entity?.duration ?? fileData.processData?.duration ?? 0;
-	if (existing > 0) return existing;
-
-	let url: string | undefined;
-	if (fileData.entity?.signedUrl) {
-		url = fileData.entity.signedUrl;
-	} else if (fileData.processData?.dataUrl) {
-		// Data URLs are not directly supported by ffprobe; fallback to download if necessary.
-		// For simplicity, assume entity.signedUrl is always available in backend contexts.
-		throw new Error("dataUrl not supported for media duration in backend");
-	}
-
-	if (!url) {
-		throw new Error("Missing URL to fetch media duration");
-	}
-
-	const command = `ffprobe -v error -show_entries format=duration -of default=noprint_wrappers=1:nokey=1 "${url}"`;
-	const { stdout } = await execPromise(command);
-	const duration = parseFloat(stdout.trim());
-
-	if (isNaN(duration)) {
-		throw new Error("Invalid duration from ffprobe");
-	}
-
-	return duration;
+async function getMediaDuration(fileData: FileData): Promise<number> {
+	return fileData?.entity?.duration ?? fileData.processData?.duration ?? 0;
 }
 
 const videoCompositorProcessor: NodeProcessor = async ({ node, data }) => {
@@ -102,13 +64,12 @@ const videoCompositorProcessor: NodeProcessor = async ({ node, data }) => {
 				input.value?.type === "Video" ||
 				input.value?.type === "Audio"
 			) {
-				const promise = getMediaDuration(
-					input.value.data as FileData,
-					input.value.type,
-				).then((durSec) => ({
-					inputHandleId: layer.inputHandleId,
-					durFrames: Math.floor(durSec * fps),
-				}));
+				const promise = getMediaDuration(input.value.data as FileData).then(
+					(durSec) => ({
+						inputHandleId: layer.inputHandleId,
+						durFrames: Math.floor(durSec * fps),
+					}),
+				);
 				mediaDurationPromises.push(promise);
 				continue; // Defer to promise resolution
 			} else {
@@ -150,7 +111,7 @@ const videoCompositorProcessor: NodeProcessor = async ({ node, data }) => {
 
 		// Assume a fixed entry point in the project that exports the composition with DynamicComposition
 		// and uses calculateMetadata to pull from props.preComputedDurationInFrames, etc.
-		const entryPoint = path.resolve(__dirname, "../remotion/entry.tsx");
+		const entryPoint = path.resolve(__dirname, "../remotion/entry.jsx");
 		const bundleLocation = await bundle({ entryPoint });
 
 		const inputProps = {

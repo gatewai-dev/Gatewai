@@ -1,29 +1,69 @@
 import type {
 	FileData,
-	OutputItem,
+	VideoCompositorLayer,
 	VideoCompositorNodeConfig,
 } from "@gatewai/types";
 import { renderMediaOnWeb } from "@remotion/web-renderer";
 import type React from "react";
+import { useMemo } from "react";
 import {
 	AbsoluteFill,
 	Audio,
 	Img,
+	interpolate,
 	Sequence,
+	spring,
+	useCurrentFrame,
 	useVideoConfig,
 	Video,
 } from "remotion";
 import { GetAssetEndpoint } from "@/utils/file";
-import type { ConnectedInput, NodeProcessorParams } from "./types";
+import type { NodeProcessorParams } from "./types";
+
+// Types for supported Animations
+export type AnimationType =
+	| "fade-in"
+	| "fade-out"
+	| "slide-in-left"
+	| "slide-in-right"
+	| "slide-in-top"
+	| "slide-in-bottom"
+	| "zoom-in"
+	| "zoom-out"
+	| "rotate-cw"
+	| "rotate-ccw"
+	| "bounce"
+	| "shake";
+
+export interface VideoAnimation {
+	id: string;
+	type: AnimationType;
+	value: number; // duration in seconds
+}
+
+interface ExtendedLayer extends VideoCompositorLayer {
+	animations?: VideoAnimation[];
+	scale?: number;
+	opacity?: number;
+}
 
 const DynamicComposition: React.FC<{
 	config: VideoCompositorNodeConfig;
 	inputDataMap: NodeProcessorParams["inputs"];
 }> = ({ config, inputDataMap }) => {
-	const { fps, durationInFrames } = useVideoConfig();
+	const {
+		fps,
+		width: viewportWidth,
+		height: viewportHeight,
+	} = useVideoConfig();
+	const frame = useCurrentFrame();
 
-	const layers = Object.values(config.layerUpdates ?? {});
-	const sortedLayers = layers.sort((a, b) => (a.zIndex ?? 0) - (b.zIndex ?? 0));
+	// Note: z-index is unsupported. We solve this by ordering the DOM elements.
+	const layers = Object.values(config.layerUpdates ?? {}) as ExtendedLayer[];
+	const sortedLayers = useMemo(
+		() => [...layers].sort((a, b) => (a.zIndex ?? 0) - (b.zIndex ?? 0)),
+		[layers],
+	);
 
 	return (
 		<AbsoluteFill style={{ backgroundColor: config.background ?? "black" }}>
@@ -32,74 +72,133 @@ const DynamicComposition: React.FC<{
 				if (!input) return null;
 
 				const from = layer.startFrame ?? 0;
-				const layerDuration =
-					layer.durationInFrames ??
-					(layer.duration
-						? Math.floor(layer.duration * fps)
-						: durationInFrames);
+				const layerDuration = layer.durationInFrames ?? 0;
+				const relativeFrame = frame - from;
+
+				// Animation State
+				let animX = layer.x ?? 0;
+				let animY = layer.y ?? 0;
+				let animScale = layer.scale ?? 1;
+				let animRotation = layer.rotation ?? 0;
+				let animOpacity = layer.opacity ?? 1;
+
+				(layer.animations ?? []).forEach((anim) => {
+					const durFrames = anim.value * fps;
+					const isOut = anim.type.includes("-out");
+					const startAnimFrame = isOut ? layerDuration - durFrames : 0;
+					const endAnimFrame = isOut ? layerDuration : durFrames;
+
+					if (relativeFrame < startAnimFrame || relativeFrame > endAnimFrame)
+						return;
+
+					const progress = interpolate(
+						relativeFrame,
+						[startAnimFrame, endAnimFrame],
+						[0, 1],
+						{ extrapolateLeft: "clamp", extrapolateRight: "clamp" },
+					);
+
+					switch (anim.type) {
+						case "fade-in":
+							animOpacity *= progress;
+							break;
+						case "fade-out":
+							animOpacity *= 1 - progress;
+							break;
+						case "slide-in-left":
+							animX += -viewportWidth * (1 - progress);
+							break;
+						case "slide-in-right":
+							animX += viewportWidth * (1 - progress);
+							break;
+						case "slide-in-top":
+							animY += -viewportHeight * (1 - progress);
+							break;
+						case "slide-in-bottom":
+							animY += viewportHeight * (1 - progress);
+							break;
+						case "zoom-in":
+							animScale *= progress;
+							break;
+						case "zoom-out":
+							animScale *= 1 - progress;
+							break;
+						case "rotate-cw":
+							animRotation += 360 * progress;
+							break;
+						case "rotate-ccw":
+							animRotation -= 360 * progress;
+							break;
+						case "bounce": {
+							const b = spring({
+								frame: relativeFrame - startAnimFrame,
+								fps,
+								config: { damping: 10, stiffness: 100 },
+								durationInFrames: durFrames,
+							});
+							animScale *= b;
+							break;
+						}
+						case "shake":
+							animX += 15 * Math.sin(relativeFrame * 0.5) * (1 - progress);
+							break;
+					}
+				});
 
 				const baseStyle: React.CSSProperties = {
 					position: "absolute",
-					left: layer.x ?? 0,
-					top: layer.y ?? 0,
+					left: animX,
+					top: animY,
 					width: layer.width ?? "auto",
 					height: layer.height ?? "auto",
-					transform: `rotate(${layer.rotation ?? 0}deg)`,
+					// Web renderer supports transform, scale, rotate, opacity
+					transform: `rotate(${animRotation}deg) scale(${animScale})`,
+					opacity: animOpacity,
 				};
 
-				let style = baseStyle;
-				const volume = layer.volume ?? 1;
-
-				if (input.outputItem?.type === "Text") {
-					const verticalAlignMap: Record<string, string> = {
-						top: "flex-start",
-						middle: "center",
-						bottom: "flex-end",
-					};
-
-					style = {
-						...baseStyle,
-						fontFamily: layer.fontFamily ?? "sans-serif",
-						fontSize: `${layer.fontSize ?? 16}px`,
-						color: layer.fill ?? "black",
-						letterSpacing: `${layer.letterSpacing ?? 0}px`,
-						lineHeight: layer.lineHeight ?? 1,
-						textAlign: layer.align ?? "left",
-						display: "flex",
-						flexDirection: "column",
-						justifyContent: verticalAlignMap[layer.verticalAlign ?? "top"],
-					};
-				}
-
-				const getAssetUrl = (input: ConnectedInput) => {
+				const getAssetUrl = () => {
 					const fileData = input.outputItem?.data as FileData;
-					if (fileData.entity?.id) {
-						return GetAssetEndpoint(fileData.entity.id);
-					}
-					if (fileData.processData?.dataUrl) {
-						return fileData.processData?.dataUrl;
-					}
+					return fileData.entity?.id
+						? GetAssetEndpoint(fileData.entity.id)
+						: fileData.processData?.dataUrl;
 				};
 
-				const inputSrc = getAssetUrl(input);
+				const inputSrc = getAssetUrl();
 
 				return (
 					<Sequence
 						from={from}
 						durationInFrames={layerDuration}
-						key={`layer_${layer.inputHandleId}`}
+						key={layer.inputHandleId}
 					>
 						{input.outputItem?.type === "Video" && inputSrc && (
-							<Video src={inputSrc} style={style} volume={volume} />
+							<Video
+								src={inputSrc}
+								style={baseStyle}
+								volume={layer.volume ?? 1}
+							/>
 						)}
 						{input.outputItem?.type === "Image" && inputSrc && (
-							<Img src={inputSrc} style={style} />
+							<Img src={inputSrc} style={baseStyle} />
 						)}
 						{input.outputItem?.type === "Text" && (
-							<div style={style}>{input.outputItem.data}</div>
+							<div
+								style={{
+									...baseStyle,
+									fontFamily: layer.fontFamily ?? "sans-serif",
+									fontSize: `${layer.fontSize ?? 16}px`,
+									color: layer.fill ?? "white",
+									textAlign: (layer.align as any) ?? "left",
+									display: "flex",
+									flexDirection: "column",
+									justifyContent: "center",
+								}}
+							>
+								{String(input.outputItem.data)}
+							</div>
 						)}
 						{input.outputItem?.type === "Audio" && inputSrc && (
-							<Audio src={inputSrc} volume={volume} />
+							<Audio src={inputSrc} volume={layer.volume ?? 1} />
 						)}
 					</Sequence>
 				);
@@ -107,34 +206,6 @@ const DynamicComposition: React.FC<{
 		</AbsoluteFill>
 	);
 };
-
-async function getMediaDuration(
-	fileData: FileData,
-	type: "Video" | "Audio",
-): Promise<number> {
-	return new Promise((resolve, reject) => {
-		const url = fileData.entity?.id
-			? GetAssetEndpoint(fileData.entity.id)
-			: fileData.processData?.dataUrl;
-		const existing =
-			fileData?.entity?.duration ?? fileData.processData?.duration ?? 0;
-		if (existing) {
-			resolve(existing);
-		}
-		if (!url) {
-			throw new Error("Missing url to get duration");
-		}
-		const element = document.createElement(
-			type === "Video" ? "video" : "audio",
-		);
-		element.preload = "metadata";
-		element.onloadedmetadata = () => {
-			resolve(element.duration);
-		};
-		element.onerror = reject;
-		element.src = url;
-	});
-}
 
 export class RemotionWebProcessorService {
 	async processVideo(
@@ -146,118 +217,76 @@ export class RemotionWebProcessorService {
 		const height = config.height ?? 720;
 		const fps = config.FPS ?? 24;
 
-		// Compute effective durations and total durationInFrames
-		const layers = Object.values(config.layerUpdates ?? {});
-
-		const mediaDurationPromises: Promise<{
-			inputHandleId: string;
-			durFrames: number;
-		}>[] = [];
-
-		const effectiveLayers: {
-			layer: (typeof layers)[0];
-			durFrames: number;
-			startFrame: number;
-		}[] = [];
+		const layers = Object.values(config.layerUpdates ?? {}) as ExtendedLayer[];
+		const mediaDurationPromises: Promise<any>[] = [];
 
 		for (const layer of layers) {
 			const input = inputDataMap[layer.inputHandleId];
 			if (!input) continue;
 
-			const startFrame = layer.startFrame ?? 0;
-			let durFrames: number | undefined;
-
-			if (layer.durationInFrames != null) {
-				durFrames = layer.durationInFrames;
-			} else if (layer.duration != null) {
-				durFrames = Math.floor(layer.duration * fps);
-			} else if (
-				input.outputItem?.type === "Video" ||
-				input.outputItem?.type === "Audio"
-			) {
-				const promise = getMediaDuration(
-					input.outputItem.data as FileData,
-					input.outputItem?.type,
-				)
-					.then((durSec) => {
-						const df = Math.floor(durSec * fps);
-						return { inputHandleId: layer.inputHandleId, durFrames: df };
-					})
-					.catch((err) => {
-						console.error(
-							`Failed to get duration for ${layer.inputHandleId}: ${err.message}`,
-						);
-						return { inputHandleId: layer.inputHandleId, durFrames: 0 };
+			if (layer.durationInFrames == null) {
+				if (
+					input.outputItem?.type === "Video" ||
+					input.outputItem?.type === "Audio"
+				) {
+					const promise = this.getMediaDuration(
+						input.outputItem.data as FileData,
+						input.outputItem.type as any,
+					).then((durSec) => {
+						layer.durationInFrames = Math.floor(durSec * fps);
 					});
-				mediaDurationPromises.push(promise);
-				continue;
-			} else {
-				// Text or Image without duration: will use total durationInFrames, skip for max calc
-				continue;
-			}
-
-			effectiveLayers.push({ layer, durFrames, startFrame });
-		}
-
-		if (mediaDurationPromises.length > 0) {
-			const mediaDurs = await Promise.all(mediaDurationPromises);
-			for (const md of mediaDurs) {
-				const layer = layers.find((l) => l.inputHandleId === md.inputHandleId);
-				if (layer) {
-					layer.durationInFrames = md.durFrames;
-					const startFrame = layer.startFrame ?? 0;
-					effectiveLayers.push({
-						layer,
-						durFrames: md.durFrames,
-						startFrame,
-					});
+					mediaDurationPromises.push(promise);
+				} else {
+					layer.durationInFrames = 150; // Default 5s at 30fps if unknown
 				}
 			}
 		}
 
-		let maxEndFrame = 0;
-		for (const el of effectiveLayers) {
-			const end = el.startFrame + el.durFrames;
-			maxEndFrame = Math.max(maxEndFrame, end);
-		}
+		await Promise.all(mediaDurationPromises);
+		const totalDuration = Math.max(
+			...layers.map((l) => (l.startFrame ?? 0) + (l.durationInFrames ?? 0)),
+			1,
+		);
 
-		const durationInFrames = maxEndFrame ?? 0;
-		console.log({ inputDataMap });
-		// 2. Render Media using the browser's WebCodecs API
 		const { getBlob } = await renderMediaOnWeb({
-			onProgress: (p) =>
-				console.log(
-					`Rendering: ${Math.round((p.encodedFrames / p.renderedFrames) * 100)}%`,
-				),
-			// This is the "Muxer" part - it encodes frames into a container
 			codec: "h264",
+			signal,
 			licenseKey: "free-license",
 			composition: {
 				id: "dynamic-video",
 				component: DynamicComposition,
-				durationInFrames,
+				durationInFrames: totalDuration,
 				fps,
 				width,
 				height,
-				calculateMetadata: null,
-				// Pass data directly as props
 				defaultProps: { config, inputDataMap },
 			},
-			delayRenderTimeoutInMilliseconds: 5000,
 			inputProps: { config, inputDataMap },
 		});
 
 		if (signal?.aborted) throw new Error("Aborted");
 		const blob = await getBlob();
-		// 3. Convert Blob to DataURL (matching your image logic)
-		const dataUrl = this.blobToObjectUrl(blob);
-
-		return { dataUrl, width, height };
+		return { dataUrl: URL.createObjectURL(blob), width, height };
 	}
 
-	private blobToObjectUrl(blob: Blob): string {
-		const url = URL.createObjectURL(blob);
-		return url;
+	private async getMediaDuration(
+		fileData: FileData,
+		type: "Video" | "Audio",
+	): Promise<number> {
+		const url = fileData.entity?.id
+			? GetAssetEndpoint(fileData.entity.id)
+			: fileData.processData?.dataUrl;
+		const existing =
+			fileData?.entity?.duration ?? fileData.processData?.duration;
+		if (existing) return existing;
+		if (!url) throw new Error("Missing source URL");
+
+		return new Promise((resolve, reject) => {
+			const el = document.createElement(type === "Video" ? "video" : "audio");
+			el.src = url;
+			el.onloadedmetadata = () => resolve(el.duration);
+			el.onerror = reject;
+		});
 	}
 }
 

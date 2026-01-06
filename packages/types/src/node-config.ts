@@ -335,6 +335,10 @@ const TextToSpeechNodeConfigSchema = z
 	})
 	.strict();
 
+const VideoEffectsSchema = z.object({
+	// TODO
+});
+
 const VideoCompositorLayerSchema = z
 	.object({
 		id: z.string(),
@@ -363,6 +367,7 @@ const VideoCompositorLayerSchema = z
 
 		src: z.string().optional(),
 		volume: z.number().optional(),
+		effects: z.array(VideoEffectsSchema).optional(),
 	})
 	.strict();
 

@@ -283,6 +283,7 @@ const BaseNode = memo(
 							<div className="flex flex-col min-w-0">
 								<span className="text-xs font-semibold text-foreground truncate">
 									{node?.name}
+									{props.id.substring(0, 6)}
 								</span>
 							</div>
 						</div>

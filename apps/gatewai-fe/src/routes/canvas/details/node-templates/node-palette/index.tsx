@@ -39,11 +39,11 @@ function NodePaletteContent({ templates }: { templates: NodeTemplateListRPC }) {
 			className={cn(
 				"relative bg-transparent flex flex-col transition-all duration-500 ease-[cubic-bezier(0.16,1,0.3,1)]",
 				"bg-background/90 backdrop-blur-xl border-r border-border/40 shadow-sm h-screen",
-				isCollapsed ? "w-[52px]" : "w-60",
+				isCollapsed ? "w-[52px]" : "w-60 pr-2",
 			)}
 		>
 			<div className="flex flex-col h-full overflow-hidden">
-				<div className="flex flex-row items-center border-r ml-2 my-4 border-border/10 gap-4">
+				<div className="flex flex-row items-center border-r ml-1 my-4 border-border/10 gap-4">
 					{!isCollapsed && <CanvasName />}
 					<Tooltip>
 						<TooltipTrigger asChild>

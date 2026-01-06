@@ -7,7 +7,6 @@ import type {
 	FileData,
 	ModulateNodeConfig,
 	NodeResult,
-	OutputItem,
 	PaintNodeConfig,
 	PaintResult,
 	ResizeNodeConfig,
@@ -18,7 +17,7 @@ import type { HandleEntityType } from "@/store/handles";
 import type { NodeEntityType } from "@/store/nodes";
 import { GetAssetEndpoint } from "@/utils/file";
 import { imageStore } from "./image-store";
-import { RemotionWebProcessorService, remotionService } from "./muxer-service";
+import { remotionService } from "./muxer-service";
 import { pixiProcessor } from "./pixi-service";
 import type {
 	ConnectedInput,
@@ -33,8 +32,6 @@ export class NodeGraphProcessor extends EventEmitter {
 	private edges: EdgeEntityType[] = [];
 	private handles: HandleEntityType[] = [];
 
-	// 1. NEW: Fast Lookup Index for Edges
-	// Key: Target Node ID -> Value: Array of Edges targeting this node
 	private edgesByTarget = new Map<string, EdgeEntityType[]>();
 
 	private adjacency = new Map<string, Set<string>>();
@@ -362,6 +359,7 @@ export class NodeGraphProcessor extends EventEmitter {
 			const hashValue = this.getImageDataUrlFromResult(state.result);
 			if (hashValue) {
 				if (hashValue.startsWith("http")) {
+					console.log({ hashValue });
 					await imageStore.addUrl(nodeId, hashValue);
 				} else {
 					await imageStore.addBase64(nodeId, hashValue);

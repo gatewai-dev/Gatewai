@@ -1,5 +1,6 @@
 {
 	"compilerOptions": {
+		"composite": true,
 		"target": "ES2023",
 		"lib": ["ES2023"],
 		"module": "ESNext",
@@ -18,5 +19,10 @@
 		"noUnusedParameters": true,
 		"noFallthroughCasesInSwitch": true
 	},
-	"include": ["vite.config.ts", "trigger.config.ts"]
+	"include": [
+		"vite.config.ts",
+		"trigger.config.ts",
+		"shared",
+		"backend/src/tasks/processors/video-compositon-component.jsx"
+	]
 }

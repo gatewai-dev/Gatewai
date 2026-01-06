@@ -6,7 +6,7 @@ import { scan } from "react-scan";
 import App from "./App.tsx";
 
 scan({
-	enabled: false,
+	enabled: true,
 });
 
 const root = document.getElementById("root");
