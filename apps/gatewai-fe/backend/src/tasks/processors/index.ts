@@ -28,7 +28,7 @@ const nodeProcessors: Partial<Record<NodeType, NodeProcessor>> = {
 	[NodeType.Compositor]: compositorProcessor,
 	[NodeType.VideoGen]: videoGenProcessor,
 	[NodeType.VideoGenExtend]: videoGenMockProcessor,
-	[NodeType.VideoGenFirstLastFrame]: videoGenMockProcessor,
+	[NodeType.VideoGenFirstLastFrame]: videoGenFirstLastFrameProcessor,
 
 	[NodeType.TextToSpeech]: textToSpeechProcessor,
 	[NodeType.SpeechToText]: audioUnderstandingProcessor,

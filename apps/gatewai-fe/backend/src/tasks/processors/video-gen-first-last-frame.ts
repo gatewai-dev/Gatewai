@@ -1,33 +1,138 @@
 import { randomUUID } from "node:crypto";
+import { existsSync, mkdirSync } from "node:fs";
 import { readFile } from "node:fs/promises";
 import path from "node:path";
 import { fileURLToPath } from "node:url";
 import { DataType, prisma } from "@gatewai/db";
-import type { VideoGenFirstLastFrameResult } from "@gatewai/types";
+import {
+	type FileData,
+	type OutputItem,
+	VideoGenFirstLastFrameNodeConfigSchema,
+	type VideoGenResult,
+} from "@gatewai/types";
 import { ENV_CONFIG } from "../../config.js";
+import { genAI } from "../../genai.js";
 import { logger } from "../../logger.js";
-import { generateSignedUrl, uploadToS3 } from "../../utils/storage.js";
+import {
+	generateSignedUrl,
+	getFromS3,
+	uploadToS3,
+} from "../../utils/storage.js";
+import { getInputValue } from "../resolvers.js";
 import type { NodeProcessor } from "./types.js";
 
 const __filename = fileURLToPath(import.meta.url);
 const __dirname = path.dirname(__filename);
+
+// Helper to resolve S3 or DataURL to base64
+async function ResolveImageData(fileData: FileData) {
+	if (fileData.entity) {
+		const buffer = await getFromS3(fileData.entity.key, fileData.entity.bucket);
+		return buffer.toString("base64");
+	}
+	if (fileData.processData) {
+		return fileData.processData.dataUrl;
+	}
+	throw new Error("Invalid file data: missing entity or processData");
+}
 
 const videoGenFirstLastFrameProcessor: NodeProcessor = async ({
 	node,
 	data,
 }) => {
 	try {
-		const extension = "mp4";
-		const testPath = path.join(__dirname, "test-vid.mp4");
-		const fileBuffer = await readFile(testPath);
+		const userPrompt = getInputValue(data, node.id, true, {
+			dataType: DataType.Text,
+			label: "Prompt",
+		})?.data as string;
+
+		const firstFrameInput = getInputValue(data, node.id, true, {
+			dataType: DataType.Image,
+			label: "First Frame",
+		}) as OutputItem<"Image">;
+
+		const lastFrameInput = getInputValue(data, node.id, true, {
+			dataType: DataType.Image,
+			label: "Last Frame",
+		}) as OutputItem<"Image">;
+
+		if (!firstFrameInput || !lastFrameInput) {
+			throw new Error("Missing data for First or Last frame.");
+		}
+
+		const firstFileData = firstFrameInput.data as FileData;
+		const lastFileData = lastFrameInput.data as FileData;
+
+		// 3. Parse Configuration
+		const config = VideoGenFirstLastFrameNodeConfigSchema.parse(node.config);
+
+		// 4. Resolve Images to Base64
+		const [firstBase64, lastBase64] = await Promise.all([
+			ResolveImageData(firstFileData),
+			ResolveImageData(lastFileData),
+		]);
+
+		// 5. Call Google GenAI (Veo)
+		// Note: 'image' param is the start frame. 'lastFrame' goes into the config object.
+		// See API Docs for Veo 3.1 interpolation
+		let operation = await genAI.models.generateVideos({
+			model: config.model,
+			prompt: userPrompt,
+			image: {
+				imageBytes: firstBase64,
+				mimeType: firstFileData.entity?.mimeType ?? "image/png",
+			},
+			config: {
+				lastFrame: {
+					imageBytes: lastBase64,
+					mimeType: lastFileData.entity?.mimeType ?? "image/png",
+				},
+				resolution: config.resolution,
+				personGeneration: config.personGeneration,
+				durationSeconds: config.durationSeconds
+					? Number(config.durationSeconds)
+					: 8,
+			},
+		});
+
+		while (!operation.done) {
+			await new Promise((resolve) => setTimeout(resolve, 10000));
+			operation = await genAI.operations.getVideosOperation({
+				operation: operation,
+			});
+		}
+
+		if (!operation.response?.generatedVideos?.length) {
+			throw new Error("No video generated from operation.");
+		}
+
+		const extension = ".mp4";
+		const now = Date.now().toString();
+		const folderPath = path.join(__dirname, `${node.id}_output`);
+		const filePath = path.join(folderPath, `${now}${extension}`);
+
+		if (!operation.response.generatedVideos[0].video) {
+			throw new Error("Generate video response is empty");
+		}
+		if (!existsSync(folderPath)) {
+			mkdirSync(folderPath);
+		}
+
+		await genAI.files.download({
+			file: operation.response.generatedVideos[0].video,
+			downloadPath: filePath,
+		});
+
+		const fileBuffer = await readFile(filePath);
 		const randId = randomUUID();
-		const fileName = `videogen_${randId}.${extension}`;
-		const key = `assets/${data.canvas.userId}/${fileName}`;
+		const fileName = `videogen_interp_${randId}.${extension}`;
+		const key = `assets/${fileName}`;
 		const contentType = "video/mp4";
 		const bucket = ENV_CONFIG.GCS_ASSETS_BUCKET;
+
 		await uploadToS3(fileBuffer, key, contentType, bucket);
 
-		const expiresIn = 3600 * 24 * 6.9; // A bit less than a week
+		const expiresIn = 3600 * 24 * 7;
 		const signedUrl = await generateSignedUrl(key, bucket, expiresIn);
 		const signedUrlExp = new Date(Date.now() + expiresIn * 1000);
 
@@ -38,7 +143,6 @@ const videoGenFirstLastFrameProcessor: NodeProcessor = async ({
 				key,
 				signedUrl,
 				signedUrlExp,
-				userId: data.canvas.userId,
 				mimeType: contentType,
 			},
 		});
@@ -49,13 +153,13 @@ const videoGenFirstLastFrameProcessor: NodeProcessor = async ({
 		if (!outputHandle) throw new Error("Output handle is missing");
 
 		const newResult = structuredClone(
-			node.result as unknown as VideoGenFirstLastFrameResult,
+			node.result as unknown as VideoGenResult,
 		) ?? {
 			outputs: [],
 			selectedOutputIndex: 0,
 		};
 
-		const newGeneration: VideoGenFirstLastFrameResult["outputs"][number] = {
+		const newGeneration: VideoGenResult["outputs"][number] = {
 			items: [
 				{
 					type: DataType.Video,
@@ -70,15 +174,18 @@ const videoGenFirstLastFrameProcessor: NodeProcessor = async ({
 
 		return { success: true, newResult };
 	} catch (err: unknown) {
-		console.log(err);
+		console.error(err);
 		if (err instanceof Error) {
-			logger.error(err.message);
+			logger.error(`VideoGenFirstLastFrame Error: ${err.message}`);
 			return {
 				success: false,
-				error: err?.message ?? "VideoGen processing failed",
+				error: err.message ?? "Video interpolation failed",
 			};
 		}
-		return { success: false, error: "VideoGen processing failed" };
+		return {
+			success: false,
+			error: "Video interpolation failed unknown error",
+		};
 	}
 };
 

@@ -69,12 +69,6 @@ export async function SEED_createNodeTemplates(prisma: PrismaClient) {
 					},
 					{
 						type: HandleType.Input,
-						dataTypes: [DataType.Text],
-						label: "Negative Prompt",
-						required: false,
-					},
-					{
-						type: HandleType.Input,
 						dataTypes: [DataType.Image],
 						label: "First Frame",
 						required: true,
@@ -84,6 +78,12 @@ export async function SEED_createNodeTemplates(prisma: PrismaClient) {
 						dataTypes: [DataType.Image],
 						label: "Last Frame",
 						required: true,
+					},
+					{
+						type: HandleType.Input,
+						dataTypes: [DataType.Text],
+						label: "Negative Prompt",
+						required: false,
 					},
 					{
 						type: HandleType.Output,
