@@ -14,7 +14,7 @@ import {
 	Video,
 } from "remotion";
 import { GetAssetEndpoint } from "@/utils/file";
-import type { NodeProcessorParams } from "./types";
+import type { ConnectedInput, NodeProcessorParams } from "./types";
 
 const DynamicComposition: React.FC<{
 	config: VideoCompositorNodeConfig;
@@ -70,41 +70,37 @@ const DynamicComposition: React.FC<{
 						justifyContent: verticalAlignMap[layer.verticalAlign ?? "top"],
 					};
 				}
-				console.log({
-					input,
-					w: GetAssetEndpoint(input.outputItem.data.entity.id),
-				});
+
+				const getAssetUrl = (input: ConnectedInput) => {
+					const fileData = input.outputItem?.data as FileData;
+					if (fileData.entity?.id) {
+						return GetAssetEndpoint(fileData.entity.id);
+					}
+					if (fileData.processData?.dataUrl) {
+						return fileData.processData?.dataUrl;
+					}
+				};
+
+				const inputSrc = getAssetUrl(input);
+
 				return (
 					<Sequence
 						from={from}
 						durationInFrames={layerDuration}
 						key={`layer_${layer.inputHandleId}`}
 					>
-						{input.outputItem?.type === "Video" &&
-							input.outputItem.data.entity && (
-								<Video
-									src={GetAssetEndpoint(input.outputItem.data.entity.id)}
-									style={style}
-									volume={volume}
-								/>
-							)}
-						{input.outputItem?.type === "Image" &&
-							input.outputItem.data.entity && (
-								<Img
-									src={GetAssetEndpoint(input.outputItem.data.entity.id)}
-									style={style}
-								/>
-							)}
+						{input.outputItem?.type === "Video" && inputSrc && (
+							<Video src={inputSrc} style={style} volume={volume} />
+						)}
+						{input.outputItem?.type === "Image" && inputSrc && (
+							<Img src={inputSrc} style={style} />
+						)}
 						{input.outputItem?.type === "Text" && (
 							<div style={style}>{input.outputItem.data}</div>
 						)}
-						{input.outputItem?.type === "Audio" &&
-							input.outputItem.data.entity && (
-								<Audio
-									src={GetAssetEndpoint(input.outputItem.data.entity.id)}
-									volume={volume}
-								/>
-							)}
+						{input.outputItem?.type === "Audio" && inputSrc && (
+							<Audio src={inputSrc} volume={volume} />
+						)}
 					</Sequence>
 				);
 			})}
