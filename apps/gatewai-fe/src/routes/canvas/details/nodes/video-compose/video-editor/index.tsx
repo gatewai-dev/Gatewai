@@ -916,14 +916,11 @@ const TimelinePanel: React.FC = () => {
 	} = useEditor();
 
 	const playheadRef = useRef<HTMLDivElement>(null);
-
-	const headerScrollRef = useRef<HTMLDivElement>(null);
-	const trackScrollRef = useRef<HTMLDivElement>(null);
+	const scrollContainerRef = useRef<HTMLDivElement>(null);
 
 	const [isPanningTimeline, setIsPanningTimeline] = useState(false);
 	const [dragStartX, setDragStartX] = useState(0);
 	const [initialScroll, setInitialScroll] = useState(0);
-
 	const [pixelsPerFrame, setPixelsPerFrame] = useState(5);
 
 	const zoomTimelineIn = () => setPixelsPerFrame((p) => Math.min(20, p + 1));
@@ -947,12 +944,10 @@ const TimelinePanel: React.FC = () => {
 			const oldIndex = sortedLayers.findIndex((l) => l.id === active.id);
 			const newIndex = sortedLayers.findIndex((l) => l.id === over.id);
 			const newSorted = arrayMove(sortedLayers, oldIndex, newIndex);
-
 			const updatedLayers = newSorted.map((l, idx) => ({
 				...l,
 				zIndex: newSorted.length - idx,
 			}));
-
 			updateLayers((prev) => {
 				const map = new Map(updatedLayers.map((l) => [l.id, l]));
 				return prev.map((l) => (map.has(l.id) ? map.get(l.id)! : l));
@@ -968,13 +963,12 @@ const TimelinePanel: React.FC = () => {
 				if (playheadRef.current) {
 					playheadRef.current.style.transform = `translateX(${frame * pixelsPerFrame}px)`;
 				}
-				// Auto-scroll logic if playing
-				if (isPlaying && trackScrollRef.current) {
+				if (isPlaying && scrollContainerRef.current) {
 					const x = frame * pixelsPerFrame;
-					const width = trackScrollRef.current.clientWidth;
-					const scroll = trackScrollRef.current.scrollLeft;
+					const width = scrollContainerRef.current.clientWidth - HEADER_WIDTH;
+					const scroll = scrollContainerRef.current.scrollLeft;
 					if (x > scroll + width - 100) {
-						trackScrollRef.current.scrollLeft = x - 100;
+						scrollContainerRef.current.scrollLeft = x - 100;
 					}
 				}
 			}
@@ -1053,53 +1047,10 @@ const TimelinePanel: React.FC = () => {
 		window.addEventListener("mouseup", onUp);
 	};
 
-	// Sync Scrolling
-	useEffect(() => {
-		const syncScroll =
-			(
-				sourceRef: React.RefObject<HTMLDivElement>,
-				targetRef: React.RefObject<HTMLDivElement>,
-			) =>
-			(e: WheelEvent) => {
-				if (e.deltaY !== 0 && targetRef.current) {
-					targetRef.current.scrollTop += e.deltaY;
-				}
-			};
-
-		const headerEl = headerScrollRef.current;
-		const trackEl = trackScrollRef.current;
-
-		if (headerEl) {
-			headerEl.addEventListener(
-				"wheel",
-				syncScroll(headerScrollRef, trackScrollRef),
-			);
-		}
-		if (trackEl) {
-			trackEl.addEventListener(
-				"wheel",
-				syncScroll(trackScrollRef, headerScrollRef),
-			);
-		}
-
-		return () => {
-			if (headerEl)
-				headerEl.removeEventListener(
-					"wheel",
-					syncScroll(headerScrollRef, trackScrollRef),
-				);
-			if (trackEl)
-				trackEl.removeEventListener(
-					"wheel",
-					syncScroll(trackScrollRef, headerScrollRef),
-				);
-		};
-	}, []);
-
 	return (
 		<div className="h-64 flex flex-col border-t border-white/10 bg-neutral-900/95 backdrop-blur-md shrink-0 select-none z-30 shadow-[0_-5px_20px_rgba(0,0,0,0.3)]">
-			{/* Timeline Toolbar */}
-			<div className="h-10 border-b border-white/5 flex items-center justify-between px-4 bg-white/5">
+			{/* 1. Fixed Toolbar */}
+			<div className="h-10 border-b border-white/5 flex items-center justify-between px-4 bg-white/5 shrink-0 z-40">
 				<div className="text-xs font-semibold text-gray-400 tracking-wider uppercase flex items-center gap-2">
 					<Layers className="w-4 h-4" /> Timeline
 				</div>
@@ -1126,83 +1077,51 @@ const TimelinePanel: React.FC = () => {
 				</div>
 			</div>
 
-			<div className="flex flex-1 overflow-hidden">
-				{/* Track Headers */}
+			{/* 2. Unified Scroll Area */}
+			<div
+				ref={scrollContainerRef}
+				className="flex-1 overflow-auto bg-neutral-950/50"
+				style={{ cursor: isPanningTimeline ? "grabbing" : "default" }}
+				onMouseDown={(e) => {
+					// Panning logic for the whole timeline
+					if (
+						e.button === 0 &&
+						(e.target as HTMLElement).classList.contains("timeline-bg")
+					) {
+						setIsPanningTimeline(true);
+						setDragStartX(e.clientX);
+						setInitialScroll(scrollContainerRef.current?.scrollLeft || 0);
+					}
+				}}
+				onMouseMove={(e) => {
+					if (isPanningTimeline && scrollContainerRef.current) {
+						const dx = e.clientX - dragStartX;
+						scrollContainerRef.current.scrollLeft = initialScroll - dx;
+					}
+				}}
+				onMouseUp={() => setIsPanningTimeline(false)}
+				onMouseLeave={() => setIsPanningTimeline(false)}
+			>
+				{/* The Content Wrapper: Width = Header + Timeline Content */}
 				<div
-					style={{ width: HEADER_WIDTH }}
-					className="border-r border-white/10 bg-neutral-900/50 shrink-0 z-20 flex flex-col relative"
+					className="relative flex flex-col min-h-full"
+					style={{
+						width: HEADER_WIDTH + durationInFrames * pixelsPerFrame + 1000,
+					}}
 				>
+					{/* Header/Ruler Row (Sticky Top) */}
 					<div
+						className="sticky top-0 z-50 flex shrink-0"
 						style={{ height: RULER_HEIGHT }}
-						className="border-b border-white/5 bg-neutral-900"
-					/>
-					<div
-						ref={headerScrollRef}
-						className="flex-1 overflow-y-auto no-scrollbar"
-						onScroll={(e) => {
-							if (trackScrollRef.current) {
-								trackScrollRef.current.scrollTop = e.currentTarget.scrollTop;
-							}
-						}}
 					>
-						<DndContext
-							sensors={sensors}
-							collisionDetection={closestCenter}
-							onDragEnd={handleDragEnd}
-						>
-							<SortableContext
-								items={sortedLayers.map((l) => l.id)}
-								strategy={verticalListSortingStrategy}
-							>
-								{sortedLayers.map((layer) => (
-									<SortableTrackHeader
-										key={layer.id}
-										layer={layer}
-										isSelected={layer.id === selectedId}
-										onSelect={() => setSelectedId(layer.id)}
-									/>
-								))}
-							</SortableContext>
-						</DndContext>
-					</div>
-				</div>
-
-				{/* Timeline Tracks */}
-				<div
-					ref={trackScrollRef}
-					className="flex-1 relative bg-neutral-950/50 overflow-auto"
-					style={{ cursor: isPanningTimeline ? "grabbing" : "default" }}
-					onScroll={(e) => {
-						if (headerScrollRef.current) {
-							headerScrollRef.current.scrollTop = e.currentTarget.scrollTop;
-						}
-					}}
-					onMouseDown={(e) => {
-						if (e.button === 0) {
-							setIsPanningTimeline(true);
-							setDragStartX(e.clientX);
-							setInitialScroll(trackScrollRef.current?.scrollLeft || 0);
-						}
-					}}
-					onMouseMove={(e) => {
-						if (isPanningTimeline) {
-							const dx = e.clientX - dragStartX;
-							if (trackScrollRef.current) {
-								trackScrollRef.current.scrollLeft = initialScroll - dx;
-							}
-						}
-					}}
-					onMouseUp={() => setIsPanningTimeline(false)}
-					onMouseLeave={() => setIsPanningTimeline(false)}
-				>
-					<div
-						className="relative min-w-full h-full"
-						style={{ width: durationInFrames * pixelsPerFrame + 1000 }} // Extra space at end
-					>
-						{/* Ruler */}
+						{/* Corner Piece (Sticky Left & Top) */}
 						<div
-							className="sticky top-0 z-10 bg-neutral-900/90 backdrop-blur-sm border-b border-white/10"
-							style={{ height: RULER_HEIGHT }}
+							className="sticky left-0 z-50 border-r border-b border-white/10 bg-neutral-900 shrink-0"
+							style={{ width: HEADER_WIDTH }}
+						/>
+						{/* Ruler (Sticky Top) */}
+						<div
+							className="flex-1 bg-neutral-900/90 backdrop-blur-sm border-b border-white/10 relative"
 							onClick={handleTimelineClick}
 						>
 							{/* Ticks */}
@@ -1218,30 +1137,51 @@ const TimelinePanel: React.FC = () => {
 									<span className="text-[9px] text-gray-500 ml-1 block mt-2">
 										{sec}s
 									</span>
-									{/* Minor ticks */}
-									{Array.from({ length: 4 }).map((__, i) => (
-										<div
-											key={`minor-${sec}-${i}`}
-											className="absolute top-0 h-1 w-px bg-gray-800"
-											style={{ left: ((i + 1) * FPS * pixelsPerFrame) / 5 }}
-										/>
-									))}
 								</div>
 							))}
 
-							{/* Playhead */}
+							{/* Playhead (Sticky-safe position) */}
 							<div
 								ref={playheadRef}
-								className="absolute top-0 bottom-0 w-px bg-red-500 z-50 pointer-events-none h-screen will-change-transform"
+								className="absolute top-0 bottom-0 w-px bg-red-500 z-50 pointer-events-none h-[100vh] will-change-transform"
 							>
 								<div className="w-3 h-3 -ml-[5.5px] bg-red-500 rotate-45 -mt-1 shadow-sm border border-red-400" />
 								<div className="w-px h-full bg-red-500/50" />
 							</div>
 						</div>
+					</div>
 
-						{/* Tracks Area */}
-						<div className="relative pb-10">
-							{/* Grid Lines */}
+					{/* Tracks Body */}
+					<div className="flex relative flex-1">
+						{/* Track Headers Column (Sticky Left) */}
+						<div
+							className="sticky left-0 z-30 bg-neutral-900/80 backdrop-blur-md border-r border-white/10 shrink-0"
+							style={{ width: HEADER_WIDTH }}
+						>
+							<DndContext
+								sensors={sensors}
+								collisionDetection={closestCenter}
+								onDragEnd={handleDragEnd}
+							>
+								<SortableContext
+									items={sortedLayers.map((l) => l.id)}
+									strategy={verticalListSortingStrategy}
+								>
+									{sortedLayers.map((layer) => (
+										<SortableTrackHeader
+											key={layer.id}
+											layer={layer}
+											isSelected={layer.id === selectedId}
+											onSelect={() => setSelectedId(layer.id)}
+										/>
+									))}
+								</SortableContext>
+							</DndContext>
+						</div>
+
+						{/* Clips/Timeline Tracks Column */}
+						<div className="flex-1 relative timeline-bg min-h-full">
+							{/* Horizontal Grid Lines */}
 							<div
 								className="absolute inset-0 pointer-events-none"
 								style={{
@@ -1254,10 +1194,7 @@ const TimelinePanel: React.FC = () => {
 							{sortedLayers.map((layer) => (
 								<div
 									key={layer.id}
-									style={{
-										height: TRACK_HEIGHT,
-										minHeight: `${TRACK_HEIGHT}px`,
-									}}
+									style={{ height: TRACK_HEIGHT }}
 									className={`border-b border-white/5 relative group/track ${
 										layer.id === selectedId ? "bg-white/[0.02]" : ""
 									}`}
@@ -1268,11 +1205,7 @@ const TimelinePanel: React.FC = () => {
 										className={`
 											absolute top-1.5 bottom-1.5 rounded-md border backdrop-blur-sm
 											flex items-center overflow-hidden cursor-move outline-none transition-all duration-150
-											${
-												layer.id === selectedId
-													? "ring-1 ring-blue-400 shadow-[0_4px_12px_rgba(0,0,0,0.5)] z-10"
-													: "hover:brightness-110 opacity-90 hover:opacity-100"
-											}
+											${layer.id === selectedId ? "ring-1 ring-blue-400 shadow-[0_4px_12px_rgba(0,0,0,0.5)] z-10" : "hover:brightness-110 opacity-90 hover:opacity-100"}
 										`}
 										style={{
 											left: layer.startFrame * pixelsPerFrame,
@@ -1303,26 +1236,12 @@ const TimelinePanel: React.FC = () => {
 											setSelectedId(layer.id);
 										}}
 									>
-										{/* Clip Content */}
 										<div className="flex flex-col px-2 w-full overflow-hidden">
 											<span className="text-[10px] truncate text-white/90 font-medium drop-shadow-md select-none">
 												{layer.name || layer.id}
 											</span>
-											{/* Animations Indicator in Timeline */}
-											{layer.animations && layer.animations.length > 0 && (
-												<div className="flex gap-0.5 mt-0.5">
-													{layer.animations.map((a, i) => (
-														<div
-															key={i}
-															className="w-1.5 h-1.5 rounded-full bg-cyan-400/80 shadow-sm"
-															title={a.type}
-														/>
-													))}
-												</div>
-											)}
 										</div>
-
-										{/* Resize Handles */}
+										{/* Resize Handle */}
 										<div
 											className="absolute right-0 top-0 bottom-0 w-2.5 cursor-e-resize hover:bg-white/30 transition-colors z-20"
 											onMouseDown={(e) => handleTrim(e, layer.id)}
