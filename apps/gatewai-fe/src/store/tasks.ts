@@ -138,7 +138,7 @@ const tasksSlice = createSlice({
 							(task.status === "COMPLETED" || task.status === "FAILED") &&
 							task.node &&
 							task.node.template.isTerminalNode &&
-							existingTask?.status !== task.status
+							(existingTask == null || existingTask?.status !== task.status)
 						) {
 							completedNodes.push(task.node);
 						}
