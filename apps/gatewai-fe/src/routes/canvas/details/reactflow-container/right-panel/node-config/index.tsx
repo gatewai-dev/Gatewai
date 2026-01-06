@@ -6,6 +6,7 @@ import { type NodeEntityType, selectSelectedNodes } from "@/store/nodes";
 import { NODE_ICON_MAP } from "../../../node-templates/node-palette/icon-map";
 import { ImageGenNodeConfigComponent } from "./image-gen";
 import { LLMNodeConfigComponent } from "./llm/llm-config";
+import { SpeechToTextNodeConfigComponent } from "./speec-to-text";
 import { TextToSpeechNodeConfigComponent } from "./text-to-speech";
 import { VideoGenNodeConfigComponent } from "./video-gen";
 import { VideoGenExtendNodeConfigComponent } from "./video-gen-extend";
@@ -24,6 +25,7 @@ const NodeConfigFormMap: Partial<
 	VideoGenExtend: VideoGenExtendNodeConfigComponent,
 	VideoGenFirstLastFrame: VideoGenFirstLastFrameNodeConfigComponent,
 	TextToSpeech: TextToSpeechNodeConfigComponent,
+	SpeechToText: SpeechToTextNodeConfigComponent,
 };
 
 const NodeConfigItem = memo(({ node }: NodeConfigComponentProps) => {
@@ -36,6 +38,7 @@ const NodeConfigItem = memo(({ node }: NodeConfigComponentProps) => {
 		return null;
 	}
 	const Icon = NODE_ICON_MAP[node?.type]?.(node) || NODE_ICON_MAP.File?.(node);
+
 	return (
 		<div className="flex flex-col" key={`${node.id}_cfg_component`}>
 			<div className="flex items-center gap-2">

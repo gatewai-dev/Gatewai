@@ -54,7 +54,7 @@ const audioUnderstandingProcessor: NodeProcessor = async ({ node, data }) => {
 				userPrompt,
 			]),
 		});
-		console.log("ANAN", response.text);
+
 		if (!response.text) return { success: false, error: "Response is empty." };
 
 		const outputHandle = data.handles.find(

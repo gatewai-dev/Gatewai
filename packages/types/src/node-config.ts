@@ -256,16 +256,13 @@ const VideoGenFirstLastFrameNodeConfigSchema = VideoGenBaseSchema.extend({
 // SpeechToText Node (based on Gemini audio understanding)
 const STT_NODE_MODELS = [
 	"gemini-2.5-flash",
+	"gemini-3-flash-preview", // Added pro for variety, assuming support
 	"gemini-3-pro-preview", // Added pro for variety, assuming support
 ] as const;
 
 const SpeechToTextNodeConfigSchema = z
 	.object({
 		model: z.enum(STT_NODE_MODELS).default("gemini-2.5-flash"),
-		languageCode: z.string().optional(), // Optional hint for primary language
-		enableSpeakerDiarization: z.boolean().default(false),
-		enableTimestamps: z.boolean().default(false),
-		enableEmotionDetection: z.boolean().default(false),
 	})
 	.strict();
 
