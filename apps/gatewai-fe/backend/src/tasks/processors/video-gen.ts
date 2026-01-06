@@ -44,6 +44,11 @@ const videoGenProcessor: NodeProcessor = async ({ node, data }) => {
 			label: "Prompt",
 		})?.data as string;
 
+		const negativePrompt = getInputValue(data, node.id, false, {
+			dataType: DataType.Text,
+			label: "Negative Prompt",
+		})?.data as string | undefined;
+
 		const imageFileData = getInputValuesByType(data, node.id, {
 			dataType: DataType.Image,
 		}).map((m) => m?.data) as FileData[] | null;
@@ -68,14 +73,20 @@ const videoGenProcessor: NodeProcessor = async ({ node, data }) => {
 			referenceImages = await Promise.all(LoadImageDataPromises);
 		}
 
-		const nodeConfig = VideoGenNodeConfigSchema.parse(node.config);
 		let operation = await genAI.models.generateVideos({
-			model: nodeConfig.model,
+			model: config.model,
 			prompt: userPrompt,
 			config: {
-				aspectRatio: config.aspectRatio,
+				// If reference image exists, only 16:9 supported
+				aspectRatio: referenceImages?.length ? "16:9" : config.aspectRatio,
 				referenceImages,
 				numberOfVideos: 1,
+				negativePrompt,
+				personGeneration: referenceImages?.length ? "allow_adult" : "allow_all",
+				durationSeconds: config.durationSeconds
+					? Number(config.durationSeconds)
+					: 8,
+				resolution: config.resolution,
 			},
 		});
 

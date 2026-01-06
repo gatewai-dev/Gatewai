@@ -28,12 +28,12 @@ const PaintNodeComponent = memo((props: NodeProps<PaintNode>) => {
 		}
 		return edges[0].source;
 	}, [edges]);
+	const inputNodeResult = useNodeResult(inputNodeId);
 
 	const node = useAppSelector(makeSelectNodeById(props.id));
 	const nodeConfig = node?.config as PaintNodeConfig;
 	const maskImageRef = useRef<HTMLImageElement | null>(null);
 
-	const inputNodeResult = useNodeResult(inputNodeId);
 	const canvasRef = useRef<HTMLCanvasElement>(null);
 	const previewRef = useRef<HTMLCanvasElement>(null);
 	const inputCanvasRef = useRef<HTMLCanvasElement>(null);
@@ -52,7 +52,7 @@ const PaintNodeComponent = memo((props: NodeProps<PaintNode>) => {
 	const lastPositionRef = useRef<{ x: number; y: number } | null>(null);
 	const needsUpdateRef = useRef(false);
 	const skipNextSyncRef = useRef(false);
-	const previewDebounceRef = useRef<number | null>(null); // New: For debouncing fill preview
+	const previewDebounceRef = useRef<number | null>(null);
 
 	const inputImageUrl = useMemo(() => {
 		const result =

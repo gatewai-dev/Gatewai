@@ -148,11 +148,9 @@ const compositorProcessor: NodeProcessor = async ({ node, data }) => {
 		const width = config.width ?? 1024;
 		const height = config.height ?? 1024;
 
-		// 1. Initialize Canvas
 		const canvas = createCanvas(width, height);
 		const ctx = canvas.getContext("2d");
 
-		// 2. Resolve Inputs
 		const inputHandlesWithValues = getAllInputValuesWithHandle(data, node.id);
 		const explicitLayers = Object.values(config.layerUpdates || {});
 		const allLayers: CompositorLayer[] = [...explicitLayers];
@@ -169,7 +167,7 @@ const compositorProcessor: NodeProcessor = async ({ node, data }) => {
 			let type: "Image" | "Text" | undefined;
 			if (inputItem.type === DataType.Image) type = "Image";
 			else if (inputItem.type === DataType.Text) type = "Text";
-			else continue; // Skip unsupported types
+			else continue;
 
 			const defaultLayer: CompositorLayer = {
 				id: handleId,
@@ -194,7 +192,6 @@ const compositorProcessor: NodeProcessor = async ({ node, data }) => {
 			allLayers.push(defaultLayer);
 		}
 
-		// 3. Register Fonts
 		// Pre-load custom fonts globally for the canvas environment
 		const fontPromises = allLayers
 			.filter((l) => l.type === "Text" && l.fontFamily)
@@ -207,14 +204,12 @@ const compositorProcessor: NodeProcessor = async ({ node, data }) => {
 			});
 		await Promise.all(fontPromises);
 
-		// 4. Sort layers by zIndex (ascending, undefined as Infinity/on top)
 		const sortedLayers = allLayers.sort((a, b) => {
 			const aZ = a.zIndex ?? Infinity;
 			const bZ = b.zIndex ?? Infinity;
 			return aZ - bZ;
 		});
 
-		// 5. Render Layers in Order
 		for (const layer of sortedLayers) {
 			const inputEntry = inputHandlesWithValues.find(
 				(f) => f.handle?.id === layer.inputHandleId,
@@ -250,7 +245,6 @@ const compositorProcessor: NodeProcessor = async ({ node, data }) => {
 			ctx.restore();
 		}
 
-		// 6. Output Generation
 		const resultBuffer = canvas.toBuffer("image/png");
 		logMedia(resultBuffer, undefined, node.id);
 

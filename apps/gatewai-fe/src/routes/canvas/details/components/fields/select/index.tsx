@@ -33,12 +33,14 @@ type SelectFieldProps<T extends FieldValues> = {
 	placeholder: string;
 	options: string[];
 	info?: ReactNode;
-} & Pick<UseControllerProps<T>, "rules">; // Optional: Add rules if needed for validation
+	disabled?: boolean;
+} & Pick<UseControllerProps<T>, "rules">;
 
 const SelectField = memo(
 	<T extends FieldValues>({
 		control,
 		name,
+		disabled,
 		label,
 		placeholder,
 		options,
@@ -61,7 +63,11 @@ const SelectField = memo(
 								</Tooltip>
 							)}
 						</div>
-						<Select onValueChange={field.onChange} value={field.value}>
+						<Select
+							disabled={disabled}
+							onValueChange={field.onChange}
+							value={field.value}
+						>
 							<FormControl>
 								<SelectTrigger>
 									<SelectValue placeholder={placeholder} />
