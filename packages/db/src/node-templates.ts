@@ -22,7 +22,7 @@ export async function SEED_createNodeTemplates(prisma: PrismaClient) {
 					},
 				],
 			},
-			defaultConfig: { width: 1080, height: 720 },
+			defaultConfig: { width: 1080, height: 1080 },
 		},
 		{
 			type: NodeType.VideoGenExtend,

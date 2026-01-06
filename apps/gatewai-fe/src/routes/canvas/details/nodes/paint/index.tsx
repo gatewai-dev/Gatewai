@@ -435,7 +435,7 @@ const PaintNodeComponent = memo((props: NodeProps<PaintNode>) => {
 				>
 					<canvas
 						ref={canvasRef}
-						className="absolute inset-0 w-full cursor-crosshair z-10"
+						className="absolute inset-0 w-full cursor-crosshair z-10 bg-transparent"
 						style={canvasStyle}
 						onMouseDown={handleMouseDown}
 						onMouseMove={handleMouseMove}
@@ -444,8 +444,9 @@ const PaintNodeComponent = memo((props: NodeProps<PaintNode>) => {
 					<canvas
 						ref={previewRef}
 						className="absolute inset-0 w-full h-full pointer-events-none z-20"
+						bg-transparent
 					/>
-					<canvas ref={inputCanvasRef} className="hidden" />
+					<canvas ref={inputCanvasRef} className="hidden bg-transparent" />
 				</div>
 				<div className="flex flex-col flex-wrap gap-4 items-start text-sm">
 					<div className="flex justify-between w-full">

@@ -95,6 +95,7 @@ import { Switch } from "@/components/ui/switch";
 import {
 	Tooltip,
 	TooltipContent,
+	TooltipProvider,
 	TooltipTrigger,
 } from "@/components/ui/tooltip";
 import { ColorInput } from "@/components/util/color-input";
@@ -1734,46 +1735,60 @@ export const CanvasDesignerEditor: React.FC<CanvasDesignerEditorProps> = ({
 
 					{/* Floating Toolbar */}
 					<div className="absolute bottom-8 left-1/2 -translate-x-1/2 z-50">
-						<Menubar className="border border-border/50 bg-background/80 backdrop-blur-md shadow-2xl rounded-full px-2 py-1 h-12 ring-1 ring-white/5">
-							<Button
-								title="Select (V)"
-								variant={mode === "select" ? "secondary" : "ghost"}
-								size="icon"
-								className="rounded-full w-9 h-9"
-								onClick={() => setMode("select")}
-							>
-								<MousePointer className="w-4 h-4" />
-							</Button>
-							<Button
-								title="Pan (Space)"
-								variant={mode === "pan" ? "secondary" : "ghost"}
-								size="icon"
-								className="rounded-full w-9 h-9"
-								onClick={() => setMode("pan")}
-							>
-								<Hand className="w-4 h-4" />
-							</Button>
+						<Menubar className="border border-white/10 bg-black/60 backdrop-blur-md shadow-2xl rounded-full px-2 py-1 h-12 flex items-center gap-1 select-none z-50">
+							<TooltipProvider>
+								<Tooltip>
+									<TooltipTrigger asChild>
+										<Button
+											variant={mode === "select" ? "secondary" : "ghost"}
+											size="icon"
+											className={`rounded-full w-9 h-9 ${mode === "select" ? "bg-white/20 text-white" : "text-gray-400 hover:text-white hover:bg-white/10"}`}
+											onClick={() => setMode("select")}
+										>
+											<MousePointer className="w-4 h-4" />
+										</Button>
+									</TooltipTrigger>
+									<TooltipContent>Select Tool (V)</TooltipContent>
+								</Tooltip>
 
-							<div className="w-px h-5 bg-border mx-2" />
+								<Tooltip>
+									<TooltipTrigger asChild>
+										<Button
+											variant={mode === "pan" ? "secondary" : "ghost"}
+											size="icon"
+											className={`rounded-full w-9 h-9 ${mode === "pan" ? "bg-white/20 text-white" : "text-gray-400 hover:text-white hover:bg-white/10"}`}
+											onClick={() => setMode("pan")}
+										>
+											<Hand className="w-4 h-4" />
+										</Button>
+									</TooltipTrigger>
+									<TooltipContent>Pan Tool (Space)</TooltipContent>
+								</Tooltip>
+							</TooltipProvider>
+
+							<div className="w-px h-5 bg-white/10 mx-1" />
 
 							<MenubarMenu>
 								<MenubarTrigger asChild>
 									<Button
 										variant="ghost"
-										className="h-9 px-3 text-xs font-mono rounded-full"
+										className="h-9 px-3 text-xs font-mono rounded-full text-gray-300 hover:text-white hover:bg-white/10"
 									>
 										{zoomPercentage}{" "}
 										<ChevronDown className="w-3 h-3 ml-2 opacity-50" />
 									</Button>
 								</MenubarTrigger>
-								<MenubarContent align="center" className="min-w-[140px]">
+								<MenubarContent
+									align="center"
+									className="min-w-[140px] bg-neutral-900/90 backdrop-blur-xl border-white/10 text-gray-200"
+								>
 									<MenubarItem onClick={() => zoomIn()}>Zoom In</MenubarItem>
 									<MenubarItem onClick={() => zoomOut()}>Zoom Out</MenubarItem>
 									<MenubarItem onClick={() => zoomTo(1)}>
 										Actual Size (100%)
 									</MenubarItem>
 									<MenubarItem onClick={() => zoomTo(2)}>200%</MenubarItem>
-									<Separator className="my-1" />
+									<Separator className="my-1 bg-white/10" />
 									<MenubarItem onClick={() => fitView()}>
 										Fit to Screen
 									</MenubarItem>

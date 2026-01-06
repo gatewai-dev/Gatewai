@@ -31,10 +31,15 @@ import {
 	Layers,
 	Minus,
 	MousePointer,
+	Move,
+	MoveHorizontal,
+	MoveVertical,
 	Music,
 	Pause,
 	Play,
 	Plus,
+	RotateCcw,
+	RotateCw,
 	Settings2,
 	Trash2,
 	Type,
@@ -97,7 +102,7 @@ import {
 	TooltipTrigger,
 } from "@/components/ui/tooltip";
 import { ColorInput } from "@/components/util/color-input";
-import { GetAssetEndpoint } from "@/utils/file";
+import { GetAssetEndpoint, GetFontAssetUrl } from "@/utils/file";
 
 // --- Types & Schemas ---
 
@@ -187,6 +192,49 @@ const FPS = 24;
 const RULER_HEIGHT = 32;
 const TRACK_HEIGHT = 48; // Slightly taller for better touch targets
 const HEADER_WIDTH = 280;
+
+// --- Font Manager (Singleton) ---
+class FontManager {
+	private static instance: FontManager | null = null;
+	private loadedFonts: Set<string> = new Set();
+
+	private constructor() {}
+
+	public static getInstance(): FontManager {
+		if (!FontManager.instance) {
+			FontManager.instance = new FontManager();
+		}
+		return FontManager.instance;
+	}
+
+	public async loadFont(family: string, url: string): Promise<void> {
+		if (this.loadedFonts.has(family)) return;
+		if (!url) return; // Skip if no URL
+
+		const fontId = `font-${family}`;
+		if (document.getElementById(fontId)) return;
+
+		const style = document.createElement("style");
+		style.id = fontId;
+		style.innerHTML = `
+      @font-face {
+        font-family: "${family}";
+        src: url("${url}");
+      }
+    `;
+		document.head.appendChild(style);
+
+		try {
+			await document.fonts.load(`1em "${family}"`);
+			await document.fonts.ready;
+			this.loadedFonts.add(family);
+		} catch (e) {
+			console.warn(`Font load failed for ${family}:`, e);
+		}
+	}
+}
+
+const fontManager = FontManager.getInstance();
 
 // --- Components: Rendering Engine (Remotion) ---
 
@@ -631,7 +679,7 @@ const InteractionOverlay: React.FC = () => {
 					>
 						{/* Selection Border - Glassy Look */}
 						<div
-							className={`absolute inset-0 transition-all duration-150 pointer-events-none border-2 ${
+							className={`absolute inset-0  pointer-events-none border-2 ${
 								selectedId === layer.id
 									? "border-blue-500/80 shadow-[0_0_15px_rgba(59,130,246,0.3)]"
 									: "border-transparent group-hover:border-blue-400/30"
@@ -644,7 +692,7 @@ const InteractionOverlay: React.FC = () => {
 								{["tl", "tr", "bl", "br"].map((pos) => (
 									<div
 										key={pos}
-										className={`absolute w-3 h-3 bg-white border border-blue-500 rounded-full shadow-sm z-50 hover:scale-125 transition-transform
+										className={`absolute w-3 h-3 bg-white border border-blue-500 rounded-full shadow-sm z-50 hover:scale-125
                       ${pos === "tl" ? "-top-1.5 -left-1.5 cursor-nwse-resize" : ""}
                       ${pos === "tr" ? "-top-1.5 -right-1.5 cursor-nesw-resize" : ""}
                       ${pos === "bl" ? "-bottom-1.5 -left-1.5 cursor-nesw-resize" : ""}
@@ -679,8 +727,6 @@ const InteractionOverlay: React.FC = () => {
 		</div>
 	);
 };
-
-// --- Components: Toolbar ---
 
 const Toolbar = React.memo<{
 	onClose: () => void;
@@ -862,7 +908,6 @@ const SortableTrackHeader: React.FC<SortableTrackProps> = ({
 			tabIndex={0}
 			className={`
 				border-b border-white/5 flex items-center pl-3 pr-2 text-xs gap-3 group outline-none
-				transition-colors duration-200
 				${isSelected ? "bg-blue-500/10 text-blue-100" : "hover:bg-white/5 text-gray-400"}
 				${isDragging ? "opacity-50 bg-neutral-900" : ""}
 			`}
@@ -983,7 +1028,7 @@ const TimelinePanel: React.FC = () => {
 		return () => {
 			if (rafId) cancelAnimationFrame(rafId);
 		};
-	}, [isPlaying, currentFrame, pixelsPerFrame]);
+	}, [isPlaying, currentFrame, pixelsPerFrame, playerRef.current]);
 
 	const handleTimelineClick = (e: React.MouseEvent) => {
 		const rect = e.currentTarget.getBoundingClientRect();
@@ -1204,7 +1249,7 @@ const TimelinePanel: React.FC = () => {
 										tabIndex={0}
 										className={`
 											absolute top-1.5 bottom-1.5 rounded-md border backdrop-blur-sm
-											flex items-center overflow-hidden cursor-move outline-none transition-all duration-150
+											flex items-center overflow-hidden cursor-move outline-none
 											${layer.id === selectedId ? "ring-1 ring-blue-400 shadow-[0_4px_12px_rgba(0,0,0,0.5)] z-10" : "hover:brightness-110 opacity-90 hover:opacity-100"}
 										`}
 										style={{
@@ -1243,7 +1288,7 @@ const TimelinePanel: React.FC = () => {
 										</div>
 										{/* Resize Handle */}
 										<div
-											className="absolute right-0 top-0 bottom-0 w-2.5 cursor-e-resize hover:bg-white/30 transition-colors z-20"
+											className="absolute right-0 top-0 bottom-0 w-2.5 cursor-e-resize hover:bg-white/30 z-20"
 											onMouseDown={(e) => handleTrim(e, layer.id)}
 										/>
 									</div>
@@ -1270,9 +1315,11 @@ const InspectorPanel: React.FC = () => {
 		updateViewportWidth,
 		updateViewportHeight,
 	} = useEditor();
-	const selectedLayer = layers.find((l) => l.id === selectedId);
+
+	const selectedLayer = layers.find((f) => f.id === selectedId);
 
 	const [addAnimOpen, setAddAnimOpen] = useState(false);
+	const fontNames = ["Geist", "Inter", "Arial"];
 
 	const aspectRatios = useMemo(
 		() => [
@@ -1358,11 +1405,13 @@ const InspectorPanel: React.FC = () => {
 						<div className="grid grid-cols-2 gap-3 mb-3">
 							<DraggableNumberInput
 								label="W"
+								icon={MoveHorizontal}
 								value={Math.round(viewportWidth)}
 								onChange={(v) => updateViewportWidth(Math.max(1, v))}
 							/>
 							<DraggableNumberInput
 								label="H"
+								icon={MoveVertical}
 								value={Math.round(viewportHeight)}
 								onChange={(v) => updateViewportHeight(Math.max(1, v))}
 							/>
@@ -1503,26 +1552,31 @@ const InspectorPanel: React.FC = () => {
 					<div className="grid grid-cols-2 gap-3">
 						<DraggableNumberInput
 							label="X"
+							icon={MoveHorizontal}
 							value={Math.round(selectedLayer.x)}
 							onChange={(v) => update({ x: v })}
 						/>
 						<DraggableNumberInput
 							label="Y"
+							icon={MoveVertical}
 							value={Math.round(selectedLayer.y)}
 							onChange={(v) => update({ y: v })}
 						/>
 						<DraggableNumberInput
 							label="W"
+							icon={MoveHorizontal}
 							value={Math.round(selectedLayer.width)}
 							onChange={(v) => update({ width: Math.max(1, v) })}
 						/>
 						<DraggableNumberInput
 							label="H"
+							icon={MoveVertical}
 							value={Math.round(selectedLayer.height)}
 							onChange={(v) => update({ height: Math.max(1, v) })}
 						/>
 						<DraggableNumberInput
 							label="Scale"
+							icon={Move}
 							value={selectedLayer.scale}
 							step={0.1}
 							onChange={(v) => update({ scale: v })}
@@ -1530,6 +1584,7 @@ const InspectorPanel: React.FC = () => {
 						/>
 						<DraggableNumberInput
 							label="Rotate"
+							icon={RotateCw}
 							value={Math.round(selectedLayer.rotation)}
 							onChange={(v) => update({ rotation: v })}
 						/>
@@ -1690,9 +1745,30 @@ const InspectorPanel: React.FC = () => {
 							<div className="text-xs text-gray-300 italic border border-white/10 p-2 rounded bg-black/20 break-words">
 								"{getTextData(selectedLayer.id)}"
 							</div>
+							<div className="space-y-1">
+								<label className="text-[10px] text-gray-400 uppercase">
+									Font Family
+								</label>
+								<Select
+									value={selectedLayer.fontFamily ?? "Inter"}
+									onValueChange={(val) => update({ fontFamily: val })}
+								>
+									<SelectTrigger className="h-8 text-xs bg-neutral-800 border-white/10">
+										<SelectValue placeholder="Select font" />
+									</SelectTrigger>
+									<SelectContent className="bg-neutral-800 border-white/10 text-white">
+										{fontNames.map((f) => (
+											<SelectItem key={f} value={f}>
+												{f}
+											</SelectItem>
+										))}
+									</SelectContent>
+								</Select>
+							</div>
 							<div className="grid grid-cols-2 gap-3">
 								<DraggableNumberInput
 									label="Size"
+									icon={Type}
 									value={selectedLayer.fontSize ?? 40}
 									onChange={(v) => update({ fontSize: v })}
 								/>
@@ -1981,6 +2057,21 @@ export const VideoDesignerEditor: React.FC<VideoDesignerEditorProps> = ({
 
 		setLayers(loaded);
 	}, [initialLayers, nodeConfig]);
+
+	// Font Loading
+	useEffect(() => {
+		const loadFonts = async () => {
+			const fontPromises: Promise<void>[] = [];
+			layers.forEach((layer) => {
+				if (layer.type === "Text" && layer.fontFamily) {
+					const fontUrl = GetFontAssetUrl(layer.fontFamily);
+					fontPromises.push(fontManager.loadFont(layer.fontFamily, fontUrl));
+				}
+			});
+			await Promise.all(fontPromises);
+		};
+		loadFonts();
+	}, [layers]);
 
 	const updateLayersHandler = useCallback(
 		(
