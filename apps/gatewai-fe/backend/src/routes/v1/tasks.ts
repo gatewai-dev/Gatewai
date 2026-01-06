@@ -6,7 +6,7 @@ import {
 } from "@gatewai/db";
 import { zValidator } from "@hono/zod-validator";
 import { Hono } from "hono";
-import { z } from "zod/v4";
+import { z } from "zod";
 
 const TaskStatuses = [
 	TaskStatus.COMPLETED,
@@ -17,7 +17,7 @@ const TaskStatuses = [
 
 const tasksQueryParams = z.object({
 	taskStatus: z.array(z.enum(TaskStatuses)).optional(),
-	fromDatetime: z.iso.datetime().optional(),
+	fromDatetime: z.string().optional(),
 });
 
 const tasksRouter = new Hono({

@@ -144,21 +144,6 @@ const CompositorNodeConfigSchema = z
 	})
 	.strict();
 
-// Describer Node
-const DescriberNodeConfigSchema = z
-	.object({
-		prompt: z.string(),
-		text: z.string(), // Output
-	})
-	.strict();
-
-// Router Node
-const RouterNodeConfigSchema = z
-	.object({
-		invert: z.boolean().optional(),
-	})
-	.strict();
-
 const LLM_NODE_MODELS = [
 	"gemini-3-pro-preview",
 	"gemini-3-flash-preview",
@@ -350,6 +335,42 @@ const TextToSpeechNodeConfigSchema = z
 	})
 	.strict();
 
+const VideoCompositorLayerSchema = z
+	.object({
+		id: z.string(),
+		inputHandleId: z.string(),
+		type: z.enum(["Text", "Image"]),
+		name: z.string().optional(),
+		x: z.number(),
+		y: z.number(),
+		width: z.number().optional(),
+		height: z.number().optional(),
+		rotation: z.number(),
+		fontFamily: z.string().optional(),
+		fontSize: z.number().optional(),
+		fill: z.string().optional(),
+		lockAspect: z.boolean(),
+		blendMode: z.string(),
+		letterSpacing: z.number().optional(),
+		lineHeight: z.number().optional(),
+		zIndex: z.number().optional(),
+		align: z.enum(["left", "center", "right"]).optional(),
+		verticalAlign: z.enum(["top", "middle", "bottom"]).optional(),
+	})
+	.strict();
+
+const VideoCompositorNodeConfigSchema = z
+	.object({
+		layerUpdates: z.record(
+			z.string(), // Input Handle ID
+			VideoCompositorLayerSchema,
+		),
+		// Width of the canvas
+		width: z.number().optional(),
+		// Height of the canvas
+		height: z.number().optional(),
+	})
+	.strict();
 // Main node schema
 const NodeConfigSchema = z.union([
 	ImageGenNodeConfigSchema,
@@ -362,14 +383,13 @@ const NodeConfigSchema = z.union([
 	PaintNodeConfigSchema,
 	BlurNodeConfigSchema,
 	CompositorNodeConfigSchema,
-	DescriberNodeConfigSchema,
-	RouterNodeConfigSchema,
 	ResizeNodeConfigSchema,
 	NoteNodeConfigSchema,
 	ModulateNodeConfigSchema,
 	VideoGenNodeConfigSchema,
 	SpeechToTextNodeConfigSchema,
 	TextToSpeechNodeConfigSchema,
+	VideoCompositorNodeConfigSchema,
 ]);
 
 // Inferred types
@@ -383,8 +403,10 @@ type PaintNodeConfig = z.infer<typeof PaintNodeConfigSchema>;
 type BlurNodeConfig = z.infer<typeof BlurNodeConfigSchema>;
 type CompositorNodeConfig = z.infer<typeof CompositorNodeConfigSchema>;
 type CompositorLayer = z.infer<typeof CompositorLayerSchema>;
-type DescriberNodeConfig = z.infer<typeof DescriberNodeConfigSchema>;
-type RouterNodeConfig = z.infer<typeof RouterNodeConfigSchema>;
+type VideoCompositorNodeConfig = z.infer<
+	typeof VideoCompositorNodeConfigSchema
+>;
+type VideoCompositorLayer = z.infer<typeof VideoCompositorLayerSchema>;
 type ResizeNodeConfig = z.infer<typeof ResizeNodeConfigSchema>;
 type AllNodeConfig = z.infer<typeof NodeConfigSchema>;
 type ImageGenConfig = z.infer<typeof ImageGenNodeConfigSchema>;
@@ -410,12 +432,12 @@ export {
 	PaintNodeConfigSchema,
 	BlurNodeConfigSchema,
 	CompositorNodeConfigSchema,
-	DescriberNodeConfigSchema,
+	CompositorLayerSchema,
+	VideoCompositorNodeConfigSchema,
+	VideoCompositorLayerSchema,
 	LLMNodeConfigSchema,
-	RouterNodeConfigSchema,
 	ResizeNodeConfigSchema,
 	NoteNodeConfigSchema,
-	CompositorLayerSchema,
 	ImageGenNodeConfigSchema,
 	ModulateNodeConfigSchema,
 	VideoGenNodeConfigSchema,
@@ -433,8 +455,8 @@ export {
 	type BlurNodeConfig,
 	type CompositorLayer,
 	type CompositorNodeConfig,
-	type DescriberNodeConfig,
-	type RouterNodeConfig,
+	type VideoCompositorLayer,
+	type VideoCompositorNodeConfig,
 	type ResizeNodeConfig,
 	type AllNodeConfig,
 	type ImageGenConfig,

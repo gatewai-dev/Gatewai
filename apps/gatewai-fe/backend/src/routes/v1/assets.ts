@@ -5,7 +5,7 @@ import { zValidator } from "@hono/zod-validator";
 import { fileTypeFromBuffer } from "file-type";
 import { Hono } from "hono";
 import sharp from "sharp";
-import { z } from "zod/v4";
+import { z } from "zod";
 import { ENV_CONFIG } from "../../config.js";
 import {
 	deleteFromS3,

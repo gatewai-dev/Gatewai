@@ -3,6 +3,28 @@ import { DataType, HandleType, NodeType, type PrismaClient } from "./client";
 export async function SEED_createNodeTemplates(prisma: PrismaClient) {
 	const nodes: NodeTemplateCreateInput[] = [
 		{
+			type: NodeType.VideoCompositor,
+			displayName: "Video Compositor",
+			category: "Video",
+			description: "Compose videos.",
+			subcategory: null,
+			tokenPrice: 0.0,
+			variableInputs: false,
+			variableOutputs: false,
+			isTerminalNode: false,
+			isTransient: true,
+			templateHandles: {
+				create: [
+					{
+						type: HandleType.Output,
+						dataTypes: [DataType.Video],
+						label: "Extended Video",
+					},
+				],
+			},
+			defaultConfig: { width: 1080, height: 720 },
+		},
+		{
 			type: NodeType.VideoGenExtend,
 			displayName: "Extend Video",
 			category: "AI",

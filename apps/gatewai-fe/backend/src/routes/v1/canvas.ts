@@ -32,6 +32,8 @@ const NodeTypes = [
 
 	"TextToSpeech",
 	"SpeechToText",
+
+	"VideoCompositor",
 ] as const;
 
 const DataTypes = [

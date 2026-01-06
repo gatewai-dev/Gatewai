@@ -90,6 +90,7 @@ export type BlurResult = SingleOutputGeneric<"Image">;
 export type CropResult = SingleOutputGeneric<"Image">;
 
 export type CompositorResult = SingleOutputGeneric<"Image">;
+export type VideoCompositorResult = SingleOutputGeneric<"Video">;
 
 export type BaseVideoGenResult = MultiOutputGeneric<"Video">;
 

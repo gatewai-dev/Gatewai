@@ -4,7 +4,7 @@ import type { NodeProps } from "@xyflow/react";
 import { PlusIcon } from "lucide-react";
 import { useMemo, useState } from "react";
 import { useForm } from "react-hook-form";
-import * as z from "zod";
+import { z } from "zod";
 import { Button } from "@/components/ui/button";
 import {
 	Dialog,

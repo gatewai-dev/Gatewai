@@ -78,8 +78,8 @@ importers:
         specifier: ^0.7.2
         version: 0.7.2(hono@4.8.5)(zod@3.25.67)
       '@hookform/resolvers':
-        specifier: ^5.2.2
-        version: 5.2.2(react-hook-form@7.66.0(react@19.1.1))
+        specifier: ^3.10.0
+        version: 3.10.0(react-hook-form@7.66.0(react@19.1.1))
       '@lobehub/icons':
         specifier: ^2.48.0
         version: 2.48.0(@babel/core@7.28.0)(@types/mdast@4.0.4)(@types/react-dom@19.1.7(@types/react@19.1.11))(@types/react@19.1.11)(antd@5.29.2(date-fns@4.1.0)(react-dom@19.1.1(react@19.1.1))(react@19.1.1))(framer-motion@12.23.26(react-dom@19.1.1(react@19.1.1))(react@19.1.1))(micromark-util-types@2.0.2)(micromark@4.0.2)(react-dom@19.1.1(react@19.1.1))(react@19.1.1)(vue@3.5.18(typescript@5.8.3))
@@ -1487,10 +1487,10 @@ packages:
       hono: '>=3.9.0'
       zod: ^3.25.0 || ^4.0.0
 
-  '@hookform/resolvers@5.2.2':
-    resolution: {integrity: sha512-A/IxlMLShx3KjV/HeTcTfaMxdwy690+L/ZADoeaTltLx+CVuzkeVIPuybK3jrRfw7YZnmdKsVVHAlEPIAEUNlA==}
+  '@hookform/resolvers@3.10.0':
+    resolution: {integrity: sha512-79Dv+3mDF7i+2ajj7SkypSKHhl1cbln1OGavqrsF7p6mbUv11xpqpacPsGDCTRvCSjEEIez2ef1NveSVL3b0Ag==}
     peerDependencies:
-      react-hook-form: ^7.55.0
+      react-hook-form: ^7.0.0
 
   '@iconify/types@2.0.0':
     resolution: {integrity: sha512-+wluvCrRhXrhyOmRDJ3q8mux9JkKy5SJ/v8ol2tu4FVjyYvtEzkc/3pK15ET6RKg4b4w4BmTk1+gsCUhf21Ykg==}
@@ -9970,7 +9970,7 @@ snapshots:
       '@google-cloud/opentelemetry-cloud-monitoring-exporter': 0.21.0(@opentelemetry/api@1.9.0)(@opentelemetry/core@2.2.0(@opentelemetry/api@1.9.0))(@opentelemetry/resources@2.2.0(@opentelemetry/api@1.9.0))(@opentelemetry/sdk-metrics@2.2.0(@opentelemetry/api@1.9.0))
       '@google-cloud/opentelemetry-cloud-trace-exporter': 3.0.0(@opentelemetry/api@1.9.0)(@opentelemetry/core@2.2.0(@opentelemetry/api@1.9.0))(@opentelemetry/resources@2.2.0(@opentelemetry/api@1.9.0))(@opentelemetry/sdk-trace-base@2.2.0(@opentelemetry/api@1.9.0))
       '@google-cloud/storage': 7.18.0
-      '@google/genai': 1.32.0(@modelcontextprotocol/sdk@1.24.3(zod@3.25.67))
+      '@google/genai': 1.32.0(@modelcontextprotocol/sdk@1.24.3(zod@3.25.76))
       '@modelcontextprotocol/sdk': 1.24.3(zod@3.25.76)
       '@opentelemetry/api': 1.9.0
       '@opentelemetry/api-logs': 0.205.0
@@ -9991,7 +9991,7 @@ snapshots:
       - supports-color
       - utf-8-validate
 
-  '@google/genai@1.32.0(@modelcontextprotocol/sdk@1.24.3(zod@3.25.67))':
+  '@google/genai@1.32.0(@modelcontextprotocol/sdk@1.24.3(zod@3.25.76))':
     dependencies:
       google-auth-library: 10.5.0
       ws: 8.18.3
@@ -10034,9 +10034,8 @@ snapshots:
       hono: 4.8.5
       zod: 3.25.67
 
-  '@hookform/resolvers@5.2.2(react-hook-form@7.66.0(react@19.1.1))':
+  '@hookform/resolvers@3.10.0(react-hook-form@7.66.0(react@19.1.1))':
     dependencies:
-      '@standard-schema/utils': 0.3.0
       react-hook-form: 7.66.0(react@19.1.1)
 
   '@iconify/types@2.0.0': {}
@@ -11610,14 +11609,14 @@ snapshots:
       '@remotion/media-parser': 4.0.397
       '@remotion/studio': 4.0.397(react-dom@19.1.1(react@19.1.1))(react@19.1.1)
       '@remotion/studio-shared': 4.0.397(react-dom@19.1.1(react@19.1.1))(react@19.1.1)
-      css-loader: 5.2.7(webpack@5.96.1)
+      css-loader: 5.2.7(webpack@5.96.1(esbuild@0.25.0))
       esbuild: 0.25.0
       react: 19.1.1
       react-dom: 19.1.1(react@19.1.1)
       react-refresh: 0.9.0
       remotion: 4.0.397(react-dom@19.1.1(react@19.1.1))(react@19.1.1)
       source-map: 0.7.3
-      style-loader: 4.0.0(webpack@5.96.1)
+      style-loader: 4.0.0(webpack@5.96.1(esbuild@0.25.0))
       webpack: 5.96.1(esbuild@0.25.0)
     transitivePeerDependencies:
       - '@swc/core'
@@ -13587,7 +13586,7 @@ snapshots:
       randombytes: 2.1.0
       randomfill: 1.0.4
 
-  css-loader@5.2.7(webpack@5.96.1):
+  css-loader@5.2.7(webpack@5.96.1(esbuild@0.25.0)):
     dependencies:
       icss-utils: 5.1.0(postcss@8.5.6)
       loader-utils: 2.0.4
@@ -17829,7 +17828,7 @@ snapshots:
 
   stubs@3.0.0: {}
 
-  style-loader@4.0.0(webpack@5.96.1):
+  style-loader@4.0.0(webpack@5.96.1(esbuild@0.25.0)):
     dependencies:
       webpack: 5.96.1(esbuild@0.25.0)
 

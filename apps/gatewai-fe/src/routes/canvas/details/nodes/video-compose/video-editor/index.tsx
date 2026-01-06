@@ -1,7 +1,7 @@
 import type {
-	CompositorNodeConfig,
 	FileData,
 	OutputItem,
+	VideoCompositorNodeConfig,
 } from "@gatewai/types";
 import { Player, type PlayerRef } from "@remotion/player";
 import {
@@ -40,6 +40,7 @@ import { ScrollArea, ScrollBar } from "@/components/ui/scroll-area";
 import { Separator } from "@/components/ui/separator";
 import { Slider } from "@/components/ui/slider";
 import { ColorInput } from "@/components/util/color-input";
+import type { NodeEntityType } from "@/store/nodes";
 
 type LayerType = "Text" | "Image" | "Video" | "Audio";
 
@@ -57,11 +58,14 @@ interface VideoLayer {
 	opacity: number;
 	zIndex: number;
 	// Temporal
+
 	startFrame: number;
 	durationInFrames: number;
 	// Media Specific
+
 	src?: string;
 	volume?: number; // 0-1
+
 	// Text Specific
 	text?: string;
 	fontFamily?: string;
@@ -111,10 +115,8 @@ const useEditor = () => {
 
 // --- Utils ---
 
-// Use geminis default FPS
+// Use gemini's default FPS
 const FPS = 24;
-
-// --- Components: Rendering Engine (Remotion) ---
 
 /**
  * The actual Remotion Scene that gets rendered inside the Player.
@@ -742,9 +744,9 @@ const InspectorPanel: React.FC = () => {
 
 interface VideoDesignerEditorProps {
 	initialLayers: Map<string, OutputItem<"Text" | "Image" | "Video" | "Audio">>;
-	node: { config: CompositorNodeConfig };
+	node: NodeEntityType;
 	onClose: () => void;
-	onSave: (config: CompositorNodeConfig) => void;
+	onSave: (config: VideoCompositorNodeConfig) => void;
 }
 
 export const VideoDesignerEditor: React.FC<VideoDesignerEditorProps> = ({
@@ -757,8 +759,8 @@ export const VideoDesignerEditor: React.FC<VideoDesignerEditorProps> = ({
 	// Normally we'd parse node.config, but simplifying for the example
 	const [layers, setLayers] = useState<VideoLayer[]>([]);
 	const [selectedId, setSelectedId] = useState<string | null>(null);
-	const [viewportWidth, setViewportWidth] = useState(1920);
-	const [viewportHeight, setViewportHeight] = useState(1080);
+	const [viewportWidth, setViewportWidth] = useState(1280);
+	const [viewportHeight, setViewportHeight] = useState(720);
 
 	// Playback State
 	const [currentFrame, setCurrentFrame] = useState(0);
