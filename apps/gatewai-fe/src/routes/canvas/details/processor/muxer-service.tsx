@@ -26,33 +26,64 @@ const DynamicComposition: React.FC<{
 
 	return (
 		<AbsoluteFill style={{ backgroundColor: config.background ?? "black" }}>
-			{sortedLayers.map((layer, index) => {
+			{sortedLayers.map((layer) => {
 				const input = inputDataMap[layer.inputHandleId];
 				if (!input) return null;
 
 				const from = layer.startFrame ?? 0;
-				const layerDuration = layer.duration
-					? Math.floor(layer.duration * fps)
-					: durationInFrames;
+				const layerDuration =
+					layer.durationInFrames ??
+					(layer.duration
+						? Math.floor(layer.duration * fps)
+						: durationInFrames);
 
-				const style: React.CSSProperties = {
+				const baseStyle: React.CSSProperties = {
 					position: "absolute",
 					left: layer.x ?? 0,
 					top: layer.y ?? 0,
 					width: layer.width ?? "auto",
 					height: layer.height ?? "auto",
 					transform: `rotate(${layer.rotation ?? 0}deg)`,
-					mixBlendMode: (layer.blendMode as any) ?? "normal",
 				};
 
+				let style = baseStyle;
+				const volume = layer.volume ?? 1;
+
+				if (input.type === "Text") {
+					const verticalAlignMap: Record<string, string> = {
+						top: "flex-start",
+						middle: "center",
+						bottom: "flex-end",
+					};
+
+					style = {
+						...baseStyle,
+						fontFamily: layer.fontFamily ?? "sans-serif",
+						fontSize: `${layer.fontSize ?? 16}px`,
+						color: layer.fill ?? "black",
+						letterSpacing: `${layer.letterSpacing ?? 0}px`,
+						lineHeight: layer.lineHeight ?? 1,
+						textAlign: layer.align ?? "left",
+						display: "flex",
+						flexDirection: "column",
+						justifyContent: verticalAlignMap[layer.verticalAlign ?? "top"],
+					};
+				}
+
 				return (
-					<Sequence from={from} durationInFrames={layerDuration} key={index}>
-						{input.type === "Video" && <Video src={input.data} style={style} />}
-						{input.type === "Image" && <Img src={input.data} style={style} />}
-						{input.type === "Text" && (
-							<div style={{ ...style }}>{input.data}</div>
+					<Sequence
+						from={from}
+						durationInFrames={layerDuration}
+						key={`layer_${layer.inputHandleId}`}
+					>
+						{input.type === "Video" && (
+							<Video src={input.data} style={style} volume={volume} />
 						)}
-						{input.type === "Audio" && <Audio src={input.data} />}
+						{input.type === "Image" && <Img src={input.data} style={style} />}
+						{input.type === "Text" && <div style={style}>{input.data}</div>}
+						{input.type === "Audio" && (
+							<Audio src={input.data} volume={volume} />
+						)}
 					</Sequence>
 				);
 			})}
@@ -76,6 +107,7 @@ export class RemotionWebProcessorService {
 			onProgress: (p) => console.log(`Rendering: ${Math.round(p * 100)}%`),
 			// This is the "Muxer" part - it encodes frames into a container
 			codec: "h264",
+			licenseKey: "free-license",
 			composition: {
 				id: "dynamic-video",
 				component: DynamicComposition,
