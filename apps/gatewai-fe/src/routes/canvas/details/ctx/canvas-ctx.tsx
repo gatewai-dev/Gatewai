@@ -88,6 +88,7 @@ interface CanvasContextType {
 		position: XYPosition,
 	) => void;
 	onNodesDelete: (nodeIds: Node["id"][]) => void;
+	onEdgesDelete: (edgeIds: Edge["id"][]) => void;
 	duplicateNodes: (nodeIds: Node["id"][]) => void;
 	onNodeConfigUpdate: (payload: {
 		id: string;
@@ -481,6 +482,16 @@ const CanvasProvider = ({
 		[rfEdges, rfNodes, dispatch, handleEntities, scheduleSave],
 	);
 
+	const onEdgesDelete = useCallback(
+		async (edgeIds: NodeEntityType["id"][]) => {
+			const newEdges = rfEdges.filter((f) => !edgeIds.includes(f.id));
+			dispatch(setEdges(newEdges));
+
+			scheduleSave();
+		},
+		[rfEdges, dispatch, scheduleSave],
+	);
+
 	const runNodes = useCallback(
 		async (node_ids?: Node["id"][]) => {
 			// Save before running
@@ -716,6 +727,7 @@ const CanvasProvider = ({
 			createNewNode,
 			duplicateNodes,
 			onNodesDelete,
+			onEdgesDelete,
 			onNodeConfigUpdate,
 			createNewHandle,
 			onNodeResultUpdate,
@@ -732,6 +744,7 @@ const CanvasProvider = ({
 			createNewNode,
 			duplicateNodes,
 			onNodesDelete,
+			onEdgesDelete,
 			onNodeConfigUpdate,
 			createNewHandle,
 			onNodeResultUpdate,

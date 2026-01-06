@@ -271,7 +271,7 @@ export class NodeWFProcessor {
 						data,
 						prisma: this.prisma,
 					});
-
+					console.log(`${node.id}: Error: ${error}`);
 					if (newResult) {
 						// Update in-memory data for propagation to downstream nodes
 						const updatedNode = data.nodes.find((n) => n.id === nodeId);

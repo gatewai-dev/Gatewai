@@ -19,7 +19,6 @@ const NodeTypes = [
 	"Paint",
 	"Blur",
 	"Compositor",
-	"Router",
 	"Note",
 	"Number",
 	"ImageGen",

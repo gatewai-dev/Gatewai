@@ -135,7 +135,7 @@ const tasksSlice = createSlice({
 						);
 						if (
 							task.finishedAt &&
-							task.status === "COMPLETED" &&
+							(task.status === "COMPLETED" || task.status === "FAILED") &&
 							task.node &&
 							task.node.template.isTerminalNode &&
 							existingTask?.status !== task.status

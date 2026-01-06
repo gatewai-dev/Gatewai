@@ -81,8 +81,13 @@ const imageGenProcessor: NodeProcessor = async ({ node, data }) => {
 					parts: parts,
 				},
 			],
+
 			config: {
 				responseModalities: ["IMAGE"],
+				systemInstruction: [
+					"You are a image generator.",
+					"Your mission is to create an image whether prompt tells you to or not.",
+				],
 				imageConfig:
 					config.model === "gemini-3-pro-image-preview"
 						? {

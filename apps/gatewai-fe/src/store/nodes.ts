@@ -64,25 +64,6 @@ export const nodesSlice = createSlice({
 			}
 		},
 	},
-	extraReducers(builder) {
-		builder.addCase(getBatchDetails.fulfilled, (state, action) => {
-			const { batches } = action.payload;
-			const completedNodes: NodeEntityType[] = [];
-			batches.forEach((batch) => {
-				batch?.tasks.forEach((task) => {
-					if (
-						task.finishedAt &&
-						task.status === "COMPLETED" &&
-						task.node &&
-						task.node.template.isTerminalNode
-					) {
-						completedNodes.push(task.node);
-					}
-				});
-			});
-			nodeAdapter.upsertMany(state, completedNodes);
-		});
-	},
 });
 
 type NodesState = ReturnType<typeof nodesSlice.reducer>;
