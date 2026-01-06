@@ -38,7 +38,6 @@ import {
 	Settings2,
 	Trash2,
 	Type,
-	Wand2,
 	Zap,
 } from "lucide-react";
 import React, {
@@ -74,6 +73,12 @@ import {
 	MenubarMenu,
 	MenubarTrigger,
 } from "@/components/ui/menubar";
+import {
+	Popover,
+	PopoverClose,
+	PopoverContent,
+	PopoverTrigger,
+} from "@/components/ui/popover";
 import { ScrollArea } from "@/components/ui/scroll-area";
 import {
 	Select,
@@ -96,21 +101,6 @@ import { GetAssetEndpoint } from "@/utils/file";
 
 // --- Types & Schemas ---
 
-// Defining the Effect Type locally based on the prompt's request for effects
-export type EffectType =
-	| "blur"
-	| "grayscale"
-	| "brightness"
-	| "contrast"
-	| "sepia"
-	| "hue-rotate";
-
-export interface VideoEffect {
-	id: string;
-	type: EffectType;
-	value: number;
-}
-
 // Defining the Animation Type
 export type AnimationType =
 	| "fade-in"
@@ -132,9 +122,8 @@ export interface VideoAnimation {
 	value: number; // duration in seconds
 }
 
-// Extended Layer Type to include effects and animations
+// Extended Layer Type to include animations
 interface ExtendedLayer extends VideoCompositorLayer {
-	effects?: VideoEffect[];
 	animations?: VideoAnimation[];
 }
 
@@ -199,31 +188,6 @@ const RULER_HEIGHT = 32;
 const TRACK_HEIGHT = 48; // Slightly taller for better touch targets
 const HEADER_WIDTH = 280;
 
-// --- Helper: CSS Filters ---
-const getFilterStyle = (effects?: VideoEffect[]) => {
-	if (!effects || effects.length === 0) return "none";
-	return effects
-		.map((effect) => {
-			switch (effect.type) {
-				case "blur":
-					return `blur(${effect.value}px)`;
-				case "grayscale":
-					return `grayscale(${effect.value * 100}%)`;
-				case "brightness":
-					return `brightness(${effect.value})`;
-				case "contrast":
-					return `contrast(${effect.value})`;
-				case "sepia":
-					return `sepia(${effect.value * 100}%)`;
-				case "hue-rotate":
-					return `hue-rotate(${effect.value}deg)`;
-				default:
-					return "";
-			}
-		})
-		.join(" ");
-};
-
 // --- Components: Rendering Engine (Remotion) ---
 
 const CompositionScene: React.FC<{
@@ -245,7 +209,6 @@ const CompositionScene: React.FC<{
 			{sortedLayers.map((layer) => {
 				const src = getAssetUrl(layer.inputHandleId);
 				const textContent = getTextData(layer.inputHandleId);
-				const filter = getFilterStyle(layer.effects);
 
 				const relativeFrame = frame - layer.startFrame;
 
@@ -346,7 +309,6 @@ const CompositionScene: React.FC<{
 					transform: `rotate(${animRotation}deg) scale(${animScale})`,
 					opacity: animOpacity,
 					textAlign: layer.align,
-					filter,
 				};
 
 				return (
@@ -411,7 +373,14 @@ const InteractionOverlay: React.FC = () => {
 	} = useEditor();
 
 	const [isDragging, setIsDragging] = useState(false);
+	const [isResizing, setIsResizing] = useState(false);
+	const [isRotating, setIsRotating] = useState(false);
+	const [resizeAnchor, setResizeAnchor] = useState<
+		"tl" | "tr" | "bl" | "br" | null
+	>(null);
+	const [isPanning, setIsPanning] = useState(false);
 	const [dragStart, setDragStart] = useState({ x: 0, y: 0 });
+	const [initialPan, setInitialPan] = useState({ x: 0, y: 0 });
 	const [initialPos, setInitialPos] = useState({
 		x: 0,
 		y: 0,
@@ -420,12 +389,7 @@ const InteractionOverlay: React.FC = () => {
 		rotation: 0,
 		scale: 1,
 	});
-	const [isResizing, setIsResizing] = useState(false);
-	const [resizeAnchor, setResizeAnchor] = useState<
-		"tl" | "tr" | "bl" | "br" | null
-	>(null);
-	const [isPanning, setIsPanning] = useState(false);
-	const [initialPan, setInitialPan] = useState({ x: 0, y: 0 });
+	const [initialAngle, setInitialAngle] = useState(0);
 
 	const visibleLayers = useMemo(() => {
 		return layers
@@ -482,6 +446,32 @@ const InteractionOverlay: React.FC = () => {
 		}
 	};
 
+	const handleRotateStart = (e: React.MouseEvent, layerId: string) => {
+		e.stopPropagation();
+		setSelectedId(layerId);
+		const layer = layers.find((l) => l.id === layerId);
+		if (!layer) return;
+		const centerX = layer.x + layer.width / 2;
+		const centerY = layer.y + layer.height / 2;
+		const screenCenterX = centerX * zoom + pan.x;
+		const screenCenterY = centerY * zoom + pan.y;
+		const startAngle = Math.atan2(
+			e.clientY - screenCenterY,
+			e.clientX - screenCenterX,
+		);
+		setInitialAngle(startAngle);
+		setDragStart({ x: e.clientX, y: e.clientY });
+		setInitialPos({
+			x: layer.x,
+			y: layer.y,
+			width: layer.width,
+			height: layer.height,
+			rotation: layer.rotation,
+			scale: layer.scale,
+		});
+		setIsRotating(true);
+	};
+
 	const handleMouseMove = (e: React.MouseEvent) => {
 		if (isDragging && selectedId) {
 			const dx = (e.clientX - dragStart.x) / zoom;
@@ -509,7 +499,8 @@ const InteractionOverlay: React.FC = () => {
 			local_dx /= initialPos.scale;
 			local_dy /= initialPos.scale;
 
-			const layer = layers.find((l) => l.id === selectedId)!;
+			const layer = layers.find((l) => l.id === selectedId);
+			if (!layer) return;
 			const ratio = initialPos.height / initialPos.width || 1;
 			const isLocked =
 				layer.type !== "Text" && layer.type !== "Audio" && layer.lockAspect;
@@ -547,11 +538,6 @@ const InteractionOverlay: React.FC = () => {
 			const newWidth = Math.max(1, initialPos.width + changeW);
 			const newHeight = Math.max(1, initialPos.height + changeH);
 
-			// We need to adjust position because resizing happens from center in CSS transform usually,
-			// but here we are top-left based. The complexity of rotated resizing is high.
-			// Simple approximation for this editor: Update X/Y based on the anchor movement in rotated space.
-			// Ideally we rotate the delta back to world space to apply to X/Y.
-
 			// Back to world space
 			const world_dx = cos * local_dx - sin * local_dy;
 			const world_dy = sin * local_dx + cos * local_dy;
@@ -559,18 +545,11 @@ const InteractionOverlay: React.FC = () => {
 			const newX = isLeft ? initialPos.x + world_dx : initialPos.x;
 			const newY = isTop ? initialPos.y + world_dy : initialPos.y;
 
-			// For this implementation, we will simplify: if rotated, aspect lock resizing is tricky without matrix math.
-			// We will just apply dimensions and drift might occur if not careful.
-			// A robust implementation requires pivoting around the opposite corner.
-
 			updateLayers((prev) =>
 				prev.map((l) =>
 					l.id === selectedId
 						? {
 								...l,
-								// Simple resizing for non-rotated or simple cases.
-								// For Principal Engineer level, we'd use a transformation matrix library.
-								// Keeping it functional for the prompt's scope:
 								width: Math.round(newWidth),
 								height: Math.round(newHeight),
 								// Only updating position if we are dragging top/left handles
@@ -578,6 +557,24 @@ const InteractionOverlay: React.FC = () => {
 								y: isTop ? Math.round(newY) : l.y,
 							}
 						: l,
+				),
+			);
+		} else if (isRotating && selectedId) {
+			const layer = layers.find((l) => l.id === selectedId);
+			if (!layer) return;
+			const centerX = layer.x + layer.width / 2;
+			const centerY = layer.y + layer.height / 2;
+			const screenCenterX = centerX * zoom + pan.x;
+			const screenCenterY = centerY * zoom + pan.y;
+			const currentAngle = Math.atan2(
+				e.clientY - screenCenterY,
+				e.clientX - screenCenterX,
+			);
+			const delta = currentAngle - initialAngle;
+			const newRot = initialPos.rotation + (delta * 180) / Math.PI;
+			updateLayers((prev) =>
+				prev.map((l) =>
+					l.id === selectedId ? { ...l, rotation: Math.round(newRot) } : l,
 				),
 			);
 		} else if (isPanning) {
@@ -591,6 +588,7 @@ const InteractionOverlay: React.FC = () => {
 		setIsDragging(false);
 		setIsResizing(false);
 		setResizeAnchor(null);
+		setIsRotating(false);
 		setIsPanning(false);
 	};
 
@@ -670,8 +668,8 @@ const InteractionOverlay: React.FC = () => {
 								/>
 								<div
 									className="absolute -top-8 left-1/2 -translate-x-1/2 w-3 h-3 bg-white border border-blue-500 rounded-full shadow-sm cursor-grab active:cursor-grabbing"
-									title="Rotate (Drag logic simplified)"
-									// simplified rotation interaction not fully implemented in this specific block
+									title="Rotate"
+									onMouseDown={(e) => handleRotateStart(e, layer.id)}
 								/>
 							</>
 						)}
@@ -854,7 +852,6 @@ const SortableTrackHeader: React.FC<SortableTrackProps> = ({
 		zIndex: isDragging ? 999 : "auto",
 	};
 
-	const hasEffects = layer.effects && layer.effects.length > 0;
 	const hasAnimations = layer.animations && layer.animations.length > 0;
 
 	return (
@@ -894,9 +891,6 @@ const SortableTrackHeader: React.FC<SortableTrackProps> = ({
 				<span className="truncate font-medium">{layer.name || layer.id}</span>
 			</div>
 			<div className="flex gap-1">
-				{hasEffects && (
-					<Wand2 className="w-3 h-3 text-yellow-400 animate-pulse" />
-				)}
 				{hasAnimations && (
 					<Zap className="w-3 h-3 text-cyan-400 animate-pulse" />
 				)}
@@ -1314,18 +1308,6 @@ const TimelinePanel: React.FC = () => {
 											<span className="text-[10px] truncate text-white/90 font-medium drop-shadow-md select-none">
 												{layer.name || layer.id}
 											</span>
-											{/* Effects Indicator in Timeline */}
-											{layer.effects && layer.effects.length > 0 && (
-												<div className="flex gap-0.5 mt-0.5">
-													{layer.effects.map((e, i) => (
-														<div
-															key={i}
-															className="w-1.5 h-1.5 rounded-full bg-yellow-400/80 shadow-sm"
-															title={e.type}
-														/>
-													))}
-												</div>
-											)}
 											{/* Animations Indicator in Timeline */}
 											{layer.animations && layer.animations.length > 0 && (
 												<div className="flex gap-0.5 mt-0.5">
@@ -1371,6 +1353,8 @@ const InspectorPanel: React.FC = () => {
 	} = useEditor();
 	const selectedLayer = layers.find((l) => l.id === selectedId);
 
+	const [addAnimOpen, setAddAnimOpen] = useState(false);
+
 	const aspectRatios = useMemo(
 		() => [
 			{ label: "IG Square (1:1)", width: 1080, height: 1080 },
@@ -1380,15 +1364,6 @@ const InspectorPanel: React.FC = () => {
 		],
 		[],
 	);
-
-	const effectTypes: EffectType[] = [
-		"blur",
-		"grayscale",
-		"brightness",
-		"contrast",
-		"sepia",
-		"hue-rotate",
-	];
 
 	const animationTypes: AnimationType[] = [
 		"fade-in",
@@ -1405,60 +1380,6 @@ const InspectorPanel: React.FC = () => {
 		"shake",
 	];
 
-	const addEffect = (type: EffectType) => {
-		if (!selectedLayer) return;
-		const newEffect: VideoEffect = {
-			id: crypto.randomUUID(),
-			type,
-			value:
-				type === "blur"
-					? 5
-					: type === "hue-rotate"
-						? 90
-						: type === "brightness" || type === "contrast"
-							? 1.5
-							: 1, // 100% for grayscale/sepia
-		};
-		const currentEffects = selectedLayer.effects || [];
-		updateLayers((prev) =>
-			prev.map((l) =>
-				l.id === selectedId
-					? { ...l, effects: [...currentEffects, newEffect] }
-					: l,
-			),
-		);
-	};
-
-	const removeEffect = (effectId: string) => {
-		if (!selectedLayer) return;
-		updateLayers((prev) =>
-			prev.map((l) =>
-				l.id === selectedId
-					? {
-							...l,
-							effects: l.effects?.filter((e) => e.id !== effectId),
-						}
-					: l,
-			),
-		);
-	};
-
-	const updateEffect = (effectId: string, value: number) => {
-		if (!selectedLayer) return;
-		updateLayers((prev) =>
-			prev.map((l) =>
-				l.id === selectedId
-					? {
-							...l,
-							effects: l.effects?.map((e) =>
-								e.id === effectId ? { ...e, value } : e,
-							),
-						}
-					: l,
-			),
-		);
-	};
-
 	const addAnimation = (type: AnimationType) => {
 		if (!selectedLayer) return;
 		const newAnimation: VideoAnimation = {
@@ -1474,6 +1395,7 @@ const InspectorPanel: React.FC = () => {
 					: l,
 			),
 		);
+		setAddAnimOpen(false);
 	};
 
 	const removeAnimation = (animId: string) => {
@@ -1565,8 +1487,82 @@ const InspectorPanel: React.FC = () => {
 		);
 	};
 
+	const formatAnimationName = (type: AnimationType) =>
+		type
+			.split("-")
+			.map((w) => w.charAt(0).toUpperCase() + w.slice(1))
+			.join(" ");
+
+	const getPreviewAnimationClass = (type: AnimationType) => {
+		return `animate-${type}`;
+	};
+
 	return (
 		<ScrollArea className="w-80 border-l border-white/10 bg-neutral-900/95 backdrop-blur-xl z-20 shadow-xl">
+			<style>{`
+				@keyframes fade-in {
+					from { opacity: 0; }
+					to { opacity: 1; }
+				}
+				@keyframes fade-out {
+					from { opacity: 1; }
+					to { opacity: 0; }
+				}
+				@keyframes slide-in-left {
+					from { transform: translateX(-100%); }
+					to { transform: translateX(0); }
+				}
+				@keyframes slide-in-right {
+					from { transform: translateX(100%); }
+					to { transform: translateX(0); }
+				}
+				@keyframes slide-in-top {
+					from { transform: translateY(-100%); }
+					to { transform: translateY(0); }
+				}
+				@keyframes slide-in-bottom {
+					from { transform: translateY(100%); }
+					to { transform: translateY(0); }
+				}
+				@keyframes zoom-in {
+					from { transform: scale(0); }
+					to { transform: scale(1); }
+				}
+				@keyframes zoom-out {
+					from { transform: scale(1); }
+					to { transform: scale(0); }
+				}
+				@keyframes rotate-cw {
+					from { transform: rotate(0deg); }
+					to { transform: rotate(360deg); }
+				}
+				@keyframes rotate-ccw {
+					from { transform: rotate(0deg); }
+					to { transform: rotate(-360deg); }
+				}
+				@keyframes bounce {
+					0%, 20%, 50%, 80%, 100% { transform: translateY(0); }
+					40% { transform: translateY(-20px); }
+					60% { transform: translateY(-10px); }
+				}
+				@keyframes shake {
+					0%, 100% { transform: translateX(0); }
+					10%, 30%, 50%, 70%, 90% { transform: translateX(-5px); }
+					20%, 40%, 60%, 80% { transform: translateX(5px); }
+				}
+				.animate-fade-in { animation: fade-in 1s ease-in-out infinite alternate; }
+				.animate-fade-out { animation: fade-out 1s ease-in-out infinite alternate; }
+				.animate-slide-in-left { animation: slide-in-left 1s ease-in-out infinite alternate; }
+				.animate-slide-in-right { animation: slide-in-right 1s ease-in-out infinite alternate; }
+				.animate-slide-in-top { animation: slide-in-top 1s ease-in-out infinite alternate; }
+				.animate-slide-in-bottom { animation: slide-in-bottom 1s ease-in-out infinite alternate; }
+				.animate-zoom-in { animation: zoom-in 1s ease-in-out infinite alternate; }
+				.animate-zoom-out { animation: zoom-out 1s ease-in-out infinite alternate; }
+				.animate-rotate-cw { animation: rotate-cw 1s linear infinite; }
+				.animate-rotate-ccw { animation: rotate-ccw 1s linear infinite; }
+				.animate-bounce { animation: bounce 1s ease-in-out infinite; }
+				.animate-shake { animation: shake 1s ease-in-out infinite; }
+			`}</style>
 			<div className="p-4 space-y-6">
 				{/* Properties Header */}
 				<div className="flex items-center justify-between">
@@ -1611,6 +1607,7 @@ const InspectorPanel: React.FC = () => {
 							value={selectedLayer.scale}
 							step={0.1}
 							onChange={(v) => update({ scale: v })}
+							allowDecimal
 						/>
 						<DraggableNumberInput
 							label="Rotate"
@@ -1640,112 +1637,41 @@ const InspectorPanel: React.FC = () => {
 
 				<Separator className="bg-white/10" />
 
-				{/* Effects Section */}
-				<section>
-					<div className="flex items-center justify-between mb-3">
-						<h3 className="text-[10px] font-bold uppercase tracking-wider text-gray-500 flex items-center gap-2">
-							<Wand2 className="w-3 h-3" /> Effects
-						</h3>
-						<Select onValueChange={(val) => addEffect(val as EffectType)}>
-							<SelectTrigger className="h-6 text-[10px] w-20 bg-white/5 border-white/10 px-2">
-								<span className="mr-1">Add</span>
-							</SelectTrigger>
-							<SelectContent className="bg-neutral-800 border-white/10 text-white">
-								{effectTypes.map((t) => (
-									<SelectItem key={t} value={t} className="text-xs">
-										{t.charAt(0).toUpperCase() + t.slice(1)}
-									</SelectItem>
-								))}
-							</SelectContent>
-						</Select>
-					</div>
-
-					<div className="space-y-3">
-						{!selectedLayer.effects?.length && (
-							<div className="text-xs text-gray-600 italic text-center py-2">
-								No effects applied
-							</div>
-						)}
-						{selectedLayer.effects?.map((effect) => (
-							<div
-								key={effect.id}
-								className="bg-black/20 rounded p-2 border border-white/5"
-							>
-								<div className="flex items-center justify-between mb-2">
-									<span className="text-xs font-medium text-gray-300 capitalize">
-										{effect.type}
-									</span>
-									<Button
-										variant="ghost"
-										size="icon"
-										className="h-5 w-5 hover:bg-red-500/20 hover:text-red-400"
-										onClick={() => removeEffect(effect.id)}
-									>
-										<Trash2 className="w-3 h-3" />
-									</Button>
-								</div>
-								<div className="flex items-center gap-2">
-									<Slider
-										value={[effect.value]}
-										min={
-											effect.type === "hue-rotate"
-												? 0
-												: effect.type === "blur"
-													? 0
-													: 0
-										}
-										max={
-											effect.type === "hue-rotate"
-												? 360
-												: effect.type === "blur"
-													? 20
-													: 2
-										}
-										step={
-											effect.type === "hue-rotate" || effect.type === "blur"
-												? 1
-												: 0.1
-										}
-										onValueChange={([v]) => updateEffect(effect.id, v)}
-										className="flex-1"
-									/>
-									<span className="text-[10px] font-mono w-8 text-right text-gray-400">
-										{Math.round(effect.value * 10) / 10}
-										{effect.type === "hue-rotate"
-											? "°"
-											: effect.type === "blur"
-												? "px"
-												: ""}
-									</span>
-								</div>
-							</div>
-						))}
-					</div>
-				</section>
-
-				<Separator className="bg-white/10" />
-
 				{/* Animations Section */}
 				<section>
 					<div className="flex items-center justify-between mb-3">
 						<h3 className="text-[10px] font-bold uppercase tracking-wider text-gray-500 flex items-center gap-2">
 							<Zap className="w-3 h-3" /> Animations
 						</h3>
-						<Select onValueChange={(val) => addAnimation(val as AnimationType)}>
-							<SelectTrigger className="h-6 text-[10px] w-20 bg-white/5 border-white/10 px-2">
-								<span className="mr-1">Add</span>
-							</SelectTrigger>
-							<SelectContent className="bg-neutral-800 border-white/10 text-white">
-								{animationTypes.map((t) => (
-									<SelectItem key={t} value={t} className="text-xs">
-										{t
-											.split("-")
-											.map((w) => w.charAt(0).toUpperCase() + w.slice(1))
-											.join(" ")}
-									</SelectItem>
-								))}
-							</SelectContent>
-						</Select>
+						<Popover open={addAnimOpen} onOpenChange={setAddAnimOpen}>
+							<PopoverTrigger asChild>
+								<Button
+									variant="ghost"
+									className="h-6 text-[10px] w-20 bg-white/5 border-white/10 px-2 text-gray-300 hover:text-white hover:bg-white/10"
+								>
+									<span className="mr-1">Add</span>
+								</Button>
+							</PopoverTrigger>
+							<PopoverContent className="bg-neutral-800 border-white/10 text-white w-80">
+								<div className="grid grid-cols-3 gap-2">
+									{animationTypes.map((type) => (
+										<Button
+											key={type}
+											variant="ghost"
+											className="flex flex-col items-center p-1 h-auto"
+											onClick={() => addAnimation(type)}
+										>
+											<div
+												className={`w-10 h-10 bg-blue-500 rounded mb-1 ${getPreviewAnimationClass(type)}`}
+											/>
+											<span className="text-xs">
+												{formatAnimationName(type)}
+											</span>
+										</Button>
+									))}
+								</div>
+							</PopoverContent>
+						</Popover>
 					</div>
 
 					<div className="space-y-3">
@@ -1761,10 +1687,7 @@ const InspectorPanel: React.FC = () => {
 							>
 								<div className="flex items-center justify-between mb-2">
 									<span className="text-xs font-medium text-gray-300 capitalize">
-										{anim.type
-											.split("-")
-											.map((w) => w.charAt(0).toUpperCase() + w.slice(1))
-											.join(" ")}
+										{formatAnimationName(anim.type)}
 									</span>
 									<Button
 										variant="ghost"
@@ -2099,7 +2022,6 @@ export const VideoDesignerEditor: React.FC<VideoDesignerEditorProps> = ({
 				startFrame: 0,
 				durationInFrames: 30 * 5,
 				volume: 1,
-				effects: saved?.effects ?? [],
 				animations: saved?.animations ?? [], // Load animations
 				...saved,
 			};
@@ -2169,6 +2091,13 @@ export const VideoDesignerEditor: React.FC<VideoDesignerEditorProps> = ({
 		playerRef.current?.seekTo(frame);
 	};
 
+	const durationInFrames = useMemo(() => {
+		return Math.max(
+			30 * 5,
+			...layers.map((l) => l.startFrame + l.durationInFrames),
+		);
+	}, [layers]);
+
 	const handleSave = () => {
 		const layerUpdates = layers.reduce<Record<string, ExtendedLayer>>(
 			(acc, layer) => {
@@ -2196,7 +2125,7 @@ export const VideoDesignerEditor: React.FC<VideoDesignerEditorProps> = ({
 		return () => {
 			if (rafId !== null) cancelAnimationFrame(rafId);
 		};
-	}, [isPlaying, playerRef]);
+	}, [isPlaying]);
 
 	return (
 		<EditorContext.Provider
@@ -2212,7 +2141,7 @@ export const VideoDesignerEditor: React.FC<VideoDesignerEditorProps> = ({
 				updateViewportWidth,
 				updateViewportHeight,
 				fps: FPS,
-				durationInFrames: 30 * 60,
+				durationInFrames,
 				currentFrame,
 				setCurrentFrame: setCurrentFrameHandler,
 				isPlaying,
@@ -2267,7 +2196,7 @@ export const VideoDesignerEditor: React.FC<VideoDesignerEditorProps> = ({
 									ref={playerRef}
 									component={CompositionScene}
 									inputProps={{ layers }}
-									durationInFrames={30 * 60}
+									durationInFrames={durationInFrames}
 									fps={FPS}
 									compositionWidth={viewportWidth}
 									compositionHeight={viewportHeight}
