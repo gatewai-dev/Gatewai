@@ -234,9 +234,6 @@ const useEditor = () => {
 	return context;
 };
 
-// --- Custom Hooks ---
-
-// Snap Logic
 const useSnap = () => {
 	const { layers, updateLayers, viewportWidth, viewportHeight, setGuides } =
 		useEditor();
