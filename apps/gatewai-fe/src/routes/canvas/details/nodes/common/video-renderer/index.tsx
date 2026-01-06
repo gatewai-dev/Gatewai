@@ -14,7 +14,7 @@ const VideoRenderer = memo(({ src }: { src: string }) => {
 				src={src}
 				preload="metadata"
 				playsInline
-				className="w-full h-full object-cover"
+				className="w-full h-full"
 			/>
 			<CentralPlayButton />
 			<SharedControlBar />

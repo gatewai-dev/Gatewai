@@ -26,10 +26,14 @@ import {
 	ChevronDown,
 	Film,
 	GripVertical,
+	Hand,
 	Image as ImageIcon,
+	Minus,
+	MousePointer,
 	Music,
 	Pause,
 	Play,
+	Plus,
 	Type,
 } from "lucide-react";
 import React, {
@@ -60,9 +64,17 @@ import {
 	MenubarMenu,
 	MenubarTrigger,
 } from "@/components/ui/menubar";
-import { ScrollArea, ScrollBar } from "@/components/ui/scroll-area";
+import { ScrollArea } from "@/components/ui/scroll-area";
+import {
+	Select,
+	SelectContent,
+	SelectItem,
+	SelectTrigger,
+	SelectValue,
+} from "@/components/ui/select";
 import { Separator } from "@/components/ui/separator";
 import { Slider } from "@/components/ui/slider";
+import { Switch } from "@/components/ui/switch";
 import { ColorInput } from "@/components/util/color-input";
 import { GetAssetEndpoint } from "@/utils/file";
 
@@ -106,6 +118,10 @@ interface EditorContextType {
 	zoomOut: () => void;
 	zoomTo: (val: number) => void;
 	fitView: () => void;
+
+	// Mode
+	mode: "select" | "pan";
+	setMode: Dispatch<SetStateAction<"select" | "pan">>;
 
 	// System
 	isDirty: boolean;
@@ -209,11 +225,26 @@ const InteractionOverlay: React.FC = () => {
 		viewportWidth,
 		viewportHeight,
 		currentFrame,
+		mode,
+		setPan,
 	} = useEditor();
 
 	const [isDragging, setIsDragging] = useState(false);
 	const [dragStart, setDragStart] = useState({ x: 0, y: 0 });
-	const [initialPos, setInitialPos] = useState({ x: 0, y: 0 });
+	const [initialPos, setInitialPos] = useState({
+		x: 0,
+		y: 0,
+		width: 0,
+		height: 0,
+		rotation: 0,
+		scale: 1,
+	});
+	const [isResizing, setIsResizing] = useState(false);
+	const [resizeAnchor, setResizeAnchor] = useState<
+		"tl" | "tr" | "bl" | "br" | null
+	>(null);
+	const [isPanning, setIsPanning] = useState(false);
+	const [initialPan, setInitialPan] = useState({ x: 0, y: 0 });
 
 	const visibleLayers = useMemo(() => {
 		return layers
@@ -226,18 +257,49 @@ const InteractionOverlay: React.FC = () => {
 			.sort((a, b) => (b.zIndex ?? 0) - (a.zIndex ?? 0));
 	}, [layers, currentFrame]);
 
-	const handleMouseDown = (e: React.MouseEvent, layerId?: string) => {
+	const handleMouseDown = (
+		e: React.MouseEvent,
+		layerId?: string,
+		anchor?: "tl" | "tr" | "bl" | "br",
+	) => {
 		if (e.button !== 0) return;
 		e.stopPropagation();
 
-		if (layerId) {
+		if (layerId && anchor && mode === "select") {
+			setSelectedId(layerId);
+			const layer = layers.find((l) => l.id === layerId);
+			if (layer) {
+				setIsResizing(true);
+				setResizeAnchor(anchor);
+				setDragStart({ x: e.clientX, y: e.clientY });
+				setInitialPos({
+					x: layer.x,
+					y: layer.y,
+					width: layer.width,
+					height: layer.height,
+					rotation: layer.rotation,
+					scale: layer.scale,
+				});
+			}
+		} else if (layerId && mode === "select") {
 			setSelectedId(layerId);
 			const layer = layers.find((l) => l.id === layerId);
 			if (layer) {
 				setIsDragging(true);
 				setDragStart({ x: e.clientX, y: e.clientY });
-				setInitialPos({ x: layer.x, y: layer.y });
+				setInitialPos({
+					x: layer.x,
+					y: layer.y,
+					width: 0,
+					height: 0,
+					rotation: 0,
+					scale: 1,
+				});
 			}
+		} else if (mode === "pan") {
+			setIsPanning(true);
+			setDragStart({ x: e.clientX, y: e.clientY });
+			setInitialPan({ x: pan.x, y: pan.y });
 		} else {
 			setSelectedId(null);
 		}
@@ -247,7 +309,6 @@ const InteractionOverlay: React.FC = () => {
 		if (isDragging && selectedId) {
 			const dx = (e.clientX - dragStart.x) / zoom;
 			const dy = (e.clientY - dragStart.y) / zoom;
-
 			updateLayers((prev) =>
 				prev.map((l) =>
 					l.id === selectedId
@@ -259,20 +320,112 @@ const InteractionOverlay: React.FC = () => {
 						: l,
 				),
 			);
+		} else if (isResizing && selectedId && resizeAnchor) {
+			const dx = (e.clientX - dragStart.x) / zoom;
+			const dy = (e.clientY - dragStart.y) / zoom;
+			const theta = initialPos.rotation * (Math.PI / 180);
+			const cos = Math.cos(theta);
+			const sin = Math.sin(theta);
+			let local_dx = cos * dx + sin * dy;
+			let local_dy = -sin * dx + cos * dy;
+			local_dx /= initialPos.scale;
+			local_dy /= initialPos.scale;
+
+			const layer = layers.find((l) => l.id === selectedId)!;
+			const ratio = initialPos.height / initialPos.width || 1;
+			const isLocked =
+				layer.type !== "Text" && layer.type !== "Audio" && layer.lockAspect;
+
+			let signW = 1,
+				signH = 1,
+				isLeft = false,
+				isTop = false;
+			switch (resizeAnchor) {
+				case "tl":
+					signW = -1;
+					signH = -1;
+					isLeft = true;
+					isTop = true;
+					break;
+				case "tr":
+					signW = 1;
+					signH = -1;
+					isLeft = false;
+					isTop = true;
+					break;
+				case "bl":
+					signW = -1;
+					signH = 1;
+					isLeft = true;
+					isTop = false;
+					break;
+				case "br":
+					signW = 1;
+					signH = 1;
+					isLeft = false;
+					isTop = false;
+					break;
+			}
+
+			let changeW = signW * local_dx;
+			let changeH = signH * local_dy;
+
+			if (isLocked) {
+				const changeHFromW = changeW * ratio;
+				const changeWFromH = changeH / ratio;
+				if (Math.abs(changeW) * ratio < Math.abs(changeH)) {
+					changeH = changeW * ratio;
+				} else {
+					changeW = changeH / ratio;
+				}
+			}
+
+			local_dx = signW * changeW;
+			local_dy = signH * changeH;
+
+			const newWidth = Math.max(1, initialPos.width + changeW);
+			const newHeight = Math.max(1, initialPos.height + changeH);
+			const newX = isLeft ? initialPos.x + local_dx : initialPos.x;
+			const newY = isTop ? initialPos.y + local_dy : initialPos.y;
+
+			updateLayers((prev) =>
+				prev.map((l) =>
+					l.id === selectedId
+						? {
+								...l,
+								x: Math.round(newX),
+								y: Math.round(newY),
+								width: Math.round(newWidth),
+								height: Math.round(newHeight),
+							}
+						: l,
+				),
+			);
+		} else if (isPanning) {
+			const dx = e.clientX - dragStart.x;
+			const dy = e.clientY - dragStart.y;
+			setPan({ x: initialPan.x + dx, y: initialPan.y + dy });
 		}
 	};
 
 	const handleMouseUp = () => {
 		setIsDragging(false);
+		setIsResizing(false);
+		setResizeAnchor(null);
+		setIsPanning(false);
 	};
+
+	const cursorStyle =
+		mode === "pan" ? (isPanning ? "grabbing" : "grab") : "auto";
 
 	return (
 		<div
 			className="absolute inset-0 z-10 overflow-hidden"
+			style={{ cursor: cursorStyle }}
 			onMouseMove={handleMouseMove}
 			onMouseUp={handleMouseUp}
 			onMouseLeave={handleMouseUp}
-			onMouseDown={(e) => handleMouseDown(e, undefined)}
+			onMouseDown={(e) => handleMouseDown(e)}
 		>
 			<div
 				className="absolute origin-top-left"
@@ -293,8 +446,8 @@ const InteractionOverlay: React.FC = () => {
 						}}
 						className={`absolute cursor-move group border-2 outline-none ${
 							selectedId === layer.id
-								? "border-blue-500 z-50"
-								: "border-transparent hover:border-blue-400/50"
+								? "border-[#3b82f6] z-50"
+								: "border-transparent hover:border-[#3b82f6]/50"
 						}`}
 						style={{
 							left: layer.x,
@@ -306,10 +459,22 @@ const InteractionOverlay: React.FC = () => {
 					>
 						{selectedId === layer.id && (
 							<>
-								<div className="absolute -top-1 -left-1 w-2 h-2 bg-blue-500 rounded-sm" />
-								<div className="absolute -top-1 -right-1 w-2 h-2 bg-blue-500 rounded-sm" />
-								<div className="absolute -bottom-1 -left-1 w-2 h-2 bg-blue-500 rounded-sm" />
-								<div className="absolute -bottom-1 -right-1 w-2 h-2 bg-blue-500 rounded-sm cursor-nwse-resize" />
+								<div
+									className="absolute -top-1 -left-1 w-2 h-2 bg-[#3b82f6] rounded-full border-2 border-white cursor-nwse-resize"
+									onMouseDown={(e) => handleMouseDown(e, layer.id, "tl")}
+								/>
+								<div
+									className="absolute -top-1 -right-1 w-2 h-2 bg-[#3b82f6] rounded-full border-2 border-white cursor-nesw-resize"
+									onMouseDown={(e) => handleMouseDown(e, layer.id, "tr")}
+								/>
+								<div
+									className="absolute -bottom-1 -left-1 w-2 h-2 bg-[#3b82f6] rounded-full border-2 border-white cursor-nesw-resize"
+									onMouseDown={(e) => handleMouseDown(e, layer.id, "bl")}
+								/>
+								<div
+									className="absolute -bottom-1 -right-1 w-2 h-2 bg-[#3b82f6] rounded-full border-2 border-white cursor-nwse-resize"
+									onMouseDown={(e) => handleMouseDown(e, layer.id, "br")}
+								/>
 							</>
 						)}
 					</div>
@@ -338,6 +503,8 @@ const Toolbar = React.memo<{
 		playerRef,
 		currentFrame,
 		fps,
+		mode,
+		setMode,
 	} = useEditor();
 	const zoomPercentage = `${Math.round(zoom * 100)}%`;
 
@@ -368,6 +535,27 @@ const Toolbar = React.memo<{
 				{Math.floor(currentFrame / fps)}s :{" "}
 				{(currentFrame % fps).toString().padStart(2, "0")}f
 			</div>
+
+			<div className="w-px h-5 bg-border mx-1" />
+
+			<Button
+				title="Select (V)"
+				variant={mode === "select" ? "secondary" : "ghost"}
+				size="icon"
+				className="rounded-full w-9 h-9"
+				onClick={() => setMode("select")}
+			>
+				<MousePointer className="w-4 h-4" />
+			</Button>
+			<Button
+				title="Pan (Space)"
+				variant={mode === "pan" ? "secondary" : "ghost"}
+				size="icon"
+				className="rounded-full w-9 h-9"
+				onClick={() => setMode("pan")}
+			>
+				<Hand className="w-4 h-4" />
+			</Button>
 
 			<div className="w-px h-5 bg-border mx-1" />
 
@@ -440,6 +628,7 @@ const SortableTrackHeader: React.FC<SortableTrackProps> = ({
 		transform: CSS.Transform.toString(transform),
 		transition,
 		height: TRACK_HEIGHT,
+		minHeight: `${TRACK_HEIGHT}px`,
 		zIndex: isDragging ? 999 : "auto",
 	};
 
@@ -497,8 +686,19 @@ const TimelinePanel: React.FC = () => {
 		fps,
 	} = useEditor();
 
-	const scrollContainerRef = useRef<HTMLDivElement>(null);
 	const playheadRef = useRef<HTMLDivElement>(null);
+
+	const headerScrollRef = useRef<HTMLDivElement>(null);
+	const trackScrollRef = useRef<HTMLDivElement>(null);
+
+	const [isPanningTimeline, setIsPanningTimeline] = useState(false);
+	const [dragStartX, setDragStartX] = useState(0);
+	const [initialScroll, setInitialScroll] = useState(0);
+
+	const [pixelsPerFrame, setPixelsPerFrame] = useState(5);
+
+	const zoomTimelineIn = () => setPixelsPerFrame((p) => Math.min(20, p + 1));
+	const zoomTimelineOut = () => setPixelsPerFrame((p) => Math.max(1, p - 1));
 
 	const sortedLayers = useMemo(
 		() => [...layers].sort((a, b) => (b.zIndex ?? 0) - (a.zIndex ?? 0)),
@@ -533,19 +733,19 @@ const TimelinePanel: React.FC = () => {
 
 	useEffect(() => {
 		if (!isPlaying && playheadRef.current) {
-			playheadRef.current.style.left = `${currentFrame * PIXELS_PER_FRAME}px`;
+			playheadRef.current.style.left = `${currentFrame * pixelsPerFrame}px`;
 		}
-	}, [currentFrame, isPlaying]);
+	}, [currentFrame, isPlaying, pixelsPerFrame]);
 
 	useEffect(() => {
-		if (scrollContainerRef.current && !isPlaying) {
-			const x = currentFrame * PIXELS_PER_FRAME;
-			const center = scrollContainerRef.current.clientWidth / 2;
-			if (x > center + scrollContainerRef.current.scrollLeft) {
-				scrollContainerRef.current.scrollLeft = x - center;
+		if (trackScrollRef.current && !isPlaying) {
+			const x = currentFrame * pixelsPerFrame;
+			const center = trackScrollRef.current.clientWidth / 2;
+			if (x > center + trackScrollRef.current.scrollLeft) {
+				trackScrollRef.current.scrollLeft = x - center;
 			}
 		}
-	}, [currentFrame, isPlaying]);
+	}, [currentFrame, isPlaying, pixelsPerFrame]);
 
 	useEffect(() => {
 		let rafId: number | null = null;
@@ -556,14 +756,14 @@ const TimelinePanel: React.FC = () => {
 					const frame = playerRef.current.getCurrentFrame();
 
 					if (playheadRef.current) {
-						playheadRef.current.style.left = `${frame * PIXELS_PER_FRAME}px`;
+						playheadRef.current.style.left = `${frame * pixelsPerFrame}px`;
 					}
 
-					if (scrollContainerRef.current) {
-						const x = frame * PIXELS_PER_FRAME;
-						const center = scrollContainerRef.current.clientWidth / 2;
-						if (x > center + scrollContainerRef.current.scrollLeft) {
-							scrollContainerRef.current.scrollLeft = x - center;
+					if (trackScrollRef.current) {
+						const x = frame * pixelsPerFrame;
+						const center = trackScrollRef.current.clientWidth / 2;
+						if (x > center + trackScrollRef.current.scrollLeft) {
+							trackScrollRef.current.scrollLeft = x - center;
 						}
 					}
 				}
@@ -579,13 +779,12 @@ const TimelinePanel: React.FC = () => {
 				cancelAnimationFrame(rafId);
 			}
 		};
-	}, [isPlaying, playerRef, fps]);
+	}, [isPlaying, playerRef, fps, pixelsPerFrame]);
 
 	const handleTimelineClick = (e: React.MouseEvent) => {
 		const rect = e.currentTarget.getBoundingClientRect();
-		const clickX =
-			e.clientX - rect.left + (scrollContainerRef.current?.scrollLeft || 0);
-		const frame = Math.max(0, Math.floor(clickX / PIXELS_PER_FRAME));
+		const clickX = e.clientX - rect.left;
+		const frame = Math.max(0, Math.floor(clickX / pixelsPerFrame));
 		if (playerRef.current) playerRef.current.seekTo(frame);
 		setCurrentFrame(frame);
 	};
@@ -599,7 +798,7 @@ const TimelinePanel: React.FC = () => {
 
 		const onMove = (moveEv: MouseEvent) => {
 			const diffPx = moveEv.clientX - startX;
-			const diffFrames = Math.round(diffPx / PIXELS_PER_FRAME);
+			const diffFrames = Math.round(diffPx / pixelsPerFrame);
 			const newStart = Math.max(0, initialStart + diffFrames);
 			updateLayers(
 				(prev) =>
@@ -626,7 +825,7 @@ const TimelinePanel: React.FC = () => {
 
 		const onMove = (moveEv: MouseEvent) => {
 			const diffPx = moveEv.clientX - startX;
-			const diffFrames = Math.round(diffPx / PIXELS_PER_FRAME);
+			const diffFrames = Math.round(diffPx / pixelsPerFrame);
 			const newDuration = Math.max(1, initialDuration + diffFrames);
 			updateLayers(
 				(prev) =>
@@ -644,18 +843,86 @@ const TimelinePanel: React.FC = () => {
 		window.addEventListener("mouseup", onUp);
 	};
 
+	useEffect(() => {
+		const syncScroll =
+			(
+				sourceRef: React.RefObject<HTMLDivElement>,
+				targetRef: React.RefObject<HTMLDivElement>,
+			) =>
+			(e: WheelEvent) => {
+				if (e.deltaY !== 0 && targetRef.current) {
+					targetRef.current.scrollTop += e.deltaY;
+				}
+			};
+
+		const headerEl = headerScrollRef.current;
+		const trackEl = trackScrollRef.current;
+
+		if (headerEl) {
+			headerEl.addEventListener(
+				"wheel",
+				syncScroll(headerScrollRef, trackScrollRef),
+			);
+		}
+		if (trackEl) {
+			trackEl.addEventListener(
+				"wheel",
+				syncScroll(trackScrollRef, headerScrollRef),
+			);
+		}
+
+		return () => {
+			if (headerEl)
+				headerEl.removeEventListener(
+					"wheel",
+					syncScroll(headerScrollRef, trackScrollRef),
+				);
+			if (trackEl)
+				trackEl.removeEventListener(
+					"wheel",
+					syncScroll(trackScrollRef, headerScrollRef),
+				);
+		};
+	}, []);
+
 	return (
-		<div className="h-72 flex flex-col border-t bg-background shrink-0 select-none z-20 shadow-[0_-4px_10px_rgba(0,0,0,0.1)]">
+		<div className="h-48 flex flex-col border-t bg-background shrink-0 select-none z-20 shadow-[0_-4px_10px_rgba(0,0,0,0.1)]">
 			<div className="flex flex-1 overflow-hidden">
 				{/* Track Headers */}
 				<div className="w-60 border-r bg-muted/10 shrink-0 z-20 flex flex-col">
 					<div
 						style={{ height: RULER_HEIGHT }}
-						className="border-b bg-muted/50 flex items-center px-2 text-[10px] text-muted-foreground uppercase tracking-wider font-semibold"
+						className="border-b bg-muted/50 flex items-center justify-between px-2 text-[10px] text-muted-foreground uppercase tracking-wider font-semibold"
 					>
-						Tracks
+						<span>Tracks</span>
+						<div className="flex gap-1">
+							<Button
+								variant="ghost"
+								size="icon"
+								className="h-6 w-6"
+								onClick={zoomTimelineIn}
+							>
+								<Plus className="h-3 w-3" />
+							</Button>
+							<Button
+								variant="ghost"
+								size="icon"
+								className="h-6 w-6"
+								onClick={zoomTimelineOut}
+							>
+								<Minus className="h-3 w-3" />
+							</Button>
+						</div>
 					</div>
-					<div className="flex-1 overflow-y-hidden">
+					<div
+						ref={headerScrollRef}
+						className="flex-1 overflow-y-auto"
+						onScroll={(e) => {
+							if (trackScrollRef.current) {
+								trackScrollRef.current.scrollTop = e.currentTarget.scrollTop;
+							}
+						}}
+					>
 						<DndContext
 							sensors={sensors}
 							collisionDetection={closestCenter}
@@ -679,13 +946,36 @@ const TimelinePanel: React.FC = () => {
 				</div>
 
 				{/* Timeline Tracks */}
-				<ScrollArea
-					className="flex-1 relative bg-neutral-900/50"
-					ref={scrollContainerRef}
+				<div
+					ref={trackScrollRef}
+					className="flex-1 relative bg-neutral-900/50 overflow-auto"
+					style={{ cursor: isPanningTimeline ? "grabbing" : "grab" }}
+					onScroll={(e) => {
+						if (headerScrollRef.current) {
+							headerScrollRef.current.scrollTop = e.currentTarget.scrollTop;
+						}
+					}}
+					onMouseDown={(e) => {
+						if (e.button === 0) {
+							setIsPanningTimeline(true);
+							setDragStartX(e.clientX);
+							setInitialScroll(trackScrollRef.current?.scrollLeft || 0);
+						}
+					}}
+					onMouseMove={(e) => {
+						if (isPanningTimeline) {
+							const dx = e.clientX - dragStartX;
+							if (trackScrollRef.current) {
+								trackScrollRef.current.scrollLeft = initialScroll - dx;
+							}
+						}
+					}}
+					onMouseUp={() => setIsPanningTimeline(false)}
+					onMouseLeave={() => setIsPanningTimeline(false)}
 				>
 					<div
 						className="relative min-w-full"
-						style={{ width: durationInFrames * PIXELS_PER_FRAME }}
+						style={{ width: durationInFrames * pixelsPerFrame }}
 					>
 						{/* Ruler */}
 						<div
@@ -703,7 +993,7 @@ const TimelinePanel: React.FC = () => {
 									<div
 										key={`${sec}_ruler`}
 										className="absolute top-0 bottom-0 border-l border-border/50 text-[9px] pl-1 text-muted-foreground pt-1"
-										style={{ left: sec * FPS * PIXELS_PER_FRAME }}
+										style={{ left: sec * FPS * pixelsPerFrame }}
 									>
 										{sec}s
 									</div>
@@ -713,7 +1003,7 @@ const TimelinePanel: React.FC = () => {
 							<div
 								ref={playheadRef}
 								className="absolute top-0 h-screen w-px bg-red-500 z-50 pointer-events-none"
-								style={{ left: currentFrame * PIXELS_PER_FRAME }}
+								style={{ left: currentFrame * pixelsPerFrame }}
 							>
 								<div className="w-2.5 h-2.5 -ml-[4.5px] bg-red-500 transform rotate-45 -mt-1 shadow-sm" />
 							</div>
@@ -727,7 +1017,7 @@ const TimelinePanel: React.FC = () => {
 								style={{
 									backgroundImage:
 										"linear-gradient(90deg, var(--border) 1px, transparent 1px)",
-									backgroundSize: `${FPS * PIXELS_PER_FRAME}px 100%`,
+									backgroundSize: `${FPS * pixelsPerFrame}px 100%`,
 									opacity: 0.05,
 								}}
 							/>
@@ -735,7 +1025,10 @@ const TimelinePanel: React.FC = () => {
 							{sortedLayers.map((layer) => (
 								<div
 									key={layer.id}
-									style={{ height: TRACK_HEIGHT }}
+									style={{
+										height: TRACK_HEIGHT,
+										minHeight: `${TRACK_HEIGHT}px`,
+									}}
 									className={`border-b border-white/5 relative ${layer.id === selectedId ? "bg-white/5" : ""}`}
 								>
 									<div
@@ -747,8 +1040,8 @@ const TimelinePanel: React.FC = () => {
 											${layer.id === selectedId ? "ring-1 ring-white shadow-lg z-10" : "hover:opacity-100"}
 										`}
 										style={{
-											left: layer.startFrame * PIXELS_PER_FRAME,
-											width: layer.durationInFrames * PIXELS_PER_FRAME,
+											left: layer.startFrame * pixelsPerFrame,
+											width: layer.durationInFrames * pixelsPerFrame,
 											backgroundColor:
 												layer.type === "Video"
 													? "#1d4ed8"
@@ -788,8 +1081,7 @@ const TimelinePanel: React.FC = () => {
 							))}
 						</div>
 					</div>
-					<ScrollBar orientation="horizontal" />
-				</ScrollArea>
+				</div>
 			</div>
 		</div>
 	);
@@ -798,138 +1090,260 @@ const TimelinePanel: React.FC = () => {
 // --- Components: Inspector ---
 
 const InspectorPanel: React.FC = () => {
-	const { selectedId, layers, updateLayers, getTextData } = useEditor();
+	const {
+		selectedId,
+		layers,
+		updateLayers,
+		getTextData,
+		viewportWidth,
+		viewportHeight,
+		updateViewportWidth,
+		updateViewportHeight,
+	} = useEditor();
 	const selectedLayer = layers.find((l) => l.id === selectedId);
 
-	if (!selectedLayer)
+	const aspectRatios = useMemo(
+		() => [
+			{ label: "Instagram Square (1:1)", width: 1080, height: 1080 },
+			{ label: "Instagram Portrait (4:5)", width: 1080, height: 1350 },
+			{ label: "Story / 9:16", width: 1080, height: 1920 },
+			{ label: "Landscape (16:9)", width: 1920, height: 1080 },
+		],
+		[],
+	);
+
+	if (selectedLayer) {
+		const update = (patch: Partial<VideoCompositorLayer>) => {
+			updateLayers((prev) =>
+				prev.map((l) => (l.id === selectedId ? { ...l, ...patch } : l)),
+			);
+		};
+
 		return (
-			<div className="w-72 border-l bg-card flex items-center justify-center p-8 text-center">
-				<div className="text-muted-foreground space-y-2">
-					<p className="text-xs">Select a layer to edit properties</p>
-				</div>
-			</div>
-		);
-
-	const update = (patch: Partial<VideoCompositorLayer>) => {
-		updateLayers((prev) =>
-			prev.map((l) => (l.id === selectedId ? { ...l, ...patch } : l)),
-		);
-	};
-
-	return (
-		<div className="w-72 bg-card border-l flex flex-col overflow-y-auto z-20 shadow-xl">
-			<div className="p-4 space-y-6">
-				<section>
-					<h3 className="text-[10px] font-bold uppercase tracking-wider text-muted-foreground mb-3 flex items-center gap-2">
-						Transform
-					</h3>
-					<div className="grid grid-cols-2 gap-3">
-						<DraggableNumberInput
-							label="X"
-							value={Math.round(selectedLayer.x)}
-							onChange={(v) => update({ x: v })}
-						/>
-						<DraggableNumberInput
-							label="Y"
-							value={Math.round(selectedLayer.y)}
-							onChange={(v) => update({ y: v })}
-						/>
-						<DraggableNumberInput
-							label="W"
-							value={Math.round(selectedLayer.width)}
-							onChange={(v) => update({ width: Math.max(1, v) })}
-						/>
-						<DraggableNumberInput
-							label="H"
-							value={Math.round(selectedLayer.height)}
-							onChange={(v) => update({ height: Math.max(1, v) })}
-						/>
-						<DraggableNumberInput
-							label="Scale"
-							value={selectedLayer.scale}
-							step={0.1}
-							onChange={(v) => update({ scale: v })}
-						/>
-						<DraggableNumberInput
-							label="Rotate"
-							value={Math.round(selectedLayer.rotation)}
-							onChange={(v) => update({ rotation: v })}
-						/>
-					</div>
-				</section>
-
-				<Separator />
-
-				<section>
-					<h3 className="text-[10px] font-bold uppercase tracking-wider text-muted-foreground mb-3">
-						Timing
-					</h3>
-					<div className="grid grid-cols-2 gap-3">
-						<DraggableNumberInput
-							label="Start"
-							value={selectedLayer.startFrame}
-							onChange={(v) => update({ startFrame: Math.max(0, v) })}
-						/>
-						<DraggableNumberInput
-							label="Duration"
-							value={selectedLayer.durationInFrames}
-							onChange={(v) => update({ durationInFrames: Math.max(1, v) })}
-						/>
-					</div>
-				</section>
-
-				<Separator />
-
-				{(selectedLayer.type === "Video" || selectedLayer.type === "Audio") && (
+			<div className="w-72 border-l bg-card flex flex-col overflow-y-auto z-20 shadow-xl">
+				<div className="p-4 space-y-6">
 					<section>
-						<h3 className="text-[10px] font-bold uppercase tracking-wider text-muted-foreground mb-3">
-							Audio
+						<h3 className="text-[10px] font-bold uppercase tracking-wider text-muted-foreground mb-3 flex items-center gap-2">
+							Canvas
 						</h3>
-						<div className="space-y-2">
-							<div className="flex items-center justify-between text-xs">
-								<span className="flex items-center gap-2">Volume</span>
-								<span className="font-mono">
-									{Math.round((selectedLayer.volume ?? 1) * 100)}%
-								</span>
-							</div>
-							<Slider
-								value={[selectedLayer.volume ?? 1]}
-								max={1}
-								step={0.01}
-								onValueChange={([v]) => update({ volume: v })}
+						<div className="grid grid-cols-2 gap-3 mb-3">
+							<DraggableNumberInput
+								label="W"
+								value={Math.round(viewportWidth)}
+								onChange={(v) => updateViewportWidth(Math.max(1, v))}
+							/>
+							<DraggableNumberInput
+								label="H"
+								value={Math.round(viewportHeight)}
+								onChange={(v) => updateViewportHeight(Math.max(1, v))}
+							/>
+						</div>
+						<Select
+							onValueChange={(val) => {
+								const preset = aspectRatios.find((r) => r.label === val);
+								if (preset) {
+									updateViewportWidth(preset.width);
+									updateViewportHeight(preset.height);
+								}
+							}}
+						>
+							<SelectTrigger className="h-8 text-xs">
+								<SelectValue placeholder="Presets" />
+							</SelectTrigger>
+							<SelectContent>
+								{aspectRatios.map((r) => (
+									<SelectItem key={r.label} value={r.label}>
+										{r.label}
+									</SelectItem>
+								))}
+							</SelectContent>
+						</Select>
+					</section>
+
+					<Separator />
+
+					<section>
+						<h3 className="text-[10px] font-bold uppercase tracking-wider text-muted-foreground mb-3 flex items-center gap-2">
+							Transform
+						</h3>
+						<div className="grid grid-cols-2 gap-3">
+							<DraggableNumberInput
+								label="X"
+								value={Math.round(selectedLayer.x)}
+								onChange={(v) => update({ x: v })}
+							/>
+							<DraggableNumberInput
+								label="Y"
+								value={Math.round(selectedLayer.y)}
+								onChange={(v) => update({ y: v })}
+							/>
+							<DraggableNumberInput
+								label="W"
+								value={Math.round(selectedLayer.width)}
+								onChange={(v) => update({ width: Math.max(1, v) })}
+							/>
+							<DraggableNumberInput
+								label="H"
+								value={Math.round(selectedLayer.height)}
+								onChange={(v) => update({ height: Math.max(1, v) })}
+							/>
+							<DraggableNumberInput
+								label="Scale"
+								value={selectedLayer.scale}
+								step={0.1}
+								onChange={(v) => update({ scale: v })}
+							/>
+							<DraggableNumberInput
+								label="Rotate"
+								value={Math.round(selectedLayer.rotation)}
+								onChange={(v) => update({ rotation: v })}
 							/>
 						</div>
 					</section>
-				)}
 
-				{selectedLayer.type === "Text" && (
+					{(selectedLayer.type === "Image" ||
+						selectedLayer.type === "Video") && (
+						<div className="flex items-center space-x-2">
+							<Switch
+								id="lockAspect"
+								checked={selectedLayer.lockAspect ?? true}
+								onCheckedChange={(checked) => update({ lockAspect: checked })}
+							/>
+							<label
+								htmlFor="lockAspect"
+								className="text-[10px] text-muted-foreground uppercase"
+							>
+								Lock Aspect Ratio
+							</label>
+						</div>
+					)}
+
+					<Separator />
+
 					<section>
 						<h3 className="text-[10px] font-bold uppercase tracking-wider text-muted-foreground mb-3">
-							Typography
+							Timing
 						</h3>
-						<div className="space-y-3">
-							<div className="text-xs text-muted-foreground italic border p-2 rounded bg-muted/20">
-								"{getTextData(selectedLayer.id)}"
-							</div>
-							<div className="grid grid-cols-2 gap-3">
-								<DraggableNumberInput
-									label="Size"
-									value={selectedLayer.fontSize ?? 40}
-									onChange={(v) => update({ fontSize: v })}
-								/>
-								<div className="space-y-1">
-									<label className="text-[10px] text-muted-foreground uppercase">
-										Color
-									</label>
-									<ColorInput
-										value={selectedLayer.fill ?? "#fff"}
-										onChange={(c) => update({ fill: c })}
-									/>
-								</div>
-							</div>
+						<div className="grid grid-cols-2 gap-3">
+							<DraggableNumberInput
+								label="Start"
+								value={selectedLayer.startFrame}
+								onChange={(v) => update({ startFrame: Math.max(0, v) })}
+							/>
+							<DraggableNumberInput
+								label="Duration"
+								value={selectedLayer.durationInFrames}
+								onChange={(v) => update({ durationInFrames: Math.max(1, v) })}
+							/>
 						</div>
 					</section>
-				)}
+
+					<Separator />
+
+					{(selectedLayer.type === "Video" ||
+						selectedLayer.type === "Audio") && (
+						<section>
+							<h3 className="text-[10px] font-bold uppercase tracking-wider text-muted-foreground mb-3">
+								Audio
+							</h3>
+							<div className="space-y-2">
+								<div className="flex items-center justify-between text-xs">
+									<span className="flex items-center gap-2">Volume</span>
+									<span className="font-mono">
+										{Math.round((selectedLayer.volume ?? 1) * 100)}%
+									</span>
+								</div>
+								<Slider
+									value={[selectedLayer.volume ?? 1]}
+									max={1}
+									step={0.01}
+									onValueChange={([v]) => update({ volume: v })}
+								/>
+							</div>
+						</section>
+					)}
+
+					{selectedLayer.type === "Text" && (
+						<section>
+							<h3 className="text-[10px] font-bold uppercase tracking-wider text-muted-foreground mb-3">
+								Typography
+							</h3>
+							<div className="space-y-3">
+								<div className="text-xs text-muted-foreground italic border p-2 rounded bg-muted/20">
+									"{getTextData(selectedLayer.id)}"
+								</div>
+								<div className="grid grid-cols-2 gap-3">
+									<DraggableNumberInput
+										label="Size"
+										value={selectedLayer.fontSize ?? 40}
+										onChange={(v) => update({ fontSize: v })}
+									/>
+									<div className="space-y-1">
+										<label className="text-[10px] text-muted-foreground uppercase">
+											Color
+										</label>
+										<ColorInput
+											value={selectedLayer.fill ?? "#fff"}
+											onChange={(c) => update({ fill: c })}
+										/>
+									</div>
+								</div>
+							</div>
+						</section>
+					)}
+				</div>
+			</div>
+		);
+	}
+
+	return (
+		<div className="w-72 border-l bg-card flex flex-col overflow-y-auto z-20 shadow-xl">
+			<div className="p-4 space-y-6">
+				<section>
+					<h3 className="text-[10px] font-bold uppercase tracking-wider text-muted-foreground mb-3 flex items-center gap-2">
+						Canvas
+					</h3>
+					<div className="grid grid-cols-2 gap-3 mb-3">
+						<DraggableNumberInput
+							label="W"
+							value={Math.round(viewportWidth)}
+							onChange={(v) => updateViewportWidth(Math.max(1, v))}
+						/>
+						<DraggableNumberInput
+							label="H"
+							value={Math.round(viewportHeight)}
+							onChange={(v) => updateViewportHeight(Math.max(1, v))}
+						/>
+					</div>
+					<Select
+						onValueChange={(val) => {
+							const preset = aspectRatios.find((r) => r.label === val);
+							if (preset) {
+								updateViewportWidth(preset.width);
+								updateViewportHeight(preset.height);
+							}
+						}}
+					>
+						<SelectTrigger className="h-8 text-xs">
+							<SelectValue placeholder="Presets" />
+						</SelectTrigger>
+						<SelectContent>
+							{aspectRatios.map((r) => (
+								<SelectItem key={r.label} value={r.label}>
+									{r.label}
+								</SelectItem>
+							))}
+						</SelectContent>
+					</Select>
+				</section>
+
+				<Separator />
+
+				<div className="flex items-center justify-center p-8 text-center">
+					<div className="text-muted-foreground space-y-2">
+						<p className="text-xs">Select a layer to edit properties</p>
+					</div>
+				</div>
 			</div>
 		</div>
 	);
@@ -956,9 +1370,17 @@ export const VideoDesignerEditor: React.FC<VideoDesignerEditorProps> = ({
 	const [layers, setLayers] = useState<VideoCompositorLayer[]>([]);
 	const [selectedId, setSelectedId] = useState<string | null>(null);
 	const [viewportWidth, setViewportWidth] = useState(nodeConfig.width ?? 1920);
+	const updateViewportWidth = (w: number) => {
+		setViewportWidth(w);
+		setIsDirty(true);
+	};
 	const [viewportHeight, setViewportHeight] = useState(
 		nodeConfig.height ?? 1080,
 	);
+	const updateViewportHeight = (h: number) => {
+		setViewportHeight(h);
+		setIsDirty(true);
+	};
 	const [isDirty, setIsDirty] = useState(false);
 
 	// Playback & View
@@ -969,6 +1391,8 @@ export const VideoDesignerEditor: React.FC<VideoDesignerEditorProps> = ({
 	const [pan, setPan] = useState({ x: 0, y: 0 });
 	const [containerSize, setContainerSize] = useState({ width: 0, height: 0 });
 	const [sizeKnown, setSizeKnown] = useState(false);
+	const [mode, setMode] = useState<"select" | "pan">("select");
+	const lastModeRef = useRef<"select" | "pan">("select");
 
 	// Refs
 	const containerRef = useRef<HTMLDivElement>(null);
@@ -1040,6 +1464,66 @@ export const VideoDesignerEditor: React.FC<VideoDesignerEditorProps> = ({
 		return () => observer.disconnect();
 	}, []);
 
+	// Wheel Zoom
+	const handleWheel = useCallback(
+		(e: WheelEvent) => {
+			e.preventDefault();
+			const oldZoom = zoom;
+			const pointerX = e.offsetX;
+			const pointerY = e.offsetY;
+			const mousePointTo = {
+				x: (pointerX - pan.x) / oldZoom,
+				y: (pointerY - pan.y) / oldZoom,
+			};
+			const direction = e.deltaY > 0 ? -1 : 1;
+			const scaleBy = 1.1;
+			const newZoom = direction > 0 ? oldZoom * scaleBy : oldZoom / scaleBy;
+			if (newZoom < 0.1 || newZoom > 3) return;
+			const newPan = {
+				x: pointerX - mousePointTo.x * newZoom,
+				y: pointerY - mousePointTo.y * newZoom,
+			};
+			setZoom(newZoom);
+			setPan(newPan);
+		},
+		[zoom, pan],
+	);
+
+	useEffect(() => {
+		const el = containerRef.current;
+		if (el) {
+			el.addEventListener("wheel", handleWheel, { passive: false });
+			return () => el.removeEventListener("wheel", handleWheel);
+		}
+	}, [handleWheel]);
+
+	// Keyboard Pan Mode
+	useEffect(() => {
+		const handleKeyDown = (e: KeyboardEvent) => {
+			if (e.code === "Space" && !e.repeat) {
+				e.preventDefault();
+				if (mode !== "pan") {
+					lastModeRef.current = mode;
+					setMode("pan");
+				}
+			}
+		};
+
+		const handleKeyUp = (e: KeyboardEvent) => {
+			if (e.code === "Space") {
+				e.preventDefault();
+				setMode(lastModeRef.current);
+			}
+		};
+
+		window.addEventListener("keydown", handleKeyDown);
+		window.addEventListener("keyup", handleKeyUp);
+		return () => {
+			window.removeEventListener("keydown", handleKeyDown);
+			window.removeEventListener("keyup", handleKeyUp);
+		};
+	}, [mode]);
+
 	// Initialization
 	useEffect(() => {
 		const layerUpdates = { ...nodeConfig.layerUpdates };
@@ -1078,6 +1562,7 @@ export const VideoDesignerEditor: React.FC<VideoDesignerEditorProps> = ({
 					fill: saved?.fill ?? "#ffffff",
 					width: saved?.width ?? 600,
 					height: saved?.height ?? 200,
+					lockAspect: false,
 					text: "",
 				});
 			} else if (item.type === "Image" || item.type === "Video") {
@@ -1088,6 +1573,7 @@ export const VideoDesignerEditor: React.FC<VideoDesignerEditorProps> = ({
 					src: "",
 					width: saved?.width ?? pData?.width ?? 1280,
 					height: saved?.height ?? pData?.height ?? 720,
+					lockAspect: saved?.lockAspect ?? true,
 				});
 			} else if (item.type === "Audio") {
 				loaded.push({
@@ -1096,6 +1582,7 @@ export const VideoDesignerEditor: React.FC<VideoDesignerEditorProps> = ({
 					src: "",
 					height: 0,
 					width: 0,
+					lockAspect: false,
 				});
 			}
 		});
@@ -1176,8 +1663,8 @@ export const VideoDesignerEditor: React.FC<VideoDesignerEditorProps> = ({
 				getAssetUrl,
 				viewportWidth,
 				viewportHeight,
-				updateViewportWidth: setViewportWidth,
-				updateViewportHeight: setViewportHeight,
+				updateViewportWidth,
+				updateViewportHeight,
 				fps: FPS,
 				durationInFrames: 30 * 60, // 60s cap
 				currentFrame,
@@ -1193,6 +1680,8 @@ export const VideoDesignerEditor: React.FC<VideoDesignerEditorProps> = ({
 				zoomOut,
 				zoomTo,
 				fitView,
+				mode,
+				setMode,
 				isDirty,
 				setIsDirty,
 			}}
@@ -1247,7 +1736,7 @@ export const VideoDesignerEditor: React.FC<VideoDesignerEditorProps> = ({
 					<InspectorPanel />
 
 					{/* Floating Toolbar */}
-					<div className="absolute bottom-8 left-1/2 -translate-x-1/2 z-50">
+					<div className="absolute bottom-1 left-1/2 -translate-x-1/2 z-50">
 						<Toolbar onClose={onClose} onSave={handleSave} timeRef={timeRef} />
 					</div>
 				</div>

@@ -16,7 +16,7 @@ import type { CompositorNode } from "../node-props";
 const VideoCompositorNodeComponent = memo(
 	(props: NodeProps<CompositorNode>) => {
 		const node = useAppSelector(makeSelectNodeById(props.id));
-		const { result } = useNodeResult(props.id);
+		const { result, isProcessing } = useNodeResult(props.id);
 		const nav = useNavigate();
 
 		const videoSrc = useMemo(() => {
@@ -36,10 +36,15 @@ const VideoCompositorNodeComponent = memo(
 						className={cn(
 							"w-full overflow-hidden rounded media-container relative",
 							{
-								"h-92": !videoSrc,
+								"h-48": !videoSrc,
 							},
 						)}
 					>
+						{isProcessing && (
+							<div className="inset-0 z-10 absolute text-foreground bg-background/20 w-full h-full flex items-center justify-center">
+								Rendering Video...
+							</div>
+						)}
 						{videoSrc && <VideoRenderer src={videoSrc} />}
 					</div>
 					<div className="flex justify-between items-center">

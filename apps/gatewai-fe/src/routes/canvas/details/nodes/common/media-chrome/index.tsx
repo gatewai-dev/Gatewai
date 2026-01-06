@@ -31,7 +31,7 @@ const MediaShell = ({
 	<div
 		className={`
         relative w-full max-w-4xl mx-auto overflow-hidden rounded-xl shadow-2xl bg-black group select-none ring-1 ring-white/10
-        ${isAudio ? "h-24" : "aspect-video"}
+        ${isAudio ? "h-24" : ""}
     `}
 	>
 		<MediaController
