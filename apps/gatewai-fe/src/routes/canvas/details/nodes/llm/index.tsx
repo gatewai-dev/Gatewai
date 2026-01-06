@@ -1,5 +1,4 @@
 import type { LLMResult } from "@gatewai/types";
-import type { NodeProps } from "@xyflow/react";
 import { memo, useMemo } from "react";
 import { ScrollArea } from "@/components/ui/scroll-area";
 import { cn } from "@/lib/utils";

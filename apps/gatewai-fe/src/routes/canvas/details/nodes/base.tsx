@@ -11,7 +11,6 @@ import { type JSX, memo, type ReactNode, useMemo } from "react";
 import {
 	Tooltip,
 	TooltipContent,
-	TooltipProvider,
 	TooltipTrigger,
 } from "@/components/ui/tooltip";
 import { dataTypeColors } from "@/config";

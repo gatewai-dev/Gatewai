@@ -1,19 +1,7 @@
 import type { FileData } from "@gatewai/types";
 import type { NodeProps } from "@xyflow/react";
 import { FileIcon } from "lucide-react";
-import {
-	MediaControlBar,
-	MediaController,
-	MediaFullscreenButton,
-	MediaMuteButton,
-	MediaPlayButton,
-	MediaSeekBackwardButton,
-	MediaSeekForwardButton,
-	MediaTimeDisplay,
-	MediaTimeRange,
-	MediaVolumeRange,
-} from "media-chrome";
-import { memo, useEffect, useMemo, useRef } from "react";
+import { memo, useMemo } from "react";
 import { ScrollArea } from "@/components/ui/scroll-area";
 import { GetAssetEndpoint } from "@/utils/file";
 import { MarkdownRenderer } from "../../components/markdown-renderer";

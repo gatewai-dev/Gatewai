@@ -34,9 +34,7 @@ import {
 	Move,
 	MoveHorizontal,
 	RotateCw,
-	SaveAll,
 	Type,
-	X,
 } from "lucide-react";
 import type React from "react";
 import {
@@ -902,10 +900,7 @@ const LayerItem: React.FC<LayerItemProps> = ({
 	);
 };
 
-const LayersPanel: React.FC<{ onSave: () => void; onClose: () => void }> = ({
-	onSave,
-	onClose,
-}) => {
+const LayersPanel: React.FC = () => {
 	const { layers, updateLayers, selectedId, setSelectedId } = useEditor();
 	const sortedLayers = useMemo(
 		() => [...layers].sort((a, b) => (a.zIndex ?? 0) - (b.zIndex ?? 0)),
@@ -927,34 +922,6 @@ const LayersPanel: React.FC<{ onSave: () => void; onClose: () => void }> = ({
 				<span className="text-xs font-semibold uppercase tracking-wider text-muted-foreground">
 					Layers
 				</span>
-				<div className="flex items-center gap-1">
-					<Tooltip>
-						<TooltipTrigger asChild>
-							<Button
-								onClick={onSave}
-								size="icon"
-								variant="ghost"
-								className="h-6 w-6 hover:bg-primary/20 hover:text-primary"
-							>
-								<SaveAll className="size-3.5" />
-							</Button>
-						</TooltipTrigger>
-						<TooltipContent>Save Changes</TooltipContent>
-					</Tooltip>
-					<Tooltip>
-						<TooltipTrigger asChild>
-							<Button
-								onClick={onClose}
-								size="icon"
-								variant="ghost"
-								className="h-6 w-6 hover:bg-destructive/20 hover:text-destructive"
-							>
-								<X className="size-3.5" />
-							</Button>
-						</TooltipTrigger>
-						<TooltipContent>Close</TooltipContent>
-					</Tooltip>
-				</div>
 			</div>
 
 			<div className="flex-1 overflow-y-auto p-2 scrollbar-thin scrollbar-thumb-rounded scrollbar-thumb-border scrollbar-track-transparent">
@@ -1712,7 +1679,7 @@ export const CanvasDesignerEditor: React.FC<CanvasDesignerEditorProps> = ({
 		>
 			<div className="flex h-screen w-screen bg-background overflow-hidden relative text-foreground">
 				<div className="relative shrink-0 z-20">
-					<LayersPanel onSave={handleSave} onClose={handleCloseRequest} />
+					<LayersPanel />
 				</div>
 
 				<div className="flex-1 flex flex-col relative min-w-0 z-0">
@@ -1794,6 +1761,28 @@ export const CanvasDesignerEditor: React.FC<CanvasDesignerEditorProps> = ({
 									</MenubarItem>
 								</MenubarContent>
 							</MenubarMenu>
+
+							<Separator
+								orientation="vertical"
+								className="mx-1 h-5 bg-white/10"
+							/>
+
+							<Button
+								size="sm"
+								className="h-8 text-xs rounded-full px-4 bg-blue-600 hover:bg-blue-500 text-white border-0"
+								onClick={handleSave}
+								disabled={!isDirty}
+							>
+								Save
+							</Button>
+							<Button
+								size="sm"
+								variant="ghost"
+								className="h-8 text-xs rounded-full px-3 ml-1 text-gray-400 hover:text-red-400 hover:bg-red-500/10"
+								onClick={handleCloseRequest}
+							>
+								Close
+							</Button>
 						</Menubar>
 					</div>
 				</div>
