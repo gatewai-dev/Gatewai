@@ -197,6 +197,8 @@ const assetsRouter = new Hono({
 				dataType = "Image";
 			} else if (contentType.startsWith("video/")) {
 				dataType = "Video";
+			} else if (contentType.startsWith("audio/")) {
+				dataType = "Audio";
 			} else {
 				dataType = "File";
 			}

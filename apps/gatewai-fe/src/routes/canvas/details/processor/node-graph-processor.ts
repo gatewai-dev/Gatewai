@@ -7,6 +7,7 @@ import type {
 	FileData,
 	ModulateNodeConfig,
 	NodeResult,
+	OutputItem,
 	PaintNodeConfig,
 	PaintResult,
 	ResizeNodeConfig,
@@ -17,6 +18,7 @@ import type { HandleEntityType } from "@/store/handles";
 import type { NodeEntityType } from "@/store/nodes";
 import { GetAssetEndpoint } from "@/utils/file";
 import { imageStore } from "./image-store";
+import { RemotionWebProcessorService, remotionService } from "./muxer-service";
 import { pixiProcessor } from "./pixi-service";
 import type {
 	ConnectedInput,
@@ -334,6 +336,7 @@ export class NodeGraphProcessor extends EventEmitter {
 				(v) => !v.connectionValid,
 			);
 			if (invalidConnections.length > 0) {
+				console.log({ inputs });
 				throw new Error("Invalid input types for some connections");
 			}
 
@@ -618,19 +621,23 @@ export class NodeGraphProcessor extends EventEmitter {
 			return undefined;
 		};
 
-		const getConnectedInputData = (
+		const getConnectedInputDataValue = (
 			inputs: Record<string, ConnectedInput>,
 			handleId: string,
-		): { type: "Image" | "Text"; value: string } | null => {
+		): { type: "Image" | "Text" | "Audio" | "Video"; value: string } | null => {
 			const input = inputs[handleId];
 			if (!input || !input.connectionValid || !input.outputItem) return null;
 
-			if (input.outputItem.type === "Image") {
+			if (
+				input.outputItem.type === "Image" ||
+				input.outputItem.type === "Audio" ||
+				input.outputItem.type === "Video"
+			) {
 				const fileData = input.outputItem.data as FileData;
 				const url = fileData?.entity?.signedUrl
 					? GetAssetEndpoint(fileData.entity.id)
 					: fileData?.processData?.dataUrl;
-				if (url) return { type: "Image", value: url };
+				if (url) return { type: input.outputItem.type, value: url };
 			} else if (input.outputItem.type === "Text") {
 				const text = input.outputItem.data as string;
 				if (text !== undefined) return { type: "Text", value: String(text) };
@@ -760,7 +767,7 @@ export class NodeGraphProcessor extends EventEmitter {
 			> = {};
 
 			Object.entries(inputs).forEach(([inputHandleId, _value]) => {
-				const data = getConnectedInputData(inputs, inputHandleId);
+				const data = getConnectedInputDataValue(inputs, inputHandleId);
 				if (data) {
 					inputDataMap[inputHandleId] = data;
 				}
@@ -803,30 +810,16 @@ export class NodeGraphProcessor extends EventEmitter {
 			"VideoCompositor",
 			async ({ node, inputs, signal }) => {
 				const config = node.config as VideoCompositorNodeConfig;
-
-				//  Prepare Inputs for Pixi Service
-				// Map the Layer's Input Handle ID -> Actual Data (URL or Text)
-				const inputDataMap: Record<
-					string,
-					{ type: "Image" | "Text" | "Audio" | "Video"; value: string }
-				> = {};
-
-				Object.entries(inputs).forEach(([inputHandleId, _value]) => {
-					const data = getConnectedInputData(inputs, inputHandleId);
-					if (data) {
-						inputDataMap[inputHandleId] = data;
-					}
-				});
-
 				// Process with web renderer
-				const result = await remotionProcessor.processVideoCompositor(
+				const start = Date.now();
+				const result = await remotionService.processVideo(
 					config,
-					inputDataMap,
+					inputs,
 					signal,
 				);
-
-				// Find Output Handle (Standard "Image" output)
-				const outputHandle = getFirstOutputHandle(node.id);
+				const end = Date.now();
+				console.log((end - start) / 1000);
+				const outputHandle = getFirstOutputHandle(node.id, "Video");
 				if (!outputHandle) throw new Error("Missing output handle");
 
 				return {

@@ -17,6 +17,7 @@ import {
 import { CSS } from "@dnd-kit/utilities";
 import type {
 	CompositorNodeConfig,
+	FileData,
 	OutputItem,
 	VideoCompositorLayer,
 } from "@gatewai/types";
@@ -25,15 +26,11 @@ import {
 	ChevronDown,
 	Film,
 	GripVertical,
-	Hand,
 	Image as ImageIcon,
-	MousePointer,
 	Music,
 	Pause,
 	Play,
 	Type,
-	Volume2,
-	ZoomIn,
 } from "lucide-react";
 import React, {
 	createContext,
@@ -67,10 +64,9 @@ import { ScrollArea, ScrollBar } from "@/components/ui/scroll-area";
 import { Separator } from "@/components/ui/separator";
 import { Slider } from "@/components/ui/slider";
 import { ColorInput } from "@/components/util/color-input";
+import { GetAssetEndpoint } from "@/utils/file";
 
 // --- Types & Context ---
-
-type EditorMode = "select" | "pan";
 
 interface EditorContextType {
 	// State
@@ -91,10 +87,6 @@ interface EditorContextType {
 	viewportHeight: number;
 	updateViewportWidth: (w: number) => void;
 	updateViewportHeight: (h: number) => void;
-
-	// Interaction Mode
-	mode: EditorMode;
-	setMode: (mode: EditorMode) => void;
 
 	// Playback
 	fps: number;
@@ -128,7 +120,7 @@ const useEditor = () => {
 };
 
 // --- Constants ---
-const FPS = 30;
+const FPS = 24;
 const RULER_HEIGHT = 28;
 const TRACK_HEIGHT = 40;
 const PIXELS_PER_FRAME = 5;
@@ -149,9 +141,8 @@ const CompositionScene: React.FC<{
 	return (
 		<AbsoluteFill style={{ backgroundColor: "#000" }}>
 			{sortedLayers.map((layer) => {
-				const src = getAssetUrl(layer.id);
-				const textContent = getTextData(layer.id);
-
+				const src = getAssetUrl(layer.inputHandleId);
+				const textContent = getTextData(layer.inputHandleId);
 				const style: React.CSSProperties = {
 					position: "absolute",
 					left: layer.x,
@@ -218,8 +209,6 @@ const InteractionOverlay: React.FC = () => {
 		viewportWidth,
 		viewportHeight,
 		currentFrame,
-		mode,
-		setMode,
 	} = useEditor();
 
 	const [isDragging, setIsDragging] = useState(false);
@@ -238,7 +227,6 @@ const InteractionOverlay: React.FC = () => {
 	}, [layers, currentFrame]);
 
 	const handleMouseDown = (e: React.MouseEvent, layerId?: string) => {
-		if (mode === "pan") return; // Let container handle pan
 		if (e.button !== 0) return;
 		e.stopPropagation();
 
@@ -256,7 +244,7 @@ const InteractionOverlay: React.FC = () => {
 	};
 
 	const handleMouseMove = (e: React.MouseEvent) => {
-		if (isDragging && selectedId && mode === "select") {
+		if (isDragging && selectedId) {
 			const dx = (e.clientX - dragStart.x) / zoom;
 			const dy = (e.clientY - dragStart.y) / zoom;
 
@@ -280,7 +268,7 @@ const InteractionOverlay: React.FC = () => {
 
 	return (
 		<div
-			className={`absolute inset-0 z-10 overflow-hidden ${mode === "pan" ? "cursor-grab active:cursor-grabbing" : ""}`}
+			className="absolute inset-0 z-10 overflow-hidden"
 			onMouseMove={handleMouseMove}
 			onMouseUp={handleMouseUp}
 			onMouseLeave={handleMouseUp}
@@ -314,7 +302,6 @@ const InteractionOverlay: React.FC = () => {
 							width: layer.width,
 							height: layer.height,
 							transform: `rotate(${layer.rotation}deg) scale(${layer.scale})`,
-							pointerEvents: mode === "pan" ? "none" : "auto",
 						}}
 					>
 						{selectedId === layer.id && (
@@ -334,79 +321,98 @@ const InteractionOverlay: React.FC = () => {
 
 // --- Components: Toolbar ---
 
-const Toolbar = React.memo<{ onClose: () => void; onSave: () => void }>(
-	({ onClose, onSave }) => {
-		const { zoom, zoomIn, zoomOut, zoomTo, fitView, mode, setMode, isDirty } =
-			useEditor();
-		const zoomPercentage = `${Math.round(zoom * 100)}%`;
+const Toolbar = React.memo<{
+	onClose: () => void;
+	onSave: () => void;
+	timeRef: React.RefObject<HTMLDivElement>;
+}>(({ onClose, onSave, timeRef }) => {
+	const {
+		zoom,
+		zoomIn,
+		zoomOut,
+		zoomTo,
+		fitView,
+		isDirty,
+		isPlaying,
+		setIsPlaying,
+		playerRef,
+		currentFrame,
+		fps,
+	} = useEditor();
+	const zoomPercentage = `${Math.round(zoom * 100)}%`;
 
-		return (
-			<Menubar className="border border-border/50 bg-background/80 backdrop-blur-md shadow-2xl rounded-full px-2 py-1 h-12 ring-1 ring-white/5 flex items-center gap-1">
-				<Button
-					title="Select (V)"
-					variant={mode === "select" ? "secondary" : "ghost"}
-					size="icon"
-					className="rounded-full w-9 h-9"
-					onClick={() => setMode("select")}
-				>
-					<MousePointer className="w-4 h-4" />
-				</Button>
-				<Button
-					title="Pan (Space)"
-					variant={mode === "pan" ? "secondary" : "ghost"}
-					size="icon"
-					className="rounded-full w-9 h-9"
-					onClick={() => setMode("pan")}
-				>
-					<Hand className="w-4 h-4" />
-				</Button>
+	return (
+		<Menubar className="border border-border/50 bg-background/80 backdrop-blur-md shadow-2xl rounded-full px-2 py-1 h-12 ring-1 ring-white/5 flex items-center gap-1">
+			<Button
+				variant="ghost"
+				size="icon"
+				className="rounded-full w-9 h-9"
+				onClick={() => {
+					if (playerRef.current) {
+						if (isPlaying) playerRef.current.pause();
+						else playerRef.current.play();
+						setIsPlaying(!isPlaying);
+					}
+				}}
+			>
+				{isPlaying ? (
+					<Pause className="w-4 h-4 fill-current" />
+				) : (
+					<Play className="w-4 h-4 fill-current" />
+				)}
+			</Button>
+			<div
+				ref={timeRef}
+				className="text-xs font-mono bg-background border rounded px-2 py-1 min-w-[80px] text-center"
+			>
+				{Math.floor(currentFrame / fps)}s :{" "}
+				{(currentFrame % fps).toString().padStart(2, "0")}f
+			</div>
 
-				<div className="w-px h-5 bg-border mx-1" />
+			<div className="w-px h-5 bg-border mx-1" />
 
-				<MenubarMenu>
-					<MenubarTrigger asChild>
-						<Button
-							variant="ghost"
-							className="h-9 px-3 text-xs font-mono rounded-full"
-						>
-							{zoomPercentage}{" "}
-							<ChevronDown className="w-3 h-3 ml-2 opacity-50" />
-						</Button>
-					</MenubarTrigger>
-					<MenubarContent align="center" className="min-w-[140px]">
-						<MenubarItem onClick={zoomIn}>Zoom In</MenubarItem>
-						<MenubarItem onClick={zoomOut}>Zoom Out</MenubarItem>
-						<MenubarItem onClick={() => zoomTo(1)}>
-							Actual Size (100%)
-						</MenubarItem>
-						<MenubarItem onClick={() => zoomTo(0.5)}>50%</MenubarItem>
-						<Separator className="my-1" />
-						<MenubarItem onClick={fitView}>Fit to Screen</MenubarItem>
-					</MenubarContent>
-				</MenubarMenu>
+			<MenubarMenu>
+				<MenubarTrigger asChild>
+					<Button
+						variant="ghost"
+						className="h-9 px-3 text-xs font-mono rounded-full"
+					>
+						{zoomPercentage} <ChevronDown className="w-3 h-3 ml-2 opacity-50" />
+					</Button>
+				</MenubarTrigger>
+				<MenubarContent align="center" className="min-w-[140px]">
+					<MenubarItem onClick={zoomIn}>Zoom In</MenubarItem>
+					<MenubarItem onClick={zoomOut}>Zoom Out</MenubarItem>
+					<MenubarItem onClick={() => zoomTo(1)}>
+						Actual Size (100%)
+					</MenubarItem>
+					<MenubarItem onClick={() => zoomTo(0.5)}>50%</MenubarItem>
+					<Separator className="my-1" />
+					<MenubarItem onClick={fitView}>Fit to Screen</MenubarItem>
+				</MenubarContent>
+			</MenubarMenu>
 
-				<Separator orientation="vertical" className="mx-1 h-5" />
+			<Separator orientation="vertical" className="mx-1 h-5" />
 
-				<Button
-					size="sm"
-					className="h-8 text-xs rounded-full px-4"
-					onClick={onSave}
-					disabled={!isDirty}
-				>
-					{isDirty ? "Save" : "Saved"}
-				</Button>
-				<Button
-					size="sm"
-					variant="ghost"
-					className="h-8 text-xs rounded-full px-3 ml-1 hover:bg-destructive/20 hover:text-destructive"
-					onClick={onClose}
-				>
-					Close
-				</Button>
-			</Menubar>
-		);
-	},
-);
+			<Button
+				size="sm"
+				className="h-8 text-xs rounded-full px-4"
+				onClick={onSave}
+				disabled={!isDirty}
+			>
+				Save
+			</Button>
+			<Button
+				size="sm"
+				variant="ghost"
+				className="h-8 text-xs rounded-full px-3 ml-1 hover:bg-destructive/20 hover:text-destructive"
+				onClick={onClose}
+			>
+				Close
+			</Button>
+		</Menubar>
+	);
+});
 
 // --- Components: Timeline Tracks (Sortable) ---
 
@@ -485,13 +491,14 @@ const TimelinePanel: React.FC = () => {
 		currentFrame,
 		setCurrentFrame,
 		playerRef,
-		isPlaying,
-		setIsPlaying,
 		selectedId,
 		setSelectedId,
+		isPlaying,
+		fps,
 	} = useEditor();
 
 	const scrollContainerRef = useRef<HTMLDivElement>(null);
+	const playheadRef = useRef<HTMLDivElement>(null);
 
 	const sortedLayers = useMemo(
 		() => [...layers].sort((a, b) => (b.zIndex ?? 0) - (a.zIndex ?? 0)),
@@ -525,14 +532,54 @@ const TimelinePanel: React.FC = () => {
 	};
 
 	useEffect(() => {
-		if (isPlaying && scrollContainerRef.current) {
+		if (!isPlaying && playheadRef.current) {
+			playheadRef.current.style.left = `${currentFrame * PIXELS_PER_FRAME}px`;
+		}
+	}, [currentFrame, isPlaying]);
+
+	useEffect(() => {
+		if (scrollContainerRef.current && !isPlaying) {
 			const x = currentFrame * PIXELS_PER_FRAME;
 			const center = scrollContainerRef.current.clientWidth / 2;
-			if (x > center) {
+			if (x > center + scrollContainerRef.current.scrollLeft) {
 				scrollContainerRef.current.scrollLeft = x - center;
 			}
 		}
 	}, [currentFrame, isPlaying]);
+
+	useEffect(() => {
+		let rafId: number | null = null;
+
+		if (isPlaying) {
+			const updatePlaybackUI = () => {
+				if (playerRef.current) {
+					const frame = playerRef.current.getCurrentFrame();
+
+					if (playheadRef.current) {
+						playheadRef.current.style.left = `${frame * PIXELS_PER_FRAME}px`;
+					}
+
+					if (scrollContainerRef.current) {
+						const x = frame * PIXELS_PER_FRAME;
+						const center = scrollContainerRef.current.clientWidth / 2;
+						if (x > center + scrollContainerRef.current.scrollLeft) {
+							scrollContainerRef.current.scrollLeft = x - center;
+						}
+					}
+				}
+
+				rafId = requestAnimationFrame(updatePlaybackUI);
+			};
+
+			rafId = requestAnimationFrame(updatePlaybackUI);
+		}
+
+		return () => {
+			if (rafId !== null) {
+				cancelAnimationFrame(rafId);
+			}
+		};
+	}, [isPlaying, playerRef, fps]);
 
 	const handleTimelineClick = (e: React.MouseEvent) => {
 		const rect = e.currentTarget.getBoundingClientRect();
@@ -559,7 +606,7 @@ const TimelinePanel: React.FC = () => {
 					prev.map((l) =>
 						l.id === layerId ? { ...l, startFrame: newStart } : l,
 					),
-				false,
+				true,
 			);
 		};
 		const onUp = () => {
@@ -586,7 +633,7 @@ const TimelinePanel: React.FC = () => {
 					prev.map((l) =>
 						l.id === layerId ? { ...l, durationInFrames: newDuration } : l,
 					),
-				false,
+				true,
 			);
 		};
 		const onUp = () => {
@@ -599,36 +646,6 @@ const TimelinePanel: React.FC = () => {
 
 	return (
 		<div className="h-72 flex flex-col border-t bg-background shrink-0 select-none z-20 shadow-[0_-4px_10px_rgba(0,0,0,0.1)]">
-			{/* Toolbar */}
-			<div className="h-10 border-b flex items-center px-4 justify-between bg-muted/40">
-				<div className="flex items-center gap-4">
-					<div className="text-xs font-mono bg-background border rounded px-2 py-1 min-w-[80px] text-center">
-						{Math.floor(currentFrame / FPS)}s :{" "}
-						{(currentFrame % FPS).toString().padStart(2, "0")}f
-					</div>
-				</div>
-				<div className="flex items-center gap-2">
-					<Button
-						variant="ghost"
-						size="sm"
-						onClick={() => {
-							if (playerRef.current) {
-								if (isPlaying) playerRef.current.pause();
-								else playerRef.current.play();
-								setIsPlaying(!isPlaying);
-							}
-						}}
-					>
-						{isPlaying ? (
-							<Pause className="h-4 w-4 fill-current" />
-						) : (
-							<Play className="h-4 w-4 fill-current" />
-						)}
-					</Button>
-				</div>
-				<div className="w-20" />
-			</div>
-
 			<div className="flex flex-1 overflow-hidden">
 				{/* Track Headers */}
 				<div className="w-60 border-r bg-muted/10 shrink-0 z-20 flex flex-col">
@@ -694,6 +711,7 @@ const TimelinePanel: React.FC = () => {
 							)}
 							{/* Playhead */}
 							<div
+								ref={playheadRef}
 								className="absolute top-0 h-screen w-px bg-red-500 z-50 pointer-events-none"
 								style={{ left: currentFrame * PIXELS_PER_FRAME }}
 							>
@@ -787,7 +805,6 @@ const InspectorPanel: React.FC = () => {
 		return (
 			<div className="w-72 border-l bg-card flex items-center justify-center p-8 text-center">
 				<div className="text-muted-foreground space-y-2">
-					<ZoomIn className="w-10 h-10 mx-auto opacity-20" />
 					<p className="text-xs">Select a layer to edit properties</p>
 				</div>
 			</div>
@@ -870,9 +887,7 @@ const InspectorPanel: React.FC = () => {
 						</h3>
 						<div className="space-y-2">
 							<div className="flex items-center justify-between text-xs">
-								<span className="flex items-center gap-2">
-									<Volume2 className="h-3 w-3" /> Volume
-								</span>
+								<span className="flex items-center gap-2">Volume</span>
 								<span className="font-mono">
 									{Math.round((selectedLayer.volume ?? 1) * 100)}%
 								</span>
@@ -936,7 +951,7 @@ export const VideoDesignerEditor: React.FC<VideoDesignerEditorProps> = ({
 	onSave,
 }) => {
 	const nodeConfig = node.config || {};
-	console.log({ initialLayers });
+
 	// State
 	const [layers, setLayers] = useState<VideoCompositorLayer[]>([]);
 	const [selectedId, setSelectedId] = useState<string | null>(null);
@@ -945,21 +960,26 @@ export const VideoDesignerEditor: React.FC<VideoDesignerEditorProps> = ({
 		nodeConfig.height ?? 1080,
 	);
 	const [isDirty, setIsDirty] = useState(false);
-	const [mode, setMode] = useState<EditorMode>("select");
 
 	// Playback & View
 	const [currentFrame, setCurrentFrame] = useState(0);
-	const [isPlaying, setIsPlaying] = useState(false);
+	const [isPlaying, setIsPlayingState] = useState(false);
 	const playerRef = useRef<PlayerRef>(null);
 	const [zoom, setZoom] = useState(0.5);
-	const [pan, setPan] = useState({ x: 50, y: 50 });
+	const [pan, setPan] = useState({ x: 0, y: 0 });
+	const [containerSize, setContainerSize] = useState({ width: 0, height: 0 });
+	const [sizeKnown, setSizeKnown] = useState(false);
+
+	// Refs
+	const containerRef = useRef<HTMLDivElement>(null);
+	const timeRef = useRef<HTMLDivElement>(null);
 
 	// Data Getters
 	const getTextData = useCallback(
 		(id: string) => {
 			const item = initialLayers.get(id);
 			if (item?.type === "Text") {
-				return (item as any).data || "Text";
+				return (item as OutputItem<"Text">).data || "Text";
 			}
 			return "";
 		},
@@ -970,9 +990,11 @@ export const VideoDesignerEditor: React.FC<VideoDesignerEditorProps> = ({
 		(id: string) => {
 			const item = initialLayers.get(id);
 			if (!item) return undefined;
-			const processData = item.data?.processData;
-			// Adapt this to match your specific data structure for URL retrieval
-			return processData?.dataUrl;
+			const processData = item.data as FileData;
+			if (processData.entity?.id) {
+				return GetAssetEndpoint(processData.entity?.id);
+			}
+			return processData?.processData?.dataUrl;
 		},
 		[initialLayers],
 	);
@@ -982,17 +1004,41 @@ export const VideoDesignerEditor: React.FC<VideoDesignerEditorProps> = ({
 	const zoomOut = useCallback(() => setZoom((z) => Math.max(0.1, z - 0.1)), []);
 	const zoomTo = useCallback((val: number) => setZoom(val), []);
 	const fitView = useCallback(() => {
-		// Simple fit logic assuming a container size ~ 1000x800 for now
-		// In a real app, use ResizeObserver on container
-		const containerW = window.innerWidth - 300; // minus inspector
-		const containerH = window.innerHeight - 300; // minus timeline
-		const scale = Math.min(
-			containerW / viewportWidth,
-			containerH / viewportHeight,
-		);
-		setZoom(scale * 0.9);
-		setPan({ x: 50, y: 50 });
-	}, [viewportWidth, viewportHeight]);
+		if (containerSize.width === 0 || containerSize.height === 0) return;
+		const scale =
+			Math.min(
+				containerSize.width / viewportWidth,
+				containerSize.height / viewportHeight,
+			) * 0.9;
+		setZoom(scale);
+	}, [containerSize, viewportWidth, viewportHeight]);
+
+	// Auto-center Pan
+	const centerPan = useCallback(() => {
+		if (containerSize.width === 0 || containerSize.height === 0) return;
+		const scaledWidth = viewportWidth * zoom;
+		const scaledHeight = viewportHeight * zoom;
+		const x = (containerSize.width - scaledWidth) / 2;
+		const y = (containerSize.height - scaledHeight) / 2;
+		setPan({ x, y });
+		if (!sizeKnown) setSizeKnown(true);
+	}, [containerSize, viewportWidth, viewportHeight, zoom, sizeKnown]);
+
+	useEffect(centerPan, [centerPan]);
+
+	// Resize Observer
+	useEffect(() => {
+		const el = containerRef.current;
+		if (!el) return;
+
+		const observer = new ResizeObserver((entries) => {
+			const { width, height } = entries[0].contentRect;
+			setContainerSize({ width, height });
+		});
+
+		observer.observe(el);
+		return () => observer.disconnect();
+	}, []);
 
 	// Initialization
 	useEffect(() => {
@@ -1006,7 +1052,6 @@ export const VideoDesignerEditor: React.FC<VideoDesignerEditorProps> = ({
 		initialLayers.forEach((item, id) => {
 			const saved = layerUpdates[id] as VideoCompositorLayer | undefined;
 
-			// Defaults
 			const base = {
 				id,
 				inputHandleId: id,
@@ -1019,12 +1064,11 @@ export const VideoDesignerEditor: React.FC<VideoDesignerEditorProps> = ({
 				opacity: 1,
 				zIndex: saved?.zIndex ?? ++maxZ,
 				startFrame: 0,
-				durationInFrames: 30 * 5, // 5s default
+				durationInFrames: 30 * 5,
 				volume: 1,
-				...saved, // Spread saved config (geometry/timing)
+				...saved,
 			};
 
-			// Note: We don't store text/src in state anymore, only config
 			if (item.type === "Text") {
 				loaded.push({
 					...base,
@@ -1034,15 +1078,14 @@ export const VideoDesignerEditor: React.FC<VideoDesignerEditorProps> = ({
 					fill: saved?.fill ?? "#ffffff",
 					width: saved?.width ?? 600,
 					height: saved?.height ?? 200,
-					text: "", // placeholder, real text comes from getTextData
+					text: "",
 				});
 			} else if (item.type === "Image" || item.type === "Video") {
-				// Retrieve dimension defaults from processData if available
 				const pData = item.data?.processData;
 				loaded.push({
 					...base,
 					type: item.type as "Image" | "Video",
-					src: "", // placeholder
+					src: "",
 					width: saved?.width ?? pData?.width ?? 1280,
 					height: saved?.height ?? pData?.height ?? 720,
 				});
@@ -1071,18 +1114,22 @@ export const VideoDesignerEditor: React.FC<VideoDesignerEditorProps> = ({
 		[],
 	);
 
-	// Sync loop for Frame Updates
-	useEffect(() => {
-		let interval: NodeJS.Timeout;
-		if (isPlaying) {
-			interval = setInterval(() => {
-				if (playerRef.current) {
-					setCurrentFrame(playerRef.current.getCurrentFrame());
-				}
-			}, 1000 / FPS);
+	const setIsPlaying = (p: boolean) => {
+		setIsPlayingState(p);
+		if (p) {
+			playerRef.current?.play();
+		} else {
+			playerRef.current?.pause();
+			if (playerRef.current) {
+				setCurrentFrame(playerRef.current.getCurrentFrame());
+			}
 		}
-		return () => clearInterval(interval);
-	}, [isPlaying]);
+	};
+
+	const setCurrentFrameHandler = (frame: number) => {
+		setCurrentFrame(frame);
+		playerRef.current?.seekTo(frame);
+	};
 
 	const handleSave = () => {
 		const layerUpdates = layers.reduce<Record<string, VideoCompositorLayer>>(
@@ -1096,60 +1143,27 @@ export const VideoDesignerEditor: React.FC<VideoDesignerEditorProps> = ({
 		setIsDirty(false);
 	};
 
-	// Pan Handling
-	const containerRef = useRef<HTMLDivElement>(null);
 	useEffect(() => {
-		const el = containerRef.current;
-		if (!el) return;
+		let rafId: number | null = null;
 
-		let isPanning = false;
-		let start = { x: 0, y: 0 };
-		let initialPan = { x: 0, y: 0 };
+		if (isPlaying) {
+			const updateTimeUI = () => {
+				if (playerRef.current && timeRef.current) {
+					const frame = playerRef.current.getCurrentFrame();
+					timeRef.current.textContent = `${Math.floor(frame / FPS)}s : ${(frame % FPS).toString().padStart(2, "0")}f`;
+				}
+				rafId = requestAnimationFrame(updateTimeUI);
+			};
 
-		const onDown = (e: MouseEvent) => {
-			if (mode === "pan" && e.button === 0) {
-				isPanning = true;
-				start = { x: e.clientX, y: e.clientY };
-				initialPan = { ...pan };
-				e.preventDefault();
-			}
-		};
-
-		const onMove = (e: MouseEvent) => {
-			if (!isPanning) return;
-			const dx = e.clientX - start.x;
-			const dy = e.clientY - start.y;
-			setPan({ x: initialPan.x + dx, y: initialPan.y + dy });
-		};
-
-		const onUp = () => {
-			isPanning = false;
-		};
-
-		// Global Spacebar shortcut
-		const onKey = (e: KeyboardEvent) => {
-			if (
-				e.code === "Space" &&
-				!e.repeat &&
-				document.activeElement?.tagName !== "INPUT"
-			) {
-				e.preventDefault();
-				setMode((prev) => (prev === "pan" ? "select" : "pan"));
-			}
-		};
-
-		el.addEventListener("mousedown", onDown);
-		window.addEventListener("mousemove", onMove);
-		window.addEventListener("mouseup", onUp);
-		window.addEventListener("keydown", onKey);
+			rafId = requestAnimationFrame(updateTimeUI);
+		}
 
 		return () => {
-			el.removeEventListener("mousedown", onDown);
-			window.removeEventListener("mousemove", onMove);
-			window.removeEventListener("mouseup", onUp);
-			window.removeEventListener("keydown", onKey);
+			if (rafId !== null) {
+				cancelAnimationFrame(rafId);
+			}
 		};
-	}, [mode, pan]);
+	}, [isPlaying, playerRef]);
 
 	return (
 		<EditorContext.Provider
@@ -1167,16 +1181,9 @@ export const VideoDesignerEditor: React.FC<VideoDesignerEditorProps> = ({
 				fps: FPS,
 				durationInFrames: 30 * 60, // 60s cap
 				currentFrame,
-				setCurrentFrame: (f) => {
-					setCurrentFrame(f);
-					playerRef.current?.seekTo(f);
-				},
+				setCurrentFrame: setCurrentFrameHandler,
 				isPlaying,
-				setIsPlaying: (p) => {
-					setIsPlaying(p);
-					if (p) playerRef.current?.play();
-					else playerRef.current?.pause();
-				},
+				setIsPlaying,
 				playerRef,
 				zoom,
 				setZoom,
@@ -1186,8 +1193,6 @@ export const VideoDesignerEditor: React.FC<VideoDesignerEditorProps> = ({
 				zoomOut,
 				zoomTo,
 				fitView,
-				mode,
-				setMode,
 				isDirty,
 				setIsDirty,
 			}}
@@ -1197,7 +1202,7 @@ export const VideoDesignerEditor: React.FC<VideoDesignerEditorProps> = ({
 					{/* Viewport Area */}
 					<div
 						ref={containerRef}
-						className={`flex-1 bg-neutral-900/95 relative overflow-hidden flex flex-col shadow-inner ${mode === "pan" ? "cursor-grab" : ""}`}
+						className="flex-1 bg-neutral-900/95 relative overflow-hidden shadow-inner"
 					>
 						{/* Grid Bg */}
 						<div
@@ -1209,43 +1214,42 @@ export const VideoDesignerEditor: React.FC<VideoDesignerEditorProps> = ({
 							}}
 						/>
 
-						<div className="flex-1 relative overflow-hidden">
+						<div
+							className="absolute origin-top-left transition-transform duration-75 ease-out"
+							style={{
+								transform: `translate(${pan.x}px, ${pan.y}px) scale(${zoom})`,
+								width: viewportWidth,
+								height: viewportHeight,
+								visibility: sizeKnown ? "visible" : "hidden",
+							}}
+						>
 							<div
-								className="absolute origin-top-left transition-transform duration-75 ease-out"
-								style={{
-									transform: `translate(${pan.x}px, ${pan.y}px) scale(${zoom})`,
-									width: viewportWidth,
-									height: viewportHeight,
-								}}
+								className="shadow-2xl relative bg-black"
+								style={{ width: viewportWidth, height: viewportHeight }}
 							>
-								<div
-									className="shadow-2xl relative bg-black"
-									style={{ width: viewportWidth, height: viewportHeight }}
-								>
-									<Player
-										ref={playerRef}
-										component={CompositionScene}
-										inputProps={{ layers }}
-										durationInFrames={30 * 60}
-										fps={FPS}
-										compositionWidth={viewportWidth}
-										compositionHeight={viewportHeight}
-										style={{ width: "100%", height: "100%" }}
-										controls={false}
-										doubleClickToFullscreen={false}
-									/>
-								</div>
+								<Player
+									ref={playerRef}
+									component={CompositionScene}
+									inputProps={{ layers }}
+									durationInFrames={30 * 60}
+									fps={FPS}
+									compositionWidth={viewportWidth}
+									compositionHeight={viewportHeight}
+									style={{ width: "100%", height: "100%" }}
+									controls={false}
+									doubleClickToFullscreen={false}
+								/>
 							</div>
-							<InteractionOverlay />
 						</div>
-
-						{/* Floating Toolbar */}
-						<div className="absolute top-6 left-1/2 -translate-x-1/2 z-30">
-							<Toolbar onClose={onClose} onSave={handleSave} />
-						</div>
+						{!isPlaying && <InteractionOverlay />}
 					</div>
 
 					<InspectorPanel />
+
+					{/* Floating Toolbar */}
+					<div className="absolute bottom-8 left-1/2 -translate-x-1/2 z-50">
+						<Toolbar onClose={onClose} onSave={handleSave} timeRef={timeRef} />
+					</div>
 				</div>
 
 				<TimelinePanel />

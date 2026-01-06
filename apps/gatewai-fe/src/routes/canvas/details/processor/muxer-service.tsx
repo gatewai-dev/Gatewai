@@ -14,15 +14,11 @@ import {
 	Video,
 } from "remotion";
 import { GetAssetEndpoint } from "@/utils/file";
+import type { NodeProcessorParams } from "./types";
 
-type VideoCompositorInputItemTypes =
-	| OutputItem<"Video">
-	| OutputItem<"Audio">
-	| OutputItem<"Text">
-	| OutputItem<"Image">;
 const DynamicComposition: React.FC<{
 	config: VideoCompositorNodeConfig;
-	inputDataMap: Record<string, VideoCompositorInputItemTypes>;
+	inputDataMap: NodeProcessorParams["inputs"];
 }> = ({ config, inputDataMap }) => {
 	const { fps, durationInFrames } = useVideoConfig();
 
@@ -54,7 +50,7 @@ const DynamicComposition: React.FC<{
 				let style = baseStyle;
 				const volume = layer.volume ?? 1;
 
-				if (input.type === "Text") {
+				if (input.outputItem?.type === "Text") {
 					const verticalAlignMap: Record<string, string> = {
 						top: "flex-start",
 						middle: "center",
@@ -74,21 +70,41 @@ const DynamicComposition: React.FC<{
 						justifyContent: verticalAlignMap[layer.verticalAlign ?? "top"],
 					};
 				}
-
+				console.log({
+					input,
+					w: GetAssetEndpoint(input.outputItem.data.entity.id),
+				});
 				return (
 					<Sequence
 						from={from}
 						durationInFrames={layerDuration}
 						key={`layer_${layer.inputHandleId}`}
 					>
-						{input.type === "Video" && (
-							<Video src={input.data} style={style} volume={volume} />
+						{input.outputItem?.type === "Video" &&
+							input.outputItem.data.entity && (
+								<Video
+									src={GetAssetEndpoint(input.outputItem.data.entity.id)}
+									style={style}
+									volume={volume}
+								/>
+							)}
+						{input.outputItem?.type === "Image" &&
+							input.outputItem.data.entity && (
+								<Img
+									src={GetAssetEndpoint(input.outputItem.data.entity.id)}
+									style={style}
+								/>
+							)}
+						{input.outputItem?.type === "Text" && (
+							<div style={style}>{input.outputItem.data}</div>
 						)}
-						{input.type === "Image" && <Img src={input.data} style={style} />}
-						{input.type === "Text" && <div style={style}>{input.data}</div>}
-						{input.type === "Audio" && (
-							<Audio src={input.data} volume={volume} />
-						)}
+						{input.outputItem?.type === "Audio" &&
+							input.outputItem.data.entity && (
+								<Audio
+									src={GetAssetEndpoint(input.outputItem.data.entity.id)}
+									volume={volume}
+								/>
+							)}
 					</Sequence>
 				);
 			})}
@@ -127,7 +143,7 @@ async function getMediaDuration(
 export class RemotionWebProcessorService {
 	async processVideo(
 		config: VideoCompositorNodeConfig,
-		inputDataMap: Record<string, VideoCompositorInputItemTypes>,
+		inputDataMap: NodeProcessorParams["inputs"],
 		signal?: AbortSignal,
 	): Promise<{ dataUrl: string; width: number; height: number }> {
 		const width = config.width ?? 1280;
@@ -159,15 +175,21 @@ export class RemotionWebProcessorService {
 				durFrames = layer.durationInFrames;
 			} else if (layer.duration != null) {
 				durFrames = Math.floor(layer.duration * fps);
-			} else if (input.type === "Video" || input.type === "Audio") {
-				const promise = getMediaDuration(input.data as FileData, input.type)
+			} else if (
+				input.outputItem?.type === "Video" ||
+				input.outputItem?.type === "Audio"
+			) {
+				const promise = getMediaDuration(
+					input.outputItem.data as FileData,
+					input.outputItem?.type,
+				)
 					.then((durSec) => {
 						const df = Math.floor(durSec * fps);
 						return { inputHandleId: layer.inputHandleId, durFrames: df };
 					})
 					.catch((err) => {
 						console.error(
-							`Failed to get duration for ${input.data}: ${err.message}`,
+							`Failed to get duration for ${layer.inputHandleId}: ${err.message}`,
 						);
 						return { inputHandleId: layer.inputHandleId, durFrames: 0 };
 					});
@@ -231,16 +253,15 @@ export class RemotionWebProcessorService {
 		if (signal?.aborted) throw new Error("Aborted");
 		const blob = await getBlob();
 		// 3. Convert Blob to DataURL (matching your image logic)
-		const dataUrl = await this.blobToDataUrl(blob);
+		const dataUrl = this.blobToObjectUrl(blob);
 
 		return { dataUrl, width, height };
 	}
 
-	private blobToDataUrl(blob: Blob): Promise<string> {
-		return new Promise((resolve) => {
-			const reader = new FileReader();
-			reader.onloadend = () => resolve(reader.result as string);
-			reader.readAsDataURL(blob);
-		});
+	private blobToObjectUrl(blob: Blob): string {
+		const url = URL.createObjectURL(blob);
+		return url;
 	}
 }
+
+export const remotionService = new RemotionWebProcessorService();
