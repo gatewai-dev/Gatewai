@@ -27,14 +27,12 @@ const VideoGenNodeConfigComponent = memo(
 	({ node }: { node: NodeEntityType }) => {
 		const { onNodeConfigUpdate } = useCanvasCtx();
 
-		const edges = useAppSelector(makeSelectEdgesByTargetNodeId(node.id));
 		const handles = useAppSelector(makeSelectHandlesByNodeId(node.id));
-		const hasReferenceImage = useMemo(() => {
-			const imageHandle = handles.find(
+		const hasReferenceImageHandle = useMemo(() => {
+			return handles.some(
 				(f) => f.type === "Input" && f.dataTypes.includes("Image"),
 			);
-			return edges.find((f) => f.targetHandleId === imageHandle?.id) != null;
-		}, [edges, handles]);
+		}, [handles]);
 
 		const updateConfig = useCallback(
 			(cfg: VideoGenNodeConfig) => {
@@ -110,7 +108,7 @@ const VideoGenNodeConfigComponent = memo(
 			const sub = form.watch((value, { name }) => {
 				if (name === "aspectRatio") {
 					const val = value as VideoGenNodeConfig;
-					if (hasReferenceImage && val.aspectRatio !== "16:9") {
+					if (hasReferenceImageHandle && val.aspectRatio !== "16:9") {
 						form.setValue("aspectRatio", "16:9", {
 							shouldValidate: true,
 							shouldDirty: true,
@@ -119,16 +117,16 @@ const VideoGenNodeConfigComponent = memo(
 				}
 			});
 			return () => sub.unsubscribe();
-		}, [form, hasReferenceImage]);
+		}, [form, hasReferenceImageHandle]);
 
 		useEffect(() => {
-			if (hasReferenceImage && form.getValues("aspectRatio") !== "16:9") {
+			if (hasReferenceImageHandle && form.getValues("aspectRatio") !== "16:9") {
 				form.setValue("aspectRatio", "16:9", {
 					shouldValidate: true,
 					shouldDirty: true,
 				});
 			}
-		}, [hasReferenceImage, form]);
+		}, [hasReferenceImageHandle, form]);
 
 		const resolution = form.watch("resolution");
 		const durationSeconds = form.watch("durationSeconds");
@@ -146,22 +144,41 @@ const VideoGenNodeConfigComponent = memo(
 				label="Aspect Ratio"
 				placeholder="Select aspect ratio"
 				options={VIDEOGEN_ASPECT_RATIOS}
-				disabled={hasReferenceImage}
+				disabled={hasReferenceImageHandle}
+			/>
+		);
+
+		const modelSelectionField = (
+			<SelectField
+				control={form.control}
+				name="model"
+				label="Model"
+				placeholder="Select a model"
+				disabled={hasReferenceImageHandle}
+				options={VIDEOGEN_NODE_MODELS}
 			/>
 		);
 
 		return (
 			<Form {...form}>
 				<form className="space-y-6">
-					<SelectField
-						control={form.control}
-						name="model"
-						label="Model"
-						placeholder="Select a model"
-						options={VIDEOGEN_NODE_MODELS}
-					/>
+					{hasReferenceImageHandle ? (
+						<TooltipProvider>
+							<Tooltip>
+								<TooltipTrigger asChild>
+									<div>{modelSelectionField}</div>
+								</TooltipTrigger>
+								<TooltipContent>
+									<p>Fast model cannot be used with reference image.</p>
+								</TooltipContent>
+							</Tooltip>
+						</TooltipProvider>
+					) : (
+						modelSelectionField
+					)}
+
 					<div className="flex gap-4">
-						{hasReferenceImage ? (
+						{hasReferenceImageHandle ? (
 							<TooltipProvider>
 								<Tooltip>
 									<TooltipTrigger asChild>

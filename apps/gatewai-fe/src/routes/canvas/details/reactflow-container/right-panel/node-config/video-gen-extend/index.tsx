@@ -31,7 +31,7 @@ const VideoGenExtendNodeConfigComponent = memo(
 				model: nodeConfig?.model ?? "veo-3.1-generate-preview",
 				// Strict defaults required by schema
 				resolution: "720p",
-				durationSeconds: "8",
+				durationSeconds: "7",
 				aspectRatio: nodeConfig?.aspectRatio ?? "16:9",
 				personGeneration: nodeConfig?.personGeneration ?? "allow_adult",
 			},
@@ -44,7 +44,7 @@ const VideoGenExtendNodeConfigComponent = memo(
 				form.reset({
 					...cfg,
 					resolution: "720p",
-					durationSeconds: "8",
+					durationSeconds: "7",
 				});
 			}
 		}, [node, form]);
@@ -90,14 +90,14 @@ const VideoGenExtendNodeConfigComponent = memo(
 									control={form.control}
 									name="durationSeconds"
 									label="Duration (Fixed)"
-									placeholder="8"
-									options={["8"]}
+									placeholder="7"
+									options={["7"]}
 									disabled={true}
 								/>
 							</div>
 						</div>
 						<FormDescription>
-							Video extension is currently limited to 720p and 8 seconds.
+							Video extension is currently limited to 720p and 7 seconds.
 						</FormDescription>
 
 						<SelectField

@@ -241,7 +241,7 @@ const VideoGenNodeConfigSchema = VideoGenBaseSchema.extend({
  * Must be 8s, 720p only for extension mode.
  */
 const VideoGenExtendNodeConfigSchema = VideoGenBaseSchema.extend({
-	durationSeconds: z.literal("8"),
+	durationSeconds: z.literal("7"),
 	resolution: z.literal("720p"),
 }).strict();
 
