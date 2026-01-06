@@ -25,7 +25,6 @@ const audioUnderstandingProcessor: NodeProcessor = async ({ node, data }) => {
 		const nodeConfig = node.config as SpeechToTextNodeConfig;
 
 		let fileBlob: Blob;
-		console.log({ audioInput });
 		if (audioInput?.entity?.signedUrl) {
 			fileBlob = await (await fetch(audioInput.entity?.signedUrl)).blob();
 		} else if (audioInput?.processData?.dataUrl) {

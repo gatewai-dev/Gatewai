@@ -38,7 +38,6 @@ async function ResolveVideoData(fileData: FileData) {
 
 const videoGenExtendProcessor: NodeProcessor = async ({ node, data }) => {
 	try {
-		// 1. Fetch Text Prompt
 		const userPrompt = getInputValue(data, node.id, true, {
 			dataType: DataType.Text,
 			label: "Prompt",
@@ -49,34 +48,46 @@ const videoGenExtendProcessor: NodeProcessor = async ({ node, data }) => {
 			label: "Negative Prompt",
 		})?.data as string | undefined;
 
-		const videoInput = getInputValue(data, node.id, true, {
+		const videoInputItem = getInputValue(data, node.id, true, {
 			dataType: DataType.Video,
 			label: "Video to extend",
 		}) as OutputItem<"Video">;
 
-		// 3. Parse Configuration
+		const videoInput = videoInputItem.data;
 		const config = VideoGenExtendNodeConfigSchema.parse(node.config);
+		console.log({ videoInput });
+		let fileBlob: Blob;
+		if (videoInput?.entity?.signedUrl) {
+			fileBlob = await (await fetch(videoInput.entity?.signedUrl)).blob();
+		} else if (videoInput?.processData?.dataUrl) {
+			const buf = Buffer.from(videoInput?.processData?.dataUrl, "base64");
+			fileBlob = new Blob([buf]);
+		} else {
+			return {
+				success: false,
+				error: "Input video data could not be resolved",
+			};
+		}
 
-		// 4. Resolve Video to Base64
-		const videoBase64 = await ResolveVideoData(videoInput.data);
+		const videoFile = await genAI.files.upload({
+			file: fileBlob,
+		});
 
-		// 5. Call Google GenAI (Veo)
-		// For extension, we pass the video in the 'video' field of the request
+		if (!videoFile.uri || !videoFile.mimeType) {
+			return { success: false, error: "Uploaded audio data is corrupted." };
+		}
+
 		let operation = await genAI.models.generateVideos({
 			model: config.model,
 			prompt: userPrompt,
 			video: {
-				videoBytes: videoBase64,
-				mimeType: videoInput.data.entity?.mimeType ?? "video/mp4",
+				uri: videoFile.uri,
 			},
 			config: {
-				resolution: "720p",
-				numberOfVideos: 1,
 				negativePrompt,
 			},
 		});
 
-		// 6. Polling
 		while (!operation.done) {
 			console.log("Waiting for video extension to complete...");
 			await new Promise((resolve) => setTimeout(resolve, 10000));
@@ -89,7 +100,6 @@ const videoGenExtendProcessor: NodeProcessor = async ({ node, data }) => {
 			throw new Error("No video generated from operation.");
 		}
 
-		// 7. Download and Process Result
 		const extension = ".mp4";
 		const now = Date.now().toString();
 		const folderPath = path.join(__dirname, `${node.id}_output`);

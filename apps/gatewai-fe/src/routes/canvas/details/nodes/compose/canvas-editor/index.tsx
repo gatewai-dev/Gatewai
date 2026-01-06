@@ -37,7 +37,7 @@ import type React from "react";
 import {
 	createContext,
 	type Dispatch,
-	type MutableRefObject,
+	type RefObject,
 	type SetStateAction,
 	useCallback,
 	useContext,
@@ -203,7 +203,7 @@ interface EditorContextType {
 	setIsEditingText: (editing: boolean) => void;
 	editingLayerId: string | null;
 	setEditingLayerId: (id: string | null) => void;
-	stageRef: MutableRefObject<Konva.Stage | null>;
+	stageRef: RefObject<Konva.Stage | null>;
 	mode: "select" | "pan";
 	setMode: Dispatch<SetStateAction<"select" | "pan">>;
 	scale: number;

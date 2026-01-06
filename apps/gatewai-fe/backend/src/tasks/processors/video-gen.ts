@@ -73,13 +73,16 @@ const videoGenProcessor: NodeProcessor = async ({ node, data }) => {
 			referenceImages = await Promise.all(LoadImageDataPromises);
 		}
 
+		const noRefImages =
+			referenceImages?.length == null || referenceImages?.length === 0;
+
 		let operation = await genAI.models.generateVideos({
 			model: config.model,
 			prompt: userPrompt,
 			config: {
 				// If reference image exists, only 16:9 supported
 				aspectRatio: referenceImages?.length ? "16:9" : config.aspectRatio,
-				referenceImages,
+				referenceImages: noRefImages ? undefined : referenceImages,
 				numberOfVideos: 1,
 				negativePrompt,
 				personGeneration: referenceImages?.length ? "allow_adult" : "allow_all",
@@ -120,7 +123,7 @@ const videoGenProcessor: NodeProcessor = async ({ node, data }) => {
 
 		const fileBuffer = await readFile(filePath);
 		const randId = randomUUID();
-		const fileName = `videogen_${randId}.${extension}`;
+		const fileName = `videogen_${randId}${extension}`;
 		const key = `assets/${fileName}`;
 		const contentType = "video/mp4";
 		const bucket = ENV_CONFIG.GCS_ASSETS_BUCKET;
