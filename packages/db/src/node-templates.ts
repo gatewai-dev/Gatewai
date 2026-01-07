@@ -13,15 +13,6 @@ export async function SEED_createNodeTemplates(prisma: PrismaClient) {
 			variableOutputs: false,
 			isTerminalNode: false,
 			isTransient: true,
-			templateHandles: {
-				create: [
-					{
-						type: HandleType.Output,
-						dataTypes: [DataType.Video],
-						label: "Result",
-					},
-				],
-			},
 			defaultConfig: { width: 1080, height: 1080 },
 		},
 		{
