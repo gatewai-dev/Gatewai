@@ -32,6 +32,9 @@ const nodeProcessors: Partial<Record<NodeType, NodeProcessor>> = {
 	[NodeType.TextToSpeech]: textToSpeechProcessor,
 	[NodeType.SpeechToText]: audioUnderstandingProcessor,
 	// No processing needed for these node types
+	[NodeType.VideoCompositor]: async ({ node }) => {
+		return { success: true, result: node.result };
+	},
 	[NodeType.File]: async ({ node }) => {
 		return { success: true, result: node.result };
 	},

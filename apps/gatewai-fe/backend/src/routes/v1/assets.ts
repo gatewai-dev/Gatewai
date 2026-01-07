@@ -235,29 +235,36 @@ const assetsRouter = new Hono({
 			return c.json({ error: "Upload failed" }, 500);
 		}
 	})
-	.get("/:id", zValidator("param", z.object({ id: z.string() })), async (c) => {
-		const id = c.req.param("id");
+	.get("/:id", async (c) => {
+		const rawId = c.req.param("id");
+		const id = rawId.split(".")[0];
+		const asset = await prisma.fileAsset.findUnique({ where: { id } });
+		if (!asset) return c.json({ error: "Not found" }, 404);
 
-		const asset = await prisma.fileAsset.findUnique({
-			where: { id },
-		});
+		const buffer = await getFromGCS(asset.key, asset.bucket);
+		const range = c.req.header("Range");
 
-		if (!asset) {
-			return c.json({ error: "Asset not found" }, 404);
-		}
+		if (range) {
+			// Simple range handling for media seeking
+			const parts = range.replace(/bytes=/, "").split("-");
+			const start = parseInt(parts[0], 10);
+			const end = parts[1] ? parseInt(parts[1], 10) : buffer.length - 1;
+			const chunksize = end - start + 1;
 
-		try {
-			const buffer = await getFromGCS(asset.key, asset.bucket);
-			const headers = {
+			return c.body(buffer.slice(start, end + 1), 206, {
+				"Content-Range": `bytes ${start}-${end}/${buffer.length}`,
+				"Accept-Ranges": "bytes",
+				"Content-Length": chunksize.toString(),
 				"Content-Type": asset.mimeType,
-				"Content-Disposition": `inline; filename="${asset.name}"`,
-				"Cache-Control": "public, max-age=31536000, immutable",
-			};
-			return c.body(buffer, { headers });
-		} catch (error) {
-			console.error("Failed to fetch asset from S3:", error);
-			return c.json({ error: "Failed to fetch asset" }, 500);
+			});
 		}
+
+		return c.body(buffer, {
+			headers: {
+				"Content-Type": asset.mimeType,
+				"Accept-Ranges": "bytes",
+			},
+		});
 	})
 	.delete(
 		"/:id",

@@ -1481,7 +1481,7 @@ export const CanvasDesignerEditor: React.FC<CanvasDesignerEditorProps> = ({
 		(handleId: string) => {
 			const layerData = initialLayers.get(handleId) as OutputItem<"Image">;
 			if (layerData?.data.entity) {
-				return GetAssetEndpoint(layerData.data.entity.id);
+				return GetAssetEndpoint(layerData.data.entity);
 			}
 			return layerData?.data?.processData?.dataUrl;
 		},

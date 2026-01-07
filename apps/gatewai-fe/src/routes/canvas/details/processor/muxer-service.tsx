@@ -135,7 +135,7 @@ const DynamicComposition: React.FC<{
 				const getAssetUrl = () => {
 					const fileData = input.outputItem?.data as FileData;
 					return fileData.entity?.id
-						? GetAssetEndpoint(fileData.entity.id)
+						? GetAssetEndpoint(fileData.entity)
 						: fileData.processData?.dataUrl;
 				};
 
@@ -252,7 +252,7 @@ export class RemotionWebProcessorService {
 		type: "Video" | "Audio",
 	): Promise<number> {
 		const url = fileData.entity?.id
-			? GetAssetEndpoint(fileData.entity.id)
+			? GetAssetEndpoint(fileData.entity)
 			: fileData.processData?.dataUrl;
 		const existing =
 			fileData?.entity?.duration ?? fileData.processData?.duration;

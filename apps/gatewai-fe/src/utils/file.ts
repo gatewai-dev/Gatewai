@@ -26,8 +26,24 @@ export const DATA_TYPE_EXTENSIONS: Record<DataType, string> = {
 
 const BACKEND_URL = import.meta.env.VITE_BASE_URL;
 
-function GetAssetEndpoint(id: FileAsset["id"]) {
-	return `${BACKEND_URL}/api/v1/assets/${id}`;
+/**
+ * Appends a file extension hint to the URL.
+ * Remotion's MediaBunny requires an extension in the URL string
+ * to identify the container format before fetching.
+ */
+function GetAssetEndpoint(fileAsset: FileAsset) {
+	// Ensure the ID itself doesn't already have an extension
+	const cleanId = fileAsset.id.split(".")[0];
+	const baseUrl = `${BACKEND_URL}/api/v1/assets/${cleanId}`;
+
+	if (!fileAsset.mimeType) return baseUrl;
+
+	const extension = Object.entries(MIME_TYPES).find(
+		([_, mime]) => mime === fileAsset.mimeType,
+	)?.[0];
+
+	// Remotion needs this extension to trigger the correct 'bunny'
+	return extension ? `${baseUrl}.${extension}` : baseUrl;
 }
 
 function GetFontAssetUrl(name: string) {

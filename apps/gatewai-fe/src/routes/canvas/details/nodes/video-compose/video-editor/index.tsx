@@ -1862,7 +1862,7 @@ export const VideoDesignerEditor: React.FC<VideoDesignerEditorProps> = ({
 			if (!item) return undefined;
 			const processData = item.data as FileData;
 			if (processData.entity?.id) {
-				return GetAssetEndpoint(processData.entity?.id);
+				return GetAssetEndpoint(processData.entity);
 			}
 			return processData?.processData?.dataUrl;
 		},

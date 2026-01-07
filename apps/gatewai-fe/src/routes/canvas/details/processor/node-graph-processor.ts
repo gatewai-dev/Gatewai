@@ -587,7 +587,7 @@ export class NodeGraphProcessor extends EventEmitter {
 				}
 				if (data.entity?.signedUrl) {
 					console.log(data.entity?.signedUrl, data.entity);
-					return GetAssetEndpoint(data.entity.id);
+					return GetAssetEndpoint(data.entity);
 				}
 			}
 		}
@@ -613,7 +613,7 @@ export class NodeGraphProcessor extends EventEmitter {
 
 				const fileData = outputItem.data as FileData;
 				const url = fileData?.entity?.signedUrl
-					? GetAssetEndpoint(fileData.entity.id)
+					? GetAssetEndpoint(fileData.entity)
 					: fileData?.processData?.dataUrl;
 				if (url) return url;
 			}
@@ -634,7 +634,7 @@ export class NodeGraphProcessor extends EventEmitter {
 			) {
 				const fileData = input.outputItem.data as FileData;
 				const url = fileData?.entity?.signedUrl
-					? GetAssetEndpoint(fileData.entity.id)
+					? GetAssetEndpoint(fileData.entity)
 					: fileData?.processData?.dataUrl;
 				if (url) return { type: input.outputItem.type, value: url };
 			} else if (input.outputItem.type === "Text") {

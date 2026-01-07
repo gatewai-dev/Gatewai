@@ -19,7 +19,7 @@ function useMediaInputSrc(nodeId: NodeEntityType["id"], type: MediaTypes) {
 	}, [result, type]);
 
 	const videoSrc = videoOutputItem?.entity?.id
-		? GetAssetEndpoint(videoOutputItem?.entity?.id)
+		? GetAssetEndpoint(videoOutputItem?.entity)
 		: null;
 
 	return videoSrc;

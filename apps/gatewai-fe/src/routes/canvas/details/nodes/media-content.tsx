@@ -25,8 +25,8 @@ function MediaContent({
 
 	const assetUrl = useMemo(() => {
 		if (!outputItem.data.entity?.id) return null;
-		return GetAssetEndpoint(outputItem.data.entity?.id);
-	}, [outputItem.data.entity?.id]);
+		return GetAssetEndpoint(outputItem.data.entity);
+	}, [outputItem.data.entity]);
 
 	return (
 		<div className="relative h-full w-full group">

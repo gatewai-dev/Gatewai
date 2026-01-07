@@ -67,7 +67,7 @@ const PaintNodeComponent = memo((props: NodeProps<PaintNode>) => {
 			return outputItem?.data.processData.dataUrl;
 		}
 		if (outputItem?.data.entity) {
-			return GetAssetEndpoint(outputItem?.data.entity.id);
+			return GetAssetEndpoint(outputItem?.data.entity);
 		}
 		return null;
 	}, [inputNodeResult]);

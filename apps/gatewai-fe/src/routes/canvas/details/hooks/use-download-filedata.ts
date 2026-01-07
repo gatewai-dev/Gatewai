@@ -72,7 +72,7 @@ function useDownloadFileData() {
 			// Priority 2: Use entity URL/path
 			else if (fileData.entity) {
 				const entity = fileData.entity;
-				url = GetAssetEndpoint(entity.id);
+				url = GetAssetEndpoint(entity);
 				filename = entity.name || generateFilename(dataType, fileData);
 
 				if (!url) {

@@ -15,7 +15,7 @@ import type { PreviewNode } from "../node-props";
 const ImagePreview = memo(({ data }: { data: FileData }) => {
 	const imageUrl = useMemo(() => {
 		if (data.entity) {
-			return GetAssetEndpoint(data.entity.id);
+			return GetAssetEndpoint(data.entity);
 		} else if (data.processData?.dataUrl) {
 			return data.processData?.dataUrl;
 		}
@@ -50,7 +50,7 @@ const PreviewNodeComponent = memo((props: NodeProps<PreviewNode>) => {
 
 	const getMediaSource = (): string | undefined => {
 		if ("entity" in outputData && outputData.entity) {
-			return GetAssetEndpoint(outputData.entity.id);
+			return GetAssetEndpoint(outputData.entity);
 		} else if ("processData" in outputData && outputData.processData) {
 			return outputData.processData?.dataUrl;
 		}
