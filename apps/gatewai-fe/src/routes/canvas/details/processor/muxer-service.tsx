@@ -3,18 +3,16 @@ import type {
 	VideoCompositorLayer,
 	VideoCompositorNodeConfig,
 } from "@gatewai/types";
+import { Audio, Video } from "@remotion/media";
 import { renderMediaOnWeb } from "@remotion/web-renderer";
 import type React from "react";
 import { useMemo } from "react";
 import {
 	AbsoluteFill,
-	Html5Audio,
-	Html5Video,
 	Img,
 	interpolate,
 	Sequence,
 	spring,
-	staticFile,
 	useCurrentFrame,
 	useVideoConfig,
 } from "remotion";
@@ -142,7 +140,7 @@ const DynamicComposition: React.FC<{
 				};
 
 				const inputSrc = getAssetUrl();
-				const assetSrc = inputSrc ? staticFile(inputSrc) : null;
+				const assetSrc = inputSrc;
 				console.log({ inputSrc });
 				return (
 					<Sequence
@@ -151,7 +149,7 @@ const DynamicComposition: React.FC<{
 						key={layer.inputHandleId}
 					>
 						{input.outputItem?.type === "Video" && assetSrc && (
-							<Html5Video
+							<Video
 								src={assetSrc}
 								style={baseStyle}
 								volume={layer.volume ?? 1}
@@ -177,7 +175,7 @@ const DynamicComposition: React.FC<{
 							</div>
 						)}
 						{input.outputItem?.type === "Audio" && assetSrc && (
-							<Html5Audio src={assetSrc} volume={layer.volume ?? 1} />
+							<Audio src={assetSrc} volume={layer.volume ?? 1} />
 						)}
 					</Sequence>
 				);

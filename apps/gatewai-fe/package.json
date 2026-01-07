@@ -59,6 +59,7 @@
 		"@radix-ui/react-tooltip": "^1.2.8",
 		"@reduxjs/toolkit": "^2.10.1",
 		"@remotion/cli": "4.0.398",
+		"@remotion/media": "^4.0.398",
 		"@remotion/player": "4.0.398",
 		"@remotion/web-renderer": "^4.0.398",
 		"@tailwindcss/vite": "^4.1.16",
