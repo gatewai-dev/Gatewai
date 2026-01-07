@@ -13,7 +13,6 @@ const TextToSpeechNodeComponent = memo(
 		const node = useAppSelector(makeSelectNodeById(props.id));
 		const { result } = useNodeResult(props.id);
 		const hasMoreThanOneOutput = result?.outputs && result?.outputs?.length > 1;
-
 		const audioSrc = useMediaInputSrc(props.id, "Audio");
 
 		return (

@@ -18,7 +18,6 @@ import {
 } from "@/components/ui/tooltip";
 import { useCanvasCtx } from "@/routes/canvas/details/ctx/canvas-ctx";
 import { useAppSelector } from "@/store";
-import { makeSelectEdgesByTargetNodeId } from "@/store/edges";
 import { makeSelectHandlesByNodeId } from "@/store/handles";
 import type { NodeEntityType } from "@/store/nodes";
 import { SelectField } from "../../../../components/fields/select";

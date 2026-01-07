@@ -783,7 +783,7 @@ const Toolbar = React.memo<{
 
 			<div
 				ref={timeRef}
-				className="text-xs font-mono bg-white/5 border border-white/5 rounded px-2 py-1 min-w-[80px] text-center text-blue-200"
+				className="text-xs font-mono bg-white/5 border border-white/5 rounded px-2 py-1 min-w-20 text-center text-blue-200"
 			>
 				{Math.floor(currentFrame / fps)}s :{" "}
 				{(currentFrame % fps).toString().padStart(2, "0")}f
@@ -851,7 +851,7 @@ const Toolbar = React.memo<{
 
 			<Button
 				size="sm"
-				className="h-8 text-xs rounded-full px-4 bg-blue-600 hover:bg-blue-500 text-white border-0"
+				className="h-8 text-xs rounded-full px-4  border-0"
 				onClick={onSave}
 				disabled={!isDirty}
 			>

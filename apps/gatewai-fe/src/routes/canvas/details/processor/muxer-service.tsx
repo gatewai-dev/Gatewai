@@ -164,8 +164,10 @@ const DynamicComposition: React.FC<{
 									...baseStyle,
 									fontFamily: layer.fontFamily ?? "sans-serif",
 									fontSize: `${layer.fontSize ?? 16}px`,
+									fontStyle: layer.fontStyle,
+									textDecoration: layer.textDecoration,
 									color: layer.fill ?? "white",
-									textAlign: (layer.align as any) ?? "left",
+									textAlign: layer.align ?? "left",
 									display: "flex",
 									flexDirection: "column",
 									justifyContent: "center",
@@ -197,7 +199,7 @@ export class RemotionWebProcessorService {
 		const layers = Object.values(
 			config.layerUpdates ?? {},
 		) as VideoCompositorLayer[];
-		const mediaDurationPromises: Promise<any>[] = [];
+		const mediaDurationPromises: Promise<void>[] = [];
 
 		for (const layer of layers) {
 			const input = inputDataMap[layer.inputHandleId];
@@ -210,7 +212,7 @@ export class RemotionWebProcessorService {
 				) {
 					const promise = this.getMediaDuration(
 						input.outputItem.data as FileData,
-						input.outputItem.type as any,
+						input.outputItem.type,
 					).then((durSec) => {
 						layer.durationInFrames = Math.floor(durSec * fps);
 					});
@@ -230,6 +232,7 @@ export class RemotionWebProcessorService {
 		const { getBlob } = await renderMediaOnWeb({
 			signal,
 			licenseKey: "free-license", // Add mention for remotion in readme.
+			videoCodec: "vp9",
 			composition: {
 				id: "dynamic-video",
 				component: DynamicComposition,

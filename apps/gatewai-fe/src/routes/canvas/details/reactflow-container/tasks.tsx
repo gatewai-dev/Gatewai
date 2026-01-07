@@ -1,6 +1,5 @@
-// 1. Import the helper from date-fns
 import { formatDistanceToNow } from "date-fns";
-import { AlertCircle, Clock } from "lucide-react";
+import { AlertCircle } from "lucide-react";
 import { memo } from "react";
 
 import {
@@ -79,7 +78,6 @@ const CanvasTasksPanel = memo(() => {
 					<h4 className="text-[11px] font-semibold uppercase tracking-tight text-muted-foreground">
 						Task Monitor
 					</h4>
-					{/* 2. Implementation of the relative time string */}
 					{latestTasksFetchTime && (
 						<span className="text-[10px] text-muted-foreground/60 tabular-nums">
 							Refreshed{" "}

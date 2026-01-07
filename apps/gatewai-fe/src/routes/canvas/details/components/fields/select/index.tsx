@@ -31,7 +31,7 @@ type SelectFieldProps<T extends FieldValues> = {
 	name: FieldPath<T>;
 	label: string;
 	placeholder: string;
-	options: string[];
+	options: string[] | ReadonlyArray<string>;
 	info?: ReactNode;
 	disabled?: boolean;
 } & Pick<UseControllerProps<T>, "rules">;

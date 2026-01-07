@@ -393,7 +393,8 @@ const ImageLayer: React.FC<LayerProps> = ({
 	onTransformStart,
 	onTransformEnd,
 }) => {
-	const { setSelectedId, updateLayers, getImageUrl, mode } = useEditor();
+	const { setSelectedId, updateLayers, getImageUrl, mode, selectedId } =
+		useEditor();
 	const url = getImageUrl(layer.inputHandleId);
 	const [image] = useImage(url ?? "", "anonymous");
 
@@ -429,6 +430,9 @@ const ImageLayer: React.FC<LayerProps> = ({
 		});
 	}, []);
 
+	const isListening =
+		mode === "select" && (selectedId === null || selectedId === layer.id);
+
 	return (
 		<KonvaImage
 			id={layer.id}
@@ -448,6 +452,7 @@ const ImageLayer: React.FC<LayerProps> = ({
 			onTransform={handleTransform}
 			onTransformEnd={onTransformEnd}
 			globalCompositeOperation={layer.blendMode as GlobalCompositeOperation}
+			listening={isListening}
 		/>
 	);
 };
@@ -470,6 +475,7 @@ const TextLayer: React.FC<
 		mode,
 		updateLayers,
 		stageRef,
+		selectedId,
 	} = useEditor();
 	const text = getTextData(layer.inputHandleId);
 
@@ -539,6 +545,9 @@ const TextLayer: React.FC<
 		}
 	}, [layer.fontFamily, stageRef]);
 
+	const isListening =
+		mode === "select" && (selectedId === null || selectedId === layer.id);
+
 	return (
 		<KonvaText
 			id={layer.id}
@@ -570,6 +579,7 @@ const TextLayer: React.FC<
 			verticalAlign={layer.verticalAlign ?? "top"}
 			letterSpacing={layer.letterSpacing ?? 0}
 			lineHeight={layer.lineHeight ?? 1}
+			listening={isListening}
 		/>
 	);
 };

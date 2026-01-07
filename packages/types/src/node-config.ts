@@ -122,6 +122,9 @@ const CompositorLayerSchema = z
 		rotation: z.number(),
 		fontFamily: z.string().optional(),
 		fontSize: z.number().optional(),
+		fontStyle: z.string().optional(),
+		textDecoration: z.string().optional(),
+
 		fill: z.string().optional(),
 		lockAspect: z.boolean(),
 		blendMode: z.string(),
@@ -367,6 +370,8 @@ const VideoCompositorLayerSchema = z
 		rotation: z.number(),
 		fontFamily: z.string().optional(),
 		fontSize: z.number().optional(),
+		fontStyle: z.string().optional(),
+		textDecoration: z.string().optional(),
 		fill: z.string().optional(),
 		lockAspect: z.boolean(),
 		blendMode: z.string(),
