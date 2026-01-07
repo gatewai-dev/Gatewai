@@ -818,8 +818,6 @@ export class NodeGraphProcessor extends EventEmitter {
 				);
 				const end = Date.now();
 				console.log((end - start) / 1000);
-				const outputHandle = getFirstOutputHandle(node.id, "Video");
-				if (!outputHandle) throw new Error("Missing output handle");
 
 				return {
 					selectedOutputIndex: 0,
@@ -835,7 +833,7 @@ export class NodeGraphProcessor extends EventEmitter {
 											height: result.height,
 										},
 									},
-									outputHandleId: outputHandle,
+									outputHandleId: null,
 								},
 							],
 						},

@@ -25,9 +25,11 @@ import {
 	AlignCenterHorizontal,
 	AlignCenterVertical,
 	ArrowLeftRight,
+	Bold,
 	ChevronDown,
 	Hand,
 	ImageIcon,
+	Italic,
 	Maximize,
 	Minimize,
 	MousePointer,
@@ -35,6 +37,7 @@ import {
 	MoveHorizontal,
 	RotateCw,
 	Type,
+	Underline,
 } from "lucide-react";
 import type React from "react";
 import {
@@ -544,6 +547,8 @@ const TextLayer: React.FC<
 			text={text as string}
 			fontSize={layer.fontSize ?? 24}
 			fontFamily={layer.fontFamily ?? "Geist"}
+			fontStyle={layer.fontStyle ?? "normal"}
+			textDecoration={layer.textDecoration ?? ""}
 			fill={layer.fill ?? "#000000"}
 			width={layer.width ?? 200}
 			height={layer.height}
@@ -1025,6 +1030,42 @@ const InspectorPanel: React.FC = () => {
 		[],
 	);
 
+	const toggleBold = useCallback(() => {
+		if (!selectedLayer || selectedLayer.type !== "Text") return;
+		const currentStyle = selectedLayer.fontStyle || "normal";
+		let newStyle = currentStyle;
+		if (newStyle.includes("bold")) {
+			newStyle = newStyle.replace("bold", "").trim();
+		} else {
+			newStyle = "bold " + newStyle;
+		}
+		if (newStyle === "") newStyle = "normal";
+		updateLayer({ fontStyle: newStyle });
+	}, [selectedLayer, updateLayer]);
+
+	const toggleItalic = useCallback(() => {
+		if (!selectedLayer || selectedLayer.type !== "Text") return;
+		const currentStyle = selectedLayer.fontStyle || "normal";
+		let newStyle = currentStyle;
+		if (newStyle.includes("italic")) {
+			newStyle = newStyle.replace("italic", "").trim();
+		} else {
+			newStyle += " italic";
+		}
+		if (newStyle === "") newStyle = "normal";
+		updateLayer({ fontStyle: newStyle });
+	}, [selectedLayer, updateLayer]);
+
+	const toggleUnderline = useCallback(() => {
+		if (!selectedLayer || selectedLayer.type !== "Text") return;
+		const isUnderline = selectedLayer.textDecoration === "underline";
+		updateLayer({ textDecoration: isUnderline ? "" : "underline" });
+	}, [selectedLayer, updateLayer]);
+
+	const isBold = selectedLayer?.fontStyle?.includes("bold") ?? false;
+	const isItalic = selectedLayer?.fontStyle?.includes("italic") ?? false;
+	const isUnderline = selectedLayer?.textDecoration === "underline";
+
 	return (
 		<div className="absolute right-0 top-0 bottom-0 w-64 bg-card border-l border-border z-10 flex flex-col shadow-xl scrollbar-thin scrollbar-thumb-rounded scrollbar-thumb-border scrollbar-track-transparent overflow-y-auto">
 			<div className="p-4 space-y-6">
@@ -1286,6 +1327,33 @@ const InspectorPanel: React.FC = () => {
 										</Button>
 									</div>
 
+									<div className="grid grid-cols-3 gap-1 bg-muted/50 p-1 rounded-md">
+										<Button
+											variant={isBold ? "secondary" : "ghost"}
+											size="icon"
+											className="h-6 w-full"
+											onClick={toggleBold}
+										>
+											<Bold className="w-3 h-3" />
+										</Button>
+										<Button
+											variant={isItalic ? "secondary" : "ghost"}
+											size="icon"
+											className="h-6 w-full"
+											onClick={toggleItalic}
+										>
+											<Italic className="w-3 h-3" />
+										</Button>
+										<Button
+											variant={isUnderline ? "secondary" : "ghost"}
+											size="icon"
+											className="h-6 w-full"
+											onClick={toggleUnderline}
+										>
+											<Underline className="w-3 h-3" />
+										</Button>
+									</div>
+
 									<div className="grid grid-cols-2 gap-3">
 										<DraggableNumberInput
 											label="Spacing"
@@ -1522,6 +1590,8 @@ export const CanvasDesignerEditor: React.FC<CanvasDesignerEditorProps> = ({
 						newLayer.width = 300;
 						newLayer.fontSize = 40;
 						newLayer.fontFamily = "Geist";
+						newLayer.fontStyle = "normal";
+						newLayer.textDecoration = "";
 						newLayer.fill = "#ffffff";
 						newLayer.letterSpacing = 0;
 						newLayer.lineHeight = 1.2;
