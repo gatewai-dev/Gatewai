@@ -336,7 +336,22 @@ const TextToSpeechNodeConfigSchema = z
 	.strict();
 
 const VideoEffectsSchema = z.object({
-	// TODO
+	id: z.string(),
+	type: z.enum([
+		"fade-in",
+		"fade-out",
+		"slide-in-left",
+		"slide-in-right",
+		"slide-in-top",
+		"slide-in-bottom",
+		"zoom-in",
+		"zoom-out",
+		"rotate-cw",
+		"rotate-ccw",
+		"bounce",
+		"shake",
+	]),
+	value: z.number(),
 });
 
 const VideoCompositorLayerSchema = z
@@ -367,7 +382,9 @@ const VideoCompositorLayerSchema = z
 
 		src: z.string().optional(),
 		volume: z.number().optional(),
-		effects: z.array(VideoEffectsSchema).optional(),
+		animations: z.array(VideoEffectsSchema).optional(),
+		scale: z.number().optional(),
+		opacity: z.number().optional(),
 	})
 	.strict();
 
@@ -434,6 +451,7 @@ type VideoGenFirstLastFrameNodeConfig = z.infer<
 >;
 type SpeechToTextNodeConfig = z.infer<typeof SpeechToTextNodeConfigSchema>;
 type TextToSpeechNodeConfig = z.infer<typeof TextToSpeechNodeConfigSchema>;
+type VideoEffectsEnum = z.infer<typeof VideoEffectsSchema>;
 
 export {
 	NodeConfigSchema,
@@ -459,6 +477,8 @@ export {
 	VideoGenFirstLastFrameNodeConfigSchema,
 	SpeechToTextNodeConfigSchema,
 	TextToSpeechNodeConfigSchema,
+	VideoEffectsSchema,
+	type VideoEffectsEnum,
 	type TextNodeConfig,
 	type FileNodeConfig,
 	type AgentNodeConfig,

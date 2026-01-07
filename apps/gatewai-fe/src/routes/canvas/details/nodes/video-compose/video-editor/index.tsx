@@ -1302,8 +1302,6 @@ const TimelinePanel: React.FC = () => {
 	);
 };
 
-// --- Components: Inspector ---
-
 const InspectorPanel: React.FC = () => {
 	const {
 		selectedId,

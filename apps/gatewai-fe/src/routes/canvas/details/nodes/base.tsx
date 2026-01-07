@@ -220,7 +220,7 @@ const BaseNode = memo(
 		const handles = useAppSelector(selectHandles);
 		const selectNode = useMemo(() => makeSelectNodeById(id), [id]);
 		const node = useAppSelector(selectNode);
-		const { inputs } = useNodeResult(id);
+		const { inputs, isProcessing } = useNodeResult(id);
 		const validation = useNodeValidation(id);
 		const hasTypeMismatch = (handleId: HandleEntityType["id"]) =>
 			validation?.[handleId] === "type_mismatch";
@@ -247,6 +247,7 @@ const BaseNode = memo(
 					// Use standard ease for cleaner motion
 					"transition-all duration-200 ease-out",
 					dragging ? "shadow-lg scale-[1.01]" : "shadow-sm",
+					{ "ring-1 ring-green-400/30": isProcessing },
 					"bg-card border border-border",
 					// Sharper corners for a more technical look to match rectangular handles
 					"rounded-2xl",

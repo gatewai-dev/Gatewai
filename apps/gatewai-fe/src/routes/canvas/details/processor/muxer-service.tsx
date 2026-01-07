@@ -21,31 +21,6 @@ import { GetAssetEndpoint } from "@/utils/file";
 import type { NodeProcessorParams } from "./types";
 
 // Types for supported Animations
-export type AnimationType =
-	| "fade-in"
-	| "fade-out"
-	| "slide-in-left"
-	| "slide-in-right"
-	| "slide-in-top"
-	| "slide-in-bottom"
-	| "zoom-in"
-	| "zoom-out"
-	| "rotate-cw"
-	| "rotate-ccw"
-	| "bounce"
-	| "shake";
-
-export interface VideoAnimation {
-	id: string;
-	type: AnimationType;
-	value: number; // duration in seconds
-}
-
-interface ExtendedLayer extends VideoCompositorLayer {
-	animations?: VideoAnimation[];
-	scale?: number;
-	opacity?: number;
-}
 
 const DynamicComposition: React.FC<{
 	config: VideoCompositorNodeConfig;
@@ -59,7 +34,9 @@ const DynamicComposition: React.FC<{
 	const frame = useCurrentFrame();
 
 	// Note: z-index is unsupported. We solve this by ordering the DOM elements.
-	const layers = Object.values(config.layerUpdates ?? {}) as ExtendedLayer[];
+	const layers = Object.values(
+		config.layerUpdates ?? {},
+	) as VideoCompositorLayer[];
 	const sortedLayers = useMemo(
 		() => [...layers].sort((a, b) => (a.zIndex ?? 0) - (b.zIndex ?? 0)),
 		[layers],
@@ -217,7 +194,9 @@ export class RemotionWebProcessorService {
 		const height = config.height ?? 720;
 		const fps = config.FPS ?? 24;
 
-		const layers = Object.values(config.layerUpdates ?? {}) as ExtendedLayer[];
+		const layers = Object.values(
+			config.layerUpdates ?? {},
+		) as VideoCompositorLayer[];
 		const mediaDurationPromises: Promise<any>[] = [];
 
 		for (const layer of layers) {
@@ -251,7 +230,7 @@ export class RemotionWebProcessorService {
 		const { getBlob } = await renderMediaOnWeb({
 			codec: "h264",
 			signal,
-			licenseKey: "free-license",
+			licenseKey: "free-license", // Add mention for remotion in readme.
 			composition: {
 				id: "dynamic-video",
 				component: DynamicComposition,

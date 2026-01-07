@@ -40,11 +40,6 @@ const VideoCompositorNodeComponent = memo(
 							},
 						)}
 					>
-						{isProcessing && (
-							<div className="inset-0 z-10 absolute text-foreground bg-background/20 w-full h-full flex items-center justify-center">
-								Rendering Video...
-							</div>
-						)}
 						{videoSrc && <VideoRenderer src={videoSrc} />}
 					</div>
 					<div className="flex justify-between items-center">
