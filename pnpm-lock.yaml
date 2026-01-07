@@ -167,6 +167,9 @@ importers:
       '@remotion/cli':
         specifier: 4.0.397
         version: 4.0.397(react-dom@19.1.1(react@19.1.1))(react@19.1.1)
+      '@remotion/fonts':
+        specifier: ^4.0.398
+        version: 4.0.398(react-dom@19.1.1(react@19.1.1))(react@19.1.1)
       '@remotion/player':
         specifier: 4.0.397
         version: 4.0.397(react-dom@19.1.1(react@19.1.1))(react@19.1.1)
@@ -2867,6 +2870,9 @@ packages:
     resolution: {integrity: sha512-2qRD/u2hTShvm4YGRBTrnjPz+ODK46RIBcHD9nbpHclIKCG43KX0aPuTZbg1Ogq7iaMqC7gkN1v0hJkdNMFnxQ==}
     cpu: [x64]
     os: [win32]
+
+  '@remotion/fonts@4.0.398':
+    resolution: {integrity: sha512-9iCAdwZ4IyKM7PsUTCD8juV+hYSjQQgVUbNi5ZrFU6hlJFOiKu0BFa9PRAQ+YxYV7O9Bdi35cmt1Ci/crXItOA==}
 
   '@remotion/licensing@4.0.397':
     resolution: {integrity: sha512-/gJsW2e78+DbtFTGKyN+JGIY8PpXbAMWxmZTTVs5SNMAkNVp2Lx0M37elz7XBC5w2y+6w1wnOJR9KS+omJFUow==}
@@ -7495,6 +7501,12 @@ packages:
       react: '>=16.8.0'
       react-dom: '>=16.8.0'
 
+  remotion@4.0.398:
+    resolution: {integrity: sha512-AhPord4kHwdlU0Ey4W/pPbPPl0hD0PrQI+uU2oCIf4Nno8huz5/49DVPX5a88Cg2nlHGfBNTcukJSMb1cbbMdQ==}
+    peerDependencies:
+      react: '>=16.8.0'
+      react-dom: '>=16.8.0'
+
   require-directory@2.1.1:
     resolution: {integrity: sha512-fGxEI7+wsG9xrvdjsrlmL22OMTTiHRwAMroiEeMgq8gzoLC/PQr7RsRDSTLUg/bZAZtF+TVIkHc6/4RIKrui+Q==}
     engines: {node: '>=0.10.0'}
@@ -11675,6 +11687,13 @@ snapshots:
 
   '@remotion/compositor-win32-x64-msvc@4.0.397':
     optional: true
+
+  '@remotion/fonts@4.0.398(react-dom@19.1.1(react@19.1.1))(react@19.1.1)':
+    dependencies:
+      remotion: 4.0.398(react-dom@19.1.1(react@19.1.1))(react@19.1.1)
+    transitivePeerDependencies:
+      - react
+      - react-dom
 
   '@remotion/licensing@4.0.397': {}
 
@@ -17339,6 +17358,11 @@ snapshots:
       unified: 11.0.5
 
   remotion@4.0.397(react-dom@19.1.1(react@19.1.1))(react@19.1.1):
+    dependencies:
+      react: 19.1.1
+      react-dom: 19.1.1(react@19.1.1)
+
+  remotion@4.0.398(react-dom@19.1.1(react@19.1.1))(react@19.1.1):
     dependencies:
       react: 19.1.1
       react-dom: 19.1.1(react@19.1.1)

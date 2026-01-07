@@ -60,6 +60,7 @@
 		"@reduxjs/toolkit": "^2.10.1",
 		"@remotion/bundler": "4.0.397",
 		"@remotion/cli": "4.0.397",
+		"@remotion/fonts": "^4.0.398",
 		"@remotion/player": "4.0.397",
 		"@remotion/renderer": "4.0.397",
 		"@remotion/web-renderer": "^4.0.397",
