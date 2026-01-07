@@ -231,10 +231,7 @@ export class RemotionWebProcessorService {
 
 		const { getBlob } = await renderMediaOnWeb({
 			signal,
-			licenseKey: "free-license", // Add mention for remotion in readme.
-			videoCodec: "vp9",
-			container: "webm",
-			transparent: true,
+			licenseKey: "free-license",
 			composition: {
 				id: "dynamic-video",
 				component: DynamicComposition,
