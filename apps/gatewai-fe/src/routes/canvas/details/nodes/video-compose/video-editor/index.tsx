@@ -102,6 +102,7 @@ import {
 	TooltipTrigger,
 } from "@/components/ui/tooltip";
 import { ColorInput } from "@/components/util/color-input";
+import { useGetFontListQuery } from "@/store/fonts";
 import { GetAssetEndpoint, GetFontAssetUrl } from "@/utils/file";
 
 // --- Types & Schemas ---
@@ -1319,7 +1320,13 @@ const InspectorPanel: React.FC = () => {
 	const selectedLayer = layers.find((f) => f.id === selectedId);
 
 	const [addAnimOpen, setAddAnimOpen] = useState(false);
-	const fontNames = ["Geist", "Inter", "Arial"];
+	const { data: fontList } = useGetFontListQuery({});
+	const fontNames = useMemo(() => {
+		if (Array.isArray(fontList) && (fontList as string[])?.length > 0) {
+			return fontList as string[];
+		}
+		return ["Geist", "Inter", "Arial"];
+	}, [fontList]);
 
 	const aspectRatios = useMemo(
 		() => [

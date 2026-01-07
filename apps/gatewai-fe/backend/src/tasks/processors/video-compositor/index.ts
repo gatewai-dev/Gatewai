@@ -138,7 +138,7 @@ const videoCompositorProcessor: NodeProcessor = async ({ node, data }) => {
 			outputLocation,
 			inputProps,
 			onProgress: ({ progress }) => {
-				logger.info(`Rendering progress: ${progress} %)`);
+				logger.info(`Rendering in progress: ${progress} %)`);
 			},
 			// Additional options: concurrency, crf, etc., can be tuned for performance/quality
 		});
