@@ -48,6 +48,7 @@ const NodeConfigItem = memo(({ node }: NodeConfigComponentProps) => {
 				<h3 className="text-sm font-semibold">{node.name}</h3>
 			</div>
 			<ConfigComponent key={node.id} node={node} />
+			<Separator className="my-5" />
 		</div>
 	);
 });
@@ -81,7 +82,6 @@ const NodeConfigPanel = memo(() => {
 						selectedNodes?.map((node) => (
 							<Fragment key={`${node.id}_cfg_section`}>
 								<NodeConfigItem node={node} />
-								<Separator className="my-5" />
 							</Fragment>
 						))}
 				</div>

@@ -405,6 +405,7 @@ const VideoCompositorNodeConfigSchema = z
 		height: z.number().optional(),
 		background: z.string().optional(),
 		FPS: z.number().optional(),
+		isTransparent: z.boolean().optional().default(false),
 	})
 	.strict();
 // Main node schema

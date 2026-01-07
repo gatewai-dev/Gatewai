@@ -1,4 +1,4 @@
-import type { FileData } from "@gatewai/types";
+import type { FileData, VideoCompositorNodeConfig } from "@gatewai/types";
 import type { NodeProps } from "@xyflow/react";
 import { Download, Loader2, VideoIcon } from "lucide-react";
 import { memo, useMemo, useState } from "react";
@@ -50,8 +50,9 @@ const VideoCompositorNodeComponent = memo(
 				// Get the first item (primary output)
 				const outputItem = selectedOutput.items[0];
 				const { type, data } = outputItem;
-
-				await downloadFileData(data as FileData, type);
+				const config = node.config as unknown as VideoCompositorNodeConfig;
+				const extension = config.isTransparent ? "webm" : "mp4";
+				await downloadFileData(data as FileData, type, extension);
 			} catch (err) {
 				const errorMessage =
 					err instanceof Error ? err.message : "An unknown error occurred";

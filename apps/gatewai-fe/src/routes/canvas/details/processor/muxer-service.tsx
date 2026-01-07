@@ -42,7 +42,10 @@ const DynamicComposition: React.FC<{
 	);
 
 	return (
-		<AbsoluteFill style={{ backgroundColor: config.background ?? "black" }}>
+		<AbsoluteFill
+			className="media-container"
+			style={{ backgroundColor: config.background ?? "black" }}
+		>
 			{sortedLayers.map((layer) => {
 				const input = inputDataMap[layer.inputHandleId];
 				if (!input) return null;
@@ -127,7 +130,6 @@ const DynamicComposition: React.FC<{
 					top: animY,
 					width: layer.width ?? "auto",
 					height: layer.height ?? "auto",
-					// Web renderer supports transform, scale, rotate, opacity
 					transform: `rotate(${animRotation}deg) scale(${animScale})`,
 					opacity: animOpacity,
 				};
@@ -139,9 +141,7 @@ const DynamicComposition: React.FC<{
 						: fileData.processData?.dataUrl;
 				};
 
-				const inputSrc = getAssetUrl();
-				const assetSrc = inputSrc;
-				console.log({ inputSrc });
+				const assetSrc = getAssetUrl();
 				return (
 					<Sequence
 						from={from}
@@ -233,6 +233,8 @@ export class RemotionWebProcessorService {
 			signal,
 			licenseKey: "free-license", // Add mention for remotion in readme.
 			videoCodec: "vp9",
+			container: "webm",
+			transparent: true,
 			composition: {
 				id: "dynamic-video",
 				component: DynamicComposition,

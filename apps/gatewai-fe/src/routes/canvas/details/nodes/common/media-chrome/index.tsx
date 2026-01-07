@@ -30,12 +30,12 @@ const MediaShell = ({
 }) => (
 	<div
 		className={`
-        relative w-full max-w-4xl mx-auto overflow-hidden rounded-xl shadow-2xl bg-black group select-none ring-1 ring-white/10
+        relative w-full max-w-4xl mx-auto overflow-hidden rounded-xl shadow-2xl  group select-none ring-1 ring-white/10
         ${isAudio ? "h-24" : ""}
     `}
 	>
 		<MediaController
-			className="w-full h-full block"
+			className="w-full h-full block bg-transparent"
 			style={SHARED_MEDIA_THEME}
 			noHotkeys={isAudio}
 		>

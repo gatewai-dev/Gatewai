@@ -1,4 +1,3 @@
-import type { FileData } from "@gatewai/types";
 import type { NodeProps } from "@xyflow/react";
 import { AlertCircle, Download, InfoIcon, Loader2 } from "lucide-react";
 import { memo, useState } from "react";

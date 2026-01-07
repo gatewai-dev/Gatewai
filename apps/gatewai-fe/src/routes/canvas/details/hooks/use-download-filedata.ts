@@ -18,10 +18,11 @@ class DownloadError extends Error {
 const generateFilename = (
 	dataType: DataType,
 	fileData?: FileData,
+	forceExtension?: string,
 	id?: string,
 ): string => {
 	const timestamp = Date.now();
-	let extension = DATA_TYPE_EXTENSIONS[dataType] || "bin";
+	let extension = forceExtension ?? (DATA_TYPE_EXTENSIONS[dataType] || "bin");
 
 	// Try to get extension from entity
 	if (fileData?.entity?.name) {
@@ -39,11 +40,15 @@ const generateFilename = (
 		}
 	}
 
-	return `export-${id}-${timestamp}.${extension}`;
+	return `export-${id ?? ""}-${timestamp}.${extension}`;
 };
 
 function useDownloadFileData() {
-	return async (fileData: FileData, dataType: DataType) => {
+	return async (
+		fileData: FileData,
+		dataType: DataType,
+		forceExtension?: string,
+	) => {
 		let url: string | undefined;
 		let filename: string;
 		let shouldRevokeUrl = false;
@@ -52,7 +57,7 @@ function useDownloadFileData() {
 			// Priority 1: Use dataUrl if available
 			if (fileData.processData?.dataUrl) {
 				url = fileData.processData?.dataUrl;
-				filename = generateFilename(dataType, fileData);
+				filename = generateFilename(dataType, fileData, forceExtension);
 
 				// If it's a base64 data URL, we can use it directly
 				// Otherwise, we might need to fetch it

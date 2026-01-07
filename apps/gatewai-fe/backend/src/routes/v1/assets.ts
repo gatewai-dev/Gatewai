@@ -251,7 +251,7 @@ const assetsRouter = new Hono({
 			const end = parts[1] ? parseInt(parts[1], 10) : buffer.length - 1;
 			const chunksize = end - start + 1;
 
-			return c.body(buffer.slice(start, end + 1), 206, {
+			return c.body(buffer.subarray(start, end + 1), 206, {
 				"Content-Range": `bytes ${start}-${end}/${buffer.length}`,
 				"Accept-Ranges": "bytes",
 				"Content-Length": chunksize.toString(),
@@ -263,6 +263,7 @@ const assetsRouter = new Hono({
 			headers: {
 				"Content-Type": asset.mimeType,
 				"Accept-Ranges": "bytes",
+				"Cache-Control": "max-age=2592000",
 			},
 		});
 	})
