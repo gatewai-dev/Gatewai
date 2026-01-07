@@ -8,14 +8,15 @@ import type React from "react";
 import { useMemo } from "react";
 import {
 	AbsoluteFill,
-	Audio,
+	Html5Audio,
+	Html5Video,
 	Img,
 	interpolate,
 	Sequence,
 	spring,
+	staticFile,
 	useCurrentFrame,
 	useVideoConfig,
-	Video,
 } from "remotion";
 import { GetAssetEndpoint } from "@/utils/file";
 import type { NodeProcessorParams } from "./types";
@@ -141,22 +142,23 @@ const DynamicComposition: React.FC<{
 				};
 
 				const inputSrc = getAssetUrl();
-
+				const assetSrc = inputSrc ? staticFile(inputSrc) : null;
+				console.log({ inputSrc });
 				return (
 					<Sequence
 						from={from}
 						durationInFrames={layerDuration}
 						key={layer.inputHandleId}
 					>
-						{input.outputItem?.type === "Video" && inputSrc && (
-							<Video
-								src={inputSrc}
+						{input.outputItem?.type === "Video" && assetSrc && (
+							<Html5Video
+								src={assetSrc}
 								style={baseStyle}
 								volume={layer.volume ?? 1}
 							/>
 						)}
-						{input.outputItem?.type === "Image" && inputSrc && (
-							<Img src={inputSrc} style={baseStyle} />
+						{input.outputItem?.type === "Image" && assetSrc && (
+							<Img src={assetSrc} style={baseStyle} />
 						)}
 						{input.outputItem?.type === "Text" && (
 							<div
@@ -174,8 +176,8 @@ const DynamicComposition: React.FC<{
 								{String(input.outputItem.data)}
 							</div>
 						)}
-						{input.outputItem?.type === "Audio" && inputSrc && (
-							<Audio src={inputSrc} volume={layer.volume ?? 1} />
+						{input.outputItem?.type === "Audio" && assetSrc && (
+							<Html5Audio src={assetSrc} volume={layer.volume ?? 1} />
 						)}
 					</Sequence>
 				);
@@ -228,7 +230,6 @@ export class RemotionWebProcessorService {
 		);
 
 		const { getBlob } = await renderMediaOnWeb({
-			codec: "h264",
 			signal,
 			licenseKey: "free-license", // Add mention for remotion in readme.
 			composition: {

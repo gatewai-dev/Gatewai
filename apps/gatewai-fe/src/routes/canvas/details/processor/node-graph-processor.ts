@@ -17,8 +17,8 @@ import type { HandleEntityType } from "@/store/handles";
 import type { NodeEntityType } from "@/store/nodes";
 import { GetAssetEndpoint } from "@/utils/file";
 import { imageStore } from "./image-store";
-import { remotionService } from "./muxer-service";
 import { pixiProcessor } from "./pixi-service";
+import RemotionWorker from "./remotion.worker.ts?worker";
 import type {
 	ConnectedInput,
 	NodeProcessor,
@@ -807,14 +807,40 @@ export class NodeGraphProcessor extends EventEmitter {
 		this.registerProcessor(
 			"VideoCompositor",
 			async ({ node, inputs, signal }) => {
-				const config = node.config as VideoCompositorNodeConfig;
+				const config = node.config as unknown as VideoCompositorNodeConfig;
 				// Process with web renderer
 				const start = Date.now();
-				const result = await remotionService.processVideo(
-					config,
-					inputs,
-					signal,
-				);
+				const result = await new Promise<{
+					dataUrl: string;
+					width: number;
+					height: number;
+				}>((resolve, reject) => {
+					const worker = new RemotionWorker();
+					worker.postMessage({ config, inputDataMap: inputs });
+
+					// Handle cancellation
+					signal?.addEventListener("abort", () => {
+						worker.terminate();
+						reject(new Error("Video processing aborted"));
+					});
+
+					worker.postMessage({ config, inputDataMap: inputs });
+
+					worker.onmessage = (e) => {
+						const { type, result, error } = e.data;
+						if (type === "success") {
+							resolve(result);
+						} else {
+							reject(new Error(error));
+						}
+						worker.terminate();
+					};
+
+					worker.onerror = (err) => {
+						reject(err);
+						worker.terminate();
+					};
+				});
 				const end = Date.now();
 				console.log((end - start) / 1000);
 				const outputHandle = getFirstOutputHandle(node.id, "Video");
