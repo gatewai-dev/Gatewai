@@ -32,6 +32,7 @@ export class RemotionNodeProcessorService {
 		signal?: CancelSignal,
 	): Promise<{ dataUrl: string; width: number; height: number }> {
 		await this.init();
+
 		if (!this.serveUrl) {
 			throw new Error("Serve URL is missing.");
 		}
