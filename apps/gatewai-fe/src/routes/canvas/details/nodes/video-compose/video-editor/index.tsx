@@ -152,6 +152,8 @@ interface EditorContextType {
 	viewportHeight: number;
 	updateViewportWidth: (w: number) => void;
 	updateViewportHeight: (h: number) => void;
+	backgroundColor: string;
+	setBackgroundColor: (color: string) => void;
 
 	// Playback
 	fps: number;
@@ -242,8 +244,13 @@ const fontManager = FontManager.getInstance();
 const CompositionScene: React.FC<{
 	layers: ExtendedLayer[];
 }> = ({ layers }) => {
-	const { getTextData, getAssetUrl, viewportWidth, viewportHeight } =
-		useEditor();
+	const {
+		getTextData,
+		getAssetUrl,
+		viewportWidth,
+		viewportHeight,
+		backgroundColor,
+	} = useEditor();
 	const frame = useCurrentFrame();
 	const { fps } = useVideoConfig();
 
@@ -254,7 +261,7 @@ const CompositionScene: React.FC<{
 	);
 
 	return (
-		<AbsoluteFill style={{ backgroundColor: "transparent" }}>
+		<AbsoluteFill style={{ backgroundColor }}>
 			{sortedLayers.map((layer) => {
 				const src = getAssetUrl(layer.inputHandleId);
 				const textContent = getTextData(layer.inputHandleId);
@@ -1313,6 +1320,8 @@ const InspectorPanel: React.FC = () => {
 		viewportHeight,
 		updateViewportWidth,
 		updateViewportHeight,
+		backgroundColor,
+		setBackgroundColor,
 	} = useEditor();
 
 	const selectedLayer = layers.find((f) => f.id === selectedId);
@@ -1441,6 +1450,15 @@ const InspectorPanel: React.FC = () => {
 								))}
 							</SelectContent>
 						</Select>
+						<div className="space-y-1 mt-3">
+							<label className="text-[10px] text-gray-400 uppercase">
+								Background Color
+							</label>
+							<ColorInput
+								value={backgroundColor}
+								onChange={setBackgroundColor}
+							/>
+						</div>
 					</section>
 
 					<div className="flex flex-col items-center justify-center p-10 text-center border border-dashed border-white/10 rounded-lg bg-white/5">
@@ -1827,6 +1845,13 @@ export const VideoDesignerEditor: React.FC<VideoDesignerEditorProps> = ({
 		setViewportHeight(h);
 		setIsDirty(true);
 	};
+	const [backgroundColor, setBackgroundColorState] = useState(
+		nodeConfig.backgroundColor ?? "#000000",
+	);
+	const setBackgroundColor = (color: string) => {
+		setBackgroundColorState(color);
+		setIsDirty(true);
+	};
 	const [isDirty, setIsDirty] = useState(false);
 
 	// Playback & View
@@ -2121,7 +2146,12 @@ export const VideoDesignerEditor: React.FC<VideoDesignerEditorProps> = ({
 			},
 			{},
 		);
-		onSave({ layerUpdates, width: viewportWidth, height: viewportHeight });
+		onSave({
+			layerUpdates,
+			width: viewportWidth,
+			height: viewportHeight,
+			backgroundColor,
+		});
 		setIsDirty(false);
 	};
 
@@ -2155,6 +2185,8 @@ export const VideoDesignerEditor: React.FC<VideoDesignerEditorProps> = ({
 				viewportHeight,
 				updateViewportWidth,
 				updateViewportHeight,
+				backgroundColor,
+				setBackgroundColor,
 				fps: FPS,
 				durationInFrames,
 				currentFrame,
@@ -2181,7 +2213,14 @@ export const VideoDesignerEditor: React.FC<VideoDesignerEditorProps> = ({
 					{/* Viewport Area */}
 					<div
 						ref={containerRef}
-						className="flex-1 bg-neutral-950 relative overflow-hidden"
+						className="flex-1 relative overflow-hidden"
+						style={
+							{
+								"--checker-color": "rgba(255, 255, 255, 0.07)",
+								"--checker-size": "40px",
+								"--checker-half": "20px",
+							} as React.CSSProperties
+						}
 						onMouseDown={() => setSelectedId(null)}
 					>
 						{/* Subtle Grid Pattern */}
@@ -2204,7 +2243,7 @@ export const VideoDesignerEditor: React.FC<VideoDesignerEditorProps> = ({
 							}}
 						>
 							<div
-								className="shadow-2xl relative bg-black ring-1 ring-white/10"
+								className="shadow-2xl media-container relative bg-black ring-1 ring-white/10"
 								style={{ width: viewportWidth, height: viewportHeight }}
 							>
 								<Player
