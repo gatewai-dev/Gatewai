@@ -83,7 +83,11 @@ function NodePaletteContent({ templates }: { templates: NodeTemplateListRPC }) {
 							: "opacity-100 visible w-auto",
 					)}
 				>
-					{!isCollapsed && <SearchInput />}
+					{!isCollapsed && (
+						<div className="mr-0.5">
+							<SearchInput />
+						</div>
+					)}
 					<Separator className="opacity-50" />
 					<ScrollArea
 						ref={scrollRef}

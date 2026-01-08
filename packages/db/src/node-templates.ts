@@ -679,7 +679,7 @@ export async function SEED_createNodeTemplates(prisma: PrismaClient) {
 		},
 		{
 			type: NodeType.SpeechToText,
-			displayName: "Speech to Text",
+			displayName: "Audio Understanding",
 			description:
 				"Create text transcript of or extract context from an audio file",
 			category: "AI",

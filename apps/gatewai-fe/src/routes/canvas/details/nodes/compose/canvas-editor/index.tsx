@@ -105,7 +105,6 @@ import { Switch } from "@/components/ui/switch";
 import {
 	Tooltip,
 	TooltipContent,
-	TooltipProvider,
 	TooltipTrigger,
 } from "@/components/ui/tooltip";
 import { ColorInput } from "@/components/util/color-input";
@@ -114,8 +113,6 @@ import { useGetFontListQuery } from "@/store/fonts";
 import type { HandleEntityType } from "@/store/handles";
 import type { NodeEntityType } from "@/store/nodes";
 import { GetAssetEndpoint, GetFontAssetUrl } from "@/utils/file";
-
-// --- Types & Constants ---
 
 const BLEND_MODES = [
 	"source-over",
@@ -190,8 +187,6 @@ const useEditor = () => {
 	}
 	return context;
 };
-
-// --- Snapping Hook ---
 
 const useSnap = () => {
 	const { layers, updateLayers, viewportWidth, viewportHeight, setGuides } =
@@ -365,8 +360,6 @@ const useSnap = () => {
 	return { handleDragMove, handleDragEnd, handleTransformEnd };
 };
 
-// --- Common Components ---
-
 const CollapsibleSection: React.FC<{
 	title: string;
 	icon: React.ElementType;
@@ -397,7 +390,6 @@ const CollapsibleSection: React.FC<{
 	);
 };
 
-// --- Layer Components ---
 interface LayerProps {
 	layer: CompositorLayer;
 	onDragStart: (e: KonvaEventObject<DragEvent>) => void;
@@ -513,7 +505,6 @@ const TextLayer: React.FC<
 		setEditingLayerId(layer.id);
 	};
 
-	// --- FIX FOR TEXT HEIGHT/OVERFLOW ---
 	// Monitor properties that change text dimensions.
 	// Sync Konva's calculated height back to state and force Transformer update.
 	useEffect(() => {
@@ -659,12 +650,9 @@ const TextLayer: React.FC<
 	);
 };
 
-// --- Stage Components ---
-
 const TransformerComponent: React.FC = () => {
 	const { selectedId, layers, stageRef, mode, transformerRef } = useEditor();
 
-	// Effect to attach transformer to selected node
 	useEffect(() => {
 		if (
 			selectedId &&
@@ -689,13 +677,12 @@ const TransformerComponent: React.FC = () => {
 
 	const enabledAnchors = useMemo(() => {
 		if (selectedLayer?.type === "Text") {
-			// For text, we usually want width resizing only
 			return ["middle-left", "middle-right"];
 		}
 		if (selectedLayer?.type === "Image" && selectedLayer.lockAspect) {
 			return ["top-left", "top-right", "bottom-left", "bottom-right"];
 		}
-		return undefined; // All anchors
+		return undefined;
 	}, [selectedLayer]);
 
 	return (
@@ -732,7 +719,7 @@ const Guides: React.FC = () => {
 							? [guide.position, 0, guide.position, viewportHeight]
 							: [0, guide.position, viewportWidth, guide.position]
 					}
-					stroke="#ec4899" // Pink/Magenta for visibility
+					stroke="#ec4899"
 					strokeWidth={1}
 					dash={[4, 4]}
 				/>
@@ -918,7 +905,6 @@ const Canvas: React.FC = () => {
 			<KonvaLayer>
 				{sortedLayers.map((layer) => {
 					const props = {
-						key: layer.id,
 						layer,
 						onDragStart: () => setSelectedId(layer.id),
 						onDragMove: handleDragMove,
@@ -927,10 +913,10 @@ const Canvas: React.FC = () => {
 						onTransformEnd: handleTransformEnd,
 					};
 					if (layer.type === "Image") {
-						return <ImageLayer {...props} />;
+						return <ImageLayer key={layer.id} {...props} />;
 					}
 					if (layer.type === "Text") {
-						return <TextLayer {...props} layer={layer} />;
+						return <TextLayer key={layer.id} {...props} layer={layer} />;
 					}
 					return null;
 				})}
@@ -944,8 +930,6 @@ const Canvas: React.FC = () => {
 		</Stage>
 	);
 };
-
-// --- Layers Panel ---
 
 interface LayerItemProps {
 	layer: CompositorLayer;
@@ -978,10 +962,6 @@ const LayerItem: React.FC<LayerItemProps> = ({
 
 	const isSelected = layer.id === selectedId;
 	const isHidden = layer.opacity === 0;
-	// Simulate lock via a custom property or assumption.
-	// Since types are strict, we'll assume unlocked unless we add metadata support later.
-	// For now, visual only or if using opacity 0.5 as "locked" (not ideal).
-	// Let's implement Visibility Toggle using Opacity.
 
 	const toggleVisibility = (e: React.MouseEvent) => {
 		e.stopPropagation();
@@ -1045,7 +1025,6 @@ const LayerItem: React.FC<LayerItemProps> = ({
 const LayersPanel: React.FC = () => {
 	const { layers, updateLayers, selectedId, setSelectedId } = useEditor();
 
-	// Sort by zIndex (asc) for rendering logic, but reverse for display (top layer = top of list)
 	const sortedLayers = useMemo(
 		() => [...layers].sort((a, b) => (a.zIndex ?? 0) - (b.zIndex ?? 0)),
 		[layers],
@@ -1129,8 +1108,6 @@ const LayersPanel: React.FC = () => {
 	);
 };
 
-// --- Inspector Panel ---
-
 const InspectorPanel: React.FC = () => {
 	const { data: fontList } = useGetFontListQuery({});
 	const fontNames = useMemo(() => {
@@ -1212,7 +1189,6 @@ const InspectorPanel: React.FC = () => {
 	const isItalic = selectedLayer?.fontStyle?.includes("italic") ?? false;
 	const isUnderline = selectedLayer?.textDecoration === "underline";
 
-	// --- Global Canvas Settings ---
 	if (!selectedLayer) {
 		return (
 			<div className="w-72 border-l border-white/10 bg-[#0a0a0a] z-20 shadow-xl flex flex-col">
@@ -1274,7 +1250,6 @@ const InspectorPanel: React.FC = () => {
 		);
 	}
 
-	// --- Layer Settings ---
 	return (
 		<ScrollArea className="w-72 border-l border-white/10 bg-[#0a0a0a] z-20 shadow-xl">
 			<div className="flex items-center justify-between px-4 py-3 border-b border-white/10 bg-neutral-900/50 backdrop-blur h-14">
@@ -1568,7 +1543,6 @@ const InspectorPanel: React.FC = () => {
 	);
 };
 
-// --- Toolbar ---
 const Toolbar = React.memo<{
 	onSave: () => void;
 	onClose: () => void;
@@ -1681,8 +1655,6 @@ const Toolbar = React.memo<{
 		</div>
 	);
 });
-
-// --- Main Designer Component ---
 
 interface ImageDesignerEditorProps {
 	initialLayers: Map<

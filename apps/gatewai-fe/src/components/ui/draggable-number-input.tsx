@@ -13,6 +13,7 @@ interface DraggableNumberInputProps {
 	max?: number;
 	step?: number;
 	className?: string;
+	disabled?: boolean;
 }
 
 const DraggableNumberInput: React.FC<DraggableNumberInputProps> = ({
@@ -20,6 +21,7 @@ const DraggableNumberInput: React.FC<DraggableNumberInputProps> = ({
 	onChange,
 	label,
 	className,
+	disabled,
 	icon: Icon,
 	allowDecimal = false,
 	min,
@@ -68,6 +70,7 @@ const DraggableNumberInput: React.FC<DraggableNumberInputProps> = ({
 	const handleMouseDown = useCallback(
 		(e: React.MouseEvent) => {
 			e.preventDefault();
+			if (disabled) return;
 			setIsDragging(true);
 			const startX = e.clientX;
 			const startValue = value;
@@ -98,7 +101,7 @@ const DraggableNumberInput: React.FC<DraggableNumberInputProps> = ({
 			document.addEventListener("mouseup", handleMouseUp);
 			document.body.style.cursor = "ew-resize";
 		},
-		[value, onChange, step, min, max, allowDecimal],
+		[value, onChange, step, min, max, allowDecimal, disabled],
 	);
 
 	return (
@@ -111,7 +114,10 @@ const DraggableNumberInput: React.FC<DraggableNumberInputProps> = ({
 			<div className="group relative flex items-center bg-muted/40 rounded-md border border-input focus-within:ring-1 focus-within:ring-ring focus-within:border-transparent overflow-hidden h-8">
 				{Icon && (
 					<div
-						className="flex items-center justify-center w-8 h-full cursor-ew-resize hover:bg-accent/50 active:bg-accent transition-colors border-r border-border/50 text-muted-foreground hover:text-foreground"
+						className={cn(
+							"flex items-center justify-center w-8 h-full hover:bg-accent/50 active:bg-accent transition-colors border-r border-border/50 text-muted-foreground hover:text-foreground",
+							{ "cursor-ew-resize": !disabled },
+						)}
 						onMouseDown={handleMouseDown}
 						title="Drag to adjust"
 					>
@@ -121,6 +127,7 @@ const DraggableNumberInput: React.FC<DraggableNumberInputProps> = ({
 				<Input
 					id={`input-${label}`}
 					type="text"
+					disabled={disabled}
 					value={text}
 					onChange={(e) => setText(e.target.value)}
 					onBlur={handleBlur}
