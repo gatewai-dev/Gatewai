@@ -22,7 +22,6 @@ import type {
 	VideoCompositorLayer,
 } from "@gatewai/types";
 import { Player, type PlayerRef } from "@remotion/player";
-import { Background, BackgroundVariant } from "@xyflow/react";
 import {
 	ChevronDown,
 	Film,
@@ -69,6 +68,7 @@ import {
 	useVideoConfig,
 } from "remotion";
 import { z } from "zod";
+
 import { Button } from "@/components/ui/button";
 import { DraggableNumberInput } from "@/components/ui/draggable-number-input";
 import {
@@ -190,8 +190,8 @@ const useEditor = () => {
 
 // --- Constants ---
 const FPS = 24;
-const RULER_HEIGHT = 32;
-const TRACK_HEIGHT = 48; // Slightly taller for better touch targets
+const RULER_HEIGHT = 24;
+const TRACK_HEIGHT = 32; // Reduced for smaller screens
 const HEADER_WIDTH = 280;
 
 // --- Font Manager (Singleton) ---
@@ -1094,17 +1094,17 @@ const TimelinePanel: React.FC = () => {
 	};
 
 	return (
-		<div className="h-64 flex flex-col border-t border-white/10 bg-neutral-900/95 backdrop-blur-md shrink-0 select-none z-30 shadow-[0_-5px_20px_rgba(0,0,0,0.3)]">
+		<div className="h-48 flex flex-col border-t border-white/10 bg-neutral-900/95 backdrop-blur-md shrink-0 select-none z-30 shadow-[0_-5px_20px_rgba(0,0,0,0.3)]">
 			{/* 1. Fixed Toolbar */}
-			<div className="h-10 border-b border-white/5 flex items-center justify-between px-4 bg-white/5 shrink-0 z-40">
+			<div className="h-8 border-b border-white/5 flex items-center justify-between px-2 bg-white/5 shrink-0 z-40">
 				<div className="text-xs font-semibold text-gray-400 tracking-wider uppercase flex items-center gap-2">
 					<Layers className="w-4 h-4" /> Timeline
 				</div>
-				<div className="flex gap-2">
+				<div className="flex gap-1">
 					<Button
 						variant="ghost"
 						size="icon"
-						className="h-7 w-7 rounded-full hover:bg-white/10"
+						className="h-6 w-6 rounded-full hover:bg-white/10"
 						onClick={zoomTimelineOut}
 					>
 						<Minus className="h-3 w-3" />
@@ -1115,7 +1115,7 @@ const TimelinePanel: React.FC = () => {
 					<Button
 						variant="ghost"
 						size="icon"
-						className="h-7 w-7 rounded-full hover:bg-white/10"
+						className="h-6 w-6 rounded-full hover:bg-white/10"
 						onClick={zoomTimelineIn}
 					>
 						<Plus className="h-3 w-3" />
@@ -1924,7 +1924,7 @@ export const VideoDesignerEditor: React.FC<VideoDesignerEditorProps> = ({
 				const pointerY = e.clientY - rect.top;
 
 				const oldZoom = zoom;
-				const zoomSensitivity = 0.0015;
+				const zoomSensitivity = 0.003; // Increased sensitivity for faster zooming
 				const delta = -e.deltaY * zoomSensitivity;
 				const newZoom = Math.min(Math.max(oldZoom * Math.exp(delta), 0.1), 5);
 
@@ -2187,9 +2187,14 @@ export const VideoDesignerEditor: React.FC<VideoDesignerEditorProps> = ({
 						ref={containerRef}
 						className="flex-1 relative overflow-hidden"
 						onMouseDown={() => setSelectedId(null)}
+						style={{
+							backgroundColor: "#000000",
+							backgroundImage:
+								"radial-gradient(circle at 1px 1px, rgba(255,255,255,0.2) 1px, transparent 0)",
+							backgroundSize: "20px 20px",
+							backgroundPosition: "0 0",
+						}}
 					>
-						<Background className="z-10" variant={BackgroundVariant.Dots} />
-
 						<div
 							className="absolute origin-top-left"
 							style={{

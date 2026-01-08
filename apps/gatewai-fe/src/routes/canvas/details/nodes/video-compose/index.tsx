@@ -50,9 +50,7 @@ const VideoCompositorNodeComponent = memo(
 				// Get the first item (primary output)
 				const outputItem = selectedOutput.items[0];
 				const { type, data } = outputItem;
-				const config = node.config as unknown as VideoCompositorNodeConfig;
-				const extension = config.isTransparent ? "webm" : "mp4";
-				await downloadFileData(data as FileData, type, extension);
+				await downloadFileData(data as FileData, type);
 			} catch (err) {
 				const errorMessage =
 					err instanceof Error ? err.message : "An unknown error occurred";
