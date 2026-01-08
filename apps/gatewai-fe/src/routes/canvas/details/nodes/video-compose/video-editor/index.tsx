@@ -778,34 +778,32 @@ const Toolbar = React.memo<{
 			<div className="w-px h-4 bg-white/10 mx-0.5" />
 
 			<div className="flex bg-white/5 rounded-full p-0.5">
-				<TooltipProvider>
-					<Tooltip>
-						<TooltipTrigger asChild>
-							<Button
-								variant={mode === "select" ? "default" : "ghost"}
-								size="icon"
-								className={`rounded-full w-7 h-7`}
-								onClick={() => setMode("select")}
-							>
-								<MousePointer className="w-3.5 h-3.5" />
-							</Button>
-						</TooltipTrigger>
-						<TooltipContent>Select Tool</TooltipContent>
-					</Tooltip>
-					<Tooltip>
-						<TooltipTrigger asChild>
-							<Button
-								variant={mode === "pan" ? "default" : "ghost"}
-								size="icon"
-								className={`rounded-full w-7 h-7`}
-								onClick={() => setMode("pan")}
-							>
-								<Hand className="w-3.5 h-3.5" />
-							</Button>
-						</TooltipTrigger>
-						<TooltipContent>Pan Tool</TooltipContent>
-					</Tooltip>
-				</TooltipProvider>
+				<Tooltip>
+					<TooltipTrigger asChild>
+						<Button
+							variant={mode === "select" ? "default" : "ghost"}
+							size="icon"
+							className={`rounded-full w-7 h-7`}
+							onClick={() => setMode("select")}
+						>
+							<MousePointer className="w-3.5 h-3.5" />
+						</Button>
+					</TooltipTrigger>
+					<TooltipContent>Select Tool</TooltipContent>
+				</Tooltip>
+				<Tooltip>
+					<TooltipTrigger asChild>
+						<Button
+							variant={mode === "pan" ? "default" : "ghost"}
+							size="icon"
+							className={`rounded-full w-7 h-7`}
+							onClick={() => setMode("pan")}
+						>
+							<Hand className="w-3.5 h-3.5" />
+						</Button>
+					</TooltipTrigger>
+					<TooltipContent>Pan Tool</TooltipContent>
+				</Tooltip>
 			</div>
 
 			<Menubar className="border-none bg-transparent h-auto p-0">

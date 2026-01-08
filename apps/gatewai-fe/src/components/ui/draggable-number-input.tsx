@@ -1,4 +1,5 @@
 import { useCallback, useEffect, useState } from "react";
+import { cn } from "@/lib/utils";
 import { Input } from "./input";
 import { Label } from "./label";
 
@@ -11,12 +12,14 @@ interface DraggableNumberInputProps {
 	min?: number;
 	max?: number;
 	step?: number;
+	className?: string;
 }
 
 const DraggableNumberInput: React.FC<DraggableNumberInputProps> = ({
 	value,
 	onChange,
 	label,
+	className,
 	icon: Icon,
 	allowDecimal = false,
 	min,
@@ -99,7 +102,7 @@ const DraggableNumberInput: React.FC<DraggableNumberInputProps> = ({
 	);
 
 	return (
-		<div className="flex flex-col space-y-1">
+		<div className={cn("flex flex-col space-y-1", className)}>
 			{label && (
 				<Label className="text-[10px] text-muted-foreground uppercase font-semibold">
 					{label}
