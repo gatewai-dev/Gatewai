@@ -161,7 +161,7 @@ const TextMergerNodeConfigComponent = memo(
 										<FormControl>
 											<Textarea
 												{...field}
-												placeholder="Enter custom separator (e.g. ' | ' or '\n')"
+												placeholder="Enter custom separator (e.g. ' | ' or '---')"
 												className="bg-card font-mono text-sm resize-none"
 											/>
 										</FormControl>

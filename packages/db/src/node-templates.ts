@@ -209,7 +209,7 @@ export async function SEED_createNodeTemplates(prisma: PrismaClient) {
 					},
 				],
 			},
-			defaultConfig: { content: "" },
+			defaultConfig: { content: "\n" },
 		},
 		{
 			type: NodeType.TextMerger,
