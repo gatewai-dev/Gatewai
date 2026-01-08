@@ -19,8 +19,6 @@ import {
 import { GetAssetEndpoint } from "@/utils/file";
 import type { NodeProcessorParams } from "./types";
 
-// Types for supported Animations
-
 const DynamicComposition: React.FC<{
 	config: VideoCompositorNodeConfig;
 	inputDataMap: NodeProcessorParams["inputs"];
@@ -29,38 +27,38 @@ const DynamicComposition: React.FC<{
 		fps,
 		width: viewportWidth,
 		height: viewportHeight,
+		durationInFrames: totalDuration,
 	} = useVideoConfig();
 	const frame = useCurrentFrame();
 
-	// Note: z-index is unsupported. We solve this by ordering the DOM elements.
 	const layers = Object.values(
 		config.layerUpdates ?? {},
 	) as VideoCompositorLayer[];
+
 	const sortedLayers = useMemo(
 		() => [...layers].sort((a, b) => (a.zIndex ?? 0) - (b.zIndex ?? 0)),
 		[layers],
 	);
 
 	return (
-		<AbsoluteFill
-			className="media-container"
-			style={{ backgroundColor: config.background ?? "black" }}
-		>
+		<AbsoluteFill style={{ backgroundColor: config.background ?? "#000000" }}>
 			{sortedLayers.map((layer) => {
 				const input = inputDataMap[layer.inputHandleId];
 				if (!input) return null;
 
-				const from = layer.startFrame ?? 0;
-				const layerDuration = layer.durationInFrames ?? 0;
-				const relativeFrame = frame - from;
+				const startFrame = layer.startFrame ?? 0;
+				const layerDuration = layer.durationInFrames ?? totalDuration;
+				const relativeFrame = frame - startFrame;
 
-				// Animation State
+				// Initial Properties
 				let animX = layer.x ?? 0;
 				let animY = layer.y ?? 0;
 				let animScale = layer.scale ?? 1;
 				let animRotation = layer.rotation ?? 0;
 				let animOpacity = layer.opacity ?? 1;
+				const animVolume = layer.volume ?? 1;
 
+				// Match Editor Animation Logic
 				(layer.animations ?? []).forEach((anim) => {
 					const durFrames = anim.value * fps;
 					const isOut = anim.type.includes("-out");
@@ -84,115 +82,107 @@ const DynamicComposition: React.FC<{
 						case "fade-out":
 							animOpacity *= 1 - progress;
 							break;
-						case "slide-in-left": {
-							const dirX = -1;
-							animX += dirX * viewportWidth * (1 - progress);
-							break;
-						}
+						case "slide-in-left":
 						case "slide-in-right": {
-							const dirX = 1;
+							const dirX = anim.type === "slide-in-left" ? -1 : 1;
 							animX += dirX * viewportWidth * (1 - progress);
 							break;
 						}
-						case "slide-in-top": {
-							const dirY = -1;
-							animY += dirY * viewportHeight * (1 - progress);
-							break;
-						}
+						case "slide-in-top":
 						case "slide-in-bottom": {
-							const dirY = 1;
+							const dirY = anim.type === "slide-in-top" ? -1 : 1;
 							animY += dirY * viewportHeight * (1 - progress);
 							break;
 						}
 						case "zoom-in":
-							animScale *= progress;
+							animScale *= progress; // Matches editor interpolate(progress, [0,1], [0,1])
 							break;
 						case "zoom-out":
 							animScale *= 1 - progress;
 							break;
 						case "rotate-cw":
-							animRotation += 360 * progress;
-							break;
-						case "rotate-ccw":
-							animRotation -= 360 * progress;
-							break;
-						case "bounce": {
-							const b = spring({
-								frame: relativeFrame - startAnimFrame,
-								fps,
-								config: { damping: 10, stiffness: 100 },
-								durationInFrames: durFrames,
-							});
-							animScale *= b;
+						case "rotate-ccw": {
+							const dirRot = anim.type === "rotate-cw" ? 1 : -1;
+							animRotation += dirRot * 360 * progress;
 							break;
 						}
-						case "shake":
-							animX += 15 * Math.sin(relativeFrame * 0.5) * (1 - progress);
+						case "bounce": {
+							const bounceProgress = spring({
+								frame: relativeFrame - startAnimFrame,
+								fps,
+								config: { damping: 10, mass: 0.5, stiffness: 100 },
+								durationInFrames: durFrames,
+							});
+							animScale *= bounceProgress;
 							break;
+						}
+						case "shake": {
+							const intensity = 20;
+							const frequency = 10;
+							const shakeProgress = 1 - progress;
+							animX +=
+								intensity *
+								Math.sin(
+									(relativeFrame * frequency * 2 * Math.PI) / durFrames,
+								) *
+								shakeProgress;
+							break;
+						}
 					}
 				});
 
-				const baseStyle: React.CSSProperties = {
+				const style: React.CSSProperties = {
 					position: "absolute",
 					left: animX,
 					top: animY,
-					width: layer.width ?? "auto",
-					height: layer.height ?? "auto",
+					width: layer.width,
+					height: layer.height,
 					transform: `rotate(${animRotation}deg) scale(${animScale})`,
 					opacity: animOpacity,
+					textAlign: layer.align as any,
 				};
 
 				const getAssetUrl = () => {
 					const fileData = input.outputItem?.data as FileData;
-					return fileData.entity?.id
+					return fileData?.entity?.id
 						? GetAssetEndpoint(fileData.entity)
-						: fileData.processData?.dataUrl;
+						: fileData?.processData?.dataUrl;
 				};
 
 				const assetSrc = getAssetUrl();
+				const textContent =
+					input.outputItem?.type === "Text"
+						? String(input.outputItem.data)
+						: "";
+
 				return (
 					<Sequence
-						from={from}
-						durationInFrames={layerDuration}
 						key={layer.inputHandleId}
+						from={startFrame}
+						durationInFrames={Math.max(1, layerDuration)}
 					>
 						{input.outputItem?.type === "Video" && assetSrc && (
-							<Video
-								src={assetSrc}
-								style={{ ...baseStyle, objectFit: "cover" }}
-								volume={layer.volume ?? 1}
-							/>
+							<Video src={assetSrc} style={{ ...style }} volume={animVolume} />
 						)}
 						{input.outputItem?.type === "Image" && assetSrc && (
-							<Img
-								src={assetSrc}
-								style={{ ...baseStyle, objectFit: "cover" }}
-							/>
+							<Img src={assetSrc} style={{ ...style, objectFit: "cover" }} />
+						)}
+						{input.outputItem?.type === "Audio" && assetSrc && (
+							<Audio src={assetSrc} volume={animVolume} />
 						)}
 						{input.outputItem?.type === "Text" && (
 							<div
 								style={{
-									...baseStyle,
-									fontFamily: layer.fontFamily ?? "sans-serif",
-									fontSize: `${layer.fontSize ?? 16}px`,
-									fontStyle: layer.fontStyle,
-									textDecoration: layer.textDecoration,
-									color: layer.fill ?? "white",
-									textAlign: layer.align ?? "left",
-									display: "flex",
-									flexDirection: "column",
-									justifyContent: "center",
-									alignItems: "flex-start",
-									lineHeight: 1.2,
-									whiteSpace: "pre-wrap",
-									textShadow: "0 2px 4px rgba(0,0,0,0.1)",
+									...style,
+									color: layer.fill,
+									fontSize: layer.fontSize,
+									fontFamily: layer.fontFamily,
+									lineHeight: layer.lineHeight,
+									whiteSpace: "nowrap",
 								}}
 							>
-								{String(input.outputItem.data)}
+								{textContent}
 							</div>
-						)}
-						{input.outputItem?.type === "Audio" && assetSrc && (
-							<Audio src={assetSrc} volume={layer.volume ?? 1} />
 						)}
 					</Sequence>
 				);
@@ -211,56 +201,21 @@ export class RemotionWebProcessorService {
 		const height = config.height ?? 720;
 		const fps = config.FPS ?? 24;
 
-		// Ensure layerUpdates exists; if not provided (e.g., user didn't open editor), generate defaults based on inputs
-		const layerUpdates: Record<string, VideoCompositorLayer> = {
-			...(config.layerUpdates ?? {}),
-		};
-
-		// Create a mutable copy of layerUpdates for adjustments
 		const layerUpdatesCopy: Record<string, VideoCompositorLayer> = {};
 		const mediaPromises: Promise<void>[] = [];
-		const inputDurations: number[] = [];
 
-		for (const layerKey in layerUpdates) {
-			const layer = layerUpdates[layerKey];
-			// Shallow copy the layer to allow modifications without affecting the original
-			layerUpdatesCopy[layerKey] = { ...layer };
+		// Initialize layerUpdatesCopy from existing config or create defaults
+		const hasConfigLayers =
+			config.layerUpdates && Object.keys(config.layerUpdates).length > 0;
 
-			const input = inputDataMap[layer.inputHandleId];
-			if (!input?.outputItem) continue;
+		if (hasConfigLayers) {
+			for (const layerKey in config.layerUpdates) {
+				const layer = config.layerUpdates[layerKey];
+				layerUpdatesCopy[layerKey] = { ...layer };
 
-			const item = input.outputItem;
+				const input = inputDataMap[layer.inputHandleId];
+				if (!input?.outputItem) continue;
 
-			// Handle duration adjustments for Video or Audio
-			if (item.type === "Video" || item.type === "Audio") {
-				const promise = this.getMediaDurationAsSec(
-					item.data as FileData,
-					item.type,
-				).then((durSec) => {
-					const actualFrames = Math.floor(durSec * fps);
-					// Use specified duration if provided, but clamp to actual media length
-					let durationInFrames = actualFrames;
-					if (layer.durationInFrames != null) {
-						durationInFrames = Math.min(layer.durationInFrames, actualFrames);
-					}
-					layerUpdatesCopy[layerKey].durationInFrames = Math.max(
-						1,
-						durationInFrames,
-					); // Ensure at least 1 frame
-				});
-				mediaPromises.push(promise);
-			} else {
-				// For Images/Text, default to 5 seconds if not specified
-				if (layer.durationInFrames == null) {
-					layerUpdatesCopy[layerKey].durationInFrames = fps * 5;
-				}
-			}
-		}
-
-		if (Object.keys(layerUpdates).length === 0) {
-			for (const inputHandleId in inputDataMap) {
-				const input = inputDataMap[inputHandleId];
-				if (!input || !input.outputItem) continue;
 				const item = input.outputItem;
 				if (item.type === "Video" || item.type === "Audio") {
 					const promise = this.getMediaDurationAsSec(
@@ -268,39 +223,77 @@ export class RemotionWebProcessorService {
 						item.type,
 					).then((durSec) => {
 						const actualFrames = Math.floor(durSec * fps);
-						return Math.max(1, actualFrames);
+						// Force clamp: never allow layer duration to be longer than the actual file
+						const requestedDuration = layer.durationInFrames ?? actualFrames;
+						layerUpdatesCopy[layerKey].durationInFrames = Math.max(
+							1,
+							Math.min(requestedDuration, actualFrames),
+						);
 					});
-					mediaPromises.push(
-						promise.then((d) => {
-							inputDurations.push(d);
-						}),
-					);
+					mediaPromises.push(promise);
+				} else if (layer.durationInFrames == null) {
+					layerUpdatesCopy[layerKey].durationInFrames = fps * 5;
+				}
+			}
+		} else {
+			// Logic for generating default layers when no config exists
+			let zIndex = 0;
+			for (const inputHandleId in inputDataMap) {
+				const input = inputDataMap[inputHandleId];
+				if (!input?.outputItem) continue;
+
+				const item = input.outputItem;
+				const itemType = item.type;
+
+				// Create a base default layer
+				const defaultLayer: VideoCompositorLayer = {
+					inputHandleId,
+					zIndex:
+						itemType === "Text" || itemType === "Image"
+							? 100 + zIndex++
+							: zIndex++,
+					startFrame: 0,
+					x: 0,
+					y: 0,
+					scale: 1,
+					rotation: 0,
+					opacity: 1,
+					volume: itemType === "Video" || itemType === "Audio" ? 1 : undefined,
+				};
+
+				if (itemType === "Video" || itemType === "Audio") {
+					const promise = this.getMediaDurationAsSec(
+						item.data as FileData,
+						itemType,
+					).then((durSec) => {
+						defaultLayer.durationInFrames = Math.max(
+							1,
+							Math.floor(durSec * fps),
+						);
+						layerUpdatesCopy[inputHandleId] = defaultLayer;
+					});
+					mediaPromises.push(promise);
 				} else {
-					inputDurations.push(fps * 5);
+					defaultLayer.durationInFrames = fps * 5;
+					layerUpdatesCopy[inputHandleId] = defaultLayer;
 				}
 			}
 		}
 
-		// Wait for all media duration fetches to complete
 		await Promise.all(mediaPromises);
 
-		// Create a copy of config with updated layers
-		const configCopy = {
-			...config,
-			layerUpdates: layerUpdatesCopy,
-		};
-
-		// Calculate total composition duration as the max end frame across all layers
-		let totalDuration = Math.max(
+		// Calculate total duration based on the clamped layers
+		const totalDuration = Math.max(
 			...Object.values(layerUpdatesCopy).map(
 				(l) => (l.startFrame ?? 0) + (l.durationInFrames ?? 0),
 			),
-			1, // Ensure at least 1 frame
+			1,
 		);
 
-		if (Object.keys(layerUpdatesCopy).length === 0) {
-			totalDuration = Math.max(...inputDurations, 1);
-		}
+		const finalConfig = {
+			...config,
+			layerUpdates: layerUpdatesCopy,
+		};
 
 		const { getBlob } = await renderMediaOnWeb({
 			signal,
@@ -312,9 +305,9 @@ export class RemotionWebProcessorService {
 				fps,
 				width,
 				height,
-				defaultProps: { config: configCopy, inputDataMap },
+				defaultProps: { config: finalConfig, inputDataMap },
 			},
-			inputProps: { config: configCopy, inputDataMap },
+			inputProps: { config: finalConfig, inputDataMap },
 		});
 
 		if (signal?.aborted) throw new Error("Aborted");
@@ -327,27 +320,24 @@ export class RemotionWebProcessorService {
 		fileData: FileData,
 		type: "Video" | "Audio",
 	): Promise<number> {
-		// Check for pre-existing duration metadata (in milliseconds)
 		const existingDurationMs =
 			fileData?.entity?.duration ?? fileData.processData?.duration;
 		if (existingDurationMs) {
 			return Number(existingDurationMs) / 1000;
 		}
 
-		// Fallback to loading the media element to get duration
 		const url = fileData.entity?.id
 			? GetAssetEndpoint(fileData.entity)
 			: fileData.processData?.dataUrl;
 		if (!url) {
-			throw new Error("Missing source URL for media duration retrieval");
+			return 0;
 		}
 
-		return new Promise((resolve, reject) => {
+		return new Promise((resolve) => {
 			const el = document.createElement(type === "Video" ? "video" : "audio");
 			el.src = url;
-			el.onloadedmetadata = () => resolve(el.duration || 0); // Fallback to 0 if duration is NaN or undefined
-			el.onerror = (err) =>
-				reject(new Error(`Failed to load media metadata: ${err}`));
+			el.onloadedmetadata = () => resolve(el.duration || 0);
+			el.onerror = () => resolve(0); // Resolve to 0 rather than crashing the whole render
 		});
 	}
 }

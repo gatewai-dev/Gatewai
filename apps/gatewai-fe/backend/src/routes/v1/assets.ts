@@ -189,7 +189,9 @@ const assetsRouter = new Hono({
 					key,
 					signedUrl,
 					isUploaded: true,
-					duration: durationInSec ? durationInSec * 1000 : undefined,
+					duration: durationInSec
+						? Math.round(durationInSec * 1000)
+						: undefined,
 					size: fileSize,
 					signedUrlExp,
 					width,

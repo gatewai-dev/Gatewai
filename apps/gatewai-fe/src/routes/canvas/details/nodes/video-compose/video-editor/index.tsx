@@ -21,6 +21,7 @@ import type {
 	OutputItem,
 	VideoCompositorLayer,
 } from "@gatewai/types";
+import { Video } from "@remotion/media";
 import { Player, type PlayerRef } from "@remotion/player";
 import {
 	ChevronDown,
@@ -66,7 +67,6 @@ import {
 	useCurrentFrame,
 	useVideoConfig,
 } from "remotion";
-
 import { Button } from "@/components/ui/button";
 import { DraggableNumberInput } from "@/components/ui/draggable-number-input";
 import { Label } from "@/components/ui/label";
@@ -126,6 +126,7 @@ export interface VideoAnimation {
 
 interface ExtendedLayer extends VideoCompositorLayer {
 	animations?: VideoAnimation[];
+	maxDurationInFrames?: number;
 }
 
 interface EditorContextType {
@@ -355,11 +356,7 @@ const CompositionScene: React.FC<{
 						durationInFrames={layer.durationInFrames}
 					>
 						{layer.type === "Video" && src && (
-							<OffthreadVideo
-								src={src}
-								style={{ ...style, objectFit: "cover" }}
-								volume={animVolume}
-							/>
+							<Video src={src} style={{ ...style }} volume={animVolume} />
 						)}
 						{layer.type === "Image" && src && (
 							<Img src={src} style={{ ...style, objectFit: "cover" }} />
@@ -374,11 +371,8 @@ const CompositionScene: React.FC<{
 									color: layer.fill,
 									fontSize: layer.fontSize,
 									fontFamily: layer.fontFamily,
-									lineHeight: 1.2,
-									display: "flex",
-									alignItems: "flex-start",
-									whiteSpace: "pre-wrap",
-									textShadow: "0 2px 4px rgba(0,0,0,0.1)",
+									lineHeight: layer.lineHeight,
+									whiteSpace: "nowrap",
 								}}
 							>
 								{textContent}
@@ -443,6 +437,13 @@ const InteractionOverlay: React.FC = () => {
 		layerId?: string,
 		anchor?: "tl" | "tr" | "bl" | "br",
 	) => {
+		if (e.button === 1) {
+			e.preventDefault();
+			setIsPanning(true);
+			setDragStart({ x: e.clientX, y: e.clientY });
+			setInitialPan({ x: pan.x, y: pan.y });
+			return;
+		}
 		if (e.button !== 0) return;
 		e.stopPropagation();
 
@@ -623,8 +624,11 @@ const InteractionOverlay: React.FC = () => {
 		setIsPanning(false);
 	};
 
-	const cursorStyle =
-		mode === "pan" ? (isPanning ? "grabbing" : "grab") : "default";
+	const cursorStyle = isPanning
+		? "grabbing"
+		: mode === "pan"
+			? "grab"
+			: "default";
 
 	return (
 		<div
@@ -1068,7 +1072,11 @@ const TimelinePanel: React.FC = () => {
 		const onMove = (moveEv: MouseEvent) => {
 			const diffPx = moveEv.clientX - startX;
 			const diffFrames = Math.round(diffPx / pixelsPerFrame);
-			const newDuration = Math.max(1, initialDuration + diffFrames);
+			let newDuration = Math.max(1, initialDuration + diffFrames);
+			const layer = layers.find((l) => l.id === layerId);
+			if (layer?.maxDurationInFrames) {
+				newDuration = Math.min(newDuration, layer.maxDurationInFrames);
+			}
 			updateLayers(
 				(prev) =>
 					prev.map((l) =>
@@ -2056,6 +2064,10 @@ export const VideoDesignerEditor: React.FC<VideoDesignerEditorProps> = ({
 					width: saved?.width ?? pData?.width ?? 1280,
 					height: saved?.height ?? pData?.height ?? 720,
 					lockAspect: saved?.lockAspect ?? true,
+					maxDurationInFrames:
+						item.type === "Video" && durationMs > 0
+							? calculatedDurationFrames
+							: undefined,
 				});
 			} else if (item.type === "Audio") {
 				loaded.push({
@@ -2065,6 +2077,8 @@ export const VideoDesignerEditor: React.FC<VideoDesignerEditorProps> = ({
 					height: 0,
 					width: 0,
 					lockAspect: false,
+					maxDurationInFrames:
+						durationMs > 0 ? calculatedDurationFrames : undefined,
 				});
 			}
 		});
@@ -2207,9 +2221,9 @@ export const VideoDesignerEditor: React.FC<VideoDesignerEditorProps> = ({
 						className="flex-1 relative overflow-hidden"
 						onMouseDown={() => setSelectedId(null)}
 						style={{
-							backgroundColor: "#050505",
+							backgroundColor: "#0F0F0F",
 							backgroundImage:
-								"radial-gradient(circle at 1px 1px, rgba(255,255,255,0.1) 1px, transparent 0)",
+								"radial-gradient(circle at 1px 1px, rgba(255,255,255,0.2) 1px, transparent 0)",
 							backgroundSize: "24px 24px",
 						}}
 					>
