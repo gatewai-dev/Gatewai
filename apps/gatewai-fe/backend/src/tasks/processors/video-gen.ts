@@ -141,6 +141,7 @@ const videoGenProcessor: NodeProcessor = async ({ node, data }) => {
 				name: fileName,
 				bucket,
 				key,
+				size: fileBuffer.length,
 				signedUrl,
 				signedUrlExp,
 				mimeType: contentType,

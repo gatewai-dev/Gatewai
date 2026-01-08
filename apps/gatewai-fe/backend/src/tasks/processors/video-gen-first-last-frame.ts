@@ -143,6 +143,7 @@ const videoGenFirstLastFrameProcessor: NodeProcessor = async ({
 			data: {
 				name: fileName,
 				bucket,
+				size: fileBuffer.length,
 				key,
 				signedUrl,
 				signedUrlExp,

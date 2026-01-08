@@ -84,18 +84,26 @@ const DynamicComposition: React.FC<{
 						case "fade-out":
 							animOpacity *= 1 - progress;
 							break;
-						case "slide-in-left":
-							animX += -viewportWidth * (1 - progress);
+						case "slide-in-left": {
+							const dirX = -1;
+							animX += dirX * viewportWidth * (1 - progress);
 							break;
-						case "slide-in-right":
-							animX += viewportWidth * (1 - progress);
+						}
+						case "slide-in-right": {
+							const dirX = 1;
+							animX += dirX * viewportWidth * (1 - progress);
 							break;
-						case "slide-in-top":
-							animY += -viewportHeight * (1 - progress);
+						}
+						case "slide-in-top": {
+							const dirY = -1;
+							animY += dirY * viewportHeight * (1 - progress);
 							break;
-						case "slide-in-bottom":
-							animY += viewportHeight * (1 - progress);
+						}
+						case "slide-in-bottom": {
+							const dirY = 1;
+							animY += dirY * viewportHeight * (1 - progress);
 							break;
+						}
 						case "zoom-in":
 							animScale *= progress;
 							break;
@@ -151,12 +159,15 @@ const DynamicComposition: React.FC<{
 						{input.outputItem?.type === "Video" && assetSrc && (
 							<Video
 								src={assetSrc}
-								style={baseStyle}
+								style={{ ...baseStyle, objectFit: "cover" }}
 								volume={layer.volume ?? 1}
 							/>
 						)}
 						{input.outputItem?.type === "Image" && assetSrc && (
-							<Img src={assetSrc} style={baseStyle} />
+							<Img
+								src={assetSrc}
+								style={{ ...baseStyle, objectFit: "cover" }}
+							/>
 						)}
 						{input.outputItem?.type === "Text" && (
 							<div
@@ -171,6 +182,10 @@ const DynamicComposition: React.FC<{
 									display: "flex",
 									flexDirection: "column",
 									justifyContent: "center",
+									alignItems: "flex-start",
+									lineHeight: 1.2,
+									whiteSpace: "pre-wrap",
+									textShadow: "0 2px 4px rgba(0,0,0,0.1)",
 								}}
 							>
 								{String(input.outputItem.data)}
@@ -196,37 +211,130 @@ export class RemotionWebProcessorService {
 		const height = config.height ?? 720;
 		const fps = config.FPS ?? 24;
 
-		const layers = Object.values(
-			config.layerUpdates ?? {},
-		) as VideoCompositorLayer[];
-		const mediaDurationPromises: Promise<void>[] = [];
+		// Ensure layerUpdates exists; if not provided (e.g., user didn't open editor), generate defaults based on inputs
+		const layerUpdates: Record<string, VideoCompositorLayer> =
+			config.layerUpdates ?? {};
 
-		for (const layer of layers) {
+		// If no layer updates are provided, create default layers for all inputs
+		if (Object.keys(layerUpdates).length === 0) {
+			let maxZ = 0; // Start zIndex from 0 and increment for stacking
+			const inputKeys = Object.keys(inputDataMap).sort();
+			for (const inputHandleId of inputKeys) {
+				const input = inputDataMap[inputHandleId];
+				if (!input?.outputItem) continue;
+
+				const item = input.outputItem;
+				const fileData = item.data as FileData;
+				const processData = fileData.processData;
+
+				// Default dimensions: use processData if available, else full viewport
+				let defaultWidth = processData?.width ?? width;
+				let defaultHeight = processData?.height ?? height;
+
+				// Center position by default
+				let defaultX = (width - defaultWidth) / 2;
+				let defaultY = (height - defaultHeight) / 2;
+
+				const defaultLayer: VideoCompositorLayer = {
+					inputHandleId,
+					x: defaultX,
+					y: defaultY,
+					width: defaultWidth,
+					height: defaultHeight,
+					scale: 1,
+					rotation: 0,
+					opacity: 1,
+					zIndex: ++maxZ,
+					startFrame: 0,
+					// durationInFrames will be determined later based on media or default
+				};
+
+				// Type-specific defaults
+				if (item.type === "Text") {
+					defaultLayer.fontFamily = "sans-serif";
+					defaultLayer.fontSize = 60;
+					defaultLayer.fill = "white";
+					defaultLayer.align = "center";
+					// Override dimensions for text
+					defaultWidth = 600;
+					defaultHeight = 200;
+					defaultLayer.width = defaultWidth;
+					defaultLayer.height = defaultHeight;
+					defaultX = (width - defaultWidth) / 2;
+					defaultY = (height - defaultHeight) / 2;
+					defaultLayer.x = defaultX;
+					defaultLayer.y = defaultY;
+				} else if (item.type === "Audio") {
+					defaultLayer.volume = 1;
+					// Audio has no visual component
+					defaultLayer.width = 0;
+					defaultLayer.height = 0;
+					defaultLayer.x = 0;
+					defaultLayer.y = 0;
+				} else if (item.type === "Video" || item.type === "Image") {
+					defaultLayer.volume = item.type === "Video" ? 1 : undefined;
+					// Use full size if no processData, but centered if smaller
+				}
+
+				layerUpdates[inputHandleId] = defaultLayer;
+			}
+		}
+
+		// Create a mutable copy of layerUpdates for adjustments
+		const layerUpdatesCopy: Record<string, VideoCompositorLayer> = {};
+		const mediaPromises: Promise<void>[] = [];
+
+		for (const layerKey in layerUpdates) {
+			const layer = layerUpdates[layerKey];
+			// Shallow copy the layer to allow modifications without affecting the original
+			layerUpdatesCopy[layerKey] = { ...layer };
+
 			const input = inputDataMap[layer.inputHandleId];
-			if (!input) continue;
+			if (!input?.outputItem) continue;
 
-			if (layer.durationInFrames == null) {
-				if (
-					input.outputItem?.type === "Video" ||
-					input.outputItem?.type === "Audio"
-				) {
-					const promise = this.getMediaDuration(
-						input.outputItem.data as FileData,
-						input.outputItem.type,
-					).then((durSec) => {
-						layer.durationInFrames = Math.floor(durSec * fps);
-					});
-					mediaDurationPromises.push(promise);
-				} else {
-					layer.durationInFrames = 150; // Default 5s at 30fps if unknown
+			const item = input.outputItem;
+
+			// Handle duration adjustments for Video or Audio
+			if (item.type === "Video" || item.type === "Audio") {
+				const promise = this.getMediaDurationAsSec(
+					item.data as FileData,
+					item.type,
+				).then((durSec) => {
+					const actualFrames = Math.floor(durSec * fps);
+					// Use specified duration if provided, but clamp to actual media length
+					let durationInFrames = actualFrames;
+					if (layer.durationInFrames != null) {
+						durationInFrames = Math.min(layer.durationInFrames, actualFrames);
+					}
+					layerUpdatesCopy[layerKey].durationInFrames = Math.max(
+						1,
+						durationInFrames,
+					); // Ensure at least 1 frame
+				});
+				mediaPromises.push(promise);
+			} else {
+				// For Images/Text, default to 5 seconds if not specified
+				if (layer.durationInFrames == null) {
+					layerUpdatesCopy[layerKey].durationInFrames = fps * 5;
 				}
 			}
 		}
 
-		await Promise.all(mediaDurationPromises);
+		// Wait for all media duration fetches to complete
+		await Promise.all(mediaPromises);
+
+		// Create a copy of config with updated layers
+		const configCopy = {
+			...config,
+			layerUpdates: layerUpdatesCopy,
+		};
+
+		// Calculate total composition duration as the max end frame across all layers
 		const totalDuration = Math.max(
-			...layers.map((l) => (l.startFrame ?? 0) + (l.durationInFrames ?? 0)),
-			1,
+			...Object.values(layerUpdatesCopy).map(
+				(l) => (l.startFrame ?? 0) + (l.durationInFrames ?? 0),
+			),
+			1, // Ensure at least 1 frame
 		);
 
 		const { getBlob } = await renderMediaOnWeb({
@@ -239,33 +347,42 @@ export class RemotionWebProcessorService {
 				fps,
 				width,
 				height,
-				defaultProps: { config, inputDataMap },
+				defaultProps: { config: configCopy, inputDataMap },
 			},
-			inputProps: { config, inputDataMap },
+			inputProps: { config: configCopy, inputDataMap },
 		});
 
 		if (signal?.aborted) throw new Error("Aborted");
+
 		const blob = await getBlob();
 		return { dataUrl: URL.createObjectURL(blob), width, height };
 	}
 
-	private async getMediaDuration(
+	private async getMediaDurationAsSec(
 		fileData: FileData,
 		type: "Video" | "Audio",
 	): Promise<number> {
+		// Check for pre-existing duration metadata (in milliseconds)
+		const existingDurationMs =
+			fileData?.entity?.duration ?? fileData.processData?.duration;
+		if (existingDurationMs) {
+			return Number(existingDurationMs) / 1000;
+		}
+
+		// Fallback to loading the media element to get duration
 		const url = fileData.entity?.id
 			? GetAssetEndpoint(fileData.entity)
 			: fileData.processData?.dataUrl;
-		const existing =
-			fileData?.entity?.duration ?? fileData.processData?.duration;
-		if (existing) return existing;
-		if (!url) throw new Error("Missing source URL");
+		if (!url) {
+			throw new Error("Missing source URL for media duration retrieval");
+		}
 
 		return new Promise((resolve, reject) => {
 			const el = document.createElement(type === "Video" ? "video" : "audio");
 			el.src = url;
-			el.onloadedmetadata = () => resolve(el.duration);
-			el.onerror = reject;
+			el.onloadedmetadata = () => resolve(el.duration || 0); // Fallback to 0 if duration is NaN or undefined
+			el.onerror = (err) =>
+				reject(new Error(`Failed to load media metadata: ${err}`));
 		});
 	}
 }

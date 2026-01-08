@@ -808,7 +808,7 @@ export class NodeGraphProcessor extends EventEmitter {
 		this.registerProcessor(
 			"VideoCompositor",
 			async ({ node, inputs, signal }) => {
-				const config = node.config as VideoCompositorNodeConfig;
+				const config = node.config as unknown as VideoCompositorNodeConfig;
 				// Process with web renderer
 				const start = Date.now();
 				const result = await remotionService.processVideo(

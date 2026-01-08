@@ -28,10 +28,14 @@ import {
 	ArrowUpDown,
 	Bold,
 	ChevronDown,
+	ChevronRight,
+	Eye,
+	EyeOff,
 	Hand,
 	ImageIcon,
 	Italic,
 	Layers,
+	Lock,
 	Maximize,
 	Minimize,
 	MousePointer,
@@ -39,11 +43,13 @@ import {
 	MoveHorizontal,
 	MoveVertical,
 	RotateCw,
+	Settings2,
+	Trash2,
 	Type,
 	Underline,
+	Unlock,
 } from "lucide-react";
-import type React from "react";
-import {
+import React, {
 	createContext,
 	type Dispatch,
 	type RefObject,
@@ -87,6 +93,7 @@ import {
 	MenubarMenu,
 	MenubarTrigger,
 } from "@/components/ui/menubar";
+import { ScrollArea } from "@/components/ui/scroll-area";
 import {
 	Select,
 	SelectContent,
@@ -95,6 +102,7 @@ import {
 	SelectValue,
 } from "@/components/ui/select";
 import { Separator } from "@/components/ui/separator";
+import { Slider } from "@/components/ui/slider";
 import { Switch } from "@/components/ui/switch";
 import {
 	Tooltip,
@@ -108,7 +116,7 @@ import type { HandleEntityType } from "@/store/handles";
 import type { NodeEntityType } from "@/store/nodes";
 import { GetAssetEndpoint, GetFontAssetUrl } from "@/utils/file";
 
-// Mocking BLEND_MODES (standard global composite operations for canvas)
+// Mocking BLEND_MODES
 const BLEND_MODES = [
 	"source-over",
 	"source-in",
@@ -138,8 +146,7 @@ const BLEND_MODES = [
 	"luminosity",
 ] as const;
 
-// --- Font Manager (Singleton) ---
-// Ensures fonts are loaded only once and efficiently managed across the application.
+// --- Font Manager ---
 class FontManager {
 	private static instance: FontManager | null = null;
 	private loadedFonts: Set<string> = new Set();
@@ -181,7 +188,6 @@ class FontManager {
 const fontManager = FontManager.getInstance();
 
 // --- Editor Context ---
-// Centralized state management for the editor, providing typed access to all necessary data and actions.
 interface EditorContextType {
 	layers: CompositorLayer[];
 	updateLayers: (
@@ -237,7 +243,6 @@ const useEditor = () => {
 };
 
 // --- Snapping Hook ---
-// Handles snapping logic for layers during drag and transform operations.
 const useSnap = () => {
 	const { layers, updateLayers, viewportWidth, viewportHeight, setGuides } =
 		useEditor();
@@ -380,8 +385,39 @@ const useSnap = () => {
 	return { handleDragMove, handleDragEnd, handleTransformEnd };
 };
 
+// --- Common Components ---
+
+const CollapsibleSection: React.FC<{
+	title: string;
+	icon: React.ElementType;
+	children: React.ReactNode;
+	defaultOpen?: boolean;
+}> = ({ title, icon: Icon, children, defaultOpen = true }) => {
+	const [isOpen, setIsOpen] = useState(defaultOpen);
+	return (
+		<div className="border-b border-white/5">
+			<button
+				type="button"
+				onClick={() => setIsOpen(!isOpen)}
+				className="w-full flex items-center justify-between p-3 hover:bg-white/5 transition-colors group"
+			>
+				<div className="flex items-center gap-2 text-[11px] font-bold text-gray-400 uppercase tracking-wider group-hover:text-gray-200">
+					<Icon className="w-3.5 h-3.5" /> {title}
+				</div>
+				<ChevronDown
+					className={`w-3 h-3 text-gray-500 transition-transform ${isOpen ? "rotate-0" : "-rotate-90"}`}
+				/>
+			</button>
+			{isOpen && (
+				<div className="p-3 pt-0 animate-in slide-in-from-top-1 duration-200">
+					{children}
+				</div>
+			)}
+		</div>
+	);
+};
+
 // --- Layer Components ---
-// Reusable components for rendering different layer types with consistent props.
 interface LayerProps {
 	layer: CompositorLayer;
 	onDragStart: (e: Konva.KonvaEventObject<DragEvent>) => void;
@@ -579,7 +615,6 @@ const TextLayer: React.FC<
 };
 
 // --- Stage Components ---
-// Components for managing the Konva stage, transformers, guides, and background.
 
 const TransformerComponent: React.FC = () => {
 	const { selectedId, layers, stageRef, mode } = useEditor();
@@ -621,7 +656,7 @@ const TransformerComponent: React.FC = () => {
 			anchorStroke="#3b82f6"
 			anchorFill="#ffffff"
 			anchorSize={10}
-			anchorCornerRadius={2}
+			anchorCornerRadius={5}
 			keepRatio={selectedLayer?.type === "Image" && selectedLayer.lockAspect}
 			enabledAnchors={enabledAnchors}
 			boundBoxFunc={(oldBox, newBox) => {
@@ -646,7 +681,7 @@ const Guides: React.FC = () => {
 							? [guide.position, 0, guide.position, viewportHeight]
 							: [0, guide.position, viewportWidth, guide.position]
 					}
-					stroke="#f43f5e"
+					stroke="#ef4444" // red-500
 					strokeWidth={1}
 					dash={[4, 4]}
 				/>
@@ -657,6 +692,8 @@ const Guides: React.FC = () => {
 
 const ArtboardBackground: React.FC = () => {
 	const { viewportWidth, viewportHeight } = useEditor();
+
+	// Create checkered pattern
 	const patternImage = useMemo(() => {
 		const size = 20;
 		const half = size / 2;
@@ -665,9 +702,9 @@ const ArtboardBackground: React.FC = () => {
 		canvas.height = size;
 		const ctx = canvas.getContext("2d");
 		if (ctx) {
-			ctx.fillStyle = "#1e1e1e"; // Slightly lighter than bg
+			ctx.fillStyle = "#1e1e1e";
 			ctx.fillRect(0, 0, size, size);
-			ctx.fillStyle = "#262626"; // Checker
+			ctx.fillStyle = "#262626";
 			ctx.fillRect(0, 0, half, half);
 			ctx.fillRect(half, half, half, half);
 		}
@@ -676,7 +713,7 @@ const ArtboardBackground: React.FC = () => {
 
 	return (
 		<Group>
-			{/* Shadow for depth/elevation */}
+			{/* Shadow for elevation */}
 			<Rect
 				x={0}
 				y={0}
@@ -684,8 +721,8 @@ const ArtboardBackground: React.FC = () => {
 				height={viewportHeight}
 				fill="#000"
 				shadowColor="black"
-				shadowBlur={50}
-				shadowOpacity={0.5}
+				shadowBlur={60}
+				shadowOpacity={0.6}
 				shadowOffset={{ x: 0, y: 10 }}
 				listening={false}
 			/>
@@ -738,10 +775,14 @@ const Canvas: React.FC = () => {
 		(e: Konva.KonvaEventObject<MouseEvent>) => {
 			if (e.evt.button === 1) {
 				e.evt.preventDefault();
+				const stage = e.currentTarget;
 				lastModeRef.current = mode;
 				setMode("pan");
+				stage.draggable(true);
+				stage.startDrag();
 				const reset = () => {
 					setMode(lastModeRef.current);
+					stage.draggable(false);
 					window.removeEventListener("mouseup", reset);
 				};
 				window.addEventListener("mouseup", reset);
@@ -764,8 +805,13 @@ const Canvas: React.FC = () => {
 				y: (pointer.y - stage.y()) / oldScale,
 			};
 
+			// Match Zoom behavior of Video Editor
+			const zoomSensitivity = 0.001; // Slower zoom on scroll
 			const direction = e.evt.deltaY > 0 ? -1 : 1;
-			const scaleBy = 1.1;
+			// Using exp like video editor for smooth zoom
+			// const newScale = Math.min(Math.max(oldScale * Math.exp(-e.evt.deltaY * 0.001), 0.1), 5);
+			// Sticking to original logic but clamped
+			const scaleBy = 1.05;
 			const newScale = direction > 0 ? oldScale * scaleBy : oldScale / scaleBy;
 
 			if (newScale < 0.1 || newScale > 10) return;
@@ -849,7 +895,7 @@ const Canvas: React.FC = () => {
 };
 
 // --- Layers Panel ---
-// Drag-and-drop sortable list for managing layer order.
+
 interface LayerItemProps {
 	layer: CompositorLayer;
 	selectedId: string | null;
@@ -887,32 +933,27 @@ const LayerItem: React.FC<LayerItemProps> = ({
 			style={style}
 			{...attributes}
 			{...listeners}
-			className="mb-1"
+			className={`
+        flex items-center gap-3 px-3 py-2 border-b border-white/5 cursor-pointer outline-none group transition-colors
+        ${isSelected ? "bg-blue-500/10 text-blue-100" : "hover:bg-white/5 text-gray-400"}
+        ${isDragging ? "bg-neutral-900" : ""}
+      `}
+			onClick={() => {
+				if (!isDragging) setSelectedId(layer.id);
+			}}
 		>
-			<Button
-				variant="ghost"
-				onClick={() => {
-					if (!isDragging) setSelectedId(layer.id);
-				}}
-				className={`
-          cursor-pointer w-full rounded-md flex items-center gap-2 px-2 py-1.5 h-auto
-          transition-colors duration-200 border border-transparent
-          ${
-						isSelected
-							? "bg-blue-500/20 hover:bg-blue-500/30 border-blue-500/50 text-blue-100"
-							: "hover:bg-accent text-muted-foreground hover:text-foreground"
-					}
-        `}
-			>
-				{layer.type === "Image" ? (
-					<ImageIcon className="size-3.5 shrink-0 text-blue-400" />
-				) : (
-					<Type className="size-3.5 shrink-0 text-green-400" />
-				)}
-				<span className="truncate flex-1 text-left text-xs font-medium">
-					{layer.id}
-				</span>
-			</Button>
+			{layer.type === "Image" ? (
+				<ImageIcon className="size-3.5 shrink-0 text-purple-400" />
+			) : (
+				<Type className="size-3.5 shrink-0 text-green-400" />
+			)}
+			<span className="truncate flex-1 text-[11px] font-medium">
+				{layer.id}
+			</span>
+			<div className="opacity-0 group-hover:opacity-100 transition-opacity flex gap-1">
+				{/* Placeholder for Lock/Hide functionality in future */}
+				<Lock className="w-3 h-3 text-gray-600 hover:text-gray-400" />
+			</div>
 		</div>
 	);
 };
@@ -922,6 +963,12 @@ const LayersPanel: React.FC = () => {
 	const sortedLayers = useMemo(
 		() => [...layers].sort((a, b) => (a.zIndex ?? 0) - (b.zIndex ?? 0)),
 		[layers],
+	);
+
+	// Invert for display so top layer is top of list
+	const displayLayers = useMemo(
+		() => [...sortedLayers].reverse(),
+		[sortedLayers],
 	);
 
 	const sensors = useSensors(
@@ -934,14 +981,14 @@ const LayersPanel: React.FC = () => {
 	);
 
 	return (
-		<div className="absolute left-0 top-0 bottom-0 w-60 bg-card border-r border-border z-10 flex flex-col shadow-xl">
-			<div className="flex items-center justify-between p-3 border-b border-border bg-muted/30">
-				<span className="text-xs font-semibold uppercase tracking-wider text-muted-foreground">
-					Layers
+		<div className="absolute left-0 top-0 bottom-0 w-60 bg-[#0f0f0f] border-r border-white/10 z-20 flex flex-col shadow-xl">
+			<div className="flex items-center justify-between p-3 border-b border-white/5 bg-neutral-900 shrink-0 h-9">
+				<span className="text-[11px] font-semibold uppercase tracking-wider text-neutral-400 flex items-center gap-2">
+					<Layers className="w-3.5 h-3.5" /> Layers
 				</span>
 			</div>
 
-			<div className="flex-1 overflow-y-auto p-2 scrollbar-thin scrollbar-thumb-rounded scrollbar-thumb-border scrollbar-track-transparent">
+			<ScrollArea className="flex-1 bg-[#0f0f0f]">
 				<DndContext
 					sensors={sensors}
 					collisionDetection={closestCenter}
@@ -949,6 +996,8 @@ const LayersPanel: React.FC = () => {
 						const { active, over } = e;
 						if (over && active.id !== over.id) {
 							updateLayers((currentLayers) => {
+								// We displayed them reversed, but logic operates on zIndex logic
+								// Higher zIndex = Top of visual stack = Top of list in this UI
 								const currentSorted = [...currentLayers].sort(
 									(a, b) => (b.zIndex ?? 0) - (a.zIndex ?? 0),
 								);
@@ -958,7 +1007,12 @@ const LayersPanel: React.FC = () => {
 								const newIndex = currentSorted.findIndex(
 									(l) => l.id === over.id,
 								);
+
+								// Move in the sorted array
 								const newSorted = arrayMove(currentSorted, oldIndex, newIndex);
+
+								// Reassign zIndexes based on new position in array
+								// index 0 is top (highest zIndex)
 								return currentLayers.map((l) => {
 									const pos = newSorted.findIndex((s) => s.id === l.id);
 									return { ...l, zIndex: newSorted.length - pos };
@@ -968,11 +1022,11 @@ const LayersPanel: React.FC = () => {
 					}}
 				>
 					<SortableContext
-						items={sortedLayers.map((l) => l.id)}
+						items={displayLayers.map((l) => l.id)}
 						strategy={verticalListSortingStrategy}
 					>
-						<div className="flex flex-col space-y-0.5">
-							{sortedLayers.map((layer) => (
+						<div className="flex flex-col">
+							{displayLayers.map((layer) => (
 								<LayerItem
 									key={layer.id}
 									layer={layer}
@@ -980,7 +1034,7 @@ const LayersPanel: React.FC = () => {
 									setSelectedId={setSelectedId}
 								/>
 							))}
-							{sortedLayers.length === 0 && (
+							{displayLayers.length === 0 && (
 								<div className="py-8 text-center text-xs text-muted-foreground italic">
 									No layers available
 								</div>
@@ -988,20 +1042,20 @@ const LayersPanel: React.FC = () => {
 						</div>
 					</SortableContext>
 				</DndContext>
-			</div>
+			</ScrollArea>
 		</div>
 	);
 };
 
 // --- Inspector Panel ---
-// Property editor for selected layers and canvas settings, with consistent input styling.
+
 const InspectorPanel: React.FC = () => {
 	const { data: fontList } = useGetFontListQuery({});
 	const fontNames = useMemo(() => {
 		if (Array.isArray(fontList) && (fontList as string[])?.length > 0) {
 			return fontList as string[];
 		}
-		return ["Geist", "Inter", "Arial"];
+		return ["Geist", "Inter", "Arial", "Courier New", "Times New Roman"];
 	}, [fontList]);
 
 	const {
@@ -1036,398 +1090,479 @@ const InspectorPanel: React.FC = () => {
 
 	const aspectRatios = useMemo(
 		() => [
-			{ label: "Instagram Square (1:1)", width: 1080, height: 1080 },
-			{ label: "Instagram Portrait (4:5)", width: 1080, height: 1350 },
-			{ label: "Story / 9:16", width: 1080, height: 1920 },
-			{ label: "Landscape (16:9)", width: 1920, height: 1080 },
+			{ label: "1:1 Square", width: 1080, height: 1080 },
+			{ label: "4:5 Portrait", width: 1080, height: 1350 },
+			{ label: "9:16 Story", width: 1080, height: 1920 },
+			{ label: "16:9 Landscape", width: 1920, height: 1080 },
 		],
 		[],
 	);
 
-	const toggleBold = useCallback(() => {
+	const toggleStyle = (style: "bold" | "italic") => {
 		if (!selectedLayer || selectedLayer.type !== "Text") return;
-		const currentStyle = selectedLayer.fontStyle || "normal";
-		let newStyle = currentStyle;
-		if (newStyle.includes("bold")) {
-			newStyle = newStyle.replace("bold", "").trim();
+		const current = selectedLayer.fontStyle || "normal";
+		let next = current;
+		if (next.includes(style)) {
+			next = next.replace(style, "").trim();
 		} else {
-			newStyle = "bold " + newStyle;
+			next = `${style} ${next}`;
 		}
-		if (newStyle === "") newStyle = "normal";
-		updateLayer({ fontStyle: newStyle });
-	}, [selectedLayer, updateLayer]);
+		if (next.trim() === "") next = "normal";
+		updateLayer({ fontStyle: next });
+	};
 
-	const toggleItalic = useCallback(() => {
+	const toggleUnderline = () => {
 		if (!selectedLayer || selectedLayer.type !== "Text") return;
-		const currentStyle = selectedLayer.fontStyle || "normal";
-		let newStyle = currentStyle;
-		if (newStyle.includes("italic")) {
-			newStyle = newStyle.replace("italic", "").trim();
-		} else {
-			newStyle += " italic";
-		}
-		if (newStyle === "") newStyle = "normal";
-		updateLayer({ fontStyle: newStyle });
-	}, [selectedLayer, updateLayer]);
-
-	const toggleUnderline = useCallback(() => {
-		if (!selectedLayer || selectedLayer.type !== "Text") return;
-		const isUnderline = selectedLayer.textDecoration === "underline";
-		updateLayer({ textDecoration: isUnderline ? "" : "underline" });
-	}, [selectedLayer, updateLayer]);
+		updateLayer({
+			textDecoration:
+				selectedLayer.textDecoration === "underline" ? "" : "underline",
+		});
+	};
 
 	const isBold = selectedLayer?.fontStyle?.includes("bold") ?? false;
 	const isItalic = selectedLayer?.fontStyle?.includes("italic") ?? false;
 	const isUnderline = selectedLayer?.textDecoration === "underline";
 
-	const isTextLayer = selectedLayer?.type === "Text";
+	if (!selectedLayer) {
+		return (
+			<div className="w-64 border-l border-white/5 bg-[#0f0f0f] z-20 shadow-xl flex flex-col">
+				<div className="p-4 bg-neutral-900 border-b border-white/5 shrink-0 h-9 flex items-center">
+					<h2 className="text-[11px] font-semibold text-neutral-400 uppercase tracking-wider">
+						Global Settings
+					</h2>
+				</div>
+				<div className="p-4 space-y-6">
+					<div className="space-y-2">
+						<Label className="text-[10px] text-gray-500 uppercase font-bold">
+							Canvas Size
+						</Label>
+						<div className="grid grid-cols-2 gap-2">
+							<DraggableNumberInput
+								label="W"
+								icon={MoveHorizontal}
+								value={Math.round(viewportWidth)}
+								onChange={(v) => updateViewportWidth(Math.max(1, v))}
+								min={1}
+							/>
+							<DraggableNumberInput
+								label="H"
+								icon={MoveVertical}
+								value={Math.round(viewportHeight)}
+								onChange={(v) => updateViewportHeight(Math.max(1, v))}
+								min={1}
+							/>
+						</div>
+
+						<Select
+							onValueChange={(val) => {
+								const preset = aspectRatios.find((r) => r.label === val);
+								if (preset) {
+									updateViewportWidth(preset.width);
+									updateViewportHeight(preset.height);
+								}
+							}}
+						>
+							<SelectTrigger className="h-8 text-xs bg-neutral-800 border-white/10 text-gray-300">
+								<SelectValue placeholder="Presets" />
+							</SelectTrigger>
+							<SelectContent className="bg-neutral-800 border-white/10 text-gray-300">
+								{aspectRatios.map((r) => (
+									<SelectItem key={r.label} value={r.label}>
+										{r.label}
+									</SelectItem>
+								))}
+							</SelectContent>
+						</Select>
+					</div>
+
+					<div className="flex flex-col items-center justify-center p-8 mt-4 text-center border border-dashed border-white/10 rounded-lg bg-white/5">
+						<MousePointer className="w-6 h-6 text-gray-600 mb-2" />
+						<p className="text-xs text-gray-500">
+							Select a layer to edit properties
+						</p>
+					</div>
+				</div>
+			</div>
+		);
+	}
 
 	return (
-		<div className="absolute right-0 top-0 bottom-0 w-64 bg-card border-l border-border z-10 flex flex-col shadow-xl scrollbar-thin scrollbar-thumb-rounded scrollbar-thumb-border scrollbar-track-transparent overflow-y-auto">
-			<div className="p-4 space-y-6">
-				{/* Canvas Settings */}
-				<section>
-					<h3 className="text-xs font-semibold uppercase tracking-wider text-muted-foreground mb-3">
-						Canvas
-					</h3>
-					<div className="grid grid-cols-2 gap-2 mb-3">
+		<ScrollArea className="w-64 border-l border-white/5 bg-[#0f0f0f] z-20 shadow-xl">
+			<div className="flex items-center justify-between p-4 border-b border-white/5 bg-neutral-900/50">
+				<div className="flex flex-col min-w-0">
+					<span className="text-[10px] text-gray-500 uppercase font-bold tracking-wider">
+						Selected
+					</span>
+					<h2 className="text-sm font-semibold text-white truncate max-w-[150px]">
+						{selectedLayer.id}
+					</h2>
+				</div>
+				<div className="flex items-center gap-1">
+					<span className="text-[10px] bg-white/10 px-2 py-0.5 rounded-full text-gray-300 font-medium uppercase border border-white/5">
+						{selectedLayer.type}
+					</span>
+				</div>
+			</div>
+
+			<div className="pb-20">
+				<CollapsibleSection title="Transform" icon={Move}>
+					<div className="flex gap-1 mb-3">
+						<Button
+							variant="outline"
+							size="sm"
+							className="flex-1 h-7 text-[10px] border-white/10 bg-white/5 hover:bg-white/10"
+							onClick={() => centerLayer("x")}
+						>
+							<AlignCenterHorizontal className="w-3 h-3 mr-1" /> Center X
+						</Button>
+						<Button
+							variant="outline"
+							size="sm"
+							className="flex-1 h-7 text-[10px] border-white/10 bg-white/5 hover:bg-white/10"
+							onClick={() => centerLayer("y")}
+						>
+							<AlignCenterVertical className="w-3 h-3 mr-1" /> Center Y
+						</Button>
+					</div>
+
+					<div className="grid grid-cols-2 gap-3 mb-3">
+						<DraggableNumberInput
+							label="X"
+							icon={MoveHorizontal}
+							value={Math.round(selectedLayer.x)}
+							onChange={(v) => updateLayer({ x: v })}
+						/>
+						<DraggableNumberInput
+							label="Y"
+							icon={MoveVertical}
+							value={Math.round(selectedLayer.y)}
+							onChange={(v) => updateLayer({ y: v })}
+						/>
 						<DraggableNumberInput
 							label="W"
 							icon={MoveHorizontal}
-							value={Math.round(viewportWidth)}
-							onChange={(v) => updateViewportWidth(v || 800)}
+							value={Math.round(selectedLayer.width ?? 0)}
+							onChange={(newWidth) => {
+								if (
+									selectedLayer.type === "Image" &&
+									selectedLayer.lockAspect
+								) {
+									const oldW = selectedLayer.width ?? 1;
+									const oldH = selectedLayer.height ?? 1;
+									const ratio = oldH / oldW;
+									updateLayer({
+										width: newWidth,
+										height: newWidth * ratio,
+									});
+								} else {
+									updateLayer({ width: newWidth });
+								}
+							}}
 							min={1}
 						/>
-						<DraggableNumberInput
-							label="H"
-							icon={MoveVertical}
-							value={Math.round(viewportHeight)}
-							onChange={(v) => updateViewportHeight(v || 600)}
-							min={1}
-						/>
-					</div>
-
-					<Select
-						onValueChange={(val) => {
-							const preset = aspectRatios.find((r) => r.label === val);
-							if (preset) {
-								updateViewportWidth(preset.width);
-								updateViewportHeight(preset.height);
-							}
-						}}
-					>
-						<SelectTrigger className="h-8 text-xs">
-							<SelectValue placeholder="Presets" />
-						</SelectTrigger>
-						<SelectContent>
-							{aspectRatios.map((r) => (
-								<SelectItem key={r.label} value={r.label}>
-									{r.label}
-								</SelectItem>
-							))}
-						</SelectContent>
-					</Select>
-				</section>
-
-				<Separator />
-
-				{/* Layer Properties */}
-				{selectedLayer ? (
-					<>
-						<section>
-							<div className="flex items-center justify-between mb-3">
-								<h3 className="text-xs font-semibold uppercase tracking-wider text-muted-foreground">
-									Transform
-								</h3>
-								<div className="flex gap-1">
-									<Button
-										variant="ghost"
-										size="icon"
-										className="h-6 w-6"
-										onClick={() => centerLayer("x")}
-										title="Center Horizontally"
-									>
-										<AlignCenterHorizontal className="w-3 h-3" />
-									</Button>
-									<Button
-										variant="ghost"
-										size="icon"
-										className="h-6 w-6"
-										onClick={() => centerLayer("y")}
-										title="Center Vertically"
-									>
-										<AlignCenterVertical className="w-3 h-3" />
-									</Button>
-								</div>
-							</div>
-
-							<div className="grid grid-cols-2 gap-3 mb-3">
-								<DraggableNumberInput
-									label="X"
-									icon={MoveHorizontal}
-									value={Math.round(selectedLayer.x)}
-									onChange={(v) => updateLayer({ x: v })}
-								/>
-								<DraggableNumberInput
-									label="Y"
-									icon={MoveVertical}
-									value={Math.round(selectedLayer.y)}
-									onChange={(v) => updateLayer({ y: v })}
-								/>
-								<DraggableNumberInput
-									label="W"
-									icon={MoveHorizontal}
-									value={Math.round(selectedLayer.width ?? 0)}
-									onChange={(newWidth) => {
-										if (
-											selectedLayer.type === "Image" &&
-											selectedLayer.lockAspect
-										) {
+						{selectedLayer.type !== "Text" ? (
+							<DraggableNumberInput
+								label="H"
+								icon={MoveVertical}
+								value={Math.round(selectedLayer.height ?? 0)}
+								onChange={(newHeight) => {
+									if (selectedLayer.type === "Image") {
+										if (selectedLayer.lockAspect) {
 											const oldW = selectedLayer.width ?? 1;
 											const oldH = selectedLayer.height ?? 1;
-											const ratio = oldH / oldW;
+											const ratio = oldW / oldH;
 											updateLayer({
-												width: newWidth,
-												height: newWidth * ratio,
+												height: newHeight,
+												width: newHeight * ratio,
 											});
 										} else {
-											updateLayer({ width: newWidth });
+											updateLayer({ height: newHeight });
 										}
-									}}
-									min={1}
-								/>
-								{!isTextLayer ? (
-									<DraggableNumberInput
-										label="H"
-										icon={MoveVertical}
-										value={Math.round(selectedLayer.height ?? 0)}
-										onChange={(newHeight) => {
-											if (selectedLayer.type === "Image") {
-												if (selectedLayer.lockAspect) {
-													const oldW = selectedLayer.width ?? 1;
-													const oldH = selectedLayer.height ?? 1;
-													const ratio = oldW / oldH;
-													updateLayer({
-														height: newHeight,
-														width: newHeight * ratio,
-													});
-												} else {
-													updateLayer({ height: newHeight });
-												}
-											}
-										}}
-										min={1}
-									/>
-								) : (
-									<DraggableNumberInput
-										label="H"
-										icon={MoveVertical}
-										value={Math.round(selectedLayer.computedHeight ?? 0)}
-										onChange={() => {}}
-										disabled
-										min={1}
-									/>
-								)}
+									}
+								}}
+								min={1}
+							/>
+						) : (
+							<DraggableNumberInput
+								label="H"
+								icon={MoveVertical}
+								value={Math.round(selectedLayer.computedHeight ?? 0)}
+								onChange={() => {}}
+								disabled
+							/>
+						)}
+					</div>
+					<div className="grid grid-cols-2 gap-3">
+						<DraggableNumberInput
+							label="Rot"
+							icon={RotateCw}
+							value={Math.round(selectedLayer.rotation)}
+							onChange={(v) => updateLayer({ rotation: v })}
+						/>
+						<DraggableNumberInput
+							label="Op"
+							icon={Layers}
+							value={Math.round((selectedLayer.opacity ?? 1) * 100)}
+							onChange={(v) => updateLayer({ opacity: v / 100 })}
+							min={0}
+							max={100}
+						/>
+					</div>
+
+					{selectedLayer.type === "Image" && (
+						<div className="flex items-center justify-between mt-3 pt-2 border-t border-white/5">
+							<Label className="text-[10px] text-gray-400">Lock Aspect</Label>
+							<Switch
+								checked={selectedLayer.lockAspect ?? true}
+								onCheckedChange={(c) => updateLayer({ lockAspect: c })}
+								className="scale-75 data-[state=checked]:bg-blue-600"
+							/>
+						</div>
+					)}
+				</CollapsibleSection>
+
+				{selectedLayer.type === "Text" && (
+					<CollapsibleSection title="Typography" icon={Type}>
+						<div className="space-y-3">
+							<div className="space-y-1">
+								<Label className="text-[10px] text-gray-500">Font</Label>
+								<Select
+									value={selectedLayer.fontFamily || "Geist"}
+									onValueChange={(val) => updateLayer({ fontFamily: val })}
+								>
+									<SelectTrigger className="h-8 text-xs bg-neutral-800 border-white/10 text-white">
+										<SelectValue />
+									</SelectTrigger>
+									<SelectContent className="bg-neutral-800 border-white/10 text-white">
+										{fontNames.map((f) => (
+											<SelectItem key={f} value={f} style={{ fontFamily: f }}>
+												{f}
+											</SelectItem>
+										))}
+									</SelectContent>
+								</Select>
 							</div>
+
 							<div className="grid grid-cols-2 gap-3">
 								<DraggableNumberInput
-									label="Rotation"
-									icon={RotateCw}
-									value={selectedLayer.rotation}
-									onChange={(v) => updateLayer({ rotation: v })}
+									label="Size"
+									icon={Type}
+									value={selectedLayer.fontSize || 24}
+									onChange={(v) => updateLayer({ fontSize: v })}
+									min={1}
+								/>
+								<div className="space-y-1">
+									<Label className="text-[10px] text-gray-500 block mb-1">
+										Color
+									</Label>
+									<ColorInput
+										value={selectedLayer.fill ?? "#ffffff"}
+										onChange={(e) => updateLayer({ fill: e })}
+										className="h-8 w-full"
+									/>
+								</div>
+							</div>
+
+							<div className="flex p-1 bg-white/5 rounded border border-white/5">
+								<Button
+									variant={isBold ? "secondary" : "ghost"}
+									size="icon"
+									className="h-6 flex-1 rounded-sm"
+									onClick={() => toggleStyle("bold")}
+								>
+									<Bold className="w-3 h-3" />
+								</Button>
+								<Separator
+									orientation="vertical"
+									className="h-4 my-auto mx-1 bg-white/10"
+								/>
+								<Button
+									variant={isItalic ? "secondary" : "ghost"}
+									size="icon"
+									className="h-6 flex-1 rounded-sm"
+									onClick={() => toggleStyle("italic")}
+								>
+									<Italic className="w-3 h-3" />
+								</Button>
+								<Separator
+									orientation="vertical"
+									className="h-4 my-auto mx-1 bg-white/10"
+								/>
+								<Button
+									variant={isUnderline ? "secondary" : "ghost"}
+									size="icon"
+									className="h-6 flex-1 rounded-sm"
+									onClick={toggleUnderline}
+								>
+									<Underline className="w-3 h-3" />
+								</Button>
+							</div>
+
+							<div className="grid grid-cols-3 gap-1 bg-white/5 p-1 rounded border border-white/5">
+								{(["left", "center", "right"] as const).map((align) => (
+									<Button
+										key={align}
+										variant={
+											selectedLayer.align === align ? "secondary" : "ghost"
+										}
+										size="sm"
+										className="h-6 text-[10px] capitalize"
+										onClick={() => updateLayer({ align })}
+									>
+										{align}
+									</Button>
+								))}
+							</div>
+
+							<div className="grid grid-cols-2 gap-3">
+								<DraggableNumberInput
+									label="Spacing"
+									icon={ArrowLeftRight}
+									value={selectedLayer.letterSpacing ?? 0}
+									onChange={(v) => updateLayer({ letterSpacing: v })}
 								/>
 								<DraggableNumberInput
-									label="Opacity"
-									icon={Layers}
-									value={Math.round((selectedLayer.opacity ?? 1) * 100)}
-									onChange={(v) => updateLayer({ opacity: v / 100 })}
-									min={0}
-									max={100}
-									step={1}
-									allowDecimal={false}
+									label="Line H"
+									icon={ArrowUpDown}
+									value={selectedLayer.lineHeight ?? 1}
+									onChange={(v) => updateLayer({ lineHeight: v })}
+									allowDecimal
+									step={0.1}
 								/>
 							</div>
-						</section>
-
-						{selectedLayer.type === "Image" && (
-							<section>
-								<div className="flex items-center space-x-2 mt-2">
-									<Switch
-										id="lockAspect"
-										checked={selectedLayer.lockAspect ?? true}
-										onCheckedChange={(checked) =>
-											updateLayer({ lockAspect: checked })
-										}
-									/>
-									<Label htmlFor="lockAspect" className="text-xs">
-										Lock Aspect Ratio
-									</Label>
-								</div>
-							</section>
-						)}
-
-						{selectedLayer.type === "Text" && (
-							<>
-								<Separator />
-								<section className="space-y-3">
-									<h3 className="text-xs font-semibold uppercase tracking-wider text-muted-foreground">
-										Typography
-									</h3>
-									<div className="space-y-1">
-										<Select
-											value={selectedLayer.fontFamily || "Geist"}
-											onValueChange={(val) => updateLayer({ fontFamily: val })}
-										>
-											<SelectTrigger className="h-8 text-xs">
-												<SelectValue />
-											</SelectTrigger>
-											<SelectContent>
-												{fontNames.map((f) => (
-													<SelectItem key={f} value={f}>
-														{f.replace("_", " ")}
-													</SelectItem>
-												))}
-											</SelectContent>
-										</Select>
-									</div>
-									<div className="grid grid-cols-2 gap-3">
-										<DraggableNumberInput
-											label="Size"
-											icon={Type}
-											value={selectedLayer.fontSize || 24}
-											onChange={(v) => updateLayer({ fontSize: v })}
-											min={1}
-										/>
-										<div className="space-y-1">
-											<Label className="text-[10px] text-muted-foreground uppercase">
-												Color
-											</Label>
-											<ColorInput
-												id="fill"
-												value={selectedLayer.fill ?? "#ffffff"}
-												onChange={(e) => updateLayer({ fill: e })}
-												className="h-8 w-full"
-											/>
-										</div>
-									</div>
-
-									<div className="grid grid-cols-3 gap-1 bg-muted/50 p-1 rounded-md">
-										<Button
-											variant={
-												selectedLayer.align === "left" ? "secondary" : "ghost"
-											}
-											size="sm"
-											className="h-6 px-0"
-											onClick={() => updateLayer({ align: "left" })}
-										>
-											<span className="text-[10px]">Left</span>
-										</Button>
-										<Button
-											variant={
-												selectedLayer.align === "center" ? "secondary" : "ghost"
-											}
-											size="sm"
-											className="h-6 px-0"
-											onClick={() => updateLayer({ align: "center" })}
-										>
-											<span className="text-[10px]">Center</span>
-										</Button>
-										<Button
-											variant={
-												selectedLayer.align === "right" ? "secondary" : "ghost"
-											}
-											size="sm"
-											className="h-6 px-0"
-											onClick={() => updateLayer({ align: "right" })}
-										>
-											<span className="text-[10px]">Right</span>
-										</Button>
-									</div>
-
-									<div className="grid grid-cols-3 gap-1 bg-muted/50 p-1 rounded-md">
-										<Button
-											variant={isBold ? "secondary" : "ghost"}
-											size="icon"
-											className="h-6 w-full"
-											onClick={toggleBold}
-										>
-											<Bold className="w-3 h-3" />
-										</Button>
-										<Button
-											variant={isItalic ? "secondary" : "ghost"}
-											size="icon"
-											className="h-6 w-full"
-											onClick={toggleItalic}
-										>
-											<Italic className="w-3 h-3" />
-										</Button>
-										<Button
-											variant={isUnderline ? "secondary" : "ghost"}
-											size="icon"
-											className="h-6 w-full"
-											onClick={toggleUnderline}
-										>
-											<Underline className="w-3 h-3" />
-										</Button>
-									</div>
-
-									<div className="grid grid-cols-2 gap-3">
-										<DraggableNumberInput
-											label="Spacing"
-											icon={ArrowLeftRight}
-											value={selectedLayer.letterSpacing ?? 0}
-											onChange={(v) => updateLayer({ letterSpacing: v })}
-										/>
-										<DraggableNumberInput
-											label="Line H"
-											icon={ArrowUpDown}
-											value={selectedLayer.lineHeight ?? 1}
-											onChange={(v) => updateLayer({ lineHeight: v })}
-											allowDecimal
-											min={0.1}
-											step={0.1}
-										/>
-									</div>
-								</section>
-							</>
-						)}
-
-						<Separator />
-
-						<section className="space-y-3">
-							<h3 className="text-xs font-semibold uppercase tracking-wider text-muted-foreground">
-								Blending
-							</h3>
-							<Select
-								value={selectedLayer.blendMode || "source-over"}
-								onValueChange={(val) => updateLayer({ blendMode: val })}
-							>
-								<SelectTrigger className="h-8 text-xs capitalize">
-									<SelectValue />
-								</SelectTrigger>
-								<SelectContent>
-									{BLEND_MODES.map((m) => (
-										<SelectItem key={m} value={m} className="capitalize">
-											{m.replace("-", " ")}
-										</SelectItem>
-									))}
-								</SelectContent>
-							</Select>
-						</section>
-					</>
-				) : (
-					<div className="flex flex-col items-center justify-center h-48 text-muted-foreground space-y-2 text-center opacity-50">
-						<MousePointer className="w-8 h-8" />
-						<p className="text-xs">Select a layer to edit properties</p>
-					</div>
+						</div>
+					</CollapsibleSection>
 				)}
+
+				<CollapsibleSection title="Blending" icon={Settings2}>
+					<div className="space-y-2">
+						<Label className="text-[10px] text-gray-500">Mode</Label>
+						<Select
+							value={selectedLayer.blendMode || "source-over"}
+							onValueChange={(val) => updateLayer({ blendMode: val })}
+						>
+							<SelectTrigger className="h-8 text-xs capitalize bg-neutral-800 border-white/10 text-white">
+								<SelectValue />
+							</SelectTrigger>
+							<SelectContent className="bg-neutral-800 border-white/10 text-white max-h-[200px]">
+								{BLEND_MODES.map((m) => (
+									<SelectItem key={m} value={m} className="capitalize">
+										{m.replace("-", " ")}
+									</SelectItem>
+								))}
+							</SelectContent>
+						</Select>
+					</div>
+				</CollapsibleSection>
 			</div>
-		</div>
+		</ScrollArea>
 	);
 };
 
+// --- Toolbar ---
+const Toolbar = React.memo<{
+	onSave: () => void;
+	onClose: () => void;
+}>(({ onSave, onClose }) => {
+	const {
+		mode,
+		setMode,
+		zoomIn,
+		zoomOut,
+		zoomTo,
+		fitView,
+		zoomPercentage,
+		isDirty,
+	} = useEditor();
+
+	return (
+		<div className="flex items-center gap-1.5 p-1.5 rounded-full bg-neutral-900/90 backdrop-blur-xl border border-white/10 shadow-2xl z-50">
+			<TooltipProvider>
+				<Tooltip>
+					<TooltipTrigger asChild>
+						<Button
+							variant="ghost"
+							size="icon"
+							className={`rounded-full w-8 h-8 ${mode === "select" ? "bg-blue-600 text-white shadow-sm" : "text-gray-400 hover:text-white hover:bg-white/5"}`}
+							onClick={() => setMode("select")}
+						>
+							<MousePointer className="w-4 h-4" />
+						</Button>
+					</TooltipTrigger>
+					<TooltipContent>Select Tool (V)</TooltipContent>
+				</Tooltip>
+
+				<Tooltip>
+					<TooltipTrigger asChild>
+						<Button
+							variant="ghost"
+							size="icon"
+							className={`rounded-full w-8 h-8 ${mode === "pan" ? "bg-blue-600 text-white shadow-sm" : "text-gray-400 hover:text-white hover:bg-white/5"}`}
+							onClick={() => setMode("pan")}
+						>
+							<Hand className="w-4 h-4" />
+						</Button>
+					</TooltipTrigger>
+					<TooltipContent>Pan Tool (Space)</TooltipContent>
+				</Tooltip>
+			</TooltipProvider>
+
+			<div className="w-px h-4 bg-white/10 mx-1" />
+
+			<Menubar className="border-none bg-transparent h-auto p-0">
+				<MenubarMenu>
+					<MenubarTrigger asChild>
+						<Button
+							variant="ghost"
+							className="h-8 px-2.5 text-[10px] rounded-full text-gray-300 hover:text-white hover:bg-white/10 font-medium"
+						>
+							{zoomPercentage}{" "}
+							<ChevronDown className="w-3 h-3 ml-1.5 opacity-50" />
+						</Button>
+					</MenubarTrigger>
+					<MenubarContent
+						align="center"
+						sideOffset={10}
+						className="min-w-[140px] bg-neutral-900/95 backdrop-blur-xl border-white/10 text-gray-200"
+					>
+						<MenubarItem onClick={() => zoomIn()}>Zoom In</MenubarItem>
+						<MenubarItem onClick={() => zoomOut()}>Zoom Out</MenubarItem>
+						<MenubarItem onClick={() => zoomTo(1)}>
+							Actual Size (100%)
+						</MenubarItem>
+						<MenubarItem onClick={() => zoomTo(2)}>200%</MenubarItem>
+						<Separator className="my-1 bg-white/10" />
+						<MenubarItem onClick={() => fitView()}>Fit to Screen</MenubarItem>
+					</MenubarContent>
+				</MenubarMenu>
+			</Menubar>
+
+			<div className="w-px h-4 bg-white/10 mx-1" />
+
+			<div className="flex items-center gap-1">
+				<Button
+					size="sm"
+					className="h-7 text-[10px] font-medium rounded-full px-3 bg-white text-black hover:bg-gray-200 border-0"
+					onClick={onSave}
+					disabled={!isDirty}
+				>
+					Save
+				</Button>
+				<Button
+					size="sm"
+					variant="ghost"
+					className="h-7 text-[10px] rounded-full px-2.5 text-gray-400 hover:text-white hover:bg-white/10"
+					onClick={onClose}
+				>
+					Close
+				</Button>
+			</div>
+		</div>
+	);
+});
+
 // --- Main Designer Component ---
-// Core editor component, managing state, rendering, and user interactions.
+
 interface ImageDesignerEditorProps {
 	initialLayers: Map<
 		HandleEntityType["id"],
@@ -1458,6 +1593,7 @@ export const ImageDesignerEditor: React.FC<ImageDesignerEditorProps> = ({
 		},
 		[],
 	);
+
 	const [selectedId, setSelectedId] = useState<string | null>(null);
 	const [viewportWidth, setViewportWidth] = useState(nodeConfig.width ?? 1024);
 	const updateViewportWidth = useCallback((w: number) => {
@@ -1471,6 +1607,7 @@ export const ImageDesignerEditor: React.FC<ImageDesignerEditorProps> = ({
 		setViewportHeight(h);
 		setIsDirty(true);
 	}, []);
+
 	const [guides, setGuides] = useState<Guide[]>([]);
 	const [isEditingText, setIsEditingText] = useState(false);
 	const [editingLayerId, setEditingLayerId] = useState<string | null>(null);
@@ -1764,7 +1901,7 @@ export const ImageDesignerEditor: React.FC<ImageDesignerEditorProps> = ({
 				setIsDirty,
 			}}
 		>
-			<div className="flex h-screen w-screen bg-background overflow-hidden relative text-foreground">
+			<div className="flex h-screen w-screen bg-[#050505] overflow-hidden relative text-foreground font-sans">
 				<div className="relative shrink-0 z-20">
 					<LayersPanel />
 				</div>
@@ -1772,16 +1909,15 @@ export const ImageDesignerEditor: React.FC<ImageDesignerEditorProps> = ({
 				<div className="flex-1 flex flex-col relative min-w-0 z-0">
 					<div
 						ref={containerRef}
-						className="flex-1 relative overflow-hidden bg-neutral-900/90"
+						className="flex-1 relative overflow-hidden bg-[#050505]"
 					>
-						{/* Grid Background (consistent with xyflow/react-flow dot grid style) */}
+						{/* Grid Background */}
 						<div
 							className="absolute inset-0 pointer-events-none"
 							style={{
 								backgroundImage:
-									"radial-gradient(circle, #404040 1px, transparent 1px)",
+									"radial-gradient(circle at 1px 1px, rgba(255,255,255,0.1) 1px, transparent 0)",
 								backgroundSize: "24px 24px",
-								opacity: 0.3,
 							}}
 						/>
 						<Canvas />
@@ -1789,88 +1925,7 @@ export const ImageDesignerEditor: React.FC<ImageDesignerEditorProps> = ({
 
 					{/* Floating Toolbar */}
 					<div className="absolute bottom-8 left-1/2 -translate-x-1/2 z-50">
-						<Menubar className="border border-white/10 bg-black/60 backdrop-blur-md shadow-2xl rounded-full px-2 py-1 h-12 flex items-center gap-1 select-none z-50">
-							<TooltipProvider>
-								<Tooltip>
-									<TooltipTrigger asChild>
-										<Button
-											variant={mode === "select" ? "secondary" : "ghost"}
-											size="icon"
-											className={`rounded-full w-9 h-9 ${mode === "select" ? "bg-white/20 text-white" : "text-gray-400 hover:text-white hover:bg-white/10"}`}
-											onClick={() => setMode("select")}
-										>
-											<MousePointer className="w-4 h-4" />
-										</Button>
-									</TooltipTrigger>
-									<TooltipContent>Select Tool (V)</TooltipContent>
-								</Tooltip>
-
-								<Tooltip>
-									<TooltipTrigger asChild>
-										<Button
-											variant={mode === "pan" ? "secondary" : "ghost"}
-											size="icon"
-											className={`rounded-full w-9 h-9 ${mode === "pan" ? "bg-white/20 text-white" : "text-gray-400 hover:text-white hover:bg-white/10"}`}
-											onClick={() => setMode("pan")}
-										>
-											<Hand className="w-4 h-4" />
-										</Button>
-									</TooltipTrigger>
-									<TooltipContent>Pan Tool (Space)</TooltipContent>
-								</Tooltip>
-							</TooltipProvider>
-
-							<div className="w-px h-5 bg-white/10 mx-1" />
-
-							<MenubarMenu>
-								<MenubarTrigger asChild>
-									<Button
-										variant="ghost"
-										className="h-9 px-3 text-xs font-mono rounded-full text-gray-300 hover:text-white hover:bg-white/10"
-									>
-										{zoomPercentage}{" "}
-										<ChevronDown className="w-3 h-3 ml-2 opacity-50" />
-									</Button>
-								</MenubarTrigger>
-								<MenubarContent
-									align="center"
-									className="min-w-[140px] bg-neutral-900/90 backdrop-blur-xl border-white/10 text-gray-200"
-								>
-									<MenubarItem onClick={() => zoomIn()}>Zoom In</MenubarItem>
-									<MenubarItem onClick={() => zoomOut()}>Zoom Out</MenubarItem>
-									<MenubarItem onClick={() => zoomTo(1)}>
-										Actual Size (100%)
-									</MenubarItem>
-									<MenubarItem onClick={() => zoomTo(2)}>200%</MenubarItem>
-									<Separator className="my-1 bg-white/10" />
-									<MenubarItem onClick={() => fitView()}>
-										Fit to Screen
-									</MenubarItem>
-								</MenubarContent>
-							</MenubarMenu>
-
-							<Separator
-								orientation="vertical"
-								className="mx-1 h-5 bg-white/10"
-							/>
-
-							<Button
-								size="sm"
-								className="h-8 text-xs rounded-full px-4"
-								onClick={handleSave}
-								disabled={!isDirty}
-							>
-								Save
-							</Button>
-							<Button
-								size="sm"
-								variant="ghost"
-								className="h-8 text-xs rounded-full px-3 ml-1 text-gray-400 hover:text-red-400 hover:bg-red-500/10"
-								onClick={handleCloseRequest}
-							>
-								Close
-							</Button>
-						</Menubar>
+						<Toolbar onSave={handleSave} onClose={handleCloseRequest} />
 					</div>
 				</div>
 
@@ -1892,7 +1947,7 @@ export const ImageDesignerEditor: React.FC<ImageDesignerEditorProps> = ({
 							<AlertDialogCancel>Cancel</AlertDialogCancel>
 							<AlertDialogAction
 								onClick={onClose}
-								className="bg-destructive text-destructive-foreground hover:bg-destructive/90"
+								className="bg-red-600 text-white hover:bg-red-700"
 							>
 								Discard Changes
 							</AlertDialogAction>

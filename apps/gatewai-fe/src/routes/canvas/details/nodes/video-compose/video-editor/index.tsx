@@ -38,11 +38,10 @@ import {
 	Pause,
 	Play,
 	Plus,
-	RotateCcw,
 	RotateCw,
-	Settings2,
 	Trash2,
 	Type,
+	Volume2,
 	Zap,
 } from "lucide-react";
 import React, {
@@ -67,7 +66,6 @@ import {
 	useCurrentFrame,
 	useVideoConfig,
 } from "remotion";
-import { z } from "zod";
 
 import { Button } from "@/components/ui/button";
 import { DraggableNumberInput } from "@/components/ui/draggable-number-input";
@@ -80,7 +78,6 @@ import {
 } from "@/components/ui/menubar";
 import {
 	Popover,
-	PopoverClose,
 	PopoverContent,
 	PopoverTrigger,
 } from "@/components/ui/popover";
@@ -92,7 +89,6 @@ import {
 	SelectTrigger,
 	SelectValue,
 } from "@/components/ui/select";
-import { Separator } from "@/components/ui/separator";
 import { Slider } from "@/components/ui/slider";
 import { Switch } from "@/components/ui/switch";
 import {
@@ -107,7 +103,6 @@ import { GetAssetEndpoint, GetFontAssetUrl } from "@/utils/file";
 
 // --- Types & Schemas ---
 
-// Defining the Animation Type
 export type AnimationType =
 	| "fade-in"
 	| "fade-out"
@@ -128,7 +123,6 @@ export interface VideoAnimation {
 	value: number; // duration in seconds
 }
 
-// Extended Layer Type to include animations
 interface ExtendedLayer extends VideoCompositorLayer {
 	animations?: VideoAnimation[];
 }
@@ -140,6 +134,7 @@ interface EditorContextType {
 		updater: SetStateAction<ExtendedLayer[]>,
 		isUserChange?: boolean,
 	) => void;
+	deleteLayer: (id: string) => void;
 	selectedId: string | null;
 	setSelectedId: (id: string | null) => void;
 
@@ -190,11 +185,13 @@ const useEditor = () => {
 
 // --- Constants ---
 const FPS = 24;
-const RULER_HEIGHT = 24;
-const TRACK_HEIGHT = 32; // Reduced for smaller screens
-const HEADER_WIDTH = 280;
+const DEFAULT_DURATION_SEC = 5;
+const DEFAULT_DURATION_FRAMES = FPS * DEFAULT_DURATION_SEC;
+const RULER_HEIGHT = 32;
+const TRACK_HEIGHT = 36;
+const HEADER_WIDTH = 260;
 
-// --- Font Manager (Singleton) ---
+// --- Font Manager ---
 class FontManager {
 	private static instance: FontManager | null = null;
 	private loadedFonts: Set<string> = new Set();
@@ -210,7 +207,7 @@ class FontManager {
 
 	public async loadFont(family: string, url: string): Promise<void> {
 		if (this.loadedFonts.has(family)) return;
-		if (!url) return; // Skip if no URL
+		if (!url) return;
 
 		const fontId = `font-${family}`;
 		if (document.getElementById(fontId)) return;
@@ -237,7 +234,7 @@ class FontManager {
 
 const fontManager = FontManager.getInstance();
 
-// --- Components: Rendering Engine (Remotion) ---
+// --- Remotion Scene ---
 
 const CompositionScene: React.FC<{
 	layers: ExtendedLayer[];
@@ -247,7 +244,6 @@ const CompositionScene: React.FC<{
 	const frame = useCurrentFrame();
 	const { fps } = useVideoConfig();
 
-	// Sort by zIndex
 	const sortedLayers = useMemo(
 		() => [...layers].sort((a, b) => (a.zIndex ?? 0) - (b.zIndex ?? 0)),
 		[layers],
@@ -258,10 +254,8 @@ const CompositionScene: React.FC<{
 			{sortedLayers.map((layer) => {
 				const src = getAssetUrl(layer.inputHandleId);
 				const textContent = getTextData(layer.inputHandleId);
-
 				const relativeFrame = frame - layer.startFrame;
 
-				// Compute animated properties
 				let animX = layer.x;
 				let animY = layer.y;
 				let animScale = layer.scale;
@@ -269,7 +263,6 @@ const CompositionScene: React.FC<{
 				let animOpacity = layer.opacity;
 				const animVolume = layer.volume ?? 1;
 
-				// Apply animations in order (stacking)
 				(layer.animations ?? []).forEach((anim) => {
 					const durFrames = anim.value * fps;
 					const isOut = anim.type.includes("-out");
@@ -277,7 +270,7 @@ const CompositionScene: React.FC<{
 					const endAnimFrame = isOut ? layer.durationInFrames : durFrames;
 
 					if (relativeFrame < startAnimFrame || relativeFrame > endAnimFrame) {
-						return; // Not active
+						return;
 					}
 
 					const progress = interpolate(
@@ -289,9 +282,10 @@ const CompositionScene: React.FC<{
 
 					switch (anim.type) {
 						case "fade-in":
+							animOpacity *= progress;
+							break;
 						case "fade-out":
-							animOpacity *= progress; // From 0 to base or base to 0
-							if (isOut) animOpacity = layer.opacity * (1 - progress);
+							animOpacity *= 1 - progress;
 							break;
 						case "slide-in-left":
 						case "slide-in-right": {
@@ -306,12 +300,11 @@ const CompositionScene: React.FC<{
 							break;
 						}
 						case "zoom-in":
-						case "zoom-out": {
-							const fromScale = anim.type === "zoom-in" ? 0 : 1.5;
-							const toScale = anim.type === "zoom-in" ? 1 : 0;
-							animScale *= interpolate(progress, [0, 1], [fromScale, toScale]);
+							animScale *= interpolate(progress, [0, 1], [0, 1]);
 							break;
-						}
+						case "zoom-out":
+							animScale *= interpolate(progress, [0, 1], [1, 0]);
+							break;
 						case "rotate-cw":
 						case "rotate-ccw": {
 							const dirRot = anim.type === "rotate-cw" ? 1 : -1;
@@ -329,18 +322,12 @@ const CompositionScene: React.FC<{
 							break;
 						}
 						case "shake": {
-							const intensity = 20; // pixels
-							const frequency = 10; // shakes
-							const shakeProgress = 1 - progress; // dampen
+							const intensity = 20;
+							const frequency = 10;
+							const shakeProgress = 1 - progress;
 							animX +=
 								intensity *
 								Math.sin(
-									(relativeFrame * frequency * 2 * Math.PI) / durFrames,
-								) *
-								shakeProgress;
-							animY +=
-								intensity *
-								Math.cos(
 									(relativeFrame * frequency * 2 * Math.PI) / durFrames,
 								) *
 								shakeProgress;
@@ -390,7 +377,6 @@ const CompositionScene: React.FC<{
 									display: "flex",
 									alignItems: "flex-start",
 									whiteSpace: "pre-wrap",
-									// Text specific style for better rendering
 									textShadow: "0 2px 4px rgba(0,0,0,0.1)",
 								}}
 							>
@@ -459,7 +445,6 @@ const InteractionOverlay: React.FC = () => {
 		if (e.button !== 0) return;
 		e.stopPropagation();
 
-		// Handle selection/deselection
 		if (!layerId && !isPanning && mode === "select") {
 			setSelectedId(null);
 		}
@@ -542,7 +527,7 @@ const InteractionOverlay: React.FC = () => {
 			const theta = initialPos.rotation * (Math.PI / 180);
 			const cos = Math.cos(theta);
 			const sin = Math.sin(theta);
-			// Rotate vector to align with object local space
+			// Rotate vector
 			let local_dx = cos * dx + sin * dy;
 			let local_dy = -sin * dx + cos * dy;
 			local_dx /= initialPos.scale;
@@ -572,7 +557,6 @@ const InteractionOverlay: React.FC = () => {
 			let changeH = signH * local_dy;
 
 			if (isLocked) {
-				// Lock aspect ratio logic
 				if (Math.abs(changeW) * ratio > Math.abs(changeH)) {
 					changeH = changeW * ratio;
 				} else {
@@ -580,14 +564,12 @@ const InteractionOverlay: React.FC = () => {
 				}
 			}
 
-			// Recalculate local deltas based on constrained changes
 			local_dx = signW * changeW;
 			local_dy = signH * changeH;
 
 			const newWidth = Math.max(1, initialPos.width + changeW);
 			const newHeight = Math.max(1, initialPos.height + changeH);
 
-			// Back to world space
 			const world_dx = cos * local_dx - sin * local_dy;
 			const world_dy = sin * local_dx + cos * local_dy;
 
@@ -601,7 +583,6 @@ const InteractionOverlay: React.FC = () => {
 								...l,
 								width: Math.round(newWidth),
 								height: Math.round(newHeight),
-								// Only updating position if we are dragging top/left handles
 								x: isLeft ? Math.round(newX) : l.x,
 								y: isTop ? Math.round(newY) : l.y,
 							}
@@ -678,12 +659,12 @@ const InteractionOverlay: React.FC = () => {
 							transform: `rotate(${layer.rotation}deg) scale(${layer.scale})`,
 						}}
 					>
-						{/* Selection Border - Glassy Look */}
+						{/* Selection Border - Refined */}
 						<div
-							className={`absolute inset-0  pointer-events-none border-2 ${
+							className={`absolute inset-0 pointer-events-none transition-colors duration-150 ${
 								selectedId === layer.id
-									? "border-blue-500/80 shadow-[0_0_15px_rgba(59,130,246,0.3)]"
-									: "border-transparent group-hover:border-blue-400/30"
+									? "border-[1.5px] border-blue-500 shadow-[0_0_0_1px_rgba(59,130,246,0.2)]"
+									: "border border-transparent group-hover:border-blue-400/50"
 							}`}
 						/>
 
@@ -693,7 +674,7 @@ const InteractionOverlay: React.FC = () => {
 								{["tl", "tr", "bl", "br"].map((pos) => (
 									<div
 										key={pos}
-										className={`absolute w-3 h-3 bg-white border border-blue-500 rounded-full shadow-sm z-50 hover:scale-125
+										className={`absolute w-2.5 h-2.5 bg-white border border-blue-600 rounded-full shadow-sm z-50 transition-transform hover:scale-125
                       ${pos === "tl" ? "-top-1.5 -left-1.5 cursor-nwse-resize" : ""}
                       ${pos === "tr" ? "-top-1.5 -right-1.5 cursor-nesw-resize" : ""}
                       ${pos === "bl" ? "-bottom-1.5 -left-1.5 cursor-nesw-resize" : ""}
@@ -708,15 +689,13 @@ const InteractionOverlay: React.FC = () => {
 										}
 									/>
 								))}
-								{/* Rotation Handle (Top Center) */}
+								{/* Rotation Handle */}
 								<div
-									className="absolute -top-6 left-1/2 -translate-x-1/2 w-0.5 h-4 bg-blue-500"
-									style={{
-										transform: `scale(${1 / zoom})`, // Keep line thin visually
-									}}
+									className="absolute -top-4 left-1/2 -translate-x-1/2 h-4 w-px bg-blue-500"
+									style={{ transform: `scaleX(${1 / zoom})` }}
 								/>
 								<div
-									className="absolute -top-8 left-1/2 -translate-x-1/2 w-3 h-3 bg-white border border-blue-500 rounded-full shadow-sm cursor-grab active:cursor-grabbing"
+									className="absolute -top-6 left-1/2 -translate-x-1/2 w-2.5 h-2.5 bg-white border border-blue-600 rounded-full shadow-sm cursor-grab active:cursor-grabbing hover:scale-110"
 									title="Rotate"
 									onMouseDown={(e) => handleRotateStart(e, layer.id)}
 								/>
@@ -752,14 +731,14 @@ const Toolbar = React.memo<{
 	const zoomPercentage = `${Math.round(zoom * 100)}%`;
 
 	return (
-		<Menubar className="border border-white/10 bg-black/60 backdrop-blur-md shadow-2xl rounded-full px-2 py-1 h-12 flex items-center gap-1 select-none z-50">
+		<div className="flex items-center gap-1.5 p-1.5 rounded-full bg-neutral-900/90 backdrop-blur-xl border border-white/10 shadow-2xl z-50">
 			<TooltipProvider>
 				<Tooltip>
 					<TooltipTrigger asChild>
 						<Button
 							variant="ghost"
 							size="icon"
-							className="rounded-full w-9 h-9 hover:bg-white/10 text-white"
+							className={`rounded-full w-8 h-8 ${isPlaying ? "bg-red-500/10 text-red-400 hover:text-red-300 hover:bg-red-500/20" : "hover:bg-white/10 text-white"}`}
 							onClick={() => {
 								if (playerRef.current) {
 									if (isPlaying) playerRef.current.pause();
@@ -776,100 +755,104 @@ const Toolbar = React.memo<{
 						</Button>
 					</TooltipTrigger>
 					<TooltipContent>
-						<p>{isPlaying ? "Pause" : "Play"}</p>
+						<p>{isPlaying ? "Pause (Space)" : "Play (Space)"}</p>
 					</TooltipContent>
 				</Tooltip>
 			</TooltipProvider>
 
+			<div className="w-px h-4 bg-white/10 mx-0.5" />
+
 			<div
 				ref={timeRef}
-				className="text-xs font-mono bg-white/5 border border-white/5 rounded px-2 py-1 min-w-20 text-center text-blue-200"
+				className="text-[10px] font-mono tabular-nums text-neutral-400 min-w-[60px] text-center select-none"
 			>
 				{Math.floor(currentFrame / fps)}s :{" "}
 				{(currentFrame % fps).toString().padStart(2, "0")}f
 			</div>
 
-			<div className="w-px h-5 bg-white/10 mx-1" />
+			<div className="w-px h-4 bg-white/10 mx-0.5" />
 
-			<TooltipProvider>
-				<Tooltip>
-					<TooltipTrigger asChild>
+			<div className="flex bg-white/5 rounded-full p-0.5">
+				<TooltipProvider>
+					<Tooltip>
+						<TooltipTrigger asChild>
+							<Button
+								variant="ghost"
+								size="icon"
+								className={`rounded-full w-7 h-7 ${mode === "select" ? "bg-blue-600 text-white shadow-sm" : "text-gray-400 hover:text-white hover:bg-white/5"}`}
+								onClick={() => setMode("select")}
+							>
+								<MousePointer className="w-3.5 h-3.5" />
+							</Button>
+						</TooltipTrigger>
+						<TooltipContent side="top">Select Tool (V)</TooltipContent>
+					</Tooltip>
+
+					<Tooltip>
+						<TooltipTrigger asChild>
+							<Button
+								variant="ghost"
+								size="icon"
+								className={`rounded-full w-7 h-7 ${mode === "pan" ? "bg-blue-600 text-white shadow-sm" : "text-gray-400 hover:text-white hover:bg-white/5"}`}
+								onClick={() => setMode("pan")}
+							>
+								<Hand className="w-3.5 h-3.5" />
+							</Button>
+						</TooltipTrigger>
+						<TooltipContent side="top">Pan Tool (H)</TooltipContent>
+					</Tooltip>
+				</TooltipProvider>
+			</div>
+
+			<Menubar className="border-none bg-transparent h-auto p-0">
+				<MenubarMenu>
+					<MenubarTrigger asChild>
 						<Button
-							variant={mode === "select" ? "secondary" : "ghost"}
-							size="icon"
-							className={`rounded-full w-9 h-9 ${mode === "select" ? "bg-white/20 text-white" : "text-gray-400 hover:text-white hover:bg-white/10"}`}
-							onClick={() => setMode("select")}
+							variant="ghost"
+							className="h-8 px-2.5 text-[10px] rounded-full text-gray-300 hover:text-white hover:bg-white/10 font-medium"
 						>
-							<MousePointer className="w-4 h-4" />
+							{zoomPercentage}{" "}
+							<ChevronDown className="w-3 h-3 ml-1.5 opacity-50" />
 						</Button>
-					</TooltipTrigger>
-					<TooltipContent>Select Tool (V)</TooltipContent>
-				</Tooltip>
-
-				<Tooltip>
-					<TooltipTrigger asChild>
-						<Button
-							variant={mode === "pan" ? "secondary" : "ghost"}
-							size="icon"
-							className={`rounded-full w-9 h-9 ${mode === "pan" ? "bg-white/20 text-white" : "text-gray-400 hover:text-white hover:bg-white/10"}`}
-							onClick={() => setMode("pan")}
-						>
-							<Hand className="w-4 h-4" />
-						</Button>
-					</TooltipTrigger>
-					<TooltipContent>Pan Tool (Space)</TooltipContent>
-				</Tooltip>
-			</TooltipProvider>
-
-			<div className="w-px h-5 bg-white/10 mx-1" />
-
-			<MenubarMenu>
-				<MenubarTrigger asChild>
-					<Button
-						variant="ghost"
-						className="h-9 px-3 text-xs font-mono rounded-full text-gray-300 hover:text-white hover:bg-white/10"
+					</MenubarTrigger>
+					<MenubarContent
+						align="center"
+						sideOffset={10}
+						className="min-w-[140px] bg-neutral-900/95 backdrop-blur-xl border-white/10 text-gray-200"
 					>
-						{zoomPercentage} <ChevronDown className="w-3 h-3 ml-2 opacity-50" />
-					</Button>
-				</MenubarTrigger>
-				<MenubarContent
-					align="center"
-					className="min-w-[140px] bg-neutral-900/90 backdrop-blur-xl border-white/10 text-gray-200"
+						<MenubarItem onClick={zoomIn}>Zoom In</MenubarItem>
+						<MenubarItem onClick={zoomOut}>Zoom Out</MenubarItem>
+						<MenubarItem onClick={() => zoomTo(1)}>Actual Size</MenubarItem>
+						<MenubarItem onClick={fitView}>Fit to Screen</MenubarItem>
+					</MenubarContent>
+				</MenubarMenu>
+			</Menubar>
+
+			<div className="w-px h-4 bg-white/10 mx-0.5" />
+
+			<div className="flex items-center gap-1">
+				<Button
+					size="sm"
+					className="h-7 text-[10px] font-medium rounded-full px-3 bg-white text-black hover:bg-gray-200 border-0"
+					onClick={onSave}
+					disabled={!isDirty}
 				>
-					<MenubarItem onClick={zoomIn}>Zoom In</MenubarItem>
-					<MenubarItem onClick={zoomOut}>Zoom Out</MenubarItem>
-					<MenubarItem onClick={() => zoomTo(1)}>
-						Actual Size (100%)
-					</MenubarItem>
-					<MenubarItem onClick={() => zoomTo(0.5)}>50%</MenubarItem>
-					<Separator className="my-1 bg-white/10" />
-					<MenubarItem onClick={fitView}>Fit to Screen</MenubarItem>
-				</MenubarContent>
-			</MenubarMenu>
-
-			<Separator orientation="vertical" className="mx-1 h-5 bg-white/10" />
-
-			<Button
-				size="sm"
-				className="h-8 text-xs rounded-full px-4  border-0"
-				onClick={onSave}
-				disabled={!isDirty}
-			>
-				Save
-			</Button>
-			<Button
-				size="sm"
-				variant="ghost"
-				className="h-8 text-xs rounded-full px-3 ml-1 text-gray-400 hover:text-red-400 hover:bg-red-500/10"
-				onClick={onClose}
-			>
-				Close
-			</Button>
-		</Menubar>
+					Save
+				</Button>
+				<Button
+					size="sm"
+					variant="ghost"
+					className="h-7 text-[10px] rounded-full px-2.5 text-gray-400 hover:text-white hover:bg-white/10"
+					onClick={onClose}
+				>
+					Close
+				</Button>
+			</div>
+		</div>
 	);
 });
 
-// --- Components: Timeline Tracks (Sortable) ---
+// --- Components: Timeline Tracks ---
 
 interface SortableTrackProps {
 	layer: ExtendedLayer;
@@ -899,8 +882,6 @@ const SortableTrackHeader: React.FC<SortableTrackProps> = ({
 		zIndex: isDragging ? 999 : "auto",
 	};
 
-	const hasAnimations = layer.animations && layer.animations.length > 0;
-
 	return (
 		<div
 			ref={setNodeRef}
@@ -908,7 +889,7 @@ const SortableTrackHeader: React.FC<SortableTrackProps> = ({
 			role="button"
 			tabIndex={0}
 			className={`
-				border-b border-white/5 flex items-center pl-3 pr-2 text-xs gap-3 group outline-none
+				border-b border-white/5 flex items-center pl-3 pr-2 text-xs gap-3 group outline-none transition-colors
 				${isSelected ? "bg-blue-500/10 text-blue-100" : "hover:bg-white/5 text-gray-400"}
 				${isDragging ? "opacity-50 bg-neutral-900" : ""}
 			`}
@@ -917,7 +898,7 @@ const SortableTrackHeader: React.FC<SortableTrackProps> = ({
 			<div
 				{...attributes}
 				{...listeners}
-				className="cursor-grab active:cursor-grabbing p-1 text-gray-600 hover:text-gray-300"
+				className="cursor-grab active:cursor-grabbing p-1 text-gray-600 hover:text-gray-300 transition-colors"
 			>
 				<GripVertical className="h-3 w-3" />
 			</div>
@@ -934,11 +915,20 @@ const SortableTrackHeader: React.FC<SortableTrackProps> = ({
 				{layer.type === "Audio" && (
 					<Music className="w-3.5 h-3.5 text-orange-400" />
 				)}
-				<span className="truncate font-medium">{layer.name || layer.id}</span>
+				<span className="truncate font-medium text-[11px]">
+					{layer.name || layer.id}
+				</span>
 			</div>
 			<div className="flex gap-1">
-				{hasAnimations && (
-					<Zap className="w-3 h-3 text-cyan-400 animate-pulse" />
+				{layer.animations && layer.animations.length > 0 && (
+					<TooltipProvider>
+						<Tooltip>
+							<TooltipTrigger>
+								<Zap className="w-3 h-3 text-amber-400" />
+							</TooltipTrigger>
+							<TooltipContent>Has Animations</TooltipContent>
+						</Tooltip>
+					</TooltipProvider>
 				)}
 			</div>
 		</div>
@@ -967,10 +957,10 @@ const TimelinePanel: React.FC = () => {
 	const [isPanningTimeline, setIsPanningTimeline] = useState(false);
 	const [dragStartX, setDragStartX] = useState(0);
 	const [initialScroll, setInitialScroll] = useState(0);
-	const [pixelsPerFrame, setPixelsPerFrame] = useState(5);
+	const [pixelsPerFrame, setPixelsPerFrame] = useState(6);
 
-	const zoomTimelineIn = () => setPixelsPerFrame((p) => Math.min(20, p + 1));
-	const zoomTimelineOut = () => setPixelsPerFrame((p) => Math.max(1, p - 1));
+	const zoomTimelineIn = () => setPixelsPerFrame((p) => Math.min(24, p + 2));
+	const zoomTimelineOut = () => setPixelsPerFrame((p) => Math.max(2, p - 2));
 
 	const sortedLayers = useMemo(
 		() => [...layers].sort((a, b) => (b.zIndex ?? 0) - (a.zIndex ?? 0)),
@@ -1013,8 +1003,9 @@ const TimelinePanel: React.FC = () => {
 					const x = frame * pixelsPerFrame;
 					const width = scrollContainerRef.current.clientWidth - HEADER_WIDTH;
 					const scroll = scrollContainerRef.current.scrollLeft;
-					if (x > scroll + width - 100) {
-						scrollContainerRef.current.scrollLeft = x - 100;
+					// Auto scroll when playing
+					if (x > scroll + width - 150) {
+						scrollContainerRef.current.scrollLeft = x - 150;
 					}
 				}
 			}
@@ -1094,28 +1085,33 @@ const TimelinePanel: React.FC = () => {
 	};
 
 	return (
-		<div className="h-48 flex flex-col border-t border-white/10 bg-neutral-900/95 backdrop-blur-md shrink-0 select-none z-30 shadow-[0_-5px_20px_rgba(0,0,0,0.3)]">
-			{/* 1. Fixed Toolbar */}
-			<div className="h-8 border-b border-white/5 flex items-center justify-between px-2 bg-white/5 shrink-0 z-40">
-				<div className="text-xs font-semibold text-gray-400 tracking-wider uppercase flex items-center gap-2">
-					<Layers className="w-4 h-4" /> Timeline
+		<div className="h-56 flex flex-col border-t border-white/10 bg-[#0f0f0f] shrink-0 select-none z-30">
+			{/* 1. Toolbar */}
+			<div className="h-9 border-b border-white/5 flex items-center justify-between px-3 bg-neutral-900 shrink-0 z-40">
+				<div className="text-[11px] font-semibold text-neutral-400 tracking-wider flex items-center gap-2">
+					<Layers className="w-3.5 h-3.5" /> LAYERS
 				</div>
-				<div className="flex gap-1">
+				<div className="flex items-center gap-2">
 					<Button
 						variant="ghost"
 						size="icon"
-						className="h-6 w-6 rounded-full hover:bg-white/10"
+						className="h-6 w-6 rounded-full hover:bg-white/10 text-gray-400"
 						onClick={zoomTimelineOut}
 					>
 						<Minus className="h-3 w-3" />
 					</Button>
-					<div className="w-16 flex items-center justify-center text-[10px] font-mono text-gray-500">
-						{pixelsPerFrame}px/f
-					</div>
+					<Slider
+						value={[pixelsPerFrame]}
+						min={1}
+						max={30}
+						step={1}
+						onValueChange={([v]) => setPixelsPerFrame(v)}
+						className="w-20"
+					/>
 					<Button
 						variant="ghost"
 						size="icon"
-						className="h-6 w-6 rounded-full hover:bg-white/10"
+						className="h-6 w-6 rounded-full hover:bg-white/10 text-gray-400"
 						onClick={zoomTimelineIn}
 					>
 						<Plus className="h-3 w-3" />
@@ -1123,13 +1119,12 @@ const TimelinePanel: React.FC = () => {
 				</div>
 			</div>
 
-			{/* 2. Unified Scroll Area */}
+			{/* 2. Scroll Area */}
 			<div
 				ref={scrollContainerRef}
-				className="flex-1 overflow-auto bg-neutral-950/50"
+				className="flex-1 overflow-auto bg-[#0a0a0a]"
 				style={{ cursor: isPanningTimeline ? "grabbing" : "default" }}
 				onMouseDown={(e) => {
-					// Panning logic for the whole timeline
 					if (
 						e.button === 0 &&
 						(e.target as HTMLElement).classList.contains("timeline-bg")
@@ -1148,60 +1143,100 @@ const TimelinePanel: React.FC = () => {
 				onMouseUp={() => setIsPanningTimeline(false)}
 				onMouseLeave={() => setIsPanningTimeline(false)}
 			>
-				{/* The Content Wrapper: Width = Header + Timeline Content */}
 				<div
 					className="relative flex flex-col min-h-full"
 					style={{
-						width: HEADER_WIDTH + durationInFrames * pixelsPerFrame + 1000,
+						width: HEADER_WIDTH + durationInFrames * pixelsPerFrame + 800,
 					}}
 				>
-					{/* Header/Ruler Row (Sticky Top) */}
+					{/* Ruler (Sticky Top) */}
 					<div
 						className="sticky top-0 z-50 flex shrink-0"
 						style={{ height: RULER_HEIGHT }}
 					>
-						{/* Corner Piece (Sticky Left & Top) */}
 						<div
-							className="sticky left-0 z-50 border-r border-b border-white/10 bg-neutral-900 shrink-0"
+							className="sticky left-0 z-50 border-r border-b border-white/5 bg-neutral-900 shrink-0"
 							style={{ width: HEADER_WIDTH }}
 						/>
-						{/* Ruler (Sticky Top) */}
 						<div
-							className="flex-1 bg-neutral-900/90 backdrop-blur-sm border-b border-white/10 relative"
+							className="flex-1 bg-neutral-900/90 backdrop-blur-sm border-b border-white/5 relative cursor-pointer"
 							onClick={handleTimelineClick}
 						>
-							{/* Ticks */}
+							{/* Ruler Ticks */}
+							<svg className="absolute inset-0 w-full h-full pointer-events-none">
+								<defs>
+									<pattern
+										id="ruler-ticks"
+										x="0"
+										y="0"
+										width={FPS * pixelsPerFrame}
+										height={RULER_HEIGHT}
+										patternUnits="userSpaceOnUse"
+									>
+										{/* Major Tick */}
+										<line
+											x1="0.5"
+											y1={RULER_HEIGHT}
+											x2="0.5"
+											y2={RULER_HEIGHT - 12}
+											stroke="#555"
+										/>
+										{/* Minor Ticks (Quarter seconds) */}
+										{[0.25, 0.5, 0.75].map((t) => (
+											<line
+												key={t}
+												x1={t * FPS * pixelsPerFrame + 0.5}
+												y1={RULER_HEIGHT}
+												x2={t * FPS * pixelsPerFrame + 0.5}
+												y2={RULER_HEIGHT - 6}
+												stroke="#333"
+											/>
+										))}
+									</pattern>
+								</defs>
+								<rect
+									width="100%"
+									height="100%"
+									fill="url(#ruler-ticks)"
+									opacity={0.8}
+								/>
+							</svg>
+
+							{/* Time Labels */}
 							{Array.from({
-								length: Math.ceil(durationInFrames / FPS) + 5,
+								length: Math.ceil(durationInFrames / FPS) + 2,
 							}).map((_, sec) => (
-								<div
+								<span
 									key={sec}
-									className="absolute top-0 bottom-0 pointer-events-none"
-									style={{ left: sec * FPS * pixelsPerFrame }}
+									className="absolute top-1 text-[9px] font-mono text-gray-500 select-none pointer-events-none"
+									style={{ left: sec * FPS * pixelsPerFrame + 4 }}
 								>
-									<div className="h-2 w-px bg-gray-600" />
-									<span className="text-[9px] text-gray-500 ml-1 block mt-2">
-										{sec}s
-									</span>
-								</div>
+									{sec}s
+								</span>
 							))}
 
-							{/* Playhead (Sticky-safe position) */}
+							{/* Playhead */}
 							<div
 								ref={playheadRef}
-								className="absolute top-0 bottom-0 w-px bg-red-500 z-50 pointer-events-none h-[100vh] will-change-transform"
+								className="absolute top-0 bottom-0 z-50 pointer-events-none h-[100vh] will-change-transform"
 							>
-								<div className="w-3 h-3 -ml-[5.5px] bg-red-500 rotate-45 -mt-1 shadow-sm border border-red-400" />
-								<div className="w-px h-full bg-red-500/50" />
+								{/* Handle */}
+								<div className="absolute -translate-x-1/2 -top-0 w-3 h-3 text-red-500 fill-current">
+									<svg viewBox="0 0 12 12" className="w-full h-full">
+										<path d="M0,0 L12,0 L12,8 L6,12 L0,8 Z" />
+									</svg>
+								</div>
+								{/* Line */}
+								<div className="w-px h-full bg-red-500 absolute left-0" />
 							</div>
 						</div>
 					</div>
 
 					{/* Tracks Body */}
 					<div className="flex relative flex-1">
-						{/* Track Headers Column (Sticky Left) */}
+						{/* Headers */}
 						<div
-							className="sticky left-0 z-30 bg-neutral-900/80 backdrop-blur-md border-r border-white/10 shrink-0"
+							className="sticky left-0 z-30 bg-[#0f0f0f] border-r border-white/5 shrink-0"
 							style={{ width: HEADER_WIDTH }}
 						>
 							<DndContext
@@ -1225,14 +1260,14 @@ const TimelinePanel: React.FC = () => {
 							</DndContext>
 						</div>
 
-						{/* Clips/Timeline Tracks Column */}
-						<div className="flex-1 relative timeline-bg min-h-full">
-							{/* Horizontal Grid Lines */}
+						{/* Clips */}
+						<div className="flex-1 relative timeline-bg min-h-full bg-[#0a0a0a]">
+							{/* Grid Lines */}
 							<div
-								className="absolute inset-0 pointer-events-none"
+								className="absolute inset-0 pointer-events-none opacity-20"
 								style={{
 									backgroundImage:
-										"linear-gradient(90deg, rgba(255,255,255,0.03) 1px, transparent 1px)",
+										"linear-gradient(90deg, #333 1px, transparent 1px)",
 									backgroundSize: `${FPS * pixelsPerFrame}px 100%`,
 								}}
 							/>
@@ -1242,16 +1277,20 @@ const TimelinePanel: React.FC = () => {
 									key={layer.id}
 									style={{ height: TRACK_HEIGHT }}
 									className={`border-b border-white/5 relative group/track ${
-										layer.id === selectedId ? "bg-white/[0.02]" : ""
+										layer.id === selectedId ? "bg-white/[0.03]" : ""
 									}`}
 								>
 									<div
 										role="button"
 										tabIndex={0}
 										className={`
-											absolute top-1.5 bottom-1.5 rounded-md border backdrop-blur-sm
+											absolute top-1 bottom-1 rounded-md border backdrop-blur-sm
 											flex items-center overflow-hidden cursor-move outline-none
-											${layer.id === selectedId ? "ring-1 ring-blue-400 shadow-[0_4px_12px_rgba(0,0,0,0.5)] z-10" : "hover:brightness-110 opacity-90 hover:opacity-100"}
+											${
+												layer.id === selectedId
+													? "ring-1 ring-white/50 z-10 shadow-lg"
+													: "opacity-80 hover:opacity-100 hover:brightness-110"
+											}
 										`}
 										style={{
 											left: layer.startFrame * pixelsPerFrame,
@@ -1261,20 +1300,13 @@ const TimelinePanel: React.FC = () => {
 											),
 											backgroundColor:
 												layer.type === "Video"
-													? "rgba(29, 78, 216, 0.4)"
+													? "#1e3a8a" // Blue
 													: layer.type === "Image"
-														? "rgba(126, 34, 206, 0.4)"
+														? "#581c87" // Purple
 														: layer.type === "Text"
-															? "rgba(21, 128, 61, 0.4)"
-															: "rgba(194, 65, 12, 0.4)",
-											borderColor:
-												layer.type === "Video"
-													? "rgba(29, 78, 216, 0.8)"
-													: layer.type === "Image"
-														? "rgba(126, 34, 206, 0.8)"
-														: layer.type === "Text"
-															? "rgba(21, 128, 61, 0.8)"
-															: "rgba(194, 65, 12, 0.8)",
+															? "#14532d" // Green
+															: "#7c2d12", // Orange
+											borderColor: "rgba(255,255,255,0.1)",
 										}}
 										onMouseDown={(e) => handleClipDrag(e, layer.id)}
 										onClick={(e) => {
@@ -1283,15 +1315,17 @@ const TimelinePanel: React.FC = () => {
 										}}
 									>
 										<div className="flex flex-col px-2 w-full overflow-hidden">
-											<span className="text-[10px] truncate text-white/90 font-medium drop-shadow-md select-none">
+											<span className="text-[10px] truncate text-white/90 font-medium drop-shadow-md">
 												{layer.name || layer.id}
 											</span>
 										</div>
 										{/* Resize Handle */}
 										<div
-											className="absolute right-0 top-0 bottom-0 w-2.5 cursor-e-resize hover:bg-white/30 z-20"
+											className="absolute right-0 top-0 bottom-0 w-3 cursor-e-resize hover:bg-white/20 z-20 flex items-center justify-center group/handle"
 											onMouseDown={(e) => handleTrim(e, layer.id)}
-										/>
+										>
+											<div className="w-0.5 h-3 bg-white/30 group-hover/handle:bg-white/70 rounded-full" />
+										</div>
 									</div>
 								</div>
 							))}
@@ -1302,6 +1336,40 @@ const TimelinePanel: React.FC = () => {
 		</div>
 	);
 };
+
+// --- Components: Collapsible Section for Inspector ---
+
+const CollapsibleSection: React.FC<{
+	title: string;
+	icon: React.ElementType;
+	children: React.ReactNode;
+	defaultOpen?: boolean;
+}> = ({ title, icon: Icon, children, defaultOpen = true }) => {
+	const [isOpen, setIsOpen] = useState(defaultOpen);
+	return (
+		<div className="border-b border-white/5">
+			<button
+				type="button"
+				onClick={() => setIsOpen(!isOpen)}
+				className="w-full flex items-center justify-between p-3 hover:bg-white/5 transition-colors"
+			>
+				<div className="flex items-center gap-2 text-[11px] font-bold text-gray-400 uppercase tracking-wider">
+					<Icon className="w-3.5 h-3.5" /> {title}
+				</div>
+				<ChevronDown
+					className={`w-3 h-3 text-gray-500 transition-transform ${isOpen ? "rotate-0" : "-rotate-90"}`}
+				/>
+			</button>
+			{isOpen && (
+				<div className="p-3 pt-0 animate-in slide-in-from-top-1 duration-200">
+					{children}
+				</div>
+			)}
+		</div>
+	);
+};
+
+// --- Inspector Panel ---
 
 const InspectorPanel: React.FC = () => {
 	const {
@@ -1323,18 +1391,8 @@ const InspectorPanel: React.FC = () => {
 		if (Array.isArray(fontList) && (fontList as string[])?.length > 0) {
 			return fontList as string[];
 		}
-		return ["Geist", "Inter", "Arial"];
+		return ["Geist", "Inter", "Arial", "Courier New", "Times New Roman"];
 	}, [fontList]);
-
-	const aspectRatios = useMemo(
-		() => [
-			{ label: "IG Square (1:1)", width: 1080, height: 1080 },
-			{ label: "IG Portrait (4:5)", width: 1080, height: 1350 },
-			{ label: "Story (9:16)", width: 1080, height: 1920 },
-			{ label: "Landscape (16:9)", width: 1920, height: 1080 },
-		],
-		[],
-	);
 
 	const animationTypes: AnimationType[] = [
 		"fade-in",
@@ -1351,18 +1409,20 @@ const InspectorPanel: React.FC = () => {
 		"shake",
 	];
 
+	// Helper for clean class preview
+	const getPreviewAnimationClass = (type: AnimationType) => `animate-${type}`;
+
 	const addAnimation = (type: AnimationType) => {
 		if (!selectedLayer) return;
 		const newAnimation: VideoAnimation = {
 			id: crypto.randomUUID(),
 			type,
-			value: 1, // default 1 second
+			value: 1,
 		};
-		const currentAnimations = selectedLayer.animations || [];
 		updateLayers((prev) =>
 			prev.map((l) =>
 				l.id === selectedId
-					? { ...l, animations: [...currentAnimations, newAnimation] }
+					? { ...l, animations: [...(l.animations || []), newAnimation] }
 					: l,
 			),
 		);
@@ -1399,15 +1459,24 @@ const InspectorPanel: React.FC = () => {
 		);
 	};
 
+	const update = (patch: Partial<ExtendedLayer>) => {
+		updateLayers((prev) =>
+			prev.map((l) => (l.id === selectedId ? { ...l, ...patch } : l)),
+		);
+	};
+
 	if (!selectedLayer) {
 		return (
-			<div className="w-80 border-l border-white/10 bg-neutral-900/95 backdrop-blur-xl flex flex-col overflow-y-auto z-20 shadow-xl">
-				<div className="p-4 space-y-6">
-					<section>
-						<h3 className="text-[10px] font-bold uppercase tracking-wider text-gray-500 mb-3 flex items-center gap-2">
-							<Settings2 className="w-3 h-3" /> Canvas Settings
-						</h3>
-						<div className="grid grid-cols-2 gap-3 mb-3">
+			<div className="w-72 border-l border-white/5 bg-[#0f0f0f] flex flex-col z-20 shadow-xl">
+				<div className="p-4 bg-neutral-900 border-b border-white/5">
+					<h2 className="text-xs font-semibold text-white">Global Settings</h2>
+				</div>
+				<div className="p-4 space-y-4">
+					<div className="space-y-2">
+						<label className="text-[10px] text-gray-500 uppercase font-bold">
+							Canvas Size
+						</label>
+						<div className="grid grid-cols-2 gap-2">
 							<DraggableNumberInput
 								label="W"
 								icon={MoveHorizontal}
@@ -1421,108 +1490,54 @@ const InspectorPanel: React.FC = () => {
 								onChange={(v) => updateViewportHeight(Math.max(1, v))}
 							/>
 						</div>
-						<Select
-							onValueChange={(val) => {
-								const preset = aspectRatios.find((r) => r.label === val);
-								if (preset) {
-									updateViewportWidth(preset.width);
-									updateViewportHeight(preset.height);
-								}
-							}}
-						>
-							<SelectTrigger className="h-8 text-xs bg-neutral-800 border-white/10">
-								<SelectValue placeholder="Presets" />
-							</SelectTrigger>
-							<SelectContent className="bg-neutral-800 border-white/10 text-white">
-								{aspectRatios.map((r) => (
-									<SelectItem key={r.label} value={r.label}>
-										{r.label}
-									</SelectItem>
-								))}
-							</SelectContent>
-						</Select>
-					</section>
+						<div className="grid grid-cols-2 gap-2 pt-1">
+							{[
+								{ label: "16:9", w: 1920, h: 1080 },
+								{ label: "9:16", w: 1080, h: 1920 },
+								{ label: "1:1", w: 1080, h: 1080 },
+								{ label: "4:5", w: 1080, h: 1350 },
+							].map((p) => (
+								<Button
+									key={p.label}
+									variant="outline"
+									size="sm"
+									className="text-[10px] h-7 border-white/10 hover:bg-white/5"
+									onClick={() => {
+										updateViewportWidth(p.w);
+										updateViewportHeight(p.h);
+									}}
+								>
+									{p.label}
+								</Button>
+							))}
+						</div>
+					</div>
 
-					<div className="flex flex-col items-center justify-center p-10 text-center border border-dashed border-white/10 rounded-lg bg-white/5">
-						<MousePointer className="w-8 h-8 text-gray-600 mb-2" />
-						<p className="text-xs text-gray-400">
-							Select a layer to edit properties
-						</p>
+					<div className="flex flex-col items-center justify-center p-8 mt-10 text-center border border-dashed border-white/10 rounded-lg bg-white/5">
+						<MousePointer className="w-6 h-6 text-gray-600 mb-2" />
+						<p className="text-xs text-gray-500">Select a layer to edit</p>
 					</div>
 				</div>
 			</div>
 		);
 	}
 
-	const update = (patch: Partial<ExtendedLayer>) => {
-		updateLayers((prev) =>
-			prev.map((l) => (l.id === selectedId ? { ...l, ...patch } : l)),
-		);
-	};
-
-	const formatAnimationName = (type: AnimationType) =>
-		type
-			.split("-")
-			.map((w) => w.charAt(0).toUpperCase() + w.slice(1))
-			.join(" ");
-
-	const getPreviewAnimationClass = (type: AnimationType) => {
-		return `animate-${type}`;
-	};
-
 	return (
-		<ScrollArea className="w-80 border-l border-white/10 bg-neutral-900/95 backdrop-blur-xl z-20 shadow-xl">
+		<ScrollArea className="w-72 border-l border-white/5 bg-[#0f0f0f] z-20 shadow-xl">
+			{/* Inject Animation Styles for Preview */}
 			<style>{`
-				@keyframes fade-in {
-					from { opacity: 0; }
-					to { opacity: 1; }
-				}
-				@keyframes fade-out {
-					from { opacity: 1; }
-					to { opacity: 0; }
-				}
-				@keyframes slide-in-left {
-					from { transform: translateX(-100%); }
-					to { transform: translateX(0); }
-				}
-				@keyframes slide-in-right {
-					from { transform: translateX(100%); }
-					to { transform: translateX(0); }
-				}
-				@keyframes slide-in-top {
-					from { transform: translateY(-100%); }
-					to { transform: translateY(0); }
-				}
-				@keyframes slide-in-bottom {
-					from { transform: translateY(100%); }
-					to { transform: translateY(0); }
-				}
-				@keyframes zoom-in {
-					from { transform: scale(0); }
-					to { transform: scale(1); }
-				}
-				@keyframes zoom-out {
-					from { transform: scale(1); }
-					to { transform: scale(0); }
-				}
-				@keyframes rotate-cw {
-					from { transform: rotate(0deg); }
-					to { transform: rotate(360deg); }
-				}
-				@keyframes rotate-ccw {
-					from { transform: rotate(0deg); }
-					to { transform: rotate(-360deg); }
-				}
-				@keyframes bounce {
-					0%, 20%, 50%, 80%, 100% { transform: translateY(0); }
-					40% { transform: translateY(-20px); }
-					60% { transform: translateY(-10px); }
-				}
-				@keyframes shake {
-					0%, 100% { transform: translateX(0); }
-					10%, 30%, 50%, 70%, 90% { transform: translateX(-5px); }
-					20%, 40%, 60%, 80% { transform: translateX(5px); }
-				}
+				@keyframes fade-in { from { opacity: 0; } to { opacity: 1; } }
+				@keyframes fade-out { from { opacity: 1; } to { opacity: 0; } }
+				@keyframes slide-in-left { from { transform: translateX(-100%); } to { transform: translateX(0); } }
+				@keyframes slide-in-right { from { transform: translateX(100%); } to { transform: translateX(0); } }
+				@keyframes slide-in-top { from { transform: translateY(-100%); } to { transform: translateY(0); } }
+				@keyframes slide-in-bottom { from { transform: translateY(100%); } to { transform: translateY(0); } }
+				@keyframes zoom-in { from { transform: scale(0); } to { transform: scale(1); } }
+				@keyframes zoom-out { from { transform: scale(1); } to { transform: scale(0); } }
+				@keyframes rotate-cw { from { transform: rotate(0deg); } to { transform: rotate(360deg); } }
+				@keyframes rotate-ccw { from { transform: rotate(0deg); } to { transform: rotate(-360deg); } }
+				@keyframes bounce { 0%, 20%, 50%, 80%, 100% { transform: translateY(0); } 40% { transform: translateY(-20px); } 60% { transform: translateY(-10px); } }
+				@keyframes shake { 0%, 100% { transform: translateX(0); } 10%, 30%, 50%, 70%, 90% { transform: translateX(-5px); } 20%, 40%, 60%, 80% { transform: translateX(5px); } }
 				.animate-fade-in { animation: fade-in 1s ease-in-out infinite alternate; }
 				.animate-fade-out { animation: fade-out 1s ease-in-out infinite alternate; }
 				.animate-slide-in-left { animation: slide-in-left 1s ease-in-out infinite alternate; }
@@ -1536,25 +1551,25 @@ const InspectorPanel: React.FC = () => {
 				.animate-bounce { animation: bounce 1s ease-in-out infinite; }
 				.animate-shake { animation: shake 1s ease-in-out infinite; }
 			`}</style>
-			<div className="p-4 space-y-6">
-				{/* Properties Header */}
-				<div className="flex items-center justify-between">
+
+			<div className="flex items-center justify-between p-4 border-b border-white/5 bg-neutral-900/50">
+				<div className="flex flex-col min-w-0">
+					<span className="text-[10px] text-gray-500 uppercase font-bold tracking-wider">
+						Selected
+					</span>
 					<h2 className="text-sm font-semibold text-white truncate max-w-[150px]">
 						{selectedLayer.name || selectedLayer.id}
 					</h2>
-					<span className="text-[10px] bg-blue-600 px-1.5 py-0.5 rounded text-white font-mono uppercase">
-						{selectedLayer.type}
-					</span>
 				</div>
+				<span className="text-[10px] bg-white/10 px-2 py-0.5 rounded-full text-gray-300 font-medium uppercase border border-white/5">
+					{selectedLayer.type}
+				</span>
+			</div>
 
-				<Separator className="bg-white/10" />
-
-				{/* Transform Section */}
-				<section>
-					<h3 className="text-[10px] font-bold uppercase tracking-wider text-gray-500 mb-3">
-						Transform
-					</h3>
-					<div className="grid grid-cols-2 gap-3">
+			<div className="pb-20">
+				{/* Transform */}
+				<CollapsibleSection title="Transform" icon={Move}>
+					<div className="grid grid-cols-2 gap-3 mb-3">
 						<DraggableNumberInput
 							label="X"
 							icon={MoveHorizontal}
@@ -1579,6 +1594,8 @@ const InspectorPanel: React.FC = () => {
 							value={Math.round(selectedLayer.height)}
 							onChange={(v) => update({ height: Math.max(1, v) })}
 						/>
+					</div>
+					<div className="grid grid-cols-2 gap-3">
 						<DraggableNumberInput
 							label="Scale"
 							icon={Move}
@@ -1588,90 +1605,50 @@ const InspectorPanel: React.FC = () => {
 							allowDecimal
 						/>
 						<DraggableNumberInput
-							label="Rotate"
+							label="Rot"
 							icon={RotateCw}
 							value={Math.round(selectedLayer.rotation)}
 							onChange={(v) => update({ rotation: v })}
 						/>
 					</div>
-				</section>
+					{(selectedLayer.type === "Image" ||
+						selectedLayer.type === "Video") && (
+						<div className="flex items-center justify-between mt-3 pt-2 border-t border-white/5">
+							<label
+								htmlFor="lockAspect"
+								className="text-[11px] text-gray-400 cursor-pointer"
+							>
+								Lock Aspect Ratio
+							</label>
+							<Switch
+								id="lockAspect"
+								checked={selectedLayer.lockAspect ?? true}
+								onCheckedChange={(checked) => update({ lockAspect: checked })}
+								className="scale-75 data-[state=checked]:bg-blue-600"
+							/>
+						</div>
+					)}
+				</CollapsibleSection>
 
-				{/* Aspect Lock */}
-				{(selectedLayer.type === "Image" || selectedLayer.type === "Video") && (
-					<div className="flex items-center space-x-2">
-						<Switch
-							id="lockAspect"
-							checked={selectedLayer.lockAspect ?? true}
-							onCheckedChange={(checked) => update({ lockAspect: checked })}
-							className="data-[state=checked]:bg-blue-600"
-						/>
-						<label
-							htmlFor="lockAspect"
-							className="text-[10px] text-gray-400 uppercase cursor-pointer"
-						>
-							Lock Aspect Ratio
-						</label>
-					</div>
-				)}
-
-				<Separator className="bg-white/10" />
-
-				{/* Animations Section */}
-				<section>
-					<div className="flex items-center justify-between mb-3">
-						<h3 className="text-[10px] font-bold uppercase tracking-wider text-gray-500 flex items-center gap-2">
-							<Zap className="w-3 h-3" /> Animations
-						</h3>
-						<Popover open={addAnimOpen} onOpenChange={setAddAnimOpen}>
-							<PopoverTrigger asChild>
-								<Button
-									variant="ghost"
-									className="h-6 text-[10px] w-20 bg-white/5 border-white/10 px-2 text-gray-300 hover:text-white hover:bg-white/10"
-								>
-									<span className="mr-1">Add</span>
-								</Button>
-							</PopoverTrigger>
-							<PopoverContent className="bg-neutral-800 border-white/10 text-white w-80">
-								<div className="grid grid-cols-3 gap-2">
-									{animationTypes.map((type) => (
-										<Button
-											key={type}
-											variant="ghost"
-											className="flex flex-col items-center p-1 h-auto"
-											onClick={() => addAnimation(type)}
-										>
-											<div
-												className={`w-10 h-10 bg-blue-500 rounded mb-1 ${getPreviewAnimationClass(type)}`}
-											/>
-											<span className="text-xs">
-												{formatAnimationName(type)}
-											</span>
-										</Button>
-									))}
-								</div>
-							</PopoverContent>
-						</Popover>
-					</div>
-
+				{/* Animations */}
+				<CollapsibleSection title="Animations" icon={Zap}>
 					<div className="space-y-3">
-						{!selectedLayer.animations?.length && (
-							<div className="text-xs text-gray-600 italic text-center py-2">
-								No animations applied
-							</div>
-						)}
 						{selectedLayer.animations?.map((anim) => (
 							<div
 								key={anim.id}
-								className="bg-black/20 rounded p-2 border border-white/5"
+								className="bg-neutral-900 rounded-md p-2 border border-white/5 shadow-sm group"
 							>
 								<div className="flex items-center justify-between mb-2">
-									<span className="text-xs font-medium text-gray-300 capitalize">
-										{formatAnimationName(anim.type)}
-									</span>
+									<div className="flex items-center gap-2">
+										<div className="w-1.5 h-1.5 rounded-full bg-blue-500" />
+										<span className="text-[11px] font-medium text-gray-200 capitalize">
+											{anim.type.replace(/-/g, " ")}
+										</span>
+									</div>
 									<Button
 										variant="ghost"
 										size="icon"
-										className="h-5 w-5 hover:bg-red-500/20 hover:text-red-400"
+										className="h-5 w-5 hover:bg-red-500/20 hover:text-red-400 opacity-0 group-hover:opacity-100 transition-opacity"
 										onClick={() => removeAnimation(anim.id)}
 									>
 										<Trash2 className="w-3 h-3" />
@@ -1686,48 +1663,109 @@ const InspectorPanel: React.FC = () => {
 										onValueChange={([v]) => updateAnimation(anim.id, v)}
 										className="flex-1"
 									/>
-									<span className="text-[10px] font-mono w-8 text-right text-gray-400">
-										{Math.round(anim.value * 10) / 10}s
+									<span className="text-[10px] font-mono w-8 text-right text-gray-500">
+										{anim.value.toFixed(1)}s
 									</span>
 								</div>
 							</div>
 						))}
+
+						<Popover open={addAnimOpen} onOpenChange={setAddAnimOpen}>
+							<PopoverTrigger asChild>
+								<Button
+									variant="outline"
+									className="w-full h-8 text-xs border-dashed border-white/20 bg-transparent hover:bg-white/5 hover:border-white/30 text-gray-400"
+								>
+									<Plus className="w-3.5 h-3.5 mr-1" /> Add Animation
+								</Button>
+							</PopoverTrigger>
+							<PopoverContent
+								side="left"
+								align="start"
+								className="bg-[#1a1a1a] border-white/10 text-white w-64 p-2 shadow-2xl"
+							>
+								<div className="grid grid-cols-3 gap-1">
+									{animationTypes.map((type) => (
+										<button
+											key={type}
+											className="flex flex-col items-center justify-center p-2 rounded hover:bg-white/10 transition-colors group"
+											onClick={() => addAnimation(type)}
+										>
+											<div className="w-8 h-8 mb-1 rounded flex items-center justify-center bg-white/5 group-hover:bg-white/10 border border-white/5">
+												<div
+													className={`w-4 h-4 bg-blue-500 rounded-sm ${getPreviewAnimationClass(type)}`}
+												/>
+											</div>
+											<span className="text-[9px] text-gray-400 text-center leading-tight">
+												{type.replace(/-/g, " ")}
+											</span>
+										</button>
+									))}
+								</div>
+							</PopoverContent>
+						</Popover>
 					</div>
-				</section>
+				</CollapsibleSection>
 
-				<Separator className="bg-white/10" />
+				{/* Typography */}
+				{selectedLayer.type === "Text" && (
+					<CollapsibleSection title="Typography" icon={Type}>
+						<div className="space-y-3">
+							<div className="space-y-1">
+								<label className="text-[10px] text-gray-500">Content</label>
+								<div className="text-xs text-gray-300 border border-white/10 p-2 rounded bg-black/20 break-words min-h-[40px]">
+									{getTextData(selectedLayer.id)}
+								</div>
+							</div>
 
-				{/* Timing Section */}
-				<section>
-					<h3 className="text-[10px] font-bold uppercase tracking-wider text-gray-500 mb-3">
-						Timing
-					</h3>
-					<div className="grid grid-cols-2 gap-3">
-						<DraggableNumberInput
-							label="Start"
-							value={selectedLayer.startFrame}
-							onChange={(v) => update({ startFrame: Math.max(0, v) })}
-						/>
-						<DraggableNumberInput
-							label="Duration"
-							value={selectedLayer.durationInFrames}
-							onChange={(v) => update({ durationInFrames: Math.max(1, v) })}
-						/>
-					</div>
-				</section>
+							<div className="grid grid-cols-2 gap-3">
+								<div className="space-y-1 col-span-2">
+									<label className="text-[10px] text-gray-500">Font</label>
+									<Select
+										value={selectedLayer.fontFamily ?? "Inter"}
+										onValueChange={(val) => update({ fontFamily: val })}
+									>
+										<SelectTrigger className="h-8 text-xs bg-neutral-800 border-white/10">
+											<SelectValue placeholder="Select font" />
+										</SelectTrigger>
+										<SelectContent className="bg-neutral-800 border-white/10 text-white max-h-[200px]">
+											{fontNames.map((f) => (
+												<SelectItem key={f} value={f} style={{ fontFamily: f }}>
+													{f}
+												</SelectItem>
+											))}
+										</SelectContent>
+									</Select>
+								</div>
 
-				<Separator className="bg-white/10" />
+								<DraggableNumberInput
+									label="Size"
+									icon={Type}
+									value={selectedLayer.fontSize ?? 40}
+									onChange={(v) => update({ fontSize: v })}
+								/>
 
-				{/* Audio/Typography Section based on type */}
+								<div className="space-y-1">
+									<label className="text-[10px] text-gray-500 block mb-1">
+										Color
+									</label>
+									<ColorInput
+										value={selectedLayer.fill ?? "#fff"}
+										onChange={(c) => update({ fill: c })}
+									/>
+								</div>
+							</div>
+						</div>
+					</CollapsibleSection>
+				)}
+
+				{/* Audio / Video Volume */}
 				{(selectedLayer.type === "Video" || selectedLayer.type === "Audio") && (
-					<section>
-						<h3 className="text-[10px] font-bold uppercase tracking-wider text-gray-500 mb-3">
-							Audio
-						</h3>
-						<div className="space-y-2">
+					<CollapsibleSection title="Audio" icon={Volume2}>
+						<div className="space-y-3 pt-1">
 							<div className="flex items-center justify-between text-xs text-gray-400">
-								<span>Volume</span>
-								<span className="font-mono">
+								<span>Volume Level</span>
+								<span className="font-mono bg-white/5 px-1.5 rounded">
 									{Math.round((selectedLayer.volume ?? 1) * 100)}%
 								</span>
 							</div>
@@ -1738,64 +1776,14 @@ const InspectorPanel: React.FC = () => {
 								onValueChange={([v]) => update({ volume: v })}
 							/>
 						</div>
-					</section>
-				)}
-
-				{selectedLayer.type === "Text" && (
-					<section>
-						<h3 className="text-[10px] font-bold uppercase tracking-wider text-gray-500 mb-3">
-							Typography
-						</h3>
-						<div className="space-y-3">
-							<div className="text-xs text-gray-300 italic border border-white/10 p-2 rounded bg-black/20 break-words">
-								"{getTextData(selectedLayer.id)}"
-							</div>
-							<div className="space-y-1">
-								<label className="text-[10px] text-gray-400 uppercase">
-									Font Family
-								</label>
-								<Select
-									value={selectedLayer.fontFamily ?? "Inter"}
-									onValueChange={(val) => update({ fontFamily: val })}
-								>
-									<SelectTrigger className="h-8 text-xs bg-neutral-800 border-white/10">
-										<SelectValue placeholder="Select font" />
-									</SelectTrigger>
-									<SelectContent className="bg-neutral-800 border-white/10 text-white">
-										{fontNames.map((f) => (
-											<SelectItem key={f} value={f}>
-												{f}
-											</SelectItem>
-										))}
-									</SelectContent>
-								</Select>
-							</div>
-							<div className="grid grid-cols-2 gap-3">
-								<DraggableNumberInput
-									label="Size"
-									icon={Type}
-									value={selectedLayer.fontSize ?? 40}
-									onChange={(v) => update({ fontSize: v })}
-								/>
-								<div className="space-y-1">
-									<label className="text-[10px] text-gray-400 uppercase">
-										Color
-									</label>
-									<ColorInput
-										value={selectedLayer.fill ?? "#fff"}
-										onChange={(c) => update({ fill: c })}
-									/>
-								</div>
-							</div>
-						</div>
-					</section>
+					</CollapsibleSection>
 				)}
 			</div>
 		</ScrollArea>
 	);
 };
 
-// --- Main Editor Wrapper ---
+// --- Main Editor ---
 
 interface VideoDesignerEditorProps {
 	initialLayers: Map<string, OutputItem<"Text" | "Image" | "Video" | "Audio">>;
@@ -1924,7 +1912,7 @@ export const VideoDesignerEditor: React.FC<VideoDesignerEditorProps> = ({
 				const pointerY = e.clientY - rect.top;
 
 				const oldZoom = zoom;
-				const zoomSensitivity = 0.003; // Increased sensitivity for faster zooming
+				const zoomSensitivity = 0.003;
 				const delta = -e.deltaY * zoomSensitivity;
 				const newZoom = Math.min(Math.max(oldZoom * Math.exp(delta), 0.1), 5);
 
@@ -1943,7 +1931,6 @@ export const VideoDesignerEditor: React.FC<VideoDesignerEditorProps> = ({
 					setPan(newPan);
 				}
 			} else {
-				// Pan with scroll wheel if not zooming
 				setPan((p) => ({ ...p, x: p.x - e.deltaX, y: p.y - e.deltaY }));
 			}
 		},
@@ -1958,20 +1945,29 @@ export const VideoDesignerEditor: React.FC<VideoDesignerEditorProps> = ({
 		}
 	}, [handleWheel]);
 
-	// Keyboard Pan Mode
+	// Keyboard Pan Mode & Shortcuts
 	useEffect(() => {
 		const handleKeyDown = (e: KeyboardEvent) => {
+			const isInputActive =
+				document.activeElement?.tagName === "INPUT" ||
+				document.activeElement?.tagName === "TEXTAREA";
+
 			if (e.code === "Space" && !e.repeat) {
-				// Don't trigger if input is focused
-				if (
-					document.activeElement?.tagName === "INPUT" ||
-					document.activeElement?.tagName === "TEXTAREA"
-				)
-					return;
+				if (isInputActive) return;
 				e.preventDefault();
 				if (mode !== "pan") {
 					lastModeRef.current = mode;
 					setMode("pan");
+				}
+			}
+
+			// Delete / Backspace support
+			if (e.key === "Delete" || e.key === "Backspace") {
+				if (isInputActive) return;
+				if (selectedId) {
+					setLayers((prev) => prev.filter((l) => l.id !== selectedId));
+					setSelectedId(null);
+					setIsDirty(true);
 				}
 			}
 		};
@@ -1994,7 +1990,7 @@ export const VideoDesignerEditor: React.FC<VideoDesignerEditorProps> = ({
 			window.removeEventListener("keydown", handleKeyDown);
 			window.removeEventListener("keyup", handleKeyUp);
 		};
-	}, [mode]);
+	}, [mode, selectedId]);
 
 	// Initialization
 	useEffect(() => {
@@ -2008,6 +2004,18 @@ export const VideoDesignerEditor: React.FC<VideoDesignerEditorProps> = ({
 		initialLayers.forEach((item, id) => {
 			const saved = layerUpdates[id] as ExtendedLayer | undefined;
 
+			// Extract duration in milliseconds if available (for video/audio)
+			const durationMs =
+				item.data.entity?.duration ?? item.data.processData?.duration ?? 0;
+			console.log({ durationMs, w: item.data });
+			// Calculate default duration in frames based on media type
+			// For video/audio: use asset duration if available, else default
+			// For text/image: always use default
+			const calculatedDurationFrames =
+				(item.type === "Video" || item.type === "Audio") && durationMs > 0
+					? Math.ceil((durationMs / 1000) * FPS)
+					: DEFAULT_DURATION_FRAMES;
+
 			const base = {
 				id,
 				inputHandleId: id,
@@ -2020,9 +2028,9 @@ export const VideoDesignerEditor: React.FC<VideoDesignerEditorProps> = ({
 				opacity: 1,
 				zIndex: saved?.zIndex ?? ++maxZ,
 				startFrame: 0,
-				durationInFrames: 30 * 5,
+				durationInFrames: saved?.durationInFrames ?? calculatedDurationFrames,
 				volume: 1,
-				animations: saved?.animations ?? [], // Load animations
+				animations: saved?.animations ?? [],
 				...saved,
 			};
 
@@ -2089,6 +2097,15 @@ export const VideoDesignerEditor: React.FC<VideoDesignerEditorProps> = ({
 		[],
 	);
 
+	const deleteLayer = useCallback(
+		(id: string) => {
+			setLayers((prev) => prev.filter((l) => l.id !== id));
+			if (selectedId === id) setSelectedId(null);
+			setIsDirty(true);
+		},
+		[selectedId],
+	);
+
 	const setIsPlaying = (p: boolean) => {
 		setIsPlayingState(p);
 		if (p) {
@@ -2108,7 +2125,7 @@ export const VideoDesignerEditor: React.FC<VideoDesignerEditorProps> = ({
 
 	const durationInFrames = useMemo(() => {
 		return Math.max(
-			30 * 5,
+			DEFAULT_DURATION_FRAMES,
 			...layers.map((l) => l.startFrame + l.durationInFrames),
 		);
 	}, [layers]);
@@ -2151,6 +2168,7 @@ export const VideoDesignerEditor: React.FC<VideoDesignerEditorProps> = ({
 			value={{
 				layers,
 				updateLayers: updateLayersHandler,
+				deleteLayer,
 				selectedId,
 				setSelectedId,
 				getTextData,
@@ -2180,19 +2198,18 @@ export const VideoDesignerEditor: React.FC<VideoDesignerEditorProps> = ({
 				setIsDirty,
 			}}
 		>
-			<div className="flex flex-col h-screen w-full bg-black text-gray-100 overflow-hidden font-sans">
+			<div className="flex flex-col h-screen w-full bg-[#050505] text-gray-100 overflow-hidden font-sans select-none">
 				<div className="flex flex-1 min-h-0 relative">
-					{/* Viewport Area */}
+					{/* Viewport */}
 					<div
 						ref={containerRef}
 						className="flex-1 relative overflow-hidden"
 						onMouseDown={() => setSelectedId(null)}
 						style={{
-							backgroundColor: "#000000",
+							backgroundColor: "#050505",
 							backgroundImage:
-								"radial-gradient(circle at 1px 1px, rgba(255,255,255,0.2) 1px, transparent 0)",
-							backgroundSize: "20px 20px",
-							backgroundPosition: "0 0",
+								"radial-gradient(circle at 1px 1px, rgba(255,255,255,0.1) 1px, transparent 0)",
+							backgroundSize: "24px 24px",
 						}}
 					>
 						<div
@@ -2205,7 +2222,7 @@ export const VideoDesignerEditor: React.FC<VideoDesignerEditorProps> = ({
 							}}
 						>
 							<div
-								className="shadow-2xl media-container relative bg-black ring-1 ring-white/10"
+								className="shadow-[0_0_50px_rgba(0,0,0,0.5)] media-container relative bg-black ring-1 ring-white/10"
 								style={{ width: viewportWidth, height: viewportHeight }}
 							>
 								<Player

@@ -13,7 +13,12 @@ export async function SEED_createNodeTemplates(prisma: PrismaClient) {
 			variableOutputs: false,
 			isTerminalNode: false,
 			isTransient: true,
-			defaultConfig: { width: 1080, height: 1080 },
+			defaultConfig: {
+				width: 1080,
+				height: 1080,
+				FPS: 24,
+				layerUpdates: [],
+			},
 		},
 		{
 			type: NodeType.VideoGenExtend,

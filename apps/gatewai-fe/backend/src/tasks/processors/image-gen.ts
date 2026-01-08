@@ -134,6 +134,7 @@ const imageGenProcessor: NodeProcessor = async ({ node, data }) => {
 		const bucket = ENV_CONFIG.GCS_ASSETS_BUCKET;
 
 		await uploadToGCS(buffer, key, contentType, bucket);
+		const size = buffer.length;
 
 		const expiresIn = 3600 * 24 * 6.9;
 		const signedUrl = await generateSignedUrl(key, bucket, expiresIn);
@@ -144,6 +145,7 @@ const imageGenProcessor: NodeProcessor = async ({ node, data }) => {
 				name: fileName,
 				bucket,
 				key,
+				size,
 				signedUrl,
 				signedUrlExp,
 				...dimensions,

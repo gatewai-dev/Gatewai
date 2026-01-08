@@ -403,7 +403,6 @@ const VideoCompositorNodeConfigSchema = z
 		width: z.number().optional(),
 		// Height of the canvas
 		height: z.number().optional(),
-		background: z.string().optional(),
 		FPS: z.number().optional(),
 	})
 	.strict();

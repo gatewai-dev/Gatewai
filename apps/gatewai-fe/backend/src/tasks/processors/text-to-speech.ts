@@ -119,6 +119,7 @@ const textToSpeechProcessor: NodeProcessor = async ({ node, data }) => {
 				name: fileName,
 				bucket,
 				key,
+				size: wavBuffer.length,
 				signedUrl,
 				signedUrlExp,
 				mimeType: contentType,

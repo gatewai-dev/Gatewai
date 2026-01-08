@@ -4,13 +4,13 @@ import type { FileResult } from "@gatewai/types";
 import { zValidator } from "@hono/zod-validator";
 import { fileTypeFromBuffer } from "file-type";
 import { Hono } from "hono";
+import * as mm from "music-metadata";
 import sharp from "sharp";
 import { z } from "zod";
 import { ENV_CONFIG } from "../../config.js";
 import {
 	deleteFromGCS,
 	generateSignedUrl,
-	getFromGCS,
 	getStreamFromGCS,
 	uploadToGCS,
 } from "../../utils/storage.js";
@@ -106,7 +106,7 @@ const assetsRouter = new Hono({
 					signedUrlExp,
 					width,
 					height,
-					mimeType: contentType, // Add mimeType to FileAsset model in Prisma schema
+					mimeType: contentType,
 				},
 			});
 
@@ -143,7 +143,7 @@ const assetsRouter = new Hono({
 		const buffer = Buffer.from(await file.arrayBuffer());
 		const fileSize = buffer.length;
 		const filename = file.name;
-		const bucket = ENV_CONFIG.GCS_ASSETS_BUCKET ?? "default-bucket";
+		const bucket = ENV_CONFIG.GCS_ASSETS_BUCKET;
 		const key = `assets/${randomUUID()}-${filename}`;
 
 		const fileTypeResult = await fileTypeFromBuffer(buffer);
@@ -152,6 +152,7 @@ const assetsRouter = new Hono({
 
 		let width: number | null = null;
 		let height: number | null = null;
+		let durationInSec: number | null = null; // Add this variable
 
 		if (contentType.startsWith("image/")) {
 			try {
@@ -162,6 +163,17 @@ const assetsRouter = new Hono({
 				console.error("Failed to compute image metadata:", error);
 			}
 		}
+		if (contentType.startsWith("video/") || contentType.startsWith("audio/")) {
+			try {
+				const metadata = await mm.parseBuffer(buffer, {
+					mimeType: contentType,
+				});
+				durationInSec = metadata.format.duration ?? null;
+			} catch (error) {
+				console.error("Failed to compute media duration:", error);
+			}
+		}
+		console.log({ durationInSec, contentType, height, width });
 
 		try {
 			await uploadToGCS(buffer, key, contentType, bucket);
@@ -177,6 +189,7 @@ const assetsRouter = new Hono({
 					key,
 					signedUrl,
 					isUploaded: true,
+					duration: durationInSec ? durationInSec * 1000 : undefined,
 					size: fileSize,
 					signedUrlExp,
 					width,
