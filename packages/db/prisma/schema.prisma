@@ -261,6 +261,8 @@ model FileAsset {
   width           Int?
   height          Int?
   bucket          String
+  // File size
+  size            BigInt
   mimeType        String
   key             String
   signedUrl       String?
@@ -270,7 +272,7 @@ model FileAsset {
   isUploaded      Boolean     @default(true)
 
   // Duration by milliseconds
-  duration        Float?
+  duration        BigInt?
 
   // Media metadata - optional
   metadata        Json?

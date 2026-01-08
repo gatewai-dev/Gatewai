@@ -35,7 +35,7 @@ const MediaShell = ({
     `}
 	>
 		<MediaController
-			className="w-full h-full block bg-transparent"
+			className="w-full h-full block"
 			style={SHARED_MEDIA_THEME}
 			noHotkeys={isAudio}
 		>

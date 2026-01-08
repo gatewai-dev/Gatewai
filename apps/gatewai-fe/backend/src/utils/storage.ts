@@ -1,4 +1,5 @@
 import path from "node:path";
+import { Readable } from "node:stream";
 import { fileURLToPath } from "node:url";
 import { Storage } from "@google-cloud/storage";
 import { ENV_CONFIG } from "../config.js";
@@ -67,4 +68,19 @@ export async function getFromGCS(
 	const [content] = await storage.bucket(bucketName).file(key).download();
 
 	return content;
+}
+
+export function getStreamFromGCS(
+	key: string,
+	bucketName: string,
+	range?: { start: number; end: number },
+) {
+	const file = storage.bucket(bucketName).file(key);
+	const options = range ? { start: range.start, end: range.end } : {};
+
+	// Create the Node.js stream
+	const nodeStream = file.createReadStream(options);
+
+	// Convert Node.js stream to Web ReadableStream for Hono
+	return Readable.toWeb(nodeStream) as ReadableStream;
 }

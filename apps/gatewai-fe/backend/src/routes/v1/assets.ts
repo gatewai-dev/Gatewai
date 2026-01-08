@@ -11,6 +11,7 @@ import {
 	deleteFromGCS,
 	generateSignedUrl,
 	getFromGCS,
+	getStreamFromGCS,
 	uploadToGCS,
 } from "../../utils/storage.js";
 
@@ -64,6 +65,7 @@ const assetsRouter = new Hono({
 		}
 
 		const buffer = Buffer.from(await file.arrayBuffer());
+		const fileSize = buffer.length;
 		const filename = file.name;
 		const bucket = process.env.AWS_ASSETS_BUCKET ?? "default-bucket";
 		const key = `assets/${randomUUID()}-${filename}`;
@@ -99,6 +101,7 @@ const assetsRouter = new Hono({
 					bucket,
 					key,
 					isUploaded: true,
+					size: fileSize,
 					signedUrl,
 					signedUrlExp,
 					width,
@@ -138,6 +141,7 @@ const assetsRouter = new Hono({
 		}
 
 		const buffer = Buffer.from(await file.arrayBuffer());
+		const fileSize = buffer.length;
 		const filename = file.name;
 		const bucket = ENV_CONFIG.GCS_ASSETS_BUCKET ?? "default-bucket";
 		const key = `assets/${randomUUID()}-${filename}`;
@@ -173,6 +177,7 @@ const assetsRouter = new Hono({
 					key,
 					signedUrl,
 					isUploaded: true,
+					size: fileSize,
 					signedUrlExp,
 					width,
 					height,
@@ -239,30 +244,42 @@ const assetsRouter = new Hono({
 		const rawId = c.req.param("id");
 		const id = rawId.split(".")[0];
 		const asset = await prisma.fileAsset.findUnique({ where: { id } });
+
 		if (!asset) return c.json({ error: "Not found" }, 404);
 
-		const buffer = await getFromGCS(asset.key, asset.bucket);
 		const range = c.req.header("Range");
+		const fileSize = Number(asset.size);
 
 		if (range) {
-			// Simple range handling for media seeking
 			const parts = range.replace(/bytes=/, "").split("-");
 			const start = parseInt(parts[0], 10);
-			const end = parts[1] ? parseInt(parts[1], 10) : buffer.length - 1;
-			const chunksize = end - start + 1;
+			const end = parts[1] ? parseInt(parts[1], 10) : fileSize - 1;
 
-			return c.body(buffer.subarray(start, end + 1), 206, {
-				"Content-Range": `bytes ${start}-${end}/${buffer.length}`,
+			// Handle potential NaN or out-of-bounds
+			if (start >= fileSize || end >= fileSize) {
+				return c.text("Requested range not satisfiable", 416, {
+					"Content-Range": `bytes */${fileSize}`,
+				});
+			}
+
+			const chunksize = end - start + 1;
+			const stream = getStreamFromGCS(asset.key, asset.bucket, { start, end });
+
+			return c.body(stream, 206, {
+				"Content-Range": `bytes ${start}-${end}/${fileSize}`,
 				"Accept-Ranges": "bytes",
 				"Content-Length": chunksize.toString(),
 				"Content-Type": asset.mimeType,
 			});
 		}
 
-		return c.body(buffer, {
+		// Full file stream
+		const fullStream = getStreamFromGCS(asset.key, asset.bucket);
+		return c.body(fullStream, {
 			headers: {
 				"Content-Type": asset.mimeType,
 				"Accept-Ranges": "bytes",
+				"Content-Length": fileSize.toString(),
 				"Cache-Control": "max-age=2592000",
 			},
 		});
