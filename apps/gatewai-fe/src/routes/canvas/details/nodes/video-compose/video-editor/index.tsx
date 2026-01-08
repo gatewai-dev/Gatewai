@@ -42,6 +42,7 @@ import {
 	RotateCw,
 	Trash2,
 	Type,
+	XIcon,
 	Zap,
 } from "lucide-react";
 import React, {
@@ -834,19 +835,19 @@ const Toolbar = React.memo<{
 			<div className="flex items-center gap-1">
 				<Button
 					size="sm"
-					className="h-7 text-[10px] font-medium rounded-full px-3  border-0"
+					className="h-7 text-[11px] font-medium rounded-full px-3  border-0"
 					onClick={onSave}
 					disabled={!isDirty}
 				>
 					Save
 				</Button>
 				<Button
-					size="sm"
+					size="xs"
 					variant="ghost"
-					className="h-7 text-[10px] rounded-full px-2.5 text-gray-400 hover:text-white hover:bg-white/10"
+					className="h-7 text-[11px] rounded-full w-7 text-gray-400 hover:text-red-400 hover:text-white hover:bg-white/10"
 					onClick={onClose}
 				>
-					Close
+					<XIcon />
 				</Button>
 			</div>
 		</div>

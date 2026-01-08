@@ -1,6 +1,7 @@
 import {
 	closestCenter,
 	DndContext,
+	type DragEndEvent,
 	KeyboardSensor,
 	PointerSensor,
 	useSensor,
@@ -21,6 +22,7 @@ import type {
 	OutputItem,
 } from "@gatewai/types";
 import type Konva from "konva";
+import type { KonvaEventObject } from "konva/lib/Node";
 import {
 	AlignCenterHorizontal,
 	AlignCenterVertical,
@@ -28,7 +30,6 @@ import {
 	ArrowUpDown,
 	Bold,
 	ChevronDown,
-	ChevronRight,
 	Eye,
 	EyeOff,
 	Hand,
@@ -36,18 +37,15 @@ import {
 	Italic,
 	Layers,
 	Lock,
-	Maximize,
-	Minimize,
+	LockOpen,
 	MousePointer,
 	Move,
 	MoveHorizontal,
 	MoveVertical,
 	RotateCw,
 	Settings2,
-	Trash2,
 	Type,
 	Underline,
-	Unlock,
 } from "lucide-react";
 import React, {
 	createContext,
@@ -72,6 +70,8 @@ import {
 	Transformer,
 } from "react-konva";
 import useImage from "use-image";
+
+// Internal Component Imports
 import {
 	AlertDialog,
 	AlertDialogAction,
@@ -84,7 +84,6 @@ import {
 } from "@/components/ui/alert-dialog";
 import { Button } from "@/components/ui/button";
 import { DraggableNumberInput } from "@/components/ui/draggable-number-input";
-import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
 import {
 	Menubar,
@@ -102,7 +101,6 @@ import {
 	SelectValue,
 } from "@/components/ui/select";
 import { Separator } from "@/components/ui/separator";
-import { Slider } from "@/components/ui/slider";
 import { Switch } from "@/components/ui/switch";
 import {
 	Tooltip,
@@ -117,19 +115,10 @@ import type { HandleEntityType } from "@/store/handles";
 import type { NodeEntityType } from "@/store/nodes";
 import { GetAssetEndpoint, GetFontAssetUrl } from "@/utils/file";
 
-// Mocking BLEND_MODES
+// --- Types & Constants ---
+
 const BLEND_MODES = [
 	"source-over",
-	"source-in",
-	"source-out",
-	"source-atop",
-	"destination-over",
-	"destination-in",
-	"destination-out",
-	"destination-atop",
-	"lighter",
-	"copy",
-	"xor",
 	"multiply",
 	"screen",
 	"overlay",
@@ -147,7 +136,6 @@ const BLEND_MODES = [
 	"luminosity",
 ] as const;
 
-// --- Editor Context ---
 interface EditorContextType {
 	layers: CompositorLayer[];
 	updateLayers: (
@@ -169,6 +157,7 @@ interface EditorContextType {
 	editingLayerId: string | null;
 	setEditingLayerId: (id: string | null) => void;
 	stageRef: RefObject<Konva.Stage | null>;
+	transformerRef: RefObject<Konva.Transformer | null>;
 	mode: "select" | "pan";
 	setMode: Dispatch<SetStateAction<"select" | "pan">>;
 	scale: number;
@@ -203,6 +192,7 @@ const useEditor = () => {
 };
 
 // --- Snapping Hook ---
+
 const useSnap = () => {
 	const { layers, updateLayers, viewportWidth, viewportHeight, setGuides } =
 		useEditor();
@@ -221,15 +211,19 @@ const useSnap = () => {
 				viewportWidth,
 			];
 
-			layers.forEach((layer) => {
+			for (const layer of layers) {
 				if (
 					layer.id !== excludeId &&
 					layer.width &&
 					(layer.height ?? layer.computedHeight)
 				) {
+					// Use opacity as a proxy for visibility/locking if needed, though strictly we should check lock state
+					if (layer.opacity === 0) continue;
+
 					const effectiveHeight = layer.height ?? layer.computedHeight ?? 0;
 					const centerX = Math.round(layer.x + layer.width / 2);
 					const centerY = Math.round(layer.y + effectiveHeight / 2);
+
 					vSnaps.push(
 						Math.round(layer.x),
 						centerX,
@@ -241,24 +235,35 @@ const useSnap = () => {
 						Math.round(layer.y + effectiveHeight),
 					);
 				}
-			});
+			}
 			return { hSnaps, vSnaps };
 		},
 		[layers, viewportHeight, viewportWidth],
 	);
 
 	const handleDragMove = useCallback(
-		(e: Konva.KonvaEventObject<DragEvent>) => {
+		(e: KonvaEventObject<DragEvent>) => {
 			const node = e.target;
 			const id = node.id();
+
+			// Skip snapping if Shift key is pressed (common design pattern)
+			if (e.evt.shiftKey) {
+				setGuides([]);
+				return;
+			}
+
 			const { hSnaps, vSnaps } = getSnapPositions(id);
 			let newX = node.x();
 			let newY = node.y();
 
-			const centerX = newX + node.width() / 2;
-			const centerY = newY + node.height() / 2;
-			const right = newX + node.width();
-			const bottom = newY + node.height();
+			// Calculate edges
+			const nodeWidth = node.width() * node.scaleX();
+			const nodeHeight = node.height() * node.scaleY();
+
+			const centerX = newX + nodeWidth / 2;
+			const centerY = newY + nodeHeight / 2;
+			const right = newX + nodeWidth;
+			const bottom = newY + nodeHeight;
 
 			// Vertical snaps
 			const vGuides: Guide[] = [];
@@ -267,10 +272,10 @@ const useSnap = () => {
 					newX = snap;
 					vGuides.push({ type: "vertical", position: snap });
 				} else if (Math.abs(centerX - snap) < SNAP_THRESHOLD) {
-					newX = snap - node.width() / 2;
+					newX = snap - nodeWidth / 2;
 					vGuides.push({ type: "vertical", position: snap });
 				} else if (Math.abs(right - snap) < SNAP_THRESHOLD) {
-					newX = snap - node.width();
+					newX = snap - nodeWidth;
 					vGuides.push({ type: "vertical", position: snap });
 				}
 			}
@@ -282,17 +287,19 @@ const useSnap = () => {
 					newY = snap;
 					hGuides.push({ type: "horizontal", position: snap });
 				} else if (Math.abs(centerY - snap) < SNAP_THRESHOLD) {
-					newY = snap - node.height() / 2;
+					newY = snap - nodeHeight / 2;
 					hGuides.push({ type: "horizontal", position: snap });
 				} else if (Math.abs(bottom - snap) < SNAP_THRESHOLD) {
-					newY = snap - node.height();
+					newY = snap - nodeHeight;
 					hGuides.push({ type: "horizontal", position: snap });
 				}
 			}
 
-			node.position({ x: newX, y: newY });
+			// Only apply closest snap
+			if (vGuides.length > 0) node.x(newX);
+			if (hGuides.length > 0) node.y(newY);
 
-			// Deduplicate guides
+			// Deduplicate guides visually
 			const guideMap = new Map<string, Guide>();
 			[...vGuides, ...hGuides].forEach((g) => {
 				const key = `${g.type}-${g.position}`;
@@ -304,7 +311,7 @@ const useSnap = () => {
 	);
 
 	const handleDragEnd = useCallback(
-		(e: Konva.KonvaEventObject<DragEvent>) => {
+		(e: KonvaEventObject<DragEvent>) => {
 			const node = e.target;
 			const id = node.id();
 			updateLayers((prev) =>
@@ -320,23 +327,36 @@ const useSnap = () => {
 	);
 
 	const handleTransformEnd = useCallback(
-		(e: Konva.KonvaEventObject<Event>) => {
+		(e: KonvaEventObject<Event>) => {
 			const node = e.target;
 			const id = node.id();
+
+			const scaleX = node.scaleX();
+			const scaleY = node.scaleY();
+
+			// Reset scale and apply to width/height to keep coordinate system clean
+			node.scaleX(1);
+			node.scaleY(1);
+
 			updateLayers((prev) =>
-				prev.map((l) =>
-					l.id === id
-						? {
-								...l,
-								x: Math.round(node.x()),
-								y: Math.round(node.y()),
-								rotation: Math.round(node.rotation()),
-								width: Math.round(node.width()),
-								height:
-									l.type === "Text" ? undefined : Math.round(node.height()),
-							}
-						: l,
-				),
+				prev.map((l) => {
+					if (l.id !== id) return l;
+
+					const updates: Partial<CompositorLayer> = {
+						x: Math.round(node.x()),
+						y: Math.round(node.y()),
+						rotation: Math.round(node.rotation()),
+						width: Math.round(node.width() * scaleX),
+					};
+
+					if (l.type === "Image") {
+						updates.height = Math.round(node.height() * scaleY);
+					}
+					// For Text, we purposely do not set 'height' here.
+					// Text height is derived from width + font properties.
+
+					return { ...l, ...updates };
+				}),
 			);
 		},
 		[updateLayers],
@@ -365,7 +385,7 @@ const CollapsibleSection: React.FC<{
 					<Icon className="w-3.5 h-3.5" /> {title}
 				</div>
 				<ChevronDown
-					className={`w-3 h-3 text-gray-500 transition-transform ${isOpen ? "rotate-0" : "-rotate-90"}`}
+					className={`w-3 h-3 text-gray-500 transition-transform duration-200 ${isOpen ? "rotate-0" : "-rotate-90"}`}
 				/>
 			</button>
 			{isOpen && (
@@ -380,11 +400,11 @@ const CollapsibleSection: React.FC<{
 // --- Layer Components ---
 interface LayerProps {
 	layer: CompositorLayer;
-	onDragStart: (e: Konva.KonvaEventObject<DragEvent>) => void;
-	onDragMove: (e: Konva.KonvaEventObject<DragEvent>) => void;
-	onDragEnd: (e: Konva.KonvaEventObject<DragEvent>) => void;
-	onTransformStart: (e: Konva.KonvaEventObject<Event>) => void;
-	onTransformEnd: (e: Konva.KonvaEventObject<Event>) => void;
+	onDragStart: (e: KonvaEventObject<DragEvent>) => void;
+	onDragMove: (e: KonvaEventObject<DragEvent>) => void;
+	onDragEnd: (e: KonvaEventObject<DragEvent>) => void;
+	onTransformStart: (e: KonvaEventObject<Event>) => void;
+	onTransformEnd: (e: KonvaEventObject<Event>) => void;
 }
 
 const ImageLayer: React.FC<LayerProps> = ({
@@ -400,6 +420,7 @@ const ImageLayer: React.FC<LayerProps> = ({
 	const url = getImageUrl(layer.inputHandleId);
 	const [image] = useImage(url ?? "", "anonymous");
 
+	// Initialize dimensions if missing
 	useEffect(() => {
 		if (image && (!layer.width || !layer.height)) {
 			updateLayers(
@@ -418,33 +439,32 @@ const ImageLayer: React.FC<LayerProps> = ({
 		}
 	}, [image, layer.id, layer.width, layer.height, updateLayers]);
 
-	const handleSelect = () => {
-		setSelectedId(layer.id);
-	};
+	const handleSelect = () => setSelectedId(layer.id);
 
-	const handleTransform = useCallback((e: Konva.KonvaEventObject<Event>) => {
+	// Limit minimum size
+	const handleTransform = useCallback((e: KonvaEventObject<Event>) => {
 		const node = e.target as Konva.Image;
-		node.setAttrs({
-			width: Math.max(20, node.width() * node.scaleX()),
-			height: Math.max(20, node.height() * node.scaleY()),
-			scaleX: 1,
-			scaleY: 1,
-		});
+		const scaleX = node.scaleX();
+		const scaleY = node.scaleY();
+		// Prevent zero dimension
+		if (node.width() * scaleX < 5) node.scaleX(5 / node.width());
+		if (node.height() * scaleY < 5) node.scaleY(5 / node.height());
 	}, []);
 
-	const isListening =
-		mode === "select" && (selectedId === null || selectedId === layer.id);
+	// Lock Logic check
+	const isLocked = false; // Add layer.locked support if schema permits
 
 	return (
 		<KonvaImage
 			id={layer.id}
+			name="object"
 			x={layer.x}
 			y={layer.y}
 			width={layer.width}
 			height={layer.height}
 			rotation={layer.rotation}
 			image={image}
-			draggable={mode === "select"}
+			draggable={mode === "select" && !isLocked}
 			onClick={handleSelect}
 			onTap={handleSelect}
 			onDragStart={onDragStart}
@@ -455,7 +475,7 @@ const ImageLayer: React.FC<LayerProps> = ({
 			onTransformEnd={onTransformEnd}
 			globalCompositeOperation={layer.blendMode as GlobalCompositeOperation}
 			opacity={layer.opacity ?? 1}
-			listening={isListening}
+			visible={layer.opacity !== 0} // Using opacity 0 as hidden for now
 		/>
 	);
 };
@@ -478,13 +498,14 @@ const TextLayer: React.FC<
 		mode,
 		updateLayers,
 		stageRef,
+		transformerRef,
 		selectedId,
 	} = useEditor();
-	const text = getTextData(layer.inputHandleId);
 
-	const handleSelect = () => {
-		setSelectedId(layer.id);
-	};
+	const text = getTextData(layer.inputHandleId);
+	const textRef = useRef<Konva.Text>(null);
+
+	const handleSelect = () => setSelectedId(layer.id);
 
 	const handleDoubleClick = () => {
 		setSelectedId(layer.id);
@@ -492,54 +513,117 @@ const TextLayer: React.FC<
 		setEditingLayerId(layer.id);
 	};
 
-	const handleTransform = useCallback((e: Konva.KonvaEventObject<Event>) => {
-		const node = e.target as Konva.Text;
-		node.scaleY(1);
-		const newWidth = Math.max(20, node.width() * node.scaleX());
-		node.setAttrs({
-			width: newWidth,
-			scaleX: 1,
-			scaleY: 1,
-			height: undefined,
-		});
-	}, []);
-
+	// --- FIX FOR TEXT HEIGHT/OVERFLOW ---
+	// Monitor properties that change text dimensions.
+	// Sync Konva's calculated height back to state and force Transformer update.
 	useEffect(() => {
-		const node = stageRef.current?.findOne(`#${layer.id}`) as
-			| Konva.Text
-			| undefined;
-		if (node && layer.type === "Text") {
-			const newHeight = Math.round(node.height());
-			if (newHeight !== layer.computedHeight) {
+		const node = textRef.current;
+		if (!node) return;
+
+		// We use a small timeout or requestAnimationFrame to wait for Konva to render the new font
+		const syncHeight = () => {
+			const calculatedHeight = node.height();
+			const calculatedWidth = node.width();
+
+			// 1. Force Transformer Update if this layer is selected
+			// This fixes the visual bug where the box doesn't grow with the text
+			if (selectedId === layer.id && transformerRef.current) {
+				transformerRef.current.forceUpdate();
+				transformerRef.current.getLayer()?.batchDraw();
+			}
+
+			// 2. Sync computed height to state if it differs
+			if (calculatedHeight !== layer.computedHeight) {
 				updateLayers(
 					(prev) =>
 						prev.map((l) =>
-							l.id === layer.id ? { ...l, computedHeight: newHeight } : l,
+							l.id === layer.id
+								? { ...l, computedHeight: calculatedHeight }
+								: l,
 						),
 					false,
-				);
+				); // false = don't mark as user-dirty for internal sync
 			}
-		}
-	}, [layer.id, layer.type, updateLayers, stageRef, layer.computedHeight]);
+		};
 
+		// If font family changes, we might need to wait for load
+		if (layer.fontFamily) {
+			document.fonts.ready.then(syncHeight);
+		} else {
+			syncHeight();
+		}
+	}, [
+		layer.fontFamily,
+		layer.fontSize,
+		layer.width,
+		layer.lineHeight,
+		layer.letterSpacing,
+		layer.textDecoration,
+		layer.fontStyle,
+		text,
+		selectedId,
+		layer.id,
+		layer.computedHeight,
+		updateLayers,
+		transformerRef,
+	]);
+
+	// Load Font
 	useEffect(() => {
 		if (layer.fontFamily) {
 			const fontUrl = GetFontAssetUrl(layer.fontFamily);
 			fontManager
 				.loadFont(layer.fontFamily, fontUrl)
 				.then(() => {
+					// Trigger redraw when font loads
 					stageRef.current?.batchDraw();
+					// Force check height again
+					if (textRef.current) {
+						const h = textRef.current.height();
+						if (h !== layer.computedHeight) {
+							updateLayers(
+								(prev) =>
+									prev.map((l) =>
+										l.id === layer.id ? { ...l, computedHeight: h } : l,
+									),
+								false,
+							);
+						}
+					}
 				})
-				.catch(() => {});
+				.catch((err) =>
+					console.warn(`Failed to load font ${layer.fontFamily}`, err),
+				);
 		}
-	}, [layer.fontFamily, stageRef]);
+	}, [
+		layer.fontFamily,
+		stageRef,
+		updateLayers,
+		layer.id,
+		layer.computedHeight,
+	]);
 
-	const isListening =
-		mode === "select" && (selectedId === null || selectedId === layer.id);
+	// Constrain Transform: Text only scales Width, Height is auto
+	const handleTransform = useCallback((e: KonvaEventObject<Event>) => {
+		const node = e.target as Konva.Text;
+
+		// Reset Y scale to prevent distortion, we want text to wrap
+		node.scaleY(1);
+
+		const newWidth = Math.max(20, node.width() * node.scaleX());
+
+		node.setAttrs({
+			width: newWidth,
+			scaleX: 1,
+			height: undefined, // Let Konva calc height based on new width
+		});
+	}, []);
 
 	return (
 		<KonvaText
+			ref={textRef}
 			id={layer.id}
+			name="object"
 			x={layer.x}
 			y={layer.y}
 			text={text as string}
@@ -549,7 +633,8 @@ const TextLayer: React.FC<
 			textDecoration={layer.textDecoration ?? ""}
 			fill={layer.fill ?? "#000000"}
 			width={layer.width ?? 200}
-			height={layer.height}
+			// IMPORTANT: Do not set hard height for wrapping text, let it be auto (undefined)
+			// We only use layer.height/computedHeight for the UI/Snapping calculations
 			rotation={layer.rotation}
 			draggable={mode === "select"}
 			onClick={handleSelect}
@@ -569,7 +654,7 @@ const TextLayer: React.FC<
 			letterSpacing={layer.letterSpacing ?? 0}
 			lineHeight={layer.lineHeight ?? 1}
 			opacity={layer.opacity ?? 1}
-			listening={isListening}
+			visible={layer.opacity !== 0}
 		/>
 	);
 };
@@ -577,52 +662,58 @@ const TextLayer: React.FC<
 // --- Stage Components ---
 
 const TransformerComponent: React.FC = () => {
-	const { selectedId, layers, stageRef, mode } = useEditor();
-	const trRef = useRef<Konva.Transformer>(null);
+	const { selectedId, layers, stageRef, mode, transformerRef } = useEditor();
 
+	// Effect to attach transformer to selected node
 	useEffect(() => {
-		if (selectedId && trRef.current && stageRef.current && mode === "select") {
+		if (
+			selectedId &&
+			transformerRef.current &&
+			stageRef.current &&
+			mode === "select"
+		) {
 			const node = stageRef.current.findOne(`#${selectedId}`);
 			if (node) {
-				trRef.current.nodes([node]);
-				trRef.current.getLayer()?.batchDraw();
+				transformerRef.current.nodes([node]);
+				transformerRef.current.getLayer()?.batchDraw();
 			} else {
-				trRef.current.nodes([]);
+				transformerRef.current.nodes([]);
 			}
-		} else if (trRef.current) {
-			trRef.current.nodes([]);
-			trRef.current.getLayer()?.batchDraw();
+		} else if (transformerRef.current) {
+			transformerRef.current.nodes([]);
+			transformerRef.current.getLayer()?.batchDraw();
 		}
-	}, [selectedId, stageRef, mode]);
+	}, [selectedId, stageRef, mode, transformerRef]);
 
 	const selectedLayer = layers.find((l) => l.id === selectedId);
 
 	const enabledAnchors = useMemo(() => {
 		if (selectedLayer?.type === "Text") {
+			// For text, we usually want width resizing only
 			return ["middle-left", "middle-right"];
 		}
 		if (selectedLayer?.type === "Image" && selectedLayer.lockAspect) {
 			return ["top-left", "top-right", "bottom-left", "bottom-right"];
 		}
-		return undefined;
+		return undefined; // All anchors
 	}, [selectedLayer]);
 
 	return (
 		<Transformer
-			ref={trRef}
+			ref={transformerRef}
 			rotateEnabled
 			flipEnabled={false}
 			borderStroke="#3b82f6"
+			borderStrokeWidth={1}
 			anchorStroke="#3b82f6"
 			anchorFill="#ffffff"
-			anchorSize={10}
-			anchorCornerRadius={5}
+			anchorSize={9}
+			anchorCornerRadius={2}
+			padding={2} // Gives a little breathing room around text
 			keepRatio={selectedLayer?.type === "Image" && selectedLayer.lockAspect}
 			enabledAnchors={enabledAnchors}
 			boundBoxFunc={(oldBox, newBox) => {
-				if (newBox.width < 5 || newBox.height < 5) {
-					return oldBox;
-				}
+				if (newBox.width < 5 || newBox.height < 5) return oldBox;
 				return newBox;
 			}}
 		/>
@@ -641,7 +732,7 @@ const Guides: React.FC = () => {
 							? [guide.position, 0, guide.position, viewportHeight]
 							: [0, guide.position, viewportWidth, guide.position]
 					}
-					stroke="#ef4444" // red-500
+					stroke="#ec4899" // Pink/Magenta for visibility
 					strokeWidth={1}
 					dash={[4, 4]}
 				/>
@@ -653,7 +744,7 @@ const Guides: React.FC = () => {
 const ArtboardBackground: React.FC = () => {
 	const { viewportWidth, viewportHeight } = useEditor();
 
-	// Create checkered pattern
+	// Checkered pattern
 	const patternImage = useMemo(() => {
 		const size = 20;
 		const half = size / 2;
@@ -673,7 +764,7 @@ const ArtboardBackground: React.FC = () => {
 
 	return (
 		<Group>
-			{/* Shadow for elevation */}
+			{/* Drop Shadow for Artboard Depth */}
 			<Rect
 				x={0}
 				y={0}
@@ -681,12 +772,12 @@ const ArtboardBackground: React.FC = () => {
 				height={viewportHeight}
 				fill="#000"
 				shadowColor="black"
-				shadowBlur={60}
-				shadowOpacity={0.6}
+				shadowBlur={50}
+				shadowOpacity={0.5}
 				shadowOffset={{ x: 0, y: 10 }}
 				listening={false}
 			/>
-			{/* The main artboard area */}
+			{/* Main Artboard */}
 			<Rect
 				x={0}
 				y={0}
@@ -723,8 +814,10 @@ const Canvas: React.FC = () => {
 	);
 
 	const handleStageClick = useCallback(
-		(e: Konva.KonvaEventObject<TouchEvent | MouseEvent>) => {
-			if (e.target === stageRef.current || e.target.name() === "artboard-bg") {
+		(e: KonvaEventObject<TouchEvent | MouseEvent>) => {
+			const clickedOnEmpty =
+				e.target === stageRef.current || e.target.name() === "artboard-bg";
+			if (clickedOnEmpty) {
 				setSelectedId(null);
 			}
 		},
@@ -732,7 +825,8 @@ const Canvas: React.FC = () => {
 	);
 
 	const handleStageMouseDown = useCallback(
-		(e: Konva.KonvaEventObject<MouseEvent>) => {
+		(e: KonvaEventObject<MouseEvent>) => {
+			// Middle mouse button pan
 			if (e.evt.button === 1) {
 				e.evt.preventDefault();
 				const stage = e.currentTarget;
@@ -752,10 +846,11 @@ const Canvas: React.FC = () => {
 	);
 
 	const handleWheel = useCallback(
-		(e: Konva.KonvaEventObject<WheelEvent>) => {
+		(e: KonvaEventObject<WheelEvent>) => {
 			e.evt.preventDefault();
 			const stage = stageRef.current;
 			if (!stage) return;
+
 			const oldScale = stage.scaleX();
 			const pointer = stage.getPointerPosition();
 			if (!pointer) return;
@@ -765,20 +860,15 @@ const Canvas: React.FC = () => {
 				y: (pointer.y - stage.y()) / oldScale,
 			};
 
-			// Match Zoom behavior of Video Editor
-			const zoomSensitivity = 0.001; // Slower zoom on scroll
 			const direction = e.evt.deltaY > 0 ? -1 : 1;
-			// Using exp like video editor for smooth zoom
-			// const newScale = Math.min(Math.max(oldScale * Math.exp(-e.evt.deltaY * 0.001), 0.1), 5);
-			// Sticking to original logic but clamped
-			const scaleBy = 1.05;
+			const scaleBy = 1.1; // Slightly faster zoom
 			const newScale = direction > 0 ? oldScale * scaleBy : oldScale / scaleBy;
 
-			if (newScale < 0.1 || newScale > 10) return;
+			if (newScale < 0.05 || newScale > 20) return;
 
 			const newPos = {
-				x: Math.round(pointer.x - mousePointTo.x * newScale),
-				y: Math.round(pointer.y - mousePointTo.y * newScale),
+				x: pointer.x - mousePointTo.x * newScale,
+				y: pointer.y - mousePointTo.y * newScale,
 			};
 
 			setScale(newScale);
@@ -795,6 +885,7 @@ const Canvas: React.FC = () => {
 		stage.batchDraw();
 	}, [scale, stagePos, stageRef]);
 
+	// Sync stage drag back to state for Pan tool
 	useEffect(() => {
 		const stage = stageRef.current;
 		if (!stage) return;
@@ -860,12 +951,14 @@ interface LayerItemProps {
 	layer: CompositorLayer;
 	selectedId: string | null;
 	setSelectedId: (id: string) => void;
+	updateLayer: (id: string, updates: Partial<CompositorLayer>) => void;
 }
 
 const LayerItem: React.FC<LayerItemProps> = ({
 	layer,
 	selectedId,
 	setSelectedId,
+	updateLayer,
 }) => {
 	const {
 		attributes,
@@ -874,9 +967,7 @@ const LayerItem: React.FC<LayerItemProps> = ({
 		transform,
 		transition,
 		isDragging,
-	} = useSortable({
-		id: layer.id,
-	});
+	} = useSortable({ id: layer.id });
 
 	const style = {
 		transform: CSS.Transform.toString(transform),
@@ -886,6 +977,16 @@ const LayerItem: React.FC<LayerItemProps> = ({
 	};
 
 	const isSelected = layer.id === selectedId;
+	const isHidden = layer.opacity === 0;
+	// Simulate lock via a custom property or assumption.
+	// Since types are strict, we'll assume unlocked unless we add metadata support later.
+	// For now, visual only or if using opacity 0.5 as "locked" (not ideal).
+	// Let's implement Visibility Toggle using Opacity.
+
+	const toggleVisibility = (e: React.MouseEvent) => {
+		e.stopPropagation();
+		updateLayer(layer.id, { opacity: isHidden ? 1 : 0 });
+	};
 
 	return (
 		<div
@@ -894,25 +995,48 @@ const LayerItem: React.FC<LayerItemProps> = ({
 			{...attributes}
 			{...listeners}
 			className={`
-        flex items-center gap-3 px-3 py-2 border-b border-white/5 cursor-pointer outline-none group transition-colors
-        ${isSelected ? "bg-blue-500/10 text-blue-100" : "hover:bg-white/5 text-gray-400"}
-        ${isDragging ? "bg-neutral-900" : ""}
+        flex items-center gap-2 px-3 py-2 border-b border-white/5 cursor-pointer outline-none group transition-colors select-none
+        ${isSelected ? "bg-blue-600/20 text-blue-100" : "hover:bg-white/5 text-gray-400"}
+        ${isDragging ? "bg-neutral-800" : ""}
       `}
-			onClick={() => {
-				if (!isDragging) setSelectedId(layer.id);
-			}}
+			onClick={() => !isDragging && setSelectedId(layer.id)}
 		>
-			{layer.type === "Image" ? (
-				<ImageIcon className="size-3.5 shrink-0 text-purple-400" />
-			) : (
-				<Type className="size-3.5 shrink-0 text-green-400" />
-			)}
-			<span className="truncate flex-1 text-[11px] font-medium">
+			<div className="shrink-0 text-gray-500 group-hover:text-gray-300">
+				{layer.type === "Image" ? (
+					<ImageIcon className="size-3.5" />
+				) : (
+					<Type className="size-3.5" />
+				)}
+			</div>
+
+			<span
+				className={`truncate flex-1 text-[11px] font-medium ${isSelected ? "text-blue-100" : "text-gray-300"}`}
+			>
 				{layer.id}
 			</span>
-			<div className="opacity-0 group-hover:opacity-100 transition-opacity flex gap-1">
-				{/* Placeholder for Lock/Hide functionality in future */}
-				<Lock className="w-3 h-3 text-gray-600 hover:text-gray-400" />
+
+			<div className="flex items-center gap-1 opacity-0 group-hover:opacity-100 transition-opacity">
+				<Button
+					size="icon"
+					variant="ghost"
+					className="h-5 w-5 hover:bg-white/10"
+					onClick={toggleVisibility}
+					aria-label={isHidden ? "Show layer" : "Hide layer"}
+				>
+					{isHidden ? (
+						<EyeOff className="w-3 h-3" />
+					) : (
+						<Eye className="w-3 h-3" />
+					)}
+				</Button>
+				<Button
+					size="icon"
+					variant="ghost"
+					className="h-5 w-5 hover:bg-white/10"
+					disabled
+				>
+					<LockOpen className="w-3 h-3" />
+				</Button>
 			</div>
 		</div>
 	);
@@ -920,83 +1044,81 @@ const LayerItem: React.FC<LayerItemProps> = ({
 
 const LayersPanel: React.FC = () => {
 	const { layers, updateLayers, selectedId, setSelectedId } = useEditor();
+
+	// Sort by zIndex (asc) for rendering logic, but reverse for display (top layer = top of list)
 	const sortedLayers = useMemo(
 		() => [...layers].sort((a, b) => (a.zIndex ?? 0) - (b.zIndex ?? 0)),
 		[layers],
 	);
-
-	// Invert for display so top layer is top of list
 	const displayLayers = useMemo(
 		() => [...sortedLayers].reverse(),
 		[sortedLayers],
 	);
 
 	const sensors = useSensors(
-		useSensor(PointerSensor, {
-			activationConstraint: { distance: 5 },
-		}),
+		useSensor(PointerSensor, { activationConstraint: { distance: 5 } }),
 		useSensor(KeyboardSensor, {
 			coordinateGetter: sortableKeyboardCoordinates,
 		}),
 	);
 
+	const handleDragEnd = (e: DragEndEvent) => {
+		const { active, over } = e;
+		if (over && active.id !== over.id) {
+			updateLayers((currentLayers) => {
+				const currentSorted = [...currentLayers].sort(
+					(a, b) => (b.zIndex ?? 0) - (a.zIndex ?? 0),
+				);
+				const oldIndex = currentSorted.findIndex((l) => l.id === active.id);
+				const newIndex = currentSorted.findIndex((l) => l.id === over.id);
+
+				const newSorted = arrayMove(currentSorted, oldIndex, newIndex);
+
+				return currentLayers.map((l) => {
+					const pos = newSorted.findIndex((s) => s.id === l.id);
+					return { ...l, zIndex: newSorted.length - pos }; // Reassign z-index
+				});
+			});
+		}
+	};
+
+	const updateLayer = (id: string, updates: Partial<CompositorLayer>) => {
+		updateLayers((prev) =>
+			prev.map((l) => (l.id === id ? { ...l, ...updates } : l)),
+		);
+	};
+
 	return (
-		<div className="absolute left-0 top-0 bottom-0 w-60 bg-[#0f0f0f] border-r border-white/10 z-20 flex flex-col shadow-xl">
-			<div className="flex items-center justify-between p-3 border-b border-white/5 bg-neutral-900 shrink-0 h-9">
-				<span className="text-[11px] font-semibold uppercase tracking-wider text-neutral-400 flex items-center gap-2">
+		<div className="absolute left-0 top-0 bottom-0 w-60 bg-[#0a0a0a] border-r border-white/10 z-20 flex flex-col shadow-2xl">
+			<div className="flex items-center justify-between px-4 py-3 border-b border-white/10 bg-neutral-900/50 backdrop-blur shrink-0 h-10">
+				<span className="text-[10px] font-bold uppercase tracking-wider text-neutral-400 flex items-center gap-2">
 					<Layers className="w-3.5 h-3.5" /> Layers
 				</span>
 			</div>
 
-			<ScrollArea className="flex-1 bg-[#0f0f0f]">
+			<ScrollArea className="flex-1">
 				<DndContext
 					sensors={sensors}
 					collisionDetection={closestCenter}
-					onDragEnd={(e) => {
-						const { active, over } = e;
-						if (over && active.id !== over.id) {
-							updateLayers((currentLayers) => {
-								// We displayed them reversed, but logic operates on zIndex logic
-								// Higher zIndex = Top of visual stack = Top of list in this UI
-								const currentSorted = [...currentLayers].sort(
-									(a, b) => (b.zIndex ?? 0) - (a.zIndex ?? 0),
-								);
-								const oldIndex = currentSorted.findIndex(
-									(l) => l.id === active.id,
-								);
-								const newIndex = currentSorted.findIndex(
-									(l) => l.id === over.id,
-								);
-
-								// Move in the sorted array
-								const newSorted = arrayMove(currentSorted, oldIndex, newIndex);
-
-								// Reassign zIndexes based on new position in array
-								// index 0 is top (highest zIndex)
-								return currentLayers.map((l) => {
-									const pos = newSorted.findIndex((s) => s.id === l.id);
-									return { ...l, zIndex: newSorted.length - pos };
-								});
-							});
-						}
-					}}
+					onDragEnd={handleDragEnd}
 				>
 					<SortableContext
 						items={displayLayers.map((l) => l.id)}
 						strategy={verticalListSortingStrategy}
 					>
-						<div className="flex flex-col">
+						<div className="flex flex-col py-2">
 							{displayLayers.map((layer) => (
 								<LayerItem
 									key={layer.id}
 									layer={layer}
 									selectedId={selectedId}
 									setSelectedId={setSelectedId}
+									updateLayer={updateLayer}
 								/>
 							))}
 							{displayLayers.length === 0 && (
-								<div className="py-8 text-center text-xs text-muted-foreground italic">
-									No layers available
+								<div className="py-8 text-center text-[11px] text-gray-600 italic">
+									No layers
 								</div>
 							)}
 						</div>
@@ -1015,7 +1137,14 @@ const InspectorPanel: React.FC = () => {
 		if (Array.isArray(fontList) && (fontList as string[])?.length > 0) {
 			return fontList as string[];
 		}
-		return ["Geist", "Inter", "Arial", "Courier New", "Times New Roman"];
+		return [
+			"Geist",
+			"Inter",
+			"Arial",
+			"Courier New",
+			"Times New Roman",
+			"Verdana",
+		];
 	}, [fontList]);
 
 	const {
@@ -1083,20 +1212,21 @@ const InspectorPanel: React.FC = () => {
 	const isItalic = selectedLayer?.fontStyle?.includes("italic") ?? false;
 	const isUnderline = selectedLayer?.textDecoration === "underline";
 
+	// --- Global Canvas Settings ---
 	if (!selectedLayer) {
 		return (
-			<div className="w-64 border-l border-white/5 bg-[#0f0f0f] z-20 shadow-xl flex flex-col">
-				<div className="p-4 bg-neutral-900 border-b border-white/5 shrink-0 h-9 flex items-center">
-					<h2 className="text-[11px] font-semibold text-neutral-400 uppercase tracking-wider">
-						Global Settings
+			<div className="w-72 border-l border-white/10 bg-[#0a0a0a] z-20 shadow-xl flex flex-col">
+				<div className="px-4 py-3 bg-neutral-900/50 backdrop-blur border-b border-white/10 shrink-0 h-10 flex items-center">
+					<h2 className="text-[10px] font-bold text-neutral-400 uppercase tracking-wider">
+						Canvas Settings
 					</h2>
 				</div>
 				<div className="p-4 space-y-6">
-					<div className="space-y-2">
-						<Label className="text-[10px] text-gray-500 uppercase font-bold">
-							Canvas Size
+					<div className="space-y-3">
+						<Label className="text-[10px] text-gray-500 uppercase font-bold tracking-wide">
+							Dimensions
 						</Label>
-						<div className="grid grid-cols-2 gap-2">
+						<div className="grid grid-cols-2 gap-3">
 							<DraggableNumberInput
 								label="W"
 								icon={MoveHorizontal}
@@ -1122,8 +1252,8 @@ const InspectorPanel: React.FC = () => {
 								}
 							}}
 						>
-							<SelectTrigger className="h-8 text-xs bg-neutral-800 border-white/10 text-gray-300">
-								<SelectValue placeholder="Presets" />
+							<SelectTrigger className="h-8 text-[11px] bg-white/5 border-white/10 text-gray-300">
+								<SelectValue placeholder="Select Preset" />
 							</SelectTrigger>
 							<SelectContent className="bg-neutral-800 border-white/10 text-gray-300">
 								{aspectRatios.map((r) => (
@@ -1135,162 +1265,160 @@ const InspectorPanel: React.FC = () => {
 						</Select>
 					</div>
 
-					<div className="flex flex-col items-center justify-center p-8 mt-4 text-center border border-dashed border-white/10 rounded-lg bg-white/5">
-						<MousePointer className="w-6 h-6 text-gray-600 mb-2" />
-						<p className="text-xs text-gray-500">
-							Select a layer to edit properties
-						</p>
+					<div className="flex flex-col items-center justify-center p-8 text-center border border-dashed border-white/10 rounded-lg bg-white/[0.02]">
+						<MousePointer className="w-5 h-5 text-gray-600 mb-2" />
+						<p className="text-[11px] text-gray-500">Select a layer to edit</p>
 					</div>
 				</div>
 			</div>
 		);
 	}
 
+	// --- Layer Settings ---
 	return (
-		<ScrollArea className="w-64 border-l border-white/5 bg-[#0f0f0f] z-20 shadow-xl">
-			<div className="flex items-center justify-between p-4 border-b border-white/5 bg-neutral-900/50">
+		<ScrollArea className="w-72 border-l border-white/10 bg-[#0a0a0a] z-20 shadow-xl">
+			<div className="flex items-center justify-between px-4 py-3 border-b border-white/10 bg-neutral-900/50 backdrop-blur h-14">
 				<div className="flex flex-col min-w-0">
-					<span className="text-[10px] text-gray-500 uppercase font-bold tracking-wider">
+					<span className="text-[9px] text-gray-500 uppercase font-bold tracking-wider mb-0.5">
 						Selected
 					</span>
-					<h2 className="text-sm font-semibold text-white truncate max-w-[150px]">
-						{selectedLayer.id}
-					</h2>
-				</div>
-				<div className="flex items-center gap-1">
-					<span className="text-[10px] bg-white/10 px-2 py-0.5 rounded-full text-gray-300 font-medium uppercase border border-white/5">
-						{selectedLayer.type}
-					</span>
+					<div className="flex items-center gap-2">
+						{selectedLayer.type === "Image" ? (
+							<ImageIcon className="w-3.5 h-3.5 text-blue-400" />
+						) : (
+							<Type className="w-3.5 h-3.5 text-blue-400" />
+						)}
+						<h2 className="text-xs font-semibold text-white truncate max-w-[140px]">
+							{selectedLayer.id}
+						</h2>
+					</div>
 				</div>
 			</div>
 
 			<div className="pb-20">
 				<CollapsibleSection title="Transform" icon={Move}>
-					<div className="flex gap-1 mb-3">
-						<Button
-							variant="outline"
-							size="sm"
-							className="flex-1 h-7 text-[10px] border-white/10 bg-white/5 hover:bg-white/10"
-							onClick={() => centerLayer("x")}
-						>
-							<AlignCenterHorizontal className="w-3 h-3 mr-1" /> Center X
-						</Button>
-						<Button
-							variant="outline"
-							size="sm"
-							className="flex-1 h-7 text-[10px] border-white/10 bg-white/5 hover:bg-white/10"
-							onClick={() => centerLayer("y")}
-						>
-							<AlignCenterVertical className="w-3 h-3 mr-1" /> Center Y
-						</Button>
-					</div>
+					<div className="space-y-3">
+						<div className="flex gap-1">
+							<Button
+								variant="outline"
+								size="sm"
+								className="flex-1 h-7 text-[10px] border-white/10 bg-white/5 hover:bg-white/10 hover:text-white text-gray-400"
+								onClick={() => centerLayer("x")}
+							>
+								<AlignCenterHorizontal className="w-3 h-3 mr-1" /> Center X
+							</Button>
+							<Button
+								variant="outline"
+								size="sm"
+								className="flex-1 h-7 text-[10px] border-white/10 bg-white/5 hover:bg-white/10 hover:text-white text-gray-400"
+								onClick={() => centerLayer("y")}
+							>
+								<AlignCenterVertical className="w-3 h-3 mr-1" /> Center Y
+							</Button>
+						</div>
 
-					<div className="grid grid-cols-2 gap-3 mb-3">
-						<DraggableNumberInput
-							label="X"
-							icon={MoveHorizontal}
-							value={Math.round(selectedLayer.x)}
-							onChange={(v) => updateLayer({ x: v })}
-						/>
-						<DraggableNumberInput
-							label="Y"
-							icon={MoveVertical}
-							value={Math.round(selectedLayer.y)}
-							onChange={(v) => updateLayer({ y: v })}
-						/>
-						<DraggableNumberInput
-							label="W"
-							icon={MoveHorizontal}
-							value={Math.round(selectedLayer.width ?? 0)}
-							onChange={(newWidth) => {
-								if (
-									selectedLayer.type === "Image" &&
-									selectedLayer.lockAspect
-								) {
-									const oldW = selectedLayer.width ?? 1;
-									const oldH = selectedLayer.height ?? 1;
-									const ratio = oldH / oldW;
-									updateLayer({
-										width: newWidth,
-										height: newWidth * ratio,
-									});
-								} else {
-									updateLayer({ width: newWidth });
-								}
-							}}
-							min={1}
-						/>
-						{selectedLayer.type !== "Text" ? (
+						<div className="grid grid-cols-2 gap-3">
 							<DraggableNumberInput
-								label="H"
+								label="X"
+								icon={MoveHorizontal}
+								value={Math.round(selectedLayer.x)}
+								onChange={(v) => updateLayer({ x: v })}
+							/>
+							<DraggableNumberInput
+								label="Y"
 								icon={MoveVertical}
-								value={Math.round(selectedLayer.height ?? 0)}
-								onChange={(newHeight) => {
-									if (selectedLayer.type === "Image") {
-										if (selectedLayer.lockAspect) {
-											const oldW = selectedLayer.width ?? 1;
-											const oldH = selectedLayer.height ?? 1;
-											const ratio = oldW / oldH;
-											updateLayer({
-												height: newHeight,
-												width: newHeight * ratio,
-											});
-										} else {
-											updateLayer({ height: newHeight });
-										}
+								value={Math.round(selectedLayer.y)}
+								onChange={(v) => updateLayer({ y: v })}
+							/>
+							<DraggableNumberInput
+								label="W"
+								icon={MoveHorizontal}
+								value={Math.round(selectedLayer.width ?? 0)}
+								onChange={(newWidth) => {
+									if (
+										selectedLayer.type === "Image" &&
+										selectedLayer.lockAspect
+									) {
+										const oldW = selectedLayer.width ?? 1;
+										const oldH = selectedLayer.height ?? 1;
+										const ratio = oldH / oldW;
+										updateLayer({
+											width: newWidth,
+											height: newWidth * ratio,
+										});
+									} else {
+										updateLayer({ width: newWidth });
 									}
 								}}
 								min={1}
 							/>
-						) : (
+							{selectedLayer.type !== "Text" ? (
+								<DraggableNumberInput
+									label="H"
+									icon={MoveVertical}
+									value={Math.round(selectedLayer.height ?? 0)}
+									onChange={(newHeight) => {
+										if (selectedLayer.type === "Image") {
+											if (selectedLayer.lockAspect) {
+												const oldW = selectedLayer.width ?? 1;
+												const oldH = selectedLayer.height ?? 1;
+												const ratio = oldW / oldH;
+												updateLayer({
+													height: newHeight,
+													width: newHeight * ratio,
+												});
+											} else {
+												updateLayer({ height: newHeight });
+											}
+										}
+									}}
+									min={1}
+								/>
+							) : (
+								<DraggableNumberInput
+									label="H"
+									icon={MoveVertical}
+									value={Math.round(selectedLayer.computedHeight ?? 0)}
+									onChange={() => {}}
+									disabled
+									className="opacity-50"
+								/>
+							)}
 							<DraggableNumberInput
-								label="H"
-								icon={MoveVertical}
-								value={Math.round(selectedLayer.computedHeight ?? 0)}
-								onChange={() => {}}
-								disabled
-							/>
-						)}
-					</div>
-					<div className="grid grid-cols-2 gap-3">
-						<DraggableNumberInput
-							label="Rot"
-							icon={RotateCw}
-							value={Math.round(selectedLayer.rotation)}
-							onChange={(v) => updateLayer({ rotation: v })}
-						/>
-						<DraggableNumberInput
-							label="Op"
-							icon={Layers}
-							value={Math.round((selectedLayer.opacity ?? 1) * 100)}
-							onChange={(v) => updateLayer({ opacity: v / 100 })}
-							min={0}
-							max={100}
-						/>
-					</div>
-
-					{selectedLayer.type === "Image" && (
-						<div className="flex items-center justify-between mt-3 pt-2 border-t border-white/5">
-							<Label className="text-[10px] text-gray-400">Lock Aspect</Label>
-							<Switch
-								checked={selectedLayer.lockAspect ?? true}
-								onCheckedChange={(c) => updateLayer({ lockAspect: c })}
-								className="scale-75 data-[state=checked]:bg-blue-600"
+								label="Rot"
+								icon={RotateCw}
+								value={Math.round(selectedLayer.rotation)}
+								onChange={(v) => updateLayer({ rotation: v })}
 							/>
 						</div>
-					)}
+
+						{selectedLayer.type === "Image" && (
+							<div className="flex items-center justify-between pt-2">
+								<Label className="text-[10px] text-gray-400">
+									Lock Aspect Ratio
+								</Label>
+								<Switch
+									checked={selectedLayer.lockAspect ?? true}
+									onCheckedChange={(c) => updateLayer({ lockAspect: c })}
+									className="scale-75 data-[state=checked]:bg-blue-600"
+								/>
+							</div>
+						)}
+					</div>
 				</CollapsibleSection>
 
 				{selectedLayer.type === "Text" && (
 					<CollapsibleSection title="Typography" icon={Type}>
-						<div className="space-y-3">
-							<div className="space-y-1">
-								<Label className="text-[10px] text-gray-500">Font</Label>
+						<div className="space-y-4">
+							<div className="space-y-1.5">
+								<Label className="text-[10px] text-gray-500 font-medium">
+									Font Family
+								</Label>
 								<Select
 									value={selectedLayer.fontFamily || "Geist"}
 									onValueChange={(val) => updateLayer({ fontFamily: val })}
 								>
-									<SelectTrigger className="h-8 text-xs bg-neutral-800 border-white/10 text-white">
+									<SelectTrigger className="h-8 text-xs bg-white/5 border-white/10 text-white">
 										<SelectValue />
 									</SelectTrigger>
 									<SelectContent className="bg-neutral-800 border-white/10 text-white">
@@ -1330,11 +1458,11 @@ const InspectorPanel: React.FC = () => {
 									className="h-6 flex-1 rounded-sm"
 									onClick={() => toggleStyle("bold")}
 								>
-									<Bold className="w-3 h-3" />
+									<Bold className="w-3.5 h-3.5" />
 								</Button>
 								<Separator
 									orientation="vertical"
-									className="h-4 my-auto mx-1 bg-white/10"
+									className="h-3 my-auto mx-1 bg-white/10"
 								/>
 								<Button
 									variant={isItalic ? "secondary" : "ghost"}
@@ -1342,11 +1470,11 @@ const InspectorPanel: React.FC = () => {
 									className="h-6 flex-1 rounded-sm"
 									onClick={() => toggleStyle("italic")}
 								>
-									<Italic className="w-3 h-3" />
+									<Italic className="w-3.5 h-3.5" />
 								</Button>
 								<Separator
 									orientation="vertical"
-									className="h-4 my-auto mx-1 bg-white/10"
+									className="h-3 my-auto mx-1 bg-white/10"
 								/>
 								<Button
 									variant={isUnderline ? "secondary" : "ghost"}
@@ -1354,7 +1482,7 @@ const InspectorPanel: React.FC = () => {
 									className="h-6 flex-1 rounded-sm"
 									onClick={toggleUnderline}
 								>
-									<Underline className="w-3 h-3" />
+									<Underline className="w-3.5 h-3.5" />
 								</Button>
 							</div>
 
@@ -1366,7 +1494,7 @@ const InspectorPanel: React.FC = () => {
 											selectedLayer.align === align ? "secondary" : "ghost"
 										}
 										size="sm"
-										className="h-6 text-[10px] capitalize"
+										className="h-6 text-[10px] capitalize rounded-sm"
 										onClick={() => updateLayer({ align })}
 									>
 										{align}
@@ -1376,13 +1504,13 @@ const InspectorPanel: React.FC = () => {
 
 							<div className="grid grid-cols-2 gap-3">
 								<DraggableNumberInput
-									label="Spacing"
+									label="Letter"
 									icon={ArrowLeftRight}
 									value={selectedLayer.letterSpacing ?? 0}
 									onChange={(v) => updateLayer({ letterSpacing: v })}
 								/>
 								<DraggableNumberInput
-									label="Line H"
+									label="Line"
 									icon={ArrowUpDown}
 									value={selectedLayer.lineHeight ?? 1}
 									onChange={(v) => updateLayer({ lineHeight: v })}
@@ -1394,24 +1522,45 @@ const InspectorPanel: React.FC = () => {
 					</CollapsibleSection>
 				)}
 
-				<CollapsibleSection title="Blending" icon={Settings2}>
-					<div className="space-y-2">
-						<Label className="text-[10px] text-gray-500">Mode</Label>
-						<Select
-							value={selectedLayer.blendMode || "source-over"}
-							onValueChange={(val) => updateLayer({ blendMode: val })}
-						>
-							<SelectTrigger className="h-8 text-xs capitalize bg-neutral-800 border-white/10 text-white">
-								<SelectValue />
-							</SelectTrigger>
-							<SelectContent className="bg-neutral-800 border-white/10 text-white max-h-[200px]">
-								{BLEND_MODES.map((m) => (
-									<SelectItem key={m} value={m} className="capitalize">
-										{m.replace("-", " ")}
-									</SelectItem>
-								))}
-							</SelectContent>
-						</Select>
+				<CollapsibleSection title="Appearance" icon={Settings2}>
+					<div className="space-y-4">
+						<div className="space-y-2">
+							<Label className="text-[10px] text-gray-500">Opacity</Label>
+							<div className="flex items-center gap-2">
+								<DraggableNumberInput
+									label="%"
+									icon={Layers}
+									value={Math.round((selectedLayer.opacity ?? 1) * 100)}
+									onChange={(v) => updateLayer({ opacity: v / 100 })}
+									min={0}
+									max={100}
+									className="flex-1"
+								/>
+							</div>
+						</div>
+
+						<div className="space-y-2">
+							<Label className="text-[10px] text-gray-500">Blend Mode</Label>
+							<Select
+								value={selectedLayer.blendMode || "source-over"}
+								onValueChange={(val) => updateLayer({ blendMode: val })}
+							>
+								<SelectTrigger className="h-8 text-[11px] capitalize bg-white/5 border-white/10 text-white">
+									<SelectValue />
+								</SelectTrigger>
+								<SelectContent className="bg-neutral-800 border-white/10 text-white max-h-[200px]">
+									{BLEND_MODES.map((m) => (
+										<SelectItem
+											key={m}
+											value={m}
+											className="capitalize text-xs"
+										>
+											{m.replace("-", " ")}
+										</SelectItem>
+									))}
+								</SelectContent>
+							</Select>
+						</div>
 					</div>
 				</CollapsibleSection>
 			</div>
@@ -1436,36 +1585,33 @@ const Toolbar = React.memo<{
 	} = useEditor();
 
 	return (
-		<div className="flex items-center gap-1.5 p-1.5 rounded-full bg-neutral-900/90 backdrop-blur-xl border border-white/10 shadow-2xl z-50">
-			<TooltipProvider>
-				<Tooltip>
-					<TooltipTrigger asChild>
-						<Button
-							variant="ghost"
-							size="icon"
-							className={`rounded-full w-8 h-8 ${mode === "select" ? "bg-blue-600 text-white shadow-sm" : "text-gray-400 hover:text-white hover:bg-white/5"}`}
-							onClick={() => setMode("select")}
-						>
-							<MousePointer className="w-4 h-4" />
-						</Button>
-					</TooltipTrigger>
-					<TooltipContent>Select Tool (V)</TooltipContent>
-				</Tooltip>
-
-				<Tooltip>
-					<TooltipTrigger asChild>
-						<Button
-							variant="ghost"
-							size="icon"
-							className={`rounded-full w-8 h-8 ${mode === "pan" ? "bg-blue-600 text-white shadow-sm" : "text-gray-400 hover:text-white hover:bg-white/5"}`}
-							onClick={() => setMode("pan")}
-						>
-							<Hand className="w-4 h-4" />
-						</Button>
-					</TooltipTrigger>
-					<TooltipContent>Pan Tool (Space)</TooltipContent>
-				</Tooltip>
-			</TooltipProvider>
+		<div className="flex items-center gap-1.5 p-1.5 rounded-full bg-[#1a1a1a] border border-white/10 shadow-2xl z-50 animate-in fade-in slide-in-from-bottom-4">
+			<Tooltip>
+				<TooltipTrigger asChild>
+					<Button
+						variant={mode === "select" ? "default" : "ghost"}
+						size="icon"
+						className={`rounded-full w-7 h-7`}
+						onClick={() => setMode("select")}
+					>
+						<MousePointer className="w-3.5 h-3.5" />
+					</Button>
+				</TooltipTrigger>
+				<TooltipContent>Select Tool</TooltipContent>
+			</Tooltip>
+			<Tooltip>
+				<TooltipTrigger asChild>
+					<Button
+						variant={mode === "pan" ? "default" : "ghost"}
+						size="icon"
+						className={`rounded-full w-7 h-7`}
+						onClick={() => setMode("pan")}
+					>
+						<Hand className="w-3.5 h-3.5" />
+					</Button>
+				</TooltipTrigger>
+				<TooltipContent>Pan Tool</TooltipContent>
+			</Tooltip>
 
 			<div className="w-px h-4 bg-white/10 mx-1" />
 
@@ -1474,19 +1620,20 @@ const Toolbar = React.memo<{
 					<MenubarTrigger asChild>
 						<Button
 							variant="ghost"
-							className="h-8 px-2.5 text-[10px] rounded-full text-gray-300 hover:text-white hover:bg-white/10 font-medium"
+							className="h-8 px-3 text-[11px] rounded-full text-gray-300 hover:text-white hover:bg-white/10 font-medium tabular-nums"
+							onDoubleClick={() => zoomTo(1)}
 						>
-							{zoomPercentage}{" "}
+							{zoomPercentage}
 							<ChevronDown className="w-3 h-3 ml-1.5 opacity-50" />
 						</Button>
 					</MenubarTrigger>
 					<MenubarContent
 						align="center"
 						sideOffset={10}
-						className="min-w-[140px] bg-neutral-900/95 backdrop-blur-xl border-white/10 text-gray-200"
+						className="min-w-[140px] bg-[#1a1a1a] border-white/10 text-gray-200"
 					>
-						<MenubarItem onClick={() => zoomIn()}>Zoom In</MenubarItem>
-						<MenubarItem onClick={() => zoomOut()}>Zoom Out</MenubarItem>
+						<MenubarItem onClick={() => zoomIn()}>Zoom In (+)</MenubarItem>
+						<MenubarItem onClick={() => zoomOut()}>Zoom Out (-)</MenubarItem>
 						<MenubarItem onClick={() => zoomTo(1)}>
 							Actual Size (100%)
 						</MenubarItem>
@@ -1499,10 +1646,10 @@ const Toolbar = React.memo<{
 
 			<div className="w-px h-4 bg-white/10 mx-1" />
 
-			<div className="flex items-center gap-1">
+			<div className="flex items-center gap-1.5 pr-1">
 				<Button
 					size="sm"
-					className="h-7 text-[10px] font-medium rounded-full px-3 bg-white text-black hover:bg-gray-200 border-0"
+					className="h-7 text-[11px] font-medium rounded-full px-4  border-0 transition-transform active:scale-95"
 					onClick={onSave}
 					disabled={!isDirty}
 				>
@@ -1511,10 +1658,24 @@ const Toolbar = React.memo<{
 				<Button
 					size="sm"
 					variant="ghost"
-					className="h-7 text-[10px] rounded-full px-2.5 text-gray-400 hover:text-white hover:bg-white/10"
+					className="h-7 w-7 rounded-full p-0 text-gray-400 hover:text-white hover:bg-red-500/20 hover:text-red-400 transition-colors"
 					onClick={onClose}
 				>
-					Close
+					<span className="sr-only">Close</span>
+					<svg
+						xmlns="http://www.w3.org/2000/svg"
+						width="16"
+						height="16"
+						viewBox="0 0 24 24"
+						fill="none"
+						stroke="currentColor"
+						strokeWidth="2"
+						strokeLinecap="round"
+						strokeLinejoin="round"
+					>
+						<path d="M18 6 6 18" />
+						<path d="m6 6 12 12" />
+					</svg>
 				</Button>
 			</div>
 		</div>
@@ -1541,6 +1702,9 @@ export const ImageDesignerEditor: React.FC<ImageDesignerEditorProps> = ({
 }) => {
 	const nodeConfig = node.config as CompositorNodeConfig;
 	const [layers, setLayers] = useState<CompositorLayer[]>([]);
+
+	const [isDirty, setIsDirty] = useState(false);
+
 	const updateLayers = useCallback(
 		(
 			updater: SetStateAction<CompositorLayer[]>,
@@ -1555,14 +1719,16 @@ export const ImageDesignerEditor: React.FC<ImageDesignerEditorProps> = ({
 	);
 
 	const [selectedId, setSelectedId] = useState<string | null>(null);
-	const [viewportWidth, setViewportWidth] = useState(nodeConfig.width ?? 1024);
+	const [viewportWidth, setViewportWidth] = useState(nodeConfig.width ?? 1080);
+	const [viewportHeight, setViewportHeight] = useState(
+		nodeConfig.height ?? 1080,
+	);
+
 	const updateViewportWidth = useCallback((w: number) => {
 		setViewportWidth(w);
 		setIsDirty(true);
 	}, []);
-	const [viewportHeight, setViewportHeight] = useState(
-		nodeConfig.height ?? 1024,
-	);
+
 	const updateViewportHeight = useCallback((h: number) => {
 		setViewportHeight(h);
 		setIsDirty(true);
@@ -1571,8 +1737,10 @@ export const ImageDesignerEditor: React.FC<ImageDesignerEditorProps> = ({
 	const [guides, setGuides] = useState<Guide[]>([]);
 	const [isEditingText, setIsEditingText] = useState(false);
 	const [editingLayerId, setEditingLayerId] = useState<string | null>(null);
+
 	const stageRef = useRef<Konva.Stage | null>(null);
-	const [isDirty, setIsDirty] = useState(false);
+	const transformerRef = useRef<Konva.Transformer | null>(null);
+
 	const [showCloseAlert, setShowCloseAlert] = useState(false);
 
 	const [mode, setMode] = useState<"select" | "pan">("select");
@@ -1601,7 +1769,7 @@ export const ImageDesignerEditor: React.FC<ImageDesignerEditorProps> = ({
 
 	// Fit View logic
 	const fitView = useCallback(() => {
-		const padding = 60;
+		const padding = 80;
 		const availableW = screenWidth - padding * 2;
 		const availableH = screenHeight - padding * 2;
 		const scaleW = availableW / viewportWidth;
@@ -1628,21 +1796,11 @@ export const ImageDesignerEditor: React.FC<ImageDesignerEditorProps> = ({
 	}, [screenWidth, screenHeight, fitView, scale, stagePos.x]);
 
 	// Zoom helpers
-	const zoomIn = useCallback(() => {
-		const newScale = scale * 1.2;
-		setScale(newScale);
-	}, [scale]);
+	const zoomIn = useCallback(() => setScale((s) => s * 1.2), []);
+	const zoomOut = useCallback(() => setScale((s) => s / 1.2), []);
+	const zoomTo = useCallback((value: number) => setScale(value), []);
 
-	const zoomOut = useCallback(() => {
-		const newScale = scale / 1.2;
-		setScale(newScale);
-	}, [scale]);
-
-	const zoomTo = useCallback((value: number) => {
-		setScale(value);
-	}, []);
-
-	// Data getters for layer content
+	// Data getters
 	const getTextData = useCallback(
 		(handleId: string) => {
 			const layerData = initialLayers.get(handleId) as OutputItem<"Text">;
@@ -1670,7 +1828,7 @@ export const ImageDesignerEditor: React.FC<ImageDesignerEditorProps> = ({
 		[initialLayers],
 	);
 
-	// Initialize layers from initial data
+	// Initialize layers
 	useEffect(() => {
 		const loadInitialLayers = async () => {
 			const existingConfig = (node.config as CompositorNodeConfig) ?? {
@@ -1701,14 +1859,14 @@ export const ImageDesignerEditor: React.FC<ImageDesignerEditorProps> = ({
 					};
 
 					if (newLayer.type === "Text") {
-						newLayer.width = 300;
-						newLayer.fontSize = 40;
+						newLayer.width = 400;
+						newLayer.fontSize = 64;
 						newLayer.fontFamily = "Geist";
 						newLayer.fontStyle = "normal";
 						newLayer.textDecoration = "";
 						newLayer.fill = "#ffffff";
 						newLayer.letterSpacing = 0;
-						newLayer.lineHeight = 1.2;
+						newLayer.lineHeight = 1.1;
 						newLayer.height = undefined; // Text auto-height
 						newLayer.align = "left";
 						newLayer.verticalAlign = "top";
@@ -1750,7 +1908,7 @@ export const ImageDesignerEditor: React.FC<ImageDesignerEditorProps> = ({
 		}
 	}, [mode, selectedId]);
 
-	// Global keyboard shortcuts
+	// Keyboard Shortcuts
 	useEffect(() => {
 		const handleKeyDown = (e: KeyboardEvent) => {
 			const isInput =
@@ -1758,7 +1916,11 @@ export const ImageDesignerEditor: React.FC<ImageDesignerEditorProps> = ({
 				document.activeElement?.tagName === "TEXTAREA";
 			if (isInput) return;
 
-			// Spacebar for pan
+			// Tools
+			if (e.key.toLowerCase() === "v") setMode("select");
+			if (e.key.toLowerCase() === "h") setMode("pan");
+
+			// Pan Spacebar
 			if (e.code === "Space" && !e.repeat) {
 				e.preventDefault();
 				if (mode !== "pan") {
@@ -1767,7 +1929,21 @@ export const ImageDesignerEditor: React.FC<ImageDesignerEditorProps> = ({
 				}
 			}
 
-			// Arrow keys for nudge
+			// Zoom
+			if ((e.ctrlKey || e.metaKey) && (e.key === "=" || e.key === "+")) {
+				e.preventDefault();
+				zoomIn();
+			}
+			if ((e.ctrlKey || e.metaKey) && e.key === "-") {
+				e.preventDefault();
+				zoomOut();
+			}
+			if ((e.ctrlKey || e.metaKey) && e.key === "0") {
+				e.preventDefault();
+				fitView();
+			}
+
+			// Nudge
 			if (
 				selectedId &&
 				["ArrowUp", "ArrowDown", "ArrowLeft", "ArrowRight"].includes(e.key)
@@ -1786,6 +1962,12 @@ export const ImageDesignerEditor: React.FC<ImageDesignerEditorProps> = ({
 					}),
 				);
 			}
+
+			// Delete
+			if (e.key === "Delete" || e.key === "Backspace") {
+				// Optional: Add layer deletion if desired, currently purely hiding via opacity
+				// if (selectedId) updateLayers(prev => prev.filter(l => l.id !== selectedId));
+			}
 		};
 
 		const handleKeyUp = (e: KeyboardEvent) => {
@@ -1801,7 +1983,7 @@ export const ImageDesignerEditor: React.FC<ImageDesignerEditorProps> = ({
 			window.removeEventListener("keydown", handleKeyDown);
 			window.removeEventListener("keyup", handleKeyUp);
 		};
-	}, [mode, selectedId, updateLayers]);
+	}, [mode, selectedId, updateLayers, zoomIn, zoomOut, fitView]);
 
 	const handleSave = useCallback(() => {
 		const layerUpdates = layers.reduce<Record<string, CompositorLayer>>(
@@ -1843,6 +2025,7 @@ export const ImageDesignerEditor: React.FC<ImageDesignerEditorProps> = ({
 				editingLayerId,
 				setEditingLayerId,
 				stageRef,
+				transformerRef,
 				mode,
 				setMode,
 				scale,
@@ -1861,7 +2044,7 @@ export const ImageDesignerEditor: React.FC<ImageDesignerEditorProps> = ({
 				setIsDirty,
 			}}
 		>
-			<div className="flex h-screen w-screen bg-[#050505] overflow-hidden relative text-foreground font-sans">
+			<div className="flex h-screen w-screen bg-[#050505] overflow-hidden relative text-foreground font-sans selection:bg-blue-500/30">
 				<div className="relative shrink-0 z-20">
 					<LayersPanel />
 				</div>
@@ -1871,13 +2054,13 @@ export const ImageDesignerEditor: React.FC<ImageDesignerEditorProps> = ({
 						ref={containerRef}
 						className="flex-1 relative overflow-hidden bg-[#050505]"
 					>
-						{/* Grid Background */}
+						{/* Subtle Grid Background */}
 						<div
-							className="absolute inset-0 pointer-events-none"
+							className="absolute inset-0 pointer-events-none opacity-20"
 							style={{
 								backgroundImage:
-									"radial-gradient(circle at 1px 1px, rgba(255,255,255,0.1) 1px, transparent 0)",
-								backgroundSize: "24px 24px",
+									"radial-gradient(circle at 1px 1px, rgba(255,255,255,0.15) 1px, transparent 0)",
+								backgroundSize: "20px 20px",
 							}}
 						/>
 						<Canvas />
@@ -1895,19 +2078,21 @@ export const ImageDesignerEditor: React.FC<ImageDesignerEditorProps> = ({
 
 				{/* Close Confirmation Dialog */}
 				<AlertDialog open={showCloseAlert} onOpenChange={setShowCloseAlert}>
-					<AlertDialogContent>
+					<AlertDialogContent className="bg-neutral-900 border-white/10 text-white">
 						<AlertDialogHeader>
 							<AlertDialogTitle>Unsaved Changes</AlertDialogTitle>
-							<AlertDialogDescription>
+							<AlertDialogDescription className="text-gray-400">
 								You have unsaved changes. Are you sure you want to leave without
 								saving?
 							</AlertDialogDescription>
 						</AlertDialogHeader>
 						<AlertDialogFooter>
-							<AlertDialogCancel>Cancel</AlertDialogCancel>
+							<AlertDialogCancel className="bg-transparent border-white/10 text-white hover:bg-white/5 hover:text-white">
+								Cancel
+							</AlertDialogCancel>
 							<AlertDialogAction
 								onClick={onClose}
-								className="bg-red-600 text-white hover:bg-red-700"
+								className="bg-red-600 text-white hover:bg-red-700 border-0"
 							>
 								Discard Changes
 							</AlertDialogAction>

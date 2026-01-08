@@ -88,7 +88,7 @@ self.onmessage = async (e: MessageEvent<WorkerMessage>) => {
 				// biome-ignore lint/correctness/useHookAtTopLevel: Not a hook
 				gl.useProgram(program);
 
-				// Setup Buffers (Rectangle for the image)
+				// Setup Buffers (rect for the image)
 				const positionBuffer = gl.createBuffer();
 				gl.bindBuffer(gl.ARRAY_BUFFER, positionBuffer);
 				gl.bufferData(
@@ -105,11 +105,11 @@ self.onmessage = async (e: MessageEvent<WorkerMessage>) => {
 					gl.STATIC_DRAW,
 				);
 
-				// Create and bind Texture
+				// Create and bind texture
 				const texture = gl.createTexture();
 				gl.bindTexture(gl.TEXTURE_2D, texture);
 
-				// Essential: Upload the bitmap to GPU
+				// Upload the bitmap to GPU
 				gl.texImage2D(
 					gl.TEXTURE_2D,
 					0,
@@ -119,12 +119,12 @@ self.onmessage = async (e: MessageEvent<WorkerMessage>) => {
 					bitmap,
 				);
 
-				// Texture parameters
+				// Texture
 				gl.texParameteri(gl.TEXTURE_2D, gl.TEXTURE_WRAP_S, gl.CLAMP_TO_EDGE);
 				gl.texParameteri(gl.TEXTURE_2D, gl.TEXTURE_WRAP_T, gl.CLAMP_TO_EDGE);
 				gl.texParameteri(gl.TEXTURE_2D, gl.TEXTURE_MIN_FILTER, gl.LINEAR);
 
-				// Final draw call
+				// Draw
 				const posLoc = gl.getAttribLocation(program, "a_position");
 				gl.enableVertexAttribArray(posLoc);
 				gl.bindBuffer(gl.ARRAY_BUFFER, positionBuffer);
