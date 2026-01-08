@@ -91,7 +91,6 @@ import {
 	SelectValue,
 } from "@/components/ui/select";
 import { Slider } from "@/components/ui/slider";
-import { Switch } from "@/components/ui/switch";
 import {
 	Tooltip,
 	TooltipContent,
@@ -496,8 +495,7 @@ const InteractionOverlay: React.FC = () => {
 			const layer = layers.find((l) => l.id === selectedId);
 			if (!layer) return;
 			const ratio = initialPos.height / initialPos.width || 1;
-			const isLocked =
-				layer.type !== "Text" && layer.type !== "Audio" && layer.lockAspect;
+			const isLocked = layer.type === "Image" || layer.type === "Video";
 			let signW = 1,
 				signH = 1,
 				isLeft = false,
@@ -1510,23 +1508,6 @@ const InspectorPanel: React.FC = () => {
 							onChange={(v) => update({ rotation: v })}
 						/>
 					</div>
-					{(selectedLayer.type === "Image" ||
-						selectedLayer.type === "Video") && (
-						<div className="flex items-center justify-between mt-3 pt-2 border-t border-white/5">
-							<label
-								htmlFor="lockAspect"
-								className="text-[11px] text-gray-400 cursor-pointer"
-							>
-								Lock Aspect Ratio
-							</label>
-							<Switch
-								id="lockAspect"
-								checked={selectedLayer.lockAspect ?? true}
-								onCheckedChange={(checked) => update({ lockAspect: checked })}
-								className="scale-75 data-[state=checked]:bg-blue-600"
-							/>
-						</div>
-					)}
 				</CollapsibleSection>
 				{/* Animations */}
 				<CollapsibleSection title="Animations" icon={Zap}>
@@ -1901,7 +1882,6 @@ export const VideoDesignerEditor: React.FC<VideoDesignerEditorProps> = ({
 					fill: saved?.fill ?? "#ffffff",
 					width: saved?.width,
 					height: saved?.height,
-					lockAspect: false,
 					text: "",
 				});
 			} else if (item.type === "Image" || item.type === "Video") {
@@ -1912,7 +1892,6 @@ export const VideoDesignerEditor: React.FC<VideoDesignerEditorProps> = ({
 					src: "",
 					width: saved?.width ?? pData?.width,
 					height: saved?.height ?? pData?.height,
-					lockAspect: saved?.lockAspect ?? true,
 					maxDurationInFrames:
 						item.type === "Video" && durationMs > 0
 							? calculatedDurationFrames
@@ -1925,7 +1904,6 @@ export const VideoDesignerEditor: React.FC<VideoDesignerEditorProps> = ({
 					src: "",
 					height: 0,
 					width: 0,
-					lockAspect: false,
 					maxDurationInFrames:
 						durationMs > 0 ? calculatedDurationFrames : undefined,
 				});
