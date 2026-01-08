@@ -40,6 +40,11 @@ const nodeProcessors: Partial<Record<NodeType, NodeProcessor>> = {
 	[NodeType.File]: async ({ node }) => {
 		return { success: true, result: node.result };
 	},
+	// Frontend-Process* (not really) only nodes
+	// We're adding them here so that it doesn't throw false-positive error for missing processors
+	[NodeType.Preview]: async () => {
+		return { success: true, result: null };
+	},
 	[NodeType.Export]: async ({ node }) => {
 		return { success: true, result: node.result };
 	},

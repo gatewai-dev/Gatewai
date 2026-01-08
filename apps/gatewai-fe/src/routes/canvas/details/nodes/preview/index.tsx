@@ -1,8 +1,10 @@
 import type { FileData } from "@gatewai/types";
 import type { NodeProps } from "@xyflow/react";
 import { FileIcon } from "lucide-react";
-import { memo, useMemo } from "react";
+import { memo, useMemo, useState } from "react";
 import { ScrollArea } from "@/components/ui/scroll-area";
+import { Switch } from "@/components/ui/switch";
+import { cn } from "@/lib/utils";
 import { GetAssetEndpoint } from "@/utils/file";
 import { MarkdownRenderer } from "../../components/markdown-renderer";
 import { useNodeResult } from "../../processor/processor-ctx";
@@ -28,6 +30,7 @@ ImagePreview.displayName = "ImagePreview";
 
 const PreviewNodeComponent = memo((props: NodeProps<PreviewNode>) => {
 	const { result } = useNodeResult(props.id);
+	const [showMarkdown, setShowMarkdown] = useState(false);
 
 	if (!result) {
 		return (
@@ -60,12 +63,22 @@ const PreviewNodeComponent = memo((props: NodeProps<PreviewNode>) => {
 	const renderContent = () => {
 		if (outputType === "Text" && typeof outputData === "string") {
 			return (
-				<ScrollArea
-					viewPortCn="max-h-[350px] overflow-auto"
-					className="bg-input p-2 w-full "
-				>
-					<MarkdownRenderer markdown={outputData} />
-				</ScrollArea>
+				<div className="flex flex-col gap-2">
+					<ScrollArea
+						viewPortCn="max-h-[350px] overflow-auto"
+						className="bg-input p-2 w-full"
+					>
+						{showMarkdown ? (
+							<MarkdownRenderer markdown={outputData} />
+						) : (
+							<div className="whitespace-pre">{outputData}</div>
+						)}
+					</ScrollArea>
+					<div className="flex items-center justify-end mb-2 gap-2">
+						<span className="text-sm text-muted-foreground">Markdown</span>
+						<Switch checked={showMarkdown} onCheckedChange={setShowMarkdown} />
+					</div>
+				</div>
 			);
 		}
 
@@ -100,9 +113,15 @@ const PreviewNodeComponent = memo((props: NodeProps<PreviewNode>) => {
 		);
 	};
 
+	const isVideoOrImage = ["Video", "Image"].includes(outputType);
+
 	return (
 		<BaseNode selected={props.selected} id={props.id} dragging={props.dragging}>
-			<div className="w-full overflow-hidden rounded media-container relative">
+			<div
+				className={cn("w-full overflow-hidden rounded relative", {
+					"media-container": isVideoOrImage,
+				})}
+			>
 				<div className="relative h-full w-full group">{renderContent()}</div>
 			</div>
 		</BaseNode>

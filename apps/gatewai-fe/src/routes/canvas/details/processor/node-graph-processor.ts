@@ -25,9 +25,37 @@ import type {
 	ConnectedInput,
 	NodeProcessor,
 	NodeProcessorParams,
-	NodeState,
+	// NodeState, // Removed import, redefining locally to match Task schema
 	ProcessorConfig,
 } from "./types";
+
+// [Schema Alignment] Enum matching the Prisma TaskStatus
+export enum TaskStatus {
+	QUEUED = "QUEUED",
+	EXECUTING = "EXECUTING",
+	FAILED = "FAILED",
+	COMPLETED = "COMPLETED",
+}
+
+// [Schema Alignment] Updated State to track Task metadata
+export interface NodeState {
+	id: string;
+	status: TaskStatus | null; // Null implies idle/not queued
+	isDirty: boolean; // Determines if the Node Config is out of sync with the Result
+
+	// Task Metrics for DB sync
+	startedAt?: number;
+	finishedAt?: number;
+	durationMs?: number;
+
+	result: NodeResult | null;
+	inputs: Record<string, ConnectedInput> | null;
+	error: string | null;
+
+	abortController: AbortController | null;
+	lastProcessedSignature: string | null;
+	version: number;
+}
 
 export class NodeGraphProcessor extends EventEmitter {
 	private nodes = new Map<string, NodeEntityType>();
@@ -35,7 +63,6 @@ export class NodeGraphProcessor extends EventEmitter {
 	private handles: HandleEntityType[] = [];
 
 	private edgesByTarget = new Map<string, EdgeEntityType[]>();
-
 	private adjacency = new Map<string, Set<string>>();
 	private reverseAdjacency = new Map<string, Set<string>>();
 	public graphValidation: Record<string, Record<string, string>> = {};
@@ -118,16 +145,21 @@ export class NodeGraphProcessor extends EventEmitter {
 			this.nodes.forEach((currNode, id) => {
 				const state = this.getOrCreateNodeState(id);
 				state.error = null;
-				state.isProcessing = false;
 				state.abortController = null;
+
+				// Initialize status based on existing result availability
 				if (currNode.result) {
 					state.result = currNode.result as unknown as NodeResult;
 					state.lastProcessedSignature = this.getNodeValueHash(currNode);
 					state.isDirty = false;
+					// Note: We don't set COMPLETED here arbitrarily unless we are sure,
+					// but generally if we have a result, it is conceptually completed.
+					state.status = TaskStatus.COMPLETED;
 				} else {
 					state.result = null;
 					state.lastProcessedSignature = null;
 					state.isDirty = true;
+					// Will be set to QUEUED in markNodesDirty
 					dirtyNodes.push(id);
 				}
 				state.version++;
@@ -157,7 +189,7 @@ export class NodeGraphProcessor extends EventEmitter {
 			});
 		}
 
-		//  Cleanup Removed Nodes
+		// Cleanup Removed Nodes
 		prevNodes.forEach((_, id) => {
 			if (!this.nodes.has(id)) {
 				const state = this.nodeStates.get(id);
@@ -166,7 +198,7 @@ export class NodeGraphProcessor extends EventEmitter {
 			}
 		});
 
-		// 6. Trigger Execution
+		// Trigger Execution
 		if (nodesToInvalidate.size > 0) {
 			this.markNodesDirty(Array.from(nodesToInvalidate));
 		}
@@ -193,9 +225,9 @@ export class NodeGraphProcessor extends EventEmitter {
 		const state = this.nodeStates.get(nodeId);
 		if (state) {
 			state.error = null;
-			state.isDirty = true;
 			state.version++;
-			this.triggerProcessing();
+			// Retrying implies re-queueing
+			this.markNodesDirty([nodeId]);
 		}
 	}
 
@@ -226,14 +258,23 @@ export class NodeGraphProcessor extends EventEmitter {
 
 			const state = this.getOrCreateNodeState(nodeId);
 
-			if (state.isProcessing && state.abortController) {
+			// If currently executing, abort it
+			if (state.status === TaskStatus.EXECUTING && state.abortController) {
 				state.abortController.abort("Restarting due to graph update");
 				state.abortController = null;
 			}
 
+			// [Schema Alignment] Set status to QUEUED
 			state.isDirty = true;
+			state.status = TaskStatus.QUEUED;
 			state.error = null;
+			state.startedAt = undefined;
+			state.finishedAt = undefined;
+			state.durationMs = undefined;
 			state.version++;
+
+			// Notify system that this node is queued (good place to create/reset DB Task)
+			this.emit("node:queued", { nodeId });
 
 			const children = this.adjacency.get(nodeId);
 			if (children) {
@@ -265,8 +306,10 @@ export class NodeGraphProcessor extends EventEmitter {
 				const dirtyNodes = Array.from(this.nodeStates.values()).filter(
 					(s) => s.isDirty,
 				);
+
+				// [Schema Alignment] Check status != EXECUTING to allow parallel execution
 				const readyNodes = dirtyNodes.filter(
-					(s) => !s.isProcessing && this.areInputsReady(s.id),
+					(s) => s.status !== TaskStatus.EXECUTING && this.areInputsReady(s.id),
 				);
 
 				if (readyNodes.length === 0) {
@@ -280,7 +323,7 @@ export class NodeGraphProcessor extends EventEmitter {
 			this.processingLoopActive = false;
 			if (
 				Array.from(this.nodeStates.values()).some(
-					(s) => s.isDirty && !s.isProcessing,
+					(s) => s.isDirty && s.status !== TaskStatus.EXECUTING,
 				)
 			) {
 				this.triggerProcessing();
@@ -293,6 +336,7 @@ export class NodeGraphProcessor extends EventEmitter {
 		if (!parents || parents.size === 0) return true;
 		for (const parentId of parents) {
 			const parentState = this.nodeStates.get(parentId);
+			// Parent must have a result and NOT be dirty to be considered stable
 			if (!parentState?.result || parentState.isDirty) return false;
 		}
 		return true;
@@ -309,12 +353,15 @@ export class NodeGraphProcessor extends EventEmitter {
 		if (!processor) {
 			state.error = `No processor found for type ${node.type}`;
 			state.isDirty = false;
+			state.status = TaskStatus.FAILED;
 			state.version++;
 			this.emit("node:error", { nodeId, error: state.error });
 			return;
 		}
 
-		state.isProcessing = true;
+		// [Schema Alignment] Update Status to EXECUTING
+		state.status = TaskStatus.EXECUTING;
+		state.startedAt = Date.now();
 		state.error = null;
 		state.abortController = new AbortController();
 		state.version++;
@@ -331,7 +378,8 @@ export class NodeGraphProcessor extends EventEmitter {
 
 			state.inputs = inputs;
 			state.version++;
-			this.emit("node:start", { nodeId, inputs });
+			// emit start with timestamp
+			this.emit("node:start", { nodeId, inputs, startedAt: state.startedAt });
 
 			const result = await processor({
 				node,
@@ -341,8 +389,13 @@ export class NodeGraphProcessor extends EventEmitter {
 
 			if (signal.aborted) throw new Error("Aborted");
 
+			// [Schema Alignment] Update Status to COMPLETED and calc duration
 			state.result = result;
 			state.isDirty = false;
+			state.status = TaskStatus.COMPLETED;
+			state.finishedAt = Date.now();
+			state.durationMs =
+				state.finishedAt - (state.startedAt || state.finishedAt);
 			state.lastProcessedSignature = this.getNodeValueHash(node);
 			state.version++;
 
@@ -355,7 +408,17 @@ export class NodeGraphProcessor extends EventEmitter {
 				}
 			}
 
-			this.emit("node:processed", { nodeId, result, inputs });
+			this.emit("node:processed", {
+				nodeId,
+				result,
+				inputs,
+				// Include duration for Task model update
+				metrics: {
+					startedAt: state.startedAt,
+					finishedAt: state.finishedAt,
+					durationMs: state.durationMs,
+				},
+			});
 		} catch (error) {
 			const isAbort =
 				error instanceof Error &&
@@ -364,19 +427,33 @@ export class NodeGraphProcessor extends EventEmitter {
 					signal.aborted);
 
 			if (isAbort) {
-				state.isProcessing = false;
+				// Aborted usually means restarting, so we don't necessarily set FAILED
+				// unless the loop stops. Typically markNodesDirty handles the reset.
+				state.status = TaskStatus.QUEUED; // or stay as is depending on restart logic
 				state.abortController = null;
 				state.version++;
 				return;
 			}
 
 			console.error(`Error processing node ${nodeId}:`, error);
+
+			// [Schema Alignment] Update Status to FAILED
 			state.error = error instanceof Error ? error.message : "Unknown error";
-			state.isDirty = false;
+			state.isDirty = false; // It processed, but failed.
+			state.status = TaskStatus.FAILED;
+			state.finishedAt = Date.now();
+			state.durationMs =
+				state.finishedAt - (state.startedAt || state.finishedAt);
 			state.version++;
-			this.emit("node:error", { nodeId, error: state.error });
+
+			this.emit("node:error", {
+				nodeId,
+				error: state.error,
+				metrics: {
+					durationMs: state.durationMs,
+				},
+			});
 		} finally {
-			state.isProcessing = false;
 			state.abortController = null;
 			state.version++;
 		}
@@ -388,7 +465,7 @@ export class NodeGraphProcessor extends EventEmitter {
 			state = {
 				id,
 				isDirty: false,
-				isProcessing: false,
+				status: null, // Initial state
 				result: null,
 				inputs: null,
 				error: null,
@@ -401,6 +478,7 @@ export class NodeGraphProcessor extends EventEmitter {
 		return state;
 	}
 
+	// ... (rest of the class methods: buildAdjacencyAndIndices, getNodeValueHash, detectInputChanges, collectInputs, getImageDataUrlFromResult, registerBuiltInProcessors remain the same)
 	private buildAdjacencyAndIndices() {
 		this.adjacency.clear();
 		this.reverseAdjacency.clear();
@@ -496,27 +574,18 @@ export class NodeGraphProcessor extends EventEmitter {
 		return changedNodes;
 	}
 
-	/**
-	 * Collects inputs for a node, ensuring the resulting Record is ordered
-	 * by the handle's createdAt property.
-	 */
 	private collectInputs(nodeId: string): Record<string, ConnectedInput> {
 		const inputs: Record<string, ConnectedInput> = {};
 		const incomingEdges = this.edgesByTarget.get(nodeId) || [];
 
-		// Get all relevant handles for this node and sort them by createdAt
 		const sortedInputHandles = this.handles
 			.filter((h) => h.nodeId === nodeId && h.type === "Input")
 			.sort((a, b) => (a.createdAt || "").localeCompare(b.createdAt || ""));
 
-		// Iterate through handles in chronological order to maintain predictable object iteration
 		for (const handle of sortedInputHandles) {
 			const edge = incomingEdges.find((e) => e.targetHandleId === handle.id);
 
-			if (!edge) {
-				// Initialize as empty/missing if required by schema downstream
-				continue;
-			}
+			if (!edge) continue;
 
 			const sourceState = this.nodeStates.get(edge.source);
 			if (!sourceState?.result) {
