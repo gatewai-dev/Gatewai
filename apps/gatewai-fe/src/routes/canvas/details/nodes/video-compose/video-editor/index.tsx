@@ -672,28 +672,25 @@ const InteractionOverlay: React.FC = () => {
 						{selectedId === layer.id && (
 							<>
 								{/* Resize Handles */}
-								{layer.type !== "Text" && (
-									<>
-										{["tl", "tr", "bl", "br"].map((pos) => (
-											<div
-												key={pos}
-												className={`absolute w-2.5 h-2.5 bg-white border border-blue-600 rounded-full shadow-sm z-50 transition-transform hover:scale-125
+								{layer.type !== "Text" &&
+									["tl", "tr", "bl", "br"].map((pos) => (
+										<div
+											key={pos}
+											className={`absolute w-2.5 h-2.5 bg-white border border-blue-600 rounded-full shadow-sm z-50 transition-transform hover:scale-125
                       ${pos === "tl" ? "-top-1.5 -left-1.5 cursor-nwse-resize" : ""}
                       ${pos === "tr" ? "-top-1.5 -right-1.5 cursor-nesw-resize" : ""}
                       ${pos === "bl" ? "-bottom-1.5 -left-1.5 cursor-nesw-resize" : ""}
                       ${pos === "br" ? "-bottom-1.5 -right-1.5 cursor-nwse-resize" : ""}
                     `}
-												onMouseDown={(e) =>
-													handleMouseDown(
-														e,
-														layer.id,
-														pos as "tl" | "tr" | "bl" | "br",
-													)
-												}
-											/>
-										))}
-									</>
-								)}
+											onMouseDown={(e) =>
+												handleMouseDown(
+													e,
+													layer.id,
+													pos as "tl" | "tr" | "bl" | "br",
+												)
+											}
+										/>
+									))}
 								{/* Rotation Handle */}
 								<div
 									className="absolute -top-4 left-1/2 -translate-x-1/2 h-4 w-px bg-blue-500"

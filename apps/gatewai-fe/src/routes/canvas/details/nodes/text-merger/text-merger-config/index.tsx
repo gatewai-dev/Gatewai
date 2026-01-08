@@ -8,7 +8,6 @@ import { useForm } from "react-hook-form";
 import {
 	Form,
 	FormControl,
-	FormDescription,
 	FormField,
 	FormItem,
 	FormLabel,
@@ -143,9 +142,6 @@ const TextMergerNodeConfigComponent = memo(
 									<SelectItem value="custom">Custom String...</SelectItem>
 								</SelectContent>
 							</Select>
-							<FormDescription>
-								Defines the string inserted between merged text fragments.
-							</FormDescription>
 						</FormItem>
 
 						{isCustomMode && (
@@ -178,28 +174,26 @@ const TextMergerNodeConfigComponent = memo(
 
 				<div className="space-y-3 pt-2">
 					<Label className="text-[10px] uppercase tracking-widest text-muted-foreground font-bold">
-						Output Preview
+						Handbook Preview
 					</Label>
+					<div className="flex flex-wrap gap-1.5">
+						{exampleInputs.map((input) => (
+							<span
+								key={`${input}_opt`}
+								className="px-2 py-0.5 rounded border border-border bg-background text-[10px] text-muted-foreground"
+							>
+								"{input}"
+							</span>
+						))}
+					</div>
 					<div className="relative">
-						<div className="p-4 bg-muted/40 border border-dashed border-border rounded-md whitespace-pre-wrap wrap-break-word text-sm min-h-[80px] text-left transition-colors font-mono">
+						<div className="p-2 bg-muted/40 border border-dashed border-border rounded-md whitespace-pre-wrap wrap-break-word text-xs text-left transition-colors font-mono">
 							{previewText || (
 								<span className="text-muted-foreground italic opacity-60">
 									No separator (Concatenated)
 								</span>
 							)}
 						</div>
-					</div>
-
-					{/* Input chips for context */}
-					<div className="flex flex-wrap gap-1.5">
-						{exampleInputs.map((input, i) => (
-							<span
-								key={i}
-								className="px-2 py-0.5 rounded border border-border bg-background text-[10px] text-muted-foreground"
-							>
-								"{input}"
-							</span>
-						))}
 					</div>
 				</div>
 			</div>

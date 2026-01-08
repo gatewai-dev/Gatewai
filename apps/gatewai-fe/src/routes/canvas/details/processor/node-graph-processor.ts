@@ -756,11 +756,8 @@ export class NodeGraphProcessor extends EventEmitter {
 		});
 
 		this.registerProcessor("Compositor", async ({ node, inputs, signal }) => {
-			console.log("ANAN");
 			const config = node.config as CompositorNodeConfig;
 
-			//  Prepare Inputs for Pixi Service
-			// Map the Layer's Input Handle ID -> Actual Data (URL or Text)
 			const inputDataMap: Record<
 				string,
 				{ type: "Image" | "Text"; value: string }
@@ -810,15 +807,13 @@ export class NodeGraphProcessor extends EventEmitter {
 			"VideoCompositor",
 			async ({ node, inputs, signal }) => {
 				const config = node.config as unknown as VideoCompositorNodeConfig;
+
 				// Process with web renderer
-				const start = Date.now();
 				const result = await remotionService.processVideo(
 					config,
 					inputs,
 					signal,
 				);
-				const end = Date.now();
-				console.log((end - start) / 1000);
 
 				return {
 					selectedOutputIndex: 0,

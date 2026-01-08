@@ -107,4 +107,6 @@ export type AnyNode =
 	| BlurNode
 	| CropNode
 	| CompositorNode
-	| ResizeNode;
+	| ResizeNode
+	| VideoCompositorNode
+	| TextMergerNode;

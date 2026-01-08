@@ -1,4 +1,9 @@
-import type { AllNodeConfig, NodeResult } from "@gatewai/types";
+import type {
+	AllNodeConfig,
+	AnyNodeConfig,
+	NodeResult,
+	NoteNodeConfig,
+} from "@gatewai/types";
 import {
 	createDraftSafeSelector,
 	createEntityAdapter,
@@ -43,7 +48,7 @@ export const nodesSlice = createSlice({
 				node.config = {
 					...existingConfig,
 					...newConfig,
-				};
+				} as AnyNodeConfig;
 			}
 		},
 		updateNodeResult: (
