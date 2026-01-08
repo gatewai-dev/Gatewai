@@ -139,7 +139,7 @@ const DynamicComposition: React.FC<{
 					height: layer.height,
 					transform: `rotate(${animRotation}deg) scale(${animScale})`,
 					opacity: animOpacity,
-					textAlign: layer.align as any,
+					textAlign: layer.align,
 				};
 
 				const getAssetUrl = () => {

@@ -1,5 +1,5 @@
 /**
- * Singleton font loader for document
+ * Singleton font loader
  */
 class FontManager {
 	private static instance: FontManager | null = null;
@@ -17,7 +17,7 @@ class FontManager {
 	public async loadFont(family: string, url: string): Promise<void> {
 		if (this.loadedFonts.has(family)) return;
 
-		const fontId = `pixi-font-${family}`;
+		const fontId = `local-font-${family}`;
 		if (document.getElementById(fontId)) return;
 
 		const style = document.createElement("style");

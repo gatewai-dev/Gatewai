@@ -12,7 +12,7 @@ const SearchInput = memo(() => {
 	return (
 		<div className="relative flex items-center w-full">
 			<Input
-				placeholder="Search"
+				placeholder="Search nodes"
 				value={searchQuery}
 				onChange={(e) => setSearchQuery(e.target.value)}
 				className="pr-9 focus-visible:ring-1"

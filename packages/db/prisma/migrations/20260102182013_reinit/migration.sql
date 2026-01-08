@@ -1,5 +1,5 @@
 -- CreateEnum
-CREATE TYPE "NodeType" AS ENUM ('Text', 'Preview', 'File', 'Export', 'Toggle', 'Crawler', 'Resize', 'Agent', 'ThreeD', 'Painter', 'Blur', 'Compositor', 'Describer', 'Router', 'Note', 'Number', 'ImageGen', 'LLM');
+CREATE TYPE "NodeType" AS ENUM ('Text', 'Preview', 'File', 'Export', 'Toggle', 'Crop', 'Resize', 'Agent', 'Paint', 'Blur', 'Compositor', 'Note', 'Number', 'Modulate', 'LLM', 'ImageGen', 'VideoGen', 'VideoGenFirstLastFrame', 'VideoGenExtend', 'VideoCompositor', 'TextToSpeech', 'SpeechToText');
 
 -- CreateEnum
 CREATE TYPE "DataType" AS ENUM ('Text', 'Number', 'Boolean', 'Image', 'Video', 'Audio', 'File', 'Mask');
@@ -8,72 +8,10 @@ CREATE TYPE "DataType" AS ENUM ('Text', 'Number', 'Boolean', 'Image', 'Video', '
 CREATE TYPE "TaskStatus" AS ENUM ('QUEUED', 'EXECUTING', 'FAILED', 'COMPLETED');
 
 -- CreateEnum
-CREATE TYPE "ProcessEnvironment" AS ENUM ('Browser', 'Server');
-
--- CreateEnum
 CREATE TYPE "HandleType" AS ENUM ('Input', 'Output');
 
 -- CreateEnum
 CREATE TYPE "FileAssetType" AS ENUM ('Image', 'Video');
-
--- CreateTable
-CREATE TABLE "user" (
-    "id" TEXT NOT NULL,
-    "name" TEXT NOT NULL,
-    "email" TEXT NOT NULL,
-    "emailVerified" BOOLEAN NOT NULL,
-    "image" TEXT,
-    "createdAt" TIMESTAMP(3) NOT NULL,
-    "updatedAt" TIMESTAMP(3) NOT NULL,
-    "tokens" INTEGER,
-
-    CONSTRAINT "user_pkey" PRIMARY KEY ("id")
-);
-
--- CreateTable
-CREATE TABLE "session" (
-    "id" TEXT NOT NULL,
-    "expiresAt" TIMESTAMP(3) NOT NULL,
-    "token" TEXT NOT NULL,
-    "createdAt" TIMESTAMP(3) NOT NULL,
-    "updatedAt" TIMESTAMP(3) NOT NULL,
-    "ipAddress" TEXT,
-    "userAgent" TEXT,
-    "userId" TEXT NOT NULL,
-
-    CONSTRAINT "session_pkey" PRIMARY KEY ("id")
-);
-
--- CreateTable
-CREATE TABLE "account" (
-    "id" TEXT NOT NULL,
-    "accountId" TEXT NOT NULL,
-    "providerId" TEXT NOT NULL,
-    "userId" TEXT NOT NULL,
-    "accessToken" TEXT,
-    "refreshToken" TEXT,
-    "idToken" TEXT,
-    "accessTokenExpiresAt" TIMESTAMP(3),
-    "refreshTokenExpiresAt" TIMESTAMP(3),
-    "scope" TEXT,
-    "password" TEXT,
-    "createdAt" TIMESTAMP(3) NOT NULL,
-    "updatedAt" TIMESTAMP(3) NOT NULL,
-
-    CONSTRAINT "account_pkey" PRIMARY KEY ("id")
-);
-
--- CreateTable
-CREATE TABLE "verification" (
-    "id" TEXT NOT NULL,
-    "identifier" TEXT NOT NULL,
-    "value" TEXT NOT NULL,
-    "expiresAt" TIMESTAMP(3) NOT NULL,
-    "createdAt" TIMESTAMP(3),
-    "updatedAt" TIMESTAMP(3),
-
-    CONSTRAINT "verification_pkey" PRIMARY KEY ("id")
-);
 
 -- CreateTable
 CREATE TABLE "node" (
@@ -104,6 +42,7 @@ CREATE TABLE "handle" (
     "type" "HandleType" NOT NULL,
     "dataTypes" "DataType"[],
     "label" TEXT NOT NULL,
+    "description" TEXT,
     "order" INTEGER NOT NULL DEFAULT 0,
     "required" BOOLEAN NOT NULL DEFAULT false,
     "templateHandleId" TEXT,
@@ -120,7 +59,6 @@ CREATE TABLE "node_template" (
     "type" "NodeType" NOT NULL,
     "displayName" TEXT NOT NULL,
     "description" TEXT,
-    "processEnvironment" "ProcessEnvironment" NOT NULL,
     "tokenPrice" DOUBLE PRECISION DEFAULT 0.0,
     "variableInputs" BOOLEAN NOT NULL DEFAULT false,
     "variableOutputs" BOOLEAN NOT NULL DEFAULT false,
@@ -169,7 +107,6 @@ CREATE TABLE "canvas" (
     "name" TEXT NOT NULL,
     "createdAt" TIMESTAMP(3) NOT NULL DEFAULT CURRENT_TIMESTAMP,
     "updatedAt" TIMESTAMP(3) NOT NULL,
-    "userId" TEXT NOT NULL,
 
     CONSTRAINT "canvas_pkey" PRIMARY KEY ("id")
 );
@@ -190,7 +127,6 @@ CREATE TABLE "taskBatch" (
     "id" TEXT NOT NULL,
     "createdAt" TIMESTAMP(3) NOT NULL DEFAULT CURRENT_TIMESTAMP,
     "updatedAt" TIMESTAMP(3) NOT NULL,
-    "userId" TEXT NOT NULL,
     "canvasId" TEXT NOT NULL,
     "finishedAt" TIMESTAMP(3),
 
@@ -225,32 +161,24 @@ CREATE TABLE "FileAsset" (
     "width" INTEGER,
     "height" INTEGER,
     "bucket" TEXT NOT NULL,
+    "size" INTEGER NOT NULL,
     "mimeType" TEXT NOT NULL,
     "key" TEXT NOT NULL,
     "signedUrl" TEXT,
     "signedUrlExp" TIMESTAMP(3),
-    "userId" TEXT NOT NULL,
+    "isUploaded" BOOLEAN NOT NULL DEFAULT true,
+    "duration" INTEGER,
+    "metadata" JSONB,
+    "fps" INTEGER,
 
     CONSTRAINT "FileAsset_pkey" PRIMARY KEY ("id")
 );
-
--- CreateIndex
-CREATE UNIQUE INDEX "user_email_key" ON "user"("email");
-
--- CreateIndex
-CREATE UNIQUE INDEX "session_token_key" ON "session"("token");
 
 -- CreateIndex
 CREATE UNIQUE INDEX "node_template_type_key" ON "node_template"("type");
 
 -- CreateIndex
 CREATE UNIQUE INDEX "edge_sourceHandleId_targetHandleId_key" ON "edge"("sourceHandleId", "targetHandleId");
-
--- AddForeignKey
-ALTER TABLE "session" ADD CONSTRAINT "session_userId_fkey" FOREIGN KEY ("userId") REFERENCES "user"("id") ON DELETE CASCADE ON UPDATE CASCADE;
-
--- AddForeignKey
-ALTER TABLE "account" ADD CONSTRAINT "account_userId_fkey" FOREIGN KEY ("userId") REFERENCES "user"("id") ON DELETE CASCADE ON UPDATE CASCADE;
 
 -- AddForeignKey
 ALTER TABLE "node" ADD CONSTRAINT "node_canvasId_fkey" FOREIGN KEY ("canvasId") REFERENCES "canvas"("id") ON DELETE CASCADE ON UPDATE CASCADE;
@@ -280,13 +208,7 @@ ALTER TABLE "edge" ADD CONSTRAINT "edge_sourceHandleId_fkey" FOREIGN KEY ("sourc
 ALTER TABLE "edge" ADD CONSTRAINT "edge_targetHandleId_fkey" FOREIGN KEY ("targetHandleId") REFERENCES "handle"("id") ON DELETE CASCADE ON UPDATE CASCADE;
 
 -- AddForeignKey
-ALTER TABLE "canvas" ADD CONSTRAINT "canvas_userId_fkey" FOREIGN KEY ("userId") REFERENCES "user"("id") ON DELETE CASCADE ON UPDATE CASCADE;
-
--- AddForeignKey
 ALTER TABLE "aisession" ADD CONSTRAINT "aisession_canvasId_fkey" FOREIGN KEY ("canvasId") REFERENCES "canvas"("id") ON DELETE CASCADE ON UPDATE CASCADE;
-
--- AddForeignKey
-ALTER TABLE "taskBatch" ADD CONSTRAINT "taskBatch_userId_fkey" FOREIGN KEY ("userId") REFERENCES "user"("id") ON DELETE CASCADE ON UPDATE CASCADE;
 
 -- AddForeignKey
 ALTER TABLE "taskBatch" ADD CONSTRAINT "taskBatch_canvasId_fkey" FOREIGN KEY ("canvasId") REFERENCES "canvas"("id") ON DELETE CASCADE ON UPDATE CASCADE;
@@ -296,6 +218,3 @@ ALTER TABLE "task" ADD CONSTRAINT "task_nodeId_fkey" FOREIGN KEY ("nodeId") REFE
 
 -- AddForeignKey
 ALTER TABLE "task" ADD CONSTRAINT "task_batchId_fkey" FOREIGN KEY ("batchId") REFERENCES "taskBatch"("id") ON DELETE CASCADE ON UPDATE CASCADE;
-
--- AddForeignKey
-ALTER TABLE "FileAsset" ADD CONSTRAINT "FileAsset_userId_fkey" FOREIGN KEY ("userId") REFERENCES "user"("id") ON DELETE CASCADE ON UPDATE CASCADE;

@@ -39,11 +39,19 @@ function NodePaletteContent({ templates }: { templates: NodeTemplateListRPC }) {
 			className={cn(
 				"relative bg-transparent flex flex-col transition-all duration-500 ease-[cubic-bezier(0.16,1,0.3,1)]",
 				"bg-background/90 backdrop-blur-xl border-r border-border/40 shadow-sm h-screen",
-				isCollapsed ? "w-[52px]" : "w-60 pr-2",
+				isCollapsed ? "w-[52px]" : "w-60",
 			)}
 		>
 			<div className="flex flex-col h-full overflow-hidden">
-				<div className="flex flex-row items-center border-r ml-1 my-4 border-border/10 gap-4">
+				<div
+					className={cn(
+						"flex flex-row items-center border-r my-4 border-border/10 gap-4",
+						{
+							"mx-3": !isCollapsed,
+							"ml-1": isCollapsed,
+						},
+					)}
+				>
 					{!isCollapsed && <CanvasName />}
 					<Tooltip>
 						<TooltipTrigger asChild>
@@ -69,7 +77,7 @@ function NodePaletteContent({ templates }: { templates: NodeTemplateListRPC }) {
 				{/* Search and List Content */}
 				<div
 					className={cn(
-						"flex flex-col flex-1 mx-4 h-[calc(100%-16rem)] transition-all duration-300",
+						"flex flex-col flex-1 mx-3 h-[calc(100%-16rem)] transition-all duration-300",
 						isCollapsed
 							? "opacity-0 invisible w-0"
 							: "opacity-100 visible w-auto",

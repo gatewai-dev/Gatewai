@@ -111,6 +111,7 @@ import {
 	TooltipTrigger,
 } from "@/components/ui/tooltip";
 import { ColorInput } from "@/components/util/color-input";
+import { fontManager } from "@/lib/fonts";
 import { useGetFontListQuery } from "@/store/fonts";
 import type { HandleEntityType } from "@/store/handles";
 import type { NodeEntityType } from "@/store/nodes";
@@ -145,47 +146,6 @@ const BLEND_MODES = [
 	"color",
 	"luminosity",
 ] as const;
-
-// --- Font Manager ---
-class FontManager {
-	private static instance: FontManager | null = null;
-	private loadedFonts: Set<string> = new Set();
-
-	private constructor() {}
-
-	public static getInstance(): FontManager {
-		if (!FontManager.instance) {
-			FontManager.instance = new FontManager();
-		}
-		return FontManager.instance;
-	}
-
-	public async loadFont(family: string, url: string): Promise<void> {
-		if (this.loadedFonts.has(family) || !url) return;
-
-		const fontId = `font-${family}`;
-		if (document.getElementById(fontId)) return;
-
-		const style = document.createElement("style");
-		style.id = fontId;
-		style.innerHTML = `
-      @font-face {
-        font-family: "${family}";
-        src: url("${url}");
-      }
-    `;
-		document.head.appendChild(style);
-
-		try {
-			await document.fonts.load(`1em "${family}"`);
-			this.loadedFonts.add(family);
-		} catch (e) {
-			console.warn(`Font load failed for ${family}:`, e);
-		}
-	}
-}
-
-const fontManager = FontManager.getInstance();
 
 // --- Editor Context ---
 interface EditorContextType {

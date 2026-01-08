@@ -32,8 +32,6 @@ const getTypeColor = (type?: string) =>
 
 /**
  * Generates styles for the handle.
- * REMOVED: translateZ and backface-visibility to fix zoom blurriness.
- * CHANGED: Logic to support rectangular 'pill' shapes.
  */
 export const getHandleStyle = (
 	types: string[],
@@ -43,8 +41,8 @@ export const getHandleStyle = (
 ): React.CSSProperties => {
 	const baseDimensions = {
 		width: "10px",
-		height: "18px", // Rectangular height
-		borderRadius: "2px", // Slight rounding for polish
+		height: "18px",
+		borderRadius: "2px",
 	};
 
 	if (!isValid) {
@@ -158,7 +156,6 @@ const NodeHandle = memo(
 			<div
 				className={cn(
 					"absolute z-50 flex items-center group/handle",
-					// Adjusted offsets for rectangular shape overlap
 					isTarget ? "-left-[5px]" : "-right-[5px]",
 				)}
 				style={{ top: `${topPosition}px` }}
@@ -244,12 +241,9 @@ const BaseNode = memo(
 			<div
 				className={cn(
 					"relative flex flex-col w-full h-full group/node",
-					// Use standard ease for cleaner motion
-					"transition-all duration-200 ease-out",
 					dragging ? "shadow-lg scale-[1.01]" : "shadow-sm",
 					{ "ring-1 ring-green-400/30": isProcessing },
 					"bg-card border border-border",
-					// Sharper corners for a more technical look to match rectangular handles
 					"rounded-2xl",
 					selected && "ring-1 ring-primary border-primary",
 					props.className,
