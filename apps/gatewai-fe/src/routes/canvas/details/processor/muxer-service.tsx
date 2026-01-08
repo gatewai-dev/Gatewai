@@ -294,7 +294,7 @@ export class RemotionWebProcessorService {
 			...config,
 			layerUpdates: layerUpdatesCopy,
 		};
-
+		console.log({ totalDuration });
 		const { getBlob } = await renderMediaOnWeb({
 			signal,
 			licenseKey: "free-license",

@@ -1198,7 +1198,7 @@ const TimelinePanel: React.FC = () => {
 										role="button"
 										tabIndex={0}
 										className={`
-absolute top-1 bottom-1 rounded-md border backdrop-blur-sm
+absolute top-1 bottom-1 rounded-xs border backdrop-blur-sm
 flex items-center overflow-hidden cursor-move outline-none
 ${
 	layer.id === selectedId

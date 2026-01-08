@@ -374,12 +374,9 @@ const VideoCompositorLayerSchema = z
 		textDecoration: z.string().optional(),
 		fill: z.string().optional(),
 		lockAspect: z.boolean(),
-		blendMode: z.string(),
 		letterSpacing: z.number().optional(),
 		lineHeight: z.number().optional(),
 		zIndex: z.number().optional(),
-		align: z.enum(["left", "center", "right"]).optional(),
-		verticalAlign: z.enum(["top", "middle", "bottom"]).optional(),
 
 		startFrame: z.number().optional(),
 		durationInFrames: z.number().optional(),
