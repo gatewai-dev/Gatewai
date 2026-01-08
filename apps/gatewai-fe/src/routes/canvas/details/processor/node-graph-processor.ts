@@ -646,7 +646,7 @@ export class NodeGraphProcessor extends EventEmitter {
 			return null;
 		};
 
-		const getFirstOutputHandle = (nodeId: string, type: string = "Image") =>
+		const getFirstOutputHandle = (nodeId: string, type: string) =>
 			this.handles.find(
 				(h) =>
 					h.nodeId === nodeId &&
@@ -670,7 +670,7 @@ export class NodeGraphProcessor extends EventEmitter {
 				signal,
 			);
 
-			const outputHandle = getFirstOutputHandle(node.id);
+			const outputHandle = getFirstOutputHandle(node.id, "Image");
 			if (!outputHandle) throw new Error("Output handle missing");
 
 			return {
@@ -781,7 +781,7 @@ export class NodeGraphProcessor extends EventEmitter {
 			);
 
 			// Find Output Handle (Standard "Image" output)
-			const outputHandle = getFirstOutputHandle(node.id);
+			const outputHandle = getFirstOutputHandle(node.id, "Image");
 			if (!outputHandle) throw new Error("Missing output handle");
 
 			return {
@@ -854,7 +854,7 @@ export class NodeGraphProcessor extends EventEmitter {
 				signal,
 			);
 
-			const outputHandle = getFirstOutputHandle(node.id);
+			const outputHandle = getFirstOutputHandle(node.id, "Image");
 			if (!outputHandle) throw new Error("Missing output handle");
 			return {
 				selectedOutputIndex: 0,
@@ -889,7 +889,7 @@ export class NodeGraphProcessor extends EventEmitter {
 				signal,
 			);
 
-			const outputHandle = getFirstOutputHandle(node.id);
+			const outputHandle = getFirstOutputHandle(node.id, "Image");
 			if (!outputHandle) throw new Error("Missing output handle");
 			return {
 				selectedOutputIndex: 0,
@@ -919,7 +919,7 @@ export class NodeGraphProcessor extends EventEmitter {
 				return input.outputItem?.data;
 			});
 			const resultText = allTexts.join(config.join);
-			const outputHandle = getFirstOutputHandle(node.id);
+			const outputHandle = getFirstOutputHandle(node.id, "Text");
 
 			if (!outputHandle) throw new Error("Missing output handle");
 			return {
@@ -973,7 +973,7 @@ export class NodeGraphProcessor extends EventEmitter {
 				signal,
 			);
 
-			const outputHandle = getFirstOutputHandle(node.id);
+			const outputHandle = getFirstOutputHandle(node.id, "Image");
 			if (!outputHandle) throw new Error("Missing output handle");
 			return {
 				selectedOutputIndex: 0,
