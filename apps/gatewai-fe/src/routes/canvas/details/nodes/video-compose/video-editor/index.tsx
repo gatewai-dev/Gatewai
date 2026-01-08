@@ -42,7 +42,6 @@ import {
 	RotateCw,
 	Trash2,
 	Type,
-	Volume2,
 	Zap,
 } from "lucide-react";
 import React, {
@@ -381,7 +380,7 @@ const CompositionScene: React.FC<{
 									fontSize: layer.fontSize,
 									fontFamily: layer.fontFamily,
 									lineHeight: layer.lineHeight ?? 1.2,
-									whiteSpace: "pre-wrap", // UPDATED: Changed from 'nowrap' to 'pre-wrap'
+									whiteSpace: "pre",
 								}}
 							>
 								{textContent}
@@ -672,24 +671,28 @@ const InteractionOverlay: React.FC = () => {
 						{selectedId === layer.id && (
 							<>
 								{/* Resize Handles */}
-								{["tl", "tr", "bl", "br"].map((pos) => (
-									<div
-										key={pos}
-										className={`absolute w-2.5 h-2.5 bg-white border border-blue-600 rounded-full shadow-sm z-50 transition-transform hover:scale-125
+								{layer.type !== "Text" && (
+									<>
+										{["tl", "tr", "bl", "br"].map((pos) => (
+											<div
+												key={pos}
+												className={`absolute w-2.5 h-2.5 bg-white border border-blue-600 rounded-full shadow-sm z-50 transition-transform hover:scale-125
                       ${pos === "tl" ? "-top-1.5 -left-1.5 cursor-nwse-resize" : ""}
                       ${pos === "tr" ? "-top-1.5 -right-1.5 cursor-nesw-resize" : ""}
                       ${pos === "bl" ? "-bottom-1.5 -left-1.5 cursor-nesw-resize" : ""}
                       ${pos === "br" ? "-bottom-1.5 -right-1.5 cursor-nwse-resize" : ""}
                     `}
-										onMouseDown={(e) =>
-											handleMouseDown(
-												e,
-												layer.id,
-												pos as "tl" | "tr" | "bl" | "br",
-											)
-										}
-									/>
-								))}
+												onMouseDown={(e) =>
+													handleMouseDown(
+														e,
+														layer.id,
+														pos as "tl" | "tr" | "bl" | "br",
+													)
+												}
+											/>
+										))}
+									</>
+								)}
 								{/* Rotation Handle */}
 								<div
 									className="absolute -top-4 left-1/2 -translate-x-1/2 h-4 w-px bg-blue-500"
@@ -1503,18 +1506,22 @@ const InspectorPanel: React.FC = () => {
 							value={Math.round(selectedLayer.y)}
 							onChange={(v) => update({ y: v })}
 						/>
-						<DraggableNumberInput
-							label="W"
-							icon={MoveHorizontal}
-							value={Math.round(selectedLayer.width ?? 0)}
-							onChange={(v) => update({ width: Math.max(1, v) })}
-						/>
-						<DraggableNumberInput
-							label="H"
-							icon={MoveVertical}
-							value={Math.round(selectedLayer.height ?? 0)}
-							onChange={(v) => update({ height: Math.max(1, v) })}
-						/>
+						{selectedLayer.type !== "Text" && (
+							<>
+								<DraggableNumberInput
+									label="W"
+									icon={MoveHorizontal}
+									value={Math.round(selectedLayer.width ?? 0)}
+									onChange={(v) => update({ width: Math.max(1, v) })}
+								/>
+								<DraggableNumberInput
+									label="H"
+									icon={MoveVertical}
+									value={Math.round(selectedLayer.height ?? 0)}
+									onChange={(v) => update({ height: Math.max(1, v) })}
+								/>
+							</>
+						)}
 					</div>
 					<div className="grid grid-cols-2 gap-3">
 						<DraggableNumberInput
@@ -1651,7 +1658,13 @@ const InspectorPanel: React.FC = () => {
 									<Label className="text-[10px] text-gray-500">Font</Label>
 									<Select
 										value={selectedLayer.fontFamily ?? "Inter"}
-										onValueChange={(val) => update({ fontFamily: val })}
+										onValueChange={(val) =>
+											update({
+												fontFamily: val,
+												width: undefined,
+												height: undefined,
+											})
+										}
 									>
 										<SelectTrigger className="h-8 text-xs bg-neutral-800 border-white/10">
 											<SelectValue placeholder="Select font" />
@@ -1669,7 +1682,9 @@ const InspectorPanel: React.FC = () => {
 									label="Size"
 									icon={Type}
 									value={selectedLayer.fontSize ?? 40}
-									onChange={(v) => update({ fontSize: v })}
+									onChange={(v) =>
+										update({ fontSize: v, width: undefined, height: undefined })
+									}
 								/>
 								<div className="space-y-1">
 									<Label className="text-[10px] text-gray-500 block mb-1">
@@ -1933,9 +1948,10 @@ export const VideoDesignerEditor: React.FC<VideoDesignerEditorProps> = ({
 							const d = document.createElement("div");
 							d.style.fontFamily = layer.fontFamily || "Inter";
 							d.style.fontSize = `${layer.fontSize || 40}px`;
+							d.style.lineHeight = `${layer.lineHeight ?? 1.2}`;
 							d.style.position = "absolute";
 							d.style.visibility = "hidden";
-							d.style.whiteSpace = "nowrap";
+							d.style.whiteSpace = "pre";
 							d.textContent = text;
 							document.body.appendChild(d);
 							updates.set(layer.id, {

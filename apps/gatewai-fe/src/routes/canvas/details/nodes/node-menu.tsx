@@ -1,5 +1,4 @@
 import { zodResolver } from "@hookform/resolvers/zod";
-import type { Node, NodeProps } from "@xyflow/react";
 import { MenuIcon } from "lucide-react";
 import { memo, useState } from "react";
 import { useForm } from "react-hook-form";

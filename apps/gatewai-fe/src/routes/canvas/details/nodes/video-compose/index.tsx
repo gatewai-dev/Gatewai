@@ -1,4 +1,5 @@
 import type { FileData } from "@gatewai/types";
+import type { NodeProps } from "@xyflow/react";
 import { Download, Loader2, VideoIcon } from "lucide-react";
 import { memo, useMemo, useState } from "react";
 import { useNavigate } from "react-router";
@@ -12,9 +13,10 @@ import { useDownloadFileData } from "../../hooks/use-download-filedata";
 import { useNodeResult } from "../../processor/processor-ctx";
 import { BaseNode } from "../base";
 import { VideoRenderer } from "../common/video-renderer";
+import type { VideoCompositorNode } from "../node-props";
 
 const VideoCompositorNodeComponent = memo(
-	(props: { selected: boolean; id: string; dragging: boolean }) => {
+	(props: NodeProps<VideoCompositorNode>) => {
 		const node = useAppSelector(makeSelectNodeById(props.id));
 		const [isDownloading, setIsDownloading] = useState(false);
 		const { result, isProcessing } = useNodeResult(props.id);

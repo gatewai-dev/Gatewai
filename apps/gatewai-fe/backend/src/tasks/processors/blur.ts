@@ -1,9 +1,9 @@
 import { DataType } from "@gatewai/db";
 import type {
 	BlurNodeConfig,
+	BlurResult,
 	FileData,
 	NodeResult,
-	Output,
 } from "@gatewai/types";
 import {
 	applyBlur,
@@ -48,7 +48,7 @@ const blurProcessor: NodeProcessor = async ({ node, data }) => {
 			selectedOutputIndex: 0,
 		};
 
-		const newGeneration: Output = {
+		const newGeneration: BlurResult["outputs"][number] = {
 			items: [
 				{
 					type: DataType.Image,
