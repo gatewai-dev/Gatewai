@@ -1393,21 +1393,33 @@ const InspectorPanel: React.FC = () => {
 				</div>
 				<div className="p-4 space-y-4">
 					<div className="space-y-2">
-						<Label className="text-[10px] text-gray-500 uppercase font-bold">
-							Canvas Size
-						</Label>
+						<TooltipProvider>
+							<Tooltip>
+								<TooltipTrigger asChild>
+									<Label className="text-[10px] text-gray-500 uppercase font-bold">
+										Canvas Size
+									</Label>
+								</TooltipTrigger>
+								<TooltipContent>
+									<p>
+										Dimensions are automatically rounded to even numbers for
+										video codec compatibility.
+									</p>
+								</TooltipContent>
+							</Tooltip>
+						</TooltipProvider>
 						<div className="grid grid-cols-2 gap-2">
 							<DraggableNumberInput
 								label="W"
 								icon={MoveHorizontal}
 								value={Math.round(viewportWidth)}
-								onChange={(v) => updateViewportWidth(Math.max(1, v))}
+								onChange={(v) => updateViewportWidth(Math.max(2, v))}
 							/>
 							<DraggableNumberInput
 								label="H"
 								icon={MoveVertical}
 								value={Math.round(viewportHeight)}
-								onChange={(v) => updateViewportHeight(Math.max(1, v))}
+								onChange={(v) => updateViewportHeight(Math.max(2, v))}
 							/>
 						</div>
 					</div>
@@ -1700,9 +1712,12 @@ export const VideoDesignerEditor: React.FC<VideoDesignerEditorProps> = ({
 	const [isDirty, setIsDirty] = useState(false);
 
 	// Canvas State
-	const [viewportWidth, setViewportWidth] = useState(nodeConfig.width ?? 1920);
+	const roundToEven = (num: number) => Math.round(num / 2) * 2;
+	const [viewportWidth, setViewportWidth] = useState(
+		roundToEven(nodeConfig.width ?? 1920),
+	);
 	const [viewportHeight, setViewportHeight] = useState(
-		nodeConfig.height ?? 1080,
+		roundToEven(nodeConfig.height ?? 1080),
 	);
 	const [zoom, setZoom] = useState(0.5);
 	const [pan, setPan] = useState({ x: 0, y: 0 });
@@ -1723,11 +1738,11 @@ export const VideoDesignerEditor: React.FC<VideoDesignerEditorProps> = ({
 	// --- Actions ---
 
 	const updateViewportWidth = (w: number) => {
-		setViewportWidth(w);
+		setViewportWidth(roundToEven(Math.max(2, w)));
 		setIsDirty(true);
 	};
 	const updateViewportHeight = (h: number) => {
-		setViewportHeight(h);
+		setViewportHeight(roundToEven(Math.max(2, h)));
 		setIsDirty(true);
 	};
 
