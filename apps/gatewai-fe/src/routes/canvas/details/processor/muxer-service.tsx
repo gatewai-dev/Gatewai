@@ -178,7 +178,7 @@ const DynamicComposition: React.FC<{
 									fontSize: layer.fontSize ?? 60,
 									fontFamily: layer.fontFamily ?? "Inter",
 									lineHeight: layer.lineHeight ?? 1.2,
-									whiteSpace: "pre-wrap", // UPDATED: Changed from 'nowrap' to 'pre-wrap'
+									whiteSpace: "pre-wrap",
 								}}
 							>
 								{textContent}
@@ -246,7 +246,7 @@ export class RemotionWebProcessorService {
 				const itemType = item.type;
 
 				// Create a base default layer
-				const defaultLayer: VideoCompositorLayer = {
+				const defaultLayer: Partial<VideoCompositorLayer> = {
 					inputHandleId,
 					zIndex:
 						itemType === "Text" || itemType === "Image"

@@ -122,7 +122,6 @@ export interface VideoAnimation {
 	value: number; // duration in seconds
 }
 
-// Fixed Interface: Removed conflicts and clarified optionality
 interface ExtendedLayer extends Omit<VideoCompositorLayer, "width" | "height"> {
 	width?: number;
 	height?: number;

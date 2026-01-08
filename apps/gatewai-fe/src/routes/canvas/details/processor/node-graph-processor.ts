@@ -17,10 +17,10 @@ import type { EdgeEntityType } from "@/store/edges";
 import type { HandleEntityType } from "@/store/handles";
 import type { NodeEntityType } from "@/store/nodes";
 import { GetAssetEndpoint } from "@/utils/file";
+import { processCompositor } from "./image-compositor";
 import { imageStore } from "./image-store";
 import { remotionService } from "./muxer-service";
 import { pixiProcessor } from "./pixi-service";
-
 import type {
 	ConnectedInput,
 	NodeProcessor,
@@ -811,11 +811,7 @@ export class NodeGraphProcessor extends EventEmitter {
 				}
 			});
 
-			const result = await pixiProcessor.processCompositor(
-				config,
-				inputDataMap,
-				signal,
-			);
+			const result = await processCompositor(config, inputDataMap, signal);
 			const outputHandle = getFirstOutputHandle(node.id, "Image");
 			if (!outputHandle) throw new Error("Missing output handle");
 
@@ -971,8 +967,10 @@ export class NodeGraphProcessor extends EventEmitter {
 			const inputEntries = Object.entries(inputs);
 			if (inputEntries.length === 0)
 				throw new Error("Missing input for Export");
+
 			const [_, { outputItem }] = inputEntries[0];
 			if (!outputItem) throw new Error("No input item");
+
 			return {
 				selectedOutputIndex: 0,
 				outputs: [
