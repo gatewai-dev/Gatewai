@@ -25,16 +25,19 @@ import {
 	AlignCenterHorizontal,
 	AlignCenterVertical,
 	ArrowLeftRight,
+	ArrowUpDown,
 	Bold,
 	ChevronDown,
 	Hand,
 	ImageIcon,
 	Italic,
+	Layers,
 	Maximize,
 	Minimize,
 	MousePointer,
 	Move,
 	MoveHorizontal,
+	MoveVertical,
 	RotateCw,
 	Type,
 	Underline,
@@ -105,7 +108,7 @@ import type { HandleEntityType } from "@/store/handles";
 import type { NodeEntityType } from "@/store/nodes";
 import { GetAssetEndpoint, GetFontAssetUrl } from "@/utils/file";
 
-// Mocking BLEND_MODES
+// Mocking BLEND_MODES (standard global composite operations for canvas)
 const BLEND_MODES = [
 	"source-over",
 	"source-in",
@@ -133,9 +136,10 @@ const BLEND_MODES = [
 	"saturation",
 	"color",
 	"luminosity",
-];
+] as const;
 
 // --- Font Manager (Singleton) ---
+// Ensures fonts are loaded only once and efficiently managed across the application.
 class FontManager {
 	private static instance: FontManager | null = null;
 	private loadedFonts: Set<string> = new Set();
@@ -150,8 +154,7 @@ class FontManager {
 	}
 
 	public async loadFont(family: string, url: string): Promise<void> {
-		if (this.loadedFonts.has(family)) return;
-		if (!url) return; // Skip if no URL
+		if (this.loadedFonts.has(family) || !url) return;
 
 		const fontId = `font-${family}`;
 		if (document.getElementById(fontId)) return;
@@ -168,7 +171,6 @@ class FontManager {
 
 		try {
 			await document.fonts.load(`1em "${family}"`);
-			await document.fonts.ready;
 			this.loadedFonts.add(family);
 		} catch (e) {
 			console.warn(`Font load failed for ${family}:`, e);
@@ -179,6 +181,7 @@ class FontManager {
 const fontManager = FontManager.getInstance();
 
 // --- Editor Context ---
+// Centralized state management for the editor, providing typed access to all necessary data and actions.
 interface EditorContextType {
 	layers: CompositorLayer[];
 	updateLayers: (
@@ -187,12 +190,10 @@ interface EditorContextType {
 	) => void;
 	selectedId: string | null;
 	setSelectedId: (id: string | null) => void;
-	// Artboard Dimensions
 	viewportWidth: number;
 	viewportHeight: number;
 	updateViewportWidth: (w: number) => void;
 	updateViewportHeight: (h: number) => void;
-	// Viewport/Screen Dimensions
 	screenWidth: number;
 	screenHeight: number;
 	guides: Guide[];
@@ -219,11 +220,14 @@ interface EditorContextType {
 	isDirty: boolean;
 	setIsDirty: Dispatch<SetStateAction<boolean>>;
 }
+
 interface Guide {
 	type: "horizontal" | "vertical";
 	position: number;
 }
+
 const EditorContext = createContext<EditorContextType | undefined>(undefined);
+
 const useEditor = () => {
 	const context = useContext(EditorContext);
 	if (!context) {
@@ -232,6 +236,8 @@ const useEditor = () => {
 	return context;
 };
 
+// --- Snapping Hook ---
+// Handles snapping logic for layers during drag and transform operations.
 const useSnap = () => {
 	const { layers, updateLayers, viewportWidth, viewportHeight, setGuides } =
 		useEditor();
@@ -325,9 +331,7 @@ const useSnap = () => {
 			const guideMap = new Map<string, Guide>();
 			[...vGuides, ...hGuides].forEach((g) => {
 				const key = `${g.type}-${g.position}`;
-				if (!guideMap.has(key)) {
-					guideMap.set(key, g);
-				}
+				if (!guideMap.has(key)) guideMap.set(key, g);
 			});
 			setGuides(Array.from(guideMap.values()));
 		},
@@ -363,7 +367,8 @@ const useSnap = () => {
 								y: Math.round(node.y()),
 								rotation: Math.round(node.rotation()),
 								width: Math.round(node.width()),
-								height: Math.round(node.height()),
+								height:
+									l.type === "Text" ? undefined : Math.round(node.height()),
 							}
 						: l,
 				),
@@ -376,6 +381,7 @@ const useSnap = () => {
 };
 
 // --- Layer Components ---
+// Reusable components for rendering different layer types with consistent props.
 interface LayerProps {
 	layer: CompositorLayer;
 	onDragStart: (e: Konva.KonvaEventObject<DragEvent>) => void;
@@ -452,6 +458,7 @@ const ImageLayer: React.FC<LayerProps> = ({
 			onTransform={handleTransform}
 			onTransformEnd={onTransformEnd}
 			globalCompositeOperation={layer.blendMode as GlobalCompositeOperation}
+			opacity={layer.opacity ?? 1}
 			listening={isListening}
 		/>
 	);
@@ -489,29 +496,15 @@ const TextLayer: React.FC<
 		setEditingLayerId(layer.id);
 	};
 
-	// Correctly handle Text resizing:
-	// Use width to determine wrap point.
-	// Reset scale to 1 so font size doesn't change.
-	// Ensure height is at least the minimum required for the text content to prevent clipping.
 	const handleTransform = useCallback((e: Konva.KonvaEventObject<Event>) => {
 		const node = e.target as Konva.Text;
+		node.scaleY(1);
 		const newWidth = Math.max(20, node.width() * node.scaleX());
-		let newHeight = Math.max(20, node.height() * node.scaleY());
-
 		node.setAttrs({
 			width: newWidth,
 			scaleX: 1,
 			scaleY: 1,
-		});
-
-		// Temporarily unset height to compute the minimum required height for the new width
-		node.height(undefined);
-		const minHeight = node.height();
-
-		// Set height to max of proposed new height and min required to avoid clipping
-		newHeight = Math.max(minHeight, newHeight);
-		node.setAttrs({
-			height: newHeight,
+			height: undefined,
 		});
 	}, []);
 
@@ -579,12 +572,14 @@ const TextLayer: React.FC<
 			verticalAlign={layer.verticalAlign ?? "top"}
 			letterSpacing={layer.letterSpacing ?? 0}
 			lineHeight={layer.lineHeight ?? 1}
+			opacity={layer.opacity ?? 1}
 			listening={isListening}
 		/>
 	);
 };
 
 // --- Stage Components ---
+// Components for managing the Konva stage, transformers, guides, and background.
 
 const TransformerComponent: React.FC = () => {
 	const { selectedId, layers, stageRef, mode } = useEditor();
@@ -607,6 +602,16 @@ const TransformerComponent: React.FC = () => {
 
 	const selectedLayer = layers.find((l) => l.id === selectedId);
 
+	const enabledAnchors = useMemo(() => {
+		if (selectedLayer?.type === "Text") {
+			return ["middle-left", "middle-right"];
+		}
+		if (selectedLayer?.type === "Image" && selectedLayer.lockAspect) {
+			return ["top-left", "top-right", "bottom-left", "bottom-right"];
+		}
+		return undefined;
+	}, [selectedLayer]);
+
 	return (
 		<Transformer
 			ref={trRef}
@@ -617,13 +622,8 @@ const TransformerComponent: React.FC = () => {
 			anchorFill="#ffffff"
 			anchorSize={10}
 			anchorCornerRadius={2}
-			// For images with locked aspect, keep ratio. For Text, allow free width resizing.
 			keepRatio={selectedLayer?.type === "Image" && selectedLayer.lockAspect}
-			enabledAnchors={
-				selectedLayer?.type === "Image" && selectedLayer.lockAspect
-					? ["top-left", "top-right", "bottom-left", "bottom-right"]
-					: undefined
-			}
+			enabledAnchors={enabledAnchors}
 			boundBoxFunc={(oldBox, newBox) => {
 				if (newBox.width < 5 || newBox.height < 5) {
 					return oldBox;
@@ -830,10 +830,10 @@ const Canvas: React.FC = () => {
 						onTransformEnd: handleTransformEnd,
 					};
 					if (layer.type === "Image") {
-						return <ImageLayer {...props} key={layer.id} />;
+						return <ImageLayer {...props} />;
 					}
 					if (layer.type === "Text") {
-						return <TextLayer {...props} layer={layer} key={layer.id} />;
+						return <TextLayer {...props} layer={layer} />;
 					}
 					return null;
 				})}
@@ -849,7 +849,7 @@ const Canvas: React.FC = () => {
 };
 
 // --- Layers Panel ---
-
+// Drag-and-drop sortable list for managing layer order.
 interface LayerItemProps {
 	layer: CompositorLayer;
 	selectedId: string | null;
@@ -868,7 +868,9 @@ const LayerItem: React.FC<LayerItemProps> = ({
 		transform,
 		transition,
 		isDragging,
-	} = useSortable({ id: layer.id });
+	} = useSortable({
+		id: layer.id,
+	});
 
 	const style = {
 		transform: CSS.Transform.toString(transform),
@@ -991,6 +993,8 @@ const LayersPanel: React.FC = () => {
 	);
 };
 
+// --- Inspector Panel ---
+// Property editor for selected layers and canvas settings, with consistent input styling.
 const InspectorPanel: React.FC = () => {
 	const { data: fontList } = useGetFontListQuery({});
 	const fontNames = useMemo(() => {
@@ -1076,6 +1080,8 @@ const InspectorPanel: React.FC = () => {
 	const isItalic = selectedLayer?.fontStyle?.includes("italic") ?? false;
 	const isUnderline = selectedLayer?.textDecoration === "underline";
 
+	const isTextLayer = selectedLayer?.type === "Text";
+
 	return (
 		<div className="absolute right-0 top-0 bottom-0 w-64 bg-card border-l border-border z-10 flex flex-col shadow-xl scrollbar-thin scrollbar-thumb-rounded scrollbar-thumb-border scrollbar-track-transparent overflow-y-auto">
 			<div className="p-4 space-y-6">
@@ -1094,7 +1100,7 @@ const InspectorPanel: React.FC = () => {
 						/>
 						<DraggableNumberInput
 							label="H"
-							icon={Move} // Using generic move for Height
+							icon={MoveVertical}
 							value={Math.round(viewportHeight)}
 							onChange={(v) => updateViewportHeight(v || 600)}
 							min={1}
@@ -1164,13 +1170,13 @@ const InspectorPanel: React.FC = () => {
 								/>
 								<DraggableNumberInput
 									label="Y"
-									icon={Move} // Generic move
+									icon={MoveVertical}
 									value={Math.round(selectedLayer.y)}
 									onChange={(v) => updateLayer({ y: v })}
 								/>
 								<DraggableNumberInput
 									label="W"
-									icon={Maximize}
+									icon={MoveHorizontal}
 									value={Math.round(selectedLayer.width ?? 0)}
 									onChange={(newWidth) => {
 										if (
@@ -1190,31 +1196,38 @@ const InspectorPanel: React.FC = () => {
 									}}
 									min={1}
 								/>
-								<DraggableNumberInput
-									label="H"
-									icon={Minimize}
-									value={Math.round(
-										selectedLayer.height ?? selectedLayer.computedHeight ?? 0,
-									)}
-									onChange={(newHeight) => {
-										if (selectedLayer.type === "Image") {
-											if (selectedLayer.lockAspect) {
-												const oldW = selectedLayer.width ?? 1;
-												const oldH = selectedLayer.height ?? 1;
-												const ratio = oldW / oldH;
-												updateLayer({
-													height: newHeight,
-													width: newHeight * ratio,
-												});
-											} else {
-												updateLayer({ height: newHeight });
+								{!isTextLayer ? (
+									<DraggableNumberInput
+										label="H"
+										icon={MoveVertical}
+										value={Math.round(selectedLayer.height ?? 0)}
+										onChange={(newHeight) => {
+											if (selectedLayer.type === "Image") {
+												if (selectedLayer.lockAspect) {
+													const oldW = selectedLayer.width ?? 1;
+													const oldH = selectedLayer.height ?? 1;
+													const ratio = oldW / oldH;
+													updateLayer({
+														height: newHeight,
+														width: newHeight * ratio,
+													});
+												} else {
+													updateLayer({ height: newHeight });
+												}
 											}
-										} else if (selectedLayer.type === "Text") {
-											updateLayer({ height: newHeight });
-										}
-									}}
-									min={1}
-								/>
+										}}
+										min={1}
+									/>
+								) : (
+									<DraggableNumberInput
+										label="H"
+										icon={MoveVertical}
+										value={Math.round(selectedLayer.computedHeight ?? 0)}
+										onChange={() => {}}
+										disabled
+										min={1}
+									/>
+								)}
 							</div>
 							<div className="grid grid-cols-2 gap-3">
 								<DraggableNumberInput
@@ -1223,22 +1236,16 @@ const InspectorPanel: React.FC = () => {
 									value={selectedLayer.rotation}
 									onChange={(v) => updateLayer({ rotation: v })}
 								/>
-								{/* Placeholder for opacity if needed, using generic input */}
-								<div className="space-y-1">
-									<Label className="text-[10px] text-muted-foreground uppercase">
-										Opacity
-									</Label>
-									<div className="relative">
-										<Input
-											value={100}
-											disabled
-											className="h-8 text-xs font-mono bg-muted/20"
-										/>
-										<span className="absolute right-2 top-1.5 text-xs text-muted-foreground pointer-events-none">
-											%
-										</span>
-									</div>
-								</div>
+								<DraggableNumberInput
+									label="Opacity"
+									icon={Layers}
+									value={Math.round((selectedLayer.opacity ?? 1) * 100)}
+									onChange={(v) => updateLayer({ opacity: v / 100 })}
+									min={0}
+									max={100}
+									step={1}
+									allowDecimal={false}
+								/>
 							</div>
 						</section>
 
@@ -1373,7 +1380,7 @@ const InspectorPanel: React.FC = () => {
 										/>
 										<DraggableNumberInput
 											label="Line H"
-											icon={ArrowLeftRight}
+											icon={ArrowUpDown}
 											value={selectedLayer.lineHeight ?? 1}
 											onChange={(v) => updateLayer({ lineHeight: v })}
 											allowDecimal
@@ -1420,8 +1427,8 @@ const InspectorPanel: React.FC = () => {
 };
 
 // --- Main Designer Component ---
-
-interface CanvasDesignerEditorProps {
+// Core editor component, managing state, rendering, and user interactions.
+interface ImageDesignerEditorProps {
 	initialLayers: Map<
 		HandleEntityType["id"],
 		OutputItem<"Text"> | OutputItem<"Image">
@@ -1431,7 +1438,7 @@ interface CanvasDesignerEditorProps {
 	onSave: (config: CompositorNodeConfig) => void;
 }
 
-export const CanvasDesignerEditor: React.FC<CanvasDesignerEditorProps> = ({
+export const ImageDesignerEditor: React.FC<ImageDesignerEditorProps> = ({
 	initialLayers,
 	node,
 	onClose,
@@ -1482,7 +1489,7 @@ export const CanvasDesignerEditor: React.FC<CanvasDesignerEditorProps> = ({
 
 	const zoomPercentage = `${Math.round(scale * 100)}%`;
 
-	// Resize observer
+	// Resize observer for dynamic screen sizing
 	useEffect(() => {
 		const updateSize = () => {
 			if (containerRef.current) {
@@ -1495,7 +1502,7 @@ export const CanvasDesignerEditor: React.FC<CanvasDesignerEditorProps> = ({
 		return () => window.removeEventListener("resize", updateSize);
 	}, []);
 
-	// Fit View
+	// Fit View logic
 	const fitView = useCallback(() => {
 		const padding = 60;
 		const availableW = screenWidth - padding * 2;
@@ -1511,7 +1518,7 @@ export const CanvasDesignerEditor: React.FC<CanvasDesignerEditorProps> = ({
 		setStagePos(newPos);
 	}, [viewportWidth, viewportHeight, screenWidth, screenHeight]);
 
-	// Initial Center
+	// Initial centering on mount
 	useEffect(() => {
 		if (
 			screenWidth > 100 &&
@@ -1523,7 +1530,7 @@ export const CanvasDesignerEditor: React.FC<CanvasDesignerEditorProps> = ({
 		}
 	}, [screenWidth, screenHeight, fitView, scale, stagePos.x]);
 
-	// Zoom Helpers
+	// Zoom helpers
 	const zoomIn = useCallback(() => {
 		const newScale = scale * 1.2;
 		setScale(newScale);
@@ -1538,7 +1545,7 @@ export const CanvasDesignerEditor: React.FC<CanvasDesignerEditorProps> = ({
 		setScale(value);
 	}, []);
 
-	// Data Getters
+	// Data getters for layer content
 	const getTextData = useCallback(
 		(handleId: string) => {
 			const layerData = initialLayers.get(handleId) as OutputItem<"Text">;
@@ -1566,7 +1573,7 @@ export const CanvasDesignerEditor: React.FC<CanvasDesignerEditorProps> = ({
 		[initialLayers],
 	);
 
-	// Initialize Layers
+	// Initialize layers from initial data
 	useEffect(() => {
 		const loadInitialLayers = async () => {
 			const existingConfig = (node.config as CompositorNodeConfig) ?? {
@@ -1581,7 +1588,6 @@ export const CanvasDesignerEditor: React.FC<CanvasDesignerEditorProps> = ({
 
 			initialLayers.forEach((output, handleId) => {
 				if (!layerUpdates[handleId]) {
-					// New layer init
 					const newLayer: CompositorLayer = {
 						type: output.type,
 						width: undefined,
@@ -1594,6 +1600,7 @@ export const CanvasDesignerEditor: React.FC<CanvasDesignerEditorProps> = ({
 						lockAspect: true,
 						blendMode: "source-over",
 						zIndex: ++maxZ,
+						opacity: 1,
 					};
 
 					if (newLayer.type === "Text") {
@@ -1639,14 +1646,14 @@ export const CanvasDesignerEditor: React.FC<CanvasDesignerEditorProps> = ({
 		loadInitialLayers();
 	}, [initialLayers, node.config, getImageData, updateLayers]);
 
-	// Deselect on Pan
+	// Deselect on pan mode
 	useEffect(() => {
 		if (mode === "pan" && selectedId) {
 			setSelectedId(null);
 		}
 	}, [mode, selectedId]);
 
-	// Global Keyboard Shortcuts (Space Pan, Arrows Nudge, Delete)
+	// Global keyboard shortcuts
 	useEffect(() => {
 		const handleKeyDown = (e: KeyboardEvent) => {
 			const isInput =
@@ -1654,7 +1661,7 @@ export const CanvasDesignerEditor: React.FC<CanvasDesignerEditorProps> = ({
 				document.activeElement?.tagName === "TEXTAREA";
 			if (isInput) return;
 
-			// Spacebar Pan
+			// Spacebar for pan
 			if (e.code === "Space" && !e.repeat) {
 				e.preventDefault();
 				if (mode !== "pan") {
@@ -1663,7 +1670,7 @@ export const CanvasDesignerEditor: React.FC<CanvasDesignerEditorProps> = ({
 				}
 			}
 
-			// Arrow Nudge
+			// Arrow keys for nudge
 			if (
 				selectedId &&
 				["ArrowUp", "ArrowDown", "ArrowLeft", "ArrowRight"].includes(e.key)
@@ -1687,7 +1694,7 @@ export const CanvasDesignerEditor: React.FC<CanvasDesignerEditorProps> = ({
 		const handleKeyUp = (e: KeyboardEvent) => {
 			if (e.code === "Space") {
 				e.preventDefault();
-				setMode(lastModeRef.current); // Revert to previous mode
+				setMode(lastModeRef.current);
 			}
 		};
 
@@ -1767,7 +1774,7 @@ export const CanvasDesignerEditor: React.FC<CanvasDesignerEditorProps> = ({
 						ref={containerRef}
 						className="flex-1 relative overflow-hidden bg-neutral-900/90"
 					>
-						{/* Grid Background */}
+						{/* Grid Background (consistent with xyflow/react-flow dot grid style) */}
 						<div
 							className="absolute inset-0 pointer-events-none"
 							style={{
@@ -1849,7 +1856,7 @@ export const CanvasDesignerEditor: React.FC<CanvasDesignerEditorProps> = ({
 
 							<Button
 								size="sm"
-								className="h-8 text-xs rounded-full px-4 bg-blue-600 hover:bg-blue-500 text-white border-0"
+								className="h-8 text-xs rounded-full px-4"
 								onClick={handleSave}
 								disabled={!isDirty}
 							>

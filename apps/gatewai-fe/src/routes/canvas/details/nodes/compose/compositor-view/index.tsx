@@ -6,7 +6,7 @@ import type { HandleEntityType } from "@/store/handles";
 import { makeSelectNodeById } from "@/store/nodes";
 import { useCanvasCtx } from "../../../ctx/canvas-ctx";
 import { useNodeResult } from "../../../processor/processor-ctx";
-import { CanvasDesignerEditor } from "../canvas-editor";
+import { ImageDesignerEditor } from "../canvas-editor";
 
 const CompositorView = memo(() => {
 	const nav = useNavigate();
@@ -55,7 +55,7 @@ const CompositorView = memo(() => {
 	return (
 		<div className="inset-0 h-screen w-screen">
 			{node && (
-				<CanvasDesignerEditor
+				<ImageDesignerEditor
 					onClose={() => closeAndFocusOnNode()}
 					onSave={onSave}
 					initialLayers={initialLayers}
