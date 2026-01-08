@@ -175,9 +175,9 @@ const DynamicComposition: React.FC<{
 								style={{
 									...style,
 									color: layer.fill,
-									fontSize: layer.fontSize,
-									fontFamily: layer.fontFamily,
-									lineHeight: layer.lineHeight,
+									fontSize: layer.fontSize ?? 60,
+									fontFamily: layer.fontFamily ?? "Inter",
+									lineHeight: layer.lineHeight ?? 1.2,
 									whiteSpace: "nowrap",
 								}}
 							>
