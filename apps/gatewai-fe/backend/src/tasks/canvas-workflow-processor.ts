@@ -232,7 +232,7 @@ export class NodeWFProcessor {
 					throw new Error(`Task not found for node ${nodeId}`);
 				}
 
-				// Defensive check: Ensure node still exists in DB before processing
+				// Defensive: Ensure node still exists in DB before processing
 				const currentNode = await this.prisma.node.findUnique({
 					where: { id: nodeId },
 					select: { id: true, type: true, name: true },

@@ -36,7 +36,6 @@ import {
 	ImageIcon,
 	Italic,
 	Layers,
-	Lock,
 	LockOpen,
 	MousePointer,
 	Move,
@@ -1241,7 +1240,7 @@ const InspectorPanel: React.FC = () => {
 						</Select>
 					</div>
 
-					<div className="flex flex-col items-center justify-center p-8 text-center border border-dashed border-white/10 rounded-lg bg-white/[0.02]">
+					<div className="flex flex-col items-center justify-center p-8 text-center border border-dashed border-white/10 rounded-lg bg-white/2">
 						<MousePointer className="w-5 h-5 text-gray-600 mb-2" />
 						<p className="text-[11px] text-gray-500">Select a layer to edit</p>
 					</div>
