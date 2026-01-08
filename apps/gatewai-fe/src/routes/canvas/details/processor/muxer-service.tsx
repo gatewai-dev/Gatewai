@@ -212,77 +212,14 @@ export class RemotionWebProcessorService {
 		const fps = config.FPS ?? 24;
 
 		// Ensure layerUpdates exists; if not provided (e.g., user didn't open editor), generate defaults based on inputs
-		const layerUpdates: Record<string, VideoCompositorLayer> =
-			config.layerUpdates ?? {};
-
-		// If no layer updates are provided, create default layers for all inputs
-		if (Object.keys(layerUpdates).length === 0) {
-			let maxZ = 0; // Start zIndex from 0 and increment for stacking
-			const inputKeys = Object.keys(inputDataMap).sort();
-			for (const inputHandleId of inputKeys) {
-				const input = inputDataMap[inputHandleId];
-				if (!input?.outputItem) continue;
-
-				const item = input.outputItem;
-				const fileData = item.data as FileData;
-				const processData = fileData.processData;
-
-				// Default dimensions: use processData if available, else full viewport
-				let defaultWidth = processData?.width ?? width;
-				let defaultHeight = processData?.height ?? height;
-
-				// Center position by default
-				let defaultX = (width - defaultWidth) / 2;
-				let defaultY = (height - defaultHeight) / 2;
-
-				const defaultLayer: VideoCompositorLayer = {
-					inputHandleId,
-					x: defaultX,
-					y: defaultY,
-					width: defaultWidth,
-					height: defaultHeight,
-					scale: 1,
-					rotation: 0,
-					opacity: 1,
-					zIndex: ++maxZ,
-					startFrame: 0,
-					// durationInFrames will be determined later based on media or default
-				};
-
-				// Type-specific defaults
-				if (item.type === "Text") {
-					defaultLayer.fontFamily = "sans-serif";
-					defaultLayer.fontSize = 60;
-					defaultLayer.fill = "white";
-					defaultLayer.align = "center";
-					// Override dimensions for text
-					defaultWidth = 600;
-					defaultHeight = 200;
-					defaultLayer.width = defaultWidth;
-					defaultLayer.height = defaultHeight;
-					defaultX = (width - defaultWidth) / 2;
-					defaultY = (height - defaultHeight) / 2;
-					defaultLayer.x = defaultX;
-					defaultLayer.y = defaultY;
-				} else if (item.type === "Audio") {
-					defaultLayer.volume = 1;
-					// Audio has no visual component
-					defaultLayer.width = 0;
-					defaultLayer.height = 0;
-					defaultLayer.x = 0;
-					defaultLayer.y = 0;
-				} else if (item.type === "Video" || item.type === "Image") {
-					defaultLayer.volume = item.type === "Video" ? 1 : undefined;
-					// Use full size if no processData, but centered if smaller
-				}
-
-				layerUpdates[inputHandleId] = defaultLayer;
-			}
-		}
+		const layerUpdates: Record<string, VideoCompositorLayer> = {
+			...(config.layerUpdates ?? {}),
+		};
 
 		// Create a mutable copy of layerUpdates for adjustments
 		const layerUpdatesCopy: Record<string, VideoCompositorLayer> = {};
 		const mediaPromises: Promise<void>[] = [];
+		const inputDurations: number[] = [];
 
 		for (const layerKey in layerUpdates) {
 			const layer = layerUpdates[layerKey];
@@ -320,6 +257,30 @@ export class RemotionWebProcessorService {
 			}
 		}
 
+		if (Object.keys(layerUpdates).length === 0) {
+			for (const inputHandleId in inputDataMap) {
+				const input = inputDataMap[inputHandleId];
+				if (!input || !input.outputItem) continue;
+				const item = input.outputItem;
+				if (item.type === "Video" || item.type === "Audio") {
+					const promise = this.getMediaDurationAsSec(
+						item.data as FileData,
+						item.type,
+					).then((durSec) => {
+						const actualFrames = Math.floor(durSec * fps);
+						return Math.max(1, actualFrames);
+					});
+					mediaPromises.push(
+						promise.then((d) => {
+							inputDurations.push(d);
+						}),
+					);
+				} else {
+					inputDurations.push(fps * 5);
+				}
+			}
+		}
+
 		// Wait for all media duration fetches to complete
 		await Promise.all(mediaPromises);
 
@@ -330,12 +291,16 @@ export class RemotionWebProcessorService {
 		};
 
 		// Calculate total composition duration as the max end frame across all layers
-		const totalDuration = Math.max(
+		let totalDuration = Math.max(
 			...Object.values(layerUpdatesCopy).map(
 				(l) => (l.startFrame ?? 0) + (l.durationInFrames ?? 0),
 			),
 			1, // Ensure at least 1 frame
 		);
+
+		if (Object.keys(layerUpdatesCopy).length === 0) {
+			totalDuration = Math.max(...inputDurations, 1);
+		}
 
 		const { getBlob } = await renderMediaOnWeb({
 			signal,

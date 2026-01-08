@@ -69,6 +69,7 @@ import {
 
 import { Button } from "@/components/ui/button";
 import { DraggableNumberInput } from "@/components/ui/draggable-number-input";
+import { Label } from "@/components/ui/label";
 import {
 	Menubar,
 	MenubarContent,
@@ -1712,7 +1713,7 @@ const InspectorPanel: React.FC = () => {
 					<CollapsibleSection title="Typography" icon={Type}>
 						<div className="space-y-3">
 							<div className="space-y-1">
-								<label className="text-[10px] text-gray-500">Content</label>
+								<Label className="text-[10px] text-gray-500">Content</Label>
 								<div className="text-xs text-gray-300 border border-white/10 p-2 rounded bg-black/20 break-words min-h-[40px]">
 									{getTextData(selectedLayer.id)}
 								</div>
@@ -1720,7 +1721,7 @@ const InspectorPanel: React.FC = () => {
 
 							<div className="grid grid-cols-2 gap-3">
 								<div className="space-y-1 col-span-2">
-									<label className="text-[10px] text-gray-500">Font</label>
+									<Label className="text-[10px] text-gray-500">Font</Label>
 									<Select
 										value={selectedLayer.fontFamily ?? "Inter"}
 										onValueChange={(val) => update({ fontFamily: val })}
@@ -1746,9 +1747,9 @@ const InspectorPanel: React.FC = () => {
 								/>
 
 								<div className="space-y-1">
-									<label className="text-[10px] text-gray-500 block mb-1">
+									<Label className="text-[10px] text-gray-500 block mb-1">
 										Color
-									</label>
+									</Label>
 									<ColorInput
 										value={selectedLayer.fill ?? "#fff"}
 										onChange={(c) => update({ fill: c })}
@@ -2229,6 +2230,7 @@ export const VideoDesignerEditor: React.FC<VideoDesignerEditorProps> = ({
 									ref={playerRef}
 									component={CompositionScene}
 									inputProps={{ layers }}
+									acknowledgeRemotionLicense
 									durationInFrames={durationInFrames}
 									fps={FPS}
 									compositionWidth={viewportWidth}
