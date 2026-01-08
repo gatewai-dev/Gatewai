@@ -8,7 +8,7 @@ import {
 	ReactFlow,
 	SelectionMode,
 } from "@xyflow/react";
-import type { DragEventHandler } from "react";
+import type { DragEventHandler, MouseEventHandler } from "react";
 import { createContext, useEffect, useRef, useState } from "react";
 import { useHotkeys } from "react-hotkeys-hook";
 import { useAppDispatch, useAppSelector } from "@/store";
@@ -131,9 +131,19 @@ function ReactflowContainer({ children }: ReactFlowProps) {
 		event.preventDefault();
 		event.dataTransfer.dropEffect = "move";
 	};
+	const handleAuxClick: MouseEventHandler<HTMLDivElement> = (event) => {
+		if (event.button === 1) {
+			// 1 is the middle mouse button
+			event.preventDefault();
+		}
+	};
 
 	return (
-		<div ref={containerRef} className="w-full h-screen bg-black">
+		<div
+			ref={containerRef}
+			onAuxClick={handleAuxClick}
+			className="w-full h-screen bg-black"
+		>
 			<ModeContext.Provider value={{ mode, setMode }}>
 				<ReactFlow
 					onInit={(flowInstance) => {
@@ -157,7 +167,7 @@ function ReactflowContainer({ children }: ReactFlowProps) {
 					onEdgesChange={onEdgesChange}
 					onNodesChange={onNodesChange}
 					onDragOver={onDragOver}
-					maxZoom={12}
+					maxZoom={8}
 					minZoom={0.1}
 					zoomOnPinch={true}
 					zoomOnScroll={true}

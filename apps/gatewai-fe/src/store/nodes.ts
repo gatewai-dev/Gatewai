@@ -1,9 +1,4 @@
-import type {
-	AllNodeConfig,
-	AnyNodeConfig,
-	NodeResult,
-	NoteNodeConfig,
-} from "@gatewai/types";
+import type { AllNodeConfig, NodeResult } from "@gatewai/types";
 import {
 	createDraftSafeSelector,
 	createEntityAdapter,
@@ -48,7 +43,7 @@ export const nodesSlice = createSlice({
 				node.config = {
 					...existingConfig,
 					...newConfig,
-				} as AnyNodeConfig;
+				} as AllNodeConfig;
 			}
 		},
 		updateNodeResult: (
@@ -128,9 +123,7 @@ export const selectSelectedNodes = createDraftSafeSelector(
 		nodeIds ? nodes.filter((f) => nodeIds.includes(f.id)) : undefined,
 );
 
-// Extract the action creators object and the reducer
 const { actions, reducer: nodesReducer } = nodesSlice;
-// Extract and export each action creator by name
 export const {
 	createNodeEntity,
 	updateNodeEntity,
@@ -142,5 +135,4 @@ export const {
 	setAllNodeEntities,
 	setSelectedNodeIds,
 } = actions;
-// Export the reducer, either as a default or named export
 export { nodesReducer, nodeSelectors };

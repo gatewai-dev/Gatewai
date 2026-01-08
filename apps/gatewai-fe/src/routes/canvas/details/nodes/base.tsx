@@ -60,16 +60,13 @@ export const getHandleStyle = (
 			...baseDimensions,
 			backgroundColor: color,
 			border: "1px solid var(--background)",
-			// Softer glow for connected state
 			boxShadow: `0 0 0 1px ${color}80`,
 			transition: "background-color 0.15s ease, box-shadow 0.15s ease",
 		};
 	}
 
-	// Unconnected handles with multiple types
 	if (types.length > 1) {
 		const segmentSize = 100 / types.length;
-		// Linear gradient looks cleaner on rectangles than conic
 		const gradientStops = types
 			.map((type, index) => {
 				const color = getTypeColor(type);
@@ -87,11 +84,10 @@ export const getHandleStyle = (
 		};
 	}
 
-	// Single type unconnected
 	const color = getTypeColor(types[0]);
 	return {
 		...baseDimensions,
-		backgroundColor: "var(--card)", // Hollow look for unconnected
+		backgroundColor: "var(--card)",
 		border: `2px solid ${color}`,
 		boxShadow: "none",
 	};
@@ -136,7 +132,6 @@ const NodeHandle = memo(
 			[connectedType, handle.dataTypes],
 		);
 
-		// Adjust vertical spacing
 		const topPosition = (index + 1) * 32 + 20;
 
 		const handleComponent = (
@@ -163,7 +158,6 @@ const NodeHandle = memo(
 				<div
 					className={cn(
 						"absolute -top-4 pointer-events-none opacity-0 transition-opacity duration-200 w-auto whitespace-nowrap",
-						// Logic: Show if handle is hovered OR if the whole node is hovered OR if node is selected
 						"group-hover/handle:opacity-100 group-hover/node:opacity-100",
 						{ "opacity-100": nodeSelected },
 						isTarget
@@ -223,7 +217,11 @@ const BaseNode = memo(
 			validation?.[handleId] === "type_mismatch";
 
 		const { inputHandles, outputHandles } = useMemo(() => {
-			const sorted = [...handles].sort((a, b) => a.order - b.order);
+			// Sort handles by createdAt ISO string to ensure consistent chronological ordering
+			const sorted = [...handles].sort((a, b) =>
+				(a.createdAt || "").localeCompare(b.createdAt || ""),
+			);
+
 			return {
 				inputHandles: sorted.filter((h) => h.type === "Input"),
 				outputHandles: sorted.filter((h) => h.type === "Output"),
@@ -311,10 +309,6 @@ const BaseNode = memo(
 
 BaseNode.displayName = "BaseNode";
 
-// ... CustomEdge and CustomConnectionLine remain largely unchanged
-// unless you want to match the edge termination style to the rectangles.
-// Assuming they are fine as is for now.
-
 const CustomConnectionLine = memo(
 	({
 		fromX,
@@ -357,7 +351,6 @@ const CustomConnectionLine = memo(
 	},
 );
 
-// Re-exporting Edge for context, assuming no changes needed to logic
 const CustomEdge = memo(
 	({
 		id,
@@ -387,7 +380,6 @@ const CustomEdge = memo(
 
 		return (
 			<>
-				{/* Hit area */}
 				<BaseEdge
 					path={edgePath}
 					style={{ strokeWidth: 24, stroke: "transparent" }}

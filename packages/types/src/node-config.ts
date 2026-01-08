@@ -494,8 +494,28 @@ export type VideoCompositorLayer = z.infer<typeof VideoCompositorLayerSchema>;
 // Union Type for All Node Configs
 export type AllNodeConfig = z.infer<typeof NodeConfigSchema>;
 
-// Export Enums/Constants
 export {
+	TextNodeConfigSchema,
+	TextMergerNodeConfigSchema,
+	FileNodeConfigSchema,
+	ImageGenNodeConfigSchema,
+	PreviewNodeConfigSchema,
+	MaskNodeConfigSchema,
+	PaintNodeConfigSchema,
+	BlurNodeConfigSchema,
+	ModulateNodeConfigSchema,
+	NoteNodeConfigSchema,
+	CropNodeConfigSchema,
+	CompositorNodeConfigSchema,
+	LLMNodeConfigSchema,
+	AgentNodeConfigSchema,
+	ResizeNodeConfigSchema,
+	VideoGenNodeConfigSchema,
+	VideoGenExtendNodeConfigSchema,
+	VideoGenFirstLastFrameNodeConfigSchema,
+	SpeechToTextNodeConfigSchema,
+	TextToSpeechNodeConfigSchema,
+	VideoCompositorNodeConfigSchema,
 	IMAGEGEN_ASPECT_RATIOS,
 	IMAGEGEN_IMAGE_SIZES,
 	IMAGEGEN_NODE_MODELS,

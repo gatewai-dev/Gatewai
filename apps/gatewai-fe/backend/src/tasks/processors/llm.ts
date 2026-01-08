@@ -122,7 +122,6 @@ const llmProcessor: NodeProcessor = async ({ node, data }) => {
 
 		return { success: true, newResult };
 	} catch (err: unknown) {
-		// Improved error logging for Google SDK specific errors
 		if (err instanceof Error) {
 			return { success: false, error: err.message };
 		}

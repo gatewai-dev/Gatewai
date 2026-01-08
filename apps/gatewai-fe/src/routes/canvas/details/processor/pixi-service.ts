@@ -552,12 +552,13 @@ class PixiProcessorService {
 					x: 0,
 					y: 0,
 					rotation: 0,
+					opacity: 100,
 					lockAspect: true,
 					blendMode: "source-over",
 					...(input.type === "Text"
 						? {
 								fontFamily: "Geist",
-								fontSize: 24,
+								fontSize: 60,
 								fill: "#ffffff",
 							}
 						: {}),
@@ -590,6 +591,7 @@ class PixiProcessorService {
 					image: img,
 					x: layerConfig.x ?? 0,
 					y: layerConfig.y ?? 0,
+					opacity: layerConfig.opacity ?? 100,
 					width: layerConfig.width ?? img.width,
 					height: layerConfig.height ?? img.height,
 					rotation: layerConfig.rotation ?? 0,
@@ -599,12 +601,13 @@ class PixiProcessorService {
 				});
 				layer.add(kImage);
 			} else if (inputData.type === "Text") {
-				const fontSize = layerConfig.fontSize ?? 24;
+				const fontSize = layerConfig.fontSize ?? 60;
 
 				const kText = new Konva.Text({
 					text: inputData.value,
 					x: layerConfig.x ?? 0,
 					y: layerConfig.y ?? 0,
+					opacity: layerConfig.opacity ?? 100,
 					rotation: layerConfig.rotation ?? 0,
 					fontSize: fontSize,
 					fontFamily: layerConfig.fontFamily ?? "Geist",

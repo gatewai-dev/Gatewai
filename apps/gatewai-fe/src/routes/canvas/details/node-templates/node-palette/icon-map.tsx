@@ -29,8 +29,8 @@ export const NODE_ICON_MAP: Record<
 	(node?: NodeEntityType) => React.ComponentType
 > = {
 	Text: () => PiTextT,
-	TextMerger: () => PiArrowsMerge, // Combines multiple text inputs
-	VideoCompositor: () => PiFilmReelLight, // Specialized for video layering
+	TextMerger: () => PiArrowsMerge,
+	VideoCompositor: () => PiFilmReelLight,
 	Preview: () => PiEye,
 	File: () => PiUploadSimple,
 	Export: () => PiDownloadSimple,

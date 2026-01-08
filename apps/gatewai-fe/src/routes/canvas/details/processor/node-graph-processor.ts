@@ -20,7 +20,7 @@ import { GetAssetEndpoint } from "@/utils/file";
 import { imageStore } from "./image-store";
 import { remotionService } from "./muxer-service";
 import { pixiProcessor } from "./pixi-service";
-import RemotionWorker from "./remotion.worker.ts?worker";
+
 import type {
 	ConnectedInput,
 	NodeProcessor,
@@ -189,7 +189,6 @@ export class NodeGraphProcessor extends EventEmitter {
 		await this.triggerProcessing();
 	}
 
-	// New method to retry a failed node
 	retryNode(nodeId: string): void {
 		const state = this.nodeStates.get(nodeId);
 		if (state) {
@@ -227,7 +226,6 @@ export class NodeGraphProcessor extends EventEmitter {
 
 			const state = this.getOrCreateNodeState(nodeId);
 
-			// Abort current execution if it's already running
 			if (state.isProcessing && state.abortController) {
 				state.abortController.abort("Restarting due to graph update");
 				state.abortController = null;
@@ -237,7 +235,6 @@ export class NodeGraphProcessor extends EventEmitter {
 			state.error = null;
 			state.version++;
 
-			// Propagate dirtiness to children
 			const children = this.adjacency.get(nodeId);
 			if (children) {
 				children.forEach((childId) => {
@@ -259,11 +256,6 @@ export class NodeGraphProcessor extends EventEmitter {
 		return this.schedulePromise;
 	}
 
-	/**
-	 * The main execution loop.
-	 * Runs continuously as long as there are 'ready' nodes.
-	 * Supports parallelism.
-	 */
 	private async runProcessingLoop(): Promise<void> {
 		if (this.processingLoopActive) return;
 		this.processingLoopActive = true;
@@ -286,7 +278,6 @@ export class NodeGraphProcessor extends EventEmitter {
 			}
 		} finally {
 			this.processingLoopActive = false;
-			// Catch trailing dirty states
 			if (
 				Array.from(this.nodeStates.values()).some(
 					(s) => s.isDirty && !s.isProcessing,
@@ -317,7 +308,7 @@ export class NodeGraphProcessor extends EventEmitter {
 		const processor = this.processors.get(node.type);
 		if (!processor) {
 			state.error = `No processor found for type ${node.type}`;
-			state.isDirty = false; // Stop trying
+			state.isDirty = false;
 			state.version++;
 			this.emit("node:error", { nodeId, error: state.error });
 			return;
@@ -335,7 +326,6 @@ export class NodeGraphProcessor extends EventEmitter {
 				(v) => !v.connectionValid,
 			);
 			if (invalidConnections.length > 0) {
-				console.log({ inputs });
 				throw new Error("Invalid input types for some connections");
 			}
 
@@ -353,15 +343,12 @@ export class NodeGraphProcessor extends EventEmitter {
 
 			state.result = result;
 			state.isDirty = false;
-			// Update the signature trace
 			state.lastProcessedSignature = this.getNodeValueHash(node);
 			state.version++;
 
-			// Store image data with lightweight hash if applicable
 			const hashValue = this.getImageDataUrlFromResult(state.result);
 			if (hashValue) {
 				if (hashValue.startsWith("http")) {
-					console.log({ hashValue });
 					await imageStore.addUrl(nodeId, hashValue);
 				} else {
 					await imageStore.addBase64(nodeId, hashValue);
@@ -372,7 +359,9 @@ export class NodeGraphProcessor extends EventEmitter {
 		} catch (error) {
 			const isAbort =
 				error instanceof Error &&
-				(error.name === "AbortError" || error.message === "Aborted");
+				(error.name === "AbortError" ||
+					error.message === "Aborted" ||
+					signal.aborted);
 
 			if (isAbort) {
 				state.isProcessing = false;
@@ -436,9 +425,7 @@ export class NodeGraphProcessor extends EventEmitter {
 	private getNodeValueHash(node: NodeEntityType): string {
 		const result = node.result as unknown as NodeResult;
 		return JSON.stringify({
-			// Configuration parameters (e.g. crop coordinates)
 			c: node.config,
-			// Data payload (e.g. uploaded file object, signed URLs)
 			d: result?.outputs?.[result?.selectedOutputIndex ?? 0],
 		});
 	}
@@ -451,7 +438,6 @@ export class NodeGraphProcessor extends EventEmitter {
 	): Set<string> {
 		const changedNodes = new Set<string>();
 
-		// Helper to generate edge signatures
 		const getEdgeSigs = (edges: EdgeEntityType[]) => {
 			const map = new Map<string, Set<string>>();
 			edges.forEach((e) => {
@@ -466,17 +452,14 @@ export class NodeGraphProcessor extends EventEmitter {
 		const prevEdgeMap = getEdgeSigs(prevEdges);
 		const currEdgeMap = getEdgeSigs(currEdges);
 
-		// Check if connections were added/removed/swapped
 		currEdgeMap.forEach((sigs, nodeId) => {
 			const prevSigs = prevEdgeMap.get(nodeId);
 
-			// New connection entirely
 			if (!prevSigs) {
 				changedNodes.add(nodeId);
 				return;
 			}
 
-			// Different set of connections
 			if (prevSigs.size !== sigs.size) {
 				changedNodes.add(nodeId);
 				return;
@@ -490,9 +473,6 @@ export class NodeGraphProcessor extends EventEmitter {
 			}
 		});
 
-		// # Check if the connected source node changed value
-		// Even if the Edge is identical, if the Source Node has a new file or index,
-		// the Target Node must update.
 		for (const edge of currEdges) {
 			const prevSource = prevNodes.get(edge.source);
 			const currSource = currNodes.get(edge.source);
@@ -502,13 +482,11 @@ export class NodeGraphProcessor extends EventEmitter {
 				const currHash = this.getNodeValueHash(currSource);
 
 				if (prevHash !== currHash) {
-					// The source changed, so the target gets a new input
 					changedNodes.add(edge.target);
 				}
 			}
 		}
 
-		// # Check for removed connections (orphaned nodes)
 		prevEdgeMap.forEach((_, nodeId) => {
 			if (!currEdgeMap.has(nodeId) && this.nodes.has(nodeId)) {
 				changedNodes.add(nodeId);
@@ -518,14 +496,31 @@ export class NodeGraphProcessor extends EventEmitter {
 		return changedNodes;
 	}
 
+	/**
+	 * Collects inputs for a node, ensuring the resulting Record is ordered
+	 * by the handle's createdAt property.
+	 */
 	private collectInputs(nodeId: string): Record<string, ConnectedInput> {
 		const inputs: Record<string, ConnectedInput> = {};
 		const incomingEdges = this.edgesByTarget.get(nodeId) || [];
 
-		for (const edge of incomingEdges) {
+		// Get all relevant handles for this node and sort them by createdAt
+		const sortedInputHandles = this.handles
+			.filter((h) => h.nodeId === nodeId && h.type === "Input")
+			.sort((a, b) => (a.createdAt || "").localeCompare(b.createdAt || ""));
+
+		// Iterate through handles in chronological order to maintain predictable object iteration
+		for (const handle of sortedInputHandles) {
+			const edge = incomingEdges.find((e) => e.targetHandleId === handle.id);
+
+			if (!edge) {
+				// Initialize as empty/missing if required by schema downstream
+				continue;
+			}
+
 			const sourceState = this.nodeStates.get(edge.source);
 			if (!sourceState?.result) {
-				inputs[edge.targetHandleId] = {
+				inputs[handle.id] = {
 					connectionValid: false,
 					outputItem: null,
 				};
@@ -536,7 +531,7 @@ export class NodeGraphProcessor extends EventEmitter {
 			const selectedIndex = result.selectedOutputIndex ?? 0;
 			const output = result.outputs[selectedIndex];
 			if (!output) {
-				inputs[edge.targetHandleId] = {
+				inputs[handle.id] = {
 					connectionValid: false,
 					outputItem: null,
 				};
@@ -547,29 +542,18 @@ export class NodeGraphProcessor extends EventEmitter {
 				(i) => i.outputHandleId === edge.sourceHandleId,
 			);
 			if (!outputItem) {
-				inputs[edge.targetHandleId] = {
+				inputs[handle.id] = {
 					connectionValid: false,
 					outputItem: null,
 				};
 				continue;
 			}
 
-			const targetHandle = this.handles.find(
-				(h) => h.id === edge.targetHandleId,
-			);
-			if (!targetHandle) {
-				inputs[edge.targetHandleId] = {
-					connectionValid: false,
-					outputItem: null,
-				};
-				continue;
-			}
-
-			const connectionValid = targetHandle.dataTypes.includes(
+			const connectionValid = handle.dataTypes.includes(
 				outputItem.type as DataType,
 			);
 
-			inputs[edge.targetHandleId] = { connectionValid, outputItem };
+			inputs[handle.id] = { connectionValid, outputItem };
 		}
 
 		return inputs;
@@ -587,7 +571,6 @@ export class NodeGraphProcessor extends EventEmitter {
 					return data.processData.dataUrl;
 				}
 				if (data.entity?.signedUrl) {
-					console.log(data.entity?.signedUrl, data.entity);
 					return GetAssetEndpoint(data.entity);
 				}
 			}
@@ -697,9 +680,7 @@ export class NodeGraphProcessor extends EventEmitter {
 
 		this.registerProcessor("Paint", async ({ node, inputs, signal }) => {
 			const config = node.config as PaintNodeConfig;
-
 			const imageUrl = findInputData(inputs, "Image");
-
 			const maskDataUrl = config.paintData;
 			const imageHandle = getFirstOutputHandle(node.id, "Image");
 			const maskHandle = getFirstOutputHandle(node.id, "Mask");
@@ -727,57 +708,45 @@ export class NodeGraphProcessor extends EventEmitter {
 					},
 					outputHandleId: imageHandle,
 				});
-				items.push({
-					type: "Mask",
-					data: {
-						processData: {
-							dataUrl: onlyMask.dataUrl,
-							width: onlyMask.width,
-							height: onlyMask.height,
-						},
-					},
-					outputHandleId: maskHandle,
-				});
-			} else {
-				items.push({
-					type: "Mask",
-					data: {
-						processData: {
-							dataUrl: onlyMask.dataUrl,
-							width: onlyMask.width,
-							height: onlyMask.height,
-						},
-					},
-					outputHandleId: maskHandle,
-				});
 			}
+
+			items.push({
+				type: "Mask",
+				data: {
+					processData: {
+						dataUrl: onlyMask.dataUrl,
+						width: onlyMask.width,
+						height: onlyMask.height,
+					},
+				},
+				outputHandleId: maskHandle,
+			});
 
 			return { selectedOutputIndex: 0, outputs: [{ items }] };
 		});
 
 		this.registerProcessor("Compositor", async ({ node, inputs, signal }) => {
 			const config = node.config as CompositorNodeConfig;
-
 			const inputDataMap: Record<
 				string,
 				{ type: "Image" | "Text"; value: string }
 			> = {};
 
-			Object.entries(inputs).forEach(([inputHandleId, _value]) => {
+			Object.entries(inputs).forEach(([inputHandleId]) => {
 				const data = getConnectedInputDataValue(inputs, inputHandleId);
-				if (data) {
-					inputDataMap[inputHandleId] = data;
+				if (data && (data.type === "Image" || data.type === "Text")) {
+					inputDataMap[inputHandleId] = data as {
+						type: "Image" | "Text";
+						value: string;
+					};
 				}
 			});
 
-			// Process with Pixi
 			const result = await pixiProcessor.processCompositor(
 				config,
 				inputDataMap,
 				signal,
 			);
-
-			// Find Output Handle (Standard "Image" output)
 			const outputHandle = getFirstOutputHandle(node.id, "Image");
 			if (!outputHandle) throw new Error("Missing output handle");
 
@@ -807,14 +776,11 @@ export class NodeGraphProcessor extends EventEmitter {
 			"VideoCompositor",
 			async ({ node, inputs, signal }) => {
 				const config = node.config as unknown as VideoCompositorNodeConfig;
-
-				// Process with web renderer
 				const result = await remotionService.processVideo(
 					config,
 					inputs,
 					signal,
 				);
-
 				return {
 					selectedOutputIndex: 0,
 					outputs: [
@@ -848,7 +814,6 @@ export class NodeGraphProcessor extends EventEmitter {
 				{ blurSize: config.size ?? 1 },
 				signal,
 			);
-
 			const outputHandle = getFirstOutputHandle(node.id, "Image");
 			if (!outputHandle) throw new Error("Missing output handle");
 			return {
@@ -883,7 +848,6 @@ export class NodeGraphProcessor extends EventEmitter {
 				config,
 				signal,
 			);
-
 			const outputHandle = getFirstOutputHandle(node.id, "Image");
 			if (!outputHandle) throw new Error("Missing output handle");
 			return {
@@ -910,12 +874,13 @@ export class NodeGraphProcessor extends EventEmitter {
 
 		this.registerProcessor("TextMerger", async ({ node, inputs }) => {
 			const config = TextMergerNodeConfigSchema.parse(node.config);
-			const allTexts = Object.values(inputs).map((input) => {
-				return input.outputItem?.data;
-			});
+			// inputs record is already sorted by handle.createdAt due to collectInputs logic
+			const allTexts = Object.values(inputs).map(
+				(input) => input.outputItem?.data,
+			);
 			const resultText = allTexts.join(config.join);
-			const outputHandle = getFirstOutputHandle(node.id, "Text");
 
+			const outputHandle = getFirstOutputHandle(node.id, "Text");
 			if (!outputHandle) throw new Error("Missing output handle");
 			return {
 				selectedOutputIndex: 0,
@@ -935,12 +900,10 @@ export class NodeGraphProcessor extends EventEmitter {
 
 		this.registerProcessor("Export", async ({ inputs }) => {
 			const inputEntries = Object.entries(inputs);
-			if (inputEntries.length === 0) {
+			if (inputEntries.length === 0)
 				throw new Error("Missing input for Export");
-			}
 			const [_, { outputItem }] = inputEntries[0];
 			if (!outputItem) throw new Error("No input item");
-
 			return {
 				selectedOutputIndex: 0,
 				outputs: [
@@ -967,7 +930,6 @@ export class NodeGraphProcessor extends EventEmitter {
 				{ width: config.width, height: config.height },
 				signal,
 			);
-
 			const outputHandle = getFirstOutputHandle(node.id, "Image");
 			if (!outputHandle) throw new Error("Missing output handle");
 			return {
@@ -994,12 +956,9 @@ export class NodeGraphProcessor extends EventEmitter {
 
 		this.registerProcessor("Preview", async ({ inputs }) => {
 			const inputEntries = Object.entries(inputs);
-			if (inputEntries.length === 0) {
-				throw new Error("Preview disconnected");
-			}
+			if (inputEntries.length === 0) throw new Error("Preview disconnected");
 			const [_, { outputItem }] = inputEntries[0];
 			if (!outputItem) throw new Error("No input item");
-
 			return {
 				selectedOutputIndex: 0,
 				outputs: [
@@ -1016,7 +975,6 @@ export class NodeGraphProcessor extends EventEmitter {
 			};
 		});
 
-		// Passthrough / Noop Processors
 		const passthrough = async ({ node }: NodeProcessorParams) =>
 			node.result as unknown as NodeResult;
 		this.registerProcessor("ImageGen", passthrough);
