@@ -178,7 +178,7 @@ const DynamicComposition: React.FC<{
 									fontSize: layer.fontSize ?? 60,
 									fontFamily: layer.fontFamily ?? "Inter",
 									lineHeight: layer.lineHeight ?? 1.2,
-									whiteSpace: "nowrap",
+									whiteSpace: "pre-wrap", // UPDATED: Changed from 'nowrap' to 'pre-wrap'
 								}}
 							>
 								{textContent}

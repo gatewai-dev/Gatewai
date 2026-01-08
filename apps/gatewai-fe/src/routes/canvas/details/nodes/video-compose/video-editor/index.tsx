@@ -381,7 +381,7 @@ const CompositionScene: React.FC<{
 									fontSize: layer.fontSize,
 									fontFamily: layer.fontFamily,
 									lineHeight: layer.lineHeight ?? 1.2,
-									whiteSpace: "nowrap",
+									whiteSpace: "pre-wrap", // UPDATED: Changed from 'nowrap' to 'pre-wrap'
 								}}
 							>
 								{textContent}
@@ -778,9 +778,9 @@ const Toolbar = React.memo<{
 					<Tooltip>
 						<TooltipTrigger asChild>
 							<Button
-								variant="ghost"
+								variant={mode === "select" ? "default" : "ghost"}
 								size="icon"
-								className={`rounded-full w-7 h-7 ${mode === "select" ? "bg-blue-600 text-white shadow-sm" : "text-gray-400 hover:text-white hover:bg-white/5"}`}
+								className={`rounded-full w-7 h-7`}
 								onClick={() => setMode("select")}
 							>
 								<MousePointer className="w-3.5 h-3.5" />
@@ -791,9 +791,9 @@ const Toolbar = React.memo<{
 					<Tooltip>
 						<TooltipTrigger asChild>
 							<Button
-								variant="ghost"
+								variant={mode === "pan" ? "default" : "ghost"}
 								size="icon"
-								className={`rounded-full w-7 h-7 ${mode === "pan" ? "bg-blue-600 text-white shadow-sm" : "text-gray-400 hover:text-white hover:bg-white/5"}`}
+								className={`rounded-full w-7 h-7`}
 								onClick={() => setMode("pan")}
 							>
 								<Hand className="w-3.5 h-3.5" />
@@ -831,7 +831,7 @@ const Toolbar = React.memo<{
 			<div className="flex items-center gap-1">
 				<Button
 					size="sm"
-					className="h-7 text-[10px] font-medium rounded-full px-3 bg-white text-black hover:bg-gray-200 border-0"
+					className="h-7 text-[10px] font-medium rounded-full px-3  border-0"
 					onClick={onSave}
 					disabled={!isDirty}
 				>
@@ -1393,9 +1393,9 @@ const InspectorPanel: React.FC = () => {
 				</div>
 				<div className="p-4 space-y-4">
 					<div className="space-y-2">
-						<label className="text-[10px] text-gray-500 uppercase font-bold">
+						<Label className="text-[10px] text-gray-500 uppercase font-bold">
 							Canvas Size
-						</label>
+						</Label>
 						<div className="grid grid-cols-2 gap-2">
 							<DraggableNumberInput
 								label="W"
