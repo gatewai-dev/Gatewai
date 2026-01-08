@@ -92,6 +92,7 @@ export type CropResult = SingleOutputGeneric<"Image">;
 
 export type CompositorResult = SingleOutputGeneric<"Image">;
 export type VideoCompositorResult = SingleOutputGeneric<"Video">;
+export type TextMergerResult = SingleOutputGeneric<"Text">;
 
 export type BaseVideoGenResult = MultiOutputGeneric<"Video">;
 
@@ -128,6 +129,7 @@ export type AnyOutputItem =
 
 export type NodeResult =
 	| TextResult
+	| TextMergerResult
 	| ToggleResult
 	| FileResult
 	| ImagesResult

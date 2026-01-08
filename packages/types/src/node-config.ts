@@ -7,6 +7,12 @@ const TextNodeConfigSchema = z
 	})
 	.strict();
 
+const TextMergerNodeConfigSchema = z
+	.object({
+		join: z.string().optional().default("\n"),
+	})
+	.strict();
+
 // File Node
 const FileNodeConfigSchema = z.object({}).strict();
 
@@ -408,6 +414,7 @@ const NodeConfigSchema = z.union([
 	ImageGenNodeConfigSchema,
 	LLMNodeConfigSchema,
 	TextNodeConfigSchema,
+	TextMergerNodeConfigSchema,
 	FileNodeConfigSchema,
 	AgentNodeConfigSchema,
 	PreviewNodeConfigSchema,
@@ -425,6 +432,7 @@ const NodeConfigSchema = z.union([
 ]);
 
 // Inferred types
+type TextMergerNodeConfig = z.infer<typeof TextMergerNodeConfigSchema>;
 type TextNodeConfig = z.infer<typeof TextNodeConfigSchema>;
 type AgentNodeConfig = z.infer<typeof AgentNodeConfigSchema>;
 type LLMNodeConfig = z.infer<typeof LLMNodeConfigSchema>;
@@ -457,6 +465,7 @@ type VideoEffectsEnum = z.infer<typeof VideoEffectsSchema>;
 export {
 	NodeConfigSchema,
 	CropNodeConfigSchema,
+	TextMergerNodeConfigSchema,
 	TextNodeConfigSchema,
 	FileNodeConfigSchema,
 	AgentNodeConfigSchema,
@@ -479,6 +488,7 @@ export {
 	SpeechToTextNodeConfigSchema,
 	TextToSpeechNodeConfigSchema,
 	VideoEffectsSchema,
+	type TextMergerNodeConfig,
 	type VideoEffectsEnum,
 	type TextNodeConfig,
 	type FileNodeConfig,

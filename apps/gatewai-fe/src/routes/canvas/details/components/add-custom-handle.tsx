@@ -123,6 +123,7 @@ function AddCustomHandleButton(props: CustomHandleButtonProps) {
 								<FormItem>
 									<FormLabel>Data Type</FormLabel>
 									<Select
+										disabled={props.dataTypes && props.dataTypes?.length <= 1}
 										onValueChange={field.onChange}
 										defaultValue={field.value}
 									>

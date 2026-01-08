@@ -1,16 +1,17 @@
 import { EventEmitter } from "node:events";
 import type { DataType, NodeType } from "@gatewai/db";
-import type {
-	BlurNodeConfig,
-	CompositorNodeConfig,
-	CropNodeConfig,
-	FileData,
-	ModulateNodeConfig,
-	NodeResult,
-	PaintNodeConfig,
-	PaintResult,
-	ResizeNodeConfig,
-	VideoCompositorNodeConfig,
+import {
+	type BlurNodeConfig,
+	type CompositorNodeConfig,
+	type CropNodeConfig,
+	type FileData,
+	type ModulateNodeConfig,
+	type NodeResult,
+	type PaintNodeConfig,
+	type PaintResult,
+	type ResizeNodeConfig,
+	TextMergerNodeConfigSchema,
+	type VideoCompositorNodeConfig,
 } from "@gatewai/types";
 import type { EdgeEntityType } from "@/store/edges";
 import type { HandleEntityType } from "@/store/handles";
@@ -904,6 +905,31 @@ export class NodeGraphProcessor extends EventEmitter {
 										height: result.height,
 									},
 								},
+								outputHandleId: outputHandle,
+							},
+						],
+					},
+				],
+			};
+		});
+
+		this.registerProcessor("TextMerger", async ({ node, inputs }) => {
+			const config = TextMergerNodeConfigSchema.parse(node.config);
+			const allTexts = Object.values(inputs).map((input) => {
+				return input.outputItem?.data;
+			});
+			const resultText = allTexts.join(config.join);
+			const outputHandle = getFirstOutputHandle(node.id);
+
+			if (!outputHandle) throw new Error("Missing output handle");
+			return {
+				selectedOutputIndex: 0,
+				outputs: [
+					{
+						items: [
+							{
+								type: "Text",
+								data: resultText,
 								outputHandleId: outputHandle,
 							},
 						],

@@ -212,6 +212,39 @@ export async function SEED_createNodeTemplates(prisma: PrismaClient) {
 			defaultConfig: { content: "" },
 		},
 		{
+			type: NodeType.TextMerger,
+			displayName: "Text Merger",
+			description: "Merge Texts",
+			category: "Tools",
+			subcategory: null,
+			tokenPrice: 0.0,
+			variableInputs: false,
+			variableOutputs: false,
+			isTerminalNode: false,
+			isTransient: false,
+			showInQuickAccess: false,
+			templateHandles: {
+				create: [
+					{
+						type: HandleType.Input,
+						dataTypes: [DataType.Text],
+						label: "Text",
+					},
+					{
+						type: HandleType.Input,
+						dataTypes: [DataType.Text],
+						label: "Text 2",
+					},
+					{
+						type: HandleType.Output,
+						dataTypes: [DataType.Text],
+						label: "Merged Text",
+					},
+				],
+			},
+			defaultConfig: { join: "" },
+		},
+		{
 			type: NodeType.Preview,
 			displayName: "Preview",
 			description: "Preview an output of a node",
@@ -243,7 +276,7 @@ export async function SEED_createNodeTemplates(prisma: PrismaClient) {
 		{
 			type: NodeType.File,
 			displayName: "Import",
-			description: "Upload your media",
+			description: "Upload your media files",
 			category: "Inputs",
 			subcategory: null,
 			tokenPrice: 0.0,
@@ -349,7 +382,7 @@ export async function SEED_createNodeTemplates(prisma: PrismaClient) {
 		{
 			type: NodeType.Paint,
 			displayName: "Paint",
-			description: "Draw / Fill Mask on  an image",
+			description: "Draw / Fill Mask on an image",
 			category: "Image",
 			subcategory: null,
 			tokenPrice: 0.0,

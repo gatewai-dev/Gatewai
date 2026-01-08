@@ -9,6 +9,7 @@ import llmProcessor from "./llm.js";
 import modulateProcessor from "./modulate.js";
 import paintProcessor from "./paint.js";
 import resizeProcessor from "./resize.js";
+import textMergerProcessor from "./text-merger.js";
 import textToSpeechProcessor from "./text-to-speech.js";
 import type { NodeProcessor } from "./types.js";
 import videoGenProcessor from "./video-gen.js";
@@ -31,6 +32,7 @@ const nodeProcessors: Partial<Record<NodeType, NodeProcessor>> = {
 
 	[NodeType.TextToSpeech]: textToSpeechProcessor,
 	[NodeType.SpeechToText]: audioUnderstandingProcessor,
+	[NodeType.TextMerger]: textMergerProcessor,
 	// No processing needed for these node types
 	[NodeType.VideoCompositor]: async ({ node }) => {
 		return { success: true, result: node.result };

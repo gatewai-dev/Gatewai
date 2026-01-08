@@ -10,6 +10,7 @@ import { NodeWFProcessor } from "../../tasks/canvas-workflow-processor.js";
 
 const NodeTypes = [
 	"Text",
+	"TextMerger",
 	"Preview",
 	"File",
 	"Export",

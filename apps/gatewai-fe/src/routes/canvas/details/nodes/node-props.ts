@@ -22,6 +22,8 @@ import type {
 	PreviewNodeConfig,
 	ResizeNodeConfig,
 	ResizeResult,
+	TextMergerNodeConfig,
+	TextMergerResult,
 	TextNodeConfig,
 	TextResult,
 } from "@gatewai/types";
@@ -29,6 +31,10 @@ import type { Node } from "@xyflow/react";
 
 export type TextNode = Node<
 	NodeWithFileType<TextNodeConfig, TextResult>,
+	"Text"
+>;
+export type TextMergerNode = Node<
+	NodeWithFileType<TextMergerNodeConfig, TextMergerResult>,
 	"Text"
 >;
 export type PreviewNode = Node<

@@ -13,6 +13,7 @@ import { ResizeNodeComponent } from "./resize";
 import { SpeechToTextNodeComponent } from "./speech-to-text";
 import { NoteNodeComponent } from "./sticky-note";
 import { TextNodeComponent } from "./text";
+import { TextMergerNodeComponent } from "./text-merger";
 import { TextToSpeechNodeComponent } from "./text-to-speech";
 import { VideoCompositorNodeComponent } from "./video-compose";
 import { VideoGenNodeComponent } from "./video-gen";
@@ -41,6 +42,7 @@ const nodeTypes = {
 	SpeechToText: SpeechToTextNodeComponent,
 	TextToSpeech: TextToSpeechNodeComponent,
 	VideoCompositor: VideoCompositorNodeComponent,
+	TextMerger: TextMergerNodeComponent,
 };
 
 export {
@@ -63,4 +65,5 @@ export {
 	VideoGenFirstLastFrameNodeComponent,
 	SpeechToTextNodeComponent,
 	TextToSpeechNodeComponent,
+	TextMergerNodeComponent,
 };

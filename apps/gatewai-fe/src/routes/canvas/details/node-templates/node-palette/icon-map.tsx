@@ -1,5 +1,7 @@
 import { Gemini } from "@lobehub/icons";
 import {
+	// New imports
+	PiArrowsMerge,
 	PiCloudFog,
 	PiCropThin,
 	PiCube,
@@ -8,6 +10,7 @@ import {
 	PiEye,
 	PiFaceMask,
 	PiFileText,
+	PiFilmReelLight,
 	PiGitBranch,
 	PiHash,
 	PiNote,
@@ -26,6 +29,8 @@ export const NODE_ICON_MAP: Record<
 	(node?: NodeEntityType) => React.ComponentType
 > = {
 	Text: () => PiTextT,
+	TextMerger: () => PiArrowsMerge, // Combines multiple text inputs
+	VideoCompositor: () => PiFilmReelLight, // Specialized for video layering
 	Preview: () => PiEye,
 	File: () => PiUploadSimple,
 	Export: () => PiDownloadSimple,
@@ -40,7 +45,6 @@ export const NODE_ICON_MAP: Record<
 	Compositor: () => PiStack,
 	Describer: () => PiFileText,
 	Router: () => PiGitBranch,
-	// Add fallbacks or additional mappings as needed for other NodeTypes
 	Note: () => PiNote,
 	Number: () => PiHash,
 	Modulate: () => PiDropDuotone,
