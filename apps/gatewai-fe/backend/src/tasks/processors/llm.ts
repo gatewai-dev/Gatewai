@@ -69,7 +69,7 @@ const llmProcessor: NodeProcessor = async ({ node, data }) => {
 		if (parts.length === 0) {
 			return { success: false, error: "No user prompt or image provided" };
 		}
-
+		console.log({ parts });
 		// 3. Generate Content
 		const nodeConfig = node.config as LLMNodeConfig;
 

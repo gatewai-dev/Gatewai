@@ -1,8 +1,4 @@
-import type {
-	CompositorNodeConfig,
-	ModulateNodeConfig,
-	PaintNodeConfig,
-} from "@gatewai/types";
+import type { ModulateNodeConfig, PaintNodeConfig } from "@gatewai/types";
 import { createPool, type Pool } from "generic-pool";
 import pLimit from "p-limit";
 import {
@@ -16,7 +12,6 @@ import {
 	WebWorkerAdapter,
 } from "pixi.js";
 import "pixi.js/advanced-blend-modes";
-import Konva from "konva";
 import { ModulateFilter } from "./filters/modulate";
 
 DOMAdapter.set(WebWorkerAdapter);

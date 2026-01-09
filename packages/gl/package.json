@@ -1,5 +1,5 @@
 {
-	"name": "@gatewai/types",
+	"name": "@yodes/gl",
 	"version": "0.0.0",
 	"type": "module",
 	"sideEffects": false,
@@ -21,15 +21,13 @@
 		"clean": "rm -rf .turbo && rm -rf node_modules && rm -rf dist"
 	},
 	"devDependencies": {
-		"@gatewai/db": "workspace:*",
 		"@gatewai/tsconfig": "workspace:*",
-		"@types/data-urls": "^3.0.4",
 		"@types/node": "^24.0.4",
-		"install": "^0.13.0",
 		"tsdown": "^0.17.0-beta.3",
 		"typescript": "5.5.4"
 	},
 	"dependencies": {
-		"zod": "3.25.67"
+		"canvas": "^3.2.0",
+		"gl": "^8.1.6"
 	}
 }

@@ -5,7 +5,6 @@ import { logger } from "hono/logger";
 import { ENV_CONFIG } from "./config.js";
 import { logger as appLogger } from "./logger.js";
 import { v1Router } from "./routes/v1/index.js";
-import { BatchRecovery } from "./tasks/batch-recovery.js";
 
 console.log(process.env);
 
@@ -35,9 +34,5 @@ serve(
 		appLogger.info(`Server is running on http://localhost:${info.port}`);
 	},
 );
-
-// Check for dangling canvas workflow runs and re-run incomplete tasks
-const batchRecovery = new BatchRecovery();
-batchRecovery.resumeDanglingBatches();
 
 export type AppType = typeof app;
