@@ -1,6 +1,5 @@
 import {
 	type Node,
-	type PrismaClient,
 	prisma,
 	type Task,
 	type TaskBatch,
@@ -13,13 +12,6 @@ import {
 } from "../repositories/canvas.js";
 import { NodeWFProcessor } from "./canvas-workflow-processor.js";
 
-/**
- * This class re-runs the workflow batches that are not completed
- * Whether they are completed with error or success
- *
- * This process should only run only once on app start
- * and should be updated if horizontal scaling required.
- */
 export class BatchRecovery {
 	private processor: NodeWFProcessor;
 
@@ -31,139 +23,160 @@ export class BatchRecovery {
 		const danglingBatches = await this.processor.prisma.taskBatch.findMany({
 			where: { finishedAt: null },
 			include: {
-				tasks: {
-					include: {
-						node: {
-							select: {
-								id: true,
-								type: true,
-								name: true,
-							},
-						},
-					},
-				},
+				tasks: { include: { node: true } },
 			},
 		});
 
-		logger.warn(`Number of dangling batches: ${danglingBatches?.length ?? 0}`);
 		for (const batch of danglingBatches) {
-			logger.warn(`Resuming batch with ID: ${batch.id}`);
-			await this.resumeBatch(batch);
+			logger.warn(`Resuming batch: ${batch.id}`);
+			try {
+				await this.resumeBatch(batch);
+			} catch (err: unknown) {
+				const msg =
+					err instanceof Error ? err.message : "Unknown recovery error";
+				logger.error(`Failed to resume batch ${batch.id}: ${msg}`);
+			}
 		}
 	}
 
 	private async resumeBatch(
-		batch: TaskBatch & {
-			tasks: (Task & {
-				node: Pick<Node, "id" | "type" | "name"> | null;
-			})[];
-		},
+		batch: TaskBatch & { tasks: (Task & { node: Node | null })[] },
 	): Promise<void> {
-		const tasks = batch.tasks;
-
-		// Fetch current canvas data
 		const data: CanvasCtxData = await GetCanvasEntities(batch.canvasId);
-
-		// Filter valid tasks where node still exists
-		const validTasks = tasks.filter(
-			(
-				t,
-			): t is Task & {
-				node: Pick<Node, "id" | "type" | "name">;
-				nodeId: string;
-			} => t.node !== null && t.nodeId !== null,
+		const validTasks = batch.tasks.filter(
+			(t): t is Task & { node: Node; nodeId: string } =>
+				t.node !== null && t.nodeId !== null,
 		);
 
-		const nodeIds: string[] = validTasks.map((t) => t.nodeId);
-
-		if (nodeIds.length === 0) {
-			await this.finishBatch(batch.id);
-			return;
-		}
-
-		// Build dependency graphs
+		const nodeIds = validTasks.map((t) => t.nodeId);
 		const { depGraph, revDepGraph } = this.processor.buildDepGraphs(
 			nodeIds,
 			data,
 		);
-
-		// Perform topological sort
 		const topoOrder = this.processor.topologicalSort(
 			nodeIds,
 			depGraph,
 			revDepGraph,
 		);
+
 		if (!topoOrder) {
-			// Fail all non-completed tasks due to cycle
-			for (const task of validTasks) {
-				if (task.status !== TaskStatus.COMPLETED) {
-					const now = new Date();
-					await this.processor.prisma.task.update({
-						where: { id: task.id },
-						data: {
-							status: TaskStatus.FAILED,
-							startedAt: now,
-							finishedAt: now,
-							durationMs: 0,
-							error: { message: "Cycle detected in dependency graph" },
-						},
-					});
-				}
-			}
+			await this.failIncompleteTasks(
+				validTasks,
+				"Cycle detected during recovery",
+			);
 			await this.finishBatch(batch.id);
 			return;
 		}
 
-		// Create map for quick task lookup
-		const tasksMap = new Map<string, (typeof validTasks)[number]>(
-			validTasks.map((t) => [t.nodeId, t]),
+		const tasksMap = new Map(validTasks.map((t) => [t.nodeId, t]));
+		const completed = new Set<string>(
+			validTasks
+				.filter((t) => t.status === TaskStatus.COMPLETED)
+				.map((t) => t.nodeId),
 		);
+		const failed = new Set<string>(
+			validTasks
+				.filter((t) => t.status === TaskStatus.FAILED)
+				.map((t) => t.nodeId),
+		);
+		const executing = new Set<string>();
 
-		// Process tasks in topological order, skipping completed ones and checking upstreams
-		for (const nodeId of topoOrder) {
-			const task = tasksMap.get(nodeId);
-			if (!task) continue;
+		// Parallel recovery loop
+		while (completed.size + failed.size < topoOrder.length) {
+			const readyToRun = topoOrder.filter((nodeId) => {
+				if (
+					completed.has(nodeId) ||
+					executing.has(nodeId) ||
+					failed.has(nodeId)
+				)
+					return false;
+				const upstreams = revDepGraph.get(nodeId) ?? [];
+				return upstreams.every((u) => completed.has(u));
+			});
 
-			if (
-				task.status === TaskStatus.COMPLETED ||
-				task.status === TaskStatus.FAILED
-			)
-				continue;
-
-			// Verify all upstream tasks are completed
-			const upstreamIds = revDepGraph.get(nodeId) ?? [];
-			const allUpstreamsCompleted = upstreamIds.every(
-				(u) => tasksMap.get(u)?.status === TaskStatus.COMPLETED,
-			);
-
-			if (!allUpstreamsCompleted) {
-				const now = new Date();
-				await this.processor.prisma.task.update({
-					where: { id: task.id },
-					data: {
-						status: TaskStatus.FAILED,
-						startedAt: now,
-						finishedAt: now,
-						durationMs: 0,
-						error: { message: "Upstream task(s) failed or incomplete" },
-					},
-				});
-				continue;
+			// If stuck (e.g. upstream failed), fail remaining
+			if (readyToRun.length === 0 && executing.size === 0) {
+				const remaining = topoOrder.filter(
+					(id) => !completed.has(id) && !failed.has(id),
+				);
+				for (const id of remaining) {
+					const task = tasksMap.get(id);
+					if (task)
+						await this.updateTaskStatus(
+							task.id,
+							TaskStatus.FAILED,
+							"Upstream dependency failed or skipped",
+						);
+					failed.add(id);
+				}
+				break;
 			}
 
-			// Process the task (assume explicitly selected for recovery)
-			await this.processor.processTask(task.id, data, true);
+			await Promise.all(
+				readyToRun.map(async (nodeId) => {
+					executing.add(nodeId);
+					const task = tasksMap.get(nodeId);
+
+					if (task) {
+						try {
+							// Re-run interrupted or queued tasks
+							await this.processor.processTask(task.id, data, true);
+
+							const updatedTask = await this.processor.prisma.task.findUnique({
+								where: { id: task.id },
+								select: { status: true },
+							});
+
+							if (updatedTask?.status === TaskStatus.COMPLETED) {
+								completed.add(nodeId);
+							} else {
+								failed.add(nodeId);
+							}
+						} catch (err: unknown) {
+							failed.add(nodeId);
+							logger.error(`Recovery task execution failed: ${nodeId}`, err);
+						}
+					}
+					executing.delete(nodeId);
+				}),
+			);
 		}
 
-		// Finish the batch
 		await this.finishBatch(batch.id);
 	}
 
-	private async finishBatch(batchId: TaskBatch["id"]): Promise<void> {
-		const finishedAt = new Date();
+	private async updateTaskStatus(
+		taskId: string,
+		status: TaskStatus,
+		errorMsg: string,
+	) {
+		const now = new Date();
+		await this.processor.prisma.task.update({
+			where: { id: taskId },
+			data: {
+				status,
+				startedAt: now,
+				finishedAt: now,
+				error: { message: errorMsg },
+			},
+		});
+	}
+
+	private async failIncompleteTasks(tasks: Task[], message: string) {
+		for (const task of tasks) {
+			if (
+				task.status !== TaskStatus.COMPLETED &&
+				task.status !== TaskStatus.FAILED
+			) {
+				await this.updateTaskStatus(task.id, TaskStatus.FAILED, message);
+			}
+		}
+	}
+
+	private async finishBatch(batchId: string): Promise<void> {
 		await this.processor.prisma.taskBatch.update({
 			where: { id: batchId },
-			data: { finishedAt },
+			data: { finishedAt: new Date() },
 		});
 	}
 }
