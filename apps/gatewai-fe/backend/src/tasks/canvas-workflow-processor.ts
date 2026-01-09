@@ -297,7 +297,30 @@ export class NodeWFProcessor {
 					return upstreams.every((u) => completed.has(u));
 				});
 
-				if (readyToRun.length === 0 && executing.size === 0) break;
+				// If stuck (e.g., upstream failed), fail remaining
+				if (readyToRun.length === 0 && executing.size === 0) {
+					const remaining = topoOrder.filter(
+						(id) => !completed.has(id) && !failed.has(id) && !executing.has(id),
+					);
+					const now = new Date();
+					for (const id of remaining) {
+						const taskId = tasksMap.get(id);
+						if (taskId) {
+							await this.prisma.task.update({
+								where: { id: taskId },
+								data: {
+									status: TaskStatus.FAILED,
+									startedAt: now,
+									finishedAt: now,
+									durationMs: 0,
+									error: { message: "Upstream dependency failed" },
+								},
+							});
+						}
+						failed.add(id);
+					}
+					break;
+				}
 
 				await Promise.all(
 					readyToRun.map(async (nodeId) => {
