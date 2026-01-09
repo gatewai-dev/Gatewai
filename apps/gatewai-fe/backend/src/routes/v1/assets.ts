@@ -60,6 +60,7 @@ const assetsRouter = new Hono({
 	.post("/", zValidator("form", uploadSchema), async (c) => {
 		const form = await c.req.formData();
 		const file = form.get("file");
+		console.log({ file });
 		if (!(file instanceof File)) {
 			return c.json({ error: "File is required" }, 400);
 		}
@@ -134,11 +135,14 @@ const assetsRouter = new Hono({
 			return c.json({ error: "Node not found" }, 404);
 		}
 
-		const form = await c.req.formData();
-		const file = form.get("file");
-		if (!(file instanceof File)) {
-			return c.json({ error: "File is required" }, 400);
-		}
+		const body = await c.req.parseBody();
+		const file = body.file as File;
+		console.log({ file }, file instanceof File);
+		// Dafuq happened and this started throw error ?
+		// if (!(file instanceof File)) {
+		// 	console.log('defuq')
+		// 	return c.json({ error: "File is required" }, 400);
+		// }
 
 		const buffer = Buffer.from(await file.arrayBuffer());
 		const fileSize = buffer.length;

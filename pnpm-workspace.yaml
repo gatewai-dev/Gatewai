@@ -10,6 +10,13 @@ catalogs:
   prisma:
     prisma: latest
 
+ignoredBuiltDependencies:
+  - gl
+
 onlyBuiltDependencies:
+  - '@swc/core'
   - canvas
+  - esbuild
   - lefthook
+  - protobufjs
+  - sharp

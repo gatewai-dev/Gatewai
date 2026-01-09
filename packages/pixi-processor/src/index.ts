@@ -1,10 +1,11 @@
 import type { ModulateNodeConfig, PaintNodeConfig } from "@gatewai/types";
 import { createPool, type Pool } from "generic-pool";
 import pLimit from "p-limit";
-// We use 'import type' here to avoid runtime dependency on browser pixi in node environment
 import type {
 	Application,
+	BlurFilter,
 	Container,
+	Graphics,
 	IRenderer,
 	Sprite,
 	Texture,
@@ -40,8 +41,28 @@ export abstract class BasePixiService {
 	// --- Abstract Methods to be implemented by Frontend/Backend services ---
 	protected abstract createApplication(): Application;
 	protected abstract loadTexture(url: string): Promise<Texture>;
+	protected abstract getPixiImport(): string;
 
-	// In V7, accessing plugins differs slightly or might need casting in strict mode
+	/**
+	 * Override this to provide Pixi modules
+	 * Frontend can provide static imports, backend can use dynamic imports
+	 */
+	protected async getPixiModules(): Promise<{
+		Sprite: typeof Sprite;
+		Container: typeof Container;
+		Graphics: typeof Graphics;
+		BlurFilter: typeof BlurFilter;
+	}> {
+		// Default implementation uses dynamic import
+		const pixi = await import(/* @vite-ignore */ this.getPixiImport());
+		return {
+			Sprite: pixi.Sprite,
+			Container: pixi.Container,
+			Graphics: pixi.Graphics,
+			BlurFilter: pixi.BlurFilter,
+		};
+	}
+
 	protected abstract extractBase64(
 		renderer: IRenderer,
 		target: Container,
@@ -55,7 +76,6 @@ export abstract class BasePixiService {
 	}
 
 	private async destroyResource(resource: PixiResource): Promise<void> {
-		// V7 destroy signature: (removeView, stageOptions)
 		resource.app.destroy(true, {
 			children: true,
 			texture: true,
@@ -76,7 +96,6 @@ export abstract class BasePixiService {
 
 			const resource = await this.pool.acquire();
 			try {
-				// Safety: Ensure stage is clean
 				resource.app.stage.removeChildren();
 				return await fn(resource.app);
 			} finally {
@@ -97,20 +116,18 @@ export abstract class BasePixiService {
 			if (signal?.aborted) throw new DOMException("Cancelled", "AbortError");
 
 			const texture = await this.loadTexture(imageUrl);
-
 			if (signal?.aborted) throw new DOMException("Cancelled", "AbortError");
 
-			const sprite = new (await import("pixi.js")).Sprite(texture);
+			const { Sprite } = await this.getPixiModules();
+			const sprite = new Sprite(texture);
 			app.renderer.resize(sprite.width, sprite.height);
 
 			const filter = new ModulateFilter(config);
 			sprite.filters = [filter];
 
 			app.stage.addChild(sprite);
-
 			if (signal?.aborted) throw new DOMException("Cancelled", "AbortError");
 
-			// Force render
 			app.render();
 
 			const dataUrl = await Promise.resolve(
@@ -136,14 +153,12 @@ export abstract class BasePixiService {
 			const texture = await this.loadTexture(imageUrl);
 			if (signal?.aborted) throw new DOMException("Cancelled", "AbortError");
 
-			const sprite = new (await import("pixi.js")).Sprite(texture);
+			const { Sprite, BlurFilter } = await this.getPixiModules();
+			const sprite = new Sprite(texture);
 			app.renderer.resize(sprite.width, sprite.height);
 
 			const strength = Math.max(0, options.blurSize);
-
-			// Dynamic import to handle both environments if BlurFilter isn't globally available
-			const { BlurFilter } = await import("pixi.js");
-			const blurFilter = new BlurFilter(strength, 8); // V7 Constructor: (strength, quality)
+			const blurFilter = new BlurFilter(strength, 8);
 
 			sprite.filters = [blurFilter];
 			app.stage.addChild(sprite);
@@ -174,7 +189,8 @@ export abstract class BasePixiService {
 			const texture = await this.loadTexture(imageUrl);
 			if (signal?.aborted) throw new DOMException("Cancelled", "AbortError");
 
-			const sprite = new (await import("pixi.js")).Sprite(texture);
+			const { Sprite } = await this.getPixiModules();
+			const sprite = new Sprite(texture);
 
 			let targetWidth = texture.width;
 			let targetHeight = texture.height;
@@ -218,7 +234,7 @@ export abstract class BasePixiService {
 			const texture = await this.loadTexture(imageUrl);
 			if (signal?.aborted) throw new DOMException("Cancelled", "AbortError");
 
-			const { Container, Sprite, Graphics } = await import("pixi.js");
+			const { Container, Sprite, Graphics } = await this.getPixiModules();
 
 			const origWidth = texture.width;
 			const origHeight = texture.height;
@@ -242,7 +258,6 @@ export abstract class BasePixiService {
 			sprite.y = -topPx;
 			container.addChild(sprite);
 
-			// V7 Graphics API: beginFill -> draw -> endFill
 			const mask = new Graphics();
 			mask.beginFill(0xffffff);
 			mask.drawRect(0, 0, widthPx, heightPx);
@@ -257,7 +272,6 @@ export abstract class BasePixiService {
 			if (signal?.aborted) throw new DOMException("Cancelled", "AbortError");
 			app.render();
 
-			// Extract container specifically
 			const dataUrl = await Promise.resolve(
 				this.extractBase64(app.renderer, container),
 			);
@@ -279,7 +293,7 @@ export abstract class BasePixiService {
 			const { backgroundColor } = config;
 			if (signal?.aborted) throw new DOMException("Cancelled", "AbortError");
 
-			const { Container, Sprite, Graphics } = await import("pixi.js");
+			const { Container, Sprite, Graphics } = await this.getPixiModules();
 
 			let widthToUse: number;
 			let heightToUse: number;
@@ -293,7 +307,6 @@ export abstract class BasePixiService {
 			} else if (backgroundColor) {
 				widthToUse = config.width;
 				heightToUse = config.height;
-				// V7 Graphics API
 				const graphics = new Graphics();
 				graphics.beginFill(backgroundColor);
 				graphics.drawRect(0, 0, widthToUse, heightToUse);

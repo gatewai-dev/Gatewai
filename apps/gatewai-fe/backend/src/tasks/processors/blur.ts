@@ -5,14 +5,9 @@ import type {
 	FileData,
 	NodeResult,
 } from "@gatewai/types";
+import parseDataUrl from "data-urls";
 import { backendPixiService } from "../../media/pixi-processor.js";
-import {
-	applyBlur,
-	bufferToDataUrl,
-	getImageBuffer,
-	getImageDimensions,
-	getMimeType,
-} from "../../utils/image.js";
+import { logImage } from "../../media-logger.js";
 import { getInputValue } from "../resolvers.js";
 import type { NodeProcessor } from "./types.js";
 
@@ -23,20 +18,30 @@ const blurProcessor: NodeProcessor = async ({ node, data }) => {
 			label: "Image",
 		})?.data as FileData | null;
 
+		const imageUrl =
+			imageInput?.entity?.signedUrl ?? imageInput?.processData?.dataUrl;
+		if (!imageUrl) {
+			return { success: false, error: "No URL" };
+		}
 		const blurConfig = node.config as BlurNodeConfig;
-		const blurAmount = blurConfig.size ?? 0;
+		const blurSize = blurConfig.size ?? 0;
 
 		if (!imageInput) {
 			return { success: false, error: "No image input provided" };
 		}
+		console.log("Start blur");
 
-		const buffer = await getImageBuffer(imageInput);
-		const processedBuffer = await applyBlur(buffer, blurAmount);
-		backendPixiService.processBlur();
-		const dimensions = getImageDimensions(processedBuffer);
-		const mimeType = getMimeType(imageInput);
-		const dataUrl = bufferToDataUrl(processedBuffer, mimeType);
-
+		const { dataUrl, ...dimensions } = await backendPixiService.processBlur(
+			imageUrl,
+			{
+				blurSize,
+			},
+		);
+		console.log("Processed blur");
+		const parsed = parseDataUrl(dataUrl);
+		if (parsed?.body.buffer) {
+			logImage(Buffer.from(parsed?.body.buffer), ".png", node.id);
+		}
 		// Build new result (similar to LLM)
 		const outputHandle = data.handles.find(
 			(h) => h.nodeId === node.id && h.type === "Output",
@@ -66,6 +71,7 @@ const blurProcessor: NodeProcessor = async ({ node, data }) => {
 
 		return { success: true, newResult };
 	} catch (err: unknown) {
+		console.log(err);
 		return {
 			success: false,
 			error: err instanceof Error ? err.message : "Blur processing failed",

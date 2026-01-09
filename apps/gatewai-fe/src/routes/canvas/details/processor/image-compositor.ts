@@ -1,5 +1,4 @@
 import type { CompositorNodeConfig } from "@gatewai/types";
-import "pixi.js/advanced-blend-modes";
 import Konva from "konva";
 
 const processCompositor = async (

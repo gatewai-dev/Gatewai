@@ -12,6 +12,9 @@
 		"start": "turbo run build && turbo run start-cli",
 		"lefthook-install": "lefthook install"
 	},
+	"dependencies": {
+		"gl": "^6.0.2"
+	},
 	"devDependencies": {
 		"@biomejs/biome": "2.3.8",
 		"@changesets/cli": "^2.29.5",
