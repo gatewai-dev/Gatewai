@@ -1,17 +1,17 @@
 import { EventEmitter } from "node:events";
 import type { DataType, NodeType } from "@gatewai/db";
-import {
-	type BlurNodeConfig,
-	type CompositorNodeConfig,
-	type CropNodeConfig,
-	type FileData,
-	type ModulateNodeConfig,
-	type NodeResult,
-	type PaintNodeConfig,
-	type PaintResult,
-	type ResizeNodeConfig,
-	TextMergerNodeConfigSchema,
-	type VideoCompositorNodeConfig,
+import type {
+	BlurNodeConfig,
+	CompositorNodeConfig,
+	CropNodeConfig,
+	FileData,
+	ModulateNodeConfig,
+	NodeResult,
+	PaintNodeConfig,
+	PaintResult,
+	ResizeNodeConfig,
+	TextMergerNodeConfig,
+	VideoCompositorNodeConfig,
 } from "@gatewai/types";
 import type { EdgeEntityType } from "@/store/edges";
 import type { HandleEntityType } from "@/store/handles";
@@ -136,6 +136,20 @@ export class NodeGraphProcessor extends EventEmitter {
 
 		// Validate the graph first
 		this.validateGraph();
+
+		// Force-fail invalid nodes after validation
+		Object.keys(this.graphValidation).forEach((nodeId) => {
+			const state = this.getOrCreateNodeState(nodeId);
+			const validationErrors = this.graphValidation[nodeId];
+			state.status = TaskStatus.FAILED;
+			state.error = `Invalid configuration: ${Object.values(validationErrors).join(", ")}`;
+			state.isDirty = false;
+			state.startedAt = undefined;
+			state.finishedAt = undefined;
+			state.durationMs = undefined;
+			state.version++;
+			this.emit("node:error", { nodeId, error: state.error });
+		});
 
 		const nodesToInvalidate = new Set<string>();
 
@@ -264,17 +278,30 @@ export class NodeGraphProcessor extends EventEmitter {
 				state.abortController = null;
 			}
 
-			// [Schema Alignment] Set status to QUEUED
-			state.isDirty = true;
-			state.status = TaskStatus.QUEUED;
-			state.error = null;
-			state.startedAt = undefined;
-			state.finishedAt = undefined;
-			state.durationMs = undefined;
-			state.version++;
+			const validationErrors = this.graphValidation[nodeId];
+			if (validationErrors && Object.keys(validationErrors).length > 0) {
+				// Fail invalid nodes immediately without queuing
+				state.status = TaskStatus.FAILED;
+				state.error = `Invalid configuration: ${Object.values(validationErrors).join(", ")}`;
+				state.isDirty = false;
+				state.startedAt = undefined;
+				state.finishedAt = undefined;
+				state.durationMs = undefined;
+				state.version++;
+				this.emit("node:error", { nodeId, error: state.error });
+			} else {
+				// [Schema Alignment] Set status to QUEUED
+				state.isDirty = true;
+				state.status = TaskStatus.QUEUED;
+				state.error = null;
+				state.startedAt = undefined;
+				state.finishedAt = undefined;
+				state.durationMs = undefined;
+				state.version++;
 
-			// Notify system that this node is queued (good place to create/reset DB Task)
-			this.emit("node:queued", { nodeId });
+				// Notify system that this node is queued (good place to create/reset DB Task)
+				this.emit("node:queued", { nodeId });
+			}
 
 			const children = this.adjacency.get(nodeId);
 			if (children) {
@@ -303,7 +330,7 @@ export class NodeGraphProcessor extends EventEmitter {
 		try {
 			let hasWork = true;
 			while (hasWork) {
-				const dirtyNodes = Array.from(this.nodeStates.values()).filter(
+				let dirtyNodes = Array.from(this.nodeStates.values()).filter(
 					(s) => s.isDirty,
 				);
 
@@ -311,12 +338,37 @@ export class NodeGraphProcessor extends EventEmitter {
 					(s) => s.status !== TaskStatus.EXECUTING && this.areInputsReady(s.id),
 				);
 
-				if (readyNodes.length === 0) {
-					hasWork = false;
-					break;
+				if (readyNodes.length > 0) {
+					await Promise.all(readyNodes.map((s) => this.executeNode(s.id)));
+					// Refresh dirtyNodes after executions, as states may have changed
+					dirtyNodes = Array.from(this.nodeStates.values()).filter(
+						(s) => s.isDirty,
+					);
 				}
 
-				await Promise.all(readyNodes.map((s) => this.executeNode(s.id)));
+				const stalledNodes = dirtyNodes.filter(
+					(s) =>
+						s.status !== TaskStatus.EXECUTING &&
+						this.areAllParentsSettled(s.id) &&
+						!this.areInputsReady(s.id),
+				);
+
+				for (const state of stalledNodes) {
+					const nodeId = state.id;
+					state.isDirty = false;
+					state.status = TaskStatus.FAILED;
+					state.error = "Missing required inputs due to upstream errors";
+					state.finishedAt = Date.now();
+					state.durationMs = state.startedAt
+						? state.finishedAt - state.startedAt
+						: 0;
+					state.version++;
+					this.emit("node:error", { nodeId, error: state.error });
+				}
+
+				if (readyNodes.length === 0 && stalledNodes.length === 0) {
+					hasWork = false;
+				}
 			}
 		} finally {
 			this.processingLoopActive = false;
@@ -337,6 +389,16 @@ export class NodeGraphProcessor extends EventEmitter {
 			const parentState = this.nodeStates.get(parentId);
 			// Parent must have a result and NOT be dirty to be considered stable
 			if (!parentState?.result || parentState.isDirty) return false;
+		}
+		return true;
+	}
+
+	private areAllParentsSettled(nodeId: string): boolean {
+		const parents = this.reverseAdjacency.get(nodeId);
+		if (!parents || parents.size === 0) return true;
+		for (const parentId of parents) {
+			const parentState = this.nodeStates.get(parentId);
+			if (!parentState || parentState.isDirty) return false;
 		}
 		return true;
 	}

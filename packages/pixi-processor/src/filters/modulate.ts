@@ -1,7 +1,9 @@
 // @ts-nocheck
 import type { ModulateNodeConfig } from "@gatewai/types";
 
+// biome-ignore lint/suspicious/noExplicitAny: Supress warning / it works
 const BuildModualteFilter = (fClass: any) => {
+	// biome-ignore lint/suspicious/noExplicitAny: Supress warning / it works
 	return class ModulateFilter extends (fClass as any) {
 		constructor(config: ModulateNodeConfig) {
 			const vertexShader = `
@@ -139,9 +141,5 @@ const BuildModualteFilter = (fClass: any) => {
 		}
 	};
 };
-/**
- * Perceptually accurate Modulate Filter for PIXI.js v7
- * Matches Node 'sharp' behavior using Oklab color space and multiplicative math.
- */
 
 export { BuildModualteFilter };
