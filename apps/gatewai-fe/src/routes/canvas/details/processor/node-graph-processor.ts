@@ -307,7 +307,6 @@ export class NodeGraphProcessor extends EventEmitter {
 					(s) => s.isDirty,
 				);
 
-				// [Schema Alignment] Check status != EXECUTING to allow parallel execution
 				const readyNodes = dirtyNodes.filter(
 					(s) => s.status !== TaskStatus.EXECUTING && this.areInputsReady(s.id),
 				);

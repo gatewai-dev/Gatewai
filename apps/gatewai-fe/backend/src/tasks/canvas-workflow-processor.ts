@@ -19,14 +19,14 @@ import { nodeProcessors } from "./processors/index.js";
  * Workflow processor for canvas
  */
 export class NodeWFProcessor {
-	private prisma: PrismaClient;
+	public prisma: PrismaClient;
 
 	constructor(prisma: PrismaClient) {
 		this.prisma = prisma;
 	}
 
 	// Build dependency graphs within selected nodes.
-	private buildDepGraphs(
+	public buildDepGraphs(
 		nodeIds: Node["id"][],
 		data: CanvasCtxData,
 	): {
@@ -58,8 +58,8 @@ export class NodeWFProcessor {
 		return { depGraph, revDepGraph };
 	}
 
-	// Topo sort using Kahn's algo.
-	private topologicalSort(
+	// Topo sort - Kahn algo.
+	public topologicalSort(
 		nodes: string[],
 		depGraph: Map<Node["id"], Node["id"][]>,
 		revDepGraph: Map<Node["id"], Node["id"][]>,
@@ -99,6 +99,153 @@ export class NodeWFProcessor {
 			return order;
 		}
 		return null;
+	}
+
+	public async processTask(
+		taskId: Task["id"],
+		data: CanvasCtxData,
+		isExplicitlySelected: boolean,
+	): Promise<void> {
+		const startedAt = new Date();
+		await this.prisma.task.update({
+			where: { id: taskId },
+			data: {
+				status: TaskStatus.EXECUTING,
+				startedAt,
+			},
+		});
+
+		// Fetch task to get nodeId
+		const task = await this.prisma.task.findUniqueOrThrow({
+			where: { id: taskId },
+			select: { nodeId: true },
+		});
+
+		if (!task.nodeId) {
+			throw new Error(`Task ${taskId} has no associated nodeId`);
+		}
+
+		// Defensive: Ensure node still exists in DB before processing
+		const currentNode = await this.prisma.node.findUnique({
+			where: { id: task.nodeId },
+			select: { id: true, type: true, name: true },
+		});
+
+		if (!currentNode) {
+			const now = new Date();
+			await this.prisma.task.update({
+				where: { id: taskId },
+				data: {
+					status: TaskStatus.FAILED,
+					startedAt: now,
+					finishedAt: now,
+					durationMs: 0,
+					error: { message: "Node removed before processing" },
+				},
+			});
+			return;
+		}
+
+		const node = data.nodes.find((n) => n.id === task.nodeId);
+		if (!node) {
+			throw new Error("Node not found");
+		}
+		const template = await this.prisma.nodeTemplate.findUniqueOrThrow({
+			where: { type: currentNode.type },
+		});
+
+		const isTerminal = template.isTerminalNode;
+		if (isTerminal && !isExplicitlySelected) {
+			logger.info(
+				`Skipping processing for terminal node: ${node.id} (type: ${node.type}) as it was not explicitly selected`,
+			);
+			const finishedAt = new Date();
+			await this.prisma.task.update({
+				where: { id: taskId },
+				data: {
+					status: TaskStatus.COMPLETED,
+					finishedAt,
+					durationMs: finishedAt.getTime() - startedAt.getTime(),
+				},
+			});
+			return;
+		}
+
+		const processor = nodeProcessors[node.type];
+		if (!processor) {
+			throw new Error(`No processor for node type ${node.type}.`);
+		}
+
+		try {
+			// Await processor, pass current data
+			logger.info(`Processing node: ${node.id} with type: ${node.type}`);
+			const { success, error, newResult } = await processor({
+				node,
+				data,
+				prisma: this.prisma,
+			});
+
+			if (error) {
+				console.log(`${node.id}: Error: ${error}`);
+			}
+
+			if (newResult) {
+				const updatedNode = data.nodes.find((n) => n.id === task.nodeId);
+				if (!updatedNode) {
+					throw new Error("Node not found to update");
+				}
+				updatedNode.result = structuredClone(
+					newResult,
+				) as unknown as NodeResult;
+			}
+
+			const finishedAt = new Date();
+			await this.prisma.task.update({
+				where: { id: taskId },
+				data: {
+					status: success ? TaskStatus.COMPLETED : TaskStatus.FAILED,
+					finishedAt,
+					durationMs: finishedAt.getTime() - startedAt.getTime(),
+					error: error ? { message: error } : undefined,
+				},
+			});
+
+			// Persist to DB only if not transient
+			if (success && !template.isTransient && newResult) {
+				try {
+					await this.prisma.node.update({
+						where: { id: node.id },
+						data: { result: newResult as NodeResult },
+					});
+				} catch (updateErr) {
+					if (
+						updateErr instanceof Prisma.PrismaClientKnownRequestError &&
+						updateErr.code === "P2025"
+					) {
+						console.log(
+							`Node ${node.id} removed during processing, skipping result update`,
+						);
+					} else {
+						throw updateErr;
+					}
+				}
+			}
+		} catch (err: unknown) {
+			console.log({ err });
+			const finishedAt = new Date();
+			await this.prisma.task.update({
+				where: { id: taskId },
+				data: {
+					status: TaskStatus.FAILED,
+					finishedAt,
+					durationMs: finishedAt.getTime() - startedAt.getTime(),
+					error:
+						err instanceof Error
+							? { message: err.message }
+							: { message: "Unknown error" },
+				},
+			});
+		}
 	}
 
 	public async processNodes(
@@ -231,142 +378,8 @@ export class NodeWFProcessor {
 				if (!task) {
 					throw new Error(`Task not found for node ${nodeId}`);
 				}
-
-				// Defensive: Ensure node still exists in DB before processing
-				const currentNode = await this.prisma.node.findUnique({
-					where: { id: nodeId },
-					select: { id: true, type: true, name: true },
-				});
-
-				if (!currentNode) {
-					const now = new Date();
-					await this.prisma.task.update({
-						where: { id: task.id },
-						data: {
-							status: TaskStatus.FAILED,
-							startedAt: now,
-							finishedAt: now,
-							durationMs: 0,
-							error: { message: "Node removed before processing" },
-						},
-					});
-					continue;
-				}
-
-				const startedAt = new Date();
-				await this.prisma.task.update({
-					where: { id: task.id },
-					data: {
-						status: TaskStatus.EXECUTING,
-						startedAt,
-					},
-				});
-
-				const node = data.nodes.find((n) => n.id === nodeId);
-				if (!node) {
-					throw new Error("Node not found");
-				}
-				const template = await this.prisma.nodeTemplate.findUnique({
-					where: { type: currentNode.type },
-				});
-
-				// (Optional) Double-check skipping logic if somehow a terminal node sneaked in,
-				// though `filteredNecessary` should prevent this.
-				const isTerminal = template?.isTerminalNode ?? false;
 				const isExplicitlySelected = nodeIds ? nodeIds.includes(nodeId) : true;
-
-				if (isTerminal && !isExplicitlySelected) {
-					logger.info(
-						`Skipping processing for terminal node: ${node.id} (type: ${node.type}) as it was not explicitly selected`,
-					);
-					const finishedAt = new Date();
-					await this.prisma.task.update({
-						where: { id: task.id },
-						data: {
-							status: TaskStatus.COMPLETED,
-							finishedAt,
-							durationMs: finishedAt.getTime() - startedAt.getTime(),
-						},
-					});
-					continue;
-				}
-
-				const processor = nodeProcessors[node.type];
-				if (!processor) {
-					throw new Error(`No processor for node type ${node.type}.`);
-				}
-
-				try {
-					// Await processor, pass current data
-					logger.info(`Processing node: ${node.id} with type: ${node.type}`);
-					const { success, error, newResult } = await processor({
-						node,
-						data,
-						prisma: this.prisma,
-					});
-
-					if (error) {
-						console.log(`${node.id}: Error: ${error}`);
-					}
-
-					if (newResult) {
-						// Update in-memory data for propagation to downstream nodes
-						const updatedNode = data.nodes.find((n) => n.id === nodeId);
-						if (!updatedNode) {
-							throw new Error("Node not found to update");
-						}
-						updatedNode.result = structuredClone(
-							newResult,
-						) as unknown as NodeResult;
-					}
-
-					const finishedAt = new Date();
-					await this.prisma.task.update({
-						where: { id: task.id },
-						data: {
-							status: success ? TaskStatus.COMPLETED : TaskStatus.FAILED,
-							finishedAt,
-							durationMs: finishedAt.getTime() - startedAt.getTime(),
-							error: error ? { message: error } : undefined,
-						},
-					});
-
-					// Persist to DB only if not transient
-					if (success && !template?.isTransient && newResult) {
-						try {
-							await this.prisma.node.update({
-								where: { id: node.id },
-								data: { result: newResult as NodeResult },
-							});
-						} catch (updateErr) {
-							if (
-								updateErr instanceof Prisma.PrismaClientKnownRequestError &&
-								updateErr.code === "P2025"
-							) {
-								console.log(
-									`Node ${node.id} removed during processing, skipping result update`,
-								);
-							} else {
-								throw updateErr;
-							}
-						}
-					}
-				} catch (err: unknown) {
-					console.log({ err });
-					const finishedAt = new Date();
-					await this.prisma.task.update({
-						where: { id: task.id },
-						data: {
-							status: TaskStatus.FAILED,
-							finishedAt,
-							durationMs: finishedAt.getTime() - startedAt.getTime(),
-							error:
-								err instanceof Error
-									? { message: err.message }
-									: { message: "Unknown error" },
-						},
-					});
-				}
+				await this.processTask(task.id, data, isExplicitlySelected);
 			}
 
 			const batchFinishedAt = new Date();

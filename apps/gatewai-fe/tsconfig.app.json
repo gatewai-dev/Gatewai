@@ -23,5 +23,5 @@
 			"@/*": ["./src/*"]
 		}
 	},
-	"include": ["src", "shared"]
+	"include": ["src", "shared", "backend/src/tasks/batch-recovery.ts"]
 }

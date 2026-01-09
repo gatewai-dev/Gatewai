@@ -4,6 +4,7 @@ import { cors } from "hono/cors";
 import { logger } from "hono/logger";
 import { ENV_CONFIG } from "./config.js";
 import { v1Router } from "./routes/v1/index.js";
+import { BatchRecovery } from "./tasks/batch-recovery.js";
 
 console.log(process.env);
 
@@ -33,5 +34,8 @@ serve(
 		console.log(`Server is running on http://localhost:${info.port}`);
 	},
 );
+
+const batchRecovery = new BatchRecovery();
+batchRecovery.resumeDanglingBatches();
 
 export type AppType = typeof app;
