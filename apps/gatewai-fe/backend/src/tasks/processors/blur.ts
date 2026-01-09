@@ -5,7 +5,6 @@ import type {
 	FileData,
 	NodeResult,
 } from "@gatewai/types";
-import { logImage } from "../../media-logger.js";
 import {
 	applyBlur,
 	bufferToDataUrl,
@@ -34,7 +33,7 @@ const blurProcessor: NodeProcessor = async ({ node, data }) => {
 		const dimensions = getImageDimensions(processedBuffer);
 		const mimeType = getMimeType(imageInput);
 		const dataUrl = bufferToDataUrl(processedBuffer, mimeType);
-		logImage(processedBuffer, undefined, node.id);
+
 		// Build new result (similar to LLM)
 		const outputHandle = data.handles.find(
 			(h) => h.nodeId === node.id && h.type === "Output",
