@@ -1,7 +1,6 @@
 import {
 	type Canvas,
 	type Node,
-	Prisma,
 	type PrismaClient,
 	type Task,
 	type TaskBatch,
