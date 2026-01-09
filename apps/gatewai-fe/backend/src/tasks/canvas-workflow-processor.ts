@@ -12,6 +12,7 @@ import {
 	type CanvasCtxData,
 	GetCanvasEntities,
 } from "../repositories/canvas.js";
+import { assertIsError } from "../utils/misc.js";
 import { nodeProcessors } from "./processors/index.js";
 
 export class NodeWFProcessor {
@@ -318,8 +319,9 @@ export class NodeWFProcessor {
 									failed.add(nodeId);
 								}
 							} catch (e) {
+								assertIsError(e);
 								failed.add(nodeId);
-								logger.error(`[Workflow] Task failed: ${nodeId}`, e);
+								logger.error(`[Workflow] Task failed: ${nodeId}: ${e.message}`);
 							}
 						}
 						executing.delete(nodeId);
@@ -327,7 +329,8 @@ export class NodeWFProcessor {
 				);
 			}
 		} catch (err) {
-			logger.error("[Workflow] Critical background failure", err);
+			assertIsError(err);
+			logger.error(`[Workflow] Critical background failure: ${err.message}`);
 		} finally {
 			await this.prisma.taskBatch.update({
 				where: { id: batchId },
