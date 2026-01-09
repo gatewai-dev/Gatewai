@@ -4,6 +4,7 @@ import {
 	Assets,
 	BlurFilter,
 	Container,
+	Filter,
 	Graphics,
 	type IRenderer,
 	Sprite,
@@ -40,8 +41,9 @@ export class FrontendPixiService extends BasePixiService {
 	 * Override to provide statically imported Pixi modules
 	 * This avoids dynamic import issues with Vite
 	 */
-	protected getPixiModules() {
+	protected async getPixiModules() {
 		return {
+			Filter,
 			Sprite,
 			Container,
 			Graphics,

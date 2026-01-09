@@ -5,12 +5,13 @@ import type {
 	Application,
 	BlurFilter,
 	Container,
+	Filter,
 	Graphics,
 	IRenderer,
 	Sprite,
 	Texture,
 } from "pixi.js";
-import { ModulateFilter } from "./filters/modulate";
+import { BuildModualteFilter } from "./filters/modulate";
 
 export interface PixiResource {
 	app: Application;
@@ -19,7 +20,7 @@ export interface PixiResource {
 
 export abstract class BasePixiService {
 	protected pool: Pool<PixiResource>;
-	protected limit = pLimit(3);
+	protected limit = pLimit(12);
 
 	constructor() {
 		this.pool = createPool(
@@ -31,7 +32,7 @@ export abstract class BasePixiService {
 					this.validateResource(resource),
 			},
 			{
-				max: 4,
+				max: 12,
 				min: 2,
 				testOnBorrow: true,
 			},
@@ -52,6 +53,7 @@ export abstract class BasePixiService {
 		Container: typeof Container;
 		Graphics: typeof Graphics;
 		BlurFilter: typeof BlurFilter;
+		Filter: typeof Filter;
 	}> {
 		// Default implementation uses dynamic import
 		const pixi = await import(/* @vite-ignore */ this.getPixiImport());
@@ -60,6 +62,7 @@ export abstract class BasePixiService {
 			Container: pixi.Container,
 			Graphics: pixi.Graphics,
 			BlurFilter: pixi.BlurFilter,
+			Filter: pixi.Filter,
 		};
 	}
 
@@ -118,11 +121,11 @@ export abstract class BasePixiService {
 			const texture = await this.loadTexture(imageUrl);
 			if (signal?.aborted) throw new DOMException("Cancelled", "AbortError");
 
-			const { Sprite } = await this.getPixiModules();
+			const { Sprite, Filter } = await this.getPixiModules();
 			const sprite = new Sprite(texture);
 			app.renderer.resize(sprite.width, sprite.height);
-
-			const filter = new ModulateFilter(config);
+			const FilterClass = BuildModualteFilter(Filter);
+			const filter = new FilterClass(config);
 			sprite.filters = [filter];
 
 			app.stage.addChild(sprite);
