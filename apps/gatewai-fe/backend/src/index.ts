@@ -3,6 +3,7 @@ import { Hono } from "hono";
 import { cors } from "hono/cors";
 import { logger } from "hono/logger";
 import { ENV_CONFIG } from "./config.js";
+import { logger as appLogger } from "./logger.js";
 import { v1Router } from "./routes/v1/index.js";
 import { BatchRecovery } from "./tasks/batch-recovery.js";
 
@@ -31,7 +32,7 @@ serve(
 		port: ENV_CONFIG.PORT,
 	},
 	(info) => {
-		console.log(`Server is running on http://localhost:${info.port}`);
+		appLogger.info(`Server is running on http://localhost:${info.port}`);
 	},
 );
 
