@@ -1,27 +1,17 @@
-import fs from "node:fs/promises";
 import path from "node:path";
 import { fileURLToPath } from "node:url";
 import { DataType } from "@gatewai/db";
-import type {
-	FileData,
-	Output,
-	PaintNodeConfig,
-	PaintResult,
-} from "@gatewai/types";
-import sharp from "sharp";
-import { logger } from "../../logger.js";
-import { logImage } from "../../media-logger.js";
 import {
-	bufferToDataUrl,
-	getImageBuffer,
-	getImageDimensions,
-	getMimeType,
-} from "../../utils/image.js";
+	type FileData,
+	type Output,
+	PaintNodeConfigSchema,
+	type PaintResult,
+} from "@gatewai/types";
+import { logger } from "../../logger.js";
+import { backendPixiService } from "../../media/pixi-processor.js";
+import { ResolveFileDataUrl } from "../../utils/misc.js";
 import { getInputValue } from "../resolvers.js";
 import type { NodeProcessor } from "./types.js";
-
-const __filename = fileURLToPath(import.meta.url);
-const __dirname = path.dirname(__filename);
 
 const paintProcessor: NodeProcessor = async ({ node, data }) => {
 	try {
@@ -32,16 +22,7 @@ const paintProcessor: NodeProcessor = async ({ node, data }) => {
 			label: "Background Image",
 		})?.data as FileData | null;
 
-		const paintConfig = node.config as PaintNodeConfig;
-		const { backgroundColor = "#000", width, height, paintData } = paintConfig;
-
-		// Get mask from node's existing result (from painting interaction)
-		const existingResult = node.result as unknown as PaintResult;
-		const currentOutput =
-			existingResult?.outputs?.[existingResult.selectedOutputIndex ?? 0];
-		const maskItem = currentOutput?.items?.find(
-			(item) => item.type === DataType.Mask,
-		);
+		const paintConfig = PaintNodeConfigSchema.parse(node.config);
 
 		// Get output handles
 		const outputHandles = data.handles.filter(
@@ -58,114 +39,18 @@ const paintProcessor: NodeProcessor = async ({ node, data }) => {
 			return { success: false, error: "Missing required output handles" };
 		}
 
-		let maskBuffer: Buffer | null = null;
-		let maskMetadata: sharp.Metadata | null = null;
-		if (paintData) {
-			const maskDataUrl = paintData;
-			const maskBase64 = maskDataUrl.split(";base64,").pop() ?? "";
-			maskBuffer = Buffer.from(maskBase64, "base64");
-			maskMetadata = await sharp(maskBuffer).metadata();
-		}
-
-		// Determine dimensions and background buffer
-		let dimensions: { width: number; height: number };
-		let backgroundBuffer: Buffer;
-		let mimeType = "image/png"; // Default to PNG for created images
+		let imageUrl: string | undefined;
 
 		if (backgroundInput) {
-			backgroundBuffer = await getImageBuffer(backgroundInput);
-			mimeType = getMimeType(backgroundInput);
-			const metadata = await sharp(backgroundBuffer).metadata();
-			if (!metadata.width || !metadata.height) {
-				return { success: false, error: "Invalid background image dimensions" };
-			}
-			dimensions = { width: metadata.width, height: metadata.height };
-		} else {
-			if (width !== undefined && height !== undefined) {
-				dimensions = { width, height };
-			} else if (maskBuffer && maskMetadata?.width && maskMetadata?.height) {
-				dimensions = { width: maskMetadata.width, height: maskMetadata.height };
-			} else {
-				return {
-					success: false,
-					error:
-						"No dimensions available: no background input, no config dimensions, and no mask",
-				};
-			}
-
-			// Create solid color background buffer
-			backgroundBuffer = await sharp({
-				create: {
-					width: dimensions.width,
-					height: dimensions.height,
-					channels: 4,
-					background: backgroundColor,
-				},
-			})
-				.png()
-				.toBuffer();
+			imageUrl = ResolveFileDataUrl(backgroundInput);
 		}
 
-		// Process mask: resize if necessary or create transparent if no mask
-		let processedMaskBuffer: Buffer;
-		if (maskBuffer) {
-			processedMaskBuffer = maskBuffer;
-			if (
-				maskMetadata?.width !== dimensions.width ||
-				maskMetadata?.height !== dimensions.height
-			) {
-				processedMaskBuffer = await sharp(maskBuffer)
-					.resize(dimensions.width, dimensions.height)
-					.toBuffer();
-			}
-		} else {
-			// Create transparent mask
-			processedMaskBuffer = await sharp({
-				create: {
-					width: dimensions.width,
-					height: dimensions.height,
-					channels: 4,
-					background: { r: 0, g: 0, b: 0, alpha: 0 },
-				},
-			})
-				.png()
-				.toBuffer();
-		}
-
-		// Composite mask over background (assuming mask has alpha for blending)
-		const compositedBuffer = await sharp(backgroundBuffer)
-			.composite([{ input: processedMaskBuffer, blend: "over" }])
-			.toBuffer();
-
-		// Save images for debug if NODE_ENV is development
-		const debugDir = path.join(__dirname, "debug_images");
-		logger.info(`Saving image output for debug to :${debugDir}`);
-		await fs.mkdir(debugDir, { recursive: true });
-
-		const timestamp = Date.now();
-		const nodeId = node.id;
-
-		await sharp(backgroundBuffer).toFile(
-			path.join(debugDir, `background_${nodeId}_${timestamp}.png`),
-		);
-		await sharp(processedMaskBuffer).toFile(
-			path.join(debugDir, `mask_${nodeId}_${timestamp}.png`),
-		);
-		await sharp(compositedBuffer).toFile(
-			path.join(debugDir, `composited_${nodeId}_${timestamp}.png`),
+		const { imageWithMask, onlyMask } = await backendPixiService.processMask(
+			paintConfig,
+			imageUrl,
+			paintConfig.paintData,
 		);
 
-		// Convert buffers to data URLs
-		const imageDataUrl = bufferToDataUrl(compositedBuffer, mimeType);
-		const imageDimensions = getImageDimensions(compositedBuffer);
-		logImage(compositedBuffer, ".png", node.id);
-		const processedMaskDataUrl = bufferToDataUrl(
-			processedMaskBuffer,
-			"image/png",
-		);
-		const maskDimensions = getImageDimensions(processedMaskBuffer);
-
-		// Build new result (cloning existing to preserve history)
 		const newResult = structuredClone(
 			node.result as unknown as PaintResult,
 		) ?? {
@@ -177,13 +62,13 @@ const paintProcessor: NodeProcessor = async ({ node, data }) => {
 			items: [
 				{
 					type: DataType.Image,
-					data: { processData: { dataUrl: imageDataUrl, ...imageDimensions } },
+					data: { processData: imageWithMask },
 					outputHandleId: imageOutputHandle.id,
 				},
 				{
 					type: DataType.Mask,
 					data: {
-						processData: { dataUrl: processedMaskDataUrl, ...maskDimensions },
+						processData: onlyMask,
 					},
 					outputHandleId: maskOutputHandle.id,
 				},

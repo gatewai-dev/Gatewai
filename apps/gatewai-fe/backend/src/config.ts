@@ -3,6 +3,7 @@ import { config } from "dotenv";
 config();
 
 type EnvConfig = {
+	BACKEND_URL: string;
 	PORT: number;
 	GEMINI_API_KEY: string;
 	GCS_ASSETS_BUCKET: string;
@@ -29,7 +30,12 @@ if (!process.env.GCS_ASSETS_BUCKET) {
 	throw new Error("Missing GCS_ASSETS_BUCKET env variable");
 }
 
+if (!process.env.BACKEND_URL) {
+	throw new Error("Missing BACKEND_URL env variable");
+}
+
 export const ENV_CONFIG: EnvConfig = {
+	BACKEND_URL: process.env.BACKEND_URL,
 	PORT: Number(process.env.PORT),
 	GEMINI_API_KEY: process.env.GEMINI_API_KEY,
 	GCS_ASSETS_BUCKET: process.env.GCS_ASSETS_BUCKET,

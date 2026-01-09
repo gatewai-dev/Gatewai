@@ -24,6 +24,25 @@ export const DATA_TYPE_EXTENSIONS: Record<DataType, string> = {
 	Boolean: "txt",
 };
 
+// MIME type mapping
+const MIME_TYPES: Record<string, string> = {
+	png: "image/png",
+	jpg: "image/jpeg",
+	jpeg: "image/jpeg",
+	gif: "image/gif",
+	webp: "image/webp",
+	svg: "image/svg+xml",
+	mp4: "video/mp4",
+	webm: "video/webm",
+	mov: "video/quicktime",
+	mp3: "audio/mpeg",
+	wav: "audio/wav",
+	ogg: "audio/ogg",
+	pdf: "application/pdf",
+	json: "application/json",
+	txt: "text/plain",
+};
+
 const BACKEND_URL = import.meta.env.VITE_BASE_URL;
 
 /**
@@ -49,25 +68,6 @@ function GetAssetEndpoint(fileAsset: FileAsset) {
 function GetFontAssetUrl(name: string) {
 	return `${BACKEND_URL}/api/v1/fonts/load/${name}`;
 }
-
-// MIME type mapping
-const MIME_TYPES: Record<string, string> = {
-	png: "image/png",
-	jpg: "image/jpeg",
-	jpeg: "image/jpeg",
-	gif: "image/gif",
-	webp: "image/webp",
-	svg: "image/svg+xml",
-	mp4: "video/mp4",
-	webm: "video/webm",
-	mov: "video/quicktime",
-	mp3: "audio/mpeg",
-	wav: "audio/wav",
-	ogg: "audio/ogg",
-	pdf: "application/pdf",
-	json: "application/json",
-	txt: "text/plain",
-};
 
 const extractExtension = (url: string): string | null => {
 	try {

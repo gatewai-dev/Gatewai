@@ -1,13 +1,15 @@
+import assert from "node:assert";
 import { DataType } from "@gatewai/db";
-import type {
-	BlurNodeConfig,
-	BlurResult,
-	FileData,
-	NodeResult,
+import {
+	BlurNodeConfigSchema,
+	type BlurResult,
+	type FileData,
+	type NodeResult,
 } from "@gatewai/types";
 import parseDataUrl from "data-urls";
 import { backendPixiService } from "../../media/pixi-processor.js";
 import { logImage } from "../../media-logger.js";
+import { ResolveFileDataUrl } from "../../utils/misc.js";
 import { getInputValue } from "../resolvers.js";
 import type { NodeProcessor } from "./types.js";
 
@@ -18,12 +20,14 @@ const blurProcessor: NodeProcessor = async ({ node, data }) => {
 			label: "Image",
 		})?.data as FileData | null;
 
-		const imageUrl =
-			imageInput?.entity?.signedUrl ?? imageInput?.processData?.dataUrl;
+		assert(imageInput);
+		const imageUrl = ResolveFileDataUrl(imageInput);
+
 		if (!imageUrl) {
 			return { success: false, error: "No URL" };
 		}
-		const blurConfig = node.config as BlurNodeConfig;
+
+		const blurConfig = BlurNodeConfigSchema.parse(node.config);
 		const blurSize = blurConfig.size ?? 0;
 
 		if (!imageInput) {
@@ -37,7 +41,7 @@ const blurProcessor: NodeProcessor = async ({ node, data }) => {
 				blurSize,
 			},
 		);
-		console.log("Processed blur");
+
 		const parsed = parseDataUrl(dataUrl);
 		if (parsed?.body.buffer) {
 			logImage(Buffer.from(parsed?.body.buffer), ".png", node.id);

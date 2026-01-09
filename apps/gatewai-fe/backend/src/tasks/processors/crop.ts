@@ -1,47 +1,41 @@
+import assert from "node:assert";
 import { DataType } from "@gatewai/db";
-import type {
-	CropNodeConfig,
-	FileData,
-	NodeResult,
-	Output,
-	OutputItem,
-} from "@gatewai/types";
 import {
-	applyCrop,
-	bufferToDataUrl,
-	getImageBuffer,
-	getImageDimensions,
-	getMimeType,
-} from "../../utils/image.js";
+	type CropNodeConfig,
+	CropNodeConfigSchema,
+	type FileData,
+	type NodeResult,
+	type Output,
+	type OutputItem,
+} from "@gatewai/types";
+import { backendPixiService } from "../../media/pixi-processor.js";
+import { ResolveFileDataUrl } from "../../utils/misc.js";
 import { getInputValue } from "../resolvers.js";
 import type { NodeProcessor } from "./types.js";
 
 const cropProcessor: NodeProcessor = async ({ node, data }) => {
 	try {
-		console.log("PROCESSING CROP");
 		const imageInput = getInputValue(data, node.id, true, {
 			dataType: DataType.Image,
 			label: "Image",
 		})?.data as FileData | null;
-		const cropConfig = node?.config as CropNodeConfig;
+		const cropConfig = CropNodeConfigSchema.parse(node?.config);
 		const { leftPercentage, topPercentage, widthPercentage, heightPercentage } =
 			cropConfig;
 
-		if (!imageInput) {
-			return { success: false, error: "No image input provided" };
-		}
+		assert(imageInput);
+		const imageUrl = ResolveFileDataUrl(imageInput);
+		assert(imageUrl);
 
-		const buffer = await getImageBuffer(imageInput);
-		const processedBuffer = await applyCrop(
-			buffer,
-			leftPercentage,
-			topPercentage,
-			widthPercentage,
-			heightPercentage,
+		const { dataUrl, ...dimensions } = await backendPixiService.processCrop(
+			imageUrl,
+			{
+				leftPercentage,
+				topPercentage,
+				widthPercentage,
+				heightPercentage,
+			},
 		);
-		const mimeType = getMimeType(imageInput);
-		const dimensions = getImageDimensions(processedBuffer);
-		const dataUrl = bufferToDataUrl(processedBuffer, mimeType);
 
 		// Build new result (similar to LLM)
 		const outputHandle = data.handles.find(
