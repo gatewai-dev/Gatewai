@@ -3,7 +3,7 @@ import type { Node } from "@gatewai/db";
 import sharp from "sharp";
 import { logger } from "./logger.js";
 
-async function logMedia(
+async function logImage(
 	buffer: Buffer,
 	extension: `.${string}` = ".png",
 	nodeId?: Node["id"],
@@ -23,4 +23,4 @@ async function logMedia(
 	}
 }
 
-export { logMedia };
+export { logImage };

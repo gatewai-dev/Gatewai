@@ -5,7 +5,7 @@ import type {
 	NodeResult,
 	Output,
 } from "@gatewai/types";
-import { logMedia } from "../../media-logger.js";
+import { logImage } from "../../media-logger.js";
 import {
 	applyModulate,
 	bufferToDataUrl,
@@ -34,7 +34,7 @@ const modulateProcessor: NodeProcessor = async ({ node, data }) => {
 		const mimeType = getMimeType(imageInput);
 		const dimensions = getImageDimensions(processedBuffer);
 		const dataUrl = bufferToDataUrl(processedBuffer, mimeType);
-		logMedia(processedBuffer, undefined, node.id);
+		logImage(processedBuffer, undefined, node.id);
 		// Build new result (similar to LLM)
 		const outputHandle = data.handles.find(
 			(h) => h.nodeId === node.id && h.type === "Output",

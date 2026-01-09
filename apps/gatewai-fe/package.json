@@ -127,6 +127,7 @@
 		"@types/react": "^19.1.10",
 		"@types/react-dom": "^19.1.7",
 		"@types/three": "^0.181.0",
+		"@types/wav": "^1.0.4",
 		"@types/webfontloader": "^1.6.38",
 		"@vitejs/plugin-react-swc": "^4.0.0",
 		"globals": "^16.3.0",

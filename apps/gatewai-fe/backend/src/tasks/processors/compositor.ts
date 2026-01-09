@@ -16,7 +16,7 @@ import {
 	loadImage,
 	registerFont,
 } from "canvas";
-import { logMedia } from "../../media-logger.js";
+import { logImage } from "../../media-logger.js";
 import {
 	bufferToDataUrl,
 	getImageBuffer,
@@ -246,7 +246,7 @@ const compositorProcessor: NodeProcessor = async ({ node, data }) => {
 		}
 
 		const resultBuffer = canvas.toBuffer("image/png");
-		logMedia(resultBuffer, undefined, node.id);
+		logImage(resultBuffer, undefined, node.id);
 
 		const dimensions = getImageDimensions(resultBuffer);
 		const dataUrl = bufferToDataUrl(resultBuffer, "image/png");

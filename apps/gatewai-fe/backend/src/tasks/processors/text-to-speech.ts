@@ -15,7 +15,6 @@ import { generateSignedUrl, uploadToGCS } from "../../utils/storage.js";
 import { getInputValue } from "../resolvers.js";
 import type { NodeProcessor } from "./types.js";
 
-// Helper to convert the Gemini PCM stream into a WAV Buffer
 async function encodeWavBuffer(pcmBuffer: Buffer): Promise<Buffer> {
 	return new Promise((resolve, reject) => {
 		const writer = new wav.Writer({
@@ -89,13 +88,10 @@ const textToSpeechProcessor: NodeProcessor = async ({ node, data }) => {
 			return { success: false, error: "No audio data returned from Gemini." };
 		}
 
-		// 1. Convert base64 to raw PCM buffer
 		const pcmBuffer = Buffer.from(rawPcmData, "base64");
 
-		// 2. Wrap PCM in a WAV container so players/metadata-readers can read it
 		const wavBuffer = await encodeWavBuffer(pcmBuffer);
 
-		// 3. Extract metadata from the now-valid WAV buffer
 		const metadata = await mm.parseBuffer(wavBuffer, "audio/wav");
 		const duration = metadata.format.duration ?? 0;
 
@@ -104,12 +100,11 @@ const textToSpeechProcessor: NodeProcessor = async ({ node, data }) => {
 		const randId = randomUUID();
 		const fileName = `text_to_speech_${randId}${extension}`;
 		const key = `assets/${fileName}`;
-		const contentType = "audio/wav"; // Changed from video/wav
+		const contentType = "audio/wav";
 		const bucket = ENV_CONFIG.GCS_ASSETS_BUCKET;
 
 		await uploadToGCS(wavBuffer, key, contentType, bucket);
 
-		// ... [Database and Signed URL logic remains the same] ...
 		const expiresIn = 3600 * 24 * 6.9;
 		const signedUrl = await generateSignedUrl(key, bucket, expiresIn);
 		const signedUrlExp = new Date(Date.now() + expiresIn * 1000);

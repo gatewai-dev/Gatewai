@@ -9,7 +9,7 @@ import type {
 } from "@gatewai/types";
 import sharp from "sharp";
 import { logger } from "../../logger.js";
-import { logMedia } from "../../media-logger.js";
+import { logImage } from "../../media-logger.js";
 import {
 	bufferToDataUrl,
 	getImageBuffer,
@@ -154,7 +154,7 @@ const paintProcessor: NodeProcessor = async ({ node, data }) => {
 		// Convert buffers to data URLs
 		const imageDataUrl = bufferToDataUrl(compositedBuffer, mimeType);
 		const imageDimensions = getImageDimensions(compositedBuffer);
-		logMedia(compositedBuffer, ".png", node.id);
+		logImage(compositedBuffer, ".png", node.id);
 		const processedMaskDataUrl = bufferToDataUrl(
 			processedMaskBuffer,
 			"image/png",
