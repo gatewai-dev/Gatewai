@@ -30,7 +30,7 @@ ImagePreview.displayName = "ImagePreview";
 
 const PreviewNodeComponent = memo((props: NodeProps<PreviewNode>) => {
 	const { result } = useNodeResult(props.id);
-	const [showMarkdown, setShowMarkdown] = useState(false);
+	const [showMarkdown, setShowMarkdown] = useState(true);
 
 	if (!result) {
 		return (

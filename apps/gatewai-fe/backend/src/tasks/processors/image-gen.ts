@@ -5,8 +5,9 @@ import {
 	ImageGenNodeConfigSchema,
 	type ImageGenResult,
 } from "@gatewai/types";
-import { GoogleGenAI, type Part } from "@google/genai";
+import type { Part } from "@google/genai";
 import { ENV_CONFIG } from "../../config.js";
+import { genAI } from "../../genai.js";
 import { logger } from "../../logger.js";
 import { getImageDimensions } from "../../utils/image.js";
 import { generateSignedUrl, uploadToGCS } from "../../utils/storage.js";
@@ -15,8 +16,6 @@ import type { NodeProcessor } from "./types.js";
 
 const imageGenProcessor: NodeProcessor = async ({ node, data }) => {
 	try {
-		const client = new GoogleGenAI({ apiKey: process.env.GOOGLE_API_KEY });
-
 		const userPrompt = getInputValue(data, node.id, true, {
 			dataType: DataType.Text,
 			label: "Prompt",
@@ -73,7 +72,7 @@ const imageGenProcessor: NodeProcessor = async ({ node, data }) => {
 		const config = ImageGenNodeConfigSchema.parse(node.config);
 
 		// 2. Execute Image Generation using generateContent
-		const response = await client.models.generateContent({
+		const response = await genAI.models.generateContent({
 			model: config.model,
 			contents: [
 				{

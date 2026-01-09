@@ -4,7 +4,7 @@ import remarkGfm from "remark-gfm";
 
 const MarkdownRenderer = memo(({ markdown }: { markdown: string }) => {
 	return (
-		<div className="prose-xs prose-hr:my-3 word whitespace-pre">
+		<div className="prose-xs prose-hr:my-3 whitespace-pre-wrap">
 			<Markdown remarkPlugins={[remarkGfm]}>{markdown}</Markdown>
 		</div>
 	);

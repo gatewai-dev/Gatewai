@@ -48,7 +48,6 @@ const TextMergerNodeConfigComponent = memo(
 
 		const currentJoin = form.watch("join");
 
-		// UI State for "Custom" mode
 		const [isCustomMode, setIsCustomMode] = useState(() => {
 			const initialVal = nodeConfig?.join ?? " ";
 			return !PRESETS.some(
@@ -58,11 +57,6 @@ const TextMergerNodeConfigComponent = memo(
 			);
 		});
 
-		/**
-		 * FIX 1: Prevent Recursive Resets
-		 * We only reset the form if the external node.config is strictly
-		 * different from the current form values.
-		 */
 		useEffect(() => {
 			if (!node?.config) return;
 
@@ -75,13 +69,8 @@ const TextMergerNodeConfigComponent = memo(
 			}
 		}, [node.config, form]);
 
-		/**
-		 * FIX 2: Stable Update Handler
-		 * Using a subscription is fine, but we ensure the callback is stable.
-		 */
 		useEffect(() => {
 			const subscription = form.watch((value, { name }) => {
-				// If the change came from a reset (externally), don't push it back
 				if (!name) return;
 
 				onNodeConfigUpdate({
@@ -161,7 +150,7 @@ const TextMergerNodeConfigComponent = memo(
 										<FormControl>
 											<Textarea
 												{...field}
-												placeholder="Enter custom separator (e.g. ' | ' or '---')"
+												placeholder="Enter custom separator,    Press Enter to add a newline"
 												className="bg-card font-mono text-sm resize-none"
 											/>
 										</FormControl>
@@ -174,7 +163,7 @@ const TextMergerNodeConfigComponent = memo(
 
 				<div className="space-y-3 pt-2">
 					<Label className="text-[10px] uppercase tracking-widest text-muted-foreground font-bold">
-						Handbook Preview
+						Seperator preview
 					</Label>
 					<div className="flex flex-wrap gap-1.5">
 						{exampleInputs.map((input) => (

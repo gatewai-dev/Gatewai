@@ -36,6 +36,7 @@ serve(
 	},
 );
 
+// Check for dangling canvas workflow runs and re-run incomplete tasks
 const batchRecovery = new BatchRecovery();
 batchRecovery.resumeDanglingBatches();
 
