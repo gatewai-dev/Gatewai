@@ -289,12 +289,7 @@ export async function SEED_createNodeTemplates(prisma: PrismaClient) {
 				create: [
 					{
 						type: HandleType.Output,
-						dataTypes: [
-							DataType.Audio,
-							DataType.Image,
-							DataType.Video,
-							DataType.File,
-						],
+						dataTypes: [DataType.Audio, DataType.Image, DataType.Video],
 						label: "File",
 					},
 				],
@@ -322,7 +317,6 @@ export async function SEED_createNodeTemplates(prisma: PrismaClient) {
 							DataType.Image,
 							DataType.Video,
 							DataType.Audio,
-							DataType.Mask,
 						],
 						required: true,
 						label: "Input",
@@ -404,7 +398,7 @@ export async function SEED_createNodeTemplates(prisma: PrismaClient) {
 					},
 					{
 						type: HandleType.Output,
-						dataTypes: [DataType.Mask],
+						dataTypes: [DataType.Image],
 						label: "Mask",
 					},
 				],

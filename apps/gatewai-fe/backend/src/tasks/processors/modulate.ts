@@ -31,10 +31,10 @@ const modulateProcessor: NodeProcessor = async ({ node, data }) => {
 			modulateConfig,
 		);
 
-		const parsed = parseDataUrl(dataUrl);
-		if (parsed?.body.buffer) {
-			logImage(Buffer.from(parsed?.body.buffer), ".png", node.id);
-		}
+		// const parsed = parseDataUrl(dataUrl);
+		// if (parsed?.body.buffer) {
+		// 	logImage(Buffer.from(parsed?.body.buffer), ".png", node.id);
+		// }
 		// Build new result (similar to LLM)
 		const outputHandle = data.handles.find(
 			(h) => h.nodeId === node.id && h.type === "Output",

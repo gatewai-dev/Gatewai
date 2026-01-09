@@ -47,7 +47,7 @@ const audioUnderstandingProcessor: NodeProcessor = async ({ node, data }) => {
 		}
 
 		const response = await genAI.models.generateContent({
-			model: nodeConfig.model || "gemini-2.5-flash",
+			model: nodeConfig.model,
 			contents: createUserContent([
 				createPartFromUri(audioFile.uri, audioFile.mimeType),
 				userPrompt,

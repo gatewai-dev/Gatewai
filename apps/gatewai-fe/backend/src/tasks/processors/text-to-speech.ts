@@ -74,7 +74,7 @@ const textToSpeechProcessor: NodeProcessor = async ({ node, data }) => {
 		}
 
 		const response = await genAI.models.generateContent({
-			model: nodeConfig.model || "gemini-2.5-flash-tts", // Ensure compatible model
+			model: nodeConfig.model, // Ensure compatible model
 			contents: [{ parts: [{ text: userPrompt }] }],
 			config: {
 				responseModalities: ["AUDIO"],
@@ -98,8 +98,8 @@ const textToSpeechProcessor: NodeProcessor = async ({ node, data }) => {
 		const extension = ".wav";
 
 		const randId = randomUUID();
-		const fileName = `text_to_speech_${randId}${extension}`;
-		const key = `assets/${fileName}`;
+		const fileName = `${randId}${extension}`;
+		const key = `assets/${node.type}/${fileName}`;
 		const contentType = "audio/wav";
 		const bucket = ENV_CONFIG.GCS_ASSETS_BUCKET;
 

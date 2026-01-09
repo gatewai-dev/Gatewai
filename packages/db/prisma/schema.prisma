@@ -46,8 +46,6 @@ enum DataType {
   Image
   Video
   Audio
-  File
-  Mask
 }
 
 enum TaskStatus {
@@ -245,6 +243,9 @@ model Task {
 
   batch          TaskBatch    @relation(fields: [batchId], references: [id], onDelete: Cascade)
   batchId        String
+
+  // Storing result for recovery - This field is not being used in frontend.
+  result          Json?
 
   @@map("task")
 }

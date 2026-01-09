@@ -99,7 +99,7 @@ const renderTextLayer = (
 	width: number,
 ) => {
 	const fontSize = layer.fontSize ?? 24;
-	const fontFamily = layer.fontFamily ?? "Geist";
+	const fontFamily = layer.fontFamily ?? "Inter";
 	const fill = layer.fill ?? "#ffffff";
 	const align = layer.align ?? "left";
 	const lineHeight = (layer.lineHeight ?? 1) * fontSize;

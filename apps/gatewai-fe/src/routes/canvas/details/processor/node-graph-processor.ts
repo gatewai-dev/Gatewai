@@ -1,17 +1,17 @@
 import { EventEmitter } from "node:events";
 import type { DataType, NodeType } from "@gatewai/db";
-import type {
-	BlurNodeConfig,
-	CompositorNodeConfig,
-	CropNodeConfig,
-	FileData,
-	ModulateNodeConfig,
-	NodeResult,
-	PaintNodeConfig,
-	PaintResult,
-	ResizeNodeConfig,
-	TextMergerNodeConfig,
-	VideoCompositorNodeConfig,
+import {
+	type BlurNodeConfig,
+	type CompositorNodeConfig,
+	type CropNodeConfig,
+	type FileData,
+	type ModulateNodeConfig,
+	type NodeResult,
+	type PaintNodeConfig,
+	type PaintResult,
+	type ResizeNodeConfig,
+	TextMergerNodeConfigSchema,
+	type VideoCompositorNodeConfig,
 } from "@gatewai/types";
 import type { EdgeEntityType } from "@/store/edges";
 import type { HandleEntityType } from "@/store/handles";

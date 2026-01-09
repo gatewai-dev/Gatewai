@@ -5,7 +5,6 @@ import path from "node:path";
 import { fileURLToPath } from "node:url";
 import { DataType, prisma } from "@gatewai/db";
 import {
-	type FileData,
 	type OutputItem,
 	VideoGenExtendNodeConfigSchema,
 	type VideoGenResult,
@@ -13,11 +12,7 @@ import {
 import { ENV_CONFIG } from "../../config.js";
 import { genAI } from "../../genai.js";
 import { logger } from "../../logger.js";
-import {
-	generateSignedUrl,
-	getFromGCS,
-	uploadToGCS,
-} from "../../utils/storage.js";
+import { generateSignedUrl, uploadToGCS } from "../../utils/storage.js";
 import { getInputValue } from "../resolvers.js";
 import type { NodeProcessor } from "./types.js";
 

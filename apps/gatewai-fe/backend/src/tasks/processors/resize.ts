@@ -26,16 +26,15 @@ const resizeProcessor: NodeProcessor = async ({ node, data }) => {
 		assert(imageInput);
 		const imageUrl = ResolveFileDataUrl(imageInput);
 		assert(imageUrl);
-
 		const processResult = await backendPixiService.processResize(imageUrl, {
 			width: resizeConfig.width,
 			height: resizeConfig.height,
 		});
 
-		const parsed = parseDataUrl(processResult.dataUrl);
-		if (parsed?.body.buffer) {
-			logImage(Buffer.from(parsed?.body.buffer), ".png", node.id);
-		}
+		// const parsed = parseDataUrl(processResult.dataUrl);
+		// if (parsed?.body.buffer) {
+		// 	logImage(Buffer.from(parsed?.body.buffer), ".png", node.id);
+		// }
 		// Build new result (similar to LLM)
 		const outputHandle = data.handles.find(
 			(h) => h.nodeId === node.id && h.type === "Output",

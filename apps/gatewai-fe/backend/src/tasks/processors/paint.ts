@@ -5,10 +5,8 @@ import {
 	PaintNodeConfigSchema,
 	type PaintResult,
 } from "@gatewai/types";
-import parseDataUrl from "data-urls";
 import { logger } from "../../logger.js";
 import { backendPixiService } from "../../media/pixi-processor.js";
-import { logImage } from "../../media-logger.js";
 import { ResolveFileDataUrl } from "../../utils/misc.js";
 import { getInputValue } from "../resolvers.js";
 import type { NodeProcessor } from "./types.js";
@@ -29,10 +27,10 @@ const paintProcessor: NodeProcessor = async ({ node, data }) => {
 			(h) => h.nodeId === node.id && h.type === "Output",
 		);
 		const imageOutputHandle = outputHandles.find((h) =>
-			h.dataTypes.includes(DataType.Image),
+			h.label.includes("Image"),
 		);
 		const maskOutputHandle = outputHandles.find((h) =>
-			h.dataTypes.includes(DataType.Mask),
+			h.label.includes("Mask"),
 		);
 
 		if (!imageOutputHandle || !maskOutputHandle) {
@@ -58,15 +56,15 @@ const paintProcessor: NodeProcessor = async ({ node, data }) => {
 			selectedOutputIndex: 0,
 		};
 
-		const parsed = parseDataUrl(imageWithMask.dataUrl);
-		if (parsed?.body.buffer) {
-			logImage(Buffer.from(parsed?.body.buffer), ".png", node.id);
-		}
-
-		const parsedMask = parseDataUrl(onlyMask.dataUrl);
-		if (parsedMask?.body.buffer) {
-			logImage(Buffer.from(parsedMask?.body.buffer), ".png", `${node.id}_mask`);
-		}
+		// const parsed = parseDataUrl(imageWithMask.dataUrl);
+		// if (parsed?.body.buffer) {
+		// 	logImage(Buffer.from(parsed?.body.buffer), ".png", node.id);
+		// }
+		//
+		// const parsedMask = parseDataUrl(onlyMask.dataUrl);
+		// if (parsedMask?.body.buffer) {
+		// 	logImage(Buffer.from(parsedMask?.body.buffer), ".png", `${node.id}_mask`);
+		// }
 
 		const newGeneration: Output = {
 			items: [
@@ -76,7 +74,7 @@ const paintProcessor: NodeProcessor = async ({ node, data }) => {
 					outputHandleId: imageOutputHandle.id,
 				},
 				{
-					type: DataType.Mask,
+					type: DataType.Image,
 					data: {
 						processData: onlyMask,
 					},

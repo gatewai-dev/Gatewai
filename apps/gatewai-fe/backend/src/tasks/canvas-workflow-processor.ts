@@ -386,7 +386,6 @@ export class NodeWFProcessor {
 			await this.prisma.taskBatch.update({
 				where: { id: batch.id },
 				data: { finishedAt: batchFinishedAt },
-				include: { tasks: true },
 			});
 		};
 
