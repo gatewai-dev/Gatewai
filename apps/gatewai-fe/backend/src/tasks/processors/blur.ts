@@ -5,6 +5,7 @@ import type {
 	FileData,
 	NodeResult,
 } from "@gatewai/types";
+import { backendPixiService } from "../../media/pixi-processor.js";
 import {
 	applyBlur,
 	bufferToDataUrl,
@@ -21,6 +22,7 @@ const blurProcessor: NodeProcessor = async ({ node, data }) => {
 			dataType: DataType.Image,
 			label: "Image",
 		})?.data as FileData | null;
+
 		const blurConfig = node.config as BlurNodeConfig;
 		const blurAmount = blurConfig.size ?? 0;
 
@@ -30,6 +32,7 @@ const blurProcessor: NodeProcessor = async ({ node, data }) => {
 
 		const buffer = await getImageBuffer(imageInput);
 		const processedBuffer = await applyBlur(buffer, blurAmount);
+		backendPixiService.processBlur();
 		const dimensions = getImageDimensions(processedBuffer);
 		const mimeType = getMimeType(imageInput);
 		const dataUrl = bufferToDataUrl(processedBuffer, mimeType);
