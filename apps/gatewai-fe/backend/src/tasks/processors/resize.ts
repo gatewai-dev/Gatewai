@@ -1,18 +1,16 @@
+import assert from "node:assert";
 import { DataType } from "@gatewai/db";
-import type {
-	FileData,
-	NodeResult,
-	Output,
-	OutputItem,
-	ResizeNodeConfig,
-} from "@gatewai/types";
 import {
-	applyResize,
-	bufferToDataUrl,
-	getImageBuffer,
-	getImageDimensions,
-	getMimeType,
-} from "../../utils/image.js";
+	type FileData,
+	type NodeResult,
+	type Output,
+	type OutputItem,
+	ResizeNodeConfigSchema,
+} from "@gatewai/types";
+import parseDataUrl from "data-urls";
+import { backendPixiService } from "../../media/pixi-processor.js";
+import { logImage } from "../../media-logger.js";
+import { ResolveFileDataUrl } from "../../utils/misc.js";
 import { getInputValue } from "../resolvers.js";
 import type { NodeProcessor } from "./types.js";
 
@@ -23,20 +21,21 @@ const resizeProcessor: NodeProcessor = async ({ node, data }) => {
 			dataType: DataType.Image,
 			label: "Image",
 		})?.data as FileData | null;
-		const resizeConfig = node?.config as ResizeNodeConfig;
-		const width = resizeConfig.width ?? 0;
-		const height = resizeConfig.height ?? 0;
+		const resizeConfig = ResizeNodeConfigSchema.parse(node.config);
 
-		if (!imageInput) {
-			return { success: false, error: "No image input provided" };
+		assert(imageInput);
+		const imageUrl = ResolveFileDataUrl(imageInput);
+		assert(imageUrl);
+
+		const processResult = await backendPixiService.processResize(imageUrl, {
+			width: resizeConfig.width,
+			height: resizeConfig.height,
+		});
+
+		const parsed = parseDataUrl(processResult.dataUrl);
+		if (parsed?.body.buffer) {
+			logImage(Buffer.from(parsed?.body.buffer), ".png", node.id);
 		}
-
-		const buffer = await getImageBuffer(imageInput);
-		const processedBuffer = await applyResize(buffer, width, height);
-		const mimeType = getMimeType(imageInput);
-		const dataUrl = bufferToDataUrl(processedBuffer, mimeType);
-		const dimensions = getImageDimensions(processedBuffer);
-
 		// Build new result (similar to LLM)
 		const outputHandle = data.handles.find(
 			(h) => h.nodeId === node.id && h.type === "Output",
@@ -55,7 +54,7 @@ const resizeProcessor: NodeProcessor = async ({ node, data }) => {
 			items: [
 				{
 					type: DataType.Image,
-					data: { processData: { dataUrl, ...dimensions } },
+					data: { processData: processResult },
 					outputHandleId: outputHandle.id,
 				} as OutputItem<"Image">,
 			],

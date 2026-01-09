@@ -442,7 +442,7 @@ export async function SEED_createNodeTemplates(prisma: PrismaClient) {
 					},
 				],
 			},
-			defaultConfig: { blurAmount: 0 },
+			defaultConfig: { size: 0 },
 		},
 		{
 			type: NodeType.Modulate,

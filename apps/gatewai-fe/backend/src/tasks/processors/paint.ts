@@ -1,5 +1,3 @@
-import path from "node:path";
-import { fileURLToPath } from "node:url";
 import { DataType } from "@gatewai/db";
 import {
 	type FileData,
@@ -7,8 +5,10 @@ import {
 	PaintNodeConfigSchema,
 	type PaintResult,
 } from "@gatewai/types";
+import parseDataUrl from "data-urls";
 import { logger } from "../../logger.js";
 import { backendPixiService } from "../../media/pixi-processor.js";
+import { logImage } from "../../media-logger.js";
 import { ResolveFileDataUrl } from "../../utils/misc.js";
 import { getInputValue } from "../resolvers.js";
 import type { NodeProcessor } from "./types.js";
@@ -57,6 +57,16 @@ const paintProcessor: NodeProcessor = async ({ node, data }) => {
 			outputs: [],
 			selectedOutputIndex: 0,
 		};
+
+		const parsed = parseDataUrl(imageWithMask.dataUrl);
+		if (parsed?.body.buffer) {
+			logImage(Buffer.from(parsed?.body.buffer), ".png", node.id);
+		}
+
+		const parsedMask = parseDataUrl(onlyMask.dataUrl);
+		if (parsedMask?.body.buffer) {
+			logImage(Buffer.from(parsedMask?.body.buffer), ".png", `${node.id}_mask`);
+		}
 
 		const newGeneration: Output = {
 			items: [

@@ -122,7 +122,7 @@ const TTS_LANGUAGES = [
 // Shared Sub-Schemas
 const colorRegex =
 	/^(#[\da-f]{6}|rgb\(\s*(?:[01]?\d{1,2}|2[0-4]\d|25[0-5])\s*,\s*(?:[01]?\d{1,2}|2[0-4]\d|25[0-5])\s*,\s*(?:[01]?\d{1,2}|2[0-4]\d|25[0-5])\s*\)|rgba\(\s*(?:[01]?\d{1,2}|2[0-4]\d|25[0-5])\s*,\s*(?:[01]?\d{1,2}|2[0-4]\d|25[0-5])\s*,\s*(?:[01]?\d{1,2}|2[0-4]\d|25[0-5])\s*,\s*(?:0(?:\.\d+)?|1(?:\.0)?|\.\d+)\s*\)|hsl\(\s*(?:[0-2]?\d{1,2}|3[0-5]\d|360)\s*,\s*(?:[0-9]?\d|100)%\s*,\s*(?:[0-9]?\d|100)%\s*\))$/i;
-const ColorSchema = z.string().regex(colorRegex).optional();
+const ColorSchema = z.string().optional();
 
 const PercentageSchema = z.number().min(0).max(100);
 
