@@ -1,5 +1,6 @@
 import fs from "node:fs/promises";
 import path from "node:path";
+import { fileURLToPath } from "node:url";
 import { DataType } from "@gatewai/db";
 import type {
 	FileData,
@@ -19,6 +20,9 @@ import {
 import { getInputValue } from "../resolvers.js";
 import type { NodeProcessor } from "./types.js";
 
+const __filename = fileURLToPath(import.meta.url);
+const __dirname = path.dirname(__filename);
+
 const paintProcessor: NodeProcessor = async ({ node, data }) => {
 	try {
 		logger.info(`Processing node ${node.id} of type ${node.type}`);
@@ -29,7 +33,7 @@ const paintProcessor: NodeProcessor = async ({ node, data }) => {
 		})?.data as FileData | null;
 
 		const paintConfig = node.config as PaintNodeConfig;
-		const { backgroundColor = "#000", width, height } = paintConfig;
+		const { backgroundColor = "#000", width, height, paintData } = paintConfig;
 
 		// Get mask from node's existing result (from painting interaction)
 		const existingResult = node.result as unknown as PaintResult;
@@ -56,8 +60,8 @@ const paintProcessor: NodeProcessor = async ({ node, data }) => {
 
 		let maskBuffer: Buffer | null = null;
 		let maskMetadata: sharp.Metadata | null = null;
-		if (maskItem?.data?.processData?.dataUrl) {
-			const maskDataUrl = maskItem.data.processData.dataUrl;
+		if (paintData) {
+			const maskDataUrl = paintData;
 			const maskBase64 = maskDataUrl.split(";base64,").pop() ?? "";
 			maskBuffer = Buffer.from(maskBase64, "base64");
 			maskMetadata = await sharp(maskBuffer).metadata();
