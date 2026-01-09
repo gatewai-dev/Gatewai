@@ -175,6 +175,7 @@ const compositorProcessor: NodeProcessor = async ({ node, data }) => {
 				type,
 				x: 0,
 				y: 0,
+				opacity: 100,
 				rotation: 0,
 				lockAspect: true,
 				blendMode: "normal",

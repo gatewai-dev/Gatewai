@@ -104,7 +104,6 @@ const processCompositor = async (
 					(layerConfig.blendMode as GlobalCompositeOperation) ?? "source-over",
 			});
 
-			// Replicate high-resolution sharpening
 			kText.listening(false);
 			layer.add(kText);
 		}
@@ -112,11 +111,11 @@ const processCompositor = async (
 
 	layer.draw();
 
-	// 4. Extract Result
-	const dataUrl = stage.toDataURL({ pixelRatio: 2 }); // Use pixelRatio for high-res output
+	const dataUrl = stage.toDataURL({ pixelRatio: 2 });
 
 	// Cleanup
 	stage.destroy();
+	container.remove();
 
 	return { dataUrl, width, height };
 };

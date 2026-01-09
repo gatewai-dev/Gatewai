@@ -13,7 +13,7 @@ import {
 	TooltipContent,
 	TooltipTrigger,
 } from "@/components/ui/tooltip";
-import { dataTypeColors } from "@/config";
+import { dataTypeColors } from "@/config/colors";
 import { cn } from "@/lib/utils";
 import { useAppSelector } from "@/store";
 import {
