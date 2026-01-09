@@ -20,7 +20,7 @@ import { GetAssetEndpoint } from "@/utils/file";
 import { processCompositor } from "./image-compositor";
 import { imageStore } from "./image-store";
 import { remotionService } from "./muxer-service";
-import { pixiProcessor } from "./pixi-service";
+import { pixiWorkerService } from "./pixi/pixi-worker.service";
 import type {
 	ConnectedInput,
 	NodeProcessor,
@@ -710,7 +710,7 @@ export class NodeGraphProcessor extends EventEmitter {
 			if (!imageUrl) throw new Error("Missing Input Image");
 
 			const config = node.config as CropNodeConfig;
-			const result = await pixiProcessor.processCrop(
+			const result = await pixiWorkerService.processCrop(
 				imageUrl,
 				{
 					leftPercentage: config.leftPercentage,
@@ -755,7 +755,7 @@ export class NodeGraphProcessor extends EventEmitter {
 
 			if (!maskHandle) throw new Error("Mask output handle missing");
 
-			const { imageWithMask, onlyMask } = await pixiProcessor.processMask(
+			const { imageWithMask, onlyMask } = await pixiWorkerService.processMask(
 				config,
 				imageUrl,
 				maskDataUrl,
@@ -873,7 +873,7 @@ export class NodeGraphProcessor extends EventEmitter {
 			if (!imageUrl) throw new Error("Missing Input Image");
 
 			const config = node.config as BlurNodeConfig;
-			const result = await pixiProcessor.processBlur(
+			const result = await pixiWorkerService.processBlur(
 				imageUrl,
 				{ blurSize: config.size ?? 1 },
 				signal,
@@ -907,7 +907,7 @@ export class NodeGraphProcessor extends EventEmitter {
 			if (!imageUrl) throw new Error("Missing Input Image");
 
 			const config = node.config as ModulateNodeConfig;
-			const result = await pixiProcessor.processModulate(
+			const result = await pixiWorkerService.processModulate(
 				imageUrl,
 				config,
 				signal,
@@ -991,7 +991,7 @@ export class NodeGraphProcessor extends EventEmitter {
 			if (!imageUrl) throw new Error("Missing Input Image");
 
 			const config = node.config as ResizeNodeConfig;
-			const result = await pixiProcessor.processResize(
+			const result = await pixiWorkerService.processResize(
 				imageUrl,
 				{ width: config.width, height: config.height },
 				signal,

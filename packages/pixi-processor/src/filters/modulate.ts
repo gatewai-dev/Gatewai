@@ -1,8 +1,8 @@
+// @ts-nocheck
 import type { ModulateNodeConfig } from "@gatewai/types";
-import type { Filter } from "pixi.js";
 
-const BuildModualteFilter = (fClass: typeof Filter) => {
-	return class ModulateFilter extends fClass {
+const BuildModualteFilter = (fClass: any) => {
+	return class ModulateFilter extends (fClass as any) {
 		constructor(config: ModulateNodeConfig) {
 			const vertexShader = `
                 precision mediump float;

@@ -11,6 +11,9 @@ import {
 	type Texture,
 } from "pixi.js";
 
+/**
+ * **DEPRECIATED in favor of PIXI worker service.
+ */
 export class FrontendPixiService extends BasePixiService {
 	private initialized = false;
 
