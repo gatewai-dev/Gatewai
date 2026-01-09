@@ -8,18 +8,7 @@ Join our Stargazers ⭐!
 
 ## Community
 
-Join our discord server: https://discord.gg/phbS3XZb
-
-## Build node-canvas
-
-By default, "canvas" package is not being built with pnpm for security reasons.
-
-To make it build, run
-
-```sh
-cd apps/yodes
-pnpm approve-builds
-```
+Join our discord server: <https://discord.gg/phbS3XZb>
 
 ## Google Bucket & Project Creation
 
@@ -59,7 +48,7 @@ A JSON file will automatically download to your computer. Move the downloaded fi
 ### In your .env file
 
 ```text
-GOOGLE_APPLICATION_CREDENTIALS="/name-of-the-file"
+GOOGLE_APPLICATION_CREDENTIALS="/name-of-the-file.json"
 ```
 
 For example:
