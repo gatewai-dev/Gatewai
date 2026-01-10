@@ -1,4 +1,5 @@
 import { NodeType } from "@gatewai/db";
+import { TextNodeConfigSchema } from "@gatewai/types";
 import aiAgentProcessor from "./ai-agent/index.js";
 import audioUnderstandingProcessor from "./audio-understanding.js";
 import blurProcessor from "./blur.js";
@@ -33,6 +34,11 @@ const nodeProcessors: Partial<Record<NodeType, NodeProcessor>> = {
 	[NodeType.TextToSpeech]: textToSpeechProcessor,
 	[NodeType.SpeechToText]: audioUnderstandingProcessor,
 	[NodeType.TextMerger]: textMergerProcessor,
+
+	[NodeType.Text]: async ({ node }) => {
+		const config = TextNodeConfigSchema.parse(node.config);
+		return { success: true, result: config.content };
+	},
 	// No processing needed for these node types
 	[NodeType.VideoCompositor]: async ({ node }) => {
 		return { success: true, result: node.result };
@@ -46,9 +52,6 @@ const nodeProcessors: Partial<Record<NodeType, NodeProcessor>> = {
 		return { success: true, result: null };
 	},
 	[NodeType.Export]: async ({ node }) => {
-		return { success: true, result: node.result };
-	},
-	[NodeType.Text]: async ({ node }) => {
 		return { success: true, result: node.result };
 	},
 	[NodeType.Note]: async ({ node }) => {

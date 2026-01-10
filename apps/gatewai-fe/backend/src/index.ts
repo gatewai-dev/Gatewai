@@ -27,7 +27,7 @@ const app = new Hono()
 	.route("/api/v1", v1Router);
 
 // Initialize canvas worker.
-startWorker();
+await startWorker();
 
 serve(
 	{

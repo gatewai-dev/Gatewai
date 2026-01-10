@@ -1,3 +1,4 @@
+import assert from "node:assert";
 import { EventEmitter } from "node:events";
 import type { DataType, NodeType } from "@gatewai/db";
 import {
@@ -11,6 +12,7 @@ import {
 	type PaintResult,
 	type ResizeNodeConfig,
 	TextMergerNodeConfigSchema,
+	TextNodeConfigSchema,
 	type VideoCompositorNodeConfig,
 } from "@gatewai/types";
 import type { EdgeEntityType } from "@/store/edges";
@@ -1103,12 +1105,32 @@ export class NodeGraphProcessor extends EventEmitter {
 			};
 		});
 
+		// We're passing from config since result updates should be done by processor only not input
+		this.registerProcessor("Text", async ({ node }) => {
+			const outputHandle = getFirstOutputHandle(node.id, "Text");
+			const config = TextNodeConfigSchema.parse(node.config);
+			if (!outputHandle) throw new Error("No input handle");
+			return {
+				selectedOutputIndex: 0,
+				outputs: [
+					{
+						items: [
+							{
+								type: "Text",
+								data: config.content,
+								outputHandleId: outputHandle,
+							},
+						],
+					},
+				],
+			};
+		});
+
 		const passthrough = async ({ node }: NodeProcessorParams) =>
 			node.result as unknown as NodeResult;
 		this.registerProcessor("ImageGen", passthrough);
 		this.registerProcessor("File", passthrough);
 		this.registerProcessor("Agent", passthrough);
-		this.registerProcessor("Text", passthrough);
 		this.registerProcessor("LLM", passthrough);
 		this.registerProcessor("VideoGen", passthrough);
 		this.registerProcessor("VideoGenExtend", passthrough);

@@ -1,42 +1,27 @@
-import type { TextResult } from "@gatewai/types";
+import type { TextNodeConfig, TextResult } from "@gatewai/types";
 import type { NodeProps } from "@xyflow/react";
 import { memo, useCallback } from "react";
 import { Textarea } from "@/components/ui/textarea";
+import { useAppSelector } from "@/store";
+import { makeSelectNodeById } from "@/store/nodes";
 import { useCanvasCtx } from "../../ctx/canvas-ctx";
-import { useNodeResult } from "../../processor/processor-ctx";
 import { BaseNode } from "../base";
 import type { TextNode } from "../node-props";
 
 const TextNodeComponent = memo((props: NodeProps<TextNode>) => {
-	const { onNodeResultUpdate } = useCanvasCtx();
-	const { result } = useNodeResult(props.id);
-	const textResult = result as unknown as TextResult;
-	const text = textResult?.outputs?.[0]?.items?.[0]?.data ?? "";
+	const { onNodeConfigUpdate } = useCanvasCtx();
+	const node = useAppSelector(makeSelectNodeById(props.id));
+	const textResult = node.config as TextNodeConfig;
+	const text = textResult?.content ?? "";
 
 	const handleChange = useCallback(
 		(e: React.ChangeEvent<HTMLTextAreaElement>) => {
-			const newResult: TextResult = {
-				selectedOutputIndex: 0,
-				outputs: [
-					{
-						items: [
-							{
-								outputHandleId:
-									textResult?.outputs?.[0]?.items?.[0]?.outputHandleId,
-								type: "Text",
-								data: e.target.value,
-							},
-						],
-					},
-				],
+			const newConfig: TextNodeConfig = {
+				content: e.target.value,
 			};
-			onNodeResultUpdate({ id: props.id, newResult });
+			onNodeConfigUpdate({ id: props.id, newConfig });
 		},
-		[
-			onNodeResultUpdate,
-			props.id,
-			textResult?.outputs?.[0]?.items?.[0]?.outputHandleId,
-		],
+		[onNodeConfigUpdate, props.id],
 	);
 
 	return (
