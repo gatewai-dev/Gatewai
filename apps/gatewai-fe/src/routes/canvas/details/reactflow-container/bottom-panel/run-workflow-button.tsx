@@ -44,7 +44,6 @@ const RunWorkflowButton = memo(() => {
 	return (
 		<Button
 			variant="default"
-			size="sm"
 			// Disable if no terminal nodes OR if something is already running
 			disabled={!hasAnyTerminalNode || isAnyTaskRunning}
 			className="rounded-full px-4 gap-2 shadow-sm"

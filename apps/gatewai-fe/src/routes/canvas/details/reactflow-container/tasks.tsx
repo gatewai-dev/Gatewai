@@ -62,7 +62,7 @@ const CanvasTasksPanel = memo(() => {
 			<PopoverTrigger asChild>
 				<Button
 					variant="ghost"
-					className="h-8 flex items-center gap-2 px-2 hover:bg-secondary/50 transition-colors"
+					className="flex items-center gap-2 hover:bg-secondary/50 rounded-4xl transition-colors"
 				>
 					<span className={`h-1.5 w-1.5 rounded-full ${indicatorColor}`} />
 					<span className="text-[11px] font-medium tabular-nums text-muted-foreground uppercase">
