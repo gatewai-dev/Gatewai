@@ -5,9 +5,9 @@ import { DataType } from "@gatewai/db";
 import type {
 	CompositorLayer,
 	CompositorNodeConfig,
+	CompositorResult,
 	FileData,
 	NodeResult,
-	Output,
 } from "@gatewai/types";
 import {
 	type CanvasRenderingContext2D,
@@ -16,12 +16,10 @@ import {
 	loadImage,
 	registerFont,
 } from "canvas";
+import { ENV_CONFIG } from "../../config.js";
 import { logImage } from "../../media-logger.js";
-import {
-	bufferToDataUrl,
-	getImageBuffer,
-	getImageDimensions,
-} from "../../utils/image.js";
+import { getImageBuffer, getImageDimensions } from "../../utils/image.js";
+import { uploadToTemporaryFolder } from "../../utils/storage.js";
 import { getAllInputValuesWithHandle } from "../resolvers.js";
 import type { NodeProcessor } from "./types.js";
 
@@ -247,10 +245,19 @@ const compositorProcessor: NodeProcessor = async ({ node, data }) => {
 		}
 
 		const resultBuffer = canvas.toBuffer("image/png");
-		logImage(resultBuffer, undefined, node.id);
+
+		if (ENV_CONFIG.DEBUG_LOG_MEDIA) {
+			logImage(resultBuffer, ".png", node.id);
+		}
 
 		const dimensions = getImageDimensions(resultBuffer);
-		const dataUrl = bufferToDataUrl(resultBuffer, "image/png");
+
+		const key = `temp/${node.id}/${Date.now()}.png`;
+		const { signedUrl } = await uploadToTemporaryFolder(
+			resultBuffer,
+			"image/png",
+			key,
+		);
 
 		const outputHandle = data.handles.find(
 			(h) => h.nodeId === node.id && h.type === "Output",
@@ -265,18 +272,18 @@ const compositorProcessor: NodeProcessor = async ({ node, data }) => {
 			selectedOutputIndex: 0,
 		};
 
-		const newGeneration: Output = {
+		const newGeneration: CompositorResult["outputs"][number] = {
 			items: [
 				{
 					type: DataType.Image,
-					data: { processData: { dataUrl, ...dimensions } },
+					data: { processData: { dataUrl: signedUrl, ...dimensions } },
 					outputHandleId: outputHandle.id,
 				},
 			],
 		};
 
 		newResult.outputs = [newGeneration];
-		newResult.selectedOutputIndex = 0;
+		newResult.selectedOutputIndex = newResult.outputs.length - 1;
 
 		return { success: true, newResult };
 	} catch (err: unknown) {

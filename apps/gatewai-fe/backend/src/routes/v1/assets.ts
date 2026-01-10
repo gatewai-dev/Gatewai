@@ -60,7 +60,6 @@ const assetsRouter = new Hono({
 	.post("/", zValidator("form", uploadSchema), async (c) => {
 		const form = await c.req.formData();
 		const file = form.get("file");
-		console.log({ file });
 		if (!(file instanceof File)) {
 			return c.json({ error: "File is required" }, 400);
 		}

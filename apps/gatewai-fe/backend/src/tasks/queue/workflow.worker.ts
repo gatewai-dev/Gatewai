@@ -88,15 +88,18 @@ const processNodeJob = async (job: Job<NodeTaskJobData>) => {
 			return;
 		}
 
+		const batchTasks = await prisma.task.findMany({
+			where: { batchId },
+		});
+
 		// 6. Execute Processor
 		const processor = nodeProcessors[node.type];
 		if (!processor) throw new Error(`No processor for node type ${node.type}`);
 
 		logger.info(`Processing node: ${node.id} with type: ${node.type}`);
-
 		const { success, error, newResult } = await processor({
 			node,
-			data,
+			data: { ...data, tasks: batchTasks },
 			prisma,
 		});
 

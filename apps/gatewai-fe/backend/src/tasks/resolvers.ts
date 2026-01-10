@@ -1,7 +1,7 @@
 import { type DataType, prisma } from "@gatewai/db";
 import type { FileData, NodeResult } from "@gatewai/types";
 import { add } from "date-fns";
-import type { CanvasCtxData } from "../repositories/canvas.js";
+import type { CanvasCtxDataWithTasks } from "../repositories/canvas.js";
 import { generateSignedUrl } from "../utils/storage.js";
 
 /**
@@ -16,18 +16,26 @@ type InputFilterOptions = {
  * Resolve the actual data value that flows into a target node through an edge.
  */
 function resolveSourceValue(
-	data: CanvasCtxData,
-	edge: CanvasCtxData["edges"][number],
+	data: CanvasCtxDataWithTasks,
+	edge: CanvasCtxDataWithTasks["edges"][number],
 ) {
 	const sourceHandle = data.handles.find((h) => h.id === edge.sourceHandleId);
 	if (!sourceHandle) throw new Error("Source handle missing");
 
 	const sourceNode = data.nodes.find((n) => n.id === sourceHandle.nodeId);
 	if (!sourceNode) throw new Error("Source node missing");
-	const result = sourceNode.result as NodeResult | null;
-	if (!result || result.outputs.length === 0) return null;
 
-	const selected = result.outputs[result.selectedOutputIndex ?? 0];
+	// Transistent nodes saves result in Task.result
+	const sourceNodeTask = data.tasks.find((f) => f.nodeId === sourceNode.id);
+	if (sourceNode.type === "Text") {
+		console.log({ sourceNodeTask: JSON.stringify(sourceNodeTask) });
+	}
+	const resultToUse = (sourceNodeTask?.result ??
+		sourceNode.result) as NodeResult | null;
+
+	if (!resultToUse || resultToUse.outputs.length === 0) return null;
+
+	const selected = resultToUse.outputs[resultToUse.selectedOutputIndex ?? 0];
 	const item = selected.items.find(
 		(i) => i.outputHandleId === edge.sourceHandleId,
 	);
@@ -42,7 +50,7 @@ function resolveSourceValue(
  * - If options.label is provided, matches on the target handle's label
  */
 function getInputValue(
-	data: CanvasCtxData,
+	data: CanvasCtxDataWithTasks,
 	targetNodeId: string,
 	required: boolean = true,
 	options: InputFilterOptions,
@@ -86,7 +94,7 @@ function getInputValue(
 }
 
 function getInputValuesByType(
-	data: CanvasCtxData,
+	data: CanvasCtxDataWithTasks,
 	targetNodeId: string,
 	options: InputFilterOptions,
 ) {
@@ -108,12 +116,12 @@ function getInputValuesByType(
 	return values;
 }
 
-function getAllOutputHandles(data: CanvasCtxData, nodeId: string) {
+function getAllOutputHandles(data: CanvasCtxDataWithTasks, nodeId: string) {
 	return data.handles.filter((e) => e.nodeId === nodeId && e.type === "Output");
 }
 
 function getAllInputValuesWithHandle(
-	data: CanvasCtxData,
+	data: CanvasCtxDataWithTasks,
 	targetNodeId: string,
 ) {
 	const incoming = data.edges.filter((e) => e.target === targetNodeId);

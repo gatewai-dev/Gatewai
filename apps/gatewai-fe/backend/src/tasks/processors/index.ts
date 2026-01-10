@@ -1,5 +1,9 @@
 import { NodeType } from "@gatewai/db";
-import { TextNodeConfigSchema } from "@gatewai/types";
+import type {
+	FileResult,
+	NodeResult,
+	VideoCompositorResult,
+} from "@gatewai/types";
 import aiAgentProcessor from "./ai-agent/index.js";
 import audioUnderstandingProcessor from "./audio-understanding.js";
 import blurProcessor from "./blur.js";
@@ -10,6 +14,7 @@ import llmProcessor from "./llm.js";
 import modulateProcessor from "./modulate.js";
 import paintProcessor from "./paint.js";
 import resizeProcessor from "./resize.js";
+import textProcessor from "./text.js";
 import textMergerProcessor from "./text-merger.js";
 import textToSpeechProcessor from "./text-to-speech.js";
 import type { NodeProcessor } from "./types.js";
@@ -35,27 +40,27 @@ const nodeProcessors: Partial<Record<NodeType, NodeProcessor>> = {
 	[NodeType.SpeechToText]: audioUnderstandingProcessor,
 	[NodeType.TextMerger]: textMergerProcessor,
 
-	[NodeType.Text]: async ({ node }) => {
-		const config = TextNodeConfigSchema.parse(node.config);
-		return { success: true, result: config.content };
-	},
+	[NodeType.Text]: textProcessor,
 	// No processing needed for these node types
 	[NodeType.VideoCompositor]: async ({ node }) => {
-		return { success: true, result: node.result };
+		return {
+			success: true,
+			newResult: node.result as unknown as VideoCompositorResult,
+		};
 	},
 	[NodeType.File]: async ({ node }) => {
-		return { success: true, result: node.result };
+		return { success: true, newResult: node.result as unknown as FileResult };
+	},
+	[NodeType.Export]: async ({ node }) => {
+		return { success: true, newResult: node.result as unknown as NodeResult };
 	},
 	// Frontend-Process* (not really) only nodes
 	// We're adding them here so that it doesn't throw false-positive error for missing processors
 	[NodeType.Preview]: async () => {
 		return { success: true, result: null };
 	},
-	[NodeType.Export]: async ({ node }) => {
-		return { success: true, result: node.result };
-	},
 	[NodeType.Note]: async ({ node }) => {
-		return { success: true, result: node.result };
+		return { success: true, newResult: node.result as unknown as NodeResult };
 	},
 };
 

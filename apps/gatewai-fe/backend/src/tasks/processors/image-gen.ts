@@ -28,6 +28,7 @@ const imageGenProcessor: NodeProcessor = async ({ node, data }) => {
 		// 1. Prepare Parts for the Model
 		const parts: Part[] = [];
 
+		logger.debug(`User prompt: ${userPrompt}`);
 		if (userPrompt) {
 			parts.push({ text: userPrompt });
 		}
@@ -53,9 +54,9 @@ const imageGenProcessor: NodeProcessor = async ({ node, data }) => {
 					}
 				} else {
 					const response = await fetch(imageData);
-					if (!response.ok) continue;
+					if (!response.ok) throw new Error("Unable to download Image");
 					const arrayBuffer = await response.arrayBuffer();
-					mimeType = response.headers.get("content-type") ?? "image/jpeg";
+					mimeType = response.headers.get("content-type") ?? "image/png";
 					base64Data = Buffer.from(arrayBuffer).toString("base64");
 				}
 

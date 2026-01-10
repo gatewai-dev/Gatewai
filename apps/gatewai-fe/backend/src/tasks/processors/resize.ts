@@ -3,14 +3,16 @@ import { DataType } from "@gatewai/db";
 import {
 	type FileData,
 	type NodeResult,
-	type Output,
 	type OutputItem,
 	ResizeNodeConfigSchema,
+	type ResizeResult,
 } from "@gatewai/types";
 import parseDataUrl from "data-urls";
+import { ENV_CONFIG } from "../../config.js";
 import { backendPixiService } from "../../media/pixi-processor.js";
 import { logImage } from "../../media-logger.js";
 import { ResolveFileDataUrl } from "../../utils/misc.js";
+import { uploadToTemporaryFolder } from "../../utils/storage.js";
 import { getInputValue } from "../resolvers.js";
 import type { NodeProcessor } from "./types.js";
 
@@ -26,15 +28,19 @@ const resizeProcessor: NodeProcessor = async ({ node, data }) => {
 		assert(imageInput);
 		const imageUrl = ResolveFileDataUrl(imageInput);
 		assert(imageUrl);
-		const processResult = await backendPixiService.processResize(imageUrl, {
-			width: resizeConfig.width,
-			height: resizeConfig.height,
-		});
+		const { dataUrl, ...dimensions } = await backendPixiService.processResize(
+			imageUrl,
+			{
+				width: resizeConfig.width,
+				height: resizeConfig.height,
+			},
+		);
 
-		// const parsed = parseDataUrl(processResult.dataUrl);
-		// if (parsed?.body.buffer) {
-		// 	logImage(Buffer.from(parsed?.body.buffer), ".png", node.id);
-		// }
+		const parsed = parseDataUrl(dataUrl);
+		assert(parsed?.body.buffer);
+		if (ENV_CONFIG.DEBUG_LOG_MEDIA) {
+			logImage(Buffer.from(parsed?.body.buffer), ".png", node.id);
+		}
 		// Build new result (similar to LLM)
 		const outputHandle = data.handles.find(
 			(h) => h.nodeId === node.id && h.type === "Output",
@@ -49,17 +55,25 @@ const resizeProcessor: NodeProcessor = async ({ node, data }) => {
 			selectedOutputIndex: 0,
 		};
 
-		const newGeneration: Output = {
+		const uploadBuffer = Buffer.from(parsed.body.buffer);
+		const key = `temp/${node.id}/${Date.now()}.png`;
+		const { signedUrl } = await uploadToTemporaryFolder(
+			uploadBuffer,
+			parsed.mimeType.type,
+			key,
+		);
+
+		const newGeneration: ResizeResult["outputs"][number] = {
 			items: [
 				{
 					type: DataType.Image,
-					data: { processData: processResult },
+					data: { processData: { dataUrl: signedUrl, ...dimensions } },
 					outputHandleId: outputHandle.id,
 				} as OutputItem<"Image">,
 			],
 		};
 
-		newResult.outputs.push(newGeneration);
+		newResult.outputs = [newGeneration];
 		newResult.selectedOutputIndex = newResult.outputs.length - 1;
 
 		return { success: true, newResult };

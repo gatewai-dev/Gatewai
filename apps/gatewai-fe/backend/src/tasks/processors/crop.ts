@@ -1,15 +1,17 @@
 import assert from "node:assert";
 import { DataType } from "@gatewai/db";
 import {
-	type CropNodeConfig,
 	CropNodeConfigSchema,
+	type CropResult,
 	type FileData,
-	type NodeResult,
-	type Output,
 	type OutputItem,
 } from "@gatewai/types";
+import parseDataUrl from "data-urls";
+import { ENV_CONFIG } from "../../config.js";
 import { backendPixiService } from "../../media/pixi-processor.js";
+import { logImage } from "../../media-logger.js";
 import { ResolveFileDataUrl } from "../../utils/misc.js";
+import { uploadToTemporaryFolder } from "../../utils/storage.js";
 import { getInputValue } from "../resolvers.js";
 import type { NodeProcessor } from "./types.js";
 
@@ -37,6 +39,12 @@ const cropProcessor: NodeProcessor = async ({ node, data }) => {
 			},
 		);
 
+		const parsed = parseDataUrl(dataUrl);
+		assert(parsed?.body.buffer);
+		if (ENV_CONFIG.DEBUG_LOG_MEDIA) {
+			logImage(Buffer.from(parsed?.body.buffer), ".png", node.id);
+		}
+
 		// Build new result (similar to LLM)
 		const outputHandle = data.handles.find(
 			(h) => h.nodeId === node.id && h.type === "Output",
@@ -44,25 +52,33 @@ const cropProcessor: NodeProcessor = async ({ node, data }) => {
 		if (!outputHandle)
 			return { success: false, error: "Output handle is missing." };
 
-		const newResult: NodeResult = structuredClone(
-			node.result as NodeResult,
+		const newResult: CropResult = structuredClone(
+			node.result as unknown as CropResult,
 		) ?? {
 			outputs: [],
 			selectedOutputIndex: 0,
 		};
 
-		const newGeneration: Output = {
+		const uploadBuffer = Buffer.from(parsed.body.buffer);
+		const key = `temp/${node.id}/${Date.now()}.png`;
+		const { signedUrl } = await uploadToTemporaryFolder(
+			uploadBuffer,
+			parsed.mimeType.toString(),
+			key,
+		);
+
+		const newGeneration: CropResult["outputs"][number] = {
 			items: [
 				{
 					type: DataType.Image,
-					data: { processData: { dataUrl, ...dimensions } }, // Transient data URL
+					data: { processData: { dataUrl: signedUrl, ...dimensions } },
 					outputHandleId: outputHandle.id,
 				} as OutputItem<"Image">,
 			],
 		};
 
-		newResult.outputs.push(newGeneration);
-		newResult.selectedOutputIndex = newResult.outputs.length - 1;
+		newResult.outputs = [newGeneration];
+		newResult.selectedOutputIndex = 0;
 
 		return { success: true, newResult };
 	} catch (err: unknown) {

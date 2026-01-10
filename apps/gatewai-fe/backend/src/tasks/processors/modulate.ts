@@ -3,12 +3,14 @@ import { DataType } from "@gatewai/db";
 import type {
 	FileData,
 	ModulateNodeConfig,
+	ModulateResult,
 	NodeResult,
-	Output,
 } from "@gatewai/types";
 import parseDataUrl from "data-urls";
+import { ENV_CONFIG } from "../../config.js";
 import { backendPixiService } from "../../media/pixi-processor.js";
 import { logImage } from "../../media-logger.js";
+import { uploadToTemporaryFolder } from "../../utils/storage.js";
 import { getInputValue } from "../resolvers.js";
 import type { NodeProcessor } from "./types.js";
 
@@ -31,10 +33,11 @@ const modulateProcessor: NodeProcessor = async ({ node, data }) => {
 			modulateConfig,
 		);
 
-		// const parsed = parseDataUrl(dataUrl);
-		// if (parsed?.body.buffer) {
-		// 	logImage(Buffer.from(parsed?.body.buffer), ".png", node.id);
-		// }
+		const parsed = parseDataUrl(dataUrl);
+		assert(parsed?.body.buffer);
+		if (ENV_CONFIG.DEBUG_LOG_MEDIA) {
+			logImage(Buffer.from(parsed?.body.buffer), ".png", node.id);
+		}
 		// Build new result (similar to LLM)
 		const outputHandle = data.handles.find(
 			(h) => h.nodeId === node.id && h.type === "Output",
@@ -49,23 +52,32 @@ const modulateProcessor: NodeProcessor = async ({ node, data }) => {
 			selectedOutputIndex: 0,
 		};
 
-		const newGeneration: Output = {
+		const uploadBuffer = Buffer.from(parsed.body.buffer);
+		const key = `temp/${node.id}/${Date.now()}.png`;
+		const { signedUrl } = await uploadToTemporaryFolder(
+			uploadBuffer,
+			parsed.mimeType.toString(),
+			key,
+		);
+
+		const newGeneration: ModulateResult["outputs"][number] = {
 			items: [
 				{
 					type: DataType.Image,
-					data: { processData: { dataUrl, ...dimensions } },
+					data: { processData: { dataUrl: signedUrl, ...dimensions } },
 					outputHandleId: outputHandle.id,
 				},
 			],
 		};
 
-		newResult.outputs.push(newGeneration);
+		newResult.outputs = [newGeneration];
+		newResult.selectedOutputIndex = newResult.outputs.length - 1;
 
 		return { success: true, newResult };
 	} catch (err: unknown) {
 		return {
 			success: false,
-			error: err instanceof Error ? err.message : "Blur processing failed",
+			error: err instanceof Error ? err.message : "Modulate processing failed",
 		};
 	}
 };

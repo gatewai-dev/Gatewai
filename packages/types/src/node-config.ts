@@ -325,7 +325,7 @@ const PaintNodeConfigSchema = z
 
 const BlurNodeConfigSchema = z
 	.object({
-		size: z.number().min(0).max(10).optional(),
+		size: z.number().min(0).max(100).optional(),
 	})
 	.strict();
 

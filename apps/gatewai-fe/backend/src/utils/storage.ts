@@ -1,8 +1,10 @@
 import path from "node:path";
 import { Readable } from "node:stream";
 import { fileURLToPath } from "node:url";
+import type { Node } from "@gatewai/db";
 import { Storage } from "@google-cloud/storage";
 import { ENV_CONFIG } from "../config.js";
+import { genAI } from "../genai.js";
 
 const __filename = fileURLToPath(import.meta.url);
 const __dirname = path.dirname(__filename);
@@ -83,4 +85,26 @@ export function getStreamFromGCS(
 
 	// Convert Node.js stream to Web ReadableStream for Hono
 	return Readable.toWeb(nodeStream) as ReadableStream;
+}
+
+/**
+ * Uploads a file to temporary folder of assets bucket.
+ * @param buffer File buffer
+ * @param nodeId Node Id
+ * @param key The key afer /temp prefix
+ */
+export async function uploadToTemporaryFolder(
+	buffer: Buffer,
+	mimeType: string,
+	key: string,
+) {
+	const keyToUse = `temp/${key}`;
+	await uploadToGCS(buffer, key, mimeType, ENV_CONFIG.GCS_ASSETS_BUCKET);
+	const expiresIn = 3600 * 24 * 1.9; // A bit less than 2 days
+	const signedUrl = await generateSignedUrl(
+		key,
+		ENV_CONFIG.GCS_ASSETS_BUCKET,
+		expiresIn,
+	);
+	return { signedUrl, key: keyToUse };
 }

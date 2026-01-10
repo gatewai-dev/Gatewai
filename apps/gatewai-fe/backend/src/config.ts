@@ -13,6 +13,7 @@ type EnvConfig = {
 	GOOGLE_APPLICATION_CREDENTIALS: string;
 	GOOGLE_CLIENT_ID: string;
 	GOOGLE_CLIENT_SECRET: string;
+	DEBUG_LOG_MEDIA: boolean;
 };
 
 if (!process.env.GOOGLE_CLIENT_ID || !process.env.GOOGLE_CLIENT_SECRET) {
@@ -46,6 +47,9 @@ if (!process.env.REDIS_HOST) {
 if (!process.env.REDIS_PASSWORD) {
 	throw new Error("Missing REDIS_PASSWORD env variable");
 }
+if (!process.env.DEBUG_LOG_MEDIA) {
+	throw new Error("Missing DEBUG_LOG_MEDIA env variable");
+}
 
 export const ENV_CONFIG: EnvConfig = {
 	BACKEND_URL: process.env.BACKEND_URL,
@@ -58,4 +62,5 @@ export const ENV_CONFIG: EnvConfig = {
 	GOOGLE_APPLICATION_CREDENTIALS: process.env.GOOGLE_APPLICATION_CREDENTIALS,
 	GOOGLE_CLIENT_ID: process.env.GOOGLE_CLIENT_ID,
 	GOOGLE_CLIENT_SECRET: process.env.GOOGLE_CLIENT_SECRET,
+	DEBUG_LOG_MEDIA: process.env.DEBUG_LOG_MEDIA.toLowerCase() === "true",
 };

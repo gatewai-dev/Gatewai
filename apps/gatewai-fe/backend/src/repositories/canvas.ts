@@ -1,4 +1,4 @@
-import { type Canvas, prisma } from "@gatewai/db";
+import { type Canvas, prisma, type Task } from "@gatewai/db";
 import { HTTPException } from "hono/http-exception";
 
 async function GetCanvasEntities(id: Canvas["id"]) {
@@ -42,5 +42,9 @@ async function GetCanvasEntities(id: Canvas["id"]) {
 }
 
 export type CanvasCtxData = Awaited<ReturnType<typeof GetCanvasEntities>>;
+
+export type CanvasCtxDataWithTasks = CanvasCtxData & {
+	tasks: Task[];
+};
 
 export { GetCanvasEntities };

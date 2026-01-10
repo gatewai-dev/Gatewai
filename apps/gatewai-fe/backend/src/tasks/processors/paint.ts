@@ -1,13 +1,18 @@
+import assert from "node:assert";
 import { DataType } from "@gatewai/db";
 import {
 	type FileData,
-	type Output,
+	type NodeResult,
 	PaintNodeConfigSchema,
 	type PaintResult,
 } from "@gatewai/types";
+import parseDataUrl from "data-urls";
+import { ENV_CONFIG } from "../../config.js";
 import { logger } from "../../logger.js";
 import { backendPixiService } from "../../media/pixi-processor.js";
+import { logImage } from "../../media-logger.js";
 import { ResolveFileDataUrl } from "../../utils/misc.js";
+import { uploadToTemporaryFolder } from "../../utils/storage.js";
 import { getInputValue } from "../resolvers.js";
 import type { NodeProcessor } from "./types.js";
 
@@ -49,41 +54,66 @@ const paintProcessor: NodeProcessor = async ({ node, data }) => {
 			paintConfig.paintData,
 		);
 
-		const newResult = structuredClone(
-			node.result as unknown as PaintResult,
+		const { dataUrl: imageDataUrl, ...imageDimensions } = imageWithMask;
+		const { dataUrl: maskDataUrl, ...maskDimensions } = onlyMask;
+
+		const parsedImage = parseDataUrl(imageDataUrl);
+		assert(parsedImage?.body.buffer);
+		if (ENV_CONFIG.DEBUG_LOG_MEDIA) {
+			logImage(Buffer.from(parsedImage.body.buffer), ".png", node.id);
+		}
+
+		const parsedMask = parseDataUrl(maskDataUrl);
+		assert(parsedMask?.body.buffer);
+		if (ENV_CONFIG.DEBUG_LOG_MEDIA) {
+			logImage(Buffer.from(parsedMask.body.buffer), ".png", `${node.id}_mask`);
+		}
+
+		const newResult: NodeResult = structuredClone(
+			node.result as NodeResult,
 		) ?? {
 			outputs: [],
 			selectedOutputIndex: 0,
 		};
 
-		// const parsed = parseDataUrl(imageWithMask.dataUrl);
-		// if (parsed?.body.buffer) {
-		// 	logImage(Buffer.from(parsed?.body.buffer), ".png", node.id);
-		// }
-		//
-		// const parsedMask = parseDataUrl(onlyMask.dataUrl);
-		// if (parsedMask?.body.buffer) {
-		// 	logImage(Buffer.from(parsedMask?.body.buffer), ".png", `${node.id}_mask`);
-		// }
+		const now = Date.now();
 
-		const newGeneration: Output = {
+		const imageBuffer = Buffer.from(parsedImage.body.buffer);
+		const imageKey = `temp/${node.id}/${now}.png`;
+		const { signedUrl: imageSignedUrl } = await uploadToTemporaryFolder(
+			imageBuffer,
+			parsedImage.mimeType.toString(),
+			imageKey,
+		);
+
+		const maskBuffer = Buffer.from(parsedMask.body.buffer);
+		const maskKey = `temp/${node.id}/${now}_mask.png`;
+		const { signedUrl: maskSignedUrl } = await uploadToTemporaryFolder(
+			maskBuffer,
+			parsedMask.mimeType.toString(),
+			maskKey,
+		);
+
+		const imageProcessData = { dataUrl: imageSignedUrl, ...imageDimensions };
+		const maskProcessData = { dataUrl: maskSignedUrl, ...maskDimensions };
+
+		const newGeneration: PaintResult["outputs"][number] = {
 			items: [
 				{
 					type: DataType.Image,
-					data: { processData: imageWithMask },
+					data: { processData: imageProcessData },
 					outputHandleId: imageOutputHandle.id,
 				},
 				{
 					type: DataType.Image,
-					data: {
-						processData: onlyMask,
-					},
+					data: { processData: maskProcessData },
 					outputHandleId: maskOutputHandle.id,
 				},
 			],
 		};
 
-		newResult.outputs.push(newGeneration);
+		newResult.outputs = [newGeneration];
+		newResult.selectedOutputIndex = newResult.outputs.length - 1;
 
 		return { success: true, newResult };
 	} catch (err: unknown) {
