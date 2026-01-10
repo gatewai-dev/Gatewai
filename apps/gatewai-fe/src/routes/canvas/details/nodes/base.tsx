@@ -32,6 +32,11 @@ const getTypeColor = (type?: string) =>
 
 /**
  * Generates styles for the handle.
+ * Priority:
+ * 1. Error state
+ * 2. Explicit Connected Type (Result or Input Value)
+ * 3. Multi-type Gradient (Combined colors)
+ * 4. Single Type Filled/Hollow
  */
 export const getHandleStyle = (
 	types: string[],
@@ -54,8 +59,9 @@ export const getHandleStyle = (
 		};
 	}
 
-	if (isConnected || connectedType) {
-		const color = getTypeColor(connectedType || types[0]);
+	// 1. If we have a specific resolved type (e.g., a Result or a known Input connection), use it.
+	if (connectedType) {
+		const color = getTypeColor(connectedType);
 		return {
 			...baseDimensions,
 			backgroundColor: color,
@@ -65,6 +71,7 @@ export const getHandleStyle = (
 		};
 	}
 
+	// 2. If no specific type is resolved and we have multiple types, show the gradient.
 	if (types.length > 1) {
 		const segmentSize = 100 / types.length;
 		const gradientStops = types
@@ -84,7 +91,18 @@ export const getHandleStyle = (
 		};
 	}
 
+	// 3. Fallback for single types.
 	const color = getTypeColor(types[0]);
+
+	if (isConnected) {
+		return {
+			...baseDimensions,
+			backgroundColor: color,
+			border: "1px solid var(--background)",
+			boxShadow: `0 0 0 1px ${color}80`,
+		};
+	}
+
 	return {
 		...baseDimensions,
 		backgroundColor: "var(--card)",
@@ -211,22 +229,37 @@ const BaseNode = memo(
 		const handles = useAppSelector(selectHandles);
 		const selectNode = useMemo(() => makeSelectNodeById(id), [id]);
 		const node = useAppSelector(selectNode);
-		const { inputs, isProcessing } = useNodeResult(id);
+
+		const { inputs, isProcessing, result } = useNodeResult(id);
 		const validation = useNodeValidation(id);
 		const hasTypeMismatch = (handleId: HandleEntityType["id"]) =>
 			validation?.[handleId] === "type_mismatch";
 
+		// Optimizing handle sorting and separation
 		const { inputHandles, outputHandles } = useMemo(() => {
-			// Sort handles by createdAt ISO string to ensure consistent chronological ordering
 			const sorted = [...handles].sort((a, b) =>
 				(a.createdAt || "").localeCompare(b.createdAt || ""),
 			);
-
 			return {
 				inputHandles: sorted.filter((h) => h.type === "Input"),
 				outputHandles: sorted.filter((h) => h.type === "Output"),
 			};
 		}, [handles]);
+
+		// Pre-calculate result types map to avoid O(N) searches in render loop
+		const resultTypeMap = useMemo(() => {
+			if (!result?.outputs) return {};
+			const activeOutput = result.outputs[result.selectedOutputIndex ?? 0];
+			if (!activeOutput?.items) return {};
+
+			const map: Record<string, string> = {};
+			for (const item of activeOutput.items) {
+				if (item.outputHandleId) {
+					map[item.outputHandleId] = item.type;
+				}
+			}
+			return map;
+		}, [result]);
 
 		const Icon = useMemo(
 			() =>
@@ -296,7 +329,7 @@ const BaseNode = memo(
 							type="source"
 							isValid={true}
 							hasValue={true}
-							connectedType={handle.dataTypes[0]}
+							connectedType={resultTypeMap[handle.id]}
 							nodeSelected={selected}
 						/>
 					))}

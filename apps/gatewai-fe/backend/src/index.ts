@@ -25,14 +25,17 @@ const app = new Hono()
 		}),
 	)
 	.route("/api/v1", v1Router);
+
+// Initialize canvas worker.
 startWorker();
+
 serve(
 	{
 		fetch: app.fetch,
 		port: ENV_CONFIG.PORT,
 	},
 	(info) => {
-		appLogger.info(`Server is running on http://localhost:${info.port}`);
+		appLogger.info(`Server is running on port ${info.port}`);
 	},
 );
 

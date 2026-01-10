@@ -1,7 +1,8 @@
-import { Prisma, prisma, TaskStatus } from "@gatewai/db";
+import { type Prisma, prisma, TaskStatus } from "@gatewai/db";
 import { type Job, Worker } from "bullmq";
-import { logger } from "../../logger.js"; // Adjust path as needed
-import { GetCanvasEntities } from "../../repositories/canvas.js"; // Adjust path as needed
+import { logger } from "../../logger.js";
+import { GetCanvasEntities } from "../../repositories/canvas.js";
+import { assertIsError } from "../../utils/misc.js";
 import { nodeProcessors } from "../processors/index.js";
 import { redisConnection } from "./connection.js";
 import {
@@ -9,6 +10,9 @@ import {
 	WORKFLOW_QUEUE_NAME,
 	workflowQueue,
 } from "./workflow.queue.js";
+
+// Global reference for shutdown handling
+let worker: Worker<NodeTaskJobData> | null = null;
 
 const processNodeJob = async (job: Job<NodeTaskJobData>) => {
 	const {
@@ -19,9 +23,26 @@ const processNodeJob = async (job: Job<NodeTaskJobData>) => {
 		isExplicitlySelected,
 		selectionMap,
 	} = job.data;
+
 	const startedAt = new Date();
 
+	// [Idempotency Check]
+	// If the job was retried after a crash, the task might already be in a terminal state
+	// or technically "EXECUTING" from the previous run.
+	const existingTask = await prisma.task.findUnique({
+		where: { id: taskId },
+		select: { status: true },
+	});
+
+	if (existingTask?.status === TaskStatus.COMPLETED) {
+		logger.info(`Task ${taskId} already completed. Skipping execution.`);
+		// Trigger next just in case the previous run crashed *after* success but *before* triggering next
+		await triggerNextTask(batchId, remainingTaskIds, selectionMap, canvasId);
+		return;
+	}
+
 	// 1. Update Task Status to EXECUTING
+	// We use updateMany here to ensure we don't overwrite a terminal state if a race condition occurs
 	await prisma.task.update({
 		where: { id: taskId },
 		data: {
@@ -31,7 +52,7 @@ const processNodeJob = async (job: Job<NodeTaskJobData>) => {
 	});
 
 	try {
-		// 2. Fetch fresh Context Data (Crucial for getting results of previous nodes)
+		// 2. Fetch fresh Context Data
 		const data = await GetCanvasEntities(canvasId);
 
 		// 3. Fetch current task details
@@ -49,9 +70,7 @@ const processNodeJob = async (job: Job<NodeTaskJobData>) => {
 			select: { id: true, type: true, name: true },
 		});
 
-		if (!currentNode) {
-			throw new Error("Node removed before processing");
-		}
+		if (!currentNode) throw new Error("Node removed before processing");
 
 		const node = data.nodes.find((n) => n.id === task.nodeId);
 		if (!node) throw new Error("Node not found in canvas entities");
@@ -63,9 +82,7 @@ const processNodeJob = async (job: Job<NodeTaskJobData>) => {
 		// 5. Check Terminal Node Logic
 		const isTerminal = template.isTerminalNode;
 		if (isTerminal && !isExplicitlySelected) {
-			logger.info(
-				`Skipping processing for terminal node: ${node.id} as it was not explicitly selected`,
-			);
+			logger.info(`Skipping processing for terminal node: ${node.id}`);
 			await completeTask(taskId, startedAt, true);
 			await triggerNextTask(batchId, remainingTaskIds, selectionMap, canvasId);
 			return;
@@ -87,30 +104,22 @@ const processNodeJob = async (job: Job<NodeTaskJobData>) => {
 
 		// 7. Handle Results
 		if (newResult) {
-			// Save to Task.result
 			await prisma.task.update({
 				where: { id: taskId },
 				data: { result: newResult as unknown as Prisma.InputJsonValue },
 			});
 
-			// Save to Node.result (if not transient)
 			if (success && !template.isTransient) {
+				// Wrap in try-catch to avoid failing the task if just the node update fails
 				try {
 					await prisma.node.update({
 						where: { id: node.id },
 						data: { result: newResult as unknown as Prisma.InputJsonValue },
 					});
-				} catch (updateErr) {
-					if (
-						updateErr instanceof Prisma.PrismaClientKnownRequestError &&
-						updateErr.code === "P2025"
-					) {
-						logger.warn(
-							`Node ${node.id} removed during processing, skipping result update`,
-						);
-					} else {
-						throw updateErr;
-					}
+				} catch (_updateErr) {
+					logger.warn(
+						`Failed to update node result for ${node.id}, continuing...`,
+					);
 				}
 			}
 		}
@@ -130,14 +139,10 @@ const processNodeJob = async (job: Job<NodeTaskJobData>) => {
 		if (success) {
 			await triggerNextTask(batchId, remainingTaskIds, selectionMap, canvasId);
 		} else {
-			// Fail the batch if a task fails
-			await prisma.taskBatch.update({
-				where: { id: batchId },
-				data: { finishedAt: new Date() }, // Marking finished essentially "stops" the batch
-			});
+			await failBatch(batchId);
 		}
 	} catch (err: unknown) {
-		logger.error({ err }, "Task execution failed");
+		logger.error({ err }, `Task execution failed for ${taskId}`);
 		const finishedAt = new Date();
 		const errorMessage = err instanceof Error ? err.message : "Unknown error";
 
@@ -151,17 +156,22 @@ const processNodeJob = async (job: Job<NodeTaskJobData>) => {
 			},
 		});
 
-		// Mark batch as finished (failed state implied by incomplete tasks)
+		await failBatch(batchId);
+		throw err;
+	}
+};
+
+async function failBatch(batchId: string) {
+	try {
 		await prisma.taskBatch.update({
 			where: { id: batchId },
 			data: { finishedAt: new Date() },
 		});
-
-		throw err; // Re-throw to let BullMQ handle retry logic if needed
+	} catch (e) {
+		logger.warn(`Could not mark batch ${batchId} as failed`, e);
 	}
-};
+}
 
-// Helper: Trigger the next task in the sequence
 async function triggerNextTask(
 	batchId: string,
 	remainingTaskIds: string[],
@@ -169,7 +179,6 @@ async function triggerNextTask(
 	canvasId: string,
 ) {
 	if (remainingTaskIds.length === 0) {
-		// Batch Complete
 		await prisma.taskBatch.update({
 			where: { id: batchId },
 			data: { finishedAt: new Date() },
@@ -180,6 +189,7 @@ async function triggerNextTask(
 	const [nextTaskId, ...rest] = remainingTaskIds;
 	const isSelected = selectionMap[nextTaskId] ?? false;
 
+	// Use the queue instance imported from workflow.queue.js
 	await workflowQueue.add("process-node", {
 		taskId: nextTaskId,
 		canvasId,
@@ -190,7 +200,6 @@ async function triggerNextTask(
 	});
 }
 
-// Helper: Fast complete for skipped nodes
 async function completeTask(taskId: string, startedAt: Date, success: boolean) {
 	const finishedAt = new Date();
 	await prisma.task.update({
@@ -203,19 +212,117 @@ async function completeTask(taskId: string, startedAt: Date, success: boolean) {
 	});
 }
 
-export const startWorker = () => {
-	// Initialize Worker
-	const worker = new Worker<NodeTaskJobData>(
-		WORKFLOW_QUEUE_NAME,
-		processNodeJob,
-		{
-			connection: redisConnection,
-			concurrency: 5, // Can process 5 disjoint batches in parallel
-		},
-	);
+/**
+ * Recovers Zembie tasks that were left in EXECUTING state
+ * due to a sudden process kill (SIGKILL/5s timeout).
+ */
+export async function recoverDanglingTasks() {
+	logger.info("Starting startup recovery check...");
 
-	worker.on("completed", (job) => console.log(`${job.id} has completed!`));
-	worker.on("failed", (job, err) =>
-		console.error(`${job?.id} failed: ${err.message}`),
+	// 1. Find all tasks stuck in EXECUTING
+	const danglingTasks = await prisma.task.findMany({
+		where: {
+			status: TaskStatus.EXECUTING,
+		},
+		include: {
+			batch: true,
+		},
+	});
+
+	if (danglingTasks.length === 0) {
+		logger.info("No dangling tasks found.");
+		return;
+	}
+
+	for (const task of danglingTasks) {
+		const job = await workflowQueue.getJob(task.id);
+
+		const isActive = job && (await job.isActive());
+
+		if (!isActive) {
+			logger.warn(`Recovering zombie task ${task.id}: marking as FAILED.`);
+
+			await prisma.$transaction([
+				prisma.task.update({
+					where: { id: task.id },
+					data: {
+						status: TaskStatus.FAILED,
+						finishedAt: new Date(),
+						error: { message: "Task abandoned due to system restart/crash." },
+					},
+				}),
+				// 3. Stop the batch so the chain doesn't continue with broken data
+				prisma.taskBatch.update({
+					where: { id: task.batchId },
+					data: { finishedAt: new Date() },
+				}),
+			]);
+		}
+	}
+
+	logger.info(
+		`Recovery check complete. Cleaned up ${danglingTasks.length} tasks.`,
 	);
+}
+
+const TEN_MINS = 600_000;
+
+export const startWorker = async () => {
+	logger.info("Starting Workflow Worker...");
+
+	try {
+		await recoverDanglingTasks();
+	} catch (err) {
+		assertIsError(err);
+		logger.error(`Failed to run startup recovery, ${err.message}`);
+		// We continue anyway so the worker can still process new jobs
+	}
+
+	worker = new Worker<NodeTaskJobData>(WORKFLOW_QUEUE_NAME, processNodeJob, {
+		connection: redisConnection,
+		concurrency: 5,
+		lockDuration: TEN_MINS,
+	});
+
+	worker.on("failed", async (job, err) => {
+		logger.error(`${job?.id} failed permanently: ${err.message}`);
+		if (job?.data) {
+			const { taskId, batchId } = job.data;
+
+			try {
+				await prisma.task.update({
+					where: { id: taskId },
+					data: {
+						status: TaskStatus.FAILED,
+						finishedAt: new Date(),
+						error: { message: `Job failed/stalled: ${err.message}` },
+					},
+				});
+				await failBatch(batchId);
+			} catch (dbErr) {
+				logger.error(`Failed to sync DB state on worker job failure ${dbErr}`);
+			}
+		}
+	});
+
+	worker.on("completed", (job) => logger.info(`${job.id} has completed!`));
+	worker.on("error", (err) => logger.error(`Worker error: ${err.message}`));
+
+	const gracefulShutdown = async (signal: string) => {
+		logger.info(`Received ${signal}, shutting down worker...`);
+
+		if (worker) {
+			await worker.close();
+			logger.info("Worker closed.");
+		}
+
+		await workflowQueue.close();
+		await prisma.$disconnect();
+
+		logger.info("Shutdown complete.");
+		process.exit(0);
+	};
+
+	process.on("SIGTERM", () => gracefulShutdown("SIGTERM"));
+	process.on("SIGINT", () => gracefulShutdown("SIGINT"));
 };
