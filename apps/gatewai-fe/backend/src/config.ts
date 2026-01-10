@@ -5,6 +5,9 @@ config();
 type EnvConfig = {
 	BACKEND_URL: string;
 	PORT: number;
+	REDIS_HOST: string;
+	REDIS_PORT: string;
+	REDIS_PASSWORD: string;
 	GEMINI_API_KEY: string;
 	GCS_ASSETS_BUCKET: string;
 	GOOGLE_APPLICATION_CREDENTIALS: string;
@@ -34,8 +37,21 @@ if (!process.env.BACKEND_URL) {
 	throw new Error("Missing BACKEND_URL env variable");
 }
 
+if (!process.env.REDIS_PORT) {
+	throw new Error("Missing REDIS_PORT env variable");
+}
+if (!process.env.REDIS_HOST) {
+	throw new Error("Missing REDIS_HOST env variable");
+}
+if (!process.env.REDIS_PASSWORD) {
+	throw new Error("Missing REDIS_PASSWORD env variable");
+}
+
 export const ENV_CONFIG: EnvConfig = {
 	BACKEND_URL: process.env.BACKEND_URL,
+	REDIS_HOST: process.env.REDIS_HOST,
+	REDIS_PASSWORD: process.env.REDIS_PASSWORD,
+	REDIS_PORT: process.env.REDIS_PORT,
 	PORT: Number(process.env.PORT),
 	GEMINI_API_KEY: process.env.GEMINI_API_KEY,
 	GCS_ASSETS_BUCKET: process.env.GCS_ASSETS_BUCKET,

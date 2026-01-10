@@ -5,7 +5,7 @@ import { logger } from "hono/logger";
 import { ENV_CONFIG } from "./config.js";
 import { logger as appLogger } from "./logger.js";
 import { v1Router } from "./routes/v1/index.js";
-import { BatchRecovery } from "./tasks/batch-recovery.js";
+import { startWorker } from "./tasks/queue/workflow.worker.js";
 
 console.log(process.env);
 
@@ -25,7 +25,7 @@ const app = new Hono()
 		}),
 	)
 	.route("/api/v1", v1Router);
-
+startWorker();
 serve(
 	{
 		fetch: app.fetch,

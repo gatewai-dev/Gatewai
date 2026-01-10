@@ -1,22 +1,19 @@
 import {
 	type Canvas,
 	type Node,
-	Prisma,
 	type PrismaClient,
 	type Task,
 	type TaskBatch,
 	TaskStatus,
 } from "@gatewai/db";
-import type { NodeResult } from "@gatewai/types";
-import { logger } from "../logger.js";
 import {
 	type CanvasCtxData,
 	GetCanvasEntities,
 } from "../repositories/canvas.js";
-import { nodeProcessors } from "./processors/index.js";
+import { workflowQueue } from "./queue/workflow.queue.js";
 
 /**
- * Workflow processor for canvas
+ * Workflow processor for canvas - Dispatcher Layer
  */
 export class NodeWFProcessor {
 	public prisma: PrismaClient;
@@ -101,153 +98,6 @@ export class NodeWFProcessor {
 		return null;
 	}
 
-	public async processTask(
-		taskId: Task["id"],
-		data: CanvasCtxData,
-		isExplicitlySelected: boolean,
-	): Promise<void> {
-		const startedAt = new Date();
-		await this.prisma.task.update({
-			where: { id: taskId },
-			data: {
-				status: TaskStatus.EXECUTING,
-				startedAt,
-			},
-		});
-
-		// Fetch task to get nodeId
-		const task = await this.prisma.task.findUniqueOrThrow({
-			where: { id: taskId },
-			select: { nodeId: true },
-		});
-
-		if (!task.nodeId) {
-			throw new Error(`Task ${taskId} has no associated nodeId`);
-		}
-
-		// Defensive: Ensure node still exists in DB before processing
-		const currentNode = await this.prisma.node.findUnique({
-			where: { id: task.nodeId },
-			select: { id: true, type: true, name: true },
-		});
-
-		if (!currentNode) {
-			const now = new Date();
-			await this.prisma.task.update({
-				where: { id: taskId },
-				data: {
-					status: TaskStatus.FAILED,
-					startedAt: now,
-					finishedAt: now,
-					durationMs: 0,
-					error: { message: "Node removed before processing" },
-				},
-			});
-			return;
-		}
-
-		const node = data.nodes.find((n) => n.id === task.nodeId);
-		if (!node) {
-			throw new Error("Node not found");
-		}
-		const template = await this.prisma.nodeTemplate.findUniqueOrThrow({
-			where: { type: currentNode.type },
-		});
-
-		const isTerminal = template.isTerminalNode;
-		if (isTerminal && !isExplicitlySelected) {
-			logger.info(
-				`Skipping processing for terminal node: ${node.id} (type: ${node.type}) as it was not explicitly selected`,
-			);
-			const finishedAt = new Date();
-			await this.prisma.task.update({
-				where: { id: taskId },
-				data: {
-					status: TaskStatus.COMPLETED,
-					finishedAt,
-					durationMs: finishedAt.getTime() - startedAt.getTime(),
-				},
-			});
-			return;
-		}
-
-		const processor = nodeProcessors[node.type];
-		if (!processor) {
-			throw new Error(`No processor for node type ${node.type}.`);
-		}
-
-		try {
-			// Await processor, pass current data
-			logger.info(`Processing node: ${node.id} with type: ${node.type}`);
-			const { success, error, newResult } = await processor({
-				node,
-				data,
-				prisma: this.prisma,
-			});
-
-			if (error) {
-				console.log(`${node.id}: Error: ${error}`);
-			}
-
-			if (newResult) {
-				const updatedNode = data.nodes.find((n) => n.id === task.nodeId);
-				if (!updatedNode) {
-					throw new Error("Node not found to update");
-				}
-				updatedNode.result = structuredClone(
-					newResult,
-				) as unknown as NodeResult;
-			}
-
-			const finishedAt = new Date();
-			await this.prisma.task.update({
-				where: { id: taskId },
-				data: {
-					status: success ? TaskStatus.COMPLETED : TaskStatus.FAILED,
-					finishedAt,
-					durationMs: finishedAt.getTime() - startedAt.getTime(),
-					error: error ? { message: error } : undefined,
-				},
-			});
-
-			// Persist to DB only if not transient
-			if (success && !template.isTransient && newResult) {
-				try {
-					await this.prisma.node.update({
-						where: { id: node.id },
-						data: { result: newResult as NodeResult },
-					});
-				} catch (updateErr) {
-					if (
-						updateErr instanceof Prisma.PrismaClientKnownRequestError &&
-						updateErr.code === "P2025"
-					) {
-						console.log(
-							`Node ${node.id} removed during processing, skipping result update`,
-						);
-					} else {
-						throw updateErr;
-					}
-				}
-			}
-		} catch (err: unknown) {
-			console.log({ err });
-			const finishedAt = new Date();
-			await this.prisma.task.update({
-				where: { id: taskId },
-				data: {
-					status: TaskStatus.FAILED,
-					finishedAt,
-					durationMs: finishedAt.getTime() - startedAt.getTime(),
-					error:
-						err instanceof Error
-							? { message: err.message }
-							: { message: "Unknown error" },
-				},
-			});
-		}
-	}
-
 	public async processNodes(
 		canvasId: Canvas["id"],
 		/**
@@ -255,9 +105,11 @@ export class NodeWFProcessor {
 		 */
 		nodeIds?: Node["id"][],
 	): Promise<TaskBatch> {
+		// 1. Fetch current canvas state
 		const data = await GetCanvasEntities(canvasId);
 
-		let batch = await this.prisma.taskBatch.create({
+		// 2. Create the Batch Record
+		const batch = await this.prisma.taskBatch.create({
 			data: {
 				canvasId,
 			},
@@ -278,7 +130,7 @@ export class NodeWFProcessor {
 
 		const nodeIdsToRun = nodeIds ?? allNodeIds;
 
-		// Find all necessary nodes: selected + all upstream dependencies
+		// 3. Find all necessary nodes: selected + all upstream dependencies
 		const necessary = new Set<Node["id"]>();
 		const queue: Node["id"][] = [...nodeIdsToRun];
 		while (queue.length > 0) {
@@ -290,9 +142,7 @@ export class NodeWFProcessor {
 			queue.push(...ups);
 		}
 
-		// Fetch templates to identify terminal nodes
-		// This prevents upstream terminal nodes from being added to the task list
-		// if they weren't explicitly selected by the user.
+		// 4. Identify terminal nodes to filter out unnecessary upstream terminals
 		const nodeTypesInCanvas = Array.from(
 			new Set(data.nodes.map((n) => n.type)),
 		);
@@ -304,7 +154,6 @@ export class NodeWFProcessor {
 			templates.filter((t) => t.isTerminalNode).map((t) => t.type),
 		);
 
-		// Filter out unselected terminal nodes from necessary set
 		const filteredNecessary = new Set<Node["id"]>();
 		for (const nodeId of necessary) {
 			const node = data.nodes.find((n) => n.id === nodeId);
@@ -313,8 +162,7 @@ export class NodeWFProcessor {
 			const isExplicitlySelected = nodeIdsToRun.includes(nodeId);
 			const isTerminal = terminalTypes.has(node.type);
 
-			// Only keep the node if it's explicitly selected OR it's NOT a terminal node.
-			// This stops "ghost" tasks for unselected terminal nodes that are upstream.
+			// Only keep if explicitly selected OR NOT a terminal node (avoid "ghost" tasks)
 			if (isExplicitlySelected || !isTerminal) {
 				filteredNecessary.add(nodeId);
 			}
@@ -322,15 +170,14 @@ export class NodeWFProcessor {
 
 		const necessaryIds = Array.from(filteredNecessary);
 
-		// Build subgraph for necessary nodes
+		// 5. Build execution plan (Topological Sort)
 		const { depGraph, revDepGraph } = this.buildDepGraphs(necessaryIds, data);
-
 		const topoOrder = this.topologicalSort(necessaryIds, depGraph, revDepGraph);
 		if (!topoOrder) {
 			throw new Error("Cycle detected in necessary nodes.");
 		}
 
-		// Validate necessary nodes exist
+		// 6. Validate
 		const necessaryNodes = data.nodes.filter((n) =>
 			filteredNecessary.has(n.id),
 		);
@@ -338,11 +185,15 @@ export class NodeWFProcessor {
 			throw new Error("Some necessary nodes not found in canvas.");
 		}
 
-		// Create tasks upfront for all necessary nodes
+		// 7. Create Task records in DB
 		const tasksMap = new Map<
 			Node["id"],
 			{ id: Task["id"]; nodeId: Node["id"] }
 		>();
+
+		// We need to store selection state to pass to worker
+		const selectionMap: Record<string, boolean> = {};
+
 		for (const nodeId of topoOrder) {
 			const node = data.nodes.find((n) => n.id === nodeId);
 			if (!node) {
@@ -358,10 +209,39 @@ export class NodeWFProcessor {
 				},
 			});
 			tasksMap.set(nodeId, { id: task.id, nodeId });
+			selectionMap[task.id] = nodeIds ? nodeIds.includes(nodeId) : true;
 		}
 
-		// Refetch batch to include tasks
-		batch = await this.prisma.taskBatch.findUniqueOrThrow({
+		// 8. Dispatch the FIRST task in the sequence to the Queue
+		// The worker will handle dispatching subsequent tasks upon completion
+		if (topoOrder.length > 0) {
+			const firstNodeId = topoOrder[0];
+			const firstTask = tasksMap.get(firstNodeId);
+
+			// Map nodeIds to taskIds for the chain sequence
+			const taskSequence = topoOrder.map((nid) => tasksMap.get(nid)!.id);
+			const [firstTaskId, ...remainingTaskIds] = taskSequence;
+
+			if (firstTask) {
+				await workflowQueue.add("process-node", {
+					taskId: firstTaskId,
+					canvasId,
+					batchId: batch.id,
+					remainingTaskIds, // The worker will pick the next one from here
+					isExplicitlySelected: selectionMap[firstTaskId],
+					selectionMap,
+				});
+			}
+		} else {
+			// Empty batch (rare, but possible if filters removed everything)
+			await this.prisma.taskBatch.update({
+				where: { id: batch.id },
+				data: { finishedAt: new Date() },
+			});
+		}
+
+		// Return the batch (Client can poll this for updates)
+		return await this.prisma.taskBatch.findUniqueOrThrow({
 			where: { id: batch.id },
 			include: {
 				tasks: {
@@ -371,26 +251,5 @@ export class NodeWFProcessor {
 				},
 			},
 		});
-
-		const executer = async () => {
-			for (const nodeId of topoOrder) {
-				const task = tasksMap.get(nodeId);
-				if (!task) {
-					throw new Error(`Task not found for node ${nodeId}`);
-				}
-				const isExplicitlySelected = nodeIds ? nodeIds.includes(nodeId) : true;
-				await this.processTask(task.id, data, isExplicitlySelected);
-			}
-
-			const batchFinishedAt = new Date();
-			await this.prisma.taskBatch.update({
-				where: { id: batch.id },
-				data: { finishedAt: batchFinishedAt },
-			});
-		};
-
-		executer();
-
-		return batch;
 	}
 }
