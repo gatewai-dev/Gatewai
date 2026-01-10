@@ -36,8 +36,8 @@ import type { HandleEntityType } from "@/store/handles";
 import { useCanvasCtx } from "../ctx/canvas-ctx";
 import type { AnyNode } from "../nodes/node-props";
 
-const InputTypes = ["Image", "Text", "Audio", "Video", "File"] as const;
-const OutputTypes = ["Image", "Text", "Audio", "Video", "File"] as const;
+const InputTypes = ["Image", "Text", "Audio", "Video"] as const;
+const OutputTypes = ["Image", "Text", "Audio", "Video"] as const;
 
 const LookupDataTypes = {
 	Input: InputTypes,

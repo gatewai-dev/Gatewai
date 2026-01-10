@@ -1,5 +1,5 @@
 import { randomUUID } from "node:crypto";
-import { prisma } from "@gatewai/db";
+import { type DataType, prisma } from "@gatewai/db";
 import type { FileResult } from "@gatewai/types";
 import { zValidator } from "@hono/zod-validator";
 import { fileTypeFromBuffer } from "file-type";
@@ -216,7 +216,7 @@ const assetsRouter = new Hono({
 				throw new Error("No output handle found for node");
 			}
 
-			let dataType: string;
+			let dataType: DataType;
 			if (contentType.startsWith("image/")) {
 				dataType = "Image";
 			} else if (contentType.startsWith("video/")) {
@@ -224,7 +224,7 @@ const assetsRouter = new Hono({
 			} else if (contentType.startsWith("audio/")) {
 				dataType = "Audio";
 			} else {
-				dataType = "File";
+				throw new Error(`Invalid content type: ${contentType}`);
 			}
 
 			const newOutput = {

@@ -53,12 +53,7 @@ function CreateOutputZodSchema(
 		const outputHandleId = handle.id;
 		const dataType = handle.dataTypes[0];
 		let handleZodObject: ZodObject<ZodRawShape, UnknownKeysParam> | undefined;
-		if (
-			dataType === "File" ||
-			dataType === "Image" ||
-			dataType === "Audio" ||
-			dataType === "Video"
-		) {
+		if (dataType === "Image" || dataType === "Audio" || dataType === "Video") {
 			handleZodObject = z.object({
 				outputHandleId: z.literal(outputHandleId),
 				data: z.object({
@@ -165,7 +160,7 @@ const aiAgentProcessor: NodeProcessor = async ({ node, data }) => {
 						content: [{ type: "input_image", image: file_url }],
 					});
 				}
-			} else if (input.handle.dataTypes[0] === "File") {
+			} else if (input.handle.dataTypes[0] === "Video") {
 				const fileData = input.value as FileData;
 				const file_url = await resolveFileUrl(fileData);
 				if (file_url) {

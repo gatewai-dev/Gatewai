@@ -44,8 +44,6 @@ const DataTypes = [
 	"Image",
 	"Video",
 	"Audio",
-	"File",
-	"Mask",
 ] as const;
 
 const handleSchema = z.object({

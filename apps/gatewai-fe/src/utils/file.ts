@@ -1,24 +1,10 @@
 import type { DataType, FileAsset } from "@gatewai/db";
 import type { FileData } from "@gatewai/types";
 
-function GetDataTypeFromMimetype(mimeType: string): DataType {
-	if (mimeType.startsWith("audio/")) {
-		return "Audio";
-	} else if (mimeType.startsWith("video/")) {
-		return "Video";
-	} else if (mimeType.startsWith("image/")) {
-		return "Image";
-	} else {
-		return "File";
-	}
-}
-
 export const DATA_TYPE_EXTENSIONS: Record<DataType, string> = {
 	Image: "png",
 	Video: "mp4",
 	Audio: "mp3",
-	File: "bin",
-	Mask: "png",
 	Text: "txt",
 	Number: "txt",
 	Boolean: "txt",
@@ -102,10 +88,4 @@ const isFileData = (data: unknown): data is FileData => {
 	);
 };
 
-export {
-	GetDataTypeFromMimetype,
-	GetAssetEndpoint,
-	GetFontAssetUrl,
-	extractExtension,
-	isFileData,
-};
+export { GetAssetEndpoint, GetFontAssetUrl, extractExtension, isFileData };

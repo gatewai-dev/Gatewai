@@ -23,7 +23,7 @@ export type DataForType<R extends DataType> = R extends "Text"
 		? number
 		: R extends "Boolean"
 			? boolean
-			: R extends "Image" | "Audio" | "File" | "Mask" | "Video" | "VideoLayer"
+			: R extends "Image" | "Audio" | "Video" | "VideoLayer"
 				? FileData
 				: R extends "DesignLayer"
 					? string | FileData
@@ -56,7 +56,10 @@ export type MultiOutputGeneric<T extends DataType> = {
 export type TextResult = SingleOutputGeneric<"Text">;
 export type ToggleResult = SingleOutputGeneric<"Boolean">;
 
-export type FileResult = MultiOutputGeneric<"File">;
+export type FileResult =
+	| MultiOutputGeneric<"Video">
+	| MultiOutputGeneric<"Image">
+	| MultiOutputGeneric<"Audio">;
 
 export type ImagesResult = MultiOutputGeneric<"Image">;
 
@@ -64,7 +67,7 @@ export type ImageGenResult = ImagesResult;
 
 export type MaskResult = {
 	selectedOutputIndex: 0;
-	outputs: { items: [OutputItem<"Mask">, OutputItem<"Image">] }[];
+	outputs: { items: [OutputItem<"Image">, OutputItem<"Image">] }[];
 };
 
 export type NumberResult = SingleOutputGeneric<"Number">;
@@ -79,9 +82,7 @@ export type PaintResult = {
 	selectedOutputIndex: 0;
 	outputs: [
 		{
-			items:
-				| [OutputItem<"Image">, OutputItem<"Mask">]
-				| [OutputItem<"Mask">, OutputItem<"Image">];
+			items: [OutputItem<"Image">, OutputItem<"Image">];
 		},
 	];
 };
@@ -109,8 +110,7 @@ export type AgentOutputUnion =
 	| OutputItem<"Audio">
 	| OutputItem<"Text">
 	| OutputItem<"Number">
-	| OutputItem<"Boolean">
-	| OutputItem<"Mask">;
+	| OutputItem<"Boolean">;
 
 export type AgentResult = {
 	selectedOutputIndex: number;
@@ -121,10 +121,8 @@ export type AnyOutputItem =
 	| OutputItem<"Audio">
 	| OutputItem<"Text">
 	| OutputItem<"Boolean">
-	| OutputItem<"File">
 	| OutputItem<"Image">
 	| OutputItem<"Video">
-	| OutputItem<"Mask">
 	| OutputItem<"Number">;
 
 export type NodeResult =

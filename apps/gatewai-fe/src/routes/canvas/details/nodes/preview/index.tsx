@@ -71,7 +71,7 @@ const PreviewNodeComponent = memo((props: NodeProps<PreviewNode>) => {
 						{showMarkdown ? (
 							<MarkdownRenderer markdown={outputData} />
 						) : (
-							<div className="whitespace-pre">{outputData}</div>
+							<div className="whitespace-pre-wrap">{outputData}</div>
 						)}
 					</ScrollArea>
 					<div className="flex items-center justify-end mb-2 gap-2">
@@ -100,7 +100,7 @@ const PreviewNodeComponent = memo((props: NodeProps<PreviewNode>) => {
 			return <AudioRenderer showControlsAlways src={src} />;
 		}
 
-		// Fallback for other file types (e.g., "File", "Audio", etc.)
+		// Fallback for other file types (e.g.,  "Audio", etc.)
 		let entityName = "Unknown file";
 		if ("entity" in outputData && outputData.entity) {
 			entityName = outputData.entity.name;
