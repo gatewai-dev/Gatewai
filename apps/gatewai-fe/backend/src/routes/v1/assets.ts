@@ -1,5 +1,5 @@
 import { randomUUID } from "node:crypto";
-import { type DataType, prisma } from "@gatewai/db";
+import { type DataType, type FileAssetWhereInput, prisma } from "@gatewai/db";
 import type { FileResult } from "@gatewai/types";
 import { zValidator } from "@hono/zod-validator";
 import { fileTypeFromBuffer } from "file-type";
@@ -8,6 +8,8 @@ import * as mm from "music-metadata";
 import sharp from "sharp";
 import { z } from "zod";
 import { ENV_CONFIG } from "../../config.js";
+import { logger } from "../../logger.js";
+import { assertIsError } from "../../utils/misc.js";
 import {
 	deleteFromGCS,
 	generateSignedUrl,
@@ -38,7 +40,7 @@ const assetsRouter = new Hono({
 			name: {
 				contains: q,
 			},
-		} as const;
+		} as FileAssetWhereInput;
 
 		const [assets, total] = await Promise.all([
 			prisma.fileAsset.findMany({
@@ -136,7 +138,6 @@ const assetsRouter = new Hono({
 
 		const body = await c.req.parseBody();
 		const file = body.file as File;
-		console.log({ file }, file instanceof File);
 		// Dafuq happened and this started throw error ?
 		// if (!(file instanceof File)) {
 		// 	console.log('defuq')
@@ -176,7 +177,6 @@ const assetsRouter = new Hono({
 				console.error("Failed to compute media duration:", error);
 			}
 		}
-		console.log({ durationInSec, contentType, height, width });
 
 		try {
 			await uploadToGCS(buffer, key, contentType, bucket);
@@ -254,7 +254,8 @@ const assetsRouter = new Hono({
 
 			return c.json(updatedNode);
 		} catch (error) {
-			console.error("Node asset upload failed:", error);
+			assertIsError(error);
+			logger.error(`Node asset upload failed: ${error.message}`);
 			return c.json({ error: "Upload failed" }, 500);
 		}
 	})
