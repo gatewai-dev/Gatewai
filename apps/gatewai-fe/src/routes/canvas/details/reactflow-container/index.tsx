@@ -19,7 +19,6 @@ import { useCanvasCtx } from "../ctx/canvas-ctx";
 import { nodeTypes } from "../nodes";
 import { CustomConnectionLine, CustomEdge } from "../nodes/base";
 import { ReactFlowPanels } from "./panels";
-import { useZoomHotkeys } from "./use-zoom-hotkeys";
 
 const edgeTypes = {
 	default: CustomEdge,
@@ -58,8 +57,6 @@ function ReactflowContainer({ children }: ReactFlowProps) {
 
 	useHotkeys("space", () => setIsSpacePressed(true), { keydown: true });
 	useHotkeys("space", () => setIsSpacePressed(false), { keyup: true });
-
-	useZoomHotkeys();
 
 	const effectivePan = mode === "pan" || isSpacePressed;
 

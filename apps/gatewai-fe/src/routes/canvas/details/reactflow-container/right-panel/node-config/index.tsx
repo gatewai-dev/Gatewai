@@ -39,7 +39,7 @@ const NodeConfigItem = memo(({ node }: NodeConfigComponentProps) => {
 	if (!ConfigComponent) {
 		return null;
 	}
-	const { mainIcon: MainIcon } = NODE_ICON_MAP[node.type] ?? {
+	const { mainIcon: MainIcon } = NODE_ICON_MAP[node?.type] ?? {
 		mainIcon: NODE_ICON_MAP.File.mainIcon,
 		optionalIcons: [],
 	};

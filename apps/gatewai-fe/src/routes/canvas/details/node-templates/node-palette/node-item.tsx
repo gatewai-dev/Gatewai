@@ -4,7 +4,6 @@ import { memo, useRef, useState } from "react";
 import {
 	Tooltip,
 	TooltipContent,
-	TooltipProvider,
 	TooltipTrigger,
 } from "@/components/ui/tooltip";
 import { cn } from "@/lib/utils";
@@ -19,7 +18,7 @@ export const NodeItem = memo(
 		const [position, setPosition] = useState<XYPosition>({ x: 0, y: 0 });
 		const [isDragging, setIsDragging] = useState(false);
 
-		useDraggable(draggableRef, {
+		useDraggable(draggableRef as unknown as React.RefObject<HTMLDivElement>, {
 			position: position,
 			onDragStart: () => setIsDragging(true),
 			onDrag: ({ offsetX, offsetY }) => {
@@ -79,7 +78,11 @@ export const NodeItem = memo(
 						{/* Optional Icons - Top Left */}
 						<div className="absolute top-1 left-1 flex gap-0.5 z-10">
 							{optionalIcons.map((OptIcon, index) => (
-								<OptIcon key={index} className="w-3 h-3 text-foreground/60" />
+								// biome-ignore lint/suspicious/noArrayIndexKey: No other prop
+								<OptIcon
+									key={`${index}_opt_icon`}
+									className="w-3 h-3 text-foreground/60"
+								/>
 							))}
 						</div>
 
