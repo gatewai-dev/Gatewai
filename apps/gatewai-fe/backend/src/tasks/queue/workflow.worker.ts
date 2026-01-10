@@ -171,7 +171,8 @@ async function failBatch(batchId: string) {
 			data: { finishedAt: new Date() },
 		});
 	} catch (e) {
-		logger.warn(`Could not mark batch ${batchId} as failed`, e);
+		assertIsError(e);
+		logger.warn(`Could not mark batch ${batchId} as failed: ${e.message}`);
 	}
 }
 
@@ -268,7 +269,9 @@ export async function recoverDanglingTasks() {
 	);
 }
 
-const TEN_MINS = 600_000;
+const FIVE_MINS = 300_000;
+
+const WORKER_LOCK_DURATION = FIVE_MINS;
 
 export const startWorker = async () => {
 	logger.info("Starting Workflow Worker...");
@@ -284,7 +287,7 @@ export const startWorker = async () => {
 	worker = new Worker<NodeTaskJobData>(WORKFLOW_QUEUE_NAME, processNodeJob, {
 		connection: redisConnection,
 		concurrency: 5,
-		lockDuration: TEN_MINS,
+		lockDuration: WORKER_LOCK_DURATION,
 	});
 
 	worker.on("failed", async (job, err) => {
