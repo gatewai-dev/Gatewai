@@ -11,7 +11,7 @@ import type { TextNode } from "../node-props";
 const TextNodeComponent = memo((props: NodeProps<TextNode>) => {
 	const { onNodeConfigUpdate } = useCanvasCtx();
 	const node = useAppSelector(makeSelectNodeById(props.id));
-	const textResult = node.config as TextNodeConfig;
+	const textResult = node?.config as TextNodeConfig;
 	const text = textResult?.content ?? "";
 
 	const handleChange = useCallback(

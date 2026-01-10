@@ -92,9 +92,7 @@ const videoGenFirstLastFrameProcessor: NodeProcessor = async ({
 				},
 				resolution: config.resolution,
 				personGeneration: config.personGeneration,
-				durationSeconds: config.durationSeconds
-					? Number(config.durationSeconds)
-					: 8,
+				durationSeconds: Number(config.durationSeconds),
 			},
 		});
 
@@ -147,6 +145,7 @@ const videoGenFirstLastFrameProcessor: NodeProcessor = async ({
 				key,
 				signedUrl,
 				signedUrlExp,
+				duration: Number(config.durationSeconds) * 1000,
 				mimeType: contentType,
 			},
 		});

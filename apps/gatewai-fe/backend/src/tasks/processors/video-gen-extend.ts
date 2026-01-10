@@ -122,6 +122,7 @@ const videoGenExtendProcessor: NodeProcessor = async ({ node, data }) => {
 				key,
 				signedUrl,
 				signedUrlExp,
+				duration: Number(config.durationSeconds) * 1000,
 				mimeType: contentType,
 			},
 		});

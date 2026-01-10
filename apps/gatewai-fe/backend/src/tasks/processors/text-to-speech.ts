@@ -1,7 +1,6 @@
 import { randomUUID } from "node:crypto";
 import { DataType, prisma } from "@gatewai/db";
 import {
-	type TextToSpeechNodeConfig,
 	TextToSpeechNodeConfigSchema,
 	type TextToSpeechResult,
 } from "@gatewai/types";
@@ -40,13 +39,7 @@ const textToSpeechProcessor: NodeProcessor = async ({ node, data }) => {
 			label: "Prompt",
 		})?.data as string;
 
-		let nodeConfig: TextToSpeechNodeConfig;
-		try {
-			nodeConfig = TextToSpeechNodeConfigSchema.parse(node.config);
-		} catch (error) {
-			logger.error(error);
-			return { success: false, error: "Invalid config." };
-		}
+		const nodeConfig = TextToSpeechNodeConfigSchema.parse(node.config);
 
 		let speechConfig: SpeechConfig = {
 			languageCode: nodeConfig.languageCode,
@@ -93,7 +86,7 @@ const textToSpeechProcessor: NodeProcessor = async ({ node, data }) => {
 		const wavBuffer = await encodeWavBuffer(pcmBuffer);
 
 		const metadata = await mm.parseBuffer(wavBuffer, "audio/wav");
-		const duration = metadata.format.duration ?? 0;
+		const durationInSec = metadata.format.duration ?? 0;
 
 		const extension = ".wav";
 
@@ -118,7 +111,7 @@ const textToSpeechProcessor: NodeProcessor = async ({ node, data }) => {
 				signedUrl,
 				signedUrlExp,
 				mimeType: contentType,
-				duration,
+				duration: durationInSec * 1000,
 				metadata: metadata as object,
 			},
 		});

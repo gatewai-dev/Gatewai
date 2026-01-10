@@ -78,7 +78,6 @@ export const NodeItem = memo(
 						{/* Optional Icons - Top Left */}
 						<div className="absolute top-1 left-1 flex gap-0.5 z-10">
 							{optionalIcons.map((OptIcon, index) => (
-								// biome-ignore lint/suspicious/noArrayIndexKey: No other prop
 								<OptIcon
 									key={`${index}_opt_icon`}
 									className="w-3 h-3 text-foreground/60"

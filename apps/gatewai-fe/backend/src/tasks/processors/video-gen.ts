@@ -89,9 +89,7 @@ const videoGenProcessor: NodeProcessor = async ({ node, data }) => {
 				numberOfVideos: 1,
 				negativePrompt,
 				personGeneration: referenceImages?.length ? "allow_adult" : "allow_all",
-				durationSeconds: config.durationSeconds
-					? Number(config.durationSeconds)
-					: 8,
+				durationSeconds: Number(config.durationSeconds),
 				resolution: config.resolution,
 			},
 		});
@@ -144,6 +142,7 @@ const videoGenProcessor: NodeProcessor = async ({ node, data }) => {
 				size: fileBuffer.length,
 				signedUrl,
 				signedUrlExp,
+				duration: Number(config.durationSeconds) * 1000,
 				mimeType: contentType,
 			},
 		});

@@ -144,6 +144,7 @@ interface EditorContextType {
 	// Data Getters
 	getTextData: (id: string) => string;
 	getAssetUrl: (id: string) => string | undefined;
+	getMediaDuration: (id: string) => number | undefined;
 	// Canvas
 	viewportWidth: number;
 	viewportHeight: number;
@@ -1780,6 +1781,19 @@ export const VideoDesignerEditor: React.FC<VideoDesignerEditorProps> = ({
 		[initialLayers],
 	);
 
+	const getMediaDuration = useCallback(
+		(id: string) => {
+			const item = initialLayers.get(id);
+			if (!item) return undefined;
+			const processData = item.data as FileData;
+			if (processData.entity?.id) {
+				return processData.entity.duration;
+			}
+			return processData?.processData?.duration;
+		},
+		[initialLayers],
+	);
+
 	const updateLayersHandler = useCallback(
 		(
 			updater: SetStateAction<ExtendedLayer[]>,
@@ -2125,6 +2139,7 @@ export const VideoDesignerEditor: React.FC<VideoDesignerEditorProps> = ({
 			setSelectedId,
 			getTextData,
 			getAssetUrl,
+			getMediaDuration,
 			viewportWidth,
 			viewportHeight,
 			updateViewportWidth,
@@ -2166,6 +2181,7 @@ export const VideoDesignerEditor: React.FC<VideoDesignerEditorProps> = ({
 			deleteLayer,
 			getTextData,
 			getAssetUrl,
+			getMediaDuration,
 			setCurrentFrameHandler,
 			setIsPlaying,
 			zoomIn,
