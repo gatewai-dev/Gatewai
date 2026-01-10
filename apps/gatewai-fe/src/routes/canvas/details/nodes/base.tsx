@@ -261,12 +261,10 @@ const BaseNode = memo(
 			return map;
 		}, [result]);
 
-		const Icon = useMemo(
-			() =>
-				node &&
-				(NODE_ICON_MAP[node?.type]?.(node) || NODE_ICON_MAP.File?.(node)),
-			[node],
-		);
+		const { mainIcon: MainIcon } = NODE_ICON_MAP[node.type] ?? {
+			mainIcon: NODE_ICON_MAP.File.mainIcon,
+			optionalIcons: [],
+		};
 
 		return (
 			<div
@@ -300,9 +298,9 @@ const BaseNode = memo(
 				<div className="flex flex-col h-full overflow-hidden">
 					<div className="flex items-center justify-between px-3 py-2 border-b border-border/40 bg-muted/20 drag-handle cursor-grab active:cursor-grabbing">
 						<div className="flex items-center gap-2.5 min-w-0">
-							{Icon && (
+							{MainIcon && (
 								<div className="text-foreground">
-									<Icon className="w-5 h-5" />
+									<MainIcon className="w-5 h-5" />
 								</div>
 							)}
 							<div className="flex flex-col min-w-0">

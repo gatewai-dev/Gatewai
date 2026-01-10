@@ -39,12 +39,15 @@ const NodeConfigItem = memo(({ node }: NodeConfigComponentProps) => {
 	if (!ConfigComponent) {
 		return null;
 	}
-	const Icon = NODE_ICON_MAP[node?.type]?.(node) || NODE_ICON_MAP.File?.(node);
+	const { mainIcon: MainIcon } = NODE_ICON_MAP[node.type] ?? {
+		mainIcon: NODE_ICON_MAP.File.mainIcon,
+		optionalIcons: [],
+	};
 
 	return (
 		<div className="flex flex-col gap-4" key={`${node.id}_cfg_component`}>
 			<div className="flex items-center gap-2">
-				<Icon />
+				<MainIcon />
 				<h3 className="text-sm font-semibold">{node.name}</h3>
 			</div>
 			<ConfigComponent key={node.id} node={node} />

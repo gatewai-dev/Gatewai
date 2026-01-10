@@ -48,7 +48,12 @@ export const NodeItem = memo(
 			},
 		});
 
-		const Icon = NODE_ICON_MAP[template.type]?.() || NODE_ICON_MAP.File;
+		const { mainIcon: MainIcon, optionalIcons = [] } = NODE_ICON_MAP[
+			template.type
+		] ?? {
+			mainIcon: NODE_ICON_MAP.File.mainIcon,
+			optionalIcons: [],
+		};
 
 		return (
 			<Tooltip>
@@ -71,6 +76,13 @@ export const NodeItem = memo(
 							],
 						)}
 					>
+						{/* Optional Icons - Top Left */}
+						<div className="absolute top-1 left-1 flex gap-0.5 z-10">
+							{optionalIcons.map((OptIcon, index) => (
+								<OptIcon key={index} className="w-3 h-3 text-foreground/60" />
+							))}
+						</div>
+
 						<div
 							className={cn(
 								"mb-2 p-1 rounded-xl transition-all transition-none duration-300",
@@ -79,7 +91,7 @@ export const NodeItem = memo(
 								isDragging && "shadow-none scale-100",
 							)}
 						>
-							<Icon className="w-5 h-5" />
+							<MainIcon className="w-5 h-5" />
 						</div>
 
 						<div className="flex flex-col items-center gap-0.5 px-1 w-full">

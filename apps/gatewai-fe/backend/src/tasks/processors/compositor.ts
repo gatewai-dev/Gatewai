@@ -252,7 +252,7 @@ const compositorProcessor: NodeProcessor = async ({ node, data }) => {
 
 		const dimensions = getImageDimensions(resultBuffer);
 
-		const key = `temp/${node.id}/${Date.now()}.png`;
+		const key = `${node.id}/${Date.now()}.png`;
 		const { signedUrl } = await uploadToTemporaryFolder(
 			resultBuffer,
 			"image/png",

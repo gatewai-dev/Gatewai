@@ -1,4 +1,4 @@
-import type { TextNodeConfig, TextResult } from "@gatewai/types";
+import type { TextNodeConfig } from "@gatewai/types";
 import type { NodeProps } from "@xyflow/react";
 import { memo, useCallback } from "react";
 import { Textarea } from "@/components/ui/textarea";

@@ -56,7 +56,7 @@ const resizeProcessor: NodeProcessor = async ({ node, data }) => {
 		};
 
 		const uploadBuffer = Buffer.from(parsed.body.buffer);
-		const key = `temp/${node.id}/${Date.now()}.png`;
+		const key = `${node.id}/${Date.now()}.png`;
 		const { signedUrl } = await uploadToTemporaryFolder(
 			uploadBuffer,
 			parsed.mimeType.type,

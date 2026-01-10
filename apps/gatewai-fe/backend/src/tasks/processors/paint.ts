@@ -79,7 +79,7 @@ const paintProcessor: NodeProcessor = async ({ node, data }) => {
 		const now = Date.now();
 
 		const imageBuffer = Buffer.from(parsedImage.body.buffer);
-		const imageKey = `temp/${node.id}/${now}.png`;
+		const imageKey = `${node.id}/${now}.png`;
 		const { signedUrl: imageSignedUrl } = await uploadToTemporaryFolder(
 			imageBuffer,
 			parsedImage.mimeType.toString(),
@@ -87,7 +87,7 @@ const paintProcessor: NodeProcessor = async ({ node, data }) => {
 		);
 
 		const maskBuffer = Buffer.from(parsedMask.body.buffer);
-		const maskKey = `temp/${node.id}/${now}_mask.png`;
+		const maskKey = `${node.id}/${now}_mask.png`;
 		const { signedUrl: maskSignedUrl } = await uploadToTemporaryFolder(
 			maskBuffer,
 			parsedMask.mimeType.toString(),
