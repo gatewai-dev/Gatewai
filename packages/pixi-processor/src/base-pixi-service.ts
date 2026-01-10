@@ -14,7 +14,6 @@ import type {
 import { BuildModualteFilter } from "./filters/modulate";
 import type { IPixiProcessor } from "./interface";
 
-// Universal AbortError for both Node and Browser environments
 export class ServiceAbortError extends Error {
 	constructor(message = "Operation cancelled") {
 		super(message);
