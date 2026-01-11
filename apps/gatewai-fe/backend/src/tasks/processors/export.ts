@@ -15,7 +15,7 @@ const exportProcessor: NodeProcessor = async ({ node, data }) => {
 		};
 
 		assert(inputValue);
-
+		console.log(inputValue.data);
 		const newGeneration: ExportResult["outputs"][number] = {
 			items: [
 				{

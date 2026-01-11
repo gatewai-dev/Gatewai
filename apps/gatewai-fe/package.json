@@ -10,7 +10,8 @@
 		"be:dev": "tsx watch backend/src/index.ts",
 		"be:build": "tsc ./backend",
 		"be:start": "node backend/dist/index.js",
-		"test-api": "tsx backend/scripts/test-api-req.ts"
+		"test-api": "tsx backend/scripts/example-api-request.ts",
+		"test-api-media": "tsx backend/scripts/example-api-media.ts"
 	},
 	"dependencies": {
 		"@dnd-kit/core": "^6.3.1",

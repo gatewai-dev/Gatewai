@@ -1,4 +1,5 @@
 import assert from "node:assert";
+import { randomUUID } from "node:crypto";
 import { RequestSchema } from "@gatewai/api-client";
 import { prisma } from "@gatewai/db";
 import type { TextNodeConfig } from "@gatewai/types";
@@ -6,6 +7,7 @@ import { zValidator } from "@hono/zod-validator";
 import { Hono } from "hono";
 import { duplicateCanvas } from "../../data-access/duplicate.js";
 import { resolveBatchResult } from "../../data-access/resolve-batch-result.js";
+import { uploadToImportNode } from "../../node-fns/import-media.js";
 import { NodeWFProcessor } from "../../tasks/canvas-workflow-processor.js";
 import { assertIsError } from "../../utils/misc.js";
 
@@ -62,19 +64,21 @@ const apiRunRoutes = new Hono({ strict: false })
 			if (payload && Object.keys(payload).length > 0) {
 				const originalNodeIds = Object.keys(payload);
 
+				// Fetch both Text and File nodes that match the payload keys
 				const nodes = await prisma.node.findMany({
 					where: {
 						canvasId: duplicated.id,
 						originalNodeId: { in: originalNodeIds },
-						type: "Text",
+						type: { in: ["Text", "File"] },
 					},
 				});
 
 				// Update nodes in parallel
 				await Promise.all(
-					nodes.map((node) => {
+					nodes.map(async (node) => {
 						assert(node.originalNodeId);
 						const inputData = payload[node.originalNodeId!];
+
 						if (node.type === "Text") {
 							return prisma.node.update({
 								where: { id: node.id },
@@ -83,7 +87,26 @@ const apiRunRoutes = new Hono({ strict: false })
 								},
 							});
 						}
+
 						if (node.type === "File") {
+							// Handle Base64 Upload
+							// Strip 'data:image/xyz;base64,' prefix if present to get pure base64
+							const base64Data = inputData.includes("base64,")
+								? inputData.split("base64,")[1]
+								: inputData;
+
+							const buffer = Buffer.from(base64Data, "base64");
+
+							// Generate a filename since base64 payloads don't usually carry it
+							// We can rely on detection inside uploadToImportNode to set the extension later,
+							// or we can pass a generic name.
+							const filename = `api-upload-${randomUUID()}`;
+
+							await uploadToImportNode({
+								nodeId: node.id,
+								buffer,
+								filename,
+							});
 						}
 					}),
 				);

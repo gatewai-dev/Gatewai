@@ -1,14 +1,12 @@
 import { randomUUID } from "node:crypto";
-import { type DataType, type FileAssetWhereInput, prisma } from "@gatewai/db";
-import type { FileResult } from "@gatewai/types";
+import { type FileAssetWhereInput, prisma } from "@gatewai/db";
 import { zValidator } from "@hono/zod-validator";
 import { fileTypeFromBuffer } from "file-type";
 import { Hono } from "hono";
-import * as mm from "music-metadata";
 import sharp from "sharp";
 import { z } from "zod";
-import { ENV_CONFIG } from "../../config.js";
 import { logger } from "../../logger.js";
+import { uploadToImportNode } from "../../node-fns/import-media.js";
 import { assertIsError } from "../../utils/misc.js";
 import {
 	deleteFromGCS,
@@ -120,142 +118,32 @@ const assetsRouter = new Hono({
 	})
 	.post("/node/:nodeId", zValidator("form", uploadSchema), async (c) => {
 		const { nodeId } = c.req.param();
-
-		const node = await prisma.node.findUnique({
-			where: { id: nodeId },
-			include: {
-				canvas: true,
-				handles: {
-					where: { type: "Output" },
-					orderBy: { order: "asc" },
-				},
-			},
-		});
-
-		if (!node) {
-			return c.json({ error: "Node not found" }, 404);
-		}
-
 		const body = await c.req.parseBody();
-		const file = body.file as File;
-		// Dafuq happened and this started throw error ?
-		// if (!(file instanceof File)) {
-		// 	console.log('defuq')
-		// 	return c.json({ error: "File is required" }, 400);
-		// }
+		const file = body.file;
 
-		const buffer = Buffer.from(await file.arrayBuffer());
-		const fileSize = buffer.length;
-		const filename = file.name;
-		const bucket = ENV_CONFIG.GCS_ASSETS_BUCKET;
-		const key = `assets/${randomUUID()}-${filename}`;
-
-		const fileTypeResult = await fileTypeFromBuffer(buffer);
-		const contentType =
-			fileTypeResult?.mime ?? file.type ?? "application/octet-stream";
-
-		let width: number | null = null;
-		let height: number | null = null;
-		let durationInSec: number | null = null; // Add this variable
-
-		if (contentType.startsWith("image/")) {
-			try {
-				const metadata = await sharp(buffer).metadata();
-				width = metadata.width ?? null;
-				height = metadata.height ?? null;
-			} catch (error) {
-				console.error("Failed to compute image metadata:", error);
-			}
-		}
-		if (contentType.startsWith("video/") || contentType.startsWith("audio/")) {
-			try {
-				const metadata = await mm.parseBuffer(buffer, {
-					mimeType: contentType,
-				});
-				durationInSec = metadata.format.duration ?? null;
-			} catch (error) {
-				console.error("Failed to compute media duration:", error);
-			}
+		// Validation: Check if it's strictly a File object (as expected from form-data)
+		if (!(file instanceof File)) {
+			return c.json({ error: "File is required" }, 400);
 		}
 
 		try {
-			await uploadToGCS(buffer, key, contentType, bucket);
+			const buffer = Buffer.from(await file.arrayBuffer());
 
-			const expiresIn = 3600 * 24 * 6.9; // A bit less than a week
-			const signedUrl = await generateSignedUrl(key, bucket, expiresIn);
-			const signedUrlExp = new Date(Date.now() + expiresIn * 1000);
-
-			const asset = await prisma.fileAsset.create({
-				data: {
-					name: filename,
-					bucket,
-					key,
-					signedUrl,
-					isUploaded: true,
-					duration: durationInSec
-						? Math.round(durationInSec * 1000)
-						: undefined,
-					size: fileSize,
-					signedUrlExp,
-					width,
-					height,
-					mimeType: contentType,
-				},
-			});
-
-			// Update node result
-			const currentResult = (node.result as unknown as FileResult) || {
-				outputs: [],
-			};
-			const outputs = currentResult.outputs || [];
-			const newIndex = outputs.length;
-
-			const outputHandle = node.handles[0];
-			if (!outputHandle) {
-				throw new Error("No output handle found for node");
-			}
-
-			let dataType: DataType;
-			if (contentType.startsWith("image/")) {
-				dataType = "Image";
-			} else if (contentType.startsWith("video/")) {
-				dataType = "Video";
-			} else if (contentType.startsWith("audio/")) {
-				dataType = "Audio";
-			} else {
-				throw new Error(`Invalid content type: ${contentType}`);
-			}
-
-			const newOutput = {
-				items: [
-					{
-						outputHandleId: outputHandle.id,
-						data: {
-							entity: asset,
-						},
-						type: dataType,
-					},
-				],
-			};
-
-			const updatedResult = {
-				...currentResult,
-				selectedOutputIndex: newIndex,
-				outputs: [...outputs, newOutput],
-			};
-
-			const updatedNode = await prisma.node.update({
-				where: { id: nodeId },
-				data: { result: updatedResult },
-				include: {
-					handles: true,
-				},
+			const updatedNode = await uploadToImportNode({
+				nodeId,
+				buffer,
+				filename: file.name,
+				mimeType: file.type || undefined,
 			});
 
 			return c.json(updatedNode);
 		} catch (error) {
 			assertIsError(error);
 			logger.error(`Node asset upload failed: ${error.message}`);
+			// Return 404 if node missing, otherwise 500
+			if (error.message.includes("not found")) {
+				return c.json({ error: error.message }, 404);
+			}
 			return c.json({ error: "Upload failed" }, 500);
 		}
 	})

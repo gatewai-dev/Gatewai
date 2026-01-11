@@ -84,6 +84,7 @@ export async function resolveBatchResult(
 			} else {
 				outputData = outputItem.data;
 			}
+			console.log({ outputData });
 			if (outputData) {
 				allResults[originalNode?.id] = {
 					type: outputItem.type,
