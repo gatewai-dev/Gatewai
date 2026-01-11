@@ -697,7 +697,7 @@ export class NodeGraphProcessor extends EventEmitter {
 		const output = result.outputs[selectedIndex];
 		if (!output) return null;
 		for (const item of output.items) {
-			if (item.type === "Image" || item.type === "Mask") {
+			if (item.type === "Image") {
 				const data = item.data as FileData;
 				if (data.processData?.dataUrl) {
 					return data.processData.dataUrl;
@@ -843,7 +843,7 @@ export class NodeGraphProcessor extends EventEmitter {
 			}
 
 			items.push({
-				type: "Mask",
+				type: "Image",
 				data: {
 					processData: {
 						dataUrl: onlyMask.dataUrl,
