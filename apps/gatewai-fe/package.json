@@ -9,7 +9,8 @@
 		"preview": "vite preview",
 		"be:dev": "tsx watch backend/src/index.ts",
 		"be:build": "tsc ./backend",
-		"be:start": "node backend/dist/index.js"
+		"be:start": "node backend/dist/index.js",
+		"test-api": "tsx backend/scripts/test-api-req.ts"
 	},
 	"dependencies": {
 		"@dnd-kit/core": "^6.3.1",
@@ -27,7 +28,8 @@
 		"@hookform/resolvers": "^3.10.0",
 		"@lobehub/icons": "^2.48.0",
 		"@neodrag/react": "^2.3.1",
-		"ioredis": "^5.8.0",
+		"@openai/agents": "^0.3.7",
+		"@openai/agents-extensions": "^0.3.7",
 		"@pixi/node": "^7.3.0",
 		"@pixi/webworker": "^7.4.3",
 		"@polar-sh/sdk": "^0.41.4",
@@ -57,6 +59,7 @@
 		"@remotion/web-renderer": "4.0.402",
 		"@tailwindcss/vite": "^4.1.16",
 		"@xyflow/react": "^12.8.4",
+		"ai": "^6.0.14",
 		"bullmq": "^5.66.4",
 		"canvas": "^3.2.0",
 		"class-variance-authority": "^0.7.1",
@@ -71,6 +74,7 @@
 		"generic-pool": "^3.9.0",
 		"gl": "^6.0.2",
 		"hono": "^4.8.5",
+		"ioredis": "^5.8.0",
 		"json-schema-to-zod": "^2.7.0",
 		"konva": "^10.0.12",
 		"lodash": "^4.17.21",
@@ -115,8 +119,8 @@
 		"zod": "3.25.67"
 	},
 	"devDependencies": {
-		"@gatewai/types": "workspace:*",
 		"@gatewai/api-client": "workspace:*",
+		"@gatewai/types": "workspace:*",
 		"@tailwindcss/typography": "^0.5.19",
 		"@types/color": "^4.2.0",
 		"@types/data-urls": "^3.0.4",

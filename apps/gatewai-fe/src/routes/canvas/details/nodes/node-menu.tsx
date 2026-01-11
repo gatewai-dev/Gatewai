@@ -34,6 +34,7 @@ import {
 	type NodeEntityType,
 	updateNodeEntity,
 } from "@/store/nodes";
+import { copyTextToClipboard } from "@/utils/clipboard";
 import { useCanvasCtx } from "../ctx/canvas-ctx";
 
 type RenameNodeDialogProps = {
@@ -129,6 +130,9 @@ const NodeMenu = memo((props: { id: NodeEntityType["id"] }) => {
 							<DropdownMenuShortcut className="italic text-[11px]">
 								delete / backspace
 							</DropdownMenuShortcut>
+						</DropdownMenuItem>
+						<DropdownMenuItem onClick={() => copyTextToClipboard(props.id)}>
+							Copy ID
 						</DropdownMenuItem>
 					</DropdownMenuGroup>
 				</DropdownMenuContent>

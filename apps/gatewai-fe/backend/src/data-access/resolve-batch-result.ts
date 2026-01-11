@@ -51,7 +51,7 @@ export async function resolveBatchResult(
 
 	assert(exportNodes);
 
-	assert(exportNodes.length > 1);
+	assert(exportNodes.length > 0);
 
 	const exportNodeOriginalIds = exportNodes
 		.map((m) => m?.originalNodeId)
@@ -74,7 +74,9 @@ export async function resolveBatchResult(
 			(f) => f.id === exportNode?.originalNodeId,
 		);
 		if (originalNode) {
-			const result = originalNode?.result as unknown as ExportResult;
+			console.log({ exportNode });
+			const result = exportNode?.result as unknown as ExportResult | null;
+			if (!result) continue;
 			const selectedOutput = result.outputs[result.selectedOutputIndex];
 			const outputItem = selectedOutput.items[0];
 			let outputData: string | number | boolean | undefined;

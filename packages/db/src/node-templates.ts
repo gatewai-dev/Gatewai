@@ -306,8 +306,8 @@ export async function SEED_createNodeTemplates(prisma: PrismaClient) {
 			variableInputs: false,
 			showInQuickAccess: true,
 			variableOutputs: false,
-			isTerminalNode: false,
-			isTransient: true,
+			isTerminalNode: true,
+			isTransient: false,
 			templateHandles: {
 				create: [
 					{

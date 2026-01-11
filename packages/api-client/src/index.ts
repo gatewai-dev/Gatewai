@@ -45,7 +45,7 @@ export class GatewaiApiClient {
 		endpoint: string,
 		options?: RequestInit,
 	): Promise<APIResponse> {
-		const url = `${this.config.GATEWAI_URL.replace(/\/$/, "")}/v1/${endpoint}`;
+		const url = `${this.config.GATEWAI_URL}/api/v1/${endpoint}`;
 
 		const response = await fetch(url, {
 			...options,
@@ -60,16 +60,16 @@ export class GatewaiApiClient {
 		}
 
 		const data = await response.json();
-
+		console.log({ data });
 		// Validates that the server response matches the APIResponse schema
-		return ResponseSchema.parse(data);
+		return ResponseSchema.parse(data.response);
 	}
 
 	/**
 	 * Initiates the request
 	 */
 	async makeRequest(request: APIRequest): Promise<APIResponse> {
-		return this.fetchAndValidate("/api-run", {
+		return this.fetchAndValidate("api-run", {
 			method: "POST",
 			body: JSON.stringify(RequestSchema.parse(request)),
 		});
@@ -80,7 +80,7 @@ export class GatewaiApiClient {
 	 * Developers should implemet their own polling mechanism with their own architecture.
 	 */
 	async checkStatus(batchHandleId: string): Promise<APIResponse> {
-		return this.fetchAndValidate(`/api-run/${batchHandleId}`, {
+		return this.fetchAndValidate(`api-run/${batchHandleId}/status`, {
 			method: "GET",
 		});
 	}

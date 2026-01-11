@@ -1,5 +1,3 @@
-import * as PIXI from "pixi.js";
-
 // check type: GlobalCompositeOperation
 const BLEND_MODES: GlobalCompositeOperation[] = [
 	"screen",

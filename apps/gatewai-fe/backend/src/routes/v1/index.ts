@@ -1,4 +1,5 @@
 import { Hono } from "hono";
+import { apiRunRoutes } from "./api-run.js";
 import { assetsRouter } from "./assets.js";
 import { canvasRoutes } from "./canvas.js";
 import { fontsRouter } from "./fonts.js";
@@ -10,6 +11,7 @@ const v1Router = new Hono()
 	.route("/node-templates", nodeTemplatesRoutes)
 	.route("/tasks", tasksRouter)
 	.route("/assets", assetsRouter)
-	.route("/fonts", fontsRouter);
+	.route("/fonts", fontsRouter)
+	.route("/api-run", apiRunRoutes);
 
 export { v1Router };
