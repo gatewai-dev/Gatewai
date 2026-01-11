@@ -214,12 +214,11 @@ const VideoCompositorNodeComponent = memo(
 				<div className="flex flex-col gap-3">
 					<div
 						className={cn(
-							"w-full overflow-hidden rounded media-container relative",
-							"h-48",
+							"w-full overflow-hidden rounded media-container relative aspect-square",
 						)}
 					>
 						{previewState && previewState.layers.length > 0 ? (
-							<div className="absolute inset-0 w-full h-full">
+							<div className="inset-0 w-full h-full">
 								<Player
 									component={CompositionScene}
 									inputProps={{

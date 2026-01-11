@@ -35,24 +35,31 @@ const FileNodeComponent = memo((props: NodeProps<FileNode>) => {
 				? "audio"
 				: null;
 
+	// 1. Define specific MIME types to exclude image/svg+xml and image/gif
 	const accept = {
-		"image/jpeg": [],
-		"image/png": [],
-		"image/webp": [],
-		"video/mp4": [],
-		"video/quicktime": [],
-		"video/webm": [],
-		"audio/mpeg": [],
-		"audio/wav": [],
-		"audio/ogg": [],
-		"audio/aac": [],
-		"audio/flac": [],
+		"image/jpeg": [".jpg", ".jpeg"],
+		"image/png": [".png"],
+		"image/webp": [".webp"],
+		"video/mp4": [".mp4"],
+		"video/quicktime": [".mov"],
+		"video/webm": [".webm"],
+		"audio/mpeg": [".mp3"],
+		"audio/wav": [".wav"],
+		"audio/ogg": [".ogg"],
+		"audio/aac": [".aac"],
+		"audio/flac": [".flac"],
 	};
 
-	const buttonAccept =
-		showResult && existingType
-			? [`${existingType}/*`]
-			: ["image/*", "video/*", "audio/*"];
+	// 2. Refine the button acceptance logic
+	// Instead of using wildcards like "image/*" which include SVGs/GIFs,
+	// we filter our 'accept' keys based on the category.
+	const getFilteredAccept = (type: "image" | "video" | "audio" | null) => {
+		const keys = Object.keys(accept);
+		if (!type) return keys;
+		return keys.filter((mime) => mime.startsWith(`${type}/`));
+	};
+
+	const buttonAccept = getFilteredAccept(existingType);
 
 	const buttonLabel =
 		showResult && existingType
