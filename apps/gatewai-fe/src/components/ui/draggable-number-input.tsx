@@ -43,7 +43,7 @@ const DraggableNumberInput: React.FC<DraggableNumberInputProps> = ({
 
 	const commit = (strVal: string) => {
 		let num = allowDecimal ? parseFloat(strVal) : parseInt(strVal, 10);
-		if (isNaN(num)) num = 0;
+		if (Number.isNaN(num)) num = 0;
 		if (min !== undefined) num = Math.max(min, num);
 		if (max !== undefined) num = Math.min(max, num);
 		if (!allowDecimal) num = Math.round(num);

@@ -1,4 +1,4 @@
-import React, { forwardRef, type SVGProps } from "react";
+import { forwardRef, type SVGProps } from "react";
 
 // 1. Define the interface for your custom props
 export interface YodesLogoProps extends SVGProps<SVGSVGElement> {

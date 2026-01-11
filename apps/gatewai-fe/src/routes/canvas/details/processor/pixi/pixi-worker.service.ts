@@ -59,11 +59,14 @@ export class WorkerPixiService extends BasePixiService {
 		// renderer.extract.base64(target) is the standard v7 way
 		try {
 			return await renderer.extract.base64(target);
-		} catch (e) {
+		} catch () {
 			// Fallback for environments where extract.base64 might fail
 			const pixels = renderer.extract.pixels(target);
 			const canvas = new OffscreenCanvas(renderer.width, renderer.height);
-			const ctx = canvas.getContext("2d")!;
+			const ctx = canvas.getContext("2d");
+			if (!ctx) {
+				throw new Error('2d Canvas context is not supported')
+			}
 			const imageData = new ImageData(
 				new Uint8ClampedArray(pixels.buffer),
 				renderer.width,

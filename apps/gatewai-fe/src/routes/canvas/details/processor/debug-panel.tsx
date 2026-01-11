@@ -76,6 +76,7 @@ function DebugPanel() {
 					) : (
 						reversed.map((log, i) => (
 							<div
+								// biome-ignore lint/suspicious/noArrayIndexKey: Bo other prop
 								key={`${log}-${i}`}
 								className="px-4 py-2 border-b border-muted last:border-0 hover:bg-muted/50 transition-colors"
 							>

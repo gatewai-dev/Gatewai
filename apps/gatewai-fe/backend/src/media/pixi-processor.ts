@@ -14,11 +14,13 @@ import { createCanvas, ImageData } from "canvas";
 
 // 1. Polyfill ImageData
 if (typeof global.ImageData === "undefined") {
+	// biome-ignore lint/suspicious/noExplicitAny: No-need
 	(global as any).ImageData = ImageData;
 }
 
 // 2. Polyfill the document factory for Pixi's extract utility
 if (typeof global.document === "undefined") {
+	// biome-ignore lint/suspicious/noExplicitAny: No-need
 	(global as any).document = {
 		createElement: (type: string) => {
 			if (type === "canvas") return createCanvas(1, 1);
