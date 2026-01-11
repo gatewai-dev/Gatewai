@@ -900,38 +900,6 @@ export class NodeGraphProcessor extends EventEmitter {
 			};
 		});
 
-		this.registerProcessor(
-			"VideoCompositor",
-			async ({ node, inputs, signal }) => {
-				const config = node.config as unknown as VideoCompositorNodeConfig;
-				const result = await remotionService.processVideo(
-					config,
-					inputs,
-					signal,
-				);
-				return {
-					selectedOutputIndex: 0,
-					outputs: [
-						{
-							items: [
-								{
-									type: "Video",
-									data: {
-										processData: {
-											dataUrl: result.dataUrl,
-											width: result.width,
-											height: result.height,
-										},
-									},
-									outputHandleId: null,
-								},
-							],
-						},
-					],
-				};
-			},
-		);
-
 		this.registerProcessor("Blur", async ({ node, inputs, signal }) => {
 			const imageUrl = findInputData(inputs, "Image");
 			if (!imageUrl) throw new Error("Missing Input Image");
@@ -1128,6 +1096,9 @@ export class NodeGraphProcessor extends EventEmitter {
 
 		const passthrough = async ({ node }: NodeProcessorParams) =>
 			node.result as unknown as NodeResult;
+
+		// We only render the video when user downloads it,
+		this.registerProcessor("VideoCompositor", passthrough);
 		this.registerProcessor("ImageGen", passthrough);
 		this.registerProcessor("File", passthrough);
 		this.registerProcessor("Agent", passthrough);
