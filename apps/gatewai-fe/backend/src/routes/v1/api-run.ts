@@ -75,12 +75,16 @@ const apiRunRoutes = new Hono({ strict: false })
 					nodes.map((node) => {
 						assert(node.originalNodeId);
 						const inputData = payload[node.originalNodeId!];
-						return prisma.node.update({
-							where: { id: node.id },
-							data: {
-								config: { content: inputData } as TextNodeConfig,
-							},
-						});
+						if (node.type === "Text") {
+							return prisma.node.update({
+								where: { id: node.id },
+								data: {
+									config: { content: inputData } as TextNodeConfig,
+								},
+							});
+						}
+						if (node.type === "File") {
+						}
 					}),
 				);
 			}
