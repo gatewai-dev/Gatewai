@@ -38,6 +38,7 @@ import {
 	Play,
 	Plus,
 	RotateCw,
+	Settings2,
 	Trash2,
 	Type,
 	XIcon,
@@ -1130,6 +1131,17 @@ const InspectorPanel: React.FC = () => {
 		return ["Geist", "Inter", "Arial", "Courier New", "Times New Roman"];
 	}, [fontList]);
 
+	const aspectRatios = useMemo(
+		() => [
+			{ label: "16:9 Landscape", width: 1920, height: 1080 },
+			{ label: "9:16 Story/Reel", width: 1080, height: 1920 },
+			{ label: "1:1 Square", width: 1080, height: 1080 },
+			{ label: "4:5 Portrait", width: 1080, height: 1350 },
+			{ label: "21:9 Ultrawide", width: 2560, height: 1080 },
+		],
+		[],
+	);
+
 	const animationTypes: AnimationType[] = [
 		"fade-in",
 		"fade-out",
@@ -1172,43 +1184,90 @@ const InspectorPanel: React.FC = () => {
 		return (
 			<div className="w-72 border-l border-white/5 bg-[#0f0f0f] flex flex-col z-20 shadow-xl">
 				<div className="p-4 bg-neutral-900 border-b border-white/5">
-					<h2 className="text-xs font-semibold text-white">Global Settings</h2>
+					<div className="flex items-center gap-2 text-xs font-semibold text-white">
+						<Settings2 className="w-3.5 h-3.5 text-gray-400" />
+						Global Settings
+					</div>
 				</div>
-				<div className="p-4 space-y-4">
-					<div className="space-y-2">
-						<TooltipProvider>
-							<Tooltip>
-								<TooltipTrigger asChild>
-									<Label className="text-[10px] text-gray-500 uppercase font-bold">
-										Canvas Size
-									</Label>
-								</TooltipTrigger>
-								<TooltipContent>
-									<p>
-										Dimensions are automatically rounded to even numbers for
-										video codec compatibility.
-									</p>
-								</TooltipContent>
-							</Tooltip>
-						</TooltipProvider>
-						<div className="grid grid-cols-2 gap-2">
-							<DraggableNumberInput
-								label="W"
-								icon={MoveHorizontal}
-								value={Math.round(viewportWidth)}
-								onChange={(v) => updateViewportWidth(Math.max(2, v))}
-							/>
-							<DraggableNumberInput
-								label="H"
-								icon={MoveVertical}
-								value={Math.round(viewportHeight)}
-								onChange={(v) => updateViewportHeight(Math.max(2, v))}
-							/>
+				<div className="p-4 space-y-6">
+					{/* Canvas Settings Group */}
+					<div className="space-y-4">
+						<div className="space-y-1">
+							<Label className="text-[10px] text-gray-500 uppercase font-bold tracking-wider">
+								Canvas Presets
+							</Label>
+							<Select
+								onValueChange={(val) => {
+									const preset = aspectRatios.find((r) => r.label === val);
+									if (preset) {
+										updateViewportWidth(preset.width);
+										updateViewportHeight(preset.height);
+									}
+								}}
+							>
+								<SelectTrigger className="h-8 text-[11px] bg-white/5 border-white/10 text-gray-300">
+									<SelectValue placeholder="Select Aspect Ratio" />
+								</SelectTrigger>
+								<SelectContent className="bg-neutral-800 border-white/10 text-gray-300">
+									{aspectRatios.map((r) => (
+										<SelectItem key={r.label} value={r.label}>
+											<span className="flex items-center justify-between w-full gap-4">
+												<span>{r.label}</span>
+												<span className="text-[9px] text-gray-500 font-mono">
+													{r.width}x{r.height}
+												</span>
+											</span>
+										</SelectItem>
+									))}
+								</SelectContent>
+							</Select>
+						</div>
+
+						<div className="space-y-2">
+							<div className="flex items-center justify-between">
+								<Label className="text-[10px] text-gray-500 uppercase font-bold tracking-wider">
+									Dimensions
+								</Label>
+								<TooltipProvider>
+									<Tooltip>
+										<TooltipTrigger asChild>
+											<div className="w-3 h-3 rounded-full border border-gray-600 text-[8px] flex items-center justify-center text-gray-500 cursor-help">
+												?
+											</div>
+										</TooltipTrigger>
+										<TooltipContent>
+											<p>
+												Dimensions are automatically rounded to even numbers for
+												codec compatibility.
+											</p>
+										</TooltipContent>
+									</Tooltip>
+								</TooltipProvider>
+							</div>
+							<div className="grid grid-cols-2 gap-2">
+								<DraggableNumberInput
+									label="W"
+									icon={MoveHorizontal}
+									value={Math.round(viewportWidth)}
+									onChange={(v) => updateViewportWidth(Math.max(2, v))}
+								/>
+								<DraggableNumberInput
+									label="H"
+									icon={MoveVertical}
+									value={Math.round(viewportHeight)}
+									onChange={(v) => updateViewportHeight(Math.max(2, v))}
+								/>
+							</div>
 						</div>
 					</div>
-					<div className="flex flex-col items-center justify-center p-8 mt-10 text-center border border-dashed border-white/10 rounded-lg bg-white/5">
+
+					<div className="w-full h-px bg-white/5" />
+
+					<div className="flex flex-col items-center justify-center p-8 text-center border border-dashed border-white/10 rounded-lg bg-white/5">
 						<MousePointer className="w-6 h-6 text-gray-600 mb-2" />
-						<p className="text-xs text-gray-500">Select a layer to edit</p>
+						<p className="text-xs text-gray-500">
+							Select a layer to edit properties
+						</p>
 					</div>
 				</div>
 			</div>

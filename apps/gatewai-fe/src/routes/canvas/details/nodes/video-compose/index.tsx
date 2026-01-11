@@ -12,6 +12,7 @@ import { makeSelectNodeById } from "@/store/nodes";
 import { GetAssetEndpoint, GetFontAssetUrl } from "@/utils/file";
 import { AddCustomHandleButton } from "../../components/add-custom-handle";
 import { useDownloadFileData } from "../../hooks/use-download-filedata";
+import { remotionService } from "../../processor/muxer-service";
 import { useNodeResult } from "../../processor/processor-ctx";
 import { BaseNode } from "../base";
 import type { VideoCompositorNode } from "../node-props";
@@ -27,14 +28,11 @@ const VideoCompositorNodeComponent = memo(
 	(props: NodeProps<VideoCompositorNode>) => {
 		const node = useAppSelector(makeSelectNodeById(props.id));
 		const [isDownloading, setIsDownloading] = useState(false);
-		const { result, isProcessing } = useNodeResult(props.id);
+		const { result, isProcessing, inputs } = useNodeResult(props.id);
 		const nav = useNavigate();
 		const downloadFileData = useDownloadFileData();
 
-		// 1. Reconstruct Layers from Config + Inputs
-		// Note: In a real flow, inputs might come from handles.
-		// We assume 'result' might have 'inputs' or we fallback to config placeholders if not executed yet.
-		// For accurate preview, we map the node config's layerUpdates.
+		// Reconstruct layers from config and inputs for accurate preview
 		const previewState = useMemo(() => {
 			const config = node?.config as unknown as VideoCompositorNodeConfig;
 			if (!config) return null;
@@ -43,39 +41,69 @@ const VideoCompositorNodeComponent = memo(
 			const height = config.height ?? 1080;
 			const layerUpdates = config.layerUpdates || {};
 
-			const layers: ExtendedLayer[] = Object.entries(layerUpdates).map(
-				([id, update]) => {
-					// Try to resolve content from result inputs if available, else placeholders
-					// This logic depends on how your system stores handle data.
-					// Assuming we can't easily get live handle data without execution,
-					// we might use placeholders or try to access the connected node data if passed.
-					// Here we setup the structural layer.
+			const layers: ExtendedLayer[] = [];
 
-					// If the node has executed, we might find resolved data in `result.inputs`?
-					// If not, we use basic config.
+			for (const [handleId, update] of Object.entries(layerUpdates)) {
+				const input = inputs[handleId];
+				const item = input?.connectionValid ? input.outputItem : null;
 
-					return {
-						id,
-						inputHandleId: id,
-						type: (update as any).type || "Image", // Fallback
-						startFrame: 0,
-						durationInFrames: DEFAULT_DURATION_FRAMES,
-						x: 0,
-						y: 0,
-						scale: 1,
-						rotation: 0,
-						opacity: 1,
-						...update,
-						// Ensure numbers are numbers
-						width: update.width ?? 100,
-						height: update.height ?? 100,
-						src: "", // Populate if URL known
-						text: "Preview", // Populate if text known
-					} as ExtendedLayer;
-				},
-			);
+				let src: string | undefined;
+				let text: string | undefined;
+				let maxDurationInFrames: number | undefined;
+				let layerWidth = update.width;
+				let layerHeight = update.height;
 
-			// Calculate max duration for the timeline
+				if (item) {
+					if (item.type === "Text") {
+						text = (item.data as string) || "Text";
+					} else if (["Image", "Video", "Audio"].includes(item.type)) {
+						const fileData = item.data as FileData;
+						if (fileData) {
+							src = fileData.entity?.id
+								? GetAssetEndpoint(fileData.entity)
+								: fileData.processData?.dataUrl;
+
+							const durationMs =
+								fileData.entity?.duration ||
+								fileData.processData?.duration ||
+								0;
+							if (
+								durationMs > 0 &&
+								(item.type === "Video" || item.type === "Audio")
+							) {
+								maxDurationInFrames = Math.ceil((durationMs / 1000) * FPS);
+							}
+
+							if (!layerWidth) layerWidth = fileData.processData?.width;
+							if (!layerHeight) layerHeight = fileData.processData?.height;
+						}
+					}
+				} else {
+					// Placeholder for unconnected inputs
+					if (update.type === "Text") {
+						text = "No Input";
+					} else {
+						src = undefined; // CompositionScene should handle gracefully (e.g., skip or show placeholder)
+					}
+				}
+
+				layers.push({
+					id: handleId,
+					inputHandleId: handleId,
+					...update,
+					width: layerWidth,
+					height: layerHeight,
+					src,
+					text,
+					maxDurationInFrames:
+						update.maxDurationInFrames || maxDurationInFrames,
+				});
+			}
+
+			// Sort layers by zIndex ascending to match rendering order (lower z first)
+			layers.sort((a, b) => (a.zIndex ?? 0) - (b.zIndex ?? 0));
+
+			// Calculate total duration matching editor logic
 			const durationInFrames =
 				layers.length > 0
 					? Math.max(
@@ -89,34 +117,36 @@ const VideoCompositorNodeComponent = memo(
 					: DEFAULT_DURATION_FRAMES;
 
 			return { layers, width, height, durationInFrames };
-		}, [node]);
+		}, [node, inputs]);
 
-		// Load fonts for preview
+		// Inject fonts for text layers to ensure consistent rendering
 		useEffect(() => {
-			previewState?.layers.forEach((l) => {
-				if (l.type === "Text" && l.fontFamily) {
-					const url = GetFontAssetUrl(l.fontFamily);
-					if (url) injectFontFace(l.fontFamily, url);
+			previewState?.layers.forEach((layer) => {
+				if (layer.type === "Text" && layer.fontFamily) {
+					const url = GetFontAssetUrl(layer.fontFamily);
+					if (url) injectFontFace(layer.fontFamily, url);
 				}
 			});
 		}, [previewState]);
 
-		/**
-		 * Main download handler (Downloads the RESULT mp4, not the preview)
-		 */
+		// Download handler for the processed result (MP4)
 		const onClickDownload = async () => {
 			if (!result) {
 				toast.error("No result available to download");
 				return;
 			}
+			setIsDownloading(true);
 			try {
-				const selectedOutput = result.outputs[result.selectedOutputIndex];
-				if (!selectedOutput || !selectedOutput.items.length) {
-					throw new Error("No output items found");
-				}
-				const outputItem = selectedOutput.items[0];
-				const { type, data } = outputItem;
-				await downloadFileData(data as FileData, type);
+				const config = node.config as unknown as VideoCompositorNodeConfig;
+				const result = await remotionService.processVideo(config, inputs);
+				await downloadFileData(
+					{
+						processData: {
+							dataUrl: result.dataUrl,
+						},
+					} as FileData,
+					"Video",
+				);
 			} catch (err) {
 				const errorMessage =
 					err instanceof Error ? err.message : "An unknown error occurred";
@@ -136,8 +166,7 @@ const VideoCompositorNodeComponent = memo(
 				<div className="flex flex-col gap-3">
 					<div
 						className={cn(
-							"w-full overflow-hidden rounded media-container relative bg-black",
-							// Responsive height based on aspect ratio approx
+							"w-full overflow-hidden rounded media-container relative",
 							"h-48",
 						)}
 					>
@@ -158,7 +187,7 @@ const VideoCompositorNodeComponent = memo(
 										width: "100%",
 										height: "100%",
 									}}
-									controls={true} // Simple controls for node view
+									controls={true} // Basic controls for node preview
 									loop
 									autoPlay={false}
 								/>
@@ -186,12 +215,6 @@ const VideoCompositorNodeComponent = memo(
 									{isDownloading && (
 										<>
 											<Loader2 className="size-3 mr-2 animate-spin" />
-											Downloading...
-										</>
-									)}
-									{isProcessing && (
-										<>
-											<Loader2 className="size-3 mr-2 animate-spin" />
 											Rendering...
 										</>
 									)}
@@ -206,7 +229,7 @@ const VideoCompositorNodeComponent = memo(
 									onClick={() => nav(`video-editor/${node.id}`)}
 									size="sm"
 								>
-									<VideoIcon /> Edit
+									<VideoIcon className="size-4 mr-2" /> Edit
 								</Button>
 							</div>
 						)}
