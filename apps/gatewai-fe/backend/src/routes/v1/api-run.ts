@@ -77,7 +77,7 @@ const apiRunRoutes = new Hono({ strict: false })
 				await Promise.all(
 					nodes.map(async (node) => {
 						assert(node.originalNodeId);
-						const inputData = payload[node.originalNodeId!];
+						const inputData = payload[node.originalNodeId];
 
 						if (node.type === "Text") {
 							return prisma.node.update({

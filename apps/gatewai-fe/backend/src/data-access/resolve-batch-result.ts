@@ -73,24 +73,27 @@ export async function resolveBatchResult(
 		const originalNode = originalExportNodes.find(
 			(f) => f.id === exportNode?.originalNodeId,
 		);
-		if (originalNode) {
-			const result = exportNode?.result as unknown as ExportResult | null;
-			if (!result) continue;
-			const selectedOutput = result.outputs[result.selectedOutputIndex];
-			const outputItem = selectedOutput.items[0];
-			let outputData: string | number | boolean | undefined;
-			if (isOutputItemFileData(outputItem.data)) {
-				outputData = await overrideFileResult(outputItem.data);
-			} else {
-				outputData = outputItem.data;
-			}
-			console.log({ outputData });
-			if (outputData) {
-				allResults[originalNode?.id] = {
-					type: outputItem.type,
-					data: outputData,
-				} as any; // TODO: Eww, need to fix this.
-			}
+
+		// Ensure we have both the node and the result
+		const result = exportNode?.result as unknown as ExportResult | null;
+		if (!originalNode?.id || !result) continue;
+
+		const selectedOutput = result.outputs[result.selectedOutputIndex];
+		const outputItem = selectedOutput.items[0];
+
+		let outputData: string | number | boolean | undefined;
+
+		if (isOutputItemFileData(outputItem.data)) {
+			outputData = await overrideFileResult(outputItem.data);
+		} else {
+			outputData = outputItem.data;
+		}
+
+		if (outputData !== undefined) {
+			allResults[originalNode.id] = {
+				type: outputItem.type,
+				data: outputData,
+			} as any;
 		}
 	}
 

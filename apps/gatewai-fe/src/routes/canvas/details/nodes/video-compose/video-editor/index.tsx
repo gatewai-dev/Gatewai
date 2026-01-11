@@ -19,9 +19,7 @@ import type {
 	CompositorNodeConfig,
 	FileData,
 	OutputItem,
-	VideoCompositorLayer,
 } from "@gatewai/types";
-import { Video } from "@remotion/media";
 import { Player, type PlayerRef } from "@remotion/player";
 import {
 	ChevronDown,
@@ -56,16 +54,6 @@ import React, {
 	useRef,
 	useState,
 } from "react";
-import {
-	AbsoluteFill,
-	Html5Audio,
-	Img,
-	interpolate,
-	Sequence,
-	spring,
-	useCurrentFrame,
-	useVideoConfig,
-} from "remotion";
 import { Button } from "@/components/ui/button";
 import { DraggableNumberInput } from "@/components/ui/draggable-number-input";
 import { Label } from "@/components/ui/label";
@@ -99,40 +87,24 @@ import {
 import { ColorInput } from "@/components/util/color-input";
 import { useGetFontListQuery } from "@/store/fonts";
 import { GetAssetEndpoint, GetFontAssetUrl } from "@/utils/file";
+import {
+	type AnimationType,
+	CompositionScene,
+	DEFAULT_DURATION_FRAMES,
+	type ExtendedLayer,
+	FPS,
+	injectFontFace,
+	type VideoAnimation,
+} from "../common/composition";
 
-// --- Types & Schemas ---
+// --- Constants ---
+const RULER_HEIGHT = 32;
+const TRACK_HEIGHT = 36;
+const HEADER_WIDTH = 260;
 
-export type AnimationType =
-	| "fade-in"
-	| "fade-out"
-	| "slide-in-left"
-	| "slide-in-right"
-	| "slide-in-top"
-	| "slide-in-bottom"
-	| "zoom-in"
-	| "zoom-out"
-	| "rotate-cw"
-	| "rotate-ccw"
-	| "bounce"
-	| "shake";
-
-export interface VideoAnimation {
-	id: string;
-	type: AnimationType;
-	value: number; // duration in seconds
-}
-
-interface ExtendedLayer extends Omit<VideoCompositorLayer, "width" | "height"> {
-	width?: number;
-	height?: number;
-	animations?: VideoAnimation[];
-	maxDurationInFrames?: number;
-	// Helper for runtime logic
-	isPlaceholder?: boolean;
-}
+// --- Context & Types ---
 
 interface EditorContextType {
-	// State
 	layers: ExtendedLayer[];
 	updateLayers: (
 		updater: SetStateAction<ExtendedLayer[]>,
@@ -141,16 +113,13 @@ interface EditorContextType {
 	deleteLayer: (id: string) => void;
 	selectedId: string | null;
 	setSelectedId: (id: string | null) => void;
-	// Data Getters
 	getTextData: (id: string) => string;
 	getAssetUrl: (id: string) => string | undefined;
 	getMediaDuration: (id: string) => number | undefined;
-	// Canvas
 	viewportWidth: number;
 	viewportHeight: number;
 	updateViewportWidth: (w: number) => void;
 	updateViewportHeight: (h: number) => void;
-	// Playback
 	fps: number;
 	durationInFrames: number;
 	currentFrame: number;
@@ -158,7 +127,6 @@ interface EditorContextType {
 	isPlaying: boolean;
 	setIsPlaying: (playing: boolean) => void;
 	playerRef: React.RefObject<PlayerRef>;
-	// View Transform
 	zoom: number;
 	setZoom: Dispatch<SetStateAction<number>>;
 	pan: { x: number; y: number };
@@ -167,10 +135,8 @@ interface EditorContextType {
 	zoomOut: () => void;
 	zoomTo: (val: number) => void;
 	fitView: () => void;
-	// Mode
 	mode: "select" | "pan";
 	setMode: Dispatch<SetStateAction<"select" | "pan">>;
-	// System
 	isDirty: boolean;
 	setIsDirty: Dispatch<SetStateAction<boolean>>;
 }
@@ -181,217 +147,6 @@ const useEditor = () => {
 	const ctx = useContext(EditorContext);
 	if (!ctx) throw new Error("useEditor must be used within EditorProvider");
 	return ctx;
-};
-
-// --- Constants ---
-const FPS = 24;
-const DEFAULT_DURATION_SEC = 5;
-const DEFAULT_DURATION_FRAMES = FPS * DEFAULT_DURATION_SEC;
-const RULER_HEIGHT = 32;
-const TRACK_HEIGHT = 36;
-const HEADER_WIDTH = 260;
-
-// --- Helpers ---
-
-/**
- * Lazily injects a font face definition.
- * Does NOT block or wait for the font to load (Fixes "Do not pre-load" constraint).
- */
-const injectFontFace = (family: string, url: string) => {
-	if (!family || !url) return;
-	const fontId = `font-${family.replace(/\s+/g, "-").toLowerCase()}`;
-	if (document.getElementById(fontId)) return;
-
-	const style = document.createElement("style");
-	style.id = fontId;
-	style.innerHTML = `
-      @font-face {
-        font-family: "${family}";
-        src: url("${url}");
-        font-display: swap; 
-      }
-    `;
-	document.head.appendChild(style);
-};
-
-// Extracted animation logic for purity and performance
-const calculateLayerTransform = (
-	layer: ExtendedLayer,
-	frame: number,
-	fps: number,
-	viewport: { w: number; h: number },
-) => {
-	const relativeFrame = frame - layer.startFrame;
-	let x = layer.x;
-	let y = layer.y;
-	let scale = layer.scale;
-	let rotation = layer.rotation;
-	let opacity = layer.opacity;
-	const volume = layer.volume ?? 1;
-
-	const animations = layer.animations ?? [];
-	if (animations.length === 0)
-		return { x, y, scale, rotation, opacity, volume };
-
-	animations.forEach((anim) => {
-		const durFrames = anim.value * fps;
-		const isOut = anim.type.includes("-out");
-		const startAnimFrame = isOut ? layer.durationInFrames - durFrames : 0;
-		const endAnimFrame = isOut ? layer.durationInFrames : durFrames;
-
-		if (relativeFrame < startAnimFrame || relativeFrame > endAnimFrame) {
-			// If we are past the animation, ensure final state is correct for "entry" animations
-			if (!isOut && relativeFrame > endAnimFrame) {
-				// Entry animations usually end at neutral state, so no op needed unless specific logic
-			}
-			return;
-		}
-
-		const progress = interpolate(
-			relativeFrame,
-			[startAnimFrame, endAnimFrame],
-			[0, 1],
-			{ extrapolateLeft: "clamp", extrapolateRight: "clamp" },
-		);
-
-		switch (anim.type) {
-			case "fade-in":
-				opacity *= progress;
-				break;
-			case "fade-out":
-				opacity *= 1 - progress;
-				break;
-			case "slide-in-left":
-				x += -1 * viewport.w * (1 - progress);
-				break;
-			case "slide-in-right":
-				x += 1 * viewport.w * (1 - progress);
-				break;
-			case "slide-in-top":
-				y += -1 * viewport.h * (1 - progress);
-				break;
-			case "slide-in-bottom":
-				y += 1 * viewport.h * (1 - progress);
-				break;
-			case "zoom-in":
-				scale *= interpolate(progress, [0, 1], [0, 1]);
-				break;
-			case "zoom-out":
-				scale *= interpolate(progress, [0, 1], [1, 0]);
-				break;
-			case "rotate-cw":
-				rotation += 360 * progress;
-				break;
-			case "rotate-ccw":
-				rotation += -360 * progress;
-				break;
-			case "bounce": {
-				const bounceVal = spring({
-					frame: relativeFrame - startAnimFrame,
-					fps,
-					config: { damping: 10, mass: 0.5, stiffness: 100 },
-					durationInFrames: durFrames,
-				});
-				scale *= bounceVal;
-				break;
-			}
-			case "shake": {
-				const intensity = 20;
-				x +=
-					intensity *
-					Math.sin((relativeFrame * 10 * 2 * Math.PI) / durFrames) *
-					(1 - progress);
-				break;
-			}
-		}
-	});
-
-	return { x, y, scale, rotation, opacity, volume };
-};
-
-// --- Remotion Scene ---
-const CompositionScene: React.FC<{
-	layers: ExtendedLayer[];
-}> = ({ layers }) => {
-	const { getTextData, getAssetUrl, viewportWidth, viewportHeight } =
-		useEditor();
-	const frame = useCurrentFrame();
-	const { fps } = useVideoConfig();
-
-	// Sort by zIndex for rendering order
-	const sortedLayers = useMemo(
-		() => [...layers].sort((a, b) => (a.zIndex ?? 0) - (b.zIndex ?? 0)),
-		[layers],
-	);
-
-	return (
-		<AbsoluteFill style={{ backgroundColor: "#000000" }}>
-			{sortedLayers.map((layer) => {
-				// Optimization: Do not render if out of frame bounds
-				const endFrame = layer.startFrame + layer.durationInFrames;
-				if (frame < layer.startFrame || frame >= endFrame) return null;
-
-				const src = getAssetUrl(layer.inputHandleId);
-				const textContent = getTextData(layer.inputHandleId);
-
-				const {
-					x: animX,
-					y: animY,
-					scale: animScale,
-					rotation: animRotation,
-					opacity: animOpacity,
-					volume: animVolume,
-				} = calculateLayerTransform(layer, frame, fps, {
-					w: viewportWidth,
-					h: viewportHeight,
-				});
-
-				const style: React.CSSProperties = {
-					position: "absolute",
-					left: animX,
-					top: animY,
-					width: layer.width,
-					height: layer.height,
-					transform: `rotate(${animRotation}deg) scale(${animScale})`,
-					opacity: animOpacity,
-					textAlign: layer.align,
-				};
-
-				return (
-					<Sequence
-						key={layer.id}
-						from={layer.startFrame}
-						durationInFrames={layer.durationInFrames}
-						layout="none" // Important for absolute positioning control
-					>
-						{layer.type === "Video" && src && (
-							<Video src={src} style={{ ...style }} volume={animVolume} />
-						)}
-						{layer.type === "Image" && src && (
-							<Img src={src} style={{ ...style, objectFit: "cover" }} />
-						)}
-						{layer.type === "Audio" && src && (
-							<Html5Audio src={src} volume={animVolume} />
-						)}
-						{layer.type === "Text" && (
-							<div
-								style={{
-									...style,
-									color: layer.fill,
-									fontSize: layer.fontSize,
-									fontFamily: layer.fontFamily,
-									lineHeight: layer.lineHeight ?? 1.2,
-									whiteSpace: "pre",
-								}}
-							>
-								{textContent}
-							</div>
-						)}
-					</Sequence>
-				);
-			})}
-		</AbsoluteFill>
-	);
 };
 
 // --- Components: Interaction Overlay ---
@@ -436,9 +191,10 @@ const InteractionOverlay: React.FC = () => {
 				(l) =>
 					l.type !== "Audio" &&
 					currentFrame >= l.startFrame &&
-					currentFrame < l.startFrame + l.durationInFrames,
+					currentFrame <
+						l.startFrame + (l.durationInFrames ?? DEFAULT_DURATION_FRAMES),
 			)
-			.sort((a, b) => (a.zIndex ?? 0) - (b.zIndex ?? 0)); // Render order
+			.sort((a, b) => (a.zIndex ?? 0) - (b.zIndex ?? 0));
 	}, [layers, currentFrame]);
 
 	const handleMouseDown = (
@@ -446,7 +202,6 @@ const InteractionOverlay: React.FC = () => {
 		layerId?: string,
 		anchor?: "tl" | "tr" | "bl" | "br",
 	) => {
-		// Middle mouse or Spacebar mode = Pan
 		if (e.button === 1 || mode === "pan") {
 			e.preventDefault();
 			setIsPanning(true);
@@ -504,7 +259,11 @@ const InteractionOverlay: React.FC = () => {
 			...layer,
 			width: layer.width ?? 0,
 			height: layer.height ?? 0,
-		}); // Snapshot
+			x: layer.x,
+			y: layer.y,
+			rotation: layer.rotation,
+			scale: layer.scale,
+		});
 		setIsRotating(true);
 	};
 
@@ -633,6 +392,11 @@ const InteractionOverlay: React.FC = () => {
 			onMouseUp={handleMouseUp}
 			onMouseLeave={handleMouseUp}
 			onMouseDown={(e) => handleMouseDown(e)}
+			role="button"
+			tabIndex={0}
+			onKeyDown={(e) => {
+				if (e.key === " ") setIsPanning(!isPanning);
+			}}
 		>
 			<div
 				className="absolute origin-top-left"
@@ -647,6 +411,9 @@ const InteractionOverlay: React.FC = () => {
 						key={layer.id}
 						role="button"
 						tabIndex={0}
+						onKeyDown={(e) => {
+							if (e.key === "Enter") setSelectedId(layer.id);
+						}}
 						onMouseDown={(e) => handleMouseDown(e, layer.id)}
 						className={`absolute group outline-none select-none ${
 							selectedId === layer.id ? "z-50" : "z-auto"
@@ -676,12 +443,15 @@ const InteractionOverlay: React.FC = () => {
 									["tl", "tr", "bl", "br"].map((pos) => (
 										<div
 											key={pos}
+											role="button"
+											tabIndex={0}
+											onKeyDown={() => {}} // No-op for a11y silence on drag handle
 											className={`absolute w-2.5 h-2.5 bg-white border border-blue-600 rounded-full shadow-sm z-50 transition-transform hover:scale-125
-                      ${pos === "tl" ? "-top-1.5 -left-1.5 cursor-nwse-resize" : ""}
-                      ${pos === "tr" ? "-top-1.5 -right-1.5 cursor-nesw-resize" : ""}
-                      ${pos === "bl" ? "-bottom-1.5 -left-1.5 cursor-nesw-resize" : ""}
-                      ${pos === "br" ? "-bottom-1.5 -right-1.5 cursor-nwse-resize" : ""}
-                    `}
+                                                ${pos === "tl" ? "-top-1.5 -left-1.5 cursor-nwse-resize" : ""}
+                                                ${pos === "tr" ? "-top-1.5 -right-1.5 cursor-nesw-resize" : ""}
+                                                ${pos === "bl" ? "-bottom-1.5 -left-1.5 cursor-nesw-resize" : ""}
+                                                ${pos === "br" ? "-bottom-1.5 -right-1.5 cursor-nwse-resize" : ""}
+                                            `}
 											onMouseDown={(e) =>
 												handleMouseDown(
 													e,
@@ -697,6 +467,9 @@ const InteractionOverlay: React.FC = () => {
 									style={{ transform: `scaleX(${1 / zoom})` }}
 								/>
 								<div
+									role="button"
+									tabIndex={0}
+									onKeyDown={() => {}}
 									className="absolute -top-6 left-1/2 -translate-x-1/2 w-2.5 h-2.5 bg-white border border-blue-600 rounded-full shadow-sm cursor-grab active:cursor-grabbing hover:scale-110"
 									onMouseDown={(e) => handleRotateStart(e, layer.id)}
 								/>
@@ -884,6 +657,7 @@ const SortableTrackHeader: React.FC<SortableTrackProps> = ({
 			style={style}
 			role="button"
 			tabIndex={0}
+			onKeyDown={(e) => e.key === "Enter" && onSelect()}
 			className={`
         border-b border-white/5 flex items-center pl-3 pr-2 text-xs gap-3 group outline-none transition-colors
         ${isSelected ? "bg-blue-500/10 text-blue-100" : "hover:bg-white/5 text-gray-400"}
@@ -951,7 +725,6 @@ const TimelinePanel: React.FC = () => {
 	const [initialScroll, setInitialScroll] = useState(0);
 	const [pixelsPerFrame, setPixelsPerFrame] = useState(6);
 
-	// Memoize sorting for the list
 	const sortedLayers = useMemo(
 		() => [...layers].sort((a, b) => (b.zIndex ?? 0) - (a.zIndex ?? 0)),
 		[layers],
@@ -971,7 +744,6 @@ const TimelinePanel: React.FC = () => {
 			const newIndex = sortedLayers.findIndex((l) => l.id === over.id);
 
 			const newSorted = arrayMove(sortedLayers, oldIndex, newIndex);
-			// Reassign zIndices based on new array order (Top of list = highest Z)
 			const updatedLayers = newSorted.map((l, idx) => ({
 				...l,
 				zIndex: newSorted.length - idx,
@@ -984,7 +756,6 @@ const TimelinePanel: React.FC = () => {
 		}
 	};
 
-	// Optimize the playhead loop
 	useEffect(() => {
 		let rafId: number | null = null;
 		const loop = () => {
@@ -1035,7 +806,7 @@ const TimelinePanel: React.FC = () => {
 		if (!layer) return;
 
 		const initialStart = layer.startFrame;
-		const initialDuration = layer.durationInFrames;
+		const initialDuration = layer.durationInFrames ?? DEFAULT_DURATION_FRAMES;
 
 		const onMove = (moveEv: MouseEvent) => {
 			const diffPx = moveEv.clientX - startX;
@@ -1128,6 +899,9 @@ const TimelinePanel: React.FC = () => {
 				}}
 				onMouseUp={() => setIsPanningTimeline(false)}
 				onMouseLeave={() => setIsPanningTimeline(false)}
+				role="button"
+				tabIndex={0}
+				onKeyDown={() => {}} // No-op
 			>
 				<div
 					className="relative flex flex-col min-h-full"
@@ -1147,6 +921,9 @@ const TimelinePanel: React.FC = () => {
 						<div
 							className="flex-1 bg-neutral-900/90 backdrop-blur-sm border-b border-white/5 relative cursor-pointer"
 							onClick={handleTimelineClick}
+							role="button"
+							tabIndex={0}
+							onKeyDown={() => {}}
 						>
 							<svg className="absolute inset-0 w-full h-full pointer-events-none">
 								<defs>
@@ -1253,67 +1030,74 @@ const TimelinePanel: React.FC = () => {
 								}}
 							/>
 
-							{sortedLayers.map((layer) => (
-								<div
-									key={layer.id}
-									style={{ height: TRACK_HEIGHT }}
-									className={`border-b border-white/5 relative group/track ${
-										layer.id === selectedId ? "bg-white/[0.03]" : ""
-									}`}
-								>
+							{sortedLayers.map((layer) => {
+								const duration =
+									layer.durationInFrames ?? DEFAULT_DURATION_FRAMES;
+								return (
 									<div
-										role="button"
-										tabIndex={0}
-										className={`
-                      absolute top-1 bottom-1 rounded-xs border backdrop-blur-sm
-                      flex items-center overflow-hidden cursor-move outline-none
-                      ${
-												layer.id === selectedId
-													? "ring-1 ring-white/50 z-10 shadow-lg"
-													: "opacity-80 hover:opacity-100 hover:brightness-110"
-											}
-                    `}
-										style={{
-											left: layer.startFrame * pixelsPerFrame,
-											width: Math.max(
-												10,
-												layer.durationInFrames * pixelsPerFrame,
-											),
-											backgroundColor:
-												layer.type === "Video"
-													? "#1e3a8a"
-													: layer.type === "Image"
-														? "#581c87"
-														: layer.type === "Text"
-															? "#14532d"
-															: "#7c2d12",
-											borderColor: "rgba(255,255,255,0.1)",
-										}}
-										onMouseDown={(e) =>
-											handleClipManipulation(e, layer.id, "move")
-										}
-										onClick={(e) => {
-											e.stopPropagation();
-											setSelectedId(layer.id);
-										}}
+										key={layer.id}
+										style={{ height: TRACK_HEIGHT }}
+										className={`border-b border-white/5 relative group/track ${
+											layer.id === selectedId ? "bg-white/[0.03]" : ""
+										}`}
 									>
-										<div className="flex flex-col px-2 w-full overflow-hidden">
-											<span className="text-[10px] truncate text-white/90 font-medium drop-shadow-md">
-												{layer.name || layer.id}
-											</span>
-										</div>
-										{/* Resize Handle */}
 										<div
-											className="absolute right-0 top-0 bottom-0 w-3 cursor-e-resize hover:bg-white/20 z-20 flex items-center justify-center group/handle"
+											role="button"
+											tabIndex={0}
+											onKeyDown={(e) => {
+												if (e.key === "Enter") setSelectedId(layer.id);
+											}}
+											className={`
+                                                absolute top-1 bottom-1 rounded-xs border backdrop-blur-sm
+                                                flex items-center overflow-hidden cursor-move outline-none
+                                                ${
+																									layer.id === selectedId
+																										? "ring-1 ring-white/50 z-10 shadow-lg"
+																										: "opacity-80 hover:opacity-100 hover:brightness-110"
+																								}
+                                            `}
+											style={{
+												left: layer.startFrame * pixelsPerFrame,
+												width: Math.max(10, duration * pixelsPerFrame),
+												backgroundColor:
+													layer.type === "Video"
+														? "#1e3a8a"
+														: layer.type === "Image"
+															? "#581c87"
+															: layer.type === "Text"
+																? "#14532d"
+																: "#7c2d12",
+												borderColor: "rgba(255,255,255,0.1)",
+											}}
 											onMouseDown={(e) =>
-												handleClipManipulation(e, layer.id, "trim")
+												handleClipManipulation(e, layer.id, "move")
 											}
+											onClick={(e) => {
+												e.stopPropagation();
+												setSelectedId(layer.id);
+											}}
 										>
-											<div className="w-0.5 h-3 bg-white/30 group-hover/handle:bg-white/70 rounded-full" />
+											<div className="flex flex-col px-2 w-full overflow-hidden">
+												<span className="text-[10px] truncate text-white/90 font-medium drop-shadow-md">
+													{layer.name || layer.id}
+												</span>
+											</div>
+											{/* Resize Handle */}
+											<div
+												className="absolute right-0 top-0 bottom-0 w-3 cursor-e-resize hover:bg-white/20 z-20 flex items-center justify-center group/handle"
+												onMouseDown={(e) =>
+													handleClipManipulation(e, layer.id, "trim")
+												}
+												role="button"
+												tabIndex={0}
+												onKeyDown={() => {}}
+											>
+												<div className="w-0.5 h-3 bg-white/30 group-hover/handle:bg-white/70 rounded-full" />
+											</div>
 										</div>
 									</div>
-								</div>
-							))}
+								);
+							})}
 						</div>
 					</div>
 				</div>
@@ -1433,42 +1217,6 @@ const InspectorPanel: React.FC = () => {
 
 	return (
 		<ScrollArea className="w-72 border-l border-white/5 bg-[#0f0f0f] z-20 shadow-xl">
-			{/* Inject Animation Styles for Preview Only */}
-			<style>{`
-        @keyframes fade-in { from { opacity: 0; } to { opacity: 1; } }
-        @keyframes fade-out { from { opacity: 1; } to { opacity: 0; } }
-        @keyframes slide-in-left { from { transform: translateX(-100%); } to { transform: translateX(0); } }
-        @keyframes slide-in-right { from { transform: translateX(100%); } to { transform: translateX(0); } }
-        @keyframes slide-in-top { from { transform: translateY(-100%); } to { transform: translateY(0); } }
-        @keyframes slide-in-bottom { from { transform: translateY(100%); } to { transform: translateY(0); } }
-        @keyframes zoom-in { from { transform: scale(0); } to { transform: scale(1); } }
-        @keyframes zoom-out { from { transform: scale(1); } to { transform: scale(0); } }
-        @keyframes rotate-cw { from { transform: rotate(0deg); } to { transform: rotate(360deg); } }
-        @keyframes rotate-ccw { from { transform: rotate(0deg); } to { transform: rotate(-360deg); } }
-        @keyframes bounce {
-          0%, 20%, 50%, 80%, 100% { transform: translateY(0); }
-          40% { transform: translateY(-100%); }
-          60% { transform: translateY(-50%); }
-        }
-        @keyframes shake {
-          0%, 100% { transform: translateX(0); }
-          10%, 30%, 50%, 70%, 90% { transform: translateX(-25%); }
-          20%, 40%, 60%, 80% { transform: translateX(25%); }
-        }
-        .animate-fade-in { animation: fade-in 1s ease-in-out infinite alternate; }
-        .animate-fade-out { animation: fade-out 1s ease-in-out infinite alternate; }
-        .animate-slide-in-left { animation: slide-in-left 1s ease-in-out infinite alternate; }
-        .animate-slide-in-right { animation: slide-in-right 1s ease-in-out infinite alternate; }
-        .animate-slide-in-top { animation: slide-in-top 1s ease-in-out infinite alternate; }
-        .animate-slide-in-bottom { animation: slide-in-bottom 1s ease-in-out infinite alternate; }
-        .animate-zoom-in { animation: zoom-in 1s ease-in-out infinite alternate; }
-        .animate-zoom-out { animation: zoom-out 1s ease-in-out infinite alternate; }
-        .animate-rotate-cw { animation: rotate-cw 1s ease-in-out infinite alternate; }
-        .animate-rotate-ccw { animation: rotate-ccw 1s ease-in-out infinite alternate; }
-        .animate-bounce { animation: bounce 1s ease-in-out infinite alternate; }
-        .animate-shake { animation: shake 1s ease-in-out infinite alternate; }
-      `}</style>
-
 			<div className="flex items-center justify-between p-4 border-b border-white/5 bg-neutral-900/50">
 				<div className="flex flex-col min-w-0">
 					<span className="text-[10px] text-gray-500 uppercase font-bold tracking-wider">
@@ -1723,12 +1471,12 @@ export const VideoDesignerEditor: React.FC<VideoDesignerEditorProps> = ({
 	const [isDirty, setIsDirty] = useState(false);
 
 	// Canvas State
-	const roundToEven = (num: number) => Math.round(num / 2) * 2;
+	const roundToEven = (num?: number) => Math.round((num ?? 0) / 2) * 2;
 	const [viewportWidth, setViewportWidth] = useState(
-		roundToEven(nodeConfig.width ?? 1920),
+		roundToEven(nodeConfig.width) || 1920,
 	);
 	const [viewportHeight, setViewportHeight] = useState(
-		roundToEven(nodeConfig.height ?? 1080),
+		roundToEven(nodeConfig.height) || 1080,
 	);
 	const [zoom, setZoom] = useState(0.5);
 	const [pan, setPan] = useState({ x: 0, y: 0 });
@@ -1854,6 +1602,10 @@ export const VideoDesignerEditor: React.FC<VideoDesignerEditorProps> = ({
 					? Math.ceil((durationMs / 1000) * FPS)
 					: DEFAULT_DURATION_FRAMES;
 
+			// Resolve content for CompositionScene
+			const src = item.type !== "Text" ? getAssetUrl(id) : undefined;
+			const text = item.type === "Text" ? getTextData(id) : undefined;
+
 			const base = {
 				id,
 				inputHandleId: id,
@@ -1867,6 +1619,8 @@ export const VideoDesignerEditor: React.FC<VideoDesignerEditorProps> = ({
 				durationInFrames: saved?.durationInFrames ?? calculatedDurationFrames,
 				volume: 1,
 				animations: saved?.animations ?? [],
+				src,
+				text,
 				...saved,
 			};
 
@@ -1879,14 +1633,12 @@ export const VideoDesignerEditor: React.FC<VideoDesignerEditorProps> = ({
 					fill: saved?.fill ?? "#ffffff",
 					width: saved?.width,
 					height: saved?.height,
-					text: "",
 				});
 			} else if (item.type === "Image" || item.type === "Video") {
 				const pData = item.data?.processData;
 				loaded.push({
 					...base,
 					type: item.type as "Image" | "Video",
-					src: "",
 					width: saved?.width ?? pData?.width,
 					height: saved?.height ?? pData?.height,
 					maxDurationInFrames:
@@ -1898,7 +1650,6 @@ export const VideoDesignerEditor: React.FC<VideoDesignerEditorProps> = ({
 				loaded.push({
 					...base,
 					type: "Audio",
-					src: "",
 					height: 0,
 					width: 0,
 					maxDurationInFrames:
@@ -1907,7 +1658,7 @@ export const VideoDesignerEditor: React.FC<VideoDesignerEditorProps> = ({
 			}
 		});
 		setLayers(loaded);
-	}, [initialLayers, nodeConfig]); // Run once on mount when props change
+	}, [initialLayers, nodeConfig, getAssetUrl, getTextData]);
 
 	// Calculate Dimensions (Lazy, no infinite loop)
 	useEffect(() => {
@@ -1915,7 +1666,7 @@ export const VideoDesignerEditor: React.FC<VideoDesignerEditorProps> = ({
 			(l) =>
 				l.type !== "Audio" &&
 				(l.width == null || l.height == null) &&
-				!l.isPlaceholder, // Flag to prevent re-checking failed ones
+				!l.isPlaceholder,
 		);
 
 		if (layersToMeasure.length === 0) return;
@@ -1952,7 +1703,7 @@ export const VideoDesignerEditor: React.FC<VideoDesignerEditorProps> = ({
 								height: video.videoHeight,
 							});
 						} else if (layer.type === "Text") {
-							// Simple text measurement approximation or off-screen render
+							// Simple text measurement
 							const text = getTextData(layer.inputHandleId);
 							const d = document.createElement("div");
 							d.style.fontFamily = layer.fontFamily || "Inter";
@@ -1993,7 +1744,7 @@ export const VideoDesignerEditor: React.FC<VideoDesignerEditorProps> = ({
 		return () => {
 			mounted = false;
 		};
-	}, [layers, getAssetUrl, getTextData]); // Run once on deps change
+	}, [layers, getAssetUrl, getTextData]);
 
 	// Lazy Font Injection (Does not pre-load)
 	useEffect(() => {
@@ -2006,8 +1757,6 @@ export const VideoDesignerEditor: React.FC<VideoDesignerEditorProps> = ({
 	}, [layers]);
 
 	// --- Viewport Logic ---
-
-	// Zoom Helpers
 	const zoomIn = useCallback(() => setZoom((z) => Math.min(3, z + 0.1)), []);
 	const zoomOut = useCallback(() => setZoom((z) => Math.max(0.1, z - 0.1)), []);
 	const zoomTo = useCallback((val: number) => setZoom(val), []);
@@ -2041,7 +1790,6 @@ export const VideoDesignerEditor: React.FC<VideoDesignerEditorProps> = ({
 		return () => observer.disconnect();
 	}, []);
 
-	// Auto-center on load
 	useEffect(() => {
 		if (!sizeKnown && containerSize.width > 0) {
 			fitView();
@@ -2129,11 +1877,12 @@ export const VideoDesignerEditor: React.FC<VideoDesignerEditorProps> = ({
 		if (layers.length === 0) return DEFAULT_DURATION_FRAMES;
 		return Math.max(
 			DEFAULT_DURATION_FRAMES,
-			...layers.map((l) => l.startFrame + l.durationInFrames),
+			...layers.map(
+				(l) => l.startFrame + (l.durationInFrames ?? DEFAULT_DURATION_FRAMES),
+			),
 		);
 	}, [layers]);
 
-	// Memoized Context Value to prevent render cascading
 	const contextValue = useMemo(
 		() => ({
 			layers,
@@ -2180,7 +1929,6 @@ export const VideoDesignerEditor: React.FC<VideoDesignerEditorProps> = ({
 			mode,
 			isDirty,
 			durationInFrames,
-			// Stable functions:
 			updateLayersHandler,
 			deleteLayer,
 			getTextData,
@@ -2210,6 +1958,9 @@ export const VideoDesignerEditor: React.FC<VideoDesignerEditorProps> = ({
 								"radial-gradient(circle at 1px 1px, rgba(255,255,255,0.2) 1px, transparent 0)",
 							backgroundSize: "24px 24px",
 						}}
+						role="button"
+						tabIndex={0}
+						onKeyDown={() => {}} // No-op
 					>
 						<div
 							className="absolute origin-top-left"
@@ -2227,7 +1978,11 @@ export const VideoDesignerEditor: React.FC<VideoDesignerEditorProps> = ({
 								<Player
 									ref={playerRef}
 									component={CompositionScene}
-									inputProps={{ layers }}
+									inputProps={{
+										layers,
+										viewportWidth,
+										viewportHeight,
+									}}
 									acknowledgeRemotionLicense
 									durationInFrames={durationInFrames}
 									fps={FPS}
