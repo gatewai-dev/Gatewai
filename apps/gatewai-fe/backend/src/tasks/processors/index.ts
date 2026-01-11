@@ -9,6 +9,7 @@ import audioUnderstandingProcessor from "./audio-understanding.js";
 import blurProcessor from "./blur.js";
 import compositorProcessor from "./compositor.js";
 import cropProcessor from "./crop.js";
+import exportProcessor from "./export.js";
 import imageGenProcessor from "./image-gen.js";
 import llmProcessor from "./llm.js";
 import modulateProcessor from "./modulate.js";
@@ -39,23 +40,21 @@ const nodeProcessors: Partial<Record<NodeType, NodeProcessor>> = {
 	[NodeType.TextToSpeech]: textToSpeechProcessor,
 	[NodeType.SpeechToText]: audioUnderstandingProcessor,
 	[NodeType.TextMerger]: textMergerProcessor,
+	[NodeType.Export]: exportProcessor,
 
 	[NodeType.Text]: textProcessor,
-	// No processing needed for these node types
+	[NodeType.File]: async ({ node }) => {
+		return { success: true, newResult: node.result as unknown as FileResult };
+	},
+	// No processing*(not really) needed for below node types
 	[NodeType.VideoCompositor]: async ({ node }) => {
 		return {
 			success: true,
 			newResult: node.result as unknown as VideoCompositorResult,
 		};
 	},
-	[NodeType.File]: async ({ node }) => {
-		return { success: true, newResult: node.result as unknown as FileResult };
-	},
-	[NodeType.Export]: async ({ node }) => {
-		return { success: true, newResult: node.result as unknown as NodeResult };
-	},
-	// Frontend-Process* (not really) only nodes
-	// We're adding them here so that it doesn't throw false-positive error for missing processors
+	// Frontend-Process*(not really) only nodes
+	// We're adding them here so that they doesn't throw false-positive error for missing processors
 	[NodeType.Preview]: async () => {
 		return { success: true, result: null };
 	},

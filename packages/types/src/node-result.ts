@@ -36,7 +36,7 @@ export type DataForType<R extends DataType> = R extends "Text"
 export type OutputItem<R extends DataType> = {
 	type: R;
 	data: DataForType<R>;
-	outputHandleId: string;
+	outputHandleId: string | undefined;
 };
 
 export type Output = {
@@ -122,7 +122,7 @@ export type AgentResult = {
  */
 export type ExportResult = {
 	selectedOutputIndex: number;
-	outputs: { items: AnyOutputUnion }[];
+	outputs: { items: AnyOutputUnion[] }[];
 };
 
 export type AnyOutputItem =

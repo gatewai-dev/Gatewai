@@ -13,9 +13,18 @@ export const RequestSchema = z.object({
 
 type APIRequest = z.infer<typeof RequestSchema>;
 
+const ResultValueSchema = z.discriminatedUnion("type", [
+	z.object({ type: z.literal("Video"), data: z.string() }),
+	z.object({ type: z.literal("Audio"), data: z.string() }),
+	z.object({ type: z.literal("Text"), data: z.string() }),
+	z.object({ type: z.literal("Image"), data: z.string() }),
+	z.object({ type: z.literal("Number"), data: z.number() }),
+	z.object({ type: z.literal("Boolean"), data: z.boolean() }),
+]);
+
 export const ResponseSchema = z.object({
 	batchHandleId: z.string(),
-	result: z.record(z.string(), z.string()).optional(),
+	result: z.record(z.string(), ResultValueSchema).optional(),
 	success: z.boolean().optional(),
 	error: z.string().optional(),
 });

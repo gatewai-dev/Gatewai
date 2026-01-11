@@ -9,13 +9,9 @@ import type { AllNodeConfig } from "@gatewai/types";
  * @throws Error if the original canvas is not found.
  */
 async function duplicateCanvas(canvasId: string): Promise<Canvas> {
-	const originalCanvas = await prisma.canvas.findUnique({
+	const originalCanvas = await prisma.canvas.findUniqueOrThrow({
 		where: { id: canvasId },
 	});
-
-	if (!originalCanvas) {
-		throw new Error("Canvas not found");
-	}
 
 	const originalNodes = await prisma.node.findMany({
 		where: { canvasId },

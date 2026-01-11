@@ -1,6 +1,6 @@
-import { DataType } from "@gatewai/db";
-import type { ExportResult } from "@gatewai/types";
-import { getInputValue, getInputValuesByType } from "../resolvers.js";
+import assert from "node:assert";
+import type { ExportResult, FileData } from "@gatewai/types";
+import { getInputValue } from "../resolvers.js";
 import type { NodeProcessor } from "./types.js";
 
 const exportProcessor: NodeProcessor = async ({ node, data }) => {
@@ -14,13 +14,15 @@ const exportProcessor: NodeProcessor = async ({ node, data }) => {
 			selectedOutputIndex: 0,
 		};
 
+		assert(inputValue);
+
 		const newGeneration: ExportResult["outputs"][number] = {
 			items: [
 				{
-					type: inputValue?.type,
-					data: inputValue,
-					outputHandleId: null,
-				},
+					type: inputValue.type,
+					data: inputValue.data,
+					outputHandleId: undefined,
+				} as unknown as ExportResult["outputs"][number]["items"][number],
 			],
 		};
 
