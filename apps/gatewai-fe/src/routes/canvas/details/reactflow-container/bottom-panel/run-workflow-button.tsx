@@ -8,7 +8,7 @@ import { useTaskManagerCtx } from "../../ctx/task-manager-ctx"; // Import your c
 
 const RunWorkflowButton = memo(() => {
 	const { runNodes } = useCanvasCtx();
-	const { isAnyTaskRunning } = useTaskManagerCtx(); // Consume the running state
+	const { isAnyTaskRunning } = useTaskManagerCtx();
 
 	const selectedNodes = useAppSelector(selectSelectedNodes);
 	const nodes = useAppSelector(makeSelectAllNodes);
