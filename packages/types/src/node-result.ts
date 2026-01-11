@@ -104,7 +104,7 @@ export type VideoGenFirstLastFrameResult = BaseVideoGenResult;
 export type TextToSpeechResult = MultiOutputGeneric<"Audio">;
 export type SpeechToTextResult = MultiOutputGeneric<"Text">;
 
-export type AgentOutputUnion =
+export type AnyOutputUnion =
 	| OutputItem<"Video">
 	| OutputItem<"Image">
 	| OutputItem<"Audio">
@@ -114,7 +114,15 @@ export type AgentOutputUnion =
 
 export type AgentResult = {
 	selectedOutputIndex: number;
-	outputs: { items: AgentOutputUnion[] }[];
+	outputs: { items: AnyOutputUnion[] }[];
+};
+
+/**
+ * Export result may have
+ */
+export type ExportResult = {
+	selectedOutputIndex: number;
+	outputs: { items: AnyOutputUnion }[];
 };
 
 export type AnyOutputItem =

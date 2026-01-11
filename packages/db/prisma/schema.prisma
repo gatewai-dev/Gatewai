@@ -109,6 +109,10 @@ model Node {
   templateId     String
   template       NodeTemplate    @relation(fields: [templateId], references: [id], onDelete: Restrict)
 
+  originalNodeId String?
+  originalNode   Node?           @relation("NodeDuplicates", fields: [originalNodeId], references: [id], onDelete: SetNull)
+  duplicates     Node[]          @relation("NodeDuplicates")
+
   @@map("node")
 }
 
@@ -190,25 +194,22 @@ model Edge {
 }
 
 model Canvas {
-  id             String       @id @default(cuid())
-  name           String
-  createdAt      DateTime     @default(now())
-  updatedAt      DateTime     @updatedAt
-  nodes          Node[]
-  aiSessions     AISession[]
-  taskBatches    TaskBatch[]
+  id               String       @id @default(cuid())
+  name             String
+  createdAt        DateTime     @default(now())
+  updatedAt        DateTime     @updatedAt
+  nodes            Node[]
+  taskBatches      TaskBatch[]
+  /**
+    True for Duplicated canvases created for API requests.
+  */
+  isAPICanvas      Boolean?     @default(false)
+
+  originalCanvasId String?
+  originalCanvas   Canvas?      @relation("CanvasDuplicates", fields: [originalCanvasId], references: [id])
+  duplicates       Canvas[]     @relation("CanvasDuplicates")
+
   @@map("canvas")
-}
-
-model AISession {
-  id        String   @id @default(cuid())
-  messages  Json
-  createdAt DateTime @default(now())
-  updatedAt DateTime @updatedAt
-  canvas    Canvas   @relation(fields: [canvasId], references: [id], onDelete: Cascade)
-  canvasId  String
-
-  @@map("aisession")
 }
 
 model TaskBatch {

@@ -1,14 +1,15 @@
+import assert from "node:assert";
 import { type DataType, prisma } from "@gatewai/db";
 import type { FileData, NodeResult } from "@gatewai/types";
 import { add } from "date-fns";
-import type { CanvasCtxDataWithTasks } from "../repositories/canvas.js";
+import type { CanvasCtxDataWithTasks } from "../data-access/canvas.js";
 import { generateSignedUrl } from "../utils/storage.js";
 
 /**
  * Options for filtering inputs.
  */
 type InputFilterOptions = {
-	dataType: DataType;
+	dataType?: DataType;
 	label?: string;
 };
 
@@ -27,9 +28,6 @@ function resolveSourceValue(
 
 	// Transistent nodes saves result in Task.result
 	const sourceNodeTask = data.tasks.find((f) => f.nodeId === sourceNode.id);
-	if (sourceNode.type === "Text") {
-		console.log({ sourceNodeTask: JSON.stringify(sourceNodeTask) });
-	}
 	const resultToUse = (sourceNodeTask?.result ??
 		sourceNode.result) as NodeResult | null;
 
@@ -48,6 +46,7 @@ function resolveSourceValue(
  * - Allows optional inputs (system prompt, image, etc.)
  * - Warns if multiple matching edges exist (takes the first)
  * - If options.label is provided, matches on the target handle's label
+ * - If options.dataType is not provided, returns first one
  */
 function getInputValue(
 	data: CanvasCtxDataWithTasks,
@@ -55,12 +54,15 @@ function getInputValue(
 	required: boolean = true,
 	options: InputFilterOptions,
 ) {
-	let incoming = data.edges
-		.filter((e) => e.target === targetNodeId)
-		.filter((e) => {
+	let incoming = data.edges.filter((e) => e.target === targetNodeId);
+
+	if (options.dataType) {
+		incoming = incoming.filter((e) => {
+			assert(options.dataType); // Just to make ts happe.
 			const targetHandle = data.handles.find((h) => h.id === e.targetHandleId);
 			return targetHandle?.dataTypes.includes(options.dataType);
 		});
+	}
 
 	if (options.label) {
 		incoming = incoming.filter((e) => {
@@ -98,12 +100,15 @@ function getInputValuesByType(
 	targetNodeId: string,
 	options: InputFilterOptions,
 ) {
-	let incoming = data.edges
-		.filter((e) => e.target === targetNodeId)
-		.filter((e) => {
+	let incoming = data.edges.filter((e) => e.target === targetNodeId);
+
+	if (options.dataType) {
+		incoming = incoming.filter((e) => {
+			assert(options.dataType); // Just to make ts happe.
 			const targetHandle = data.handles.find((h) => h.id === e.targetHandleId);
 			return targetHandle?.dataTypes.includes(options.dataType);
 		});
+	}
 
 	if (options.label) {
 		incoming = incoming.filter((e) => {

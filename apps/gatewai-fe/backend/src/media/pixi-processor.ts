@@ -36,14 +36,11 @@ export class BackendPixiService extends BasePixiService {
 			height: 1,
 			backgroundAlpha: 0,
 			antialias: true,
-			// Ensure the renderer is using the headless context provided by @pixi/node
 		});
 	}
 
 	protected async loadTexture(url: string): Promise<Texture> {
 		if (!this.initialized) {
-			// It is often safer in Node to skip init() or pass specific parsers
-			// but Assets.init() is generally fine in v7
 			await Assets.init();
 			this.initialized = true;
 		}
@@ -52,7 +49,6 @@ export class BackendPixiService extends BasePixiService {
 
 	/**
 	 * Override to provide statically imported Pixi modules
-	 * This avoids dynamic import issues with Vite
 	 */
 	protected async getPixiModules() {
 		return {

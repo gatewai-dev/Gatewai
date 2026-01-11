@@ -116,6 +116,7 @@
 	},
 	"devDependencies": {
 		"@gatewai/types": "workspace:*",
+		"@gatewai/api-client": "workspace:*",
 		"@tailwindcss/typography": "^0.5.19",
 		"@types/color": "^4.2.0",
 		"@types/data-urls": "^3.0.4",

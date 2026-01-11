@@ -1,7 +1,7 @@
 import { type Prisma, prisma, TaskStatus } from "@gatewai/db";
 import { type Job, Worker } from "bullmq";
+import { GetCanvasEntities } from "../../data-access/canvas.js";
 import { logger } from "../../logger.js";
-import { GetCanvasEntities } from "../../repositories/canvas.js";
 import { assertIsError } from "../../utils/misc.js";
 import { nodeProcessors } from "../processors/index.js";
 import { redisConnection } from "./connection.js";

@@ -327,6 +327,9 @@ importers:
         specifier: 3.25.67
         version: 3.25.67
     devDependencies:
+      '@gatewai/api-client':
+        specifier: workspace:*
+        version: link:../../packages/api-client
       '@tailwindcss/typography':
         specifier: ^0.5.19
         version: 0.5.19(tailwindcss@4.1.16)
@@ -9652,7 +9655,7 @@ snapshots:
       '@google-cloud/opentelemetry-cloud-monitoring-exporter': 0.21.0(@opentelemetry/api@1.9.0)(@opentelemetry/core@2.2.0(@opentelemetry/api@1.9.0))(@opentelemetry/resources@2.2.0(@opentelemetry/api@1.9.0))(@opentelemetry/sdk-metrics@2.2.0(@opentelemetry/api@1.9.0))(encoding@0.1.13)
       '@google-cloud/opentelemetry-cloud-trace-exporter': 3.0.0(@opentelemetry/api@1.9.0)(@opentelemetry/core@2.2.0(@opentelemetry/api@1.9.0))(@opentelemetry/resources@2.2.0(@opentelemetry/api@1.9.0))(@opentelemetry/sdk-trace-base@2.2.0(@opentelemetry/api@1.9.0))(encoding@0.1.13)
       '@google-cloud/storage': 7.18.0(encoding@0.1.13)
-      '@google/genai': 1.32.0(@modelcontextprotocol/sdk@1.24.3(zod@3.25.76))
+      '@google/genai': 1.32.0(@modelcontextprotocol/sdk@1.24.3(zod@3.25.67))
       '@modelcontextprotocol/sdk': 1.24.3(zod@3.25.76)
       '@opentelemetry/api': 1.9.0
       '@opentelemetry/api-logs': 0.205.0
@@ -9673,7 +9676,7 @@ snapshots:
       - supports-color
       - utf-8-validate
 
-  '@google/genai@1.32.0(@modelcontextprotocol/sdk@1.24.3(zod@3.25.76))':
+  '@google/genai@1.32.0(@modelcontextprotocol/sdk@1.24.3(zod@3.25.67))':
     dependencies:
       google-auth-library: 10.5.0
       ws: 8.18.3

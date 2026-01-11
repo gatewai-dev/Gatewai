@@ -9,7 +9,7 @@ import {
 import {
 	type CanvasCtxData,
 	GetCanvasEntities,
-} from "../repositories/canvas.js";
+} from "../data-access/canvas.js";
 import { workflowQueue } from "./queue/workflow.queue.js";
 
 /**

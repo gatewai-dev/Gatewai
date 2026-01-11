@@ -2025,6 +2025,10 @@ export const VideoDesignerEditor: React.FC<VideoDesignerEditorProps> = ({
 		setPan({ x, y });
 	}, [containerSize, viewportWidth, viewportHeight]);
 
+	useEffect(() => {
+		fitView();
+	}, [viewportWidth, viewportHeight, fitView]);
+
 	// Initialize View
 	useEffect(() => {
 		const el = containerRef.current;
