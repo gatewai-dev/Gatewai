@@ -1,6 +1,3 @@
-// worker/pixi-worker.service.ts
-
-// IMPORTANT: Import everything from @pixi/webworker instead of pixi.js
 import { BasePixiService } from "@gatewai/pixi-processor";
 import {
 	Application,
@@ -18,9 +15,7 @@ export class WorkerPixiService extends BasePixiService {
 	private initialized = false;
 
 	protected createApplication(): Application {
-		// @pixi/webworker Application is pre-configured for OffscreenCanvas
 		return new Application({
-			// In a worker, we don't pass a view; it creates an OffscreenCanvas internally
 			width: 1,
 			height: 1,
 			backgroundAlpha: 0,
@@ -58,7 +53,6 @@ export class WorkerPixiService extends BasePixiService {
 		try {
 			return await renderer.extract.base64(target);
 		} catch (_e) {
-			// Fallback for environments where extract.base64 might fail
 			const pixels = renderer.extract.pixels(target);
 			const canvas = new OffscreenCanvas(renderer.width, renderer.height);
 			const ctx = canvas.getContext("2d");

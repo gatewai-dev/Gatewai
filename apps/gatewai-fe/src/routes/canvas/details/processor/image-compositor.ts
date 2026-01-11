@@ -11,7 +11,6 @@ const processCompositor = async (
 	const width = config.width ?? 1024;
 	const height = config.height ?? 1024;
 
-	// 1. Create a headless Konva Stage
 	const container = document.createElement("div");
 	const stage = new Konva.Stage({
 		container: container,
@@ -22,7 +21,6 @@ const processCompositor = async (
 	const layer = new Konva.Layer();
 	stage.add(layer);
 
-	// 2. Prepare Layers
 	const explicitLayers = Object.values(config.layerUpdates || {});
 	const allLayers = [...explicitLayers];
 
@@ -45,17 +43,17 @@ const processCompositor = async (
 			if (input.type === "Text") {
 				Object.assign(defaultLayer, {
 					fontFamily: "Geist",
-					fontSize: 64, // Match server: 64, not 60
+					fontSize: 64,
 					fill: "#ffffff",
 					letterSpacing: 0,
-					lineHeight: 1.1, // Match server: 1.1, not 1.2
+					lineHeight: 1.1,
 					align: "left",
-					width: 400, // Match server: 400, not full width
+					width: 400,
 				});
 			} else {
 				Object.assign(defaultLayer, {
-					width: 300, // Match server: 300
-					height: 300, // Match server: 300
+					width: 300,
+					height: 300,
 				});
 			}
 
@@ -113,9 +111,9 @@ const processCompositor = async (
 				image: img,
 				x: layerConfig.x ?? 0,
 				y: layerConfig.y ?? 0,
-				opacity: layerConfig.opacity ?? 1, // Server default is 1
-				width: layerConfig.width ?? 300, // Match server default
-				height: layerConfig.height ?? 300, // Match server default
+				opacity: layerConfig.opacity ?? 1,
+				width: layerConfig.width ?? 300,
+				height: layerConfig.height ?? 300,
 				rotation: layerConfig.rotation ?? 0,
 				globalCompositeOperation:
 					(layerConfig.blendMode as GlobalCompositeOperation) ?? "source-over",
