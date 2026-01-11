@@ -74,7 +74,6 @@ export async function resolveBatchResult(
 			(f) => f.id === exportNode?.originalNodeId,
 		);
 		if (originalNode) {
-			console.log({ exportNode });
 			const result = exportNode?.result as unknown as ExportResult | null;
 			if (!result) continue;
 			const selectedOutput = result.outputs[result.selectedOutputIndex];

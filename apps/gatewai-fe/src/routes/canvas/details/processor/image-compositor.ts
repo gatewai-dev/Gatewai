@@ -26,26 +26,40 @@ const processCompositor = async (
 	const explicitLayers = Object.values(config.layerUpdates || {});
 	const allLayers = [...explicitLayers];
 
+	// Default layer generation matching server-side logic
 	for (const [handleId, input] of Object.entries(inputs)) {
 		if (!explicitLayers.some((l) => l.inputHandleId === handleId)) {
-			allLayers.push({
+			const defaultLayer = {
 				id: handleId,
 				inputHandleId: handleId,
 				type: input.type,
 				x: 0,
 				y: 0,
 				rotation: 0,
-				opacity: 100,
+				opacity: 1, // Server uses 1, not 100
 				lockAspect: true,
 				blendMode: "source-over",
-				...(input.type === "Text"
-					? {
-							fontFamily: "Geist",
-							fontSize: 60,
-							fill: "#ffffff",
-						}
-					: {}),
-			});
+				zIndex: 100,
+			};
+
+			if (input.type === "Text") {
+				Object.assign(defaultLayer, {
+					fontFamily: "Geist",
+					fontSize: 64, // Match server: 64, not 60
+					fill: "#ffffff",
+					letterSpacing: 0,
+					lineHeight: 1.1, // Match server: 1.1, not 1.2
+					align: "left",
+					width: 400, // Match server: 400, not full width
+				});
+			} else {
+				Object.assign(defaultLayer, {
+					width: 300, // Match server: 300
+					height: 300, // Match server: 300
+				});
+			}
+
+			allLayers.push(defaultLayer);
 		}
 	}
 
@@ -53,12 +67,37 @@ const processCompositor = async (
 		(a, b) => (a.zIndex ?? 0) - (b.zIndex ?? 0),
 	);
 
-	// 3. Render Loop
+	// 3. Collect and Load Fonts
+	const fontsToLoad = new Set<string>();
+	for (const layerConfig of sortedLayers) {
+		if (layerConfig.type === "Text" && layerConfig.fontFamily) {
+			fontsToLoad.add(layerConfig.fontFamily);
+		}
+	}
+
+	// Load all fonts before rendering
+	const fontLoadPromises = Array.from(fontsToLoad).map(async (fontFamily) => {
+		try {
+			await document.fonts.load(`16px "${fontFamily}"`);
+		} catch (err) {
+			console.warn(`Failed to load font: ${fontFamily}`, err);
+		}
+	});
+
+	await Promise.all(fontLoadPromises);
+
+	// Wait for fonts to be fully ready
+	await document.fonts.ready;
+
+	// 4. Render Loop
 	for (const layerConfig of sortedLayers) {
 		if (signal?.aborted) throw new DOMException("Cancelled", "AbortError");
 
 		const inputData = inputs[layerConfig.inputHandleId];
 		if (!inputData) continue;
+
+		// Skip invisible layers (server checks opacity === 0)
+		if (layerConfig.opacity === 0) continue;
 
 		if (inputData.type === "Image") {
 			const img = new Image();
@@ -74,30 +113,33 @@ const processCompositor = async (
 				image: img,
 				x: layerConfig.x ?? 0,
 				y: layerConfig.y ?? 0,
-				opacity: layerConfig.opacity ?? 100,
-				width: layerConfig.width ?? img.width,
-				height: layerConfig.height ?? img.height,
+				opacity: layerConfig.opacity ?? 1, // Server default is 1
+				width: layerConfig.width ?? 300, // Match server default
+				height: layerConfig.height ?? 300, // Match server default
 				rotation: layerConfig.rotation ?? 0,
 				globalCompositeOperation:
 					(layerConfig.blendMode as GlobalCompositeOperation) ?? "source-over",
 			});
 			layer.add(kImage);
 		} else if (inputData.type === "Text") {
-			const fontSize = layerConfig.fontSize ?? 60;
+			const fontSize = layerConfig.fontSize ?? 64; // Match server: 64
+			const maxWidth = layerConfig.width ?? 400; // Match server: 400
 
 			const kText = new Konva.Text({
 				text: inputData.value,
 				x: layerConfig.x ?? 0,
 				y: layerConfig.y ?? 0,
-				opacity: layerConfig.opacity ?? 100,
+				opacity: layerConfig.opacity ?? 1,
 				rotation: layerConfig.rotation ?? 0,
 				fontSize: fontSize,
 				fontFamily: layerConfig.fontFamily ?? "Geist",
+				fontStyle: layerConfig.fontStyle ?? "normal",
+				textDecoration: layerConfig.textDecoration ?? "",
 				fill: layerConfig.fill ?? "#ffffff",
 				align: layerConfig.align ?? "left",
 				letterSpacing: layerConfig.letterSpacing ?? 0,
-				lineHeight: layerConfig.lineHeight ?? 1.2,
-				width: layerConfig.width ?? width - (layerConfig.x ?? 0),
+				lineHeight: layerConfig.lineHeight ?? 1.1, // Match server: 1.1
+				width: maxWidth,
 				wrap: "word",
 				globalCompositeOperation:
 					(layerConfig.blendMode as GlobalCompositeOperation) ?? "source-over",

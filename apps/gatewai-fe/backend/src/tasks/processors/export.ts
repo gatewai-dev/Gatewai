@@ -1,5 +1,5 @@
 import assert from "node:assert";
-import type { ExportResult, FileData } from "@gatewai/types";
+import type { ExportResult } from "@gatewai/types";
 import { getInputValue } from "../resolvers.js";
 import type { NodeProcessor } from "./types.js";
 

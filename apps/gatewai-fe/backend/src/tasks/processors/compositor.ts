@@ -30,7 +30,8 @@ const getFontPath = async (fontName: string): Promise<string | null> => {
 	try {
 		const fontDir = path.join(__dirname, "../../assets/fonts", fontName);
 		const files = await fs.readdir(fontDir);
-		const fontFile = files.find((f) => /\.(woff|woff2|ttf|otf)$/i.test(f));
+		// Prioritize woff2/woff as they are common web fonts, then ttf/otf
+		const fontFile = files.find((f) => /\.(woff2|woff|ttf|otf)$/i.test(f));
 		if (!fontFile) return null;
 		return path.join(fontDir, fontFile);
 	} catch (e) {
@@ -43,6 +44,7 @@ const getCompositeOperation = (
 	mode: string = "normal",
 ): GlobalCompositeOperation => {
 	const map: Record<string, GlobalCompositeOperation> = {
+		"source-over": "source-over",
 		normal: "source-over",
 		multiply: "multiply",
 		screen: "screen",
@@ -64,78 +66,96 @@ const getCompositeOperation = (
 };
 
 /**
- * Wraps text into lines based on max width.
- * Mimics standard Pixi/CSS word-wrap behavior.
+ * text wrapper that respects explicit newlines
+ * and performs word-wrapping based on max width.
  */
-function wrapText(
+function getWrappedLines(
 	ctx: CanvasRenderingContext2D,
 	text: string,
 	maxWidth: number,
 ): string[] {
-	const words = text.split(" ");
-	const lines: string[] = [];
-	let currentLine = words[0];
+	// 1. Split by explicit hard returns first to preserve user paragraphs
+	const paragraphs = text.split("\n");
+	const finalLines: string[] = [];
 
-	for (let i = 1; i < words.length; i++) {
-		const word = words[i];
-		const width = ctx.measureText(`${currentLine} ${word}`).width;
-		if (width < maxWidth) {
-			currentLine += ` ${word}`;
-		} else {
-			lines.push(currentLine);
-			currentLine = word;
+	for (const paragraph of paragraphs) {
+		// If paragraph is empty (double newline), push an empty line
+		if (paragraph.trim() === "" && paragraph.length === 0) {
+			finalLines.push("");
+			continue;
 		}
+
+		const words = paragraph.split(" ");
+		let currentLine = words[0];
+
+		for (let i = 1; i < words.length; i++) {
+			const word = words[i];
+			const width = ctx.measureText(`${currentLine} ${word}`).width;
+
+			if (width < maxWidth) {
+				currentLine += ` ${word}`;
+			} else {
+				finalLines.push(currentLine);
+				currentLine = word;
+			}
+		}
+		finalLines.push(currentLine);
 	}
-	lines.push(currentLine);
-	return lines;
+
+	return finalLines;
 }
 
 const renderTextLayer = (
 	ctx: CanvasRenderingContext2D,
 	layer: CompositorLayer,
 	text: string,
-	width: number,
+	canvasWidth: number,
 ) => {
 	const fontSize = layer.fontSize ?? 24;
 	const fontFamily = layer.fontFamily ?? "Inter";
 	const fill = layer.fill ?? "#ffffff";
 	const align = layer.align ?? "left";
-	const lineHeight = (layer.lineHeight ?? 1) * fontSize;
-	const maxWidth = layer.width ?? width - (layer.x ?? 0);
+	const letterSpacing = layer.letterSpacing ?? 0;
 
-	// 1. Configure Context
-	// We strictly quote the font family to handle names with spaces
+	// Konva: lineHeight is a multiplier. Canvas: usually explicit pixels.
+	// However, basic canvas layout usually works best with simple multiplier logic for 'y' stepping.
+	const lineHeightPx = (layer.lineHeight ?? 1) * fontSize;
+
+	// Determine the constraints
+	// If layer.width is set, use it. Otherwise use remaining canvas width.
+	const maxWidth = layer.width ?? canvasWidth - (layer.x ?? 0);
+
+	// 1. Configure Context Typography
 	ctx.font = `${fontSize}px "${fontFamily}"`;
 	ctx.fillStyle = fill;
-	ctx.textBaseline = "top";
+	ctx.textBaseline = "top"; // Matches Konva default
 
-	// 2. Handle Text Wrapping
-	let lines: string[] = [text];
-	if (maxWidth > 0) {
-		lines = wrapText(ctx, text, maxWidth);
+	// Polyfill/Type-cast for letterSpacing (Supported in node-canvas >= 2.11.0)
+	if ("letterSpacing" in ctx) {
+		ctx.letterSpacing = `${letterSpacing}px`;
 	}
 
-	// 3. Draw Lines
-	// We draw relative to (0,0) because the context is already transformed (translated/rotated)
+	// 2. Setup Alignment & Anchor Points
+	// We set the anchor (x) and the alignment mode so the text grows in the correct direction
+	let x = 0;
+	if (align === "center") {
+		x = maxWidth / 2;
+		ctx.textAlign = "center";
+	} else if (align === "right") {
+		x = maxWidth;
+		ctx.textAlign = "right";
+	} else {
+		x = 0;
+		ctx.textAlign = "left";
+	}
+
+	// 3. Process Wrapping
+	// Note: Wrapping logic relies on the context having the correct font set above
+	const lines = getWrappedLines(ctx, text, maxWidth);
+
+	// 4. Render
 	lines.forEach((line, i) => {
-		const y = i * lineHeight;
-		let x = 0;
-
-		// Calculate alignment offset
-		if (maxWidth > 0) {
-			const lineWidth = ctx.measureText(line).width;
-			if (align === "center") {
-				x = (maxWidth - lineWidth) / 2;
-			} else if (align === "right") {
-				x = maxWidth - lineWidth;
-			}
-		} else {
-			// If no width constraint, simple alignment
-			if (align === "center") ctx.textAlign = "center";
-			else if (align === "right") ctx.textAlign = "right";
-			else ctx.textAlign = "left";
-		}
-
+		const y = i * lineHeightPx;
 		ctx.fillText(line, x, y);
 	});
 };
@@ -143,20 +163,27 @@ const renderTextLayer = (
 const compositorProcessor: NodeProcessor = async ({ node, data }) => {
 	try {
 		const config = node.config as CompositorNodeConfig;
-		const width = config.width ?? 1024;
-		const height = config.height ?? 1024;
+		const width = config.width ?? 1080;
+		const height = config.height ?? 1080;
 
 		const canvas = createCanvas(width, height);
 		const ctx = canvas.getContext("2d");
+
+		// High-quality settings
+		ctx.quality = "best";
+		ctx.patternQuality = "best";
+		ctx.textDrawingMode = "path"; // Ensures cleaner text rendering in some environments
 
 		const inputHandlesWithValues = getAllInputValuesWithHandle(data, node.id);
 		const explicitLayers = Object.values(config.layerUpdates || {});
 		const allLayers: CompositorLayer[] = [...explicitLayers];
 
-		// Add default layers for inputs without explicit configs
+		// --- 1. Default Layer Generation (for inputs not in explicit config) ---
 		for (const inputEntry of inputHandlesWithValues) {
 			const handleId = inputEntry.handle?.id;
 			if (!handleId) continue;
+
+			// Skip if this handle is already configured in the layers
 			if (explicitLayers.some((l) => l.inputHandleId === handleId)) continue;
 
 			const inputItem = inputEntry.value;
@@ -167,26 +194,32 @@ const compositorProcessor: NodeProcessor = async ({ node, data }) => {
 			else if (inputItem.type === DataType.Text) type = "Text";
 			else continue;
 
+			// Defaults match the Konva initialization in index.tsx
 			const defaultLayer: CompositorLayer = {
 				id: handleId,
 				inputHandleId: handleId,
 				type,
 				x: 0,
 				y: 0,
-				opacity: 100,
+				opacity: 1,
 				rotation: 0,
 				lockAspect: true,
-				blendMode: "normal",
+				blendMode: "source-over",
+				zIndex: 100,
 				...(type === "Text"
 					? {
 							fontFamily: "Geist",
-							fontSize: 24,
-							fill: "#fff",
+							fontSize: 64,
+							fill: "#ffffff",
 							letterSpacing: 0,
-							lineHeight: 1.2,
+							lineHeight: 1.1,
 							align: "left",
+							width: 400,
 						}
-					: {}),
+					: {
+							width: 300,
+							height: 300,
+						}),
 			};
 			allLayers.push(defaultLayer);
 		}
@@ -204,8 +237,8 @@ const compositorProcessor: NodeProcessor = async ({ node, data }) => {
 		await Promise.all(fontPromises);
 
 		const sortedLayers = allLayers.sort((a, b) => {
-			const aZ = a.zIndex ?? Infinity;
-			const bZ = b.zIndex ?? Infinity;
+			const aZ = a.zIndex ?? 0;
+			const bZ = b.zIndex ?? 0;
 			return aZ - bZ;
 		});
 
@@ -213,9 +246,10 @@ const compositorProcessor: NodeProcessor = async ({ node, data }) => {
 			const inputEntry = inputHandlesWithValues.find(
 				(f) => f.handle?.id === layer.inputHandleId,
 			);
-			if (!inputEntry) continue;
+
+			// If explicit layer exists but no input data, we skip drawing
+			if (!inputEntry?.value) continue;
 			const inputItem = inputEntry.value;
-			if (!inputItem) continue;
 
 			ctx.save();
 
@@ -223,20 +257,24 @@ const compositorProcessor: NodeProcessor = async ({ node, data }) => {
 			const y = Math.round(layer.y ?? 0);
 			const rotation = (layer.rotation ?? 0) * (Math.PI / 180); // Deg to Rad
 
+			// Apply global transformations
 			ctx.translate(x, y);
 			ctx.rotate(rotation);
 
+			// Apply Layer Styles
 			ctx.globalCompositeOperation = getCompositeOperation(layer.blendMode);
-			ctx.globalAlpha = 1;
+			ctx.globalAlpha = layer.opacity ?? 1;
 
-			if (layer.type === "Image" && inputItem?.type === DataType.Image) {
+			if (layer.type === "Image" && inputItem.type === DataType.Image) {
 				const fileData = inputItem.data as FileData;
 				const imgBuffer = await getImageBuffer(fileData);
 				const img = await loadImage(imgBuffer);
+
 				const drawW = layer.width ?? img.width;
 				const drawH = layer.height ?? img.height;
+
 				ctx.drawImage(img, 0, 0, drawW, drawH);
-			} else if (layer.type === "Text" && inputItem?.type === DataType.Text) {
+			} else if (layer.type === "Text" && inputItem.type === DataType.Text) {
 				const textValue = String(inputItem.data);
 				renderTextLayer(ctx, layer, textValue, width);
 			}
@@ -244,6 +282,7 @@ const compositorProcessor: NodeProcessor = async ({ node, data }) => {
 			ctx.restore();
 		}
 
+		// --- 5. Output ---
 		const resultBuffer = canvas.toBuffer("image/png");
 
 		if (ENV_CONFIG.DEBUG_LOG_MEDIA) {
@@ -251,7 +290,6 @@ const compositorProcessor: NodeProcessor = async ({ node, data }) => {
 		}
 
 		const dimensions = getImageDimensions(resultBuffer);
-
 		const key = `${node.id}/${Date.now()}.png`;
 		const { signedUrl } = await uploadToTemporaryFolder(
 			resultBuffer,

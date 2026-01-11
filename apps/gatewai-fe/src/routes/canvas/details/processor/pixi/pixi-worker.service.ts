@@ -55,17 +55,15 @@ export class WorkerPixiService extends BasePixiService {
 		renderer: IRenderer,
 		target: Container,
 	): Promise<string> {
-		// v7 CanvasExtract.base64 is async and works with OffscreenCanvas
-		// renderer.extract.base64(target) is the standard v7 way
 		try {
 			return await renderer.extract.base64(target);
-		} catch () {
+		} catch (_e) {
 			// Fallback for environments where extract.base64 might fail
 			const pixels = renderer.extract.pixels(target);
 			const canvas = new OffscreenCanvas(renderer.width, renderer.height);
 			const ctx = canvas.getContext("2d");
 			if (!ctx) {
-				throw new Error('2d Canvas context is not supported')
+				throw new Error("2d Canvas context is not supported");
 			}
 			const imageData = new ImageData(
 				new Uint8ClampedArray(pixels.buffer),
