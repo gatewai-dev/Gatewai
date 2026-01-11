@@ -12,6 +12,7 @@ const CanvasRenderer = memo(
 		({ resultHash, imageUrl }, ref) => {
 			const internalRef = useRef<HTMLCanvasElement | null>(null);
 			// Sync the forwarded ref with our internal ref
+			// biome-ignore lint/style/noNonNullAssertion: Not important
 			useImperativeHandle(ref, () => internalRef.current!);
 			// Get the calculated height from the hook
 			const imageUrlToRender =

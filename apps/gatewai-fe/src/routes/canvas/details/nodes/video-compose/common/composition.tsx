@@ -83,7 +83,7 @@ export const calculateLayerTransform = (
 	fps: number,
 	viewport: { w: number; h: number },
 ) => {
-	const relativeFrame = frame - layer.startFrame;
+	const relativeFrame = frame - (layer.startFrame ?? 0);
 	let x = layer.x;
 	let y = layer.y;
 	let scale = layer.scale;
