@@ -1,4 +1,3 @@
-import assert from "node:assert";
 import { EventEmitter } from "node:events";
 import type { DataType, NodeType } from "@gatewai/db";
 import {
@@ -13,7 +12,6 @@ import {
 	type ResizeNodeConfig,
 	TextMergerNodeConfigSchema,
 	TextNodeConfigSchema,
-	type VideoCompositorNodeConfig,
 } from "@gatewai/types";
 import type { EdgeEntityType } from "@/store/edges";
 import type { HandleEntityType } from "@/store/handles";
@@ -21,17 +19,14 @@ import type { NodeEntityType } from "@/store/nodes";
 import { GetAssetEndpoint } from "@/utils/file";
 import { processCompositor } from "./image-compositor";
 import { imageStore } from "./image-store";
-import { remotionService } from "./muxer-service";
 import { pixiWorkerService } from "./pixi/pixi-worker.service";
 import type {
 	ConnectedInput,
 	NodeProcessor,
 	NodeProcessorParams,
-	// NodeState, // Removed import, redefining locally to match Task schema
 	ProcessorConfig,
 } from "./types";
 
-// [Schema Alignment] Enum matching the Prisma TaskStatus
 export enum TaskStatus {
 	QUEUED = "QUEUED",
 	EXECUTING = "EXECUTING",
@@ -39,13 +34,11 @@ export enum TaskStatus {
 	COMPLETED = "COMPLETED",
 }
 
-// [Schema Alignment] Updated State to track Task metadata
 export interface NodeState {
 	id: string;
-	status: TaskStatus | null; // Null implies idle/not queued
-	isDirty: boolean; // Determines if the Node Config is out of sync with the Result
+	status: TaskStatus | null;
+	isDirty: boolean;
 
-	// Task Metrics for DB sync
 	startedAt?: number;
 	finishedAt?: number;
 	durationMs?: number;
@@ -441,7 +434,7 @@ export class NodeGraphProcessor extends EventEmitter {
 
 			state.inputs = inputs;
 			state.version++;
-			// emit start with timestamp
+
 			this.emit("node:start", { nodeId, inputs, startedAt: state.startedAt });
 
 			const result = await processor({
@@ -452,7 +445,6 @@ export class NodeGraphProcessor extends EventEmitter {
 
 			if (signal.aborted) throw new Error("Aborted");
 
-			// [Schema Alignment] Update Status to COMPLETED and calc duration
 			state.result = result;
 			state.isDirty = false;
 			state.status = TaskStatus.COMPLETED;
@@ -475,7 +467,6 @@ export class NodeGraphProcessor extends EventEmitter {
 				nodeId,
 				result,
 				inputs,
-				// Include duration for Task model update
 				metrics: {
 					startedAt: state.startedAt,
 					finishedAt: state.finishedAt,
@@ -490,9 +481,7 @@ export class NodeGraphProcessor extends EventEmitter {
 					signal.aborted);
 
 			if (isAbort) {
-				// Aborted usually means restarting, so we don't necessarily set FAILED
-				// unless the loop stops. Typically markNodesDirty handles the reset.
-				state.status = TaskStatus.QUEUED; // or stay as is depending on restart logic
+				state.status = TaskStatus.QUEUED;
 				state.abortController = null;
 				state.version++;
 				return;
@@ -500,7 +489,6 @@ export class NodeGraphProcessor extends EventEmitter {
 
 			console.error(`Error processing node ${nodeId}:`, error);
 
-			// [Schema Alignment] Update Status to FAILED
 			state.error = error instanceof Error ? error.message : "Unknown error";
 			state.isDirty = false; // It processed, but failed.
 			state.status = TaskStatus.FAILED;
@@ -528,7 +516,7 @@ export class NodeGraphProcessor extends EventEmitter {
 			state = {
 				id,
 				isDirty: false,
-				status: null, // Initial state
+				status: null,
 				result: null,
 				inputs: null,
 				error: null,
@@ -541,7 +529,6 @@ export class NodeGraphProcessor extends EventEmitter {
 		return state;
 	}
 
-	// ... (rest of the class methods: buildAdjacencyAndIndices, getNodeValueHash, detectInputChanges, collectInputs, getImageDataUrlFromResult, registerBuiltInProcessors remain the same)
 	private buildAdjacencyAndIndices() {
 		this.adjacency.clear();
 		this.reverseAdjacency.clear();

@@ -125,8 +125,7 @@ export function useNodeResult<T extends NodeResult = NodeResult>(
 			snapshotRef.current.isProcessing !== nextIsProcessing ||
 			snapshotRef.current.error !== nextError ||
 			// If inputs is an object/map, compare size or specific keys
-			Object.keys(snapshotRef.current.inputs).length !==
-				Object.keys(nextInputs).length;
+			!isEqual(snapshotRef.current.inputs, nextInputs);
 
 		if (hasChanged) {
 			snapshotRef.current = {

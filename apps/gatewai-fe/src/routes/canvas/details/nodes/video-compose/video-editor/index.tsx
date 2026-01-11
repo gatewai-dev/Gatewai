@@ -2064,9 +2064,22 @@ export const VideoDesignerEditor: React.FC<VideoDesignerEditorProps> = ({
 							onClose={onClose}
 							onSave={() => {
 								const layerUpdates = layers.reduce<
-									Record<string, ExtendedLayer>
+									Record<
+										string,
+										Omit<
+											ExtendedLayer,
+											"src" | "text" | "isPlaceholder" | "maxDurationInFrames"
+										>
+									>
 								>((acc, layer) => {
-									acc[layer.id] = layer;
+									const {
+										src,
+										text,
+										isPlaceholder,
+										maxDurationInFrames,
+										...savedLayer
+									} = layer;
+									acc[layer.id] = savedLayer;
 									return acc;
 								}, {});
 								onSave({

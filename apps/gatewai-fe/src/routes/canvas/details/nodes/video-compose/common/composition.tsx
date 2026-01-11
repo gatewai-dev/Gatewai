@@ -55,8 +55,6 @@ export interface SceneProps {
 	viewportHeight: number;
 }
 
-// --- Helpers ---
-
 /**
  * Lazily injects a font face definition.
  */
@@ -169,8 +167,6 @@ export const calculateLayerTransform = (
 
 	return { x, y, scale, rotation, opacity, volume };
 };
-
-// --- Scene Component ---
 
 export const CompositionScene: React.FC<SceneProps> = ({
 	layers,

@@ -31,76 +31,124 @@ const VideoCompositorNodeComponent = memo(
 		const { result, isProcessing, inputs } = useNodeResult(props.id);
 		const nav = useNavigate();
 		const downloadFileData = useDownloadFileData();
-
+		console.log({ inputs });
 		// Reconstruct layers from config and inputs for accurate preview
 		const previewState = useMemo(() => {
-			const config = node?.config as unknown as VideoCompositorNodeConfig;
-			if (!config) return null;
+			const config =
+				(node?.config as unknown as VideoCompositorNodeConfig) ?? {};
+			const layerUpdates = config.layerUpdates || {};
 
 			const width = config.width ?? 1920;
 			const height = config.height ?? 1080;
-			const layerUpdates = config.layerUpdates || {};
+
+			// Compute maxZ from existing layerUpdates to preserve ordering for new layers
+			let maxZ = 0;
+			for (const update of Object.values(layerUpdates)) {
+				maxZ = Math.max(maxZ, (update as ExtendedLayer).zIndex ?? 0);
+			}
 
 			const layers: ExtendedLayer[] = [];
 
-			for (const [handleId, update] of Object.entries(layerUpdates)) {
-				const input = inputs[handleId];
-				const item = input?.connectionValid ? input.outputItem : null;
+			// Iterate over all connected inputs, applying saved updates or defaults
+			for (const [handleId, input] of Object.entries(inputs)) {
+				if (!input?.connectionValid) continue;
+				const item = input.outputItem;
+				if (!item) continue; // Skip if no valid output item
 
+				const saved = layerUpdates[handleId] ?? {};
 				let src: string | undefined;
 				let text: string | undefined;
-				let maxDurationInFrames: number | undefined;
-				let layerWidth = update.width;
-				let layerHeight = update.height;
+				let layerWidth = saved.width;
+				let layerHeight = saved.height;
 
-				if (item) {
-					if (item.type === "Text") {
-						text = (item.data as string) || "Text";
-					} else if (["Image", "Video", "Audio"].includes(item.type)) {
-						const fileData = item.data as FileData;
-						if (fileData) {
-							src = fileData.entity?.id
-								? GetAssetEndpoint(fileData.entity)
-								: fileData.processData?.dataUrl;
+				if (item.type === "Text") {
+					text = (item.data as string) || "Text";
+				} else if (["Image", "Video", "Audio"].includes(item.type)) {
+					const fileData = item.data as FileData;
+					if (fileData) {
+						src = fileData.entity?.id
+							? GetAssetEndpoint(fileData.entity)
+							: fileData.processData?.dataUrl;
 
-							const durationMs =
-								fileData.entity?.duration ||
-								fileData.processData?.duration ||
-								0;
-							if (
-								durationMs > 0 &&
-								(item.type === "Video" || item.type === "Audio")
-							) {
-								maxDurationInFrames = Math.ceil((durationMs / 1000) * FPS);
-							}
-
-							if (!layerWidth) layerWidth = fileData.processData?.width;
-							if (!layerHeight) layerHeight = fileData.processData?.height;
+						const durationMs =
+							fileData.entity?.duration || fileData.processData?.duration || 0;
+						if (
+							durationMs > 0 &&
+							(item.type === "Video" || item.type === "Audio")
+						) {
+							maxDurationInFrames = Math.ceil((durationMs / 1000) * FPS);
 						}
-					}
-				} else {
-					// Placeholder for unconnected inputs
-					if (update.type === "Text") {
-						text = "No Input";
-					} else {
-						src = undefined; // CompositionScene should handle gracefully (e.g., skip or show placeholder)
+
+						if (!layerWidth) layerWidth = fileData.processData?.width;
+						if (!layerHeight) layerHeight = fileData.processData?.height;
 					}
 				}
 
-				layers.push({
+				// Base layer properties with defaults
+				const durationMs =
+					item.type !== "Text"
+						? ((item.data as FileData)?.entity?.duration ??
+							(item.data as FileData)?.processData?.duration ??
+							0)
+						: 0;
+
+				const calculatedDurationFrames =
+					(item.type === "Video" || item.type === "Audio") && durationMs > 0
+						? Math.ceil((durationMs / 1000) * FPS)
+						: DEFAULT_DURATION_FRAMES;
+
+				const base = {
 					id: handleId,
 					inputHandleId: handleId,
-					...update,
-					width: layerWidth,
-					height: layerHeight,
+					x: 0,
+					y: 0,
+					rotation: 0,
+					scale: 1,
+					opacity: 1,
+					zIndex: saved.zIndex ?? ++maxZ,
+					startFrame: 0,
+					durationInFrames: saved.durationInFrames ?? calculatedDurationFrames,
+					volume: 1,
+					animations: saved.animations ?? [],
 					src,
 					text,
-					maxDurationInFrames:
-						update.maxDurationInFrames || maxDurationInFrames,
-				});
+					...saved,
+				};
+
+				if (item.type === "Text") {
+					layers.push({
+						...base,
+						type: "Text",
+						fontSize: saved.fontSize ?? 60,
+						fontFamily: saved.fontFamily ?? "Inter",
+						fill: saved.fill ?? "#ffffff",
+						width: layerWidth,
+						height: layerHeight,
+					});
+				} else if (item.type === "Image" || item.type === "Video") {
+					layers.push({
+						...base,
+						type: item.type as "Image" | "Video",
+						width: layerWidth,
+						height: layerHeight,
+						maxDurationInFrames:
+							item.type === "Video" && durationMs > 0
+								? calculatedDurationFrames
+								: undefined,
+					});
+				} else if (item.type === "Audio") {
+					layers.push({
+						...base,
+						type: "Audio",
+						height: 0,
+						width: 0,
+						maxDurationInFrames:
+							durationMs > 0 ? calculatedDurationFrames : undefined,
+					});
+				}
 			}
 
-			// Sort layers by zIndex ascending to match rendering order (lower z first)
+			// Sort layers by zIndex ascending for correct rendering order
 			layers.sort((a, b) => (a.zIndex ?? 0) - (b.zIndex ?? 0));
 
 			// Calculate total duration matching editor logic
@@ -170,7 +218,7 @@ const VideoCompositorNodeComponent = memo(
 							"h-48",
 						)}
 					>
-						{previewState ? (
+						{previewState && previewState.layers.length > 0 ? (
 							<div className="absolute inset-0 w-full h-full">
 								<Player
 									component={CompositionScene}
@@ -194,7 +242,7 @@ const VideoCompositorNodeComponent = memo(
 							</div>
 						) : (
 							<div className="flex items-center justify-center h-full text-muted-foreground text-xs">
-								No config
+								No layers
 							</div>
 						)}
 					</div>
