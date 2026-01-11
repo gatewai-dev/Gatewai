@@ -1,17 +1,11 @@
 import { z } from "zod";
 
-const API_CLIENT_CONFIG_SCHEMA = z.object({
-	GATEWAI_URL: z.string().url(),
-});
-
-export type APIClientConfig = z.infer<typeof API_CLIENT_CONFIG_SCHEMA>;
-
 export const RequestSchema = z.object({
 	canvasId: z.string(),
-	payload: z.record(z.string(), z.string()),
+	payload: z.record(z.string(), z.string()).optional(),
 });
 
-type APIRequest = z.infer<typeof RequestSchema>;
+export type APIRequest = z.infer<typeof RequestSchema>;
 
 const ResultValueSchema = z.discriminatedUnion("type", [
 	z.object({ type: z.literal("Video"), data: z.string() }),
@@ -25,29 +19,35 @@ const ResultValueSchema = z.discriminatedUnion("type", [
 export const ResponseSchema = z.object({
 	batchHandleId: z.string(),
 	result: z.record(z.string(), ResultValueSchema).optional(),
-	success: z.boolean().optional(),
+	success: z.boolean().default(true),
 	error: z.string().optional(),
 });
 
 export type APIResponse = z.infer<typeof ResponseSchema>;
 
+export interface APIClientConfig {
+	baseUrl: string;
+	timeoutMs?: number;
+}
+
+/**
+ * API Client
+ */
 export class GatewaiApiClient {
-	private config: APIClientConfig;
+	private baseUrl: string;
 
 	constructor(config: APIClientConfig) {
-		this.config = API_CLIENT_CONFIG_SCHEMA.parse(config);
+		this.baseUrl = config.baseUrl.replace(/\/$/, "");
 	}
 
 	/**
-	 * Shared fetch wrapper to handle JSON parsing and Zod validation
+	 * Internal fetch wrapper with validation
 	 */
-	private async fetchAndValidate(
+	private async request<T>(
 		endpoint: string,
 		options?: RequestInit,
-	): Promise<APIResponse> {
-		const url = `${this.config.GATEWAI_URL}/api/v1/${endpoint}`;
-
-		const response = await fetch(url, {
+	): Promise<T> {
+		const response = await fetch(`${this.baseUrl}/api/v1/${endpoint}`, {
 			...options,
 			headers: {
 				"Content-Type": "application/json",
@@ -56,32 +56,56 @@ export class GatewaiApiClient {
 		});
 
 		if (!response.ok) {
-			throw new Error(`HTTP Error: ${response.status} ${response.statusText}`);
+			const errBody = await response.json().catch(() => ({}));
+			throw new Error(
+				errBody.error ||
+					`HTTP Error: ${response.status} ${response.statusText}`,
+			);
 		}
 
-		const data = await response.json();
-		console.log({ data });
-		// Validates that the server response matches the APIResponse schema
-		return ResponseSchema.parse(data.response);
+		return (await response.json()) as T;
 	}
 
 	/**
-	 * Initiates the request
+	 * Starts a run on a canvas
 	 */
-	async makeRequest(request: APIRequest): Promise<APIResponse> {
-		return this.fetchAndValidate("api-run", {
+	async startRun(request: APIRequest): Promise<APIResponse> {
+		const validated = RequestSchema.parse(request);
+		const data = await this.request<APIResponse>("api-run", {
 			method: "POST",
-			body: JSON.stringify(RequestSchema.parse(request)),
+			body: JSON.stringify(validated),
 		});
+		return ResponseSchema.parse(data);
 	}
 
 	/**
-	 * Checks the status of an existing request.
-	 * Developers should implemet their own polling mechanism with their own architecture.
+	 * Checks the status of a specific batch
 	 */
 	async checkStatus(batchHandleId: string): Promise<APIResponse> {
-		return this.fetchAndValidate(`api-run/${batchHandleId}/status`, {
-			method: "GET",
-		});
+		const data = await this.request<APIResponse>(
+			`api-run/${batchHandleId}/status`,
+		);
+		return ResponseSchema.parse(data);
+	}
+
+	/**
+	 * Triggers a run and polls until completion.
+	 */
+	async run(
+		request: APIRequest,
+		pollingIntervalMs = 1000,
+	): Promise<APIResponse> {
+		let status = await this.startRun(request);
+
+		while (!status.result && !status.error) {
+			await new Promise((resolve) => setTimeout(resolve, pollingIntervalMs));
+			status = await this.checkStatus(status.batchHandleId);
+
+			if (status.success === false) {
+				break;
+			}
+		}
+
+		return status;
 	}
 }

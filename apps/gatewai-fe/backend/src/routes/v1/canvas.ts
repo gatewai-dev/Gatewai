@@ -102,6 +102,9 @@ const canvasRoutes = new Hono({
 })
 	.get("/", async (c) => {
 		const canvases = await prisma.canvas.findMany({
+			where: {
+				isAPICanvas: false, // Do not show duplicate API canvases.
+			},
 			orderBy: {
 				updatedAt: "desc",
 			},
