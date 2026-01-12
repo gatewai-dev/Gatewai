@@ -12,7 +12,6 @@ function useDrawToCanvas(
 		undefined,
 	);
 	const [containerWidth, setContainerWidth] = useState(0);
-
 	// Setup Worker and ResizeObserver
 	useEffect(() => {
 		if (!workerRef.current) {

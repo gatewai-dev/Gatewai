@@ -30,7 +30,7 @@ const VideoCompositorNodeComponent = memo(
 		const { result, isProcessing, inputs } = useNodeResult(props.id);
 		const nav = useNavigate();
 		const downloadFileData = useDownloadFileData();
-
+		console.log({ inputs });
 		const previewState = useMemo(() => {
 			const config =
 				(node?.config as unknown as VideoCompositorNodeConfig) ?? {};
@@ -216,6 +216,7 @@ const VideoCompositorNodeComponent = memo(
 					>
 						{previewState && previewState.layers.length > 0 ? (
 							<Player
+								acknowledgeRemotionLicense
 								component={CompositionScene}
 								inputProps={{
 									layers: previewState.layers,
