@@ -9,11 +9,11 @@ import {
 	SelectionMode,
 } from "@xyflow/react";
 import type { DragEventHandler, MouseEventHandler } from "react";
-import { createContext, useEffect, useRef, useState } from "react";
+import { createContext, useCallback, useEffect, useRef, useState } from "react";
 import { useHotkeys } from "react-hotkeys-hook";
 import { useAppDispatch, useAppSelector } from "@/store";
 import { setSelectedEdgeIds } from "@/store/edges";
-import { setSelectedNodeIds } from "@/store/nodes";
+import { setSelectedNodeIds } from "@/store/node-meta";
 import { selectRFEdges, selectRFNodes } from "@/store/rfstate";
 import { useCanvasCtx } from "../ctx/canvas-ctx";
 import { nodeTypes } from "../nodes";
@@ -135,6 +135,23 @@ function ReactflowContainer({ children }: ReactFlowProps) {
 		}
 	};
 
+	const handleNodeDragStop = useCallback(
+		(_, node) => {
+			// We dispatch a specific 'commit' action here.
+			// We pass the final position change.
+			dispatch(
+				nodesFinishedDragging([
+					{
+						id: node.id,
+						type: "position",
+						position: node.position,
+					},
+				]),
+			);
+		},
+		[dispatch],
+	);
+
 	return (
 		<div
 			ref={containerRef}
@@ -179,6 +196,7 @@ function ReactflowContainer({ children }: ReactFlowProps) {
 					onConnect={onConnect}
 					onSelectionChange={onSelectionChange}
 					proOptions={{ hideAttribution: false }}
+					onNodeDragStop={handleNodeDragStop}
 				>
 					{children}
 					<Background variant={BackgroundVariant.Dots} />

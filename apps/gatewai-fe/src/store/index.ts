@@ -1,4 +1,4 @@
-import { configureStore } from "@reduxjs/toolkit";
+import { combineReducers, configureStore } from "@reduxjs/toolkit";
 import { setupListeners } from "@reduxjs/toolkit/query";
 import { useDispatch, useSelector } from "react-redux";
 import { assetsAPI } from "./assets";
@@ -7,18 +7,51 @@ import { canvasListAPI } from "./canvas-list";
 import { edgesReducer } from "./edges";
 import { fontListAPI } from "./fonts";
 import { handlesReducer } from "./handles";
+import { nodeMetaReducer } from "./node-meta";
 import { nodeTemplatesAPI } from "./node-templates";
 import { nodesReducer } from "./nodes";
 import { reactFlowReducer } from "./rfstate";
 import { tasksReducer } from "./tasks";
+import { undoReducer } from "./undo-redo";
+
+const flowReducer = combineReducers({
+	nodes: nodesReducer,
+	handles: handlesReducer,
+	edges: edgesReducer,
+	reactFlow: reactFlowReducer,
+});
+
+const undoableFlowReducer = undoReducer(flowReducer, {
+	limit: 50,
+	undoableActionTypes: [
+		"reactFlow/nodesFinishedDragging",
+		"reactFlow/createNode",
+		"reactFlow/createEdge",
+		"reactFlow/addConnection",
+
+		"nodes/createNodeEntity",
+		"nodes/updateNodeEntity",
+		"nodes/updateNodeResult",
+		"nodes/updateNodeConfig",
+		"nodes/deleteManyNodeEntity",
+		"nodes/deleteManyNodeEntity",
+
+		"edges/createEdgeEntity",
+		"edges/deleteManyEdgeEntity",
+
+		"handles/createHandleEntity",
+		"handles/deleteManyHandleEntity",
+		"handles/addManyHandleEntities",
+		"handles/updateHandleEntity",
+	],
+});
 
 export const store = configureStore({
 	reducer: {
-		nodes: nodesReducer,
-		handles: handlesReducer,
-		edges: edgesReducer,
-		reactFlow: reactFlowReducer,
+		flow: undoableFlowReducer,
+
 		tasks: tasksReducer,
+		nodeMeta: nodeMetaReducer,
 		[nodeTemplatesAPI.reducerPath]: nodeTemplatesAPI.reducer,
 		[assetsAPI.reducerPath]: assetsAPI.reducer,
 		[canvasListAPI.reducerPath]: canvasListAPI.reducer,

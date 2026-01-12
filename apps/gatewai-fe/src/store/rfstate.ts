@@ -43,6 +43,9 @@ const reactFlowSlice = createSlice({
 		onNodeChange: (state, action: PayloadAction<NodeChange<Node>[]>) => {
 			state.nodes = applyNodeChangesBase(action.payload, state.nodes);
 		},
+		onNodeDragStop: (state, action: PayloadAction<NodeChange<Node>[]>) => {
+			state.nodes = applyNodeChangesBase(action.payload, state.nodes);
+		},
 		onEdgeChange: (state, action: PayloadAction<EdgeChange<Edge>[]>) => {
 			state.edges = applyEdgeChangesBase(action.payload, state.edges);
 		},
@@ -62,7 +65,7 @@ export const {
 	onEdgeChange,
 } = reactFlowSlice.actions;
 
-export const selectRFState = (state: RootState) => state.reactFlow;
+export const selectRFState = (state: RootState) => state.flow.present.reactFlow;
 
 export const selectRFNodes = createSelector(
 	selectRFState,

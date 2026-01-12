@@ -4,6 +4,7 @@ import {
 	createSlice,
 } from "@reduxjs/toolkit";
 import type { CanvasDetailsRPC } from "@/rpc/types";
+import type { RootState } from "./";
 
 export type HandleEntityType = CanvasDetailsRPC["handles"][number];
 
@@ -17,7 +18,6 @@ const handlesSlice = createSlice({
 	reducers: {
 		createHandleEntity: handleAdapter.addOne,
 		updateHandleEntity: handleAdapter.updateOne,
-		deleteHandleEntity: handleAdapter.removeOne,
 		deleteManyHandleEntity: handleAdapter.removeMany,
 		addManyHandleEntities: handleAdapter.addMany,
 		setAllHandleEntities: handleAdapter.setAll,
@@ -26,12 +26,12 @@ const handlesSlice = createSlice({
 
 type HandlesState = ReturnType<typeof handlesSlice.reducer>;
 
-const handleSelectors = handleAdapter.getSelectors<{ handles: HandlesState }>(
-	(state) => state.handles,
+const handleSelectors = handleAdapter.getSelectors<RootState>(
+	(state) => state.flow.present.handles,
 );
 
-export const selectHandlesState = (state: { handles: HandlesState }) =>
-	state.handles;
+export const selectHandlesState = (state: RootState) =>
+	state.flow.present.handles;
 
 export const makeSelectHandleById = (id: string) => {
 	return (state: { handles: HandlesState }) =>

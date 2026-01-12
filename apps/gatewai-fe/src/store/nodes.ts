@@ -3,11 +3,11 @@ import {
 	createDraftSafeSelector,
 	createEntityAdapter,
 	createSlice,
-	type PayloadAction,
 } from "@reduxjs/toolkit";
 import { isEqual } from "lodash";
-import { arrayEquals } from "@/lib/utils";
 import type { CanvasDetailsRPC } from "@/rpc/types";
+import type { RootState } from "./";
+import { type NodeMetaState, selectSelectedNodeIds } from "./node-meta";
 import { getBatchDetails } from "./tasks";
 
 export type NodeEntityType = CanvasDetailsRPC["nodes"][number];
@@ -18,19 +18,11 @@ export const nodeAdapter = createEntityAdapter({
 
 export const nodesSlice = createSlice({
 	name: "nodes",
-	initialState: nodeAdapter.getInitialState<{
-		selectedNodeIds: NodeEntityType["id"][] | null;
-		loadingNodeIds: NodeEntityType["id"][];
-	}>({
-		selectedNodeIds: [],
-		loadingNodeIds: [],
-	}),
+	initialState: nodeAdapter.getInitialState(),
 	reducers: {
 		createNodeEntity: nodeAdapter.addOne,
 		updateNodeEntity: nodeAdapter.updateOne,
-		deleteNodeEntity: nodeAdapter.removeOne,
 		deleteManyNodeEntity: nodeAdapter.removeMany,
-		upsertManyNodeEntity: nodeAdapter.upsertMany,
 		setAllNodeEntities: nodeAdapter.setAll,
 		updateNodeConfig: (
 			state,
@@ -54,14 +46,6 @@ export const nodesSlice = createSlice({
 			const node = state.entities[id];
 			if (node) {
 				node.result = newResult;
-			}
-		},
-		setSelectedNodeIds: (
-			state,
-			action: PayloadAction<NodeEntityType["id"][] | null>,
-		) => {
-			if (!arrayEquals(state.selectedNodeIds ?? [], action.payload ?? [])) {
-				state.selectedNodeIds = action.payload;
 			}
 		},
 	},
@@ -89,13 +73,11 @@ export const nodesSlice = createSlice({
 	},
 });
 
-type NodesState = ReturnType<typeof nodesSlice.reducer>;
+export type NodesState = ReturnType<typeof nodesSlice.reducer>;
 
-const nodeSelectors = nodeAdapter.getSelectors<{ nodes: NodesState }>(
-	(state) => state.nodes,
+const nodeSelectors = nodeAdapter.getSelectors<RootState>(
+	(state) => state.flow.present.nodes,
 );
-
-export const selectNodesState = (state: { nodes: NodesState }) => state.nodes;
 
 export const selectNodeById = nodeSelectors.selectById;
 
@@ -106,33 +88,22 @@ export const makeSelectNodeById = (id: string) => {
 export const makeSelectAllNodes = nodeSelectors.selectAll;
 export const makeSelectAllNodeEntities = nodeSelectors.selectEntities;
 
-export const selectSelectedNodeIds = createDraftSafeSelector(
-	selectNodesState,
-	(nodes) => nodes.selectedNodeIds,
-);
-
-export const selectLoadingNodeIds = createDraftSafeSelector(
-	selectNodesState,
-	(nodes) => nodes.loadingNodeIds,
-);
-
 export const selectSelectedNodes = createDraftSafeSelector(
-	selectSelectedNodeIds,
-	makeSelectAllNodes,
+	(state: { nodeMeta: NodeMetaState; nodes: NodesState }) =>
+		selectSelectedNodeIds(state),
+	(state: { nodeMeta: NodeMetaState; nodes: NodesState }) =>
+		nodeSelectors.selectAll(state),
 	(nodeIds, nodes) =>
 		nodeIds ? nodes.filter((f) => nodeIds.includes(f.id)) : undefined,
 );
 
-const { actions, reducer: nodesReducer } = nodesSlice;
+const { actions: nodeActions, reducer: nodesReducer } = nodesSlice;
 export const {
 	createNodeEntity,
 	updateNodeEntity,
 	updateNodeResult,
 	updateNodeConfig,
-	deleteNodeEntity,
 	deleteManyNodeEntity,
-	upsertManyNodeEntity,
 	setAllNodeEntities,
-	setSelectedNodeIds,
-} = actions;
+} = nodeActions;
 export { nodesReducer, nodeSelectors };

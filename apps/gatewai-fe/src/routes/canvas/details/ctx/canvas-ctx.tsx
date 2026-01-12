@@ -52,12 +52,12 @@ import {
 	handleSelectors,
 	setAllHandleEntities,
 } from "@/store/handles";
+import { setSelectedNodeIds } from "@/store/node-meta";
 import {
 	createNodeEntity,
 	deleteManyNodeEntity,
 	type NodeEntityType,
 	setAllNodeEntities,
-	setSelectedNodeIds,
 	updateNodeConfig,
 	updateNodeResult,
 } from "@/store/nodes";
@@ -177,11 +177,17 @@ const CanvasProvider = ({
 	const save = useCallback(() => {
 		if (!canvasId) return;
 		const state = store.getState() as RootState;
-		const currentNodeEntities = Object.values(state.nodes.entities);
-		const currentRfNodes = Object.values(state.reactFlow.nodes);
-		const currentEdgeEntities = Object.values(state.edges.entities);
-		const currentRfEdges = Object.values(state.reactFlow.edges);
-		const currentHandleEntities = Object.values(state.handles.entities);
+		const currentNodeEntities = Object.values(
+			state.flow.present.nodes.entities,
+		);
+		const currentRfNodes = Object.values(state.flow.present.reactFlow.nodes);
+		const currentEdgeEntities = Object.values(
+			state.flow.present.edges.entities,
+		);
+		const currentRfEdges = Object.values(state.flow.present.reactFlow.edges);
+		const currentHandleEntities = Object.values(
+			state.flow.present.handles.entities,
+		);
 		const currentCanvasDetailsNodes = currentNodeEntities
 			.map((n) => {
 				const rfNode = currentRfNodes.find((f) => f.id === n.id);

@@ -6,6 +6,7 @@ import {
 } from "@reduxjs/toolkit";
 import { arrayEquals } from "@/lib/utils";
 import type { CanvasDetailsRPC } from "@/rpc/types";
+import type { RootState } from ".";
 import type { NodeEntityType } from "./nodes";
 
 export type EdgeEntityType = CanvasDetailsRPC["edges"][number];
@@ -25,7 +26,6 @@ const edgesSlice = createSlice({
 		createEdgeEntity: edgeAdapter.addOne,
 		updateEdgeEntity: edgeAdapter.updateOne,
 		deleteManyEdgeEntity: edgeAdapter.removeMany,
-		deleteEdgeEntity: edgeAdapter.removeOne,
 		setAllEdgeEntities: edgeAdapter.setAll,
 		setSelectedEdgeIds: (
 			state,
@@ -40,11 +40,11 @@ const edgesSlice = createSlice({
 
 type EdgesState = ReturnType<typeof edgesSlice.reducer>;
 
-const edgeSelectors = edgeAdapter.getSelectors<{ edges: EdgesState }>(
-	(state) => state.edges,
+const edgeSelectors = edgeAdapter.getSelectors<RootState>(
+	(state) => state.flow.present.edges,
 );
 
-export const selectEdgesState = (state: { edges: EdgesState }) => state.edges;
+export const selectEdgesState = (state: RootState) => state.flow.present.edges;
 
 export const makeSelectEdgeById = (id: string) => {
 	return (state: { edges: EdgesState }) => edgeSelectors.selectById(state, id);
@@ -87,7 +87,6 @@ const { actions, reducer: edgesReducer } = edgesSlice;
 export const {
 	createEdgeEntity,
 	updateEdgeEntity,
-	deleteEdgeEntity,
 	setAllEdgeEntities,
 	deleteManyEdgeEntity,
 	setSelectedEdgeIds,
