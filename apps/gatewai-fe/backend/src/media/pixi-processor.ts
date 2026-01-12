@@ -7,8 +7,9 @@ import {
 	Filter,
 	Graphics,
 	type IRenderer,
+	Rectangle,
 	Sprite,
-	type Texture,
+	Texture,
 } from "@pixi/node";
 import { createCanvas, ImageData } from "canvas";
 
@@ -59,6 +60,8 @@ export class BackendPixiService extends BasePixiService {
 			Container,
 			Graphics,
 			BlurFilter,
+			Rectangle,
+			Texture,
 		};
 	}
 

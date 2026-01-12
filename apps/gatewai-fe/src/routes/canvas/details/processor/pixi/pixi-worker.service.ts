@@ -7,8 +7,9 @@ import {
 	Filter,
 	Graphics,
 	type IRenderer,
+	Rectangle,
 	Sprite,
-	type Texture,
+	Texture,
 } from "@pixi/webworker";
 
 export class WorkerPixiService extends BasePixiService {
@@ -43,6 +44,8 @@ export class WorkerPixiService extends BasePixiService {
 			Container,
 			Graphics,
 			BlurFilter,
+			Texture,
+			Rectangle,
 		};
 	}
 

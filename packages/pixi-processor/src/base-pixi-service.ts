@@ -8,6 +8,7 @@ import type {
 	Filter,
 	Graphics,
 	IRenderer,
+	Rectangle,
 	Sprite,
 	Texture,
 } from "pixi.js";
@@ -61,8 +62,10 @@ export abstract class BasePixiService implements IPixiProcessor {
 		Sprite: typeof Sprite;
 		Container: typeof Container;
 		Graphics: typeof Graphics;
+		Texture: typeof Texture;
 		BlurFilter: typeof BlurFilter;
 		Filter: typeof Filter;
+		Rectangle: typeof Rectangle;
 	}> {
 		const pixi = await import(/* @vite-ignore */ this.getPixiImport());
 		return {
@@ -71,6 +74,8 @@ export abstract class BasePixiService implements IPixiProcessor {
 			Graphics: pixi.Graphics,
 			BlurFilter: pixi.BlurFilter,
 			Filter: pixi.Filter,
+			Rectangle: pixi.Rectangle,
+			Texture: pixi.Texture,
 		};
 	}
 
@@ -298,13 +303,13 @@ export abstract class BasePixiService implements IPixiProcessor {
 		return this.useApp(async (app) => {
 			this.ensureNotAborted(signal);
 
-			const texture = await this.loadTexture(imageUrl);
+			const originalTexture = await this.loadTexture(imageUrl);
 			this.ensureNotAborted(signal);
 
-			const { Container, Sprite, Graphics } = await this.getPixiModules();
+			const { Sprite, Rectangle, Texture } = await this.getPixiModules();
 
-			const origWidth = texture.width;
-			const origHeight = texture.height;
+			const origWidth = originalTexture.width;
+			const origHeight = originalTexture.height;
 
 			const clamp = (val: number) => Math.max(0, Math.min(100, val));
 
@@ -322,31 +327,20 @@ export abstract class BasePixiService implements IPixiProcessor {
 			widthPx = Math.max(1, Math.min(widthPx, origWidth - leftPx));
 			heightPx = Math.max(1, Math.min(heightPx, origHeight - topPx));
 
-			const container = new Container();
-			const sprite = new Sprite(texture);
+			// Create a new texture with the cropped frame (best practice for efficiency, avoids unnecessary masking)
+			const frame = new Rectangle(leftPx, topPx, widthPx, heightPx);
+			const croppedTexture = new Texture(originalTexture.baseTexture, frame);
 
-			// Position sprite so the crop area is at (0,0)
-			sprite.x = -leftPx;
-			sprite.y = -topPx;
-			container.addChild(sprite);
-
-			const mask = new Graphics();
-			mask.beginFill(0xffffff);
-			mask.drawRect(0, 0, widthPx, heightPx);
-			mask.endFill();
-
-			container.mask = mask;
-			container.addChild(mask);
+			const sprite = new Sprite(croppedTexture);
 
 			app.renderer.resize(widthPx, heightPx);
-			app.stage.addChild(container);
+			app.stage.addChild(sprite);
 
 			this.ensureNotAborted(signal);
 			app.render();
 
 			const dataUrl = await Promise.resolve(
-				// Pass container explicitly to ensure we extract the masked result
-				this.extractBase64(app.renderer, container),
+				this.extractBase64(app.renderer, app.stage),
 			);
 
 			return { dataUrl, width: widthPx, height: heightPx };
