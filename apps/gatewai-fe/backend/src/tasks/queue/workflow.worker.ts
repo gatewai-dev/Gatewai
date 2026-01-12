@@ -26,7 +26,6 @@ const processNodeJob = async (job: Job<NodeTaskJobData>) => {
 
 	const startedAt = new Date();
 
-	// [Idempotency Check]
 	// If the job was retried after a crash, the task might already be in a terminal state
 	// or technically "EXECUTING" from the previous run.
 	const existingTask = await prisma.task.findUnique({

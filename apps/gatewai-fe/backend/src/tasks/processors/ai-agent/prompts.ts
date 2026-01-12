@@ -16,4 +16,6 @@ ${JSON.stringify(schema, null, 2)}
 - Ensure that the final output strictly adheres to the provided JSON schema.
 - Maintain clarity and relevance in the final output, ensuring it directly addresses the user's request.
 - CLEAR RAW OUTPUT JSON SCHEMA IS REQUIRED
+- DO NOT INCLUDE MESSAGES LIKE: "Here is X ..." or "The final output is ..." - THE DATA SHOULD BE PURE IN JSON
+- DO NOT INCLUDE EXAMPLES USAGE, OR ANY OTHER METADATA, PURE CONCIESE PURE DATA IS MANDATORY.
 .`;

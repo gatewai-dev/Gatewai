@@ -9,6 +9,7 @@ import { InMemoryMemoryService, LlmAgent, Runner } from "@google/adk";
 import { type Part, type Schema, Type } from "@google/genai";
 import { ENV_CONFIG } from "../../../config.js";
 import { urlToBase64 } from "../../../utils/file-utils.js";
+import { getMimeType } from "../../../utils/image.js";
 import {
 	getAllInputValuesWithHandle,
 	getAllOutputHandles,
@@ -22,8 +23,8 @@ import { createResultGeneratorTool } from "./tools/result-generator.js";
 
 function cleanJsonString(raw: string): string {
 	return raw
-		.replace(/^```json\n?/, "") // Remove starting ```json
-		.replace(/```$/, "") // Remove ending ```
+		.replace(/^```json\n?/, "")
+		.replace(/```$/, "")
 		.trim();
 }
 
@@ -161,7 +162,6 @@ const aiAgentProcessor: NodeProcessor = async ({ node, data }) => {
 		// 3. Prepare Schema
 		const outputs = getAllOutputHandles(data, node.id);
 		const nodeResultSchema = CreateOutputSchema(outputs);
-		const resultGeneratorTool = createResultGeneratorTool(nodeResultSchema);
 		console.log({ nodeResultSchema });
 		const rootPrompt = SYSTEM_PROMPT_SUFFIX_BUILDER(nodeResultSchema);
 
@@ -209,15 +209,7 @@ const aiAgentProcessor: NodeProcessor = async ({ node, data }) => {
 				if (fileUrl) {
 					try {
 						const base64Data = await urlToBase64(fileUrl);
-
-						// Determine MimeType (Fallback to generic if missing from fileData)
-						const mimeType =
-							fileData.entity?.mimeType ||
-							(dataType === "Image"
-								? "image/jpeg"
-								: dataType === "Audio"
-									? "audio/mp3"
-									: "video/mp4");
+						const mimeType = getMimeType(fileData);
 
 						userParts.push({
 							inlineData: {
@@ -297,7 +289,7 @@ const aiAgentProcessor: NodeProcessor = async ({ node, data }) => {
 		}
 		return {
 			success: false,
-			error: "LLM processing failed with unknown error",
+			error: "AI Agent processing failed with unknown error",
 		};
 	}
 };

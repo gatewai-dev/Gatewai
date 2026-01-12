@@ -24,17 +24,10 @@ const blurProcessor: NodeProcessor = async ({ node, data }) => {
 
 		assert(imageInput);
 		const imageUrl = ResolveFileDataUrl(imageInput);
-
-		if (!imageUrl) {
-			return { success: false, error: "No URL" };
-		}
+		assert(imageUrl);
 
 		const blurConfig = BlurNodeConfigSchema.parse(node.config);
 		const blurSize = blurConfig.size ?? 0;
-
-		if (!imageInput) {
-			return { success: false, error: "No image input provided" };
-		}
 
 		const { dataUrl, ...dimensions } = await backendPixiService.processBlur(
 			imageUrl,
