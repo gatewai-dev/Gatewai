@@ -1,7 +1,7 @@
 import { Route, Routes } from "react-router";
+import { VideoCompositorView } from "../../../modules/video-editor/video-compose-view";
 import { CanvasDetailsRoot } from ".";
 import { CompositorView } from "./nodes/compose/compositor-view";
-import { VideoCompositorView } from "./nodes/video-compose/video-compose-view";
 import { ReactflowContainer } from "./reactflow-container";
 
 function CanvasDetailsRouter() {

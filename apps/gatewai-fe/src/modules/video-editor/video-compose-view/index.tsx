@@ -4,8 +4,8 @@ import { useNavigate, useParams } from "react-router";
 import { useAppSelector } from "@/store";
 import type { HandleEntityType } from "@/store/handles";
 import { makeSelectNodeById } from "@/store/nodes";
-import { useCanvasCtx } from "../../../ctx/canvas-ctx";
-import { useNodeResult } from "../../../processor/processor-ctx";
+import { useCanvasCtx } from "../../../routes/canvas/details/ctx/canvas-ctx";
+import { useNodeResult } from "../../../routes/canvas/details/processor/processor-ctx";
 import { VideoDesignerEditor } from "../video-editor";
 
 type InputOutputItems =
@@ -50,7 +50,6 @@ const VideoCompositorView = memo(() => {
 		}
 		closeAndFocusOnNode();
 	};
-	console.log({ inputs });
 	return (
 		<div className="inset-0 h-screen w-screen">
 			{node && (

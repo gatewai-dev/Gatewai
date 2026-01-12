@@ -11,13 +11,8 @@ import {
 	useCurrentFrame,
 	useVideoConfig,
 } from "remotion";
+import { DEFAULT_DURATION_FRAMES } from "../config";
 
-// --- Constants ---
-export const FPS = 24;
-export const DEFAULT_DURATION_SEC = 5;
-export const DEFAULT_DURATION_FRAMES = FPS * DEFAULT_DURATION_SEC;
-
-// --- Types ---
 export type AnimationType =
 	| "fade-in"
 	| "fade-out"
@@ -35,7 +30,7 @@ export type AnimationType =
 export interface VideoAnimation {
 	id: string;
 	type: AnimationType;
-	value: number; // duration in seconds
+	value: number;
 }
 
 export interface ExtendedLayer

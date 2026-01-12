@@ -13,6 +13,7 @@ import { nodesReducer } from "./nodes";
 import { reactFlowReducer } from "./rfstate";
 import { tasksReducer } from "./tasks";
 import { undoReducer } from "./undo-redo";
+import { videoEditorReducer } from "./video-compositor";
 
 const flowReducer = combineReducers({
 	nodes: nodesReducer,
@@ -54,6 +55,7 @@ export const store = configureStore({
 
 		tasks: tasksReducer,
 		nodeMeta: nodeMetaReducer,
+		videoEditor: videoEditorReducer,
 		[nodeTemplatesAPI.reducerPath]: nodeTemplatesAPI.reducer,
 		[assetsAPI.reducerPath]: assetsAPI.reducer,
 		[canvasListAPI.reducerPath]: canvasListAPI.reducer,

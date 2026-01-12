@@ -50,7 +50,6 @@ const { actions, reducer: handlesReducer } = handlesSlice;
 export const {
 	createHandleEntity,
 	updateHandleEntity,
-	deleteHandleEntity,
 	deleteManyHandleEntity,
 	addManyHandleEntities,
 	setAllHandleEntities,

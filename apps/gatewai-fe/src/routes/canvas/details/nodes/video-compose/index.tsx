@@ -7,6 +7,12 @@ import { useNavigate } from "react-router";
 import { toast } from "sonner";
 import { Button } from "@/components/ui/button";
 import { cn } from "@/lib/utils";
+import {
+	CompositionScene,
+	type ExtendedLayer,
+	injectFontFace,
+} from "@/modules/video-editor/common/composition";
+import { DEFAULT_DURATION_FRAMES, FPS } from "@/modules/video-editor/config";
 import { useAppSelector } from "@/store";
 import { makeSelectNodeById } from "@/store/nodes";
 import { GetAssetEndpoint, GetFontAssetUrl } from "@/utils/file";
@@ -16,13 +22,6 @@ import { remotionService } from "../../processor/muxer-service";
 import { useNodeResult } from "../../processor/processor-ctx";
 import { BaseNode } from "../base";
 import type { VideoCompositorNode } from "../node-props";
-import {
-	CompositionScene,
-	DEFAULT_DURATION_FRAMES,
-	type ExtendedLayer,
-	FPS,
-	injectFontFace,
-} from "./common/composition";
 
 const VideoCompositorNodeComponent = memo(
 	(props: NodeProps<VideoCompositorNode>) => {
