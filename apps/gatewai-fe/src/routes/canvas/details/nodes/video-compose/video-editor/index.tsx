@@ -22,13 +22,13 @@ import type {
 } from "@gatewai/types";
 import { Player, type PlayerRef } from "@remotion/player";
 import {
+	AlignHorizontalJustifyStart,
 	ChevronDown,
 	Film,
 	GripVertical,
 	Hand,
 	Image as ImageIcon,
 	Layers,
-	Loader2,
 	Minus,
 	MousePointer,
 	Move,
@@ -88,24 +88,31 @@ import {
 } from "@/components/ui/tooltip";
 import { ColorInput } from "@/components/util/color-input";
 import { useGetFontListQuery } from "@/store/fonts";
-import { GetAssetEndpoint, GetFontAssetUrl } from "@/utils/file";
+import { GetAssetEndpoint } from "@/utils/file";
 import {
 	type AnimationType,
 	CompositionScene,
 	DEFAULT_DURATION_FRAMES,
 	type ExtendedLayer,
 	FPS,
-	injectFontFace,
 	type VideoAnimation,
 } from "../common/composition";
 
-// --- Constants ---
-const RULER_HEIGHT = 32;
-const TRACK_HEIGHT = 36;
-const HEADER_WIDTH = 260;
+// --- Constants & Configuration ---
+const RULER_HEIGHT = 40;
+const TRACK_HEIGHT = 40; // Compact height for cleaner look
+const HEADER_WIDTH = 240;
+
+// Optimized Presets for Web Editing (Performance focused)
+const ASPECT_RATIOS = [
+	{ label: "Youtube / HD (16:9)", width: 1280, height: 720 },
+	{ label: "Full HD (16:9)", width: 1920, height: 1080 },
+	{ label: "TikTok / Reel (9:16)", width: 720, height: 1280 },
+	{ label: "Square (1:1)", width: 1080, height: 1080 },
+	{ label: "Portrait (4:5)", width: 1080, height: 1350 },
+];
 
 // --- Context & Types ---
-
 interface EditorContextType {
 	layers: ExtendedLayer[];
 	updateLayers: (
@@ -151,7 +158,95 @@ const useEditor = () => {
 	return ctx;
 };
 
-// --- Components: Interaction Overlay ---
+// --- Components: Unified Visual Track Item (Performance Optimized) ---
+const UnifiedClip: React.FC<{
+	layer: ExtendedLayer;
+	width: number;
+	isSelected: boolean;
+}> = ({ layer, width, isSelected }) => {
+	// Determine styles based on type
+	const styleConfig = useMemo(() => {
+		switch (layer.type) {
+			case "Video":
+				return {
+					bg: "bg-blue-600",
+					border: "border-blue-400",
+					icon: Film,
+					gradient: "from-blue-600 to-blue-700",
+				};
+			case "Audio":
+				return {
+					bg: "bg-orange-600",
+					border: "border-orange-400",
+					icon: Music,
+					gradient: "from-orange-600 to-orange-700",
+				};
+			case "Image":
+				return {
+					bg: "bg-purple-600",
+					border: "border-purple-400",
+					icon: ImageIcon,
+					gradient: "from-purple-600 to-purple-700",
+				};
+			case "Text":
+				return {
+					bg: "bg-emerald-600",
+					border: "border-emerald-400",
+					icon: Type,
+					gradient: "from-emerald-600 to-emerald-700",
+				};
+			default:
+				return {
+					bg: "bg-gray-600",
+					border: "border-gray-400",
+					icon: Layers,
+					gradient: "from-gray-600 to-gray-700",
+				};
+		}
+	}, [layer.type]);
+
+	const Icon = styleConfig.icon;
+
+	return (
+		<div
+			className={`h-full w-full relative overflow-hidden rounded-md transition-all duration-75 
+      bg-gradient-to-r ${styleConfig.gradient} 
+      ${isSelected ? "brightness-110 ring-2 ring-white/70 shadow-lg" : "opacity-90 hover:opacity-100 hover:brightness-105"}
+    `}
+		>
+			{/* Decorative Striping for visual texture without heavy rendering */}
+			<div
+				className="absolute inset-0 opacity-10 pointer-events-none"
+				style={{
+					backgroundImage:
+						"linear-gradient(45deg,rgba(0,0,0,.1) 25%,transparent 25%,transparent 50%,rgba(0,0,0,.1) 50%,rgba(0,0,0,.1) 75%,transparent 75%,transparent)",
+					backgroundSize: "10px 10px",
+				}}
+			/>
+
+			{/* Clip Label */}
+			<div className="absolute inset-0 px-2 flex items-center justify-between pointer-events-none">
+				<div className="flex items-center gap-1.5 min-w-0">
+					<Icon className="w-3 h-3 text-white/90 shrink-0" />
+					<span className="text-[10px] text-white font-medium truncate drop-shadow-md select-none">
+						{layer.name || layer.id}
+					</span>
+				</div>
+			</div>
+
+			{/* Resize Handle Visuals (Only visible on hover/select) */}
+			{isSelected && (
+				<>
+					<div className="absolute left-0 top-0 bottom-0 w-1 bg-white/30" />
+					<div className="absolute right-0 top-0 bottom-0 w-1 bg-white/30" />
+				</>
+			)}
+		</div>
+	);
+};
+
+// --- Components: Timeline Core ---
+
 const InteractionOverlay: React.FC = () => {
 	const {
 		layers,
@@ -171,7 +266,6 @@ const InteractionOverlay: React.FC = () => {
 	const [isResizing, setIsResizing] = useState(false);
 	const [isRotating, setIsRotating] = useState(false);
 	const [isPanning, setIsPanning] = useState(false);
-
 	const [resizeAnchor, setResizeAnchor] = useState<
 		"tl" | "tr" | "bl" | "br" | null
 	>(null);
@@ -187,6 +281,7 @@ const InteractionOverlay: React.FC = () => {
 	});
 	const [initialAngle, setInitialAngle] = useState(0);
 
+	// Memoize visible layers
 	const visibleLayers = useMemo(() => {
 		return layers
 			.filter(
@@ -204,6 +299,7 @@ const InteractionOverlay: React.FC = () => {
 		layerId?: string,
 		anchor?: "tl" | "tr" | "bl" | "br",
 	) => {
+		// Middle mouse or pan tool
 		if (e.button === 1 || mode === "pan") {
 			e.preventDefault();
 			setIsPanning(true);
@@ -299,7 +395,6 @@ const InteractionOverlay: React.FC = () => {
 			const cos = Math.cos(theta);
 			const sin = Math.sin(theta);
 
-			// Transform screen delta to local object space
 			let localDx = cos * dx + sin * dy;
 			let localDy = -sin * dx + cos * dy;
 
@@ -312,7 +407,6 @@ const InteractionOverlay: React.FC = () => {
 			let changeW = signW * localDx;
 			let changeH = signH * localDy;
 
-			// Aspect ratio lock for media
 			const layer = layers.find((l) => l.id === selectedId);
 			if (layer && (layer.type === "Image" || layer.type === "Video")) {
 				const ratio = initialPos.height / initialPos.width || 1;
@@ -323,14 +417,12 @@ const InteractionOverlay: React.FC = () => {
 				}
 			}
 
-			// Recalculate based on locked changes
 			localDx = signW * changeW;
 			localDy = signH * changeH;
 
 			const newWidth = Math.max(10, initialPos.width + changeW);
 			const newHeight = Math.max(10, initialPos.height + changeH);
 
-			// Adjust position to keep opposite anchor stationary
 			const worldDx = cos * localDx - sin * localDy;
 			const worldDy = sin * localDx + cos * localDy;
 
@@ -368,8 +460,8 @@ const InteractionOverlay: React.FC = () => {
 				e.clientX - screenCenterX,
 			);
 			const delta = currentAngle - initialAngle;
-			const newRot = initialPos.rotation + (delta * 180) / Math.PI;
 
+			const newRot = initialPos.rotation + (delta * 180) / Math.PI;
 			updateLayers((prev) =>
 				prev.map((l) =>
 					l.id === selectedId ? { ...l, rotation: Math.round(newRot) } : l,
@@ -430,13 +522,12 @@ const InteractionOverlay: React.FC = () => {
 					>
 						{/* Selection Border */}
 						<div
-							className={`absolute inset-0 pointer-events-none transition-colors duration-150 ${
+							className={`absolute inset-0 pointer-events-none transition-all duration-150 ${
 								selectedId === layer.id
-									? "border-[1.5px] border-blue-500 shadow-[0_0_0_1px_rgba(59,130,246,0.2)]"
+									? "border-[2px] border-blue-500 shadow-[0_0_0_1px_rgba(59,130,246,0.2)]"
 									: "border border-transparent group-hover:border-blue-400/50"
 							}`}
 						/>
-
 						{/* Controls (Only if selected) */}
 						{selectedId === layer.id && (
 							<>
@@ -445,10 +536,7 @@ const InteractionOverlay: React.FC = () => {
 									["tl", "tr", "bl", "br"].map((pos) => (
 										<div
 											key={pos}
-											role="button"
-											tabIndex={0}
-											onKeyDown={() => {}} // No-op for a11y silence on drag handle
-											className={`absolute w-2.5 h-2.5 bg-white border border-blue-600 rounded-full shadow-sm z-50 transition-transform hover:scale-125
+											className={`absolute w-3 h-3 bg-white border border-blue-600 rounded-full shadow-sm z-50 transition-transform hover:scale-125
                                                 ${pos === "tl" ? "-top-1.5 -left-1.5 cursor-nwse-resize" : ""}
                                                 ${pos === "tr" ? "-top-1.5 -right-1.5 cursor-nesw-resize" : ""}
                                                 ${pos === "bl" ? "-bottom-1.5 -left-1.5 cursor-nesw-resize" : ""}
@@ -465,14 +553,11 @@ const InteractionOverlay: React.FC = () => {
 									))}
 								{/* Rotation Handle */}
 								<div
-									className="absolute -top-4 left-1/2 -translate-x-1/2 h-4 w-px bg-blue-500"
+									className="absolute -top-6 left-1/2 -translate-x-1/2 h-6 w-px bg-blue-500"
 									style={{ transform: `scaleX(${1 / zoom})` }}
 								/>
 								<div
-									role="button"
-									tabIndex={0}
-									onKeyDown={() => {}}
-									className="absolute -top-6 left-1/2 -translate-x-1/2 w-2.5 h-2.5 bg-white border border-blue-600 rounded-full shadow-sm cursor-grab active:cursor-grabbing hover:scale-110"
+									className="absolute -top-8 left-1/2 -translate-x-1/2 w-3 h-3 bg-white border border-blue-600 rounded-full shadow-sm cursor-grab active:cursor-grabbing hover:scale-110"
 									onMouseDown={(e) => handleRotateStart(e, layer.id)}
 								/>
 							</>
@@ -484,7 +569,6 @@ const InteractionOverlay: React.FC = () => {
 	);
 };
 
-// --- Toolbar ---
 const Toolbar = React.memo<{
 	onClose: () => void;
 	onSave: () => void;
@@ -522,7 +606,7 @@ const Toolbar = React.memo<{
 						<Button
 							variant="ghost"
 							size="icon"
-							className={`rounded-full w-8 h-8 ${isPlaying ? "bg-red-500/10 text-red-400" : "hover:bg-white/10 text-white"}`}
+							className={`rounded-full w-9 h-9 transition-colors ${isPlaying ? "bg-red-500/20 text-red-400 hover:bg-red-500/30" : "hover:bg-white/10 text-white"}`}
 							onClick={handlePlayPause}
 						>
 							{isPlaying ? (
@@ -538,24 +622,27 @@ const Toolbar = React.memo<{
 				</Tooltip>
 			</TooltipProvider>
 
-			<div className="w-px h-4 bg-white/10 mx-0.5" />
+			<div className="w-px h-5 bg-white/10 mx-1" />
+
+			{/* Timecode */}
 			<div
 				ref={timeRef}
-				className="text-[10px] font-mono tabular-nums text-neutral-400 min-w-[60px] text-center select-none"
+				className="text-[11px] font-mono tabular-nums text-neutral-300 min-w-[70px] text-center select-none cursor-default"
 			>
-				{/* Initial content to avoid layout shift */}
 				{Math.floor(currentFrame / fps)}s :{" "}
 				{(currentFrame % fps).toString().padStart(2, "0")}f
 			</div>
-			<div className="w-px h-4 bg-white/10 mx-0.5" />
 
-			<div className="flex bg-white/5 rounded-full p-0.5">
+			<div className="w-px h-5 bg-white/10 mx-1" />
+
+			{/* Tools */}
+			<div className="flex bg-white/5 rounded-full p-0.5 border border-white/5">
 				<Tooltip>
 					<TooltipTrigger asChild>
 						<Button
-							variant={mode === "select" ? "default" : "ghost"}
+							variant={mode === "select" ? "secondary" : "ghost"}
 							size="icon"
-							className={`rounded-full w-7 h-7`}
+							className={`rounded-full w-8 h-8 ${mode === "select" ? "bg-white/20 text-white" : "text-gray-400 hover:text-white"}`}
 							onClick={() => setMode("select")}
 						>
 							<MousePointer className="w-3.5 h-3.5" />
@@ -566,9 +653,9 @@ const Toolbar = React.memo<{
 				<Tooltip>
 					<TooltipTrigger asChild>
 						<Button
-							variant={mode === "pan" ? "default" : "ghost"}
+							variant={mode === "pan" ? "secondary" : "ghost"}
 							size="icon"
-							className={`rounded-full w-7 h-7`}
+							className={`rounded-full w-8 h-8 ${mode === "pan" ? "bg-white/20 text-white" : "text-gray-400 hover:text-white"}`}
 							onClick={() => setMode("pan")}
 						>
 							<Hand className="w-3.5 h-3.5" />
@@ -578,14 +665,17 @@ const Toolbar = React.memo<{
 				</Tooltip>
 			</div>
 
+			<div className="w-px h-5 bg-white/10 mx-1" />
+
+			{/* Zoom */}
 			<Menubar className="border-none bg-transparent h-auto p-0">
 				<MenubarMenu>
 					<MenubarTrigger asChild>
 						<Button
 							variant="ghost"
-							className="h-8 px-2.5 text-[10px] rounded-full text-gray-300 hover:text-white hover:bg-white/10 font-medium"
+							className="h-8 px-3 text-[11px] rounded-full text-gray-300 hover:text-white hover:bg-white/10 font-medium min-w-[80px] justify-between"
 						>
-							{Math.round(zoom * 100)}%{" "}
+							{Math.round(zoom * 100)}%
 							<ChevronDown className="w-3 h-3 ml-1.5 opacity-50" />
 						</Button>
 					</MenubarTrigger>
@@ -593,31 +683,33 @@ const Toolbar = React.memo<{
 						align="center"
 						className="min-w-[140px] bg-neutral-900/95 backdrop-blur-xl border-white/10 text-gray-200"
 					>
-						<MenubarItem onClick={zoomIn}>Zoom In</MenubarItem>
-						<MenubarItem onClick={zoomOut}>Zoom Out</MenubarItem>
+						<MenubarItem onClick={zoomIn}>Zoom In (+)</MenubarItem>
+						<MenubarItem onClick={zoomOut}>Zoom Out (-)</MenubarItem>
 						<MenubarItem onClick={() => zoomTo(1)}>Actual Size</MenubarItem>
 						<MenubarItem onClick={fitView}>Fit to Screen</MenubarItem>
 					</MenubarContent>
 				</MenubarMenu>
 			</Menubar>
 
-			<div className="w-px h-4 bg-white/10 mx-0.5" />
+			<div className="w-px h-5 bg-white/10 mx-1" />
+
+			{/* Actions */}
 			<div className="flex items-center gap-1">
 				<Button
 					size="sm"
-					className="h-7 text-[11px] font-medium rounded-full px-3  border-0"
+					className="h-8 text-[11px] font-semibold rounded-full px-4 border-0 bg-white text-black hover:bg-gray-200"
 					onClick={onSave}
 					disabled={!isDirty}
 				>
 					Save
 				</Button>
 				<Button
-					size="xs"
+					size="icon"
 					variant="ghost"
-					className="h-7 text-[11px] rounded-full w-7 text-gray-400 hover:text-red-400 hover:text-white hover:bg-white/10"
+					className="h-8 w-8 rounded-full text-gray-400 hover:text-white hover:bg-white/10"
 					onClick={onClose}
 				>
-					<XIcon />
+					<XIcon className="w-4 h-4" />
 				</Button>
 			</div>
 		</div>
@@ -625,6 +717,7 @@ const Toolbar = React.memo<{
 });
 
 // --- Timeline Panel ---
+
 interface SortableTrackProps {
 	layer: ExtendedLayer;
 	isSelected: boolean;
@@ -661,8 +754,8 @@ const SortableTrackHeader: React.FC<SortableTrackProps> = ({
 			tabIndex={0}
 			onKeyDown={(e) => e.key === "Enter" && onSelect()}
 			className={`
-        border-b border-white/5 flex items-center pl-3 pr-2 text-xs gap-3 group outline-none transition-colors
-        ${isSelected ? "bg-blue-500/10 text-blue-100" : "hover:bg-white/5 text-gray-400"}
+        border-b border-white/5 flex items-center pl-3 pr-2 text-xs gap-3 group outline-none transition-colors select-none
+        ${isSelected ? "bg-white/5 text-blue-100" : "hover:bg-white/5 text-gray-400"}
         ${isDragging ? "opacity-50 bg-neutral-900" : ""}
       `}
 			onClick={onSelect}
@@ -670,24 +763,26 @@ const SortableTrackHeader: React.FC<SortableTrackProps> = ({
 			<div
 				{...attributes}
 				{...listeners}
-				className="cursor-grab active:cursor-grabbing p-1 text-gray-600 hover:text-gray-300 transition-colors"
+				className="cursor-grab active:cursor-grabbing p-1.5 text-gray-600 hover:text-gray-300 transition-colors rounded hover:bg-white/5"
 			>
-				<GripVertical className="h-3 w-3" />
+				<GripVertical className="h-3.5 w-3.5" />
 			</div>
-			<div className="flex-1 flex items-center gap-2 min-w-0">
-				{layer.type === "Video" && (
-					<Film className="w-3.5 h-3.5 text-blue-400" />
-				)}
-				{layer.type === "Image" && (
-					<ImageIcon className="w-3.5 h-3.5 text-purple-400" />
-				)}
-				{layer.type === "Text" && (
-					<Type className="w-3.5 h-3.5 text-green-400" />
-				)}
-				{layer.type === "Audio" && (
-					<Music className="w-3.5 h-3.5 text-orange-400" />
-				)}
-				<span className="truncate font-medium text-[11px]">
+			<div className="flex-1 flex items-center gap-2.5 min-w-0">
+				<div
+					className={`
+                    w-6 h-6 rounded flex items-center justify-center
+                    ${layer.type === "Video" ? "bg-blue-500/20 text-blue-400" : ""}
+                    ${layer.type === "Image" ? "bg-purple-500/20 text-purple-400" : ""}
+                    ${layer.type === "Text" ? "bg-emerald-500/20 text-emerald-400" : ""}
+                    ${layer.type === "Audio" ? "bg-orange-500/20 text-orange-400" : ""}
+                `}
+				>
+					{layer.type === "Video" && <Film className="w-3.5 h-3.5" />}
+					{layer.type === "Image" && <ImageIcon className="w-3.5 h-3.5" />}
+					{layer.type === "Text" && <Type className="w-3.5 h-3.5" />}
+					{layer.type === "Audio" && <Music className="w-3.5 h-3.5" />}
+				</div>
+				<span className="truncate font-medium text-[11px] leading-tight opacity-80">
 					{layer.name || layer.id}
 				</span>
 			</div>
@@ -695,9 +790,11 @@ const SortableTrackHeader: React.FC<SortableTrackProps> = ({
 				<TooltipProvider>
 					<Tooltip>
 						<TooltipTrigger>
-							<Zap className="w-3 h-3 text-amber-400" />
+							<div className="p-1 rounded bg-amber-500/10">
+								<Zap className="w-3 h-3 text-amber-400" />
+							</div>
 						</TooltipTrigger>
-						<TooltipContent>Has Animations</TooltipContent>
+						<TooltipContent>Animations applied</TooltipContent>
 					</Tooltip>
 				</TooltipProvider>
 			)}
@@ -721,11 +818,10 @@ const TimelinePanel: React.FC = () => {
 
 	const playheadRef = useRef<HTMLDivElement>(null);
 	const scrollContainerRef = useRef<HTMLDivElement>(null);
-
 	const [isPanningTimeline, setIsPanningTimeline] = useState(false);
 	const [dragStartX, setDragStartX] = useState(0);
 	const [initialScroll, setInitialScroll] = useState(0);
-	const [pixelsPerFrame, setPixelsPerFrame] = useState(6);
+	const [pixelsPerFrame, setPixelsPerFrame] = useState(10); // Increased default for better visibility
 
 	const sortedLayers = useMemo(
 		() => [...layers].sort((a, b) => (b.zIndex ?? 0) - (a.zIndex ?? 0)),
@@ -739,18 +835,17 @@ const TimelinePanel: React.FC = () => {
 		}),
 	);
 
+	// --- Drag & Drop Sorting ---
 	const handleDragEnd = (event: DragEndEvent) => {
 		const { active, over } = event;
 		if (over && active.id !== over.id) {
 			const oldIndex = sortedLayers.findIndex((l) => l.id === active.id);
 			const newIndex = sortedLayers.findIndex((l) => l.id === over.id);
-
 			const newSorted = arrayMove(sortedLayers, oldIndex, newIndex);
 			const updatedLayers = newSorted.map((l, idx) => ({
 				...l,
 				zIndex: newSorted.length - idx,
 			}));
-
 			updateLayers((prev) => {
 				const updateMap = new Map(updatedLayers.map((l) => [l.id, l]));
 				return prev.map((l) => updateMap.get(l.id) || l);
@@ -758,6 +853,7 @@ const TimelinePanel: React.FC = () => {
 		}
 	};
 
+	// --- Playhead & Scroll Sync ---
 	useEffect(() => {
 		let rafId: number | null = null;
 		const loop = () => {
@@ -777,18 +873,17 @@ const TimelinePanel: React.FC = () => {
 			}
 			rafId = requestAnimationFrame(loop);
 		};
-
 		if (isPlaying) {
 			loop();
 		} else if (playheadRef.current) {
 			playheadRef.current.style.transform = `translateX(${currentFrame * pixelsPerFrame}px)`;
 		}
-
 		return () => {
 			if (rafId) cancelAnimationFrame(rafId);
 		};
 	}, [isPlaying, currentFrame, pixelsPerFrame, playerRef]);
 
+	// --- Timeline Interaction ---
 	const handleTimelineClick = (e: React.MouseEvent) => {
 		const rect = e.currentTarget.getBoundingClientRect();
 		const clickX = e.clientX - rect.left;
@@ -797,6 +892,25 @@ const TimelinePanel: React.FC = () => {
 		setCurrentFrame(frame);
 	};
 
+	// --- Scroll Wheel Navigation (Canva-like) ---
+	useEffect(() => {
+		const el = scrollContainerRef.current;
+		if (!el) return;
+
+		const handleWheel = (e: WheelEvent) => {
+			// If Shift key is pressed or it's a horizontal scroll
+			if (e.shiftKey || Math.abs(e.deltaX) > Math.abs(e.deltaY)) {
+				e.preventDefault();
+				el.scrollLeft += e.deltaX || e.deltaY;
+			}
+			// Vertical scroll is handled natively
+		};
+
+		el.addEventListener("wheel", handleWheel, { passive: false });
+		return () => el.removeEventListener("wheel", handleWheel);
+	}, []);
+
+	// --- Clip Manipulation (Move/Trim) with Snapping ---
 	const handleClipManipulation = (
 		e: React.MouseEvent,
 		layerId: string,
@@ -815,13 +929,15 @@ const TimelinePanel: React.FC = () => {
 			const diffFrames = Math.round(diffPx / pixelsPerFrame);
 
 			if (type === "move") {
-				const newStart = Math.max(0, initialStart + diffFrames);
+				let newStart = initialStart + diffFrames;
+				newStart = Math.max(0, newStart);
 				updateLayers((prev) =>
 					prev.map((l) =>
 						l.id === layerId ? { ...l, startFrame: newStart } : l,
 					),
 				);
 			} else {
+				// Trimming
 				let newDuration = Math.max(1, initialDuration + diffFrames);
 				if (layer.maxDurationInFrames) {
 					newDuration = Math.min(newDuration, layer.maxDurationInFrames);
@@ -844,34 +960,34 @@ const TimelinePanel: React.FC = () => {
 	};
 
 	return (
-		<div className="h-56 flex flex-col border-t border-white/10 bg-[#0f0f0f] shrink-0 select-none z-30">
+		<div className="h-80 flex flex-col border-t border-white/10 bg-[#0f0f0f] shrink-0 select-none z-30 shadow-[0_-5px_20px_rgba(0,0,0,0.5)]">
 			{/* Toolbar */}
-			<div className="h-9 border-b border-white/5 flex items-center justify-between px-3 bg-neutral-900 shrink-0 z-40">
-				<div className="text-[11px] font-semibold text-neutral-400 tracking-wider flex items-center gap-2">
-					<Layers className="w-3.5 h-3.5" /> LAYERS
+			<div className="h-10 border-b border-white/5 flex items-center justify-between px-4 bg-neutral-900 shrink-0 z-40">
+				<div className="text-[11px] font-bold text-neutral-400 tracking-wider flex items-center gap-2">
+					<Layers className="w-4 h-4" /> TIMELINE LAYERS
 				</div>
 				<div className="flex items-center gap-2">
 					<Button
 						variant="ghost"
 						size="icon"
-						className="h-6 w-6 rounded-full hover:bg-white/10 text-gray-400"
-						onClick={() => setPixelsPerFrame((p) => Math.max(2, p - 2))}
+						className="h-6 w-6 rounded hover:bg-white/10 text-gray-400"
+						onClick={() => setPixelsPerFrame((p) => Math.max(1, p - 2))}
 					>
 						<Minus className="h-3 w-3" />
 					</Button>
 					<Slider
 						value={[pixelsPerFrame]}
 						min={1}
-						max={30}
+						max={60}
 						step={1}
 						onValueChange={([v]) => setPixelsPerFrame(v)}
-						className="w-20"
+						className="w-24"
 					/>
 					<Button
 						variant="ghost"
 						size="icon"
-						className="h-6 w-6 rounded-full hover:bg-white/10 text-gray-400"
-						onClick={() => setPixelsPerFrame((p) => Math.min(24, p + 2))}
+						className="h-6 w-6 rounded hover:bg-white/10 text-gray-400"
+						onClick={() => setPixelsPerFrame((p) => Math.min(100, p + 2))}
 					>
 						<Plus className="h-3 w-3" />
 					</Button>
@@ -881,8 +997,12 @@ const TimelinePanel: React.FC = () => {
 			{/* Timeline Content */}
 			<div
 				ref={scrollContainerRef}
-				className="flex-1 overflow-auto bg-[#0a0a0a]"
-				style={{ cursor: isPanningTimeline ? "grabbing" : "default" }}
+				className="flex-1 overflow-auto bg-[#0a0a0a] timeline-scroll-area custom-scrollbar"
+				style={{
+					cursor: isPanningTimeline ? "grabbing" : "default",
+					scrollbarWidth: "thin",
+					scrollbarColor: "#333 #0a0a0a",
+				}}
 				onMouseDown={(e) => {
 					if (
 						e.button === 0 &&
@@ -903,12 +1023,15 @@ const TimelinePanel: React.FC = () => {
 				onMouseLeave={() => setIsPanningTimeline(false)}
 				role="button"
 				tabIndex={0}
-				onKeyDown={() => {}} // No-op
+				onKeyDown={() => {}}
 			>
 				<div
 					className="relative flex flex-col min-h-full"
 					style={{
-						width: HEADER_WIDTH + durationInFrames * pixelsPerFrame + 800,
+						width: Math.max(
+							scrollContainerRef.current?.clientWidth || 0,
+							HEADER_WIDTH + durationInFrames * pixelsPerFrame + 800,
+						),
 					}}
 				>
 					{/* Ruler */}
@@ -917,17 +1040,14 @@ const TimelinePanel: React.FC = () => {
 						style={{ height: RULER_HEIGHT }}
 					>
 						<div
-							className="sticky left-0 z-50 border-r border-b border-white/5 bg-neutral-900 shrink-0"
+							className="sticky left-0 z-50 border-r border-b border-white/5 bg-neutral-900 shrink-0 shadow-lg"
 							style={{ width: HEADER_WIDTH }}
 						/>
 						<div
 							className="flex-1 bg-neutral-900/90 backdrop-blur-sm border-b border-white/5 relative cursor-pointer"
 							onClick={handleTimelineClick}
-							role="button"
-							tabIndex={0}
-							onKeyDown={() => {}}
 						>
-							<svg className="absolute inset-0 w-full h-full pointer-events-none">
+							<svg className="absolute inset-0 w-full h-full pointer-events-none opacity-50">
 								<defs>
 									<pattern
 										id="ruler-ticks"
@@ -937,13 +1057,16 @@ const TimelinePanel: React.FC = () => {
 										height={RULER_HEIGHT}
 										patternUnits="userSpaceOnUse"
 									>
+										{/* Second Tick */}
 										<line
 											x1="0.5"
 											y1={RULER_HEIGHT}
 											x2="0.5"
 											y2={RULER_HEIGHT - 12}
-											stroke="#555"
+											stroke="#666"
+											strokeWidth="1"
 										/>
+										{/* Quarter Second Ticks */}
 										{[0.25, 0.5, 0.75].map((t) => (
 											<line
 												key={t}
@@ -956,38 +1079,31 @@ const TimelinePanel: React.FC = () => {
 										))}
 									</pattern>
 								</defs>
-								<rect
-									width="100%"
-									height="100%"
-									fill="url(#ruler-ticks)"
-									opacity={0.8}
-								/>
+								<rect width="100%" height="100%" fill="url(#ruler-ticks)" />
 							</svg>
-
 							{/* Time Labels */}
 							{Array.from({
-								length: Math.ceil(durationInFrames / fps) + 2,
+								length: Math.ceil(durationInFrames / fps) + 5,
 							}).map((_, sec) => (
 								<span
 									key={sec}
-									className="absolute top-1 text-[9px] font-mono text-gray-500 select-none pointer-events-none"
+									className="absolute top-1.5 text-[10px] font-mono text-gray-500 select-none pointer-events-none font-medium"
 									style={{ left: sec * fps * pixelsPerFrame + 4 }}
 								>
 									{sec}s
 								</span>
 							))}
-
 							{/* Playhead */}
 							<div
 								ref={playheadRef}
-								className="absolute top-0 bottom-0 z-50 pointer-events-none h-[100vh] will-change-transform"
+								className="absolute top-0 bottom-0 z-[60] pointer-events-none h-[100vh] will-change-transform"
 							>
-								<div className="absolute -translate-x-1/2 -top-0 w-3 h-3 text-red-500 fill-current">
+								<div className="absolute -translate-x-1/2 -top-0 w-3 h-3 text-blue-500 fill-current filter drop-shadow-md">
 									<svg viewBox="0 0 12 12" className="w-full h-full">
 										<path d="M0,0 L12,0 L12,8 L6,12 L0,8 Z" />
 									</svg>
 								</div>
-								<div className="w-px h-full bg-red-500 absolute left-0" />
+								<div className="w-px h-full bg-blue-500 absolute left-0 shadow-[0_0_4px_rgba(59,130,246,0.5)]" />
 							</div>
 						</div>
 					</div>
@@ -1024,10 +1140,10 @@ const TimelinePanel: React.FC = () => {
 						<div className="flex-1 relative timeline-bg min-h-full bg-[#0a0a0a]">
 							{/* Grid */}
 							<div
-								className="absolute inset-0 pointer-events-none opacity-20"
+								className="absolute inset-0 pointer-events-none opacity-[0.03]"
 								style={{
 									backgroundImage:
-										"linear-gradient(90deg, #333 1px, transparent 1px)",
+										"linear-gradient(90deg, #fff 1px, transparent 1px)",
 									backgroundSize: `${fps * pixelsPerFrame}px 100%`,
 								}}
 							/>
@@ -1035,12 +1151,15 @@ const TimelinePanel: React.FC = () => {
 							{sortedLayers.map((layer) => {
 								const duration =
 									layer.durationInFrames ?? DEFAULT_DURATION_FRAMES;
+								const width = Math.max(10, duration * pixelsPerFrame);
+								const isSelected = layer.id === selectedId;
+
 								return (
 									<div
 										key={layer.id}
 										style={{ height: TRACK_HEIGHT }}
 										className={`border-b border-white/5 relative group/track ${
-											layer.id === selectedId ? "bg-white/[0.03]" : ""
+											isSelected ? "bg-white/[0.02]" : ""
 										}`}
 									>
 										<div
@@ -1050,26 +1169,14 @@ const TimelinePanel: React.FC = () => {
 												if (e.key === "Enter") setSelectedId(layer.id);
 											}}
 											className={`
-                                                absolute top-1 bottom-1 rounded-xs border backdrop-blur-sm
-                                                flex items-center overflow-hidden cursor-move outline-none
-                                                ${
-																									layer.id === selectedId
-																										? "ring-1 ring-white/50 z-10 shadow-lg"
-																										: "opacity-80 hover:opacity-100 hover:brightness-110"
-																								}
-                                            `}
+                          absolute top-[4px] bottom-[4px] rounded-md
+                          flex items-center overflow-hidden cursor-move outline-none
+                          ${isSelected ? "z-20" : "z-10"}
+                      `}
 											style={{
 												left: layer.startFrame * pixelsPerFrame,
-												width: Math.max(10, duration * pixelsPerFrame),
-												backgroundColor:
-													layer.type === "Video"
-														? "#1e3a8a"
-														: layer.type === "Image"
-															? "#581c87"
-															: layer.type === "Text"
-																? "#14532d"
-																: "#7c2d12",
-												borderColor: "rgba(255,255,255,0.1)",
+												width,
+												minWidth: "10px",
 											}}
 											onMouseDown={(e) =>
 												handleClipManipulation(e, layer.id, "move")
@@ -1079,22 +1186,20 @@ const TimelinePanel: React.FC = () => {
 												setSelectedId(layer.id);
 											}}
 										>
-											<div className="flex flex-col px-2 w-full overflow-hidden">
-												<span className="text-[10px] truncate text-white/90 font-medium drop-shadow-md">
-													{layer.name || layer.id}
-												</span>
-											</div>
-											{/* Resize Handle */}
+											<UnifiedClip
+												layer={layer}
+												width={width}
+												isSelected={isSelected}
+											/>
+
+											{/* Resize Handle (Right) - Invisible hit area, visible on hover */}
 											<div
-												className="absolute right-0 top-0 bottom-0 w-3 cursor-e-resize hover:bg-white/20 z-20 flex items-center justify-center group/handle"
+												className="absolute right-0 top-0 bottom-0 w-3 cursor-e-resize z-30 group/handle"
 												onMouseDown={(e) =>
 													handleClipManipulation(e, layer.id, "trim")
 												}
-												role="button"
-												tabIndex={0}
-												onKeyDown={() => {}}
 											>
-												<div className="w-0.5 h-3 bg-white/30 group-hover/handle:bg-white/70 rounded-full" />
+												<div className="absolute right-0.5 top-1/2 -translate-y-1/2 w-1 h-4 bg-black/20 rounded-full group-hover/handle:bg-white/50 transition-colors" />
 											</div>
 										</div>
 									</div>
@@ -1109,6 +1214,7 @@ const TimelinePanel: React.FC = () => {
 };
 
 // --- Inspector ---
+
 const InspectorPanel: React.FC = () => {
 	const {
 		selectedId,
@@ -1120,7 +1226,6 @@ const InspectorPanel: React.FC = () => {
 		updateViewportWidth,
 		updateViewportHeight,
 	} = useEditor();
-
 	const selectedLayer = layers.find((f) => f.id === selectedId);
 	const [addAnimOpen, setAddAnimOpen] = useState(false);
 	const { data: fontList } = useGetFontListQuery({});
@@ -1131,17 +1236,6 @@ const InspectorPanel: React.FC = () => {
 		}
 		return ["Geist", "Inter", "Arial", "Courier New", "Times New Roman"];
 	}, [fontList]);
-
-	const aspectRatios = useMemo(
-		() => [
-			{ label: "16:9 Landscape", width: 1920, height: 1080 },
-			{ label: "9:16 Story/Reel", width: 1080, height: 1920 },
-			{ label: "1:1 Square", width: 1080, height: 1080 },
-			{ label: "4:5 Portrait", width: 1080, height: 1350 },
-			{ label: "21:9 Ultrawide", width: 2560, height: 1080 },
-		],
-		[],
-	);
 
 	const animationTypes: AnimationType[] = [
 		"fade-in",
@@ -1183,328 +1277,364 @@ const InspectorPanel: React.FC = () => {
 
 	if (!selectedLayer) {
 		return (
-			<div className="w-72 border-l border-white/5 bg-[#0f0f0f] flex flex-col z-20 shadow-xl">
+			<div className="w-80 border-l border-white/5 bg-[#0f0f0f] flex flex-col z-20 shadow-xl">
 				<div className="p-4 bg-neutral-900 border-b border-white/5">
-					<div className="flex items-center gap-2 text-xs font-semibold text-white">
-						<Settings2 className="w-3.5 h-3.5 text-gray-400" />
-						Global Settings
+					<div className="flex items-center gap-2 text-xs font-bold text-gray-200 uppercase tracking-wide">
+						<Settings2 className="w-3.5 h-3.5 text-blue-400" />
+						Project Settings
 					</div>
 				</div>
-				<div className="p-4 space-y-6">
-					{/* Canvas Settings Group */}
-					<div className="space-y-4">
-						<div className="space-y-1">
-							<Label className="text-[10px] text-gray-500 uppercase font-bold tracking-wider">
-								Canvas Presets
-							</Label>
-							<Select
-								onValueChange={(val) => {
-									const preset = aspectRatios.find((r) => r.label === val);
-									if (preset) {
-										updateViewportWidth(preset.width);
-										updateViewportHeight(preset.height);
-									}
-								}}
-							>
-								<SelectTrigger className="h-8 text-[11px] bg-white/5 border-white/10 text-gray-300">
-									<SelectValue placeholder="Select Aspect Ratio" />
-								</SelectTrigger>
-								<SelectContent className="bg-neutral-800 border-white/10 text-gray-300">
-									{aspectRatios.map((r) => (
-										<SelectItem key={r.label} value={r.label}>
-											<span className="flex items-center justify-between w-full gap-4">
-												<span>{r.label}</span>
-												<span className="text-[9px] text-gray-500 font-mono">
-													{r.width}x{r.height}
-												</span>
-											</span>
-										</SelectItem>
-									))}
-								</SelectContent>
-							</Select>
-						</div>
-
-						<div className="space-y-2">
-							<div className="flex items-center justify-between">
+				<ScrollArea className="flex-1">
+					<div className="p-4 space-y-6">
+						{/* Canvas Settings Group */}
+						<div className="space-y-4">
+							<div className="space-y-1.5">
 								<Label className="text-[10px] text-gray-500 uppercase font-bold tracking-wider">
-									Dimensions
+									Preset
 								</Label>
-								<TooltipProvider>
-									<Tooltip>
-										<TooltipTrigger asChild>
-											<div className="w-3 h-3 rounded-full border border-gray-600 text-[8px] flex items-center justify-center text-gray-500 cursor-help">
-												?
-											</div>
-										</TooltipTrigger>
-										<TooltipContent>
-											<p>
-												Dimensions are automatically rounded to even numbers for
-												codec compatibility.
-											</p>
-										</TooltipContent>
-									</Tooltip>
-								</TooltipProvider>
+								<Select
+									onValueChange={(val) => {
+										const preset = ASPECT_RATIOS.find((r) => r.label === val);
+										if (preset) {
+											updateViewportWidth(preset.width);
+											updateViewportHeight(preset.height);
+										}
+									}}
+								>
+									<SelectTrigger className="h-8 text-[11px] bg-white/5 border-white/10 text-gray-300 focus:ring-blue-500/20">
+										<SelectValue placeholder="Select Aspect Ratio" />
+									</SelectTrigger>
+									<SelectContent className="bg-neutral-800 border-white/10 text-gray-300">
+										{ASPECT_RATIOS.map((r) => (
+											<SelectItem key={r.label} value={r.label}>
+												<span className="flex items-center justify-between w-full gap-6">
+													<span>{r.label}</span>
+													<span className="text-[10px] text-gray-500 font-mono">
+														{r.width}x{r.height}
+													</span>
+												</span>
+											</SelectItem>
+										))}
+									</SelectContent>
+								</Select>
 							</div>
-							<div className="grid grid-cols-2 gap-2">
-								<DraggableNumberInput
-									label="W"
-									icon={MoveHorizontal}
-									value={Math.round(viewportWidth)}
-									onChange={(v) => updateViewportWidth(Math.max(2, v))}
-								/>
-								<DraggableNumberInput
-									label="H"
-									icon={MoveVertical}
-									value={Math.round(viewportHeight)}
-									onChange={(v) => updateViewportHeight(Math.max(2, v))}
-								/>
+
+							<div className="space-y-2">
+								<Label className="text-[10px] text-gray-500 uppercase font-bold tracking-wider">
+									Resolution
+								</Label>
+								<div className="grid grid-cols-2 gap-2">
+									<DraggableNumberInput
+										label="W"
+										icon={MoveHorizontal}
+										value={Math.round(viewportWidth)}
+										onChange={(v) => updateViewportWidth(Math.max(2, v))}
+									/>
+									<DraggableNumberInput
+										label="H"
+										icon={MoveVertical}
+										value={Math.round(viewportHeight)}
+										onChange={(v) => updateViewportHeight(Math.max(2, v))}
+									/>
+								</div>
 							</div>
 						</div>
+						<div className="w-full h-px bg-white/5" />
+						<div className="flex flex-col items-center justify-center py-12 px-4 text-center border border-dashed border-white/10 rounded-lg bg-white/[0.02]">
+							<MousePointer className="w-8 h-8 text-gray-700 mb-3" />
+							<p className="text-sm font-medium text-gray-400">
+								No Layer Selected
+							</p>
+							<p className="text-xs text-gray-600 mt-1">
+								Click on a clip in the timeline or canvas to edit properties.
+							</p>
+						</div>
 					</div>
-
-					<div className="w-full h-px bg-white/5" />
-
-					<div className="flex flex-col items-center justify-center p-8 text-center border border-dashed border-white/10 rounded-lg bg-white/5">
-						<MousePointer className="w-6 h-6 text-gray-600 mb-2" />
-						<p className="text-xs text-gray-500">
-							Select a layer to edit properties
-						</p>
-					</div>
-				</div>
+				</ScrollArea>
 			</div>
 		);
 	}
 
 	return (
-		<ScrollArea className="w-72 border-l border-white/5 bg-[#0f0f0f] z-20 shadow-xl">
+		<div className="w-80 border-l border-white/5 bg-[#0f0f0f] z-20 shadow-xl flex flex-col h-full">
 			<div className="flex items-center justify-between p-4 border-b border-white/5 bg-neutral-900/50">
 				<div className="flex flex-col min-w-0">
-					<span className="text-[10px] text-gray-500 uppercase font-bold tracking-wider">
-						Selected
+					<span className="text-[10px] text-blue-400 uppercase font-bold tracking-wider mb-0.5">
+						Properties
 					</span>
-					<h2 className="text-sm font-semibold text-white truncate max-w-[150px]">
+					<h2 className="text-sm font-semibold text-white truncate max-w-[200px]">
 						{selectedLayer.name || selectedLayer.id}
 					</h2>
 				</div>
-				<span className="text-[10px] bg-white/10 px-2 py-0.5 rounded-full text-gray-300 font-medium uppercase border border-white/5">
+				<span className="text-[9px] bg-white/10 px-2 py-1 rounded text-gray-300 font-medium uppercase border border-white/5 tracking-wider">
 					{selectedLayer.type}
 				</span>
 			</div>
 
-			<div className="pb-20">
-				{/* Transform */}
-				<div className="border-b border-white/5 p-3">
-					<div className="flex items-center gap-2 mb-2 text-[11px] font-bold text-gray-400 uppercase">
-						<Move className="w-3.5 h-3.5" /> Transform
-					</div>
-					<div className="grid grid-cols-2 gap-3 mb-3">
-						<DraggableNumberInput
-							label="X"
-							icon={MoveHorizontal}
-							value={Math.round(selectedLayer.x)}
-							onChange={(v) => update({ x: v })}
-						/>
-						<DraggableNumberInput
-							label="Y"
-							icon={MoveVertical}
-							value={Math.round(selectedLayer.y)}
-							onChange={(v) => update({ y: v })}
-						/>
-						{selectedLayer.type !== "Text" && (
-							<>
-								<DraggableNumberInput
-									label="W"
-									icon={MoveHorizontal}
-									value={Math.round(selectedLayer.width ?? 0)}
-									onChange={(v) => update({ width: Math.max(1, v) })}
-								/>
-								<DraggableNumberInput
-									label="H"
-									icon={MoveVertical}
-									value={Math.round(selectedLayer.height ?? 0)}
-									onChange={(v) => update({ height: Math.max(1, v) })}
-								/>
-							</>
-						)}
-					</div>
-					<div className="grid grid-cols-2 gap-3">
-						<DraggableNumberInput
-							label="Scale"
-							icon={Move}
-							value={selectedLayer.scale}
-							step={0.1}
-							onChange={(v) => update({ scale: v })}
-							allowDecimal
-						/>
-						<DraggableNumberInput
-							label="Rot"
-							icon={RotateCw}
-							value={Math.round(selectedLayer.rotation)}
-							onChange={(v) => update({ rotation: v })}
-						/>
-					</div>
-				</div>
-
-				{/* Animations */}
-				<div className="border-b border-white/5 p-3">
-					<div className="flex items-center gap-2 mb-2 text-[11px] font-bold text-gray-400 uppercase">
-						<Zap className="w-3.5 h-3.5" /> Animations
-					</div>
-					<div className="space-y-3">
-						{selectedLayer.animations?.map((anim) => (
-							<div
-								key={anim.id}
-								className="bg-neutral-900 rounded-md p-2 border border-white/5 shadow-sm group"
-							>
-								<div className="flex items-center justify-between mb-2">
-									<div className="flex items-center gap-2">
-										<div className="w-1.5 h-1.5 rounded-full bg-blue-500" />
-										<span className="text-[11px] font-medium text-gray-200 capitalize">
-											{anim.type.replace(/-/g, " ")}
-										</span>
-									</div>
-									<Button
-										variant="ghost"
-										size="icon"
-										className="h-5 w-5 hover:bg-red-500/20 hover:text-red-400 opacity-0 group-hover:opacity-100 transition-opacity"
-										onClick={() => {
-											updateLayers((prev) =>
-												prev.map((l) =>
-													l.id === selectedId
-														? {
-																...l,
-																animations: l.animations?.filter(
-																	(a) => a.id !== anim.id,
-																),
-															}
-														: l,
-												),
-											);
-										}}
-									>
-										<Trash2 className="w-3 h-3" />
-									</Button>
-								</div>
-								<Slider
-									value={[anim.value]}
-									min={0.1}
-									max={5}
-									step={0.1}
-									onValueChange={([v]) => {
-										updateLayers((prev) =>
-											prev.map((l) =>
-												l.id === selectedId
-													? {
-															...l,
-															animations: l.animations?.map((a) =>
-																a.id === anim.id ? { ...a, value: v } : a,
-															),
-														}
-													: l,
-											),
-										);
-									}}
-								/>
-							</div>
-						))}
-
-						<Popover open={addAnimOpen} onOpenChange={setAddAnimOpen}>
-							<PopoverTrigger asChild>
-								<Button
-									variant="outline"
-									className="w-full h-8 text-xs border-dashed border-white/20 bg-transparent hover:bg-white/5 text-gray-400"
-								>
-									<Plus className="w-3.5 h-3.5 mr-1" /> Add Animation
-								</Button>
-							</PopoverTrigger>
-							<PopoverContent
-								side="left"
-								align="start"
-								className="bg-[#1a1a1a] border-white/10 w-64 p-2"
-							>
-								<div className="grid grid-cols-3 gap-1">
-									{animationTypes.map((type) => (
-										<button
-											key={type}
-											type="button"
-											className="flex flex-col items-center justify-center p-2 rounded hover:bg-white/10 transition-colors"
-											onClick={() => addAnimation(type)}
-										>
-											<div
-												className={`w-8 h-8 mb-1 rounded bg-primary border border-white/5 animate-${type}`}
-											></div>
-											<span className="text-[9px] text-gray-400 text-center leading-tight">
-												{type.replace(/-/g, " ")}
-											</span>
-										</button>
-									))}
-								</div>
-							</PopoverContent>
-						</Popover>
-					</div>
-				</div>
-
-				{/* Typography */}
-				{selectedLayer.type === "Text" && (
-					<div className="border-b border-white/5 p-3">
-						<div className="flex items-center gap-2 mb-2 text-[11px] font-bold text-gray-400 uppercase">
-							<Type className="w-3.5 h-3.5" /> Typography
+			<ScrollArea className="flex-1">
+				<div className="pb-20">
+					{/* Transform */}
+					<div className="border-b border-white/5 p-4">
+						<div className="flex items-center gap-2 mb-3 text-[11px] font-bold text-gray-500 uppercase tracking-wider">
+							<Move className="w-3.5 h-3.5" /> Transform
 						</div>
-						<div className="space-y-3">
-							<div className="space-y-1">
-								<Label className="text-[10px] text-gray-500">Content</Label>
-								<div className="text-xs text-gray-300 border border-white/10 p-2 rounded bg-black/20 break-words min-h-[40px]">
-									{getTextData(selectedLayer.id)}
-								</div>
+						<div className="grid grid-cols-2 gap-3 mb-3">
+							<DraggableNumberInput
+								label="X"
+								icon={MoveHorizontal}
+								value={Math.round(selectedLayer.x)}
+								onChange={(v) => update({ x: v })}
+							/>
+							<DraggableNumberInput
+								label="Y"
+								icon={MoveVertical}
+								value={Math.round(selectedLayer.y)}
+								onChange={(v) => update({ y: v })}
+							/>
+							{selectedLayer.type !== "Text" && (
+								<>
+									<DraggableNumberInput
+										label="W"
+										icon={MoveHorizontal}
+										value={Math.round(selectedLayer.width ?? 0)}
+										onChange={(v) => update({ width: Math.max(1, v) })}
+									/>
+									<DraggableNumberInput
+										label="H"
+										icon={MoveVertical}
+										value={Math.round(selectedLayer.height ?? 0)}
+										onChange={(v) => update({ height: Math.max(1, v) })}
+									/>
+								</>
+							)}
+						</div>
+						<div className="grid grid-cols-2 gap-3">
+							<DraggableNumberInput
+								label="Scale"
+								icon={Move}
+								value={selectedLayer.scale}
+								step={0.01}
+								onChange={(v) => update({ scale: v })}
+								allowDecimal
+							/>
+							<DraggableNumberInput
+								label="Rotate"
+								icon={RotateCw}
+								value={Math.round(selectedLayer.rotation)}
+								onChange={(v) => update({ rotation: v })}
+							/>
+						</div>
+					</div>
+
+					{/* Audio Settings for Video/Audio */}
+					{(selectedLayer.type === "Video" ||
+						selectedLayer.type === "Audio") && (
+						<div className="border-b border-white/5 p-4">
+							<div className="flex items-center gap-2 mb-3 text-[11px] font-bold text-gray-500 uppercase tracking-wider">
+								<Music className="w-3.5 h-3.5" /> Audio
 							</div>
-							<div className="grid grid-cols-2 gap-3">
-								<div className="space-y-1 col-span-2">
-									<Label className="text-[10px] text-gray-500">Font</Label>
-									<Select
-										value={selectedLayer.fontFamily ?? "Inter"}
-										onValueChange={(val) =>
+							<div className="flex items-center gap-2">
+								<span className="text-[9px] text-gray-500 w-8">Volume</span>
+								<Slider
+									className="flex-1"
+									value={[selectedLayer.volume * 100]}
+									min={0}
+									max={100}
+									step={1}
+									onValueChange={([v]) => update({ volume: v / 100 })}
+								/>
+								<span className="text-[9px] text-gray-400 w-6 text-right">
+									{Math.round(selectedLayer.volume * 100)}%
+								</span>
+							</div>
+						</div>
+					)}
+
+					{/* Typography */}
+					{selectedLayer.type === "Text" && (
+						<div className="border-b border-white/5 p-4">
+							<div className="flex items-center gap-2 mb-3 text-[11px] font-bold text-gray-500 uppercase tracking-wider">
+								<Type className="w-3.5 h-3.5" /> Typography
+							</div>
+							<div className="space-y-4">
+								<div className="space-y-1.5">
+									<Label className="text-[10px] text-gray-500 font-semibold">
+										CONTENT
+									</Label>
+									<div className="text-xs text-gray-300 border border-white/10 p-3 rounded bg-black/20 break-words min-h-[60px] max-h-[100px] overflow-y-auto">
+										{getTextData(selectedLayer.id)}
+									</div>
+								</div>
+
+								<div className="grid grid-cols-2 gap-3">
+									<div className="space-y-1.5 col-span-2">
+										<Label className="text-[10px] text-gray-500 font-semibold">
+											FONT FAMILY
+										</Label>
+										<Select
+											value={selectedLayer.fontFamily ?? "Inter"}
+											onValueChange={(val) =>
+												update({
+													fontFamily: val,
+													width: undefined,
+													height: undefined,
+												})
+											}
+										>
+											<SelectTrigger className="h-8 text-xs bg-neutral-800 border-white/10">
+												<SelectValue placeholder="Select font" />
+											</SelectTrigger>
+											<SelectContent className="bg-neutral-800 border-white/10 text-white max-h-[200px]">
+												{fontNames.map((f) => (
+													<SelectItem
+														key={f}
+														value={f}
+														style={{ fontFamily: f }}
+													>
+														{f}
+													</SelectItem>
+												))}
+											</SelectContent>
+										</Select>
+									</div>
+									<DraggableNumberInput
+										label="Size"
+										icon={Type}
+										value={selectedLayer.fontSize ?? 40}
+										onChange={(v) =>
 											update({
-												fontFamily: val,
+												fontSize: v,
 												width: undefined,
 												height: undefined,
 											})
 										}
-									>
-										<SelectTrigger className="h-8 text-xs bg-neutral-800 border-white/10">
-											<SelectValue placeholder="Select font" />
-										</SelectTrigger>
-										<SelectContent className="bg-neutral-800 border-white/10 text-white max-h-[200px]">
-											{fontNames.map((f) => (
-												<SelectItem key={f} value={f} style={{ fontFamily: f }}>
-													{f}
-												</SelectItem>
-											))}
-										</SelectContent>
-									</Select>
-								</div>
-								<DraggableNumberInput
-									label="Size"
-									icon={Type}
-									value={selectedLayer.fontSize ?? 40}
-									onChange={(v) =>
-										update({ fontSize: v, width: undefined, height: undefined })
-									}
-								/>
-								<div className="space-y-1">
-									<Label className="text-[10px] text-gray-500 block mb-1">
-										Color
-									</Label>
-									<ColorInput
-										value={selectedLayer.fill ?? "#fff"}
-										onChange={(c) => update({ fill: c })}
 									/>
+									<div className="space-y-1.5">
+										<Label className="text-[10px] text-gray-500 block mb-1 font-semibold">
+											COLOR
+										</Label>
+										<ColorInput
+											value={selectedLayer.fill ?? "#fff"}
+											onChange={(c) => update({ fill: c })}
+										/>
+									</div>
 								</div>
 							</div>
 						</div>
+					)}
+
+					{/* Animations */}
+					<div className="border-b border-white/5 p-4">
+						<div className="flex items-center justify-between mb-3">
+							<div className="flex items-center gap-2 text-[11px] font-bold text-gray-500 uppercase tracking-wider">
+								<Zap className="w-3.5 h-3.5" /> Animations
+							</div>
+						</div>
+						<div className="space-y-3">
+							{selectedLayer.animations?.map((anim) => (
+								<div
+									key={anim.id}
+									className="bg-neutral-900 rounded-md p-3 border border-white/5 shadow-sm group hover:border-blue-500/30 transition-colors"
+								>
+									<div className="flex items-center justify-between mb-3">
+										<div className="flex items-center gap-2">
+											<div className="w-1.5 h-1.5 rounded-full bg-blue-500 shadow-[0_0_8px_rgba(59,130,246,0.8)]" />
+											<span className="text-[11px] font-medium text-gray-200 capitalize">
+												{anim.type.replace(/-/g, " ")}
+											</span>
+										</div>
+										<Button
+											variant="ghost"
+											size="icon"
+											className="h-5 w-5 hover:bg-red-500/20 hover:text-red-400 opacity-0 group-hover:opacity-100 transition-opacity"
+											onClick={() => {
+												updateLayers((prev) =>
+													prev.map((l) =>
+														l.id === selectedId
+															? {
+																	...l,
+																	animations: l.animations?.filter(
+																		(a) => a.id !== anim.id,
+																	),
+																}
+															: l,
+													),
+												);
+											}}
+										>
+											<Trash2 className="w-3 h-3" />
+										</Button>
+									</div>
+									<div className="flex items-center gap-2">
+										<span className="text-[9px] text-gray-500 w-8">Speed</span>
+										<Slider
+											className="flex-1"
+											value={[anim.value]}
+											min={0.1}
+											max={3}
+											step={0.1}
+											onValueChange={([v]) => {
+												updateLayers((prev) =>
+													prev.map((l) =>
+														l.id === selectedId
+															? {
+																	...l,
+																	animations: l.animations?.map((a) =>
+																		a.id === anim.id ? { ...a, value: v } : a,
+																	),
+																}
+															: l,
+													),
+												);
+											}}
+										/>
+										<span className="text-[9px] text-gray-400 w-6 text-right">
+											{anim.value.toFixed(1)}x
+										</span>
+									</div>
+								</div>
+							))}
+
+							<Popover open={addAnimOpen} onOpenChange={setAddAnimOpen}>
+								<PopoverTrigger asChild>
+									<Button
+										variant="outline"
+										className="w-full h-9 text-xs border-dashed border-white/20 bg-transparent hover:bg-white/5 text-gray-400 hover:text-white"
+									>
+										<Plus className="w-3.5 h-3.5 mr-1.5" /> Add Animation
+									</Button>
+								</PopoverTrigger>
+								<PopoverContent
+									side="left"
+									align="start"
+									className="bg-[#1a1a1a] border-white/10 w-72 p-2"
+								>
+									<div className="grid grid-cols-2 gap-1">
+										{animationTypes.map((type) => (
+											<button
+												key={type}
+												type="button"
+												className="flex items-center gap-3 px-3 py-2 rounded hover:bg-white/10 transition-colors text-left"
+												onClick={() => addAnimation(type)}
+											>
+												<div
+													className={`w-6 h-6 rounded bg-neutral-800 border border-white/5 flex items-center justify-center`}
+												>
+													<Zap className="w-3 h-3 text-gray-400" />
+												</div>
+												<span className="text-[10px] text-gray-300 font-medium">
+													{type.replace(/-/g, " ")}
+												</span>
+											</button>
+										))}
+									</div>
+								</PopoverContent>
+							</Popover>
+						</div>
 					</div>
-				)}
-			</div>
-		</ScrollArea>
+				</div>
+			</ScrollArea>
+		</div>
 	);
 };
 
@@ -1533,10 +1663,10 @@ export const VideoDesignerEditor: React.FC<VideoDesignerEditorProps> = ({
 	// Canvas State
 	const roundToEven = (num?: number) => Math.round((num ?? 0) / 2) * 2;
 	const [viewportWidth, setViewportWidth] = useState(
-		roundToEven(nodeConfig.width) || 1920,
+		roundToEven(nodeConfig.width) || 1280,
 	);
 	const [viewportHeight, setViewportHeight] = useState(
-		roundToEven(nodeConfig.height) || 1080,
+		roundToEven(nodeConfig.height) || 720,
 	);
 	const [zoom, setZoom] = useState(0.5);
 	const [pan, setPan] = useState({ x: 0, y: 0 });
@@ -1552,15 +1682,16 @@ export const VideoDesignerEditor: React.FC<VideoDesignerEditorProps> = ({
 	const containerRef = useRef<HTMLDivElement>(null);
 	const timeRef = useRef<HTMLDivElement>(null);
 	const lastModeRef = useRef<"select" | "pan">("select");
+
 	const [containerSize, setContainerSize] = useState({ width: 0, height: 0 });
 	const [sizeKnown, setSizeKnown] = useState(false);
 
 	// --- Actions ---
-
 	const updateViewportWidth = (w: number) => {
 		setViewportWidth(roundToEven(Math.max(2, w)));
 		setIsDirty(true);
 	};
+
 	const updateViewportHeight = (h: number) => {
 		setViewportHeight(roundToEven(Math.max(2, h)));
 		setIsDirty(true);
@@ -1641,12 +1772,9 @@ export const VideoDesignerEditor: React.FC<VideoDesignerEditorProps> = ({
 	}, []);
 
 	// --- Initialization ---
-
-	// Load Initial State
 	useEffect(() => {
 		const layerUpdates = { ...nodeConfig.layerUpdates };
 		const loaded: ExtendedLayer[] = [];
-
 		let maxZ = Math.max(
 			0,
 			...Object.values(layerUpdates).map((l) => l.zIndex ?? 0),
@@ -1656,14 +1784,11 @@ export const VideoDesignerEditor: React.FC<VideoDesignerEditorProps> = ({
 			const saved = layerUpdates[id] as ExtendedLayer | undefined;
 			const durationMs =
 				item.data.entity?.duration ?? item.data.processData?.duration ?? 0;
-
-			// Logic: Videos/Audio use their duration, Images/Text use default unless saved
 			const calculatedDurationFrames =
 				(item.type === "Video" || item.type === "Audio") && durationMs > 0
 					? Math.ceil((durationMs / 1000) * FPS)
 					: DEFAULT_DURATION_FRAMES;
 
-			// Resolve content for CompositionScene
 			const src = item.type !== "Text" ? getAssetUrl(id) : undefined;
 			const text = item.type === "Text" ? getTextData(id) : undefined;
 
@@ -1721,7 +1846,7 @@ export const VideoDesignerEditor: React.FC<VideoDesignerEditorProps> = ({
 		setLayers(loaded);
 	}, [initialLayers, nodeConfig, getAssetUrl, getTextData]);
 
-	// Calculate Dimensions (Lazy, no infinite loop)
+	// Calculate Dimensions
 	useEffect(() => {
 		const layersToMeasure = layers.filter(
 			(l) =>
@@ -1733,7 +1858,6 @@ export const VideoDesignerEditor: React.FC<VideoDesignerEditorProps> = ({
 		if (layersToMeasure.length === 0) return;
 
 		let mounted = true;
-
 		const measure = async () => {
 			const updates = new Map<string, Partial<ExtendedLayer>>();
 
@@ -1754,7 +1878,6 @@ export const VideoDesignerEditor: React.FC<VideoDesignerEditorProps> = ({
 						} else if (layer.type === "Video") {
 							const video = document.createElement("video");
 							video.src = url!;
-							// Load metadata only
 							await new Promise((res) => {
 								video.onloadedmetadata = res;
 								video.onerror = res;
@@ -1764,7 +1887,6 @@ export const VideoDesignerEditor: React.FC<VideoDesignerEditorProps> = ({
 								height: video.videoHeight,
 							});
 						} else if (layer.type === "Text") {
-							// Simple text measurement
 							const text = getTextData(layer.inputHandleId);
 							const d = document.createElement("div");
 							d.style.fontFamily = layer.fontFamily || "Inter";
@@ -1782,7 +1904,6 @@ export const VideoDesignerEditor: React.FC<VideoDesignerEditorProps> = ({
 							document.body.removeChild(d);
 						}
 					} catch (e) {
-						// Mark as handled even if failed to stop loop
 						updates.set(layer.id, {
 							isPlaceholder: true,
 							width: 100,
@@ -1807,21 +1928,10 @@ export const VideoDesignerEditor: React.FC<VideoDesignerEditorProps> = ({
 		};
 	}, [layers, getAssetUrl, getTextData]);
 
-	// Lazy Font Injection (Does not pre-load)
-	useEffect(() => {
-		layers.forEach((layer) => {
-			if (layer.type === "Text" && layer.fontFamily) {
-				const fontUrl = GetFontAssetUrl(layer.fontFamily);
-				if (fontUrl) injectFontFace(layer.fontFamily, fontUrl);
-			}
-		});
-	}, [layers]);
-
-	// --- Viewport Logic ---
+	// Viewport Logic
 	const zoomIn = useCallback(() => setZoom((z) => Math.min(3, z + 0.1)), []);
 	const zoomOut = useCallback(() => setZoom((z) => Math.max(0.1, z - 0.1)), []);
 	const zoomTo = useCallback((val: number) => setZoom(val), []);
-
 	const fitView = useCallback(() => {
 		if (containerSize.width === 0 || containerSize.height === 0) return;
 		const scale =
@@ -1839,7 +1949,6 @@ export const VideoDesignerEditor: React.FC<VideoDesignerEditorProps> = ({
 		fitView();
 	}, [viewportWidth, viewportHeight, fitView]);
 
-	// Initialize View
 	useEffect(() => {
 		const el = containerRef.current;
 		if (!el) return;
@@ -1869,7 +1978,6 @@ export const VideoDesignerEditor: React.FC<VideoDesignerEditorProps> = ({
 				const rect = el.getBoundingClientRect();
 				const pointerX = e.clientX - rect.left;
 				const pointerY = e.clientY - rect.top;
-
 				const zoomSensitivity = 0.003;
 				const delta = -e.deltaY * zoomSensitivity;
 				const newZoom = Math.min(Math.max(zoom * Math.exp(delta), 0.1), 5);
@@ -1879,6 +1987,7 @@ export const VideoDesignerEditor: React.FC<VideoDesignerEditorProps> = ({
 						x: (pointerX - pan.x) / zoom,
 						y: (pointerY - pan.y) / zoom,
 					};
+
 					setPan({
 						x: pointerX - mousePointTo.x * newZoom,
 						y: pointerY - mousePointTo.y * newZoom,
@@ -1928,6 +2037,7 @@ export const VideoDesignerEditor: React.FC<VideoDesignerEditorProps> = ({
 
 		window.addEventListener("keydown", handleKeyDown);
 		window.addEventListener("keyup", handleKeyUp);
+
 		return () => {
 			window.removeEventListener("keydown", handleKeyDown);
 			window.removeEventListener("keyup", handleKeyUp);
@@ -2020,8 +2130,8 @@ export const VideoDesignerEditor: React.FC<VideoDesignerEditorProps> = ({
 						style={{
 							backgroundColor: "#0F0F0F",
 							backgroundImage:
-								"radial-gradient(circle at 1px 1px, rgba(255,255,255,0.2) 1px, transparent 0)",
-							backgroundSize: "24px 24px",
+								"radial-gradient(circle at 1px 1px, rgba(255,255,255,0.08) 1px, transparent 0)",
+							backgroundSize: "32px 32px",
 						}}
 						role="button"
 						tabIndex={0}
@@ -2037,9 +2147,16 @@ export const VideoDesignerEditor: React.FC<VideoDesignerEditorProps> = ({
 							}}
 						>
 							<div
-								className="shadow-[0_0_50px_rgba(0,0,0,0.5)] media-container relative bg-black ring-1 ring-white/10"
+								className="shadow-[0_0_100px_rgba(0,0,0,0.8)] media-container relative bg-black ring-1 ring-white/10"
 								style={{ width: viewportWidth, height: viewportHeight }}
 							>
+								{/* Safety Guides (Action Safe) */}
+								{selectedId && (
+									<div className="absolute inset-0 pointer-events-none opacity-20 border-[40px] border-transparent">
+										<div className="w-full h-full border border-white/50 border-dashed" />
+									</div>
+								)}
+
 								<Player
 									ref={playerRef}
 									component={CompositionScene}
@@ -2081,16 +2198,11 @@ export const VideoDesignerEditor: React.FC<VideoDesignerEditorProps> = ({
 										>
 									>
 								>((acc, layer) => {
-									const {
-										src,
-										text,
-										isPlaceholder,
-										maxDurationInFrames,
-										...savedLayer
-									} = layer;
+									const { ...savedLayer } = layer;
 									acc[layer.id] = savedLayer;
 									return acc;
 								}, {});
+
 								onSave({
 									layerUpdates,
 									width: viewportWidth,
