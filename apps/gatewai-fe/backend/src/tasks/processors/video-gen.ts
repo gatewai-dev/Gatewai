@@ -1,6 +1,6 @@
 import { randomUUID } from "node:crypto";
 import { existsSync, mkdirSync } from "node:fs";
-import { readFile } from "node:fs/promises";
+import { readFile, rm } from "node:fs/promises";
 import path from "node:path";
 import { fileURLToPath } from "node:url";
 import { DataType, prisma } from "@gatewai/db";
@@ -16,6 +16,7 @@ import {
 import { ENV_CONFIG } from "../../config.js";
 import { genAI } from "../../genai.js";
 import { logger } from "../../logger.js";
+import { assertIsError } from "../../utils/misc.js";
 import {
 	generateSignedUrl,
 	getFromGCS,
@@ -130,7 +131,17 @@ const videoGenProcessor: NodeProcessor = async ({ node, data }) => {
 		const bucket = ENV_CONFIG.GCS_ASSETS_BUCKET;
 		await uploadToGCS(fileBuffer, key, contentType, bucket);
 
-		const expiresIn = 3600 * 24 * 6.9; // A bit less than a week
+		// Remove temp file
+		try {
+			await rm(folderPath, { recursive: true, force: true });
+		} catch (cleanupErr) {
+			assertIsError(cleanupErr);
+			logger.warn(
+				`Failed to cleanup temp file: ${filePath}: ${cleanupErr.message}`,
+			);
+		}
+
+		const expiresIn = 3600 * 24 * 6.9;
 		const signedUrl = await generateSignedUrl(key, bucket, expiresIn);
 		const signedUrlExp = new Date(Date.now() + expiresIn * 1000);
 

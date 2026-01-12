@@ -1,3 +1,4 @@
+import { google } from "@ai-sdk/google";
 import type { DataType } from "@gatewai/db";
 import type {
 	AgentNodeConfig,
@@ -8,7 +9,6 @@ import type {
 } from "@gatewai/types";
 import { Agent, type AgentInputItem, Runner } from "@openai/agents";
 import { aisdk } from "@openai/agents-extensions";
-import { gateway } from "ai";
 import {
 	type UnknownKeysParam,
 	type ZodObject,
@@ -27,16 +27,25 @@ export const FileAssetSchema = z.object({
 	name: z.string(),
 	createdAt: z.date(),
 	updatedAt: z.date(),
+
 	width: z.number().int().positive().nullable(),
 	height: z.number().int().positive().nullable(),
+
 	bucket: z.string(),
+	size: z.number().int().nonnegative(),
 	mimeType: z.string(),
 	key: z.string(),
+
+	// URL Management
 	signedUrl: z.string().url().nullable(),
 	signedUrlExp: z.date().nullable(),
-	userId: z.string(),
+
 	isUploaded: z.boolean().default(true),
-	duration: z.number().optional(),
+
+	// Media Specifics
+	duration: z.number().int().nonnegative().nullable(),
+	fps: z.number().int().positive().nullable(),
+	metadata: z.record(z.any()).nullable(),
 });
 
 function CreateOutputZodSchema(
@@ -121,12 +130,14 @@ const aiAgentProcessor: NodeProcessor = async ({ node, data }) => {
 		});
 		type AgentContext = typeof dynamicInputs;
 
-		const agentModel = aisdk(gateway(config.model));
+		const agentModel = aisdk(google(config.model));
 		const agent = new Agent<AgentContext>({
 			instructions: systemPrompt,
 			name: node.name,
 			outputType: jsonSchema,
+			tools: [],
 		});
+
 		const runner = new Runner({
 			model: agentModel,
 		});

@@ -31,8 +31,7 @@ const VideoCompositorNodeComponent = memo(
 		const { result, isProcessing, inputs } = useNodeResult(props.id);
 		const nav = useNavigate();
 		const downloadFileData = useDownloadFileData();
-		console.log({ inputs });
-		// Reconstruct layers from config and inputs for accurate preview
+
 		const previewState = useMemo(() => {
 			const config =
 				(node?.config as unknown as VideoCompositorNodeConfig) ?? {};
@@ -94,8 +93,8 @@ const VideoCompositorNodeComponent = memo(
 					x: 0,
 					y: 0,
 					rotation: 0,
-					scale: 1,
 					opacity: 1,
+					scale: 1,
 					zIndex: saved.zIndex ?? ++maxZ,
 					startFrame: 0,
 					durationInFrames: saved.durationInFrames ?? calculatedDurationFrames,
@@ -119,7 +118,7 @@ const VideoCompositorNodeComponent = memo(
 				} else if (item.type === "Image" || item.type === "Video") {
 					layers.push({
 						...base,
-						type: item.type as "Image" | "Video",
+						type: item.type,
 						width: layerWidth,
 						height: layerHeight,
 						maxDurationInFrames:
@@ -149,7 +148,7 @@ const VideoCompositorNodeComponent = memo(
 							DEFAULT_DURATION_FRAMES,
 							...layers.map(
 								(l) =>
-									l.startFrame +
+									(l.startFrame ?? 0) +
 									(l.durationInFrames ?? DEFAULT_DURATION_FRAMES),
 							),
 						)
@@ -158,7 +157,12 @@ const VideoCompositorNodeComponent = memo(
 			return { layers, width, height, durationInFrames };
 		}, [node, inputs]);
 
-		// Inject fonts for text layers to ensure consistent rendering
+		// Memoize aspect ratio to prevent layout shifts
+		const aspectRatio = useMemo(() => {
+			if (!previewState.width || !previewState.height) return 16 / 9;
+			return previewState.width / previewState.height;
+		}, [previewState.width, previewState.height]);
+
 		useEffect(() => {
 			previewState?.layers.forEach((layer) => {
 				if (layer.type === "Text" && layer.fontFamily) {
@@ -168,7 +172,6 @@ const VideoCompositorNodeComponent = memo(
 			});
 		}, [previewState]);
 
-		// Download handler for the processed result (MP4)
 		const onClickDownload = async () => {
 			if (!result) {
 				toast.error("No result available to download");
@@ -202,61 +205,64 @@ const VideoCompositorNodeComponent = memo(
 				id={props.id}
 				dragging={props.dragging}
 			>
-				<div className="flex flex-col gap-3">
+				<div className="flex flex-col gap-3 w-full">
 					<div
 						className={cn(
-							"w-full overflow-hidden rounded media-container relative aspect-square",
+							"w-full overflow-hidden rounded bg-black/5 relative border border-border",
 						)}
+						style={{
+							aspectRatio: `${aspectRatio}`,
+							minHeight: previewState.layers.length === 0 ? "120px" : "auto",
+						}}
 					>
 						{previewState && previewState.layers.length > 0 ? (
-							<div className="inset-0 w-full h-full">
-								<Player
-									component={CompositionScene}
-									inputProps={{
-										layers: previewState.layers,
-										viewportWidth: previewState.width,
-										viewportHeight: previewState.height,
-									}}
-									durationInFrames={previewState.durationInFrames}
-									fps={FPS}
-									compositionWidth={previewState.width}
-									compositionHeight={previewState.height}
-									style={{
-										width: "100%",
-										height: "100%",
-									}}
-									controls={true} // Basic controls for node preview
-									loop
-									autoPlay={false}
-								/>
-							</div>
+							<Player
+								component={CompositionScene}
+								inputProps={{
+									layers: previewState.layers,
+									viewportWidth: previewState.width,
+									viewportHeight: previewState.height,
+								}}
+								durationInFrames={previewState.durationInFrames}
+								fps={FPS}
+								compositionWidth={previewState.width}
+								compositionHeight={previewState.height}
+								style={{
+									width: "100%",
+									height: "100%",
+									objectFit: "contain",
+								}}
+								controls={true}
+								loop
+								autoPlay={false}
+							/>
 						) : (
-							<div className="flex items-center justify-center h-full text-muted-foreground text-xs">
-								No layers
+							<div className="absolute inset-0 flex items-center justify-center text-muted-foreground text-xs italic">
+								No layers connected
 							</div>
 						)}
 					</div>
-					<div className="flex justify-between items-center">
+
+					<div className="flex justify-between items-center gap-2">
 						<AddCustomHandleButton
 							dataTypes={["Video", "Audio", "Image", "Text"]}
 							nodeProps={props}
 							type="Input"
 						/>
 						{node && (
-							<div className="flex gap-2">
+							<div className="flex gap-2 shrink-0">
 								<Button
 									onClick={onClickDownload}
 									variant="ghost"
 									disabled={isProcessing || isDownloading || !result}
 									size="sm"
 								>
-									{isDownloading && (
+									{isDownloading ? (
 										<>
 											<Loader2 className="size-3 mr-2 animate-spin" />
 											Rendering...
 										</>
-									)}
-									{!isDownloading && !isProcessing && (
+									) : (
 										<>
 											<Download className="size-3 mr-2" />
 											Download
@@ -277,7 +283,5 @@ const VideoCompositorNodeComponent = memo(
 		);
 	},
 );
-
-VideoCompositorNodeComponent.displayName = "VideoCompositorNodeComponent";
 
 export { VideoCompositorNodeComponent };

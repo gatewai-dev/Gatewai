@@ -1,3 +1,4 @@
+import { createGoogleGenerativeAI } from "@ai-sdk/google";
 import { GoogleGenAI } from "@google/genai";
 import { ENV_CONFIG } from "./config.js";
 
@@ -8,4 +9,11 @@ const genAI = new GoogleGenAI({
 	apiKey: ENV_CONFIG.GEMINI_API_KEY,
 });
 
-export { genAI };
+/**
+ * Gemini client for ai sdk - used by openai agents
+ */
+const aiSDKGenAI = createGoogleGenerativeAI({
+	apiKey: ENV_CONFIG.GEMINI_API_KEY,
+});
+
+export { genAI, aiSDKGenAI };
