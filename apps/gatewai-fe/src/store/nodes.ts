@@ -7,7 +7,7 @@ import {
 import { isEqual } from "lodash";
 import type { CanvasDetailsRPC } from "@/rpc/types";
 import type { RootState } from "./";
-import { type NodeMetaState, selectSelectedNodeIds } from "./node-meta";
+import { selectSelectedNodeIds } from "./node-meta";
 import { getBatchDetails } from "./tasks";
 
 export type NodeEntityType = CanvasDetailsRPC["nodes"][number];
@@ -89,10 +89,8 @@ export const makeSelectAllNodes = nodeSelectors.selectAll;
 export const makeSelectAllNodeEntities = nodeSelectors.selectEntities;
 
 export const selectSelectedNodes = createDraftSafeSelector(
-	(state: { nodeMeta: NodeMetaState; nodes: NodesState }) =>
-		selectSelectedNodeIds(state),
-	(state: { nodeMeta: NodeMetaState; nodes: NodesState }) =>
-		nodeSelectors.selectAll(state),
+	(state: RootState) => selectSelectedNodeIds(state),
+	(state: RootState) => nodeSelectors.selectAll(state),
 	(nodeIds, nodes) =>
 		nodeIds ? nodes.filter((f) => nodeIds.includes(f.id)) : undefined,
 );

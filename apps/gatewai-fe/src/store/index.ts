@@ -43,6 +43,8 @@ const undoableFlowReducer = undoReducer(flowReducer, {
 		"handles/deleteManyHandleEntity",
 		"handles/addManyHandleEntities",
 		"handles/updateHandleEntity",
+
+		"flow/batched",
 	],
 });
 

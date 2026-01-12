@@ -5,6 +5,7 @@ import {
 	ConnectionMode,
 	type Edge,
 	type Node,
+	type OnNodeDrag,
 	ReactFlow,
 	SelectionMode,
 } from "@xyflow/react";
@@ -12,8 +13,7 @@ import type { DragEventHandler, MouseEventHandler } from "react";
 import { createContext, useCallback, useEffect, useRef, useState } from "react";
 import { useHotkeys } from "react-hotkeys-hook";
 import { useAppDispatch, useAppSelector } from "@/store";
-import { setSelectedEdgeIds } from "@/store/edges";
-import { setSelectedNodeIds } from "@/store/node-meta";
+import { setSelectedEdgeIds, setSelectedNodeIds } from "@/store/node-meta";
 import { selectRFEdges, selectRFNodes } from "@/store/rfstate";
 import { useCanvasCtx } from "../ctx/canvas-ctx";
 import { nodeTypes } from "../nodes";
@@ -135,8 +135,8 @@ function ReactflowContainer({ children }: ReactFlowProps) {
 		}
 	};
 
-	const handleNodeDragStop = useCallback(
-		(_, node) => {
+	const handleNodeDragStop: OnNodeDrag<Node> = useCallback(
+		(event, node) => {
 			// We dispatch a specific 'commit' action here.
 			// We pass the final position change.
 			dispatch(

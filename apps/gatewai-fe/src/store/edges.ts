@@ -2,9 +2,7 @@ import {
 	createDraftSafeSelector,
 	createEntityAdapter,
 	createSlice,
-	type PayloadAction,
 } from "@reduxjs/toolkit";
-import { arrayEquals } from "@/lib/utils";
 import type { CanvasDetailsRPC } from "@/rpc/types";
 import type { RootState } from ".";
 import type { NodeEntityType } from "./nodes";
@@ -17,24 +15,12 @@ export const edgeAdapter = createEntityAdapter({
 
 const edgesSlice = createSlice({
 	name: "edges",
-	initialState: edgeAdapter.getInitialState<{
-		selectedEdgeIds: EdgeEntityType["id"][] | null;
-	}>({
-		selectedEdgeIds: null,
-	}),
+	initialState: edgeAdapter.getInitialState(),
 	reducers: {
 		createEdgeEntity: edgeAdapter.addOne,
 		updateEdgeEntity: edgeAdapter.updateOne,
 		deleteManyEdgeEntity: edgeAdapter.removeMany,
 		setAllEdgeEntities: edgeAdapter.setAll,
-		setSelectedEdgeIds: (
-			state,
-			action: PayloadAction<EdgeEntityType["id"][] | null>,
-		) => {
-			if (!arrayEquals(state.selectedEdgeIds ?? [], action.payload ?? [])) {
-				state.selectedEdgeIds = action.payload;
-			}
-		},
 	},
 });
 
@@ -69,18 +55,6 @@ export const makeSelectEdgesBySourceNodeId = (id: NodeEntityType["id"]) =>
 
 export const makeSelectAllEdges = edgeSelectors.selectAll;
 
-export const selectSelectedEdgeIds = createDraftSafeSelector(
-	selectEdgesState,
-	(edges) => edges.selectedEdgeIds,
-);
-
-export const selectSelectedEdges = createDraftSafeSelector(
-	selectSelectedEdgeIds,
-	edgeSelectors.selectAll,
-	(edgeIds, edges) =>
-		edgeIds ? edges.filter((f) => edgeIds.includes(f.id)) : undefined,
-);
-
 // Extract the action creators object and the reducer
 const { actions, reducer: edgesReducer } = edgesSlice;
 // Extract and export each action creator by name
@@ -89,7 +63,6 @@ export const {
 	updateEdgeEntity,
 	setAllEdgeEntities,
 	deleteManyEdgeEntity,
-	setSelectedEdgeIds,
 } = actions;
 // Export the reducer, either as a default or named export
 export { edgesReducer, edgeSelectors };

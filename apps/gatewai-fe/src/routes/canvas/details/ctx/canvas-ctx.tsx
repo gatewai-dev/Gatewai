@@ -71,6 +71,7 @@ import {
 	setNodes,
 } from "@/store/rfstate";
 import type { BatchEntity } from "@/store/tasks";
+import { batchActions } from "@/store/undo-redo";
 import { useNodeTemplates } from "../node-templates/node-templates.ctx";
 import { useTaskManagerCtx } from "./task-manager-ctx";
 
@@ -120,7 +121,12 @@ const CanvasProvider = ({
 	const rfInstance = useRef<ReactFlowInstance | undefined>(undefined);
 	const rfNodes = useAppSelector(selectRFNodes);
 	const rfEdges = useAppSelector(selectRFEdges);
+
 	const handleEntities = useAppSelector(handleSelectors.selectAll);
+
+	const [patchCanvasAsync] = usePatchCanvasMutation();
+	const [runNodesMutateAsync] = useProcessNodesMutation();
+
 	const { nodeTemplates } = useNodeTemplates();
 
 	const {
@@ -170,9 +176,6 @@ const CanvasProvider = ({
 		}
 	}, [dispatch, canvasDetailsResponse]);
 	const timeoutRef = useRef<NodeJS.Timeout | null>(null);
-
-	const [patchCanvasAsync] = usePatchCanvasMutation();
-	const [runNodesMutateAsync] = useProcessNodesMutation();
 
 	const save = useCallback(() => {
 		if (!canvasId) return;
@@ -587,9 +590,12 @@ const CanvasProvider = ({
 				selectable: true,
 				deletable: true,
 			};
-			dispatch(createNode(newNode));
-			dispatch(createNodeEntity(nodeEntity));
-			dispatch(addManyHandleEntities(handles));
+			const createBatch = batchActions([
+				createNode(newNode),
+				createNodeEntity(nodeEntity),
+				addManyHandleEntities(handles),
+			]);
+			dispatch(createBatch);
 			let saveDelay: number | undefined;
 			// I have a lidl suspicion that this will fucking bite me asp
 			if (template.type === "File") {
