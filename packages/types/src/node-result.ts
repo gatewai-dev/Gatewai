@@ -112,11 +112,6 @@ export type AnyOutputUnion =
 	| OutputItem<"Number">
 	| OutputItem<"Boolean">;
 
-export type AgentResult = {
-	selectedOutputIndex: number;
-	outputs: { items: AnyOutputUnion[] }[];
-};
-
 /**
  * Export result may have
  */
@@ -140,7 +135,6 @@ export type NodeResult =
 	| FileResult
 	| ImagesResult
 	| ImageGenResult
-	| AgentResult
 	| CropResult
 	| MaskResult
 	| NumberResult

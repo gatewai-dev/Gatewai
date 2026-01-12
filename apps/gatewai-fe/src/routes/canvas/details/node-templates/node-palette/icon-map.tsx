@@ -42,7 +42,6 @@ export const NODE_ICON_MAP: Record<
 	Export: { mainIcon: PiDownloadSimple },
 	Toggle: { mainIcon: PiToggleLeft },
 	Resize: { mainIcon: PiResize },
-	Agent: { mainIcon: PiRobotLight },
 	Paint: { mainIcon: PiPaintBrushFill },
 	Crop: { mainIcon: PiCropThin },
 	Blur: { mainIcon: PiCloudFog },

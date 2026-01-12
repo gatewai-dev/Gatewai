@@ -1,4 +1,3 @@
-import { AgentNodeComponent } from "./agent";
 import { BlurNodeComponent } from "./blur";
 import { CompositorNodeComponent } from "./compose";
 import { CropNodeComponent } from "./crop";
@@ -28,7 +27,6 @@ const nodeTypes = {
 	Blur: BlurNodeComponent,
 	Resize: ResizeNodeComponent,
 	File: FileNodeComponent,
-	Agent: AgentNodeComponent,
 	Crop: CropNodeComponent,
 	Paint: PaintNodeComponent,
 	Note: NoteNodeComponent,

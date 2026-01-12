@@ -383,13 +383,6 @@ const LLMNodeConfigSchema = z
 	})
 	.strict();
 
-const AgentNodeConfigSchema = z
-	.object({
-		model: z.enum(AGENT_NODE_MODELS),
-		maxTurns: z.number().int().min(1).optional().default(10),
-	})
-	.strict();
-
 // Video-Related Nodes
 const VideoGenNodeConfigSchema = VideoGenBaseSchema.extend({
 	durationSeconds: z.enum(VIDEOGEN_DURATIONS).default("8"),
@@ -443,7 +436,6 @@ const allNodeConfigSchemas = [
 	CropNodeConfigSchema,
 	CompositorNodeConfigSchema,
 	LLMNodeConfigSchema,
-	AgentNodeConfigSchema,
 	ResizeNodeConfigSchema,
 	VideoGenNodeConfigSchema,
 	VideoGenExtendNodeConfigSchema,
@@ -469,7 +461,6 @@ export type CropNodeConfig = z.infer<typeof CropNodeConfigSchema>;
 export type CompositorNodeConfig = z.infer<typeof CompositorNodeConfigSchema>;
 export type CompositorLayer = z.infer<typeof CompositorLayerSchema>;
 export type LLMNodeConfig = z.infer<typeof LLMNodeConfigSchema>;
-export type AgentNodeConfig = z.infer<typeof AgentNodeConfigSchema>;
 export type ResizeNodeConfig = z.infer<typeof ResizeNodeConfigSchema>;
 export type VideoGenNodeConfig = z.infer<typeof VideoGenNodeConfigSchema>;
 export type VideoGenExtendNodeConfig = z.infer<
@@ -506,7 +497,6 @@ export {
 	CropNodeConfigSchema,
 	CompositorNodeConfigSchema,
 	LLMNodeConfigSchema,
-	AgentNodeConfigSchema,
 	ResizeNodeConfigSchema,
 	VideoGenNodeConfigSchema,
 	VideoGenExtendNodeConfigSchema,

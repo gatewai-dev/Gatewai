@@ -4,7 +4,6 @@ import type {
 	NodeResult,
 	VideoCompositorResult,
 } from "@gatewai/types";
-import aiAgentProcessor from "./ai-agent/index.js";
 import audioUnderstandingProcessor from "./audio-understanding.js";
 import blurProcessor from "./blur.js";
 import compositorProcessor from "./compositor.js";
@@ -28,7 +27,6 @@ const nodeProcessors: Partial<Record<NodeType, NodeProcessor>> = {
 	[NodeType.Resize]: resizeProcessor,
 	[NodeType.LLM]: llmProcessor,
 	[NodeType.ImageGen]: imageGenProcessor,
-	[NodeType.Agent]: aiAgentProcessor,
 	[NodeType.Crop]: cropProcessor,
 	[NodeType.Paint]: paintProcessor,
 	[NodeType.Modulate]: modulateProcessor,

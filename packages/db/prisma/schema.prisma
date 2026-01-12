@@ -20,7 +20,6 @@ enum NodeType {
   Toggle
   Crop
   Resize
-  Agent
   Paint
   Blur
   Compositor
@@ -113,8 +112,6 @@ model Node {
   originalNode   Node?           @relation("NodeDuplicates", fields: [originalNodeId], references: [id], onDelete: SetNull)
   duplicates     Node[]          @relation("NodeDuplicates")
 
-  agentSessions  AgentSession[]
-
   @@map("node")
 }
 
@@ -123,7 +120,6 @@ model Handle {
   type               HandleType
   dataTypes          DataType[]
   label              String
-  // Required for Agent nodes where handles can be dynamically added
   description        String?
   order              Int                 @default(0)
   required           Boolean             @default(false)
@@ -279,23 +275,4 @@ model FileAsset {
   // Media metadata - optional
   metadata        Json?
   fps             Int?
-}
-
-model AgentSession {
-  id              String       @default(cuid())
-  appName         String
-  userId          String
-  sessionId       String
-  state           Json         @default("{}")
-  events          Json         @default("[]")
-  lastUpdateTime  DateTime
-  createdAt       DateTime     @default(now())
-  updatedAt       DateTime     @updatedAt
-  expiredAt       DateTime
-
-  node            Node?        @relation(fields: [nodeId], references: [id])
-  nodeId          String?
-
-  @@id([appName, userId, sessionId])
-  @@map("agent_session")
 }

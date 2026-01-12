@@ -159,36 +159,6 @@ export async function SEED_createNodeTemplates(prisma: PrismaClient) {
 			},
 		},
 		{
-			type: NodeType.Agent,
-			displayName: "AI Agent",
-			category: "AI",
-			description:
-				"A multi-modal AI agent. Capable of generating videos and images and also use image editing tools.",
-			subcategory: "General",
-			tokenPrice: 0.0,
-			variableInputs: false,
-			variableOutputs: false,
-			isTerminalNode: true,
-			isTransient: false,
-			templateHandles: {
-				create: [
-					{
-						type: HandleType.Input,
-						dataTypes: [DataType.Text],
-						label: "Instructions",
-						required: true,
-					},
-					{
-						type: HandleType.Input,
-						dataTypes: [DataType.Text],
-						label: "System Prompt Suffix",
-						required: false,
-					},
-				],
-			},
-			defaultConfig: { maxTurns: 20, model: "gemini-3-pro-preview" },
-		},
-		{
 			type: NodeType.Text,
 			displayName: "Text",
 			description: "A basic text node",

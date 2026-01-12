@@ -1,6 +1,4 @@
 import type {
-	AgentNodeConfig,
-	AgentResult,
 	BlurNodeConfig,
 	BlurResult,
 	CompositorNodeConfig,
@@ -56,10 +54,6 @@ export type FileNode = Node<
 	NodeWithFileType<FileNodeConfig, FileResult>,
 	"File"
 >;
-export type AgentNode = Node<
-	NodeWithFileType<AgentNodeConfig, AgentResult>,
-	"Agent"
->;
 export type MaskNode = Node<
 	NodeWithFileType<MaskNodeConfig, MaskResult>,
 	"Mask"
@@ -100,7 +94,6 @@ export type AnyNode =
 	| LLMNode
 	| ImageGenNode
 	| FileNode
-	| AgentNode
 	| MaskNode
 	| NoteNode
 	| PaintNode

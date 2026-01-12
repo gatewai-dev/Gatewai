@@ -51,8 +51,6 @@ type CustomHandleButtonProps = {
 };
 
 function AddCustomHandleButton(props: CustomHandleButtonProps) {
-	const isAgentNode = props.nodeProps.data.type === "Agent";
-
 	const OPTIONS = useMemo(() => {
 		return props.dataTypes ?? LookupDataTypes[props.type];
 	}, [props.dataTypes, props.type]);
@@ -161,29 +159,6 @@ function AddCustomHandleButton(props: CustomHandleButtonProps) {
 								</FormItem>
 							)}
 						/>
-						{isAgentNode && (
-							<FormField
-								control={form.control}
-								name="description"
-								render={({ field }) => (
-									<FormItem>
-										<FormLabel>Description</FormLabel>
-										<FormControl>
-											<Textarea
-												placeholder="E.g. The image of product in lightning."
-												{...field}
-												value={field.value ?? ""}
-											/>
-										</FormControl>
-										<FormDescription>
-											Please provide a precise description; the AI agent will
-											use it to populate the data accurately.
-										</FormDescription>
-										<FormMessage />
-									</FormItem>
-								)}
-							/>
-						)}
 						<Button type="submit">Create</Button>
 					</form>
 				</Form>

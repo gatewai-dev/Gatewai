@@ -16,7 +16,6 @@ const NodeTypes = [
 	"Export",
 	"Toggle",
 	"Resize",
-	"Agent",
 	"Paint",
 	"Blur",
 	"Compositor",
