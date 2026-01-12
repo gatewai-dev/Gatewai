@@ -45,6 +45,8 @@ export type CanvasCtxData = Awaited<ReturnType<typeof GetCanvasEntities>>;
 
 export type CanvasCtxDataWithTasks = CanvasCtxData & {
 	tasks: Task[];
+	// The task assigned to processor
+	task?: Task;
 };
 
 export { GetCanvasEntities };

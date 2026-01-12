@@ -58,7 +58,6 @@ const processNodeJob = async (job: Job<NodeTaskJobData>) => {
 		// 3. Fetch current task details
 		const task = await prisma.task.findUniqueOrThrow({
 			where: { id: taskId },
-			select: { nodeId: true },
 		});
 
 		if (!task.nodeId)
@@ -99,7 +98,7 @@ const processNodeJob = async (job: Job<NodeTaskJobData>) => {
 		logger.info(`Processing node: ${node.id} with type: ${node.type}`);
 		const { success, error, newResult } = await processor({
 			node,
-			data: { ...data, tasks: batchTasks },
+			data: { ...data, tasks: batchTasks, task },
 			prisma,
 		});
 

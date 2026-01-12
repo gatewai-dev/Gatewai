@@ -1,12 +1,13 @@
-import type { PrismaClient, Task } from "@gatewai/db";
+import type { PrismaClient } from "@gatewai/db";
 import type { NodeResult } from "@gatewai/types";
-import type { CanvasCtxData } from "../../data-access/canvas.js";
+import type {
+	CanvasCtxData,
+	CanvasCtxDataWithTasks,
+} from "../../data-access/canvas.js";
 
 export type NodeProcessorCtx = {
 	node: CanvasCtxData["nodes"][number];
-	data: CanvasCtxData & {
-		tasks: Task[];
-	};
+	data: CanvasCtxDataWithTasks;
 	prisma: PrismaClient;
 };
 

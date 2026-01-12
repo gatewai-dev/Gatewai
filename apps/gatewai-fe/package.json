@@ -118,7 +118,8 @@
 		"vite-plugin-node-polyfills": "^0.24.0",
 		"wav": "^1.0.2",
 		"webfontloader": "^1.6.28",
-		"zod": "3.25.67"
+		"zod": "3.25.67",
+		"zod-to-json-schema": "^3.25.1"
 	},
 	"devDependencies": {
 		"@gatewai/api-client": "workspace:*",
