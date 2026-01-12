@@ -40,7 +40,7 @@ const PreviewNodeComponent = memo((props: NodeProps<PreviewNode>) => {
 				dragging={props.dragging}
 			>
 				<div className="flex flex-col items-center justify-center h-32">
-					<p className="text-muted-foreground">Connect media to preview</p>
+					<p className="text-muted-foreground">Connect a node to preview</p>
 				</div>
 			</BaseNode>
 		);

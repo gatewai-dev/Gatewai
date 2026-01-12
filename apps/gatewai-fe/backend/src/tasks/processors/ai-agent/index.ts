@@ -12,6 +12,8 @@ import {
 import type { NodeProcessor, NodeProcessorCtx } from "../types.js";
 import { AgentNodeArtifactService } from "./artifact-service.js";
 import { PrismaSessionService } from "./prisma-session-service.js";
+import { SYSTEM_PROMPT_SUFFIX_BUILDER } from "./prompts.js";
+import { createResultGeneratorTool } from "./tools/result-generator.js";
 
 const FileAssetGeminiSchema: Schema = {
 	type: Type.OBJECT,
@@ -150,21 +152,16 @@ const aiAgentProcessor: NodeProcessor = async ({ node, data }) => {
 
 		// 3. Prepare Schema
 		const outputs = getAllOutputHandles(data, node.id);
-		const googleSchema = CreateOutputSchema(outputs);
-
-		const resultGeneratorAgent = new LlmAgent({
-			model: config.model,
-			name: node.name || "AI Agent",
-			outputSchema: googleSchema,
-			instruction:
-				"Generates AI agent output according to the provided information and schema.",
-		});
-
+		const nodeResultSchema = CreateOutputSchema(outputs);
+		const resultGeneratorTool = createResultGeneratorTool(nodeResultSchema);
+		console.log({ nodeResultSchema });
+		const rootPrompt = SYSTEM_PROMPT_SUFFIX_BUILDER(nodeResultSchema);
 		const rootAgent = new LlmAgent({
 			model: config.model,
-			name: node.name || "AI Agent",
-			subAgents: [resultGeneratorAgent],
-			instruction: "Use the inputs to fulfill the user's request.",
+			name: node.name.replace(" ", "_") || "AI_Agent",
+			tools: [resultGeneratorTool],
+			instruction: rootPrompt,
+			outputKey: "result",
 		});
 
 		// 5. Build Content Parts (Multimodal inputs)
@@ -221,21 +218,28 @@ const aiAgentProcessor: NodeProcessor = async ({ node, data }) => {
 							`Failed to process file input ${input.handle.label}`,
 							e,
 						);
-						// Optionally continue or fail
 					}
 				}
 			}
 		}
+		const sessionService = new PrismaSessionService(node.id);
+		await sessionService.createSession({
+			appName: "Gatewai AI Agent Node Processor",
+			userId: "system",
+			sessionId: data.task.id,
+			state: {},
+		});
 
 		const runner = new Runner({
 			agent: rootAgent,
 			appName: "Gatewai AI Agent Node Processor",
-			sessionService: new PrismaSessionService(node.id),
+			sessionService,
 			artifactService: new AgentNodeArtifactService(
 				ENV_CONFIG.GCS_ASSETS_BUCKET,
 			),
 		});
-
+		console.log(JSON.stringify(userParts));
+		console.log(prompt);
 		// 6. Execute Generation
 		const result = runner.runAsync({
 			sessionId: data.task.id,
@@ -253,7 +257,7 @@ const aiAgentProcessor: NodeProcessor = async ({ node, data }) => {
 		async function consumeIterator() {
 			for await (const value of result) {
 				console.log("Received:", value);
-				console.log(value.content);
+				console.log(JSON.stringify(value.content, null, 2));
 			}
 			console.log("Done!");
 		}

@@ -70,9 +70,9 @@ export class PrismaSessionService extends BaseSessionService {
 		request: GetSessionRequest,
 	): Promise<Session | undefined> {
 		const { appName, userId, sessionId, config } = request;
-
+		console.log({ request });
 		const now = new Date();
-		const rawSession = await prisma.agentSession.findFirstOrThrow({
+		const rawSession = await prisma.agentSession.findFirst({
 			where: { appName, userId, sessionId },
 		});
 
