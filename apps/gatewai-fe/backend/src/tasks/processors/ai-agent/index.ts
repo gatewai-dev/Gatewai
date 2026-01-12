@@ -18,6 +18,7 @@ import {
 } from "../../resolvers.js";
 import type { NodeProcessor, NodeProcessorCtx } from "../types.js";
 import { AgentNodeArtifactService } from "./artifact-service.js";
+import { RedisSessionService } from "./redis-session-service.js";
 
 // --- Definitions ---
 
@@ -160,19 +161,19 @@ const aiAgentProcessor: NodeProcessor = async ({ node, data }) => {
 		const outputs = getAllOutputHandles(data, node.id);
 		const googleSchema = CreateOutputSchema(outputs);
 
-		const rootAgent = new LlmAgent({
-			model: config.model,
-			name: node.name || "AI Agent",
-			outputSchema: googleSchema,
-			instruction: prompt,
-		});
-
 		const resultGeneratorAgent = new LlmAgent({
 			model: config.model,
 			name: node.name || "AI Agent",
 			outputSchema: googleSchema,
 			instruction:
-				"Generate output according to the provided information and schema.",
+				"Generates AI agent output according to the provided information and schema.",
+		});
+
+		const rootAgent = new LlmAgent({
+			model: config.model,
+			name: node.name || "AI Agent",
+			subAgents: [resultGeneratorAgent],
+			instruction: prompt,
 		});
 
 		// 5. Build Content Parts (Multimodal inputs)
@@ -238,7 +239,7 @@ const aiAgentProcessor: NodeProcessor = async ({ node, data }) => {
 		const runner = new Runner({
 			agent: rootAgent,
 			appName: "Gatewai AI Agent Node Processor",
-			sessionService: new InMemorySessionService(),
+			sessionService: new RedisSessionService(),
 			artifactService: new AgentNodeArtifactService(
 				ENV_CONFIG.GCS_ASSETS_BUCKET,
 			),
@@ -250,6 +251,7 @@ const aiAgentProcessor: NodeProcessor = async ({ node, data }) => {
 			userId: "system",
 			newMessage: {
 				parts: [
+					...userParts,
 					{
 						text: prompt,
 					},

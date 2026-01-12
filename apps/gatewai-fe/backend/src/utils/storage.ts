@@ -70,6 +70,17 @@ export async function getFromGCS(
 	return content;
 }
 
+export async function listFromGCS(
+	prefix: string,
+	bucketName: string,
+): Promise<string[]> {
+	const [files] = await storage.bucket(bucketName).getFiles({
+		prefix: prefix,
+	});
+
+	return files.map((file) => file.name);
+}
+
 export function getStreamFromGCS(
 	key: string,
 	bucketName: string,
@@ -88,8 +99,8 @@ export function getStreamFromGCS(
 /**
  * Uploads a file to temporary folder of assets bucket.
  * @param buffer File buffer
- * @param nodeId Node Id
- * @param key The key afer /temp prefix
+ * @param mimeType Mime type of the file
+ * @param key The key after /temp prefix
  */
 export async function uploadToTemporaryFolder(
 	buffer: Buffer,
