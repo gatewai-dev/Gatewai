@@ -35,7 +35,6 @@ const FileNodeComponent = memo((props: NodeProps<FileNode>) => {
 				? "audio"
 				: null;
 
-	// 1. Define specific MIME types to exclude image/svg+xml and image/gif
 	const accept = {
 		"image/jpeg": [".jpg", ".jpeg"],
 		"image/png": [".png"],
@@ -50,9 +49,6 @@ const FileNodeComponent = memo((props: NodeProps<FileNode>) => {
 		"audio/flac": [".flac"],
 	};
 
-	// 2. Refine the button acceptance logic
-	// Instead of using wildcards like "image/*" which include SVGs/GIFs,
-	// we filter our 'accept' keys based on the category.
 	const getFilteredAccept = (type: "image" | "video" | "audio" | null) => {
 		const keys = Object.keys(accept);
 		if (!type) return keys;
