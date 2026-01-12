@@ -62,6 +62,7 @@ export const {
 	setEdges,
 	addConnection,
 	onNodeChange,
+	onNodeDragStop,
 	onEdgeChange,
 } = reactFlowSlice.actions;
 

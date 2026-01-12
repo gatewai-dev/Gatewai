@@ -24,6 +24,20 @@ export const nodesSlice = createSlice({
 		updateNodeEntity: nodeAdapter.updateOne,
 		deleteManyNodeEntity: nodeAdapter.removeMany,
 		setAllNodeEntities: nodeAdapter.setAll,
+		updateNodeConfigWithoutHistory: (
+			state,
+			action: { payload: { id: string; newConfig: Partial<AllNodeConfig> } },
+		) => {
+			const { id, newConfig } = action.payload;
+			const node = state.entities[id];
+			const existingConfig = node.config as AllNodeConfig;
+			if (node) {
+				node.config = {
+					...existingConfig,
+					...newConfig,
+				} as AllNodeConfig;
+			}
+		},
 		updateNodeConfig: (
 			state,
 			action: { payload: { id: string; newConfig: Partial<AllNodeConfig> } },
@@ -102,6 +116,7 @@ export const {
 	updateNodeResult,
 	updateNodeConfig,
 	deleteManyNodeEntity,
+	updateNodeConfigWithoutHistory,
 	setAllNodeEntities,
 } = nodeActions;
 export { nodesReducer, nodeSelectors };

@@ -230,8 +230,7 @@ const BaseNode = memo(
 		const selectNode = useMemo(() => makeSelectNodeById(id), [id]);
 		const node = useAppSelector(selectNode);
 
-		const { inputs, isProcessing, result } = useNodeResult(id);
-		const validation = useNodeValidation(id);
+		const { inputs, isProcessing, result, validation } = useNodeResult(id);
 		const hasTypeMismatch = (handleId: HandleEntityType["id"]) =>
 			validation?.[handleId] === "type_mismatch";
 
@@ -246,7 +245,6 @@ const BaseNode = memo(
 			};
 		}, [handles]);
 
-		// Pre-calculate result types map to avoid O(N) searches in render loop
 		const resultTypeMap = useMemo(() => {
 			if (!result?.outputs) return {};
 			const activeOutput = result.outputs[result.selectedOutputIndex ?? 0];
@@ -393,6 +391,8 @@ const CustomEdge = memo(
 		style = {},
 		markerEnd,
 		selected,
+		target,
+		targetHandle,
 	}: EdgeProps): JSX.Element => {
 		const [edgePath] = getBezierPath({
 			sourceX,
@@ -403,10 +403,15 @@ const CustomEdge = memo(
 			targetPosition,
 		});
 
-		const color = useMemo(
-			() => (selected ? "var(--primary)" : undefined),
-			[selected],
-		);
+		const validation = useNodeValidation(target);
+		const isInvalid = validation?.[targetHandle ?? ""] === "type_mismatch";
+
+		const strokeColor = isInvalid
+			? "var(--destructive)"
+			: selected
+				? "var(--primary)"
+				: undefined;
+		const opacity = isInvalid || selected ? 1 : 0.6;
 
 		return (
 			<>
@@ -420,9 +425,9 @@ const CustomEdge = memo(
 					markerEnd={markerEnd}
 					style={{
 						...style,
-						strokeWidth: selected ? 3 : 1.5,
-						stroke: color,
-						opacity: selected ? 1 : 0.6,
+						strokeWidth: selected || isInvalid ? 3 : 1.5,
+						stroke: strokeColor,
+						opacity,
 					}}
 				/>
 			</>

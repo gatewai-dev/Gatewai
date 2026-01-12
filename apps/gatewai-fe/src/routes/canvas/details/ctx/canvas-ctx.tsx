@@ -59,6 +59,7 @@ import {
 	type NodeEntityType,
 	setAllNodeEntities,
 	updateNodeConfig,
+	updateNodeConfigWithoutHistory,
 	updateNodeResult,
 } from "@/store/nodes";
 import {
@@ -94,6 +95,7 @@ interface CanvasContextType {
 	onNodeConfigUpdate: (payload: {
 		id: string;
 		newConfig: Partial<AllNodeConfig>;
+		appendHistory?: boolean;
 	}) => void;
 	createNewHandle: (newHandle: HandleEntityType) => void;
 	onNodeResultUpdate: (payload: { id: string; newResult: NodeResult }) => void;
@@ -270,8 +272,15 @@ const CanvasProvider = ({
 	);
 
 	const onNodeConfigUpdate = useCallback(
-		(payload: { id: string; newConfig: Partial<AllNodeConfig> }) => {
-			dispatch(updateNodeConfig(payload));
+		(payload: {
+			id: string;
+			newConfig: Partial<AllNodeConfig>;
+			appendHistory?: boolean;
+		}) => {
+			const dispatchAction = payload.appendHistory
+				? updateNodeConfig
+				: updateNodeConfigWithoutHistory;
+			dispatch(dispatchAction(payload));
 			scheduleSave();
 		},
 		[dispatch, scheduleSave],
@@ -622,7 +631,8 @@ const CanvasProvider = ({
 					continue;
 				}
 
-				const nodeEntityToDuplicate = rootState.nodes.entities[nodeId];
+				const nodeEntityToDuplicate =
+					rootState.flow.present.nodes.entities[nodeId];
 				if (!nodeEntityToDuplicate) {
 					toast.error(`Node entity ${nodeId} to duplicate not found`);
 					continue;
@@ -710,15 +720,18 @@ const CanvasProvider = ({
 				newNodeEntities.push(nodeEntity);
 			}
 
+			const batchActionsList = [];
 			if (newRfNodes.length > 0) {
-				dispatch(setNodes([...rfNodes, ...newRfNodes]));
+				batchActionsList.push(setNodes([...rfNodes, ...newRfNodes]));
 			}
 			for (const newNodeEntity of newNodeEntities) {
-				dispatch(createNodeEntity(newNodeEntity));
+				batchActionsList.push(createNodeEntity(newNodeEntity));
 			}
 			if (allNewHandles.length > 0) {
-				dispatch(addManyHandleEntities(allNewHandles));
+				batchActionsList.push(addManyHandleEntities(allNewHandles));
 			}
+			const createBatch = batchActions(batchActionsList);
+			dispatch(createBatch);
 			if (newRfNodes.length > 0) {
 				scheduleSave();
 			}

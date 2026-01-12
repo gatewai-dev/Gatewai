@@ -83,7 +83,7 @@ const TaskManagerProvider = ({
 			return () => clearInterval(intervalId);
 		}
 	}, [pollingInterval, batchIdsToPoll, dispatch]);
-	console.log({ nodeTaskStatus });
+
 	const isAnyTaskRunning = useMemo(() => {
 		// Check if any node in any batch is currently EXECUTING or QUEUED
 		return Object.values(nodeTaskStatus).some((tasks) =>
@@ -92,7 +92,7 @@ const TaskManagerProvider = ({
 			),
 		);
 	}, [nodeTaskStatus]);
-	console.log({ isAnyTaskRunning });
+
 	const value: TaskManagerContextType = {
 		pollingInterval,
 		setPollingInterval: setPollingIntervalHandler,

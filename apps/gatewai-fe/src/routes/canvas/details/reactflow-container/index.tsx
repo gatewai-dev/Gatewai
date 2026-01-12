@@ -14,7 +14,7 @@ import { createContext, useCallback, useEffect, useRef, useState } from "react";
 import { useHotkeys } from "react-hotkeys-hook";
 import { useAppDispatch, useAppSelector } from "@/store";
 import { setSelectedEdgeIds, setSelectedNodeIds } from "@/store/node-meta";
-import { selectRFEdges, selectRFNodes } from "@/store/rfstate";
+import { onNodeDragStop, selectRFEdges, selectRFNodes } from "@/store/rfstate";
 import { useCanvasCtx } from "../ctx/canvas-ctx";
 import { nodeTypes } from "../nodes";
 import { CustomConnectionLine, CustomEdge } from "../nodes/base";
@@ -130,17 +130,14 @@ function ReactflowContainer({ children }: ReactFlowProps) {
 	};
 	const handleAuxClick: MouseEventHandler<HTMLDivElement> = (event) => {
 		if (event.button === 1) {
-			// 1 is the middle mouse button
 			event.preventDefault();
 		}
 	};
 
 	const handleNodeDragStop: OnNodeDrag<Node> = useCallback(
-		(event, node) => {
-			// We dispatch a specific 'commit' action here.
-			// We pass the final position change.
+		(_event, node) => {
 			dispatch(
-				nodesFinishedDragging([
+				onNodeDragStop([
 					{
 						id: node.id,
 						type: "position",
