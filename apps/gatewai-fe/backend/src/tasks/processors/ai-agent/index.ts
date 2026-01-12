@@ -1,6 +1,11 @@
 import assert from "node:assert";
-import type { AgentNodeConfig, FileData, NodeResult } from "@gatewai/types";
-import { LlmAgent, Runner } from "@google/adk";
+import type {
+	AgentNodeConfig,
+	AgentResult,
+	FileData,
+	NodeResult,
+} from "@gatewai/types";
+import { InMemoryMemoryService, LlmAgent, Runner } from "@google/adk";
 import { type Part, type Schema, Type } from "@google/genai";
 import { ENV_CONFIG } from "../../../config.js";
 import { urlToBase64 } from "../../../utils/file-utils.js";
@@ -14,6 +19,13 @@ import { AgentNodeArtifactService } from "./artifact-service.js";
 import { PrismaSessionService } from "./prisma-session-service.js";
 import { SYSTEM_PROMPT_SUFFIX_BUILDER } from "./prompts.js";
 import { createResultGeneratorTool } from "./tools/result-generator.js";
+
+function cleanJsonString(raw: string): string {
+	return raw
+		.replace(/^```json\n?/, "") // Remove starting ```json
+		.replace(/```$/, "") // Remove ending ```
+		.trim();
+}
 
 const FileAssetGeminiSchema: Schema = {
 	type: Type.OBJECT,
@@ -152,11 +164,15 @@ const aiAgentProcessor: NodeProcessor = async ({ node, data }) => {
 		const resultGeneratorTool = createResultGeneratorTool(nodeResultSchema);
 		console.log({ nodeResultSchema });
 		const rootPrompt = SYSTEM_PROMPT_SUFFIX_BUILDER(nodeResultSchema);
+
+		const instructionsWithPrompt = `${rootPrompt},
+		User Request: ${prompt}`;
+		console.log({ rootPrompt });
 		const rootAgent = new LlmAgent({
 			model: config.model,
 			name: node.name.replace(" ", "_") || "AI_Agent",
-			tools: [resultGeneratorTool],
-			instruction: rootPrompt,
+			tools: [],
+			instruction: instructionsWithPrompt,
 			outputKey: "result",
 		});
 
@@ -230,6 +246,7 @@ const aiAgentProcessor: NodeProcessor = async ({ node, data }) => {
 			agent: rootAgent,
 			appName: "Gatewai AI Agent Node Processor",
 			sessionService,
+			memoryService: new InMemoryMemoryService(),
 			artifactService: new AgentNodeArtifactService(
 				ENV_CONFIG.GCS_ASSETS_BUCKET,
 			),
@@ -241,23 +258,27 @@ const aiAgentProcessor: NodeProcessor = async ({ node, data }) => {
 			sessionId: data.task.id,
 			userId: "system",
 			newMessage: {
-				parts: [
-					...userParts,
-					{
-						text: prompt,
-					},
-				],
+				parts: [...userParts],
 			},
 		});
 
-		async function consumeIterator() {
-			for await (const value of result) {
-				console.log("Received:", value);
-				console.log(JSON.stringify(value.content, null, 2));
+		let fullText = "";
+		for await (const chunk of result) {
+			const content = chunk.content?.parts?.[0]?.text;
+			if (content) {
+				fullText += content;
 			}
-			console.log("Done!");
 		}
-		await consumeIterator();
+		console.log({ fullText });
+		assert(fullText);
+		const cleanedText = cleanJsonString(fullText);
+		console.log({ cleanedText });
+		const parsedData = JSON.parse(cleanedText);
+		const newOutputs = Object.values(parsedData);
+
+		const newGeneration: AgentResult["outputs"][number] = {
+			items: newOutputs,
+		};
 
 		const newResult: NodeResult = structuredClone(
 			node.result as NodeResult,
@@ -265,6 +286,9 @@ const aiAgentProcessor: NodeProcessor = async ({ node, data }) => {
 			outputs: [],
 			selectedOutputIndex: 0,
 		};
+
+		newResult.outputs.push(newGeneration);
+		newResult.selectedOutputIndex = newResult.outputs.length - 1;
 
 		return { success: true, newResult };
 	} catch (err: unknown) {

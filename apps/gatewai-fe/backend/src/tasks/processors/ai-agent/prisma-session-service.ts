@@ -183,10 +183,6 @@ export class PrismaSessionService extends BaseSessionService {
 
 			events = [...events, event];
 
-			const sessionToUpdate = await prisma.agentSession.findFirstOrThrow({
-				where: { appName, userId, sessionId },
-			});
-
 			await tx.agentSession.update({
 				where: { appName_userId_sessionId: { appName, userId, sessionId } },
 				data: {
