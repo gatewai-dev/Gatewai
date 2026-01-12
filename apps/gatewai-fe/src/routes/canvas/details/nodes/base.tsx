@@ -268,8 +268,7 @@ const BaseNode = memo(
 			<div
 				className={cn(
 					"relative flex flex-col w-full h-full group/node",
-					dragging ? "shadow-lg scale-[1.01]" : "shadow-sm",
-					{ "ring-1 ring-green-400/30": isProcessing },
+					dragging ? "shadow-lg scale-[1.003]" : "shadow-sm",
 					"bg-card border border-border",
 					"rounded-2xl",
 					selected && "ring-1 ring-primary border-primary",
