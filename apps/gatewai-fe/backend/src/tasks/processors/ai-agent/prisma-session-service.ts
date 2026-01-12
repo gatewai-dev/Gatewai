@@ -144,7 +144,7 @@ export class PrismaSessionService extends BaseSessionService {
 
 		if (sessionToDelete) {
 			await prisma.agentSession.delete({
-				where: { id: sessionToDelete.id },
+				where: { appName_userId_sessionId: { appName, userId, sessionId } },
 			});
 		}
 	}
@@ -188,7 +188,7 @@ export class PrismaSessionService extends BaseSessionService {
 			});
 
 			await tx.agentSession.update({
-				where: { id: sessionToUpdate.id },
+				where: { appName_userId_sessionId: { appName, userId, sessionId } },
 				data: {
 					state,
 					events,

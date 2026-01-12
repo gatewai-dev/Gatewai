@@ -175,14 +175,14 @@ export async function SEED_createNodeTemplates(prisma: PrismaClient) {
 					{
 						type: HandleType.Input,
 						dataTypes: [DataType.Text],
-						label: "System Prompt",
+						label: "Instructions",
 						required: true,
 					},
 					{
 						type: HandleType.Input,
 						dataTypes: [DataType.Text],
-						label: "Instructions",
-						required: true,
+						label: "System Prompt Suffix",
+						required: false,
 					},
 				],
 			},
