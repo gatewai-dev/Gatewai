@@ -16,7 +16,6 @@ import {
 import {
 	Form,
 	FormControl,
-	FormDescription,
 	FormField,
 	FormItem,
 	FormLabel,
@@ -30,7 +29,6 @@ import {
 	SelectTrigger,
 	SelectValue,
 } from "@/components/ui/select";
-import { Textarea } from "@/components/ui/textarea";
 import { generateId } from "@/lib/idgen";
 import type { HandleEntityType } from "@/store/handles";
 import { useCanvasCtx } from "../ctx/canvas-ctx";
