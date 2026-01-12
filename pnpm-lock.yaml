@@ -200,9 +200,6 @@ importers:
       hono:
         specifier: ^4.8.5
         version: 4.8.5
-      immer:
-        specifier: ^11.1.3
-        version: 11.1.3
       ioredis:
         specifier: ^5.8.0
         version: 5.8.2
@@ -11247,14 +11244,14 @@ snapshots:
       '@remotion/media-parser': 4.0.402
       '@remotion/studio': 4.0.402(react-dom@19.1.1(react@19.1.1))(react@19.1.1)
       '@remotion/studio-shared': 4.0.402(react-dom@19.1.1(react@19.1.1))(react@19.1.1)
-      css-loader: 5.2.7(webpack@5.96.1)
+      css-loader: 5.2.7(webpack@5.96.1(esbuild@0.25.0))
       esbuild: 0.25.0
       react: 19.1.1
       react-dom: 19.1.1(react@19.1.1)
       react-refresh: 0.9.0
       remotion: 4.0.402(react-dom@19.1.1(react@19.1.1))(react@19.1.1)
       source-map: 0.7.3
-      style-loader: 4.0.0(webpack@5.96.1)
+      style-loader: 4.0.0(webpack@5.96.1(esbuild@0.25.0))
       webpack: 5.96.1(esbuild@0.25.0)
     transitivePeerDependencies:
       - '@swc/core'
@@ -12955,7 +12952,7 @@ snapshots:
       randombytes: 2.1.0
       randomfill: 1.0.4
 
-  css-loader@5.2.7(webpack@5.96.1):
+  css-loader@5.2.7(webpack@5.96.1(esbuild@0.25.0)):
     dependencies:
       icss-utils: 5.1.0(postcss@8.5.6)
       loader-utils: 2.0.4
@@ -14276,7 +14273,8 @@ snapshots:
 
   immer@10.2.0: {}
 
-  immer@11.1.3: {}
+  immer@11.1.3:
+    optional: true
 
   import-fresh@3.3.1:
     dependencies:
@@ -17519,7 +17517,7 @@ snapshots:
 
   stubs@3.0.0: {}
 
-  style-loader@4.0.0(webpack@5.96.1):
+  style-loader@4.0.0(webpack@5.96.1(esbuild@0.25.0)):
     dependencies:
       webpack: 5.96.1(esbuild@0.25.0)
 
