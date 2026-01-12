@@ -109,14 +109,12 @@
 		"sonner": "^2.0.7",
 		"tailwind-merge": "^3.3.1",
 		"tailwindcss": "^4.1.16",
-		"three": "^0.181.0",
 		"use-debounce": "^10.0.6",
 		"use-image": "^1.1.4",
 		"vite-plugin-node-polyfills": "^0.24.0",
 		"wav": "^1.0.2",
 		"webfontloader": "^1.6.28",
-		"zod": "3.25.67",
-		"zod-to-json-schema": "^3.25.1"
+		"zod": "3.25.67"
 	},
 	"devDependencies": {
 		"@gatewai/api-client": "workspace:*",
@@ -129,7 +127,6 @@
 		"@types/node": "^20.11.17",
 		"@types/react": "^19.1.10",
 		"@types/react-dom": "^19.1.7",
-		"@types/three": "^0.181.0",
 		"@types/wav": "^1.0.4",
 		"@types/webfontloader": "^1.6.38",
 		"@vitejs/plugin-react-swc": "^4.0.0",

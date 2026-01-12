@@ -31,7 +31,7 @@ export interface APIClientConfig {
 }
 
 /**
- * API Client
+ * API Client used to run workflows externally
  */
 export class GatewaiApiClient {
 	private baseUrl: string;

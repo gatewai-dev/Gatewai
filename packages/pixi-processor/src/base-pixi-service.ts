@@ -41,7 +41,7 @@ export abstract class BasePixiService implements IPixiProcessor {
 					this.validateResource(resource),
 			},
 			{
-				max: 12,
+				max: 12, // Enough for frontend - may need to parameterize for backend
 				min: 2,
 				testOnBorrow: true,
 			},
