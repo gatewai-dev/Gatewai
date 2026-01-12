@@ -28,6 +28,7 @@ import {
 	Hand,
 	Image as ImageIcon,
 	Layers,
+	Loader2,
 	Minus,
 	MousePointer,
 	Move,
@@ -1544,6 +1545,7 @@ export const VideoDesignerEditor: React.FC<VideoDesignerEditorProps> = ({
 	// Player State
 	const [currentFrame, setCurrentFrame] = useState(0);
 	const [isPlaying, setIsPlayingState] = useState(false);
+	const [isBuffering, setIsBuffering] = useState(false);
 	const playerRef = useRef<PlayerRef>(null);
 
 	// Refs
@@ -2002,6 +2004,10 @@ export const VideoDesignerEditor: React.FC<VideoDesignerEditorProps> = ({
 		],
 	);
 
+	useEffect(() => {
+		playerRef.current?.seekTo(0);
+	}, []);
+
 	return (
 		<EditorContext.Provider value={contextValue}>
 			<div className="flex flex-col h-screen w-full bg-[#050505] text-gray-100 overflow-hidden font-sans select-none">
@@ -2050,6 +2056,9 @@ export const VideoDesignerEditor: React.FC<VideoDesignerEditorProps> = ({
 									style={{ width: "100%", height: "100%" }}
 									controls={false}
 									doubleClickToFullscreen={false}
+									onBufferStateChange={(state) =>
+										setIsBuffering(state.buffering)
+									}
 								/>
 							</div>
 						</div>
