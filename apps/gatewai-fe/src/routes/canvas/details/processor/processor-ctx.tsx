@@ -13,7 +13,7 @@ import { makeSelectAllEdges } from "@/store/edges";
 import { type HandleEntityType, makeSelectAllHandles } from "@/store/handles";
 import { makeSelectAllNodeEntities, type NodeEntityType } from "@/store/nodes";
 import { imageStore } from "./image-store";
-import { NodeGraphProcessor, TaskStatus } from "./node-graph-processor";
+import { NodeGraphProcessor } from "./node-graph-processor";
 import type { ConnectedInput } from "./types";
 
 const ProcessorContext = createContext<NodeGraphProcessor | null>(null);
@@ -70,8 +70,8 @@ export function useProcessor(): NodeGraphProcessor {
 }
 
 /**
- * Subscribe to a specific node's processing state, including result, inputs, status, error, and validation
- * Returns a comprehensive meta state and updates automatically on relevant events
+ * Subscribe to a specific node's result
+ * Returns result and updates automatically when processing completes
  */
 export function useNodeResult<T extends NodeResult = NodeResult>(
 	nodeId: string,
@@ -80,7 +80,6 @@ export function useNodeResult<T extends NodeResult = NodeResult>(
 	inputs: Record<HandleEntityType["id"], ConnectedInput>;
 	isProcessing: boolean;
 	error: string | null;
-	validation: Record<string, string>;
 } {
 	const processor = useProcessor();
 
@@ -90,12 +89,12 @@ export function useNodeResult<T extends NodeResult = NodeResult>(
 		inputs: Record<HandleEntityType["id"], ConnectedInput>;
 		isProcessing: boolean;
 		error: string | null;
-		validation: Record<string, string>;
 	} | null>(null);
 
 	const subscribe = (callback: () => void) => {
 		const handler = (data: { nodeId: string }) => {
 			if (data.nodeId === nodeId) {
+				// Force a recalculation of the snapshot before calling the callback
 				callback();
 			}
 		};
@@ -103,13 +102,11 @@ export function useNodeResult<T extends NodeResult = NodeResult>(
 		processor.on("node:start", handler);
 		processor.on("node:processed", handler);
 		processor.on("node:error", handler);
-		processor.on("node:validated", handler);
 
 		return () => {
 			processor.off("node:start", handler);
 			processor.off("node:processed", handler);
 			processor.off("node:error", handler);
-			processor.off("node:validated", handler);
 		};
 	};
 
@@ -118,9 +115,8 @@ export function useNodeResult<T extends NodeResult = NodeResult>(
 
 		const nextResult = state?.result ?? null;
 		const nextInputs = state?.inputs ?? {};
-		const nextIsProcessing = state?.status === TaskStatus.EXECUTING ?? false;
+		const nextIsProcessing = state?.isProcessing ?? false;
 		const nextError = state?.error ?? null;
-		const nextValidation = processor.getNodeValidation(nodeId);
 
 		// Check if anything actually changed since the last snapshot
 		const hasChanged =
@@ -128,8 +124,8 @@ export function useNodeResult<T extends NodeResult = NodeResult>(
 			snapshotRef.current.result !== nextResult ||
 			snapshotRef.current.isProcessing !== nextIsProcessing ||
 			snapshotRef.current.error !== nextError ||
-			!isEqual(snapshotRef.current.inputs, nextInputs) ||
-			!isEqual(snapshotRef.current.validation, nextValidation);
+			// If inputs is an object/map, compare size or specific keys
+			!isEqual(snapshotRef.current.inputs, nextInputs);
 
 		if (hasChanged) {
 			snapshotRef.current = {
@@ -137,7 +133,6 @@ export function useNodeResult<T extends NodeResult = NodeResult>(
 				inputs: nextInputs,
 				isProcessing: nextIsProcessing,
 				error: nextError,
-				validation: nextValidation,
 			};
 		}
 
@@ -153,13 +148,11 @@ export function useNodeValidation(nodeId: string): Record<string, string> {
 
 	const subscribe = useCallback(
 		(callback: () => void) => {
-			const onValidated = (data: { nodeId: string }) => {
-				if (data.nodeId === nodeId) callback();
-			};
-			processor.on("node:validated", onValidated);
-			return () => processor.off("node:validated", onValidated);
+			const onValidated = () => callback();
+			processor.on("graph:validated", onValidated);
+			return () => processor.off("graph:validated", onValidated);
 		},
-		[processor, nodeId],
+		[processor],
 	);
 
 	const getSnapshot = () => {

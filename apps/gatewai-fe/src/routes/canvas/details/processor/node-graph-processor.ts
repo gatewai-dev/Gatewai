@@ -13,7 +13,6 @@ import {
 	TextMergerNodeConfigSchema,
 	TextNodeConfigSchema,
 } from "@gatewai/types";
-import { isEqual } from "lodash";
 import type { EdgeEntityType } from "@/store/edges";
 import type { HandleEntityType } from "@/store/handles";
 import type { NodeEntityType } from "@/store/nodes";
@@ -75,36 +74,7 @@ export class NodeGraphProcessor extends EventEmitter {
 		this.registerBuiltInProcessors();
 	}
 
-	/**
-	 * Creates a standard empty result to prevent downstream nodes
-	 * from processing stale data.
-	 */
-	private createEmptyResult(): NodeResult {
-		return {
-			selectedOutputIndex: 0,
-			outputs: [],
-		};
-	}
-
-	/**
-	 * Centralized method to clear a node's result and notify the system of state changes.
-	 */
-	private resetNodeStateResult(
-		state: NodeState,
-		error: string | null = null,
-	): void {
-		state.result = this.createEmptyResult();
-		state.error = error;
-		state.isDirty = false;
-		state.lastProcessedSignature = null;
-		state.startedAt = undefined;
-		state.finishedAt = undefined;
-		state.durationMs = undefined;
-		state.version++;
-	}
-
 	private validateGraph(): void {
-		const prevValidation = { ...this.graphValidation };
 		const validation: Record<string, Record<string, string>> = {};
 
 		this.nodes.forEach((_node, nodeId) => {
@@ -113,10 +83,11 @@ export class NodeGraphProcessor extends EventEmitter {
 				(h) => h.nodeId === nodeId && h.type === "Input",
 			);
 
-			for (const ih of inputHandles) {
+			inputHandles.forEach((ih) => {
 				const edge = this.edges.find((e) => e.targetHandleId === ih.id);
 				if (!edge && this.handles.find((f) => f.id === ih.id)?.required) {
 					invalid[ih.id] = "missing_connection";
+					return;
 				}
 
 				if (edge) {
@@ -125,7 +96,7 @@ export class NodeGraphProcessor extends EventEmitter {
 					);
 					if (!sourceHandle) {
 						invalid[ih.id] = "invalid_source";
-						continue;
+						return;
 					}
 
 					const compatible = sourceHandle.dataTypes.some((t: DataType) =>
@@ -133,45 +104,45 @@ export class NodeGraphProcessor extends EventEmitter {
 					);
 					if (!compatible) {
 						invalid[ih.id] = "type_mismatch";
+						return;
 					}
 				}
-			}
+			});
 
 			if (Object.keys(invalid).length > 0) {
 				validation[nodeId] = invalid;
 			}
 		});
 		this.graphValidation = validation;
-
-		this.nodes.forEach((_, nodeId) => {
-			const prev = prevValidation[nodeId] || {};
-			const curr = validation[nodeId] || {};
-			if (!isEqual(prev, curr)) {
-				this.emit("node:validated", { nodeId, validation: curr });
-			}
-		});
+		this.emit("graph:validated", { validation });
 	}
 
 	updateGraph(config: ProcessorConfig): void {
 		const prevNodes = this.nodes;
 		const prevEdges = this.edges;
 
+		// Update Internal State
 		this.nodes = config.nodes;
 		this.edges = config.edges;
 		this.handles = config.handles;
 
+		// Rebuild Topology Indices
 		this.buildAdjacencyAndIndices();
+
+		// Validate the graph first
 		this.validateGraph();
 
-		// Force-fail and CLEAR results for invalid nodes
+		// Force-fail invalid nodes after validation
 		Object.keys(this.graphValidation).forEach((nodeId) => {
 			const state = this.getOrCreateNodeState(nodeId);
 			const validationErrors = this.graphValidation[nodeId];
-			const errorMsg = `Invalid configuration: ${Object.values(validationErrors).join(", ")}`;
-
 			state.status = TaskStatus.FAILED;
-			this.resetNodeStateResult(state, errorMsg);
-
+			state.error = `Invalid configuration: ${Object.values(validationErrors).join(", ")}`;
+			state.isDirty = false;
+			state.startedAt = undefined;
+			state.finishedAt = undefined;
+			state.durationMs = undefined;
+			state.version++;
 			this.emit("node:error", { nodeId, error: state.error });
 		});
 
@@ -185,15 +156,19 @@ export class NodeGraphProcessor extends EventEmitter {
 				state.error = null;
 				state.abortController = null;
 
-				if (currNode.result && !this.graphValidation[id]) {
+				// Initialize status based on existing result availability
+				if (currNode.result) {
 					state.result = currNode.result as unknown as NodeResult;
 					state.lastProcessedSignature = this.getNodeValueHash(currNode);
 					state.isDirty = false;
+					// Note: We don't set COMPLETED here arbitrarily unless we are sure,
+					// but generally if we have a result, it is conceptually completed.
 					state.status = TaskStatus.COMPLETED;
 				} else {
-					state.result = this.createEmptyResult();
+					state.result = null;
 					state.lastProcessedSignature = null;
 					state.isDirty = true;
+					// Will be set to QUEUED in markNodesDirty
 					dirtyNodes.push(id);
 				}
 				state.version++;
@@ -202,6 +177,7 @@ export class NodeGraphProcessor extends EventEmitter {
 				this.markNodesDirty(dirtyNodes);
 			}
 		} else {
+			// Detect Intrinsic Node Changes (Config/Data/Index mismatch)
 			this.nodes.forEach((currNode, id) => {
 				const state = this.nodeStates.get(id);
 				const currHash = this.getNodeValueHash(currNode);
@@ -210,6 +186,7 @@ export class NodeGraphProcessor extends EventEmitter {
 				}
 			});
 
+			// Detect Extrinsic Input Changes (Edges or Upstream Values)
 			const inputChanges = this.detectInputChanges(
 				prevEdges,
 				this.edges,
@@ -221,6 +198,7 @@ export class NodeGraphProcessor extends EventEmitter {
 			});
 		}
 
+		// Cleanup Removed Nodes
 		prevNodes.forEach((_, id) => {
 			if (!this.nodes.has(id)) {
 				const state = this.nodeStates.get(id);
@@ -229,6 +207,7 @@ export class NodeGraphProcessor extends EventEmitter {
 			}
 		});
 
+		// Trigger Execution
 		if (nodesToInvalidate.size > 0) {
 			this.markNodesDirty(Array.from(nodesToInvalidate));
 		}
@@ -243,7 +222,7 @@ export class NodeGraphProcessor extends EventEmitter {
 	}
 
 	getNodeValidation(nodeId: NodeEntityType["id"]) {
-		return this.graphValidation[nodeId] ?? {};
+		return this.graphValidation[nodeId] ?? null;
 	}
 
 	async processNode(nodeId: string): Promise<void> {
@@ -256,6 +235,7 @@ export class NodeGraphProcessor extends EventEmitter {
 		if (state) {
 			state.error = null;
 			state.version++;
+			// Retrying implies re-queueing
 			this.markNodesDirty([nodeId]);
 		}
 	}
@@ -287,6 +267,7 @@ export class NodeGraphProcessor extends EventEmitter {
 
 			const state = this.getOrCreateNodeState(nodeId);
 
+			// If currently executing, abort it
 			if (state.status === TaskStatus.EXECUTING && state.abortController) {
 				state.abortController.abort("Restarting due to graph update");
 				state.abortController = null;
@@ -294,11 +275,17 @@ export class NodeGraphProcessor extends EventEmitter {
 
 			const validationErrors = this.graphValidation[nodeId];
 			if (validationErrors && Object.keys(validationErrors).length > 0) {
+				// Fail invalid nodes immediately without queuing
 				state.status = TaskStatus.FAILED;
-				const errorMsg = `Invalid configuration: ${Object.values(validationErrors).join(", ")}`;
-				this.resetNodeStateResult(state, errorMsg);
+				state.error = `Invalid configuration: ${Object.values(validationErrors).join(", ")}`;
+				state.isDirty = false;
+				state.startedAt = undefined;
+				state.finishedAt = undefined;
+				state.durationMs = undefined;
+				state.version++;
 				this.emit("node:error", { nodeId, error: state.error });
 			} else {
+				// [Schema Alignment] Set status to QUEUED
 				state.isDirty = true;
 				state.status = TaskStatus.QUEUED;
 				state.error = null;
@@ -306,6 +293,8 @@ export class NodeGraphProcessor extends EventEmitter {
 				state.finishedAt = undefined;
 				state.durationMs = undefined;
 				state.version++;
+
+				// Notify system that this node is queued (good place to create/reset DB Task)
 				this.emit("node:queued", { nodeId });
 			}
 
@@ -346,6 +335,7 @@ export class NodeGraphProcessor extends EventEmitter {
 
 				if (readyNodes.length > 0) {
 					await Promise.all(readyNodes.map((s) => this.executeNode(s.id)));
+					// Refresh dirtyNodes after executions, as states may have changed
 					dirtyNodes = Array.from(this.nodeStates.values()).filter(
 						(s) => s.isDirty,
 					);
@@ -360,14 +350,14 @@ export class NodeGraphProcessor extends EventEmitter {
 
 				for (const state of stalledNodes) {
 					const nodeId = state.id;
+					state.isDirty = false;
 					state.status = TaskStatus.FAILED;
-					const errorMsg = "Missing required inputs due to upstream errors";
-
-					// Clear results for stalled nodes to ensure no stale data propagates
-					this.resetNodeStateResult(state, errorMsg);
+					state.error = "Missing required inputs due to upstream errors";
 					state.finishedAt = Date.now();
-					state.durationMs = 0;
-
+					state.durationMs = state.startedAt
+						? state.finishedAt - state.startedAt
+						: 0;
+					state.version++;
 					this.emit("node:error", { nodeId, error: state.error });
 				}
 
@@ -392,10 +382,8 @@ export class NodeGraphProcessor extends EventEmitter {
 		if (!parents || parents.size === 0) return true;
 		for (const parentId of parents) {
 			const parentState = this.nodeStates.get(parentId);
-			// Check if parent has a valid (non-empty) result and is not currently dirty
-			const hasValidResult =
-				parentState?.result && parentState.result.outputs.length > 0;
-			if (!hasValidResult || parentState.isDirty) return false;
+			// Parent must have a result and NOT be dirty to be considered stable
+			if (!parentState?.result || parentState.isDirty) return false;
 		}
 		return true;
 	}
@@ -419,13 +407,15 @@ export class NodeGraphProcessor extends EventEmitter {
 
 		const processor = this.processors.get(node.type);
 		if (!processor) {
-			const errorMsg = `No processor found for type ${node.type}`;
+			state.error = `No processor found for type ${node.type}`;
+			state.isDirty = false;
 			state.status = TaskStatus.FAILED;
-			this.resetNodeStateResult(state, errorMsg);
+			state.version++;
 			this.emit("node:error", { nodeId, error: state.error });
 			return;
 		}
 
+		// [Schema Alignment] Update Status to EXECUTING
 		state.status = TaskStatus.EXECUTING;
 		state.startedAt = Date.now();
 		state.error = null;
@@ -499,12 +489,13 @@ export class NodeGraphProcessor extends EventEmitter {
 
 			console.error(`Error processing node ${nodeId}:`, error);
 
-			const errorMsg = error instanceof Error ? error.message : "Unknown error";
+			state.error = error instanceof Error ? error.message : "Unknown error";
+			state.isDirty = false; // It processed, but failed.
 			state.status = TaskStatus.FAILED;
-			this.resetNodeStateResult(state, errorMsg);
 			state.finishedAt = Date.now();
 			state.durationMs =
 				state.finishedAt - (state.startedAt || state.finishedAt);
+			state.version++;
 
 			this.emit("node:error", {
 				nodeId,
@@ -526,7 +517,7 @@ export class NodeGraphProcessor extends EventEmitter {
 				id,
 				isDirty: false,
 				status: null,
-				result: this.createEmptyResult(),
+				result: null,
 				inputs: null,
 				error: null,
 				abortController: null,
@@ -647,7 +638,7 @@ export class NodeGraphProcessor extends EventEmitter {
 			if (!edge) continue;
 
 			const sourceState = this.nodeStates.get(edge.source);
-			if (!sourceState?.result || sourceState.result.outputs.length === 0) {
+			if (!sourceState?.result) {
 				inputs[handle.id] = {
 					connectionValid: false,
 					outputItem: null,
@@ -757,11 +748,6 @@ export class NodeGraphProcessor extends EventEmitter {
 			return null;
 		};
 
-		const getOutputHandleByLabel = (nodeId: string, label: string) =>
-			this.handles.find(
-				(h) => h.nodeId === nodeId && h.type === "Output" && h.label === label,
-			)?.id;
-
 		const getFirstOutputHandle = (nodeId: string, type: string) =>
 			this.handles.find(
 				(h) =>
@@ -815,8 +801,8 @@ export class NodeGraphProcessor extends EventEmitter {
 			const config = node.config as PaintNodeConfig;
 			const imageUrl = findInputData(inputs, "Image");
 			const maskDataUrl = config.paintData;
-			const imageHandle = getOutputHandleByLabel(node.id, "Image");
-			const maskHandle = getOutputHandleByLabel(node.id, "Mask");
+			const imageHandle = getFirstOutputHandle(node.id, "Image");
+			const maskHandle = getFirstOutputHandle(node.id, "Mask");
 
 			if (!maskHandle) throw new Error("Mask output handle missing");
 
@@ -971,6 +957,7 @@ export class NodeGraphProcessor extends EventEmitter {
 
 		this.registerProcessor("TextMerger", async ({ node, inputs }) => {
 			const config = TextMergerNodeConfigSchema.parse(node.config);
+			// inputs record is already sorted by handle.createdAt due to collectInputs logic
 			const allTexts = Object.values(inputs).map(
 				(input) => input.outputItem?.data,
 			);
@@ -1073,6 +1060,7 @@ export class NodeGraphProcessor extends EventEmitter {
 			};
 		});
 
+		// We're passing from config since result updates should be done by processor only not input
 		this.registerProcessor("Text", async ({ node }) => {
 			const outputHandle = getFirstOutputHandle(node.id, "Text");
 			const config = TextNodeConfigSchema.parse(node.config);
@@ -1096,6 +1084,7 @@ export class NodeGraphProcessor extends EventEmitter {
 		const passthrough = async ({ node }: NodeProcessorParams) =>
 			node.result as unknown as NodeResult;
 
+		// We only render the video when user downloads it, and use remotion player.
 		this.registerProcessor("VideoCompositor", passthrough);
 		this.registerProcessor("ImageGen", passthrough);
 		this.registerProcessor("File", passthrough);

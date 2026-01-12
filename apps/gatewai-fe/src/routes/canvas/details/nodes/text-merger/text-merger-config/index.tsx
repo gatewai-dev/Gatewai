@@ -12,7 +12,6 @@ import {
 	FormItem,
 	FormLabel,
 } from "@/components/ui/form";
-import { Label } from "@/components/ui/label";
 import {
 	Select,
 	SelectContent,
@@ -100,10 +99,6 @@ const TextMergerNodeConfigComponent = memo(
 			return currentJoin;
 		};
 
-		const exampleInputs = ["Text 1", "Text 2"];
-		const processedJoin = currentJoin.replace(/\\n/g, "\n");
-		const previewText = exampleInputs.join(processedJoin);
-
 		return (
 			<div className="p-4 space-y-3 bg-background rounded-lg shadow-sm">
 				<Form {...form}>
@@ -160,31 +155,6 @@ const TextMergerNodeConfigComponent = memo(
 						)}
 					</form>
 				</Form>
-
-				<div className="space-y-3 pt-2">
-					<Label className="text-[10px] uppercase tracking-widest text-muted-foreground font-bold">
-						Seperator preview
-					</Label>
-					<div className="flex flex-wrap gap-1.5">
-						{exampleInputs.map((input) => (
-							<span
-								key={`${input}_opt`}
-								className="px-2 py-0.5 rounded border border-border bg-background text-[10px] text-muted-foreground"
-							>
-								"{input}"
-							</span>
-						))}
-					</div>
-					<div className="relative">
-						<div className="p-2 bg-muted/40 border border-dashed border-border rounded-md whitespace-pre-wrap wrap-break-word text-xs text-left transition-colors font-mono">
-							{previewText || (
-								<span className="text-muted-foreground italic opacity-60">
-									No separator (Concatenated)
-								</span>
-							)}
-						</div>
-					</div>
-				</div>
 			</div>
 		);
 	},

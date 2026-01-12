@@ -42,7 +42,6 @@ const NoteNodeComponent = memo((props: NodeProps<NoteNode>) => {
 			/>
 
 			<div className="custom-drag-handle h-6 w-full cursor-move bg-black/10 flex items-center justify-center hover:bg-black/20 transition-colors">
-				{/* Visual grip handle indicator */}
 				<div className="w-8 h-1 rounded-full bg-black/20" />
 			</div>
 
