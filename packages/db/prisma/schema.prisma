@@ -113,6 +113,8 @@ model Node {
   originalNode   Node?           @relation("NodeDuplicates", fields: [originalNodeId], references: [id], onDelete: SetNull)
   duplicates     Node[]          @relation("NodeDuplicates")
 
+  agentSessions  AgentSession[]
+
   @@map("node")
 }
 
@@ -251,10 +253,7 @@ model Task {
   @@map("task")
 }
 
-enum FileAssetType {
-  Image
-  Video
-}
+
 model FileAsset {
   id              String       @id @default(cuid())
   name            String
@@ -280,4 +279,23 @@ model FileAsset {
   // Media metadata - optional
   metadata        Json?
   fps             Int?
+}
+
+model AgentSession {
+  id              String       @default(cuid())
+  appName         String
+  userId          String
+  sessionId       String
+  state           Json         @default("{}")
+  events          Json         @default("[]")
+  lastUpdateTime  DateTime
+  createdAt       DateTime     @default(now())
+  updatedAt       DateTime     @updatedAt
+  expiredAt       DateTime
+
+  node            Node?        @relation(fields: [nodeId], references: [id])
+  nodeId          String?
+
+  @@id([appName, userId, sessionId])
+  @@map("agent_session")
 }

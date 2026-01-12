@@ -1,13 +1,6 @@
 import assert from "node:assert";
-import type { DataType } from "@gatewai/db";
-import type {
-	AgentNodeConfig,
-	FileData,
-	NodeResult,
-	Output,
-	OutputItem,
-} from "@gatewai/types";
-import { InMemorySessionService, LlmAgent, Runner } from "@google/adk";
+import type { AgentNodeConfig, FileData, NodeResult } from "@gatewai/types";
+import { LlmAgent, Runner } from "@google/adk";
 import { type Part, type Schema, Type } from "@google/genai";
 import { ENV_CONFIG } from "../../../config.js";
 import { urlToBase64 } from "../../../utils/file-utils.js";
@@ -18,9 +11,7 @@ import {
 } from "../../resolvers.js";
 import type { NodeProcessor, NodeProcessorCtx } from "../types.js";
 import { AgentNodeArtifactService } from "./artifact-service.js";
-import { RedisSessionService } from "./redis-session-service.js";
-
-// --- Definitions ---
+import { PrismaSessionService } from "./prisma-session-service.js";
 
 const FileAssetGeminiSchema: Schema = {
 	type: Type.OBJECT,
@@ -173,7 +164,7 @@ const aiAgentProcessor: NodeProcessor = async ({ node, data }) => {
 			model: config.model,
 			name: node.name || "AI Agent",
 			subAgents: [resultGeneratorAgent],
-			instruction: prompt,
+			instruction: "Use the inputs to fulfill the user's request.",
 		});
 
 		// 5. Build Content Parts (Multimodal inputs)
@@ -181,7 +172,7 @@ const aiAgentProcessor: NodeProcessor = async ({ node, data }) => {
 			return (
 				input?.handle &&
 				input.handle.id !== systemPromptData?.handle?.id &&
-				input.handle.label !== "Instructions" // Exclude the main prompt instructions handled above
+				input.handle.label !== "Instructions"
 			);
 		});
 
@@ -239,7 +230,7 @@ const aiAgentProcessor: NodeProcessor = async ({ node, data }) => {
 		const runner = new Runner({
 			agent: rootAgent,
 			appName: "Gatewai AI Agent Node Processor",
-			sessionService: new RedisSessionService(),
+			sessionService: new PrismaSessionService(node.id),
 			artifactService: new AgentNodeArtifactService(
 				ENV_CONFIG.GCS_ASSETS_BUCKET,
 			),
@@ -262,23 +253,11 @@ const aiAgentProcessor: NodeProcessor = async ({ node, data }) => {
 		async function consumeIterator() {
 			for await (const value of result) {
 				console.log("Received:", value);
+				console.log(value.content);
 			}
 			console.log("Done!");
 		}
-
-		// Parse JSON
-		let parsedJson;
-		try {
-			parsedJson = JSON.parse(responseText);
-		} catch (e) {
-			return {
-				success: false,
-				error: "Failed to parse JSON response from model",
-			};
-		}
-
-		// 8. Construct Node Result
-		const newItems = Object.values(parsedJson) as OutputItem<DataType>[];
+		await consumeIterator();
 
 		const newResult: NodeResult = structuredClone(
 			node.result as NodeResult,
@@ -286,13 +265,6 @@ const aiAgentProcessor: NodeProcessor = async ({ node, data }) => {
 			outputs: [],
 			selectedOutputIndex: 0,
 		};
-
-		const newGeneration: Output = {
-			items: newItems,
-		};
-
-		newResult.outputs.push(newGeneration);
-		newResult.selectedOutputIndex = newResult.outputs.length - 1;
 
 		return { success: true, newResult };
 	} catch (err: unknown) {
