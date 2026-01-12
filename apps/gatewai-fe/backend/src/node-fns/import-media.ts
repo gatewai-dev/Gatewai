@@ -11,7 +11,7 @@ interface UploadOptions {
 	nodeId: string;
 	buffer: Buffer;
 	filename: string;
-	mimeType?: string; // Optional: will attempt to detect if not provided
+	mimeType?: string;
 }
 
 /**

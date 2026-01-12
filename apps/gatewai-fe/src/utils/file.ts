@@ -29,7 +29,7 @@ const MIME_TYPES: Record<string, string> = {
 	txt: "text/plain",
 };
 
-const BACKEND_URL = import.meta.env.VITE_BASE_URL;
+const BASE_URL = import.meta.env.VITE_BASE_URL;
 
 /**
  * Appends a file extension hint to the URL.
@@ -39,7 +39,7 @@ const BACKEND_URL = import.meta.env.VITE_BASE_URL;
 function GetAssetEndpoint(fileAsset: FileAsset) {
 	// Ensure the ID itself doesn't already have an extension
 	const cleanId = fileAsset.id.split(".")[0];
-	const baseUrl = `${BACKEND_URL}/api/v1/assets/${cleanId}`;
+	const baseUrl = `${BASE_URL}/api/v1/assets/${cleanId}`;
 
 	if (!fileAsset.mimeType) return baseUrl;
 
@@ -52,7 +52,7 @@ function GetAssetEndpoint(fileAsset: FileAsset) {
 }
 
 function GetFontAssetUrl(name: string) {
-	return `${BACKEND_URL}/api/v1/fonts/load/${name}`;
+	return `${BASE_URL}/api/v1/fonts/load/${name}`;
 }
 
 const extractExtension = (url: string): string | null => {

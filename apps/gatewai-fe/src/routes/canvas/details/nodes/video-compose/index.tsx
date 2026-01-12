@@ -70,15 +70,6 @@ const VideoCompositorNodeComponent = memo(
 							? GetAssetEndpoint(fileData.entity)
 							: fileData.processData?.dataUrl;
 
-						const durationMs =
-							fileData.entity?.duration || fileData.processData?.duration || 0;
-						if (
-							durationMs > 0 &&
-							(item.type === "Video" || item.type === "Audio")
-						) {
-							maxDurationInFrames = Math.ceil((durationMs / 1000) * FPS);
-						}
-
 						if (!layerWidth) layerWidth = fileData.processData?.width;
 						if (!layerHeight) layerHeight = fileData.processData?.height;
 					}
@@ -91,7 +82,7 @@ const VideoCompositorNodeComponent = memo(
 							(item.data as FileData)?.processData?.duration ??
 							0)
 						: 0;
-
+				console.log({ durationMs, id: item.data });
 				const calculatedDurationFrames =
 					(item.type === "Video" || item.type === "Audio") && durationMs > 0
 						? Math.ceil((durationMs / 1000) * FPS)

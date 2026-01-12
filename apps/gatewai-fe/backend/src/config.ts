@@ -3,7 +3,7 @@ import { config } from "dotenv";
 config();
 
 type EnvConfig = {
-	BACKEND_URL: string;
+	BASE_URL: string;
 	PORT: number;
 	REDIS_HOST: string;
 	REDIS_PORT: string;
@@ -34,8 +34,8 @@ if (!process.env.GCS_ASSETS_BUCKET) {
 	throw new Error("Missing GCS_ASSETS_BUCKET env variable");
 }
 
-if (!process.env.BACKEND_URL) {
-	throw new Error("Missing BACKEND_URL env variable");
+if (!process.env.BASE_URL) {
+	throw new Error("Missing BASE_URL env variable");
 }
 
 if (!process.env.REDIS_PORT) {
@@ -52,7 +52,7 @@ if (!process.env.DEBUG_LOG_MEDIA) {
 }
 
 export const ENV_CONFIG: EnvConfig = {
-	BACKEND_URL: process.env.BACKEND_URL,
+	BASE_URL: process.env.BASE_URL,
 	REDIS_HOST: process.env.REDIS_HOST,
 	REDIS_PASSWORD: process.env.REDIS_PASSWORD,
 	REDIS_PORT: process.env.REDIS_PORT,

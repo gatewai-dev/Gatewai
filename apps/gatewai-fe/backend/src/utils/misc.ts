@@ -29,7 +29,7 @@ const MIME_TYPES: Record<string, string> = {
 export function GetAssetEndpoint(fileAsset: FileAsset) {
 	// Ensure the ID itself doesn't already have an extension
 	const cleanId = fileAsset.id.split(".")[0];
-	const baseUrl = `${ENV_CONFIG.BACKEND_URL}/api/v1/assets/${cleanId}`;
+	const baseUrl = `${ENV_CONFIG.BASE_URL}/api/v1/assets/${cleanId}`;
 
 	if (!fileAsset.mimeType) return baseUrl;
 
