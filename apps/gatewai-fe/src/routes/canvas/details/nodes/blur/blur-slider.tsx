@@ -14,34 +14,34 @@ const BlurValueSlider = memo(({ node }: { node: NodeEntityType }) => {
 		setLocalSize(config.size ?? 0);
 	}, [config.size]);
 
-	const handleChange = useCallback((value: number[]) => {
-		setLocalSize(value[0]);
-	}, []);
+	const handleChange = useCallback(
+		(value: number[]) => {
+			setLocalSize(value[0]);
+			onNodeConfigUpdate({
+				id: node.id,
+				newConfig: { size: value[0] },
+			});
+		},
+		[node.id, onNodeConfigUpdate],
+	);
 
-	useEffect(() => {
-		onNodeConfigUpdate({
-			id: node.id,
-			newConfig: { size: localSize },
-		});
-	}, [localSize, node.id, onNodeConfigUpdate]);
-
-	const onBlur = useCallback(() => {
+	const onValueCommit = useCallback(() => {
 		onNodeConfigUpdate({
 			id: node.id,
 			newConfig: { size: localSize },
 			appendHistory: true,
 		});
-		console.log({ localSize });
 	}, [localSize, node.id, onNodeConfigUpdate]);
+
 	return (
 		<div className="flex flex-col gap-1 flex-1">
 			<Label className="text-xs text-gray-600">Size: {localSize}</Label>
 			<Slider
 				value={[localSize]}
 				max={100}
-				onBlur={onBlur}
 				min={1}
 				step={1}
+				onValueCommit={onValueCommit}
 				onValueChange={handleChange}
 			/>
 		</div>

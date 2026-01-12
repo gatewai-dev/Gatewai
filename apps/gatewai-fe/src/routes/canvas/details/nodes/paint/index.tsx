@@ -52,7 +52,7 @@ const PaintNodeComponent = memo((props: NodeProps<PaintNode>) => {
 	const lastPositionRef = useRef<{ x: number; y: number } | null>(null);
 	const needsUpdateRef = useRef(false);
 	const skipNextSyncRef = useRef(false);
-	const previewDebounceRef = useRef<number | null>(null);
+	const previewDebounceRef = useRef<NodeJS.Timeout | null>(null);
 
 	const inputImageUrl = useMemo(() => {
 		const result =
@@ -300,6 +300,15 @@ const PaintNodeComponent = memo((props: NodeProps<PaintNode>) => {
 		[],
 	);
 
+	const drawFilledCircle = useCallback(
+		(ctx: CanvasRenderingContext2D, x: number, y: number, radius: number) => {
+			ctx.beginPath();
+			ctx.arc(x, y, radius, 0, Math.PI * 2);
+			ctx.fill();
+		},
+		[],
+	);
+
 	const handleMouseDown = useCallback(
 		(e: React.MouseEvent<HTMLCanvasElement>) => {
 			e.preventDefault();
@@ -314,27 +323,32 @@ const PaintNodeComponent = memo((props: NodeProps<PaintNode>) => {
 				return;
 			}
 
-			ctx.beginPath();
-			ctx.moveTo(x, y);
-			ctx.lineWidth = brushSize;
+			// Set drawing properties
 			ctx.globalAlpha = 1;
+
 			if (tool === "brush") {
 				ctx.globalCompositeOperation = "source-over";
-				ctx.strokeStyle = brushColor;
+				ctx.fillStyle = brushColor;
 			} else {
 				ctx.globalCompositeOperation = "destination-out";
+				ctx.fillStyle = "#000000"; // Opaque for erasing
 			}
+
+			// Draw initial filled circle
+			drawFilledCircle(ctx, x, y, brushSize / 2);
+
 			isDrawingRef.current = true;
 			lastPositionRef.current = { x, y };
 			needsUpdateRef.current = true;
 		},
 		[
-			brushSize,
 			tool,
-			brushColor,
 			getScaledCoordinates,
 			performFloodFill,
 			clearPreview,
+			brushColor,
+			brushSize,
+			drawFilledCircle,
 		],
 	);
 
@@ -342,10 +356,20 @@ const PaintNodeComponent = memo((props: NodeProps<PaintNode>) => {
 		(e: React.MouseEvent<HTMLCanvasElement>) => {
 			const { x, y } = getScaledCoordinates(e);
 
+			// Draw cursor preview for brush mode
+			if (tool === "brush") {
+				clearPreview();
+				const previewCtx = previewRef.current?.getContext("2d");
+				if (previewCtx) {
+					previewCtx.strokeStyle = "red";
+					previewCtx.lineWidth = 2;
+					previewCtx.beginPath();
+					previewCtx.arc(x, y, brushSize / 2, 0, Math.PI * 2);
+					previewCtx.stroke();
+				}
+			}
+
 			if (tool === "fill") {
-				// Performance fix: Clear preview immediately on move (cheap operation).
-				// Debounce the expensive flood fill to only run after 100ms of mouse inactivity.
-				// This prevents running flood fill on every mouse move event, which fires rapidly.
 				if (previewDebounceRef.current) {
 					clearTimeout(previewDebounceRef.current);
 				}
@@ -369,11 +393,52 @@ const PaintNodeComponent = memo((props: NodeProps<PaintNode>) => {
 			const ctx = canvasRef.current?.getContext("2d");
 			if (!ctx || !lastPositionRef.current) return;
 
-			ctx.lineTo(x, y);
-			ctx.stroke();
+			// Set drawing properties again for safety (in case of external changes)
+			ctx.globalAlpha = 1;
+			if (tool === "brush") {
+				ctx.globalCompositeOperation = "source-over";
+				ctx.fillStyle = brushColor;
+			} else {
+				ctx.globalCompositeOperation = "destination-out";
+				ctx.fillStyle = "#000000"; // Opaque for erasing
+			}
+
+			const lastX = lastPositionRef.current.x;
+			const lastY = lastPositionRef.current.y;
+
+			const dx = x - lastX;
+			const dy = y - lastY;
+			const distance = Math.sqrt(dx * dx + dy * dy);
+
+			if (distance <= 0) return;
+
+			// Use a small step size for smooth filling without gaps or protrusions
+			const radius = brushSize / 2;
+			const step = Math.max(1, Math.min(5, radius / 4)); // Adaptive step: small for precision, capped for perf
+			const numSteps = Math.ceil(distance / step);
+			const stepX = dx / numSteps;
+			const stepY = dy / numSteps;
+
+			let posX = lastX + stepX;
+			let posY = lastY + stepY;
+
+			for (let i = 1; i <= numSteps; i++) {
+				drawFilledCircle(ctx, posX, posY, radius);
+				posX += stepX;
+				posY += stepY;
+			}
+
 			lastPositionRef.current = { x, y };
 		},
-		[tool, getScaledCoordinates, clearPreview, performFloodFill],
+		[
+			tool,
+			getScaledCoordinates,
+			clearPreview,
+			brushSize,
+			performFloodFill,
+			brushColor,
+			drawFilledCircle,
+		],
 	);
 
 	const handleMouseUp = useCallback(() => {
@@ -390,14 +455,12 @@ const PaintNodeComponent = memo((props: NodeProps<PaintNode>) => {
 	}, [updateConfig]);
 
 	const handleMouseLeave = useCallback(() => {
-		if (tool === "fill") {
-			clearPreview();
-			if (previewDebounceRef.current) {
-				clearTimeout(previewDebounceRef.current);
-				previewDebounceRef.current = null;
-			}
+		clearPreview();
+		if (previewDebounceRef.current) {
+			clearTimeout(previewDebounceRef.current);
+			previewDebounceRef.current = null;
 		}
-	}, [tool, clearPreview]);
+	}, [clearPreview]);
 
 	const handleClear = useCallback(() => {
 		const canvas = canvasRef.current;
@@ -435,7 +498,10 @@ const PaintNodeComponent = memo((props: NodeProps<PaintNode>) => {
 				>
 					<canvas
 						ref={canvasRef}
-						className="absolute inset-0 w-full cursor-crosshair z-10 bg-transparent"
+						className={cn(
+							"absolute inset-0 w-full z-10 bg-transparent",
+							tool === "brush" ? "cursor-none" : "cursor-crosshair",
+						)}
 						style={canvasStyle}
 						onMouseDown={handleMouseDown}
 						onMouseMove={handleMouseMove}
@@ -443,8 +509,7 @@ const PaintNodeComponent = memo((props: NodeProps<PaintNode>) => {
 					/>
 					<canvas
 						ref={previewRef}
-						className="absolute inset-0 w-full h-full pointer-events-none z-20"
-						bg-transparent
+						className="absolute inset-0 w-full h-full pointer-events-none z-20 bg-transparent"
 					/>
 					<canvas ref={inputCanvasRef} className="hidden bg-transparent" />
 				</div>

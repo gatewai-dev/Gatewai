@@ -5,7 +5,6 @@ import {
 	ConnectionMode,
 	type Edge,
 	type Node,
-	type OnNodeDrag,
 	ReactFlow,
 	SelectionMode,
 } from "@xyflow/react";
@@ -14,7 +13,7 @@ import { createContext, useCallback, useEffect, useRef, useState } from "react";
 import { useHotkeys } from "react-hotkeys-hook";
 import { useAppDispatch, useAppSelector } from "@/store";
 import { setSelectedEdgeIds, setSelectedNodeIds } from "@/store/node-meta";
-import { onNodeDragStop, selectRFEdges, selectRFNodes } from "@/store/rfstate";
+import { selectRFEdges, selectRFNodes } from "@/store/rfstate";
 import { useCanvasCtx } from "../ctx/canvas-ctx";
 import { nodeTypes } from "../nodes";
 import { CustomConnectionLine, CustomEdge } from "../nodes/base";
@@ -130,24 +129,10 @@ function ReactflowContainer({ children }: ReactFlowProps) {
 	};
 	const handleAuxClick: MouseEventHandler<HTMLDivElement> = (event) => {
 		if (event.button === 1) {
+			// 1 is the middle mouse button
 			event.preventDefault();
 		}
 	};
-
-	const handleNodeDragStop: OnNodeDrag<Node> = useCallback(
-		(_event, node) => {
-			dispatch(
-				onNodeDragStop([
-					{
-						id: node.id,
-						type: "position",
-						position: node.position,
-					},
-				]),
-			);
-		},
-		[dispatch],
-	);
 
 	return (
 		<div
@@ -193,7 +178,6 @@ function ReactflowContainer({ children }: ReactFlowProps) {
 					onConnect={onConnect}
 					onSelectionChange={onSelectionChange}
 					proOptions={{ hideAttribution: false }}
-					onNodeDragStop={handleNodeDragStop}
 				>
 					{children}
 					<Background variant={BackgroundVariant.Dots} />
