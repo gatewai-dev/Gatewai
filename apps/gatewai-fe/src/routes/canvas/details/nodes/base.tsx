@@ -230,7 +230,7 @@ const BaseNode = memo(
 		const selectNode = useMemo(() => makeSelectNodeById(id), [id]);
 		const node = useAppSelector(selectNode);
 
-		const { inputs, isProcessing, result, validation } = useNodeResult(id);
+		const { inputs, result, validation } = useNodeResult(id);
 		const hasTypeMismatch = (handleId: HandleEntityType["id"]) =>
 			validation?.[handleId] === "type_mismatch";
 
