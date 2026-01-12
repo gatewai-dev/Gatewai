@@ -186,11 +186,12 @@ export const CompositionScene: React.FC<SceneProps> = ({
 		<AbsoluteFill style={{ backgroundColor: "#000000" }}>
 			{/* Inject Animation Keyframes for CSS-based previews if needed, though we use Remotion math mostly */}
 			{sortedLayers.map((layer) => {
+				const startFrame = layer.startFrame ?? 0;
 				const duration = layer.durationInFrames ?? DEFAULT_DURATION_FRAMES;
-				const endFrame = layer.startFrame + duration;
+				const endFrame = startFrame + duration;
 
 				// Optimization: Do not render if out of frame bounds
-				if (frame < layer.startFrame || frame >= endFrame) return null;
+				if (frame < startFrame || frame >= endFrame) return null;
 
 				// Source Resolution
 				// In Editor: handled via callbacks. In Node: handled via pre-resolved 'src' prop in ExtendedLayer.

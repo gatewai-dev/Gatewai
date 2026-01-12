@@ -87,7 +87,7 @@ const VideoCompositorNodeComponent = memo(
 					(item.type === "Video" || item.type === "Audio") && durationMs > 0
 						? Math.ceil((durationMs / 1000) * FPS)
 						: DEFAULT_DURATION_FRAMES;
-
+				console.log({ calculatedDurationFrames });
 				const base = {
 					id: handleId,
 					inputHandleId: handleId,

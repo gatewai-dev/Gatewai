@@ -2,9 +2,9 @@ import { randomUUID } from "node:crypto";
 import { type DataType, prisma } from "@gatewai/db";
 import type { FileResult } from "@gatewai/types";
 import { fileTypeFromBuffer } from "file-type";
-import * as mm from "music-metadata";
 import sharp from "sharp";
 import { ENV_CONFIG } from "../config.js";
+import { getMediaDuration } from "../utils/media.js";
 import { generateSignedUrl, uploadToGCS } from "../utils/storage.js";
 
 interface UploadOptions {
@@ -64,10 +64,7 @@ export async function uploadToImportNode({
 		contentType.startsWith("audio/")
 	) {
 		try {
-			const metadata = await mm.parseBuffer(buffer, {
-				mimeType: contentType,
-			});
-			durationInSec = metadata.format.duration ?? null;
+			durationInSec = await getMediaDuration(buffer);
 		} catch (error) {
 			console.error("Failed to compute media duration:", error);
 		}
@@ -120,8 +117,6 @@ export async function uploadToImportNode({
 	} else if (contentType.startsWith("audio/")) {
 		dataType = "Audio";
 	} else {
-		// Default fallback or strict error depending on requirements
-		// For now, adhering to the original logic which threw error
 		throw new Error(`Invalid content type for Import Node: ${contentType}`);
 	}
 

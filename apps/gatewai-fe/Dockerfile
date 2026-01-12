@@ -56,6 +56,7 @@ RUN apt-get update && apt-get install -y \
     libgbm-dev \
     libcups2 \
     libatk-bridge2.0-0 \
+    ffmpeg \
     && rm -rf /var/lib/apt/lists/*
 
 ENV NODE_ENV=production
