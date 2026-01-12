@@ -41,9 +41,6 @@ const NoteNodeComponent = memo((props: NodeProps<NoteNode>) => {
 				handleClassName="h-3 w-3 bg-white border-2 rounded border-blue-400"
 			/>
 
-			{/* Drag Handle Area */}
-			{/* We add a specific class 'custom-drag-handle' so you can target it specifically if needed, 
-                but just having an area without 'nodrag' is usually enough. */}
 			<div className="custom-drag-handle h-6 w-full cursor-move bg-black/10 flex items-center justify-center hover:bg-black/20 transition-colors">
 				{/* Visual grip handle indicator */}
 				<div className="w-8 h-1 rounded-full bg-black/20" />
@@ -54,9 +51,8 @@ const NoteNodeComponent = memo((props: NodeProps<NoteNode>) => {
 				onChange={handleChange}
 				style={{
 					color: textColor,
-					backgroundColor: "transparent", // Background is handled by the parent wrapper now
+					backgroundColor: "transparent",
 				}}
-				// Changed h-full to flex-1 so it fills remaining space below the handle
 				className="nodrag nopan w-full flex-1 resize-none border-none outline-none focus:outline-none focus:ring-0 p-2 text-sm font-sans"
 				placeholder="Enter your notes here..."
 			/>
