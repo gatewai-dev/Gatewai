@@ -10,6 +10,7 @@ import type {
 import { InMemorySessionService, LlmAgent, Runner } from "@google/adk";
 import { type Part, type Schema, Type } from "@google/genai";
 import { ENV_CONFIG } from "../../../config.js";
+import { urlToBase64 } from "../../../utils/file-utils.js";
 import {
 	getAllInputValuesWithHandle,
 	getAllOutputHandles,
@@ -52,20 +53,6 @@ const FileAssetGeminiSchema: Schema = {
 		"isUploaded",
 	],
 };
-
-// --- Helpers ---
-
-/**
- * Fetches a file from a URL and converts it to a base64 string
- * required for Gemini InlineData.
- */
-async function urlToBase64(url: string): Promise<string> {
-	const response = await fetch(url);
-	if (!response.ok)
-		throw new Error(`Failed to fetch image: ${response.statusText}`);
-	const arrayBuffer = await response.arrayBuffer();
-	return Buffer.from(arrayBuffer).toString("base64");
-}
 
 /**
  * Creates the Gemini Schema directly for the output
@@ -146,8 +133,6 @@ function CreateOutputSchema(
 	};
 }
 
-// --- Processor ---
-
 const aiAgentProcessor: NodeProcessor = async ({ node, data }) => {
 	try {
 		assert(data.task, "Task data is missing in processor context");
@@ -170,12 +155,6 @@ const aiAgentProcessor: NodeProcessor = async ({ node, data }) => {
 
 		// 2. Setup Configuration
 		const config = node.config as unknown as AgentNodeConfig;
-		if (!process.env.GOOGLE_API_KEY) {
-			return {
-				success: false,
-				error: "GOOGLE_API_KEY environment variable is missing",
-			};
-		}
 
 		// 3. Prepare Schema
 		const outputs = getAllOutputHandles(data, node.id);
@@ -228,9 +207,6 @@ const aiAgentProcessor: NodeProcessor = async ({ node, data }) => {
 
 				if (fileUrl) {
 					try {
-						// Google SDK expects base64 data for 'inlineData'
-						// Alternatively, if using Google File API, you would use 'fileData' with a URI.
-						// Here we assume standard URL -> Base64 flow.
 						const base64Data = await urlToBase64(fileUrl);
 
 						// Determine MimeType (Fallback to generic if missing from fileData)

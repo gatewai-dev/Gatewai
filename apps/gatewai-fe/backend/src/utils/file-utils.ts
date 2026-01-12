@@ -4,3 +4,15 @@ export function resolveMimeTypeFromDataUrl(dataUrl: string) {
 		return match?.[1];
 	}
 }
+
+/**
+ * Fetches a file from a URL and converts it to a base64 string
+ * required for Gemini InlineData.
+ */
+export async function urlToBase64(url: string): Promise<string> {
+	const response = await fetch(url);
+	if (!response.ok)
+		throw new Error(`Failed to fetch image: ${response.statusText}`);
+	const arrayBuffer = await response.arrayBuffer();
+	return Buffer.from(arrayBuffer).toString("base64");
+}
