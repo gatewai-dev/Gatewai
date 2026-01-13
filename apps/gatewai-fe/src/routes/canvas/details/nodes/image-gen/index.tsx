@@ -28,7 +28,7 @@ const ImageGenNodeComponent = memo(
 				dragging={props.dragging}
 			>
 				<div className="flex flex-col gap-3">
-					<div className="media-container w-full overflow-hidden rounded  min-h-[100px] relative">
+					<div className="media-container w-full overflow-hidden rounded  min-h-32 relative">
 						{hasMoreThanOneOutput && (
 							<div className="absolute top-1 left-1 z-10">
 								<OutputSelector node={node} />

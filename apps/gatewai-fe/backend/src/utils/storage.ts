@@ -1,3 +1,4 @@
+import { existsSync } from "node:fs";
 import path from "node:path";
 import { Readable } from "node:stream";
 import { fileURLToPath } from "node:url";
@@ -12,8 +13,14 @@ const CREDENTIALS_PATH = path.join(
 	"..",
 	"..",
 	"..",
+	"..",
+	"..",
 	ENV_CONFIG.GOOGLE_APPLICATION_CREDENTIALS,
 );
+
+if (!existsSync(CREDENTIALS_PATH)) {
+	throw new Error(`Missing credentials file, seeked: ${CREDENTIALS_PATH}`);
+}
 
 const storage = new Storage({
 	keyFile: CREDENTIALS_PATH,

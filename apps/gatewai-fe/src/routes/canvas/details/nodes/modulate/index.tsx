@@ -25,7 +25,7 @@ const ModulateNodeComponent = memo(
 				dragging={props.dragging}
 			>
 				<div className="flex flex-col gap-3 ">
-					<div className="w-full overflow-hidden rounded media-container relative">
+					<div className="w-full overflow-hidden rounded media-container min-h-32 relative">
 						{imageUrl && <CanvasRenderer imageUrl={imageUrl} />}
 					</div>
 

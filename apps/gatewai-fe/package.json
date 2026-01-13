@@ -4,7 +4,7 @@
 	"version": "0.0.0",
 	"type": "module",
 	"scripts": {
-		"dev": "vite",
+		"dev": "concurrently \"pnpm be:dev\" \"vite\"",
 		"build": "tsc -b && vite build",
 		"preview": "vite preview",
 		"be:dev": "tsx watch backend/src/index.ts",
@@ -17,6 +17,7 @@
 		"@dnd-kit/core": "^6.3.1",
 		"@dnd-kit/sortable": "^10.0.0",
 		"@dnd-kit/utilities": "^3.2.2",
+		"@gatewai/api-client": "workspace:*",
 		"@gatewai/db": "workspace:*",
 		"@gatewai/pixi-processor": "workspace:*",
 		"@gatewai/tsconfig": "workspace:*",
@@ -116,7 +117,6 @@
 		"zod": "3.25.67"
 	},
 	"devDependencies": {
-		"@gatewai/api-client": "workspace:*",
 		"@gatewai/types": "workspace:*",
 		"@tailwindcss/typography": "^0.5.19",
 		"@types/color": "^4.2.0",
@@ -129,6 +129,7 @@
 		"@types/wav": "^1.0.4",
 		"@types/webfontloader": "^1.6.38",
 		"@vitejs/plugin-react-swc": "^4.0.0",
+		"concurrently": "^9.2.1",
 		"globals": "^16.3.0",
 		"pino-pretty": "^13.1.3",
 		"tsx": "^4.20.3",
