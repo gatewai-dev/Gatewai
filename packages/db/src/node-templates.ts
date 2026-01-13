@@ -542,7 +542,7 @@ export async function SEED_createNodeTemplates(prisma: PrismaClient) {
 			tokenPrice: 0.0,
 			variableInputs: false,
 			variableOutputs: false,
-			showInQuickAccess: true,
+			showInQuickAccess: false,
 			isTerminalNode: true,
 			isTransient: false,
 			templateHandles: {
@@ -579,7 +579,7 @@ export async function SEED_createNodeTemplates(prisma: PrismaClient) {
 			variableOutputs: false,
 			isTerminalNode: true,
 			isTransient: false,
-			showInQuickAccess: true,
+			showInQuickAccess: false,
 			templateHandles: {
 				create: [
 					{
