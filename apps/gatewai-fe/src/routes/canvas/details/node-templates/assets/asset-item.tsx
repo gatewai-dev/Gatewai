@@ -1,7 +1,7 @@
 import type { FileResult } from "@gatewai/types";
 import { useReactFlow } from "@xyflow/react";
 import { motion } from "framer-motion";
-import { FileImage, GripVertical } from "lucide-react";
+import { FileImage, GripVertical, Music } from "lucide-react";
 import { memo, useEffect, useRef, useState } from "react";
 import { createPortal } from "react-dom";
 import { cn } from "@/lib/utils";
@@ -19,6 +19,7 @@ const DragOverlay = ({
 	position: { x: number; y: number };
 }) => {
 	const thumbnail = GetAssetThumbnailEndpoint(asset);
+	const isAudio = asset.mimeType?.startsWith("audio/");
 
 	return createPortal(
 		<div
@@ -39,15 +40,20 @@ const DragOverlay = ({
 			>
 				{/* Thumbnail Preview */}
 				<div className="h-12 w-12 shrink-0 overflow-hidden rounded-lg bg-muted border border-border/50">
-					{thumbnail ? (
+					{isAudio ? (
+						<div className="flex h-full w-full items-center justify-center bg-primary/5">
+							<Music className="h-4 w-4 text-primary/70" />
+						</div>
+					) : thumbnail ? (
 						<img
 							src={thumbnail}
 							alt={asset.name}
 							className="h-full w-full object-cover"
+							loading="lazy"
 						/>
 					) : (
 						<div className="flex h-full w-full items-center justify-center">
-							<FileImage className="h-5 w-5 text-muted-foreground" />
+							<FileImage className="h-4 w-4 text-muted-foreground/60" />
 						</div>
 					)}
 				</div>
@@ -78,6 +84,7 @@ export const AssetItem = memo(({ asset }: AssetItemProps) => {
 	const [cursorPos, setCursorPos] = useState({ x: 0, y: 0 });
 	const itemRef = useRef<HTMLDivElement>(null);
 	const thumbnail = GetAssetThumbnailEndpoint(asset);
+	const isAudio = asset.mimeType?.startsWith("audio/");
 
 	useEffect(() => {
 		if (!isDragging) return;
@@ -154,7 +161,7 @@ export const AssetItem = memo(({ asset }: AssetItemProps) => {
 				onMouseDown={handleMouseDown}
 				className={cn(
 					"group relative flex w-full cursor-grab active:cursor-grabbing select-none items-center gap-3",
-					"rounded-lg border border-transparent p-1.5 transition-all duration-200",
+					"rounded-lg border border-transparent p-1.5 transition-all duration-100",
 					"hover:bg-muted/50 hover:border-border/40",
 					isDragging ? "opacity-30 grayscale" : "opacity-100",
 				)}
@@ -168,7 +175,11 @@ export const AssetItem = memo(({ asset }: AssetItemProps) => {
 						"transition-colors duration-300 group-hover:border-primary/20",
 					)}
 				>
-					{thumbnail ? (
+					{isAudio ? (
+						<div className="flex h-full w-full items-center justify-center bg-primary/5">
+							<Music className="h-4 w-4 text-primary/70" />
+						</div>
+					) : thumbnail ? (
 						<img
 							src={thumbnail}
 							alt={asset.name}

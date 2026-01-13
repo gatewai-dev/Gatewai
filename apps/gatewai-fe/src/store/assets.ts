@@ -11,6 +11,7 @@ import type {
 // Define a service using a base URL and expected endpoints
 export const assetsAPI = createApi({
 	reducerPath: "assetsAPI",
+	tagTypes: ["getUserAssets"],
 	baseQuery: fetchBaseQuery({
 		baseUrl: `/api/v1/assets`,
 	}),
@@ -23,6 +24,7 @@ export const assetsAPI = createApi({
 				const data = await response.json();
 				return { data };
 			},
+			providesTags: ["getUserAssets"],
 		}),
 		uploadAsset: build.mutation<UserAssetsUploadRPC, File>({
 			queryFn: async (file) => {
@@ -33,6 +35,7 @@ export const assetsAPI = createApi({
 				const data = await response.json();
 				return { data };
 			},
+			invalidatesTags: ["getUserAssets"],
 		}),
 		uploadFileNodeAsset: build.mutation<
 			UploadFileNodeAssetRPC,
@@ -44,6 +47,7 @@ export const assetsAPI = createApi({
 				const data = await response.json();
 				return { data };
 			},
+			invalidatesTags: ["getUserAssets"],
 		}),
 	}),
 });

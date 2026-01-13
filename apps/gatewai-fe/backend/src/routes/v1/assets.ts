@@ -27,7 +27,7 @@ const uploadSchema = z.object({
 });
 
 const querySchema = z.object({
-	pageSize: z.coerce.number().int().positive().max(100).default(10),
+	pageSize: z.coerce.number().int().positive().max(1000).default(1000),
 	pageIndex: z.coerce.number().int().nonnegative().default(0),
 	q: z.string().default(""),
 });

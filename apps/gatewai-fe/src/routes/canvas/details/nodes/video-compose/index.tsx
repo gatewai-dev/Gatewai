@@ -27,10 +27,9 @@ const VideoCompositorNodeComponent = memo(
 	(props: NodeProps<VideoCompositorNode>) => {
 		const node = useAppSelector(makeSelectNodeById(props.id));
 		const [isDownloading, setIsDownloading] = useState(false);
-		const { result, inputs } = useNodeResult(props.id);
+		const { inputs } = useNodeResult(props.id);
 		const nav = useNavigate();
 		const downloadFileData = useDownloadFileData();
-		console.log({ w: props.id });
 		const previewState = useMemo(() => {
 			const config =
 				(node?.config as unknown as VideoCompositorNodeConfig) ?? {};
@@ -172,10 +171,6 @@ const VideoCompositorNodeComponent = memo(
 		}, [previewState]);
 
 		const onClickDownload = async () => {
-			if (!result) {
-				toast.error("No result available to download");
-				return;
-			}
 			setIsDownloading(true);
 			try {
 				const config = node.config as unknown as VideoCompositorNodeConfig;
@@ -253,17 +248,17 @@ const VideoCompositorNodeComponent = memo(
 								<Button
 									onClick={onClickDownload}
 									variant="ghost"
-									disabled={isDownloading || !result}
+									disabled={isDownloading}
 									size="sm"
 								>
 									{isDownloading ? (
 										<>
-											<Loader2 className="size-3 mr-2 animate-spin" />
+											<Loader2 className="size-3 mr-1 animate-spin" />
 											Rendering...
 										</>
 									) : (
 										<>
-											<Download className="size-3 mr-2" />
+											<Download className="size-3 mr-1" />
 											Download
 										</>
 									)}
@@ -272,7 +267,7 @@ const VideoCompositorNodeComponent = memo(
 									onClick={() => nav(`video-editor/${node.id}`)}
 									size="sm"
 								>
-									<VideoIcon className="size-4 mr-2" /> Edit
+									<VideoIcon className="size-4 mr-1" /> Edit
 								</Button>
 							</div>
 						)}

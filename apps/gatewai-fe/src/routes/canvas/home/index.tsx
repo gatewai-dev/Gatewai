@@ -139,14 +139,16 @@ function CanvasHome() {
 													<Clock className="h-3 w-3" />
 													<span>
 														Edited{" "}
-														{formatDistanceToNow(new Date(canvas.updatedAt))}
+														{formatDistanceToNow(new Date(canvas.updatedAt))}{" "}
+														ago
 													</span>
 												</div>
 												<div className="flex items-center gap-1.5">
 													<Calendar className="h-3 w-3" />
 													<span>
 														Created{" "}
-														{formatDistanceToNow(new Date(canvas.createdAt))}
+														{formatDistanceToNow(new Date(canvas.createdAt))}{" "}
+														ago
 													</span>
 												</div>
 											</div>
