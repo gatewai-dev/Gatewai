@@ -11,7 +11,7 @@ export const DATA_TYPE_EXTENSIONS: Record<DataType, string> = {
 };
 
 // MIME type mapping
-const MIME_TYPES: Record<string, string> = {
+export const MIME_TYPES: Record<string, string> = {
 	png: "image/png",
 	jpg: "image/jpeg",
 	jpeg: "image/jpeg",
@@ -29,7 +29,7 @@ const MIME_TYPES: Record<string, string> = {
 	txt: "text/plain",
 };
 
-const BASE_URL = import.meta.env.VITE_BASE_URL;
+export const BASE_URL = import.meta.env.VITE_BASE_URL;
 
 /**
  * Appends a file extension hint to the URL.

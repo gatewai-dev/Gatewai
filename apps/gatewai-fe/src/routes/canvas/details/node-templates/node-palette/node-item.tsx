@@ -8,16 +8,11 @@ import { useCanvasCtx } from "@/routes/canvas/details/ctx/canvas-ctx";
 import type { NodeTemplateListItemRPC } from "@/rpc/types";
 import { NODE_ICON_MAP } from "./icon-map";
 
-// --- Types & Interfaces ---
-
 interface NodeItemProps {
 	template: NodeTemplateListItemRPC;
 	id_suffix?: string;
 }
 
-// --- Drag Overlay Portal ---
-// This component renders the "floating" node attached to the mouse cursor
-// directly into the document body to escape any sidebar overflow clipping.
 const DragOverlay = ({
 	template,
 	position,
@@ -31,7 +26,7 @@ const DragOverlay = ({
 
 	return createPortal(
 		<div
-			className="fixed z-[9999] pointer-events-none"
+			className="fixed z-9999 pointer-events-none"
 			style={{
 				left: position.x,
 				top: position.y,
@@ -72,7 +67,6 @@ export const NodeItem = memo(({ template, id_suffix }: NodeItemProps) => {
 
 	const itemRef = useRef<HTMLDivElement>(null);
 
-	// --- Icon Resolution ---
 	const { mainIcon: MainIcon, optionalIcons = [] } = NODE_ICON_MAP[
 		template.type
 	] ?? {
@@ -80,7 +74,6 @@ export const NodeItem = memo(({ template, id_suffix }: NodeItemProps) => {
 		optionalIcons: [],
 	};
 
-	// --- Drag Logic ---
 	useEffect(() => {
 		if (!isDragging) return;
 

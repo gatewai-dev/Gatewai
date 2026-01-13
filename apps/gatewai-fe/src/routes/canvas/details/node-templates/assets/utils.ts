@@ -1,0 +1,17 @@
+import { BASE_URL, MIME_TYPES } from "@/utils/file";
+import type { FileAssetEntity } from "./types";
+
+export function GetAssetThumbnailEndpoint(fileAsset: FileAssetEntity) {
+	// Ensure the ID itself doesn't already have an extension
+	const cleanId = fileAsset.id.split(".")[0];
+	const baseUrl = `${BASE_URL}/api/v1/assets/thumbnail/${cleanId}`;
+
+	if (!fileAsset.mimeType) return baseUrl;
+
+	const extension = Object.entries(MIME_TYPES).find(
+		([_, mime]) => mime === fileAsset.mimeType,
+	)?.[0];
+
+	// Remotion needs this extension to trigger the correct 'bunny'
+	return extension ? `${baseUrl}.${extension}` : baseUrl;
+}

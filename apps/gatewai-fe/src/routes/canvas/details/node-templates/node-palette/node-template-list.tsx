@@ -140,7 +140,7 @@ const NodeTemplateList = memo(({ templates }: NodeListProps) => {
 	}
 
 	return (
-		<ScrollArea viewPortCn="h-[calc(100%-4rem)]" className="h-full!">
+		<ScrollArea viewPortCn="h-[calc(100%-1rem)]" className="h-full!">
 			{catKeys.map((cat) => (
 				<div key={cat} className="flex flex-col gap-2">
 					{/* Category Header */}

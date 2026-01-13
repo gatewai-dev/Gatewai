@@ -17,7 +17,6 @@ import {
 	PiNote,
 	PiPaintBrushFill,
 	PiResize,
-	PiRobotLight,
 	PiSpeakerHifi,
 	PiStack,
 	PiTextT,

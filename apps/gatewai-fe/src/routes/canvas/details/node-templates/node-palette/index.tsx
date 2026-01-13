@@ -8,6 +8,7 @@ import {
 } from "@/components/ui/tooltip";
 import { cn } from "@/lib/utils";
 import type { NodeTemplateListRPC } from "@/rpc/types";
+import { AssetsSection } from "../assets/assets-section";
 import { useNodeTemplates } from "../node-templates.ctx";
 import { NodePaletteProvider, useNodePalette } from "./node-palette.ctx";
 import { NodeTemplateList } from "./node-template-list";
@@ -38,8 +39,10 @@ function NodePaletteContent({ templates }: { templates: NodeTemplateListRPC }) {
 				isCollapsed ? "w-[60px] hover:bg-background cursor-pointer" : "w-72",
 			)}
 			tabIndex={isCollapsed ? 0 : undefined}
-			onClick={() => {
-				if (isCollapsed) setIsCollapsed(false);
+			onClick={(e) => {
+				// Prevent expanding if clicking inside the popover trigger area (managed internally)
+				// But allow expanding if clicking general whitespace
+				if (isCollapsed && e.target === e.currentTarget) setIsCollapsed(false);
 			}}
 			onKeyDown={(e) => {
 				if (isCollapsed && (e.key === "Enter" || e.key === " ")) {
@@ -69,7 +72,10 @@ function NodePaletteContent({ templates }: { templates: NodeTemplateListRPC }) {
 						<Button
 							variant="ghost"
 							size="icon"
-							onClick={() => setIsCollapsed(!isCollapsed)}
+							onClick={(e) => {
+								e.stopPropagation();
+								setIsCollapsed(!isCollapsed);
+							}}
 							className="h-8 w-8 shrink-0 rounded-full text-muted-foreground hover:bg-muted hover:text-foreground"
 						>
 							{isCollapsed ? (
@@ -86,7 +92,7 @@ function NodePaletteContent({ templates }: { templates: NodeTemplateListRPC }) {
 			</div>
 
 			{/* --- Content Section --- */}
-			<div className="flex flex-1 flex-col grow h-full">
+			<div className="flex flex-1 flex-col grow h-full overflow-hidden">
 				{/* Search Bar Container */}
 				<div
 					className={cn(
@@ -109,17 +115,22 @@ function NodePaletteContent({ templates }: { templates: NodeTemplateListRPC }) {
 
 				{/* Scrollable List */}
 				{!isCollapsed && (
-					<div className="pb-4 pt-3 h-[calc(100%-12rem)] grow">
+					<div className="pb-4 pt-3 flex-1 overflow-y-auto min-h-0">
 						<NodeTemplateList templates={templates} />
 					</div>
 				)}
 
 				{/* Collapsed State Icons (Vertical) */}
 				{isCollapsed && (
-					<div className="flex flex-col items-center gap-4 py-4 opacity-50">
+					<div className="flex flex-1 flex-col items-center gap-4 py-4 opacity-50">
 						<div className="h-px w-8 bg-border" />
 					</div>
 				)}
+			</div>
+
+			{/* --- Assets Section (Bottom) --- */}
+			<div className="mt-auto shrink-0 z-50">
+				<AssetsSection isCollapsed={isCollapsed} />
 			</div>
 		</aside>
 	);
