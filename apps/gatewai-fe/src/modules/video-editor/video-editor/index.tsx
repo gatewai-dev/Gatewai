@@ -22,7 +22,6 @@ import type {
 } from "@gatewai/types";
 import { Player, type PlayerRef } from "@remotion/player";
 import {
-	AlignHorizontalJustifyStart,
 	ChevronDown,
 	Film,
 	GripVertical,
@@ -209,7 +208,7 @@ const UnifiedClip: React.FC<{
 	return (
 		<div
 			className={`h-full w-full relative overflow-hidden rounded-md transition-all duration-75 
-      bg-gradient-to-r ${styleConfig.gradient} 
+      bg-linear-to-r ${styleConfig.gradient} 
       ${isSelected ? "brightness-110 ring-2 ring-white/70 shadow-lg" : "opacity-90 hover:opacity-100 hover:brightness-105"}
     `}
 		>
@@ -523,7 +522,7 @@ const InteractionOverlay: React.FC = () => {
 						<div
 							className={`absolute inset-0 pointer-events-none transition-all duration-150 ${
 								selectedId === layer.id
-									? "border-[2px] border-blue-500 shadow-[0_0_0_1px_rgba(59,130,246,0.2)]"
+									? "border-2 border-blue-500 shadow-[0_0_0_1px_rgba(59,130,246,0.2)]"
 									: "border border-transparent group-hover:border-blue-400/50"
 							}`}
 						/>
@@ -1095,7 +1094,7 @@ const TimelinePanel: React.FC = () => {
 							{/* Playhead */}
 							<div
 								ref={playheadRef}
-								className="absolute top-0 bottom-0 z-[60] pointer-events-none h-[100vh] will-change-transform"
+								className="absolute top-0 bottom-0 z-60 pointer-events-none h-screen will-change-transform"
 							>
 								<div className="absolute -translate-x-1/2 -top-0 w-3 h-3 text-blue-500 fill-current filter drop-shadow-md">
 									<svg viewBox="0 0 12 12" className="w-full h-full">
@@ -1158,7 +1157,7 @@ const TimelinePanel: React.FC = () => {
 										key={layer.id}
 										style={{ height: TRACK_HEIGHT }}
 										className={`border-b border-white/5 relative group/track ${
-											isSelected ? "bg-white/[0.02]" : ""
+											isSelected ? "bg-white/2" : ""
 										}`}
 									>
 										<div
@@ -1168,7 +1167,7 @@ const TimelinePanel: React.FC = () => {
 												if (e.key === "Enter") setSelectedId(layer.id);
 											}}
 											className={`
-                          absolute top-[4px] bottom-[4px] rounded-md
+                          absolute top-1 bottom-1 rounded-md
                           flex items-center overflow-hidden cursor-move outline-none
                           ${isSelected ? "z-20" : "z-10"}
                       `}
@@ -2151,7 +2150,7 @@ export const VideoDesignerEditor: React.FC<VideoDesignerEditorProps> = ({
 							>
 								{/* Safety Guides (Action Safe) */}
 								{selectedId && (
-									<div className="absolute inset-0 pointer-events-none opacity-20 border-[40px] border-transparent">
+									<div className="absolute inset-0 pointer-events-none opacity-20 border-40 border-transparent">
 										<div className="w-full h-full border border-white/50 border-dashed" />
 									</div>
 								)}

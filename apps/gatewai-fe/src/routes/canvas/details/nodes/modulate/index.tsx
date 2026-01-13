@@ -13,7 +13,7 @@ const ModulateNodeComponent = memo(
 		const node = useAppSelector(makeSelectNodeById(props.id));
 
 		const { result } = useNodeResult(props.id);
-		const outputItem = result?.outputs[result.selectedOutputIndex].items[0];
+		const outputItem = result?.outputs[result.selectedOutputIndex]?.items[0];
 		const inputFileData = outputItem?.data as FileData;
 
 		const imageUrl = ResolveFileDataUrl(inputFileData);

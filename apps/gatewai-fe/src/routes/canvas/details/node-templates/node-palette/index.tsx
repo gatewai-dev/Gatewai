@@ -1,8 +1,8 @@
+import { PanelLeftClose, PanelLeftOpen } from "lucide-react";
 import { useRef } from "react";
 import { Button } from "@/components/ui/button";
 import { YodesLogo } from "@/components/ui/logo";
 import { ScrollArea } from "@/components/ui/scroll-area";
-import { Separator } from "@/components/ui/separator";
 import {
 	Tooltip,
 	TooltipContent,
@@ -10,7 +10,6 @@ import {
 } from "@/components/ui/tooltip";
 import { cn } from "@/lib/utils";
 import type { NodeTemplateListRPC } from "@/rpc/types";
-import { CanvasName } from "../../reactflow-container/left-panel/canvas-name";
 import { useNodeTemplates } from "../node-templates.ctx";
 import { NodePaletteProvider, useNodePalette } from "./node-palette.ctx";
 import { NodeTemplateList } from "./node-template-list";
@@ -32,71 +31,99 @@ export function NodePalette() {
 
 function NodePaletteContent({ templates }: { templates: NodeTemplateListRPC }) {
 	const { isCollapsed, setIsCollapsed } = useNodePalette();
-	const scrollRef = useRef<HTMLDivElement>(null);
 
 	return (
-		<div
+		<aside
 			className={cn(
-				"relative bg-transparent flex flex-col transition-all duration-500 ease-[cubic-bezier(0.16,1,0.3,1)]",
-				"bg-background/90 backdrop-blur-xl border-r border-border/40 shadow-sm h-screen",
-				isCollapsed ? "w-[52px]" : "w-60",
+				"relative z-40 flex h-[calc(100vh-1rem)] my-2 ml-2 flex-col overflow-hidden transition-all duration-500 ease-[cubic-bezier(0.32,0.72,0,1)]",
+				"rounded-3xl border border-white/10 bg-background/60 shadow-2xl backdrop-blur-xl", // Glass effect
+				isCollapsed ? "w-[60px] hover:bg-background cursor-pointer" : "w-72",
 			)}
+			tabIndex={isCollapsed ? 0 : undefined}
+			onClick={() => {
+				if (isCollapsed) setIsCollapsed(false);
+			}}
+			onKeyDown={(e) => {
+				if (isCollapsed && (e.key === "Enter" || e.key === " ")) {
+					setIsCollapsed(false);
+					if (e.key === " ") {
+						e.preventDefault();
+					}
+				}
+			}}
 		>
-			<div className="flex flex-col h-full overflow-hidden">
+			{/* --- Header Section --- */}
+			<div className="flex shrink-0 items-center justify-between px-3 py-4">
 				<div
 					className={cn(
-						"flex flex-row items-center border-r my-4 border-border/10 gap-4",
-						{
-							"mx-3": !isCollapsed,
-							"ml-1": isCollapsed,
-						},
+						"flex items-center gap-2 overflow-hidden transition-all duration-300",
+						isCollapsed ? "w-0 opacity-0" : "w-auto opacity-100",
 					)}
 				>
-					{!isCollapsed && <CanvasName />}
-					<Tooltip>
-						<TooltipTrigger asChild>
-							<Button
-								variant={isCollapsed ? "ghost" : "default"}
-								size="icon"
-								onClick={() => setIsCollapsed(!isCollapsed)}
-								className={cn(
-									"h-10 w-10 rounded-xl transition-all duration-200",
-									isCollapsed ? "rotate-0 hover:rotate-270" : "rotate-90",
-								)}
-							>
-								<YodesLogo className="size-8" />
-							</Button>
-						</TooltipTrigger>
-						<TooltipContent side="right">
-							{isCollapsed ? "Expand Node Menu" : "Collapse"}
-						</TooltipContent>
-					</Tooltip>
+					<div className="flex h-8 w-8 shrink-0 items-center justify-center rounded-lg bg-primary text-primary-foreground shadow-md">
+						<YodesLogo className="h-5 w-5" />
+					</div>
+					<span className="font-semibold tracking-tight text-sm">Library</span>
 				</div>
-				<Separator className="my-2 opacity-50" />
 
-				{/* Search and List Content */}
+				<Tooltip>
+					<TooltipTrigger asChild>
+						<Button
+							variant="ghost"
+							size="icon"
+							onClick={() => setIsCollapsed(!isCollapsed)}
+							className="h-8 w-8 shrink-0 rounded-full text-muted-foreground hover:bg-muted hover:text-foreground"
+						>
+							{isCollapsed ? (
+								<PanelLeftOpen className="h-4 w-4" />
+							) : (
+								<PanelLeftClose className="h-4 w-4" />
+							)}
+						</Button>
+					</TooltipTrigger>
+					<TooltipContent side="right" className="text-xs">
+						{isCollapsed ? "Expand Library" : "Collapse Library"}
+					</TooltipContent>
+				</Tooltip>
+			</div>
+
+			{/* --- Content Section --- */}
+			<div className="flex flex-1 flex-col grow h-full">
+				{/* Search Bar Container */}
 				<div
 					className={cn(
-						"flex flex-col flex-1 mx-3 h-[calc(100%-16rem)] transition-all duration-300",
+						"shrink-0 px-3 pb-3 transition-all duration-300",
 						isCollapsed
-							? "opacity-0 invisible w-0"
-							: "opacity-100 visible w-auto",
+							? "-translate-x-full opacity-0"
+							: "translate-x-0 opacity-100",
 					)}
 				>
-					{!isCollapsed && (
-						<div className="mr-0.5">
-							<SearchInput />
-						</div>
-					)}
-					<Separator className="opacity-50" />
-					<ScrollArea
-						ref={scrollRef}
-						className="flex-1 overflow-auto grow pt-4"
-					>
-						<NodeTemplateList templates={templates} />
-					</ScrollArea>
+					<SearchInput />
 				</div>
+
+				{/* Divider with Gradient */}
+				<div
+					className={cn(
+						"h-px w-full bg-linear-to-r from-transparent via-border to-transparent",
+						isCollapsed && "hidden",
+					)}
+				/>
+
+				{/* Scrollable List */}
+				{!isCollapsed && (
+					<div className="pb-4 pt-3 h-[calc(100%-12rem)] grow">
+						<NodeTemplateList templates={templates} />
+					</div>
+				)}
+
+				{/* Collapsed State Icons (Vertical) */}
+				{isCollapsed && (
+					<div className="flex flex-col items-center gap-4 py-4 opacity-50">
+						<div className="h-px w-8 bg-border" />
+						{/* You could map a few quick access icons here if desired */}
+					</div>
+				)}
 			</div>
-		</div>
+		</aside>
 	);
 }

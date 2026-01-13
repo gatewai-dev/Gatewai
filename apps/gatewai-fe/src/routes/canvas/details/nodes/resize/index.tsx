@@ -16,7 +16,7 @@ const ResizeNodeComponent = memo((props: NodeProps<ResizeNode>) => {
 	const dispatch = useAppDispatch();
 
 	const { result } = useNodeResult(props.id);
-	const outputItem = result?.outputs[result.selectedOutputIndex].items[0];
+	const outputItem = result?.outputs[result.selectedOutputIndex]?.items[0];
 	const inputFileData = outputItem?.data as FileData;
 
 	const imageUrl = ResolveFileDataUrl(inputFileData);

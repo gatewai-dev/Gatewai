@@ -41,6 +41,7 @@ export function NodePaletteProvider({ children }: { children: ReactNode }) {
 
 export const useNodePalette = () => {
 	const context = useContext(NodePaletteContext);
-	if (!context) throw new Error("useNodePalette must be inside provider");
+	if (!context)
+		throw new Error("useNodePalette must be used within a NodePaletteProvider");
 	return context;
 };
