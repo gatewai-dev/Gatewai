@@ -19,6 +19,7 @@ import type {
 	CompositorNodeConfig,
 	FileData,
 	OutputItem,
+	VideoCompositorNodeConfig,
 } from "@gatewai/types";
 import { Player, type PlayerRef } from "@remotion/player";
 import {
@@ -87,6 +88,7 @@ import {
 } from "@/components/ui/tooltip";
 import { ColorInput } from "@/components/util/color-input";
 import { useGetFontListQuery } from "@/store/fonts";
+import type { NodeEntityType } from "@/store/nodes";
 import { GetAssetEndpoint } from "@/utils/file";
 import {
 	type AnimationType,
@@ -122,7 +124,9 @@ interface EditorContextType {
 	setSelectedId: (id: string | null) => void;
 	getTextData: (id: string) => string;
 	getAssetUrl: (id: string) => string | undefined;
-	getMediaDuration: (id: string) => number | undefined;
+	getMediaDuration: (
+		id: string | undefined | null,
+	) => number | null | undefined;
 	viewportWidth: number;
 	viewportHeight: number;
 	updateViewportWidth: (w: number) => void;
@@ -133,7 +137,7 @@ interface EditorContextType {
 	setCurrentFrame: (frame: number) => void;
 	isPlaying: boolean;
 	setIsPlaying: (playing: boolean) => void;
-	playerRef: React.RefObject<PlayerRef>;
+	playerRef: React.RefObject<PlayerRef | null>;
 	zoom: number;
 	setZoom: Dispatch<SetStateAction<number>>;
 	pan: { x: number; y: number };
@@ -1100,7 +1104,7 @@ const TimelinePanel: React.FC = () => {
 								ref={playheadRef}
 								className="absolute top-0 bottom-0 z-60 pointer-events-none h-screen will-change-transform"
 							>
-								<div className="absolute -translate-x-1/2 -top-0 w-3 h-3 text-blue-500 fill-current filter drop-shadow-md">
+								<div className="absolute -translate-x-1/2 top-0 w-3 h-3 text-blue-500 fill-current filter drop-shadow-md">
 									<svg viewBox="0 0 12 12" className="w-full h-full">
 										<title>Playhead</title>
 										<path d="M0,0 L12,0 L12,8 L6,12 L0,8 Z" />
@@ -1641,7 +1645,7 @@ const InspectorPanel: React.FC = () => {
 
 interface VideoDesignerEditorProps {
 	initialLayers: Map<string, OutputItem<"Text" | "Image" | "Video" | "Audio">>;
-	node: { config: CompositorNodeConfig };
+	node: NodeEntityType;
 	onClose: () => void;
 	onSave: (config: CompositorNodeConfig) => void;
 }
@@ -1652,7 +1656,7 @@ export const VideoDesignerEditor: React.FC<VideoDesignerEditorProps> = ({
 	onClose,
 	onSave,
 }) => {
-	const nodeConfig = node.config || {};
+	const nodeConfig = node.config as unknown as VideoCompositorNodeConfig;
 
 	// --- State ---
 	const [layers, setLayers] = useState<ExtendedLayer[]>([]);
@@ -1662,7 +1666,7 @@ export const VideoDesignerEditor: React.FC<VideoDesignerEditorProps> = ({
 	// Canvas State
 	const roundToEven = (num?: number) => Math.round((num ?? 0) / 2) * 2;
 	const [viewportWidth, setViewportWidth] = useState(
-		roundToEven(nodeConfig.width) || 1280,
+		roundToEven(nodeConfig.width ?? 1280),
 	);
 	const [viewportHeight, setViewportHeight] = useState(
 		roundToEven(nodeConfig.height) || 720,
@@ -1674,7 +1678,6 @@ export const VideoDesignerEditor: React.FC<VideoDesignerEditorProps> = ({
 	// Player State
 	const [currentFrame, setCurrentFrame] = useState(0);
 	const [isPlaying, setIsPlayingState] = useState(false);
-	const [isBuffering, setIsBuffering] = useState(false);
 	const playerRef = useRef<PlayerRef>(null);
 
 	// Refs
@@ -1721,7 +1724,8 @@ export const VideoDesignerEditor: React.FC<VideoDesignerEditorProps> = ({
 	);
 
 	const getMediaDuration = useCallback(
-		(id: string) => {
+		(id: string | undefined | null) => {
+			if (!id) return undefined;
 			const item = initialLayers.get(id);
 			if (!item) return undefined;
 			const processData = item.data as FileData;
@@ -1782,7 +1786,9 @@ export const VideoDesignerEditor: React.FC<VideoDesignerEditorProps> = ({
 		initialLayers.forEach((item, id) => {
 			const saved = layerUpdates[id] as ExtendedLayer | undefined;
 			const durationMs =
-				item.data.entity?.duration ?? item.data.processData?.duration ?? 0;
+				typeof item.data !== "string"
+					? (item.data.entity?.duration ?? item.data.processData?.duration ?? 0)
+					: 0;
 			const calculatedDurationFrames =
 				(item.type === "Video" || item.type === "Audio") && durationMs > 0
 					? Math.ceil((durationMs / 1000) * FPS)
@@ -1818,9 +1824,10 @@ export const VideoDesignerEditor: React.FC<VideoDesignerEditorProps> = ({
 					fill: saved?.fill ?? "#ffffff",
 					width: saved?.width,
 					height: saved?.height,
+					lockAspect: true,
 				});
 			} else if (item.type === "Image" || item.type === "Video") {
-				const pData = item.data?.processData;
+				const pData = (item.data as FileData)?.processData;
 				loaded.push({
 					...base,
 					type: item.type as "Image" | "Video",
@@ -1830,6 +1837,7 @@ export const VideoDesignerEditor: React.FC<VideoDesignerEditorProps> = ({
 						item.type === "Video" && durationMs > 0
 							? calculatedDurationFrames
 							: undefined,
+					lockAspect: true,
 				});
 			} else if (item.type === "Audio") {
 				loaded.push({
@@ -1839,6 +1847,7 @@ export const VideoDesignerEditor: React.FC<VideoDesignerEditorProps> = ({
 					width: 0,
 					maxDurationInFrames:
 						durationMs > 0 ? calculatedDurationFrames : undefined,
+					lockAspect: true,
 				});
 			}
 		});
@@ -1944,6 +1953,7 @@ export const VideoDesignerEditor: React.FC<VideoDesignerEditorProps> = ({
 		setPan({ x, y });
 	}, [containerSize, viewportWidth, viewportHeight]);
 
+	// biome-ignore lint/correctness/useExhaustiveDependencies: Re-fit required when viewport dims change
 	useEffect(() => {
 		fitView();
 	}, [viewportWidth, viewportHeight, fitView]);
@@ -2173,9 +2183,6 @@ export const VideoDesignerEditor: React.FC<VideoDesignerEditorProps> = ({
 									style={{ width: "100%", height: "100%" }}
 									controls={false}
 									doubleClickToFullscreen={false}
-									onBufferStateChange={(state) =>
-										setIsBuffering(state.buffering)
-									}
 								/>
 							</div>
 						</div>
@@ -2185,7 +2192,7 @@ export const VideoDesignerEditor: React.FC<VideoDesignerEditorProps> = ({
 					<InspectorPanel />
 
 					{/* Floating Controls */}
-					<div className="absolute bottom-6 left-1/2 left-1/2 -translate-x-1/2 z-40 transition-all duration-300">
+					<div className="absolute bottom-6 left-1/2 -translate-x-1/2 z-40 transition-all duration-300">
 						<Toolbar
 							onClose={onClose}
 							onSave={() => {

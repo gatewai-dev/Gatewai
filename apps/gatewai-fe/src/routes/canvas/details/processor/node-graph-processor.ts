@@ -7,8 +7,8 @@ import {
 	type FileData,
 	type ModulateNodeConfig,
 	type NodeResult,
+	type OutputItem,
 	type PaintNodeConfig,
-	type PaintResult,
 	type ResizeNodeConfig,
 	TextMergerNodeConfigSchema,
 	TextNodeConfigSchema,
@@ -789,7 +789,7 @@ export class NodeGraphProcessor extends EventEmitter {
 				signal,
 			);
 
-			const items: PaintResult["outputs"][number]["items"] = [];
+			const items: Array<OutputItem<"Image">> = [];
 
 			if (imageUrl && imageHandle && imageWithMask) {
 				items.push({
@@ -817,7 +817,10 @@ export class NodeGraphProcessor extends EventEmitter {
 				outputHandleId: maskHandle,
 			});
 
-			return { selectedOutputIndex: 0, outputs: [{ items }] };
+			return {
+				selectedOutputIndex: 0,
+				outputs: [{ items }],
+			} as unknown as NodeResult;
 		});
 
 		this.registerProcessor("Compositor", async ({ node, inputs, signal }) => {
@@ -978,7 +981,7 @@ export class NodeGraphProcessor extends EventEmitter {
 						],
 					},
 				],
-			};
+			} as unknown as NodeResult;
 		});
 
 		this.registerProcessor("Resize", async ({ node, inputs, signal }) => {
@@ -1033,7 +1036,7 @@ export class NodeGraphProcessor extends EventEmitter {
 						],
 					},
 				],
-			};
+			} as unknown as NodeResult;
 		});
 
 		// We're passing from config since result updates should be done by processor only not input

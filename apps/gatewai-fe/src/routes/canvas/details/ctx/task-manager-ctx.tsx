@@ -13,9 +13,9 @@ import { useAppDispatch, useAppSelector } from "@/store";
 import type { NodeEntityType } from "@/store/nodes";
 import {
 	addBatchToPoll,
-	batchSelectors,
 	getBatchDetails,
 	getInitialBatches,
+	selectAllBatches,
 	selectBatchIdsToPoll,
 	selectInitialLoading,
 	selectLatestTasksFetchTime,
@@ -24,7 +24,7 @@ import {
 	setPollingInterval,
 } from "@/store/tasks";
 
-type BatchEntity = BatchDetailsRPC["batches"][number];
+type BatchEntity = BatchDetailsRPC[number];
 type BatchNodeData = BatchEntity["tasks"][number];
 interface TaskManagerContextType {
 	pollingInterval: number;
@@ -50,7 +50,7 @@ const TaskManagerProvider = ({
 	const batchIdsToPoll = useAppSelector(selectBatchIdsToPoll);
 	const nodeTaskStatus = useAppSelector(selectNodeTaskStatus);
 	const isLoading = useAppSelector(selectInitialLoading);
-	const taskBatches = useAppSelector(batchSelectors.selectAll);
+	const taskBatches = useAppSelector(selectAllBatches);
 	const latestTasksFetchTime = useAppSelector(selectLatestTasksFetchTime);
 
 	const setPollingIntervalHandler = (value: SetStateAction<number>) => {

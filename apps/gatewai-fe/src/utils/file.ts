@@ -84,7 +84,7 @@ const extractExtension = (url: string): string | null => {
  * Maps a MIME type string to a DataType value.
  * Falls back to "Text" or undefined if no match is found.
  */
-export function getDataTypeFromMime(mimeType: string): DataType | null {
+export function getDataTypeFromMime(mimeType: string) {
 	if (!mimeType) return null;
 	if (mimeType.startsWith("image/")) {
 		return "Image";
@@ -94,13 +94,6 @@ export function getDataTypeFromMime(mimeType: string): DataType | null {
 	}
 	if (mimeType.startsWith("audio/")) {
 		return "Audio";
-	}
-	if (
-		mimeType === "text/plain" ||
-		mimeType.includes("json") ||
-		mimeType.includes("pdf")
-	) {
-		return "Text";
 	}
 
 	return null;

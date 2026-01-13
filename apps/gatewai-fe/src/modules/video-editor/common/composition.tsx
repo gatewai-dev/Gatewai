@@ -79,7 +79,7 @@ export const calculateLayerTransform = (
 	const relativeFrame = frame - (layer.startFrame ?? 0);
 	let x = layer.x;
 	let y = layer.y;
-	let scale = layer.scale;
+	let scale = layer.scale ?? 1;
 	let rotation = layer.rotation;
 	let opacity = layer.opacity;
 	const volume = layer.volume ?? 1;
@@ -213,7 +213,6 @@ export const CompositionScene: React.FC<SceneProps> = ({
 					height: layer.height,
 					transform: `rotate(${animRotation}deg) scale(${animScale})`,
 					opacity: animOpacity,
-					textAlign: layer.align,
 				};
 
 				return (

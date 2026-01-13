@@ -24,7 +24,7 @@ const edgesSlice = createSlice({
 	},
 });
 
-type EdgesState = ReturnType<typeof edgesSlice.reducer>;
+export type EdgesState = ReturnType<typeof edgesSlice.reducer>;
 
 const edgeSelectors = edgeAdapter.getSelectors<RootState>(
 	(state) => state.flow.present.edges,
@@ -33,7 +33,7 @@ const edgeSelectors = edgeAdapter.getSelectors<RootState>(
 export const selectEdgesState = (state: RootState) => state.flow.present.edges;
 
 export const makeSelectEdgeById = (id: string) => {
-	return (state: { edges: EdgesState }) => edgeSelectors.selectById(state, id);
+	return (state: RootState) => edgeSelectors.selectById(state, id);
 };
 
 export const makeSelectEdgesByIds = (ids: EdgeEntityType["id"][]) =>

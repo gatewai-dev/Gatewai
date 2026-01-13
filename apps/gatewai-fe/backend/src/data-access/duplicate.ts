@@ -1,4 +1,4 @@
-import { type Canvas, type Node, prisma } from "@gatewai/db";
+import { type Canvas, prisma } from "@gatewai/db";
 import type { AllNodeConfig } from "@gatewai/types";
 
 /**
@@ -50,7 +50,8 @@ async function duplicateCanvas(
 				data: {
 					name: originalNode.name,
 					type: originalNode.type,
-					position: originalNode.position as Node["position"],
+					// biome-ignore lint/suspicious/noExplicitAny: Insignificant
+					position: originalNode.position as unknown as any,
 					width: originalNode.width,
 					height: originalNode.height,
 					draggable: originalNode.draggable,
@@ -58,7 +59,6 @@ async function duplicateCanvas(
 					deletable: originalNode.deletable,
 					config: originalNode.config as AllNodeConfig,
 					isDirty: false,
-					result: null,
 					zIndex: originalNode.zIndex,
 					canvasId: newCanvas.id,
 					templateId: originalNode.templateId,

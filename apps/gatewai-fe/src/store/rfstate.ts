@@ -14,7 +14,7 @@ import {
 } from "@xyflow/react";
 import type { RootState } from ".";
 
-interface RFState {
+export interface RFState {
 	nodes: Node[];
 	edges: Edge[];
 }

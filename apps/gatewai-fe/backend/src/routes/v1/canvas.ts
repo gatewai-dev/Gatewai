@@ -29,10 +29,8 @@ const NodeTypes = [
 	"VideoGen",
 	"VideoGenFirstLastFrame",
 	"VideoGenExtend",
-
 	"TextToSpeech",
 	"SpeechToText",
-
 	"VideoCompositor",
 ] as const;
 
@@ -102,7 +100,7 @@ const canvasRoutes = new Hono({
 	.get("/", async (c) => {
 		const canvases = await prisma.canvas.findMany({
 			where: {
-				isAPICanvas: false, // Do not show duplicate API canvases.
+				isAPICanvas: false,
 			},
 			orderBy: {
 				updatedAt: "desc",
@@ -135,9 +133,7 @@ const canvasRoutes = new Hono({
 	})
 	.get("/:id", async (c) => {
 		const id = c.req.param("id");
-
 		const response = await GetCanvasEntities(id);
-
 		return c.json(response);
 	})
 	.patch(
@@ -153,12 +149,8 @@ const canvasRoutes = new Hono({
 			const id = c.req.param("id");
 
 			const canvas = await prisma.canvas.update({
-				where: {
-					id,
-				},
-				data: {
-					name: validated.name,
-				},
+				where: { id },
+				data: { name: validated.name },
 			});
 
 			return c.json(canvas, 201);
@@ -176,162 +168,149 @@ const canvasRoutes = new Hono({
 			throw new HTTPException(404, { message: "Canvas not found" });
 		}
 
-		// Get canvas entities from DB
+		// --- 1. Fetch Existing Entities ---
 		const nodesInDB = await prisma.node.findMany({
-			where: {
-				canvasId: id,
-			},
+			where: { canvasId: id },
+			select: { id: true },
 		});
-		const nodeIdsInDB = nodesInDB.map((m) => m.id);
+		const nodeIdsInDBSet = new Set(nodesInDB.map((m) => m.id));
 
 		const edgesInDB = await prisma.edge.findMany({
 			where: {
 				OR: [
-					{
-						targetNode: {
-							id: {
-								in: nodeIdsInDB,
-							},
-						},
-					},
-					{
-						sourceNode: {
-							id: {
-								in: nodeIdsInDB,
-							},
-						},
-					},
+					{ targetNode: { canvasId: id } },
+					{ sourceNode: { canvasId: id } },
 				],
 			},
+			select: { id: true },
 		});
-		const edgeIdsInDB = edgesInDB.map((m) => m.id);
+		const edgeIdsInDBSet = new Set(edgesInDB.map((m) => m.id));
 
 		const handlesInDB = await prisma.handle.findMany({
 			where: {
-				nodeId: {
-					in: nodeIdsInDB,
-				},
+				node: { canvasId: id },
 			},
+			select: { id: true },
 		});
-		const handleIdsInDB = handlesInDB.map((m) => m.id);
+		const handleIdsInDBSet = new Set(handlesInDB.map((m) => m.id));
 
-		// Prepare payload data
+		// --- 2. Prepare Payload Data ---
 		const nodesInPayload = validated.nodes ?? [];
 		const edgesInPayload = validated.edges ?? [];
 		const handlesInPayload = validated.handles ?? [];
 
-		const nodeIdsInPayload = nodesInPayload
-			.map((m) => m.id)
-			.filter((id): id is string => !!id);
-
-		const edgeIdsInPayload = edgesInPayload
-			.map((m) => m.id)
-			.filter((id): id is string => !!id);
-
-		const handleIdsInPayload = handlesInPayload
-			.map((m) => m.id)
-			.filter((id): id is string => !!id);
-
-		// Deletions
-		const removedNodeIds = nodeIdsInDB.filter(
-			(id) => !nodeIdsInPayload.includes(id),
+		const nodeIdsInPayloadSet = new Set(
+			nodesInPayload.map((m) => m.id).filter((id): id is string => !!id),
 		);
-		const removedEdgeIds = edgeIdsInDB.filter(
-			(id) => !edgeIdsInPayload.includes(id),
+		const edgeIdsInPayloadSet = new Set(
+			edgesInPayload.map((m) => m.id).filter((id): id is string => !!id),
 		);
-		const removedHandleIds = handleIdsInDB.filter(
-			(id) => !handleIdsInPayload.includes(id),
+		const handleIdsInPayloadSet = new Set(
+			handlesInPayload.map((m) => m.id).filter((id): id is string => !!id),
 		);
 
-		const deleteEdgesTx = prisma.edge.deleteMany({
-			where: {
-				id: {
-					in: removedEdgeIds,
-				},
-			},
-		});
+		// --- 3. Determine Deletions ---
+		const removedNodeIds = Array.from(nodeIdsInDBSet).filter(
+			(id) => !nodeIdsInPayloadSet.has(id),
+		);
+		const removedEdgeIds = Array.from(edgeIdsInDBSet).filter(
+			(id) => !edgeIdsInPayloadSet.has(id),
+		);
+		const removedHandleIds = Array.from(handleIdsInDBSet).filter(
+			(id) => !handleIdsInPayloadSet.has(id),
+		);
 
-		const deleteHandlesTx = prisma.handle.deleteMany({
-			where: {
-				id: {
-					in: removedHandleIds,
-				},
-			},
-		});
+		// --- 4. Begin Transaction Construction ---
+		// Explicitly type the transaction array to allow mixed return types (BatchPayload vs Node/Edge objects)
+		const txs = [];
 
-		const deleteNodesTx = prisma.node.deleteMany({
-			where: {
-				id: {
-					in: removedNodeIds,
-				},
-			},
-		});
-
-		const txs = [deleteEdgesTx, deleteHandlesTx, deleteNodesTx];
-
-		// Canvas name update if provided
-		if (validated.name) {
-			const updateCanvasTx = prisma.canvas.update({
-				where: { id },
-				data: { name: validated.name },
-			});
-			txs.push(updateCanvasTx);
+		// Delete Edges first to avoid FK constraints
+		if (removedEdgeIds.length > 0) {
+			txs.push(
+				prisma.edge.deleteMany({
+					where: { id: { in: removedEdgeIds } },
+				}),
+			);
 		}
 
-		// Node creations and updates
+		if (removedHandleIds.length > 0) {
+			txs.push(
+				prisma.handle.deleteMany({
+					where: { id: { in: removedHandleIds } },
+				}),
+			);
+		}
+
+		if (removedNodeIds.length > 0) {
+			txs.push(
+				prisma.node.deleteMany({
+					where: { id: { in: removedNodeIds } },
+				}),
+			);
+		}
+
+		// Canvas name update
+		if (validated.name) {
+			txs.push(
+				prisma.canvas.update({
+					where: { id },
+					data: { name: validated.name },
+				}),
+			);
+		}
+
+		// --- 5. Node Operations ---
 		const createdNodes = nodesInPayload.filter(
 			(n): n is typeof n & { id: string } =>
-				!!n.id && !nodeIdsInDB.includes(n.id),
+				!!n.id && !nodeIdsInDBSet.has(n.id),
 		);
 		const updatedNodes = nodesInPayload.filter(
-			(n): n is typeof n & { id: string } =>
-				!!n.id && nodeIdsInDB.includes(n.id),
+			(n): n is typeof n & { id: string } => !!n.id && nodeIdsInDBSet.has(n.id),
 		);
 
-		const createNodesTx = prisma.node.createMany({
-			data: createdNodes.map((newNode) => ({
-				id: newNode.id,
-				result: newNode.result,
-				config: newNode.config,
-				name: newNode.name,
-				width: newNode.width,
-				height: newNode.height,
-				type: newNode.type,
-				templateId: newNode.templateId,
-				position: newNode.position,
-				canvasId: id,
-			})),
-		});
-		txs.push(createNodesTx);
+		if (createdNodes.length > 0) {
+			txs.push(
+				prisma.node.createMany({
+					data: createdNodes.map((newNode) => ({
+						id: newNode.id,
+						result: newNode.result,
+						config: newNode.config,
+						name: newNode.name,
+						width: newNode.width,
+						height: newNode.height,
+						type: newNode.type,
+						templateId: newNode.templateId,
+						position: newNode.position,
+						canvasId: id,
+					})),
+				}),
+			);
+		}
 
+		// Fetch templates for validation
 		const updatedNodeTemplateIds = updatedNodes
 			.map((m) => m.templateId)
 			.filter((id): id is string => !!id);
 
 		const updatedNodeTemplates = await prisma.nodeTemplate.findMany({
-			where: {
-				id: {
-					in: updatedNodeTemplateIds,
-				},
-			},
+			where: { id: { in: updatedNodeTemplateIds } },
 		});
 
 		const isTerminalNode = (templateId: string) => {
 			const nodeTemplate = updatedNodeTemplates.find(
 				(f) => f.id === templateId,
 			);
-			if (!nodeTemplate) {
-				throw new Error("Node template not found for node");
-			}
-			return nodeTemplate.isTerminalNode;
+			// Defensive: if template missing, safe default
+			return nodeTemplate ? nodeTemplate.isTerminalNode : false;
 		};
 
-		const updatedNodesTxs = updatedNodes.map((uNode) => {
+		updatedNodes.forEach((uNode) => {
 			const updateData: NodeUpdateInput = {
 				config: uNode.config,
 				position: uNode.position,
 				name: uNode.name,
 			};
+
 			if (!isTerminalNode(uNode.templateId)) {
 				updateData.result = uNode.result;
 			}
@@ -342,67 +321,82 @@ const canvasRoutes = new Hono({
 					outputs: (uNode.result as NodeResult).outputs,
 				} as NodeResult;
 			}
-			return prisma.node.update({
-				data: updateData,
-				where: {
-					id: uNode.id,
-				},
-			});
-		});
-		txs.push(...updatedNodesTxs);
 
-		// Handle creations and updates
-		const createdHandles = handlesInPayload.filter(
+			txs.push(
+				prisma.node.update({
+					data: updateData,
+					where: { id: uNode.id },
+				}),
+			);
+		});
+
+		// --- 6. Handle Operations (Defensive) ---
+		// Create a Set of all Node IDs that will exist after this transaction
+		// (Existing nodes that weren't deleted + New nodes being created)
+		const validNodeIdsSet = new Set([
+			...Array.from(nodeIdsInDBSet).filter(
+				(id) => !removedNodeIds.includes(id),
+			),
+			...createdNodes.map((n) => n.id),
+		]);
+
+		const rawCreatedHandles = handlesInPayload.filter(
 			(h): h is typeof h & { id: string } =>
-				!!h.id && !handleIdsInDB.includes(h.id),
+				!!h.id && !handleIdsInDBSet.has(h.id),
 		);
+
+		// DEFENSIVE: Filter out handles that point to non-existent nodes
+		const safeCreatedHandles = rawCreatedHandles.filter((h) => {
+			if (!validNodeIdsSet.has(h.nodeId)) {
+				console.warn(
+					`Skipping handle creation for invalid nodeId: ${h.nodeId}`,
+				);
+				return false;
+			}
+			return true;
+		});
+
 		const updatedHandles = handlesInPayload.filter(
 			(h): h is typeof h & { id: string } =>
-				!!h.id && handleIdsInDB.includes(h.id),
+				!!h.id && handleIdsInDBSet.has(h.id),
 		);
 
-		console.log(
-			"Creating handles for nodes:",
-			createdHandles.map((h) => h.nodeId),
-		);
-		console.log(
-			"Nodes being created in this tx:",
-			createdNodes.map((n) => n.id),
-		);
+		if (safeCreatedHandles.length > 0) {
+			txs.push(
+				prisma.handle.createMany({
+					data: safeCreatedHandles.map((nHandle) => ({
+						id: nHandle.id,
+						nodeId: nHandle.nodeId,
+						required: nHandle.required,
+						dataTypes: nHandle.dataTypes,
+						label: nHandle.label,
+						order: nHandle.order,
+						templateHandleId: nHandle.templateHandleId,
+						type: nHandle.type,
+					})),
+				}),
+			);
+		}
 
-		const createHandlesTx = prisma.handle.createMany({
-			data: createdHandles.map((nHandle) => ({
-				id: nHandle.id,
-				nodeId: nHandle.nodeId,
-				required: nHandle.required,
-				dataTypes: nHandle.dataTypes,
-				label: nHandle.label,
-				order: nHandle.order,
-				templateHandleId: nHandle.templateHandleId,
-				type: nHandle.type,
-			})),
+		updatedHandles.forEach((uHandle) => {
+			txs.push(
+				prisma.handle.update({
+					data: {
+						type: uHandle.type,
+						dataTypes: uHandle.dataTypes,
+						label: uHandle.label,
+						order: uHandle.order,
+						required: uHandle.required,
+						templateHandleId: uHandle.templateHandleId,
+					},
+					where: { id: uHandle.id },
+				}),
+			);
 		});
-		txs.push(createHandlesTx);
 
-		const updatedHandlesTxs = updatedHandles.map((uHandle) =>
-			prisma.handle.update({
-				data: {
-					type: uHandle.type,
-					dataTypes: uHandle.dataTypes,
-					label: uHandle.label,
-					order: uHandle.order,
-					required: uHandle.required,
-					templateHandleId: uHandle.templateHandleId,
-				},
-				where: {
-					id: uHandle.id,
-				},
-			}),
-		);
-		txs.push(...updatedHandlesTxs);
-
-		// Edge creations and updates
-		const createdEdges = edgesInPayload.filter(
+		// --- 7. Edge Operations (Defensive) ---
+		// Edges also depend on valid handles. We'll verify source/target nodes first.
+		const rawCreatedEdges = edgesInPayload.filter(
 			(
 				e,
 			): e is typeof e & {
@@ -413,8 +407,19 @@ const canvasRoutes = new Hono({
 				!!e.id &&
 				!!e.sourceHandleId &&
 				!!e.targetHandleId &&
-				!edgeIdsInDB.includes(e.id),
+				!edgeIdsInDBSet.has(e.id),
 		);
+
+		const safeCreatedEdges = rawCreatedEdges.filter((e) => {
+			if (!validNodeIdsSet.has(e.source) || !validNodeIdsSet.has(e.target)) {
+				console.warn(
+					`Skipping edge creation for invalid nodes: ${e.source} -> ${e.target}`,
+				);
+				return false;
+			}
+			return true;
+		});
+
 		const updatedEdges = edgesInPayload.filter(
 			(
 				e,
@@ -426,77 +431,64 @@ const canvasRoutes = new Hono({
 				!!e.id &&
 				!!e.sourceHandleId &&
 				!!e.targetHandleId &&
-				edgeIdsInDB.includes(e.id),
+				edgeIdsInDBSet.has(e.id),
 		);
 
-		const createEdgesTx = prisma.edge.createMany({
-			data: createdEdges.map((newEdge) => ({
-				id: newEdge.id,
-				source: newEdge.source,
-				sourceHandleId: newEdge.sourceHandleId,
-				target: newEdge.target,
-				targetHandleId: newEdge.targetHandleId,
-			})),
+		if (safeCreatedEdges.length > 0) {
+			txs.push(
+				prisma.edge.createMany({
+					data: safeCreatedEdges.map((newEdge) => ({
+						id: newEdge.id,
+						source: newEdge.source,
+						sourceHandleId: newEdge.sourceHandleId,
+						target: newEdge.target,
+						targetHandleId: newEdge.targetHandleId,
+					})),
+				}),
+			);
+		}
+
+		updatedEdges.forEach((uEdge) => {
+			txs.push(
+				prisma.edge.update({
+					data: {
+						source: uEdge.source,
+						sourceHandleId: uEdge.sourceHandleId,
+						target: uEdge.target,
+						targetHandleId: uEdge.targetHandleId,
+					},
+					where: { id: uEdge.id },
+				}),
+			);
 		});
-		txs.push(createEdgesTx);
-
-		const updatedEdgesTxs = updatedEdges.map((uEdge) =>
-			prisma.edge.update({
-				data: {
-					source: uEdge.source,
-					sourceHandleId: uEdge.sourceHandleId,
-					target: uEdge.target,
-					targetHandleId: uEdge.targetHandleId,
-				},
-				where: {
-					id: uEdge.id,
-				},
-			}),
-		);
-		txs.push(...updatedEdgesTxs);
 
 		// Execute all transactions atomically
 		await prisma.$transaction(txs);
 
-		// Fetch updated entities
+		// --- 8. Return Response ---
 		const canvas = await prisma.canvas.findFirst({
-			where: {
-				id,
-			},
-		});
-
-		const nodes = await prisma.node.findMany({
-			where: {
-				canvasId: canvas?.id,
-			},
-			include: {
-				template: true,
-			},
+			where: { id },
 		});
 
 		if (!canvas) {
 			throw new HTTPException(404, { message: "Canvas not found" });
 		}
 
-		// Get all edges for this canvas separately for cleaner structure
+		const nodes = await prisma.node.findMany({
+			where: { canvasId: id },
+			include: { template: true },
+		});
+
 		const edges = await prisma.edge.findMany({
-			where: {
-				sourceNode: {
-					canvasId: id,
-				},
-			},
+			where: { sourceNode: { canvasId: id } },
 		});
 
 		const handles = await prisma.handle.findMany({
-			where: {
-				nodeId: {
-					in: nodes.map((m) => m.id),
-				},
-			},
+			where: { nodeId: { in: nodes.map((m) => m.id) } },
 		});
 
 		return c.json({
-			canvas: canvas,
+			canvas,
 			edges,
 			nodes,
 			handles,
@@ -505,25 +497,17 @@ const canvasRoutes = new Hono({
 	.delete("/:id", async (c) => {
 		const id = c.req.param("id");
 
-		// Verify ownership
-		const existing = await prisma.canvas.findFirst({
-			where: { id },
-		});
-
+		const existing = await prisma.canvas.findFirst({ where: { id } });
 		if (!existing) {
 			throw new HTTPException(404, { message: "Canvas not found" });
 		}
 
-		await prisma.canvas.delete({
-			where: { id },
-		});
-
+		await prisma.canvas.delete({ where: { id } });
 		return c.json({ success: true });
 	})
 	.post("/:id/duplicate", async (c) => {
 		const id = c.req.param("id");
 
-		// Get the original canvas with all its data
 		const original = await prisma.canvas.findFirst({
 			where: { id },
 			include: {
@@ -540,23 +524,16 @@ const canvasRoutes = new Hono({
 			throw new HTTPException(404, { message: "Canvas not found" });
 		}
 
-		// Get edges separately
 		const originalEdges = await prisma.edge.findMany({
-			where: {
-				sourceNode: {
-					canvasId: id,
-				},
-			},
+			where: { sourceNode: { canvasId: id } },
 		});
 
-		// Create the duplicate canvas
 		const duplicate = await prisma.canvas.create({
-			data: {
-				name: `${original.name} (Copy)`,
-			},
+			data: { name: `${original.name} (Copy)` },
 		});
 
-		// Create new nodes
+		// We use $transaction with an array of PrismaPromises which return Nodes.
+		// Since we map strictly 1:1, we can rely on index matching for the map construction below.
 		const nodeCreations = original.nodes.map((node) =>
 			prisma.node.create({
 				data: {
@@ -579,18 +556,24 @@ const canvasRoutes = new Hono({
 
 		const newNodes = await prisma.$transaction(nodeCreations);
 
-		// Create nodeIdMap
 		const nodeIdMap = new Map<string, string>();
 		original.nodes.forEach((oldNode, index) => {
 			nodeIdMap.set(oldNode.id, newNodes[index].id);
 		});
 
-		// Create new handles
 		const handleCreations = [];
+		// Map to store temporary mapping logic
+		const tempHandleMapping: { oldId: string; newNodeId: string }[] = [];
+
 		for (let i = 0; i < original.nodes.length; i++) {
 			const oldNode = original.nodes[i];
 			const newNodeId = newNodes[i].id;
 			for (const oldHandle of oldNode.handles) {
+				tempHandleMapping.push({
+					oldId: oldHandle.id,
+					newNodeId: newNodeId, // store for reference if needed
+				});
+
 				handleCreations.push(
 					prisma.handle.create({
 						data: {
@@ -609,19 +592,17 @@ const canvasRoutes = new Hono({
 
 		const newHandles = await prisma.$transaction(handleCreations);
 
-		// Create handleIdMap
 		const handleIdMap = new Map<string, string>();
-		let handleIndex = 0;
-		for (const oldNode of original.nodes) {
-			for (const oldHandle of oldNode.handles) {
-				handleIdMap.set(oldHandle.id, newHandles[handleIndex].id);
-				handleIndex++;
-			}
+		for (let i = 0; i < tempHandleMapping.length; i++) {
+			handleIdMap.set(tempHandleMapping[i].oldId, newHandles[i].id);
 		}
 
-		// Create edges with new node and handle IDs
 		const edgeCreations = originalEdges
 			.map((edge) => {
+				const hasHandleIds = edge.sourceHandleId && edge.targetHandleId;
+				if (!hasHandleIds) {
+					return null;
+				}
 				const newSource = nodeIdMap.get(edge.source);
 				const newTarget = nodeIdMap.get(edge.target);
 				const newSourceHandleId = handleIdMap.get(edge.sourceHandleId);
@@ -632,8 +613,9 @@ const canvasRoutes = new Hono({
 					!newTarget ||
 					!newSourceHandleId ||
 					!newTargetHandleId
-				)
+				) {
 					return null;
+				}
 
 				return prisma.edge.create({
 					data: {
@@ -644,13 +626,12 @@ const canvasRoutes = new Hono({
 					},
 				});
 			})
-			.filter(Boolean);
+			.filter((e) => e !== null);
 
 		if (edgeCreations.length > 0) {
 			await prisma.$transaction(edgeCreations);
 		}
 
-		// Return the duplicate canvas with nodes (without re-fetching everything)
 		return c.json({ canvas: { ...duplicate, nodes: newNodes } }, 201);
 	})
 	.post("/:id/process", zValidator("json", processSchema), async (c) => {
@@ -658,9 +639,6 @@ const canvasRoutes = new Hono({
 		const validated = c.req.valid("json");
 
 		const wfProcessor = new NodeWFProcessor(prisma);
-
-		// Starts processing but does not await*.
-		// Frontend starts polling when it get's batch info response.
 		const taskBatch = await wfProcessor.processNodes(
 			canvasId,
 			validated.node_ids,

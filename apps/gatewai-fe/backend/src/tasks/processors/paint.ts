@@ -45,7 +45,7 @@ const paintProcessor: NodeProcessor = async ({ node, data }) => {
 		let imageUrl: string | undefined;
 
 		if (backgroundInput) {
-			imageUrl = ResolveFileDataUrl(backgroundInput);
+			imageUrl = ResolveFileDataUrl(backgroundInput) ?? undefined;
 		}
 
 		const { imageWithMask, onlyMask } = await backendPixiService.processMask(

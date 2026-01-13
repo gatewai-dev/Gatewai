@@ -514,7 +514,6 @@ const TextLayer: React.FC<LayerProps> = ({
 		// We use a small timeout or requestAnimationFrame to wait for Konva to render the new font
 		const syncHeight = () => {
 			const calculatedHeight = node.height();
-			const calculatedWidth = node.width();
 
 			// 1. Force Transformer Update if this layer is selected
 			// This fixes the visual bug where the box doesn't grow with the text

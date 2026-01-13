@@ -1,7 +1,6 @@
 import { formatDistanceToNow } from "date-fns";
 import { AlertCircle } from "lucide-react";
 import { memo } from "react";
-
 import {
 	Accordion,
 	AccordionContent,
@@ -165,7 +164,8 @@ const CanvasTasksPanel = memo(() => {
 																	ID: {ft.nodeId ?? "anonymous"}
 																</p>
 																<p className="text-[11px] text-foreground/80 leading-snug">
-																	{ft.error?.message ?? "Execution aborted"}
+																	{(ft?.error as unknown as { message: string })
+																		?.message ?? "Execution aborted"}
 																</p>
 															</div>
 														))}

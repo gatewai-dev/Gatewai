@@ -174,7 +174,7 @@ export function ColorInput({
 
 	const handlePointerDown = (
 		e: React.PointerEvent,
-		ref: React.RefObject<HTMLDivElement>,
+		ref: React.RefObject<HTMLDivElement | null>,
 		updater: (x: number, y: number, rect: DOMRect) => Partial<HSVA>,
 	) => {
 		e.preventDefault();

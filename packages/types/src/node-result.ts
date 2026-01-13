@@ -88,7 +88,6 @@ export type PaintResult = {
 };
 
 export type BlurResult = SingleOutputGeneric<"Image">;
-
 export type CropResult = SingleOutputGeneric<"Image">;
 
 export type CompositorResult = SingleOutputGeneric<"Image">;
@@ -147,5 +146,7 @@ export type NodeResult =
 	| VideoGenResult
 	| VideoGenExtendResult
 	| VideoGenFirstLastFrameResult
+	| VideoCompositorResult
+	| ExportResult
 	| TextToSpeechResult
 	| SpeechToTextResult;

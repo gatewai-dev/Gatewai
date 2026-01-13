@@ -1,4 +1,4 @@
-import type { FileResult } from "@gatewai/types";
+import type { FileData, FileResult } from "@gatewai/types";
 import { useReactFlow } from "@xyflow/react";
 import { motion } from "framer-motion";
 import { FileImage, GripVertical, Music } from "lucide-react";
@@ -116,22 +116,35 @@ export const AssetItem = memo(({ asset }: AssetItemProps) => {
 					console.error("Import template not found");
 					return;
 				}
-				const initialResult: FileResult = {
+				const dataType = getDataTypeFromMime(asset.mimeType);
+				if (!dataType) {
+					console.error("Unsupported asset mime type:", asset.mimeType);
+					return;
+				}
+				const initialResult = {
 					selectedOutputIndex: 0,
 					outputs: [
 						{
 							items: [
 								{
-									type: getDataTypeFromMime(asset.mimeType),
+									type: dataType,
 									data: {
-										entity: asset,
-									},
+										entity: {
+											...asset,
+											// Ts date strings to Date objects - eww
+											createdAt: new Date(asset.createdAt),
+											updatedAt: new Date(asset.updatedAt),
+											signedUrlExp: asset.signedUrlExp
+												? new Date(asset.signedUrlExp)
+												: null,
+										},
+									} as FileData,
 									outputHandleId: undefined,
 								},
 							],
 						},
 					],
-				};
+				} as FileResult;
 				createNewNode(importTemplate, position, initialResult);
 			}
 		};

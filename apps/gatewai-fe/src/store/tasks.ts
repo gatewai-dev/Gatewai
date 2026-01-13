@@ -132,8 +132,7 @@ export const tasksReducer = tasksSlice.reducer;
 
 export const selectTasksState = (state: RootState) => state.tasks;
 
-export const batchSelectors =
-	batchAdapter.getSelectors<RootState>(selectTasksState);
+const batchSelectors = batchAdapter.getSelectors<RootState>(selectTasksState);
 
 export const selectPollingInterval: (state: RootState) => number =
 	createSelector(selectTasksState, (tasks) => tasks.pollingInterval);
@@ -146,6 +145,8 @@ export const selectLatestTasksFetchTime: (state: RootState) => number | null =
 
 export const selectInitialLoading: (state: RootState) => boolean =
 	createSelector(selectTasksState, (tasks) => tasks.initialLoading);
+
+export const selectAllBatches = batchSelectors.selectAll;
 
 export const selectNodeTaskStatus = createSelector(
 	(state: RootState) => batchSelectors.selectAll(state),

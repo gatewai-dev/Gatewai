@@ -219,7 +219,11 @@ export class NodeWFProcessor {
 			const firstTask = tasksMap.get(firstNodeId);
 
 			// Map nodeIds to taskIds for the chain sequence
-			const taskSequence = topoOrder.map((nid) => tasksMap.get(nid)!.id);
+			const taskSequence = topoOrder.map((nid) => {
+				const task = tasksMap.get(nid);
+				if (!task) throw new Error(`Missing task for node ${nid}`);
+				return task.id;
+			});
 			const [firstTaskId, ...remainingTaskIds] = taskSequence;
 
 			if (firstTask) {
