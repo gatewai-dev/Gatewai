@@ -16,6 +16,7 @@ import {
 	DropdownMenuContent,
 	DropdownMenuGroup,
 	DropdownMenuItem,
+	DropdownMenuSeparator,
 	DropdownMenuShortcut,
 	DropdownMenuTrigger,
 } from "@/components/ui/dropdown-menu";
@@ -125,14 +126,15 @@ const NodeMenu = memo((props: { id: NodeEntityType["id"] }) => {
 								{isMac ? "⌘ D" : "ctrl + d"}
 							</DropdownMenuShortcut>
 						</DropdownMenuItem>
+						<DropdownMenuItem onClick={() => copyTextToClipboard(props.id)}>
+							Copy ID
+						</DropdownMenuItem>
+						<DropdownMenuSeparator />
 						<DropdownMenuItem onClick={() => onNodesDelete([props.id])}>
 							Delete
 							<DropdownMenuShortcut className="italic text-[11px]">
 								delete / backspace
 							</DropdownMenuShortcut>
-						</DropdownMenuItem>
-						<DropdownMenuItem onClick={() => copyTextToClipboard(props.id)}>
-							Copy ID
 						</DropdownMenuItem>
 					</DropdownMenuGroup>
 				</DropdownMenuContent>

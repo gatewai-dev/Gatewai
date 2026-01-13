@@ -9,7 +9,7 @@ import {
 	SelectionMode,
 } from "@xyflow/react";
 import type { DragEventHandler, MouseEventHandler } from "react";
-import { createContext, useCallback, useEffect, useRef, useState } from "react";
+import { createContext, useEffect, useRef, useState } from "react";
 import { useHotkeys } from "react-hotkeys-hook";
 import { useAppDispatch, useAppSelector } from "@/store";
 import { setSelectedEdgeIds, setSelectedNodeIds } from "@/store/node-meta";
@@ -175,6 +175,7 @@ function ReactflowContainer({ children }: ReactFlowProps) {
 					selectionMode={SelectionMode.Partial}
 					connectionMode={ConnectionMode.Loose}
 					onConnect={onConnect}
+					onlyRenderVisibleElements={rfNodes.length > 20} // When there's too many nodes, only render visible ones for performance
 					onSelectionChange={onSelectionChange}
 					proOptions={{ hideAttribution: false }}
 				>
