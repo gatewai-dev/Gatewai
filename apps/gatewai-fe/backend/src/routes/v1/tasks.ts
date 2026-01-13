@@ -52,9 +52,7 @@ const tasksRouter = new Hono({
 					},
 				},
 			});
-			return c.json({
-				batches,
-			});
+			return c.json(batches);
 		},
 	)
 	.get(
@@ -99,7 +97,7 @@ const tasksRouter = new Hono({
 					},
 				},
 			});
-			return c.json({ batches });
+			return c.json(batches);
 		},
 	);
 

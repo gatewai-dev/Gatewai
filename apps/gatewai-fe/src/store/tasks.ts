@@ -1,7 +1,7 @@
 import {
 	createAsyncThunk,
-	createDraftSafeSelector,
 	createEntityAdapter,
+	createSelector,
 	createSlice,
 	type PayloadAction,
 } from "@reduxjs/toolkit";
@@ -9,12 +9,10 @@ import { rpcClient } from "@/rpc/client";
 import type { BatchDetailsRPC, BatchDetailsRPCParams } from "@/rpc/types";
 import type { RootState } from "@/store"; // Adjust based on your store setup
 
-export type BatchEntity = BatchDetailsRPC["batches"][number];
+export type BatchEntity = BatchDetailsRPC[number];
 export type BatchNodeData = BatchEntity["tasks"][number];
 
-export const batchAdapter = createEntityAdapter<BatchEntity>({
-	selectId: (batch: BatchEntity) => batch.id,
-});
+export const batchAdapter = createEntityAdapter<BatchEntity>();
 
 export const getBatchDetails = createAsyncThunk<
 	BatchDetailsRPC,
@@ -86,10 +84,10 @@ const tasksSlice = createSlice({
 				state.initialLoading = false;
 			})
 			.addCase(getInitialBatches.fulfilled, (state, action) => {
-				const { batches } = action.payload;
+				const batches = action.payload;
 				batchAdapter.upsertMany(
 					state,
-					batches.filter((b): b is BatchEntity => b !== null),
+					action.payload.filter((b): b is BatchEntity => b !== null),
 				);
 				const runningBatchIds = batches
 					.filter((f) => f.finishedAt == null)
@@ -106,7 +104,7 @@ const tasksSlice = createSlice({
 				state.latestTasksFetchTime = Date.now();
 			})
 			.addCase(getBatchDetails.fulfilled, (state, action) => {
-				const { batches } = action.payload;
+				const batches = action.payload;
 				batchAdapter.upsertMany(
 					state,
 					batches.filter((b): b is BatchEntity => b !== null),
@@ -134,30 +132,23 @@ export const tasksReducer = tasksSlice.reducer;
 
 export const selectTasksState = (state: RootState) => state.tasks;
 
-export const batchSelectors = batchAdapter.getSelectors(selectTasksState);
+export const batchSelectors =
+	batchAdapter.getSelectors<TasksState>(selectTasksState);
 
-export const selectPollingInterval = createDraftSafeSelector(
-	selectTasksState,
-	(tasks) => tasks.pollingInterval,
-);
+export const selectPollingInterval: (state: RootState) => number =
+	createSelector(selectTasksState, (tasks) => tasks.pollingInterval);
 
-export const selectBatchIdsToPoll = createDraftSafeSelector(
-	selectTasksState,
-	(tasks) => tasks.batchIdsToPoll,
-);
+export const selectBatchIdsToPoll: (state: RootState) => string[] =
+	createSelector(selectTasksState, (t) => t.batchIdsToPoll);
 
-export const selectLatestTasksFetchTime = createDraftSafeSelector(
-	selectTasksState,
-	(tasks) => tasks.latestTasksFetchTime,
-);
+export const selectLatestTasksFetchTime: (state: RootState) => number | null =
+	createSelector(selectTasksState, (tasks) => tasks.latestTasksFetchTime);
 
-export const selectInitialLoading = createDraftSafeSelector(
-	selectTasksState,
-	(tasks) => tasks.initialLoading,
-);
+export const selectInitialLoading: (state: RootState) => boolean =
+	createSelector(selectTasksState, (tasks) => tasks.initialLoading);
 
-export const selectNodeTaskStatus = createDraftSafeSelector(
-	batchSelectors.selectAll,
+export const selectNodeTaskStatus = createSelector(
+	(state: RootState) => batchSelectors.selectAll(state as any),
 	(batches) => {
 		const status: Record<string, BatchNodeData[]> = {};
 		batches.forEach((batch) => {
@@ -173,4 +164,4 @@ export const selectNodeTaskStatus = createDraftSafeSelector(
 		});
 		return status;
 	},
-);
+) as (state: RootState) => Record<string, BatchNodeData[]>;

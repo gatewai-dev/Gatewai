@@ -35,7 +35,7 @@ export const nodesSlice = createSlice({
 				node.config = {
 					...existingConfig,
 					...newConfig,
-				} as AllNodeConfig;
+				} as unknown as typeof node.config;
 			}
 		},
 		updateNodeConfig: (
@@ -49,7 +49,7 @@ export const nodesSlice = createSlice({
 				node.config = {
 					...existingConfig,
 					...newConfig,
-				} as AllNodeConfig;
+				} as unknown as typeof node.config;
 			}
 		},
 		updateNodeResult: (
@@ -59,13 +59,13 @@ export const nodesSlice = createSlice({
 			const { id, newResult } = action.payload;
 			const node = state.entities[id];
 			if (node) {
-				node.result = newResult;
+				node.result = newResult as unknown as typeof node.result;
 			}
 		},
 	},
 	extraReducers(builder) {
 		builder.addCase(getBatchDetails.fulfilled, (state, action) => {
-			const { batches } = action.payload;
+			const batches = action.payload;
 			const completedNodes: NodeEntityType[] = [];
 			batches.forEach((batch) => {
 				batch?.tasks.forEach((task) => {

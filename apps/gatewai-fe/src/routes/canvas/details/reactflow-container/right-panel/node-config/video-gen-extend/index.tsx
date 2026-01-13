@@ -103,6 +103,7 @@ const VideoGenExtendNodeConfigComponent = memo(
 						<SelectField
 							control={form.control}
 							name="personGeneration"
+							placeholder="Select Person Generation"
 							label="Person Generation"
 							options={VIDEOGEN_PERSON_GENERATION_OPTIONS}
 						/>

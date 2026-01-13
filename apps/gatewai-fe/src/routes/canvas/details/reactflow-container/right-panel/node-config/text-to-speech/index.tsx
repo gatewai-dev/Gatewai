@@ -65,7 +65,6 @@ const resolvedSchema = TextToSpeechNodeConfigSchema.superRefine((data, ctx) => {
 const TextToSpeechNodeConfigComponent = memo(
 	({ node }: { node: NodeEntityType }) => {
 		const { onNodeConfigUpdate } = useCanvasCtx();
-		console.log({ onNodeConfigUpdate });
 		const updateConfig = useCallback(
 			(cfg: TextToSpeechNodeConfig) => {
 				onNodeConfigUpdate({ id: node.id, newConfig: cfg });
@@ -134,14 +133,14 @@ const TextToSpeechNodeConfigComponent = memo(
 						name="model"
 						label="Model"
 						placeholder="Select a TTS model"
-						options={TTS_NODE_MODELS.map((model) => model)}
+						options={TTS_NODE_MODELS}
 					/>
 					<SelectField
 						control={form.control}
 						name="languageCode"
 						label="Language"
 						placeholder="Select a language (optional)"
-						options={["Auto-detect", ...TTS_LANGUAGES.map((lang) => lang)]}
+						options={["Auto-detect", ...TTS_LANGUAGES]}
 					/>
 					<div className="space-y-4">
 						<div className="flex items-center justify-between">
@@ -209,7 +208,7 @@ const TextToSpeechNodeConfigComponent = memo(
 									name={`speakerConfig.${index}.voiceName`}
 									label="Voice"
 									placeholder="Select a voice"
-									options={TTS_VOICE_NAMES.map((voice) => voice)}
+									options={TTS_VOICE_NAMES}
 								/>
 							</div>
 						))}

@@ -16,6 +16,7 @@ import {
 	useCurrentFrame,
 	useVideoConfig,
 } from "remotion";
+import { generateId } from "@/lib/idgen";
 import { GetAssetEndpoint } from "@/utils/file";
 import type { NodeProcessorParams } from "./types";
 
@@ -41,7 +42,7 @@ const DynamicComposition: React.FC<{
 	);
 
 	return (
-		<AbsoluteFill style={{ backgroundColor: config.background ?? "#000000" }}>
+		<AbsoluteFill>
 			{sortedLayers.map((layer) => {
 				const input = inputDataMap[layer.inputHandleId];
 				if (!input) return null;
@@ -139,7 +140,6 @@ const DynamicComposition: React.FC<{
 					height: layer.height,
 					transform: `rotate(${animRotation}deg) scale(${animScale})`,
 					opacity: animOpacity,
-					textAlign: layer.align,
 				};
 
 				const getAssetUrl = () => {
@@ -246,17 +246,20 @@ export class RemotionWebProcessorService {
 				const itemType = item.type;
 
 				// Create a base default layer
-				const defaultLayer: Partial<VideoCompositorLayer> = {
+				const defaultLayer: VideoCompositorLayer = {
 					inputHandleId,
 					zIndex:
 						itemType === "Text" || itemType === "Image"
 							? 100 + zIndex++
 							: zIndex++,
 					startFrame: 0,
+					type: itemType as VideoCompositorLayer["type"],
 					x: 0,
 					y: 0,
 					scale: 1,
 					rotation: 0,
+					id: generateId(),
+					lockAspect: true,
 					opacity: 1,
 					volume: itemType === "Video" || itemType === "Audio" ? 1 : undefined,
 				};

@@ -86,12 +86,7 @@ const VideoCompositorNodeComponent = memo(
 						: DEFAULT_DURATION_FRAMES;
 				console.log({ calculatedDurationFrames });
 				const base = {
-					id: handleId,
-					inputHandleId: handleId,
-					x: 0,
-					y: 0,
-					rotation: 0,
-					opacity: 1,
+					// defaults first
 					scale: 1,
 					zIndex: saved.zIndex ?? ++maxZ,
 					startFrame: 0,
@@ -100,7 +95,14 @@ const VideoCompositorNodeComponent = memo(
 					animations: saved.animations ?? [],
 					src,
 					text,
-					...saved,
+					...saved, // allow saved to override defaults
+					// ensure handle-based ids win
+					x: saved.x ?? 0,
+					y: saved.y ?? 0,
+					rotation: saved.rotation ?? 0,
+					opacity: saved.opacity ?? 1,
+					id: saved.id ?? handleId,
+					inputHandleId: saved.inputHandleId ?? handleId,
 				};
 
 				if (item.type === "Text") {
