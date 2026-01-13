@@ -29,7 +29,7 @@ const TextNodeComponent = memo((props: NodeProps<TextNode>) => {
 			<Textarea
 				value={text}
 				onChange={handleChange}
-				className="w-full h-full max-h-[20rem] overflow-auto p-2 border rounded text-gray-100 resize-none text-xs!"
+				className="w-full h-full max-h-80 overflow-auto p-2 border rounded text-gray-100 resize-none text-xs!"
 				placeholder="Enter text..."
 			/>
 		</BaseNode>
