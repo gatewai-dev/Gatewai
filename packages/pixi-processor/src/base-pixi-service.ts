@@ -12,7 +12,7 @@ import type {
 	Sprite,
 	Texture,
 } from "pixi.js";
-import { BuildModualteFilter } from "./filters/modulate";
+import { BuildModulateFilter } from "./filters/modulate";
 import type { IPixiProcessor } from "./interface";
 
 export class ServiceAbortError extends Error {
@@ -49,7 +49,6 @@ export abstract class BasePixiService implements IPixiProcessor {
 		);
 	}
 
-	// --- Abstract Methods ---
 	protected abstract createApplication(): Application;
 	protected abstract loadTexture(url: string): Promise<Texture>;
 	protected abstract getPixiImport(): string;
@@ -169,7 +168,7 @@ export abstract class BasePixiService implements IPixiProcessor {
 			// Strict resizing of the renderer to match image dimensions
 			app.renderer.resize(texture.width, texture.height);
 
-			const FilterClass = BuildModualteFilter(Filter);
+			const FilterClass = BuildModulateFilter(Filter);
 			const filter = new FilterClass(config);
 			sprite.filters = [filter];
 
@@ -388,8 +387,6 @@ export abstract class BasePixiService implements IPixiProcessor {
 
 			const container = new Container();
 
-			// FIX: Add a transparent spacer to guarantee container bounds match target size
-			// This prevents the output from shrinking if the mask is empty or smaller than the canvas
 			const spacer = new Graphics();
 			spacer.beginFill(0x000000, 0); // Transparent
 			spacer.drawRect(0, 0, widthToUse, heightToUse);

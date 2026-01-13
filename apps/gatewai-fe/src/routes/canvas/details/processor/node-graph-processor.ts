@@ -756,6 +756,11 @@ export class NodeGraphProcessor extends EventEmitter {
 					h.dataTypes.includes(type as DataType),
 			)?.id;
 
+		const getOutputHandleByLabel = (nodeId: string, label: string) =>
+			this.handles.find(
+				(h) => h.nodeId === nodeId && h.type === "Output" && h.label === label,
+			)?.id;
+
 		this.registerProcessor("Crop", async ({ node, inputs, signal }) => {
 			const imageUrl = findInputData(inputs, "Image");
 			if (!imageUrl) throw new Error("Missing Input Image");
@@ -801,8 +806,8 @@ export class NodeGraphProcessor extends EventEmitter {
 			const config = node.config as PaintNodeConfig;
 			const imageUrl = findInputData(inputs, "Image");
 			const maskDataUrl = config.paintData;
-			const imageHandle = getFirstOutputHandle(node.id, "Image");
-			const maskHandle = getFirstOutputHandle(node.id, "Mask");
+			const imageHandle = getOutputHandleByLabel(node.id, "Image");
+			const maskHandle = getOutputHandleByLabel(node.id, "Mask");
 
 			if (!maskHandle) throw new Error("Mask output handle missing");
 

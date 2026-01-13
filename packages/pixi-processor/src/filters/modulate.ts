@@ -2,7 +2,7 @@
 import type { ModulateNodeConfig } from "@gatewai/types";
 
 // biome-ignore lint/suspicious/noExplicitAny: Supress warning / it works
-const BuildModualteFilter = (fClass: any) => {
+const BuildModulateFilter = (fClass: any) => {
 	// biome-ignore lint/suspicious/noExplicitAny: Supress warning / it works
 	return class ModulateFilter extends (fClass as any) {
 		constructor(config: ModulateNodeConfig) {
@@ -142,4 +142,4 @@ const BuildModualteFilter = (fClass: any) => {
 	};
 };
 
-export { BuildModualteFilter };
+export { BuildModulateFilter };
