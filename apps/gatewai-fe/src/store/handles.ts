@@ -24,7 +24,7 @@ const handlesSlice = createSlice({
 	},
 });
 
-type HandlesState = ReturnType<typeof handlesSlice.reducer>;
+export type HandlesState = ReturnType<typeof handlesSlice.reducer>;
 
 const handleSelectors = handleAdapter.getSelectors<RootState>(
 	(state) => state.flow.present.handles,
@@ -34,8 +34,7 @@ export const selectHandlesState = (state: RootState) =>
 	state.flow.present.handles;
 
 export const makeSelectHandleById = (id: string) => {
-	return (state: { handles: HandlesState }) =>
-		handleSelectors.selectById(state, id);
+	return (state: RootState) => handleSelectors.selectById(state, id);
 };
 export const makeSelectHandlesByNodeId = (nodeId: string) =>
 	createDraftSafeSelector(handleSelectors.selectAll, (handles) =>

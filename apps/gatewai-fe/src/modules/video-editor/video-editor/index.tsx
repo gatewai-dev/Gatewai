@@ -156,12 +156,10 @@ const useEditor = () => {
 	return ctx;
 };
 
-// --- Components: Unified Visual Track Item (Performance Optimized) ---
 const UnifiedClip: React.FC<{
 	layer: ExtendedLayer;
-	width: number;
 	isSelected: boolean;
-}> = ({ layer, width, isSelected }) => {
+}> = ({ layer, isSelected }) => {
 	// Determine styles based on type
 	const styleConfig = useMemo(() => {
 		switch (layer.type) {
@@ -285,9 +283,10 @@ const InteractionOverlay: React.FC = () => {
 			.filter(
 				(l) =>
 					l.type !== "Audio" &&
-					currentFrame >= l.startFrame &&
+					currentFrame >= (l.startFrame ?? 0) &&
 					currentFrame <
-						l.startFrame + (l.durationInFrames ?? DEFAULT_DURATION_FRAMES),
+						(l.startFrame ?? 0) +
+							(l.durationInFrames ?? DEFAULT_DURATION_FRAMES),
 			)
 			.sort((a, b) => (a.zIndex ?? 0) - (b.zIndex ?? 0));
 	}, [layers, currentFrame]);
@@ -325,7 +324,7 @@ const InteractionOverlay: React.FC = () => {
 			width: layer.width ?? 0,
 			height: layer.height ?? 0,
 			rotation: layer.rotation,
-			scale: layer.scale,
+			scale: layer.scale ?? 1,
 		});
 
 		if (anchor) {
@@ -358,7 +357,7 @@ const InteractionOverlay: React.FC = () => {
 			x: layer.x,
 			y: layer.y,
 			rotation: layer.rotation,
-			scale: layer.scale,
+			scale: layer.scale ?? 1,
 		});
 		setIsRotating(true);
 	};
@@ -921,7 +920,7 @@ const TimelinePanel: React.FC = () => {
 		const layer = layers.find((l) => l.id === layerId);
 		if (!layer) return;
 
-		const initialStart = layer.startFrame;
+		const initialStart = layer.startFrame ?? 0;
 		const initialDuration = layer.durationInFrames ?? DEFAULT_DURATION_FRAMES;
 
 		const onMove = (moveEv: MouseEvent) => {
@@ -1086,7 +1085,10 @@ const TimelinePanel: React.FC = () => {
 								length: Math.ceil(durationInFrames / fps) + 5,
 							}).map((_, sec) => (
 								<span
-									key={sec}
+									key={`${
+										// biome-ignore lint/suspicious/noArrayIndexKey: Range used for static labels
+										sec
+									}_label_time`}
 									className="absolute top-1.5 text-[10px] font-mono text-gray-500 select-none pointer-events-none font-medium"
 									style={{ left: sec * fps * pixelsPerFrame + 4 }}
 								>
@@ -1100,6 +1102,7 @@ const TimelinePanel: React.FC = () => {
 							>
 								<div className="absolute -translate-x-1/2 -top-0 w-3 h-3 text-blue-500 fill-current filter drop-shadow-md">
 									<svg viewBox="0 0 12 12" className="w-full h-full">
+										<title>Playhead</title>
 										<path d="M0,0 L12,0 L12,8 L6,12 L0,8 Z" />
 									</svg>
 								</div>
@@ -1174,7 +1177,7 @@ const TimelinePanel: React.FC = () => {
                           ${isSelected ? "z-20" : "z-10"}
                       `}
 											style={{
-												left: layer.startFrame * pixelsPerFrame,
+												left: (layer.startFrame ?? 0) * pixelsPerFrame,
 												width,
 												minWidth: "10px",
 											}}
@@ -1186,11 +1189,7 @@ const TimelinePanel: React.FC = () => {
 												setSelectedId(layer.id);
 											}}
 										>
-											<UnifiedClip
-												layer={layer}
-												width={width}
-												isSelected={isSelected}
-											/>
+											<UnifiedClip layer={layer} isSelected={isSelected} />
 
 											{/* Resize Handle (Right) - Invisible hit area, visible on hover */}
 											<div
@@ -1412,7 +1411,7 @@ const InspectorPanel: React.FC = () => {
 							<DraggableNumberInput
 								label="Scale"
 								icon={Move}
-								value={selectedLayer.scale}
+								value={selectedLayer.scale ?? 1}
 								step={0.01}
 								onChange={(v) => update({ scale: v })}
 								allowDecimal
@@ -1437,14 +1436,14 @@ const InspectorPanel: React.FC = () => {
 								<span className="text-[9px] text-gray-500 w-8">Volume</span>
 								<Slider
 									className="flex-1"
-									value={[selectedLayer.volume * 100]}
+									value={[(selectedLayer.volume ?? 1) * 100]}
 									min={0}
 									max={100}
 									step={1}
 									onValueChange={([v]) => update({ volume: v / 100 })}
 								/>
 								<span className="text-[9px] text-gray-400 w-6 text-right">
-									{Math.round(selectedLayer.volume * 100)}%
+									{Math.round((selectedLayer.volume ?? 1) * 100)}%
 								</span>
 							</div>
 						</div>
@@ -2049,7 +2048,8 @@ export const VideoDesignerEditor: React.FC<VideoDesignerEditorProps> = ({
 		return Math.max(
 			DEFAULT_DURATION_FRAMES,
 			...layers.map(
-				(l) => l.startFrame + (l.durationInFrames ?? DEFAULT_DURATION_FRAMES),
+				(l) =>
+					(l.startFrame ?? 0) + (l.durationInFrames ?? DEFAULT_DURATION_FRAMES),
 			),
 		);
 	}, [layers]);
@@ -2185,7 +2185,7 @@ export const VideoDesignerEditor: React.FC<VideoDesignerEditorProps> = ({
 					<InspectorPanel />
 
 					{/* Floating Controls */}
-					<div className="absolute bottom-6 left-1/2 -translate-x-1/2 z-40 transition-all duration-300">
+					<div className="absolute bottom-6 left-1/2 left-1/2 -translate-x-1/2 z-40 transition-all duration-300">
 						<Toolbar
 							onClose={onClose}
 							onSave={() => {
@@ -2198,7 +2198,13 @@ export const VideoDesignerEditor: React.FC<VideoDesignerEditorProps> = ({
 										>
 									>
 								>((acc, layer) => {
-									const { ...savedLayer } = layer;
+									const {
+										src,
+										text,
+										isPlaceholder,
+										maxDurationInFrames,
+										...savedLayer
+									} = layer;
 									acc[layer.id] = savedLayer;
 									return acc;
 								}, {});

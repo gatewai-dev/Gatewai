@@ -7,7 +7,7 @@ import {
 } from "@reduxjs/toolkit";
 import { rpcClient } from "@/rpc/client";
 import type { BatchDetailsRPC, BatchDetailsRPCParams } from "@/rpc/types";
-import type { RootState } from "@/store"; // Adjust based on your store setup
+import type { RootState } from "@/store";
 
 export type BatchEntity = BatchDetailsRPC[number];
 export type BatchNodeData = BatchEntity["tasks"][number];
@@ -133,7 +133,7 @@ export const tasksReducer = tasksSlice.reducer;
 export const selectTasksState = (state: RootState) => state.tasks;
 
 export const batchSelectors =
-	batchAdapter.getSelectors<TasksState>(selectTasksState);
+	batchAdapter.getSelectors<RootState>(selectTasksState);
 
 export const selectPollingInterval: (state: RootState) => number =
 	createSelector(selectTasksState, (tasks) => tasks.pollingInterval);
@@ -148,7 +148,7 @@ export const selectInitialLoading: (state: RootState) => boolean =
 	createSelector(selectTasksState, (tasks) => tasks.initialLoading);
 
 export const selectNodeTaskStatus = createSelector(
-	(state: RootState) => batchSelectors.selectAll(state as any),
+	(state: RootState) => batchSelectors.selectAll(state),
 	(batches) => {
 		const status: Record<string, BatchNodeData[]> = {};
 		batches.forEach((batch) => {

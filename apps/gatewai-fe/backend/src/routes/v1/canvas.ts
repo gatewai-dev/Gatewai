@@ -361,6 +361,15 @@ const canvasRoutes = new Hono({
 				!!h.id && handleIdsInDB.includes(h.id),
 		);
 
+		console.log(
+			"Creating handles for nodes:",
+			createdHandles.map((h) => h.nodeId),
+		);
+		console.log(
+			"Nodes being created in this tx:",
+			createdNodes.map((n) => n.id),
+		);
+
 		const createHandlesTx = prisma.handle.createMany({
 			data: createdHandles.map((nHandle) => ({
 				id: nHandle.id,
