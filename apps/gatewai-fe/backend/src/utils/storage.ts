@@ -13,8 +13,6 @@ const CREDENTIALS_PATH = path.join(
 	"..",
 	"..",
 	"..",
-	"..",
-	"..",
 	ENV_CONFIG.GOOGLE_APPLICATION_CREDENTIALS,
 );
 

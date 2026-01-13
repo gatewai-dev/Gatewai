@@ -120,7 +120,7 @@ const NodeTemplateList = memo(({ templates }: NodeListProps) => {
 	return (
 		<ScrollArea viewPortCn="h-[calc(100%-1rem)]" className="h-full!">
 			{catKeys.map((cat) => (
-				<div key={cat} className="flex flex-col gap-2">
+				<div key={cat} className="flex flex-col">
 					{/* Category Header */}
 					<h2
 						className={cn(
@@ -131,7 +131,7 @@ const NodeTemplateList = memo(({ templates }: NodeListProps) => {
 						{cat}
 					</h2>
 
-					<div className="flex flex-col gap-4 pl-1">
+					<div className="flex flex-col gap-4 my-2pl-1">
 						{Object.entries(groups[cat])
 							.sort(([subA], [subB]) => subA.localeCompare(subB))
 							.map(([sub, temps]) => (

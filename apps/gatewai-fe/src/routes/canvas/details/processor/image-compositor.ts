@@ -72,6 +72,7 @@ const processCompositor = async (
 
 		allLayers.push(defaultLayer);
 	}
+	if (signal?.aborted) throw new DOMException("Cancelled", "AbortError");
 
 	const sortedLayers = allLayers.sort(
 		(a, b) => (a.zIndex ?? 0) - (b.zIndex ?? 0),
@@ -104,6 +105,7 @@ const processCompositor = async (
 	});
 
 	await Promise.all(fontLoadPromises);
+	if (signal?.aborted) throw new DOMException("Cancelled", "AbortError");
 
 	// Wait for fonts to be fully ready
 	await document.fonts.ready;
@@ -171,6 +173,7 @@ const processCompositor = async (
 	}
 
 	layer.draw();
+	if (signal?.aborted) throw new DOMException("Cancelled", "AbortError");
 
 	const dataUrl = stage.toDataURL({ pixelRatio: 2 });
 
