@@ -15,8 +15,8 @@ import { ResolveFileDataUrl } from "@/utils/file";
 import { useCanvasCtx } from "../../ctx/canvas-ctx";
 import { useNodeResult } from "../../processor/processor-ctx";
 import { BaseNode } from "../base";
-import { DimensionsConfig } from "../common/dimensions";
 import type { PaintNode } from "../node-props";
+import { PaintDimensionsConfig } from "./paint-config";
 import { colorsSimilar, colorToRgb, getPixel, setPixel } from "./utils";
 
 const PaintNodeComponent = memo((props: NodeProps<PaintNode>) => {
@@ -578,7 +578,10 @@ const PaintNodeComponent = memo((props: NodeProps<PaintNode>) => {
 				<Separator />
 				{node && nodeConfig?.backgroundColor && (
 					<div className="flex items-center gap-2">
-						<DimensionsConfig node={node} disabled={inputImageUrl != null} />
+						<PaintDimensionsConfig
+							node={node}
+							disabled={inputImageUrl != null}
+						/>
 						<Separator orientation="vertical" className=" h-full" />
 						<div className="flex flex-col items-start gap-1">
 							<Label

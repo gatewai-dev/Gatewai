@@ -18,8 +18,8 @@ const AspectRatioSwitch = memo(
 		disabled,
 	}: {
 		node: NodeEntityType;
-		originalWidth: number | null;
-		originalHeight: number | null;
+		originalWidth?: number;
+		originalHeight?: number;
 		disabled?: boolean;
 	}) => {
 		const config = node?.config as ResizeNodeConfig;

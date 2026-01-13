@@ -8,8 +8,8 @@ import { ResolveFileDataUrl } from "@/utils/file";
 import { useNodeResult } from "../../processor/processor-ctx";
 import { BaseNode } from "../base";
 import { CanvasRenderer } from "../common/canvas-renderer";
-import { DimensionsConfig } from "../common/dimensions";
 import type { ResizeNode } from "../node-props";
+import { ResizeConfig } from "./resize-config";
 
 const ResizeNodeComponent = memo((props: NodeProps<ResizeNode>) => {
 	const node = useAppSelector(makeSelectNodeById(props.id));
@@ -18,11 +18,10 @@ const ResizeNodeComponent = memo((props: NodeProps<ResizeNode>) => {
 	const { result } = useNodeResult(props.id);
 	const outputItem = result?.outputs[result.selectedOutputIndex]?.items[0];
 	const inputFileData = outputItem?.data as FileData;
-
 	const imageUrl = ResolveFileDataUrl(inputFileData);
 
 	const nodeConfig = node?.config as ResizeNodeConfig | null;
-	// Draw to canvas when result is ready
+	//  When image connected, set dimensions to images
 	useEffect(() => {
 		if (!imageUrl || !node) return;
 
@@ -66,7 +65,7 @@ const ResizeNodeComponent = memo((props: NodeProps<ResizeNode>) => {
 				>
 					{imageUrl && <CanvasRenderer imageUrl={imageUrl} />}
 				</div>
-				{node && <DimensionsConfig node={node} />}
+				{node && <ResizeConfig node={node} />}
 			</div>
 		</BaseNode>
 	);

@@ -230,7 +230,7 @@ const BaseNode = memo(
 		const selectNode = useMemo(() => makeSelectNodeById(id), [id]);
 		const node = useAppSelector(selectNode);
 
-		const { inputs, isProcessing, result } = useNodeResult(id);
+		const { inputs, result } = useNodeResult(id);
 		const validation = useNodeValidation(id);
 		const hasTypeMismatch = (handleId: HandleEntityType["id"]) =>
 			validation?.[handleId] === "type_mismatch";
@@ -270,7 +270,6 @@ const BaseNode = memo(
 				className={cn(
 					"relative flex flex-col w-full h-full group/node",
 					dragging ? "shadow-lg scale-[1.01]" : "shadow-sm",
-					{ "ring-1 ring-green-400/30": isProcessing },
 					"bg-card border border-border",
 					"rounded-2xl",
 					selected && "ring-1 ring-primary border-primary",

@@ -14,8 +14,8 @@ const ResizeHeightInput = memo(
 		disabled,
 	}: {
 		node: NodeEntityType;
-		originalWidth: number | null;
-		originalHeight: number | null;
+		originalWidth?: number;
+		originalHeight?: number;
 		maintainAspect: boolean;
 		disabled?: boolean;
 	}) => {
