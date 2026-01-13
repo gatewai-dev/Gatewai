@@ -12,7 +12,7 @@ import { useAppSelector } from "@/store";
 import { makeSelectAllEdges } from "@/store/edges";
 import { type HandleEntityType, makeSelectAllHandles } from "@/store/handles";
 import { makeSelectAllNodeEntities, type NodeEntityType } from "@/store/nodes";
-import { NodeGraphProcessor } from "./node-graph-processor";
+import { type HandleState, NodeGraphProcessor } from "./node-graph-processor";
 import type { ConnectedInput } from "./types";
 
 const ProcessorContext = createContext<NodeGraphProcessor | null>(null);
@@ -77,6 +77,7 @@ export function useNodeResult<T extends NodeResult = NodeResult>(
 ): {
 	result: T | null;
 	inputs: Record<HandleEntityType["id"], ConnectedInput>;
+	handleStatus: Record<string, HandleState>;
 	error: string | null;
 } {
 	const processor = useProcessor();
@@ -85,6 +86,7 @@ export function useNodeResult<T extends NodeResult = NodeResult>(
 	const snapshotRef = useRef<{
 		result: T | null;
 		inputs: Record<HandleEntityType["id"], ConnectedInput>;
+		handleStatus: Record<string, HandleState>;
 		error: string | null;
 	} | null>(null);
 
@@ -99,11 +101,24 @@ export function useNodeResult<T extends NodeResult = NodeResult>(
 		processor.on("node:start", handler);
 		processor.on("node:processed", handler);
 		processor.on("node:error", handler);
+		processor.on("node:queued", handler); // Status changes
+		// Graph update indirectly triggers these, but we might want to be explicit if topology changes without execution
+		// Note: The processor doesn't currently emit a "graph:updated" event that is public,
+		// but React rerenders will re-run this hook.
+		// However, for useSyncExternalStore we need an event.
+		// The processor updates state synchronously in updateGraph so the component should re-render if it uses
+		// this hook and the data changed.
+		// We'll rely on the parent component triggering re-renders via Redux updates, which calls updateGraph,
+		// but since useSyncExternalStore is outside React's flow, we ideally need an event.
+		// Let's assume 'node:queued' or similar covers it or we rely on React prop updates to the Provider triggering the effect.
+		// To be safe, we can listen to a generic change if available, or just the node events.
+		// Since updateGraph marks nodes dirty/queued, 'node:queued' should fire.
 
 		return () => {
 			processor.off("node:start", handler);
 			processor.off("node:processed", handler);
 			processor.off("node:error", handler);
+			processor.off("node:queued", handler);
 		};
 	};
 
@@ -113,12 +128,14 @@ export function useNodeResult<T extends NodeResult = NodeResult>(
 		const nextResult = state?.result ?? null;
 		const nextInputs = state?.inputs ?? {};
 		const nextError = state?.error ?? null;
+		const nextHandleStatus = state?.handleStatus ?? {};
 
 		// Check if anything actually changed since the last snapshot
 		const hasChanged =
 			!snapshotRef.current ||
 			snapshotRef.current.result !== nextResult ||
 			snapshotRef.current.error !== nextError ||
+			snapshotRef.current.handleStatus !== nextHandleStatus ||
 			// If inputs is an object/map, compare size or specific keys
 			!isEqual(snapshotRef.current.inputs, nextInputs);
 
@@ -126,6 +143,7 @@ export function useNodeResult<T extends NodeResult = NodeResult>(
 			snapshotRef.current = {
 				result: nextResult as T,
 				inputs: nextInputs,
+				handleStatus: nextHandleStatus,
 				error: nextError,
 			};
 		}
@@ -158,6 +176,46 @@ export function useNodeValidation(nodeId: string): Record<string, string> {
 		}
 
 		return lastSnapshot.current;
+	};
+
+	return useSyncExternalStore(subscribe, getSnapshot, getSnapshot);
+}
+
+/**
+ * Hook to get the color for an edge based on its source handle
+ */
+export function useEdgeColor(
+	sourceNodeId: string,
+	sourceHandleId: string,
+): string | undefined {
+	const processor = useProcessor();
+	const lastColor = useRef<string | undefined>(undefined);
+
+	const subscribe = useCallback(
+		(callback: () => void) => {
+			const handler = (data: { nodeId: string }) => {
+				if (data.nodeId === sourceNodeId) {
+					callback();
+				}
+			};
+			processor.on("node:processed", handler);
+			// Also need to listen to initial graph loads or status updates
+			processor.on("node:queued", handler);
+			return () => {
+				processor.off("node:processed", handler);
+				processor.off("node:queued", handler);
+			};
+		},
+		[processor, sourceNodeId],
+	);
+
+	const getSnapshot = () => {
+		const color =
+			processor.getHandleColor(sourceNodeId, sourceHandleId) ?? undefined;
+		if (color !== lastColor.current) {
+			lastColor.current = color;
+		}
+		return lastColor.current;
 	};
 
 	return useSyncExternalStore(subscribe, getSnapshot, getSnapshot);

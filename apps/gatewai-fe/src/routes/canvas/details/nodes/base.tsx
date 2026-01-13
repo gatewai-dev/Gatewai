@@ -22,27 +22,22 @@ import {
 } from "@/store/handles";
 import { makeSelectNodeById } from "@/store/nodes";
 import { NODE_ICON_MAP } from "../node-templates/node-palette/icon-map";
-import { useNodeResult, useNodeValidation } from "../processor/processor-ctx";
+import type { HandleState } from "../processor/node-graph-processor";
+import {
+	useEdgeColor,
+	useNodeResult,
+	useNodeValidation,
+} from "../processor/processor-ctx";
 import { NodeMenu } from "./node-menu";
 
 const DEFAULT_COLOR = "#9ca3af";
 
-const getTypeColor = (type?: string) =>
-	dataTypeColors[type || ""]?.hex || DEFAULT_COLOR;
-
 /**
- * Generates styles for the handle.
- * Priority:
- * 1. Error state
- * 2. Explicit Connected Type (Result or Input Value)
- * 3. Multi-type Gradient (Combined colors)
- * 4. Single Type Filled/Hollow
+ * Generates styles for the handle based on processor state.
  */
 export const getHandleStyle = (
-	types: string[],
-	isConnected: boolean,
-	connectedType?: string,
-	isValid: boolean = true,
+	status: HandleState | undefined,
+	defColors: string[],
 ): React.CSSProperties => {
 	const baseDimensions = {
 		width: "10px",
@@ -50,7 +45,8 @@ export const getHandleStyle = (
 		borderRadius: "2px",
 	};
 
-	if (!isValid) {
+	// 1. Error state (from validation or status, but only if connected)
+	if (status && !status.valid && status.isConnected) {
 		return {
 			...baseDimensions,
 			backgroundColor: "var(--destructive)",
@@ -59,55 +55,30 @@ export const getHandleStyle = (
 		};
 	}
 
-	// 1. If we have a specific resolved type (e.g., a Result or a known Input connection), use it.
-	if (connectedType) {
-		const color = getTypeColor(connectedType);
+	// 2. Disconnected state: Transparent/Hollow
+	if (!status?.isConnected) {
+		// If disconnected, show a hollow box with the color of the *default* type
+		// to indicate what *should* go there.
+		const defaultColor =
+			dataTypeColors[defColors[0]]?.hex ||
+			dataTypeColors["Any"]?.hex ||
+			DEFAULT_COLOR;
 		return {
 			...baseDimensions,
-			backgroundColor: color,
-			border: "1px solid var(--background)",
-			boxShadow: `0 0 0 1px ${color}80`,
-			transition: "background-color 0.15s ease, box-shadow 0.15s ease",
+			backgroundColor: "var(--card)", // Hollow center
+			border: `2px solid ${defaultColor}`,
+			boxShadow: "none",
 		};
 	}
 
-	// 2. If no specific type is resolved and we have multiple types, show the gradient.
-	if (types.length > 1) {
-		const segmentSize = 100 / types.length;
-		const gradientStops = types
-			.map((type, index) => {
-				const color = getTypeColor(type);
-				const start = index * segmentSize;
-				const end = (index + 1) * segmentSize;
-				return `${color} ${start}% ${end}%`;
-			})
-			.join(", ");
-
-		return {
-			...baseDimensions,
-			background: `linear-gradient(to bottom, ${gradientStops})`,
-			border: "1px solid var(--border)",
-			boxShadow: "0 1px 2px rgba(0,0,0,0.1)",
-		};
-	}
-
-	// 3. Fallback for single types.
-	const color = getTypeColor(types[0]);
-
-	if (isConnected) {
-		return {
-			...baseDimensions,
-			backgroundColor: color,
-			border: "1px solid var(--background)",
-			boxShadow: `0 0 0 1px ${color}80`,
-		};
-	}
-
+	// 3. Connected state: Filled with the resolved active type color
+	const color = status.color || DEFAULT_COLOR;
 	return {
 		...baseDimensions,
-		backgroundColor: "var(--card)",
-		border: `2px solid ${color}`,
-		boxShadow: "none",
+		backgroundColor: color,
+		border: "1px solid var(--background)",
+		boxShadow: `0 0 0 1px ${color}80`,
+		transition: "background-color 0.15s ease, box-shadow 0.15s ease",
 	};
 };
 
@@ -116,40 +87,29 @@ const NodeHandle = memo(
 		handle,
 		index,
 		type,
-		isValid,
-		hasValue,
-		connectedType,
+		status,
 		nodeSelected,
 	}: {
 		handle: HandleEntityType;
 		index: number;
 		type: "source" | "target";
-		isValid: boolean;
-		hasValue: boolean;
-		connectedType?: string;
+		status?: HandleState;
 		nodeSelected?: boolean;
 	}) => {
 		const isTarget = type === "target";
 
+		const validation = useNodeValidation(handle.nodeId);
+		const errorCode = validation?.[handle.id];
+		const isRequiredErr = errorCode === "missing_connection";
 		const handleStyle = useMemo(
-			() =>
-				getHandleStyle(
-					handle.dataTypes,
-					hasValue || !isTarget,
-					connectedType,
-					isValid,
-				),
-			[handle.dataTypes, hasValue, isTarget, connectedType, isValid],
+			() => getHandleStyle(status, handle.dataTypes),
+			[status, handle.dataTypes],
 		);
 
-		const activeColor = useMemo(
-			() =>
-				connectedType
-					? getTypeColor(connectedType)
-					: getTypeColor(handle.dataTypes[0]),
-			[connectedType, handle.dataTypes],
-		);
-
+		let activeColor = status?.color || dataTypeColors[handle.dataTypes[0]]?.hex;
+		if (isRequiredErr) {
+			activeColor = dataTypeColors[handle.dataTypes[0]]?.hex;
+		}
 		const topPosition = (index + 1) * 32 + 20;
 
 		const handleComponent = (
@@ -159,11 +119,24 @@ const NodeHandle = memo(
 				position={isTarget ? Position.Left : Position.Right}
 				style={handleStyle}
 				className={cn(
-					!isValid && "animate-pulse",
+					status && !status.valid && status.isConnected && "animate-pulse",
 					"hover:scale-110 transition-transform duration-75",
 				)}
 			/>
 		);
+
+		let tooltipContent: string | null = null;
+		if (status && !status.valid && errorCode) {
+			if (errorCode === "type_mismatch") {
+				tooltipContent = "Invalid Type";
+			} else if (errorCode === "missing_connection") {
+				tooltipContent = "Missing Required";
+			} else if (errorCode === "invalid_source") {
+				tooltipContent = "Invalid Source";
+			} else {
+				tooltipContent = "Invalid";
+			}
+		}
 
 		return (
 			<div
@@ -190,21 +163,21 @@ const NodeHandle = memo(
 							textShadow: "0 1px 2px rgba(0,0,0,0.1)",
 						}}
 					>
-						{handle.label || connectedType || handle.dataTypes[0]}
+						{handle.label || status?.type || handle.dataTypes[0]}
 						{handle.required && (
-							<span className="text-destructive ml-0.5">*</span>
+							<span className="text-destructive text-lg ml-0.5">*</span>
 						)}
 					</span>
 				</div>
 
-				{!isValid ? (
+				{tooltipContent ? (
 					<Tooltip>
 						<TooltipTrigger asChild>{handleComponent}</TooltipTrigger>
 						<TooltipContent
 							side={"bottom"}
 							className="bg-destructive text-destructive-foreground border-none text-[10px] uppercase font-bold"
 						>
-							Invalid Type
+							{tooltipContent}
 						</TooltipContent>
 					</Tooltip>
 				) : (
@@ -230,12 +203,9 @@ const BaseNode = memo(
 		const selectNode = useMemo(() => makeSelectNodeById(id), [id]);
 		const node = useAppSelector(selectNode);
 
-		const { inputs, result } = useNodeResult(id);
+		const { handleStatus } = useNodeResult(id);
 		const validation = useNodeValidation(id);
-		const hasTypeMismatch = (handleId: HandleEntityType["id"]) =>
-			validation?.[handleId] === "type_mismatch";
-
-		// Optimizing handle sorting and separation
+		console.log({ validation });
 		const { inputHandles, outputHandles } = useMemo(() => {
 			const sorted = [...handles].sort((a, b) =>
 				(a.createdAt || "").localeCompare(b.createdAt || ""),
@@ -245,20 +215,6 @@ const BaseNode = memo(
 				outputHandles: sorted.filter((h) => h.type === "Output"),
 			};
 		}, [handles]);
-
-		const resultTypeMap = useMemo(() => {
-			if (!result?.outputs) return {};
-			const activeOutput = result.outputs[result.selectedOutputIndex ?? 0];
-			if (!activeOutput?.items) return {};
-
-			const map: Record<string, string> = {};
-			for (const item of activeOutput.items) {
-				if (item.outputHandleId) {
-					map[item.outputHandleId] = item.type;
-				}
-			}
-			return map;
-		}, [result]);
 
 		const { mainIcon: MainIcon } = NODE_ICON_MAP[node?.type] ?? {
 			mainIcon: NODE_ICON_MAP.File.mainIcon,
@@ -284,9 +240,7 @@ const BaseNode = memo(
 							handle={handle}
 							index={i}
 							type="target"
-							isValid={!hasTypeMismatch(handle?.id)}
-							hasValue={inputs[handle.id]?.outputItem?.data != null}
-							connectedType={inputs[handle.id]?.outputItem?.type}
+							status={handleStatus[handle.id]}
 							nodeSelected={selected}
 						/>
 					))}
@@ -323,9 +277,7 @@ const BaseNode = memo(
 							handle={handle}
 							index={i}
 							type="source"
-							isValid={true}
-							hasValue={true}
-							connectedType={resultTypeMap[handle.id]}
+							status={handleStatus[handle.id]}
 							nodeSelected={selected}
 						/>
 					))}
@@ -382,6 +334,8 @@ const CustomConnectionLine = memo(
 const CustomEdge = memo(
 	({
 		id,
+		source,
+		sourceHandleId,
 		sourceX,
 		sourceY,
 		targetX,
@@ -401,9 +355,12 @@ const CustomEdge = memo(
 			targetPosition,
 		});
 
+		// Fetch the color dynamically from the processor based on the source handle
+		const processorColor = useEdgeColor(source, sourceHandleId ?? "");
+
 		const color = useMemo(
-			() => (selected ? "var(--primary)" : undefined),
-			[selected],
+			() => (selected ? "var(--primary)" : processorColor || "var(--border)"),
+			[selected, processorColor],
 		);
 
 		return (
@@ -421,6 +378,7 @@ const CustomEdge = memo(
 						strokeWidth: selected ? 3 : 1.5,
 						stroke: color,
 						opacity: selected ? 1 : 0.6,
+						transition: "stroke 0.3s ease",
 					}}
 				/>
 			</>

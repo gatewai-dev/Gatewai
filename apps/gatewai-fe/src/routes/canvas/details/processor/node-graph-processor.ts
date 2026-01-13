@@ -13,6 +13,7 @@ import {
 	TextMergerNodeConfigSchema,
 	TextNodeConfigSchema,
 } from "@gatewai/types";
+import { dataTypeColors } from "@/config/colors";
 import type { EdgeEntityType } from "@/store/edges";
 import type { HandleEntityType } from "@/store/handles";
 import type { NodeEntityType } from "@/store/nodes";
@@ -33,6 +34,14 @@ export enum TaskStatus {
 	COMPLETED = "COMPLETED",
 }
 
+export interface HandleState {
+	id: string;
+	isConnected: boolean;
+	valid: boolean;
+	type: string | null;
+	color: string | null;
+}
+
 export interface NodeState {
 	id: string;
 	status: TaskStatus | null;
@@ -45,6 +54,8 @@ export interface NodeState {
 	result: NodeResult | null;
 	inputs: Record<string, ConnectedInput> | null;
 	error: string | null;
+
+	handleStatus: Record<string, HandleState>;
 
 	abortController: AbortController | null;
 	lastProcessedSignature: string | null;
@@ -160,16 +171,14 @@ export class NodeGraphProcessor extends EventEmitter {
 					state.result = currNode.result as unknown as NodeResult;
 					state.lastProcessedSignature = this.getNodeValueHash(currNode);
 					state.isDirty = false;
-					// Note: We don't set COMPLETED here arbitrarily unless we are sure,
-					// but generally if we have a result, it is conceptually completed.
 					state.status = TaskStatus.COMPLETED;
 				} else {
 					state.result = null;
 					state.lastProcessedSignature = null;
 					state.isDirty = true;
-					// Will be set to QUEUED in markNodesDirty
 					dirtyNodes.push(id);
 				}
+				this.updateNodeHandleStatus(id);
 				state.version++;
 			});
 			if (dirtyNodes.length > 0) {
@@ -183,6 +192,8 @@ export class NodeGraphProcessor extends EventEmitter {
 				if (!state || state.lastProcessedSignature !== currHash) {
 					nodesToInvalidate.add(id);
 				}
+				// Always update handle status on graph update to catch connectivity changes
+				this.updateNodeHandleStatus(id);
 			});
 
 			// Detect Extrinsic Input Changes (Edges or Upstream Values)
@@ -212,12 +223,111 @@ export class NodeGraphProcessor extends EventEmitter {
 		}
 	}
 
+	/**
+	 * Calculates the visual state (connected, color, type) for all handles of a node.
+	 */
+	private updateNodeHandleStatus(nodeId: string) {
+		const state = this.getOrCreateNodeState(nodeId);
+		const handles = this.handles.filter((h) => h.nodeId === nodeId);
+		const newStatus: Record<string, HandleState> = {};
+		const nodeValidationErrors = this.graphValidation[nodeId] || {};
+		const hasNodeErrors = Object.keys(nodeValidationErrors).length > 0;
+
+		for (const handle of handles) {
+			let isConnected = false;
+			let activeType = handle.dataTypes[0] as string;
+
+			if (handle.type === "Input") {
+				// Check for incoming edge
+				const edge = this.edgesByTarget
+					.get(nodeId)
+					?.find((e) => e.targetHandleId === handle.id);
+				isConnected = !!edge;
+
+				if (edge) {
+					const sourceState = this.nodeStates.get(edge.source);
+					// If we have a processed result from source, use that type
+					if (sourceState?.result) {
+						const outputIndex = sourceState.result.selectedOutputIndex ?? 0;
+						const outputItem = sourceState.result.outputs[
+							outputIndex
+						]?.items.find((i) => i.outputHandleId === edge.sourceHandleId);
+						if (outputItem) {
+							activeType = outputItem.type;
+						}
+					}
+				}
+			} else {
+				// Output
+				// Check if any edge originates from this handle
+				isConnected = this.edges.some(
+					(e) => e.source === nodeId && e.sourceHandleId === handle.id,
+				);
+
+				// If this node has a result, use the actual output type
+				if (state.result) {
+					const outputIndex = state.result.selectedOutputIndex ?? 0;
+					const outputItem = state.result.outputs[outputIndex]?.items.find(
+						(i) => i.outputHandleId === handle.id,
+					);
+					if (outputItem) {
+						activeType = outputItem.type;
+					}
+				}
+			}
+
+			// Compute per-handle validity (static from graph validation)
+			let valid = true;
+			if (nodeValidationErrors[handle.id]) {
+				valid = false;
+			}
+			if (handle.type === "Output" && hasNodeErrors) {
+				valid = false;
+			}
+
+			// Resolve Color
+			// Requirement: Disconnected = No Background (null). Connected = Type Color.
+			let color: string | null = null;
+			if (isConnected) {
+				const colorConfig = dataTypeColors[activeType] || dataTypeColors["Any"];
+				color = colorConfig?.hex || "#9ca3af";
+			}
+
+			// If invalid, do not change to incoming color/type - reset to expected/default
+			if (!valid) {
+				activeType = handle.dataTypes[0];
+				const colorConfig = dataTypeColors[activeType] || dataTypeColors["Any"];
+				color = colorConfig?.hex || "#9ca3af";
+			}
+
+			newStatus[handle.id] = {
+				id: handle.id,
+				isConnected,
+				valid,
+				type: activeType,
+				color,
+			};
+		}
+
+		state.handleStatus = newStatus;
+	}
+
 	getNodeResult(nodeId: string): NodeResult | null {
 		return this.nodeStates.get(nodeId)?.result ?? null;
 	}
 
 	getNodeState(nodeId: string): NodeState | null {
 		return this.nodeStates.get(nodeId) ?? null;
+	}
+
+	/**
+	 * Helper to get the resolved color for a specific handle
+	 * Used for coloring edges based on source handle
+	 */
+	getHandleColor(nodeId: string, handleId: string): string | null {
+		const state = this.nodeStates.get(nodeId);
+		if (!state) return null;
+		return state.handleStatus[handleId]?.color ?? null;
 	}
 
 	getNodeValidation(nodeId: NodeEntityType["id"]) {
@@ -274,7 +384,6 @@ export class NodeGraphProcessor extends EventEmitter {
 
 			const validationErrors = this.graphValidation[nodeId];
 			if (validationErrors && Object.keys(validationErrors).length > 0) {
-				// Fail invalid nodes immediately without queuing
 				state.status = TaskStatus.FAILED;
 				state.error = `Invalid configuration: ${Object.values(validationErrors).join(", ")}`;
 				state.isDirty = false;
@@ -284,7 +393,6 @@ export class NodeGraphProcessor extends EventEmitter {
 				state.version++;
 				this.emit("node:error", { nodeId, error: state.error });
 			} else {
-				// [Schema Alignment] Set status to QUEUED
 				state.isDirty = true;
 				state.status = TaskStatus.QUEUED;
 				state.error = null;
@@ -293,7 +401,6 @@ export class NodeGraphProcessor extends EventEmitter {
 				state.durationMs = undefined;
 				state.version++;
 
-				// Notify system that this node is queued (good place to create/reset DB Task)
 				this.emit("node:queued", { nodeId });
 			}
 
@@ -414,7 +521,6 @@ export class NodeGraphProcessor extends EventEmitter {
 			return;
 		}
 
-		// [Schema Alignment] Update Status to EXECUTING
 		state.status = TaskStatus.EXECUTING;
 		state.startedAt = Date.now();
 		state.error = null;
@@ -451,6 +557,16 @@ export class NodeGraphProcessor extends EventEmitter {
 			state.durationMs =
 				state.finishedAt - (state.startedAt || state.finishedAt);
 			state.lastProcessedSignature = this.getNodeValueHash(node);
+
+			// Recalculate handle status as types might have changed
+			this.updateNodeHandleStatus(nodeId);
+
+			// Also update downstream neighbors, as their input handle colors may depend on this result
+			const children = this.adjacency.get(nodeId);
+			children?.forEach((childId) => {
+				this.updateNodeHandleStatus(childId);
+			});
+
 			state.version++;
 
 			this.emit("node:processed", {
@@ -510,6 +626,7 @@ export class NodeGraphProcessor extends EventEmitter {
 				result: null,
 				inputs: null,
 				error: null,
+				handleStatus: {},
 				abortController: null,
 				lastProcessedSignature: null,
 				version: 0,
