@@ -12,7 +12,7 @@ const NoteNodeComponent = memo((props: NodeProps<NoteNode>) => {
 	const node = useAppSelector(makeSelectNodeById(props.id));
 	const { onNodeConfigUpdate } = useCanvasCtx();
 	const nodeConfig = node?.config as unknown as NoteNodeConfig;
-	const text = nodeConfig.content ?? "";
+	const text = nodeConfig?.content ?? "";
 
 	const handleChange = useCallback(
 		(e: React.ChangeEvent<HTMLTextAreaElement>) => {

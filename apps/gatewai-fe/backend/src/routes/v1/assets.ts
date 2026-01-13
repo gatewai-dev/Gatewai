@@ -5,12 +5,19 @@ import { fileTypeFromBuffer } from "file-type";
 import { Hono } from "hono";
 import sharp from "sharp";
 import { z } from "zod";
+import { ENV_CONFIG } from "../../config.js";
 import { logger } from "../../logger.js";
 import { uploadToImportNode } from "../../node-fns/import-media.js";
+import {
+	generateImageThumbnail,
+	generateVideoThumbnail,
+} from "../../utils/media.js";
 import { assertIsError } from "../../utils/misc.js";
 import {
 	deleteFromGCS,
+	fileExistsInGCS,
 	generateSignedUrl,
+	getFromGCS,
 	getStreamFromGCS,
 	uploadToGCS,
 } from "../../utils/storage.js";
@@ -147,6 +154,87 @@ const assetsRouter = new Hono({
 			return c.json({ error: "Upload failed" }, 500);
 		}
 	})
+	.get(
+		"/thumbnail/:id",
+		zValidator(
+			"query",
+			z.object({
+				w: z.coerce.number().int().positive().default(300),
+				h: z.coerce.number().int().positive().default(300),
+			}),
+		),
+		async (c) => {
+			const { id: rawId } = c.req.param();
+			const { w: width, h: height } = c.req.valid("query");
+			const id = rawId.split(".")[0]; // Sanitize ID
+
+			// 1. Construct Cache Key
+			const cacheBucket = ENV_CONFIG.GCS_ASSETS_BUCKET;
+			const cacheKey = `temp/thumbnails/${id}_${width}_${height}.webp`;
+
+			try {
+				// 2. Check Cache
+				const exists = await fileExistsInGCS(cacheKey, cacheBucket);
+				if (exists) {
+					const stream = getStreamFromGCS(cacheKey, cacheBucket);
+					return c.body(stream, 200, {
+						"Content-Type": "image/webp",
+						"Cache-Control": "public, max-age=31536000, immutable",
+					});
+				}
+
+				// 3. Cache Miss: Retrieve Original Asset
+				const asset = await prisma.fileAsset.findUnique({ where: { id } });
+				if (!asset) {
+					return c.json({ error: "Asset not found" }, 404);
+				}
+
+				let thumbnailBuffer: Buffer;
+
+				// 4. Generate Thumbnail based on Type
+				if (asset.mimeType.startsWith("video/")) {
+					// For videos, we need a Signed URL to pass to ffmpeg (remote read)
+					// This avoids downloading the entire video file to memory
+					const sourceUrl = await generateSignedUrl(
+						asset.key,
+						asset.bucket,
+						300, // 5 minutes validity
+					);
+					thumbnailBuffer = await generateVideoThumbnail(
+						sourceUrl,
+						width,
+						height,
+					);
+				} else if (asset.mimeType.startsWith("image/")) {
+					// For images, we download the buffer to process with Sharp
+					const originalBuffer = await getFromGCS(asset.key, asset.bucket);
+					thumbnailBuffer = await generateImageThumbnail(
+						originalBuffer,
+						width,
+						height,
+					);
+				} else {
+					return c.json({ error: "Unsupported asset type for thumbnail" }, 400);
+				}
+
+				// 5. Upload to Cache
+				await uploadToGCS(thumbnailBuffer, cacheKey, "image/webp", cacheBucket);
+
+				// 6. Return Response
+				return c.body(thumbnailBuffer, 200, {
+					"Content-Type": "image/webp",
+					"Cache-Control": "public, max-age=31536000, immutable",
+				});
+			} catch (error) {
+				logger.error(`Thumbnail generation failed for ${id}: ${error}`);
+				assertIsError(error);
+				return c.json(
+					{ error: "Thumbnail generation failed", details: error.message },
+					500,
+				);
+			}
+		},
+	)
 	.get("/:id", async (c) => {
 		const rawId = c.req.param("id");
 		const id = rawId.split(".")[0];

@@ -1,8 +1,6 @@
 import { PanelLeftClose, PanelLeftOpen } from "lucide-react";
-import { useRef } from "react";
 import { Button } from "@/components/ui/button";
 import { YodesLogo } from "@/components/ui/logo";
-import { ScrollArea } from "@/components/ui/scroll-area";
 import {
 	Tooltip,
 	TooltipContent,
@@ -120,7 +118,6 @@ function NodePaletteContent({ templates }: { templates: NodeTemplateListRPC }) {
 				{isCollapsed && (
 					<div className="flex flex-col items-center gap-4 py-4 opacity-50">
 						<div className="h-px w-8 bg-border" />
-						{/* You could map a few quick access icons here if desired */}
 					</div>
 				)}
 			</div>

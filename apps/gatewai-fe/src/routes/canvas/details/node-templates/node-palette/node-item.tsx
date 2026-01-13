@@ -1,5 +1,5 @@
-import { useReactFlow, type XYPosition } from "@xyflow/react";
-import { AnimatePresence, motion } from "framer-motion";
+import { useReactFlow } from "@xyflow/react";
+import { motion } from "framer-motion";
 import { GripVertical } from "lucide-react";
 import { memo, useEffect, useRef, useState } from "react";
 import { createPortal } from "react-dom";
@@ -170,7 +170,8 @@ export const NodeItem = memo(({ template, id_suffix }: NodeItemProps) => {
 						<div className="flex -space-x-1 pl-2">
 							{optionalIcons.slice(0, 2).map((OptIcon, idx) => (
 								<div
-									key={idx}
+									// biome-ignore lint/suspicious/noArrayIndexKey: No other
+									key={`${idx}_opticon`}
 									className="flex h-4 w-4 items-center justify-center rounded-full bg-background ring-1 ring-border"
 								>
 									<OptIcon className="h-2.5 w-2.5 text-muted-foreground" />

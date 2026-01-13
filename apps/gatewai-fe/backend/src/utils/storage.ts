@@ -97,6 +97,25 @@ export function getStreamFromGCS(
 }
 
 /**
+ * Checks if a file exists in the specified GCS bucket.
+ */
+export async function fileExistsInGCS(
+	key: string,
+	bucketName: string,
+): Promise<boolean> {
+	try {
+		const [exists] = await storage.bucket(bucketName).file(key).exists();
+		return exists;
+	} catch (error) {
+		console.warn(
+			`Failed to check existence for ${key} in ${bucketName}`,
+			error,
+		);
+		return false;
+	}
+}
+
+/**
  * Uploads a file to temporary folder of assets bucket.
  * @param buffer File buffer
  * @param mimeType Mime type of the file
