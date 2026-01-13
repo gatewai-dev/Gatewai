@@ -12,6 +12,9 @@ function useDrawToCanvas(
 		undefined,
 	);
 	const [containerWidth, setContainerWidth] = useState(0);
+	const prevZoomRef = useRef(zoom);
+	const timeoutRef = useRef<NodeJS.Timeout | null>(null);
+
 	// Setup Worker and ResizeObserver
 	useEffect(() => {
 		if (!workerRef.current) {
@@ -49,17 +52,41 @@ function useDrawToCanvas(
 
 	// Redraw when image, width, or zoom changes
 	useEffect(() => {
-		if (imageUrl && workerRef.current && containerWidth > 0) {
-			workerRef.current.postMessage({
-				type: "DRAW_IMAGE",
-				payload: {
-					imageUrl,
-					canvasWidth: containerWidth,
-					zoom: zoom,
-					dpr: window.devicePixelRatio || 1,
-				},
-			});
+		if (workerRef.current && imageUrl && containerWidth > 0) {
+			const draw = () => {
+				workerRef.current!.postMessage({
+					type: "DRAW_IMAGE",
+					payload: {
+						imageUrl,
+						canvasWidth: containerWidth,
+						zoom: zoom,
+						dpr: window.devicePixelRatio || 1,
+					},
+				});
+			};
+
+			const isZoomChange = zoom !== prevZoomRef.current;
+			prevZoomRef.current = zoom;
+
+			if (timeoutRef.current) {
+				clearTimeout(timeoutRef.current);
+			}
+
+			if (isZoomChange) {
+				timeoutRef.current = setTimeout(() => {
+					draw();
+					timeoutRef.current = null;
+				}, 100);
+			} else {
+				draw();
+			}
 		}
+
+		return () => {
+			if (timeoutRef.current) {
+				clearTimeout(timeoutRef.current);
+			}
+		};
 	}, [imageUrl, containerWidth, zoom]);
 
 	return { renderHeight };

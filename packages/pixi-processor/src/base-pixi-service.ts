@@ -149,8 +149,6 @@ export abstract class BasePixiService implements IPixiProcessor {
 		}
 	}
 
-	// --- Processors ---
-
 	public async processModulate(
 		imageUrl: string,
 		config: ModulateNodeConfig,

@@ -1,5 +1,6 @@
-import type { CompositorNodeConfig } from "@gatewai/types";
+import type { CompositorLayer, CompositorNodeConfig } from "@gatewai/types";
 import Konva from "konva";
+import { GetFontAssetUrl } from "@/utils/file";
 
 const processCompositor = async (
 	config: CompositorNodeConfig,
@@ -8,8 +9,8 @@ const processCompositor = async (
 ): Promise<{ dataUrl: string; width: number; height: number }> => {
 	if (signal?.aborted) throw new DOMException("Cancelled", "AbortError");
 
-	const width = config.width ?? 1024;
-	const height = config.height ?? 1024;
+	const width = config.width ?? 1080;
+	const height = config.height ?? 1080;
 
 	const container = document.createElement("div");
 	const stage = new Konva.Stage({
@@ -22,43 +23,54 @@ const processCompositor = async (
 	stage.add(layer);
 
 	const explicitLayers = Object.values(config.layerUpdates || {});
-	const allLayers = [...explicitLayers];
+	const allLayers: CompositorLayer[] = [...explicitLayers];
+
+	let maxZ = Math.max(...explicitLayers.map((l) => l.zIndex ?? 0), 0);
 
 	// Default layer generation matching server-side logic
 	for (const [handleId, input] of Object.entries(inputs)) {
-		if (!explicitLayers.some((l) => l.inputHandleId === handleId)) {
-			const defaultLayer = {
-				id: handleId,
-				inputHandleId: handleId,
-				type: input.type,
-				x: 0,
-				y: 0,
-				rotation: 0,
-				opacity: 1, // Server uses 1, not 100
-				lockAspect: true,
-				blendMode: "source-over",
-				zIndex: 100,
-			};
+		if (explicitLayers.some((l) => l.inputHandleId === handleId)) continue;
 
-			if (input.type === "Text") {
-				Object.assign(defaultLayer, {
-					fontFamily: "Geist",
-					fontSize: 64,
-					fill: "#ffffff",
-					letterSpacing: 0,
-					lineHeight: 1.1,
-					align: "left",
-					width: 400,
-				});
-			} else {
-				Object.assign(defaultLayer, {
-					width: 300,
-					height: 300,
-				});
-			}
+		const defaultLayer: CompositorLayer = {
+			id: handleId,
+			inputHandleId: handleId,
+			type: input.type,
+			x: 0,
+			y: 0,
+			rotation: 0,
+			opacity: 1, // Server uses 1, not 100
+			lockAspect: true,
+			blendMode: "source-over",
+			zIndex: ++maxZ,
+		};
 
-			allLayers.push(defaultLayer);
+		if (input.type === "Text") {
+			Object.assign(defaultLayer, {
+				fontFamily: "Geist",
+				fontSize: 64,
+				fill: "#ffffff",
+				letterSpacing: 0,
+				lineHeight: 1.1,
+				align: "left",
+				verticalAlign: "top",
+				width: 400,
+			});
+		} else {
+			const img = new Image();
+			img.crossOrigin = "Anonymous";
+			img.src = input.value;
+
+			await new Promise<void>((resolve, reject) => {
+				img.onload = () => {
+					defaultLayer.width = Math.round(img.width);
+					defaultLayer.height = Math.round(img.height);
+					resolve();
+				};
+				img.onerror = reject;
+			});
 		}
+
+		allLayers.push(defaultLayer);
 	}
 
 	const sortedLayers = allLayers.sort(
@@ -75,6 +87,15 @@ const processCompositor = async (
 
 	// Load all fonts before rendering
 	const fontLoadPromises = Array.from(fontsToLoad).map(async (fontFamily) => {
+		const fontUrl = GetFontAssetUrl(fontFamily);
+		const style = document.createElement("style");
+		style.textContent = `
+			@font-face {
+				font-family: "${fontFamily}";
+				src: url("${fontUrl}");
+			}
+		`;
+		document.head.appendChild(style);
 		try {
 			await document.fonts.load(`16px "${fontFamily}"`);
 		} catch (err) {
@@ -135,6 +156,7 @@ const processCompositor = async (
 				textDecoration: layerConfig.textDecoration ?? "",
 				fill: layerConfig.fill ?? "#ffffff",
 				align: layerConfig.align ?? "left",
+				verticalAlign: layerConfig.verticalAlign ?? "top",
 				letterSpacing: layerConfig.letterSpacing ?? 0,
 				lineHeight: layerConfig.lineHeight ?? 1.1, // Match server: 1.1
 				width: maxWidth,

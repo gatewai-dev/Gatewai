@@ -1,6 +1,7 @@
 import type { TextNodeConfig } from "@gatewai/types";
 import type { NodeProps } from "@xyflow/react";
 import { memo, useCallback } from "react";
+import { ScrollArea } from "@/components/ui/scroll-area";
 import { Textarea } from "@/components/ui/textarea";
 import { useAppSelector } from "@/store";
 import { makeSelectNodeById } from "@/store/nodes";
@@ -26,12 +27,17 @@ const TextNodeComponent = memo((props: NodeProps<TextNode>) => {
 
 	return (
 		<BaseNode {...props} className="nowheel">
-			<Textarea
-				value={text}
-				onChange={handleChange}
-				className="w-full h-full max-h-80 overflow-auto p-2 border rounded text-gray-100 resize-none text-xs!"
-				placeholder="Enter text..."
-			/>
+			<ScrollArea
+				viewPortCn="max-h-[350px]"
+				className="text-xs bg-input p-2 w-full"
+			>
+				<Textarea
+					value={text}
+					onChange={handleChange}
+					className="w-full h-full p-2 border rounded resize-none text-xs!"
+					placeholder="Enter text..."
+				/>
+			</ScrollArea>
 		</BaseNode>
 	);
 });

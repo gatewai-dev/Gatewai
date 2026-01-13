@@ -762,7 +762,7 @@ export class NodeGraphProcessor extends EventEmitter {
 			)?.id;
 
 		this.registerProcessor("Crop", async ({ node, inputs, signal }) => {
-			const imageUrl = findInputData(inputs, "Image");
+			const imageUrl = findInputData(inputs, "Image", "Crop");
 			if (!imageUrl) throw new Error("Missing Input Image");
 
 			const config = node.config as CropNodeConfig;
