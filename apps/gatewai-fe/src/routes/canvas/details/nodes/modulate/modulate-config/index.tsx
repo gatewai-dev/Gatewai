@@ -74,7 +74,7 @@ const ModulateNodeConfigComponent = memo(
 						min={0}
 						max={360}
 						step={1}
-						description="Rotate colors around the wheel (0-360°)"
+						info="Rotate colors around the wheel (0-360°)"
 					/>
 					<SliderField
 						control={form.control}
@@ -83,7 +83,7 @@ const ModulateNodeConfigComponent = memo(
 						min={0}
 						max={2}
 						step={0.01}
-						description="1.0 is original. 0 is grayscale."
+						info="1.0 is original. 0 is grayscale."
 					/>
 					<SliderField
 						control={form.control}
@@ -92,7 +92,7 @@ const ModulateNodeConfigComponent = memo(
 						min={0}
 						max={2}
 						step={0.01}
-						description="1.0 is original. 0 is black."
+						info="1.0 is original. 0 is black."
 					/>
 					<SliderField
 						control={form.control}
@@ -101,7 +101,7 @@ const ModulateNodeConfigComponent = memo(
 						min={0}
 						max={2}
 						step={0.01}
-						description="1.0 is original. Multiplies final output."
+						info="1.0 is original. Multiplies final output."
 					/>
 				</form>
 			</Form>

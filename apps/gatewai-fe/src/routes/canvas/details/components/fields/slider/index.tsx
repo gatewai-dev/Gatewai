@@ -1,6 +1,6 @@
 import { Info } from "lucide-react";
-import { memo } from "react";
-import type { Control, FieldValues, Path } from "react-hook-form";
+import { type JSX, memo } from "react";
+import type { Control, FieldPath, FieldValues } from "react-hook-form";
 import {
 	FormControl,
 	FormField,
@@ -15,9 +15,9 @@ import {
 	TooltipTrigger,
 } from "@/components/ui/tooltip";
 
-type SliderFieldProps<TFieldValues extends FieldValues = FieldValues> = {
-	control: Control<TFieldValues>;
-	name: Path<TFieldValues>;
+type SliderFieldProps<T extends FieldValues> = {
+	control: Control<T>;
+	name: FieldPath<T>;
 	label?: string;
 	min?: number;
 	max?: number;
@@ -25,9 +25,7 @@ type SliderFieldProps<TFieldValues extends FieldValues = FieldValues> = {
 	info?: string;
 };
 
-const SliderField = memo(function SliderField<
-	TFieldValues extends FieldValues = FieldValues,
->({
+function SliderFieldInner<T extends FieldValues>({
 	control,
 	name,
 	label,
@@ -35,7 +33,7 @@ const SliderField = memo(function SliderField<
 	max,
 	step,
 	info,
-}: SliderFieldProps<TFieldValues>) {
+}: SliderFieldProps<T>): JSX.Element {
 	return (
 		<FormField
 			control={control}
@@ -69,6 +67,11 @@ const SliderField = memo(function SliderField<
 			)}
 		/>
 	);
-});
+}
+
+// Memoize and cast to maintain generic support in JSX
+const SliderField = memo(SliderFieldInner) as <T extends FieldValues>(
+	props: SliderFieldProps<T>,
+) => JSX.Element;
 
 export { SliderField };
