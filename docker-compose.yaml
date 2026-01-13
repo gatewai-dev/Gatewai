@@ -24,6 +24,32 @@ services:
     volumes:
       - redis_data:/data
 
+  app:
+    build: .
+    container_name: gatewai-app
+    restart: unless-stopped
+    ports:
+      - "8081:8081"
+    depends_on:
+      - postgres
+      - redis
+    environment:
+      - NODE_ENV=production
+      - PORT=8081
+      - BASE_URL=${BASE_URL}
+      - REDIS_HOST=redis
+      - REDIS_PORT=6379
+      - REDIS_PASSWORD=${REDIS_PASSWORD}
+      - DATABASE_URL=postgresql://postgres:postgres@postgres:5432/postgres
+      - GEMINI_API_KEY=${GEMINI_API_KEY}
+      - GCS_ASSETS_BUCKET=${GCS_ASSETS_BUCKET}
+      - GOOGLE_APPLICATION_CREDENTIALS=${GOOGLE_APPLICATION_CREDENTIALS}
+      - GOOGLE_CLIENT_ID=${GOOGLE_CLIENT_ID}
+      - GOOGLE_CLIENT_SECRET=${GOOGLE_CLIENT_SECRET}
+      - DEBUG_LOG_MEDIA=${DEBUG_LOG_MEDIA}
+    volumes:
+      - ./credentials.json:/app/credentials.json
+
 volumes:
   postgres_data:
   redis_data:

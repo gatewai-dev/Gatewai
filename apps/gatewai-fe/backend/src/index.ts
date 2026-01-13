@@ -1,4 +1,5 @@
 import { serve } from "@hono/node-server";
+import { serveStatic } from "@hono/node-server/serve-static";
 import { Hono } from "hono";
 import { cors } from "hono/cors";
 import { logger } from "hono/logger";
@@ -24,7 +25,8 @@ const app = new Hono()
 			credentials: true,
 		}),
 	)
-	.route("/api/v1", v1Router);
+	.route("/api/v1", v1Router)
+	.get("*", serveStatic({ root: "./dist" }));
 
 // Initialize canvas worker.
 await startWorker();

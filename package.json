@@ -1,7 +1,8 @@
 {
 	"private": false,
 	"scripts": {
-		"build": "turbo run build --force",
+		"build": "turbo run build",
+		"build-force": "turbo run build --force",
 		"dev": "turbo run dev",
 		"biome": "pnpm exec biome check --write",
 		"biome-hook": "pnpm exec biome check --write --no-errors-on-unmatched --files-ignore-unknown=true --colors=off",
