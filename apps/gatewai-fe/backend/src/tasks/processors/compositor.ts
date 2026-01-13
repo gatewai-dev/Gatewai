@@ -214,11 +214,10 @@ const compositorProcessor: NodeProcessor = async ({ node, data }) => {
 							letterSpacing: 0,
 							lineHeight: 1.1,
 							align: "left",
-							width: 400,
+							width: config.width ?? 400,
 						}
 					: {
-							width: 300,
-							height: 300,
+							width: config.width,
 						}),
 			};
 			allLayers.push(defaultLayer);

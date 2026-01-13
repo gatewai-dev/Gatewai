@@ -132,10 +132,14 @@ const BLEND_MODES = [
 	"luminosity",
 ] as const;
 
+interface LocalCompositorLayer extends CompositorLayer {
+	computedHeight?: number;
+}
+
 interface EditorContextType {
-	layers: CompositorLayer[];
+	layers: LocalCompositorLayer[];
 	updateLayers: (
-		updater: SetStateAction<CompositorLayer[]>,
+		updater: SetStateAction<LocalCompositorLayer[]>,
 		isUserChange?: boolean,
 	) => void;
 	selectedId: string | null;
@@ -336,7 +340,7 @@ const useSnap = () => {
 				prev.map((l) => {
 					if (l.id !== id) return l;
 
-					const updates: Partial<CompositorLayer> = {
+					const updates: Partial<LocalCompositorLayer> = {
 						x: Math.round(node.x()),
 						y: Math.round(node.y()),
 						rotation: Math.round(node.rotation()),
@@ -390,7 +394,7 @@ const CollapsibleSection: React.FC<{
 };
 
 interface LayerProps {
-	layer: CompositorLayer;
+	layer: LocalCompositorLayer;
 	onDragStart: (e: KonvaEventObject<DragEvent>) => void;
 	onDragMove: (e: KonvaEventObject<DragEvent>) => void;
 	onDragEnd: (e: KonvaEventObject<DragEvent>) => void;
@@ -406,8 +410,7 @@ const ImageLayer: React.FC<LayerProps> = ({
 	onTransformStart,
 	onTransformEnd,
 }) => {
-	const { setSelectedId, updateLayers, getImageUrl, mode, selectedId } =
-		useEditor();
+	const { setSelectedId, updateLayers, getImageUrl, mode } = useEditor();
 	const url = getImageUrl(layer.inputHandleId);
 	const [image] = useImage(url ?? "", "anonymous");
 
@@ -471,9 +474,7 @@ const ImageLayer: React.FC<LayerProps> = ({
 	);
 };
 
-const TextLayer: React.FC<
-	LayerProps & { layer: CompositorLayer & { type: "Text" } }
-> = ({
+const TextLayer: React.FC<LayerProps> = ({
 	layer,
 	onDragStart,
 	onDragMove,
@@ -769,7 +770,7 @@ const ArtboardBackground: React.FC = () => {
 				y={0}
 				width={viewportWidth}
 				height={viewportHeight}
-				fillPatternImage={patternImage}
+				fillPatternImage={patternImage as any}
 				fillPatternRepeat="repeat"
 				listening={false}
 			/>
@@ -915,7 +916,7 @@ const Canvas: React.FC = () => {
 						return <ImageLayer key={layer.id} {...props} />;
 					}
 					if (layer.type === "Text") {
-						return <TextLayer key={layer.id} {...props} layer={layer} />;
+						return <TextLayer key={layer.id} {...props} />;
 					}
 					return null;
 				})}
@@ -931,10 +932,10 @@ const Canvas: React.FC = () => {
 };
 
 interface LayerItemProps {
-	layer: CompositorLayer;
+	layer: LocalCompositorLayer;
 	selectedId: string | null;
 	setSelectedId: (id: string) => void;
-	updateLayer: (id: string, updates: Partial<CompositorLayer>) => void;
+	updateLayer: (id: string, updates: Partial<LocalCompositorLayer>) => void;
 }
 
 const LayerItem: React.FC<LayerItemProps> = ({
@@ -967,8 +968,17 @@ const LayerItem: React.FC<LayerItemProps> = ({
 		updateLayer(layer.id, { opacity: isHidden ? 1 : 0 });
 	};
 
+	const handleKeyDown = (e: React.KeyboardEvent) => {
+		if (e.key === "Enter" || e.key === " ") {
+			e.preventDefault();
+			if (!isDragging) {
+				setSelectedId(layer.id);
+			}
+		}
+	};
+
 	return (
-		<div
+		<button
 			ref={setNodeRef}
 			style={style}
 			{...attributes}
@@ -979,6 +989,8 @@ const LayerItem: React.FC<LayerItemProps> = ({
         ${isDragging ? "bg-neutral-800" : ""}
       `}
 			onClick={() => !isDragging && setSelectedId(layer.id)}
+			onKeyDown={handleKeyDown}
+			tabIndex={0}
 		>
 			<div className="shrink-0 text-gray-500 group-hover:text-gray-300">
 				{layer.type === "Image" ? (
@@ -1017,7 +1029,7 @@ const LayerItem: React.FC<LayerItemProps> = ({
 					<LockOpen className="w-3 h-3" />
 				</Button>
 			</div>
-		</div>
+		</button>
 	);
 };
 
@@ -1060,7 +1072,7 @@ const LayersPanel: React.FC = () => {
 		}
 	};
 
-	const updateLayer = (id: string, updates: Partial<CompositorLayer>) => {
+	const updateLayer = (id: string, updates: Partial<LocalCompositorLayer>) => {
 		updateLayers((prev) =>
 			prev.map((l) => (l.id === id ? { ...l, ...updates } : l)),
 		);
@@ -1135,7 +1147,7 @@ const InspectorPanel: React.FC = () => {
 
 	const selectedLayer = layers.find((l) => l.id === selectedId);
 
-	const updateLayer = (updates: Partial<CompositorLayer>) => {
+	const updateLayer = (updates: Partial<LocalCompositorLayer>) => {
 		if (!selectedId) return;
 		updateLayers((prev) =>
 			prev.map((l) => (l.id === selectedId ? { ...l, ...updates } : l)),
@@ -1631,7 +1643,7 @@ const Toolbar = React.memo<{
 				<Button
 					size="sm"
 					variant="ghost"
-					className="h-7 w-7 rounded-full p-0 text-gray-400 hover:text-white hover:bg-red-500/20 hover:text-red-400 transition-colors"
+					className="h-7 w-7 rounded-full p-0 text-gray-400 hover:text-white hover:bg-red-500/20 transition-colors"
 					onClick={onClose}
 				>
 					<span className="sr-only">Close</span>
@@ -1646,6 +1658,7 @@ const Toolbar = React.memo<{
 						strokeLinecap="round"
 						strokeLinejoin="round"
 					>
+						<title>Close</title>
 						<path d="M18 6 6 18" />
 						<path d="m6 6 12 12" />
 					</svg>
@@ -1672,13 +1685,13 @@ export const ImageDesignerEditor: React.FC<ImageDesignerEditorProps> = ({
 	onSave: propOnSave,
 }) => {
 	const nodeConfig = node.config as CompositorNodeConfig;
-	const [layers, setLayers] = useState<CompositorLayer[]>([]);
+	const [layers, setLayers] = useState<LocalCompositorLayer[]>([]);
 
 	const [isDirty, setIsDirty] = useState(false);
 
 	const updateLayers = useCallback(
 		(
-			updater: SetStateAction<CompositorLayer[]>,
+			updater: SetStateAction<LocalCompositorLayer[]>,
 			isUserChange: boolean = true,
 		) => {
 			setLayers(updater);
@@ -1814,7 +1827,7 @@ export const ImageDesignerEditor: React.FC<ImageDesignerEditorProps> = ({
 
 			initialLayers.forEach((output, handleId) => {
 				if (!layerUpdates[handleId]) {
-					const newLayer: CompositorLayer = {
+					const newLayer: LocalCompositorLayer = {
 						type: output.type,
 						width: undefined,
 						height: undefined,
@@ -1830,7 +1843,7 @@ export const ImageDesignerEditor: React.FC<ImageDesignerEditorProps> = ({
 					};
 
 					if (newLayer.type === "Text") {
-						newLayer.width = 400;
+						newLayer.width = existingConfig.width;
 						newLayer.fontSize = 64;
 						newLayer.fontFamily = "Geist";
 						newLayer.fontStyle = "normal";
@@ -1838,22 +1851,23 @@ export const ImageDesignerEditor: React.FC<ImageDesignerEditorProps> = ({
 						newLayer.fill = "#ffffff";
 						newLayer.letterSpacing = 0;
 						newLayer.lineHeight = 1.1;
-						newLayer.height = undefined; // Text auto-height
 						newLayer.align = "left";
 						newLayer.verticalAlign = "top";
+						newLayer.computedHeight = undefined;
 					}
 
 					if (newLayer.type === "Image") {
 						const fData = getImageData(handleId);
 						if (fData.entity) {
-							newLayer.width = Math.round(fData.entity.width ?? 300);
-							newLayer.height = Math.round(fData.entity.height ?? 300);
+							newLayer.width = Math.round(
+								fData.entity.width ?? existingConfig.width ?? 300,
+							);
 						} else if (fData.processData) {
-							newLayer.width = Math.round(fData.processData.width ?? 300);
-							newLayer.height = Math.round(fData.processData.height ?? 300);
+							newLayer.width = Math.round(
+								fData.processData.width ?? existingConfig.width ?? 300,
+							);
 						} else {
-							newLayer.width = 300;
-							newLayer.height = 300;
+							newLayer.width = existingConfig.width;
 						}
 					}
 					layerUpdates[handleId] = newLayer;
@@ -1959,7 +1973,8 @@ export const ImageDesignerEditor: React.FC<ImageDesignerEditorProps> = ({
 	const handleSave = useCallback(() => {
 		const layerUpdates = layers.reduce<Record<string, CompositorLayer>>(
 			(acc, layer) => {
-				acc[layer.inputHandleId] = layer;
+				const { ...rest } = layer;
+				acc[layer.inputHandleId] = rest;
 				return acc;
 			},
 			{},

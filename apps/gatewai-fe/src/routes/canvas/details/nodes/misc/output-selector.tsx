@@ -25,7 +25,7 @@ function OutputSelector({ node }: { node: NodeEntityType }) {
 					result.selectedOutputIndex + 1,
 					result.outputs.length - 1,
 				),
-			},
+			} as typeof nodeResult,
 		});
 	};
 
@@ -39,7 +39,7 @@ function OutputSelector({ node }: { node: NodeEntityType }) {
 			newResult: {
 				...nodeResult,
 				selectedOutputIndex: Math.max(result.selectedOutputIndex - 1, 0),
-			},
+			} as typeof nodeResult,
 		});
 	};
 

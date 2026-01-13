@@ -52,9 +52,17 @@ const PreviewNodeComponent = memo((props: NodeProps<PreviewNode>) => {
 	const outputData = outputItem.data;
 
 	const getMediaSource = (): string | undefined => {
-		if ("entity" in outputData && outputData.entity) {
+		if (
+			typeof outputData === "object" &&
+			"entity" in outputData &&
+			outputData.entity
+		) {
 			return GetAssetEndpoint(outputData.entity);
-		} else if ("processData" in outputData && outputData.processData) {
+		} else if (
+			typeof outputData === "object" &&
+			"processData" in outputData &&
+			outputData.processData
+		) {
 			return outputData.processData?.dataUrl;
 		}
 		return undefined;
@@ -102,7 +110,11 @@ const PreviewNodeComponent = memo((props: NodeProps<PreviewNode>) => {
 
 		// Fallback for other file types (e.g.,  "Audio", etc.)
 		let entityName = "Unknown file";
-		if ("entity" in outputData && outputData.entity) {
+		if (
+			typeof outputData === "object" &&
+			"entity" in outputData &&
+			outputData.entity
+		) {
 			entityName = outputData.entity.name;
 		}
 		return (

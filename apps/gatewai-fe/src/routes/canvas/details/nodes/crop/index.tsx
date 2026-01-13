@@ -5,7 +5,7 @@ import { cn } from "@/lib/utils";
 import { useAppDispatch, useAppSelector } from "@/store";
 import { makeSelectEdgesByTargetNodeId } from "@/store/edges";
 import { makeSelectNodeById, updateNodeConfig } from "@/store/nodes";
-import { GetAssetEndpoint, ResolveFileDataUrl } from "@/utils/file";
+import { ResolveFileDataUrl } from "@/utils/file";
 import { useNodeResult } from "../../processor/processor-ctx";
 import { BaseNode } from "../base";
 import { CanvasRenderer } from "../common/canvas-renderer";

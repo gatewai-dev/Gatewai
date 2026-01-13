@@ -53,7 +53,7 @@ const processCompositor = async (
 				lineHeight: 1.1,
 				align: "left",
 				verticalAlign: "top",
-				width: 400,
+				width: width,
 			});
 		} else {
 			const img = new Image();
@@ -133,16 +133,16 @@ const processCompositor = async (
 				x: layerConfig.x ?? 0,
 				y: layerConfig.y ?? 0,
 				opacity: layerConfig.opacity ?? 1,
-				width: layerConfig.width ?? 300,
-				height: layerConfig.height ?? 300,
+				width: layerConfig.width ?? width,
+				height: layerConfig.height,
 				rotation: layerConfig.rotation ?? 0,
 				globalCompositeOperation:
 					(layerConfig.blendMode as GlobalCompositeOperation) ?? "source-over",
 			});
 			layer.add(kImage);
 		} else if (inputData.type === "Text") {
-			const fontSize = layerConfig.fontSize ?? 64; // Match server: 64
-			const maxWidth = layerConfig.width ?? 400; // Match server: 400
+			const fontSize = layerConfig.fontSize ?? 64;
+			const maxWidth = layerConfig.width ?? width;
 
 			const kText = new Konva.Text({
 				text: inputData.value,
