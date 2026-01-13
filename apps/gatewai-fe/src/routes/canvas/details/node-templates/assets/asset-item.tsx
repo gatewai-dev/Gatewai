@@ -1,3 +1,4 @@
+import type { FileResult } from "@gatewai/types";
 import { useReactFlow } from "@xyflow/react";
 import { motion } from "framer-motion";
 import { FileImage, GripVertical } from "lucide-react";
@@ -5,6 +6,8 @@ import { memo, useEffect, useRef, useState } from "react";
 import { createPortal } from "react-dom";
 import { cn } from "@/lib/utils";
 import { useCanvasCtx } from "@/routes/canvas/details/ctx/canvas-ctx";
+import { getDataTypeFromMime } from "@/utils/file";
+import { useNodeTemplates } from "../node-templates.ctx";
 import type { FileAssetEntity } from "./types";
 import { GetAssetThumbnailEndpoint } from "./utils";
 
@@ -68,6 +71,7 @@ type AssetItemProps = {
 
 export const AssetItem = memo(({ asset }: AssetItemProps) => {
 	const { createNewNode } = useCanvasCtx();
+	const { nodeTemplates } = useNodeTemplates();
 	const rfInstance = useReactFlow();
 
 	const [isDragging, setIsDragging] = useState(false);
@@ -100,23 +104,28 @@ export const AssetItem = memo(({ asset }: AssetItemProps) => {
 					x: e.clientX,
 					y: e.clientY,
 				});
-
-				// Construct a "template-like" object for the asset node
-				// Assuming 'File' is the node type for assets
-				const assetNodePayload = {
-					type: "File",
-					displayName: asset.name,
-					data: {
-						assetId: asset.id,
-						mimeType: asset.mimeType,
-						name: asset.name,
-					},
-					// Add strict template properties if your types require them
-					id: `asset-${asset.id}`,
-					category: "Assets",
+				const importTemplate = nodeTemplates?.find((f) => f.type === "File");
+				if (!importTemplate) {
+					console.error("Import template not found");
+					return;
+				}
+				const initialResult: FileResult = {
+					selectedOutputIndex: 0,
+					outputs: [
+						{
+							items: [
+								{
+									type: getDataTypeFromMime(asset.mimeType),
+									data: {
+										entity: asset,
+									},
+									outputHandleId: undefined,
+								},
+							],
+						},
+					],
 				};
-
-				createNewNode(assetNodePayload, position);
+				createNewNode(importTemplate, position, initialResult);
 			}
 		};
 
@@ -127,7 +136,7 @@ export const AssetItem = memo(({ asset }: AssetItemProps) => {
 			window.removeEventListener("mousemove", handleMouseMove);
 			window.removeEventListener("mouseup", handleMouseUp);
 		};
-	}, [isDragging, asset, createNewNode, rfInstance]);
+	}, [isDragging, asset, createNewNode, rfInstance, nodeTemplates]);
 
 	const handleMouseDown = (e: React.MouseEvent) => {
 		e.preventDefault();

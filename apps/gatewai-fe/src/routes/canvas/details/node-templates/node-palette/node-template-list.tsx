@@ -1,4 +1,3 @@
-import type { DataType } from "@gatewai/db";
 import { memo, useMemo } from "react";
 import { ScrollArea } from "@/components/ui/scroll-area";
 import { cn } from "@/lib/utils";
@@ -32,31 +31,10 @@ const getLevenshteinDistance = (a: string, b: string): number => {
 };
 
 const NodeTemplateList = memo(({ templates }: NodeListProps) => {
-	const { searchQuery, fromTypes, toTypes } = useNodePalette();
+	const { searchQuery } = useNodePalette();
 
 	const filtered = useMemo(() => {
 		let result = templates;
-
-		// 1. Connection Type Filtering
-		if (fromTypes.length > 0) {
-			result = result.filter((t) =>
-				t.templateHandles.some(
-					(inp) =>
-						fromTypes.some((ft) => inp.dataTypes.includes(ft as DataType)) &&
-						inp.type === "Input",
-				),
-			);
-		}
-
-		if (toTypes.length > 0) {
-			result = result.filter((t) =>
-				t.templateHandles.some(
-					(out) =>
-						toTypes.some((ft) => out.dataTypes.includes(ft as DataType)) &&
-						out.type === "Output",
-				),
-			);
-		}
 
 		// 2. Fuzzy Search
 		if (searchQuery) {
@@ -82,7 +60,7 @@ const NodeTemplateList = memo(({ templates }: NodeListProps) => {
 		}
 
 		return result;
-	}, [templates, searchQuery, fromTypes, toTypes]);
+	}, [templates, searchQuery]);
 
 	const groups = useMemo(() => {
 		const g: Record<string, Record<string, NodeTemplateListRPC>> = {};

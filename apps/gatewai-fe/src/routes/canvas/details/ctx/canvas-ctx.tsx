@@ -88,6 +88,7 @@ interface CanvasContextType {
 	createNewNode: (
 		template: NodeTemplateListItemRPC,
 		position: XYPosition,
+		initialResult?: NodeResult,
 	) => void;
 	onNodesDelete: (nodeIds: Node["id"][]) => void;
 	onEdgesDelete: (edgeIds: Edge["id"][]) => void;
@@ -534,9 +535,16 @@ const CanvasProvider = ({
 	}, [dispatch, initialEdges, initialNodes]);
 
 	const createNewNode = useCallback(
-		(template: NodeTemplateListItemRPC, position: XYPosition) => {
+		(
+			template: NodeTemplateListItemRPC,
+			position: XYPosition,
+			initialResult?: NodeResult,
+		) => {
 			const nodeId = generateId();
-			let initialResult: NodeResult | null = null;
+			const initialResultToUse: NodeResult = initialResult ?? {
+				selectedOutputIndex: 0,
+				outputs: [],
+			};
 
 			const handles = template.templateHandles.map((tHandle, i) => ({
 				nodeId: nodeId,
@@ -551,22 +559,12 @@ const CanvasProvider = ({
 				dataTypes: tHandle.dataTypes,
 			}));
 
-			if (template.type === "Text") {
-				initialResult = {
-					selectedOutputIndex: 0,
-					outputs: [
-						{
-							items: [
-								{ type: "Text", outputHandleId: handles[0].id, data: "" },
-							],
-						},
-					],
-				};
-			} else {
-				initialResult = {
-					selectedOutputIndex: 0,
-					outputs: [],
-				};
+			for (let i = 0; i < initialResultToUse.outputs[0].items.length; i++) {
+				const outputItem = initialResultToUse.outputs[0].items[i];
+				const respHandle = handles[i];
+				if (respHandle) {
+					outputItem.outputHandleId = respHandle.id;
+				}
 			}
 
 			const nodeEntity: NodeEntityType = {

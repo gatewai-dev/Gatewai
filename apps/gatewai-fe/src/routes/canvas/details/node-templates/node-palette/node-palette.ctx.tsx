@@ -3,10 +3,6 @@ import { createContext, type ReactNode, useContext, useState } from "react";
 interface NodePaletteContextType {
 	searchQuery: string;
 	setSearchQuery: (q: string) => void;
-	fromTypes: string[];
-	setFromTypes: (t: string[]) => void;
-	toTypes: string[];
-	setToTypes: (t: string[]) => void;
 	isCollapsed: boolean;
 	setIsCollapsed: (b: boolean) => void;
 }
@@ -17,8 +13,6 @@ const NodePaletteContext = createContext<NodePaletteContextType | undefined>(
 
 export function NodePaletteProvider({ children }: { children: ReactNode }) {
 	const [searchQuery, setSearchQuery] = useState("");
-	const [fromTypes, setFromTypes] = useState<string[]>([]);
-	const [toTypes, setToTypes] = useState<string[]>([]);
 	const [isCollapsed, setIsCollapsed] = useState(false);
 
 	return (
@@ -26,10 +20,6 @@ export function NodePaletteProvider({ children }: { children: ReactNode }) {
 			value={{
 				searchQuery,
 				setSearchQuery,
-				fromTypes,
-				setFromTypes,
-				toTypes,
-				setToTypes,
 				isCollapsed,
 				setIsCollapsed,
 			}}

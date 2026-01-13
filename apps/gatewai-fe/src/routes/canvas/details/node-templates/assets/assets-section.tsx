@@ -59,7 +59,7 @@ export function AssetsSection({ isCollapsed }: AssetsSectionProps) {
 				className="w-auto p-0uto shadow-2xl backdrop-blur-3xl bg-background/95 border-white/10"
 				sideOffset={10}
 			>
-				<ScrollArea viewPortCn=" h-[400px] flex flex-col" className="">
+				<ScrollArea viewPortCn=" h-[400px] flex flex-col">
 					<div className="flex items-center justify-between border-b px-4 py-3 bg-muted/20">
 						<h4 className="font-semibold text-sm">Your Assets</h4>
 						<span className="text-[10px] px-2 py-0.5 rounded-full bg-primary/10 text-primary font-medium">
