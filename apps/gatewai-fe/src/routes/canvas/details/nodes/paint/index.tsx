@@ -11,7 +11,7 @@ import { cn } from "@/lib/utils";
 import { useAppSelector } from "@/store";
 import { makeSelectEdgesByTargetNodeId } from "@/store/edges";
 import { makeSelectNodeById } from "@/store/nodes";
-import { GetAssetEndpoint, ResolveFileDataUrl } from "@/utils/file";
+import { ResolveFileDataUrl } from "@/utils/file";
 import { useCanvasCtx } from "../../ctx/canvas-ctx";
 import { useNodeResult } from "../../processor/processor-ctx";
 import { BaseNode } from "../base";
@@ -199,8 +199,9 @@ const PaintNodeComponent = memo((props: NodeProps<PaintNode>) => {
 				img = new Image();
 				img.src = inputImageUrl;
 				await new Promise<void>((resolve, reject) => {
-					img!.onload = () => resolve();
-					img!.onerror = reject;
+					if (!img) return reject();
+					img.onload = () => resolve();
+					img.onerror = reject;
 				});
 
 				setContainerStyle({
