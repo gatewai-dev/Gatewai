@@ -485,7 +485,6 @@ export async function SEED_createNodeTemplates(prisma: PrismaClient) {
 					{
 						type: HandleType.Input,
 						dataTypes: [DataType.Image],
-						required: true,
 						label: "Image",
 					},
 					{

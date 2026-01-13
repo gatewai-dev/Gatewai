@@ -477,6 +477,7 @@ const InteractionOverlay: React.FC = () => {
 	};
 
 	return (
+		// biome-ignore lint/a11y/useSemanticElements: No need
 		<div
 			className="absolute inset-0 z-10 overflow-hidden outline-none"
 			style={{ cursor: isPanning ? "grabbing" : "default" }}
@@ -499,6 +500,7 @@ const InteractionOverlay: React.FC = () => {
 				}}
 			>
 				{visibleLayers.map((layer) => (
+					// biome-ignore lint/a11y/useSemanticElements: No need
 					<div
 						key={layer.id}
 						role="button"
