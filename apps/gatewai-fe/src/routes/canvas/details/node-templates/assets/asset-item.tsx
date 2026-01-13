@@ -187,9 +187,12 @@ export const AssetItem = memo(({ asset }: AssetItemProps) => {
 					<span className="truncate text-xs font-medium text-foreground/90">
 						{asset.name}
 					</span>
-					<span className="truncate text-[10px] text-muted-foreground">
-						{asset.mimeType || "Unknown type"}
-					</span>
+					<div>
+						<span className="truncate text-[10px] text-muted-foreground">
+							{asset.mimeType || "Unknown type"}
+						</span>
+						{asset.duration && <span>{}</span>}
+					</div>
 				</div>
 
 				<GripVertical className="h-3.5 w-3.5 text-border opacity-0 transition-opacity group-hover:opacity-100" />

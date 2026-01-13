@@ -36,22 +36,8 @@ function NodePaletteContent({ templates }: { templates: NodeTemplateListRPC }) {
 			className={cn(
 				"relative z-40 flex h-[calc(100vh-1rem)] my-2 ml-2 flex-col overflow-hidden transition-all duration-500 ease-[cubic-bezier(0.32,0.72,0,1)]",
 				"rounded-3xl border border-white/10 bg-background/60 shadow-2xl backdrop-blur-xl", // Glass effect
-				isCollapsed ? "w-[60px] hover:bg-background cursor-pointer" : "w-72",
+				isCollapsed ? "w-[60px]" : "w-72",
 			)}
-			tabIndex={isCollapsed ? 0 : undefined}
-			onClick={(e) => {
-				// Prevent expanding if clicking inside the popover trigger area (managed internally)
-				// But allow expanding if clicking general whitespace
-				if (isCollapsed && e.target === e.currentTarget) setIsCollapsed(false);
-			}}
-			onKeyDown={(e) => {
-				if (isCollapsed && (e.key === "Enter" || e.key === " ")) {
-					setIsCollapsed(false);
-					if (e.key === " ") {
-						e.preventDefault();
-					}
-				}
-			}}
 		>
 			{/* --- Header Section --- */}
 			<div className="flex shrink-0 items-center justify-between px-3 py-4">
@@ -76,12 +62,12 @@ function NodePaletteContent({ templates }: { templates: NodeTemplateListRPC }) {
 								e.stopPropagation();
 								setIsCollapsed(!isCollapsed);
 							}}
-							className="h-8 w-8 shrink-0 rounded-full text-muted-foreground hover:bg-muted hover:text-foreground"
+							className="h-8 w-8 p-0 shrink-0 rounded-full text-muted-foreground hover:bg-muted hover:text-foreground"
 						>
 							{isCollapsed ? (
-								<PanelLeftOpen className="h-4 w-4" />
+								<PanelLeftOpen className="h-5 w-5" />
 							) : (
-								<PanelLeftClose className="h-4 w-4" />
+								<PanelLeftClose className="h-5 w-5" />
 							)}
 						</Button>
 					</TooltipTrigger>
@@ -91,9 +77,7 @@ function NodePaletteContent({ templates }: { templates: NodeTemplateListRPC }) {
 				</Tooltip>
 			</div>
 
-			{/* --- Content Section --- */}
 			<div className="flex flex-1 flex-col grow h-full overflow-hidden">
-				{/* Search Bar Container */}
 				<div
 					className={cn(
 						"shrink-0 px-3 pb-3 transition-all duration-300",
@@ -105,7 +89,6 @@ function NodePaletteContent({ templates }: { templates: NodeTemplateListRPC }) {
 					<SearchInput />
 				</div>
 
-				{/* Divider with Gradient */}
 				<div
 					className={cn(
 						"h-px w-full bg-linear-to-r from-transparent via-border to-transparent",
@@ -120,7 +103,6 @@ function NodePaletteContent({ templates }: { templates: NodeTemplateListRPC }) {
 					</div>
 				)}
 
-				{/* Collapsed State Icons (Vertical) */}
 				{isCollapsed && (
 					<div className="flex flex-1 flex-col items-center gap-4 py-4 opacity-50">
 						<div className="h-px w-8 bg-border" />
@@ -128,7 +110,6 @@ function NodePaletteContent({ templates }: { templates: NodeTemplateListRPC }) {
 				)}
 			</div>
 
-			{/* --- Assets Section (Bottom) --- */}
 			<div className="mt-auto shrink-0 z-50">
 				<AssetsSection isCollapsed={isCollapsed} />
 			</div>

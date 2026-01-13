@@ -29,27 +29,28 @@ export function AssetsSection({ isCollapsed }: AssetsSectionProps) {
 		<Popover open={isOpen} onOpenChange={setIsOpen}>
 			<PopoverTrigger asChild>
 				<Button
-					variant="default"
+					variant="ghost"
 					className={cn(
 						"flex h-12 w-full items-center gap-3 rounded-none border-t",
 						isCollapsed ? "justify-center" : "justify-start",
 					)}
 				>
-					<div className="flex h-8 w-8 shrink-0 items-center justify-center rounded-lg text-secondary-foreground shadow-sm">
-						<Images className="h-4 w-4" />
+					<div className="flex shrink-0 items-center justify-center rounded-lg shadow-sm">
+						<Images className="h-5 w-5 text-primary" />
 					</div>
 
-					<div
-						className={cn(
-							"flex flex-col items-start overflow-hidden transition-all duration-300",
-							isCollapsed ? "w-0 opacity-0" : "w-auto opacity-100",
-						)}
-					>
-						<span className="text-sm font-medium">Assets</span>
-						<span className="text-[10px]">
-							{isLoading ? "Loading..." : `${assets.length} items`}
-						</span>
-					</div>
+					{!isCollapsed && (
+						<div
+							className={cn(
+								"flex flex-col items-start overflow-hidden text-primary transition-all duration-300",
+							)}
+						>
+							<span className="text-sm font-medium">Your Assets</span>
+							<span className="text-[10px]">
+								{isLoading ? "Loading..." : `${assets.length} items`}
+							</span>
+						</div>
+					)}
 				</Button>
 			</PopoverTrigger>
 
@@ -59,7 +60,7 @@ export function AssetsSection({ isCollapsed }: AssetsSectionProps) {
 				className="w-auto p-0uto shadow-2xl backdrop-blur-3xl bg-background/95 border-white/10"
 				sideOffset={10}
 			>
-				<ScrollArea viewPortCn=" h-[400px] flex flex-col">
+				<ScrollArea viewPortCn=" h-[600px] flex flex-col">
 					<div className="flex items-center justify-between border-b px-4 py-3 bg-muted/20">
 						<h4 className="font-semibold text-sm">Your Assets</h4>
 						<span className="text-[10px] px-2 py-0.5 rounded-full bg-primary/10 text-primary font-medium">

@@ -27,10 +27,10 @@ const VideoCompositorNodeComponent = memo(
 	(props: NodeProps<VideoCompositorNode>) => {
 		const node = useAppSelector(makeSelectNodeById(props.id));
 		const [isDownloading, setIsDownloading] = useState(false);
-		const { result, isProcessing, inputs } = useNodeResult(props.id);
+		const { result, inputs } = useNodeResult(props.id);
 		const nav = useNavigate();
 		const downloadFileData = useDownloadFileData();
-		console.log({ inputs });
+		console.log({ w: props.id });
 		const previewState = useMemo(() => {
 			const config =
 				(node?.config as unknown as VideoCompositorNodeConfig) ?? {};
@@ -197,7 +197,6 @@ const VideoCompositorNodeComponent = memo(
 				setIsDownloading(false);
 			}
 		};
-
 		return (
 			<BaseNode
 				selected={props.selected}
@@ -254,7 +253,7 @@ const VideoCompositorNodeComponent = memo(
 								<Button
 									onClick={onClickDownload}
 									variant="ghost"
-									disabled={isProcessing || isDownloading || !result}
+									disabled={isDownloading || !result}
 									size="sm"
 								>
 									{isDownloading ? (

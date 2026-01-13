@@ -558,12 +558,13 @@ const CanvasProvider = ({
 				type: tHandle.type,
 				dataTypes: tHandle.dataTypes,
 			}));
-
-			for (let i = 0; i < initialResultToUse.outputs[0].items.length; i++) {
-				const outputItem = initialResultToUse.outputs[0].items[i];
-				const respHandle = handles[i];
-				if (respHandle) {
-					outputItem.outputHandleId = respHandle.id;
+			if (initialResultToUse.outputs.length) {
+				for (let i = 0; i < initialResultToUse.outputs[0].items?.length; i++) {
+					const outputItem = initialResultToUse.outputs[0].items[i];
+					const respHandle = handles[i];
+					if (respHandle) {
+						outputItem.outputHandleId = respHandle.id;
+					}
 				}
 			}
 
