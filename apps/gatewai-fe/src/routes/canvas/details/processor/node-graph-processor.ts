@@ -18,7 +18,6 @@ import type { HandleEntityType } from "@/store/handles";
 import type { NodeEntityType } from "@/store/nodes";
 import { GetAssetEndpoint } from "@/utils/file";
 import { processCompositor } from "./image-compositor";
-import { imageStore } from "./image-store";
 import { pixiWorkerService } from "./pixi/pixi-worker.service";
 import type {
 	ConnectedInput,
@@ -454,15 +453,6 @@ export class NodeGraphProcessor extends EventEmitter {
 			state.lastProcessedSignature = this.getNodeValueHash(node);
 			state.version++;
 
-			const hashValue = this.getImageDataUrlFromResult(state.result);
-			if (hashValue) {
-				if (hashValue.startsWith("http")) {
-					await imageStore.addUrl(nodeId, hashValue);
-				} else {
-					await imageStore.addBase64(nodeId, hashValue);
-				}
-			}
-
 			this.emit("node:processed", {
 				nodeId,
 				result,
@@ -678,25 +668,6 @@ export class NodeGraphProcessor extends EventEmitter {
 		return inputs;
 	}
 
-	private getImageDataUrlFromResult(result: NodeResult | null): string | null {
-		if (!result) return null;
-		const selectedIndex = result.selectedOutputIndex ?? 0;
-		const output = result.outputs[selectedIndex];
-		if (!output) return null;
-		for (const item of output.items) {
-			if (item.type === "Image") {
-				const data = item.data as FileData;
-				if (data.processData?.dataUrl) {
-					return data.processData.dataUrl;
-				}
-				if (data.entity?.signedUrl) {
-					return GetAssetEndpoint(data.entity);
-				}
-			}
-		}
-		return null;
-	}
-
 	private registerBuiltInProcessors(): void {
 		const findInputData = (
 			inputs: Record<string, ConnectedInput>,
@@ -762,7 +733,7 @@ export class NodeGraphProcessor extends EventEmitter {
 			)?.id;
 
 		this.registerProcessor("Crop", async ({ node, inputs, signal }) => {
-			const imageUrl = findInputData(inputs, "Image", "Crop");
+			const imageUrl = findInputData(inputs, "Image", "Image");
 			if (!imageUrl) throw new Error("Missing Input Image");
 
 			const config = node.config as CropNodeConfig;
@@ -1077,7 +1048,7 @@ export class NodeGraphProcessor extends EventEmitter {
 						items: [
 							{
 								type: "Text",
-								data: config.content,
+								data: config.content ?? "",
 								outputHandleId: outputHandle,
 							},
 						],

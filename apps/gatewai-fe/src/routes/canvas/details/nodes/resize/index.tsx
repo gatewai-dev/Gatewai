@@ -1,11 +1,11 @@
-import type { ResizeNodeConfig } from "@gatewai/types";
+import type { FileData, ResizeNodeConfig } from "@gatewai/types";
 import type { NodeProps } from "@xyflow/react";
 import { memo, useEffect } from "react";
 import { cn } from "@/lib/utils";
 import { useAppDispatch, useAppSelector } from "@/store";
 import { makeSelectNodeById, updateNodeConfig } from "@/store/nodes";
-import { imageStore } from "../../processor/image-store";
-import { useNodeResultHash } from "../../processor/processor-ctx";
+import { ResolveFileDataUrl } from "@/utils/file";
+import { useNodeResult } from "../../processor/processor-ctx";
 import { BaseNode } from "../base";
 import { CanvasRenderer } from "../common/canvas-renderer";
 import { DimensionsConfig } from "../common/dimensions";
@@ -15,12 +15,16 @@ const ResizeNodeComponent = memo((props: NodeProps<ResizeNode>) => {
 	const node = useAppSelector(makeSelectNodeById(props.id));
 	const dispatch = useAppDispatch();
 
-	const resultHash = useNodeResultHash(props.id);
+	const { result } = useNodeResult(props.id);
+	const outputItem = result?.outputs[result.selectedOutputIndex].items[0];
+	const inputFileData = outputItem?.data as FileData;
+
+	const imageUrl = ResolveFileDataUrl(inputFileData);
 
 	const nodeConfig = node?.config as ResizeNodeConfig | null;
 	// Draw to canvas when result is ready
 	useEffect(() => {
-		if (!resultHash || !node) return;
+		if (!imageUrl || !node) return;
 
 		if (
 			nodeConfig?.originalHeight == null ||
@@ -28,7 +32,6 @@ const ResizeNodeComponent = memo((props: NodeProps<ResizeNode>) => {
 		) {
 			const img = new Image();
 			img.crossOrigin = "anonymous";
-			const imageUrl = imageStore.getDataUrlForHash(resultHash);
 			if (!imageUrl) {
 				return;
 			}
@@ -48,7 +51,7 @@ const ResizeNodeComponent = memo((props: NodeProps<ResizeNode>) => {
 				);
 			};
 		}
-	}, [dispatch, resultHash, node, nodeConfig]);
+	}, [dispatch, imageUrl, node, nodeConfig]);
 
 	return (
 		<BaseNode selected={props.selected} id={props.id} dragging={props.dragging}>
@@ -57,11 +60,11 @@ const ResizeNodeComponent = memo((props: NodeProps<ResizeNode>) => {
 					className={cn(
 						"w-full media-container overflow-hidden rounded relative",
 						{
-							"h-92": resultHash == null,
+							"h-92": imageUrl == null,
 						},
 					)}
 				>
-					{resultHash && <CanvasRenderer resultHash={resultHash} />}
+					{imageUrl && <CanvasRenderer imageUrl={imageUrl} />}
 				</div>
 				{node && <DimensionsConfig node={node} />}
 			</div>

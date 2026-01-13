@@ -1,7 +1,9 @@
+import type { FileData } from "@gatewai/types";
 import { memo } from "react";
 import { useAppSelector } from "@/store";
 import { makeSelectNodeById } from "@/store/nodes";
-import { useNodeResultHash } from "../../processor/processor-ctx";
+import { ResolveFileDataUrl } from "@/utils/file";
+import { useNodeResult } from "../../processor/processor-ctx";
 import { BaseNode } from "../base";
 import { CanvasRenderer } from "../common/canvas-renderer";
 import { ModulateNodeConfigComponent } from "./modulate-config";
@@ -9,7 +11,12 @@ import { ModulateNodeConfigComponent } from "./modulate-config";
 const ModulateNodeComponent = memo(
 	(props: { selected: boolean; id: string; dragging: boolean }) => {
 		const node = useAppSelector(makeSelectNodeById(props.id));
-		const resultHash = useNodeResultHash(props.id);
+
+		const { result } = useNodeResult(props.id);
+		const outputItem = result?.outputs[result.selectedOutputIndex].items[0];
+		const inputFileData = outputItem?.data as FileData;
+
+		const imageUrl = ResolveFileDataUrl(inputFileData);
 
 		return (
 			<BaseNode
@@ -19,7 +26,7 @@ const ModulateNodeComponent = memo(
 			>
 				<div className="flex flex-col gap-3 ">
 					<div className="w-full overflow-hidden rounded media-container relative">
-						{resultHash && <CanvasRenderer resultHash={resultHash} />}
+						{imageUrl && <CanvasRenderer imageUrl={imageUrl} />}
 					</div>
 
 					{node && <ModulateNodeConfigComponent node={node} />}

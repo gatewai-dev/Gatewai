@@ -96,7 +96,7 @@ const nodeSelectors = nodeAdapter.getSelectors<RootState>(
 export const selectNodeById = nodeSelectors.selectById;
 
 export const makeSelectNodeById = (id: string) => {
-	return (state: { nodes: NodesState }) => nodeSelectors.selectById(state, id);
+	return (state: RootState) => nodeSelectors.selectById(state, id);
 };
 
 export const makeSelectAllNodes = nodeSelectors.selectAll;

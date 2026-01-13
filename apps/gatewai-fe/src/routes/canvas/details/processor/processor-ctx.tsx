@@ -12,7 +12,6 @@ import { useAppSelector } from "@/store";
 import { makeSelectAllEdges } from "@/store/edges";
 import { type HandleEntityType, makeSelectAllHandles } from "@/store/handles";
 import { makeSelectAllNodeEntities, type NodeEntityType } from "@/store/nodes";
-import { imageStore } from "./image-store";
 import { NodeGraphProcessor } from "./node-graph-processor";
 import type { ConnectedInput } from "./types";
 
@@ -78,7 +77,6 @@ export function useNodeResult<T extends NodeResult = NodeResult>(
 ): {
 	result: T | null;
 	inputs: Record<HandleEntityType["id"], ConnectedInput>;
-	isProcessing: boolean;
 	error: string | null;
 } {
 	const processor = useProcessor();
@@ -87,7 +85,6 @@ export function useNodeResult<T extends NodeResult = NodeResult>(
 	const snapshotRef = useRef<{
 		result: T | null;
 		inputs: Record<HandleEntityType["id"], ConnectedInput>;
-		isProcessing: boolean;
 		error: string | null;
 	} | null>(null);
 
@@ -115,14 +112,12 @@ export function useNodeResult<T extends NodeResult = NodeResult>(
 
 		const nextResult = state?.result ?? null;
 		const nextInputs = state?.inputs ?? {};
-		const nextIsProcessing = state?.isProcessing ?? false;
 		const nextError = state?.error ?? null;
 
 		// Check if anything actually changed since the last snapshot
 		const hasChanged =
 			!snapshotRef.current ||
 			snapshotRef.current.result !== nextResult ||
-			snapshotRef.current.isProcessing !== nextIsProcessing ||
 			snapshotRef.current.error !== nextError ||
 			// If inputs is an object/map, compare size or specific keys
 			!isEqual(snapshotRef.current.inputs, nextInputs);
@@ -131,7 +126,6 @@ export function useNodeResult<T extends NodeResult = NodeResult>(
 			snapshotRef.current = {
 				result: nextResult as T,
 				inputs: nextInputs,
-				isProcessing: nextIsProcessing,
 				error: nextError,
 			};
 		}
@@ -172,6 +166,18 @@ export function useNodeValidation(nodeId: string): Record<string, string> {
 /**
  * Subscribe to a node's image output for canvas rendering, used by crop etc
  */
+export function useNodeOutputs(nodeId: string) {
+	const { result } = useNodeResult(nodeId);
+
+	if (!result) return null;
+
+	const output = result.outputs[result.selectedOutputIndex ?? 0];
+	return output.items;
+}
+
+/**
+ * Subscribe to a node's image output for canvas rendering, used by crop etc
+ */
 export function useNodeFileOutputUrl(nodeId: string): string | null {
 	const { result } = useNodeResult(nodeId);
 
@@ -184,44 +190,4 @@ export function useNodeFileOutputUrl(nodeId: string): string | null {
 	const fileData =
 		outputItem.data as FileResult["outputs"][number]["items"][number]["data"];
 	return fileData?.entity?.signedUrl ?? fileData?.processData?.dataUrl ?? null;
-}
-
-/**
- * Trigger manual processing of a node
- */
-export function useProcessNode(nodeId: string) {
-	const processor = useProcessor();
-	return () => processor.processNode(nodeId);
-}
-
-export function useNodeResultHash(nodeId: string): string | null {
-	const processor = useProcessor();
-
-	const subscribe = (callback: () => void) => {
-		const onProcessed = (data: { nodeId: string }) => {
-			if (data.nodeId === nodeId) callback();
-		};
-		const onStart = (data: { nodeId: string }) => {
-			if (data.nodeId === nodeId) callback();
-		};
-		const onError = (data: { nodeId: string }) => {
-			if (data.nodeId === nodeId) callback();
-		};
-
-		processor.on("node:start", onStart);
-		processor.on("node:processed", onProcessed);
-		processor.on("node:error", onError);
-
-		return () => {
-			processor.off("node:start", onStart);
-			processor.off("node:processed", onProcessed);
-			processor.off("node:error", onError);
-		};
-	};
-
-	const getSnapshot = () => {
-		return imageStore.getHashForNode(nodeId) ?? null;
-	};
-
-	return useSyncExternalStore(subscribe, getSnapshot, getSnapshot);
 }

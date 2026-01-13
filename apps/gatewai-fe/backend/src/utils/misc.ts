@@ -42,7 +42,8 @@ export function GetAssetEndpoint(fileAsset: FileAsset) {
 	return extension ? `${baseUrl}.${extension}` : baseUrl;
 }
 
-export function ResolveFileDataUrl(data: FileData) {
+export function ResolveFileDataUrl(data: FileData | null) {
+	if (!data) return null;
 	if (data.processData?.dataUrl) return data.processData.dataUrl;
 	if (data.entity?.signedUrl) return GetAssetEndpoint(data.entity);
 }

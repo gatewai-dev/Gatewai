@@ -1,11 +1,10 @@
+import type { FileData } from "@gatewai/types";
 import { memo } from "react";
 import { useAppSelector } from "@/store";
 import { makeSelectNodeById } from "@/store/nodes";
+import { GetAssetEndpoint } from "@/utils/file";
 import { RunNodeButton } from "../../components/run-node-button";
-import {
-	useNodeResult,
-	useNodeResultHash,
-} from "../../processor/processor-ctx";
+import { useNodeResult } from "../../processor/processor-ctx";
 import { BaseNode } from "../base";
 import { CanvasRenderer } from "../common/canvas-renderer";
 import { CreateHandleButton } from "../common/create-handle-button";
@@ -15,7 +14,12 @@ const ImageGenNodeComponent = memo(
 	(props: { selected: boolean; id: string; dragging: boolean }) => {
 		const node = useAppSelector(makeSelectNodeById(props.id));
 		const { result } = useNodeResult(props.id);
-		const resultHash = useNodeResultHash(props.id);
+		const outputItem = result?.outputs[result.selectedOutputIndex].items[0];
+		const inputFileData = outputItem?.data as FileData;
+		const imageUrl =
+			inputFileData?.processData?.dataUrl ??
+			(inputFileData?.entity ? GetAssetEndpoint(inputFileData.entity) : null);
+
 		const hasMoreThanOneOutput = result?.outputs && result?.outputs?.length > 1;
 		return (
 			<BaseNode
@@ -30,7 +34,7 @@ const ImageGenNodeComponent = memo(
 								<OutputSelector node={node} />
 							</div>
 						)}
-						{resultHash && <CanvasRenderer resultHash={resultHash} />}
+						{imageUrl && <CanvasRenderer imageUrl={imageUrl} />}
 					</div>
 
 					<div className="flex justify-between items-center w-full">

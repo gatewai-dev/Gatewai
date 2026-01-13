@@ -1,11 +1,12 @@
-import type { CropNodeConfig } from "@gatewai/types";
+import type { CropNodeConfig, FileData } from "@gatewai/types";
 import type { NodeProps } from "@xyflow/react";
 import { memo, useCallback, useEffect, useMemo, useRef, useState } from "react";
 import { cn } from "@/lib/utils";
 import { useAppDispatch, useAppSelector } from "@/store";
 import { makeSelectEdgesByTargetNodeId } from "@/store/edges";
 import { makeSelectNodeById, updateNodeConfig } from "@/store/nodes";
-import { useNodeResultHash } from "../../processor/processor-ctx";
+import { GetAssetEndpoint, ResolveFileDataUrl } from "@/utils/file";
+import { useNodeResult } from "../../processor/processor-ctx";
 import { BaseNode } from "../base";
 import { CanvasRenderer } from "../common/canvas-renderer";
 import type { CropNode } from "../node-props";
@@ -29,16 +30,19 @@ type DragState = {
 const CropNodeComponent = memo((props: NodeProps<CropNode>) => {
 	const dispatch = useAppDispatch();
 	const edges = useAppSelector(makeSelectEdgesByTargetNodeId(props.id));
-	const inputNodeId = useMemo(() => {
+	const inputHandleId = useMemo(() => {
 		if (!edges || !edges[0]) {
 			return undefined;
 		}
-		return edges[0].source;
+		return edges[0].targetHandleId;
 	}, [edges]);
 
-	const inputResultHash = useNodeResultHash(inputNodeId);
+	const { inputs } = useNodeResult(props.id);
+	const inputFileData = inputs[inputHandleId!]?.outputItem?.data as FileData;
+	const imageUrl = ResolveFileDataUrl(inputFileData);
 	const node = useAppSelector(makeSelectNodeById(props.id));
 	const canvasRef = useRef<HTMLCanvasElement>(null);
+
 	const nodeConfig = node?.config as CropNodeConfig;
 	const [crop, setCrop] = useState<CropNodeConfig>({
 		leftPercentage: nodeConfig?.leftPercentage ?? 0,
@@ -196,13 +200,11 @@ const CropNodeComponent = memo((props: NodeProps<CropNode>) => {
 				className={cn(
 					"media-container w-full overflow-hidden bg-black/5 relative select-none",
 					{
-						"h-92": !inputResultHash,
+						"h-92": !imageUrl,
 					},
 				)}
 			>
-				{inputResultHash && (
-					<CanvasRenderer ref={canvasRef} resultHash={inputResultHash} />
-				)}
+				{imageUrl && <CanvasRenderer ref={canvasRef} imageUrl={imageUrl} />}
 
 				{/* Dark overlay for cropped-out areas */}
 				<div className="absolute inset-0 pointer-events-none">

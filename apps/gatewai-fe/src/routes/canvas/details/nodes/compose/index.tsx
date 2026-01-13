@@ -1,3 +1,4 @@
+import type { FileData } from "@gatewai/types";
 import type { NodeProps } from "@xyflow/react";
 import { ImagesIcon } from "lucide-react";
 import { memo } from "react";
@@ -6,16 +7,23 @@ import { Button } from "@/components/ui/button";
 import { cn } from "@/lib/utils";
 import { useAppSelector } from "@/store";
 import { makeSelectNodeById } from "@/store/nodes";
+import { ResolveFileDataUrl } from "@/utils/file";
 import { AddCustomHandleButton } from "../../components/add-custom-handle";
-import { useNodeResultHash } from "../../processor/processor-ctx";
+import { useNodeResult } from "../../processor/processor-ctx";
 import { BaseNode } from "../base";
 import { CanvasRenderer } from "../common/canvas-renderer";
 import type { CompositorNode } from "../node-props";
 
 const CompositorNodeComponent = memo((props: NodeProps<CompositorNode>) => {
 	const node = useAppSelector(makeSelectNodeById(props.id));
-	const resultHash = useNodeResultHash(props.id);
+
+	const { result } = useNodeResult(props.id);
+	const outputItem = result?.outputs[result.selectedOutputIndex].items[0];
+	const inputFileData = outputItem?.data as FileData;
+
+	const imageUrl = ResolveFileDataUrl(inputFileData);
 	const nav = useNavigate();
+
 	return (
 		<BaseNode selected={props.selected} id={props.id} dragging={props.dragging}>
 			<div className="flex flex-col gap-3 ">
@@ -23,11 +31,11 @@ const CompositorNodeComponent = memo((props: NodeProps<CompositorNode>) => {
 					className={cn(
 						"w-full overflow-hidden rounded media-container relative",
 						{
-							"h-92": !resultHash,
+							"h-92": !imageUrl,
 						},
 					)}
 				>
-					{resultHash && <CanvasRenderer resultHash={resultHash} />}
+					{imageUrl && <CanvasRenderer imageUrl={imageUrl} />}
 				</div>
 				<div className="flex justify-between items-center">
 					<AddCustomHandleButton

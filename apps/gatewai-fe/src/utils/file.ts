@@ -88,4 +88,10 @@ const isFileData = (data: unknown): data is FileData => {
 	);
 };
 
+export function ResolveFileDataUrl(data: FileData) {
+	if (!data) return null;
+	if (data.processData?.dataUrl) return data.processData.dataUrl;
+	if (data.entity?.signedUrl) return GetAssetEndpoint(data.entity);
+}
+
 export { GetAssetEndpoint, GetFontAssetUrl, extractExtension, isFileData };

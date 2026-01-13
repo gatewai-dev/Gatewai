@@ -1,5 +1,3 @@
-// canvas.worker.ts
-
 type WorkerMessage =
 	| { type: "INIT_CANVAS"; payload: { canvas: OffscreenCanvas } }
 	| {

@@ -54,7 +54,7 @@ function useDrawToCanvas(
 	useEffect(() => {
 		if (workerRef.current && imageUrl && containerWidth > 0) {
 			const draw = () => {
-				workerRef.current!.postMessage({
+				workerRef.current?.postMessage({
 					type: "DRAW_IMAGE",
 					payload: {
 						imageUrl,
