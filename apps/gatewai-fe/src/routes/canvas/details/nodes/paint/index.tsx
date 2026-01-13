@@ -1,4 +1,4 @@
-import type { PaintNodeConfig } from "@gatewai/types";
+import type { FileData, PaintNodeConfig } from "@gatewai/types";
 import type { NodeProps } from "@xyflow/react";
 import { Brush, Eraser, PaintBucket } from "lucide-react";
 import { memo, useCallback, useEffect, useMemo, useRef, useState } from "react";
@@ -11,7 +11,7 @@ import { cn } from "@/lib/utils";
 import { useAppSelector } from "@/store";
 import { makeSelectEdgesByTargetNodeId } from "@/store/edges";
 import { makeSelectNodeById } from "@/store/nodes";
-import { GetAssetEndpoint } from "@/utils/file";
+import { GetAssetEndpoint, ResolveFileDataUrl } from "@/utils/file";
 import { useCanvasCtx } from "../../ctx/canvas-ctx";
 import { useNodeResult } from "../../processor/processor-ctx";
 import { BaseNode } from "../base";
@@ -22,14 +22,16 @@ import { colorsSimilar, colorToRgb, getPixel, setPixel } from "./utils";
 const PaintNodeComponent = memo((props: NodeProps<PaintNode>) => {
 	const { onNodeConfigUpdate } = useCanvasCtx();
 	const edges = useAppSelector(makeSelectEdgesByTargetNodeId(props.id));
-	const inputNodeId = useMemo(() => {
+	const inputHandleId = useMemo(() => {
 		if (!edges || !edges[0]) {
 			return undefined;
 		}
-		return edges[0].source;
+		return edges[0].targetHandleId;
 	}, [edges]);
-	const inputNodeResult = useNodeResult(inputNodeId);
 
+	const { inputs } = useNodeResult(props.id);
+	const inputFileData = inputs[inputHandleId!]?.outputItem?.data as FileData;
+	const inputImageUrl = ResolveFileDataUrl(inputFileData);
 	const node = useAppSelector(makeSelectNodeById(props.id));
 	const nodeConfig = node?.config as PaintNodeConfig;
 	const maskImageRef = useRef<HTMLImageElement | null>(null);
@@ -54,23 +56,6 @@ const PaintNodeComponent = memo((props: NodeProps<PaintNode>) => {
 	const skipNextSyncRef = useRef(false);
 	const previewDebounceRef = useRef<NodeJS.Timeout | null>(null);
 
-	const inputImageUrl = useMemo(() => {
-		const result =
-			inputNodeResult.result?.outputs[
-				inputNodeResult.result?.selectedOutputIndex
-			];
-		if (!result) {
-			return null;
-		}
-		const outputItem = result.items.find((f) => f.type === "Image");
-		if (outputItem?.data.processData) {
-			return outputItem?.data.processData.dataUrl;
-		}
-		if (outputItem?.data.entity) {
-			return GetAssetEndpoint(outputItem?.data.entity);
-		}
-		return null;
-	}, [inputNodeResult]);
 	const updateConfig = useCallback(
 		(cfg: Partial<PaintNodeConfig>) => {
 			onNodeConfigUpdate({
