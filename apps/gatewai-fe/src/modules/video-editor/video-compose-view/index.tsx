@@ -1,4 +1,4 @@
-import type { CompositorNodeConfig, OutputItem } from "@gatewai/types";
+import type { OutputItem, VideoCompositorNodeConfig } from "@gatewai/types";
 import { memo, useMemo } from "react";
 import { useNavigate, useParams } from "react-router";
 import { useAppSelector } from "@/store";
@@ -43,7 +43,7 @@ const VideoCompositorView = memo(() => {
 		}, 500);
 	};
 
-	const onSave = (config: CompositorNodeConfig) => {
+	const onSave = (config: VideoCompositorNodeConfig) => {
 		onNodeConfigUpdate({ id: node.id, newConfig: config });
 		if (!canvasId) {
 			throw new Error("Canvas id is missing in parameters");

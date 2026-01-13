@@ -16,7 +16,6 @@ import {
 } from "@dnd-kit/sortable";
 import { CSS } from "@dnd-kit/utilities";
 import type {
-	CompositorNodeConfig,
 	FileData,
 	OutputItem,
 	VideoCompositorNodeConfig,
@@ -575,7 +574,7 @@ const InteractionOverlay: React.FC = () => {
 const Toolbar = React.memo<{
 	onClose: () => void;
 	onSave: () => void;
-	timeRef: React.RefObject<HTMLDivElement>;
+	timeRef: React.RefObject<HTMLDivElement | null>;
 }>(({ onClose, onSave, timeRef }) => {
 	const {
 		zoom,
@@ -1647,7 +1646,7 @@ interface VideoDesignerEditorProps {
 	initialLayers: Map<string, OutputItem<"Text" | "Image" | "Video" | "Audio">>;
 	node: NodeEntityType;
 	onClose: () => void;
-	onSave: (config: CompositorNodeConfig) => void;
+	onSave: (config: VideoCompositorNodeConfig) => void;
 }
 
 export const VideoDesignerEditor: React.FC<VideoDesignerEditorProps> = ({

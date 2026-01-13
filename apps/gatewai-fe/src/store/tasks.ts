@@ -6,7 +6,11 @@ import {
 	type PayloadAction,
 } from "@reduxjs/toolkit";
 import { rpcClient } from "@/rpc/client";
-import type { BatchDetailsRPC, BatchDetailsRPCParams } from "@/rpc/types";
+import type {
+	ActiveCanvasBatchListRPC,
+	BatchDetailsRPC,
+	BatchDetailsRPCParams,
+} from "@/rpc/types";
 import type { RootState } from "@/store";
 
 export type BatchEntity = BatchDetailsRPC[number];
@@ -26,7 +30,7 @@ export const getBatchDetails = createAsyncThunk<
 });
 
 export const getInitialBatches = createAsyncThunk<
-	BatchDetailsRPC,
+	ActiveCanvasBatchListRPC,
 	{ canvasId: string }
 >("tasks/getInitialBatches", async ({ canvasId }) => {
 	const response = await rpcClient.api.v1.tasks[":canvasId"].$get({
