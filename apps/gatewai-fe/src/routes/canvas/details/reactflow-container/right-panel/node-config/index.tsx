@@ -69,10 +69,10 @@ const NodeConfigPanel = memo(() => {
 	}, [selectedNodes]);
 
 	return (
-		<Panel position="top-right" className="m-0! h-full pointer-events-none">
+		<Panel position="top-right" className="m-0! h-full pointer-events-none ">
 			<div
 				className={cn(
-					"h-full w-80 bg-background border-l shadow-2xl p-4 overflow-y-auto pointer-events-auto",
+					"h-full w-80 border border-white/10 bg-background/60 shadow-2xl backdrop-blur-xl border-l p-4 overflow-y-auto pointer-events-auto",
 					"transition-all duration-500 ease-in-out transform",
 					isVisible
 						? "translate-x-0 opacity-100"
