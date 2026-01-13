@@ -10,13 +10,6 @@ import { BaseNode } from "../base";
 import { CanvasRenderer } from "../common/canvas-renderer";
 import type { CropNode } from "../node-props";
 
-type Crop = {
-	leftPercentage: number;
-	topPercentage: number;
-	widthPercentage: number;
-	heightPercentage: number;
-};
-
 type DragState = {
 	type:
 		| "move"
@@ -30,7 +23,7 @@ type DragState = {
 		| "resize-e";
 	startX: number;
 	startY: number;
-	startCrop: Crop;
+	startCrop: CropNodeConfig;
 };
 
 const CropNodeComponent = memo((props: NodeProps<CropNode>) => {
@@ -47,7 +40,7 @@ const CropNodeComponent = memo((props: NodeProps<CropNode>) => {
 	const node = useAppSelector(makeSelectNodeById(props.id));
 	const canvasRef = useRef<HTMLCanvasElement>(null);
 	const nodeConfig = node?.config as CropNodeConfig;
-	const [crop, setCrop] = useState<Crop>({
+	const [crop, setCrop] = useState<CropNodeConfig>({
 		leftPercentage: nodeConfig?.leftPercentage ?? 0,
 		topPercentage: nodeConfig?.topPercentage ?? 0,
 		widthPercentage: nodeConfig?.widthPercentage ?? 100,
@@ -74,41 +67,44 @@ const CropNodeComponent = memo((props: NodeProps<CropNode>) => {
 	}, [nodeConfig]);
 
 	const updateConfig = useCallback(
-		(newCrop: Crop) => {
+		(newCrop: CropNodeConfig) => {
 			dispatch(updateNodeConfig({ id: props.id, newConfig: newCrop }));
 		},
 		[dispatch, props.id],
 	);
 
-	const constrainCrop = useCallback((newCrop: Crop): Crop => {
-		let { leftPercentage, topPercentage, widthPercentage, heightPercentage } =
-			newCrop;
+	const constrainCrop = useCallback(
+		(newCrop: CropNodeConfig): CropNodeConfig => {
+			let { leftPercentage, topPercentage, widthPercentage, heightPercentage } =
+				newCrop;
 
-		// Ensure minimum dimensions
-		widthPercentage = Math.max(5, widthPercentage);
-		heightPercentage = Math.max(5, heightPercentage);
+			// Ensure minimum dimensions
+			widthPercentage = Math.max(5, widthPercentage);
+			heightPercentage = Math.max(5, heightPercentage);
 
-		// Clamp width and height to 100% max
-		widthPercentage = Math.min(100, widthPercentage);
-		heightPercentage = Math.min(100, heightPercentage);
+			// Clamp width and height to 100% max
+			widthPercentage = Math.min(100, widthPercentage);
+			heightPercentage = Math.min(100, heightPercentage);
 
-		// Clamp position so crop box stays within image bounds
-		leftPercentage = Math.max(
-			0,
-			Math.min(100 - widthPercentage, leftPercentage),
-		);
-		topPercentage = Math.max(
-			0,
-			Math.min(100 - heightPercentage, topPercentage),
-		);
+			// Clamp position so crop box stays within image bounds
+			leftPercentage = Math.max(
+				0,
+				Math.min(100 - widthPercentage, leftPercentage),
+			);
+			topPercentage = Math.max(
+				0,
+				Math.min(100 - heightPercentage, topPercentage),
+			);
 
-		return {
-			leftPercentage,
-			topPercentage,
-			widthPercentage,
-			heightPercentage,
-		};
-	}, []);
+			return {
+				leftPercentage,
+				topPercentage,
+				widthPercentage,
+				heightPercentage,
+			};
+		},
+		[],
+	);
 
 	const handleMouseDown = useCallback(
 		(e: React.MouseEvent, type: DragState["type"]) => {
