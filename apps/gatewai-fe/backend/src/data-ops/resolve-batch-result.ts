@@ -1,12 +1,12 @@
 import assert from "node:assert";
-import type { APIResponse } from "@gatewai/api-client";
 import { type Node, prisma, type TaskBatch } from "@gatewai/db";
 import type { ExportResult, FileData } from "@gatewai/types";
 import { ENV_CONFIG } from "../config.js";
 import { bufferToDataUrl } from "../utils/image.js";
 import { getFromGCS } from "../utils/storage.js";
+import type { APIRunResponse } from "./schemas.js";
 
-type BatchResult = APIResponse["result"];
+type BatchResult = APIRunResponse["result"];
 
 const isOutputItemFileData = (
 	data: string | number | boolean | FileData,

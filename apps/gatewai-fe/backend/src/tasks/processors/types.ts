@@ -3,7 +3,7 @@ import type { NodeResult } from "@gatewai/types";
 import type {
 	CanvasCtxData,
 	CanvasCtxDataWithTasks,
-} from "../../data-access/canvas.js";
+} from "../../data-ops/canvas.js";
 
 export type NodeProcessorCtx = {
 	node: CanvasCtxData["nodes"][number];
