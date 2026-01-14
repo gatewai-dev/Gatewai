@@ -240,6 +240,16 @@ const compositorProcessor: NodeProcessor = async ({ node, data }) => {
 			else if (inputItem.type === DataType.Text) type = "Text";
 			else continue;
 
+			const imgDims: { width?: number; height?: number } = {};
+			if (type === "Image") {
+				const fData = inputItem.data as FileData;
+				// Try to find width/height in standard FileData locations
+				const w = fData.entity?.width ?? fData.processData?.width;
+				const h = fData.entity?.width ?? fData.processData?.height;
+				if (w) imgDims.width = w;
+				if (h) imgDims.height = h;
+			}
+
 			// Defaults match the Konva initialization in index.tsx
 			const defaultLayer: CompositorLayer = {
 				id: handleId,
@@ -264,11 +274,14 @@ const compositorProcessor: NodeProcessor = async ({ node, data }) => {
 							width: width, // Default to full width
 						}
 					: {
-							width: width, // Default to full width
+							// For Images:
+							// If we found dimensions in FileData, use them.
+							// If not, leave undefined so render logic uses intrinsic image size.
+							width: imgDims.width,
+							height: imgDims.height,
 						}),
 			};
 
-			// For images, we try to load strict dimensions if possible, but here we just set width
 			allLayers.push(defaultLayer);
 		}
 
