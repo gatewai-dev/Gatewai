@@ -516,6 +516,7 @@ const TextLayer: React.FC<LayerProps> = ({
 
 	// Monitor properties that change text dimensions.
 	// Sync Konva's calculated height back to state and force Transformer update.
+	// biome-ignore lint/correctness/useExhaustiveDependencies: Internal calculations being made when these chandes
 	useEffect(() => {
 		const node = textRef.current;
 		if (!node) return;
