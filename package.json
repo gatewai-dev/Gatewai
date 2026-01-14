@@ -3,13 +3,13 @@
 	"scripts": {
 		"build": "turbo run build",
 		"build-force": "turbo run build --force",
-		"dev": "turbo run dev",
+		"dev": "dotenv -e .env.development -- turbo run dev",
 		"biome": "pnpm exec biome check --write",
 		"biome-hook": "pnpm exec biome check --write --no-errors-on-unmatched --files-ignore-unknown=true --colors=off",
 		"clean": "turbo run clean && rm -rf node_modules",
 		"changeset": "changeset",
 		"version-packages": "changeset version",
-		"release": "turbo run build --filter=@gatewai/docs^... && changeset publish",
+		"release": "turbo run build --filter=@gatewai/guides^... && changeset publish",
 		"start": "turbo run build && turbo run start-cli",
 		"lefthook-install": "lefthook install"
 	},
