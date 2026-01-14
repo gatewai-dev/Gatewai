@@ -1,15 +1,38 @@
 import assert from "node:assert";
 import { randomUUID } from "node:crypto";
-import { RequestSchema } from "@gatewai/api-client";
 import { prisma } from "@gatewai/db";
 import type { TextNodeConfig } from "@gatewai/types";
 import { zValidator } from "@hono/zod-validator";
 import { Hono } from "hono";
+import z from "zod";
 import { duplicateCanvas } from "../../data-access/duplicate.js";
 import { resolveBatchResult } from "../../data-access/resolve-batch-result.js";
 import { uploadToImportNode } from "../../node-fns/import-media.js";
 import { NodeWFProcessor } from "../../tasks/canvas-workflow-processor.js";
 import { assertIsError } from "../../utils/misc.js";
+
+export const RequestSchema = z.object({
+	canvasId: z.string(),
+	payload: z.record(z.string(), z.string()).optional(),
+});
+
+export type APIRequest = z.infer<typeof RequestSchema>;
+
+const ResultValueSchema = z.discriminatedUnion("type", [
+	z.object({ type: z.literal("Video"), data: z.string() }),
+	z.object({ type: z.literal("Audio"), data: z.string() }),
+	z.object({ type: z.literal("Text"), data: z.string() }),
+	z.object({ type: z.literal("Image"), data: z.string() }),
+	z.object({ type: z.literal("Number"), data: z.number() }),
+	z.object({ type: z.literal("Boolean"), data: z.boolean() }),
+]);
+
+export const ResponseSchema = z.object({
+	batchHandleId: z.string(),
+	result: z.record(z.string(), ResultValueSchema).optional(),
+	success: z.boolean().default(true),
+	error: z.string().optional(),
+});
 
 const apiRunRoutes = new Hono({ strict: false })
 	/**
@@ -35,6 +58,7 @@ const apiRunRoutes = new Hono({ strict: false })
 			return c.json({
 				batchHandleId: batch.id,
 				success: true,
+				error: null,
 				result,
 			});
 		} catch (error) {
@@ -44,6 +68,7 @@ const apiRunRoutes = new Hono({ strict: false })
 					batchHandleId: batch.id,
 					success: false,
 					error: error.message,
+					result: undefined,
 				},
 				500,
 			);
@@ -115,24 +140,22 @@ const apiRunRoutes = new Hono({ strict: false })
 			// 3. Trigger Workflow
 			const wfProcessor = new NodeWFProcessor(prisma);
 			const taskBatch = await wfProcessor.processNodes(duplicated.id);
-
-			return c.json(
-				{
-					batchHandleId: taskBatch.id,
-					success: true,
-				},
-				201,
-			);
+			const result = ResponseSchema.parse({
+				batchHandleId: taskBatch.id,
+				success: true,
+				error: undefined,
+				result: undefined,
+			});
+			return c.json(result, 201);
 		} catch (error) {
 			assertIsError(error);
-			return c.json(
-				{
-					success: false,
-					error: error.message,
-					batchHandleId: "error",
-				},
-				500,
-			);
+			const result = ResponseSchema.parse({
+				success: false,
+				error: error.message,
+				batchHandleId: "error",
+				result: undefined,
+			});
+			return c.json(result, 500);
 		}
 	});
 

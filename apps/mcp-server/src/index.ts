@@ -1,66 +1,285 @@
-import { GatewaiApiClient } from "@gatewai/api-client";
-// Specialized Hono transport
+import { GatewaiApiClient, type StartRunRequest } from "@gatewai/api-client";
 import { StreamableHTTPTransport } from "@hono/mcp";
 import { serve } from "@hono/node-server";
 import {
 	McpServer,
 	ResourceTemplate,
 } from "@modelcontextprotocol/sdk/server/mcp.js";
-import type { ListResourcesResult } from "@modelcontextprotocol/sdk/types.js";
 import { Hono } from "hono";
 import { cors } from "hono/cors";
 import { z } from "zod";
 
-// 1. Create the MCP server
-const server = new McpServer({
-	name: "gatewai-mcp-server",
-	version: "0.0.1",
+const EnvSchema = z.object({
+	BASE_URL: z.string().url("BASE_URL must be a valid URL"),
+	MCP_PORT: z.coerce.number().default(3000),
+	LOG_LEVEL: z.enum(["debug", "info", "error"]).default("info"),
 });
 
-const BASE_URL = process.env.BASE_URL;
-
-if (!BASE_URL) {
-	throw new Error("Missing Gatewai BASE_URL");
-}
+const env = EnvSchema.parse(process.env);
 
 const apiClient = new GatewaiApiClient({
-	baseUrl: BASE_URL,
+	baseUrl: env.BASE_URL,
 });
 
-const canvasListResourceTemplate = new ResourceTemplate("/canvas-list", {
-	list: (ex) => {
-		const result: ListResourcesResult = {};
+const server = new McpServer({
+	name: "gatewai-mcp-server",
+	version: "1.0.0",
+});
+
+// --- 4. Resources (Read-Only Data) ---
+
+/**
+ * Resource: List all Canvas Workflows
+ * URI: gatewai://canvases
+ */
+server.resource("canvas-list", "gatewai://canvases", async (uri) => {
+	try {
+		const canvases = await apiClient.getCanvases();
+		return {
+			contents: [
+				{
+					uri: uri.href,
+					text: JSON.stringify(canvases, null, 2),
+					mimeType: "application/json",
+				},
+			],
+		};
+	} catch (error) {
+		const msg = error instanceof Error ? error.message : "Unknown error.";
+		throw new Error(`Failed to fetch canvases: ${msg}`);
+	}
+});
+
+/**
+ * Resource: Get Specific Canvas Details
+ * URI: gatewai://canvases/{id}
+ */
+server.resource(
+	"canvas-detail",
+	new ResourceTemplate("gatewai://canvases/{id}", { list: undefined }),
+	async (uri, { id }) => {
+		try {
+			const canvasId = id as string;
+			const canvas = await apiClient.getCanvas(canvasId);
+
+			return {
+				contents: [
+					{
+						uri: uri.href,
+						text: JSON.stringify(canvas, null, 2),
+						mimeType: "application/json",
+					},
+				],
+			};
+		} catch (error) {
+			const msg = error instanceof Error ? error.message : "Unknown error.";
+			throw new Error(`Failed to fetch canvas ${id}: ${msg}`);
+		}
 	},
-});
-server.registerResource("Fetch Canvas Workflows", canvasListResourceTemplate, {
-	description: "",
+);
+
+/**
+ * Resource: Node Templates
+ * URI: gatewai://node-templates
+ */
+server.resource("node-templates", "gatewai://node-templates", async (uri) => {
+	try {
+		const templates = await apiClient.getNodeTemplates();
+		return {
+			contents: [
+				{
+					uri: uri.href,
+					text: JSON.stringify(templates, null, 2),
+					mimeType: "application/json",
+				},
+			],
+		};
+	} catch (error) {
+		const msg = error instanceof Error ? error.message : "Unknown error.";
+		throw new Error(`Failed to fetch node templates: ${msg}`);
+	}
 });
 
-// 3. Initialize Hono and the Transport
+/**
+ * Tool: Create a new empty canvas
+ */
+server.tool(
+	"create-canvas",
+	{
+		name: z.string().optional().describe("Optional name for the new canvas"),
+	},
+	async ({ name }) => {
+		try {
+			const newCanvas = await apiClient.createCanvas();
+
+			// If a name was provided, strictly speaking we need a second call to rename it
+			// as the API `createCanvas` doesn't seem to accept a payload based on the client types.
+			if (name && newCanvas.id) {
+				await apiClient.updateCanvasName(newCanvas.id, { name });
+				// Fetch fresh state to return accurate data
+				const updated = await apiClient.getCanvas(newCanvas.id);
+				return {
+					content: [{ type: "text", text: JSON.stringify(updated, null, 2) }],
+				};
+			}
+
+			return {
+				content: [{ type: "text", text: JSON.stringify(newCanvas, null, 2) }],
+			};
+		} catch (error) {
+			const msg = error instanceof Error ? error.message : "Unknown error.";
+			return {
+				content: [{ type: "text", text: `Error creating canvas: ${msg}` }],
+				isError: true,
+			};
+		}
+	},
+);
+
+/**
+ * Tool: Duplicate an existing canvas
+ */
+server.tool(
+	"duplicate-canvas",
+	{
+		canvasId: z.string().describe("The ID of the canvas to duplicate"),
+	},
+	async ({ canvasId }) => {
+		try {
+			const result = await apiClient.duplicateCanvas(canvasId);
+			return {
+				content: [{ type: "text", text: JSON.stringify(result, null, 2) }],
+			};
+		} catch (error) {
+			const msg = error instanceof Error ? error.message : "Unknown error.";
+			return {
+				content: [{ type: "text", text: `Error duplicating canvas: ${msg}` }],
+				isError: true,
+			};
+		}
+	},
+);
+
+/**
+ * Tool: Delete a canvas
+ */
+server.tool(
+	"delete-canvas",
+	{
+		canvasId: z.string().describe("The ID of the canvas to delete"),
+	},
+	async ({ canvasId }) => {
+		try {
+			const result = await apiClient.deleteCanvas(canvasId);
+			return {
+				content: [{ type: "text", text: JSON.stringify(result, null, 2) }],
+			};
+		} catch (error) {
+			const msg = error instanceof Error ? error.message : "Unknown error.";
+			return {
+				content: [{ type: "text", text: `Error deleting canvas: ${msg}` }],
+				isError: true,
+			};
+		}
+	},
+);
+
+/**
+ * Tool: Run a Workflow
+ * Uses the client's polling mechanism to wait for completion.
+ */
+server.tool(
+	"run-workflow",
+	{
+		canvasId: z.string().describe("The ID of the canvas to run"),
+		inputs: z
+			.record(z.any())
+			.optional()
+			.describe("Dictionary of input values for the workflow execution"),
+	},
+	async ({ canvasId, inputs }) => {
+		try {
+			// Construct the payload matching StartRunRequest
+			const payload: StartRunRequest = {
+				canvasId,
+				inputs: inputs || {},
+				// Mapping optional fields if the API supports them in the future
+				// strictly adhering to the inferred type 'StartRunRequest' is safest
+			};
+
+			// Use the polling method to give the LLM the final result
+			const result = await apiClient.run(payload);
+
+			return {
+				content: [{ type: "text", text: JSON.stringify(result, null, 2) }],
+			};
+		} catch (error) {
+			const msg = error instanceof Error ? error.message : "Unknown error.";
+			return {
+				content: [{ type: "text", text: `Workflow execution failed: ${msg}` }],
+				isError: true,
+			};
+		}
+	},
+);
+
+/**
+ * Tool: Update Canvas Name
+ */
+server.tool(
+	"rename-canvas",
+	{
+		canvasId: z.string(),
+		newName: z.string(),
+	},
+	async ({ canvasId, newName }) => {
+		try {
+			const result = await apiClient.updateCanvasName(canvasId, {
+				name: newName,
+			});
+			return {
+				content: [{ type: "text", text: JSON.stringify(result, null, 2) }],
+			};
+		} catch (error) {
+			const msg = error instanceof Error ? error.message : "Unknown error.";
+			return {
+				content: [{ type: "text", text: `Error renaming canvas: ${msg}` }],
+				isError: true,
+			};
+		}
+	},
+);
+
 const app = new Hono();
 const transport = new StreamableHTTPTransport();
 
+// Middleware
 app.use("*", cors());
 
-// Health check
-app.get("/health", (c) => c.json({ status: "ok" }));
+// Health Check
+app.get("/health", (c) => c.json({ status: "ok", env: env.LOG_LEVEL }));
 
-// 4. MCP Route
-// The @hono/mcp transport takes the Hono context (c) directly
-app.all("/mcp", async (c) => {
-	// Ensure server is connected to the transport
+// MCP SSE Endpoint
+app.get("/mcp", async (c) => {
 	if (!server.isConnected()) {
 		await server.connect(transport);
 	}
 	return transport.handleRequest(c);
 });
 
-// 5. Start Server
-const PORT = Number(process.env.MCP_PORT) || 3000;
+// MCP POST Endpoint (for JSON-RPC messages)
+app.post("/mcp", async (c) => {
+	if (!server.isConnected()) {
+		await server.connect(transport);
+	}
+	return transport.handleRequest(c);
+});
 
-console.log(`Hono MCP server running on http://localhost:${PORT}/mcp`);
+console.log(
+	`Gatewai MCP Server running on http://localhost:${env.MCP_PORT}/mcp`,
+);
 
 serve({
 	fetch: app.fetch,
-	port: PORT,
+	port: env.MCP_PORT,
 });
