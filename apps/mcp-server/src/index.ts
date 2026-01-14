@@ -26,8 +26,6 @@ const server = new McpServer({
 	version: "1.0.0",
 });
 
-// --- 4. Resources (Read-Only Data) ---
-
 /**
  * Resource: List all Canvas Workflows
  * URI: gatewai://canvases
@@ -195,7 +193,9 @@ server.tool(
 		inputs: z
 			.record(z.any())
 			.optional()
-			.describe("Dictionary of input values for the workflow execution"),
+			.describe(
+				"Dictionary of input values for the workflow execution. Keys should be the Node IDs (from get-canvas-inputs) and values should be the string content (for Text nodes) or base64 string (for File nodes).",
+			),
 	},
 	async ({ canvasId, inputs }) => {
 		try {
@@ -203,8 +203,6 @@ server.tool(
 			const payload: StartRunRequest = {
 				canvasId,
 				inputs: inputs || {},
-				// Mapping optional fields if the API supports them in the future
-				// strictly adhering to the inferred type 'StartRunRequest' is safest
 			};
 
 			// Use the polling method to give the LLM the final result
@@ -217,6 +215,58 @@ server.tool(
 			const msg = error instanceof Error ? error.message : "Unknown error.";
 			return {
 				content: [{ type: "text", text: `Workflow execution failed: ${msg}` }],
+				isError: true,
+			};
+		}
+	},
+);
+
+/**
+ * Tool: Get Canvas Inputs
+ * Helper to discover available input nodes (Text, File) in a canvas.
+ */
+server.tool(
+	"get-canvas-inputs",
+	{
+		canvasId: z.string().describe("The ID of the canvas to inspect"),
+	},
+	async ({ canvasId }) => {
+		try {
+			const canvasData = await apiClient.getCanvas(canvasId);
+
+			// Filter for Text and File nodes which are typically inputs
+			const inputNodes = canvasData.nodes
+				.filter((n) => n.type === "Text" || n.type === "File")
+				.map((n) => ({
+					id: n.id,
+					name: n.name,
+					type: n.type,
+					currentValue: n.config?.content || "(no content)",
+				}));
+
+			return {
+				content: [
+					{
+						type: "text",
+						text: JSON.stringify(
+							{
+								canvasId,
+								inputs: inputNodes,
+								instructions:
+									"Use the 'id' of these nodes as keys in the 'inputs' dictionary for the 'run-workflow' tool.",
+							},
+							null,
+							2,
+						),
+					},
+				],
+			};
+		} catch (error) {
+			const msg = error instanceof Error ? error.message : "Unknown error.";
+			return {
+				content: [
+					{ type: "text", text: `Error fetching canvas inputs: ${msg}` },
+				],
 				isError: true,
 			};
 		}

@@ -421,6 +421,12 @@ importers:
       '@types/node':
         specifier: ^25.0.8
         version: 25.0.8
+      tsdown:
+        specifier: ^0.17.0-beta.3
+        version: 0.17.0-beta.3(synckit@0.11.11)(typescript@5.8.3)
+      typescript:
+        specifier: ~5.8.3
+        version: 5.8.3
 
   packages/api-client:
     dependencies:
