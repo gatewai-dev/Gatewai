@@ -2,7 +2,7 @@ import type { NodeResult } from "@gatewai/types";
 import { ChevronLeft, ChevronRight } from "lucide-react";
 import { Button } from "@/components/ui/button";
 import type { NodeEntityType } from "@/store/nodes";
-import { useCanvasCtx } from "../../ctx/canvas-ctx";
+import { useCanvasCtx } from "../ctx/canvas-ctx";
 
 function OutputSelector({ node }: { node: NodeEntityType }) {
 	const { onNodeResultUpdate } = useCanvasCtx();

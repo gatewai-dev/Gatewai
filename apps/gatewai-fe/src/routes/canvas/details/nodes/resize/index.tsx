@@ -1,24 +1,18 @@
-import type { FileData, ResizeNodeConfig } from "@gatewai/types";
+import type { ResizeNodeConfig } from "@gatewai/types";
 import type { NodeProps } from "@xyflow/react";
 import { memo, useEffect } from "react";
 import { cn } from "@/lib/utils";
-import { useAppDispatch, useAppSelector } from "@/store";
-import { makeSelectNodeById, updateNodeConfig } from "@/store/nodes";
-import { ResolveFileDataUrl } from "@/utils/file";
-import { useNodeResult } from "../../processor/processor-ctx";
+import { useAppDispatch } from "@/store";
+import { updateNodeConfig } from "@/store/nodes";
+import { useNodePreview } from "../../hooks/node-preview";
 import { BaseNode } from "../base";
 import { CanvasRenderer } from "../common/canvas-renderer";
 import type { ResizeNode } from "../node-props";
 import { ResizeConfig } from "./resize-config";
 
 const ResizeNodeComponent = memo((props: NodeProps<ResizeNode>) => {
-	const node = useAppSelector(makeSelectNodeById(props.id));
 	const dispatch = useAppDispatch();
-
-	const { result } = useNodeResult(props.id);
-	const outputItem = result?.outputs[result.selectedOutputIndex]?.items[0];
-	const inputFileData = outputItem?.data as FileData;
-	const imageUrl = ResolveFileDataUrl(inputFileData);
+	const { imageUrl, node } = useNodePreview(props.id);
 
 	const nodeConfig = node?.config as ResizeNodeConfig | null;
 	//  When image connected, set dimensions to images

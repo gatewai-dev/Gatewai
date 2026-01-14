@@ -1,22 +1,12 @@
-import type { FileData } from "@gatewai/types";
 import { memo } from "react";
-import { useAppSelector } from "@/store";
-import { makeSelectNodeById } from "@/store/nodes";
-import { ResolveFileDataUrl } from "@/utils/file";
-import { useNodeResult } from "../../processor/processor-ctx";
+import { useNodePreview } from "../../hooks/node-preview";
 import { BaseNode } from "../base";
 import { CanvasRenderer } from "../common/canvas-renderer";
 import { ModulateNodeConfigComponent } from "./modulate-config";
 
 const ModulateNodeComponent = memo(
 	(props: { selected: boolean; id: string; dragging: boolean }) => {
-		const node = useAppSelector(makeSelectNodeById(props.id));
-
-		const { result } = useNodeResult(props.id);
-		const outputItem = result?.outputs[result.selectedOutputIndex]?.items[0];
-		const inputFileData = outputItem?.data as FileData;
-
-		const imageUrl = ResolveFileDataUrl(inputFileData);
+		const { imageUrl, node } = useNodePreview(props.id);
 
 		return (
 			<BaseNode
