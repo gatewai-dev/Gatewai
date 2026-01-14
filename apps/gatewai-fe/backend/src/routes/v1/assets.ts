@@ -30,22 +30,30 @@ const querySchema = z.object({
 	pageSize: z.coerce.number().int().positive().max(1000).default(1000),
 	pageIndex: z.coerce.number().int().nonnegative().default(0),
 	q: z.string().default(""),
+	type: z.enum(["image", "video", "audio"]).optional(),
 });
 
 const assetsRouter = new Hono({
 	strict: false,
 })
 	.get("/", zValidator("query", querySchema), async (c) => {
-		const { pageSize, pageIndex, q } = c.req.valid("query");
+		const { pageSize, pageIndex, q, type } = c.req.valid("query");
 
 		const skip = pageIndex * pageSize;
 		const take = pageSize;
 
-		const where = {
+		const where: FileAssetWhereInput = {
 			name: {
 				contains: q,
+				mode: "insensitive",
 			},
-		} as FileAssetWhereInput;
+		};
+
+		if (type) {
+			where.mimeType = {
+				startsWith: `${type}/`,
+			};
+		}
 
 		const [assets, total] = await Promise.all([
 			prisma.fileAsset.findMany({

@@ -27,6 +27,7 @@ const UserAssetsProvider = ({ children }: PropsWithChildren) => {
 			pageIndex: "0",
 			pageSize: "50",
 			q: "",
+			type: undefined,
 		},
 	});
 
@@ -50,7 +51,7 @@ const UserAssetsProvider = ({ children }: PropsWithChildren) => {
 export function useUserAssets() {
 	const ctx = useContext(UserAssetsContext);
 	if (!ctx) {
-		throw new Error("useUserAssets should used inside UserAssetsProvider");
+		throw new Error("useUserAssets must be used within a UserAssetsProvider");
 	}
 	return ctx;
 }
