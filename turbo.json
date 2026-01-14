@@ -3,12 +3,17 @@
 	"tasks": {
 		"build": {
 			"dependsOn": ["^build"],
-			"outputs": ["dist/**"]
+			"outputs": ["dist/**"],
+			"inputs": ["$TURBO_DEFAULT$", ".env"]
 		},
 		"dev": {
 			"dependsOn": ["^build"],
 			"cache": false,
-			"persistent": true
+			"persistent": true,
+			"inputs": ["$TURBO_DEFAULT$", ".env.development"]
+		},
+		"start-cli": {
+			"inputs": ["$TURBO_DEFAULT$", ".env"]
 		}
 	}
 }
