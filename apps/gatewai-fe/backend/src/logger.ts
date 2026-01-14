@@ -4,7 +4,7 @@ const logger = pino({
 	level: process.env.LOG_LEVEL || "debug",
 	timestamp: pino.stdTimeFunctions.isoTime,
 	redact: {
-		paths: ["email", "password", "accessToken", "refreshToken"],
+		paths: ["email", "password", "accessToken", "refreshToken"], // In case we add auth
 	},
 	transport:
 		process.env.NODE_ENV !== "production"

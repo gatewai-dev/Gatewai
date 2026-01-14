@@ -6,6 +6,6 @@
 	"fixed": [],
 	"linked": [],
 	"access": "public",
-	"ignore": ["apps/guides"],
+	"ignore": ["@gatewai/guides"],
 	"updateInternalDependencies": "patch"
 }

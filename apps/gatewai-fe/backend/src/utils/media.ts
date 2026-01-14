@@ -39,7 +39,7 @@ export async function getMediaDuration(buffer: Buffer): Promise<number | null> {
 			ffprobe.on("close", (code) => {
 				if (code === 0) {
 					const duration = parseFloat(output.trim());
-					resolve(isNaN(duration) ? null : duration);
+					resolve(Number.isNaN(duration) ? null : duration);
 				} else {
 					reject(new Error(`ffprobe exited with code ${code}`));
 				}
