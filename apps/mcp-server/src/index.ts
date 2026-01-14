@@ -1,77 +1,66 @@
+import { GatewaiApiClient } from "@gatewai/api-client";
+// Specialized Hono transport
+import { StreamableHTTPTransport } from "@hono/mcp";
 import { serve } from "@hono/node-server";
-import type { CallToolResult } from "@modelcontextprotocol/server";
 import {
 	McpServer,
-	WebStandardStreamableHTTPServerTransport,
-} from "@modelcontextprotocol/server";
+	ResourceTemplate,
+} from "@modelcontextprotocol/sdk/server/mcp.js";
+import type { ListResourcesResult } from "@modelcontextprotocol/sdk/types.js";
 import { Hono } from "hono";
 import { cors } from "hono/cors";
-import * as z from "zod/v4";
+import { z } from "zod";
 
-// Create the MCP server
+// 1. Create the MCP server
 const server = new McpServer({
 	name: "gatewai-mcp-server",
 	version: "0.0.1",
 });
 
-// Register a simple greeting tool
-server.registerTool(
-	"greet",
-	{
-		title: "Greeting Tool",
-		description: "A simple greeting tool",
-		inputSchema: { name: z.string().describe("Name to greet") },
-	},
-	async ({ name }): Promise<CallToolResult> => {
-		return {
-			content: [
-				{
-					type: "text",
-					text: `Hello, ${name}! (from Hono + WebStandard transport)`,
-				},
-			],
-		};
-	},
-);
+const BASE_URL = process.env.BASE_URL;
 
-// Create a stateless transport (no options = no session management)
-const transport = new WebStandardStreamableHTTPServerTransport();
+if (!BASE_URL) {
+	throw new Error("Missing Gatewai BASE_URL");
+}
 
-// Create the Hono app
+const apiClient = new GatewaiApiClient({
+	baseUrl: BASE_URL,
+});
+
+const canvasListResourceTemplate = new ResourceTemplate("/canvas-list", {
+	list: (ex) => {
+		const result: ListResourcesResult = {};
+	},
+});
+server.registerResource("Fetch Canvas Workflows", canvasListResourceTemplate, {
+	description: "",
+});
+
+// 3. Initialize Hono and the Transport
 const app = new Hono();
+const transport = new StreamableHTTPTransport();
 
-// Enable CORS for all origins
-app.use(
-	"*",
-	cors({
-		origin: "*",
-		allowMethods: ["GET", "POST", "DELETE", "OPTIONS"],
-		allowHeaders: [
-			"Content-Type",
-			"mcp-session-id",
-			"Last-Event-ID",
-			"mcp-protocol-version",
-		],
-		exposeHeaders: ["mcp-session-id", "mcp-protocol-version"],
-	}),
-);
+app.use("*", cors());
 
-// Health check endpoint
+// Health check
 app.get("/health", (c) => c.json({ status: "ok" }));
 
-// MCP endpoint
-app.all("/mcp", (c) => transport.handleRequest(c.req.raw));
+// 4. MCP Route
+// The @hono/mcp transport takes the Hono context (c) directly
+app.all("/mcp", async (c) => {
+	// Ensure server is connected to the transport
+	if (!server.isConnected()) {
+		await server.connect(transport);
+	}
+	return transport.handleRequest(c);
+});
 
-// Start the server
-const PORT = process.env.MCP_PORT ? parseInt(process.env.MCP_PORT, 10) : 3000;
+// 5. Start Server
+const PORT = Number(process.env.MCP_PORT) || 3000;
 
-server.connect(transport).then(() => {
-	console.log(`Starting Hono MCP server on port ${PORT}`);
-	console.log(`Health check: http://localhost:${PORT}/health`);
-	console.log(`MCP endpoint: http://localhost:${PORT}/mcp`);
+console.log(`Hono MCP server running on http://localhost:${PORT}/mcp`);
 
-	serve({
-		fetch: app.fetch,
-		port: PORT,
-	});
+serve({
+	fetch: app.fetch,
+	port: PORT,
 });

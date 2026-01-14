@@ -1,16 +1,13 @@
 {
 	"extends": "@gatewai/tsconfig/base.json",
 	"compilerOptions": {
-		"target": "ESNext",
+		"target": "ES2022",
 		"module": "NodeNext",
-		"strict": true,
-		"verbatimModuleSyntax": true,
-		"skipLibCheck": true,
+		"moduleResolution": "NodeNext",
+		"lib": ["ES2022", "WebWorker"],
 		"types": ["node"],
-		"lib": ["DOM"],
-		"jsx": "react-jsx",
-		"jsxImportSource": "hono/jsx",
-		"outDir": "./dist"
+		"strict": true,
+		"skipLibCheck": true
 	},
 	"include": ["src/**/*"],
 	"exclude": ["node_modules", "dist"]

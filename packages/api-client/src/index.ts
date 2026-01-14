@@ -1,91 +1,64 @@
-import { z } from "zod";
+import type { InferRequestType, InferResponseType } from "hono/client";
+import { hc } from "hono/client";
+// Ehm, we can pass it.
+import type { AppType } from "../../../apps/gatewai-fe/backend/src/index";
 
-export const RequestSchema = z.object({
-	canvasId: z.string(),
-	payload: z.record(z.string(), z.string()).optional(),
-});
+const client = hc<AppType>("");
+// Extracting Request Type for POST /api/v1/api-run
+type StartRunRequest = InferRequestType<
+	(typeof client.api.v1)["api-run"]["$post"]
+>;
+export type APIRequest = StartRunRequest["json"];
 
-export type APIRequest = z.infer<typeof RequestSchema>;
-
-const ResultValueSchema = z.discriminatedUnion("type", [
-	z.object({ type: z.literal("Video"), data: z.string() }),
-	z.object({ type: z.literal("Audio"), data: z.string() }),
-	z.object({ type: z.literal("Text"), data: z.string() }),
-	z.object({ type: z.literal("Image"), data: z.string() }),
-	z.object({ type: z.literal("Number"), data: z.number() }),
-	z.object({ type: z.literal("Boolean"), data: z.boolean() }),
-]);
-
-export const ResponseSchema = z.object({
-	batchHandleId: z.string(),
-	result: z.record(z.string(), ResultValueSchema).optional(),
-	success: z.boolean().default(true),
-	error: z.string().optional(),
-});
-
-export type APIResponse = z.infer<typeof ResponseSchema>;
+// Extracting Response Type for POST /api/v1/api-run
+export type APIResponse = InferResponseType<
+	(typeof client.api.v1)["api-run"]["$post"]
+>;
 
 export interface APIClientConfig {
 	baseUrl: string;
 	timeoutMs?: number;
 }
 
-/**
- * API Client used to run workflows externally
- */
 export class GatewaiApiClient {
 	private baseUrl: string;
+	private rpc: ReturnType<typeof hc<AppType>>;
 
 	constructor(config: APIClientConfig) {
 		this.baseUrl = config.baseUrl.replace(/\/$/, "");
-	}
-
-	/**
-	 * Internal fetch wrapper with validation
-	 */
-	private async request<T>(
-		endpoint: string,
-		options?: RequestInit,
-	): Promise<T> {
-		const response = await fetch(`${this.baseUrl}/api/v1/${endpoint}`, {
-			...options,
-			headers: {
-				"Content-Type": "application/json",
-				...options?.headers,
-			},
-		});
-
-		if (!response.ok) {
-			const errBody = await response.json().catch(() => ({}));
-			throw new Error(
-				errBody.error ||
-					`HTTP Error: ${response.status} ${response.statusText}`,
-			);
-		}
-
-		return (await response.json()) as T;
+		this.rpc = hc<AppType>(this.baseUrl);
 	}
 
 	/**
 	 * Starts a run on a canvas
 	 */
 	async startRun(request: APIRequest): Promise<APIResponse> {
-		const validated = RequestSchema.parse(request);
-		const data = await this.request<APIResponse>("api-run", {
-			method: "POST",
-			body: JSON.stringify(validated),
+		const res = await this.rpc.api.v1["api-run"].$post({
+			json: request,
 		});
-		return ResponseSchema.parse(data);
+
+		if (!res.ok) {
+			const errBody = await res.json().catch(() => ({}));
+			throw new Error(errBody.error || `HTTP Error: ${res.status}`);
+		}
+
+		return (await res.json()) as APIResponse;
 	}
 
 	/**
 	 * Checks the status of a specific batch
 	 */
 	async checkStatus(batchHandleId: string): Promise<APIResponse> {
-		const data = await this.request<APIResponse>(
-			`api-run/${batchHandleId}/status`,
-		);
-		return ResponseSchema.parse(data);
+		const res = await this.rpc.api.v1["api-run"][":batchHandleId"].status.$get({
+			param: { batchHandleId },
+		});
+
+		if (!res.ok) {
+			const errBody = await res.json().catch(() => ({}));
+			throw new Error((errBody as any).error || `HTTP Error: ${res.status}`);
+		}
+
+		return (await res.json()) as APIResponse;
 	}
 
 	/**
@@ -97,7 +70,8 @@ export class GatewaiApiClient {
 	): Promise<APIResponse> {
 		let status = await this.startRun(request);
 
-		while (!status.result && !status.error) {
+		// Uses the inferred properties from your backend response
+		while (!status.success && !status.error) {
 			await new Promise((resolve) => setTimeout(resolve, pollingIntervalMs));
 			status = await this.checkStatus(status.batchHandleId);
 
