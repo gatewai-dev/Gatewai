@@ -172,7 +172,7 @@ export const NodeItem = memo(({ template, id_suffix }: NodeItemProps) => {
 							))}
 						</div>
 					</div>
-					<span className="text-[11px] text-muted-foreground/70">
+					<span className="text-[11px] text-muted-foreground/80">
 						{template.description || "Drag to add to canvas"}
 					</span>
 				</div>
