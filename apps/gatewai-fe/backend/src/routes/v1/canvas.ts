@@ -330,9 +330,6 @@ const canvasRoutes = new Hono({
 			);
 		});
 
-		// --- 6. Handle Operations (Defensive) ---
-		// Create a Set of all Node IDs that will exist after this transaction
-		// (Existing nodes that weren't deleted + New nodes being created)
 		const validNodeIdsSet = new Set([
 			...Array.from(nodeIdsInDBSet).filter(
 				(id) => !removedNodeIds.includes(id),
@@ -345,7 +342,7 @@ const canvasRoutes = new Hono({
 				!!h.id && !handleIdsInDBSet.has(h.id),
 		);
 
-		// DEFENSIVE: Filter out handles that point to non-existent nodes
+		// Filter out handles that point to non-existent nodes
 		const safeCreatedHandles = rawCreatedHandles.filter((h) => {
 			if (!validNodeIdsSet.has(h.nodeId)) {
 				console.warn(
@@ -394,7 +391,7 @@ const canvasRoutes = new Hono({
 			);
 		});
 
-		// --- 7. Edge Operations (Defensive) ---
+		// --- 7. Edge Operations ---
 		// Edges also depend on valid handles. We'll verify source/target nodes first.
 		const rawCreatedEdges = edgesInPayload.filter(
 			(
@@ -465,7 +462,7 @@ const canvasRoutes = new Hono({
 		// Execute all transactions atomically
 		await prisma.$transaction(txs);
 
-		// --- 8. Return Response ---
+		// --- Return Response ---
 		const canvas = await prisma.canvas.findFirst({
 			where: { id },
 		});

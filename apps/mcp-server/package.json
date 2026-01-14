@@ -2,12 +2,12 @@
 	"name": "@gatewai/mcp-server",
 	"version": "1.0.0",
 	"description": "Gatewai MCP server",
-	"main": "index.js",
+	"main": "dist/index.js",
 	"type": "module",
 	"scripts": {
-		"dev": "tsdown src/index.ts --watch --run",
-		"build": "tsdown src/index.ts --format esm --clean",
-		"start-cli": "node dist/index.mjs",
+		"dev": "tsx watch src/index.ts",
+		"build": "tsdown src/index.ts --format esm --clean --dts",
+		"start": "node dist/index.js",
 		"test": "echo \"Error: no test specified\" && exit 1"
 	},
 	"keywords": [],
@@ -26,6 +26,7 @@
 		"@gatewai/tsconfig": "workspace:*",
 		"@types/node": "^25.0.8",
 		"tsdown": "^0.17.0-beta.3",
+		"tsx": "^4.20.3",
 		"typescript": "~5.8.3"
 	}
 }

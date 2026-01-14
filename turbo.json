@@ -16,6 +16,9 @@
 			"inputs": ["$TURBO_DEFAULT$", ".env"]
 		},
 		"start-mcp": {
+			"inputs": ["$TURBO_DEFAULT$", ".env"]
+		},
+		"dev-mcp": {
 			"inputs": ["$TURBO_DEFAULT$", ".env.development"]
 		}
 	}
