@@ -26,6 +26,17 @@ import type { NodeProcessor } from "./types.js";
 const __filename = fileURLToPath(import.meta.url);
 const __dirname = path.dirname(__filename);
 
+// --- 1. Shared Defaults (Sync with Client) ---
+const DEFAULTS = {
+	FONT_FAMILY: "Geist",
+	FONT_SIZE: 64,
+	FILL: "#ffffff",
+	LINE_HEIGHT: 1.1,
+	ALIGN: "left",
+	VERTICAL_ALIGN: "top",
+	LETTER_SPACING: 0,
+};
+
 const getFontPath = async (fontName: string): Promise<string | null> => {
 	try {
 		const fontDir = path.join(__dirname, "../../assets/fonts", fontName);
@@ -66,7 +77,7 @@ const getCompositeOperation = (
 };
 
 /**
- * text wrapper that respects explicit newlines
+ * Text wrapper that respects explicit newlines
  * and performs word-wrapping based on max width.
  */
 function getWrappedLines(
@@ -80,7 +91,7 @@ function getWrappedLines(
 
 	for (const paragraph of paragraphs) {
 		// If paragraph is empty (double newline), push an empty line
-		if (paragraph.trim() === "" && paragraph.length === 0) {
+		if (paragraph.length === 0) {
 			finalLines.push("");
 			continue;
 		}
@@ -90,10 +101,12 @@ function getWrappedLines(
 
 		for (let i = 1; i < words.length; i++) {
 			const word = words[i];
-			const width = ctx.measureText(`${currentLine} ${word}`).width;
+			const testLine = `${currentLine} ${word}`;
+			const metrics = ctx.measureText(testLine);
+			const width = metrics.width;
 
 			if (width < maxWidth) {
-				currentLine += ` ${word}`;
+				currentLine = testLine;
 			} else {
 				finalLines.push(currentLine);
 				currentLine = word;
@@ -111,22 +124,25 @@ const renderTextLayer = (
 	text: string,
 	canvasWidth: number,
 ) => {
-	const fontSize = layer.fontSize ?? 24;
-	const fontFamily = layer.fontFamily ?? "Inter";
-	const fill = layer.fill ?? "#ffffff";
-	const align = layer.align ?? "left";
-	const letterSpacing = layer.letterSpacing ?? 0;
+	const fontSize = layer.fontSize ?? DEFAULTS.FONT_SIZE;
+	const fontFamily = layer.fontFamily ?? DEFAULTS.FONT_FAMILY;
+	const fill = layer.fill ?? DEFAULTS.FILL;
+	const align = layer.align ?? DEFAULTS.ALIGN;
+	const verticalAlign = layer.verticalAlign ?? DEFAULTS.VERTICAL_ALIGN;
+	const letterSpacing = layer.letterSpacing ?? DEFAULTS.LETTER_SPACING;
+	const lineHeight = layer.lineHeight ?? DEFAULTS.LINE_HEIGHT;
+	const fontStyle = layer.fontStyle ?? "normal";
 
-	// Konva: lineHeight is a multiplier. Canvas: usually explicit pixels.
-	// However, basic canvas layout usually works best with simple multiplier logic for 'y' stepping.
-	const lineHeightPx = (layer.lineHeight ?? 1) * fontSize;
+	// Calculate line height in pixels
+	const lineHeightPx = fontSize * lineHeight;
 
-	// Determine the constraints
-	// If layer.width is set, use it. Otherwise use remaining canvas width.
+	// Determine constraints
 	const maxWidth = layer.width ?? canvasWidth - (layer.x ?? 0);
+	const maxHeight = layer.height; // Can be undefined for auto-height
 
 	// 1. Configure Context Typography
-	ctx.font = `${fontSize}px "${fontFamily}"`;
+	// font string syntax: "style variant weight size/line-height family"
+	ctx.font = `${fontStyle} ${fontSize}px "${fontFamily}"`;
 	ctx.fillStyle = fill;
 	ctx.textBaseline = "top"; // Matches Konva default
 
@@ -135,8 +151,7 @@ const renderTextLayer = (
 		ctx.letterSpacing = `${letterSpacing}px`;
 	}
 
-	// 2. Setup Alignment & Anchor Points
-	// We set the anchor (x) and the alignment mode so the text grows in the correct direction
+	// 2. Setup Horizontal Alignment & Anchor Points
 	let x = 0;
 	if (align === "center") {
 		x = maxWidth / 2;
@@ -150,13 +165,42 @@ const renderTextLayer = (
 	}
 
 	// 3. Process Wrapping
-	// Note: Wrapping logic relies on the context having the correct font set above
 	const lines = getWrappedLines(ctx, text, maxWidth);
 
-	// 4. Render
+	// 4. Calculate Vertical Alignment Offset
+	let yOffset = 0;
+	if (maxHeight !== undefined) {
+		// Calculate total height of the text block
+		// Note: Konva uses (lines * lineHeightPx) - (lineHeightPx - fontSize) for tight bounds
+		// but visual layout usually assumes full line heights steps.
+		const totalTextHeight = lines.length * lineHeightPx;
+
+		if (verticalAlign === "middle") {
+			yOffset = (maxHeight - totalTextHeight) / 2;
+		} else if (verticalAlign === "bottom") {
+			yOffset = maxHeight - totalTextHeight;
+		}
+	}
+
+	// 5. Render
 	lines.forEach((line, i) => {
-		const y = i * lineHeightPx;
+		const y = yOffset + i * lineHeightPx;
+		// Clip if it exceeds layer height (optional, Konva clips only if clip:true, but usually text spills)
+		// For pixel match, we normally allow spill unless strict bounds are enforced.
 		ctx.fillText(line, x, y);
+
+		// Handle Decoration (Underline) - Manual implementation for Canvas
+		if (layer.textDecoration === "underline") {
+			const metrics = ctx.measureText(line);
+			const lineWidth = metrics.width;
+			let lineX = x;
+
+			if (align === "center") lineX = x - lineWidth / 2;
+			if (align === "right") lineX = x - lineWidth;
+
+			const lineY = y + fontSize; // Approximate baseline for underline
+			ctx.fillRect(lineX, lineY, lineWidth, fontSize * 0.08); // simple underline
+		}
 	});
 };
 
@@ -172,13 +216,15 @@ const compositorProcessor: NodeProcessor = async ({ node, data }) => {
 		// High-quality settings
 		ctx.quality = "best";
 		ctx.patternQuality = "best";
-		ctx.textDrawingMode = "path"; // Ensures cleaner text rendering in some environments
+		ctx.textDrawingMode = "path"; // Ensures cleaner text rendering
 
 		const inputHandlesWithValues = getAllInputValuesWithHandle(data, node.id);
 		const explicitLayers = Object.values(config.layerUpdates || {});
 		const allLayers: CompositorLayer[] = [...explicitLayers];
 
-		// --- 1. Default Layer Generation (for inputs not in explicit config) ---
+		// --- 1. Default Layer Generation (Sync with Index.tsx) ---
+		let maxZ = Math.max(...explicitLayers.map((l) => l.zIndex ?? 0), 0);
+
 		for (const inputEntry of inputHandlesWithValues) {
 			const handleId = inputEntry.handle?.id;
 			if (!handleId) continue;
@@ -205,21 +251,24 @@ const compositorProcessor: NodeProcessor = async ({ node, data }) => {
 				rotation: 0,
 				lockAspect: true,
 				blendMode: "source-over",
-				zIndex: 100,
+				zIndex: ++maxZ,
 				...(type === "Text"
 					? {
-							fontFamily: "Geist",
-							fontSize: 64,
-							fill: "#ffffff",
-							letterSpacing: 0,
-							lineHeight: 1.1,
-							align: "left",
-							width: config.width ?? 400,
+							fontFamily: DEFAULTS.FONT_FAMILY,
+							fontSize: DEFAULTS.FONT_SIZE,
+							fill: DEFAULTS.FILL,
+							letterSpacing: DEFAULTS.LETTER_SPACING,
+							lineHeight: DEFAULTS.LINE_HEIGHT,
+							align: DEFAULTS.ALIGN,
+							verticalAlign: DEFAULTS.VERTICAL_ALIGN,
+							width: width, // Default to full width
 						}
 					: {
-							width: config.width,
+							width: width, // Default to full width
 						}),
 			};
+
+			// For images, we try to load strict dimensions if possible, but here we just set width
 			allLayers.push(defaultLayer);
 		}
 
@@ -249,6 +298,9 @@ const compositorProcessor: NodeProcessor = async ({ node, data }) => {
 			// If explicit layer exists but no input data, we skip drawing
 			if (!inputEntry?.value) continue;
 			const inputItem = inputEntry.value;
+
+			// Skip invisible layers
+			if (layer.opacity === 0) continue;
 
 			ctx.save();
 

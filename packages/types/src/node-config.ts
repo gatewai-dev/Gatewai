@@ -226,6 +226,8 @@ const CompositorLayerSchema = BaseLayerSchema.merge(PositionSchema)
 	.merge(OpacitySchema)
 	.extend({
 		type: z.enum(["Text", "Image"]),
+		align: z.string().optional(),
+		verticalAlign: z.string().optional(),
 	})
 	.strict();
 

@@ -2,6 +2,17 @@ import type { CompositorLayer, CompositorNodeConfig } from "@gatewai/types";
 import Konva from "konva";
 import { GetFontAssetUrl } from "@/utils/file";
 
+// Sync with server defaults
+const DEFAULTS = {
+	FONT_FAMILY: "Geist",
+	FONT_SIZE: 64,
+	FILL: "#ffffff",
+	LINE_HEIGHT: 1.1,
+	ALIGN: "left",
+	VERTICAL_ALIGN: "top",
+	LETTER_SPACING: 0,
+};
+
 const processCompositor = async (
 	config: CompositorNodeConfig,
 	inputs: Record<string, { type: "Image" | "Text"; value: string }>,
@@ -38,7 +49,7 @@ const processCompositor = async (
 			x: 0,
 			y: 0,
 			rotation: 0,
-			opacity: 1, // Server uses 1, not 100
+			opacity: 1,
 			lockAspect: true,
 			blendMode: "source-over",
 			zIndex: ++maxZ,
@@ -46,13 +57,13 @@ const processCompositor = async (
 
 		if (input.type === "Text") {
 			Object.assign(defaultLayer, {
-				fontFamily: "Geist",
-				fontSize: 64,
-				fill: "#ffffff",
-				letterSpacing: 0,
-				lineHeight: 1.1,
-				align: "left",
-				verticalAlign: "top",
+				fontFamily: DEFAULTS.FONT_FAMILY,
+				fontSize: DEFAULTS.FONT_SIZE,
+				fill: DEFAULTS.FILL,
+				letterSpacing: DEFAULTS.LETTER_SPACING,
+				lineHeight: DEFAULTS.LINE_HEIGHT,
+				align: DEFAULTS.ALIGN,
+				verticalAlign: DEFAULTS.VERTICAL_ALIGN,
 				width: width,
 			});
 		} else {
@@ -117,7 +128,7 @@ const processCompositor = async (
 		const inputData = inputs[layerConfig.inputHandleId];
 		if (!inputData) continue;
 
-		// Skip invisible layers (server checks opacity === 0)
+		// Skip invisible layers
 		if (layerConfig.opacity === 0) continue;
 
 		if (inputData.type === "Image") {
@@ -143,7 +154,7 @@ const processCompositor = async (
 			});
 			layer.add(kImage);
 		} else if (inputData.type === "Text") {
-			const fontSize = layerConfig.fontSize ?? 64;
+			const fontSize = layerConfig.fontSize ?? DEFAULTS.FONT_SIZE;
 			const maxWidth = layerConfig.width ?? width;
 
 			const kText = new Konva.Text({
@@ -153,15 +164,16 @@ const processCompositor = async (
 				opacity: layerConfig.opacity ?? 1,
 				rotation: layerConfig.rotation ?? 0,
 				fontSize: fontSize,
-				fontFamily: layerConfig.fontFamily ?? "Geist",
+				fontFamily: layerConfig.fontFamily ?? DEFAULTS.FONT_FAMILY,
 				fontStyle: layerConfig.fontStyle ?? "normal",
 				textDecoration: layerConfig.textDecoration ?? "",
-				fill: layerConfig.fill ?? "#ffffff",
-				align: layerConfig.align ?? "left",
-				verticalAlign: layerConfig.verticalAlign ?? "top",
-				letterSpacing: layerConfig.letterSpacing ?? 0,
-				lineHeight: layerConfig.lineHeight ?? 1.1, // Match server: 1.1
+				fill: layerConfig.fill ?? DEFAULTS.FILL,
+				align: layerConfig.align ?? DEFAULTS.ALIGN,
+				verticalAlign: layerConfig.verticalAlign ?? DEFAULTS.VERTICAL_ALIGN,
+				letterSpacing: layerConfig.letterSpacing ?? DEFAULTS.LETTER_SPACING,
+				lineHeight: layerConfig.lineHeight ?? DEFAULTS.LINE_HEIGHT,
 				width: maxWidth,
+				height: layerConfig.height, // Important: pass height so verticalAlign works
 				wrap: "word",
 				globalCompositeOperation:
 					(layerConfig.blendMode as GlobalCompositeOperation) ?? "source-over",
@@ -175,7 +187,8 @@ const processCompositor = async (
 	layer.draw();
 	if (signal?.aborted) throw new DOMException("Cancelled", "AbortError");
 
-	const dataUrl = stage.toDataURL({ pixelRatio: 2 });
+	// Use pixelRatio 1 to ensure dimensions match server output exactly
+	const dataUrl = stage.toDataURL({ pixelRatio: 1 });
 
 	// Cleanup
 	stage.destroy();

@@ -479,7 +479,8 @@ const InteractionOverlay: React.FC = () => {
 	};
 
 	return (
-		// biome-ignore lint/a11y/useSemanticElements: No need
+		// Using a div here is acceptable as it acts as a global event listener/surface.
+		// For stricter accessibility, one might use role="presentation" but it handles keys.
 		<div
 			className="absolute inset-0 z-10 overflow-hidden outline-none"
 			style={{ cursor: isPanning ? "grabbing" : "default" }}
@@ -502,16 +503,14 @@ const InteractionOverlay: React.FC = () => {
 				}}
 			>
 				{visibleLayers.map((layer) => (
-					// biome-ignore lint/a11y/useSemanticElements: No need
-					<div
+					<button
 						key={layer.id}
-						role="button"
-						tabIndex={0}
+						type="button"
 						onKeyDown={(e) => {
 							if (e.key === "Enter") setSelectedId(layer.id);
 						}}
 						onMouseDown={(e) => handleMouseDown(e, layer.id)}
-						className={`absolute group outline-none select-none ${
+						className={`absolute group outline-none select-none p-0 m-0 border-0 bg-transparent text-left ${
 							selectedId === layer.id ? "z-50" : "z-auto"
 						}`}
 						style={{
@@ -538,6 +537,11 @@ const InteractionOverlay: React.FC = () => {
 									["tl", "tr", "bl", "br"].map((pos) => (
 										<div
 											key={pos}
+											// These act as buttons but are drag handles.
+											// Keeping them as divs for drag logic is often cleaner,
+											// but we can make them buttons for a11y.
+											role="button"
+											tabIndex={-1} // Handled via mouse, not tab navigable individually usually
 											className={`absolute w-3 h-3 bg-white border border-blue-600 rounded-full shadow-sm z-50 transition-transform hover:scale-125
                                                 ${pos === "tl" ? "-top-1.5 -left-1.5 cursor-nwse-resize" : ""}
                                                 ${pos === "tr" ? "-top-1.5 -right-1.5 cursor-nesw-resize" : ""}
@@ -559,12 +563,14 @@ const InteractionOverlay: React.FC = () => {
 									style={{ transform: `scaleX(${1 / zoom})` }}
 								/>
 								<div
+									role="button"
+									tabIndex={-1}
 									className="absolute -top-8 left-1/2 -translate-x-1/2 w-3 h-3 bg-white border border-blue-600 rounded-full shadow-sm cursor-grab active:cursor-grabbing hover:scale-110"
 									onMouseDown={(e) => handleRotateStart(e, layer.id)}
 								/>
 							</>
 						)}
-					</div>
+					</button>
 				))}
 			</div>
 		</div>
@@ -749,13 +755,12 @@ const SortableTrackHeader: React.FC<SortableTrackProps> = ({
 	};
 
 	return (
-		<div
+		<button
 			ref={setNodeRef}
 			style={style}
-			role="button"
-			tabIndex={0}
-			onKeyDown={(e) => e.key === "Enter" && onSelect()}
+			type="button"
 			className={`
+				w-full text-left p-0 m-0 bg-transparent border-0
         border-b border-white/5 flex items-center pl-3 pr-2 text-xs gap-3 group outline-none transition-colors select-none
         ${isSelected ? "bg-white/5 text-blue-100" : "hover:bg-white/5 text-gray-400"}
         ${isDragging ? "opacity-50 bg-neutral-900" : ""}
@@ -800,7 +805,7 @@ const SortableTrackHeader: React.FC<SortableTrackProps> = ({
 					</Tooltip>
 				</TooltipProvider>
 			)}
-		</div>
+		</button>
 	);
 };
 
@@ -1049,7 +1054,11 @@ const TimelinePanel: React.FC = () => {
 							className="flex-1 bg-neutral-900/90 backdrop-blur-sm border-b border-white/5 relative cursor-pointer"
 							onClick={handleTimelineClick}
 						>
-							<svg className="absolute inset-0 w-full h-full pointer-events-none opacity-50">
+							<svg
+								role="img"
+								aria-label="tick"
+								className="absolute inset-0 w-full h-full pointer-events-none opacity-50"
+							>
 								<defs>
 									<pattern
 										id="ruler-ticks"
@@ -1168,14 +1177,13 @@ const TimelinePanel: React.FC = () => {
 											isSelected ? "bg-white/2" : ""
 										}`}
 									>
-										<div
-											role="button"
-											tabIndex={0}
+										<button
+											type="button"
 											onKeyDown={(e) => {
 												if (e.key === "Enter") setSelectedId(layer.id);
 											}}
 											className={`
-                          absolute top-1 bottom-1 rounded-md
+                          absolute top-1 bottom-1 rounded-md text-left p-0 m-0 border-0 bg-transparent
                           flex items-center overflow-hidden cursor-move outline-none
                           ${isSelected ? "z-20" : "z-10"}
                       `}
@@ -1203,7 +1211,7 @@ const TimelinePanel: React.FC = () => {
 											>
 												<div className="absolute right-0.5 top-1/2 -translate-y-1/2 w-1 h-4 bg-black/20 rounded-full group-hover/handle:bg-white/50 transition-colors" />
 											</div>
-										</div>
+										</button>
 									</div>
 								);
 							})}
@@ -2182,6 +2190,9 @@ export const VideoDesignerEditor: React.FC<VideoDesignerEditorProps> = ({
 									style={{ width: "100%", height: "100%" }}
 									controls={false}
 									doubleClickToFullscreen={false}
+									onPause={() => setIsPlaying(false)}
+									onPlay={() => setIsPlaying(true)}
+									onEnded={() => setIsPlaying(false)}
 								/>
 							</div>
 						</div>

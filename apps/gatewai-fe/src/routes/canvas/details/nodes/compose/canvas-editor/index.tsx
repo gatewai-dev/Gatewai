@@ -113,6 +113,16 @@ import type { HandleEntityType } from "@/store/handles";
 import type { NodeEntityType } from "@/store/nodes";
 import { GetAssetEndpoint, GetFontAssetUrl } from "@/utils/file";
 
+const DEFAULTS = {
+	FONT_FAMILY: "Geist",
+	FONT_SIZE: 64,
+	FILL: "#ffffff",
+	LINE_HEIGHT: 1.1,
+	ALIGN: "left",
+	VERTICAL_ALIGN: "top",
+	LETTER_SPACING: 0,
+};
+
 const BLEND_MODES = [
 	"source-over",
 	"multiply",
@@ -349,9 +359,12 @@ const useSnap = () => {
 
 					if (l.type === "Image") {
 						updates.height = Math.round(node.height() * scaleY);
+					} else if (l.type === "Text") {
+						// For Text, we check if height has been manually resized by user (non-auto)
+						// If the transformer changed height significantly, we might want to capture it
+						// for vertical alignment to work.
+						updates.height = Math.round(node.height() * scaleY);
 					}
-					// For Text, we purposely do not set 'height' here.
-					// Text height is derived from width + font properties.
 
 					return { ...l, ...updates };
 				}),
@@ -435,7 +448,6 @@ const ImageLayer: React.FC<LayerProps> = ({
 
 	const handleSelect = () => setSelectedId(layer.id);
 
-	// Limit minimum size
 	const handleTransform = useCallback((e: KonvaEventObject<Event>) => {
 		const node = e.target as Konva.Image;
 		const scaleX = node.scaleX();
@@ -444,9 +456,6 @@ const ImageLayer: React.FC<LayerProps> = ({
 		if (node.width() * scaleX < 5) node.scaleX(5 / node.width());
 		if (node.height() * scaleY < 5) node.scaleY(5 / node.height());
 	}, []);
-
-	// Lock Logic check
-	const isLocked = false; // Add layer.locked support if schema permits
 
 	return (
 		<KonvaImage
@@ -458,7 +467,7 @@ const ImageLayer: React.FC<LayerProps> = ({
 			height={layer.height}
 			rotation={layer.rotation}
 			image={image}
-			draggable={mode === "select" && !isLocked}
+			draggable={mode === "select"}
 			onClick={handleSelect}
 			onTap={handleSelect}
 			onDragStart={onDragStart}
@@ -469,7 +478,7 @@ const ImageLayer: React.FC<LayerProps> = ({
 			onTransformEnd={onTransformEnd}
 			globalCompositeOperation={layer.blendMode as GlobalCompositeOperation}
 			opacity={layer.opacity ?? 1}
-			visible={layer.opacity !== 0} // Using opacity 0 as hidden for now
+			visible={layer.opacity !== 0}
 		/>
 	);
 };
@@ -511,18 +520,14 @@ const TextLayer: React.FC<LayerProps> = ({
 		const node = textRef.current;
 		if (!node) return;
 
-		// We use a small timeout or requestAnimationFrame to wait for Konva to render the new font
 		const syncHeight = () => {
 			const calculatedHeight = node.height();
 
-			// 1. Force Transformer Update if this layer is selected
-			// This fixes the visual bug where the box doesn't grow with the text
 			if (selectedId === layer.id && transformerRef.current) {
 				transformerRef.current.forceUpdate();
 				transformerRef.current.getLayer()?.batchDraw();
 			}
 
-			// 2. Sync computed height to state if it differs
 			if (calculatedHeight !== layer.computedHeight) {
 				updateLayers(
 					(prev) =>
@@ -532,11 +537,10 @@ const TextLayer: React.FC<LayerProps> = ({
 								: l,
 						),
 					false,
-				); // false = don't mark as user-dirty for internal sync
+				);
 			}
 		};
 
-		// If font family changes, we might need to wait for load
 		if (layer.fontFamily) {
 			document.fonts.ready.then(syncHeight);
 		} else {
@@ -546,6 +550,7 @@ const TextLayer: React.FC<LayerProps> = ({
 		layer.fontFamily,
 		layer.fontSize,
 		layer.width,
+		layer.height,
 		layer.lineHeight,
 		layer.letterSpacing,
 		layer.textDecoration,
@@ -565,9 +570,7 @@ const TextLayer: React.FC<LayerProps> = ({
 			fontManager
 				.loadFont(layer.fontFamily, fontUrl)
 				.then(() => {
-					// Trigger redraw when font loads
 					stageRef.current?.batchDraw();
-					// Force check height again
 					if (textRef.current) {
 						const h = textRef.current.height();
 						if (h !== layer.computedHeight) {
@@ -593,7 +596,6 @@ const TextLayer: React.FC<LayerProps> = ({
 		layer.computedHeight,
 	]);
 
-	// Constrain Transform: Text only scales Width, Height is auto
 	const handleTransform = useCallback((e: KonvaEventObject<Event>) => {
 		const node = e.target as Konva.Text;
 
@@ -605,7 +607,13 @@ const TextLayer: React.FC<LayerProps> = ({
 		node.setAttrs({
 			width: newWidth,
 			scaleX: 1,
-			height: undefined, // Let Konva calc height based on new width
+			// We do NOT reset height here if the user wants to vertically align within a box.
+			// But traditionally in this editor, dragging corner scales box width.
+			// If we want auto-height, we leave it undefined.
+			// However, if vertical align is active, we need a fixed height.
+			// For simplicity, we keep height auto unless explicitly set by a specialized tool.
+			// But for parity with the transformer logic which might set height:
+			height: node.height() * node.scaleY(), // capture height for V-align
 		});
 	}, []);
 
@@ -617,14 +625,13 @@ const TextLayer: React.FC<LayerProps> = ({
 			x={layer.x}
 			y={layer.y}
 			text={text as string}
-			fontSize={layer.fontSize ?? 24}
-			fontFamily={layer.fontFamily ?? "Geist"}
+			fontSize={layer.fontSize ?? DEFAULTS.FONT_SIZE}
+			fontFamily={layer.fontFamily ?? DEFAULTS.FONT_FAMILY}
 			fontStyle={layer.fontStyle ?? "normal"}
 			textDecoration={layer.textDecoration ?? ""}
-			fill={layer.fill ?? "#000000"}
+			fill={layer.fill ?? DEFAULTS.FILL}
 			width={layer.width ?? 200}
-			// IMPORTANT: Do not set hard height for wrapping text, let it be auto (undefined)
-			// We only use layer.height/computedHeight for the UI/Snapping calculations
+			height={layer.height} // Pass explicit height to support Vertical Align
 			rotation={layer.rotation}
 			draggable={mode === "select"}
 			onClick={handleSelect}
@@ -639,10 +646,10 @@ const TextLayer: React.FC<LayerProps> = ({
 			onTransformEnd={onTransformEnd}
 			globalCompositeOperation={layer.blendMode as GlobalCompositeOperation}
 			wrap="word"
-			align={layer.align || "left"}
-			verticalAlign={layer.verticalAlign ?? "top"}
-			letterSpacing={layer.letterSpacing ?? 0}
-			lineHeight={layer.lineHeight ?? 1}
+			align={layer.align || DEFAULTS.ALIGN}
+			verticalAlign={layer.verticalAlign ?? DEFAULTS.VERTICAL_ALIGN}
+			letterSpacing={layer.letterSpacing ?? DEFAULTS.LETTER_SPACING}
+			lineHeight={layer.lineHeight ?? DEFAULTS.LINE_HEIGHT}
 			opacity={layer.opacity ?? 1}
 			visible={layer.opacity !== 0}
 		/>
@@ -676,7 +683,15 @@ const TransformerComponent: React.FC = () => {
 
 	const enabledAnchors = useMemo(() => {
 		if (selectedLayer?.type === "Text") {
-			return ["middle-left", "middle-right"];
+			// Allow resizing height now for vertical alignment support
+			return [
+				"top-left",
+				"top-right",
+				"bottom-left",
+				"bottom-right",
+				"middle-left",
+				"middle-right",
+			];
 		}
 		if (selectedLayer?.type === "Image" && selectedLayer.lockAspect) {
 			return ["top-left", "top-right", "bottom-left", "bottom-right"];
@@ -695,7 +710,7 @@ const TransformerComponent: React.FC = () => {
 			anchorFill="#ffffff"
 			anchorSize={9}
 			anchorCornerRadius={2}
-			padding={2} // Gives a little breathing room around text
+			padding={2}
 			keepRatio={selectedLayer?.type === "Image" && selectedLayer.lockAspect}
 			enabledAnchors={enabledAnchors}
 			boundBoxFunc={(oldBox, newBox) => {
@@ -1363,10 +1378,11 @@ const InspectorPanel: React.FC = () => {
 								<DraggableNumberInput
 									label="H"
 									icon={MoveVertical}
-									value={Math.round(selectedLayer.computedHeight ?? 0)}
-									onChange={() => {}}
-									disabled
-									className="opacity-50"
+									value={Math.round(
+										selectedLayer.height ?? selectedLayer.computedHeight ?? 0,
+									)}
+									onChange={(v) => updateLayer({ height: v })}
+									min={1}
 								/>
 							)}
 							<DraggableNumberInput
@@ -1400,7 +1416,7 @@ const InspectorPanel: React.FC = () => {
 									Font Family
 								</Label>
 								<Select
-									value={selectedLayer.fontFamily || "Geist"}
+									value={selectedLayer.fontFamily || DEFAULTS.FONT_FAMILY}
 									onValueChange={(val) => updateLayer({ fontFamily: val })}
 								>
 									<SelectTrigger className="h-8 text-xs bg-white/5 border-white/10 text-white">
@@ -1420,7 +1436,7 @@ const InspectorPanel: React.FC = () => {
 								<DraggableNumberInput
 									label="Size"
 									icon={Type}
-									value={selectedLayer.fontSize || 24}
+									value={selectedLayer.fontSize || DEFAULTS.FONT_SIZE}
 									onChange={(v) => updateLayer({ fontSize: v })}
 									min={1}
 								/>
@@ -1429,7 +1445,7 @@ const InspectorPanel: React.FC = () => {
 										Color
 									</Label>
 									<ColorInput
-										value={selectedLayer.fill ?? "#ffffff"}
+										value={selectedLayer.fill ?? DEFAULTS.FILL}
 										onChange={(e) => updateLayer({ fill: e })}
 										className="h-8 w-full"
 									/>
@@ -1476,7 +1492,9 @@ const InspectorPanel: React.FC = () => {
 									<Button
 										key={align}
 										variant={
-											selectedLayer.align === align ? "secondary" : "ghost"
+											(selectedLayer.align || DEFAULTS.ALIGN) === align
+												? "secondary"
+												: "ghost"
 										}
 										size="sm"
 										className="h-6 text-[10px] capitalize rounded-sm"
@@ -1487,17 +1505,36 @@ const InspectorPanel: React.FC = () => {
 								))}
 							</div>
 
-							<div className="grid grid-cols-2 gap-3">
+							<div className="grid grid-cols-3 gap-1 bg-white/5 p-1 rounded border border-white/5 mt-2">
+								{(["top", "middle", "bottom"] as const).map((vAlign) => (
+									<Button
+										key={vAlign}
+										variant={
+											(selectedLayer.verticalAlign ||
+												DEFAULTS.VERTICAL_ALIGN) === vAlign
+												? "secondary"
+												: "ghost"
+										}
+										size="sm"
+										className="h-6 text-[10px] capitalize rounded-sm"
+										onClick={() => updateLayer({ verticalAlign: vAlign })}
+									>
+										{vAlign}
+									</Button>
+								))}
+							</div>
+
+							<div className="grid grid-cols-2 gap-3 mt-2">
 								<DraggableNumberInput
 									label="Letter"
 									icon={ArrowLeftRight}
-									value={selectedLayer.letterSpacing ?? 0}
+									value={selectedLayer.letterSpacing ?? DEFAULTS.LETTER_SPACING}
 									onChange={(v) => updateLayer({ letterSpacing: v })}
 								/>
 								<DraggableNumberInput
 									label="Line"
 									icon={ArrowUpDown}
-									value={selectedLayer.lineHeight ?? 1}
+									value={selectedLayer.lineHeight ?? DEFAULTS.LINE_HEIGHT}
 									onChange={(v) => updateLayer({ lineHeight: v })}
 									allowDecimal
 									step={0.1}
@@ -1843,15 +1880,15 @@ export const ImageDesignerEditor: React.FC<ImageDesignerEditorProps> = ({
 
 					if (newLayer.type === "Text") {
 						newLayer.width = existingConfig.width;
-						newLayer.fontSize = 64;
-						newLayer.fontFamily = "Geist";
+						newLayer.fontSize = DEFAULTS.FONT_SIZE;
+						newLayer.fontFamily = DEFAULTS.FONT_FAMILY;
 						newLayer.fontStyle = "normal";
 						newLayer.textDecoration = "";
-						newLayer.fill = "#ffffff";
-						newLayer.letterSpacing = 0;
-						newLayer.lineHeight = 1.1;
-						newLayer.align = "left";
-						newLayer.verticalAlign = "top";
+						newLayer.fill = DEFAULTS.FILL;
+						newLayer.letterSpacing = DEFAULTS.LETTER_SPACING;
+						newLayer.lineHeight = DEFAULTS.LINE_HEIGHT;
+						newLayer.align = DEFAULTS.ALIGN;
+						newLayer.verticalAlign = DEFAULTS.VERTICAL_ALIGN;
 						newLayer.computedHeight = undefined;
 					}
 
