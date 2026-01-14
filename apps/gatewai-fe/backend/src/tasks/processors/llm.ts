@@ -1,3 +1,4 @@
+import assert from "node:assert";
 import { DataType } from "@gatewai/db";
 import type { FileData, LLMNodeConfig, LLMResult } from "@gatewai/types";
 import type { Part } from "@google/genai";
@@ -31,32 +32,30 @@ const llmProcessor: NodeProcessor = async ({ node, data }) => {
 		}
 
 		// 2. Handle Image Processing (URL -> Base64 for Google SDK)
-		const imageData =
-			imageFileData?.entity?.signedUrl ?? imageFileData?.processData?.dataUrl;
+		const imageData = imageFileData?.entity ?? imageFileData?.processData;
 
 		if (imageData) {
-			let base64Data: string;
-			let mimeType: string;
+			let mimeType: string | undefined;
+			let key: string | undefined;
+			let bucket: string | undefined;
 
-			if (imageFileData?.processData?.dataUrl) {
-				// Handle Data URL
-				const matches = imageData.match(/^data:(.+);base64,(.+)$/);
-				if (!matches || matches.length !== 3) {
-					throw new Error("Invalid data URL format");
-				}
-				mimeType = matches[1];
-				base64Data = matches[2];
-			} else if (imageFileData?.entity?.signedUrl) {
-				const arrayBuffer = await getFromGCS(
-					imageFileData?.entity?.key,
-					imageFileData?.entity?.bucket,
-				);
-				const buffer = Buffer.from(arrayBuffer);
+			if (imageFileData?.entity) {
+				key = imageFileData.entity.key;
+				bucket = imageFileData.entity.bucket;
 				mimeType = imageFileData.entity.mimeType;
-				base64Data = buffer.toString("base64");
+			} else if (imageFileData?.processData) {
+				key = imageFileData.processData.tempKey;
+				mimeType = imageFileData.processData.mimeType;
+				bucket = undefined;
 			} else {
-				return { success: false, error: "Missing input image data" };
+				throw new Error("Image data could not be found");
 			}
+			console.log({ key });
+			assert(key);
+			assert(mimeType);
+			const arrayBuffer = await getFromGCS(key, bucket);
+			const buffer = Buffer.from(arrayBuffer);
+			const base64Data = buffer.toString("base64");
 
 			parts.push({
 				inlineData: {

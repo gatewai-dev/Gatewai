@@ -79,23 +79,33 @@ const paintProcessor: NodeProcessor = async ({ node, data }) => {
 		const now = Date.now();
 
 		const imageBuffer = Buffer.from(parsedImage.body.buffer);
+		const imageMimeType = parsedImage.mimeType.toString();
 		const imageKey = `${node.id}/${now}.png`;
-		const { signedUrl: imageSignedUrl } = await uploadToTemporaryFolder(
-			imageBuffer,
-			parsedImage.mimeType.toString(),
-			imageKey,
-		);
+		const { signedUrl: imageSignedUrl, key: tempImageKey } =
+			await uploadToTemporaryFolder(
+				imageBuffer,
+				parsedImage.mimeType.toString(),
+				imageKey,
+			);
 
 		const maskBuffer = Buffer.from(parsedMask.body.buffer);
 		const maskKey = `${node.id}/${now}_mask.png`;
-		const { signedUrl: maskSignedUrl } = await uploadToTemporaryFolder(
-			maskBuffer,
-			parsedMask.mimeType.toString(),
-			maskKey,
-		);
+		const maskMimeType = parsedMask.mimeType.toString();
+		const { signedUrl: maskSignedUrl, key: tempMaskKey } =
+			await uploadToTemporaryFolder(maskBuffer, maskMimeType, maskKey);
 
-		const imageProcessData = { dataUrl: imageSignedUrl, ...imageDimensions };
-		const maskProcessData = { dataUrl: maskSignedUrl, ...maskDimensions };
+		const imageProcessData = {
+			dataUrl: imageSignedUrl,
+			tempKey: tempImageKey,
+			mimeType: imageMimeType,
+			...imageDimensions,
+		};
+		const maskProcessData = {
+			dataUrl: maskSignedUrl,
+			tempKey: tempMaskKey,
+			mimeType: maskMimeType,
+			...maskDimensions,
+		};
 
 		const newGeneration: PaintResult["outputs"][number] = {
 			items: [

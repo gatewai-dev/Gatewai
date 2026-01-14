@@ -341,12 +341,15 @@ const compositorProcessor: NodeProcessor = async ({ node, data }) => {
 		}
 
 		const dimensions = getImageDimensions(resultBuffer);
-		const key = `${node.id}/${Date.now()}.png`;
-		const { signedUrl } = await uploadToTemporaryFolder(
+		const key = `${(data.task ?? node).id}/${Date.now()}.png`;
+		const mimeType = "image/png";
+		console.log({ key });
+		const { signedUrl, key: tempKey } = await uploadToTemporaryFolder(
 			resultBuffer,
-			"image/png",
+			mimeType,
 			key,
 		);
+		console.log({ tempKey });
 
 		const outputHandle = data.handles.find(
 			(h) => h.nodeId === node.id && h.type === "Output",
@@ -365,7 +368,14 @@ const compositorProcessor: NodeProcessor = async ({ node, data }) => {
 			items: [
 				{
 					type: DataType.Image,
-					data: { processData: { dataUrl: signedUrl, ...dimensions } },
+					data: {
+						processData: {
+							dataUrl: signedUrl,
+							mimeType,
+							tempKey,
+							...dimensions,
+						},
+					},
 					outputHandleId: outputHandle.id,
 				},
 			],

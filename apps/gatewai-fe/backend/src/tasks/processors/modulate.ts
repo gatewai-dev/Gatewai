@@ -53,10 +53,11 @@ const modulateProcessor: NodeProcessor = async ({ node, data }) => {
 		};
 
 		const uploadBuffer = Buffer.from(parsed.body.buffer);
+		const mimeType = parsed.mimeType.toString();
 		const key = `${node.id}/${Date.now()}.png`;
-		const { signedUrl } = await uploadToTemporaryFolder(
+		const { signedUrl, key: tempKey } = await uploadToTemporaryFolder(
 			uploadBuffer,
-			parsed.mimeType.toString(),
+			mimeType,
 			key,
 		);
 
@@ -64,7 +65,14 @@ const modulateProcessor: NodeProcessor = async ({ node, data }) => {
 			items: [
 				{
 					type: DataType.Image,
-					data: { processData: { dataUrl: signedUrl, ...dimensions } },
+					data: {
+						processData: {
+							dataUrl: signedUrl,
+							tempKey,
+							mimeType,
+							...dimensions,
+						},
+					},
 					outputHandleId: outputHandle.id,
 				},
 			],

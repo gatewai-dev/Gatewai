@@ -41,24 +41,11 @@ const imageGenProcessor: NodeProcessor = async ({ node, data }) => {
 				imgData?.entity?.signedUrl ?? imgData?.processData?.dataUrl;
 
 			if (imageData) {
-				let base64Data: string;
-				let mimeType: string;
-
-				if (imageData.startsWith("data:")) {
-					const matches = imageData.match(/^data:(.+);base64,(.+)$/);
-					if (matches && matches.length === 3) {
-						mimeType = matches[1];
-						base64Data = matches[2];
-					} else {
-						continue;
-					}
-				} else {
-					const response = await fetch(imageData);
-					if (!response.ok) throw new Error("Unable to download Image");
-					const arrayBuffer = await response.arrayBuffer();
-					mimeType = response.headers.get("content-type") ?? "image/png";
-					base64Data = Buffer.from(arrayBuffer).toString("base64");
-				}
+				const response = await fetch(imageData);
+				if (!response.ok) throw new Error("Unable to download Image");
+				const arrayBuffer = await response.arrayBuffer();
+				const mimeType = response.headers.get("content-type") ?? "image/png";
+				const base64Data = Buffer.from(arrayBuffer).toString("base64");
 
 				parts.push({
 					inlineData: { mimeType, data: base64Data },
