@@ -17,11 +17,12 @@ export default defineConfig({
 			],
 			sidebar: [
 				{
-					label: "Guides",
-					items: [
-						// Each item here is one entry in the navigation menu.
-						{ label: "Example Guide", slug: "guides/example" },
-					],
+					label: "Architecture",
+					autogenerate: { directory: "architecture" },
+				},
+				{
+					label: "Nodes",
+					autogenerate: { directory: "nodes" },
 				},
 				{
 					label: "Reference",
