@@ -9,13 +9,23 @@ import { Hono } from "hono";
 import { cors } from "hono/cors";
 import { z } from "zod";
 
+console.log(process.env);
 const EnvSchema = z.object({
 	BASE_URL: z.string().url("BASE_URL must be a valid URL"),
 	MCP_PORT: z.coerce.number().default(3000),
 	LOG_LEVEL: z.enum(["debug", "info", "error"]).default("info"),
 });
 
-const env = EnvSchema.parse(process.env);
+const result = EnvSchema.safeParse(process.env);
+
+if (!result.success) {
+	console.error("Invalid Environment Variables:");
+	console.error(JSON.stringify(result.error.flatten().fieldErrors, null, 2));
+	process.exit(1);
+}
+
+const env = result.data;
+console.log("Environment loaded successfully");
 
 const apiClient = new GatewaiApiClient({
 	baseUrl: env.BASE_URL,
@@ -303,7 +313,6 @@ server.tool(
 const app = new Hono();
 const transport = new StreamableHTTPTransport();
 
-// Middleware
 app.use("*", cors());
 
 // Health Check

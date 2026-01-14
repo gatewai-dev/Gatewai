@@ -7,7 +7,7 @@
 	"scripts": {
 		"dev": "tsdown src/index.ts --watch --run",
 		"build": "tsdown src/index.ts --format esm --clean",
-		"start": "node dist/index.js",
+		"start-cli": "node dist/index.mjs",
 		"test": "echo \"Error: no test specified\" && exit 1"
 	},
 	"keywords": [],

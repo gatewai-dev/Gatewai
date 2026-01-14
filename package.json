@@ -4,6 +4,7 @@
 		"build": "turbo run build",
 		"build-force": "turbo run build --force",
 		"dev": "turbo run dev",
+		"dev-mcp": "turbo run dev --filter=@gatewai/mcp-server",
 		"biome": "pnpm exec biome check --write",
 		"biome-hook": "pnpm exec biome check --write --no-errors-on-unmatched --files-ignore-unknown=true --colors=off",
 		"clean": "turbo run clean && rm -rf node_modules",
@@ -11,6 +12,7 @@
 		"version-packages": "changeset version",
 		"release": "turbo run build --filter=@gatewai/guides^... && changeset publish",
 		"start": "turbo run start-cli",
+		"start-mcp": "turbo run start-cli --filter=@gatewai/mcp-server",
 		"lefthook-install": "lefthook install"
 	},
 	"devDependencies": {
