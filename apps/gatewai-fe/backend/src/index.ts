@@ -1,4 +1,3 @@
-import { createServer } from "node:http2";
 import { serve } from "@hono/node-server";
 import { serveStatic } from "@hono/node-server/serve-static";
 import { Hono } from "hono";
@@ -36,7 +35,6 @@ serve(
 	{
 		fetch: app.fetch,
 		port: ENV_CONFIG.PORT,
-		createServer,
 	},
 	(info) => {
 		appLogger.info(`Server is running on port ${info.port}`);
