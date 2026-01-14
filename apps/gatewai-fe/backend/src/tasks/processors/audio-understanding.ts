@@ -7,6 +7,7 @@ import type {
 import { createPartFromUri, createUserContent } from "@google/genai";
 import { genAI } from "../../genai.js";
 import { logger } from "../../logger.js";
+import { getFromGCS } from "../../utils/storage.js";
 import { getInputValue } from "../resolvers.js";
 import type { NodeProcessor } from "./types.js";
 
@@ -25,11 +26,22 @@ const audioUnderstandingProcessor: NodeProcessor = async ({ node, data }) => {
 		const nodeConfig = node.config as SpeechToTextNodeConfig;
 
 		let fileBlob: Blob;
+		let mimeType: string;
 		if (audioInput?.entity?.signedUrl) {
-			fileBlob = await (await fetch(audioInput.entity?.signedUrl)).blob();
-		} else if (audioInput?.processData?.dataUrl) {
-			const buf = Buffer.from(audioInput?.processData?.dataUrl, "base64");
-			fileBlob = new Blob([buf]);
+			const buffer = await getFromGCS(
+				audioInput.entity.key,
+				audioInput.entity.bucket,
+			);
+			fileBlob = new Blob([new Uint8Array(buffer)], {
+				type: audioInput.entity.mimeType,
+			});
+			mimeType = audioInput.entity.mimeType;
+		} else if (audioInput?.processData?.tempKey) {
+			const buffer = await getFromGCS(audioInput?.processData.tempKey);
+			fileBlob = new Blob([new Uint8Array(buffer)], {
+				type: audioInput?.processData.mimeType,
+			});
+			mimeType = audioInput?.processData.mimeType ?? "audio/wav";
 		} else {
 			return {
 				success: false,
@@ -39,7 +51,7 @@ const audioUnderstandingProcessor: NodeProcessor = async ({ node, data }) => {
 
 		const audioFile = await genAI.files.upload({
 			file: fileBlob,
-			config: { mimeType: "audio/wav" },
+			config: { mimeType },
 		});
 
 		if (!audioFile.uri || !audioFile.mimeType) {

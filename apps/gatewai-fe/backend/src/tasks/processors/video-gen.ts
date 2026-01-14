@@ -96,8 +96,8 @@ const videoGenProcessor: NodeProcessor = async ({ node, data }) => {
 		});
 
 		while (!operation.done) {
-			console.log("Waiting for video generation to complete...");
-			await new Promise((resolve) => setTimeout(resolve, 10000));
+			logger.info("Waiting for video generation to complete...");
+			await new Promise((resolve) => setTimeout(resolve, 5000));
 			operation = await genAI.operations.getVideosOperation({
 				operation: operation,
 			});

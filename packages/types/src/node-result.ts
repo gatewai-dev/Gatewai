@@ -1,7 +1,15 @@
 import type { DataType, FileAsset } from "@gatewai/db";
 
+/**
+ * Typing for non-terminal processing
+ */
 export type ProcessData = {
 	dataUrl: string;
+	/**
+	 * Bucket key of temporary file
+	 */
+	tempKey?: string;
+	mimeType?: string;
 
 	// For the Image, Video media types
 	width?: number;

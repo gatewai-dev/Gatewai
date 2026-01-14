@@ -56,7 +56,7 @@ const blurProcessor: NodeProcessor = async ({ node, data }) => {
 
 		const uploadBuffer = Buffer.from(parsed.body.buffer);
 		const key = `${node.id}/${Date.now()}.png`;
-		const { signedUrl } = await uploadToTemporaryFolder(
+		const { signedUrl, key: tempKey } = await uploadToTemporaryFolder(
 			uploadBuffer,
 			parsed.mimeType.toString(),
 			key,
@@ -66,7 +66,14 @@ const blurProcessor: NodeProcessor = async ({ node, data }) => {
 			items: [
 				{
 					type: DataType.Image,
-					data: { processData: { dataUrl: signedUrl, ...dimensions } },
+					data: {
+						processData: {
+							dataUrl: signedUrl,
+							tempKey,
+							mimeType: parsed.mimeType.toString(),
+							...dimensions,
+						},
+					},
 					outputHandleId: outputHandle.id,
 				},
 			],

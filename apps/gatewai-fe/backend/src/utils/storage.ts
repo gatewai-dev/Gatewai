@@ -68,7 +68,7 @@ export async function generateSignedUrl(
 
 export async function getFromGCS(
 	key: string,
-	bucketName: string,
+	bucketName: string = ENV_CONFIG.GCS_ASSETS_BUCKET,
 ): Promise<Buffer> {
 	const [content] = await storage.bucket(bucketName).file(key).download();
 
@@ -124,7 +124,7 @@ export async function fileExistsInGCS(
  * Uploads a file to temporary folder of assets bucket.
  * @param buffer File buffer
  * @param mimeType Mime type of the file
- * @param key The key after /temp prefix
+ * @param key The key after /temp prefix -> temp/${key}
  */
 export async function uploadToTemporaryFolder(
 	buffer: Buffer,
