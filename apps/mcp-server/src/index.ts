@@ -5,9 +5,12 @@ import {
 	McpServer,
 	ResourceTemplate,
 } from "@modelcontextprotocol/sdk/server/mcp.js";
+import { config } from "dotenv";
 import { Hono } from "hono";
 import { cors } from "hono/cors";
 import { z } from "zod";
+
+config();
 
 console.log(process.env);
 const EnvSchema = z.object({

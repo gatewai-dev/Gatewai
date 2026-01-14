@@ -6,13 +6,14 @@ import { scan } from "react-scan";
 import App from "./App.tsx";
 
 scan({
-	enabled: true,
+	enabled: process.env.NODE_ENV === "development",
 });
 
 const root = document.getElementById("root");
 if (!root) {
 	throw new Error("Root not found");
 }
+
 createRoot(root).render(
 	<StrictMode>
 		<BrowserRouter>
