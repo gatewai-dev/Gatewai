@@ -2,11 +2,11 @@ import { memo } from "react";
 import { useAppSelector } from "@/store";
 import { makeSelectNodeById } from "@/store/nodes";
 import { RunNodeButton } from "../../components/run-node-button";
+import { OutputSelector } from "../../misc/output-selector";
 import { useNodeResult } from "../../processor/processor-ctx";
 import { BaseNode } from "../base";
 import { AudioRenderer } from "../common/audio-renderer";
 import { useMediaInputSrc } from "../common/hooks/use-media-src";
-import { OutputSelector } from "../misc/output-selector";
 
 const TextToSpeechNodeComponent = memo(
 	(props: { selected: boolean; id: string; dragging: boolean }) => {

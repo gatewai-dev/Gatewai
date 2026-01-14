@@ -2,11 +2,11 @@ import { memo } from "react";
 import { useAppSelector } from "@/store";
 import { makeSelectNodeById } from "@/store/nodes";
 import { RunNodeButton } from "../../components/run-node-button";
+import { OutputSelector } from "../../misc/output-selector";
 import { useNodeResult } from "../../processor/processor-ctx";
 import { BaseNode } from "../base";
 import { useMediaInputSrc } from "../common/hooks/use-media-src";
 import { VideoRenderer } from "../common/video-renderer";
-import { OutputSelector } from "../misc/output-selector";
 
 const VideoGenFirstLastFrameNodeComponent = memo(
 	(props: { selected: boolean; id: string; dragging: boolean }) => {

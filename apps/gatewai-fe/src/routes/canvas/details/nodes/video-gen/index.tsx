@@ -3,12 +3,12 @@ import { useAppSelector } from "@/store";
 import { makeSelectHandlesByNodeId } from "@/store/handles";
 import { makeSelectNodeById } from "@/store/nodes";
 import { RunNodeButton } from "../../components/run-node-button";
+import { OutputSelector } from "../../misc/output-selector";
 import { useNodeResult } from "../../processor/processor-ctx";
 import { BaseNode } from "../base";
 import { CreateHandleButton } from "../common/create-handle-button";
 import { useMediaInputSrc } from "../common/hooks/use-media-src";
 import { VideoRenderer } from "../common/video-renderer";
-import { OutputSelector } from "../misc/output-selector";
 
 const VideoGenNodeComponent = memo(
 	(props: { selected: boolean; id: string; dragging: boolean }) => {

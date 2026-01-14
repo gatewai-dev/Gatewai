@@ -3,10 +3,10 @@ import { FileIcon } from "lucide-react";
 import { useMemo } from "react";
 import type { NodeEntityType } from "@/store/nodes";
 import { GetAssetEndpoint } from "@/utils/file";
+import { OutputSelector } from "../misc/output-selector";
 import { AudioRenderer } from "./common/audio-renderer";
 import { CanvasRenderer } from "./common/canvas-renderer";
 import { VideoRenderer } from "./common/video-renderer";
-import { OutputSelector } from "./misc/output-selector";
 
 function MediaContent({
 	node,

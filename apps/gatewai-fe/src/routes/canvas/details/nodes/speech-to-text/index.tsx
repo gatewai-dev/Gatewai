@@ -6,9 +6,9 @@ import { useAppSelector } from "@/store";
 import { makeSelectNodeById } from "@/store/nodes";
 import { MarkdownRenderer } from "../../components/markdown-renderer";
 import { RunNodeButton } from "../../components/run-node-button";
+import { OutputSelector } from "../../misc/output-selector";
 import { useNodeResult } from "../../processor/processor-ctx";
 import { BaseNode } from "../base";
-import { OutputSelector } from "../misc/output-selector";
 
 const SpeechToTextNodeComponent = memo(
 	(props: { selected: boolean; id: string; dragging: boolean }) => {
