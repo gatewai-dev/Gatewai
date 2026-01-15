@@ -79,17 +79,4 @@ const SharedControlBar = ({
 	</div>
 );
 
-// Large center play button that fades in/out
-const CentralPlayButton = () => (
-	<div
-		slot="centered-chrome"
-		className="pointer-events-none absolute inset-0 flex items-center justify-center"
-	>
-		<MediaPlayButton
-			mediaPaused
-			className="w-16 h-16 p-4 rounded-full bg-black/40 backdrop-blur-md border border-white/20 opacity-0 scale-90 group-hover:media-paused:opacity-100 group-hover:media-paused:scale-100 transition-all duration-300 pointer-events-auto"
-		/>
-	</div>
-);
-
-export { MediaShell, CentralPlayButton, SharedControlBar };
+export { MediaShell, SharedControlBar };

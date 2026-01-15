@@ -1,9 +1,5 @@
 import { memo } from "react";
-import {
-	CentralPlayButton,
-	MediaShell,
-	SharedControlBar,
-} from "../media-chrome";
+import { MediaShell, SharedControlBar } from "../media-chrome";
 
 const AudioRenderer = memo(
 	({ src, title }: { src: string; title?: string }) => {
@@ -24,7 +20,6 @@ const AudioRenderer = memo(
 					</div>
 				</div>
 
-				<CentralPlayButton />
 				<SharedControlBar hideFullscreen />
 			</MediaShell>
 		);

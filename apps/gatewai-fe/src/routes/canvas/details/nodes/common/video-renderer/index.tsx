@@ -1,9 +1,5 @@
 import { memo } from "react";
-import {
-	CentralPlayButton,
-	MediaShell,
-	SharedControlBar,
-} from "../media-chrome";
+import { MediaShell, SharedControlBar } from "../media-chrome";
 
 const VideoRenderer = memo(({ src }: { src: string }) => {
 	return (
@@ -16,7 +12,6 @@ const VideoRenderer = memo(({ src }: { src: string }) => {
 				playsInline
 				className="w-full h-full bg-transparent"
 			/>
-			<CentralPlayButton />
 			<SharedControlBar />
 		</MediaShell>
 	);
