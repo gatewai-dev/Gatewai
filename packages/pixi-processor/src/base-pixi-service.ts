@@ -42,7 +42,7 @@ export abstract class BasePixiService implements IPixiProcessor {
 					this.validateResource(resource),
 			},
 			{
-				max: 12, // Enough for frontend - may need to parameterize for backend
+				max: 12, // Enough for frontend - may need to parameterize for backend when scaling
 				min: 2,
 				testOnBorrow: true,
 			},
@@ -82,8 +82,6 @@ export abstract class BasePixiService implements IPixiProcessor {
 		renderer: IRenderer,
 		target: Container,
 	): Promise<string> | string;
-
-	// --- Resource Management ---
 
 	private async createResource(): Promise<PixiResource> {
 		const app = this.createApplication();

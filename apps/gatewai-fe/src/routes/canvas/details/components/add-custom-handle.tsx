@@ -28,6 +28,7 @@ import {
 	SelectTrigger,
 	SelectValue,
 } from "@/components/ui/select";
+import { Textarea } from "@/components/ui/textarea";
 import { generateId } from "@/lib/idgen";
 import { useAppSelector } from "@/store";
 import {
@@ -160,6 +161,25 @@ function AddCustomHandleButton(props: CustomHandleButtonProps) {
 									<FormControl>
 										<Input
 											placeholder={props.placeholder ?? "E.g. Product Image"}
+											{...field}
+											value={field.value ?? ""}
+										/>
+									</FormControl>
+									<FormMessage />
+								</FormItem>
+							)}
+						/>
+						<FormField
+							control={form.control}
+							name="description"
+							render={({ field }) => (
+								<FormItem>
+									<FormLabel>Description</FormLabel>
+									<FormControl>
+										<Textarea
+											placeholder={
+												"Optional description. Add context for AI Agents."
+											}
 											{...field}
 											value={field.value ?? ""}
 										/>
