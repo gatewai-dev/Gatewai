@@ -1,6 +1,6 @@
 import { Check, Copy, Pipette } from "lucide-react";
 import type React from "react";
-import { useCallback, useEffect, useMemo, useRef, useState } from "react";
+import { useEffect, useRef, useState } from "react";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import {
@@ -187,8 +187,8 @@ const SaturationSquare = ({
 			className="relative w-full h-40 rounded-md cursor-crosshair overflow-hidden border border-border shadow-sm"
 			style={{ backgroundColor: `hsl(${hsva.h}, 100%, 50%)` }}
 		>
-			<div className="absolute inset-0 bg-gradient-to-r from-white to-transparent" />
-			<div className="absolute inset-0 bg-gradient-to-b from-transparent to-black" />
+			<div className="absolute inset-0 bg-linear-to-r from-white to-transparent" />
+			<div className="absolute inset-0 bg-linear-to-b from-transparent to-black" />
 			<div
 				className="absolute w-4 h-4 border-2 border-white rounded-full shadow-md transform -translate-x-1/2 -translate-y-1/2 pointer-events-none"
 				style={{ left: `${hsva.s * 100}%`, top: `${(1 - hsva.v) * 100}%` }}
@@ -330,7 +330,7 @@ export function ColorPicker({
 			const result = await eyeDropper.open();
 			const newHsva = parseColorToHsva(result.sRGBHex);
 			handleHsvaChange({ ...newHsva, a: hsva.a }); // Keep current alpha
-		} catch (e) {
+		} catch (_e) {
 			console.log("Eyedropper canceled");
 		}
 	};
