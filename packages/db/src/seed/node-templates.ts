@@ -271,7 +271,7 @@ export async function SEED_createNodeTemplates(prisma: PrismaClient) {
 			type: NodeType.Export,
 			displayName: "Export",
 			subcategory: null,
-			description: "A UI download / API output node",
+			description: "An UI download / API output node",
 			category: "Outputs",
 			tokenPrice: 0.0,
 			variableInputs: false,

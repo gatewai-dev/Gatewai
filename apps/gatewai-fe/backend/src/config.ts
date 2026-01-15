@@ -1,66 +1,32 @@
 import { config } from "dotenv";
+import { z } from "zod";
 
 config();
 
-type EnvConfig = {
-	BASE_URL: string;
-	PORT: number;
-	REDIS_HOST: string;
-	REDIS_PORT: string;
-	REDIS_PASSWORD: string;
-	GEMINI_API_KEY: string;
-	GCS_ASSETS_BUCKET: string;
-	GOOGLE_APPLICATION_CREDENTIALS: string;
-	GOOGLE_CLIENT_ID: string;
-	GOOGLE_CLIENT_SECRET: string;
-	DEBUG_LOG_MEDIA: boolean;
-};
+const envSchema = z.object({
+	BASE_URL: z.string().url(),
+	PORT: z.coerce.number().default(3000),
+	REDIS_HOST: z.string().min(1),
+	REDIS_PORT: z.string().min(1),
+	REDIS_PASSWORD: z.string().min(1),
+	GEMINI_API_KEY: z.string().min(1),
+	GCS_ASSETS_BUCKET: z.string().min(1),
+	GOOGLE_APPLICATION_CREDENTIALS: z.string().min(1),
+	GOOGLE_CLIENT_ID: z.string().min(1),
+	GOOGLE_CLIENT_SECRET: z.string().min(1),
+	DEBUG_LOG_MEDIA: z
+		.string()
+		.transform((val) => val.toLowerCase() === "true")
+		.default("false"),
+});
 
-if (!process.env.GOOGLE_CLIENT_ID || !process.env.GOOGLE_CLIENT_SECRET) {
-	throw new Error(
-		"Missing GOOGLE_CLIENT_ID / GOOGLE_CLIENT_SECRET env variable(s)",
-	);
-}
+const parsed = envSchema.safeParse(process.env);
 
-if (!process.env.GEMINI_API_KEY) {
-	throw new Error("Missing GEMINI_API_KEY env variable");
-}
-
-if (!process.env.GOOGLE_APPLICATION_CREDENTIALS) {
-	throw new Error("Missing GOOGLE_APPLICATION_CREDENTIALS env variable");
+if (!parsed.success) {
+	console.error("❌ Invalid environment variables:", parsed.error.format());
+	throw new Error("Invalid environment variables");
 }
 
-if (!process.env.GCS_ASSETS_BUCKET) {
-	throw new Error("Missing GCS_ASSETS_BUCKET env variable");
-}
+export const ENV_CONFIG = parsed.data;
 
-if (!process.env.BASE_URL) {
-	throw new Error("Missing BASE_URL env variable");
-}
-
-if (!process.env.REDIS_PORT) {
-	throw new Error("Missing REDIS_PORT env variable");
-}
-if (!process.env.REDIS_HOST) {
-	throw new Error("Missing REDIS_HOST env variable");
-}
-if (!process.env.REDIS_PASSWORD) {
-	throw new Error("Missing REDIS_PASSWORD env variable");
-}
-if (!process.env.DEBUG_LOG_MEDIA) {
-	throw new Error("Missing DEBUG_LOG_MEDIA env variable");
-}
-
-export const ENV_CONFIG: EnvConfig = {
-	BASE_URL: process.env.BASE_URL,
-	REDIS_HOST: process.env.REDIS_HOST,
-	REDIS_PASSWORD: process.env.REDIS_PASSWORD,
-	REDIS_PORT: process.env.REDIS_PORT,
-	PORT: Number(process.env.PORT),
-	GEMINI_API_KEY: process.env.GEMINI_API_KEY,
-	GCS_ASSETS_BUCKET: process.env.GCS_ASSETS_BUCKET,
-	GOOGLE_APPLICATION_CREDENTIALS: process.env.GOOGLE_APPLICATION_CREDENTIALS,
-	GOOGLE_CLIENT_ID: process.env.GOOGLE_CLIENT_ID,
-	GOOGLE_CLIENT_SECRET: process.env.GOOGLE_CLIENT_SECRET,
-	DEBUG_LOG_MEDIA: process.env.DEBUG_LOG_MEDIA.toLowerCase() === "true",
-};
+export type EnvConfig = z.infer<typeof envSchema>;

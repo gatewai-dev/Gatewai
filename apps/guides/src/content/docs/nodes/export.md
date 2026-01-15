@@ -1,6 +1,6 @@
 ---
 title: Export
-description: A UI download / API output node.
+description: An UI download / API output node.
 ---
 
 **Category**: Outputs

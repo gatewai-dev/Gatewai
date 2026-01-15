@@ -28,7 +28,7 @@ const __dirname = path.dirname(__filename);
 
 // --- 1. Shared Defaults (Sync with Client) ---
 const DEFAULTS = {
-	FONT_FAMILY: "Geist",
+	FONT_FAMILY: "Inter",
 	FONT_SIZE: 64,
 	FILL: "#ffffff",
 	LINE_HEIGHT: 1.1,

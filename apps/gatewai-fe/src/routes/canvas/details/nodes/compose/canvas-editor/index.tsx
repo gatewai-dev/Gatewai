@@ -114,7 +114,7 @@ import type { NodeEntityType } from "@/store/nodes";
 import { GetAssetEndpoint, GetFontAssetUrl } from "@/utils/file";
 
 const DEFAULTS = {
-	FONT_FAMILY: "Geist",
+	FONT_FAMILY: "Inter",
 	FONT_SIZE: 64,
 	FILL: "#ffffff",
 	LINE_HEIGHT: 1.1,

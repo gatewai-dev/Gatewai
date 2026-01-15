@@ -4,7 +4,7 @@ import { GetFontAssetUrl } from "@/utils/file";
 
 // Sync with server defaults
 const DEFAULTS = {
-	FONT_FAMILY: "Geist",
+	FONT_FAMILY: "Inter",
 	FONT_SIZE: 64,
 	FILL: "#ffffff",
 	LINE_HEIGHT: 1.1,

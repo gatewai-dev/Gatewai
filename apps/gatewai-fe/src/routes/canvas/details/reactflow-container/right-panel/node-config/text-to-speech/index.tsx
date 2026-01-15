@@ -6,6 +6,7 @@ import {
 	TTS_VOICE_NAMES,
 } from "@gatewai/types";
 import { zodResolver } from "@hookform/resolvers/zod";
+import { isEqual } from "lodash";
 import { Plus, Trash2 } from "lucide-react";
 import { memo, useCallback, useEffect, useMemo } from "react";
 import { useFieldArray, useForm } from "react-hook-form";
@@ -68,7 +69,7 @@ const TextToSpeechNodeConfigComponent = memo(
 			const subscription = form.watch((value) => {
 				const val = TextToSpeechNodeConfigSchema.safeParse(value);
 				console.log({ val, value });
-				if (val.success && !deepEqual(val.data, nodeConfig)) {
+				if (val.success && !isEqual(val.data, nodeConfig)) {
 					updateConfig(val.data);
 				}
 			});
@@ -182,24 +183,5 @@ const TextToSpeechNodeConfigComponent = memo(
 		);
 	},
 );
-
-// Helper function for deep equality check (since watch triggers on shallow changes)
-function deepEqual(obj1: any, obj2: any): boolean {
-	if (obj1 === obj2) return true;
-	if (
-		typeof obj1 !== "object" ||
-		typeof obj2 !== "object" ||
-		obj1 == null ||
-		obj2 == null
-	)
-		return false;
-	const keys1 = Object.keys(obj1);
-	const keys2 = Object.keys(obj2);
-	if (keys1.length !== keys2.length) return false;
-	for (const key of keys1) {
-		if (!keys2.includes(key) || !deepEqual(obj1[key], obj2[key])) return false;
-	}
-	return true;
-}
 
 export { TextToSpeechNodeConfigComponent };
