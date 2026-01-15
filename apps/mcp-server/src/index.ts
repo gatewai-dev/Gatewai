@@ -15,7 +15,7 @@ config();
 console.log(process.env);
 const EnvSchema = z.object({
 	BASE_URL: z.string().url("BASE_URL must be a valid URL"),
-	MCP_PORT: z.coerce.number().default(3000),
+	MCP_PORT: z.coerce.number().default(4001),
 	LOG_LEVEL: z.enum(["debug", "info", "error"]).default("info"),
 });
 
