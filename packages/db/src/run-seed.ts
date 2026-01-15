@@ -1,6 +1,6 @@
 import { config } from "dotenv";
 import { prisma } from "./client.js";
-import { SEED_createNodeTemplates } from "./node-templates.js";
+import { SEED_createNodeTemplates } from "./seed/node-templates.js";
 
 config();
 

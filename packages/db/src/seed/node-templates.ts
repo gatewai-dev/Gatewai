@@ -1,5 +1,6 @@
-import type { NodeTemplateCreateInput } from "./../generated/client/models/NodeTemplate";
-import { DataType, HandleType, NodeType, type PrismaClient } from "./client";
+import type { NodeTemplateCreateInput } from "../../generated/client/models/NodeTemplate";
+import { DataType, HandleType, NodeType, type PrismaClient } from "../client";
+
 export async function SEED_createNodeTemplates(prisma: PrismaClient) {
 	const nodes: NodeTemplateCreateInput[] = [
 		{
@@ -677,6 +678,17 @@ export async function SEED_createNodeTemplates(prisma: PrismaClient) {
 	];
 
 	for (const node of nodes) {
-		await prisma.nodeTemplate.create({ data: node });
+		const { type, templateHandles, ...rest } = node;
+		await prisma.nodeTemplate.upsert({
+			where: { type },
+			create: node,
+			update: {
+				...rest,
+				templateHandles: {
+					deleteMany: {},
+					create: templateHandles?.create ?? [],
+				},
+			},
+		});
 	}
 }
