@@ -51,27 +51,6 @@ export const dataTypeColors: Record<
 		text: "text-gray-500",
 		border: "border-gray-500",
 	},
-	Mask: {
-		bg: "bg-pink-500",
-		stroke: "stroke-pink-500",
-		hex: "#ec4899",
-		text: "text-pink-500",
-		border: "border-pink-500",
-	},
-	VideoLayer: {
-		bg: "bg-cyan-500",
-		stroke: "stroke-cyan-500",
-		hex: "#06b6d4",
-		text: "text-cyan-500",
-		border: "border-cyan-500",
-	},
-	DesignLayer: {
-		bg: "bg-indigo-500",
-		stroke: "stroke-indigo-500",
-		hex: "#6366f1",
-		text: "text-indigo-500",
-		border: "border-indigo-500",
-	},
 	Any: {
 		bg: "bg-white",
 		stroke: "stroke-white",
