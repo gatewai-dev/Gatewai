@@ -163,7 +163,7 @@ const NodeHandle = memo(
 							textShadow: "0 1px 2px rgba(0,0,0,0.1)",
 						}}
 					>
-						{handle.label || status?.type || handle.dataTypes[0]}
+						{handle.label || handle.dataTypes[0]}
 						{handle.required && (
 							<span className="text-destructive text-lg ml-0.5">*</span>
 						)}
