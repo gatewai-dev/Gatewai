@@ -115,7 +115,6 @@ const PaintNodeComponent = memo((props: NodeProps<PaintNode>) => {
 			const inputCanvas = inputCanvasRef.current;
 			const useInput = !!inputImageUrl && inputCanvas;
 			const inputCtx = useInput ? inputCanvas.getContext("2d") : null;
-			console.log({ inputImageUrl });
 			const colorData =
 				useInput && inputCtx
 					? inputCtx.getImageData(0, 0, w, h).data
