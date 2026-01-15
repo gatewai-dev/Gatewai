@@ -164,7 +164,7 @@ const PaintNodeComponent = memo((props: NodeProps<PaintNode>) => {
 				if (p.y < h - 1) stack.push({ x: p.x, y: p.y + 1 });
 			}
 
-			ctxToPut.putImageData(new ImageData(dataToModify, w, h), 0, 0);
+			ctxToPut.putImageData(new ImageData(dataToModify as any, w, h), 0, 0);
 
 			if (!isPreview) {
 				needsUpdateRef.current = true;

@@ -1,3 +1,4 @@
+import * as SliderPrimitive from "@radix-ui/react-slider";
 import { Check, Copy, Pipette } from "lucide-react";
 import type React from "react";
 import { useEffect, useRef, useState } from "react";
@@ -25,13 +26,11 @@ interface ColorPickerProps {
 	onChange: (value: string) => void;
 	className?: string;
 	disabled?: boolean;
-	showAlpha?: boolean; // New feature: toggle alpha support
-	presets?: string[]; // New feature: color presets
+	showAlpha?: boolean;
+	presets?: string[];
 }
 
 // --- Color Utility Logic ---
-// Encapsulated to keep the component clean.
-// In a real repo, this might live in `lib/color-utils.ts`
 
 const clamp = (number: number, min: number, max: number) => {
 	return Math.min(Math.max(number, min), max);
@@ -87,7 +86,7 @@ const parseColorToHsva = (color: string): HSVA => {
 	if (!ctx) return { h: 0, s: 0, v: 0, a: 1 };
 
 	ctx.fillStyle = color;
-	const computed = ctx.fillStyle; // Browsers normalize colors to hex or rgba
+	const computed = ctx.fillStyle;
 
 	if (computed.startsWith("#")) {
 		let hex = computed.slice(1);
@@ -99,8 +98,6 @@ const parseColorToHsva = (color: string): HSVA => {
 		const r = parseInt(hex.substring(0, 2), 16);
 		const g = parseInt(hex.substring(2, 4), 16);
 		const b = parseInt(hex.substring(4, 6), 16);
-		// Canvas usually drops alpha for hex, but we can try to parse the original if it was hex8
-		// For simplicity/robustness, we stick to what the browser computed, defaulting alpha to 1
 		return rgbaToHsva(r, g, b, 1);
 	}
 
@@ -121,9 +118,6 @@ const parseColorToHsva = (color: string): HSVA => {
 	return { h: 0, s: 0, v: 0, a: 1 };
 };
 
-// --- Custom Hook for Draggable Areas ---
-// Solves: Reusability for Sat/Val, Hue, and Alpha sliders
-
 const useColorDrag = (
 	ref: React.RefObject<HTMLDivElement | null>,
 	onChange: (position: { x: number; y: number }) => void,
@@ -140,7 +134,7 @@ const useColorDrag = (
 		};
 
 		const handlePointerDown = (e: PointerEvent) => {
-			e.preventDefault(); // Prevent text selection
+			e.preventDefault();
 			update(e.clientX, e.clientY);
 			window.addEventListener("pointermove", handlePointerMove);
 			window.addEventListener("pointerup", handlePointerUp);
@@ -167,7 +161,7 @@ const useColorDrag = (
 
 // --- Sub-Components ---
 
-// 1. Saturation/Value Area
+// 1. Saturation/Value Area (unchanged – keeps custom drag)
 const SaturationSquare = ({
 	hsva,
 	onChange,
@@ -197,73 +191,70 @@ const SaturationSquare = ({
 	);
 };
 
-// 2. Hue Slider
+// 2. Hue Slider (now uses Radix Slider primitive for better accessibility/keyboard support)
 const HueSlider = ({
 	hsva,
 	onChange,
 }: {
 	hsva: HSVA;
-	onChange: (s: HSVA) => void;
+	onChange: (hsva: HSVA) => void;
 }) => {
-	const ref = useRef<HTMLDivElement>(null);
-
-	useColorDrag(ref, ({ x }) => {
-		onChange({ ...hsva, h: x * 360 });
-	});
-
 	return (
-		<div
-			ref={ref}
-			className="relative w-full h-4 rounded-full cursor-pointer border border-border"
+		<SliderPrimitive.Root
+			className="relative flex w-full touch-none select-none items-center"
+			value={[hsva.h]}
+			onValueChange={(val) => onChange({ ...hsva, h: val[0] ?? 0 })}
+			max={360}
+			step={1}
+			aria-label="Hue"
 		>
-			<div
-				className="absolute inset-0 rounded-full"
-				style={{
-					background:
-						"linear-gradient(to right, #f00, #ff0, #0f0, #0ff, #00f, #f0f, #f00)",
-				}}
-			/>
-			<div
-				className="absolute w-5 h-5 bg-white border border-gray-300 rounded-full shadow-sm transform -translate-x-1/2 -translate-y-1/2 pointer-events-none"
-				style={{ left: `${(hsva.h / 360) * 100}%`, top: "50%" }}
-			/>
-		</div>
+			<SliderPrimitive.Track className="relative h-4 w-full grow overflow-hidden rounded-full border border-border">
+				<div
+					className="absolute inset-0 rounded-full"
+					style={{
+						background:
+							"linear-gradient(to right, #f00, #ff0, #0f0, #0ff, #00f, #f0f, #f00)",
+					}}
+				/>
+				<SliderPrimitive.Range className="absolute h-full bg-transparent" />
+			</SliderPrimitive.Track>
+			<SliderPrimitive.Thumb className="block h-5 w-5 rounded-full border border-gray-300 bg-white shadow-sm focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ring focus-visible:ring-offset-2 disabled:pointer-events-none disabled:opacity-50" />
+		</SliderPrimitive.Root>
 	);
 };
 
-// 3. Alpha Slider
+// 3. Alpha Slider (now uses Radix Slider primitive)
 const AlphaSlider = ({
 	hsva,
 	onChange,
 }: {
 	hsva: HSVA;
-	onChange: (s: HSVA) => void;
+	onChange: (hsva: HSVA) => void;
 }) => {
-	const ref = useRef<HTMLDivElement>(null);
-	const rgba = hsvaToRgba(hsva);
-
-	useColorDrag(ref, ({ x }) => {
-		onChange({ ...hsva, a: parseFloat(x.toFixed(2)) });
-	});
+	const { r, g, b } = hsvaToRgba(hsva);
 
 	return (
-		<div
-			ref={ref}
-			className="relative w-full h-4 rounded-full cursor-pointer border border-border overflow-hidden"
+		<SliderPrimitive.Root
+			className="relative flex w-full touch-none select-none items-center"
+			value={[hsva.a]}
+			onValueChange={(val) => onChange({ ...hsva, a: val[0] ?? 1 })}
+			min={0}
+			max={1}
+			step={0.01}
+			aria-label="Alpha"
 		>
-			{/* Checkered background pattern for transparency */}
-			<div className="absolute inset-0 bg-[url('data:image/svg+xml;base64,PHN2ZyB4bWxucz0iaHR0cDovL3d3dy53My5vcmcvMjAwMC9zdmciIHdpZHRoPSI4IiBoZWlnaHQ9IjgiPjxyZWN0IHdpZHRoPSI0IiBoZWlnaHQ9IjQiIGZpbGw9IiNlN2U3ZTciLz48cmVjdCB4PSI0IiB5PSI0IiB3aWR0aD0iNCIgaGVpZ2h0PSI0IiBmaWxsPSIjZTdlN2U3Ii8+PC9zdmc+')] opacity-50" />
-			<div
-				className="absolute inset-0"
-				style={{
-					background: `linear-gradient(to right, rgba(${rgba.r},${rgba.g},${rgba.b},0), rgba(${rgba.r},${rgba.g},${rgba.b},1))`,
-				}}
-			/>
-			<div
-				className="absolute w-5 h-5 bg-white border border-gray-300 rounded-full shadow-sm transform -translate-x-1/2 -translate-y-1/2 pointer-events-none"
-				style={{ left: `${hsva.a * 100}%`, top: "50%" }}
-			/>
-		</div>
+			<SliderPrimitive.Track className="relative h-4 w-full grow overflow-hidden rounded-full border border-border">
+				<div className="absolute inset-0 bg-[url('data:image/svg+xml;base64,PHN2ZyB4bWxucz0iaHR0cDovL3d3dy53My5vcmcvMjAwMC9zdmciIHdpZHRoPSI4IiBoZWlnaHQ9IjgiPjxyZWN0IHdpZHRoPSI0IiBoZWlnaHQ9IjQiIGZpbGw9IiNlN2U3ZTciLz48cmVjdCB4PSI0IiB5PSI0IiB3aWR0aD0iNCIgaGVpZ2h0PSI0IiBmaWxsPSIjZTdlN2U3Ii8+PC9zdmc+')] opacity-50" />
+				<div
+					className="absolute inset-0 rounded-full"
+					style={{
+						background: `linear-gradient(to right, rgba(${r},${g},${b},0), rgba(${r},${g},${b},1))`,
+					}}
+				/>
+				<SliderPrimitive.Range className="absolute h-full bg-transparent" />
+			</SliderPrimitive.Track>
+			<SliderPrimitive.Thumb className="block h-5 w-5 rounded-full border border-gray-300 bg-white shadow-sm focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ring focus-visible:ring-offset-2 disabled:pointer-events-none disabled:opacity-50" />
+		</SliderPrimitive.Root>
 	);
 };
 
@@ -292,21 +283,17 @@ export function ColorPicker({
 	showAlpha = true,
 	presets = PRESETS,
 }: ColorPickerProps) {
-	// Use a stable HSVA state internally
 	const [hsva, setHsva] = useState<HSVA>(parseColorToHsva(value));
 	const [inputMode, setInputMode] = useState<"hex" | "rgb">("hex");
 	const [isCopied, setIsCopied] = useState(false);
 
-	// Sync internal state if prop value changes externally
 	useEffect(() => {
-		// Avoid circular update loops by checking equality approx
 		const currentHex = hsvaToHex(hsva, showAlpha);
 		const incomingHsva = parseColorToHsva(value);
-		// Simple check: if the hex representation matches, don't re-parse
 		if (hsvaToHex(incomingHsva, showAlpha) !== currentHex) {
 			setHsva(incomingHsva);
 		}
-	}, [value]);
+	}, [value, showAlpha]);
 
 	const handleHsvaChange = (newHsva: HSVA) => {
 		setHsva(newHsva);
@@ -322,14 +309,13 @@ export function ColorPicker({
 		setTimeout(() => setIsCopied(false), 2000);
 	};
 
-	// Modern EyeDropper API
 	const handleEyeDropper = async () => {
 		if (!window.EyeDropper) return;
 		const eyeDropper = new window.EyeDropper();
 		try {
 			const result = await eyeDropper.open();
 			const newHsva = parseColorToHsva(result.sRGBHex);
-			handleHsvaChange({ ...newHsva, a: hsva.a }); // Keep current alpha
+			handleHsvaChange({ ...newHsva, a: hsva.a });
 		} catch (_e) {
 			console.log("Eyedropper canceled");
 		}
@@ -360,12 +346,9 @@ export function ColorPicker({
 			</PopoverTrigger>
 			<PopoverContent className="w-72 p-3" align="start">
 				<div className="space-y-4">
-					{/* Main Saturation/Value Area */}
 					<SaturationSquare hsva={hsva} onChange={handleHsvaChange} />
 
-					{/* Sliders */}
 					<div className="flex gap-3 items-center">
-						{/* Current Color Preview */}
 						<div className="w-8 h-8 rounded-full border border-input relative overflow-hidden shrink-0">
 							<div className="absolute inset-0 bg-[url('data:image/svg+xml;base64,PHN2ZyB4bWxucz0iaHR0cDovL3d3dy53My5vcmcvMjAwMC9zdmciIHdpZHRoPSI4IiBoZWlnaHQ9IjgiPjxyZWN0IHdpZHRoPSI0IiBoZWlnaHQ9IjQiIGZpbGw9IiNlN2U3ZTciLz48cmVjdCB4PSI0IiB5PSI0IiB3aWR0aD0iNCIgaGVpZ2h0PSI0IiBmaWxsPSIjZTdlN2U3Ii8+PC9zdmc+')] opacity-50" />
 							<div
@@ -382,7 +365,6 @@ export function ColorPicker({
 						</div>
 					</div>
 
-					{/* Inputs & Controls */}
 					<Tabs
 						defaultValue="hex"
 						value={inputMode}
@@ -400,7 +382,6 @@ export function ColorPicker({
 							</TabsList>
 
 							<div className="flex items-center gap-1">
-								{/* EyeDropper (Only Chrome/Edge supports this currently) */}
 								{typeof window !== "undefined" && "EyeDropper" in window && (
 									<Button
 										variant="ghost"
@@ -433,8 +414,6 @@ export function ColorPicker({
 								value={hsvaToHex(hsva, showAlpha)}
 								onChange={(e) => {
 									const newHsva = parseColorToHsva(e.target.value);
-									// Prevent jumping to black if parsing fails, unless it's explicitly black
-									// In a real app, you might want more robust validation state
 									handleHsvaChange({
 										...newHsva,
 										a: showAlpha ? newHsva.a : 1,
@@ -501,7 +480,6 @@ export function ColorPicker({
 						</TabsContent>
 					</Tabs>
 
-					{/* Presets */}
 					{presets.length > 0 && (
 						<div className="space-y-1.5 pt-2 border-t">
 							<span className="text-xs font-medium text-muted-foreground">
@@ -531,9 +509,9 @@ export function ColorPicker({
 	);
 }
 
-// Global augmentation for TypeScript
 declare global {
 	interface Window {
+		// biome-ignore lint/suspicious/noExplicitAny: Not exists always
 		EyeDropper?: any;
 	}
 }
