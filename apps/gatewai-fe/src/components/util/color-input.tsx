@@ -1,4 +1,6 @@
-import * as React from "react";
+import { Check, Copy, Pipette } from "lucide-react";
+import type React from "react";
+import { useCallback, useEffect, useMemo, useRef, useState } from "react";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import {
@@ -6,14 +8,10 @@ import {
 	PopoverContent,
 	PopoverTrigger,
 } from "@/components/ui/popover";
+import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
+import { cn } from "@/lib/utils";
 
-interface ColorInputProps {
-	id?: string;
-	value: string;
-	onChange: (color: string) => void;
-	className?: string;
-	disabled?: boolean;
-}
+// --- Types ---
 
 interface HSVA {
 	h: number;
@@ -22,53 +20,52 @@ interface HSVA {
 	a: number;
 }
 
-function parseColor(color: string): HSVA {
-	if (color.startsWith("#")) {
-		let hex = color.slice(1);
-		let a = 1;
-		if (hex.length === 3 || hex.length === 4) {
-			hex = hex
-				.split("")
-				.map((c) => c + c)
-				.join("");
-		}
-		if (hex.length === 8) {
-			a = parseInt(hex.slice(6, 8), 16) / 255;
-			hex = hex.slice(0, 6);
-		}
-		const r = parseInt(hex.slice(0, 2), 16);
-		const g = parseInt(hex.slice(2, 4), 16);
-		const b = parseInt(hex.slice(4, 6), 16);
-		return rgbToHsva(r, g, b, a);
-	} else if (color.startsWith("rgba")) {
-		const match = color.match(
-			/rgba?\((\d+),\s*(\d+),\s*(\d+),\s*(\d*\.?\d+)\)/,
-		);
-		if (match) {
-			const [, r, g, b, a] = match;
-			return rgbToHsva(Number(r), Number(g), Number(b), Number(a));
-		}
-	} else if (color.startsWith("rgb")) {
-		const match = color.match(/rgb?\((\d+),\s*(\d+),\s*(\d+)\)/);
-		if (match) {
-			const [, r, g, b] = match;
-			return rgbToHsva(Number(r), Number(g), Number(b), 1);
-		}
-	}
-	return { h: 0, s: 0, v: 1, a: 1 };
+interface ColorPickerProps {
+	value: string;
+	onChange: (value: string) => void;
+	className?: string;
+	disabled?: boolean;
+	showAlpha?: boolean; // New feature: toggle alpha support
+	presets?: string[]; // New feature: color presets
 }
 
-function rgbToHsva(r: number, g: number, b: number, a: number): HSVA {
+// --- Color Utility Logic ---
+// Encapsulated to keep the component clean.
+// In a real repo, this might live in `lib/color-utils.ts`
+
+const clamp = (number: number, min: number, max: number) => {
+	return Math.min(Math.max(number, min), max);
+};
+
+const hsvaToRgba = ({ h, s, v, a }: HSVA) => {
+	const f = (n: number, k = (n + h / 60) % 6) =>
+		v - v * s * Math.max(Math.min(k, 4 - k, 1), 0);
+	const rgb = [f(5), f(3), f(1)].map((v) => Math.round(v * 255));
+	return { r: rgb[0], g: rgb[1], b: rgb[2], a };
+};
+
+const hsvaToHex = (hsva: HSVA, includeAlpha: boolean = true) => {
+	const { r, g, b, a } = hsvaToRgba(hsva);
+	const toHex = (n: number) => n.toString(16).padStart(2, "0");
+	let hex = `#${toHex(r)}${toHex(g)}${toHex(b)}`;
+	if (includeAlpha) {
+		hex += toHex(Math.round(a * 255));
+	}
+	return hex;
+};
+
+const rgbaToHsva = (r: number, g: number, b: number, a: number): HSVA => {
 	r /= 255;
 	g /= 255;
 	b /= 255;
 	const max = Math.max(r, g, b);
 	const min = Math.min(r, g, b);
 	const d = max - min;
-	let h = 0;
 	const s = max === 0 ? 0 : d / max;
 	const v = max;
-	if (d !== 0) {
+	let h = 0;
+
+	if (max !== min) {
 		switch (max) {
 			case r:
 				h = (g - b) / d + (g < b ? 6 : 0);
@@ -83,256 +80,460 @@ function rgbToHsva(r: number, g: number, b: number, a: number): HSVA {
 		h /= 6;
 	}
 	return { h: h * 360, s, v, a };
-}
+};
 
-function hsvaToRgba(hsva: HSVA): {
-	r: number;
-	g: number;
-	b: number;
-	a: number;
-} {
-	let { h, s, v, a } = hsva;
-	h /= 360;
-	const i = Math.floor(h * 6);
-	const f = h * 6 - i;
-	const p = v * (1 - s);
-	const q = v * (1 - f * s);
-	const t = v * (1 - (1 - f) * s);
-	let r = 0,
-		g = 0,
-		b = 0;
-	switch (i % 6) {
-		case 0:
-			r = v;
-			g = t;
-			b = p;
-			break;
-		case 1:
-			r = q;
-			g = v;
-			b = p;
-			break;
-		case 2:
-			r = p;
-			g = v;
-			b = t;
-			break;
-		case 3:
-			r = p;
-			g = q;
-			b = v;
-			break;
-		case 4:
-			r = t;
-			g = p;
-			b = v;
-			break;
-		case 5:
-			r = v;
-			g = p;
-			b = q;
-			break;
+const parseColorToHsva = (color: string): HSVA => {
+	const ctx = document.createElement("canvas").getContext("2d");
+	if (!ctx) return { h: 0, s: 0, v: 0, a: 1 };
+
+	ctx.fillStyle = color;
+	const computed = ctx.fillStyle; // Browsers normalize colors to hex or rgba
+
+	if (computed.startsWith("#")) {
+		let hex = computed.slice(1);
+		if (hex.length === 3)
+			hex = hex
+				.split("")
+				.map((c) => c + c)
+				.join("");
+		const r = parseInt(hex.substring(0, 2), 16);
+		const g = parseInt(hex.substring(2, 4), 16);
+		const b = parseInt(hex.substring(4, 6), 16);
+		// Canvas usually drops alpha for hex, but we can try to parse the original if it was hex8
+		// For simplicity/robustness, we stick to what the browser computed, defaulting alpha to 1
+		return rgbaToHsva(r, g, b, 1);
 	}
-	return {
-		r: Math.round(r * 255),
-		g: Math.round(g * 255),
-		b: Math.round(b * 255),
-		a,
-	};
-}
 
-function hsvaToRgbaString(hsva: HSVA): string {
-	const { r, g, b, a } = hsvaToRgba(hsva);
-	return `rgba(${r}, ${g}, ${b}, ${a.toFixed(2)})`;
-}
+	if (computed.startsWith("rgba")) {
+		const match = computed.match(
+			/rgba?\((\d+),\s*(\d+),\s*(\d+)(?:,\s*(\d*\.?\d+))?\)/,
+		);
+		if (match) {
+			return rgbaToHsva(
+				Number(match[1]),
+				Number(match[2]),
+				Number(match[3]),
+				Number(match[4] ?? 1),
+			);
+		}
+	}
 
-function hsvToRgbString(hsva: HSVA): string {
-	const { r, g, b } = hsvaToRgba(hsva);
-	return `rgb(${r}, ${g}, ${b})`;
-}
+	return { h: 0, s: 0, v: 0, a: 1 };
+};
 
-export function ColorInput({
-	id,
+// --- Custom Hook for Draggable Areas ---
+// Solves: Reusability for Sat/Val, Hue, and Alpha sliders
+
+const useColorDrag = (
+	ref: React.RefObject<HTMLDivElement | null>,
+	onChange: (position: { x: number; y: number }) => void,
+) => {
+	useEffect(() => {
+		const element = ref.current;
+		if (!element) return;
+
+		const update = (clientX: number, clientY: number) => {
+			const rect = element.getBoundingClientRect();
+			const x = clamp((clientX - rect.left) / rect.width, 0, 1);
+			const y = clamp((clientY - rect.top) / rect.height, 0, 1);
+			onChange({ x, y });
+		};
+
+		const handlePointerDown = (e: PointerEvent) => {
+			e.preventDefault(); // Prevent text selection
+			update(e.clientX, e.clientY);
+			window.addEventListener("pointermove", handlePointerMove);
+			window.addEventListener("pointerup", handlePointerUp);
+		};
+
+		const handlePointerMove = (e: PointerEvent) => {
+			update(e.clientX, e.clientY);
+		};
+
+		const handlePointerUp = () => {
+			window.removeEventListener("pointermove", handlePointerMove);
+			window.removeEventListener("pointerup", handlePointerUp);
+		};
+
+		element.addEventListener("pointerdown", handlePointerDown);
+
+		return () => {
+			element.removeEventListener("pointerdown", handlePointerDown);
+			window.removeEventListener("pointermove", handlePointerMove);
+			window.removeEventListener("pointerup", handlePointerUp);
+		};
+	}, [ref, onChange]);
+};
+
+// --- Sub-Components ---
+
+// 1. Saturation/Value Area
+const SaturationSquare = ({
+	hsva,
+	onChange,
+}: {
+	hsva: HSVA;
+	onChange: (s: HSVA) => void;
+}) => {
+	const ref = useRef<HTMLDivElement>(null);
+
+	useColorDrag(ref, ({ x, y }) => {
+		onChange({ ...hsva, s: x, v: 1 - y });
+	});
+
+	return (
+		<div
+			ref={ref}
+			className="relative w-full h-40 rounded-md cursor-crosshair overflow-hidden border border-border shadow-sm"
+			style={{ backgroundColor: `hsl(${hsva.h}, 100%, 50%)` }}
+		>
+			<div className="absolute inset-0 bg-gradient-to-r from-white to-transparent" />
+			<div className="absolute inset-0 bg-gradient-to-b from-transparent to-black" />
+			<div
+				className="absolute w-4 h-4 border-2 border-white rounded-full shadow-md transform -translate-x-1/2 -translate-y-1/2 pointer-events-none"
+				style={{ left: `${hsva.s * 100}%`, top: `${(1 - hsva.v) * 100}%` }}
+			/>
+		</div>
+	);
+};
+
+// 2. Hue Slider
+const HueSlider = ({
+	hsva,
+	onChange,
+}: {
+	hsva: HSVA;
+	onChange: (s: HSVA) => void;
+}) => {
+	const ref = useRef<HTMLDivElement>(null);
+
+	useColorDrag(ref, ({ x }) => {
+		onChange({ ...hsva, h: x * 360 });
+	});
+
+	return (
+		<div
+			ref={ref}
+			className="relative w-full h-4 rounded-full cursor-pointer border border-border"
+		>
+			<div
+				className="absolute inset-0 rounded-full"
+				style={{
+					background:
+						"linear-gradient(to right, #f00, #ff0, #0f0, #0ff, #00f, #f0f, #f00)",
+				}}
+			/>
+			<div
+				className="absolute w-5 h-5 bg-white border border-gray-300 rounded-full shadow-sm transform -translate-x-1/2 -translate-y-1/2 pointer-events-none"
+				style={{ left: `${(hsva.h / 360) * 100}%`, top: "50%" }}
+			/>
+		</div>
+	);
+};
+
+// 3. Alpha Slider
+const AlphaSlider = ({
+	hsva,
+	onChange,
+}: {
+	hsva: HSVA;
+	onChange: (s: HSVA) => void;
+}) => {
+	const ref = useRef<HTMLDivElement>(null);
+	const rgba = hsvaToRgba(hsva);
+
+	useColorDrag(ref, ({ x }) => {
+		onChange({ ...hsva, a: parseFloat(x.toFixed(2)) });
+	});
+
+	return (
+		<div
+			ref={ref}
+			className="relative w-full h-4 rounded-full cursor-pointer border border-border overflow-hidden"
+		>
+			{/* Checkered background pattern for transparency */}
+			<div className="absolute inset-0 bg-[url('data:image/svg+xml;base64,PHN2ZyB4bWxucz0iaHR0cDovL3d3dy53My5vcmcvMjAwMC9zdmciIHdpZHRoPSI4IiBoZWlnaHQ9IjgiPjxyZWN0IHdpZHRoPSI0IiBoZWlnaHQ9IjQiIGZpbGw9IiNlN2U3ZTciLz48cmVjdCB4PSI0IiB5PSI0IiB3aWR0aD0iNCIgaGVpZ2h0PSI0IiBmaWxsPSIjZTdlN2U3Ii8+PC9zdmc+')] opacity-50" />
+			<div
+				className="absolute inset-0"
+				style={{
+					background: `linear-gradient(to right, rgba(${rgba.r},${rgba.g},${rgba.b},0), rgba(${rgba.r},${rgba.g},${rgba.b},1))`,
+				}}
+			/>
+			<div
+				className="absolute w-5 h-5 bg-white border border-gray-300 rounded-full shadow-sm transform -translate-x-1/2 -translate-y-1/2 pointer-events-none"
+				style={{ left: `${hsva.a * 100}%`, top: "50%" }}
+			/>
+		</div>
+	);
+};
+
+// --- Main Component ---
+
+const PRESETS = [
+	"#000000",
+	"#FFFFFF",
+	"#FF0000",
+	"#00FF00",
+	"#0000FF",
+	"#FFFF00",
+	"#00FFFF",
+	"#FF00FF",
+	"#C0C0C0",
+	"#808080",
+	"#800000",
+	"#808000",
+];
+
+export function ColorPicker({
 	value,
 	onChange,
 	className,
-	disabled,
-}: ColorInputProps) {
-	const [hsva, setHsva] = React.useState<HSVA>(parseColor(value));
-	const svRef = React.useRef<HTMLDivElement>(null);
-	const hueRef = React.useRef<HTMLDivElement>(null);
-	const alphaRef = React.useRef<HTMLDivElement>(null);
+	disabled = false,
+	showAlpha = true,
+	presets = PRESETS,
+}: ColorPickerProps) {
+	// Use a stable HSVA state internally
+	const [hsva, setHsva] = useState<HSVA>(parseColorToHsva(value));
+	const [inputMode, setInputMode] = useState<"hex" | "rgb">("hex");
+	const [isCopied, setIsCopied] = useState(false);
 
-	React.useEffect(() => {
-		setHsva(parseColor(value));
+	// Sync internal state if prop value changes externally
+	useEffect(() => {
+		// Avoid circular update loops by checking equality approx
+		const currentHex = hsvaToHex(hsva, showAlpha);
+		const incomingHsva = parseColorToHsva(value);
+		// Simple check: if the hex representation matches, don't re-parse
+		if (hsvaToHex(incomingHsva, showAlpha) !== currentHex) {
+			setHsva(incomingHsva);
+		}
 	}, [value]);
 
-	const handleChange = (newHsva: HSVA) => {
+	const handleHsvaChange = (newHsva: HSVA) => {
 		setHsva(newHsva);
-		onChange(hsvaToRgbaString(newHsva));
+		const newColor = showAlpha
+			? hsvaToHex(newHsva, true)
+			: hsvaToHex({ ...newHsva, a: 1 }, false);
+		onChange(newColor);
 	};
 
-	const handlePointerDown = (
-		e: React.PointerEvent,
-		ref: React.RefObject<HTMLDivElement | null>,
-		updater: (x: number, y: number, rect: DOMRect) => Partial<HSVA>,
-	) => {
-		e.preventDefault();
-		const target = ref.current;
-		if (!target) return;
-
-		const onPointerMove = (e: PointerEvent) => {
-			const rect = target.getBoundingClientRect();
-			let x = e.clientX - rect.left;
-			let y = e.clientY - rect.top;
-			x = Math.max(0, Math.min(x, rect.width));
-			y = Math.max(0, Math.min(y, rect.height));
-			const updates = updater(x, y, rect);
-			handleChange({ ...hsva, ...updates });
-		};
-
-		const onPointerUp = () => {
-			document.removeEventListener("pointermove", onPointerMove);
-			document.removeEventListener("pointerup", onPointerUp);
-		};
-
-		onPointerMove(e.nativeEvent);
-		document.addEventListener("pointermove", onPointerMove);
-		document.addEventListener("pointerup", onPointerUp);
+	const handleCopy = () => {
+		navigator.clipboard.writeText(hsvaToHex(hsva, showAlpha));
+		setIsCopied(true);
+		setTimeout(() => setIsCopied(false), 2000);
 	};
 
-	const handleSvDown = (e: React.PointerEvent) => {
-		handlePointerDown(e, svRef, (x, y, rect) => ({
-			s: x / rect.width,
-			v: 1 - y / rect.height,
-		}));
+	// Modern EyeDropper API
+	const handleEyeDropper = async () => {
+		if (!window.EyeDropper) return;
+		const eyeDropper = new window.EyeDropper();
+		try {
+			const result = await eyeDropper.open();
+			const newHsva = parseColorToHsva(result.sRGBHex);
+			handleHsvaChange({ ...newHsva, a: hsva.a }); // Keep current alpha
+		} catch (e) {
+			console.log("Eyedropper canceled");
+		}
 	};
 
-	const handleHueDown = (e: React.PointerEvent) => {
-		handlePointerDown(e, hueRef, (x, _, rect) => ({
-			h: (x / rect.width) * 360,
-		}));
-	};
-
-	const handleAlphaDown = (e: React.PointerEvent) => {
-		handlePointerDown(e, alphaRef, (x, _, rect) => ({
-			a: x / rect.width,
-		}));
-	};
+	const { r, g, b } = hsvaToRgba(hsva);
 
 	return (
 		<Popover>
 			<PopoverTrigger asChild>
 				<Button
-					id={id}
 					variant="outline"
-					className={`w-8 h-8 p-0 rounded border ${className ?? ""}`}
-					style={{ backgroundColor: value }}
 					disabled={disabled}
+					className={cn(
+						"w-full justify-start text-left font-normal px-2 h-9",
+						className,
+					)}
 				>
-					<span className="sr-only">Open color picker</span>
+					<div className="w-5 h-5 rounded border border-input mr-2 relative overflow-hidden shrink-0">
+						<div className="absolute inset-0 bg-[url('data:image/svg+xml;base64,PHN2ZyB4bWxucz0iaHR0cDovL3d3dy53My5vcmcvMjAwMC9zdmciIHdpZHRoPSI4IiBoZWlnaHQ9IjgiPjxyZWN0IHdpZHRoPSI0IiBoZWlnaHQ9IjQiIGZpbGw9IiNlN2U3ZTciLz48cmVjdCB4PSI0IiB5PSI0IiB3aWR0aD0iNCIgaGVpZ2h0PSI0IiBmaWxsPSIjZTdlN2U3Ii8+PC9zdmc+')] opacity-50" />
+						<div
+							className="absolute inset-0"
+							style={{ backgroundColor: hsvaToHex(hsva, showAlpha) }}
+						/>
+					</div>
+					<span className="truncate flex-1">{value || "Pick a color"}</span>
 				</Button>
 			</PopoverTrigger>
-			<PopoverContent className="w-72">
+			<PopoverContent className="w-72 p-3" align="start">
 				<div className="space-y-4">
-					{/* Saturation/Value picker */}
-					<div
-						ref={svRef}
-						className="relative w-full h-48 rounded cursor-crosshair overflow-hidden"
-						onPointerDown={handleSvDown}
-					>
-						<div
-							className="absolute inset-0"
-							style={{ backgroundColor: `hsl(${hsva.h}, 100%, 50%)` }}
-						/>
-						<div
-							className="absolute inset-0"
-							style={{
-								background:
-									"linear-gradient(to right, #fff, rgba(255,255,255,0))",
-							}}
-						/>
-						<div
-							className="absolute inset-0"
-							style={{
-								background: "linear-gradient(to bottom, rgba(0,0,0,0), #000)",
-							}}
-						/>
-						<div
-							className="pointer-events-none absolute w-5 h-5 rounded-full border-2 border-white shadow-md -translate-x-1/2 -translate-y-1/2"
-							style={{
-								left: `${hsva.s * 100}%`,
-								top: `${(1 - hsva.v) * 100}%`,
-							}}
-						/>
+					{/* Main Saturation/Value Area */}
+					<SaturationSquare hsva={hsva} onChange={handleHsvaChange} />
+
+					{/* Sliders */}
+					<div className="flex gap-3 items-center">
+						{/* Current Color Preview */}
+						<div className="w-8 h-8 rounded-full border border-input relative overflow-hidden shrink-0">
+							<div className="absolute inset-0 bg-[url('data:image/svg+xml;base64,PHN2ZyB4bWxucz0iaHR0cDovL3d3dy53My5vcmcvMjAwMC9zdmciIHdpZHRoPSI4IiBoZWlnaHQ9IjgiPjxyZWN0IHdpZHRoPSI0IiBoZWlnaHQ9IjQiIGZpbGw9IiNlN2U3ZTciLz48cmVjdCB4PSI0IiB5PSI0IiB3aWR0aD0iNCIgaGVpZ2h0PSI0IiBmaWxsPSIjZTdlN2U3Ii8+PC9zdmc+')] opacity-50" />
+							<div
+								className="absolute inset-0"
+								style={{ backgroundColor: hsvaToHex(hsva, showAlpha) }}
+							/>
+						</div>
+
+						<div className="flex-1 space-y-3">
+							<HueSlider hsva={hsva} onChange={handleHsvaChange} />
+							{showAlpha && (
+								<AlphaSlider hsva={hsva} onChange={handleHsvaChange} />
+							)}
+						</div>
 					</div>
 
-					{/* Hue slider */}
-					<div
-						ref={hueRef}
-						className="relative w-full h-5 rounded cursor-pointer"
-						onPointerDown={handleHueDown}
+					{/* Inputs & Controls */}
+					<Tabs
+						defaultValue="hex"
+						value={inputMode}
+						onValueChange={(v) => setInputMode(v as "hex" | "rgb")}
+						className="w-full"
 					>
-						<div
-							className="absolute inset-0 rounded"
-							style={{
-								background:
-									"linear-gradient(to right, #f00 0%, #ff0 16.66%, #0f0 33.33%, #0ff 50%, #00f 66.66%, #f0f 83.33%, #f00 100%)",
-							}}
-						/>
-						<div
-							className="pointer-events-none absolute w-5 h-5 rounded-full border-2 border-white shadow-md -translate-x-1/2 -translate-y-1/2"
-							style={{
-								left: `${(hsva.h / 360) * 100}%`,
-								top: "50%",
-							}}
-						/>
-					</div>
+						<div className="flex items-center justify-between mb-2">
+							<TabsList className="h-7">
+								<TabsTrigger value="hex" className="text-xs h-5 px-2">
+									Hex
+								</TabsTrigger>
+								<TabsTrigger value="rgb" className="text-xs h-5 px-2">
+									RGB
+								</TabsTrigger>
+							</TabsList>
 
-					{/* Alpha slider */}
-					<div
-						ref={alphaRef}
-						className="relative w-full h-5 rounded cursor-pointer"
-						style={{
-							backgroundImage:
-								"repeating-conic-gradient(#ccc 0 25%, #fff 0 50%)",
-							backgroundSize: "20px 20px",
-							backgroundPosition: "0 0",
-						}}
-						onPointerDown={handleAlphaDown}
-					>
-						<div
-							className="absolute inset-0 rounded"
-							style={{
-								background: `linear-gradient(to right, transparent, ${hsvToRgbString(hsva)})`,
-							}}
-						/>
-						<div
-							className="pointer-events-none absolute w-5 h-5 rounded-full border-2 border-white shadow-md -translate-x-1/2 -translate-y-1/2"
-							style={{
-								left: `${hsva.a * 100}%`,
-								top: "50%",
-							}}
-						/>
-					</div>
+							<div className="flex items-center gap-1">
+								{/* EyeDropper (Only Chrome/Edge supports this currently) */}
+								{typeof window !== "undefined" && "EyeDropper" in window && (
+									<Button
+										variant="ghost"
+										size="icon"
+										className="h-7 w-7"
+										onClick={handleEyeDropper}
+										title="Pick color from screen"
+									>
+										<Pipette className="h-3.5 w-3.5" />
+									</Button>
+								)}
+								<Button
+									variant="ghost"
+									size="icon"
+									className="h-7 w-7"
+									onClick={handleCopy}
+									title="Copy to clipboard"
+								>
+									{isCopied ? (
+										<Check className="h-3.5 w-3.5" />
+									) : (
+										<Copy className="h-3.5 w-3.5" />
+									)}
+								</Button>
+							</div>
+						</div>
 
-					{/* Text input for manual entry */}
-					<Input
-						value={hsvaToRgbaString(hsva)}
-						onChange={(e) => {
-							const newHsva = parseColor(e.target.value);
-							if (
-								newHsva.h !== 0 ||
-								newHsva.s !== 0 ||
-								newHsva.v !== 0 ||
-								newHsva.a !== 1
-							) {
-								handleChange(newHsva);
-							}
-						}}
-					/>
+						<TabsContent value="hex">
+							<Input
+								value={hsvaToHex(hsva, showAlpha)}
+								onChange={(e) => {
+									const newHsva = parseColorToHsva(e.target.value);
+									// Prevent jumping to black if parsing fails, unless it's explicitly black
+									// In a real app, you might want more robust validation state
+									handleHsvaChange({
+										...newHsva,
+										a: showAlpha ? newHsva.a : 1,
+									});
+								}}
+								className="font-mono"
+							/>
+						</TabsContent>
+
+						<TabsContent value="rgb">
+							<div className="flex gap-2">
+								<div className="space-y-1 text-center">
+									<Input
+										value={r}
+										onChange={(e) =>
+											handleHsvaChange(
+												rgbaToHsva(Number(e.target.value), g, b, hsva.a),
+											)
+										}
+										className="text-center font-mono px-0"
+									/>
+									<span className="text-[10px] text-muted-foreground">R</span>
+								</div>
+								<div className="space-y-1 text-center">
+									<Input
+										value={g}
+										onChange={(e) =>
+											handleHsvaChange(
+												rgbaToHsva(r, Number(e.target.value), b, hsva.a),
+											)
+										}
+										className="text-center font-mono px-0"
+									/>
+									<span className="text-[10px] text-muted-foreground">G</span>
+								</div>
+								<div className="space-y-1 text-center">
+									<Input
+										value={b}
+										onChange={(e) =>
+											handleHsvaChange(
+												rgbaToHsva(r, g, Number(e.target.value), hsva.a),
+											)
+										}
+										className="text-center font-mono px-0"
+									/>
+									<span className="text-[10px] text-muted-foreground">B</span>
+								</div>
+								{showAlpha && (
+									<div className="space-y-1 text-center">
+										<Input
+											value={Math.round(hsva.a * 100)}
+											onChange={(e) =>
+												handleHsvaChange({
+													...hsva,
+													a: Number(e.target.value) / 100,
+												})
+											}
+											className="text-center font-mono px-0"
+										/>
+										<span className="text-[10px] text-muted-foreground">%</span>
+									</div>
+								)}
+							</div>
+						</TabsContent>
+					</Tabs>
+
+					{/* Presets */}
+					{presets.length > 0 && (
+						<div className="space-y-1.5 pt-2 border-t">
+							<span className="text-xs font-medium text-muted-foreground">
+								Presets
+							</span>
+							<div className="grid grid-cols-6 gap-2">
+								{presets.map((color) => (
+									<button
+										key={color}
+										type="button"
+										className="w-full aspect-square rounded-md border border-input relative overflow-hidden ring-offset-background hover:ring-2 hover:ring-ring focus:ring-2 focus:outline-none"
+										onClick={() => handleHsvaChange(parseColorToHsva(color))}
+									>
+										<div className="absolute inset-0 bg-[url('data:image/svg+xml;base64,PHN2ZyB4bWxucz0iaHR0cDovL3d3dy53My5vcmcvMjAwMC9zdmciIHdpZHRoPSI4IiBoZWlnaHQ9IjgiPjxyZWN0IHdpZHRoPSI0IiBoZWlnaHQ9IjQiIGZpbGw9IiNlN2U3ZTciLz48cmVjdCB4PSI0IiB5PSI0IiB3aWR0aD0iNCIgaGVpZ2h0PSI0IiBmaWxsPSIjZTdlN2U3Ii8+PC9zdmc+')] opacity-50" />
+										<div
+											className="absolute inset-0"
+											style={{ backgroundColor: color }}
+										/>
+									</button>
+								))}
+							</div>
+						</div>
+					)}
 				</div>
 			</PopoverContent>
 		</Popover>
 	);
+}
+
+// Global augmentation for TypeScript
+declare global {
+	interface Window {
+		EyeDropper?: any;
+	}
 }

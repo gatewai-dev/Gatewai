@@ -85,7 +85,7 @@ import {
 	TooltipProvider,
 	TooltipTrigger,
 } from "@/components/ui/tooltip";
-import { ColorInput } from "@/components/util/color-input";
+import { ColorPicker } from "@/components/util/color-input";
 import { useGetFontListQuery } from "@/store/fonts";
 import type { NodeEntityType } from "@/store/nodes";
 import { GetAssetEndpoint } from "@/utils/file";
@@ -1523,7 +1523,7 @@ const InspectorPanel: React.FC = () => {
 										<Label className="text-[10px] text-gray-500 block mb-1 font-semibold">
 											COLOR
 										</Label>
-										<ColorInput
+										<ColorPicker
 											value={selectedLayer.fill ?? "#fff"}
 											onChange={(c) => update({ fill: c })}
 										/>

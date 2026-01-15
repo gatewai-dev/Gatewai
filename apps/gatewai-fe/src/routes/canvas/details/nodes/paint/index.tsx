@@ -6,7 +6,7 @@ import { Button } from "@/components/ui/button";
 import { Label } from "@/components/ui/label";
 import { Separator } from "@/components/ui/separator";
 import { Slider } from "@/components/ui/slider";
-import { ColorInput } from "@/components/util/color-input";
+import { ColorPicker } from "@/components/util/color-input";
 import { cn } from "@/lib/utils";
 import { useAppSelector } from "@/store";
 import { makeSelectEdgesByTargetNodeId } from "@/store/edges";
@@ -526,7 +526,7 @@ const PaintNodeComponent = memo((props: NodeProps<PaintNode>) => {
 								</Button>
 								<div className="flex items-center gap-1">
 									<Label htmlFor="brush-color">Color</Label>
-									<ColorInput
+									<ColorPicker
 										id="brush-color"
 										value={brushColor}
 										onChange={(e) => setBrushColor(e)}
@@ -592,7 +592,7 @@ const PaintNodeComponent = memo((props: NodeProps<PaintNode>) => {
 							>
 								Background
 							</Label>
-							<ColorInput
+							<ColorPicker
 								id="bg-color"
 								disabled={inputImageUrl != null}
 								value={nodeConfig?.backgroundColor}
