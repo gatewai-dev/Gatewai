@@ -123,6 +123,14 @@ const DEFAULTS = {
 	LETTER_SPACING: 0,
 };
 
+const ASPECT_RATIOS = [
+	{ label: "Youtube / HD (16:9)", width: 1280, height: 720 },
+	{ label: "Full HD (16:9)", width: 1920, height: 1080 },
+	{ label: "TikTok / Reel (9:16)", width: 720, height: 1280 },
+	{ label: "Square (1:1)", width: 1080, height: 1080 },
+	{ label: "Portrait (4:5)", width: 1080, height: 1350 },
+];
+
 const BLEND_MODES = [
 	"source-over",
 	"multiply",
@@ -144,6 +152,9 @@ const BLEND_MODES = [
 
 interface LocalCompositorLayer extends CompositorLayer {
 	computedHeight?: number;
+	computedWidth?: number;
+	autoHeight?: boolean;
+	autoWidth?: boolean;
 }
 
 interface EditorContextType {
@@ -202,8 +213,14 @@ const useEditor = () => {
 };
 
 const useSnap = () => {
-	const { layers, updateLayers, viewportWidth, viewportHeight, setGuides } =
-		useEditor();
+	const {
+		layers,
+		updateLayers,
+		viewportWidth,
+		viewportHeight,
+		setGuides,
+		transformerRef,
+	} = useEditor();
 	const SNAP_THRESHOLD = 5;
 
 	const getSnapPositions = useCallback(
@@ -220,22 +237,21 @@ const useSnap = () => {
 			];
 
 			for (const layer of layers) {
-				if (
-					layer.id !== excludeId &&
-					layer.width &&
-					(layer.height ?? layer.computedHeight)
-				) {
-					// Use opacity as a proxy for visibility/locking if needed, though strictly we should check lock state
-					if (layer.opacity === 0) continue;
+				if (layer.id !== excludeId && layer.opacity !== 0) {
+					const effectiveWidth = layer.autoWidth
+						? (layer.computedWidth ?? 0)
+						: (layer.width ?? 0);
+					const effectiveHeight = layer.autoHeight
+						? (layer.computedHeight ?? 0)
+						: (layer.height ?? 0);
 
-					const effectiveHeight = layer.height ?? layer.computedHeight ?? 0;
-					const centerX = Math.round(layer.x + layer.width / 2);
+					const centerX = Math.round(layer.x + effectiveWidth / 2);
 					const centerY = Math.round(layer.y + effectiveHeight / 2);
 
 					vSnaps.push(
 						Math.round(layer.x),
 						centerX,
-						Math.round(layer.x + layer.width),
+						Math.round(layer.x + effectiveWidth),
 					);
 					hSnaps.push(
 						Math.round(layer.y),
@@ -334,10 +350,19 @@ const useSnap = () => {
 		[updateLayers, setGuides],
 	);
 
+	const activeAnchorRef = useRef<string | null>(null);
+
+	const handleTransformStart = useCallback(() => {
+		if (transformerRef.current) {
+			activeAnchorRef.current = transformerRef.current.getActiveAnchor();
+		}
+	}, [transformerRef]);
+
 	const handleTransformEnd = useCallback(
 		(e: KonvaEventObject<Event>) => {
 			const node = e.target;
 			const id = node.id();
+			const activeAnchor = activeAnchorRef.current;
 
 			const scaleX = node.scaleX();
 			const scaleY = node.scaleY();
@@ -354,26 +379,65 @@ const useSnap = () => {
 						x: Math.round(node.x()),
 						y: Math.round(node.y()),
 						rotation: Math.round(node.rotation()),
-						width: Math.round(node.width() * scaleX),
 					};
 
-					if (l.type === "Image") {
-						updates.height = Math.round(node.height() * scaleY);
-					} else if (l.type === "Text") {
-						// For Text, we check if height has been manually resized by user (non-auto)
-						// If the transformer changed height significantly, we might want to capture it
-						// for vertical alignment to work.
-						updates.height = Math.round(node.height() * scaleY);
+					if (l.type === "Text") {
+						const newWidth = Math.round(node.width() * scaleX);
+						const newHeight = Math.round(node.height() * scaleY);
+
+						if (
+							activeAnchor === "middle-left" ||
+							activeAnchor === "middle-right"
+						) {
+							// Width resize -> Auto Height (Fixed Width)
+							updates.width = newWidth;
+							updates.autoWidth = false;
+							updates.autoHeight = true;
+							updates.height = undefined; // Let it recalculate
+						} else if (
+							activeAnchor === "top-center" ||
+							activeAnchor === "bottom-center"
+						) {
+							// Height resize -> Fixed Size
+							updates.height = newHeight;
+							updates.width = newWidth;
+							updates.autoHeight = false;
+							updates.autoWidth = false;
+						} else if (activeAnchor) {
+							// Corner -> Fixed Size
+							updates.width = newWidth;
+							updates.height = newHeight;
+							updates.autoWidth = false;
+							updates.autoHeight = false;
+						} else {
+							// Fallback
+							updates.width = newWidth;
+							updates.height = newHeight;
+						}
+					} else {
+						if (l.type === "Image" || !l.autoWidth) {
+							updates.width = Math.round(node.width() * scaleX);
+						}
+
+						if (l.type === "Image" || !l.autoHeight) {
+							updates.height = Math.round(node.height() * scaleY);
+						}
 					}
 
 					return { ...l, ...updates };
 				}),
 			);
+			activeAnchorRef.current = null;
 		},
 		[updateLayers],
 	);
 
-	return { handleDragMove, handleDragEnd, handleTransformEnd };
+	return {
+		handleDragMove,
+		handleDragEnd,
+		handleTransformEnd,
+		handleTransformStart,
+	};
 };
 
 const CollapsibleSection: React.FC<{
@@ -514,27 +578,39 @@ const TextLayer: React.FC<LayerProps> = ({
 		setEditingLayerId(layer.id);
 	};
 
-	// Monitor properties that change text dimensions.
-	// Sync Konva's calculated height back to state and force Transformer update.
-	// biome-ignore lint/correctness/useExhaustiveDependencies: Internal calculations being made when these chandes
+	// Sync Konva's calculated dimensions back to state and force Transformer update.
 	useEffect(() => {
 		const node = textRef.current;
 		if (!node) return;
 
-		const syncHeight = () => {
-			const calculatedHeight = node.height();
+		const syncDimensions = () => {
+			const calculatedWidth = node.textWidth;
+			const calculatedHeight = node.textHeight;
 
 			if (selectedId === layer.id && transformerRef.current) {
 				transformerRef.current.forceUpdate();
 				transformerRef.current.getLayer()?.batchDraw();
 			}
 
-			if (calculatedHeight !== layer.computedHeight) {
+			if (
+				typeof calculatedWidth !== "number" ||
+				typeof calculatedHeight !== "number"
+			)
+				return;
+
+			if (
+				Math.abs(calculatedWidth - (layer.computedWidth ?? 0)) > 0.5 ||
+				Math.abs(calculatedHeight - (layer.computedHeight ?? 0)) > 0.5
+			) {
 				updateLayers(
 					(prev) =>
 						prev.map((l) =>
 							l.id === layer.id
-								? { ...l, computedHeight: calculatedHeight }
+								? {
+										...l,
+										computedWidth: calculatedWidth,
+										computedHeight: calculatedHeight,
+									}
 								: l,
 						),
 					false,
@@ -543,10 +619,13 @@ const TextLayer: React.FC<LayerProps> = ({
 		};
 
 		if (layer.fontFamily) {
-			document.fonts.ready.then(syncHeight);
+			document.fonts.ready.then(syncDimensions);
 		} else {
-			syncHeight();
+			syncDimensions();
 		}
+
+		// Force redraw after sync
+		stageRef.current?.batchDraw();
 	}, [
 		layer.fontFamily,
 		layer.fontSize,
@@ -560,8 +639,10 @@ const TextLayer: React.FC<LayerProps> = ({
 		selectedId,
 		layer.id,
 		layer.computedHeight,
+		layer.computedWidth,
 		updateLayers,
 		transformerRef,
+		stageRef,
 	]);
 
 	// Load Font
@@ -573,12 +654,21 @@ const TextLayer: React.FC<LayerProps> = ({
 				.then(() => {
 					stageRef.current?.batchDraw();
 					if (textRef.current) {
-						const h = textRef.current.height();
-						if (h !== layer.computedHeight) {
+						const w = textRef.current.textWidth;
+						const h = textRef.current.textHeight;
+
+						if (typeof w !== "number" || typeof h !== "number") return;
+
+						if (
+							Math.abs(w - (layer.computedWidth ?? 0)) > 0.5 ||
+							Math.abs(h - (layer.computedHeight ?? 0)) > 0.5
+						) {
 							updateLayers(
 								(prev) =>
 									prev.map((l) =>
-										l.id === layer.id ? { ...l, computedHeight: h } : l,
+										l.id === layer.id
+											? { ...l, computedWidth: w, computedHeight: h }
+											: l,
 									),
 								false,
 							);
@@ -595,28 +685,33 @@ const TextLayer: React.FC<LayerProps> = ({
 		updateLayers,
 		layer.id,
 		layer.computedHeight,
+		layer.computedWidth,
 	]);
 
-	const handleTransform = useCallback((e: KonvaEventObject<Event>) => {
-		const node = e.target as Konva.Text;
+	const handleTransform = useCallback(
+		(e: KonvaEventObject<Event>) => {
+			const node = e.target as Konva.Text;
 
-		// Reset Y scale to prevent distortion, we want text to wrap
-		node.scaleY(1);
+			// Reset scales if auto-dimension to prevent distortion
+			if (layer.autoHeight) {
+				node.scaleY(1);
+			}
+			if (layer.autoWidth) {
+				node.scaleX(1);
+			}
 
-		const newWidth = Math.max(20, node.width() * node.scaleX());
+			const newWidth = Math.max(20, node.width() * node.scaleX());
+			const newHeight = node.height() * node.scaleY();
 
-		node.setAttrs({
-			width: newWidth,
-			scaleX: 1,
-			// We do NOT reset height here if the user wants to vertically align within a box.
-			// But traditionally in this editor, dragging corner scales box width.
-			// If we want auto-height, we leave it undefined.
-			// However, if vertical align is active, we need a fixed height.
-			// For simplicity, we keep height auto unless explicitly set by a specialized tool.
-			// But for parity with the transformer logic which might set height:
-			height: node.height() * node.scaleY(), // capture height for V-align
-		});
-	}, []);
+			node.setAttrs({
+				width: layer.autoWidth ? undefined : newWidth,
+				scaleX: 1,
+				scaleY: 1,
+				height: layer.autoHeight ? undefined : newHeight,
+			});
+		},
+		[layer.autoHeight, layer.autoWidth],
+	);
 
 	return (
 		<KonvaText
@@ -631,8 +726,8 @@ const TextLayer: React.FC<LayerProps> = ({
 			fontStyle={layer.fontStyle ?? "normal"}
 			textDecoration={layer.textDecoration ?? ""}
 			fill={layer.fill ?? DEFAULTS.FILL}
-			width={layer.width ?? 200}
-			height={layer.height} // Pass explicit height to support Vertical Align
+			width={layer.autoWidth ? undefined : (layer.width ?? 200)}
+			height={layer.autoHeight ? undefined : layer.height}
 			rotation={layer.rotation}
 			draggable={mode === "select"}
 			onClick={handleSelect}
@@ -646,7 +741,7 @@ const TextLayer: React.FC<LayerProps> = ({
 			onTransform={handleTransform}
 			onTransformEnd={onTransformEnd}
 			globalCompositeOperation={layer.blendMode as GlobalCompositeOperation}
-			wrap="word"
+			wrap={layer.autoWidth ? "none" : "word"}
 			align={layer.align || DEFAULTS.ALIGN}
 			verticalAlign={layer.verticalAlign ?? DEFAULTS.VERTICAL_ALIGN}
 			letterSpacing={layer.letterSpacing ?? DEFAULTS.LETTER_SPACING}
@@ -683,21 +778,26 @@ const TransformerComponent: React.FC = () => {
 	const selectedLayer = layers.find((l) => l.id === selectedId);
 
 	const enabledAnchors = useMemo(() => {
-		if (selectedLayer?.type === "Text") {
-			// Allow resizing height now for vertical alignment support
-			return [
-				"top-left",
-				"top-right",
-				"bottom-left",
-				"bottom-right",
-				"middle-left",
-				"middle-right",
-			];
+		if (selectedLayer?.type !== "Text") {
+			if (selectedLayer?.lockAspect) {
+				return ["top-left", "top-right", "bottom-left", "bottom-right"];
+			}
+			return undefined;
 		}
-		if (selectedLayer?.type === "Image" && selectedLayer.lockAspect) {
-			return ["top-left", "top-right", "bottom-left", "bottom-right"];
-		}
-		return undefined;
+
+		const anchors = [
+			"top-left",
+			"top-center",
+			"top-right",
+			"middle-left",
+			"middle-right",
+			"bottom-left",
+			"bottom-center",
+			"bottom-right",
+		];
+
+		// We allow all anchors for Text to enable switching between Auto/Fixed modes via resize
+		return anchors;
 	}, [selectedLayer]);
 
 	return (
@@ -807,7 +907,12 @@ const Canvas: React.FC = () => {
 		setScale,
 		setStagePos,
 	} = useEditor();
-	const { handleDragMove, handleDragEnd, handleTransformEnd } = useSnap();
+	const {
+		handleDragMove,
+		handleDragEnd,
+		handleTransformEnd,
+		handleTransformStart,
+	} = useSnap();
 	const lastModeRef = useRef<"select" | "pan">("select");
 
 	const sortedLayers = useMemo(
@@ -924,7 +1029,10 @@ const Canvas: React.FC = () => {
 						onDragStart: () => setSelectedId(layer.id),
 						onDragMove: handleDragMove,
 						onDragEnd: handleDragEnd,
-						onTransformStart: () => setSelectedId(layer.id),
+						onTransformStart: () => {
+							setSelectedId(layer.id);
+							handleTransformStart();
+						},
 						onTransformEnd: handleTransformEnd,
 					};
 					if (layer.type === "Image") {
@@ -1136,19 +1244,7 @@ const LayersPanel: React.FC = () => {
 
 const InspectorPanel: React.FC = () => {
 	const { data: fontList } = useGetFontListQuery({});
-	const fontNames = useMemo(() => {
-		if (Array.isArray(fontList) && (fontList as string[])?.length > 0) {
-			return fontList as string[];
-		}
-		return [
-			"Geist",
-			"Inter",
-			"Arial",
-			"Courier New",
-			"Times New Roman",
-			"Verdana",
-		];
-	}, [fontList]);
+	const fontNames = useMemo(() => fontList ?? [], [fontList]); // Rely solely on fetched fonts, no defaults
 
 	const {
 		selectedId,
@@ -1171,24 +1267,20 @@ const InspectorPanel: React.FC = () => {
 
 	const centerLayer = (axis: "x" | "y") => {
 		if (!selectedLayer) return;
+
+		const effectiveWidth = selectedLayer.autoWidth
+			? (selectedLayer.computedWidth ?? 0)
+			: (selectedLayer.width ?? 0);
+		const effectiveHeight = selectedLayer.autoHeight
+			? (selectedLayer.computedHeight ?? 0)
+			: (selectedLayer.height ?? 0);
+
 		if (axis === "x") {
-			const w = selectedLayer.width ?? 0;
-			updateLayer({ x: Math.round((viewportWidth - w) / 2) });
+			updateLayer({ x: Math.round((viewportWidth - effectiveWidth) / 2) });
 		} else {
-			const h = selectedLayer.height ?? selectedLayer.computedHeight ?? 0;
-			updateLayer({ y: Math.round((viewportHeight - h) / 2) });
+			updateLayer({ y: Math.round((viewportHeight - effectiveHeight) / 2) });
 		}
 	};
-
-	const aspectRatios = useMemo(
-		() => [
-			{ label: "1:1 Square", width: 1080, height: 1080 },
-			{ label: "4:5 Portrait", width: 1080, height: 1350 },
-			{ label: "9:16 Story", width: 1080, height: 1920 },
-			{ label: "16:9 Landscape", width: 1920, height: 1080 },
-		],
-		[],
-	);
 
 	const toggleStyle = (style: "bold" | "italic") => {
 		if (!selectedLayer || selectedLayer.type !== "Text") return;
@@ -1247,7 +1339,7 @@ const InspectorPanel: React.FC = () => {
 
 						<Select
 							onValueChange={(val) => {
-								const preset = aspectRatios.find((r) => r.label === val);
+								const preset = ASPECT_RATIOS.find((r) => r.label === val);
 								if (preset) {
 									updateViewportWidth(preset.width);
 									updateViewportHeight(preset.height);
@@ -1258,7 +1350,7 @@ const InspectorPanel: React.FC = () => {
 								<SelectValue placeholder="Select Preset" />
 							</SelectTrigger>
 							<SelectContent className="bg-neutral-800 border-white/10 text-gray-300">
-								{aspectRatios.map((r) => (
+								{ASPECT_RATIOS.map((r) => (
 									<SelectItem key={r.label} value={r.label}>
 										{r.label}
 									</SelectItem>
@@ -1331,66 +1423,136 @@ const InspectorPanel: React.FC = () => {
 								value={Math.round(selectedLayer.y)}
 								onChange={(v) => updateLayer({ y: v })}
 							/>
-							<DraggableNumberInput
-								label="W"
-								icon={MoveHorizontal}
-								value={Math.round(selectedLayer.width ?? 0)}
-								onChange={(newWidth) => {
-									if (
-										selectedLayer.type === "Image" &&
-										selectedLayer.lockAspect
-									) {
-										const oldW = selectedLayer.width ?? 1;
-										const oldH = selectedLayer.height ?? 1;
-										const ratio = oldH / oldW;
-										updateLayer({
-											width: newWidth,
-											height: newWidth * ratio,
-										});
-									} else {
-										updateLayer({ width: newWidth });
-									}
-								}}
-								min={1}
-							/>
-							{selectedLayer.type !== "Text" ? (
-								<DraggableNumberInput
-									label="H"
-									icon={MoveVertical}
-									value={Math.round(selectedLayer.height ?? 0)}
-									onChange={(newHeight) => {
-										if (selectedLayer.type === "Image") {
-											if (selectedLayer.lockAspect) {
+							{selectedLayer.type === "Text" ? (
+								<>
+									<div className="space-y-2">
+										<div className="flex items-center justify-between">
+											<Label className="text-[10px] text-gray-400">
+												Auto Width
+											</Label>
+											<Switch
+												checked={selectedLayer.autoWidth ?? true}
+												onCheckedChange={(checked) => {
+													if (checked) {
+														updateLayer({
+															autoWidth: true,
+															width: undefined,
+														});
+													} else {
+														updateLayer({
+															autoWidth: false,
+															width:
+																selectedLayer.width ??
+																selectedLayer.computedWidth,
+														});
+													}
+												}}
+												className="scale-75 data-[state=checked]:bg-blue-600"
+											/>
+										</div>
+										<DraggableNumberInput
+											label="W"
+											icon={MoveHorizontal}
+											value={Math.round(
+												selectedLayer.width ?? selectedLayer.computedWidth ?? 0,
+											)}
+											onChange={(newWidth) => updateLayer({ width: newWidth })}
+											min={1}
+											disabled={selectedLayer.autoWidth ?? true}
+										/>
+									</div>
+									<div className="space-y-2">
+										<div className="flex items-center justify-between">
+											<Label className="text-[10px] text-gray-400">
+												Auto Height
+											</Label>
+											<Switch
+												checked={selectedLayer.autoHeight ?? true}
+												onCheckedChange={(checked) => {
+													if (checked) {
+														updateLayer({
+															autoHeight: true,
+															height: undefined,
+														});
+													} else {
+														updateLayer({
+															autoHeight: false,
+															height:
+																selectedLayer.height ??
+																selectedLayer.computedHeight,
+														});
+													}
+												}}
+												className="scale-75 data-[state=checked]:bg-blue-600"
+											/>
+										</div>
+										<DraggableNumberInput
+											label="H"
+											icon={MoveVertical}
+											value={Math.round(
+												selectedLayer.height ??
+													selectedLayer.computedHeight ??
+													0,
+											)}
+											onChange={(v) => updateLayer({ height: v })}
+											min={1}
+											disabled={selectedLayer.autoHeight ?? true}
+										/>
+									</div>
+								</>
+							) : (
+								<>
+									<DraggableNumberInput
+										label="W"
+										icon={MoveHorizontal}
+										value={Math.round(selectedLayer.width ?? 0)}
+										onChange={(newWidth) => {
+											if (
+												selectedLayer.type === "Image" &&
+												selectedLayer.lockAspect
+											) {
 												const oldW = selectedLayer.width ?? 1;
 												const oldH = selectedLayer.height ?? 1;
-												const ratio = oldW / oldH;
+												const ratio = oldH / oldW;
 												updateLayer({
-													height: newHeight,
-													width: newHeight * ratio,
+													width: newWidth,
+													height: newWidth * ratio,
 												});
 											} else {
-												updateLayer({ height: newHeight });
+												updateLayer({ width: newWidth });
 											}
-										}
-									}}
-									min={1}
-								/>
-							) : (
-								<DraggableNumberInput
-									label="H"
-									icon={MoveVertical}
-									value={Math.round(
-										selectedLayer.height ?? selectedLayer.computedHeight ?? 0,
-									)}
-									onChange={(v) => updateLayer({ height: v })}
-									min={1}
-								/>
+										}}
+										min={1}
+									/>
+									<DraggableNumberInput
+										label="H"
+										icon={MoveVertical}
+										value={Math.round(selectedLayer.height ?? 0)}
+										onChange={(newHeight) => {
+											if (selectedLayer.type === "Image") {
+												if (selectedLayer.lockAspect) {
+													const oldW = selectedLayer.width ?? 1;
+													const oldH = selectedLayer.height ?? 1;
+													const ratio = oldW / oldH;
+													updateLayer({
+														height: newHeight,
+														width: newHeight * ratio,
+													});
+												} else {
+													updateLayer({ height: newHeight });
+												}
+											}
+										}}
+										min={1}
+									/>
+								</>
 							)}
 							<DraggableNumberInput
 								label="Rot"
 								icon={RotateCw}
 								value={Math.round(selectedLayer.rotation)}
 								onChange={(v) => updateLayer({ rotation: v })}
+								className="col-span-2"
 							/>
 						</div>
 
@@ -1866,8 +2028,6 @@ export const ImageDesignerEditor: React.FC<ImageDesignerEditorProps> = ({
 				if (!layerUpdates[handleId]) {
 					const newLayer: LocalCompositorLayer = {
 						type: output.type,
-						width: undefined,
-						height: undefined,
 						x: 0,
 						y: 0,
 						id: handleId,
@@ -1880,7 +2040,8 @@ export const ImageDesignerEditor: React.FC<ImageDesignerEditorProps> = ({
 					};
 
 					if (newLayer.type === "Text") {
-						newLayer.width = existingConfig.width;
+						newLayer.autoHeight = true;
+						newLayer.autoWidth = true;
 						newLayer.fontSize = DEFAULTS.FONT_SIZE;
 						newLayer.fontFamily = DEFAULTS.FONT_FAMILY;
 						newLayer.fontStyle = "normal";
@@ -1891,6 +2052,7 @@ export const ImageDesignerEditor: React.FC<ImageDesignerEditorProps> = ({
 						newLayer.align = DEFAULTS.ALIGN;
 						newLayer.verticalAlign = DEFAULTS.VERTICAL_ALIGN;
 						newLayer.computedHeight = undefined;
+						newLayer.computedWidth = undefined;
 					}
 
 					if (newLayer.type === "Image") {
@@ -2010,7 +2172,13 @@ export const ImageDesignerEditor: React.FC<ImageDesignerEditorProps> = ({
 	const handleSave = useCallback(() => {
 		const layerUpdates = layers.reduce<Record<string, CompositorLayer>>(
 			(acc, layer) => {
-				const { ...rest } = layer;
+				const {
+					autoHeight,
+					autoWidth,
+					computedHeight,
+					computedWidth,
+					...rest
+				} = layer; // Strip local-only props
 				acc[layer.inputHandleId] = rest;
 				return acc;
 			},

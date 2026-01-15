@@ -80,39 +80,78 @@ const getCompositeOperation = (
  * Text wrapper that respects explicit newlines
  * and performs word-wrapping based on max width.
  */
+/**
+ * Text wrapper that mimics Konva's wrapping logic.
+ * 1. Respects explicit newlines.
+ * 2. Wraps words that exceed max width.
+ * 3. Breaks words if they are wider than max width (break-word behavior).
+ */
 function getWrappedLines(
 	ctx: CanvasRenderingContext2D,
 	text: string,
 	maxWidth: number,
 ): string[] {
-	// 1. Split by explicit hard returns first to preserve user paragraphs
 	const paragraphs = text.split("\n");
 	const finalLines: string[] = [];
 
 	for (const paragraph of paragraphs) {
 		// If paragraph is empty (double newline), push an empty line
-		if (paragraph.length === 0) {
+		if (paragraph === "") {
 			finalLines.push("");
 			continue;
 		}
 
 		const words = paragraph.split(" ");
-		let currentLine = words[0];
+		let currentLine = "";
 
-		for (let i = 1; i < words.length; i++) {
+		for (let i = 0; i < words.length; i++) {
 			const word = words[i];
-			const testLine = `${currentLine} ${word}`;
-			const metrics = ctx.measureText(testLine);
-			const width = metrics.width;
 
-			if (width < maxWidth) {
+			// If we are appending to an existing line, we need a space
+			const separator = currentLine.length > 0 ? " " : "";
+			const testLine = currentLine + separator + word;
+			const metrics = ctx.measureText(testLine);
+
+			if (metrics.width <= maxWidth) {
 				currentLine = testLine;
 			} else {
-				finalLines.push(currentLine);
-				currentLine = word;
+				// The word caused the line to overflow.
+				// If we have content on the current line, push it and start a new one.
+				if (currentLine.length > 0) {
+					finalLines.push(currentLine);
+					currentLine = "";
+				}
+
+				// Now check if the word ITSELF fits on a new line
+				const wordMetrics = ctx.measureText(word);
+				if (wordMetrics.width <= maxWidth) {
+					currentLine = word;
+				} else {
+					// Word is too long for a single line, we must break it (break-word)
+					let fragment = "";
+					for (const char of word) {
+						const testFragment = fragment + char;
+						if (ctx.measureText(testFragment).width > maxWidth) {
+							// Fragment exceeds width, push previous fragment
+							if (fragment.length > 0) {
+								finalLines.push(fragment);
+								fragment = char;
+							} else {
+								// Extremely narrow width case: char itself is too wide
+								finalLines.push(char);
+								fragment = "";
+							}
+						} else {
+							fragment = testFragment;
+						}
+					}
+					currentLine = fragment;
+				}
 			}
 		}
-		finalLines.push(currentLine);
+		if (currentLine.length > 0) {
+			finalLines.push(currentLine);
+		}
 	}
 
 	return finalLines;
@@ -137,7 +176,8 @@ const renderTextLayer = (
 	const lineHeightPx = fontSize * lineHeight;
 
 	// Determine constraints
-	const maxWidth = layer.width ?? canvasWidth - (layer.x ?? 0);
+	// Match Frontend: default to canvasWidth if layer.width is not set
+	const maxWidth = layer.width ?? canvasWidth;
 	const maxHeight = layer.height; // Can be undefined for auto-height
 
 	// 1. Configure Context Typography
@@ -171,8 +211,6 @@ const renderTextLayer = (
 	let yOffset = 0;
 	if (maxHeight !== undefined) {
 		// Calculate total height of the text block
-		// Note: Konva uses (lines * lineHeightPx) - (lineHeightPx - fontSize) for tight bounds
-		// but visual layout usually assumes full line heights steps.
 		const totalTextHeight = lines.length * lineHeightPx;
 
 		if (verticalAlign === "middle") {
