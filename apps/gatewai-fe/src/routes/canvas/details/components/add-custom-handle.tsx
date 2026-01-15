@@ -91,15 +91,16 @@ function AddCustomHandleButton(props: CustomHandleButtonProps) {
 
 	const onSubmit = (values: FormValues) => {
 		const ioHandles = existingHandles.filter((f) => f.type === props.type);
+		// Careful with -Infinity
 		const maxOrder = Math.max(...ioHandles.map((m) => m.order));
-		const newHandleOrder = maxOrder + 1;
+		const newHandleOrder = (maxOrder ?? -1) + 1;
 		const handleEntity: HandleEntityType = {
 			id: generateId(),
 			nodeId: props.nodeId,
 			dataTypes: [values.dataType as DataType],
 			type: props.type,
 			required: false,
-			order: newHandleOrder,
+			order: Math.max(newHandleOrder, 0),
 			templateHandleId: null,
 			label: values.label,
 			description: values.description?.trim() || null,

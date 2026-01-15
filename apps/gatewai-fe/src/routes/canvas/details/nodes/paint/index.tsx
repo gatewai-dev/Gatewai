@@ -527,7 +527,6 @@ const PaintNodeComponent = memo((props: NodeProps<PaintNode>) => {
 								<div className="flex items-center gap-1">
 									<Label htmlFor="brush-color">Color</Label>
 									<ColorPicker
-										id="brush-color"
 										value={brushColor}
 										onChange={(e) => setBrushColor(e)}
 										className="w-8 h-8 p-1 rounded border bg-background"
