@@ -1,6 +1,5 @@
 import type { DataType } from "@gatewai/db";
 import { zodResolver } from "@hookform/resolvers/zod";
-import type { NodeProps } from "@xyflow/react";
 import { PlusIcon } from "lucide-react";
 import { useMemo, useState } from "react";
 import { useForm } from "react-hook-form";
@@ -30,9 +29,13 @@ import {
 	SelectValue,
 } from "@/components/ui/select";
 import { generateId } from "@/lib/idgen";
-import type { HandleEntityType } from "@/store/handles";
+import { useAppSelector } from "@/store";
+import {
+	type HandleEntityType,
+	makeSelectHandlesByNodeId,
+} from "@/store/handles";
+import type { NodeEntityType } from "@/store/nodes";
 import { useCanvasCtx } from "../ctx/canvas-ctx";
-import type { AnyNode } from "../nodes/node-props";
 
 const InputTypes = ["Image", "Text", "Audio", "Video"] as const;
 const OutputTypes = ["Image", "Text", "Audio", "Video"] as const;
@@ -43,9 +46,11 @@ const LookupDataTypes = {
 } as const;
 
 type CustomHandleButtonProps = {
-	nodeProps: NodeProps<AnyNode>;
+	nodeId: NodeEntityType["id"];
 	type: HandleEntityType["type"];
 	dataTypes?: DataType[];
+	disabled?: boolean;
+	label?: string;
 	placeholder?: string;
 };
 
@@ -53,7 +58,9 @@ function AddCustomHandleButton(props: CustomHandleButtonProps) {
 	const OPTIONS = useMemo(() => {
 		return props.dataTypes ?? LookupDataTypes[props.type];
 	}, [props.dataTypes, props.type]);
-
+	const existingHandles = useAppSelector(
+		makeSelectHandlesByNodeId(props.nodeId),
+	);
 	if (!OPTIONS || OPTIONS.length === 0) {
 		throw new Error(
 			"AddCustomHandleButton: OPTIONS must contain at least one dataType",
@@ -82,13 +89,16 @@ function AddCustomHandleButton(props: CustomHandleButtonProps) {
 	});
 
 	const onSubmit = (values: FormValues) => {
+		const ioHandles = existingHandles.filter((f) => f.type === props.type);
+		const maxOrder = Math.max(...ioHandles.map((m) => m.order));
+		const newHandleOrder = maxOrder + 1;
 		const handleEntity: HandleEntityType = {
 			id: generateId(),
-			nodeId: props.nodeProps.id,
+			nodeId: props.nodeId,
 			dataTypes: [values.dataType as DataType],
 			type: props.type,
 			required: false,
-			order: 2,
+			order: newHandleOrder,
 			templateHandleId: null,
 			label: values.label,
 			description: values.description?.trim() || null,
@@ -103,8 +113,8 @@ function AddCustomHandleButton(props: CustomHandleButtonProps) {
 	return (
 		<Dialog open={open} onOpenChange={setOpen}>
 			<DialogTrigger asChild>
-				<Button variant="ghost" size="sm">
-					<PlusIcon /> Add {props.type}
+				<Button disabled={props.disabled} variant="ghost" size="sm">
+					<PlusIcon /> {props.label ?? `Add ${props.type}`}
 				</Button>
 			</DialogTrigger>
 			<DialogContent>

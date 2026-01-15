@@ -50,7 +50,6 @@ const llmProcessor: NodeProcessor = async ({ node, data }) => {
 			} else {
 				throw new Error("Image data could not be found");
 			}
-			console.log({ key });
 			assert(key);
 			assert(mimeType);
 			const arrayBuffer = await getFromGCS(key, bucket);

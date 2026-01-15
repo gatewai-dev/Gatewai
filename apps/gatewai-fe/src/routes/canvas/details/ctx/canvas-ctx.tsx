@@ -546,13 +546,13 @@ const CanvasProvider = ({
 				outputs: [],
 			};
 
-			const handles = template.templateHandles.map((tHandle, i) => ({
+			const handles = template.templateHandles.map((tHandle) => ({
 				nodeId: nodeId,
 				label: tHandle.label,
-				order: i,
 				templateHandleId: tHandle.id,
 				id: generateId(),
 				description: null,
+				order: tHandle.order,
 				required: tHandle.required,
 				createdAt: new Date().toISOString(),
 				updatedAt: new Date().toISOString(),

@@ -1,12 +1,18 @@
 import { memo } from "react";
+// Assuming you have a Popover component in your UI library
+import {
+	Popover,
+	PopoverContent,
+	PopoverTrigger,
+} from "@/components/ui/popover";
 import { useAppSelector } from "@/store";
 import { makeSelectHandlesByNodeId } from "@/store/handles";
 import { makeSelectNodeById } from "@/store/nodes";
+import { AddCustomHandleButton } from "../../components/add-custom-handle";
 import { RunNodeButton } from "../../components/run-node-button";
 import { OutputSelector } from "../../misc/output-selector";
 import { useNodeResult } from "../../processor/processor-ctx";
 import { BaseNode } from "../base";
-import { CreateHandleButton } from "../common/create-handle-button";
 import { useMediaInputSrc } from "../common/hooks/use-media-src";
 import { VideoRenderer } from "../common/video-renderer";
 
@@ -15,6 +21,7 @@ const VideoGenNodeComponent = memo(
 		const node = useAppSelector(makeSelectNodeById(props.id));
 		const { result } = useNodeResult(props.id);
 		const selectHandles = useAppSelector(makeSelectHandlesByNodeId(props.id));
+
 		const inputHandles = selectHandles.filter((f) => f.type === "Input");
 		const referenceInputHandles = inputHandles.filter((f) =>
 			f.dataTypes.includes("Image"),
@@ -22,7 +29,6 @@ const VideoGenNodeComponent = memo(
 
 		const hasThreeImageInputs = referenceInputHandles.length === 3;
 		const hasMoreThanOneOutput = result?.outputs && result?.outputs?.length > 1;
-
 		const videoSrc = useMediaInputSrc(props.id, "Video");
 
 		return (
@@ -42,15 +48,30 @@ const VideoGenNodeComponent = memo(
 					</div>
 
 					<div className="flex justify-between items-center w-full">
-						<CreateHandleButton
-							title={
-								hasThreeImageInputs
-									? "Three is the max number of reference images that can be used."
-									: undefined
-							}
-							disabled={hasThreeImageInputs}
-							nodeId={props.id}
-						/>
+						{/* Popover Logic for the Warning */}
+						<Popover>
+							<PopoverTrigger asChild>
+								<div>
+									{" "}
+									{/* Wrapper to allow trigger on disabled buttons if needed */}
+									<AddCustomHandleButton
+										disabled={hasThreeImageInputs}
+										nodeId={props.id}
+										type="Input"
+										dataTypes={["Image"]}
+									/>
+								</div>
+							</PopoverTrigger>
+							{hasThreeImageInputs && (
+								<PopoverContent
+									side="top"
+									className="text-xs p-2 max-w-[200px]"
+								>
+									Three is the max number of reference images that can be used.
+								</PopoverContent>
+							)}
+						</Popover>
+
 						<RunNodeButton nodeId={props.id} />
 					</div>
 				</div>

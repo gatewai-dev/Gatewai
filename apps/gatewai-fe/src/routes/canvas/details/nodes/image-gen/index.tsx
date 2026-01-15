@@ -1,10 +1,10 @@
 import { memo } from "react";
+import { AddCustomHandleButton } from "../../components/add-custom-handle";
 import { RunNodeButton } from "../../components/run-node-button";
 import { useNodePreview } from "../../hooks/node-preview";
 import { OutputSelector } from "../../misc/output-selector";
 import { BaseNode } from "../base";
 import { CanvasRenderer } from "../common/canvas-renderer";
-import { CreateHandleButton } from "../common/create-handle-button";
 
 const ImageGenNodeComponent = memo(
 	(props: { selected: boolean; id: string; dragging: boolean }) => {
@@ -27,7 +27,12 @@ const ImageGenNodeComponent = memo(
 					</div>
 
 					<div className="flex justify-between items-center w-full">
-						<CreateHandleButton nodeId={props.id} />
+						<AddCustomHandleButton
+							nodeId={props.id}
+							type="Input"
+							label="Add Reference Image"
+							dataTypes={["Image"]}
+						/>
 						<RunNodeButton nodeId={props.id} />
 					</div>
 				</div>

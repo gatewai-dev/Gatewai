@@ -204,12 +204,22 @@ const BaseNode = memo(
 		const node = useAppSelector(selectNode);
 
 		const { handleStatus } = useNodeResult(id);
-		const validation = useNodeValidation(id);
-		console.log({ validation });
+
 		const { inputHandles, outputHandles } = useMemo(() => {
-			const sorted = [...handles].sort((a, b) =>
-				(a.createdAt || "").localeCompare(b.createdAt || ""),
-			);
+			// Sort by .order (smaller number = higher position)
+			// If order is missing/undefined → falls back to creation time
+			const sorted = [...handles].sort((a, b) => {
+				const orderA = a.order ?? Infinity;
+				const orderB = b.order ?? Infinity;
+
+				if (orderA !== orderB) {
+					return orderA - orderB; // lower order number comes first (top)
+				}
+
+				// Fallback: older created items on top if orders are equal/missing
+				return (a.createdAt || "").localeCompare(b.createdAt || "");
+			});
+
 			return {
 				inputHandles: sorted.filter((h) => h.type === "Input"),
 				outputHandles: sorted.filter((h) => h.type === "Output"),
@@ -232,13 +242,13 @@ const BaseNode = memo(
 					props.className,
 				)}
 			>
-				{/* Inputs */}
+				{/* Inputs - left side */}
 				<div className="absolute inset-y-0 left-0 w-0">
 					{inputHandles.map((handle, i) => (
 						<NodeHandle
 							key={handle.id}
 							handle={handle}
-							index={i}
+							index={i} // ← now index follows the desired visual order
 							type="target"
 							status={handleStatus[handle.id]}
 							nodeSelected={selected}
@@ -269,13 +279,13 @@ const BaseNode = memo(
 					</div>
 				</div>
 
-				{/* Outputs */}
+				{/* Outputs - right side */}
 				<div className="absolute inset-y-0 right-0 w-0">
 					{outputHandles.map((handle, i) => (
 						<NodeHandle
 							key={handle.id}
 							handle={handle}
-							index={i}
+							index={i} // ← index now respects .order
 							type="source"
 							status={handleStatus[handle.id]}
 							nodeSelected={selected}
@@ -286,6 +296,8 @@ const BaseNode = memo(
 		);
 	},
 );
+
+BaseNode.displayName = "BaseNode";
 
 BaseNode.displayName = "BaseNode";
 

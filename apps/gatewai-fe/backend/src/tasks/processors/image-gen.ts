@@ -1,3 +1,4 @@
+import assert from "node:assert";
 import { randomUUID } from "node:crypto";
 import { DataType, prisma } from "@gatewai/db";
 import {
@@ -10,7 +11,11 @@ import { ENV_CONFIG } from "../../config.js";
 import { genAI } from "../../genai.js";
 import { logger } from "../../logger.js";
 import { getImageDimensions } from "../../utils/image.js";
-import { generateSignedUrl, uploadToGCS } from "../../utils/storage.js";
+import {
+	generateSignedUrl,
+	getFromGCS,
+	uploadToGCS,
+} from "../../utils/storage.js";
 import { getInputValue, getInputValuesByType } from "../resolvers.js";
 import type { NodeProcessor } from "./types.js";
 
@@ -33,24 +38,41 @@ const imageGenProcessor: NodeProcessor = async ({ node, data }) => {
 			parts.push({ text: userPrompt });
 		}
 
-		logger.info(`Number of reference images: ${imageFileData?.length}`);
+		logger.info(`Number of reference images: ${imageFileData?.length ?? 0}`);
 
 		// Convert reference images to inlineData for Google SDK
 		for (const imgData of imageFileData || []) {
-			const imageData =
-				imgData?.entity?.signedUrl ?? imgData?.processData?.dataUrl;
-
-			if (imageData) {
-				const response = await fetch(imageData);
-				if (!response.ok) throw new Error("Unable to download Image");
-				const arrayBuffer = await response.arrayBuffer();
-				const mimeType = response.headers.get("content-type") ?? "image/png";
-				const base64Data = Buffer.from(arrayBuffer).toString("base64");
-
-				parts.push({
-					inlineData: { mimeType, data: base64Data },
-				});
+			if (!imgData) {
+				continue; // Skip invalid image data entries
 			}
+
+			let mimeType: string | undefined;
+			let key: string | undefined;
+			let bucket: string | undefined;
+
+			if (imgData.entity) {
+				key = imgData.entity.key;
+				bucket = imgData.entity.bucket;
+				mimeType = imgData.entity.mimeType;
+			} else if (imgData.processData) {
+				key = imgData.processData.tempKey;
+				mimeType = imgData.processData.mimeType;
+				bucket = undefined;
+			} else {
+				logger.warn("Skipping image: Image data could not be found");
+				continue;
+			}
+
+			assert(key, "Key must be defined for image retrieval");
+			assert(mimeType, "MimeType must be defined for image retrieval");
+
+			const arrayBuffer = await getFromGCS(key, bucket);
+			const buffer = Buffer.from(arrayBuffer);
+			const base64Data = buffer.toString("base64");
+
+			parts.push({
+				inlineData: { mimeType, data: base64Data },
+			});
 		}
 
 		if (parts.length === 0) {
