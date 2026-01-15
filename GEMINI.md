@@ -1,12 +1,12 @@
-# Yodes | System Architecture & Data Schema
+# Gatewai | System Architecture & Data Schema
 
-Yodes is a node-based generative AI workflow engine. This document outlines the technical architecture, data modeling, and execution flow for the platform.
+Gatewai is a node-based generative AI workflow engine. This document outlines the technical architecture, data modeling, and execution flow for the platform.
 
 ---
 
 ## 🏗️ System Architecture
 
-Yodes utilizes a **hybrid execution model** where node processing is distributed between the client and the server based on computational requirements.
+Gatewai utilizes a **hybrid execution model** where node processing is distributed between the client and the server based on computational requirements.
 
 * **Frontend Engine (Web):** Processes lightweight nodes, UI-centric logic (e.g., `Note`, `Toggle`), and real-time canvas previews.
 * **Backend Engine (Node.js):** Executes heavy generative tasks and terminal operations.
@@ -17,7 +17,7 @@ Yodes utilizes a **hybrid execution model** where node processing is distributed
 
 * `packages/db`: Prisma schema definitions and database client generation.
 * `packages/types`: Shared TypeScript interfaces for `NodeResult` and `NodeConfig` (validating Prisma's `Json` types).
-* `apps/yodes`: The core application.
+* `apps/Gatewai`: The core application.
   * `/src`: Vite React frontend code.
   * `/backend`: Execution workers, generative AI integrations, and task orchestration with Hono HTTP framework.
 

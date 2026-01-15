@@ -1,13 +1,13 @@
 ---
 title: System Architecture
-description: Overview of the Yodes system architecture.
+description: Overview of the Gatewai system architecture.
 ---
 
-Yodes is a node-based generative AI workflow engine. This section outlines the technical architecture, data modeling, and execution flow for the platform.
+Gatewai is a node-based generative AI workflow engine. This section outlines the technical architecture, data modeling, and execution flow for the platform.
 
 ## 🏗️ High-Level Architecture
 
-Yodes utilizes a **hybrid execution model** where node processing is distributed between the client and the server based on computational requirements.
+Gatewai utilizes a **hybrid execution model** where node processing is distributed between the client and the server based on computational requirements.
 
 ### Frontend Engine (Web)
 - Processes lightweight nodes.

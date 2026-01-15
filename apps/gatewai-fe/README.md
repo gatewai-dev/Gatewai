@@ -1,3 +1,3 @@
-# Yodes Mono-App
+# Gatewai Mono-App
 
-Mono-App for backend and frontend of Yodes.
+Mono-App for backend and frontend of Gatewai.

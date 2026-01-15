@@ -3,7 +3,7 @@ title: Nodes Reference
 description: Reference documentation for all available nodes.
 ---
 
-This section provides detailed documentation for all the nodes available in Yodes. Nodes are the building blocks of your workflows, allowing you to process data, generate content, and create complex logic.
+This section provides detailed documentation for all the nodes available in Gatewai. Nodes are the building blocks of your workflows, allowing you to process data, generate content, and create complex logic.
 
 ## Categories
 

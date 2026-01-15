@@ -1,6 +1,6 @@
 import { PanelLeftClose, PanelLeftOpen } from "lucide-react";
 import { Button } from "@/components/ui/button";
-import { YodesLogo } from "@/components/ui/logo";
+import { GatewaiLogo } from "@/components/ui/logo";
 import {
 	Tooltip,
 	TooltipContent,
@@ -48,7 +48,7 @@ function NodePaletteContent({ templates }: { templates: NodeTemplateListRPC }) {
 					)}
 				>
 					<div className="flex h-8 w-8 shrink-0 items-center justify-center rounded-lg bg-primary text-primary-foreground shadow-md">
-						<YodesLogo className="h-5 w-5" />
+						<GatewaiLogo className="h-5 w-5" />
 					</div>
 					<span className="font-semibold tracking-tight text-sm">Library</span>
 				</div>

@@ -1,14 +1,14 @@
 import { forwardRef, type SVGProps } from "react";
 
 // 1. Define the interface for your custom props
-export interface YodesLogoProps extends SVGProps<SVGSVGElement> {
+export interface GatewaiLogoProps extends SVGProps<SVGSVGElement> {
 	color?: string;
 	size?: string | number;
 	strokeWidth?: string | number;
 	className?: string;
 }
 
-const YodesLogo = forwardRef<SVGSVGElement, YodesLogoProps>(
+const GatewaiLogo = forwardRef<SVGSVGElement, GatewaiLogoProps>(
 	(
 		{
 			color = "currentColor",
@@ -25,7 +25,7 @@ const YodesLogo = forwardRef<SVGSVGElement, YodesLogoProps>(
 				xmlns="http://www.w3.org/2000/svg"
 				width={size}
 				role="img"
-				aria-label="Yodes Logo"
+				aria-label="Gatewai Logo"
 				height={size}
 				viewBox="0 0 24 24"
 				fill="none"
@@ -33,7 +33,7 @@ const YodesLogo = forwardRef<SVGSVGElement, YodesLogoProps>(
 				strokeWidth={strokeWidth}
 				strokeLinecap="round"
 				strokeLinejoin="round"
-				className={`lucide lucide-yodes-logo ${className}`}
+				className={`lucide lucide-Gatewai-logo ${className}`}
 				{...props}
 			>
 				{/* Top Left Square */}
@@ -81,6 +81,6 @@ const YodesLogo = forwardRef<SVGSVGElement, YodesLogoProps>(
 	},
 );
 
-YodesLogo.displayName = "YodesLogo";
+GatewaiLogo.displayName = "GatewaiLogo";
 
-export { YodesLogo };
+export { GatewaiLogo };
