@@ -18,7 +18,6 @@ export function useNodePreview(nodeId: string) {
 		const outputItem = result?.outputs[result?.selectedOutputIndex]?.items[0];
 		const inputFileData = outputItem?.data as FileData;
 
-		// Logic to resolve URL based on your ImageGen implementation
 		const imageUrl =
 			inputFileData?.processData?.dataUrl ??
 			(inputFileData?.entity ? GetAssetEndpoint(inputFileData.entity) : null);

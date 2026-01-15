@@ -533,6 +533,7 @@ export class NodeGraphProcessor extends EventEmitter {
 			const invalidConnections = Object.values(inputs).filter(
 				(v) => !v.connectionValid,
 			);
+			console.log({ inputs });
 			if (invalidConnections.length > 0) {
 				throw new Error("Invalid input types for some connections");
 			}
@@ -905,10 +906,10 @@ export class NodeGraphProcessor extends EventEmitter {
 				maskDataUrl,
 				signal,
 			);
-
+			console.log({ imageWithMask, onlyMask });
 			const items: Array<OutputItem<"Image">> = [];
 
-			if (imageUrl && imageHandle && imageWithMask) {
+			if (imageHandle && imageWithMask) {
 				items.push({
 					type: "Image",
 					data: {

@@ -45,7 +45,7 @@ const VideoCompositorNodeComponent = memo(
 			}
 
 			const layers: ExtendedLayer[] = [];
-
+			console.log({ inputs });
 			// Iterate over all connected inputs, applying saved updates or defaults
 			for (const [handleId, input] of Object.entries(inputs)) {
 				if (!input?.connectionValid) continue;
@@ -86,7 +86,6 @@ const VideoCompositorNodeComponent = memo(
 						: DEFAULT_DURATION_FRAMES;
 				console.log({ calculatedDurationFrames });
 				const base = {
-					// defaults first
 					scale: 1,
 					zIndex: saved.zIndex ?? ++maxZ,
 					startFrame: 0,
@@ -95,8 +94,7 @@ const VideoCompositorNodeComponent = memo(
 					animations: saved.animations ?? [],
 					src,
 					text,
-					...saved, // allow saved to override defaults
-					// ensure handle-based ids win
+					...saved,
 					x: saved.x ?? 0,
 					y: saved.y ?? 0,
 					rotation: saved.rotation ?? 0,

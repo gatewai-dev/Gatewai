@@ -79,7 +79,7 @@ const PreviewNodeComponent = memo((props: NodeProps<PreviewNode>) => {
 						{showMarkdown ? (
 							<MarkdownRenderer markdown={outputData} />
 						) : (
-							<div className="whitespace-pre-wrap">{outputData}</div>
+							<div className="whitespace-pre-wrap text-xs">{outputData}</div>
 						)}
 					</ScrollArea>
 					<div className="flex items-center justify-end mb-2 gap-2">

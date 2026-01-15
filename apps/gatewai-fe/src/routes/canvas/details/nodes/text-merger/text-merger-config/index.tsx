@@ -123,7 +123,7 @@ const TextMergerNodeConfigComponent = memo(
 										</SelectItem>
 									))}
 									<Separator className="my-1" />
-									<SelectItem value="custom">Custom String...</SelectItem>
+									<SelectItem value="custom">Custom</SelectItem>
 								</SelectContent>
 							</Select>
 						</FormItem>
