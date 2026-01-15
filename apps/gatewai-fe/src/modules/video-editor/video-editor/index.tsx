@@ -38,6 +38,7 @@ import {
 	Play,
 	Plus,
 	RotateCw,
+	Save,
 	Settings2,
 	Trash2,
 	Type,
@@ -55,6 +56,16 @@ import React, {
 	useRef,
 	useState,
 } from "react";
+import {
+	AlertDialog,
+	AlertDialogAction,
+	AlertDialogCancel,
+	AlertDialogContent,
+	AlertDialogDescription,
+	AlertDialogFooter,
+	AlertDialogHeader,
+	AlertDialogTitle,
+} from "@/components/ui/alert-dialog";
 import { Button } from "@/components/ui/button";
 import { DraggableNumberInput } from "@/components/ui/draggable-number-input";
 import { Label } from "@/components/ui/label";
@@ -98,9 +109,9 @@ import {
 import { DEFAULT_DURATION_FRAMES, FPS } from "../config";
 
 // --- Constants & Configuration ---
-const RULER_HEIGHT = 40;
-const TRACK_HEIGHT = 40; // Compact height for cleaner look
-const HEADER_WIDTH = 240;
+const RULER_HEIGHT = 28;
+const TRACK_HEIGHT = 32;
+const HEADER_WIDTH = 200;
 
 // Optimized Presets for Web Editing (Performance focused)
 const ASPECT_RATIOS = [
@@ -483,16 +494,14 @@ const InteractionOverlay: React.FC = () => {
 		// For stricter accessibility, one might use role="presentation" but it handles keys.
 		<div
 			className="absolute inset-0 z-10 overflow-hidden outline-none"
-			style={{ cursor: isPanning ? "grabbing" : "default" }}
+			style={{ cursor: isPanning || mode === "pan" ? "grab" : "default" }}
 			onMouseMove={handleMouseMove}
 			onMouseUp={handleMouseUp}
 			onMouseLeave={handleMouseUp}
 			onMouseDown={(e) => handleMouseDown(e)}
 			role="button"
 			tabIndex={0}
-			onKeyDown={(e) => {
-				if (e.key === " ") setIsPanning(!isPanning);
-			}}
+			onKeyDown={() => {}}
 		>
 			<div
 				className="absolute origin-top-left"
@@ -598,6 +607,8 @@ const Toolbar = React.memo<{
 		setMode,
 	} = useEditor();
 
+	const [showCloseDialog, setShowCloseDialog] = useState(false);
+
 	const handlePlayPause = useCallback(() => {
 		if (playerRef.current) {
 			if (isPlaying) playerRef.current.pause();
@@ -606,121 +617,202 @@ const Toolbar = React.memo<{
 		}
 	}, [isPlaying, setIsPlaying, playerRef]);
 
+	const handleCloseClick = useCallback(() => {
+		if (isDirty) {
+			setShowCloseDialog(true);
+		} else {
+			onClose();
+		}
+	}, [isDirty, onClose]);
+
+	const handleSaveAndClose = useCallback(() => {
+		onSave();
+		setShowCloseDialog(false);
+		onClose();
+	}, [onSave, onClose]);
+
+	const handleDiscardAndClose = useCallback(() => {
+		setShowCloseDialog(false);
+		onClose();
+	}, [onClose]);
+
 	return (
-		<div className="flex items-center gap-1.5 p-1.5 rounded-full bg-neutral-900/90 backdrop-blur-xl border border-white/10 shadow-2xl z-50">
-			<TooltipProvider>
-				<Tooltip>
-					<TooltipTrigger asChild>
-						<Button
-							variant="ghost"
-							size="icon"
-							className={`rounded-full w-9 h-9 transition-colors ${isPlaying ? "bg-red-500/20 text-red-400 hover:bg-red-500/30" : "hover:bg-white/10 text-white"}`}
-							onClick={handlePlayPause}
-						>
-							{isPlaying ? (
-								<Pause className="w-4 h-4 fill-current" />
-							) : (
-								<Play className="w-4 h-4 fill-current ml-0.5" />
-							)}
-						</Button>
-					</TooltipTrigger>
-					<TooltipContent>
-						<p>{isPlaying ? "Pause (Space)" : "Play (Space)"}</p>
-					</TooltipContent>
-				</Tooltip>
-			</TooltipProvider>
+		<>
+			<div className="flex items-center gap-1.5 p-1.5 rounded-full bg-neutral-900/90 backdrop-blur-xl border border-white/10 shadow-2xl z-50">
+				<TooltipProvider>
+					<Tooltip>
+						<TooltipTrigger asChild>
+							<Button
+								variant="ghost"
+								size="icon"
+								className={`rounded-full w-9 h-9 transition-colors ${isPlaying ? "bg-red-500/20 text-red-400 hover:bg-red-500/30" : "hover:bg-white/10 text-white"}`}
+								onClick={handlePlayPause}
+							>
+								{isPlaying ? (
+									<Pause className="w-4 h-4 fill-current" />
+								) : (
+									<Play className="w-4 h-4 fill-current ml-0.5" />
+								)}
+							</Button>
+						</TooltipTrigger>
+						<TooltipContent>
+							<p>{isPlaying ? "Pause (Space)" : "Play (Space)"}</p>
+						</TooltipContent>
+					</Tooltip>
+				</TooltipProvider>
 
-			<div className="w-px h-5 bg-white/10 mx-1" />
+				<div className="w-px h-5 bg-white/10 mx-1" />
 
-			{/* Timecode */}
-			<div
-				ref={timeRef}
-				className="text-[11px] font-mono tabular-nums text-neutral-300 min-w-[70px] text-center select-none cursor-default"
-			>
-				{Math.floor(currentFrame / fps)}s :{" "}
-				{(currentFrame % fps).toString().padStart(2, "0")}f
-			</div>
-
-			<div className="w-px h-5 bg-white/10 mx-1" />
-
-			{/* Tools */}
-			<div className="flex bg-white/5 rounded-full p-0.5 border border-white/5">
-				<Tooltip>
-					<TooltipTrigger asChild>
-						<Button
-							variant={mode === "select" ? "secondary" : "ghost"}
-							size="icon"
-							className={`rounded-full w-8 h-8 ${mode === "select" ? "bg-white/20 text-white" : "text-gray-400 hover:text-white"}`}
-							onClick={() => setMode("select")}
-						>
-							<MousePointer className="w-3.5 h-3.5" />
-						</Button>
-					</TooltipTrigger>
-					<TooltipContent>Select Tool</TooltipContent>
-				</Tooltip>
-				<Tooltip>
-					<TooltipTrigger asChild>
-						<Button
-							variant={mode === "pan" ? "secondary" : "ghost"}
-							size="icon"
-							className={`rounded-full w-8 h-8 ${mode === "pan" ? "bg-white/20 text-white" : "text-gray-400 hover:text-white"}`}
-							onClick={() => setMode("pan")}
-						>
-							<Hand className="w-3.5 h-3.5" />
-						</Button>
-					</TooltipTrigger>
-					<TooltipContent>Pan Tool</TooltipContent>
-				</Tooltip>
-			</div>
-
-			<div className="w-px h-5 bg-white/10 mx-1" />
-
-			{/* Zoom */}
-			<Menubar className="border-none bg-transparent h-auto p-0">
-				<MenubarMenu>
-					<MenubarTrigger asChild>
-						<Button
-							variant="ghost"
-							className="h-8 px-3 text-[11px] rounded-full text-gray-300 hover:text-white hover:bg-white/10 font-medium min-w-[80px] justify-between"
-						>
-							{Math.round(zoom * 100)}%
-							<ChevronDown className="w-3 h-3 ml-1.5 opacity-50" />
-						</Button>
-					</MenubarTrigger>
-					<MenubarContent
-						align="center"
-						className="min-w-[140px] bg-neutral-900/95 backdrop-blur-xl border-white/10 text-gray-200"
-					>
-						<MenubarItem onClick={zoomIn}>Zoom In (+)</MenubarItem>
-						<MenubarItem onClick={zoomOut}>Zoom Out (-)</MenubarItem>
-						<MenubarItem onClick={() => zoomTo(1)}>Actual Size</MenubarItem>
-						<MenubarItem onClick={fitView}>Fit to Screen</MenubarItem>
-					</MenubarContent>
-				</MenubarMenu>
-			</Menubar>
-
-			<div className="w-px h-5 bg-white/10 mx-1" />
-
-			{/* Actions */}
-			<div className="flex items-center gap-1">
-				<Button
-					size="sm"
-					className="h-8 text-[11px] font-semibold rounded-full px-4 border-0 bg-white text-black hover:bg-gray-200"
-					onClick={onSave}
-					disabled={!isDirty}
+				{/* Timecode */}
+				<div
+					ref={timeRef}
+					className="text-[11px] font-mono tabular-nums text-neutral-300 min-w-[70px] text-center select-none cursor-default"
 				>
-					Save
-				</Button>
-				<Button
-					size="icon"
-					variant="ghost"
-					className="h-8 w-8 rounded-full text-gray-400 hover:text-white hover:bg-white/10"
-					onClick={onClose}
-				>
-					<XIcon className="w-4 h-4" />
-				</Button>
+					{Math.floor(currentFrame / fps)}s :{" "}
+					{(currentFrame % fps).toString().padStart(2, "0")}f
+				</div>
+
+				<div className="w-px h-5 bg-white/10 mx-1" />
+
+				{/* Tools */}
+				<div className="flex bg-white/5 rounded-full p-0.5 border border-white/5">
+					<Tooltip>
+						<TooltipTrigger asChild>
+							<Button
+								variant={mode === "select" ? "secondary" : "ghost"}
+								size="icon"
+								className={`rounded-full w-8 h-8 ${mode === "select" ? "bg-white/20 text-white" : "text-gray-400 hover:text-white"}`}
+								onClick={() => setMode("select")}
+							>
+								<MousePointer className="w-3.5 h-3.5" />
+							</Button>
+						</TooltipTrigger>
+						<TooltipContent>Select Tool (V)</TooltipContent>
+					</Tooltip>
+					<Tooltip>
+						<TooltipTrigger asChild>
+							<Button
+								variant={mode === "pan" ? "secondary" : "ghost"}
+								size="icon"
+								className={`rounded-full w-8 h-8 ${mode === "pan" ? "bg-white/20 text-white" : "text-gray-400 hover:text-white"}`}
+								onClick={() => setMode("pan")}
+							>
+								<Hand className="w-3.5 h-3.5" />
+							</Button>
+						</TooltipTrigger>
+						<TooltipContent>Pan Tool (H) or hold Space</TooltipContent>
+					</Tooltip>
+				</div>
+
+				<div className="w-px h-5 bg-white/10 mx-1" />
+
+				{/* Zoom */}
+				<Menubar className="border-none bg-transparent h-auto p-0">
+					<MenubarMenu>
+						<MenubarTrigger asChild>
+							<Button
+								variant="ghost"
+								className="h-8 px-3 text-[11px] rounded-full text-gray-300 hover:text-white hover:bg-white/10 font-medium min-w-[80px] justify-between"
+							>
+								{Math.round(zoom * 100)}%
+								<ChevronDown className="w-3 h-3 ml-1.5 opacity-50" />
+							</Button>
+						</MenubarTrigger>
+						<MenubarContent
+							align="center"
+							className="min-w-[160px] bg-neutral-900/95 backdrop-blur-xl border-white/10 text-gray-200"
+						>
+							<MenubarItem onClick={zoomIn}>
+								<span className="flex-1">Zoom In</span>
+								<span className="text-xs text-gray-500 ml-4">+</span>
+							</MenubarItem>
+							<MenubarItem onClick={zoomOut}>
+								<span className="flex-1">Zoom Out</span>
+								<span className="text-xs text-gray-500 ml-4">−</span>
+							</MenubarItem>
+							<MenubarItem onClick={() => zoomTo(1)}>
+								<span className="flex-1">100%</span>
+								<span className="text-xs text-gray-500 ml-4">1</span>
+							</MenubarItem>
+							<MenubarItem onClick={fitView}>
+								<span className="flex-1">Fit to Screen</span>
+								<span className="text-xs text-gray-500 ml-4">0</span>
+							</MenubarItem>
+						</MenubarContent>
+					</MenubarMenu>
+				</Menubar>
+
+				<div className="w-px h-5 bg-white/10 mx-1" />
+
+				{/* Actions */}
+				<div className="flex items-center gap-1">
+					<Tooltip>
+						<TooltipTrigger asChild>
+							<Button
+								size="sm"
+								variant="default"
+								className="h-8 text-[11px] font-semibold rounded-full px-4"
+								onClick={onSave}
+								disabled={!isDirty}
+							>
+								<Save className="w-3.5 h-3.5 mr-1" />
+								Save
+							</Button>
+						</TooltipTrigger>
+						<TooltipContent>Save (⌘S)</TooltipContent>
+					</Tooltip>
+					<Tooltip>
+						<TooltipTrigger asChild>
+							<Button
+								size="icon"
+								variant="ghost"
+								className="h-8 w-8 rounded-full text-gray-400 hover:text-white hover:bg-white/10"
+								onClick={handleCloseClick}
+							>
+								<XIcon className="w-4 h-4" />
+							</Button>
+						</TooltipTrigger>
+						<TooltipContent>Close (Esc)</TooltipContent>
+					</Tooltip>
+				</div>
 			</div>
-		</div>
+
+			{/* Unsaved Changes Confirmation Dialog */}
+			<AlertDialog open={showCloseDialog} onOpenChange={setShowCloseDialog}>
+				<AlertDialogContent className="bg-neutral-900 border-white/10">
+					<AlertDialogHeader>
+						<AlertDialogTitle className="text-white">
+							Unsaved Changes
+						</AlertDialogTitle>
+						<AlertDialogDescription className="text-gray-400">
+							You have unsaved changes in this composition. Would you like to
+							save before closing?
+						</AlertDialogDescription>
+					</AlertDialogHeader>
+					<AlertDialogFooter>
+						<AlertDialogCancel
+							onClick={() => setShowCloseDialog(false)}
+							className="bg-transparent border-white/10 text-gray-300 hover:bg-white/5 hover:text-white"
+						>
+							Cancel
+						</AlertDialogCancel>
+						<Button
+							variant="destructive"
+							onClick={handleDiscardAndClose}
+							className="bg-red-500/20 text-red-400 hover:bg-red-500/30 border-0"
+						>
+							Discard
+						</Button>
+						<AlertDialogAction
+							onClick={handleSaveAndClose}
+							className="bg-primary text-primary-foreground hover:bg-primary/90"
+						>
+							Save & Close
+						</AlertDialogAction>
+					</AlertDialogFooter>
+				</AlertDialogContent>
+			</AlertDialog>
+		</>
 	);
 });
 
@@ -967,12 +1059,13 @@ const TimelinePanel: React.FC = () => {
 	};
 
 	return (
-		<div className="h-80 flex flex-col border-t border-white/10 bg-[#0f0f0f] shrink-0 select-none z-30 shadow-[0_-5px_20px_rgba(0,0,0,0.5)]">
+		<div className="h-52 flex flex-col border-t border-white/10 bg-[#0f0f0f] shrink-0 select-none z-30 shadow-[0_-5px_20px_rgba(0,0,0,0.5)]">
 			{/* Toolbar */}
-			<div className="h-10 border-b border-white/5 flex items-center justify-between px-4 bg-neutral-900 shrink-0 z-40">
-				<div className="text-[11px] font-bold text-neutral-400 tracking-wider flex items-center gap-2">
-					<Layers className="w-4 h-4" /> TIMELINE LAYERS
+			<div className="h-8 border-b border-white/5 flex items-center justify-between px-3 bg-neutral-900 shrink-0 z-40">
+				<div className="text-[10px] font-bold text-neutral-400 tracking-wider flex items-center gap-1.5">
+					<Layers className="w-3.5 h-3.5" /> TIMELINE
 				</div>
+
 				<div className="flex items-center gap-2">
 					<Button
 						variant="ghost"
@@ -2026,16 +2119,81 @@ export const VideoDesignerEditor: React.FC<VideoDesignerEditorProps> = ({
 				document.activeElement?.tagName === "INPUT" ||
 				document.activeElement?.tagName === "TEXTAREA";
 
-			if (e.code === "Space" && !e.repeat && !isInput) {
+			// Ctrl/Cmd + S: Save
+			if ((e.ctrlKey || e.metaKey) && e.key.toLowerCase() === "s") {
+				e.preventDefault();
+				if (isDirty) {
+					const layerUpdates = layers.reduce<
+						Record<
+							string,
+							Omit<
+								ExtendedLayer,
+								"src" | "text" | "isPlaceholder" | "maxDurationInFrames"
+							>
+						>
+					>((acc, layer) => {
+						const {
+							src,
+							text,
+							isPlaceholder,
+							maxDurationInFrames,
+							...savedLayer
+						} = layer;
+						acc[layer.id] = savedLayer;
+						return acc;
+					}, {});
+					onSave({
+						layerUpdates,
+						width: viewportWidth,
+						height: viewportHeight,
+					});
+					setIsDirty(false);
+				}
+				return;
+			}
+
+			if (isInput) return;
+
+			// Space: Temporary pan mode (hold)
+			if (e.code === "Space" && !e.repeat) {
 				e.preventDefault();
 				if (mode !== "pan") {
 					lastModeRef.current = mode;
 					setMode("pan");
 				}
+				return;
 			}
 
-			if ((e.key === "Delete" || e.key === "Backspace") && !isInput) {
+			// Delete/Backspace: Delete selected layer
+			if (e.key === "Delete" || e.key === "Backspace") {
 				if (selectedId) deleteLayer(selectedId);
+				return;
+			}
+
+			// Tool shortcuts
+			switch (e.key.toLowerCase()) {
+				case "v":
+					setMode("select");
+					break;
+				case "h":
+					setMode("pan");
+					break;
+				case "=":
+				case "+":
+					zoomIn();
+					break;
+				case "-":
+					zoomOut();
+					break;
+				case "0":
+					fitView();
+					break;
+				case "1":
+					zoomTo(1);
+					break;
+				case "escape":
+					setSelectedId(null);
+					break;
 			}
 		};
 
@@ -2058,7 +2216,20 @@ export const VideoDesignerEditor: React.FC<VideoDesignerEditorProps> = ({
 			window.removeEventListener("keydown", handleKeyDown);
 			window.removeEventListener("keyup", handleKeyUp);
 		};
-	}, [mode, selectedId, deleteLayer]);
+	}, [
+		mode,
+		selectedId,
+		deleteLayer,
+		isDirty,
+		layers,
+		onSave,
+		viewportWidth,
+		viewportHeight,
+		zoomIn,
+		zoomOut,
+		zoomTo,
+		fitView,
+	]);
 
 	const durationInFrames = useMemo(() => {
 		if (layers.length === 0) return DEFAULT_DURATION_FRAMES;
