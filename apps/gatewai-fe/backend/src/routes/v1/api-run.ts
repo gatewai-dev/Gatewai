@@ -4,7 +4,7 @@ import { prisma } from "@gatewai/db";
 import type { TextNodeConfig } from "@gatewai/types";
 import { zValidator } from "@hono/zod-validator";
 import { Hono } from "hono";
-import { duplicateCanvas } from "../../data-ops/duplicate.js";
+import { duplicateCanvas } from "../../data-ops/duplicate-canvas.js";
 import { resolveBatchResult } from "../../data-ops/resolve-batch-result.js";
 import {
 	APIRunRequestSchema,
