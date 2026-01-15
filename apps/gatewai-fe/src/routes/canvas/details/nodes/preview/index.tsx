@@ -105,7 +105,7 @@ const PreviewNodeComponent = memo((props: NodeProps<PreviewNode>) => {
 			const src = getMediaSource();
 			if (!src) return null;
 
-			return <AudioRenderer showControlsAlways src={src} />;
+			return <AudioRenderer src={src} />;
 		}
 
 		// Fallback for other file types (e.g.,  "Audio", etc.)

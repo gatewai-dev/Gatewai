@@ -28,6 +28,10 @@ function MediaContent({
 		return GetAssetEndpoint(outputItem.data.entity);
 	}, [outputItem.data.entity]);
 
+	const assetName = useMemo(() => {
+		return outputItem.data.entity?.name;
+	}, [outputItem.data.entity]);
+	console.log(outputItem.data.entity?.name);
 	return (
 		<div className="relative h-full w-full group">
 			{hasMoreThanOneOutput && (
@@ -38,7 +42,7 @@ function MediaContent({
 			{isImage && assetUrl && <CanvasRenderer imageUrl={assetUrl} />}
 			{isVideo && assetUrl && <VideoRenderer src={assetUrl} />}
 			{isAudio && assetUrl && (
-				<AudioRenderer showControlsAlways src={assetUrl} />
+				<AudioRenderer title={assetName} src={assetUrl} />
 			)}
 			{isOther && (
 				<div className="flex flex-col items-center gap-2">
