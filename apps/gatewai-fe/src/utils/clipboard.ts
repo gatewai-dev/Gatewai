@@ -1,8 +1,11 @@
+import { toast } from "sonner";
+
 export async function copyTextToClipboard(text: string) {
 	try {
 		await navigator.clipboard.writeText(text);
-		console.log("Text copied to clipboard");
+		toast.info("Text copied to clipboard.");
 	} catch (err) {
+		toast.error("Failed to copy.");
 		console.error("Failed to copy: ", err);
 	}
 }
