@@ -17,14 +17,12 @@ enum NodeType {
   Preview
   File
   Export
-  Toggle
   Crop
   Resize
   Paint
   Blur
   Compositor
   Note
-  Number
   Modulate
 
   LLM

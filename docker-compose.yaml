@@ -9,19 +9,15 @@ services:
       POSTGRES_USER: postgres
       POSTGRES_PASSWORD: postgres
       POSTGRES_DB: postgres
-    ports:
-      - "54321:5432" # Keeps host access at 54321
     volumes:
       - postgres_data:/var/lib/postgresql/data
+    # Removed public ports for security; app accesses via internal network
 
   redis:
     image: redis:7-alpine
     container_name: redis
     restart: unless-stopped
-    # Uses the password from your .env
     command: redis-server --requirepass ${REDIS_PASSWORD}
-    ports:
-      - "6379:6379"
     volumes:
       - redis_data:/data
 
@@ -29,23 +25,41 @@ services:
     build: .
     container_name: gatewai-app
     restart: unless-stopped
-    ports:
-      - "8081:8081"
     depends_on:
       - postgres
       - redis
-    # Loads the .env file into the container
     env_file:
       - .env
     environment:
       - NODE_ENV=production
       - PORT=8081
-      # Overriding specific network variables for internal Docker communication
       - REDIS_HOST=redis
       - REDIS_PORT=6379
       - DATABASE_URL=postgresql://postgres:postgres@postgres:5432/postgres
     volumes:
       - ./${GOOGLE_APPLICATION_CREDENTIALS}:/app/${GOOGLE_APPLICATION_CREDENTIALS}
+
+  nginx:
+    image: nginx:alpine
+    container_name: nginx
+    restart: unless-stopped
+    ports:
+      - "80:80"
+      - "443:443"
+    volumes:
+      - ./nginx/conf:/etc/nginx/conf.d:ro
+      - ./nginx/certbot/conf:/etc/letsencrypt
+      - ./nginx/certbot/www:/var/www/certbot
+    depends_on:
+      - app
+
+  certbot:
+    image: certbot/certbot
+    container_name: certbot
+    volumes:
+      - ./nginx/certbot/conf:/etc/letsencrypt
+      - ./nginx/certbot/www:/var/www/certbot
+    entrypoint: "/bin/sh -c 'trap exit TERM; while :; do certbot renew; sleep 12h & wait $${!}; done;'"
 
 volumes:
   postgres_data:

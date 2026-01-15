@@ -15,10 +15,11 @@ const TextMergerNodeComponent = memo((props: NodeProps<TextMergerNode>) => {
 			<div className="flex flex-col gap-3 ">
 				{node && <TextMergerNodeConfigComponent node={node} />}
 			</div>
-			<div className="flex justify-between items-center">
+			<div className="flex justify-between mt-1 items-center">
 				<AddCustomHandleButton
 					dataTypes={["Text"]}
 					nodeProps={props}
+					placeholder="E.g. Second Part"
 					type="Input"
 				/>
 			</div>

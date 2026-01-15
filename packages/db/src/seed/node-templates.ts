@@ -213,7 +213,7 @@ export async function SEED_createNodeTemplates(prisma: PrismaClient) {
 					},
 				],
 			},
-			defaultConfig: { join: "" },
+			defaultConfig: { join: " " },
 		},
 		{
 			type: NodeType.Preview,
@@ -291,27 +291,6 @@ export async function SEED_createNodeTemplates(prisma: PrismaClient) {
 						],
 						required: true,
 						label: "Input",
-					},
-				],
-			},
-		},
-		{
-			type: NodeType.Toggle,
-			displayName: "Toggle",
-			description: "A toggle for True/False (Yes/No) data type",
-			category: "Inputs",
-			subcategory: null,
-			tokenPrice: 0.0,
-			variableInputs: false,
-			variableOutputs: false,
-			isTerminalNode: false,
-			isTransient: false,
-			templateHandles: {
-				create: [
-					{
-						type: HandleType.Output,
-						dataTypes: [DataType.Boolean],
-						label: "Value",
 					},
 				],
 			},
@@ -510,28 +489,6 @@ export async function SEED_createNodeTemplates(prisma: PrismaClient) {
 			isTransient: false,
 			templateHandles: { create: [] },
 			defaultConfig: { backgroundColor: "#ffff88", textColor: "#000" },
-		},
-		{
-			type: NodeType.Number,
-			displayName: "Number",
-			description: "A number input node",
-			category: "Inputs",
-			subcategory: null,
-			tokenPrice: 0.0,
-			variableInputs: false,
-			variableOutputs: false,
-			isTerminalNode: false,
-			isTransient: false,
-			templateHandles: {
-				create: [
-					{
-						type: HandleType.Output,
-						dataTypes: [DataType.Number],
-						label: "Number",
-					},
-				],
-			},
-			defaultConfig: undefined,
 		},
 		{
 			type: NodeType.ImageGen,

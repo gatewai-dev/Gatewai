@@ -46,6 +46,7 @@ type CustomHandleButtonProps = {
 	nodeProps: NodeProps<AnyNode>;
 	type: HandleEntityType["type"];
 	dataTypes?: DataType[];
+	placeholder?: string;
 };
 
 function AddCustomHandleButton(props: CustomHandleButtonProps) {
@@ -148,7 +149,7 @@ function AddCustomHandleButton(props: CustomHandleButtonProps) {
 									<FormLabel>Label</FormLabel>
 									<FormControl>
 										<Input
-											placeholder="E.g. Product Image"
+											placeholder={props.placeholder ?? "E.g. Product Image"}
 											{...field}
 											value={field.value ?? ""}
 										/>

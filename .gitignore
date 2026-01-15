@@ -12,7 +12,7 @@ server/dist
 public/dist
 .turbo
 */**/game.db
-
+nginx/certbot/
 */**/dungeon-master-prompt_*.txt
 gatewai-466716-6a4cc3da9bc4.json
 
