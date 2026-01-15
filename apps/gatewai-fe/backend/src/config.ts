@@ -12,8 +12,6 @@ const envSchema = z.object({
 	GEMINI_API_KEY: z.string().min(1),
 	GCS_ASSETS_BUCKET: z.string().min(1),
 	GOOGLE_APPLICATION_CREDENTIALS: z.string().min(1),
-	GOOGLE_CLIENT_ID: z.string().min(1),
-	GOOGLE_CLIENT_SECRET: z.string().min(1),
 	DEBUG_LOG_MEDIA: z
 		.string()
 		.transform((val) => val.toLowerCase() === "true")
