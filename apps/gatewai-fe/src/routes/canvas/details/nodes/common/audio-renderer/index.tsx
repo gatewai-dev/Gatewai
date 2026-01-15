@@ -7,7 +7,7 @@ const AudioRenderer = memo(
 			<MediaShell isAudio>
 				{/** biome-ignore lint/a11y/useMediaCaption: No caption exists */}
 				<audio slot="media" src={src} preload="metadata" />
-				<div className="absolute inset-0 flex items-center px-3 pb-8 pointer-events-none">
+				<div className=" inset-0 flex items-center px-3  pointer-events-none">
 					<div className="flex flex-col">
 						<span className="text-white/40 text-xs font-medium uppercase tracking-widest">
 							Audio Track

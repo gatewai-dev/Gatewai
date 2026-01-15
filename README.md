@@ -48,11 +48,11 @@ A JSON file will automatically download to your computer. Move the downloaded fi
 ### In your .env file
 
 ```text
-GOOGLE_APPLICATION_CREDENTIALS="/name-of-the-file.json"
+GOOGLE_APPLICATION_CREDENTIALS_PATH="/name-of-the-file.json"
 ```
 
 For example:
-GOOGLE_APPLICATION_CREDENTIALS=/gatewai-466716-6a4cc3da9bc4.json
+GOOGLE_APPLICATION_CREDENTIALS_PATH=/gatewai-466716-6a4cc3da9bc4.json
 
 ⚠️ Security Warning
 Never commit your JSON key file to Git. Add the filename to your .gitignore immediately. If the key is leaked, anyone can access your storage buckets and potentially incur high costs or delete your data.

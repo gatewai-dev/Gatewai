@@ -54,10 +54,10 @@ const SharedControlBar = ({
 }: {
 	hideFullscreen?: boolean;
 }) => (
-	<div className="absolute inset-x-0 bottom-0 flex flex-col pointer-events-none group-hover:opacity-100 opacity-0 transition-opacity duration-200 bg-linear-to-t from-black/80 via-black/40 to-transparent">
-		<MediaControlBar className="w-full h-4 px-2 flex items-center justify-between pointer-events-auto bg-transparent">
+	<div className=" w-full inset-x-0 bottom-0 flex flex-col pointer-events-none group-hover:opacity-100 opacity-0 transition-opacity duration-200 bg-linear-to-t from-black/80 via-black/40 to-transparent">
+		<MediaControlBar className="w-full px-2 gap-2 flex items-center justify-between pointer-events-auto bg-transparent">
 			<div className="flex items-center gap-1">
-				<MediaPlayButton className="hover:scale-110 transition-transform" />
+				<MediaPlayButton className="hover:scale-105 transition-transform" />
 				<MediaMuteButton />
 				<MediaVolumeRange className="w-0 overflow-hidden group-hover/volume:w-20 transition-all duration-200" />
 				<div className="flex items-center px-2 text-[13px] font-mono text-white/90 tabular-nums">
@@ -69,7 +69,7 @@ const SharedControlBar = ({
 				<div className="flex items-center group/volume"></div>
 
 				{!hideFullscreen && (
-					<MediaFullscreenButton className="hover:scale-110 transition-transform" />
+					<MediaFullscreenButton className="hover:scale-105 transition-transform" />
 				)}
 			</div>
 		</MediaControlBar>

@@ -37,7 +37,7 @@ services:
       - REDIS_PORT=6379
       - DATABASE_URL=postgresql://postgres:postgres@postgres:5432/postgres
     volumes:
-      - ./${GOOGLE_APPLICATION_CREDENTIALS}:/app/${GOOGLE_APPLICATION_CREDENTIALS}
+      - ./${GOOGLE_APPLICATION_CREDENTIALS_PATH}:/app/${GOOGLE_APPLICATION_CREDENTIALS_PATH}
 
   nginx:
     image: nginx:alpine

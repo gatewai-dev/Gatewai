@@ -1,28 +1,22 @@
 import { existsSync } from "node:fs";
 import path from "node:path";
 import { Readable } from "node:stream";
-import { fileURLToPath } from "node:url";
 import { Storage } from "@google-cloud/storage";
 import { ENV_CONFIG } from "../config.js";
 
-const __filename = fileURLToPath(import.meta.url);
-const __dirname = path.dirname(__filename);
-
 const CREDENTIALS_PATH = path.join(
-	__dirname,
-	"..",
-	"..",
-	"..",
-	ENV_CONFIG.GOOGLE_APPLICATION_CREDENTIALS,
+	ENV_CONFIG.GOOGLE_APPLICATION_CREDENTIALS_PATH,
 );
 
-if (!existsSync(CREDENTIALS_PATH)) {
-	throw new Error(`Missing credentials file, seeked: ${CREDENTIALS_PATH}`);
+if (!existsSync(ENV_CONFIG.GOOGLE_APPLICATION_CREDENTIALS_PATH)) {
+	throw new Error(
+		`Missing credentials file, seeked: ${ENV_CONFIG.GOOGLE_APPLICATION_CREDENTIALS_PATH}`,
+	);
 }
 
 const storage = new Storage({
-	keyFile: CREDENTIALS_PATH,
-	projectId: process.env.GCP_PROJECT_ID,
+	credentials: await import(CREDENTIALS_PATH),
+	projectId: ENV_CONFIG.GOOGLE_CLIENT_ID,
 });
 
 export async function uploadToGCS(
