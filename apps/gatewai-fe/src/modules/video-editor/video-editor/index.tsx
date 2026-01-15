@@ -2361,9 +2361,6 @@ export const VideoDesignerEditor: React.FC<VideoDesignerEditorProps> = ({
 									style={{ width: "100%", height: "100%" }}
 									controls={false}
 									doubleClickToFullscreen={false}
-									onPause={() => setIsPlaying(false)}
-									onPlay={() => setIsPlaying(true)}
-									onEnded={() => setIsPlaying(false)}
 								/>
 							</div>
 						</div>
