@@ -43,7 +43,7 @@ const imageGenProcessor: NodeProcessor = async ({ node, data }) => {
 		// Convert reference images to inlineData for Google SDK
 		for (const imgData of imageFileData || []) {
 			if (!imgData) {
-				continue; // Skip invalid image data entries
+				continue;
 			}
 
 			let mimeType: string | undefined;
