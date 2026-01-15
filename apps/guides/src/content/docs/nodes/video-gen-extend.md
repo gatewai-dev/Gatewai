@@ -1,6 +1,6 @@
 ---
 title: Extend Video
-description: Extend videos up to 148 seconds.
+description: Extends gemini videos up to 148 seconds.
 ---
 
 **Category**: AI

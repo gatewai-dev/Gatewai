@@ -7,7 +7,7 @@ import {
 import { zodResolver } from "@hookform/resolvers/zod";
 import { memo, useCallback, useEffect } from "react";
 import { useForm } from "react-hook-form";
-import { Form, FormDescription } from "@/components/ui/form";
+import { Form } from "@/components/ui/form";
 import { useCanvasCtx } from "@/routes/canvas/details/ctx/canvas-ctx";
 import type { NodeEntityType } from "@/store/nodes";
 import { SelectField } from "../../../../components/fields/select";
@@ -88,7 +88,7 @@ const VideoGenFirstLastFrameNodeConfigComponent = memo(
 						options={VIDEOGEN_NODE_MODELS}
 					/>
 
-					<div className="flex flex-col gap-4">
+					<div className="flex flex-row gap-4">
 						<div className="flex-1">
 							<SelectField
 								control={form.control}
@@ -97,11 +97,8 @@ const VideoGenFirstLastFrameNodeConfigComponent = memo(
 								placeholder="Select resolution"
 								options={VIDEOGEN_RESOLUTIONS}
 							/>
-							<FormDescription>
-								High resolution (1080p) may require strict 8s duration.
-							</FormDescription>
 						</div>
-						<div className="flex-1 opacity-50 pointer-events-none">
+						<div className="flex-1 opacity-80 pointer-events-none">
 							<SelectField
 								control={form.control}
 								name="durationSeconds"

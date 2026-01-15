@@ -263,7 +263,8 @@ const SpeakerVoiceConfigSchema = z
 	.object({
 		speaker: z
 			.string()
-			.describe("The name of the speaker as it appears in the text prompt"),
+			.describe("The name of the speaker as it appears in the text prompt")
+			.optional(),
 		voiceName: z.enum(TTS_VOICE_NAMES),
 	})
 	.strict();
@@ -419,9 +420,49 @@ const TextToSpeechNodeConfigSchema = z
 		model: z.enum(TTS_NODE_MODELS).default("gemini-2.5-flash-preview-tts"),
 		languageCode: z.enum(TTS_LANGUAGES).optional(),
 		voiceName: z.string().optional(),
+		// Make the base schema's speaker field optional so it doesn't
+		// throw errors before your custom logic runs
 		speakerConfig: z.array(SpeakerVoiceConfigSchema).max(2).optional(),
 	})
-	.strict();
+	.strict()
+	.superRefine((data, ctx) => {
+		const config = data.speakerConfig ?? [];
+
+		// If there is only 1 or 0 configs, we don't need to enforce names
+		// (unless your business logic says otherwise).
+		if (config.length !== 2) return;
+
+		const [c1, c2] = config;
+		const s1 = c1.speaker?.trim() ?? "";
+		const s2 = c2.speaker?.trim() ?? "";
+
+		// 1. Check if first speaker is empty
+		if (s1 === "") {
+			ctx.addIssue({
+				code: z.ZodIssueCode.custom,
+				message: "Speaker name is required for multi-speaker setups",
+				path: ["speakerConfig", 0, "speaker"],
+			});
+		}
+
+		// 2. Check if second speaker is empty
+		if (s2 === "") {
+			ctx.addIssue({
+				code: z.ZodIssueCode.custom,
+				message: "Speaker name is required for multi-speaker setups",
+				path: ["speakerConfig", 1, "speaker"],
+			});
+		}
+
+		// 3. Check for uniqueness
+		if (s1 !== "" && s2 !== "" && s1 === s2) {
+			ctx.addIssue({
+				code: z.ZodIssueCode.custom,
+				message: "Speaker names must be unique",
+				path: ["speakerConfig", 1, "speaker"],
+			});
+		}
+	});
 
 // Consolidated Union Schema
 const allNodeConfigSchemas = [

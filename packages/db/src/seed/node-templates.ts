@@ -25,7 +25,7 @@ export async function SEED_createNodeTemplates(prisma: PrismaClient) {
 			type: NodeType.VideoGenExtend,
 			displayName: "Extend Video",
 			category: "AI",
-			description: "Extend videos up to 148 seconds",
+			description: "Extends gemini videos up to 148 seconds",
 			subcategory: "Video",
 			tokenPrice: 0.0,
 			variableInputs: false,

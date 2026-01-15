@@ -29,7 +29,7 @@ const TextNodeComponent = memo((props: NodeProps<TextNode>) => {
 		<BaseNode {...props} className="nowheel">
 			<ScrollArea
 				viewPortCn="max-h-[350px]"
-				className="text-xs bg-input p-2 w-full"
+				className="text-xs bg-input w-full"
 			>
 				<Textarea
 					value={text}
