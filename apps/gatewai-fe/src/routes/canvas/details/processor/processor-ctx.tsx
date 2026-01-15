@@ -91,34 +91,30 @@ export function useNodeResult<T extends NodeResult = NodeResult>(
 	} | null>(null);
 
 	const subscribe = (callback: () => void) => {
-		const handler = (data: { nodeId: string }) => {
+		const nodeHandler = (data: { nodeId: string }) => {
 			if (data.nodeId === nodeId) {
-				// Force a recalculation of the snapshot before calling the callback
 				callback();
 			}
 		};
 
-		processor.on("node:start", handler);
-		processor.on("node:processed", handler);
-		processor.on("node:error", handler);
-		processor.on("node:queued", handler); // Status changes
-		// Graph update indirectly triggers these, but we might want to be explicit if topology changes without execution
-		// Note: The processor doesn't currently emit a "graph:updated" event that is public,
-		// but React rerenders will re-run this hook.
-		// However, for useSyncExternalStore we need an event.
-		// The processor updates state synchronously in updateGraph so the component should re-render if it uses
-		// this hook and the data changed.
-		// We'll rely on the parent component triggering re-renders via Redux updates, which calls updateGraph,
-		// but since useSyncExternalStore is outside React's flow, we ideally need an event.
-		// Let's assume 'node:queued' or similar covers it or we rely on React prop updates to the Provider triggering the effect.
-		// To be safe, we can listen to a generic change if available, or just the node events.
-		// Since updateGraph marks nodes dirty/queued, 'node:queued' should fire.
+		// Handler for general graph topology updates (connection changes)
+		// This ensures handle colors/status update immediately even if node didn't execute
+		const graphHandler = () => {
+			callback();
+		};
+
+		processor.on("node:start", nodeHandler);
+		processor.on("node:processed", nodeHandler);
+		processor.on("node:error", nodeHandler);
+		processor.on("node:queued", nodeHandler);
+		processor.on("graph:updated", graphHandler);
 
 		return () => {
-			processor.off("node:start", handler);
-			processor.off("node:processed", handler);
-			processor.off("node:error", handler);
-			processor.off("node:queued", handler);
+			processor.off("node:start", nodeHandler);
+			processor.off("node:processed", nodeHandler);
+			processor.off("node:error", nodeHandler);
+			processor.off("node:queued", nodeHandler);
+			processor.off("graph:updated", graphHandler);
 		};
 	};
 
@@ -198,12 +194,17 @@ export function useEdgeColor(
 					callback();
 				}
 			};
+			// Handler for general graph topology updates
+			const graphHandler = () => callback();
+
 			processor.on("node:processed", handler);
-			// Also need to listen to initial graph loads or status updates
 			processor.on("node:queued", handler);
+			processor.on("graph:updated", graphHandler);
+
 			return () => {
 				processor.off("node:processed", handler);
 				processor.off("node:queued", handler);
+				processor.off("graph:updated", graphHandler);
 			};
 		},
 		[processor, sourceNodeId],

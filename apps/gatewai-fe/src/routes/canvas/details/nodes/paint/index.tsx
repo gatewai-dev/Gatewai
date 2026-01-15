@@ -342,8 +342,8 @@ const PaintNodeComponent = memo((props: NodeProps<PaintNode>) => {
 		(e: React.MouseEvent<HTMLCanvasElement>) => {
 			const { x, y } = getScaledCoordinates(e);
 
-			// Draw cursor preview for brush mode
-			if (tool === "brush") {
+			// Draw cursor preview for brush and eraser modes
+			if (tool === "brush" || tool === "eraser") {
 				clearPreview();
 				const previewCtx = previewRef.current?.getContext("2d");
 				if (previewCtx) {
@@ -486,7 +486,7 @@ const PaintNodeComponent = memo((props: NodeProps<PaintNode>) => {
 						ref={canvasRef}
 						className={cn(
 							"absolute inset-0 w-full z-10 bg-transparent",
-							tool === "brush" ? "cursor-none" : "cursor-crosshair",
+							tool === "fill" ? "cursor-crosshair" : "cursor-none",
 						)}
 						style={canvasStyle}
 						onMouseDown={handleMouseDown}

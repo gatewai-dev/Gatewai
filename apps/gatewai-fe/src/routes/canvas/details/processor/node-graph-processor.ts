@@ -84,6 +84,11 @@ export class NodeGraphProcessor extends EventEmitter {
 		this.registerBuiltInProcessors();
 	}
 
+	/**
+	 * Static validation of the graph topology.
+	 * Checks if edges connect handles with compatible *definitions* (intersection of types).
+	 * Does not check runtime values.
+	 */
 	private validateGraph(): void {
 		const validation: Record<string, Record<string, string>> = {};
 
@@ -109,6 +114,8 @@ export class NodeGraphProcessor extends EventEmitter {
 						return;
 					}
 
+					// Static check: Do the handle definitions overlap at all?
+					// e.g. Source: [Image, Video], Target: [Image] -> Valid
 					const compatible = sourceHandle.dataTypes.some((t: DataType) =>
 						ih.dataTypes.includes(t),
 					);
@@ -139,7 +146,7 @@ export class NodeGraphProcessor extends EventEmitter {
 		// Rebuild Topology Indices
 		this.buildAdjacencyAndIndices();
 
-		// Validate the graph first
+		// Validate the graph first (Structural/Static validation)
 		this.validateGraph();
 
 		// Force-fail invalid nodes after validation
@@ -178,6 +185,8 @@ export class NodeGraphProcessor extends EventEmitter {
 					state.isDirty = true;
 					dirtyNodes.push(id);
 				}
+
+				// Calculate handle status immediately
 				this.updateNodeHandleStatus(id);
 				state.version++;
 			});
@@ -221,10 +230,13 @@ export class NodeGraphProcessor extends EventEmitter {
 		if (nodesToInvalidate.size > 0) {
 			this.markNodesDirty(Array.from(nodesToInvalidate));
 		}
+
+		this.emit("graph:updated");
 	}
 
 	/**
 	 * Calculates the visual state (connected, color, type) for all handles of a node.
+	 * Performs RUNTIME validation: comparing actual source result types against target handle definition.
 	 */
 	private updateNodeHandleStatus(nodeId: string) {
 		const state = this.getOrCreateNodeState(nodeId);
@@ -236,6 +248,8 @@ export class NodeGraphProcessor extends EventEmitter {
 		for (const handle of handles) {
 			let isConnected = false;
 			let activeType = handle.dataTypes[0] as string;
+			// Assume valid unless static validation or runtime check fails
+			let valid = !nodeValidationErrors[handle.id];
 
 			if (handle.type === "Input") {
 				// Check for incoming edge
@@ -252,19 +266,27 @@ export class NodeGraphProcessor extends EventEmitter {
 						const outputItem = sourceState.result.outputs[
 							outputIndex
 						]?.items.find((i) => i.outputHandleId === edge.sourceHandleId);
+
 						if (outputItem) {
 							activeType = outputItem.type;
+
+							// *** RUNTIME CHECK ***
+							// If the source (e.g., File) outputs a 'Video', but this Input handle (e.g., Crop)
+							// only accepts 'Image', mark it invalid, even if the graph was statically valid.
+							if (!handle.dataTypes.includes(activeType as DataType)) {
+								valid = false;
+							}
 						}
 					}
 				}
 			} else {
-				// Output
+				// Output Handle
 				// Check if any edge originates from this handle
 				isConnected = this.edges.some(
 					(e) => e.source === nodeId && e.sourceHandleId === handle.id,
 				);
 
-				// If this node has a result, use the actual output type
+				// If this node has a result, use the actual output type generated
 				if (state.result) {
 					const outputIndex = state.result.selectedOutputIndex ?? 0;
 					const outputItem = state.result.outputs[outputIndex]?.items.find(
@@ -276,11 +298,7 @@ export class NodeGraphProcessor extends EventEmitter {
 				}
 			}
 
-			// Compute per-handle validity (static from graph validation)
-			let valid = true;
-			if (nodeValidationErrors[handle.id]) {
-				valid = false;
-			}
+			// If the whole node is invalid, outputs are invalid
 			if (handle.type === "Output" && hasNodeErrors) {
 				valid = false;
 			}
@@ -293,9 +311,11 @@ export class NodeGraphProcessor extends EventEmitter {
 				color = colorConfig?.hex || "#9ca3af";
 			}
 
-			// If invalid, do not change to incoming color/type - reset to expected/default
-			if (!valid) {
-				activeType = handle.dataTypes[0];
+			// If invalid, revert visual type to expected type (so user sees what IS expected) but keep connection color
+			if (!valid && handle.type === "Input") {
+				// We still want to show the color of the *incoming* type if possible to explain the error,
+				// but usually, we want to show the invalid state.
+				// For now, let's keep the color of the *active* (incoming) type to show mismatch.
 				const colorConfig = dataTypeColors[activeType] || dataTypeColors["Any"];
 				color = colorConfig?.hex || "#9ca3af";
 			}
@@ -562,7 +582,7 @@ export class NodeGraphProcessor extends EventEmitter {
 			// Recalculate handle status as types might have changed
 			this.updateNodeHandleStatus(nodeId);
 
-			// Also update downstream neighbors, as their input handle colors may depend on this result
+			// Also update downstream neighbors, as their input handle colors/validity may depend on this result
 			const children = this.adjacency.get(nodeId);
 			children?.forEach((childId) => {
 				this.updateNodeHandleStatus(childId);
@@ -776,6 +796,10 @@ export class NodeGraphProcessor extends EventEmitter {
 				continue;
 			}
 
+			// *** RUNTIME CHECK ***
+			// Ensure the actual output type matches the input handle's allowed types.
+			// This handles cases where a Source Node handle (e.g. File) allows [Image, Video],
+			// but at runtime produces 'Video', and the Destination Node handle only allows [Image].
 			const connectionValid = handle.dataTypes.includes(
 				outputItem.type as DataType,
 			);
