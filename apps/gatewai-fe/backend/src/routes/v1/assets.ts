@@ -187,6 +187,7 @@ const assetsRouter = new Hono({
 					const stream = getStreamFromGCS(cacheKey, cacheBucket);
 					return c.body(stream, 200, {
 						"Content-Type": "image/webp",
+						"Access-Control-Allow-Origin": "*",
 						"Cache-Control": "public, max-age=31536000, immutable",
 					});
 				}
@@ -231,6 +232,7 @@ const assetsRouter = new Hono({
 				// 6. Return Response
 				return c.body(thumbnailBuffer, 200, {
 					"Content-Type": "image/webp",
+					"Access-Control-Allow-Origin": "*",
 					"Cache-Control": "public, max-age=31536000, immutable",
 				});
 			} catch (error) {
@@ -271,6 +273,7 @@ const assetsRouter = new Hono({
 			return c.body(stream, 206, {
 				"Content-Range": `bytes ${start}-${end}/${fileSize}`,
 				"Accept-Ranges": "bytes",
+				"Access-Control-Allow-Origin": "*",
 				"Content-Length": chunksize.toString(),
 				"Content-Type": asset.mimeType,
 			});
@@ -281,6 +284,7 @@ const assetsRouter = new Hono({
 		return c.body(fullStream, {
 			headers: {
 				"Content-Type": asset.mimeType,
+				"Access-Control-Allow-Origin": "*",
 				"Accept-Ranges": "bytes",
 				"Content-Length": fileSize.toString(),
 				"Cache-Control": "max-age=2592000",

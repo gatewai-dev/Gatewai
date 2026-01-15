@@ -115,7 +115,7 @@ const PaintNodeComponent = memo((props: NodeProps<PaintNode>) => {
 			const inputCanvas = inputCanvasRef.current;
 			const useInput = !!inputImageUrl && inputCanvas;
 			const inputCtx = useInput ? inputCanvas.getContext("2d") : null;
-
+			console.log({ inputImageUrl });
 			const colorData =
 				useInput && inputCtx
 					? inputCtx.getImageData(0, 0, w, h).data
@@ -125,7 +125,7 @@ const PaintNodeComponent = memo((props: NodeProps<PaintNode>) => {
 
 			const [brushR, brushG, brushB] = colorToRgb(brushColor);
 
-			const targetTol = tolerance; // 0-255
+			const targetTol = tolerance;
 
 			const stack: { x: number; y: number }[] = [{ x: posX, y: posY }];
 			const visited = new Uint8Array(w * h);
@@ -197,6 +197,7 @@ const PaintNodeComponent = memo((props: NodeProps<PaintNode>) => {
 
 			if (inputImageUrl) {
 				img = new Image();
+				img.crossOrigin = "Anonymous";
 				img.src = inputImageUrl;
 				await new Promise<void>((resolve, reject) => {
 					if (!img) return reject();
