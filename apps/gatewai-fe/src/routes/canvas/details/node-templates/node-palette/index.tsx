@@ -92,7 +92,7 @@ function NodePaletteContent({ templates }: { templates: NodeTemplateListRPC }) {
 
 				<div
 					className={cn(
-						"h-px w-full bg-gradient-to-r from-transparent via-border to-transparent",
+						"h-px w-full bg-linear-to-r from-transparent via-border to-transparent",
 						isCollapsed && "hidden",
 					)}
 				/>
