@@ -7,7 +7,7 @@ export async function SEED_createNodeTemplates(prisma: PrismaClient) {
 			type: NodeType.VideoCompositor,
 			displayName: "Video Compositor",
 			category: "Video",
-			description: "Compose videos.",
+			description: "Compose videos",
 			subcategory: null,
 			tokenPrice: 0.0,
 			variableInputs: false,
@@ -174,7 +174,7 @@ export async function SEED_createNodeTemplates(prisma: PrismaClient) {
 		{
 			type: NodeType.Text,
 			displayName: "Text",
-			description: "A basic text node",
+			description: "A text input",
 			category: "Inputs",
 			subcategory: null,
 			tokenPrice: 0.0,
@@ -198,7 +198,7 @@ export async function SEED_createNodeTemplates(prisma: PrismaClient) {
 		{
 			type: NodeType.TextMerger,
 			displayName: "Text Merger",
-			description: "Merge Texts",
+			description: "Merge texts",
 			category: "Tools",
 			subcategory: null,
 			tokenPrice: 0.0,
@@ -234,7 +234,7 @@ export async function SEED_createNodeTemplates(prisma: PrismaClient) {
 		{
 			type: NodeType.Preview,
 			displayName: "Preview",
-			description: "Preview an output of a node",
+			description: "Preview the output of a connected node",
 			category: "Outputs",
 			subcategory: null,
 			tokenPrice: 0.0,
@@ -484,7 +484,7 @@ export async function SEED_createNodeTemplates(prisma: PrismaClient) {
 		{
 			type: NodeType.Compositor,
 			displayName: "Compositor",
-			description: "Compose an image using images and text",
+			description: "Compose an image using images and texts",
 			category: "Image",
 			subcategory: null,
 			tokenPrice: 0.0,
@@ -644,8 +644,7 @@ export async function SEED_createNodeTemplates(prisma: PrismaClient) {
 		{
 			type: NodeType.SpeechToText,
 			displayName: "Audio Understanding",
-			description:
-				"Create text transcript of or extract context from an audio file",
+			description: "Create text transcript of or extract context from an audio",
 			category: "AI",
 			subcategory: "Audio",
 			tokenPrice: 0.0,

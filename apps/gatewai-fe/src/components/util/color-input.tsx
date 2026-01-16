@@ -293,7 +293,7 @@ export function ColorPicker({
 		if (hsvaToHex(incomingHsva, showAlpha) !== currentHex) {
 			setHsva(incomingHsva);
 		}
-	}, [value, showAlpha]);
+	}, [value, showAlpha, hsva]);
 
 	const handleHsvaChange = (newHsva: HSVA) => {
 		setHsva(newHsva);
