@@ -12,7 +12,7 @@ This project is built for the Gemini 3 Hackathon.
 
 ### Adaptive Execution Engine
 
-Gatewai utilizes a **Flexible Hybrid Model** where nodes are processed across both the frontend and backend. Rather than sticking to rigid roles, our engine evaluates the requirements of each task—from real-time canvas manipulations to heavy generative rendering—and executes them at the **Edge** (your browser) or on our **Cloud** backend only as necessary to optimize performance and latency.
+Gatewai utilizes a **Flexible Hybrid Model** where nodes are processed across both the frontend and backend. Rather than sticking to rigid roles, our engine evaluates the requirements of each task—from real-time canvas manipulations to AI operations and executes them at the browser or on backend when necessary.
 
 ### Multi-Modal Mastery
 
@@ -25,7 +25,7 @@ Stop switching between tools. Gatewai offers a unified interface for:
 
 ### ⚡ Real-time Creativity
 
-Don't wait for results. Our interactive canvas allows for instant feedback, enabling a fluid creative process where AI becomes an extension of your brush.
+Don't wait for results. Our interactive canvas allows for instant feedback, enabling a fluid creative process where AI becomes an extension of your brush. Gatewai uses WebGL at both backend and frontend to for identical outputs at pixel-level. What you see at browser is what AI gets.
 
 ---
 
