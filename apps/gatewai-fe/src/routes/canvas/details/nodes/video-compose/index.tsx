@@ -79,12 +79,12 @@ const VideoCompositorNodeComponent = memo(
 							(item.data as FileData)?.processData?.duration ??
 							0)
 						: 0;
-				console.log({ durationMs, id: item.data });
+
 				const calculatedDurationFrames =
 					(item.type === "Video" || item.type === "Audio") && durationMs > 0
 						? Math.ceil((durationMs / 1000) * FPS)
 						: DEFAULT_DURATION_FRAMES;
-				console.log({ calculatedDurationFrames });
+
 				const base = {
 					scale: 1,
 					zIndex: saved.zIndex ?? ++maxZ,

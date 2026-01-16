@@ -233,7 +233,7 @@ const CanvasProvider = ({
 			edges: currentDbEdges,
 			handles: currentHandleEntities,
 		};
-		console.log({ currentCanvasDetailsNodes });
+
 		return patchCanvasAsync({
 			json: body,
 			param: {

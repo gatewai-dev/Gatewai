@@ -133,7 +133,7 @@ const ExportNodeComponent = memo((props: NodeProps<BlurNode>) => {
 
 	const hasResult =
 		result && result.outputs[result.selectedOutputIndex]?.items.length > 0;
-	console.log({ hasResult });
+
 	return (
 		<BaseNode selected={props.selected} id={props.id} dragging={props.dragging}>
 			<div className="flex flex-col gap-3">

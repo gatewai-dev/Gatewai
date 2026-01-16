@@ -18,7 +18,6 @@ import type { NodeProcessor } from "./types.js";
 
 const resizeProcessor: NodeProcessor = async ({ node, data }) => {
 	try {
-		console.log("PROCESSING RESIZE");
 		const imageInput = getInputValue(data, node.id, true, {
 			dataType: DataType.Image,
 			label: "Image",

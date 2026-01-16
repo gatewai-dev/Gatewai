@@ -72,7 +72,7 @@ const videoGenExtendProcessor: NodeProcessor = async ({ node, data }) => {
 		});
 
 		while (!operation.done) {
-			console.log("Waiting for video extension to complete...");
+			logger.info("Waiting for video extension to complete...");
 			await new Promise((resolve) => setTimeout(resolve, 10000));
 			operation = await genAI.operations.getVideosOperation({
 				operation: operation,

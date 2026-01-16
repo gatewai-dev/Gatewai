@@ -12,7 +12,6 @@ import { z } from "zod";
 
 config();
 
-console.log(process.env);
 const EnvSchema = z.object({
 	BASE_URL: z.string().url("BASE_URL must be a valid URL"),
 	MCP_PORT: z.coerce.number().default(4001),
@@ -28,7 +27,6 @@ if (!result.success) {
 }
 
 const env = result.data;
-console.log("Environment loaded successfully");
 
 const apiClient = new GatewaiApiClient({
 	baseUrl: env.BASE_URL,
