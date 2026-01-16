@@ -6,7 +6,7 @@ Follow these steps to get **Gatewai** up and running on your local machine.
 
 Before you begin, ensure you have the following installed:
 
-* **Node.js** (v18+ recommended)
+* **Node.js** (20+ recommended)
 * **pnpm** (`npm install -g pnpm`)
 * **Docker & Docker Compose**
 * **Google Cloud Account** (for storage)

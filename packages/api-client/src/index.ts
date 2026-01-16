@@ -1,9 +1,7 @@
 import type { InferRequestType, InferResponseType } from "hono/client";
 import { hc } from "hono/client";
-// Ensure this path matches your actual main backend entry point where `route` is defined
 import type { AppType } from "../../../apps/gatewai-fe/backend/src/index";
 
-// --- Type Inference Helpers ---
 // We create a dummy client instance purely to extract types via Hono's Infer utility.
 // This ensures your client types automatically stay in sync with your Zod schemas.
 const client = hc<AppType>("");
@@ -53,8 +51,6 @@ type NodeTemplatesRoute = (typeof client.api.v1)["node-templates"];
 export type GetNodeTemplatesResponse = InferResponseType<
 	NodeTemplatesRoute["$get"]
 >;
-
-// --- Client Configuration ---
 
 export interface APIClientConfig {
 	baseUrl: string;
