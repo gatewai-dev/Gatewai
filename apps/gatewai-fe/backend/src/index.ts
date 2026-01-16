@@ -1,3 +1,4 @@
+import { prisma, SEED_createNodeTemplates } from "@gatewai/db";
 import { serve } from "@hono/node-server";
 import { serveStatic } from "@hono/node-server/serve-static";
 import { Hono } from "hono";
@@ -30,6 +31,9 @@ const app = new Hono()
 
 // Initialize canvas worker.
 await startWorker();
+
+// Run seed check for node templates
+await SEED_createNodeTemplates(prisma);
 
 serve(
 	{

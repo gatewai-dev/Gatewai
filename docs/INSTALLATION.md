@@ -73,7 +73,7 @@ docker-compose up -d
 
 ### Option B: Manual Setup
 
-Use this if you prefer running the application layers individually for debugging.
+Use this if you prefer running the application layers individually.
 
 ```bash
 # Install dependencies
