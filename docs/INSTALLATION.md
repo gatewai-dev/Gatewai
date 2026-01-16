@@ -28,7 +28,7 @@ cp .env.example .env
 ```
 
 > [!IMPORTANT]
-> Open the `.env` file and fill in your specific credentials (database, redis, and Google Cloud paths) before proceeding.
+> Open the `.env` file and fill in your specific credentials (postgres database, redis, and Google Cloud paths) before proceeding.
 
 ---
 
