@@ -64,23 +64,45 @@ GOOGLE_APPLICATION_CREDENTIALS_PATH="/your/local/path/gatewai/apps/gatewai-fe/gc
 
 ### Option A: Docker (Recommended)
 
-This is the fastest way to start the infrastructure (PostgreSQL, Redis).
+This is the fastest way to start the infrastructure (PostgreSQL, Redis) and the application environment without manually installing system libraries.
 
 ```bash
 docker-compose up -d
 
 ```
 
-### Option B: Manual Setup
+### Option B: Manual Setup (Local Machine)
 
-Use this if you prefer running the application layers individually.
+If you prefer running the application directly on your host, you must first install the system-level dependencies required for media processing.
+
+#### 1. Install System Dependencies
+
+**For macOS:**
 
 ```bash
-# Install dependencies
+brew install cairo pango libpng jpeg giflib librsvg ffmpeg
+```
+
+**For Debian/Ubuntu:**
+
+```bash
+sudo apt-get update && sudo apt-get install -y \
+    python3 build-essential libcairo2-dev libpango1.0-dev \
+    libjpeg-dev libgif-dev librsvg2-dev libgl1-mesa-dev \
+    libglew-dev pkg-config ffmpeg
+
+```
+
+#### 2. Initialize Application
+
+Once the system libraries are ready, run the following commands:
+
+```bash
+# Install Node dependencies
 pnpm i
 
-# Build the project
-pnpm build
+# Build the frontend and backend artifacts
+pnpm run build
 
 # Start the application
 pnpm start
@@ -91,7 +113,6 @@ pnpm start
 
 ## 🔍 Troubleshooting
 
+* **Missing `ffmpeg` or `canvas` errors:** If you see errors related to `node-canvas` or video processing during `pnpm i` or at runtime, ensure the system dependencies listed in Step 3 are correctly installed and linked in your PATH.
 * **Database connection fails:** Ensure the ports in your `.env` match the ports defined in `docker-compose.yml`.
 * **GCP Permissions:** If uploads fail, double-check that your Service Account has the `Storage Object Admin` role and the bucket name in `.env` is correct.
-
----
