@@ -1,4 +1,4 @@
-# 🌌 GATEWAI
+# GATEWAI
 
 **The Multi-Modal Generative AI Workflow Engine.**
 
@@ -8,7 +8,7 @@ Gatewai is a powerful, node-based orchestration platform designed to bridge the 
 
 ---
 
-## ✨ Key Pillars
+## Key Pillars
 
 ### Hybrid Intelligence
 
