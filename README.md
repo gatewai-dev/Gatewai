@@ -48,7 +48,7 @@ See [INSTALLATION.md](https://github.com/okanasl/gatewai/blob/main/docs/INSTALLA
 ### Community & Support
 
 * **Join the Stars ⭐**: Support our journey by starring the repo!
-* **Discord**: Connect with other creators in our [Community Discord](https://discord.gg/phbS3XZb).
+* **Discord**: Connect with other creators, explore/share workflows, vote for next feature in our [Community Discord](https://discord.gg/phbS3XZb).
 
 ---
 
