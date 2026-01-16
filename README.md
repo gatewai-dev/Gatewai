@@ -29,7 +29,7 @@ Don't wait for results. Our interactive canvas allows for instant feedback, enab
 
 ---
 
-## 🚀 Features at a Glance
+## Features at a Glance
 
 - **Cinematic Video Suite**: Generate, extend, and interpolate videos with professional-grade control.
 - **AI-Powered Paint**: Draw, mask, and fill with generative precision directly on the canvas.
@@ -39,7 +39,11 @@ Don't wait for results. Our interactive canvas allows for instant feedback, enab
 
 ---
 
-## 🛠️ Getting Started
+## Getting Started
+
+## Installation
+
+See [INSTALLATION.md](./docs/INSTALLATION.md)
 
 ### Community & Support
 
@@ -48,38 +52,6 @@ Don't wait for results. Our interactive canvas allows for instant feedback, enab
 
 ---
 
-## ⚙️ Setup & Configuration
+## License
 
-### Google Cloud Storage Setup
-
-To enable media persistence and high-performance asset handling, you'll need a Google Cloud Service Account.
-
-1. **Create a Service Account**:
-   - Go to the [IAM & Admin > Service Accounts](https://console.cloud.google.com/iam-admin/serviceaccounts) page.
-   - Click **+ Create Service Account**.
-   - Name it (e.g., "gatewai-storage") and click **Create and Continue**.
-
-2. **Assign Permissions**:
-   - In the Role dropdown, select **Storage Object Admin**.
-   - Click **Continue** and then **Done**.
-
-3. **Generate JSON Key**:
-   - Click on the Email of your new account.
-   - Go to the **Keys** tab -> **Add Key** -> **Create new key**.
-   - Select **JSON** and download it.
-   - Move the file to the `apps/gatewai-fe` folder.
-
-4. **Update your `.env`**:
-
-   ```text
-   GOOGLE_APPLICATION_CREDENTIALS_PATH="/absolute/path/to/your-key.json"
-   ```
-
-> [!WARNING]
-> **Security First**: Never commit your JSON key to Git. Ensure it is added to your `.gitignore` immediately.
-
----
-
-## 📜 License
-
-Gatewai is Open Source. See the LICENSE file for details.
+See [LICENCE.md](./INSTALLATION.md)
