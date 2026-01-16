@@ -80,6 +80,7 @@ const CanvasName = memo(() => {
 
 	if (!isEditing) {
 		return (
+			// biome-ignore lint/a11y/useSemanticElements: No need
 			<div
 				className={`${sharedStyles} cursor-pointer select-none`}
 				onClick={enterEditMode}
