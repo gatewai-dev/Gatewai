@@ -48,7 +48,7 @@ Gatewai uses Google Cloud Storage (GCS) for media persistence.
 2. Click **+ Create Service Account**. Name it `gatewai-storage`.
 3. **Role**: Select `Storage Object Admin`.
 4. Once created, click the account's **Email** > **Keys** tab > **Add Key** > **Create New Key (JSON)**.
-5. Download the file and move it to: `apps/gatewai-fe/gcp-key.json`.
+5. Download the file and move it to root of the repository.
 
 ### 3. Update Environment
 
@@ -56,7 +56,6 @@ Add the absolute path of that JSON file to your `.env`:
 
 ```text
 GOOGLE_APPLICATION_CREDENTIALS_PATH="/your/local/path/gatewai/apps/gatewai-fe/gcp-key.json"
-
 ```
 
 ---
