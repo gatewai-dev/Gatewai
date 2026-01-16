@@ -1,11 +1,9 @@
-// types.ts
 import type { ModulateNodeConfig, PaintNodeConfig } from "@gatewai/types";
 
 export interface IPixiProcessor {
 	processModulate(
 		imageUrl: string,
 		config: ModulateNodeConfig,
-		// AbortSignal is handled on the caller side for Workers
 		signal?: AbortSignal,
 	): Promise<{ dataUrl: string; width: number; height: number }>;
 
