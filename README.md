@@ -4,7 +4,7 @@
 
 Gatewai is a powerful, node-based orchestration platform designed to bridge the gap between complex AI models and intuitive creative workflows. Whether you're generating cinematic videos, composing multi-layered images, or building sophisticated LLM chains, Gatewai provides the canvas for your imagination.
 
-This project is built for Gemini 3 Hackathon.
+This project is built for the Gemini 3 Hackathon.
 
 ---
 
