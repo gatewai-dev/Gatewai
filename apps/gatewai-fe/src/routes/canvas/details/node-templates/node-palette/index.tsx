@@ -8,6 +8,7 @@ import {
 } from "@/components/ui/tooltip";
 import { cn } from "@/lib/utils";
 import type { NodeTemplateListRPC } from "@/rpc/types";
+import { CanvasName } from "../../reactflow-container/left-panel/canvas-name";
 import { AssetsSection } from "../assets/assets-section";
 import { useNodeTemplates } from "../node-templates.ctx";
 import { NodePaletteProvider, useNodePalette } from "./node-palette.ctx";
@@ -43,14 +44,14 @@ function NodePaletteContent({ templates }: { templates: NodeTemplateListRPC }) {
 			<div className="flex shrink-0 items-center justify-between px-3 py-4">
 				<div
 					className={cn(
-						"flex items-center gap-2 overflow-hidden transition-all duration-300",
+						"flex items-center gap-2 overflow-hidden transition-all duration-300 pr-0.5",
 						isCollapsed ? "w-0 opacity-0" : "w-auto opacity-100",
 					)}
 				>
 					<div className="flex h-8 w-8 shrink-0 items-center justify-center rounded-lg bg-primary text-primary-foreground shadow-md">
 						<GatewaiLogo className="h-5 w-5" />
 					</div>
-					<span className="font-semibold tracking-tight text-sm">Library</span>
+					<CanvasName />
 				</div>
 
 				<Tooltip>
@@ -91,7 +92,7 @@ function NodePaletteContent({ templates }: { templates: NodeTemplateListRPC }) {
 
 				<div
 					className={cn(
-						"h-px w-full bg-linear-to-r from-transparent via-border to-transparent",
+						"h-px w-full bg-gradient-to-r from-transparent via-border to-transparent",
 						isCollapsed && "hidden",
 					)}
 				/>
