@@ -1,58 +1,85 @@
-# GATEWAI
+# 🌌 GATEWAI
+
+**The Multi-Modal Generative AI Workflow Engine.**
+
+Gatewai is a powerful, node-based orchestration platform designed to bridge the gap between complex AI models and intuitive creative workflows. Whether you're generating cinematic videos, composing multi-layered images, or building sophisticated LLM chains, Gatewai provides the canvas for your imagination.
 
 [![Checked with Biome](https://img.shields.io/badge/Checked_with-Biome-60a5fa?style=flat&logo=biome)](https://biomejs.dev)
 
-## Support
+---
 
-Join our Stargazers ⭐!
+## ✨ Key Pillars
 
-## Community
+### Hybrid Intelligence
 
-Join our discord server: <https://discord.gg/phbS3XZb>
+Experience the best of both worlds. Gatewai utilizes a **Hybrid Execution Model** that intelligently distributes workloads. Lightweight tasks like real-time painting and image modulation run instantly at the **Edge** (your browser), while heavy generative tasks and video rendering are handled by our high-performance **Cloud** backend.
 
-## Google Bucket & Project Creation
+### Multi-Modal Mastery
 
-To create a JSON credentials file (often called a Service Account Key), you need to use the Google Cloud Console. This file acts as the "identity" for your application, allowing it to interact with Cloud Storage.
+Stop switching between tools. Gatewai offers a unified interface for:
 
-Here is the step-by-step process:
+- **Video**: Text-to-video, cinematic extensions (up to 148s), and first-to-last frame interpolation.
+- **Image**: Generative fill, real-time painting, and advanced compositional tools.
+- **Audio**: High-fidelity text-to-speech and deep audio understanding.
+- **Text**: State-of-the-art LLM orchestration using Gemini 3.
 
-1. Create a Service Account
-Go to the IAM & Admin > Service Accounts page in the Google Cloud Console.
+### ⚡ Real-time Creativity
 
-Select your Project.
+Don't wait for results. Our interactive canvas allows for instant feedback, enabling a fluid creative process where AI becomes an extension of your brush.
 
-Click + Create Service Account at the top.
+---
 
-Enter a name (e.g., "storage-manager") and click Create and Continue.
+## 🚀 Features at a Glance
 
-2. Assign the Correct Permissions
-The service account needs permission to manage objects in created bucket.
+- **Cinematic Video Suite**: Generate, extend, and interpolate videos with professional-grade control.
+- **AI-Powered Paint**: Draw, mask, and fill with generative precision directly on the canvas.
+- **Intelligent Compositor**: Merge images, text, and AI outputs into complex, multi-layered masterpieces.
+- **Modular LLM Chains**: Build sophisticated logic by connecting LLMs with real-world data and media.
+- **Seamless Asset Management**: Unified handling of all your media assets with cloud-native storage.
 
-In the Role dropdown, search for and select:
+---
 
-Storage Object Admin (Full control over objects, including upload/delete).
+## 🛠️ Getting Started
 
-Click Continue and then Done.
+### Community & Support
 
-3. Generate and Download the JSON Key
-In the list of service accounts, click on the Email address of the account you just created.
+- **Join the Stars ⭐**: Support our journey by starring the repo!
+- **Discord**: Connect with other creators in our [Community Discord](https://discord.gg/phbS3XZb).
 
-Click on the Keys tab on the right menu.
+---
 
-Click Add Key > Create new key.
+## ⚙️ Setup & Configuration
 
-Select JSON as the key type and click Create.
+### Google Cloud Storage Setup
 
-A JSON file will automatically download to your computer. Move the downloaded file to /apps/yodes folder.
+To enable media persistence and high-performance asset handling, you'll need a Google Cloud Service Account.
 
-### In your .env file
+1. **Create a Service Account**:
+   - Go to the [IAM & Admin > Service Accounts](https://console.cloud.google.com/iam-admin/serviceaccounts) page.
+   - Click **+ Create Service Account**.
+   - Name it (e.g., "gatewai-storage") and click **Create and Continue**.
 
-```text
-GOOGLE_APPLICATION_CREDENTIALS_PATH="/name-of-the-file.json"
-```
+2. **Assign Permissions**:
+   - In the Role dropdown, select **Storage Object Admin**.
+   - Click **Continue** and then **Done**.
 
-For example:
-GOOGLE_APPLICATION_CREDENTIALS_PATH=/gatewai-466716-6a4cc3da9bc4.json
+3. **Generate JSON Key**:
+   - Click on the Email of your new account.
+   - Go to the **Keys** tab -> **Add Key** -> **Create new key**.
+   - Select **JSON** and download it.
+   - Move the file to the `apps/gatewai-fe` folder.
 
-⚠️ Security Warning
-Never commit your JSON key file to Git. Add the filename to your .gitignore immediately. If the key is leaked, anyone can access your storage buckets and potentially incur high costs or delete your data.
+4. **Update your `.env`**:
+
+   ```text
+   GOOGLE_APPLICATION_CREDENTIALS_PATH="/absolute/path/to/your-key.json"
+   ```
+
+> [!WARNING]
+> **Security First**: Never commit your JSON key to Git. Ensure it is added to your `.gitignore` immediately.
+
+---
+
+## 📜 License
+
+Gatewai is Open Source. See the LICENSE file for details.
