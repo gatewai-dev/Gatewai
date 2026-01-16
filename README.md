@@ -43,7 +43,7 @@ Don't wait for results. Our interactive canvas allows for instant feedback, enab
 
 ## Installation
 
-See [INSTALLATION.md](https://www.google.com/search?q=./docs/INSTALLATION.md)
+See [INSTALLATION.md](https://github.com/okanasl/gatewai/blob/main/docs/INSTALLATION.md)
 
 ### Community & Support
 
@@ -54,6 +54,6 @@ See [INSTALLATION.md](https://www.google.com/search?q=./docs/INSTALLATION.md)
 
 ## License
 
-See [LICENCE.md](https://www.google.com/search?q=./INSTALLATION.md)
+See [LICENCE.md](https://github.com/okanasl/gatewai/blob/main/LICENCE.md)
 
 ---
