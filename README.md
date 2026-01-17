@@ -37,9 +37,9 @@ Don't wait for results. Our interactive canvas allows for instant feedback, enab
 * **Modular LLM Chains**: Build sophisticated logic by connecting LLMs with real-world media.
 * **Seamless Asset Management**: Unified handling of all your media assets with cloud-native storage.
 
-### Media Editing
+### Media Editing 🎬 🎥 🎞️ 🎨
 
-Gatewai ships with image 🎨 and video 🎥 compositor nodes. There's nothing that can stop you from creating a new masterpiece.
+Gatewai ships with image  and video  compositor nodes. There's nothing that can stop you from creating the movie you've always dreamt of.
 
 ---
 
@@ -58,6 +58,6 @@ See [INSTALLATION.md](https://github.com/okanasl/gatewai/blob/main/docs/INSTALLA
 
 ## License
 
-See [LICENCE.md](https://github.com/okanasl/gatewai/blob/main/LICENCE.md)
+See [LICENCE](https://github.com/okanasl/gatewai/blob/main/LICENCE)
 
 ---
