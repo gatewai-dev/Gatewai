@@ -69,37 +69,15 @@ export class BackendPixiService extends BasePixiService {
 		return "@pixi/node";
 	}
 
-	protected async extractBase64(
+	/**
+	 * Extract as Blob directly (more efficient)
+	 */
+	protected async extractBlob(
 		renderer: IRenderer,
 		target: Container,
-	): Promise<string> {
-		// 1. Get raw pixel data (Uint8Array)
-		const pixels = renderer.extract.pixels(target);
-
-		// 2. Get the dimensions of the target
-		// Note: For a Container, use getLocalBounds() or its stored width/height
-		const bounds = target.getLocalBounds();
-		const width = Math.ceil(bounds.width);
-		const height = Math.ceil(bounds.height);
-
-		if (width === 0 || height === 0) {
-			throw new Error(
-				"Cannot extract Base64 from a container with 0 width or height",
-			);
-		}
-
-		// 3. Manually create the canvas and put the image data
-		const canvas = createCanvas(width, height);
-		const ctx = canvas.getContext("2d");
-
-		// Pixi returns Uint8Array, but ImageData needs Uint8ClampedArray
-		const clampedArray = new Uint8ClampedArray(pixels.buffer);
-		const imgData = new ImageData(clampedArray, width, height);
-
-		ctx.putImageData(imgData, 0, 0);
-
-		// 4. Return the Base64 string
-		return canvas.toDataURL("image/png");
+	): Promise<Blob> {
+		const buffer = renderer.extract.pixels(target).buffer;
+		return new Blob([buffer], { type: "image/png" });
 	}
 }
 

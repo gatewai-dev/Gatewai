@@ -78,10 +78,10 @@ export abstract class BasePixiService implements IPixiProcessor {
 		};
 	}
 
-	protected abstract extractBase64(
+	protected abstract extractBlob(
 		renderer: IRenderer,
 		target: Container,
-	): Promise<string> | string;
+	): Promise<Blob>;
 
 	private async createResource(): Promise<PixiResource> {
 		const app = this.createApplication();
@@ -151,7 +151,7 @@ export abstract class BasePixiService implements IPixiProcessor {
 		imageUrl: string,
 		config: ModulateNodeConfig,
 		signal?: AbortSignal,
-	): Promise<{ dataUrl: string; width: number; height: number }> {
+	): Promise<{ dataUrl: Blob; width: number; height: number }> {
 		return this.useApp(async (app) => {
 			this.ensureNotAborted(signal);
 
@@ -174,7 +174,7 @@ export abstract class BasePixiService implements IPixiProcessor {
 			app.render();
 
 			const dataUrl = await Promise.resolve(
-				this.extractBase64(app.renderer, app.stage),
+				this.extractBlob(app.renderer, app.stage),
 			);
 
 			return {
@@ -189,7 +189,7 @@ export abstract class BasePixiService implements IPixiProcessor {
 		imageUrl: string,
 		options: { blurSize: number },
 		signal?: AbortSignal,
-	): Promise<{ dataUrl: string; width: number; height: number }> {
+	): Promise<{ dataUrl: Blob; width: number; height: number }> {
 		return this.useApp(async (app) => {
 			this.ensureNotAborted(signal);
 
@@ -214,7 +214,7 @@ export abstract class BasePixiService implements IPixiProcessor {
 			app.render();
 
 			const dataUrl = await Promise.resolve(
-				this.extractBase64(app.renderer, app.stage),
+				this.extractBlob(app.renderer, app.stage),
 			);
 
 			return {
@@ -229,7 +229,7 @@ export abstract class BasePixiService implements IPixiProcessor {
 		imageUrl: string,
 		options: { width?: number; height?: number },
 		signal?: AbortSignal,
-	): Promise<{ dataUrl: string; width: number; height: number }> {
+	): Promise<{ dataUrl: Blob; width: number; height: number }> {
 		return this.useApp(async (app) => {
 			this.ensureNotAborted(signal);
 
@@ -278,7 +278,7 @@ export abstract class BasePixiService implements IPixiProcessor {
 			app.render();
 
 			const dataUrl = await Promise.resolve(
-				this.extractBase64(app.renderer, app.stage),
+				this.extractBlob(app.renderer, app.stage),
 			);
 
 			return { dataUrl, width: targetWidth, height: targetHeight };
@@ -294,7 +294,7 @@ export abstract class BasePixiService implements IPixiProcessor {
 			heightPercentage: number;
 		},
 		signal?: AbortSignal,
-	): Promise<{ dataUrl: string; width: number; height: number }> {
+	): Promise<{ dataUrl: Blob; width: number; height: number }> {
 		return this.useApp(async (app) => {
 			this.ensureNotAborted(signal);
 
@@ -335,7 +335,7 @@ export abstract class BasePixiService implements IPixiProcessor {
 			app.render();
 
 			const dataUrl = await Promise.resolve(
-				this.extractBase64(app.renderer, app.stage),
+				this.extractBlob(app.renderer, app.stage),
 			);
 
 			return { dataUrl, width: widthPx, height: heightPx };
@@ -348,8 +348,8 @@ export abstract class BasePixiService implements IPixiProcessor {
 		maskUrl?: string,
 		signal?: AbortSignal,
 	): Promise<{
-		imageWithMask: { dataUrl: string; width: number; height: number };
-		onlyMask: { dataUrl: string; width: number; height: number };
+		imageWithMask: { dataUrl: Blob; width: number; height: number };
+		onlyMask: { dataUrl: Blob; width: number; height: number };
 	}> {
 		return this.useApp(async (app) => {
 			const { backgroundColor } = config;
@@ -407,7 +407,7 @@ export abstract class BasePixiService implements IPixiProcessor {
 			app.render();
 
 			const onlyMaskDataUrl = await Promise.resolve(
-				this.extractBase64(app.renderer, app.stage),
+				this.extractBlob(app.renderer, app.stage),
 			);
 
 			// 2. Render Image + Mask
@@ -420,7 +420,7 @@ export abstract class BasePixiService implements IPixiProcessor {
 			app.render();
 
 			const imageWithMaskDataUrl = await Promise.resolve(
-				this.extractBase64(app.renderer, app.stage),
+				this.extractBlob(app.renderer, app.stage),
 			);
 
 			return {
