@@ -1,4 +1,5 @@
 import { PanelLeftClose, PanelLeftOpen } from "lucide-react";
+import { FaDiscord, FaGithub } from "react-icons/fa";
 import { Button } from "@/components/ui/button";
 import { GatewaiLogo } from "@/components/ui/logo";
 import {
@@ -66,9 +67,9 @@ function NodePaletteContent({ templates }: { templates: NodeTemplateListRPC }) {
 							className="h-8 w-8 p-0 shrink-0 rounded-full text-muted-foreground hover:bg-muted hover:text-foreground"
 						>
 							{isCollapsed ? (
-								<PanelLeftOpen className="h-5 w-5" />
+								<PanelLeftOpen className="size-6" />
 							) : (
-								<PanelLeftClose className="h-5 w-5" />
+								<PanelLeftClose className="size-6" />
 							)}
 						</Button>
 					</TooltipTrigger>
@@ -111,9 +112,59 @@ function NodePaletteContent({ templates }: { templates: NodeTemplateListRPC }) {
 				)}
 			</div>
 
-			<div className="mt-auto shrink-0 z-50">
-				<AssetsSection isCollapsed={isCollapsed} />
+			<div className="mt-auto shrink-0 z-50 flex flex-col gap-1px-3">
+				<SocialLink
+					href="https://discord.gg/phbS3XZb"
+					icon={<FaDiscord className="size-5" />}
+					label="Discord"
+					isCollapsed={isCollapsed}
+				/>
+				<SocialLink
+					href="https://github.com/okanasl/gatewai"
+					icon={<FaGithub className="size-5" />}
+					label="GitHub"
+					isCollapsed={isCollapsed}
+				/>
+				<div className="mt-2">
+					<AssetsSection isCollapsed={isCollapsed} />
+				</div>
 			</div>
 		</aside>
+	);
+}
+
+function SocialLink({
+	href,
+	icon,
+	label,
+	isCollapsed,
+}: {
+	href: string;
+	icon: React.ReactNode;
+	label: string;
+	isCollapsed: boolean;
+}) {
+	return (
+		<Tooltip>
+			<TooltipTrigger asChild>
+				<a
+					href={href}
+					target="_blank"
+					rel="noopener noreferrer"
+					className={cn(
+						"flex items-center gap-3 rounded-xl px-2 py-2 text-muted-foreground transition-colors hover:bg-muted hover:text-foreground",
+						isCollapsed ? "justify-center" : "justify-start",
+					)}
+				>
+					<span className="shrink-0">{icon}</span>
+					{!isCollapsed && (
+						<span className="text-sm font-medium animate-in fade-in slide-in-from-left-2">
+							{label}
+						</span>
+					)}
+				</a>
+			</TooltipTrigger>
+			{isCollapsed && <TooltipContent side="right">{label}</TooltipContent>}
+		</Tooltip>
 	);
 }
