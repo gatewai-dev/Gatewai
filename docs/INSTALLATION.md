@@ -32,10 +32,6 @@ cp .env.example .env
 
 ---
 
-I've updated the Google Cloud configuration section to include bucket creation and lifecycle management rules. This ensures your media files are stored correctly and temporary files are automatically cleaned up to save costs.
-
----
-
 ## Step 2: Google Cloud Configuration
 
 Gatewai uses Google Cloud Storage (GCS) for media persistence.

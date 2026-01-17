@@ -37,14 +37,18 @@ import {
 	Italic,
 	Layers,
 	LockOpen,
+	Minus,
 	MousePointer,
 	Move,
 	MoveHorizontal,
 	MoveVertical,
+	Plus,
 	RotateCw,
+	Save,
 	Settings2,
 	Type,
 	Underline,
+	X as XIcon,
 } from "lucide-react";
 import React, {
 	createContext,
@@ -104,6 +108,7 @@ import { Switch } from "@/components/ui/switch";
 import {
 	Tooltip,
 	TooltipContent,
+	TooltipProvider,
 	TooltipTrigger,
 } from "@/components/ui/tooltip";
 import { ColorPicker } from "@/components/util/color-input";
@@ -113,6 +118,7 @@ import type { HandleEntityType } from "@/store/handles";
 import type { NodeEntityType } from "@/store/nodes";
 import { GetAssetEndpoint, GetFontAssetUrl } from "@/utils/file";
 
+// --- Constants ---
 const DEFAULTS = {
 	FONT_FAMILY: "Inter",
 	FONT_SIZE: 64,
@@ -150,6 +156,7 @@ const BLEND_MODES = [
 	"luminosity",
 ] as const;
 
+// --- Types ---
 interface LocalCompositorLayer extends CompositorLayer {
 	computedHeight?: number;
 	computedWidth?: number;
@@ -212,6 +219,8 @@ const useEditor = () => {
 	return context;
 };
 
+// --- Hooks ---
+
 const useSnap = () => {
 	const {
 		layers,
@@ -270,7 +279,6 @@ const useSnap = () => {
 			const node = e.target;
 			const id = node.id();
 
-			// Skip snapping if Shift key is pressed (common design pattern)
 			if (e.evt.shiftKey) {
 				setGuides([]);
 				return;
@@ -280,7 +288,6 @@ const useSnap = () => {
 			let newX = node.x();
 			let newY = node.y();
 
-			// Calculate edges
 			const nodeWidth = node.width() * node.scaleX();
 			const nodeHeight = node.height() * node.scaleY();
 
@@ -289,7 +296,6 @@ const useSnap = () => {
 			const right = newX + nodeWidth;
 			const bottom = newY + nodeHeight;
 
-			// Vertical snaps
 			const vGuides: Guide[] = [];
 			for (const snap of vSnaps) {
 				if (Math.abs(newX - snap) < SNAP_THRESHOLD) {
@@ -304,7 +310,6 @@ const useSnap = () => {
 				}
 			}
 
-			// Horizontal snaps
 			const hGuides: Guide[] = [];
 			for (const snap of hSnaps) {
 				if (Math.abs(newY - snap) < SNAP_THRESHOLD) {
@@ -319,11 +324,9 @@ const useSnap = () => {
 				}
 			}
 
-			// Only apply closest snap
 			if (vGuides.length > 0) node.x(newX);
 			if (hGuides.length > 0) node.y(newY);
 
-			// Deduplicate guides visually
 			const guideMap = new Map<string, Guide>();
 			[...vGuides, ...hGuides].forEach((g) => {
 				const key = `${g.type}-${g.position}`;
@@ -367,7 +370,6 @@ const useSnap = () => {
 			const scaleX = node.scaleX();
 			const scaleY = node.scaleY();
 
-			// Reset scale and apply to width/height to keep coordinate system clean
 			node.scaleX(1);
 			node.scaleY(1);
 
@@ -389,28 +391,24 @@ const useSnap = () => {
 							activeAnchor === "middle-left" ||
 							activeAnchor === "middle-right"
 						) {
-							// Width resize -> Auto Height (Fixed Width)
 							updates.width = newWidth;
 							updates.autoWidth = false;
 							updates.autoHeight = true;
-							updates.height = undefined; // Let it recalculate
+							updates.height = undefined;
 						} else if (
 							activeAnchor === "top-center" ||
 							activeAnchor === "bottom-center"
 						) {
-							// Height resize -> Fixed Size
 							updates.height = newHeight;
 							updates.width = newWidth;
 							updates.autoHeight = false;
 							updates.autoWidth = false;
 						} else if (activeAnchor) {
-							// Corner -> Fixed Size
 							updates.width = newWidth;
 							updates.height = newHeight;
 							updates.autoWidth = false;
 							updates.autoHeight = false;
 						} else {
-							// Fallback
 							updates.width = newWidth;
 							updates.height = newHeight;
 						}
@@ -440,6 +438,8 @@ const useSnap = () => {
 	};
 };
 
+// --- Components ---
+
 const CollapsibleSection: React.FC<{
 	title: string;
 	icon: React.ElementType;
@@ -454,7 +454,7 @@ const CollapsibleSection: React.FC<{
 				onClick={() => setIsOpen(!isOpen)}
 				className="w-full flex items-center justify-between p-3 hover:bg-white/5 transition-colors group"
 			>
-				<div className="flex items-center gap-2 text-[11px] font-bold text-gray-400 uppercase tracking-wider group-hover:text-gray-200">
+				<div className="flex items-center gap-2 text-[11px] font-bold text-gray-500 uppercase tracking-wider group-hover:text-gray-300">
 					<Icon className="w-3.5 h-3.5" /> {title}
 				</div>
 				<ChevronDown
@@ -491,7 +491,6 @@ const ImageLayer: React.FC<LayerProps> = ({
 	const url = getImageUrl(layer.inputHandleId);
 	const [image] = useImage(url ?? "", "anonymous");
 
-	// Initialize dimensions if missing
 	useEffect(() => {
 		if (image && (!layer.width || !layer.height)) {
 			updateLayers(
@@ -516,7 +515,6 @@ const ImageLayer: React.FC<LayerProps> = ({
 		const node = e.target as Konva.Image;
 		const scaleX = node.scaleX();
 		const scaleY = node.scaleY();
-		// Prevent zero dimension
 		if (node.width() * scaleX < 5) node.scaleX(5 / node.width());
 		if (node.height() * scaleY < 5) node.scaleY(5 / node.height());
 	}, []);
@@ -578,7 +576,6 @@ const TextLayer: React.FC<LayerProps> = ({
 		setEditingLayerId(layer.id);
 	};
 
-	// Sync Konva's calculated dimensions back to state and force Transformer update.
 	useEffect(() => {
 		const node = textRef.current;
 		if (!node) return;
@@ -623,8 +620,6 @@ const TextLayer: React.FC<LayerProps> = ({
 		} else {
 			syncDimensions();
 		}
-
-		// Force redraw after sync
 		stageRef.current?.batchDraw();
 	}, [
 		layer.fontFamily,
@@ -645,7 +640,6 @@ const TextLayer: React.FC<LayerProps> = ({
 		stageRef,
 	]);
 
-	// Load Font
 	useEffect(() => {
 		if (layer.fontFamily) {
 			const fontUrl = GetFontAssetUrl(layer.fontFamily);
@@ -656,9 +650,7 @@ const TextLayer: React.FC<LayerProps> = ({
 					if (textRef.current) {
 						const w = textRef.current.textWidth;
 						const h = textRef.current.textHeight;
-
 						if (typeof w !== "number" || typeof h !== "number") return;
-
 						if (
 							Math.abs(w - (layer.computedWidth ?? 0)) > 0.5 ||
 							Math.abs(h - (layer.computedHeight ?? 0)) > 0.5
@@ -691,14 +683,8 @@ const TextLayer: React.FC<LayerProps> = ({
 	const handleTransform = useCallback(
 		(e: KonvaEventObject<Event>) => {
 			const node = e.target as Konva.Text;
-
-			// Reset scales if auto-dimension to prevent distortion
-			if (layer.autoHeight) {
-				node.scaleY(1);
-			}
-			if (layer.autoWidth) {
-				node.scaleX(1);
-			}
+			if (layer.autoHeight) node.scaleY(1);
+			if (layer.autoWidth) node.scaleX(1);
 
 			const newWidth = Math.max(20, node.width() * node.scaleX());
 			const newHeight = node.height() * node.scaleY();
@@ -784,8 +770,7 @@ const TransformerComponent: React.FC = () => {
 			}
 			return undefined;
 		}
-
-		const anchors = [
+		return [
 			"top-left",
 			"top-center",
 			"top-right",
@@ -795,9 +780,6 @@ const TransformerComponent: React.FC = () => {
 			"bottom-center",
 			"bottom-right",
 		];
-
-		// We allow all anchors for Text to enable switching between Auto/Fixed modes via resize
-		return anchors;
 	}, [selectedLayer]);
 
 	return (
@@ -845,8 +827,7 @@ const Guides: React.FC = () => {
 
 const ArtboardBackground: React.FC = () => {
 	const { viewportWidth, viewportHeight } = useEditor();
-
-	// Checkered pattern
+	// Checkered pattern for transparency
 	const patternImage = useMemo(() => {
 		const size = 20;
 		const half = size / 2;
@@ -866,7 +847,6 @@ const ArtboardBackground: React.FC = () => {
 
 	return (
 		<Group>
-			{/* Drop Shadow for Artboard Depth */}
 			<Rect
 				x={0}
 				y={0}
@@ -874,12 +854,11 @@ const ArtboardBackground: React.FC = () => {
 				height={viewportHeight}
 				fill="#000"
 				shadowColor="black"
-				shadowBlur={50}
-				shadowOpacity={0.5}
+				shadowBlur={60}
+				shadowOpacity={0.6}
 				shadowOffset={{ x: 0, y: 10 }}
 				listening={false}
 			/>
-			{/* Main Artboard */}
 			<Rect
 				x={0}
 				y={0}
@@ -933,17 +912,21 @@ const Canvas: React.FC = () => {
 
 	const handleStageMouseDown = useCallback(
 		(e: KonvaEventObject<MouseEvent>) => {
-			// Middle mouse button pan
-			if (e.evt.button === 1) {
+			if (e.evt.button === 1 || mode === "pan") {
 				e.evt.preventDefault();
 				const stage = e.currentTarget;
 				lastModeRef.current = mode;
-				setMode("pan");
+				// Only set mode to pan if it wasn't already (to handle spacebar pan)
+				if (mode !== "pan") setMode("pan");
+
 				stage.draggable(true);
 				stage.startDrag();
 				const reset = () => {
-					setMode(lastModeRef.current);
+					// We only reset if we temporarily switched via middle mouse
+					// If mode was already 'pan' (via toolbar), we keep it.
+					// However, Konva drag behavior usually requires draggable=false to stop.
 					stage.draggable(false);
+					if (e.evt.button === 1) setMode(lastModeRef.current);
 					window.removeEventListener("mouseup", reset);
 				};
 				window.addEventListener("mouseup", reset);
@@ -958,6 +941,17 @@ const Canvas: React.FC = () => {
 			const stage = stageRef.current;
 			if (!stage) return;
 
+			// Pan if no Ctrl/Meta
+			if (!e.evt.ctrlKey && !e.evt.metaKey) {
+				const newPos = {
+					x: stagePos.x - e.evt.deltaX,
+					y: stagePos.y - e.evt.deltaY,
+				};
+				setStagePos(newPos);
+				return;
+			}
+
+			// Zoom if Ctrl/Meta
 			const oldScale = stage.scaleX();
 			const pointer = stage.getPointerPosition();
 			if (!pointer) return;
@@ -968,7 +962,7 @@ const Canvas: React.FC = () => {
 			};
 
 			const direction = e.evt.deltaY > 0 ? -1 : 1;
-			const scaleBy = 1.1; // Slightly faster zoom
+			const scaleBy = 1.1;
 			const newScale = direction > 0 ? oldScale * scaleBy : oldScale / scaleBy;
 
 			if (newScale < 0.05 || newScale > 20) return;
@@ -981,7 +975,7 @@ const Canvas: React.FC = () => {
 			setScale(newScale);
 			setStagePos(newPos);
 		},
-		[stageRef, setScale, setStagePos],
+		[stageRef, setScale, setStagePos, stagePos],
 	);
 
 	useEffect(() => {
@@ -992,7 +986,6 @@ const Canvas: React.FC = () => {
 		stage.batchDraw();
 	}, [scale, stagePos, stageRef]);
 
-	// Sync stage drag back to state for Pan tool
 	useEffect(() => {
 		const stage = stageRef.current;
 		if (!stage) return;
@@ -1054,6 +1047,8 @@ const Canvas: React.FC = () => {
 	);
 };
 
+// --- Panels ---
+
 interface LayerItemProps {
 	layer: LocalCompositorLayer;
 	selectedId: string | null;
@@ -1094,9 +1089,7 @@ const LayerItem: React.FC<LayerItemProps> = ({
 	const handleKeyDown = (e: React.KeyboardEvent) => {
 		if (e.key === "Enter" || e.key === " ") {
 			e.preventDefault();
-			if (!isDragging) {
-				setSelectedId(layer.id);
-			}
+			if (!isDragging) setSelectedId(layer.id);
 		}
 	};
 
@@ -1107,13 +1100,14 @@ const LayerItem: React.FC<LayerItemProps> = ({
 			{...attributes}
 			{...listeners}
 			className={`
-        flex items-center gap-2 px-3 py-2 border-b border-white/5 cursor-pointer outline-none group transition-colors select-none
+        flex items-center gap-2 px-3 py-2 border-b border-white/5 cursor-pointer outline-none group transition-colors select-none w-full text-left
         ${isSelected ? "bg-blue-600/20 text-blue-100" : "hover:bg-white/5 text-gray-400"}
         ${isDragging ? "bg-neutral-800" : ""}
       `}
 			onClick={() => !isDragging && setSelectedId(layer.id)}
 			onKeyDown={handleKeyDown}
 			tabIndex={0}
+			type="button"
 		>
 			<div className="shrink-0 text-gray-500 group-hover:text-gray-300">
 				{layer.type === "Image" ? (
@@ -1189,7 +1183,7 @@ const LayersPanel: React.FC = () => {
 
 				return currentLayers.map((l) => {
 					const pos = newSorted.findIndex((s) => s.id === l.id);
-					return { ...l, zIndex: newSorted.length - pos }; // Reassign z-index
+					return { ...l, zIndex: newSorted.length - pos };
 				});
 			});
 		}
@@ -1202,14 +1196,14 @@ const LayersPanel: React.FC = () => {
 	};
 
 	return (
-		<div className="absolute left-0 top-0 bottom-0 w-60 bg-[#0a0a0a] border-r border-white/10 z-20 flex flex-col shadow-2xl">
+		<div className="absolute left-0 top-0 bottom-0 w-60 bg-[#0f0f0f] border-r border-white/10 z-20 flex flex-col shadow-2xl">
 			<div className="flex items-center justify-between px-4 py-3 border-b border-white/10 bg-neutral-900/50 backdrop-blur shrink-0 h-10">
 				<span className="text-[10px] font-bold uppercase tracking-wider text-neutral-400 flex items-center gap-2">
 					<Layers className="w-3.5 h-3.5" /> Layers
 				</span>
 			</div>
 
-			<ScrollArea className="flex-1">
+			<ScrollArea className="flex-1 bg-[#0f0f0f]">
 				<DndContext
 					sensors={sensors}
 					collisionDetection={closestCenter}
@@ -1244,7 +1238,7 @@ const LayersPanel: React.FC = () => {
 
 const InspectorPanel: React.FC = () => {
 	const { data: fontList } = useGetFontListQuery({});
-	const fontNames = useMemo(() => fontList ?? [], [fontList]); // Rely solely on fetched fonts, no defaults
+	const fontNames = useMemo(() => fontList ?? [], [fontList]);
 
 	const {
 		selectedId,
@@ -1309,9 +1303,10 @@ const InspectorPanel: React.FC = () => {
 
 	if (!selectedLayer) {
 		return (
-			<div className="w-72 border-l border-white/10 bg-[#0a0a0a] z-20 shadow-xl flex flex-col">
-				<div className="px-4 py-3 bg-neutral-900/50 backdrop-blur border-b border-white/10 shrink-0 h-10 flex items-center">
-					<h2 className="text-[10px] font-bold text-neutral-400 uppercase tracking-wider">
+			<div className="w-72 border-l border-white/10 bg-[#0f0f0f] z-20 shadow-xl flex flex-col">
+				<div className="px-4 py-3 bg-neutral-900 border-b border-white/5 shrink-0 h-10 flex items-center">
+					<h2 className="text-[10px] font-bold text-gray-200 uppercase tracking-wide flex items-center gap-2">
+						<Settings2 className="w-3.5 h-3.5 text-blue-400" />
 						Canvas Settings
 					</h2>
 				</div>
@@ -1352,7 +1347,12 @@ const InspectorPanel: React.FC = () => {
 							<SelectContent className="bg-neutral-800 border-white/10 text-gray-300">
 								{ASPECT_RATIOS.map((r) => (
 									<SelectItem key={r.label} value={r.label}>
-										{r.label}
+										<span className="flex items-center justify-between w-full gap-6">
+											<span>{r.label}</span>
+											<span className="text-[10px] text-gray-500 font-mono">
+												{r.width}x{r.height}
+											</span>
+										</span>
 									</SelectItem>
 								))}
 							</SelectContent>
@@ -1360,8 +1360,13 @@ const InspectorPanel: React.FC = () => {
 					</div>
 
 					<div className="flex flex-col items-center justify-center p-8 text-center border border-dashed border-white/10 rounded-lg bg-white/2">
-						<MousePointer className="w-5 h-5 text-gray-600 mb-2" />
-						<p className="text-[11px] text-gray-500">Select a layer to edit</p>
+						<MousePointer className="w-6 h-6 text-gray-700 mb-3" />
+						<p className="text-[11px] font-medium text-gray-400">
+							No Layer Selected
+						</p>
+						<p className="text-[10px] text-gray-600 mt-1">
+							Select a layer to edit properties
+						</p>
 					</div>
 				</div>
 			</div>
@@ -1369,23 +1374,21 @@ const InspectorPanel: React.FC = () => {
 	}
 
 	return (
-		<ScrollArea className="w-72 border-l border-white/10 bg-[#0a0a0a] z-20 shadow-xl">
-			<div className="flex items-center justify-between px-4 py-3 border-b border-white/10 bg-neutral-900/50 backdrop-blur h-14">
+		<ScrollArea className="w-72 border-l border-white/10 bg-[#0f0f0f] z-20 shadow-xl">
+			<div className="flex items-center justify-between px-4 py-3 border-b border-white/5 bg-neutral-900/50 backdrop-blur">
 				<div className="flex flex-col min-w-0">
-					<span className="text-[9px] text-gray-500 uppercase font-bold tracking-wider mb-0.5">
-						Selected
+					<span className="text-[10px] text-blue-400 uppercase font-bold tracking-wider mb-0.5">
+						Properties
 					</span>
 					<div className="flex items-center gap-2">
-						{selectedLayer.type === "Image" ? (
-							<ImageIcon className="w-3.5 h-3.5 text-blue-400" />
-						) : (
-							<Type className="w-3.5 h-3.5 text-blue-400" />
-						)}
-						<h2 className="text-xs font-semibold text-white truncate max-w-[140px]">
+						<h2 className="text-sm font-semibold text-white truncate max-w-[140px]">
 							{selectedLayer.id}
 						</h2>
 					</div>
 				</div>
+				<span className="text-[9px] bg-white/10 px-2 py-1 rounded text-gray-300 font-medium uppercase border border-white/5 tracking-wider">
+					{selectedLayer.type}
+				</span>
 			</div>
 
 			<div className="pb-20">
@@ -1575,14 +1578,14 @@ const InspectorPanel: React.FC = () => {
 					<CollapsibleSection title="Typography" icon={Type}>
 						<div className="space-y-4">
 							<div className="space-y-1.5">
-								<Label className="text-[10px] text-gray-500 font-medium">
-									Font Family
+								<Label className="text-[10px] text-gray-500 font-semibold">
+									FONT FAMILY
 								</Label>
 								<Select
 									value={selectedLayer.fontFamily || DEFAULTS.FONT_FAMILY}
 									onValueChange={(val) => updateLayer({ fontFamily: val })}
 								>
-									<SelectTrigger className="h-8 text-xs bg-white/5 border-white/10 text-white">
+									<SelectTrigger className="h-8 text-xs bg-neutral-800 border-white/10 text-white">
 										<SelectValue />
 									</SelectTrigger>
 									<SelectContent className="bg-neutral-800 border-white/10 text-white">
@@ -1604,8 +1607,8 @@ const InspectorPanel: React.FC = () => {
 									min={1}
 								/>
 								<div className="space-y-1">
-									<Label className="text-[10px] text-gray-500 block mb-1">
-										Color
+									<Label className="text-[10px] text-gray-500 block mb-1 font-semibold">
+										COLOR
 									</Label>
 									<ColorPicker
 										value={selectedLayer.fill ?? DEFAULTS.FILL}
@@ -1668,25 +1671,6 @@ const InspectorPanel: React.FC = () => {
 								))}
 							</div>
 
-							<div className="grid grid-cols-3 gap-1 bg-white/5 p-1 rounded border border-white/5 mt-2">
-								{(["top", "middle", "bottom"] as const).map((vAlign) => (
-									<Button
-										key={vAlign}
-										variant={
-											(selectedLayer.verticalAlign ||
-												DEFAULTS.VERTICAL_ALIGN) === vAlign
-												? "secondary"
-												: "ghost"
-										}
-										size="sm"
-										className="h-6 text-[10px] capitalize rounded-sm"
-										onClick={() => updateLayer({ verticalAlign: vAlign })}
-									>
-										{vAlign}
-									</Button>
-								))}
-							</div>
-
 							<div className="grid grid-cols-2 gap-3 mt-2">
 								<DraggableNumberInput
 									label="Letter"
@@ -1710,7 +1694,9 @@ const InspectorPanel: React.FC = () => {
 				<CollapsibleSection title="Appearance" icon={Settings2}>
 					<div className="space-y-4">
 						<div className="space-y-2">
-							<Label className="text-[10px] text-gray-500">Opacity</Label>
+							<Label className="text-[10px] text-gray-500 font-semibold">
+								OPACITY
+							</Label>
 							<div className="flex items-center gap-2">
 								<DraggableNumberInput
 									label="%"
@@ -1725,7 +1711,9 @@ const InspectorPanel: React.FC = () => {
 						</div>
 
 						<div className="space-y-2">
-							<Label className="text-[10px] text-gray-500">Blend Mode</Label>
+							<Label className="text-[10px] text-gray-500 font-semibold">
+								BLEND MODE
+							</Label>
 							<Select
 								value={selectedLayer.blendMode || "source-over"}
 								onValueChange={(val) => updateLayer({ blendMode: val })}
@@ -1769,42 +1757,46 @@ const Toolbar = React.memo<{
 	} = useEditor();
 
 	return (
-		<div className="flex items-center gap-1.5 p-1.5 rounded-full bg-[#1a1a1a] border border-white/10 shadow-2xl z-50 animate-in fade-in slide-in-from-bottom-4">
-			<Tooltip>
-				<TooltipTrigger asChild>
-					<Button
-						variant={mode === "select" ? "default" : "ghost"}
-						size="icon"
-						className={`rounded-full w-7 h-7`}
-						onClick={() => setMode("select")}
-					>
-						<MousePointer className="w-3.5 h-3.5" />
-					</Button>
-				</TooltipTrigger>
-				<TooltipContent>Select Tool</TooltipContent>
-			</Tooltip>
-			<Tooltip>
-				<TooltipTrigger asChild>
-					<Button
-						variant={mode === "pan" ? "default" : "ghost"}
-						size="icon"
-						className={`rounded-full w-7 h-7`}
-						onClick={() => setMode("pan")}
-					>
-						<Hand className="w-3.5 h-3.5" />
-					</Button>
-				</TooltipTrigger>
-				<TooltipContent>Pan Tool</TooltipContent>
-			</Tooltip>
+		<div className="flex items-center gap-1.5 p-1.5 rounded-full bg-neutral-900/90 backdrop-blur-xl border border-white/10 shadow-2xl z-50 animate-in fade-in slide-in-from-bottom-4">
+			<TooltipProvider>
+				<div className="flex bg-white/5 rounded-full p-0.5 border border-white/5">
+					<Tooltip>
+						<TooltipTrigger asChild>
+							<Button
+								variant={mode === "select" ? "secondary" : "ghost"}
+								size="icon"
+								className={`rounded-full w-8 h-8 ${mode === "select" ? "bg-white/20 text-white" : "text-gray-400 hover:text-white"}`}
+								onClick={() => setMode("select")}
+							>
+								<MousePointer className="w-3.5 h-3.5" />
+							</Button>
+						</TooltipTrigger>
+						<TooltipContent>Select Tool (V)</TooltipContent>
+					</Tooltip>
+					<Tooltip>
+						<TooltipTrigger asChild>
+							<Button
+								variant={mode === "pan" ? "secondary" : "ghost"}
+								size="icon"
+								className={`rounded-full w-8 h-8 ${mode === "pan" ? "bg-white/20 text-white" : "text-gray-400 hover:text-white"}`}
+								onClick={() => setMode("pan")}
+							>
+								<Hand className="w-3.5 h-3.5" />
+							</Button>
+						</TooltipTrigger>
+						<TooltipContent>Pan Tool (H) or hold Space</TooltipContent>
+					</Tooltip>
+				</div>
+			</TooltipProvider>
 
-			<div className="w-px h-4 bg-white/10 mx-1" />
+			<div className="w-px h-5 bg-white/10 mx-1" />
 
 			<Menubar className="border-none bg-transparent h-auto p-0">
 				<MenubarMenu>
 					<MenubarTrigger asChild>
 						<Button
 							variant="ghost"
-							className="h-8 px-3 text-[11px] rounded-full text-gray-300 hover:text-white hover:bg-white/10 font-medium tabular-nums"
+							className="h-8 px-3 text-[11px] rounded-full text-gray-300 hover:text-white hover:bg-white/10 font-medium min-w-[80px] justify-between"
 							onDoubleClick={() => zoomTo(1)}
 						>
 							{zoomPercentage}
@@ -1814,58 +1806,68 @@ const Toolbar = React.memo<{
 					<MenubarContent
 						align="center"
 						sideOffset={10}
-						className="min-w-[140px] bg-[#1a1a1a] border-white/10 text-gray-200"
+						className="min-w-[160px] bg-neutral-900/95 backdrop-blur-xl border-white/10 text-gray-200"
 					>
-						<MenubarItem onClick={() => zoomIn()}>Zoom In (+)</MenubarItem>
-						<MenubarItem onClick={() => zoomOut()}>Zoom Out (-)</MenubarItem>
-						<MenubarItem onClick={() => zoomTo(1)}>
-							Actual Size (100%)
+						<MenubarItem onClick={() => zoomIn()}>
+							<span className="flex-1">Zoom In</span>
+							<span className="text-xs text-gray-500 ml-4">+</span>
 						</MenubarItem>
-						<MenubarItem onClick={() => zoomTo(2)}>200%</MenubarItem>
+						<MenubarItem onClick={() => zoomOut()}>
+							<span className="flex-1">Zoom Out</span>
+							<span className="text-xs text-gray-500 ml-4">−</span>
+						</MenubarItem>
+						<MenubarItem onClick={() => zoomTo(1)}>
+							<span className="flex-1">Actual Size</span>
+							<span className="text-xs text-gray-500 ml-4">1</span>
+						</MenubarItem>
 						<Separator className="my-1 bg-white/10" />
-						<MenubarItem onClick={() => fitView()}>Fit to Screen</MenubarItem>
+						<MenubarItem onClick={() => fitView()}>
+							<span className="flex-1">Fit to Screen</span>
+							<span className="text-xs text-gray-500 ml-4">0</span>
+						</MenubarItem>
 					</MenubarContent>
 				</MenubarMenu>
 			</Menubar>
 
-			<div className="w-px h-4 bg-white/10 mx-1" />
+			<div className="w-px h-5 bg-white/10 mx-1" />
 
-			<div className="flex items-center gap-1.5 pr-1">
-				<Button
-					size="sm"
-					className="h-7 text-[11px] font-medium rounded-full px-4  border-0 transition-transform active:scale-95"
-					onClick={onSave}
-					disabled={!isDirty}
-				>
-					Save
-				</Button>
-				<Button
-					size="sm"
-					variant="ghost"
-					className="h-7 w-7 rounded-full p-0 text-gray-400 hover:text-white hover:bg-red-500/20 transition-colors"
-					onClick={onClose}
-				>
-					<span className="sr-only">Close</span>
-					<svg
-						xmlns="http://www.w3.org/2000/svg"
-						width="16"
-						height="16"
-						viewBox="0 0 24 24"
-						fill="none"
-						stroke="currentColor"
-						strokeWidth="2"
-						strokeLinecap="round"
-						strokeLinejoin="round"
-					>
-						<title>Close</title>
-						<path d="M18 6 6 18" />
-						<path d="m6 6 12 12" />
-					</svg>
-				</Button>
+			<div className="flex items-center gap-1">
+				<TooltipProvider>
+					<Tooltip>
+						<TooltipTrigger asChild>
+							<Button
+								size="sm"
+								variant="default"
+								className="h-8 text-[11px] font-semibold rounded-full px-4"
+								onClick={onSave}
+								disabled={!isDirty}
+							>
+								<Save className="w-3.5 h-3.5 mr-1" />
+								Save
+							</Button>
+						</TooltipTrigger>
+						<TooltipContent>Save (⌘S)</TooltipContent>
+					</Tooltip>
+					<Tooltip>
+						<TooltipTrigger asChild>
+							<Button
+								size="icon"
+								variant="ghost"
+								className="h-8 w-8 rounded-full text-gray-400 hover:text-white hover:bg-white/10"
+								onClick={onClose}
+							>
+								<XIcon className="w-4 h-4" />
+							</Button>
+						</TooltipTrigger>
+						<TooltipContent>Close (Esc)</TooltipContent>
+					</Tooltip>
+				</TooltipProvider>
 			</div>
 		</div>
 	);
 });
+
+// --- Main Editor ---
 
 interface ImageDesignerEditorProps {
 	initialLayers: Map<
@@ -1885,7 +1887,6 @@ export const ImageDesignerEditor: React.FC<ImageDesignerEditorProps> = ({
 }) => {
 	const nodeConfig = node.config as CompositorNodeConfig;
 	const [layers, setLayers] = useState<LocalCompositorLayer[]>([]);
-
 	const [isDirty, setIsDirty] = useState(false);
 
 	const updateLayers = useCallback(
@@ -1923,7 +1924,6 @@ export const ImageDesignerEditor: React.FC<ImageDesignerEditorProps> = ({
 
 	const stageRef = useRef<Konva.Stage | null>(null);
 	const transformerRef = useRef<Konva.Transformer | null>(null);
-
 	const [showCloseAlert, setShowCloseAlert] = useState(false);
 
 	const [mode, setMode] = useState<"select" | "pan">("select");
@@ -1937,7 +1937,7 @@ export const ImageDesignerEditor: React.FC<ImageDesignerEditorProps> = ({
 
 	const zoomPercentage = `${Math.round(scale * 100)}%`;
 
-	// Resize observer for dynamic screen sizing
+	// Resize observer
 	useEffect(() => {
 		const updateSize = () => {
 			if (containerRef.current) {
@@ -1946,8 +1946,9 @@ export const ImageDesignerEditor: React.FC<ImageDesignerEditorProps> = ({
 			}
 		};
 		updateSize();
-		window.addEventListener("resize", updateSize);
-		return () => window.removeEventListener("resize", updateSize);
+		const observer = new ResizeObserver(updateSize);
+		if (containerRef.current) observer.observe(containerRef.current);
+		return () => observer.disconnect();
 	}, []);
 
 	// Fit View logic
@@ -1966,7 +1967,7 @@ export const ImageDesignerEditor: React.FC<ImageDesignerEditorProps> = ({
 		setStagePos(newPos);
 	}, [viewportWidth, viewportHeight, screenWidth, screenHeight]);
 
-	// Initial centering on mount
+	// Initial centering
 	useEffect(() => {
 		if (
 			screenWidth > 100 &&
@@ -1978,7 +1979,6 @@ export const ImageDesignerEditor: React.FC<ImageDesignerEditorProps> = ({
 		}
 	}, [screenWidth, screenHeight, fitView, scale, stagePos.x]);
 
-	// Zoom helpers
 	const zoomIn = useCallback(() => setScale((s) => s * 1.2), []);
 	const zoomOut = useCallback(() => setScale((s) => s / 1.2), []);
 	const zoomTo = useCallback((value: number) => setScale(value), []);
@@ -2085,7 +2085,6 @@ export const ImageDesignerEditor: React.FC<ImageDesignerEditorProps> = ({
 		loadInitialLayers();
 	}, [initialLayers, node.config, getImageData, updateLayers]);
 
-	// Deselect on pan mode
 	useEffect(() => {
 		if (mode === "pan" && selectedId) {
 			setSelectedId(null);
@@ -2098,6 +2097,14 @@ export const ImageDesignerEditor: React.FC<ImageDesignerEditorProps> = ({
 			const isInput =
 				document.activeElement?.tagName === "INPUT" ||
 				document.activeElement?.tagName === "TEXTAREA";
+
+			// Save (Ctrl/Cmd + S)
+			if ((e.ctrlKey || e.metaKey) && e.key.toLowerCase() === "s") {
+				e.preventDefault();
+				if (isDirty) handleSave();
+				return;
+			}
+
 			if (isInput) return;
 
 			// Tools
@@ -2149,15 +2156,24 @@ export const ImageDesignerEditor: React.FC<ImageDesignerEditorProps> = ({
 
 			// Delete
 			if (e.key === "Delete" || e.key === "Backspace") {
-				// Optional: Add layer deletion if desired, currently purely hiding via opacity
-				// if (selectedId) updateLayers(prev => prev.filter(l => l.id !== selectedId));
+				// Optional: Add layer deletion if desired
+			}
+
+			// Close (Esc)
+			if (e.key === "Escape") {
+				handleCloseRequest();
 			}
 		};
 
 		const handleKeyUp = (e: KeyboardEvent) => {
 			if (e.code === "Space") {
-				e.preventDefault();
-				setMode(lastModeRef.current);
+				const isInput =
+					document.activeElement?.tagName === "INPUT" ||
+					document.activeElement?.tagName === "TEXTAREA";
+				if (!isInput) {
+					e.preventDefault();
+					setMode(lastModeRef.current);
+				}
 			}
 		};
 
@@ -2167,7 +2183,7 @@ export const ImageDesignerEditor: React.FC<ImageDesignerEditorProps> = ({
 			window.removeEventListener("keydown", handleKeyDown);
 			window.removeEventListener("keyup", handleKeyUp);
 		};
-	}, [mode, selectedId, updateLayers, zoomIn, zoomOut, fitView]);
+	}, [mode, selectedId, updateLayers, zoomIn, zoomOut, fitView, isDirty]);
 
 	const handleSave = useCallback(() => {
 		const layerUpdates = layers.reduce<Record<string, CompositorLayer>>(
@@ -2178,7 +2194,7 @@ export const ImageDesignerEditor: React.FC<ImageDesignerEditorProps> = ({
 					computedHeight,
 					computedWidth,
 					...rest
-				} = layer; // Strip local-only props
+				} = layer;
 				acc[layer.inputHandleId] = rest;
 				return acc;
 			},
@@ -2194,6 +2210,17 @@ export const ImageDesignerEditor: React.FC<ImageDesignerEditorProps> = ({
 		} else {
 			onClose();
 		}
+	};
+
+	const handleDiscardAndClose = () => {
+		setShowCloseAlert(false);
+		onClose();
+	};
+
+	const handleSaveAndClose = () => {
+		handleSave();
+		setShowCloseAlert(false);
+		onClose();
 	};
 
 	return (
@@ -2244,21 +2271,18 @@ export const ImageDesignerEditor: React.FC<ImageDesignerEditorProps> = ({
 					<div
 						ref={containerRef}
 						className="flex-1 relative overflow-hidden bg-[#050505]"
+						style={{
+							backgroundImage:
+								"radial-gradient(circle at 1px 1px, rgba(255,255,255,0.08) 1px, transparent 0)",
+							backgroundSize: "32px 32px",
+							backgroundColor: "#0F0F0F",
+						}}
 					>
-						{/* Subtle Grid Background */}
-						<div
-							className="absolute inset-0 pointer-events-none opacity-20"
-							style={{
-								backgroundImage:
-									"radial-gradient(circle at 1px 1px, rgba(255,255,255,0.15) 1px, transparent 0)",
-								backgroundSize: "20px 20px",
-							}}
-						/>
 						<Canvas />
 					</div>
 
 					{/* Floating Toolbar */}
-					<div className="absolute bottom-8 left-1/2 -translate-x-1/2 z-50">
+					<div className="absolute bottom-6 left-1/2 -translate-x-1/2 z-50 transition-all duration-300">
 						<Toolbar onSave={handleSave} onClose={handleCloseRequest} />
 					</div>
 				</div>
@@ -2271,21 +2295,33 @@ export const ImageDesignerEditor: React.FC<ImageDesignerEditorProps> = ({
 				<AlertDialog open={showCloseAlert} onOpenChange={setShowCloseAlert}>
 					<AlertDialogContent className="bg-neutral-900 border-white/10 text-white">
 						<AlertDialogHeader>
-							<AlertDialogTitle>Unsaved Changes</AlertDialogTitle>
+							<AlertDialogTitle className="text-white">
+								Unsaved Changes
+							</AlertDialogTitle>
 							<AlertDialogDescription className="text-gray-400">
 								You have unsaved changes. Are you sure you want to leave without
 								saving?
 							</AlertDialogDescription>
 						</AlertDialogHeader>
 						<AlertDialogFooter>
-							<AlertDialogCancel className="bg-transparent border-white/10 text-white hover:bg-white/5 hover:text-white">
+							<AlertDialogCancel
+								onClick={() => setShowCloseAlert(false)}
+								className="bg-transparent border-white/10 text-gray-300 hover:bg-white/5 hover:text-white"
+							>
 								Cancel
 							</AlertDialogCancel>
-							<AlertDialogAction
-								onClick={onClose}
-								className="bg-red-600 text-white hover:bg-red-700 border-0"
+							<Button
+								variant="destructive"
+								onClick={handleDiscardAndClose}
+								className="bg-red-500/20 text-red-400 hover:bg-red-500/30 border-0"
 							>
-								Discard Changes
+								Discard
+							</Button>
+							<AlertDialogAction
+								onClick={handleSaveAndClose}
+								className="bg-primary text-primary-foreground hover:bg-primary/90"
+							>
+								Save & Close
 							</AlertDialogAction>
 						</AlertDialogFooter>
 					</AlertDialogContent>

@@ -112,7 +112,6 @@ import { DEFAULT_DURATION_FRAMES, FPS } from "../config";
 const RULER_HEIGHT = 28;
 const TRACK_HEIGHT = 32;
 const HEADER_WIDTH = 200;
-
 // Optimized Presets for Web Editing (Performance focused)
 const ASPECT_RATIOS = [
 	{ label: "Youtube / HD (16:9)", width: 1280, height: 720 },
@@ -121,7 +120,6 @@ const ASPECT_RATIOS = [
 	{ label: "Square (1:1)", width: 1080, height: 1080 },
 	{ label: "Portrait (4:5)", width: 1080, height: 1350 },
 ];
-
 // --- Context & Types ---
 interface EditorContextType {
 	layers: ExtendedLayer[];
@@ -161,15 +159,12 @@ interface EditorContextType {
 	isDirty: boolean;
 	setIsDirty: Dispatch<SetStateAction<boolean>>;
 }
-
 const EditorContext = createContext<EditorContextType | undefined>(undefined);
-
 const useEditor = () => {
 	const ctx = useContext(EditorContext);
 	if (!ctx) throw new Error("useEditor must be used within EditorProvider");
 	return ctx;
 };
-
 const UnifiedClip: React.FC<{
 	layer: ExtendedLayer;
 	isSelected: boolean;
@@ -214,13 +209,11 @@ const UnifiedClip: React.FC<{
 				};
 		}
 	}, [layer.type]);
-
 	const Icon = styleConfig.icon;
-
 	return (
 		<div
-			className={`h-full w-full relative overflow-hidden rounded-md transition-all duration-75 
-      bg-linear-to-r ${styleConfig.gradient} 
+			className={`h-full w-full relative overflow-hidden rounded-md transition-all duration-75
+      bg-linear-to-r ${styleConfig.gradient}
       ${isSelected ? "brightness-110 ring-2 ring-white/70 shadow-lg" : "opacity-90 hover:opacity-100 hover:brightness-105"}
     `}
 		>
@@ -233,7 +226,6 @@ const UnifiedClip: React.FC<{
 					backgroundSize: "10px 10px",
 				}}
 			/>
-
 			{/* Clip Label */}
 			<div className="absolute inset-0 px-2 flex items-center justify-between pointer-events-none">
 				<div className="flex items-center gap-1.5 min-w-0">
@@ -243,7 +235,6 @@ const UnifiedClip: React.FC<{
 					</span>
 				</div>
 			</div>
-
 			{/* Resize Handle Visuals (Only visible on hover/select) */}
 			{isSelected && (
 				<>
@@ -254,9 +245,7 @@ const UnifiedClip: React.FC<{
 		</div>
 	);
 };
-
 // --- Components: Timeline Core ---
-
 const InteractionOverlay: React.FC = () => {
 	const {
 		layers,
@@ -271,7 +260,6 @@ const InteractionOverlay: React.FC = () => {
 		mode,
 		setPan,
 	} = useEditor();
-
 	const [isDragging, setIsDragging] = useState(false);
 	const [isResizing, setIsResizing] = useState(false);
 	const [isRotating, setIsRotating] = useState(false);
@@ -290,7 +278,6 @@ const InteractionOverlay: React.FC = () => {
 		scale: 1,
 	});
 	const [initialAngle, setInitialAngle] = useState(0);
-
 	// Memoize visible layers
 	const visibleLayers = useMemo(() => {
 		return layers
@@ -304,7 +291,6 @@ const InteractionOverlay: React.FC = () => {
 			)
 			.sort((a, b) => (a.zIndex ?? 0) - (b.zIndex ?? 0));
 	}, [layers, currentFrame]);
-
 	const handleMouseDown = (
 		e: React.MouseEvent,
 		layerId?: string,
@@ -318,18 +304,14 @@ const InteractionOverlay: React.FC = () => {
 			setInitialPan({ x: pan.x, y: pan.y });
 			return;
 		}
-
 		if (e.button !== 0) return;
 		e.stopPropagation();
-
 		if (!layerId) {
 			setSelectedId(null);
 			return;
 		}
-
 		const layer = layers.find((l) => l.id === layerId);
 		if (!layer) return;
-
 		setSelectedId(layerId);
 		setDragStart({ x: e.clientX, y: e.clientY });
 		setInitialPos({
@@ -340,7 +322,6 @@ const InteractionOverlay: React.FC = () => {
 			rotation: layer.rotation,
 			scale: layer.scale ?? 1,
 		});
-
 		if (anchor) {
 			setIsResizing(true);
 			setResizeAnchor(anchor);
@@ -348,19 +329,16 @@ const InteractionOverlay: React.FC = () => {
 			setIsDragging(true);
 		}
 	};
-
 	const handleRotateStart = (e: React.MouseEvent, layerId: string) => {
 		e.stopPropagation();
 		e.preventDefault();
 		setSelectedId(layerId);
 		const layer = layers.find((l) => l.id === layerId);
 		if (!layer) return;
-
 		const centerX = layer.x + (layer.width ?? 0) / 2;
 		const centerY = layer.y + (layer.height ?? 0) / 2;
 		const screenCenterX = centerX * zoom + pan.x;
 		const screenCenterY = centerY * zoom + pan.y;
-
 		setInitialAngle(
 			Math.atan2(e.clientY - screenCenterY, e.clientX - screenCenterX),
 		);
@@ -375,7 +353,6 @@ const InteractionOverlay: React.FC = () => {
 		});
 		setIsRotating(true);
 	};
-
 	const handleMouseMove = (e: React.MouseEvent) => {
 		if (isPanning) {
 			const dx = e.clientX - dragStart.x;
@@ -383,12 +360,9 @@ const InteractionOverlay: React.FC = () => {
 			setPan({ x: initialPan.x + dx, y: initialPan.y + dy });
 			return;
 		}
-
 		if (!selectedId) return;
-
 		const dx = (e.clientX - dragStart.x) / zoom;
 		const dy = (e.clientY - dragStart.y) / zoom;
-
 		if (isDragging) {
 			updateLayers((prev) =>
 				prev.map((l) =>
@@ -405,19 +379,14 @@ const InteractionOverlay: React.FC = () => {
 			const theta = initialPos.rotation * (Math.PI / 180);
 			const cos = Math.cos(theta);
 			const sin = Math.sin(theta);
-
 			let localDx = cos * dx + sin * dy;
 			let localDy = -sin * dx + cos * dy;
-
 			localDx /= initialPos.scale;
 			localDy /= initialPos.scale;
-
 			const signW = resizeAnchor.includes("l") ? -1 : 1;
 			const signH = resizeAnchor.includes("t") ? -1 : 1;
-
 			let changeW = signW * localDx;
 			let changeH = signH * localDy;
-
 			const layer = layers.find((l) => l.id === selectedId);
 			if (layer && (layer.type === "Image" || layer.type === "Video")) {
 				const ratio = initialPos.height / initialPos.width || 1;
@@ -427,23 +396,18 @@ const InteractionOverlay: React.FC = () => {
 					changeW = changeH / ratio;
 				}
 			}
-
 			localDx = signW * changeW;
 			localDy = signH * changeH;
-
 			const newWidth = Math.max(10, initialPos.width + changeW);
 			const newHeight = Math.max(10, initialPos.height + changeH);
-
 			const worldDx = cos * localDx - sin * localDy;
 			const worldDy = sin * localDx + cos * localDy;
-
 			const newX = resizeAnchor.includes("l")
 				? initialPos.x + worldDx
 				: initialPos.x;
 			const newY = resizeAnchor.includes("t")
 				? initialPos.y + worldDy
 				: initialPos.y;
-
 			updateLayers((prev) =>
 				prev.map((l) =>
 					l.id === selectedId
@@ -460,18 +424,15 @@ const InteractionOverlay: React.FC = () => {
 		} else if (isRotating) {
 			const layer = layers.find((l) => l.id === selectedId);
 			if (!layer) return;
-
 			const centerX = layer.x + (layer.width ?? 0) / 2;
 			const centerY = layer.y + (layer.height ?? 0) / 2;
 			const screenCenterX = centerX * zoom + pan.x;
 			const screenCenterY = centerY * zoom + pan.y;
-
 			const currentAngle = Math.atan2(
 				e.clientY - screenCenterY,
 				e.clientX - screenCenterX,
 			);
 			const delta = currentAngle - initialAngle;
-
 			const newRot = initialPos.rotation + (delta * 180) / Math.PI;
 			updateLayers((prev) =>
 				prev.map((l) =>
@@ -480,7 +441,6 @@ const InteractionOverlay: React.FC = () => {
 			);
 		}
 	};
-
 	const handleMouseUp = () => {
 		setIsDragging(false);
 		setIsResizing(false);
@@ -488,7 +448,6 @@ const InteractionOverlay: React.FC = () => {
 		setIsRotating(false);
 		setIsPanning(false);
 	};
-
 	return (
 		// Using a div here is acceptable as it acts as a global event listener/surface.
 		// For stricter accessibility, one might use role="presentation" but it handles keys.
@@ -585,7 +544,6 @@ const InteractionOverlay: React.FC = () => {
 		</div>
 	);
 };
-
 const Toolbar = React.memo<{
 	onClose: () => void;
 	onSave: () => void;
@@ -606,9 +564,7 @@ const Toolbar = React.memo<{
 		mode,
 		setMode,
 	} = useEditor();
-
 	const [showCloseDialog, setShowCloseDialog] = useState(false);
-
 	const handlePlayPause = useCallback(() => {
 		if (playerRef.current) {
 			if (isPlaying) playerRef.current.pause();
@@ -616,7 +572,6 @@ const Toolbar = React.memo<{
 			setIsPlaying(!isPlaying);
 		}
 	}, [isPlaying, setIsPlaying, playerRef]);
-
 	const handleCloseClick = useCallback(() => {
 		if (isDirty) {
 			setShowCloseDialog(true);
@@ -624,18 +579,15 @@ const Toolbar = React.memo<{
 			onClose();
 		}
 	}, [isDirty, onClose]);
-
 	const handleSaveAndClose = useCallback(() => {
 		onSave();
 		setShowCloseDialog(false);
 		onClose();
 	}, [onSave, onClose]);
-
 	const handleDiscardAndClose = useCallback(() => {
 		setShowCloseDialog(false);
 		onClose();
 	}, [onClose]);
-
 	return (
 		<>
 			<div className="flex items-center gap-1.5 p-1.5 rounded-full bg-neutral-900/90 backdrop-blur-xl border border-white/10 shadow-2xl z-50">
@@ -660,9 +612,7 @@ const Toolbar = React.memo<{
 						</TooltipContent>
 					</Tooltip>
 				</TooltipProvider>
-
 				<div className="w-px h-5 bg-white/10 mx-1" />
-
 				{/* Timecode */}
 				<div
 					ref={timeRef}
@@ -671,9 +621,7 @@ const Toolbar = React.memo<{
 					{Math.floor(currentFrame / fps)}s :{" "}
 					{(currentFrame % fps).toString().padStart(2, "0")}f
 				</div>
-
 				<div className="w-px h-5 bg-white/10 mx-1" />
-
 				{/* Tools */}
 				<div className="flex bg-white/5 rounded-full p-0.5 border border-white/5">
 					<Tooltip>
@@ -703,9 +651,7 @@ const Toolbar = React.memo<{
 						<TooltipContent>Pan Tool (H) or hold Space</TooltipContent>
 					</Tooltip>
 				</div>
-
 				<div className="w-px h-5 bg-white/10 mx-1" />
-
 				{/* Zoom */}
 				<Menubar className="border-none bg-transparent h-auto p-0">
 					<MenubarMenu>
@@ -741,9 +687,7 @@ const Toolbar = React.memo<{
 						</MenubarContent>
 					</MenubarMenu>
 				</Menubar>
-
 				<div className="w-px h-5 bg-white/10 mx-1" />
-
 				{/* Actions */}
 				<div className="flex items-center gap-1">
 					<Tooltip>
@@ -776,7 +720,6 @@ const Toolbar = React.memo<{
 					</Tooltip>
 				</div>
 			</div>
-
 			{/* Unsaved Changes Confirmation Dialog */}
 			<AlertDialog open={showCloseDialog} onOpenChange={setShowCloseDialog}>
 				<AlertDialogContent className="bg-neutral-900 border-white/10">
@@ -815,15 +758,12 @@ const Toolbar = React.memo<{
 		</>
 	);
 });
-
 // --- Timeline Panel ---
-
 interface SortableTrackProps {
 	layer: ExtendedLayer;
 	isSelected: boolean;
 	onSelect: () => void;
 }
-
 const SortableTrackHeader: React.FC<SortableTrackProps> = ({
 	layer,
 	isSelected,
@@ -837,7 +777,6 @@ const SortableTrackHeader: React.FC<SortableTrackProps> = ({
 		transition,
 		isDragging,
 	} = useSortable({ id: layer.id });
-
 	const style = {
 		transform: CSS.Transform.toString(transform),
 		transition,
@@ -845,14 +784,13 @@ const SortableTrackHeader: React.FC<SortableTrackProps> = ({
 		minHeight: `${TRACK_HEIGHT}px`,
 		zIndex: isDragging ? 999 : "auto",
 	};
-
 	return (
 		<button
 			ref={setNodeRef}
 			style={style}
 			type="button"
 			className={`
-				w-full text-left p-0 m-0 bg-transparent border-0
+w-full text-left p-0 m-0 bg-transparent border-0
         border-b border-white/5 flex items-center pl-3 pr-2 text-xs gap-3 group outline-none transition-colors select-none
         ${isSelected ? "bg-white/5 text-blue-100" : "hover:bg-white/5 text-gray-400"}
         ${isDragging ? "opacity-50 bg-neutral-900" : ""}
@@ -900,7 +838,6 @@ const SortableTrackHeader: React.FC<SortableTrackProps> = ({
 		</button>
 	);
 };
-
 const TimelinePanel: React.FC = () => {
 	const {
 		layers,
@@ -914,26 +851,22 @@ const TimelinePanel: React.FC = () => {
 		isPlaying,
 		fps,
 	} = useEditor();
-
 	const playheadRef = useRef<HTMLDivElement>(null);
 	const scrollContainerRef = useRef<HTMLDivElement>(null);
 	const [isPanningTimeline, setIsPanningTimeline] = useState(false);
 	const [dragStartX, setDragStartX] = useState(0);
 	const [initialScroll, setInitialScroll] = useState(0);
 	const [pixelsPerFrame, setPixelsPerFrame] = useState(10); // Increased default for better visibility
-
 	const sortedLayers = useMemo(
 		() => [...layers].sort((a, b) => (b.zIndex ?? 0) - (a.zIndex ?? 0)),
 		[layers],
 	);
-
 	const sensors = useSensors(
 		useSensor(PointerSensor, { activationConstraint: { distance: 5 } }),
 		useSensor(KeyboardSensor, {
 			coordinateGetter: sortableKeyboardCoordinates,
 		}),
 	);
-
 	// --- Drag & Drop Sorting ---
 	const handleDragEnd = (event: DragEndEvent) => {
 		const { active, over } = event;
@@ -951,7 +884,6 @@ const TimelinePanel: React.FC = () => {
 			});
 		}
 	};
-
 	// --- Playhead & Scroll Sync ---
 	useEffect(() => {
 		let rafId: number | null = null;
@@ -981,7 +913,6 @@ const TimelinePanel: React.FC = () => {
 			if (rafId) cancelAnimationFrame(rafId);
 		};
 	}, [isPlaying, currentFrame, pixelsPerFrame, playerRef]);
-
 	// --- Timeline Interaction ---
 	const handleTimelineClick = (e: React.MouseEvent) => {
 		const rect = e.currentTarget.getBoundingClientRect();
@@ -990,12 +921,10 @@ const TimelinePanel: React.FC = () => {
 		if (playerRef.current) playerRef.current.seekTo(frame);
 		setCurrentFrame(frame);
 	};
-
 	// --- Scroll Wheel Navigation (Canva-like) ---
 	useEffect(() => {
 		const el = scrollContainerRef.current;
 		if (!el) return;
-
 		const handleWheel = (e: WheelEvent) => {
 			// If Shift key is pressed or it's a horizontal scroll
 			if (e.shiftKey || Math.abs(e.deltaX) > Math.abs(e.deltaY)) {
@@ -1004,11 +933,9 @@ const TimelinePanel: React.FC = () => {
 			}
 			// Vertical scroll is handled natively
 		};
-
 		el.addEventListener("wheel", handleWheel, { passive: false });
 		return () => el.removeEventListener("wheel", handleWheel);
 	}, []);
-
 	// --- Clip Manipulation (Move/Trim) with Snapping ---
 	const handleClipManipulation = (
 		e: React.MouseEvent,
@@ -1019,14 +946,11 @@ const TimelinePanel: React.FC = () => {
 		const startX = e.clientX;
 		const layer = layers.find((l) => l.id === layerId);
 		if (!layer) return;
-
 		const initialStart = layer.startFrame ?? 0;
 		const initialDuration = layer.durationInFrames ?? DEFAULT_DURATION_FRAMES;
-
 		const onMove = (moveEv: MouseEvent) => {
 			const diffPx = moveEv.clientX - startX;
 			const diffFrames = Math.round(diffPx / pixelsPerFrame);
-
 			if (type === "move") {
 				let newStart = initialStart + diffFrames;
 				newStart = Math.max(0, newStart);
@@ -1048,16 +972,13 @@ const TimelinePanel: React.FC = () => {
 				);
 			}
 		};
-
 		const onUp = () => {
 			window.removeEventListener("mousemove", onMove);
 			window.removeEventListener("mouseup", onUp);
 		};
-
 		window.addEventListener("mousemove", onMove);
 		window.addEventListener("mouseup", onUp);
 	};
-
 	return (
 		<div className="h-52 flex flex-col border-t border-white/10 bg-[#0f0f0f] shrink-0 select-none z-30 shadow-[0_-5px_20px_rgba(0,0,0,0.5)]">
 			{/* Toolbar */}
@@ -1065,7 +986,6 @@ const TimelinePanel: React.FC = () => {
 				<div className="text-[10px] font-bold text-neutral-400 tracking-wider flex items-center gap-1.5">
 					<Layers className="w-3.5 h-3.5" /> TIMELINE
 				</div>
-
 				<div className="flex items-center gap-2">
 					<Button
 						variant="ghost"
@@ -1093,7 +1013,6 @@ const TimelinePanel: React.FC = () => {
 					</Button>
 				</div>
 			</div>
-
 			{/* Timeline Content */}
 			<div
 				ref={scrollContainerRef}
@@ -1215,7 +1134,6 @@ const TimelinePanel: React.FC = () => {
 							</div>
 						</div>
 					</div>
-
 					{/* Tracks Body */}
 					<div className="flex relative flex-1">
 						{/* Sidebar / Headers */}
@@ -1243,7 +1161,6 @@ const TimelinePanel: React.FC = () => {
 								</SortableContext>
 							</DndContext>
 						</div>
-
 						{/* Clips Area */}
 						<div className="flex-1 relative timeline-bg min-h-full bg-[#0a0a0a]">
 							{/* Grid */}
@@ -1255,13 +1172,11 @@ const TimelinePanel: React.FC = () => {
 									backgroundSize: `${fps * pixelsPerFrame}px 100%`,
 								}}
 							/>
-
 							{sortedLayers.map((layer) => {
 								const duration =
 									layer.durationInFrames ?? DEFAULT_DURATION_FRAMES;
 								const width = Math.max(10, duration * pixelsPerFrame);
 								const isSelected = layer.id === selectedId;
-
 								return (
 									<div
 										key={layer.id}
@@ -1294,7 +1209,6 @@ const TimelinePanel: React.FC = () => {
 											}}
 										>
 											<UnifiedClip layer={layer} isSelected={isSelected} />
-
 											{/* Resize Handle (Right) - Invisible hit area, visible on hover */}
 											<div
 												className="absolute right-0 top-0 bottom-0 w-3 cursor-e-resize z-30 group/handle"
@@ -1315,9 +1229,7 @@ const TimelinePanel: React.FC = () => {
 		</div>
 	);
 };
-
 // --- Inspector ---
-
 const InspectorPanel: React.FC = () => {
 	const {
 		selectedId,
@@ -1332,14 +1244,12 @@ const InspectorPanel: React.FC = () => {
 	const selectedLayer = layers.find((f) => f.id === selectedId);
 	const [addAnimOpen, setAddAnimOpen] = useState(false);
 	const { data: fontList } = useGetFontListQuery({});
-
 	const fontNames = useMemo(() => {
 		if (Array.isArray(fontList) && (fontList as string[])?.length > 0) {
 			return fontList as string[];
 		}
 		return ["Geist", "Inter", "Arial", "Courier New", "Times New Roman"];
 	}, [fontList]);
-
 	const animationTypes: AnimationType[] = [
 		"fade-in",
 		"fade-out",
@@ -1354,7 +1264,6 @@ const InspectorPanel: React.FC = () => {
 		"bounce",
 		"shake",
 	];
-
 	const addAnimation = (type: AnimationType) => {
 		if (!selectedLayer) return;
 		const newAnimation: VideoAnimation = {
@@ -1371,13 +1280,11 @@ const InspectorPanel: React.FC = () => {
 		);
 		setAddAnimOpen(false);
 	};
-
 	const update = (patch: Partial<ExtendedLayer>) => {
 		updateLayers((prev) =>
 			prev.map((l) => (l.id === selectedId ? { ...l, ...patch } : l)),
 		);
 	};
-
 	if (!selectedLayer) {
 		return (
 			<div className="w-80 border-l border-white/5 bg-[#0f0f0f] flex flex-col z-20 shadow-xl">
@@ -1421,7 +1328,6 @@ const InspectorPanel: React.FC = () => {
 									</SelectContent>
 								</Select>
 							</div>
-
 							<div className="space-y-2">
 								<Label className="text-[10px] text-gray-500 uppercase font-bold tracking-wider">
 									Resolution
@@ -1443,7 +1349,7 @@ const InspectorPanel: React.FC = () => {
 							</div>
 						</div>
 						<div className="w-full h-px bg-white/5" />
-						<div className="flex flex-col items-center justify-center py-12 px-4 text-center border border-dashed border-white/10 rounded-lg bg-white/[0.02]">
+						<div className="flex flex-col items-center justify-center py-12 px-4 text-center border border-dashed border-white/10 rounded-lg bg-white/2">
 							<MousePointer className="w-8 h-8 text-gray-700 mb-3" />
 							<p className="text-sm font-medium text-gray-400">
 								No Layer Selected
@@ -1457,7 +1363,6 @@ const InspectorPanel: React.FC = () => {
 			</div>
 		);
 	}
-
 	return (
 		<div className="w-80 border-l border-white/5 bg-[#0f0f0f] z-20 shadow-xl flex flex-col h-full">
 			<div className="flex items-center justify-between p-4 border-b border-white/5 bg-neutral-900/50">
@@ -1473,62 +1378,62 @@ const InspectorPanel: React.FC = () => {
 					{selectedLayer.type}
 				</span>
 			</div>
-
 			<ScrollArea className="flex-1">
 				<div className="pb-20">
 					{/* Transform */}
-					<div className="border-b border-white/5 p-4">
-						<div className="flex items-center gap-2 mb-3 text-[11px] font-bold text-gray-500 uppercase tracking-wider">
-							<Move className="w-3.5 h-3.5" /> Transform
+					{selectedLayer.type !== "Audio" && (
+						<div className="border-b border-white/5 p-4">
+							<div className="flex items-center gap-2 mb-3 text-[11px] font-bold text-gray-500 uppercase tracking-wider">
+								<Move className="w-3.5 h-3.5" /> Transform
+							</div>
+							<div className="grid grid-cols-2 gap-3 mb-3">
+								<DraggableNumberInput
+									label="X"
+									icon={MoveHorizontal}
+									value={Math.round(selectedLayer.x)}
+									onChange={(v) => update({ x: v })}
+								/>
+								<DraggableNumberInput
+									label="Y"
+									icon={MoveVertical}
+									value={Math.round(selectedLayer.y)}
+									onChange={(v) => update({ y: v })}
+								/>
+								{selectedLayer.type !== "Text" && (
+									<>
+										<DraggableNumberInput
+											label="W"
+											icon={MoveHorizontal}
+											value={Math.round(selectedLayer.width ?? 0)}
+											onChange={(v) => update({ width: Math.max(1, v) })}
+										/>
+										<DraggableNumberInput
+											label="H"
+											icon={MoveVertical}
+											value={Math.round(selectedLayer.height ?? 0)}
+											onChange={(v) => update({ height: Math.max(1, v) })}
+										/>
+									</>
+								)}
+							</div>
+							<div className="grid grid-cols-2 gap-3">
+								<DraggableNumberInput
+									label="Scale"
+									icon={Move}
+									value={selectedLayer.scale ?? 1}
+									step={0.01}
+									onChange={(v) => update({ scale: v })}
+									allowDecimal
+								/>
+								<DraggableNumberInput
+									label="Rotate"
+									icon={RotateCw}
+									value={Math.round(selectedLayer.rotation)}
+									onChange={(v) => update({ rotation: v })}
+								/>
+							</div>
 						</div>
-						<div className="grid grid-cols-2 gap-3 mb-3">
-							<DraggableNumberInput
-								label="X"
-								icon={MoveHorizontal}
-								value={Math.round(selectedLayer.x)}
-								onChange={(v) => update({ x: v })}
-							/>
-							<DraggableNumberInput
-								label="Y"
-								icon={MoveVertical}
-								value={Math.round(selectedLayer.y)}
-								onChange={(v) => update({ y: v })}
-							/>
-							{selectedLayer.type !== "Text" && (
-								<>
-									<DraggableNumberInput
-										label="W"
-										icon={MoveHorizontal}
-										value={Math.round(selectedLayer.width ?? 0)}
-										onChange={(v) => update({ width: Math.max(1, v) })}
-									/>
-									<DraggableNumberInput
-										label="H"
-										icon={MoveVertical}
-										value={Math.round(selectedLayer.height ?? 0)}
-										onChange={(v) => update({ height: Math.max(1, v) })}
-									/>
-								</>
-							)}
-						</div>
-						<div className="grid grid-cols-2 gap-3">
-							<DraggableNumberInput
-								label="Scale"
-								icon={Move}
-								value={selectedLayer.scale ?? 1}
-								step={0.01}
-								onChange={(v) => update({ scale: v })}
-								allowDecimal
-							/>
-							<DraggableNumberInput
-								label="Rotate"
-								icon={RotateCw}
-								value={Math.round(selectedLayer.rotation)}
-								onChange={(v) => update({ rotation: v })}
-							/>
-						</div>
-					</div>
-
+					)}
 					{/* Audio Settings for Video/Audio */}
 					{(selectedLayer.type === "Video" ||
 						selectedLayer.type === "Audio") && (
@@ -1552,7 +1457,6 @@ const InspectorPanel: React.FC = () => {
 							</div>
 						</div>
 					)}
-
 					{/* Typography */}
 					{selectedLayer.type === "Text" && (
 						<div className="border-b border-white/5 p-4">
@@ -1568,7 +1472,6 @@ const InspectorPanel: React.FC = () => {
 										{getTextData(selectedLayer.id)}
 									</div>
 								</div>
-
 								<div className="grid grid-cols-2 gap-3">
 									<div className="space-y-1.5 col-span-2">
 										<Label className="text-[10px] text-gray-500 font-semibold">
@@ -1625,131 +1528,130 @@ const InspectorPanel: React.FC = () => {
 							</div>
 						</div>
 					)}
-
 					{/* Animations */}
-					<div className="border-b border-white/5 p-4">
-						<div className="flex items-center justify-between mb-3">
-							<div className="flex items-center gap-2 text-[11px] font-bold text-gray-500 uppercase tracking-wider">
-								<Zap className="w-3.5 h-3.5" /> Animations
+					{selectedLayer.type !== "Audio" && (
+						<div className="border-b border-white/5 p-4">
+							<div className="flex items-center justify-between mb-3">
+								<div className="flex items-center gap-2 text-[11px] font-bold text-gray-500 uppercase tracking-wider">
+									<Zap className="w-3.5 h-3.5" /> Animations
+								</div>
 							</div>
-						</div>
-						<div className="space-y-3">
-							{selectedLayer.animations?.map((anim) => (
-								<div
-									key={anim.id}
-									className="bg-neutral-900 rounded-md p-3 border border-white/5 shadow-sm group hover:border-blue-500/30 transition-colors"
-								>
-									<div className="flex items-center justify-between mb-3">
+							<div className="space-y-3">
+								{selectedLayer.animations?.map((anim) => (
+									<div
+										key={anim.id}
+										className="bg-neutral-900 rounded-md p-3 border border-white/5 shadow-sm group hover:border-blue-500/30 transition-colors"
+									>
+										<div className="flex items-center justify-between mb-3">
+											<div className="flex items-center gap-2">
+												<div className="w-1.5 h-1.5 rounded-full bg-blue-500 shadow-[0_0_8px_rgba(59,130,246,0.8)]" />
+												<span className="text-[11px] font-medium text-gray-200 capitalize">
+													{anim.type.replace(/-/g, " ")}
+												</span>
+											</div>
+											<Button
+												variant="ghost"
+												size="icon"
+												className="h-5 w-5 hover:bg-red-500/20 hover:text-red-400 opacity-0 group-hover:opacity-100 transition-opacity"
+												onClick={() => {
+													updateLayers((prev) =>
+														prev.map((l) =>
+															l.id === selectedId
+																? {
+																		...l,
+																		animations: l.animations?.filter(
+																			(a) => a.id !== anim.id,
+																		),
+																	}
+																: l,
+														),
+													);
+												}}
+											>
+												<Trash2 className="w-3 h-3" />
+											</Button>
+										</div>
 										<div className="flex items-center gap-2">
-											<div className="w-1.5 h-1.5 rounded-full bg-blue-500 shadow-[0_0_8px_rgba(59,130,246,0.8)]" />
-											<span className="text-[11px] font-medium text-gray-200 capitalize">
-												{anim.type.replace(/-/g, " ")}
+											<span className="text-[9px] text-gray-500 w-8">
+												Speed
+											</span>
+											<Slider
+												className="flex-1"
+												value={[anim.value]}
+												min={0.1}
+												max={3}
+												step={0.1}
+												onValueChange={([v]) => {
+													updateLayers((prev) =>
+														prev.map((l) =>
+															l.id === selectedId
+																? {
+																		...l,
+																		animations: l.animations?.map((a) =>
+																			a.id === anim.id ? { ...a, value: v } : a,
+																		),
+																	}
+																: l,
+														),
+													);
+												}}
+											/>
+											<span className="text-[9px] text-gray-400 w-6 text-right">
+												{anim.value.toFixed(1)}x
 											</span>
 										</div>
+									</div>
+								))}
+								<Popover open={addAnimOpen} onOpenChange={setAddAnimOpen}>
+									<PopoverTrigger asChild>
 										<Button
-											variant="ghost"
-											size="icon"
-											className="h-5 w-5 hover:bg-red-500/20 hover:text-red-400 opacity-0 group-hover:opacity-100 transition-opacity"
-											onClick={() => {
-												updateLayers((prev) =>
-													prev.map((l) =>
-														l.id === selectedId
-															? {
-																	...l,
-																	animations: l.animations?.filter(
-																		(a) => a.id !== anim.id,
-																	),
-																}
-															: l,
-													),
-												);
-											}}
+											variant="outline"
+											className="w-full h-9 text-xs border-dashed border-white/20 bg-transparent hover:bg-white/5 text-gray-400 hover:text-white"
 										>
-											<Trash2 className="w-3 h-3" />
+											<Plus className="w-3.5 h-3.5 mr-1.5" /> Add Animation
 										</Button>
-									</div>
-									<div className="flex items-center gap-2">
-										<span className="text-[9px] text-gray-500 w-8">Speed</span>
-										<Slider
-											className="flex-1"
-											value={[anim.value]}
-											min={0.1}
-											max={3}
-											step={0.1}
-											onValueChange={([v]) => {
-												updateLayers((prev) =>
-													prev.map((l) =>
-														l.id === selectedId
-															? {
-																	...l,
-																	animations: l.animations?.map((a) =>
-																		a.id === anim.id ? { ...a, value: v } : a,
-																	),
-																}
-															: l,
-													),
-												);
-											}}
-										/>
-										<span className="text-[9px] text-gray-400 w-6 text-right">
-											{anim.value.toFixed(1)}x
-										</span>
-									</div>
-								</div>
-							))}
-
-							<Popover open={addAnimOpen} onOpenChange={setAddAnimOpen}>
-								<PopoverTrigger asChild>
-									<Button
-										variant="outline"
-										className="w-full h-9 text-xs border-dashed border-white/20 bg-transparent hover:bg-white/5 text-gray-400 hover:text-white"
+									</PopoverTrigger>
+									<PopoverContent
+										side="left"
+										align="start"
+										className="bg-[#1a1a1a] border-white/10 w-72 p-2"
 									>
-										<Plus className="w-3.5 h-3.5 mr-1.5" /> Add Animation
-									</Button>
-								</PopoverTrigger>
-								<PopoverContent
-									side="left"
-									align="start"
-									className="bg-[#1a1a1a] border-white/10 w-72 p-2"
-								>
-									<div className="grid grid-cols-2 gap-1">
-										{animationTypes.map((type) => (
-											<button
-												key={type}
-												type="button"
-												className="flex items-center gap-3 px-3 py-2 rounded hover:bg-white/10 transition-colors text-left"
-												onClick={() => addAnimation(type)}
-											>
-												<div
-													className={`w-6 h-6 rounded bg-neutral-800 border border-white/5 flex items-center justify-center`}
+										<div className="grid grid-cols-2 gap-1">
+											{animationTypes.map((type) => (
+												<button
+													key={type}
+													type="button"
+													className="flex items-center gap-3 px-3 py-2 rounded hover:bg-white/10 transition-colors text-left"
+													onClick={() => addAnimation(type)}
 												>
-													<Zap className="w-3 h-3 text-gray-400" />
-												</div>
-												<span className="text-[10px] text-gray-300 font-medium">
-													{type.replace(/-/g, " ")}
-												</span>
-											</button>
-										))}
-									</div>
-								</PopoverContent>
-							</Popover>
+													<div
+														className={`w-6 h-6 rounded bg-neutral-800 border border-white/5 flex items-center justify-center`}
+													>
+														<Zap className="w-3 h-3 text-gray-400" />
+													</div>
+													<span className="text-[10px] text-gray-300 font-medium">
+														{type.replace(/-/g, " ")}
+													</span>
+												</button>
+											))}
+										</div>
+									</PopoverContent>
+								</Popover>
+							</div>
 						</div>
-					</div>
+					)}
 				</div>
 			</ScrollArea>
 		</div>
 	);
 };
-
 // --- Main Editor ---
-
 interface VideoDesignerEditorProps {
 	initialLayers: Map<string, OutputItem<"Text" | "Image" | "Video" | "Audio">>;
 	node: NodeEntityType;
 	onClose: () => void;
 	onSave: (config: VideoCompositorNodeConfig) => void;
 }
-
 export const VideoDesignerEditor: React.FC<VideoDesignerEditorProps> = ({
 	initialLayers,
 	node,
@@ -1757,12 +1659,10 @@ export const VideoDesignerEditor: React.FC<VideoDesignerEditorProps> = ({
 	onSave,
 }) => {
 	const nodeConfig = node.config as unknown as VideoCompositorNodeConfig;
-
 	// --- State ---
 	const [layers, setLayers] = useState<ExtendedLayer[]>([]);
 	const [selectedId, setSelectedId] = useState<string | null>(null);
 	const [isDirty, setIsDirty] = useState(false);
-
 	// Canvas State
 	const roundToEven = (num?: number) => Math.round((num ?? 0) / 2) * 2;
 	const [viewportWidth, setViewportWidth] = useState(
@@ -1774,31 +1674,25 @@ export const VideoDesignerEditor: React.FC<VideoDesignerEditorProps> = ({
 	const [zoom, setZoom] = useState(0.5);
 	const [pan, setPan] = useState({ x: 0, y: 0 });
 	const [mode, setMode] = useState<"select" | "pan">("select");
-
 	// Player State
 	const [currentFrame, setCurrentFrame] = useState(0);
 	const [isPlaying, setIsPlayingState] = useState(false);
 	const playerRef = useRef<PlayerRef>(null);
-
 	// Refs
 	const containerRef = useRef<HTMLDivElement>(null);
 	const timeRef = useRef<HTMLDivElement>(null);
 	const lastModeRef = useRef<"select" | "pan">("select");
-
 	const [containerSize, setContainerSize] = useState({ width: 0, height: 0 });
 	const [sizeKnown, setSizeKnown] = useState(false);
-
 	// --- Actions ---
 	const updateViewportWidth = (w: number) => {
 		setViewportWidth(roundToEven(Math.max(2, w)));
 		setIsDirty(true);
 	};
-
 	const updateViewportHeight = (h: number) => {
 		setViewportHeight(roundToEven(Math.max(2, h)));
 		setIsDirty(true);
 	};
-
 	const getTextData = useCallback(
 		(id: string) => {
 			const item = initialLayers.get(id);
@@ -1809,7 +1703,6 @@ export const VideoDesignerEditor: React.FC<VideoDesignerEditorProps> = ({
 		},
 		[initialLayers],
 	);
-
 	const getAssetUrl = useCallback(
 		(id: string) => {
 			const item = initialLayers.get(id);
@@ -1822,7 +1715,6 @@ export const VideoDesignerEditor: React.FC<VideoDesignerEditorProps> = ({
 		},
 		[initialLayers],
 	);
-
 	const getMediaDuration = useCallback(
 		(id: string | undefined | null) => {
 			if (!id) return undefined;
@@ -1836,7 +1728,6 @@ export const VideoDesignerEditor: React.FC<VideoDesignerEditorProps> = ({
 		},
 		[initialLayers],
 	);
-
 	const updateLayersHandler = useCallback(
 		(
 			updater: SetStateAction<ExtendedLayer[]>,
@@ -1847,7 +1738,6 @@ export const VideoDesignerEditor: React.FC<VideoDesignerEditorProps> = ({
 		},
 		[],
 	);
-
 	const deleteLayer = useCallback(
 		(id: string) => {
 			setLayers((prev) => prev.filter((l) => l.id !== id));
@@ -1856,7 +1746,6 @@ export const VideoDesignerEditor: React.FC<VideoDesignerEditorProps> = ({
 		},
 		[selectedId],
 	);
-
 	const setIsPlaying = useCallback((p: boolean) => {
 		setIsPlayingState(p);
 		if (p) playerRef.current?.play();
@@ -1868,12 +1757,10 @@ export const VideoDesignerEditor: React.FC<VideoDesignerEditorProps> = ({
 			}
 		}
 	}, []);
-
 	const setCurrentFrameHandler = useCallback((frame: number) => {
 		setCurrentFrame(frame);
 		playerRef.current?.seekTo(frame);
 	}, []);
-
 	// --- Initialization ---
 	useEffect(() => {
 		const layerUpdates = { ...nodeConfig.layerUpdates };
@@ -1882,7 +1769,6 @@ export const VideoDesignerEditor: React.FC<VideoDesignerEditorProps> = ({
 			0,
 			...Object.values(layerUpdates).map((l) => l.zIndex ?? 0),
 		);
-
 		initialLayers.forEach((item, id) => {
 			const saved = layerUpdates[id] as ExtendedLayer | undefined;
 			const durationMs =
@@ -1893,10 +1779,8 @@ export const VideoDesignerEditor: React.FC<VideoDesignerEditorProps> = ({
 				(item.type === "Video" || item.type === "Audio") && durationMs > 0
 					? Math.ceil((durationMs / 1000) * FPS)
 					: DEFAULT_DURATION_FRAMES;
-
 			const src = item.type !== "Text" ? getAssetUrl(id) : undefined;
 			const text = item.type === "Text" ? getTextData(id) : undefined;
-
 			const base = {
 				id,
 				inputHandleId: id,
@@ -1914,7 +1798,6 @@ export const VideoDesignerEditor: React.FC<VideoDesignerEditorProps> = ({
 				text,
 				...saved,
 			};
-
 			if (item.type === "Text") {
 				loaded.push({
 					...base,
@@ -1953,7 +1836,6 @@ export const VideoDesignerEditor: React.FC<VideoDesignerEditorProps> = ({
 		});
 		setLayers(loaded);
 	}, [initialLayers, nodeConfig, getAssetUrl, getTextData]);
-
 	// Calculate Dimensions
 	useEffect(() => {
 		const layersToMeasure = layers.filter(
@@ -1962,18 +1844,14 @@ export const VideoDesignerEditor: React.FC<VideoDesignerEditorProps> = ({
 				(l.width == null || l.height == null) &&
 				!l.isPlaceholder,
 		);
-
 		if (layersToMeasure.length === 0) return;
-
 		let mounted = true;
 		const measure = async () => {
 			const updates = new Map<string, Partial<ExtendedLayer>>();
-
 			await Promise.all(
 				layersToMeasure.map(async (layer) => {
 					const url = getAssetUrl(layer.inputHandleId);
 					if (!url && layer.type !== "Text") return;
-
 					try {
 						if (layer.type === "Image") {
 							const img = new Image();
@@ -2020,7 +1898,6 @@ export const VideoDesignerEditor: React.FC<VideoDesignerEditorProps> = ({
 					}
 				}),
 			);
-
 			if (mounted && updates.size > 0) {
 				setLayers((prev) =>
 					prev.map((l) =>
@@ -2029,13 +1906,11 @@ export const VideoDesignerEditor: React.FC<VideoDesignerEditorProps> = ({
 				);
 			}
 		};
-
 		measure();
 		return () => {
 			mounted = false;
 		};
 	}, [layers, getAssetUrl, getTextData]);
-
 	// Viewport Logic
 	const zoomIn = useCallback(() => setZoom((z) => Math.min(3, z + 0.1)), []);
 	const zoomOut = useCallback(() => setZoom((z) => Math.max(0.1, z - 0.1)), []);
@@ -2052,12 +1927,10 @@ export const VideoDesignerEditor: React.FC<VideoDesignerEditorProps> = ({
 		const y = (containerSize.height - viewportHeight * scale) / 2;
 		setPan({ x, y });
 	}, [containerSize, viewportWidth, viewportHeight]);
-
 	// biome-ignore lint/correctness/useExhaustiveDependencies: Re-fit required when viewport dims change
 	useEffect(() => {
 		fitView();
 	}, [viewportWidth, viewportHeight, fitView]);
-
 	useEffect(() => {
 		const el = containerRef.current;
 		if (!el) return;
@@ -2068,19 +1941,16 @@ export const VideoDesignerEditor: React.FC<VideoDesignerEditorProps> = ({
 		observer.observe(el);
 		return () => observer.disconnect();
 	}, []);
-
 	useEffect(() => {
 		if (!sizeKnown && containerSize.width > 0) {
 			fitView();
 			setSizeKnown(true);
 		}
 	}, [containerSize, fitView, sizeKnown]);
-
 	// Wheel Interaction
 	useEffect(() => {
 		const el = containerRef.current;
 		if (!el) return;
-
 		const handleWheel = (e: WheelEvent) => {
 			if (e.ctrlKey || e.metaKey || mode === "pan") {
 				e.preventDefault();
@@ -2090,13 +1960,11 @@ export const VideoDesignerEditor: React.FC<VideoDesignerEditorProps> = ({
 				const zoomSensitivity = 0.003;
 				const delta = -e.deltaY * zoomSensitivity;
 				const newZoom = Math.min(Math.max(zoom * Math.exp(delta), 0.1), 5);
-
 				if (newZoom !== zoom) {
 					const mousePointTo = {
 						x: (pointerX - pan.x) / zoom,
 						y: (pointerY - pan.y) / zoom,
 					};
-
 					setPan({
 						x: pointerX - mousePointTo.x * newZoom,
 						y: pointerY - mousePointTo.y * newZoom,
@@ -2107,18 +1975,15 @@ export const VideoDesignerEditor: React.FC<VideoDesignerEditorProps> = ({
 				setPan((p) => ({ ...p, x: p.x - e.deltaX, y: p.y - e.deltaY }));
 			}
 		};
-
 		el.addEventListener("wheel", handleWheel, { passive: false });
 		return () => el.removeEventListener("wheel", handleWheel);
 	}, [zoom, pan, mode]);
-
 	// Keyboard Shortcuts
 	useEffect(() => {
 		const handleKeyDown = (e: KeyboardEvent) => {
 			const isInput =
 				document.activeElement?.tagName === "INPUT" ||
 				document.activeElement?.tagName === "TEXTAREA";
-
 			// Ctrl/Cmd + S: Save
 			if ((e.ctrlKey || e.metaKey) && e.key.toLowerCase() === "s") {
 				e.preventDefault();
@@ -2151,9 +2016,7 @@ export const VideoDesignerEditor: React.FC<VideoDesignerEditorProps> = ({
 				}
 				return;
 			}
-
 			if (isInput) return;
-
 			// Space: Temporary pan mode (hold)
 			if (e.code === "Space" && !e.repeat) {
 				e.preventDefault();
@@ -2163,13 +2026,11 @@ export const VideoDesignerEditor: React.FC<VideoDesignerEditorProps> = ({
 				}
 				return;
 			}
-
 			// Delete/Backspace: Delete selected layer
 			if (e.key === "Delete" || e.key === "Backspace") {
 				if (selectedId) deleteLayer(selectedId);
 				return;
 			}
-
 			// Tool shortcuts
 			switch (e.key.toLowerCase()) {
 				case "v":
@@ -2196,7 +2057,6 @@ export const VideoDesignerEditor: React.FC<VideoDesignerEditorProps> = ({
 					break;
 			}
 		};
-
 		const handleKeyUp = (e: KeyboardEvent) => {
 			if (e.code === "Space") {
 				const isInput =
@@ -2208,10 +2068,8 @@ export const VideoDesignerEditor: React.FC<VideoDesignerEditorProps> = ({
 				}
 			}
 		};
-
 		window.addEventListener("keydown", handleKeyDown);
 		window.addEventListener("keyup", handleKeyUp);
-
 		return () => {
 			window.removeEventListener("keydown", handleKeyDown);
 			window.removeEventListener("keyup", handleKeyUp);
@@ -2230,7 +2088,6 @@ export const VideoDesignerEditor: React.FC<VideoDesignerEditorProps> = ({
 		zoomTo,
 		fitView,
 	]);
-
 	const durationInFrames = useMemo(() => {
 		if (layers.length === 0) return DEFAULT_DURATION_FRAMES;
 		return Math.max(
@@ -2241,7 +2098,6 @@ export const VideoDesignerEditor: React.FC<VideoDesignerEditorProps> = ({
 			),
 		);
 	}, [layers]);
-
 	const contextValue = useMemo(
 		() => ({
 			layers,
@@ -2301,11 +2157,9 @@ export const VideoDesignerEditor: React.FC<VideoDesignerEditorProps> = ({
 			fitView,
 		],
 	);
-
 	useEffect(() => {
 		playerRef.current?.seekTo(0);
 	}, []);
-
 	return (
 		<EditorContext.Provider value={contextValue}>
 			<div className="flex flex-col h-screen w-full bg-[#050505] text-gray-100 overflow-hidden font-sans select-none">
@@ -2344,7 +2198,6 @@ export const VideoDesignerEditor: React.FC<VideoDesignerEditorProps> = ({
 										<div className="w-full h-full border border-white/50 border-dashed" />
 									</div>
 								)}
-
 								<Player
 									ref={playerRef}
 									component={CompositionScene}
@@ -2366,9 +2219,7 @@ export const VideoDesignerEditor: React.FC<VideoDesignerEditorProps> = ({
 						</div>
 						{!isPlaying && <InteractionOverlay />}
 					</div>
-
 					<InspectorPanel />
-
 					{/* Floating Controls */}
 					<div className="absolute bottom-6 left-1/2 -translate-x-1/2 z-40 transition-all duration-300">
 						<Toolbar
@@ -2393,7 +2244,6 @@ export const VideoDesignerEditor: React.FC<VideoDesignerEditorProps> = ({
 									acc[layer.id] = savedLayer;
 									return acc;
 								}, {});
-
 								onSave({
 									layerUpdates,
 									width: viewportWidth,

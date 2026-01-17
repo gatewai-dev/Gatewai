@@ -2,7 +2,7 @@
 
 **The Multi-Modal Generative AI Workflow Platform.**
 
-Gatewai is a powerful, node-based orchestration platform designed to bridge the gap between complex AI models and intuitive creative workflows. Whether you're generating cinematic videos, composing multi-layered images, or building sophisticated LLM chains, Gatewai provides the canvas for your imagination while looking good.
+Gatewai is a powerful, node-based orchestration platform designed to bridge the gap between complex AI models and intuitive creative workflows. Whether you're generating cinematic videos, composing multi-layered images, or building sophisticated LLM chains, Gatewai provides the canvas for your imagination while looking good and providing ease of use.
 
 This project is built for the Gemini 3 Hackathon.
 
@@ -36,6 +36,10 @@ Don't wait for results. Our interactive canvas allows for instant feedback, enab
 * **Intelligent Compositor**: Merge images, text, and AI outputs into complex, multi-layered masterpieces.
 * **Modular LLM Chains**: Build sophisticated logic by connecting LLMs with real-world media.
 * **Seamless Asset Management**: Unified handling of all your media assets with cloud-native storage.
+
+### A Video Editor
+
+Gatewai ships with a video editor node.
 
 ---
 
