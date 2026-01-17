@@ -1,3 +1,4 @@
+import assert from "node:assert";
 import { randomUUID } from "node:crypto";
 import { existsSync, mkdirSync } from "node:fs";
 import { readFile, rm } from "node:fs/promises";
@@ -17,29 +18,17 @@ import { ENV_CONFIG } from "../../config.js";
 import { genAI } from "../../genai.js";
 import { logger } from "../../logger.js";
 import { assertIsError } from "../../utils/misc.js";
+import { generateSignedUrl, uploadToGCS } from "../../utils/storage.js";
 import {
-	generateSignedUrl,
-	getFromGCS,
-	uploadToGCS,
-} from "../../utils/storage.js";
-import { getInputValue, getInputValuesByType } from "../resolvers.js";
+	getFileDataMimeType,
+	getInputValue,
+	getInputValuesByType,
+	loadMediaBuffer,
+} from "../resolvers.js";
 import type { NodeProcessor } from "./types.js";
 
 const __filename = fileURLToPath(import.meta.url);
 const __dirname = path.dirname(__filename);
-
-async function ResolveImageData(fileData: FileData) {
-	if (fileData.entity) {
-		const buffer = await getFromGCS(
-			fileData.entity.key,
-			fileData.entity.bucket,
-		);
-		return buffer.toString("base64");
-	}
-	if (fileData.processData) {
-		return fileData.processData.dataUrl;
-	}
-}
 
 const videoGenProcessor: NodeProcessor = async ({ node, data }) => {
 	try {
@@ -60,11 +49,16 @@ const videoGenProcessor: NodeProcessor = async ({ node, data }) => {
 		const config = VideoGenNodeConfigSchema.parse(node.config);
 
 		const LoadImageDataPromises = imageFileData?.map(async (fileData) => {
-			const base64Data = await ResolveImageData(fileData);
+			const arrayBuffer = await loadMediaBuffer(fileData);
+			const buffer = Buffer.from(arrayBuffer);
+			const base64Data = buffer.toString("base64");
+
+			const mimeType = await getFileDataMimeType(fileData);
+			assert(mimeType);
 			const refImg: VideoGenerationReferenceImage = {
 				image: {
 					imageBytes: base64Data,
-					mimeType: fileData.entity?.mimeType ?? "image/png",
+					mimeType: mimeType,
 				},
 				referenceType: VideoGenerationReferenceType.ASSET,
 			};

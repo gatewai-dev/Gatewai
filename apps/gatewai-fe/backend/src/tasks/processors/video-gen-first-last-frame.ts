@@ -1,3 +1,4 @@
+import assert from "node:assert";
 import { randomUUID } from "node:crypto";
 import { existsSync, mkdirSync } from "node:fs";
 import { readFile } from "node:fs/promises";
@@ -13,30 +14,25 @@ import {
 import { ENV_CONFIG } from "../../config.js";
 import { genAI } from "../../genai.js";
 import { logger } from "../../logger.js";
+import { generateSignedUrl, uploadToGCS } from "../../utils/storage.js";
 import {
-	generateSignedUrl,
-	getFromGCS,
-	uploadToGCS,
-} from "../../utils/storage.js";
-import { getInputValue } from "../resolvers.js";
+	getFileDataMimeType,
+	getInputValue,
+	loadMediaBuffer,
+} from "../resolvers.js";
 import type { NodeProcessor } from "./types.js";
 
 const __filename = fileURLToPath(import.meta.url);
 const __dirname = path.dirname(__filename);
 
-// Helper to resolve S3 or DataURL to base64
 async function ResolveImageData(fileData: FileData) {
-	if (fileData.entity) {
-		const buffer = await getFromGCS(
-			fileData.entity.key,
-			fileData.entity.bucket,
-		);
-		return buffer.toString("base64");
-	}
-	if (fileData.processData) {
-		return fileData.processData.dataUrl;
-	}
-	throw new Error("Invalid file data: missing entity or processData");
+	const arrayBuffer = await loadMediaBuffer(fileData);
+	const buffer = Buffer.from(arrayBuffer);
+	const base64Data = buffer.toString("base64");
+
+	const mimeType = await getFileDataMimeType(fileData);
+	assert(mimeType);
+	return { base64Data, mimeType };
 }
 
 const videoGenFirstLastFrameProcessor: NodeProcessor = async ({
@@ -70,7 +66,10 @@ const videoGenFirstLastFrameProcessor: NodeProcessor = async ({
 		const config = VideoGenFirstLastFrameNodeConfigSchema.parse(node.config);
 
 		// 4. Resolve Images to Base64
-		const [firstBase64, lastBase64] = await Promise.all([
+		const [
+			{ base64Data: firstBase64, mimeType: firstMimeType },
+			{ base64Data: lastBase64, mimeType: lastMimeType },
+		] = await Promise.all([
 			ResolveImageData(firstFileData),
 			ResolveImageData(lastFileData),
 		]);
@@ -83,12 +82,12 @@ const videoGenFirstLastFrameProcessor: NodeProcessor = async ({
 			prompt: userPrompt,
 			image: {
 				imageBytes: firstBase64,
-				mimeType: firstFileData.entity?.mimeType ?? "image/png",
+				mimeType: firstMimeType,
 			},
 			config: {
 				lastFrame: {
 					imageBytes: lastBase64,
-					mimeType: lastFileData.entity?.mimeType ?? "image/png",
+					mimeType: lastMimeType,
 				},
 				resolution: config.resolution,
 				personGeneration: config.personGeneration,

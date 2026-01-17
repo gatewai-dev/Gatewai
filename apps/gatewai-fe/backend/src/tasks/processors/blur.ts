@@ -25,7 +25,6 @@ const blurProcessor: NodeProcessor = async ({ node, data }) => {
 		assert(imageInput);
 		const imageUrl = await ResolveFileDataUrl(imageInput);
 		assert(imageUrl);
-		console.log({ imageUrl }, "BLUR");
 		const blurConfig = BlurNodeConfigSchema.parse(node.config);
 		const blurSize = blurConfig.size ?? 0;
 

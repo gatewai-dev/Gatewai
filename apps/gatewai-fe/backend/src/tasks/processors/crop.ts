@@ -26,7 +26,7 @@ const cropProcessor: NodeProcessor = async ({ node, data }) => {
 			cropConfig;
 
 		assert(imageInput);
-		const imageUrl = ResolveFileDataUrl(imageInput);
+		const imageUrl = await ResolveFileDataUrl(imageInput);
 		assert(imageUrl);
 
 		const { dataUrl, ...dimensions } = await backendPixiService.processCrop(

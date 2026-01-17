@@ -3,7 +3,6 @@ import { DataType } from "@gatewai/db";
 import type { FileData, LLMNodeConfig, LLMResult } from "@gatewai/types";
 import type { Part } from "@google/genai";
 import { genAI } from "../../genai.js";
-import { bufferToDataUrl } from "../../utils/image.js";
 import {
 	getFileDataMimeType,
 	getInputValue,
