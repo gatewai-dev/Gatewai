@@ -32,6 +32,10 @@ cp .env.example .env
 
 ---
 
+I've updated the Google Cloud configuration section to include bucket creation and lifecycle management rules. This ensures your media files are stored correctly and temporary files are automatically cleaned up to save costs.
+
+---
+
 ## Step 2: Google Cloud Configuration
 
 Gatewai uses Google Cloud Storage (GCS) for media persistence.
@@ -42,21 +46,54 @@ Gatewai uses Google Cloud Storage (GCS) for media persistence.
 2. Click the project dropdown and select **New Project**.
 3. Name it `Gatewai` and click **Create**.
 
-### 2. Service Account & Keys
+### 2. Create a Storage Bucket
+
+1. Navigate to **Cloud Storage > Buckets**.
+2. Click **+ Create**.
+3. **Name your bucket:** (e.g., `gatewai-media-assets`). Keep this name handy for your `.env` file.
+4. **Location type:** Choose `Region` and select the one closest to you.
+5. **Storage class:** Select `Standard`.
+6. Click **Create**.
+
+### 3. Service Account & Keys
 
 1. Navigate to **IAM & Admin > Service Accounts**.
 2. Click **+ Create Service Account**. Name it `gatewai-storage`.
-3. **Role**: Select `Storage Object Admin`.
+3. **Role:** Select `Storage Object Admin`.
 4. Once created, click the account's **Email** > **Keys** tab > **Add Key** > **Create New Key (JSON)**.
 5. Download the file and move it to the root path of this repository.
 
-### 3. Update Environment
+### 4. Configure Lifecycle Rules (Highly Reccommended)
 
-Add the absolute path of that JSON file to your `.env`:
+To manage costs and clean up temporary processing files, you must set a lifecycle policy.
+
+1. Go back to your **Bucket Details** page.
+2. Select the **Lifecycle** tab and click **+ Add a Rule**.
+3. **Select an action:** Choose `Delete object`.
+4. **Select object conditions:**
+
+* **Age:** Set to `2` days.
+* **Name prefix matches:** Enter `temp/`.
+
+1. Click **Create**.
+
+> [!TIP]
+> **Rule Precedence:** If an object meets multiple conditions, Google Cloud follows a specific hierarchy:
+>
+> * **Deletion** always takes precedence over changing storage classes.
+> * Moving to **colder** storage (e.g., Archive) takes precedence over warmer classes.
+
+### 5. Update Environment
+
+Add your bucket name and the absolute path of your JSON key to your `.env`:
 
 ```text
+GCP_BUCKET_NAME="your-bucket-name"
 GOOGLE_APPLICATION_CREDENTIALS_PATH="/your/local/path/gatewai/apps/gatewai-fe/gcp-key.json"
+
 ```
+
+---
 
 ---
 
