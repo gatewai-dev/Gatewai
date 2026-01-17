@@ -37,10 +37,12 @@ import {
 	Italic,
 	Layers,
 	LockOpen,
+	Minus,
 	MousePointer,
 	Move,
 	MoveHorizontal,
 	MoveVertical,
+	Plus,
 	RotateCw,
 	Save,
 	Settings2,
@@ -393,10 +395,22 @@ const useSnap = () => {
 							updates.autoWidth = false;
 							updates.autoHeight = true;
 							updates.height = undefined;
+						} else if (
+							activeAnchor === "top-center" ||
+							activeAnchor === "bottom-center"
+						) {
+							updates.height = newHeight;
+							updates.width = newWidth;
+							updates.autoHeight = false;
+							updates.autoWidth = false;
+						} else if (activeAnchor) {
+							updates.width = newWidth;
+							updates.height = newHeight;
+							updates.autoWidth = false;
+							updates.autoHeight = false;
 						} else {
 							updates.width = newWidth;
-							updates.height = undefined;
-							updates.autoHeight = true;
+							updates.height = newHeight;
 						}
 					} else {
 						if (l.type === "Image" || !l.autoWidth) {
@@ -493,7 +507,7 @@ const ImageLayer: React.FC<LayerProps> = ({
 				false,
 			);
 		}
-	}, [image, layer.id, updateLayers]);
+	}, [image, layer.id, layer.width, layer.height, updateLayers]);
 
 	const handleSelect = () => setSelectedId(layer.id);
 
@@ -585,23 +599,19 @@ const TextLayer: React.FC<LayerProps> = ({
 				Math.abs(calculatedWidth - (layer.computedWidth ?? 0)) > 0.5 ||
 				Math.abs(calculatedHeight - (layer.computedHeight ?? 0)) > 0.5
 			) {
-				// Use a timeout to avoid synchronous re-renders that can lead to infinite loops
-				const timeoutId = setTimeout(() => {
-					updateLayers(
-						(prev) =>
-							prev.map((l) =>
-								l.id === layer.id
-									? {
-											...l,
-											computedWidth: calculatedWidth,
-											computedHeight: calculatedHeight,
-										}
-									: l,
-							),
-						false,
-					);
-				}, 0);
-				return () => clearTimeout(timeoutId);
+				updateLayers(
+					(prev) =>
+						prev.map((l) =>
+							l.id === layer.id
+								? {
+										...l,
+										computedWidth: calculatedWidth,
+										computedHeight: calculatedHeight,
+									}
+								: l,
+						),
+					false,
+				);
 			}
 		};
 
@@ -623,6 +633,8 @@ const TextLayer: React.FC<LayerProps> = ({
 		text,
 		selectedId,
 		layer.id,
+		layer.computedHeight,
+		layer.computedWidth,
 		updateLayers,
 		transformerRef,
 		stageRef,
@@ -659,7 +671,14 @@ const TextLayer: React.FC<LayerProps> = ({
 					console.warn(`Failed to load font ${layer.fontFamily}`, err),
 				);
 		}
-	}, [layer.fontFamily, stageRef, updateLayers, layer.id]);
+	}, [
+		layer.fontFamily,
+		stageRef,
+		updateLayers,
+		layer.id,
+		layer.computedHeight,
+		layer.computedWidth,
+	]);
 
 	const handleTransform = useCallback(
 		(e: KonvaEventObject<Event>) => {
@@ -751,12 +770,16 @@ const TransformerComponent: React.FC = () => {
 			}
 			return undefined;
 		}
-
-		if (selectedLayer?.autoWidth ?? true) {
-			return [];
-		} else {
-			return ["middle-left", "middle-right"];
-		}
+		return [
+			"top-left",
+			"top-center",
+			"top-right",
+			"middle-left",
+			"middle-right",
+			"bottom-left",
+			"bottom-center",
+			"bottom-right",
+		];
 	}, [selectedLayer]);
 
 	return (
@@ -1441,6 +1464,44 @@ const InspectorPanel: React.FC = () => {
 											disabled={selectedLayer.autoWidth ?? true}
 										/>
 									</div>
+									<div className="space-y-2">
+										<div className="flex items-center justify-between">
+											<Label className="text-[10px] text-gray-400">
+												Auto Height
+											</Label>
+											<Switch
+												checked={selectedLayer.autoHeight ?? true}
+												onCheckedChange={(checked) => {
+													if (checked) {
+														updateLayer({
+															autoHeight: true,
+															height: undefined,
+														});
+													} else {
+														updateLayer({
+															autoHeight: false,
+															height:
+																selectedLayer.height ??
+																selectedLayer.computedHeight,
+														});
+													}
+												}}
+												className="scale-75 data-[state=checked]:bg-blue-600"
+											/>
+										</div>
+										<DraggableNumberInput
+											label="H"
+											icon={MoveVertical}
+											value={Math.round(
+												selectedLayer.height ??
+													selectedLayer.computedHeight ??
+													0,
+											)}
+											onChange={(v) => updateLayer({ height: v })}
+											min={1}
+											disabled={selectedLayer.autoHeight ?? true}
+										/>
+									</div>
 								</>
 							) : (
 								<>
@@ -1907,17 +1968,14 @@ export const ImageDesignerEditor: React.FC<ImageDesignerEditorProps> = ({
 	}, [viewportWidth, viewportHeight, screenWidth, screenHeight]);
 
 	// Initial centering
-	const hasFittedRef = useRef(false);
 	useEffect(() => {
 		if (
 			screenWidth > 100 &&
 			screenHeight > 100 &&
 			scale === 1 &&
-			stagePos.x === 0 &&
-			!hasFittedRef.current
+			stagePos.x === 0
 		) {
 			fitView();
-			hasFittedRef.current = true;
 		}
 	}, [screenWidth, screenHeight, fitView, scale, stagePos.x]);
 
@@ -1954,10 +2012,7 @@ export const ImageDesignerEditor: React.FC<ImageDesignerEditorProps> = ({
 	);
 
 	// Initialize layers
-	const initializedRef = useRef(false);
 	useEffect(() => {
-		if (initializedRef.current) return;
-
 		const loadInitialLayers = async () => {
 			const existingConfig = (node.config as CompositorNodeConfig) ?? {
 				layerUpdates: {},
@@ -2026,7 +2081,6 @@ export const ImageDesignerEditor: React.FC<ImageDesignerEditorProps> = ({
 
 			await Promise.all(fontPromises);
 			updateLayers(Object.values(layerUpdates), false);
-			initializedRef.current = true;
 		};
 		loadInitialLayers();
 	}, [initialLayers, node.config, getImageData, updateLayers]);

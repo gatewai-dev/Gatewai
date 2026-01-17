@@ -51,6 +51,7 @@ const fontsRouter = new Hono({
 					"Content-Type": contentType,
 					"Content-Disposition": `inline; filename="${fontFile}"`,
 					"Cache-Control": "public, max-age=31536000, immutable",
+					"Access-Control-Allow-Origin": "*",
 				};
 				return c.body(buffer, { headers });
 			} catch (error) {

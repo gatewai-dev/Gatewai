@@ -15,7 +15,7 @@ const CompositorView = memo(() => {
 		throw new Error("Node Id is missing");
 	}
 	const node = useAppSelector(makeSelectNodeById(nodeId));
-	const { inputs } = useNodeResult(nodeId);
+	const { inputs, isProcessed } = useNodeResult(nodeId);
 	const { onNodeConfigUpdate, moveViewportToNode } = useCanvasCtx();
 	const initialLayers = useMemo(() => {
 		const items = new Map<
@@ -54,7 +54,7 @@ const CompositorView = memo(() => {
 
 	return (
 		<div className="inset-0 h-screen w-screen">
-			{node && (
+			{node && isProcessed && (
 				<ImageDesignerEditor
 					onClose={() => closeAndFocusOnNode()}
 					onSave={onSave}

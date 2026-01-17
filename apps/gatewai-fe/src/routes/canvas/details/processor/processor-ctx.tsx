@@ -12,7 +12,11 @@ import { useAppSelector } from "@/store";
 import { makeSelectAllEdges } from "@/store/edges";
 import { type HandleEntityType, makeSelectAllHandles } from "@/store/handles";
 import { makeSelectAllNodeEntities, type NodeEntityType } from "@/store/nodes";
-import { type HandleState, NodeGraphProcessor } from "./node-graph-processor";
+import {
+	type HandleState,
+	NodeGraphProcessor,
+	TaskStatus,
+} from "./node-graph-processor";
 import type { ConnectedInput } from "./types";
 
 const ProcessorContext = createContext<NodeGraphProcessor | null>(null);
@@ -68,6 +72,9 @@ export function useProcessor(): NodeGraphProcessor {
 	return processor;
 }
 
+const EMPTY_INPUTS = Object.freeze({});
+const EMPTY_HANDLES = Object.freeze({});
+
 /**
  * Subscribe to a specific node's result
  * Returns result and updates automatically when processing completes
@@ -79,15 +86,16 @@ export function useNodeResult<T extends NodeResult = NodeResult>(
 	inputs: Record<HandleEntityType["id"], ConnectedInput>;
 	handleStatus: Record<string, HandleState>;
 	error: string | null;
+	isProcessed: boolean; // Added property
 } {
 	const processor = useProcessor();
 
-	// Track the snapshot in a ref to ensure stable identity
 	const snapshotRef = useRef<{
 		result: T | null;
 		inputs: Record<HandleEntityType["id"], ConnectedInput>;
 		handleStatus: Record<string, HandleState>;
 		error: string | null;
+		isProcessed: boolean; // Added property
 	} | null>(null);
 
 	const subscribe = (callback: () => void) => {
@@ -97,8 +105,6 @@ export function useNodeResult<T extends NodeResult = NodeResult>(
 			}
 		};
 
-		// Handler for general graph topology updates (connection changes)
-		// This ensures handle colors/status update immediately even if node didn't execute
 		const graphHandler = () => {
 			callback();
 		};
@@ -122,17 +128,19 @@ export function useNodeResult<T extends NodeResult = NodeResult>(
 		const state = processor.getNodeState(nodeId);
 
 		const nextResult = state?.result ?? null;
-		const nextInputs = state?.inputs ?? {};
+		const nextInputs = state?.inputs ?? EMPTY_INPUTS;
 		const nextError = state?.error ?? null;
-		const nextHandleStatus = state?.handleStatus ?? {};
+		const nextHandleStatus = state?.handleStatus ?? EMPTY_HANDLES;
 
-		// Check if anything actually changed since the last snapshot
+		// Logic for isProcessed: adjust 'processed' to match your actual state enum
+		const nextIsProcessed = state?.status === TaskStatus.COMPLETED;
+
 		const hasChanged =
 			!snapshotRef.current ||
 			snapshotRef.current.result !== nextResult ||
 			snapshotRef.current.error !== nextError ||
 			snapshotRef.current.handleStatus !== nextHandleStatus ||
-			// If inputs is an object/map, compare size or specific keys
+			snapshotRef.current.isProcessed !== nextIsProcessed || // Check for change
 			!isEqual(snapshotRef.current.inputs, nextInputs);
 
 		if (hasChanged) {
@@ -141,6 +149,7 @@ export function useNodeResult<T extends NodeResult = NodeResult>(
 				inputs: nextInputs,
 				handleStatus: nextHandleStatus,
 				error: nextError,
+				isProcessed: nextIsProcessed,
 			};
 		}
 
