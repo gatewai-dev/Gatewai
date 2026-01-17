@@ -37,12 +37,10 @@ import {
 	Italic,
 	Layers,
 	LockOpen,
-	Minus,
 	MousePointer,
 	Move,
 	MoveHorizontal,
 	MoveVertical,
-	Plus,
 	RotateCw,
 	Save,
 	Settings2,
@@ -160,8 +158,6 @@ const BLEND_MODES = [
 interface LocalCompositorLayer extends CompositorLayer {
 	computedHeight?: number;
 	computedWidth?: number;
-	autoHeight?: boolean;
-	autoWidth?: boolean;
 }
 
 interface EditorContextType {
@@ -247,12 +243,14 @@ const useSnap = () => {
 
 			for (const layer of layers) {
 				if (layer.id !== excludeId && layer.opacity !== 0) {
-					const effectiveWidth = layer.autoWidth
-						? (layer.computedWidth ?? 0)
-						: (layer.width ?? 0);
-					const effectiveHeight = layer.autoHeight
-						? (layer.computedHeight ?? 0)
-						: (layer.height ?? 0);
+					const effectiveWidth =
+						layer.type === "Text"
+							? (layer.computedWidth ?? 0)
+							: (layer.width ?? 0);
+					const effectiveHeight =
+						layer.type === "Text"
+							? (layer.computedHeight ?? 0)
+							: (layer.height ?? 0);
 
 					const centerX = Math.round(layer.x + effectiveWidth / 2);
 					const centerY = Math.round(layer.y + effectiveHeight / 2);
@@ -353,19 +351,10 @@ const useSnap = () => {
 		[updateLayers, setGuides],
 	);
 
-	const activeAnchorRef = useRef<string | null>(null);
-
-	const handleTransformStart = useCallback(() => {
-		if (transformerRef.current) {
-			activeAnchorRef.current = transformerRef.current.getActiveAnchor();
-		}
-	}, [transformerRef]);
-
 	const handleTransformEnd = useCallback(
 		(e: KonvaEventObject<Event>) => {
 			const node = e.target;
 			const id = node.id();
-			const activeAnchor = activeAnchorRef.current;
 
 			const scaleX = node.scaleX();
 			const scaleY = node.scaleY();
@@ -383,49 +372,14 @@ const useSnap = () => {
 						rotation: Math.round(node.rotation()),
 					};
 
-					if (l.type === "Text") {
-						const newWidth = Math.round(node.width() * scaleX);
-						const newHeight = Math.round(node.height() * scaleY);
-
-						if (
-							activeAnchor === "middle-left" ||
-							activeAnchor === "middle-right"
-						) {
-							updates.width = newWidth;
-							updates.autoWidth = false;
-							updates.autoHeight = true;
-							updates.height = undefined;
-						} else if (
-							activeAnchor === "top-center" ||
-							activeAnchor === "bottom-center"
-						) {
-							updates.height = newHeight;
-							updates.width = newWidth;
-							updates.autoHeight = false;
-							updates.autoWidth = false;
-						} else if (activeAnchor) {
-							updates.width = newWidth;
-							updates.height = newHeight;
-							updates.autoWidth = false;
-							updates.autoHeight = false;
-						} else {
-							updates.width = newWidth;
-							updates.height = newHeight;
-						}
-					} else {
-						if (l.type === "Image" || !l.autoWidth) {
-							updates.width = Math.round(node.width() * scaleX);
-						}
-
-						if (l.type === "Image" || !l.autoHeight) {
-							updates.height = Math.round(node.height() * scaleY);
-						}
+					if (l.type !== "Text") {
+						updates.width = Math.round(node.width() * scaleX);
+						updates.height = Math.round(node.height() * scaleY);
 					}
 
 					return { ...l, ...updates };
 				}),
 			);
-			activeAnchorRef.current = null;
 		},
 		[updateLayers],
 	);
@@ -434,7 +388,6 @@ const useSnap = () => {
 		handleDragMove,
 		handleDragEnd,
 		handleTransformEnd,
-		handleTransformStart,
 	};
 };
 
@@ -475,7 +428,6 @@ interface LayerProps {
 	onDragStart: (e: KonvaEventObject<DragEvent>) => void;
 	onDragMove: (e: KonvaEventObject<DragEvent>) => void;
 	onDragEnd: (e: KonvaEventObject<DragEvent>) => void;
-	onTransformStart: (e: KonvaEventObject<Event>) => void;
 	onTransformEnd: (e: KonvaEventObject<Event>) => void;
 }
 
@@ -484,7 +436,6 @@ const ImageLayer: React.FC<LayerProps> = ({
 	onDragStart,
 	onDragMove,
 	onDragEnd,
-	onTransformStart,
 	onTransformEnd,
 }) => {
 	const { setSelectedId, updateLayers, getImageUrl, mode } = useEditor();
@@ -535,7 +486,6 @@ const ImageLayer: React.FC<LayerProps> = ({
 			onDragStart={onDragStart}
 			onDragMove={onDragMove}
 			onDragEnd={onDragEnd}
-			onTransformStart={onTransformStart}
 			onTransform={handleTransform}
 			onTransformEnd={onTransformEnd}
 			globalCompositeOperation={layer.blendMode as GlobalCompositeOperation}
@@ -550,7 +500,6 @@ const TextLayer: React.FC<LayerProps> = ({
 	onDragStart,
 	onDragMove,
 	onDragEnd,
-	onTransformStart,
 	onTransformEnd,
 }) => {
 	const {
@@ -624,8 +573,6 @@ const TextLayer: React.FC<LayerProps> = ({
 	}, [
 		layer.fontFamily,
 		layer.fontSize,
-		layer.width,
-		layer.height,
 		layer.lineHeight,
 		layer.letterSpacing,
 		layer.textDecoration,
@@ -680,25 +627,6 @@ const TextLayer: React.FC<LayerProps> = ({
 		layer.computedWidth,
 	]);
 
-	const handleTransform = useCallback(
-		(e: KonvaEventObject<Event>) => {
-			const node = e.target as Konva.Text;
-			if (layer.autoHeight) node.scaleY(1);
-			if (layer.autoWidth) node.scaleX(1);
-
-			const newWidth = Math.max(20, node.width() * node.scaleX());
-			const newHeight = node.height() * node.scaleY();
-
-			node.setAttrs({
-				width: layer.autoWidth ? undefined : newWidth,
-				scaleX: 1,
-				scaleY: 1,
-				height: layer.autoHeight ? undefined : newHeight,
-			});
-		},
-		[layer.autoHeight, layer.autoWidth],
-	);
-
 	return (
 		<KonvaText
 			ref={textRef}
@@ -712,8 +640,6 @@ const TextLayer: React.FC<LayerProps> = ({
 			fontStyle={layer.fontStyle ?? "normal"}
 			textDecoration={layer.textDecoration ?? ""}
 			fill={layer.fill ?? DEFAULTS.FILL}
-			width={layer.autoWidth ? undefined : (layer.width ?? 200)}
-			height={layer.autoHeight ? undefined : layer.height}
 			rotation={layer.rotation}
 			draggable={mode === "select"}
 			onClick={handleSelect}
@@ -723,11 +649,9 @@ const TextLayer: React.FC<LayerProps> = ({
 			onDragStart={onDragStart}
 			onDragMove={onDragMove}
 			onDragEnd={onDragEnd}
-			onTransformStart={onTransformStart}
-			onTransform={handleTransform}
 			onTransformEnd={onTransformEnd}
 			globalCompositeOperation={layer.blendMode as GlobalCompositeOperation}
-			wrap={layer.autoWidth ? "none" : "word"}
+			wrap="none"
 			align={layer.align || DEFAULTS.ALIGN}
 			verticalAlign={layer.verticalAlign ?? DEFAULTS.VERTICAL_ALIGN}
 			letterSpacing={layer.letterSpacing ?? DEFAULTS.LETTER_SPACING}
@@ -764,22 +688,13 @@ const TransformerComponent: React.FC = () => {
 	const selectedLayer = layers.find((l) => l.id === selectedId);
 
 	const enabledAnchors = useMemo(() => {
-		if (selectedLayer?.type !== "Text") {
-			if (selectedLayer?.lockAspect) {
-				return ["top-left", "top-right", "bottom-left", "bottom-right"];
-			}
-			return undefined;
+		if (selectedLayer?.type === "Text") {
+			return [];
 		}
-		return [
-			"top-left",
-			"top-center",
-			"top-right",
-			"middle-left",
-			"middle-right",
-			"bottom-left",
-			"bottom-center",
-			"bottom-right",
-		];
+		if (selectedLayer?.lockAspect) {
+			return ["top-left", "top-right", "bottom-left", "bottom-right"];
+		}
+		return undefined;
 	}, [selectedLayer]);
 
 	return (
@@ -886,12 +801,7 @@ const Canvas: React.FC = () => {
 		setScale,
 		setStagePos,
 	} = useEditor();
-	const {
-		handleDragMove,
-		handleDragEnd,
-		handleTransformEnd,
-		handleTransformStart,
-	} = useSnap();
+	const { handleDragMove, handleDragEnd, handleTransformEnd } = useSnap();
 	const lastModeRef = useRef<"select" | "pan">("select");
 
 	const sortedLayers = useMemo(
@@ -1022,11 +932,10 @@ const Canvas: React.FC = () => {
 						onDragStart: () => setSelectedId(layer.id),
 						onDragMove: handleDragMove,
 						onDragEnd: handleDragEnd,
-						onTransformStart: () => {
+						onTransformEnd: () => {
 							setSelectedId(layer.id);
-							handleTransformStart();
+							handleTransformEnd;
 						},
-						onTransformEnd: handleTransformEnd,
 					};
 					if (layer.type === "Image") {
 						return <ImageLayer key={layer.id} {...props} />;
@@ -1262,12 +1171,14 @@ const InspectorPanel: React.FC = () => {
 	const centerLayer = (axis: "x" | "y") => {
 		if (!selectedLayer) return;
 
-		const effectiveWidth = selectedLayer.autoWidth
-			? (selectedLayer.computedWidth ?? 0)
-			: (selectedLayer.width ?? 0);
-		const effectiveHeight = selectedLayer.autoHeight
-			? (selectedLayer.computedHeight ?? 0)
-			: (selectedLayer.height ?? 0);
+		const effectiveWidth =
+			selectedLayer.type === "Text"
+				? (selectedLayer.computedWidth ?? 0)
+				: (selectedLayer.width ?? 0);
+		const effectiveHeight =
+			selectedLayer.type === "Text"
+				? (selectedLayer.computedHeight ?? 0)
+				: (selectedLayer.height ?? 0);
 
 		if (axis === "x") {
 			updateLayer({ x: Math.round((viewportWidth - effectiveWidth) / 2) });
@@ -1426,84 +1337,7 @@ const InspectorPanel: React.FC = () => {
 								value={Math.round(selectedLayer.y)}
 								onChange={(v) => updateLayer({ y: v })}
 							/>
-							{selectedLayer.type === "Text" ? (
-								<>
-									<div className="space-y-2">
-										<div className="flex items-center justify-between">
-											<Label className="text-[10px] text-gray-400">
-												Auto Width
-											</Label>
-											<Switch
-												checked={selectedLayer.autoWidth ?? true}
-												onCheckedChange={(checked) => {
-													if (checked) {
-														updateLayer({
-															autoWidth: true,
-															width: undefined,
-														});
-													} else {
-														updateLayer({
-															autoWidth: false,
-															width:
-																selectedLayer.width ??
-																selectedLayer.computedWidth,
-														});
-													}
-												}}
-												className="scale-75 data-[state=checked]:bg-blue-600"
-											/>
-										</div>
-										<DraggableNumberInput
-											label="W"
-											icon={MoveHorizontal}
-											value={Math.round(
-												selectedLayer.width ?? selectedLayer.computedWidth ?? 0,
-											)}
-											onChange={(newWidth) => updateLayer({ width: newWidth })}
-											min={1}
-											disabled={selectedLayer.autoWidth ?? true}
-										/>
-									</div>
-									<div className="space-y-2">
-										<div className="flex items-center justify-between">
-											<Label className="text-[10px] text-gray-400">
-												Auto Height
-											</Label>
-											<Switch
-												checked={selectedLayer.autoHeight ?? true}
-												onCheckedChange={(checked) => {
-													if (checked) {
-														updateLayer({
-															autoHeight: true,
-															height: undefined,
-														});
-													} else {
-														updateLayer({
-															autoHeight: false,
-															height:
-																selectedLayer.height ??
-																selectedLayer.computedHeight,
-														});
-													}
-												}}
-												className="scale-75 data-[state=checked]:bg-blue-600"
-											/>
-										</div>
-										<DraggableNumberInput
-											label="H"
-											icon={MoveVertical}
-											value={Math.round(
-												selectedLayer.height ??
-													selectedLayer.computedHeight ??
-													0,
-											)}
-											onChange={(v) => updateLayer({ height: v })}
-											min={1}
-											disabled={selectedLayer.autoHeight ?? true}
-										/>
-									</div>
-								</>
-							) : (
+							{selectedLayer.type !== "Text" && (
 								<>
 									<DraggableNumberInput
 										label="W"
@@ -1806,7 +1640,7 @@ const Toolbar = React.memo<{
 					<MenubarContent
 						align="center"
 						sideOffset={10}
-						className="min-w-[160px] bg-neutral-900/95 backdrop-blur-xl border-white/10 text-gray-200"
+						className="min-w-40 bg-neutral-900/95 backdrop-blur-xl border-white/10 text-gray-200"
 					>
 						<MenubarItem onClick={() => zoomIn()}>
 							<span className="flex-1">Zoom In</span>
@@ -2040,8 +1874,6 @@ export const ImageDesignerEditor: React.FC<ImageDesignerEditorProps> = ({
 					};
 
 					if (newLayer.type === "Text") {
-						newLayer.autoHeight = true;
-						newLayer.autoWidth = true;
 						newLayer.fontSize = DEFAULTS.FONT_SIZE;
 						newLayer.fontFamily = DEFAULTS.FONT_FAMILY;
 						newLayer.fontStyle = "normal";
@@ -2061,14 +1893,22 @@ export const ImageDesignerEditor: React.FC<ImageDesignerEditorProps> = ({
 							newLayer.width = Math.round(
 								fData.entity.width ?? existingConfig.width ?? 300,
 							);
+							newLayer.height = Math.round(
+								fData.entity.height ?? existingConfig.height ?? 300,
+							);
 						} else if (fData.processData) {
 							newLayer.width = Math.round(
 								fData.processData.width ?? existingConfig.width ?? 300,
 							);
+							newLayer.height = Math.round(
+								fData.processData.height ?? existingConfig.height ?? 300,
+							);
 						} else {
 							newLayer.width = existingConfig.width;
+							newLayer.height = existingConfig.height;
 						}
 					}
+
 					layerUpdates[handleId] = newLayer;
 				}
 
@@ -2188,13 +2028,7 @@ export const ImageDesignerEditor: React.FC<ImageDesignerEditorProps> = ({
 	const handleSave = useCallback(() => {
 		const layerUpdates = layers.reduce<Record<string, CompositorLayer>>(
 			(acc, layer) => {
-				const {
-					autoHeight,
-					autoWidth,
-					computedHeight,
-					computedWidth,
-					...rest
-				} = layer;
+				const { computedHeight, computedWidth, ...rest } = layer;
 				acc[layer.inputHandleId] = rest;
 				return acc;
 			},

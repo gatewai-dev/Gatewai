@@ -64,7 +64,6 @@ const processCompositor = async (
 				lineHeight: DEFAULTS.LINE_HEIGHT,
 				align: DEFAULTS.ALIGN,
 				verticalAlign: DEFAULTS.VERTICAL_ALIGN,
-				width: width,
 			});
 		} else {
 			const img = new Image();
@@ -83,6 +82,7 @@ const processCompositor = async (
 
 		allLayers.push(defaultLayer);
 	}
+
 	if (signal?.aborted) throw new DOMException("Cancelled", "AbortError");
 
 	const sortedLayers = allLayers.sort(
@@ -97,28 +97,19 @@ const processCompositor = async (
 		}
 	}
 
-	// Load all fonts before rendering
 	const fontLoadPromises = Array.from(fontsToLoad).map(async (fontFamily) => {
-		const fontUrl = GetFontAssetUrl(fontFamily);
-		const style = document.createElement("style");
-		style.textContent = `
-			@font-face {
-				font-family: "${fontFamily}";
-				src: url("${fontUrl}");
-			}
-		`;
-		document.head.appendChild(style);
+		if (document.fonts.check(`16px "${fontFamily}"`)) return;
 		try {
-			await document.fonts.load(`16px "${fontFamily}"`);
+			const fontUrl = GetFontAssetUrl(fontFamily);
+			const fontFace = new FontFace(fontFamily, `url(${fontUrl})`);
+			const loadedFace = await fontFace.load();
+			document.fonts.add(loadedFace);
 		} catch (err) {
 			console.warn(`Failed to load font: ${fontFamily}`, err);
 		}
 	});
 
 	await Promise.all(fontLoadPromises);
-	if (signal?.aborted) throw new DOMException("Cancelled", "AbortError");
-
-	// Wait for fonts to be fully ready
 	await document.fonts.ready;
 
 	// 4. Render Loop
@@ -127,8 +118,6 @@ const processCompositor = async (
 
 		const inputData = inputs[layerConfig.inputHandleId];
 		if (!inputData) continue;
-
-		// Skip invisible layers
 		if (layerConfig.opacity === 0) continue;
 
 		if (inputData.type === "Image") {
@@ -155,7 +144,8 @@ const processCompositor = async (
 			layer.add(kImage);
 		} else if (inputData.type === "Text") {
 			const fontSize = layerConfig.fontSize ?? DEFAULTS.FONT_SIZE;
-			const maxWidth = layerConfig.width ?? width;
+			const align = layerConfig.align ?? DEFAULTS.ALIGN;
+			const hasExplicitWidth = !!(layerConfig.width && layerConfig.width > 0);
 
 			const kText = new Konva.Text({
 				text: inputData.value,
@@ -168,13 +158,16 @@ const processCompositor = async (
 				fontStyle: layerConfig.fontStyle ?? "normal",
 				textDecoration: layerConfig.textDecoration ?? "",
 				fill: layerConfig.fill ?? DEFAULTS.FILL,
-				align: layerConfig.align ?? DEFAULTS.ALIGN,
-				verticalAlign: layerConfig.verticalAlign ?? DEFAULTS.VERTICAL_ALIGN,
 				letterSpacing: layerConfig.letterSpacing ?? DEFAULTS.LETTER_SPACING,
 				lineHeight: layerConfig.lineHeight ?? DEFAULTS.LINE_HEIGHT,
-				width: maxWidth,
-				height: layerConfig.height, // Important: pass height so verticalAlign works
-				wrap: "word",
+				width: hasExplicitWidth ? layerConfig.width : undefined,
+				height:
+					layerConfig.height && layerConfig.height > 0
+						? layerConfig.height
+						: undefined,
+				align: align,
+				verticalAlign: layerConfig.verticalAlign ?? DEFAULTS.VERTICAL_ALIGN,
+				wrap: hasExplicitWidth ? "word" : "none",
 				globalCompositeOperation:
 					(layerConfig.blendMode as GlobalCompositeOperation) ?? "source-over",
 			});
@@ -187,7 +180,6 @@ const processCompositor = async (
 	layer.draw();
 	if (signal?.aborted) throw new DOMException("Cancelled", "AbortError");
 
-	// Use pixelRatio 1 to ensure dimensions match server output exactly
 	const blob = await new Promise<Blob>((resolve, reject) => {
 		stage.toBlob({
 			pixelRatio: 1,
@@ -198,7 +190,6 @@ const processCompositor = async (
 		});
 	});
 
-	// Cleanup
 	stage.destroy();
 	container.remove();
 
