@@ -49,13 +49,12 @@ export class WorkerPixiService extends BasePixiService {
 		};
 	}
 
-	protected async extractBlob(
+	protected async extractBase64(
 		renderer: IRenderer,
 		target: Container,
-	): Promise<Blob> {
+	): Promise<string> {
 		try {
-			const canvas = renderer.extract.canvas(target) as OffscreenCanvas;
-			return await canvas.convertToBlob({ type: "image/png" });
+			return await renderer.extract.base64(target);
 		} catch (_e) {
 			const pixels = renderer.extract.pixels(target);
 			const canvas = new OffscreenCanvas(renderer.width, renderer.height);
@@ -71,7 +70,11 @@ export class WorkerPixiService extends BasePixiService {
 			ctx.putImageData(imageData, 0, 0);
 
 			const blob = await canvas.convertToBlob();
-			return blob;
+			return new Promise((resolve) => {
+				const reader = new FileReader();
+				reader.onloadend = () => resolve(reader.result as string);
+				reader.readAsDataURL(blob);
+			});
 		}
 	}
 }

@@ -17,7 +17,7 @@ const processCompositor = async (
 	config: CompositorNodeConfig,
 	inputs: Record<string, { type: "Image" | "Text"; value: string }>,
 	signal?: AbortSignal,
-): Promise<{ dataUrl: Blob; width: number; height: number }> => {
+): Promise<{ dataUrl: string; width: number; height: number }> => {
 	if (signal?.aborted) throw new DOMException("Cancelled", "AbortError");
 
 	const width = config.width ?? 1080;
@@ -188,21 +188,13 @@ const processCompositor = async (
 	if (signal?.aborted) throw new DOMException("Cancelled", "AbortError");
 
 	// Use pixelRatio 1 to ensure dimensions match server output exactly
-	const blob = await new Promise<Blob>((resolve, reject) => {
-		stage.toBlob({
-			pixelRatio: 1,
-			callback(blob) {
-				if (blob) return resolve(blob);
-				return reject();
-			},
-		});
-	});
+	const dataUrl = stage.toDataURL({ pixelRatio: 1 });
 
 	// Cleanup
 	stage.destroy();
 	container.remove();
 
-	return { dataUrl: blob, width, height };
+	return { dataUrl, width, height };
 };
 
 export { processCompositor };

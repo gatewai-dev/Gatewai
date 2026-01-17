@@ -74,7 +74,6 @@ export class NodeGraphProcessor extends EventEmitter {
 
 	private nodeStates = new Map<string, NodeState>();
 	private processors = new Map<string, NodeProcessor>();
-	private objectUrls = new Map<string, string[]>();
 	private processingLoopActive = false;
 	private schedulePromise: Promise<void> | null = null;
 	private isInitial = true;
@@ -224,7 +223,6 @@ export class NodeGraphProcessor extends EventEmitter {
 				const state = this.nodeStates.get(id);
 				state?.abortController?.abort();
 				this.nodeStates.delete(id);
-				this.revokeNodeObjectUrls(id);
 			}
 		});
 
@@ -383,32 +381,7 @@ export class NodeGraphProcessor extends EventEmitter {
 			state.abortController?.abort();
 		});
 		this.nodeStates.clear();
-
-		// Revoke all object URLs
-		this.objectUrls.forEach((urls) => {
-			urls.forEach((url) => {
-				URL.revokeObjectURL(url);
-			});
-		});
-		this.objectUrls.clear();
-
 		this.removeAllListeners();
-	}
-
-	private registerObjectUrl(nodeId: string, url: string): void {
-		const urls = this.objectUrls.get(nodeId) || [];
-		urls.push(url);
-		this.objectUrls.set(nodeId, urls);
-	}
-
-	private revokeNodeObjectUrls(nodeId: string): void {
-		const urls = this.objectUrls.get(nodeId);
-		if (urls) {
-			urls.forEach((url) => {
-				URL.revokeObjectURL(url);
-			});
-			this.objectUrls.delete(nodeId);
-		}
 	}
 
 	private markNodesDirty(startNodeIds: string[]): void {
@@ -572,10 +545,6 @@ export class NodeGraphProcessor extends EventEmitter {
 		state.startedAt = Date.now();
 		state.error = null;
 		state.abortController = new AbortController();
-
-		// Revoke previous object URLs for this node before starting new execution
-		this.revokeNodeObjectUrls(nodeId);
-
 		state.version++;
 		const signal = state.abortController.signal;
 
@@ -924,9 +893,6 @@ export class NodeGraphProcessor extends EventEmitter {
 			const outputHandle = getFirstOutputHandle(node.id, "Image");
 			if (!outputHandle) throw new Error("Output handle missing");
 
-			const dataUrl = URL.createObjectURL(result.dataUrl);
-			this.registerObjectUrl(node.id, dataUrl);
-
 			return {
 				selectedOutputIndex: 0,
 				outputs: [
@@ -936,7 +902,7 @@ export class NodeGraphProcessor extends EventEmitter {
 								type: "Image",
 								data: {
 									processData: {
-										dataUrl,
+										dataUrl: result.dataUrl,
 										width: result.width,
 										height: result.height,
 									},
@@ -968,13 +934,11 @@ export class NodeGraphProcessor extends EventEmitter {
 			const items: Array<OutputItem<"Image">> = [];
 
 			if (imageHandle && imageWithMask) {
-				const dataUrl = URL.createObjectURL(imageWithMask.dataUrl);
-				this.registerObjectUrl(node.id, dataUrl);
 				items.push({
 					type: "Image",
 					data: {
 						processData: {
-							dataUrl,
+							dataUrl: imageWithMask.dataUrl,
 							width: imageWithMask.width,
 							height: imageWithMask.height,
 						},
@@ -983,13 +947,11 @@ export class NodeGraphProcessor extends EventEmitter {
 				});
 			}
 
-			const maskDataUrlResult = URL.createObjectURL(onlyMask.dataUrl);
-			this.registerObjectUrl(node.id, maskDataUrlResult);
 			items.push({
 				type: "Image",
 				data: {
 					processData: {
-						dataUrl: maskDataUrlResult,
+						dataUrl: onlyMask.dataUrl,
 						width: onlyMask.width,
 						height: onlyMask.height,
 					},
@@ -1024,9 +986,6 @@ export class NodeGraphProcessor extends EventEmitter {
 			const outputHandle = getFirstOutputHandle(node.id, "Image");
 			if (!outputHandle) throw new Error("Missing output handle");
 
-			const compositorUrl = URL.createObjectURL(result.dataUrl);
-			this.registerObjectUrl(node.id, compositorUrl);
-
 			return {
 				selectedOutputIndex: 0,
 				outputs: [
@@ -1036,7 +995,7 @@ export class NodeGraphProcessor extends EventEmitter {
 								type: "Image",
 								data: {
 									processData: {
-										dataUrl: compositorUrl,
+										dataUrl: result.dataUrl,
 										width: result.width,
 										height: result.height,
 									},
@@ -1061,10 +1020,6 @@ export class NodeGraphProcessor extends EventEmitter {
 			);
 			const outputHandle = getFirstOutputHandle(node.id, "Image");
 			if (!outputHandle) throw new Error("Missing output handle");
-
-			const dataUrl = URL.createObjectURL(result.dataUrl);
-			this.registerObjectUrl(node.id, dataUrl);
-
 			return {
 				selectedOutputIndex: 0,
 				outputs: [
@@ -1074,7 +1029,7 @@ export class NodeGraphProcessor extends EventEmitter {
 								type: "Image",
 								data: {
 									processData: {
-										dataUrl,
+										dataUrl: result.dataUrl,
 										width: result.width,
 										height: result.height,
 									},
@@ -1099,10 +1054,6 @@ export class NodeGraphProcessor extends EventEmitter {
 			);
 			const outputHandle = getFirstOutputHandle(node.id, "Image");
 			if (!outputHandle) throw new Error("Missing output handle");
-
-			const dataUrl = URL.createObjectURL(result.dataUrl);
-			this.registerObjectUrl(node.id, dataUrl);
-
 			return {
 				selectedOutputIndex: 0,
 				outputs: [
@@ -1112,7 +1063,7 @@ export class NodeGraphProcessor extends EventEmitter {
 								type: "Image",
 								data: {
 									processData: {
-										dataUrl,
+										dataUrl: result.dataUrl,
 										width: result.width,
 										height: result.height,
 									},
@@ -1187,10 +1138,6 @@ export class NodeGraphProcessor extends EventEmitter {
 			);
 			const outputHandle = getFirstOutputHandle(node.id, "Image");
 			if (!outputHandle) throw new Error("Missing output handle");
-
-			const dataUrl = URL.createObjectURL(result.dataUrl);
-			this.registerObjectUrl(node.id, dataUrl);
-
 			return {
 				selectedOutputIndex: 0,
 				outputs: [
@@ -1200,7 +1147,7 @@ export class NodeGraphProcessor extends EventEmitter {
 								type: "Image",
 								data: {
 									processData: {
-										dataUrl,
+										dataUrl: result.dataUrl,
 										width: result.width,
 										height: result.height,
 									},

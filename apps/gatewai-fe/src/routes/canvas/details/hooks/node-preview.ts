@@ -2,7 +2,7 @@ import type { FileData } from "@gatewai/types";
 import { useMemo } from "react";
 import { useAppSelector } from "@/store";
 import { makeSelectNodeById } from "@/store/nodes";
-import { GetAssetEndpoint } from "@/utils/file";
+import { GetAssetEndpoint } from "@/utils/file"; // Updated utility
 import { useNodeResult, useNodeValidation } from "../processor/processor-ctx";
 
 export function useNodePreview(nodeId: string) {
