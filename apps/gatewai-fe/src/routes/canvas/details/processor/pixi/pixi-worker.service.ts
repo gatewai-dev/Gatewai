@@ -30,11 +30,7 @@ export class WorkerPixiService extends BasePixiService {
 			await Assets.init();
 			this.initialized = true;
 		}
-		return await Assets.load({
-			src: url,
-			format: "png",
-			loadParser: "loadTextures",
-		});
+		return await Assets.load(url);
 	}
 
 	protected getPixiImport(): string {

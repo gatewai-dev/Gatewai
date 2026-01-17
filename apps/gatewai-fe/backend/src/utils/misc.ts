@@ -2,7 +2,6 @@ import type { FileAsset } from "@gatewai/db";
 import type { FileData, ProcessData } from "@gatewai/types";
 import { customAlphabet } from "nanoid";
 import { ENV_CONFIG } from "../config.js";
-import { getObjectMetadata } from "./storage.js";
 
 export function assertIsError(error: unknown): asserts error is Error {
 	if (!(error instanceof Error)) {
@@ -46,12 +45,15 @@ export function GetAssetEndpoint(fileAsset: FileAsset) {
 export async function GetProcessDataEndpoint(
 	processData: ProcessData,
 ): Promise<string> {
-	const url = new URL("/api/v1/assets/temp", ENV_CONFIG.BASE_URL);
+	const baseUrl = ENV_CONFIG.BASE_URL.endsWith("/")
+		? ENV_CONFIG.BASE_URL.slice(0, -1)
+		: ENV_CONFIG.BASE_URL;
 
-	// URLSearchParams automatically handles percent-encoding for special characters
-	url.searchParams.append("key", processData.tempKey);
+	const path = processData?.tempKey?.startsWith("/")
+		? processData.tempKey.slice(1)
+		: processData.tempKey;
 
-	return url.toString();
+	return `${baseUrl}/api/v1/assets/temp/${path}`;
 }
 
 export function ResolveFileDataUrl(data: FileData | null) {

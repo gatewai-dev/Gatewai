@@ -12,6 +12,7 @@ import {
 	Texture,
 } from "@pixi/node";
 import { createCanvas, ImageData } from "canvas";
+import sharp from "sharp";
 
 // 1. Polyfill ImageData
 if (typeof global.ImageData === "undefined") {
@@ -47,9 +48,7 @@ export class BackendPixiService extends BasePixiService {
 			await Assets.init();
 			this.initialized = true;
 		}
-		return await Assets.load({
-			src: url,
-		});
+		return await Assets.load(url);
 	}
 
 	/**
@@ -74,11 +73,29 @@ export class BackendPixiService extends BasePixiService {
 	/**
 	 * Extract as Blob directly (more efficient)
 	 */
+	// Replace your existing extractBlob with this:
 	protected async extractBlob(
 		renderer: IRenderer,
 		target: Container,
 	): Promise<Blob> {
-		const buffer = renderer.extract.pixels(target).buffer;
+		const bounds = target.getBounds();
+		const width = Math.floor(bounds.width);
+		const height = Math.floor(bounds.height);
+
+		// Extract raw RGBA pixel data
+		const pixelData = renderer.extract.pixels(target);
+
+		// Use sharp to encode raw RGBA pixels to PNG
+		const buffer = await sharp(Buffer.from(pixelData.buffer), {
+			raw: {
+				width,
+				height,
+				channels: 4, // RGBA
+			},
+		})
+			.png()
+			.toBuffer();
+
 		return new Blob([buffer], { type: "image/png" });
 	}
 }

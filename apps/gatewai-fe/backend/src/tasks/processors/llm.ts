@@ -40,7 +40,7 @@ const llmProcessor: NodeProcessor = async ({ node, data }) => {
 			assert(mimeType);
 			const arrayBuffer = await loadMediaBuffer(imageFileData);
 			const buffer = Buffer.from(arrayBuffer);
-			const base64Data = bufferToDataUrl(buffer, "image/png");
+			const base64Data = buffer.toString("base64");
 
 			parts.push({
 				inlineData: {

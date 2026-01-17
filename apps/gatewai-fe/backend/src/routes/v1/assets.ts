@@ -247,12 +247,15 @@ const assetsRouter = new Hono({
 			}
 		},
 	)
-	.get("/temp", async (c) => {
-		const rawKey = c.req.query("key");
+	.get("/temp/*", async (c) => {
+		const path = c.req.path.split("/temp/")[1];
+		const rawKey = decodeURIComponent(path);
+
 		assert(rawKey);
 		const fullStream = await getFromGCS(rawKey);
 		const metadata = await getObjectMetadata(rawKey);
 		assert(metadata.contentType);
+
 		return c.body(fullStream, {
 			headers: {
 				"Content-Type": metadata.contentType,
