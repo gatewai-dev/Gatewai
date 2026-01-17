@@ -77,12 +77,6 @@ To manage costs and clean up temporary processing files, you must set a lifecycl
 
 1. Click **Create**.
 
-> [!TIP]
-> **Rule Precedence:** If an object meets multiple conditions, Google Cloud follows a specific hierarchy:
->
-> * **Deletion** always takes precedence over changing storage classes.
-> * Moving to **colder** storage (e.g., Archive) takes precedence over warmer classes.
-
 ### 5. Update Environment
 
 Add your bucket name and the absolute path of your JSON key to your `.env`:
