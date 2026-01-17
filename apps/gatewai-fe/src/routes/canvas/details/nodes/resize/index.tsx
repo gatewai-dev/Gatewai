@@ -3,7 +3,7 @@ import type { NodeProps } from "@xyflow/react";
 import { memo, useEffect } from "react";
 import { cn } from "@/lib/utils";
 import { useAppDispatch } from "@/store";
-import { updateNodeConfig } from "@/store/nodes";
+import { updateNodeConfigWithoutHistory } from "@/store/nodes";
 import { useNodePreview } from "../../hooks/node-preview";
 import { BaseNode } from "../base";
 import { CanvasRenderer } from "../common/canvas-renderer";
@@ -33,7 +33,7 @@ const ResizeNodeComponent = memo((props: NodeProps<ResizeNode>) => {
 
 			img.onload = () => {
 				dispatch(
-					updateNodeConfig({
+					updateNodeConfigWithoutHistory({
 						id: node.id,
 						newConfig: {
 							...nodeConfig,

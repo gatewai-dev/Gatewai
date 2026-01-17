@@ -307,7 +307,7 @@ export class NodeGraphProcessor extends EventEmitter {
 			// Requirement: Disconnected = No Background (null). Connected = Type Color.
 			let color: string | null = null;
 			if (isConnected) {
-				const colorConfig = dataTypeColors[activeType] || dataTypeColors["Any"];
+				const colorConfig = dataTypeColors[activeType] || dataTypeColors.Any;
 				color = colorConfig?.hex || "#9ca3af";
 			}
 
@@ -316,7 +316,7 @@ export class NodeGraphProcessor extends EventEmitter {
 				// We still want to show the color of the *incoming* type if possible to explain the error,
 				// but usually, we want to show the invalid state.
 				// For now, let's keep the color of the *active* (incoming) type to show mismatch.
-				const colorConfig = dataTypeColors[activeType] || dataTypeColors["Any"];
+				const colorConfig = dataTypeColors[activeType] || dataTypeColors.Any;
 				color = colorConfig?.hex || "#9ca3af";
 			}
 

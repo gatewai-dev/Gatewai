@@ -14,13 +14,11 @@ const NodeTypes = [
 	"Preview",
 	"File",
 	"Export",
-	"Toggle",
 	"Resize",
 	"Paint",
 	"Blur",
 	"Compositor",
 	"Note",
-	"Number",
 	"ImageGen",
 	"LLM",
 	"Crop",
@@ -353,10 +351,33 @@ const canvasRoutes = new Hono({
 			return true;
 		});
 
-		const updatedHandles = handlesInPayload.filter(
+		// --- FIXED: Verify handle existence before updating ---
+		const rawUpdatedHandles = handlesInPayload.filter(
 			(h): h is typeof h & { id: string } =>
 				!!h.id && handleIdsInDBSet.has(h.id),
 		);
+
+		// Additional check: verify handles still exist and weren't deleted
+		const currentHandleIds = new Set([
+			...Array.from(handleIdsInDBSet).filter(
+				(id) => !removedHandleIds.includes(id),
+			),
+		]);
+
+		const updatedHandles = rawUpdatedHandles.filter((h) => {
+			if (!currentHandleIds.has(h.id)) {
+				console.warn(`Skipping handle update for non-existent handle: ${h.id}`);
+				return false;
+			}
+			// Also verify the node exists
+			if (!validNodeIdsSet.has(h.nodeId)) {
+				console.warn(
+					`Skipping handle update for handle with invalid nodeId: ${h.id} -> ${h.nodeId}`,
+				);
+				return false;
+			}
+			return true;
+		});
 
 		if (safeCreatedHandles.length > 0) {
 			txs.push(
@@ -417,7 +438,8 @@ const canvasRoutes = new Hono({
 			return true;
 		});
 
-		const updatedEdges = edgesInPayload.filter(
+		// --- FIXED: Verify edge existence before updating ---
+		const rawUpdatedEdges = edgesInPayload.filter(
 			(
 				e,
 			): e is typeof e & {
@@ -430,6 +452,27 @@ const canvasRoutes = new Hono({
 				!!e.targetHandleId &&
 				edgeIdsInDBSet.has(e.id),
 		);
+
+		// Additional check: verify edges still exist and weren't deleted
+		const currentEdgeIds = new Set([
+			...Array.from(edgeIdsInDBSet).filter(
+				(id) => !removedEdgeIds.includes(id),
+			),
+		]);
+
+		const updatedEdges = rawUpdatedEdges.filter((e) => {
+			if (!currentEdgeIds.has(e.id)) {
+				console.warn(`Skipping edge update for non-existent edge: ${e.id}`);
+				return false;
+			}
+			if (!validNodeIdsSet.has(e.source) || !validNodeIdsSet.has(e.target)) {
+				console.warn(
+					`Skipping edge update for edge with invalid nodes: ${e.source} -> ${e.target}`,
+				);
+				return false;
+			}
+			return true;
+		});
 
 		if (safeCreatedEdges.length > 0) {
 			txs.push(

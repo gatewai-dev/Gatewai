@@ -1,6 +1,6 @@
 # GATEWAI
 
-**The Multi-Modal Generative AI Workflow Engine.**
+**The Multi-Modal Generative AI Workflow Platform.**
 
 Gatewai is a powerful, node-based orchestration platform designed to bridge the gap between complex AI models and intuitive creative workflows. Whether you're generating cinematic videos, composing multi-layered images, or building sophisticated LLM chains, Gatewai provides the canvas for your imagination while looking good on frontend.
 
@@ -48,7 +48,7 @@ See [INSTALLATION.md](https://github.com/okanasl/gatewai/blob/main/docs/INSTALLA
 ### Community & Support
 
 * **Join the Stars ⭐**: Support our journey by starring the repo!
-* **Discord**: Connect with other creators, explore/share workflows, vote for next feature in our [Community Discord](https://discord.gg/phbS3XZb).
+* **Discord**: Connect with other creators, explore/share workflows, vote for the next feature in our [Community Discord](https://discord.gg/phbS3XZb).
 
 ---
 
