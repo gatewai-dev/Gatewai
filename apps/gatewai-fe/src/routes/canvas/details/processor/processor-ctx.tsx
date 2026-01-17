@@ -68,6 +68,9 @@ export function useProcessor(): NodeGraphProcessor {
 	return processor;
 }
 
+const EMPTY_INPUTS = {};
+const EMPTY_HANDLE_STATUS = {};
+
 /**
  * Subscribe to a specific node's result
  * Returns result and updates automatically when processing completes
@@ -122,9 +125,9 @@ export function useNodeResult<T extends NodeResult = NodeResult>(
 		const state = processor.getNodeState(nodeId);
 
 		const nextResult = state?.result ?? null;
-		const nextInputs = state?.inputs ?? {};
+		const nextInputs = state?.inputs ?? EMPTY_INPUTS;
 		const nextError = state?.error ?? null;
-		const nextHandleStatus = state?.handleStatus ?? {};
+		const nextHandleStatus = state?.handleStatus ?? EMPTY_HANDLE_STATUS;
 
 		// Check if anything actually changed since the last snapshot
 		const hasChanged =
