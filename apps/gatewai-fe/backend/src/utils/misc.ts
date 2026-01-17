@@ -1,6 +1,7 @@
 import type { FileAsset } from "@gatewai/db";
 import type { FileData } from "@gatewai/types";
 import { customAlphabet } from "nanoid";
+import { ENV_CONFIG } from "../config.js";
 
 export function assertIsError(error: unknown): asserts error is Error {
 	if (!(error instanceof Error)) {
@@ -29,7 +30,7 @@ const MIME_TYPES: Record<string, string> = {
 export function GetAssetEndpoint(fileAsset: FileAsset) {
 	// Ensure the ID itself doesn't already have an extension
 	const cleanId = fileAsset.id.split(".")[0];
-	const baseUrl = `/api/v1/assets/${cleanId}`;
+	const baseUrl = `${ENV_CONFIG.BASE_URL}/api/v1/assets/${cleanId}`;
 
 	if (!fileAsset.mimeType) return baseUrl;
 
