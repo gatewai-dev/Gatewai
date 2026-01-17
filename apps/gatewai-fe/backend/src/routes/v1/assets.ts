@@ -1,3 +1,4 @@
+import assert from "node:assert";
 import { randomUUID } from "node:crypto";
 import { type FileAssetWhereInput, prisma } from "@gatewai/db";
 import { zValidator } from "@hono/zod-validator";
@@ -18,6 +19,7 @@ import {
 	fileExistsInGCS,
 	generateSignedUrl,
 	getFromGCS,
+	getObjectMetadata,
 	getStreamFromGCS,
 	uploadToGCS,
 } from "../../utils/storage.js";
@@ -245,6 +247,20 @@ const assetsRouter = new Hono({
 			}
 		},
 	)
+	.get("/temp", async (c) => {
+		const rawKey = c.req.query("key");
+		assert(rawKey);
+		const fullStream = await getFromGCS(rawKey);
+		const metadata = await getObjectMetadata(rawKey);
+		assert(metadata.contentType);
+		return c.body(fullStream, {
+			headers: {
+				"Content-Type": metadata.contentType,
+				"Access-Control-Allow-Origin": "*",
+				"Cache-Control": "max-age=2592000",
+			},
+		});
+	})
 	.get("/:id", async (c) => {
 		const rawId = c.req.param("id");
 		const id = rawId.split(".")[0];

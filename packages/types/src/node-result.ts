@@ -17,7 +17,7 @@ export type ProcessData = {
 
 	// For the Audio, Video media types
 	duration?: number;
-	dps?: number;
+	fps?: number;
 };
 
 export type FileData = {
@@ -33,13 +33,9 @@ export type DataForType<R extends DataType> = R extends "Text"
 			? boolean
 			: R extends "Image" | "Audio" | "Video" | "VideoLayer"
 				? FileData
-				: R extends "DesignLayer"
-					? string | FileData
-					: R extends "VideoLayer"
-						? FileData
-						: R extends "Any"
-							? string | number | boolean | FileData
-							: never;
+				: R extends "Any"
+					? string | number | boolean | FileData
+					: never;
 
 export type OutputItem<R extends DataType> = {
 	type: R;

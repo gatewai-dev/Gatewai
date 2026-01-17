@@ -3,7 +3,11 @@ import { type DataType, prisma } from "@gatewai/db";
 import type { FileData, NodeResult } from "@gatewai/types";
 import { add } from "date-fns";
 import type { CanvasCtxDataWithTasks } from "../data-ops/canvas.js";
-import { generateSignedUrl } from "../utils/storage.js";
+import {
+	generateSignedUrl,
+	getFromGCS,
+	getObjectMetadata,
+} from "../utils/storage.js";
 
 /**
  * Options for filtering inputs.
@@ -140,40 +144,38 @@ function getAllInputValuesWithHandle(
 
 /**
  * @param fileData Filedata of node
- * @returns A data url if exists, A new signed url if it doesn't exprired or signed url of unexpired signed url
+ * @returns Returns file data from Storage (GCS)
  */
-async function resolveFileUrl(fileData: FileData) {
-	if (fileData.processData?.dataUrl) {
-		return fileData.processData?.dataUrl;
-	}
-	if (fileData.entity) {
-		const expiration = fileData.entity.signedUrlExp;
-		const now = new Date();
-		const dayLater = add(now, { days: 1 });
-		const isExpired = expiration == null || dayLater < new Date(expiration);
-		if (!isExpired) {
-			return fileData.entity.signedUrl;
-		}
-		const aWeekLater = add(now, { weeks: 1 });
+async function loadMediaBuffer(fileData: FileData) {
+	let mimeType: string | undefined;
+	let key: string | undefined;
+	let bucket: string | undefined;
 
-		const A_WEEKISH = 3600 * 24 * 6.9; // A bit less than a week
-		const newUrl = await generateSignedUrl(
-			fileData.entity.key,
-			fileData.entity.bucket,
-			A_WEEKISH,
-		);
-		await prisma.fileAsset.update({
-			data: {
-				signedUrl: newUrl,
-				signedUrlExp: aWeekLater,
-			},
-			where: {
-				id: fileData.entity.id,
-			},
-		});
-
-		return newUrl;
+	if (fileData?.entity) {
+		key = fileData.entity.key;
+		bucket = fileData.entity.bucket;
+		mimeType = fileData.entity.mimeType;
+	} else if (fileData?.processData) {
+		key = fileData.processData.tempKey;
+		mimeType = fileData.processData.mimeType;
+		bucket = undefined;
+	} else {
+		throw new Error("Image data could not be found");
 	}
+	assert(key);
+	assert(mimeType);
+	const arrayBuffer = await getFromGCS(key, bucket);
+	return arrayBuffer;
+}
+
+async function getFileDataMimeType(fileData: FileData) {
+	if (fileData?.entity?.mimeType) return fileData?.entity?.mimeType;
+	if (fileData?.processData?.mimeType) return fileData?.processData?.mimeType;
+	if (fileData?.processData?.tempKey) {
+		const metadata = await getObjectMetadata(fileData?.processData?.tempKey);
+		return metadata.contentType;
+	}
+	return null;
 }
 
 export {
@@ -182,5 +184,6 @@ export {
 	getAllOutputHandles,
 	getAllInputValuesWithHandle,
 	getInputValuesByType,
-	resolveFileUrl,
+	loadMediaBuffer,
+	getFileDataMimeType,
 };

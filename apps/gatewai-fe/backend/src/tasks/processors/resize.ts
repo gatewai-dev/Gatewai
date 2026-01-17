@@ -7,7 +7,7 @@ import {
 	ResizeNodeConfigSchema,
 	type ResizeResult,
 } from "@gatewai/types";
-import parseDataUrl from "data-urls";
+
 import { ENV_CONFIG } from "../../config.js";
 import { backendPixiService } from "../../media/pixi-processor.js";
 import { logImage } from "../../media-logger.js";
@@ -35,10 +35,11 @@ const resizeProcessor: NodeProcessor = async ({ node, data }) => {
 			},
 		);
 
-		const parsed = parseDataUrl(dataUrl);
-		assert(parsed?.body.buffer);
+		const uploadBuffer = Buffer.from(await dataUrl.arrayBuffer());
+		const mimeType = dataUrl.type;
+
 		if (ENV_CONFIG.DEBUG_LOG_MEDIA) {
-			logImage(Buffer.from(parsed?.body.buffer), ".png", node.id);
+			logImage(uploadBuffer, ".png", node.id);
 		}
 		// Build new result (similar to LLM)
 		const outputHandle = data.handles.find(
@@ -54,12 +55,10 @@ const resizeProcessor: NodeProcessor = async ({ node, data }) => {
 			selectedOutputIndex: 0,
 		};
 
-		const uploadBuffer = Buffer.from(parsed.body.buffer);
 		const key = `${node.id}/${Date.now()}.png`;
-		const mimeType = parsed.mimeType.toString();
 		const { signedUrl, key: tempKey } = await uploadToTemporaryFolder(
 			uploadBuffer,
-			parsed.mimeType.toString(),
+			mimeType,
 			key,
 		);
 

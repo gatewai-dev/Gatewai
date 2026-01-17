@@ -1,4 +1,4 @@
-export function resolveMimeTypeFromDataUrl(dataUrl: string) {
+export function resolveMimeTypeFromBase64(dataUrl: string) {
 	const match = dataUrl.match(/^data:(image\/[^;]+);base64,/);
 	if (match?.[1]) {
 		return match?.[1];

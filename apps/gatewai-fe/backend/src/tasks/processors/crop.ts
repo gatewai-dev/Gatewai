@@ -6,7 +6,7 @@ import {
 	type FileData,
 	type OutputItem,
 } from "@gatewai/types";
-import parseDataUrl from "data-urls";
+
 import { ENV_CONFIG } from "../../config.js";
 import { backendPixiService } from "../../media/pixi-processor.js";
 import { logImage } from "../../media-logger.js";
@@ -39,10 +39,11 @@ const cropProcessor: NodeProcessor = async ({ node, data }) => {
 			},
 		);
 
-		const parsed = parseDataUrl(dataUrl);
-		assert(parsed?.body.buffer);
+		const uploadBuffer = Buffer.from(await dataUrl.arrayBuffer());
+		const mimeType = dataUrl.type;
+
 		if (ENV_CONFIG.DEBUG_LOG_MEDIA) {
-			logImage(Buffer.from(parsed?.body.buffer), ".png", node.id);
+			logImage(uploadBuffer, ".png", node.id);
 		}
 
 		// Build new result (similar to LLM)
@@ -59,8 +60,6 @@ const cropProcessor: NodeProcessor = async ({ node, data }) => {
 			selectedOutputIndex: 0,
 		};
 
-		const uploadBuffer = Buffer.from(parsed.body.buffer);
-		const mimeType = parsed.mimeType.toString();
 		const key = `${node.id}/${Date.now()}.png`;
 		const { signedUrl, key: tempKey } = await uploadToTemporaryFolder(
 			uploadBuffer,

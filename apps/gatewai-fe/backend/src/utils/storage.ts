@@ -69,6 +69,15 @@ export async function getFromGCS(
 	return content;
 }
 
+export async function getObjectMetadata(
+	key: string,
+	bucketName: string = ENV_CONFIG.GCS_ASSETS_BUCKET,
+) {
+	const [metadata] = await storage.bucket(bucketName).file(key).getMetadata();
+
+	return metadata;
+}
+
 export async function listFromGCS(
 	prefix: string,
 	bucketName: string,

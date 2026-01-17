@@ -6,7 +6,7 @@ import {
 	PaintNodeConfigSchema,
 	type PaintResult,
 } from "@gatewai/types";
-import parseDataUrl from "data-urls";
+
 import { ENV_CONFIG } from "../../config.js";
 import { logger } from "../../logger.js";
 import { backendPixiService } from "../../media/pixi-processor.js";
@@ -57,16 +57,18 @@ const paintProcessor: NodeProcessor = async ({ node, data }) => {
 		const { dataUrl: imageDataUrl, ...imageDimensions } = imageWithMask;
 		const { dataUrl: maskDataUrl, ...maskDimensions } = onlyMask;
 
-		const parsedImage = parseDataUrl(imageDataUrl);
-		assert(parsedImage?.body.buffer);
+		const imageBuffer = Buffer.from(await imageDataUrl.arrayBuffer());
+		const imageMimeType = imageDataUrl.type;
+
 		if (ENV_CONFIG.DEBUG_LOG_MEDIA) {
-			logImage(Buffer.from(parsedImage.body.buffer), ".png", node.id);
+			logImage(imageBuffer, ".png", node.id);
 		}
 
-		const parsedMask = parseDataUrl(maskDataUrl);
-		assert(parsedMask?.body.buffer);
+		const maskBuffer = Buffer.from(await maskDataUrl.arrayBuffer());
+		const maskMimeType = maskDataUrl.type;
+
 		if (ENV_CONFIG.DEBUG_LOG_MEDIA) {
-			logImage(Buffer.from(parsedMask.body.buffer), ".png", `${node.id}_mask`);
+			logImage(maskBuffer, ".png", `${node.id}_mask`);
 		}
 
 		const newResult: NodeResult = structuredClone(
@@ -78,19 +80,11 @@ const paintProcessor: NodeProcessor = async ({ node, data }) => {
 
 		const now = Date.now();
 
-		const imageBuffer = Buffer.from(parsedImage.body.buffer);
-		const imageMimeType = parsedImage.mimeType.toString();
 		const imageKey = `${node.id}/${now}.png`;
 		const { signedUrl: imageSignedUrl, key: tempImageKey } =
-			await uploadToTemporaryFolder(
-				imageBuffer,
-				parsedImage.mimeType.toString(),
-				imageKey,
-			);
+			await uploadToTemporaryFolder(imageBuffer, imageMimeType, imageKey);
 
-		const maskBuffer = Buffer.from(parsedMask.body.buffer);
 		const maskKey = `${node.id}/${now}_mask.png`;
-		const maskMimeType = parsedMask.mimeType.toString();
 		const { signedUrl: maskSignedUrl, key: tempMaskKey } =
 			await uploadToTemporaryFolder(maskBuffer, maskMimeType, maskKey);
 

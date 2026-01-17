@@ -3,8 +3,12 @@ import { DataType } from "@gatewai/db";
 import type { FileData, LLMNodeConfig, LLMResult } from "@gatewai/types";
 import type { Part } from "@google/genai";
 import { genAI } from "../../genai.js";
-import { getFromGCS } from "../../utils/storage.js";
-import { getInputValue } from "../resolvers.js";
+import { bufferToDataUrl } from "../../utils/image.js";
+import {
+	getFileDataMimeType,
+	getInputValue,
+	loadMediaBuffer,
+} from "../resolvers.js";
 import type { NodeProcessor } from "./types.js";
 
 const llmProcessor: NodeProcessor = async ({ node, data }) => {
@@ -17,7 +21,7 @@ const llmProcessor: NodeProcessor = async ({ node, data }) => {
 		const userPrompt = getInputValue(data, node.id, true, {
 			dataType: DataType.Text,
 			label: "Prompt",
-		})?.data as string;
+		})?.data as string | null;
 
 		const imageFileData = getInputValue(data, node.id, false, {
 			dataType: DataType.Image,
@@ -31,30 +35,12 @@ const llmProcessor: NodeProcessor = async ({ node, data }) => {
 			parts.push({ text: userPrompt });
 		}
 
-		// 2. Handle Image Processing (URL -> Base64 for Google SDK)
-		const imageData = imageFileData?.entity ?? imageFileData?.processData;
-
-		if (imageData) {
-			let mimeType: string | undefined;
-			let key: string | undefined;
-			let bucket: string | undefined;
-
-			if (imageFileData?.entity) {
-				key = imageFileData.entity.key;
-				bucket = imageFileData.entity.bucket;
-				mimeType = imageFileData.entity.mimeType;
-			} else if (imageFileData?.processData) {
-				key = imageFileData.processData.tempKey;
-				mimeType = imageFileData.processData.mimeType;
-				bucket = undefined;
-			} else {
-				throw new Error("Image data could not be found");
-			}
-			assert(key);
+		if (imageFileData) {
+			const mimeType = await getFileDataMimeType(imageFileData);
 			assert(mimeType);
-			const arrayBuffer = await getFromGCS(key, bucket);
+			const arrayBuffer = await loadMediaBuffer(imageFileData);
 			const buffer = Buffer.from(arrayBuffer);
-			const base64Data = buffer.toString("base64");
+			const base64Data = bufferToDataUrl(buffer, "image/png");
 
 			parts.push({
 				inlineData: {
