@@ -2018,9 +2018,6 @@ export const ImageDesignerEditor: React.FC<ImageDesignerEditorProps> = ({
 				}
 
 				const layer = layerUpdates[handleId];
-				if (layer.type === "Text") {
-					layer.height = undefined;
-				}
 				if (layer.type === "Text" && layer.fontFamily) {
 					const fontUrl = GetFontAssetUrl(layer.fontFamily);
 					fontPromises.push(fontManager.loadFont(layer.fontFamily, fontUrl));
