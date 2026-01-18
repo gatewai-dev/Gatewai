@@ -29,8 +29,16 @@
 	},
 	"pnpm": {
 		"onlyBuiltDependencies": [
-			"gl",
-			"canvas"
+			"@prisma/client",
+			"@prisma/engines",
+			"@swc/core",
+			"canvas",
+			"esbuild",
+			"lefthook",
+			"msgpackr-extract",
+			"prisma",
+			"protobufjs",
+			"sharp"
 		]
 	},
 	"name": "gatewai"
