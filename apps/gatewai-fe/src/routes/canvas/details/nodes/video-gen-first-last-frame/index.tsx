@@ -2,6 +2,7 @@ import { memo } from "react";
 import { useAppSelector } from "@/store";
 import { makeSelectNodeById } from "@/store/nodes";
 import { RunNodeButton } from "../../components/run-node-button";
+import { MediaDimensions } from "../../misc/media-dimensions";
 import { OutputSelector } from "../../misc/output-selector";
 import { useNodeResult } from "../../processor/processor-ctx";
 import { BaseNode } from "../base";
@@ -31,6 +32,9 @@ const VideoGenFirstLastFrameNodeComponent = memo(
 							</div>
 						)}
 						{videoSrc && <VideoRenderer src={videoSrc} />}
+						<div className="absolute bottom-1 left-1 z-10">
+							<MediaDimensions node={node} />
+						</div>
 					</div>
 
 					<div className="flex justify-end items-center w-full">

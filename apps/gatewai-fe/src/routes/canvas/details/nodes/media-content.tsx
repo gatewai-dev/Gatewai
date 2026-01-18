@@ -3,6 +3,7 @@ import { FileIcon } from "lucide-react";
 import { useMemo } from "react";
 import type { NodeEntityType } from "@/store/nodes";
 import { GetAssetEndpoint } from "@/utils/file";
+import { MediaDimensions } from "../misc/media-dimensions";
 import { OutputSelector } from "../misc/output-selector";
 import { AudioRenderer } from "./common/audio-renderer";
 import { CanvasRenderer } from "./common/canvas-renderer";
@@ -50,6 +51,9 @@ function MediaContent({
 					<span>{outputItem.data.entity?.name}</span>
 				</div>
 			)}
+			<div className="absolute bottom-1 left-1 z-10">
+				<MediaDimensions node={node} />
+			</div>
 		</div>
 	);
 }

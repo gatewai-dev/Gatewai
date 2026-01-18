@@ -10,6 +10,7 @@ import { makeSelectHandlesByNodeId } from "@/store/handles";
 import { makeSelectNodeById } from "@/store/nodes";
 import { AddCustomHandleButton } from "../../components/add-custom-handle";
 import { RunNodeButton } from "../../components/run-node-button";
+import { MediaDimensions } from "../../misc/media-dimensions";
 import { OutputSelector } from "../../misc/output-selector";
 import { useNodeResult } from "../../processor/processor-ctx";
 import { BaseNode } from "../base";
@@ -45,6 +46,9 @@ const VideoGenNodeComponent = memo(
 							</div>
 						)}
 						{videoSrc && <VideoRenderer src={videoSrc} />}
+						<div className="absolute bottom-1 left-1 z-10">
+							<MediaDimensions node={node} />
+						</div>
 					</div>
 
 					<div className="flex justify-between items-center w-full">

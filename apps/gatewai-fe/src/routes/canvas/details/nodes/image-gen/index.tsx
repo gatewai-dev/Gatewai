@@ -2,6 +2,7 @@ import { memo } from "react";
 import { AddCustomHandleButton } from "../../components/add-custom-handle";
 import { RunNodeButton } from "../../components/run-node-button";
 import { useNodePreview } from "../../hooks/node-preview";
+import { MediaDimensions } from "../../misc/media-dimensions";
 import { OutputSelector } from "../../misc/output-selector";
 import { BaseNode } from "../base";
 import { CanvasRenderer } from "../common/canvas-renderer";
@@ -24,6 +25,9 @@ const ImageGenNodeComponent = memo(
 							</div>
 						)}
 						{imageUrl && <CanvasRenderer imageUrl={imageUrl} />}
+						<div className="absolute bottom-1 left-1 z-10">
+							<MediaDimensions node={node} />
+						</div>
 					</div>
 
 					<div className="flex justify-between items-center w-full">
