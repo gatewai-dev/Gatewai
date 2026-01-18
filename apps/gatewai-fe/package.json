@@ -5,7 +5,7 @@
 	"type": "module",
 	"scripts": {
 		"dev": "concurrently \"pnpm be:dev\" \"vite\"",
-		"build": "vite build && tsc -p backend/tsconfig.json",
+		"build": "NODE_OPTIONS='--max-old-space-size=4096' vite build && tsc -p backend/tsconfig.json",
 		"start-cli": "node backend/dist/index.js",
 		"preview": "vite preview",
 		"be:dev": "tsx watch backend/src/index.ts",
