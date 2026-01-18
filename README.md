@@ -39,7 +39,7 @@ Don't wait for results. Our interactive canvas allows for instant feedback, enab
 
 ### Media Editing 🎬 🎥 🎞️ 🍿
 
-Gatewai ships with image  and video  compositor nodes. There's nothing that can stop you from creating the movie you've always dreamt of.
+Gatewai ships with image and video compositor nodes. There's nothing that can stop you from creating the masterpiece you've always dreamt of.
 
 ---
 
