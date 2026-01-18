@@ -119,6 +119,45 @@ const TTS_LANGUAGES = [
 	"te-IN",
 ] as const;
 
+const COMPOSITE_OPERATIONS = [
+	// Basic Compositing
+	"source-over",
+	"source-in",
+	"source-out",
+	"source-atop",
+	"destination-over",
+	"destination-in",
+	"destination-out",
+	"destination-atop",
+	"lighter",
+	"copy",
+	"xor",
+
+	// Blending Modes
+	"multiply",
+	"screen",
+	"overlay",
+	"darken",
+	"lighten",
+	"color-dodge",
+	"color-burn",
+	"hard-light",
+	"soft-light",
+	"difference",
+	"exclusion",
+	"hue",
+	"saturation",
+	"color",
+	"luminosity",
+] as const;
+
+export const GlobalCompositeOperation = z.enum(COMPOSITE_OPERATIONS);
+
+// Extract the TypeScript type from the schema
+export type GlobalCompositeOperationType = z.infer<
+	typeof GlobalCompositeOperation
+>;
+
 // Shared Sub-Schemas
 const ColorSchema = z.string().optional();
 
@@ -212,7 +251,7 @@ const BaseLayerSchema = z.object({
 	inputHandleId: z.string(),
 	name: z.string().optional(),
 	fill: ColorSchema,
-	blendMode: z.string().optional(),
+	blendMode: GlobalCompositeOperation.optional(),
 });
 
 // Compositor Layer (extends base)
@@ -560,5 +599,6 @@ export {
 	STT_NODE_MODELS,
 	TTS_NODE_MODELS,
 	TTS_VOICE_NAMES,
+	COMPOSITE_OPERATIONS,
 	TTS_LANGUAGES,
 };

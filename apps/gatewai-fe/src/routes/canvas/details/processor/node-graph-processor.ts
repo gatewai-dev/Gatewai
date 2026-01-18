@@ -1092,7 +1092,6 @@ export class NodeGraphProcessor extends EventEmitter {
 			if (!imageUrl) throw new Error("Missing Input Image");
 
 			const config = node.config as ModulateNodeConfig;
-			console.log({ imageUrl });
 			const result = await pixiWorkerService.processModulate(
 				imageUrl,
 				config,
