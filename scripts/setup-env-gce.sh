@@ -5,7 +5,7 @@ ENV_FILE=".env"
 
 echo "Fetching secrets from Google Secret Manager..."
 
-# 1. Fetch secrets (added error handling)
+# 1. Fetch secrets
 GEMINI_API_KEY=$(gcloud secrets versions access latest --secret="GEMINI_API_KEY")
 GOOGLE_CLIENT_ID=$(gcloud secrets versions access latest --secret="GOOGLE_CLIENT_ID")
 GOOGLE_CLIENT_SECRET=$(gcloud secrets versions access latest --secret="GOOGLE_CLIENT_SECRET")
@@ -37,7 +37,7 @@ REDIS_PORT=6379
 
 # --- Logging & Debug ---
 LOG_LEVEL=debug
-DEBUG_LOG_MEDIA=true
+DEBUG_LOG_MEDIA=false
 MCP_PORT=4001
 EOF
 
