@@ -338,9 +338,22 @@ export class RemotionWebProcessorService {
 
 		return new Promise((resolve) => {
 			const el = document.createElement(type === "Video" ? "video" : "audio");
+			el.preload = "metadata";
 			el.src = url;
-			el.onloadedmetadata = () => resolve(el.duration || 0);
-			el.onerror = () => resolve(0); // Resolve to 0 rather than crashing the whole render
+
+			el.onloadedmetadata = () => {
+				const duration = el.duration || 0;
+				el.onloadedmetadata = null;
+				el.onerror = null;
+				el.src = "";
+				el.load();
+				resolve(duration);
+			};
+
+			el.onerror = () => {
+				el.src = "";
+				resolve(0);
+			};
 		});
 	}
 }
