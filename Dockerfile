@@ -55,6 +55,4 @@ COPY --from=builder --chown=gatewai:nodejs /app/deploy .
 USER gatewai
 EXPOSE 8081
 
-# Note: In production, it is often safer to run migrations 
-# via a release script or InitContainer rather than the CMD.
-CMD ["pnpm", "run", "start"]
+CMD ["pnpm", "run", "start-cli"]
