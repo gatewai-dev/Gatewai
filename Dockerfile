@@ -26,13 +26,8 @@ RUN corepack enable && pnpm install --frozen-lockfile
 
 COPY --from=pruner /app/out/full/ .
 
-# --- Database Generation ---
-# We generate the client before building the app so types are available
-RUN pnpm run db:generate
-
 # Build artifacts
-RUN pnpm run build --filter=@gatewai/fe...
-RUN pnpm run be:build --filter=@gatewai/fe...
+RUN pnpm run build
 
 # Deploy production-ready folder
 RUN pnpm deploy --filter=@gatewai/fe --prod /app/deploy

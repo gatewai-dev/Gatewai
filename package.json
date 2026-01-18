@@ -11,7 +11,8 @@
 		"changeset": "changeset",
 		"version-packages": "changeset version",
 		"release": "turbo run build --filter=@gatewai/guides^... && changeset publish",
-		"start": "turbo run start-cli",
+
+		"start-cli": "turbo run start-cli",
 		"start-mcp": "turbo run start-cli --filter=@gatewai/mcp-server",
 
 		"db:migrate": "turbo run db:migrate --filter=@gatewai/db",
