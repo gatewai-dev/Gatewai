@@ -5,9 +5,12 @@ import { memo, useMemo, useState } from "react";
 import { ScrollArea } from "@/components/ui/scroll-area";
 import { Switch } from "@/components/ui/switch";
 import { cn } from "@/lib/utils";
+import { useAppSelector } from "@/store";
+import { makeSelectNodeById } from "@/store/nodes";
 import { GetAssetEndpoint } from "@/utils/file";
 import { MarkdownRenderer } from "../../components/markdown-renderer";
 import { useNodeResult } from "../../graph-engine/processor-ctx";
+import { MediaDimensions } from "../../misc/media-dimensions";
 import { BaseNode } from "../base";
 import { AudioRenderer } from "../common/audio-renderer";
 import { CanvasRenderer } from "../common/canvas-renderer";
@@ -30,6 +33,7 @@ ImagePreview.displayName = "ImagePreview";
 
 const PreviewNodeComponent = memo((props: NodeProps<PreviewNode>) => {
 	const { result } = useNodeResult(props.id);
+	const node = useAppSelector(makeSelectNodeById(props.id));
 	const [showMarkdown, setShowMarkdown] = useState(false);
 
 	if (!result) {
@@ -134,7 +138,15 @@ const PreviewNodeComponent = memo((props: NodeProps<PreviewNode>) => {
 					"media-container": isVideoOrImage,
 				})}
 			>
-				<div className="relative h-full w-full group">{renderContent()}</div>
+				<div className="relative h-full w-full group">
+					{renderContent()}
+
+					{node && (
+						<div className="absolute bottom-1 left-1 z-10">
+							<MediaDimensions node={node} />
+						</div>
+					)}
+				</div>
 			</div>
 		</BaseNode>
 	);
