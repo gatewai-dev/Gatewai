@@ -6,6 +6,10 @@ import { nodePolyfills } from "vite-plugin-node-polyfills";
 
 // https://vite.dev/config/
 export default defineConfig({
+	build: {
+		sourcemap: false,
+		minify: "esbuild",
+	},
 	plugins: [
 		react(),
 		tailwindcss(),
