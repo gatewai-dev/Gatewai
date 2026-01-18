@@ -6,6 +6,15 @@
 			"outputs": ["dist/**"],
 			"inputs": ["$TURBO_DEFAULT$", ".env"]
 		},
+		"db:generate": {
+			"cache": false
+		},
+		"db:migrate": {
+			"cache": false
+		},
+		"db:reset": {
+			"cache": false
+		},
 		"dev": {
 			"dependsOn": ["^build"],
 			"cache": false,

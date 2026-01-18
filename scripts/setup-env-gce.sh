@@ -17,7 +17,6 @@ if [ -z "$GEMINI_API_KEY" ]; then
 fi
 
 # 3. Create/Override the .env file
-# The '>' operator ensures the file is truncated (wiped) before writing
 cat << EOF > "$ENV_FILE"
 # --- App Configuration ---
 PORT=8081
