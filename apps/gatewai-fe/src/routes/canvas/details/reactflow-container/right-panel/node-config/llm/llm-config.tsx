@@ -7,10 +7,10 @@ import { zodResolver } from "@hookform/resolvers/zod";
 import { memo, useCallback, useEffect } from "react";
 import { useForm } from "react-hook-form";
 import { Form } from "@/components/ui/form";
+import { SliderField } from "@/routes/canvas/details/components/fields/slider";
 import { useCanvasCtx } from "@/routes/canvas/details/ctx/canvas-ctx";
 import type { NodeEntityType } from "@/store/nodes";
 import { SelectField } from "../../../../components/fields/select";
-import { TemperatureField } from "../../../../components/fields/temperature";
 
 const LLMNodeConfigComponent = memo(({ node }: { node: NodeEntityType }) => {
 	const { onNodeConfigUpdate } = useCanvasCtx();
@@ -58,11 +58,14 @@ const LLMNodeConfigComponent = memo(({ node }: { node: NodeEntityType }) => {
 					placeholder="Select a model"
 					options={LLM_NODE_MODELS}
 				/>
-				<TemperatureField
+				<SliderField
 					control={form.control}
 					name="temperature"
 					info="Temperature is a value between 0 and 2 that influences the randomness of the generated text. A lower temperature (e.g., 0.2) makes the output more focused and deterministic, while a higher value (e.g., 1.0) increases creativity and variability."
 					label="Temperature"
+					min={0}
+					max={2}
+					step={0.1}
 				/>
 			</form>
 		</Form>

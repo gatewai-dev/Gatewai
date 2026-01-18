@@ -113,10 +113,6 @@ export function AssetsSection({ isCollapsed }: AssetsSectionProps) {
 							</span>
 						</div>
 					)}
-
-					{hasActiveFilters && (
-						<span className="absolute right-2 top-2 h-1.5 w-1.5 rounded-full bg-primary" />
-					)}
 				</Button>
 			</PopoverTrigger>
 

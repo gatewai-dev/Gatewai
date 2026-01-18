@@ -11,7 +11,7 @@ function MediaDimensions({
 	node: NodeEntityType;
 	className?: string;
 }) {
-	const { result } = useNodeResult(node.id);
+	const { result } = useNodeResult(node?.id);
 
 	const outputItem = result?.outputs[result.selectedOutputIndex];
 	if (!outputItem) return null;

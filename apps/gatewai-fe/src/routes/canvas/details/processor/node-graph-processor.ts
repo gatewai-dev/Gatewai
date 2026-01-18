@@ -1258,7 +1258,7 @@ export class NodeGraphProcessor extends EventEmitter {
 		const passthrough = async ({ node }: NodeProcessorParams) =>
 			node.result as unknown as NodeResult;
 
-		// We only render the video when user downloads it, and use remotion player.
+		// We only render the video when user downloads it, and use remotion player for render on node component.
 		this.registerProcessor("VideoCompositor", passthrough);
 		this.registerProcessor("ImageGen", passthrough);
 		this.registerProcessor("File", passthrough);
