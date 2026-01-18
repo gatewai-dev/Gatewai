@@ -10,8 +10,8 @@ import {
 	APIRunRequestSchema,
 	APIRunResponseSchema,
 } from "../../data-ops/schemas.js";
+import { NodeWFProcessor } from "../../graph-engine/canvas-workflow-processor.js";
 import { uploadToImportNode } from "../../node-fns/import-media.js";
-import { NodeWFProcessor } from "../../tasks/canvas-workflow-processor.js";
 import { assertIsError } from "../../utils/misc.js";
 
 const apiRunRoutes = new Hono({ strict: false })

@@ -5,9 +5,9 @@ import { Hono } from "hono";
 import { cors } from "hono/cors";
 import { logger } from "hono/logger";
 import { ENV_CONFIG } from "./config.js";
+import { startWorker } from "./graph-engine/queue/workflow.worker.js";
 import { logger as appLogger } from "./logger.js";
 import { v1Router } from "./routes/v1/index.js";
-import { startWorker } from "./tasks/queue/workflow.worker.js";
 
 console.log(process.env);
 

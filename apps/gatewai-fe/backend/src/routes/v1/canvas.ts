@@ -6,7 +6,7 @@ import { Hono } from "hono";
 import { HTTPException } from "hono/http-exception";
 import z from "zod";
 import { GetCanvasEntities } from "../../data-ops/canvas.js";
-import { NodeWFProcessor } from "../../tasks/canvas-workflow-processor.js";
+import { NodeWFProcessor } from "../../graph-engine/canvas-workflow-processor.js";
 
 const NodeTypes = [
 	"Text",

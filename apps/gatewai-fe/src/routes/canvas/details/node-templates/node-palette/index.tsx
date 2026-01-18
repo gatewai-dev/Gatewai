@@ -41,7 +41,6 @@ function NodePaletteContent({ templates }: { templates: NodeTemplateListRPC }) {
 				isCollapsed ? "w-[60px]" : "w-72",
 			)}
 		>
-			{/* --- Header Section --- */}
 			<div className="flex shrink-0 items-center justify-between px-3 py-4">
 				<div
 					className={cn(
@@ -49,7 +48,7 @@ function NodePaletteContent({ templates }: { templates: NodeTemplateListRPC }) {
 						isCollapsed ? "w-0 opacity-0" : "w-auto opacity-100",
 					)}
 				>
-					<GatewaiLogo className="size-7 shrink-0" />
+					<GatewaiLogo className="size-7 shrink-0 text-primary" />
 					<CanvasName />
 				</div>
 

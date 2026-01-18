@@ -1,13 +1,8 @@
 import assert from "node:assert";
-import { type DataType, prisma } from "@gatewai/db";
+import type { DataType } from "@gatewai/db";
 import type { FileData, NodeResult } from "@gatewai/types";
-import { add } from "date-fns";
 import type { CanvasCtxDataWithTasks } from "../data-ops/canvas.js";
-import {
-	generateSignedUrl,
-	getFromGCS,
-	getObjectMetadata,
-} from "../utils/storage.js";
+import { getFromGCS, getObjectMetadata } from "../utils/storage.js";
 
 /**
  * Options for filtering inputs.
