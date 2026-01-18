@@ -6,8 +6,8 @@ import { useAppSelector } from "@/store";
 import { makeSelectNodeById } from "@/store/nodes";
 import { MarkdownRenderer } from "../../components/markdown-renderer";
 import { RunNodeButton } from "../../components/run-node-button";
+import { useNodeResult } from "../../graph-engine/processor-ctx";
 import { OutputSelector } from "../../misc/output-selector";
-import { useNodeResult } from "../../processor/processor-ctx";
 import { BaseNode } from "../base";
 
 const LlmNodeComponent = memo(

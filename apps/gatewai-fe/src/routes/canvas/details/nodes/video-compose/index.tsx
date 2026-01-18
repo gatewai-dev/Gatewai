@@ -17,9 +17,9 @@ import { useAppSelector } from "@/store";
 import { makeSelectNodeById } from "@/store/nodes";
 import { GetAssetEndpoint, GetFontAssetUrl } from "@/utils/file";
 import { AddCustomHandleButton } from "../../components/add-custom-handle";
+import { remotionService } from "../../graph-engine/muxer-service";
+import { useNodeResult } from "../../graph-engine/processor-ctx";
 import { useDownloadFileData } from "../../hooks/use-download-filedata";
-import { remotionService } from "../../processor/muxer-service";
-import { useNodeResult } from "../../processor/processor-ctx";
 import { BaseNode } from "../base";
 import type { VideoCompositorNode } from "../node-props";
 

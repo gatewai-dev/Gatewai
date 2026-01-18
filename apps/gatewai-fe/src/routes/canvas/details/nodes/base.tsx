@@ -21,13 +21,13 @@ import {
 	makeSelectHandlesByNodeId,
 } from "@/store/handles";
 import { makeSelectNodeById } from "@/store/nodes";
-import { NODE_ICON_MAP } from "../node-templates/node-palette/icon-map";
-import type { HandleState } from "../processor/node-graph-processor";
+import type { HandleState } from "../graph-engine/node-graph-processor";
 import {
 	useEdgeColor,
 	useNodeResult,
 	useNodeValidation,
-} from "../processor/processor-ctx";
+} from "../graph-engine/processor-ctx";
+import { NODE_ICON_MAP } from "../node-templates/node-palette/icon-map";
 import { NodeMenu } from "./node-menu";
 
 const DEFAULT_COLOR = "#9ca3af";

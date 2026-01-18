@@ -6,7 +6,7 @@ import { useAppDispatch, useAppSelector } from "@/store";
 import { makeSelectEdgesByTargetNodeId } from "@/store/edges";
 import { makeSelectNodeById, updateNodeConfig } from "@/store/nodes";
 import { ResolveFileDataUrl } from "@/utils/file";
-import { useNodeResult } from "../../processor/processor-ctx";
+import { useNodeResult } from "../../graph-engine/processor-ctx";
 import { BaseNode } from "../base";
 import { CanvasRenderer } from "../common/canvas-renderer";
 import type { CropNode } from "../node-props";

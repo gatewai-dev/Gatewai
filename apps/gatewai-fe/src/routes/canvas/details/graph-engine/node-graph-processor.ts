@@ -841,6 +841,7 @@ export class NodeGraphProcessor extends EventEmitter {
 		return inputs;
 	}
 
+	//#region BUILT-IN PROCESSORS
 	private registerBuiltInProcessors(): void {
 		const findInputData = (
 			inputs: Record<string, ConnectedInput>,
@@ -1255,6 +1256,7 @@ export class NodeGraphProcessor extends EventEmitter {
 			};
 		});
 
+		// Pass-through computations - No browser processing required.
 		const passthrough = async ({ node }: NodeProcessorParams) =>
 			node.result as unknown as NodeResult;
 
@@ -1268,5 +1270,6 @@ export class NodeGraphProcessor extends EventEmitter {
 		this.registerProcessor("VideoGenFirstLastFrame", passthrough);
 		this.registerProcessor("TextToSpeech", passthrough);
 		this.registerProcessor("SpeechToText", passthrough);
+		//#endregion
 	}
 }

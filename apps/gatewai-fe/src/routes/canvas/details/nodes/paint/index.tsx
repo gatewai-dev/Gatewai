@@ -13,7 +13,7 @@ import { makeSelectEdgesByTargetNodeId } from "@/store/edges";
 import { makeSelectNodeById } from "@/store/nodes";
 import { ResolveFileDataUrl } from "@/utils/file";
 import { useCanvasCtx } from "../../ctx/canvas-ctx";
-import { useNodeResult } from "../../processor/processor-ctx";
+import { useNodeResult } from "../../graph-engine/processor-ctx";
 import { BaseNode } from "../base";
 import type { PaintNode } from "../node-props";
 import { PaintDimensionsConfig } from "./paint-config";

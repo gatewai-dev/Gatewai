@@ -5,7 +5,7 @@ import { useAppSelector } from "@/store";
 import type { HandleEntityType } from "@/store/handles";
 import { makeSelectNodeById } from "@/store/nodes";
 import { useCanvasCtx } from "../../../routes/canvas/details/ctx/canvas-ctx";
-import { useNodeResult } from "../../../routes/canvas/details/processor/processor-ctx";
+import { useNodeResult } from "../../../routes/canvas/details/graph-engine/processor-ctx";
 import { VideoDesignerEditor } from "../video-editor";
 
 type InputOutputItems =

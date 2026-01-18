@@ -4,9 +4,9 @@ import { UserAssetsProvider } from "../assets/user-assets-ctx";
 import { CanvasProvider } from "./ctx/canvas-ctx";
 import { ShortcutsProvider } from "./ctx/hotkeys-ctx";
 import { TaskManagerProvider } from "./ctx/task-manager-ctx";
+import { ProcessorProvider } from "./graph-engine/processor-ctx";
 import { NodeTemplateDnDProvider } from "./node-templates/node-template-drag.ctx";
 import { NodeTemplatesProvider } from "./node-templates/node-templates.ctx";
-import { ProcessorProvider } from "./processor/processor-ctx";
 
 function CanvasDetailsRoot() {
 	const { canvasId } = useParams();

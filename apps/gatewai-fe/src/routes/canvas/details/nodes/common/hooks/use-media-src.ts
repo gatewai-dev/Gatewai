@@ -2,7 +2,7 @@ import type { VideoGenResult } from "@gatewai/types";
 import { useMemo } from "react";
 import type { NodeEntityType } from "@/store/nodes";
 import { GetAssetEndpoint } from "@/utils/file";
-import { useNodeResult } from "../../../processor/processor-ctx";
+import { useNodeResult } from "../../../graph-engine/processor-ctx";
 
 type MediaTypes = "Image" | "Video" | "Audio";
 

@@ -3,7 +3,10 @@ import { useMemo } from "react";
 import { useAppSelector } from "@/store";
 import { makeSelectNodeById } from "@/store/nodes";
 import { GetAssetEndpoint } from "@/utils/file";
-import { useNodeResult, useNodeValidation } from "../processor/processor-ctx";
+import {
+	useNodeResult,
+	useNodeValidation,
+} from "../graph-engine/processor-ctx";
 
 export function useNodePreview(nodeId: string) {
 	const node = useAppSelector(makeSelectNodeById(nodeId));

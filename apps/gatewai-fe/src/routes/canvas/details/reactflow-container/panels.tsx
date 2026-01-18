@@ -1,6 +1,6 @@
 import { Panel } from "@xyflow/react";
 import { memo } from "react";
-import { DebugPanel } from "../processor/debug-panel";
+import { DebugPanel } from "../graph-engine/debug-panel";
 import { BottomPanel } from "./bottom-panel";
 import { LeftPanel } from "./left-panel";
 import { NodeConfigPanel } from "./right-panel/node-config";

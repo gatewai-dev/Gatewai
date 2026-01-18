@@ -5,7 +5,7 @@ import { useAppSelector } from "@/store";
 import type { HandleEntityType } from "@/store/handles";
 import { makeSelectNodeById } from "@/store/nodes";
 import { useCanvasCtx } from "../../../ctx/canvas-ctx";
-import { useNodeResult } from "../../../processor/processor-ctx";
+import { useNodeResult } from "../../../graph-engine/processor-ctx";
 import { ImageDesignerEditor } from "../canvas-editor";
 
 const CompositorView = memo(() => {

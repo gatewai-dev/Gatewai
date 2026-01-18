@@ -6,7 +6,7 @@ import { Spinner } from "@/components/ui/spinner";
 import type { NodeEntityType } from "@/store/nodes";
 import { useCanvasCtx } from "../ctx/canvas-ctx";
 import { useNodeTaskRunning } from "../ctx/task-manager-ctx";
-import { useNodeValidation } from "../processor/processor-ctx";
+import { useNodeValidation } from "../graph-engine/processor-ctx";
 
 export type RunNodeButtonProps = ButtonProps & {
 	nodeId: NodeEntityType["id"];

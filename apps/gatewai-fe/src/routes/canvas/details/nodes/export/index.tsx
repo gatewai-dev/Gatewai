@@ -12,8 +12,8 @@ import { Button } from "@/components/ui/button";
 import { Separator } from "@/components/ui/separator";
 import type { NodeEntityType } from "@/store/nodes";
 import { isFileData } from "@/utils/file";
+import { useNodeResult } from "../../graph-engine/processor-ctx";
 import { useDownloadFileData } from "../../hooks/use-download-filedata";
-import { useNodeResult } from "../../processor/processor-ctx";
 import { BaseNode } from "../base";
 import type { BlurNode } from "../node-props";
 

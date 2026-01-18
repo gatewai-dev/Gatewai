@@ -7,7 +7,7 @@ import { Switch } from "@/components/ui/switch";
 import { cn } from "@/lib/utils";
 import { GetAssetEndpoint } from "@/utils/file";
 import { MarkdownRenderer } from "../../components/markdown-renderer";
-import { useNodeResult } from "../../processor/processor-ctx";
+import { useNodeResult } from "../../graph-engine/processor-ctx";
 import { BaseNode } from "../base";
 import { AudioRenderer } from "../common/audio-renderer";
 import { CanvasRenderer } from "../common/canvas-renderer";

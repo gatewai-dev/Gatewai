@@ -9,7 +9,7 @@ import { useAppSelector } from "@/store";
 import { makeSelectNodeById } from "@/store/nodes";
 import { ResolveFileDataUrl } from "@/utils/file";
 import { AddCustomHandleButton } from "../../components/add-custom-handle";
-import { useNodeResult } from "../../processor/processor-ctx";
+import { useNodeResult } from "../../graph-engine/processor-ctx";
 import { BaseNode } from "../base";
 import { CanvasRenderer } from "../common/canvas-renderer";
 import type { CompositorNode } from "../node-props";
