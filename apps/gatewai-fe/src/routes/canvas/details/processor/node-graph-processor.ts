@@ -1218,6 +1218,7 @@ export class NodeGraphProcessor extends EventEmitter {
 			if (inputEntries.length === 0) throw new Error("Preview disconnected");
 			const [_, { outputItem }] = inputEntries[0];
 			if (!outputItem) throw new Error("No input item");
+			console.log({ outputItem });
 			return {
 				selectedOutputIndex: 0,
 				outputs: [
