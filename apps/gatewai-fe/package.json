@@ -6,7 +6,7 @@
 	"scripts": {
 		"dev": "concurrently \"pnpm be:dev\" \"vite\"",
 		"build": "vite build && tsc -p backend/tsconfig.json",
-		"start": "node backend/dist/index.js",
+		"start-cli": "node backend/dist/index.js",
 		"preview": "vite preview",
 		"be:dev": "tsx watch backend/src/index.ts",
 		"be:build": "tsc -p backend/tsconfig.json",

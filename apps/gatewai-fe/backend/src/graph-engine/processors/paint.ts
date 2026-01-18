@@ -1,4 +1,3 @@
-import assert from "node:assert";
 import { DataType } from "@gatewai/db";
 import {
 	type FileData,
@@ -11,9 +10,9 @@ import { ENV_CONFIG } from "../../config.js";
 import { logger } from "../../logger.js";
 import { backendPixiService } from "../../media/pixi-processor.js";
 import { logImage } from "../../media-logger.js";
-import { ResolveFileDataUrl } from "../../utils/misc.js";
+import { bufferToDataUrl } from "../../utils/image.js";
 import { uploadToTemporaryFolder } from "../../utils/storage.js";
-import { getInputValue } from "../resolvers.js";
+import { getInputValue, loadMediaBuffer } from "../resolvers.js";
 import type { NodeProcessor } from "./types.js";
 
 const paintProcessor: NodeProcessor = async ({ node, data }) => {
@@ -45,7 +44,9 @@ const paintProcessor: NodeProcessor = async ({ node, data }) => {
 		let imageUrl: string | undefined;
 
 		if (backgroundInput) {
-			imageUrl = ResolveFileDataUrl(backgroundInput) ?? undefined;
+			const arrayBuffer = await loadMediaBuffer(backgroundInput);
+			const buffer = Buffer.from(arrayBuffer);
+			imageUrl = bufferToDataUrl(buffer, "image/png");
 		}
 
 		const { imageWithMask, onlyMask } = await backendPixiService.processMask(

@@ -1,5 +1,3 @@
-version: '3.8'
-
 services:
   postgres:
     image: postgres:latest
@@ -11,13 +9,11 @@ services:
       POSTGRES_DB: postgres
     volumes:
       - postgres_data:/var/lib/postgresql/data
-    # Removed public ports for security; app accesses via internal network
 
   redis:
     image: redis:7-alpine
     container_name: redis
     restart: unless-stopped
-    command: redis-server --requirepass ${REDIS_PASSWORD}
     volumes:
       - redis_data:/data
 
@@ -36,8 +32,6 @@ services:
       - REDIS_HOST=redis
       - REDIS_PORT=6379
       - DATABASE_URL=postgresql://postgres:postgres@postgres:5432/postgres
-    volumes:
-      - ./${GOOGLE_APPLICATION_CREDENTIALS_PATH}:/app/${GOOGLE_APPLICATION_CREDENTIALS_PATH}
 
   nginx:
     image: nginx:alpine

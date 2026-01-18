@@ -13,6 +13,11 @@
 		"release": "turbo run build --filter=@gatewai/guides^... && changeset publish",
 		"start": "turbo run start-cli",
 		"start-mcp": "turbo run start-cli --filter=@gatewai/mcp-server",
+
+		"db:migrate": "turbo run db:migrate --filter=@gatewai/db",
+		"db:generate": "turbo run db:generate --filter=@gatewai/db",
+		"db:reset": "turbo run db:reset --filter=@gatewai/db",
+
 		"lefthook-install": "lefthook install",
 		"mcp-inspector": "npx @modelcontextprotocol/inspector"
 	},

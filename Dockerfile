@@ -1,4 +1,4 @@
-# Stage 0: Base setup for shared environment variables
+# Stage 0: Base setup
 FROM node:22-bullseye-slim AS base
 WORKDIR /app
 ENV NODE_ENV=production
@@ -12,7 +12,6 @@ RUN turbo prune @gatewai/fe --docker
 
 # Stage 2: Builder
 FROM base AS builder
-# Install build-time dependencies
 RUN apt-get update && apt-get install -y \
     python3 build-essential python-is-python3 libcairo2-dev libpango1.0-dev \
     libjpeg-dev libgif-dev librsvg2-dev libgl1-mesa-dev \
@@ -26,6 +25,10 @@ COPY --from=pruner /app/out/pnpm-lock.yaml ./pnpm-lock.yaml
 RUN corepack enable && pnpm install --frozen-lockfile
 
 COPY --from=pruner /app/out/full/ .
+
+# --- Database Generation ---
+# We generate the client before building the app so types are available
+RUN pnpm run db:generate
 
 # Build artifacts
 RUN pnpm run build --filter=@gatewai/fe...
@@ -42,18 +45,16 @@ FROM base AS runner
 RUN groupadd --system --gid 1001 nodejs
 RUN useradd --system --uid 1001 gatewai
 
-# Runtime dependencies
 RUN apt-get update && apt-get install -y \
     libcairo2 libpango-1.0-0 libjpeg62-turbo libgif7 \
     librsvg2-2 libgl1-mesa-glx libgl1-mesa-dri ffmpeg \
     && rm -rf /var/lib/apt/lists/*
 
-# Copy from builder and set ownership to the non-root user
 COPY --from=builder --chown=gatewai:nodejs /app/deploy .
 
-# Switch to non-root user
 USER gatewai
-
 EXPOSE 8081
 
-CMD ["pnpm", "run" "start"]
+# Note: In production, it is often safer to run migrations 
+# via a release script or InitContainer rather than the CMD.
+CMD ["pnpm", "run", "start"]

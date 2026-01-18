@@ -12,11 +12,7 @@ import { backendPixiService } from "../../media/pixi-processor.js";
 import { logImage } from "../../media-logger.js";
 import { bufferToDataUrl } from "../../utils/image.js";
 import { uploadToTemporaryFolder } from "../../utils/storage.js";
-import {
-	getFileDataMimeType,
-	getInputValue,
-	loadMediaBuffer,
-} from "../resolvers.js";
+import { getInputValue, loadMediaBuffer } from "../resolvers.js";
 import type { NodeProcessor } from "./types.js";
 
 const modulateProcessor: NodeProcessor = async ({ node, data }) => {
@@ -34,7 +30,7 @@ const modulateProcessor: NodeProcessor = async ({ node, data }) => {
 		const arrayBuffer = await loadMediaBuffer(imageInput);
 		const buffer = Buffer.from(arrayBuffer);
 		const base64Data = bufferToDataUrl(buffer, "image/png");
-		console.log({ base64Data }, "MODL");
+
 		const { dataUrl, ...dimensions } = await backendPixiService.processModulate(
 			base64Data,
 			modulateConfig,

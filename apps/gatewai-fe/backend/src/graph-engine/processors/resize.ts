@@ -1,4 +1,3 @@
-import assert from "node:assert";
 import { DataType } from "@gatewai/db";
 import {
 	type FileData,
@@ -11,9 +10,9 @@ import {
 import { ENV_CONFIG } from "../../config.js";
 import { backendPixiService } from "../../media/pixi-processor.js";
 import { logImage } from "../../media-logger.js";
-import { ResolveFileDataUrl } from "../../utils/misc.js";
+import { bufferToDataUrl } from "../../utils/image.js";
 import { uploadToTemporaryFolder } from "../../utils/storage.js";
-import { getInputValue } from "../resolvers.js";
+import { getInputValue, loadMediaBuffer } from "../resolvers.js";
 import type { NodeProcessor } from "./types.js";
 
 const resizeProcessor: NodeProcessor = async ({ node, data }) => {
@@ -24,9 +23,14 @@ const resizeProcessor: NodeProcessor = async ({ node, data }) => {
 		})?.data as FileData | null;
 		const resizeConfig = ResizeNodeConfigSchema.parse(node.config);
 
-		assert(imageInput);
-		const imageUrl = ResolveFileDataUrl(imageInput);
-		assert(imageUrl);
+		if (!imageInput) {
+			return { success: false, error: "No image input provided" };
+		}
+
+		const arrayBuffer = await loadMediaBuffer(imageInput);
+		const buffer = Buffer.from(arrayBuffer);
+		const imageUrl = bufferToDataUrl(buffer, "image/png");
+
 		const { dataUrl, ...dimensions } = await backendPixiService.processResize(
 			imageUrl,
 			{
@@ -41,12 +45,14 @@ const resizeProcessor: NodeProcessor = async ({ node, data }) => {
 		if (ENV_CONFIG.DEBUG_LOG_MEDIA) {
 			logImage(uploadBuffer, ".png", node.id);
 		}
+
 		// Build new result (similar to LLM)
 		const outputHandle = data.handles.find(
 			(h) => h.nodeId === node.id && h.type === "Output",
 		);
-		if (!outputHandle)
+		if (!outputHandle) {
 			return { success: false, error: "Output handle is missing." };
+		}
 
 		const newResult: NodeResult = structuredClone(
 			node.result as NodeResult,
