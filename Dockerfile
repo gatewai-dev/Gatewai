@@ -29,6 +29,7 @@ RUN pnpm rebuild canvas sharp
 
 COPY --from=pruner /app/out/full/ .
 
+RUN pnpm run be:build
 # Build artifacts
 RUN pnpm run build
 

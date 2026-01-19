@@ -8,7 +8,9 @@ import { nodePolyfills } from "vite-plugin-node-polyfills";
 export default defineConfig({
 	build: {
 		sourcemap: false,
-		minify: "esbuild",
+		rollupOptions: {
+			cache: false,
+		},
 	},
 	plugins: [
 		react(),

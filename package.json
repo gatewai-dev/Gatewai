@@ -2,7 +2,7 @@
 	"private": false,
 	"scripts": {
 		"build": "turbo run build",
-		"build-force": "turbo run build --force",
+		"be:build": "turbo run be:build --filter=@gatewai/fe",
 		"dev": "turbo run dev",
 		"dev-mcp": "turbo run dev --filter=@gatewai/mcp-server",
 		"biome": "pnpm exec biome check --write",
@@ -10,7 +10,7 @@
 		"clean": "turbo run clean && rm -rf node_modules",
 		"changeset": "changeset",
 		"version-packages": "changeset version",
-		"release": "turbo run build --filter=@gatewai/guides^... && changeset publish",
+		"release": "changeset publish",
 
 		"start-cli": "turbo run start-cli",
 		"start-mcp": "turbo run start-cli --filter=@gatewai/mcp-server",

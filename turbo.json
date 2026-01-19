@@ -6,6 +6,9 @@
 			"outputs": ["dist/**"],
 			"inputs": ["$TURBO_DEFAULT$", ".env"]
 		},
+		"be:build": {
+			"cache": false
+		},
 		"db:generate": {
 			"cache": false
 		},
