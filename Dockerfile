@@ -33,7 +33,7 @@ COPY --from=pruner /app/out/full/ .
 RUN pnpm run build
 
 # Deploy production-ready folder
-RUN pnpm deploy --filter=@gatewai/fe --prod /app/deploy
+RUN pnpm deploy --filter=@gatewai/fe --prod --legacy /app/deploy
 RUN cp -r apps/gatewai-fe/dist /app/deploy/dist
 RUN cp -r apps/gatewai-fe/backend/dist /app/deploy/backend/dist
 
