@@ -18,44 +18,22 @@ services:
       - redis_data:/data
 
   app:
-    build: .
+    image: gatewai/app:latest
     container_name: gatewai-app
     restart: unless-stopped
     depends_on:
       - postgres
       - redis
     env_file:
-      - .env
+      - .env.development
     environment:
-      - NODE_ENV=production
+      - NODE_ENV=development
       - PORT=8081
       - REDIS_HOST=redis
       - REDIS_PORT=6379
       - DATABASE_URL=postgresql://postgres:postgres@postgres:5432/postgres
     volumes:
       - ./${GOOGLE_APPLICATION_CREDENTIALS_PATH}:/app/${GOOGLE_APPLICATION_CREDENTIALS_PATH}
-
-  nginx:
-    image: nginx:alpine
-    container_name: nginx
-    restart: unless-stopped
-    ports:
-      - "80:80"
-      - "443:443"
-    volumes:
-      - ./nginx/conf:/etc/nginx/conf.d:ro
-      - ./nginx/certbot/conf:/etc/letsencrypt
-      - ./nginx/certbot/www:/var/www/certbot
-    depends_on:
-      - app
-
-  certbot:
-    image: certbot/certbot
-    container_name: certbot
-    volumes:
-      - ./nginx/certbot/conf:/etc/letsencrypt
-      - ./nginx/certbot/www:/var/www/certbot
-    entrypoint: "/bin/sh -c 'trap exit TERM; while :; do certbot renew; sleep 12h & wait $${!}; done;'"
 
 volumes:
   postgres_data:
