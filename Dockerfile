@@ -8,6 +8,7 @@ ENV GRPC_POLL_STRATEGY=epoll1
 FROM base AS pruner
 RUN npm install -g turbo
 COPY . .
+# Prune creates a subset of the monorepo for the specific target
 RUN turbo prune @gatewai/fe --docker
 
 # Stage 2: Builder
@@ -19,21 +20,27 @@ RUN apt-get update && apt-get install -y \
     libx11-dev libxi-dev libxext-dev \
     && rm -rf /var/lib/apt/lists/*
 
+# Copy pruned json/lockfiles
 COPY --from=pruner /app/out/json/ .
 COPY --from=pruner /app/out/pnpm-lock.yaml ./pnpm-lock.yaml
 
-# 1. Install everything but skip scripts to avoid the Prisma crash
+# Install all dependencies (including devDeps for building)
 RUN corepack enable && pnpm install --frozen-lockfile --ignore-scripts
 
+# Rebuild native modules for the current architecture
 RUN pnpm rebuild canvas sharp
 
+# Copy the actual source code
 COPY --from=pruner /app/out/full/ .
 
-RUN pnpm run be:build
-# Build artifacts
-RUN pnpm run build
+# IMPORTANT: Generate Prisma/DB types first so they are available for the build
+RUN npx turbo run db:generate
 
-# Deploy production-ready folder
+# Build the app AND all its internal workspace dependencies (@gatewai/db, @gatewai/types, etc.)
+# The "..." is the magic suffix that includes dependencies in the build order.
+RUN npx turbo run build --filter=@gatewai/fe...
+
+# Deploy production-ready folder (isolates only what's needed for runtime)
 RUN pnpm deploy --filter=@gatewai/fe --prod --legacy /app/deploy
 RUN cp -r apps/gatewai-fe/dist /app/deploy/dist
 RUN cp -r apps/gatewai-fe/backend/dist /app/deploy/backend/dist
@@ -53,5 +60,8 @@ COPY --from=builder --chown=gatewai:nodejs /app/deploy .
 
 USER gatewai
 EXPOSE 8081
+
+# Ensure pnpm is available in the runner for the start script
+RUN corepack enable
 
 CMD ["pnpm", "run", "start-cli"]
