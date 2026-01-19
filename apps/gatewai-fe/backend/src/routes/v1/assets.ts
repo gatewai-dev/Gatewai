@@ -292,9 +292,9 @@ const assetsRouter = new Hono({
 			return c.body(stream, 206, {
 				"Content-Range": `bytes ${start}-${end}/${fileSize}`,
 				"Accept-Ranges": "bytes",
-				"Access-Control-Allow-Origin": "*",
 				"Content-Length": chunksize.toString(),
 				"Content-Type": asset.mimeType,
+				"Access-Control-Allow-Origin": "*",
 			});
 		}
 

@@ -14,7 +14,7 @@ if (!existsSync(ENV_CONFIG.GOOGLE_APPLICATION_CREDENTIALS_PATH)) {
 	);
 }
 
-const storage = new Storage({
+export const storage = new Storage({
 	credentials: (await import(CREDENTIALS_PATH, { with: { type: "json" } }))
 		.default,
 	projectId: ENV_CONFIG.GOOGLE_CLIENT_ID,

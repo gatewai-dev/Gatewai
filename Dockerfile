@@ -34,11 +34,11 @@ RUN pnpm rebuild canvas sharp
 COPY --from=pruner /app/out/full/ .
 
 # IMPORTANT: Generate Prisma/DB types first so they are available for the build
-RUN npx turbo run db:generate
+RUN pnpm run db:generate
 
 # Build the app AND all its internal workspace dependencies (@gatewai/db, @gatewai/types, etc.)
 # The "..." is the magic suffix that includes dependencies in the build order.
-RUN npx turbo run build --filter=@gatewai/fe...
+RUN pnpm run build --filter=@gatewai/fe...
 
 # Deploy production-ready folder (isolates only what's needed for runtime)
 RUN pnpm deploy --filter=@gatewai/fe --prod --legacy /app/deploy
@@ -58,10 +58,11 @@ RUN apt-get update && apt-get install -y \
 
 COPY --from=builder --chown=gatewai:nodejs /app/deploy .
 
+# Ensure pnpm is available in the runner for the start script
+RUN corepack enable
+
 USER gatewai
 EXPOSE 8081
 
-# Ensure pnpm is available in the runner for the start script
-RUN corepack enable
 
 CMD ["pnpm", "run", "start-cli"]
