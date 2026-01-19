@@ -22,10 +22,12 @@ RUN apt-get update && apt-get install -y \
 COPY --from=pruner /app/out/json/ .
 COPY --from=pruner /app/out/pnpm-lock.yaml ./pnpm-lock.yaml
 
-RUN corepack enable && pnpm install --frozen-lockfile
+# 1. Install everything but skip scripts to avoid the Prisma crash
+RUN corepack enable && pnpm install --frozen-lockfile --ignore-scripts
+
+RUN pnpm rebuild canvas sharp
 
 COPY --from=pruner /app/out/full/ .
-
 
 # Build artifacts
 RUN pnpm run build
