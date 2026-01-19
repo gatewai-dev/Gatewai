@@ -30,8 +30,6 @@
 		"@hookform/resolvers": "^3.10.0",
 		"@lobehub/icons": "^2.48.0",
 		"@neodrag/react": "^2.3.1",
-		"@openai/agents": "^0.3.7",
-		"@openai/agents-extensions": "^0.3.7",
 		"@pixi/node": "^7.3.0",
 		"@pixi/webworker": "^7.4.3",
 		"@radix-ui/react-accordion": "^1.2.12",
