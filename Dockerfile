@@ -2,6 +2,8 @@
 FROM node:22-bullseye-slim AS base
 WORKDIR /app
 ENV NODE_ENV=production
+# Fix: Ensure openssl is available for Prisma if needed, though bullseye-slim usually has 1.1
+RUN apt-get update && apt-get install -y openssl && rm -rf /var/lib/apt/lists/*
 ENV GRPC_POLL_STRATEGY=epoll1
 
 # Stage 1: Pruner
@@ -28,27 +30,31 @@ COPY --from=pruner /app/out/pnpm-lock.yaml ./pnpm-lock.yaml
 RUN corepack enable && pnpm install --frozen-lockfile
 
 COPY --from=pruner /app/out/full/ .
+# 1. Generate Prisma Client (Generates into packages/db/generated/client)
+# Note: This generates the binary required for the current container (debian-openssl-1.1.x)
 RUN pnpm --filter=@gatewai/db db:generate
-# 1. Generate Prisma Client
-# Note: Ensure binaryTargets in schema.prisma includes "debian-openssl-1.1.x" or "linux-musl" etc.
-RUN pnpm run db:generate
 
 # 2. Build the app
 RUN pnpm run build --filter=@gatewai/fe...
 
 # 3. Deploy production-ready folder
+# This creates a fresh node_modules in /app/deploy based on package.json files lists
 RUN pnpm deploy --filter=@gatewai/fe --prod --legacy /app/deploy
 
 # --- FIX START ---
-# Manually copy the Prisma engines into the deploy folder if they are missing
-# We look for where the error says it's missing and ensure it exists in /app/deploy
-RUN find node_modules/.pnpm -name "libquery_engine-*.so.node" -exec cp {} /app/deploy/node_modules/ \; || true
+# The deploy step above does NOT copy 'generated' folder because it's not in package.json 'files'.
+# We must manually copy the binary to where the bundled code (dist) expects it.
+# The app will look in: /app/node_modules/@gatewai/db/dist/
+RUN mkdir -p /app/deploy/node_modules/@gatewai/db/dist && \
+    cp packages/db/generated/client/libquery_engine-debian-openssl-1.1.x.so.node \
+       /app/deploy/node_modules/@gatewai/db/dist/
 # --- FIX END ---
 
 WORKDIR /app/deploy
 RUN pnpm rebuild canvas sharp gl
-RUN pnpm --filter=@gatewai/db db:generate
 
+# We assume backend dists are handled by the deploy/build process, 
+# but if you need to copy specific output folders manually as per your original file:
 WORKDIR /app
 RUN mkdir -p /app/deploy/backend && \
     cp -r apps/gatewai-fe/backend/dist /app/deploy/backend/dist && \
@@ -73,7 +79,6 @@ WORKDIR /app
 
 # Copy the fully prepared deployment folder
 COPY --from=builder --chown=gatewai:nodejs /app/deploy .
-
 RUN corepack enable && \
     mkdir -p /home/gatewai/.cache/corepack && \
     chown -R gatewai:nodejs /home/gatewai
