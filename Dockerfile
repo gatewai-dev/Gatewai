@@ -42,9 +42,10 @@ RUN pnpm run build --filter=@gatewai/fe...
 
 # Deploy production-ready folder (isolates only what's needed for runtime, prod deps only)
 RUN pnpm deploy --filter=@gatewai/fe --prod --legacy /app/deploy
-# Consolidated cp for dist folders
-RUN cp -r apps/gatewai-fe/dist /app/deploy/ && \
-    cp -r apps/gatewai-fe/backend/dist /app/deploy/
+
+RUN mkdir -p /app/deploy/backend && \
+    cp -r apps/gatewai-fe/backend/dist /app/deploy/backend/dist && \
+    cp -r apps/gatewai-fe/dist /app/deploy/dist
 
 # Stage 3: Runner
 FROM base AS runner
