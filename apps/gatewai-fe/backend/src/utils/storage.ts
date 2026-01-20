@@ -1,22 +1,16 @@
-import { existsSync } from "node:fs";
 import path from "node:path";
 import { Readable } from "node:stream";
 import { Storage } from "@google-cloud/storage";
 import { ENV_CONFIG } from "../config.js";
 
 const CREDENTIALS_PATH = path.join(
-	ENV_CONFIG.GOOGLE_APPLICATION_CREDENTIALS_PATH,
+	ENV_CONFIG.GOOGLE_APPLICATION_CREDENTIALS_PATH ?? "",
 );
 
-if (!existsSync(ENV_CONFIG.GOOGLE_APPLICATION_CREDENTIALS_PATH)) {
-	throw new Error(
-		`Missing credentials file, seeked: ${ENV_CONFIG.GOOGLE_APPLICATION_CREDENTIALS_PATH}`,
-	);
-}
-
 export const storage = new Storage({
-	credentials: (await import(CREDENTIALS_PATH, { with: { type: "json" } }))
-		.default,
+	credentials: ENV_CONFIG.GOOGLE_APPLICATION_CREDENTIALS_PATH
+		? (await import(CREDENTIALS_PATH, { with: { type: "json" } })).default
+		: undefined,
 	projectId: ENV_CONFIG.GOOGLE_CLIENT_ID,
 });
 

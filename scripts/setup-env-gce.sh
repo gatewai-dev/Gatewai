@@ -34,10 +34,10 @@ DATABASE_URL="postgresql://postgres:postgres@localhost:54321/gatewai"
 REDIS_HOST=localhost
 REDIS_PORT=6379
 
+MCP_PORT=4001
 # --- Logging & Debug ---
 LOG_LEVEL=debug
 DEBUG_LOG_MEDIA=false
-MCP_PORT=4001
 EOF
 
 echo "Successfully updated and overwrote $ENV_FILE"
