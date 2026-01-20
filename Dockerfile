@@ -61,7 +61,7 @@ FROM base AS runner
 RUN apt-get update && apt-get install -y --no-install-recommends \
     libcairo2 libpango-1.0-0 libjpeg62-turbo libgif7 \
     librsvg2-2 libgl1-mesa-glx libgl1-mesa-dri ffmpeg \
-    libxi6 libxext6 \
+    libxi6 libxext6 libxrender1 libasound2 \
     && rm -rf /var/lib/apt/lists/*
 
 RUN groupadd --system --gid 1001 nodejs && \
