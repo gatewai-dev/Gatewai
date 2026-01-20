@@ -18,7 +18,7 @@
 		}
 	},
 	"scripts": {
-		"build": "pnpm db:generate && tsdown src/index.ts",
+		"build": "pnpm db:generate && tsdown",
 		"db:generate": "prisma generate",
 		"db:migrate": "prisma migrate dev",
 		"db:deploy": "prisma migrate deploy",

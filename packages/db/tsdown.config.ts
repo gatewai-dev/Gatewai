@@ -2,12 +2,12 @@ import { defineConfig } from "tsdown";
 
 export default defineConfig({
 	entry: {
-		".": "src/index.ts",
+		index: "src/index.ts",
 	},
 	format: ["esm"],
 	clean: true,
 	sourcemap: true,
 	treeshake: true,
-
-	noExternal: [],
+	dts: true,
+	noExternal: [/^@prisma\/client/],
 });
