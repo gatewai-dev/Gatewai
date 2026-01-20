@@ -14,8 +14,7 @@ RUN turbo prune @gatewai/fe --docker
 
 # Stage 2: Builder
 FROM base AS builder
-# 1. Install build dependencies
-# Added 'git' and 'ln -s' for python to fix the gl/canvas build errors
+# (Keep your apt-get and symlink logic here)
 RUN apt-get update && apt-get install -y --no-install-recommends \
     python3 build-essential git ca-certificates libcairo2-dev libpango1.0-dev \
     libjpeg-dev libgif-dev librsvg2-dev libgl1-mesa-dev \
@@ -29,25 +28,23 @@ COPY --from=pruner /app/out/pnpm-lock.yaml ./pnpm-lock.yaml
 # Install dependencies
 RUN corepack enable && pnpm install --frozen-lockfile
 
-# Copy source code
+# Now copy the full source (which includes the schema.prisma files)
 COPY --from=pruner /app/out/full/ .
 
-# Generate Prisma/DB types
+# Re-enable Prisma generation and run it manually now that files exist
 RUN pnpm run db:generate
+# --- FIX ENDS HERE ---
 
 # Build the app
 RUN pnpm run build --filter=@gatewai/fe...
 
-# Deploy production-ready folder (isolates @gatewai/fe and its production deps)
+# Deploy production-ready folder
 RUN pnpm deploy --filter=@gatewai/fe --prod --legacy /app/deploy
 
-# 2. Rebuild native modules INSIDE the deploy folder
-# This ensures binaries match the final node_modules structure
+# Rebuild native modules inside the deploy folder
 WORKDIR /app/deploy
 RUN pnpm rebuild canvas sharp gl
 
-# Copy build artifacts into the deploy directory
-# Adjusted paths to ensure 'apps/' prefix from the 'full' copy is respected
 WORKDIR /app
 RUN mkdir -p /app/deploy/backend && \
     cp -r apps/gatewai-fe/backend/dist /app/deploy/backend/dist && \
