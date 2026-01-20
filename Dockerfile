@@ -41,7 +41,7 @@ RUN pnpm run db:generate
 RUN pnpm run build --filter=@gatewai/fe...
 
 # Deploy production-ready folder (isolates only what's needed for runtime, prod deps only)
-RUN pnpm deploy --filter=@gatewai/fe --prod /app/deploy
+RUN pnpm deploy --filter=@gatewai/fe --prod --legacy /app/deploy
 # Consolidated cp for dist folders
 RUN cp -r apps/gatewai-fe/{dist,backend/dist} /app/deploy/
 
