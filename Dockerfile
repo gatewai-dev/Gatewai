@@ -25,8 +25,7 @@ COPY --from=pruner /app/out/json/ .
 COPY --from=pruner /app/out/pnpm-lock.yaml ./pnpm-lock.yaml
 
 # Install dependencies.
-# We keep --ignore-scripts for speed/security, but we MUST explicitly rebuild native modules after.
-RUN corepack enable && pnpm install --frozen-lockfile --ignore-scripts
+RUN corepack enable && pnpm install --frozen-lockfile
 
 # 1. Rebuild for the main build process (in case 'vite build' needs them)
 RUN pnpm rebuild canvas sharp gl
