@@ -18,6 +18,9 @@
 		"db:reset": {
 			"cache": false
 		},
+		"db:deploy": {
+			"cache": false
+		},
 		"dev": {
 			"dependsOn": ["^build"],
 			"cache": false,

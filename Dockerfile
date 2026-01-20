@@ -7,14 +7,11 @@ ENV GRPC_POLL_STRATEGY=epoll1
 # Stage 1: Pruner
 FROM base AS pruner
 RUN npm install -g turbo
-COPY turbo.json package.json pnpm-workspace.yaml pnpm-lock.yaml ./
-COPY packages/ packages/
-COPY apps/ apps/
+COPY . .
 RUN turbo prune @gatewai/fe --docker
 
 # Stage 2: Builder
 FROM base AS builder
-# (Keep your apt-get and symlink logic here)
 RUN apt-get update && apt-get install -y --no-install-recommends \
     python3 build-essential git ca-certificates libcairo2-dev libpango1.0-dev \
     libjpeg-dev libgif-dev librsvg2-dev libgl1-mesa-dev \
@@ -25,15 +22,13 @@ RUN apt-get update && apt-get install -y --no-install-recommends \
 COPY --from=pruner /app/out/json/ .
 COPY --from=pruner /app/out/pnpm-lock.yaml ./pnpm-lock.yaml
 
-# Install dependencies
 RUN corepack enable && pnpm install --frozen-lockfile
 
-# Now copy the full source (which includes the schema.prisma files)
 COPY --from=pruner /app/out/full/ .
 
-# Re-enable Prisma generation and run it manually now that files exist
+# IMPORTANT: Generate Prisma Client 
+# We run this BEFORE pnpm deploy so the generated files exist to be copied
 RUN pnpm run db:generate
-# --- FIX ENDS HERE ---
 
 # Build the app
 RUN pnpm run build --filter=@gatewai/fe...
@@ -41,7 +36,12 @@ RUN pnpm run build --filter=@gatewai/fe...
 # Deploy production-ready folder
 RUN pnpm deploy --filter=@gatewai/fe --prod --legacy /app/deploy
 
-# Rebuild native modules inside the deploy folder
+# --- FIX FOR PRISMA ENGINES ---
+# Manually copy the generated prisma engine to the deploy folder if it's missing
+# This ensures the .so.node file is available to the runner
+RUN cp -r packages/db/node_modules/.prisma /app/deploy/node_modules/ || true
+# ------------------------------
+
 WORKDIR /app/deploy
 RUN pnpm rebuild canvas sharp gl
 
@@ -53,29 +53,25 @@ RUN mkdir -p /app/deploy/backend && \
 # Stage 3: Runner
 FROM base AS runner
 
-# Install runtime dependencies for Canvas and Headless-GL
 RUN apt-get update && apt-get install -y --no-install-recommends \
     libcairo2 libpango-1.0-0 libjpeg62-turbo libgif7 \
     librsvg2-2 libgl1-mesa-glx libgl1-mesa-dri ffmpeg \
-    libxi6 libxext6 libxrender1 libasound2 \
+    libxi6 libxext6 libxrender1 libasound2 openssl \
     && rm -rf /var/lib/apt/lists/*
 
 RUN groupadd --system --gid 1001 nodejs && \
     useradd --system --uid 1001 -m -g nodejs gatewai
 
-ENV COREPACK_HOME=/home/gatewai/.cache/corepack
-
 WORKDIR /app
-
-# Copy the fully prepared deployment folder
 COPY --from=builder --chown=gatewai:nodejs /app/deploy .
 
-RUN corepack enable && \
-    mkdir -p /home/gatewai/.cache/corepack && \
-    chown -R gatewai:nodejs /home/gatewai
+# Create a startup script to run migrations
+RUN echo '#!/bin/sh\n\
+pnpm --filter @gatewai/db db:deploy\n\
+pnpm run start-cli' > /app/entrypoint.sh && chmod +x /app/entrypoint.sh
 
 USER gatewai
 EXPOSE 8081
 
-# Ensure we use the pnpm from the deployed directory
-CMD ["pnpm", "run", "start-cli"]
+# Use the entrypoint script
+CMD ["/app/entrypoint.sh"]
