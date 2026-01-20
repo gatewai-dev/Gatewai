@@ -23,9 +23,9 @@ Stop switching between tools. Gatewai offers a unified interface for:
 * **Audio**: High-fidelity text-to-speech and deep audio understanding.
 * **Text**: State-of-the-art LLM orchestration using Gemini 3.
 
-### ⚡ Real-time Creativity
+### Real-time Creativity
 
-Don't wait for results. Our interactive canvas allows for instant feedback, enabling a fluid creative process where AI becomes an extension of your brush. Gatewai uses WebGL at both backend and frontend to achieve identical outputs at pixel-level. What you see at browser is what AI gets.
+Don't wait for results. Our interactive canvas allows for instant feedback, enabling a fluid creative process where AI becomes an extension of your brush. Gatewai uses WebGL specification at both server and browser to achieve identical outputs at pixel-level. What you see at browser is what AI gets.
 
 ---
 

@@ -47,5 +47,13 @@
 			"sharp"
 		]
 	},
+	"trustedDependencies": [
+		"canvas",
+		"@swc/core",
+		"esbuild",
+		"protobufjs",
+		"sharp",
+		"gl"
+	],
 	"name": "gatewai"
 }
