@@ -5,7 +5,6 @@ export default defineConfig({
 		".": "src/index.ts",
 	},
 	format: ["esm"],
-	external: [/generated\/client/],
 	clean: true,
 	sourcemap: true,
 	treeshake: true,
