@@ -47,6 +47,7 @@ RUN find node_modules/.pnpm -name "libquery_engine-*.so.node" -exec cp {} /app/d
 
 WORKDIR /app/deploy
 RUN pnpm rebuild canvas sharp gl
+RUN pnpm --filter=@gatewai/db db:generate
 
 WORKDIR /app
 RUN mkdir -p /app/deploy/backend && \
