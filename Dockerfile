@@ -28,7 +28,7 @@ COPY --from=pruner /app/out/pnpm-lock.yaml ./pnpm-lock.yaml
 RUN corepack enable && pnpm install --frozen-lockfile
 
 COPY --from=pruner /app/out/full/ .
-
+RUN pnpm --filter=@gatewai/db db:generate
 # 1. Generate Prisma Client
 # Note: Ensure binaryTargets in schema.prisma includes "debian-openssl-1.1.x" or "linux-musl" etc.
 RUN pnpm run db:generate
