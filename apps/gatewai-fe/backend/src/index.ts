@@ -28,7 +28,13 @@ const app = new Hono()
 	)
 	.route("/api/v1", v1Router)
 	// Serve frontend dist (located in gatewai-fe root)
-	.get("*", serveStatic({ root: "./dist" }));
+	.get(
+		"*",
+		serveStatic({
+			root: "./dist",
+			rewriteRequestPath: (path) => (path.includes(".") ? path : "/index.html"),
+		}),
+	);
 
 // Initialize canvas worker.
 await startWorker();
