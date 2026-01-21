@@ -30,7 +30,7 @@ GOOGLE_CLIENT_ID=$GOOGLE_CLIENT_ID
 GOOGLE_CLIENT_SECRET=$GOOGLE_CLIENT_SECRET
 
 # --- Database & Redis ---
-DATABASE_URL="postgresql://postgres:postgres@localhost:54321/gatewai"
+DATABASE_URL="postgresql://postgres:postgres@localhost:5432/gatewai"
 REDIS_HOST=localhost
 REDIS_PORT=6379
 

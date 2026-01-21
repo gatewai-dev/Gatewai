@@ -41,20 +41,16 @@ RUN pnpm run build --filter=@gatewai/fe...
 # This creates a fresh node_modules in /app/deploy based on package.json files lists
 RUN pnpm deploy --filter=@gatewai/fe --prod --legacy /app/deploy
 
-# --- FIX START ---
-# The deploy step above does NOT copy 'generated' folder because it's not in package.json 'files'.
-# We must manually copy the binary to where the bundled code (dist) expects it.
-# The app will look in: /app/node_modules/@gatewai/db/dist/
+
 RUN mkdir -p /app/deploy/node_modules/@gatewai/db/dist && \
     cp packages/db/generated/client/libquery_engine-debian-openssl-1.1.x.so.node \
        /app/deploy/node_modules/@gatewai/db/dist/
-# --- FIX END ---
+
 
 WORKDIR /app/deploy
 RUN pnpm rebuild canvas sharp gl
 
-# We assume backend dists are handled by the deploy/build process, 
-# but if you need to copy specific output folders manually as per your original file:
+# We assume backend dists are handled by the deploy/build process,
 WORKDIR /app
 RUN mkdir -p /app/deploy/backend && \
     cp -r apps/gatewai-fe/backend/dist /app/deploy/backend/dist && \
