@@ -2,7 +2,7 @@
 FROM node:22-bullseye-slim AS base
 WORKDIR /app
 ENV NODE_ENV=production
-# Fix: Ensure openssl is available for Prisma if needed, though bullseye-slim usually has 1.1
+
 RUN apt-get update && apt-get install -y openssl && rm -rf /var/lib/apt/lists/*
 ENV GRPC_POLL_STRATEGY=epoll1
 
@@ -16,7 +16,7 @@ RUN turbo prune @gatewai/fe --docker
 
 # Stage 2: Builder
 FROM base AS builder
-# (Keep your apt-get and symlink logic here)
+
 RUN apt-get update && apt-get install -y --no-install-recommends \
     python3 build-essential git ca-certificates libcairo2-dev libpango1.0-dev \
     libjpeg-dev libgif-dev librsvg2-dev libgl1-mesa-dev \
@@ -31,14 +31,12 @@ RUN corepack enable && pnpm install --frozen-lockfile
 
 COPY --from=pruner /app/out/full/ .
 # 1. Generate Prisma Client (Generates into packages/db/generated/client)
-# Note: This generates the binary required for the current container (debian-openssl-1.1.x)
 RUN pnpm --filter=@gatewai/db db:generate
 
 # 2. Build the app
 RUN pnpm run build --filter=@gatewai/fe...
 
 # 3. Deploy production-ready folder
-# This creates a fresh node_modules in /app/deploy based on package.json files lists
 RUN pnpm deploy --filter=@gatewai/fe --prod --legacy /app/deploy
 
 
