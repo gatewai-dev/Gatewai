@@ -1,5 +1,6 @@
 import type { CompositorLayer, CompositorNodeConfig } from "@gatewai/types";
 import Konva from "konva";
+import { fontManager } from "@/lib/fonts";
 import { GetFontAssetUrl } from "@/utils/file";
 
 // Sync with server defaults
@@ -98,12 +99,10 @@ const processCompositor = async (
 	}
 
 	const fontLoadPromises = Array.from(fontsToLoad).map(async (fontFamily) => {
-		if (document.fonts.check(`16px "${fontFamily}"`)) return;
 		try {
 			const fontUrl = GetFontAssetUrl(fontFamily);
-			const fontFace = new FontFace(fontFamily, `url(${fontUrl})`);
-			const loadedFace = await fontFace.load();
-			document.fonts.add(loadedFace);
+			console.log({ fontUrl });
+			await fontManager.loadFont(fontFamily, fontUrl);
 		} catch (err) {
 			console.warn(`Failed to load font: ${fontFamily}`, err);
 		}

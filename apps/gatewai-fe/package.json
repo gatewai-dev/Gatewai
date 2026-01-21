@@ -5,11 +5,12 @@
 	"type": "module",
 	"scripts": {
 		"dev": "concurrently \"pnpm be:dev\" \"vite\"",
-		"build": "vite build && tsc -p backend/tsconfig.json",
+		"build": "vite build && tsc -p backend/tsconfig.json && pnpm copy-assets",
 		"start-cli": "node backend/dist/index.js",
 		"preview": "vite preview",
 		"be:dev": "tsx watch backend/src/index.ts",
-		"be:build": "tsc -p backend/tsconfig.json",
+		"be:build": "tsc -p backend/tsconfig.json && pnpm copy-assets",
+		"copy-assets": "mkdir -p backend/dist && cp -r backend/src/assets backend/dist/",
 		"test-api": "tsx backend/scripts/example-api-request.ts",
 		"test-api-media": "tsx backend/scripts/example-api-media.ts"
 	},
@@ -142,6 +143,7 @@
 		"@swc/core",
 		"esbuild",
 		"protobufjs",
-		"sharp"
+		"sharp",
+		"gl"
 	]
 }

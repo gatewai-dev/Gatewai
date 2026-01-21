@@ -36,6 +36,10 @@
 		"node": ">=22"
 	},
 	"pnpm": {
+		"overrides": {
+			"react": "^19.2.0",
+			"react-dom": "^19.2.0"
+		},
 		"onlyBuiltDependencies": [
 			"@prisma/client",
 			"@prisma/engines",

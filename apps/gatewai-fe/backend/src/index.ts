@@ -1,3 +1,4 @@
+import { readFile } from "node:fs/promises";
 import { prisma, SEED_createNodeTemplates } from "@gatewai/db";
 import { serve } from "@hono/node-server";
 import { serveStatic } from "@hono/node-server/serve-static";
@@ -28,13 +29,17 @@ const app = new Hono()
 	)
 	.route("/api/v1", v1Router)
 	// Serve frontend dist (located in gatewai-fe root)
-	.get(
-		"*",
-		serveStatic({
-			root: "./dist",
-			rewriteRequestPath: (path) => (path.includes(".") ? path : "/index.html"),
-		}),
-	);
+	.use("*", serveStatic({ root: "./dist" }))
+	// If no file was found, serve index.html for client-side routing
+	.get("*", async (c) => {
+		try {
+			// Adjust this path to where your index.html lives relative to execution
+			const html = await readFile("./dist/index.html", "utf-8");
+			return c.html(html);
+		} catch (_e) {
+			return c.text("404 Not Found", 404);
+		}
+	});
 
 // Initialize canvas worker.
 await startWorker();
