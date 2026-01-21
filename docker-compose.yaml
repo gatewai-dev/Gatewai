@@ -3,6 +3,8 @@ services:
     image: postgres:18
     container_name: postgres
     restart: unless-stopped
+    ports:
+      - "5432:5432"
     environment:
       POSTGRES_USER: postgres
       POSTGRES_PASSWORD: postgres
@@ -13,6 +15,8 @@ services:
   redis:
     image: redis:7-alpine
     container_name: redis
+    ports:
+      - "6379:6379"
     restart: unless-stopped
     volumes:
       - redis_data:/data
