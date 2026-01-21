@@ -17,6 +17,7 @@
 
 		"db:migrate": "turbo run db:migrate --filter=@gatewai/db",
 		"db:generate": "turbo run db:generate --filter=@gatewai/db",
+		"db:seed": "turbo run db:seed --filter=@gatewai/db",
 		"db:reset": "turbo run db:reset --filter=@gatewai/db",
 		"db:deploy": "turbo run db:deploy --filter=@gatewai/db",
 

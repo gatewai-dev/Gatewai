@@ -15,6 +15,9 @@
 		"db:migrate": {
 			"cache": false
 		},
+		"db:seed": {
+			"cache": false
+		},
 		"db:reset": {
 			"cache": false
 		},
