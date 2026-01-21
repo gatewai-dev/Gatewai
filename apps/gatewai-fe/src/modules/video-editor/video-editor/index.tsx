@@ -22,11 +22,13 @@ import type {
 } from "@gatewai/types";
 import { Player, type PlayerRef } from "@remotion/player";
 import {
+	Bold,
 	ChevronDown,
 	Film,
 	GripVertical,
 	Hand,
 	Image as ImageIcon,
+	Italic,
 	Layers,
 	Minus,
 	MousePointer,
@@ -42,10 +44,10 @@ import {
 	Settings2,
 	Trash2,
 	Type,
+	Underline,
 	XIcon,
 	Zap,
 } from "lucide-react";
-
 import React, {
 	createContext,
 	type Dispatch,
@@ -90,6 +92,7 @@ import {
 	SelectTrigger,
 	SelectValue,
 } from "@/components/ui/select";
+import { Separator } from "@/components/ui/separator";
 import { Slider } from "@/components/ui/slider";
 import {
 	Tooltip,
@@ -98,9 +101,10 @@ import {
 	TooltipTrigger,
 } from "@/components/ui/tooltip";
 import { ColorPicker } from "@/components/util/color-input";
+import { fontManager } from "@/lib/fonts";
 import { useGetFontListQuery } from "@/store/fonts";
 import type { NodeEntityType } from "@/store/nodes";
-import { GetAssetEndpoint } from "@/utils/file";
+import { GetAssetEndpoint, GetFontAssetUrl } from "@/utils/file";
 import {
 	type AnimationType,
 	CompositionScene,
@@ -113,7 +117,6 @@ import { DEFAULT_DURATION_FRAMES, FPS } from "../config";
 const RULER_HEIGHT = 28;
 const TRACK_HEIGHT = 32;
 const HEADER_WIDTH = 200;
-
 // Optimized Presets for Web Editing (Performance focused)
 const ASPECT_RATIOS = [
 	{ label: "Youtube / HD (16:9)", width: 1280, height: 720 },
@@ -122,7 +125,6 @@ const ASPECT_RATIOS = [
 	{ label: "Square (1:1)", width: 1080, height: 1080 },
 	{ label: "Portrait (4:5)", width: 1080, height: 1350 },
 ];
-
 // --- Context & Types ---
 interface EditorContextType {
 	layers: ExtendedLayer[];
@@ -162,15 +164,12 @@ interface EditorContextType {
 	isDirty: boolean;
 	setIsDirty: Dispatch<SetStateAction<boolean>>;
 }
-
 const EditorContext = createContext<EditorContextType | undefined>(undefined);
-
 const useEditor = () => {
 	const ctx = useContext(EditorContext);
 	if (!ctx) throw new Error("useEditor must be used within EditorProvider");
 	return ctx;
 };
-
 // --- Components: Unified Clip ---
 const UnifiedClip: React.FC<{
 	layer: ExtendedLayer;
@@ -252,7 +251,6 @@ const UnifiedClip: React.FC<{
 		</div>
 	);
 };
-
 // --- Components: Timeline Core ---
 const InteractionOverlay: React.FC = () => {
 	const {
@@ -286,7 +284,6 @@ const InteractionOverlay: React.FC = () => {
 		scale: 1,
 	});
 	const [initialAngle, setInitialAngle] = useState(0);
-
 	// Memoize visible layers
 	const visibleLayers = useMemo(() => {
 		return layers
@@ -300,7 +297,6 @@ const InteractionOverlay: React.FC = () => {
 			)
 			.sort((a, b) => (a.zIndex ?? 0) - (b.zIndex ?? 0));
 	}, [layers, currentFrame]);
-
 	const handleMouseDown = (
 		e: React.MouseEvent,
 		layerId?: string,
@@ -322,7 +318,6 @@ const InteractionOverlay: React.FC = () => {
 		}
 		const layer = layers.find((l) => l.id === layerId);
 		if (!layer) return;
-
 		setSelectedId(layerId);
 		setDragStart({ x: e.clientX, y: e.clientY });
 		setInitialPos({
@@ -333,7 +328,6 @@ const InteractionOverlay: React.FC = () => {
 			rotation: layer.rotation,
 			scale: layer.scale ?? 1,
 		});
-
 		if (anchor) {
 			setIsResizing(true);
 			setResizeAnchor(anchor);
@@ -341,7 +335,6 @@ const InteractionOverlay: React.FC = () => {
 			setIsDragging(true);
 		}
 	};
-
 	const handleRotateStart = (e: React.MouseEvent, layerId: string) => {
 		e.stopPropagation();
 		e.preventDefault();
@@ -352,7 +345,6 @@ const InteractionOverlay: React.FC = () => {
 		const centerY = layer.y + (layer.height ?? 0) / 2;
 		const screenCenterX = centerX * zoom + pan.x;
 		const screenCenterY = centerY * zoom + pan.y;
-
 		setInitialAngle(
 			Math.atan2(e.clientY - screenCenterY, e.clientX - screenCenterX),
 		);
@@ -367,7 +359,6 @@ const InteractionOverlay: React.FC = () => {
 		});
 		setIsRotating(true);
 	};
-
 	const handleMouseMove = (e: React.MouseEvent) => {
 		if (isPanning) {
 			const dx = e.clientX - dragStart.x;
@@ -376,10 +367,8 @@ const InteractionOverlay: React.FC = () => {
 			return;
 		}
 		if (!selectedId) return;
-
 		const dx = (e.clientX - dragStart.x) / zoom;
 		const dy = (e.clientY - dragStart.y) / zoom;
-
 		if (isDragging) {
 			updateLayers((prev) =>
 				prev.map((l) =>
@@ -396,19 +385,14 @@ const InteractionOverlay: React.FC = () => {
 			const theta = initialPos.rotation * (Math.PI / 180);
 			const cos = Math.cos(theta);
 			const sin = Math.sin(theta);
-
 			let localDx = cos * dx + sin * dy;
 			let localDy = -sin * dx + cos * dy;
-
 			localDx /= initialPos.scale;
 			localDy /= initialPos.scale;
-
 			const signW = resizeAnchor.includes("l") ? -1 : 1;
 			const signH = resizeAnchor.includes("t") ? -1 : 1;
-
 			let changeW = signW * localDx;
 			let changeH = signH * localDy;
-
 			const layer = layers.find((l) => l.id === selectedId);
 			if (layer && (layer.type === "Image" || layer.type === "Video")) {
 				const ratio = initialPos.height / initialPos.width || 1;
@@ -418,23 +402,18 @@ const InteractionOverlay: React.FC = () => {
 					changeW = changeH / ratio;
 				}
 			}
-
 			localDx = signW * changeW;
 			localDy = signH * changeH;
-
 			const newWidth = Math.max(10, initialPos.width + changeW);
 			const newHeight = Math.max(10, initialPos.height + changeH);
-
 			const worldDx = cos * localDx - sin * localDy;
 			const worldDy = sin * localDx + cos * localDy;
-
 			const newX = resizeAnchor.includes("l")
 				? initialPos.x + worldDx
 				: initialPos.x;
 			const newY = resizeAnchor.includes("t")
 				? initialPos.y + worldDy
 				: initialPos.y;
-
 			updateLayers((prev) =>
 				prev.map((l) =>
 					l.id === selectedId
@@ -455,14 +434,12 @@ const InteractionOverlay: React.FC = () => {
 			const centerY = layer.y + (layer.height ?? 0) / 2;
 			const screenCenterX = centerX * zoom + pan.x;
 			const screenCenterY = centerY * zoom + pan.y;
-
 			const currentAngle = Math.atan2(
 				e.clientY - screenCenterY,
 				e.clientX - screenCenterX,
 			);
 			const delta = currentAngle - initialAngle;
 			const newRot = initialPos.rotation + (delta * 180) / Math.PI;
-
 			updateLayers((prev) =>
 				prev.map((l) =>
 					l.id === selectedId ? { ...l, rotation: Math.round(newRot) } : l,
@@ -470,7 +447,6 @@ const InteractionOverlay: React.FC = () => {
 			);
 		}
 	};
-
 	const handleMouseUp = () => {
 		setIsDragging(false);
 		setIsResizing(false);
@@ -478,7 +454,6 @@ const InteractionOverlay: React.FC = () => {
 		setIsRotating(false);
 		setIsPanning(false);
 	};
-
 	return (
 		<div
 			className="absolute inset-0 z-10 overflow-hidden outline-none"
@@ -526,7 +501,6 @@ const InteractionOverlay: React.FC = () => {
 									: "border border-transparent group-hover:border-blue-400/50"
 							}`}
 						/>
-
 						{/* Controls (Only if selected) */}
 						{selectedId === layer.id && (
 							<>
@@ -552,7 +526,6 @@ const InteractionOverlay: React.FC = () => {
 											}
 										/>
 									))}
-
 								{/* Rotation Handle */}
 								<div
 									className="absolute -top-6 left-1/2 -translate-x-1/2 h-6 w-px bg-blue-500"
@@ -572,7 +545,6 @@ const InteractionOverlay: React.FC = () => {
 		</div>
 	);
 };
-
 // --- Toolbar ---
 const Toolbar = React.memo<{
 	onClose: () => void;
@@ -595,7 +567,6 @@ const Toolbar = React.memo<{
 		setMode,
 	} = useEditor();
 	const [showCloseDialog, setShowCloseDialog] = useState(false);
-
 	const handlePlayPause = useCallback(() => {
 		if (playerRef.current) {
 			if (isPlaying) playerRef.current.pause();
@@ -603,7 +574,6 @@ const Toolbar = React.memo<{
 			setIsPlaying(!isPlaying);
 		}
 	}, [isPlaying, setIsPlaying, playerRef]);
-
 	const handleCloseClick = useCallback(() => {
 		if (isDirty) {
 			setShowCloseDialog(true);
@@ -611,18 +581,15 @@ const Toolbar = React.memo<{
 			onClose();
 		}
 	}, [isDirty, onClose]);
-
 	const handleSaveAndClose = useCallback(() => {
 		onSave();
 		setShowCloseDialog(false);
 		onClose();
 	}, [onSave, onClose]);
-
 	const handleDiscardAndClose = useCallback(() => {
 		setShowCloseDialog(false);
 		onClose();
 	}, [onClose]);
-
 	return (
 		<>
 			<div className="flex items-center gap-1.5 p-1.5 rounded-full bg-neutral-900/90 backdrop-blur-xl border border-white/10 shadow-2xl z-50">
@@ -793,7 +760,6 @@ const Toolbar = React.memo<{
 		</>
 	);
 });
-
 // --- Timeline Panel ---
 interface SortableTrackProps {
 	layer: ExtendedLayer;
@@ -813,7 +779,6 @@ const SortableTrackHeader: React.FC<SortableTrackProps> = ({
 		transition,
 		isDragging,
 	} = useSortable({ id: layer.id });
-
 	const style = {
 		transform: CSS.Transform.toString(transform),
 		transition,
@@ -821,7 +786,6 @@ const SortableTrackHeader: React.FC<SortableTrackProps> = ({
 		minHeight: `${TRACK_HEIGHT}px`,
 		zIndex: isDragging ? 999 : "auto",
 	};
-
 	return (
 		<button
 			ref={setNodeRef}
@@ -876,7 +840,6 @@ w-full text-left p-0 m-0 bg-transparent border-0
 		</button>
 	);
 };
-
 const TimelinePanel: React.FC = () => {
 	const {
 		layers,
@@ -896,19 +859,16 @@ const TimelinePanel: React.FC = () => {
 	const [dragStartX, setDragStartX] = useState(0);
 	const [initialScroll, setInitialScroll] = useState(0);
 	const [pixelsPerFrame, setPixelsPerFrame] = useState(10); // Increased default for better visibility
-
 	const sortedLayers = useMemo(
 		() => [...layers].sort((a, b) => (b.zIndex ?? 0) - (a.zIndex ?? 0)),
 		[layers],
 	);
-
 	const sensors = useSensors(
 		useSensor(PointerSensor, { activationConstraint: { distance: 5 } }),
 		useSensor(KeyboardSensor, {
 			coordinateGetter: sortableKeyboardCoordinates,
 		}),
 	);
-
 	// --- Drag & Drop Sorting ---
 	const handleDragEnd = (event: DragEndEvent) => {
 		const { active, over } = event;
@@ -920,14 +880,12 @@ const TimelinePanel: React.FC = () => {
 				...l,
 				zIndex: newSorted.length - idx,
 			}));
-
 			updateLayers((prev) => {
 				const updateMap = new Map(updatedLayers.map((l) => [l.id, l]));
 				return prev.map((l) => updateMap.get(l.id) || l);
 			});
 		}
 	};
-
 	// --- Playhead & Scroll Sync ---
 	useEffect(() => {
 		let rafId: number | null = null;
@@ -948,18 +906,15 @@ const TimelinePanel: React.FC = () => {
 			}
 			rafId = requestAnimationFrame(loop);
 		};
-
 		if (isPlaying) {
 			loop();
 		} else if (playheadRef.current) {
 			playheadRef.current.style.transform = `translateX(${currentFrame * pixelsPerFrame}px)`;
 		}
-
 		return () => {
 			if (rafId) cancelAnimationFrame(rafId);
 		};
 	}, [isPlaying, currentFrame, pixelsPerFrame, playerRef]);
-
 	// --- Timeline Interaction ---
 	const handleTimelineClick = (e: React.MouseEvent) => {
 		const rect = e.currentTarget.getBoundingClientRect();
@@ -968,7 +923,6 @@ const TimelinePanel: React.FC = () => {
 		if (playerRef.current) playerRef.current.seekTo(frame);
 		setCurrentFrame(frame);
 	};
-
 	// --- Scroll Wheel Navigation (Canva-like) ---
 	useEffect(() => {
 		const el = scrollContainerRef.current;
@@ -984,7 +938,6 @@ const TimelinePanel: React.FC = () => {
 		el.addEventListener("wheel", handleWheel, { passive: false });
 		return () => el.removeEventListener("wheel", handleWheel);
 	}, []);
-
 	// --- Clip Manipulation (Move/Trim) with Snapping ---
 	const handleClipManipulation = (
 		e: React.MouseEvent,
@@ -995,14 +948,11 @@ const TimelinePanel: React.FC = () => {
 		const startX = e.clientX;
 		const layer = layers.find((l) => l.id === layerId);
 		if (!layer) return;
-
 		const initialStart = layer.startFrame ?? 0;
 		const initialDuration = layer.durationInFrames ?? DEFAULT_DURATION_FRAMES;
-
 		const onMove = (moveEv: MouseEvent) => {
 			const diffPx = moveEv.clientX - startX;
 			const diffFrames = Math.round(diffPx / pixelsPerFrame);
-
 			if (type === "move") {
 				let newStart = initialStart + diffFrames;
 				newStart = Math.max(0, newStart);
@@ -1024,16 +974,13 @@ const TimelinePanel: React.FC = () => {
 				);
 			}
 		};
-
 		const onUp = () => {
 			window.removeEventListener("mousemove", onMove);
 			window.removeEventListener("mouseup", onUp);
 		};
-
 		window.addEventListener("mousemove", onMove);
 		window.addEventListener("mouseup", onUp);
 	};
-
 	return (
 		<div className="h-52 flex flex-col border-t border-white/10 bg-[#0f0f0f] shrink-0 select-none z-30 shadow-[0_-5px_20px_rgba(0,0,0,0.5)]">
 			{/* Toolbar */}
@@ -1068,7 +1015,6 @@ const TimelinePanel: React.FC = () => {
 					</Button>
 				</div>
 			</div>
-
 			{/* Timeline Content */}
 			<div
 				ref={scrollContainerRef}
@@ -1160,7 +1106,6 @@ const TimelinePanel: React.FC = () => {
 								</defs>
 								<rect width="100%" height="100%" fill="url(#ruler-ticks)" />
 							</svg>
-
 							{/* Time Labels */}
 							{Array.from({
 								length: Math.ceil(durationInFrames / fps) + 5,
@@ -1176,7 +1121,6 @@ const TimelinePanel: React.FC = () => {
 									{sec}s
 								</span>
 							))}
-
 							{/* Playhead */}
 							<div
 								ref={playheadRef}
@@ -1192,7 +1136,6 @@ const TimelinePanel: React.FC = () => {
 							</div>
 						</div>
 					</div>
-
 					{/* Tracks Body */}
 					<div className="flex relative flex-1">
 						{/* Sidebar / Headers */}
@@ -1220,7 +1163,6 @@ const TimelinePanel: React.FC = () => {
 								</SortableContext>
 							</DndContext>
 						</div>
-
 						{/* Clips Area */}
 						<div className="flex-1 relative timeline-bg min-h-full bg-[#0a0a0a]">
 							{/* Grid */}
@@ -1232,13 +1174,11 @@ const TimelinePanel: React.FC = () => {
 									backgroundSize: `${fps * pixelsPerFrame}px 100%`,
 								}}
 							/>
-
 							{sortedLayers.map((layer) => {
 								const duration =
 									layer.durationInFrames ?? DEFAULT_DURATION_FRAMES;
 								const width = Math.max(10, duration * pixelsPerFrame);
 								const isSelected = layer.id === selectedId;
-
 								return (
 									<div
 										key={layer.id}
@@ -1271,7 +1211,6 @@ const TimelinePanel: React.FC = () => {
 											}}
 										>
 											<UnifiedClip layer={layer} isSelected={isSelected} />
-
 											{/* Resize Handle (Right) - Invisible hit area, visible on hover */}
 											<div
 												className="absolute right-0 top-0 bottom-0 w-3 cursor-e-resize z-30 group/handle"
@@ -1292,7 +1231,6 @@ const TimelinePanel: React.FC = () => {
 		</div>
 	);
 };
-
 // --- Inspector ---
 const InspectorPanel: React.FC = () => {
 	const {
@@ -1307,7 +1245,6 @@ const InspectorPanel: React.FC = () => {
 	} = useEditor();
 	const selectedLayer = layers.find((f) => f.id === selectedId);
 	const [addAnimOpen, setAddAnimOpen] = useState(false);
-
 	const { data: fontList } = useGetFontListQuery({});
 	const fontNames = useMemo(() => {
 		if (Array.isArray(fontList) && (fontList as string[])?.length > 0) {
@@ -1315,7 +1252,6 @@ const InspectorPanel: React.FC = () => {
 		}
 		return ["Geist", "Inter", "Arial", "Courier New", "Times New Roman"];
 	}, [fontList]);
-
 	const animationTypes: AnimationType[] = [
 		"fade-in",
 		"fade-out",
@@ -1330,7 +1266,6 @@ const InspectorPanel: React.FC = () => {
 		"bounce",
 		"shake",
 	];
-
 	const addAnimation = (type: AnimationType) => {
 		if (!selectedLayer) return;
 		const newAnimation: VideoAnimation = {
@@ -1347,13 +1282,47 @@ const InspectorPanel: React.FC = () => {
 		);
 		setAddAnimOpen(false);
 	};
-
 	const update = (patch: Partial<ExtendedLayer>) => {
 		updateLayers((prev) =>
 			prev.map((l) => (l.id === selectedId ? { ...l, ...patch } : l)),
 		);
 	};
+	const toggleItalic = () => {
+		if (!selectedLayer || selectedLayer.type !== "Text") return;
 
+		const current = selectedLayer.fontStyle === "italic" ? "normal" : "italic";
+
+		update({
+			fontStyle: current,
+			width: undefined,
+			height: undefined,
+		});
+	};
+
+	const toggleBold = () => {
+		if (!selectedLayer || selectedLayer.type !== "Text") return;
+
+		// Note: font-weight is a separate CSS property
+		const current = selectedLayer.fontWeight === "bold" ? "normal" : "bold";
+
+		update({
+			fontWeight: current,
+			width: undefined,
+			height: undefined,
+		});
+	};
+	const toggleUnderline = () => {
+		if (!selectedLayer || selectedLayer.type !== "Text") return;
+		update({
+			textDecoration:
+				selectedLayer.textDecoration === "underline" ? "" : "underline",
+			width: undefined, // Trigger re-measure
+			height: undefined,
+		});
+	};
+	const isBold = selectedLayer?.fontWeight?.includes("bold") ?? false;
+	const isItalic = selectedLayer?.fontStyle?.includes("italic") ?? false;
+	const isUnderline = selectedLayer?.textDecoration === "underline";
 	if (!selectedLayer) {
 		return (
 			<div className="w-80 border-l border-white/5 bg-[#0f0f0f] flex flex-col z-20 shadow-xl">
@@ -1397,7 +1366,6 @@ const InspectorPanel: React.FC = () => {
 									</SelectContent>
 								</Select>
 							</div>
-
 							<div className="space-y-2">
 								<Label className="text-[10px] text-gray-500 uppercase font-bold tracking-wider">
 									Resolution
@@ -1418,7 +1386,6 @@ const InspectorPanel: React.FC = () => {
 								</div>
 							</div>
 						</div>
-
 						<div className="w-full h-px bg-white/5" />
 						<div className="flex flex-col items-center justify-center py-12 px-4 text-center border border-dashed border-white/10 rounded-lg bg-white/2">
 							<MousePointer className="w-8 h-8 text-gray-700 mb-3" />
@@ -1434,7 +1401,6 @@ const InspectorPanel: React.FC = () => {
 			</div>
 		);
 	}
-
 	return (
 		<div className="w-80 border-l border-white/5 bg-[#0f0f0f] z-20 shadow-xl flex flex-col h-full">
 			<div className="flex items-center justify-between p-4 border-b border-white/5 bg-neutral-900/50">
@@ -1450,7 +1416,6 @@ const InspectorPanel: React.FC = () => {
 					{selectedLayer.type}
 				</span>
 			</div>
-
 			<ScrollArea className="flex-1">
 				<div className="pb-20">
 					{/* Transform */}
@@ -1507,7 +1472,6 @@ const InspectorPanel: React.FC = () => {
 							</div>
 						</div>
 					)}
-
 					{/* Audio Settings for Video/Audio */}
 					{(selectedLayer.type === "Video" ||
 						selectedLayer.type === "Audio") && (
@@ -1531,7 +1495,6 @@ const InspectorPanel: React.FC = () => {
 							</div>
 						</div>
 					)}
-
 					{/* Typography */}
 					{selectedLayer.type === "Text" && (
 						<div className="border-b border-white/5 p-4">
@@ -1546,13 +1509,16 @@ const InspectorPanel: React.FC = () => {
 										</Label>
 										<Select
 											value={selectedLayer.fontFamily ?? "Inter"}
-											onValueChange={(val) =>
-												update({
-													fontFamily: val,
-													width: undefined, // Recalculate dimensions
-													height: undefined, // Recalculate dimensions
-												})
-											}
+											onValueChange={(val) => {
+												const fontUrl = GetFontAssetUrl(val);
+												fontManager.loadFont(val, fontUrl).then(() => {
+													update({
+														fontFamily: val,
+														width: undefined, // Recalculate dimensions
+														height: undefined, // Recalculate dimensions
+													});
+												});
+											}}
 										>
 											<SelectTrigger className="h-8 text-xs bg-neutral-800 border-white/10">
 												<SelectValue placeholder="Select font" />
@@ -1592,10 +1558,43 @@ const InspectorPanel: React.FC = () => {
 										/>
 									</div>
 								</div>
+								<div className="flex p-1 bg-white/5 rounded border border-white/5">
+									<Button
+										variant={isBold ? "secondary" : "ghost"}
+										size="icon"
+										className="h-6 flex-1 rounded-sm"
+										onClick={() => toggleBold()}
+									>
+										<Bold className="w-3.5 h-3.5" />
+									</Button>
+									<Separator
+										orientation="vertical"
+										className="h-3 my-auto mx-1 bg-white/10"
+									/>
+									<Button
+										variant={isItalic ? "secondary" : "ghost"}
+										size="icon"
+										className="h-6 flex-1 rounded-sm"
+										onClick={() => toggleItalic()}
+									>
+										<Italic className="w-3.5 h-3.5" />
+									</Button>
+									<Separator
+										orientation="vertical"
+										className="h-3 my-auto mx-1 bg-white/10"
+									/>
+									<Button
+										variant={isUnderline ? "secondary" : "ghost"}
+										size="icon"
+										className="h-6 flex-1 rounded-sm"
+										onClick={toggleUnderline}
+									>
+										<Underline className="w-3.5 h-3.5" />
+									</Button>
+								</div>
 							</div>
 						</div>
 					)}
-
 					{/* Animations */}
 					{selectedLayer.type !== "Audio" && (
 						<div className="border-b border-white/5 p-4">
@@ -1670,7 +1669,6 @@ const InspectorPanel: React.FC = () => {
 										</div>
 									</div>
 								))}
-
 								<Popover open={addAnimOpen} onOpenChange={setAddAnimOpen}>
 									<PopoverTrigger asChild>
 										<Button
@@ -1714,7 +1712,6 @@ const InspectorPanel: React.FC = () => {
 		</div>
 	);
 };
-
 // --- Main Editor ---
 interface VideoDesignerEditorProps {
 	initialLayers: Map<string, OutputItem<"Text" | "Image" | "Video" | "Audio">>;
@@ -1722,7 +1719,6 @@ interface VideoDesignerEditorProps {
 	onClose: () => void;
 	onSave: (config: VideoCompositorNodeConfig) => void;
 }
-
 export const VideoDesignerEditor: React.FC<VideoDesignerEditorProps> = ({
 	initialLayers,
 	node,
@@ -1734,7 +1730,6 @@ export const VideoDesignerEditor: React.FC<VideoDesignerEditorProps> = ({
 	const [layers, setLayers] = useState<ExtendedLayer[]>([]);
 	const [selectedId, setSelectedId] = useState<string | null>(null);
 	const [isDirty, setIsDirty] = useState(false);
-
 	// Canvas State
 	const roundToEven = (num?: number) => Math.round((num ?? 0) / 2) * 2;
 	const [viewportWidth, setViewportWidth] = useState(
@@ -1746,19 +1741,16 @@ export const VideoDesignerEditor: React.FC<VideoDesignerEditorProps> = ({
 	const [zoom, setZoom] = useState(0.5);
 	const [pan, setPan] = useState({ x: 0, y: 0 });
 	const [mode, setMode] = useState<"select" | "pan">("select");
-
 	// Player State
 	const [currentFrame, setCurrentFrame] = useState(0);
 	const [isPlaying, setIsPlayingState] = useState(false);
 	const playerRef = useRef<PlayerRef>(null);
-
 	// Refs
 	const containerRef = useRef<HTMLDivElement>(null);
 	const timeRef = useRef<HTMLDivElement>(null);
 	const lastModeRef = useRef<"select" | "pan">("select");
 	const [containerSize, setContainerSize] = useState({ width: 0, height: 0 });
 	const [sizeKnown, setSizeKnown] = useState(false);
-
 	// --- Actions ---
 	const updateViewportWidth = (w: number) => {
 		setViewportWidth(roundToEven(Math.max(2, w)));
@@ -1768,7 +1760,6 @@ export const VideoDesignerEditor: React.FC<VideoDesignerEditorProps> = ({
 		setViewportHeight(roundToEven(Math.max(2, h)));
 		setIsDirty(true);
 	};
-
 	const getTextData = useCallback(
 		(id: string) => {
 			const item = initialLayers.get(id);
@@ -1779,7 +1770,6 @@ export const VideoDesignerEditor: React.FC<VideoDesignerEditorProps> = ({
 		},
 		[initialLayers],
 	);
-
 	const getAssetUrl = useCallback(
 		(id: string) => {
 			const item = initialLayers.get(id);
@@ -1792,7 +1782,6 @@ export const VideoDesignerEditor: React.FC<VideoDesignerEditorProps> = ({
 		},
 		[initialLayers],
 	);
-
 	const getMediaDuration = useCallback(
 		(id: string | undefined | null) => {
 			if (!id) return undefined;
@@ -1806,7 +1795,6 @@ export const VideoDesignerEditor: React.FC<VideoDesignerEditorProps> = ({
 		},
 		[initialLayers],
 	);
-
 	const updateLayersHandler = useCallback(
 		(
 			updater: SetStateAction<ExtendedLayer[]>,
@@ -1817,7 +1805,6 @@ export const VideoDesignerEditor: React.FC<VideoDesignerEditorProps> = ({
 		},
 		[],
 	);
-
 	const deleteLayer = useCallback(
 		(id: string) => {
 			setLayers((prev) => prev.filter((l) => l.id !== id));
@@ -1826,7 +1813,6 @@ export const VideoDesignerEditor: React.FC<VideoDesignerEditorProps> = ({
 		},
 		[selectedId],
 	);
-
 	const setIsPlaying = useCallback((p: boolean) => {
 		setIsPlayingState(p);
 		if (p) playerRef.current?.play();
@@ -1838,93 +1824,98 @@ export const VideoDesignerEditor: React.FC<VideoDesignerEditorProps> = ({
 			}
 		}
 	}, []);
-
 	const setCurrentFrameHandler = useCallback((frame: number) => {
 		setCurrentFrame(frame);
 		playerRef.current?.seekTo(frame);
 	}, []);
-
 	// --- Initialization ---
 	useEffect(() => {
-		const layerUpdates = { ...nodeConfig.layerUpdates };
-		const loaded: ExtendedLayer[] = [];
-		let maxZ = Math.max(
-			0,
-			...Object.values(layerUpdates).map((l) => l.zIndex ?? 0),
-		);
-
-		initialLayers.forEach((item, id) => {
-			const saved = layerUpdates[id] as ExtendedLayer | undefined;
-			const durationMs =
-				typeof item.data !== "string"
-					? (item.data.entity?.duration ?? item.data.processData?.duration ?? 0)
-					: 0;
-
-			const calculatedDurationFrames =
-				(item.type === "Video" || item.type === "Audio") && durationMs > 0
-					? Math.ceil((durationMs / 1000) * FPS)
-					: DEFAULT_DURATION_FRAMES;
-
-			const src = item.type !== "Text" ? getAssetUrl(id) : undefined;
-			const text = item.type === "Text" ? getTextData(id) : undefined;
-
-			const base = {
-				id,
-				inputHandleId: id,
-				x: 0,
-				y: 0,
-				rotation: 0,
-				scale: 1,
-				opacity: 1,
-				zIndex: saved?.zIndex ?? ++maxZ,
-				startFrame: 0,
-				durationInFrames: saved?.durationInFrames ?? calculatedDurationFrames,
-				volume: 1,
-				animations: saved?.animations ?? [],
-				src,
-				text,
-				...saved,
-			};
-
-			if (item.type === "Text") {
-				loaded.push({
-					...base,
-					type: "Text",
-					fontSize: saved?.fontSize ?? 60,
-					fontFamily: saved?.fontFamily ?? "Inter",
-					fill: saved?.fill ?? "#ffffff",
-					width: saved?.width,
-					height: saved?.height,
-					lockAspect: true,
-				});
-			} else if (item.type === "Image" || item.type === "Video") {
-				const pData = (item.data as FileData)?.processData;
-				loaded.push({
-					...base,
-					type: item.type as "Image" | "Video",
-					width: saved?.width ?? pData?.width,
-					height: saved?.height ?? pData?.height,
-					maxDurationInFrames:
-						item.type === "Video" && durationMs > 0
-							? calculatedDurationFrames
-							: undefined,
-					lockAspect: true,
-				});
-			} else if (item.type === "Audio") {
-				loaded.push({
-					...base,
-					type: "Audio",
-					height: 0,
-					width: 0,
-					maxDurationInFrames:
-						durationMs > 0 ? calculatedDurationFrames : undefined,
-					lockAspect: true,
-				});
-			}
-		});
-		setLayers(loaded);
+		const loadInitialLayers = async () => {
+			const layerUpdates = { ...nodeConfig.layerUpdates };
+			const loaded: ExtendedLayer[] = [];
+			const fontPromises: Promise<void>[] = [];
+			let maxZ = Math.max(
+				0,
+				...Object.values(layerUpdates).map((l) => l.zIndex ?? 0),
+			);
+			initialLayers.forEach((item, id) => {
+				const saved = layerUpdates[id] as ExtendedLayer | undefined;
+				const durationMs =
+					typeof item.data !== "string"
+						? (item.data.entity?.duration ??
+							item.data.processData?.duration ??
+							0)
+						: 0;
+				const calculatedDurationFrames =
+					(item.type === "Video" || item.type === "Audio") && durationMs > 0
+						? Math.ceil((durationMs / 1000) * FPS)
+						: DEFAULT_DURATION_FRAMES;
+				const src = item.type !== "Text" ? getAssetUrl(id) : undefined;
+				const text = item.type === "Text" ? getTextData(id) : undefined;
+				const base = {
+					id,
+					inputHandleId: id,
+					x: 0,
+					y: 0,
+					rotation: 0,
+					scale: 1,
+					opacity: 1,
+					zIndex: saved?.zIndex ?? ++maxZ,
+					startFrame: 0,
+					durationInFrames: saved?.durationInFrames ?? calculatedDurationFrames,
+					volume: 1,
+					animations: saved?.animations ?? [],
+					src,
+					text,
+					...saved,
+				};
+				if (item.type === "Text") {
+					const fontFamily = saved?.fontFamily ?? "Inter";
+					loaded.push({
+						...base,
+						type: "Text",
+						fontSize: saved?.fontSize ?? 60,
+						fontFamily,
+						fontStyle: saved?.fontStyle ?? "normal",
+						textDecoration: saved?.textDecoration ?? "",
+						fill: saved?.fill ?? "#ffffff",
+						width: saved?.width,
+						height: saved?.height,
+						lockAspect: true,
+					});
+					// Queue font loading
+					const fontUrl = GetFontAssetUrl(fontFamily);
+					fontPromises.push(fontManager.loadFont(fontFamily, fontUrl));
+				} else if (item.type === "Image" || item.type === "Video") {
+					const pData = (item.data as FileData)?.processData;
+					loaded.push({
+						...base,
+						type: item.type as "Image" | "Video",
+						width: saved?.width ?? pData?.width,
+						height: saved?.height ?? pData?.height,
+						maxDurationInFrames:
+							item.type === "Video" && durationMs > 0
+								? calculatedDurationFrames
+								: undefined,
+						lockAspect: true,
+					});
+				} else if (item.type === "Audio") {
+					loaded.push({
+						...base,
+						type: "Audio",
+						height: 0,
+						width: 0,
+						maxDurationInFrames:
+							durationMs > 0 ? calculatedDurationFrames : undefined,
+						lockAspect: true,
+					});
+				}
+			});
+			await Promise.all(fontPromises);
+			setLayers(loaded);
+		};
+		loadInitialLayers();
 	}, [initialLayers, nodeConfig, getAssetUrl, getTextData]);
-
 	// --- Dynamic Measurement Logic ---
 	// watches for layers with invalid dimensions (null/undefined width/height) and measures them
 	useEffect(() => {
@@ -1934,18 +1925,14 @@ export const VideoDesignerEditor: React.FC<VideoDesignerEditorProps> = ({
 				(l.width == null || l.height == null) &&
 				!l.isPlaceholder,
 		);
-
 		if (layersToMeasure.length === 0) return;
-
 		let mounted = true;
 		const measure = async () => {
 			const updates = new Map<string, Partial<ExtendedLayer>>();
-
 			await Promise.all(
 				layersToMeasure.map(async (layer) => {
 					const url = getAssetUrl(layer.inputHandleId);
 					if (!url && layer.type !== "Text") return;
-
 					try {
 						if (layer.type === "Image") {
 							const img = new Image();
@@ -1971,6 +1958,8 @@ export const VideoDesignerEditor: React.FC<VideoDesignerEditorProps> = ({
 							const d = document.createElement("div");
 							d.style.fontFamily = layer.fontFamily || "Inter";
 							d.style.fontSize = `${layer.fontSize || 40}px`;
+							d.style.fontStyle = layer.fontStyle || "normal";
+							d.style.textDecoration = layer.textDecoration || "";
 							d.style.lineHeight = `${layer.lineHeight ?? 1.2}`;
 							d.style.position = "absolute";
 							d.style.visibility = "hidden";
@@ -1992,7 +1981,6 @@ export const VideoDesignerEditor: React.FC<VideoDesignerEditorProps> = ({
 					}
 				}),
 			);
-
 			if (mounted && updates.size > 0) {
 				setLayers((prev) =>
 					prev.map((l) =>
@@ -2001,18 +1989,15 @@ export const VideoDesignerEditor: React.FC<VideoDesignerEditorProps> = ({
 				);
 			}
 		};
-
 		measure();
 		return () => {
 			mounted = false;
 		};
 	}, [layers, getAssetUrl, getTextData]);
-
 	// Viewport Logic
 	const zoomIn = useCallback(() => setZoom((z) => Math.min(3, z + 0.1)), []);
 	const zoomOut = useCallback(() => setZoom((z) => Math.max(0.1, z - 0.1)), []);
 	const zoomTo = useCallback((val: number) => setZoom(val), []);
-
 	const fitView = useCallback(() => {
 		if (containerSize.width === 0 || containerSize.height === 0) return;
 		const scale =
@@ -2025,12 +2010,10 @@ export const VideoDesignerEditor: React.FC<VideoDesignerEditorProps> = ({
 		const y = (containerSize.height - viewportHeight * scale) / 2;
 		setPan({ x, y });
 	}, [containerSize, viewportWidth, viewportHeight]);
-
 	// biome-ignore lint/correctness/useExhaustiveDependencies: Re-fit required when viewport dims change
 	useEffect(() => {
 		fitView();
 	}, [viewportWidth, viewportHeight, fitView]);
-
 	useEffect(() => {
 		const el = containerRef.current;
 		if (!el) return;
@@ -2041,14 +2024,12 @@ export const VideoDesignerEditor: React.FC<VideoDesignerEditorProps> = ({
 		observer.observe(el);
 		return () => observer.disconnect();
 	}, []);
-
 	useEffect(() => {
 		if (!sizeKnown && containerSize.width > 0) {
 			fitView();
 			setSizeKnown(true);
 		}
 	}, [containerSize, fitView, sizeKnown]);
-
 	// Wheel Interaction
 	useEffect(() => {
 		const el = containerRef.current;
@@ -2062,7 +2043,6 @@ export const VideoDesignerEditor: React.FC<VideoDesignerEditorProps> = ({
 				const zoomSensitivity = 0.003;
 				const delta = -e.deltaY * zoomSensitivity;
 				const newZoom = Math.min(Math.max(zoom * Math.exp(delta), 0.1), 5);
-
 				if (newZoom !== zoom) {
 					const mousePointTo = {
 						x: (pointerX - pan.x) / zoom,
@@ -2081,14 +2061,12 @@ export const VideoDesignerEditor: React.FC<VideoDesignerEditorProps> = ({
 		el.addEventListener("wheel", handleWheel, { passive: false });
 		return () => el.removeEventListener("wheel", handleWheel);
 	}, [zoom, pan, mode]);
-
 	// Keyboard Shortcuts
 	useEffect(() => {
 		const handleKeyDown = (e: KeyboardEvent) => {
 			const isInput =
 				document.activeElement?.tagName === "INPUT" ||
 				document.activeElement?.tagName === "TEXTAREA";
-
 			// Ctrl/Cmd + S: Save
 			if ((e.ctrlKey || e.metaKey) && e.key.toLowerCase() === "s") {
 				e.preventDefault();
@@ -2112,7 +2090,6 @@ export const VideoDesignerEditor: React.FC<VideoDesignerEditorProps> = ({
 						acc[layer.id] = savedLayer;
 						return acc;
 					}, {});
-
 					onSave({
 						layerUpdates,
 						width: viewportWidth,
@@ -2122,9 +2099,7 @@ export const VideoDesignerEditor: React.FC<VideoDesignerEditorProps> = ({
 				}
 				return;
 			}
-
 			if (isInput) return;
-
 			// Space: Temporary pan mode (hold)
 			if (e.code === "Space" && !e.repeat) {
 				e.preventDefault();
@@ -2134,13 +2109,11 @@ export const VideoDesignerEditor: React.FC<VideoDesignerEditorProps> = ({
 				}
 				return;
 			}
-
 			// Delete/Backspace: Delete selected layer
 			if (e.key === "Delete" || e.key === "Backspace") {
 				if (selectedId) deleteLayer(selectedId);
 				return;
 			}
-
 			// Tool shortcuts
 			switch (e.key.toLowerCase()) {
 				case "v":
@@ -2167,7 +2140,6 @@ export const VideoDesignerEditor: React.FC<VideoDesignerEditorProps> = ({
 					break;
 			}
 		};
-
 		const handleKeyUp = (e: KeyboardEvent) => {
 			if (e.code === "Space") {
 				const isInput =
@@ -2179,10 +2151,8 @@ export const VideoDesignerEditor: React.FC<VideoDesignerEditorProps> = ({
 				}
 			}
 		};
-
 		window.addEventListener("keydown", handleKeyDown);
 		window.addEventListener("keyup", handleKeyUp);
-
 		return () => {
 			window.removeEventListener("keydown", handleKeyDown);
 			window.removeEventListener("keyup", handleKeyUp);
@@ -2201,7 +2171,6 @@ export const VideoDesignerEditor: React.FC<VideoDesignerEditorProps> = ({
 		zoomTo,
 		fitView,
 	]);
-
 	const durationInFrames = useMemo(() => {
 		if (layers.length === 0) return DEFAULT_DURATION_FRAMES;
 		return Math.max(
@@ -2212,7 +2181,6 @@ export const VideoDesignerEditor: React.FC<VideoDesignerEditorProps> = ({
 			),
 		);
 	}, [layers]);
-
 	const contextValue = useMemo(
 		() => ({
 			layers,
@@ -2272,11 +2240,9 @@ export const VideoDesignerEditor: React.FC<VideoDesignerEditorProps> = ({
 			fitView,
 		],
 	);
-
 	useEffect(() => {
 		playerRef.current?.seekTo(0);
 	}, []);
-
 	return (
 		<EditorContext.Provider value={contextValue}>
 			<div className="flex flex-col h-screen w-full bg-[#050505] text-gray-100 overflow-hidden font-sans select-none">
@@ -2315,7 +2281,6 @@ export const VideoDesignerEditor: React.FC<VideoDesignerEditorProps> = ({
 										<div className="w-full h-full border border-white/50 border-dashed" />
 									</div>
 								)}
-
 								<Player
 									ref={playerRef}
 									component={CompositionScene}
@@ -2337,9 +2302,7 @@ export const VideoDesignerEditor: React.FC<VideoDesignerEditorProps> = ({
 						</div>
 						{!isPlaying && <InteractionOverlay />}
 					</div>
-
 					<InspectorPanel />
-
 					{/* Floating Controls */}
 					<div className="absolute bottom-6 left-1/2 -translate-x-1/2 z-40 transition-all duration-300">
 						<Toolbar
@@ -2364,7 +2327,6 @@ export const VideoDesignerEditor: React.FC<VideoDesignerEditorProps> = ({
 									acc[layer.id] = savedLayer;
 									return acc;
 								}, {});
-
 								onSave({
 									layerUpdates,
 									width: viewportWidth,

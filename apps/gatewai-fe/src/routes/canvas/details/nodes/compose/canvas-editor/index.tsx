@@ -218,14 +218,8 @@ const useEditor = () => {
 // --- Hooks ---
 
 const useSnap = () => {
-	const {
-		layers,
-		updateLayers,
-		viewportWidth,
-		viewportHeight,
-		setGuides,
-		transformerRef,
-	} = useEditor();
+	const { layers, updateLayers, viewportWidth, viewportHeight, setGuides } =
+		useEditor();
 	const SNAP_THRESHOLD = 5;
 
 	const getSnapPositions = useCallback(

@@ -50,26 +50,6 @@ export interface SceneProps {
 	viewportHeight: number;
 }
 
-/**
- * Lazily injects a font face definition.
- */
-export const injectFontFace = (family: string, url: string) => {
-	if (!family || !url) return;
-	const fontId = `font-${family.replace(/\s+/g, "-").toLowerCase()}`;
-	if (document.getElementById(fontId)) return;
-
-	const style = document.createElement("style");
-	style.id = fontId;
-	style.innerHTML = `
-      @font-face {
-        font-family: "${family}";
-        src: url("${url}");
-        font-display: swap; 
-      }
-    `;
-	document.head.appendChild(style);
-};
-
 export const calculateLayerTransform = (
 	layer: ExtendedLayer,
 	frame: number,
@@ -176,7 +156,7 @@ export const CompositionScene: React.FC<SceneProps> = ({
 		() => [...layers].sort((a, b) => (a.zIndex ?? 0) - (b.zIndex ?? 0)),
 		[layers],
 	);
-
+	console.log({ sortedLayers });
 	return (
 		<AbsoluteFill style={{ backgroundColor: "#000000" }}>
 			{/* Inject Animation Keyframes for CSS-based previews if needed, though we use Remotion math mostly */}
@@ -238,6 +218,9 @@ export const CompositionScene: React.FC<SceneProps> = ({
 									color: layer.fill,
 									fontSize: layer.fontSize,
 									fontFamily: layer.fontFamily,
+									fontStyle: layer.fontStyle,
+									fontWeight: layer.fontWeight,
+									textDecoration: layer.textDecoration,
 									lineHeight: layer.lineHeight ?? 1.2,
 									whiteSpace: "pre",
 								}}

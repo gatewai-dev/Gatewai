@@ -6,11 +6,11 @@ import { memo, useEffect, useMemo, useState } from "react";
 import { useNavigate } from "react-router";
 import { toast } from "sonner";
 import { Button } from "@/components/ui/button";
+import { fontManager } from "@/lib/fonts";
 import { cn } from "@/lib/utils";
 import {
 	CompositionScene,
 	type ExtendedLayer,
-	injectFontFace,
 } from "@/modules/video-editor/common/composition";
 import { DEFAULT_DURATION_FRAMES, FPS } from "@/modules/video-editor/config";
 import { useAppSelector } from "@/store";
@@ -165,7 +165,7 @@ const VideoCompositorNodeComponent = memo(
 			previewState?.layers.forEach((layer) => {
 				if (layer.type === "Text" && layer.fontFamily) {
 					const url = GetFontAssetUrl(layer.fontFamily);
-					if (url) injectFontFace(layer.fontFamily, url);
+					if (url) fontManager.loadFont(layer.fontFamily, url);
 				}
 			});
 		}, [previewState]);
