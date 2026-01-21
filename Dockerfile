@@ -76,7 +76,8 @@ RUN groupadd --system --gid 1001 nodejs && \
 ENV COREPACK_HOME=/home/gatewai/.cache/corepack
 
 WORKDIR /app
-
+COPY entrypoint.sh /usr/local/bin/
+RUN chmod +x /usr/local/bin/entrypoint.sh
 # Copy the fully prepared deployment folder
 COPY --from=builder --chown=gatewai:nodejs /app/deploy .
 RUN corepack enable && \
@@ -86,8 +87,6 @@ RUN corepack enable && \
 USER gatewai
 EXPOSE 8081
 
-COPY entrypoint.sh /usr/local/bin/
-RUN chmod +x /usr/local/bin/entrypoint.sh
 
 # Use it as the entrypoint
 ENTRYPOINT ["entrypoint.sh"]
