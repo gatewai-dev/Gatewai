@@ -86,10 +86,10 @@ RUN corepack enable && \
 USER gatewai
 EXPOSE 8081
 
-COPY docker-entrypoint.sh /usr/local/bin/
-RUN chmod +x /usr/local/bin/docker-entrypoint.sh
+COPY entrypoint.sh /usr/local/bin/
+RUN chmod +x /usr/local/bin/entrypoint.sh
 
 # Use it as the entrypoint
-ENTRYPOINT ["docker-entrypoint.sh"]
+ENTRYPOINT ["entrypoint.sh"]
 # Ensure we use the pnpm from the deployed directory
 CMD ["pnpm", "run", "start-cli"]
