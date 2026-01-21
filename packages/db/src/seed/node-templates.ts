@@ -679,8 +679,14 @@ export async function SEED_createNodeTemplates(prisma: PrismaClient) {
 		},
 	];
 
-	await prisma.nodeTemplate.createMany({
-		data: nodes.map(({ templateHandles, ...node }) => node),
-		skipDuplicates: true, // This skips without error if 'type' already exists
-	});
+	for (const node of nodes) {
+		const existing = await prisma.nodeTemplate.findUnique({
+			where: { type: node.type },
+		});
+		if (!existing) {
+			await prisma.nodeTemplate.create({
+				data: node,
+			});
+		}
+	}
 }
