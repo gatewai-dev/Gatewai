@@ -133,7 +133,7 @@ export async function uploadToTemporaryFolder(
 	await uploadToGCS(buffer, keyToUse, mimeType, ENV_CONFIG.GCS_ASSETS_BUCKET);
 	const expiresIn = 3600 * 24 * 1.9; // A bit less than 2 days
 	const signedUrl = await generateSignedUrl(
-		key,
+		keyToUse,
 		ENV_CONFIG.GCS_ASSETS_BUCKET,
 		expiresIn,
 	);
