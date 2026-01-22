@@ -1,7 +1,7 @@
 import { PanelLeftClose, PanelLeftOpen } from "lucide-react";
 import { FaDiscord, FaGithub } from "react-icons/fa";
 import { Button } from "@/components/ui/button";
-import { GatewaiLogo } from "@/components/ui/logo";
+import { GatewaiIcon } from "@/components/ui/gatewai-icon";
 import {
 	Tooltip,
 	TooltipContent,
@@ -48,7 +48,7 @@ function NodePaletteContent({ templates }: { templates: NodeTemplateListRPC }) {
 						isCollapsed ? "w-0 opacity-0" : "w-auto opacity-100",
 					)}
 				>
-					<GatewaiLogo className="size-7 shrink-0 text-primary" />
+					<GatewaiIcon className="size-7 shrink-0 text-primary" />
 					<CanvasName />
 				</div>
 
