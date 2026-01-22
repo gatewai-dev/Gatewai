@@ -4,7 +4,7 @@ services:
     container_name: postgres
     restart: unless-stopped
     ports:
-      - "5432:54321"
+      - "54321:5432"
     environment:
       POSTGRES_USER: postgres
       POSTGRES_PASSWORD: postgres
@@ -20,24 +20,6 @@ services:
     restart: unless-stopped
     volumes:
       - redis_data:/data
-
-  app:
-    image: gatewai/app:latest
-    container_name: gatewai-app
-    restart: unless-stopped
-    depends_on:
-      - postgres
-      - redis
-    env_file:
-      - .env.development
-    environment:
-      - NODE_ENV=development
-      - PORT=8081
-      - REDIS_HOST=redis
-      - REDIS_PORT=6379
-      - DATABASE_URL=postgresql://postgres:postgres@postgres:5432/postgres
-    volumes:
-      - ./${GOOGLE_APPLICATION_CREDENTIALS_PATH}:/app/${GOOGLE_APPLICATION_CREDENTIALS_PATH}
 
 volumes:
   postgres_data:

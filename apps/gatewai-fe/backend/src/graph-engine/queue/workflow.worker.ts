@@ -14,6 +14,82 @@ import {
 // Global reference for shutdown handling
 let worker: Worker<NodeTaskJobData> | null = null;
 
+async function checkAndFinishBatch(batchId: string) {
+	try {
+		const pendingCount = await prisma.task.count({
+			where: {
+				batchId,
+				status: { in: [TaskStatus.QUEUED, TaskStatus.EXECUTING] },
+			},
+		});
+
+		if (pendingCount === 0) {
+			await prisma.taskBatch.update({
+				where: { id: batchId },
+				data: { finishedAt: new Date() },
+			});
+		}
+	} catch (e) {
+		assertIsError(e);
+		logger.warn(`Could not check and finish batch ${batchId}: ${e.message}`);
+	}
+}
+
+async function propagateFailure(
+	taskId: string,
+	batchId: string,
+	failedNodeIdentifier: string,
+	errorMessage: string,
+) {
+	async function recurse(currentTaskId: string) {
+		const currentTask = await prisma.task.findUnique({
+			where: { id: currentTaskId },
+			select: { nodeId: true },
+		});
+		if (!currentTask?.nodeId) return;
+
+		const outgoingEdges = await prisma.edge.findMany({
+			where: { source: currentTask.nodeId },
+			select: { target: true },
+		});
+
+		const downstreamNodeIds = outgoingEdges.map((e) => e.target);
+
+		const downstreamTasks = await prisma.task.findMany({
+			where: {
+				nodeId: { in: downstreamNodeIds },
+				batchId,
+				status: { in: [TaskStatus.QUEUED, TaskStatus.EXECUTING] },
+			},
+			select: { id: true, status: true, startedAt: true },
+		});
+
+		for (const dt of downstreamTasks) {
+			const finishedAt = new Date();
+			const durationMs =
+				dt.status === TaskStatus.EXECUTING && dt.startedAt
+					? finishedAt.getTime() - dt.startedAt.getTime()
+					: 0;
+
+			await prisma.task.update({
+				where: { id: dt.id },
+				data: {
+					status: TaskStatus.FAILED,
+					finishedAt,
+					durationMs,
+					error: {
+						message: `Upstream failure in node ${failedNodeIdentifier}: ${errorMessage}`,
+					},
+				},
+			});
+
+			await recurse(dt.id);
+		}
+	}
+
+	await recurse(taskId);
+}
+
 const processNodeJob = async (job: Job<NodeTaskJobData>) => {
 	const {
 		taskId,
@@ -41,7 +117,6 @@ const processNodeJob = async (job: Job<NodeTaskJobData>) => {
 	}
 
 	// 1. Update Task Status to EXECUTING
-	// We use updateMany here to ensure we don't overwrite a terminal state if a race condition occurs
 	await prisma.task.update({
 		where: { id: taskId },
 		data: {
@@ -50,26 +125,24 @@ const processNodeJob = async (job: Job<NodeTaskJobData>) => {
 		},
 	});
 
+	// Fetch task and node details early for use in catch if needed
+	const task = await prisma.task.findUniqueOrThrow({
+		where: { id: taskId },
+	});
+
+	if (!task.nodeId)
+		throw new Error(`Task ${taskId} has no associated nodeId`);
+
+	const currentNode = await prisma.node.findUniqueOrThrow({
+		where: { id: task.nodeId },
+		select: { id: true, type: true, name: true },
+	});
+
 	try {
 		// 2. Fetch fresh Context Data
 		const data = await GetCanvasEntities(canvasId);
 
-		// 3. Fetch current task details
-		const task = await prisma.task.findUniqueOrThrow({
-			where: { id: taskId },
-		});
-
-		if (!task.nodeId)
-			throw new Error(`Task ${taskId} has no associated nodeId`);
-
-		// 4. Validate Node Exists
-		const currentNode = await prisma.node.findUnique({
-			where: { id: task.nodeId },
-			select: { id: true, type: true, name: true },
-		});
-
-		if (!currentNode) throw new Error("Node removed before processing");
-
+		// 3. Validate Node Exists in data
 		const node = data.nodes.find((n) => n.id === task.nodeId);
 		if (!node) throw new Error("Node not found in canvas entities");
 
@@ -77,11 +150,12 @@ const processNodeJob = async (job: Job<NodeTaskJobData>) => {
 			where: { type: currentNode.type },
 		});
 
-		// 5. Check Terminal Node Logic
+		// 4. Check Terminal Node Logic
 		const isTerminal = template.isTerminalNode;
 		if (isTerminal && !isExplicitlySelected) {
 			logger.info(`Skipping processing for terminal node: ${node.id}`);
 			await completeTask(taskId, startedAt, true);
+			await checkAndFinishBatch(batchId);
 			await triggerNextTask(batchId, remainingTaskIds, selectionMap, canvasId);
 			return;
 		}
@@ -90,7 +164,7 @@ const processNodeJob = async (job: Job<NodeTaskJobData>) => {
 			where: { batchId },
 		});
 
-		// 6. Execute Processor
+		// 5. Execute Processor
 		const processor = nodeProcessors[node.type];
 		if (!processor) throw new Error(`No processor for node type ${node.type}`);
 
@@ -103,7 +177,7 @@ const processNodeJob = async (job: Job<NodeTaskJobData>) => {
 
 		if (error) logger.error(`${node.id}: Error: ${error}`);
 
-		// 7. Handle Results
+		// 6. Handle Results
 		if (newResult) {
 			await prisma.task.update({
 				where: { id: taskId },
@@ -125,7 +199,7 @@ const processNodeJob = async (job: Job<NodeTaskJobData>) => {
 			}
 		}
 
-		// 8. Finalize Task
+		// 7. Finalize Task
 		const finishedAt = new Date();
 		await prisma.task.update({
 			where: { id: taskId },
@@ -138,9 +212,16 @@ const processNodeJob = async (job: Job<NodeTaskJobData>) => {
 		});
 
 		if (success) {
+			await checkAndFinishBatch(batchId);
 			await triggerNextTask(batchId, remainingTaskIds, selectionMap, canvasId);
 		} else {
-			await failBatch(batchId);
+			await propagateFailure(
+				taskId,
+				batchId,
+				currentNode.name ?? currentNode.id,
+				error ?? "Unknown error",
+			);
+			await checkAndFinishBatch(batchId);
 		}
 	} catch (err: unknown) {
 		logger.error({ err }, `Task execution failed for ${taskId}`);
@@ -157,22 +238,16 @@ const processNodeJob = async (job: Job<NodeTaskJobData>) => {
 			},
 		});
 
-		await failBatch(batchId);
+		await propagateFailure(
+			taskId,
+			batchId,
+			currentNode.name ?? currentNode.id,
+			errorMessage,
+		);
+		await checkAndFinishBatch(batchId);
 		throw err;
 	}
 };
-
-async function failBatch(batchId: string) {
-	try {
-		await prisma.taskBatch.update({
-			where: { id: batchId },
-			data: { finishedAt: new Date() },
-		});
-	} catch (e) {
-		assertIsError(e);
-		logger.warn(`Could not mark batch ${batchId} as failed: ${e.message}`);
-	}
-}
 
 async function triggerNextTask(
 	batchId: string,
@@ -181,10 +256,6 @@ async function triggerNextTask(
 	canvasId: string,
 ) {
 	if (remainingTaskIds.length === 0) {
-		await prisma.taskBatch.update({
-			where: { id: batchId },
-			data: { finishedAt: new Date() },
-		});
 		return;
 	}
 
@@ -215,7 +286,7 @@ async function completeTask(taskId: string, startedAt: Date, success: boolean) {
 }
 
 /**
- * Recovers Zembie tasks that were left in EXECUTING state
+ * Recovers Zombie tasks that were left in EXECUTING state
  * due to a sudden process kill (SIGKILL/5s timeout).
  */
 export async function recoverDanglingTasks() {
@@ -228,6 +299,9 @@ export async function recoverDanglingTasks() {
 		},
 		include: {
 			batch: true,
+			node: {
+				select: { name: true },
+			},
 		},
 	});
 
@@ -244,21 +318,29 @@ export async function recoverDanglingTasks() {
 		if (!isActive) {
 			logger.warn(`Recovering zombie task ${task.id}: marking as FAILED.`);
 
-			await prisma.$transaction([
-				prisma.task.update({
-					where: { id: task.id },
-					data: {
-						status: TaskStatus.FAILED,
-						finishedAt: new Date(),
-						error: { message: "Task abandoned due to system restart/crash." },
-					},
-				}),
-				// 3. Stop the batch so the chain doesn't continue with broken data
-				prisma.taskBatch.update({
-					where: { id: task.batchId },
-					data: { finishedAt: new Date() },
-				}),
-			]);
+			const finishedAt = new Date();
+			const durationMs = task.startedAt
+				? finishedAt.getTime() - task.startedAt.getTime()
+				: 0;
+			const errorMsg = "Task abandoned due to system restart/crash.";
+
+			await prisma.task.update({
+				where: { id: task.id },
+				data: {
+					status: TaskStatus.FAILED,
+					finishedAt,
+					durationMs,
+					error: { message: errorMsg },
+				},
+			});
+
+			await propagateFailure(
+				task.id,
+				task.batchId,
+				task.node?.name ?? task.id,
+				errorMsg,
+			);
+			await checkAndFinishBatch(task.batchId);
 		}
 	}
 
@@ -294,17 +376,42 @@ export const startWorker = async () => {
 			const { taskId, batchId } = job.data;
 
 			try {
-				await prisma.task.update({
+				const currentTask = await prisma.task.findFirstOrThrow({
 					where: { id: taskId },
-					data: {
-						status: TaskStatus.FAILED,
-						finishedAt: new Date(),
-						error: { message: `Job failed/stalled: ${err.message}` },
-					},
+					select: { status: true, startedAt: true, nodeId: true },
 				});
-				await failBatch(batchId);
+
+				if (currentTask?.status !== TaskStatus.FAILED) {
+					const finishedAt = new Date();
+					const durationMs = currentTask.startedAt
+						? finishedAt.getTime() - currentTask.startedAt.getTime()
+						: 0;
+					const errorMsg = `Job failed/stalled: ${err.message}`;
+
+					await prisma.task.update({
+						where: { id: taskId },
+						data: {
+							status: TaskStatus.FAILED,
+							finishedAt,
+							durationMs,
+							error: { message: errorMsg },
+						},
+					});
+
+					const node = await prisma.node.findUnique({
+						where: { id: currentTask.nodeId ?? "" },
+						select: { name: true },
+					});
+
+					const nodeIdentifier = node?.name ?? taskId;
+
+					await propagateFailure(taskId, batchId, nodeIdentifier, errorMsg);
+				}
+
+				await checkAndFinishBatch(batchId);
 			} catch (dbErr) {
-				logger.error(`Failed to sync DB state on worker job failure ${dbErr}`);
+				assertIsError(dbErr);
+				logger.error(`Failed to sync DB state on worker job failure: ${dbErr.message}`);
 			}
 		}
 	});

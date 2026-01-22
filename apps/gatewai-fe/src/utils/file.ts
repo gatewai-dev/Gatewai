@@ -40,12 +40,12 @@ function GetAssetEndpoint(fileAsset: FileAsset) {
 	// Ensure the ID itself doesn't already have an extension
 	const cleanId = fileAsset.id.split(".")[0];
 	const baseUrl = `${BASE_URL}/api/v1/assets/${cleanId}`;
-
 	if (!fileAsset.mimeType) return baseUrl;
 
 	const extension = Object.entries(MIME_TYPES).find(
 		([_, mime]) => mime === fileAsset.mimeType,
 	)?.[0];
+	console.log({baseUrl, extension})
 
 	// Remotion needs this extension to trigger the correct 'bunny'
 	return extension ? `${baseUrl}.${extension}` : baseUrl;

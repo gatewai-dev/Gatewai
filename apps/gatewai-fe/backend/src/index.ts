@@ -10,6 +10,7 @@ import { startWorker } from "./graph-engine/queue/workflow.worker.js";
 import { logger as appLogger } from "./logger.js";
 import { v1Router } from "./routes/v1/index.js";
 
+
 console.log(process.env);
 
 const app = new Hono()

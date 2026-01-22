@@ -8,7 +8,7 @@ import type {
 } from "@gatewai/types";
 
 import { ENV_CONFIG } from "../../config.js";
-import { backendPixiService } from "../../media/pixi-processor.js";
+import { backendPixiService } from "../../media/pixi-service.js";
 import { logImage } from "../../media-logger.js";
 import { bufferToDataUrl } from "../../utils/image.js";
 import { uploadToTemporaryFolder } from "../../utils/storage.js";

@@ -11,7 +11,8 @@ import {
 	Sprite,
 	Texture,
 } from "@pixi/node";
-import { createCanvas, ImageData } from "canvas";
+import { createCanvas, ImageData } from "canvas"; // Removed unused Image import
+import { extname } from "node:path";
 import sharp from "sharp";
 
 // 1. Polyfill ImageData
@@ -48,7 +49,30 @@ export class BackendPixiService extends BasePixiService {
 			await Assets.init();
 			this.initialized = true;
 		}
-		return await Assets.load(url);
+
+		// Check if the file is webp
+		if (extname(url).toLowerCase() === ".webp") {
+			// Fetch the WebP image
+			const imageResp = await fetch(url);
+			const arrayBuffer = await imageResp.arrayBuffer();
+			const buffer = Buffer.from(arrayBuffer);
+
+			// Use sharp to decode to raw RGBA pixels
+			const { data, info } = await sharp(buffer)
+				.ensureAlpha() // Ensure RGBA (adds alpha channel if missing)
+				.raw()
+				.toBuffer({ resolveWithObject: true });
+
+			// Create Pixi Texture from raw buffer
+			const rgbaData = new Uint8Array(data.buffer, data.byteOffset, data.length);
+			return Texture.fromBuffer(rgbaData, info.width, info.height);
+		}
+
+		// Standard loading for other formats
+		return await Assets.load({
+			src: url,
+			loadParser: "loadTextures",
+		});
 	}
 
 	/**
@@ -73,7 +97,6 @@ export class BackendPixiService extends BasePixiService {
 	/**
 	 * Extract as Blob directly (more efficient)
 	 */
-	// Replace your existing extractBlob with this:
 	protected async extractBlob(
 		renderer: IRenderer,
 		target: Container,
