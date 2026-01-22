@@ -101,7 +101,6 @@ const processCompositor = async (
 	const fontLoadPromises = Array.from(fontsToLoad).map(async (fontFamily) => {
 		try {
 			const fontUrl = GetFontAssetUrl(fontFamily);
-			console.log({ fontUrl });
 			await fontManager.loadFont(fontFamily, fontUrl);
 		} catch (err) {
 			console.warn(`Failed to load font: ${fontFamily}`, err);

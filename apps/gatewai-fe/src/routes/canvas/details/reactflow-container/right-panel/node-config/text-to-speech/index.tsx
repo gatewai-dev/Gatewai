@@ -68,7 +68,6 @@ const TextToSpeechNodeConfigComponent = memo(
 		useEffect(() => {
 			const subscription = form.watch((value) => {
 				const val = TextToSpeechNodeConfigSchema.safeParse(value);
-				console.log({ val, value });
 				if (val.success && !isEqual(val.data, nodeConfig)) {
 					updateConfig(val.data);
 				}

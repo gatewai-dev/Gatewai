@@ -116,7 +116,7 @@ import type { HandleEntityType } from "@/store/handles";
 import type { NodeEntityType } from "@/store/nodes";
 import { GetAssetEndpoint, GetFontAssetUrl } from "@/utils/file";
 
-// --- Constants ---
+//#region CONSTANTS
 const DEFAULTS = {
 	FONT_FAMILY: "Inter",
 	FONT_SIZE: 64,
@@ -154,7 +154,6 @@ const BLEND_MODES = [
 	"luminosity",
 ] as const;
 
-// --- Types ---
 interface LocalCompositorLayer extends CompositorLayer {
 	computedHeight?: number;
 	computedWidth?: number;
@@ -214,8 +213,6 @@ const useEditor = () => {
 	}
 	return context;
 };
-
-// --- Hooks ---
 
 const useSnap = () => {
 	const { layers, updateLayers, viewportWidth, viewportHeight, setGuides } =
@@ -385,7 +382,7 @@ const useSnap = () => {
 	};
 };
 
-// --- Components ---
+//#region Components
 
 const CollapsibleSection: React.FC<{
 	title: string;
@@ -950,7 +947,7 @@ const Canvas: React.FC = () => {
 	);
 };
 
-// --- Panels ---
+//#region Panels
 
 interface LayerItemProps {
 	layer: LocalCompositorLayer;
@@ -1695,7 +1692,7 @@ const Toolbar = React.memo<{
 	);
 });
 
-// --- Main Editor ---
+//#region Main Editor
 
 interface ImageDesignerEditorProps {
 	initialLayers: Map<

@@ -156,7 +156,7 @@ export const CompositionScene: React.FC<SceneProps> = ({
 		() => [...layers].sort((a, b) => (a.zIndex ?? 0) - (b.zIndex ?? 0)),
 		[layers],
 	);
-	console.log({ sortedLayers });
+
 	return (
 		<AbsoluteFill style={{ backgroundColor: "#000000" }}>
 			{/* Inject Animation Keyframes for CSS-based previews if needed, though we use Remotion math mostly */}

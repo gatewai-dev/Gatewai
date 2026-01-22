@@ -32,7 +32,7 @@ function MediaContent({
 	const assetName = useMemo(() => {
 		return outputItem.data.entity?.name;
 	}, [outputItem.data.entity]);
-	console.log(outputItem.data.entity?.name);
+
 	return (
 		<div className="relative h-full w-full group">
 			{hasMoreThanOneOutput && (

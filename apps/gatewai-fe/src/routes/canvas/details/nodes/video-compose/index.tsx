@@ -45,7 +45,6 @@ const VideoCompositorNodeComponent = memo(
 			}
 
 			const layers: ExtendedLayer[] = [];
-			console.log({ inputs });
 			// Iterate over all connected inputs, applying saved updates or defaults
 			for (const [handleId, input] of Object.entries(inputs)) {
 				if (!input?.connectionValid) continue;

@@ -34,7 +34,7 @@ const blurProcessor: NodeProcessor = async ({ node, data }) => {
 				blurSize,
 			},
 		);
-		console.log({ dataUrl });
+
 		const uploadBuffer = Buffer.from(await dataUrl.arrayBuffer());
 		const mimeType = dataUrl.type;
 
