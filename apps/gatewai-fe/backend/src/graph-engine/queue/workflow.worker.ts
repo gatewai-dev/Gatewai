@@ -130,8 +130,7 @@ const processNodeJob = async (job: Job<NodeTaskJobData>) => {
 		where: { id: taskId },
 	});
 
-	if (!task.nodeId)
-		throw new Error(`Task ${taskId} has no associated nodeId`);
+	if (!task.nodeId) throw new Error(`Task ${taskId} has no associated nodeId`);
 
 	const currentNode = await prisma.node.findUniqueOrThrow({
 		where: { id: task.nodeId },
@@ -411,7 +410,9 @@ export const startWorker = async () => {
 				await checkAndFinishBatch(batchId);
 			} catch (dbErr) {
 				assertIsError(dbErr);
-				logger.error(`Failed to sync DB state on worker job failure: ${dbErr.message}`);
+				logger.error(
+					`Failed to sync DB state on worker job failure: ${dbErr.message}`,
+				);
 			}
 		}
 	});

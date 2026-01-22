@@ -1,3 +1,4 @@
+import { extname } from "node:path";
 import { BasePixiService } from "@gatewai/pixi-processor";
 import {
 	Application,
@@ -12,7 +13,6 @@ import {
 	Texture,
 } from "@pixi/node";
 import { createCanvas, ImageData } from "canvas"; // Removed unused Image import
-import { extname } from "node:path";
 import sharp from "sharp";
 
 // 1. Polyfill ImageData
@@ -64,7 +64,11 @@ export class BackendPixiService extends BasePixiService {
 				.toBuffer({ resolveWithObject: true });
 
 			// Create Pixi Texture from raw buffer
-			const rgbaData = new Uint8Array(data.buffer, data.byteOffset, data.length);
+			const rgbaData = new Uint8Array(
+				data.buffer,
+				data.byteOffset,
+				data.length,
+			);
 			return Texture.fromBuffer(rgbaData, info.width, info.height);
 		}
 

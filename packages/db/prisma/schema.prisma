@@ -108,6 +108,8 @@ model Node {
   originalNode   Node?           @relation("NodeDuplicates", fields: [originalNodeId], references: [id], onDelete: SetNull)
   duplicates     Node[]          @relation("NodeDuplicates")
 
+  threads       AgentThread[]
+
   @@map("node")
 }
 
@@ -274,4 +276,41 @@ model FileAsset {
   // Media metadata - optional
   metadata        Json?
   fps             Int?
+}
+
+
+
+model AgentThread {
+  id              String    @id @default(cuid())
+  externalId      String?   @unique // Optional: To map to Google's internal thread IDs if applicable
+  canvasId         String
+  canvas           Canvas     @relation(fields: [canvasId], references: [id], onDelete: Cascade)
+  messages        Message[]
+  
+  // Metadata for the conversation
+  metadata        Json?
+  
+  createdAt       DateTime  @default(now())
+  updatedAt       DateTime  @updatedAt
+
+}
+
+model Message {
+  id              String    @id @default(cuid())
+  threadId        String
+  thread          AgentThread    @relation(fields: [threadId], references: [id], onDelete: Cascade)
+  
+  role            MessageRole
+  content         Json      // Using Json to support multimodal (text, parts, inlineData/FileAssets)
+
+  createdAt       DateTime  @default(now())
+
+  @@map("message")
+}
+
+enum MessageRole {
+  USER
+  MODEL
+  SYSTEM
+  TOOL
 }
