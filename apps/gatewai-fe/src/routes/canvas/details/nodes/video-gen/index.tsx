@@ -56,13 +56,11 @@ const VideoGenNodeComponent = memo(
 						<Popover>
 							<PopoverTrigger asChild>
 								<div>
-									{" "}
-									{/* Wrapper to allow trigger on disabled buttons if needed */}
 									<AddCustomHandleButton
 										disabled={hasThreeImageInputs}
 										nodeId={props.id}
 										type="Input"
-										dataTypes={["Image"]}
+										dataTypes={node.template.variableInputDataTypes}
 									/>
 								</div>
 							</PopoverTrigger>

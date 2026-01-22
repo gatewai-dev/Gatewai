@@ -108,7 +108,6 @@ model Node {
   originalNode   Node?           @relation("NodeDuplicates", fields: [originalNodeId], references: [id], onDelete: SetNull)
   duplicates     Node[]          @relation("NodeDuplicates")
 
-  threads       AgentThread[]
 
   @@map("node")
 }
@@ -134,23 +133,25 @@ model Handle {
 }
 
 model NodeTemplate {
-  id                  String                 @id @default(cuid())
-  type                NodeType               @unique
-  displayName         String
-  description         String?
-  templateHandles     NodeTemplateHandle[]
-  tokenPrice          Float?                 @default(0.0)
-  variableInputs      Boolean                @default(false)
-  variableOutputs     Boolean                @default(false)
-  category            String?
-  subcategory         String?
-  showInQuickAccess   Boolean                @default(false)
-  createdAt           DateTime               @default(now())
-  updatedAt           DateTime               @updatedAt
-  nodes               Node[]
-  defaultConfig       Json?
-  isTerminalNode      Boolean                @default(false)
-  isTransient         Boolean @default(false)
+  id                      String                 @id @default(cuid())
+  type                    NodeType               @unique
+  displayName             String
+  description             String?
+  templateHandles         NodeTemplateHandle[]
+  tokenPrice              Float?                 @default(0.0)
+  variableInputs          Boolean                @default(false)
+  variableInputDataTypes  DataType[]
+  variableOutputs         Boolean                @default(false)
+  variableOutputDataTypes DataType[]
+  category                String?
+  subcategory             String?
+  showInQuickAccess       Boolean                @default(false)
+  createdAt               DateTime               @default(now())
+  updatedAt               DateTime               @updatedAt
+  nodes                   Node[]
+  defaultConfig           Json?
+  isTerminalNode          Boolean                @default(false)
+  isTransient             Boolean @default(false)
 
   @@map("node_template")
 }
@@ -207,6 +208,8 @@ model Canvas {
   originalCanvasId String?
   originalCanvas   Canvas?      @relation("CanvasDuplicates", fields: [originalCanvasId], references: [id])
   duplicates       Canvas[]     @relation("CanvasDuplicates")
+
+  threads       AgentThread[]
 
   @@map("canvas")
 }

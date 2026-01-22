@@ -17,8 +17,8 @@ const TextMergerNodeComponent = memo((props: NodeProps<TextMergerNode>) => {
 			</div>
 			<div className="flex justify-between mt-1 items-center">
 				<AddCustomHandleButton
-					dataTypes={["Text"]}
-					nodeProps={props}
+					dataTypes={node.template.variableInputDataTypes}
+					nodeId={node?.id}
 					placeholder="E.g. Second Part"
 					type="Input"
 				/>

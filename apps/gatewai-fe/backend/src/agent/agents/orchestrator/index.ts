@@ -1,7 +1,8 @@
-import type { Canvas } from "@gatewai/db";
+import { prisma, type Canvas } from "@gatewai/db";
 import { LlmAgent } from "@google/adk";
 import { GetCanvasEntities } from "../../../data-ops/canvas.js";
 import { localGatewaiMCPTool } from "../../tools/gatewai-mcp.js";
+import { NODE_CONFIG_RAW } from "../../context/node-config.js";
 
 const BASE_INSTRUCTION = `
 You are an agent that orchestrates sub agents to achieve the task user assigned to you.
@@ -18,17 +19,30 @@ When user gives you a task:
     - You may create new nodes for this, for example connecting ImageGen node output to a LLM reference image input.
 7- When you accomplish the task or user says stop, summarize your actions and return it to user. IF required only, provide next steps suggestions to user.
 
-Below is the Fresh Canvas State, EACH LLM CALL YOU MADE CONTAINS LATEST STATE:
+EACH LLM CALL YOU MADE CONTAINS LATEST CANVAS STATE, SO YOU DON'T NEED A TOOL CALL FOR THAT
+Below is the Fresh Canvas State:
 {{canvas_state}}
 
+The Node Templates you can use to create workflows.
+{{node_templates_list}}
 
+Node Config Schemas:
+${NODE_CONFIG_RAW}
 `;
 
-const CreateOrchestratorAgentForCanvas = ({
+const CreateOrchestratorAgentForCanvas = async ({
 	canvasId,
 }: {
 	canvasId: Canvas["id"];
 }) => {
+	const nodeTemplates = await prisma.nodeTemplate.findMany({
+		include: {
+			templateHandles: true
+		}
+	})
+
+	const NodeTemplatesList = JSON.stringify(nodeTemplates);
+
 	const OrchestratorAgent = new LlmAgent({
 		model: "gemini-3-flash-preview",
 		name: "Gatewai_Orchestrator_Agent",
@@ -38,10 +52,12 @@ const CreateOrchestratorAgentForCanvas = ({
 		// For each llm call, make sure we fetch the fresh canvas state
 		beforeModelCallback: ({ request }) => {
 			const freshCanvasState = GetCanvasEntities(canvasId);
-			if (request?.config?.systemInstruction) {
+			if (request?.config) {
 				request.config.systemInstruction = BASE_INSTRUCTION.replace(
 					"{{canvas_state}}",
 					JSON.stringify(freshCanvasState, null, 2),
+				).replace("{{node_templates_list}}",
+					NodeTemplatesList
 				);
 			}
 			return undefined;

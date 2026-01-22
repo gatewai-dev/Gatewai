@@ -1,5 +1,5 @@
 import type { Node, NodeTemplate, NodeType } from "@gatewai/db";
-import type { AllNodeConfig } from "./node-config.js";
+import type { AllNodeConfig } from "./config/index.js";
 import type { FileData, NodeResult } from "./node-result.js";
 
 export type NodeWithFileType<

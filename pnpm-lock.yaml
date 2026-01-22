@@ -429,31 +429,6 @@ importers:
         specifier: ~5.8.3
         version: 5.8.3
 
-  packages/agent:
-    dependencies:
-      hono:
-        specifier: ^4.8.5
-        version: 4.8.5
-      zod:
-        specifier: 3.25.67
-        version: 3.25.67
-    devDependencies:
-      '@gatewai/tsconfig':
-        specifier: workspace:*
-        version: link:../tsconfig
-      '@gatewai/types':
-        specifier: workspace:*
-        version: link:../types
-      '@types/node':
-        specifier: ^24.0.4
-        version: 24.10.4
-      tsdown:
-        specifier: ^0.19.0
-        version: 0.19.0(synckit@0.11.11)(typescript@5.5.4)
-      typescript:
-        specifier: 5.5.4
-        version: 5.5.4
-
   packages/api-client:
     dependencies:
       hono:
@@ -9584,7 +9559,7 @@ snapshots:
       pkce-challenge: 5.0.1
       raw-body: 3.0.2
       zod: 3.25.67
-      zod-to-json-schema: 3.25.1(zod@3.25.76)
+      zod-to-json-schema: 3.25.1(zod@3.25.67)
     transitivePeerDependencies:
       - hono
       - supports-color
@@ -17629,6 +17604,10 @@ snapshots:
   yocto-queue@0.1.0: {}
 
   yocto-queue@1.2.2: {}
+
+  zod-to-json-schema@3.25.1(zod@3.25.67):
+    dependencies:
+      zod: 3.25.67
 
   zod-to-json-schema@3.25.1(zod@3.25.76):
     dependencies:

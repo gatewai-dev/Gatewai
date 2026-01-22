@@ -39,7 +39,7 @@ const CompositorNodeComponent = memo((props: NodeProps<CompositorNode>) => {
 				</div>
 				<div className="flex justify-between items-center">
 					<AddCustomHandleButton
-						dataTypes={["Image", "Text"]}
+						dataTypes={node.template.variableInputDataTypes}
 						nodeId={props.id}
 						type="Input"
 					/>
