@@ -3,7 +3,6 @@
 	"version": "0.0.0",
 	"type": "module",
 	"sideEffects": false,
-	"license": "MIT",
 	"module": "./dist/index.mjs",
 	"types": "./dist/index.d.mts",
 	"exports": {
@@ -19,7 +18,6 @@
 	"scripts": {
 		"build": "tsdown src/index.ts --format esm",
 		"dev": "tsdown src/index.ts --format esm --watch",
-		"lint": "eslint \"src/**/*.ts*\"",
 		"clean": "rm -rf .turbo && rm -rf node_modules && rm -rf dist"
 	},
 	"devDependencies": {

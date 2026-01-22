@@ -10,7 +10,6 @@ import { startWorker } from "./graph-engine/queue/workflow.worker.js";
 import { logger as appLogger } from "./logger.js";
 import { v1Router } from "./routes/v1/index.js";
 
-
 console.log(process.env);
 
 const app = new Hono()
@@ -28,8 +27,11 @@ const app = new Hono()
 			credentials: true,
 		}),
 	)
-	.route("/api/v1", v1Router)
-	// Serve frontend dist (located in gatewai-fe root)
+	.route("/api/v1", v1Router);
+// Serve frontend dist (located in gatewai-fe root)
+
+// We're splitting here so that RPC types works well - At least for VS Code
+app
 	.use("*", serveStatic({ root: "./dist" }))
 	// If no file was found, serve index.html for client-side routing
 	.get("*", async (c) => {

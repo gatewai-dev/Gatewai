@@ -13,6 +13,7 @@ const envSchema = z.object({
 	GCS_ASSETS_BUCKET: z.string().min(1),
 	GOOGLE_APPLICATION_CREDENTIALS_PATH: z.string().min(1).optional(),
 	GOOGLE_CLIENT_ID: z.string().min(1),
+	MCP_URL: z.string(),
 	GOOGLE_CLIENT_SECRET: z.string().min(1),
 	DEBUG_LOG_MEDIA: z
 		.string()

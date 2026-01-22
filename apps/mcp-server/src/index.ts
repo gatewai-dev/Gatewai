@@ -41,31 +41,43 @@ const server = new McpServer({
  * Resource: List all Canvas Workflows
  * URI: gatewai://canvases
  */
-server.resource("canvas-list", "gatewai://canvases", async (uri) => {
-	try {
-		const canvases = await apiClient.getCanvases();
-		return {
-			contents: [
-				{
-					uri: uri.href,
-					text: JSON.stringify(canvases, null, 2),
-					mimeType: "application/json",
-				},
-			],
-		};
-	} catch (error) {
-		const msg = error instanceof Error ? error.message : "Unknown error.";
-		throw new Error(`Failed to fetch canvases: ${msg}`);
-	}
-});
+server.registerResource(
+	"canvas-list",
+	"gatewai://canvases",
+	{
+		description: "List all available canvas workflows",
+		mimeType: "application/json",
+	},
+	async (uri) => {
+		try {
+			const canvases = await apiClient.getCanvases();
+			return {
+				contents: [
+					{
+						uri: uri.href,
+						text: JSON.stringify(canvases, null, 2),
+						mimeType: "application/json",
+					},
+				],
+			};
+		} catch (error) {
+			const msg = error instanceof Error ? error.message : "Unknown error.";
+			throw new Error(`Failed to fetch canvases: ${msg}`);
+		}
+	},
+);
 
 /**
  * Resource: Get Specific Canvas Details
  * URI: gatewai://canvases/{id}
  */
-server.resource(
+server.registerResource(
 	"canvas-detail",
 	new ResourceTemplate("gatewai://canvases/{id}", { list: undefined }),
+	{
+		description: "Get details of a specific canvas workflow",
+		mimeType: "application/json",
+	},
 	async (uri, { id }) => {
 		try {
 			const canvasId = id as string;
@@ -91,38 +103,48 @@ server.resource(
  * Resource: Node Templates
  * URI: gatewai://node-templates
  */
-server.resource("node-templates", "gatewai://node-templates", async (uri) => {
-	try {
-		const templates = await apiClient.getNodeTemplates();
-		return {
-			contents: [
-				{
-					uri: uri.href,
-					text: JSON.stringify(templates, null, 2),
-					mimeType: "application/json",
-				},
-			],
-		};
-	} catch (error) {
-		const msg = error instanceof Error ? error.message : "Unknown error.";
-		throw new Error(`Failed to fetch node templates: ${msg}`);
-	}
-});
+server.registerResource(
+	"node-templates",
+	"gatewai://node-templates",
+	{
+		description: "Available node templates for canvas workflows",
+		mimeType: "application/json",
+	},
+	async (uri) => {
+		try {
+			const templates = await apiClient.getNodeTemplates();
+			return {
+				contents: [
+					{
+						uri: uri.href,
+						text: JSON.stringify(templates, null, 2),
+						mimeType: "application/json",
+					},
+				],
+			};
+		} catch (error) {
+			const msg = error instanceof Error ? error.message : "Unknown error.";
+			throw new Error(`Failed to fetch node templates: ${msg}`);
+		}
+	},
+);
 
 /**
  * Tool: Create a new empty canvas
  */
-server.tool(
+server.registerTool(
 	"create-canvas",
 	{
-		name: z.string().optional().describe("Optional name for the new canvas"),
+		description: "Create a new empty canvas workflow",
+		inputSchema: z.object({
+			name: z.string().optional().describe("Optional name for the new canvas"),
+		}),
 	},
 	async ({ name }) => {
 		try {
 			const newCanvas = await apiClient.createCanvas();
 
-			// If a name was provided, strictly speaking we need a second call to rename it
-			// as the API `createCanvas` doesn't seem to accept a payload based on the client types.
+			// If a name was provided, update it with a second call
 			if (name && newCanvas.id) {
 				await apiClient.updateCanvasName(newCanvas.id, { name });
 				// Fetch fresh state to return accurate data
@@ -148,10 +170,13 @@ server.tool(
 /**
  * Tool: Duplicate an existing canvas
  */
-server.tool(
+server.registerTool(
 	"duplicate-canvas",
 	{
-		canvasId: z.string().describe("The ID of the canvas to duplicate"),
+		description: "Duplicate an existing canvas workflow",
+		inputSchema: z.object({
+			canvasId: z.string().describe("The ID of the canvas to duplicate"),
+		}),
 	},
 	async ({ canvasId }) => {
 		try {
@@ -172,10 +197,13 @@ server.tool(
 /**
  * Tool: Delete a canvas
  */
-server.tool(
+server.registerTool(
 	"delete-canvas",
 	{
-		canvasId: z.string().describe("The ID of the canvas to delete"),
+		description: "Delete a canvas workflow permanently",
+		inputSchema: z.object({
+			canvasId: z.string().describe("The ID of the canvas to delete"),
+		}),
 	},
 	async ({ canvasId }) => {
 		try {
@@ -197,16 +225,19 @@ server.tool(
  * Tool: Run a Workflow
  * Uses the client's polling mechanism to wait for completion.
  */
-server.tool(
+server.registerTool(
 	"run-workflow",
 	{
-		canvasId: z.string().describe("The ID of the canvas to run"),
-		inputs: z
-			.record(z.any())
-			.optional()
-			.describe(
-				"Dictionary of input values for the workflow execution. Keys should be the Node IDs (from get-canvas-inputs) and values should be the string content (for Text nodes) or base64 string (for File nodes).",
-			),
+		description: "Execute a workflow and wait for completion with polling",
+		inputSchema: z.object({
+			canvasId: z.string().describe("The ID of the canvas workflow to execute"),
+			inputs: z
+				.record(z.any())
+				.optional()
+				.describe(
+					"Dictionary of input values for the workflow execution. Keys should be the Node IDs (from get-canvas-inputs) and values should be the string content (for Text nodes) or base64 string (for File nodes).",
+				),
+		}),
 	},
 	async ({ canvasId, inputs }) => {
 		try {
@@ -236,10 +267,14 @@ server.tool(
  * Tool: Get Canvas Inputs
  * Helper to discover available input nodes (Text, File) in a canvas.
  */
-server.tool(
+server.registerTool(
 	"get-canvas-inputs",
 	{
-		canvasId: z.string().describe("The ID of the canvas to inspect"),
+		description:
+			"Discover available input nodes (Text, File) in a canvas workflow",
+		inputSchema: z.object({
+			canvasId: z.string().describe("The ID of the canvas to inspect"),
+		}),
 	},
 	async ({ canvasId }) => {
 		try {
@@ -287,11 +322,14 @@ server.tool(
 /**
  * Tool: Update Canvas Name
  */
-server.tool(
+server.registerTool(
 	"rename-canvas",
 	{
-		canvasId: z.string(),
-		newName: z.string(),
+		description: "Update the name of a canvas workflow",
+		inputSchema: z.object({
+			canvasId: z.string().describe("The ID of the canvas to rename"),
+			newName: z.string().describe("The new name for the canvas"),
+		}),
 	},
 	async ({ canvasId, newName }) => {
 		try {

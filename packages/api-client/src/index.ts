@@ -225,7 +225,7 @@ export class GatewaiApiClient {
 			await this.startRun(request);
 
 		// If immediate failure or immediate success (though startRun usually returns pending)
-		if (!status.success && status.error) {
+		if (!status.success && "error" in status && status.error) {
 			return status;
 		}
 
@@ -237,7 +237,10 @@ export class GatewaiApiClient {
 			const nextStatus = await this.checkStatus(status.batchHandleId);
 
 			// If we have a result (finished) or explicit failure
-			if (nextStatus.result || nextStatus.success === false) {
+			if (
+				("result" in nextStatus && nextStatus.result) ||
+				nextStatus.success === false
+			) {
 				return nextStatus;
 			}
 
