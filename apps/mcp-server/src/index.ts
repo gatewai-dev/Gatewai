@@ -9,6 +9,7 @@ import {
 import { config } from "dotenv";
 import { Hono } from "hono";
 import { cors } from "hono/cors";
+import { logger } from "hono/logger";
 import { z } from "zod";
 
 config();
@@ -383,6 +384,7 @@ const app = new Hono();
 const transport = new StreamableHTTPTransport();
 
 app.use("*", cors());
+app.use("*", logger());
 
 // Health Check
 app.get("/health", (c) => c.json({ status: "ok", env: env.LOG_LEVEL }));

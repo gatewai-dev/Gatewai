@@ -54,12 +54,19 @@ export const nodeSchema = z.object({
 	}),
 	handles: z.array(handleSchema).optional(),
 	width: z.number().optional(),
-	height: z.number().optional().nullable(),
+	height: z.number().optional(),
 	draggable: z.boolean().optional().default(true),
 	selectable: z.boolean().optional().default(true),
 	deletable: z.boolean().optional().default(true),
-	result: z.any().optional(),
-	config: z.any().optional(),
+	// Changed from z.any() to z.record() to provide a valid 'object' type
+	result: z
+		.record(z.unknown())
+		.optional()
+		.describe("The output data from this node"),
+	config: z
+		.record(z.unknown())
+		.optional()
+		.describe("Configuration parameters for this node"),
 	isDirty: z.boolean().optional().default(false),
 	zIndex: z.number().optional(),
 	templateId: z.string(),

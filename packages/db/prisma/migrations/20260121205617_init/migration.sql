@@ -1,8 +1,8 @@
 -- CreateEnum
-CREATE TYPE "NodeType" AS ENUM ('Text', 'Preview', 'File', 'Export', 'Toggle', 'Crop', 'Resize', 'Agent', 'Paint', 'Blur', 'Compositor', 'Note', 'Number', 'Modulate', 'LLM', 'ImageGen', 'VideoGen', 'VideoGenFirstLastFrame', 'VideoGenExtend', 'VideoCompositor', 'TextToSpeech', 'SpeechToText');
+CREATE TYPE "NodeType" AS ENUM ('Text', 'TextMerger', 'Preview', 'File', 'Export', 'Crop', 'Resize', 'Paint', 'Blur', 'Compositor', 'Note', 'Modulate', 'LLM', 'ImageGen', 'VideoGen', 'VideoGenFirstLastFrame', 'VideoGenExtend', 'VideoCompositor', 'TextToSpeech', 'SpeechToText');
 
 -- CreateEnum
-CREATE TYPE "DataType" AS ENUM ('Text', 'Number', 'Boolean', 'Image', 'Video', 'Audio', 'File', 'Mask');
+CREATE TYPE "DataType" AS ENUM ('Text', 'Number', 'Boolean', 'Image', 'Video', 'Audio');
 
 -- CreateEnum
 CREATE TYPE "TaskStatus" AS ENUM ('QUEUED', 'EXECUTING', 'FAILED', 'COMPLETED');
@@ -11,7 +11,7 @@ CREATE TYPE "TaskStatus" AS ENUM ('QUEUED', 'EXECUTING', 'FAILED', 'COMPLETED');
 CREATE TYPE "HandleType" AS ENUM ('Input', 'Output');
 
 -- CreateEnum
-CREATE TYPE "FileAssetType" AS ENUM ('Image', 'Video');
+CREATE TYPE "MessageRole" AS ENUM ('USER', 'MODEL', 'SYSTEM', 'TOOL');
 
 -- CreateTable
 CREATE TABLE "node" (
@@ -32,6 +32,7 @@ CREATE TABLE "node" (
     "updatedAt" TIMESTAMP(3) NOT NULL,
     "canvasId" TEXT NOT NULL,
     "templateId" TEXT NOT NULL,
+    "originalNodeId" TEXT,
 
     CONSTRAINT "node_pkey" PRIMARY KEY ("id")
 );
@@ -54,14 +55,16 @@ CREATE TABLE "handle" (
 );
 
 -- CreateTable
-CREATE TABLE "node_template" (
+CREATE TABLE "nodeTemplate" (
     "id" TEXT NOT NULL,
     "type" "NodeType" NOT NULL,
     "displayName" TEXT NOT NULL,
     "description" TEXT,
     "tokenPrice" DOUBLE PRECISION DEFAULT 0.0,
     "variableInputs" BOOLEAN NOT NULL DEFAULT false,
+    "variableInputDataTypes" "DataType"[],
     "variableOutputs" BOOLEAN NOT NULL DEFAULT false,
+    "variableOutputDataTypes" "DataType"[],
     "category" TEXT,
     "subcategory" TEXT,
     "showInQuickAccess" BOOLEAN NOT NULL DEFAULT false,
@@ -71,21 +74,23 @@ CREATE TABLE "node_template" (
     "isTerminalNode" BOOLEAN NOT NULL DEFAULT false,
     "isTransient" BOOLEAN NOT NULL DEFAULT false,
 
-    CONSTRAINT "node_template_pkey" PRIMARY KEY ("id")
+    CONSTRAINT "nodeTemplate_pkey" PRIMARY KEY ("id")
 );
 
 -- CreateTable
-CREATE TABLE "node_template_handle" (
+CREATE TABLE "nodeTemplateHandle" (
     "id" TEXT NOT NULL,
     "templateId" TEXT NOT NULL,
     "type" "HandleType" NOT NULL,
     "dataTypes" "DataType"[],
     "label" TEXT NOT NULL,
     "required" BOOLEAN NOT NULL DEFAULT false,
+    "order" INTEGER NOT NULL,
+    "description" TEXT,
     "createdAt" TIMESTAMP(3) NOT NULL DEFAULT CURRENT_TIMESTAMP,
     "updatedAt" TIMESTAMP(3) NOT NULL,
 
-    CONSTRAINT "node_template_handle_pkey" PRIMARY KEY ("id")
+    CONSTRAINT "nodeTemplateHandle_pkey" PRIMARY KEY ("id")
 );
 
 -- CreateTable
@@ -105,21 +110,13 @@ CREATE TABLE "edge" (
 CREATE TABLE "canvas" (
     "id" TEXT NOT NULL,
     "name" TEXT NOT NULL,
+    "description" TEXT,
     "createdAt" TIMESTAMP(3) NOT NULL DEFAULT CURRENT_TIMESTAMP,
     "updatedAt" TIMESTAMP(3) NOT NULL,
+    "isAPICanvas" BOOLEAN DEFAULT false,
+    "originalCanvasId" TEXT,
 
     CONSTRAINT "canvas_pkey" PRIMARY KEY ("id")
-);
-
--- CreateTable
-CREATE TABLE "aisession" (
-    "id" TEXT NOT NULL,
-    "messages" JSONB NOT NULL,
-    "createdAt" TIMESTAMP(3) NOT NULL DEFAULT CURRENT_TIMESTAMP,
-    "updatedAt" TIMESTAMP(3) NOT NULL,
-    "canvasId" TEXT NOT NULL,
-
-    CONSTRAINT "aisession_pkey" PRIMARY KEY ("id")
 );
 
 -- CreateTable
@@ -148,12 +145,13 @@ CREATE TABLE "task" (
     "error" JSONB,
     "isTest" BOOLEAN NOT NULL DEFAULT false,
     "batchId" TEXT NOT NULL,
+    "result" JSONB,
 
     CONSTRAINT "task_pkey" PRIMARY KEY ("id")
 );
 
 -- CreateTable
-CREATE TABLE "FileAsset" (
+CREATE TABLE "fileAsset" (
     "id" TEXT NOT NULL,
     "name" TEXT NOT NULL,
     "createdAt" TIMESTAMP(3) NOT NULL DEFAULT CURRENT_TIMESTAMP,
@@ -171,11 +169,33 @@ CREATE TABLE "FileAsset" (
     "metadata" JSONB,
     "fps" INTEGER,
 
-    CONSTRAINT "FileAsset_pkey" PRIMARY KEY ("id")
+    CONSTRAINT "fileAsset_pkey" PRIMARY KEY ("id")
+);
+
+-- CreateTable
+CREATE TABLE "adk_session_state" (
+    "id" TEXT NOT NULL,
+    "canvasId" TEXT NOT NULL,
+    "metadata" JSONB,
+    "createdAt" TIMESTAMP(3) NOT NULL DEFAULT CURRENT_TIMESTAMP,
+    "updatedAt" TIMESTAMP(3) NOT NULL,
+
+    CONSTRAINT "adk_session_state_pkey" PRIMARY KEY ("id")
+);
+
+-- CreateTable
+CREATE TABLE "message" (
+    "id" TEXT NOT NULL,
+    "threadId" TEXT NOT NULL,
+    "role" "MessageRole" NOT NULL,
+    "content" JSONB NOT NULL,
+    "createdAt" TIMESTAMP(3) NOT NULL DEFAULT CURRENT_TIMESTAMP,
+
+    CONSTRAINT "message_pkey" PRIMARY KEY ("id")
 );
 
 -- CreateIndex
-CREATE UNIQUE INDEX "node_template_type_key" ON "node_template"("type");
+CREATE UNIQUE INDEX "nodeTemplate_type_key" ON "nodeTemplate"("type");
 
 -- CreateIndex
 CREATE UNIQUE INDEX "edge_sourceHandleId_targetHandleId_key" ON "edge"("sourceHandleId", "targetHandleId");
@@ -184,16 +204,19 @@ CREATE UNIQUE INDEX "edge_sourceHandleId_targetHandleId_key" ON "edge"("sourceHa
 ALTER TABLE "node" ADD CONSTRAINT "node_canvasId_fkey" FOREIGN KEY ("canvasId") REFERENCES "canvas"("id") ON DELETE CASCADE ON UPDATE CASCADE;
 
 -- AddForeignKey
-ALTER TABLE "node" ADD CONSTRAINT "node_templateId_fkey" FOREIGN KEY ("templateId") REFERENCES "node_template"("id") ON DELETE RESTRICT ON UPDATE CASCADE;
+ALTER TABLE "node" ADD CONSTRAINT "node_templateId_fkey" FOREIGN KEY ("templateId") REFERENCES "nodeTemplate"("id") ON DELETE RESTRICT ON UPDATE CASCADE;
 
 -- AddForeignKey
-ALTER TABLE "handle" ADD CONSTRAINT "handle_templateHandleId_fkey" FOREIGN KEY ("templateHandleId") REFERENCES "node_template_handle"("id") ON DELETE RESTRICT ON UPDATE CASCADE;
+ALTER TABLE "node" ADD CONSTRAINT "node_originalNodeId_fkey" FOREIGN KEY ("originalNodeId") REFERENCES "node"("id") ON DELETE SET NULL ON UPDATE CASCADE;
+
+-- AddForeignKey
+ALTER TABLE "handle" ADD CONSTRAINT "handle_templateHandleId_fkey" FOREIGN KEY ("templateHandleId") REFERENCES "nodeTemplateHandle"("id") ON DELETE RESTRICT ON UPDATE CASCADE;
 
 -- AddForeignKey
 ALTER TABLE "handle" ADD CONSTRAINT "handle_nodeId_fkey" FOREIGN KEY ("nodeId") REFERENCES "node"("id") ON DELETE CASCADE ON UPDATE CASCADE;
 
 -- AddForeignKey
-ALTER TABLE "node_template_handle" ADD CONSTRAINT "node_template_handle_templateId_fkey" FOREIGN KEY ("templateId") REFERENCES "node_template"("id") ON DELETE CASCADE ON UPDATE CASCADE;
+ALTER TABLE "nodeTemplateHandle" ADD CONSTRAINT "nodeTemplateHandle_templateId_fkey" FOREIGN KEY ("templateId") REFERENCES "nodeTemplate"("id") ON DELETE CASCADE ON UPDATE CASCADE;
 
 -- AddForeignKey
 ALTER TABLE "edge" ADD CONSTRAINT "edge_source_fkey" FOREIGN KEY ("source") REFERENCES "node"("id") ON DELETE CASCADE ON UPDATE CASCADE;
@@ -208,7 +231,7 @@ ALTER TABLE "edge" ADD CONSTRAINT "edge_sourceHandleId_fkey" FOREIGN KEY ("sourc
 ALTER TABLE "edge" ADD CONSTRAINT "edge_targetHandleId_fkey" FOREIGN KEY ("targetHandleId") REFERENCES "handle"("id") ON DELETE CASCADE ON UPDATE CASCADE;
 
 -- AddForeignKey
-ALTER TABLE "aisession" ADD CONSTRAINT "aisession_canvasId_fkey" FOREIGN KEY ("canvasId") REFERENCES "canvas"("id") ON DELETE CASCADE ON UPDATE CASCADE;
+ALTER TABLE "canvas" ADD CONSTRAINT "canvas_originalCanvasId_fkey" FOREIGN KEY ("originalCanvasId") REFERENCES "canvas"("id") ON DELETE SET NULL ON UPDATE CASCADE;
 
 -- AddForeignKey
 ALTER TABLE "taskBatch" ADD CONSTRAINT "taskBatch_canvasId_fkey" FOREIGN KEY ("canvasId") REFERENCES "canvas"("id") ON DELETE CASCADE ON UPDATE CASCADE;
@@ -218,3 +241,9 @@ ALTER TABLE "task" ADD CONSTRAINT "task_nodeId_fkey" FOREIGN KEY ("nodeId") REFE
 
 -- AddForeignKey
 ALTER TABLE "task" ADD CONSTRAINT "task_batchId_fkey" FOREIGN KEY ("batchId") REFERENCES "taskBatch"("id") ON DELETE CASCADE ON UPDATE CASCADE;
+
+-- AddForeignKey
+ALTER TABLE "adk_session_state" ADD CONSTRAINT "adk_session_state_canvasId_fkey" FOREIGN KEY ("canvasId") REFERENCES "canvas"("id") ON DELETE CASCADE ON UPDATE CASCADE;
+
+-- AddForeignKey
+ALTER TABLE "message" ADD CONSTRAINT "message_threadId_fkey" FOREIGN KEY ("threadId") REFERENCES "adk_session_state"("id") ON DELETE CASCADE ON UPDATE CASCADE;

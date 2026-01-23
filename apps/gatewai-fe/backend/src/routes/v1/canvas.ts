@@ -4,16 +4,18 @@ import {
 	type NodeResult,
 	processSchema,
 } from "@gatewai/types";
+import { InMemorySessionService } from "@google/adk";
 import { zValidator } from "@hono/zod-validator";
 import type { XYPosition } from "@xyflow/react";
 import { Hono } from "hono";
 import { HTTPException } from "hono/http-exception";
 import { streamSSE } from "hono/streaming";
 import z from "zod";
-import { GetCanvasAgentRunner } from "../../agent/runner/index.js";
+import { APP_NAME, USER_ID } from "../../agent/const/index.js";
+import { RunCanvasAgent, RunCanvasAgent } from "../../agent/runner/index.js";
 import { GetCanvasEntities } from "../../data-ops/canvas.js";
 import { NodeWFProcessor } from "../../graph-engine/canvas-workflow-processor.js";
-import { InMemorySessionService } from "@google/adk";
+import { toGeminiSchema } from "./tst.js";
 
 const canvasRoutes = new Hono({
 	strict: false,
@@ -641,40 +643,10 @@ const canvasRoutes = new Hono({
 					},
 				});
 			}
-			const sessionService = new InMemorySessionService();
-			await sessionService.createSession({
-				appName: 'Gatewai',
-				sessionId: sessionId,
-				userId: 'Gatewai',
-			})
 
-			const runner = await GetCanvasAgentRunner({ canvasId });
+			const result = await RunCanvasAgent({ canvasId, sessionId, userMessage: message });
 
-			return streamSSE(c, async (stream) => {
-				const eventIterator = runner.runAsync({
-					userId: "Gatewai",
-					sessionId,
-					newMessage: {
-						role: "user",
-						parts: [
-							{
-								text: message,
-							},
-						],
-					},
-				});
-				for await (const event of eventIterator) {
-					// Skip partial events
-					if (event.partial) {
-						continue;
-					}
-					await stream.writeSSE({
-						data: JSON.stringify(event),
-						event: "message",
-						id: event.id,
-					});
-				}
-			});
+			return c.json(result)
 		},
 	)
 	.get("/:id/agent/:sessionId", async (c) => {
