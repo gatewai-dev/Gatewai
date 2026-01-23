@@ -1,18 +1,16 @@
 {
 	"name": "@gatewai/mcp-server",
-	"version": "1.0.0",
+	"version": "0.0.1",
 	"description": "Gatewai MCP server",
 	"main": "dist/index.js",
 	"type": "module",
 	"scripts": {
 		"dev": "tsx watch src/index.ts",
 		"build": "tsdown src/index.ts --format esm --clean --dts",
-		"start": "node dist/index.js",
-		"test": "echo \"Error: no test specified\" && exit 1"
+		"start-cli": "node dist/index.mjs"
 	},
 	"keywords": [],
-	"author": "",
-	"license": "ISC",
+	"author": "Okan Aslankan",
 	"packageManager": "pnpm@10.13.1",
 	"dependencies": {
 		"@gatewai/api-client": "workspace:*",

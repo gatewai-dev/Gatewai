@@ -39,8 +39,6 @@ const server = new McpServer({
 	version: "0.0.1",
 });
 
-// ==================== CANVAS RESOURCES ====================
-
 /**
  * Resource: List all Canvas Workflows
  * URI: gatewai://canvases
@@ -453,8 +451,7 @@ server.registerTool(
 	},
 );
 
-// ==================== ASSET TOOLS ====================
-
+//#region Assets
 /**
  * Tool: List Assets with Filters
  */
@@ -702,8 +699,6 @@ server.registerTool(
 		}
 	},
 );
-
-// ==================== HTTP SERVER ====================
 
 const app = new Hono();
 const transport = new StreamableHTTPTransport();

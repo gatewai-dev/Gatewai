@@ -39,6 +39,7 @@ export const RunCanvasAgent = async ({
 		},
 	});
 
+	// Ensure connection to MCP server
 	await localGatewaiMCPTool.connect();
 	// 5. Execute
 	const result = await run(agent, userMessage);

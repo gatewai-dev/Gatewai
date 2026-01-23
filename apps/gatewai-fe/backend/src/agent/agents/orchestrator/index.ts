@@ -21,6 +21,7 @@ Your goal is to manage the user's creative workflow on a node-based canvas.
 - Looping connections are forbidden.
 - Input handles accept only one connection; Outputs accept many.
 - Data types must match between connected handles.
+- When creating nodes, it's CRITICAL to follow same structure as node template including handles.
 
 **NODE CONFIG SCHEMA:**
 ${NODE_CONFIG_RAW}
@@ -35,7 +36,7 @@ export const CreateOrchestratorAgentForCanvas = async ({
 	const nodeTemplates = await prisma.nodeTemplate.findMany({
 		include: { templateHandles: true },
 	});
-	const templatesStr = JSON.stringify(nodeTemplates);
+	const templatesStr = JSON.stringify(nodeTemplates, null, 2);
 
 	// Dynamic Instructions Function
 	// This runs before EVERY turn to inject fresh state
