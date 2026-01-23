@@ -53,8 +53,11 @@ export const nodeSchema = z.object({
 		y: z.number(),
 	}),
 	handles: z.array(handleSchema).optional(),
-	width: z.number().optional(),
-	height: z.number().optional(),
+	width: z.number().optional().default(340),
+	height: z
+		.number()
+		.optional()
+		.describe("It is better to keep this undefined for auto-style"),
 	draggable: z.boolean().optional().default(true),
 	selectable: z.boolean().optional().default(true),
 	deletable: z.boolean().optional().default(true),
@@ -74,8 +77,8 @@ export const nodeSchema = z.object({
 
 export const edgeSchema = z.object({
 	id: z.string().optional(),
-	source: z.string(),
-	target: z.string(),
+	source: z.string().describe("Source Node ID"),
+	target: z.string().describe("Target Node ID"),
 	sourceHandleId: z.string().optional(),
 	targetHandleId: z.string().optional(),
 });

@@ -52,7 +52,7 @@ export const CreateOrchestratorAgentForCanvas = async ({
         ${JSON.stringify(freshState, null, 2)}
         `;
 	};
-
+	console.log(await getInstructions());
 	return new Agent({
 		name: "Gatewai_Orchestrator",
 		model: agentModel,

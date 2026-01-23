@@ -226,7 +226,6 @@ server.registerTool(
 
 /**
  * Tool: Run a Workflow
- * Uses the client's polling mechanism to wait for completion.
  */
 server.registerTool(
 	"run-workflow",
@@ -244,15 +243,11 @@ server.registerTool(
 	},
 	async ({ canvasId, inputs }) => {
 		try {
-			// Construct the payload matching StartRunRequest
 			const payload: StartRunRequest = {
 				canvasId,
 				inputs: inputs || {},
 			};
-
-			// Use the polling method to give the LLM the final result
 			const result = await apiClient.run(payload);
-
 			return {
 				content: [{ type: "text", text: JSON.stringify(result, null, 2) }],
 			};
@@ -268,7 +263,6 @@ server.registerTool(
 
 /**
  * Tool: Get Canvas Inputs
- * Helper to discover available input nodes (Text, File) in a canvas.
  */
 server.registerTool(
 	"get-canvas-inputs",
@@ -283,7 +277,6 @@ server.registerTool(
 		try {
 			const canvasData = await apiClient.getCanvas(canvasId);
 
-			// Filter for Text and File nodes which are typically inputs
 			const inputNodes = canvasData.nodes
 				.filter((n) => n.type === "Text" || n.type === "File")
 				.map((n) => ({
@@ -353,15 +346,23 @@ server.registerTool(
 );
 
 /**
- * Tool: Patch Canvas Name
+ * Tool: Patch Canvas
  */
 server.registerTool(
 	"patch-canvas",
 	{
-		description: "Update the canvas workflow",
+		description: `Update the canvas workflow using a sync/upsert strategy.
+		- For EXISTING nodes/edges/handles: You MUST include their current valid UUID 'id'.
+		- For NEW nodes/edges/handles: You can provide a temporary ID (e.g. "temp-1", "node-new-A") or a random string.
+		  The server will generate a valid UUID and replace your temporary ID.
+		- LINKING NEW ELEMENTS: If you create a new Node with ID "temp-1" and a new Edge connecting to it, use ID "temp-1" in the Edge's source/target fields. 
+		  The server will resolve these temporary references automatically.
+		- DELETIONS: Any existing node/edge/handle NOT present in this payload will be DELETED. Ensure you fetch the latest state before patching.`,
 		inputSchema: z.object({
-			canvasId: z.string().describe("The ID of the canvas to rename"),
-			canvasState: bulkUpdateSchema.describe("The new canvas state"),
+			canvasId: z.string().describe("The ID of the canvas to update"),
+			canvasState: bulkUpdateSchema.describe(
+				"Full Canvas state. Use temporary IDs for new items.",
+			),
 		}),
 	},
 	async ({ canvasId, canvasState }) => {
@@ -373,7 +374,7 @@ server.registerTool(
 		} catch (error) {
 			const msg = error instanceof Error ? error.message : "Unknown error.";
 			return {
-				content: [{ type: "text", text: `Error renaming canvas: ${msg}` }],
+				content: [{ type: "text", text: `Error patching canvas: ${msg}` }],
 				isError: true,
 			};
 		}

@@ -231,7 +231,7 @@ const VideoCompositorNodeComponent = memo(
 							/>
 						) : (
 							<div className="absolute inset-0 flex items-center justify-center text-muted-foreground text-xs italic">
-								No layers connected
+								No input connected
 							</div>
 						)}
 					</div>
