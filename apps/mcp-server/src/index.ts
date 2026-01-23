@@ -22,7 +22,7 @@ const EnvSchema = z.object({
 
 const result = EnvSchema.safeParse(process.env);
 
-if (!result.success	) {
+if (!result.success) {
 	console.error("Invalid Environment Variables:");
 	console.error(JSON.stringify(result.error.flatten().fieldErrors, null, 2));
 	process.exit(1);

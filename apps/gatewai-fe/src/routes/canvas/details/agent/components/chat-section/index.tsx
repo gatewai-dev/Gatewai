@@ -72,6 +72,7 @@ export function AgentChatSection({ canvasId }: AgentChatSectionProps) {
 	}, [optionIndex, isFocused, inputValue, isLoading]);
 
 	// --- Auto-scroll Logic ---
+	// biome-ignore lint/correctness/useExhaustiveDependencies: Required logically
 	useEffect(() => {
 		const viewport = scrollRef.current?.querySelector(
 			"[data-radix-scroll-area-viewport]",
@@ -104,7 +105,6 @@ export function AgentChatSection({ canvasId }: AgentChatSectionProps) {
 			</div>
 		);
 	}
-
 	return (
 		<div className="flex-1 flex flex-col bg-background/50 h-full relative">
 			<ScrollArea className="flex-1 h-full" viewPortCn="h-full" ref={scrollRef}>

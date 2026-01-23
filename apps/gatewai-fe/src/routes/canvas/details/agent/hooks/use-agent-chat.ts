@@ -9,6 +9,32 @@ export interface ChatMessage {
 	createdAt: Date;
 }
 
+function extractText(content: any): string {
+	let rawContent = content.content;
+	if (Array.isArray(rawContent)) {
+		rawContent = rawContent.map((item) => item.text || "").join("\n");
+	}
+
+	let text = "";
+	if (typeof rawContent === "string") {
+		text = rawContent;
+		if (text.startsWith("{")) {
+			try {
+				const parsed = JSON.parse(text);
+				if (parsed.type === "text" && parsed.text) {
+					const innerParsed = JSON.parse(parsed.text);
+					text = innerParsed.text;
+				} else if (parsed.text) {
+					text = parsed.text;
+				}
+			} catch (e) {
+				// Leave as is if parsing fails
+			}
+		}
+	}
+	return text;
+}
+
 export function useAgentChatStream(canvasId: string, sessionId: string) {
 	const [messages, setMessages] = useState<ChatMessage[]>([]);
 	const [isLoading, setIsLoading] = useState(false);
@@ -29,14 +55,20 @@ export function useAgentChatStream(canvasId: string, sessionId: string) {
 				);
 				if (!res.ok) throw new Error("Failed to fetch session");
 				const data = await res.json();
-				if (data.messages) {
-					setMessages(
-						data.messages.map((m: any) => ({
-							...m,
-							createdAt: new Date(m.createdAt),
-						})),
-					);
-				}
+				const historyMessages = (data.events || [])
+					.filter((e: any) => e.eventType === "message")
+					.map((e: any) => ({
+						id: e.id,
+						role:
+							e.role === "USER"
+								? "user"
+								: e.role === "ASSISTANT"
+									? "model"
+									: "system",
+						text: extractText(e.content),
+						createdAt: new Date(e.createdAt),
+					}));
+				setMessages(historyMessages);
 			} catch (error) {
 				console.error("Error fetching history:", error);
 			} finally {
