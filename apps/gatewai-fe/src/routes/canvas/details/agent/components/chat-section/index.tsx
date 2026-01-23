@@ -1,6 +1,5 @@
-import { SendHorizontal, Sparkles, StopCircle, User } from "lucide-react";
+import { SendHorizontal, Sparkles, StopCircle } from "lucide-react";
 import { useEffect, useRef, useState } from "react";
-import ReactMarkdown from "react-markdown";
 import { Button } from "@/components/ui/button";
 import { ScrollArea } from "@/components/ui/scroll-area";
 import { Textarea } from "@/components/ui/textarea";
@@ -13,16 +12,69 @@ interface AgentChatSectionProps {
 	canvasId: string;
 }
 
+const PLACEHOLDER_OPTIONS = [
+	"Create workflow for 16 seconds advertisement video clip with 3 consistent characters",
+	"Create workflow for 6 minutes of podcast",
+];
+
 export function AgentChatSection({ canvasId }: AgentChatSectionProps) {
 	const { activeSessionId } = useCanvasAgent();
 	const scrollRef = useRef<HTMLDivElement>(null);
 
 	// Local state for input
 	const [inputValue, setInputValue] = useState("");
+	const [isFocused, setIsFocused] = useState(false);
+	const [placeholder, setPlaceholder] = useState("");
+	const [currentOptionIndex, setCurrentOptionIndex] = useState(0);
 
 	// Use the streaming hook we created
 	const { messages, sendMessage, isLoading, stopGeneration } =
 		useAgentChatStream(canvasId, activeSessionId || "");
+
+	// Animated placeholder effect
+	useEffect(() => {
+		if (isFocused || inputValue) {
+			setPlaceholder("Ask anything...");
+			return;
+		}
+
+		let charIndex = 0;
+		let isDeleting = false;
+		let timeoutId: NodeJS.Timeout;
+
+		const typeEffect = () => {
+			const currentText = PLACEHOLDER_OPTIONS[currentOptionIndex];
+
+			if (!isDeleting && charIndex <= currentText.length) {
+				setPlaceholder(currentText.substring(0, charIndex));
+				charIndex++;
+				timeoutId = setTimeout(typeEffect, 50);
+			} else if (!isDeleting && charIndex > currentText.length) {
+				// Wait before deleting
+				timeoutId = setTimeout(() => {
+					isDeleting = true;
+					typeEffect();
+				}, 2000);
+			} else if (isDeleting && charIndex > 0) {
+				charIndex--;
+				setPlaceholder(currentText.substring(0, charIndex));
+				timeoutId = setTimeout(typeEffect, 30);
+			} else if (isDeleting && charIndex === 0) {
+				// Move to next option
+				setCurrentOptionIndex(
+					(prev) => (prev + 1) % PLACEHOLDER_OPTIONS.length,
+				);
+				isDeleting = false;
+				timeoutId = setTimeout(typeEffect, 500);
+			}
+		};
+
+		typeEffect();
+
+		return () => {
+			if (timeoutId) clearTimeout(timeoutId);
+		};
+	}, [currentOptionIndex, isFocused, inputValue]);
 
 	// Auto-scroll to bottom
 	useEffect(() => {
@@ -55,7 +107,7 @@ export function AgentChatSection({ canvasId }: AgentChatSectionProps) {
 	}
 
 	return (
-		<div className="flex-1 flex flex-col bg-background h-full relative overflow-hidden">
+		<div className="flex-1 flex flex-col bg-transparent h-full relative overflow-hidden">
 			{/* --- Chat History --- */}
 			<ScrollArea className="flex-1 p-6 space-y-6" ref={scrollRef}>
 				{messages.length === 0 && (
@@ -80,30 +132,13 @@ export function AgentChatSection({ canvasId }: AgentChatSectionProps) {
 								msg.role === "user" ? "flex-row-reverse" : "flex-row",
 							)}
 						>
-							{/* Avatar */}
-							{/*<Avatar className="flex-shrink-0">
-                <AvatarFallback
-                  className={cn(
-                    msg.role === "user"
-                      ? "bg-muted border-border"
-                      : "bg-primary/10 border-primary/20"
-                  )}
-                >
-                  {msg.role === "user" ? (
-                    <User className="w-4 h-4 text-muted-foreground" />
-                  ) : (
-                    <Sparkles className="w-4 h-4 text-primary" />
-                  )}
-                </AvatarFallback>
-              </Avatar> */}
-
 							{/* Bubble */}
 							<div
 								className={cn(
-									"px-4 py-3 rounded-2xl text-sm leading-relaxed shadow-sm",
+									"px-4 py-3 rounded-2xl text-sm leading-relaxed shadow-sm backdrop-blur-sm",
 									msg.role === "user"
-										? "bg-foreground text-background rounded-tr-sm"
-										: "bg-card border text-foreground rounded-tl-sm",
+										? "bg-primary text-primary-foreground rounded-tr-sm"
+										: "bg-muted/40 border border-white/5 text-foreground rounded-tl-sm",
 								)}
 							>
 								{msg.role === "user" ? (
@@ -122,14 +157,16 @@ export function AgentChatSection({ canvasId }: AgentChatSectionProps) {
 			</ScrollArea>
 
 			{/* --- Input Area --- */}
-			<div className="p-4 bg-background/80 backdrop-blur-md border-t sticky bottom-0 z-10">
-				<div className="max-w-3xl mx-auto relative flex items-end gap-2 p-2 bg-muted rounded-xl border focus-within:ring-2 focus-within:ring-primary/10 focus-within:border-primary transition-all shadow-sm">
+			<div className="p-4 bg-background/40 backdrop-blur-md border-t border-white/5 sticky bottom-0 z-10">
+				<div className="max-w-3xl mx-auto relative flex items-end gap-2 p-2 bg-muted/50 rounded-xl border border-white/5 focus-within:ring-2 focus-within:ring-primary/10 focus-within:border-primary transition-all shadow-sm">
 					<Textarea
 						value={inputValue}
 						onChange={(e) => setInputValue(e.target.value)}
 						onKeyDown={handleKeyDown}
-						placeholder="Ask anything..."
-						className="w-full bg-transparent border-0 focus:ring-0 resize-none min-h-[44px] max-h-32 py-2.5 px-2 text-sm placeholder:text-muted-foreground"
+						onFocus={() => setIsFocused(true)}
+						onBlur={() => setIsFocused(false)}
+						placeholder={placeholder}
+						className="w-full bg-transparent border-0 focus:ring-0 resize-none min-h-[44px] max-h-32 py-2.5 px-2 text-sm placeholder:text-muted-foreground text-foreground"
 						rows={1}
 					/>
 
@@ -150,7 +187,7 @@ export function AgentChatSection({ canvasId }: AgentChatSectionProps) {
 								size="icon"
 								onClick={handleSubmit}
 								disabled={!inputValue.trim()}
-								className="bg-foreground text-background hover:bg-foreground/90 disabled:bg-muted disabled:text-muted-foreground transition-colors shadow-sm"
+								className="bg-primary text-primary-foreground hover:bg-primary/90 disabled:bg-muted disabled:text-muted-foreground transition-colors shadow-sm"
 								aria-label="Send message"
 							>
 								<SendHorizontal className="w-5 h-5" />
@@ -160,7 +197,7 @@ export function AgentChatSection({ canvasId }: AgentChatSectionProps) {
 				</div>
 				<div className="text-center mt-2">
 					<p className="text-[10px] text-muted-foreground">
-						AI can make mistakes. Check important info.
+						AI can make mistakes. Check workflow before running.
 					</p>
 				</div>
 			</div>

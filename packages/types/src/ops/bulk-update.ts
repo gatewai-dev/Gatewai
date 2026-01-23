@@ -1,4 +1,5 @@
 import z from "zod";
+import { NodeConfigSchema } from "../config/schemas.js";
 
 export const NodeTypes = [
 	"Text",
@@ -15,7 +16,6 @@ export const NodeTypes = [
 	"LLM",
 	"Crop",
 	"Modulate",
-	"Preview",
 	"VideoGen",
 	"VideoGenFirstLastFrame",
 	"VideoGenExtend",
@@ -44,6 +44,63 @@ export const handleSchema = z.object({
 	nodeId: z.string(),
 });
 
+// Compositor layer configuration using handle IDs as keys
+const compositorLayerSchema = z.object({
+	opacity: z.number().min(0).max(1).optional().default(1),
+	blendMode: z
+		.enum([
+			"normal",
+			"multiply",
+			"screen",
+			"overlay",
+			"darken",
+			"lighten",
+			"color-dodge",
+			"color-burn",
+			"hard-light",
+			"soft-light",
+			"difference",
+			"exclusion",
+		])
+		.optional()
+		.default("normal"),
+	position: z
+		.object({
+			x: z.number().default(0),
+			y: z.number().default(0),
+		})
+		.optional(),
+	scale: z
+		.object({
+			x: z.number().positive().default(1),
+			y: z.number().positive().default(1),
+		})
+		.optional(),
+	rotation: z.number().optional().default(0),
+	visible: z.boolean().optional().default(true),
+	zIndex: z.number().optional(),
+});
+
+// Video compositor layer configuration using handle IDs as keys
+const videoCompositorLayerSchema = compositorLayerSchema.extend({
+	trimStart: z.number().min(0).optional(),
+	trimEnd: z.number().min(0).optional(),
+	volume: z.number().min(0).max(1).optional().default(1),
+	muted: z.boolean().optional().default(false),
+});
+
+// Base config schema for all nodes
+const baseConfigSchema = z.record(z.unknown());
+
+// Compositor-specific config: keys are input handle IDs
+const compositorConfigSchema = z.record(z.string(), compositorLayerSchema);
+
+// VideoCompositor-specific config: keys are input handle IDs
+const videoCompositorConfigSchema = z.record(
+	z.string(),
+	videoCompositorLayerSchema,
+);
+
 export const nodeSchema = z.object({
 	id: z.string().optional(),
 	name: z.string(),
@@ -61,14 +118,12 @@ export const nodeSchema = z.object({
 	draggable: z.boolean().optional().default(true),
 	selectable: z.boolean().optional().default(true),
 	deletable: z.boolean().optional().default(true),
-	// Changed from z.any() to z.record() to provide a valid 'object' type
 	result: z
 		.record(z.unknown())
 		.optional()
 		.describe("The output data from this node"),
-	config: z
-		.record(z.unknown())
-		.optional()
+	config: NodeConfigSchema.optional()
+		.nullable()
 		.describe("Configuration parameters for this node"),
 	isDirty: z.boolean().optional().default(false),
 	zIndex: z.number().optional(),
@@ -118,6 +173,8 @@ export const bulkUpdateSchema = z
 		});
 
 		const handleMap = new Map<string, z.infer<typeof handleSchema>>();
+		const nodeHandlesMap = new Map<string, Set<string>>();
+
 		handles.forEach((handle, index) => {
 			if (handle.id) {
 				if (handleMap.has(handle.id)) {
@@ -128,6 +185,12 @@ export const bulkUpdateSchema = z
 					});
 				}
 				handleMap.set(handle.id, handle);
+
+				// Track handles by node
+				if (!nodeHandlesMap.has(handle.nodeId)) {
+					nodeHandlesMap.set(handle.nodeId, new Set());
+				}
+				nodeHandlesMap.get(handle.nodeId)!.add(handle.id);
 			} else {
 				ctx.addIssue({
 					code: "custom",
@@ -146,9 +209,68 @@ export const bulkUpdateSchema = z
 			}
 		});
 
+		// Validate Compositor and VideoCompositor config keys
+		nodes.forEach((node, nodeIndex) => {
+			if (!node.id || !node.config) return;
+
+			const isCompositor = node.type === "Compositor";
+			const isVideoCompositor = node.type === "VideoCompositor";
+
+			if (isCompositor || isVideoCompositor) {
+				const nodeHandles = nodeHandlesMap.get(node.id);
+				if (!nodeHandles) return;
+
+				const inputHandleIds = Array.from(nodeHandles).filter((hId) => {
+					const handle = handleMap.get(hId);
+					return handle?.type === "Input";
+				});
+
+				const configKeys = Object.keys(node.config);
+
+				// Validate that all config keys are valid input handle IDs
+				configKeys.forEach((key) => {
+					if (!inputHandleIds.includes(key)) {
+						ctx.addIssue({
+							code: "custom",
+							path: ["nodes", nodeIndex, "config", key],
+							message: `Config key "${key}" must be a valid input handle ID for ${node.type} node.`,
+						});
+					}
+				});
+
+				// Validate layer configurations
+				configKeys.forEach((key) => {
+					const layerConfig = node.config![key];
+					if (typeof layerConfig !== "object" || layerConfig === null) {
+						ctx.addIssue({
+							code: "custom",
+							path: ["nodes", nodeIndex, "config", key],
+							message: `Layer configuration for handle "${key}" must be an object.`,
+						});
+						return;
+					}
+
+					// Validate specific properties
+					const config = layerConfig as Record<string, unknown>;
+
+					if ("opacity" in config) {
+						const opacity = config.opacity;
+						if (typeof opacity !== "number" || opacity < 0 || opacity > 1) {
+							ctx.addIssue({
+								code: "custom",
+								path: ["nodes", nodeIndex, "config", key, "opacity"],
+								message: "Opacity must be a number between 0 and 1.",
+							});
+						}
+					}
+				});
+			}
+		});
+
 		// Build adjacency list for cycle detection
 		const adj = new Map<string, string[]>();
 		const edgeMap = new Map<string, z.infer<typeof edgeSchema>>();
+
 		edges.forEach((edge, index) => {
 			if (edge.id) {
 				if (edgeMap.has(edge.id)) {
@@ -272,6 +394,20 @@ export const bulkUpdateSchema = z
 							message: "Target handle must be of type 'Input'.",
 						});
 					}
+
+					// Validate required inputs
+					if (th.required) {
+						const hasIncomingEdge = edges.some(
+							(e) => e.targetHandleId === edge.targetHandleId,
+						);
+						if (!hasIncomingEdge) {
+							ctx.addIssue({
+								code: "custom",
+								path: ["edges", index, "targetHandleId"],
+								message: `Required input handle "${th.label}" must have an incoming connection.`,
+							});
+						}
+					}
 				}
 			} else {
 				ctx.addIssue({
@@ -281,7 +417,7 @@ export const bulkUpdateSchema = z
 				});
 			}
 
-			// Optional: Check data type compatibility if handles exist
+			// Data type compatibility validation
 			if (edge.sourceHandleId && edge.targetHandleId) {
 				const sh = handleMap.get(edge.sourceHandleId);
 				const th = handleMap.get(edge.targetHandleId);
@@ -293,49 +429,70 @@ export const bulkUpdateSchema = z
 						ctx.addIssue({
 							code: "custom",
 							path: ["edges", index],
-							message:
-								"Data types between source and target handles are incompatible.",
+							message: `Data types between source (${sh.dataTypes.join(", ")}) and target (${th.dataTypes.join(", ")}) handles are incompatible.`,
 						});
 					}
 				}
 			}
 		});
 
-		// Cycle detection using DFS
-		function hasCycle(): boolean {
+		// Validate all required handles have connections
+		handles.forEach((handle, handleIndex) => {
+			if (handle.required && handle.type === "Input" && handle.id) {
+				const hasConnection = edges.some((e) => e.targetHandleId === handle.id);
+				if (!hasConnection) {
+					ctx.addIssue({
+						code: "custom",
+						path: ["handles", handleIndex, "id"],
+						message: `Required input handle "${handle.label}" (${handle.id}) has no incoming connection.`,
+					});
+				}
+			}
+		});
+
+		// Cycle detection using DFS with path tracking
+		function hasCycle(): { hasCycle: boolean; path?: string[] } {
 			const visited = new Set<string>();
 			const recStack = new Set<string>();
+			const path: string[] = [];
 
 			function dfs(node: string): boolean {
 				visited.add(node);
 				recStack.add(node);
+				path.push(node);
 
 				for (const neighbor of adj.get(node) || []) {
 					if (!visited.has(neighbor)) {
 						if (dfs(neighbor)) return true;
 					} else if (recStack.has(neighbor)) {
+						path.push(neighbor);
 						return true;
 					}
 				}
 
 				recStack.delete(node);
+				path.pop();
 				return false;
 			}
 
 			for (const nodeId of nodeMap.keys()) {
 				if (!visited.has(nodeId)) {
-					if (dfs(nodeId)) return true;
+					if (dfs(nodeId)) {
+						return { hasCycle: true, path };
+					}
 				}
 			}
 
-			return false;
+			return { hasCycle: false };
 		}
 
-		if (hasCycle()) {
+		const cycleResult = hasCycle();
+		if (cycleResult.hasCycle) {
+			const cyclePath = cycleResult.path?.join(" → ") || "unknown";
 			ctx.addIssue({
 				code: "custom",
 				path: ["edges"],
-				message: "Graph contains a cycle, which is not allowed.",
+				message: `Graph contains a cycle, which is not allowed. Cycle path: ${cyclePath}`,
 			});
 		}
 	});

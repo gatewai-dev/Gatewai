@@ -16,16 +16,18 @@ export function AgentSessionList({ className }: { className?: string }) {
 	return (
 		<div
 			className={cn(
-				"flex flex-col h-full w-64 bg-gray-50/50 border-r border-gray-200",
+				"flex flex-col h-full w-64 bg-transparent border-r border-border/50",
 				className,
 			)}
 		>
 			{/* Header */}
-			<div className="p-4 border-b border-gray-100 flex items-center justify-between">
-				<h2 className="text-sm font-semibold text-gray-900">Chats</h2>
+			<div className="p-4 border-b border-border/50 flex items-center justify-between">
+				<h2 className="text-sm font-semibold text-foreground">Chats</h2>
 				<Button
 					onClick={createNewSession}
-					className="p-1.5 rounded-md hover:bg-gray-200/80 text-gray-600 transition-colors"
+					variant="ghost"
+					size="icon"
+					className="h-7 w-7 rounded-md hover:bg-accent text-muted-foreground transition-colors"
 					title="New Chat"
 				>
 					<Plus className="w-4 h-4" />
@@ -35,27 +37,28 @@ export function AgentSessionList({ className }: { className?: string }) {
 			{/* Scrollable List */}
 			<div className="flex-1 overflow-y-auto p-2 space-y-1">
 				{!agentSessionsList || agentSessionsList.length === 0 ? (
-					<div className="px-4 py-8 text-center text-xs text-gray-400">
+					<div className="px-4 py-8 text-center text-xs text-muted-foreground">
 						No history yet. Start a conversation.
 					</div>
 				) : (
 					agentSessionsList.map((session) => (
 						<Button
 							key={session.id}
+							variant="ghost"
 							onClick={() => setActiveSessionId(session.id)}
 							className={cn(
-								"w-full text-left px-3 py-3 rounded-lg flex items-start gap-3 transition-all duration-200 group",
+								"w-full justify-start text-left px-3 py-3 h-auto rounded-lg flex items-start gap-3 transition-all duration-200 group",
 								activeSessionId === session.id
-									? "bg-white shadow-sm ring-1 ring-gray-200"
-									: "hover:bg-gray-100",
+									? "bg-accent/50 shadow-sm ring-1 ring-border/50"
+									: "hover:bg-accent/30",
 							)}
 						>
 							<MessageSquare
 								className={cn(
-									"w-4 h-4 mt-0.5",
+									"w-4 h-4 mt-0.5 shrink-0",
 									activeSessionId === session.id
-										? "text-blue-500"
-										: "text-gray-400",
+										? "text-primary"
+										: "text-muted-foreground",
 								)}
 							/>
 
@@ -65,8 +68,8 @@ export function AgentSessionList({ className }: { className?: string }) {
 									className={cn(
 										"text-sm font-medium truncate",
 										activeSessionId === session.id
-											? "text-gray-900"
-											: "text-gray-700",
+											? "text-foreground"
+											: "text-muted-foreground",
 									)}
 								>
 									{session.id.slice(0, 8)}...{" "}
@@ -74,7 +77,7 @@ export function AgentSessionList({ className }: { className?: string }) {
 								</p>
 
 								{session.createdAt && (
-									<div className="flex items-center gap-1 mt-1 text-[10px] text-gray-400">
+									<div className="flex items-center gap-1 mt-1 text-[10px] text-muted-foreground/70">
 										<Clock className="w-3 h-3" />
 										{formatDistanceToNow(new Date(session.createdAt), {
 											addSuffix: true,
