@@ -397,6 +397,9 @@ importers:
       '@gatewai/api-client':
         specifier: workspace:*
         version: link:../../packages/api-client
+      '@gatewai/types':
+        specifier: workspace:*
+        version: link:../../packages/types
       '@hono/mcp':
         specifier: ^0.2.3
         version: 0.2.3(@modelcontextprotocol/sdk@1.25.2(hono@4.8.5)(zod@3.25.67))(hono-rate-limiter@0.4.2(hono@4.8.5))(hono@4.8.5)(zod@3.25.67)
@@ -9559,7 +9562,7 @@ snapshots:
       pkce-challenge: 5.0.1
       raw-body: 3.0.2
       zod: 3.25.67
-      zod-to-json-schema: 3.25.1(zod@3.25.67)
+      zod-to-json-schema: 3.25.1(zod@3.25.76)
     transitivePeerDependencies:
       - hono
       - supports-color
@@ -17604,10 +17607,6 @@ snapshots:
   yocto-queue@0.1.0: {}
 
   yocto-queue@1.2.2: {}
-
-  zod-to-json-schema@3.25.1(zod@3.25.67):
-    dependencies:
-      zod: 3.25.67
 
   zod-to-json-schema@3.25.1(zod@3.25.76):
     dependencies:

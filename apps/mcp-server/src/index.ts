@@ -1,4 +1,5 @@
 import { GatewaiApiClient, type StartRunRequest } from "@gatewai/api-client";
+import { bulkUpdateSchema } from "@gatewai/types";
 import { StreamableHTTPTransport } from "@hono/mcp";
 import { serve } from "@hono/node-server";
 import {
@@ -34,7 +35,7 @@ const apiClient = new GatewaiApiClient({
 
 const server = new McpServer({
 	name: "gatewai-mcp-server",
-	version: "1.0.0",
+	version: "0.0.1",
 });
 
 /**
@@ -351,22 +352,20 @@ server.registerTool(
 );
 
 /**
- * Tool: Update Canvas Name
+ * Tool: Patch Canvas Name
  */
 server.registerTool(
-	"update-canvas",
+	"patch-canvas",
 	{
 		description: "Update the canvas workflow",
 		inputSchema: z.object({
 			canvasId: z.string().describe("The ID of the canvas to rename"),
-			newName: z.string().describe("The new name for the canvas"),
+			canvasState: bulkUpdateSchema.describe("The new canvas state"),
 		}),
 	},
-	async ({ canvasId, newName }) => {
+	async ({ canvasId, canvasState }) => {
 		try {
-			const result = await apiClient.updateCanvasName(canvasId, {
-				name: newName,
-			});
+			const result = await apiClient.updateCanvas(canvasId, canvasState);
 			return {
 				content: [{ type: "text", text: JSON.stringify(result, null, 2) }],
 			};

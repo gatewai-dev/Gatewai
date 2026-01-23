@@ -8,7 +8,9 @@ import { zValidator } from "@hono/zod-validator";
 import type { XYPosition } from "@xyflow/react";
 import { Hono } from "hono";
 import { HTTPException } from "hono/http-exception";
+import { streamSSE } from "hono/streaming";
 import z from "zod";
+import { GetCanvasAgentRunner } from "../../agent/runner/index.js";
 import { GetCanvasEntities } from "../../data-ops/canvas.js";
 import { NodeWFProcessor } from "../../graph-engine/canvas-workflow-processor.js";
 
@@ -261,13 +263,11 @@ const canvasRoutes = new Hono({
 			return true;
 		});
 
-		// --- FIXED: Verify handle existence before updating ---
 		const rawUpdatedHandles = handlesInPayload.filter(
 			(h): h is typeof h & { id: string } =>
 				!!h.id && handleIdsInDBSet.has(h.id),
 		);
 
-		// Additional check: verify handles still exist and weren't deleted
 		const currentHandleIds = new Set([
 			...Array.from(handleIdsInDBSet).filter(
 				(id) => !removedHandleIds.includes(id),
@@ -348,7 +348,6 @@ const canvasRoutes = new Hono({
 			return true;
 		});
 
-		// --- FIXED: Verify edge existence before updating ---
 		const rawUpdatedEdges = edgesInPayload.filter(
 			(
 				e,
@@ -595,6 +594,94 @@ const canvasRoutes = new Hono({
 		);
 
 		return c.json(taskBatch, 201);
+	})
+
+	.get("/:id/agent/sessions", async (c) => {
+		const canvasId = c.req.param("id");
+
+		const agentSessions = await prisma.agentSession.findMany({
+			where: {
+				canvasId,
+			},
+		});
+
+		return c.json(agentSessions);
+	})
+	// TODO: In case we release to prod, we need to check sessionId
+	// since it's client generated OR we should generate it on server
+	.post(
+		"/:id/agent/:sessionId",
+		zValidator(
+			"json",
+			z.object({
+				message: z.string(),
+			}),
+		),
+		async (c) => {
+			const canvasId = c.req.param("id");
+			const sessionId = c.req.param("sessionId");
+			const { message } = c.req.valid("json");
+
+			const existingSession = await prisma.agentSession.findFirst({
+				where: {
+					id: sessionId,
+				},
+			});
+
+			if (!existingSession) {
+				await prisma.agentSession.create({
+					data: {
+						id: sessionId,
+						canvas: {
+							connect: {
+								id: canvasId,
+							},
+						},
+					},
+				});
+			}
+
+			const runner = await GetCanvasAgentRunner({ canvasId });
+
+			return streamSSE(c, async (stream) => {
+				const eventIterator = runner.runAsync({
+					userId: "main-user",
+					sessionId,
+					newMessage: {
+						role: "user",
+						parts: [
+							{
+								text: message,
+							},
+						],
+					},
+				});
+				for await (const event of eventIterator) {
+					// Skip partial events
+					if (event.partial) {
+						continue;
+					}
+					await stream.writeSSE({
+						data: JSON.stringify(event),
+						event: "message",
+						id: event.id,
+					});
+				}
+			});
+		},
+	)
+	.get("/:id/agent/:sessionId", async (c) => {
+		const canvasId = c.req.param("id");
+		const sessionId = c.req.param("sessionId");
+
+		const existingSession = await prisma.agentSession.findFirst({
+			where: {
+				id: sessionId,
+				canvasId,
+			},
+		});
+
+		return c.json(existingSession);
 	});
 
 export { canvasRoutes };

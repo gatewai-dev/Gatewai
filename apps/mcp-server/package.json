@@ -16,6 +16,7 @@
 	"packageManager": "pnpm@10.13.1",
 	"dependencies": {
 		"@gatewai/api-client": "workspace:*",
+		"@gatewai/types": "workspace:*",
 		"@hono/mcp": "^0.2.3",
 		"@hono/node-server": "^1.19.9",
 		"@modelcontextprotocol/sdk": "^1.25.2",

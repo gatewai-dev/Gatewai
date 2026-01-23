@@ -86,3 +86,16 @@ export type FontListRPC = InferResponseType<typeof rpcClient.api.v1.fonts.$get>;
 export type FontListRPCParams = InferRequestType<
 	typeof rpcClient.api.v1.fonts.$get
 >;
+
+type AgentSessionsRPCRoute =
+	(typeof rpcClient.api.v1.canvas)[":id"]["agent"]["sessions"]["$get"];
+export type AgentSessionsRPC = InferResponseType<AgentSessionsRPCRoute>;
+export type AgentSessionsRPCParams = InferRequestType<AgentSessionsRPCRoute>;
+export type AgentSessionEntity = AgentSessionsRPC[number];
+
+type AgentSessionDetailsRPCRoute =
+	(typeof rpcClient.api.v1.canvas)[":id"]["agent"][":sessionId"]["$get"];
+export type AgentSessionDetailsRPC =
+	InferResponseType<AgentSessionDetailsRPCRoute>;
+export type AgentSessionDetailsRPCParams =
+	InferRequestType<AgentSessionDetailsRPCRoute>;

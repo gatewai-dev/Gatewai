@@ -1,3 +1,4 @@
+import type { BulkUpdatePayload } from "@gatewai/types";
 import type { InferRequestType, InferResponseType } from "hono/client";
 import { hc } from "hono/client";
 import type { AppType } from "../../../apps/gatewai-fe/backend/src/index";
@@ -69,9 +70,7 @@ export class GatewaiApiClient {
 		});
 	}
 
-	// --------------------------------------------------------------------------
 	// Helper: Generic Error Handler
-	// --------------------------------------------------------------------------
 	private async handleResponse<T>(res: Response): Promise<T> {
 		if (!res.ok) {
 			const errBody = await res.json().catch(() => ({}));
@@ -85,10 +84,6 @@ export class GatewaiApiClient {
 		return (await res.json()) as T;
 	}
 
-	// --------------------------------------------------------------------------
-	// Domain: Node Templates
-	// --------------------------------------------------------------------------
-
 	/**
 	 * Fetches all available node templates.
 	 */
@@ -96,10 +91,6 @@ export class GatewaiApiClient {
 		const res = await this.rpc.api.v1["node-templates"].$get();
 		return this.handleResponse(res);
 	}
-
-	// --------------------------------------------------------------------------
-	// Domain: Canvas Management
-	// --------------------------------------------------------------------------
 
 	/**
 	 * Lists all non-API canvases, ordered by updated date.
@@ -167,6 +158,20 @@ export class GatewaiApiClient {
 	}
 
 	/**
+	 * BULK patch a canvas entities.
+	 */
+	async patchCanvas(
+		id: string,
+		payload: BulkUpdatePayload,
+	): Promise<{ success: boolean }> {
+		const res = await this.rpc.api.v1.canvas[":id"].$patch({
+			param: { id },
+			json: payload,
+		});
+		return this.handleResponse(res);
+	}
+
+	/**
 	 * Duplicates a canvas and all its entities.
 	 */
 	async duplicateCanvas(id: string): Promise<DuplicateCanvasResponse> {
@@ -189,10 +194,6 @@ export class GatewaiApiClient {
 		});
 		return this.handleResponse(res);
 	}
-
-	// --------------------------------------------------------------------------
-	// Domain: API Run (Execution)
-	// --------------------------------------------------------------------------
 
 	/**
 	 * Starts a new run (execution) on a canvas.

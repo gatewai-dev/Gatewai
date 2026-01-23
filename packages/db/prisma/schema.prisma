@@ -209,7 +209,7 @@ model Canvas {
   originalCanvas   Canvas?      @relation("CanvasDuplicates", fields: [originalCanvasId], references: [id])
   duplicates       Canvas[]     @relation("CanvasDuplicates")
 
-  threads       AgentThread[]
+  agentSessions       AgentSession[]
 
   @@map("canvas")
 }
@@ -279,30 +279,33 @@ model FileAsset {
   // Media metadata - optional
   metadata        Json?
   fps             Int?
+
+  @@map("fileAsset")
 }
 
 
 
-model AgentThread {
-  id              String    @id @default(cuid())
-  externalId      String?   @unique // Optional: To map to Google's internal thread IDs if applicable
-  canvasId         String
-  canvas           Canvas     @relation(fields: [canvasId], references: [id], onDelete: Cascade)
-  messages        Message[]
-  
+model AgentSession {
+  id                String    @id @default(cuid())
+  canvasId          String
+  canvas            Canvas     @relation(fields: [canvasId], references: [id], onDelete: Cascade)
+  messages          Message[]
+
   // Metadata for the conversation
-  metadata        Json?
-  
-  createdAt       DateTime  @default(now())
-  updatedAt       DateTime  @updatedAt
+  metadata          Json?
+
+  createdAt         DateTime  @default(now())
+  updatedAt         DateTime  @updatedAt
+
+  @@map("agentSession")
 
 }
 
 model Message {
   id              String    @id @default(cuid())
   threadId        String
-  thread          AgentThread    @relation(fields: [threadId], references: [id], onDelete: Cascade)
-  
+  thread          AgentSession    @relation(fields: [threadId], references: [id], onDelete: Cascade)
+
   role            MessageRole
   content         Json      // Using Json to support multimodal (text, parts, inlineData/FileAssets)
 

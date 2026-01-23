@@ -26,7 +26,7 @@ Below is the Fresh Canvas State:
 The Node Templates you can use to create workflows.
 {{node_templates_list}}
 
-It is important to set correct config for Nodes, Below is the Schemas:
+It is important to set correct config for Nodes, Below is the Node Config Schemas and patch canvas mcp tool payload schema:
 ${NODE_CONFIG_RAW}
 
 Canvas Connection Rules:

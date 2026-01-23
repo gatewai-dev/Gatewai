@@ -1,36 +1,36 @@
 // types.ts
-import { z } from "zod";
+import type { z } from "zod";
 
 import type {
-    CompositorLayerSchema,
-    VideoCompositorLayerSchema,
-    TextNodeConfigSchema,
-    TextMergerNodeConfigSchema,
-    FileNodeConfigSchema,
-    ImageGenNodeConfigSchema,
-    PreviewNodeConfigSchema,
-    MaskNodeConfigSchema,
-    PaintNodeConfigSchema,
-    BlurNodeConfigSchema,
-    ModulateNodeConfigSchema,
-    NoteNodeConfigSchema,
-    CropNodeConfigSchema,
-    CompositorNodeConfigSchema,
-    LLMNodeConfigSchema,
-    ResizeNodeConfigSchema,
-    VideoGenNodeConfigSchema,
-    VideoGenExtendNodeConfigSchema,
-    VideoGenFirstLastFrameNodeConfigSchema,
-    SpeechToTextNodeConfigSchema,
-    TextToSpeechNodeConfigSchema,
-    VideoCompositorNodeConfigSchema,
-    NodeConfigSchema,
-    GlobalCompositeOperation,
+	BlurNodeConfigSchema,
+	CompositorLayerSchema,
+	CompositorNodeConfigSchema,
+	CropNodeConfigSchema,
+	FileNodeConfigSchema,
+	GlobalCompositeOperation,
+	ImageGenNodeConfigSchema,
+	LLMNodeConfigSchema,
+	MaskNodeConfigSchema,
+	ModulateNodeConfigSchema,
+	NodeConfigSchema,
+	NoteNodeConfigSchema,
+	PaintNodeConfigSchema,
+	PreviewNodeConfigSchema,
+	ResizeNodeConfigSchema,
+	SpeechToTextNodeConfigSchema,
+	TextMergerNodeConfigSchema,
+	TextNodeConfigSchema,
+	TextToSpeechNodeConfigSchema,
+	VideoCompositorLayerSchema,
+	VideoCompositorNodeConfigSchema,
+	VideoGenExtendNodeConfigSchema,
+	VideoGenFirstLastFrameNodeConfigSchema,
+	VideoGenNodeConfigSchema,
 } from "./schemas.js";
 
 // Extract the TypeScript type from the schema
 export type GlobalCompositeOperationType = z.infer<
-    typeof GlobalCompositeOperation
+	typeof GlobalCompositeOperation
 >;
 
 export type TextNodeConfig = z.infer<typeof TextNodeConfigSchema>;
@@ -50,19 +50,19 @@ export type LLMNodeConfig = z.infer<typeof LLMNodeConfigSchema>;
 export type ResizeNodeConfig = z.infer<typeof ResizeNodeConfigSchema>;
 export type VideoGenNodeConfig = z.infer<typeof VideoGenNodeConfigSchema>;
 export type VideoGenExtendNodeConfig = z.infer<
-    typeof VideoGenExtendNodeConfigSchema
+	typeof VideoGenExtendNodeConfigSchema
 >;
 export type VideoGenFirstLastFrameNodeConfig = z.infer<
-    typeof VideoGenFirstLastFrameNodeConfigSchema
+	typeof VideoGenFirstLastFrameNodeConfigSchema
 >;
 export type SpeechToTextNodeConfig = z.infer<
-    typeof SpeechToTextNodeConfigSchema
+	typeof SpeechToTextNodeConfigSchema
 >;
 export type TextToSpeechNodeConfig = z.infer<
-    typeof TextToSpeechNodeConfigSchema
+	typeof TextToSpeechNodeConfigSchema
 >;
 export type VideoCompositorNodeConfig = z.infer<
-    typeof VideoCompositorNodeConfigSchema
+	typeof VideoCompositorNodeConfigSchema
 >;
 export type VideoCompositorLayer = z.infer<typeof VideoCompositorLayerSchema>;
 

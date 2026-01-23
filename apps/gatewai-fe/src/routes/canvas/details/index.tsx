@@ -1,6 +1,7 @@
 import { ReactFlowProvider } from "@xyflow/react";
 import { Outlet, useParams } from "react-router";
 import { UserAssetsProvider } from "../assets/user-assets-ctx";
+import { CanvasAgentSessionsProvider } from "./agent/ctx/canvas-sessions.ctx";
 import { CanvasProvider } from "./ctx/canvas-ctx";
 import { ShortcutsProvider } from "./ctx/hotkeys-ctx";
 import { TaskManagerProvider } from "./ctx/task-manager-ctx";
@@ -20,11 +21,13 @@ function CanvasDetailsRoot() {
 					<UserAssetsProvider>
 						<ReactFlowProvider>
 							<CanvasProvider canvasId={canvasId}>
-								<ShortcutsProvider>
-									<ProcessorProvider>
-										<Outlet />
-									</ProcessorProvider>
-								</ShortcutsProvider>
+								<CanvasAgentSessionsProvider canvasId={canvasId}>
+									<ShortcutsProvider>
+										<ProcessorProvider>
+											<Outlet />
+										</ProcessorProvider>
+									</ShortcutsProvider>
+								</CanvasAgentSessionsProvider>
 							</CanvasProvider>
 						</ReactFlowProvider>
 					</UserAssetsProvider>
