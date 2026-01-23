@@ -9,9 +9,11 @@
 	"exports": {
 		".": {
 			"types": "./dist/index.d.mts",
-			"development": "./src/index.ts",
-			"import": "./dist/index.mjs"
-		}
+    		"development": "./src/index.ts",
+    		"import": "./dist/index.mjs",
+    		"default": "./dist/index.mjs"
+		},
+		"./dist/index.mjs": "./dist/index.mjs"
 	},
 	"files": [
 		"dist/**"

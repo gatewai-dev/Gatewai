@@ -51,6 +51,7 @@ const undoableFlowReducer = undoReducer(flowReducer, {
 import type { Middleware } from "@reduxjs/toolkit";
 import { isRejectedWithValue } from "@reduxjs/toolkit";
 import { toast } from "sonner";
+import { agentSessionsAPI } from "./agent-sessions";
 
 /**
  * Log a warning and show a toast!
@@ -80,6 +81,7 @@ export const store = configureStore({
 		[canvasListAPI.reducerPath]: canvasListAPI.reducer,
 		[canvasDetailsAPI.reducerPath]: canvasDetailsAPI.reducer,
 		[fontListAPI.reducerPath]: fontListAPI.reducer,
+		[agentSessionsAPI.reducerPath]: agentSessionsAPI.reducer,
 	},
 	middleware: (getDefaultMiddleware) =>
 		getDefaultMiddleware()
@@ -88,7 +90,8 @@ export const store = configureStore({
 			.concat(canvasListAPI.middleware)
 			.concat(fontListAPI.middleware)
 			.concat(canvasDetailsAPI.middleware)
-			.concat(rtkQueryErrorLogger),
+			.concat(rtkQueryErrorLogger)
+			.concat(agentSessionsAPI.middleware),
 });
 
 setupListeners(store.dispatch);

@@ -5,8 +5,9 @@ import { BrowserRouter } from "react-router";
 import { scan } from "react-scan";
 import App from "./App.tsx";
 
+// Enable when required
 scan({
-	enabled: process.env.NODE_ENV === "development",
+	enabled: false,
 });
 
 const root = document.getElementById("root");

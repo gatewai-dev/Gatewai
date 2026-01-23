@@ -13,6 +13,7 @@ import z from "zod";
 import { GetCanvasAgentRunner } from "../../agent/runner/index.js";
 import { GetCanvasEntities } from "../../data-ops/canvas.js";
 import { NodeWFProcessor } from "../../graph-engine/canvas-workflow-processor.js";
+import { InMemorySessionService } from "@google/adk";
 
 const canvasRoutes = new Hono({
 	strict: false,
@@ -640,12 +641,18 @@ const canvasRoutes = new Hono({
 					},
 				});
 			}
+			const sessionService = new InMemorySessionService();
+			await sessionService.createSession({
+				appName: 'Gatewai',
+				sessionId: sessionId,
+				userId: 'Gatewai',
+			})
 
 			const runner = await GetCanvasAgentRunner({ canvasId });
 
 			return streamSSE(c, async (stream) => {
 				const eventIterator = runner.runAsync({
-					userId: "main-user",
+					userId: "Gatewai",
 					sessionId,
 					newMessage: {
 						role: "user",
