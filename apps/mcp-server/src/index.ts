@@ -336,8 +336,8 @@ server.registerTool(
 server.registerTool(
 	"get-canvas-inputs",
 	{
-		description:
-			"Discover available input nodes (Text, File) in a canvas workflow",
+		description: `Discover available input nodes (Text, File) in a canvas workflow.
+			Text node contains value in config and File node contains it in Result`,
 		inputSchema: z.object({
 			canvasId: z.string().describe("The ID of the canvas to inspect"),
 		}),
@@ -352,7 +352,10 @@ server.registerTool(
 					id: n.id,
 					name: n.name,
 					type: n.type,
-					currentValue: n.config?.content || "(no content)",
+					currentValue: {
+						config: n.config ?? null,
+						result: n.result ?? null,
+					},
 				}));
 
 			return {

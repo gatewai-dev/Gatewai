@@ -132,7 +132,7 @@ pnpm i
 pnpm run build
 
 # Start the application
-pnpm start
+pnpm start-cli
 
 ```
 
