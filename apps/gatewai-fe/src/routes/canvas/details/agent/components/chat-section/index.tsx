@@ -13,8 +13,9 @@ interface AgentChatSectionProps {
 }
 
 const PLACEHOLDER_OPTIONS = [
-	"Create workflow for 16 seconds advertisement video clip with 3 consistent characters",
-	"Create workflow for 6 minutes of podcast",
+	"Teach me Gatewai studio please.",
+	"Create workflow for 16 seconds advertisement video clip with 3 consistent characters.",
+	'Create workflow for 12 minutes of podcast about "What AI can do to understand Universe", make it challenge known assumptions.',
 ];
 
 export function AgentChatSection({ canvasId }: AgentChatSectionProps) {
@@ -166,7 +167,7 @@ export function AgentChatSection({ canvasId }: AgentChatSectionProps) {
 						onFocus={() => setIsFocused(true)}
 						onBlur={() => setIsFocused(false)}
 						placeholder={placeholder}
-						className="w-full bg-transparent border-0 focus:ring-0 resize-none min-h-[44px] max-h-32 py-2.5 px-2 text-sm placeholder:text-muted-foreground text-foreground"
+						className="w-full bg-transparent border-0 focus:ring-0 resize-none min-h-11 max-h-32 py-2.5 px-2 text-sm placeholder:text-muted-foreground text-foreground"
 						rows={1}
 					/>
 

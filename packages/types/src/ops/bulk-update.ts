@@ -394,20 +394,6 @@ export const bulkUpdateSchema = z
 							message: "Target handle must be of type 'Input'.",
 						});
 					}
-
-					// Validate required inputs
-					if (th.required) {
-						const hasIncomingEdge = edges.some(
-							(e) => e.targetHandleId === edge.targetHandleId,
-						);
-						if (!hasIncomingEdge) {
-							ctx.addIssue({
-								code: "custom",
-								path: ["edges", index, "targetHandleId"],
-								message: `Required input handle "${th.label}" must have an incoming connection.`,
-							});
-						}
-					}
 				}
 			} else {
 				ctx.addIssue({
@@ -432,20 +418,6 @@ export const bulkUpdateSchema = z
 							message: `Data types between source (${sh.dataTypes.join(", ")}) and target (${th.dataTypes.join(", ")}) handles are incompatible.`,
 						});
 					}
-				}
-			}
-		});
-
-		// Validate all required handles have connections
-		handles.forEach((handle, handleIndex) => {
-			if (handle.required && handle.type === "Input" && handle.id) {
-				const hasConnection = edges.some((e) => e.targetHandleId === handle.id);
-				if (!hasConnection) {
-					ctx.addIssue({
-						code: "custom",
-						path: ["handles", handleIndex, "id"],
-						message: `Required input handle "${handle.label}" (${handle.id}) has no incoming connection.`,
-					});
 				}
 			}
 		});
