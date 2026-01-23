@@ -44,63 +44,6 @@ export const handleSchema = z.object({
 	nodeId: z.string(),
 });
 
-// Compositor layer configuration using handle IDs as keys
-const compositorLayerSchema = z.object({
-	opacity: z.number().min(0).max(1).optional().default(1),
-	blendMode: z
-		.enum([
-			"normal",
-			"multiply",
-			"screen",
-			"overlay",
-			"darken",
-			"lighten",
-			"color-dodge",
-			"color-burn",
-			"hard-light",
-			"soft-light",
-			"difference",
-			"exclusion",
-		])
-		.optional()
-		.default("normal"),
-	position: z
-		.object({
-			x: z.number().default(0),
-			y: z.number().default(0),
-		})
-		.optional(),
-	scale: z
-		.object({
-			x: z.number().positive().default(1),
-			y: z.number().positive().default(1),
-		})
-		.optional(),
-	rotation: z.number().optional().default(0),
-	visible: z.boolean().optional().default(true),
-	zIndex: z.number().optional(),
-});
-
-// Video compositor layer configuration using handle IDs as keys
-const videoCompositorLayerSchema = compositorLayerSchema.extend({
-	trimStart: z.number().min(0).optional(),
-	trimEnd: z.number().min(0).optional(),
-	volume: z.number().min(0).max(1).optional().default(1),
-	muted: z.boolean().optional().default(false),
-});
-
-// Base config schema for all nodes
-const baseConfigSchema = z.record(z.unknown());
-
-// Compositor-specific config: keys are input handle IDs
-const compositorConfigSchema = z.record(z.string(), compositorLayerSchema);
-
-// VideoCompositor-specific config: keys are input handle IDs
-const videoCompositorConfigSchema = z.record(
-	z.string(),
-	videoCompositorLayerSchema,
-);
-
 export const nodeSchema = z.object({
 	id: z.string().optional(),
 	name: z.string(),
