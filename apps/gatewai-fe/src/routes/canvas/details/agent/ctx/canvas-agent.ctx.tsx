@@ -5,7 +5,7 @@ import {
 	useContext,
 	useState,
 } from "react";
-import type { AgentSessionEntity, AgentSessionsRPC } from "@/rpc/types";
+import type { AgentSessionsRPC } from "@/rpc/types";
 import { useGetCanvasAgentSessionListQuery } from "@/store/agent-sessions";
 
 type CanvasAgentContextType = {

@@ -12,6 +12,7 @@ import { HTTPException } from "hono/http-exception";
 import { streamSSE, streamText } from "hono/streaming";
 import z from "zod";
 import { RunCanvasAgent } from "../../agent/runner/index.js";
+import { canvasAgentState } from "../../agent/state.js";
 import { GetCanvasEntities } from "../../data-ops/canvas.js";
 import { NodeWFProcessor } from "../../graph-engine/canvas-workflow-processor.js";
 
@@ -569,49 +570,117 @@ const canvasRoutes = new Hono({
 		return c.json(agentSessions);
 	})
 	.post(
-    "/:id/agent/:sessionId",
-    zValidator(
-        "json",
-        z.object({
-            message: z.string(),
-        }),
-    ),
-    async (c) => {
-        const canvasId = c.req.param("id");
-        const sessionId = c.req.param("sessionId");
-        const { message } = c.req.valid("json");
+		"/:id/agent/:sessionId",
+		zValidator(
+			"json",
+			z.object({
+				message: z.string(),
+			}),
+		),
+		async (c) => {
+			const canvasId = c.req.param("id");
+			const sessionId = c.req.param("sessionId");
+			const { message } = c.req.valid("json");
 
-        // 1. Ensure Session exists
-        await prisma.agentSession.upsert({
-            where: { id: sessionId },
-            update: {},
-            create: {
-                id: sessionId,
-                canvasId: canvasId,
-            },
-        });
+			// 1. Ensure Session exists
+			await prisma.agentSession.upsert({
+				where: { id: sessionId },
+				update: {},
+				create: {
+					id: sessionId,
+					canvasId: canvasId,
+				},
+			});
 
-        // 2. Return SSE Stream
-        return streamSSE(c, async (stream) => {
-            const runner = RunCanvasAgent({
-                canvasId,
-                sessionId,
-                userMessage: message,
-            });
+			// 2. Return SSE Stream
+			return streamSSE(c, async (stream) => {
+				const runner = RunCanvasAgent({
+					canvasId,
+					sessionId,
+					userMessage: message,
+				});
 
-            for await (const delta of runner) {
-                await stream.write(JSON.stringify(delta));
-            }
-        });
-    },
-)
+				for await (const delta of runner) {
+					await stream.write(JSON.stringify(delta));
+				}
+			});
+		},
+	)
+	.get("/:id/agent/status", (c) => {
+		const canvasId = c.req.param("id");
+		const isLocked = canvasAgentState.isLocked(canvasId);
+		return c.json({ isLocked });
+	})
+	.get("/:id/agent/events", (c) => {
+		const canvasId = c.req.param("id");
+
+		return streamSSE(c, async (stream) => {
+			// Send initial state
+			await stream.writeSSE({
+				data: JSON.stringify({
+					type: "LOCK_STATUS",
+					isLocked: canvasAgentState.isLocked(canvasId),
+				}),
+			});
+
+			const listener = async (changedCanvasId: string, isLocked: boolean) => {
+				if (changedCanvasId === canvasId) {
+					await stream.writeSSE({
+						data: JSON.stringify({
+							type: "LOCK_STATUS",
+							isLocked,
+						}),
+					});
+				}
+			};
+
+			canvasAgentState.on("change", listener);
+
+			stream.onAbort(() => {
+				canvasAgentState.off("change", listener);
+			});
+
+			// Keep connection alive
+			while (true) {
+				await new Promise((resolve) => setTimeout(resolve, 1000));
+			}
+
+			// Cleanup is handled by Hono/runtime when connection closes (conceptually),
+			// but explicit cleanup in streamSSE loop break is tricky without AbortSignal.
+			// However, Hono's streamSSE usually handles close.
+			// Ideally we should remove listener.
+			// For now, we rely on the loop breaking if write fails?
+			// Actually, streamSSE callback doesn't easily support cleanup on disconnect unless we catch error.
+		});
+	})
 	.get("/:id/agent/:sessionId", async (c) => {
 		const canvasId = c.req.param("id");
 		const sessionId = c.req.param("sessionId");
-		const existingSession = await prisma.agentSession.findFirst({
+
+		const session = await prisma.agentSession.findFirst({
 			where: { id: sessionId, canvasId },
+			include: {
+				events: {
+					orderBy: { createdAt: "asc" },
+				},
+			},
 		});
-		return c.json(existingSession);
+
+		if (!session) {
+			throw new HTTPException(404, { message: "Session not found" });
+		}
+
+		// Map events to ChatMessage format
+		const messages = session.events
+			.filter((e) => e.role === "USER" || e.role === "ASSISTANT")
+			.map((e) => ({
+				id: e.id,
+				role: e.role === "USER" ? "user" : "model",
+				text: (e.content as any)?.text || "", // Assuming content structure
+				createdAt: e.createdAt,
+			}));
+
+		return c.json({ ...session, messages });
 	});
 
 export { canvasRoutes };

@@ -11,9 +11,11 @@ import {
 import type { DragEventHandler, MouseEventHandler } from "react";
 import { createContext, useEffect, useRef, useState } from "react";
 import { useHotkeys } from "react-hotkeys-hook";
+import { LoadingSpinner } from "@/components/ui/loading-spinner";
 import { useAppDispatch, useAppSelector } from "@/store";
 import { setSelectedEdgeIds, setSelectedNodeIds } from "@/store/node-meta";
 import { selectRFEdges, selectRFNodes } from "@/store/rfstate";
+import { useAgentSessionsCtx } from "../agent/ctx/canvas-sessions.ctx";
 import { useCanvasCtx } from "../ctx/canvas-ctx";
 import { nodeTypes } from "../nodes";
 import { CustomConnectionLine, CustomEdge } from "../nodes/base";
@@ -35,6 +37,7 @@ export const ModeContext = createContext<{
 function ReactflowContainer({ children }: ReactFlowProps) {
 	const { onEdgesChange, onNodesChange, onConnect, rfInstance } =
 		useCanvasCtx();
+	const { isLocked } = useAgentSessionsCtx();
 	const dispatch = useAppDispatch();
 
 	const onSelectionChange = ({
@@ -138,8 +141,24 @@ function ReactflowContainer({ children }: ReactFlowProps) {
 		<div
 			ref={containerRef}
 			onAuxClick={handleAuxClick}
-			className="w-full h-screen bg-black"
+			className="w-full h-screen bg-black relative"
 		>
+			{isLocked && (
+				<div className="absolute inset-0 z-50 bg-background/50 backdrop-blur-sm flex items-center justify-center animate-in fade-in duration-300">
+					<div className="bg-card p-6 rounded-xl shadow-2xl border border-border flex flex-col items-center gap-4 max-w-sm text-center">
+						<div className="relative">
+							<div className="absolute inset-0 bg-primary/20 blur-xl rounded-full" />
+							<LoadingSpinner className="w-8 h-8 relative z-10 text-primary" />
+						</div>
+						<div>
+							<h3 className="font-semibold text-lg">Agent Working</h3>
+							<p className="text-sm text-muted-foreground">
+								Canvas is locked while the agent is executing changes.
+							</p>
+						</div>
+					</div>
+				</div>
+			)}
 			<ModeContext.Provider value={{ mode, setMode }}>
 				<ReactFlow
 					onInit={(flowInstance) => {
@@ -160,24 +179,25 @@ function ReactflowContainer({ children }: ReactFlowProps) {
 					nodeTypes={nodeTypes}
 					edgeTypes={edgeTypes}
 					connectionLineComponent={CustomConnectionLine}
-					onEdgesChange={onEdgesChange}
-					onNodesChange={onNodesChange}
-					onDragOver={onDragOver}
+					onEdgesChange={!isLocked ? onEdgesChange : undefined}
+					onNodesChange={!isLocked ? onNodesChange : undefined}
+					onDragOver={!isLocked ? onDragOver : undefined}
 					maxZoom={8}
 					minZoom={0.1}
 					zoomOnPinch={true}
 					zoomOnScroll={true}
-					nodesDraggable={true}
-					elementsSelectable={true}
+					nodesDraggable={!isLocked}
+					elementsSelectable={!isLocked}
 					panOnDrag={effectivePan}
 					selectionOnDrag={!effectivePan}
-					selectNodesOnDrag={true}
+					selectNodesOnDrag={!isLocked}
 					selectionMode={SelectionMode.Partial}
 					connectionMode={ConnectionMode.Loose}
-					onConnect={onConnect}
+					onConnect={!isLocked ? onConnect : undefined}
 					onlyRenderVisibleElements={rfNodes.length > 20} // When there's too many nodes, only render visible ones for performance
 					onSelectionChange={onSelectionChange}
 					proOptions={{ hideAttribution: false }}
+					nodesConnectable={!isLocked}
 				>
 					{children}
 					<Background variant={BackgroundVariant.Dots} />

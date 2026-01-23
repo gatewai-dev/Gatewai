@@ -288,38 +288,91 @@ model FileAsset {
 model AgentSession {
   id                String    @id @default(cuid())
   canvasId          String
-  canvas            Canvas     @relation(fields: [canvasId], references: [id], onDelete: Cascade)
-  messages          Message[]
+  canvas            Canvas    @relation(fields: [canvasId], references: [id], onDelete: Cascade)
+  events            Event[]
 
-  // Metadata for the conversation
+  // OpenAI thread ID if using Assistants API
+  threadId          String?   @unique
+  
+  // Assistant configuration
+  assistantId       String?
+  model             String?   @default("gemini-3.0-flash-preview")
+  
+  // Session state
+  status            SessionStatus @default(ACTIVE)
+  
+  // Metadata for the conversation (tools, instructions, etc.)
   metadata          Json?
 
   createdAt         DateTime  @default(now())
   updatedAt         DateTime  @updatedAt
 
-  @@map("adk_session_state")
-
+  @@index([canvasId])
+  @@index([threadId])
+  @@map("agent_session")
 }
 
-model Message {
+model Event {
   id              String        @id @default(cuid())
   agentSessionId  String
   agentSession    AgentSession  @relation(fields: [agentSessionId], references: [id], onDelete: Cascade)
   
-  role            MessageRole
-  content         String        // Changed to String for easy text storage, or keep Json if strictly multimodal
+  // Event type from OpenAI (thread.message.created, thread.run.step.completed, etc.)
+  eventType       String
   
-  // Metadata for tool calls, usage tokens, or specific UI rendering hints
+  // Role for message events
+  role            EventRole?
+  
+  // Content can be text, tool calls, tool results, etc.
+  content         Json
+  
+  // OpenAI specific IDs
+  messageId       String?       // OpenAI message ID
+  runId           String?       // OpenAI run ID
+  stepId          String?       // OpenAI step ID
+  
+  // For tool calls
+  toolCallId      String?
+  toolName        String?
+  
+  // Token usage tracking
+  promptTokens    Int?
+  completionTokens Int?
+  totalTokens     Int?
+  
+  // Additional metadata (annotations, citations, etc.)
   metadata        Json?
+  
+  // Status for async operations
+  status          EventStatus?  @default(COMPLETED)
+  
   createdAt       DateTime      @default(now())
 
-  @@index([agentSessionId]) // Added index for faster history retrieval
-  @@map("message")
+  @@index([agentSessionId, createdAt])
+  @@index([messageId])
+  @@index([runId])
+  @@index([eventType])
+  @@map("event")
 }
 
-enum MessageRole {
+enum EventRole {
   USER
-  MODEL
+  ASSISTANT
   SYSTEM
   TOOL
+}
+
+enum EventStatus {
+  PENDING
+  IN_PROGRESS
+  COMPLETED
+  FAILED
+  CANCELLED
+}
+
+enum SessionStatus {
+  ACTIVE
+  COMPLETED
+  FAILED
+  EXPIRED
 }
