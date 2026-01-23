@@ -1,9 +1,9 @@
-import { type MessageRole, prisma } from "@gatewai/db";
+import { prisma } from "@gatewai/db";
 import { run } from "@openai/agents";
 import { CreateOrchestratorAgentForCanvas } from "../agents/orchestrator/index.js";
 import { localGatewaiMCPTool } from "../tools/gatewai-mcp.js";
 
-export const RunCanvasAgent = async ({
+export const RunCanvasAgent = async function* ({
 	canvasId,
 	sessionId,
 	userMessage,
@@ -11,51 +11,46 @@ export const RunCanvasAgent = async ({
 	canvasId: string;
 	sessionId: string;
 	userMessage: string;
-}) => {
-	// 1. Initialize Agent
-	const agent = await CreateOrchestratorAgentForCanvas({ canvasId });
-
-	// 2. Load History (Map Prisma messages to Agent messages)
-	// The OpenAI Runner is stateless by default unless we pass history,
-	// but typically we want to just pass the conversation history.
-	// const dbMessages = await prisma.message.findMany({
-	//     where: { threadId: sessionId },
-	//     orderBy: { createdAt: 'asc' }
-	// });
-	//
-	// // Convert DB messages to OpenAI format (simplified for brevity)
-	// // Note: In a real app, you'd map tool calls and outputs carefully.
-	// const history = dbMessages.map(m => ({
-	//     role: m.role.toLowerCase(),
-	//     content: JSON.parse(JSON.stringify(m.content)), // Handle JSON content
-	// }));
-
-	// 3. Add the new user message to DB and history
+}) {
+	// 1. Persist User Message
 	await prisma.message.create({
 		data: {
-			threadId: sessionId,
+			agentSessionId: sessionId,
 			role: "USER",
 			content: userMessage,
 		},
 	});
 
-	// Ensure connection to MCP server
+	// 2. Initialize Agent
+	const agent = await CreateOrchestratorAgentForCanvas({ canvasId });
 	await localGatewaiMCPTool.connect();
-	// 5. Execute
-	const result = await run(agent, userMessage);
 
-	// 6. Save Result to DB
-	// The result.finalOutput contains the text response.
-	// If tools were called, you might want to save those intermediate steps too (messages list).
-	if (result.finalOutput) {
+	// 3. Execute with streaming enabled
+	// Note: result.stream is available in the @openai/agents runner
+	const result = await run(agent, userMessage, { stream: true });
+	
+	let fullResponse = "";
+
+	// 4. Yield chunks to the caller
+	for await (const chunk of result.toStream()) {
+		console.log({chunk})
+		if (chunk.type === "raw_model_stream_event") {
+			if (chunk.data.type === 'output_text_delta') {
+				const delta = chunk.data.delta;
+				fullResponse += delta;
+			}
+		}
+		yield chunk;
+	}
+
+	// 5. Finalize: Save Model Response to DB
+	if (fullResponse) {
 		await prisma.message.create({
 			data: {
-				threadId: sessionId,
+				agentSessionId: sessionId,
 				role: "MODEL",
-				content: result.finalOutput,
+				content: fullResponse,
 			},
 		});
 	}
-
-	return result;
 };

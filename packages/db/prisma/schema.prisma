@@ -302,15 +302,18 @@ model AgentSession {
 }
 
 model Message {
-  id              String    @id @default(cuid())
-  threadId        String
-  thread          AgentSession    @relation(fields: [threadId], references: [id], onDelete: Cascade)
-
+  id              String        @id @default(cuid())
+  agentSessionId  String
+  agentSession    AgentSession  @relation(fields: [agentSessionId], references: [id], onDelete: Cascade)
+  
   role            MessageRole
-  content         Json      // Using Json to support multimodal (text, parts, inlineData/FileAssets)
+  content         String        // Changed to String for easy text storage, or keep Json if strictly multimodal
+  
+  // Metadata for tool calls, usage tokens, or specific UI rendering hints
+  metadata        Json?
+  createdAt       DateTime      @default(now())
 
-  createdAt       DateTime  @default(now())
-
+  @@index([agentSessionId]) // Added index for faster history retrieval
   @@map("message")
 }
 

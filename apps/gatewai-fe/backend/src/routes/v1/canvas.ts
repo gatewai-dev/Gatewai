@@ -9,7 +9,7 @@ import { zValidator } from "@hono/zod-validator";
 import type { XYPosition } from "@xyflow/react";
 import { Hono } from "hono";
 import { HTTPException } from "hono/http-exception";
-import { streamSSE } from "hono/streaming";
+import { streamSSE, streamText } from "hono/streaming";
 import z from "zod";
 import { RunCanvasAgent } from "../../agent/runner/index.js";
 import { GetCanvasEntities } from "../../data-ops/canvas.js";
@@ -569,39 +569,42 @@ const canvasRoutes = new Hono({
 		return c.json(agentSessions);
 	})
 	.post(
-		"/:id/agent/:sessionId",
-		zValidator(
-			"json",
-			z.object({
-				message: z.string(),
-			}),
-		),
-		async (c) => {
-			const canvasId = c.req.param("id");
-			const sessionId = c.req.param("sessionId");
-			const { message } = c.req.valid("json");
+    "/:id/agent/:sessionId",
+    zValidator(
+        "json",
+        z.object({
+            message: z.string(),
+        }),
+    ),
+    async (c) => {
+        const canvasId = c.req.param("id");
+        const sessionId = c.req.param("sessionId");
+        const { message } = c.req.valid("json");
 
-			const existingSession = await prisma.agentSession.findFirst({
-				where: { id: sessionId },
-			});
+        // 1. Ensure Session exists
+        await prisma.agentSession.upsert({
+            where: { id: sessionId },
+            update: {},
+            create: {
+                id: sessionId,
+                canvasId: canvasId,
+            },
+        });
 
-			if (!existingSession) {
-				await prisma.agentSession.create({
-					data: {
-						id: sessionId,
-						canvas: { connect: { id: canvasId } },
-					},
-				});
-			}
+        // 2. Return SSE Stream
+        return streamSSE(c, async (stream) => {
+            const runner = RunCanvasAgent({
+                canvasId,
+                sessionId,
+                userMessage: message,
+            });
 
-			const result = await RunCanvasAgent({
-				canvasId,
-				sessionId,
-				userMessage: message,
-			});
-			return c.json(result);
-		},
-	)
+            for await (const delta of runner) {
+                await stream.write(JSON.stringify(delta));
+            }
+        });
+    },
+)
 	.get("/:id/agent/:sessionId", async (c) => {
 		const canvasId = c.req.param("id");
 		const sessionId = c.req.param("sessionId");

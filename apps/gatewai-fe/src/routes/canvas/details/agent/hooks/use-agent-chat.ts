@@ -56,54 +56,53 @@ export function useAgentChatStream(canvasId: string, sessionId: string) {
 					},
 				);
 
-				console.log(await response.json());
 
-				// if (!response.body) throw new Error("No response body");
-				//
-				// const reader = response.body.getReader();
-				// const decoder = new TextDecoder();
-				// let aiTextAccumulator = "";
-				//
-				// while (true) {
-				// 	const { done, value } = await reader.read();
-				// 	if (done) break;
-				//
-				// 	const chunk = decoder.decode(value);
-				//
-				// 	// Parse SSE format: "data: {...}\n\n"
-				// 	const lines = chunk.split("\n\n");
-				//
-				// 	for (const line of lines) {
-				// 		if (line.startsWith("data: ")) {
-				// 			try {
-				// 				const jsonStr = line.replace("data: ", "");
-				// 				if (jsonStr === "[DONE]") continue;
-				//
-				// 				const event = JSON.parse(jsonStr);
-				//
-				// 				// Assuming 'event' structure based on Google ADK or typical LLM delta
-				// 				// Adjust 'event.candidates[0].content' based on your specific runner output
-				// 				// Here we assume the runner outputs partial text in a specific field
-				// 				const textDelta =
-				// 					event.candidates?.[0]?.content?.parts?.[0]?.text || "";
-				//
-				// 				aiTextAccumulator += textDelta;
-				//
-				// 				setMessages((prev) =>
-				// 					prev.map((msg) =>
-				// 						msg.id === aiMsgId
-				// 							? { ...msg, text: aiTextAccumulator }
-				// 							: msg,
-				// 					),
-				// 				);
-				// 			} catch (e) {
-				// 				console.error("Error parsing SSE chunk", e);
-				// 			}
-				// 		}
-				// 	}
-				// }
+				 if (!response.body) throw new Error("No response body");
+				
+				 const reader = response.body.getReader();
+				 const decoder = new TextDecoder();
+				 let aiTextAccumulator = "";
+				
+				 while (true) {
+				 	const { done, value } = await reader.read();
+				 	if (done) break;
+				
+				 	const chunk = decoder.decode(value);
+				 	const lines = chunk.split("\n\n");
+				 	// Parse SSE format: "data: {...}\n\n"
+                    console.log({chunkParsed, lines})
+				 	for (const line of lines) {
+                        const chunkParsed = JSON.parse(line);
+				 		if (line.startsWith("data: ")) {
+				 			try {
+				 				const jsonStr = line.replace("data: ", "");
+				 				if (jsonStr === "[DONE]") continue;
+				
+				 				const event = JSON.parse(jsonStr);
+				
+				 				// Assuming 'event' structure based on Google ADK or typical LLM delta
+				 				// Adjust 'event.candidates[0].content' based on your specific runner output
+				 				// Here we assume the runner outputs partial text in a specific field
+				 				const textDelta =
+				 					event.candidates?.[0]?.content?.parts?.[0]?.text || "";
+				
+				 				aiTextAccumulator += textDelta;
+				
+				 				setMessages((prev) =>
+				 					prev.map((msg) =>
+				 						msg.id === aiMsgId
+				 							? { ...msg, text: aiTextAccumulator }
+				 							: msg,
+				 					),
+				 				);
+				 			} catch (e) {
+				 				console.error("Error parsing SSE chunk", e);
+				 			}
+				 		}
+				 	}
+				 }
 			} catch (error) {
-				if (error.name !== "AbortError") {
+				if (error instanceof Error &&  error.name !== "AbortError") {
 					console.error("Stream error:", error);
 					// Optionally add an error message to the chat
 				}
