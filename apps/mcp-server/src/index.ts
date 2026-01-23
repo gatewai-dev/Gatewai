@@ -75,7 +75,8 @@ server.registerResource(
 	"canvas-detail",
 	new ResourceTemplate("gatewai://canvases/{id}", { list: undefined }),
 	{
-		description: "Get details of a specific canvas workflow",
+		description:
+			"Get details of a specific canvas workflow including workflow nodes, edges and handles.",
 		mimeType: "application/json",
 	},
 	async (uri, { id }) => {
@@ -326,6 +327,36 @@ server.registerTool(
 	"rename-canvas",
 	{
 		description: "Update the name of a canvas workflow",
+		inputSchema: z.object({
+			canvasId: z.string().describe("The ID of the canvas to rename"),
+			newName: z.string().describe("The new name for the canvas"),
+		}),
+	},
+	async ({ canvasId, newName }) => {
+		try {
+			const result = await apiClient.updateCanvasName(canvasId, {
+				name: newName,
+			});
+			return {
+				content: [{ type: "text", text: JSON.stringify(result, null, 2) }],
+			};
+		} catch (error) {
+			const msg = error instanceof Error ? error.message : "Unknown error.";
+			return {
+				content: [{ type: "text", text: `Error renaming canvas: ${msg}` }],
+				isError: true,
+			};
+		}
+	},
+);
+
+/**
+ * Tool: Update Canvas Name
+ */
+server.registerTool(
+	"update-canvas",
+	{
+		description: "Update the canvas workflow",
 		inputSchema: z.object({
 			canvasId: z.string().describe("The ID of the canvas to rename"),
 			newName: z.string().describe("The new name for the canvas"),

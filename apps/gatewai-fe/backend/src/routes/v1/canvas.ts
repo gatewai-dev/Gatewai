@@ -1,5 +1,9 @@
 import { type NodeUpdateInput, prisma } from "@gatewai/db";
-import type { NodeResult } from "@gatewai/types";
+import {
+	bulkUpdateSchema,
+	type NodeResult,
+	processSchema,
+} from "@gatewai/types";
 import { zValidator } from "@hono/zod-validator";
 import type { XYPosition } from "@xyflow/react";
 import { Hono } from "hono";
@@ -7,90 +11,6 @@ import { HTTPException } from "hono/http-exception";
 import z from "zod";
 import { GetCanvasEntities } from "../../data-ops/canvas.js";
 import { NodeWFProcessor } from "../../graph-engine/canvas-workflow-processor.js";
-
-const NodeTypes = [
-	"Text",
-	"TextMerger",
-	"Preview",
-	"File",
-	"Export",
-	"Resize",
-	"Paint",
-	"Blur",
-	"Compositor",
-	"Note",
-	"ImageGen",
-	"LLM",
-	"Crop",
-	"Modulate",
-	"Preview",
-	"VideoGen",
-	"VideoGenFirstLastFrame",
-	"VideoGenExtend",
-	"TextToSpeech",
-	"SpeechToText",
-	"VideoCompositor",
-] as const;
-
-const DataTypes = [
-	"Text",
-	"Number",
-	"Boolean",
-	"Image",
-	"Video",
-	"Audio",
-] as const;
-
-const handleSchema = z.object({
-	id: z.string().optional(),
-	type: z.enum(["Input", "Output"]),
-	dataTypes: z.array(z.enum(DataTypes)),
-	label: z.string(),
-	order: z.number().default(0),
-	required: z.boolean().default(false),
-	templateHandleId: z.string().optional().nullable(),
-	nodeId: z.string(),
-});
-
-const nodeSchema = z.object({
-	id: z.string().optional(),
-	name: z.string(),
-	type: z.enum(NodeTypes),
-	position: z.object({
-		x: z.number(),
-		y: z.number(),
-	}),
-	handles: z.array(handleSchema).optional(),
-	width: z.number().optional(),
-	height: z.number().optional().nullable(),
-	draggable: z.boolean().optional().default(true),
-	selectable: z.boolean().optional().default(true),
-	deletable: z.boolean().optional().default(true),
-	result: z.any().optional(),
-	config: z.any().optional(),
-	isDirty: z.boolean().optional().default(false),
-	zIndex: z.number().optional(),
-	templateId: z.string(),
-});
-
-const edgeSchema = z.object({
-	id: z.string().optional(),
-	source: z.string(),
-	target: z.string(),
-	sourceHandleId: z.string().optional(),
-	targetHandleId: z.string().optional(),
-});
-
-const processSchema = z.object({
-	node_ids: z.array(z.string()).optional(),
-});
-
-const bulkUpdateSchema = z.object({
-	name: z.string().min(1).max(20).optional(),
-	nodes: z.array(nodeSchema).optional(),
-	edges: z.array(edgeSchema).optional(),
-	handles: z.array(handleSchema).optional(),
-});
 
 const canvasRoutes = new Hono({
 	strict: false,
@@ -243,16 +163,6 @@ const canvasRoutes = new Hono({
 			txs.push(
 				prisma.node.deleteMany({
 					where: { id: { in: removedNodeIds } },
-				}),
-			);
-		}
-
-		// Canvas name update
-		if (validated.name) {
-			txs.push(
-				prisma.canvas.update({
-					where: { id },
-					data: { name: validated.name },
 				}),
 			);
 		}
