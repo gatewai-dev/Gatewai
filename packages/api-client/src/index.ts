@@ -53,6 +53,24 @@ export type GetNodeTemplatesResponse = InferResponseType<
 	NodeTemplatesRoute["$get"]
 >;
 
+// 4. Asset Types
+type AssetsRoute = typeof client.api.v1.assets;
+
+export type GetAssetsRequest = InferRequestType<AssetsRoute["$get"]>["query"];
+export type GetAssetsResponse = InferResponseType<AssetsRoute["$get"]>;
+export type GetAssetResponse = InferResponseType<AssetsRoute[":id"]["$get"]>;
+
+export type UploadAssetFromUrlRequest = InferRequestType<
+	AssetsRoute["from-url"]["$post"]
+>["json"];
+export type UploadAssetFromUrlResponse = InferResponseType<
+	AssetsRoute["from-url"]["$post"]
+>;
+
+export type DeleteAssetResponse = InferResponseType<
+	AssetsRoute[":id"]["$delete"]
+>;
+
 export interface APIClientConfig {
 	baseUrl: string;
 	timeoutMs?: number;
@@ -84,6 +102,8 @@ export class GatewaiApiClient {
 		return (await res.json()) as T;
 	}
 
+	// ==================== NODE TEMPLATES ====================
+
 	/**
 	 * Fetches all available node templates.
 	 */
@@ -91,6 +111,8 @@ export class GatewaiApiClient {
 		const res = await this.rpc.api.v1["node-templates"].$get();
 		return this.handleResponse(res);
 	}
+
+	// ==================== CANVAS METHODS ====================
 
 	/**
 	 * Lists all non-API canvases, ordered by updated date.
@@ -195,6 +217,8 @@ export class GatewaiApiClient {
 		return this.handleResponse(res);
 	}
 
+	// ==================== API RUN METHODS ====================
+
 	/**
 	 * Starts a new run (execution) on a canvas.
 	 */
@@ -248,5 +272,135 @@ export class GatewaiApiClient {
 			// Update status for the next loop (mainly for the handle ID)
 			status = nextStatus;
 		}
+	}
+
+	/**
+	 * Lists all assets with optional filtering and pagination.
+	 */
+	async listAssets(params: GetAssetsRequest): Promise<GetAssetsResponse> {
+		const res = await this.rpc.api.v1.assets.$get({
+			query: params,
+		});
+		return this.handleResponse(res);
+	}
+
+	/**
+	 * Fetches a specific asset by ID.
+	 */
+	async getAsset(id: string): Promise<GetAssetResponse> {
+		const res = await this.rpc.api.v1.assets[":id"].$get({
+			param: { id },
+		});
+		return this.handleResponse(res);
+	}
+
+	/**
+	 * Uploads an asset from base64 encoded data.
+	 */
+	async uploadAsset(params: {
+		filename: string;
+		base64Data: string;
+		mimeType?: string;
+	}): Promise<GetAssetResponse> {
+		const { filename, base64Data, mimeType } = params;
+
+		// Convert base64 to binary
+		const binaryString = atob(base64Data);
+		const bytes = new Uint8Array(binaryString.length);
+		for (let i = 0; i < binaryString.length; i++) {
+			bytes[i] = binaryString.charCodeAt(i);
+		}
+
+		// Create FormData
+		const formData = new FormData();
+		const blob = new Blob([bytes], {
+			type: mimeType || "application/octet-stream",
+		});
+		formData.append("file", blob, filename);
+
+		// Make request using fetch directly (FormData not supported in RPC client)
+		const response = await fetch(`${this.baseUrl}/api/v1/assets`, {
+			method: "POST",
+			body: formData,
+		});
+
+		return this.handleResponse(response);
+	}
+
+	/**
+	 * Uploads an asset by downloading from a public URL.
+	 */
+	async uploadAssetFromUrl(
+		payload: UploadAssetFromUrlRequest,
+	): Promise<UploadAssetFromUrlResponse> {
+		const res = await this.rpc.api.v1.assets["from-url"].$post({
+			json: payload,
+		});
+		return this.handleResponse(res);
+	}
+
+	/**
+	 * Uploads an asset directly to a specific node (Import Media node).
+	 */
+	async uploadAssetToNode(params: {
+		nodeId: string;
+		filename: string;
+		base64Data: string;
+		mimeType?: string;
+	}): Promise<GetAssetResponse> {
+		const { nodeId, filename, base64Data, mimeType } = params;
+
+		// Convert base64 to binary
+		const binaryString = atob(base64Data);
+		const bytes = new Uint8Array(binaryString.length);
+		for (let i = 0; i < binaryString.length; i++) {
+			bytes[i] = binaryString.charCodeAt(i);
+		}
+
+		// Create FormData
+		const formData = new FormData();
+		const blob = new Blob([bytes], {
+			type: mimeType || "application/octet-stream",
+		});
+		formData.append("file", blob, filename);
+
+		// Make request using fetch directly
+		const response = await fetch(
+			`${this.baseUrl}/api/v1/assets/node/${nodeId}`,
+			{
+				method: "POST",
+				body: formData,
+			},
+		);
+
+		return this.handleResponse(response);
+	}
+
+	/**
+	 * Deletes an asset permanently.
+	 */
+	async deleteAsset(id: string): Promise<DeleteAssetResponse> {
+		const res = await this.rpc.api.v1.assets[":id"].$delete({
+			param: { id },
+		});
+		return this.handleResponse(res);
+	}
+
+	/**
+	 * Generates a thumbnail URL for an asset.
+	 */
+	getAssetThumbnailUrl(
+		id: string,
+		width: number = 300,
+		height: number = 300,
+	): string {
+		return `${this.baseUrl}/api/v1/assets/thumbnail/${id}?w=${width}&h=${height}`;
+	}
+
+	/**
+	 * Gets the direct URL for an asset.
+	 */
+	getAssetUrl(id: string): string {
+		return `${this.baseUrl}/api/v1/assets/${id}`;
 	}
 }

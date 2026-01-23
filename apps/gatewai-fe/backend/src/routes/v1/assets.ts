@@ -28,12 +28,72 @@ const uploadSchema = z.object({
 	file: z.any(),
 });
 
+const uploadFromUrlSchema = z.object({
+	url: z.string().url("Must be a valid URL"),
+	filename: z.string().optional(),
+});
+
 const querySchema = z.object({
 	pageSize: z.coerce.number().int().positive().max(1000).default(1000),
 	pageIndex: z.coerce.number().int().nonnegative().default(0),
 	q: z.string().default(""),
 	type: z.enum(["image", "video", "audio"]).optional(),
 });
+
+/**
+ * Download file from URL and return buffer
+ */
+async function downloadFileFromUrl(url: string): Promise<{
+	buffer: Buffer;
+	filename: string;
+	contentType: string;
+}> {
+	const response = await fetch(url);
+
+	if (!response.ok) {
+		throw new Error(`Failed to download file: ${response.statusText}`);
+	}
+
+	const buffer = Buffer.from(await response.arrayBuffer());
+
+	// Try to extract filename from URL or Content-Disposition header
+	let filename = "downloaded-file";
+	const contentDisposition = response.headers.get("content-disposition");
+
+	if (contentDisposition) {
+		const filenameMatch = contentDisposition.match(
+			/filename[^;=\n]*=((['"]).*?\2|[^;\n]*)/,
+		);
+		if (filenameMatch?.[1]) {
+			filename = filenameMatch[1].replace(/['"]/g, "");
+		}
+	} else {
+		// Extract from URL
+		const urlPath = new URL(url).pathname;
+		const urlFilename = urlPath.split("/").pop();
+		if (urlFilename?.includes(".")) {
+			filename = urlFilename;
+		}
+	}
+
+	// Get content type from response or detect from buffer
+	let contentType =
+		response.headers.get("content-type") || "application/octet-stream";
+
+	// Verify content type by detecting from buffer
+	const fileTypeResult = await fileTypeFromBuffer(buffer);
+	if (fileTypeResult?.mime) {
+		contentType = fileTypeResult.mime;
+
+		// If filename doesn't have proper extension, add it
+		const hasExtension = filename.includes(".");
+		if (!hasExtension && fileTypeResult.ext) {
+			filename = `${filename}.${fileTypeResult.ext}`;
+		}
+	}
+
+	return { buffer, filename, contentType };
+}
 
 const assetsRouter = new Hono({
 	strict: false,
@@ -131,6 +191,73 @@ const assetsRouter = new Hono({
 		} catch (error) {
 			console.error(error);
 			return c.json({ error: "Upload failed" }, 500);
+		}
+	})
+	.post("/from-url", zValidator("json", uploadFromUrlSchema), async (c) => {
+		const { url, filename: customFilename } = c.req.valid("json");
+
+		try {
+			// Download file from URL
+			const {
+				buffer,
+				filename: downloadedFilename,
+				contentType,
+			} = await downloadFileFromUrl(url);
+
+			const fileSize = buffer.length;
+			const filename = customFilename || downloadedFilename;
+			const bucket = process.env.AWS_ASSETS_BUCKET ?? "default-bucket";
+			const key = `assets/${randomUUID()}-${filename}`;
+
+			let width: number | null = null;
+			let height: number | null = null;
+
+			// Extract image dimensions if it's an image
+			if (contentType.startsWith("image/")) {
+				try {
+					const metadata = await sharp(buffer).metadata();
+					width = metadata.width ?? null;
+					height = metadata.height ?? null;
+				} catch (error) {
+					assertIsError(error);
+					logger.error(`Failed to compute image metadata: ${error.message}`);
+				}
+			}
+
+			// Upload to storage
+			await uploadToGCS(buffer, key, contentType, bucket);
+
+			const expiresIn = 3600 * 24 * 6.9; // A bit less than a week
+			const signedUrl = await generateSignedUrl(key, bucket, expiresIn);
+			const signedUrlExp = new Date(Date.now() + expiresIn * 1000);
+
+			// Create asset record in database
+			const asset = await prisma.fileAsset.create({
+				data: {
+					name: filename,
+					bucket,
+					key,
+					isUploaded: true,
+					size: fileSize,
+					signedUrl,
+					signedUrlExp,
+					width,
+					height,
+					mimeType: contentType,
+				},
+			});
+
+			return c.json(asset);
+		} catch (error) {
+			assertIsError(error);
+			logger.error(`Upload from URL failed: ${error.message}`);
+			return c.json(
+				{
+					error: "Upload from URL failed",
+					details: error.message,
+				},
+				500,
+			);
 		}
 	})
 	.post("/node/:nodeId", zValidator("form", uploadSchema), async (c) => {

@@ -39,6 +39,8 @@ const server = new McpServer({
 	version: "0.0.1",
 });
 
+// ==================== CANVAS RESOURCES ====================
+
 /**
  * Resource: List all Canvas Workflows
  * URI: gatewai://canvases
@@ -131,6 +133,73 @@ server.registerResource(
 		}
 	},
 );
+
+// ==================== ASSET RESOURCES ====================
+
+/**
+ * Resource: List all Assets
+ * URI: gatewai://assets
+ */
+server.registerResource(
+	"asset-list",
+	"gatewai://assets",
+	{
+		description: "List all available file assets (images, videos, audio)",
+		mimeType: "application/json",
+	},
+	async (uri) => {
+		try {
+			const assets = await apiClient.getAssets();
+			return {
+				contents: [
+					{
+						uri: uri.href,
+						text: JSON.stringify(assets, null, 2),
+						mimeType: "application/json",
+					},
+				],
+			};
+		} catch (error) {
+			const msg = error instanceof Error ? error.message : "Unknown error.";
+			throw new Error(`Failed to fetch assets: ${msg}`);
+		}
+	},
+);
+
+/**
+ * Resource: Get Specific Asset Details
+ * URI: gatewai://assets/{id}
+ */
+server.registerResource(
+	"asset-detail",
+	new ResourceTemplate("gatewai://assets/{id}", { list: undefined }),
+	{
+		description:
+			"Get details of a specific asset including metadata, URL, and dimensions",
+		mimeType: "application/json",
+	},
+	async (uri, { id }) => {
+		try {
+			const assetId = id as string;
+			const asset = await apiClient.getAsset(assetId);
+
+			return {
+				contents: [
+					{
+						uri: uri.href,
+						text: JSON.stringify(asset, null, 2),
+						mimeType: "application/json",
+					},
+				],
+			};
+		} catch (error) {
+			const msg = error instanceof Error ? error.message : "Unknown error.";
+			throw new Error(`Failed to fetch asset ${id}: ${msg}`);
+		}
+	},
+);
+
+// ==================== CANVAS TOOLS ====================
 
 /**
  * Tool: Create a new empty canvas
@@ -380,6 +449,258 @@ server.registerTool(
 		}
 	},
 );
+
+// ==================== ASSET TOOLS ====================
+
+/**
+ * Tool: List Assets with Filters
+ */
+server.registerTool(
+	"list-assets",
+	{
+		description:
+			"List file assets with optional filtering by type and search query",
+		inputSchema: z.object({
+			pageSize: z
+				.number()
+				.int()
+				.positive()
+				.max(1000)
+				.optional()
+				.describe("Number of items per page (max 1000)"),
+			pageIndex: z
+				.number()
+				.int()
+				.nonnegative()
+				.optional()
+				.describe("Page index (0-based)"),
+			query: z.string().optional().describe("Search query for asset names"),
+			type: z
+				.enum(["image", "video", "audio"])
+				.optional()
+				.describe("Filter by asset type"),
+		}),
+	},
+	async ({ pageSize, pageIndex, query, type }) => {
+		try {
+			const result = await apiClient.listAssets({
+				pageSize,
+				pageIndex,
+				q: query,
+				type,
+			});
+			return {
+				content: [{ type: "text", text: JSON.stringify(result, null, 2) }],
+			};
+		} catch (error) {
+			const msg = error instanceof Error ? error.message : "Unknown error.";
+			return {
+				content: [{ type: "text", text: `Error listing assets: ${msg}` }],
+				isError: true,
+			};
+		}
+	},
+);
+
+/**
+ * Tool: Upload Asset from Base64
+ */
+server.registerTool(
+	"upload-asset",
+	{
+		description: "Upload a new file asset from base64 encoded data",
+		inputSchema: z.object({
+			filename: z.string().describe("Name of the file including extension"),
+			base64Data: z
+				.string()
+				.describe("Base64 encoded file content (without data URI prefix)"),
+			mimeType: z
+				.string()
+				.optional()
+				.describe("MIME type of the file (e.g., 'image/png', 'video/mp4')"),
+		}),
+	},
+	async ({ filename, base64Data, mimeType }) => {
+		try {
+			const result = await apiClient.uploadAsset({
+				filename,
+				base64Data,
+				mimeType,
+			});
+			return {
+				content: [{ type: "text", text: JSON.stringify(result, null, 2) }],
+			};
+		} catch (error) {
+			const msg = error instanceof Error ? error.message : "Unknown error.";
+			return {
+				content: [{ type: "text", text: `Error uploading asset: ${msg}` }],
+				isError: true,
+			};
+		}
+	},
+);
+
+/**
+ * Tool: Upload Asset from URL
+ */
+server.registerTool(
+	"upload-asset-from-url",
+	{
+		description:
+			"Upload a new file asset by downloading from a public URL on the internet",
+		inputSchema: z.object({
+			url: z.string().url().describe("Public URL of the file to download"),
+			filename: z
+				.string()
+				.optional()
+				.describe(
+					"Optional custom filename. If not provided, will be extracted from URL",
+				),
+		}),
+	},
+	async ({ url, filename }) => {
+		try {
+			const result = await apiClient.uploadAssetFromUrl({
+				url,
+				filename,
+			});
+			return {
+				content: [{ type: "text", text: JSON.stringify(result, null, 2) }],
+			};
+		} catch (error) {
+			const msg = error instanceof Error ? error.message : "Unknown error.";
+			return {
+				content: [
+					{ type: "text", text: `Error uploading asset from URL: ${msg}` },
+				],
+				isError: true,
+			};
+		}
+	},
+);
+
+/**
+ * Tool: Upload Asset to Node
+ */
+server.registerTool(
+	"upload-asset-to-node",
+	{
+		description:
+			"Upload a file asset directly to a specific node (Import Media node)",
+		inputSchema: z.object({
+			nodeId: z.string().describe("The ID of the node to upload the asset to"),
+			filename: z.string().describe("Name of the file including extension"),
+			base64Data: z
+				.string()
+				.describe("Base64 encoded file content (without data URI prefix)"),
+			mimeType: z
+				.string()
+				.optional()
+				.describe("MIME type of the file (e.g., 'image/png', 'video/mp4')"),
+		}),
+	},
+	async ({ nodeId, filename, base64Data, mimeType }) => {
+		try {
+			const result = await apiClient.uploadAssetToNode({
+				nodeId,
+				filename,
+				base64Data,
+				mimeType,
+			});
+			return {
+				content: [{ type: "text", text: JSON.stringify(result, null, 2) }],
+			};
+		} catch (error) {
+			const msg = error instanceof Error ? error.message : "Unknown error.";
+			return {
+				content: [
+					{ type: "text", text: `Error uploading asset to node: ${msg}` },
+				],
+				isError: true,
+			};
+		}
+	},
+);
+
+/**
+ * Tool: Delete Asset
+ */
+server.registerTool(
+	"delete-asset",
+	{
+		description: "Delete a file asset permanently",
+		inputSchema: z.object({
+			assetId: z.string().describe("The ID of the asset to delete"),
+		}),
+	},
+	async ({ assetId }) => {
+		try {
+			const result = await apiClient.deleteAsset(assetId);
+			return {
+				content: [{ type: "text", text: JSON.stringify(result, null, 2) }],
+			};
+		} catch (error) {
+			const msg = error instanceof Error ? error.message : "Unknown error.";
+			return {
+				content: [{ type: "text", text: `Error deleting asset: ${msg}` }],
+				isError: true,
+			};
+		}
+	},
+);
+
+/**
+ * Tool: Get Asset Thumbnail
+ */
+server.registerTool(
+	"get-asset-thumbnail",
+	{
+		description:
+			"Get a thumbnail URL for an image or video asset with custom dimensions",
+		inputSchema: z.object({
+			assetId: z.string().describe("The ID of the asset"),
+			width: z
+				.number()
+				.int()
+				.positive()
+				.optional()
+				.describe("Thumbnail width in pixels (default: 300)"),
+			height: z
+				.number()
+				.int()
+				.positive()
+				.optional()
+				.describe("Thumbnail height in pixels (default: 300)"),
+		}),
+	},
+	async ({ assetId, width, height }) => {
+		try {
+			const thumbnailUrl = apiClient.getAssetThumbnailUrl(
+				assetId,
+				width,
+				height,
+			);
+			return {
+				content: [
+					{
+						type: "text",
+						text: JSON.stringify({ assetId, thumbnailUrl }, null, 2),
+					},
+				],
+			};
+		} catch (error) {
+			const msg = error instanceof Error ? error.message : "Unknown error.";
+			return {
+				content: [
+					{ type: "text", text: `Error generating thumbnail URL: ${msg}` },
+				],
+				isError: true,
+			};
+		}
+	},
+);
+
+// ==================== HTTP SERVER ====================
 
 const app = new Hono();
 const transport = new StreamableHTTPTransport();
