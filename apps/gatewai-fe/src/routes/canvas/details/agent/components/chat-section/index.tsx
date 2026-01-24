@@ -164,7 +164,7 @@ export function AgentChatSection({ onClose }: { onClose: () => void }) {
 		<div className="flex flex-col h-full bg-background/50 relative">
 			{/* Header */}
 			<div className="sticky top-0 z-10 bg-transparent p-3 flex items-center justify-between">
-				<h2 className="text-sm font-medium text-foreground pl-2">Agent</h2>
+				<h2 className="text-sm font-medium text-foreground pl-2">Waigate</h2>
 				<div className="flex items-center gap-1">
 					<Button
 						variant="ghost"
@@ -192,14 +192,6 @@ export function AgentChatSection({ onClose }: { onClose: () => void }) {
 							/>
 						</DialogContent>
 					</Dialog>
-
-					<Button
-						variant="ghost"
-						size="icon"
-						className="h-7 w-7 rounded-md hover:bg-accent text-muted-foreground transition-colors"
-					>
-						<MoreHorizontal className="w-4 h-4" />
-					</Button>
 					<Button
 						variant="ghost"
 						size="icon"
