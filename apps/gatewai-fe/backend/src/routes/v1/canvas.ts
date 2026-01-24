@@ -375,12 +375,13 @@ const canvasRoutes = new Hono<{ Variables: AuthHonoTypes }>({
 			"json",
 			z.object({
 				message: z.string(),
+				model: z.string(),
 			}),
 		),
 		async (c) => {
 			const canvasId = c.req.param("id");
 			const sessionId = c.req.param("sessionId");
-			const { message } = c.req.valid("json");
+			const { message, model } = c.req.valid("json");
 
 			// 1. Ensure Session exists
 			await prisma.agentSession.upsert({
@@ -413,6 +414,7 @@ const canvasRoutes = new Hono<{ Variables: AuthHonoTypes }>({
 						canvasId,
 						sessionId,
 						userMessage: message,
+						model,
 					});
 
 					for await (const delta of runner) {
