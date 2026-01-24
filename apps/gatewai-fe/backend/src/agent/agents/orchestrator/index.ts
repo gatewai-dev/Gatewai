@@ -185,7 +185,7 @@ Base Image → Paint (mask) → ImageGen (style A) → Preview
 
 **Pattern 3: Iterative Refinement**
 
-Text → LLM (draft) → Preview → LLM (critique) → LLM (final) → TextToSpeech → Export
+Text → LLM (draft) → LLM (critique) → LLM (final) → TextToSpeech → Export
 
 
 **Pattern 4: Multi-Modal Composition**

@@ -773,6 +773,9 @@ const CanvasProvider = ({
 					return;
 				}
 
+				const state = store.getState() as RootState;
+				const currentNodeEntities = Object.values(state.nodes.entities);
+
 				const patchData = patch.patch as unknown as BulkUpdatePayload;
 
 				const patchNodes: NodeEntityType[] = (patchData.nodes || []).map(
@@ -788,11 +791,13 @@ const CanvasProvider = ({
 
 				const hydratedNodes = patchNodes.map((n) => {
 					const template = nodeTemplates?.find((t) => t.id === n.templateId);
+					const prevNode = currentNodeEntities.find((f) => f.id === n.id);
 					return {
 						...n,
 						template: template || (n as any).template,
 						draggable: true,
 						selectable: true,
+						result: n.result ?? prevNode?.result,
 						deletable: true,
 					};
 				});
@@ -820,7 +825,6 @@ const CanvasProvider = ({
 				// Set reviewing state BEFORE updating Redux to prevent save triggers
 				isReviewingRef.current = true;
 				previewPatchIdRef.current = patchId;
-
 				dispatch(setAllNodeEntities(hydratedNodes as NodeEntityType[]));
 				dispatch(setAllEdgeEntities(patchData.edges as EdgeEntityType[]));
 				dispatch(setAllHandleEntities(patchData.handles as HandleEntityType[]));

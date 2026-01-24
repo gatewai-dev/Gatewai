@@ -38,7 +38,6 @@ export function ProcessorProvider({ children }: { children: React.ReactNode }) {
 
 	// Sync Redux store to processor
 	useEffect(() => {
-		console.log({ nodes, edges });
 		processor.updateGraph({
 			nodes: new Map(
 				Object.entries(nodes).filter(
