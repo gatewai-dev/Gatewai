@@ -6,7 +6,6 @@ import {
 	type TaskBatch,
 	TaskStatus,
 } from "@gatewai/db";
-import type { User } from "better-auth";
 import { type CanvasCtxData, GetCanvasEntities } from "../data-ops/canvas.js";
 import { workflowQueue } from "./queue/workflow.queue.js";
 
