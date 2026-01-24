@@ -2,6 +2,7 @@ import { zodResolver } from "@hookform/resolvers/zod";
 import { AlertCircle, Loader2, UserPlus } from "lucide-react";
 import { useState } from "react";
 import { useForm } from "react-hook-form";
+import { useNavigate } from "react-router";
 import { z } from "zod";
 import { Alert, AlertDescription } from "@/components/ui/alert";
 import { Button } from "@/components/ui/button";
@@ -23,7 +24,6 @@ import {
 import { GatewaiLogo } from "@/components/ui/gatewai-logo";
 import { Input } from "@/components/ui/input";
 import { authClient } from "@/lib/auth-client";
-import { useNavigate } from "react-router";
 
 const formSchema = z
 	.object({

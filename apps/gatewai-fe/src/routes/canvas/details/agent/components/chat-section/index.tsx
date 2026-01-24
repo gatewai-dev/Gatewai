@@ -87,8 +87,12 @@ function InputArea({
 								<SelectValue placeholder="Model" />
 							</SelectTrigger>
 							<SelectContent>
-								<SelectItem value="gemini-3-pro-preview">Gemini 3 Pro</SelectItem>
-								<SelectItem value="gemini-3-flash-preview">Gemini 3 Flash</SelectItem>
+								<SelectItem value="gemini-3-pro-preview">
+									Gemini 3 Pro
+								</SelectItem>
+								<SelectItem value="gemini-3-flash-preview">
+									Gemini 3 Flash
+								</SelectItem>
 							</SelectContent>
 						</Select>
 					</div>

@@ -5,8 +5,8 @@ function SigninPage() {
 	const nav = useNavigate();
 
 	const onSuccess = () => {
-		nav('/canvas')
-	}
+		nav("/canvas");
+	};
 	return <SignInForm onSuccess={onSuccess} />;
 }
 

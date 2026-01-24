@@ -140,33 +140,10 @@ export class NodeWFProcessor {
 			queue.push(...ups);
 		}
 
-		// 4. Identify terminal nodes to filter out unnecessary upstream terminals
-		const nodeTypesInCanvas = Array.from(
-			new Set(data.nodes.map((n) => n.type)),
-		);
-		const templates = await this.prisma.nodeTemplate.findMany({
-			where: { type: { in: nodeTypesInCanvas } },
-			select: { type: true, isTerminalNode: true },
-		});
-		const terminalTypes = new Set(
-			templates.filter((t) => t.isTerminalNode).map((t) => t.type),
-		);
-
-		const filteredNecessary = new Set<Node["id"]>();
-		for (const nodeId of necessary) {
-			const node = data.nodes.find((n) => n.id === nodeId);
-			if (!node) continue;
-
-			const isExplicitlySelected = nodeIdsToRun.includes(nodeId);
-			const isTerminal = terminalTypes.has(node.type);
-
-			// Only keep if explicitly selected OR NOT a terminal node (avoid "ghost" tasks)
-			if (isExplicitlySelected || !isTerminal) {
-				filteredNecessary.add(nodeId);
-			}
-		}
-
-		const necessaryIds = Array.from(filteredNecessary);
+		// 4. (Step removed) - We do not filter out terminal nodes here.
+		// If a node is in the 'necessary' set, it is a dependency of the selection
+		// and must run, regardless of its type (Terminal/Transient/etc).
+		const necessaryIds = Array.from(necessary);
 
 		// 5. Build execution plan (Topological Sort)
 		const { depGraph, revDepGraph } = this.buildDepGraphs(necessaryIds, data);
@@ -176,10 +153,8 @@ export class NodeWFProcessor {
 		}
 
 		// 6. Validate
-		const necessaryNodes = data.nodes.filter((n) =>
-			filteredNecessary.has(n.id),
-		);
-		if (necessaryNodes.length !== filteredNecessary.size) {
+		const necessaryNodes = data.nodes.filter((n) => necessary.has(n.id));
+		if (necessaryNodes.length !== necessary.size) {
 			throw new Error("Some necessary nodes not found in canvas.");
 		}
 

@@ -419,12 +419,16 @@ Remember: Be thorough, be precise, be excellent.
 `;
 	};
 
-	function assertIsValidName(modelName: string): asserts modelName is "gemini-3-pro-preview" | "gemini-3-flash-preview" {
-	   const validModels = ["gemini-3-pro-preview", "gemini-3-flash-preview"];
-	   
-	   if (!validModels.includes(modelName)) {
-	       throw new Error(`Invalid model name: ${modelName}. Expected one of ${validModels.join(", ")}`);
-	   }
+	function assertIsValidName(
+		modelName: string,
+	): asserts modelName is "gemini-3-pro-preview" | "gemini-3-flash-preview" {
+		const validModels = ["gemini-3-pro-preview", "gemini-3-flash-preview"];
+
+		if (!validModels.includes(modelName)) {
+			throw new Error(
+				`Invalid model name: ${modelName}. Expected one of ${validModels.join(", ")}`,
+			);
+		}
 	}
 	assertIsValidName(modelName);
 

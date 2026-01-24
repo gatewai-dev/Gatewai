@@ -1,5 +1,6 @@
 import { PanelLeftClose, PanelLeftOpen } from "lucide-react";
 import { FaDiscord, FaGithub } from "react-icons/fa";
+import { Link } from "react-router";
 import { Button } from "@/components/ui/button";
 import { GatewaiIcon } from "@/components/ui/gatewai-icon";
 import {
@@ -37,7 +38,7 @@ function NodePaletteContent({ templates }: { templates: NodeTemplateListRPC }) {
 		<aside
 			className={cn(
 				"relative z-40 flex h-[calc(100vh-1rem)] my-2 ml-2 flex-col overflow-hidden transition-all duration-500 ease-[cubic-bezier(0.32,0.72,0,1)]",
-				"rounded-3xl border border-white/10 bg-background/60 shadow-2xl backdrop-blur-xl", // Glass effect
+				"rounded-3xl border border-white/10 bg-background/60 shadow-2xl backdrop-blur-xl",
 				isCollapsed ? "w-[60px]" : "w-72",
 			)}
 		>
@@ -48,7 +49,9 @@ function NodePaletteContent({ templates }: { templates: NodeTemplateListRPC }) {
 						isCollapsed ? "w-0 opacity-0" : "w-auto opacity-100",
 					)}
 				>
-					<GatewaiIcon className="size-7 shrink-0 text-primary" />
+					<Link title="Back to workspace" to="/canvas">
+						<GatewaiIcon className="size-7 shrink-0 text-primary" />
+					</Link>
 					<CanvasName />
 				</div>
 

@@ -30,12 +30,6 @@ services:
       - redis
     env_file:
       - .env
-    environment:
-      - NODE_ENV=production
-      - PORT=8081
-      - REDIS_HOST=redis
-      - REDIS_PORT=6379
-      - DATABASE_URL=postgresql://postgres:postgres@postgres:5432/gatewai
 
   nginx:
     image: nginx:alpine

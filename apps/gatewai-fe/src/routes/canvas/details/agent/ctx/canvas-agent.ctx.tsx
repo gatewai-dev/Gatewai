@@ -104,17 +104,17 @@ const CanvasAgentProvider = ({
 	const [isLoading, setIsLoading] = useState(false);
 	const [pendingPatchId, setPendingPatchId] = useState<string | null>(null);
 	const [selectedModel, setSelectedModel] = useState<string>(() => {
-    // Check if we're in a browser environment
-    if (typeof window !== "undefined") {
-        const saved = localStorage.getItem(SELECTED_MODEL_STORAGE_KEY);
-        return saved || "gemini-3-flash-preview";
-    }
-    return "gemini-3-flash-preview";
-});
+		// Check if we're in a browser environment
+		if (typeof window !== "undefined") {
+			const saved = localStorage.getItem(SELECTED_MODEL_STORAGE_KEY);
+			return saved || "gemini-3-flash-preview";
+		}
+		return "gemini-3-flash-preview";
+	});
 
-useEffect(() => {
-    localStorage.setItem(SELECTED_MODEL_STORAGE_KEY, selectedModel);
-}, [selectedModel]);
+	useEffect(() => {
+		localStorage.setItem(SELECTED_MODEL_STORAGE_KEY, selectedModel);
+	}, [selectedModel]);
 	const abortControllerRef = useRef<AbortController | null>(null);
 
 	const { data: agentSessionsList, isLoading: isLoadingSessions } =
@@ -175,8 +175,7 @@ useEffect(() => {
 
 			const historyMessages = (data.events || [])
 				.filter(
-					(e) =>
-						e.eventType === "message" || e.eventType === "patch_action",
+					(e) => e.eventType === "message" || e.eventType === "patch_action",
 				)
 				.map((e: any) => ({
 					id: e.id,
