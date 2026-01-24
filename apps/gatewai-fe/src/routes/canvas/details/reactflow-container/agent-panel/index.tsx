@@ -8,10 +8,7 @@ function AgentPanel() {
 		return null;
 	}
 	return (
-		<Panel
-			className="right-0 ml-0! bottom-0 top-0 w-[400px]"
-			position="top-right"
-		>
+		<Panel className="h-full" position="top-right">
 			<CanvasAgentLayout canvasId={canvas.id} />
 		</Panel>
 	);

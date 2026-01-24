@@ -11,16 +11,7 @@ CREATE TYPE "TaskStatus" AS ENUM ('QUEUED', 'EXECUTING', 'FAILED', 'COMPLETED');
 CREATE TYPE "HandleType" AS ENUM ('Input', 'Output');
 
 -- CreateEnum
-CREATE TYPE "EventRole" AS ENUM ('USER', 'ASSISTANT', 'SYSTEM', 'TOOL');
-
--- CreateEnum
-CREATE TYPE "EventStatus" AS ENUM ('PENDING', 'IN_PROGRESS', 'COMPLETED', 'FAILED', 'CANCELLED');
-
--- CreateEnum
-CREATE TYPE "SessionStatus" AS ENUM ('ACTIVE', 'COMPLETED', 'FAILED', 'EXPIRED');
-
--- CreateEnum
-CREATE TYPE "PatchStatus" AS ENUM ('PENDING', 'ACCEPTED', 'REJECTED');
+CREATE TYPE "MessageRole" AS ENUM ('USER', 'MODEL', 'SYSTEM', 'TOOL');
 
 -- CreateTable
 CREATE TABLE "node" (
@@ -123,7 +114,6 @@ CREATE TABLE "canvas" (
     "createdAt" TIMESTAMP(3) NOT NULL DEFAULT CURRENT_TIMESTAMP,
     "updatedAt" TIMESTAMP(3) NOT NULL,
     "isAPICanvas" BOOLEAN DEFAULT false,
-    "version" INTEGER NOT NULL DEFAULT 0,
     "originalCanvasId" TEXT,
 
     CONSTRAINT "canvas_pkey" PRIMARY KEY ("id")
@@ -183,53 +173,25 @@ CREATE TABLE "fileAsset" (
 );
 
 -- CreateTable
-CREATE TABLE "agent_session" (
+CREATE TABLE "adk_session_state" (
     "id" TEXT NOT NULL,
     "canvasId" TEXT NOT NULL,
-    "threadId" TEXT,
-    "assistantId" TEXT,
-    "model" TEXT DEFAULT 'gemini-3.0-flash-preview',
-    "status" "SessionStatus" NOT NULL DEFAULT 'ACTIVE',
     "metadata" JSONB,
     "createdAt" TIMESTAMP(3) NOT NULL DEFAULT CURRENT_TIMESTAMP,
     "updatedAt" TIMESTAMP(3) NOT NULL,
 
-    CONSTRAINT "agent_session_pkey" PRIMARY KEY ("id")
+    CONSTRAINT "adk_session_state_pkey" PRIMARY KEY ("id")
 );
 
 -- CreateTable
-CREATE TABLE "event" (
+CREATE TABLE "message" (
     "id" TEXT NOT NULL,
-    "agentSessionId" TEXT NOT NULL,
-    "eventType" TEXT NOT NULL,
-    "role" "EventRole",
+    "threadId" TEXT NOT NULL,
+    "role" "MessageRole" NOT NULL,
     "content" JSONB NOT NULL,
-    "messageId" TEXT,
-    "runId" TEXT,
-    "stepId" TEXT,
-    "toolCallId" TEXT,
-    "toolName" TEXT,
-    "promptTokens" INTEGER,
-    "completionTokens" INTEGER,
-    "totalTokens" INTEGER,
-    "metadata" JSONB,
-    "status" "EventStatus" DEFAULT 'COMPLETED',
     "createdAt" TIMESTAMP(3) NOT NULL DEFAULT CURRENT_TIMESTAMP,
 
-    CONSTRAINT "event_pkey" PRIMARY KEY ("id")
-);
-
--- CreateTable
-CREATE TABLE "canvas_patch" (
-    "id" TEXT NOT NULL,
-    "canvasId" TEXT NOT NULL,
-    "patch" JSONB NOT NULL,
-    "status" "PatchStatus" NOT NULL DEFAULT 'PENDING',
-    "agentSessionId" TEXT,
-    "createdAt" TIMESTAMP(3) NOT NULL DEFAULT CURRENT_TIMESTAMP,
-    "updatedAt" TIMESTAMP(3) NOT NULL,
-
-    CONSTRAINT "canvas_patch_pkey" PRIMARY KEY ("id")
+    CONSTRAINT "message_pkey" PRIMARY KEY ("id")
 );
 
 -- CreateIndex
@@ -237,27 +199,6 @@ CREATE UNIQUE INDEX "nodeTemplate_type_key" ON "nodeTemplate"("type");
 
 -- CreateIndex
 CREATE UNIQUE INDEX "edge_sourceHandleId_targetHandleId_key" ON "edge"("sourceHandleId", "targetHandleId");
-
--- CreateIndex
-CREATE UNIQUE INDEX "agent_session_threadId_key" ON "agent_session"("threadId");
-
--- CreateIndex
-CREATE INDEX "agent_session_canvasId_idx" ON "agent_session"("canvasId");
-
--- CreateIndex
-CREATE INDEX "agent_session_threadId_idx" ON "agent_session"("threadId");
-
--- CreateIndex
-CREATE INDEX "event_agentSessionId_createdAt_idx" ON "event"("agentSessionId", "createdAt");
-
--- CreateIndex
-CREATE INDEX "event_messageId_idx" ON "event"("messageId");
-
--- CreateIndex
-CREATE INDEX "event_runId_idx" ON "event"("runId");
-
--- CreateIndex
-CREATE INDEX "event_eventType_idx" ON "event"("eventType");
 
 -- AddForeignKey
 ALTER TABLE "node" ADD CONSTRAINT "node_canvasId_fkey" FOREIGN KEY ("canvasId") REFERENCES "canvas"("id") ON DELETE CASCADE ON UPDATE CASCADE;
@@ -302,13 +243,7 @@ ALTER TABLE "task" ADD CONSTRAINT "task_nodeId_fkey" FOREIGN KEY ("nodeId") REFE
 ALTER TABLE "task" ADD CONSTRAINT "task_batchId_fkey" FOREIGN KEY ("batchId") REFERENCES "taskBatch"("id") ON DELETE CASCADE ON UPDATE CASCADE;
 
 -- AddForeignKey
-ALTER TABLE "agent_session" ADD CONSTRAINT "agent_session_canvasId_fkey" FOREIGN KEY ("canvasId") REFERENCES "canvas"("id") ON DELETE CASCADE ON UPDATE CASCADE;
+ALTER TABLE "adk_session_state" ADD CONSTRAINT "adk_session_state_canvasId_fkey" FOREIGN KEY ("canvasId") REFERENCES "canvas"("id") ON DELETE CASCADE ON UPDATE CASCADE;
 
 -- AddForeignKey
-ALTER TABLE "event" ADD CONSTRAINT "event_agentSessionId_fkey" FOREIGN KEY ("agentSessionId") REFERENCES "agent_session"("id") ON DELETE CASCADE ON UPDATE CASCADE;
-
--- AddForeignKey
-ALTER TABLE "canvas_patch" ADD CONSTRAINT "canvas_patch_canvasId_fkey" FOREIGN KEY ("canvasId") REFERENCES "canvas"("id") ON DELETE CASCADE ON UPDATE CASCADE;
-
--- AddForeignKey
-ALTER TABLE "canvas_patch" ADD CONSTRAINT "canvas_patch_agentSessionId_fkey" FOREIGN KEY ("agentSessionId") REFERENCES "agent_session"("id") ON DELETE SET NULL ON UPDATE CASCADE;
+ALTER TABLE "message" ADD CONSTRAINT "message_threadId_fkey" FOREIGN KEY ("threadId") REFERENCES "adk_session_state"("id") ON DELETE CASCADE ON UPDATE CASCADE;

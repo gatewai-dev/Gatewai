@@ -5,13 +5,7 @@ import { ScrollArea } from "@/components/ui/scroll-area";
 import { cn } from "@/lib/utils";
 import { useCanvasAgent } from "../../ctx/canvas-agent.ctx";
 
-export function AgentSessionList({
-	className,
-	onItemClick,
-}: {
-	className?: string;
-	onItemClick?: () => void;
-}) {
+export function AgentSessionList({ className }: { className?: string }) {
 	const {
 		agentSessionsList,
 		activeSessionId,
@@ -32,10 +26,7 @@ export function AgentSessionList({
 			<div className="p-3 border-b border-border/50 flex items-center justify-between">
 				<h2 className="text-xs font-semibold text-foreground">Chats</h2>
 				<Button
-					onClick={() => {
-						createNewSession();
-						onItemClick?.();
-					}}
+					onClick={createNewSession}
 					variant="ghost"
 					size="icon"
 					className="h-6 w-6 rounded-md hover:bg-accent text-muted-foreground transition-colors"
@@ -58,10 +49,7 @@ export function AgentSessionList({
 						<Button
 							key={session.id}
 							variant="ghost"
-							onClick={() => {
-								setActiveSessionId(session.id);
-								onItemClick?.();
-							}}
+							onClick={() => setActiveSessionId(session.id)}
 							className={cn(
 								"w-full justify-start text-left px-2 py-2 h-auto rounded-md flex items-start gap-2 transition-all duration-200 group",
 								activeSessionId === session.id
