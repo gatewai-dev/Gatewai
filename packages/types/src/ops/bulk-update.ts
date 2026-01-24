@@ -138,14 +138,15 @@ export const bulkUpdateSchema = z
 					return handle?.type === "Input";
 				});
 
-				const configKeys = Object.keys(node.config);
+				const layerUpdates = node.config.layerUpdates ?? {};
+				const configKeys = Object.keys(layerUpdates);
 
-				// Validate that all config keys are valid input handle IDs
+				// Validate that all layerUpdates keys are valid input handle IDs
 				configKeys.forEach((key) => {
 					if (!inputHandleIds.includes(key)) {
 						ctx.addIssue({
 							code: "custom",
-							path: ["nodes", nodeIndex, "config", key],
+							path: ["nodes", nodeIndex, "config", "layerUpdates", key],
 							message: `Config key "${key}" must be a valid input handle ID for ${node.type} node.`,
 						});
 					}
@@ -153,17 +154,17 @@ export const bulkUpdateSchema = z
 
 				// Validate layer configurations
 				configKeys.forEach((key) => {
-					const layerConfig = node.config![key];
+					const layerConfig = layerUpdates[key];
 					if (typeof layerConfig !== "object" || layerConfig === null) {
 						ctx.addIssue({
 							code: "custom",
-							path: ["nodes", nodeIndex, "config", key],
+							path: ["nodes", nodeIndex, "config", "layerUpdates", key],
 							message: `Layer configuration for handle "${key}" must be an object.`,
 						});
 						return;
 					}
 
-					// Validate specific properties
+					// Validate specific properties (unchanged)
 					const config = layerConfig as Record<string, unknown>;
 
 					if ("opacity" in config) {
@@ -171,7 +172,14 @@ export const bulkUpdateSchema = z
 						if (typeof opacity !== "number" || opacity < 0 || opacity > 1) {
 							ctx.addIssue({
 								code: "custom",
-								path: ["nodes", nodeIndex, "config", key, "opacity"],
+								path: [
+									"nodes",
+									nodeIndex,
+									"config",
+									"layerUpdates",
+									key,
+									"opacity",
+								],
 								message: "Opacity must be a number between 0 and 1.",
 							});
 						}

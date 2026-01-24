@@ -1,5 +1,4 @@
 import assert from "node:assert";
-import { randomUUID } from "node:crypto";
 import { type FileAssetWhereInput, prisma } from "@gatewai/db";
 import { zValidator } from "@hono/zod-validator";
 import { fileTypeFromBuffer } from "file-type";
@@ -13,7 +12,7 @@ import {
 	generateImageThumbnail,
 	generateVideoThumbnail,
 } from "../../utils/media.js";
-import { assertIsError } from "../../utils/misc.js";
+import { assertIsError, generateId } from "../../utils/misc.js";
 import {
 	deleteFromGCS,
 	fileExistsInGCS,
@@ -145,7 +144,7 @@ const assetsRouter = new Hono({
 		const fileSize = buffer.length;
 		const filename = file.name;
 		const bucket = process.env.AWS_ASSETS_BUCKET ?? "default-bucket";
-		const key = `assets/${randomUUID()}-${filename}`;
+		const key = `assets/${generateId()}-${filename}`;
 
 		// Detect MIME type from buffer using file-type
 		const fileTypeResult = await fileTypeFromBuffer(buffer);
@@ -207,7 +206,7 @@ const assetsRouter = new Hono({
 			const fileSize = buffer.length;
 			const filename = customFilename || downloadedFilename;
 			const bucket = process.env.AWS_ASSETS_BUCKET ?? "default-bucket";
-			const key = `assets/${randomUUID()}-${filename}`;
+			const key = `assets/${generateId()}-${filename}`;
 
 			let width: number | null = null;
 			let height: number | null = null;

@@ -51,9 +51,11 @@ const VideoCompositorView = memo(() => {
 		}
 		closeAndFocusOnNode();
 	};
+
+	console.log({ node, isProcessed });
 	return (
 		<div className="inset-0 h-screen w-screen">
-			{node && isProcessed && (
+			{node && (
 				<VideoDesignerEditor
 					onClose={() => closeAndFocusOnNode()}
 					onSave={onSave}

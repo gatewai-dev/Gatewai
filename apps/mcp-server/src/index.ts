@@ -147,7 +147,7 @@ server.registerResource(
 	},
 	async (uri) => {
 		try {
-			const assets = await apiClient.getAssets();
+			const assets = await apiClient.listAssets({});
 			return {
 				contents: [
 					{

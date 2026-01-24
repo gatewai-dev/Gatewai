@@ -1,7 +1,7 @@
-import { randomUUID } from "node:crypto";
 import type { NodeUpdateInput } from "@gatewai/db";
 import { prisma } from "@gatewai/db";
 import type { BulkUpdatePayload, NodeResult } from "@gatewai/types";
+import { generateId } from "../utils/misc.js";
 
 export async function applyCanvasUpdate(
 	canvasId: string,
@@ -65,7 +65,7 @@ export async function applyCanvasUpdate(
 	for (const n of validated.nodes ?? []) {
 		const clientId = n.id;
 		const shouldOverride = clientId ? clientId.startsWith("temp-") : true;
-		const serverId = shouldOverride ? randomUUID() : (clientId as string);
+		const serverId = shouldOverride ? generateId() : (clientId as string);
 
 		if (shouldOverride && clientId) {
 			idMap.nodes.set(clientId, serverId);
@@ -109,7 +109,7 @@ export async function applyCanvasUpdate(
 	for (const h of validated.handles ?? []) {
 		const clientId = h.id;
 		const shouldOverride = clientId ? clientId.startsWith("temp-") : true;
-		const serverId = shouldOverride ? randomUUID() : (clientId as string);
+		const serverId = shouldOverride ? generateId() : (clientId as string);
 
 		if (shouldOverride && clientId) {
 			idMap.handles.set(clientId, serverId);
@@ -175,7 +175,7 @@ export async function applyCanvasUpdate(
 
 		const clientId = e.id;
 		const shouldOverride = clientId ? clientId.startsWith("temp-") : true;
-		const serverId = shouldOverride ? randomUUID() : (clientId as string);
+		const serverId = shouldOverride ? generateId() : (clientId as string);
 
 		if (shouldOverride && clientId) {
 			idMap.edges.set(clientId, serverId);

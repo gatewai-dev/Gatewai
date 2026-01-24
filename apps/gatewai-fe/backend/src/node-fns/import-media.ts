@@ -1,10 +1,10 @@
-import { randomUUID } from "node:crypto";
 import { type DataType, prisma } from "@gatewai/db";
 import type { FileResult } from "@gatewai/types";
 import { fileTypeFromBuffer } from "file-type";
 import sharp from "sharp";
 import { ENV_CONFIG } from "../config.js";
 import { getMediaDuration } from "../utils/media.js";
+import { generateId } from "../utils/misc.js";
 import { generateSignedUrl, uploadToGCS } from "../utils/storage.js";
 
 interface UploadOptions {
@@ -72,7 +72,7 @@ export async function uploadToImportNode({
 
 	// 4. Upload to Storage
 	const bucket = ENV_CONFIG.GCS_ASSETS_BUCKET ?? "default-bucket";
-	const key = `assets/${randomUUID()}-${filename}`;
+	const key = `assets/${generateId()}-${filename}`;
 
 	await uploadToGCS(buffer, key, contentType, bucket);
 

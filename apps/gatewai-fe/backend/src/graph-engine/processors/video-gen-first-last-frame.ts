@@ -1,5 +1,4 @@
 import assert from "node:assert";
-import { randomUUID } from "node:crypto";
 import { existsSync, mkdirSync } from "node:fs";
 import { readFile } from "node:fs/promises";
 import path from "node:path";
@@ -14,6 +13,7 @@ import {
 import { ENV_CONFIG } from "../../config.js";
 import { genAI } from "../../genai.js";
 import { logger } from "../../logger.js";
+import { generateId } from "../../utils/misc.js";
 import { generateSignedUrl, uploadToGCS } from "../../utils/storage.js";
 import {
 	getFileDataMimeType,
@@ -124,7 +124,7 @@ const videoGenFirstLastFrameProcessor: NodeProcessor = async ({
 		});
 
 		const fileBuffer = await readFile(filePath);
-		const randId = randomUUID();
+		const randId = generateId();
 		const fileName = `videogen_interp_${randId}.${extension}`;
 		const key = `assets/${fileName}`;
 		const contentType = "video/mp4";

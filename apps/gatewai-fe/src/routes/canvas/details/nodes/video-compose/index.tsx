@@ -191,6 +191,9 @@ const VideoCompositorNodeComponent = memo(
 				setIsDownloading(false);
 			}
 		};
+
+		const hasInputs = previewState && previewState.layers.length > 0;
+
 		return (
 			<BaseNode
 				selected={props.selected}
@@ -204,10 +207,10 @@ const VideoCompositorNodeComponent = memo(
 						)}
 						style={{
 							aspectRatio: `${aspectRatio}`,
-							minHeight: previewState.layers.length === 0 ? "120px" : "auto",
+							minHeight: hasInputs ? "120px" : "auto",
 						}}
 					>
-						{previewState && previewState.layers.length > 0 ? (
+						{hasInputs ? (
 							<Player
 								acknowledgeRemotionLicense
 								component={CompositionScene}
@@ -265,6 +268,7 @@ const VideoCompositorNodeComponent = memo(
 								<Button
 									onClick={() => nav(`video-editor/${node.id}`)}
 									size="sm"
+									disabled={!hasInputs}
 								>
 									<VideoIcon className="size-4 mr-1" /> Edit
 								</Button>

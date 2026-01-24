@@ -1,5 +1,4 @@
 import assert from "node:assert";
-import { randomUUID } from "node:crypto";
 import { prisma } from "@gatewai/db";
 import type { TextNodeConfig } from "@gatewai/types";
 import { zValidator } from "@hono/zod-validator";
@@ -12,7 +11,7 @@ import {
 } from "../../data-ops/schemas.js";
 import { NodeWFProcessor } from "../../graph-engine/canvas-workflow-processor.js";
 import { uploadToImportNode } from "../../node-fns/import-media.js";
-import { assertIsError } from "../../utils/misc.js";
+import { assertIsError, generateId } from "../../utils/misc.js";
 
 const apiRunRoutes = new Hono({ strict: false })
 	/**
@@ -105,7 +104,7 @@ const apiRunRoutes = new Hono({ strict: false })
 							// Generate a filename since base64 payloads don't usually carry it
 							// We can rely on detection inside uploadToImportNode to set the extension later,
 							// or we can pass a generic name.
-							const filename = `api-upload-${randomUUID()}`;
+							const filename = `api-upload-${generateId()}`;
 
 							await uploadToImportNode({
 								nodeId: node.id,

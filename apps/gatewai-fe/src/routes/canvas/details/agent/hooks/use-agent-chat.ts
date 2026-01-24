@@ -1,4 +1,5 @@
 import { useCallback, useEffect, useRef, useState } from "react";
+import { generateId } from "@/lib/idgen";
 
 export type MessageRole = "user" | "model" | "system";
 export interface ChatMessage {
@@ -84,9 +85,9 @@ export function useAgentChatStream(canvasId: string, sessionId: string) {
 		async (message: string) => {
 			if (!message.trim() || !sessionId) return;
 
-			const aiMsgId = crypto.randomUUID();
+			const aiMsgId = generateId();
 			const userMsg: ChatMessage = {
-				id: crypto.randomUUID(),
+				id: generateId(),
 				role: "user",
 				text: message,
 				createdAt: new Date(),

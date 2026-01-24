@@ -102,6 +102,7 @@ import {
 } from "@/components/ui/tooltip";
 import { ColorPicker } from "@/components/util/color-input";
 import { fontManager } from "@/lib/fonts";
+import { generateId } from "@/lib/idgen";
 import { useGetFontListQuery } from "@/store/fonts";
 import type { NodeEntityType } from "@/store/nodes";
 import { GetAssetEndpoint, GetFontAssetUrl } from "@/utils/file";
@@ -1269,7 +1270,7 @@ const InspectorPanel: React.FC = () => {
 	const addAnimation = (type: AnimationType) => {
 		if (!selectedLayer) return;
 		const newAnimation: VideoAnimation = {
-			id: crypto.randomUUID(),
+			id: generateId(),
 			type,
 			value: 1,
 		};
@@ -1725,6 +1726,7 @@ export const VideoDesignerEditor: React.FC<VideoDesignerEditorProps> = ({
 	onClose,
 	onSave,
 }) => {
+	console.log({ initialLayers, node });
 	const nodeConfig = node.config as unknown as VideoCompositorNodeConfig;
 	// --- State ---
 	const [layers, setLayers] = useState<ExtendedLayer[]>([]);

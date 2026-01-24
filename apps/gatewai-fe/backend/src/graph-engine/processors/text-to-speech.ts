@@ -1,4 +1,3 @@
-import { randomUUID } from "node:crypto";
 import { DataType, prisma } from "@gatewai/db";
 import {
 	TextToSpeechNodeConfigSchema,
@@ -10,6 +9,7 @@ import wav from "wav";
 import { ENV_CONFIG } from "../../config.js";
 import { genAI } from "../../genai.js";
 import { logger } from "../../logger.js";
+import { generateId } from "../../utils/misc.js";
 import { generateSignedUrl, uploadToGCS } from "../../utils/storage.js";
 import { getInputValue } from "../resolvers.js";
 import type { NodeProcessor } from "./types.js";
@@ -90,7 +90,7 @@ const textToSpeechProcessor: NodeProcessor = async ({ node, data }) => {
 
 		const extension = ".wav";
 
-		const randId = randomUUID();
+		const randId = generateId();
 		const fileName = `${randId}${extension}`;
 		const key = `assets/${node.type}/${fileName}`;
 		const contentType = "audio/wav";

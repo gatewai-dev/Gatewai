@@ -7,6 +7,7 @@ import {
 	useRef,
 	useState,
 } from "react";
+import { generateId } from "@/lib/idgen";
 import { rpcClient } from "@/rpc/client"; // Assuming rpcClient is imported from the appropriate location
 import type { AgentSessionsRPC } from "@/rpc/types";
 import { useGetCanvasAgentSessionListQuery } from "@/store/agent-sessions";
@@ -100,7 +101,7 @@ const CanvasAgentProvider = ({
 		}
 
 		// Generate a client-side ID for immediate UI optimistic updates
-		const newId = crypto.randomUUID();
+		const newId = generateId();
 
 		// Clear messages immediately before setting new session
 		setMessages([]);
@@ -174,9 +175,9 @@ const CanvasAgentProvider = ({
 		async (message: string) => {
 			if (!message.trim() || !activeSessionId) return;
 
-			const aiMsgId = crypto.randomUUID();
+			const aiMsgId = generateId();
 			const userMsg: ChatMessage = {
-				id: crypto.randomUUID(),
+				id: generateId(),
 				role: "user",
 				text: message,
 				createdAt: new Date(),

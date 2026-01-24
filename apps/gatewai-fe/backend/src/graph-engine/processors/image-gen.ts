@@ -1,5 +1,4 @@
 import assert from "node:assert";
-import { randomUUID } from "node:crypto";
 import { DataType, prisma } from "@gatewai/db";
 import {
 	type FileData,
@@ -11,6 +10,7 @@ import { ENV_CONFIG } from "../../config.js";
 import { genAI } from "../../genai.js";
 import { logger } from "../../logger.js";
 import { getImageDimensions } from "../../utils/image.js";
+import { generateId } from "../../utils/misc.js";
 import {
 	generateSignedUrl,
 	getFromGCS,
@@ -137,7 +137,7 @@ const imageGenProcessor: NodeProcessor = async ({ node, data }) => {
 		const contentType = mimeType;
 
 		const dimensions = await getImageDimensions(buffer);
-		const randId = randomUUID();
+		const randId = generateId();
 		const fileName = `imagegen_${randId}.${extension}`;
 		const key = `assets/${fileName}`;
 		const bucket = ENV_CONFIG.GCS_ASSETS_BUCKET;

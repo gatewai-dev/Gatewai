@@ -1,4 +1,3 @@
-import { randomUUID } from "node:crypto";
 import { existsSync, mkdirSync } from "node:fs";
 import { readFile } from "node:fs/promises";
 import path from "node:path";
@@ -12,6 +11,7 @@ import {
 import { ENV_CONFIG } from "../../config.js";
 import { genAI } from "../../genai.js";
 import { logger } from "../../logger.js";
+import { generateId } from "../../utils/misc.js";
 import { generateSignedUrl, uploadToGCS } from "../../utils/storage.js";
 import { getInputValue } from "../resolvers.js";
 import type { NodeProcessor } from "./types.js";
@@ -102,7 +102,7 @@ const videoGenExtendProcessor: NodeProcessor = async ({ node, data }) => {
 		});
 
 		const fileBuffer = await readFile(filePath);
-		const randId = randomUUID();
+		const randId = generateId();
 		const fileName = `videogen_extend_${randId}.${extension}`;
 		const key = `assets/${fileName}`;
 		const contentType = "video/mp4";

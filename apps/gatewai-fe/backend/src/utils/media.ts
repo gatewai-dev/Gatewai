@@ -1,16 +1,16 @@
 import { spawn } from "node:child_process";
-import { randomUUID } from "node:crypto"; // Missing import
 import fs from "node:fs/promises"; // Use the promises API
 import os from "node:os";
 import path from "node:path";
 import sharp from "sharp";
+import { generateId } from "./misc.js";
 
 /**
  * Gets the duration of media (video/audio) using ffprobe.
  */
 export async function getMediaDuration(buffer: Buffer): Promise<number | null> {
 	const tempDir = os.tmpdir();
-	const tempFile = path.join(tempDir, `temp_media_${randomUUID()}`);
+	const tempFile = path.join(tempDir, `temp_media_${generateId()}`);
 
 	try {
 		await fs.writeFile(tempFile, buffer);

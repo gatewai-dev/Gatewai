@@ -7,9 +7,7 @@ function AgentPanel() {
 	if (!canvas) {
 		return null;
 	}
-	return (
-        <CanvasAgentLayout canvasId={canvas.id} />
-	);
+	return <CanvasAgentLayout canvasId={canvas.id} />;
 }
 
 export { AgentPanel };
