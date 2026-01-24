@@ -1,6 +1,9 @@
-import { configureStore } from "@reduxjs/toolkit";
+import type { Middleware } from "@reduxjs/toolkit";
+import { configureStore, isRejectedWithValue } from "@reduxjs/toolkit";
 import { setupListeners } from "@reduxjs/toolkit/query";
 import { useDispatch, useSelector } from "react-redux";
+import { toast } from "sonner";
+import { agentSessionsAPI } from "./agent-sessions";
 import { assetsAPI } from "./assets";
 import { canvasDetailsAPI } from "./canvas";
 import { canvasListAPI } from "./canvas-list";
@@ -12,11 +15,6 @@ import { nodeTemplatesAPI } from "./node-templates";
 import { nodesReducer } from "./nodes";
 import { reactFlowReducer } from "./rfstate";
 import { tasksReducer } from "./tasks";
-
-import type { Middleware } from "@reduxjs/toolkit";
-import { isRejectedWithValue } from "@reduxjs/toolkit";
-import { toast } from "sonner";
-import { agentSessionsAPI } from "./agent-sessions";
 
 /**
  * Log a warning and show a toast!

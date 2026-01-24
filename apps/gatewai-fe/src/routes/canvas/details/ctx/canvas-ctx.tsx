@@ -214,17 +214,11 @@ const CanvasProvider = ({
 	const save = useCallback(() => {
 		if (!canvasId || isReviewing) return;
 		const state = store.getState() as RootState;
-		const currentNodeEntities = Object.values(
-			state.nodes.entities,
-		);
+		const currentNodeEntities = Object.values(state.nodes.entities);
 		const currentRfNodes = Object.values(state.reactFlow.nodes);
-		const currentEdgeEntities = Object.values(
-			state.edges.entities,
-		);
+		const currentEdgeEntities = Object.values(state.edges.entities);
 		const currentRfEdges = Object.values(state.reactFlow.edges);
-		const currentHandleEntities = Object.values(
-			state.handles.entities,
-		);
+		const currentHandleEntities = Object.values(state.handles.entities);
 		const currentCanvasDetailsNodes = currentNodeEntities
 			.map((n) => {
 				const rfNode = currentRfNodes.find((f) => f.id === n.id);
@@ -637,9 +631,9 @@ const CanvasProvider = ({
 				selectable: true,
 				deletable: true,
 			};
-				dispatch(createNode(newNode));
-				dispatch(createNodeEntity(nodeEntity));
-				dispatch(addManyHandleEntities(handles));
+			dispatch(createNode(newNode));
+			dispatch(createNodeEntity(nodeEntity));
+			dispatch(addManyHandleEntities(handles));
 			let saveDelay: number | undefined;
 			// I have a lidl suspicion that this will fucking bite me asp
 			if (template.type === "File") {
@@ -666,8 +660,7 @@ const CanvasProvider = ({
 					continue;
 				}
 
-				const nodeEntityToDuplicate =
-					rootState.nodes.entities[nodeId];
+				const nodeEntityToDuplicate = rootState.nodes.entities[nodeId];
 				if (!nodeEntityToDuplicate) {
 					toast.error(`Node entity ${nodeId} to duplicate not found`);
 					continue;
@@ -842,7 +835,7 @@ const CanvasProvider = ({
 				}));
 
 				// Update Redux Store ATOMICALLY to avoid inconsistent states in GraphProcessor
-				
+
 				dispatch(setAllNodeEntities(hydratedNodes as NodeEntityType[]));
 				dispatch(setAllEdgeEntities(patchData.edges as EdgeEntityType[]));
 				dispatch(setAllHandleEntities(patchData.handles as HandleEntityType[]));
@@ -892,7 +885,7 @@ const CanvasProvider = ({
 		}));
 
 		// Atomic revert of the entire state
-		
+
 		dispatch(setAllNodeEntities(canvasDetailsResponse.nodes));
 		dispatch(setAllEdgeEntities(canvasDetailsResponse.edges));
 		dispatch(setAllHandleEntities(canvasDetailsResponse.handles));
@@ -958,7 +951,6 @@ const CanvasProvider = ({
 					dispatch(setNodes(originalNodes));
 					dispatch(setEdges(originalEdges));
 				}
-				
 
 				setIsReviewing(false);
 				setPreviewPatchId(null);

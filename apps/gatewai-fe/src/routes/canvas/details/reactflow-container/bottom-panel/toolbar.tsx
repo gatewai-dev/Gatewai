@@ -1,9 +1,5 @@
 import { useReactFlow, useViewport } from "@xyflow/react";
-import {
-	ChevronDown,
-	Hand,
-	MousePointer,
-} from "lucide-react";
+import { ChevronDown, Hand, MousePointer } from "lucide-react";
 import { memo, useContext } from "react";
 import { Button } from "@/components/ui/button";
 import {
@@ -27,7 +23,6 @@ const Toolbar = memo(() => {
 
 	return (
 		<div className="relative flex flex-col items-center gap-2">
-
 			<Menubar className="border border-border/50 bg-background/80 backdrop-blur-md shadow-2xl rounded-full px-2 py-1 h-12 ring-1 ring-white/5 flex items-center gap-1">
 				{/* Selection & Pan Tools */}
 				<Button

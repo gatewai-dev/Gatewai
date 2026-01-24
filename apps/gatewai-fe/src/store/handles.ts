@@ -30,8 +30,7 @@ const handleSelectors = handleAdapter.getSelectors<RootState>(
 	(state) => state.handles,
 );
 
-export const selectHandlesState = (state: RootState) =>
-	state.handles;
+export const selectHandlesState = (state: RootState) => state.handles;
 
 export const makeSelectHandleById = (id: string) => {
 	return (state: RootState) => handleSelectors.selectById(state, id);

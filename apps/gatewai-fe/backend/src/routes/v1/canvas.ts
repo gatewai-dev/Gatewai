@@ -88,7 +88,7 @@ const canvasRoutes = new Hono({
 			await applyCanvasUpdate(id, validated);
 		} catch (error) {
 			assertIsError(error);
-			logger.error(`Canvas Bulk Update Failed: ${error.message}`,);
+			logger.error(`Canvas Bulk Update Failed: ${error.message}`);
 			throw new HTTPException(500, {
 				message: "Failed to save canvas updates.",
 			});
