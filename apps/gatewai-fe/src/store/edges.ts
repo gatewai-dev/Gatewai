@@ -27,10 +27,10 @@ const edgesSlice = createSlice({
 export type EdgesState = ReturnType<typeof edgesSlice.reducer>;
 
 const edgeSelectors = edgeAdapter.getSelectors<RootState>(
-	(state) => state.flow.present.edges,
+	(state) => state.edges,
 );
 
-export const selectEdgesState = (state: RootState) => state.flow.present.edges;
+export const selectEdgesState = (state: RootState) => state.edges;
 
 export const makeSelectEdgeById = (id: string) => {
 	return (state: RootState) => edgeSelectors.selectById(state, id);

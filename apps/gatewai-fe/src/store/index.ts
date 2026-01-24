@@ -1,4 +1,4 @@
-import { combineReducers, configureStore } from "@reduxjs/toolkit";
+import { configureStore } from "@reduxjs/toolkit";
 import { setupListeners } from "@reduxjs/toolkit/query";
 import { useDispatch, useSelector } from "react-redux";
 import { assetsAPI } from "./assets";
@@ -12,41 +12,6 @@ import { nodeTemplatesAPI } from "./node-templates";
 import { nodesReducer } from "./nodes";
 import { reactFlowReducer } from "./rfstate";
 import { tasksReducer } from "./tasks";
-import { undoReducer } from "./undo-redo";
-
-const flowReducer = combineReducers({
-	nodes: nodesReducer,
-	handles: handlesReducer,
-	edges: edgesReducer,
-	reactFlow: reactFlowReducer,
-});
-
-const undoableFlowReducer = undoReducer(flowReducer, {
-	limit: 50,
-	undoableActionTypes: [
-		"reactFlow/nodesFinishedDragging",
-		"reactFlow/createNode",
-		"reactFlow/createEdge",
-		"reactFlow/addConnection",
-
-		"nodes/createNodeEntity",
-		"nodes/updateNodeEntity",
-		"nodes/updateNodeResult",
-		"nodes/updateNodeConfig",
-		"nodes/deleteManyNodeEntity",
-		"nodes/deleteManyNodeEntity",
-
-		"edges/createEdgeEntity",
-		"edges/deleteManyEdgeEntity",
-
-		"handles/createHandleEntity",
-		"handles/deleteManyHandleEntity",
-		"handles/addManyHandleEntities",
-		"handles/updateHandleEntity",
-
-		"flow/batched",
-	],
-});
 
 import type { Middleware } from "@reduxjs/toolkit";
 import { isRejectedWithValue } from "@reduxjs/toolkit";
@@ -72,7 +37,10 @@ export const rtkQueryErrorLogger: Middleware = () => (next) => (action) => {
 
 export const store = configureStore({
 	reducer: {
-		flow: undoableFlowReducer,
+		nodes: nodesReducer,
+		handles: handlesReducer,
+		edges: edgesReducer,
+		reactFlow: reactFlowReducer,
 
 		tasks: tasksReducer,
 		nodeMeta: nodeMetaReducer,

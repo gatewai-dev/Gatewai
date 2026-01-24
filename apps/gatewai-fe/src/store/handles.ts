@@ -27,11 +27,11 @@ const handlesSlice = createSlice({
 export type HandlesState = ReturnType<typeof handlesSlice.reducer>;
 
 const handleSelectors = handleAdapter.getSelectors<RootState>(
-	(state) => state.flow.present.handles,
+	(state) => state.handles,
 );
 
 export const selectHandlesState = (state: RootState) =>
-	state.flow.present.handles;
+	state.handles;
 
 export const makeSelectHandleById = (id: string) => {
 	return (state: RootState) => handleSelectors.selectById(state, id);

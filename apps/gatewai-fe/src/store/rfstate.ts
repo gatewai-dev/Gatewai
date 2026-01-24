@@ -66,7 +66,7 @@ export const {
 	onEdgeChange,
 } = reactFlowSlice.actions;
 
-export const selectRFState = (state: RootState) => state.flow.present.reactFlow;
+export const selectRFState = (state: RootState) => state.reactFlow;
 
 export const selectRFNodes = createSelector(
 	selectRFState,

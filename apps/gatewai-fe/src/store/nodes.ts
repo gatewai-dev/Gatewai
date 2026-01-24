@@ -90,7 +90,7 @@ export const nodesSlice = createSlice({
 export type NodesState = ReturnType<typeof nodesSlice.reducer>;
 
 const nodeSelectors = nodeAdapter.getSelectors<RootState>(
-	(state) => state.flow.present.nodes,
+	(state) => state.nodes,
 );
 
 export const selectNodeById = nodeSelectors.selectById;

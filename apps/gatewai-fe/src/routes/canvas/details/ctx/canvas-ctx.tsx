@@ -80,7 +80,6 @@ import {
 	setNodes,
 } from "@/store/rfstate";
 import type { BatchEntity } from "@/store/tasks";
-import { batchActions } from "@/store/undo-redo";
 import { useNodeTemplates } from "../node-templates/node-templates.ctx";
 import { useTaskManagerCtx } from "./task-manager-ctx";
 
@@ -216,15 +215,15 @@ const CanvasProvider = ({
 		if (!canvasId || isReviewing) return;
 		const state = store.getState() as RootState;
 		const currentNodeEntities = Object.values(
-			state.flow.present.nodes.entities,
+			state.nodes.entities,
 		);
-		const currentRfNodes = Object.values(state.flow.present.reactFlow.nodes);
+		const currentRfNodes = Object.values(state.reactFlow.nodes);
 		const currentEdgeEntities = Object.values(
-			state.flow.present.edges.entities,
+			state.edges.entities,
 		);
-		const currentRfEdges = Object.values(state.flow.present.reactFlow.edges);
+		const currentRfEdges = Object.values(state.reactFlow.edges);
 		const currentHandleEntities = Object.values(
-			state.flow.present.handles.entities,
+			state.handles.entities,
 		);
 		const currentCanvasDetailsNodes = currentNodeEntities
 			.map((n) => {
@@ -638,12 +637,9 @@ const CanvasProvider = ({
 				selectable: true,
 				deletable: true,
 			};
-			const createBatch = batchActions([
-				createNode(newNode),
-				createNodeEntity(nodeEntity),
-				addManyHandleEntities(handles),
-			]);
-			dispatch(createBatch);
+				dispatch(createNode(newNode));
+				dispatch(createNodeEntity(nodeEntity));
+				dispatch(addManyHandleEntities(handles));
 			let saveDelay: number | undefined;
 			// I have a lidl suspicion that this will fucking bite me asp
 			if (template.type === "File") {
@@ -671,7 +667,7 @@ const CanvasProvider = ({
 				}
 
 				const nodeEntityToDuplicate =
-					rootState.flow.present.nodes.entities[nodeId];
+					rootState.nodes.entities[nodeId];
 				if (!nodeEntityToDuplicate) {
 					toast.error(`Node entity ${nodeId} to duplicate not found`);
 					continue;

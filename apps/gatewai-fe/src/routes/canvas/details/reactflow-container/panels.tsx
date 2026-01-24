@@ -1,4 +1,4 @@
-import { Panel } from "@xyflow/react";
+import { Controls, Panel } from "@xyflow/react";
 import { memo } from "react";
 import { DebugPanel } from "../graph-engine/debug-panel";
 import { BottomPanel } from "./bottom-panel";
@@ -10,9 +10,9 @@ const ReactFlowPanels = memo(() => {
 	return (
 		<>
 			<LeftPanel />
-			<NodeConfigPanel />
 			<BottomPanel />
 			<AgentPanel />
+			<NodeConfigPanel />
 			<Panel position="top-center">
 				<DebugPanel />
 			</Panel>

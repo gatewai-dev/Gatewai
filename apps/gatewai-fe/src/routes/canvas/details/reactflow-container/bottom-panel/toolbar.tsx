@@ -3,8 +3,6 @@ import {
 	ChevronDown,
 	Hand,
 	MousePointer,
-	Redo2,
-	Undo2,
 } from "lucide-react";
 import { memo, useContext } from "react";
 import { Button } from "@/components/ui/button";
@@ -16,22 +14,12 @@ import {
 	MenubarTrigger,
 } from "@/components/ui/menubar";
 import { Separator } from "@/components/ui/separator";
-import { useAppDispatch, useAppSelector } from "@/store";
-import { selectCanRedo, selectCanUndo } from "@/store/undo-redo";
 import { ModeContext } from "..";
 import { CanvasTasksPanel } from "../tasks";
 import { RunWorkflowButton } from "./run-workflow-button";
 
 const Toolbar = memo(() => {
 	const { zoom } = useViewport();
-	const dispatch = useAppDispatch();
-
-	// Existing logic
-	const undo = () => dispatch({ type: "flow/undo" });
-	const redo = () => dispatch({ type: "flow/redo" });
-
-	const canUndo = useAppSelector(selectCanUndo);
-	const canRedo = useAppSelector(selectCanRedo);
 
 	const { zoomIn, zoomOut, zoomTo, fitView } = useReactFlow();
 	const zoomPercentage = `${Math.round(zoom * 100)}%`;
@@ -60,32 +48,6 @@ const Toolbar = memo(() => {
 				>
 					<Hand className="w-4 h-4" />
 				</Button>
-
-				<Separator orientation="vertical" className="h-5 mx-1" />
-
-				{/* Undo & Redo Group */}
-				<div className="flex items-center gap-0.5">
-					<Button
-						title="Undo (Ctrl+Z)"
-						variant="ghost"
-						disabled={!canUndo}
-						size="icon"
-						className="rounded-full w-9 h-9"
-						onClick={undo}
-					>
-						<Undo2 className="w-4 h-4" />
-					</Button>
-					<Button
-						title="Redo (Ctrl+Y)"
-						variant="ghost"
-						disabled={!canRedo}
-						size="icon"
-						className="rounded-full w-9 h-9"
-						onClick={redo}
-					>
-						<Redo2 className="w-4 h-4" />
-					</Button>
-				</div>
 
 				<Separator orientation="vertical" className="h-5 mx-1" />
 
