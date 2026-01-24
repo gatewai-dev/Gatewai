@@ -19,7 +19,6 @@ const RunNodeButton = memo(({ nodeId, ...buttonProps }: RunNodeButtonProps) => {
 
 	const validation = useNodeValidation(nodeId);
 	const isInvalid = validation && Object.keys(validation).length > 0;
-
 	return (
 		<Button
 			{...buttonProps}

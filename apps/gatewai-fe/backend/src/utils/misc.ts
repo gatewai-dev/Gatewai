@@ -37,7 +37,6 @@ export function GetAssetEndpoint(fileAsset: FileAsset) {
 	const extension = Object.entries(MIME_TYPES).find(
 		([_, mime]) => mime === fileAsset.mimeType,
 	)?.[0];
-	console.log({ baseUrl });
 	// Remotion needs this extension to trigger the correct 'bunny'
 	return extension ? `${baseUrl}.${extension}` : baseUrl;
 }
@@ -63,11 +62,7 @@ export function ResolveFileDataUrl(data: FileData | null) {
 	if (data.entity?.signedUrl) return GetAssetEndpoint(data.entity);
 }
 
-// base62 alphabet
 const alphabet =
 	"0123456789abcdefghijklmnopqrstuvwxyzABCDEFGHIJKLMNOPQRSTUVWXYZ";
 
-// Create a generator for 22-character IDs
-const generateId = customAlphabet(alphabet, 22);
-
-export { generateId };
+export const generateId = customAlphabet(alphabet, 22);

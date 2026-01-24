@@ -7,6 +7,7 @@ import {
 	useRef,
 	useState,
 } from "react";
+import { rpcClient } from "@/rpc/client"; // Assuming rpcClient is imported from the appropriate location
 import type { AgentSessionsRPC } from "@/rpc/types";
 import { useGetCanvasAgentSessionListQuery } from "@/store/agent-sessions";
 
@@ -44,7 +45,6 @@ const CanvasAgentContext = createContext<CanvasAgentContextType | undefined>(
 	undefined,
 );
 
-// EWW
 function extractText(content: any): string {
 	let rawContent = content.content;
 	if (Array.isArray(rawContent)) {
@@ -92,53 +92,6 @@ const CanvasAgentProvider = ({
 			param: { id: canvasId },
 		});
 
-	// Fetch history when session changes
-	useEffect(() => {
-		if (!activeSessionId || !canvasId) {
-			setMessages([]);
-			return;
-		}
-
-		const fetchHistory = async () => {
-			setIsLoading(true);
-			try {
-				const res = await fetch(
-					`/api/v1/canvas/${canvasId}/agent/${activeSessionId}`,
-				);
-				if (!res.ok) {
-					// New session - no history yet
-					if (res.status === 404) {
-						setMessages([]);
-						return;
-					}
-					throw new Error("Failed to fetch session");
-				}
-				const data = await res.json();
-				const historyMessages = (data.events || [])
-					.filter((e: any) => e.eventType === "message")
-					.map((e: any) => ({
-						id: e.id,
-						role:
-							e.role === "USER"
-								? "user"
-								: e.role === "ASSISTANT"
-									? "model"
-									: "system",
-						text: extractText(e.content),
-						createdAt: new Date(e.createdAt),
-					}));
-				setMessages(historyMessages);
-			} catch (error) {
-				console.error("Error fetching history:", error);
-				setMessages([]);
-			} finally {
-				setIsLoading(false);
-			}
-		};
-
-		fetchHistory();
-	}, [canvasId, activeSessionId]);
-
 	const createNewSession = useCallback(() => {
 		// Abort any ongoing generation
 		if (abortControllerRef.current) {
@@ -154,6 +107,68 @@ const CanvasAgentProvider = ({
 		setIsLoading(false);
 		setActiveSessionId(newId);
 	}, []);
+
+	// Automatically select or create session on mount
+	useEffect(() => {
+		if (isLoadingSessions || activeSessionId) return;
+
+		if (agentSessionsList && agentSessionsList.length > 0) {
+			// Sort by createdAt descending and select the latest
+			const sortedSessions = [...agentSessionsList].sort(
+				(a, b) =>
+					new Date(b.createdAt).getTime() - new Date(a.createdAt).getTime(),
+			);
+			setActiveSessionId(sortedSessions[0].id);
+		} else {
+			createNewSession();
+		}
+	}, [isLoadingSessions, agentSessionsList, activeSessionId, createNewSession]);
+
+	// Fetch history when session changes
+	useEffect(() => {
+		if (!activeSessionId || !canvasId) {
+			setMessages([]);
+			return;
+		}
+
+		const fetchHistory = async () => {
+			setIsLoading(true);
+			try {
+				const resp = await rpcClient.api.v1.canvas[":id"].agent[
+					":sessionId"
+				].$get({
+					param: { id: canvasId, sessionId: activeSessionId },
+				});
+				const data = await resp.json();
+				if (!data) {
+					setMessages([]);
+					return;
+				}
+
+				const historyMessages = (data.events || [])
+					.filter((e) => e.eventType === "message")
+					.map((e: any) => ({
+						id: e.id,
+						role:
+							e.role === "USER"
+								? "user"
+								: e.role === "ASSISTANT"
+									? "model"
+									: "system",
+						text: extractText(e.content),
+						createdAt: new Date(e.createdAt),
+					}));
+				setMessages(historyMessages);
+			} catch (error: unknown) {
+				console.error("Error fetching history:", error);
+				setMessages([]);
+			} finally {
+				setIsLoading(false);
+			}
+		};
+
+		fetchHistory();
+	}, [canvasId, activeSessionId]);
 
 	const sendMessage = useCallback(
 		async (message: string) => {
@@ -179,15 +194,12 @@ const CanvasAgentProvider = ({
 			abortControllerRef.current = new AbortController();
 
 			try {
-				const response = await fetch(
-					`/api/v1/canvas/${canvasId}/agent/${activeSessionId}`,
-					{
-						method: "POST",
-						headers: { "Content-Type": "application/json" },
-						body: JSON.stringify({ message }),
-						signal: abortControllerRef.current.signal,
-					},
-				);
+				const response = await rpcClient.api.v1.canvas[":id"].agent[
+					":sessionId"
+				].$post({
+					param: { id: canvasId, sessionId: activeSessionId },
+					json: { message },
+				});
 
 				if (!response.body) throw new Error("No response body");
 

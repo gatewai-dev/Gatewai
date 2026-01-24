@@ -548,6 +548,7 @@ const CanvasProvider = ({
 
 	const runNodes = useCallback(
 		async (node_ids?: Node["id"][]) => {
+			console.log({ node_ids });
 			// Save before running
 			await save();
 

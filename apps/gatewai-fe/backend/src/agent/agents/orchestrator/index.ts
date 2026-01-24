@@ -25,6 +25,7 @@ but you should ask for confirmation if there's two Image generation node in canv
 - At least one data type must match between connected handles.
 - When creating nodes, it's CRITICAL to follow same structure as node template including handles.
 - Video Compositor should not have output handle, user's can click download on Node UI view to render and download it.
+- When adding new Entities (Node, Edge, Handle) use ID that starts with "temp-" suffix. This is CRITICAL.
 
 **WORKFLOW DESIGN PRINCIPLES:**
 To create the best possible workflows, always prioritize modularity, extensibility, ease of modification, and robustness. Think step-by-step to design optimal structures:

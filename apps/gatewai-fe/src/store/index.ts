@@ -7,6 +7,7 @@ import { agentSessionsAPI } from "./agent-sessions";
 import { assetsAPI } from "./assets";
 import { canvasDetailsAPI } from "./canvas";
 import { canvasListAPI } from "./canvas-list";
+import { canvasPatchesReducer } from "./canvas-patches";
 import { edgesReducer } from "./edges";
 import { fontListAPI } from "./fonts";
 import { handlesReducer } from "./handles";
@@ -15,12 +16,10 @@ import { nodeTemplatesAPI } from "./node-templates";
 import { nodesReducer } from "./nodes";
 import { reactFlowReducer } from "./rfstate";
 import { tasksReducer } from "./tasks";
-
 /**
  * Log a warning and show a toast!
  */
 export const rtkQueryErrorLogger: Middleware = () => (next) => (action) => {
-	// RTK Query uses `createAsyncThunk` from redux-toolkit under the hood, so we're able to utilize these matchers!
 	if (isRejectedWithValue(action)) {
 		console.warn("We got a rejected action!");
 		toast.error(
@@ -39,7 +38,7 @@ export const store = configureStore({
 		handles: handlesReducer,
 		edges: edgesReducer,
 		reactFlow: reactFlowReducer,
-
+		canvasPatches: canvasPatchesReducer,
 		tasks: tasksReducer,
 		nodeMeta: nodeMetaReducer,
 		[nodeTemplatesAPI.reducerPath]: nodeTemplatesAPI.reducer,
