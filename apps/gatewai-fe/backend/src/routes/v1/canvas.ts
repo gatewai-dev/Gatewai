@@ -81,337 +81,326 @@ const canvasRoutes = new Hono({
 		const id = c.req.param("id");
 		const validated = c.req.valid("json");
 
+		// 1. Verify Canvas Existence
 		const existingCanvas = await prisma.canvas.findFirst({
 			where: { id },
+			select: { id: true, version: true },
 		});
 
 		if (!existingCanvas) {
 			throw new HTTPException(404, { message: "Canvas not found" });
 		}
 
-		// --- 1. Fetch Existing Entities to determine Updates vs Creates ---
-		const nodesInDB = await prisma.node.findMany({
-			where: { canvasId: id },
-			select: { id: true },
-		});
-		const nodeIdsInDBSet = new Set(nodesInDB.map((m) => m.id));
+		// --- PHASE 1: Fetch Current State (Snapshoting) ---
+		// We need the current state to calculate the diff (What to delete vs update)
+		const [nodesInDB, edgesInDB, handlesInDB] = await Promise.all([
+			prisma.node.findMany({ where: { canvasId: id }, select: { id: true } }),
+			prisma.edge.findMany({
+				where: { sourceNode: { canvasId: id } },
+				select: { id: true },
+			}),
+			prisma.handle.findMany({
+				where: { node: { canvasId: id } },
+				select: { id: true },
+			}),
+		]);
 
-		const edgesInDB = await prisma.edge.findMany({
-			where: { sourceNode: { canvasId: id } }, // Optimized query
-			select: { id: true },
-		});
-		const edgeIdsInDBSet = new Set(edgesInDB.map((m) => m.id));
+		const dbState = {
+			nodeIds: new Set(nodesInDB.map((n) => n.id)),
+			edgeIds: new Set(edgesInDB.map((e) => e.id)),
+			handleIds: new Set(handlesInDB.map((h) => h.id)),
+		};
 
-		const handlesInDB = await prisma.handle.findMany({
-			where: { node: { canvasId: id } },
-			select: { id: true },
-		});
-		const handleIdsInDBSet = new Set(handlesInDB.map((m) => m.id));
+		// --- PHASE 2: ID Remapping & Diff Calculation ---
+		// We map frontend "temp" IDs to backend "real" UUIDs here.
+		// This allows us to insert interdependent records in one transaction.
 
-		// --- 2. ID Remapping Maps ---
-		// These maps store the mapping from "Client Provided ID" (temp) -> "Server Generated ID" (UUID)
-		const nodeIdMap = new Map<string, string>();
-		const handleIdMap = new Map<string, string>();
-		const edgeIdMap = new Map<string, string>();
+		const idMap = {
+			nodes: new Map<string, string>(), // ClientID -> ServerUUID
+			handles: new Map<string, string>(), // ClientID -> ServerUUID
+			edges: new Map<string, string>(), // ClientID -> ServerUUID
+		};
 
-		// --- 3. Process Nodes ---
-		const nodesToCreate = [];
-		const nodesToUpdate = [];
-		// Track IDs that are "kept" (exist in DB and present in Payload)
-		const keptNodeIds = new Set<string>();
+		const ops = {
+			nodes: {
+				create: [] as any[],
+				update: [] as any[],
+				keepIds: new Set<string>(),
+			},
+			handles: {
+				create: [] as any[],
+				update: [] as any[],
+				keepIds: new Set<string>(),
+			},
+			edges: {
+				create: [] as any[],
+				update: [] as any[],
+				keepIds: new Set<string>(),
+			},
+		};
 
-		const nodesInPayload = validated.nodes ?? [];
+		// A. Process Nodes
+		for (const n of validated.nodes ?? []) {
+			const clientId = n.id;
+			// If ID is missing or not in DB, it's a CREATE
+			const isNew = !clientId || !dbState.nodeIds.has(clientId);
+			const serverId = isNew ? randomUUID() : clientId;
 
-		for (const n of nodesInPayload) {
-			const clientSideId = n.id;
-			let serverSideId = clientSideId;
+			if (clientId) idMap.nodes.set(clientId, serverId);
 
-			// If no ID or ID not in DB, treat as NEW
-			if (!clientSideId || !nodeIdsInDBSet.has(clientSideId)) {
-				serverSideId = randomUUID();
-				nodesToCreate.push({ ...n, id: serverSideId });
-
-				// Map the temp ID (if provided) to the new real ID
-				if (clientSideId) {
-					nodeIdMap.set(clientSideId, serverSideId);
-				}
+			if (isNew) {
+				ops.nodes.create.push({ ...n, id: serverId });
 			} else {
-				// It's an update
-				nodesToUpdate.push(n);
-				keptNodeIds.add(clientSideId);
-				// Map self to self for consistency
-				nodeIdMap.set(clientSideId, clientSideId);
+				ops.nodes.update.push(n);
+				ops.nodes.keepIds.add(clientId);
 			}
 		}
 
-		// --- 4. Process Handles ---
-		const handlesToCreate = [];
-		const handlesToUpdate = [];
-		const keptHandleIds = new Set<string>();
+		// B. Process Handles
+		for (const h of validated.handles ?? []) {
+			// Resolve parent Node ID (It might be a newly created node)
+			const resolvedNodeId = idMap.nodes.get(h.nodeId) ?? h.nodeId;
 
-		const handlesInPayload = validated.handles ?? [];
+			const clientId = h.id;
+			const isNew = !clientId || !dbState.handleIds.has(clientId);
+			const serverId = isNew ? randomUUID() : clientId;
 
-		for (const h of handlesInPayload) {
-			// Resolve Parent Node ID
-			// If the handle belongs to a new node, we must use the remapped Node ID
-			const resolvedNodeId = nodeIdMap.get(h.nodeId) ?? h.nodeId;
+			if (clientId) idMap.handles.set(clientId, serverId);
 
-			// Sanity check: If we can't find the node (and it's not being created), skip
-			// Note: We skip check here strictly to allow loose coupling, but DB FK will fail if invalid.
+			const handleData = { ...h, nodeId: resolvedNodeId, id: serverId };
 
-			const clientSideId = h.id;
-			let serverSideId = clientSideId;
-
-			if (!clientSideId || !handleIdsInDBSet.has(clientSideId)) {
-				serverSideId = randomUUID();
-				handlesToCreate.push({
-					...h,
-					id: serverSideId,
-					nodeId: resolvedNodeId,
-				});
-
-				if (clientSideId) {
-					handleIdMap.set(clientSideId, serverSideId);
-				}
+			if (isNew) {
+				ops.handles.create.push(handleData);
 			} else {
-				handlesToUpdate.push({ ...h, nodeId: resolvedNodeId });
-				keptHandleIds.add(clientSideId);
-				handleIdMap.set(clientSideId, clientSideId);
+				ops.handles.update.push(handleData);
+				ops.handles.keepIds.add(clientId);
 			}
 		}
 
-		// --- 5. Process Edges ---
-		const edgesToCreate = [];
-		const edgesToUpdate = [];
-		const keptEdgeIds = new Set<string>();
+		// C. Process Edges
+		for (const e of validated.edges ?? []) {
+			// Resolve references (Source/Target nodes and handles might be new)
+			const source = idMap.nodes.get(e.source) ?? e.source;
+			const target = idMap.nodes.get(e.target) ?? e.target;
+			const sourceHandle =
+				idMap.handles.get(e.sourceHandleId) ?? e.sourceHandleId;
+			const targetHandle =
+				idMap.handles.get(e.targetHandleId) ?? e.targetHandleId;
 
-		const edgesInPayload = validated.edges ?? [];
-
-		for (const e of edgesInPayload) {
-			if (!e.sourceHandleId || !e.targetHandleId) {
-				continue;
-			}
-			// Resolve References
-			const resolvedSource = nodeIdMap.get(e.source) ?? e.source;
-			const resolvedTarget = nodeIdMap.get(e.target) ?? e.target;
-			const resolvedSourceHandle =
-				handleIdMap.get(e.sourceHandleId) ?? e.sourceHandleId;
-			const resolvedTargetHandle =
-				handleIdMap.get(e.targetHandleId) ?? e.targetHandleId;
-
-			// Check validity of resolved IDs (basic check to prevent DB errors)
-			if (!resolvedSource || !resolvedTarget) {
-				console.warn(`Skipping edge ${e.id}: unresolved source/target`);
+			// Integrity Check: Skip edges with missing references
+			if (!source || !target || !sourceHandle || !targetHandle) {
+				console.warn(`[Patch] Skipping Edge ${e.id}: Unresolved reference.`);
 				continue;
 			}
 
-			const clientSideId = e.id;
-			let serverSideId = clientSideId;
+			const clientId = e.id;
+			const isNew = !clientId || !dbState.edgeIds.has(clientId);
+			const serverId = isNew ? randomUUID() : clientId;
 
-			if (!clientSideId || !edgeIdsInDBSet.has(clientSideId)) {
-				serverSideId = randomUUID();
-				edgesToCreate.push({
-					...e,
-					id: serverSideId,
-					source: resolvedSource,
-					target: resolvedTarget,
-					sourceHandleId: resolvedSourceHandle,
-					targetHandleId: resolvedTargetHandle,
-				});
+			if (clientId) idMap.edges.set(clientId, serverId);
 
-				if (clientSideId) edgeIdMap.set(clientSideId, serverSideId);
-			} else {
-				edgesToUpdate.push({
-					...e,
-					source: resolvedSource,
-					target: resolvedTarget,
-					sourceHandleId: resolvedSourceHandle,
-					targetHandleId: resolvedTargetHandle,
-				});
-				keptEdgeIds.add(clientSideId);
-			}
-		}
-
-		// --- 6. Determine Deletions ---
-		// Delete anything in DB that was NOT in the "kept" sets
-		const removedNodeIds = Array.from(nodeIdsInDBSet).filter(
-			(id) => !keptNodeIds.has(id),
-		);
-		const removedEdgeIds = Array.from(edgeIdsInDBSet).filter(
-			(id) => !keptEdgeIds.has(id),
-		);
-		const removedHandleIds = Array.from(handleIdsInDBSet).filter(
-			(id) => !keptHandleIds.has(id),
-		);
-
-		// --- 7. Transaction ---
-		const txs = [];
-
-		// A. Deletions (Edges -> Handles -> Nodes to respect FK)
-		if (removedEdgeIds.length > 0) {
-			txs.push(
-				prisma.edge.deleteMany({ where: { id: { in: removedEdgeIds } } }),
-			);
-		}
-		if (removedHandleIds.length > 0) {
-			txs.push(
-				prisma.handle.deleteMany({ where: { id: { in: removedHandleIds } } }),
-			);
-		}
-		if (removedNodeIds.length > 0) {
-			txs.push(
-				prisma.node.deleteMany({ where: { id: { in: removedNodeIds } } }),
-			);
-		}
-
-		// B. Creates
-		if (nodesToCreate.length > 0) {
-			txs.push(
-				prisma.node.createMany({
-					data: nodesToCreate.map((n) => ({
-						id: n.id, // Server generated UUID
-						result: n.result as any,
-						config: n.config as any,
-						name: n.name,
-						width: n.width,
-						height: n.height,
-						type: n.type,
-						templateId: n.templateId,
-						position: n.position,
-						canvasId: id,
-					})),
-				}),
-			);
-		}
-
-		// C. Updates (Nodes) - Fetch templates to check terminal status
-		if (nodesToUpdate.length > 0) {
-			const updatedNodeTemplateIds = nodesToUpdate
-				.map((m) => m.templateId)
-				.filter((id): id is string => !!id);
-
-			const updatedNodeTemplates = await prisma.nodeTemplate.findMany({
-				where: { id: { in: updatedNodeTemplateIds } },
-			});
-
-			const isTerminalNode = (templateId: string) => {
-				const nodeTemplate = updatedNodeTemplates.find(
-					(f) => f.id === templateId,
-				);
-				return nodeTemplate ? nodeTemplate.isTerminalNode : false;
+			const edgeData = {
+				...e,
+				id: serverId,
+				source,
+				target,
+				sourceHandleId: sourceHandle,
+				targetHandleId: targetHandle,
 			};
 
-			nodesToUpdate.forEach((uNode) => {
-				const updateData: NodeUpdateInput = {
-					config: uNode.config as any,
-					position: uNode.position,
-					name: uNode.name,
-				};
-
-				if (!isTerminalNode(uNode.templateId)) {
-					updateData.result = uNode.result as any;
-				}
-
-				if (uNode.result) {
-					updateData.result = {
-						selectedOutputIndex: uNode.result?.selectedOutputIndex,
-						outputs: (uNode.result as NodeResult).outputs,
-					} as NodeResult;
-				}
-
-				txs.push(
-					prisma.node.update({ data: updateData, where: { id: uNode.id } }),
-				);
-			});
+			if (isNew) {
+				ops.edges.create.push(edgeData);
+			} else {
+				ops.edges.update.push(edgeData);
+				ops.edges.keepIds.add(clientId);
+			}
 		}
 
-		// D. Creates (Handles)
-		if (handlesToCreate.length > 0) {
-			txs.push(
-				prisma.handle.createMany({
-					data: handlesToCreate.map((h) => ({
-						id: h.id,
-						nodeId: h.nodeId, // Already resolved
-						required: h.required,
-						dataTypes: h.dataTypes,
-						label: h.label,
-						order: h.order,
-						templateHandleId: h.templateHandleId,
-						type: h.type,
+		// --- PHASE 3: Prepare Transaction ---
+
+		// 1. Calculate Deletions (Anything in DB not in "keepIds" is deleted)
+		// Order matters: Edges -> Handles -> Nodes (Foreign Key constraints)
+		const deleteIds = {
+			edges: Array.from(dbState.edgeIds).filter(
+				(id) => !ops.edges.keepIds.has(id),
+			),
+			handles: Array.from(dbState.handleIds).filter(
+				(id) => !ops.handles.keepIds.has(id),
+			),
+			nodes: Array.from(dbState.nodeIds).filter(
+				(id) => !ops.nodes.keepIds.has(id),
+			),
+		};
+
+		const transactionSteps = [];
+
+		// Step A: Deletes
+		if (deleteIds.edges.length) {
+			transactionSteps.push(
+				prisma.edge.deleteMany({ where: { id: { in: deleteIds.edges } } }),
+			);
+		}
+		if (deleteIds.handles.length) {
+			transactionSteps.push(
+				prisma.handle.deleteMany({ where: { id: { in: deleteIds.handles } } }),
+			);
+		}
+		if (deleteIds.nodes.length) {
+			transactionSteps.push(
+				prisma.node.deleteMany({ where: { id: { in: deleteIds.nodes } } }),
+			);
+		}
+
+		// Step B: Node Operations
+		if (ops.nodes.create.length) {
+			transactionSteps.push(
+				prisma.node.createMany({
+					data: ops.nodes.create.map((n) => ({
+						id: n.id,
+						canvasId: id,
+						name: n.name,
+						type: n.type,
+						position: n.position,
+						width: n.width,
+						height: n.height,
+						templateId: n.templateId,
+						config: n.config ?? {},
+						result: n.result ?? {},
 					})),
 				}),
 			);
 		}
 
-		// E. Updates (Handles)
-		handlesToUpdate.forEach((uHandle) => {
-			txs.push(
-				prisma.handle.update({
-					data: {
-						type: uHandle.type,
-						dataTypes: uHandle.dataTypes,
-						label: uHandle.label,
-						order: uHandle.order,
-						required: uHandle.required,
-						templateHandleId: uHandle.templateHandleId,
+		// Logic for Node Updates (checking terminal status)
+		if (ops.nodes.update.length) {
+			const templates = await prisma.nodeTemplate.findMany({
+				where: {
+					id: {
+						in: ops.nodes.update
+							.map((n) => n.templateId)
+							.filter(Boolean) as string[],
 					},
-					where: { id: uHandle.id },
+				},
+				select: { id: true, isTerminalNode: true },
+			});
+			const terminalTemplateIds = new Set(
+				templates.filter((t) => t.isTerminalNode).map((t) => t.id),
+			);
+
+			for (const uNode of ops.nodes.update) {
+				const data: NodeUpdateInput = {
+					name: uNode.name,
+					position: uNode.position,
+					config: uNode.config,
+				};
+
+				// Only update result if not a terminal node, or if explicitly provided
+				const isTerminal =
+					uNode.templateId && terminalTemplateIds.has(uNode.templateId);
+				if (!isTerminal && uNode.result) {
+					data.result = {
+						selectedOutputIndex: uNode.result?.selectedOutputIndex,
+						outputs: (uNode.result as NodeResult).outputs,
+					};
+				}
+
+				transactionSteps.push(
+					prisma.node.update({ where: { id: uNode.id }, data }),
+				);
+			}
+		}
+
+		// Step C: Handle Operations
+		if (ops.handles.create.length) {
+			transactionSteps.push(
+				prisma.handle.createMany({
+					data: ops.handles.create.map((h) => ({
+						id: h.id,
+						nodeId: h.nodeId,
+						type: h.type,
+						label: h.label,
+						required: h.required,
+						order: h.order,
+						dataTypes: h.dataTypes,
+						templateHandleId: h.templateHandleId,
+					})),
 				}),
 			);
-		});
+		}
+		for (const uHandle of ops.handles.update) {
+			transactionSteps.push(
+				prisma.handle.update({
+					where: { id: uHandle.id },
+					data: {
+						type: uHandle.type,
+						label: uHandle.label,
+						required: uHandle.required,
+						order: uHandle.order,
+						dataTypes: uHandle.dataTypes,
+						templateHandleId: uHandle.templateHandleId,
+					},
+				}),
+			);
+		}
 
-		// F. Creates (Edges)
-		if (edgesToCreate.length > 0) {
-			txs.push(
+		// Step D: Edge Operations
+		if (ops.edges.create.length) {
+			transactionSteps.push(
 				prisma.edge.createMany({
-					data: edgesToCreate.map((e) => ({
+					data: ops.edges.create.map((e) => ({
 						id: e.id,
-						source: e.source, // Already resolved
-						sourceHandleId: e.sourceHandleId, // Already resolved
+						source: e.source,
 						target: e.target,
+						sourceHandleId: e.sourceHandleId,
 						targetHandleId: e.targetHandleId,
 					})),
 				}),
 			);
 		}
-
-		// G. Updates (Edges)
-		edgesToUpdate.forEach((uEdge) => {
-			txs.push(
+		for (const uEdge of ops.edges.update) {
+			transactionSteps.push(
 				prisma.edge.update({
+					where: { id: uEdge.id },
 					data: {
 						source: uEdge.source,
-						sourceHandleId: uEdge.sourceHandleId,
 						target: uEdge.target,
+						sourceHandleId: uEdge.sourceHandleId,
 						targetHandleId: uEdge.targetHandleId,
 					},
-					where: { id: uEdge.id },
 				}),
 			);
-		});
+		}
 
-		// Execute
-		await prisma.$transaction(txs);
+		// Step E: Canvas Version Increment (The Revoke Mechanism)
+		// If any previous step fails, this never happens.
+		// If this fails, previous steps roll back.
+		transactionSteps.push(
+			prisma.canvas.update({
+				where: { id },
+				data: {
+					version: { increment: 1 },
+					// Optional: Update 'updatedAt' explicitly if not auto-handled
+					// updatedAt: new Date()
+				},
+			}),
+		);
 
-		// --- Return Full Response ---
-		const finalCanvas = await prisma.canvas.findFirst({ where: { id } });
-		const finalNodes = await prisma.node.findMany({
-			where: { canvasId: id },
-			include: { template: true },
-		});
-		const finalEdges = await prisma.edge.findMany({
-			where: { sourceNode: { canvasId: id } },
-		});
-		const finalHandles = await prisma.handle.findMany({
-			where: { nodeId: { in: finalNodes.map((m) => m.id) } },
-		});
+		// --- PHASE 4: Execution ---
+		try {
+			await prisma.$transaction(transactionSteps);
+		} catch (error) {
+			console.error("Canvas Bulk Update Failed - Rolling back:", error);
+			// We re-throw HTTP exception so Hono returns appropriate error to client.
+			// Data in DB remains untouched (Atomicity).
+			throw new HTTPException(500, {
+				message: "Failed to save canvas updates.",
+			});
+		}
 
-		return c.json({
-			canvas: finalCanvas,
-			edges: finalEdges,
-			nodes: finalNodes,
-			handles: finalHandles,
-		});
+		// --- PHASE 5: Response ---
+		// Fetch the clean, updated state to return to client
+		const response = await GetCanvasEntities(id);
+		return c.json(response);
 	})
 	.delete("/:id", async (c) => {
 		const id = c.req.param("id");

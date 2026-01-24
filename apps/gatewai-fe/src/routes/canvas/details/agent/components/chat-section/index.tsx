@@ -1,5 +1,6 @@
 import { SendHorizontal, Sparkles, StopCircle } from "lucide-react";
 import { useEffect, useMemo, useRef, useState } from "react";
+import { BiRightArrowCircle } from "react-icons/bi";
 import { Button } from "@/components/ui/button";
 import { LoadingSpinner } from "@/components/ui/loading-spinner";
 import { ScrollArea } from "@/components/ui/scroll-area";
@@ -7,11 +8,6 @@ import { Textarea } from "@/components/ui/textarea";
 import { cn } from "@/lib/utils";
 import { MarkdownRenderer } from "../../../components/markdown-renderer";
 import { useCanvasAgent } from "../../ctx/canvas-agent.ctx";
-import { useAgentChatStream } from "../../hooks/use-agent-chat";
-
-interface AgentChatSectionProps {
-	canvasId: string;
-}
 
 const PLACEHOLDER_OPTIONS = [
 	"Teach me Gatewai studio please.",
@@ -19,27 +15,17 @@ const PLACEHOLDER_OPTIONS = [
 	"Create workflow for 12 minutes of podcast about AI...",
 ];
 
-export function AgentChatSection({ canvasId }: AgentChatSectionProps) {
-	const { activeSessionId } = useCanvasAgent();
+export function AgentChatSection() {
+	const { activeSessionId, messages, sendMessage, isLoading, stopGeneration } =
+		useCanvasAgent();
+
 	const scrollRef = useRef<HTMLDivElement>(null);
 	const textareaRef = useRef<HTMLTextAreaElement>(null);
 
 	const [inputValue, setInputValue] = useState("");
 	const [isFocused, setIsFocused] = useState(false);
-	const [typingText, setTypingText] = useState("");
 	const [optionIndex, setOptionIndex] = useState(0);
 
-	const { messages, sendMessage, isLoading, stopGeneration } =
-		useAgentChatStream(canvasId, activeSessionId || "");
-	console.log({ messages });
-	// --- Computed State ---
-	const displayPlaceholder = useMemo(() => {
-		if (isLoading) return "Working...";
-		if (isFocused || inputValue) return "Ask anything...";
-		return typingText;
-	}, [isLoading, isFocused, inputValue, typingText]);
-
-	// --- Animated Placeholder Effect ---
 	useEffect(() => {
 		if (isFocused || inputValue || isLoading) return;
 
@@ -49,8 +35,6 @@ export function AgentChatSection({ canvasId }: AgentChatSectionProps) {
 
 		const type = () => {
 			const fullText = PLACEHOLDER_OPTIONS[optionIndex];
-
-			setTypingText(fullText.substring(0, charIndex));
 
 			if (!isDeleting && charIndex < fullText.length) {
 				charIndex++;
@@ -72,7 +56,6 @@ export function AgentChatSection({ canvasId }: AgentChatSectionProps) {
 	}, [optionIndex, isFocused, inputValue, isLoading]);
 
 	// --- Auto-scroll Logic ---
-	// biome-ignore lint/correctness/useExhaustiveDependencies: Required logically
 	useEffect(() => {
 		const viewport = scrollRef.current?.querySelector(
 			"[data-radix-scroll-area-viewport]",
@@ -105,6 +88,7 @@ export function AgentChatSection({ canvasId }: AgentChatSectionProps) {
 			</div>
 		);
 	}
+
 	return (
 		<div className="flex-1 flex flex-col bg-background/50 h-full relative">
 			<ScrollArea className="flex-1 h-full" viewPortCn="h-full" ref={scrollRef}>
@@ -166,7 +150,7 @@ export function AgentChatSection({ canvasId }: AgentChatSectionProps) {
 							}
 							onFocus={() => setIsFocused(true)}
 							onBlur={() => setIsFocused(false)}
-							placeholder={displayPlaceholder}
+							placeholder={"Enter your message..."}
 							className="flex-1 bg-transparent border-0 focus-visible:ring-0 focus-visible:ring-offset-0 resize-none min-h-11 max-h-48 py-3 px-3 text-sm"
 							rows={1}
 						/>
@@ -188,7 +172,7 @@ export function AgentChatSection({ canvasId }: AgentChatSectionProps) {
 									disabled={!inputValue.trim()}
 									className="h-9 w-9 rounded-xl transition-transform active:scale-95 shadow-lg shadow-primary/20"
 								>
-									<SendHorizontal className="w-4 h-4" />
+									<BiRightArrowCircle className="size-5" />
 								</Button>
 							)}
 						</div>

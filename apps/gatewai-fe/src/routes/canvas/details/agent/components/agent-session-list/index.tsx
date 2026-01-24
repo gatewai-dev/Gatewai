@@ -12,7 +12,9 @@ export function AgentSessionList({ className }: { className?: string }) {
 		setActiveSessionId,
 		createNewSession,
 	} = useCanvasAgent();
-
+	const dateSorted = [...(agentSessionsList || [])].sort(
+		(a, b) => new Date(b.createdAt).getTime() - new Date(a.createdAt).getTime(),
+	);
 	return (
 		<div
 			className={cn(
@@ -36,12 +38,12 @@ export function AgentSessionList({ className }: { className?: string }) {
 
 			{/* Scrollable List */}
 			<div className="flex-1 overflow-y-auto p-2 space-y-1">
-				{!agentSessionsList || agentSessionsList.length === 0 ? (
+				{!dateSorted || dateSorted.length === 0 ? (
 					<div className="px-4 py-8 text-center text-xs text-muted-foreground">
 						No history yet. Start a conversation.
 					</div>
 				) : (
-					agentSessionsList.map((session) => (
+					dateSorted?.map((session) => (
 						<Button
 							key={session.id}
 							variant="ghost"
