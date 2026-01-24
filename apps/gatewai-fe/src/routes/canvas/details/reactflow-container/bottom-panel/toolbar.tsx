@@ -2,12 +2,11 @@ import { useReactFlow, useViewport } from "@xyflow/react";
 import {
 	ChevronDown,
 	Hand,
-	MessageSquare,
 	MousePointer,
 	Redo2,
 	Undo2,
 } from "lucide-react";
-import { memo, useContext, useState } from "react";
+import { memo, useContext } from "react";
 import { Button } from "@/components/ui/button";
 import {
 	Menubar,
@@ -19,8 +18,6 @@ import {
 import { Separator } from "@/components/ui/separator";
 import { useAppDispatch, useAppSelector } from "@/store";
 import { selectCanRedo, selectCanUndo } from "@/store/undo-redo";
-import { CanvasAgentLayout } from "../../agent/components/layout";
-import { useCanvasCtx } from "../../ctx/canvas-ctx";
 import { ModeContext } from "..";
 import { CanvasTasksPanel } from "../tasks";
 import { RunWorkflowButton } from "./run-workflow-button";
@@ -28,8 +25,6 @@ import { RunWorkflowButton } from "./run-workflow-button";
 const Toolbar = memo(() => {
 	const { zoom } = useViewport();
 	const dispatch = useAppDispatch();
-	const { canvas } = useCanvasCtx();
-	const [isChatOpen, setIsChatOpen] = useState(false);
 
 	// Existing logic
 	const undo = () => dispatch({ type: "flow/undo" });
@@ -44,12 +39,6 @@ const Toolbar = memo(() => {
 
 	return (
 		<div className="relative flex flex-col items-center gap-2">
-			{/* Chat Window - Floating above toolbar */}
-			{isChatOpen && canvas && (
-				<div className="absolute bottom-full mb-4 right-0 w-[750px] shadow-2xl rounded-xl overflow-hidden animate-in slide-in-from-bottom-5 fade-in duration-200 z-50">
-					<CanvasAgentLayout canvasId={canvas.id} />
-				</div>
-			)}
 
 			<Menubar className="border border-border/50 bg-background/80 backdrop-blur-md shadow-2xl rounded-full px-2 py-1 h-12 ring-1 ring-white/5 flex items-center gap-1">
 				{/* Selection & Pan Tools */}
@@ -127,19 +116,6 @@ const Toolbar = memo(() => {
 
 				<RunWorkflowButton />
 				<CanvasTasksPanel />
-
-				<Separator orientation="vertical" className="h-5 mx-1" />
-
-				{/* Chat Toggle */}
-				<Button
-					title="AI Agent Chat"
-					variant={isChatOpen ? "secondary" : "ghost"}
-					size="icon"
-					className="rounded-full w-9 h-9"
-					onClick={() => setIsChatOpen(!isChatOpen)}
-				>
-					<MessageSquare className="w-4 h-4" />
-				</Button>
 			</Menubar>
 		</div>
 	);

@@ -15,6 +15,8 @@ import { canvasAgentState } from "../../agent/state.js";
 import { GetCanvasEntities } from "../../data-ops/canvas.js";
 import { applyCanvasUpdate } from "../../data-ops/canvas-update.js";
 import { NodeWFProcessor } from "../../graph-engine/canvas-workflow-processor.js";
+import { logger } from "../../logger.js";
+import { assertIsError } from "../../utils/misc.js";
 
 const canvasRoutes = new Hono({
 	strict: false,
@@ -85,7 +87,8 @@ const canvasRoutes = new Hono({
 		try {
 			await applyCanvasUpdate(id, validated);
 		} catch (error) {
-			console.error("Canvas Bulk Update Failed:", error);
+			assertIsError(error);
+			logger.error(`Canvas Bulk Update Failed: ${error.message}`,);
 			throw new HTTPException(500, {
 				message: "Failed to save canvas updates.",
 			});
@@ -102,7 +105,7 @@ const canvasRoutes = new Hono({
 		const patch = await prisma.canvasPatch.create({
 			data: {
 				canvasId: id,
-				patch: validated,
+				patch: validated as object,
 				status: "PENDING",
 				agentSessionId: agentSessionId,
 			},

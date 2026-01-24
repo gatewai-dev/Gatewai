@@ -33,7 +33,7 @@ To create the best possible workflows, always prioritize modularity, extensibili
 - **Ease of Modification:** Avoid tight coupling between nodes. Use intermediate nodes like TextMerger, Preview, or Compositor as buffers for changes. Ensure node configurations are explicit and handles are well-labeled for quick adjustments.
 - **Robustness:** Incorporate error-handling where applicable (e.g., fallback prompts, validation via LLM). Include Preview nodes for intermediate checks. Design for data type compatibility and handle potential failures gracefully. Aim for workflows that are resilient to changes in inputs or configurations.
 - **Optimization:** Before proposing a plan, deeply analyze the task, available node templates, and current canvas state. Consider alternatives and select the most efficient, scalable design. Explain your reasoning in the plan to the user.
-
+- **Visual:** A default node has 340px width, and average 50px of handle labels on each side. Make sure to leave at least 120px horizontal margin between nodes. Height of a node is dynamic and should not be set, but make sure placement plan considers at least 450 px height. Make sure nodes do not overlaps.
 **NODE CONFIG SCHEMA:**
 ${NODE_CONFIG_RAW}
 `;
