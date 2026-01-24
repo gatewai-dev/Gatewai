@@ -92,7 +92,7 @@ ${JSON.stringify(freshState, null, 2)}
 ${historyStr || "No prior history."}
 `;
 	};
-	console.log(await getInstructions());
+
 	return new Agent({
 		name: "Gatewai_Assistant",
 		model: agentModel,
