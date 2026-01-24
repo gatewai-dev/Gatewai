@@ -1,206 +1,307 @@
-import { Menu, SendHorizontal, Sparkles, StopCircle } from "lucide-react";
-import { useEffect, useMemo, useRef, useState } from "react";
-import { BiRightArrowCircle } from "react-icons/bi";
+import {
+	ArrowRight,
+	Clock,
+	MoreHorizontal,
+	Plus,
+	StopCircle,
+	X,
+} from "lucide-react";
+import { useCallback, useEffect, useRef, useState } from "react";
 import { Button } from "@/components/ui/button";
+import { Dialog, DialogContent, DialogTrigger } from "@/components/ui/dialog";
 import { LoadingSpinner } from "@/components/ui/loading-spinner";
 import { ScrollArea } from "@/components/ui/scroll-area";
+import {
+	Select,
+	SelectContent,
+	SelectItem,
+	SelectTrigger,
+	SelectValue,
+} from "@/components/ui/select";
 import { Textarea } from "@/components/ui/textarea";
 import { cn } from "@/lib/utils";
 import { MarkdownRenderer } from "../../../components/markdown-renderer";
 import { useCanvasAgent } from "../../ctx/canvas-agent.ctx";
+import { AgentSessionList } from "../agent-session-list";
 import { PatchReviewCard } from "../patch-review-card";
 
-const PLACEHOLDER_OPTIONS = [
-    "Teach me Gatewai studio please.",
-    "Create workflow for 16 seconds advertisement video clip...",
-    "Create workflow for 12 minutes of podcast about AI...",
-];
+function InputArea({
+	centered = false,
+	inputValue,
+	setInputValue,
+	isLoading,
+	handleSubmit,
+	stopGeneration,
+	textareaRef,
+}: {
+	centered?: boolean;
+	inputValue: string;
+	setInputValue: (value: string) => void;
+	isLoading: boolean;
+	handleSubmit: () => Promise<void>;
+	stopGeneration: () => void;
+	textareaRef: React.RefObject<HTMLTextAreaElement | null>;
+}) {
+	return (
+		<div
+			className={cn(
+				"w-full max-w-3xl mx-auto",
+				centered ? "" : "pointer-events-auto",
+			)}
+		>
+			<div
+				className={cn(
+					"relative flex flex-col gap-2 p-2 rounded-2xl border transition-all duration-200",
+					"bg-background/80 backdrop-blur-xl",
+					"border-border shadow-2xl shadow-black/5",
+					"focus-within:border-primary/50 focus-within:ring-4 focus-within:ring-primary/5",
+				)}
+			>
+				<div className="flex items-center gap-2 px-2 pt-1">
+					<span className="text-[10px] font-medium bg-primary/10 text-primary px-1.5 py-0.5 rounded-md">
+						@agent
+					</span>
+					<Textarea
+						ref={textareaRef}
+						value={inputValue}
+						onChange={(e) => setInputValue(e.target.value)}
+						onKeyDown={(e) =>
+							e.key === "Enter" &&
+							!e.shiftKey &&
+							(e.preventDefault(), handleSubmit())
+						}
+						placeholder="Enter your request..."
+						className="flex-1 bg-transparent border-0 focus-visible:ring-0 focus-visible:ring-offset-0 resize-none min-h-[24px] max-h-40 p-1 text-xs shadow-none"
+						rows={1}
+					/>
+				</div>
 
-export function AgentChatSection({ onToggleSidebar }: { onToggleSidebar: () => void }) {
-    const {
-        activeSessionId,
-        messages,
-        sendMessage,
-        isLoading,
-        stopGeneration,
-        pendingPatchId,
-        clearPendingPatch,
-    } = useCanvasAgent();
-    const scrollRef = useRef<HTMLDivElement>(null);
-    const textareaRef = useRef<HTMLTextAreaElement>(null);
-    const [inputValue, setInputValue] = useState("");
-    const [placeholderText, setPlaceholderText] = useState("");
-    const [isFocused, setIsFocused] = useState(false);
-    const [optionIndex, setOptionIndex] = useState(0);
-    useEffect(() => {
-        if (isFocused || inputValue || isLoading) return;
-        let charIndex = 0;
-        let isDeleting = false;
-        let timeoutId: NodeJS.Timeout;
-        const type = () => {
-            const fullText = PLACEHOLDER_OPTIONS[optionIndex];
-            if (!isDeleting && charIndex < fullText.length) {
-                charIndex++;
-            } else if (isDeleting && charIndex > 0) {
-                charIndex--;
-            } else {
-                isDeleting = !isDeleting;
-                if (!isDeleting)
-                    setOptionIndex((prev) => (prev + 1) % PLACEHOLDER_OPTIONS.length);
-                timeoutId = setTimeout(type, isDeleting ? 2000 : 500);
-                setPlaceholderText(fullText.slice(0, charIndex));
-                return;
-            }
-            setPlaceholderText(fullText.slice(0, charIndex));
-            timeoutId = setTimeout(type, isDeleting ? 30 : 50);
-        };
-        timeoutId = setTimeout(type, 500);
-        return () => clearTimeout(timeoutId);
-    }, [optionIndex, isFocused, inputValue, isLoading]);
-    // --- Auto-scroll Logic ---
-    useEffect(() => {
-        const viewport = scrollRef.current?.querySelector(
-            "[data-radix-scroll-area-viewport]",
-        );
-        if (viewport) {
-            viewport.scrollTo({ top: viewport.scrollHeight, behavior: "smooth" });
-        }
-    }, [messages, isLoading]);
-    const handleSubmit = async () => {
-        if (!inputValue.trim() || isLoading) return;
-        const msg = inputValue.trim();
-        setInputValue("");
-        await sendMessage(msg);
-        setTimeout(() => {
-            const viewport = scrollRef.current?.querySelector(
-                "[data-radix-scroll-area-viewport]",
-            );
-            viewport?.scrollTo({ top: viewport.scrollHeight, behavior: "smooth" });
-        }, 120);
-    };
-    if (!activeSessionId) {
-        return (
-            <div className="flex-1 flex flex-col items-center justify-center bg-background text-muted-foreground animate-in fade-in duration-500">
-                <Sparkles className="w-8 h-8 mb-3 text-primary/20" />
-                <p className="text-xs font-medium">
-                    Select a session to start collaborating
-                </p>
-            </div>
-        );
-    }
-    return (
-        <div className="flex flex-col h-full bg-background/50 relative">
-            <div className="sticky top-0 z-10 bg-background/80 backdrop-blur-md border-b border-border/50 p-3 flex items-center justify-between">
-                <Button
-                    variant="ghost"
-                    size="icon"
-                    onClick={onToggleSidebar}
-                    className="h-7 w-7 rounded-md hover:bg-accent text-muted-foreground transition-colors"
-                >
-                    <Menu className="w-4 h-4" />
-                </Button>
-                <h2 className="text-xs font-semibold text-foreground">Chat</h2>
-                <div className="w-7" /> {/* Spacer */}
-            </div>
-            <ScrollArea className="flex-1" viewPortCn="h-full" ref={scrollRef}>
-                <div className="max-w-3xl mx-auto w-full p-4 space-y-6 pb-28">
-                    {messages.length === 0 && (
-                        <div className="py-16 text-center opacity-40">
-                            <h3 className="text-lg font-semibold tracking-tight">
-                                How can I help?
-                            </h3>
-                        </div>
-                    )}
-                    {messages.map((msg) => (
-                        <div
-                            key={msg.id}
-                            className={cn(
-                                "flex w-full animate-in slide-in-from-bottom-2 duration-300",
-                                msg.role === "user" ? "justify-end" : "justify-start",
-                            )}
-                        >
-                            <div
-                                className={cn(
-                                    "max-w-[85%] px-3 py-2 rounded-2xl text-xs transition-all",
-                                    msg.role === "user"
-                                        ? "bg-primary text-primary-foreground rounded-tr-none"
-                                        : "bg-muted/50 border border-border/50 text-foreground rounded-tl-none",
-                                )}
-                            >
-                                {msg.role === "user" ? (
-                                    <div className="whitespace-pre-wrap">{msg.text}</div>
-                                ) : (
-                                    <MarkdownRenderer markdown={msg.text} />
-                                )}
-                                {msg.isStreaming && <LoadingSpinner className="size-5" />}
-                            </div>
-                        </div>
-                    ))}
-                    {pendingPatchId && (
-                        <div className="flex w-full justify-start animate-in slide-in-from-bottom-2 duration-300">
-                            <div className="max-w-[85%]">
-                                <PatchReviewCard
-                                    patchId={pendingPatchId}
-                                    onComplete={clearPendingPatch}
-                                />
-                            </div>
-                        </div>
-                    )}
-                </div>
-            </ScrollArea>
-            {/* --- Input Container --- */}
-            <div className="absolute bottom-0 inset-x-0 p-4 bg-linear-to-t from-background via-background/90 to-transparent pointer-events-none">
-                <div className="max-w-3xl mx-auto pointer-events-auto">
-                    <div
-                        className={cn(
-                            "relative flex items-end gap-2 p-2 rounded-2xl border transition-all duration-200",
-                            "bg-background/80 backdrop-blur-xl",
-                            "border-border shadow-2xl shadow-black/5",
-                            "focus-within:border-primary/50 focus-within:ring-4 focus-within:ring-primary/5",
-                        )}
-                    >
-                        <Textarea
-                            ref={textareaRef}
-                            value={inputValue}
-                            onChange={(e) => setInputValue(e.target.value)}
-                            onKeyDown={(e) =>
-                                e.key === "Enter" &&
-                                !e.shiftKey &&
-                                (e.preventDefault(), handleSubmit())
-                            }
-                            onFocus={() => setIsFocused(true)}
-                            onBlur={() => setIsFocused(false)}
-                            placeholder={placeholderText}
-                            className="flex-1 bg-transparent border-0 focus-visible:ring-0 focus-visible:ring-offset-0 resize-none min-h-10 max-h-40 py-2 px-3 text-xs"
-                            rows={1}
-                        />
-                        <div className="flex items-center gap-2 pr-1 pb-1">
-                            {isLoading ? (
-                                <Button
-                                    size="icon"
-                                    variant="ghost"
-                                    onClick={stopGeneration}
-                                    className="h-8 w-8 text-destructive hover:bg-destructive/10 rounded-xl"
-                                >
-                                    <StopCircle className="w-4 h-4" />
-                                </Button>
-                            ) : (
-                                <Button
-                                    size="icon"
-                                    onClick={handleSubmit}
-                                    disabled={!inputValue.trim()}
-                                    className="h-8 w-8 rounded-xl transition-transform active:scale-95 shadow-lg shadow-primary/20"
-                                >
-                                    <BiRightArrowCircle className="size-4" />
-                                </Button>
-                            )}
-                        </div>
-                    </div>
-                    <p className="text-center mt-2 text-[9px] text-muted-foreground/60">
-                        AI can make mistakes. Check workflow before running.
-                    </p>
-                </div>
-            </div>
-        </div>
-    );
+				<div className="flex items-center justify-between px-1 pb-1">
+					<div className="flex items-center gap-2">
+						<Button
+							variant="ghost"
+							size="icon"
+							className="h-6 w-6 rounded-md text-muted-foreground hover:text-foreground"
+						>
+							<Plus className="w-4 h-4" />
+						</Button>
+						<Select defaultValue="planning">
+							<SelectTrigger className="h-6 text-[10px] border-0 bg-transparent hover:bg-accent/50 gap-1 px-2 w-auto shadow-none focus:ring-0">
+								<SelectValue placeholder="Mode" />
+							</SelectTrigger>
+							<SelectContent>
+								<SelectItem value="planning">Planning</SelectItem>
+								<SelectItem value="coding">Coding</SelectItem>
+							</SelectContent>
+						</Select>
+						<Select defaultValue="gemini-pro">
+							<SelectTrigger className="h-6 text-[10px] border-0 bg-transparent hover:bg-accent/50 gap-1 px-2 w-auto shadow-none focus:ring-0">
+								<SelectValue placeholder="Model" />
+							</SelectTrigger>
+							<SelectContent>
+								<SelectItem value="gemini-pro">Gemini 3 Pro (High)</SelectItem>
+								<SelectItem value="gemini-flash">Gemini 3 Flash</SelectItem>
+							</SelectContent>
+						</Select>
+					</div>
+
+					{isLoading ? (
+						<Button
+							size="icon"
+							variant="ghost"
+							onClick={stopGeneration}
+							className="h-7 w-7 text-destructive hover:bg-destructive/10 rounded-full"
+						>
+							<StopCircle className="w-4 h-4" />
+						</Button>
+					) : (
+						<Button
+							size="icon"
+							onClick={handleSubmit}
+							disabled={!inputValue.trim()}
+							className="h-7 w-7 rounded-full transition-transform active:scale-95 shadow-lg shadow-primary/20"
+						>
+							<ArrowRight className="size-4" />
+						</Button>
+					)}
+				</div>
+			</div>
+			{centered && (
+				<p className="text-center mt-4 text-[10px] text-muted-foreground/60">
+					AI may make mistakes. Double-check all generated workflow.
+				</p>
+			)}
+		</div>
+	);
+}
+
+export function AgentChatSection({ onClose }: { onClose: () => void }) {
+	const {
+		activeSessionId,
+		messages,
+		sendMessage,
+		isLoading,
+		stopGeneration,
+		pendingPatchId,
+		clearPendingPatch,
+		createNewSession,
+	} = useCanvasAgent();
+	const scrollRef = useRef<HTMLDivElement | null>(null);
+	const textareaRef = useRef<HTMLTextAreaElement | null>(null);
+	const [inputValue, setInputValue] = useState("");
+	const [isHistoryOpen, setIsHistoryOpen] = useState(false);
+
+	// --- Auto-scroll Logic ---
+	useEffect(() => {
+		const viewport = scrollRef.current?.querySelector(
+			"[data-radix-scroll-area-viewport]",
+		);
+		if (viewport) {
+			viewport.scrollTo({ top: viewport.scrollHeight, behavior: "smooth" });
+		}
+	}, [messages, isLoading]);
+
+	const handleSubmit = useCallback(async () => {
+		if (!inputValue.trim() || isLoading) return;
+		const msg = inputValue.trim();
+		setInputValue("");
+		await sendMessage(msg);
+		setTimeout(() => {
+			const viewport = scrollRef.current?.querySelector(
+				"[data-radix-scroll-area-viewport]",
+			);
+			viewport?.scrollTo({ top: viewport.scrollHeight, behavior: "smooth" });
+		}, 120);
+	}, [inputValue, isLoading, sendMessage]);
+
+	const isNewSession = !activeSessionId || messages.length === 0;
+
+	return (
+		<div className="flex flex-col h-full bg-background/50 relative">
+			{/* Header */}
+			<div className="sticky top-0 z-10 bg-transparent p-3 flex items-center justify-between">
+				<h2 className="text-sm font-medium text-foreground pl-2">Agent</h2>
+				<div className="flex items-center gap-1">
+					<Button
+						variant="ghost"
+						size="icon"
+						onClick={createNewSession}
+						className="h-7 w-7 rounded-md hover:bg-accent text-muted-foreground transition-colors"
+					>
+						<Plus className="w-4 h-4" />
+					</Button>
+
+					<Dialog open={isHistoryOpen} onOpenChange={setIsHistoryOpen}>
+						<DialogTrigger asChild>
+							<Button
+								variant="ghost"
+								size="icon"
+								className="h-7 w-7 rounded-md hover:bg-accent text-muted-foreground transition-colors"
+							>
+								<Clock className="w-4 h-4" />
+							</Button>
+						</DialogTrigger>
+						<DialogContent className="sm:max-w-[425px] p-0 overflow-hidden bg-background/95 backdrop-blur-xl border-white/10">
+							<AgentSessionList
+								className="w-full border-none bg-transparent"
+								onItemClick={() => setIsHistoryOpen(false)}
+							/>
+						</DialogContent>
+					</Dialog>
+
+					<Button
+						variant="ghost"
+						size="icon"
+						className="h-7 w-7 rounded-md hover:bg-accent text-muted-foreground transition-colors"
+					>
+						<MoreHorizontal className="w-4 h-4" />
+					</Button>
+					<Button
+						variant="ghost"
+						size="icon"
+						onClick={onClose}
+						className="h-7 w-7 rounded-md hover:bg-accent text-muted-foreground transition-colors"
+					>
+						<X className="w-4 h-4" />
+					</Button>
+				</div>
+			</div>
+
+			{/* Content */}
+			{isNewSession ? (
+				<div className="flex-1 flex flex-col items-center justify-center p-4">
+					<div className="w-full max-w-3xl space-y-8">
+						<h1 className="text-2xl font-semibold text-foreground/90 px-2">
+							Gatewai Agent
+						</h1>
+						<InputArea
+							centered
+							inputValue={inputValue}
+							setInputValue={setInputValue}
+							isLoading={isLoading}
+							handleSubmit={handleSubmit}
+							stopGeneration={stopGeneration}
+							textareaRef={textareaRef}
+						/>
+					</div>
+				</div>
+			) : (
+				<>
+					<ScrollArea className="flex-1" viewPortCn="h-full" ref={scrollRef}>
+						<div className="max-w-3xl mx-auto w-full p-4 space-y-6 pb-28">
+							{messages.map((msg) => (
+								<div
+									key={msg.id}
+									className={cn(
+										"flex w-full animate-in slide-in-from-bottom-2 duration-300",
+										msg.role === "user" ? "justify-end" : "justify-start",
+									)}
+								>
+									<div
+										className={cn(
+											"max-w-[85%] px-3 py-2 rounded-2xl text-xs transition-all",
+											msg.role === "user"
+												? "bg-primary text-primary-foreground rounded-tr-none"
+												: "bg-muted/50 border border-border/50 text-foreground rounded-tl-none",
+										)}
+									>
+										{msg.role === "user" ? (
+											<div className="whitespace-pre-wrap">{msg.text}</div>
+										) : (
+											<MarkdownRenderer markdown={msg.text} />
+										)}
+										{msg.isStreaming && <LoadingSpinner className="size-5" />}
+									</div>
+								</div>
+							))}
+							{pendingPatchId && (
+								<div className="flex w-full justify-start animate-in slide-in-from-bottom-2 duration-300">
+									<div className="max-w-[85%]">
+										<PatchReviewCard
+											patchId={pendingPatchId}
+											onComplete={clearPendingPatch}
+										/>
+									</div>
+								</div>
+							)}
+						</div>
+					</ScrollArea>
+
+					<div className="absolute bottom-0 inset-x-0 p-4 bg-linear-to-t from-background via-background/90 to-transparent pointer-events-none">
+						<InputArea
+							inputValue={inputValue}
+							setInputValue={setInputValue}
+							isLoading={isLoading}
+							handleSubmit={handleSubmit}
+							stopGeneration={stopGeneration}
+							textareaRef={textareaRef}
+						/>
+						<p className="text-center mt-2 text-[9px] text-muted-foreground/60 pointer-events-auto">
+							AI may make mistakes. Double-check all generated workflow.
+						</p>
+					</div>
+				</>
+			)}
+		</div>
+	);
 }
