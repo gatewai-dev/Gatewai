@@ -19,6 +19,9 @@ export default defineConfig({
 			include: ["events"],
 		}),
 	],
+	optimizeDeps: {
+		include: ["mermaid"],
+	},
 	server: {
 		proxy: {
 			"/api": {

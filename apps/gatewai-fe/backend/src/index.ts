@@ -51,7 +51,7 @@ const app = new Hono<{
 			origin:
 				process.env.NODE_ENV === "production"
 					? ENV_CONFIG.BASE_URL
-					: ["http://localhost:5173", "http://localhost:8081"],
+					: ["http://localhost:5173"],
 			allowMethods: ["POST", "GET", "OPTIONS"],
 			exposeHeaders: ["Content-Length"],
 			maxAge: 600,

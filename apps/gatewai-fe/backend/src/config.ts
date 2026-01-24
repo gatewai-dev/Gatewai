@@ -8,7 +8,7 @@ const envSchema = z.object({
 	PORT: z.coerce.number().default(3000),
 	REDIS_HOST: z.string().min(1),
 	REDIS_PORT: z.string().min(1),
-	REDIS_PASSWORD: z.string().min(1).optional(),
+	REDIS_PASSWORD: z.string().optional(),
 	GEMINI_API_KEY: z.string().min(1),
 	GCS_ASSETS_BUCKET: z.string().min(1),
 	GOOGLE_APPLICATION_CREDENTIALS_PATH: z.string().min(1).optional(),
