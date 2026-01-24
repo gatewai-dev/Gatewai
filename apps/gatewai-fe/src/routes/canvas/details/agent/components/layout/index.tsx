@@ -1,10 +1,10 @@
-import { Gemini } from "@lobehub/icons";
+import { Panel } from "@xyflow/react";
 import { useState } from "react";
+import { HiSparkles } from "react-icons/hi2";
 import { Button } from "@/components/ui/button";
 import { cn } from "@/lib/utils";
 import { CanvasAgentProvider } from "../../ctx/canvas-agent.ctx";
 import { AgentChatSection } from "../chat-section";
-import { Panel } from "@xyflow/react";
 
 function AgentLayoutInner() {
 	const [isCollapsed, setIsCollapsed] = useState(false);
@@ -12,7 +12,7 @@ function AgentLayoutInner() {
 	return (
 		<Panel
 			className={cn("right-0 bottom-0 top-0 grow w-[320px]", {
-				'w-0': isCollapsed
+				"w-0": isCollapsed,
 			})}
 			position="top-right"
 		>
@@ -20,13 +20,14 @@ function AgentLayoutInner() {
 				variant="ghost"
 				onClick={() => setIsCollapsed(false)}
 				className={cn(
-					"absolute top-3 right-3 z-50 w-12 h-12 rounded-full bg-background/80 backdrop-blur-md border border-white/10 shadow-xl flex items-center justify-center hover:bg-accent transition-all",
+					"absolute top-3 right-3 z-50 w-42 h-12 rounded-full bg-background/80 backdrop-blur-md border border-white/10 shadow-xl flex items-center justify-center hover:bg-accent transition-all",
 					{
 						hidden: !isCollapsed,
 					},
 				)}
 			>
-				<Gemini.Color className="size-7 text-foreground" />
+				<HiSparkles className="size-6 text-primary" />
+				Workflow Agent
 			</Button>
 			<div
 				className={cn(

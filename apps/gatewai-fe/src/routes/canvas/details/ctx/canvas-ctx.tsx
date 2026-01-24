@@ -164,7 +164,7 @@ const CanvasProvider = ({
 	// Use useRef instead of useState for isReviewing to prevent unnecessary re-renders
 	const isReviewingRef = useRef(false);
 	const previewPatchIdRef = useRef<string | null>(null);
-	
+
 	// Track state changes to force re-render when needed
 	const [reviewingStateVersion, setReviewingStateVersion] = useState(0);
 	const timeoutRef = useRef<NodeJS.Timeout | null>(null);
@@ -205,12 +205,7 @@ const CanvasProvider = ({
 			dispatch(setNodes(initialNodes));
 			dispatch(setEdges(initialEdges));
 		}
-	}, [
-		dispatch,
-		canvasDetailsResponse,
-		initialNodes,
-		initialEdges,
-	]);
+	}, [dispatch, canvasDetailsResponse, initialNodes, initialEdges]);
 
 	const save = useCallback(() => {
 		if (!canvasId || isReviewingRef.current) {
@@ -275,7 +270,7 @@ const CanvasProvider = ({
 	const scheduleSave = useCallback(
 		(delay?: number) => {
 			if (isReviewingRef.current) return;
-			
+
 			if (timeoutRef.current) {
 				clearTimeout(timeoutRef.current);
 			}
@@ -627,7 +622,7 @@ const CanvasProvider = ({
 			dispatch(createNode(newNode));
 			dispatch(createNodeEntity(nodeEntity));
 			dispatch(addManyHandleEntities(handles));
-			
+
 			let saveDelay: number | undefined;
 			if (template.type === "File") {
 				saveDelay = 50;
@@ -834,7 +829,7 @@ const CanvasProvider = ({
 
 				// Force re-render to update UI with new reviewing state
 				setReviewingStateVersion((v) => v + 1);
-				
+
 				toast.info("Previewing patch...");
 			} catch (error) {
 				console.error("Error previewing patch:", error);
@@ -896,13 +891,13 @@ const CanvasProvider = ({
 		async (patchId: string) => {
 			try {
 				await applyPatchMutation({ param: { id: canvasId, patchId } }).unwrap();
-				
+
 				isReviewingRef.current = false;
 				previewPatchIdRef.current = null;
 				setReviewingStateVersion((v) => v + 1);
-				
+
 				refetchCanvas();
-				toast.success("Patch applied successfully");
+				toast.success("Applied changes to the canvas succesfully");
 			} catch (error) {
 				console.error("Error applying patch:", error);
 				toast.error("Failed to apply patch");
@@ -938,7 +933,7 @@ const CanvasProvider = ({
 						sourceHandle: edge.sourceHandleId || undefined,
 						targetHandle: edge.targetHandleId || undefined,
 					}));
-					
+
 					dispatch(setAllNodeEntities(canvasDetailsResponse.nodes));
 					dispatch(setAllEdgeEntities(canvasDetailsResponse.edges));
 					dispatch(setAllHandleEntities(canvasDetailsResponse.handles));
@@ -949,7 +944,7 @@ const CanvasProvider = ({
 				isReviewingRef.current = false;
 				previewPatchIdRef.current = null;
 				setReviewingStateVersion((v) => v + 1);
-				
+
 				await refetchCanvas();
 				toast.info("Patch rejected");
 			} catch (error) {

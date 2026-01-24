@@ -164,7 +164,7 @@ export function AgentChatSection({ onClose }: { onClose: () => void }) {
 		<div className="flex flex-col h-full bg-background/50 relative">
 			{/* Header */}
 			<div className="sticky top-0 z-10 bg-transparent p-3 flex items-center justify-between">
-				<h2 className="text-sm font-medium text-foreground pl-2">Waigate</h2>
+				<div></div>
 				<div className="flex items-center gap-1">
 					<Button
 						variant="ghost"
@@ -223,7 +223,11 @@ export function AgentChatSection({ onClose }: { onClose: () => void }) {
 				</div>
 			) : (
 				<>
-					<ScrollArea className="flex-1 grow h-full pb-24" viewPortCn="h-full overflow-auto" ref={scrollRef}>
+					<ScrollArea
+						className="flex-1 grow h-full pb-24"
+						viewPortCn="h-full overflow-auto"
+						ref={scrollRef}
+					>
 						<div className="max-w-3xl mx-auto w-full p-2 space-y-6 pb-28">
 							{messages.map((msg) => (
 								<div
@@ -252,10 +256,10 @@ export function AgentChatSection({ onClose }: { onClose: () => void }) {
 							))}
 							{pendingPatchId && (
 								<div className="flex w-full justify-start animate-in slide-in-from-bottom-2 duration-300">
-										<PatchReviewCard
-											patchId={pendingPatchId}
-											onComplete={clearPendingPatch}
-										/>
+									<PatchReviewCard
+										patchId={pendingPatchId}
+										onComplete={clearPendingPatch}
+									/>
 								</div>
 							)}
 						</div>

@@ -2,7 +2,6 @@ import { randomUUID } from "node:crypto";
 import type { NodeUpdateInput } from "@gatewai/db";
 import { prisma } from "@gatewai/db";
 import type { BulkUpdatePayload, NodeResult } from "@gatewai/types";
-import assert from "node:assert";
 
 export async function applyCanvasUpdate(
 	canvasId: string,
@@ -65,36 +64,92 @@ export async function applyCanvasUpdate(
 	// A. Process Nodes
 	for (const n of validated.nodes ?? []) {
 		const clientId = n.id;
-		assert(clientId, 'No client id provided');
-		const isTempId = clientId?.startsWith("temp-");
-		const isNew = !dbState.nodeIds.has(clientId);
-		const serverId = isNew ? isTempId ? randomUUID() : clientId : clientId;
-		if (clientId) idMap.nodes.set(clientId, serverId);
+		const shouldOverride = clientId ? clientId.startsWith("temp-") : true;
+		const serverId = shouldOverride ? randomUUID() : (clientId as string);
 
-		if (isNew) {
-			ops.nodes.create.push({ ...n, id: serverId });
+		if (shouldOverride && clientId) {
+			idMap.nodes.set(clientId, serverId);
+		}
+
+		if (shouldOverride) {
+			ops.nodes.create.push({
+				id: serverId,
+				canvasId,
+				name: n.name,
+				type: n.type,
+				position: n.position,
+				width: n.width,
+				height: n.height,
+				templateId: n.templateId,
+				config: n.config,
+				result: n.result,
+			});
 		} else {
-			ops.nodes.update.push(n);
-			ops.nodes.keepIds.add(clientId);
+			ops.nodes.keepIds.add(serverId);
+			if (dbState.nodeIds.has(serverId)) {
+				ops.nodes.update.push({ ...n, id: serverId });
+			} else {
+				ops.nodes.create.push({
+					id: serverId,
+					canvasId,
+					name: n.name,
+					type: n.type,
+					position: n.position,
+					width: n.width,
+					height: n.height,
+					templateId: n.templateId,
+					config: n.config,
+					result: n.result,
+				});
+			}
 		}
 	}
 
 	// B. Process Handles
 	for (const h of validated.handles ?? []) {
-		const resolvedNodeId = idMap.nodes.get(h.nodeId) ?? h.nodeId;
 		const clientId = h.id;
-		const isNew = !clientId || !dbState.handleIds.has(clientId);
-		const serverId = isNew ? randomUUID() : clientId;
+		const shouldOverride = clientId ? clientId.startsWith("temp-") : true;
+		const serverId = shouldOverride ? randomUUID() : (clientId as string);
 
-		if (clientId) idMap.handles.set(clientId, serverId);
+		if (shouldOverride && clientId) {
+			idMap.handles.set(clientId, serverId);
+		}
 
-		const handleData = { ...h, nodeId: resolvedNodeId, id: serverId };
+		const resolvedNodeId = idMap.nodes.get(h.nodeId) ?? h.nodeId;
 
-		if (isNew) {
-			ops.handles.create.push(handleData);
+		const handleData = {
+			...h,
+			id: serverId,
+			nodeId: resolvedNodeId,
+		};
+
+		if (shouldOverride) {
+			ops.handles.create.push({
+				id: serverId,
+				nodeId: resolvedNodeId,
+				type: h.type,
+				label: h.label,
+				required: h.required,
+				order: h.order,
+				dataTypes: h.dataTypes,
+				templateHandleId: h.templateHandleId,
+			});
 		} else {
-			ops.handles.update.push(handleData);
-			ops.handles.keepIds.add(clientId);
+			ops.handles.keepIds.add(serverId);
+			if (dbState.handleIds.has(serverId)) {
+				ops.handles.update.push(handleData);
+			} else {
+				ops.handles.create.push({
+					id: serverId,
+					nodeId: resolvedNodeId,
+					type: h.type,
+					label: h.label,
+					required: h.required,
+					order: h.order,
+					dataTypes: h.dataTypes,
+					templateHandleId: h.templateHandleId,
+				});
+			}
 		}
 	}
 
@@ -108,36 +163,54 @@ export async function applyCanvasUpdate(
 
 		const source = idMap.nodes.get(e.source) ?? e.source;
 		const target = idMap.nodes.get(e.target) ?? e.target;
-		const sourceHandle =
+		const sourceHandleId =
 			idMap.handles.get(e.sourceHandleId) ?? e.sourceHandleId;
-		const targetHandle =
+		const targetHandleId =
 			idMap.handles.get(e.targetHandleId) ?? e.targetHandleId;
 
-		if (!source || !target || !sourceHandle || !targetHandle) {
+		if (!source || !target || !sourceHandleId || !targetHandleId) {
 			console.warn(`[Patch] Skipping Edge ${e.id}: Unresolved reference.`);
 			continue;
 		}
 
 		const clientId = e.id;
-		const isNew = !clientId || !dbState.edgeIds.has(clientId);
-		const serverId = isNew ? randomUUID() : clientId;
+		const shouldOverride = clientId ? clientId.startsWith("temp-") : true;
+		const serverId = shouldOverride ? randomUUID() : (clientId as string);
 
-		if (clientId) idMap.edges.set(clientId, serverId);
+		if (shouldOverride && clientId) {
+			idMap.edges.set(clientId, serverId);
+		}
 
 		const edgeData = {
 			...e,
 			id: serverId,
 			source,
 			target,
-			sourceHandleId: sourceHandle,
-			targetHandleId: targetHandle,
+			sourceHandleId,
+			targetHandleId,
 		};
 
-		if (isNew) {
-			ops.edges.create.push(edgeData);
+		if (shouldOverride) {
+			ops.edges.create.push({
+				id: serverId,
+				source,
+				target,
+				sourceHandleId,
+				targetHandleId,
+			});
 		} else {
-			ops.edges.update.push(edgeData);
-			ops.edges.keepIds.add(clientId);
+			ops.edges.keepIds.add(serverId);
+			if (dbState.edgeIds.has(serverId)) {
+				ops.edges.update.push(edgeData);
+			} else {
+				ops.edges.create.push({
+					id: serverId,
+					source,
+					target,
+					sourceHandleId,
+					targetHandleId,
+				});
+			}
 		}
 	}
 
@@ -175,18 +248,7 @@ export async function applyCanvasUpdate(
 	if (ops.nodes.create.length) {
 		transactionSteps.push(
 			prisma.node.createMany({
-				data: ops.nodes.create.map((n) => ({
-					id: n.id,
-					canvasId,
-					name: n.name,
-					type: n.type,
-					position: n.position,
-					width: n.width,
-					height: n.height,
-					templateId: n.templateId,
-					config: n.config,
-					result: n.result,
-				})),
+				data: ops.nodes.create,
 			}),
 		);
 	}
@@ -231,16 +293,7 @@ export async function applyCanvasUpdate(
 	if (ops.handles.create.length) {
 		transactionSteps.push(
 			prisma.handle.createMany({
-				data: ops.handles.create.map((h) => ({
-					id: h.id,
-					nodeId: h.nodeId,
-					type: h.type,
-					label: h.label,
-					required: h.required,
-					order: h.order,
-					dataTypes: h.dataTypes,
-					templateHandleId: h.templateHandleId,
-				})),
+				data: ops.handles.create,
 			}),
 		);
 	}
@@ -263,13 +316,7 @@ export async function applyCanvasUpdate(
 	if (ops.edges.create.length) {
 		transactionSteps.push(
 			prisma.edge.createMany({
-				data: ops.edges.create.map((e) => ({
-					id: e.id,
-					source: e.source,
-					target: e.target,
-					sourceHandleId: e.sourceHandleId,
-					targetHandleId: e.targetHandleId,
-				})),
+				data: ops.edges.create,
 			}),
 		);
 	}
