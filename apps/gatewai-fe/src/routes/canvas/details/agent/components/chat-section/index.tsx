@@ -33,6 +33,8 @@ function InputArea({
 	handleSubmit,
 	stopGeneration,
 	textareaRef,
+	selectedModel,
+	setSelectedModel,
 }: {
 	centered?: boolean;
 	inputValue: string;
@@ -41,6 +43,8 @@ function InputArea({
 	handleSubmit: () => Promise<void>;
 	stopGeneration: () => void;
 	textareaRef: React.RefObject<HTMLTextAreaElement | null>;
+	selectedModel: string;
+	setSelectedModel: (value: string) => void;
 }) {
 	return (
 		<div
@@ -78,13 +82,13 @@ function InputArea({
 
 				<div className="flex items-center justify-between px-1 pb-1">
 					<div className="flex items-center gap-2">
-						<Select defaultValue="gemini-pro">
+						<Select value={selectedModel} onValueChange={setSelectedModel}>
 							<SelectTrigger className=" text-[10px] border-0 bg-transparent hover:bg-accent/50 gap-1 px-2 w-auto shadow-none focus:ring-0">
 								<SelectValue placeholder="Model" />
 							</SelectTrigger>
 							<SelectContent>
-								<SelectItem value="gemini-pro">Gemini 3 Pro</SelectItem>
-								<SelectItem value="gemini-flash">Gemini 3 Flash</SelectItem>
+								<SelectItem value="gemini-3-pro-preview">Gemini 3 Pro</SelectItem>
+								<SelectItem value="gemini-3-flash-preview">Gemini 3 Flash</SelectItem>
 							</SelectContent>
 						</Select>
 					</div>
@@ -129,6 +133,8 @@ export function AgentChatSection({ onClose }: { onClose: () => void }) {
 		pendingPatchId,
 		clearPendingPatch,
 		createNewSession,
+		selectedModel,
+		setSelectedModel,
 	} = useCanvasAgent();
 	const scrollRef = useRef<HTMLDivElement | null>(null);
 	const textareaRef = useRef<HTMLTextAreaElement | null>(null);
@@ -218,6 +224,8 @@ export function AgentChatSection({ onClose }: { onClose: () => void }) {
 							handleSubmit={handleSubmit}
 							stopGeneration={stopGeneration}
 							textareaRef={textareaRef}
+							selectedModel={selectedModel}
+							setSelectedModel={setSelectedModel}
 						/>
 					</div>
 				</div>
@@ -234,21 +242,27 @@ export function AgentChatSection({ onClose }: { onClose: () => void }) {
 									key={msg.id}
 									className={cn(
 										"flex w-full animate-in slide-in-from-bottom-2 duration-300",
-										msg.role === "user" ? "justify-end" : "justify-start",
+										msg.role === "user"
+											? "justify-end"
+											: msg.role === "system"
+												? "justify-center"
+												: "justify-start",
 									)}
 								>
 									<div
 										className={cn(
-											"max-w-[85%] px-3 py-2 rounded-2xl text-xs transition-all",
-											msg.role === "user"
-												? "bg-primary text-primary-foreground rounded-tr-none"
-												: "bg-muted/50 border border-border/50 text-foreground rounded-tl-none",
+											"px-3 py-2 rounded-2xl text-xs transition-all",
+											msg.role === "system"
+												? "bg-accent/50 text-muted-foreground rounded-full text-center max-w-lg"
+												: msg.role === "user"
+													? "bg-primary text-primary-foreground rounded-tr-none max-w-[85%]"
+													: "bg-muted/50 border border-border/50 text-foreground rounded-tl-none max-w-[85%]",
 										)}
 									>
-										{msg.role === "user" ? (
-											<div className="whitespace-pre-wrap">{msg.text}</div>
-										) : (
+										{msg.role === "model" ? (
 											<MarkdownRenderer markdown={msg.text} />
+										) : (
+											<div className="whitespace-pre-wrap">{msg.text}</div>
 										)}
 										{msg.isStreaming && <LoadingSpinner className="size-5" />}
 									</div>
@@ -273,6 +287,8 @@ export function AgentChatSection({ onClose }: { onClose: () => void }) {
 							handleSubmit={handleSubmit}
 							stopGeneration={stopGeneration}
 							textareaRef={textareaRef}
+							selectedModel={selectedModel}
+							setSelectedModel={setSelectedModel}
 						/>
 						<p className="text-center mt-2 text-[9px] text-muted-foreground/60 pointer-events-auto">
 							AI may make mistakes. Double-check all generated workflow.

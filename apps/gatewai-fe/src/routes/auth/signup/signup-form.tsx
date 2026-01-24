@@ -23,6 +23,7 @@ import {
 import { GatewaiLogo } from "@/components/ui/gatewai-logo";
 import { Input } from "@/components/ui/input";
 import { authClient } from "@/lib/auth-client";
+import { useNavigate } from "react-router";
 
 const formSchema = z
 	.object({
@@ -54,7 +55,6 @@ interface SignUpFormProps {
 function SignUpForm({ onSuccess, onError }: SignUpFormProps) {
 	const [isLoading, setIsLoading] = useState<boolean>(false);
 	const [error, setError] = useState<string | null>(null);
-
 	const form = useForm<FormValues>({
 		resolver: zodResolver(formSchema),
 		defaultValues: {

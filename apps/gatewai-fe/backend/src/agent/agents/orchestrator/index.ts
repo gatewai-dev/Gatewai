@@ -350,9 +350,11 @@ ${NODE_CONFIG_RAW}
 export const CreateOrchestratorAgentForCanvas = async ({
 	canvasId,
 	session,
+	modelName,
 }: {
 	canvasId: string;
 	session: PrismaAgentSession;
+	modelName: string;
 }) => {
 	const nodeTemplates = await prisma.nodeTemplate.findMany({
 		include: { templateHandles: true },
@@ -417,8 +419,16 @@ Remember: Be thorough, be precise, be excellent.
 `;
 	};
 
-	// TODO: Parameterize name from UI
-	const model = getAgentModel("gemini-3-flash-preview");
+	function assertIsValidName(modelName: string): asserts modelName is "gemini-3-pro-preview" | "gemini-3-flash-preview" {
+	   const validModels = ["gemini-3-pro-preview", "gemini-3-flash-preview"];
+	   
+	   if (!validModels.includes(modelName)) {
+	       throw new Error(`Invalid model name: ${modelName}. Expected one of ${validModels.join(", ")}`);
+	   }
+	}
+	assertIsValidName(modelName);
+
+	const model = getAgentModel(modelName);
 
 	return new Agent({
 		name: "Gatewai_Workflow_Architect",

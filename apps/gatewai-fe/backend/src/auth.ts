@@ -10,7 +10,7 @@ export const auth = betterAuth({
 		provider: "postgresql",
 		debugLogs: false,
 	}),
-	trustedOrigins: [ENV_CONFIG.BASE_URL],
+	trustedOrigins: [ENV_CONFIG.BASE_URL, "http://localhost:5173"],
 	baseURL:
 		process.env.NODE_ENV === "development"
 			? process.env.VITE_BASE_URL

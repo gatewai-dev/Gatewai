@@ -12,16 +12,18 @@ export const RunCanvasAgent = async function* ({
 	canvasId,
 	sessionId,
 	userMessage,
+	model,
 }: {
 	canvasId: string;
 	sessionId: string;
 	userMessage: string;
+	model: string;
 }) {
 	const logDir = path.join(__dirname, "logs");
 	const logPath = path.join(logDir, `session_${sessionId}.log`);
 
 	const session = new PrismaAgentSession({ sessionId, canvasId });
-	const agent = await CreateOrchestratorAgentForCanvas({ canvasId, session });
+	const agent = await CreateOrchestratorAgentForCanvas({ canvasId, session, modelName: model });
 	await localGatewaiMCPTool.connect();
 
 	const result = await run(agent, userMessage, { stream: true, session });

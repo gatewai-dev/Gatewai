@@ -1,7 +1,13 @@
+import { useNavigate } from "react-router";
 import { SignInForm } from "./signin-form";
 
 function SigninPage() {
-	return <SignInForm />;
+	const nav = useNavigate();
+
+	const onSuccess = () => {
+		nav('/canvas')
+	}
+	return <SignInForm onSuccess={onSuccess} />;
 }
 
 export { SigninPage };

@@ -12,6 +12,8 @@ import { rpcClient } from "@/rpc/client"; // Assuming rpcClient is imported from
 import type { AgentSessionsRPC } from "@/rpc/types";
 import { useGetCanvasAgentSessionListQuery } from "@/store/agent-sessions";
 
+const SELECTED_MODEL_STORAGE_KEY = "canvas_agent_selected_model";
+
 export type MessageRole = "user" | "model" | "system";
 export interface ChatMessage {
 	id: string;
@@ -19,6 +21,7 @@ export interface ChatMessage {
 	text: string;
 	isStreaming?: boolean;
 	createdAt: Date;
+	eventType?: string; // Optional to preserve for potential future use
 }
 
 type CanvasAgentContextType = {
@@ -40,6 +43,10 @@ type CanvasAgentContextType = {
 	// Patch System
 	pendingPatchId: string | null;
 	clearPendingPatch: () => void;
+
+	// Model Selection
+	selectedModel: string;
+	setSelectedModel: (model: string) => void;
 };
 
 const CanvasAgentContext = createContext<CanvasAgentContextType | undefined>(
@@ -47,7 +54,17 @@ const CanvasAgentContext = createContext<CanvasAgentContextType | undefined>(
 );
 
 function extractText(content: any): string {
-	let rawContent = content.content;
+	// Handle patch_action events where content is { action, patchId, text }
+	if (
+		content &&
+		typeof content === "object" &&
+		typeof content.text === "string" &&
+		!content.content
+	) {
+		return content.text;
+	}
+
+	let rawContent = content?.content || content;
 	if (Array.isArray(rawContent)) {
 		rawContent = rawContent.map((item) => item.text || "").join("\n");
 	}
@@ -86,6 +103,18 @@ const CanvasAgentProvider = ({
 	const [messages, setMessages] = useState<ChatMessage[]>([]);
 	const [isLoading, setIsLoading] = useState(false);
 	const [pendingPatchId, setPendingPatchId] = useState<string | null>(null);
+	const [selectedModel, setSelectedModel] = useState<string>(() => {
+    // Check if we're in a browser environment
+    if (typeof window !== "undefined") {
+        const saved = localStorage.getItem(SELECTED_MODEL_STORAGE_KEY);
+        return saved || "gemini-3-flash-preview";
+    }
+    return "gemini-3-flash-preview";
+});
+
+useEffect(() => {
+    localStorage.setItem(SELECTED_MODEL_STORAGE_KEY, selectedModel);
+}, [selectedModel]);
 	const abortControllerRef = useRef<AbortController | null>(null);
 
 	const { data: agentSessionsList, isLoading: isLoadingSessions } =
@@ -125,51 +154,57 @@ const CanvasAgentProvider = ({
 		}
 	}, [isLoadingSessions, agentSessionsList, activeSessionId, createNewSession]);
 
-	// Fetch history when session changes
-	useEffect(() => {
+	const refreshHistory = useCallback(async () => {
 		if (!activeSessionId || !canvasId) {
 			setMessages([]);
 			return;
 		}
 
-		const fetchHistory = async () => {
-			setIsLoading(true);
-			try {
-				const resp = await rpcClient.api.v1.canvas[":id"].agent[
-					":sessionId"
-				].$get({
-					param: { id: canvasId, sessionId: activeSessionId },
-				});
-				const data = await resp.json();
-				if (!data) {
-					setMessages([]);
-					return;
-				}
+		setIsLoading(true);
+		try {
+			const resp = await rpcClient.api.v1.canvas[":id"].agent[
+				":sessionId"
+			].$get({
+				param: { id: canvasId, sessionId: activeSessionId },
+			});
+			const data = await resp.json();
+			if (!data) {
+				setMessages([]);
+				return;
+			}
 
-				const historyMessages = (data.events || [])
-					.filter((e) => e.eventType === "message")
-					.map((e: any) => ({
-						id: e.id,
-						role:
-							e.role === "USER"
+			const historyMessages = (data.events || [])
+				.filter(
+					(e) =>
+						e.eventType === "message" || e.eventType === "patch_action",
+				)
+				.map((e: any) => ({
+					id: e.id,
+					eventType: e.eventType,
+					role:
+						e.eventType === "patch_action"
+							? "system"
+							: e.role === "USER"
 								? "user"
 								: e.role === "ASSISTANT"
 									? "model"
 									: "system",
-						text: extractText(e.content),
-						createdAt: new Date(e.createdAt),
-					}));
-				setMessages(historyMessages);
-			} catch (error: unknown) {
-				console.error("Error fetching history:", error);
-				setMessages([]);
-			} finally {
-				setIsLoading(false);
-			}
-		};
-
-		fetchHistory();
+					text: extractText(e.content),
+					createdAt: new Date(e.createdAt),
+				}));
+			setMessages(historyMessages);
+		} catch (error: unknown) {
+			console.error("Error fetching history:", error);
+			setMessages([]);
+		} finally {
+			setIsLoading(false);
+		}
 	}, [canvasId, activeSessionId]);
+
+	// Fetch history when session changes
+	useEffect(() => {
+		refreshHistory();
+	}, [refreshHistory]);
 
 	const sendMessage = useCallback(
 		async (message: string) => {
@@ -199,7 +234,7 @@ const CanvasAgentProvider = ({
 					":sessionId"
 				].$post({
 					param: { id: canvasId, sessionId: activeSessionId },
-					json: { message },
+					json: { message, model: selectedModel },
 				});
 
 				if (!response.body) throw new Error("No response body");
@@ -298,7 +333,7 @@ const CanvasAgentProvider = ({
 				abortControllerRef.current = null;
 			}
 		},
-		[canvasId, activeSessionId],
+		[canvasId, activeSessionId, selectedModel],
 	);
 
 	const stopGeneration = useCallback(() => {
@@ -310,7 +345,9 @@ const CanvasAgentProvider = ({
 
 	const clearPendingPatch = useCallback(() => {
 		setPendingPatchId(null);
-	}, []);
+		// Refresh history to show the accepted/rejected message
+		refreshHistory();
+	}, [refreshHistory]);
 
 	return (
 		<CanvasAgentContext.Provider
@@ -326,6 +363,8 @@ const CanvasAgentProvider = ({
 				stopGeneration,
 				pendingPatchId,
 				clearPendingPatch,
+				selectedModel,
+				setSelectedModel,
 			}}
 		>
 			{children}
