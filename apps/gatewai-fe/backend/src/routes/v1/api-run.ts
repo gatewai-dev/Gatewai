@@ -3,6 +3,7 @@ import { prisma } from "@gatewai/db";
 import type { TextNodeConfig } from "@gatewai/types";
 import { zValidator } from "@hono/zod-validator";
 import { Hono } from "hono";
+import type { AuthorizedHonoTypes } from "../../auth.js";
 import { duplicateCanvas } from "../../data-ops/duplicate-canvas.js";
 import { resolveBatchResult } from "../../data-ops/resolve-batch-result.js";
 import {
@@ -13,7 +14,9 @@ import { NodeWFProcessor } from "../../graph-engine/canvas-workflow-processor.js
 import { uploadToImportNode } from "../../node-fns/import-media.js";
 import { assertIsError, generateId } from "../../utils/misc.js";
 
-const apiRunRoutes = new Hono({ strict: false })
+const apiRunRoutes = new Hono<{ Variables: AuthorizedHonoTypes }>({
+	strict: false,
+})
 	/**
 	 * GET /api/v1/api-run/:batchId/status
 	 */

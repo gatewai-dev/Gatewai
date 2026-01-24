@@ -64,6 +64,7 @@
 		"@tailwindcss/vite": "^4.1.16",
 		"@xyflow/react": "^12.8.4",
 		"ai": "^6.0.44",
+		"better-auth": "^1.4.17",
 		"bullmq": "^5.66.4",
 		"canvas": "^3.2.0",
 		"class-variance-authority": "^0.7.1",

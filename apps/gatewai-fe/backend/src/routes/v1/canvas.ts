@@ -12,13 +12,14 @@ import { streamSSE } from "hono/streaming";
 import z from "zod";
 import { RunCanvasAgent } from "../../agent/runner/index.js";
 import { canvasAgentState } from "../../agent/state.js";
+import type { AuthHonoTypes } from "../../auth.js";
 import { GetCanvasEntities } from "../../data-ops/canvas.js";
 import { applyCanvasUpdate } from "../../data-ops/canvas-update.js";
 import { NodeWFProcessor } from "../../graph-engine/canvas-workflow-processor.js";
 import { logger } from "../../logger.js";
 import { assertIsError } from "../../utils/misc.js";
 
-const canvasRoutes = new Hono({
+const canvasRoutes = new Hono<{ Variables: AuthHonoTypes }>({
 	strict: false,
 })
 	.get("/", async (c) => {
@@ -46,7 +47,10 @@ const canvasRoutes = new Hono({
 	})
 	.post("/", async (c) => {
 		const canvasCount = await prisma.canvas.count();
-
+		const user = c.get("user");
+		if (!user) {
+			c.json({ error: "Unauthenticated" }, 401);
+		}
 		const canvas = await prisma.canvas.create({
 			data: {
 				name: `Canvas ${canvasCount + 1}`,

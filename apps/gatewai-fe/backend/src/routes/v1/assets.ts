@@ -5,6 +5,11 @@ import { fileTypeFromBuffer } from "file-type";
 import { Hono } from "hono";
 import sharp from "sharp";
 import { z } from "zod";
+import {
+	type AuthHonoTypes,
+	type AuthorizedHonoTypes,
+	authMiddleware,
+} from "../../auth.js";
 import { ENV_CONFIG } from "../../config.js";
 import { logger } from "../../logger.js";
 import { uploadToImportNode } from "../../node-fns/import-media.js";
@@ -94,7 +99,7 @@ async function downloadFileFromUrl(url: string): Promise<{
 	return { buffer, filename, contentType };
 }
 
-const assetsRouter = new Hono({
+const assetsRouter = new Hono<{ Variables: AuthorizedHonoTypes }>({
 	strict: false,
 })
 	.get("/", zValidator("query", querySchema), async (c) => {

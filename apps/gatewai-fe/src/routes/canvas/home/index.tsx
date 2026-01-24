@@ -15,9 +15,9 @@ import { Button } from "@/components/ui/button";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { Input } from "@/components/ui/input";
 import { Skeleton } from "@/components/ui/skeleton";
-import { useCanvasListCtx } from "../ctx/canvas-list.ctx";
+import { CanvasListProvider, useCanvasListCtx } from "../ctx/canvas-list.ctx";
 
-function CanvasHome() {
+function CanvasHomeImpl() {
 	const {
 		canvasList,
 		isLoading,
@@ -227,6 +227,14 @@ function CanvasHome() {
 				)}
 			</div>
 		</div>
+	);
+}
+
+function CanvasHome() {
+	return (
+		<CanvasListProvider>
+			<CanvasHomeImpl />
+		</CanvasListProvider>
 	);
 }
 

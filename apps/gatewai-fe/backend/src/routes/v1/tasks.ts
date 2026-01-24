@@ -7,6 +7,7 @@ import {
 import { zValidator } from "@hono/zod-validator";
 import { Hono } from "hono";
 import { z } from "zod";
+import type { AuthorizedHonoTypes } from "../../auth.js";
 
 const TaskStatuses = [
 	TaskStatus.COMPLETED,
@@ -20,7 +21,7 @@ const tasksQueryParams = z.object({
 	fromDatetime: z.string().optional(),
 });
 
-const tasksRouter = new Hono({
+const tasksRouter = new Hono<{ Variables: AuthorizedHonoTypes }>({
 	strict: false,
 })
 	.get(

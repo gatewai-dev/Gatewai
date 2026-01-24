@@ -5,11 +5,12 @@ import { zValidator } from "@hono/zod-validator";
 import { fileTypeFromBuffer } from "file-type";
 import { Hono } from "hono";
 import { z } from "zod";
+import type { AuthorizedHonoTypes } from "../../auth.js";
 
 const __filename = fileURLToPath(import.meta.url);
 const __dirname = path.dirname(__filename);
 
-const fontsRouter = new Hono({
+const fontsRouter = new Hono<{ Variables: AuthorizedHonoTypes }>({
 	strict: false,
 })
 	.get("/", async (c) => {

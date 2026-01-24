@@ -4,6 +4,7 @@ import { serve } from "@hono/node-server";
 import { serveStatic } from "@hono/node-server/serve-static";
 import { Hono } from "hono";
 import { cors } from "hono/cors";
+import { type AuthHonoTypes, auth } from "./auth.js";
 import { ENV_CONFIG } from "./config.js";
 import { startWorker } from "./graph-engine/queue/workflow.worker.js";
 import {
@@ -14,16 +15,43 @@ import {
 import { v1Router } from "./routes/v1/index.js";
 
 console.log(process.env);
-const app = new Hono()
+const app = new Hono<{
+	Variables: AuthHonoTypes;
+}>()
 	.use(loggerMiddleware)
 	.onError(errorHandler)
+	.use("*", async (c, next) => {
+		const session = await auth.api.getSession({ headers: c.req.raw.headers });
+		if (!session) {
+			c.set("user", null);
+			c.set("session", null);
+			return next();
+		}
+		c.set("user", session.user);
+		c.set("session", session.session);
+		return next();
+	})
+	.on(["POST", "GET"], "/api/auth/*", async (c) => {
+		return await auth.handler(c.req.raw);
+	})
+	.get("/session", (c) => {
+		const session = c.get("session") || null;
+		const user = c.get("user") || null;
+
+		if (!user) return c.body(null, 401);
+
+		return c.json({
+			session,
+			user,
+		});
+	})
 	.use(
 		"/api/*",
 		cors({
 			origin:
 				process.env.NODE_ENV === "production"
 					? ENV_CONFIG.BASE_URL
-					: "http://localhost:5173",
+					: ["http://localhost:5173", "http://localhost:8081"],
 			allowMethods: ["POST", "GET", "OPTIONS"],
 			exposeHeaders: ["Content-Length"],
 			maxAge: 600,
