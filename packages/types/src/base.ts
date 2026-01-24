@@ -1,0 +1,31 @@
+export const NodeTypes = [
+	"Text",
+	"TextMerger",
+	"Preview",
+	"File",
+	"Export",
+	"Resize",
+	"Paint",
+	"Blur",
+	"Compositor",
+	"Note",
+	"ImageGen",
+	"LLM",
+	"Crop",
+	"Modulate",
+	"VideoGen",
+	"VideoGenFirstLastFrame",
+	"VideoGenExtend",
+	"TextToSpeech",
+	"SpeechToText",
+	"VideoCompositor",
+] as const;
+
+export const DataTypes = [
+	"Text",
+	"Number",
+	"Boolean",
+	"Image",
+	"Video",
+	"Audio",
+] as const;

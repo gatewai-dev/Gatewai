@@ -1,37 +1,7 @@
 import z from "zod";
+import { DataTypes, NodeTypes } from "../base.js";
 import { NodeConfigSchema } from "../config/schemas.js";
-
-export const NodeTypes = [
-	"Text",
-	"TextMerger",
-	"Preview",
-	"File",
-	"Export",
-	"Resize",
-	"Paint",
-	"Blur",
-	"Compositor",
-	"Note",
-	"ImageGen",
-	"LLM",
-	"Crop",
-	"Modulate",
-	"VideoGen",
-	"VideoGenFirstLastFrame",
-	"VideoGenExtend",
-	"TextToSpeech",
-	"SpeechToText",
-	"VideoCompositor",
-] as const;
-
-export const DataTypes = [
-	"Text",
-	"Number",
-	"Boolean",
-	"Image",
-	"Video",
-	"Audio",
-] as const;
+import { NodeResultSchema } from "../node-result.js";
 
 export const handleSchema = z.object({
 	id: z.string().optional(),
@@ -61,10 +31,9 @@ export const nodeSchema = z.object({
 	draggable: z.boolean().optional().default(true),
 	selectable: z.boolean().optional().default(true),
 	deletable: z.boolean().optional().default(true),
-	result: z
-		.record(z.unknown())
-		.optional()
-		.describe("The output data from this node"),
+	result: NodeResultSchema.describe(
+		"The output data from this node - CANNOT BE SET BY AI AGENT",
+	),
 	config: NodeConfigSchema.optional()
 		.nullable()
 		.describe("Configuration parameters for this node"),

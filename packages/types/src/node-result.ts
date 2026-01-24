@@ -1,156 +1,155 @@
-import type { DataType, FileAsset } from "@gatewai/db";
+import { z } from "zod";
+import { DataTypes } from "./base.js";
 
-/**
- * Typing for non-terminal processing
- */
-export type ProcessData = {
-	dataUrl: string;
-	/**
-	 * Bucket key of temporary file
-	 */
-	tempKey?: string;
-	mimeType?: string;
+// --- Base Schemas ---
 
-	// For the Image, Video media types
-	width?: number;
-	height?: number;
+export const ProcessDataSchema = z.object({
+	dataUrl: z.string(),
+	tempKey: z.string().optional(),
+	mimeType: z.string().optional(),
+	width: z.number().optional(),
+	height: z.number().optional(),
+	duration: z.number().optional(),
+	fps: z.number().optional(),
+});
 
-	// For the Audio, Video media types
-	duration?: number;
-	fps?: number;
-};
+// Assuming FileAsset is a complex type, we use z.any() or a placeholder
+// Replace z.any() with the actual FileAsset schema if available
+export const FileDataSchema = z.object({
+	entity: z.any().optional(),
+	processData: ProcessDataSchema.optional(),
+});
 
-export type FileData = {
-	entity?: FileAsset;
-	processData?: ProcessData;
-};
+// --- Dynamic Data Typing ---
 
-export type DataForType<R extends DataType> = R extends "Text"
-	? string
-	: R extends "Number"
-		? number
-		: R extends "Boolean"
-			? boolean
-			: R extends "Image" | "Audio" | "Video" | "VideoLayer"
-				? FileData
-				: R extends "Any"
-					? string | number | boolean | FileData
-					: never;
+export const DataForTypeSchema = z.union([
+	z.string(),
+	z.number(),
+	z.boolean(),
+	FileDataSchema,
+]);
 
-export type OutputItem<R extends DataType> = {
-	type: R;
-	data: DataForType<R>;
-	outputHandleId: string | undefined;
-};
+export const OutputItemSchema = z.object({
+	type: z.enum(DataTypes),
+	data: DataForTypeSchema,
+	outputHandleId: z.string().optional(),
+});
 
-export type Output = {
-	items: OutputItem<DataType>[];
-};
+// --- Generic Result Factories ---
 
-export type SingleOutputGeneric<T extends DataType> = {
-	selectedOutputIndex: 0;
-	outputs: [{ items: [OutputItem<T>] }];
-};
+const SingleOutputGeneric = <T extends z.ZodTypeAny>(itemSchema: T) =>
+	z.object({
+		selectedOutputIndex: z.literal(0),
+		outputs: z.tuple([
+			z.object({
+				items: z.tuple([itemSchema]),
+			}),
+		]),
+	});
 
-export type MultiOutputGeneric<T extends DataType> = {
-	selectedOutputIndex: number;
-	outputs: [{ items: [OutputItem<T>] }];
-};
+const MultiOutputGeneric = <T extends z.ZodTypeAny>(itemSchema: T) =>
+	z.object({
+		selectedOutputIndex: z.number(),
+		outputs: z.array(
+			z.object({
+				items: z.tuple([itemSchema]),
+			}),
+		),
+	});
 
-export type TextResult = SingleOutputGeneric<"Text">;
-export type ToggleResult = SingleOutputGeneric<"Boolean">;
+// --- Specific Node Results ---
 
-export type FileResult =
-	| MultiOutputGeneric<"Video">
-	| MultiOutputGeneric<"Image">
-	| MultiOutputGeneric<"Audio">;
+export const TextResultSchema = SingleOutputGeneric(
+	OutputItemSchema.extend({ type: z.literal("Text"), data: z.string() }),
+);
+export const NumberResultSchema = SingleOutputGeneric(
+	OutputItemSchema.extend({ type: z.literal("Number"), data: z.number() }),
+);
+export const ToggleResultSchema = SingleOutputGeneric(
+	OutputItemSchema.extend({ type: z.literal("Boolean"), data: z.boolean() }),
+);
 
-export type ImagesResult = MultiOutputGeneric<"Image">;
+const ImageItem = OutputItemSchema.extend({
+	type: z.literal("Image"),
+	data: FileDataSchema,
+});
+const AudioItem = OutputItemSchema.extend({
+	type: z.literal("Audio"),
+	data: FileDataSchema,
+});
+const VideoItem = OutputItemSchema.extend({
+	type: z.literal("Video"),
+	data: FileDataSchema,
+});
 
-export type ImageGenResult = ImagesResult;
+export const ImageResultSchema = MultiOutputGeneric(ImageItem);
+export const AudioResultSchema = MultiOutputGeneric(AudioItem);
+export const VideoResultSchema = MultiOutputGeneric(VideoItem);
 
-export type MaskResult = {
-	selectedOutputIndex: 0;
-	outputs: { items: [OutputItem<"Image">, OutputItem<"Image">] }[];
-};
+export const FileResultSchema = z.union([
+	VideoResultSchema,
+	ImageResultSchema,
+	AudioResultSchema,
+]);
 
-export type NumberResult = SingleOutputGeneric<"Number">;
+export const MaskResultSchema = z.object({
+	selectedOutputIndex: z.literal(0),
+	outputs: z.array(
+		z.object({
+			items: z.tuple([ImageItem, ImageItem]),
+		}),
+	),
+});
 
-export type LLMResult = MultiOutputGeneric<"Text">;
+export const PaintResultSchema = z.object({
+	selectedOutputIndex: z.literal(0),
+	outputs: z.tuple([
+		z.object({
+			items: z.tuple([ImageItem, ImageItem]),
+		}),
+	]),
+});
 
-export type ResizeResult = SingleOutputGeneric<"Image">;
+export const ExportResultSchema = z.object({
+	selectedOutputIndex: z.number(),
+	outputs: z.array(
+		z.object({
+			items: z.array(
+				z.union([
+					VideoItem,
+					ImageItem,
+					AudioItem,
+					TextResultSchema,
+					NumberResultSchema,
+					ToggleResultSchema,
+				]),
+			),
+		}),
+	),
+});
 
-export type ModulateResult = SingleOutputGeneric<"Image">;
+// --- Final Union Schema ---
 
-export type PaintResult = {
-	selectedOutputIndex: 0;
-	outputs: [
-		{
-			items: [OutputItem<"Image">, OutputItem<"Image">];
-		},
-	];
-};
+export const NodeResultSchema = z.union([
+	TextResultSchema,
+	NumberResultSchema,
+	ToggleResultSchema,
+	FileResultSchema,
+	MaskResultSchema,
+	PaintResultSchema,
+	ExportResultSchema,
+	// Mapping specific tool names to their underlying schemas
+	MultiOutputGeneric(
+		OutputItemSchema.extend({ type: z.literal("Text"), data: z.string() }),
+	), // LLMResult
+	SingleOutputGeneric(ImageItem), // Resize, Blur, Crop, Compositor
+	MultiOutputGeneric(VideoItem), // VideoGen
+	MultiOutputGeneric(AudioItem), // TTS
+]);
 
-export type BlurResult = SingleOutputGeneric<"Image">;
-export type CropResult = SingleOutputGeneric<"Image">;
+// --- Exported Types ---
 
-export type CompositorResult = SingleOutputGeneric<"Image">;
-export type VideoCompositorResult = SingleOutputGeneric<"Video">;
-export type TextMergerResult = SingleOutputGeneric<"Text">;
-
-export type BaseVideoGenResult = MultiOutputGeneric<"Video">;
-
-export type VideoGenResult = BaseVideoGenResult;
-export type VideoGenExtendResult = BaseVideoGenResult;
-export type VideoGenFirstLastFrameResult = BaseVideoGenResult;
-
-export type TextToSpeechResult = MultiOutputGeneric<"Audio">;
-export type SpeechToTextResult = MultiOutputGeneric<"Text">;
-
-export type AnyOutputUnion =
-	| OutputItem<"Video">
-	| OutputItem<"Image">
-	| OutputItem<"Audio">
-	| OutputItem<"Text">
-	| OutputItem<"Number">
-	| OutputItem<"Boolean">;
-
-/**
- * Export result may have
- */
-export type ExportResult = {
-	selectedOutputIndex: number;
-	outputs: { items: AnyOutputUnion[] }[];
-};
-
-export type AnyOutputItem =
-	| OutputItem<"Audio">
-	| OutputItem<"Text">
-	| OutputItem<"Boolean">
-	| OutputItem<"Image">
-	| OutputItem<"Video">
-	| OutputItem<"Number">;
-
-export type NodeResult =
-	| TextResult
-	| TextMergerResult
-	| ToggleResult
-	| FileResult
-	| ImagesResult
-	| ImageGenResult
-	| CropResult
-	| MaskResult
-	| NumberResult
-	| LLMResult
-	| ResizeResult
-	| PaintResult
-	| BlurResult
-	| CompositorResult
-	| ModulateResult
-	| VideoGenResult
-	| VideoGenExtendResult
-	| VideoGenFirstLastFrameResult
-	| VideoCompositorResult
-	| ExportResult
-	| TextToSpeechResult
-	| SpeechToTextResult;
+export type ProcessData = z.infer<typeof ProcessDataSchema>;
+export type FileData = z.infer<typeof FileDataSchema>;
+export type OutputItem = z.infer<typeof OutputItemSchema>;
+export type NodeResult = z.infer<typeof NodeResultSchema>;
