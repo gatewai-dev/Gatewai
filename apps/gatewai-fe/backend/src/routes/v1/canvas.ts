@@ -102,7 +102,7 @@ const canvasRoutes = new Hono({
 		const patch = await prisma.canvasPatch.create({
 			data: {
 				canvasId: id,
-				patch: validated as any, // Prisma Json type workaround
+				patch: validated,
 				status: "PENDING",
 				agentSessionId: agentSessionId,
 			},

@@ -407,7 +407,10 @@ export const CompositorNodeConfigSchema = z
 
 export const VideoCompositorNodeConfigSchema = z
 	.object({
-		layerUpdates: z.record(z.string(), VideoCompositorLayerSchema),
+		layerUpdates: z.record(
+			z.string().describe("The ID of input handle"),
+			VideoCompositorLayerSchema,
+		),
 		width: DimensionSchema,
 		height: DimensionSchema,
 		FPS: z.number().optional(),

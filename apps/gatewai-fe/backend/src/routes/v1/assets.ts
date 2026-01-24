@@ -272,7 +272,7 @@ const assetsRouter = new Hono({
 
 		try {
 			const buffer = Buffer.from(await file.arrayBuffer());
-
+			console.log({ nodeId });
 			const updatedNode = await uploadToImportNode({
 				nodeId,
 				buffer,

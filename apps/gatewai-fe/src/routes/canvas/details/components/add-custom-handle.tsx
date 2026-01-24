@@ -57,21 +57,15 @@ type CustomHandleButtonProps = {
 
 function AddCustomHandleButton(props: CustomHandleButtonProps) {
 	const OPTIONS = useMemo(() => {
-		return props.dataTypes ?? LookupDataTypes[props.type];
+		return props?.dataTypes ?? LookupDataTypes[props.type];
 	}, [props.dataTypes, props.type]);
 	const existingHandles = useAppSelector(
 		makeSelectHandlesByNodeId(props.nodeId),
 	);
-	if (!OPTIONS || OPTIONS.length === 0) {
-		throw new Error(
-			"AddCustomHandleButton: OPTIONS must contain at least one dataType",
-		);
-	}
 	const enumValues = OPTIONS as unknown as [string, ...string[]];
 
 	const { createNewHandle } = useCanvasCtx();
 	const [open, setOpen] = useState(false);
-
 	const formSchema = z.object({
 		dataType: z.enum(enumValues),
 		label: z.string(),

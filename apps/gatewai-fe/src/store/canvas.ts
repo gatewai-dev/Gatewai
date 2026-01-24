@@ -22,10 +22,10 @@ export const canvasDetailsAPI = createApi({
 	baseQuery: fetchBaseQuery({
 		baseUrl: `/api/v1/canvas`,
 	}),
-	tagTypes: ["canvasDetails"],
+	tagTypes: ["getCanvasDetails"],
 	endpoints: (build) => ({
 		getCanvasDetails: build.query<CanvasDetailsRPC, CanvasDetailsRPCParams>({
-			providesTags: ["canvasDetails"],
+			providesTags: ["getCanvasDetails"],
 			queryFn: async (params) => {
 				const response = await rpcClient.api.v1.canvas[":id"].$get(params);
 				if (!response.ok) {
@@ -38,6 +38,7 @@ export const canvasDetailsAPI = createApi({
 			},
 		}),
 		patchCanvas: build.mutation<PatchCanvasRPC, PatchCanvasRPCParams>({
+			// FIXED: Removed invalidatesTags to prevent infinite Save -> Fetch -> Save loop
 			queryFn: async (params) => {
 				const response = await rpcClient.api.v1.canvas[":id"].$patch(params);
 				if (!response.ok) {
@@ -50,7 +51,7 @@ export const canvasDetailsAPI = createApi({
 			},
 		}),
 		updateName: build.mutation<UpdateCanvasNameRPC, UpdateCanvasNameRPCParams>({
-			invalidatesTags: ["canvasDetails"],
+			invalidatesTags: ["getCanvasDetails"],
 			queryFn: async (params) => {
 				const response =
 					await rpcClient.api.v1.canvas[":id"]["update-name"].$patch(params);
@@ -90,7 +91,7 @@ export const canvasDetailsAPI = createApi({
 			},
 		}),
 		applyPatch: build.mutation<ApplyPatchRPC, ApplyPatchRPCParams>({
-			invalidatesTags: ["canvasDetails"],
+			invalidatesTags: ["getCanvasDetails"],
 			queryFn: async (params) => {
 				const response =
 					await rpcClient.api.v1.canvas[":id"].patches[":patchId"].apply.$post(
@@ -106,6 +107,7 @@ export const canvasDetailsAPI = createApi({
 			},
 		}),
 		rejectPatch: build.mutation<RejectPatchRPC, RejectPatchRPCParams>({
+			invalidatesTags: ["getCanvasDetails"],
 			queryFn: async (params) => {
 				const response =
 					await rpcClient.api.v1.canvas[":id"].patches[":patchId"].reject.$post(

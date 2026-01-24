@@ -182,8 +182,8 @@ export async function applyCanvasUpdate(
 					width: n.width,
 					height: n.height,
 					templateId: n.templateId,
-					config: n.config ?? {},
-					result: n.result ?? {},
+					config: n.config,
+					result: n.result,
 				})),
 			}),
 		);

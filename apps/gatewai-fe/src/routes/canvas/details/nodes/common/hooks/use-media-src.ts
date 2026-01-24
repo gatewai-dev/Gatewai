@@ -11,7 +11,7 @@ function useMediaInputSrc(nodeId: NodeEntityType["id"], type: MediaTypes) {
 
 	const videoOutputItem = useMemo(() => {
 		const nodeResult = result as VideoGenResult;
-		const outputItem = nodeResult?.outputs[nodeResult.selectedOutputIndex];
+		const outputItem = nodeResult?.outputs?.[nodeResult.selectedOutputIndex];
 		if (outputItem) {
 			return outputItem.items.find((f) => f.type === type)?.data;
 		}

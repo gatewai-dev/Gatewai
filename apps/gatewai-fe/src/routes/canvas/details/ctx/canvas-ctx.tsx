@@ -209,6 +209,7 @@ const CanvasProvider = ({
 		initialEdges,
 		isReviewing,
 	]);
+
 	const timeoutRef = useRef<NodeJS.Timeout | null>(null);
 
 	const save = useCallback(() => {
@@ -299,7 +300,11 @@ const CanvasProvider = ({
 	const onNodesChange = useCallback(
 		(changes: NodeChange<Node>[]) => {
 			dispatch(onNodeChange(changes));
-			scheduleSave();
+			const shouldSave = changes.some((c) => c.type !== "select");
+
+			if (shouldSave) {
+				scheduleSave();
+			}
 		},
 		[dispatch, scheduleSave],
 	);
@@ -330,7 +335,12 @@ const CanvasProvider = ({
 	const onEdgesChange = useCallback(
 		(changes: EdgeChange<Edge>[]) => {
 			dispatch(onEdgeChange(changes));
-			scheduleSave();
+
+			// Same logic for edges, though 'select' is the main transient one here too
+			const shouldSave = changes.some((c) => c.type !== "select");
+			if (shouldSave) {
+				scheduleSave();
+			}
 		},
 		[dispatch, scheduleSave],
 	);
@@ -560,11 +570,6 @@ const CanvasProvider = ({
 		},
 		[save, runNodesMutateAsync, canvasId, addBatch],
 	);
-
-	useEffect(() => {
-		dispatch(setNodes(initialNodes));
-		dispatch(setEdges(initialEdges));
-	}, [dispatch, initialEdges, initialNodes]);
 
 	const createNewNode = useCallback(
 		(

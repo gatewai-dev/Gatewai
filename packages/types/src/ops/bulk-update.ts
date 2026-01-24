@@ -31,9 +31,10 @@ export const nodeSchema = z.object({
 	draggable: z.boolean().optional().default(true),
 	selectable: z.boolean().optional().default(true),
 	deletable: z.boolean().optional().default(true),
-	result: NodeResultSchema.describe(
-		"The output data from this node - CANNOT BE SET BY AI AGENT",
-	),
+	result: z
+		.record(z.unknown())
+		.optional()
+		.describe("The output data from this node"),
 	config: NodeConfigSchema.optional()
 		.nullable()
 		.describe("Configuration parameters for this node"),
