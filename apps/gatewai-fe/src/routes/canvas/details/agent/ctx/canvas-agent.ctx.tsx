@@ -44,6 +44,7 @@ const CanvasAgentContext = createContext<CanvasAgentContextType | undefined>(
 	undefined,
 );
 
+// EWW
 function extractText(content: any): string {
 	let rawContent = content.content;
 	if (Array.isArray(rawContent)) {

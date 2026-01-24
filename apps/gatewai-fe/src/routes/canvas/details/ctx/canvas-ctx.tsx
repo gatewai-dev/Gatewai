@@ -768,8 +768,9 @@ const CanvasProvider = ({
 			if (allNewHandles.length > 0) {
 				batchActionsList.push(addManyHandleEntities(allNewHandles));
 			}
-			const createBatch = batchActions(batchActionsList);
-			dispatch(createBatch);
+			for (const action of batchActionsList) {
+				dispatch(action);
+			}
 			if (newRfNodes.length > 0) {
 				scheduleSave();
 			}
@@ -841,15 +842,12 @@ const CanvasProvider = ({
 				}));
 
 				// Update Redux Store ATOMICALLY to avoid inconsistent states in GraphProcessor
-				dispatch(
-					batchActions([
-						setAllNodeEntities(hydratedNodes as NodeEntityType[]),
-						setAllEdgeEntities(patchData.edges as EdgeEntityType[]),
-						setAllHandleEntities(patchData.handles as HandleEntityType[]),
-						setNodes(rfPatchNodes),
-						setEdges(rfPatchEdges),
-					]),
-				);
+				
+				dispatch(setAllNodeEntities(hydratedNodes as NodeEntityType[]));
+				dispatch(setAllEdgeEntities(patchData.edges as EdgeEntityType[]));
+				dispatch(setAllHandleEntities(patchData.handles as HandleEntityType[]));
+				dispatch(setNodes(rfPatchNodes));
+				dispatch(setEdges(rfPatchEdges));
 
 				setIsReviewing(true);
 				setPreviewPatchId(patchId);
@@ -894,15 +892,12 @@ const CanvasProvider = ({
 		}));
 
 		// Atomic revert of the entire state
-		dispatch(
-			batchActions([
-				setAllNodeEntities(canvasDetailsResponse.nodes),
-				setAllEdgeEntities(canvasDetailsResponse.edges),
-				setAllHandleEntities(canvasDetailsResponse.handles),
-				setNodes(originalNodes),
-				setEdges(originalEdges),
-			]),
-		);
+		
+		dispatch(setAllNodeEntities(canvasDetailsResponse.nodes)),
+		dispatch(setAllEdgeEntities(canvasDetailsResponse.edges)),
+		dispatch(setAllHandleEntities(canvasDetailsResponse.handles)),
+		dispatch(setNodes(originalNodes)),
+		dispatch(setEdges(originalEdges)),
 
 		// Now it's safe to disable reviewing mode
 		setIsReviewing(false);
@@ -958,15 +953,12 @@ const CanvasProvider = ({
 						targetHandle: edge.targetHandleId || undefined,
 					}));
 
-					dispatch(
-						batchActions([
-							setAllNodeEntities(canvasDetailsResponse.nodes),
-							setAllEdgeEntities(canvasDetailsResponse.edges),
-							setAllHandleEntities(canvasDetailsResponse.handles),
-							setNodes(originalNodes),
-							setEdges(originalEdges),
-						]),
-					);
+					
+					dispatch(setAllNodeEntities(canvasDetailsResponse.nodes)),
+					dispatch(setAllEdgeEntities(canvasDetailsResponse.edges)),
+					dispatch(setAllHandleEntities(canvasDetailsResponse.handles)),
+					dispatch(setNodes(originalNodes)),
+					dispatch(setEdges(originalEdges)),
 				}
 
 				setIsReviewing(false);
