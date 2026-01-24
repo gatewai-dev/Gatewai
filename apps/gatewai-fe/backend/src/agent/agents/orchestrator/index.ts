@@ -1,7 +1,7 @@
 import { prisma } from "@gatewai/db";
 import { Agent } from "@openai/agents";
 import { GetCanvasEntities } from "../../../data-ops/canvas.js";
-import { agentModel, getAgentModel } from "../../agent-model.js";
+import { getAgentModel } from "../../agent-model.js";
 import { NODE_CONFIG_RAW } from "../../context/node-config.js";
 import type { PrismaAgentSession } from "../../session/gatewai-session.js";
 import { localGatewaiMCPTool } from "../../tools/gatewai-mcp.js";
@@ -44,6 +44,9 @@ Design workflows using these principles:
    - Each node should have ONE clear responsibility
    - Prefer composition over monolithic solutions
    - Example: Instead of "generate video", use: prompt → image gen → video gen → preview → export
+   - Since a workflow is logic processing, think of input nodes like variable abstractions similar to coding. But do not add over-abstraction.
+   - For example, a single text node describes character's clothing, and another describes characters pose, and another describes world style (ghibli, realistic, anime etc.)
+   - For example, a single Import / File node that contains an image is reference point of multiple ImageGen nodes
 
 2. **Defensive Data Flow**
    - Add Preview nodes at critical decision points
@@ -151,9 +154,14 @@ When building the workflow:
 **SPECIAL NODE BEHAVIORS**:
 - VideoCompositor: NO output handle (download via UI)
 - Preview: Must have EXACTLY one input connection
-- Text: Always create with empty content, user fills it
 - File: User uploads via UI, only provide output handle
 - Transient nodes (isTransient=true): Don't persist results long-term
+- Text to speect node should not be used for character dialogues as Veo can produce lip synced dialogues in video generation.
+- Text Merger is a powerful tool for prompt style consistency
+- Video generation models can only generate 8 seconds videos MAX
+- FOR veo-3.1.generate-preview: 1080p is only available for 8-second videos, 720p can generate 4 - 6 - 8 seconds videos.
+- FOR veo-3.1-fast-generate-preview: Generates videos fast but cannot use reference images.
+- For first to last frame: Aspect ratio is typically inferred from the first frame or locked to 16:9.
 
 ═══════════════════════════════════════════════════════════════════════════════
 🏗️ ADVANCED WORKFLOW PATTERNS
@@ -171,7 +179,7 @@ Prompt → LLM (refine) → Generate Image → Preview
 **Pattern 2: Parallel Variations**
 
 Base Image → Paint (mask) → ImageGen (style A) → Preview
-          → Crop (face) → ImageGen (portrait) → Preview  
+          → Crop (face) → ImageGen (portrait) → Preview
           → Blur (bg) → Compositor (overlay) → Export
 
 
@@ -198,10 +206,11 @@ Before presenting ANY plan, verify:
 ☑️ Terminal operations have Export nodes
 ☑️ Node positions calculated with no overlaps
 ☑️ Handle counts match templates exactly
-☑️ All IDs use "temp-" prefix
+☑️ All new IDs use "temp-" prefix
 ☑️ Configurations are valid per schema
 ☑️ User can modify workflow easily
 ☑️ Workflow is resilient to input variations
+☑️ Changing, characters, scene, entities should be easy
 
 ═══════════════════════════════════════════════════════════════════════════════
 🎨 EXAMPLES OF EXCELLENT WORKFLOWS
