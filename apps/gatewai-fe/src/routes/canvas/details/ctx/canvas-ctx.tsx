@@ -893,11 +893,11 @@ const CanvasProvider = ({
 
 		// Atomic revert of the entire state
 		
-		dispatch(setAllNodeEntities(canvasDetailsResponse.nodes)),
-		dispatch(setAllEdgeEntities(canvasDetailsResponse.edges)),
-		dispatch(setAllHandleEntities(canvasDetailsResponse.handles)),
-		dispatch(setNodes(originalNodes)),
-		dispatch(setEdges(originalEdges)),
+		dispatch(setAllNodeEntities(canvasDetailsResponse.nodes));
+		dispatch(setAllEdgeEntities(canvasDetailsResponse.edges));
+		dispatch(setAllHandleEntities(canvasDetailsResponse.handles));
+		dispatch(setNodes(originalNodes));
+		dispatch(setEdges(originalEdges));
 
 		// Now it's safe to disable reviewing mode
 		setIsReviewing(false);
@@ -952,14 +952,13 @@ const CanvasProvider = ({
 						sourceHandle: edge.sourceHandleId || undefined,
 						targetHandle: edge.targetHandleId || undefined,
 					}));
-
-					
-					dispatch(setAllNodeEntities(canvasDetailsResponse.nodes)),
-					dispatch(setAllEdgeEntities(canvasDetailsResponse.edges)),
-					dispatch(setAllHandleEntities(canvasDetailsResponse.handles)),
-					dispatch(setNodes(originalNodes)),
-					dispatch(setEdges(originalEdges)),
+					dispatch(setAllNodeEntities(canvasDetailsResponse.nodes));
+					dispatch(setAllEdgeEntities(canvasDetailsResponse.edges));
+					dispatch(setAllHandleEntities(canvasDetailsResponse.handles));
+					dispatch(setNodes(originalNodes));
+					dispatch(setEdges(originalEdges));
 				}
+				
 
 				setIsReviewing(false);
 				setPreviewPatchId(null);
