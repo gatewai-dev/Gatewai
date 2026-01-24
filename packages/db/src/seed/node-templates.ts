@@ -19,7 +19,7 @@ export async function SEED_createNodeTemplates(prisma: PrismaClient) {
 				width: 1080,
 				height: 1080,
 				FPS: 24,
-				layerUpdates: [],
+				layerUpdates: {},
 			},
 		},
 		{
@@ -511,7 +511,7 @@ export async function SEED_createNodeTemplates(prisma: PrismaClient) {
 					},
 				],
 			},
-			defaultConfig: { width: 1024, height: 1024 },
+			defaultConfig: { width: 1024, height: 1024, layerUpdates: {} },
 		},
 		{
 			type: NodeType.Note,

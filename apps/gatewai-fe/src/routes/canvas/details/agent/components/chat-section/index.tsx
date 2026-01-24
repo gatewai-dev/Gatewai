@@ -78,28 +78,12 @@ function InputArea({
 
 				<div className="flex items-center justify-between px-1 pb-1">
 					<div className="flex items-center gap-2">
-						<Button
-							variant="ghost"
-							size="icon"
-							className="h-6 w-6 rounded-md text-muted-foreground hover:text-foreground"
-						>
-							<Plus className="w-4 h-4" />
-						</Button>
-						<Select defaultValue="planning">
-							<SelectTrigger className="h-6 text-[10px] border-0 bg-transparent hover:bg-accent/50 gap-1 px-2 w-auto shadow-none focus:ring-0">
-								<SelectValue placeholder="Mode" />
-							</SelectTrigger>
-							<SelectContent>
-								<SelectItem value="planning">Planning</SelectItem>
-								<SelectItem value="coding">Coding</SelectItem>
-							</SelectContent>
-						</Select>
 						<Select defaultValue="gemini-pro">
-							<SelectTrigger className="h-6 text-[10px] border-0 bg-transparent hover:bg-accent/50 gap-1 px-2 w-auto shadow-none focus:ring-0">
+							<SelectTrigger className=" text-[10px] border-0 bg-transparent hover:bg-accent/50 gap-1 px-2 w-auto shadow-none focus:ring-0">
 								<SelectValue placeholder="Model" />
 							</SelectTrigger>
 							<SelectContent>
-								<SelectItem value="gemini-pro">Gemini 3 Pro (High)</SelectItem>
+								<SelectItem value="gemini-pro">Gemini 3 Pro</SelectItem>
 								<SelectItem value="gemini-flash">Gemini 3 Flash</SelectItem>
 							</SelectContent>
 						</Select>
@@ -247,7 +231,7 @@ export function AgentChatSection({ onClose }: { onClose: () => void }) {
 				</div>
 			) : (
 				<>
-					<ScrollArea className="flex-1" viewPortCn="h-full" ref={scrollRef}>
+					<ScrollArea className="flex-1 grow h-full pb-24" viewPortCn="h-full overflow-auto" ref={scrollRef}>
 						<div className="max-w-3xl mx-auto w-full p-2 space-y-6 pb-28">
 							{messages.map((msg) => (
 								<div
@@ -276,12 +260,10 @@ export function AgentChatSection({ onClose }: { onClose: () => void }) {
 							))}
 							{pendingPatchId && (
 								<div className="flex w-full justify-start animate-in slide-in-from-bottom-2 duration-300">
-									<div className="max-w-[85%]">
 										<PatchReviewCard
 											patchId={pendingPatchId}
 											onComplete={clearPendingPatch}
 										/>
-									</div>
 								</div>
 							)}
 						</div>

@@ -4,16 +4,15 @@ import { serve } from "@hono/node-server";
 import { serveStatic } from "@hono/node-server/serve-static";
 import { Hono } from "hono";
 import { cors } from "hono/cors";
-import { logger } from "hono/logger";
 import { ENV_CONFIG } from "./config.js";
 import { startWorker } from "./graph-engine/queue/workflow.worker.js";
-import { logger as appLogger } from "./logger.js";
+import { logger as appLogger, errorHandler, loggerMiddleware } from "./logger.js";
 import { v1Router } from "./routes/v1/index.js";
 
 console.log(process.env);
-
 const app = new Hono()
-	.use(logger())
+	.use(loggerMiddleware)
+	.onError(errorHandler)
 	.use(
 		"/api/*",
 		cors({

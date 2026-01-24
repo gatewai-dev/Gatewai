@@ -4,12 +4,18 @@ import { Button } from "@/components/ui/button";
 import { cn } from "@/lib/utils";
 import { CanvasAgentProvider } from "../../ctx/canvas-agent.ctx";
 import { AgentChatSection } from "../chat-section";
+import { Panel } from "@xyflow/react";
 
 function AgentLayoutInner() {
 	const [isCollapsed, setIsCollapsed] = useState(false);
 
 	return (
-		<>
+		<Panel
+			className={cn("right-0 bottom-0 top-0 grow w-[320px]", {
+				'w-0': isCollapsed
+			})}
+			position="top-right"
+		>
 			<Button
 				variant="ghost"
 				onClick={() => setIsCollapsed(false)}
@@ -34,7 +40,7 @@ function AgentLayoutInner() {
 					<AgentChatSection onClose={() => setIsCollapsed(true)} />
 				</div>
 			</div>
-		</>
+		</Panel>
 	);
 }
 

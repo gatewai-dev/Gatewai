@@ -161,8 +161,13 @@ const CanvasProvider = ({
 		},
 	});
 
-	const [isReviewing, setIsReviewing] = useState(false);
-	const [previewPatchId, setPreviewPatchId] = useState<string | null>(null);
+	// Use useRef instead of useState for isReviewing to prevent unnecessary re-renders
+	const isReviewingRef = useRef(false);
+	const previewPatchIdRef = useRef<string | null>(null);
+	
+	// Track state changes to force re-render when needed
+	const [reviewingStateVersion, setReviewingStateVersion] = useState(0);
+	const timeoutRef = useRef<NodeJS.Timeout | null>(null);
 
 	const { initialEdges, initialNodes } = useMemo(() => {
 		if (!canvasDetailsResponse?.nodes) {
@@ -181,7 +186,6 @@ const CanvasProvider = ({
 			deletable: node.deletable ?? true,
 		}));
 
-		// Map backend edges to React Flow edges with handle support
 		const initialEdges: Edge[] = canvasDetailsResponse.edges.map((edge) => ({
 			id: edge.id,
 			source: edge.source,
@@ -194,7 +198,7 @@ const CanvasProvider = ({
 	}, [canvasDetailsResponse]);
 
 	useEffect(() => {
-		if (canvasDetailsResponse?.nodes && !isReviewing) {
+		if (canvasDetailsResponse?.nodes && !isReviewingRef.current) {
 			dispatch(setAllNodeEntities(canvasDetailsResponse.nodes));
 			dispatch(setAllEdgeEntities(canvasDetailsResponse.edges));
 			dispatch(setAllHandleEntities(canvasDetailsResponse.handles));
@@ -206,13 +210,14 @@ const CanvasProvider = ({
 		canvasDetailsResponse,
 		initialNodes,
 		initialEdges,
-		isReviewing,
 	]);
 
-	const timeoutRef = useRef<NodeJS.Timeout | null>(null);
-
 	const save = useCallback(() => {
-		if (!canvasId || isReviewing) return;
+		if (!canvasId || isReviewingRef.current) {
+			console.log({ isReviewing: isReviewingRef.current });
+			return;
+		}
+
 		const state = store.getState() as RootState;
 		const currentNodeEntities = Object.values(state.nodes.entities);
 		const currentRfNodes = Object.values(state.reactFlow.nodes);
@@ -265,11 +270,12 @@ const CanvasProvider = ({
 				id: canvasId,
 			},
 		});
-	}, [canvasId, patchCanvasAsync, store, isReviewing]);
+	}, [canvasId, patchCanvasAsync, store]);
 
 	const scheduleSave = useCallback(
 		(delay?: number) => {
-			if (isReviewing) return;
+			if (isReviewingRef.current) return;
+			
 			if (timeoutRef.current) {
 				clearTimeout(timeoutRef.current);
 			}
@@ -277,13 +283,12 @@ const CanvasProvider = ({
 				save();
 			}, delay ?? 2500);
 		},
-		[save, isReviewing],
+		[save],
 	);
 
 	const createNewHandle = useCallback(
 		(newHandle: HandleEntityType) => {
 			dispatch(createHandleEntity(newHandle));
-			// When adding handles, we need to notify React Flow to update its internals
 			updateNodeInternals(newHandle.nodeId);
 			scheduleSave();
 		},
@@ -329,7 +334,6 @@ const CanvasProvider = ({
 		(changes: EdgeChange<Edge>[]) => {
 			dispatch(onEdgeChange(changes));
 
-			// Same logic for edges, though 'select' is the main transient one here too
 			const shouldSave = changes.some((c) => c.type !== "select");
 			if (shouldSave) {
 				scheduleSave();
@@ -351,7 +355,6 @@ const CanvasProvider = ({
 				return;
 			}
 
-			// Calculate center position of the node
 			const x = node.position.x + (node.width ?? 300) / 2;
 			const y = node.position.y + (node.height ?? 200) / 2;
 
@@ -372,7 +375,6 @@ const CanvasProvider = ({
 				};
 			}
 
-			// Self-connection is always invalid
 			if (connection.source === connection.target) {
 				return {
 					isValid: false,
@@ -380,19 +382,16 @@ const CanvasProvider = ({
 				};
 			}
 
-			// Find source node
 			const sourceNode = rfNodes.find((n) => n.id === connection.source);
 			if (!sourceNode) {
 				return { isValid: false, error: "Source node could not be found." };
 			}
 
-			// Find target node
 			const targetNode = rfNodes.find((n) => n.id === connection.target);
 			if (!targetNode) {
 				return { isValid: false, error: "Target node could not be found." };
 			}
 
-			// Check for cycles: adding this edge (source -> target) creates a cycle if there's already a path from target to source
 			const isReachable = (fromId: string, toId: string): boolean => {
 				const visited = new Set<string>();
 
@@ -419,7 +418,6 @@ const CanvasProvider = ({
 				return { isValid: false, error: "Looping connection is not valid." };
 			}
 
-			// Validate if data types for handles match
 			const sourceHandle = handleEntities.find(
 				(h) => h.id === connection.sourceHandle,
 			);
@@ -435,7 +433,6 @@ const CanvasProvider = ({
 				};
 			}
 
-			// Ensure source is output and target is input
 			if (sourceHandle.type !== "Output" || targetHandle.type !== "Input") {
 				return { isValid: false, error: "Can only connect output to input." };
 			}
@@ -463,8 +460,6 @@ const CanvasProvider = ({
 			}
 
 			const newEdges = (() => {
-				// Remove edge if target handle is already occupied (existing logic)
-				// Remove edge if source handle is already connected to THIS target node (new requirement)
 				const updatedEdges = rfEdges.filter((e) => {
 					const isSameTargetHandle =
 						e.target === params.target &&
@@ -477,7 +472,6 @@ const CanvasProvider = ({
 					return !isSameTargetHandle && !isSameSourceToNode;
 				});
 
-				// Add the new edge
 				return [
 					...updatedEdges,
 					{
@@ -490,7 +484,6 @@ const CanvasProvider = ({
 				];
 			})();
 
-			// Map to entities for DB sync
 			const edgeEntities: EdgeEntityType[] = newEdges
 				.map((ne) => {
 					if (ne.sourceHandle && ne.targetHandle) {
@@ -549,7 +542,6 @@ const CanvasProvider = ({
 	const runNodes = useCallback(
 		async (node_ids?: Node["id"][]) => {
 			console.log({ node_ids });
-			// Save before running
 			await save();
 
 			const resp = await runNodesMutateAsync({
@@ -635,8 +627,8 @@ const CanvasProvider = ({
 			dispatch(createNode(newNode));
 			dispatch(createNodeEntity(nodeEntity));
 			dispatch(addManyHandleEntities(handles));
+			
 			let saveDelay: number | undefined;
-			// I have a lidl suspicion that this will fucking bite me asp
 			if (template.type === "File") {
 				saveDelay = 50;
 			}
@@ -788,27 +780,22 @@ const CanvasProvider = ({
 
 				const patchData = patch.patch as unknown as BulkUpdatePayload;
 
-				// Convert patch data to React Flow and Entity format
-				// This mimics the initial load logic
 				const patchNodes: NodeEntityType[] = (patchData.nodes || []).map(
 					(n) => ({
 						...n,
-						// Ensure defaults for missing fields if any
 						isDirty: false,
 						createdAt: new Date().toISOString(),
 						updatedAt: new Date().toISOString(),
 						canvasId,
-						template: (n as any).template, // Assuming template data is included or we need to fetch it?
+						template: (n as any).template,
 					}),
 				) as any;
 
-				// We need to hydrate the nodes with template info for the UI to render correctly
 				const hydratedNodes = patchNodes.map((n) => {
 					const template = nodeTemplates?.find((t) => t.id === n.templateId);
 					return {
 						...n,
-						template: template || (n as any).template, // Fallback if already present
-						// Add other required fields
+						template: template || (n as any).template,
 						draggable: true,
 						selectable: true,
 						deletable: true,
@@ -835,7 +822,9 @@ const CanvasProvider = ({
 					targetHandle: edge.targetHandleId || undefined,
 				}));
 
-				// Update Redux Store ATOMICALLY to avoid inconsistent states in GraphProcessor
+				// Set reviewing state BEFORE updating Redux to prevent save triggers
+				isReviewingRef.current = true;
+				previewPatchIdRef.current = patchId;
 
 				dispatch(setAllNodeEntities(hydratedNodes as NodeEntityType[]));
 				dispatch(setAllEdgeEntities(patchData.edges as EdgeEntityType[]));
@@ -843,25 +832,27 @@ const CanvasProvider = ({
 				dispatch(setNodes(rfPatchNodes));
 				dispatch(setEdges(rfPatchEdges));
 
-				setIsReviewing(true);
-				setPreviewPatchId(patchId);
+				// Force re-render to update UI with new reviewing state
+				setReviewingStateVersion((v) => v + 1);
+				
 				toast.info("Previewing patch...");
 			} catch (error) {
 				console.error("Error previewing patch:", error);
 				toast.error("Failed to preview patch");
+				// Reset state on error
+				isReviewingRef.current = false;
+				previewPatchIdRef.current = null;
+				setReviewingStateVersion((v) => v + 1);
 			}
 		},
 		[canvasId, dispatch, nodeTemplates, triggerGetPatch],
 	);
 
 	const cancelPreview = useCallback(() => {
-		// Explicitly revert to the original server state BEFORE unsetting 'isReviewing'.
-		// This ensures that if any auto-save mechanism triggers (via onNodesChange etc.),
-		// it sees the original 'valid' state and not the patch state.
-
 		if (!canvasDetailsResponse?.nodes) {
-			setIsReviewing(false);
-			setPreviewPatchId(null);
+			isReviewingRef.current = false;
+			previewPatchIdRef.current = null;
+			setReviewingStateVersion((v) => v + 1);
 			return;
 		}
 
@@ -885,19 +876,18 @@ const CanvasProvider = ({
 			targetHandle: edge.targetHandleId || undefined,
 		}));
 
-		// Atomic revert of the entire state
-
+		// Atomic revert
 		dispatch(setAllNodeEntities(canvasDetailsResponse.nodes));
 		dispatch(setAllEdgeEntities(canvasDetailsResponse.edges));
 		dispatch(setAllHandleEntities(canvasDetailsResponse.handles));
 		dispatch(setNodes(originalNodes));
 		dispatch(setEdges(originalEdges));
 
-		// Now it's safe to disable reviewing mode
-		setIsReviewing(false);
-		setPreviewPatchId(null);
+		// Clear reviewing state AFTER revert
+		isReviewingRef.current = false;
+		previewPatchIdRef.current = null;
+		setReviewingStateVersion((v) => v + 1);
 
-		// Refetch to ensure strict consistency with backend
 		refetchCanvas();
 		toast.info("Preview cancelled");
 	}, [canvasDetailsResponse, dispatch, refetchCanvas]);
@@ -906,8 +896,11 @@ const CanvasProvider = ({
 		async (patchId: string) => {
 			try {
 				await applyPatchMutation({ param: { id: canvasId, patchId } }).unwrap();
-				setIsReviewing(false);
-				setPreviewPatchId(null);
+				
+				isReviewingRef.current = false;
+				previewPatchIdRef.current = null;
+				setReviewingStateVersion((v) => v + 1);
+				
 				refetchCanvas();
 				toast.success("Patch applied successfully");
 			} catch (error) {
@@ -925,7 +918,6 @@ const CanvasProvider = ({
 					param: { id: canvasId, patchId },
 				}).unwrap();
 
-				// Similar to cancelPreview, strictly revert state before allowing interactions/saves
 				if (canvasDetailsResponse?.nodes) {
 					const originalNodes = canvasDetailsResponse.nodes.map((node) => ({
 						id: node.id,
@@ -946,6 +938,7 @@ const CanvasProvider = ({
 						sourceHandle: edge.sourceHandleId || undefined,
 						targetHandle: edge.targetHandleId || undefined,
 					}));
+					
 					dispatch(setAllNodeEntities(canvasDetailsResponse.nodes));
 					dispatch(setAllEdgeEntities(canvasDetailsResponse.edges));
 					dispatch(setAllHandleEntities(canvasDetailsResponse.handles));
@@ -953,8 +946,10 @@ const CanvasProvider = ({
 					dispatch(setEdges(originalEdges));
 				}
 
-				setIsReviewing(false);
-				setPreviewPatchId(null);
+				isReviewingRef.current = false;
+				previewPatchIdRef.current = null;
+				setReviewingStateVersion((v) => v + 1);
+				
 				await refetchCanvas();
 				toast.info("Patch rejected");
 			} catch (error) {
@@ -989,8 +984,8 @@ const CanvasProvider = ({
 			createNewHandle,
 			onNodeResultUpdate,
 			moveViewportToNode,
-			// Patch System
-			isReviewing,
+			// Patch System - expose ref value as boolean
+			isReviewing: isReviewingRef.current,
 			previewPatch,
 			applyPatch,
 			rejectPatch,
@@ -1012,7 +1007,7 @@ const CanvasProvider = ({
 			createNewHandle,
 			onNodeResultUpdate,
 			moveViewportToNode,
-			isReviewing,
+			reviewingStateVersion, // Include to force re-compute when reviewing state changes
 			previewPatch,
 			applyPatch,
 			rejectPatch,
