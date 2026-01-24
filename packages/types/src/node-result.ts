@@ -1,5 +1,6 @@
-import type { DataType, FileAsset } from "@gatewai/db";
+import type { DataType } from "@gatewai/db";
 import { z } from "zod";
+import { FileAssetSchema } from "./base.js";
 
 // --- Base Schemas ---
 
@@ -14,7 +15,7 @@ export const ProcessDataSchema = z.object({
 });
 
 export const FileDataSchema = z.object({
-	entity: z.any().optional(), // Replace with actual FileAsset schema if available
+	entity: FileAssetSchema.optional(), // Replace with actual FileAsset schema if available
 	processData: ProcessDataSchema.optional(),
 });
 
