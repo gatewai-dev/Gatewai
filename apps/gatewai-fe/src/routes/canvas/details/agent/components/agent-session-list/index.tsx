@@ -2,6 +2,7 @@ import { formatDistanceToNow } from "date-fns";
 
 import { Clock, MessageSquare, Plus } from "lucide-react";
 import { Button } from "@/components/ui/button";
+import { ScrollArea } from "@/components/ui/scroll-area";
 import { cn } from "@/lib/utils";
 import { useCanvasAgent } from "../../ctx/canvas-agent.ctx";
 
@@ -37,7 +38,10 @@ export function AgentSessionList({ className }: { className?: string }) {
 			</div>
 
 			{/* Scrollable List */}
-			<div className="flex-1 overflow-y-auto p-2 space-y-1">
+			<ScrollArea
+				viewPortCn="h-full"
+				className="flex-1 p-2 space-y-1 h-full overflow-auto"
+			>
 				{!dateSorted || dateSorted.length === 0 ? (
 					<div className="px-4 py-8 text-center text-xs text-muted-foreground">
 						No history yet. Start a conversation.
@@ -90,7 +94,7 @@ export function AgentSessionList({ className }: { className?: string }) {
 						</Button>
 					))
 				)}
-			</div>
+			</ScrollArea>
 		</div>
 	);
 }

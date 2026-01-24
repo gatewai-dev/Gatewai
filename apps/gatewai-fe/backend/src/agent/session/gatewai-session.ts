@@ -62,6 +62,10 @@ export class PrismaAgentSession
 		this.model = params.model;
 	}
 
+	public get id(): string | null {
+		return this.sessionId;
+	}
+
 	/**
 	 * Ensure and return the identifier for this session.
 	 */
@@ -111,7 +115,9 @@ export class PrismaAgentSession
 		const sessionId = await this.getSessionId();
 
 		await prisma.event.createMany({
-			data: items.map((item) => this.agentInputItemToEvent(sessionId, item)),
+			data: items.map((item) =>
+				this.agentInputItemToEvent(sessionId, item),
+			) as any,
 		});
 
 		// Update session timestamp
@@ -366,7 +372,7 @@ export class PrismaAgentSession
 					arguments: item.arguments,
 					output: item.output,
 					providerData: item.providerData,
-				},
+				} as any,
 				status:
 					item.status === "completed"
 						? EventStatus.COMPLETED
@@ -388,7 +394,7 @@ export class PrismaAgentSession
 					type: "type" in item ? item.type : "message",
 					status: "status" in item ? item.status : undefined,
 					providerData: "providerData" in item ? item.providerData : undefined,
-				},
+				} as any,
 				status: EventStatus.COMPLETED,
 			};
 		}

@@ -35,7 +35,7 @@ const ImageGenNodeComponent = memo(
 							nodeId={props.id}
 							type="Input"
 							label="Add Reference Image"
-							dataTypes={node.template.variableInputDataTypes}
+							dataTypes={node?.template.variableInputDataTypes}
 						/>
 						<RunNodeButton nodeId={props.id} />
 					</div>

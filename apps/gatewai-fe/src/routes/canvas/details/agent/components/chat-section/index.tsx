@@ -8,6 +8,7 @@ import { Textarea } from "@/components/ui/textarea";
 import { cn } from "@/lib/utils";
 import { MarkdownRenderer } from "../../../components/markdown-renderer";
 import { useCanvasAgent } from "../../ctx/canvas-agent.ctx";
+import { PatchReviewCard } from "../patch-review-card";
 
 const PLACEHOLDER_OPTIONS = [
 	"Teach me Gatewai studio please.",
@@ -16,8 +17,15 @@ const PLACEHOLDER_OPTIONS = [
 ];
 
 export function AgentChatSection() {
-	const { activeSessionId, messages, sendMessage, isLoading, stopGeneration } =
-		useCanvasAgent();
+	const {
+		activeSessionId,
+		messages,
+		sendMessage,
+		isLoading,
+		stopGeneration,
+		pendingPatchId,
+		clearPendingPatch,
+	} = useCanvasAgent();
 
 	const scrollRef = useRef<HTMLDivElement>(null);
 	const textareaRef = useRef<HTMLTextAreaElement>(null);
@@ -125,6 +133,16 @@ export function AgentChatSection() {
 							</div>
 						</div>
 					))}
+					{pendingPatchId && (
+						<div className="flex w-full justify-start animate-in slide-in-from-bottom-2 duration-300">
+							<div className="max-w-[85%]">
+								<PatchReviewCard
+									patchId={pendingPatchId}
+									onComplete={clearPendingPatch}
+								/>
+							</div>
+						</div>
+					)}
 				</div>
 			</ScrollArea>
 

@@ -839,12 +839,16 @@ const CanvasProvider = ({
 					targetHandle: edge.targetHandleId || undefined,
 				}));
 
-				// Update Redux Store
-				dispatch(setAllNodeEntities(hydratedNodes as NodeEntityType[]));
-				dispatch(setAllEdgeEntities(patchData.edges as EdgeEntityType[]));
-				dispatch(setAllHandleEntities(patchData.handles as HandleEntityType[]));
-				dispatch(setNodes(rfPatchNodes));
-				dispatch(setEdges(rfPatchEdges));
+				// Update Redux Store ATOMICALLY to avoid inconsistent states in GraphProcessor
+				dispatch(
+					batchActions([
+						setAllNodeEntities(hydratedNodes as NodeEntityType[]),
+						setAllEdgeEntities(patchData.edges as EdgeEntityType[]),
+						setAllHandleEntities(patchData.handles as HandleEntityType[]),
+						setNodes(rfPatchNodes),
+						setEdges(rfPatchEdges),
+					]),
+				);
 
 				setIsReviewing(true);
 				setPreviewPatchId(patchId);
@@ -858,12 +862,55 @@ const CanvasProvider = ({
 	);
 
 	const cancelPreview = useCallback(() => {
+		// Explicitly revert to the original server state BEFORE unsetting 'isReviewing'.
+		// This ensures that if any auto-save mechanism triggers (via onNodesChange etc.),
+		// it sees the original 'valid' state and not the patch state.
+
+		if (!canvasDetailsResponse?.nodes) {
+			setIsReviewing(false);
+			setPreviewPatchId(null);
+			return;
+		}
+
+		const originalNodes = canvasDetailsResponse.nodes.map((node) => ({
+			id: node.id,
+			position: node.position as XYPosition,
+			data: node,
+			type: node.type,
+			width: node.width ?? undefined,
+			height: node.height ?? undefined,
+			draggable: node.draggable ?? true,
+			selectable: node.selectable ?? true,
+			deletable: node.deletable ?? true,
+		}));
+
+		const originalEdges = canvasDetailsResponse.edges.map((edge) => ({
+			id: edge.id,
+			source: edge.source,
+			target: edge.target,
+			sourceHandle: edge.sourceHandleId || undefined,
+			targetHandle: edge.targetHandleId || undefined,
+		}));
+
+		// Atomic revert of the entire state
+		dispatch(
+			batchActions([
+				setAllNodeEntities(canvasDetailsResponse.nodes),
+				setAllEdgeEntities(canvasDetailsResponse.edges),
+				setAllHandleEntities(canvasDetailsResponse.handles),
+				setNodes(originalNodes),
+				setEdges(originalEdges),
+			]),
+		);
+
+		// Now it's safe to disable reviewing mode
 		setIsReviewing(false);
 		setPreviewPatchId(null);
-		// Re-fetch the original canvas state
+
+		// Refetch to ensure strict consistency with backend
 		refetchCanvas();
 		toast.info("Preview cancelled");
-	}, [refetchCanvas]);
+	}, [canvasDetailsResponse, dispatch, refetchCanvas]);
 
 	const applyPatch = useCallback(
 		async (patchId: string) => {
@@ -887,16 +934,56 @@ const CanvasProvider = ({
 				await rejectPatchMutation({
 					param: { id: canvasId, patchId },
 				}).unwrap();
+
+				// Similar to cancelPreview, strictly revert state before allowing interactions/saves
+				if (canvasDetailsResponse?.nodes) {
+					const originalNodes = canvasDetailsResponse.nodes.map((node) => ({
+						id: node.id,
+						position: node.position as XYPosition,
+						data: node,
+						type: node.type,
+						width: node.width ?? undefined,
+						height: node.height ?? undefined,
+						draggable: node.draggable ?? true,
+						selectable: node.selectable ?? true,
+						deletable: node.deletable ?? true,
+					}));
+
+					const originalEdges = canvasDetailsResponse.edges.map((edge) => ({
+						id: edge.id,
+						source: edge.source,
+						target: edge.target,
+						sourceHandle: edge.sourceHandleId || undefined,
+						targetHandle: edge.targetHandleId || undefined,
+					}));
+
+					dispatch(
+						batchActions([
+							setAllNodeEntities(canvasDetailsResponse.nodes),
+							setAllEdgeEntities(canvasDetailsResponse.edges),
+							setAllHandleEntities(canvasDetailsResponse.handles),
+							setNodes(originalNodes),
+							setEdges(originalEdges),
+						]),
+					);
+				}
+
 				setIsReviewing(false);
 				setPreviewPatchId(null);
-				refetchCanvas();
+				await refetchCanvas();
 				toast.info("Patch rejected");
 			} catch (error) {
 				console.error("Error rejecting patch:", error);
 				toast.error("Failed to reject patch");
 			}
 		},
-		[rejectPatchMutation, canvasId, refetchCanvas],
+		[
+			rejectPatchMutation,
+			canvasId,
+			refetchCanvas,
+			canvasDetailsResponse,
+			dispatch,
+		],
 	);
 
 	const value = useMemo(

@@ -238,7 +238,7 @@ const VideoCompositorNodeComponent = memo(
 
 					<div className="flex justify-between items-center gap-2">
 						<AddCustomHandleButton
-							dataTypes={node.template.variableInputDataTypes}
+							dataTypes={node?.template.variableInputDataTypes}
 							nodeId={props.id}
 							type="Input"
 						/>

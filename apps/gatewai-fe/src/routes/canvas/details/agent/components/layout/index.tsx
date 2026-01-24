@@ -1,14 +1,8 @@
-import {
-	CanvasAgentProvider,
-	useCanvasAgent,
-} from "../../ctx/canvas-agent.ctx";
+import { CanvasAgentProvider } from "../../ctx/canvas-agent.ctx";
 import { AgentSessionList } from "../agent-session-list";
 import { AgentChatSection } from "../chat-section";
-import { PatchReviewBanner } from "../patch-review-banner";
 
 function AgentLayoutInner({ canvasId }: { canvasId: string }) {
-	const { pendingPatchId, clearPendingPatch } = useCanvasAgent();
-
 	return (
 		<>
 			<div className="flex h-[600px] w-full bg-background/60 backdrop-blur-xl border border-white/10 shadow-2xl rounded-xl overflow-hidden text-foreground font-sans antialiased">
@@ -20,12 +14,6 @@ function AgentLayoutInner({ canvasId }: { canvasId: string }) {
 					<AgentChatSection />
 				</div>
 			</div>
-			{pendingPatchId && (
-				<PatchReviewBanner
-					patchId={pendingPatchId}
-					onClear={clearPendingPatch}
-				/>
-			)}
 		</>
 	);
 }

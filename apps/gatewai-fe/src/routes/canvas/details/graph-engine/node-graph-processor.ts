@@ -199,9 +199,24 @@ export class NodeGraphProcessor extends EventEmitter {
 			this.nodes.forEach((currNode, id) => {
 				const state = this.nodeStates.get(id);
 				const currHash = this.getNodeValueHash(currNode);
+
+				// 1. Data/Config Change Detection
 				if (!state || state.lastProcessedSignature !== currHash) {
 					nodesToInvalidate.add(id);
 				}
+
+				// 2. Recovery Detection
+				// If a node was previously FAILED (perhaps due to temporary invalid topology during a patch),
+				// but is now structurally valid, we must force it to re-evaluate/re-process.
+				if (
+					state &&
+					state.status === TaskStatus.FAILED &&
+					!this.graphValidation[id] // It is currently valid
+				) {
+					// We add it to invalidate so it transitions from FAILED -> QUEUED
+					nodesToInvalidate.add(id);
+				}
+
 				// Always update handle status on graph update to catch connectivity changes
 				this.updateNodeHandleStatus(id);
 			});
@@ -290,12 +305,14 @@ export class NodeGraphProcessor extends EventEmitter {
 
 				// If this node has a result, use the actual output type generated
 				if (state.result) {
-					const outputIndex = state.result.selectedOutputIndex ?? 0;
-					const outputItem = state.result.outputs[outputIndex]?.items.find(
-						(i) => i.outputHandleId === handle.id,
-					);
-					if (outputItem) {
-						activeType = outputItem.type;
+					const outputIndex = state.result?.selectedOutputIndex ?? undefined;
+					if (outputIndex) {
+						const outputItem = state.result.outputs[outputIndex]?.items.find(
+							(i) => i.outputHandleId === handle.id,
+						);
+						if (outputItem) {
+							activeType = outputItem.type;
+						}
 					}
 				}
 			}

@@ -60,7 +60,7 @@ const VideoGenNodeComponent = memo(
 										disabled={hasThreeImageInputs}
 										nodeId={props.id}
 										type="Input"
-										dataTypes={node.template.variableInputDataTypes}
+										dataTypes={node?.template.variableInputDataTypes}
 									/>
 								</div>
 							</PopoverTrigger>

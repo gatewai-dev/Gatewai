@@ -41,7 +41,7 @@ ${NODE_CONFIG_RAW}
 
 export const CreateOrchestratorAgentForCanvas = async ({
 	canvasId,
-	session, // Add session as a required param
+	session,
 }: {
 	canvasId: string;
 	session: PrismaAgentSession;
@@ -78,6 +78,10 @@ export const CreateOrchestratorAgentForCanvas = async ({
 		return `${BASE_SYSTEM_PROMPT}
 
 ---
+**SESSION CONTEXT:**
+Session ID: ${session.id}
+(Use this ID when calling 'propose-canvas-update' tool)
+
 **AVAILABLE NODE TEMPLATES:**
 ${templatesStr}
 
@@ -88,7 +92,7 @@ ${JSON.stringify(freshState, null, 2)}
 ${historyStr || "No prior history."}
 `;
 	};
-
+	console.log(await getInstructions());
 	return new Agent({
 		name: "Gatewai_Assistant",
 		model: agentModel,

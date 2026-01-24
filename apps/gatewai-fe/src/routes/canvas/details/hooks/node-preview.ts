@@ -18,7 +18,7 @@ export function useNodePreview(nodeId: string) {
 		const isTerminalNode = node?.template.isTerminalNode;
 		const shouldHidePreview = !isTerminalNode && hasInvalidInput;
 
-		const outputItem = result?.outputs[result?.selectedOutputIndex]?.items[0];
+		const outputItem = result?.outputs?.[result?.selectedOutputIndex]?.items[0];
 		const inputFileData = outputItem?.data as FileData;
 
 		const imageUrl =

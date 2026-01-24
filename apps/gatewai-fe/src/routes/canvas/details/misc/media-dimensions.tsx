@@ -13,7 +13,7 @@ function MediaDimensions({
 }) {
 	const { result } = useNodeResult(node?.id);
 
-	const outputItem = result?.outputs[result.selectedOutputIndex];
+	const outputItem = result?.outputs?.[result.selectedOutputIndex];
 	if (!outputItem) return null;
 	const items = outputItem?.items;
 	const firstImageOrVideoOutputItem = items?.find(

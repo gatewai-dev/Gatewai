@@ -313,6 +313,8 @@ model AgentSession {
   createdAt         DateTime  @default(now())
   updatedAt         DateTime  @updatedAt
 
+  patches           CanvasPatch[]
+
   @@index([canvasId])
   @@index([threadId])
   @@map("agent_session")
@@ -392,6 +394,9 @@ model CanvasPatch {
   patch     Json
   
   status    PatchStatus @default(PENDING)
+
+  agentSessionId String?
+  agentSession   AgentSession? @relation(fields: [agentSessionId], references: [id], onDelete: SetNull)
   
   createdAt DateTime @default(now())
   updatedAt DateTime @updatedAt

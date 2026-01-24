@@ -431,14 +431,22 @@ server.registerTool(
 		- DELETIONS: Any existing node/edge/handle NOT present in this payload will be DELETED. Ensure you fetch the latest state before patching.`,
 		inputSchema: z.object({
 			canvasId: z.string().describe("The ID of the canvas to update"),
+			agentSessionId: z
+				.string()
+				.optional()
+				.describe("The ID of the current agent session"),
 			canvasState: bulkUpdateSchema.describe(
 				"Full Canvas state. Use temporary IDs for new items.",
 			),
 		}),
 	},
-	async ({ canvasId, canvasState }) => {
+	async ({ canvasId, canvasState, agentSessionId }) => {
 		try {
-			const result = await apiClient.createPatch(canvasId, canvasState);
+			const result = await apiClient.createPatch(
+				canvasId,
+				canvasState,
+				agentSessionId,
+			);
 			return {
 				content: [
 					{

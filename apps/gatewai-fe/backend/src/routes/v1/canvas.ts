@@ -1,9 +1,7 @@
-import { randomUUID } from "node:crypto"; // Native UUID generation
-import { type NodeUpdateInput, prisma } from "@gatewai/db";
+import { prisma } from "@gatewai/db";
 import {
 	type BulkUpdatePayload,
 	bulkUpdateSchema,
-	type NodeResult,
 	processSchema,
 } from "@gatewai/types";
 import { zValidator } from "@hono/zod-validator";
@@ -98,6 +96,7 @@ const canvasRoutes = new Hono({
 	})
 	.post("/:id/patches", zValidator("json", bulkUpdateSchema), async (c) => {
 		const id = c.req.param("id");
+		const agentSessionId = c.req.query("agentSessionId");
 		const validated = c.req.valid("json");
 
 		const patch = await prisma.canvasPatch.create({
@@ -105,6 +104,7 @@ const canvasRoutes = new Hono({
 				canvasId: id,
 				patch: validated as any, // Prisma Json type workaround
 				status: "PENDING",
+				agentSessionId: agentSessionId,
 			},
 		});
 
@@ -134,6 +134,22 @@ const canvasRoutes = new Hono({
 				where: { id: patchId },
 				data: { status: "ACCEPTED" },
 			});
+
+			// Log event if session exists
+			if (patch.agentSessionId) {
+				await prisma.event.create({
+					data: {
+						agentSessionId: patch.agentSessionId,
+						eventType: "patch_action",
+						role: "USER",
+						content: {
+							action: "ACCEPTED",
+							patchId: patch.id,
+							text: "User accepted the proposed changes.",
+						},
+					},
+				});
+			}
 		} catch (error) {
 			console.error("Failed to apply patch:", error);
 			throw new HTTPException(500, { message: "Failed to apply patch" });
@@ -158,6 +174,22 @@ const canvasRoutes = new Hono({
 			where: { id: patchId },
 			data: { status: "REJECTED" },
 		});
+
+		// Log event if session exists
+		if (patch.agentSessionId) {
+			await prisma.event.create({
+				data: {
+					agentSessionId: patch.agentSessionId,
+					eventType: "patch_action",
+					role: "USER",
+					content: {
+						action: "REJECTED",
+						patchId: patch.id,
+						text: "User rejected the proposed changes.",
+					},
+				},
+			});
+		}
 
 		return c.json({ success: true });
 	})

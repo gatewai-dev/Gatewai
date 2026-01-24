@@ -18,7 +18,7 @@ const CompositorNodeComponent = memo((props: NodeProps<CompositorNode>) => {
 	const node = useAppSelector(makeSelectNodeById(props.id));
 
 	const { result } = useNodeResult(props.id);
-	const outputItem = result?.outputs[result.selectedOutputIndex]?.items[0];
+	const outputItem = result?.outputs?.[result.selectedOutputIndex]?.items[0];
 	const inputFileData = outputItem?.data as FileData;
 
 	const imageUrl = ResolveFileDataUrl(inputFileData);
@@ -39,7 +39,7 @@ const CompositorNodeComponent = memo((props: NodeProps<CompositorNode>) => {
 				</div>
 				<div className="flex justify-between items-center">
 					<AddCustomHandleButton
-						dataTypes={node.template.variableInputDataTypes}
+						dataTypes={node?.template.variableInputDataTypes}
 						nodeId={props.id}
 						type="Input"
 					/>

@@ -409,9 +409,11 @@ export class GatewaiApiClient {
 	async createPatch(
 		canvasId: string,
 		payload: BulkUpdatePayload,
+		agentSessionId?: string,
 	): Promise<any> {
 		const res = await this.rpc.api.v1.canvas[":id"].patches.$post({
 			param: { id: canvasId },
+			query: { agentSessionId },
 			json: payload,
 		});
 		return this.handleResponse(res);
