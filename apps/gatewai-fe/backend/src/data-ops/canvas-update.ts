@@ -2,6 +2,7 @@ import { randomUUID } from "node:crypto";
 import type { NodeUpdateInput } from "@gatewai/db";
 import { prisma } from "@gatewai/db";
 import type { BulkUpdatePayload, NodeResult } from "@gatewai/types";
+import assert from "node:assert";
 
 export async function applyCanvasUpdate(
 	canvasId: string,
@@ -64,9 +65,10 @@ export async function applyCanvasUpdate(
 	// A. Process Nodes
 	for (const n of validated.nodes ?? []) {
 		const clientId = n.id;
-		const isNew = !clientId || !dbState.nodeIds.has(clientId);
-		const serverId = isNew ? randomUUID() : clientId;
-
+		assert(clientId, 'No client id provided');
+		const isTempId = clientId?.startsWith("temp-");
+		const isNew = !dbState.nodeIds.has(clientId);
+		const serverId = isNew ? isTempId ? randomUUID() : clientId : clientId;
 		if (clientId) idMap.nodes.set(clientId, serverId);
 
 		if (isNew) {
