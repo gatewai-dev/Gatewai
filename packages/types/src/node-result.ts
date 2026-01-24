@@ -2,8 +2,6 @@ import type { DataType } from "@gatewai/db";
 import { z } from "zod";
 import { FileAssetSchema } from "./base.js";
 
-// --- Base Schemas ---
-
 export const ProcessDataSchema = z.object({
 	dataUrl: z.string(),
 	tempKey: z.string().optional(),
@@ -15,11 +13,9 @@ export const ProcessDataSchema = z.object({
 });
 
 export const FileDataSchema = z.object({
-	entity: FileAssetSchema.optional(), // Replace with actual FileAsset schema if available
+	entity: FileAssetSchema.optional(),
 	processData: ProcessDataSchema.optional(),
 });
-
-// --- Output Item Factory ---
 
 const createOutputItem = <T extends DataType>(
 	type: T,
