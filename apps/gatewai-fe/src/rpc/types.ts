@@ -99,3 +99,24 @@ export type AgentSessionDetailsRPC =
 	InferResponseType<AgentSessionDetailsRPCRoute>;
 export type AgentSessionDetailsRPCParams =
 	InferRequestType<AgentSessionDetailsRPCRoute>;
+
+export type GetPatchRPC = InferResponseType<
+	(typeof rpcClient.api.v1.canvas)[":id"]["patches"][":patchId"]["$get"]
+>;
+export type GetPatchRPCParams = InferRequestType<
+	(typeof rpcClient.api.v1.canvas)[":id"]["patches"][":patchId"]["$get"]
+>;
+
+export type ApplyPatchRPC = InferResponseType<
+	(typeof rpcClient.api.v1.canvas)[":id"]["patches"][":patchId"]["apply"]["$post"]
+>;
+export type ApplyPatchRPCParams = InferRequestType<
+	(typeof rpcClient.api.v1.canvas)[":id"]["patches"][":patchId"]["apply"]["$post"]
+>;
+
+export type RejectPatchRPC = InferResponseType<
+	(typeof rpcClient.api.v1.canvas)[":id"]["patches"][":patchId"]["reject"]["$post"]
+>;
+export type RejectPatchRPCParams = InferRequestType<
+	(typeof rpcClient.api.v1.canvas)[":id"]["patches"][":patchId"]["reject"]["$post"]
+>;

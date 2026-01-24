@@ -1,20 +1,22 @@
-import { EventEmitter } from "node:events";
+import { EventEmitter } from "events";
 
 class CanvasAgentStateManager extends EventEmitter {
 	private lockedCanvases = new Set<string>();
 
 	lock(canvasId: string) {
 		this.lockedCanvases.add(canvasId);
-		this.emit("change", canvasId, true);
 	}
 
 	unlock(canvasId: string) {
 		this.lockedCanvases.delete(canvasId);
-		this.emit("change", canvasId, false);
 	}
 
 	isLocked(canvasId: string) {
 		return this.lockedCanvases.has(canvasId);
+	}
+
+	notifyPatch(canvasId: string, patchId: string) {
+		this.emit("patch", canvasId, patchId);
 	}
 }
 

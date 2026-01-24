@@ -33,7 +33,7 @@ export const ModeContext = createContext<{
 } | null>(null);
 
 function ReactflowContainer({ children }: ReactFlowProps) {
-	const { onEdgesChange, onNodesChange, onConnect, rfInstance } =
+	const { onEdgesChange, onNodesChange, onConnect, rfInstance, isReviewing } =
 		useCanvasCtx();
 	const dispatch = useAppDispatch();
 
@@ -160,25 +160,25 @@ function ReactflowContainer({ children }: ReactFlowProps) {
 					nodeTypes={nodeTypes}
 					edgeTypes={edgeTypes}
 					connectionLineComponent={CustomConnectionLine}
-					onEdgesChange={onEdgesChange}
-					onNodesChange={onNodesChange}
+					onEdgesChange={isReviewing ? undefined : onEdgesChange}
+					onNodesChange={isReviewing ? undefined : onNodesChange}
 					onDragOver={onDragOver}
 					maxZoom={8}
 					minZoom={0.1}
 					zoomOnPinch={true}
 					zoomOnScroll={true}
-					nodesDraggable
+					nodesDraggable={!isReviewing}
 					elementsSelectable
 					panOnDrag={effectivePan}
 					selectionOnDrag={!effectivePan}
-					selectNodesOnDrag
+					selectNodesOnDrag={!isReviewing}
 					selectionMode={SelectionMode.Partial}
 					connectionMode={ConnectionMode.Loose}
-					onConnect={onConnect}
+					onConnect={isReviewing ? undefined : onConnect}
 					onlyRenderVisibleElements={rfNodes.length > 20} // When there's too many nodes, only render visible ones for performance
 					onSelectionChange={onSelectionChange}
 					proOptions={{ hideAttribution: false }}
-					nodesConnectable
+					nodesConnectable={!isReviewing}
 				>
 					{children}
 					<Background variant={BackgroundVariant.Dots} />

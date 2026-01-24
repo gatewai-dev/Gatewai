@@ -1,5 +1,9 @@
 import type { NodeType } from "@gatewai/db";
-import type { AllNodeConfig, NodeResult } from "@gatewai/types";
+import type {
+	AllNodeConfig,
+	BulkUpdatePayload,
+	NodeResult,
+} from "@gatewai/types";
 import {
 	type Connection,
 	type Edge,
@@ -24,6 +28,7 @@ import {
 	useEffect,
 	useMemo,
 	useRef,
+	useState,
 } from "react";
 import { useStore } from "react-redux";
 import { toast } from "sonner";
@@ -35,9 +40,12 @@ import type {
 } from "@/rpc/types";
 import { type RootState, useAppDispatch, useAppSelector } from "@/store";
 import {
+	useApplyPatchMutation,
 	useGetCanvasDetailsQuery,
+	useLazyGetPatchQuery,
 	usePatchCanvasMutation,
 	useProcessNodesMutation,
+	useRejectPatchMutation,
 } from "@/store/canvas";
 import {
 	deleteManyEdgeEntity,
@@ -107,6 +115,13 @@ interface CanvasContextType {
 			duration?: number;
 		},
 	) => void;
+
+	// Patch System
+	isReviewing: boolean;
+	previewPatch: (patchId: string) => Promise<void>;
+	applyPatch: (patchId: string) => Promise<void>;
+	rejectPatch: (patchId: string) => Promise<void>;
+	cancelPreview: () => void;
 }
 
 const CanvasContext = createContext<CanvasContextType | undefined>(undefined);
@@ -130,17 +145,25 @@ const CanvasProvider = ({
 	const [patchCanvasAsync] = usePatchCanvasMutation();
 	const [runNodesMutateAsync] = useProcessNodesMutation();
 
+	const [triggerGetPatch] = useLazyGetPatchQuery();
+	const [applyPatchMutation] = useApplyPatchMutation();
+	const [rejectPatchMutation] = useRejectPatchMutation();
+
 	const { nodeTemplates } = useNodeTemplates();
 
 	const {
 		data: canvasDetailsResponse,
 		isLoading,
 		isError,
+		refetch: refetchCanvas,
 	} = useGetCanvasDetailsQuery({
 		param: {
 			id: canvasId,
 		},
 	});
+
+	const [isReviewing, setIsReviewing] = useState(false);
+	const [previewPatchId, setPreviewPatchId] = useState<string | null>(null);
 
 	const { initialEdges, initialNodes } = useMemo(() => {
 		if (!canvasDetailsResponse?.nodes) {
@@ -172,16 +195,24 @@ const CanvasProvider = ({
 	}, [canvasDetailsResponse]);
 
 	useEffect(() => {
-		if (canvasDetailsResponse?.nodes) {
+		if (canvasDetailsResponse?.nodes && !isReviewing) {
 			dispatch(setAllNodeEntities(canvasDetailsResponse.nodes));
 			dispatch(setAllEdgeEntities(canvasDetailsResponse.edges));
 			dispatch(setAllHandleEntities(canvasDetailsResponse.handles));
+			dispatch(setNodes(initialNodes));
+			dispatch(setEdges(initialEdges));
 		}
-	}, [dispatch, canvasDetailsResponse]);
+	}, [
+		dispatch,
+		canvasDetailsResponse,
+		initialNodes,
+		initialEdges,
+		isReviewing,
+	]);
 	const timeoutRef = useRef<NodeJS.Timeout | null>(null);
 
 	const save = useCallback(() => {
-		if (!canvasId) return;
+		if (!canvasId || isReviewing) return;
 		const state = store.getState() as RootState;
 		const currentNodeEntities = Object.values(
 			state.flow.present.nodes.entities,
@@ -240,10 +271,11 @@ const CanvasProvider = ({
 				id: canvasId,
 			},
 		});
-	}, [canvasId, patchCanvasAsync, store]);
+	}, [canvasId, patchCanvasAsync, store, isReviewing]);
 
 	const scheduleSave = useCallback(
 		(delay?: number) => {
+			if (isReviewing) return;
 			if (timeoutRef.current) {
 				clearTimeout(timeoutRef.current);
 			}
@@ -251,7 +283,7 @@ const CanvasProvider = ({
 				save();
 			}, delay ?? 2500);
 		},
-		[save],
+		[save, isReviewing],
 	);
 
 	const createNewHandle = useCallback(
@@ -744,6 +776,129 @@ const CanvasProvider = ({
 		[canvasId, dispatch, nodeTemplates, rfNodes, scheduleSave, store],
 	);
 
+	// --- Patch System Implementation ---
+
+	const previewPatch = useCallback(
+		async (patchId: string) => {
+			try {
+				const { data: patch } = await triggerGetPatch({
+					param: { id: canvasId, patchId },
+				});
+
+				if (!patch || !patch.patch) {
+					toast.error("Failed to load patch data");
+					return;
+				}
+
+				const patchData = patch.patch as unknown as BulkUpdatePayload;
+
+				// Convert patch data to React Flow and Entity format
+				// This mimics the initial load logic
+				const patchNodes: NodeEntityType[] = (patchData.nodes || []).map(
+					(n) => ({
+						...n,
+						// Ensure defaults for missing fields if any
+						isDirty: false,
+						createdAt: new Date().toISOString(),
+						updatedAt: new Date().toISOString(),
+						canvasId,
+						template: (n as any).template, // Assuming template data is included or we need to fetch it?
+					}),
+				) as any;
+
+				// We need to hydrate the nodes with template info for the UI to render correctly
+				const hydratedNodes = patchNodes.map((n) => {
+					const template = nodeTemplates?.find((t) => t.id === n.templateId);
+					return {
+						...n,
+						template: template || (n as any).template, // Fallback if already present
+						// Add other required fields
+						draggable: true,
+						selectable: true,
+						deletable: true,
+					};
+				});
+
+				const rfPatchNodes: Node[] = hydratedNodes.map((node) => ({
+					id: node.id,
+					position: node.position as XYPosition,
+					data: node,
+					type: node.type,
+					width: node.width ?? undefined,
+					height: node.height ?? undefined,
+					draggable: true,
+					selectable: true,
+					deletable: true,
+				}));
+
+				const rfPatchEdges: Edge[] = (patchData.edges || []).map((edge) => ({
+					id: edge.id,
+					source: edge.source,
+					target: edge.target,
+					sourceHandle: edge.sourceHandleId || undefined,
+					targetHandle: edge.targetHandleId || undefined,
+				}));
+
+				// Update Redux Store
+				dispatch(setAllNodeEntities(hydratedNodes as NodeEntityType[]));
+				dispatch(setAllEdgeEntities(patchData.edges as EdgeEntityType[]));
+				dispatch(setAllHandleEntities(patchData.handles as HandleEntityType[]));
+				dispatch(setNodes(rfPatchNodes));
+				dispatch(setEdges(rfPatchEdges));
+
+				setIsReviewing(true);
+				setPreviewPatchId(patchId);
+				toast.info("Previewing patch...");
+			} catch (error) {
+				console.error("Error previewing patch:", error);
+				toast.error("Failed to preview patch");
+			}
+		},
+		[canvasId, dispatch, nodeTemplates, triggerGetPatch],
+	);
+
+	const cancelPreview = useCallback(() => {
+		setIsReviewing(false);
+		setPreviewPatchId(null);
+		// Re-fetch the original canvas state
+		refetchCanvas();
+		toast.info("Preview cancelled");
+	}, [refetchCanvas]);
+
+	const applyPatch = useCallback(
+		async (patchId: string) => {
+			try {
+				await applyPatchMutation({ param: { id: canvasId, patchId } }).unwrap();
+				setIsReviewing(false);
+				setPreviewPatchId(null);
+				refetchCanvas();
+				toast.success("Patch applied successfully");
+			} catch (error) {
+				console.error("Error applying patch:", error);
+				toast.error("Failed to apply patch");
+			}
+		},
+		[applyPatchMutation, canvasId, refetchCanvas],
+	);
+
+	const rejectPatch = useCallback(
+		async (patchId: string) => {
+			try {
+				await rejectPatchMutation({
+					param: { id: canvasId, patchId },
+				}).unwrap();
+				setIsReviewing(false);
+				setPreviewPatchId(null);
+				refetchCanvas();
+				toast.info("Patch rejected");
+			} catch (error) {
+				console.error("Error rejecting patch:", error);
+				toast.error("Failed to reject patch");
+			}
+		},
+		[rejectPatchMutation, canvasId, refetchCanvas],
+	);
+
 	const value = useMemo(
 		() => ({
 			canvas: canvasDetailsResponse?.canvas,
@@ -762,6 +917,12 @@ const CanvasProvider = ({
 			createNewHandle,
 			onNodeResultUpdate,
 			moveViewportToNode,
+			// Patch System
+			isReviewing,
+			previewPatch,
+			applyPatch,
+			rejectPatch,
+			cancelPreview,
 		}),
 		[
 			canvasDetailsResponse?.canvas,
@@ -779,6 +940,11 @@ const CanvasProvider = ({
 			createNewHandle,
 			onNodeResultUpdate,
 			moveViewportToNode,
+			isReviewing,
+			previewPatch,
+			applyPatch,
+			rejectPatch,
+			cancelPreview,
 		],
 	);
 

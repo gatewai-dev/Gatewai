@@ -403,4 +403,42 @@ export class GatewaiApiClient {
 	getAssetUrl(id: string): string {
 		return `${this.baseUrl}/api/v1/assets/${id}`;
 	}
+
+	// ==================== PATCH METHODS ====================
+
+	async createPatch(
+		canvasId: string,
+		payload: BulkUpdatePayload,
+	): Promise<any> {
+		const res = await this.rpc.api.v1.canvas[":id"].patches.$post({
+			param: { id: canvasId },
+			json: payload,
+		});
+		return this.handleResponse(res);
+	}
+
+	async applyPatch(canvasId: string, patchId: string): Promise<any> {
+		const res = await this.rpc.api.v1.canvas[":id"].patches[
+			":patchId"
+		].apply.$post({
+			param: { id: canvasId, patchId },
+		});
+		return this.handleResponse(res);
+	}
+
+	async rejectPatch(canvasId: string, patchId: string): Promise<any> {
+		const res = await this.rpc.api.v1.canvas[":id"].patches[
+			":patchId"
+		].reject.$post({
+			param: { id: canvasId, patchId },
+		});
+		return this.handleResponse(res);
+	}
+
+	async getPatch(canvasId: string, patchId: string): Promise<any> {
+		const res = await this.rpc.api.v1.canvas[":id"].patches[":patchId"].$get({
+			param: { id: canvasId, patchId },
+		});
+		return this.handleResponse(res);
+	}
 }

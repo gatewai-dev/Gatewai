@@ -38,6 +38,7 @@ function extractText(content: any): string {
 export function useAgentChatStream(canvasId: string, sessionId: string) {
 	const [messages, setMessages] = useState<ChatMessage[]>([]);
 	const [isLoading, setIsLoading] = useState(false);
+	const [pendingPatchId, setPendingPatchId] = useState<string | null>(null);
 	const abortControllerRef = useRef<AbortController | null>(null);
 
 	// --- Fetch History ---
@@ -173,6 +174,11 @@ export function useAgentChatStream(canvasId: string, sessionId: string) {
 						try {
 							const event = JSON.parse(jsonStr);
 
+							// Handle patch_proposed events
+							if (event.type === "patch_proposed" && event.patchId) {
+								setPendingPatchId(event.patchId);
+							}
+
 							// Extract text from 'output_text_delta'
 							if (
 								event.type === "raw_model_stream_event" &&
@@ -217,5 +223,17 @@ export function useAgentChatStream(canvasId: string, sessionId: string) {
 		}
 	}, []);
 
-	return { messages, sendMessage, isLoading, stopGeneration, setMessages };
+	const clearPendingPatch = useCallback(() => {
+		setPendingPatchId(null);
+	}, []);
+
+	return {
+		messages,
+		sendMessage,
+		isLoading,
+		stopGeneration,
+		setMessages,
+		pendingPatchId,
+		clearPendingPatch,
+	};
 }

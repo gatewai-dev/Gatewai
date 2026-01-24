@@ -1,6 +1,7 @@
 import { randomUUID } from "node:crypto"; // Native UUID generation
 import { type NodeUpdateInput, prisma } from "@gatewai/db";
 import {
+	type BulkUpdatePayload,
 	bulkUpdateSchema,
 	type NodeResult,
 	processSchema,
@@ -12,7 +13,9 @@ import { HTTPException } from "hono/http-exception";
 import { streamSSE } from "hono/streaming";
 import z from "zod";
 import { RunCanvasAgent } from "../../agent/runner/index.js";
+import { canvasAgentState } from "../../agent/state.js";
 import { GetCanvasEntities } from "../../data-ops/canvas.js";
+import { applyCanvasUpdate } from "../../data-ops/canvas-update.js";
 import { NodeWFProcessor } from "../../graph-engine/canvas-workflow-processor.js";
 
 const canvasRoutes = new Hono({
@@ -81,326 +84,96 @@ const canvasRoutes = new Hono({
 		const id = c.req.param("id");
 		const validated = c.req.valid("json");
 
-		// 1. Verify Canvas Existence
-		const existingCanvas = await prisma.canvas.findFirst({
-			where: { id },
-			select: { id: true, version: true },
-		});
-
-		if (!existingCanvas) {
-			throw new HTTPException(404, { message: "Canvas not found" });
-		}
-
-		// --- PHASE 1: Fetch Current State (Snapshoting) ---
-		// We need the current state to calculate the diff (What to delete vs update)
-		const [nodesInDB, edgesInDB, handlesInDB] = await Promise.all([
-			prisma.node.findMany({ where: { canvasId: id }, select: { id: true } }),
-			prisma.edge.findMany({
-				where: { sourceNode: { canvasId: id } },
-				select: { id: true },
-			}),
-			prisma.handle.findMany({
-				where: { node: { canvasId: id } },
-				select: { id: true },
-			}),
-		]);
-
-		const dbState = {
-			nodeIds: new Set(nodesInDB.map((n) => n.id)),
-			edgeIds: new Set(edgesInDB.map((e) => e.id)),
-			handleIds: new Set(handlesInDB.map((h) => h.id)),
-		};
-
-		// --- PHASE 2: ID Remapping & Diff Calculation ---
-		// We map frontend "temp" IDs to backend "real" UUIDs here.
-		// This allows us to insert interdependent records in one transaction.
-
-		const idMap = {
-			nodes: new Map<string, string>(), // ClientID -> ServerUUID
-			handles: new Map<string, string>(), // ClientID -> ServerUUID
-			edges: new Map<string, string>(), // ClientID -> ServerUUID
-		};
-
-		const ops = {
-			nodes: {
-				create: [] as any[],
-				update: [] as any[],
-				keepIds: new Set<string>(),
-			},
-			handles: {
-				create: [] as any[],
-				update: [] as any[],
-				keepIds: new Set<string>(),
-			},
-			edges: {
-				create: [] as any[],
-				update: [] as any[],
-				keepIds: new Set<string>(),
-			},
-		};
-
-		// A. Process Nodes
-		for (const n of validated.nodes ?? []) {
-			const clientId = n.id;
-			// If ID is missing or not in DB, it's a CREATE
-			const isNew = !clientId || !dbState.nodeIds.has(clientId);
-			const serverId = isNew ? randomUUID() : clientId;
-
-			if (clientId) idMap.nodes.set(clientId, serverId);
-
-			if (isNew) {
-				ops.nodes.create.push({ ...n, id: serverId });
-			} else {
-				ops.nodes.update.push(n);
-				ops.nodes.keepIds.add(clientId);
-			}
-		}
-
-		// B. Process Handles
-		for (const h of validated.handles ?? []) {
-			// Resolve parent Node ID (It might be a newly created node)
-			const resolvedNodeId = idMap.nodes.get(h.nodeId) ?? h.nodeId;
-
-			const clientId = h.id;
-			const isNew = !clientId || !dbState.handleIds.has(clientId);
-			const serverId = isNew ? randomUUID() : clientId;
-
-			if (clientId) idMap.handles.set(clientId, serverId);
-
-			const handleData = { ...h, nodeId: resolvedNodeId, id: serverId };
-
-			if (isNew) {
-				ops.handles.create.push(handleData);
-			} else {
-				ops.handles.update.push(handleData);
-				ops.handles.keepIds.add(clientId);
-			}
-		}
-
-		// C. Process Edges
-		for (const e of validated.edges ?? []) {
-			// Resolve references (Source/Target nodes and handles might be new)
-			const source = idMap.nodes.get(e.source) ?? e.source;
-			const target = idMap.nodes.get(e.target) ?? e.target;
-			const sourceHandle =
-				idMap.handles.get(e.sourceHandleId) ?? e.sourceHandleId;
-			const targetHandle =
-				idMap.handles.get(e.targetHandleId) ?? e.targetHandleId;
-
-			// Integrity Check: Skip edges with missing references
-			if (!source || !target || !sourceHandle || !targetHandle) {
-				console.warn(`[Patch] Skipping Edge ${e.id}: Unresolved reference.`);
-				continue;
-			}
-
-			const clientId = e.id;
-			const isNew = !clientId || !dbState.edgeIds.has(clientId);
-			const serverId = isNew ? randomUUID() : clientId;
-
-			if (clientId) idMap.edges.set(clientId, serverId);
-
-			const edgeData = {
-				...e,
-				id: serverId,
-				source,
-				target,
-				sourceHandleId: sourceHandle,
-				targetHandleId: targetHandle,
-			};
-
-			if (isNew) {
-				ops.edges.create.push(edgeData);
-			} else {
-				ops.edges.update.push(edgeData);
-				ops.edges.keepIds.add(clientId);
-			}
-		}
-
-		// --- PHASE 3: Prepare Transaction ---
-
-		// 1. Calculate Deletions (Anything in DB not in "keepIds" is deleted)
-		// Order matters: Edges -> Handles -> Nodes (Foreign Key constraints)
-		const deleteIds = {
-			edges: Array.from(dbState.edgeIds).filter(
-				(id) => !ops.edges.keepIds.has(id),
-			),
-			handles: Array.from(dbState.handleIds).filter(
-				(id) => !ops.handles.keepIds.has(id),
-			),
-			nodes: Array.from(dbState.nodeIds).filter(
-				(id) => !ops.nodes.keepIds.has(id),
-			),
-		};
-
-		const transactionSteps = [];
-
-		// Step A: Deletes
-		if (deleteIds.edges.length) {
-			transactionSteps.push(
-				prisma.edge.deleteMany({ where: { id: { in: deleteIds.edges } } }),
-			);
-		}
-		if (deleteIds.handles.length) {
-			transactionSteps.push(
-				prisma.handle.deleteMany({ where: { id: { in: deleteIds.handles } } }),
-			);
-		}
-		if (deleteIds.nodes.length) {
-			transactionSteps.push(
-				prisma.node.deleteMany({ where: { id: { in: deleteIds.nodes } } }),
-			);
-		}
-
-		// Step B: Node Operations
-		if (ops.nodes.create.length) {
-			transactionSteps.push(
-				prisma.node.createMany({
-					data: ops.nodes.create.map((n) => ({
-						id: n.id,
-						canvasId: id,
-						name: n.name,
-						type: n.type,
-						position: n.position,
-						width: n.width,
-						height: n.height,
-						templateId: n.templateId,
-						config: n.config ?? {},
-						result: n.result ?? {},
-					})),
-				}),
-			);
-		}
-
-		// Logic for Node Updates (checking terminal status)
-		if (ops.nodes.update.length) {
-			const templates = await prisma.nodeTemplate.findMany({
-				where: {
-					id: {
-						in: ops.nodes.update
-							.map((n) => n.templateId)
-							.filter(Boolean) as string[],
-					},
-				},
-				select: { id: true, isTerminalNode: true },
-			});
-			const terminalTemplateIds = new Set(
-				templates.filter((t) => t.isTerminalNode).map((t) => t.id),
-			);
-
-			for (const uNode of ops.nodes.update) {
-				const data: NodeUpdateInput = {
-					name: uNode.name,
-					position: uNode.position,
-					config: uNode.config,
-				};
-
-				// Only update result if not a terminal node, or if explicitly provided
-				const isTerminal =
-					uNode.templateId && terminalTemplateIds.has(uNode.templateId);
-				if (!isTerminal && uNode.result) {
-					data.result = {
-						selectedOutputIndex: uNode.result?.selectedOutputIndex,
-						outputs: (uNode.result as NodeResult).outputs,
-					};
-				}
-
-				transactionSteps.push(
-					prisma.node.update({ where: { id: uNode.id }, data }),
-				);
-			}
-		}
-
-		// Step C: Handle Operations
-		if (ops.handles.create.length) {
-			transactionSteps.push(
-				prisma.handle.createMany({
-					data: ops.handles.create.map((h) => ({
-						id: h.id,
-						nodeId: h.nodeId,
-						type: h.type,
-						label: h.label,
-						required: h.required,
-						order: h.order,
-						dataTypes: h.dataTypes,
-						templateHandleId: h.templateHandleId,
-					})),
-				}),
-			);
-		}
-		for (const uHandle of ops.handles.update) {
-			transactionSteps.push(
-				prisma.handle.update({
-					where: { id: uHandle.id },
-					data: {
-						type: uHandle.type,
-						label: uHandle.label,
-						required: uHandle.required,
-						order: uHandle.order,
-						dataTypes: uHandle.dataTypes,
-						templateHandleId: uHandle.templateHandleId,
-					},
-				}),
-			);
-		}
-
-		// Step D: Edge Operations
-		if (ops.edges.create.length) {
-			transactionSteps.push(
-				prisma.edge.createMany({
-					data: ops.edges.create.map((e) => ({
-						id: e.id,
-						source: e.source,
-						target: e.target,
-						sourceHandleId: e.sourceHandleId,
-						targetHandleId: e.targetHandleId,
-					})),
-				}),
-			);
-		}
-		for (const uEdge of ops.edges.update) {
-			transactionSteps.push(
-				prisma.edge.update({
-					where: { id: uEdge.id },
-					data: {
-						source: uEdge.source,
-						target: uEdge.target,
-						sourceHandleId: uEdge.sourceHandleId,
-						targetHandleId: uEdge.targetHandleId,
-					},
-				}),
-			);
-		}
-
-		// Step E: Canvas Version Increment (The Revoke Mechanism)
-		// If any previous step fails, this never happens.
-		// If this fails, previous steps roll back.
-		transactionSteps.push(
-			prisma.canvas.update({
-				where: { id },
-				data: {
-					version: { increment: 1 },
-					// Optional: Update 'updatedAt' explicitly if not auto-handled
-					// updatedAt: new Date()
-				},
-			}),
-		);
-
-		// --- PHASE 4: Execution ---
 		try {
-			await prisma.$transaction(transactionSteps);
+			await applyCanvasUpdate(id, validated);
 		} catch (error) {
-			console.error("Canvas Bulk Update Failed - Rolling back:", error);
-			// We re-throw HTTP exception so Hono returns appropriate error to client.
-			// Data in DB remains untouched (Atomicity).
+			console.error("Canvas Bulk Update Failed:", error);
 			throw new HTTPException(500, {
 				message: "Failed to save canvas updates.",
 			});
 		}
 
-		// --- PHASE 5: Response ---
-		// Fetch the clean, updated state to return to client
 		const response = await GetCanvasEntities(id);
 		return c.json(response);
+	})
+	.post("/:id/patches", zValidator("json", bulkUpdateSchema), async (c) => {
+		const id = c.req.param("id");
+		const validated = c.req.valid("json");
+
+		const patch = await prisma.canvasPatch.create({
+			data: {
+				canvasId: id,
+				patch: validated as any, // Prisma Json type workaround
+				status: "PENDING",
+			},
+		});
+
+		canvasAgentState.notifyPatch(id, patch.id);
+
+		return c.json(patch, 201);
+	})
+	.post("/:id/patches/:patchId/apply", async (c) => {
+		const id = c.req.param("id");
+		const patchId = c.req.param("patchId");
+
+		const patch = await prisma.canvasPatch.findUnique({
+			where: { id: patchId },
+		});
+
+		if (!patch || patch.canvasId !== id) {
+			throw new HTTPException(404, { message: "Patch not found" });
+		}
+
+		if (patch.status !== "PENDING") {
+			throw new HTTPException(400, { message: "Patch is not pending" });
+		}
+
+		try {
+			await applyCanvasUpdate(id, patch.patch as unknown as BulkUpdatePayload);
+			await prisma.canvasPatch.update({
+				where: { id: patchId },
+				data: { status: "ACCEPTED" },
+			});
+		} catch (error) {
+			console.error("Failed to apply patch:", error);
+			throw new HTTPException(500, { message: "Failed to apply patch" });
+		}
+
+		const response = await GetCanvasEntities(id);
+		return c.json(response);
+	})
+	.post("/:id/patches/:patchId/reject", async (c) => {
+		const id = c.req.param("id");
+		const patchId = c.req.param("patchId");
+
+		const patch = await prisma.canvasPatch.findUnique({
+			where: { id: patchId },
+		});
+
+		if (!patch || patch.canvasId !== id) {
+			throw new HTTPException(404, { message: "Patch not found" });
+		}
+
+		await prisma.canvasPatch.update({
+			where: { id: patchId },
+			data: { status: "REJECTED" },
+		});
+
+		return c.json({ success: true });
+	})
+	.get("/:id/patches/:patchId", async (c) => {
+		const id = c.req.param("id");
+		const patchId = c.req.param("patchId");
+
+		const patch = await prisma.canvasPatch.findUnique({
+			where: { id: patchId },
+		});
+
+		if (!patch || patch.canvasId !== id) {
+			throw new HTTPException(404, { message: "Patch not found" });
+		}
+
+		return c.json(patch);
 	})
 	.delete("/:id", async (c) => {
 		const id = c.req.param("id");
@@ -582,14 +355,32 @@ const canvasRoutes = new Hono({
 
 			// 2. Return SSE Stream
 			return streamSSE(c, async (stream) => {
-				const runner = RunCanvasAgent({
-					canvasId,
-					sessionId,
-					userMessage: message,
-				});
+				const onPatch = async (cId: string, pId: string) => {
+					if (cId === canvasId) {
+						await stream.writeSSE({
+							data: JSON.stringify({
+								type: "patch_proposed",
+								patchId: pId,
+							}),
+							event: "patch_proposed",
+						});
+					}
+				};
 
-				for await (const delta of runner) {
-					await stream.write(JSON.stringify(delta));
+				canvasAgentState.on("patch", onPatch);
+
+				try {
+					const runner = RunCanvasAgent({
+						canvasId,
+						sessionId,
+						userMessage: message,
+					});
+
+					for await (const delta of runner) {
+						await stream.write(JSON.stringify(delta));
+					}
+				} finally {
+					canvasAgentState.off("patch", onPatch);
 				}
 			});
 		},

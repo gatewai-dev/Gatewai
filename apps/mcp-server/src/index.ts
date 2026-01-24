@@ -416,12 +416,13 @@ server.registerTool(
 );
 
 /**
- * Tool: Patch Canvas
+ * Tool: Propose Canvas Update
  */
 server.registerTool(
-	"patch-canvas",
+	"propose-canvas-update",
 	{
-		description: `Update the canvas workflow using a sync/upsert strategy.
+		description: `Propose an update to the canvas workflow.
+		- This will NOT apply changes immediately. The user will review them.
 		- For EXISTING nodes/edges/handles: You MUST include their current valid UUID 'id'.
 		- For NEW nodes/edges/handles: You can provide a temporary ID (e.g. "temp-1", "node-new-A") or a random string.
 		  The server will generate a valid UUID and replace your temporary ID.
@@ -437,14 +438,19 @@ server.registerTool(
 	},
 	async ({ canvasId, canvasState }) => {
 		try {
-			const result = await apiClient.updateCanvas(canvasId, canvasState);
+			const result = await apiClient.createPatch(canvasId, canvasState);
 			return {
-				content: [{ type: "text", text: JSON.stringify(result, null, 2) }],
+				content: [
+					{
+						type: "text",
+						text: `Patch proposed successfully. Patch ID: ${result.id}. The user has been notified to review the changes.`,
+					},
+				],
 			};
 		} catch (error) {
 			const msg = error instanceof Error ? error.message : "Unknown error.";
 			return {
-				content: [{ type: "text", text: `Error patching canvas: ${msg}` }],
+				content: [{ type: "text", text: `Error proposing patch: ${msg}` }],
 				isError: true,
 			};
 		}

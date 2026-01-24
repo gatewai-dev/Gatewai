@@ -34,6 +34,10 @@ type CanvasAgentContextType = {
 	sendMessage: (message: string) => Promise<void>;
 	isLoading: boolean;
 	stopGeneration: () => void;
+
+	// Patch System
+	pendingPatchId: string | null;
+	clearPendingPatch: () => void;
 };
 
 const CanvasAgentContext = createContext<CanvasAgentContextType | undefined>(
@@ -79,6 +83,7 @@ const CanvasAgentProvider = ({
 	);
 	const [messages, setMessages] = useState<ChatMessage[]>([]);
 	const [isLoading, setIsLoading] = useState(false);
+	const [pendingPatchId, setPendingPatchId] = useState<string | null>(null);
 	const abortControllerRef = useRef<AbortController | null>(null);
 
 	const { data: agentSessionsList, isLoading: isLoadingSessions } =
@@ -241,6 +246,11 @@ const CanvasAgentProvider = ({
 						try {
 							const event = JSON.parse(jsonStr);
 
+							// Handle patch_proposed events
+							if (event.type === "patch_proposed" && event.patchId) {
+								setPendingPatchId(event.patchId);
+							}
+
 							if (
 								event.type === "raw_model_stream_event" &&
 								event.data?.type === "output_text_delta"
@@ -284,6 +294,10 @@ const CanvasAgentProvider = ({
 		}
 	}, []);
 
+	const clearPendingPatch = useCallback(() => {
+		setPendingPatchId(null);
+	}, []);
+
 	return (
 		<CanvasAgentContext.Provider
 			value={{
@@ -296,6 +310,8 @@ const CanvasAgentProvider = ({
 				sendMessage,
 				isLoading,
 				stopGeneration,
+				pendingPatchId,
+				clearPendingPatch,
 			}}
 		>
 			{children}

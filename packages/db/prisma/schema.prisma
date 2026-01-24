@@ -214,6 +214,7 @@ model Canvas {
   duplicates       Canvas[]     @relation("CanvasDuplicates")
 
   agentSessions       AgentSession[]
+  patches             CanvasPatch[]
 
 
   @@map("canvas")
@@ -380,4 +381,26 @@ enum SessionStatus {
   COMPLETED
   FAILED
   EXPIRED
+}
+
+model CanvasPatch {
+  id        String   @id @default(cuid())
+  canvasId  String
+  canvas    Canvas   @relation(fields: [canvasId], references: [id], onDelete: Cascade)
+  
+  // The proposed changes (JSON)
+  patch     Json
+  
+  status    PatchStatus @default(PENDING)
+  
+  createdAt DateTime @default(now())
+  updatedAt DateTime @updatedAt
+
+  @@map("canvas_patch")
+}
+
+enum PatchStatus {
+  PENDING
+  ACCEPTED
+  REJECTED
 }
