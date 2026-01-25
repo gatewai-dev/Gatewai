@@ -1294,7 +1294,9 @@ const InspectorPanel: React.FC = () => {
 							<Select
 								value={selectedLayer.blendMode}
 								onValueChange={(v) =>
-									updateLayer(selectedLayer.id, { blendMode: v })
+									updateLayer(selectedLayer.id, {
+										blendMode: v as LocalCompositorLayer["blendMode"],
+									})
 								}
 							>
 								<SelectTrigger className="h-8 text-[11px] bg-white/5 border-white/10">
@@ -1572,6 +1574,7 @@ export const ImageDesignerEditor: React.FC<ImageDesignerEditorProps> = ({
 	const handleSave = () => {
 		const layerUpdates = layers.reduce<Record<string, CompositorLayer>>(
 			(acc, l) => {
+				// biome-ignore lint/correctness/noUnusedVariables: Logical method.
 				const { computedHeight, computedWidth, ...rest } = l;
 				acc[l.inputHandleId] = rest;
 				return acc;

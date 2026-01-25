@@ -14,17 +14,12 @@ const fontsRouter = new Hono<{ Variables: AuthorizedHonoTypes }>({
 	strict: false,
 })
 	.get("/", async (c) => {
-		try {
-			const assetsDir = path.join(__dirname, "../../assets/fonts");
-			const dirents = await fs.readdir(assetsDir, { withFileTypes: true });
-			const fontNames = dirents
-				.filter((dirent) => dirent.isDirectory())
-				.map((dirent) => dirent.name);
-			return c.json(fontNames);
-		} catch (error) {
-			console.error("Failed to list fonts:", error);
-			return c.json({ error: "Failed to list fonts" }, 500);
-		}
+		const assetsDir = path.join(__dirname, "../../assets/fonts");
+		const dirents = await fs.readdir(assetsDir, { withFileTypes: true });
+		const fontNames = dirents
+			.filter((dirent) => dirent.isDirectory())
+			.map((dirent) => dirent.name);
+		return c.json(fontNames);
 	})
 	.get(
 		"/load/:fontName",
