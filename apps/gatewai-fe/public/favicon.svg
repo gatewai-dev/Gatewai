@@ -1,0 +1,15 @@
+<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24" fill="none" stroke="oklch(89.992% 0.16568 110.075)" stroke-width="3" stroke-linecap="square" stroke-linejoin="miter">
+    <title>Gatewai Logo</title>
+    <path d="M 2 2 L 22 2" />
+    <path d="M 2 2 L 2 22" />
+    <path d="M 2 22 L 22 22" />
+    <path d="M 22 22 L 22 12" />
+    <path d="M 12 12 L 22 12" />
+
+    <circle cx="2" cy="2" r="3" fill="oklch(89.992% 0.16568 110.075)" stroke="none" />
+    <circle cx="22" cy="2" r="3" fill="oklch(89.992% 0.16568 110.075)" stroke="none" />
+    <circle cx="2" cy="22" r="3" fill="oklch(89.992% 0.16568 110.075)" stroke="none" />
+    <circle cx="22" cy="22" r="3" fill="oklch(89.992% 0.16568 110.075)" stroke="none" />
+    <circle cx="22" cy="12" r="3" fill="oklch(89.992% 0.16568 110.075)" stroke="none" />
+    <circle cx="12" cy="12" r="3" fill="oklch(89.992% 0.16568 110.075)" stroke="none" />
+</svg>

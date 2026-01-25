@@ -135,6 +135,7 @@ const CanvasAgentProvider = ({
 		// Clear messages immediately before setting new session
 		setMessages([]);
 		setIsLoading(false);
+		setPendingPatchId(null);
 		setActiveSessionId(newId);
 	}, []);
 
@@ -157,6 +158,7 @@ const CanvasAgentProvider = ({
 	const refreshHistory = useCallback(async () => {
 		if (!activeSessionId || !canvasId) {
 			setMessages([]);
+			setPendingPatchId(null);
 			return;
 		}
 
@@ -170,31 +172,55 @@ const CanvasAgentProvider = ({
 			const data = await resp.json();
 			if (!data) {
 				setMessages([]);
+				setPendingPatchId(null);
 				return;
 			}
 
-			const historyMessages = (data.events || [])
-				.filter(
-					(e) => e.eventType === "message" || e.eventType === "patch_action",
-				)
-				.map((e: any) => ({
-					id: e.id,
-					eventType: e.eventType,
-					role:
-						e.eventType === "patch_action"
-							? "system"
-							: e.role === "USER"
-								? "user"
-								: e.role === "ASSISTANT"
-									? "model"
-									: "system",
-					text: extractText(e.content),
-					createdAt: new Date(e.createdAt),
-				}));
+			const filteredEvents = (data.events || []).filter(
+				(e) =>
+					e.eventType === "message" ||
+					e.eventType === "patch_action" ||
+					e.eventType === "patch_proposed",
+			);
+
+			// Detect pending patch by scanning events in order
+			let lastProposedPatchId: string | null = null;
+			for (const e of filteredEvents) {
+				if (e.eventType === "patch_proposed") {
+					lastProposedPatchId = (e.content as any)?.patchId ?? null;
+				} else if (e.eventType === "patch_action") {
+					const actionPatchId = (e.content as any)?.patchId;
+					const action = (e.content as any)?.action;
+					if (
+						actionPatchId === lastProposedPatchId &&
+						(action === "ACCEPTED" || action === "REJECTED")
+					) {
+						lastProposedPatchId = null;
+					}
+				}
+			}
+
+			const historyMessages = filteredEvents.map((e: any) => ({
+				id: e.id,
+				eventType: e.eventType,
+				role:
+					e.eventType === "patch_action" || e.eventType === "patch_proposed"
+						? "system"
+						: e.role === "USER"
+							? "user"
+							: e.role === "ASSISTANT"
+								? "model"
+								: "system",
+				text: extractText(e.content),
+				createdAt: new Date(e.createdAt),
+			}));
+
 			setMessages(historyMessages);
+			setPendingPatchId(lastProposedPatchId);
 		} catch (error: unknown) {
 			console.error("Error fetching history:", error);
 			setMessages([]);
+			setPendingPatchId(null);
 		} finally {
 			setIsLoading(false);
 		}

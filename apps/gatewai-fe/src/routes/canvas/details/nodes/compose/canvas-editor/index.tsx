@@ -10,6 +10,7 @@ import {
 import {
 	arrayMove,
 	SortableContext,
+	sortableKeyboardCoordinates,
 	useSortable,
 	verticalListSortingStrategy,
 } from "@dnd-kit/sortable";
@@ -23,12 +24,19 @@ import type {
 import type Konva from "konva";
 import type { KonvaEventObject } from "konva/lib/Node";
 import {
+	AlignCenterHorizontal,
+	AlignCenterVertical,
+	ArrowLeftRight,
+	ArrowUpDown,
+	Bold,
 	ChevronDown,
 	Eye,
 	EyeOff,
 	Hand,
 	ImageIcon,
+	Italic,
 	Layers,
+	LockOpen,
 	MousePointer,
 	Move,
 	MoveHorizontal,
@@ -37,6 +45,7 @@ import {
 	Save,
 	Settings2,
 	Type,
+	Underline,
 	X as XIcon,
 } from "lucide-react";
 import React, {
@@ -63,7 +72,7 @@ import {
 } from "react-konva";
 import useImage from "use-image";
 
-// UI Components
+// Internal Component Imports
 import {
 	AlertDialog,
 	AlertDialogAction,
@@ -92,7 +101,14 @@ import {
 	SelectTrigger,
 	SelectValue,
 } from "@/components/ui/select";
+import { Separator } from "@/components/ui/separator";
 import { Switch } from "@/components/ui/switch";
+import {
+	Tooltip,
+	TooltipContent,
+	TooltipProvider,
+	TooltipTrigger,
+} from "@/components/ui/tooltip";
 import { ColorPicker } from "@/components/util/color-input";
 import { fontManager } from "@/lib/fonts";
 import { useGetFontListQuery } from "@/store/fonts";
@@ -100,10 +116,7 @@ import type { HandleEntityType } from "@/store/handles";
 import type { NodeEntityType } from "@/store/nodes";
 import { GetAssetEndpoint, GetFontAssetUrl } from "@/utils/file";
 
-// -----------------------------------------------------------------------------
-// Constants & Types
-// -----------------------------------------------------------------------------
-
+//#region CONSTANTS
 const DEFAULTS = {
 	FONT_FAMILY: "Inter",
 	FONT_SIZE: 64,
@@ -112,9 +125,7 @@ const DEFAULTS = {
 	ALIGN: "left",
 	VERTICAL_ALIGN: "top",
 	LETTER_SPACING: 0,
-	CANVAS_WIDTH: 1080,
-	CANVAS_HEIGHT: 1080,
-} as const;
+};
 
 const ASPECT_RATIOS = [
 	{ label: "Youtube / HD (16:9)", width: 1280, height: 720 },
@@ -122,7 +133,7 @@ const ASPECT_RATIOS = [
 	{ label: "TikTok / Reel (9:16)", width: 720, height: 1280 },
 	{ label: "Square (1:1)", width: 1080, height: 1080 },
 	{ label: "Portrait (4:5)", width: 1080, height: 1350 },
-] as const;
+];
 
 const BLEND_MODES = [
 	"source-over",
@@ -146,47 +157,32 @@ const BLEND_MODES = [
 interface LocalCompositorLayer extends CompositorLayer {
 	computedHeight?: number;
 	computedWidth?: number;
-	// Ensure zIndex is always present for local sorting
-	zIndex: number;
 }
 
-interface Guide {
-	type: "horizontal" | "vertical";
-	position: number;
-}
-
-// -----------------------------------------------------------------------------
-// Context Definition
-// -----------------------------------------------------------------------------
-
-interface EditorState {
-	// Canvas State
+interface EditorContextType {
 	layers: LocalCompositorLayer[];
-	zoomPercentage: string; // Add this
 	updateLayers: (
 		updater: SetStateAction<LocalCompositorLayer[]>,
 		isUserChange?: boolean,
 	) => void;
-	updateLayer: (id: string, updates: Partial<LocalCompositorLayer>) => void;
-
-	// Selection State
 	selectedId: string | null;
 	setSelectedId: (id: string | null) => void;
-
-	// Viewport State
 	viewportWidth: number;
 	viewportHeight: number;
-	updateViewportSize: (w: number, h: number) => void;
-
-	// Tool State
-	mode: "select" | "pan";
-	setMode: Dispatch<SetStateAction<"select" | "pan">>;
+	updateViewportWidth: (w: number) => void;
+	updateViewportHeight: (h: number) => void;
+	screenWidth: number;
+	screenHeight: number;
+	guides: Guide[];
+	setGuides: Dispatch<SetStateAction<Guide[]>>;
 	isEditingText: boolean;
 	setIsEditingText: (editing: boolean) => void;
 	editingLayerId: string | null;
 	setEditingLayerId: (id: string | null) => void;
-
-	// Zoom/Pan State
+	stageRef: RefObject<Konva.Stage | null>;
+	transformerRef: RefObject<Konva.Transformer | null>;
+	mode: "select" | "pan";
+	setMode: Dispatch<SetStateAction<"select" | "pan">>;
 	scale: number;
 	setScale: Dispatch<SetStateAction<number>>;
 	stagePos: { x: number; y: number };
@@ -195,215 +191,198 @@ interface EditorState {
 	zoomOut: () => void;
 	zoomTo: (value: number) => void;
 	fitView: () => void;
-
-	// Refs & Layout
-	stageRef: RefObject<Konva.Stage | null>;
-	transformerRef: RefObject<Konva.Transformer | null>;
-	containerSize: { width: number; height: number };
-
-	// Guides
-	guides: Guide[];
-	setGuides: Dispatch<SetStateAction<Guide[]>>;
-
-	// Data Access
-	getTextData: (handleId: string) => string;
-	getImageData: (handleId: string) => FileData;
-	getImageUrl: (handleId: string) => string | undefined;
-
-	// Meta
+	zoomPercentage: string;
+	getTextData: (handleId: HandleEntityType["id"]) => string;
+	getImageData: (handleId: HandleEntityType["id"]) => FileData;
+	getImageUrl: (handleId: HandleEntityType["id"]) => string | undefined;
 	isDirty: boolean;
 	setIsDirty: Dispatch<SetStateAction<boolean>>;
-	isNodeDragging: boolean;
-	setIsNodeDragging: Dispatch<SetStateAction<boolean>>;
 }
 
-const EditorContext = createContext<EditorState | undefined>(undefined);
+interface Guide {
+	type: "horizontal" | "vertical";
+	position: number;
+}
+
+const EditorContext = createContext<EditorContextType | undefined>(undefined);
 
 const useEditor = () => {
 	const context = useContext(EditorContext);
-	if (!context) throw new Error("useEditor must be used within EditorProvider");
+	if (!context) {
+		throw new Error("useEditor must be used within EditorProvider");
+	}
 	return context;
 };
 
-// -----------------------------------------------------------------------------
-// Hooks (Logic)
-// -----------------------------------------------------------------------------
-
-const useSnapping = (
-	layers: LocalCompositorLayer[],
-	viewportW: number,
-	viewportH: number,
-	setGuides: Dispatch<SetStateAction<Guide[]>>,
-) => {
+const useSnap = () => {
+	const { layers, updateLayers, viewportWidth, viewportHeight, setGuides } =
+		useEditor();
 	const SNAP_THRESHOLD = 5;
 
 	const getSnapPositions = useCallback(
 		(excludeId: string) => {
-			const hSnaps: number[] = [0, Math.round(viewportH / 2), viewportH];
-			const vSnaps: number[] = [0, Math.round(viewportW / 2), viewportW];
+			const hSnaps: number[] = [
+				0,
+				Math.round(viewportHeight / 2),
+				viewportHeight,
+			];
+			const vSnaps: number[] = [
+				0,
+				Math.round(viewportWidth / 2),
+				viewportWidth,
+			];
 
 			for (const layer of layers) {
 				if (layer.id !== excludeId && layer.opacity !== 0) {
-					const w =
+					const effectiveWidth =
 						layer.type === "Text"
 							? (layer.computedWidth ?? 0)
 							: (layer.width ?? 0);
-					const h =
+					const effectiveHeight =
 						layer.type === "Text"
 							? (layer.computedHeight ?? 0)
 							: (layer.height ?? 0);
 
-					const cx = Math.round(layer.x + w / 2);
-					const cy = Math.round(layer.y + h / 2);
+					const centerX = Math.round(layer.x + effectiveWidth / 2);
+					const centerY = Math.round(layer.y + effectiveHeight / 2);
 
-					vSnaps.push(Math.round(layer.x), cx, Math.round(layer.x + w));
-					hSnaps.push(Math.round(layer.y), cy, Math.round(layer.y + h));
+					vSnaps.push(
+						Math.round(layer.x),
+						centerX,
+						Math.round(layer.x + effectiveWidth),
+					);
+					hSnaps.push(
+						Math.round(layer.y),
+						centerY,
+						Math.round(layer.y + effectiveHeight),
+					);
 				}
 			}
 			return { hSnaps, vSnaps };
 		},
-		[layers, viewportH, viewportW],
+		[layers, viewportHeight, viewportWidth],
 	);
 
 	const handleDragMove = useCallback(
 		(e: KonvaEventObject<DragEvent>) => {
 			const node = e.target;
+			const id = node.id();
+
 			if (e.evt.shiftKey) {
 				setGuides([]);
 				return;
 			}
 
-			const { hSnaps, vSnaps } = getSnapPositions(node.id());
+			const { hSnaps, vSnaps } = getSnapPositions(id);
 			let newX = node.x();
 			let newY = node.y();
 
-			const w = node.width() * node.scaleX();
-			const h = node.height() * node.scaleY();
-			const cx = newX + w / 2;
-			const cy = newY + h / 2;
-			const right = newX + w;
-			const bottom = newY + h;
+			const nodeWidth = node.width() * node.scaleX();
+			const nodeHeight = node.height() * node.scaleY();
+
+			const centerX = newX + nodeWidth / 2;
+			const centerY = newY + nodeHeight / 2;
+			const right = newX + nodeWidth;
+			const bottom = newY + nodeHeight;
 
 			const vGuides: Guide[] = [];
-			const hGuides: Guide[] = [];
-
-			// Vertical Snapping
 			for (const snap of vSnaps) {
 				if (Math.abs(newX - snap) < SNAP_THRESHOLD) {
 					newX = snap;
 					vGuides.push({ type: "vertical", position: snap });
-				} else if (Math.abs(cx - snap) < SNAP_THRESHOLD) {
-					newX = snap - w / 2;
+				} else if (Math.abs(centerX - snap) < SNAP_THRESHOLD) {
+					newX = snap - nodeWidth / 2;
 					vGuides.push({ type: "vertical", position: snap });
 				} else if (Math.abs(right - snap) < SNAP_THRESHOLD) {
-					newX = snap - w;
+					newX = snap - nodeWidth;
 					vGuides.push({ type: "vertical", position: snap });
 				}
 			}
 
-			// Horizontal Snapping
+			const hGuides: Guide[] = [];
 			for (const snap of hSnaps) {
 				if (Math.abs(newY - snap) < SNAP_THRESHOLD) {
 					newY = snap;
 					hGuides.push({ type: "horizontal", position: snap });
-				} else if (Math.abs(cy - snap) < SNAP_THRESHOLD) {
-					newY = snap - h / 2;
+				} else if (Math.abs(centerY - snap) < SNAP_THRESHOLD) {
+					newY = snap - nodeHeight / 2;
 					hGuides.push({ type: "horizontal", position: snap });
 				} else if (Math.abs(bottom - snap) < SNAP_THRESHOLD) {
-					newY = snap - h;
+					newY = snap - nodeHeight;
 					hGuides.push({ type: "horizontal", position: snap });
 				}
 			}
 
-			if (vGuides.length) node.x(newX);
-			if (hGuides.length) node.y(newY);
+			if (vGuides.length > 0) node.x(newX);
+			if (hGuides.length > 0) node.y(newY);
 
-			// Deduplicate guides
 			const guideMap = new Map<string, Guide>();
-			[...vGuides, ...hGuides].forEach((g) =>
-				guideMap.set(`${g.type}-${g.position}`, g),
-			);
+			[...vGuides, ...hGuides].forEach((g) => {
+				const key = `${g.type}-${g.position}`;
+				if (!guideMap.has(key)) guideMap.set(key, g);
+			});
 			setGuides(Array.from(guideMap.values()));
 		},
 		[getSnapPositions, setGuides],
 	);
 
-	return { handleDragMove };
+	const handleDragEnd = useCallback(
+		(e: KonvaEventObject<DragEvent>) => {
+			const node = e.target;
+			const id = node.id();
+			updateLayers((prev) =>
+				prev.map((l) =>
+					l.id === id
+						? { ...l, x: Math.round(node.x()), y: Math.round(node.y()) }
+						: l,
+				),
+			);
+			setGuides([]);
+		},
+		[updateLayers, setGuides],
+	);
+
+	const handleTransformEnd = useCallback(
+		(e: KonvaEventObject<Event>) => {
+			const node = e.target;
+			const id = node.id();
+
+			const scaleX = node.scaleX();
+			const scaleY = node.scaleY();
+
+			node.scaleX(1);
+			node.scaleY(1);
+
+			updateLayers((prev) =>
+				prev.map((l) => {
+					if (l.id !== id) return l;
+
+					const updates: Partial<LocalCompositorLayer> = {
+						x: Math.round(node.x()),
+						y: Math.round(node.y()),
+						rotation: Math.round(node.rotation()),
+					};
+
+					if (l.type !== "Text") {
+						updates.width = Math.round(node.width() * scaleX);
+						updates.height = Math.round(node.height() * scaleY);
+					}
+
+					return { ...l, ...updates };
+				}),
+			);
+		},
+		[updateLayers],
+	);
+
+	return {
+		handleDragMove,
+		handleDragEnd,
+		handleTransformEnd,
+	};
 };
 
-const useEditorShortcuts = () => {
-	const {
-		setMode,
-		mode,
-		zoomIn,
-		zoomOut,
-		fitView,
-		selectedId,
-		updateLayer,
-		isDirty,
-		isNodeDragging,
-	} = useEditor();
-	const lastModeRef = useRef<"select" | "pan">("select");
-
-	useEffect(() => {
-		const handleKeyDown = (e: KeyboardEvent) => {
-			const target = e.target as HTMLElement;
-			const isInput = ["INPUT", "TEXTAREA", "SELECT"].includes(target.tagName);
-
-			if (isInput) return;
-
-			// Tools
-			if (e.key.toLowerCase() === "v") setMode("select");
-			if (e.key.toLowerCase() === "h") setMode("pan");
-
-			// Pan Mode (Space)
-			if (e.code === "Space" && !e.repeat && !isNodeDragging) {
-				e.preventDefault();
-				if (mode !== "pan") {
-					lastModeRef.current = mode;
-					setMode("pan");
-				}
-			}
-
-			// Zoom
-			if (e.ctrlKey || e.metaKey) {
-				if (e.key === "=" || e.key === "+") {
-					e.preventDefault();
-					zoomIn();
-				}
-				if (e.key === "-") {
-					e.preventDefault();
-					zoomOut();
-				}
-				if (e.key === "0") {
-					e.preventDefault();
-					fitView();
-				}
-			}
-		};
-
-		const handleKeyUp = (e: KeyboardEvent) => {
-			if (e.code === "Space") {
-				const target = e.target as HTMLElement;
-				if (!["INPUT", "TEXTAREA"].includes(target.tagName)) {
-					e.preventDefault();
-					setMode(lastModeRef.current);
-				}
-			}
-		};
-
-		window.addEventListener("keydown", handleKeyDown);
-		window.addEventListener("keyup", handleKeyUp);
-		return () => {
-			window.removeEventListener("keydown", handleKeyDown);
-			window.removeEventListener("keyup", handleKeyUp);
-		};
-	}, [mode, selectedId, setMode, zoomIn, zoomOut, fitView, isNodeDragging]);
-};
-
-// -----------------------------------------------------------------------------
-// Sub-Components
-// -----------------------------------------------------------------------------
+//#region Components
 
 const CollapsibleSection: React.FC<{
 	title: string;
@@ -435,245 +414,247 @@ const CollapsibleSection: React.FC<{
 	);
 };
 
-const ImageLayer: React.FC<{ layer: LocalCompositorLayer }> = React.memo(
-	({ layer }) => {
-		const {
-			setSelectedId,
-			updateLayer,
-			getImageUrl,
-			mode,
-			setGuides,
-			viewportWidth,
-			viewportHeight,
-			layers,
-			setIsNodeDragging,
-		} = useEditor();
+interface LayerProps {
+	layer: LocalCompositorLayer;
+	onDragStart: (e: KonvaEventObject<DragEvent>) => void;
+	onDragMove: (e: KonvaEventObject<DragEvent>) => void;
+	onDragEnd: (e: KonvaEventObject<DragEvent>) => void;
+	onTransformEnd: (e: KonvaEventObject<Event>) => void;
+}
 
-		const { handleDragMove } = useSnapping(
-			layers,
-			viewportWidth,
-			viewportHeight,
-			setGuides,
-		);
-		const url = getImageUrl(layer.inputHandleId);
-		const [image] = useImage(url ?? "", "anonymous");
+const ImageLayer: React.FC<LayerProps> = ({
+	layer,
+	onDragStart,
+	onDragMove,
+	onDragEnd,
+	onTransformEnd,
+}) => {
+	const { setSelectedId, updateLayers, getImageUrl, mode } = useEditor();
+	const url = getImageUrl(layer.inputHandleId);
+	const [image] = useImage(url ?? "", "anonymous");
 
-		// Initialize Dimensions from loaded image
-		useEffect(() => {
-			if (image && (!layer.width || !layer.height)) {
-				updateLayer(layer.id, {
-					width: Math.round(image.width),
-					height: Math.round(image.height),
-				});
+	useEffect(() => {
+		if (image && (!layer.width || !layer.height)) {
+			updateLayers(
+				(prev) =>
+					prev.map((l) =>
+						l.id === layer.id
+							? {
+									...l,
+									width: Math.round(image.width),
+									height: Math.round(image.height),
+								}
+							: l,
+					),
+				false,
+			);
+		}
+	}, [image, layer.id, layer.width, layer.height, updateLayers]);
+
+	const handleSelect = () => setSelectedId(layer.id);
+
+	const handleTransform = useCallback((e: KonvaEventObject<Event>) => {
+		const node = e.target as Konva.Image;
+		const scaleX = node.scaleX();
+		const scaleY = node.scaleY();
+		if (node.width() * scaleX < 5) node.scaleX(5 / node.width());
+		if (node.height() * scaleY < 5) node.scaleY(5 / node.height());
+	}, []);
+
+	return (
+		<KonvaImage
+			id={layer.id}
+			name="object"
+			x={layer.x}
+			y={layer.y}
+			width={layer.width}
+			height={layer.height}
+			rotation={layer.rotation}
+			image={image}
+			draggable={mode === "select"}
+			onClick={handleSelect}
+			onTap={handleSelect}
+			onDragStart={onDragStart}
+			onDragMove={onDragMove}
+			onDragEnd={onDragEnd}
+			onTransform={handleTransform}
+			onTransformEnd={onTransformEnd}
+			globalCompositeOperation={layer.blendMode as GlobalCompositeOperation}
+			opacity={layer.opacity ?? 1}
+			visible={layer.opacity !== 0}
+		/>
+	);
+};
+
+const TextLayer: React.FC<LayerProps> = ({
+	layer,
+	onDragStart,
+	onDragMove,
+	onDragEnd,
+	onTransformEnd,
+}) => {
+	const {
+		setSelectedId,
+		setIsEditingText,
+		setEditingLayerId,
+		getTextData,
+		mode,
+		updateLayers,
+		stageRef,
+		transformerRef,
+		selectedId,
+	} = useEditor();
+
+	const text = getTextData(layer.inputHandleId);
+	const textRef = useRef<Konva.Text>(null);
+
+	const handleSelect = () => setSelectedId(layer.id);
+
+	const handleDoubleClick = () => {
+		setSelectedId(layer.id);
+		setIsEditingText(true);
+		setEditingLayerId(layer.id);
+	};
+
+	useEffect(() => {
+		const node = textRef.current;
+		if (!node) return;
+
+		const syncDimensions = () => {
+			const calculatedWidth = node.textWidth;
+			const calculatedHeight = node.textHeight;
+
+			if (selectedId === layer.id && transformerRef.current) {
+				transformerRef.current.forceUpdate();
+				transformerRef.current.getLayer()?.batchDraw();
 			}
-		}, [image, layer.id, layer.width, layer.height, updateLayer]);
 
-		const handleTransformEnd = (e: KonvaEventObject<Event>) => {
-			const node = e.target;
-			const scaleX = node.scaleX();
-			const scaleY = node.scaleY();
+			if (
+				typeof calculatedWidth !== "number" ||
+				typeof calculatedHeight !== "number"
+			)
+				return;
 
-			// Reset scale and apply to width/height to keep things clean
-			node.scaleX(1);
-			node.scaleY(1);
-
-			updateLayer(layer.id, {
-				x: Math.round(node.x()),
-				y: Math.round(node.y()),
-				rotation: Math.round(node.rotation()),
-				width: Math.round(node.width() * scaleX),
-				height: Math.round(node.height() * scaleY),
-			});
+			if (
+				Math.abs(calculatedWidth - (layer.computedWidth ?? 0)) > 0.5 ||
+				Math.abs(calculatedHeight - (layer.computedHeight ?? 0)) > 0.5
+			) {
+				updateLayers(
+					(prev) =>
+						prev.map((l) =>
+							l.id === layer.id
+								? {
+										...l,
+										computedWidth: calculatedWidth,
+										computedHeight: calculatedHeight,
+									}
+								: l,
+						),
+					false,
+				);
+			}
 		};
 
-		const handleDragEnd = (e: KonvaEventObject<DragEvent>) => {
-			const node = e.target;
-			updateLayer(layer.id, {
-				x: Math.round(node.x()),
-				y: Math.round(node.y()),
-			});
-			setGuides([]);
-			setIsNodeDragging(false);
-		};
+		if (layer.fontFamily) {
+			document.fonts.ready.then(syncDimensions);
+		} else {
+			syncDimensions();
+		}
+		stageRef.current?.batchDraw();
+	}, [
+		layer.fontFamily,
+		layer.fontSize,
+		layer.lineHeight,
+		layer.letterSpacing,
+		layer.textDecoration,
+		layer.fontStyle,
+		text,
+		selectedId,
+		layer.id,
+		layer.computedHeight,
+		layer.computedWidth,
+		updateLayers,
+		transformerRef,
+		stageRef,
+	]);
 
-		return (
-			<KonvaImage
-				id={layer.id}
-				name="object"
-				x={layer.x}
-				y={layer.y}
-				width={layer.width}
-				height={layer.height}
-				rotation={layer.rotation}
-				image={image}
-				draggable={mode === "select"}
-				onClick={() => setSelectedId(layer.id)}
-				onTap={() => setSelectedId(layer.id)}
-				onDragStart={() => {
-					setSelectedId(layer.id);
-					setIsNodeDragging(true);
-				}}
-				onDragMove={handleDragMove}
-				onDragEnd={handleDragEnd}
-				onTransformEnd={handleTransformEnd}
-				globalCompositeOperation={layer.blendMode as GlobalCompositeOperation}
-				opacity={layer.opacity ?? 1}
-				visible={layer.opacity !== 0}
-			/>
-		);
-	},
-);
-ImageLayer.displayName = "ImageLayer";
+	useEffect(() => {
+		if (layer.fontFamily) {
+			const fontUrl = GetFontAssetUrl(layer.fontFamily);
+			fontManager
+				.loadFont(layer.fontFamily, fontUrl)
+				.then(() => {
+					stageRef.current?.batchDraw();
+					if (textRef.current) {
+						const w = textRef.current.textWidth;
+						const h = textRef.current.textHeight;
+						if (typeof w !== "number" || typeof h !== "number") return;
+						if (
+							Math.abs(w - (layer.computedWidth ?? 0)) > 0.5 ||
+							Math.abs(h - (layer.computedHeight ?? 0)) > 0.5
+						) {
+							updateLayers(
+								(prev) =>
+									prev.map((l) =>
+										l.id === layer.id
+											? { ...l, computedWidth: w, computedHeight: h }
+											: l,
+									),
+								false,
+							);
+						}
+					}
+				})
+				.catch((err) =>
+					console.warn(`Failed to load font ${layer.fontFamily}`, err),
+				);
+		}
+	}, [
+		layer.fontFamily,
+		stageRef,
+		updateLayers,
+		layer.id,
+		layer.computedHeight,
+		layer.computedWidth,
+	]);
 
-const TextLayer: React.FC<{ layer: LocalCompositorLayer }> = React.memo(
-	({ layer }) => {
-		const {
-			setSelectedId,
-			setIsEditingText,
-			setEditingLayerId,
-			getTextData,
-			mode,
-			updateLayer,
-			setGuides,
-			viewportWidth,
-			viewportHeight,
-			layers,
-			selectedId,
-			transformerRef,
-			setIsNodeDragging,
-		} = useEditor();
-
-		const text = getTextData(layer.inputHandleId);
-		const { handleDragMove } = useSnapping(
-			layers,
-			viewportWidth,
-			viewportHeight,
-			setGuides,
-		);
-		const textRef = useRef<Konva.Text>(null);
-
-		const handleDoubleClick = () => {
-			setSelectedId(layer.id);
-			setIsEditingText(true);
-			setEditingLayerId(layer.id);
-		};
-
-		// Sync computed dimensions
-		useEffect(() => {
-			const node = textRef.current;
-			if (!node) return;
-
-			const sync = () => {
-				const w = node.textWidth;
-				const h = node.textHeight;
-
-				if (selectedId === layer.id && transformerRef.current) {
-					transformerRef.current.forceUpdate();
-				}
-
-				if (
-					Math.abs(w - (layer.computedWidth ?? 0)) > 0.5 ||
-					Math.abs(h - (layer.computedHeight ?? 0)) > 0.5
-				) {
-					updateLayer(layer.id, { computedWidth: w, computedHeight: h });
-				}
-			};
-
-			if (layer.fontFamily) {
-				document.fonts.ready.then(sync);
-			} else {
-				sync();
-			}
-		}, [layer, text, selectedId, updateLayer, transformerRef]);
-
-		// Load Font
-		useEffect(() => {
-			if (layer.fontFamily) {
-				const fontUrl = GetFontAssetUrl(layer.fontFamily);
-				fontManager
-					.loadFont(layer.fontFamily, fontUrl)
-					.catch((err) =>
-						console.warn(`Failed to load font ${layer.fontFamily}`, err),
-					);
-			}
-		}, [layer.fontFamily]);
-
-		return (
-			<KonvaText
-				ref={textRef}
-				id={layer.id}
-				name="object"
-				x={layer.x}
-				y={layer.y}
-				text={text as string}
-				fontSize={layer.fontSize ?? DEFAULTS.FONT_SIZE}
-				fontFamily={layer.fontFamily ?? DEFAULTS.FONT_FAMILY}
-				fontStyle={layer.fontStyle ?? "normal"}
-				textDecoration={layer.textDecoration ?? ""}
-				fill={layer.fill ?? DEFAULTS.FILL}
-				rotation={layer.rotation}
-				draggable={mode === "select"}
-				onClick={() => setSelectedId(layer.id)}
-				onTap={() => setSelectedId(layer.id)}
-				onDblClick={handleDoubleClick}
-				onDblTap={handleDoubleClick}
-				onDragStart={() => {
-					setSelectedId(layer.id);
-					setIsNodeDragging(true);
-				}}
-				onDragMove={handleDragMove}
-				onDragEnd={(e) => {
-					updateLayer(layer.id, {
-						x: Math.round(e.target.x()),
-						y: Math.round(e.target.y()),
-					});
-					setGuides([]);
-					setIsNodeDragging(false);
-				}}
-				onTransformEnd={(e) => {
-					updateLayer(layer.id, {
-						x: Math.round(e.target.x()),
-						y: Math.round(e.target.y()),
-						rotation: Math.round(e.target.rotation()),
-					});
-				}}
-				globalCompositeOperation={layer.blendMode as GlobalCompositeOperation}
-				wrap="none"
-				align={layer.align || DEFAULTS.ALIGN}
-				verticalAlign={layer.verticalAlign ?? DEFAULTS.VERTICAL_ALIGN}
-				letterSpacing={layer.letterSpacing ?? DEFAULTS.LETTER_SPACING}
-				lineHeight={layer.lineHeight ?? DEFAULTS.LINE_HEIGHT}
-				opacity={layer.opacity ?? 1}
-				visible={layer.opacity !== 0}
-			/>
-		);
-	},
-);
-TextLayer.displayName = "TextLayer";
+	return (
+		<KonvaText
+			ref={textRef}
+			id={layer.id}
+			name="object"
+			x={layer.x}
+			y={layer.y}
+			text={text as string}
+			fontSize={layer.fontSize ?? DEFAULTS.FONT_SIZE}
+			fontFamily={layer.fontFamily ?? DEFAULTS.FONT_FAMILY}
+			fontStyle={layer.fontStyle ?? "normal"}
+			textDecoration={layer.textDecoration ?? ""}
+			fill={layer.fill ?? DEFAULTS.FILL}
+			rotation={layer.rotation}
+			draggable={mode === "select"}
+			onClick={handleSelect}
+			onTap={handleSelect}
+			onDblClick={handleDoubleClick}
+			onDblTap={handleDoubleClick}
+			onDragStart={onDragStart}
+			onDragMove={onDragMove}
+			onDragEnd={onDragEnd}
+			onTransformEnd={onTransformEnd}
+			globalCompositeOperation={layer.blendMode as GlobalCompositeOperation}
+			wrap="none"
+			align={layer.align || DEFAULTS.ALIGN}
+			verticalAlign={layer.verticalAlign ?? DEFAULTS.VERTICAL_ALIGN}
+			letterSpacing={layer.letterSpacing ?? DEFAULTS.LETTER_SPACING}
+			lineHeight={layer.lineHeight ?? DEFAULTS.LINE_HEIGHT}
+			opacity={layer.opacity ?? 1}
+			visible={layer.opacity !== 0}
+		/>
+	);
+};
 
 const TransformerComponent: React.FC = () => {
 	const { selectedId, layers, stageRef, mode, transformerRef } = useEditor();
-
-	const selectedLayer = useMemo(
-		() => layers.find((l) => l.id === selectedId),
-		[layers, selectedId],
-	);
-
-	// Force update transformer when layer dimensions change via Inspector
-	useEffect(() => {
-		if (transformerRef.current && selectedLayer) {
-			// This ensures the box resizes if width/height changed externally (e.g. input field)
-			transformerRef.current.forceUpdate();
-			transformerRef.current.getLayer()?.batchDraw();
-		}
-	}, [
-		selectedLayer?.width,
-		selectedLayer?.height,
-		selectedLayer?.x,
-		selectedLayer?.y,
-		selectedLayer?.rotation,
-		transformerRef,
-	]);
 
 	useEffect(() => {
 		if (
@@ -695,12 +676,16 @@ const TransformerComponent: React.FC = () => {
 		}
 	}, [selectedId, stageRef, mode, transformerRef]);
 
+	const selectedLayer = layers.find((l) => l.id === selectedId);
+
 	const enabledAnchors = useMemo(() => {
-		if (selectedLayer?.type === "Text") return []; // Text scales via font size usually, or transform without anchors for this editor
+		if (selectedLayer?.type === "Text") {
+			return [];
+		}
 		if (selectedLayer?.lockAspect) {
 			return ["top-left", "top-right", "bottom-left", "bottom-right"];
 		}
-		return undefined; // All anchors
+		return undefined;
 	}, [selectedLayer]);
 
 	return (
@@ -725,10 +710,33 @@ const TransformerComponent: React.FC = () => {
 	);
 };
 
-const ArtboardBackground: React.FC = React.memo(() => {
+const Guides: React.FC = () => {
+	const { guides, viewportWidth, viewportHeight } = useEditor();
+	return (
+		<>
+			{guides.map((guide, index) => (
+				<Line
+					key={`${guide.type}-${guide.position}-${index}`}
+					points={
+						guide.type === "vertical"
+							? [guide.position, 0, guide.position, viewportHeight]
+							: [0, guide.position, viewportWidth, guide.position]
+					}
+					stroke="#ec4899"
+					strokeWidth={1}
+					dash={[4, 4]}
+				/>
+			))}
+		</>
+	);
+};
+
+const ArtboardBackground: React.FC = () => {
 	const { viewportWidth, viewportHeight } = useEditor();
+	// Checkered pattern for transparency
 	const patternImage = useMemo(() => {
 		const size = 20;
+		const half = size / 2;
 		const canvas = document.createElement("canvas");
 		canvas.width = size;
 		canvas.height = size;
@@ -737,8 +745,8 @@ const ArtboardBackground: React.FC = React.memo(() => {
 			ctx.fillStyle = "#1e1e1e";
 			ctx.fillRect(0, 0, size, size);
 			ctx.fillStyle = "#262626";
-			ctx.fillRect(0, 0, size / 2, size / 2);
-			ctx.fillRect(size / 2, size / 2, size / 2, size / 2);
+			ctx.fillRect(0, 0, half, half);
+			ctx.fillRect(half, half, half, half);
 		}
 		return canvas;
 	}, []);
@@ -768,13 +776,13 @@ const ArtboardBackground: React.FC = React.memo(() => {
 			/>
 		</Group>
 	);
-});
-ArtboardBackground.displayName = "ArtboardBackground";
+};
 
 const Canvas: React.FC = () => {
 	const {
 		layers,
-		containerSize,
+		screenWidth,
+		screenHeight,
 		setSelectedId,
 		stageRef,
 		mode,
@@ -783,25 +791,68 @@ const Canvas: React.FC = () => {
 		stagePos,
 		setScale,
 		setStagePos,
-		guides,
 	} = useEditor();
+	const { handleDragMove, handleDragEnd, handleTransformEnd } = useSnap();
+	const lastModeRef = useRef<"select" | "pan">("select");
 
 	const sortedLayers = useMemo(
-		() => [...layers].sort((a, b) => a.zIndex - b.zIndex),
+		() => [...layers].sort((a, b) => (a.zIndex ?? 0) - (b.zIndex ?? 0)),
 		[layers],
+	);
+
+	const handleStageClick = useCallback(
+		(e: KonvaEventObject<TouchEvent | MouseEvent>) => {
+			const clickedOnEmpty =
+				e.target === stageRef.current || e.target.name() === "artboard-bg";
+			if (clickedOnEmpty) {
+				setSelectedId(null);
+			}
+		},
+		[stageRef, setSelectedId],
+	);
+
+	const handleStageMouseDown = useCallback(
+		(e: KonvaEventObject<MouseEvent>) => {
+			if (e.evt.button === 1 || mode === "pan") {
+				e.evt.preventDefault();
+				const stage = e.currentTarget;
+				lastModeRef.current = mode;
+				// Only set mode to pan if it wasn't already (to handle spacebar pan)
+				if (mode !== "pan") setMode("pan");
+
+				stage.draggable(true);
+				stage.startDrag();
+				const reset = () => {
+					// We only reset if we temporarily switched via middle mouse
+					// If mode was already 'pan' (via toolbar), we keep it.
+					// However, Konva drag behavior usually requires draggable=false to stop.
+					stage.draggable(false);
+					if (e.evt.button === 1) setMode(lastModeRef.current);
+					window.removeEventListener("mouseup", reset);
+				};
+				window.addEventListener("mouseup", reset);
+			}
+		},
+		[mode, setMode],
 	);
 
 	const handleWheel = useCallback(
 		(e: KonvaEventObject<WheelEvent>) => {
 			e.evt.preventDefault();
-			if (!stageRef.current) return;
+			const stage = stageRef.current;
+			if (!stage) return;
 
+			// Pan if no Ctrl/Meta
 			if (!e.evt.ctrlKey && !e.evt.metaKey) {
-				setStagePos((p) => ({ x: p.x - e.evt.deltaX, y: p.y - e.evt.deltaY }));
+				const newPos = {
+					x: stagePos.x - e.evt.deltaX,
+					y: stagePos.y - e.evt.deltaY,
+				};
+				setStagePos(newPos);
 				return;
 			}
 
-			const stage = stageRef.current;
+			// Zoom if Ctrl/Meta
 			const oldScale = stage.scaleX();
 			const pointer = stage.getPointerPosition();
 			if (!pointer) return;
@@ -811,120 +862,250 @@ const Canvas: React.FC = () => {
 				y: (pointer.y - stage.y()) / oldScale,
 			};
 
-			const newScale = e.evt.deltaY > 0 ? oldScale / 1.1 : oldScale * 1.1;
+			const direction = e.evt.deltaY > 0 ? -1 : 1;
+			const scaleBy = 1.1;
+			const newScale = direction > 0 ? oldScale * scaleBy : oldScale / scaleBy;
+
 			if (newScale < 0.05 || newScale > 20) return;
 
-			setScale(newScale);
-			setStagePos({
+			const newPos = {
 				x: pointer.x - mousePointTo.x * newScale,
 				y: pointer.y - mousePointTo.y * newScale,
-			});
+			};
+
+			setScale(newScale);
+			setStagePos(newPos);
 		},
-		[stageRef, setScale, setStagePos],
+		[stageRef, setScale, setStagePos, stagePos],
 	);
+
+	useEffect(() => {
+		const stage = stageRef.current;
+		if (!stage) return;
+		stage.scale({ x: scale, y: scale });
+		stage.position(stagePos);
+		stage.batchDraw();
+	}, [scale, stagePos, stageRef]);
+
+	useEffect(() => {
+		const stage = stageRef.current;
+		if (!stage) return;
+		const handleDragEndStage = () => {
+			setStagePos(stage.position());
+		};
+		stage.on("dragend", handleDragEndStage);
+		return () => {
+			stage.off("dragend", handleDragEndStage);
+		};
+	}, [stageRef, setStagePos]);
+
+	const cursorStyle = mode === "pan" ? "grab" : "default";
 
 	return (
 		<Stage
 			ref={stageRef}
-			width={containerSize.width}
-			height={containerSize.height}
-			style={{
-				background: "transparent",
-				cursor: mode === "pan" ? "grab" : "default",
-			}}
-			onClick={(e) => {
-				if (
-					e.target === stageRef.current ||
-					e.target.name() === "artboard-bg"
-				) {
-					setSelectedId(null);
-				}
-			}}
+			width={screenWidth}
+			height={screenHeight}
+			style={{ background: "transparent", cursor: cursorStyle }}
+			onClick={handleStageClick}
+			onTap={handleStageClick}
 			onWheel={handleWheel}
+			onMouseDown={handleStageMouseDown}
 			draggable={mode === "pan"}
-			onDragEnd={(e) => {
-				if (e.target === stageRef.current)
-					setStagePos(stageRef.current.position());
-			}}
-			scale={{ x: scale, y: scale }}
-			position={stagePos}
 		>
 			<KonvaLayer name="artboard-bg">
 				<ArtboardBackground />
 			</KonvaLayer>
 			<KonvaLayer>
-				{sortedLayers.map((layer) =>
-					layer.type === "Image" ? (
-						<ImageLayer key={layer.id} layer={layer} />
-					) : (
-						<TextLayer key={layer.id} layer={layer} />
-					),
-				)}
+				{sortedLayers.map((layer) => {
+					const props = {
+						layer,
+						onDragStart: () => setSelectedId(layer.id),
+						onDragMove: handleDragMove,
+						onDragEnd: handleDragEnd,
+						onTransformEnd: (e: Konva.KonvaEventObject<Event>) => {
+							setSelectedId(layer.id);
+							handleTransformEnd(e);
+						},
+					};
+					if (layer.type === "Image") {
+						return <ImageLayer key={layer.id} {...props} />;
+					}
+					if (layer.type === "Text") {
+						return <TextLayer key={layer.id} {...props} />;
+					}
+					return null;
+				})}
 			</KonvaLayer>
 			<KonvaLayer>
 				<TransformerComponent />
 			</KonvaLayer>
 			<KonvaLayer listening={false}>
-				{guides.map((g, i) => (
-					<Line
-						key={`${g.type}-${g.position}-${i}`}
-						points={
-							g.type === "vertical"
-								? [g.position, -10000, g.position, 10000]
-								: [-10000, g.position, 10000, g.position]
-						}
-						stroke="#ec4899"
-						strokeWidth={1 / scale} // Keep guides thin visually
-						dash={[4 / scale, 4 / scale]}
-					/>
-				))}
+				<Guides />
 			</KonvaLayer>
 		</Stage>
 	);
 };
 
-const LayersPanel: React.FC = () => {
-	const { layers, updateLayers, selectedId, setSelectedId, updateLayer } =
-		useEditor();
+//#region Panels
 
-	// Reverse for display (Top layer on top of list)
-	const displayLayers = useMemo(
-		() => [...layers].sort((a, b) => b.zIndex - a.zIndex),
+interface LayerItemProps {
+	layer: LocalCompositorLayer;
+	selectedId: string | null;
+	setSelectedId: (id: string) => void;
+	updateLayer: (id: string, updates: Partial<LocalCompositorLayer>) => void;
+}
+
+const LayerItem: React.FC<LayerItemProps> = ({
+	layer,
+	selectedId,
+	setSelectedId,
+	updateLayer,
+}) => {
+	const {
+		attributes,
+		listeners,
+		setNodeRef,
+		transform,
+		transition,
+		isDragging,
+	} = useSortable({ id: layer.id });
+
+	const style = {
+		transform: CSS.Transform.toString(transform),
+		transition,
+		zIndex: isDragging ? 9999 : "auto",
+		opacity: isDragging ? 0.5 : 1,
+	};
+
+	const isSelected = layer.id === selectedId;
+	const isHidden = layer.opacity === 0;
+
+	const toggleVisibility = (e: React.MouseEvent) => {
+		e.stopPropagation();
+		updateLayer(layer.id, { opacity: isHidden ? 1 : 0 });
+	};
+
+	const handleKeyDown = (e: React.KeyboardEvent) => {
+		if (e.key === "Enter" || e.key === " ") {
+			e.preventDefault();
+			if (!isDragging) setSelectedId(layer.id);
+		}
+	};
+
+	return (
+		<button
+			ref={setNodeRef}
+			style={style}
+			{...attributes}
+			{...listeners}
+			className={`
+        flex items-center gap-2 px-3 py-2 border-b border-white/5 cursor-pointer outline-none group transition-colors select-none w-full text-left
+        ${isSelected ? "bg-blue-600/20 text-blue-100" : "hover:bg-white/5 text-gray-400"}
+        ${isDragging ? "bg-neutral-800" : ""}
+      `}
+			onClick={() => !isDragging && setSelectedId(layer.id)}
+			onKeyDown={handleKeyDown}
+			tabIndex={0}
+			type="button"
+		>
+			<div className="shrink-0 text-gray-500 group-hover:text-gray-300">
+				{layer.type === "Image" ? (
+					<ImageIcon className="size-3.5" />
+				) : (
+					<Type className="size-3.5" />
+				)}
+			</div>
+
+			<span
+				className={`truncate flex-1 text-[11px] font-medium ${isSelected ? "text-blue-100" : "text-gray-300"}`}
+			>
+				{layer.id}
+			</span>
+
+			<div className="flex items-center gap-1 opacity-0 group-hover:opacity-100 transition-opacity">
+				<Button
+					size="icon"
+					variant="ghost"
+					className="h-5 w-5 hover:bg-white/10"
+					onClick={toggleVisibility}
+					aria-label={isHidden ? "Show layer" : "Hide layer"}
+				>
+					{isHidden ? (
+						<EyeOff className="w-3 h-3" />
+					) : (
+						<Eye className="w-3 h-3" />
+					)}
+				</Button>
+				<Button
+					size="icon"
+					variant="ghost"
+					className="h-5 w-5 hover:bg-white/10"
+					disabled
+				>
+					<LockOpen className="w-3 h-3" />
+				</Button>
+			</div>
+		</button>
+	);
+};
+
+const LayersPanel: React.FC = () => {
+	const { layers, updateLayers, selectedId, setSelectedId } = useEditor();
+
+	const sortedLayers = useMemo(
+		() => [...layers].sort((a, b) => (a.zIndex ?? 0) - (b.zIndex ?? 0)),
 		[layers],
+	);
+	const displayLayers = useMemo(
+		() => [...sortedLayers].reverse(),
+		[sortedLayers],
+	);
+
+	const sensors = useSensors(
+		useSensor(PointerSensor, { activationConstraint: { distance: 5 } }),
+		useSensor(KeyboardSensor, {
+			coordinateGetter: sortableKeyboardCoordinates,
+		}),
 	);
 
 	const handleDragEnd = (e: DragEndEvent) => {
 		const { active, over } = e;
 		if (over && active.id !== over.id) {
-			updateLayers((current) => {
-				// Reorder based on Z-Index logic
-				const sorted = [...current].sort((a, b) => b.zIndex - a.zIndex);
-				const oldIdx = sorted.findIndex((l) => l.id === active.id);
-				const newIdx = sorted.findIndex((l) => l.id === over.id);
-				const reordered = arrayMove(sorted, oldIdx, newIdx);
+			updateLayers((currentLayers) => {
+				const currentSorted = [...currentLayers].sort(
+					(a, b) => (b.zIndex ?? 0) - (a.zIndex ?? 0),
+				);
+				const oldIndex = currentSorted.findIndex((l) => l.id === active.id);
+				const newIndex = currentSorted.findIndex((l) => l.id === over.id);
 
-				// Reassign z-indices
-				return reordered.map((l, idx) => ({
-					...l,
-					zIndex: reordered.length - idx,
-				}));
+				const newSorted = arrayMove(currentSorted, oldIndex, newIndex);
+
+				return currentLayers.map((l) => {
+					const pos = newSorted.findIndex((s) => s.id === l.id);
+					return { ...l, zIndex: newSorted.length - pos };
+				});
 			});
 		}
 	};
 
+	const updateLayer = (id: string, updates: Partial<LocalCompositorLayer>) => {
+		updateLayers((prev) =>
+			prev.map((l) => (l.id === id ? { ...l, ...updates } : l)),
+		);
+	};
+
 	return (
 		<div className="absolute left-0 top-0 bottom-0 w-60 bg-[#0f0f0f] border-r border-white/10 z-20 flex flex-col shadow-2xl">
-			<div className="flex items-center px-4 py-3 border-b border-white/10 bg-neutral-900/50 backdrop-blur h-10">
+			<div className="flex items-center justify-between px-4 py-3 border-b border-white/10 bg-neutral-900/50 backdrop-blur shrink-0 h-10">
 				<span className="text-[10px] font-bold uppercase tracking-wider text-neutral-400 flex items-center gap-2">
 					<Layers className="w-3.5 h-3.5" /> Layers
 				</span>
 			</div>
+
 			<ScrollArea className="flex-1 bg-[#0f0f0f]">
 				<DndContext
-					sensors={useSensors(
-						useSensor(PointerSensor, { activationConstraint: { distance: 5 } }),
-						useSensor(KeyboardSensor),
-					)}
+					sensors={sensors}
 					collisionDetection={closestCenter}
 					onDragEnd={handleDragEnd}
 				>
@@ -942,6 +1123,11 @@ const LayersPanel: React.FC = () => {
 									updateLayer={updateLayer}
 								/>
 							))}
+							{displayLayers.length === 0 && (
+								<div className="py-8 text-center text-[11px] text-gray-600 italic">
+									No layers
+								</div>
+							)}
 						</div>
 					</SortableContext>
 				</DndContext>
@@ -950,118 +1136,111 @@ const LayersPanel: React.FC = () => {
 	);
 };
 
-const LayerItem: React.FC<{
-	layer: LocalCompositorLayer;
-	selectedId: string | null;
-	setSelectedId: (id: string) => void;
-	updateLayer: (id: string, u: Partial<LocalCompositorLayer>) => void;
-}> = ({ layer, selectedId, setSelectedId, updateLayer }) => {
-	const {
-		attributes,
-		listeners,
-		setNodeRef,
-		transform,
-		transition,
-		isDragging,
-	} = useSortable({ id: layer.id });
-	const style = {
-		transform: CSS.Transform.toString(transform),
-		transition,
-		zIndex: isDragging ? 9999 : "auto",
-		opacity: isDragging ? 0.5 : 1,
-	};
-	const isSelected = layer.id === selectedId;
-
-	return (
-		<button
-			ref={setNodeRef}
-			style={style}
-			{...attributes}
-			{...listeners}
-			className={`flex items-center gap-2 px-3 py-2 border-b border-white/5 cursor-pointer outline-none group transition-colors select-none w-full text-left ${isSelected ? "bg-blue-600/20 text-blue-100" : "hover:bg-white/5 text-gray-400"}`}
-			onClick={() => !isDragging && setSelectedId(layer.id)}
-		>
-			<div className="shrink-0">
-				{layer.type === "Image" ? (
-					<ImageIcon className="size-3.5" />
-				) : (
-					<Type className="size-3.5" />
-				)}
-			</div>
-			<span
-				className={`truncate flex-1 text-[11px] font-medium ${isSelected ? "text-blue-100" : "text-gray-300"}`}
-			>
-				{layer.id}
-			</span>
-			<Button
-				size="icon"
-				variant="ghost"
-				className="h-5 w-5 opacity-0 group-hover:opacity-100"
-				onClick={(e) => {
-					e.stopPropagation();
-					updateLayer(layer.id, { opacity: layer.opacity === 0 ? 1 : 0 });
-				}}
-			>
-				{layer.opacity === 0 ? (
-					<EyeOff className="w-3 h-3" />
-				) : (
-					<Eye className="w-3 h-3" />
-				)}
-			</Button>
-		</button>
-	);
-};
-
 const InspectorPanel: React.FC = () => {
 	const { data: fontList } = useGetFontListQuery({});
+	const fontNames = useMemo(() => fontList ?? [], [fontList]);
+
 	const {
 		selectedId,
 		layers,
-		updateLayer,
+		updateLayers,
 		viewportWidth,
+		updateViewportWidth,
 		viewportHeight,
-		updateViewportSize,
+		updateViewportHeight,
 	} = useEditor();
+
 	const selectedLayer = layers.find((l) => l.id === selectedId);
 
+	const updateLayer = (updates: Partial<LocalCompositorLayer>) => {
+		if (!selectedId) return;
+		updateLayers((prev) =>
+			prev.map((l) => (l.id === selectedId ? { ...l, ...updates } : l)),
+		);
+	};
+
+	const centerLayer = (axis: "x" | "y") => {
+		if (!selectedLayer) return;
+
+		const effectiveWidth =
+			selectedLayer.type === "Text"
+				? (selectedLayer.computedWidth ?? 0)
+				: (selectedLayer.width ?? 0);
+		const effectiveHeight =
+			selectedLayer.type === "Text"
+				? (selectedLayer.computedHeight ?? 0)
+				: (selectedLayer.height ?? 0);
+
+		if (axis === "x") {
+			updateLayer({ x: Math.round((viewportWidth - effectiveWidth) / 2) });
+		} else {
+			updateLayer({ y: Math.round((viewportHeight - effectiveHeight) / 2) });
+		}
+	};
+
+	const toggleStyle = (style: "bold" | "italic") => {
+		if (!selectedLayer || selectedLayer.type !== "Text") return;
+		const current = selectedLayer.fontStyle || "normal";
+		let next = current;
+		if (next.includes(style)) {
+			next = next.replace(style, "").trim();
+		} else {
+			next = `${style} ${next}`;
+		}
+		if (next.trim() === "") next = "normal";
+		updateLayer({ fontStyle: next });
+	};
+
+	const toggleUnderline = () => {
+		if (!selectedLayer || selectedLayer.type !== "Text") return;
+		updateLayer({
+			textDecoration:
+				selectedLayer.textDecoration === "underline" ? "" : "underline",
+		});
+	};
+
+	const isBold = selectedLayer?.fontStyle?.includes("bold") ?? false;
+	const isItalic = selectedLayer?.fontStyle?.includes("italic") ?? false;
+	const isUnderline = selectedLayer?.textDecoration === "underline";
+
 	if (!selectedLayer) {
-		// Canvas Settings
 		return (
 			<div className="w-72 border-l border-white/10 bg-[#0f0f0f] z-20 shadow-xl flex flex-col">
-				<div className="px-4 py-3 bg-neutral-900 border-b border-white/5 h-10 flex items-center">
+				<div className="px-4 py-3 bg-neutral-900 border-b border-white/5 shrink-0 h-10 flex items-center">
 					<h2 className="text-[10px] font-bold text-gray-200 uppercase tracking-wide flex items-center gap-2">
-						<Settings2 className="w-3.5 h-3.5 text-blue-400" /> Canvas Settings
+						<Settings2 className="w-3.5 h-3.5 text-blue-400" />
+						Canvas Settings
 					</h2>
 				</div>
 				<div className="p-4 space-y-6">
 					<div className="space-y-3">
-						<Label className="text-[10px] text-gray-500 uppercase font-bold">
+						<Label className="text-[10px] text-gray-500 uppercase font-bold tracking-wide">
 							Dimensions
 						</Label>
 						<div className="grid grid-cols-2 gap-3">
 							<DraggableNumberInput
 								label="W"
 								icon={MoveHorizontal}
-								value={viewportWidth}
-								onChange={(v) =>
-									updateViewportSize(Math.max(1, v), viewportHeight)
-								}
+								value={Math.round(viewportWidth)}
+								onChange={(v) => updateViewportWidth(Math.max(1, v))}
 								min={1}
 							/>
 							<DraggableNumberInput
 								label="H"
 								icon={MoveVertical}
-								value={viewportHeight}
-								onChange={(v) =>
-									updateViewportSize(viewportWidth, Math.max(1, v))
-								}
+								value={Math.round(viewportHeight)}
+								onChange={(v) => updateViewportHeight(Math.max(1, v))}
 								min={1}
 							/>
 						</div>
+
 						<Select
 							onValueChange={(val) => {
-								const p = ASPECT_RATIOS.find((r) => r.label === val);
-								if (p) updateViewportSize(p.width, p.height);
+								const preset = ASPECT_RATIOS.find((r) => r.label === val);
+								if (preset) {
+									updateViewportWidth(preset.width);
+									updateViewportHeight(preset.height);
+								}
 							}}
 						>
 							<SelectTrigger className="h-8 text-[11px] bg-white/5 border-white/10 text-gray-300">
@@ -1070,11 +1249,26 @@ const InspectorPanel: React.FC = () => {
 							<SelectContent className="bg-neutral-800 border-white/10 text-gray-300">
 								{ASPECT_RATIOS.map((r) => (
 									<SelectItem key={r.label} value={r.label}>
-										{r.label}
+										<span className="flex items-center justify-between w-full gap-6">
+											<span>{r.label}</span>
+											<span className="text-[10px] text-gray-500 font-mono">
+												{r.width}x{r.height}
+											</span>
+										</span>
 									</SelectItem>
 								))}
 							</SelectContent>
 						</Select>
+					</div>
+
+					<div className="flex flex-col items-center justify-center p-8 text-center border border-dashed border-white/10 rounded-lg bg-white/2">
+						<MousePointer className="w-6 h-6 text-gray-700 mb-3" />
+						<p className="text-[11px] font-medium text-gray-400">
+							No Layer Selected
+						</p>
+						<p className="text-[10px] text-gray-600 mt-1">
+							Select a layer to edit properties
+						</p>
 					</div>
 				</div>
 			</div>
@@ -1085,17 +1279,20 @@ const InspectorPanel: React.FC = () => {
 		<ScrollArea className="w-72 border-l border-white/10 bg-[#0f0f0f] z-20 shadow-xl">
 			<div className="flex items-center justify-between px-4 py-3 border-b border-white/5 bg-neutral-900/50 backdrop-blur">
 				<div className="flex flex-col min-w-0">
-					<span className="text-[10px] text-blue-400 uppercase font-bold mb-0.5">
+					<span className="text-[10px] text-blue-400 uppercase font-bold tracking-wider mb-0.5">
 						Properties
 					</span>
-					<h2 className="text-sm font-semibold text-white truncate max-w-[140px]">
-						{selectedLayer.id}
-					</h2>
+					<div className="flex items-center gap-2">
+						<h2 className="text-sm font-semibold text-white truncate max-w-[140px]">
+							{selectedLayer.id}
+						</h2>
+					</div>
 				</div>
-				<span className="text-[9px] bg-white/10 px-2 py-1 rounded text-gray-300 font-medium uppercase">
+				<span className="text-[9px] bg-white/10 px-2 py-1 rounded text-gray-300 font-medium uppercase border border-white/5 tracking-wider">
 					{selectedLayer.type}
 				</span>
 			</div>
+
 			<div className="pb-20">
 				<CollapsibleSection title="Transform" icon={Move}>
 					<div className="space-y-3">
@@ -1103,44 +1300,33 @@ const InspectorPanel: React.FC = () => {
 							<Button
 								variant="outline"
 								size="sm"
-								className="flex-1 h-7 text-[10px] bg-white/5 border-white/10"
-								onClick={() =>
-									updateLayer(selectedLayer.id, {
-										x: Math.round(
-											viewportWidth / 2 - (selectedLayer.width || 0) / 2,
-										),
-									})
-								}
+								className="flex-1 h-7 text-[10px] border-white/10 bg-white/5 hover:bg-white/10 hover:text-white text-gray-400"
+								onClick={() => centerLayer("x")}
 							>
-								Center X
+								<AlignCenterHorizontal className="w-3 h-3 mr-1" /> Center X
 							</Button>
 							<Button
 								variant="outline"
 								size="sm"
-								className="flex-1 h-7 text-[10px] bg-white/5 border-white/10"
-								onClick={() =>
-									updateLayer(selectedLayer.id, {
-										y: Math.round(
-											viewportHeight / 2 - (selectedLayer.height || 0) / 2,
-										),
-									})
-								}
+								className="flex-1 h-7 text-[10px] border-white/10 bg-white/5 hover:bg-white/10 hover:text-white text-gray-400"
+								onClick={() => centerLayer("y")}
 							>
-								Center Y
+								<AlignCenterVertical className="w-3 h-3 mr-1" /> Center Y
 							</Button>
 						</div>
+
 						<div className="grid grid-cols-2 gap-3">
 							<DraggableNumberInput
 								label="X"
 								icon={MoveHorizontal}
 								value={Math.round(selectedLayer.x)}
-								onChange={(v) => updateLayer(selectedLayer.id, { x: v })}
+								onChange={(v) => updateLayer({ x: v })}
 							/>
 							<DraggableNumberInput
 								label="Y"
 								icon={MoveVertical}
 								value={Math.round(selectedLayer.y)}
-								onChange={(v) => updateLayer(selectedLayer.id, { y: v })}
+								onChange={(v) => updateLayer({ y: v })}
 							/>
 							{selectedLayer.type !== "Text" && (
 								<>
@@ -1148,18 +1334,20 @@ const InspectorPanel: React.FC = () => {
 										label="W"
 										icon={MoveHorizontal}
 										value={Math.round(selectedLayer.width ?? 0)}
-										onChange={(v) => {
-											const newW = Math.max(1, v);
-											if (selectedLayer.lockAspect) {
-												const ratio =
-													(selectedLayer.height || 1) /
-													(selectedLayer.width || 1);
-												updateLayer(selectedLayer.id, {
-													width: newW,
-													height: Math.round(newW * ratio),
+										onChange={(newWidth) => {
+											if (
+												selectedLayer.type === "Image" &&
+												selectedLayer.lockAspect
+											) {
+												const oldW = selectedLayer.width ?? 1;
+												const oldH = selectedLayer.height ?? 1;
+												const ratio = oldH / oldW;
+												updateLayer({
+													width: newWidth,
+													height: newWidth * ratio,
 												});
 											} else {
-												updateLayer(selectedLayer.id, { width: newW });
+												updateLayer({ width: newWidth });
 											}
 										}}
 										min={1}
@@ -1168,18 +1356,19 @@ const InspectorPanel: React.FC = () => {
 										label="H"
 										icon={MoveVertical}
 										value={Math.round(selectedLayer.height ?? 0)}
-										onChange={(v) => {
-											const newH = Math.max(1, v);
-											if (selectedLayer.lockAspect) {
-												const ratio =
-													(selectedLayer.width || 1) /
-													(selectedLayer.height || 1);
-												updateLayer(selectedLayer.id, {
-													height: newH,
-													width: Math.round(newH * ratio),
-												});
-											} else {
-												updateLayer(selectedLayer.id, { height: newH });
+										onChange={(newHeight) => {
+											if (selectedLayer.type === "Image") {
+												if (selectedLayer.lockAspect) {
+													const oldW = selectedLayer.width ?? 1;
+													const oldH = selectedLayer.height ?? 1;
+													const ratio = oldW / oldH;
+													updateLayer({
+														height: newHeight,
+														width: newHeight * ratio,
+													});
+												} else {
+													updateLayer({ height: newHeight });
+												}
 											}
 										}}
 										min={1}
@@ -1190,20 +1379,19 @@ const InspectorPanel: React.FC = () => {
 								label="Rot"
 								icon={RotateCw}
 								value={Math.round(selectedLayer.rotation)}
-								onChange={(v) => updateLayer(selectedLayer.id, { rotation: v })}
+								onChange={(v) => updateLayer({ rotation: v })}
 								className="col-span-2"
 							/>
 						</div>
+
 						{selectedLayer.type === "Image" && (
 							<div className="flex items-center justify-between pt-2">
 								<Label className="text-[10px] text-gray-400">
 									Lock Aspect Ratio
 								</Label>
 								<Switch
-									checked={selectedLayer.lockAspect}
-									onCheckedChange={(c) =>
-										updateLayer(selectedLayer.id, { lockAspect: c })
-									}
+									checked={selectedLayer.lockAspect ?? true}
+									onCheckedChange={(c) => updateLayer({ lockAspect: c })}
 									className="scale-75 data-[state=checked]:bg-blue-600"
 								/>
 							</div>
@@ -1214,37 +1402,114 @@ const InspectorPanel: React.FC = () => {
 				{selectedLayer.type === "Text" && (
 					<CollapsibleSection title="Typography" icon={Type}>
 						<div className="space-y-4">
-							<Select
-								value={selectedLayer.fontFamily}
-								onValueChange={(val) =>
-									updateLayer(selectedLayer.id, { fontFamily: val })
-								}
-							>
-								<SelectTrigger className="h-8 text-xs bg-neutral-800 border-white/10">
-									<SelectValue />
-								</SelectTrigger>
-								<SelectContent className="bg-neutral-800 border-white/10">
-									{fontList?.map((f) => (
-										<SelectItem key={f} value={f} style={{ fontFamily: f }}>
-											{f}
-										</SelectItem>
-									))}
-								</SelectContent>
-							</Select>
+							<div className="space-y-1.5">
+								<Label className="text-[10px] text-gray-500 font-semibold">
+									FONT FAMILY
+								</Label>
+								<Select
+									value={selectedLayer.fontFamily || DEFAULTS.FONT_FAMILY}
+									onValueChange={(val) => updateLayer({ fontFamily: val })}
+								>
+									<SelectTrigger className="h-8 text-xs bg-neutral-800 border-white/10 text-white">
+										<SelectValue />
+									</SelectTrigger>
+									<SelectContent className="bg-neutral-800 border-white/10 text-white">
+										{fontNames.map((f) => (
+											<SelectItem key={f} value={f} style={{ fontFamily: f }}>
+												{f}
+											</SelectItem>
+										))}
+									</SelectContent>
+								</Select>
+							</div>
+
 							<div className="grid grid-cols-2 gap-3">
 								<DraggableNumberInput
 									label="Size"
 									icon={Type}
-									value={selectedLayer.fontSize}
-									onChange={(v) =>
-										updateLayer(selectedLayer.id, { fontSize: v })
-									}
+									value={selectedLayer.fontSize || DEFAULTS.FONT_SIZE}
+									onChange={(v) => updateLayer({ fontSize: v })}
 									min={1}
 								/>
-								<ColorPicker
-									value={selectedLayer.fill ?? "#fff"}
-									onChange={(v) => updateLayer(selectedLayer.id, { fill: v })}
-									className="h-8 w-full"
+								<div className="space-y-1">
+									<Label className="text-[10px] text-gray-500 block mb-1 font-semibold">
+										COLOR
+									</Label>
+									<ColorPicker
+										value={selectedLayer.fill ?? DEFAULTS.FILL}
+										onChange={(e) => updateLayer({ fill: e })}
+										className="h-8 w-full"
+									/>
+								</div>
+							</div>
+
+							<div className="flex p-1 bg-white/5 rounded border border-white/5">
+								<Button
+									variant={isBold ? "secondary" : "ghost"}
+									size="icon"
+									className="h-6 flex-1 rounded-sm"
+									onClick={() => toggleStyle("bold")}
+								>
+									<Bold className="w-3.5 h-3.5" />
+								</Button>
+								<Separator
+									orientation="vertical"
+									className="h-3 my-auto mx-1 bg-white/10"
+								/>
+								<Button
+									variant={isItalic ? "secondary" : "ghost"}
+									size="icon"
+									className="h-6 flex-1 rounded-sm"
+									onClick={() => toggleStyle("italic")}
+								>
+									<Italic className="w-3.5 h-3.5" />
+								</Button>
+								<Separator
+									orientation="vertical"
+									className="h-3 my-auto mx-1 bg-white/10"
+								/>
+								<Button
+									variant={isUnderline ? "secondary" : "ghost"}
+									size="icon"
+									className="h-6 flex-1 rounded-sm"
+									onClick={toggleUnderline}
+								>
+									<Underline className="w-3.5 h-3.5" />
+								</Button>
+							</div>
+
+							<div className="grid grid-cols-3 gap-1 bg-white/5 p-1 rounded border border-white/5">
+								{(["left", "center", "right"] as const).map((align) => (
+									<Button
+										key={align}
+										variant={
+											(selectedLayer.align || DEFAULTS.ALIGN) === align
+												? "secondary"
+												: "ghost"
+										}
+										size="sm"
+										className="h-6 text-[10px] capitalize rounded-sm"
+										onClick={() => updateLayer({ align })}
+									>
+										{align}
+									</Button>
+								))}
+							</div>
+
+							<div className="grid grid-cols-2 gap-3 mt-2">
+								<DraggableNumberInput
+									label="Letter"
+									icon={ArrowLeftRight}
+									value={selectedLayer.letterSpacing ?? DEFAULTS.LETTER_SPACING}
+									onChange={(v) => updateLayer({ letterSpacing: v })}
+								/>
+								<DraggableNumberInput
+									label="Line"
+									icon={ArrowUpDown}
+									value={selectedLayer.lineHeight ?? DEFAULTS.LINE_HEIGHT}
+									onChange={(v) => updateLayer({ lineHeight: v })}
+									allowDecimal
+									step={0.1}
 								/>
 							</div>
 						</div>
@@ -1252,37 +1517,43 @@ const InspectorPanel: React.FC = () => {
 				)}
 
 				<CollapsibleSection title="Appearance" icon={Settings2}>
-					<div className="space-y-2">
-						<Label className="text-[10px] text-gray-500 font-semibold">
-							OPACITY
-						</Label>
-						<DraggableNumberInput
-							label="%"
-							icon={Layers}
-							value={Math.round((selectedLayer.opacity ?? 1) * 100)}
-							onChange={(v) =>
-								updateLayer(selectedLayer.id, { opacity: v / 100 })
-							}
-							min={0}
-							max={100}
-						/>
-						<div className="pt-2">
-							<Label className="text-[10px] text-gray-500 font-semibold mb-2 block">
+					<div className="space-y-4">
+						<div className="space-y-2">
+							<Label className="text-[10px] text-gray-500 font-semibold">
+								OPACITY
+							</Label>
+							<div className="flex items-center gap-2">
+								<DraggableNumberInput
+									label="%"
+									icon={Layers}
+									value={Math.round((selectedLayer.opacity ?? 1) * 100)}
+									onChange={(v) => updateLayer({ opacity: v / 100 })}
+									min={0}
+									max={100}
+									className="flex-1"
+								/>
+							</div>
+						</div>
+
+						<div className="space-y-2">
+							<Label className="text-[10px] text-gray-500 font-semibold">
 								BLEND MODE
 							</Label>
 							<Select
-								value={selectedLayer.blendMode}
-								onValueChange={(v) =>
-									updateLayer(selectedLayer.id, { blendMode: v })
-								}
+								value={selectedLayer.blendMode || "source-over"}
+								onValueChange={(val) => updateLayer({ blendMode: val })}
 							>
-								<SelectTrigger className="h-8 text-[11px] bg-white/5 border-white/10">
+								<SelectTrigger className="h-8 text-[11px] capitalize bg-white/5 border-white/10 text-white">
 									<SelectValue />
 								</SelectTrigger>
-								<SelectContent className="bg-neutral-800 border-white/10 max-h-[200px]">
+								<SelectContent className="bg-neutral-800 border-white/10 text-white max-h-[200px]">
 									{BLEND_MODES.map((m) => (
-										<SelectItem key={m} value={m} className="capitalize">
-											{m}
+										<SelectItem
+											key={m}
+											value={m}
+											className="capitalize text-xs"
+										>
+											{m.replace("-", " ")}
 										</SelectItem>
 									))}
 								</SelectContent>
@@ -1295,88 +1566,133 @@ const InspectorPanel: React.FC = () => {
 	);
 };
 
-const Toolbar = React.memo<{ onSave: () => void; onClose: () => void }>(
-	({ onSave, onClose }) => {
-		const {
-			mode,
-			setMode,
-			zoomPercentage,
-			zoomIn,
-			zoomOut,
-			fitView,
-			isDirty,
-			zoomTo,
-		} = useEditor();
-		return (
-			<div className="flex items-center gap-1.5 p-1.5 rounded-full bg-neutral-900/90 backdrop-blur-xl border border-white/10 shadow-2xl z-50">
-				<div className="flex bg-white/5 rounded-full p-0.5 border border-white/5">
-					<Button
-						size="icon"
-						variant={mode === "select" ? "secondary" : "ghost"}
-						className="rounded-full w-8 h-8"
-						onClick={() => setMode("select")}
-					>
-						<MousePointer className="w-3.5 h-3.5" />
-					</Button>
-					<Button
-						size="icon"
-						variant={mode === "pan" ? "secondary" : "ghost"}
-						className="rounded-full w-8 h-8"
-						onClick={() => setMode("pan")}
-					>
-						<Hand className="w-3.5 h-3.5" />
-					</Button>
-				</div>
-				<div className="w-px h-5 bg-white/10 mx-1" />
-				<Menubar className="border-none bg-transparent h-auto p-0">
-					<MenubarMenu>
-						<MenubarTrigger asChild>
-							<Button
-								variant="ghost"
-								className="h-8 px-3 text-[11px] rounded-full text-gray-300 min-w-[80px] justify-between"
-							>
-								{zoomPercentage}
-								<ChevronDown className="w-3 h-3 ml-1.5 opacity-50" />
-							</Button>
-						</MenubarTrigger>
-						<MenubarContent
-							align="center"
-							sideOffset={10}
-							className="bg-neutral-900/95 border-white/10 text-gray-200"
-						>
-							<MenubarItem onClick={zoomIn}>Zoom In</MenubarItem>
-							<MenubarItem onClick={zoomOut}>Zoom Out</MenubarItem>
-							<MenubarItem onClick={() => zoomTo(1)}>Actual Size</MenubarItem>
-							<MenubarItem onClick={fitView}>Fit to Screen</MenubarItem>
-						</MenubarContent>
-					</MenubarMenu>
-				</Menubar>
-				<div className="w-px h-5 bg-white/10 mx-1" />
-				<Button
-					size="sm"
-					variant="default"
-					className="h-8 text-[11px] font-semibold rounded-full px-4"
-					onClick={onSave}
-					disabled={!isDirty}
-				>
-					<Save className="w-3.5 h-3.5 mr-1" /> Save
-				</Button>
-				<Button
-					size="icon"
-					variant="ghost"
-					className="h-8 w-8 rounded-full text-gray-400"
-					onClick={onClose}
-				>
-					<XIcon className="w-4 h-4" />
-				</Button>
-			</div>
-		);
-	},
-);
+const Toolbar = React.memo<{
+	onSave: () => void;
+	onClose: () => void;
+}>(({ onSave, onClose }) => {
+	const {
+		mode,
+		setMode,
+		zoomIn,
+		zoomOut,
+		zoomTo,
+		fitView,
+		zoomPercentage,
+		isDirty,
+	} = useEditor();
 
-// -----------------------------------------------------------------------------
-// Main Provider & Container
-// -----------------------------------------------------------------------------
+	return (
+		<div className="flex items-center gap-1.5 p-1.5 rounded-full bg-neutral-900/90 backdrop-blur-xl border border-white/10 shadow-2xl z-50 animate-in fade-in slide-in-from-bottom-4">
+			<TooltipProvider>
+				<div className="flex bg-white/5 rounded-full p-0.5 border border-white/5">
+					<Tooltip>
+						<TooltipTrigger asChild>
+							<Button
+								variant={mode === "select" ? "secondary" : "ghost"}
+								size="icon"
+								className={`rounded-full w-8 h-8 ${mode === "select" ? "bg-white/20 text-white" : "text-gray-400 hover:text-white"}`}
+								onClick={() => setMode("select")}
+							>
+								<MousePointer className="w-3.5 h-3.5" />
+							</Button>
+						</TooltipTrigger>
+						<TooltipContent>Select Tool (V)</TooltipContent>
+					</Tooltip>
+					<Tooltip>
+						<TooltipTrigger asChild>
+							<Button
+								variant={mode === "pan" ? "secondary" : "ghost"}
+								size="icon"
+								className={`rounded-full w-8 h-8 ${mode === "pan" ? "bg-white/20 text-white" : "text-gray-400 hover:text-white"}`}
+								onClick={() => setMode("pan")}
+							>
+								<Hand className="w-3.5 h-3.5" />
+							</Button>
+						</TooltipTrigger>
+						<TooltipContent>Pan Tool (H) or hold Space</TooltipContent>
+					</Tooltip>
+				</div>
+			</TooltipProvider>
+
+			<div className="w-px h-5 bg-white/10 mx-1" />
+
+			<Menubar className="border-none bg-transparent h-auto p-0">
+				<MenubarMenu>
+					<MenubarTrigger asChild>
+						<Button
+							variant="ghost"
+							className="h-8 px-3 text-[11px] rounded-full text-gray-300 hover:text-white hover:bg-white/10 font-medium min-w-[80px] justify-between"
+							onDoubleClick={() => zoomTo(1)}
+						>
+							{zoomPercentage}
+							<ChevronDown className="w-3 h-3 ml-1.5 opacity-50" />
+						</Button>
+					</MenubarTrigger>
+					<MenubarContent
+						align="center"
+						sideOffset={10}
+						className="min-w-40 bg-neutral-900/95 backdrop-blur-xl border-white/10 text-gray-200"
+					>
+						<MenubarItem onClick={() => zoomIn()}>
+							<span className="flex-1">Zoom In</span>
+							<span className="text-xs text-gray-500 ml-4">+</span>
+						</MenubarItem>
+						<MenubarItem onClick={() => zoomOut()}>
+							<span className="flex-1">Zoom Out</span>
+							<span className="text-xs text-gray-500 ml-4">−</span>
+						</MenubarItem>
+						<MenubarItem onClick={() => zoomTo(1)}>
+							<span className="flex-1">Actual Size</span>
+							<span className="text-xs text-gray-500 ml-4">1</span>
+						</MenubarItem>
+						<Separator className="my-1 bg-white/10" />
+						<MenubarItem onClick={() => fitView()}>
+							<span className="flex-1">Fit to Screen</span>
+							<span className="text-xs text-gray-500 ml-4">0</span>
+						</MenubarItem>
+					</MenubarContent>
+				</MenubarMenu>
+			</Menubar>
+
+			<div className="w-px h-5 bg-white/10 mx-1" />
+
+			<div className="flex items-center gap-1">
+				<TooltipProvider>
+					<Tooltip>
+						<TooltipTrigger asChild>
+							<Button
+								size="sm"
+								variant="default"
+								className="h-8 text-[11px] font-semibold rounded-full px-4"
+								onClick={onSave}
+								disabled={!isDirty}
+							>
+								<Save className="w-3.5 h-3.5 mr-1" />
+								Save
+							</Button>
+						</TooltipTrigger>
+						<TooltipContent>Save (⌘S)</TooltipContent>
+					</Tooltip>
+					<Tooltip>
+						<TooltipTrigger asChild>
+							<Button
+								size="icon"
+								variant="ghost"
+								className="h-8 w-8 rounded-full text-gray-400 hover:text-white hover:bg-white/10"
+								onClick={onClose}
+							>
+								<XIcon className="w-4 h-4" />
+							</Button>
+						</TooltipTrigger>
+						<TooltipContent>Close (Esc)</TooltipContent>
+					</Tooltip>
+				</TooltipProvider>
+			</div>
+		</div>
+	);
+});
+
+//#region Main Editor
 
 interface ImageDesignerEditorProps {
 	initialLayers: Map<
@@ -1395,273 +1711,440 @@ export const ImageDesignerEditor: React.FC<ImageDesignerEditorProps> = ({
 	onSave: propOnSave,
 }) => {
 	const nodeConfig = node.config as CompositorNodeConfig;
-
-	// --- State ---
 	const [layers, setLayers] = useState<LocalCompositorLayer[]>([]);
 	const [isDirty, setIsDirty] = useState(false);
-	const [selectedId, setSelectedId] = useState<string | null>(null);
-	const [viewportWidth, setViewportWidth] = useState(
-		nodeConfig.width ?? DEFAULTS.CANVAS_WIDTH,
-	);
-	const [viewportHeight, setViewportHeight] = useState(
-		nodeConfig.height ?? DEFAULTS.CANVAS_HEIGHT,
-	);
-	const [mode, setMode] = useState<"select" | "pan">("select");
-	const [scale, setScale] = useState(1);
-	const [stagePos, setStagePos] = useState({ x: 0, y: 0 });
-	const [guides, setGuides] = useState<Guide[]>([]);
-	const [isEditingText, setIsEditingText] = useState(false);
-	const [editingLayerId, setEditingLayerId] = useState<string | null>(null);
-	const [showCloseAlert, setShowCloseAlert] = useState(false);
-	const [isNodeDragging, setIsNodeDragging] = useState(false);
-	// --- Refs ---
-	const stageRef = useRef<Konva.Stage | null>(null);
-	const transformerRef = useRef<Konva.Transformer | null>(null);
-	const containerRef = useRef<HTMLDivElement>(null);
-	const [containerSize, setContainerSize] = useState({
-		width: 100,
-		height: 100,
-	});
 
-	// --- Actions ---
 	const updateLayers = useCallback(
-		(updater: SetStateAction<LocalCompositorLayer[]>, isUserChange = true) => {
+		(
+			updater: SetStateAction<LocalCompositorLayer[]>,
+			isUserChange: boolean = true,
+		) => {
 			setLayers(updater);
-			if (isUserChange) setIsDirty(true);
+			if (isUserChange) {
+				setIsDirty(true);
+			}
 		},
 		[],
 	);
 
-	const updateLayer = useCallback(
-		(id: string, updates: Partial<LocalCompositorLayer>) => {
-			updateLayers((prev) =>
-				prev.map((l) => (l.id === id ? { ...l, ...updates } : l)),
-			);
-		},
-		[updateLayers],
+	const [selectedId, setSelectedId] = useState<string | null>(null);
+	const [viewportWidth, setViewportWidth] = useState(nodeConfig.width ?? 1080);
+	const [viewportHeight, setViewportHeight] = useState(
+		nodeConfig.height ?? 1080,
 	);
 
-	const updateViewportSize = useCallback((w: number, h: number) => {
+	const updateViewportWidth = useCallback((w: number) => {
 		setViewportWidth(w);
+		setIsDirty(true);
+	}, []);
+
+	const updateViewportHeight = useCallback((h: number) => {
 		setViewportHeight(h);
 		setIsDirty(true);
 	}, []);
 
-	// --- Data Accessors ---
+	const [guides, setGuides] = useState<Guide[]>([]);
+	const [isEditingText, setIsEditingText] = useState(false);
+	const [editingLayerId, setEditingLayerId] = useState<string | null>(null);
+
+	const stageRef = useRef<Konva.Stage | null>(null);
+	const transformerRef = useRef<Konva.Transformer | null>(null);
+	const [showCloseAlert, setShowCloseAlert] = useState(false);
+
+	const [mode, setMode] = useState<"select" | "pan">("select");
+	const lastModeRef = useRef<"select" | "pan">("select");
+
+	const [scale, setScale] = useState(1);
+	const [stagePos, setStagePos] = useState({ x: 0, y: 0 });
+	const containerRef = useRef<HTMLDivElement>(null);
+	const [screenWidth, setScreenWidth] = useState(100);
+	const [screenHeight, setScreenHeight] = useState(100);
+
+	const zoomPercentage = `${Math.round(scale * 100)}%`;
+
+	// Resize observer
+	useEffect(() => {
+		const updateSize = () => {
+			if (containerRef.current) {
+				setScreenWidth(containerRef.current.offsetWidth);
+				setScreenHeight(containerRef.current.offsetHeight);
+			}
+		};
+		updateSize();
+		const observer = new ResizeObserver(updateSize);
+		if (containerRef.current) observer.observe(containerRef.current);
+		return () => observer.disconnect();
+	}, []);
+
+	// Fit View logic
+	const fitView = useCallback(() => {
+		const padding = 80;
+		const availableW = screenWidth - padding * 2;
+		const availableH = screenHeight - padding * 2;
+		const scaleW = availableW / viewportWidth;
+		const scaleH = availableH / viewportHeight;
+		const newScale = Math.min(scaleW, scaleH);
+		const newPos = {
+			x: Math.round((screenWidth - viewportWidth * newScale) / 2),
+			y: Math.round((screenHeight - viewportHeight * newScale) / 2),
+		};
+		setScale(newScale);
+		setStagePos(newPos);
+	}, [viewportWidth, viewportHeight, screenWidth, screenHeight]);
+
+	// Initial centering
+	useEffect(() => {
+		if (
+			screenWidth > 100 &&
+			screenHeight > 100 &&
+			scale === 1 &&
+			stagePos.x === 0
+		) {
+			fitView();
+		}
+	}, [screenWidth, screenHeight, fitView, scale, stagePos.x]);
+
+	const zoomIn = useCallback(() => setScale((s) => s * 1.2), []);
+	const zoomOut = useCallback(() => setScale((s) => s / 1.2), []);
+	const zoomTo = useCallback((value: number) => setScale(value), []);
+
+	// Data getters
 	const getTextData = useCallback(
-		(handleId: string) =>
-			(initialLayers.get(handleId) as OutputItem<"Text">)?.data || "",
-		[initialLayers],
-	);
-	const getImageData = useCallback(
-		(handleId: string) =>
-			(initialLayers.get(handleId) as OutputItem<"Image">)?.data ?? {},
-		[initialLayers],
-	);
-	const getImageUrl = useCallback(
 		(handleId: string) => {
-			const d = (initialLayers.get(handleId) as OutputItem<"Image">)?.data;
-			if (d?.entity) return GetAssetEndpoint(d.entity);
-			return d?.processData?.dataUrl;
+			const layerData = initialLayers.get(handleId) as OutputItem<"Text">;
+			return layerData?.data || "";
 		},
 		[initialLayers],
 	);
 
-	// --- Initialization ---
-	useEffect(() => {
-		// Observer for container resize
-		if (!containerRef.current) return;
-		const observer = new ResizeObserver(() => {
-			if (containerRef.current)
-				setContainerSize({
-					width: containerRef.current.offsetWidth,
-					height: containerRef.current.offsetHeight,
-				});
-		});
-		observer.observe(containerRef.current);
-		return () => observer.disconnect();
-	}, []);
+	const getImageData = useCallback(
+		(handleId: string) => {
+			const layerData = initialLayers.get(handleId) as OutputItem<"Image">;
+			return layerData?.data ?? {};
+		},
+		[initialLayers],
+	);
 
-	useEffect(() => {
-		// Initialize Layers
-		const cfg = (node.config as CompositorNodeConfig) ?? { layerUpdates: {} };
-		const updates = { ...cfg.layerUpdates };
-		let maxZ = Math.max(...Object.values(updates).map((l) => l.zIndex ?? 0), 0);
-
-		initialLayers.forEach((output, handleId) => {
-			if (!updates[handleId]) {
-				const base: LocalCompositorLayer = {
-					id: handleId,
-					inputHandleId: handleId,
-					type: output.type,
-					x: 0,
-					y: 0,
-					rotation: 0,
-					zIndex: ++maxZ,
-					opacity: 1,
-					blendMode: "source-over",
-					lockAspect: true,
-				};
-
-				if (base.type === "Text") {
-					Object.assign(base, {
-						fontSize: DEFAULTS.FONT_SIZE,
-						fontFamily: DEFAULTS.FONT_FAMILY,
-						fill: DEFAULTS.FILL,
-						align: DEFAULTS.ALIGN,
-						letterSpacing: 0,
-						lineHeight: 1.1,
-					});
-				} else {
-					// Image default sizing logic
-					const fData = (output as OutputItem<"Image">).data;
-					const w =
-						fData.entity?.width ?? fData.processData?.width ?? cfg.width ?? 300;
-					const h =
-						fData.entity?.height ??
-						fData.processData?.height ??
-						cfg.height ??
-						300;
-					base.width = Math.round(w);
-					base.height = Math.round(h);
-				}
-				updates[handleId] = base;
+	const getImageUrl = useCallback(
+		(handleId: string) => {
+			const layerData = initialLayers.get(handleId) as OutputItem<"Image">;
+			if (layerData?.data.entity) {
+				return GetAssetEndpoint(layerData.data.entity);
 			}
-		});
-		setLayers(Object.values(updates));
-	}, [initialLayers, node.config]);
+			return layerData?.data?.processData?.dataUrl;
+		},
+		[initialLayers],
+	);
 
-	// --- Zoom Logic ---
-	const fitView = useCallback(() => {
-		const padding = 80;
-		const availW = containerSize.width - padding * 2;
-		const availH = containerSize.height - padding * 2;
-		const scaleVal = Math.min(availW / viewportWidth, availH / viewportHeight);
-		setScale(scaleVal);
-		setStagePos({
-			x: Math.round((containerSize.width - viewportWidth * scaleVal) / 2),
-			y: Math.round((containerSize.height - viewportHeight * scaleVal) / 2),
-		});
-	}, [containerSize, viewportWidth, viewportHeight]);
+	// Initialize layers
+	useEffect(() => {
+		const loadInitialLayers = async () => {
+			const existingConfig = (node.config as CompositorNodeConfig) ?? {
+				layerUpdates: {},
+			};
+			const layerUpdates = { ...existingConfig.layerUpdates };
+			let maxZ = Math.max(
+				...Object.values(layerUpdates).map((l) => l.zIndex ?? 0),
+				0,
+			);
+			const fontPromises: Promise<void>[] = [];
+
+			initialLayers.forEach((output, handleId) => {
+				if (!layerUpdates[handleId]) {
+					const newLayer: LocalCompositorLayer = {
+						type: output.type,
+						x: 0,
+						y: 0,
+						id: handleId,
+						inputHandleId: handleId,
+						rotation: 0,
+						lockAspect: true,
+						blendMode: "source-over",
+						zIndex: ++maxZ,
+						opacity: 1,
+					};
+
+					if (newLayer.type === "Text") {
+						newLayer.fontSize = DEFAULTS.FONT_SIZE;
+						newLayer.fontFamily = DEFAULTS.FONT_FAMILY;
+						newLayer.fontStyle = "normal";
+						newLayer.textDecoration = "";
+						newLayer.fill = DEFAULTS.FILL;
+						newLayer.letterSpacing = DEFAULTS.LETTER_SPACING;
+						newLayer.lineHeight = DEFAULTS.LINE_HEIGHT;
+						newLayer.align = DEFAULTS.ALIGN;
+						newLayer.verticalAlign = DEFAULTS.VERTICAL_ALIGN;
+						newLayer.computedHeight = undefined;
+						newLayer.computedWidth = undefined;
+					}
+
+					if (newLayer.type === "Image") {
+						const fData = getImageData(handleId);
+						if (fData.entity) {
+							newLayer.width = Math.round(
+								fData.entity.width ?? existingConfig.width ?? 300,
+							);
+							newLayer.height = Math.round(
+								fData.entity.height ?? existingConfig.height ?? 300,
+							);
+						} else if (fData.processData) {
+							newLayer.width = Math.round(
+								fData.processData.width ?? existingConfig.width ?? 300,
+							);
+							newLayer.height = Math.round(
+								fData.processData.height ?? existingConfig.height ?? 300,
+							);
+						} else {
+							newLayer.width = existingConfig.width;
+							newLayer.height = existingConfig.height;
+						}
+					}
+
+					layerUpdates[handleId] = newLayer;
+				}
+
+				const layer = layerUpdates[handleId];
+				if (layer.type === "Text" && layer.fontFamily) {
+					const fontUrl = GetFontAssetUrl(layer.fontFamily);
+					fontPromises.push(fontManager.loadFont(layer.fontFamily, fontUrl));
+				}
+			});
+
+			await Promise.all(fontPromises);
+			updateLayers(Object.values(layerUpdates), false);
+		};
+		loadInitialLayers();
+	}, [initialLayers, node.config, getImageData, updateLayers]);
 
 	useEffect(() => {
-		if (containerSize.width > 100 && scale === 1 && stagePos.x === 0) fitView();
-	}, [containerSize, fitView, scale, stagePos.x]);
+		if (mode === "pan" && selectedId) {
+			setSelectedId(null);
+		}
+	}, [mode, selectedId]);
 
-	const handleSave = () => {
+	// Keyboard Shortcuts
+	useEffect(() => {
+		const handleKeyDown = (e: KeyboardEvent) => {
+			const isInput =
+				document.activeElement?.tagName === "INPUT" ||
+				document.activeElement?.tagName === "TEXTAREA";
+
+			// Save (Ctrl/Cmd + S)
+			if ((e.ctrlKey || e.metaKey) && e.key.toLowerCase() === "s") {
+				e.preventDefault();
+				if (isDirty) handleSave();
+				return;
+			}
+
+			if (isInput) return;
+
+			// Tools
+			if (e.key.toLowerCase() === "v") setMode("select");
+			if (e.key.toLowerCase() === "h") setMode("pan");
+
+			// Pan Spacebar
+			if (e.code === "Space" && !e.repeat) {
+				e.preventDefault();
+				if (mode !== "pan") {
+					lastModeRef.current = mode;
+					setMode("pan");
+				}
+			}
+
+			// Zoom
+			if ((e.ctrlKey || e.metaKey) && (e.key === "=" || e.key === "+")) {
+				e.preventDefault();
+				zoomIn();
+			}
+			if ((e.ctrlKey || e.metaKey) && e.key === "-") {
+				e.preventDefault();
+				zoomOut();
+			}
+			if ((e.ctrlKey || e.metaKey) && e.key === "0") {
+				e.preventDefault();
+				fitView();
+			}
+
+			// Nudge
+			if (
+				selectedId &&
+				["ArrowUp", "ArrowDown", "ArrowLeft", "ArrowRight"].includes(e.key)
+			) {
+				e.preventDefault();
+				const shift = e.shiftKey ? 10 : 1;
+				updateLayers((prev) =>
+					prev.map((l) => {
+						if (l.id !== selectedId) return l;
+						const u = { ...l };
+						if (e.key === "ArrowUp") u.y -= shift;
+						if (e.key === "ArrowDown") u.y += shift;
+						if (e.key === "ArrowLeft") u.x -= shift;
+						if (e.key === "ArrowRight") u.x += shift;
+						return u;
+					}),
+				);
+			}
+
+			// Delete
+			if (e.key === "Delete" || e.key === "Backspace") {
+				// Optional: Add layer deletion if desired
+			}
+
+			// Close (Esc)
+			if (e.key === "Escape") {
+				handleCloseRequest();
+			}
+		};
+
+		const handleKeyUp = (e: KeyboardEvent) => {
+			if (e.code === "Space") {
+				const isInput =
+					document.activeElement?.tagName === "INPUT" ||
+					document.activeElement?.tagName === "TEXTAREA";
+				if (!isInput) {
+					e.preventDefault();
+					setMode(lastModeRef.current);
+				}
+			}
+		};
+
+		window.addEventListener("keydown", handleKeyDown);
+		window.addEventListener("keyup", handleKeyUp);
+		return () => {
+			window.removeEventListener("keydown", handleKeyDown);
+			window.removeEventListener("keyup", handleKeyUp);
+		};
+	}, [mode, selectedId, updateLayers, zoomIn, zoomOut, fitView, isDirty]);
+
+	const handleSave = useCallback(() => {
 		const layerUpdates = layers.reduce<Record<string, CompositorLayer>>(
-			(acc, l) => {
-				const { computedHeight, computedWidth, ...rest } = l;
-				acc[l.inputHandleId] = rest;
+			(acc, layer) => {
+				const { computedHeight, computedWidth, ...rest } = layer;
+				acc[layer.inputHandleId] = rest;
 				return acc;
 			},
 			{},
 		);
 		propOnSave({ layerUpdates, width: viewportWidth, height: viewportHeight });
 		setIsDirty(false);
+	}, [layers, propOnSave, viewportHeight, viewportWidth]);
+
+	const handleCloseRequest = () => {
+		if (isDirty) {
+			setShowCloseAlert(true);
+		} else {
+			onClose();
+		}
 	};
 
-	const zoomPercentage = useMemo(() => `${Math.round(scale * 100)}%`, [scale]);
+	const handleDiscardAndClose = () => {
+		setShowCloseAlert(false);
+		onClose();
+	};
 
-	const contextValue: EditorState = {
-		layers,
-		updateLayers,
-		updateLayer,
-		selectedId,
-		zoomPercentage,
-		setSelectedId,
-		viewportWidth,
-		viewportHeight,
-		updateViewportSize,
-		mode,
-		setMode,
-		isEditingText,
-		setIsEditingText,
-		editingLayerId,
-		setEditingLayerId,
-		scale,
-		setScale,
-		stagePos,
-		setStagePos,
-		zoomIn: () => setScale((s) => s * 1.2),
-		zoomOut: () => setScale((s) => s / 1.2),
-		zoomTo: setScale,
-		fitView,
-		stageRef,
-		transformerRef,
-		containerSize,
-		guides,
-		setGuides,
-		getTextData,
-		getImageData,
-		getImageUrl,
-		isDirty,
-		setIsDirty,
-		isNodeDragging,
-		setIsNodeDragging,
+	const handleSaveAndClose = () => {
+		handleSave();
+		setShowCloseAlert(false);
+		onClose();
 	};
 
 	return (
-		<EditorContext.Provider value={contextValue}>
-			<EditorShortcuts />
+		<EditorContext.Provider
+			value={{
+				layers,
+				updateLayers,
+				selectedId,
+				setSelectedId,
+				viewportWidth,
+				updateViewportWidth,
+				viewportHeight,
+				updateViewportHeight,
+				screenWidth,
+				screenHeight,
+				guides,
+				setGuides,
+				isEditingText,
+				setIsEditingText,
+				editingLayerId,
+				setEditingLayerId,
+				stageRef,
+				transformerRef,
+				mode,
+				setMode,
+				scale,
+				setScale,
+				stagePos,
+				setStagePos,
+				zoomIn,
+				zoomOut,
+				zoomTo,
+				fitView,
+				zoomPercentage,
+				getTextData,
+				getImageData,
+				getImageUrl,
+				isDirty,
+				setIsDirty,
+			}}
+		>
 			<div className="flex h-screen w-screen bg-[#050505] overflow-hidden relative text-foreground font-sans selection:bg-blue-500/30">
 				<div className="relative shrink-0 z-20">
 					<LayersPanel />
 				</div>
+
 				<div className="flex-1 flex flex-col relative min-w-0 z-0">
 					<div
 						ref={containerRef}
-						className="flex-1 relative overflow-hidden bg-[#0F0F0F]"
+						className="flex-1 relative overflow-hidden bg-[#050505]"
 						style={{
 							backgroundImage:
 								"radial-gradient(circle at 1px 1px, rgba(255,255,255,0.08) 1px, transparent 0)",
 							backgroundSize: "32px 32px",
+							backgroundColor: "#0F0F0F",
 						}}
 					>
 						<Canvas />
 					</div>
-					<div className="absolute bottom-6 left-1/2 -translate-x-1/2 z-50">
-						<Toolbar
-							onSave={handleSave}
-							onClose={() => (isDirty ? setShowCloseAlert(true) : onClose())}
-						/>
+
+					{/* Floating Toolbar */}
+					<div className="absolute bottom-6 left-1/2 -translate-x-1/2 z-50 transition-all duration-300">
+						<Toolbar onSave={handleSave} onClose={handleCloseRequest} />
 					</div>
 				</div>
+
 				<div className="relative shrink-0 z-20">
 					<InspectorPanel />
 				</div>
 
+				{/* Close Confirmation Dialog */}
 				<AlertDialog open={showCloseAlert} onOpenChange={setShowCloseAlert}>
 					<AlertDialogContent className="bg-neutral-900 border-white/10 text-white">
 						<AlertDialogHeader>
-							<AlertDialogTitle>Unsaved Changes</AlertDialogTitle>
+							<AlertDialogTitle className="text-white">
+								Unsaved Changes
+							</AlertDialogTitle>
 							<AlertDialogDescription className="text-gray-400">
-								You have unsaved changes. Are you sure you want to leave?
+								You have unsaved changes. Are you sure you want to leave without
+								saving?
 							</AlertDialogDescription>
 						</AlertDialogHeader>
 						<AlertDialogFooter>
 							<AlertDialogCancel
 								onClick={() => setShowCloseAlert(false)}
-								className="bg-transparent border-white/10 text-gray-300 hover:bg-white/5"
+								className="bg-transparent border-white/10 text-gray-300 hover:bg-white/5 hover:text-white"
 							>
 								Cancel
 							</AlertDialogCancel>
 							<Button
 								variant="destructive"
-								onClick={() => {
-									setShowCloseAlert(false);
-									onClose();
-								}}
-								className="bg-red-500/20 text-red-400 border-0"
+								onClick={handleDiscardAndClose}
+								className="bg-red-500/20 text-red-400 hover:bg-red-500/30 border-0"
 							>
 								Discard
 							</Button>
 							<AlertDialogAction
-								onClick={() => {
-									handleSave();
-									setShowCloseAlert(false);
-									onClose();
-								}}
+								onClick={handleSaveAndClose}
+								className="bg-primary text-primary-foreground hover:bg-primary/90"
 							>
 								Save & Close
 							</AlertDialogAction>
@@ -1671,10 +2154,4 @@ export const ImageDesignerEditor: React.FC<ImageDesignerEditorProps> = ({
 			</div>
 		</EditorContext.Provider>
 	);
-};
-
-// Helper component to activate shortcuts within Context
-const EditorShortcuts = () => {
-	useEditorShortcuts();
-	return null;
 };
