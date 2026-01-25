@@ -16,8 +16,12 @@ function MediaContent({
 	node: NodeEntityType;
 	result: ImagesResult | FileResult | VideoGenResult;
 }) {
-	const selectedOutput = result.outputs[result.selectedOutputIndex];
-	const outputItem = selectedOutput.items[0];
+	const selectedOutput =
+		result.outputs?.[
+			Math.min(result.selectedOutputIndex, result.outputs.length - 1)
+		];
+	const outputItem = selectedOutput?.items?.[0];
+
 	const isImage = outputItem.data.entity?.mimeType.startsWith("image");
 	const isVideo = outputItem.data.entity?.mimeType.startsWith("video");
 	const isAudio = outputItem.data.entity?.mimeType.startsWith("audio");

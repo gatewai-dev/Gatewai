@@ -12,7 +12,7 @@
 		"version-packages": "changeset version",
 		"release": "changeset publish",
 
-		"start-cli": "turbo run start-cli",
+		"start-cli": "turbo run start-cli --filter=@gatewai/fe",
 		"start-mcp": "turbo run start-cli --filter=@gatewai/mcp-server",
 
 		"db:migrate": "turbo run db:migrate --filter=@gatewai/db",

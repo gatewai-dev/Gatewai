@@ -8,7 +8,7 @@ import {
 	useState,
 } from "react";
 import { generateId } from "@/lib/idgen";
-import { rpcClient } from "@/rpc/client"; // Assuming rpcClient is imported from the appropriate location
+import { rpcClient } from "@/rpc/client";
 import type { AgentSessionsRPC } from "@/rpc/types";
 import { useGetCanvasAgentSessionListQuery } from "@/store/agent-sessions";
 
@@ -21,30 +21,21 @@ export interface ChatMessage {
 	text: string;
 	isStreaming?: boolean;
 	createdAt: Date;
-	eventType?: string; // Optional to preserve for potential future use
+	eventType?: string;
 }
 
 type CanvasAgentContextType = {
-	// Session Management
 	activeSessionId: string | null;
 	setActiveSessionId: (id: string | null) => void;
 	createNewSession: () => void;
-
-	// Data
 	agentSessionsList: AgentSessionsRPC | undefined;
 	isLoadingSessions: boolean;
-
-	// Chat Stream
 	messages: ChatMessage[];
 	sendMessage: (message: string) => Promise<void>;
 	isLoading: boolean;
 	stopGeneration: () => void;
-
-	// Patch System
 	pendingPatchId: string | null;
 	clearPendingPatch: () => void;
-
-	// Model Selection
 	selectedModel: string;
 	setSelectedModel: (model: string) => void;
 };
@@ -54,19 +45,14 @@ const CanvasAgentContext = createContext<CanvasAgentContextType | undefined>(
 );
 
 function extractText(content: any): string {
-	// Handle patch_action events where content is { action, patchId, text }
-	if (
-		content &&
-		typeof content === "object" &&
-		typeof content.text === "string" &&
-		!content.content
-	) {
-		return content.text;
-	}
+	if (!content) return "";
+
+	// If it's the direct text property from our manual event creation
+	if (typeof content.text === "string") return content.text;
 
 	let rawContent = content?.content || content;
 	if (Array.isArray(rawContent)) {
-		rawContent = rawContent.map((item) => item.text || "").join("\n");
+		rawContent = rawContent.map((item: any) => item.text || "").join("\n");
 	}
 
 	let text = "";
@@ -76,13 +62,18 @@ function extractText(content: any): string {
 			try {
 				const parsed = JSON.parse(text);
 				if (parsed.type === "text" && parsed.text) {
-					const innerParsed = JSON.parse(parsed.text);
-					text = innerParsed.text;
+					// Handle nested JSON strings from some AI providers
+					try {
+						const innerParsed = JSON.parse(parsed.text);
+						text = innerParsed.text || parsed.text;
+					} catch {
+						text = parsed.text;
+					}
 				} else if (parsed.text) {
 					text = parsed.text;
 				}
 			} catch (e) {
-				// Leave as is if parsing fails
+				/* ignore */
 			}
 		}
 	}
@@ -104,7 +95,6 @@ const CanvasAgentProvider = ({
 	const [isLoading, setIsLoading] = useState(false);
 	const [pendingPatchId, setPendingPatchId] = useState<string | null>(null);
 	const [selectedModel, setSelectedModel] = useState<string>(() => {
-		// Check if we're in a browser environment
 		if (typeof window !== "undefined") {
 			const saved = localStorage.getItem(SELECTED_MODEL_STORAGE_KEY);
 			return saved || "gemini-3-flash-preview";
@@ -115,6 +105,7 @@ const CanvasAgentProvider = ({
 	useEffect(() => {
 		localStorage.setItem(SELECTED_MODEL_STORAGE_KEY, selectedModel);
 	}, [selectedModel]);
+
 	const abortControllerRef = useRef<AbortController | null>(null);
 
 	const { data: agentSessionsList, isLoading: isLoadingSessions } =
@@ -123,28 +114,20 @@ const CanvasAgentProvider = ({
 		});
 
 	const createNewSession = useCallback(() => {
-		// Abort any ongoing generation
 		if (abortControllerRef.current) {
 			abortControllerRef.current.abort();
 			abortControllerRef.current = null;
 		}
-
-		// Generate a client-side ID for immediate UI optimistic updates
 		const newId = generateId();
-
-		// Clear messages immediately before setting new session
 		setMessages([]);
 		setIsLoading(false);
 		setPendingPatchId(null);
 		setActiveSessionId(newId);
 	}, []);
 
-	// Automatically select or create session on mount
 	useEffect(() => {
 		if (isLoadingSessions || activeSessionId) return;
-
 		if (agentSessionsList && agentSessionsList.length > 0) {
-			// Sort by createdAt descending and select the latest
 			const sortedSessions = [...agentSessionsList].sort(
 				(a, b) =>
 					new Date(b.createdAt).getTime() - new Date(a.createdAt).getTime(),
@@ -170,63 +153,55 @@ const CanvasAgentProvider = ({
 				param: { id: canvasId, sessionId: activeSessionId },
 			});
 			const data = await resp.json();
-			if (!data) {
-				setMessages([]);
-				setPendingPatchId(null);
-				return;
-			}
+			if (!data) return;
 
-			const filteredEvents = (data.events || []).filter(
-				(e) =>
-					e.eventType === "message" ||
-					e.eventType === "patch_action" ||
-					e.eventType === "patch_proposed",
-			);
+			const events = data.events || [];
 
-			// Detect pending patch by scanning events in order
+			// 1. Identify pending patches by looking at the stream of events
 			let lastProposedPatchId: string | null = null;
-			for (const e of filteredEvents) {
+			for (const e of events) {
 				if (e.eventType === "patch_proposed") {
 					lastProposedPatchId = (e.content as any)?.patchId ?? null;
 				} else if (e.eventType === "patch_action") {
 					const actionPatchId = (e.content as any)?.patchId;
-					const action = (e.content as any)?.action;
-					if (
-						actionPatchId === lastProposedPatchId &&
-						(action === "ACCEPTED" || action === "REJECTED")
-					) {
+					if (actionPatchId === lastProposedPatchId) {
 						lastProposedPatchId = null;
 					}
 				}
 			}
 
-			const historyMessages = filteredEvents.map((e: any) => ({
-				id: e.id,
-				eventType: e.eventType,
-				role:
-					e.eventType === "patch_action" || e.eventType === "patch_proposed"
-						? "system"
-						: e.role === "USER"
-							? "user"
-							: e.role === "ASSISTANT"
-								? "model"
-								: "system",
-				text: extractText(e.content),
-				createdAt: new Date(e.createdAt),
-			}));
+			// 2. Map to UI messages
+			const historyMessages = events
+				.filter(
+					(e: any) =>
+						e.eventType === "message" ||
+						e.eventType === "patch_action" ||
+						e.eventType === "patch_proposed",
+				)
+				.map((e: any) => ({
+					id: e.id,
+					eventType: e.eventType,
+					role:
+						e.eventType === "patch_action" || e.eventType === "patch_proposed"
+							? "system"
+							: e.role === "USER"
+								? "user"
+								: e.role === "ASSISTANT"
+									? "model"
+									: "system",
+					text: extractText(e.content),
+					createdAt: new Date(e.createdAt),
+				}));
 
 			setMessages(historyMessages);
 			setPendingPatchId(lastProposedPatchId);
-		} catch (error: unknown) {
+		} catch (error) {
 			console.error("Error fetching history:", error);
-			setMessages([]);
-			setPendingPatchId(null);
 		} finally {
 			setIsLoading(false);
 		}
 	}, [canvasId, activeSessionId]);
 
-	// Fetch history when session changes
 	useEffect(() => {
 		refreshHistory();
 	}, [refreshHistory]);
@@ -274,38 +249,25 @@ const CanvasAgentProvider = ({
 					if (done) break;
 					buffer += decoder.decode(value, { stream: true });
 
-					while (buffer.length > 0) {
-						const startIdx = buffer.indexOf("{");
-						if (startIdx === -1) {
-							buffer = "";
-							break;
-						}
-
+					let startIdx;
+					while ((startIdx = buffer.indexOf("{")) !== -1) {
 						let depth = 0;
 						let inString = false;
 						let endIdx = -1;
 
 						for (let i = startIdx; i < buffer.length; i++) {
 							const char = buffer[i];
-
 							if (inString) {
-								if (char === "\\") {
+								if (char === "\\" && i + 1 < buffer.length) {
 									i++;
 									continue;
 								}
-								if (char === '"') {
-									inString = false;
-								}
+								if (char === '"') inString = false;
 							} else {
-								if (char === '"') {
-									inString = true;
-								} else if (char === "{") {
-									depth++;
-								} else if (char === "}") {
-									depth--;
-								}
+								if (char === '"') inString = true;
+								else if (char === "{") depth++;
+								else if (char === "}") depth--;
 							}
-
 							if (!inString && depth === 0) {
 								endIdx = i;
 								break;
@@ -319,18 +281,14 @@ const CanvasAgentProvider = ({
 
 						try {
 							const event = JSON.parse(jsonStr);
-
-							// Handle patch_proposed events
 							if (event.type === "patch_proposed" && event.patchId) {
 								setPendingPatchId(event.patchId);
 							}
-
 							if (
 								event.type === "raw_model_stream_event" &&
 								event.data?.type === "output_text_delta"
 							) {
 								aiTextAccumulator += event.data.delta || "";
-
 								setMessages((prev) =>
 									prev.map((msg) =>
 										msg.id === aiMsgId
@@ -340,7 +298,7 @@ const CanvasAgentProvider = ({
 								);
 							}
 						} catch (e) {
-							console.error("Error parsing extracted JSON:", e);
+							/* ignore parse error for partial chunks */
 						}
 					}
 				}
@@ -370,7 +328,6 @@ const CanvasAgentProvider = ({
 
 	const clearPendingPatch = useCallback(() => {
 		setPendingPatchId(null);
-		// Refresh history to show the accepted/rejected message
 		refreshHistory();
 	}, [refreshHistory]);
 
@@ -399,9 +356,8 @@ const CanvasAgentProvider = ({
 
 export function useCanvasAgent() {
 	const ctx = useContext(CanvasAgentContext);
-	if (!ctx) {
+	if (!ctx)
 		throw new Error("useCanvasAgent must be used inside CanvasAgentProvider");
-	}
 	return ctx;
 }
 

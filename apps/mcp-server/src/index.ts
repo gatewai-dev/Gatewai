@@ -132,8 +132,6 @@ server.registerResource(
 	},
 );
 
-// ==================== ASSET RESOURCES ====================
-
 /**
  * Resource: List all Assets
  * URI: gatewai://assets

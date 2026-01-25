@@ -27,6 +27,7 @@ export const nodeSchema = z.object({
 	height: z
 		.number()
 		.optional()
+		.nullable()
 		.describe("It is better to keep this undefined for auto-style"),
 	draggable: z.boolean().optional().default(true),
 	selectable: z.boolean().optional().default(true),
@@ -34,6 +35,7 @@ export const nodeSchema = z.object({
 	result: z
 		.record(z.unknown())
 		.optional()
+		.nullable()
 		.describe("The output data from this node"),
 	config: NodeConfigSchema.optional()
 		.nullable()

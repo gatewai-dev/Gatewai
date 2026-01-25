@@ -115,6 +115,20 @@ const canvasRoutes = new Hono<{ Variables: AuthHonoTypes }>({
 			},
 		});
 
+		if (agentSessionId) {
+			await prisma.event.create({
+				data: {
+					agentSessionId: agentSessionId,
+					eventType: "patch_proposed",
+					role: "ASSISTANT",
+					content: {
+						patchId: patch.id,
+						text: "Assistant proposed changes to the canvas.",
+					},
+				},
+			});
+		}
+
 		canvasAgentState.notifyPatch(id, patch.id);
 
 		return c.json(patch, 201);
@@ -142,7 +156,6 @@ const canvasRoutes = new Hono<{ Variables: AuthHonoTypes }>({
 				data: { status: "ACCEPTED" },
 			});
 
-			// Log event if session exists
 			if (patch.agentSessionId) {
 				await prisma.event.create({
 					data: {
