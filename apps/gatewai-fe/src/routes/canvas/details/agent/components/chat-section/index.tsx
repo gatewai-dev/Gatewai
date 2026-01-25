@@ -151,7 +151,7 @@ export function AgentChatSection({ onClose }: { onClose: () => void }) {
 			"[data-radix-scroll-area-viewport]",
 		);
 		if (viewport) {
-			viewport.scrollTo({ top: viewport.scrollHeight, behavior: "smooth" });
+			viewport.scrollTo({ top: viewport.scrollHeight });
 		}
 	}, [messages, isLoading]);
 
@@ -164,7 +164,7 @@ export function AgentChatSection({ onClose }: { onClose: () => void }) {
 			const viewport = scrollRef.current?.querySelector(
 				"[data-radix-scroll-area-viewport]",
 			);
-			viewport?.scrollTo({ top: viewport.scrollHeight, behavior: "smooth" });
+			viewport?.scrollTo({ top: viewport.scrollHeight });
 		}, 120);
 	}, [inputValue, isLoading, sendMessage]);
 
