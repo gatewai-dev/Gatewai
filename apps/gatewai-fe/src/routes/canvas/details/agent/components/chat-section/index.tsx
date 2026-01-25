@@ -1,11 +1,4 @@
-import {
-	ArrowRight,
-	Clock,
-	MoreHorizontal,
-	Plus,
-	StopCircle,
-	X,
-} from "lucide-react";
+import { ArrowRight, Clock, Plus, StopCircle, X } from "lucide-react";
 import { useCallback, useEffect, useRef, useState } from "react";
 import { Button } from "@/components/ui/button";
 import { Dialog, DialogContent, DialogTrigger } from "@/components/ui/dialog";
@@ -145,14 +138,17 @@ export function AgentChatSection({ onClose }: { onClose: () => void }) {
 	const [inputValue, setInputValue] = useState("");
 	const [isHistoryOpen, setIsHistoryOpen] = useState(false);
 
-	// --- Auto-scroll Logic ---
-	useEffect(() => {
+	const scrollToBottom = useCallback(() => {
 		const viewport = scrollRef.current?.querySelector(
 			"[data-radix-scroll-area-viewport]",
 		);
 		if (viewport) {
 			viewport.scrollTo({ top: viewport.scrollHeight });
 		}
+	}, []);
+	// --- Auto-scroll Logic ---
+	useEffect(() => {
+		scrollToBottom();
 	}, [messages, isLoading]);
 
 	const handleSubmit = useCallback(async () => {
@@ -161,12 +157,9 @@ export function AgentChatSection({ onClose }: { onClose: () => void }) {
 		setInputValue("");
 		await sendMessage(msg);
 		setTimeout(() => {
-			const viewport = scrollRef.current?.querySelector(
-				"[data-radix-scroll-area-viewport]",
-			);
-			viewport?.scrollTo({ top: viewport.scrollHeight });
+			scrollToBottom();
 		}, 120);
-	}, [inputValue, isLoading, sendMessage]);
+	}, [inputValue, isLoading, sendMessage, scrollToBottom]);
 
 	const isNewSession = !activeSessionId || messages.length === 0;
 

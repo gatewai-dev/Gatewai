@@ -5,18 +5,18 @@ ENV_FILE=".env"
 
 echo "Fetching secrets from Google Secret Manager..."
 
-# 1. Fetch secrets
+# Fetch secrets
 GEMINI_API_KEY=$(gcloud secrets versions access latest --secret="GEMINI_API_KEY")
 GOOGLE_CLIENT_ID=$(gcloud secrets versions access latest --secret="GOOGLE_CLIENT_ID")
 GOOGLE_CLIENT_SECRET=$(gcloud secrets versions access latest --secret="GOOGLE_CLIENT_SECRET")
 
-# 2. Check if secrets were fetched successfully before overwriting
+# Check if secrets were fetched successfully before overwriting
 if [ -z "$GEMINI_API_KEY" ]; then
   echo "Error: Failed to fetch secrets. Aborting to protect existing .env file."
   exit 1
 fi
 
-# 3. Create/Override the .env file
+# Create/Override the .env file
 cat << EOF > "$ENV_FILE"
 # --- App Configuration ---
 PORT=8081

@@ -89,9 +89,7 @@ You MUST present a detailed plan including:
    - Position rationale
    - Connection logic
 
-3. **Rationale** - Why this architecture vs. alternatives
-
-4. **User Confirmation**
+3. **User Confirmation**
    - "This workflow will create [X] nodes and [Y] connections."
    - "Should I proceed with building this workflow?"
    - WAIT for explicit confirmation unless user request is unambiguous
@@ -156,6 +154,7 @@ When building the workflow:
 - Preview: Must have EXACTLY one input connection
 - File: User uploads via UI, only provide output handle
 - Transient nodes (isTransient=true): Don't persist results long-term
+- Terminal nodes (isTerminal=true): Make sure previous results exists in new patch.
 - Text to speect node should not be used for character dialogues as Veo can produce lip synced dialogues in video generation.
 - Text Merger is a powerful tool for prompt style consistency
 - Video generation models can only generate 8 seconds videos MAX
