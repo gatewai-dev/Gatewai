@@ -380,24 +380,6 @@ const useEditorShortcuts = () => {
 					fitView();
 				}
 			}
-
-			// Nudge
-			if (
-				selectedId &&
-				["ArrowUp", "ArrowDown", "ArrowLeft", "ArrowRight"].includes(e.key)
-			) {
-				e.preventDefault();
-				const shift = e.shiftKey ? 10 : 1;
-				const updates: Partial<LocalCompositorLayer> = {};
-
-				// We need current values, but we can't access them easily in this closure without 'layers' dependency
-				// So we rely on functional updates in the consumer or just assume standard nudge
-				// Simplified: We need to read from state.
-				// NOTE: To fix "stale closure" on Nudge, we should ideally use a functional update
-				// exposed by context that accepts a callback based on previous state.
-				// For brevity in this refactor, we are using the imperative updateLayer which might need current state.
-				// Better approach: Let the consumer handle keydown or expose a "nudge" function.
-			}
 		};
 
 		const handleKeyUp = (e: KeyboardEvent) => {
@@ -851,7 +833,6 @@ const Canvas: React.FC = () => {
 				cursor: mode === "pan" ? "grab" : "default",
 			}}
 			onClick={(e) => {
-				// Only deselect if clicking the empty stage or background
 				if (
 					e.target === stageRef.current ||
 					e.target.name() === "artboard-bg"
@@ -862,10 +843,8 @@ const Canvas: React.FC = () => {
 			onWheel={handleWheel}
 			draggable={mode === "pan"}
 			onDragEnd={(e) => {
-				// Only update stage position if the stage itself was dragged
-				if (e.target === stageRef.current) {
+				if (e.target === stageRef.current)
 					setStagePos(stageRef.current.position());
-				}
 			}}
 			scale={{ x: scale, y: scale }}
 			position={stagePos}
@@ -1294,9 +1273,7 @@ const InspectorPanel: React.FC = () => {
 							<Select
 								value={selectedLayer.blendMode}
 								onValueChange={(v) =>
-									updateLayer(selectedLayer.id, {
-										blendMode: v as LocalCompositorLayer["blendMode"],
-									})
+									updateLayer(selectedLayer.id, { blendMode: v })
 								}
 							>
 								<SelectTrigger className="h-8 text-[11px] bg-white/5 border-white/10">
@@ -1574,7 +1551,6 @@ export const ImageDesignerEditor: React.FC<ImageDesignerEditorProps> = ({
 	const handleSave = () => {
 		const layerUpdates = layers.reduce<Record<string, CompositorLayer>>(
 			(acc, l) => {
-				// biome-ignore lint/correctness/noUnusedVariables: Logical method.
 				const { computedHeight, computedWidth, ...rest } = l;
 				acc[l.inputHandleId] = rest;
 				return acc;
