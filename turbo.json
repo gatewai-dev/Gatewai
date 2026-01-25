@@ -38,6 +38,10 @@
 		},
 		"dev-mcp": {
 			"inputs": ["$TURBO_DEFAULT$", ".env.development"]
+		},
+		"test": {
+			"dependsOn": ["^build", "db:generate"],
+			"cache": false
 		}
 	}
 }

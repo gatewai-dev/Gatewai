@@ -11,16 +11,14 @@
 		"changeset": "changeset",
 		"version-packages": "changeset version",
 		"release": "changeset publish",
-
 		"start-cli": "turbo run start-cli --filter=@gatewai/fe",
 		"start-mcp": "turbo run start-cli --filter=@gatewai/mcp-server",
-
 		"db:migrate": "turbo run db:migrate --filter=@gatewai/db",
 		"db:generate": "turbo run db:generate --filter=@gatewai/db",
 		"db:seed": "turbo run db:seed --filter=@gatewai/db",
 		"db:reset": "turbo run db:reset --filter=@gatewai/db",
 		"db:deploy": "turbo run db:deploy --filter=@gatewai/db",
-
+		"test": "turbo run test",
 		"lefthook-install": "lefthook install",
 		"mcp-inspector": "npx @modelcontextprotocol/inspector"
 	},
@@ -29,7 +27,8 @@
 		"@changesets/cli": "^2.3.0",
 		"dotenv": "^17.2.3",
 		"lefthook": "^2.0.11",
-		"turbo": "^2.5.4"
+		"turbo": "^2.5.4",
+		"vitest": "^4.0.18"
 	},
 	"packageManager": "pnpm@10.13.1",
 	"engines": {
