@@ -18,8 +18,8 @@ Gatewai utilizes a **Flexible Hybrid Model** where nodes are processed across bo
 
 Stop switching between tools. Gatewai offers a unified interface for:
 
-* **Video**: Text-to-video, cinematic extensions (up to 148s), and first-to-last frame interpolation.
-* **Image**: Generative fill, real-time painting, and advanced compositional tools.
+* **Video**: Text-to-video and first-to-last frame interpolation, video composition.
+* **Image**: Generative fill, real-time painting, and advanced compositional tools, image composition.
 * **Audio**: High-fidelity text-to-speech and deep audio understanding.
 * **Text**: State-of-the-art LLM orchestration using Gemini 3.
 
@@ -35,7 +35,8 @@ Don't wait for results. Our interactive canvas allows for instant feedback, enab
 * **AI-Powered Paint**: Draw, mask, and fill with generative precision directly on the canvas.
 * **Intelligent Compositor**: Merge images, text, and AI outputs into complex, multi-layered masterpieces.
 * **Modular LLM Chains**: Build sophisticated logic by connecting LLMs with real-world media.
-* **Seamless Asset Management**: Unified handling of all your media assets with cloud-native storage.
+* **Gatewai Copilot**: Let copilot help you create modular, extensible workflow logic in which each entity becomes a variable inside the workflow.
+* **Asset Management**: Unified handling of all your media assets with cloud-native storage.
 
 ### Media Editing 🎬 🎥 🎞️ 🍿
 
