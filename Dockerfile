@@ -39,6 +39,10 @@ RUN pnpm run build --filter=@gatewai/fe...
 # 3. Deploy production-ready folder
 RUN pnpm deploy --filter=@gatewai/fe --prod --legacy /app/deploy
 
+# Copy Prisma schema for migrations
+RUN mkdir -p /app/deploy/packages/db/prisma && \
+    cp -r packages/db/prisma/* /app/deploy/packages/db/prisma/
+
 
 RUN mkdir -p /app/deploy/node_modules/@gatewai/db/dist && \
     cp packages/db/generated/client/libquery_engine-debian-openssl-1.1.x.so.node \

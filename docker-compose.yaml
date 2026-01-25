@@ -22,7 +22,7 @@ services:
       - redis_data:/data
 
   app:
-    build: .
+    image: ${GAR_LOCATION}-docker.pkg.dev/${PROJECT_ID}/${REPOSITORY}/${IMAGE_APP}:latest
     container_name: gatewai-app
     restart: unless-stopped
     depends_on:
@@ -54,9 +54,7 @@ services:
     entrypoint: "/bin/sh -c 'trap exit TERM; while :; do certbot renew; sleep 12h & wait $${!}; done;'"
 
   mcp:
-    build:
-      context: .
-      dockerfile: Dockerfile.mcp
+    image: ${GAR_LOCATION}-docker.pkg.dev/${PROJECT_ID}/${REPOSITORY}/${IMAGE_MCP}:latest
     container_name: gatewai-mcp
     restart: unless-stopped
     ports:

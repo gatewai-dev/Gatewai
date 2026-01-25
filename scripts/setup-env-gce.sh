@@ -24,6 +24,13 @@ VITE_BASE_URL=https://gatewai.studio
 BASE_URL=https://gatewai.studio
 GCS_ASSETS_BUCKET=gatewai-media
 
+# --- Registry Configuration ---
+PROJECT_ID=gatewai-466716
+GAR_LOCATION=us-central1
+REPOSITORY=gatewai
+IMAGE_APP=gatewai-app
+IMAGE_MCP=gatewai-mcp
+
 # --- Secrets (Fetched from GCP) ---
 GEMINI_API_KEY=$GEMINI_API_KEY
 GOOGLE_CLIENT_ID=$GOOGLE_CLIENT_ID
