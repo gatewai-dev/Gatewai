@@ -81,8 +81,6 @@ RUN corepack enable && \
     mkdir -p /home/gatewai/.cache/corepack && \
     chown -R gatewai:nodejs /home/gatewai
 
-COPY --chown=gatewai:nodejs entrypoint.sh /app
-RUN chmod +x /app/entrypoint.sh
 
 USER gatewai
 EXPOSE 8081
