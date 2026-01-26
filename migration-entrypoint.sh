@@ -58,7 +58,7 @@ sleep 5
 
 # Test database connection with Prisma
 echo "Testing Prisma database connection..."
-if ! npx prisma db execute --schema "$SCHEMA_PATH" --stdin <<< "SELECT 1;" 2>&1; then
+if ! npx prisma db execute --stdin <<< "SELECT 1;" 2>&1; then
   echo "ERROR: Prisma cannot connect to database"
   echo "Attempting to show Prisma version and debug info..."
   npx prisma --version
@@ -69,7 +69,7 @@ echo "✓ Prisma database connection successful"
 
 # Run migrations
 echo "Running Prisma migrations..."
-npx prisma migrate deploy --schema "$SCHEMA_PATH"
+npx prisma migrate deploy
 
 MIGRATION_EXIT_CODE=$?
 
