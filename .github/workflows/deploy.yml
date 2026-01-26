@@ -67,7 +67,7 @@ jobs:
           host: ${{ secrets.GCE_INSTANCE_IP }}
           username: okanasl
           key: ${{ secrets.GCE_SSH_PRIVATE_KEY }}
-          source: "docker-compose.yml,scripts/setup-env-gce.sh"
+          source: "docker-compose.yaml,scripts/setup-env-gce.sh"
           target: "/home/okanasl/gatewai"
 
       - name: Deploy to GCE via SSH
