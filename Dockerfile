@@ -33,6 +33,7 @@ COPY --from=pruner /app/out/full/ .
 # 1. Generate Prisma Client (Generates into packages/db/generated/client)
 RUN pnpm --filter=@gatewai/db db:generate
 
+ENV NODE_OPTIONS="--max-old-space-size=6144"
 # 2. Build the app
 RUN pnpm run build --filter=@gatewai/fe...
 
@@ -46,7 +47,7 @@ RUN mkdir -p /app/deploy/packages/db/prisma && \
 
 RUN mkdir -p /app/deploy/node_modules/@gatewai/db/dist && \
     cp packages/db/generated/client/libquery_engine-debian-openssl-1.1.x.so.node \
-       /app/deploy/node_modules/@gatewai/db/dist/
+        /app/deploy/node_modules/@gatewai/db/dist/
 
 
 WORKDIR /app/deploy
@@ -79,6 +80,9 @@ COPY --from=builder --chown=gatewai:nodejs /app/deploy .
 RUN corepack enable && \
     mkdir -p /home/gatewai/.cache/corepack && \
     chown -R gatewai:nodejs /home/gatewai
+
+COPY --chown=gatewai:nodejs scripts/migrate.sh /app/scripts/
+RUN chmod +x /app/scripts/migrate.sh
 
 USER gatewai
 EXPOSE 8081

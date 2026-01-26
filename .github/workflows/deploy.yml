@@ -59,14 +59,33 @@ jobs:
         uses: appleboy/ssh-action@v1.0.3
         with:
           host: ${{ secrets.GCE_INSTANCE_IP }}
-          username: gatewai
+          username: okn.aslnkn
           key: ${{ secrets.GCE_SSH_PRIVATE_KEY }}
           script: |
-            cd /home/gatewai/gc-hackathon
+            # Define the project directory
+            PROJECT_DIR="/home/okanasl/gatewai"
+
+            # Clone repository if it doesn't exist
+            if [ ! -d "$PROJECT_DIR" ]; then
+              echo "Repository not found. Cloning..."
+              git clone https://github.com/${{ github.repository }}.git "$PROJECT_DIR"
+            fi
+
+            cd "$PROJECT_DIR"
+
+            # 1. Sync the code to the triggered tag
+            git fetch --tags
             git checkout ${{ github.ref_name }}
+
+            # 2. Authenticate and Pull
             gcloud auth configure-docker ${{ env.GAR_LOCATION }}-docker.pkg.dev
             ./scripts/setup-env-gce.sh
             docker compose pull
+
+            # 3. Migrate and Update Containers
             docker compose run --rm app npx prisma migrate deploy --schema ./packages/db/prisma/schema.prisma
             docker compose up -d --remove-orphans
 
+            # 4. Cleanup (The Space Saver)
+            # This removes all images not currently in use by the running containers
+            docker image prune -af
