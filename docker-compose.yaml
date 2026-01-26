@@ -8,7 +8,7 @@ services:
     environment:
       POSTGRES_USER: postgres
       POSTGRES_PASSWORD: postgres
-      POSTGRES_DB: gatewai
+      POSTGRES_DB: gatewai_db
     volumes:
       - postgres_data:/var/lib/postgresql
 
