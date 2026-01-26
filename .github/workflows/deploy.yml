@@ -40,6 +40,7 @@ jobs:
           tags: |
             ${{ env.GAR_LOCATION }}-docker.pkg.dev/${{ env.PROJECT_ID }}/${{ env.REPOSITORY }}/${{ env.IMAGE_APP }}:latest
             ${{ env.GAR_LOCATION }}-docker.pkg.dev/${{ env.PROJECT_ID }}/${{ env.REPOSITORY }}/${{ env.IMAGE_APP }}:${{ github.sha }}
+            ${{ env.GAR_LOCATION }}-docker.pkg.dev/${{ env.PROJECT_ID }}/${{ env.REPOSITORY }}/${{ env.IMAGE_APP }}:${{ github.ref_name }}
 
       - name: Build and Push MCP
         uses: docker/build-push-action@v5
@@ -50,6 +51,7 @@ jobs:
           tags: |
             ${{ env.GAR_LOCATION }}-docker.pkg.dev/${{ env.PROJECT_ID }}/${{ env.REPOSITORY }}/${{ env.IMAGE_MCP }}:latest
             ${{ env.GAR_LOCATION }}-docker.pkg.dev/${{ env.PROJECT_ID }}/${{ env.REPOSITORY }}/${{ env.IMAGE_MCP }}:${{ github.sha }}
+            ${{ env.GAR_LOCATION }}-docker.pkg.dev/${{ env.PROJECT_ID }}/${{ env.REPOSITORY }}/${{ env.IMAGE_MCP }}:${{ github.ref_name }}
 
   deploy:
     needs: build-and-push
@@ -65,6 +67,9 @@ jobs:
             # Define the project directory
             PROJECT_DIR="/home/okanasl/gatewai"
 
+            # Fix git ownership issue
+            git config --global --add safe.directory "$PROJECT_DIR"
+
             # Clone repository if it doesn't exist
             if [ ! -d "$PROJECT_DIR" ]; then
               echo "Repository not found. Cloning..."
@@ -79,11 +84,16 @@ jobs:
 
             # 2. Authenticate and Pull
             gcloud auth configure-docker ${{ env.GAR_LOCATION }}-docker.pkg.dev
+            chmod +x ./scripts/setup-env-gce.sh
             ./scripts/setup-env-gce.sh
+            
+            # Export tag for docker compose
+            export IMAGE_TAG=${{ github.ref_name }}
             docker compose pull
 
             # 3. Migrate and Update Containers
-            docker compose run --rm app npx prisma migrate deploy --schema ./packages/db/prisma/schema.prisma
+            # Run migration using the app container but with pnpm command
+            docker compose run --rm app pnpm --filter @gatewai/db db:deploy
             docker compose up -d --remove-orphans
 
             # 4. Cleanup (The Space Saver)
