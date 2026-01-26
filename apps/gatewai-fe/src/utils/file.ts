@@ -47,7 +47,6 @@ function GetAssetEndpoint(fileAsset: FileAsset) {
 	const extension = Object.entries(MIME_TYPES).find(
 		([_, mime]) => mime === fileAsset.mimeType,
 	)?.[0];
-	console.log({ baseUrl, extension });
 
 	// Remotion needs this extension to trigger the correct 'bunny'
 	return extension ? `${baseUrl}.${extension}` : baseUrl;
