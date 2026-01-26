@@ -61,7 +61,7 @@ jobs:
         uses: appleboy/ssh-action@v1.0.3
         with:
           host: ${{ secrets.GCE_INSTANCE_IP }}
-          username: okn.aslnkn
+          username: okanasl
           key: ${{ secrets.GCE_SSH_PRIVATE_KEY }}
           script: |
             # Define the project directory
