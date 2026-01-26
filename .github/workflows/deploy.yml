@@ -57,45 +57,48 @@ jobs:
     needs: build-and-push
     runs-on: ubuntu-latest
     steps:
+      - name: Checkout
+        uses: actions/checkout@v4
+
+      # Instead of cloning on the server, we send the compose and script files directly
+      - name: Copy files to GCE
+        uses: appleboy/scp-action@v0.1.7
+        with:
+          host: ${{ secrets.GCE_INSTANCE_IP }}
+          username: okanasl
+          key: ${{ secrets.GCE_SSH_PRIVATE_KEY }}
+          source: "docker-compose.yml,scripts/setup-env-gce.sh"
+          target: "/home/okanasl/gatewai"
+
       - name: Deploy to GCE via SSH
         uses: appleboy/ssh-action@v1.0.3
         with:
           host: ${{ secrets.GCE_INSTANCE_IP }}
           username: okanasl
           key: ${{ secrets.GCE_SSH_PRIVATE_KEY }}
+          envs: GAR_LOCATION,PROJECT_ID,REPOSITORY,IMAGE_APP,IMAGE_MCP
           script: |
-            # Define the project directory
             PROJECT_DIR="/home/okanasl/gatewai"
-
-            # Fix git ownership issue
-            git config --global --add safe.directory "$PROJECT_DIR"
-
-            # Clone repository if it doesn't exist
-            if [ ! -d "$PROJECT_DIR" ]; then
-              echo "Repository not found. Cloning..."
-              git clone https://github.com/${{ github.repository }}.git "$PROJECT_DIR"
-            fi
-
             cd "$PROJECT_DIR"
 
-            # 1. Sync the code to the triggered tag
-            git fetch --tags
-            git checkout ${{ github.ref_name }}
+            # 1. Authenticate Docker with Google Artifact Registry
+            # Ensure the VM has the 'Artifact Registry Reader' role assigned
+            gcloud auth configure-docker ${{ env.GAR_LOCATION }}-docker.pkg.dev --quiet
 
-            # 2. Authenticate and Pull
-            gcloud auth configure-docker ${{ env.GAR_LOCATION }}-docker.pkg.dev
+            # 2. Setup Environment
             chmod +x ./scripts/setup-env-gce.sh
             ./scripts/setup-env-gce.sh
             
             # Export tag for docker compose
             export IMAGE_TAG=${{ github.ref_name }}
+            
+            # 3. Pull and Update
             docker compose pull
-
-            # 3. Migrate and Update Containers
-            # Run migration using the app container but with pnpm command
+            
+            # Run migration using the newly pulled app container
             docker compose run --rm app pnpm --filter @gatewai/db db:deploy
+            
             docker compose up -d --remove-orphans
 
-            # 4. Cleanup (The Space Saver)
-            # This removes all images not currently in use by the running containers
+            # 4. Cleanup
             docker image prune -af
