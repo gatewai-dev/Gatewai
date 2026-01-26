@@ -11,6 +11,7 @@ env:
   REPOSITORY: gatewai
   IMAGE_APP: gatewai-app
   IMAGE_MCP: gatewai-mcp
+  IMAGE_MIGRATION: gatewai-migration
 
 jobs:
   build-and-push:
@@ -30,6 +31,17 @@ jobs:
       - name: 'Docker Auth'
         run: |-
           gcloud auth configure-docker ${{ env.GAR_LOCATION }}-docker.pkg.dev
+
+      - name: Build and Push Migration
+        uses: docker/build-push-action@v5
+        with:
+          context: .
+          file: ./Dockerfile.migration
+          push: true
+          tags: |
+            ${{ env.GAR_LOCATION }}-docker.pkg.dev/${{ env.PROJECT_ID }}/${{ env.REPOSITORY }}/${{ env.IMAGE_MIGRATION }}:latest
+            ${{ env.GAR_LOCATION }}-docker.pkg.dev/${{ env.PROJECT_ID }}/${{ env.REPOSITORY }}/${{ env.IMAGE_MIGRATION }}:${{ github.sha }}
+            ${{ env.GAR_LOCATION }}-docker.pkg.dev/${{ env.PROJECT_ID }}/${{ env.REPOSITORY }}/${{ env.IMAGE_MIGRATION }}:${{ github.ref_name }}
 
       - name: Build and Push App
         uses: docker/build-push-action@v5
@@ -60,14 +72,13 @@ jobs:
       - name: Checkout
         uses: actions/checkout@v4
 
-      # Instead of cloning on the server, we send the compose and script files directly
       - name: Copy files to GCE
         uses: appleboy/scp-action@v0.1.7
         with:
           host: ${{ secrets.GCE_INSTANCE_IP }}
           username: okanasl
           key: ${{ secrets.GCE_SSH_PRIVATE_KEY }}
-          source: "docker-compose.yaml,scripts/setup-env-gce.sh"
+          source: "docker-compose.yaml,scripts/setup-env-gce.sh,migration-entrypoint.sh"
           target: "/home/okanasl/gatewai"
 
       - name: Deploy to GCE via SSH
@@ -76,13 +87,12 @@ jobs:
           host: ${{ secrets.GCE_INSTANCE_IP }}
           username: okanasl
           key: ${{ secrets.GCE_SSH_PRIVATE_KEY }}
-          envs: GAR_LOCATION,PROJECT_ID,REPOSITORY,IMAGE_APP,IMAGE_MCP
+          envs: GAR_LOCATION,PROJECT_ID,REPOSITORY,IMAGE_APP,IMAGE_MCP,IMAGE_MIGRATION
           script: |
             PROJECT_DIR="/home/okanasl/gatewai"
             cd "$PROJECT_DIR"
 
             # 1. Authenticate Docker with Google Artifact Registry
-            # Ensure the VM has the 'Artifact Registry Reader' role assigned
             gcloud auth configure-docker ${{ env.GAR_LOCATION }}-docker.pkg.dev --quiet
 
             # 2. Setup Environment
@@ -94,21 +104,35 @@ jobs:
             export REPOSITORY="${REPOSITORY}"
             export IMAGE_APP="${IMAGE_APP}"
             export IMAGE_MCP="${IMAGE_MCP}"
+            export IMAGE_MIGRATION="${IMAGE_MIGRATION}"
             export IMAGE_TAG="${{ github.ref_name }}"
-
 
             echo "GAR_LOCATION: $GAR_LOCATION"
             echo "PROJECT_ID: $PROJECT_ID"
             echo "IMAGE_APP: $IMAGE_APP"
+            echo "IMAGE_MCP: $IMAGE_MCP"
+            echo "IMAGE_MIGRATION: $IMAGE_MIGRATION"
             echo "IMAGE_TAG: $IMAGE_TAG"
 
-            # 3. Pull and Update
+            # 3. Pull latest images
             docker compose pull
 
-            # Run migration using the newly pulled app container
-            docker compose run --rm app pnpm --filter @gatewai/db db:deploy
+            # 4. Stop running services (except postgres and redis)
+            docker compose stop app mcp nginx certbot || true
 
+            # 5. Run migration service (will run once and exit)
+            docker compose up migration --abort-on-container-exit
+            
+            # Check if migration succeeded
+            if [ $? -ne 0 ]; then
+              echo "Migration failed! Aborting deployment."
+              exit 1
+            fi
+
+            echo "Migration completed successfully"
+
+            # 6. Start all services
             docker compose up -d --remove-orphans
 
-            # 4. Cleanup
-            docker image prune -af
+            # 7. Cleanup old images
+            docker image prune -af --filter "until=24h"

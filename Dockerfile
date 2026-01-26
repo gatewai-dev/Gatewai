@@ -87,6 +87,5 @@ RUN chmod +x /app/entrypoint.sh
 USER gatewai
 EXPOSE 8081
 
-ENTRYPOINT ["/app/entrypoint.sh"]
 # Ensure we use the pnpm from the deployed directory
 CMD ["pnpm", "run", "start-cli"]

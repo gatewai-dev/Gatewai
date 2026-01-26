@@ -1,0 +1,61 @@
+# Stage 0: Base setup
+FROM node:22-bullseye-slim AS base
+WORKDIR /app
+ENV NODE_ENV=production
+
+RUN apt-get update && apt-get install -y openssl && rm -rf /var/lib/apt/lists/*
+
+# Stage 1: Pruner
+FROM base AS pruner
+RUN npm install -g turbo
+COPY turbo.json package.json pnpm-workspace.yaml pnpm-lock.yaml ./
+COPY packages/ packages/
+COPY apps/ apps/
+RUN turbo prune @gatewai/db --docker
+
+# Stage 2: Builder
+FROM base AS builder
+
+COPY --from=pruner /app/out/json/ .
+COPY --from=pruner /app/out/pnpm-lock.yaml ./pnpm-lock.yaml
+
+RUN corepack enable && pnpm install --frozen-lockfile
+
+COPY --from=pruner /app/out/full/ .
+
+# Generate Prisma Client
+RUN pnpm --filter=@gatewai/db db:generate
+
+# Deploy production-ready folder for db package only
+RUN pnpm deploy --filter=@gatewai/db --prod /app/deploy
+
+# Copy Prisma schema and generated client
+RUN mkdir -p /app/deploy/packages/db/prisma && \
+    cp -r packages/db/prisma/* /app/deploy/packages/db/prisma/ && \
+    mkdir -p /app/deploy/packages/db/generated && \
+    cp -r packages/db/generated/* /app/deploy/packages/db/generated/
+
+# Stage 3: Runner
+FROM base AS runner
+
+RUN groupadd --system --gid 1001 nodejs && \
+    useradd --system --uid 1001 -m -g nodejs gatewai
+
+ENV COREPACK_HOME=/home/gatewai/.cache/corepack
+
+WORKDIR /app
+
+# Copy the deployment folder
+COPY --from=builder --chown=gatewai:nodejs /app/deploy .
+
+RUN corepack enable && \
+    mkdir -p /home/gatewai/.cache/corepack && \
+    chown -R gatewai:nodejs /home/gatewai
+
+# Copy migration entrypoint
+COPY --chown=gatewai:nodejs migration-entrypoint.sh /app/
+RUN chmod +x /app/migration-entrypoint.sh
+
+USER gatewai
+
+ENTRYPOINT ["/app/migration-entrypoint.sh"]
