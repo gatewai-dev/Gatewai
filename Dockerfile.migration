@@ -26,8 +26,8 @@ COPY --from=pruner /app/out/full/ .
 # Generate Prisma Client
 RUN pnpm --filter=@gatewai/db db:generate
 
-# Deploy production-ready folder for db package only
-RUN pnpm deploy --filter=@gatewai/db --prod /app/deploy
+# Deploy production-ready folder for db package only with --legacy flag
+RUN pnpm deploy --filter=@gatewai/db --prod --legacy /app/deploy
 
 # Copy Prisma schema and generated client
 RUN mkdir -p /app/deploy/packages/db/prisma && \
