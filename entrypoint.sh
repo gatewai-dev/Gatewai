@@ -7,43 +7,27 @@ if [ -z "${DATABASE_URL:-}" ]; then
   exit 1
 fi
 
-# 2. Parse DATABASE_URL for connectivity checks
-DB_STRING="${DATABASE_URL#postgresql://}"
-DB_STRING="${DB_STRING#postgres://}"
-
-DB_USER_PASS="${DB_STRING%%@*}"
-DB_USER="${DB_USER_PASS%%:*}"
-
-DB_HOST_PORT_DB="${DB_STRING#*@}"
-DB_HOST_PORT="${DB_HOST_PORT_DB%%/*}"
-DB_HOST="${DB_HOST_PORT%%:*}"
-# Default to 5432 if port is not specified in the URL
-DB_PORT="${DB_HOST_PORT#*:}"
-if [ "$DB_PORT" = "$DB_HOST" ]; then DB_PORT=5432; fi
-
-# 3. Wait for PostgreSQL to be reachable
-echo "Waiting for PostgreSQL server at $DB_HOST:$DB_PORT..."
-timeout=60
-elapsed=0
-while ! pg_isready -h "$DB_HOST" -p "$DB_PORT" -U "$DB_USER" > /dev/null 2>&1; do
-  if [ $elapsed -ge $timeout ]; then
-    echo "ERROR: PostgreSQL not ready after ${timeout}s"
-    exit 1
-  fi
-  sleep 1
-  elapsed=$((elapsed + 1))
-done
-
-# 4. Run Migrations
-echo "PostgreSQL is up. Running migrations..."
+# 2. Migration Loop
+# This replaces the need for pg_isready by trying the migration directly
+echo "Attempting to run migrations..."
 cd /app
 
-if ! npx prisma migrate deploy --schema ./packages/db/prisma/schema.prisma; then
-  echo "ERROR: Migration failed!"
+MAX_RETRIES=30
+COUNT=0
+
+# Loop until prisma can connect and run or we hit the timeout
+until npx prisma migrate deploy --schema ./packages/db/prisma/schema.prisma || [ $COUNT -eq $MAX_RETRIES ]; do
+  echo "Database not ready yet... (Attempt $((COUNT+1))/$MAX_RETRIES)"
+  sleep 2
+  COUNT=$((COUNT + 1))
+done
+
+if [ $COUNT -eq $MAX_RETRIES ]; then
+  echo "ERROR: Migration failed after $MAX_RETRIES attempts."
   exit 1
 fi
 
 echo "Migrations completed successfully!"
 
-# 5. Hand off to CMD
+# 3. Hand off to CMD
 exec "$@"
