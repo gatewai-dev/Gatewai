@@ -81,11 +81,12 @@ RUN corepack enable && \
     mkdir -p /home/gatewai/.cache/corepack && \
     chown -R gatewai:nodejs /home/gatewai
 
-COPY --chown=gatewai:nodejs scripts/migrate.sh /app/scripts/
-RUN chmod +x /app/scripts/migrate.sh
+COPY --chown=gatewai:nodejs entrypoint.sh /app
+RUN chmod +x /app/entrypoint.sh
 
 USER gatewai
 EXPOSE 8081
 
+ENTRYPOINT ["/app/entrypoint.sh"]
 # Ensure we use the pnpm from the deployed directory
 CMD ["pnpm", "run", "start-cli"]
