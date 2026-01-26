@@ -29,7 +29,9 @@ export const MIME_TYPES: Record<string, string> = {
 	txt: "text/plain",
 };
 
-export const BASE_URL = import.meta.env.VITE_BASE_URL;
+import { getEnv } from "./env";
+
+export const BASE_URL = getEnv("VITE_BASE_URL");
 
 /**
  * Appends a file extension hint to the URL.

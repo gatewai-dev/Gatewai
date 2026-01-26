@@ -58,7 +58,16 @@ const app = new Hono<{
 			credentials: true,
 		}),
 	)
-	.route("/api/v1", v1Router);
+	.route("/api/v1", v1Router)
+	.get("/env.js", (c) => {
+		const env = {
+			VITE_BASE_URL: ENV_CONFIG.BASE_URL,
+		};
+		return c.text(`window.GATEWAI_ENV = ${JSON.stringify(env)};`, 200, {
+			"Content-Type": "application/javascript",
+		});
+	});
+
 // Serve frontend dist (located in gatewai-fe root)
 
 // We're splitting here so that RPC types works well - At least for VS Code

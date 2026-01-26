@@ -1,7 +1,10 @@
 import { createAuthClient } from "better-auth/react";
 
+import { getEnv } from "../utils/env";
+
 const authClient = createAuthClient({
-	baseURL: import.meta.env.VITE_BASE_URL,
+	baseURL: getEnv("VITE_BASE_URL"),
+
 	fetchOptions: {
 		credentials: "include",
 	},
