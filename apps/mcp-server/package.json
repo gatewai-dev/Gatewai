@@ -7,7 +7,8 @@
 	"scripts": {
 		"dev": "tsx watch src/index.ts",
 		"build": "tsdown src/index.ts --format esm --clean --dts",
-		"start-cli": "node dist/index.mjs"
+		"start-cli": "node dist/index.mjs",
+		"start-mcp": "node dist/index.mjs"
 	},
 	"keywords": [],
 	"author": "Okan Aslankan",
