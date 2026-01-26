@@ -67,7 +67,10 @@ RUN apt-get update && apt-get install -y --no-install-recommends \
     libcairo2 libpango-1.0-0 libjpeg62-turbo libgif7 \
     librsvg2-2 libgl1-mesa-glx libgl1-mesa-dri ffmpeg \
     libxi6 libxext6 libxrender1 libasound2 \
+    xvfb \
     && rm -rf /var/lib/apt/lists/*
+
+ENV DISPLAY=:99
 
 RUN groupadd --system --gid 1001 nodejs && \
     useradd --system --uid 1001 -m -g nodejs gatewai
@@ -86,4 +89,4 @@ USER gatewai
 EXPOSE 8081
 
 # Ensure we use the pnpm from the deployed directory
-CMD ["pnpm", "run", "start-cli"]
+CMD ["sh", "-c", "Xvfb :99 -screen 0 1024x768x24 & pnpm run start-cli"]
