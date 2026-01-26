@@ -34,34 +34,22 @@ fi
 
 echo "✓ Found Prisma schema at $SCHEMA_PATH"
 
-# Wait for TCP connection
-MAX_RETRIES=30
-COUNT=0
-
-echo "Waiting for database TCP connection..."
-until nc -z "$DB_HOST" "$DB_PORT" 2>/dev/null || [ $COUNT -eq $MAX_RETRIES ]; do
-  echo "Waiting for ${DB_HOST}:${DB_PORT}... (Attempt $((COUNT+1))/$MAX_RETRIES)"
-  sleep 2
-  COUNT=$((COUNT + 1))
-done
-
-if [ $COUNT -eq $MAX_RETRIES ]; then
-  echo "ERROR: Cannot reach database at ${DB_HOST}:${DB_PORT}"
+# Check for Prisma CLI in node_modules
+if [ ! -f "./node_modules/.bin/prisma" ]; then
+  echo "ERROR: Prisma CLI not found in node_modules/.bin/"
+  echo "Available binaries:"
+  ls -la ./node_modules/.bin/ 2>/dev/null || echo "No binaries found"
   exit 1
 fi
 
-echo "✓ Database TCP connection established"
+echo "✓ Found Prisma CLI at ./node_modules/.bin/prisma"
 
-# Additional wait for database to be fully ready
-echo "Waiting for database to be fully initialized..."
-sleep 5
+# Use direct path to Prisma CLI
+PRISMA_CLI="./node_modules/.bin/prisma"
 
-
-echo "✓ Prisma database connection successful"
-
-# Run migrations
+# Run migrations using direct path to Prisma
 echo "Running Prisma migrations..."
-npx prisma@6.19.0 migrate deploy
+$PRISMA_CLI migrate deploy
 
 MIGRATION_EXIT_CODE=$?
 
