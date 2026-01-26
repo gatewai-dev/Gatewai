@@ -3,7 +3,7 @@ FROM node:22-bullseye-slim AS base
 WORKDIR /app
 ENV NODE_ENV=production
 
-RUN apt-get update && apt-get install -y openssl && rm -rf /var/lib/apt/lists/*
+RUN apt-get update && apt-get install -y openssl netcat-openbsd && rm -rf /var/lib/apt/lists/*
 
 # Stage 1: Pruner
 FROM base AS pruner
@@ -29,11 +29,15 @@ RUN pnpm --filter=@gatewai/db db:generate
 # Deploy production-ready folder for db package only with --legacy flag
 RUN pnpm deploy --filter=@gatewai/db --prod --legacy /app/deploy
 
-# Copy Prisma schema and generated client
-RUN mkdir -p /app/deploy/packages/db/prisma && \
-    cp -r packages/db/prisma/* /app/deploy/packages/db/prisma/ && \
-    mkdir -p /app/deploy/packages/db/generated && \
-    cp -r packages/db/generated/* /app/deploy/packages/db/generated/
+# Ensure Prisma schema is in the right place
+RUN mkdir -p /app/deploy/prisma && \
+    cp -r packages/db/prisma/* /app/deploy/prisma/
+
+# Copy Prisma binaries to deployment
+RUN mkdir -p /app/deploy/node_modules/.prisma && \
+    mkdir -p /app/deploy/node_modules/@prisma && \
+    cp -r node_modules/.prisma/* /app/deploy/node_modules/.prisma/ 2>/dev/null || true && \
+    cp -r node_modules/@prisma/* /app/deploy/node_modules/@prisma/ 2>/dev/null || true
 
 # Stage 3: Runner
 FROM base AS runner
