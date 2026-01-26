@@ -88,16 +88,26 @@ jobs:
             # 2. Setup Environment
             chmod +x ./scripts/setup-env-gce.sh
             ./scripts/setup-env-gce.sh
-            
-            # Export tag for docker compose
-            export IMAGE_TAG=${{ github.ref_name }}
-            
+
+            export GAR_LOCATION="${GAR_LOCATION}"
+            export PROJECT_ID="${PROJECT_ID}"
+            export REPOSITORY="${REPOSITORY}"
+            export IMAGE_APP="${IMAGE_APP}"
+            export IMAGE_MCP="${IMAGE_MCP}"
+            export IMAGE_TAG="${{ github.ref_name }}"
+
+
+            echo "GAR_LOCATION: $GAR_LOCATION"
+            echo "PROJECT_ID: $PROJECT_ID"
+            echo "IMAGE_APP: $IMAGE_APP"
+            echo "IMAGE_TAG: $IMAGE_TAG"
+
             # 3. Pull and Update
             docker compose pull
-            
+
             # Run migration using the newly pulled app container
             docker compose run --rm app pnpm --filter @gatewai/db db:deploy
-            
+
             docker compose up -d --remove-orphans
 
             # 4. Cleanup
