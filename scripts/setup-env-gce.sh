@@ -31,6 +31,7 @@ GAR_LOCATION=us-central1
 REPOSITORY=gatewai
 IMAGE_APP=gatewai-app
 IMAGE_MCP=gatewai-mcp
+IMAGE_MIGRATION=gatewai-migration
 
 # --- Secrets (Fetched from GCP) ---
 GEMINI_API_KEY=$GEMINI_API_KEY
