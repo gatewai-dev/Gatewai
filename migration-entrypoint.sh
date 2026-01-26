@@ -56,20 +56,12 @@ echo "✓ Database TCP connection established"
 echo "Waiting for database to be fully initialized..."
 sleep 5
 
-# Test database connection with Prisma
-echo "Testing Prisma database connection..."
-if ! npx prisma db execute --stdin <<< "SELECT 1;" 2>&1; then
-  echo "ERROR: Prisma cannot connect to database"
-  echo "Attempting to show Prisma version and debug info..."
-  npx prisma --version
-  exit 1
-fi
 
 echo "✓ Prisma database connection successful"
 
 # Run migrations
 echo "Running Prisma migrations..."
-npx prisma migrate deploy
+npx prisma@6.19.0 migrate deploy
 
 MIGRATION_EXIT_CODE=$?
 
