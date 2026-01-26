@@ -33,11 +33,14 @@ RUN pnpm deploy --filter=@gatewai/db --prod --legacy /app/deploy
 RUN mkdir -p /app/deploy/prisma && \
     cp -r packages/db/prisma/* /app/deploy/prisma/
 
-# Copy Prisma binaries to deployment
+# Copy Prisma binaries and CLI to deployment
 RUN mkdir -p /app/deploy/node_modules/.prisma && \
     mkdir -p /app/deploy/node_modules/@prisma && \
+    mkdir -p /app/deploy/node_modules/.bin && \
     cp -r node_modules/.prisma/* /app/deploy/node_modules/.prisma/ 2>/dev/null || true && \
-    cp -r node_modules/@prisma/* /app/deploy/node_modules/@prisma/ 2>/dev/null || true
+    cp -r node_modules/@prisma/* /app/deploy/node_modules/@prisma/ 2>/dev/null || true && \
+    cp -r node_modules/prisma /app/deploy/node_modules/ 2>/dev/null || true && \
+    cp -P node_modules/.bin/prisma /app/deploy/node_modules/.bin/ 2>/dev/null || true
 
 # Stage 3: Runner
 FROM base AS runner

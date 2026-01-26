@@ -495,6 +495,9 @@ importers:
       dotenv:
         specifier: ^17.2.0
         version: 17.2.0
+      prisma:
+        specifier: ^6.19.0
+        version: 6.19.0(typescript@5.8.3)
     devDependencies:
       '@gatewai/tsconfig':
         specifier: workspace:*
@@ -502,9 +505,6 @@ importers:
       '@types/node':
         specifier: ^24.0.4
         version: 24.1.0
-      prisma:
-        specifier: ^6.19.0
-        version: 6.19.0(typescript@5.8.3)
       tsdown:
         specifier: ^0.19.0
         version: 0.19.0(synckit@0.11.11)(typescript@5.8.3)
