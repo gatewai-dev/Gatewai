@@ -45,7 +45,7 @@ REDIS_HOST=redis
 REDIS_PORT=6379
 
 MCP_PORT=4001
-MCP_URL=http://localhost:4001
+MCP_URL=http://mcp:4001
 # --- Logging & Debug ---
 LOG_LEVEL=debug
 DEBUG_LOG_MEDIA=false

@@ -59,7 +59,7 @@ function SignUpForm({ onSuccess, onError }: SignUpFormProps) {
 		resolver: zodResolver(formSchema),
 		defaultValues: {
 			name: "",
-			email: "",
+			email: "demo@gatewai.studio",
 			password: "",
 			confirmPassword: "",
 		},

@@ -47,7 +47,7 @@ function SignInForm({ onSuccess, onError }: SignInFormProps) {
 	const form = useForm<FormValues>({
 		resolver: zodResolver(formSchema),
 		defaultValues: {
-			email: "demo@example.com",
+			email: "demo@gatewai.studio",
 			password: "",
 		},
 	});
