@@ -19,6 +19,10 @@ import { NodeWFProcessor } from "../../graph-engine/canvas-workflow-processor.js
 import { logger } from "../../logger.js";
 import { assertIsError } from "../../utils/misc.js";
 
+const createPatchQuerySchema = z.object({
+	agentSessionId: z.string().optional(),
+});
+
 const canvasRoutes = new Hono<{ Variables: AuthHonoTypes }>({
 	strict: false,
 })
@@ -101,38 +105,43 @@ const canvasRoutes = new Hono<{ Variables: AuthHonoTypes }>({
 		const response = await GetCanvasEntities(id);
 		return c.json(response);
 	})
-	.post("/:id/patches", zValidator("json", bulkUpdateSchema), async (c) => {
-		const id = c.req.param("id");
-		const agentSessionId = c.req.query("agentSessionId");
-		const validated = c.req.valid("json");
+	.post(
+		"/:id/patches",
+		zValidator("json", bulkUpdateSchema),
+		zValidator("query", createPatchQuerySchema),
+		async (c) => {
+			const id = c.req.param("id");
+			const { agentSessionId } = c.req.valid("query");
+			const validated = c.req.valid("json");
 
-		const patch = await prisma.canvasPatch.create({
-			data: {
-				canvasId: id,
-				patch: validated as object,
-				status: "PENDING",
-				agentSessionId: agentSessionId,
-			},
-		});
-
-		if (agentSessionId) {
-			await prisma.event.create({
+			const patch = await prisma.canvasPatch.create({
 				data: {
+					canvasId: id,
+					patch: validated as object,
+					status: "PENDING",
 					agentSessionId: agentSessionId,
-					eventType: "patch_proposed",
-					role: "ASSISTANT",
-					content: {
-						patchId: patch.id,
-						text: "Assistant proposed changes to the canvas.",
-					},
 				},
 			});
-		}
 
-		canvasAgentState.notifyPatch(id, patch.id);
+			if (agentSessionId) {
+				await prisma.event.create({
+					data: {
+						agentSessionId: agentSessionId,
+						eventType: "patch_proposed",
+						role: "ASSISTANT",
+						content: {
+							patchId: patch.id,
+							text: "Assistant proposed changes to the canvas.",
+						},
+					},
+				});
+			}
 
-		return c.json(patch, 201);
-	})
+			canvasAgentState.notifyPatch(id, patch.id);
+
+			return c.json(patch, 201);
+		},
+	)
 	.post("/:id/patches/:patchId/apply", async (c) => {
 		const id = c.req.param("id");
 		const patchId = c.req.param("patchId");
