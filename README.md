@@ -40,6 +40,11 @@ Don't wait for results. Our interactive canvas allows for instant feedback, enab
 
 Gatewai ships with image and video compositor nodes. There's nothing that can stop you from creating the masterpiece you've always dreamt of.
 
+| Image Compositor | Video Compositor |
+| :---: | :---: |
+| ![Image Compositor](assets/img-comp.png) | ![Video Compositor](assets/vid-comp.png) |
+
+
 ---
 
 ## Getting Started
