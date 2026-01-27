@@ -28,13 +28,18 @@ export const auth = betterAuth({
 export const authMiddleware = createMiddleware(async (c, next) => {
 	const session = c.get("session");
 	if (!session) {
-		const errorResponse = new Response("Unauthorized", {
-			status: 401,
-			headers: {
-				Authenticate: 'error="invalid_token"',
-			},
-		});
-		throw new HTTPException(401, { res: errorResponse });
+		// Check root api key if user is unauthorized
+		const apiKey = ENV_CONFIG.GATEWAI_API_KEY;
+		const hasValidAPIKey = c.req.header('X-API-KEY') === apiKey
+		if (!hasValidAPIKey) {
+			const errorResponse = new Response("Unauthorized", {
+				status: 401,
+				headers: {
+					Authenticate: 'error="invalid_token"',
+				},
+			});
+			throw new HTTPException(401, { res: errorResponse });
+		}
 	}
 	await next();
 });
