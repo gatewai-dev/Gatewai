@@ -287,7 +287,6 @@ const canvasRoutes = new Hono<{ Variables: AuthHonoTypes }>({
 					deletable: node.deletable,
 					config: node.config ?? {},
 					isDirty: node.isDirty,
-					zIndex: node.zIndex,
 					templateId: node.templateId,
 					canvasId: duplicate.id,
 				},

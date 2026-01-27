@@ -1,6 +1,9 @@
 import z from "zod";
 import { DataTypes, NodeTypes } from "../base.js";
-import { NodeConfigSchema } from "../config/schemas.js";
+import {
+	NodeConfigSchema,
+	VideoCompositorNodeConfigSchema,
+} from "../config/schemas.js";
 import { NodeResultSchema } from "../node-result.js";
 
 export const handleSchema = z.object({

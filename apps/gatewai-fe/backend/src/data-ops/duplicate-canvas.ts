@@ -66,7 +66,6 @@ async function duplicateCanvas(
 					result: keepConfigAndResults
 						? (originalNode.result as any)
 						: undefined,
-					zIndex: originalNode.zIndex,
 					canvasId: newCanvas.id,
 					templateId: originalNode.templateId,
 					originalNodeId: originalNode.id,

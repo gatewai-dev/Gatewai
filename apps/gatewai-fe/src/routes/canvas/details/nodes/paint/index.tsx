@@ -114,7 +114,9 @@ const PaintNodeComponent = memo((props: NodeProps<PaintNode>) => {
 
 			const inputCanvas = inputCanvasRef.current;
 			const useInput = !!inputImageUrl && inputCanvas;
-			const inputCtx = useInput ? inputCanvas.getContext("2d") : null;
+			const inputCtx = useInput
+				? inputCanvas.getContext("2d", { willReadFrequently: true })
+				: null;
 			const colorData =
 				useInput && inputCtx
 					? inputCtx.getImageData(0, 0, w, h).data
@@ -136,7 +138,7 @@ const PaintNodeComponent = memo((props: NodeProps<PaintNode>) => {
 			if (isPreview) {
 				const preview = previewRef.current;
 				if (!preview) return;
-				ctxToPut = preview.getContext("2d");
+				ctxToPut = preview.getContext("2d", { willReadFrequently: true });
 				if (!ctxToPut) throw new Error("Missing ctx for preview");
 				dataToModify = ctxToPut.createImageData(w, h).data;
 				alpha = 128; // Semi-transparent for preview
@@ -592,7 +594,6 @@ const PaintNodeComponent = memo((props: NodeProps<PaintNode>) => {
 								Background
 							</Label>
 							<ColorPicker
-								id="bg-color"
 								disabled={inputImageUrl != null}
 								value={nodeConfig?.backgroundColor}
 								onChange={(e) => {

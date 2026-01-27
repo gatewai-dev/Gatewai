@@ -229,7 +229,6 @@ const CanvasProvider = ({
 					position: rfNode.position,
 					width: rfNode.width ?? undefined,
 					height: rfNode.height ?? undefined,
-					zIndex: n.zIndex ?? undefined,
 					result: n.result ?? undefined,
 				};
 			})

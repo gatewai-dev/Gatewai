@@ -49,7 +49,6 @@ export const loggerMiddleware = async (c: Context, next: Next) => {
 	}
 };
 
-// 2. Global Error Handler (500s)
 export const errorHandler = (err: Error, c: Context) => {
 	logger.error(
 		{
@@ -59,10 +58,10 @@ export const errorHandler = (err: Error, c: Context) => {
 		},
 		"🔥 Unhandled Exception",
 	);
+	console.error(err);
 	return c.json({ error: "Internal Server Error" }, 500);
 };
 
-// 3. Not Found Handler (404s)
 export const notFoundHandler = (c: Context) => {
 	logger.warn({ url: c.req.url, method: c.req.method }, "❓ Route Not Found");
 	return c.json({ error: "Not Found" }, 404);

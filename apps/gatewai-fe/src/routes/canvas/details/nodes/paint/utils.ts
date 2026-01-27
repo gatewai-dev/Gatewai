@@ -2,7 +2,7 @@ export const colorToRgb = (color: string): [number, number, number] => {
 	const canvas = document.createElement("canvas");
 	canvas.width = 1;
 	canvas.height = 1;
-	const ctx = canvas.getContext("2d");
+	const ctx = canvas.getContext("2d", { willReadFrequently: true });
 	if (!ctx) return [0, 0, 0];
 	ctx.fillStyle = color;
 	ctx.fillRect(0, 0, 1, 1);

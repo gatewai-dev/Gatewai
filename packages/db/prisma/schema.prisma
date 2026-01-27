@@ -178,8 +178,6 @@ model Node {
   }
   */
   result         Json?           // Node processing result
-  // Visual properties
-  zIndex         Int?            // For layering
   // Timestamps - DB managed
   createdAt      DateTime        @default(now())
   updatedAt      DateTime        @updatedAt

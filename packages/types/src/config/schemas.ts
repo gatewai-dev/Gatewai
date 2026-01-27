@@ -399,7 +399,10 @@ export const MaskNodeConfigSchema = z.object({}).strict();
 // Compositor Nodes
 export const CompositorNodeConfigSchema = z
 	.object({
-		layerUpdates: z.record(z.string(), CompositorLayerSchema),
+		layerUpdates: z.record(
+			z.string().describe("The ID of input handle"),
+			CompositorLayerSchema,
+		),
 		width: DimensionSchema,
 		height: DimensionSchema,
 	})
@@ -469,8 +472,6 @@ export const TextToSpeechNodeConfigSchema = z
 	.superRefine((data, ctx) => {
 		const config = data.speakerConfig ?? [];
 
-		// If there is only 1 or 0 configs, we don't need to enforce names
-		// (unless your business logic says otherwise).
 		if (config.length !== 2) return;
 
 		const [c1, c2] = config;
