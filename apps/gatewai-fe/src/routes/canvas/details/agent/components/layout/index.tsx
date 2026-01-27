@@ -27,7 +27,7 @@ function AgentLayoutInner() {
 				)}
 			>
 				<HiSparkles className="size-6 text-primary" />
-				Workflow Copilot
+				Copilot
 			</Button>
 			<div
 				className={cn(
