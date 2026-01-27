@@ -114,7 +114,7 @@ function NodePaletteContent({ templates }: { templates: NodeTemplateListRPC }) {
 
 			<div className="mt-auto shrink-0 z-50 flex flex-col gap-1px-3">
 				<SocialLink
-					href="https://discord.gg/phbS3XZb"
+					href="https://discord.gg/ha4A8UD7kn"
 					icon={<FaDiscord className="size-5" />}
 					label="Discord"
 					isCollapsed={isCollapsed}

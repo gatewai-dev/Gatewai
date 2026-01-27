@@ -58,7 +58,7 @@ const VideoCompositorNodeComponent = memo(
 				let layerHeight = saved.height;
 
 				if (item.type === "Text") {
-					text = (item.data as string) || "Text";
+					text = (item.data as string) || "";
 				} else if (["Image", "Video", "Audio"].includes(item.type)) {
 					const fileData = item.data as FileData;
 					if (fileData) {

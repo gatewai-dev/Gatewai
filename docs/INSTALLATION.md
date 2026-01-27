@@ -85,8 +85,6 @@ GOOGLE_APPLICATION_CREDENTIALS_PATH="/your/local/path/gatewai/apps/gatewai-fe/gc
 
 ---
 
----
-
 ## Step 3: Deployment Options
 
 ### Option A: Docker (Recommended)
