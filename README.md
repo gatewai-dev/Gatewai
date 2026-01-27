@@ -63,4 +63,3 @@ See [INSTALLATION.md](https://github.com/gatewai-dev/Gatewai/blob/main/docs/INST
 
 See [LICENSE](https://github.com/gatewai-dev/Gatewai/blob/main/LICENCE)
 
-*Note: Open-source licensing will be re-evaluated following the conclusion of the hackathon.*
