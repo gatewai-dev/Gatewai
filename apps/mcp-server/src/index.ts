@@ -744,4 +744,5 @@ console.log(
 serve({
 	fetch: app.fetch,
 	port: env.MCP_PORT,
+	hostname: "0.0.0.0",
 });
