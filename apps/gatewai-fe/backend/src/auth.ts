@@ -11,10 +11,7 @@ export const auth = betterAuth({
 		debugLogs: false,
 	}),
 	trustedOrigins: [ENV_CONFIG.BASE_URL, "http://localhost:5173"],
-	baseURL:
-		process.env.NODE_ENV === "development"
-			? process.env.VITE_BASE_URL
-			: process.env.BACKEND_URL,
+	baseURL: ENV_CONFIG.BASE_URL,
 	emailAndPassword: {
 		enabled: true,
 		requireEmailVerification: false,
@@ -30,7 +27,7 @@ export const authMiddleware = createMiddleware(async (c, next) => {
 	if (!session) {
 		// Check root api key if user is unauthorized
 		const apiKey = ENV_CONFIG.GATEWAI_API_KEY;
-		const hasValidAPIKey = c.req.header('X-API-KEY') === apiKey
+		const hasValidAPIKey = c.req.header("X-API-KEY") === apiKey;
 		if (!hasValidAPIKey) {
 			const errorResponse = new Response("Unauthorized", {
 				status: 401,
