@@ -36,6 +36,8 @@ const apiClient = new GatewaiApiClient({
 	apiKey: env.GATEWAI_API_KEY,
 });
 
+console.log(`MCP Server initialized with BASE_URL: ${env.BASE_URL}`);
+
 const server = new McpServer({
 	name: "gatewai-mcp-server",
 	version: "0.0.1",
@@ -726,7 +728,9 @@ app.get("/health", (c) => c.json({ status: "ok", env: env.LOG_LEVEL }));
 
 // MCP SSE Endpoint
 app.get("/mcp", async (c) => {
+	console.log("MCP SSE request received");
 	if (!server.isConnected()) {
+		console.log("Connecting MCP server to transport...");
 		await server.connect(transport);
 	}
 	return transport.handleRequest(c);
@@ -734,18 +738,18 @@ app.get("/mcp", async (c) => {
 
 // MCP POST Endpoint (for JSON-RPC messages)
 app.post("/mcp", async (c) => {
+	console.log("MCP POST request received");
 	if (!server.isConnected()) {
+		console.log("Connecting MCP server to transport...");
 		await server.connect(transport);
 	}
 	return transport.handleRequest(c);
 });
-
-console.log(
-	`Gatewai MCP Server running on http://localhost:${env.MCP_PORT}/mcp`,
-);
 
 serve({
 	fetch: app.fetch,
 	port: env.MCP_PORT,
 	hostname: "0.0.0.0",
 });
+
+console.log(`Gatewai MCP Server running on http://0.0.0.0:${env.MCP_PORT}/mcp`);

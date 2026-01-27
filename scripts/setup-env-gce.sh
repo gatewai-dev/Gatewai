@@ -47,9 +47,10 @@ REDIS_HOST=redis
 REDIS_PORT=6379
 
 MCP_PORT=4001
-MCP_URL=http://mcp:4001/mcp
+MCP_URL=http://gatewai-mcp:4001/mcp
+
 # --- Logging & Debug ---
-LOG_LEVEL=debug
+LOG_LEVEL=info
 DEBUG_LOG_MEDIA=false
 DISABLE_EMAIL_SIGNUP=true
 EOF

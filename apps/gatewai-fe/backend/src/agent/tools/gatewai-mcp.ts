@@ -1,5 +1,8 @@
 import { MCPServerStreamableHttp } from "@openai/agents";
 import { ENV_CONFIG } from "../../config.js";
+import { logger } from "../../logger.js";
+
+logger.info(`Initializing MCP Tool with URL: ${ENV_CONFIG.MCP_URL}`);
 
 const localGatewaiMCPTool = new MCPServerStreamableHttp({
 	url: ENV_CONFIG.MCP_URL,

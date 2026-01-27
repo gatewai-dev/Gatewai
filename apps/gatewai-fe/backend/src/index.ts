@@ -7,12 +7,12 @@ import { cors } from "hono/cors";
 import { type AuthHonoTypes, auth } from "./auth.js";
 import { ENV_CONFIG } from "./config.js";
 import { startWorker } from "./graph-engine/queue/workflow.worker.js";
+import { logger as appLogger } from "./logger.js";
 import {
-	logger as appLogger,
 	errorHandler,
 	loggerMiddleware,
 	notFoundHandler,
-} from "./logger.js";
+} from "./middlewares.js";
 import { v1Router } from "./routes/v1/index.js";
 
 const app = new Hono<{
@@ -99,9 +99,10 @@ serve(
 	{
 		fetch: app.fetch,
 		port: ENV_CONFIG.PORT,
+		hostname: "0.0.0.0",
 	},
 	(info) => {
-		appLogger.info(`Server is running on port ${info.port}`);
+		appLogger.info(`Server is running on port ${info.port} (0.0.0.0)`);
 	},
 );
 

@@ -3,6 +3,7 @@ import path from "node:path";
 import { fileURLToPath } from "node:url";
 import { run } from "@openai/agents";
 import { ENV_CONFIG } from "../../config.js";
+import { logger } from "../../logger.js";
 import { CreateOrchestratorAgentForCanvas } from "../agents/orchestrator/index.js";
 import { PrismaAgentSession } from "../session/gatewai-session.js";
 import { localGatewaiMCPTool } from "../tools/gatewai-mcp.js";
@@ -29,11 +30,23 @@ export const RunCanvasAgent = async function* ({
 		session,
 		modelName: model,
 	});
-	await localGatewaiMCPTool.connect();
+	try {
+		await localGatewaiMCPTool.connect();
+	} catch (err) {
+		logger.error({ err }, "Failed to connect to MCP tool");
+	}
 
 	const result = await run(agent, userMessage, { stream: true, session });
 
 	for await (const chunk of result.toStream()) {
+		// Filter out unwanted raw model stream events that clutter the frontend
+		if (chunk.type === "raw_model_stream_event") {
+			const data = chunk.data;
+			if (data?.type === "response_started") continue;
+			if (data?.type === "model" && data?.event?.type === "stream-start")
+				continue;
+		}
+
 		if (ENV_CONFIG.LOG_LEVEL === "debug") {
 			const logEntry = {
 				timestamp: new Date().toISOString(),
