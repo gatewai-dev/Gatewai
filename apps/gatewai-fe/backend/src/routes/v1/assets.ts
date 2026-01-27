@@ -5,9 +5,7 @@ import { fileTypeFromBuffer } from "file-type";
 import { Hono } from "hono";
 import sharp from "sharp";
 import { z } from "zod";
-import type {
-	AuthorizedHonoTypes,
-} from "../../auth.js";
+import type { AuthorizedHonoTypes } from "../../auth.js";
 import { ENV_CONFIG } from "../../config.js";
 import { logger } from "../../logger.js";
 import { uploadToImportNode } from "../../node-fns/import-media.js";

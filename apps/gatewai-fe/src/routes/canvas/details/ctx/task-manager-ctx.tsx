@@ -85,7 +85,6 @@ const TaskManagerProvider = ({
 	}, [pollingInterval, batchIdsToPoll, dispatch]);
 
 	const isAnyTaskRunning = useMemo(() => {
-
 		return Object.values(nodeTaskStatus).some((tasks) =>
 			tasks.some(
 				(task) => task.status === "EXECUTING" || task.status === "QUEUED",
