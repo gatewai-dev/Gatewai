@@ -198,6 +198,7 @@ export class GatewaiApiClient {
 			param: { id },
 			json: payload,
 		});
+		console.log(res);
 		return this.handleResponse(res);
 	}
 

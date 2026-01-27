@@ -84,6 +84,8 @@ services:
       - app
     env_file:
       - .env
+    environment:
+      - BASE_URL=http://gatewai-app:8081
 
 volumes:
   postgres_data:

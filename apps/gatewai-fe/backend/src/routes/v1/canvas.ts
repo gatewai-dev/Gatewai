@@ -110,36 +110,41 @@ const canvasRoutes = new Hono<{ Variables: AuthHonoTypes }>({
 		zValidator("json", bulkUpdateSchema),
 		zValidator("query", createPatchQuerySchema),
 		async (c) => {
-			const id = c.req.param("id");
-			const { agentSessionId } = c.req.valid("query");
-			const validated = c.req.valid("json");
+			try {
+				const id = c.req.param("id");
+				const { agentSessionId } = c.req.valid("query");
+				const validated = c.req.valid("json");
 
-			const patch = await prisma.canvasPatch.create({
-				data: {
-					canvasId: id,
-					patch: validated as object,
-					status: "PENDING",
-					agentSessionId: agentSessionId,
-				},
-			});
-
-			if (agentSessionId) {
-				await prisma.event.create({
+				const patch = await prisma.canvasPatch.create({
 					data: {
+						canvasId: id,
+						patch: validated as object,
+						status: "PENDING",
 						agentSessionId: agentSessionId,
-						eventType: "patch_proposed",
-						role: "ASSISTANT",
-						content: {
-							patchId: patch.id,
-							text: "Assistant proposed changes to the canvas.",
-						},
 					},
 				});
+
+				if (agentSessionId) {
+					await prisma.event.create({
+						data: {
+							agentSessionId: agentSessionId,
+							eventType: "patch_proposed",
+							role: "ASSISTANT",
+							content: {
+								patchId: patch.id,
+								text: "Assistant proposed changes to the canvas.",
+							},
+						},
+					});
+				}
+
+				canvasAgentState.notifyPatch(id, patch.id);
+
+				return c.json(patch, 201);
+			} catch (error) {
+				console.log({ error });
+				throw error;
 			}
-
-			canvasAgentState.notifyPatch(id, patch.id);
-
-			return c.json(patch, 201);
 		},
 	)
 	.post("/:id/patches/:patchId/apply", async (c) => {
@@ -441,6 +446,8 @@ const canvasRoutes = new Hono<{ Variables: AuthHonoTypes }>({
 					for await (const delta of runner) {
 						await stream.write(JSON.stringify(delta));
 					}
+				} catch (e) {
+					throw e;
 				} finally {
 					canvasAgentState.off("patch", onPatch);
 				}

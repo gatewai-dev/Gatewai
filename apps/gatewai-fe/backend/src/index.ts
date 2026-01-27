@@ -11,6 +11,7 @@ import {
 	logger as appLogger,
 	errorHandler,
 	loggerMiddleware,
+	notFoundHandler,
 } from "./logger.js";
 import { v1Router } from "./routes/v1/index.js";
 
@@ -58,6 +59,12 @@ const app = new Hono<{
 		}),
 	)
 	.route("/api/v1", v1Router)
+	.get("/api/v1/test-error", () => {
+		throw new Error("Test Unhandled Exception");
+	})
+	.get("/api/v1/test-500", (c) => {
+		return c.json({ error: "Explicit 500" }, 500);
+	})
 	.get("/env.js", (c) => {
 		const env = {
 			VITE_BASE_URL: ENV_CONFIG.BASE_URL,
@@ -66,8 +73,6 @@ const app = new Hono<{
 			"Content-Type": "application/javascript",
 		});
 	});
-
-// Serve frontend dist (located in gatewai-fe root)
 
 // We're splitting here so that RPC types works well - At least for VS Code
 app
@@ -81,7 +86,8 @@ app
 		} catch (_e) {
 			return c.text("404 Not Found", 404);
 		}
-	});
+	})
+	.notFound(notFoundHandler);
 
 // Initialize canvas worker.
 await startWorker();

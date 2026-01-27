@@ -335,7 +335,7 @@ server.registerTool(
 	"get-canvas-inputs",
 	{
 		description: `Discover available input nodes (Text, File) in a canvas workflow.
-			Text node contains value in config and File node contains it in Result`,
+		Should be used to retrieve input schema for run workflow.`,
 		inputSchema: z.object({
 			canvasId: z.string().describe("The ID of the canvas to inspect"),
 		}),
@@ -456,6 +456,7 @@ server.registerTool(
 				],
 			};
 		} catch (error) {
+			console.error(error);
 			const msg = error instanceof Error ? error.message : "Unknown error.";
 			return {
 				content: [{ type: "text", text: `Error proposing patch: ${msg}` }],
