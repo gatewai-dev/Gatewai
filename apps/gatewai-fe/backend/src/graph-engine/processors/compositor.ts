@@ -6,6 +6,7 @@ import type {
 	CompositorLayer,
 	CompositorNodeConfig,
 	FileData,
+	GlobalCompositeOperationType,
 	NodeResult,
 } from "@gatewai/types";
 import Konva from "konva";
@@ -134,7 +135,8 @@ const compositorProcessor: NodeProcessor = async ({ node, data }) => {
 					height: layerConfig.height ?? img.height,
 					opacity: layerConfig.opacity ?? 1,
 					rotation: layerConfig.rotation ?? 0,
-					globalCompositeOperation: layerConfig.blendMode as any,
+					globalCompositeOperation:
+						layerConfig.blendMode as GlobalCompositeOperationType,
 				});
 				konvaLayer.add(kImage);
 			} else if (layerConfig.type === "Text" && input.type === DataType.Text) {

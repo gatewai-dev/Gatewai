@@ -2,6 +2,7 @@ import { appendFile, mkdir } from "node:fs/promises";
 import path from "node:path";
 import { fileURLToPath } from "node:url";
 import { run } from "@openai/agents";
+import { ENV_CONFIG } from "../../config.js";
 import { CreateOrchestratorAgentForCanvas } from "../agents/orchestrator/index.js";
 import { PrismaAgentSession } from "../session/gatewai-session.js";
 import { localGatewaiMCPTool } from "../tools/gatewai-mcp.js";
@@ -33,7 +34,7 @@ export const RunCanvasAgent = async function* ({
 	const result = await run(agent, userMessage, { stream: true, session });
 
 	for await (const chunk of result.toStream()) {
-		if (process.env.NODE_ENV === "development") {
+		if (ENV_CONFIG.LOG_LEVEL === "debug") {
 			const logEntry = {
 				timestamp: new Date().toISOString(),
 				type: chunk.type,

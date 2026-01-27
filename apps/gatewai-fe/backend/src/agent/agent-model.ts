@@ -1,4 +1,4 @@
-import { createGoogleGenerativeAI, google } from "@ai-sdk/google";
+import { createGoogleGenerativeAI } from "@ai-sdk/google";
 import { aisdk } from "@openai/agents-extensions";
 import { ENV_CONFIG } from "../config.js";
 

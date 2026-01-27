@@ -1,4 +1,3 @@
-import assert from "node:assert";
 import { DataType } from "@gatewai/db";
 import type {
 	FileData,

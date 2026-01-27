@@ -16,6 +16,7 @@ const envSchema = z.object({
 	MCP_URL: z.string(),
 	GOOGLE_CLIENT_SECRET: z.string().min(1),
 	GATEWAI_API_KEY: z.string(),
+	LOG_LEVEL: z.string().default("info"),
 	DEBUG_LOG_MEDIA: z
 		.string()
 		.toLowerCase()
