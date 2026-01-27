@@ -48,7 +48,7 @@ Gatewai ships with image and video compositor nodes. There's nothing that can st
 
 ## Installation
 
-See [INSTALLATION.md](https://github.com/okanasl/gatewai/blob/main/docs/INSTALLATION.md)
+See [INSTALLATION.md](https://github.com/gatewai-dev/Gatewai/blob/main/docs/INSTALLATION.md)
 
 ### Community & Support
 
@@ -59,7 +59,7 @@ See [INSTALLATION.md](https://github.com/okanasl/gatewai/blob/main/docs/INSTALLA
 
 ## License
 
-See [LICENCE](https://github.com/okanasl/gatewai/blob/main/LICENCE)
+See [LICENCE](https://github.com/gatewai-dev/Gatewai/blob/main/LICENCE)
 
 We will reconsider the OS licence after hackathon results.
 

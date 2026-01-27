@@ -49,6 +49,7 @@ MCP_URL=http://mcp:4001
 # --- Logging & Debug ---
 LOG_LEVEL=debug
 DEBUG_LOG_MEDIA=false
+DISABLE_EMAIL_SIGNUP=true
 EOF
 
 echo "Successfully updated and overwrote $ENV_FILE"

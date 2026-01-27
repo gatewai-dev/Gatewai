@@ -21,6 +21,7 @@ export const auth = betterAuth({
 		minPasswordLength: 8,
 		maxPasswordLength: 128,
 		autoSignIn: true,
+		disableSignUp: ENV_CONFIG.DISABLE_EMAIL_SIGNUP,
 	},
 }) as ReturnType<typeof betterAuth>;
 

@@ -19,8 +19,8 @@ First, clone the project and prepare your environment variables.
 
 ```bash
 # Clone the repository
-git clone https://github.com/okanasl/gatewai
-cd gatewai
+git clone https://github.com/gatewai-dev/Gatewai
+cd Gatewai
 
 # Initialize environment variables
 cp .env.example .env

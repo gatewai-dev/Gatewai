@@ -120,7 +120,7 @@ function NodePaletteContent({ templates }: { templates: NodeTemplateListRPC }) {
 					isCollapsed={isCollapsed}
 				/>
 				<SocialLink
-					href="https://github.com/okanasl/gatewai"
+					href="https://github.com/gatewai-dev/Gatewai"
 					icon={<FaGithub className="size-5" />}
 					label="GitHub"
 					isCollapsed={isCollapsed}
