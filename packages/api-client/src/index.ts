@@ -73,18 +73,26 @@ export type DeleteAssetResponse = InferResponseType<
 
 export interface APIClientConfig {
 	baseUrl: string;
+	apiKey: string;
 	timeoutMs?: number;
 	headers?: Record<string, string>;
 }
 
 export class GatewaiApiClient {
 	private baseUrl: string;
+	private apiKey: string;
 	private rpc: ReturnType<typeof hc<AppType>>;
+	private defaultHeaders: Record<string, string>;
 
 	constructor(config: APIClientConfig) {
 		this.baseUrl = config.baseUrl.replace(/\/$/, "");
+		this.apiKey = config.apiKey;
+		this.defaultHeaders = {
+			"X-API-Key": this.apiKey,
+			...config.headers,
+		};
 		this.rpc = hc<AppType>(this.baseUrl, {
-			headers: config.headers,
+			headers: this.defaultHeaders,
 		});
 	}
 
@@ -321,6 +329,7 @@ export class GatewaiApiClient {
 		// Make request using fetch directly (FormData not supported in RPC client)
 		const response = await fetch(`${this.baseUrl}/api/v1/assets`, {
 			method: "POST",
+			headers: this.defaultHeaders,
 			body: formData,
 		});
 
@@ -369,6 +378,7 @@ export class GatewaiApiClient {
 			`${this.baseUrl}/api/v1/assets/node/${nodeId}`,
 			{
 				method: "POST",
+				headers: this.defaultHeaders,
 				body: formData,
 			},
 		);

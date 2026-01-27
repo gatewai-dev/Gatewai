@@ -18,6 +18,7 @@ const EnvSchema = z.object({
 	BASE_URL: z.string().url("BASE_URL must be a valid URL"),
 	MCP_PORT: z.coerce.number().default(4001),
 	LOG_LEVEL: z.enum(["debug", "info", "error"]).default("info"),
+	GATEWAI_API_KEY: z.string(),
 });
 
 const result = EnvSchema.safeParse(process.env);
@@ -32,6 +33,7 @@ const env = result.data;
 
 const apiClient = new GatewaiApiClient({
 	baseUrl: env.BASE_URL,
+	apiKey: env.GATEWAI_API_KEY,
 });
 
 const server = new McpServer({

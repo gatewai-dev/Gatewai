@@ -10,6 +10,7 @@ GEMINI_API_KEY=$(gcloud secrets versions access latest --secret="GEMINI_API_KEY"
 GOOGLE_CLIENT_ID=$(gcloud secrets versions access latest --secret="GOOGLE_CLIENT_ID")
 GOOGLE_CLIENT_SECRET=$(gcloud secrets versions access latest --secret="GOOGLE_CLIENT_SECRET")
 BETTER_AUTH_SECRET=$(gcloud secrets versions access latest --secret="BETTER_AUTH_SECRET")
+GATEWAI_API_KEY=$(gcloud secrets versions access latest --secret="GATEWAI_API_KEY")
 
 # Check if secrets were fetched successfully before overwriting
 if [ -z "$GEMINI_API_KEY" ]; then
@@ -38,6 +39,7 @@ GEMINI_API_KEY=$GEMINI_API_KEY
 GOOGLE_CLIENT_ID=$GOOGLE_CLIENT_ID
 GOOGLE_CLIENT_SECRET=$GOOGLE_CLIENT_SECRET
 BETTER_AUTH_SECRET=$BETTER_AUTH_SECRET
+GATEWAI_API_KEY=$GATEWAI_API_KEY
 
 # --- Database & Redis ---
 DATABASE_URL="postgresql://postgres:postgres@postgres:5432/gatewai_db"

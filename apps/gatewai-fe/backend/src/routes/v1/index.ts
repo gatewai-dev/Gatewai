@@ -8,12 +8,12 @@ import { nodeTemplatesRoutes } from "./node-templates.js";
 import { tasksRouter } from "./tasks.js";
 
 const v1Router = new Hono()
+	.use(authMiddleware)
 	.route("/node-templates", nodeTemplatesRoutes)
 	.route("/tasks", tasksRouter)
 	.route("/assets", assetsRouter)
 	.route("/fonts", fontsRouter)
 	.route("/api-run", apiRunRoutes)
-	.use(authMiddleware)
 	.route("/canvas", canvasRoutes);
 
 export { v1Router };
