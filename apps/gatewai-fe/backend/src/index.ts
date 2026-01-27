@@ -14,7 +14,7 @@ import {
 } from "./logger.js";
 import { v1Router } from "./routes/v1/index.js";
 
-console.log(process.env);
+
 const app = new Hono<{
 	Variables: AuthHonoTypes;
 }>()

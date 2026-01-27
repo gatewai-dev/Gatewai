@@ -209,7 +209,6 @@ const CanvasProvider = ({
 
 	const save = useCallback(() => {
 		if (!canvasId || isReviewingRef.current) {
-			console.log({ isReviewing: isReviewingRef.current });
 			return;
 		}
 
@@ -536,7 +535,6 @@ const CanvasProvider = ({
 
 	const runNodes = useCallback(
 		async (node_ids?: Node["id"][]) => {
-			console.log({ node_ids });
 			await save();
 
 			const resp = await runNodesMutateAsync({

@@ -1726,7 +1726,7 @@ export const VideoDesignerEditor: React.FC<VideoDesignerEditorProps> = ({
 	onClose,
 	onSave,
 }) => {
-	console.log({ initialLayers, node });
+
 	const nodeConfig = node.config as unknown as VideoCompositorNodeConfig;
 	// --- State ---
 	const [layers, setLayers] = useState<ExtendedLayer[]>([]);

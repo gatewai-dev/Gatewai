@@ -85,14 +85,7 @@ const TaskManagerProvider = ({
 	}, [pollingInterval, batchIdsToPoll, dispatch]);
 
 	const isAnyTaskRunning = useMemo(() => {
-		// Check if any node in any batch is currently EXECUTING or QUEUED
-		console.log(
-			Object.values(nodeTaskStatus).filter((tasks) =>
-				tasks.some(
-					(task) => task.status === "EXECUTING" || task.status === "QUEUED",
-				),
-			),
-		);
+
 		return Object.values(nodeTaskStatus).some((tasks) =>
 			tasks.some(
 				(task) => task.status === "EXECUTING" || task.status === "QUEUED",

@@ -5,10 +5,8 @@ import { fileTypeFromBuffer } from "file-type";
 import { Hono } from "hono";
 import sharp from "sharp";
 import { z } from "zod";
-import {
-	type AuthHonoTypes,
-	type AuthorizedHonoTypes,
-	authMiddleware,
+import type {
+	AuthorizedHonoTypes,
 } from "../../auth.js";
 import { ENV_CONFIG } from "../../config.js";
 import { logger } from "../../logger.js";
@@ -276,7 +274,6 @@ const assetsRouter = new Hono<{ Variables: AuthorizedHonoTypes }>({
 
 		try {
 			const buffer = Buffer.from(await file.arrayBuffer());
-			console.log({ nodeId });
 			const updatedNode = await uploadToImportNode({
 				nodeId,
 				buffer,
