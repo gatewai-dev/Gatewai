@@ -3,7 +3,7 @@ import { ENV_CONFIG } from "../../config.js";
 
 export const redisConnection: ConnectionOptions = {
 	host: ENV_CONFIG.REDIS_HOST,
-	port: parseInt(ENV_CONFIG.REDIS_PORT, 10),
+	port: ENV_CONFIG.REDIS_PORT,
 	password: ENV_CONFIG.REDIS_PASSWORD,
 };
 
