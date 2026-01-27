@@ -88,7 +88,7 @@ export class GatewaiApiClient {
 		this.baseUrl = config.baseUrl.replace(/\/$/, "");
 		this.apiKey = config.apiKey;
 		this.defaultHeaders = {
-			"X-API-Key": this.apiKey,
+			"X-API-KEY": this.apiKey,
 			...config.headers,
 		};
 		this.rpc = hc<AppType>(this.baseUrl, {
