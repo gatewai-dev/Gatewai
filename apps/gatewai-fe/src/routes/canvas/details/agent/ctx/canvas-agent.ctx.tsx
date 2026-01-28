@@ -13,6 +13,7 @@ import type { AgentSessionsRPC } from "@/rpc/types";
 import { useGetCanvasAgentSessionListQuery } from "@/store/agent-sessions";
 
 const SELECTED_MODEL_STORAGE_KEY = "canvas_agent_selected_model";
+const DEFAULT_MODEL = "gemini-3-flash-preview";
 
 export type MessageRole = "user" | "model" | "system";
 export interface ChatMessage {
@@ -97,16 +98,32 @@ const CanvasAgentProvider = ({
 	const [selectedModel, setSelectedModel] = useState<string>(() => {
 		if (typeof window !== "undefined") {
 			const saved = localStorage.getItem(SELECTED_MODEL_STORAGE_KEY);
-			return saved || "gemini-3-flash-preview";
+			return saved || DEFAULT_MODEL;
 		}
-		return "gemini-3-flash-preview";
+		return DEFAULT_MODEL;
 	});
 
-	useEffect(() => {
-		localStorage.setItem(SELECTED_MODEL_STORAGE_KEY, selectedModel);
-	}, [selectedModel]);
-
+	// Track if component is mounted to prevent state updates after unmount
+	const isMountedRef = useRef(true);
 	const abortControllerRef = useRef<AbortController | null>(null);
+
+	useEffect(() => {
+		isMountedRef.current = true;
+		return () => {
+			isMountedRef.current = false;
+			// Cleanup abort controller on unmount
+			if (abortControllerRef.current) {
+				abortControllerRef.current.abort();
+				abortControllerRef.current = null;
+			}
+		};
+	}, []);
+
+	useEffect(() => {
+		if (isMountedRef.current) {
+			localStorage.setItem(SELECTED_MODEL_STORAGE_KEY, selectedModel);
+		}
+	}, [selectedModel]);
 
 	const { data: agentSessionsList, isLoading: isLoadingSessions } =
 		useGetCanvasAgentSessionListQuery({
@@ -119,10 +136,12 @@ const CanvasAgentProvider = ({
 			abortControllerRef.current = null;
 		}
 		const newId = generateId();
-		setMessages([]);
-		setIsLoading(false);
-		setPendingPatchId(null);
-		setActiveSessionId(newId);
+		if (isMountedRef.current) {
+			setMessages([]);
+			setIsLoading(false);
+			setPendingPatchId(null);
+			setActiveSessionId(newId);
+		}
 	}, []);
 
 	useEffect(() => {
@@ -132,7 +151,9 @@ const CanvasAgentProvider = ({
 				(a, b) =>
 					new Date(b.createdAt).getTime() - new Date(a.createdAt).getTime(),
 			);
-			setActiveSessionId(sortedSessions[0].id);
+			if (isMountedRef.current) {
+				setActiveSessionId(sortedSessions[0].id);
+			}
 		} else {
 			createNewSession();
 		}
@@ -140,20 +161,28 @@ const CanvasAgentProvider = ({
 
 	const refreshHistory = useCallback(async () => {
 		if (!activeSessionId || !canvasId) {
-			setMessages([]);
-			setPendingPatchId(null);
+			if (isMountedRef.current) {
+				setMessages([]);
+				setPendingPatchId(null);
+			}
 			return;
 		}
 
-		setIsLoading(true);
+		if (isMountedRef.current) {
+			setIsLoading(true);
+		}
+
 		try {
 			const resp = await rpcClient.api.v1.canvas[":id"].agent[
 				":sessionId"
 			].$get({
 				param: { id: canvasId, sessionId: activeSessionId },
 			});
+
+			if (!isMountedRef.current) return;
+
 			const data = await resp.json();
-			if (!data) return;
+			if (!data || !isMountedRef.current) return;
 
 			const events = data.events || [];
 
@@ -193,12 +222,16 @@ const CanvasAgentProvider = ({
 					createdAt: new Date(e.createdAt),
 				}));
 
-			setMessages(historyMessages);
-			setPendingPatchId(lastProposedPatchId);
+			if (isMountedRef.current) {
+				setMessages(historyMessages);
+				setPendingPatchId(lastProposedPatchId);
+			}
 		} catch (error) {
 			console.error("Error fetching history:", error);
 		} finally {
-			setIsLoading(false);
+			if (isMountedRef.current) {
+				setIsLoading(false);
+			}
 		}
 	}, [canvasId, activeSessionId]);
 
@@ -208,7 +241,7 @@ const CanvasAgentProvider = ({
 
 	const sendMessage = useCallback(
 		async (message: string) => {
-			if (!message.trim() || !activeSessionId) return;
+			if (!message.trim() || !activeSessionId || !isMountedRef.current) return;
 
 			const aiMsgId = generateId();
 			const userMsg: ChatMessage = {
@@ -225,8 +258,15 @@ const CanvasAgentProvider = ({
 				createdAt: new Date(),
 			};
 
+			if (!isMountedRef.current) return;
+
 			setMessages((prev) => [...prev, userMsg, aiMsg]);
 			setIsLoading(true);
+
+			// Cancel any existing request
+			if (abortControllerRef.current) {
+				abortControllerRef.current.abort();
+			}
 			abortControllerRef.current = new AbortController();
 
 			try {
@@ -238,81 +278,127 @@ const CanvasAgentProvider = ({
 				});
 
 				if (!response.body) throw new Error("No response body");
+				if (!isMountedRef.current) return;
 
 				const reader = response.body.getReader();
 				const decoder = new TextDecoder();
 				let aiTextAccumulator = "";
 				let buffer = "";
 
-				while (true) {
-					const { done, value } = await reader.read();
-					if (done) break;
-					buffer += decoder.decode(value, { stream: true });
+				try {
+					while (true) {
+						const { done, value } = await reader.read();
 
-					let startIdx;
-					while ((startIdx = buffer.indexOf("{")) !== -1) {
-						let depth = 0;
-						let inString = false;
-						let endIdx = -1;
+						if (done) break;
 
-						for (let i = startIdx; i < buffer.length; i++) {
-							const char = buffer[i];
-							if (inString) {
-								if (char === "\\" && i + 1 < buffer.length) {
-									i++;
+						if (!isMountedRef.current) {
+							reader.cancel();
+							break;
+						}
+
+						buffer += decoder.decode(value, { stream: true });
+
+						let startIdx;
+						while ((startIdx = buffer.indexOf("{")) !== -1) {
+							let depth = 0;
+							let inString = false;
+							let escape = false;
+							let endIdx = -1;
+
+							for (let i = startIdx; i < buffer.length; i++) {
+								const char = buffer[i];
+
+								if (escape) {
+									escape = false;
 									continue;
 								}
-								if (char === '"') inString = false;
-							} else {
-								if (char === '"') inString = true;
-								else if (char === "{") depth++;
-								else if (char === "}") depth--;
-							}
-							if (!inString && depth === 0) {
-								endIdx = i;
-								break;
-							}
-						}
 
-						if (endIdx === -1) break;
+								if (char === "\\") {
+									escape = true;
+									continue;
+								}
 
-						const jsonStr = buffer.substring(startIdx, endIdx + 1);
-						buffer = buffer.substring(endIdx + 1);
+								if (inString) {
+									if (char === '"') inString = false;
+								} else {
+									if (char === '"') inString = true;
+									else if (char === "{") depth++;
+									else if (char === "}") depth--;
+								}
 
-						try {
-							const event = JSON.parse(jsonStr);
-							if (event.type === "patch_proposed" && event.patchId) {
-								setPendingPatchId(event.patchId);
+								if (!inString && depth === 0) {
+									endIdx = i;
+									break;
+								}
 							}
-							if (
-								event.type === "raw_model_stream_event" &&
-								event.data?.type === "output_text_delta"
-							) {
-								aiTextAccumulator += event.data.delta || "";
-								setMessages((prev) =>
-									prev.map((msg) =>
-										msg.id === aiMsgId
-											? { ...msg, text: aiTextAccumulator }
-											: msg,
-									),
-								);
+
+							if (endIdx === -1) break;
+
+							const jsonStr = buffer.substring(startIdx, endIdx + 1);
+							buffer = buffer.substring(endIdx + 1);
+
+							try {
+								const event = JSON.parse(jsonStr);
+
+								if (!isMountedRef.current) break;
+
+								if (event.type === "patch_proposed" && event.patchId) {
+									setPendingPatchId(event.patchId);
+								}
+
+								if (
+									event.type === "raw_model_stream_event" &&
+									event.data?.type === "output_text_delta"
+								) {
+									aiTextAccumulator += event.data.delta || "";
+
+									// Optimized update: only update the specific message
+									setMessages((prev) => {
+										const newMessages = [...prev];
+										const msgIndex = newMessages.findIndex(
+											(m) => m.id === aiMsgId,
+										);
+										if (msgIndex !== -1) {
+											newMessages[msgIndex] = {
+												...newMessages[msgIndex],
+												text: aiTextAccumulator,
+											};
+										}
+										return newMessages;
+									});
+								}
+							} catch (e) {
+								console.warn("Failed to parse streaming event:", e);
+								// Continue processing other events
 							}
-						} catch (e) {
-							/* ignore parse error for partial chunks */
 						}
 					}
+
+					// Finalize the decode with any remaining bytes
+					if (buffer.length > 0) {
+						decoder.decode();
+					}
+				} finally {
+					reader.releaseLock();
 				}
 			} catch (error) {
-				if (error instanceof Error && error.name !== "AbortError") {
-					console.error("Stream error:", error);
+				if (error instanceof Error) {
+					if (error.name === "AbortError") {
+						console.log("Stream aborted by user");
+					} else {
+						console.error("Stream error:", error);
+					}
 				}
 			} finally {
-				setIsLoading(false);
-				setMessages((prev) =>
-					prev.map((msg) =>
-						msg.id === aiMsgId ? { ...msg, isStreaming: false } : msg,
-					),
-				);
+				if (isMountedRef.current) {
+					setIsLoading(false);
+					// Only update the streaming message, not all messages
+					setMessages((prev) =>
+						prev.map((msg) =>
+							msg.id === aiMsgId ? { ...msg, isStreaming: false } : msg,
+						),
+					);
+				}
 				abortControllerRef.current = null;
 			}
 		},
@@ -322,12 +408,30 @@ const CanvasAgentProvider = ({
 	const stopGeneration = useCallback(() => {
 		if (abortControllerRef.current) {
 			abortControllerRef.current.abort();
+			abortControllerRef.current = null;
+		}
+		if (isMountedRef.current) {
 			setIsLoading(false);
+			// Stop streaming for the last message
+			setMessages((prev) => {
+				if (prev.length === 0) return prev;
+				const newMessages = [...prev];
+				const lastMsg = newMessages[newMessages.length - 1];
+				if (lastMsg.isStreaming) {
+					newMessages[newMessages.length - 1] = {
+						...lastMsg,
+						isStreaming: false,
+					};
+				}
+				return newMessages;
+			});
 		}
 	}, []);
 
 	const clearPendingPatch = useCallback(() => {
-		setPendingPatchId(null);
+		if (isMountedRef.current) {
+			setPendingPatchId(null);
+		}
 		refreshHistory();
 	}, [refreshHistory]);
 

@@ -1,6 +1,7 @@
 import { formatDistanceToNow } from "date-fns";
 import { Clock, MessageSquare, Plus } from "lucide-react";
 import { Button } from "@/components/ui/button";
+import { DialogTitle } from "@/components/ui/dialog";
 import { ScrollArea } from "@/components/ui/scroll-area";
 import { cn } from "@/lib/utils";
 import { useCanvasAgent } from "../../ctx/canvas-agent.ctx";
@@ -30,7 +31,9 @@ export function AgentSessionList({
 		>
 			{/* Header */}
 			<div className="p-3 border-b border-border/50 flex items-center justify-between">
-				<h2 className="text-xs font-semibold text-foreground">Chats</h2>
+				<DialogTitle className="text-xs font-semibold text-foreground">
+					Chats
+				</DialogTitle>
 				<Button
 					onClick={() => {
 						createNewSession();
