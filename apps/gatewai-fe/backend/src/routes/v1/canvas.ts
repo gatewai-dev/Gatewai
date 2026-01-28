@@ -420,6 +420,10 @@ const canvasRoutes = new Hono<{ Variables: AuthHonoTypes }>({
 			});
 
 			// 2. Return SSE Stream
+			c.header("X-Accel-Buffering", "no");
+			c.header("Cache-Control", "no-cache");
+			c.header("Content-Type", "text/event-stream");
+
 			return streamSSE(c, async (stream) => {
 				const onPatch = async (cId: string, pId: string) => {
 					if (cId === canvasId) {
@@ -444,7 +448,9 @@ const canvasRoutes = new Hono<{ Variables: AuthHonoTypes }>({
 					});
 
 					for await (const delta of runner) {
-						await stream.write(JSON.stringify(delta));
+						await stream.writeSSE({
+							data: JSON.stringify(delta),
+						});
 					}
 				} catch (e) {
 					throw e;

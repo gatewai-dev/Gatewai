@@ -135,4 +135,4 @@ jobs:
             docker compose up -d --remove-orphans
 
             # 7. Cleanup old images
-            docker image prune -af --filter "until=24h"
+            docker image prune -af

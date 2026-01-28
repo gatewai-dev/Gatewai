@@ -118,8 +118,11 @@ server.registerResource(
 		mimeType: "application/json",
 	},
 	async (uri) => {
+		console.log("Tool 'node-templates' called");
 		try {
+			console.log("Fetching node templates from API...");
 			const templates = await apiClient.getNodeTemplates();
+			console.log(`Fetched ${templates.length} templates`);
 			return {
 				contents: [
 					{
@@ -130,6 +133,7 @@ server.registerResource(
 				],
 			};
 		} catch (error) {
+			console.error("Error in 'node-templates' tool:", error);
 			const msg = error instanceof Error ? error.message : "Unknown error.";
 			throw new Error(`Failed to fetch node templates: ${msg}`);
 		}
@@ -729,6 +733,7 @@ app.get("/health", (c) => c.json({ status: "ok", env: env.LOG_LEVEL }));
 // MCP SSE Endpoint
 app.get("/mcp", async (c) => {
 	console.log("MCP SSE request received");
+	c.header("X-Accel-Buffering", "no");
 	return transport.handleRequest(c);
 });
 
