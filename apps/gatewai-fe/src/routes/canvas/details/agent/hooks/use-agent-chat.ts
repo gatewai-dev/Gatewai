@@ -10,6 +10,7 @@ export interface ChatMessage {
 	isStreaming?: boolean;
 	eventType?: string;
 	patchId?: string;
+	patchStatus?: "PENDING" | "ACCEPTED" | "REJECTED";
 	createdAt: Date;
 }
 
@@ -197,12 +198,18 @@ export function useAgentChatStream(
 				setMessages(historyMessages);
 
 				// If session is active, connect to stream
-				// We check for both "ACTIVE" and undefined (assuming active if not specified, or check data structure)
-				// The backend returns { ...session, messages }, so status should be at top level.
 				if (data.status === "ACTIVE") {
 					connectToStream();
 				} else {
 					setIsLoading(false);
+				}
+
+				// Check for pending patch in history
+				const lastPatchMsg = [...historyMessages]
+					.reverse()
+					.find((m) => m.eventType === "patch_proposed" && m.patchId);
+				if (lastPatchMsg?.patchStatus === "PENDING") {
+					setPendingPatchId(lastPatchMsg.patchId!);
 				}
 			} catch (error) {
 				console.error("Error fetching history:", error);

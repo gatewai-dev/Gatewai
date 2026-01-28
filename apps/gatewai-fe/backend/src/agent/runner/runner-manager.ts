@@ -1,6 +1,7 @@
 import { redisPublisher } from "../../lib/redis.js";
 import { RunCanvasAgent } from "./index.js";
 
+// biome-ignore lint/complexity/noStaticOnlyClass: Required
 export class AgentRunnerManager {
 	private static activeSessions = new Map<
 		string,

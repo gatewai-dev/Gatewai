@@ -26,6 +26,7 @@ export interface ChatMessage {
 	createdAt: Date;
 	eventType?: string;
 	patchId?: string;
+	patchStatus?: "PENDING" | "ACCEPTED" | "REJECTED";
 }
 
 type CanvasAgentContextType = {

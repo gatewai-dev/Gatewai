@@ -330,12 +330,16 @@ export function AgentChatSection({ onClose }: { onClose: () => void }) {
 					>
 						<div className="max-w-3xl mx-auto w-full p-2 space-y-6 pb-28">
 							{messages
-								.filter(
-									(msg) =>
+								.filter((msg) => {
+									const isNotEmpty =
 										msg.text.trim() !== "" ||
 										msg.eventType === "patch_proposed" ||
-										msg.isStreaming,
-								)
+										msg.isStreaming;
+									const isPending =
+										msg.eventType === "patch_proposed" &&
+										msg.patchId === pendingPatchId;
+									return isNotEmpty && !isPending;
+								})
 								.map((msg) => (
 									<div
 										key={msg.id}
@@ -365,6 +369,7 @@ export function AgentChatSection({ onClose }: { onClose: () => void }) {
 											{msg.eventType === "patch_proposed" && msg.patchId ? (
 												<PatchReviewCard
 													patchId={msg.patchId}
+													initialStatus={msg.patchStatus}
 													onComplete={() => {}} // No-op for history patches
 												/>
 											) : msg.role === "model" ? (

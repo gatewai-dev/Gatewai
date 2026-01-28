@@ -623,17 +623,26 @@ const canvasRoutes = new Hono<{ Variables: AuthHonoTypes }>({
 			return "";
 		};
 
+		// Fetch all patches for this session to get their statuses
+		const patches = await prisma.canvasPatch.findMany({
+			where: { agentSessionId: sessionId },
+			select: { id: true, status: true },
+		});
+		const patchStatusMap = new Map(patches.map((p) => [p.id, p.status]));
+
 		// Map events to ChatMessage format
 		const messages = session.events
 			.filter((e) => e.role === "USER" || e.role === "ASSISTANT")
 			.map((e) => {
 				const content = e.content as any;
+				const patchId = content?.patchId;
 				return {
 					id: e.id,
 					role: e.role === "USER" ? "user" : "model",
 					text: extractText(content),
 					eventType: e.eventType,
-					patchId: content?.patchId,
+					patchId,
+					patchStatus: patchId ? patchStatusMap.get(patchId) : undefined,
 					createdAt: e.createdAt,
 				};
 			});

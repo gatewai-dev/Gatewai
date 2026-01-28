@@ -1,5 +1,5 @@
 import { prisma } from "@gatewai/db";
-import { Agent } from "@openai/agents";
+import { Agent, type AgentInputItem } from "@openai/agents";
 import { GetCanvasEntities } from "../../../data-ops/canvas.js";
 import { getAgentModel } from "../../agent-model.js";
 import { NODE_CONFIG_RAW } from "../../context/node-config.js";
@@ -366,21 +366,44 @@ export const CreateOrchestratorAgentForCanvas = async ({
 
 		const items = await session.getItems();
 		const historyStr = items
+			.filter(
+				(item): item is Extract<AgentInputItem, { role: string }> =>
+					"role" in item && (item.role === "user" || item.role === "assistant"),
+			)
 			.map((item) => {
-				if ("role" in item) {
-					const contentStr = Array.isArray(item.content)
-						? item.content
-								.map((c) => (typeof c === "string" ? c : JSON.stringify(c)))
-								.join("\n")
-						: typeof item.content === "string"
-							? item.content
-							: JSON.stringify(item.content);
-					return `${item.role.toUpperCase()}: ${contentStr}`;
-				}
-				return "Unknown item";
-			})
-			.join("\n\n---\n\n");
+				const role = item.role.toUpperCase();
+				let content = "";
 
+				if (Array.isArray(item.content)) {
+					content = item.content
+						.map((part: any) => (typeof part === "string" ? part : part.text))
+						.join("\n");
+				} else {
+					content = item.content;
+				}
+
+				// Attempt to parse and extract text if it's a stringified JSON message object
+				if (typeof content === "string" && content.trim().startsWith("{")) {
+					try {
+						const parsed = JSON.parse(content);
+						if (
+							parsed.type === "message" &&
+							typeof parsed.content === "string"
+						) {
+							content = parsed.content;
+						} else if (parsed.text && typeof parsed.text === "string") {
+							content = parsed.text;
+						}
+					} catch (e) {
+						// Not valid JSON or different structure, keep original content
+					}
+				}
+
+				return `${role}: ${content}`;
+			})
+			.filter((line) => line.split(": ")[1]?.trim())
+			.join("\n\n---\n\n");
+		console.log({ wwq: historyStr.length, historyStr });
 		return `${BASE_SYSTEM_PROMPT}
 
 ═══════════════════════════════════════════════════════════════════════════════
@@ -433,9 +456,10 @@ Remember: Be thorough, be precise, be excellent.
 	assertIsValidName(modelName);
 
 	const model = getAgentModel(modelName);
-
+	const instructions = await getInstructions();
+	console.log({ instructions });
 	return new Agent({
-		name: "Gatewai_Workflow_Architect",
+		name: "Gatewai_Copilot",
 		model,
 		instructions: getInstructions,
 		mcpServers: [localGatewaiMCPTool],

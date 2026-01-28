@@ -1,8 +1,6 @@
-import { appendFile, mkdir } from "node:fs/promises";
 import path from "node:path";
 import { fileURLToPath } from "node:url";
 import { run } from "@openai/agents";
-import { ENV_CONFIG } from "../../config.js";
 import { CreateOrchestratorAgentForCanvas } from "../agents/orchestrator/index.js";
 import { PrismaAgentSession } from "../session/gatewai-session.js";
 import { connectMCP } from "../tools/gatewai-mcp.js";
@@ -22,9 +20,6 @@ export const RunCanvasAgent = async function* ({
 	model: string;
 	signal?: AbortSignal;
 }) {
-	const logDir = path.join(__dirname, "logs");
-	const logPath = path.join(logDir, `session_${sessionId}.log`);
-
 	const session = new PrismaAgentSession({ sessionId, canvasId });
 	try {
 		const agent = await CreateOrchestratorAgentForCanvas({
