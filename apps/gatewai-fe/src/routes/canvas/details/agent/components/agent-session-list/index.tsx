@@ -90,8 +90,7 @@ export function AgentSessionList({
 											: "text-muted-foreground",
 									)}
 								>
-									{session.id.slice(0, 8)}...{" "}
-									{/* Replace with session.title if avail */}
+									{(session as any).preview || session.id.slice(0, 8)}
 								</p>
 								{session.createdAt && (
 									<div className="flex items-center gap-1 mt-0.5 text-[9px] text-muted-foreground/70">

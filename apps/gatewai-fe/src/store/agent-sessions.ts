@@ -49,10 +49,25 @@ export const agentSessionsAPI = createApi({
 				return { data };
 			},
 		}),
+		createCanvasAgentSession: build.mutation<any, { param: { id: string } }>({
+			invalidatesTags: ["agentSessionList"],
+			queryFn: async (payload) => {
+				const response =
+					await rpcClient.api.v1.canvas[":id"].agent.sessions.$post(payload);
+				if (!response.ok) {
+					return {
+						error: { status: response.status, data: await response.text() },
+					};
+				}
+				const data = await response.json();
+				return { data };
+			},
+		}),
 	}),
 });
 
 export const {
 	useGetCanvasAgentSessionListQuery,
 	useGetCanvasAgentSessionDetailsQuery,
+	useCreateCanvasAgentSessionMutation,
 } = agentSessionsAPI;

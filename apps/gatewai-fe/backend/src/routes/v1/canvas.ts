@@ -10,12 +10,12 @@ import { Hono } from "hono";
 import { HTTPException } from "hono/http-exception";
 import { streamSSE } from "hono/streaming";
 import z from "zod";
-import { RunCanvasAgent } from "../../agent/runner/index.js";
-import { canvasAgentState } from "../../agent/state.js";
+import { AgentRunnerManager } from "../../agent/runner/runner-manager.js";
 import type { AuthHonoTypes } from "../../auth.js";
 import { GetCanvasEntities } from "../../data-ops/canvas.js";
 import { applyCanvasUpdate } from "../../data-ops/canvas-update.js";
 import { NodeWFProcessor } from "../../graph-engine/canvas-workflow-processor.js";
+import { redisSubscriber } from "../../lib/redis.js";
 import { logger } from "../../logger.js";
 import { assertIsError } from "../../utils/misc.js";
 
@@ -124,8 +124,6 @@ const canvasRoutes = new Hono<{ Variables: AuthHonoTypes }>({
 					},
 				});
 
-				console.log(`Patch created: ${patch.id} for canvas ${id}`);
-
 				if (agentSessionId) {
 					await prisma.event.create({
 						data: {
@@ -140,8 +138,26 @@ const canvasRoutes = new Hono<{ Variables: AuthHonoTypes }>({
 					});
 				}
 
-				console.log(`Notifying patch: ${patch.id}`);
-				canvasAgentState.notifyPatch(id, patch.id);
+				// Notify via session
+				if (agentSessionId) {
+					const session = await prisma.agentSession.findUnique({
+						where: { id: agentSessionId },
+					});
+					if (session) {
+						// We need to instantiate PrismaAgentSession to call notifyPatch
+						// Or we can just publish directly here since we have the session ID
+						// But let's use the session class for consistency if possible,
+						// or just publish directly to Redis to avoid overhead.
+						// Let's use the session class to keep logic encapsulated.
+						const { loadSession } = await import(
+							"../../agent/session/gatewai-session.js"
+						);
+						const agentSession = await loadSession(agentSessionId);
+						if (agentSession) {
+							await agentSession.notifyPatch(patch.id);
+						}
+					}
+				}
 
 				return c.json(patch, 201);
 			} catch (error) {
@@ -395,8 +411,51 @@ const canvasRoutes = new Hono<{ Variables: AuthHonoTypes }>({
 		const canvasId = c.req.param("id");
 		const agentSessions = await prisma.agentSession.findMany({
 			where: { canvasId },
+			orderBy: { createdAt: "desc" },
+			include: {
+				events: {
+					where: { role: "USER" },
+					orderBy: { createdAt: "asc" },
+					take: 1,
+				},
+			},
 		});
-		return c.json(agentSessions);
+
+		const extractText = (content: any): string => {
+			if (!content) return "";
+			if (typeof content === "string") return content;
+			const rawContent =
+				content.content !== undefined ? content.content : content;
+			if (typeof rawContent === "string") return rawContent;
+			if (Array.isArray(rawContent)) {
+				return rawContent.map((item: any) => item.text || "").join("\n");
+			}
+			if (typeof rawContent === "object" && rawContent !== null) {
+				return rawContent.text || JSON.stringify(rawContent);
+			}
+			return "";
+		};
+
+		const sessionsWithPreview = agentSessions.map((session) => ({
+			...session,
+			preview: session.events[0]
+				? extractText(session.events[0].content)
+				: "New Chat",
+		}));
+
+		return c.json(sessionsWithPreview);
+	})
+	.post("/:id/agent/sessions", async (c) => {
+		const canvasId = c.req.param("id");
+
+		const session = await prisma.agentSession.create({
+			data: {
+				canvasId,
+				status: "COMPLETED",
+			},
+		});
+
+		return c.json(session, 201);
 	})
 	.post(
 		"/:id/agent/:sessionId",
@@ -412,13 +471,16 @@ const canvasRoutes = new Hono<{ Variables: AuthHonoTypes }>({
 			const sessionId = c.req.param("sessionId");
 			const { message, model } = c.req.valid("json");
 
-			// 1. Ensure Session exists
+			// 1. Ensure Session exists and is ACTIVE
 			await prisma.agentSession.upsert({
 				where: { id: sessionId },
-				update: {},
+				update: {
+					status: "ACTIVE",
+				},
 				create: {
 					id: sessionId,
 					canvasId: canvasId,
+					status: "ACTIVE",
 				},
 			});
 
@@ -427,47 +489,102 @@ const canvasRoutes = new Hono<{ Variables: AuthHonoTypes }>({
 			c.header("Cache-Control", "no-cache");
 			c.header("Content-Type", "text/event-stream");
 
+			// Start the agent runner in the background
+			await AgentRunnerManager.start({
+				canvasId,
+				sessionId,
+				message,
+				model,
+			});
+
 			return streamSSE(c, async (stream) => {
-				const onPatch = async (cId: string, pId: string) => {
-					try {
-						if (cId === canvasId) {
-							await stream.writeSSE({
-								data: JSON.stringify({
-									type: "patch_proposed",
-									patchId: pId,
-								}),
-								event: "patch_proposed",
-							});
+				const channel = `agent:session:${sessionId}`;
+				const subscriber = redisSubscriber.duplicate(); // Use a duplicate connection for subscription
+
+				await subscriber.subscribe(channel);
+
+				let isDone = false;
+				const onMessage = async (chan: string, msg: string) => {
+					if (chan === channel) {
+						await stream.writeSSE({
+							data: msg,
+						});
+
+						try {
+							const event = JSON.parse(msg);
+							if (event.type === "done" || event.type === "error") {
+								isDone = true;
+							}
+						} catch (e) {
+							// Ignore parse errors
 						}
-					} catch (error) {
-						console.error("Error writing patch event to SSE stream:", error);
 					}
 				};
 
-				canvasAgentState.on("patch", onPatch);
+				subscriber.on("message", onMessage);
 
-				try {
-					const runner = RunCanvasAgent({
-						canvasId,
-						sessionId,
-						userMessage: message,
-						model,
-					});
-
-					for await (const delta of runner) {
-						await stream.writeSSE({
-							data: JSON.stringify(delta),
-						});
+				// Keep the stream open until the client disconnects or agent finishes
+				while (!isDone) {
+					await new Promise((resolve) => setTimeout(resolve, 500));
+					if (c.req.raw.signal.aborted) {
+						break;
 					}
-				} catch (e) {
-					console.error("Error in RunCanvasAgent:", e);
-					throw e;
-				} finally {
-					canvasAgentState.off("patch", onPatch);
 				}
+
+				await subscriber.unsubscribe(channel);
+				await subscriber.quit();
 			});
 		},
 	)
+	.post("/:id/agent/:sessionId/stop", async (c) => {
+		const sessionId = c.req.param("sessionId");
+		const stopped = AgentRunnerManager.stop(sessionId);
+		return c.json({ success: stopped });
+	})
+	.get("/:id/agent/:sessionId/stream", async (c) => {
+		const sessionId = c.req.param("sessionId");
+
+		c.header("X-Accel-Buffering", "no");
+		c.header("Cache-Control", "no-cache");
+		c.header("Content-Type", "text/event-stream");
+
+		return streamSSE(c, async (stream) => {
+			const channel = `agent:session:${sessionId}`;
+			const subscriber = redisSubscriber.duplicate();
+
+			await subscriber.subscribe(channel);
+
+			let isDone = false;
+			const onMessage = async (chan: string, msg: string) => {
+				if (chan === channel) {
+					await stream.writeSSE({
+						data: msg,
+					});
+
+					try {
+						const event = JSON.parse(msg);
+						if (event.type === "done" || event.type === "error") {
+							isDone = true;
+						}
+					} catch (e) {
+						// Ignore parse errors
+					}
+				}
+			};
+
+			subscriber.on("message", onMessage);
+
+			while (!isDone) {
+				await new Promise((resolve) => setTimeout(resolve, 500));
+				if (c.req.raw.signal.aborted) {
+					break;
+				}
+			}
+
+			await subscriber.unsubscribe(channel);
+			await subscriber.quit();
+		});
+	})
 	.get("/:id/agent/:sessionId", async (c) => {
 		const canvasId = c.req.param("id");
 		const sessionId = c.req.param("sessionId");
@@ -485,15 +602,57 @@ const canvasRoutes = new Hono<{ Variables: AuthHonoTypes }>({
 			throw new HTTPException(404, { message: "Session not found" });
 		}
 
+		const extractText = (content: any): string => {
+			if (!content) return "";
+			if (typeof content === "string") return content;
+
+			// Handle the structure { content: ... }
+			const rawContent =
+				content.content !== undefined ? content.content : content;
+
+			if (typeof rawContent === "string") return rawContent;
+			if (Array.isArray(rawContent)) {
+				return rawContent.map((item: any) => item.text || "").join("\n");
+			}
+			if (typeof rawContent === "object" && rawContent !== null) {
+				if (rawContent.type === "function_call") {
+					return ""; // Don't show raw function calls as text
+				}
+				return rawContent.text || JSON.stringify(rawContent);
+			}
+			return "";
+		};
+
 		// Map events to ChatMessage format
 		const messages = session.events
 			.filter((e) => e.role === "USER" || e.role === "ASSISTANT")
-			.map((e) => ({
-				id: e.id,
-				role: e.role === "USER" ? "user" : "model",
-				text: (e.content as any)?.text || "",
-				createdAt: e.createdAt,
-			}));
+			.map((e) => {
+				const content = e.content as any;
+				return {
+					id: e.id,
+					role: e.role === "USER" ? "user" : "model",
+					text: extractText(content),
+					eventType: e.eventType,
+					patchId: content?.patchId,
+					createdAt: e.createdAt,
+				};
+			});
+
+		// If session is active, check for live accumulated text from runner
+		if (session.status === "ACTIVE") {
+			const liveText = AgentRunnerManager.getAccumulatedText(sessionId);
+			if (liveText !== null) {
+				messages.push({
+					id: `live-${sessionId}`,
+					role: "model",
+					text: liveText,
+					eventType: "message",
+					patchId: undefined,
+					createdAt: new Date(),
+					isStreaming: true,
+				} as any);
+			}
+		}
 
 		return c.json({ ...session, messages });
 	});

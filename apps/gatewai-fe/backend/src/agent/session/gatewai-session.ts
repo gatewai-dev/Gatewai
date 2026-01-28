@@ -523,6 +523,24 @@ export class PrismaAgentSession
 			data: { status: "COMPLETED" },
 		});
 	}
+
+	/**
+	 * Notify about a proposed patch via Redis
+	 */
+	async notifyPatch(patchId: string): Promise<void> {
+		const sessionId = await this.getSessionId();
+		const channel = `agent:session:${sessionId}`;
+
+		const { redisPublisher } = await import("../../lib/redis.js");
+
+		await redisPublisher.publish(
+			channel,
+			JSON.stringify({
+				type: "patch_proposed",
+				patchId: patchId,
+			}),
+		);
+	}
 }
 
 /**

@@ -14,57 +14,37 @@ export const RunCanvasAgent = async function* ({
 	sessionId,
 	userMessage,
 	model,
+	signal,
 }: {
 	canvasId: string;
 	sessionId: string;
 	userMessage: string;
 	model: string;
+	signal?: AbortSignal;
 }) {
 	const logDir = path.join(__dirname, "logs");
 	const logPath = path.join(logDir, `session_${sessionId}.log`);
 
 	const session = new PrismaAgentSession({ sessionId, canvasId });
-	const agent = await CreateOrchestratorAgentForCanvas({
-		canvasId,
-		session,
-		modelName: model,
-	});
-	await connectMCP();
+	try {
+		const agent = await CreateOrchestratorAgentForCanvas({
+			canvasId,
+			session,
+			modelName: model,
+		});
+		await connectMCP();
 
-	const result = await run(agent, userMessage, { stream: true, session });
+		const result = await run(agent, userMessage, {
+			stream: true,
+			session,
+			signal,
+		});
 
-	for await (const chunk of result.toStream()) {
-		// Filter out unwanted raw model stream events that clutter the frontend
-		// if (ENV_CONFIG.LOG_LEVEL === "debug") {
-		// 	const logEntry = {
-		// 		timestamp: new Date().toISOString(),
-		// 		type: chunk.type,
-		// 		detail:
-		// 			chunk.type === "run_item_stream_event"
-		// 				? { event: chunk.name, item: chunk.item }
-		// 				: chunk,
-		// 	};
-		//
-		// 	try {
-		// 		await mkdir(logDir, { recursive: true });
-		// 		await appendFile(logPath, JSON.stringify(logEntry) + "\n");
-		// 	} catch (err) {
-		// 		console.error(
-		// 			`Failed to write to log file for session ${sessionId}:`,
-		// 			err,
-		// 		);
-		// 	}
-		// }
-
-		// if (chunk.type === "raw_model_stream_event") {
-		// 	const data = chunk.data;
-		// 	if (data?.type === "response_done") continue;
-		// 	if (data?.type === "response_started") continue;
-		// 	if (data?.type === "model" && data?.event?.type === "stream-start")
-		// 		continue;
-		// }
-		// if (chunk?.type === "run_item_stream_event") continue;
-		console.log({ chunk });
-		yield chunk;
+		for await (const chunk of result.toStream()) {
+			console.log({ chunk });
+			yield chunk;
+		}
+	} finally {
+		await session.completeSession();
 	}
 };
