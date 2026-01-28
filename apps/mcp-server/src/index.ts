@@ -733,13 +733,23 @@ app.get("/health", (c) => c.json({ status: "ok", env: env.LOG_LEVEL }));
 // MCP SSE Endpoint
 app.get("/mcp", async (c) => {
 	console.log("MCP SSE request received");
-	c.header("X-Accel-Buffering", "no");
+    
+    // Core NGINX override
+    c.header("X-Accel-Buffering", "no");
+    
+    // Core SSE standards
+    c.header("Content-Type", "text/event-stream");
+    c.header("Cache-Control", "no-cache, no-transform");
+    c.header("Connection", "keep-alive");
+    
+    // If you are behind Cloudflare or other proxies
+    c.header("Transfer-Encoding", "chunked");
 	return transport.handleRequest(c);
 });
 
 // MCP POST Endpoint (for JSON-RPC messages)
 app.post("/mcp", async (c) => {
-	console.log("MCP POST request received");
+	console.log("MCP POST request received", c);
 	return transport.handleRequest(c);
 });
 

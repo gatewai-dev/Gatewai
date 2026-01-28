@@ -240,6 +240,17 @@ export function AgentChatSection({ onClose }: { onClose: () => void }) {
 
 	const isNewSession = !activeSessionId || messages.length === 0;
 
+	const filteredMessages = messages.filter((msg) => {
+		const isNotEmpty =
+			msg.text.trim() !== "" ||
+			msg.eventType === "patch_proposed" ||
+			msg.isStreaming;
+		const isPending =
+			msg.eventType === "patch_proposed" &&
+			msg.patchId === pendingPatchId;
+		return isNotEmpty && !isPending;
+	});
+
 	return (
 		<div className="flex flex-col h-full bg-background/50 relative">
 			{/* Header */}
@@ -329,67 +340,61 @@ export function AgentChatSection({ onClose }: { onClose: () => void }) {
 						ref={scrollRef}
 					>
 						<div className="max-w-3xl mx-auto w-full p-2 space-y-6 pb-28">
-							{messages
-								.filter((msg) => {
-									const isNotEmpty =
-										msg.text.trim() !== "" ||
-										msg.eventType === "patch_proposed" ||
-										msg.isStreaming;
-									const isPending =
-										msg.eventType === "patch_proposed" &&
-										msg.patchId === pendingPatchId;
-									return isNotEmpty && !isPending;
-								})
-								.map((msg) => (
+							{filteredMessages.map((msg) => (
+								<div
+									key={msg.id}
+									className={cn(
+										"flex w-full animate-in slide-in-from-bottom-2 duration-300",
+										msg.role === "user"
+											? "justify-end"
+											: msg.role === "system"
+												? "justify-center"
+												: "justify-start",
+									)}
+								>
 									<div
-										key={msg.id}
 										className={cn(
-											"flex w-full animate-in slide-in-from-bottom-2 duration-300",
-											msg.role === "user"
-												? "justify-end"
-												: msg.role === "system"
-													? "justify-center"
-													: "justify-start",
+											"px-3 py-2 rounded-2xl text-xs transition-all",
+											msg.role === "system"
+												? "bg-accent/50 text-muted-foreground rounded-full text-center max-w-lg"
+												: msg.role === "user"
+													? "bg-primary text-primary-foreground rounded-tr-none max-w-[85%]"
+													: "bg-muted/50 border border-border/50 text-foreground rounded-tl-none max-w-[85%]",
+											msg.eventType === "patch_proposed" &&
+												"bg-transparent border-0 p-0 max-w-full w-full",
 										)}
+										role={msg.role === "system" ? "status" : undefined}
+										aria-live={msg.isStreaming ? "polite" : undefined}
 									>
-										<div
-											className={cn(
-												"px-3 py-2 rounded-2xl text-xs transition-all",
-												msg.role === "system"
-													? "bg-accent/50 text-muted-foreground rounded-full text-center max-w-lg"
-													: msg.role === "user"
-														? "bg-primary text-primary-foreground rounded-tr-none max-w-[85%]"
-														: "bg-muted/50 border border-border/50 text-foreground rounded-tl-none max-w-[85%]",
-												msg.eventType === "patch_proposed" &&
-													"bg-transparent border-0 p-0 max-w-full w-full",
-											)}
-											role={msg.role === "system" ? "status" : undefined}
-											aria-live={msg.isStreaming ? "polite" : undefined}
-										>
-											{msg.eventType === "patch_proposed" && msg.patchId ? (
-												<PatchReviewCard
-													patchId={msg.patchId}
-													initialStatus={msg.patchStatus}
-													onComplete={() => {}} // No-op for history patches
-												/>
-											) : msg.role === "model" ? (
-												<>
-													<MarkdownRenderer markdown={msg.text} />
-													{msg.isStreaming && (
-														<div className="flex items-center gap-2 mt-2">
-															<LoadingSpinner className="size-4" />
-															<span className="text-[10px] text-muted-foreground">
-																Generating...
-															</span>
-														</div>
-													)}
-												</>
-											) : (
-												<div className="whitespace-pre-wrap">{msg.text}</div>
-											)}
-										</div>
+										{msg.eventType === "patch_proposed" && msg.patchId ? (
+											<PatchReviewCard
+												patchId={msg.patchId}
+												initialStatus={msg.patchStatus}
+												onComplete={() => {}} // No-op for history patches
+											/>
+										) : msg.role === "model" ? (
+											<>
+												<MarkdownRenderer markdown={msg.text} />
+												{msg.isStreaming && (
+													<div
+														className={cn(
+															"flex items-center gap-2",
+															msg.text.trim() ? "mt-2" : "mt-0",
+														)}
+													>
+														<LoadingSpinner className="size-4" />
+														<span className="text-[10px] text-muted-foreground">
+															Generating...
+														</span>
+													</div>
+												)}
+											</>
+										) : (
+											<div className="whitespace-pre-wrap">{msg.text}</div>
+										)}
 									</div>
-								))}
+								</div>
+							))}
 							{pendingPatchId && (
 								<div className="flex w-full justify-start animate-in slide-in-from-bottom-2 duration-300">
 									<PatchReviewCard
@@ -398,6 +403,27 @@ export function AgentChatSection({ onClose }: { onClose: () => void }) {
 									/>
 								</div>
 							)}
+							{isLoading &&
+								(filteredMessages.length === 0 ||
+									filteredMessages[filteredMessages.length - 1].role !==
+										"model" ||
+									!filteredMessages[filteredMessages.length - 1].isStreaming) && (
+									<div className="flex w-full justify-start animate-in slide-in-from-bottom-2 duration-300">
+										<div
+											className={cn(
+												"px-3 py-2 rounded-2xl text-xs transition-all",
+												"bg-muted/50 border border-border/50 text-foreground rounded-tl-none max-w-[85%]",
+											)}
+										>
+											<div className="flex items-center gap-2">
+												<LoadingSpinner className="size-4" />
+												<span className="text-[10px] text-muted-foreground">
+													Generating...
+												</span>
+											</div>
+										</div>
+									</div>
+								)}
 						</div>
 					</ScrollArea>
 

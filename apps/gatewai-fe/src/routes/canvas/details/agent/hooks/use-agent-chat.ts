@@ -217,8 +217,8 @@ export function useAgentChatStream(
 				const lastPatchMsg = [...historyMessages]
 					.reverse()
 					.find((m) => m.eventType === "patch_proposed" && m.patchId);
-				if (lastPatchMsg?.patchStatus === "PENDING") {
-					setPendingPatchId(lastPatchMsg.patchId!);
+				if (lastPatchMsg?.patchStatus === "PENDING" && lastPatchMsg.patchId) {
+					setPendingPatchId(lastPatchMsg.patchId);
 				}
 			} catch (error) {
 				console.error("Error fetching history:", error);

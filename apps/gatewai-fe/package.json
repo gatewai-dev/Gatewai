@@ -16,7 +16,7 @@
 		"test": "vitest run"
 	},
 	"dependencies": {
-		"@ai-sdk/google": "^3.0.10",
+		"@ai-sdk/google": "^3.0.16",
 		"@dnd-kit/core": "^6.3.1",
 		"@dnd-kit/sortable": "^10.0.0",
 		"@dnd-kit/utilities": "^3.2.2",
@@ -64,7 +64,7 @@
 		"@remotion/web-renderer": "4.0.402",
 		"@tailwindcss/vite": "^4.1.16",
 		"@xyflow/react": "^12.8.4",
-		"ai": "^6.0.44",
+		"ai": "^6.0.58",
 		"better-auth": "^1.4.17",
 		"bullmq": "^5.66.4",
 		"canvas": "^3.2.0",

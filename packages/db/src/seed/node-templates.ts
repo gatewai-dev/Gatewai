@@ -200,7 +200,7 @@ export async function SEED_createNodeTemplates(prisma: PrismaClient) {
 		{
 			type: NodeType.TextMerger,
 			displayName: "Text Merger",
-			description: "Merge texts",
+			description: "Merges connected texts.",
 			category: "Tools",
 			subcategory: null,
 			tokenPrice: 0.0,

@@ -103,15 +103,22 @@ const CanvasAgentProvider = ({
 		useCreateCanvasAgentSessionMutation();
 
 	const createNewSession = useCallback(async () => {
-		try {
-			const res = await createSession({ param: { id: canvasId } }).unwrap();
-			if (isMountedRef.current && res?.data) {
-				setActiveSessionId(res.data.id);
+        try {
+            // RTK Query's unwrap() is fine, but we can check if we still care about the result
+            const res = await createSession({ param: { id: canvasId } }).unwrap();
+
+				console.log('Act', res)
+            if (res?.id) {
+                setActiveSessionId(res.id);
+            }
+        } catch (e) {
+			if (e instanceof Error) {
+            	if (e.name !== 'AbortError') {
+            	    console.error("Failed to create session", e);
+            	}
 			}
-		} catch (e) {
-			console.error("Failed to create session", e);
-		}
-	}, [canvasId, createSession]);
+        }
+    }, [canvasId, createSession]);
 
 	useEffect(() => {
 		if (isLoadingSessions || activeSessionId || isCreatingSession) return;

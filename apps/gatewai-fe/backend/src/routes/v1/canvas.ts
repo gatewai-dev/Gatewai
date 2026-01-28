@@ -448,6 +448,25 @@ const canvasRoutes = new Hono<{ Variables: AuthHonoTypes }>({
 	.post("/:id/agent/sessions", async (c) => {
 		const canvasId = c.req.param("id");
 
+		// 1. Check for an existing session on this canvas that has no events
+		const existingEmptySession = await prisma.agentSession.findFirst({
+			where: {
+				canvasId,
+				events: {
+					none: {},
+				},
+			},
+			orderBy: {
+				createdAt: "desc",
+			},
+		});
+
+		// 2. If found, return the existing session
+		if (existingEmptySession) {
+			return c.json(existingEmptySession, 200);
+		}
+
+		// 3. Otherwise, create a new one
 		const session = await prisma.agentSession.create({
 			data: {
 				canvasId,
@@ -488,6 +507,7 @@ const canvasRoutes = new Hono<{ Variables: AuthHonoTypes }>({
 			c.header("X-Accel-Buffering", "no");
 			c.header("Cache-Control", "no-cache");
 			c.header("Content-Type", "text/event-stream");
+			c.header('Connection', 'keep-alive');
 
 			// Start the agent runner in the background
 			await AgentRunnerManager.start({
