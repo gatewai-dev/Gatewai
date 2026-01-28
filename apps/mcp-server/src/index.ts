@@ -729,21 +729,19 @@ app.get("/health", (c) => c.json({ status: "ok", env: env.LOG_LEVEL }));
 // MCP SSE Endpoint
 app.get("/mcp", async (c) => {
 	console.log("MCP SSE request received");
-	if (!server.isConnected()) {
-		console.log("Connecting MCP server to transport...");
-		await server.connect(transport);
-	}
 	return transport.handleRequest(c);
 });
 
 // MCP POST Endpoint (for JSON-RPC messages)
 app.post("/mcp", async (c) => {
 	console.log("MCP POST request received");
-	if (!server.isConnected()) {
-		console.log("Connecting MCP server to transport...");
-		await server.connect(transport);
-	}
 	return transport.handleRequest(c);
+});
+
+// Connect the server to the transport once at startup
+console.log("Connecting MCP server to transport...");
+server.connect(transport).catch((err) => {
+	console.error("Failed to connect MCP server to transport:", err);
 });
 
 serve({

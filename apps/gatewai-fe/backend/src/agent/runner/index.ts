@@ -6,7 +6,7 @@ import { ENV_CONFIG } from "../../config.js";
 import { logger } from "../../logger.js";
 import { CreateOrchestratorAgentForCanvas } from "../agents/orchestrator/index.js";
 import { PrismaAgentSession } from "../session/gatewai-session.js";
-import { localGatewaiMCPTool } from "../tools/gatewai-mcp.js";
+import { connectMCP, localGatewaiMCPTool } from "../tools/gatewai-mcp.js";
 
 const __dirname = path.dirname(fileURLToPath(import.meta.url));
 
@@ -30,11 +30,7 @@ export const RunCanvasAgent = async function* ({
 		session,
 		modelName: model,
 	});
-	try {
-		await localGatewaiMCPTool.connect();
-	} catch (err) {
-		logger.error({ err }, "Failed to connect to MCP tool");
-	}
+	await connectMCP();
 
 	const result = await run(agent, userMessage, { stream: true, session });
 

@@ -17,4 +17,31 @@ const localGatewaiMCPTool = new MCPServerStreamableHttp({
 	},
 });
 
+let isConnecting = false;
+let isConnected = false;
+
+export const connectMCP = async () => {
+	if (isConnected) return;
+	if (isConnecting) {
+		// Wait for existing connection attempt
+		while (isConnecting) {
+			await new Promise((resolve) => setTimeout(resolve, 100));
+		}
+		return;
+	}
+
+	isConnecting = true;
+	try {
+		logger.info("Connecting to MCP server...");
+		await localGatewaiMCPTool.connect();
+		isConnected = true;
+		logger.info("Successfully connected to MCP server");
+	} catch (err) {
+		logger.error({ err }, "Failed to connect to MCP tool");
+		// Don't set isConnected to true, so we can retry later
+	} finally {
+		isConnecting = false;
+	}
+};
+
 export { localGatewaiMCPTool };
