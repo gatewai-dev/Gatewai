@@ -124,6 +124,8 @@ const canvasRoutes = new Hono<{ Variables: AuthHonoTypes }>({
 					},
 				});
 
+				console.log(`Patch created: ${patch.id} for canvas ${id}`);
+
 				if (agentSessionId) {
 					await prisma.event.create({
 						data: {
@@ -138,6 +140,7 @@ const canvasRoutes = new Hono<{ Variables: AuthHonoTypes }>({
 					});
 				}
 
+				console.log(`Notifying patch: ${patch.id}`);
 				canvasAgentState.notifyPatch(id, patch.id);
 
 				return c.json(patch, 201);
@@ -426,14 +429,18 @@ const canvasRoutes = new Hono<{ Variables: AuthHonoTypes }>({
 
 			return streamSSE(c, async (stream) => {
 				const onPatch = async (cId: string, pId: string) => {
-					if (cId === canvasId) {
-						await stream.writeSSE({
-							data: JSON.stringify({
-								type: "patch_proposed",
-								patchId: pId,
-							}),
-							event: "patch_proposed",
-						});
+					try {
+						if (cId === canvasId) {
+							await stream.writeSSE({
+								data: JSON.stringify({
+									type: "patch_proposed",
+									patchId: pId,
+								}),
+								event: "patch_proposed",
+							});
+						}
+					} catch (error) {
+						console.error("Error writing patch event to SSE stream:", error);
 					}
 				};
 
@@ -453,6 +460,7 @@ const canvasRoutes = new Hono<{ Variables: AuthHonoTypes }>({
 						});
 					}
 				} catch (e) {
+					console.error("Error in RunCanvasAgent:", e);
 					throw e;
 				} finally {
 					canvasAgentState.off("patch", onPatch);
