@@ -7,8 +7,8 @@ logger.info(`Initializing MCP Tool with URL: ${ENV_CONFIG.MCP_URL}`);
 const localGatewaiMCPTool = new MCPServerStreamableHttp({
 	url: ENV_CONFIG.MCP_URL,
 	name: "Gatewai MCP Streamable HTTP Server",
-	clientSessionTimeoutSeconds: 15,
-	timeout: 15000,
+	clientSessionTimeoutSeconds: 300,
+	timeout: 300000,
 	reconnectionOptions: {
 		maxRetries: 2,
 		initialReconnectionDelay: 2000,
