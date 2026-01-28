@@ -3,12 +3,21 @@ import { generateId } from "@/lib/idgen";
 import { rpcClient } from "@/rpc/client";
 
 export type MessageRole = "user" | "model" | "system";
+export type MessageType =
+	| "message"
+	| "function_call"
+	| "function_call_result"
+	| "tool_call"
+	| "patch_proposed"
+	| "patch_action";
+
 export interface ChatMessage {
 	id: string;
 	role: MessageRole;
 	text: string;
 	isStreaming?: boolean;
 	eventType?: string;
+	messageType?: MessageType;
 	patchId?: string;
 	patchStatus?: "PENDING" | "ACCEPTED" | "REJECTED";
 	createdAt: Date;

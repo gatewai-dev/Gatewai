@@ -1,6 +1,4 @@
-import { HTTPException } from "hono/http-exception";
 import pino from "pino";
-import { assertIsError } from "./utils/misc.js";
 
 export const logger = pino({
 	level: process.env.LOG_LEVEL || "debug",

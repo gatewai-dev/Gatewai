@@ -615,8 +615,12 @@ const canvasRoutes = new Hono<{ Variables: AuthHonoTypes }>({
 				return rawContent.map((item: any) => item.text || "").join("\n");
 			}
 			if (typeof rawContent === "object" && rawContent !== null) {
-				if (rawContent.type === "function_call") {
-					return ""; // Don't show raw function calls as text
+				// Don't show raw function calls or function call results as text
+				if (
+					rawContent.type === "function_call" ||
+					rawContent.type === "function_call_result"
+				) {
+					return "";
 				}
 				return rawContent.text || JSON.stringify(rawContent);
 			}

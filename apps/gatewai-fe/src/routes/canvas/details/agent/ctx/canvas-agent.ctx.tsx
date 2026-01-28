@@ -18,6 +18,15 @@ const SELECTED_MODEL_STORAGE_KEY = "canvas_agent_selected_model";
 const DEFAULT_MODEL = "gemini-3-flash-preview";
 
 export type MessageRole = "user" | "model" | "system";
+
+export type MessageType =
+	| "message"
+	| "function_call"
+	| "function_call_result"
+	| "tool_call"
+	| "patch_proposed"
+	| "patch_action";
+
 export interface ChatMessage {
 	id: string;
 	role: MessageRole;
@@ -25,6 +34,7 @@ export interface ChatMessage {
 	isStreaming?: boolean;
 	createdAt: Date;
 	eventType?: string;
+	messageType?: MessageType;
 	patchId?: string;
 	patchStatus?: "PENDING" | "ACCEPTED" | "REJECTED";
 }
