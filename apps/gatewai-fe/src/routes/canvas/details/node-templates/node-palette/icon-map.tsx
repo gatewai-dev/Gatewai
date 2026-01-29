@@ -7,7 +7,6 @@ import {
 	PiCloudFog,
 	PiCropThin,
 	PiDownloadSimple,
-	PiDropDuotone,
 	PiEye,
 	PiFilmReelLight,
 	PiFrameCorners,
@@ -16,12 +15,12 @@ import {
 	PiNote,
 	PiPaintBrushFill,
 	PiResize,
-	PiSpeakerHifi,
 	PiStack,
 	PiTextT,
 	PiUploadSimple,
 	PiVideoCamera,
 } from "react-icons/pi";
+import { TbAdjustments, TbVolume } from "react-icons/tb";
 import type { NodeEntityType } from "@/store/nodes";
 
 export const NODE_ICON_MAP: Record<
@@ -43,7 +42,7 @@ export const NODE_ICON_MAP: Record<
 	Blur: { mainIcon: PiCloudFog },
 	Compositor: { mainIcon: PiStack },
 	Note: { mainIcon: PiNote },
-	Modulate: { mainIcon: PiDropDuotone },
+	Modulate: { mainIcon: TbAdjustments },
 	ImageGen: { mainIcon: PiMagicWand, optionalIcons: [Gemini.Color] },
 	LLM: { mainIcon: PiBrain, optionalIcons: [Gemini.Color] },
 	VideoGen: { mainIcon: PiVideoCamera, optionalIcons: [Gemini.Color] },
@@ -55,6 +54,6 @@ export const NODE_ICON_MAP: Record<
 		mainIcon: PiArrowsHorizontal,
 		optionalIcons: [Gemini.Color],
 	},
-	TextToSpeech: { mainIcon: PiSpeakerHifi, optionalIcons: [Gemini.Color] },
+	TextToSpeech: { mainIcon: TbVolume, optionalIcons: [Gemini.Color] },
 	SpeechToText: { mainIcon: PiMicrophone, optionalIcons: [Gemini.Color] },
 };

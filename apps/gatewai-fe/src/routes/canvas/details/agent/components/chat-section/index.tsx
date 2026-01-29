@@ -208,7 +208,7 @@ function Message({ message, patchId, onPatchComplete }: MessageProps) {
 							>
 								<LoadingSpinner className="size-4" />
 								<span className="text-[10px] text-muted-foreground">
-									Generating...
+									Working...
 								</span>
 							</div>
 						)}
@@ -238,9 +238,7 @@ function LoadingIndicator() {
 			<div className="bg-muted/50 border border-border/50 text-foreground rounded-2xl rounded-tl-none max-w-[85%] px-3 py-2 text-xs">
 				<div className="flex items-center gap-2">
 					<LoadingSpinner className="size-4" />
-					<span className="text-[10px] text-muted-foreground">
-						Generating...
-					</span>
+					<span className="text-[10px] text-muted-foreground">Working...</span>
 				</div>
 			</div>
 		</div>
