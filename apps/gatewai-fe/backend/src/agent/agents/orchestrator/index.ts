@@ -395,7 +395,6 @@ export const CreateOrchestratorAgentForCanvas = async ({
 			})
 			.filter((line) => line.split(": ")[1]?.trim())
 			.join("\n\n---\n\n");
-		console.log({ wwq: historyStr.length, historyStr });
 		return `${BASE_SYSTEM_PROMPT}
 
 # SESSION CONTEXT

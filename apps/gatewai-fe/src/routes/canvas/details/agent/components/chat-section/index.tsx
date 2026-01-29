@@ -34,7 +34,7 @@ interface InputAreaProps {
 	isLoading: boolean;
 	handleSubmit: () => Promise<void>;
 	stopGeneration: () => void;
-	textareaRef: React.RefObject<HTMLTextAreaElement>;
+	textareaRef: React.RefObject<HTMLTextAreaElement | null>;
 	selectedModel: string;
 	setSelectedModel: (value: string) => void;
 }
@@ -155,10 +155,6 @@ function InputArea({
 	);
 }
 
-// ============================================================================
-// Message Component
-// ============================================================================
-
 interface MessageProps {
 	message: {
 		id: string;
@@ -235,10 +231,6 @@ function Message({ message, patchId, onPatchComplete }: MessageProps) {
 	return null;
 }
 
-// ============================================================================
-// Loading Indicator Component
-// ============================================================================
-
 function LoadingIndicator() {
 	return (
 		<div className="flex w-full justify-start animate-in slide-in-from-bottom-2 duration-300">
@@ -253,10 +245,6 @@ function LoadingIndicator() {
 		</div>
 	);
 }
-
-// ============================================================================
-// Chat Header Component
-// ============================================================================
 
 interface ChatHeaderProps {
 	messageCount: number;
@@ -331,9 +319,7 @@ function ChatHeader({
 	);
 }
 
-// ============================================================================
 // Empty State Component
-// ============================================================================
 
 interface EmptyStateProps {
 	inputValue: string;
@@ -341,7 +327,7 @@ interface EmptyStateProps {
 	isLoading: boolean;
 	handleSubmit: () => Promise<void>;
 	stopGeneration: () => void;
-	textareaRef: React.RefObject<HTMLTextAreaElement>;
+	textareaRef: React.RefObject<HTMLTextAreaElement | null>;
 	selectedModel: string;
 	setSelectedModel: (value: string) => void;
 }
@@ -383,9 +369,7 @@ function EmptyState({
 	);
 }
 
-// ============================================================================
 // Main Component
-// ============================================================================
 
 export function AgentChatSection({ onClose }: { onClose: () => void }) {
 	const {
@@ -410,20 +394,12 @@ export function AgentChatSection({ onClose }: { onClose: () => void }) {
 	const [inputValue, setInputValue] = useState("");
 	const [isHistoryOpen, setIsHistoryOpen] = useState(false);
 
-	// ============================================================================
-	// Mount/Unmount Tracking
-	// ============================================================================
-
 	useEffect(() => {
 		isMountedRef.current = true;
 		return () => {
 			isMountedRef.current = false;
 		};
 	}, []);
-
-	// ============================================================================
-	// Scroll Management
-	// ============================================================================
 
 	const scrollToBottom = useCallback(() => {
 		if (!isMountedRef.current) return;
@@ -448,10 +424,6 @@ export function AgentChatSection({ onClose }: { onClose: () => void }) {
 		scrollToBottom();
 	}, [messages, isLoading, scrollToBottom]);
 
-	// ============================================================================
-	// Message Submission
-	// ============================================================================
-
 	const handleSubmit = useCallback(async () => {
 		if (!inputValue.trim() || isLoading) return;
 
@@ -473,10 +445,6 @@ export function AgentChatSection({ onClose }: { onClose: () => void }) {
 		}, 100);
 	}, [inputValue, isLoading, sendMessage, scrollToBottom]);
 
-	// ============================================================================
-	// Keyboard Shortcuts
-	// ============================================================================
-
 	useEffect(() => {
 		const handleKeyDown = (e: KeyboardEvent) => {
 			// Ctrl/Cmd + N for new session
@@ -493,10 +461,6 @@ export function AgentChatSection({ onClose }: { onClose: () => void }) {
 		window.addEventListener("keydown", handleKeyDown);
 		return () => window.removeEventListener("keydown", handleKeyDown);
 	}, [createNewSession, onClose, isHistoryOpen]);
-
-	// ============================================================================
-	// Message Processing
-	// ============================================================================
 
 	// Group messages with their associated patches
 	const processedMessages = messages
@@ -534,20 +498,12 @@ export function AgentChatSection({ onClose }: { onClose: () => void }) {
 			[] as Array<any>,
 		);
 
-	// ============================================================================
-	// Derived State
-	// ============================================================================
-
 	const isNewSession = !activeSessionId || messages.length === 0;
 	const shouldShowLoadingIndicator =
 		isLoading &&
 		(processedMessages.length === 0 ||
 			processedMessages[processedMessages.length - 1]?.role !== "model" ||
 			!processedMessages[processedMessages.length - 1]?.isStreaming);
-
-	// ============================================================================
-	// Render
-	// ============================================================================
 
 	return (
 		<div className="flex flex-col h-full bg-background/50 relative">

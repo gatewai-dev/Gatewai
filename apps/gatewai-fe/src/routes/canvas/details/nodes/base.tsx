@@ -30,7 +30,7 @@ import {
 import { NODE_ICON_MAP } from "../node-templates/node-palette/icon-map";
 import { NodeMenu } from "./node-menu";
 
-const DEFAULT_COLOR = "#9ca3af";
+const DEFAULT_COLOR = "#ccc";
 
 /**
  * Generates styles for the handle based on processor state.
@@ -45,7 +45,28 @@ export const getHandleStyle = (
 		borderRadius: "2px",
 	};
 
-	// 1. Error state (from validation or status, but only if connected)
+	// Get the resolved color if the handle has a specific type/result
+	const resolvedColor =
+		status?.color || (status?.type ? dataTypeColors[status.type]?.hex : null);
+
+	// A handle is "Multi-Type" only if it hasn't resolved to a single type yet
+	const isMultiType = !resolvedColor && defColors.length > 1;
+
+	// Helper to generate gradient segments
+	const getMultiColorGradient = () => {
+		const colors = defColors.map(
+			(t) =>
+				dataTypeColors[t]?.hex || dataTypeColors["Any"]?.hex || DEFAULT_COLOR,
+		);
+		const segments = colors.map((color, i) => {
+			const start = (i / colors.length) * 100;
+			const end = ((i + 1) / colors.length) * 100;
+			return `${color} ${start}%, ${color} ${end}%`;
+		});
+		return `conic-gradient(${segments.join(", ")})`;
+	};
+
+	// 1. Error state (Connected but invalid)
 	if (status && !status.valid && status.isConnected) {
 		return {
 			...baseDimensions,
@@ -55,30 +76,52 @@ export const getHandleStyle = (
 		};
 	}
 
-	// 2. Disconnected state: Transparent/Hollow
+	// 2. Disconnected state
 	if (!status?.isConnected) {
-		// If disconnected, show a hollow box with the color of the *default* type
-		// to indicate what *should* go there.
-		const defaultColor =
-			dataTypeColors[defColors[0]]?.hex ||
-			dataTypeColors["Any"]?.hex ||
-			DEFAULT_COLOR;
+		if (isMultiType) {
+			return {
+				...baseDimensions,
+				backgroundColor: "transparent",
+				border: "2px solid transparent",
+				backgroundImage: `linear-gradient(var(--card), var(--card)), ${getMultiColorGradient()}`,
+				backgroundOrigin: "border-box",
+				backgroundClip: "padding-box, border-box",
+			};
+		}
+
+		const color =
+			resolvedColor || dataTypeColors[defColors[0]]?.hex || DEFAULT_COLOR;
 		return {
 			...baseDimensions,
-			backgroundColor: "var(--card)", // Hollow center
-			border: `2px solid ${defaultColor}`,
-			boxShadow: "none",
+			backgroundColor: "var(--card)",
+			border: `2px solid ${color}`,
 		};
 	}
 
-	// 3. Connected state: Filled with the resolved active type color
-	const color = status.color || DEFAULT_COLOR;
+	// 3. Connected/Resolved state
+	if (resolvedColor) {
+		return {
+			...baseDimensions,
+			backgroundColor: resolvedColor,
+			border: "1px solid var(--background)",
+			boxShadow: `0 0 0 1px ${resolvedColor}80`,
+		};
+	}
+
+	// 4. Connected but Ambiguous (Still Multi-type)
+	if (isMultiType) {
+		return {
+			...baseDimensions,
+			backgroundImage: getMultiColorGradient(),
+			border: "1px solid var(--background)",
+		};
+	}
+
+	// Fallback
 	return {
 		...baseDimensions,
-		backgroundColor: color,
+		backgroundColor: DEFAULT_COLOR,
 		border: "1px solid var(--background)",
-		boxShadow: `0 0 0 1px ${color}80`,
-		transition: "background-color 0.15s ease, box-shadow 0.15s ease",
 	};
 };
 
@@ -105,7 +148,7 @@ const NodeHandle = memo(
 			() => getHandleStyle(status, handle.dataTypes),
 			[status, handle.dataTypes],
 		);
-
+		console.log({ handleStyle });
 		let activeColor = status?.color || dataTypeColors[handle.dataTypes[0]]?.hex;
 		if (isRequiredErr) {
 			activeColor = dataTypeColors[handle.dataTypes[0]]?.hex;
@@ -157,7 +200,7 @@ const NodeHandle = memo(
 					)}
 				>
 					<span
-						className="text-[9px] font-bold uppercase tracking-wider shadow-sm leading-none"
+						className="text-[10px] font-bold uppercase tracking-wider shadow-sm leading-none"
 						style={{
 							color: activeColor,
 							textShadow: "0 1px 2px rgba(0,0,0,0.1)",

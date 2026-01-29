@@ -41,7 +41,7 @@ export function PatchReviewCard({
 						animate={{ opacity: 1, y: 0 }}
 						className="flex items-center gap-3 p-3 rounded-xl border bg-white/50 dark:bg-zinc-900/50 backdrop-blur-sm"
 					>
-						<div className="shrink-0 w-8 h-8 flex items-center justify-center rounded-full bg-green-500/10">
+						<div className="shrink-0 w-8 h-8 flex items-center justify-center rounded-full ">
 							<CheckCircle2 className="w-4 h-4 text-green-600 dark:text-green-400" />
 						</div>
 						<span className="text-[13px] font-medium text-zinc-600 dark:text-zinc-300">
