@@ -1,4 +1,4 @@
-import type { Logger } from "@openai/agents";
+
 import { MCPServerStreamableHttp } from "@openai/agents";
 import { ENV_CONFIG } from "../../config.js";
 import { logger } from "../../logger.js";
@@ -6,7 +6,7 @@ import { logger } from "../../logger.js";
 logger.info(`Initializing MCP Tool with URL: ${ENV_CONFIG.MCP_URL}`);
 
 // Create a logger adapter that implements the MCP Logger interface
-const mcpLogger: Logger = {
+const mcpLogger = {
 	namespace: "mcp-server",
 	debug: (message: string, ...args: any[]) => {
 		logger.debug({ mcpArgs: args }, message);
