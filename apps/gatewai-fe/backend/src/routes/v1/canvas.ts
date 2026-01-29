@@ -163,11 +163,6 @@ const canvasRoutes = new Hono<{ Variables: AuthHonoTypes }>({
 						where: { id: agentSessionId },
 					});
 					if (session) {
-						// We need to instantiate PrismaAgentSession to call notifyPatch
-						// Or we can just publish directly here since we have the session ID
-						// But let's use the session class for consistency if possible,
-						// or just publish directly to Redis to avoid overhead.
-						// Let's use the session class to keep logic encapsulated.
 						const { loadSession } = await import(
 							"../../agent/session/gatewai-session.js"
 						);

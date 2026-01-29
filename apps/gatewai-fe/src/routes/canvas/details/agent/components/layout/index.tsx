@@ -20,7 +20,7 @@ function AgentLayoutInner() {
 				variant="ghost"
 				onClick={() => setIsCollapsed(false)}
 				className={cn(
-					"absolute top-3 right-3 z-50 w-42 h-12 rounded-full bg-background/80 backdrop-blur-md border border-white/10 shadow-xl flex items-center justify-center hover:bg-accent transition-all",
+					"absolute top-3 right-3 z-50 w-28 h-12 rounded-full bg-background/80 backdrop-blur-md border border-white/10 shadow-xl flex items-center justify-center hover:bg-accent transition-all",
 					{
 						hidden: !isCollapsed,
 					},

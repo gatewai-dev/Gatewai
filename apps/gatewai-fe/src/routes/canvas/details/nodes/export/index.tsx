@@ -1,12 +1,6 @@
 import type { NodeProps } from "@xyflow/react";
 import { AlertCircle, Download, InfoIcon, Loader2 } from "lucide-react";
 import { memo, useState } from "react";
-import {
-	Accordion,
-	AccordionContent,
-	AccordionItem,
-	AccordionTrigger,
-} from "@/components/ui/accordion";
 import { Alert, AlertDescription } from "@/components/ui/alert";
 import { Button } from "@/components/ui/button";
 import { Separator } from "@/components/ui/separator";
@@ -19,36 +13,26 @@ import type { BlurNode } from "../node-props";
 
 function ExportNodeHandbook({ nodeId }: { nodeId: NodeEntityType["id"] }) {
 	return (
-		<Accordion type="single" collapsible defaultValue="info">
-			<AccordionItem value="info">
-				<AccordionTrigger className="text-[8px] py-2 gap-1 flex justify-start items-center">
-					<InfoIcon className="size-2" />
-					Handbook
-				</AccordionTrigger>
-				<AccordionContent>
-					<Alert>
-						<InfoIcon className="size-3" />
-						<AlertDescription className="text-[8px]">
-							<p className="mb-2">Connect a node and click Download button.</p>
-							<Separator />
-							<h2 className="font-semibold mt-3 mb-1">API Requests</h2>
-							<p className="mb-1">
-								When you run the workflow via API request, export node will
-								expose the output.
-							</p>
-							<code className="block bg-muted p-2 rounded text-[7px] mt-1 whitespace-pre-wrap w-full">
-								{`{
+		<Alert>
+			<InfoIcon className="size-3" />
+			<AlertDescription className="text-[8px]">
+				<p className="mb-2">Connect a node and click Download button.</p>
+				<Separator />
+				<h2 className="font-semibold mt-3 mb-1">API Requests</h2>
+				<p className="mb-1">
+					When you run the workflow via API request, export node will expose the
+					output.
+				</p>
+				<code className="block bg-muted p-2 rounded text-[7px] mt-1 whitespace-pre-wrap w-full">
+					{`{
 	...
 	"data": {
 		"${nodeId}": [data]
 	}
 }`}
-							</code>
-						</AlertDescription>
-					</Alert>
-				</AccordionContent>
-			</AccordionItem>
-		</Accordion>
+				</code>
+			</AlertDescription>
+		</Alert>
 	);
 }
 

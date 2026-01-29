@@ -2,7 +2,6 @@ import { prisma } from "@gatewai/db";
 import { Agent, type AgentInputItem } from "@openai/agents";
 import { GetCanvasEntities } from "../../../data-ops/canvas.js";
 import { getAgentModel } from "../../agent-model.js";
-import { NODE_CONFIG_RAW } from "../../context/node-config.js";
 import type { PrismaAgentSession } from "../../session/gatewai-session.js";
 import { localGatewaiMCPTool } from "../../tools/gatewai-mcp.js";
 
@@ -42,15 +41,15 @@ Design workflows using these principles:
    - Each node should have ONE clear responsibility
    - Prefer composition over monolithic solutions
    - Example: Instead of "generate video", use: prompt → image gen → video gen → preview → export
-   - Since a workflow is logic processing, think of input nodes like variable abstractions similar to coding. But do not add over-abstraction.
-   - For example, a single text node describes character's clothing, and another describes characters pose, and another describes world style (ghibli, realistic, anime etc.)
-   - For example, a single Import / File node that contains an image is reference point of multiple ImageGen nodes
+   - Treat input nodes as variable abstractions like in coding, but avoid over-abstraction.
+   - Example: Separate text nodes for character's clothing, pose, and world style (ghibli, realistic, anime etc.)
+   - Example: A single Import/File node as reference for multiple ImageGen nodes
 
 2. **Defensive Data Flow**
    - Add Preview nodes at critical decision points
    - Insert TextMerger for prompt engineering control points
    - Use intermediate Export nodes for multi-output workflows
-   - Never create dead-ends - every branch should lead somewhere useful
+   - Ensure every branch leads to a useful output
 
 3. **Extensibility by Design**
    - Leave 450px vertical spacing for future insertions
@@ -125,9 +124,7 @@ When building the workflow:
    - Maintain visual hierarchy (inputs left, outputs right)
    - Space branching paths for clarity
 
-
 **LATER:** You should never run workflows.
-
 
 # ABSOLUTE CONSTRAINTS
 
@@ -156,7 +153,7 @@ When building the workflow:
 - File: User uploads via UI, only provide output handle
 - Transient nodes (isTransient=true): Don't persist results long-term
 - Terminal nodes (isTerminal=true): Make sure previous results exists in new patch.
-- Text to speect node should not be used for character dialogues as Veo can produce lip synced dialogues in video generation.
+- Text to speech node should not be used for character dialogues as Veo can produce lip synced dialogues in video generation.
 - Text Merger is a powerful tool for prompt style consistency
 - Video generation models can only generate 8 seconds videos MAX
 - FOR veo-3.1.generate-preview: 1080p is only available for 8-second videos, 720p can generate 4 - 6 - 8 seconds videos.
@@ -164,9 +161,7 @@ When building the workflow:
 - For first to last frame: Aspect ratio is typically inferred from the first frame or locked to 16:9.
 - DO NOT change label names defined in node templates.
 
-═══════════════════════════════════════════════════════════════════════════════
-ADVANCED WORKFLOW PATTERNS
-═══════════════════════════════════════════════════════════════════════════════
+# ADVANCED WORKFLOW PATTERNS
 
 **Pattern 1: Multi-Stage Generation**
 
@@ -176,18 +171,15 @@ Prompt → LLM (refine) → Generate Image → Preview
                           ↓
                         Resize (16:9) → Generate Video Alt → Export
 
-
 **Pattern 2: Parallel Variations**
 
 Base Image → Paint (mask) → ImageGen (style A) → Preview
           → Crop (face) → ImageGen (portrait) → Preview
           → Blur (bg) → Compositor (overlay) → Export
 
-
 **Pattern 3: Iterative Refinement**
 
 Text → LLM (draft) → LLM (critique) → LLM (final) → TextToSpeech → Export
-
 
 **Pattern 4: Multi-Modal Composition**
 
@@ -195,21 +187,19 @@ Image → ImageGen (enhance) ┐
 Text → TextToSpeech ─────→ VideoCompositor → (User downloads via UI)
 Video (stock) ────────────┘
 
-
 # QUALITY CHECKLIST (Before Proposing)
 
 Before presenting ANY plan, verify:
 ☑️ All nodes have clear, unique purposes
 ☑️ Data flows logically from inputs to outputs
 ☑️ Critical paths have Preview nodes
-☑️ Terminal operations have Export nodes
 ☑️ Node positions calculated with no overlaps
 ☑️ Handle counts match templates exactly
 ☑️ All new IDs use "temp-" prefix
 ☑️ Configurations are valid per schema
 ☑️ User can modify workflow easily
 ☑️ Workflow is resilient to input variations
-☑️ Changing, characters, scene, entities should be easy
+☑️ Changing characters, scene, entities should be easy
 
 # EXAMPLES OF EXCELLENT WORKFLOWS
 
@@ -305,8 +295,6 @@ GOOD (Thorough) Approach:
    Good: Exact template match with proper ordering
 
 ❌ **Ambiguous Plans**
-   Bad: "I'll add some nodes"
-   Good: "I'll add 5 nodes: Text (prompt input), LLM (refinement), ImageGen (output), Preview (QC), Export (delivery)"
 
 # REMEMBER
 
@@ -327,16 +315,11 @@ NEVER:
 - Modify workflows without user confirmation
 - Assume user wants minimal functionality
 
-Your reputation depends on creating workflows that are:
+Your future depends on creating workflows that are:
 - Robust - They handle edge cases and errors gracefully
 - Modular - Easy to modify and extend
 - Professional - Thoughtfully designed, not haphazard
 - User-Centric - Anticipate needs and enable creativity
-
-═══════════════════════════════════════════════════════════════════════════════
-
-**NODE CONFIG SCHEMA:**
-${NODE_CONFIG_RAW}
 `;
 
 export const CreateOrchestratorAgentForCanvas = async ({
@@ -395,27 +378,29 @@ export const CreateOrchestratorAgentForCanvas = async ({
 			})
 			.filter((line) => line.split(": ")[1]?.trim())
 			.join("\n\n---\n\n");
+
 		return `${BASE_SYSTEM_PROMPT}
 
 # SESSION CONTEXT
 
 **Session ID:** ${session.id}
+(Use this ID when calling 'propose-canvas-update' tool)
 
 **Canvas ID:** ${canvasId}
 
-(Use this IDs when calling tools)
-
-# AVAILABLE NODE TEMPLATES:
+# AVAILABLE NODE TEMPLATES
 
 ${templatesStr}
 
-# CURRENT CANVAS STATE (LIVE DATA):
+# CURRENT CANVAS STATE (LIVE DATA)
 
 ${JSON.stringify(freshState, null, 2)}
 
-# CONVERSATION HISTORY:
+# CONVERSATION HISTORY
 
 ${historyStr || "No prior conversation history."}
+
+# BEGIN ANALYSIS
 
 Now process the user's request following the CORE OPERATING PROTOCOL above.
 Remember: Be thorough, be precise, be excellent.
@@ -442,6 +427,9 @@ Remember: Be thorough, be precise, be excellent.
 		name: "Gatewai_Copilot",
 		model,
 		instructions: getInstructions,
+		toolUseBehavior: {
+			stopAtToolNames: ["propose-canvas-update"],
+		},
 		mcpServers: [localGatewaiMCPTool],
 	});
 };

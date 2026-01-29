@@ -4,6 +4,7 @@ import { run } from "@openai/agents";
 import { CreateOrchestratorAgentForCanvas } from "../agents/orchestrator/index.js";
 import { PrismaAgentSession } from "../session/gatewai-session.js";
 import { connectMCP } from "../tools/gatewai-mcp.js";
+import { GatewaiRunContext } from "./run-context.js";
 
 const __dirname = path.dirname(fileURLToPath(import.meta.url));
 
@@ -28,15 +29,16 @@ export const RunCanvasAgent = async function* ({
 			modelName: model,
 		});
 		await connectMCP();
-
+		const context = new GatewaiRunContext();
 		const result = await run(agent, userMessage, {
 			stream: true,
 			session,
+			context,
 			signal,
 		});
 
 		for await (const chunk of result.toStream()) {
-			console.log({ chunk });
+			console.log({ chunk: JSON.stringify(chunk, null, 2) });
 			yield chunk;
 		}
 	} finally {

@@ -1,4 +1,4 @@
-import { GatewaiApiClient, type StartRunRequest } from "@gatewai/api-client";
+import { GatewaiApiClient } from "@gatewai/api-client";
 import { bulkUpdateSchema } from "@gatewai/types";
 import { StreamableHTTPTransport } from "@hono/mcp";
 import { serve } from "@hono/node-server";
@@ -42,36 +42,6 @@ const server = new McpServer({
 	name: "gatewai-mcp-server",
 	version: "0.0.1",
 });
-
-/**
- * Resource: List all Canvas Workflows
- * URI: gatewai://canvases
- */
-server.registerResource(
-	"canvas-list",
-	"gatewai://canvases",
-	{
-		description: "List all available canvas workflows",
-		mimeType: "application/json",
-	},
-	async (uri) => {
-		try {
-			const canvases = await apiClient.getCanvases();
-			return {
-				contents: [
-					{
-						uri: uri.href,
-						text: JSON.stringify(canvases, null, 2),
-						mimeType: "application/json",
-					},
-				],
-			};
-		} catch (error) {
-			const msg = error instanceof Error ? error.message : "Unknown error.";
-			throw new Error(`Failed to fetch canvases: ${msg}`);
-		}
-	},
-);
 
 /**
  * Resource: Get Specific Canvas Details
@@ -119,305 +89,16 @@ server.registerResource(
 	},
 	async (uri) => {
 		console.log("Tool 'node-templates' called");
-		try {
-			console.log("Fetching node templates from API...");
-			const templates = await apiClient.getNodeTemplates();
-			console.log(`Fetched ${templates.length} templates`);
-			return {
-				contents: [
-					{
-						uri: uri.href,
-						text: JSON.stringify(templates, null, 2),
-						mimeType: "application/json",
-					},
-				],
-			};
-		} catch (error) {
-			console.error("Error in 'node-templates' tool:", error);
-			const msg = error instanceof Error ? error.message : "Unknown error.";
-			throw new Error(`Failed to fetch node templates: ${msg}`);
-		}
-	},
-);
-
-/**
- * Resource: List all Assets
- * URI: gatewai://assets
- */
-server.registerResource(
-	"asset-list",
-	"gatewai://assets",
-	{
-		description: "List all available file assets (images, videos, audio)",
-		mimeType: "application/json",
-	},
-	async (uri) => {
-		try {
-			const assets = await apiClient.listAssets({});
-			return {
-				contents: [
-					{
-						uri: uri.href,
-						text: JSON.stringify(assets, null, 2),
-						mimeType: "application/json",
-					},
-				],
-			};
-		} catch (error) {
-			const msg = error instanceof Error ? error.message : "Unknown error.";
-			throw new Error(`Failed to fetch assets: ${msg}`);
-		}
-	},
-);
-
-/**
- * Resource: Get Specific Asset Details
- * URI: gatewai://assets/{id}
- */
-server.registerResource(
-	"asset-detail",
-	new ResourceTemplate("gatewai://assets/{id}", { list: undefined }),
-	{
-		description:
-			"Get details of a specific asset including metadata, URL, and dimensions",
-		mimeType: "application/json",
-	},
-	async (uri, { id }) => {
-		try {
-			const assetId = id as string;
-			const asset = await apiClient.getAsset(assetId);
-
-			return {
-				contents: [
-					{
-						uri: uri.href,
-						text: JSON.stringify(asset, null, 2),
-						mimeType: "application/json",
-					},
-				],
-			};
-		} catch (error) {
-			const msg = error instanceof Error ? error.message : "Unknown error.";
-			throw new Error(`Failed to fetch asset ${id}: ${msg}`);
-		}
-	},
-);
-
-// ==================== CANVAS TOOLS ====================
-
-/**
- * Tool: Create a new empty canvas
- */
-server.registerTool(
-	"create-canvas",
-	{
-		description: "Create a new empty canvas workflow",
-		inputSchema: z.object({
-			name: z.string().optional().describe("Optional name for the new canvas"),
-		}),
-	},
-	async ({ name }) => {
-		try {
-			const newCanvas = await apiClient.createCanvas();
-
-			// If a name was provided, update it with a second call
-			if (name && newCanvas.id) {
-				await apiClient.updateCanvasName(newCanvas.id, { name });
-				// Fetch fresh state to return accurate data
-				const updated = await apiClient.getCanvas(newCanvas.id);
-				return {
-					content: [{ type: "text", text: JSON.stringify(updated, null, 2) }],
-				};
-			}
-
-			return {
-				content: [{ type: "text", text: JSON.stringify(newCanvas, null, 2) }],
-			};
-		} catch (error) {
-			const msg = error instanceof Error ? error.message : "Unknown error.";
-			return {
-				content: [{ type: "text", text: `Error creating canvas: ${msg}` }],
-				isError: true,
-			};
-		}
-	},
-);
-
-/**
- * Tool: Duplicate an existing canvas
- */
-server.registerTool(
-	"duplicate-canvas",
-	{
-		description: "Duplicate an existing canvas workflow",
-		inputSchema: z.object({
-			canvasId: z.string().describe("The ID of the canvas to duplicate"),
-		}),
-	},
-	async ({ canvasId }) => {
-		try {
-			const result = await apiClient.duplicateCanvas(canvasId);
-			return {
-				content: [{ type: "text", text: JSON.stringify(result, null, 2) }],
-			};
-		} catch (error) {
-			const msg = error instanceof Error ? error.message : "Unknown error.";
-			return {
-				content: [{ type: "text", text: `Error duplicating canvas: ${msg}` }],
-				isError: true,
-			};
-		}
-	},
-);
-
-/**
- * Tool: Delete a canvas
- */
-server.registerTool(
-	"delete-canvas",
-	{
-		description: "Delete a canvas workflow permanently",
-		inputSchema: z.object({
-			canvasId: z.string().describe("The ID of the canvas to delete"),
-		}),
-	},
-	async ({ canvasId }) => {
-		try {
-			const result = await apiClient.deleteCanvas(canvasId);
-			return {
-				content: [{ type: "text", text: JSON.stringify(result, null, 2) }],
-			};
-		} catch (error) {
-			const msg = error instanceof Error ? error.message : "Unknown error.";
-			return {
-				content: [{ type: "text", text: `Error deleting canvas: ${msg}` }],
-				isError: true,
-			};
-		}
-	},
-);
-
-/**
- * Tool: Run a Workflow
- */
-server.registerTool(
-	"run-workflow",
-	{
-		description: "Execute a workflow and wait for completion with polling",
-		inputSchema: z.object({
-			canvasId: z.string().describe("The ID of the canvas workflow to execute"),
-			inputs: z
-				.record(z.any())
-				.optional()
-				.describe(
-					"Dictionary of input values for the workflow execution. Keys should be the Node IDs (from get-canvas-inputs) and values should be the string content (for Text nodes) or base64 string (for File nodes).",
-				),
-		}),
-	},
-	async ({ canvasId, inputs }) => {
-		try {
-			const payload: StartRunRequest = {
-				canvasId,
-				inputs: inputs || {},
-			};
-			const result = await apiClient.run(payload);
-			return {
-				content: [{ type: "text", text: JSON.stringify(result, null, 2) }],
-			};
-		} catch (error) {
-			const msg = error instanceof Error ? error.message : "Unknown error.";
-			return {
-				content: [{ type: "text", text: `Workflow execution failed: ${msg}` }],
-				isError: true,
-			};
-		}
-	},
-);
-
-/**
- * Tool: Get Canvas Inputs
- */
-server.registerTool(
-	"get-canvas-inputs",
-	{
-		description: `Discover available input nodes (Text, File) in a canvas workflow.
-		Should be used to retrieve input schema for run workflow.`,
-		inputSchema: z.object({
-			canvasId: z.string().describe("The ID of the canvas to inspect"),
-		}),
-	},
-	async ({ canvasId }) => {
-		try {
-			const canvasData = await apiClient.getCanvas(canvasId);
-
-			const inputNodes = canvasData.nodes
-				.filter((n) => n.type === "Text" || n.type === "File")
-				.map((n) => ({
-					id: n.id,
-					name: n.name,
-					type: n.type,
-					currentValue: {
-						config: n.config ?? null,
-						result: n.result ?? null,
-					},
-				}));
-
-			return {
-				content: [
-					{
-						type: "text",
-						text: JSON.stringify(
-							{
-								canvasId,
-								inputs: inputNodes,
-								instructions:
-									"Use the 'id' of these nodes as keys in the 'inputs' dictionary for the 'run-workflow' tool.",
-							},
-							null,
-							2,
-						),
-					},
-				],
-			};
-		} catch (error) {
-			const msg = error instanceof Error ? error.message : "Unknown error.";
-			return {
-				content: [
-					{ type: "text", text: `Error fetching canvas inputs: ${msg}` },
-				],
-				isError: true,
-			};
-		}
-	},
-);
-
-/**
- * Tool: Update Canvas Name
- */
-server.registerTool(
-	"rename-canvas",
-	{
-		description: "Update the name of a canvas workflow",
-		inputSchema: z.object({
-			canvasId: z.string().describe("The ID of the canvas to rename"),
-			newName: z.string().describe("The new name for the canvas"),
-		}),
-	},
-	async ({ canvasId, newName }) => {
-		try {
-			const result = await apiClient.updateCanvasName(canvasId, {
-				name: newName,
-			});
-			return {
-				content: [{ type: "text", text: JSON.stringify(result, null, 2) }],
-			};
-		} catch (error) {
-			const msg = error instanceof Error ? error.message : "Unknown error.";
-			return {
-				content: [{ type: "text", text: `Error renaming canvas: ${msg}` }],
-				isError: true,
-			};
-		}
+		const templates = await apiClient.getNodeTemplates();
+		return {
+			contents: [
+				{
+					uri: uri.href,
+					text: JSON.stringify(templates, null, 2),
+					mimeType: "application/json",
+				},
+			],
+		};
 	},
 );
 
@@ -447,28 +128,19 @@ server.registerTool(
 		}),
 	},
 	async ({ canvasId, canvasState, agentSessionId }) => {
-		try {
-			const result = await apiClient.createPatch(
-				canvasId,
-				canvasState,
-				agentSessionId,
-			);
-			return {
-				content: [
-					{
-						type: "text",
-						text: `Patch proposed successfully. Patch ID: ${result.id}. The user has been notified to review the changes.`,
-					},
-				],
-			};
-		} catch (error) {
-			console.error(error);
-			const msg = error instanceof Error ? error.message : "Unknown error.";
-			return {
-				content: [{ type: "text", text: `Error proposing patch: ${msg}` }],
-				isError: true,
-			};
-		}
+		const result = await apiClient.createPatch(
+			canvasId,
+			canvasState,
+			agentSessionId,
+		);
+		return {
+			content: [
+				{
+					type: "text",
+					text: `Patch proposed successfully. Patch ID: ${result.id}. The user has been notified to review the changes.`,
+				},
+			],
+		};
 	},
 );
 
@@ -523,233 +195,46 @@ server.registerTool(
 	},
 );
 
-/**
- * Tool: Upload Asset from Base64
- */
-server.registerTool(
-	"upload-asset",
-	{
-		description: "Upload a new file asset from base64 encoded data",
-		inputSchema: z.object({
-			filename: z.string().describe("Name of the file including extension"),
-			base64Data: z
-				.string()
-				.describe("Base64 encoded file content (without data URI prefix)"),
-			mimeType: z
-				.string()
-				.optional()
-				.describe("MIME type of the file (e.g., 'image/png', 'video/mp4')"),
-		}),
-	},
-	async ({ filename, base64Data, mimeType }) => {
-		try {
-			const result = await apiClient.uploadAsset({
-				filename,
-				base64Data,
-				mimeType,
-			});
-			return {
-				content: [{ type: "text", text: JSON.stringify(result, null, 2) }],
-			};
-		} catch (error) {
-			const msg = error instanceof Error ? error.message : "Unknown error.";
-			return {
-				content: [{ type: "text", text: `Error uploading asset: ${msg}` }],
-				isError: true,
-			};
-		}
-	},
-);
-
-/**
- * Tool: Upload Asset from URL
- */
-server.registerTool(
-	"upload-asset-from-url",
-	{
-		description:
-			"Upload a new file asset by downloading from a public URL on the internet",
-		inputSchema: z.object({
-			url: z.string().url().describe("Public URL of the file to download"),
-			filename: z
-				.string()
-				.optional()
-				.describe(
-					"Optional custom filename. If not provided, will be extracted from URL",
-				),
-		}),
-	},
-	async ({ url, filename }) => {
-		try {
-			const result = await apiClient.uploadAssetFromUrl({
-				url,
-				filename,
-			});
-			return {
-				content: [{ type: "text", text: JSON.stringify(result, null, 2) }],
-			};
-		} catch (error) {
-			const msg = error instanceof Error ? error.message : "Unknown error.";
-			return {
-				content: [
-					{ type: "text", text: `Error uploading asset from URL: ${msg}` },
-				],
-				isError: true,
-			};
-		}
-	},
-);
-
-/**
- * Tool: Upload Asset to Node
- */
-server.registerTool(
-	"upload-asset-to-node",
-	{
-		description:
-			"Upload a file asset directly to a specific node (Import Media node)",
-		inputSchema: z.object({
-			nodeId: z.string().describe("The ID of the node to upload the asset to"),
-			filename: z.string().describe("Name of the file including extension"),
-			base64Data: z
-				.string()
-				.describe("Base64 encoded file content (without data URI prefix)"),
-			mimeType: z
-				.string()
-				.optional()
-				.describe("MIME type of the file (e.g., 'image/png', 'video/mp4')"),
-		}),
-	},
-	async ({ nodeId, filename, base64Data, mimeType }) => {
-		try {
-			const result = await apiClient.uploadAssetToNode({
-				nodeId,
-				filename,
-				base64Data,
-				mimeType,
-			});
-			return {
-				content: [{ type: "text", text: JSON.stringify(result, null, 2) }],
-			};
-		} catch (error) {
-			const msg = error instanceof Error ? error.message : "Unknown error.";
-			return {
-				content: [
-					{ type: "text", text: `Error uploading asset to node: ${msg}` },
-				],
-				isError: true,
-			};
-		}
-	},
-);
-
-/**
- * Tool: Delete Asset
- */
-server.registerTool(
-	"delete-asset",
-	{
-		description: "Delete a file asset permanently",
-		inputSchema: z.object({
-			assetId: z.string().describe("The ID of the asset to delete"),
-		}),
-	},
-	async ({ assetId }) => {
-		try {
-			const result = await apiClient.deleteAsset(assetId);
-			return {
-				content: [{ type: "text", text: JSON.stringify(result, null, 2) }],
-			};
-		} catch (error) {
-			const msg = error instanceof Error ? error.message : "Unknown error.";
-			return {
-				content: [{ type: "text", text: `Error deleting asset: ${msg}` }],
-				isError: true,
-			};
-		}
-	},
-);
-
-/**
- * Tool: Get Asset Thumbnail
- */
-server.registerTool(
-	"get-asset-thumbnail",
-	{
-		description:
-			"Get a thumbnail URL for an image or video asset with custom dimensions",
-		inputSchema: z.object({
-			assetId: z.string().describe("The ID of the asset"),
-			width: z
-				.number()
-				.int()
-				.positive()
-				.optional()
-				.describe("Thumbnail width in pixels (default: 300)"),
-			height: z
-				.number()
-				.int()
-				.positive()
-				.optional()
-				.describe("Thumbnail height in pixels (default: 300)"),
-		}),
-	},
-	async ({ assetId, width, height }) => {
-		try {
-			const thumbnailUrl = apiClient.getAssetThumbnailUrl(
-				assetId,
-				width,
-				height,
-			);
-			return {
-				content: [
-					{
-						type: "text",
-						text: JSON.stringify({ assetId, thumbnailUrl }, null, 2),
-					},
-				],
-			};
-		} catch (error) {
-			const msg = error instanceof Error ? error.message : "Unknown error.";
-			return {
-				content: [
-					{ type: "text", text: `Error generating thumbnail URL: ${msg}` },
-				],
-				isError: true,
-			};
-		}
-	},
-);
-
 const app = new Hono();
 const transport = new StreamableHTTPTransport();
 
 app.use("*", cors());
 app.use("*", logger());
+app.use("*", async (c, next) => {
+	// --- Log Request Body ---
+	if (c.req.header("content-type")?.includes("application/json")) {
+		const body = await c.req.raw.clone().json();
+		console.log(`[REQ BODY]:`, JSON.stringify(body, null, 2));
+	}
 
+	await next();
+
+	// --- Log Response Body ---
+	// Note: We clone the response to avoid "body already used" errors
+	const resClone = c.res.clone();
+	const contentType = resClone.headers.get("content-type");
+
+	if (contentType?.includes("application/json")) {
+		const resBody = await resClone.json();
+		console.log(`[RES BODY]:`, JSON.stringify(resBody, null, 2));
+	} else if (contentType?.includes("text/")) {
+		const resText = await resClone.text();
+		console.log(`[RES TEXT]:`, resText);
+	}
+});
 // Health Check
 app.get("/health", (c) => c.json({ status: "ok", env: env.LOG_LEVEL }));
 
 // MCP SSE Endpoint
 app.get("/mcp", async (c) => {
-	console.log("MCP SSE request received");
-
-	// Core NGINX override
-	c.header("X-Accel-Buffering", "no");
-
-	// Core SSE standards
-	c.header("Content-Type", "text/event-stream");
-	c.header("Cache-Control", "no-cache, no-transform");
-	c.header("Connection", "keep-alive");
-
-	// If you are behind Cloudflare or other proxies
-	c.header("Transfer-Encoding", "chunked");
 	return transport.handleRequest(c);
 });
 
 // MCP POST Endpoint (for JSON-RPC messages)
 app.post("/mcp", async (c) => {
-	console.log("MCP POST request received", c);
+	const rawBody = await c.req.raw.clone().text();
+	console.log("--- AI ATTEMPTED TOOL CALL ---");
+	console.log(rawBody);
 	return transport.handleRequest(c);
 });
 
