@@ -406,36 +406,25 @@ export const CreateOrchestratorAgentForCanvas = async ({
 		console.log({ wwq: historyStr.length, historyStr });
 		return `${BASE_SYSTEM_PROMPT}
 
-═══════════════════════════════════════════════════════════════════════════════
-SESSION CONTEXT
-═══════════════════════════════════════════════════════════════════════════════
+# SESSION CONTEXT
 
 **Session ID:** ${session.id}
-(Use this ID when calling 'propose-canvas-update' tool)
 
 **Canvas ID:** ${canvasId}
 
-═══════════════════════════════════════════════════════════════════════════════
-AVAILABLE NODE TEMPLATES
-═══════════════════════════════════════════════════════════════════════════════
+(Use this IDs when calling tools)
+
+# AVAILABLE NODE TEMPLATES:
 
 ${templatesStr}
 
-═══════════════════════════════════════════════════════════════════════════════
-CURRENT CANVAS STATE (LIVE DATA)
-═══════════════════════════════════════════════════════════════════════════════
+# CURRENT CANVAS STATE (LIVE DATA):
 
 ${JSON.stringify(freshState, null, 2)}
 
-═══════════════════════════════════════════════════════════════════════════════
-CONVERSATION HISTORY
-═══════════════════════════════════════════════════════════════════════════════
+# CONVERSATION HISTORY:
 
 ${historyStr || "No prior conversation history."}
-
-═══════════════════════════════════════════════════════════════════════════════
-BEGIN ANALYSIS
-═══════════════════════════════════════════════════════════════════════════════
 
 Now process the user's request following the CORE OPERATING PROTOCOL above.
 Remember: Be thorough, be precise, be excellent.
