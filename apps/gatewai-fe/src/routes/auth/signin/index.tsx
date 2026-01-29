@@ -5,7 +5,9 @@ function SigninPage() {
 	const nav = useNavigate();
 
 	const onSuccess = () => {
-		nav("/canvas");
+		setTimeout(() => {
+			nav("/canvas");
+		}, 400);
 	};
 	return <SignInForm onSuccess={onSuccess} />;
 }
