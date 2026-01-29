@@ -1,14 +1,32 @@
+import type { Logger } from "@openai/agents";
 import { MCPServerStreamableHttp } from "@openai/agents";
 import { ENV_CONFIG } from "../../config.js";
 import { logger } from "../../logger.js";
 
 logger.info(`Initializing MCP Tool with URL: ${ENV_CONFIG.MCP_URL}`);
 
+// Create a logger adapter that implements the MCP Logger interface
+const mcpLogger: Logger = {
+	namespace: "mcp-server",
+	debug: (message: string, ...args: any[]) => {
+		logger.debug({ mcpArgs: args }, message);
+	},
+	error: (message: string, ...args: any[]) => {
+		logger.error({ mcpArgs: args }, message);
+	},
+	warn: (message: string, ...args: any[]) => {
+		logger.warn({ mcpArgs: args }, message);
+	},
+	dontLogModelData: false,
+	dontLogToolData: false,
+};
+
 const localGatewaiMCPTool = new MCPServerStreamableHttp({
 	url: ENV_CONFIG.MCP_URL,
 	name: "Gatewai MCP Streamable HTTP Server",
 	clientSessionTimeoutSeconds: 300,
 	timeout: 300000,
+	logger: mcpLogger,
 	reconnectionOptions: {
 		maxRetries: 2,
 		initialReconnectionDelay: 2000,

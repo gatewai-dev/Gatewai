@@ -1,5 +1,5 @@
 import { zodResolver } from "@hookform/resolvers/zod";
-import { AlertCircle, Loader2, Mail } from "lucide-react";
+import { AlertCircle, Loader2 } from "lucide-react";
 import { useState } from "react";
 import { useForm } from "react-hook-form";
 import { z } from "zod";
@@ -60,6 +60,7 @@ function SignInForm({ onSuccess, onError }: SignInFormProps) {
 			const result = await authClient.signIn.email({
 				email: values.email,
 				password: values.password,
+				rememberMe: true,
 			});
 
 			if (result.error) {
