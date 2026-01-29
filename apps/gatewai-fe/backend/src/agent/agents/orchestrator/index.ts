@@ -2,6 +2,7 @@ import { prisma } from "@gatewai/db";
 import { Agent, type AgentInputItem } from "@openai/agents";
 import { GetCanvasEntities } from "../../../data-ops/canvas.js";
 import { getAgentModel } from "../../agent-model.js";
+import { NODE_CONFIG_RAW } from "../../context/node-config.js";
 import type { PrismaAgentSession } from "../../session/gatewai-session.js";
 import { localGatewaiMCPTool } from "../../tools/gatewai-mcp.js";
 
@@ -404,13 +405,24 @@ ${historyStr || "No prior conversation history."}
 
 Now process the user's request following the CORE OPERATING PROTOCOL above.
 Remember: Be thorough, be precise, be excellent.
+
+# THE RAW CODE OF SCHEMA:
+
+${NODE_CONFIG_RAW}
 `;
 	};
 
 	function assertIsValidName(
 		modelName: string,
-	): asserts modelName is "gemini-3-pro-preview" | "gemini-3-flash-preview" {
-		const validModels = ["gemini-3-pro-preview", "gemini-3-flash-preview"];
+	): asserts modelName is
+		| "gemini-3-pro-preview"
+		| "gemini-3-flash-preview"
+		| "gemini-2.5-pro" {
+		const validModels = [
+			"gemini-3-pro-preview",
+			"gemini-3-flash-preview",
+			"gemini-2.5-pro",
+		];
 
 		if (!validModels.includes(modelName)) {
 			throw new Error(
@@ -420,7 +432,7 @@ Remember: Be thorough, be precise, be excellent.
 	}
 	assertIsValidName(modelName);
 
-	const model = getAgentModel(modelName);
+	const model = getAgentModel("gemini-2.5-pro");
 	const instructions = await getInstructions();
 	console.log({ instructions });
 	return new Agent({

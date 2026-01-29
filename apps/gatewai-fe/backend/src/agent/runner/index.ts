@@ -36,7 +36,7 @@ export const RunCanvasAgent = async function* ({
 			context,
 			signal,
 		});
-
+		console.log(context.getToolLogs());
 		for await (const chunk of result.toStream()) {
 			console.log({ chunk: JSON.stringify(chunk, null, 2) });
 			yield chunk;

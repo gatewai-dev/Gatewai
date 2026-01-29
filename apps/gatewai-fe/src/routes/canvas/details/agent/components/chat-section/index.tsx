@@ -21,6 +21,7 @@ import { PatchReviewCard } from "../patch-review-card";
 const MODEL_OPTIONS = [
 	{ value: "gemini-3-pro-preview", label: "Gemini 3 Pro" },
 	{ value: "gemini-3-flash-preview", label: "Gemini 3 Flash" },
+	{ value: "gemini-2.5-pro", label: "Gemini 2.5 Pro" },
 ] as const;
 
 // ============================================================================
