@@ -413,8 +413,9 @@ const CustomEdge = memo(
 		// Fetch the color dynamically from the processor based on the source handle
 		const processorColor = useEdgeColor(source, sourceHandleId ?? "");
 
+		// Use DEFAULT_COLOR (#ccc) as the fallback instead of var(--border)
 		const color = useMemo(
-			() => (selected ? "var(--primary)" : processorColor || "var(--border)"),
+			() => (selected ? "var(--primary)" : processorColor || DEFAULT_COLOR),
 			[selected, processorColor],
 		);
 
