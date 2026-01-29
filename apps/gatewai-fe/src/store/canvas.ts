@@ -38,7 +38,6 @@ export const canvasDetailsAPI = createApi({
 			},
 		}),
 		patchCanvas: build.mutation<PatchCanvasRPC, PatchCanvasRPCParams>({
-			// FIXED: Removed invalidatesTags to prevent infinite Save -> Fetch -> Save loop
 			queryFn: async (params) => {
 				const response = await rpcClient.api.v1.canvas[":id"].$patch(params);
 				if (!response.ok) {

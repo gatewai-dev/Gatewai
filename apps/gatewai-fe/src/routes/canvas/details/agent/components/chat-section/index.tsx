@@ -478,7 +478,7 @@ export function AgentChatSection({ onClose }: { onClose: () => void }) {
 			return hasContent && !isPending;
 		})
 		.reduce(
-			(acc, msg, idx, arr) => {
+			(acc, msg) => {
 				// If this is a patch_proposed event, attach it to the previous model message
 				if (msg.eventType === "patch_proposed" && msg.patchId) {
 					const lastMessage = acc[acc.length - 1];

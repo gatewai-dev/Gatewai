@@ -26,29 +26,48 @@ const createPatchQuerySchema = z.object({
 const canvasRoutes = new Hono<{ Variables: AuthHonoTypes }>({
 	strict: false,
 })
-	.get("/", async (c) => {
-		const canvases = await prisma.canvas.findMany({
-			where: {
-				isAPICanvas: false,
-			},
-			orderBy: {
-				updatedAt: "desc",
-			},
-			select: {
-				id: true,
-				name: true,
-				createdAt: true,
-				updatedAt: true,
-				_count: {
-					select: {
-						nodes: true,
+	.get(
+		"/",
+		zValidator(
+			"query",
+			z.object({
+				q: z.string().optional(),
+			}),
+		),
+		async (c) => {
+			const { q } = c.req.valid("query");
+
+			const canvases = await prisma.canvas.findMany({
+				where: {
+					isAPICanvas: false,
+					...(q
+						? {
+								name: {
+									contains: q,
+									mode: "insensitive",
+								},
+							}
+						: {}),
+				},
+				orderBy: {
+					updatedAt: "desc",
+				},
+				select: {
+					id: true,
+					name: true,
+					createdAt: true,
+					updatedAt: true,
+					_count: {
+						select: {
+							nodes: true,
+						},
 					},
 				},
-			},
-		});
+			});
 
-		return c.json(canvases);
-	})
+			return c.json(canvases);
+		},
+	)
 	.post("/", async (c) => {
 		const canvasCount = await prisma.canvas.count();
 		const user = c.get("user");

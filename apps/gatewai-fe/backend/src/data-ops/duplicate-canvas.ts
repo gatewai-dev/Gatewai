@@ -1,19 +1,18 @@
 import { type Canvas, prisma } from "@gatewai/db";
-import type { AllNodeConfig } from "@gatewai/types";
 
 /**
  * Duplicates a canvas, including its nodes, handles, and edges.
  * Preserves mapping from duplicated nodes back to their originals for API data passing.
  * @param canvasId - The ID of the canvas to duplicate.
  * @param isAPICanvas - Whether or not duplicated canvas will be used for API request.
- * @param keepConfigAndResults - Whether to keep the config and results of the nodes in the duplicate.
+ * @param keepResults - Whether to keep the results of the nodes in the duplicate.
  * @returns The newly created duplicated canvas.
  * @throws Error if the original canvas is not found.
  */
 async function duplicateCanvas(
 	canvasId: string,
 	isAPICanvas = false,
-	keepConfigAndResults: boolean = false,
+	keepResults: boolean = false,
 ): Promise<Canvas> {
 	const originalCanvas = await prisma.canvas.findUniqueOrThrow({
 		where: { id: canvasId },
@@ -59,13 +58,9 @@ async function duplicateCanvas(
 					draggable: originalNode.draggable,
 					selectable: originalNode.selectable,
 					deletable: originalNode.deletable,
-					config: keepConfigAndResults
-						? (originalNode.config as AllNodeConfig)
-						: undefined,
+					config: originalNode.config as any,
 					isDirty: false,
-					result: keepConfigAndResults
-						? (originalNode.result as any)
-						: undefined,
+					result: keepResults ? (originalNode.result as any) : undefined,
 					canvasId: newCanvas.id,
 					templateId: originalNode.templateId,
 					originalNodeId: originalNode.id,

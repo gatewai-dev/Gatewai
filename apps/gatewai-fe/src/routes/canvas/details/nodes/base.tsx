@@ -317,7 +317,7 @@ const BaseNode = memo(
 						<NodeMenu id={props.id} />
 					</div>
 
-					<div className="flex-1 p-2 nodrag nopan cursor-auto bg-card/50 rounded-3xl">
+					<div className="flex-1 p-2 nodrag nopan cursor-auto  rounded-3xl">
 						{props.children}
 					</div>
 				</div>

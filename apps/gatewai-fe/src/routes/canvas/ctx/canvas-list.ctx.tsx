@@ -4,6 +4,7 @@ import {
 	type PropsWithChildren,
 	type SetStateAction,
 	useContext,
+	useEffect,
 	useState,
 } from "react";
 import type { CanvasListRPC } from "@/rpc/types";
@@ -16,8 +17,8 @@ interface CanvasContextType {
 	canvasList: CanvasListRPC | undefined;
 	isError: boolean;
 	isLoading: boolean;
-	searchQuery: string | undefined;
-	setSearchQuery: Dispatch<SetStateAction<string | undefined>>;
+	searchQuery: string;
+	setSearchQuery: Dispatch<SetStateAction<string>>;
 	createCanvas: (
 		name: string,
 	) => ReturnType<ReturnType<typeof useCreateCanvasMutation>[0]>;
@@ -28,9 +29,15 @@ const CanvasListContext = createContext<CanvasContextType | undefined>(
 	undefined,
 );
 
-const CanvasListProvider = ({ children }: PropsWithChildren) => {
-	const [searchQuery, setSearchQuery] = useState<string | undefined>(undefined);
-	const { data, isLoading, isError } = useGetCanvasListQuery({});
+export const CanvasListProvider = ({ children }: PropsWithChildren) => {
+	const [searchQuery, setSearchQuery] = useState("");
+
+	// Fetch all canvases - no server-side filtering
+	const { data, isLoading, isError } = useGetCanvasListQuery({
+		query: {
+			q: searchQuery,
+		},
+	});
 	const [mutate, { isLoading: isCreating }] = useCreateCanvasMutation();
 
 	const value = {
@@ -52,10 +59,7 @@ const CanvasListProvider = ({ children }: PropsWithChildren) => {
 
 export function useCanvasListCtx() {
 	const ctx = useContext(CanvasListContext);
-	if (!ctx) {
-		throw new Error("useCanvasListCtx should used inside CanvasListProvider");
-	}
+	if (!ctx)
+		throw new Error("useCanvasListCtx must be used within CanvasListProvider");
 	return ctx;
 }
-
-export { CanvasListContext, CanvasListProvider };
