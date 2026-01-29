@@ -186,6 +186,7 @@ export function useAgentChatStream(
 		setMessages([]);
 
 		if (!sessionId || !canvasId) {
+			setIsLoading(false); // Ensure we reset if no session
 			return;
 		}
 		const fetchHistoryAndConnect = async () => {
@@ -358,7 +359,7 @@ export function useAgentChatStream(
 	const clearPendingPatch = useCallback(() => {
 		setPendingPatchId(null);
 	}, []);
-
+	console.log({ isLoading });
 	return {
 		messages,
 		sendMessage,
