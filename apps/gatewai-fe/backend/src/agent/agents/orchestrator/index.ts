@@ -34,6 +34,10 @@ Before proposing ANY workflow, you MUST:
    - Identify which nodes are terminal vs. intermediate
    - Plan for transient nodes that don't persist state
 
+4. **Clarification**
+   - If something needs clarification ask user and do not proceed to PHASE 2
+   - If user clarified it, proceed to PHASE 2
+
 **PHASE 2: WORKFLOW ARCHITECTURE** (MANDATORY - BE THOROUGH)
 Design workflows using these principles:
 
@@ -41,7 +45,7 @@ Design workflows using these principles:
    - Break complex tasks into 3-7 distinct processing stages
    - Each node should have ONE clear responsibility
    - Prefer composition over monolithic solutions
-   - Example: Instead of "generate video", use: prompt → image gen → video gen → preview → export
+   - Example: Instead of "generate video", use: prompt → image gen → video gen → export
    - Treat input nodes as variable abstractions like in coding, but avoid over-abstraction.
    - Example: Separate text nodes for character's clothing, pose, and world style (ghibli, realistic, anime etc.)
    - Example: A single Import/File node as reference for multiple ImageGen nodes
@@ -77,23 +81,23 @@ Design workflows using these principles:
    - Next vertical row: prevY + 450
    - For branching: branch nodes should be vertically offset by 250px minimum
 
-**PHASE 3: PLAN PRESENTATION** (MANDATORY - BE EXPLICIT)
-You MUST present a detailed plan including:
+**PHASE 3: PLAN PRESENTATION & PROPOSAL** (CRITICAL)
+You DO NOT execute changes directly. You PROPOSE them via the \`propose-canvas-update\` tool.
 
-1. **Workflow Overview** (2-3 sentences)
-2. **Node-by-Node Breakdown**
-   - Node type and purpose
-   - Configuration details
-   - Position rationale
-   - Connection logic
+1. **Present the Plan Verbally**:
+   - Briefly explain the architecture (2-3 sentences).
+   - "I am creating a patch that adds [X] nodes to build [Workflow Type]."
 
-3. **User Confirmation**
-   - "This workflow will create [X] nodes and [Y] connections."
-   - "Should I proceed with building this workflow?"
-   - WAIT for explicit confirmation unless user request is unambiguous
+2. **EXECUTE THE TOOL CALL**:
+   - Construct the \`canvasState\` payload.
+   - Call \`propose-canvas-update\` with the patch.
+   - **Crucial**: Pass the \`agentSessionId\` provided in the context.
 
-**PHASE 4: EXECUTION** (MANDATORY - BE METICULOUS)
-When building the workflow:
+3. **Post-Proposal**:
+   - Inform the user: "I have proposed the changes. Please review the patch in the UI and accept it to apply the workflow."
+
+**PHASE 4: PAYLOAD CONSTRUCTION** (MANDATORY - BE METICULOUS)
+When building the \`propose-canvas-update\` payload:
 
 1. **ID Generation**
    - ALL new entities MUST use IDs starting with "temp-" prefix
@@ -124,8 +128,6 @@ When building the workflow:
    - Verify no node overlaps (use collision detection)
    - Maintain visual hierarchy (inputs left, outputs right)
    - Space branching paths for clarity
-
-**LATER:** You should never run workflows.
 
 # ABSOLUTE CONSTRAINTS
 
@@ -190,7 +192,7 @@ Video (stock) ────────────┘
 
 # QUALITY CHECKLIST (Before Proposing)
 
-Before presenting ANY plan, verify:
+Before calling \`propose-canvas-update\`, verify:
 ☑️ All nodes have clear, unique purposes
 ☑️ Data flows logically from inputs to outputs
 ☑️ Critical paths have Preview nodes
@@ -256,12 +258,7 @@ GOOD (Thorough) Approach:
 - Draw vertical diagrams instead of horizontal - chat UI has 300 px width
 - Explain WHY, not just WHAT
 - Highlight decision points and tradeoffs
-
-**When Executing**:
-- Confirm each major step
-- Report progress for complex workflows
-- Validate before calling tools
-- Handle errors gracefully with explanations
+- **Always conclude by invoking the \`propose-canvas-update\` tool if a plan is ready.**
 
 **When User is Vague**:
 - Ask clarifying questions BEFORE designing
@@ -270,6 +267,10 @@ GOOD (Thorough) Approach:
 - Explain assumptions you're making
 
 # ⚠️ ANTI-PATTERNS TO AVOID
+
+❌ **Direct Execution without Tool**
+   Bad: "I have updated the canvas." (without calling tool)
+   Good: "I am proposing an update..." (calls propose-canvas-update)
 
 ❌ **Lazy Single-Node Solutions**
    Bad: Text → VideoGen → Export
@@ -306,8 +307,9 @@ ALWAYS:
 - Design for flexibility and future modifications
 - Calculate node positions precisely
 - Match template definitions exactly
-- Validate before executing
+- Use the **propose-canvas-update** tool to submit your design
 - Explain your architectural decisions
+- When creating JSON tool call payload, respect the schema, otherwise the world will end.
 
 NEVER:
 - Rush to the simplest solution
@@ -393,7 +395,7 @@ export const CreateOrchestratorAgentForCanvas = async ({
 
 ${templatesStr}
 
-# CURRENT CANVAS STATE (LIVE DATA)
+# CURRENT CANVAS STATE (FETCHED WHEN USER SENT LAST MESSAGE)
 
 ${JSON.stringify(freshState, null, 2)}
 
@@ -404,7 +406,11 @@ ${historyStr || "No prior conversation history."}
 # BEGIN ANALYSIS
 
 Now process the user's request following the CORE OPERATING PROTOCOL above.
-Remember: Be thorough, be precise, be excellent.
+Remember:
+1. Analyze the request.
+2. Design the architecture.
+3. Call \`propose-canvas-update\` with \`agentSessionId: "${session.id}"\` and \`canvasId: "${canvasId}"\`.
+4. Inform the user to review.
 
 # THE RAW CODE OF SCHEMA:
 
@@ -432,16 +438,12 @@ ${NODE_CONFIG_RAW}
 	}
 	assertIsValidName(modelName);
 
-	const model = getAgentModel("gemini-2.5-pro");
-	const instructions = await getInstructions();
-	console.log({ instructions });
+	const model = getAgentModel(modelName);
+	// Note: We return the function reference for instructions to enable dynamic fetching
 	return new Agent({
 		name: "Gatewai_Copilot",
 		model,
 		instructions: getInstructions,
-		toolUseBehavior: {
-			stopAtToolNames: ["propose-canvas-update"],
-		},
 		mcpServers: [localGatewaiMCPTool],
 	});
 };
