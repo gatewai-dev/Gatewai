@@ -254,6 +254,7 @@ export class NodeGraphProcessor extends EventEmitter {
 	/**
 	 * Calculates the visual state (connected, color, type) for all handles of a node.
 	 * Performs RUNTIME validation: comparing actual source result types against target handle definition.
+	 * Also handles multi-type color inference based on connections.
 	 */
 	private updateNodeHandleStatus(nodeId: string) {
 		const state = this.getOrCreateNodeState(nodeId);
@@ -264,7 +265,11 @@ export class NodeGraphProcessor extends EventEmitter {
 
 		for (const handle of handles) {
 			let isConnected = false;
-			let activeType = handle.dataTypes[0] as string;
+			// If handle supports multiple types (e.g. Export Input), default to null (mixed/multi-color)
+			// unless we can narrow it down via connection or result.
+			let activeType: string | null =
+				handle.dataTypes.length === 1 ? (handle.dataTypes[0] as string) : null;
+
 			// Assume valid unless static validation or runtime check fails
 			let valid = !nodeValidationErrors[handle.id];
 
@@ -277,7 +282,8 @@ export class NodeGraphProcessor extends EventEmitter {
 
 				if (edge) {
 					const sourceState = this.nodeStates.get(edge.source);
-					// If we have a processed result from source, use that type
+
+					// 1. Try to get type from Runtime Result (Source)
 					if (sourceState?.result) {
 						const outputIndex = sourceState.result.selectedOutputIndex ?? 0;
 						const outputItem = sourceState.result.outputs[
@@ -288,10 +294,31 @@ export class NodeGraphProcessor extends EventEmitter {
 							activeType = outputItem.type;
 
 							// *** RUNTIME CHECK ***
-							// If the source (e.g., File) outputs a 'Video', but this Input handle (e.g., Crop)
-							// only accepts 'Image', mark it invalid, even if the graph was statically valid.
 							if (!handle.dataTypes.includes(activeType as DataType)) {
 								valid = false;
+							}
+						}
+					}
+					// 2. If no result yet (Graph didn't run), infer from Source Handle Definition
+					// This allows 'Export' (Multi) connected to 'Text' (Single) to show 'Text' color immediately.
+					else {
+						const sourceHandle = this.handles.find(
+							(h) => h.id === edge.sourceHandleId,
+						);
+						if (sourceHandle) {
+							// Find intersection of types
+							const commonTypes = handle.dataTypes.filter((t) =>
+								sourceHandle.dataTypes.includes(t),
+							);
+							// If we narrowed it down to exactly one type, use it.
+							if (commonTypes.length === 1) {
+								activeType = commonTypes[0] as string;
+							} else if (commonTypes.length > 1) {
+								// Still ambiguous (e.g. File -> Export), keep null (Multi) or intersection logic
+								// If source is single type (e.g. Image), it dominates.
+								if (sourceHandle.dataTypes.length === 1) {
+									activeType = sourceHandle.dataTypes[0] as string;
+								}
 							}
 						}
 					}
@@ -299,19 +326,47 @@ export class NodeGraphProcessor extends EventEmitter {
 			} else {
 				// Output Handle
 				// Check if any edge originates from this handle
-				isConnected = this.edges.some(
+				const outgoingEdges = this.edges.filter(
 					(e) => e.source === nodeId && e.sourceHandleId === handle.id,
 				);
+				isConnected = outgoingEdges.length > 0;
 
-				// If this node has a result, use the actual output type generated
+				// 1. Try to get type from Runtime Result (Self)
 				if (state.result) {
 					const outputIndex = state.result?.selectedOutputIndex ?? undefined;
-					if (outputIndex) {
+					if (outputIndex !== undefined) {
 						const outputItem = state.result.outputs[outputIndex]?.items.find(
 							(i) => i.outputHandleId === handle.id,
 						);
 						if (outputItem) {
 							activeType = outputItem.type;
+						}
+					}
+				}
+				// 2. If no result yet, infer from Downstream Connections (Back-propagation of type constraint)
+				// e.g. File (Multi) -> Crop (Image Only). The File output should show Image color.
+				else if (isConnected) {
+					// Get all target handles this output feeds into
+					const targetTypesPerEdge = outgoingEdges
+						.map((e) => this.handles.find((h) => h.id === e.targetHandleId))
+						.filter((h) => !!h)
+						.map((h) => h!.dataTypes);
+
+					if (targetTypesPerEdge.length > 0) {
+						// Find intersection of Self Types AND All Connected Target Input Types
+						// Start with self types
+						let possibleTypes = [...handle.dataTypes];
+
+						// Intersect with each edge's requirement
+						for (const targetTypes of targetTypesPerEdge) {
+							possibleTypes = possibleTypes.filter((t) =>
+								targetTypes.includes(t),
+							);
+						}
+
+						// If we narrowed it down to exactly one valid type across all connections, use it.
+						if (possibleTypes.length === 1) {
+							activeType = possibleTypes[0] as string;
 						}
 					}
 				}
@@ -323,21 +378,19 @@ export class NodeGraphProcessor extends EventEmitter {
 			}
 
 			// Resolve Color
-			// Requirement: Disconnected = No Background (null). Connected = Type Color.
+			// Requirement: Disconnected = Multi/Null (if multi-type). Connected = Type Color.
 			let color: string | null = null;
-			if (isConnected) {
+			if (activeType) {
 				const colorConfig = dataTypeColors[activeType] || dataTypeColors.Any;
 				color = colorConfig?.hex || "#9ca3af";
 			}
 
-			// If invalid, revert visual type to expected type (so user sees what IS expected) but keep connection color
-			if (!valid && handle.type === "Input") {
-				// We still want to show the color of the *incoming* type if possible to explain the error,
-				// but usually, we want to show the invalid state.
-				// For now, let's keep the color of the *active* (incoming) type to show mismatch.
-				const colorConfig = dataTypeColors[activeType] || dataTypeColors.Any;
-				color = colorConfig?.hex || "#9ca3af";
-			}
+			// If we found a specific type via connection/result, we set the color.
+			// If activeType is null (because it's unconnected & multi-type, OR connected & ambiguous), color remains null.
+			// This allows the frontend to render the multi-color ring.
+
+			// Override: If invalid, we usually want to show the color of the *expected* or *incoming* type to indicate mismatch,
+			// or red. But here we assume `valid` flag handles the error UI overlay, and color handles the type indication.
 
 			newStatus[handle.id] = {
 				id: handle.id,

@@ -507,7 +507,7 @@ const canvasRoutes = new Hono<{ Variables: AuthHonoTypes }>({
 			c.header("X-Accel-Buffering", "no");
 			c.header("Cache-Control", "no-cache");
 			c.header("Content-Type", "text/event-stream");
-			c.header('Connection', 'keep-alive');
+			c.header("Connection", "keep-alive");
 
 			// Start the agent runner in the background
 			await AgentRunnerManager.start({

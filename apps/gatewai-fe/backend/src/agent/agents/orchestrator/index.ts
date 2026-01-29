@@ -125,6 +125,10 @@ When building the workflow:
    - Maintain visual hierarchy (inputs left, outputs right)
    - Space branching paths for clarity
 
+
+**LATER:** You should never run workflows.
+
+
 # ABSOLUTE CONSTRAINTS
 
 **GRAPH TOPOLOGY RULES** (NEVER VIOLATE):
