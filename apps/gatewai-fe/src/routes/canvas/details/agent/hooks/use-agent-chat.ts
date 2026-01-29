@@ -29,7 +29,7 @@ export function useAgentChatStream(
 	model: string,
 ) {
 	const [messages, setMessages] = useState<ChatMessage[]>([]);
-	const [isLoading, setIsLoading] = useState(false);
+	const [isRequestPending, setIsRequestPending] = useState(false);
 	const [pendingPatchId, setPendingPatchId] = useState<string | null>(null);
 	const abortControllerRef = useRef<AbortController | null>(null);
 
@@ -38,27 +38,12 @@ export function useAgentChatStream(
 			abortControllerRef.current.abort();
 		}
 		abortControllerRef.current = new AbortController();
-		setIsLoading(true);
+
+		// Note: We do NOT set isRequestPending(true) here.
+		// Connecting to the stream is a background process (listening).
+		// We rely on message.isStreaming state to determine if the UI should show a "busy" state.
 
 		try {
-			// rpcClient doesn't support streaming response body directly with type inference for the stream content
-			// but we can get the raw response.
-			// The path is /api/v1/canvas/:id/agent/:sessionId/stream
-			// We need to verify if this route is available in the typed client.
-			// If not, we might need to use fetch or cast the client.
-			// Assuming it is available or we use the path directly if not.
-			// Since we just added it to the backend, the types might not be updated in the frontend if they are generated.
-			// But usually Hono types are inferred from the backend source if imported.
-
-			// Let's try to use rpcClient if possible, otherwise fallback to fetch with correct base URL logic if needed.
-			// But wait, rpcClient is configured with base URL.
-			// If we use rpcClient.api.v1...stream.$get(), it should work if typed.
-			// If not typed, we can use `rpcClient.request(...)` or similar if available, or just fetch.
-			// Given the user asked to use rpcClient, I should try to use it.
-
-			// However, for streaming, the standard client might try to parse JSON.
-			// We need to use `$get` and then `res.body`.
-
 			const res = await rpcClient.api.v1.canvas[":id"].agent[
 				":sessionId"
 			].stream.$get(
@@ -176,7 +161,6 @@ export function useAgentChatStream(
 				prev.map((msg) => ({ ...msg, isStreaming: false })),
 			);
 			abortControllerRef.current = null;
-			setIsLoading(false);
 		}
 	}, [canvasId, sessionId]);
 
@@ -186,10 +170,11 @@ export function useAgentChatStream(
 		setMessages([]);
 
 		if (!sessionId || !canvasId) {
+			setIsRequestPending(false); // Ensure we reset if no session
 			return;
 		}
 		const fetchHistoryAndConnect = async () => {
-			setIsLoading(true);
+			setIsRequestPending(true);
 			try {
 				const res = await rpcClient.api.v1.canvas[":id"].agent[
 					":sessionId"
@@ -198,7 +183,6 @@ export function useAgentChatStream(
 				});
 				if (!res.ok) throw new Error("Failed to fetch session");
 				const data = await res.json();
-				console.log({ data });
 
 				const historyMessages = (data.messages || []).map((m: any) => ({
 					...m,
@@ -206,11 +190,12 @@ export function useAgentChatStream(
 				}));
 				setMessages(historyMessages);
 
-				// If session is active, connect to stream
+				// History loaded, stop "Loading" spinner immediately
+				setIsRequestPending(false);
+
+				// If session is active, connect to stream (background)
 				if (data.status === "ACTIVE") {
 					connectToStream();
-				} else {
-					setIsLoading(false);
 				}
 
 				// Check for pending patch in history
@@ -222,7 +207,7 @@ export function useAgentChatStream(
 				}
 			} catch (error) {
 				console.error("Error fetching history:", error);
-				setIsLoading(false);
+				setIsRequestPending(false);
 			}
 		};
 
@@ -249,7 +234,7 @@ export function useAgentChatStream(
 			};
 
 			setMessages((prev) => [...prev, userMsg, aiMsg]);
-			setIsLoading(true);
+			setIsRequestPending(true);
 			abortControllerRef.current = new AbortController();
 
 			try {
@@ -327,7 +312,7 @@ export function useAgentChatStream(
 					console.error("Stream error:", error);
 				}
 			} finally {
-				setIsLoading(false);
+				setIsRequestPending(false);
 				setMessages((prev) =>
 					prev.map((msg) =>
 						msg.id === aiMsgId ? { ...msg, isStreaming: false } : msg,
@@ -336,7 +321,7 @@ export function useAgentChatStream(
 				abortControllerRef.current = null;
 			}
 		},
-		[canvasId, sessionId],
+		[canvasId, sessionId, model],
 	);
 
 	const stopGeneration = useCallback(async () => {
@@ -352,12 +337,16 @@ export function useAgentChatStream(
 				console.error("Failed to stop generation on backend", e);
 			}
 		}
-		setIsLoading(false);
+		setIsRequestPending(false);
 	}, [canvasId, sessionId]);
 
 	const clearPendingPatch = useCallback(() => {
 		setPendingPatchId(null);
 	}, []);
+
+	// The UI is "loading" if we are waiting for a request OR if a message is actively streaming
+	const isStreaming = messages.some((m) => m.isStreaming && m.role === "model");
+	const isLoading = isRequestPending || isStreaming;
 
 	return {
 		messages,

@@ -99,14 +99,6 @@ const VideoGenExtendNodeConfigComponent = memo(
 						<FormDescription>
 							Video extension is currently limited to 720p and 7 seconds.
 						</FormDescription>
-
-						<SelectField
-							control={form.control}
-							name="personGeneration"
-							placeholder="Select Person Generation"
-							label="Person Generation"
-							options={VIDEOGEN_PERSON_GENERATION_OPTIONS}
-						/>
 					</div>
 				</form>
 			</Form>
