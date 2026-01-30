@@ -77,14 +77,14 @@ function InputArea({
 		>
 			<div
 				className={cn(
-					"relative flex flex-col gap-2 p-2 rounded-2xl border transition-all duration-200",
+					"relative flex flex-col gap-1.5 p-1 rounded-xl border transition-all duration-200",
 					"bg-background/80 backdrop-blur-xl",
-					"border-border shadow-2xl shadow-black/5",
+					"border-border/60 shadow-xl shadow-black/5",
 					"focus-within:border-primary/50 focus-within:ring-4 focus-within:ring-primary/5",
 				)}
 			>
 				{/* Input Field */}
-				<div className="flex items-start gap-2 px-2 pt-1">
+				<div className="flex items-start gap-2 px-1 pt-1">
 					<span className="text-[10px] font-medium bg-primary/10 text-primary px-1.5 py-0.5 rounded-md mt-1 flex-shrink-0">
 						@agent
 					</span>
@@ -138,10 +138,10 @@ function InputArea({
 							size="icon"
 							onClick={handleSubmit}
 							disabled={!inputValue.trim()}
-							className="h-7 w-7 rounded-full transition-transform active:scale-95 shadow-lg shadow-primary/20"
+							className="h-6 w-6 rounded-full transition-transform active:scale-95 shadow-lg shadow-primary/20"
 							aria-label="Send message"
 						>
-							<ArrowRight className="size-4" />
+							<ArrowRight className="size-3.5" />
 						</Button>
 					)}
 				</div>
@@ -188,10 +188,11 @@ function Message({ message, patchId, onPatchComplete }: MessageProps) {
 	if (role === "user") {
 		return (
 			<div className="flex w-full justify-end animate-in slide-in-from-bottom-2 duration-300">
-				<div className="bg-primary text-primary-foreground rounded-2xl rounded-tr-none max-w-[85%] px-3 py-2 text-xs whitespace-pre-wrap">
+				<div className="bg-primary text-primary-foreground rounded-2xl rounded-tr-sm max-w-[85%] px-2.5 py-1.5 text-sm leading-relaxed whitespace-pre-wrap break-words shadow-sm">
 					{text}
 				</div>
 			</div>
+
 		);
 	}
 
@@ -200,14 +201,14 @@ function Message({ message, patchId, onPatchComplete }: MessageProps) {
 		return (
 			<div className="space-y-3">
 				<div className="flex w-full justify-start animate-in slide-in-from-bottom-2 duration-300">
-					<div className="bg-muted/50 border border-border/50 text-foreground rounded-2xl rounded-tl-none max-w-[85%] px-3 py-2 text-xs">
-						<MarkdownRenderer markdown={text} />
+					<div className="bg-muted/50 borde border-border/50 text-foreground rounded-2xl rounded-tl-sm max-w-[90%] px-2.5 py-2 text-[11px] leading-relaxed shadow-sm overflow-hidden">
+						<MarkdownRenderer className="text-sm" markdown={text} />
 						{isStreaming && (
 							<div
 								className={cn("flex items-center gap-2", text.trim() && "mt-2")}
 							>
 								<LoadingSpinner className="size-4" />
-								<span className="text-[10px] text-muted-foreground">
+								<span className="text-sm text-muted-foreground">
 									Working...
 								</span>
 							</div>
@@ -215,17 +216,20 @@ function Message({ message, patchId, onPatchComplete }: MessageProps) {
 					</div>
 				</div>
 
+
 				{/* Patch card displays after model message */}
-				{patchId && (
-					<div className="flex w-full justify-start animate-in slide-in-from-bottom-2 duration-300">
-						<PatchReviewCard
-							patchId={patchId}
-							initialStatus={message.patchStatus}
-							onComplete={onPatchComplete || (() => {})}
-						/>
-					</div>
-				)}
-			</div>
+				{
+					patchId && (
+						<div className="flex w-full justify-start animate-in slide-in-from-bottom-2 duration-300">
+							<PatchReviewCard
+								patchId={patchId}
+								initialStatus={message.patchStatus}
+								onComplete={onPatchComplete || (() => { })}
+							/>
+						</div>
+					)
+				}
+			</div >
 		);
 	}
 
@@ -237,9 +241,10 @@ function LoadingIndicator() {
 		<div className="flex w-full justify-start animate-in slide-in-from-bottom-2 duration-300">
 			<div className="bg-muted/50 border border-border/50 text-foreground rounded-2xl rounded-tl-none max-w-[85%] px-3 py-2 text-xs">
 				<div className="flex items-center gap-2">
-					<LoadingSpinner className="size-4" />
-					<span className="text-[10px] text-muted-foreground">Working...</span>
+					<LoadingSpinner className="size-3" />
+					<span className="text-[10px] text-muted-foreground">Thinking...</span>
 				</div>
+
 			</div>
 		</div>
 	);
@@ -263,7 +268,7 @@ function ChatHeader({
 	onClose,
 }: ChatHeaderProps) {
 	return (
-		<div className="sticky top-0 z-10 bg-transparent p-3 flex items-center justify-between">
+		<div className="sticky top-0 z-10 bg-transparent p-2 flex items-center justify-between">
 			<div className="text-xs text-muted-foreground">
 				{!isNewSession && (
 					<span className="opacity-70">
@@ -529,11 +534,11 @@ export function AgentChatSection({ onClose }: { onClose: () => void }) {
 			) : (
 				<>
 					<ScrollArea
-						className="flex-1 grow h-full pb-24"
-						viewPortCn="h-full overflow-auto"
+						className="flex-1 grow h-full pb-24 w-full"
+						viewPortCn="h-full overflow-auto w-full"
 						ref={scrollRef}
 					>
-						<div className="max-w-3xl mx-auto w-full p-2 space-y-6 pb-28">
+						<div className="max-w-3xl mx-auto w-full px-1 py-2 space-y-3 pb-28">
 							{processedMessages.map((msg) => (
 								<Message
 									key={msg.id}
