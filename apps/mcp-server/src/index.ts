@@ -88,7 +88,6 @@ server.registerResource(
 		mimeType: "application/json",
 	},
 	async (uri) => {
-		console.log("Tool 'node-templates' called");
 		const templates = await apiClient.getNodeTemplates();
 		return {
 			contents: [
