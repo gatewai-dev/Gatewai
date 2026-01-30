@@ -141,6 +141,7 @@ Connect Text Output to ImageGen Prompt input."
 
 **SPECIAL NODE BEHAVIORS**:
 - VideoCompositor: NO output handle (download via UI)
+- We have no Array types so, we also have no text splitter node. For example when you want to create LLM that generates script we cannot distribute the output. Instead, create multiple LLM connected to each other e.g. Stage 1 + Prompt = Stage 2. Or better way you can think of.
 - Do not escape newline in TextMerger node.
 - Preview: Must have EXACTLY one input connection. Use ONLY for TextMerger outputs to visualize merged text, since TextMerger doesn't display results in the node itself.
 - File: User uploads via UI, only provide output handle

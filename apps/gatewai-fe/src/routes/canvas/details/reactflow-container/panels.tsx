@@ -1,4 +1,4 @@
-import { Controls, Panel } from "@xyflow/react";
+import { Panel } from "@xyflow/react";
 import { memo } from "react";
 import { DebugPanel } from "../graph-engine/debug-panel";
 import { AgentPanel } from "./agent-panel";

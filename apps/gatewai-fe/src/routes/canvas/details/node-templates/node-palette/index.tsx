@@ -1,13 +1,27 @@
-import { PanelLeftClose, PanelLeftOpen } from "lucide-react";
+import {
+	LayoutGrid,
+	LogOut,
+	PanelLeftClose,
+	PanelLeftOpen,
+} from "lucide-react";
 import { FaDiscord, FaGithub } from "react-icons/fa";
 import { Link } from "react-router";
 import { Button } from "@/components/ui/button";
+import {
+	DropdownMenu,
+	DropdownMenuContent,
+	DropdownMenuItem,
+	DropdownMenuLabel,
+	DropdownMenuSeparator,
+	DropdownMenuTrigger,
+} from "@/components/ui/dropdown-menu";
 import { GatewaiIcon } from "@/components/ui/gatewai-icon";
 import {
 	Tooltip,
 	TooltipContent,
 	TooltipTrigger,
 } from "@/components/ui/tooltip";
+import { authClient } from "@/lib/auth-client";
 import { cn } from "@/lib/utils";
 import type { NodeTemplateListRPC } from "@/rpc/types";
 import { CanvasName } from "../../reactflow-container/left-panel/canvas-name";
@@ -49,9 +63,39 @@ function NodePaletteContent({ templates }: { templates: NodeTemplateListRPC }) {
 						isCollapsed ? "w-0 opacity-0" : "w-auto opacity-100",
 					)}
 				>
-					<Link title="Back to workspace" to="/canvas">
-						<GatewaiIcon className="size-7 shrink-0 text-primary" />
-					</Link>
+					<DropdownMenu>
+						<DropdownMenuTrigger asChild>
+							<button type="button" className="outline-none">
+								<GatewaiIcon className="size-7 shrink-0 text-primary cursor-pointer hover:opacity-80 transition-opacity" />
+							</button>
+						</DropdownMenuTrigger>
+						<DropdownMenuContent align="start" className="w-56 ml-2">
+							<DropdownMenuLabel>My Account</DropdownMenuLabel>
+							<DropdownMenuSeparator />
+							<DropdownMenuItem asChild>
+								<Link to="/canvas" className="cursor-pointer">
+									<LayoutGrid className="mr-2 h-4 w-4" />
+									<span>Back to workspace</span>
+								</Link>
+							</DropdownMenuItem>
+							<DropdownMenuSeparator />
+							<DropdownMenuItem
+								className="text-red-600 focus:text-red-600 cursor-pointer"
+								onClick={async () => {
+									await authClient.signOut({
+										fetchOptions: {
+											onSuccess: () => {
+												window.location.href = "/auth/signin";
+											},
+										},
+									});
+								}}
+							>
+								<LogOut className="mr-2 h-4 w-4" />
+								<span>Sign out</span>
+							</DropdownMenuItem>
+						</DropdownMenuContent>
+					</DropdownMenu>
 					<CanvasName />
 				</div>
 
