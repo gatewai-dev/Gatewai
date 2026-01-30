@@ -11,7 +11,7 @@ import {
 	Sprite,
 	Texture,
 } from "@pixi/node";
-import { createCanvas, ImageData } from "canvas"; // Removed unused Image import
+import { createCanvas, ImageData } from "canvas";
 import sharp from "sharp";
 import { ENV_CONFIG } from "../config.js";
 
