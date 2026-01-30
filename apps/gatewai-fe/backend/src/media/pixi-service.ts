@@ -14,6 +14,7 @@ import {
 } from "@pixi/node";
 import { createCanvas, ImageData } from "canvas"; // Removed unused Image import
 import sharp from "sharp";
+import { ENV_CONFIG } from "../config.js";
 
 // 1. Polyfill ImageData
 if (typeof global.ImageData === "undefined") {
@@ -50,33 +51,33 @@ export class BackendPixiService extends BasePixiService {
 			this.initialized = true;
 		}
 
-		// Check if the file is webp
-		if (extname(url).toLowerCase() === ".webp") {
-			// Fetch the WebP image
-			const imageResp = await fetch(url);
-			const arrayBuffer = await imageResp.arrayBuffer();
-			const buffer = Buffer.from(arrayBuffer);
-
-			// Use sharp to decode to raw RGBA pixels
-			const { data, info } = await sharp(buffer)
-				.ensureAlpha() // Ensure RGBA (adds alpha channel if missing)
-				.raw()
-				.toBuffer({ resolveWithObject: true });
-
-			// Create Pixi Texture from raw buffer
-			const rgbaData = new Uint8Array(
-				data.buffer,
-				data.byteOffset,
-				data.length,
-			);
-			return Texture.fromBuffer(rgbaData, info.width, info.height);
+		// Prepare headers with API key for authentication
+		const headers: HeadersInit = {};
+		if (ENV_CONFIG.GATEWAI_API_KEY) {
+			headers["X-API-KEY"] = ENV_CONFIG.GATEWAI_API_KEY;
 		}
 
-		// Standard loading for other formats
-		return await Assets.load({
-			src: url,
-			loadParser: "loadTextures",
-		});
+		// Fetch the image with authentication
+		const imageResp = await fetch(url, { headers });
+
+		if (!imageResp.ok) {
+			throw new Error(
+				`Failed to load texture from ${url}: ${imageResp.status} ${imageResp.statusText}`,
+			);
+		}
+
+		const arrayBuffer = await imageResp.arrayBuffer();
+		const buffer = Buffer.from(arrayBuffer);
+
+		// Use sharp to decode to raw RGBA pixels (works for all image formats)
+		const { data, info } = await sharp(buffer)
+			.ensureAlpha() // Ensure RGBA (adds alpha channel if missing)
+			.raw()
+			.toBuffer({ resolveWithObject: true });
+
+		// Create Pixi Texture from raw buffer
+		const rgbaData = new Uint8Array(data.buffer, data.byteOffset, data.length);
+		return Texture.fromBuffer(rgbaData, info.width, info.height);
 	}
 
 	/**

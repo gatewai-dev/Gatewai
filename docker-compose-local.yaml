@@ -1,0 +1,81 @@
+# Docker Compose for local development
+# Usage: docker compose -f docker-compose-local.yaml up
+
+services:
+  postgres:
+    image: postgres:18
+    container_name: postgres
+    restart: unless-stopped
+    environment:
+      POSTGRES_USER: postgres
+      POSTGRES_PASSWORD: postgres
+      POSTGRES_DB: gatewai_db
+    ports:
+      - "5432:5432"
+    volumes:
+      - postgres_data:/var/lib/postgresql
+    healthcheck:
+      test: ["CMD-SHELL", "pg_isready -U postgres"]
+      interval: 5s
+      timeout: 5s
+      retries: 5
+
+  redis:
+    image: redis:7-alpine
+    container_name: redis
+    restart: unless-stopped
+    ports:
+      - "6379:6379"
+    volumes:
+      - redis_data:/data
+
+  migration:
+    build:
+      context: .
+      dockerfile: Dockerfile.migration
+    container_name: gatewai-migration
+    depends_on:
+      postgres:
+        condition: service_healthy
+    env_file:
+      - .env.local
+    environment:
+      DATABASE_URL: postgresql://postgres:postgres@postgres:5432/gatewai_db
+    restart: "no"
+
+  app:
+    build:
+      context: .
+      dockerfile: Dockerfile
+    container_name: gatewai-app
+    restart: unless-stopped
+    ports:
+      - "8081:8081"
+    depends_on:
+      postgres:
+        condition: service_healthy
+      migration:
+        condition: service_completed_successfully
+      redis:
+        condition: service_started
+    env_file:
+      - .env.local
+
+  mcp:
+    build:
+      context: .
+      dockerfile: Dockerfile.mcp
+    container_name: gatewai-mcp
+    restart: unless-stopped
+    ports:
+      - "4001:4001"
+    depends_on:
+      - app
+    env_file:
+      - .env.local
+    environment:
+      - BASE_URL=http://gatewai-app:8081
+
+volumes:
+  postgres_data:
+  redis_data:

@@ -49,7 +49,7 @@ export function AgentSessionList({
 			</div>
 			{/* Scrollable List */}
 			<ScrollArea
-				viewPortCn="h-full"
+				viewPortCn="h-full max-h-[660px]"
 				className="flex-1 p-2 space-y-1 h-full overflow-auto"
 			>
 				{!dateSorted || dateSorted.length === 0 ? (

@@ -1,6 +1,7 @@
 import { motion, useScroll, useTransform } from "framer-motion";
 import { ArrowRight, GitBranch, Sparkles, Workflow } from "lucide-react";
 import { useEffect, useRef, useState } from "react";
+import { SiDiscord, SiGithub } from "react-icons/si";
 import { Link } from "react-router";
 import { Button } from "@/components/ui/button";
 import { GatewaiLogo } from "@/components/ui/gatewai-logo";
@@ -145,22 +146,34 @@ const HomePage = () => {
 			{/* Navbar */}
 			<nav className="fixed top-0 left-0 right-0 z-50 flex h-20 items-center justify-between border-b border-primary/10 bg-[#0a0a0f]/90 px-8 backdrop-blur-xl">
 				<div className="flex items-center gap-3">
-					<GatewaiLogo className="h-7 w-7 text-primary" />
-					<span
-						className="text-xl font-bold tracking-tight"
-						style={{ fontFamily: "'JetBrains Mono', monospace" }}
-					>
-						GATEWAI
-					</span>
+					<GatewaiLogo className="size-20 text-primary" />
 				</div>
-				<Link to="/auth/signin">
-					<Button
-						variant="ghost"
-						className="text-primary/80 hover:text-primary hover:bg-primary/10"
+				<div className="flex items-center gap-4">
+					<a
+						href="https://github.com/gatewai-dev/Gatewai"
+						target="_blank"
+						rel="noreferrer"
+						className="text-zinc-400 hover:text-primary transition-colors"
 					>
-						Sign In
-					</Button>
-				</Link>
+						<SiGithub className="h-5 w-5" />
+					</a>
+					<a
+						href="https://discord.gg/ha4A8UD7kn"
+						target="_blank"
+						rel="noreferrer"
+						className="text-zinc-400 hover:text-primary transition-colors"
+					>
+						<SiDiscord className="h-5 w-5" />
+					</a>
+					<Link to="/auth/signin">
+						<Button
+							variant="ghost"
+							className="text-primary/80 hover:text-primary hover:bg-primary/10"
+						>
+							Sign In
+						</Button>
+					</Link>
+				</div>
 			</nav>
 
 			{/* Hero Section */}
@@ -240,19 +253,6 @@ const HomePage = () => {
 								<ArrowRight className="ml-3 h-5 w-5 transition-transform group-hover:translate-x-1" />
 							</Button>
 						</Link>
-						<a
-							href="https://github.com/gatewai-dev/Gatewai"
-							target="_blank"
-							rel="noreferrer"
-						>
-							<Button
-								variant="outline"
-								size="lg"
-								className="h-16 px-10 text-lg font-semibold rounded-2xl border-2 border-primary/30 bg-primary/5 hover:bg-primary/15 hover:border-primary/50 text-primary/80 hover:text-primary transition-all duration-300"
-							>
-								GitHub
-							</Button>
-						</a>
 					</motion.div>
 				</motion.div>
 			</section>
