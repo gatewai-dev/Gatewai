@@ -89,11 +89,11 @@ app
 	})
 	.notFound(notFoundHandler);
 
-// Initialize canvas worker.
-await startWorker();
-
 // Run seed check for node templates
 await SEED_createNodeTemplates(prisma);
+
+// Initialize canvas worker.
+await startWorker();
 
 serve(
 	{

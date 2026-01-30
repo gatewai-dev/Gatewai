@@ -1,17 +1,11 @@
 import { zodResolver } from "@hookform/resolvers/zod";
+import { motion } from "framer-motion";
 import { AlertCircle, Loader2 } from "lucide-react";
 import { useState } from "react";
 import { useForm } from "react-hook-form";
 import { z } from "zod";
 import { Alert, AlertDescription } from "@/components/ui/alert";
 import { Button } from "@/components/ui/button";
-import {
-	Card,
-	CardContent,
-	CardDescription,
-	CardHeader,
-	CardTitle,
-} from "@/components/ui/card";
 import {
 	Form,
 	FormControl,
@@ -20,7 +14,6 @@ import {
 	FormLabel,
 	FormMessage,
 } from "@/components/ui/form";
-import { GatewaiLogo } from "@/components/ui/gatewai-logo";
 import { Input } from "@/components/ui/input";
 import { authClient } from "@/lib/auth-client";
 
@@ -82,89 +75,82 @@ function SignInForm({ onSuccess, onError }: SignInFormProps) {
 	};
 
 	return (
-		<div className="flex items-center justify-center min-h-screen p-4  ">
-			<Card className="w-full max-w-md  shadow-xl  backdrop-blur-sm">
-				<CardHeader className="space-y-3 pb-8">
-					<CardTitle className="text-3xl font-semibold tracking-tight text-center flex flex-col items-center justify-center">
-						<GatewaiLogo className="size-24 text-primary" /> Demo
-					</CardTitle>
-					<CardDescription className="text-center">
-						Please use the login credentials in hackathon submission.
-					</CardDescription>
-				</CardHeader>
-				<CardContent className="space-y-6">
-					{error && (
-						<Alert variant="destructive">
-							<AlertCircle className="h-4 w-4" />
-							<AlertDescription className="">{error}</AlertDescription>
-						</Alert>
-					)}
+		<div className="grid gap-6">
+			{error && (
+				<motion.div
+					initial={{ opacity: 0, y: -10 }}
+					animate={{ opacity: 1, y: 0 }}
+					exit={{ opacity: 0, y: -10 }}
+				>
+					<Alert variant="destructive">
+						<AlertCircle className="h-4 w-4" />
+						<AlertDescription>{error}</AlertDescription>
+					</Alert>
+				</motion.div>
+			)}
 
-					<Form {...form}>
-						<div className="space-y-5">
-							<FormField
-								control={form.control}
-								name="email"
-								render={({ field }) => (
-									<FormItem>
-										<FormLabel className="text-sm font-medium">Email</FormLabel>
-										<FormControl>
-											<Input
-												placeholder="demo@email.com"
-												type="email"
-												autoComplete="email"
-												disabled={isLoading}
-												className="h-11 transition-colors"
-												{...field}
-											/>
-										</FormControl>
-										<FormMessage className="text-xs" />
-									</FormItem>
-								)}
-							/>
+			<Form {...form}>
+				<form onSubmit={form.handleSubmit(handleSubmit)} className="space-y-4">
+					<FormField
+						control={form.control}
+						name="email"
+						render={({ field }) => (
+							<FormItem>
+								<FormLabel className="sr-only">Email</FormLabel>
+								<FormControl>
+									<Input
+										placeholder="name@example.com"
+										type="email"
+										autoCapitalize="none"
+										autoComplete="email"
+										autoCorrect="off"
+										disabled={isLoading}
+										className="h-12 bg-background border-input hover:border-sidebar-primary/50 focus:border-sidebar-primary transition-all duration-300"
+										{...field}
+									/>
+								</FormControl>
+								<FormMessage />
+							</FormItem>
+						)}
+					/>
 
-							<FormField
-								control={form.control}
-								name="password"
-								render={({ field }) => (
-									<FormItem>
-										<FormLabel className="text-sm font-medium">
-											Password
-										</FormLabel>
-										<FormControl>
-											<Input
-												placeholder="Enter your password"
-												type="password"
-												autoComplete="current-password"
-												disabled={isLoading}
-												className="h-11  transition-colors"
-												{...field}
-											/>
-										</FormControl>
-										<FormMessage className="text-xs" />
-									</FormItem>
-								)}
-							/>
+					<FormField
+						control={form.control}
+						name="password"
+						render={({ field }) => (
+							<FormItem>
+								<FormLabel className="sr-only">Password</FormLabel>
+								<FormControl>
+									<Input
+										placeholder="Password"
+										type="password"
+										autoComplete="current-password"
+										disabled={isLoading}
+										className="h-12 bg-background border-input hover:border-sidebar-primary/50 focus:border-sidebar-primary transition-all duration-300"
+										{...field}
+									/>
+								</FormControl>
+								<FormMessage />
+							</FormItem>
+						)}
+					/>
 
-							<Button
-								type="button"
-								onClick={form.handleSubmit(handleSubmit)}
-								className="w-full h-11 font-medium shadow-lg shadow-blue-500/30 hover:shadow-xl hover:shadow-blue-600/40 transition-all duration-200"
-								disabled={isLoading}
-							>
-								{isLoading ? (
-									<>
-										<Loader2 className="mr-2 h-4 w-4 animate-spin" />
-										Signing in...
-									</>
-								) : (
-									"Sign in"
-								)}
-							</Button>
-						</div>
-					</Form>
-				</CardContent>
-			</Card>
+					<Button
+						type="submit"
+						className="w-full h-12 font-medium tracking-wide shadow-lg shadow-primary/25 hover:shadow-primary/40 transition-all duration-300"
+						disabled={isLoading}
+					>
+						{isLoading ? (
+							<>
+								<Loader2 className="mr-2 h-4 w-4 animate-spin" />
+								Signing in...
+							</>
+						) : (
+							"Sign In with Email"
+						)}
+					</Button>
+				</form>
+			</Form>
 		</div>
 	);
 }

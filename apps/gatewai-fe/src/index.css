@@ -4,6 +4,7 @@
 
 @custom-variant dark (&:is(.dark *));
 @custom-variant hover (&:hover);
+
 :root {
 	--background: oklch(1 0 0);
 	--background-selected: oklch(95.514% 0.00011 271.152);
@@ -62,6 +63,7 @@
 	--glass-shadow: 0 4px 30px oklch(0% 0 0 / 0.1);
 	--glass-blur: 10px;
 }
+
 .dark {
 	--background: oklch(23.929% 0.00003 271.152);
 	--background-selected: oklch(22.213% 0.00003 271.152);
@@ -118,6 +120,7 @@
 	--glass-shadow: 0 4px 30px oklch(0% 0 0 / 0.1);
 	--glass-blur: 10px;
 }
+
 @theme inline {
 	--color-background: var(--background);
 	--color-background-selected: var(--background-selected);
@@ -172,15 +175,18 @@
 	--glass-shadow: var(--glass-shadow);
 	--glass-blur: var(--glass-blur);
 }
+
 @layer base {
 	* {
 		@apply border-border outline-ring/50;
 	}
+
 	body {
 		font-family: var(--font-sans);
 		@apply bg-background text-foreground;
 	}
 }
+
 @layer utilities {
 	.glass {
 		background: var(--glass-background);
@@ -191,11 +197,13 @@
 		border-radius: var(--radius);
 	}
 }
+
 :root {
 	--checker-size: 20px;
 	--checker-half: calc(var(--checker-size) / 2);
 	--checker-color: rgb(0, 0, 0);
 }
+
 .media-container {
 	background-image:
 		linear-gradient(45deg, var(--checker-color) 25%, transparent 25%),

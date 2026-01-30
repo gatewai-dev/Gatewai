@@ -2,6 +2,7 @@ import { redisPublisher } from "../../lib/redis.js";
 import { RunCanvasAgent } from "./index.js";
 
 // biome-ignore lint/complexity/noStaticOnlyClass: Required
+// A Agent runner that uses redis for the events
 export class AgentRunnerManager {
 	private static activeSessions = new Map<
 		string,
