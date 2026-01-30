@@ -289,6 +289,10 @@ model TaskBatch {
   canvasId        String
 
   finishedAt      DateTime?
+  // When the batch actually started executing (first task dispatched)
+  startedAt       DateTime?
+  // Stores job data when batch is waiting for previous batch to complete
+  pendingJobData  Json?
 
   @@map("taskBatch")
 }

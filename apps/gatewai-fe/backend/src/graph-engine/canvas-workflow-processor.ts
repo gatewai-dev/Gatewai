@@ -184,8 +184,8 @@ export class NodeWFProcessor {
 			selectionMap[task.id] = nodeIds ? nodeIds.includes(nodeId) : true;
 		}
 
-		// 8. Dispatch the FIRST task in the sequence to the Queue
-		// The worker will handle dispatching subsequent tasks upon completion
+		// 8. Check if another batch is currently running for this canvas
+		// If so, store job data and defer dispatch until that batch finishes
 		if (topoOrder.length > 0) {
 			const firstNodeId = topoOrder[0];
 			const firstTask = tasksMap.get(firstNodeId);
@@ -198,15 +198,38 @@ export class NodeWFProcessor {
 			});
 			const [firstTaskId, ...remainingTaskIds] = taskSequence;
 
-			if (firstTask) {
-				await workflowQueue.add("process-node", {
-					taskId: firstTaskId,
+			const jobData = {
+				taskId: firstTaskId,
+				canvasId,
+				batchId: batch.id,
+				remainingTaskIds,
+				isExplicitlySelected: selectionMap[firstTaskId],
+				selectionMap,
+			};
+
+			// Check for an active batch (started but not finished) on this canvas
+			const activeBatch = await this.prisma.taskBatch.findFirst({
+				where: {
 					canvasId,
-					batchId: batch.id,
-					remainingTaskIds, // The worker will pick the next one from here
-					isExplicitlySelected: selectionMap[firstTaskId],
-					selectionMap,
+					startedAt: { not: null },
+					finishedAt: null,
+					id: { not: batch.id }, // Exclude the current batch
+				},
+			});
+
+			if (activeBatch) {
+				// Another batch is running - store job data for later dispatch
+				await this.prisma.taskBatch.update({
+					where: { id: batch.id },
+					data: { pendingJobData: jobData },
 				});
+			} else if (firstTask) {
+				// No active batch - start this one immediately
+				await this.prisma.taskBatch.update({
+					where: { id: batch.id },
+					data: { startedAt: new Date() },
+				});
+				await workflowQueue.add("process-node", jobData);
 			}
 		} else {
 			// Empty batch (rare, but possible if filters removed everything)

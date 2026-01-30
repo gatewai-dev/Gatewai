@@ -1,4 +1,4 @@
-import { type Prisma, prisma, TaskStatus } from "@gatewai/db";
+import { Prisma, prisma, TaskStatus } from "@gatewai/db";
 import { type Job, Worker } from "bullmq";
 import { GetCanvasEntities } from "../../data-ops/canvas.js";
 import { logger } from "../../logger.js";
@@ -24,14 +24,61 @@ async function checkAndFinishBatch(batchId: string) {
 		});
 
 		if (pendingCount === 0) {
-			await prisma.taskBatch.update({
+			// Mark current batch as finished
+			const finishedBatch = await prisma.taskBatch.update({
 				where: { id: batchId },
 				data: { finishedAt: new Date() },
+				select: { canvasId: true },
 			});
+
+			// Check for next pending batch on the same canvas
+			await dispatchNextPendingBatch(finishedBatch.canvasId);
 		}
 	} catch (e) {
 		assertIsError(e);
 		logger.warn(`Could not check and finish batch ${batchId}: ${e.message}`);
+	}
+}
+
+/**
+ * Find and dispatch the next pending batch for a canvas.
+ * Called when a batch finishes to start the next queued one.
+ */
+async function dispatchNextPendingBatch(canvasId: string) {
+	try {
+		// Find the oldest pending batch (has pendingJobData but no startedAt)
+		const nextBatch = await prisma.taskBatch.findFirst({
+			where: {
+				canvasId,
+				pendingJobData: { not: Prisma.JsonNull },
+				startedAt: null,
+			},
+			orderBy: { createdAt: "asc" },
+		});
+
+		if (nextBatch?.pendingJobData) {
+			const jobData = nextBatch.pendingJobData as unknown as NodeTaskJobData;
+
+			// Mark batch as started and clear pendingJobData
+			await prisma.taskBatch.update({
+				where: { id: nextBatch.id },
+				data: {
+					startedAt: new Date(),
+					pendingJobData: Prisma.DbNull,
+				},
+			});
+
+			// Dispatch to queue
+			await workflowQueue.add("process-node", jobData);
+			logger.info(
+				`Dispatched pending batch ${nextBatch.id} for canvas ${canvasId}`,
+			);
+		}
+	} catch (e) {
+		assertIsError(e);
+		logger.error(
+			`Failed to dispatch next pending batch for canvas ${canvasId}: ${e.message}`,
+		);
 	}
 }
 
@@ -112,6 +159,15 @@ const processNodeJob = async (job: Job<NodeTaskJobData>) => {
 	if (existingTask?.status === TaskStatus.COMPLETED) {
 		logger.info(`Task ${taskId} already completed. Skipping execution.`);
 		// Trigger next just in case the previous run crashed *after* success but *before* triggering next
+		await triggerNextTask(batchId, remainingTaskIds, selectionMap, canvasId);
+		return;
+	}
+
+	// Skip tasks already marked as FAILED (e.g., by propagateFailure from upstream node)
+	if (existingTask?.status === TaskStatus.FAILED) {
+		logger.info(
+			`Task ${taskId} already failed (upstream propagation). Skipping execution.`,
+		);
 		await triggerNextTask(batchId, remainingTaskIds, selectionMap, canvasId);
 		return;
 	}
@@ -221,6 +277,10 @@ const processNodeJob = async (job: Job<NodeTaskJobData>) => {
 				error ?? "Unknown error",
 			);
 			await checkAndFinishBatch(batchId);
+			// Continue processing remaining tasks - propagateFailure already marked
+			// graph-dependent downstream tasks as FAILED, but independent parallel
+			// branches should still execute
+			await triggerNextTask(batchId, remainingTaskIds, selectionMap, canvasId);
 		}
 	} catch (err: unknown) {
 		logger.error({ err }, `Task execution failed for ${taskId}`);
@@ -244,6 +304,8 @@ const processNodeJob = async (job: Job<NodeTaskJobData>) => {
 			errorMessage,
 		);
 		await checkAndFinishBatch(batchId);
+		// Continue processing remaining tasks even on exception
+		await triggerNextTask(batchId, remainingTaskIds, selectionMap, canvasId);
 		throw err;
 	}
 };
