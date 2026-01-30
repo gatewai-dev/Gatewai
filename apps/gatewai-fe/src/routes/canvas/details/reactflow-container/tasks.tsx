@@ -27,8 +27,14 @@ const CanvasTasksPanel = memo(() => {
 		);
 	}
 
-	const runningTaskBatches =
-		taskBatches?.filter((tb) => tb.finishedAt == null) ?? [];
+	const executingTaskBatches =
+		taskBatches?.filter(
+			(tb) => tb.startedAt != null && tb.finishedAt == null,
+		) ?? [];
+	const queuedTaskBatches =
+		taskBatches?.filter(
+			(tb) => tb.startedAt == null && tb.finishedAt == null,
+		) ?? [];
 	const oneHourAgo = new Date(Date.now() - 60 * 60 * 1000);
 	const failedTaskBatches =
 		taskBatches?.filter(
@@ -38,23 +44,29 @@ const CanvasTasksPanel = memo(() => {
 				tb.tasks.some((t) => t.status === "FAILED"),
 		) ?? [];
 
-	const sortedRunning = [...runningTaskBatches].sort(
+	const sortedExecuting = [...executingTaskBatches].sort(
+		(a, b) => new Date(b.createdAt).getTime() - new Date(a.createdAt).getTime(),
+	);
+	const sortedQueued = [...queuedTaskBatches].sort(
 		(a, b) => new Date(b.createdAt).getTime() - new Date(a.createdAt).getTime(),
 	);
 	const sortedFailed = [...failedTaskBatches].sort(
 		(a, b) => new Date(b.createdAt).getTime() - new Date(a.createdAt).getTime(),
 	);
 
-	const runningCount = sortedRunning.length;
+	const executingCount = sortedExecuting.length;
+	const queuedCount = sortedQueued.length;
 	const failedCount = sortedFailed.length;
-	const totalCount = runningCount + failedCount;
+	const totalCount = executingCount + queuedCount + failedCount;
 
 	const indicatorColor =
 		failedCount > 0
 			? "bg-destructive"
-			: runningCount > 0
+			: executingCount > 0
 				? "bg-amber-400"
-				: "bg-emerald-500";
+				: queuedCount > 0
+					? "bg-blue-400"
+					: "bg-emerald-500";
 
 	return (
 		<Popover>
@@ -96,13 +108,13 @@ const CanvasTasksPanel = memo(() => {
 						</div>
 					) : (
 						<>
-							{runningCount > 0 && (
+							{executingCount > 0 && (
 								<section className="space-y-1.5">
 									<h5 className="text-[10px] font-bold text-muted-foreground/50 uppercase px-1">
 										Active Batches
 									</h5>
 									<div className="grid gap-1">
-										{sortedRunning.map((tb) => {
+										{sortedExecuting.map((tb) => {
 											const exec = tb.tasks.filter(
 												(t) => t.status === "EXECUTING",
 											).length;
@@ -121,6 +133,38 @@ const CanvasTasksPanel = memo(() => {
 														</span>
 														<span className="text-[10px] text-muted-foreground">
 															{queued} in queue
+														</span>
+													</div>
+												</div>
+											);
+										})}
+									</div>
+								</section>
+							)}
+
+							{queuedCount > 0 && (
+								<section className="space-y-1.5">
+									<h5 className="text-[10px] font-bold text-blue-400/70 uppercase px-1">
+										Waiting to Start
+									</h5>
+									<div className="grid gap-1">
+										{sortedQueued.map((tb) => {
+											const taskCount = tb.tasks.length;
+											return (
+												<div
+													key={tb.id}
+													className="flex items-center gap-3 p-1.5 rounded-md border border-blue-500/20 bg-blue-500/5"
+												>
+													<div
+														className="h-3 w-3 rounded-full border-2 border-blue-400/50 border-dashed animate-spin"
+														style={{ animationDuration: "3s" }}
+													/>
+													<div className="flex flex-col">
+														<span className="text-xs font-medium tabular-nums text-blue-400">
+															Queued
+														</span>
+														<span className="text-[10px] text-muted-foreground">
+															{taskCount} tasks waiting
 														</span>
 													</div>
 												</div>

@@ -8,10 +8,22 @@ import {
 	Plus,
 	Search,
 	Sparkles,
+	Trash2,
 } from "lucide-react";
 
 import { useEffect, useRef, useState } from "react";
 import { Link, useNavigate } from "react-router";
+import {
+	AlertDialog,
+	AlertDialogAction,
+	AlertDialogCancel,
+	AlertDialogContent,
+	AlertDialogDescription,
+	AlertDialogFooter,
+	AlertDialogHeader,
+	AlertDialogTitle,
+	AlertDialogTrigger,
+} from "@/components/ui/alert-dialog";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { Skeleton } from "@/components/ui/skeleton";
@@ -246,84 +258,185 @@ function CanvasCard({
 	const nodeCount = canvas._count?.nodes || 0;
 	const timeAgo = formatDistanceToNow(new Date(canvas.updatedAt));
 
+	const { deleteCanvas } = useCanvasListCtx();
+	const [isDeleteDialogOpen, setIsDeleteDialogOpen] = useState(false);
+
+	const handleDelete = async (e: React.MouseEvent) => {
+		e.preventDefault();
+		e.stopPropagation();
+		try {
+			await deleteCanvas(canvas.id);
+			setIsDeleteDialogOpen(false);
+		} catch (error) {
+			console.error("Failed to delete canvas:", error);
+		}
+	};
+
 	if (view === "list") {
 		return (
-			<Link
-				to={`/canvas/${canvas.id}`}
-				className="group flex items-center justify-between p-4 bg-white dark:bg-zinc-900 border border-zinc-200 dark:border-zinc-800 rounded-2xl hover:border-primary/40 hover:shadow-md transition-all cursor-pointer w-full text-left"
-				aria-label={`Open canvas ${canvas.name}, edited ${timeAgo} ago, ${nodeCount} nodes`}
-			>
-				<div className="flex items-center gap-4">
-					<div
-						className="w-10 h-10 rounded-xl bg-zinc-100 dark:bg-zinc-800 flex items-center justify-center group-hover:bg-primary/10 transition-colors"
-						aria-hidden="true"
+			<div className="group relative">
+				<Link
+					to={`/canvas/${canvas.id}`}
+					className="flex items-center justify-between p-4 bg-white dark:bg-zinc-900 border border-zinc-200 dark:border-zinc-800 rounded-2xl hover:border-primary/40 hover:shadow-md transition-all cursor-pointer w-full text-left pr-20"
+					aria-label={`Open canvas ${canvas.name}, edited ${timeAgo} ago, ${nodeCount} nodes`}
+				>
+					<div className="flex items-center gap-4">
+						<div
+							className="w-10 h-10 rounded-xl bg-zinc-100 dark:bg-zinc-800 flex items-center justify-center group-hover:bg-primary/10 transition-colors"
+							aria-hidden="true"
+						>
+							<Network className="h-5 w-5 text-zinc-500 group-hover:text-primary" />
+						</div>
+						<div>
+							<h3 className="font-semibold text-zinc-900 dark:text-zinc-100">
+								{canvas.name}
+							</h3>
+							<p className="text-xs text-muted-foreground">
+								Edited {timeAgo} ago
+							</p>
+						</div>
+					</div>
+					<div className="flex items-center gap-6 text-sm text-muted-foreground">
+						<div className="flex items-center gap-1.5">
+							<FileText className="h-3.5 w-3.5" aria-hidden="true" />
+							<span>{nodeCount} nodes</span>
+						</div>
+					</div>
+				</Link>
+				<div className="absolute right-4 top-1/2 -translate-y-1/2 opacity-0 group-hover:opacity-100 transition-opacity">
+					<AlertDialog
+						open={isDeleteDialogOpen}
+						onOpenChange={setIsDeleteDialogOpen}
 					>
-						<Network className="h-5 w-5 text-zinc-500 group-hover:text-primary" />
-					</div>
-					<div>
-						<h3 className="font-semibold text-zinc-900 dark:text-zinc-100">
-							{canvas.name}
-						</h3>
-						<p className="text-xs text-muted-foreground">
-							Edited {timeAgo} ago
-						</p>
-					</div>
+						<AlertDialogTrigger asChild>
+							<Button
+								variant="ghost"
+								size="icon"
+								className="h-8 w-8 text-muted-foreground hover:text-destructive hover:bg-destructive/10"
+								onClick={(e) => {
+									e.preventDefault();
+									e.stopPropagation();
+									setIsDeleteDialogOpen(true);
+								}}
+							>
+								<Trash2 className="h-4 w-4" />
+							</Button>
+						</AlertDialogTrigger>
+						<AlertDialogContent>
+							<AlertDialogHeader>
+								<AlertDialogTitle>Are you absolutely sure?</AlertDialogTitle>
+								<AlertDialogDescription>
+									This action cannot be undone. This will permanently delete the
+									canvas named{" "}
+									<span className="font-medium">"{canvas.name}"</span> and
+									remove all its data.
+								</AlertDialogDescription>
+							</AlertDialogHeader>
+							<AlertDialogFooter>
+								<AlertDialogCancel onClick={(e) => e.stopPropagation()}>
+									Cancel
+								</AlertDialogCancel>
+								<AlertDialogAction
+									onClick={handleDelete}
+									className="bg-destructive text-destructive-foreground hover:bg-destructive/90"
+								>
+									Delete
+								</AlertDialogAction>
+							</AlertDialogFooter>
+						</AlertDialogContent>
+					</AlertDialog>
 				</div>
-				<div className="flex items-center gap-6 text-sm text-muted-foreground">
-					<div className="flex items-center gap-1.5">
-						<FileText className="h-3.5 w-3.5" aria-hidden="true" />
-						<span>{nodeCount} nodes</span>
-					</div>
-				</div>
-			</Link>
+			</div>
 		);
 	}
 
 	return (
-		<Link
-			to={`/canvas/${canvas.id}`}
-			className="group relative aspect-4/3 rounded-4xl p-6 border border-zinc-200 dark:border-zinc-800 bg-white dark:bg-zinc-900 hover:shadow-2xl hover:-translate-y-1 transition-all duration-300 cursor-pointer overflow-hidden block"
-			aria-label={`Open canvas ${canvas.name}, edited ${timeAgo} ago, ${nodeCount} nodes`}
-		>
-			<div className="flex flex-col h-full justify-between relative z-10">
-				<div className="flex justify-between items-start">
-					<div
-						className="p-3 rounded-2xl bg-zinc-100 dark:bg-zinc-800 group-hover:bg-primary group-hover:text-white transition-all duration-300"
-						aria-hidden="true"
-					>
-						<Network className="h-6 w-6" />
-					</div>
-					<span className="text-[10px] font-bold uppercase tracking-widest text-muted-foreground bg-zinc-100 dark:bg-zinc-800 px-2 py-1 rounded-full">
-						Canvas
-					</span>
-				</div>
-
-				<div className="space-y-1">
-					<h3 className="text-xl font-semibold tracking-tight group-hover:text-primary transition-colors truncate">
-						{canvas.name}
-					</h3>
-					<div className="flex items-center gap-3 text-[11px] font-medium text-muted-foreground">
-						<div className="flex items-center gap-1">
-							<Clock className="h-3 w-3" aria-hidden="true" />
-							{timeAgo} ago
-						</div>
+		<div className="group relative">
+			<Link
+				to={`/canvas/${canvas.id}`}
+				className="relative aspect-4/3 rounded-4xl p-6 border border-zinc-200 dark:border-zinc-800 bg-white dark:bg-zinc-900 hover:shadow-2xl hover:-translate-y-1 transition-all duration-300 cursor-pointer overflow-hidden block"
+				aria-label={`Open canvas ${canvas.name}, edited ${timeAgo} ago, ${nodeCount} nodes`}
+			>
+				<div className="flex flex-col h-full justify-between relative z-10">
+					<div className="flex justify-between items-start">
 						<div
-							className="w-1 h-1 rounded-full bg-zinc-300 dark:bg-zinc-700"
+							className="p-3 rounded-2xl bg-zinc-100 dark:bg-zinc-800 group-hover:bg-primary group-hover:text-white transition-all duration-300"
 							aria-hidden="true"
-						/>
-						<div className="flex items-center gap-1">
-							<FileText className="h-3 w-3" aria-hidden="true" />
-							{nodeCount} nodes
+						>
+							<Network className="h-6 w-6" />
+						</div>
+					</div>
+
+					<div className="space-y-1">
+						<h3 className="text-xl font-semibold tracking-tight group-hover:text-primary transition-colors truncate pr-8">
+							{canvas.name}
+						</h3>
+						<div className="flex items-center gap-3 text-[11px] font-medium text-muted-foreground">
+							<div className="flex items-center gap-1">
+								<Clock className="h-3 w-3" aria-hidden="true" />
+								{timeAgo} ago
+							</div>
+							<div
+								className="w-1 h-1 rounded-full bg-zinc-300 dark:bg-zinc-700"
+								aria-hidden="true"
+							/>
+							<div className="flex items-center gap-1">
+								<FileText className="h-3 w-3" aria-hidden="true" />
+								{nodeCount} nodes
+							</div>
 						</div>
 					</div>
 				</div>
+				{/* Subtle background glow on hover */}
+				<div
+					className="absolute -bottom-12 -right-12 w-32 h-32 bg-primary/5 rounded-full blur-3xl opacity-0 group-hover:opacity-100 transition-opacity"
+					aria-hidden="true"
+				/>
+			</Link>
+			<div className="absolute top-4 right-4 z-20 opacity-0 group-hover:opacity-100 transition-opacity">
+				<AlertDialog
+					open={isDeleteDialogOpen}
+					onOpenChange={setIsDeleteDialogOpen}
+				>
+					<AlertDialogTrigger asChild>
+						<Button
+							variant="ghost"
+							size="icon"
+							className="h-8 w-8 text-muted-foreground hover:text-destructive hover:bg-destructive/10 bg-white/50 backdrop-blur-sm dark:bg-black/50"
+							onClick={(e) => {
+								e.preventDefault();
+								e.stopPropagation();
+								setIsDeleteDialogOpen(true);
+							}}
+						>
+							<Trash2 className="h-4 w-4" />
+						</Button>
+					</AlertDialogTrigger>
+					<AlertDialogContent>
+						<AlertDialogHeader>
+							<AlertDialogTitle>Are you absolutely sure?</AlertDialogTitle>
+							<AlertDialogDescription>
+								This action cannot be undone. This will permanently delete the
+								canvas named{" "}
+								<span className="font-medium">"{canvas.name}"</span> and remove
+								all its data.
+							</AlertDialogDescription>
+						</AlertDialogHeader>
+						<AlertDialogFooter>
+							<AlertDialogCancel onClick={(e) => e.stopPropagation()}>
+								Cancel
+							</AlertDialogCancel>
+							<AlertDialogAction
+								onClick={handleDelete}
+								className="bg-destructive text-destructive-foreground hover:bg-destructive/90"
+							>
+								Delete
+							</AlertDialogAction>
+						</AlertDialogFooter>
+					</AlertDialogContent>
+				</AlertDialog>
 			</div>
-			{/* Subtle background glow on hover */}
-			<div
-				className="absolute -bottom-12 -right-12 w-32 h-32 bg-primary/5 rounded-full blur-3xl opacity-0 group-hover:opacity-100 transition-opacity"
-				aria-hidden="true"
-			/>
-		</Link>
+		</div>
 	);
 }
 

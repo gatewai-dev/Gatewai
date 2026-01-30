@@ -40,7 +40,26 @@ export const canvasListAPI = createApi({
 				return { data };
 			},
 		}),
+		deleteCanvas: build.mutation<void, string>({
+			invalidatesTags: ["canvasList"],
+			queryFn: async (id) => {
+				const response = await rpcClient.api.v1.canvas[":id"].$delete({
+					param: { id },
+				});
+				if (!response.ok) {
+					return {
+						error: { status: response.status, data: await response.text() },
+					};
+				}
+				const data = await response.json();
+				return { data: undefined };
+			},
+		}),
 	}),
 });
 
-export const { useGetCanvasListQuery, useCreateCanvasMutation } = canvasListAPI;
+export const {
+	useGetCanvasListQuery,
+	useCreateCanvasMutation,
+	useDeleteCanvasMutation,
+} = canvasListAPI;

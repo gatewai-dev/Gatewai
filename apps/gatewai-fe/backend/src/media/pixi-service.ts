@@ -1,4 +1,3 @@
-import { extname } from "node:path";
 import { BasePixiService } from "@gatewai/pixi-processor";
 import {
 	Application,

@@ -10,6 +10,7 @@ import {
 import type { CanvasListRPC } from "@/rpc/types";
 import {
 	useCreateCanvasMutation,
+	useDeleteCanvasMutation,
 	useGetCanvasListQuery,
 } from "@/store/canvas-list";
 
@@ -22,6 +23,9 @@ interface CanvasContextType {
 	createCanvas: (
 		name: string,
 	) => ReturnType<ReturnType<typeof useCreateCanvasMutation>[0]>;
+	deleteCanvas: (
+		id: string,
+	) => ReturnType<ReturnType<typeof useDeleteCanvasMutation>[0]>;
 	isCreating: boolean;
 }
 
@@ -39,6 +43,7 @@ export const CanvasListProvider = ({ children }: PropsWithChildren) => {
 		},
 	});
 	const [mutate, { isLoading: isCreating }] = useCreateCanvasMutation();
+	const [deleteCanvas] = useDeleteCanvasMutation();
 
 	const value = {
 		canvasList: data,
@@ -47,6 +52,7 @@ export const CanvasListProvider = ({ children }: PropsWithChildren) => {
 		searchQuery,
 		setSearchQuery,
 		createCanvas: mutate,
+		deleteCanvas,
 		isCreating,
 	};
 

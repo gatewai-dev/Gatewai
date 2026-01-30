@@ -64,4 +64,3 @@ See [INSTALLATION.md](https://github.com/gatewai-dev/Gatewai/blob/main/docs/INST
 ## License
 
 See [LICENSE](https://github.com/gatewai-dev/Gatewai/blob/main/LICENCE)
-

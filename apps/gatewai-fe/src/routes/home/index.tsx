@@ -288,7 +288,7 @@ const HomePage = () => {
 					<FeatureCard
 						icon={<GitBranch className="h-8 w-8" />}
 						title="Hybrid Runtime"
-						description="Execute lightweight nodes in-browser. Offload heavy AI tasks to cloud workers."
+						description="Gatewai has an headless backend. Run workflows wherever you want - in browser or backend only."
 						delay={0.2}
 						color="fuchsia"
 					/>

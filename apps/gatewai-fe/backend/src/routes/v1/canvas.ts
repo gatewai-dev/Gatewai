@@ -282,6 +282,18 @@ const canvasRoutes = new Hono<{ Variables: AuthHonoTypes }>({
 			throw new HTTPException(404, { message: "Canvas not found" });
 		}
 
+		// 1. Find all agent sessions for this canvas
+		const sessions = await prisma.agentSession.findMany({
+			where: { canvasId: id },
+			select: { id: true },
+		});
+
+		// 2. Stop all running agents in memory
+		for (const session of sessions) {
+			AgentRunnerManager.stop(session.id);
+		}
+
+		// 3. Delete the canvas (cascades to sessions, nodes, etc.)
 		await prisma.canvas.delete({ where: { id } });
 		return c.json({ success: true });
 	})
