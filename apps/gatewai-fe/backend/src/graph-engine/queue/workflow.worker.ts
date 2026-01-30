@@ -10,6 +10,7 @@ import {
 	WORKFLOW_QUEUE_NAME,
 	workflowQueue,
 } from "./workflow.queue.js";
+import { ENV_CONFIG } from "../../config.js";
 
 // Global reference for shutdown handling
 let worker: Worker<NodeTaskJobData> | null = null;
@@ -427,7 +428,7 @@ export const startWorker = async () => {
 
 	worker = new Worker<NodeTaskJobData>(WORKFLOW_QUEUE_NAME, processNodeJob, {
 		connection: redisConnection,
-		concurrency: 5,
+		concurrency: ENV_CONFIG.MAX_CONCURRENT_WORKFLOW_JOBS,
 		lockDuration: WORKER_LOCK_DURATION,
 	});
 

@@ -7,6 +7,7 @@ import { cors } from "hono/cors";
 import { type AuthHonoTypes, auth } from "./auth.js";
 import { ENV_CONFIG } from "./config.js";
 import { startWorker } from "./graph-engine/queue/workflow.worker.js";
+import { startAgentWorker } from "./lib/agent-queue.js";
 import { logger as appLogger } from "./logger.js";
 import {
 	errorHandler,
@@ -94,6 +95,7 @@ await SEED_createNodeTemplates(prisma);
 
 // Initialize canvas worker.
 await startWorker();
+startAgentWorker();
 
 serve(
 	{

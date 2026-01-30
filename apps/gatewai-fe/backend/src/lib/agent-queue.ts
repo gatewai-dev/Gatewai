@@ -1,0 +1,107 @@
+import { type Job, Queue, Worker } from "bullmq";
+import { ENV_CONFIG } from "../config.js";
+import { redisPublisher } from "./redis.js";
+import { RunCanvasAgent } from "../agent/runner/index.js";
+import { logger } from "../logger.js";
+
+const connection = {
+    host: ENV_CONFIG.REDIS_HOST,
+    port: ENV_CONFIG.REDIS_PORT,
+    password: ENV_CONFIG.REDIS_PASSWORD,
+};
+
+export const agentQueue = new Queue("agent-tasks", { connection });
+
+async function processAgentJob(job: Job) {
+    const { canvasId, sessionId, message, model } = job.data;
+    const channel = `agent:session:${sessionId}`;
+    const accumulatedKey = `agent:session:${sessionId}:accumulated`;
+    const stopKey = `agent:session:${sessionId}:stop`;
+
+    // Initialize controller for cancellation
+    const controller = new AbortController();
+
+    try {
+        logger.info({ sessionId }, "Starting agent job");
+
+        const runner = RunCanvasAgent({
+            canvasId,
+            sessionId,
+            userMessage: message,
+            model,
+            signal: controller.signal,
+        });
+
+        for await (const chunk of runner) {
+            // Check for cancellation signal from Redis
+            const stopSignal = await redisPublisher.get(stopKey);
+            if (stopSignal) {
+                logger.info({ sessionId }, "Agent job cancelled via stop signal");
+                controller.abort();
+                break;
+            }
+
+            // Check if job is still active in BullMQ
+            const isActive = await job.isActive();
+            if (!isActive) {
+                logger.info({ sessionId }, "Agent job no longer active in BullMQ");
+                controller.abort();
+                break;
+            }
+
+            // Persist accumulated text
+            if (
+                chunk.type === "raw_model_stream_event" &&
+                chunk.data?.type === "output_text_delta"
+            ) {
+                await redisPublisher.append(accumulatedKey, chunk.data.delta || "");
+                // Set expiry to 24h
+                await redisPublisher.expire(accumulatedKey, 60 * 60 * 24);
+            }
+
+            // Publish to real-time subscribers
+            await redisPublisher.publish(channel, JSON.stringify(chunk));
+        }
+
+        // Clean up stop key
+        await redisPublisher.del(stopKey);
+
+        if (controller.signal.aborted) {
+            // If aborted, maybe publish an error/aborted message if needed
+            // For now, just logging
+        } else {
+            // Signal completion
+            await redisPublisher.publish(channel, JSON.stringify({ type: "done" }));
+        }
+    } catch (error) {
+        if (error instanceof Error && error.name === "AbortError") {
+            logger.info(`Session ${sessionId} was aborted.`);
+        } else {
+            logger.error({ err: error, sessionId }, `Error in session`);
+            await redisPublisher.publish(
+                channel,
+                JSON.stringify({
+                    type: "error",
+                    error: error instanceof Error ? error.message : "Unknown error",
+                }),
+            );
+            // Re-throw to fail the job in BullMQ
+            throw error;
+        }
+    }
+}
+
+export const startAgentWorker = () => {
+    logger.info("Starting agent worker...");
+    const worker = new Worker("agent-tasks", processAgentJob, { connection, concurrency: ENV_CONFIG.MAX_CONCURRENT_ASSISTANT_JOBS });
+
+    worker.on("failed", (job, err) => {
+        logger.error({ jobId: job?.id, err }, "Agent job failed");
+    });
+
+    worker.on("completed", (job) => {
+        logger.info({ jobId: job.id }, "Agent job completed");
+    });
+
+    return worker;
+};

@@ -192,6 +192,7 @@ export const bulkUpdateSchema = z
 		// Build adjacency list for cycle detection
 		const adj = new Map<string, string[]>();
 		const edgeMap = new Map<string, z.infer<typeof edgeSchema>>();
+		const connectionSet = new Set<string>();
 
 		edges.forEach((edge, index) => {
 			if (edge.id) {
@@ -327,6 +328,16 @@ export const bulkUpdateSchema = z
 
 			// Data type compatibility validation
 			if (edge.sourceHandleId && edge.targetHandleId) {
+				const connectionKey = `${edge.sourceHandleId}|${edge.targetHandleId}`;
+				if (connectionSet.has(connectionKey)) {
+					ctx.addIssue({
+						code: "custom",
+						path: ["edges", index],
+						message: "Duplicate connection between handles.",
+					});
+				}
+				connectionSet.add(connectionKey);
+
 				const sh = handleMap.get(edge.sourceHandleId);
 				const th = handleMap.get(edge.targetHandleId);
 				if (sh && th) {

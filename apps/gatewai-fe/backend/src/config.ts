@@ -27,6 +27,8 @@ const envSchema = z.object({
 		.toLowerCase()
 		.transform((val) => val === "true")
 		.default("false"),
+	MAX_CONCURRENT_ASSISTANT_JOBS: z.coerce.number().default(5),
+	MAX_CONCURRENT_WORKFLOW_JOBS: z.coerce.number().default(5),
 });
 
 const parsed = envSchema.safeParse(process.env);

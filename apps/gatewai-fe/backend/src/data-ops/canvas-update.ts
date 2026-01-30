@@ -317,6 +317,7 @@ export async function applyCanvasUpdate(
 		transactionSteps.push(
 			prisma.edge.createMany({
 				data: ops.edges.create,
+				skipDuplicates: true,
 			}),
 		);
 	}

@@ -42,11 +42,11 @@ const canvasRoutes = new Hono<{ Variables: AuthHonoTypes }>({
 					isAPICanvas: false,
 					...(q
 						? {
-								name: {
-									contains: q,
-									mode: "insensitive",
-								},
-							}
+							name: {
+								contains: q,
+								mode: "insensitive",
+							},
+						}
 						: {}),
 				},
 				orderBy: {
@@ -699,7 +699,7 @@ const canvasRoutes = new Hono<{ Variables: AuthHonoTypes }>({
 
 		// If session is active, check for live accumulated text from runner
 		if (session.status === "ACTIVE") {
-			const liveText = AgentRunnerManager.getAccumulatedText(sessionId);
+			const liveText = await AgentRunnerManager.getAccumulatedText(sessionId);
 			if (liveText !== null) {
 				messages.push({
 					id: `live-${sessionId}`,
