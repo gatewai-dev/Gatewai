@@ -1,181 +1,315 @@
 import { motion, useScroll, useTransform } from "framer-motion";
-import { ArrowRight, Cpu, Network, Zap } from "lucide-react";
-import { useRef } from "react";
+import { ArrowRight, GitBranch, Sparkles, Workflow } from "lucide-react";
+import { useEffect, useRef, useState } from "react";
 import { Link } from "react-router";
 import { Button } from "@/components/ui/button";
 import { GatewaiLogo } from "@/components/ui/gatewai-logo";
 
-// Animation variants
-const containerVariants = {
-	hidden: { opacity: 0 },
-	visible: {
-		opacity: 1,
-		transition: {
-			staggerChildren: 0.1,
-			delayChildren: 0.3,
-		},
-	},
-};
+// Node connection animation component
+const NodeCanvas = () => {
+	const canvasRef = useRef<HTMLCanvasElement>(null);
+	const [dimensions, setDimensions] = useState({ width: 0, height: 0 });
 
-const itemVariants = {
-	hidden: { opacity: 0, y: 20 },
-	visible: {
-		opacity: 1,
-		y: 0,
-		transition: {
-			duration: 0.5,
-			ease: [0.215, 0.61, 0.355, 1],
-		},
-	},
+	useEffect(() => {
+		const updateDimensions = () => {
+			if (canvasRef.current) {
+				const { width, height } = canvasRef.current.getBoundingClientRect();
+				setDimensions({ width, height });
+				canvasRef.current.width = width;
+				canvasRef.current.height = height;
+			}
+		};
+
+		updateDimensions();
+		window.addEventListener("resize", updateDimensions);
+		return () => window.removeEventListener("resize", updateDimensions);
+	}, []);
+
+	useEffect(() => {
+		const canvas = canvasRef.current;
+		if (!canvas) return;
+
+		const ctx = canvas.getContext("2d");
+		if (!ctx) return;
+
+		// Define nodes in a workflow pattern
+		const nodes = [
+			{ x: 0.15, y: 0.3, radius: 4, connections: [1, 2] },
+			{ x: 0.35, y: 0.2, radius: 5, connections: [3] },
+			{ x: 0.35, y: 0.5, radius: 5, connections: [3] },
+			{ x: 0.6, y: 0.35, radius: 6, connections: [4, 5] },
+			{ x: 0.8, y: 0.25, radius: 4, connections: [] },
+			{ x: 0.8, y: 0.55, radius: 4, connections: [] },
+		];
+
+		let animationFrame: number;
+		let time = 0;
+
+		const animate = () => {
+			ctx.clearRect(0, 0, dimensions.width, dimensions.height);
+			time += 0.01;
+
+			// Draw connections with animated flow
+			nodes.forEach((node, i) => {
+				node.connections.forEach((targetIdx) => {
+					const target = nodes[targetIdx];
+					const startX = node.x * dimensions.width;
+					const startY = node.y * dimensions.height;
+					const endX = target.x * dimensions.width;
+					const endY = target.y * dimensions.height;
+
+					// Draw connection line
+					ctx.strokeStyle = "rgba(183, 234, 72, 0.2)";
+					ctx.lineWidth = 1.5;
+					ctx.beginPath();
+					ctx.moveTo(startX, startY);
+					ctx.lineTo(endX, endY);
+					ctx.stroke();
+
+					// Animated flow particle
+					const progress = (Math.sin(time + i * 0.5) + 1) / 2;
+					const particleX = startX + (endX - startX) * progress;
+					const particleY = startY + (endY - startY) * progress;
+
+					ctx.fillStyle = "rgba(183, 234, 72, 0.8)";
+					ctx.beginPath();
+					ctx.arc(particleX, particleY, 2, 0, Math.PI * 2);
+					ctx.fill();
+				});
+			});
+
+			// Draw nodes with pulse effect
+			nodes.forEach((node, i) => {
+				const x = node.x * dimensions.width;
+				const y = node.y * dimensions.height;
+				const pulse = Math.sin(time * 2 + i) * 0.3 + 1;
+
+				// Outer glow
+				ctx.fillStyle = "rgba(183, 234, 72, 0.15)";
+				ctx.beginPath();
+				ctx.arc(x, y, node.radius * pulse * 2, 0, Math.PI * 2);
+				ctx.fill();
+
+				// Node core
+				ctx.fillStyle = "rgba(183, 234, 72, 0.6)";
+				ctx.beginPath();
+				ctx.arc(x, y, node.radius, 0, Math.PI * 2);
+				ctx.fill();
+
+				// Inner highlight
+				ctx.fillStyle = "rgba(255, 255, 255, 0.8)";
+				ctx.beginPath();
+				ctx.arc(x, y, node.radius * 0.4, 0, Math.PI * 2);
+				ctx.fill();
+			});
+
+			animationFrame = requestAnimationFrame(animate);
+		};
+
+		animate();
+
+		return () => {
+			if (animationFrame) cancelAnimationFrame(animationFrame);
+		};
+	}, [dimensions]);
+
+	return (
+		<canvas
+			ref={canvasRef}
+			className="absolute inset-0 w-full h-full opacity-40"
+			style={{ width: "100%", height: "100%" }}
+		/>
+	);
 };
 
 const HomePage = () => {
-	// Parallax effect for the hero background
 	const targetRef = useRef<HTMLDivElement>(null);
 	const { scrollYProgress } = useScroll({
 		target: targetRef,
 		offset: ["start start", "end start"],
 	});
 
-	const y = useTransform(scrollYProgress, [0, 1], ["0%", "50%"]);
-	const opacity = useTransform(scrollYProgress, [0, 1], [1, 0]);
+	const y = useTransform(scrollYProgress, [0, 1], ["0%", "30%"]);
 
 	return (
 		<main
 			ref={targetRef}
-			className="relative min-h-screen w-full overflow-x-hidden bg-background text-foreground selection:bg-primary/30"
+			className="relative min-h-screen w-full overflow-x-hidden bg-[#0a0a0f] text-white selection:bg-violet-500/30"
+			style={{ fontFamily: "'Outfit', sans-serif" }}
 		>
+			{/* Google Fonts */}
+			<style>{`
+				@import url('https://fonts.googleapis.com/css2?family=JetBrains+Mono:wght@700;800&family=Outfit:wght@300;400;600;700&display=swap');
+			`}</style>
+
 			{/* Navbar */}
-			<nav className="fixed top-0 left-0 right-0 z-50 flex h-16 items-center justify-between border-b border-border/40 bg-background/80 px-6 backdrop-blur-md">
-				<div className="flex items-center gap-2">
-					<GatewaiLogo className="h-6 w-6 text-primary" />
-					<span className="text-lg font-bold tracking-tight">Gatewai</span>
+			<nav className="fixed top-0 left-0 right-0 z-50 flex h-20 items-center justify-between border-b border-primary/10 bg-[#0a0a0f]/90 px-8 backdrop-blur-xl">
+				<div className="flex items-center gap-3">
+					<GatewaiLogo className="h-7 w-7 text-primary" />
+					<span
+						className="text-xl font-bold tracking-tight"
+						style={{ fontFamily: "'JetBrains Mono', monospace" }}
+					>
+						GATEWAI
+					</span>
 				</div>
-				<div className="flex items-center gap-4">
-					<Link to="/auth/signin">
-						<Button variant="ghost" className="text-sm font-medium">
-							Log in
-						</Button>
-					</Link>
-					<Link to="/auth/signup">
-						<Button
-							size="sm"
-							className="font-medium shadow-lg shadow-primary/20"
-						>
-							Sign up
-						</Button>
-					</Link>
-				</div>
+				<Link to="/auth/signin">
+					<Button
+						variant="ghost"
+						className="text-primary/80 hover:text-primary hover:bg-primary/10"
+					>
+						Sign In
+					</Button>
+				</Link>
 			</nav>
 
 			{/* Hero Section */}
-			<section className="relative flex min-h-[90vh] flex-col items-center justify-center px-6 pt-16">
-				{/* Ambient Background */}
+			<section className="relative flex min-h-screen flex-col items-center justify-center px-6 pt-20">
+				{/* Animated Canvas Background */}
 				<motion.div
-					style={{ y, opacity }}
-					className="absolute inset-0 z-0 pointer-events-none"
+					style={{ y }}
+					className="absolute inset-0 z-0 pointer-events-none overflow-hidden"
 				>
-					<div className="absolute top-1/2 left-1/2 -translate-x-1/2 -translate-y-1/2 h-[500px] w-[500px] rounded-full bg-primary/20 blur-[120px]" />
-					<div className="absolute top-0 inset-x-0 h-px bg-gradient-to-r from-transparent via-primary/50 to-transparent opacity-50" />
+					<NodeCanvas />
+					<div className="absolute top-1/3 left-1/2 -translate-x-1/2 -translate-y-1/2 h-[600px] w-[600px] rounded-full bg-primary/20 blur-[150px]" />
+					<div className="absolute bottom-0 left-0 right-0 h-px bg-gradient-to-r from-transparent via-primary/50 to-transparent" />
 				</motion.div>
 
 				<motion.div
-					variants={containerVariants}
-					initial="hidden"
-					animate="visible"
-					className="relative z-10 flex flex-col items-center max-w-4xl text-center space-y-8"
+					initial={{ opacity: 0 }}
+					animate={{ opacity: 1 }}
+					transition={{ duration: 1 }}
+					className="relative z-10 flex flex-col items-center max-w-6xl text-center space-y-10"
 				>
-					{/* Logo/Badge */}
-					<motion.div variants={itemVariants} className="mb-4">
-						<div className="inline-flex items-center gap-2 rounded-full border border-primary/20 bg-primary/5 px-4 py-1.5 backdrop-blur-sm">
-							<span className="relative flex h-2 w-2">
-								<span className="animate-ping absolute inline-flex h-full w-full rounded-full bg-primary opacity-75"></span>
-								<span className="relative inline-flex rounded-full h-2 w-2 bg-primary"></span>
-							</span>
-							<span className="text-xs font-semibold uppercase tracking-widest text-primary">
-								v1.0 Alpha
-							</span>
-						</div>
+					{/* Badge */}
+					<motion.div
+						initial={{ opacity: 0, y: 20 }}
+						animate={{ opacity: 1, y: 0 }}
+						transition={{ delay: 0.2, duration: 0.6 }}
+						className="inline-flex items-center gap-2 rounded-full border border-primary/30 bg-primary/5 px-5 py-2 backdrop-blur-sm"
+					>
+						<Sparkles className="h-4 w-4 text-primary" />
+						<span
+							className="text-xs font-bold uppercase tracking-[0.2em] text-primary/80"
+							style={{ fontFamily: "'JetBrains Mono', monospace" }}
+						>
+							Alpha v0.0
+						</span>
 					</motion.div>
 
 					{/* Main Title */}
 					<motion.h1
-						variants={itemVariants}
-						className="text-5xl md:text-7xl lg:text-8xl font-bold tracking-tighter text-foreground"
+						initial={{ opacity: 0, y: 30 }}
+						animate={{ opacity: 1, y: 0 }}
+						transition={{ delay: 0.4, duration: 0.8, ease: [0.16, 1, 0.3, 1] }}
+						className="text-6xl md:text-8xl lg:text-9xl font-extrabold tracking-tighter leading-[0.9]"
+						style={{ fontFamily: "'JetBrains Mono', monospace" }}
 					>
-						Architect{" "}
-						<span className="text-transparent bg-clip-text bg-gradient-to-r from-primary via-purple-500 to-blue-500">
-							Intelligence
+						BUILD
+						<br />
+						<span className="text-transparent bg-clip-text bg-gradient-to-r from-primary via-secondary to-primary">
+							WORKFLOWS
 						</span>
+						<br />
+						VISUALLY
 					</motion.h1>
 
 					<motion.p
-						variants={itemVariants}
-						className="text-lg md:text-xl text-muted-foreground max-w-2xl font-light leading-relaxed"
+						initial={{ opacity: 0, y: 20 }}
+						animate={{ opacity: 1, y: 0 }}
+						transition={{ delay: 0.6, duration: 0.6 }}
+						className="text-xl md:text-2xl text-zinc-400 max-w-3xl font-light leading-relaxed"
 					>
-						The node-based workspace for the next generation of generative AI.
-						Design, prototype, and deploy multi-modal workflows with
-						unparalleled control.
+						Node-based canvas for multi-modal AI. Connect models, chain
+						operations, and orchestrate intelligence with precision.
 					</motion.p>
 
 					{/* CTA Buttons */}
 					<motion.div
-						variants={itemVariants}
-						className="flex flex-col sm:flex-row items-center gap-4 pt-4"
+						initial={{ opacity: 0, y: 20 }}
+						animate={{ opacity: 1, y: 0 }}
+						transition={{ delay: 0.8, duration: 0.6 }}
+						className="flex flex-col sm:flex-row items-center gap-5 pt-6"
 					>
 						<Link to="/canvas">
 							<Button
 								size="lg"
-								className="h-14 px-8 text-base rounded-full shadow-2xl shadow-primary/30 hover:shadow-primary/50 transition-all duration-300 group"
+								className="h-16 px-10 text-lg font-semibold rounded-2xl bg-gradient-to-r from-primary to-secondary hover:from-primary/90 hover:to-secondary/90 shadow-2xl shadow-primary/40 hover:shadow-primary/60 transition-all duration-300 group border-0"
 							>
-								Enter Studio
-								<ArrowRight className="ml-2 h-4 w-4 transition-transform group-hover:translate-x-1" />
+								Launch Studio
+								<ArrowRight className="ml-3 h-5 w-5 transition-transform group-hover:translate-x-1" />
 							</Button>
 						</Link>
 						<a
-							href="https://github.com/gatewai/gatewai"
+							href="https://github.com/gatewai-dev/Gatewai"
 							target="_blank"
 							rel="noreferrer"
 						>
 							<Button
 								variant="outline"
 								size="lg"
-								className="h-14 px-8 text-base rounded-full border-primary/20 bg-primary/5 hover:bg-primary/10 hover:border-primary/40 transition-all duration-300"
+								className="h-16 px-10 text-lg font-semibold rounded-2xl border-2 border-primary/30 bg-primary/5 hover:bg-primary/15 hover:border-primary/50 text-primary/80 hover:text-primary transition-all duration-300"
 							>
-								View on GitHub
+								GitHub
 							</Button>
 						</a>
 					</motion.div>
 				</motion.div>
 			</section>
 
-			{/* Features / Glass Grid */}
-			<section className="relative z-10 py-24 px-6 md:px-12 max-w-7xl mx-auto">
-				<div className="grid grid-cols-1 md:grid-cols-3 gap-6">
+			{/* Features Grid */}
+			<section className="relative z-10 py-32 px-6 md:px-12 max-w-7xl mx-auto">
+				<motion.div
+					initial={{ opacity: 0, y: 40 }}
+					whileInView={{ opacity: 1, y: 0 }}
+					viewport={{ once: true, margin: "-100px" }}
+					transition={{ duration: 0.8 }}
+					className="text-center mb-20"
+				>
+					<h2
+						className="text-5xl md:text-6xl font-bold tracking-tighter mb-4"
+						style={{ fontFamily: "'JetBrains Mono', monospace" }}
+					>
+						WORKFLOW ENGINE
+					</h2>
+					<p className="text-xl text-zinc-500">
+						Designed for the next generation of AI builders
+					</p>
+				</motion.div>
+
+				<div className="grid grid-cols-1 md:grid-cols-3 gap-8">
 					<FeatureCard
-						icon={<Network className="h-6 w-6 text-blue-400" />}
-						title="Visual Graph Engine"
-						description="Construct complex logic flows visually. Connect LLMs, image generators, and custom scripts with drag-and-drop ease."
+						icon={<Workflow className="h-8 w-8" />}
+						title="Visual Graph"
+						description="Drag, drop, connect. Build complex AI pipelines without writing boilerplate code."
 						delay={0.1}
+						color="violet"
 					/>
 					<FeatureCard
-						icon={<Cpu className="h-6 w-6 text-purple-400" />}
-						title="Hybrid Execution"
-						description="Run lightweight tasks in the browser and offload heavy generative jobs to the cloud or local backend seamlessly."
+						icon={<GitBranch className="h-8 w-8" />}
+						title="Hybrid Runtime"
+						description="Execute lightweight nodes in-browser. Offload heavy AI tasks to cloud workers."
 						delay={0.2}
+						color="fuchsia"
 					/>
 					<FeatureCard
-						icon={<Zap className="h-6 w-6 text-yellow-400" />}
-						title="Real-time Preview"
-						description="See results instantly as you tweak parameters. Iterate faster with a reactive canvas designed for experimentation."
+						icon={<Sparkles className="h-8 w-8" />}
+						title="Live Preview"
+						description="See outputs in real-time. Iterate faster with instant visual feedback loops."
 						delay={0.3}
+						color="purple"
 					/>
 				</div>
 			</section>
 
 			{/* Footer */}
-			<footer className="py-12 text-center text-sm text-muted-foreground border-t border-border/40 bg-zinc-950/50">
-				<p>© 2024 Gatewai Studio. Built for the future of AI.</p>
+			<footer className="relative z-10 py-16 text-center text-sm text-zinc-600 border-t border-violet-500/10">
+				<p
+					className="font-semibold tracking-wider"
+					style={{ fontFamily: "'JetBrains Mono', monospace" }}
+				>
+					© 2026 GATEWAI STUDIO
+				</p>
 			</footer>
 		</main>
 	);
@@ -186,26 +320,48 @@ const FeatureCard = ({
 	title,
 	description,
 	delay,
+	color,
 }: {
 	icon: React.ReactNode;
 	title: string;
 	description: string;
 	delay: number;
+	color: "violet" | "fuchsia" | "purple";
 }) => {
+	const colorMap = {
+		violet: "from-primary/20 to-primary/5",
+		fuchsia: "from-secondary/20 to-secondary/5",
+		purple: "from-purple-600/20 to-purple-600/5",
+	};
+
+	const iconColorMap = {
+		violet: "text-primary",
+		fuchsia: "text-secondary",
+		purple: "text-purple-400",
+	};
+
 	return (
 		<motion.div
-			initial={{ opacity: 0, y: 20 }}
+			initial={{ opacity: 0, y: 30 }}
 			whileInView={{ opacity: 1, y: 0 }}
-			viewport={{ once: true, margin: "-100px" }}
-			transition={{ duration: 0.5, delay }}
-			className="group relative overflow-hidden rounded-2xl border border-white/10 bg-white/5 p-8 transition-all hover:bg-white/10 hover:border-white/20 hover:shadow-2xl hover:shadow-primary/5"
+			viewport={{ once: true, margin: "-50px" }}
+			transition={{ duration: 0.6, delay }}
+			whileHover={{ y: -8, transition: { duration: 0.2 } }}
+			className="group relative overflow-hidden rounded-3xl border border-white/5 bg-gradient-to-br from-white/5 to-transparent p-10 backdrop-blur-sm"
 		>
-			<div className="absolute inset-0 bg-gradient-to-br from-white/5 to-transparent opacity-0 group-hover:opacity-100 transition-opacity duration-500" />
+			<div
+				className={`absolute inset-0 bg-gradient-to-br ${colorMap[color]} opacity-0 group-hover:opacity-100 transition-opacity duration-500`}
+			/>
 			<div className="relative z-10">
-				<div className="mb-4 inline-flex h-12 w-12 items-center justify-center rounded-lg bg-white/10 ring-1 ring-white/20 group-hover:bg-white/20 transition-colors">
+				<div
+					className={`mb-6 inline-flex h-16 w-16 items-center justify-center rounded-2xl bg-white/5 ring-1 ring-white/10 group-hover:ring-white/20 transition-all ${iconColorMap[color]}`}
+				>
 					{icon}
 				</div>
-				<h3 className="mb-2 text-xl font-semibold text-white tracking-tight">
+				<h3
+					className="mb-3 text-2xl font-bold text-white tracking-tight"
+					style={{ fontFamily: "'JetBrains Mono', monospace" }}
+				>
 					{title}
 				</h3>
 				<p className="text-zinc-400 leading-relaxed group-hover:text-zinc-300 transition-colors">

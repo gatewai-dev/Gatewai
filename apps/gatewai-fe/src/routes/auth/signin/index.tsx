@@ -13,11 +13,11 @@ function SigninPage() {
 
 	return (
 		<AuthLayout
-			title="Welcome back"
-			subtitle="Enter your email to sign in to your account"
+			title="WELCOME BACK"
+			subtitle="Sign in to continue building workflows"
 		>
 			<SignInForm onSuccess={onSuccess} />
-			<div className="text-center text-sm text-muted-foreground mt-4">
+			<div className="text-center text-sm text-zinc-500 mt-4">
 				Don&apos;t have an account?{" "}
 				<Link
 					to="/auth/signup"

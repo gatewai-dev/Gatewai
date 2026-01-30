@@ -5,11 +5,11 @@ import { SignUpForm } from "./signup-form";
 function SignupPage() {
 	return (
 		<AuthLayout
-			title="Create an account"
-			subtitle="Enter your email below to create your account"
+			title="CREATE ACCOUNT"
+			subtitle="Start building AI workflows today"
 		>
 			<SignUpForm />
-			<div className="text-center text-sm text-muted-foreground mt-4">
+			<div className="text-center text-sm text-zinc-500 mt-4">
 				Already have an account?{" "}
 				<Link
 					to="/auth/signin"
