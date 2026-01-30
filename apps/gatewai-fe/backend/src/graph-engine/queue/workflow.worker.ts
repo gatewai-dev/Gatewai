@@ -1,5 +1,6 @@
 import { Prisma, prisma, TaskStatus } from "@gatewai/db";
 import { type Job, Worker } from "bullmq";
+import { ENV_CONFIG } from "../../config.js";
 import { GetCanvasEntities } from "../../data-ops/canvas.js";
 import { logger } from "../../logger.js";
 import { assertIsError } from "../../utils/misc.js";
@@ -10,7 +11,6 @@ import {
 	WORKFLOW_QUEUE_NAME,
 	workflowQueue,
 } from "./workflow.queue.js";
-import { ENV_CONFIG } from "../../config.js";
 
 // Global reference for shutdown handling
 let worker: Worker<NodeTaskJobData> | null = null;

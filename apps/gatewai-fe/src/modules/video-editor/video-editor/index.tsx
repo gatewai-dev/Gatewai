@@ -68,6 +68,7 @@ import React, {
 	useRef,
 	useState,
 } from "react";
+import { useHotkeys } from "react-hotkeys-hook";
 import {
 	AlertDialog,
 	AlertDialogAction,
@@ -2132,8 +2133,10 @@ export const VideoDesignerEditor: React.FC<VideoDesignerEditorProps> = ({
 		const el = containerRef.current;
 		if (!el) return;
 		const handleWheel = (e: WheelEvent) => {
-			if (e.ctrlKey || e.metaKey || mode === "pan") {
-				e.preventDefault();
+			e.preventDefault();
+
+			// Zoom if Ctrl/Meta is pressed
+			if (e.ctrlKey || e.metaKey) {
 				const rect = el.getBoundingClientRect();
 				const pointerX = e.clientX - rect.left;
 				const pointerY = e.clientY - rect.top;
@@ -2151,123 +2154,119 @@ export const VideoDesignerEditor: React.FC<VideoDesignerEditorProps> = ({
 					});
 					setZoom(newZoom);
 				}
-			} else {
-				setPan((p) => ({ ...p, x: p.x - e.deltaX, y: p.y - e.deltaY }));
+				return;
 			}
+
+			// Pan (Scroll) logic
+			// Shift = Horizontal Pan
+			// Default = Vertical Pan
+			// Note: Trackpads might send deltaX, so we respect it.
+			let dx = e.deltaX;
+			let dy = e.deltaY;
+
+			if (e.shiftKey) {
+				// Shift + Scroll usually means horizontal scrolling on non-trackpads
+				if (dy !== 0 && dx === 0) {
+					dx = dy;
+					dy = 0;
+				}
+			}
+
+			setPan((p) => ({
+				...p,
+				x: p.x - dx,
+				y: p.y - dy,
+			}));
 		};
 		el.addEventListener("wheel", handleWheel, { passive: false });
 		return () => el.removeEventListener("wheel", handleWheel);
 	}, [zoom, pan, mode]);
 	// Keyboard Shortcuts
-	useEffect(() => {
-		const handleKeyDown = (e: KeyboardEvent) => {
+
+	// Tool Switching
+	useHotkeys("v", () => setMode("select"));
+	useHotkeys("h", () => setMode("pan"));
+
+	// Zoom
+	useHotkeys("=", () => zoomIn());
+	useHotkeys("+", () => zoomIn());
+	useHotkeys("-", () => zoomOut());
+	useHotkeys("0", () => fitView());
+	useHotkeys("1", () => zoomTo(1));
+
+	// General
+	useHotkeys("escape", () => setSelectedId(null));
+	useHotkeys("delete, backspace", () => {
+		if (selectedId) deleteLayer(selectedId);
+	});
+
+	// Space for Pan Mode (Hold)
+	useHotkeys(
+		"space",
+		(e) => {
 			const isInput =
 				document.activeElement?.tagName === "INPUT" ||
 				document.activeElement?.tagName === "TEXTAREA";
-			// Ctrl/Cmd + S: Save
-			if ((e.ctrlKey || e.metaKey) && e.key.toLowerCase() === "s") {
-				e.preventDefault();
-				if (isDirty) {
-					const layerUpdates = layers.reduce<
-						Record<
-							string,
-							Omit<
-								ExtendedLayer,
-								"src" | "text" | "isPlaceholder" | "maxDurationInFrames"
-							>
-						>
-					>((acc, layer) => {
-						const {
-							src,
-							text,
-							isPlaceholder,
-							maxDurationInFrames,
-							...savedLayer
-						} = layer;
-						acc[layer.id] = savedLayer;
-						return acc;
-					}, {});
-					onSave({
-						layerUpdates,
-						width: viewportWidth,
-						height: viewportHeight,
-					});
-					setIsDirty(false);
-				}
-				return;
-			}
 			if (isInput) return;
-			// Space: Temporary pan mode (hold)
-			if (e.code === "Space" && !e.repeat) {
-				e.preventDefault();
-				if (mode !== "pan") {
-					lastModeRef.current = mode;
-					setMode("pan");
-				}
-				return;
+
+			e.preventDefault();
+			if (mode !== "pan") {
+				lastModeRef.current = mode;
+				setMode("pan");
 			}
-			// Delete/Backspace: Delete selected layer
-			if (e.key === "Delete" || e.key === "Backspace") {
-				if (selectedId) deleteLayer(selectedId);
-				return;
+		},
+		{ keydown: true },
+	);
+
+	useHotkeys(
+		"space",
+		(e) => {
+			const isInput =
+				document.activeElement?.tagName === "INPUT" ||
+				document.activeElement?.tagName === "TEXTAREA";
+			if (isInput) return;
+
+			e.preventDefault();
+			setMode(lastModeRef.current);
+		},
+		{ keyup: true },
+	);
+
+	// Save
+	useHotkeys(
+		"meta+s, ctrl+s",
+		(e) => {
+			e.preventDefault();
+			if (isDirty) {
+				const layerUpdates = layers.reduce<
+					Record<
+						string,
+						Omit<
+							ExtendedLayer,
+							"src" | "text" | "isPlaceholder" | "maxDurationInFrames"
+						>
+					>
+				>((acc, layer) => {
+					const {
+						src,
+						text,
+						isPlaceholder,
+						maxDurationInFrames,
+						...savedLayer
+					} = layer;
+					acc[layer.id] = savedLayer;
+					return acc;
+				}, {});
+				onSave({
+					layerUpdates,
+					width: viewportWidth,
+					height: viewportHeight,
+				});
+				setIsDirty(false);
 			}
-			// Tool shortcuts
-			switch (e.key.toLowerCase()) {
-				case "v":
-					setMode("select");
-					break;
-				case "h":
-					setMode("pan");
-					break;
-				case "=":
-				case "+":
-					zoomIn();
-					break;
-				case "-":
-					zoomOut();
-					break;
-				case "0":
-					fitView();
-					break;
-				case "1":
-					zoomTo(1);
-					break;
-				case "escape":
-					setSelectedId(null);
-					break;
-			}
-		};
-		const handleKeyUp = (e: KeyboardEvent) => {
-			if (e.code === "Space") {
-				const isInput =
-					document.activeElement?.tagName === "INPUT" ||
-					document.activeElement?.tagName === "TEXTAREA";
-				if (!isInput) {
-					e.preventDefault();
-					setMode(lastModeRef.current);
-				}
-			}
-		};
-		window.addEventListener("keydown", handleKeyDown);
-		window.addEventListener("keyup", handleKeyUp);
-		return () => {
-			window.removeEventListener("keydown", handleKeyDown);
-			window.removeEventListener("keyup", handleKeyUp);
-		};
-	}, [
-		mode,
-		selectedId,
-		deleteLayer,
-		isDirty,
-		layers,
-		onSave,
-		viewportWidth,
-		viewportHeight,
-		zoomIn,
-		zoomOut,
-		zoomTo,
-		fitView,
-	]);
+		},
+		{ enableOnFormTags: true },
+	);
 	const durationInFrames = useMemo(() => {
 		if (layers.length === 0) return DEFAULT_DURATION_FRAMES;
 		return Math.max(

@@ -192,7 +192,6 @@ function Message({ message, patchId, onPatchComplete }: MessageProps) {
 					{text}
 				</div>
 			</div>
-
 		);
 	}
 
@@ -216,20 +215,17 @@ function Message({ message, patchId, onPatchComplete }: MessageProps) {
 					</div>
 				</div>
 
-
 				{/* Patch card displays after model message */}
-				{
-					patchId && (
-						<div className="flex w-full justify-start animate-in slide-in-from-bottom-2 duration-300">
-							<PatchReviewCard
-								patchId={patchId}
-								initialStatus={message.patchStatus}
-								onComplete={onPatchComplete || (() => { })}
-							/>
-						</div>
-					)
-				}
-			</div >
+				{patchId && (
+					<div className="flex w-full justify-start animate-in slide-in-from-bottom-2 duration-300">
+						<PatchReviewCard
+							patchId={patchId}
+							initialStatus={message.patchStatus}
+							onComplete={onPatchComplete || (() => {})}
+						/>
+					</div>
+				)}
+			</div>
 		);
 	}
 
@@ -244,7 +240,6 @@ function LoadingIndicator() {
 					<LoadingSpinner className="size-3" />
 					<span className="text-[10px] text-muted-foreground">Thinking...</span>
 				</div>
-
 			</div>
 		</div>
 	);

@@ -54,8 +54,24 @@ function ReactflowContainer({ children }: ReactFlowProps) {
 	const [isSpacePressed, setIsSpacePressed] = useState(false);
 	const containerRef = useRef<HTMLDivElement>(null);
 
-	useHotkeys("space", () => setIsSpacePressed(true), { keydown: true });
-	useHotkeys("space", () => setIsSpacePressed(false), { keyup: true });
+	useHotkeys(
+		"space",
+		(e) => {
+			e.preventDefault();
+			setIsSpacePressed(true);
+			setMode("pan");
+		},
+		{ keydown: true },
+	);
+	useHotkeys(
+		"space",
+		(e) => {
+			e.preventDefault();
+			setIsSpacePressed(false);
+			setMode("select");
+		},
+		{ keyup: true },
+	);
 
 	const effectivePan = mode === "pan" || isSpacePressed;
 
@@ -166,7 +182,9 @@ function ReactflowContainer({ children }: ReactFlowProps) {
 					maxZoom={8}
 					minZoom={0.1}
 					zoomOnPinch={true}
-					zoomOnScroll={true}
+					panOnScroll={true}
+					zoomActivationKeyCode="Ctrl"
+					zoomOnScroll={false} // Handled by panOnScroll + modifier
 					nodesDraggable={!isReviewing}
 					elementsSelectable
 					panOnDrag={effectivePan}

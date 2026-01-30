@@ -1,5 +1,5 @@
-import { redisPublisher } from "../../lib/redis.js";
 import { agentQueue } from "../../lib/agent-queue.js";
+import { redisPublisher } from "../../lib/redis.js";
 
 // A Agent runner that uses BullMQ and redis for the events
 export class AgentRunnerManager {
@@ -18,8 +18,10 @@ export class AgentRunnerManager {
 		const existingJob = await agentQueue.getJob(sessionId);
 		if (existingJob) {
 			const state = await existingJob.getState();
-			if (state === 'active' || state === 'waiting' || state === 'delayed') {
-				console.log(`Session ${sessionId} is already running (Job state: ${state}).`);
+			if (state === "active" || state === "waiting" || state === "delayed") {
+				console.log(
+					`Session ${sessionId} is already running (Job state: ${state}).`,
+				);
 				return;
 			}
 		}
@@ -36,8 +38,8 @@ export class AgentRunnerManager {
 			{
 				jobId: sessionId,
 				removeOnComplete: true, // Auto clean up completed jobs to allow re-running same session if needed?
-				// Actually, if we use same sessionId for multiple turns, we might have ID collision if checking existingJob. 
-				// BUT, usually a session is a long living thing? 
+				// Actually, if we use same sessionId for multiple turns, we might have ID collision if checking existingJob.
+				// BUT, usually a session is a long living thing?
 				// Wait, "Session" in the user's context seems to be a chat session.
 				// The `RunCanvasAgent` runs an exchange.
 				// If the user sends another message, is it the same sessionId?
@@ -61,7 +63,7 @@ export class AgentRunnerManager {
 		const job = await agentQueue.getJob(sessionId);
 		if (job) {
 			const state = await job.getState();
-			if (state === 'waiting' || state === 'delayed') {
+			if (state === "waiting" || state === "delayed") {
 				await job.remove();
 				return true;
 			}
@@ -74,7 +76,7 @@ export class AgentRunnerManager {
 		const job = await agentQueue.getJob(sessionId);
 		if (!job) return false;
 		const state = await job.getState();
-		return state === 'active' || state === 'waiting' || state === 'delayed';
+		return state === "active" || state === "waiting" || state === "delayed";
 	}
 
 	static async getAccumulatedText(sessionId: string) {

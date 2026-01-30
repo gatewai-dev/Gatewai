@@ -60,6 +60,7 @@ import React, {
 	useRef,
 	useState,
 } from "react";
+import { useHotkeys } from "react-hotkeys-hook";
 import {
 	Group,
 	Image as KonvaImage,
@@ -800,6 +801,36 @@ const Canvas: React.FC = () => {
 		[layers],
 	);
 
+	// --- Hotkeys ---
+
+	useHotkeys("h", () => {
+		setMode("pan");
+	}, []);
+	useHotkeys("v", () => {
+		setMode("select");
+	}, []);
+	useHotkeys(
+		"space",
+		(e) => {
+			e.preventDefault(); // Prevent scrolling
+			if (mode !== "pan") {
+				lastModeRef.current = mode;
+				setMode("pan");
+			}
+		},
+		{ keydown: true },
+	);
+	useHotkeys(
+		"space",
+		(e) => {
+			e.preventDefault();
+			if (mode === "pan") {
+				setMode(lastModeRef.current || "select");
+			}
+		},
+		{ keyup: true },
+	);
+
 	const handleStageClick = useCallback(
 		(e: KonvaEventObject<TouchEvent | MouseEvent>) => {
 			const clickedOnEmpty =
@@ -813,21 +844,30 @@ const Canvas: React.FC = () => {
 
 	const handleStageMouseDown = useCallback(
 		(e: KonvaEventObject<MouseEvent>) => {
+			// Middle mouse (button 1) OR Pan Mode
 			if (e.evt.button === 1 || mode === "pan") {
 				e.evt.preventDefault();
 				const stage = e.currentTarget;
-				lastModeRef.current = mode;
-				// Only set mode to pan if it wasn't already (to handle spacebar pan)
-				if (mode !== "pan") setMode("pan");
+
+				// Ensure we are in pan mode for the cursor style
+				if (mode !== "pan") {
+					lastModeRef.current = mode;
+					setMode("pan");
+				}
 
 				stage.draggable(true);
 				stage.startDrag();
+
 				const reset = () => {
-					// We only reset if we temporarily switched via middle mouse
-					// If mode was already 'pan' (via toolbar), we keep it.
-					// However, Konva drag behavior usually requires draggable=false to stop.
 					stage.draggable(false);
-					if (e.evt.button === 1) setMode(lastModeRef.current);
+					// If this was a middle-click temporary pan, revert.
+					// If we are holding Space, the keyup handler handles revert.
+					// If we are manually in Pan mode (H), we stay in Pan mode.
+
+					// Logic: If button was 1 (middle), revert.
+					if (e.evt.button === 1) {
+						setMode(lastModeRef.current || "select");
+					}
 					window.removeEventListener("mouseup", reset);
 				};
 				window.addEventListener("mouseup", reset);
@@ -842,39 +882,53 @@ const Canvas: React.FC = () => {
 			const stage = stageRef.current;
 			if (!stage) return;
 
-			// Pan if no Ctrl/Meta
-			if (!e.evt.ctrlKey && !e.evt.metaKey) {
-				const newPos = {
-					x: stagePos.x - e.evt.deltaX,
-					y: stagePos.y - e.evt.deltaY,
+			// Zoom if Ctrl/Meta is pressed
+			if (e.evt.ctrlKey || e.evt.metaKey) {
+				const oldScale = stage.scaleX();
+				const pointer = stage.getPointerPosition();
+				if (!pointer) return;
+
+				const mousePointTo = {
+					x: (pointer.x - stage.x()) / oldScale,
+					y: (pointer.y - stage.y()) / oldScale,
 				};
+
+				const direction = e.evt.deltaY > 0 ? -1 : 1;
+				const scaleBy = 1.1;
+				const newScale =
+					direction > 0 ? oldScale * scaleBy : oldScale / scaleBy;
+
+				if (newScale < 0.05 || newScale > 20) return;
+
+				const newPos = {
+					x: pointer.x - mousePointTo.x * newScale,
+					y: pointer.y - mousePointTo.y * newScale,
+				};
+
+				setScale(newScale);
 				setStagePos(newPos);
 				return;
 			}
 
-			// Zoom if Ctrl/Meta
-			const oldScale = stage.scaleX();
-			const pointer = stage.getPointerPosition();
-			if (!pointer) return;
+			// Pan (Scroll) logic
+			// Shift = Horizontal Pan
+			// Default = Vertical Pan
+			const sensitivity = 1; // Adjust sensitivity as needed
+			let dx = 0;
+			let dy = 0;
 
-			const mousePointTo = {
-				x: (pointer.x - stage.x()) / oldScale,
-				y: (pointer.y - stage.y()) / oldScale,
-			};
+			if (e.evt.shiftKey) {
+				dx = -e.evt.deltaY * sensitivity;
+				dy = -e.evt.deltaX * sensitivity; // Handle horizontal scroll devices
+			} else {
+				dx = -e.evt.deltaX * sensitivity;
+				dy = -e.evt.deltaY * sensitivity;
+			}
 
-			const direction = e.evt.deltaY > 0 ? -1 : 1;
-			const scaleBy = 1.1;
-			const newScale = direction > 0 ? oldScale * scaleBy : oldScale / scaleBy;
-
-			if (newScale < 0.05 || newScale > 20) return;
-
-			const newPos = {
-				x: pointer.x - mousePointTo.x * newScale,
-				y: pointer.y - mousePointTo.y * newScale,
-			};
-
-			setScale(newScale);
-			setStagePos(newPos);
+			setStagePos({
+				x: stagePos.x + dx,
+				y: stagePos.y + dy,
+			});
 		},
 		[stageRef, setScale, setStagePos, stagePos],
 	);

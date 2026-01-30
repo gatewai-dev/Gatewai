@@ -85,7 +85,7 @@ function NodePaletteContent({ templates }: { templates: NodeTemplateListRPC }) {
 									await authClient.signOut({
 										fetchOptions: {
 											onSuccess: () => {
-												nav('/auth/signin');
+												nav("/auth/signin");
 											},
 										},
 									});

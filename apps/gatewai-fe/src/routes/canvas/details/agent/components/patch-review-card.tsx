@@ -1,9 +1,8 @@
 import { AnimatePresence, motion } from "framer-motion";
-import { Check, X, ArrowRight, GitPullRequest } from "lucide-react";
+import { ArrowRight, Check, GitPullRequest, X } from "lucide-react";
 import { useState } from "react";
 import { Button } from "@/components/ui/button";
 import { useCanvasCtx } from "../../ctx/canvas-ctx";
-
 
 interface PatchReviewCardProps {
 	patchId: string;
@@ -142,4 +141,3 @@ export function PatchReviewCard({
 		</div>
 	);
 }
-

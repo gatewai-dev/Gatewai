@@ -42,11 +42,11 @@ const canvasRoutes = new Hono<{ Variables: AuthHonoTypes }>({
 					isAPICanvas: false,
 					...(q
 						? {
-							name: {
-								contains: q,
-								mode: "insensitive",
-							},
-						}
+								name: {
+									contains: q,
+									mode: "insensitive",
+								},
+							}
 						: {}),
 				},
 				orderBy: {
