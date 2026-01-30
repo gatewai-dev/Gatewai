@@ -60,6 +60,10 @@ services:
         condition: service_started
     env_file:
       - .env.local
+    environment:
+      - GOOGLE_APPLICATION_CREDENTIALS_PATH=/secrets/gcp-credentials.json
+    volumes:
+      - ${GOOGLE_APPLICATION_CREDENTIALS_PATH}:/secrets/gcp-credentials.json
 
   mcp:
     build:

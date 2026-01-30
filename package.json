@@ -20,7 +20,8 @@
 		"db:deploy": "turbo run db:deploy --filter=@gatewai/db",
 		"test": "turbo run test",
 		"lefthook-install": "lefthook install",
-		"mcp-inspector": "npx @modelcontextprotocol/inspector"
+		"mcp-inspector": "npx @modelcontextprotocol/inspector",
+		"start:docker": "docker compose -f docker-compose-local.yaml up"
 	},
 	"devDependencies": {
 		"@biomejs/biome": "2.3.8",
