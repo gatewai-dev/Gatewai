@@ -154,13 +154,7 @@ export function AuthLayout({ children, title, subtitle }: AuthLayoutProps) {
 					transition={{ duration: 0.6 }}
 					className="relative z-20 flex items-center gap-3"
 				>
-					<GatewaiLogo className="size-10 text-primary" />
-					<span
-						className="text-2xl font-bold tracking-tight"
-						style={{ fontFamily: "'JetBrains Mono', monospace" }}
-					>
-						GATEWAI
-					</span>
+					<GatewaiLogo className="size-22 text-primary" />
 				</motion.div>
 
 				{/* Content */}
@@ -179,7 +173,7 @@ export function AuthLayout({ children, title, subtitle }: AuthLayoutProps) {
 							<br />
 							WORKFLOWS
 							<br />
-							<span className="text-transparent bg-clip-text bg-gradient-to-r from-primary to-secondary">
+							<span className="text-transparent bg-clip-text bg-linear-to-r from-primary to-secondary">
 								VISUALLY
 							</span>
 						</h2>
@@ -194,7 +188,7 @@ export function AuthLayout({ children, title, subtitle }: AuthLayoutProps) {
 			{/* Right Side - Form */}
 			<div className="relative flex h-full min-h-screen items-center p-8 lg:p-12 bg-[#0a0a0f]">
 				{/* Subtle gradient */}
-				<div className="absolute inset-0 bg-[radial-gradient(ellipse_at_top_right,_var(--tw-gradient-stops))] from-primary/10 via-transparent to-transparent pointer-events-none" />
+				<div className="absolute inset-0 bg-[radial-gradient(ellipse_at_top_right,var(--tw-gradient-stops))] from-primary/10 via-transparent to-transparent pointer-events-none" />
 
 				{/* Back to home link */}
 				<Link

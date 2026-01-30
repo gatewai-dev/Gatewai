@@ -1,4 +1,4 @@
-import { Link, useNavigate } from "react-router";
+import { useNavigate } from "react-router";
 import { AuthLayout } from "../auth-layout";
 import { SignInForm } from "./signin-form";
 
@@ -17,15 +17,6 @@ function SigninPage() {
 			subtitle="Sign in to continue building workflows"
 		>
 			<SignInForm onSuccess={onSuccess} />
-			<div className="text-center text-sm text-zinc-500 mt-4">
-				Don&apos;t have an account?{" "}
-				<Link
-					to="/auth/signup"
-					className="font-semibold text-primary hover:text-primary/80 transition-colors"
-				>
-					Sign up
-				</Link>
-			</div>
 		</AuthLayout>
 	);
 }

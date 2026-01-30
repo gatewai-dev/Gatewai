@@ -1,7 +1,13 @@
 import { motion, useScroll, useTransform } from "framer-motion";
-import { ArrowRight, GitBranch, Sparkles, Workflow } from "lucide-react";
+import {
+	ArrowRight,
+	GitBranch,
+	Github,
+	Sparkles,
+	Workflow,
+} from "lucide-react";
 import { useEffect, useRef, useState } from "react";
-import { SiDiscord, SiGithub } from "react-icons/si";
+import { SiDiscord } from "react-icons/si";
 import { Link } from "react-router";
 import { Button } from "@/components/ui/button";
 import { GatewaiLogo } from "@/components/ui/gatewai-logo";
@@ -117,7 +123,7 @@ const NodeCanvas = () => {
 	return (
 		<canvas
 			ref={canvasRef}
-			className="absolute inset-0 w-full h-full opacity-40"
+			className="absolute inset-0 top-40 w-full h-full opacity-40"
 			style={{ width: "100%", height: "100%" }}
 		/>
 	);
@@ -143,39 +149,6 @@ const HomePage = () => {
 				@import url('https://fonts.googleapis.com/css2?family=JetBrains+Mono:wght@700;800&family=Outfit:wght@300;400;600;700&display=swap');
 			`}</style>
 
-			{/* Navbar */}
-			<nav className="fixed top-0 left-0 right-0 z-50 flex h-20 items-center justify-between border-b border-primary/10 bg-[#0a0a0f]/90 px-8 backdrop-blur-xl">
-				<div className="flex items-center gap-3">
-					<GatewaiLogo className="size-20 text-primary" />
-				</div>
-				<div className="flex items-center gap-4">
-					<a
-						href="https://github.com/gatewai-dev/Gatewai"
-						target="_blank"
-						rel="noreferrer"
-						className="text-zinc-400 hover:text-primary transition-colors"
-					>
-						<SiGithub className="h-5 w-5" />
-					</a>
-					<a
-						href="https://discord.gg/ha4A8UD7kn"
-						target="_blank"
-						rel="noreferrer"
-						className="text-zinc-400 hover:text-primary transition-colors"
-					>
-						<SiDiscord className="h-5 w-5" />
-					</a>
-					<Link to="/auth/signin">
-						<Button
-							variant="ghost"
-							className="text-primary/80 hover:text-primary hover:bg-primary/10"
-						>
-							Sign In
-						</Button>
-					</Link>
-				</div>
-			</nav>
-
 			{/* Hero Section */}
 			<section className="relative flex min-h-screen flex-col items-center justify-center px-6 pt-20">
 				{/* Animated Canvas Background */}
@@ -194,20 +167,14 @@ const HomePage = () => {
 					transition={{ duration: 1 }}
 					className="relative z-10 flex flex-col items-center max-w-6xl text-center space-y-10"
 				>
-					{/* Badge */}
+					{/* Logo */}
 					<motion.div
-						initial={{ opacity: 0, y: 20 }}
-						animate={{ opacity: 1, y: 0 }}
-						transition={{ delay: 0.2, duration: 0.6 }}
-						className="inline-flex items-center gap-2 rounded-full border border-primary/30 bg-primary/5 px-5 py-2 backdrop-blur-sm"
+						initial={{ opacity: 0, scale: 0.8 }}
+						animate={{ opacity: 1, scale: 1 }}
+						transition={{ delay: 0.2, duration: 0.8, ease: [0.16, 1, 0.3, 1] }}
+						className="flex items-center justify-center"
 					>
-						<Sparkles className="h-4 w-4 text-primary" />
-						<span
-							className="text-xs font-bold uppercase tracking-[0.2em] text-primary/80"
-							style={{ fontFamily: "'JetBrains Mono', monospace" }}
-						>
-							Alpha v0.0
-						</span>
+						<GatewaiLogo className="size-32 text-primary" />
 					</motion.div>
 
 					{/* Main Title */}
@@ -215,14 +182,12 @@ const HomePage = () => {
 						initial={{ opacity: 0, y: 30 }}
 						animate={{ opacity: 1, y: 0 }}
 						transition={{ delay: 0.4, duration: 0.8, ease: [0.16, 1, 0.3, 1] }}
-						className="text-6xl md:text-8xl lg:text-9xl font-extrabold tracking-tighter leading-[0.9]"
+						className="text-7xl font-extrabold tracking-tighter leading-[0.9]"
 						style={{ fontFamily: "'JetBrains Mono', monospace" }}
 					>
 						BUILD
 						<br />
-						<span className="text-transparent bg-clip-text bg-gradient-to-r from-primary via-secondary to-primary">
-							WORKFLOWS
-						</span>
+						<span className="text-primary">WORKFLOWS</span>
 						<br />
 						VISUALLY
 					</motion.h1>
@@ -247,12 +212,25 @@ const HomePage = () => {
 						<Link to="/canvas">
 							<Button
 								size="lg"
-								className="h-16 px-10 text-lg font-semibold rounded-2xl bg-gradient-to-r from-primary to-secondary hover:from-primary/90 hover:to-secondary/90 shadow-2xl shadow-primary/40 hover:shadow-primary/60 transition-all duration-300 group border-0"
+								className="h-16 px-10 text-lg font-semibold rounded-2xl bg-primary hover:from-primary/90 hover:to-secondary/90 shadow-2xl shadow-primary/40 hover:shadow-primary/60 transition-all duration-300 group border-0"
 							>
 								Launch Studio
 								<ArrowRight className="ml-3 h-5 w-5 transition-transform group-hover:translate-x-1" />
 							</Button>
 						</Link>
+						<a
+							href="https://github.com/gatewai-dev/Gatewai"
+							target="_blank"
+							rel="noreferrer"
+						>
+							<Button
+								variant="outline"
+								size="lg"
+								className="h-16 px-10 text-lg font-semibold rounded-2xl border-2 border-primary/30 bg-primary/5 hover:bg-primary/15 hover:border-primary/50 text-primary/80 hover:text-primary transition-all duration-300"
+							>
+								GitHub
+							</Button>
+						</a>
 					</motion.div>
 				</motion.div>
 			</section>
@@ -288,7 +266,7 @@ const HomePage = () => {
 					<FeatureCard
 						icon={<GitBranch className="h-8 w-8" />}
 						title="Hybrid Runtime"
-						description="Gatewai has an headless backend. Run workflows wherever you want - in browser or backend only."
+						description="Execute lightweight nodes in-browser. Offload heavy AI tasks to cloud workers."
 						delay={0.2}
 						color="fuchsia"
 					/>
@@ -347,10 +325,10 @@ const FeatureCard = ({
 			viewport={{ once: true, margin: "-50px" }}
 			transition={{ duration: 0.6, delay }}
 			whileHover={{ y: -8, transition: { duration: 0.2 } }}
-			className="group relative overflow-hidden rounded-3xl border border-white/5 bg-gradient-to-br from-white/5 to-transparent p-10 backdrop-blur-sm"
+			className="group relative overflow-hidden rounded-3xl border border-white/5 bg-linear-to-br from-white/5 to-transparent p-10 backdrop-blur-sm"
 		>
 			<div
-				className={`absolute inset-0 bg-gradient-to-br ${colorMap[color]} opacity-0 group-hover:opacity-100 transition-opacity duration-500`}
+				className={`absolute inset-0 bg-linear-to-br ${colorMap[color]} opacity-0 group-hover:opacity-100 transition-opacity duration-500`}
 			/>
 			<div className="relative z-10">
 				<div
