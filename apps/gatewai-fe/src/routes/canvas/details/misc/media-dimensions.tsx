@@ -30,7 +30,7 @@ function MediaDimensions({
 	return (
 		<div
 			className={cn(
-				"bg-background/20 text-white text-[9px] p-1 flex items-center gap-1",
+				"bg-background/20 text-white text-xs p-1 flex items-center gap-1",
 				className,
 			)}
 		>

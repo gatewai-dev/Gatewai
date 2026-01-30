@@ -303,8 +303,8 @@ const InteractionOverlay: React.FC = () => {
 					l.type !== "Audio" &&
 					currentFrame >= (l.startFrame ?? 0) &&
 					currentFrame <
-					(l.startFrame ?? 0) +
-					(l.durationInFrames ?? DEFAULT_DURATION_FRAMES),
+						(l.startFrame ?? 0) +
+							(l.durationInFrames ?? DEFAULT_DURATION_FRAMES),
 			)
 			.sort((a, b) => (a.zIndex ?? 0) - (b.zIndex ?? 0));
 	}, [layers, currentFrame]);
@@ -385,10 +385,10 @@ const InteractionOverlay: React.FC = () => {
 				prev.map((l) =>
 					l.id === selectedId
 						? {
-							...l,
-							x: Math.round(initialPos.x + dx),
-							y: Math.round(initialPos.y + dy),
-						}
+								...l,
+								x: Math.round(initialPos.x + dx),
+								y: Math.round(initialPos.y + dy),
+							}
 						: l,
 				),
 			);
@@ -429,12 +429,12 @@ const InteractionOverlay: React.FC = () => {
 				prev.map((l) =>
 					l.id === selectedId
 						? {
-							...l,
-							width: Math.round(newWidth),
-							height: Math.round(newHeight),
-							x: Math.round(newX),
-							y: Math.round(newY),
-						}
+								...l,
+								width: Math.round(newWidth),
+								height: Math.round(newHeight),
+								x: Math.round(newX),
+								y: Math.round(newY),
+							}
 						: l,
 				),
 			);
@@ -475,7 +475,7 @@ const InteractionOverlay: React.FC = () => {
 			onMouseDown={(e) => handleMouseDown(e)}
 			role="button"
 			tabIndex={0}
-			onKeyDown={() => { }}
+			onKeyDown={() => {}}
 		>
 			<div
 				className="absolute origin-top-left"
@@ -493,8 +493,9 @@ const InteractionOverlay: React.FC = () => {
 							if (e.key === "Enter") setSelectedId(layer.id);
 						}}
 						onMouseDown={(e) => handleMouseDown(e, layer.id)}
-						className={`absolute group outline-none select-none p-0 m-0 border-0 bg-transparent text-left ${selectedId === layer.id ? "z-50" : "z-auto"
-							}`}
+						className={`absolute group outline-none select-none p-0 m-0 border-0 bg-transparent text-left ${
+							selectedId === layer.id ? "z-50" : "z-auto"
+						}`}
 						style={{
 							left: layer.x,
 							top: layer.y,
@@ -505,10 +506,11 @@ const InteractionOverlay: React.FC = () => {
 					>
 						{/* Selection Border */}
 						<div
-							className={`absolute inset-0 pointer-events-none transition-all duration-150 ${selectedId === layer.id
-								? "border-2 border-blue-500 shadow-[0_0_0_1px_rgba(59,130,246,0.2)]"
-								: "border border-transparent group-hover:border-blue-400/50"
-								}`}
+							className={`absolute inset-0 pointer-events-none transition-all duration-150 ${
+								selectedId === layer.id
+									? "border-2 border-blue-500 shadow-[0_0_0_1px_rgba(59,130,246,0.2)]"
+									: "border border-transparent group-hover:border-blue-400/50"
+							}`}
 						/>
 						{/* Controls (Only if selected) */}
 						{selectedId === layer.id && (
@@ -1053,7 +1055,7 @@ const TimelinePanel: React.FC = () => {
 				onMouseLeave={() => setIsPanningTimeline(false)}
 				role="button"
 				tabIndex={0}
-				onKeyDown={() => { }}
+				onKeyDown={() => {}}
 			>
 				<div
 					className="relative flex flex-col min-h-full"
@@ -1123,7 +1125,7 @@ const TimelinePanel: React.FC = () => {
 									key={`${
 										// biome-ignore lint/suspicious/noArrayIndexKey: Range used for static labels
 										sec
-										}_label_time`}
+									}_label_time`}
 									className="absolute top-1.5 text-[10px] font-mono text-gray-500 select-none pointer-events-none font-medium"
 									style={{ left: sec * fps * pixelsPerFrame + 4 }}
 								>
@@ -1192,8 +1194,9 @@ const TimelinePanel: React.FC = () => {
 									<div
 										key={layer.id}
 										style={{ height: TRACK_HEIGHT }}
-										className={`border-b border-white/5 relative group/track ${isSelected ? "bg-white/2" : ""
-											}`}
+										className={`border-b border-white/5 relative group/track ${
+											isSelected ? "bg-white/2" : ""
+										}`}
 									>
 										<button
 											type="button"
@@ -1261,38 +1264,77 @@ const InspectorPanel: React.FC = () => {
 		return ["Geist", "Inter", "Arial", "Courier New", "Times New Roman"];
 	}, [fontList]);
 	// Animation categories with icons for better UX
-	const animationCategories = useMemo(() => [
-		{
-			label: "Entrance",
-			color: "text-green-400",
-			animations: [
-				{ type: "fade-in" as AnimationType, label: "Fade In", icon: Sparkles },
-				{ type: "slide-in-left" as AnimationType, label: "Slide Left", icon: ArrowRight },
-				{ type: "slide-in-right" as AnimationType, label: "Slide Right", icon: ArrowLeft },
-				{ type: "slide-in-top" as AnimationType, label: "Slide Down", icon: ArrowDown },
-				{ type: "slide-in-bottom" as AnimationType, label: "Slide Up", icon: ArrowUp },
-				{ type: "zoom-in" as AnimationType, label: "Zoom In", icon: ZoomIn },
-			],
-		},
-		{
-			label: "Exit",
-			color: "text-red-400",
-			animations: [
-				{ type: "fade-out" as AnimationType, label: "Fade Out", icon: EyeOff },
-				{ type: "zoom-out" as AnimationType, label: "Zoom Out", icon: ZoomOut },
-			],
-		},
-		{
-			label: "Emphasis",
-			color: "text-yellow-400",
-			animations: [
-				{ type: "rotate-cw" as AnimationType, label: "Rotate CW", icon: RotateCw },
-				{ type: "rotate-ccw" as AnimationType, label: "Rotate CCW", icon: RotateCcw },
-				{ type: "bounce" as AnimationType, label: "Bounce", icon: ArrowUp },
-				{ type: "shake" as AnimationType, label: "Shake", icon: Move },
-			],
-		},
-	], []);
+	const animationCategories = useMemo(
+		() => [
+			{
+				label: "Entrance",
+				color: "text-green-400",
+				animations: [
+					{
+						type: "fade-in" as AnimationType,
+						label: "Fade In",
+						icon: Sparkles,
+					},
+					{
+						type: "slide-in-left" as AnimationType,
+						label: "Slide Left",
+						icon: ArrowRight,
+					},
+					{
+						type: "slide-in-right" as AnimationType,
+						label: "Slide Right",
+						icon: ArrowLeft,
+					},
+					{
+						type: "slide-in-top" as AnimationType,
+						label: "Slide Down",
+						icon: ArrowDown,
+					},
+					{
+						type: "slide-in-bottom" as AnimationType,
+						label: "Slide Up",
+						icon: ArrowUp,
+					},
+					{ type: "zoom-in" as AnimationType, label: "Zoom In", icon: ZoomIn },
+				],
+			},
+			{
+				label: "Exit",
+				color: "text-red-400",
+				animations: [
+					{
+						type: "fade-out" as AnimationType,
+						label: "Fade Out",
+						icon: EyeOff,
+					},
+					{
+						type: "zoom-out" as AnimationType,
+						label: "Zoom Out",
+						icon: ZoomOut,
+					},
+				],
+			},
+			{
+				label: "Emphasis",
+				color: "text-yellow-400",
+				animations: [
+					{
+						type: "rotate-cw" as AnimationType,
+						label: "Rotate CW",
+						icon: RotateCw,
+					},
+					{
+						type: "rotate-ccw" as AnimationType,
+						label: "Rotate CCW",
+						icon: RotateCcw,
+					},
+					{ type: "bounce" as AnimationType, label: "Bounce", icon: ArrowUp },
+					{ type: "shake" as AnimationType, label: "Shake", icon: Move },
+				],
+			},
+		],
+		[],
+	);
 	const addAnimation = (type: AnimationType) => {
 		if (!selectedLayer) return;
 		const newAnimation: VideoAnimation = {
@@ -1502,26 +1544,26 @@ const InspectorPanel: React.FC = () => {
 					{/* Audio Settings for Video/Audio */}
 					{(selectedLayer.type === "Video" ||
 						selectedLayer.type === "Audio") && (
-							<div className="border-b border-white/5 p-4">
-								<div className="flex items-center gap-2 mb-3 text-[11px] font-bold text-gray-500 uppercase tracking-wider">
-									<Music className="w-3.5 h-3.5" /> Audio
-								</div>
-								<div className="flex items-center gap-2">
-									<span className="text-[9px] text-gray-500 w-8">Volume</span>
-									<Slider
-										className="flex-1"
-										value={[(selectedLayer.volume ?? 1) * 100]}
-										min={0}
-										max={100}
-										step={1}
-										onValueChange={([v]) => update({ volume: v / 100 })}
-									/>
-									<span className="text-[9px] text-gray-400 w-6 text-right">
-										{Math.round((selectedLayer.volume ?? 1) * 100)}%
-									</span>
-								</div>
+						<div className="border-b border-white/5 p-4">
+							<div className="flex items-center gap-2 mb-3 text-[11px] font-bold text-gray-500 uppercase tracking-wider">
+								<Music className="w-3.5 h-3.5" /> Audio
 							</div>
-						)}
+							<div className="flex items-center gap-2">
+								<span className="text-[9px] text-gray-500 w-8">Volume</span>
+								<Slider
+									className="flex-1"
+									value={[(selectedLayer.volume ?? 1) * 100]}
+									min={0}
+									max={100}
+									step={1}
+									onValueChange={([v]) => update({ volume: v / 100 })}
+								/>
+								<span className="text-[9px] text-gray-400 w-6 text-right">
+									{Math.round((selectedLayer.volume ?? 1) * 100)}%
+								</span>
+							</div>
+						</div>
+					)}
 					{/* Typography */}
 					{selectedLayer.type === "Text" && (
 						<div className="border-b border-white/5 p-4">
@@ -1652,11 +1694,11 @@ const InspectorPanel: React.FC = () => {
 														prev.map((l) =>
 															l.id === selectedId
 																? {
-																	...l,
-																	animations: l.animations?.filter(
-																		(a) => a.id !== anim.id,
-																	),
-																}
+																		...l,
+																		animations: l.animations?.filter(
+																			(a) => a.id !== anim.id,
+																		),
+																	}
 																: l,
 														),
 													);
@@ -1680,11 +1722,11 @@ const InspectorPanel: React.FC = () => {
 														prev.map((l) =>
 															l.id === selectedId
 																? {
-																	...l,
-																	animations: l.animations?.map((a) =>
-																		a.id === anim.id ? { ...a, value: v } : a,
-																	),
-																}
+																		...l,
+																		animations: l.animations?.map((a) =>
+																			a.id === anim.id ? { ...a, value: v } : a,
+																		),
+																	}
 																: l,
 														),
 													);
@@ -1715,8 +1757,12 @@ const InspectorPanel: React.FC = () => {
 												<div key={category.label}>
 													{idx > 0 && <div className="h-px bg-white/5 mb-3" />}
 													<div className="flex items-center gap-1.5 mb-2">
-														<div className={`w-1.5 h-1.5 rounded-full ${category.color.replace('text-', 'bg-')}`} />
-														<span className={`text-[9px] font-bold uppercase tracking-wider ${category.color}`}>
+														<div
+															className={`w-1.5 h-1.5 rounded-full ${category.color.replace("text-", "bg-")}`}
+														/>
+														<span
+															className={`text-[9px] font-bold uppercase tracking-wider ${category.color}`}
+														>
 															{category.label}
 														</span>
 													</div>
@@ -2297,9 +2343,9 @@ export const VideoDesignerEditor: React.FC<VideoDesignerEditorProps> = ({
 		// Subscribe to ended event
 		const player = playerRef.current;
 		if (player) {
-			player.addEventListener('ended', handlePlaybackEnded);
+			player.addEventListener("ended", handlePlaybackEnded);
 			return () => {
-				player.removeEventListener('ended', handlePlaybackEnded);
+				player.removeEventListener("ended", handlePlaybackEnded);
 			};
 		}
 	}, [handlePlaybackEnded]);
@@ -2320,7 +2366,7 @@ export const VideoDesignerEditor: React.FC<VideoDesignerEditorProps> = ({
 						}}
 						role="button"
 						tabIndex={0}
-						onKeyDown={() => { }} // No-op
+						onKeyDown={() => {}} // No-op
 					>
 						<div
 							className="absolute origin-top-left"

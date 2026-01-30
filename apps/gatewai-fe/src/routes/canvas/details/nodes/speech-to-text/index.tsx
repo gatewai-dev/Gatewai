@@ -48,7 +48,10 @@ const SpeechToTextNodeComponent = memo(
 								"pt-8": hasMoreThanOneOutput,
 							})}
 						>
-							<MarkdownRenderer markdown={SpeechToTextTextContent} />
+							<MarkdownRenderer
+								className="text-sm"
+								markdown={SpeechToTextTextContent}
+							/>
 						</ScrollArea>
 					)}
 					{!SpeechToTextTextContent && (

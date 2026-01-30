@@ -48,7 +48,7 @@ const LlmNodeComponent = memo(
 								"pt-8": hasMoreThanOneOutput,
 							})}
 						>
-							<MarkdownRenderer markdown={llmTextContent} />
+							<MarkdownRenderer className="text-sm" markdown={llmTextContent} />
 						</ScrollArea>
 					)}
 					{!llmTextContent && (

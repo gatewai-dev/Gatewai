@@ -1,13 +1,6 @@
 import { motion, useScroll, useTransform } from "framer-motion";
-import {
-	ArrowRight,
-	GitBranch,
-	Github,
-	Sparkles,
-	Workflow,
-} from "lucide-react";
+import { ArrowRight, GitBranch, Sparkles, Workflow } from "lucide-react";
 import { useEffect, useRef, useState } from "react";
-import { SiDiscord } from "react-icons/si";
 import { Link } from "react-router";
 import { Button } from "@/components/ui/button";
 import { GatewaiLogo } from "@/components/ui/gatewai-logo";

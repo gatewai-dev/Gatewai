@@ -81,7 +81,7 @@ const PreviewNodeComponent = memo((props: NodeProps<PreviewNode>) => {
 						className="bg-input p-2 w-full"
 					>
 						{showMarkdown ? (
-							<MarkdownRenderer markdown={outputData} />
+							<MarkdownRenderer className="text-sm" markdown={outputData} />
 						) : (
 							<div className="whitespace-pre-wrap text-xs">{outputData}</div>
 						)}
