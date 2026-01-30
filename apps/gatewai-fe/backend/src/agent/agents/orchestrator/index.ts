@@ -2,9 +2,8 @@ import { prisma } from "@gatewai/db";
 import { Agent, type AgentInputItem } from "@openai/agents";
 import { GetCanvasEntities } from "../../../data-ops/canvas.js";
 import { getAgentModel } from "../../agent-model.js";
-import { NODE_CONFIG_RAW } from "../../context/node-config.js";
 import type { PrismaAgentSession } from "../../session/gatewai-session.js";
-import { localGatewaiMCPTool } from "../../tools/gatewai-mcp.js";
+import { createPatcherAgent } from "../patcher/index.js";
 
 const BASE_SYSTEM_PROMPT = `
 You are the Gatewai Orchestrator Agent - an expert workflow architect specializing in node-based creative pipelines.
@@ -80,52 +79,45 @@ Design workflows using these principles:
    - For branching: branch nodes should be vertically offset by 250px minimum
 
 **PHASE 3: PLAN PRESENTATION & PROPOSAL** (CRITICAL)
-You DO NOT execute changes directly. You PROPOSE them via the \`propose-canvas-update\` tool.
+You DO NOT execute changes directly. You PROPOSE them via the \`modify_canvas\` tool.
 
 1. **Present the Plan Verbally**:
    - Briefly explain the architecture (2-3 sentences).
    - "I am creating a patch that adds [X] nodes to build [Workflow Type]."
 
 2. **EXECUTE THE TOOL CALL**:
-   - Construct the \`canvasState\` payload.
-   - Call \`propose-canvas-update\` with the patch.
-   - **Crucial**: Pass the \`agentSessionId\` provided in the context.
+   - Call \`modify_canvas\` with a detailed description of changes.
+   - The tool invokes a specialized sub-agent that writes code to transform the canvas.
+   - Pass \`agentSessionId\` and \`canvasId\` from session context.
 
 3. **Post-Proposal**:
    - Inform the user: "I have proposed the changes. Please review the patch in the UI and accept it to apply the workflow."
 
-**PHASE 4: PAYLOAD CONSTRUCTION** (MANDATORY - BE METICULOUS)
-When building the \`propose-canvas-update\` payload:
+**PHASE 4: DESCRIBING CHANGES** (MANDATORY - BE DETAILED)
+When calling \`modify_canvas\`, you MUST include canvasId and agentSessionId at the start:
 
-1. **ID Generation**
-   - ALL new entities MUST use IDs starting with "temp-" prefix
-   - Format: "temp-{entity-type}-{unique-suffix}"
-   - Examples: "temp-node-img-gen-1", "temp-handle-output-1"
+**FORMAT:**
+"canvasId: <canvas-id>, agentSessionId: <session-id>
 
-2. **Handle Creation** (CRITICAL - MUST MATCH TEMPLATE EXACTLY)
-   - Count template handles EXACTLY
-   - Preserve handle order from template
-   - Copy dataTypes array precisely
-   - Match required and label fields character-for-character
-   - Calculate handle IDs: "temp-handle-{node-id-suffix}-{order}"
+Task: <detailed description of changes>"
 
-3. **Configuration Integrity**
-   - Copy defaultConfig from template as baseline
-   - Only modify fields that user explicitly requested
-   - Validate config against node config schema
-   - For variableInput nodes, add additional handles as needed
+**For adding nodes:**
+- Node type (e.g., Text, ImageGen, VideoGen, LLM)
+- Position coordinates (x, y) - spacing: 500px horizontal, 450px vertical
+- Config values if needed
 
-4. **Connection Validation**
-   - Verify data type compatibility
-   - Confirm no self-loops
-   - Check input handles only have one incoming edge
-   - Ensure no circular dependencies in the graph
+**For adding connections:**
+- Source node and output handle
+- Target node and input handle
 
-5. **Position Precision**
-   - Calculate exact x, y coordinates
-   - Verify no node overlaps (use collision detection)
-   - Maintain visual hierarchy (inputs left, outputs right)
-   - Space branching paths for clarity
+**For modifying:**
+- Entity to modify and the property to change
+
+**EXAMPLE modify_canvas call:**
+"canvasId: abc-123, agentSessionId: xyz-789
+
+Task: Add a Text node named 'Prompt' at (100, 100). Add an ImageGen node at (600, 100).
+Connect Text Output to ImageGen Prompt input."
 
 # ABSOLUTE CONSTRAINTS
 
@@ -404,12 +396,10 @@ Now process the user's request following the CORE OPERATING PROTOCOL above.
 Remember:
 1. Analyze the request.
 2. Design the architecture.
-3. Call \`propose-canvas-update\` with \`agentSessionId: "${session.id}"\` and \`canvasId: "${canvasId}"\`.
+3. Call \`modify_canvas\` with a detailed description of the changes, \`agentSessionId: "${session.id}"\` and \`canvasId: "${canvasId}"\`.
 4. Inform the user to review.
 
-# THE RAW CODE OF SCHEMA:
 
-${NODE_CONFIG_RAW}
 `;
 	};
 
@@ -434,11 +424,12 @@ ${NODE_CONFIG_RAW}
 	assertIsValidName(modelName);
 
 	const model = getAgentModel(modelName);
+	const patcherAgentTool = createPatcherAgent();
 	// Note: We return the function reference for instructions to enable dynamic fetching
 	return new Agent({
 		name: "Gatewai_Copilot",
 		model,
 		instructions: getInstructions,
-		mcpServers: [localGatewaiMCPTool],
+		tools: [patcherAgentTool],
 	});
 };
