@@ -507,6 +507,10 @@ export class NodeGraphProcessor extends EventEmitter {
 				state.startedAt = undefined;
 				state.finishedAt = undefined;
 				state.durationMs = undefined;
+
+				// Recalculate inputs even for failed nodes so UI shows current connections
+				state.inputs = this.collectInputs(nodeId);
+
 				state.version++;
 				this.emit("node:error", { nodeId, error: state.error });
 			} else {
@@ -516,6 +520,12 @@ export class NodeGraphProcessor extends EventEmitter {
 				state.startedAt = undefined;
 				state.finishedAt = undefined;
 				state.durationMs = undefined;
+
+				// Immediately recalculate inputs based on current graph topology.
+				// This ensures UI components see the current connection state,
+				// not stale cached data from previous edges.
+				state.inputs = this.collectInputs(nodeId);
+
 				state.version++;
 
 				this.emit("node:queued", { nodeId });

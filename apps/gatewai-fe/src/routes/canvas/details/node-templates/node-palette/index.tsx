@@ -5,7 +5,7 @@ import {
 	PanelLeftOpen,
 } from "lucide-react";
 import { FaDiscord, FaGithub } from "react-icons/fa";
-import { Link } from "react-router";
+import { Link, useNavigate } from "react-router";
 import { Button } from "@/components/ui/button";
 import {
 	DropdownMenu,
@@ -47,7 +47,7 @@ export function NodePalette() {
 
 function NodePaletteContent({ templates }: { templates: NodeTemplateListRPC }) {
 	const { isCollapsed, setIsCollapsed } = useNodePalette();
-
+	const nav = useNavigate();
 	return (
 		<aside
 			className={cn(
@@ -80,12 +80,12 @@ function NodePaletteContent({ templates }: { templates: NodeTemplateListRPC }) {
 							</DropdownMenuItem>
 							<DropdownMenuSeparator />
 							<DropdownMenuItem
-								className="text-red-600 focus:text-red-600 cursor-pointer"
+								className="cursor-pointer"
 								onClick={async () => {
 									await authClient.signOut({
 										fetchOptions: {
 											onSuccess: () => {
-												window.location.href = "/auth/signin";
+												nav('/auth/signin');
 											},
 										},
 									});
