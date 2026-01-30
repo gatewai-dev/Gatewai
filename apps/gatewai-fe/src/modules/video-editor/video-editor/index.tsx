@@ -22,8 +22,13 @@ import type {
 } from "@gatewai/types";
 import { Player, type PlayerRef } from "@remotion/player";
 import {
+	ArrowDown,
+	ArrowLeft,
+	ArrowRight,
+	ArrowUp,
 	Bold,
 	ChevronDown,
+	EyeOff,
 	Film,
 	GripVertical,
 	Hand,
@@ -39,14 +44,18 @@ import {
 	Pause,
 	Play,
 	Plus,
+	RotateCcw,
 	RotateCw,
 	Save,
 	Settings2,
+	Sparkles,
 	Trash2,
 	Type,
 	Underline,
 	XIcon,
 	Zap,
+	ZoomIn,
+	ZoomOut,
 } from "lucide-react";
 import React, {
 	createContext,
@@ -164,6 +173,7 @@ interface EditorContextType {
 	setMode: Dispatch<SetStateAction<"select" | "pan">>;
 	isDirty: boolean;
 	setIsDirty: Dispatch<SetStateAction<boolean>>;
+	timelineScrollRef: React.RefObject<HTMLDivElement | null>;
 }
 const EditorContext = createContext<EditorContextType | undefined>(undefined);
 const useEditor = () => {
@@ -293,8 +303,8 @@ const InteractionOverlay: React.FC = () => {
 					l.type !== "Audio" &&
 					currentFrame >= (l.startFrame ?? 0) &&
 					currentFrame <
-						(l.startFrame ?? 0) +
-							(l.durationInFrames ?? DEFAULT_DURATION_FRAMES),
+					(l.startFrame ?? 0) +
+					(l.durationInFrames ?? DEFAULT_DURATION_FRAMES),
 			)
 			.sort((a, b) => (a.zIndex ?? 0) - (b.zIndex ?? 0));
 	}, [layers, currentFrame]);
@@ -375,10 +385,10 @@ const InteractionOverlay: React.FC = () => {
 				prev.map((l) =>
 					l.id === selectedId
 						? {
-								...l,
-								x: Math.round(initialPos.x + dx),
-								y: Math.round(initialPos.y + dy),
-							}
+							...l,
+							x: Math.round(initialPos.x + dx),
+							y: Math.round(initialPos.y + dy),
+						}
 						: l,
 				),
 			);
@@ -419,12 +429,12 @@ const InteractionOverlay: React.FC = () => {
 				prev.map((l) =>
 					l.id === selectedId
 						? {
-								...l,
-								width: Math.round(newWidth),
-								height: Math.round(newHeight),
-								x: Math.round(newX),
-								y: Math.round(newY),
-							}
+							...l,
+							width: Math.round(newWidth),
+							height: Math.round(newHeight),
+							x: Math.round(newX),
+							y: Math.round(newY),
+						}
 						: l,
 				),
 			);
@@ -465,7 +475,7 @@ const InteractionOverlay: React.FC = () => {
 			onMouseDown={(e) => handleMouseDown(e)}
 			role="button"
 			tabIndex={0}
-			onKeyDown={() => {}}
+			onKeyDown={() => { }}
 		>
 			<div
 				className="absolute origin-top-left"
@@ -483,9 +493,8 @@ const InteractionOverlay: React.FC = () => {
 							if (e.key === "Enter") setSelectedId(layer.id);
 						}}
 						onMouseDown={(e) => handleMouseDown(e, layer.id)}
-						className={`absolute group outline-none select-none p-0 m-0 border-0 bg-transparent text-left ${
-							selectedId === layer.id ? "z-50" : "z-auto"
-						}`}
+						className={`absolute group outline-none select-none p-0 m-0 border-0 bg-transparent text-left ${selectedId === layer.id ? "z-50" : "z-auto"
+							}`}
 						style={{
 							left: layer.x,
 							top: layer.y,
@@ -496,11 +505,10 @@ const InteractionOverlay: React.FC = () => {
 					>
 						{/* Selection Border */}
 						<div
-							className={`absolute inset-0 pointer-events-none transition-all duration-150 ${
-								selectedId === layer.id
-									? "border-2 border-blue-500 shadow-[0_0_0_1px_rgba(59,130,246,0.2)]"
-									: "border border-transparent group-hover:border-blue-400/50"
-							}`}
+							className={`absolute inset-0 pointer-events-none transition-all duration-150 ${selectedId === layer.id
+								? "border-2 border-blue-500 shadow-[0_0_0_1px_rgba(59,130,246,0.2)]"
+								: "border border-transparent group-hover:border-blue-400/50"
+								}`}
 						/>
 						{/* Controls (Only if selected) */}
 						{selectedId === layer.id && (
@@ -853,9 +861,9 @@ const TimelinePanel: React.FC = () => {
 		setSelectedId,
 		isPlaying,
 		fps,
+		timelineScrollRef: scrollContainerRef,
 	} = useEditor();
 	const playheadRef = useRef<HTMLDivElement>(null);
-	const scrollContainerRef = useRef<HTMLDivElement>(null);
 	const [isPanningTimeline, setIsPanningTimeline] = useState(false);
 	const [dragStartX, setDragStartX] = useState(0);
 	const [initialScroll, setInitialScroll] = useState(0);
@@ -1045,7 +1053,7 @@ const TimelinePanel: React.FC = () => {
 				onMouseLeave={() => setIsPanningTimeline(false)}
 				role="button"
 				tabIndex={0}
-				onKeyDown={() => {}}
+				onKeyDown={() => { }}
 			>
 				<div
 					className="relative flex flex-col min-h-full"
@@ -1115,7 +1123,7 @@ const TimelinePanel: React.FC = () => {
 									key={`${
 										// biome-ignore lint/suspicious/noArrayIndexKey: Range used for static labels
 										sec
-									}_label_time`}
+										}_label_time`}
 									className="absolute top-1.5 text-[10px] font-mono text-gray-500 select-none pointer-events-none font-medium"
 									style={{ left: sec * fps * pixelsPerFrame + 4 }}
 								>
@@ -1184,9 +1192,8 @@ const TimelinePanel: React.FC = () => {
 									<div
 										key={layer.id}
 										style={{ height: TRACK_HEIGHT }}
-										className={`border-b border-white/5 relative group/track ${
-											isSelected ? "bg-white/2" : ""
-										}`}
+										className={`border-b border-white/5 relative group/track ${isSelected ? "bg-white/2" : ""
+											}`}
 									>
 										<button
 											type="button"
@@ -1253,20 +1260,39 @@ const InspectorPanel: React.FC = () => {
 		}
 		return ["Geist", "Inter", "Arial", "Courier New", "Times New Roman"];
 	}, [fontList]);
-	const animationTypes: AnimationType[] = [
-		"fade-in",
-		"fade-out",
-		"slide-in-left",
-		"slide-in-right",
-		"slide-in-top",
-		"slide-in-bottom",
-		"zoom-in",
-		"zoom-out",
-		"rotate-cw",
-		"rotate-ccw",
-		"bounce",
-		"shake",
-	];
+	// Animation categories with icons for better UX
+	const animationCategories = useMemo(() => [
+		{
+			label: "Entrance",
+			color: "text-green-400",
+			animations: [
+				{ type: "fade-in" as AnimationType, label: "Fade In", icon: Sparkles },
+				{ type: "slide-in-left" as AnimationType, label: "Slide Left", icon: ArrowRight },
+				{ type: "slide-in-right" as AnimationType, label: "Slide Right", icon: ArrowLeft },
+				{ type: "slide-in-top" as AnimationType, label: "Slide Down", icon: ArrowDown },
+				{ type: "slide-in-bottom" as AnimationType, label: "Slide Up", icon: ArrowUp },
+				{ type: "zoom-in" as AnimationType, label: "Zoom In", icon: ZoomIn },
+			],
+		},
+		{
+			label: "Exit",
+			color: "text-red-400",
+			animations: [
+				{ type: "fade-out" as AnimationType, label: "Fade Out", icon: EyeOff },
+				{ type: "zoom-out" as AnimationType, label: "Zoom Out", icon: ZoomOut },
+			],
+		},
+		{
+			label: "Emphasis",
+			color: "text-yellow-400",
+			animations: [
+				{ type: "rotate-cw" as AnimationType, label: "Rotate CW", icon: RotateCw },
+				{ type: "rotate-ccw" as AnimationType, label: "Rotate CCW", icon: RotateCcw },
+				{ type: "bounce" as AnimationType, label: "Bounce", icon: ArrowUp },
+				{ type: "shake" as AnimationType, label: "Shake", icon: Move },
+			],
+		},
+	], []);
 	const addAnimation = (type: AnimationType) => {
 		if (!selectedLayer) return;
 		const newAnimation: VideoAnimation = {
@@ -1326,7 +1352,7 @@ const InspectorPanel: React.FC = () => {
 	const isUnderline = selectedLayer?.textDecoration === "underline";
 	if (!selectedLayer) {
 		return (
-			<div className="w-80 border-l border-white/5 bg-[#0f0f0f] flex flex-col z-20 shadow-xl">
+			<div className="w-80 border-l border-white/5 bg-[#0f0f0f] flex flex-col z-20 shadow-xl h-full">
 				<div className="p-4 bg-neutral-900 border-b border-white/5">
 					<div className="flex items-center gap-2 text-xs font-bold text-gray-200 uppercase tracking-wide">
 						<Settings2 className="w-3.5 h-3.5 text-blue-400" />
@@ -1334,7 +1360,7 @@ const InspectorPanel: React.FC = () => {
 					</div>
 				</div>
 				<ScrollArea className="flex-1">
-					<div className="p-4 space-y-6">
+					<div className="p-4 pb-52 space-y-6">
 						{/* Canvas Settings Group */}
 						<div className="space-y-4">
 							<div className="space-y-1.5">
@@ -1418,7 +1444,7 @@ const InspectorPanel: React.FC = () => {
 				</span>
 			</div>
 			<ScrollArea className="flex-1">
-				<div className="pb-20">
+				<div className="pb-52">
 					{/* Transform */}
 					{selectedLayer.type !== "Audio" && (
 						<div className="border-b border-white/5 p-4">
@@ -1476,26 +1502,26 @@ const InspectorPanel: React.FC = () => {
 					{/* Audio Settings for Video/Audio */}
 					{(selectedLayer.type === "Video" ||
 						selectedLayer.type === "Audio") && (
-						<div className="border-b border-white/5 p-4">
-							<div className="flex items-center gap-2 mb-3 text-[11px] font-bold text-gray-500 uppercase tracking-wider">
-								<Music className="w-3.5 h-3.5" /> Audio
+							<div className="border-b border-white/5 p-4">
+								<div className="flex items-center gap-2 mb-3 text-[11px] font-bold text-gray-500 uppercase tracking-wider">
+									<Music className="w-3.5 h-3.5" /> Audio
+								</div>
+								<div className="flex items-center gap-2">
+									<span className="text-[9px] text-gray-500 w-8">Volume</span>
+									<Slider
+										className="flex-1"
+										value={[(selectedLayer.volume ?? 1) * 100]}
+										min={0}
+										max={100}
+										step={1}
+										onValueChange={([v]) => update({ volume: v / 100 })}
+									/>
+									<span className="text-[9px] text-gray-400 w-6 text-right">
+										{Math.round((selectedLayer.volume ?? 1) * 100)}%
+									</span>
+								</div>
 							</div>
-							<div className="flex items-center gap-2">
-								<span className="text-[9px] text-gray-500 w-8">Volume</span>
-								<Slider
-									className="flex-1"
-									value={[(selectedLayer.volume ?? 1) * 100]}
-									min={0}
-									max={100}
-									step={1}
-									onValueChange={([v]) => update({ volume: v / 100 })}
-								/>
-								<span className="text-[9px] text-gray-400 w-6 text-right">
-									{Math.round((selectedLayer.volume ?? 1) * 100)}%
-								</span>
-							</div>
-						</div>
-					)}
+						)}
 					{/* Typography */}
 					{selectedLayer.type === "Text" && (
 						<div className="border-b border-white/5 p-4">
@@ -1626,11 +1652,11 @@ const InspectorPanel: React.FC = () => {
 														prev.map((l) =>
 															l.id === selectedId
 																? {
-																		...l,
-																		animations: l.animations?.filter(
-																			(a) => a.id !== anim.id,
-																		),
-																	}
+																	...l,
+																	animations: l.animations?.filter(
+																		(a) => a.id !== anim.id,
+																	),
+																}
 																: l,
 														),
 													);
@@ -1654,11 +1680,11 @@ const InspectorPanel: React.FC = () => {
 														prev.map((l) =>
 															l.id === selectedId
 																? {
-																		...l,
-																		animations: l.animations?.map((a) =>
-																			a.id === anim.id ? { ...a, value: v } : a,
-																		),
-																	}
+																	...l,
+																	animations: l.animations?.map((a) =>
+																		a.id === anim.id ? { ...a, value: v } : a,
+																	),
+																}
 																: l,
 														),
 													);
@@ -1682,25 +1708,39 @@ const InspectorPanel: React.FC = () => {
 									<PopoverContent
 										side="left"
 										align="start"
-										className="bg-[#1a1a1a] border-white/10 w-72 p-2"
+										className="bg-[#1a1a1a] border-white/10 w-80 p-3"
 									>
-										<div className="grid grid-cols-2 gap-1">
-											{animationTypes.map((type) => (
-												<button
-													key={type}
-													type="button"
-													className="flex items-center gap-3 px-3 py-2 rounded hover:bg-white/10 transition-colors text-left"
-													onClick={() => addAnimation(type)}
-												>
-													<div
-														className={`w-6 h-6 rounded bg-neutral-800 border border-white/5 flex items-center justify-center`}
-													>
-														<Zap className="w-3 h-3 text-gray-400" />
+										<div className="space-y-4">
+											{animationCategories.map((category, idx) => (
+												<div key={category.label}>
+													{idx > 0 && <div className="h-px bg-white/5 mb-3" />}
+													<div className="flex items-center gap-1.5 mb-2">
+														<div className={`w-1.5 h-1.5 rounded-full ${category.color.replace('text-', 'bg-')}`} />
+														<span className={`text-[9px] font-bold uppercase tracking-wider ${category.color}`}>
+															{category.label}
+														</span>
 													</div>
-													<span className="text-[10px] text-gray-300 font-medium">
-														{type.replace(/-/g, " ")}
-													</span>
-												</button>
+													<div className="grid grid-cols-3 gap-1">
+														{category.animations.map((anim) => {
+															const AnimIcon = anim.icon;
+															return (
+																<button
+																	key={anim.type}
+																	type="button"
+																	className="flex flex-col items-center gap-1.5 p-2 rounded-lg hover:bg-white/10 transition-colors group"
+																	onClick={() => addAnimation(anim.type)}
+																>
+																	<div className="w-8 h-8 rounded-md bg-neutral-800 border border-white/5 flex items-center justify-center group-hover:border-white/20 transition-colors">
+																		<AnimIcon className="w-4 h-4 text-gray-400 group-hover:text-white transition-colors" />
+																	</div>
+																	<span className="text-[9px] text-gray-400 group-hover:text-white font-medium transition-colors">
+																		{anim.label}
+																	</span>
+																</button>
+															);
+														})}
+													</div>
+												</div>
 											))}
 										</div>
 									</PopoverContent>
@@ -1814,6 +1854,7 @@ export const VideoDesignerEditor: React.FC<VideoDesignerEditorProps> = ({
 		},
 		[selectedId],
 	);
+	const timelineScrollRef = useRef<HTMLDivElement>(null);
 	const setIsPlaying = useCallback((p: boolean) => {
 		setIsPlayingState(p);
 		if (p) playerRef.current?.play();
@@ -1823,6 +1864,15 @@ export const VideoDesignerEditor: React.FC<VideoDesignerEditorProps> = ({
 			if (playerRef.current) {
 				setCurrentFrame(playerRef.current.getCurrentFrame());
 			}
+		}
+	}, []);
+	const handlePlaybackEnded = useCallback(() => {
+		setIsPlayingState(false);
+		setCurrentFrame(0);
+		playerRef.current?.seekTo(0);
+		// Reset timeline scroll to start
+		if (timelineScrollRef.current) {
+			timelineScrollRef.current.scrollLeft = 0;
 		}
 	}, []);
 	const setCurrentFrameHandler = useCallback((frame: number) => {
@@ -2215,6 +2265,7 @@ export const VideoDesignerEditor: React.FC<VideoDesignerEditorProps> = ({
 			setMode,
 			isDirty,
 			setIsDirty,
+			timelineScrollRef,
 		}),
 		[
 			layers,
@@ -2243,7 +2294,15 @@ export const VideoDesignerEditor: React.FC<VideoDesignerEditorProps> = ({
 	);
 	useEffect(() => {
 		playerRef.current?.seekTo(0);
-	}, []);
+		// Subscribe to ended event
+		const player = playerRef.current;
+		if (player) {
+			player.addEventListener('ended', handlePlaybackEnded);
+			return () => {
+				player.removeEventListener('ended', handlePlaybackEnded);
+			};
+		}
+	}, [handlePlaybackEnded]);
 	return (
 		<EditorContext.Provider value={contextValue}>
 			<div className="flex flex-col h-screen w-full bg-[#050505] text-gray-100 overflow-hidden font-sans select-none">
@@ -2254,14 +2313,14 @@ export const VideoDesignerEditor: React.FC<VideoDesignerEditorProps> = ({
 						className="flex-1 relative overflow-hidden"
 						onMouseDown={() => setSelectedId(null)}
 						style={{
-							backgroundColor: "#0F0F0F",
+							backgroundColor: "#1a1a1a",
 							backgroundImage:
-								"radial-gradient(circle at 1px 1px, rgba(255,255,255,0.08) 1px, transparent 0)",
-							backgroundSize: "32px 32px",
+								"radial-gradient(circle at 1px 1px, rgba(255,255,255,0.12) 1px, transparent 0)",
+							backgroundSize: "24px 24px",
 						}}
 						role="button"
 						tabIndex={0}
-						onKeyDown={() => {}} // No-op
+						onKeyDown={() => { }} // No-op
 					>
 						<div
 							className="absolute origin-top-left"
@@ -2273,7 +2332,7 @@ export const VideoDesignerEditor: React.FC<VideoDesignerEditorProps> = ({
 							}}
 						>
 							<div
-								className="shadow-[0_0_100px_rgba(0,0,0,0.8)] media-container relative bg-black ring-1 ring-white/10"
+								className="shadow-[0_0_100px_rgba(0,0,0,0.9)] media-container relative bg-[#0a0a0a] ring-2 ring-white/15 rounded-sm"
 								style={{ width: viewportWidth, height: viewportHeight }}
 							>
 								{/* Safety Guides (Action Safe) */}
