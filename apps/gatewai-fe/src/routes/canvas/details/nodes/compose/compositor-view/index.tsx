@@ -1,12 +1,12 @@
 import type { CompositorNodeConfig, OutputItem } from "@gatewai/types";
 import { memo, useMemo } from "react";
 import { useNavigate, useParams } from "react-router";
+import { ImageDesignerEditor } from "@/modules/canvas-editor";
 import { useAppSelector } from "@/store";
 import type { HandleEntityType } from "@/store/handles";
 import { makeSelectNodeById } from "@/store/nodes";
 import { useCanvasCtx } from "../../../ctx/canvas-ctx";
 import { useNodeResult } from "../../../graph-engine/processor-ctx";
-import { ImageDesignerEditor } from "../canvas-editor";
 
 const CompositorView = memo(() => {
 	const nav = useNavigate();

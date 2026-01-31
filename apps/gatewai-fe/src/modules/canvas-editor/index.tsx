@@ -22,31 +22,23 @@ import type {
 	OutputItem,
 } from "@gatewai/types";
 import { COMPOSITOR_DEFAULTS } from "@gatewai/types";
+import { Separator } from "@radix-ui/react-menubar";
 import type Konva from "konva";
 import type { KonvaEventObject } from "konva/lib/Node";
 import {
-	AlignCenterHorizontal,
-	AlignCenterVertical,
-	ArrowLeftRight,
-	ArrowUpDown,
-	Bold,
 	ChevronDown,
 	Eye,
 	EyeOff,
 	Hand,
 	ImageIcon,
-	Italic,
 	Layers,
 	LockOpen,
 	MousePointer,
-	Move,
 	MoveHorizontal,
 	MoveVertical,
-	RotateCw,
 	Save,
 	Settings2,
 	Type,
-	Underline,
 	X as XIcon,
 } from "lucide-react";
 import React, {
@@ -73,7 +65,6 @@ import {
 	Transformer,
 } from "react-konva";
 import useImage from "use-image";
-
 // Internal Component Imports
 import {
 	AlertDialog,
@@ -103,20 +94,21 @@ import {
 	SelectTrigger,
 	SelectValue,
 } from "@/components/ui/select";
-import { Separator } from "@/components/ui/separator";
-import { Switch } from "@/components/ui/switch";
 import {
 	Tooltip,
 	TooltipContent,
 	TooltipProvider,
 	TooltipTrigger,
 } from "@/components/ui/tooltip";
-import { ColorPicker } from "@/components/util/color-input";
 import { fontManager } from "@/lib/fonts";
 import { useGetFontListQuery } from "@/store/fonts";
 import type { HandleEntityType } from "@/store/handles";
 import type { NodeEntityType } from "@/store/nodes";
 import { GetAssetEndpoint, GetFontAssetUrl } from "@/utils/file";
+import { CollapsibleSection } from "../common/CollapsibleSection";
+import { StyleControls } from "../common/properties/StyleControls";
+import { TransformControls } from "../common/properties/TransformControls";
+import { TypographyControls } from "../common/properties/TypographyControls";
 
 //#region CONSTANTS
 // Local defaults removed in favor of shared COMPOSITOR_DEFAULTS
@@ -377,36 +369,6 @@ const useSnap = () => {
 };
 
 //#region Components
-
-const CollapsibleSection: React.FC<{
-	title: string;
-	icon: React.ElementType;
-	children: React.ReactNode;
-	defaultOpen?: boolean;
-}> = ({ title, icon: Icon, children, defaultOpen = true }) => {
-	const [isOpen, setIsOpen] = useState(defaultOpen);
-	return (
-		<div className="border-b border-white/5">
-			<button
-				type="button"
-				onClick={() => setIsOpen(!isOpen)}
-				className="w-full flex items-center justify-between p-3 hover:bg-white/5 transition-colors group"
-			>
-				<div className="flex items-center gap-2 text-[11px] font-bold text-gray-500 uppercase tracking-wider group-hover:text-gray-300">
-					<Icon className="w-3.5 h-3.5" /> {title}
-				</div>
-				<ChevronDown
-					className={`w-3 h-3 text-gray-500 transition-transform duration-200 ${isOpen ? "rotate-0" : "-rotate-90"}`}
-				/>
-			</button>
-			{isOpen && (
-				<div className="p-3 pt-0 animate-in slide-in-from-top-1 duration-200">
-					{children}
-				</div>
-			)}
-		</div>
-	);
-};
 
 interface LayerProps {
 	layer: LocalCompositorLayer;
@@ -1347,322 +1309,53 @@ const InspectorPanel: React.FC = () => {
 			</div>
 
 			<div className="pb-20">
-				<CollapsibleSection title="Transform" icon={Move}>
-					<div className="space-y-3">
-						<div className="flex gap-1">
-							<Button
-								variant="outline"
-								size="sm"
-								className="flex-1 h-7 text-[10px] border-white/10 bg-white/5 hover:bg-white/10 hover:text-white text-gray-400"
-								onClick={() => centerLayer("x")}
-							>
-								<AlignCenterHorizontal className="w-3 h-3 mr-1" /> Center X
-							</Button>
-							<Button
-								variant="outline"
-								size="sm"
-								className="flex-1 h-7 text-[10px] border-white/10 bg-white/5 hover:bg-white/10 hover:text-white text-gray-400"
-								onClick={() => centerLayer("y")}
-							>
-								<AlignCenterVertical className="w-3 h-3 mr-1" /> Center Y
-							</Button>
-						</div>
+				<TransformControls
+					x={selectedLayer.x}
+					y={selectedLayer.y}
+					width={selectedLayer.width}
+					height={selectedLayer.height}
+					rotation={selectedLayer.rotation}
+					lockAspect={selectedLayer.lockAspect}
+					showDimensions={selectedLayer.type !== "Text"}
+					showScale={false}
+					showLockAspect={selectedLayer.type === "Image"}
+					onChange={updateLayer}
+					onCenter={centerLayer}
+				/>
 
-						<div className="grid grid-cols-2 gap-3">
-							<DraggableNumberInput
-								label="X"
-								icon={MoveHorizontal}
-								value={Math.round(selectedLayer.x)}
-								onChange={(v) => updateLayer({ x: v })}
-							/>
-							<DraggableNumberInput
-								label="Y"
-								icon={MoveVertical}
-								value={Math.round(selectedLayer.y)}
-								onChange={(v) => updateLayer({ y: v })}
-							/>
-							{selectedLayer.type !== "Text" && (
-								<>
-									<DraggableNumberInput
-										label="W"
-										icon={MoveHorizontal}
-										value={Math.round(selectedLayer.width ?? 0)}
-										onChange={(newWidth) => {
-											if (
-												selectedLayer.type === "Image" &&
-												selectedLayer.lockAspect
-											) {
-												const oldW = selectedLayer.width ?? 1;
-												const oldH = selectedLayer.height ?? 1;
-												const ratio = oldH / oldW;
-												updateLayer({
-													width: newWidth,
-													height: newWidth * ratio,
-												});
-											} else {
-												updateLayer({ width: newWidth });
-											}
-										}}
-										min={1}
-									/>
-									<DraggableNumberInput
-										label="H"
-										icon={MoveVertical}
-										value={Math.round(selectedLayer.height ?? 0)}
-										onChange={(newHeight) => {
-											if (selectedLayer.type === "Image") {
-												if (selectedLayer.lockAspect) {
-													const oldW = selectedLayer.width ?? 1;
-													const oldH = selectedLayer.height ?? 1;
-													const ratio = oldW / oldH;
-													updateLayer({
-														height: newHeight,
-														width: newHeight * ratio,
-													});
-												} else {
-													updateLayer({ height: newHeight });
-												}
-											}
-										}}
-										min={1}
-									/>
-								</>
-							)}
-							<DraggableNumberInput
-								label="Rot"
-								icon={RotateCw}
-								value={Math.round(selectedLayer.rotation)}
-								onChange={(v) => updateLayer({ rotation: v })}
-								className="col-span-2"
-							/>
-						</div>
-
-						{selectedLayer.type === "Image" && (
-							<div className="flex items-center justify-between pt-2">
-								<Label className="text-[10px] text-gray-400">
-									Lock Aspect Ratio
-								</Label>
-								<Switch
-									checked={selectedLayer.lockAspect ?? true}
-									onCheckedChange={(c) => updateLayer({ lockAspect: c })}
-									className="scale-75 data-[state=checked]:bg-blue-600"
-								/>
-							</div>
-						)}
-					</div>
-				</CollapsibleSection>
-
-				<CollapsibleSection title="Style" icon={ImageIcon}>
-					<div className="space-y-4">
-						<div className="space-y-2">
-							<Label className="text-[10px] text-gray-500 font-semibold">
-								BORDER
-							</Label>
-							<div className="grid grid-cols-[1fr,80px] gap-2">
-								<ColorPicker
-									value={selectedLayer.stroke ?? COMPOSITOR_DEFAULTS.STROKE}
-									onChange={(c) => updateLayer({ stroke: c })}
-									className="h-8 w-full"
-								/>
-								<DraggableNumberInput
-									label="Size"
-									icon={Move}
-									value={
-										selectedLayer.strokeWidth ??
-										COMPOSITOR_DEFAULTS.STROKE_WIDTH
-									}
-									onChange={(v) => updateLayer({ strokeWidth: v })}
-									min={0}
-								/>
-							</div>
-						</div>
-
-						{selectedLayer.type === "Image" && (
-							<div className="space-y-2">
-								<Label className="text-[10px] text-gray-500 font-semibold">
-									CORNER RADIUS
-								</Label>
-								<DraggableNumberInput
-									label="Radius"
-									icon={Move}
-									value={
-										selectedLayer.cornerRadius ??
-										COMPOSITOR_DEFAULTS.CORNER_RADIUS
-									}
-									onChange={(v) => updateLayer({ cornerRadius: v })}
-									min={0}
-								/>
-							</div>
-						)}
-
-						{selectedLayer.type === "Text" && (
-							<>
-								<div className="space-y-2">
-									<Label className="text-[10px] text-gray-500 font-semibold">
-										PADDING
-									</Label>
-									<DraggableNumberInput
-										label="Px"
-										icon={Move}
-										value={selectedLayer.padding ?? COMPOSITOR_DEFAULTS.PADDING}
-										onChange={(v) => updateLayer({ padding: v })}
-										min={0}
-									/>
-								</div>
-
-								<div className="flex items-center justify-between pt-1">
-									<Label className="text-[10px] text-gray-500 font-semibold">
-										WRAP TEXT
-									</Label>
-									<Switch
-										checked={selectedLayer.wrap === "word"}
-										onCheckedChange={(c) =>
-											updateLayer({ wrap: c ? "word" : "none" })
-										}
-										className="scale-75 data-[state=checked]:bg-blue-600"
-									/>
-								</div>
-							</>
-						)}
-					</div>
-				</CollapsibleSection>
+				<StyleControls
+					backgroundColor={undefined}
+					stroke={selectedLayer.stroke}
+					strokeWidth={selectedLayer.strokeWidth}
+					cornerRadius={selectedLayer.cornerRadius}
+					padding={selectedLayer.padding}
+					opacity={selectedLayer.opacity}
+					showBackground={false}
+					showStroke={true}
+					showCornerRadius={selectedLayer.type === "Image"}
+					showPadding={selectedLayer.type === "Text"}
+					showOpacity={true}
+					onChange={updateLayer}
+				/>
 
 				{selectedLayer.type === "Text" && (
-					<CollapsibleSection title="Typography" icon={Type}>
-						<div className="space-y-4">
-							<div className="space-y-1.5">
-								<Label className="text-[10px] text-gray-500 font-semibold">
-									FONT FAMILY
-								</Label>
-								<Select
-									value={selectedLayer.fontFamily || DEFAULTS.FONT_FAMILY}
-									onValueChange={(val) => updateLayer({ fontFamily: val })}
-								>
-									<SelectTrigger className="h-8 text-xs bg-neutral-800 border-white/10 text-white">
-										<SelectValue />
-									</SelectTrigger>
-									<SelectContent className="bg-neutral-800 border-white/10 text-white">
-										{fontNames.map((f) => (
-											<SelectItem key={f} value={f} style={{ fontFamily: f }}>
-												{f}
-											</SelectItem>
-										))}
-									</SelectContent>
-								</Select>
-							</div>
-
-							<div className="grid grid-cols-2 gap-3">
-								<DraggableNumberInput
-									label="Size"
-									icon={Type}
-									value={selectedLayer.fontSize || DEFAULTS.FONT_SIZE}
-									onChange={(v) => updateLayer({ fontSize: v })}
-									min={1}
-								/>
-								<div className="space-y-1">
-									<Label className="text-[10px] text-gray-500 block mb-1 font-semibold">
-										COLOR
-									</Label>
-									<ColorPicker
-										value={selectedLayer.fill ?? DEFAULTS.FILL}
-										onChange={(e) => updateLayer({ fill: e })}
-										className="h-8 w-full"
-									/>
-								</div>
-							</div>
-
-							<div className="flex p-1 bg-white/5 rounded border border-white/5">
-								<Button
-									variant={isBold ? "secondary" : "ghost"}
-									size="icon"
-									className="h-6 flex-1 rounded-sm"
-									onClick={() => toggleStyle("bold")}
-								>
-									<Bold className="w-3.5 h-3.5" />
-								</Button>
-								<Separator
-									orientation="vertical"
-									className="h-3 my-auto mx-1 bg-white/10"
-								/>
-								<Button
-									variant={isItalic ? "secondary" : "ghost"}
-									size="icon"
-									className="h-6 flex-1 rounded-sm"
-									onClick={() => toggleStyle("italic")}
-								>
-									<Italic className="w-3.5 h-3.5" />
-								</Button>
-								<Separator
-									orientation="vertical"
-									className="h-3 my-auto mx-1 bg-white/10"
-								/>
-								<Button
-									variant={isUnderline ? "secondary" : "ghost"}
-									size="icon"
-									className="h-6 flex-1 rounded-sm"
-									onClick={toggleUnderline}
-								>
-									<Underline className="w-3.5 h-3.5" />
-								</Button>
-							</div>
-
-							<div className="grid grid-cols-3 gap-1 bg-white/5 p-1 rounded border border-white/5">
-								{(["left", "center", "right"] as const).map((align) => (
-									<Button
-										key={align}
-										variant={
-											(selectedLayer.align || DEFAULTS.ALIGN) === align
-												? "secondary"
-												: "ghost"
-										}
-										size="sm"
-										className="h-6 text-[10px] capitalize rounded-sm"
-										onClick={() => updateLayer({ align })}
-									>
-										{align}
-									</Button>
-								))}
-							</div>
-
-							<div className="grid grid-cols-2 gap-3 mt-2">
-								<DraggableNumberInput
-									label="Letter"
-									icon={ArrowLeftRight}
-									value={selectedLayer.letterSpacing ?? DEFAULTS.LETTER_SPACING}
-									onChange={(v) => updateLayer({ letterSpacing: v })}
-								/>
-								<DraggableNumberInput
-									label="Line"
-									icon={ArrowUpDown}
-									value={selectedLayer.lineHeight ?? DEFAULTS.LINE_HEIGHT}
-									onChange={(v) => updateLayer({ lineHeight: v })}
-									allowDecimal
-									step={0.1}
-								/>
-							</div>
-						</div>
-					</CollapsibleSection>
+					<TypographyControls
+						fontFamily={selectedLayer.fontFamily ?? "Inter"}
+						fontSize={selectedLayer.fontSize ?? 40}
+						fill={selectedLayer.fill ?? "#fff"}
+						fontStyle={selectedLayer.fontStyle ?? "normal"}
+						textDecoration={selectedLayer.textDecoration ?? ""}
+						align={selectedLayer.align}
+						verticalAlign={selectedLayer.verticalAlign}
+						letterSpacing={selectedLayer.letterSpacing}
+						lineHeight={selectedLayer.lineHeight}
+						wrap={selectedLayer.wrap}
+						onChange={updateLayer}
+					/>
 				)}
 
-				<CollapsibleSection title="Appearance" icon={Settings2}>
+				<CollapsibleSection title="Blending" icon={Settings2}>
 					<div className="space-y-4">
-						<div className="space-y-2">
-							<Label className="text-[10px] text-gray-500 font-semibold">
-								OPACITY
-							</Label>
-							<div className="flex items-center gap-2">
-								<DraggableNumberInput
-									label="%"
-									icon={Layers}
-									value={Math.round((selectedLayer.opacity ?? 1) * 100)}
-									onChange={(v) => updateLayer({ opacity: v / 100 })}
-									min={0}
-									max={100}
-									className="flex-1"
-								/>
-							</div>
-						</div>
-
 						<div className="space-y-2">
 							<Label className="text-[10px] text-gray-500 font-semibold">
 								BLEND MODE

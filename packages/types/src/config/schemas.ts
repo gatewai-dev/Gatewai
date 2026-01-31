@@ -296,6 +296,9 @@ export const VideoCompositorLayerSchema = BaseLayerSchema.merge(PositionSchema)
 	.merge(AnimationSchema)
 	.merge(ScaleSchema)
 	.merge(OpacitySchema)
+	.merge(AlignmentSchema)
+	.merge(StrokeSchema)
+	.merge(PaddingSchema)
 	.extend({
 		type: z.enum(["Text", "Image", "Video", "Audio"]),
 		// New Remotion Web Renderer compatible properties

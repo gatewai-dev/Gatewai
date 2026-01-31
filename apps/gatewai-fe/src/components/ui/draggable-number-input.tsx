@@ -1,4 +1,5 @@
 import { useCallback, useEffect, useState } from "react";
+import { createPortal } from "react-dom";
 import { cn } from "@/lib/utils";
 import { Input } from "./input";
 import { Label } from "./label";
@@ -30,6 +31,7 @@ const DraggableNumberInput: React.FC<DraggableNumberInputProps> = ({
 }) => {
 	const [isDragging, setIsDragging] = useState(false);
 	const [text, setText] = useState(value.toString());
+	const [virtualCursorPos, setVirtualCursorPos] = useState({ x: 0, y: 0 });
 
 	// Update text if external value changes (and not currently typing/dragging)
 	useEffect(() => {
@@ -68,18 +70,47 @@ const DraggableNumberInput: React.FC<DraggableNumberInputProps> = ({
 	};
 
 	const handleMouseDown = useCallback(
-		(e: React.MouseEvent) => {
+		(e: React.MouseEvent<Element, MouseEvent>) => {
 			e.preventDefault();
 			if (disabled) return;
+			const target = e.currentTarget as HTMLElement;
+
+			// Request pointer lock for infinite dragging
+			target.requestPointerLock();
+
 			setIsDragging(true);
-			const startX = e.clientX;
+			setVirtualCursorPos({ x: e.clientX, y: e.clientY });
+
+			let totalDeltaX = 0;
 			const startValue = value;
 
+			// Use refs for mutable values during the drag to avoid closure stale state
+			let currentX = e.clientX;
+			let currentY = e.clientY;
+
 			const handleMouseMove = (moveEvent: MouseEvent) => {
-				const deltaX = moveEvent.clientX - startX;
+				const deltaX = moveEvent.movementX;
+				const deltaY = moveEvent.movementY;
+
+				totalDeltaX += deltaX;
+
+				// Update virtual cursor position
+				currentX += deltaX;
+				currentY += deltaY;
+
+				// Wrap horizontally
+				if (currentX < 0) currentX = window.innerWidth;
+				if (currentX > window.innerWidth) currentX = 0;
+
+				// Clamp vertically
+				if (currentY < 0) currentY = 0;
+				if (currentY > window.innerHeight) currentY = window.innerHeight;
+
+				setVirtualCursorPos({ x: currentX, y: currentY });
+
 				const multiplier = moveEvent.shiftKey ? 10 : 1;
 				// Slower sensitivity for better control
-				const change = Math.round(deltaX * 0.5) * multiplier * step;
+				const change = Math.round(totalDeltaX * 0.5) * multiplier * step;
 				let newValue = startValue + change;
 
 				if (min !== undefined) newValue = Math.max(min, newValue);
@@ -94,18 +125,70 @@ const DraggableNumberInput: React.FC<DraggableNumberInputProps> = ({
 				setIsDragging(false);
 				document.removeEventListener("mousemove", handleMouseMove);
 				document.removeEventListener("mouseup", handleMouseUp);
-				document.body.style.cursor = "";
+				document.removeEventListener("pointerlockchange", handleLockChange);
+				if (document.pointerLockElement) {
+					document.exitPointerLock();
+				}
+				// document.body.style.cursor = ""; // No need to set body cursor, we handle it with virtual cursor
+			};
+
+			const handleLockChange = () => {
+				if (!document.pointerLockElement) {
+					handleMouseUp();
+				}
 			};
 
 			document.addEventListener("mousemove", handleMouseMove);
 			document.addEventListener("mouseup", handleMouseUp);
-			document.body.style.cursor = "ew-resize";
+			document.addEventListener("pointerlockchange", handleLockChange);
+			// document.body.style.cursor = "ew-resize"; // We render our own
 		},
 		[value, onChange, step, min, max, allowDecimal, disabled],
 	);
 
 	return (
 		<div className={cn("flex flex-col space-y-1", className)}>
+			{isDragging &&
+				createPortal(
+					<div
+						style={{
+							position: "fixed",
+							left: 0,
+							top: 0,
+							transform: `translate(${virtualCursorPos.x}px, ${virtualCursorPos.y}px)`,
+							pointerEvents: "none",
+							zIndex: 9999,
+							marginTop: -12,
+							marginLeft: -12,
+						}}
+					>
+						<svg
+							width="24"
+							height="24"
+							viewBox="0 0 24 24"
+							fill="none"
+							xmlns="http://www.w3.org/2000/svg"
+						>
+							<path
+								d="M7.99998 12L10.9999 15M7.99998 12L10.9999 9M7.99998 12H16M16 12L13 15M16 12L13 9"
+								stroke="black"
+								strokeWidth="2"
+								strokeLinecap="round"
+								strokeLinejoin="round"
+							/>
+							<circle
+								cx="12"
+								cy="12"
+								r="8"
+								stroke="black"
+								strokeWidth="2"
+								fill="white"
+								fillOpacity="0.5"
+							/>
+						</svg>
+					</div>,
+					document.body,
+				)}
 			{label && (
 				<Label className="text-[10px] text-muted-foreground uppercase font-semibold">
 					{label}

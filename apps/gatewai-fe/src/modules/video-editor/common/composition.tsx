@@ -42,6 +42,14 @@ export interface ExtendedLayer
 	isPlaceholder?: boolean;
 	src?: string; // Resolved URL for rendering
 	text?: string; // Resolved text for rendering
+	align?: string;
+	verticalAlign?: string;
+	letterSpacing?: number;
+	lineHeight?: number;
+	padding?: number;
+	stroke?: string;
+	strokeWidth?: number;
+	wrap?: string;
 }
 
 export interface SceneProps {
@@ -228,7 +236,27 @@ export const CompositionScene: React.FC<SceneProps> = ({
 									fontWeight: layer.fontWeight,
 									textDecoration: layer.textDecoration,
 									lineHeight: layer.lineHeight ?? 1.2,
-									whiteSpace: "pre",
+									letterSpacing: layer.letterSpacing
+										? `${layer.letterSpacing}px`
+										: undefined,
+									textAlign:
+										(layer.align as "left" | "center" | "right") ?? "left",
+									padding: layer.padding,
+									whiteSpace: layer.wrap === "none" ? "nowrap" : "pre-wrap",
+									WebkitTextStroke:
+										layer.strokeWidth && layer.stroke
+											? `${layer.strokeWidth}px ${layer.stroke}`
+											: undefined,
+									paintOrder: "stroke fill",
+									display: "flex",
+									flexDirection: "column",
+									justifyContent:
+										layer.verticalAlign === "middle"
+											? "center"
+											: layer.verticalAlign === "bottom"
+												? "flex-end"
+												: "flex-start",
+									// whiteSpace: "pre", // Removed in favor of dynamic wrap
 								}}
 							>
 								{textContent}
