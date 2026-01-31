@@ -16,8 +16,8 @@ import {
 	useCurrentFrame,
 	useVideoConfig,
 } from "remotion";
+import { GetAssetEndpoint } from "@/lib/file";
 import { generateId } from "@/lib/idgen";
-import { GetAssetEndpoint } from "@/utils/file";
 import type { NodeProcessorParams } from "./types";
 
 const DynamicComposition: React.FC<{

@@ -26,9 +26,9 @@ import {
 import { Separator } from "@/components/ui/separator";
 import { Switch } from "@/components/ui/switch";
 import { ColorPicker } from "@/components/util/color-input";
+import { GetFontAssetUrl } from "@/lib/file";
 import { fontManager } from "@/lib/fonts";
 import { useGetFontListQuery } from "@/store/fonts";
-import { GetFontAssetUrl } from "@/utils/file";
 import { CollapsibleSection } from "../CollapsibleSection";
 
 interface TypographyControlsProps {

@@ -6,6 +6,7 @@ import { memo, useEffect, useMemo, useState } from "react";
 import { useNavigate } from "react-router";
 import { toast } from "sonner";
 import { Button } from "@/components/ui/button";
+import { GetAssetEndpoint, GetFontAssetUrl } from "@/lib/file";
 import { fontManager } from "@/lib/fonts";
 import { cn } from "@/lib/utils";
 import {
@@ -15,7 +16,6 @@ import {
 import { DEFAULT_DURATION_FRAMES, FPS } from "@/modules/video-editor/config";
 import { useAppSelector } from "@/store";
 import { makeSelectNodeById } from "@/store/nodes";
-import { GetAssetEndpoint, GetFontAssetUrl } from "@/utils/file";
 import { AddCustomHandleButton } from "../../components/add-custom-handle";
 import { remotionService } from "../../graph-engine/muxer-service";
 import { useNodeResult } from "../../graph-engine/processor-ctx";

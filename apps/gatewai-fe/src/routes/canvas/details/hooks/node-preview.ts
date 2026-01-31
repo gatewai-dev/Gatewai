@@ -1,8 +1,8 @@
 import type { FileData } from "@gatewai/types";
 import { useMemo } from "react";
+import { GetAssetEndpoint } from "@/lib/file";
 import { useAppSelector } from "@/store";
 import { makeSelectNodeById } from "@/store/nodes";
-import { GetAssetEndpoint } from "@/utils/file";
 import {
 	useNodeResult,
 	useNodeValidation,

@@ -1,8 +1,8 @@
 import type { FileResult, ImagesResult, VideoGenResult } from "@gatewai/types";
 import { FileIcon } from "lucide-react";
 import { useMemo } from "react";
+import { GetAssetEndpoint } from "@/lib/file";
 import type { NodeEntityType } from "@/store/nodes";
-import { GetAssetEndpoint } from "@/utils/file";
 import { MediaDimensions } from "../misc/media-dimensions";
 import { OutputSelector } from "../misc/output-selector";
 import { AudioRenderer } from "./common/audio-renderer";

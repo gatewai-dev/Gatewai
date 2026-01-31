@@ -26,7 +26,6 @@ import {
 	ArrowLeft,
 	ArrowRight,
 	ArrowUp,
-	Bold,
 	ChevronDown,
 	EyeOff,
 	Film,
@@ -34,7 +33,6 @@ import {
 	GripVertical,
 	Hand,
 	Image as ImageIcon,
-	Italic,
 	Layers,
 	Minus,
 	MousePointer,
@@ -42,7 +40,6 @@ import {
 	MoveHorizontal,
 	MoveVertical,
 	Music,
-	Palette,
 	Pause,
 	Play,
 	Plus,
@@ -53,7 +50,6 @@ import {
 	Sparkles,
 	Trash2,
 	Type,
-	Underline,
 	XIcon,
 	Zap,
 	ZoomIn,
@@ -104,7 +100,6 @@ import {
 	SelectTrigger,
 	SelectValue,
 } from "@/components/ui/select";
-import { Separator } from "@/components/ui/separator";
 import { Slider } from "@/components/ui/slider";
 import {
 	Tooltip,
@@ -112,16 +107,15 @@ import {
 	TooltipProvider,
 	TooltipTrigger,
 } from "@/components/ui/tooltip";
-import { ColorPicker } from "@/components/util/color-input";
+import { GetAssetEndpoint, GetFontAssetUrl } from "@/lib/file";
 import { fontManager } from "@/lib/fonts";
 import { generateId } from "@/lib/idgen";
+import { CollapsibleSection } from "@/modules/common/CollapsibleSection";
+import { StyleControls } from "@/modules/common/properties/StyleControls";
+import { TransformControls } from "@/modules/common/properties/TransformControls";
+import { TypographyControls } from "@/modules/common/properties/TypographyControls";
 import { useGetFontListQuery } from "@/store/fonts";
 import type { NodeEntityType } from "@/store/nodes";
-import { GetAssetEndpoint, GetFontAssetUrl } from "@/utils/file";
-import { CollapsibleSection } from "../../../routes/canvas/details/nodes/compose/common/CollapsibleSection";
-import { StyleControls } from "../../../routes/canvas/details/nodes/compose/common/properties/StyleControls";
-import { TransformControls } from "../../../routes/canvas/details/nodes/compose/common/properties/TransformControls";
-import { TypographyControls } from "../../../routes/canvas/details/nodes/compose/common/properties/TypographyControls";
 import {
 	type AnimationType,
 	CompositionScene,

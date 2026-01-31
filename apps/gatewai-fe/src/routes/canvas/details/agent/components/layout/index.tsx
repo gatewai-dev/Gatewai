@@ -1,13 +1,16 @@
 import { Panel } from "@xyflow/react";
-import { useState } from "react";
 import { HiSparkles } from "react-icons/hi2";
 import { Button } from "@/components/ui/button";
+import { usePersistentState } from "@/lib/hooks/use-persistent-state";
 import { cn } from "@/lib/utils";
 import { CanvasAgentProvider } from "../../ctx/canvas-agent.ctx";
 import { AgentChatSection } from "../chat-section";
 
 function AgentLayoutInner() {
-	const [isCollapsed, setIsCollapsed] = useState(false);
+	const [isCollapsed, setIsCollapsed] = usePersistentState(
+		"gatewai-agent-collapsed",
+		false,
+	);
 
 	return (
 		<Panel

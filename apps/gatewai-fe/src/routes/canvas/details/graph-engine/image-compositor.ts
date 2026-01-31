@@ -5,8 +5,8 @@ import {
 	type GlobalCompositeOperationType,
 } from "@gatewai/types";
 import Konva from "konva";
+import { GetFontAssetUrl } from "@/lib/file";
 import { fontManager } from "@/lib/fonts";
-import { GetFontAssetUrl } from "@/utils/file";
 
 // Local defaults removed in favor of shared COMPOSITOR_DEFAULTS
 

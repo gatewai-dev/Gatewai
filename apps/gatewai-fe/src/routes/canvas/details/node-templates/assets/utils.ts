@@ -1,5 +1,5 @@
 import qs from "query-string";
-import { BASE_URL, MIME_TYPES } from "@/utils/file";
+import { BASE_URL, MIME_TYPES } from "@/lib/file";
 import type { FileAssetEntity } from "./types";
 
 export function GetAssetThumbnailEndpoint(

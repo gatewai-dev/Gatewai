@@ -1,10 +1,10 @@
 import type { FileData, ResizeNodeConfig } from "@gatewai/types";
 import type { NodeProps } from "@xyflow/react";
 import { memo, useEffect } from "react";
+import { ResolveFileDataUrl } from "@/lib/file";
 import { cn } from "@/lib/utils";
 import { useAppDispatch } from "@/store";
 import { updateNodeConfigWithoutHistory } from "@/store/nodes";
-import { ResolveFileDataUrl } from "@/utils/file";
 import { useNodeResult } from "../../graph-engine/processor-ctx";
 import type { ConnectedInput } from "../../graph-engine/types";
 import { useNodePreview } from "../../hooks/node-preview";

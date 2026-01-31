@@ -29,13 +29,13 @@ import {
 	FormMessage,
 } from "@/components/ui/form";
 import { Input } from "@/components/ui/input";
+import { copyTextToClipboard } from "@/lib/clipboard";
 import { useAppDispatch, useAppSelector } from "@/store";
 import {
 	makeSelectNodeById,
 	type NodeEntityType,
 	updateNodeEntity,
 } from "@/store/nodes";
-import { copyTextToClipboard } from "@/utils/clipboard";
 import { useCanvasCtx } from "../ctx/canvas-ctx";
 
 type RenameNodeDialogProps = {

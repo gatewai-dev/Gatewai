@@ -4,7 +4,7 @@ import {
 	DATA_TYPE_EXTENSIONS,
 	extractExtension,
 	GetAssetEndpoint,
-} from "@/utils/file";
+} from "@/lib/file";
 
 class DownloadError extends Error {
 	constructor(message: string) {

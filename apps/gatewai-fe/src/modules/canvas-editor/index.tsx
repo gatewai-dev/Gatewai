@@ -100,11 +100,11 @@ import {
 	TooltipProvider,
 	TooltipTrigger,
 } from "@/components/ui/tooltip";
+import { GetAssetEndpoint, GetFontAssetUrl } from "@/lib/file";
 import { fontManager } from "@/lib/fonts";
 import { useGetFontListQuery } from "@/store/fonts";
 import type { HandleEntityType } from "@/store/handles";
 import type { NodeEntityType } from "@/store/nodes";
-import { GetAssetEndpoint, GetFontAssetUrl } from "@/utils/file";
 import { CollapsibleSection } from "../common/CollapsibleSection";
 import { StyleControls } from "../common/properties/StyleControls";
 import { TransformControls } from "../common/properties/TransformControls";
