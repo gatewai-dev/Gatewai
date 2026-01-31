@@ -33,12 +33,10 @@ import {
 	ChevronDown,
 	Eye,
 	EyeOff,
-	GripVertical,
 	Hand,
 	ImageIcon,
 	Italic,
 	Layers,
-	Lock,
 	LockOpen,
 	MousePointer,
 	Move,
@@ -467,7 +465,7 @@ const ImageLayer: React.FC<LayerProps> = ({
 			height={layer.height}
 			rotation={layer.rotation}
 			image={image}
-			draggable={mode === "select" && !layer.locked}
+			draggable={mode === "select"}
 			onClick={handleSelect}
 			onTap={handleSelect}
 			onDragStart={onDragStart}
@@ -631,7 +629,7 @@ const TextLayer: React.FC<LayerProps> = ({
 			textDecoration={layer.textDecoration ?? ""}
 			fill={layer.fill ?? COMPOSITOR_DEFAULTS.FILL}
 			rotation={layer.rotation}
-			draggable={mode === "select" && !layer.locked}
+			draggable={mode === "select"}
 			onClick={handleSelect}
 			onTap={handleSelect}
 			onDblClick={handleDoubleClick}
@@ -659,13 +657,11 @@ const TransformerComponent: React.FC = () => {
 	const { selectedId, layers, stageRef, mode, transformerRef } = useEditor();
 
 	useEffect(() => {
-		const targetLayer = layers.find((l) => l.id === selectedId);
 		if (
 			selectedId &&
 			transformerRef.current &&
 			stageRef.current &&
-			mode === "select" &&
-			!targetLayer?.locked // Do not attach if locked
+			mode === "select"
 		) {
 			const node = stageRef.current.findOne(`#${selectedId}`);
 			if (node) {
@@ -678,7 +674,7 @@ const TransformerComponent: React.FC = () => {
 			transformerRef.current.nodes([]);
 			transformerRef.current.getLayer()?.batchDraw();
 		}
-	}, [selectedId, stageRef, mode, transformerRef, layers]);
+	}, [selectedId, stageRef, mode, transformerRef]);
 
 	const selectedLayer = layers.find((l) => l.id === selectedId);
 
@@ -1037,16 +1033,10 @@ const LayerItem: React.FC<LayerItemProps> = ({
 
 	const isSelected = layer.id === selectedId;
 	const isHidden = layer.opacity === 0;
-	const isLocked = layer.locked ?? false;
 
 	const toggleVisibility = (e: React.MouseEvent) => {
 		e.stopPropagation();
 		updateLayer(layer.id, { opacity: isHidden ? 1 : 0 });
-	};
-
-	const toggleLock = (e: React.MouseEvent) => {
-		e.stopPropagation();
-		updateLayer(layer.id, { locked: !isLocked });
 	};
 
 	const handleKeyDown = (e: React.KeyboardEvent) => {
@@ -1057,26 +1047,21 @@ const LayerItem: React.FC<LayerItemProps> = ({
 	};
 
 	return (
-		<div
+		<button
 			ref={setNodeRef}
 			style={style}
 			{...attributes}
+			{...listeners}
 			className={`
-        flex items-center gap-2 px-3 py-2 border-b border-white/5 outline-none group transition-colors select-none w-full text-left
+        flex items-center gap-2 px-3 py-2 border-b border-white/5 cursor-pointer outline-none group transition-colors select-none w-full text-left
         ${isSelected ? "bg-blue-600/20 text-blue-100" : "hover:bg-white/5 text-gray-400"}
         ${isDragging ? "bg-neutral-800" : ""}
       `}
 			onClick={() => !isDragging && setSelectedId(layer.id)}
 			onKeyDown={handleKeyDown}
 			tabIndex={0}
+			type="button"
 		>
-			<div
-				className="cursor-move p-1 -ml-1 text-gray-600 hover:text-gray-400 opacity-0 group-hover:opacity-100 transition-opacity"
-				{...listeners}
-			>
-				<GripVertical className="size-3.5" />
-			</div>
-
 			<div className="shrink-0 text-gray-500 group-hover:text-gray-300">
 				{layer.type === "Image" ? (
 					<ImageIcon className="size-3.5" />
@@ -1109,17 +1094,12 @@ const LayerItem: React.FC<LayerItemProps> = ({
 					size="icon"
 					variant="ghost"
 					className="h-5 w-5 hover:bg-white/10"
-					onClick={toggleLock}
-					aria-label={isLocked ? "Unlock layer" : "Lock layer"}
+					disabled
 				>
-					{isLocked ? (
-						<Lock className="w-3 h-3 text-red-400" />
-					) : (
-						<LockOpen className="w-3 h-3" />
-					)}
+					<LockOpen className="w-3 h-3" />
 				</Button>
 			</div>
-		</div>
+		</button>
 	);
 };
 

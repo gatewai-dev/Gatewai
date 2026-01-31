@@ -265,10 +265,6 @@ const BaseLayerSchema = z.object({
 	blendMode: GlobalCompositeOperation.optional(),
 });
 
-const LockedSchema = z.object({
-	locked: z.boolean().optional().default(false),
-});
-
 // Compositor Layer (extends base)
 export const CompositorLayerSchema = BaseLayerSchema.merge(PositionSchema)
 	.merge(SizeSchema)
@@ -281,7 +277,6 @@ export const CompositorLayerSchema = BaseLayerSchema.merge(PositionSchema)
 	.merge(StrokeSchema)
 	.merge(CornerRadiusSchema)
 	.merge(PaddingSchema)
-	.merge(LockedSchema)
 	.extend({
 		type: z.enum(["Text", "Image"]),
 		align: z.string().optional(),
