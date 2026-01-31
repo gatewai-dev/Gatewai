@@ -1439,14 +1439,14 @@ const InspectorPanel: React.FC = () => {
 	const isUnderline = selectedLayer?.textDecoration === "underline";
 	if (!selectedLayer) {
 		return (
-			<div className="w-80 border-l border-white/5 bg-[#0f0f0f] flex flex-col z-20 shadow-xl shrink-0 overflow-hidden">
+			<div className="w-80 h-full border-l border-white/5 bg-[#0f0f0f] flex flex-col z-20 shadow-xl shrink-0 overflow-hidden">
 				<div className="p-4 bg-neutral-900 border-b border-white/5">
 					<div className="flex items-center gap-2 text-xs font-bold text-gray-200 uppercase tracking-wide">
 						<Settings2 className="w-3.5 h-3.5 text-blue-400" />
 						Project Settings
 					</div>
 				</div>
-				<ScrollArea className="flex-1">
+				<ScrollArea className="flex-1 min-h-0">
 					<div className="p-4 pb-6 space-y-6">
 						{/* Canvas Settings Group */}
 						<div className="space-y-4">
@@ -1516,7 +1516,7 @@ const InspectorPanel: React.FC = () => {
 		);
 	}
 	return (
-		<div className="w-80 border-l border-white/5 bg-[#0f0f0f] z-20 shadow-xl flex flex-col shrink-0 overflow-hidden min-h-0">
+		<div className="w-80 h-full border-l border-white/5 bg-[#0f0f0f] z-20 shadow-xl flex flex-col shrink-0 overflow-hidden">
 			<div className="flex items-center justify-between p-4 border-b border-white/5 bg-neutral-900/50">
 				<div className="flex flex-col min-w-0">
 					<span className="text-[10px] text-blue-400 uppercase font-bold tracking-wider mb-0.5">
@@ -1530,7 +1530,7 @@ const InspectorPanel: React.FC = () => {
 					{selectedLayer.type}
 				</span>
 			</div>
-			<ScrollArea className="flex-1">
+			<ScrollArea className="flex-1 min-h-0">
 				<div className="pb-6">
 					{/* Transform */}
 					{selectedLayer.type !== "Audio" && (
@@ -2449,7 +2449,7 @@ export const VideoDesignerEditor: React.FC<VideoDesignerEditorProps> = ({
 	return (
 		<EditorContext.Provider value={contextValue}>
 			<div className="flex flex-col h-screen w-full bg-[#050505] text-gray-100 overflow-hidden font-sans select-none">
-				<div className="flex flex-1 min-h-0 relative">
+				<div className="flex flex-1 min-h-0 relative overflow-hidden">
 					{/* Canvas Area */}
 					<div
 						ref={containerRef}
