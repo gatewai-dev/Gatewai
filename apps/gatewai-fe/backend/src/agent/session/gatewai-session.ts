@@ -9,14 +9,25 @@ import type {
 } from "@openai/agents";
 
 // Type definitions for content structures
+
+// Google-specific provider data for thought signatures
+// See: https://ai.google.dev/gemini-api/docs/thought-signatures
+interface GoogleProviderData {
+	model?: string;
+	google?: {
+		thoughtSignature?: string;
+	};
+}
+
 interface ToolCallContent {
-	type: "hosted_tool_call";
+	type: "hosted_tool_call" | "function_call";
 	name?: string;
 	id?: string;
+	callId?: string; // Used by function_call type
 	status?: string;
 	arguments?: any;
 	output?: any;
-	providerData?: any;
+	providerData?: GoogleProviderData;
 }
 
 interface MessageContent {
@@ -297,18 +308,29 @@ export class PrismaAgentSession
 		};
 
 		// Determine the type of item based on stored data
-		if (
+		// Handle both hosted_tool_call and function_call types
+		const isToolCall =
 			event.eventType === "tool_call" ||
-			(isObjectContent(content) && content.type === "hosted_tool_call")
-		) {
+			(isObjectContent(content) &&
+				(content.type === "hosted_tool_call" ||
+					content.type === "function_call"));
+
+		if (isToolCall) {
 			const toolContent = content as ToolCallContent;
+			// Preserve the original type for proper SDK compatibility
+			const itemType = toolContent?.type || "function_call";
+			// Get the call ID - function_call uses callId, hosted_tool_call uses id
+			const callId = event.toolCallId || toolContent?.callId || toolContent?.id;
+
 			return {
-				type: "hosted_tool_call",
+				type: itemType,
 				name: event.toolName || toolContent?.name,
-				id: event.toolCallId || toolContent?.id,
+				id: callId,
+				callId: callId,
 				status: toolContent?.status,
 				arguments: toolContent?.arguments,
 				output: toolContent?.output,
+				// CRITICAL: Preserve providerData which contains thoughtSignature
 				providerData: toolContent?.providerData,
 			} as AgentInputItem;
 		}
@@ -356,21 +378,31 @@ export class PrismaAgentSession
 	 * Convert an AgentInputItem to a Prisma Event data object
 	 */
 	private agentInputItemToEvent(sessionId: string, item: AgentInputItem) {
-		// Handle tool calls
-		if ("type" in item && item.type === "hosted_tool_call") {
+		// Handle tool calls (both hosted_tool_call and function_call types)
+		const isToolCallItem =
+			"type" in item &&
+			(item.type === "hosted_tool_call" || item.type === "function_call");
+
+		if (isToolCallItem) {
+			// Extract callId for function_call type compatibility
+			const callId = "callId" in item ? item.callId : item.id;
+
 			return {
 				agentSessionId: sessionId,
 				eventType: "tool_call",
 				role: EventRole.TOOL,
-				toolCallId: item.id,
+				toolCallId: callId,
 				toolName: item.name,
 				content: {
-					type: "hosted_tool_call",
+					// Preserve original type for proper reconstruction
+					type: item.type,
 					name: item.name,
 					id: item.id,
+					callId: callId,
 					status: item.status,
 					arguments: item.arguments,
-					output: item.output,
+					output: "output" in item ? item.output : undefined,
+					// CRITICAL: Preserve providerData which contains google.thoughtSignature
 					providerData: item.providerData,
 				} as any,
 				status:

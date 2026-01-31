@@ -6,8 +6,6 @@ import { PrismaAgentSession } from "../session/gatewai-session.js";
 import { connectMCP } from "../tools/gatewai-mcp.js";
 import { GatewaiRunContext } from "./run-context.js";
 
-const __dirname = path.dirname(fileURLToPath(import.meta.url));
-
 export const RunCanvasAgent = async function* ({
 	canvasId,
 	sessionId,
