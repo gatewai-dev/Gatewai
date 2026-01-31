@@ -1,11 +1,11 @@
 import { prisma } from "@gatewai/db";
 import { type BulkUpdatePayload, bulkUpdateSchema } from "@gatewai/types";
 import { Agent, tool } from "@openai/agents";
-import { getQuickJS, QuickJSContext, Scope } from "quickjs-emscripten";
+import { getQuickJS, type QuickJSContext, Scope } from "quickjs-emscripten";
 import { z } from "zod";
 import { zodToJsonSchema } from "zod-to-json-schema";
 import { GetCanvasEntities } from "../../../data-ops/canvas.js";
-import { getAgentModel, AVAILABLE_AGENT_MODELS } from "../../agent-model.js";
+import { getAgentModel, type AVAILABLE_AGENT_MODELS } from "../../agent-model.js";
 import { localGatewaiMCPTool } from "../../tools/gatewai-mcp.js";
 import assert from "node:assert";
 
@@ -82,7 +82,7 @@ export function createPatcherAgent(modelName: (typeof AVAILABLE_AGENT_MODELS)[nu
 		- ${templates.length} available templates
 		
 		Available templates:
-		${templates.map((t: any) => `- ${t.type} (id: ${t.id})`).join("\n")}
+		${JSON.stringify(templates)}
 		
 		You can now call execute_canvas_code with your JavaScript code.`;
 			} catch (error) {
