@@ -1,24 +1,25 @@
 import { prisma } from "@gatewai/db";
 import { type BulkUpdatePayload, bulkUpdateSchema } from "@gatewai/types";
 import { Agent, tool } from "@openai/agents";
-import { VM } from "vm2";
+import { getQuickJS, QuickJSContext, Scope } from "quickjs-emscripten";
 import { z } from "zod";
 import { GetCanvasEntities } from "../../../data-ops/canvas.js";
-import { getAgentModel } from "../../agent-model.js";
+import { getAgentModel, AVAILABLE_AGENT_MODELS } from "../../agent-model.js";
 import { localGatewaiMCPTool } from "../../tools/gatewai-mcp.js";
+import assert from "node:assert";
 
 /**
  * Patcher Sub-Agent
  *
  * This agent writes JavaScript code to manipulate canvas state.
- * It uses vm2 to execute the code safely, validates the result,
+ * It uses quickjs-ecmascripten to execute the code safely, validates the result,
  * and retries if the code fails or validation errors occur.
  *
  * Flow:
  * 1. Orchestrator calls this subagent via .asTool() handoff
  * 2. Subagent calls prepare_canvas to fetch state
  * 3. Subagent writes JS code to modify canvas state
- * 4. Code is executed in vm2 sandbox
+ * 4. Code is executed in QuickJS sandbox
  * 5. Result is validated against bulkUpdateSchema
  * 6. On success, submit_patch creates the patch via MCP
  * 7. On failure, agent retries with error context
@@ -34,253 +35,316 @@ interface PatcherContext {
 	templates: any[];
 }
 
-let patcherContext: PatcherContext | null = null;
-
-/**
- * Tool: Prepare Canvas Context
- *
- * Fetches current canvas state and templates. Must be called first.
- */
-const prepareCanvasTool = tool({
-	name: "prepare_canvas",
-	description: `Fetch the current canvas state and templates. You MUST call this first before execute_canvas_code.
-Extract the canvasId and agentSessionId from the task description provided by the orchestrator.`,
-	parameters: z.object({
-		canvasId: z.string().describe("The ID of the canvas to modify"),
-		agentSessionId: z.string().describe("The ID of the agent session"),
-	}),
-	async execute({ canvasId, agentSessionId }) {
-		try {
-			// Fetch current canvas state and templates
-			const [{ nodes, edges, handles }, templates] = await Promise.all([
-				GetCanvasEntities(canvasId),
-				prisma.nodeTemplate.findMany({
-					include: { templateHandles: true },
-				}),
-			]);
-
-			// Store in context for other tools
-			patcherContext = {
-				canvasId,
-				agentSessionId,
-				nodes: nodes || [],
-				edges: edges || [],
-				handles: handles || [],
-				templates,
-			};
-
-			return `Canvas prepared successfully!
-- ${patcherContext.nodes.length} existing nodes
-- ${patcherContext.edges.length} existing edges
-- ${patcherContext.handles.length} existing handles
-- ${templates.length} available templates
-
-Available templates:
-${templates.map((t: any) => `- ${t.type} (id: ${t.id})`).join("\n")}
-
-You can now call execute_canvas_code with your JavaScript code.`;
-		} catch (error) {
-			const msg = error instanceof Error ? error.message : String(error);
-			return `Failed to prepare canvas: ${msg}`;
-		}
-	},
-});
-
-/**
- * Tool: Execute Canvas Transformation Code
- *
- * Executes JavaScript code in a vm2 sandbox to transform canvas state.
- * The code has access to: nodes, edges, handles, templates, and helper functions.
- */
-const executeCanvasCodeTool = tool({
-	name: "execute_canvas_code",
-	description: `Execute JavaScript code to transform the canvas state.
-
-You have access to the following in your code:
-- nodes: Array of current nodes
-- edges: Array of current edges  
-- handles: Array of current handles
-- templates: Array of available node templates (with templateHandles)
-- generateId(): Generate a temp ID (returns "temp-<uuid>")
-
-Your code MUST return an object with: { nodes, edges, handles }
-
-IMPORTANT RULES:
-1. Use generateId() for ALL new entity IDs
-2. Copy handle dataTypes and labels EXACTLY from template.templateHandles
-3. Edges connect sourceHandleId (Output) to targetHandleId (Input)
-4. No circular dependencies or self-connections
-5. Each Input handle can only have ONE incoming edge
-
-EXAMPLE CODE:
-\`\`\`javascript
-// Create a Text node
-const textNodeId = generateId();
-const textTemplate = templates.find(t => t.type === 'Text');
-
-nodes.push({
-  id: textNodeId,
-  name: 'Prompt',
-  type: 'Text',
-  templateId: textTemplate.id,
-  position: { x: 100, y: 100 },
-  width: 340,
-  config: { content: 'A cinematic shot of a sunset' }
-});
-
-// Add handles from template
-textTemplate.templateHandles.forEach((th) => {
-  handles.push({
-    id: generateId(),
-    type: th.type,
-    dataTypes: th.dataTypes,
-    label: th.label,
-    order: th.order,
-    nodeId: textNodeId,
-    required: th.required || false,
-    templateHandleId: th.id
-  });
-});
-
-return { nodes, edges, handles };
-\`\`\``,
-	parameters: z.object({
-		code: z
-			.string()
-			.describe(
-				"JavaScript code that transforms the canvas state. Must return { nodes, edges, handles }",
-			),
-	}),
-	async execute({ code }) {
-		if (!patcherContext) {
-			return "Error: Canvas not prepared. Call prepare_canvas first with canvasId and agentSessionId.";
-		}
-
-		try {
-			// Create vm2 sandbox with canvas state and helpers
-			const vm = new VM({
-				timeout: 5000,
-				sandbox: {
-					nodes: JSON.parse(JSON.stringify(patcherContext.nodes)),
-					edges: JSON.parse(JSON.stringify(patcherContext.edges)),
-					handles: JSON.parse(JSON.stringify(patcherContext.handles)),
-					templates: JSON.parse(JSON.stringify(patcherContext.templates)),
-					generateId: () => `temp-${crypto.randomUUID()}`,
-					console: {
-						log: (...args: any[]) => console.log("[VM]", ...args),
-					},
-				},
-			});
-
-			// Execute the code
-			const result = vm.run(`
-				(function() {
-					${code}
-				})()
-			`);
-
-			console.log("[Patcher] VM result:", { result });
-
-			// Validate the result structure
-			if (!result || typeof result !== "object") {
-				return "Error: Code must return an object with { nodes, edges, handles }";
-			}
-
-			if (!Array.isArray(result.nodes)) {
-				return "Error: result.nodes must be an array";
-			}
-			if (!Array.isArray(result.edges)) {
-				return "Error: result.edges must be an array";
-			}
-			if (!Array.isArray(result.handles)) {
-				return "Error: result.handles must be an array";
-			}
-
-			// Validate against bulkUpdateSchema
-			const payload: BulkUpdatePayload = {
-				nodes: result.nodes,
-				edges: result.edges,
-				handles: result.handles,
-			};
-
-			const validationResult = bulkUpdateSchema.safeParse(payload);
-			if (!validationResult.success) {
-				const errors = validationResult.error.issues
-					.map((i) => `${i.path.join(".")}: ${i.message}`)
-					.join("\n");
-				return `Validation failed. Fix these issues and try again:\n${errors}`;
-			}
-
-			// Store validated result back to context
-			patcherContext.nodes = validationResult.data.nodes || [];
-			patcherContext.edges = validationResult.data.edges || [];
-			patcherContext.handles = validationResult.data.handles || [];
-
-			return `Code executed successfully! Canvas state updated:
-- ${patcherContext.nodes.length} nodes
-- ${patcherContext.edges.length} edges
-- ${patcherContext.handles.length} handles
-
-Call submit_patch to create the patch proposal.`;
-		} catch (error) {
-			const msg = error instanceof Error ? error.message : String(error);
-			return `Code execution failed: ${msg}\n\nFix the code and try again.`;
-		}
-	},
-});
-
-/**
- * Tool: Submit the Patch
- *
- * After successfully executing code, submit the patch for user review.
- */
-const submitPatchTool = tool({
-	name: "submit_patch",
-	description:
-		"Submit the transformed canvas state as a patch for user review. Only call this after execute_canvas_code succeeds.",
-	parameters: z.object({}),
-	async execute() {
-		if (!patcherContext) {
-			return "Error: Canvas not prepared. Call prepare_canvas first.";
-		}
-
-		try {
-			const payload: BulkUpdatePayload = {
-				nodes: patcherContext.nodes,
-				edges: patcherContext.edges,
-				handles: patcherContext.handles,
-			};
-
-			// Call MCP tool to create patch
-			const result = await localGatewaiMCPTool.callTool(
-				"propose-canvas-update",
-				{
-					canvasId: patcherContext.canvasId,
-					agentSessionId: patcherContext.agentSessionId,
-					canvasState: payload,
-				},
-			);
-
-			// Clear context after successful submission
-			const canvasId = patcherContext.canvasId;
-			patcherContext = null;
-
-			const resultText =
-				Array.isArray((result as any)?.content) &&
-				(result as any).content.find((c: any) => c.type === "text")?.text;
-
-			return `Patch submitted successfully for canvas ${canvasId}! ${resultText || "The user has been notified to review the changes."}`;
-		} catch (error) {
-			const msg = error instanceof Error ? error.message : String(error);
-			return `Failed to submit patch: ${msg}`;
-		}
-	},
-});
-
 /**
  * Create the Patcher Sub-Agent as a Tool
  */
-export function createPatcherAgent() {
+export function createPatcherAgent(modelName: (typeof AVAILABLE_AGENT_MODELS)[number]) {
+	let patcherContext: PatcherContext | null = null;
+
+	/**
+	 * Tool: Prepare Canvas Context
+	 *
+	 * Fetches current canvas state and templates. Must be called first.
+	 */
+	const prepareCanvasTool = tool({
+		name: "prepare_canvas",
+		description: `Fetch the current canvas state and templates. You MUST call this first before execute_canvas_code.
+		Extract the canvasId and agentSessionId from the task description provided by the orchestrator.`,
+		parameters: z.object({
+			canvasId: z.string().describe("The ID of the canvas to modify"),
+			agentSessionId: z.string().describe("The ID of the agent session"),
+		}),
+		async execute({ canvasId, agentSessionId }) {
+			try {
+				// Fetch current canvas state and templates
+				const [{ nodes, edges, handles }, templates] = await Promise.all([
+					GetCanvasEntities(canvasId),
+					prisma.nodeTemplate.findMany({
+						include: { templateHandles: true },
+					}),
+				]);
+
+				// Store in context for other tools
+				patcherContext = {
+					canvasId,
+					agentSessionId,
+					nodes: nodes || [],
+					edges: edges || [],
+					handles: handles || [],
+					templates,
+				};
+
+				return `Canvas prepared successfully!
+		- ${patcherContext.nodes.length} existing nodes
+		- ${patcherContext.edges.length} existing edges
+		- ${patcherContext.handles.length} existing handles
+		- ${templates.length} available templates
+		
+		Available templates:
+		${templates.map((t: any) => `- ${t.type} (id: ${t.id})`).join("\n")}
+		
+		You can now call execute_canvas_code with your JavaScript code.`;
+			} catch (error) {
+				const msg = error instanceof Error ? error.message : String(error);
+				return `Failed to prepare canvas: ${msg}`;
+			}
+		},
+	});
+
+	/**
+	 * Tool: Execute Canvas Transformation Code
+	 *
+	 * Executes JavaScript code in a QuickJS sandbox to transform canvas state.
+	 * The code has access to: nodes, edges, handles, templates, and helper functions.
+	 */
+	const executeCanvasCodeTool = tool({
+		name: "execute_canvas_code",
+		description: `Execute JavaScript code to transform the canvas state.
+		
+		You have access to the following in your code:
+		- nodes: Array of current nodes
+		- edges: Array of current edges
+		- handles: Array of current handles
+		- templates: Array of available node templates (with templateHandles)
+		- generateId(): Generate a temp ID (returns "temp-<uuid>")
+		
+		Your code MUST return an object with: { nodes, edges, handles }
+		
+		IMPORTANT RULES:
+		1. Use generateId() for ALL new entity IDs
+		2. Copy handle dataTypes and labels EXACTLY from template.templateHandles
+		3. Edges connect sourceHandleId (Output) to targetHandleId (Input)
+		4. No circular dependencies or self-connections
+		5. Each Input handle can only have ONE incoming edge
+		
+		EXAMPLE CODE:
+		\`\`\`javascript
+		// Create a Text node
+		const textNodeId = generateId();
+		const textTemplate = templates.find(t => t.type === 'Text');
+		
+		nodes.push({
+		  id: textNodeId,
+		  name: 'Prompt',
+		  type: 'Text',
+		  templateId: textTemplate.id,
+		  position: { x: 100, y: 100 },
+		  width: 340,
+		  config: { content: 'A cinematic shot of a sunset' }
+		});
+		
+		// Add handles from template
+		textTemplate.templateHandles.forEach((th) => {
+		  handles.push({
+			id: generateId(),
+			type: th.type,
+			dataTypes: th.dataTypes,
+			label: th.label,
+			order: th.order,
+			nodeId: textNodeId,
+			required: th.required || false,
+			templateHandleId: th.id
+		  });
+		});
+		
+		return { nodes, edges, handles };
+		\`\`\``,
+		parameters: z.object({
+			code: z
+				.string()
+				.describe(
+					"JavaScript code that transforms the canvas state. Must return { nodes, edges, handles }",
+				),
+		}),
+		async execute({ code }) {
+			if (!patcherContext) {
+				return "Error: Canvas not prepared. Call prepare_canvas first with canvasId and agentSessionId.";
+			}
+			console.log("[VM] Context prepared. Starting execution.");
+
+
+			// Use Scope for automatic handle disposal
+			const scope = new Scope();
+			let context: QuickJSContext | undefined;
+
+			try {
+				const QuickJS = await getQuickJS();
+				context = QuickJS.newContext();
+				assert(context)
+				const undefinedHandle = scope.manage(context.undefined);
+
+				// Helper: Inject JSON data into VM global scope
+				console.log("[VM] Preparing to inject globals");
+
+				const injectGlobal = (name: string, data: any) => {
+					assert(context)
+					const jsonStr = JSON.stringify(data);
+					const jsonHandle = scope.manage(context.newString(jsonStr));
+
+					// Use JSON.parse inside VM to create the object
+					const parseResult = context.evalCode(`JSON.parse`);
+					if (parseResult.error) {
+						const error = scope.manage(parseResult.error);
+						const errorDump = context.dump(error);
+						console.error("[VM] JSON.parse lookup error:", errorDump);
+						// We don't really need to read the error for JSON.parse lookup failure, but good practice
+						throw new Error(`Failed to access JSON.parse in VM`);
+					}
+					const parseFn = scope.manage(context.unwrapResult(parseResult));
+
+					const objHandle = scope.manage(context.unwrapResult(context.callFunction(parseFn, undefinedHandle, jsonHandle)));
+
+					context.setProp(context.global, name, objHandle);
+				};
+
+				// 1. Inject Context Data
+				injectGlobal("nodes", patcherContext.nodes);
+				injectGlobal("edges", patcherContext.edges);
+				injectGlobal("handles", patcherContext.handles);
+				injectGlobal("templates", patcherContext.templates);
+
+				// 2. Inject generateId helper
+				const generateIdHandle = scope.manage(context.newFunction("generateId", () => {
+					const id = `temp-${crypto.randomUUID()}`;
+					assert(context)
+					return context.newString(id); // NOTE: Return values from host functions are owned by VM, not Scope
+				}));
+				context.setProp(context.global, "generateId", generateIdHandle);
+
+				// 3. Inject console.log helper (for debugging within VM if needed)
+				const consoleHandle = scope.manage(context.newObject());
+				const logHandle = scope.manage(context.newFunction("log", (...args: any[]) => {
+
+					const logArgs = args.map(arg => { assert(context); return context.dump(arg) });
+					console.log("[VM]", ...logArgs);
+				}));
+				context.setProp(consoleHandle, "log", logHandle);
+				context.setProp(context.global, "console", consoleHandle);
+
+				// 4. Execute the user code
+				// We wrap it in an IIFE to ensure we capture the return value
+				const wrappedCode = `
+					(function() {
+						${code}
+					})()
+				`;
+
+				const resultHandle = context.evalCode(wrappedCode);
+
+				if (resultHandle.error) {
+					const errorHandle = scope.manage(resultHandle.error);
+					const error = context.dump(errorHandle);
+					console.error("[VM] Execution error dump:", error);
+					throw new Error(error.name && error.message ? `${error.name}: ${error.message}` : String(error));
+				}
+
+				const valueHandle = scope.manage(resultHandle.value);
+				const result = context.dump(valueHandle);
+				// Validate the result structure
+				if (!result || typeof result !== "object") {
+					return "Error: Code must return an object with { nodes, edges, handles }";
+				}
+
+				if (!Array.isArray(result.nodes)) {
+					return "Error: result.nodes must be an array";
+				}
+				if (!Array.isArray(result.edges)) {
+					return "Error: result.edges must be an array";
+				}
+				if (!Array.isArray(result.handles)) {
+					return "Error: result.handles must be an array";
+				}
+
+				// Validate against bulkUpdateSchema
+				const payload: BulkUpdatePayload = {
+					nodes: result.nodes,
+					edges: result.edges,
+					handles: result.handles,
+				};
+
+				const validationResult = bulkUpdateSchema.safeParse(payload);
+				if (!validationResult.success) {
+					const errors = validationResult.error.issues
+						.map((i) => `${i.path.join(".")}: ${i.message}`)
+						.join("\n");
+					return `Validation failed. Fix these issues and try again:\n${errors}`;
+				}
+
+				// Store validated result back to context
+				patcherContext.nodes = validationResult.data.nodes || [];
+				patcherContext.edges = validationResult.data.edges || [];
+				patcherContext.handles = validationResult.data.handles || [];
+
+				return `Code executed successfully! Canvas state updated:
+		- ${patcherContext.nodes.length} nodes
+		- ${patcherContext.edges.length} edges
+		- ${patcherContext.handles.length} handles
+		
+		Call submit_patch to create the patch proposal.`;
+			} catch (error) {
+				const msg = error instanceof Error ? error.message : String(error);
+				console.error("[VM] Top-level execution error:", msg);
+				return `Code execution failed: ${msg}\n\nFix the code and try again.`;
+			} finally {
+				// Dispose scope handles first
+				scope.dispose();
+
+				// Then dispose the runtime
+				if (context) {
+					context.dispose();
+				}
+			}
+		},
+	});
+
+	/**
+	 * Tool: Submit the Patch
+	 *
+	 * After successfully executing code, submit the patch for user review.
+	 */
+	const submitPatchTool = tool({
+		name: "submit_patch",
+		description:
+			"Submit the transformed canvas state as a patch for user review. Only call this after execute_canvas_code succeeds.",
+		parameters: z.object({}),
+		async execute() {
+			if (!patcherContext) {
+				return "Error: Canvas not prepared. Call prepare_canvas first.";
+			}
+
+			try {
+				const payload: BulkUpdatePayload = {
+					nodes: patcherContext.nodes,
+					edges: patcherContext.edges,
+					handles: patcherContext.handles,
+				};
+
+				// Call MCP tool to create patch
+				const result = await localGatewaiMCPTool.callTool(
+					"propose-canvas-update",
+					{
+						canvasId: patcherContext.canvasId,
+						agentSessionId: patcherContext.agentSessionId,
+						canvasState: payload,
+					},
+				);
+
+				// Clear context after successful submission
+				const canvasId = patcherContext.canvasId;
+				patcherContext = null;
+
+				const resultText =
+					Array.isArray((result as any)?.content) &&
+					(result as any).content.find((c: any) => c.type === "text")?.text;
+
+				return `Patch submitted successfully for canvas ${canvasId}! ${resultText || "The user has been notified to review the changes."} `;
+			} catch (error) {
+				const msg = error instanceof Error ? error.message : String(error);
+				return `Failed to submit patch: ${msg} `;
+			}
+		},
+	});
+
 	const systemPrompt = `You are a Canvas Patcher Agent. Your job is to write JavaScript code that transforms canvas state.
 
 ## Your Tools
@@ -328,14 +392,14 @@ nodes.push({
 // Add handles from template
 template.templateHandles.forEach((th) => {
   handles.push({
-    id: generateId(),
-    type: th.type,
-    dataTypes: th.dataTypes,
-    label: th.label,
-    order: th.order,
-    nodeId: nodeId,
-    required: th.required || false,
-    templateHandleId: th.id
+	id: generateId(),
+	type: th.type,
+	dataTypes: th.dataTypes,
+	label: th.label,
+	order: th.order,
+	nodeId: nodeId,
+	required: th.required || false,
+	templateHandleId: th.id
   });
 });
 
@@ -362,7 +426,7 @@ Be thorough and precise. Always validate your code logic before executing.`;
 
 	return new Agent({
 		name: "Canvas_Patcher",
-		model: getAgentModel("gemini-2.5-pro"),
+		model: getAgentModel(modelName),
 		instructions: systemPrompt,
 		tools: [prepareCanvasTool, executeCanvasCodeTool, submitPatchTool],
 	}).asTool({
@@ -380,13 +444,3 @@ IMPORTANT: You must include the canvasId and agentSessionId in your description 
 Format: "canvasId: <id>, agentSessionId: <id>. Task: <your description>"`,
 	});
 }
-
-// Export for backwards compatibility (can be removed later)
-export const invokePatcherTool = tool({
-	name: "modify_canvas_legacy",
-	description: "Legacy - use createPatcherAgent().asTool() instead",
-	parameters: z.object({ msg: z.string() }),
-	async execute() {
-		return "This tool is deprecated. Use the new patcher agent tool.";
-	},
-});

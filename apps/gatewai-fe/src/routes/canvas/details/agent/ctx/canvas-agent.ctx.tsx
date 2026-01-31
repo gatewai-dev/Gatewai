@@ -51,6 +51,11 @@ type CanvasAgentContextType = {
 	stopGeneration: () => void;
 	pendingPatchId: string | null;
 	clearPendingPatch: () => void;
+	updateMessage: (id: string, updates: Partial<ChatMessage>) => void;
+	updatePatchStatus: (
+		patchId: string,
+		status: "PENDING" | "ACCEPTED" | "REJECTED",
+	) => void;
 	selectedModel: string;
 	setSelectedModel: (model: string) => void;
 };
@@ -189,6 +194,8 @@ const CanvasAgentProvider = ({
 		stopGeneration,
 		pendingPatchId,
 		clearPendingPatch,
+		updateMessage,
+		updatePatchStatus,
 	} = useAgentChatStream(canvasId, activeSessionId || "", selectedModel);
 
 	return (
@@ -205,6 +212,8 @@ const CanvasAgentProvider = ({
 				stopGeneration,
 				pendingPatchId,
 				clearPendingPatch,
+				updateMessage,
+				updatePatchStatus,
 				selectedModel,
 				setSelectedModel,
 			}}

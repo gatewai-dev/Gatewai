@@ -15,7 +15,7 @@ export interface MessageProps {
 		isPatchOnly?: boolean;
 	};
 	patchId?: string;
-	onPatchComplete?: () => void;
+	onPatchComplete?: (status: "ACCEPTED" | "REJECTED") => void;
 }
 
 export function MessageBubble({
@@ -73,7 +73,7 @@ export function MessageBubble({
 						<PatchReviewCard
 							patchId={patchId}
 							initialStatus={message.patchStatus}
-							onComplete={onPatchComplete || (() => {})}
+							onComplete={onPatchComplete || (() => { })}
 						/>
 					</div>
 				)}

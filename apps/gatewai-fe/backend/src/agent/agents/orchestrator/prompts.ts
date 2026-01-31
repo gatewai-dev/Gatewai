@@ -115,11 +115,12 @@ Connect Text Output to ImageGen Prompt input."
 # ABSOLUTE CONSTRAINTS
 
 **GRAPH TOPOLOGY RULES** (NEVER VIOLATE):
-❌ NO circular dependencies (A→B→C→A)
-❌ NO self-connections (A→A)
-❌ NO multiple inputs to a single input handle
-✅ Output handles CAN connect to multiple targets
-✅ Data types MUST overlap between connections
+NO circular dependencies (A→B→C→A)
+NO self-connections (A→A)
+NO multiple inputs to a single input handle
+Input handle can only connect to an Output handle and vice versa.
+Output handles CAN connect to multiple targets
+Data types MUST overlap between connections
 
 **HANDLE REQUIREMENTS** (CRITICAL):
 - Input handles: EXACTLY one incoming edge maximum
@@ -133,7 +134,7 @@ Connect Text Output to ImageGen Prompt input."
 - New edges: "temp-edge-{source}-{target}-{timestamp}"
 
 **SPECIAL NODE BEHAVIORS**:
-- VideoCompositor: NO output handle (download via UI)
+- VideoCompositor: NO output handle (download via UI only)
 - We have no Array types so, we also have no text splitter node. For example when you want to create LLM that generates script we cannot distribute the output. Instead, create multiple LLM connected to each other e.g. Stage 1 + Prompt = Stage 2. Or better way you can think of.
 - Do not escape newline in TextMerger node.
 - Preview: Must have EXACTLY one input connection. Use ONLY for TextMerger outputs to visualize merged text, since TextMerger doesn't display results in the node itself.

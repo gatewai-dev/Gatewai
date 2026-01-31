@@ -94,6 +94,22 @@ export function useAgentChatStream(
 
 					if (event.type === "patch_proposed") {
 						setPendingPatchId(event.patchId);
+						setMessages((prev) => {
+							// Check if already exists
+							if (prev.some((m) => m.patchId === event.patchId)) return prev;
+							return [
+								...prev,
+								{
+									id: generateId(),
+									role: "model",
+									text: "", // Patch events might not have text, handled by UI
+									eventType: "patch_proposed",
+									patchId: event.patchId,
+									patchStatus: "PENDING",
+									createdAt: new Date(),
+								},
+							];
+						});
 					}
 
 					if (
@@ -321,6 +337,23 @@ export function useAgentChatStream(
 		setPendingPatchId(null);
 	}, []);
 
+	const updateMessage = useCallback((id: string, updates: Partial<ChatMessage>) => {
+		setMessages((prev) =>
+			prev.map((msg) => (msg.id === id ? { ...msg, ...updates } : msg)),
+		);
+	}, []);
+
+	const updatePatchStatus = useCallback(
+		(patchId: string, status: "PENDING" | "ACCEPTED" | "REJECTED") => {
+			setMessages((prev) =>
+				prev.map((msg) =>
+					msg.patchId === patchId ? { ...msg, patchStatus: status } : msg,
+				),
+			);
+		},
+		[],
+	);
+
 	const isStreaming = messages.some((m) => m.isStreaming && m.role === "model");
 	const isLoading = isRequestPending || isStreaming;
 
@@ -332,5 +365,7 @@ export function useAgentChatStream(
 		setMessages,
 		pendingPatchId,
 		clearPendingPatch,
+		updateMessage,
+		updatePatchStatus,
 	};
 }

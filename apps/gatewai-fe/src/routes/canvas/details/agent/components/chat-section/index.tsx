@@ -19,6 +19,7 @@ export function AgentChatSection({ onClose }: { onClose: () => void }) {
 		createNewSession,
 		selectedModel,
 		setSelectedModel,
+		updatePatchStatus,
 	} = useCanvasAgent();
 
 	// Refs
@@ -99,40 +100,53 @@ export function AgentChatSection({ onClose }: { onClose: () => void }) {
 	}, [createNewSession, onClose, isHistoryOpen]);
 
 	// Group messages with their associated patches
-	const processedMessages = messages
-		.filter((msg) => {
-			// Filter out empty messages, but keep streaming and patch_proposed events
+	const processedMessages = (() => {
+		const result: any[] = [];
+		const filtered = messages.filter((msg) => {
 			const hasContent =
 				msg.text.trim() !== "" ||
 				msg.eventType === "patch_proposed" ||
 				msg.isStreaming;
-
-			// Exclude pending patches (they're shown separately)
 			const isPending =
 				msg.eventType === "patch_proposed" && msg.patchId === pendingPatchId;
-
 			return hasContent && !isPending;
-		})
-		.reduce(
-			(acc, msg) => {
-				// If this is a patch_proposed event, attach it to the previous model message
-				if (msg.eventType === "patch_proposed" && msg.patchId) {
-					const lastMessage = acc[acc.length - 1];
-					if (lastMessage && lastMessage.role === "model") {
-						// Attach patch to previous model message
-						lastMessage.patchId = msg.patchId;
-						lastMessage.patchStatus = msg.patchStatus;
-					} else {
-						// If no previous model message, show patch standalone
-						acc.push({ ...msg, isPatchOnly: true });
-					}
+		});
+
+		for (let i = 0; i < filtered.length; i++) {
+			const msg = filtered[i];
+
+			if (msg.eventType === "patch_proposed" && msg.patchId) {
+				// Strategy: Try to attach to the NEXT model message first (so text appears before patch)
+				// If not available, try to attach to PREVIOUS model message
+				// If neither, show standalone
+
+				const nextMsg = filtered[i + 1];
+				const prevMsg = result[result.length - 1];
+
+				if (nextMsg && nextMsg.role === "model" && !nextMsg.patchId) {
+					// We'll merge this patch into the next message when we process it
+					// Temporarily store it on the next message object in the source array?
+					// No, that mutates state.
+					// We can skip adding this patch now, and when we hit the next message, we check if there was a preceding patch.
+					// Actually, let's just mark the next message in our lookahead.
+					nextMsg.patchId = msg.patchId;
+					nextMsg.patchStatus = msg.patchStatus;
+					continue; // Skip adding the patch standalone
+				} else if (prevMsg && prevMsg.role === "model" && !prevMsg.patchId) {
+					// Attach to previous
+					prevMsg.patchId = msg.patchId;
+					prevMsg.patchStatus = msg.patchStatus;
 				} else {
-					acc.push({ ...msg });
+					// Standalone
+					result.push({ ...msg, isPatchOnly: true });
 				}
-				return acc;
-			},
-			[] as Array<any>,
-		);
+			} else {
+				// Regular message (or already mutated model message from lookahead)
+				result.push({ ...msg });
+			}
+		}
+		return result;
+	})();
 
 	const isNewSession = !activeSessionId || messages.length === 0;
 	const shouldShowLoadingIndicator =
@@ -176,9 +190,14 @@ export function AgentChatSection({ onClose }: { onClose: () => void }) {
 									key={msg.id}
 									message={msg}
 									patchId={msg.patchId}
-									onPatchComplete={
-										msg.isPatchOnly ? clearPendingPatch : undefined
-									}
+									onPatchComplete={(status) => {
+										if (msg.patchId) {
+											updatePatchStatus(msg.patchId, status);
+										}
+										if (msg.isPatchOnly) {
+											clearPendingPatch();
+										}
+									}}
 								/>
 							))}
 
@@ -187,7 +206,10 @@ export function AgentChatSection({ onClose }: { onClose: () => void }) {
 								<div className="flex w-full justify-start animate-in slide-in-from-bottom-2 duration-300">
 									<PatchReviewCard
 										patchId={pendingPatchId}
-										onComplete={clearPendingPatch}
+										onComplete={(status) => {
+											updatePatchStatus(pendingPatchId, status);
+											clearPendingPatch();
+										}}
 									/>
 								</div>
 							)}

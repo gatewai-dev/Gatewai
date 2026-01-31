@@ -7,7 +7,7 @@ import { useCanvasCtx } from "../../ctx/canvas-ctx";
 interface PatchReviewCardProps {
 	patchId: string;
 	initialStatus?: "PENDING" | "ACCEPTED" | "REJECTED";
-	onComplete: () => void;
+	onComplete: (status: "ACCEPTED" | "REJECTED") => void;
 }
 
 export function PatchReviewCard({
@@ -22,13 +22,13 @@ export function PatchReviewCard({
 	const handleApply = async () => {
 		await applyPatch(patchId);
 		setStatus("ACCEPTED");
-		onComplete();
+		onComplete("ACCEPTED");
 	};
 
 	const handleReject = async () => {
 		await rejectPatch(patchId);
 		setStatus("REJECTED");
-		onComplete();
+		onComplete("REJECTED");
 	};
 
 	return (

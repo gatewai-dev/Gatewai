@@ -119,7 +119,7 @@ Remember:
 	assertIsValidName(modelName);
 
 	const model = getAgentModel(modelName);
-	const patcherAgentTool = createPatcherAgent();
+	const patcherAgentTool = createPatcherAgent(modelName);
 	// Note: We return the function reference for instructions to enable dynamic fetching
 	return new Agent({
 		name: "Gatewai_Copilot",
