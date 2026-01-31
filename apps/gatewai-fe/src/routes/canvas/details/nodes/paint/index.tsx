@@ -208,11 +208,7 @@ const PaintNodeComponent = memo((props: NodeProps<PaintNode>) => {
 
 				setContainerStyle({
 					aspectRatio: `${img.naturalWidth} / ${img.naturalHeight}`,
-					backgroundImage: `url(${inputImageUrl})`,
-					backgroundColor: nodeConfig?.backgroundColor ?? "#ffffff",
-					backgroundSize: "contain",
-					backgroundPosition: "center",
-					backgroundRepeat: "no-repeat",
+					backgroundColor: "transparent",
 				});
 
 				canvas.width = img.naturalWidth;
@@ -484,6 +480,17 @@ const PaintNodeComponent = memo((props: NodeProps<PaintNode>) => {
 					className="media-container w-full overflow-hidden relative select-none"
 					style={containerStyle}
 				>
+					{inputImageUrl && (
+						<div
+							className="absolute inset-0 w-full h-full pointer-events-none z-0"
+							style={{
+								backgroundImage: `url(${inputImageUrl})`,
+								backgroundSize: "contain",
+								backgroundPosition: "center",
+								backgroundRepeat: "no-repeat",
+							}}
+						/>
+					)}
 					<canvas
 						ref={canvasRef}
 						className={cn(
