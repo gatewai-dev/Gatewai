@@ -1,4 +1,5 @@
 import { memo } from "react";
+import { cn } from "@/lib/utils";
 import { useNodePreview } from "../../hooks/node-preview";
 import { BaseNode } from "../base";
 import { CanvasRenderer } from "../common/canvas-renderer";
@@ -15,7 +16,12 @@ const ModulateNodeComponent = memo(
 				dragging={props.dragging}
 			>
 				<div className="flex flex-col gap-3 ">
-					<div className="w-full overflow-hidden rounded media-container min-h-32 relative">
+					<div
+						className={cn("w-full overflow-hidden rounded media-container", {
+							"min-h-32": !imageUrl,
+							"h-full": imageUrl,
+						})}
+					>
 						{imageUrl && <CanvasRenderer imageUrl={imageUrl} />}
 					</div>
 
