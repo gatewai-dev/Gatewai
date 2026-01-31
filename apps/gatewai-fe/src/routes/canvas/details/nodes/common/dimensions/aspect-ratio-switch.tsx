@@ -26,17 +26,31 @@ const AspectRatioSwitch = memo(
 		const maintainAspect = config.maintainAspect ?? true;
 		const { onNodeConfigUpdate } = useCanvasCtx();
 
+		// In types.ts, we need to extend config to include aspectRatio. The component doesn't need to import the updated type explicitly if it relies on generic access, but we should be aware.
 		const handleChange = useCallback(
 			(checked: boolean) => {
-				let updates: Partial<ResizeNodeConfig & { maintainAspect: boolean }> = {
+				let updates: Partial<
+					ResizeNodeConfig & { maintainAspect: boolean; aspectRatio?: number }
+				> = {
 					maintainAspect: checked,
 				};
-				if (checked && originalWidth && originalHeight) {
-					const currentWidth = config.width ?? originalWidth;
-					const newHeight = Math.round(
-						(originalHeight / originalWidth) * currentWidth,
-					);
-					updates = { ...config, ...updates, height: newHeight };
+
+				if (checked) {
+					// Logic:
+					// Always lock to CURRENT ratio.
+					// Fallback to original dimensions only if current dimensions are missing.
+
+					let ratio: number | undefined;
+					const w = config.width ?? originalWidth ?? 0;
+					const h = config.height ?? originalHeight ?? 0;
+
+					if (w > 0 && h > 0) {
+						ratio = w / h;
+						updates = { ...config, ...updates, aspectRatio: ratio };
+					}
+				} else {
+					// Unlock: clear ratio
+					updates = { ...config, ...updates, aspectRatio: undefined };
 				}
 
 				onNodeConfigUpdate({

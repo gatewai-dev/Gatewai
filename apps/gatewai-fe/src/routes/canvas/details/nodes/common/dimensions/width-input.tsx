@@ -1,7 +1,7 @@
 import type { ResizeNodeConfig } from "@gatewai/types";
-import { memo, useCallback, useEffect, useState } from "react";
-import { Input } from "@/components/ui/input";
-import { Label } from "@/components/ui/label";
+import { ArrowLeftRight } from "lucide-react";
+import { memo, useCallback } from "react";
+import { DraggableNumberInput } from "@/components/ui/draggable-number-input";
 import type { NodeEntityType } from "@/store/nodes";
 import { useCanvasCtx } from "../../../ctx/canvas-ctx";
 
@@ -23,64 +23,61 @@ const ResizeWidthInput = memo(
 		const { onNodeConfigUpdate } = useCanvasCtx();
 
 		const displayValue = config.width ?? originalWidth ?? 0;
-		const [inputValue, setInputValue] = useState(displayValue.toString());
-
-		useEffect(() => {
-			setInputValue(displayValue.toString());
-		}, [displayValue]);
 
 		const handleChange = useCallback(
-			(e: React.ChangeEvent<HTMLInputElement>) => {
-				setInputValue(e.target.value);
+			(value: number) => {
+				if (value < 1 || value > 4096) {
+					return;
+				}
+
+				let updates: Partial<ResizeNodeConfig> = { width: value };
+
+				if (maintainAspect) {
+					// Use stored aspect ratio if available
+					let ratio = config.aspectRatio;
+
+					// Fallback 1: Original dimensions (Resize Node)
+					if (!ratio && originalWidth && originalHeight) {
+						ratio = originalWidth / originalHeight;
+					}
+
+					// Fallback 2: Current dimensions (Paint Node default)
+					if (!ratio && config.width && config.height) {
+						ratio = config.width / config.height;
+					}
+
+					if (ratio) {
+						const newHeight = Math.round(value / ratio);
+						updates = { ...config, ...updates, height: newHeight };
+					}
+				}
+
+				onNodeConfigUpdate({
+					id: node.id,
+					newConfig: updates,
+				});
 			},
-			[],
+			[
+				maintainAspect,
+				originalWidth,
+				originalHeight,
+				onNodeConfigUpdate,
+				node.id,
+				config,
+			],
 		);
 
-		const handleBlur = useCallback(() => {
-			if (inputValue === "") {
-				setInputValue(displayValue.toString());
-				return;
-			}
-			const value = parseInt(inputValue, 10);
-			if (Number.isNaN(value) || value < 1 || value > 2000) {
-				setInputValue(displayValue.toString());
-				return;
-			}
-
-			let updates: Partial<ResizeNodeConfig> = { width: value };
-			if (maintainAspect && originalWidth && originalHeight) {
-				const newHeight = Math.round((originalHeight / originalWidth) * value);
-				updates = { ...config, ...updates, height: newHeight };
-			}
-
-			onNodeConfigUpdate({
-				id: node.id,
-				newConfig: updates,
-			});
-		}, [
-			inputValue,
-			maintainAspect,
-			originalWidth,
-			originalHeight,
-			onNodeConfigUpdate,
-			node.id,
-			displayValue,
-			config,
-		]);
-
 		return (
-			<div className="flex flex-col gap-1 flex-1">
-				<Label className="text-xs text-gray-600">Width</Label>
-				<Input
-					type="text"
-					disabled={disabled}
-					inputMode="numeric"
-					pattern="[0-9]*"
-					value={inputValue}
-					onChange={handleChange}
-					onBlur={handleBlur}
-				/>
-			</div>
+			<DraggableNumberInput
+				label="Width"
+				value={displayValue}
+				onChange={handleChange}
+				min={1}
+				max={4096}
+				disabled={disabled}
+				icon={ArrowLeftRight}
+				className="flex-1"
+			/>
 		);
 	},
 );

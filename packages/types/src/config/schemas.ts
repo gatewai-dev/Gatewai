@@ -355,6 +355,7 @@ export const PaintNodeConfigSchema = z
 		width: z.number().int(),
 		height: z.number().int(),
 		maintainAspect: z.boolean(),
+		aspectRatio: z.number().optional(),
 		backgroundColor: ColorSchema,
 		paintData: z.string().optional(),
 	})
@@ -391,6 +392,7 @@ export const ResizeNodeConfigSchema = z
 		width: DimensionSchema,
 		height: DimensionSchema,
 		maintainAspect: z.boolean().optional(),
+		aspectRatio: z.number().optional(),
 	})
 	.strict();
 
