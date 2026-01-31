@@ -102,7 +102,14 @@ const CanvasAgentProvider = ({
 	const [createSession, { isLoading: isCreatingSession }] =
 		useCreateCanvasAgentSessionMutation();
 
+	// Lock to prevent double creation in StrictMode or race conditions
+	const isCreatingSessionRef = useRef(false);
+
 	const createNewSession = useCallback(async () => {
+		// Prevent duplicate calls
+		if (isCreatingSessionRef.current) return;
+		isCreatingSessionRef.current = true;
+
 		try {
 			// RTK Query's unwrap() is fine, but we can check if we still care about the result
 			const res = await createSession({ param: { id: canvasId } }).unwrap();
@@ -117,20 +124,53 @@ const CanvasAgentProvider = ({
 					console.error("Failed to create session", e);
 				}
 			}
+		} finally {
+			// Reset lock after a delay to ensure state updates have propagated
+			// or immediately if you trust the state loop.
+			// However, if we set activeSessionId, the effect shouldn't call this again anyway.
+			isCreatingSessionRef.current = false;
 		}
 	}, [canvasId, createSession]);
 
 	useEffect(() => {
-		if (isLoadingSessions || activeSessionId || isCreatingSession) return;
+		if (
+			isLoadingSessions ||
+			activeSessionId ||
+			isCreatingSession ||
+			isCreatingSessionRef.current
+		)
+			return;
+
 		if (agentSessionsList && agentSessionsList.length > 0) {
 			const sortedSessions = [...agentSessionsList].sort(
 				(a, b) =>
 					new Date(b.createdAt).getTime() - new Date(a.createdAt).getTime(),
 			);
-			if (isMountedRef.current) {
-				setActiveSessionId(sortedSessions[0].id);
+
+			// 1. Prefer an ACTIVE session
+			const activeSession = sortedSessions.find((s) => s.status === "ACTIVE");
+			if (activeSession) {
+				if (isMountedRef.current) {
+					setActiveSessionId(activeSession.id);
+				}
+				return;
 			}
-		} else {
+
+			// 2. Fallback to an existing empty session (not started yet)
+			const emptySession = sortedSessions.find(
+				(s) => s.events && s.events.length === 0,
+			);
+			if (emptySession) {
+				if (isMountedRef.current) {
+					setActiveSessionId(emptySession.id);
+				}
+				return;
+			}
+
+			// 3. Otherwise, create a new session
+			createNewSession();
+		} else if (agentSessionsList) {
+			// Only create if list is loaded and empty
 			createNewSession();
 		}
 	}, [
