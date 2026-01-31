@@ -1,3 +1,4 @@
+import type { GatewaiDoneEvent, GatewaiErrorEvent } from "@gatewai/types";
 import { type Job, Queue, Worker } from "bullmq";
 import { RunCanvasAgent } from "../agent/runner/index.js";
 import { ENV_CONFIG } from "../config.js";
@@ -71,20 +72,19 @@ async function processAgentJob(job: Job) {
 			// For now, just logging
 		} else {
 			// Signal completion
-			await redisPublisher.publish(channel, JSON.stringify({ type: "done" }));
+			const doneEvent: GatewaiDoneEvent = { type: "done" };
+			await redisPublisher.publish(channel, JSON.stringify(doneEvent));
 		}
 	} catch (error) {
 		if (error instanceof Error && error.name === "AbortError") {
 			logger.info(`Session ${sessionId} was aborted.`);
 		} else {
 			logger.error({ err: error, sessionId }, `Error in session`);
-			await redisPublisher.publish(
-				channel,
-				JSON.stringify({
-					type: "error",
-					error: error instanceof Error ? error.message : "Unknown error",
-				}),
-			);
+			const errorEvent: GatewaiErrorEvent = {
+				type: "error",
+				error: error instanceof Error ? error.message : "Unknown error",
+			};
+			await redisPublisher.publish(channel, JSON.stringify(errorEvent));
 			// Re-throw to fail the job in BullMQ
 			throw error;
 		}

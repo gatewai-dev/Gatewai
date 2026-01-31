@@ -1,15 +1,9 @@
+import type { GatewaiAgentEvent } from "@gatewai/types";
 import { useCallback, useEffect, useRef, useState } from "react";
 import { generateId } from "@/lib/idgen";
 import { rpcClient } from "@/rpc/client";
 
 export type MessageRole = "user" | "model" | "system";
-export type MessageType =
-	| "message"
-	| "function_call"
-	| "function_call_result"
-	| "tool_call"
-	| "patch_proposed"
-	| "patch_action";
 
 export interface ChatMessage {
 	id: string;
@@ -17,10 +11,42 @@ export interface ChatMessage {
 	text: string;
 	isStreaming?: boolean;
 	eventType?: string;
-	messageType?: MessageType;
 	patchId?: string;
 	patchStatus?: "PENDING" | "ACCEPTED" | "REJECTED";
 	createdAt: Date;
+}
+
+// Utility to read SSE stream and yield typed events
+async function* readStream(
+	reader: ReadableStreamDefaultReader<Uint8Array>,
+): AsyncGenerator<GatewaiAgentEvent, void, unknown> {
+	const decoder = new TextDecoder();
+	let buffer = "";
+
+	try {
+		while (true) {
+			const { done, value } = await reader.read();
+			if (done) break;
+			buffer += decoder.decode(value, { stream: true });
+			const lines = buffer.split("\n");
+			buffer = lines.pop() || "";
+
+			for (const line of lines) {
+				if (line.trim() === "") continue;
+				if (line.startsWith("data: ")) {
+					const jsonStr = line.slice(6);
+					try {
+						const event = JSON.parse(jsonStr) as GatewaiAgentEvent;
+						yield event;
+					} catch (e) {
+						console.error("Error parsing SSE JSON:", e);
+					}
+				}
+			}
+		}
+	} finally {
+		reader.releaseLock();
+	}
 }
 
 export function useAgentChatStream(
@@ -33,15 +59,110 @@ export function useAgentChatStream(
 	const [pendingPatchId, setPendingPatchId] = useState<string | null>(null);
 	const abortControllerRef = useRef<AbortController | null>(null);
 
+	// Shared handler for processing stream events
+	const processStream = useCallback(
+		async (
+			reader: ReadableStreamDefaultReader<Uint8Array>,
+			aiMsgId?: string,
+		) => {
+			let aiTextAccumulator = "";
+			let currentAiMsgId = aiMsgId;
+
+			// If resuming a stream (e.g. initial load), try to find existing streaming message
+			if (!currentAiMsgId) {
+				setMessages((prev) => {
+					const lastMsg = prev[prev.length - 1];
+					if (lastMsg && lastMsg.role === "model" && lastMsg.isStreaming) {
+						aiTextAccumulator = lastMsg.text;
+						currentAiMsgId = lastMsg.id;
+					}
+					return prev;
+				});
+			}
+
+			try {
+				for await (const event of readStream(reader)) {
+					if (event.type === "done") {
+						break;
+					}
+
+					if (event.type === "error") {
+						console.error("Agent error:", event.error);
+						// We could add an error message to the chat here if desired
+						break;
+					}
+
+					if (event.type === "patch_proposed") {
+						setPendingPatchId(event.patchId);
+					}
+
+					if (
+						event.type === "raw_model_stream_event" &&
+						event.data?.type === "output_text_delta"
+					) {
+						const delta = event.data.delta || "";
+						aiTextAccumulator += delta;
+
+						setMessages((prev) => {
+							// If we have a specific ID, update it
+							if (currentAiMsgId) {
+								return prev.map((msg) =>
+									msg.id === currentAiMsgId
+										? { ...msg, text: aiTextAccumulator }
+										: msg,
+								);
+							}
+
+							// Otherwise try to find the last streaming message or create new
+							const lastMsg = prev[prev.length - 1];
+							if (lastMsg && lastMsg.role === "model" && lastMsg.isStreaming) {
+								currentAiMsgId = lastMsg.id;
+								return prev.map((msg) =>
+									msg.id === lastMsg.id
+										? { ...msg, text: aiTextAccumulator }
+										: msg,
+								);
+							} else {
+								// Create new message
+								const newId = generateId();
+								currentAiMsgId = newId;
+								return [
+									...prev,
+									{
+										id: newId,
+										role: "model",
+										text: aiTextAccumulator,
+										isStreaming: true,
+										createdAt: new Date(),
+									},
+								];
+							}
+						});
+					}
+				}
+			} catch (err) {
+				if (err instanceof Error && err.name !== "AbortError") {
+					console.error("Stream processing error:", err);
+				}
+			} finally {
+				// Stop streaming indicator
+				if (currentAiMsgId) {
+					setMessages((prev) =>
+						prev.map((msg) =>
+							msg.id === currentAiMsgId ? { ...msg, isStreaming: false } : msg,
+						),
+					);
+				}
+			}
+		},
+		[],
+	);
+
 	const connectToStream = useCallback(async () => {
 		if (abortControllerRef.current) {
 			abortControllerRef.current.abort();
 		}
 		abortControllerRef.current = new AbortController();
-
-		// Note: We do NOT set isRequestPending(true) here.
-		// Connecting to the stream is a background process (listening).
-		// We rely on message.isStreaming state to determine if the UI should show a "busy" state.
 
 		try {
 			const res = await rpcClient.api.v1.canvas[":id"].agent[
@@ -59,110 +180,18 @@ export function useAgentChatStream(
 
 			if (!res.body) return;
 
-			const reader = res.body.getReader();
-			const decoder = new TextDecoder();
-			let aiTextAccumulator = "";
-			let currentAiMsgId: string | null = null;
-
-			// Initialize from existing streaming message if present (e.g. after refresh)
-			setMessages((prev) => {
-				const lastMsg = prev[prev.length - 1];
-				if (lastMsg && lastMsg.role === "model" && lastMsg.isStreaming) {
-					aiTextAccumulator = lastMsg.text;
-					currentAiMsgId = lastMsg.id;
-				}
-				return prev;
-			});
-
-			let buffer = "";
-
-			while (true) {
-				const { done, value } = await reader.read();
-				if (done) break;
-				buffer += decoder.decode(value, { stream: true });
-
-				const lines = buffer.split("\n");
-				buffer = lines.pop() || "";
-
-				for (const line of lines) {
-					if (line.trim() === "") continue;
-					if (line.startsWith("data: ")) {
-						const jsonStr = line.slice(6);
-						try {
-							const event = JSON.parse(jsonStr);
-
-							if (event.type === "done") {
-								break;
-							}
-
-							if (event.type === "error") {
-								console.error("Agent error:", event.error);
-								break;
-							}
-
-							if (event.type === "patch_proposed" && event.patchId) {
-								setPendingPatchId(event.patchId);
-							}
-
-							if (
-								event.type === "raw_model_stream_event" &&
-								event.data?.type === "output_text_delta"
-							) {
-								const delta = event.data.delta || "";
-								aiTextAccumulator += delta;
-
-								setMessages((prev) => {
-									const lastMsg = prev[prev.length - 1];
-									if (
-										lastMsg &&
-										lastMsg.role === "model" &&
-										lastMsg.isStreaming
-									) {
-										currentAiMsgId = lastMsg.id;
-										return prev.map((msg) =>
-											msg.id === lastMsg.id
-												? { ...msg, text: aiTextAccumulator }
-												: msg,
-										);
-									} else if (currentAiMsgId) {
-										return prev.map((msg) =>
-											msg.id === currentAiMsgId
-												? { ...msg, text: aiTextAccumulator }
-												: msg,
-										);
-									} else {
-										const newId = generateId();
-										currentAiMsgId = newId;
-										return [
-											...prev,
-											{
-												id: newId,
-												role: "model",
-												text: aiTextAccumulator,
-												isStreaming: true,
-												createdAt: new Date(),
-											},
-										];
-									}
-								});
-							}
-						} catch (e) {
-							console.error("Error parsing SSE JSON:", e);
-						}
-					}
-				}
-			}
+			// We don't implement the full complexity of "accumulating" from previous messages here
+			// because `connectToStream` is usually called on load/reconnect.
+			// The `processStream` helper handles attaching to existing streaming message if any.
+			await processStream(res.body.getReader());
 		} catch (error) {
 			if (error instanceof Error && error.name !== "AbortError") {
-				console.error("Stream error:", error);
+				console.error("Connection stream error:", error);
 			}
 		} finally {
-			setMessages((prev) =>
-				prev.map((msg) => ({ ...msg, isStreaming: false })),
-			);
 			abortControllerRef.current = null;
 		}
-	}, [canvasId, sessionId]);
+	}, [canvasId, sessionId, processStream]);
 
 	// --- Fetch History & Reconnect Stream ---
 	useEffect(() => {
@@ -170,9 +199,10 @@ export function useAgentChatStream(
 		setMessages([]);
 
 		if (!sessionId || !canvasId) {
-			setIsRequestPending(false); // Ensure we reset if no session
+			setIsRequestPending(false);
 			return;
 		}
+
 		const fetchHistoryAndConnect = async () => {
 			setIsRequestPending(true);
 			try {
@@ -189,11 +219,9 @@ export function useAgentChatStream(
 					createdAt: new Date(m.createdAt),
 				}));
 				setMessages(historyMessages);
-
-				// History loaded, stop "Loading" spinner immediately
 				setIsRequestPending(false);
 
-				// If session is active, connect to stream (background)
+				// Connect to stream if active
 				if (data.status === "ACTIVE") {
 					connectToStream();
 				}
@@ -243,7 +271,7 @@ export function useAgentChatStream(
 				].$post(
 					{
 						param: { id: canvasId, sessionId },
-						json: { message, model }, // Use the model passed to the hook
+						json: { message, model },
 					},
 					{
 						init: {
@@ -254,74 +282,23 @@ export function useAgentChatStream(
 
 				if (!response.body) throw new Error("No response body");
 
-				const reader = response.body.getReader();
-				const decoder = new TextDecoder();
-				let aiTextAccumulator = "";
-				let buffer = "";
-
-				while (true) {
-					const { done, value } = await reader.read();
-					if (done) break;
-					buffer += decoder.decode(value, { stream: true });
-
-					const lines = buffer.split("\n");
-					buffer = lines.pop() || "";
-
-					for (const line of lines) {
-						if (line.trim() === "") continue;
-						if (line.startsWith("data: ")) {
-							const jsonStr = line.slice(6);
-							try {
-								const event = JSON.parse(jsonStr);
-
-								if (event.type === "done") {
-									break;
-								}
-
-								if (event.type === "error") {
-									console.error("Agent error:", event.error);
-									break;
-								}
-
-								if (event.type === "patch_proposed" && event.patchId) {
-									setPendingPatchId(event.patchId);
-								}
-
-								if (
-									event.type === "raw_model_stream_event" &&
-									event.data?.type === "output_text_delta"
-								) {
-									aiTextAccumulator += event.data.delta || "";
-
-									setMessages((prev) =>
-										prev.map((msg) =>
-											msg.id === aiMsgId
-												? { ...msg, text: aiTextAccumulator }
-												: msg,
-										),
-									);
-								}
-							} catch (e) {
-								console.error("Error parsing SSE JSON:", e);
-							}
-						}
-					}
-				}
+				await processStream(response.body.getReader(), aiMsgId);
 			} catch (error) {
 				if (error instanceof Error && error.name !== "AbortError") {
-					console.error("Stream error:", error);
+					console.error("Send message error:", error);
+					// Mark message as not streaming if error
+					setMessages((prev) =>
+						prev.map((msg) =>
+							msg.id === aiMsgId ? { ...msg, isStreaming: false } : msg,
+						),
+					);
 				}
 			} finally {
 				setIsRequestPending(false);
-				setMessages((prev) =>
-					prev.map((msg) =>
-						msg.id === aiMsgId ? { ...msg, isStreaming: false } : msg,
-					),
-				);
 				abortControllerRef.current = null;
 			}
 		},
-		[canvasId, sessionId, model],
+		[canvasId, sessionId, model, processStream],
 	);
 
 	const stopGeneration = useCallback(async () => {
@@ -344,7 +321,6 @@ export function useAgentChatStream(
 		setPendingPatchId(null);
 	}, []);
 
-	// The UI is "loading" if we are waiting for a request OR if a message is actively streaming
 	const isStreaming = messages.some((m) => m.isStreaming && m.role === "model");
 	const isLoading = isRequestPending || isStreaming;
 
