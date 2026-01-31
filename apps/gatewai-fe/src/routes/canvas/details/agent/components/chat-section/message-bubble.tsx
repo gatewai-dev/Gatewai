@@ -73,7 +73,7 @@ export function MessageBubble({
 						<PatchReviewCard
 							patchId={patchId}
 							initialStatus={message.patchStatus}
-							onComplete={onPatchComplete || (() => { })}
+							onComplete={onPatchComplete || (() => {})}
 						/>
 					</div>
 				)}

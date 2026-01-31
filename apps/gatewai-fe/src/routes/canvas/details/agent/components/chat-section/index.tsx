@@ -131,7 +131,6 @@ export function AgentChatSection({ onClose }: { onClose: () => void }) {
 					// Actually, let's just mark the next message in our lookahead.
 					nextMsg.patchId = msg.patchId;
 					nextMsg.patchStatus = msg.patchStatus;
-					continue; // Skip adding the patch standalone
 				} else if (prevMsg && prevMsg.role === "model" && !prevMsg.patchId) {
 					// Attach to previous
 					prevMsg.patchId = msg.patchId;

@@ -1,3 +1,4 @@
+import assert from "node:assert";
 import { prisma } from "@gatewai/db";
 import { type BulkUpdatePayload, bulkUpdateSchema } from "@gatewai/types";
 import { Agent, tool } from "@openai/agents";
@@ -5,9 +6,11 @@ import { getQuickJS, type QuickJSContext, Scope } from "quickjs-emscripten";
 import { z } from "zod";
 import { zodToJsonSchema } from "zod-to-json-schema";
 import { GetCanvasEntities } from "../../../data-ops/canvas.js";
-import { getAgentModel, type AVAILABLE_AGENT_MODELS } from "../../agent-model.js";
+import {
+	type AVAILABLE_AGENT_MODELS,
+	getAgentModel,
+} from "../../agent-model.js";
 import { localGatewaiMCPTool } from "../../tools/gatewai-mcp.js";
-import assert from "node:assert";
 
 /**
  * Patcher Sub-Agent
@@ -39,7 +42,9 @@ interface PatcherContext {
 /**
  * Create the Patcher Sub-Agent as a Tool
  */
-export function createPatcherAgent(modelName: (typeof AVAILABLE_AGENT_MODELS)[number]) {
+export function createPatcherAgent(
+	modelName: (typeof AVAILABLE_AGENT_MODELS)[number],
+) {
 	let patcherContext: PatcherContext | null = null;
 
 	/**
@@ -163,7 +168,6 @@ export function createPatcherAgent(modelName: (typeof AVAILABLE_AGENT_MODELS)[nu
 			}
 			console.log("[VM] Context prepared. Starting execution.");
 
-
 			// Use Scope for automatic handle disposal
 			const scope = new Scope();
 			let context: QuickJSContext | undefined;
@@ -171,14 +175,14 @@ export function createPatcherAgent(modelName: (typeof AVAILABLE_AGENT_MODELS)[nu
 			try {
 				const QuickJS = await getQuickJS();
 				context = QuickJS.newContext();
-				assert(context)
+				assert(context);
 				const undefinedHandle = scope.manage(context.undefined);
 
 				// Helper: Inject JSON data into VM global scope
 				console.log("[VM] Preparing to inject globals");
 
 				const injectGlobal = (name: string, data: any) => {
-					assert(context)
+					assert(context);
 					const jsonStr = JSON.stringify(data);
 					const jsonHandle = scope.manage(context.newString(jsonStr));
 
@@ -193,7 +197,11 @@ export function createPatcherAgent(modelName: (typeof AVAILABLE_AGENT_MODELS)[nu
 					}
 					const parseFn = scope.manage(context.unwrapResult(parseResult));
 
-					const objHandle = scope.manage(context.unwrapResult(context.callFunction(parseFn, undefinedHandle, jsonHandle)));
+					const objHandle = scope.manage(
+						context.unwrapResult(
+							context.callFunction(parseFn, undefinedHandle, jsonHandle),
+						),
+					);
 
 					context.setProp(context.global, name, objHandle);
 				};
@@ -205,20 +213,26 @@ export function createPatcherAgent(modelName: (typeof AVAILABLE_AGENT_MODELS)[nu
 				injectGlobal("templates", patcherContext.templates);
 
 				// 2. Inject generateId helper
-				const generateIdHandle = scope.manage(context.newFunction("generateId", () => {
-					const id = `temp-${crypto.randomUUID()}`;
-					assert(context)
-					return context.newString(id); // NOTE: Return values from host functions are owned by VM, not Scope
-				}));
+				const generateIdHandle = scope.manage(
+					context.newFunction("generateId", () => {
+						const id = `temp-${crypto.randomUUID()}`;
+						assert(context);
+						return context.newString(id); // NOTE: Return values from host functions are owned by VM, not Scope
+					}),
+				);
 				context.setProp(context.global, "generateId", generateIdHandle);
 
 				// 3. Inject console.log helper (for debugging within VM if needed)
 				const consoleHandle = scope.manage(context.newObject());
-				const logHandle = scope.manage(context.newFunction("log", (...args: any[]) => {
-
-					const logArgs = args.map(arg => { assert(context); return context.dump(arg) });
-					console.log("[VM]", ...logArgs);
-				}));
+				const logHandle = scope.manage(
+					context.newFunction("log", (...args: any[]) => {
+						const logArgs = args.map((arg) => {
+							assert(context);
+							return context.dump(arg);
+						});
+						console.log("[VM]", ...logArgs);
+					}),
+				);
 				context.setProp(consoleHandle, "log", logHandle);
 				context.setProp(context.global, "console", consoleHandle);
 

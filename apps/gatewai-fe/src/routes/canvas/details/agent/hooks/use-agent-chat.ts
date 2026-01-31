@@ -337,11 +337,14 @@ export function useAgentChatStream(
 		setPendingPatchId(null);
 	}, []);
 
-	const updateMessage = useCallback((id: string, updates: Partial<ChatMessage>) => {
-		setMessages((prev) =>
-			prev.map((msg) => (msg.id === id ? { ...msg, ...updates } : msg)),
-		);
-	}, []);
+	const updateMessage = useCallback(
+		(id: string, updates: Partial<ChatMessage>) => {
+			setMessages((prev) =>
+				prev.map((msg) => (msg.id === id ? { ...msg, ...updates } : msg)),
+			);
+		},
+		[],
+	);
 
 	const updatePatchStatus = useCallback(
 		(patchId: string, status: "PENDING" | "ACCEPTED" | "REJECTED") => {
