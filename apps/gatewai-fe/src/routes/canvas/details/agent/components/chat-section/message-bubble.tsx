@@ -40,7 +40,7 @@ export function MessageBubble({
 	if (role === "user") {
 		return (
 			<div className="flex w-full justify-end animate-in slide-in-from-bottom-2 duration-300">
-				<div className="bg-primary text-primary-foreground rounded-2xl rounded-tr-sm max-w-[85%] px-2.5 py-1.5 text-sm leading-relaxed whitespace-pre-wrap break-words shadow-sm">
+				<div className="bg-primary text-primary-foreground rounded-2xl rounded-tr-sm max-w-[85%] px-2.5 py-1.5 text-xs leading-relaxed whitespace-pre-wrap break-words shadow-sm">
 					{text}
 				</div>
 			</div>
@@ -53,13 +53,13 @@ export function MessageBubble({
 			<div className="space-y-3">
 				<div className="flex w-full justify-start animate-in slide-in-from-bottom-2 duration-300">
 					<div className="bg-muted/50 border border-border/50 text-foreground rounded-2xl rounded-tl-sm max-w-[90%] px-2.5 py-2 text-[11px] leading-relaxed shadow-sm overflow-hidden">
-						<MarkdownRenderer className="text-sm" markdown={text} />
+						<MarkdownRenderer className="text-xs" markdown={text} />
 						{isStreaming && (
 							<div
 								className={cn("flex items-center gap-2", text.trim() && "mt-2")}
 							>
 								<LoadingSpinner className="size-4" />
-								<span className="text-sm text-muted-foreground">
+								<span className="text-xs text-muted-foreground">
 									Working...
 								</span>
 							</div>

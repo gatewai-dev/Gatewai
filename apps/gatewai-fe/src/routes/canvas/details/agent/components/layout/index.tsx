@@ -14,7 +14,7 @@ function AgentLayoutInner() {
 
 	return (
 		<Panel
-			className={cn("right-0 bottom-0 top-0 grow w-[360px]", {
+			className={cn("right-0 bottom-0 top-0 grow w-[320px]", {
 				"w-0": isCollapsed,
 			})}
 			position="top-right"
