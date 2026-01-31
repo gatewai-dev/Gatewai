@@ -124,7 +124,7 @@ const PaintNodeComponent = memo((props: NodeProps<PaintNode>) => {
 
 			const targetColor = getPixel(colorData, posX, posY, w);
 
-			const [brushR, brushG, brushB] = colorToRgb(brushColor);
+			const [brushR, brushG, brushB, brushA] = colorToRgb(brushColor);
 
 			const targetTol = tolerance;
 
@@ -133,7 +133,7 @@ const PaintNodeComponent = memo((props: NodeProps<PaintNode>) => {
 
 			let dataToModify: Uint8ClampedArray;
 			let ctxToPut: CanvasRenderingContext2D | null;
-			let alpha = 255;
+			let alpha = brushA;
 
 			if (isPreview) {
 				const preview = previewRef.current;
@@ -141,7 +141,7 @@ const PaintNodeComponent = memo((props: NodeProps<PaintNode>) => {
 				ctxToPut = preview.getContext("2d", { willReadFrequently: true });
 				if (!ctxToPut) throw new Error("Missing ctx for preview");
 				dataToModify = ctxToPut.createImageData(w, h).data;
-				alpha = 128; // Semi-transparent for preview
+				alpha = Math.floor(brushA * 0.5); // Semi-transparent for preview, relative to actual alpha
 			} else {
 				ctxToPut = maskCtx;
 				dataToModify = maskCtx.getImageData(0, 0, w, h).data;

@@ -1,18 +1,14 @@
-import type { CompositorLayer, CompositorNodeConfig } from "@gatewai/types";
+import {
+	COMPOSITOR_DEFAULTS,
+	type CompositorLayer,
+	type CompositorNodeConfig,
+	type GlobalCompositeOperationType,
+} from "@gatewai/types";
 import Konva from "konva";
 import { fontManager } from "@/lib/fonts";
 import { GetFontAssetUrl } from "@/utils/file";
 
-// Sync with server defaults
-const DEFAULTS = {
-	FONT_FAMILY: "Inter",
-	FONT_SIZE: 64,
-	FILL: "#ffffff",
-	LINE_HEIGHT: 1.1,
-	ALIGN: "left",
-	VERTICAL_ALIGN: "top",
-	LETTER_SPACING: 0,
-};
+// Local defaults removed in favor of shared COMPOSITOR_DEFAULTS
 
 const processCompositor = async (
 	config: CompositorNodeConfig,
@@ -58,13 +54,13 @@ const processCompositor = async (
 
 		if (input.type === "Text") {
 			Object.assign(defaultLayer, {
-				fontFamily: DEFAULTS.FONT_FAMILY,
-				fontSize: DEFAULTS.FONT_SIZE,
-				fill: DEFAULTS.FILL,
-				letterSpacing: DEFAULTS.LETTER_SPACING,
-				lineHeight: DEFAULTS.LINE_HEIGHT,
-				align: DEFAULTS.ALIGN,
-				verticalAlign: DEFAULTS.VERTICAL_ALIGN,
+				fontFamily: COMPOSITOR_DEFAULTS.FONT_FAMILY,
+				fontSize: COMPOSITOR_DEFAULTS.FONT_SIZE,
+				fill: COMPOSITOR_DEFAULTS.FILL,
+				letterSpacing: COMPOSITOR_DEFAULTS.LETTER_SPACING,
+				lineHeight: COMPOSITOR_DEFAULTS.LINE_HEIGHT,
+				align: COMPOSITOR_DEFAULTS.ALIGN,
+				verticalAlign: COMPOSITOR_DEFAULTS.VERTICAL_ALIGN,
 			});
 		} else {
 			const img = new Image();
@@ -136,13 +132,19 @@ const processCompositor = async (
 				width: layerConfig.width ?? width,
 				height: layerConfig.height,
 				rotation: layerConfig.rotation ?? 0,
+				stroke: layerConfig.stroke,
+				strokeWidth:
+					layerConfig.strokeWidth ?? COMPOSITOR_DEFAULTS.STROKE_WIDTH,
+				cornerRadius:
+					layerConfig.cornerRadius ?? COMPOSITOR_DEFAULTS.CORNER_RADIUS,
 				globalCompositeOperation:
-					(layerConfig.blendMode as GlobalCompositeOperation) ?? "source-over",
+					(layerConfig.blendMode as GlobalCompositeOperationType) ??
+					"source-over",
 			});
 			layer.add(kImage);
 		} else if (inputData.type === "Text") {
-			const fontSize = layerConfig.fontSize ?? DEFAULTS.FONT_SIZE;
-			const align = layerConfig.align ?? DEFAULTS.ALIGN;
+			const fontSize = layerConfig.fontSize ?? COMPOSITOR_DEFAULTS.FONT_SIZE;
+			const align = layerConfig.align ?? COMPOSITOR_DEFAULTS.ALIGN;
 			const hasExplicitWidth = !!(layerConfig.width && layerConfig.width > 0);
 
 			const kText = new Konva.Text({
@@ -152,22 +154,29 @@ const processCompositor = async (
 				opacity: layerConfig.opacity ?? 1,
 				rotation: layerConfig.rotation ?? 0,
 				fontSize: fontSize,
-				fontFamily: layerConfig.fontFamily ?? DEFAULTS.FONT_FAMILY,
+				fontFamily: layerConfig.fontFamily ?? COMPOSITOR_DEFAULTS.FONT_FAMILY,
 				fontStyle: layerConfig.fontStyle ?? "normal",
 				textDecoration: layerConfig.textDecoration ?? "",
-				fill: layerConfig.fill ?? DEFAULTS.FILL,
-				letterSpacing: layerConfig.letterSpacing ?? DEFAULTS.LETTER_SPACING,
-				lineHeight: layerConfig.lineHeight ?? DEFAULTS.LINE_HEIGHT,
+				fill: layerConfig.fill ?? COMPOSITOR_DEFAULTS.FILL,
+				letterSpacing:
+					layerConfig.letterSpacing ?? COMPOSITOR_DEFAULTS.LETTER_SPACING,
+				lineHeight: layerConfig.lineHeight ?? COMPOSITOR_DEFAULTS.LINE_HEIGHT,
 				width: hasExplicitWidth ? layerConfig.width : undefined,
 				height:
 					layerConfig.height && layerConfig.height > 0
 						? layerConfig.height
 						: undefined,
 				align: align,
-				verticalAlign: layerConfig.verticalAlign ?? DEFAULTS.VERTICAL_ALIGN,
-				wrap: hasExplicitWidth ? "word" : "none",
+				verticalAlign:
+					layerConfig.verticalAlign ?? COMPOSITOR_DEFAULTS.VERTICAL_ALIGN,
+				wrap: layerConfig.wrap ?? (hasExplicitWidth ? "word" : "none"),
+				padding: layerConfig.padding ?? COMPOSITOR_DEFAULTS.PADDING,
+				stroke: layerConfig.stroke,
+				strokeWidth:
+					layerConfig.strokeWidth ?? COMPOSITOR_DEFAULTS.STROKE_WIDTH,
 				globalCompositeOperation:
-					(layerConfig.blendMode as GlobalCompositeOperation) ?? "source-over",
+					(layerConfig.blendMode as GlobalCompositeOperationType) ??
+					"source-over",
 			});
 
 			kText.listening(false);

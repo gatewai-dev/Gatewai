@@ -169,6 +169,7 @@ const FontOptionsSchema = z.object({
 	letterSpacing: z.number().optional(),
 	lineHeight: z.number().optional(),
 	fontWeight: z.string().optional(),
+	wrap: z.enum(["word", "char", "none"]).optional(),
 });
 
 const AlignmentSchema = z.object({
@@ -242,6 +243,19 @@ const ScaleSchema = z.object({
 	scale: z.number().optional(),
 });
 
+const StrokeSchema = z.object({
+	stroke: ColorSchema,
+	strokeWidth: z.number().min(0).optional(),
+});
+
+const CornerRadiusSchema = z.object({
+	cornerRadius: z.number().min(0).optional(),
+});
+
+const PaddingSchema = z.object({
+	padding: z.number().min(0).optional(),
+});
+
 // Base Layer Schema (shared between Compositor and VideoCompositor layers)
 const BaseLayerSchema = z.object({
 	id: z.string(),
@@ -260,6 +274,9 @@ export const CompositorLayerSchema = BaseLayerSchema.merge(PositionSchema)
 	.merge(AspectLockSchema)
 	.merge(ZIndexSchema)
 	.merge(OpacitySchema)
+	.merge(StrokeSchema)
+	.merge(CornerRadiusSchema)
+	.merge(PaddingSchema)
 	.extend({
 		type: z.enum(["Text", "Image"]),
 		align: z.string().optional(),

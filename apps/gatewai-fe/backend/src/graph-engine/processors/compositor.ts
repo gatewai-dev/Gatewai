@@ -9,6 +9,7 @@ import type {
 	GlobalCompositeOperationType,
 	NodeResult,
 } from "@gatewai/types";
+import { COMPOSITOR_DEFAULTS } from "@gatewai/types";
 import Konva from "konva";
 import "konva/canvas-backend";
 import { loadImage, registerFont } from "canvas";
@@ -23,15 +24,7 @@ import type { NodeProcessor } from "./types.js";
 const __filename = fileURLToPath(import.meta.url);
 const __dirname = path.dirname(__filename);
 
-const DEFAULTS = {
-	FONT_FAMILY: "Inter",
-	FONT_SIZE: 64,
-	FILL: "#ffffff",
-	LINE_HEIGHT: 1.1,
-	ALIGN: "left",
-	VERTICAL_ALIGN: "top",
-	LETTER_SPACING: 0,
-};
+// Local defaults removed in favor of shared COMPOSITOR_DEFAULTS
 
 /**
  * Resolves local font files and registers them with the canvas backend.
@@ -41,7 +34,7 @@ const setupFonts = async (layers: CompositorLayer[]) => {
 	const families = new Set(
 		layers
 			.filter((l) => l.type === "Text")
-			.map((l) => l.fontFamily ?? DEFAULTS.FONT_FAMILY),
+			.map((l) => l.fontFamily ?? COMPOSITOR_DEFAULTS.FONT_FAMILY),
 	);
 
 	for (const family of families) {
@@ -98,7 +91,7 @@ const compositorProcessor: NodeProcessor = async ({ node, data }) => {
 				rotation: 0,
 				zIndex: ++maxZ,
 				blendMode: "source-over",
-				...(type === "Text" ? { ...DEFAULTS, width } : {}),
+				...(type === "Text" ? { ...COMPOSITOR_DEFAULTS, width } : {}),
 			});
 		}
 
@@ -135,6 +128,11 @@ const compositorProcessor: NodeProcessor = async ({ node, data }) => {
 					height: layerConfig.height ?? img.height,
 					opacity: layerConfig.opacity ?? 1,
 					rotation: layerConfig.rotation ?? 0,
+					stroke: layerConfig.stroke,
+					strokeWidth:
+						layerConfig.strokeWidth ?? COMPOSITOR_DEFAULTS.STROKE_WIDTH,
+					cornerRadius:
+						layerConfig.cornerRadius ?? COMPOSITOR_DEFAULTS.CORNER_RADIUS,
 					globalCompositeOperation:
 						layerConfig.blendMode as GlobalCompositeOperationType,
 				});
@@ -148,16 +146,22 @@ const compositorProcessor: NodeProcessor = async ({ node, data }) => {
 					y: layerConfig.y ?? 0,
 					width: hasWidth ? layerConfig.width : undefined,
 					height: layerConfig.height || undefined,
-					fontSize: layerConfig.fontSize ?? DEFAULTS.FONT_SIZE,
-					fontFamily: layerConfig.fontFamily ?? DEFAULTS.FONT_FAMILY,
+					fontSize: layerConfig.fontSize ?? COMPOSITOR_DEFAULTS.FONT_SIZE,
+					fontFamily: layerConfig.fontFamily ?? COMPOSITOR_DEFAULTS.FONT_FAMILY,
 					fontStyle: layerConfig.fontStyle ?? "normal",
-					fill: layerConfig.fill ?? DEFAULTS.FILL,
-					align: layerConfig.align ?? DEFAULTS.ALIGN,
-					verticalAlign: layerConfig.verticalAlign ?? DEFAULTS.VERTICAL_ALIGN,
-					lineHeight: layerConfig.lineHeight ?? DEFAULTS.LINE_HEIGHT,
-					letterSpacing: layerConfig.letterSpacing ?? DEFAULTS.LETTER_SPACING,
+					fill: layerConfig.fill ?? COMPOSITOR_DEFAULTS.FILL,
+					align: layerConfig.align ?? COMPOSITOR_DEFAULTS.ALIGN,
+					verticalAlign:
+						layerConfig.verticalAlign ?? COMPOSITOR_DEFAULTS.VERTICAL_ALIGN,
+					lineHeight: layerConfig.lineHeight ?? COMPOSITOR_DEFAULTS.LINE_HEIGHT,
+					letterSpacing:
+						layerConfig.letterSpacing ?? COMPOSITOR_DEFAULTS.LETTER_SPACING,
 					textDecoration: layerConfig.textDecoration ?? "",
-					wrap: hasWidth ? "word" : "none",
+					wrap: layerConfig.wrap ?? (hasWidth ? "word" : "none"),
+					padding: layerConfig.padding ?? COMPOSITOR_DEFAULTS.PADDING,
+					stroke: layerConfig.stroke,
+					strokeWidth:
+						layerConfig.strokeWidth ?? COMPOSITOR_DEFAULTS.STROKE_WIDTH,
 					opacity: layerConfig.opacity ?? 1,
 					rotation: layerConfig.rotation ?? 0,
 					globalCompositeOperation: layerConfig.blendMode as any,

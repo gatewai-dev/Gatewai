@@ -29,7 +29,7 @@ export function EmptyState({
 						Gatewai Copilot
 					</h1>
 					<p className="text-sm text-muted-foreground">
-						Your AI assistant for workflow automation
+						Your AI assistant for building workflows.
 					</p>
 				</div>
 				<InputArea

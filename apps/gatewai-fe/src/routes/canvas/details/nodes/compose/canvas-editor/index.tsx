@@ -21,6 +21,7 @@ import type {
 	FileData,
 	OutputItem,
 } from "@gatewai/types";
+import { COMPOSITOR_DEFAULTS } from "@gatewai/types";
 import type Konva from "konva";
 import type { KonvaEventObject } from "konva/lib/Node";
 import {
@@ -118,15 +119,7 @@ import type { NodeEntityType } from "@/store/nodes";
 import { GetAssetEndpoint, GetFontAssetUrl } from "@/utils/file";
 
 //#region CONSTANTS
-const DEFAULTS = {
-	FONT_FAMILY: "Inter",
-	FONT_SIZE: 64,
-	FILL: "#ffffff",
-	LINE_HEIGHT: 1.1,
-	ALIGN: "left",
-	VERTICAL_ALIGN: "top",
-	LETTER_SPACING: 0,
-};
+// Local defaults removed in favor of shared COMPOSITOR_DEFAULTS
 
 const ASPECT_RATIOS = [
 	{ label: "Youtube / HD (16:9)", width: 1280, height: 720 },
@@ -482,6 +475,9 @@ const ImageLayer: React.FC<LayerProps> = ({
 			onTransformEnd={onTransformEnd}
 			globalCompositeOperation={layer.blendMode as GlobalCompositeOperation}
 			opacity={layer.opacity ?? 1}
+			stroke={layer.stroke}
+			strokeWidth={layer.strokeWidth ?? COMPOSITOR_DEFAULTS.STROKE_WIDTH}
+			cornerRadius={layer.cornerRadius ?? COMPOSITOR_DEFAULTS.CORNER_RADIUS}
 			visible={layer.opacity !== 0}
 		/>
 	);
@@ -627,11 +623,11 @@ const TextLayer: React.FC<LayerProps> = ({
 			x={layer.x}
 			y={layer.y}
 			text={text as string}
-			fontSize={layer.fontSize ?? DEFAULTS.FONT_SIZE}
-			fontFamily={layer.fontFamily ?? DEFAULTS.FONT_FAMILY}
+			fontSize={layer.fontSize ?? COMPOSITOR_DEFAULTS.FONT_SIZE}
+			fontFamily={layer.fontFamily ?? COMPOSITOR_DEFAULTS.FONT_FAMILY}
 			fontStyle={layer.fontStyle ?? "normal"}
 			textDecoration={layer.textDecoration ?? ""}
-			fill={layer.fill ?? DEFAULTS.FILL}
+			fill={layer.fill ?? COMPOSITOR_DEFAULTS.FILL}
 			rotation={layer.rotation}
 			draggable={mode === "select"}
 			onClick={handleSelect}
@@ -643,11 +639,14 @@ const TextLayer: React.FC<LayerProps> = ({
 			onDragEnd={onDragEnd}
 			onTransformEnd={onTransformEnd}
 			globalCompositeOperation={layer.blendMode as GlobalCompositeOperation}
-			wrap="none"
-			align={layer.align || DEFAULTS.ALIGN}
-			verticalAlign={layer.verticalAlign ?? DEFAULTS.VERTICAL_ALIGN}
-			letterSpacing={layer.letterSpacing ?? DEFAULTS.LETTER_SPACING}
-			lineHeight={layer.lineHeight ?? DEFAULTS.LINE_HEIGHT}
+			wrap={layer.wrap ?? (layer.width ? "word" : "none")}
+			align={layer.align || COMPOSITOR_DEFAULTS.ALIGN}
+			verticalAlign={layer.verticalAlign ?? COMPOSITOR_DEFAULTS.VERTICAL_ALIGN}
+			letterSpacing={layer.letterSpacing ?? COMPOSITOR_DEFAULTS.LETTER_SPACING}
+			lineHeight={layer.lineHeight ?? COMPOSITOR_DEFAULTS.LINE_HEIGHT}
+			padding={layer.padding ?? COMPOSITOR_DEFAULTS.PADDING}
+			stroke={layer.stroke}
+			strokeWidth={layer.strokeWidth ?? COMPOSITOR_DEFAULTS.STROKE_WIDTH}
 			opacity={layer.opacity ?? 1}
 			visible={layer.opacity !== 0}
 		/>
@@ -1453,6 +1452,81 @@ const InspectorPanel: React.FC = () => {
 					</div>
 				</CollapsibleSection>
 
+				<CollapsibleSection title="Style" icon={ImageIcon}>
+					<div className="space-y-4">
+						<div className="space-y-2">
+							<Label className="text-[10px] text-gray-500 font-semibold">
+								BORDER
+							</Label>
+							<div className="grid grid-cols-[1fr,80px] gap-2">
+								<ColorPicker
+									value={selectedLayer.stroke ?? COMPOSITOR_DEFAULTS.STROKE}
+									onChange={(c) => updateLayer({ stroke: c })}
+									className="h-8 w-full"
+								/>
+								<DraggableNumberInput
+									label="Size"
+									icon={Move}
+									value={
+										selectedLayer.strokeWidth ??
+										COMPOSITOR_DEFAULTS.STROKE_WIDTH
+									}
+									onChange={(v) => updateLayer({ strokeWidth: v })}
+									min={0}
+								/>
+							</div>
+						</div>
+
+						{selectedLayer.type === "Image" && (
+							<div className="space-y-2">
+								<Label className="text-[10px] text-gray-500 font-semibold">
+									CORNER RADIUS
+								</Label>
+								<DraggableNumberInput
+									label="Radius"
+									icon={Move}
+									value={
+										selectedLayer.cornerRadius ??
+										COMPOSITOR_DEFAULTS.CORNER_RADIUS
+									}
+									onChange={(v) => updateLayer({ cornerRadius: v })}
+									min={0}
+								/>
+							</div>
+						)}
+
+						{selectedLayer.type === "Text" && (
+							<>
+								<div className="space-y-2">
+									<Label className="text-[10px] text-gray-500 font-semibold">
+										PADDING
+									</Label>
+									<DraggableNumberInput
+										label="Px"
+										icon={Move}
+										value={selectedLayer.padding ?? COMPOSITOR_DEFAULTS.PADDING}
+										onChange={(v) => updateLayer({ padding: v })}
+										min={0}
+									/>
+								</div>
+
+								<div className="flex items-center justify-between pt-1">
+									<Label className="text-[10px] text-gray-500 font-semibold">
+										WRAP TEXT
+									</Label>
+									<Switch
+										checked={selectedLayer.wrap === "word"}
+										onCheckedChange={(c) =>
+											updateLayer({ wrap: c ? "word" : "none" })
+										}
+										className="scale-75 data-[state=checked]:bg-blue-600"
+									/>
+								</div>
+							</>
+						)}
+					</div>
+				</CollapsibleSection>
+
 				{selectedLayer.type === "Text" && (
 					<CollapsibleSection title="Typography" icon={Type}>
 						<div className="space-y-4">
@@ -1919,15 +1993,17 @@ export const ImageDesignerEditor: React.FC<ImageDesignerEditorProps> = ({
 					};
 
 					if (newLayer.type === "Text") {
-						newLayer.fontSize = DEFAULTS.FONT_SIZE;
-						newLayer.fontFamily = DEFAULTS.FONT_FAMILY;
+						newLayer.fontSize = COMPOSITOR_DEFAULTS.FONT_SIZE;
+						newLayer.fontFamily = COMPOSITOR_DEFAULTS.FONT_FAMILY;
 						newLayer.fontStyle = "normal";
 						newLayer.textDecoration = "";
-						newLayer.fill = DEFAULTS.FILL;
-						newLayer.letterSpacing = DEFAULTS.LETTER_SPACING;
-						newLayer.lineHeight = DEFAULTS.LINE_HEIGHT;
-						newLayer.align = DEFAULTS.ALIGN;
-						newLayer.verticalAlign = DEFAULTS.VERTICAL_ALIGN;
+						newLayer.fill = COMPOSITOR_DEFAULTS.FILL;
+						newLayer.letterSpacing = COMPOSITOR_DEFAULTS.LETTER_SPACING;
+						newLayer.lineHeight = COMPOSITOR_DEFAULTS.LINE_HEIGHT;
+						newLayer.align = COMPOSITOR_DEFAULTS.ALIGN;
+						newLayer.verticalAlign = COMPOSITOR_DEFAULTS.VERTICAL_ALIGN;
+						newLayer.padding = COMPOSITOR_DEFAULTS.PADDING;
+						newLayer.wrap = "none";
 						newLayer.computedHeight = undefined;
 						newLayer.computedWidth = undefined;
 					}
