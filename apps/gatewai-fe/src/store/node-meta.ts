@@ -50,7 +50,7 @@ export const selectSelectedNodeIds = createDraftSafeSelector(
 
 export const selectSelectedEdgeIds = createDraftSafeSelector(
 	selectNodeMetaState,
-	(slice) => slice.selectedNodeIds,
+	(slice) => slice.selectedEdgeIds,
 );
 
 export const selectLoadingNodeIds = createDraftSafeSelector(

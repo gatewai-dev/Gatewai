@@ -27,6 +27,7 @@ import type { NodeTemplateListRPC } from "@/rpc/types";
 import { CanvasName } from "../../reactflow-container/left-panel/canvas-name";
 import { AssetsSection } from "../assets/assets-section";
 import { useNodeTemplates } from "../node-templates.ctx";
+import { GuidesDialog } from "./guides-dialog";
 import { NodePaletteProvider, useNodePalette } from "./node-palette.ctx";
 import { NodeTemplateList } from "./node-template-list";
 import { SearchInput } from "./search";
@@ -170,6 +171,7 @@ function NodePaletteContent({ templates }: { templates: NodeTemplateListRPC }) {
 					isCollapsed={isCollapsed}
 				/>
 				<div className="mt-2">
+					<GuidesDialog isCollapsed={isCollapsed} />
 					<AssetsSection isCollapsed={isCollapsed} />
 				</div>
 			</div>

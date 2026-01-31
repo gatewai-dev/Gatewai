@@ -9,20 +9,6 @@ export const dataTypeColors: Record<
 		text: "text-blue-500",
 		border: "border-blue-500",
 	},
-	Number: {
-		bg: "bg-green-500",
-		stroke: "stroke-green-500",
-		hex: "#22c55e",
-		text: "text-green-500",
-		border: "border-green-500",
-	},
-	Boolean: {
-		bg: "bg-yellow-500",
-		stroke: "stroke-yellow-500",
-		hex: "#eab308",
-		text: "text-yellow-500",
-		border: "border-yellow-500",
-	},
 	Image: {
 		bg: "bg-purple-500",
 		stroke: "stroke-purple-500",
@@ -44,18 +30,18 @@ export const dataTypeColors: Record<
 		text: "text-orange-500",
 		border: "border-orange-500",
 	},
-	File: {
-		bg: "bg-gray-500",
-		stroke: "stroke-gray-500",
-		hex: "#6b7280",
-		text: "text-gray-500",
-		border: "border-gray-500",
+	Number: {
+		bg: "bg-green-500",
+		stroke: "stroke-green-500",
+		hex: "#22c55e",
+		text: "text-green-500",
+		border: "border-green-500",
 	},
-	Any: {
-		bg: "bg-white",
-		stroke: "stroke-white",
-		hex: "#ffffff",
-		text: "text-white",
-		border: "border-white",
+	Boolean: {
+		bg: "bg-yellow-500",
+		stroke: "stroke-yellow-500",
+		hex: "#eab308",
+		text: "text-yellow-500",
+		border: "border-yellow-500",
 	},
 };

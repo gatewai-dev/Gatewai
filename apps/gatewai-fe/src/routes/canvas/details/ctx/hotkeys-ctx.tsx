@@ -30,18 +30,20 @@ const ShortcutsProvider = ({ children }: PropsWithChildren) => {
 		{ enabled: selectedNodeIDs.length > 0, preventDefault: true },
 	);
 
-	useHotkeys("backspace, delete", (event) => {
-		if (!selectedNodes) {
-			return;
-		}
-		event.preventDefault();
-		if (selectedNodeIDs.length > 0) {
-			onNodesDelete(selectedNodeIDs);
-		}
-		if (selectedEdgeIds && selectedEdgeIds?.length > 0) {
-			onEdgesDelete(selectedEdgeIds);
-		}
-	});
+	useHotkeys(
+		"backspace, delete",
+		(event) => {
+			event.preventDefault();
+			if (selectedNodeIDs.length > 0) {
+				onNodesDelete(selectedNodeIDs);
+			}
+			if (selectedEdgeIds && selectedEdgeIds?.length > 0) {
+				onEdgesDelete(selectedEdgeIds);
+			}
+		},
+		{ preventDefault: true },
+		[selectedNodeIDs, selectedEdgeIds],
+	);
 
 	return (
 		<ShortcutsContext.Provider value={undefined}>
