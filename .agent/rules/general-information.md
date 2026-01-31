@@ -1,5 +1,5 @@
 ---
 trigger: always_on
-glob:
-description:
 ---
+
+USE PNPM
