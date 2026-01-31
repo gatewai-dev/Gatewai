@@ -7,7 +7,7 @@ import App from "./App.tsx";
 
 // Enable when required
 scan({
-	enabled: true,
+	enabled: false,
 });
 
 const root = document.getElementById("root");
