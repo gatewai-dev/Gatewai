@@ -3,6 +3,7 @@ import { type BulkUpdatePayload, bulkUpdateSchema } from "@gatewai/types";
 import { Agent, tool } from "@openai/agents";
 import { getQuickJS, QuickJSContext, Scope } from "quickjs-emscripten";
 import { z } from "zod";
+import { zodToJsonSchema } from "zod-to-json-schema";
 import { GetCanvasEntities } from "../../../data-ops/canvas.js";
 import { getAgentModel, AVAILABLE_AGENT_MODELS } from "../../agent-model.js";
 import { localGatewaiMCPTool } from "../../tools/gatewai-mcp.js";
@@ -235,7 +236,7 @@ export function createPatcherAgent(modelName: (typeof AVAILABLE_AGENT_MODELS)[nu
 					const errorHandle = scope.manage(resultHandle.error);
 					const error = context.dump(errorHandle);
 					console.error("[VM] Execution error dump:", error);
-					throw new Error(error.name && error.message ? `${error.name}: ${error.message}` : String(error));
+					throw new Error(error);
 				}
 
 				const valueHandle = scope.manage(resultHandle.value);
@@ -345,6 +346,12 @@ export function createPatcherAgent(modelName: (typeof AVAILABLE_AGENT_MODELS)[nu
 		},
 	});
 
+	// Generate JSON schema for validation reference
+	const jsonSchema = zodToJsonSchema(bulkUpdateSchema, {
+		name: "bulkUpdateSchema",
+	});
+	const schemaString = JSON.stringify(jsonSchema, null, 2);
+
 	const systemPrompt = `You are a Canvas Patcher Agent. Your job is to write JavaScript code that transforms canvas state.
 
 ## Your Tools
@@ -364,12 +371,23 @@ export function createPatcherAgent(modelName: (typeof AVAILABLE_AGENT_MODELS)[nu
 
 ## Code Guidelines
 
+- Code will be run in a sandboxed environment with quickjs-emscripten.
 - Use generateId() for ALL new IDs
 - Access current state via: nodes, edges, handles
 - Access templates via: templates (each has .templateHandles array)
 - Return { nodes, edges, handles } at the end
 - Copy template handle properties EXACTLY (dataTypes, label, required)
 - Position new nodes with proper spacing (500px horizontal, 450px vertical)
+
+## Validation Schema
+
+The output of executeCanvasCodeTool will be validated against the following JSON Schema. 
+Pay special attention to the "config" property of nodes, as it varies by node type.
+Use this schema to understand valid properties and types for node configurations.
+
+\`\`\`json
+${schemaString}
+\`\`\`
 
 ## Common Patterns
 
@@ -386,7 +404,12 @@ nodes.push({
   templateId: template.id,
   position: { x: 600, y: 100 },
   width: 340,
-  config: template.defaultConfig || {}
+  config: template.defaultConfig || {
+    // Refer to the schema for valid config properties per node type
+    model: 'gemini-2.5-flash-image',
+    aspectRatio: '1:1',
+    imageSize: '1K'
+  }
 });
 
 // Add handles from template

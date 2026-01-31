@@ -6,6 +6,8 @@ import type { PrismaAgentSession } from "../../session/gatewai-session.js";
 import { createPatcherAgent } from "../patcher/index.js";
 
 import { BASE_SYSTEM_PROMPT } from "./prompts.js";
+import { zodToJsonSchema } from "zod-to-json-schema";
+import { bulkUpdateSchema } from "@gatewai/types";
 
 export const CreateOrchestratorAgentForCanvas = async ({
 	canvasId,
@@ -20,7 +22,10 @@ export const CreateOrchestratorAgentForCanvas = async ({
 		include: { templateHandles: true },
 	});
 	const templatesStr = JSON.stringify(nodeTemplates, null, 2);
-
+	const jsonSchema = zodToJsonSchema(bulkUpdateSchema, {
+		name: "bulkUpdateSchema",
+	});
+	const schemaString = JSON.stringify(jsonSchema, null, 2);
 	const getInstructions = async () => {
 		const freshState = await GetCanvasEntities(canvasId);
 
@@ -84,6 +89,14 @@ ${JSON.stringify(freshState, null, 2)}
 # CONVERSATION HISTORY
 
 ${historyStr || "No prior conversation history."}
+
+# Canvas Specification Schema
+
+Check the specs for the canvas to understand valid properties and types for node configurations.
+
+\`\`\`json
+${schemaString}
+\`\`\`
 
 # BEGIN ANALYSIS
 
