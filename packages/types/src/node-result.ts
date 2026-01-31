@@ -31,7 +31,7 @@ export type DataForType<R extends DataType> = R extends "Text"
 		? number
 		: R extends "Boolean"
 			? boolean
-			: R extends "Image" | "Audio" | "Video" | "VideoLayer"
+			: R extends "Image" | "Audio" | "Video"
 				? FileData
 				: R extends "Any"
 					? string | number | boolean | FileData

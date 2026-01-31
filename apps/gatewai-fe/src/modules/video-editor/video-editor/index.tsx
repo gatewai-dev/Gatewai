@@ -30,6 +30,7 @@ import {
 	ChevronDown,
 	EyeOff,
 	Film,
+	GripHorizontal,
 	GripVertical,
 	Hand,
 	Image as ImageIcon,
@@ -41,6 +42,7 @@ import {
 	MoveHorizontal,
 	MoveVertical,
 	Music,
+	Palette,
 	Pause,
 	Play,
 	Plus,
@@ -128,6 +130,9 @@ import { DEFAULT_DURATION_FRAMES, FPS } from "../config";
 const RULER_HEIGHT = 28;
 const TRACK_HEIGHT = 32;
 const HEADER_WIDTH = 200;
+const DEFAULT_TIMELINE_HEIGHT = 208; // h-52 equivalent
+const MIN_TIMELINE_HEIGHT = 120;
+const MAX_TIMELINE_HEIGHT = 400;
 // Optimized Presets for Web Editing (Performance focused)
 const ASPECT_RATIOS = [
 	{ label: "Youtube / HD (16:9)", width: 1280, height: 720 },
@@ -175,6 +180,8 @@ interface EditorContextType {
 	isDirty: boolean;
 	setIsDirty: Dispatch<SetStateAction<boolean>>;
 	timelineScrollRef: React.RefObject<HTMLDivElement | null>;
+	timelineHeight: number;
+	setTimelineHeight: Dispatch<SetStateAction<number>>;
 }
 const EditorContext = createContext<EditorContextType | undefined>(undefined);
 const useEditor = () => {
@@ -865,12 +872,15 @@ const TimelinePanel: React.FC = () => {
 		isPlaying,
 		fps,
 		timelineScrollRef: scrollContainerRef,
+		timelineHeight,
+		setTimelineHeight,
 	} = useEditor();
 	const playheadRef = useRef<HTMLDivElement>(null);
 	const [isPanningTimeline, setIsPanningTimeline] = useState(false);
 	const [dragStartX, setDragStartX] = useState(0);
 	const [initialScroll, setInitialScroll] = useState(0);
 	const [pixelsPerFrame, setPixelsPerFrame] = useState(10); // Increased default for better visibility
+	const [isResizingTimeline, setIsResizingTimeline] = useState(false);
 	const sortedLayers = useMemo(
 		() => [...layers].sort((a, b) => (b.zIndex ?? 0) - (a.zIndex ?? 0)),
 		[layers],
@@ -993,8 +1003,42 @@ const TimelinePanel: React.FC = () => {
 		window.addEventListener("mousemove", onMove);
 		window.addEventListener("mouseup", onUp);
 	};
+	const handleTimelineResize = (e: React.MouseEvent) => {
+		e.preventDefault();
+		const startY = e.clientY;
+		const startHeight = timelineHeight;
+		setIsResizingTimeline(true);
+
+		const onMove = (moveEv: MouseEvent) => {
+			const delta = startY - moveEv.clientY;
+			const newHeight = Math.min(
+				MAX_TIMELINE_HEIGHT,
+				Math.max(MIN_TIMELINE_HEIGHT, startHeight + delta),
+			);
+			setTimelineHeight(newHeight);
+		};
+
+		const onUp = () => {
+			setIsResizingTimeline(false);
+			window.removeEventListener("mousemove", onMove);
+			window.removeEventListener("mouseup", onUp);
+		};
+
+		window.addEventListener("mousemove", onMove);
+		window.addEventListener("mouseup", onUp);
+	};
 	return (
-		<div className="h-52 flex flex-col border-t border-white/10 bg-[#0f0f0f] shrink-0 select-none z-30 shadow-[0_-5px_20px_rgba(0,0,0,0.5)]">
+		<div
+			className="flex flex-col border-t border-white/10 bg-[#0f0f0f] shrink-0 select-none z-30 shadow-[0_-5px_20px_rgba(0,0,0,0.5)]"
+			style={{ height: timelineHeight }}
+		>
+			{/* Resize Handle */}
+			<div
+				className={`h-1.5 flex items-center justify-center cursor-ns-resize hover:bg-white/10 transition-colors group ${isResizingTimeline ? "bg-blue-500/20" : ""}`}
+				onMouseDown={handleTimelineResize}
+			>
+				<GripHorizontal className="w-6 h-3 text-gray-600 group-hover:text-gray-400 transition-colors" />
+			</div>
 			{/* Toolbar */}
 			<div className="h-8 border-b border-white/5 flex items-center justify-between px-3 bg-neutral-900 shrink-0 z-40">
 				<div className="text-[10px] font-bold text-neutral-400 tracking-wider flex items-center gap-1.5">
@@ -1395,7 +1439,7 @@ const InspectorPanel: React.FC = () => {
 	const isUnderline = selectedLayer?.textDecoration === "underline";
 	if (!selectedLayer) {
 		return (
-			<div className="w-80 border-l border-white/5 bg-[#0f0f0f] flex flex-col z-20 shadow-xl h-full">
+			<div className="w-80 border-l border-white/5 bg-[#0f0f0f] flex flex-col z-20 shadow-xl shrink-0 overflow-hidden">
 				<div className="p-4 bg-neutral-900 border-b border-white/5">
 					<div className="flex items-center gap-2 text-xs font-bold text-gray-200 uppercase tracking-wide">
 						<Settings2 className="w-3.5 h-3.5 text-blue-400" />
@@ -1403,7 +1447,7 @@ const InspectorPanel: React.FC = () => {
 					</div>
 				</div>
 				<ScrollArea className="flex-1">
-					<div className="p-4 pb-52 space-y-6">
+					<div className="p-4 pb-6 space-y-6">
 						{/* Canvas Settings Group */}
 						<div className="space-y-4">
 							<div className="space-y-1.5">
@@ -1472,7 +1516,7 @@ const InspectorPanel: React.FC = () => {
 		);
 	}
 	return (
-		<div className="w-80 border-l border-white/5 bg-[#0f0f0f] z-20 shadow-xl flex flex-col h-full">
+		<div className="w-80 border-l border-white/5 bg-[#0f0f0f] z-20 shadow-xl flex flex-col shrink-0 overflow-hidden">
 			<div className="flex items-center justify-between p-4 border-b border-white/5 bg-neutral-900/50">
 				<div className="flex flex-col min-w-0">
 					<span className="text-[10px] text-blue-400 uppercase font-bold tracking-wider mb-0.5">
@@ -1487,7 +1531,7 @@ const InspectorPanel: React.FC = () => {
 				</span>
 			</div>
 			<ScrollArea className="flex-1">
-				<div className="pb-52">
+				<div className="pb-6">
 					{/* Transform */}
 					{selectedLayer.type !== "Audio" && (
 						<div className="border-b border-white/5 p-4">
@@ -1562,6 +1606,56 @@ const InspectorPanel: React.FC = () => {
 								<span className="text-[9px] text-gray-400 w-6 text-right">
 									{Math.round((selectedLayer.volume ?? 1) * 100)}%
 								</span>
+							</div>
+						</div>
+					)}
+					{/* Appearance - for Image/Video layers */}
+					{(selectedLayer.type === "Image" ||
+						selectedLayer.type === "Video") && (
+						<div className="border-b border-white/5 p-4">
+							<div className="flex items-center gap-2 mb-3 text-[11px] font-bold text-gray-500 uppercase tracking-wider">
+								<Palette className="w-3.5 h-3.5" /> Appearance
+							</div>
+							<div className="space-y-4">
+								<div className="space-y-1.5">
+									<Label className="text-[10px] text-gray-500 font-semibold">
+										BACKGROUND
+									</Label>
+									<ColorPicker
+										value={selectedLayer.backgroundColor ?? "transparent"}
+										onChange={(c) => update({ backgroundColor: c })}
+									/>
+								</div>
+								<div className="space-y-1.5">
+									<Label className="text-[10px] text-gray-500 font-semibold">
+										BORDER
+									</Label>
+									<div className="grid grid-cols-2 gap-2">
+										<DraggableNumberInput
+											label="Width"
+											icon={MoveHorizontal}
+											value={selectedLayer.borderWidth ?? 0}
+											onChange={(v) => update({ borderWidth: Math.max(0, v) })}
+										/>
+										<DraggableNumberInput
+											label="Radius"
+											icon={MoveHorizontal}
+											value={selectedLayer.borderRadius ?? 0}
+											onChange={(v) => update({ borderRadius: Math.max(0, v) })}
+										/>
+									</div>
+								</div>
+								{(selectedLayer.borderWidth ?? 0) > 0 && (
+									<div className="space-y-1.5">
+										<Label className="text-[10px] text-gray-500 font-semibold">
+											BORDER COLOR
+										</Label>
+										<ColorPicker
+											value={selectedLayer.borderColor ?? "#ffffff"}
+											onChange={(c) => update({ borderColor: c })}
+										/>
+									</div>
+								)}
 							</div>
 						</div>
 					)}
@@ -1829,6 +1923,7 @@ export const VideoDesignerEditor: React.FC<VideoDesignerEditorProps> = ({
 	const [zoom, setZoom] = useState(0.5);
 	const [pan, setPan] = useState({ x: 0, y: 0 });
 	const [mode, setMode] = useState<"select" | "pan">("select");
+	const [timelineHeight, setTimelineHeight] = useState(DEFAULT_TIMELINE_HEIGHT);
 	// Player State
 	const [currentFrame, setCurrentFrame] = useState(0);
 	const [isPlaying, setIsPlayingState] = useState(false);
@@ -2311,6 +2406,8 @@ export const VideoDesignerEditor: React.FC<VideoDesignerEditorProps> = ({
 			isDirty,
 			setIsDirty,
 			timelineScrollRef,
+			timelineHeight,
+			setTimelineHeight,
 		}),
 		[
 			layers,
@@ -2335,6 +2432,7 @@ export const VideoDesignerEditor: React.FC<VideoDesignerEditorProps> = ({
 			zoomOut,
 			zoomTo,
 			fitView,
+			timelineHeight,
 		],
 	);
 	useEffect(() => {

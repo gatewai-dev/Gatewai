@@ -6,6 +6,7 @@ import type { NodeProcessor } from "./types.js";
 const exportProcessor: NodeProcessor = async ({ node, data }) => {
 	try {
 		const inputValue = getInputValue(data, node.id, true, {});
+		assert(inputValue);
 
 		const newResult = structuredClone(
 			node.result as unknown as ExportResult,
@@ -14,7 +15,6 @@ const exportProcessor: NodeProcessor = async ({ node, data }) => {
 			selectedOutputIndex: 0,
 		};
 
-		assert(inputValue);
 		const newGeneration: ExportResult["outputs"][number] = {
 			items: [
 				{
@@ -33,7 +33,7 @@ const exportProcessor: NodeProcessor = async ({ node, data }) => {
 		if (err instanceof Error) {
 			return { success: false, error: err.message };
 		}
-		return { success: false, error: "Text Merger processing failed" };
+		return { success: false, error: "Export processing failed" };
 	}
 };
 

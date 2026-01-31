@@ -298,6 +298,11 @@ export const VideoCompositorLayerSchema = BaseLayerSchema.merge(PositionSchema)
 	.merge(OpacitySchema)
 	.extend({
 		type: z.enum(["Text", "Image", "Video", "Audio"]),
+		// New Remotion Web Renderer compatible properties
+		backgroundColor: z.string().optional(),
+		borderColor: z.string().optional(),
+		borderWidth: z.number().min(0).optional(),
+		borderRadius: z.number().min(0).optional(),
 	})
 	.strict();
 

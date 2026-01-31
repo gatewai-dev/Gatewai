@@ -193,6 +193,12 @@ export const CompositionScene: React.FC<SceneProps> = ({
 					height: layer.height,
 					transform: `rotate(${animRotation}deg) scale(${animScale})`,
 					opacity: animOpacity,
+					// New Remotion-compatible properties
+					backgroundColor: layer.backgroundColor,
+					borderColor: layer.borderColor,
+					borderWidth: layer.borderWidth,
+					borderRadius: layer.borderRadius,
+					borderStyle: layer.borderWidth ? "solid" : undefined,
 				};
 
 				return (

@@ -21,7 +21,7 @@ const VideoCompositorView = memo(() => {
 		throw new Error("Node Id is missing");
 	}
 	const node = useAppSelector(makeSelectNodeById(nodeId));
-	const { inputs, isProcessed } = useNodeResult(nodeId);
+	const { inputs } = useNodeResult(nodeId);
 	const { onNodeConfigUpdate, moveViewportToNode } = useCanvasCtx();
 
 	const initialLayers = useMemo(() => {
