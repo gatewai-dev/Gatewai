@@ -1516,7 +1516,7 @@ const InspectorPanel: React.FC = () => {
 		);
 	}
 	return (
-		<div className="w-80 border-l border-white/5 bg-[#0f0f0f] z-20 shadow-xl flex flex-col shrink-0 overflow-hidden">
+		<div className="w-80 border-l border-white/5 bg-[#0f0f0f] z-20 shadow-xl flex flex-col shrink-0 overflow-hidden min-h-0">
 			<div className="flex items-center justify-between p-4 border-b border-white/5 bg-neutral-900/50">
 				<div className="flex flex-col min-w-0">
 					<span className="text-[10px] text-blue-400 uppercase font-bold tracking-wider mb-0.5">
