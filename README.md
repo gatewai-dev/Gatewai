@@ -48,6 +48,16 @@ Gatewai ships with dedicated image and video compositor nodes, removing the barr
 
 ---
 
+## 🤖 Gatewai Copilot
+
+Gatewai's intelligent agent system uses a sophisticated multi-agent architecture to co-create with you.
+
+* **Orchestrator Agent**: Powered by **Gemini 3**, it understands your high-level intent, analyzes the current canvas state, and plans workflow modifications.
+* **Patcher Sub-Agent**: A specialized coding agent that safely generates and verifies JavaScript to manipulate the canvas graph. It executes in a sandboxed `QuickJS` and `VM` environment to ensure structural integrity (correct handle types, valid connections) before any changes are applied.
+* **Context Aware**: The agent has full visibility into your node templates (`ImageGen`, `VideoCompositor`, etc.) and seamlessly bridges natural language with complex graph operations.
+
+---
+
 ## Getting Started
 
 ### Installation
