@@ -526,6 +526,7 @@ const CanvasProvider = ({
 		async (edgeIds: NodeEntityType["id"][]) => {
 			const newEdges = rfEdges.filter((f) => !edgeIds.includes(f.id));
 			dispatch(setEdges(newEdges));
+			dispatch(deleteManyEdgeEntity(edgeIds));
 
 			scheduleSave();
 		},

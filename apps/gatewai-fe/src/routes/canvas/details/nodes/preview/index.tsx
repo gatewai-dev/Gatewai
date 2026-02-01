@@ -32,11 +32,11 @@ const ImagePreview = memo(({ data }: { data: FileData }) => {
 ImagePreview.displayName = "ImagePreview";
 
 const PreviewNodeComponent = memo((props: NodeProps<PreviewNode>) => {
-	const { result } = useNodeResult(props.id);
+	const { result, error } = useNodeResult(props.id);
 	const node = useAppSelector(makeSelectNodeById(props.id));
 	const [showMarkdown, setShowMarkdown] = useState(false);
 
-	if (!result) {
+	if (!result || error) {
 		return (
 			<BaseNode
 				selected={props.selected}

@@ -33,52 +33,121 @@ import { NodeMenu } from "./node-menu";
 const DEFAULT_COLOR = "#9ca3af";
 
 /**
+ * Generates a conic-gradient CSS string for multiple colors.
+ * Colors are split evenly around the circle.
+ */
+const getMultiColorGradient = (colors: string[]): string => {
+	if (colors.length === 0) return DEFAULT_COLOR;
+	if (colors.length === 1) return colors[0];
+
+	const segmentSize = 360 / colors.length;
+	const stops = colors
+		.map((color, i) => {
+			const start = i * segmentSize;
+			const end = (i + 1) * segmentSize;
+			return `${color} ${start}deg ${end}deg`;
+		})
+		.join(", ");
+
+	return `conic-gradient(from 90deg, ${stops})`;
+};
+
+/**
+ * Returns the hex colors for the given data types.
+ */
+const getColorsForTypes = (types: string[]): string[] => {
+	return types
+		.map((t) => dataTypeColors[t]?.hex)
+		.filter((c): c is string => !!c);
+};
+
+/**
+ * Handle style result with optional multi-color gradient.
+ */
+interface HandleStyleResult {
+	style: React.CSSProperties;
+	isMultiColor: boolean;
+	gradientColors: string[];
+}
+
+const baseDimensions = {
+	width: "10px",
+	height: "18px",
+	borderRadius: "2px",
+};
+
+/**
  * Generates styles for the handle based on processor state.
+ * Returns style object plus multi-color info for gradient wrapper rendering.
  */
 export const getHandleStyle = (
 	status: HandleState | undefined,
 	defColors: string[],
-): React.CSSProperties => {
-	const baseDimensions = {
-		width: "10px",
-		height: "18px",
-		borderRadius: "2px",
-	};
+): HandleStyleResult => {
+	const typeColors = getColorsForTypes(defColors);
+	const isMultiType = typeColors.length > 1;
+	const hasResolvedColor = !!status?.color;
 
 	// 1. Error state (from validation or status, but only if connected)
 	if (status && !status.valid && status.isConnected) {
 		return {
-			...baseDimensions,
-			backgroundColor: "var(--destructive)",
-			border: "1px solid var(--background)",
-			boxShadow: "0 0 0 2px var(--destructive), 0 0 8px var(--destructive/50)",
+			style: {
+				...baseDimensions,
+				backgroundColor: "var(--destructive)",
+				border: "1px solid var(--background)",
+				boxShadow:
+					"0 0 0 2px var(--destructive), 0 0 8px var(--destructive/50)",
+			},
+			isMultiColor: false,
+			gradientColors: [],
 		};
 	}
 
-	// 2. Disconnected state: Transparent/Hollow
+	// 2. Disconnected state
 	if (!status?.isConnected) {
-		// If disconnected, show a hollow box with the color of the *default* type
-		// to indicate what *should* go there.
-		const defaultColor =
-			dataTypeColors[defColors[0]]?.hex ||
+		// If multi-type AND no resolved color → use gradient wrapper
+		if (isMultiType && !hasResolvedColor) {
+			return {
+				style: {
+					...baseDimensions,
+					backgroundColor: "var(--card)",
+					border: "none", // Border handled by gradient wrapper
+				},
+				isMultiColor: true,
+				gradientColors: typeColors,
+			};
+		}
+
+		// Single type or resolved color → solid border
+		const solidColor =
+			status?.color ||
+			typeColors[0] ||
 			dataTypeColors["Any"]?.hex ||
 			DEFAULT_COLOR;
 		return {
-			...baseDimensions,
-			backgroundColor: "var(--card)", // Hollow center
-			border: `2px solid ${defaultColor}`,
-			boxShadow: "none",
+			style: {
+				...baseDimensions,
+				backgroundColor: "var(--card)",
+				border: `2px solid ${solidColor}`,
+				boxShadow: "none",
+			},
+			isMultiColor: false,
+			gradientColors: [],
 		};
 	}
 
 	// 3. Connected state: Filled with the resolved active type color
 	const color = status.color || DEFAULT_COLOR;
 	return {
-		...baseDimensions,
-		backgroundColor: color,
-		border: "1px solid var(--background)",
-		boxShadow: `0 0 0 1px ${color}80`,
-		transition: "background-color 0.15s ease, box-shadow 0.15s ease",
+		style: {
+			...baseDimensions,
+			backgroundColor: color,
+			border: "1px solid var(--background)",
+			boxShadow: `0 0 0 1px ${color}80`,
+			transition: "background-color 0.15s ease, box-shadow 0.15s ease",
+		},
+		isMultiColor: false,
+		gradientColors: [],
 	};
 };
 
@@ -101,7 +170,12 @@ const NodeHandle = memo(
 		const validation = useNodeValidation(handle.nodeId);
 		const errorCode = validation?.[handle.id];
 		const isRequiredErr = errorCode === "missing_connection";
-		const handleStyle = useMemo(
+
+		const {
+			style: handleStyle,
+			isMultiColor,
+			gradientColors,
+		} = useMemo(
 			() => getHandleStyle(status, handle.dataTypes),
 			[status, handle.dataTypes],
 		);
@@ -112,7 +186,7 @@ const NodeHandle = memo(
 		}
 		const topPosition = (index + 1) * 32 + 20;
 
-		const handleComponent = (
+		const handleElement = (
 			<Handle
 				id={handle.id}
 				type={type}
@@ -123,6 +197,28 @@ const NodeHandle = memo(
 					"hover:scale-110 transition-transform duration-75",
 				)}
 			/>
+		);
+
+		// Wrap handle in gradient container if multi-color
+		const handleComponent = isMultiColor ? (
+			<div className="relative hover:scale-120 transition-transform duration-75">
+				{/* Gradient border background */}
+				<div
+					className="absolute inset-0"
+					style={{
+						width: "14px",
+						height: "22px",
+						borderRadius: "3px",
+						background: getMultiColorGradient(gradientColors),
+						top: "-11px",
+						left: "-7px",
+					}}
+				/>
+				{/* Handle on top */}
+				<div className="relative">{handleElement}</div>
+			</div>
+		) : (
+			handleElement
 		);
 
 		let tooltipContent: string | null = null;
@@ -370,10 +466,9 @@ const CustomEdge = memo(
 		// Fetch the color dynamically from the processor based on the source handle
 		const processorColor = useEdgeColor(source, sourceHandleId ?? "");
 
-		const color = useMemo(
-			() => (selected ? "var(--primary)" : processorColor || "var(--border)"),
-			[selected, processorColor],
-		);
+		const color = selected
+			? "var(--primary)"
+			: processorColor || "var(--border)";
 
 		return (
 			<>
