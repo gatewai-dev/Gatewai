@@ -1,5 +1,6 @@
 import { ArrowRight, StopCircle } from "lucide-react";
-import { useEffect } from "react";
+import type { AutosizeTextAreaRef } from "@/components/ui/autosize-textarea";
+import { AutosizeTextarea } from "@/components/ui/autosize-textarea";
 import { Button } from "@/components/ui/button";
 import {
 	Select,
@@ -8,7 +9,6 @@ import {
 	SelectTrigger,
 	SelectValue,
 } from "@/components/ui/select";
-import { Textarea } from "@/components/ui/textarea";
 import { cn } from "@/lib/utils";
 
 const MODEL_OPTIONS = [
@@ -24,7 +24,7 @@ interface InputAreaProps {
 	isLoading: boolean;
 	handleSubmit: () => Promise<void>;
 	stopGeneration: () => void;
-	textareaRef: React.RefObject<HTMLTextAreaElement | null>;
+	textareaRef: React.RefObject<AutosizeTextAreaRef | null>;
 	selectedModel: string;
 	setSelectedModel: (value: string) => void;
 }
@@ -40,15 +40,7 @@ export function InputArea({
 	selectedModel,
 	setSelectedModel,
 }: InputAreaProps) {
-	// Auto-resize textarea based on content
-	useEffect(() => {
-		const textarea = textareaRef.current;
-		if (!textarea) return;
-
-		textarea.style.height = "auto";
-		const newHeight = Math.min(textarea.scrollHeight, 160); // Max 160px
-		textarea.style.height = `${newHeight}px`;
-	}, [inputValue, textareaRef]);
+	// AutosizeTextarea handles resizing internally.
 
 	const handleKeyDown = (e: React.KeyboardEvent<HTMLTextAreaElement>) => {
 		if (e.key === "Enter" && !e.shiftKey) {
@@ -77,14 +69,15 @@ export function InputArea({
 					<span className="text-[10px] font-medium bg-primary/10 text-primary px-1.5 py-0.5 rounded-md mt-1 flex-shrink-0">
 						@agent
 					</span>
-					<Textarea
+					<AutosizeTextarea
 						ref={textareaRef}
 						value={inputValue}
 						onChange={(e) => setInputValue(e.target.value)}
 						onKeyDown={handleKeyDown}
 						placeholder="Enter your request..."
-						className="flex-1 border-0 focus-visible:ring-0 min-h-[24px] focus-visible:ring-offset-0 resize-none max-h-40 p-1 text-xs shadow-none"
-						rows={1}
+						className="flex-1 border-0 focus-visible:ring-0 min-h-[24px] focus-visible:ring-offset-0 p-1 text-xs shadow-none"
+						minHeight={24}
+						maxHeight={160}
 						aria-label="Message input"
 						disabled={isLoading}
 					/>

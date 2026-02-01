@@ -1,3 +1,4 @@
+import type { AutosizeTextAreaRef } from "@/components/ui/autosize-textarea";
 import { InputArea } from "./input-area";
 
 interface EmptyStateProps {
@@ -6,7 +7,7 @@ interface EmptyStateProps {
 	isLoading: boolean;
 	handleSubmit: () => Promise<void>;
 	stopGeneration: () => void;
-	textareaRef: React.RefObject<HTMLTextAreaElement | null>;
+	textareaRef: React.RefObject<AutosizeTextAreaRef | null>;
 	selectedModel: string;
 	setSelectedModel: (value: string) => void;
 }

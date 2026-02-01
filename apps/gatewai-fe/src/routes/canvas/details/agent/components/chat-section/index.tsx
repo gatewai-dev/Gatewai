@@ -1,4 +1,5 @@
 import { useCallback, useEffect, useRef, useState } from "react";
+import type { AutosizeTextAreaRef } from "@/components/ui/autosize-textarea";
 import { ScrollArea } from "@/components/ui/scroll-area";
 import { useCanvasAgent } from "../../ctx/canvas-agent.ctx";
 import { PatchReviewCard } from "../patch-review-card";
@@ -24,7 +25,7 @@ export function AgentChatSection({ onClose }: { onClose: () => void }) {
 
 	// Refs
 	const scrollRef = useRef<HTMLDivElement>(null);
-	const textareaRef = useRef<HTMLTextAreaElement>(null);
+	const textareaRef = useRef<AutosizeTextAreaRef>(null);
 	const isMountedRef = useRef(true);
 
 	// State
@@ -65,12 +66,8 @@ export function AgentChatSection({ onClose }: { onClose: () => void }) {
 		if (!inputValue.trim() || isLoading) return;
 
 		const message = inputValue.trim();
+		// AutosizeTextarea handles resizing automatically when value is cleared.
 		setInputValue("");
-
-		// Reset textarea height
-		if (textareaRef.current) {
-			textareaRef.current.style.height = "auto";
-		}
 
 		await sendMessage(message);
 

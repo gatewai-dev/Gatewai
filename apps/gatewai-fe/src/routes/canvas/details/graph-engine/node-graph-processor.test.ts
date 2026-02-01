@@ -500,7 +500,7 @@ describe("NodeGraphProcessor", () => {
 				.value;
 
 			// Trigger re-execution
-			processor.markNodesDirty(["n2"]);
+			(processor as any).markNodesDirty(["n2"]);
 			await new Promise((resolve) => setTimeout(resolve, 50));
 
 			expect(global.URL.revokeObjectURL).toHaveBeenCalledWith(firstUrl);
