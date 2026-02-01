@@ -42,11 +42,11 @@ const canvasRoutes = new Hono<{ Variables: AuthHonoTypes }>({
 					isAPICanvas: false,
 					...(q
 						? {
-								name: {
-									contains: q,
-									mode: "insensitive",
-								},
-							}
+							name: {
+								contains: q,
+								mode: "insensitive",
+							},
+						}
 						: {}),
 				},
 				orderBy: {
@@ -332,9 +332,6 @@ const canvasRoutes = new Hono<{ Variables: AuthHonoTypes }>({
 					position: node.position as XYPosition,
 					width: node.width,
 					height: node.height,
-					draggable: node.draggable,
-					selectable: node.selectable,
-					deletable: node.deletable,
 					config: node.config ?? {},
 					isDirty: node.isDirty,
 					templateId: node.templateId,

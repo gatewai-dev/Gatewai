@@ -28,9 +28,6 @@ export const nodeSchema = z.object({
 		.optional()
 		.nullable()
 		.describe("It is better to keep this undefined for auto-style"),
-	draggable: z.boolean().optional().default(true),
-	selectable: z.boolean().optional().default(true),
-	deletable: z.boolean().optional().default(true),
 	result: z
 		.record(z.unknown())
 		.optional()

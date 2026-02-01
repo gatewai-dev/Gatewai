@@ -181,9 +181,9 @@ const CanvasProvider = ({
 			type: node.type,
 			width: node.width ?? undefined,
 			height: node.height ?? undefined,
-			draggable: node.draggable ?? true,
-			selectable: node.selectable ?? true,
-			deletable: node.deletable ?? true,
+			draggable: true,
+			selectable: true,
+			deletable: true,
 		}));
 
 		const initialEdges: Edge[] = canvasDetailsResponse.edges.map((edge) => ({
@@ -860,9 +860,9 @@ const CanvasProvider = ({
 			type: node.type,
 			width: node.width ?? undefined,
 			height: node.height ?? undefined,
-			draggable: node.draggable ?? true,
-			selectable: node.selectable ?? true,
-			deletable: node.deletable ?? true,
+			draggable: true,
+			selectable: true,
+			deletable: true,
 		}));
 
 		const originalEdges = canvasDetailsResponse.edges.map((edge) => ({
@@ -923,9 +923,9 @@ const CanvasProvider = ({
 						type: node.type,
 						width: node.width ?? undefined,
 						height: node.height ?? undefined,
-						draggable: node.draggable ?? true,
-						selectable: node.selectable ?? true,
-						deletable: node.deletable ?? true,
+						draggable: true,
+						selectable: true,
+						deletable: true,
 					}));
 
 					const originalEdges = canvasDetailsResponse.edges.map((edge) => ({
