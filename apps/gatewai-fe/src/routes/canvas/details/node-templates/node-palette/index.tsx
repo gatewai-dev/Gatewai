@@ -145,7 +145,7 @@ function NodePaletteContent({ templates }: { templates: NodeTemplateListRPC }) {
 
 				{/* Scrollable List */}
 				{!isCollapsed && (
-					<div className="pb-4 pt-3 flex-1 overflow-y-auto min-h-0">
+					<div className="flex-1 overflow-y-auto min-h-0">
 						<NodeTemplateList templates={templates} />
 					</div>
 				)}
@@ -157,7 +157,7 @@ function NodePaletteContent({ templates }: { templates: NodeTemplateListRPC }) {
 				)}
 			</div>
 
-			<div className="mt-auto shrink-0 z-50 flex flex-col gap-1px-3">
+			<div className=" shrink-0 z-50 flex flex-col ">
 				<SocialLink
 					href="https://discord.gg/ha4A8UD7kn"
 					icon={<FaDiscord className="size-5" />}
@@ -170,10 +170,8 @@ function NodePaletteContent({ templates }: { templates: NodeTemplateListRPC }) {
 					label="GitHub"
 					isCollapsed={isCollapsed}
 				/>
-				<div className="mt-2">
-					<GuidesDialog isCollapsed={isCollapsed} />
-					<AssetsSection isCollapsed={isCollapsed} />
-				</div>
+				<GuidesDialog isCollapsed={isCollapsed} />
+				<AssetsSection isCollapsed={isCollapsed} />
 			</div>
 		</aside>
 	);

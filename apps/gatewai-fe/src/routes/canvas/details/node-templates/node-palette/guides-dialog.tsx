@@ -39,7 +39,7 @@ Some nodes are marked as **Terminal Nodes** (e.g., Image Generation, Video Proce
 
 - These nodes run exclusively on the **backend**.
 - They require a **manual trigger** (Run button) to execute.
-- Make sure all inputs are connected before running.
+- Make sure all required are connected before running.
 `;
 
 export function GuidesDialog({ isCollapsed }: { isCollapsed: boolean }) {
