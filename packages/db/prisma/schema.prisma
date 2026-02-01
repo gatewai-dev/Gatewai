@@ -153,10 +153,6 @@ model Node {
   // React Flow dimensions (optional, can be auto-calculated)
   width          Float?
   height         Float?
-  // React Flow specific properties
-  draggable      Boolean         @default(true)
-  selectable     Boolean         @default(true)
-  deletable      Boolean         @default(true)
 
   config         Json?
   isDirty        Boolean         @default(false) // Whether or not previous results or data/config changed
@@ -366,7 +362,6 @@ model AgentSession {
   
   // Assistant configuration
   assistantId       String?
-  model             String?   @default("gemini-3.0-flash-preview")
   
   // Session state
   status            SessionStatus @default(ACTIVE)
