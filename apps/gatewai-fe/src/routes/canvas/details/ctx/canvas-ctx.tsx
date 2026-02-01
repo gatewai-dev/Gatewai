@@ -168,6 +168,7 @@ const CanvasProvider = ({
 	// Track state changes to force re-render when needed
 	const [reviewingStateVersion, setReviewingStateVersion] = useState(0);
 	const timeoutRef = useRef<NodeJS.Timeout | null>(null);
+	const timeoutFireTimeRef = useRef<number | null>(null);
 
 	const { initialEdges, initialNodes } = useMemo(() => {
 		if (!canvasDetailsResponse?.nodes) {
@@ -266,15 +267,28 @@ const CanvasProvider = ({
 	}, [canvasId, patchCanvasAsync, store]);
 
 	const scheduleSave = useCallback(
-		(delay?: number) => {
+		(delay?: number, opts?: { preventExtend?: boolean }) => {
 			if (isReviewingRef.current) return;
 
+			const duration = delay ?? 2500;
+			const fireTime = Date.now() + duration;
+
 			if (timeoutRef.current) {
+				if (opts?.preventExtend && timeoutFireTimeRef.current !== null) {
+					// If existing timer fires sooner or at same time, keep it
+					if (timeoutFireTimeRef.current <= fireTime) {
+						return;
+					}
+				}
 				clearTimeout(timeoutRef.current);
 			}
+
+			timeoutFireTimeRef.current = fireTime;
 			timeoutRef.current = setTimeout(() => {
+				timeoutRef.current = null;
+				timeoutFireTimeRef.current = null;
 				save();
-			}, delay ?? 2500);
+			}, duration);
 		},
 		[save],
 	);
@@ -294,7 +308,7 @@ const CanvasProvider = ({
 			const shouldSave = changes.some((c) => c.type !== "select");
 
 			if (shouldSave) {
-				scheduleSave();
+				scheduleSave(undefined, { preventExtend: true });
 			}
 		},
 		[dispatch, scheduleSave],
@@ -329,7 +343,7 @@ const CanvasProvider = ({
 
 			const shouldSave = changes.some((c) => c.type !== "select");
 			if (shouldSave) {
-				scheduleSave();
+				scheduleSave(undefined, { preventExtend: true });
 			}
 		},
 		[dispatch, scheduleSave],
@@ -715,10 +729,6 @@ const CanvasProvider = ({
 					updatedAt: new Date().toISOString(),
 					originalNodeId: null,
 					canvasId: canvasId,
-					zIndex: 1,
-					draggable: true,
-					selectable: true,
-					deletable: true,
 					config: template.defaultConfig || {},
 					result: initialResult as unknown as NodeEntityType["result"],
 				};

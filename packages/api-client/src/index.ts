@@ -127,7 +127,7 @@ export class GatewaiApiClient {
 	 */
 	async getCanvases(): Promise<GetCanvasesResponse> {
 		const res = await this.rpc.api.v1.canvas.$get({
-			query: {q: undefined}
+			query: { q: undefined },
 		});
 		return this.handleResponse(res);
 	}

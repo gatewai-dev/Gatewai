@@ -51,11 +51,11 @@ const canvasRoutes = new Hono<{ Variables: AuthHonoTypes }>({
 						isAPICanvas: false,
 						...(q
 							? {
-								name: {
-									contains: q,
-									mode: "insensitive",
-								},
-							}
+									name: {
+										contains: q,
+										mode: "insensitive",
+									},
+								}
 							: {}),
 					},
 					orderBy: {
@@ -73,7 +73,9 @@ const canvasRoutes = new Hono<{ Variables: AuthHonoTypes }>({
 						},
 					},
 				});
-				return c.json(canvases.map((ca) => ({ ...ca, isShared: false, shareRole: null })));
+				return c.json(
+					canvases.map((ca) => ({ ...ca, isShared: false, shareRole: null })),
+				);
 			}
 
 			const user = requireUser(c);
@@ -86,11 +88,11 @@ const canvasRoutes = new Hono<{ Variables: AuthHonoTypes }>({
 						isAPICanvas: false,
 						...(q
 							? {
-								name: {
-									contains: q,
-									mode: "insensitive",
-								},
-							}
+									name: {
+										contains: q,
+										mode: "insensitive",
+									},
+								}
 							: {}),
 					},
 					orderBy: {
@@ -115,11 +117,11 @@ const canvasRoutes = new Hono<{ Variables: AuthHonoTypes }>({
 							isAPICanvas: false,
 							...(q
 								? {
-									name: {
-										contains: q,
-										mode: "insensitive",
-									},
-								}
+										name: {
+											contains: q,
+											mode: "insensitive",
+										},
+									}
 								: {}),
 						},
 					},
@@ -871,6 +873,6 @@ const canvasRoutes = new Hono<{ Variables: AuthHonoTypes }>({
 		});
 
 		return c.json({ shares });
-	})
+	});
 
 export { canvasRoutes };

@@ -187,7 +187,7 @@ function CanvasHomeImpl() {
 								key={`skeleton-${
 									// biome-ignore lint/suspicious/noArrayIndexKey: No other props
 									i
-									}`}
+								}`}
 								className="h-48 rounded-3xl"
 							/>
 						))}

@@ -17,10 +17,10 @@ export type CanvasListRPCParams = InferRequestType<
 >;
 
 export type DeleteCanvasRPC = InferResponseType<
-	typeof rpcClient.api.v1.canvas[":id"]["$delete"]
+	(typeof rpcClient.api.v1.canvas)[":id"]["$delete"]
 >;
 export type DeleteCanvasRPCParams = InferRequestType<
-	typeof rpcClient.api.v1.canvas[":id"]["$delete"]
+	(typeof rpcClient.api.v1.canvas)[":id"]["$delete"]
 >;
 
 export type CreateCanvasRPC = InferResponseType<

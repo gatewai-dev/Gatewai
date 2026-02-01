@@ -109,7 +109,9 @@ export const getHandleStyle = (
 		if (isMultiType && !hasResolvedColor) {
 			return {
 				style: {
-					...baseDimensions,
+					width: "6px",
+					height: "14px",
+					borderRadius: "0px",
 					backgroundColor: "var(--card)",
 					border: "none", // Border handled by gradient wrapper
 				},
@@ -186,6 +188,9 @@ const NodeHandle = memo(
 		}
 		const topPosition = (index + 1) * 32 + 20;
 
+		const animationClasses =
+			"hover:scale-110 transition-transform duration-75 origin-center";
+
 		const handleElement = (
 			<Handle
 				id={handle.id}
@@ -194,24 +199,24 @@ const NodeHandle = memo(
 				style={handleStyle}
 				className={cn(
 					status && !status.valid && status.isConnected && "animate-pulse",
-					"hover:scale-110 transition-transform duration-75",
+					!isMultiColor && animationClasses,
 				)}
 			/>
 		);
 
 		// Wrap handle in gradient container if multi-color
 		const handleComponent = isMultiColor ? (
-			<div className="relative hover:scale-120 transition-transform duration-75">
+			<div className={cn("relative", animationClasses)}>
 				{/* Gradient border background */}
 				<div
 					className="absolute inset-0"
 					style={{
-						width: "14px",
-						height: "22px",
-						borderRadius: "3px",
+						width: "10px",
+						height: "18px",
+						borderRadius: "2px",
 						background: getMultiColorGradient(gradientColors),
-						top: "-11px",
-						left: "-7px",
+						top: "-9px",
+						left: "-5px",
 					}}
 				/>
 				{/* Handle on top */}
