@@ -4,8 +4,6 @@ Gatewai is a powerful, node-based orchestration platform designed to bridge the 
 
 ![Gatewai Workflow](assets/workflow_1.png)
 
-This project is built for the **Gemini 3 Hackathon**.
-
 ---
 
 ## Key Pillars
@@ -40,9 +38,9 @@ Don't wait for results. Our interactive canvas provides instant feedback, enabli
 
 ### Media Editing 🎬 🎥 🎞️ 🍿
 
-Gatewai ships with dedicated image and video compositor nodes, removing the barriers between your vision and the final masterpiece.
+Gatewai ships with dedicated image and video compositior nodes, removing the barriers between your vision and the final masterpiece.
 
-| Image Compositor | Video Compositor |
+| Image Composition Node Editor | Video Composition Node Editor |
 | :---: | :---: |
 | ![Image Compositor](assets/img-comp.png) | ![Video Compositor](assets/vid-comp.png) |
 
@@ -76,3 +74,7 @@ See [INSTALLATION.md](https://github.com/gatewai-dev/Gatewai/blob/main/docs/INST
 ## License
 
 See [LICENSE](https://github.com/gatewai-dev/Gatewai/blob/main/LICENCE)
+
+## Hackathon 
+
+This project is built for the **Gemini 3 Hackathon**.
