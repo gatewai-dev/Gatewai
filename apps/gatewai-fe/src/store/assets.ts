@@ -49,6 +49,18 @@ export const assetsAPI = createApi({
 			},
 			invalidatesTags: ["getUserAssets"],
 		}),
+		deleteAsset: build.mutation<void, string>({
+			queryFn: async (id) => {
+				const response = await rpcClient.api.v1.assets[":id"].$delete({
+					param: { id },
+				});
+				if (!response.ok) {
+					throw new Error("Failed to delete asset");
+				}
+				return { data: undefined };
+			},
+			invalidatesTags: ["getUserAssets"],
+		}),
 	}),
 });
 
@@ -58,4 +70,5 @@ export const {
 	useGetUserAssetsQuery,
 	useUploadAssetMutation,
 	useUploadFileNodeAssetMutation,
+	useDeleteAssetMutation,
 } = assetsAPI;

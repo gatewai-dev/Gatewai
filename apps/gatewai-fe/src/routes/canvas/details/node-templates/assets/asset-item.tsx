@@ -1,12 +1,26 @@
 import type { FileData, FileResult } from "@gatewai/types";
 import { useReactFlow } from "@xyflow/react";
 import { motion } from "framer-motion";
-import { FileImage, GripVertical, Music } from "lucide-react";
+import {
+	FileImage,
+	Loader2,
+	MoreHorizontal,
+	Music,
+	Trash2,
+} from "lucide-react";
 import { memo, useEffect, useRef, useState } from "react";
 import { createPortal } from "react-dom";
 import { getDataTypeFromMime } from "@/lib/file";
 import { cn } from "@/lib/utils";
 import { useCanvasCtx } from "@/routes/canvas/details/ctx/canvas-ctx";
+import {
+	DropdownMenu,
+	DropdownMenuContent,
+	DropdownMenuItem,
+	DropdownMenuTrigger,
+} from "@/components/ui/dropdown-menu";
+import { useDeleteAssetMutation } from "@/store/assets";
+import { toast } from "sonner";
 import { useNodeTemplates } from "../node-templates.ctx";
 import type { FileAssetEntity } from "./types";
 import { GetAssetThumbnailEndpoint } from "./utils";
@@ -84,7 +98,19 @@ export const AssetItem = memo(({ asset }: AssetItemProps) => {
 	const [cursorPos, setCursorPos] = useState({ x: 0, y: 0 });
 	const itemRef = useRef<HTMLDivElement>(null);
 	const thumbnail = GetAssetThumbnailEndpoint(asset);
+	const [deleteAsset, { isLoading: isDeleting }] = useDeleteAssetMutation();
 	const isAudio = asset.mimeType?.startsWith("audio/");
+
+	const handleDelete = async (e: React.MouseEvent) => {
+		e.stopPropagation();
+		try {
+			await deleteAsset(asset.id).unwrap();
+			toast.success("Asset deleted");
+		} catch (error) {
+			toast.error("Failed to delete asset");
+			console.error(error);
+		}
+	};
 
 	useEffect(() => {
 		if (!isDragging) return;
@@ -215,11 +241,36 @@ export const AssetItem = memo(({ asset }: AssetItemProps) => {
 						<span className="truncate text-[10px] text-muted-foreground">
 							{asset.mimeType || "Unknown type"}
 						</span>
-						{asset.duration && <span>{}</span>}
+						{asset.duration && <span>{ }</span>}
 					</div>
 				</div>
 
-				<GripVertical className="h-3.5 w-3.5 text-border opacity-0 transition-opacity group-hover:opacity-100" />
+				<DropdownMenu>
+					<DropdownMenuTrigger asChild>
+						<button
+							type="button"
+							className="opacity-0 group-hover:opacity-100 transition-opacity p-1 hover:bg-muted rounded-md focus:opacity-100 outline-none"
+							onMouseDown={(e) => e.stopPropagation()} // Prevent drag start
+							onClick={(e) => e.stopPropagation()} // Prevent click through
+						>
+							{isDeleting ? (
+								<Loader2 className="h-4 w-4 animate-spin text-muted-foreground" />
+							) : (
+								<MoreHorizontal className="h-4 w-4 text-muted-foreground" />
+							)}
+						</button>
+					</DropdownMenuTrigger>
+					<DropdownMenuContent align="end" className="w-[160px]">
+						<DropdownMenuItem
+							className="focus:bg-destructive/10 cursor-pointer gap-2"
+							onClick={handleDelete}
+							onSelect={(e) => e.preventDefault()} // Prevent menu close on click if needed, but handled by onClick usually
+						>
+							<Trash2 className="h-4 w-4" />
+							<span>Delete Asset</span>
+						</DropdownMenuItem>
+					</DropdownMenuContent>
+				</DropdownMenu>
 			</motion.div>
 		</>
 	);
