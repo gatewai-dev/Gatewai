@@ -1,13 +1,41 @@
 import type { PrismaClient } from "@gatewai/db";
-import { beforeEach, describe, expect, it } from "vitest";
+import { beforeEach, describe, expect, it, vi } from "vitest";
+import { GetCanvasEntities } from "../data-ops/canvas.js";
 import { NodeWFProcessor } from "./canvas-workflow-processor.js";
+import { workflowQueue } from "./queue/workflow.queue.js";
+
+// Mock dependencies
+vi.mock("../data-ops/canvas.js", () => ({
+	GetCanvasEntities: vi.fn(),
+}));
+
+vi.mock("./queue/workflow.queue.js", () => ({
+	workflowQueue: {
+		add: vi.fn(),
+	},
+}));
 
 describe("NodeWFProcessor", () => {
 	let processor: NodeWFProcessor;
+	let mockPrisma: any;
 
 	beforeEach(() => {
-		// Mock PrismaClient as it's required by the constructor but not used in the methods we're testing
-		processor = new NodeWFProcessor({} as PrismaClient);
+		vi.clearAllMocks();
+
+		// Create mock Prisma Client
+		mockPrisma = {
+			taskBatch: {
+				create: vi.fn(),
+				findFirst: vi.fn(),
+				update: vi.fn(),
+				findUniqueOrThrow: vi.fn(),
+			},
+			task: {
+				create: vi.fn(),
+			},
+		};
+
+		processor = new NodeWFProcessor(mockPrisma as PrismaClient);
 	});
 
 	describe("buildDepGraphs", () => {
@@ -150,6 +178,194 @@ describe("NodeWFProcessor", () => {
 			expect(() =>
 				processor.topologicalSort(nodes, depGraph, revDepGraph),
 			).toThrow("Missing reverse dependencies for node 2");
+		});
+	});
+
+	describe("processNodes", () => {
+		it("should process all nodes when no nodeIds provided", async () => {
+			const canvasId = "canvas-1";
+			const mockData = {
+				nodes: [
+					{ id: "1", name: "Node 1" },
+					{ id: "2", name: "Node 2" },
+				],
+				edges: [{ source: "1", target: "2" }],
+			};
+
+			(GetCanvasEntities as any).mockResolvedValue(mockData);
+			mockPrisma.taskBatch.create.mockResolvedValue({ id: "batch-1" });
+			mockPrisma.task.create.mockImplementation((args: any) =>
+				Promise.resolve({ id: `task-${args.data.nodeId}` }),
+			);
+			mockPrisma.taskBatch.findFirst.mockResolvedValue(null); // No active batch
+			mockPrisma.taskBatch.findUniqueOrThrow.mockResolvedValue({
+				id: "batch-1",
+				tasks: [],
+			});
+
+			await processor.processNodes(canvasId);
+
+			expect(GetCanvasEntities).toHaveBeenCalledWith(canvasId);
+			expect(mockPrisma.taskBatch.create).toHaveBeenCalled();
+			expect(mockPrisma.task.create).toHaveBeenCalledTimes(2);
+			expect(mockPrisma.taskBatch.update).toHaveBeenCalledWith({
+				where: { id: "batch-1" },
+				data: { startedAt: expect.any(Date) },
+			});
+			expect(workflowQueue.add).toHaveBeenCalled();
+		});
+
+		it("should process selected nodes and their upstream dependencies", async () => {
+			const canvasId = "canvas-1";
+			// 1 -> 2 -> 3. Select 3, should include 1, 2, 3.
+			const mockData = {
+				nodes: [
+					{ id: "1", name: "Node 1" },
+					{ id: "2", name: "Node 2" },
+					{ id: "3", name: "Node 3" },
+				],
+				edges: [
+					{ source: "1", target: "2" },
+					{ source: "2", target: "3" },
+				],
+			};
+
+			(GetCanvasEntities as any).mockResolvedValue(mockData);
+			mockPrisma.taskBatch.create.mockResolvedValue({ id: "batch-1" });
+			mockPrisma.task.create.mockImplementation((args: any) =>
+				Promise.resolve({ id: `task-${args.data.nodeId}` }),
+			);
+			mockPrisma.taskBatch.findFirst.mockResolvedValue(null);
+			mockPrisma.taskBatch.findUniqueOrThrow.mockResolvedValue({
+				id: "batch-1",
+				tasks: [],
+			});
+
+			await processor.processNodes(canvasId, ["3"]);
+
+			// Topological sort of 1,2,3 is 1->2->3
+			expect(mockPrisma.task.create).toHaveBeenCalledTimes(3);
+			// Check order of task creation which follows topo sort
+			expect(mockPrisma.task.create).toHaveBeenNthCalledWith(1, {
+				data: expect.objectContaining({ nodeId: "1" }),
+			});
+			expect(mockPrisma.task.create).toHaveBeenNthCalledWith(2, {
+				data: expect.objectContaining({ nodeId: "2" }),
+			});
+			expect(mockPrisma.task.create).toHaveBeenNthCalledWith(3, {
+				data: expect.objectContaining({ nodeId: "3" }),
+			});
+		});
+
+		it("should queue job if another batch is running", async () => {
+			const canvasId = "canvas-1";
+			const mockData = {
+				nodes: [{ id: "1", name: "Node 1" }],
+				edges: [],
+			};
+
+			(GetCanvasEntities as any).mockResolvedValue(mockData);
+			mockPrisma.taskBatch.create.mockResolvedValue({ id: "batch-2" });
+			mockPrisma.task.create.mockResolvedValue({ id: "task-1" });
+			// Simulate active batch
+			mockPrisma.taskBatch.findFirst.mockResolvedValue({ id: "batch-1" });
+			mockPrisma.taskBatch.findUniqueOrThrow.mockResolvedValue({
+				id: "batch-2",
+				tasks: [],
+			});
+
+			await processor.processNodes(canvasId);
+
+			expect(mockPrisma.taskBatch.update).toHaveBeenCalledWith({
+				where: { id: "batch-2" },
+				data: { pendingJobData: expect.any(Object) },
+			});
+			expect(workflowQueue.add).not.toHaveBeenCalled();
+		});
+
+		it("should start immediately if no active batch", async () => {
+			const canvasId = "canvas-1";
+			const mockData = {
+				nodes: [{ id: "1", name: "Node 1" }],
+				edges: [],
+			};
+
+			(GetCanvasEntities as any).mockResolvedValue(mockData);
+			mockPrisma.taskBatch.create.mockResolvedValue({ id: "batch-1" });
+			mockPrisma.task.create.mockResolvedValue({ id: "task-1" });
+			mockPrisma.taskBatch.findFirst.mockResolvedValue(null);
+			mockPrisma.taskBatch.findUniqueOrThrow.mockResolvedValue({
+				id: "batch-1",
+				tasks: [],
+			});
+
+			await processor.processNodes(canvasId);
+
+			expect(mockPrisma.taskBatch.update).toHaveBeenCalledWith({
+				where: { id: "batch-1" },
+				data: { startedAt: expect.any(Date) },
+			});
+			expect(workflowQueue.add).toHaveBeenCalled();
+		});
+
+		it("should throw error if cycle detected", async () => {
+			const canvasId = "canvas-1";
+			// 1 -> 2 -> 1 Cycle
+			const mockData = {
+				nodes: [
+					{ id: "1", name: "Node 1" },
+					{ id: "2", name: "Node 2" },
+				],
+				edges: [
+					{ source: "1", target: "2" },
+					{ source: "2", target: "1" },
+				],
+			};
+
+			(GetCanvasEntities as any).mockResolvedValue(mockData);
+			mockPrisma.taskBatch.create.mockResolvedValue({ id: "batch-1" });
+
+			await expect(processor.processNodes(canvasId)).rejects.toThrow(
+				"Cycle detected in necessary nodes.",
+			);
+		});
+
+		it("should throw error if necessary nodes missing", async () => {
+			const canvasId = "canvas-1";
+			const mockData = {
+				nodes: [{ id: "1", name: "Node 1" }],
+				edges: [],
+			};
+			// Mock data returns node 1, but we request node 2
+			(GetCanvasEntities as any).mockResolvedValue(mockData);
+			mockPrisma.taskBatch.create.mockResolvedValue({ id: "batch-1" });
+
+			await expect(processor.processNodes(canvasId, ["2"])).rejects.toThrow(); // Will throw "Some necessary nodes not found" or "Node 2 not found" depending on logic flow, but "necessary nodes not found" is checked earlier if we filter
+			// Actually the logic:
+			// 1. buildDepGraphs for all nodes (needs 2 to be in data? No, it uses data.nodes)
+			// Wait, processNodes logic Step 3: queue initial nodes.
+			// "2" is in queue.
+			// Step 4: necessaryIds = ["2"]
+			// Step 6: necessaryNodes = data.nodes.filter(n => necessary.has(n.id))
+			// if (necessaryNodes.length !== necessary.size) throw Error
+		});
+
+		it("should handle empty batch (no nodes to run)", async () => {
+			const canvasId = "canvas-1";
+			const mockData = { nodes: [], edges: [] };
+			(GetCanvasEntities as any).mockResolvedValue(mockData);
+			mockPrisma.taskBatch.create.mockResolvedValue({ id: "batch-1" });
+			mockPrisma.taskBatch.findUniqueOrThrow.mockResolvedValue({
+				id: "batch-1",
+				tasks: [],
+			});
+
+			await processor.processNodes(canvasId, []);
+
+			expect(mockPrisma.taskBatch.update).toHaveBeenCalledWith({
+				where: { id: "batch-1" },
+				data: { finishedAt: expect.any(Date) },
+			});
 		});
 	});
 });
