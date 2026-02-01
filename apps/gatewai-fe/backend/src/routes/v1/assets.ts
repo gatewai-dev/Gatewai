@@ -1,5 +1,6 @@
 import assert from "node:assert";
 import { type FileAssetWhereInput, prisma } from "@gatewai/db";
+import type { NodeResult, Output, OutputItem } from "@gatewai/types";
 import { zValidator } from "@hono/zod-validator";
 import { fileTypeFromBuffer } from "file-type";
 import { Hono } from "hono";
@@ -447,19 +448,145 @@ const assetsRouter = new Hono<{ Variables: AuthorizedHonoTypes }>({
 		"/:id",
 		zValidator("param", z.object({ id: z.string() })),
 		async (c) => {
-			const id = c.req.param("id");
+			const rawId = c.req.param("id");
+			const id = rawId.split(".")[0]; // Sanitize ID
 
 			// Validate user owns this asset
 			const asset = await assertAssetOwnership(c as any, id);
 
+			logger.info(`Deleting asset ${id} (key: ${asset.key})`);
+
 			try {
-				await deleteFromGCS(asset.key, asset.bucket);
+				// 1. Find all nodes that reference this asset in their result
+				// We use a raw query because Prisma's JSON filtering is limited for deep searches
+				const nodes = await prisma.$queryRaw<{ id: string; result: any }[]>`
+					SELECT id, result 
+					FROM "node" 
+					WHERE result::text LIKE ${`%${id}%`}
+				`;
+				console.log({ nodes });
+				logger.info(`Found ${nodes.length} nodes referencing asset ${id}`);
+
+				// 2. Update each node to remove the asset reference
+				for (const node of nodes) {
+					// Handle potential stringified JSON from raw query
+					let result: NodeResult;
+					if (typeof node.result === "string") {
+						try {
+							result = JSON.parse(node.result);
+						} catch (e) {
+							logger.error(
+								{ err: e },
+								`Failed to parse result for node ${node.id}`,
+							);
+							continue;
+						}
+					} else {
+						result = node.result;
+					}
+
+					if (!result) continue;
+
+					let hasChanges = false;
+
+					// Traverse outputs to find and remove the asset
+					// Note: selectedOutputIndex refers to the index in the outputs array
+					if (result.outputs && Array.isArray(result.outputs)) {
+						const currentSelectedIndex = result.selectedOutputIndex ?? 0;
+
+						// First pass: filter items within each output
+						result.outputs.forEach((output: Output, outputIndex: number) => {
+							if (output.items && Array.isArray(output.items)) {
+								// Filter out items containing the asset
+								output.items = output.items.filter((item: OutputItem<any>) => {
+									// Only check entity.id for object data (FileData), not primitives
+									const data = item.data;
+									const entityId =
+										typeof data === "object" &&
+										data !== null &&
+										"entity" in data
+											? (data as { entity?: { id?: string } }).entity?.id
+											: undefined;
+									const matches = entityId === id;
+									if (matches) {
+										hasChanges = true;
+									}
+									return !matches;
+								});
+							}
+						});
+
+						// Second pass: Remove outputs that have become empty
+						const removedOutputIndices: number[] = [];
+
+						result.outputs = result.outputs.filter(
+							(output: Output, outputIndex: number) => {
+								const isEmpty = !output.items || output.items.length === 0;
+								if (isEmpty) {
+									removedOutputIndices.push(outputIndex);
+									hasChanges = true;
+								}
+								return !isEmpty;
+							},
+						);
+
+						// Adjust selectedOutputIndex if outputs were removed
+						if (removedOutputIndices.length > 0) {
+							const newOutputsLength = result.outputs.length;
+
+							if (newOutputsLength === 0) {
+								// All outputs removed, reset to 0
+								result.selectedOutputIndex = 0;
+							} else if (removedOutputIndices.includes(currentSelectedIndex)) {
+								// The selected output was removed, select the last available
+								result.selectedOutputIndex = Math.max(0, newOutputsLength - 1);
+							} else {
+								// Count how many outputs before the selected one were removed
+								const removedBefore = removedOutputIndices.filter(
+									(idx) => idx < currentSelectedIndex,
+								).length;
+
+								// Shift the index
+								let newIndex = currentSelectedIndex - removedBefore;
+
+								// Clamp to valid range
+								if (newIndex >= newOutputsLength) {
+									newIndex = newOutputsLength - 1;
+								} else if (newIndex < 0) {
+									newIndex = 0;
+								}
+
+								result.selectedOutputIndex = newIndex;
+							}
+						}
+					}
+
+					if (hasChanges) {
+						await prisma.node.update({
+							where: { id: node.id },
+							data: { result: result as any }, // Cast to any to satisfy Prisma InputJsonValue
+						});
+						logger.info(`Updated node ${node.id} to remove asset reference`);
+					}
+				}
+
+				// 3. Delete from Storage and DB
+				try {
+					await deleteFromGCS(asset.key, asset.bucket);
+					logger.info(`Deleted from GCS: ${asset.key}`);
+				} catch (err) {
+					logger.error({ err }, `Failed to delete from GCS: ${asset.key}`);
+					// Continue to delete from DB even if GCS failed (orphan check later?)
+				}
+
 				await prisma.fileAsset.delete({
 					where: { id },
 				});
+				logger.info(`Deleted asset record ${id}`);
+
 				return c.json({ success: true });
 			} catch (error) {
-				console.error(error);
+				logger.error({ err: error }, `Asset deletion failed for ${id}`);
 				return c.json({ error: "Deletion failed" }, 500);
 			}
 		},

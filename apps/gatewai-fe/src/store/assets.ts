@@ -7,6 +7,7 @@ import type {
 	UserAssetsListRPCParams,
 	UserAssetsUploadRPC,
 } from "@/rpc/types";
+import { canvasDetailsAPI } from "./canvas";
 
 // Define a service using a base URL and expected endpoints
 export const assetsAPI = createApi({
@@ -60,6 +61,14 @@ export const assetsAPI = createApi({
 				return { data: undefined };
 			},
 			invalidatesTags: ["getUserAssets"],
+			onQueryStarted: async (_arg, { dispatch, queryFulfilled }) => {
+				try {
+					await queryFulfilled;
+					dispatch(canvasDetailsAPI.util.invalidateTags(["getCanvasDetails"]));
+				} catch {
+					// Ignore errors
+				}
+			},
 		}),
 	}),
 });

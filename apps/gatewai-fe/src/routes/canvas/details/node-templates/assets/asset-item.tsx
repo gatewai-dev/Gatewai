@@ -10,17 +10,27 @@ import {
 } from "lucide-react";
 import { memo, useEffect, useRef, useState } from "react";
 import { createPortal } from "react-dom";
-import { getDataTypeFromMime } from "@/lib/file";
-import { cn } from "@/lib/utils";
-import { useCanvasCtx } from "@/routes/canvas/details/ctx/canvas-ctx";
+import { toast } from "sonner";
+import {
+	AlertDialog,
+	AlertDialogAction,
+	AlertDialogCancel,
+	AlertDialogContent,
+	AlertDialogDescription,
+	AlertDialogFooter,
+	AlertDialogHeader,
+	AlertDialogTitle,
+} from "@/components/ui/alert-dialog";
 import {
 	DropdownMenu,
 	DropdownMenuContent,
 	DropdownMenuItem,
 	DropdownMenuTrigger,
 } from "@/components/ui/dropdown-menu";
+import { getDataTypeFromMime } from "@/lib/file";
+import { cn } from "@/lib/utils";
+import { useCanvasCtx } from "@/routes/canvas/details/ctx/canvas-ctx";
 import { useDeleteAssetMutation } from "@/store/assets";
-import { toast } from "sonner";
 import { useNodeTemplates } from "../node-templates.ctx";
 import type { FileAssetEntity } from "./types";
 import { GetAssetThumbnailEndpoint } from "./utils";
@@ -99,16 +109,18 @@ export const AssetItem = memo(({ asset }: AssetItemProps) => {
 	const itemRef = useRef<HTMLDivElement>(null);
 	const thumbnail = GetAssetThumbnailEndpoint(asset);
 	const [deleteAsset, { isLoading: isDeleting }] = useDeleteAssetMutation();
+	const [showDeleteDialog, setShowDeleteDialog] = useState(false);
 	const isAudio = asset.mimeType?.startsWith("audio/");
 
-	const handleDelete = async (e: React.MouseEvent) => {
-		e.stopPropagation();
+	const handleDelete = async () => {
 		try {
 			await deleteAsset(asset.id).unwrap();
 			toast.success("Asset deleted");
 		} catch (error) {
 			toast.error("Failed to delete asset");
 			console.error(error);
+		} finally {
+			setShowDeleteDialog(false);
 		}
 	};
 
@@ -197,9 +209,8 @@ export const AssetItem = memo(({ asset }: AssetItemProps) => {
 			<motion.div
 				ref={itemRef}
 				layoutId={`asset-item-${asset.id}`}
-				onMouseDown={handleMouseDown}
 				className={cn(
-					"group relative flex w-full cursor-grab active:cursor-grabbing select-none items-center gap-3",
+					"group relative flex w-full select-none items-center gap-3",
 					"rounded-lg border border-transparent p-1.5 transition-all duration-100",
 					"hover:bg-muted/50 hover:border-border/40",
 					isDragging ? "opacity-30 grayscale" : "opacity-100",
@@ -207,41 +218,46 @@ export const AssetItem = memo(({ asset }: AssetItemProps) => {
 				whileHover={{ scale: 1.02 }}
 				whileTap={{ scale: 0.98 }}
 			>
-				{/* Thumbnail */}
 				<div
-					className={cn(
-						"relative h-9 w-9 shrink-0 overflow-hidden rounded-md border border-border/40 bg-muted",
-						"transition-colors duration-300 group-hover:border-primary/20",
-					)}
+					onMouseDown={handleMouseDown}
+					className="flex flex-1 items-center gap-3 cursor-grab active:cursor-grabbing min-w-0"
 				>
-					{isAudio ? (
-						<div className="flex h-full w-full items-center justify-center bg-primary/5">
-							<Music className="h-4 w-4 text-primary/70" />
-						</div>
-					) : thumbnail ? (
-						<img
-							src={thumbnail}
-							alt={asset.name}
-							className="h-full w-full object-cover"
-							loading="lazy"
-						/>
-					) : (
-						<div className="flex h-full w-full items-center justify-center">
-							<FileImage className="h-4 w-4 text-muted-foreground/60" />
-						</div>
-					)}
-				</div>
+					{/* Thumbnail */}
+					<div
+						className={cn(
+							"relative h-9 w-9 shrink-0 overflow-hidden rounded-md border border-border/40 bg-muted",
+							"transition-colors duration-300 group-hover:border-primary/20",
+						)}
+					>
+						{isAudio ? (
+							<div className="flex h-full w-full items-center justify-center bg-primary/5">
+								<Music className="h-4 w-4 text-primary/70" />
+							</div>
+						) : thumbnail ? (
+							<img
+								src={thumbnail}
+								alt={asset.name}
+								className="h-full w-full object-cover"
+								loading="lazy"
+							/>
+						) : (
+							<div className="flex h-full w-full items-center justify-center">
+								<FileImage className="h-4 w-4 text-muted-foreground/60" />
+							</div>
+						)}
+					</div>
 
-				{/* Info */}
-				<div className="flex flex-1 flex-col overflow-hidden">
-					<span className="truncate text-xs font-medium text-foreground/90">
-						{asset.name}
-					</span>
-					<div>
-						<span className="truncate text-[10px] text-muted-foreground">
-							{asset.mimeType || "Unknown type"}
+					{/* Info */}
+					<div className="flex flex-1 flex-col overflow-hidden">
+						<span className="truncate text-xs font-medium text-foreground/90">
+							{asset.name}
 						</span>
-						{asset.duration && <span>{ }</span>}
+						<div>
+							<span className="truncate text-[10px] text-muted-foreground">
+								{asset.mimeType || "Unknown type"}
+							</span>
+							{asset.duration && <span>{}</span>}
+						</div>
 					</div>
 				</div>
 
@@ -250,8 +266,6 @@ export const AssetItem = memo(({ asset }: AssetItemProps) => {
 						<button
 							type="button"
 							className="opacity-0 group-hover:opacity-100 transition-opacity p-1 hover:bg-muted rounded-md focus:opacity-100 outline-none"
-							onMouseDown={(e) => e.stopPropagation()} // Prevent drag start
-							onClick={(e) => e.stopPropagation()} // Prevent click through
 						>
 							{isDeleting ? (
 								<Loader2 className="h-4 w-4 animate-spin text-muted-foreground" />
@@ -263,14 +277,44 @@ export const AssetItem = memo(({ asset }: AssetItemProps) => {
 					<DropdownMenuContent align="end" className="w-[160px]">
 						<DropdownMenuItem
 							className="focus:bg-destructive/10 cursor-pointer gap-2"
-							onClick={handleDelete}
-							onSelect={(e) => e.preventDefault()} // Prevent menu close on click if needed, but handled by onClick usually
+							onClick={(e) => {
+								e.stopPropagation();
+								setShowDeleteDialog(true);
+							}}
+							onSelect={(e) => e.preventDefault()}
 						>
 							<Trash2 className="h-4 w-4" />
 							<span>Delete Asset</span>
 						</DropdownMenuItem>
 					</DropdownMenuContent>
 				</DropdownMenu>
+
+				<AlertDialog open={showDeleteDialog} onOpenChange={setShowDeleteDialog}>
+					<AlertDialogContent>
+						<AlertDialogHeader>
+							<AlertDialogTitle>Are you sure?</AlertDialogTitle>
+							<AlertDialogDescription>
+								This will permanently delete the asset "{asset.name}". Any nodes
+								using this asset will lose their data. This action cannot be
+								undone.
+							</AlertDialogDescription>
+						</AlertDialogHeader>
+						<AlertDialogFooter>
+							<AlertDialogCancel onClick={(e) => e.stopPropagation()}>
+								Cancel
+							</AlertDialogCancel>
+							<AlertDialogAction
+								onClick={(e) => {
+									e.stopPropagation();
+									handleDelete();
+								}}
+								className="bg-destructive hover:bg-destructive/90 text-destructive-foreground"
+							>
+								{isDeleting ? "Deleting..." : "Delete"}
+							</AlertDialogAction>
+						</AlertDialogFooter>
+					</AlertDialogContent>
+				</AlertDialog>
 			</motion.div>
 		</>
 	);
