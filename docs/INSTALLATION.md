@@ -79,6 +79,7 @@ npm run start:docker
 ```
 
 The application will be available at [http://localhost:8081](http://localhost:8081).
+The MCP server will be available at [http://localhost:4001](http://localhost:4001).
 
 ---
 
