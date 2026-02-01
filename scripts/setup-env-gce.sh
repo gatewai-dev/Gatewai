@@ -53,6 +53,9 @@ MCP_URL=http://gatewai-mcp:4001/mcp
 LOG_LEVEL=info
 DEBUG_LOG_MEDIA=false
 DISABLE_EMAIL_SIGNUP=true
+
+MAX_CONCURRENT_ASSISTANT_JOBS=5
+MAX_CONCURRENT_WORKFLOW_JOBS=5
 EOF
 
 echo "Successfully updated and overwrote $ENV_FILE"

@@ -83,7 +83,7 @@ export function InputArea({
 						onChange={(e) => setInputValue(e.target.value)}
 						onKeyDown={handleKeyDown}
 						placeholder="Enter your request..."
-						className="flex-1 bg-transparent border-0 focus-visible:ring-0 focus-visible:ring-offset-0 resize-none min-h-[24px] max-h-40 p-1 text-xs shadow-none overflow-y-auto"
+						className="flex-1 border-0 focus-visible:ring-0 min-h-[24px] focus-visible:ring-offset-0 resize-none max-h-40 p-1 text-xs shadow-none"
 						rows={1}
 						aria-label="Message input"
 						disabled={isLoading}
@@ -98,7 +98,7 @@ export function InputArea({
 						disabled={isLoading}
 					>
 						<SelectTrigger
-							className="text-[10px] border-0 bg-transparent hover:bg-accent/50 gap-1 px-2 w-auto shadow-none focus:ring-0"
+							className="text-[10px] border-0 hover:bg-accent/50 gap-1 px-2 w-auto shadow-none focus:ring-0"
 							aria-label="Select AI model"
 						>
 							<SelectValue placeholder="Model" />
