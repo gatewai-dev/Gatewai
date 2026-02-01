@@ -75,7 +75,7 @@ const PreviewNodeComponent = memo((props: NodeProps<PreviewNode>) => {
 	const renderContent = () => {
 		if (outputType === "Text" && typeof outputData === "string") {
 			return (
-				<div className="flex flex-col gap-2">
+				<div className="flex flex-col gap-2 nodrag nopan">
 					<ScrollArea
 						viewPortCn="max-h-[350px] overflow-auto"
 						className="bg-input p-2 w-full"

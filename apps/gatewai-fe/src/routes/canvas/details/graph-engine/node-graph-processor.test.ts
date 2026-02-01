@@ -21,7 +21,7 @@ vi.mock("./image-compositor", () => ({
 	processCompositor: vi.fn(),
 }));
 
-vi.mock("@/utils/file", () => ({
+vi.mock("@/lib/file", () => ({
 	GetAssetEndpoint: vi.fn((entity) => `http://mock-asset/${entity.id}`),
 }));
 
@@ -154,6 +154,60 @@ describe("NodeGraphProcessor", () => {
 			expect(processor.graphValidation["n2"]).toEqual({
 				h2: "type_mismatch",
 			});
+		});
+
+		it("should allow output handles to remain valid if node has a result, even if inputs are invalid", () => {
+			const node1 = createMockNode("n1", "LLM");
+			// Simulate a result already existing on the node
+			(node1 as any).result = {
+				selectedOutputIndex: 1,
+				outputs: [
+					{
+						items: [
+							{
+								type: DataType.Text,
+								data: "output 1",
+								outputHandleId: "h1",
+							},
+						],
+					},
+					{
+						items: [
+							{
+								type: DataType.Text,
+								data: "output 2",
+								outputHandleId: "h1",
+							},
+						],
+					},
+				],
+			};
+
+			const h1 = createMockHandle("h1", "n1", "Output", [DataType.Text]);
+			// Required input that is missing
+			const h2 = createMockHandle("h2", "n1", "Input", [DataType.Text], true);
+
+			const config: ProcessorConfig = {
+				nodes: new Map([["n1", node1]]),
+				edges: [],
+				handles: [h1, h2],
+			};
+
+			processor.updateGraph(config);
+
+			const state = processor.getNodeState("n1");
+			// Status should be FAILED due to validation
+			expect(state?.status).toBe(TaskStatus.FAILED);
+			// But Result should be populated from the node
+			expect(state?.result).toEqual((node1 as any).result);
+			// And selectedOutputIndex should be preserved (implied by result inequality check passing above)
+			expect(state?.result?.selectedOutputIndex).toBe(1);
+
+			// Output handle should be VALID despite node error, because we have a result
+			expect(state?.handleStatus["h1"].valid).toBe(true);
+
+			// Input handle should definitely be invalid/missing
+			expect(processor.graphValidation["n1"]["h2"]).toBe("missing_connection");
 		});
 	});
 
@@ -339,8 +393,8 @@ describe("NodeGraphProcessor", () => {
 				handles: [h1],
 			});
 
-			// Initially disconnected
-			expect(processor.getHandleColor("n1", "h1")).toBeNull();
+			// Initially disconnected, but since it has a single type (Text), it should have that type's color
+			expect(processor.getHandleColor("n1", "h1")).not.toBeNull();
 
 			const node2 = createMockNode("n2", "Preview");
 			const h2 = createMockHandle("h2", "n2", "Input", [DataType.Text]);

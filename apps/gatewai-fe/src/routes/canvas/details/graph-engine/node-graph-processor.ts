@@ -151,7 +151,10 @@ export class NodeGraphProcessor extends EventEmitter {
 		this.validateGraph();
 
 		// Force-fail invalid nodes after validation
+		// For terminal nodes (like LLM), we must preserve their existing results
+		// since their passthrough processor won't run when validation fails.
 		Object.keys(this.graphValidation).forEach((nodeId) => {
+			const node = this.nodes.get(nodeId);
 			const state = this.getOrCreateNodeState(nodeId);
 			const validationErrors = this.graphValidation[nodeId];
 			state.status = TaskStatus.FAILED;
@@ -160,6 +163,14 @@ export class NodeGraphProcessor extends EventEmitter {
 			state.startedAt = undefined;
 			state.finishedAt = undefined;
 			state.durationMs = undefined;
+
+			// Preserve result from node.result for terminal nodes (passthrough won't run)
+			// This allows LLM, ImageGen, etc. to display their results even when validation fails
+			// CRITICAL FIX: Always update result if node has one, to capture selectedOutputIndex changes
+			if (node?.result) {
+				state.result = node.result as unknown as NodeResult;
+			}
+
 			state.version++;
 			this.emit("node:error", { nodeId, error: state.error });
 		});
@@ -171,7 +182,12 @@ export class NodeGraphProcessor extends EventEmitter {
 			const dirtyNodes: string[] = [];
 			this.nodes.forEach((currNode, id) => {
 				const state = this.getOrCreateNodeState(id);
-				state.error = null;
+
+				// Don't clear error if it was set by validation just above
+				if (state.status !== TaskStatus.FAILED) {
+					state.error = null;
+				}
+
 				state.abortController = null;
 
 				// Initialize status based on existing result availability
@@ -179,7 +195,11 @@ export class NodeGraphProcessor extends EventEmitter {
 					state.result = currNode.result as unknown as NodeResult;
 					state.lastProcessedSignature = this.getNodeValueHash(currNode);
 					state.isDirty = false;
-					state.status = TaskStatus.COMPLETED;
+
+					// Only set to COMPLETED if it passed validation (not FAILED)
+					if (state.status !== TaskStatus.FAILED) {
+						state.status = TaskStatus.COMPLETED;
+					}
 				} else {
 					state.result = null;
 					state.lastProcessedSignature = null;
@@ -373,7 +393,9 @@ export class NodeGraphProcessor extends EventEmitter {
 			}
 
 			// If the whole node is invalid, outputs are invalid
-			if (handle.type === "Output" && hasNodeErrors) {
+			// EXCEPTION: If we have a result, we can still show the output as valid/usable
+			// This allows LLM nodes to show their generated text even if the prompt input is removed.
+			if (handle.type === "Output" && hasNodeErrors && !state.result) {
 				valid = false;
 			}
 
@@ -507,6 +529,14 @@ export class NodeGraphProcessor extends EventEmitter {
 				state.startedAt = undefined;
 				state.finishedAt = undefined;
 				state.durationMs = undefined;
+
+				// Preserve result from node.result for terminal nodes (passthrough won't run)
+				// This allows LLM, ImageGen, etc. to display their results even when validation fails
+				const node = this.nodes.get(nodeId);
+				// CRITICAL FIX: Always update result if node has one, to capture selectedOutputIndex changes
+				if (node?.result) {
+					state.result = node.result as unknown as NodeResult;
+				}
 
 				// Recalculate inputs even for failed nodes so UI shows current connections
 				state.inputs = this.collectInputs(nodeId);
