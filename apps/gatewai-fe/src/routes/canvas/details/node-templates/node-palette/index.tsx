@@ -157,20 +157,27 @@ function NodePaletteContent({ templates }: { templates: NodeTemplateListRPC }) {
 				)}
 			</div>
 
-			<div className=" shrink-0 z-50 flex flex-col ">
-				<SocialLink
-					href="https://discord.gg/ha4A8UD7kn"
-					icon={<FaDiscord className="size-5" />}
-					label="Discord"
-					isCollapsed={isCollapsed}
-				/>
-				<SocialLink
-					href="https://github.com/gatewai-dev/Gatewai"
-					icon={<FaGithub className="size-5" />}
-					label="GitHub"
-					isCollapsed={isCollapsed}
-				/>
-				<GuidesDialog isCollapsed={isCollapsed} />
+			<div className=" shrink-0 z-50 flex flex-col">
+				<div
+					className={cn(
+						"flex w-full items-center justify-evenly",
+						isCollapsed && "flex-col gap-4 pb-4",
+					)}
+				>
+					<SocialLink
+						href="https://discord.gg/ha4A8UD7kn"
+						icon={<FaDiscord className="size-5" />}
+						label="Discord"
+						isCollapsed={true}
+					/>
+					<SocialLink
+						href="https://github.com/gatewai-dev/Gatewai"
+						icon={<FaGithub className="size-5" />}
+						label="GitHub"
+						isCollapsed={true}
+					/>
+					<GuidesDialog isCollapsed={true} />
+				</div>
 				<AssetsSection isCollapsed={isCollapsed} />
 			</div>
 		</aside>

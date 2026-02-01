@@ -13,7 +13,7 @@ import {
 import { NodeWFProcessor } from "../../graph-engine/canvas-workflow-processor.js";
 import { uploadToImportNode } from "../../node-fns/import-media.js";
 import { assertIsError, generateId } from "../../utils/misc.js";
-import { assertCanvasAccess, requireUser } from "./auth-helpers.js";
+import { assertCanvasOwnership, requireUser } from "./auth-helpers.js";
 
 const apiRunRoutes = new Hono<{ Variables: AuthorizedHonoTypes }>({
 	strict: false,
@@ -61,13 +61,13 @@ const apiRunRoutes = new Hono<{ Variables: AuthorizedHonoTypes }>({
 	 * POST /api/v1/api-run
 	 */
 	.post("/", zValidator("json", APIRunRequestSchema), async (c) => {
-		const user = requireUser(c);
+		const user = c.get("user");
 		const { canvasId, payload } = c.req.valid("json");
 
 		try {
 			assert(canvasId);
 			// Verify user has access to this canvas
-			await assertCanvasAccess(c, canvasId);
+			await assertCanvasOwnership(c as any, canvasId);
 			// Duplicate the canvas with user ownership
 			const duplicated = await duplicateCanvas(canvasId, true, false, user.id);
 

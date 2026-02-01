@@ -66,7 +66,6 @@ model User {
   sessions      Session[]
   accounts      Account[]
   canvases      Canvas[]       @relation("UserCanvases")
-  sharedCanvases CanvasShare[] @relation("UserSharedCanvases")
   assets        FileAsset[]    @relation("UserAssets")
 
   @@unique([email])
@@ -127,7 +126,6 @@ model Canvas {
   updatedAt        DateTime     @updatedAt
   userId           String?
   user             User?         @relation("UserCanvases", fields: [userId], references: [id], onDelete: Cascade)
-  shares           CanvasShare[]
   nodes            Node[]
   taskBatches      TaskBatch[]
   /**
@@ -479,24 +477,4 @@ enum PatchStatus {
   PENDING
   ACCEPTED
   REJECTED
-}
-
-enum ShareRole {
-  VIEWER
-  EDITOR
-}
-
-model CanvasShare {
-  id        String    @id @default(cuid())
-  canvasId  String
-  canvas    Canvas    @relation(fields: [canvasId], references: [id], onDelete: Cascade)
-  userId    String
-  user      User      @relation("UserSharedCanvases", fields: [userId], references: [id], onDelete: Cascade)
-  role      ShareRole @default(VIEWER)
-  createdAt DateTime  @default(now())
-  updatedAt DateTime  @updatedAt
-
-  @@unique([canvasId, userId])
-  @@index([userId])
-  @@map("canvas_share")
 }

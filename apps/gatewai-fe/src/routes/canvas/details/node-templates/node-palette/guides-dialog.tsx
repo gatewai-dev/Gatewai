@@ -51,7 +51,7 @@ export function GuidesDialog({ isCollapsed }: { isCollapsed: boolean }) {
 						<Button
 							variant="ghost"
 							className={cn(
-								"flex items-center gap-3 rounded-xl px-2 py-2 w-full text-muted-foreground transition-colors hover:bg-muted hover:text-foreground",
+								"flex items-center gap-3 rounded-xl px-2 py-2 text-muted-foreground transition-colors hover:bg-muted hover:text-foreground",
 								isCollapsed ? "justify-center" : "justify-start",
 							)}
 						>

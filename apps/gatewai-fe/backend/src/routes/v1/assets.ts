@@ -100,7 +100,7 @@ const assetsRouter = new Hono<{ Variables: AuthorizedHonoTypes }>({
 	strict: false,
 })
 	.get("/", zValidator("query", querySchema), async (c) => {
-		const user = requireUser(c);
+		const user = c.get("user");
 		const { pageSize, pageIndex, q, type } = c.req.valid("query");
 
 		const skip = pageIndex * pageSize;
@@ -138,7 +138,7 @@ const assetsRouter = new Hono<{ Variables: AuthorizedHonoTypes }>({
 		});
 	})
 	.post("/", zValidator("form", uploadSchema), async (c) => {
-		const user = requireUser(c);
+		const user = c.get("user");
 		const form = await c.req.formData();
 		const file = form.get("file");
 		if (!(file instanceof File)) {
@@ -199,7 +199,7 @@ const assetsRouter = new Hono<{ Variables: AuthorizedHonoTypes }>({
 		}
 	})
 	.post("/from-url", zValidator("json", uploadFromUrlSchema), async (c) => {
-		const user = requireUser(c);
+		const user = c.get("user");
 		const { url, filename: customFilename } = c.req.valid("json");
 
 		try {
@@ -302,8 +302,8 @@ const assetsRouter = new Hono<{ Variables: AuthorizedHonoTypes }>({
 		zValidator(
 			"query",
 			z.object({
-				w: z.coerce.number().int().positive().default(300),
-				h: z.coerce.number().int().positive().default(300),
+				w: z.coerce.number().int().positive().default(50),
+				h: z.coerce.number().int().positive().default(50),
 			}),
 		),
 		async (c) => {
@@ -450,7 +450,7 @@ const assetsRouter = new Hono<{ Variables: AuthorizedHonoTypes }>({
 			const id = c.req.param("id");
 
 			// Validate user owns this asset
-			const asset = await assertAssetOwnership(c, id);
+			const asset = await assertAssetOwnership(c as any, id);
 
 			try {
 				await deleteFromGCS(asset.key, asset.bucket);
