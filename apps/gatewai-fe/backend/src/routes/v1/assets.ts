@@ -23,6 +23,7 @@ import {
 	getStreamFromGCS,
 	uploadToGCS,
 } from "../../utils/storage.js";
+import { assertAssetOwnership, requireUser } from "./auth-helpers.js";
 
 const uploadSchema = z.object({
 	file: z.any(),
@@ -99,12 +100,14 @@ const assetsRouter = new Hono<{ Variables: AuthorizedHonoTypes }>({
 	strict: false,
 })
 	.get("/", zValidator("query", querySchema), async (c) => {
+		const user = requireUser(c);
 		const { pageSize, pageIndex, q, type } = c.req.valid("query");
 
 		const skip = pageIndex * pageSize;
 		const take = pageSize;
 
 		const where: FileAssetWhereInput = {
+			userId: user.id,
 			name: {
 				contains: q,
 				mode: "insensitive",
@@ -135,6 +138,7 @@ const assetsRouter = new Hono<{ Variables: AuthorizedHonoTypes }>({
 		});
 	})
 	.post("/", zValidator("form", uploadSchema), async (c) => {
+		const user = requireUser(c);
 		const form = await c.req.formData();
 		const file = form.get("file");
 		if (!(file instanceof File)) {
@@ -175,6 +179,7 @@ const assetsRouter = new Hono<{ Variables: AuthorizedHonoTypes }>({
 			const asset = await prisma.fileAsset.create({
 				data: {
 					name: filename,
+					userId: user.id,
 					bucket,
 					key,
 					isUploaded: true,
@@ -194,6 +199,7 @@ const assetsRouter = new Hono<{ Variables: AuthorizedHonoTypes }>({
 		}
 	})
 	.post("/from-url", zValidator("json", uploadFromUrlSchema), async (c) => {
+		const user = requireUser(c);
 		const { url, filename: customFilename } = c.req.valid("json");
 
 		try {
@@ -235,6 +241,7 @@ const assetsRouter = new Hono<{ Variables: AuthorizedHonoTypes }>({
 			const asset = await prisma.fileAsset.create({
 				data: {
 					name: filename,
+					userId: user.id,
 					bucket,
 					key,
 					isUploaded: true,
@@ -442,13 +449,8 @@ const assetsRouter = new Hono<{ Variables: AuthorizedHonoTypes }>({
 		async (c) => {
 			const id = c.req.param("id");
 
-			const asset = await prisma.fileAsset.findUnique({
-				where: { id },
-			});
-
-			if (!asset) {
-				return c.json({ error: "Asset not found" }, 404);
-			}
+			// Validate user owns this asset
+			const asset = await assertAssetOwnership(c, id);
 
 			try {
 				await deleteFromGCS(asset.key, asset.bucket);

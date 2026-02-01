@@ -25,7 +25,7 @@ export const auth = betterAuth({
 export const authMiddleware = createMiddleware(async (c, next) => {
 	const session = c.get("session");
 	if (!session) {
-		// Check root api key if user is unauthorized
+		// Check root API key if user is unauthorized
 		const apiKey = ENV_CONFIG.GATEWAI_API_KEY;
 		const hasValidAPIKey = c.req.header("X-API-KEY") === apiKey;
 		if (!hasValidAPIKey) {
@@ -37,6 +37,8 @@ export const authMiddleware = createMiddleware(async (c, next) => {
 			});
 			throw new HTTPException(401, { res: errorResponse });
 		}
+		// Set flag for API key authentication (service account mode)
+		c.set("isApiKeyAuth", true);
 	}
 	await next();
 });
@@ -44,9 +46,14 @@ export const authMiddleware = createMiddleware(async (c, next) => {
 export type AuthHonoTypes = {
 	user: typeof auth.$Infer.Session.user | null;
 	session: typeof auth.$Infer.Session.session | null;
+	isApiKeyAuth?: boolean;
 };
 
 export type AuthorizedHonoTypes = {
 	user: typeof auth.$Infer.Session.user;
 	session: typeof auth.$Infer.Session.session;
+	isApiKeyAuth?: boolean;
 };
+
+// Union type for auth helpers to work with both contexts
+export type AnyAuthHonoTypes = AuthHonoTypes | AuthorizedHonoTypes;

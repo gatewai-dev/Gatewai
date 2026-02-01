@@ -54,6 +54,7 @@ Gatewai's intelligent agent system uses a sophisticated multi-agent architecture
 
 * **Orchestrator Agent**: Powered by **Gemini 3**, it understands your high-level intent, analyzes the current canvas state, and plans workflow modifications.
 * **Patcher Sub-Agent**: A specialized coding agent that safely generates and verifies JavaScript to manipulate the canvas graph. It executes in a sandboxed secure environment to ensure structural integrity (correct handle types, valid connections) before any changes are applied.
+* **Tought Signatures**: Copilot uses thought signatures for more compact, yet detailed, reasoning, reducing token usage and improving response times.
 * **Context Aware**: The agent has full visibility into your node templates (`ImageGen`, `VideoCompositor`, etc.) and seamlessly bridges natural language with complex graph operations.
 * **See differences**: When agent prepares the changes for your workflow, it shows you the differences between the current graph and the new graph. It is up to you to accept it or reject it and clarify your intent.
 

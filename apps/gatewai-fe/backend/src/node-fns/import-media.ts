@@ -84,6 +84,7 @@ export async function uploadToImportNode({
 	const asset = await prisma.fileAsset.create({
 		data: {
 			name: filename,
+			userId: node.canvas.userId,
 			bucket,
 			key,
 			signedUrl,

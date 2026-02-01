@@ -1,4 +1,4 @@
-import { prisma } from "@gatewai/db";
+import { prisma, ShareRole } from "@gatewai/db";
 import {
 	type BulkUpdatePayload,
 	bulkUpdateSchema,
@@ -18,6 +18,13 @@ import { NodeWFProcessor } from "../../graph-engine/canvas-workflow-processor.js
 import { redisSubscriber } from "../../lib/redis.js";
 import { logger } from "../../logger.js";
 import { assertIsError } from "../../utils/misc.js";
+import {
+	assertCanvasAccess,
+	assertCanvasOwnership,
+	getUserOrNull,
+	isApiKeyAuth,
+	requireUser,
+} from "./auth-helpers.js";
 
 const createPatchQuerySchema = z.object({
 	agentSessionId: z.string().optional(),
@@ -37,46 +44,145 @@ const canvasRoutes = new Hono<{ Variables: AuthHonoTypes }>({
 		async (c) => {
 			const { q } = c.req.valid("query");
 
-			const canvases = await prisma.canvas.findMany({
-				where: {
-					isAPICanvas: false,
-					...(q
-						? {
-							name: {
-								contains: q,
-								mode: "insensitive",
+			// API key auth (service account) gets all non-API canvases
+			if (isApiKeyAuth(c)) {
+				const canvases = await prisma.canvas.findMany({
+					where: {
+						isAPICanvas: false,
+						...(q
+							? {
+								name: {
+									contains: q,
+									mode: "insensitive",
+								},
+							}
+							: {}),
+					},
+					orderBy: {
+						updatedAt: "desc",
+					},
+					select: {
+						id: true,
+						name: true,
+						createdAt: true,
+						updatedAt: true,
+						_count: {
+							select: {
+								nodes: true,
 							},
-						}
-						: {}),
-				},
-				orderBy: {
-					updatedAt: "desc",
-				},
-				select: {
-					id: true,
-					name: true,
-					createdAt: true,
-					updatedAt: true,
-					_count: {
-						select: {
-							nodes: true,
 						},
 					},
-				},
-			});
+				});
+				return c.json(canvases.map((ca) => ({ ...ca, isShared: false, shareRole: null })));
+			}
 
-			return c.json(canvases);
+			const user = requireUser(c);
+
+			// Get owned canvases and shared canvases
+			const [ownedCanvases, sharedCanvasRecords] = await Promise.all([
+				prisma.canvas.findMany({
+					where: {
+						userId: user.id,
+						isAPICanvas: false,
+						...(q
+							? {
+								name: {
+									contains: q,
+									mode: "insensitive",
+								},
+							}
+							: {}),
+					},
+					orderBy: {
+						updatedAt: "desc",
+					},
+					select: {
+						id: true,
+						name: true,
+						createdAt: true,
+						updatedAt: true,
+						_count: {
+							select: {
+								nodes: true,
+							},
+						},
+					},
+				}),
+				prisma.canvasShare.findMany({
+					where: {
+						userId: user.id,
+						canvas: {
+							isAPICanvas: false,
+							...(q
+								? {
+									name: {
+										contains: q,
+										mode: "insensitive",
+									},
+								}
+								: {}),
+						},
+					},
+					include: {
+						canvas: {
+							select: {
+								id: true,
+								name: true,
+								createdAt: true,
+								updatedAt: true,
+								_count: {
+									select: {
+										nodes: true,
+									},
+								},
+							},
+						},
+					},
+				}),
+			]);
+
+			// Combine and format canvases with owner flag
+			const sharedCanvases = sharedCanvasRecords.map((share) => ({
+				...share.canvas,
+				isShared: true,
+				shareRole: share.role,
+			}));
+
+			const ownedWithFlag = ownedCanvases.map((ca) => ({
+				...ca,
+				isShared: false,
+				shareRole: null,
+			}));
+
+			const allCanvases = [...ownedWithFlag, ...sharedCanvases].sort(
+				(a, b) =>
+					new Date(b.updatedAt).getTime() - new Date(a.updatedAt).getTime(),
+			);
+
+			return c.json(allCanvases);
 		},
 	)
 	.post("/", async (c) => {
-		const canvasCount = await prisma.canvas.count();
-		const user = c.get("user");
-		if (!user) {
-			c.json({ error: "Unauthenticated" }, 401);
+		// API key auth creates canvas without owner
+		if (isApiKeyAuth(c)) {
+			const canvasCount = await prisma.canvas.count();
+			const canvas = await prisma.canvas.create({
+				data: {
+					name: `Canvas ${canvasCount + 1}`,
+					// userId is null for service account created canvases
+				},
+			});
+			return c.json(canvas, 201);
 		}
+
+		const user = requireUser(c);
+		const canvasCount = await prisma.canvas.count({
+			where: { userId: user.id },
+		});
 		const canvas = await prisma.canvas.create({
 			data: {
 				name: `Canvas ${canvasCount + 1}`,
+				userId: user.id,
 			},
 		});
 
@@ -84,6 +190,8 @@ const canvasRoutes = new Hono<{ Variables: AuthHonoTypes }>({
 	})
 	.get("/:id", async (c) => {
 		const id = c.req.param("id");
+		// Validate user has access (owner or shared)
+		await assertCanvasAccess(c, id);
 		const response = await GetCanvasEntities(id);
 		return c.json(response);
 	})
@@ -99,6 +207,9 @@ const canvasRoutes = new Hono<{ Variables: AuthHonoTypes }>({
 			const validated = c.req.valid("json");
 			const id = c.req.param("id");
 
+			// Only owners and editors can rename
+			await assertCanvasAccess(c, id, ShareRole.EDITOR);
+
 			const canvas = await prisma.canvas.update({
 				where: { id },
 				data: { name: validated.name },
@@ -110,6 +221,9 @@ const canvasRoutes = new Hono<{ Variables: AuthHonoTypes }>({
 	.patch("/:id", zValidator("json", bulkUpdateSchema), async (c) => {
 		const id = c.req.param("id");
 		const validated = c.req.valid("json");
+
+		// Only owners and editors can update canvas
+		await assertCanvasAccess(c, id, ShareRole.EDITOR);
 
 		try {
 			await applyCanvasUpdate(id, validated);
@@ -129,8 +243,12 @@ const canvasRoutes = new Hono<{ Variables: AuthHonoTypes }>({
 		zValidator("json", bulkUpdateSchema),
 		zValidator("query", createPatchQuerySchema),
 		async (c) => {
+			const id = c.req.param("id");
+			// Validate permission: Editor access required to propose patch
+			// (Agents using API key will bypass this due to auth-helpers change)
+			await assertCanvasAccess(c, id, ShareRole.EDITOR);
+
 			try {
-				const id = c.req.param("id");
 				const { agentSessionId } = c.req.valid("query");
 				const validated = c.req.valid("json");
 
@@ -184,6 +302,9 @@ const canvasRoutes = new Hono<{ Variables: AuthHonoTypes }>({
 		const id = c.req.param("id");
 		const patchId = c.req.param("patchId");
 
+		// Validate permission: Editor access required to apply patch
+		await assertCanvasAccess(c, id, ShareRole.EDITOR);
+
 		const patch = await prisma.canvasPatch.findUnique({
 			where: { id: patchId },
 		});
@@ -229,6 +350,9 @@ const canvasRoutes = new Hono<{ Variables: AuthHonoTypes }>({
 		const id = c.req.param("id");
 		const patchId = c.req.param("patchId");
 
+		// Validate permission: Editor access required to reject patch
+		await assertCanvasAccess(c, id, ShareRole.EDITOR);
+
 		const patch = await prisma.canvasPatch.findUnique({
 			where: { id: patchId },
 		});
@@ -264,6 +388,9 @@ const canvasRoutes = new Hono<{ Variables: AuthHonoTypes }>({
 		const id = c.req.param("id");
 		const patchId = c.req.param("patchId");
 
+		// Validate permission: Viewer access required to view patch
+		await assertCanvasAccess(c, id);
+
 		const patch = await prisma.canvasPatch.findUnique({
 			where: { id: patchId },
 		});
@@ -277,10 +404,8 @@ const canvasRoutes = new Hono<{ Variables: AuthHonoTypes }>({
 	.delete("/:id", async (c) => {
 		const id = c.req.param("id");
 
-		const existing = await prisma.canvas.findFirst({ where: { id } });
-		if (!existing) {
-			throw new HTTPException(404, { message: "Canvas not found" });
-		}
+		// Only owners can delete canvases
+		await assertCanvasOwnership(c, id);
 
 		// 1. Find all agent sessions for this canvas
 		const sessions = await prisma.agentSession.findMany({
@@ -299,6 +424,10 @@ const canvasRoutes = new Hono<{ Variables: AuthHonoTypes }>({
 	})
 	.post("/:id/duplicate", async (c) => {
 		const id = c.req.param("id");
+		const user = requireUser(c);
+
+		// User needs at least view access to duplicate
+		await assertCanvasAccess(c, id);
 
 		const original = await prisma.canvas.findFirst({
 			where: { id },
@@ -320,8 +449,9 @@ const canvasRoutes = new Hono<{ Variables: AuthHonoTypes }>({
 			where: { sourceNode: { canvasId: id } },
 		});
 
+		// Duplicate belongs to the current user
 		const duplicate = await prisma.canvas.create({
-			data: { name: `${original.name} (Copy)` },
+			data: { name: `${original.name} (Copy)`, userId: user.id },
 		});
 
 		const nodeCreations = original.nodes.map((node) =>
@@ -711,6 +841,36 @@ const canvasRoutes = new Hono<{ Variables: AuthHonoTypes }>({
 		}
 
 		return c.json({ ...session, messages });
-	});
+	})
+	// =====================================
+	// Canvas Sharing Endpoints
+	// =====================================
+	/**
+	 * GET /api/v1/canvas/:id/shares
+	 * List all shares for a canvas (owner only)
+	 */
+	.get("/:id/shares", async (c) => {
+		const id = c.req.param("id");
+
+		// Only owner can view shares
+		await assertCanvasOwnership(c, id);
+
+		const shares = await prisma.canvasShare.findMany({
+			where: { canvasId: id },
+			include: {
+				user: {
+					select: {
+						id: true,
+						name: true,
+						email: true,
+						image: true,
+					},
+				},
+			},
+			orderBy: { createdAt: "desc" },
+		});
+
+		return c.json({ shares });
+	})
 
 export { canvasRoutes };

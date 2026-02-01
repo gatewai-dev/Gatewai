@@ -5,6 +5,8 @@ import type {
 	CanvasListRPCParams,
 	CreateCanvasRPC,
 	CreateCanvasRPCParams,
+	DeleteCanvasRPC,
+	DeleteCanvasRPCParams,
 } from "@/rpc/types";
 
 export const canvasListAPI = createApi({
@@ -40,19 +42,17 @@ export const canvasListAPI = createApi({
 				return { data };
 			},
 		}),
-		deleteCanvas: build.mutation<void, string>({
+		deleteCanvas: build.mutation<DeleteCanvasRPC, DeleteCanvasRPCParams>({
 			invalidatesTags: ["canvasList"],
-			queryFn: async (id) => {
-				const response = await rpcClient.api.v1.canvas[":id"].$delete({
-					param: { id },
-				});
+			queryFn: async (param) => {
+				const response = await rpcClient.api.v1.canvas[":id"].$delete(param);
 				if (!response.ok) {
 					return {
 						error: { status: response.status, data: await response.text() },
 					};
 				}
 				const data = await response.json();
-				return { data: undefined };
+				return { data };
 			},
 		}),
 	}),

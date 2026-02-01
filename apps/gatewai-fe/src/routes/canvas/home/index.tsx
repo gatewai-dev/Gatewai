@@ -44,7 +44,7 @@ function CanvasHomeImpl() {
 
 	// Local state for immediate input updates
 	const [localSearchQuery, setLocalSearchQuery] = useState(searchQuery);
-	const debounceTimerRef = useRef<NodeJS.Timeout>();
+	const debounceTimerRef = useRef<NodeJS.Timeout | null>(null);
 
 	// Sync local state with context state when context changes externally
 	useEffect(() => {
@@ -187,7 +187,7 @@ function CanvasHomeImpl() {
 								key={`skeleton-${
 									// biome-ignore lint/suspicious/noArrayIndexKey: No other props
 									i
-								}`}
+									}`}
 								className="h-48 rounded-3xl"
 							/>
 						))}

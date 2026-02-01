@@ -6,6 +6,7 @@ import { type Canvas, prisma } from "@gatewai/db";
  * @param canvasId - The ID of the canvas to duplicate.
  * @param isAPICanvas - Whether or not duplicated canvas will be used for API request.
  * @param keepResults - Whether to keep the results of the nodes in the duplicate.
+ * @param userId - The user ID to assign ownership of the duplicated canvas. If not provided, inherits from original.
  * @returns The newly created duplicated canvas.
  * @throws Error if the original canvas is not found.
  */
@@ -13,6 +14,7 @@ async function duplicateCanvas(
 	canvasId: string,
 	isAPICanvas = false,
 	keepResults: boolean = false,
+	userId?: string,
 ): Promise<Canvas> {
 	const originalCanvas = await prisma.canvas.findUniqueOrThrow({
 		where: { id: canvasId },
@@ -40,6 +42,7 @@ async function duplicateCanvas(
 				name: `${originalCanvas.name} (copy)`,
 				isAPICanvas: isAPICanvas,
 				originalCanvasId: originalCanvas.id,
+				userId: userId ?? originalCanvas.userId,
 			},
 		});
 

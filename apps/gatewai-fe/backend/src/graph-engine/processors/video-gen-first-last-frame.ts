@@ -139,6 +139,7 @@ const videoGenFirstLastFrameProcessor: NodeProcessor = async ({
 		const asset = await prisma.fileAsset.create({
 			data: {
 				name: fileName,
+				userId: data.canvas.userId,
 				bucket,
 				size: fileBuffer.length,
 				key,

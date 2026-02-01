@@ -50,8 +50,8 @@ export const CanvasListProvider = ({ children }: PropsWithChildren) => {
 		isLoading,
 		searchQuery,
 		setSearchQuery,
-		createCanvas: mutate,
-		deleteCanvas,
+		createCanvas: (_name: string) => mutate({}),
+		deleteCanvas: (id: string) => deleteCanvas({ param: { id } }),
 		isCreating,
 	};
 

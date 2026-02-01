@@ -100,9 +100,9 @@ const imageGenProcessor: NodeProcessor = async ({ node, data }) => {
 				imageConfig:
 					config.model === "gemini-3-pro-image-preview"
 						? {
-								aspectRatio: config.aspectRatio,
-								imageSize: config.imageSize,
-							}
+							aspectRatio: config.aspectRatio,
+							imageSize: config.imageSize,
+						}
 						: undefined,
 			},
 		});
@@ -152,6 +152,7 @@ const imageGenProcessor: NodeProcessor = async ({ node, data }) => {
 		const asset = await prisma.fileAsset.create({
 			data: {
 				name: fileName,
+				userId: data.canvas.userId,
 				bucket,
 				key,
 				size,

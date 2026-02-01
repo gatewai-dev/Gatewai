@@ -65,6 +65,9 @@ model User {
   updatedAt     DateTime
   sessions      Session[]
   accounts      Account[]
+  canvases      Canvas[]       @relation("UserCanvases")
+  sharedCanvases CanvasShare[] @relation("UserSharedCanvases")
+  assets        FileAsset[]    @relation("UserAssets")
 
   @@unique([email])
   @@map("user")
@@ -122,6 +125,9 @@ model Canvas {
   description      String?
   createdAt        DateTime     @default(now())
   updatedAt        DateTime     @updatedAt
+  userId           String?
+  user             User?         @relation("UserCanvases", fields: [userId], references: [id], onDelete: Cascade)
+  shares           CanvasShare[]
   nodes            Node[]
   taskBatches      TaskBatch[]
   /**
@@ -140,7 +146,7 @@ model Canvas {
   agentSessions       AgentSession[]
   patches             CanvasPatch[]
 
-
+  @@index([userId])
   @@map("canvas")
 }
 
@@ -325,6 +331,8 @@ model FileAsset {
   name            String
   createdAt       DateTime     @default(now())
   updatedAt       DateTime     @updatedAt
+  userId          String?
+  user            User?         @relation("UserAssets", fields: [userId], references: [id], onDelete: Cascade)
 
   width           Int?
   height          Int?
@@ -346,6 +354,7 @@ model FileAsset {
   metadata        Json?
   fps             Int?
 
+  @@index([userId])
   @@map("fileAsset")
 }
 
@@ -362,6 +371,9 @@ model AgentSession {
   
   // Assistant configuration
   assistantId       String?
+  
+  // AI model used for this session
+  model             String?
   
   // Session state
   status            SessionStatus @default(ACTIVE)
@@ -467,4 +479,24 @@ enum PatchStatus {
   PENDING
   ACCEPTED
   REJECTED
+}
+
+enum ShareRole {
+  VIEWER
+  EDITOR
+}
+
+model CanvasShare {
+  id        String    @id @default(cuid())
+  canvasId  String
+  canvas    Canvas    @relation(fields: [canvasId], references: [id], onDelete: Cascade)
+  userId    String
+  user      User      @relation("UserSharedCanvases", fields: [userId], references: [id], onDelete: Cascade)
+  role      ShareRole @default(VIEWER)
+  createdAt DateTime  @default(now())
+  updatedAt DateTime  @updatedAt
+
+  @@unique([canvasId, userId])
+  @@index([userId])
+  @@map("canvas_share")
 }

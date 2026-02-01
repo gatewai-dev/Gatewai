@@ -126,7 +126,9 @@ export class GatewaiApiClient {
 	 * Lists all non-API canvases, ordered by updated date.
 	 */
 	async getCanvases(): Promise<GetCanvasesResponse> {
-		const res = await this.rpc.api.v1.canvas.$get();
+		const res = await this.rpc.api.v1.canvas.$get({
+			query: {q: undefined}
+		});
 		return this.handleResponse(res);
 	}
 
