@@ -73,6 +73,9 @@ export type DeleteAssetResponse = InferResponseType<
 
 export interface APIClientConfig {
 	baseUrl: string;
+	/**
+	 * Service account API KEY (GATEWAI_API_KEY)
+	 */
 	apiKey: string;
 	timeoutMs?: number;
 	headers?: Record<string, string>;
@@ -110,8 +113,6 @@ export class GatewaiApiClient {
 		return (await res.json()) as T;
 	}
 
-	// ==================== NODE TEMPLATES ====================
-
 	/**
 	 * Fetches all available node templates.
 	 */
@@ -120,7 +121,6 @@ export class GatewaiApiClient {
 		return this.handleResponse(res);
 	}
 
-	// ==================== CANVAS METHODS ====================
 
 	/**
 	 * Lists all non-API canvases, ordered by updated date.

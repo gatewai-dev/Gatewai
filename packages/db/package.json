@@ -1,6 +1,7 @@
 {
 	"name": "@gatewai/db",
-	"version": "0.0.0",
+	"version": "0.0.1",
+	"private": true,
 	"author": "Okan Aslankan <okn.aslnkn@gmail.com>",
 	"type": "module",
 	"module": "./dist/index.mjs",

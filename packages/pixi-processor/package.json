@@ -1,6 +1,7 @@
 {
 	"name": "@gatewai/pixi-processor",
 	"version": "0.0.0",
+	"private": true,
 	"type": "module",
 	"sideEffects": false,
 	"license": "MIT",

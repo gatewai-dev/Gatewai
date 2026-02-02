@@ -1,6 +1,7 @@
 {
 	"name": "@gatewai/api-client",
-	"version": "0.0.0",
+	"version": "0.0.1",
+	"private": false,
 	"type": "module",
 	"sideEffects": false,
 	"module": "./dist/index.mjs",
