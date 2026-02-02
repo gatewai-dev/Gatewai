@@ -15,7 +15,7 @@ import {
 import { useAgentChatStream } from "../hooks/use-agent-chat";
 
 const SELECTED_MODEL_STORAGE_KEY = "canvas_agent_selected_model";
-const DEFAULT_MODEL = "gemini-3-flash-preview";
+const DEFAULT_MODEL = "gemini-3-pro-preview";
 
 export type MessageRole = "user" | "model" | "system";
 
