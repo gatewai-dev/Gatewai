@@ -159,7 +159,7 @@ const ColorSchema = z.string().optional();
 
 const PercentageSchema = z.number().min(0).max(100);
 
-const DimensionSchema = z.number().int().positive().optional();
+const DimensionSchema = z.number().min(0).optional();
 
 const FontOptionsSchema = z.object({
 	fontFamily: z.string().optional(),

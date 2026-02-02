@@ -10,8 +10,8 @@ Gatewai utilizes a **hybrid execution model** where node processing is distribut
 
 * **Frontend Engine (Web):** Processes lightweight nodes, UI-centric logic (e.g., `Note`, `Toggle`), and real-time canvas previews.
 * **Backend Engine (Node.js):** Executes heavy generative tasks and terminal operations.
-  * **Terminal Nodes:** Templates marked with `isTerminal: true` run exclusively on the backend.
-  * **Data Flow:** Backend nodes can pipe results (images, video, LLM streams) back to frontend nodes for visualization or further non-terminal processing.
+  * **Terminal Nodes:** Templates marked with `isTerminal: true` run exclusively on the server.
+  * **Data Flow:** Server nodes can pipe results (images, video, LLM streams) back to frontend nodes for visualization or further non-terminal processing.
 
 ### Workspace Structure
 

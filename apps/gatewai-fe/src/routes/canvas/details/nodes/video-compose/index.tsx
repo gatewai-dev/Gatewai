@@ -142,13 +142,13 @@ const VideoCompositorNodeComponent = memo(
 			const durationInFrames =
 				layers.length > 0
 					? Math.max(
-							DEFAULT_DURATION_FRAMES,
-							...layers.map(
-								(l) =>
-									(l.startFrame ?? 0) +
-									(l.durationInFrames ?? DEFAULT_DURATION_FRAMES),
-							),
-						)
+						DEFAULT_DURATION_FRAMES,
+						...layers.map(
+							(l) =>
+								(l.startFrame ?? 0) +
+								(l.durationInFrames ?? DEFAULT_DURATION_FRAMES),
+						),
+					)
 					: DEFAULT_DURATION_FRAMES;
 
 			return { layers, width, height, durationInFrames };
@@ -268,7 +268,6 @@ const VideoCompositorNodeComponent = memo(
 								<Button
 									onClick={() => nav(`video-editor/${node.id}`)}
 									size="sm"
-									disabled={!hasInputs}
 								>
 									<VideoIcon className="size-4 mr-1" /> Edit
 								</Button>
