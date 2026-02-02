@@ -47,6 +47,10 @@ echo "✓ Found Prisma CLI at ./node_modules/.bin/prisma"
 # Use direct path to Prisma CLI
 PRISMA_CLI="./node_modules/.bin/prisma"
 
+# TODO: rm
+echo "Running Prisma migrations reset..."
+$PRISMA_CLI migrate reset
+
 # Run migrations using direct path to Prisma
 echo "Running Prisma migrations..."
 $PRISMA_CLI migrate deploy
