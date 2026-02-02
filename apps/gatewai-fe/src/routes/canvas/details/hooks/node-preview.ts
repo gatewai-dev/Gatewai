@@ -12,7 +12,9 @@ export function useNodePreview(nodeId: string) {
 	const node = useAppSelector(makeSelectNodeById(nodeId));
 	const { result } = useNodeResult(nodeId);
 	const validation = useNodeValidation(nodeId);
-
+	if (node.id === "kUX9W7SgfGkdjQlUtrMUyW") {
+		console.log("validation", { validation, result });
+	}
 	return useMemo(() => {
 		const hasInvalidInput = validation && Object.keys(validation).length > 0;
 		const isTerminalNode = node?.template.isTerminalNode;

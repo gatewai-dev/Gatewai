@@ -166,9 +166,10 @@ export class NodeGraphProcessor extends EventEmitter {
 
 			// Preserve result from node.result for terminal nodes (passthrough won't run)
 			// This allows LLM, ImageGen, etc. to display their results even when validation fails
-			// CRITICAL FIX: Always update result if node has one, to capture selectedOutputIndex changes
-			if (node?.result) {
+			if (node?.template.isTerminalNode && node.result) {
 				state.result = node.result as unknown as NodeResult;
+			} else {
+				state.result = null;
 			}
 
 			state.version++;
@@ -533,9 +534,10 @@ export class NodeGraphProcessor extends EventEmitter {
 				// Preserve result from node.result for terminal nodes (passthrough won't run)
 				// This allows LLM, ImageGen, etc. to display their results even when validation fails
 				const node = this.nodes.get(nodeId);
-				// CRITICAL FIX: Always update result if node has one, to capture selectedOutputIndex changes
-				if (node?.result) {
+				if (node?.template.isTerminalNode && node.result) {
 					state.result = node.result as unknown as NodeResult;
+				} else {
+					state.result = null;
 				}
 
 				// Recalculate inputs even for failed nodes so UI shows current connections
@@ -616,6 +618,7 @@ export class NodeGraphProcessor extends EventEmitter {
 					state.isDirty = false;
 					state.status = TaskStatus.FAILED;
 					state.error = "Missing required inputs due to upstream errors";
+					state.result = null; // Clear result on failure
 					state.finishedAt = Date.now();
 					state.durationMs = state.startedAt
 						? state.finishedAt - state.startedAt
@@ -793,6 +796,7 @@ export class NodeGraphProcessor extends EventEmitter {
 			state.error = error instanceof Error ? error.message : "Unknown error";
 			state.isDirty = false; // It processed, but failed.
 			state.status = TaskStatus.FAILED;
+			state.result = null; // Clear result on failure
 			state.finishedAt = Date.now();
 			state.durationMs =
 				state.finishedAt - (state.startedAt || state.finishedAt);

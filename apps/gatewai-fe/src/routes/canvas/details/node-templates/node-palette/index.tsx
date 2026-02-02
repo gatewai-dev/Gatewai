@@ -215,7 +215,7 @@ function SocialLink({
 					)}
 				</a>
 			</TooltipTrigger>
-			{isCollapsed && <TooltipContent side="right">{label}</TooltipContent>}
+			{isCollapsed && <TooltipContent side="top">{label}</TooltipContent>}
 		</Tooltip>
 	);
 }
