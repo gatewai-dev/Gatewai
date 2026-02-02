@@ -12,6 +12,7 @@ import {
 } from "lucide-react";
 
 import { useEffect, useRef, useState } from "react";
+import { Helmet } from "react-helmet-async";
 import { Link, useNavigate } from "react-router";
 import {
 	AlertDialog,
@@ -117,6 +118,9 @@ function CanvasHomeImpl() {
 
 	return (
 		<div className="min-h-screen bg-[#FAFAFA] dark:bg-[#09090B] selection:bg-primary/10">
+			<Helmet>
+				<title>Workspace - Gatewai</title>
+			</Helmet>
 			<div className="max-w-7xl mx-auto px-6 py-12 lg:px-12 space-y-12">
 				{/* Apple-style Hero Header */}
 				<header className="flex flex-col md:flex-row justify-between items-end gap-6">

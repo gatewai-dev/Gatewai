@@ -1,5 +1,6 @@
 import type { CompositorNodeConfig, OutputItem } from "@gatewai/types";
 import { memo, useMemo } from "react";
+import { Helmet } from "react-helmet-async";
 import { useNavigate, useParams } from "react-router";
 import { ImageDesignerEditor } from "@/modules/canvas-editor";
 import { useAppSelector } from "@/store";
@@ -54,6 +55,9 @@ const CompositorView = memo(() => {
 
 	return (
 		<div className="inset-0 h-screen w-screen">
+			<Helmet>
+				<title>Designer - Gatewai</title>
+			</Helmet>
 			{node && isProcessed && (
 				<ImageDesignerEditor
 					onClose={() => closeAndFocusOnNode()}

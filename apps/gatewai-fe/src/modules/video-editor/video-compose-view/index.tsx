@@ -1,5 +1,6 @@
 import type { OutputItem, VideoCompositorNodeConfig } from "@gatewai/types";
 import { memo, useMemo } from "react";
+import { Helmet } from "react-helmet-async";
 import { useNavigate, useParams } from "react-router";
 import { useAppSelector } from "@/store";
 import type { HandleEntityType } from "@/store/handles";
@@ -54,6 +55,9 @@ const VideoCompositorView = memo(() => {
 
 	return (
 		<div className="inset-0 h-screen w-screen">
+			<Helmet>
+				<title>Video Editor - Gatewai</title>
+			</Helmet>
 			{node && (
 				<VideoDesignerEditor
 					onClose={() => closeAndFocusOnNode()}

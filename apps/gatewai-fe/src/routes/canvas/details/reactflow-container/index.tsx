@@ -10,6 +10,7 @@ import {
 } from "@xyflow/react";
 import type { DragEventHandler, MouseEventHandler } from "react";
 import { createContext, useEffect, useRef, useState } from "react";
+import { Helmet } from "react-helmet-async";
 import { useHotkeys } from "react-hotkeys-hook";
 import { useAppDispatch, useAppSelector } from "@/store";
 import { setSelectedEdgeIds, setSelectedNodeIds } from "@/store/node-meta";
@@ -33,8 +34,14 @@ export const ModeContext = createContext<{
 } | null>(null);
 
 function ReactflowContainer({ children }: ReactFlowProps) {
-	const { onEdgesChange, onNodesChange, onConnect, rfInstance, isReviewing } =
-		useCanvasCtx();
+	const {
+		onEdgesChange,
+		onNodesChange,
+		onConnect,
+		rfInstance,
+		isReviewing,
+		canvas,
+	} = useCanvasCtx();
 	const dispatch = useAppDispatch();
 
 	const onSelectionChange = ({
@@ -156,6 +163,9 @@ function ReactflowContainer({ children }: ReactFlowProps) {
 			onAuxClick={handleAuxClick}
 			className="w-full h-screen bg-black relative"
 		>
+			<Helmet>
+				<title>{canvas?.name ?? "Canvas"} - Gatewai</title>
+			</Helmet>
 			<ModeContext.Provider value={{ mode, setMode }}>
 				<ReactFlow
 					onInit={(flowInstance) => {

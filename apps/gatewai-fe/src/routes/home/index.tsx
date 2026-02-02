@@ -1,6 +1,7 @@
 import { motion, useScroll, useTransform } from "framer-motion";
 import { ArrowRight, GitBranch, Sparkles, Workflow } from "lucide-react";
 import { useEffect, useRef, useState } from "react";
+import { Helmet } from "react-helmet-async";
 import { Link } from "react-router";
 import { Button } from "@/components/ui/button";
 import { GatewaiLogo } from "@/components/ui/gatewai-logo";
@@ -137,6 +138,9 @@ const HomePage = () => {
 			className="relative min-h-screen w-full overflow-x-hidden bg-[#0a0a0f] text-white selection:bg-violet-500/30"
 			style={{ fontFamily: "'Outfit', sans-serif" }}
 		>
+			<Helmet>
+				<title>Gatewai - AI Workflow Engine</title>
+			</Helmet>
 			{/* Google Fonts */}
 			<style>{`
 				@import url('https://fonts.googleapis.com/css2?family=JetBrains+Mono:wght@700;800&family=Outfit:wght@300;400;600;700&display=swap');

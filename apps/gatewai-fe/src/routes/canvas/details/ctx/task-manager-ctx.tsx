@@ -8,6 +8,7 @@ import {
 	useEffect,
 	useMemo,
 } from "react";
+import { useAnimatedFavicon } from "@/hooks/use-animated-favicon";
 import type { BatchDetailsRPC, BatchDetailsRPCParams } from "@/rpc/types";
 import { useAppDispatch, useAppSelector } from "@/store";
 import type { NodeEntityType } from "@/store/nodes";
@@ -91,6 +92,9 @@ const TaskManagerProvider = ({
 			),
 		);
 	}, [nodeTaskStatus]);
+
+	// Animate favicon when tasks are running
+	useAnimatedFavicon(isAnyTaskRunning);
 
 	const value: TaskManagerContextType = {
 		pollingInterval,

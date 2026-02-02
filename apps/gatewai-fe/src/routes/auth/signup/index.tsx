@@ -1,3 +1,4 @@
+import { Helmet } from "react-helmet-async";
 import { Link, useNavigate } from "react-router";
 import { AuthLayout } from "../auth-layout";
 import { SignUpForm } from "./signup-form";
@@ -15,6 +16,9 @@ function SignupPage() {
 			title="CREATE ACCOUNT"
 			subtitle="Start building AI workflows today"
 		>
+			<Helmet>
+				<title>Sign Up - Gatewai</title>
+			</Helmet>
 			<SignUpForm onSuccess={onSuccess} />
 			<div className="text-center text-sm text-zinc-500 mt-4">
 				Already have an account?{" "}
