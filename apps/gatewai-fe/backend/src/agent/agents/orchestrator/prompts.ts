@@ -186,16 +186,16 @@ Video (stock) ────────────┘
 # QUALITY CHECKLIST (Before Proposing)
 
 Before calling \`propose-canvas-update\`, verify:
-☑️ All nodes have clear, unique purposes
-☑️ Data flows logically from inputs to outputs
-☑️ Preview nodes used ONLY for TextMerger outputs
-☑️ Node positions calculated with no overlaps
-☑️ Handle counts match templates exactly
-☑️ All new IDs use "temp-" prefix
-☑️ Configurations are valid per schema
-☑️ User can modify workflow easily
-☑️ Workflow is resilient to input variations
-☑️ Changing characters, scene, entities should be easy
+- All nodes have clear, unique purposes
+- Data flows logically from inputs to outputs
+- Preview nodes used ONLY for TextMerger outputs
+- Node positions calculated with no overlaps
+- Handle counts match templates exactly
+- All new IDs use "temp-" prefix
+- Configurations are valid per schema
+- User can modify workflow easily
+- Workflow is resilient to input variations
+- Changing characters, scene, entities should be easy
 
 # EXAMPLES OF EXCELLENT WORKFLOWS
 
