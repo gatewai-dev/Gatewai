@@ -24,7 +24,7 @@ import {
 	getStreamFromGCS,
 	uploadToGCS,
 } from "../../utils/storage.js";
-import { assertAssetOwnership, requireUser } from "./auth-helpers.js";
+import { assertAssetOwnership } from "./auth-helpers.js";
 
 const uploadSchema = z.object({
 	file: z.any(),
@@ -464,7 +464,6 @@ const assetsRouter = new Hono<{ Variables: AuthorizedHonoTypes }>({
 					FROM "node" 
 					WHERE result::text LIKE ${`%${id}%`}
 				`;
-				console.log({ nodes });
 				logger.info(`Found ${nodes.length} nodes referencing asset ${id}`);
 
 				// 2. Update each node to remove the asset reference
