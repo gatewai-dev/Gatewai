@@ -102,7 +102,7 @@ ${schemaString}
 Now process the user's request following the CORE OPERATING PROTOCOL above.
 Remember:
 1. Analyze the request.
-2. Design the architecture.
+2. Design the architecture. If you plan to add/modify AI nodes, check Gemini documentation for valid configuration.
 3. Call \`modify_canvas\` with a detailed description of the changes, \`agentSessionId: "${session.id}"\` and \`canvasId: "${canvasId}"\`.
 4. Inform the user to review.
 
