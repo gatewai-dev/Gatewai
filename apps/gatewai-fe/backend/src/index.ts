@@ -20,6 +20,14 @@ const app = new Hono<{
 	Variables: AuthHonoTypes;
 }>()
 	.use(loggerMiddleware)
+	.use(async (c, next) => {
+		await next();
+		c.header("X-Frame-Options", "SAMEORIGIN");
+		c.header("X-XSS-Protection", "1; mode=block");
+		c.header("X-Content-Type-Options", "nosniff");
+		c.header("Referrer-Policy", "strict-origin-when-cross-origin");
+		c.header("Strict-Transport-Security", "max-age=31536000; includeSubDomains");
+	})
 	.onError(errorHandler)
 	.use("*", async (c, next) => {
 		const session = await auth.api.getSession({ headers: c.req.raw.headers });
