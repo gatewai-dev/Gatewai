@@ -49,7 +49,7 @@ PRISMA_CLI="./node_modules/.bin/prisma"
 
 # TODO: rm
 echo "Running Prisma migrations reset..."
-$PRISMA_CLI migrate reset
+$PRISMA_CLI migrate reset --force
 
 # Run migrations using direct path to Prisma
 echo "Running Prisma migrations..."
