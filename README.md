@@ -36,7 +36,7 @@ Crucially, our **Unified Rendering Engine** ensures consistency. By injecting **
 ## Features at a Glance
 
 * **Cinematic Video Suite**: Generate, extend, and interpolate videos with professional-grade control.
-* **AI-Powered Paint**: Draw, mask, and fill with generative precision directly on the canvas.
+* **AI-Powered Paint**: Draw, mask, fill, crop, resize, blur and modulate with precision directly on the canvas.
 * **Intelligent Compositor**: Merge images, text, and AI outputs into complex, multi-layered masterpieces.
 * **Modular LLM Chains**: Build sophisticated logic by connecting LLMs with real-world media assets.
 * **Gatewai Copilot**: Use our integrated assistant to build modular, extensible workflow logic where every entity functions as a dynamic variable.

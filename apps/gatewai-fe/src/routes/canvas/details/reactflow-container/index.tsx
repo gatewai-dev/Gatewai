@@ -203,7 +203,7 @@ function ReactflowContainer({ children }: ReactFlowProps) {
 					selectionMode={SelectionMode.Partial}
 					connectionMode={ConnectionMode.Strict}
 					onConnect={isReviewing ? undefined : onConnect}
-					onlyRenderVisibleElements={rfNodes.length > 20} // When there's too many nodes, only render visible ones for performance
+					onlyRenderVisibleElements={rfNodes.length > 100} // When there's too many nodes, only render visible ones for performance
 					onSelectionChange={onSelectionChange}
 					proOptions={{ hideAttribution: false }}
 					nodesConnectable={!isReviewing}
