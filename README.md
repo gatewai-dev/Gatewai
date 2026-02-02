@@ -25,6 +25,12 @@ Stop switching between tools. Gatewai offers a unified interface for:
 
 Don't wait for results. Our interactive canvas provides instant feedback, enabling a fluid process where AI becomes a natural extension of your creativity. Gatewai utilizes **WebGL rendering** on both the server and browser to ensure pixel-perfect parity. What you see in the browser is exactly what the AI processes, and vice versa.
 
+### Headless Architecture
+
+Gatewai is built with a **backend-first philosophy**. The execution engine is fully decoupled from the UI, meaning workflows can be executed "headlessly" via API without ever instantiating a browser session. This architecture enables developers to embed Gatewai's powerful generative pipelines directly into their own applications.
+
+Crucially, our **Unified Rendering Engine** ensures consistency. By injecting **Headless GL** on the server and **WebGL** in the client into a shared core, complex media compositions generated on the backend are pixel-perfect matches to the real-time browser preview.
+
 ---
 
 ## Features at a Glance
