@@ -23,7 +23,7 @@ export async function getMediaDuration(buffer: Buffer): Promise<number | null> {
 				"format=duration",
 				"-of",
 				"default=noprint_wrappers=1:nokey=1",
-				tempFile, // Removed '-i' (optional, but cleaner)
+				tempFile,
 			]);
 
 			let output = "";
@@ -72,7 +72,7 @@ export async function generateVideoThumbnail(
 			"-i",
 			videoUrl,
 			"-ss",
-			"00:00:01.000", // Seek to 1 second
+			"00:00:00.500",
 			"-vframes",
 			"1",
 			"-f",

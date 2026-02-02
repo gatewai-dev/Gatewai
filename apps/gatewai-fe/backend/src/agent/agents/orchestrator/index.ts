@@ -137,6 +137,7 @@ Remember:
 		name: "Gatewai_Copilot",
 		model,
 		instructions: getInstructions,
+		toolUseBehavior: { stopAtToolNames: ["modify_canvas"] },
 		tools: [patcherAgentTool],
 	});
 };

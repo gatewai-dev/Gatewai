@@ -287,7 +287,7 @@ describe("NodeGraphProcessor", () => {
 			const node2 = createMockNode("n2", "Preview");
 
 			const h1 = createMockHandle("h1", "n1", "Output", [DataType.Text]);
-			const h2 = createMockHandle("h2", "n2", "Input", [DataType.Text]);
+			const h2 = createMockHandle("h2", "n2", "Input", [DataType.Text], true);
 			const e1 = createMockEdge("e1", "n1", "h1", "n2", "h2");
 
 			const config: ProcessorConfig = {

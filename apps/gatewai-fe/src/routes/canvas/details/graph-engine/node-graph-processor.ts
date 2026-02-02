@@ -641,12 +641,45 @@ export class NodeGraphProcessor extends EventEmitter {
 	}
 
 	private areInputsReady(nodeId: string): boolean {
-		const parents = this.reverseAdjacency.get(nodeId);
-		if (!parents || parents.size === 0) return true;
-		for (const parentId of parents) {
-			const parentState = this.nodeStates.get(parentId);
-			// Parent must have a result and NOT be dirty to be considered stable
-			if (!parentState?.result || parentState.isDirty) return false;
+		const inputHandles = this.handles.filter(
+			(h) => h.nodeId === nodeId && h.type === "Input",
+		);
+
+		for (const handle of inputHandles) {
+			const edge = this.edgesByTarget
+				.get(nodeId)
+				?.find((e) => e.targetHandleId === handle.id);
+			if (!edge) {
+				continue;
+			}
+
+			const parentState = this.nodeStates.get(edge.source);
+			if (!parentState) return false; // Should not happen if graph consistent
+
+			// If parent is still working, we wait.
+			if (
+				parentState.isDirty ||
+				(parentState.status !== TaskStatus.FAILED &&
+					parentState.status !== TaskStatus.COMPLETED)
+			) {
+				return false;
+			}
+
+			// Parent is Settled (FAILED or COMPLETED).
+			// We need to decide if we are "Ready" given the parent's outcome.
+
+			// Case 1: Parent Failed or Result Missing
+			if (!parentState.result) {
+				// If strictly required, we cannot proceed if upstream failed/missing.
+				if (handle.required) {
+					// If parent Failed -> We block if Required.
+					if (parentState.status === TaskStatus.FAILED) return false;
+				} else {
+					// Optional handle.
+					// If parent Failed, we ignore it and proceed (ready = true for this handle).
+					// If parent Completed, we proceed.
+				}
+			}
 		}
 		return true;
 	}
@@ -908,10 +941,49 @@ export class NodeGraphProcessor extends EventEmitter {
 
 			const sourceState = this.nodeStates.get(edge.source);
 			if (!sourceState?.result) {
-				inputs[handle.id] = {
-					connectionValid: false,
-					outputItem: null,
-				};
+				// Parent completed/failed without result.
+				// If handle is required, this is Invalid Connection? Not really, it's just runtime error.
+				// But invalid connections throw error in `executeNode`.
+				// If Optional, we should allow it as valid (null input).
+				// If Required...
+				//   If parent Completed -> we allow it (null input).
+				//   If parent Failed -> we allow it?
+				//      If we marked it as "valid", executeNode will proceed. Processor might fail if it needs data.
+				//      If we mark as "invalid", executeNode throws "Invalid input types".
+				//      User said: "input check should only be made for Required handles, and for invalid connections"
+				//      If upstream FAILED, and handle is OPTIONAL, we should probably mark connection as valid (so we don't throw)
+				//      and let processor handle null.
+
+				const isParentCompleted = sourceState?.status === TaskStatus.COMPLETED;
+				// If parent completed, assume valid null.
+				if (isParentCompleted) {
+					inputs[handle.id] = {
+						connectionValid: true,
+						outputItem: null,
+					};
+				} else {
+					// Parent Failed (or missing state).
+					// If handle is Optional, we want to allow execution -> Valid connection (null data).
+					if (!handle.required) {
+						inputs[handle.id] = {
+							connectionValid: true,
+							outputItem: null,
+						};
+					} else {
+						// Required handle + Failed Parent -> Invalid?
+						// Actually, if parent failed, areInputsReady should have blocked us!
+						// So we shouldn't even be here for Required handles if parent failed.
+						// But if we ARE here, let's mark it as invalid to be safe/consistent?
+						// Or valid=false means "Invalid Type".
+						// Let's stick to: if not ready, we don't execute.
+						// So if we are executing, we assume we are ready.
+						// Be defensive.
+						inputs[handle.id] = {
+							connectionValid: false,
+							outputItem: null,
+						};
+					}
+				}
 				continue;
 			}
 
@@ -1240,7 +1312,8 @@ export class NodeGraphProcessor extends EventEmitter {
 			const config = TextMergerNodeConfigSchema.parse(node.config);
 			// inputs record is already sorted by handle.createdAt due to collectInputs logic
 			const allTexts = Object.values(inputs).map(
-				(input) => input.outputItem?.data,
+				// FIX: Handle missing/null output items (e.g. from empty LLM result)
+				(input) => input.outputItem?.data ?? "",
 			);
 			const resultText = allTexts.join(config.join);
 

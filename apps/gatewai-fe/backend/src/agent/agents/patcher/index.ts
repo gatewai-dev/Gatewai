@@ -392,6 +392,7 @@ export function createPatcherAgent(
 - Return { nodes, edges, handles } at the end
 - Copy template handle properties EXACTLY (dataTypes, label, required)
 - Position new nodes with proper spacing (500px horizontal, 450px vertical)
+- **Strings with Newlines**: When generating text content with multiple lines, use \`\\n\` characters. DO NOT double-escape them as \`\\\\n\`. The string should look like "Line 1\\nLine 2" in the code, so it becomes a real newline in the resulting string.
 
 ## Validation Schema
 
@@ -465,6 +466,7 @@ Be thorough and precise. Always validate your code logic before executing.`;
 		name: "Canvas_Patcher",
 		model: getAgentModel(modelName),
 		instructions: systemPrompt,
+		toolUseBehavior: { stopAtToolNames: ["submit_patch"] },
 		tools: [prepareCanvasTool, executeCanvasCodeTool, submitPatchTool],
 	}).asTool({
 		toolName: "modify_canvas",
