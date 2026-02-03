@@ -68,7 +68,7 @@ graph TB
 
 ### Frontend (Browser)
 - **Canvas Editor**: The primary UI for constructing generative workflows.
-- **NodeGraphProcessor**: The client-side engine that orchestrates execution. It identifies which nodes can be run locally and which must be offloaded to the server.
+- **NodeGraphProcessor**: The client-side engine that orchestrates execution on browser.
 - **Local Processors**: Performs lightweight operations (e.g., cropping, boolean logic) directly in the browser to reduce latency.
 
 ### Backend (Node.js/Hono)
