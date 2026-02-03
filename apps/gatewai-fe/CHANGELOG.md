@@ -1,5 +1,11 @@
 # @gatewai/fe
 
+## 0.0.4
+
+### Patch Changes
+
+- ee396a2: Fix deployment workflow
+
 ## 0.0.3
 
 ### Patch Changes
