@@ -1,5 +1,11 @@
 # @gatewai/api-client
 
+## 0.0.5
+
+### Patch Changes
+
+- dd84da5: test release
+
 ## 0.0.3
 
 ### Patch Changes

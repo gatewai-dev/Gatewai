@@ -1,5 +1,14 @@
 # @gatewai/mcp-server
 
+## 0.0.5
+
+### Patch Changes
+
+- dd84da5: test release
+- Updated dependencies [dd84da5]
+  - @gatewai/api-client@0.0.5
+  - @gatewai/types@0.0.5
+
 ## 0.0.3
 
 ### Patch Changes

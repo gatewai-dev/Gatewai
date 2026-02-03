@@ -1,5 +1,17 @@
 # @gatewai/fe
 
+## 0.0.5
+
+### Patch Changes
+
+- dd84da5: test release
+- Updated dependencies [dd84da5]
+  - @gatewai/api-client@0.0.5
+  - @gatewai/db@0.0.5
+  - @gatewai/pixi-processor@0.0.5
+  - @gatewai/tsconfig@0.0.5
+  - @gatewai/types@0.0.5
+
 ## 0.0.4
 
 ### Patch Changes
