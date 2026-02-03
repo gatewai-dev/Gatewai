@@ -11,7 +11,7 @@
 		"changeset": "changeset",
 		"version-packages": "changeset version",
 		"release": "changeset publish",
-		"release:tags": "changeset version && changeset tag && git push --follow-tags",
+		"release:tags": "changeset version && changeset tag && git tag v$(node -p \"require('./apps/gatewai-fe/package.json').version\") && git push --follow-tags",
 		"start-cli": "turbo run start-cli --filter=@gatewai/fe",
 		"start-mcp": "turbo run start-cli --filter=@gatewai/mcp-server",
 		"db:migrate": "turbo run db:migrate --filter=@gatewai/db",
