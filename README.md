@@ -83,4 +83,4 @@ See [LICENSE](https://github.com/gatewai-dev/Gatewai/blob/main/LICENCE)
 
 ## Hackathon 
 
-This project is built for the **Gemini 3 Hackathon**.
+This project is built for the **Gemini 3 Hackathon**. [Drop us a like](https://devpost.com/software/gatewai-ylt5uo)

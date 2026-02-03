@@ -609,7 +609,7 @@ const Toolbar = React.memo<{
 	}, [onClose]);
 	return (
 		<>
-			<div className="flex items-center gap-1.5 p-1.5 rounded-full bg-neutral-900/90 backdrop-blur-xl border border-white/10 shadow-2xl z-50">
+			<div className="flex items-center gap-1.5 p-1.5 rounded-full border border-border/50 bg-background/80 backdrop-blur-md shadow-2xl ring-1 ring-white/5 z-50">
 				<TooltipProvider>
 					<Tooltip>
 						<TooltipTrigger asChild>
@@ -642,13 +642,13 @@ const Toolbar = React.memo<{
 				</div>
 				<div className="w-px h-5 bg-white/10 mx-1" />
 				{/* Tools */}
-				<div className="flex bg-white/5 rounded-full p-0.5 border border-white/5">
+				<div className="flex rounded-full p-0.5">
 					<Tooltip>
 						<TooltipTrigger asChild>
 							<Button
 								variant={mode === "select" ? "secondary" : "ghost"}
 								size="icon"
-								className={`rounded-full w-8 h-8 ${mode === "select" ? "bg-white/20 text-white" : "text-gray-400 hover:text-white"}`}
+								className="rounded-full w-8 h-8"
 								onClick={() => setMode("select")}
 							>
 								<MousePointer className="w-3.5 h-3.5" />
@@ -661,7 +661,7 @@ const Toolbar = React.memo<{
 							<Button
 								variant={mode === "pan" ? "secondary" : "ghost"}
 								size="icon"
-								className={`rounded-full w-8 h-8 ${mode === "pan" ? "bg-white/20 text-white" : "text-gray-400 hover:text-white"}`}
+								className="rounded-full w-8 h-8"
 								onClick={() => setMode("pan")}
 							>
 								<Hand className="w-3.5 h-3.5" />
@@ -1587,7 +1587,6 @@ const InspectorPanel: React.FC = () => {
 							textDecoration={selectedLayer.textDecoration ?? ""}
 							fontWeight={selectedLayer.fontWeight ?? "normal"}
 							align={selectedLayer.align}
-							verticalAlign={selectedLayer.verticalAlign}
 							letterSpacing={selectedLayer.letterSpacing}
 							lineHeight={selectedLayer.lineHeight}
 							wrap={selectedLayer.wrap}
