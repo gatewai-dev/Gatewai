@@ -20,3 +20,5 @@ gatewai-466716-6a4cc3da9bc4.json
 */**/libquery_engine*
 */**/debug_images/**
 */**/packages/db/node-compile-cache
+
+packages/db/generated
