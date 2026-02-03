@@ -603,7 +603,6 @@ const TextLayer: React.FC<LayerProps> = ({
 			globalCompositeOperation={layer.blendMode as GlobalCompositeOperation}
 			wrap={layer.wrap ?? (layer.width ? "word" : "none")}
 			align={layer.align || COMPOSITOR_DEFAULTS.ALIGN}
-			verticalAlign={layer.verticalAlign ?? COMPOSITOR_DEFAULTS.VERTICAL_ALIGN}
 			letterSpacing={layer.letterSpacing ?? COMPOSITOR_DEFAULTS.LETTER_SPACING}
 			lineHeight={layer.lineHeight ?? COMPOSITOR_DEFAULTS.LINE_HEIGHT}
 			padding={layer.padding ?? COMPOSITOR_DEFAULTS.PADDING}
@@ -1220,78 +1219,80 @@ const InspectorPanel: React.FC = () => {
 
 	if (!selectedLayer) {
 		return (
-			<div className="w-72 border-l border-white/10 bg-[#0f0f0f] z-20 shadow-xl flex flex-col">
-				<div className="px-4 py-3 bg-neutral-900 border-b border-white/5 shrink-0 h-10 flex items-center">
-					<h2 className="text-[10px] font-bold text-gray-200 uppercase tracking-wide flex items-center gap-2">
-						<Settings2 className="w-3.5 h-3.5 text-blue-400" />
-						Canvas Settings
-					</h2>
-				</div>
-				<div className="p-4 space-y-6">
-					<div className="space-y-3">
-						<Label className="text-[10px] text-gray-500 uppercase font-bold tracking-wide">
-							Dimensions
-						</Label>
-						<div className="grid grid-cols-2 gap-3">
-							<DraggableNumberInput
-								label="W"
-								icon={MoveHorizontal}
-								value={Math.round(viewportWidth)}
-								onChange={(v) => updateViewportWidth(Math.max(1, v))}
-								min={1}
-							/>
-							<DraggableNumberInput
-								label="H"
-								icon={MoveVertical}
-								value={Math.round(viewportHeight)}
-								onChange={(v) => updateViewportHeight(Math.max(1, v))}
-								min={1}
-							/>
+			<ScrollArea className="w-72 h-full border-l border-white/10 bg-[#0f0f0f] z-20 shadow-xl">
+				<div className="flex flex-col min-h-full">
+					<div className="px-4 py-3 bg-neutral-900 border-b border-white/5 shrink-0 h-10 flex items-center">
+						<h2 className="text-[10px] font-bold text-gray-200 uppercase tracking-wide flex items-center gap-2">
+							<Settings2 className="w-3.5 h-3.5 text-blue-400" />
+							Canvas Settings
+						</h2>
+					</div>
+					<div className="p-4 space-y-6">
+						<div className="space-y-3">
+							<Label className="text-[10px] text-gray-500 uppercase font-bold tracking-wide">
+								Dimensions
+							</Label>
+							<div className="grid grid-cols-2 gap-3">
+								<DraggableNumberInput
+									label="W"
+									icon={MoveHorizontal}
+									value={Math.round(viewportWidth)}
+									onChange={(v) => updateViewportWidth(Math.max(1, v))}
+									min={1}
+								/>
+								<DraggableNumberInput
+									label="H"
+									icon={MoveVertical}
+									value={Math.round(viewportHeight)}
+									onChange={(v) => updateViewportHeight(Math.max(1, v))}
+									min={1}
+								/>
+							</div>
+
+							<Select
+								onValueChange={(val) => {
+									const preset = ASPECT_RATIOS.find((r) => r.label === val);
+									if (preset) {
+										updateViewportWidth(preset.width);
+										updateViewportHeight(preset.height);
+									}
+								}}
+							>
+								<SelectTrigger className="h-8 text-[11px] bg-white/5 border-white/10 text-gray-300">
+									<SelectValue placeholder="Select Preset" />
+								</SelectTrigger>
+								<SelectContent className="bg-neutral-800 border-white/10 text-gray-300">
+									{ASPECT_RATIOS.map((r) => (
+										<SelectItem key={r.label} value={r.label}>
+											<span className="flex items-center justify-between w-full gap-6">
+												<span>{r.label}</span>
+												<span className="text-[10px] text-gray-500 font-mono">
+													{r.width}x{r.height}
+												</span>
+											</span>
+										</SelectItem>
+									))}
+								</SelectContent>
+							</Select>
 						</div>
 
-						<Select
-							onValueChange={(val) => {
-								const preset = ASPECT_RATIOS.find((r) => r.label === val);
-								if (preset) {
-									updateViewportWidth(preset.width);
-									updateViewportHeight(preset.height);
-								}
-							}}
-						>
-							<SelectTrigger className="h-8 text-[11px] bg-white/5 border-white/10 text-gray-300">
-								<SelectValue placeholder="Select Preset" />
-							</SelectTrigger>
-							<SelectContent className="bg-neutral-800 border-white/10 text-gray-300">
-								{ASPECT_RATIOS.map((r) => (
-									<SelectItem key={r.label} value={r.label}>
-										<span className="flex items-center justify-between w-full gap-6">
-											<span>{r.label}</span>
-											<span className="text-[10px] text-gray-500 font-mono">
-												{r.width}x{r.height}
-											</span>
-										</span>
-									</SelectItem>
-								))}
-							</SelectContent>
-						</Select>
-					</div>
-
-					<div className="flex flex-col items-center justify-center p-8 text-center border border-dashed border-white/10 rounded-lg bg-white/2">
-						<MousePointer className="w-6 h-6 text-gray-700 mb-3" />
-						<p className="text-[11px] font-medium text-gray-400">
-							No Layer Selected
-						</p>
-						<p className="text-[10px] text-gray-600 mt-1">
-							Select a layer to edit properties
-						</p>
+						<div className="flex flex-col items-center justify-center p-8 text-center border border-dashed border-white/10 rounded-lg bg-white/2">
+							<MousePointer className="w-6 h-6 text-gray-700 mb-3" />
+							<p className="text-[11px] font-medium text-gray-400">
+								No Layer Selected
+							</p>
+							<p className="text-[10px] text-gray-600 mt-1">
+								Select a layer to edit properties
+							</p>
+						</div>
 					</div>
 				</div>
-			</div>
+			</ScrollArea>
 		);
 	}
 
 	return (
-		<ScrollArea className="w-72 border-l border-white/10 bg-[#0f0f0f] z-20 shadow-xl">
+		<ScrollArea className="w-72 h-full border-l border-white/10 bg-[#0f0f0f] z-20 shadow-xl">
 			<div className="flex items-center justify-between px-4 py-3 border-b border-white/5 bg-neutral-900/50 backdrop-blur">
 				<div className="flex flex-col min-w-0">
 					<span className="text-[10px] text-blue-400 uppercase font-bold tracking-wider mb-0.5">
@@ -1346,7 +1347,6 @@ const InspectorPanel: React.FC = () => {
 						fontStyle={selectedLayer.fontStyle ?? "normal"}
 						textDecoration={selectedLayer.textDecoration ?? ""}
 						align={selectedLayer.align}
-						verticalAlign={selectedLayer.verticalAlign}
 						letterSpacing={selectedLayer.letterSpacing}
 						lineHeight={selectedLayer.lineHeight}
 						wrap={selectedLayer.wrap}

@@ -2,8 +2,6 @@ import {
 	AlignCenter,
 	AlignLeft,
 	AlignRight,
-	ArrowDownFromLine,
-	ArrowUpFromLine,
 	Bold,
 	Italic,
 	MoveVertical,
@@ -39,7 +37,6 @@ interface TypographyControlsProps {
 	textDecoration: string; // "underline" | ""
 	fontWeight: string; // "bold" | "normal"
 	align?: string; // "left" | "center" | "right" | "justify"
-	verticalAlign?: string; // "top" | "middle" | "bottom"
 	letterSpacing?: number;
 	lineHeight?: number;
 	wrap?: string; // "word" | "none" | "char"
@@ -52,7 +49,6 @@ interface TypographyControlsProps {
 		textDecoration?: string;
 		fontWeight?: string;
 		align?: string;
-		verticalAlign?: string;
 		letterSpacing?: number;
 		lineHeight?: number;
 		wrap?: string;
@@ -67,7 +63,6 @@ export const TypographyControls: React.FC<TypographyControlsProps> = ({
 	textDecoration,
 	fontWeight,
 	align,
-	verticalAlign,
 	letterSpacing,
 	lineHeight,
 	wrap,
@@ -86,11 +81,25 @@ export const TypographyControls: React.FC<TypographyControlsProps> = ({
 	const isUnderline = textDecoration?.includes("underline");
 
 	const toggleStyle = (style: "bold" | "italic") => {
-		if (style === "bold") {
-			onChange({ fontWeight: isBold ? "normal" : "bold" });
-		} else {
-			onChange({ fontStyle: isItalic ? "normal" : "italic" });
-		}
+		let current = fontStyle || "normal";
+		if (current === "normal") current = "";
+
+		const hasBold = current.includes("bold") || fontWeight === "bold";
+		const hasItalic = current.includes("italic");
+
+		let nextBold = hasBold;
+		let nextItalic = hasItalic;
+
+		if (style === "bold") nextBold = !nextBold;
+		if (style === "italic") nextItalic = !nextItalic;
+
+		const parts = [];
+		if (nextBold) parts.push("bold");
+		if (nextItalic) parts.push("italic");
+
+		const nextStyle = parts.join(" ") || "normal";
+		// Reset fontWeight to normal to avoid conflict if it was set
+		onChange({ fontStyle: nextStyle, fontWeight: "normal" });
 	};
 
 	const toggleUnderline = () => {
@@ -227,45 +236,7 @@ export const TypographyControls: React.FC<TypographyControlsProps> = ({
 					</div>
 				</div>
 
-				{/* Vertical Alignment */}
-				<div className="space-y-2">
-					<Label className="text-[10px] text-gray-500 font-semibold">
-						VERTICAL ALIGN
-					</Label>
-					<div className="flex p-1 bg-white/5 rounded border border-white/5">
-						<Button
-							variant={
-								verticalAlign === "top" || !verticalAlign
-									? "secondary"
-									: "ghost"
-							}
-							size="icon"
-							className="h-6 flex-1 rounded-sm"
-							onClick={() => onChange({ verticalAlign: "top" })}
-							title="Top"
-						>
-							<ArrowUpFromLine className="w-3.5 h-3.5" />
-						</Button>
-						<Button
-							variant={verticalAlign === "middle" ? "secondary" : "ghost"}
-							size="icon"
-							className="h-6 flex-1 rounded-sm"
-							onClick={() => onChange({ verticalAlign: "middle" })}
-							title="Middle"
-						>
-							<MoveVertical className="w-3.5 h-3.5" />
-						</Button>
-						<Button
-							variant={verticalAlign === "bottom" ? "secondary" : "ghost"}
-							size="icon"
-							className="h-6 flex-1 rounded-sm"
-							onClick={() => onChange({ verticalAlign: "bottom" })}
-							title="Bottom"
-						>
-							<ArrowDownFromLine className="w-3.5 h-3.5" />
-						</Button>
-					</div>
-				</div>
+				{/* Vertical Alignment (Removed) */}
 
 				{/* Spacing & Line Height */}
 				<div className="grid grid-cols-2 gap-3">
