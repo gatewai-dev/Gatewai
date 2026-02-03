@@ -1,9 +1,8 @@
 name: Deploy to GCE
 
 on:
-  push:
-    tags:
-      - "v*"
+  release:
+    types: [published]
 
 env:
   PROJECT_ID: gatewai-466716
