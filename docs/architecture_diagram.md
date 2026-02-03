@@ -4,12 +4,6 @@ This document visualizes the high-level architecture of the Gatewai platform, il
 
 ```mermaid
 graph TB
-    %% Definitions
-    client_color["#e1f5fe"]
-    server_color["#e8f5e9"]
-    data_color["#fff3e0"]
-    ext_color["#f3e5f5"]
-
     subgraph Frontend["Frontend (Browser)"]
         direction TB
         style Frontend fill:#e1f5fe,stroke:#01579b,stroke-width:2px
@@ -26,7 +20,7 @@ graph TB
         direction TB
         style Backend fill:#e8f5e9,stroke:#2e7d32,stroke-width:2px
         
-        APIServer["API Server<br>(Hono / WebSocket)"]:::component
+        APIServer["API Server<br>(Hono)"]:::component
         WorkflowWorker["Workflow Worker<br>(Node.js)"]:::component
         AgentWorker["Agent Worker / Copilot<br>(Node.js)"]:::component
         
