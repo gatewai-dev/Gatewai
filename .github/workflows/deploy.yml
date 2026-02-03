@@ -72,13 +72,17 @@ jobs:
       - name: Checkout
         uses: actions/checkout@v4
 
-      - name: Copy files to GCE
+      - name: Create deployment archive
+        run: |
+          tar -czf deploy.tar.gz docker-compose.yaml scripts/ migration-entrypoint.sh nginx/
+
+      - name: Copy archive to GCE
         uses: appleboy/scp-action@v0.1.7
         with:
           host: ${{ secrets.GCE_INSTANCE_IP }}
           username: okanasl
           key: ${{ secrets.GCE_SSH_PRIVATE_KEY }}
-          source: "docker-compose.yaml,scripts/setup-env-gce.sh,migration-entrypoint.sh,nginx/conf/*"
+          source: "deploy.tar.gz"
           target: "/home/okanasl/gatewai"
 
       - name: Deploy to GCE via SSH
@@ -90,7 +94,12 @@ jobs:
           envs: GAR_LOCATION,PROJECT_ID,REPOSITORY,IMAGE_APP,IMAGE_MCP,IMAGE_MIGRATION
           script: |
             PROJECT_DIR="/home/okanasl/gatewai"
+            mkdir -p "$PROJECT_DIR"
             cd "$PROJECT_DIR"
+
+            # Extract archive
+            tar -xzf deploy.tar.gz
+            rm deploy.tar.gz
 
             # 1. Authenticate Docker with Google Artifact Registry
             gcloud auth configure-docker ${{ env.GAR_LOCATION }}-docker.pkg.dev --quiet
