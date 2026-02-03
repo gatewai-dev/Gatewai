@@ -1,5 +1,11 @@
 # @gatewai/types
 
+## 0.0.7
+
+### Patch Changes
+
+- f06b116: Fix text merger bugs
+
 ## 0.0.6
 
 ### Patch Changes

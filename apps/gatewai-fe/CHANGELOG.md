@@ -1,5 +1,17 @@
 # @gatewai/fe
 
+## 0.0.7
+
+### Patch Changes
+
+- f06b116: Fix text merger bugs
+- Updated dependencies [f06b116]
+  - @gatewai/api-client@0.0.7
+  - @gatewai/db@0.0.7
+  - @gatewai/pixi-processor@0.0.7
+  - @gatewai/tsconfig@0.0.7
+  - @gatewai/types@0.0.7
+
 ## 0.0.6
 
 ### Patch Changes

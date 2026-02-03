@@ -1,5 +1,14 @@
 # @gatewai/mcp-server
 
+## 0.0.7
+
+### Patch Changes
+
+- f06b116: Fix text merger bugs
+- Updated dependencies [f06b116]
+  - @gatewai/api-client@0.0.7
+  - @gatewai/types@0.0.7
+
 ## 0.0.6
 
 ### Patch Changes
