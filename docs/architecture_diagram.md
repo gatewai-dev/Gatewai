@@ -5,7 +5,6 @@ This document visualizes the high-level architecture of the Gatewai platform, il
 ```mermaid
 graph TB
     subgraph Frontend["Frontend (Browser)"]
-        direction TB
         style Frontend fill:#e1f5fe,stroke:#01579b,stroke-width:2px
         
         CanvasEditor["Canvas Editor<br>(React / ReactFlow)"]:::component
@@ -17,7 +16,6 @@ graph TB
     end
 
     subgraph Backend["Backend (Node.js / Hono)"]
-        direction TB
         style Backend fill:#e8f5e9,stroke:#2e7d32,stroke-width:2px
         
         APIServer["API Server<br>(Hono)"]:::component
@@ -28,7 +26,6 @@ graph TB
     end
 
     subgraph DataLayer["Data Layer"]
-        direction TB
         style DataLayer fill:#fff3e0,stroke:#ef6c00,stroke-width:2px
         
         PostgreSQL[("PostgreSQL<br>(Nodes, Edges, Users)")]:::database
@@ -43,7 +40,7 @@ graph TB
     end
 
     %% Key Interactions
-    NodeGraphProcessor <== "Syncs Graph State<br>& Requests Execution" ==> APIServer
+    NodeGraphProcessor <-->|"Syncs Graph State<br>& Requests Execution"| APIServer
     
     %% Queue Interaction (BullMQ)
     APIServer -- "Enqueues Jobs<br>(BullMQ)" --> Redis
@@ -59,12 +56,12 @@ graph TB
     NodeGraphProcessor -. "Fetches Assets (Signed URLs)" .-> ObjectStorage
     
     %% Agent Interactions
-    AgentWorker <== "MCP Protocol<br>(Tool Use / Context)" ==> MCPServer
+    AgentWorker <-->|"MCP Protocol<br>(Tool Use / Context)"| MCPServer
     
     %% Styling Classes
-    classDef component fill:#ffffff,stroke:#333,stroke-width:1px;
-    classDef database fill:#ffffff,stroke:#333,stroke-width:1px,shape:cylinder;
-    classDef external fill:#ffffff,stroke:#333,stroke-width:1px,stroke-dasharray: 5 5;
+    classDef component fill:#ffffff,stroke:#333,stroke-width:1px
+    classDef database fill:#ffffff,stroke:#333,stroke-width:1px
+    classDef external fill:#ffffff,stroke:#333,stroke-width:1px,stroke-dasharray: 5 5
 ```
 
 ## Component Overview
