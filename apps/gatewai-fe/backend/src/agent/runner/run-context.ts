@@ -1,13 +1,16 @@
 import { RunContext, type RunToolApprovalItem } from "@openai/agents";
 
 class GatewaiRunContext<TContext> extends RunContext<TContext> {
-	private toolLogs: Array<{ toolName: string; callId: string; result: any }> =
-		[];
+	private toolLogs: Array<{
+		toolName: string;
+		callId: string;
+		result: unknown;
+	}> = [];
 
 	/**
 	 * Custom method to record the tool response.
 	 */
-	logToolResult(toolName: string, callId: string, result: any) {
+	logToolResult(toolName: string, callId: string, result: unknown) {
 		const logEntry = {
 			toolName,
 			callId,

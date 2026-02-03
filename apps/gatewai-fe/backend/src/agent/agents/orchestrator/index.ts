@@ -58,7 +58,7 @@ export const CreateOrchestratorAgentForCanvas = async ({
 						} else if (parsed.text && typeof parsed.text === "string") {
 							content = parsed.text;
 						}
-					} catch (e) {
+					} catch (_e) {
 						// Not valid JSON or different structure, keep original content
 					}
 				}

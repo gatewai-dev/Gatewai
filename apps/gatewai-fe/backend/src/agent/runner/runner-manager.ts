@@ -2,6 +2,7 @@ import { agentQueue } from "../../lib/agent-queue.js";
 import { redisPublisher } from "../../lib/redis.js";
 
 // A Agent runner that uses BullMQ and redis for the events
+// biome-ignore lint/complexity/noStaticOnlyClass: Required for context
 export class AgentRunnerManager {
 	static async start({
 		canvasId,

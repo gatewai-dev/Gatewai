@@ -7,13 +7,13 @@ logger.info(`Initializing MCP Tool with URL: ${ENV_CONFIG.MCP_URL}`);
 // Create a logger adapter that implements the MCP Logger interface
 const mcpLogger = {
 	namespace: "mcp-server",
-	debug: (message: string, ...args: any[]) => {
+	debug: (message: string, ...args: unknown[]) => {
 		logger.debug({ mcpArgs: args }, message);
 	},
-	error: (message: string, ...args: any[]) => {
+	error: (message: string, ...args: unknown[]) => {
 		logger.error({ mcpArgs: args }, message);
 	},
-	warn: (message: string, ...args: any[]) => {
+	warn: (message: string, ...args: unknown[]) => {
 		logger.warn({ mcpArgs: args }, message);
 	},
 	dontLogModelData: false,

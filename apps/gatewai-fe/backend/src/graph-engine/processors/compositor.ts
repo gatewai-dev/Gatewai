@@ -175,6 +175,7 @@ const compositorProcessor: NodeProcessor = async ({ node, data }) => {
 		// 4. Persistence
 		// Use toCanvas().toBuffer() for higher control or stage.toDataURL()
 		const canvasElement = stage.toCanvas();
+		// biome-ignore lint/suspicious/noExplicitAny: Invalid base type
 		const resultBuffer = (canvasElement as any).toBuffer("image/png");
 
 		if (ENV_CONFIG.DEBUG_LOG_MEDIA) logImage(resultBuffer, ".png", node.id);
