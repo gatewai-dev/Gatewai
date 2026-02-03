@@ -1,4 +1,4 @@
-name: Deploy to GCE
+name: Deploy to GCE on Release
 
 on:
   release:
