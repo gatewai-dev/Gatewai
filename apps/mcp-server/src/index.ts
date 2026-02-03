@@ -10,7 +10,11 @@ import { config } from "dotenv";
 import { Hono } from "hono";
 import { cors } from "hono/cors";
 import { logger } from "hono/logger";
+import { createRequire } from "module";
 import { z } from "zod";
+
+const require = createRequire(import.meta.url);
+const pkg = require("../package.json");
 
 config();
 
@@ -39,8 +43,8 @@ const apiClient = new GatewaiApiClient({
 console.log(`MCP Server initialized with BASE_URL: ${env.BASE_URL}`);
 
 const server = new McpServer({
-	name: "gatewai-mcp-server",
-	version: "0.0.1",
+	name: pkg.name,
+	version: pkg.version,
 });
 
 /**
@@ -199,28 +203,6 @@ const transport = new StreamableHTTPTransport();
 
 app.use("*", cors());
 app.use("*", logger());
-app.use("*", async (c, next) => {
-	// --- Log Request Body ---
-	if (c.req.header("content-type")?.includes("application/json")) {
-		const body = await c.req.raw.clone().json();
-		console.log(`[REQ BODY]:`, JSON.stringify(body, null, 2));
-	}
-
-	await next();
-
-	// --- Log Response Body ---
-	// Note: We clone the response to avoid "body already used" errors
-	const resClone = c.res.clone();
-	const contentType = resClone.headers.get("content-type");
-
-	if (contentType?.includes("application/json")) {
-		const resBody = await resClone.json();
-		console.log(`[RES BODY]:`, JSON.stringify(resBody, null, 2));
-	} else if (contentType?.includes("text/")) {
-		const resText = await resClone.text();
-		console.log(`[RES TEXT]:`, resText);
-	}
-});
 // Health Check
 app.get("/health", (c) => c.json({ status: "ok", env: env.LOG_LEVEL }));
 
@@ -232,8 +214,6 @@ app.get("/mcp", async (c) => {
 // MCP POST Endpoint (for JSON-RPC messages)
 app.post("/mcp", async (c) => {
 	const rawBody = await c.req.raw.clone().text();
-	console.log("--- AI ATTEMPTED TOOL CALL ---");
-	console.log(rawBody);
 	return transport.handleRequest(c);
 });
 
@@ -249,4 +229,6 @@ serve({
 	hostname: "0.0.0.0",
 });
 
-console.log(`Gatewai MCP Server running on http://0.0.0.0:${env.MCP_PORT}/mcp`);
+console.log(
+	`Gatewai MCP Server version: (${pkg.version}) running on http://0.0.0.0:${env.MCP_PORT}/mcp`,
+);

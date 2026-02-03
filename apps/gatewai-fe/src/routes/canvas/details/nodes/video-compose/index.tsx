@@ -269,7 +269,7 @@ const VideoCompositorNodeComponent = memo(
 									onClick={() => nav(`video-editor/${node.id}`)}
 									size="sm"
 								>
-									<VideoIcon className="size-4 mr-1" /> Edit
+									<VideoIcon className="size-4 mr-1" /> Editor
 								</Button>
 							</div>
 						)}

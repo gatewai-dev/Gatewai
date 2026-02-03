@@ -45,7 +45,7 @@ const CompositorNodeComponent = memo((props: NodeProps<CompositorNode>) => {
 					/>
 					{node && (
 						<Button onClick={() => nav(`designer/${node.id}`)} size="sm">
-							<ImagesIcon /> Edit
+							<ImagesIcon /> Editor
 						</Button>
 					)}
 				</div>
