@@ -1,6 +1,6 @@
 {
 	"name": "@gatewai/db",
-	"version": "0.0.5",
+	"version": "0.0.6",
 	"private": true,
 	"author": "Okan Aslankan <okn.aslnkn@gmail.com>",
 	"type": "module",

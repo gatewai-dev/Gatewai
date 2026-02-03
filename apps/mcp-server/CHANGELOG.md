@@ -1,5 +1,14 @@
 # @gatewai/mcp-server
 
+## 0.0.6
+
+### Patch Changes
+
+- c7e2efc: misc updates
+- Updated dependencies [c7e2efc]
+  - @gatewai/api-client@0.0.6
+  - @gatewai/types@0.0.6
+
 ## 0.0.5
 
 ### Patch Changes
