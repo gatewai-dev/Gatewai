@@ -1,7 +1,8 @@
-import { motion, useScroll, useTransform } from "framer-motion";
-import { ArrowRight, GitBranch, Sparkles, Workflow } from "lucide-react";
+import { motion } from "framer-motion";
+import { ArrowRight, Box, Sparkles, Terminal } from "lucide-react";
 import { useEffect, useRef, useState } from "react";
 import { Helmet } from "react-helmet-async";
+import { FaDiscord, FaGithub } from "react-icons/fa";
 import { Link } from "react-router";
 import { Button } from "@/components/ui/button";
 import { GatewaiLogo } from "@/components/ui/gatewai-logo";
@@ -14,7 +15,11 @@ const NodeCanvas = () => {
 	useEffect(() => {
 		const updateDimensions = () => {
 			if (canvasRef.current) {
-				const { width, height } = canvasRef.current.getBoundingClientRect();
+				const { width, height } =
+					canvasRef.current.parentElement?.getBoundingClientRect() || {
+						width: 0,
+						height: 0,
+					};
 				setDimensions({ width, height });
 				canvasRef.current.width = width;
 				canvasRef.current.height = height;
@@ -117,25 +122,15 @@ const NodeCanvas = () => {
 	return (
 		<canvas
 			ref={canvasRef}
-			className="absolute inset-0 top-40 w-full h-full opacity-40"
-			style={{ width: "100%", height: "100%" }}
+			className="absolute inset-0 w-full h-full opacity-60"
 		/>
 	);
 };
 
 const HomePage = () => {
-	const targetRef = useRef<HTMLDivElement>(null);
-	const { scrollYProgress } = useScroll({
-		target: targetRef,
-		offset: ["start start", "end start"],
-	});
-
-	const y = useTransform(scrollYProgress, [0, 1], ["0%", "30%"]);
-
 	return (
 		<main
-			ref={targetRef}
-			className="relative min-h-screen w-full overflow-x-hidden bg-[#0a0a0f] text-white selection:bg-violet-500/30"
+			className="relative h-screen w-full bg-background text-foreground overflow-y-auto md:overflow-hidden p-4 md:p-6"
 			style={{ fontFamily: "'Outfit', sans-serif" }}
 		>
 			<Helmet>
@@ -143,207 +138,259 @@ const HomePage = () => {
 			</Helmet>
 			{/* Google Fonts */}
 			<style>{`
-				@import url('https://fonts.googleapis.com/css2?family=JetBrains+Mono:wght@700;800&family=Outfit:wght@300;400;600;700&display=swap');
+				@import url('https://fonts.googleapis.com/css2?family=JetBrains+Mono:wght@500;700;800&family=Outfit:wght@300;400;500;600;700&display=swap');
+				@keyframes marquee {
+					0% { transform: translateX(0); }
+					100% { transform: translateX(-50%); }
+				}
+				.animate-marquee {
+					animation: marquee 20s linear infinite;
+				}
 			`}</style>
 
-			{/* Hero Section */}
-			<section className="relative flex min-h-screen flex-col items-center justify-center px-6 pt-20">
-				{/* Animated Canvas Background */}
-				<motion.div
-					style={{ y }}
-					className="absolute inset-0 z-0 pointer-events-none overflow-hidden"
-				>
-					<NodeCanvas />
-					<div className="absolute top-1/3 left-1/2 -translate-x-1/2 -translate-y-1/2 h-[600px] w-[600px] rounded-full bg-primary/20 blur-[150px]" />
-					<div className="absolute bottom-0 left-0 right-0 h-px bg-gradient-to-r from-transparent via-primary/50 to-transparent" />
-				</motion.div>
-
-				<motion.div
-					initial={{ opacity: 0 }}
-					animate={{ opacity: 1 }}
-					transition={{ duration: 1 }}
-					className="relative z-10 flex flex-col items-center max-w-6xl text-center space-y-10"
-				>
-					{/* Logo */}
-					<motion.div
-						initial={{ opacity: 0, scale: 0.8 }}
-						animate={{ opacity: 1, scale: 1 }}
-						transition={{ delay: 0.2, duration: 0.8, ease: [0.16, 1, 0.3, 1] }}
-						className="flex items-center justify-center"
-					>
+			{/* Grid Container */}
+			<div className="md:h-full w-full grid grid-cols-1 md:grid-cols-12 md:grid-rows-12 gap-4">
+				{/* 1. Header / Nav (Top Row) */}
+				<div className="md:col-span-12 md:row-span-1 flex items-center justify-between px-2">
+					<div className="flex items-center gap-3">
 						<GatewaiLogo className="size-32 text-primary" />
-					</motion.div>
+					</div>
+				</div>
 
-					{/* Main Title */}
-					<motion.h1
-						initial={{ opacity: 0, y: 30 }}
-						animate={{ opacity: 1, y: 0 }}
-						transition={{ delay: 0.4, duration: 0.8, ease: [0.16, 1, 0.3, 1] }}
-						className="text-7xl font-extrabold tracking-tighter leading-[0.9]"
-						style={{ fontFamily: "'JetBrains Mono', monospace" }}
-					>
-						BUILD
-						<br />
-						<span className="text-primary">WORKFLOWS</span>
-						<br />
-						VISUALLY
-					</motion.h1>
-
-					<motion.p
-						initial={{ opacity: 0, y: 20 }}
-						animate={{ opacity: 1, y: 0 }}
-						transition={{ delay: 0.6, duration: 0.6 }}
-						className="text-xl md:text-2xl text-zinc-400 max-w-3xl font-light leading-relaxed"
-					>
-						Node-based canvas for multi-modal AI. Connect models, chain
-						operations, and orchestrate intelligence with precision.
-					</motion.p>
-
-					{/* CTA Buttons */}
+				{/* 2. Hero Block (Top-Left, Large) */}
+				<div className="md:col-span-7 md:row-span-7 bg-neutral-900/40 border border-neutral-800 rounded-3xl p-8 md:p-12 flex flex-col justify-center relative shadow-sm overflow-hidden">
 					<motion.div
-						initial={{ opacity: 0, y: 20 }}
+						initial={{ opacity: 0, y: 10 }}
 						animate={{ opacity: 1, y: 0 }}
-						transition={{ delay: 0.8, duration: 0.6 }}
-						className="flex flex-col sm:flex-row items-center gap-5 pt-6"
+						transition={{ duration: 0.5 }}
+						className="space-y-8 z-10"
 					>
-						<Link to="/canvas">
-							<Button
-								size="lg"
-								className="h-16 px-10 text-lg font-semibold rounded-2xl bg-primary hover:from-primary/90 hover:to-secondary/90 shadow-2xl shadow-primary/40 hover:shadow-primary/60 transition-all duration-300 group border-0"
-							>
-								Launch Studio
-								<ArrowRight className="ml-3 h-5 w-5 transition-transform group-hover:translate-x-1" />
-							</Button>
-						</Link>
-						<a
-							href="https://github.com/gatewai-dev/Gatewai"
-							target="_blank"
-							rel="noreferrer"
+						<h1
+							className="text-5xl md:text-7xl font-extrabold tracking-tighter leading-[0.9] text-white"
+							style={{ fontFamily: "'JetBrains Mono', monospace" }}
 						>
-							<Button
-								variant="outline"
-								size="lg"
-								className="h-16 px-10 text-lg font-semibold rounded-2xl border-2 border-primary/30 bg-primary/5 hover:bg-primary/15 hover:border-primary/50 text-primary/80 hover:text-primary transition-all duration-300"
-							>
-								GitHub
-							</Button>
-						</a>
+							BUILD <br />
+							<span className="text-primary">WORKFLOWS</span> <br />
+							VISUALLY
+						</h1>
+						<p className="text-xl text-neutral-400 max-w-lg font-light leading-relaxed">
+							The node-based engine for multi-modal AI. Connect models, chain
+							operations, and orchestrate intelligence.
+						</p>
+
+						<div className="flex flex-col sm:flex-row gap-4 pt-2">
+							<Link to="/canvas">
+								<Button className="h-14 px-8 text-base font-semibold rounded-xl bg-primary hover:bg-primary/90 text-neutral-950 border-0 shadow-lg shadow-primary/20 transition-all duration-200">
+									Launch Studio <ArrowRight className="ml-2 size-5" />
+								</Button>
+							</Link>
+							<div className="flex gap-3">
+								<a
+									href="https://github.com/gatewai-dev/Gatewai"
+									target="_blank"
+									rel="noreferrer"
+								>
+									<Button
+										variant="outline"
+										className="h-14 w-14 rounded-xl border-neutral-700 bg-neutral-800/50 hover:bg-neutral-800 hover:text-white transition-colors p-0"
+									>
+										<FaGithub className="size-6" />
+									</Button>
+								</a>
+								<a
+									href="https://discord.gg/ha4A8UD7kn"
+									target="_blank"
+									rel="noreferrer"
+								>
+									<Button
+										variant="outline"
+										className="h-14 w-14 rounded-xl border-neutral-700 bg-neutral-800/50 hover:bg-neutral-800 hover:text-white transition-colors p-0 text-[#5865F2]"
+									>
+										<FaDiscord className="size-6" />
+									</Button>
+								</a>
+							</div>
+						</div>
 					</motion.div>
-				</motion.div>
-			</section>
 
-			{/* Features Grid */}
-			<section className="relative z-10 py-32 px-6 md:px-12 max-w-7xl mx-auto">
-				<motion.div
-					initial={{ opacity: 0, y: 40 }}
-					whileInView={{ opacity: 1, y: 0 }}
-					viewport={{ once: true, margin: "-100px" }}
-					transition={{ duration: 0.8 }}
-					className="text-center mb-20"
-				>
-					<h2
-						className="text-5xl md:text-6xl font-bold tracking-tighter mb-4"
-						style={{ fontFamily: "'JetBrains Mono', monospace" }}
-					>
-						WORKFLOW ENGINE
-					</h2>
-					<p className="text-xl text-zinc-500">
-						Designed for the next generation of AI builders
-					</p>
-				</motion.div>
-
-				<div className="grid grid-cols-1 md:grid-cols-3 gap-8">
-					<FeatureCard
-						icon={<Workflow className="h-8 w-8" />}
-						title="Visual Graph"
-						description="Drag, drop, connect. Build complex AI pipelines without writing boilerplate code."
-						delay={0.1}
-						color="violet"
-					/>
-					<FeatureCard
-						icon={<GitBranch className="h-8 w-8" />}
-						title="Hybrid Runtime"
-						description="Execute lightweight nodes in-browser. Offload heavy AI tasks to cloud workers."
-						delay={0.2}
-						color="fuchsia"
-					/>
-					<FeatureCard
-						icon={<Sparkles className="h-8 w-8" />}
-						title="Live Preview"
-						description="See outputs in real-time. Iterate faster with instant visual feedback loops."
-						delay={0.3}
-						color="purple"
+					{/* Subtle Background pattern for Hero */}
+					<div
+						className="absolute inset-0 opacity-[0.03] pointer-events-none"
+						style={{
+							backgroundImage: "radial-gradient(#ffffff 1px, transparent 1px)",
+							backgroundSize: "32px 32px",
+						}}
 					/>
 				</div>
-			</section>
 
-			{/* Footer */}
-			<footer className="relative z-10 py-16 text-center text-sm text-zinc-600 border-t border-violet-500/10">
-				<p
-					className="font-semibold tracking-wider"
-					style={{ fontFamily: "'JetBrains Mono', monospace" }}
-				>
-					© 2026 GATEWAI STUDIO
-				</p>
-			</footer>
-		</main>
-	);
-};
+				{/* 3. Visual Engine Block (Right Side, Vertical) */}
+				<div className="md:col-span-5 md:row-span-11 bg-neutral-950 border border-neutral-800 rounded-3xl relative overflow-hidden flex flex-col shadow-sm">
+					<div className="absolute top-6 left-6 z-10 bg-neutral-900/80 backdrop-blur-md px-4 py-1.5 rounded-full border border-neutral-800">
+						<span className="text-xs font-mono font-semibold text-primary tracking-wide">
+							VISUAL GRAPH ENGINE
+						</span>
+					</div>
 
-const FeatureCard = ({
-	icon,
-	title,
-	description,
-	delay,
-	color,
-}: {
-	icon: React.ReactNode;
-	title: string;
-	description: string;
-	delay: number;
-	color: "violet" | "fuchsia" | "purple";
-}) => {
-	const colorMap = {
-		violet: "from-primary/20 to-primary/5",
-		fuchsia: "from-secondary/20 to-secondary/5",
-		purple: "from-purple-600/20 to-purple-600/5",
-	};
+					{/* The Animation Canvas */}
+					<div className="flex-1 w-full h-full relative">
+						<NodeCanvas />
+						{/* Gradient Fades for integration */}
+						<div className="absolute inset-0 bg-linear-to-b from-transparent via-transparent to-neutral-950/80 pointer-events-none" />
+					</div>
 
-	const iconColorMap = {
-		violet: "text-primary",
-		fuchsia: "text-secondary",
-		purple: "text-purple-400",
-	};
-
-	return (
-		<motion.div
-			initial={{ opacity: 0, y: 30 }}
-			whileInView={{ opacity: 1, y: 0 }}
-			viewport={{ once: true, margin: "-50px" }}
-			transition={{ duration: 0.6, delay }}
-			whileHover={{ y: -8, transition: { duration: 0.2 } }}
-			className="group relative overflow-hidden rounded-3xl border border-white/5 bg-linear-to-br from-white/5 to-transparent p-10 backdrop-blur-sm"
-		>
-			<div
-				className={`absolute inset-0 bg-linear-to-br ${colorMap[color]} opacity-0 group-hover:opacity-100 transition-opacity duration-500`}
-			/>
-			<div className="relative z-10">
-				<div
-					className={`mb-6 inline-flex h-16 w-16 items-center justify-center rounded-2xl bg-white/5 ring-1 ring-white/10 group-hover:ring-white/20 transition-all ${iconColorMap[color]}`}
-				>
-					{icon}
+					<div className="p-8 relative z-10">
+						<div className="space-y-2">
+							<h3 className="text-2xl font-bold text-white tracking-tight font-mono">
+								Real-time Execution
+							</h3>
+							<p className="text-neutral-500 leading-snug">
+								Watch data flow between nodes instantly. Debug logic visually
+								with live execution tracing and output previews.
+							</p>
+						</div>
+					</div>
 				</div>
-				<h3
-					className="mb-3 text-2xl font-bold text-white tracking-tight"
-					style={{ fontFamily: "'JetBrains Mono', monospace" }}
-				>
-					{title}
-				</h3>
-				<p className="text-zinc-400 leading-relaxed group-hover:text-zinc-300 transition-colors">
-					{description}
-				</p>
+
+				{/* 4. Feature: Hybrid Runtime (Mid-Left) */}
+				<div className="md:col-span-3 md:row-span-4 bg-neutral-900/20 border border-neutral-800 rounded-3xl p-6 flex flex-col justify-between group hover:border-neutral-700 transition-colors relative overflow-hidden">
+					<div className="relative z-10 space-y-4">
+						<div className="h-10 w-10 rounded-lg bg-neutral-800/50 flex items-center justify-center text-primary">
+							<Box className="size-5" />
+						</div>
+						{/* Mock execution pill */}
+						<div className="bg-neutral-950/50 rounded-lg p-3 border border-neutral-800/50 backdrop-blur-sm">
+							<div className="flex items-center gap-2 mb-2">
+								<div className="h-1.5 w-1.5 rounded-full bg-green-500 animate-pulse"></div>
+								<span className="text-[10px] font-mono text-neutral-400">
+									EXECUTION_MODE
+								</span>
+							</div>
+							<div className="space-y-1.5">
+								<div className="flex justify-between text-[10px] font-mono">
+									<span className="text-neutral-500">CLIENT</span>
+									<span className="text-primary">ACTIVE</span>
+								</div>
+								<div className="h-1 w-full bg-neutral-800 rounded-full overflow-hidden">
+									<div className="h-full w-2/3 bg-primary rounded-full"></div>
+								</div>
+								<div className="flex justify-between text-[10px] font-mono pt-1">
+									<span className="text-neutral-500">CLOUD</span>
+									<span className="text-neutral-600">IDLE</span>
+								</div>
+								<div className="h-1 w-full bg-neutral-800 rounded-full overflow-hidden">
+									<div className="h-full w-0 bg-neutral-700 rounded-full"></div>
+								</div>
+							</div>
+						</div>
+					</div>
+					<div>
+						<h3 className="text-lg font-bold text-white mb-2 font-mono">
+							Hybrid Runtime
+						</h3>
+						<p className="text-sm text-neutral-500 leading-relaxed">
+							Execute lightweight logic in-browser. Offload heavy generation
+							tasks to the cloud seamlessly.
+						</p>
+					</div>
+				</div>
+
+				{/* 5. Feature: Copilot (Mid-Center) */}
+				<div className="md:col-span-4 md:row-span-4 bg-neutral-900/20 border border-neutral-800 rounded-3xl p-6 flex flex-col justify-between group hover:border-neutral-700 transition-colors relative overflow-hidden">
+					<div className="relative z-10 flex flex-col gap-3">
+						<div className="h-10 w-10 rounded-lg bg-neutral-800/50 flex items-center justify-center text-primary mb-2">
+							<Sparkles className="size-5" />
+						</div>
+
+						{/* Chat Interface */}
+						<div className="space-y-3 font-mono text-[10px] leading-tight">
+							{/* User Message */}
+							<div className="bg-neutral-800/50 self-end rounded-2xl rounded-tr-sm p-3 ml-8 border border-neutral-700/50">
+								<p className="text-neutral-300">
+									Create a cyberpunk character generator workflow.
+								</p>
+							</div>
+
+							{/* AI Response with Typing Effect */}
+							<div className="bg-primary/10 self-start rounded-2xl rounded-tl-sm p-3 mr-8 border border-primary/20">
+								<p className="text-primary typing-effect">
+									Sure! compiling nodes...
+								</p>
+							</div>
+						</div>
+					</div>
+					<div>
+						<h3 className="text-lg font-bold text-white mb-2 font-mono">
+							AI Copilot
+						</h3>
+						<p className="text-sm text-neutral-500 leading-relaxed">
+							Don't just drag nodes. Describe your intent and let our Agent
+							architect the perfect workflow for you.
+						</p>
+					</div>
+
+					{/* CSS for typing effect */}
+					<style>{`
+						.typing-effect {
+							overflow: hidden;
+							white-space: nowrap;
+							border-right: 2px solid transparent;
+							width: 0;
+							animation: typing 2.5s steps(30, end) forwards infinite alternate, blink .75s step-end infinite;
+							animation-delay: 1s;
+						}
+						@keyframes typing {
+							0% { width: 0 }
+							30% { width: 0 } /* Pause before typing */
+							100% { width: 100% }
+						}
+					`}</style>
+				</div>
+
+				{/* 6. Tech Stack Ticker (Bottom Row, Left) */}
+				<div className="md:col-span-7 md:row-span-1 flex items-center px-4 overflow-hidden border-t md:border-t-0 border-neutral-800/50 pt-4 md:pt-0">
+					<div className="flex items-center gap-2 text-xs font-mono text-neutral-600 mr-6 whitespace-nowrap z-10 bg-background/95 pr-2">
+						<Terminal className="size-3" /> POWERED BY
+					</div>
+					{/* Marquee Wrapper with masking */}
+					<div className="flex-1 overflow-hidden relative mask-linear-fade">
+						<div className="flex items-center gap-8 animate-marquee whitespace-nowrap opacity-40 hover:opacity-100 transition-opacity duration-300">
+							<span className="font-semibold text-lg">Gemini 3</span>
+							<span className="font-semibold text-lg">Veo</span>
+							<span className="font-semibold text-lg">React Flow</span>
+							<span className="font-semibold text-lg">PixiJS</span>
+							<span className="font-semibold text-lg">Hono</span>
+							<span className="font-semibold text-lg">Nano Banana</span>
+							<span className="font-semibold text-lg">Veo</span>
+							<span className="font-semibold text-lg">Remotion</span>
+							<span className="font-semibold text-lg">Konva</span>
+							{/* Duplicate for seamless loop */}
+							<span className="font-semibold text-lg">Gemini 3</span>
+							<span className="font-semibold text-lg">Veo</span>
+							<span className="font-semibold text-lg">React Flow</span>
+							<span className="font-semibold text-lg">PixiJS</span>
+							<span className="font-semibold text-lg">Hono</span>
+							<span className="font-semibold text-lg">Nano Banana</span>
+							<span className="font-semibold text-lg">Veo</span>
+							<span className="font-semibold text-lg">Remotion</span>
+							<span className="font-semibold text-lg">Konva</span>
+						</div>
+					</div>
+				</div>
+
+				{/* 7. Footer (Bottom Row, Right) */}
+				<div className="md:col-span-5 md:row-span-1 flex items-center justify-between px-6 border-t border-neutral-800 text-xs text-neutral-600 font-mono">
+					<span>© 2026 GATEWAI STUDIO</span>
+					<div className="flex gap-4">
+						<a href="#" className="hover:text-primary transition-colors">
+							TERMS
+						</a>
+						<a href="#" className="hover:text-primary transition-colors">
+							PRIVACY
+						</a>
+					</div>
+				</div>
 			</div>
-		</motion.div>
+		</main>
 	);
 };
 

@@ -74,8 +74,7 @@ Start the entire application stack (App, Database, Redis, MCP server) with a sin
 # Start Docker containers
 docker compose -f docker-compose-local.yaml up
 
-# Or use the helper script if you have npm/pnpm installed:
-npm run start:docker
+pnpm run start:docker
 ```
 
 The application will be available at [http://localhost:8081](http://localhost:8081).
