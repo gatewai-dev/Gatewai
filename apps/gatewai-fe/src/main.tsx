@@ -5,7 +5,7 @@ import { BrowserRouter } from "react-router";
 import { scan } from "react-scan";
 import App from "./App.tsx";
 
-// Enable when required
+// Enable when required on local
 scan({
 	enabled: false,
 });
