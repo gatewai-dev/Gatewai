@@ -9,9 +9,7 @@ import type { NodeEntityType } from "./nodes";
 
 export type EdgeEntityType = CanvasDetailsRPC["edges"][number];
 
-export const edgeAdapter = createEntityAdapter({
-	selectId: (edge: EdgeEntityType) => edge.id,
-});
+export const edgeAdapter = createEntityAdapter<EdgeEntityType>();
 
 const edgesSlice = createSlice({
 	name: "edges",

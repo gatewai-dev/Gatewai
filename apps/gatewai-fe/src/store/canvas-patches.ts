@@ -6,9 +6,7 @@ import {
 } from "@reduxjs/toolkit";
 import type { RootState } from ".";
 
-export const patchAdapter = createEntityAdapter<CanvasPatch>({
-	selectId: (patch: CanvasPatch) => patch.id,
-});
+export const patchAdapter = createEntityAdapter<CanvasPatch>();
 
 export type PatchesState = ReturnType<typeof patchesSlice.reducer>;
 

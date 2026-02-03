@@ -8,9 +8,7 @@ import type { RootState } from "./";
 
 export type HandleEntityType = CanvasDetailsRPC["handles"][number];
 
-export const handleAdapter = createEntityAdapter({
-	selectId: (handle: HandleEntityType) => handle.id,
-});
+export const handleAdapter = createEntityAdapter<HandleEntityType>();
 
 const handlesSlice = createSlice({
 	name: "handles",

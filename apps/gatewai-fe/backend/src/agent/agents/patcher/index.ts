@@ -1,5 +1,11 @@
 import assert from "node:assert";
-import { prisma } from "@gatewai/db";
+import {
+	type Edge,
+	type Handle,
+	type Node,
+	type NodeTemplate,
+	prisma,
+} from "@gatewai/db";
 import { type BulkUpdatePayload, bulkUpdateSchema } from "@gatewai/types";
 import { Agent, tool } from "@openai/agents";
 import { getQuickJS, type QuickJSContext, Scope } from "quickjs-emscripten";
@@ -33,10 +39,10 @@ import { localGatewaiMCPTool } from "../../tools/gatewai-mcp.js";
 interface PatcherContext {
 	canvasId: string;
 	agentSessionId: string;
-	nodes: any[];
-	edges: any[];
-	handles: any[];
-	templates: any[];
+	nodes: BulkUpdatePayload["nodes"];
+	edges: BulkUpdatePayload["edges"];
+	handles: BulkUpdatePayload["handles"];
+	templates: NodeTemplate[];
 }
 
 /**
@@ -70,20 +76,29 @@ export function createPatcherAgent(
 					}),
 				]);
 
+				const sanitizedNodes =
+					nodes?.map((node) => ({
+						...node,
+						width: node.width ?? 340,
+						position: node.position as unknown as { x: number; y: number },
+						config: node.config as any,
+						result: node.result as Record<string, unknown> | null,
+					})) || [];
+
 				// Store in context for other tools
 				patcherContext = {
 					canvasId,
 					agentSessionId,
-					nodes: nodes || [],
+					nodes: sanitizedNodes,
 					edges: edges || [],
 					handles: handles || [],
 					templates,
 				};
 
 				return `Canvas prepared successfully!
-		- ${patcherContext.nodes.length} existing nodes
-		- ${patcherContext.edges.length} existing edges
-		- ${patcherContext.handles.length} existing handles
+		- ${sanitizedNodes.length} existing nodes
+		- ${(edges || []).length} existing edges
+		- ${(handles || []).length} existing handles
 		- ${templates.length} available templates
 		
 		Available templates:

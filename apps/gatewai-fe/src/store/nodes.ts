@@ -12,9 +12,7 @@ import { getBatchDetails } from "./tasks";
 
 export type NodeEntityType = CanvasDetailsRPC["nodes"][number];
 
-export const nodeAdapter = createEntityAdapter({
-	selectId: (node: NodeEntityType) => node.id,
-});
+export const nodeAdapter = createEntityAdapter<NodeEntityType>();
 
 export const nodesSlice = createSlice({
 	name: "nodes",
