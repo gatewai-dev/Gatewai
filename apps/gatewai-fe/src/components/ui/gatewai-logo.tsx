@@ -40,35 +40,35 @@ const GatewaiLogo = forwardRef<SVGSVGElement, GatewaiLogoProps>(
 
 		// Letter T (34-44)
 		const t = {
-			top: { left: 34, right: 44, y: 6 },
-			stem: { x: 39, bottom: 18 },
+			top: { left: 29, right: 41, y: 6 },
+			stem: { x: 36, bottom: 18 },
 		};
 
 		// Letter E (48-58)
 		const e = {
-			spine: { x: 48, top: 6, bottom: 18 },
-			bars: { right: 58, midY: 12 },
+			spine: { x: 43, top: 6, bottom: 18 },
+			bars: { right: 55, midY: 12 },
 		};
 
 		// Letter W (62-76)
 		const w = {
-			left: 62,
-			right: 76,
+			left: 59,
+			right: 73,
 			top: 6,
 			bottom: 18,
-			v: { left: 66, mid: 69, right: 72, peak: 13 },
+			v: { left: 61, mid: 66, right: 69, peak: 13 },
 		};
 
 		// Letter A (80-92)
 		const a2 = {
-			base: { left: 80, right: 92, y: 18 },
-			apex: { x: 86, y: 6 },
+			base: { left: 77, right: 89, y: 18 },
+			apex: { x: 81, y: 6 },
 			crossbar: { y: 13, inset: 2 },
 		};
 
 		// Letter I (96-98)
 		const i = {
-			x: 97,
+			x: 94,
 			top: 7,
 			bottom: 18,
 			dot: 2,

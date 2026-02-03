@@ -42,7 +42,7 @@ const textMergerProcessor: NodeProcessor = async ({ node, data }) => {
 			],
 		};
 
-		newResult.outputs.push(newGeneration);
+		newResult.outputs = [newGeneration];
 		newResult.selectedOutputIndex = 0;
 
 		return { success: true, newResult };

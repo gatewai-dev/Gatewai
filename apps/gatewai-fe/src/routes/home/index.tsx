@@ -306,7 +306,7 @@ const HomePage = () => {
 							{/* User Message */}
 							<div className="bg-neutral-800/50 self-end rounded-2xl rounded-tr-sm p-3 ml-8 border border-neutral-700/50">
 								<p className="text-neutral-300">
-									Create a cyberpunk character generator workflow.
+									Create a parfume advertisement generator workflow.
 								</p>
 							</div>
 
