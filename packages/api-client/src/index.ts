@@ -121,7 +121,6 @@ export class GatewaiApiClient {
 		return this.handleResponse(res);
 	}
 
-
 	/**
 	 * Lists all non-API canvases, ordered by updated date.
 	 */
