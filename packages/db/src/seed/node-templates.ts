@@ -205,7 +205,7 @@ export async function SEED_createNodeTemplates(prisma: PrismaClient) {
 			subcategory: null,
 			variableInputDataTypes: ["Text"],
 			tokenPrice: 0.0,
-			variableInputs: false,
+			variableInputs: true,
 			variableOutputs: false,
 			isTerminalNode: false,
 			isTransient: false,
@@ -698,6 +698,12 @@ export async function SEED_createNodeTemplates(prisma: PrismaClient) {
 			if (existing.type === NodeType.VideoGenExtend) {
 				await prisma.nodeTemplate.delete({
 					where: { type: existing.type },
+				});
+			}
+			if (existing.type === NodeType.TextMerger) {
+				await prisma.nodeTemplate.update({
+					where: { type: existing.type },
+					data: { variableInputDataTypes: ["Text"], variableInputs: true },
 				});
 			}
 		}
