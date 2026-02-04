@@ -7,10 +7,12 @@ import {
 	useContext,
 	useEffect,
 	useMemo,
+	useRef,
 } from "react";
 import { useAnimatedFavicon } from "@/hooks/use-animated-favicon";
 import type { BatchDetailsRPC, BatchDetailsRPCParams } from "@/rpc/types";
 import { useAppDispatch, useAppSelector } from "@/store";
+import { assetsAPI } from "@/store/assets";
 import type { NodeEntityType } from "@/store/nodes";
 import {
 	addBatchToPoll,
@@ -53,6 +55,34 @@ const TaskManagerProvider = ({
 	const isLoading = useAppSelector(selectInitialLoading);
 	const taskBatches = useAppSelector(selectAllBatches);
 	const latestTasksFetchTime = useAppSelector(selectLatestTasksFetchTime);
+
+	const prevFinishedBatchesRef = useRef<Set<string>>(new Set());
+	const isFirstRunRef = useRef(true);
+
+	useEffect(() => {
+		if (isFirstRunRef.current) {
+			const initialFinished = new Set(
+				taskBatches.filter((b) => b.finishedAt != null).map((b) => b.id),
+			);
+			prevFinishedBatchesRef.current = initialFinished;
+			isFirstRunRef.current = false;
+			return;
+		}
+
+		const currentFinished = taskBatches.filter((b) => b.finishedAt != null);
+		let shouldRefetch = false;
+
+		for (const batch of currentFinished) {
+			if (!prevFinishedBatchesRef.current.has(batch.id)) {
+				shouldRefetch = true;
+				prevFinishedBatchesRef.current.add(batch.id);
+			}
+		}
+
+		if (shouldRefetch) {
+			dispatch(assetsAPI.util.invalidateTags(["getUserAssets"]));
+		}
+	}, [taskBatches, dispatch]);
 
 	const setPollingIntervalHandler = (value: SetStateAction<number>) => {
 		if (typeof value === "function") {

@@ -693,19 +693,6 @@ export async function SEED_createNodeTemplates(prisma: PrismaClient) {
 			await prisma.nodeTemplate.create({
 				data: node,
 			});
-			// TODO: remove deletion after new deployment
-		} else {
-			if (existing.type === NodeType.VideoGenExtend) {
-				await prisma.nodeTemplate.delete({
-					where: { type: existing.type },
-				});
-			}
-			if (existing.type === NodeType.TextMerger) {
-				await prisma.nodeTemplate.update({
-					where: { type: existing.type },
-					data: { variableInputDataTypes: ["Text"], variableInputs: true },
-				});
-			}
 		}
 	}
 }

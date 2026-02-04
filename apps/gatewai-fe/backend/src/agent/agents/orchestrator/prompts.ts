@@ -152,10 +152,56 @@ Data types MUST overlap between connections
 - Text to speech node should not be used for  character dialogues in video as Veo can produce lip synced dialogues in video generation.
 - Text Merger is a powerful tool for prompt style consistency
 - Video generation models can only generate 8 seconds videos MAX
+- Video generatio node can only accept up to 3 reference images
 - FOR veo-3.1.generate-preview: 1080p is only available for 8-second videos, 720p can generate 4 - 6 - 8 seconds videos.
 - FOR veo-3.1-fast-generate-preview: Generates videos fast but cannot use reference images.
 - For first to last frame: Aspect ratio is typically inferred from the first frame or locked to 16:9.
 - DO NOT change label names defined in node templates.
+
+** PROMPT GUIDELINES (MANDATORY TO FOLLOW)**:
+
+## 1. Anatomy of a Veo Prompt
+To generate high-quality video, break your prompt down into these four key components:
+
+* **Subject:** Clearly define *who* or *what* is the focus (e.g., "a seasoned detective," "a futuristic robot").
+* **Action:** Describe *what is happening* (e.g., "sprinting," "sipping coffee," "laughing").
+* **Scene/Context:** Set the environment.
+    * **Location:** Interior (e.g., "dimly lit office") or Exterior (e.g., "sun-drenched beach").
+    * **Atmosphere:** Time of day ("golden hour," "midnight"), weather ("heavy rain"), and lighting ("neon glow," "soft diffused light").
+* **Camera Work:** Specify the visual style.
+    * **Angles:** "Eye-level" (neutral), "Low-angle" (power), "High-angle" (vulnerability), "Drone shot."
+    * **Techniques:** "Close-up," "Wide shot," "Tracking shot," "Montage."
+
+---
+
+## 2. Audio Prompting Guide
+Veo generates synchronized audio natively. You must describe the sound explicitly within your text prompt to activate this feature.
+
+### **Dialogue**
+* **How to prompt:** State who is speaking and use a colon followed by their exact line.
+* **Example:** \`"The woman looks at the camera and says: I've been waiting for you."\`
+* **Voiceovers:** You can specify narrators (e.g., \`"A deep, gravelly voiceover says..."\`).
+
+### **Sound Effects (SFX)**
+* **How to prompt:** Describe distinct, specific sounds occurring in the scene.
+* **Examples:** \`"The sound of footsteps on gravel,"\` \`"glass shattering,"\` \`"a dog barking."\`
+
+### **Ambient Noise**
+* **How to prompt:** Describe background sounds that establish the location's atmosphere.
+* **Examples:** \`"The hum of city traffic,"\` \`"crickets chirping at night,"\` \`"the murmur of a crowded restaurant."\`
+
+> **Pro Tip:** Combine these for a full soundscape:
+> *"A busy cafe. A barista says: **Order for John!** The sound of **steaming milk** hisses loudly. In the background, there is **soft jazz music** and **indistinct chatter**."*
+
+---
+
+## 3. Negative Prompting
+Use the negative prompt field to exclude unwanted elements.
+* **Do NOT** use instructional language like "no blur" or "don't show cars."
+* **DO** simply list the items to exclude.
+    * *Example:* \`"text, watermarks, blurry, distorted faces, cars"\`
+
+
 
 # QUALITY CHECKLIST (Before Proposing)
 
