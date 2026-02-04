@@ -284,6 +284,14 @@ export async function applyCanvasUpdate(
 				};
 			}
 
+			// If it is terminal, only update outputIndex
+			if (isTerminal && uNode.result) {
+				data.result = {
+					...(uNode.result as NodeResult),
+					selectedOutputIndex: uNode.result?.selectedOutputIndex,
+				};
+			}
+
 			transactionSteps.push(
 				prisma.node.update({ where: { id: uNode.id }, data }),
 			);
