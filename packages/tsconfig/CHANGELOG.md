@@ -1,5 +1,11 @@
 # @gatewai/tsconfig
 
+## 0.0.8
+
+### Patch Changes
+
+- 8cde453: Misc bug fix
+
 ## 0.0.7
 
 ### Patch Changes

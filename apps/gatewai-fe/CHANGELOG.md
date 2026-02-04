@@ -1,5 +1,17 @@
 # @gatewai/fe
 
+## 0.0.8
+
+### Patch Changes
+
+- 8cde453: Misc bug fix
+- Updated dependencies [8cde453]
+  - @gatewai/api-client@0.0.8
+  - @gatewai/db@0.0.8
+  - @gatewai/pixi-processor@0.0.8
+  - @gatewai/tsconfig@0.0.8
+  - @gatewai/types@0.0.8
+
 ## 0.0.7
 
 ### Patch Changes

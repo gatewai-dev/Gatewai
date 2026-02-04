@@ -1,5 +1,14 @@
 # @gatewai/mcp-server
 
+## 0.0.8
+
+### Patch Changes
+
+- 8cde453: Misc bug fix
+- Updated dependencies [8cde453]
+  - @gatewai/api-client@0.0.8
+  - @gatewai/types@0.0.8
+
 ## 0.0.7
 
 ### Patch Changes
