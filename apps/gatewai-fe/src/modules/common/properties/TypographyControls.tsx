@@ -7,7 +7,6 @@ import {
 	MoveVertical,
 	Type,
 	Underline,
-	WrapText,
 } from "lucide-react";
 import type React from "react";
 import { useMemo } from "react";
@@ -22,7 +21,6 @@ import {
 	SelectValue,
 } from "@/components/ui/select";
 import { Separator } from "@/components/ui/separator";
-import { Switch } from "@/components/ui/switch";
 import { ColorPicker } from "@/components/util/color-input";
 import { GetFontAssetUrl } from "@/lib/file";
 import { fontManager } from "@/lib/fonts";
@@ -62,8 +60,6 @@ export const TypographyControls: React.FC<TypographyControlsProps> = ({
 	fontWeight,
 	align,
 	letterSpacing,
-	align,
-	letterSpacing,
 	lineHeight,
 	onChange,
 }) => {
@@ -80,25 +76,13 @@ export const TypographyControls: React.FC<TypographyControlsProps> = ({
 	const isUnderline = textDecoration?.includes("underline");
 
 	const toggleStyle = (style: "bold" | "italic") => {
-		let current = fontStyle || "normal";
-		if (current === "normal") current = "";
-
-		const hasBold = current.includes("bold") || fontWeight === "bold";
-		const hasItalic = current.includes("italic");
-
-		let nextBold = hasBold;
-		let nextItalic = hasItalic;
-
-		if (style === "bold") nextBold = !nextBold;
-		if (style === "italic") nextItalic = !nextItalic;
-
-		const parts = [];
-		if (nextBold) parts.push("bold");
-		if (nextItalic) parts.push("italic");
-
-		const nextStyle = parts.join(" ") || "normal";
-		// Reset fontWeight to normal to avoid conflict if it was set
-		onChange({ fontStyle: nextStyle, fontWeight: "normal" });
+		if (style === "bold") {
+			const nextWeight = isBold ? "normal" : "bold";
+			onChange({ fontWeight: nextWeight });
+		} else if (style === "italic") {
+			const nextStyle = isItalic ? "normal" : "italic";
+			onChange({ fontStyle: nextStyle });
+		}
 	};
 
 	const toggleUnderline = () => {
@@ -255,12 +239,7 @@ export const TypographyControls: React.FC<TypographyControlsProps> = ({
 						allowDecimal
 					/>
 				</div>
-
-				step={0.1}
-				allowDecimal
-					/>
 			</div>
-		</div>
-		</CollapsibleSection >
+		</CollapsibleSection>
 	);
 };

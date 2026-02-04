@@ -34,7 +34,10 @@ export interface VideoAnimation {
 }
 
 export interface ExtendedLayer
-	extends Omit<VideoCompositorLayer, "width" | "height"> {
+	extends Omit<
+		VideoCompositorLayer,
+		"width" | "height" | "align" | "verticalAlign"
+	> {
 	width?: number;
 	height?: number;
 	animations?: VideoAnimation[];
@@ -241,7 +244,7 @@ export const CompositionScene: React.FC<SceneProps> = ({
 									textAlign:
 										(layer.align as "left" | "center" | "right") ?? "left",
 									padding: layer.padding,
-									whiteSpace: "nowrap",
+
 									WebkitTextStroke:
 										layer.strokeWidth && layer.stroke
 											? `${layer.strokeWidth}px ${layer.stroke}`
@@ -255,7 +258,7 @@ export const CompositionScene: React.FC<SceneProps> = ({
 											: layer.verticalAlign === "bottom"
 												? "flex-end"
 												: "flex-start",
-									// whiteSpace: "pre", // Removed in favor of dynamic wrap
+									whiteSpace: "pre-wrap",
 								}}
 							>
 								{textContent}
