@@ -39,7 +39,6 @@ interface TypographyControlsProps {
 	align?: string; // "left" | "center" | "right" | "justify"
 	letterSpacing?: number;
 	lineHeight?: number;
-	wrap?: string; // "word" | "none" | "char"
 
 	onChange: (updates: {
 		fontFamily?: string;
@@ -51,7 +50,6 @@ interface TypographyControlsProps {
 		align?: string;
 		letterSpacing?: number;
 		lineHeight?: number;
-		wrap?: string;
 	}) => void;
 }
 
@@ -64,8 +62,9 @@ export const TypographyControls: React.FC<TypographyControlsProps> = ({
 	fontWeight,
 	align,
 	letterSpacing,
+	align,
+	letterSpacing,
 	lineHeight,
-	wrap,
 	onChange,
 }) => {
 	const { data: fontList } = useGetFontListQuery({});
@@ -257,19 +256,11 @@ export const TypographyControls: React.FC<TypographyControlsProps> = ({
 					/>
 				</div>
 
-				{/* Wrap */}
-				<div className="flex items-center justify-between pt-1">
-					<Label className="text-[10px] text-gray-500 font-semibold flex items-center gap-2">
-						<WrapText className="size-3.5" />
-						WRAP TEXT
-					</Label>
-					<Switch
-						checked={wrap === "word"}
-						onCheckedChange={(c) => onChange({ wrap: c ? "word" : "none" })}
-						className="scale-75 data-[state=checked]:bg-blue-600"
+				step={0.1}
+				allowDecimal
 					/>
-				</div>
 			</div>
-		</CollapsibleSection>
+		</div>
+		</CollapsibleSection >
 	);
 };

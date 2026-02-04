@@ -601,7 +601,6 @@ const TextLayer: React.FC<LayerProps> = ({
 			onDragEnd={onDragEnd}
 			onTransformEnd={onTransformEnd}
 			globalCompositeOperation={layer.blendMode as GlobalCompositeOperation}
-			wrap={layer.wrap ?? (layer.width ? "word" : "none")}
 			align={layer.align || COMPOSITOR_DEFAULTS.ALIGN}
 			letterSpacing={layer.letterSpacing ?? COMPOSITOR_DEFAULTS.LETTER_SPACING}
 			lineHeight={layer.lineHeight ?? COMPOSITOR_DEFAULTS.LINE_HEIGHT}
@@ -1349,7 +1348,6 @@ const InspectorPanel: React.FC = () => {
 						align={selectedLayer.align}
 						letterSpacing={selectedLayer.letterSpacing}
 						lineHeight={selectedLayer.lineHeight}
-						wrap={selectedLayer.wrap}
 						onChange={updateLayer}
 					/>
 				)}
@@ -1696,7 +1694,6 @@ export const ImageDesignerEditor: React.FC<ImageDesignerEditorProps> = ({
 						newLayer.align = COMPOSITOR_DEFAULTS.ALIGN;
 						newLayer.verticalAlign = COMPOSITOR_DEFAULTS.VERTICAL_ALIGN;
 						newLayer.padding = COMPOSITOR_DEFAULTS.PADDING;
-						newLayer.wrap = "none";
 						newLayer.computedHeight = undefined;
 						newLayer.computedWidth = undefined;
 					}

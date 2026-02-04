@@ -169,7 +169,6 @@ const FontOptionsSchema = z.object({
 	letterSpacing: z.number().optional(),
 	lineHeight: z.number().optional(),
 	fontWeight: z.string().optional(),
-	wrap: z.enum(["word", "char", "none"]).optional(),
 });
 
 const AlignmentSchema = z.object({

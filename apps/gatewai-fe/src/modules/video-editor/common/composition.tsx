@@ -49,7 +49,6 @@ export interface ExtendedLayer
 	padding?: number;
 	stroke?: string;
 	strokeWidth?: number;
-	wrap?: string;
 }
 
 export interface SceneProps {
@@ -242,7 +241,7 @@ export const CompositionScene: React.FC<SceneProps> = ({
 									textAlign:
 										(layer.align as "left" | "center" | "right") ?? "left",
 									padding: layer.padding,
-									whiteSpace: layer.wrap === "none" ? "nowrap" : "pre-wrap",
+									whiteSpace: "nowrap",
 									WebkitTextStroke:
 										layer.strokeWidth && layer.stroke
 											? `${layer.strokeWidth}px ${layer.stroke}`

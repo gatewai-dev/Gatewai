@@ -107,6 +107,7 @@ import {
 	TooltipProvider,
 	TooltipTrigger,
 } from "@/components/ui/tooltip";
+import { dataTypeColors } from "@/config/colors";
 import { GetAssetEndpoint, GetFontAssetUrl } from "@/lib/file";
 import { fontManager } from "@/lib/fonts";
 import { generateId } from "@/lib/idgen";
@@ -114,7 +115,9 @@ import { CollapsibleSection } from "@/modules/common/CollapsibleSection";
 import { StyleControls } from "@/modules/common/properties/StyleControls";
 import { TransformControls } from "@/modules/common/properties/TransformControls";
 import { TypographyControls } from "@/modules/common/properties/TypographyControls";
+import { useAppSelector } from "@/store";
 import { useGetFontListQuery } from "@/store/fonts";
+import { handleSelectors } from "@/store/handles";
 import type { NodeEntityType } from "@/store/nodes";
 import {
 	type AnimationType,
@@ -131,6 +134,7 @@ const HEADER_WIDTH = 200;
 const DEFAULT_TIMELINE_HEIGHT = 208; // h-52 equivalent
 const MIN_TIMELINE_HEIGHT = 120;
 const MAX_TIMELINE_HEIGHT = 400;
+
 // Optimized Presets for Web Editing (Performance focused)
 const ASPECT_RATIOS = [
 	{ label: "Youtube / HD (16:9)", width: 1280, height: 720 },
@@ -139,6 +143,34 @@ const ASPECT_RATIOS = [
 	{ label: "Square (1:1)", width: 1080, height: 1080 },
 	{ label: "Portrait (4:5)", width: 1080, height: 1350 },
 ];
+
+// --- Helper Functions ---
+
+/**
+ * Resolves the display label for a layer based on priority:
+ * 1. Handle Label (if not null/empty)
+ * 2. First DataType from Handle
+ * 3. Layer Name
+ * 4. Layer ID
+ */
+const resolveLayerLabel = (handle: any, layer: ExtendedLayer): string => {
+	if (
+		handle?.label &&
+		typeof handle.label === "string" &&
+		handle.label.trim() !== ""
+	) {
+		return handle.label;
+	}
+	if (
+		Array.isArray(handle?.dataTypes) &&
+		handle.dataTypes.length > 0 &&
+		handle.dataTypes[0]
+	) {
+		return handle.dataTypes[0];
+	}
+	return layer.name ?? layer.id;
+};
+
 // --- Context & Types ---
 interface EditorContextType {
 	layers: ExtendedLayer[];
@@ -181,62 +213,62 @@ interface EditorContextType {
 	timelineHeight: number;
 	setTimelineHeight: Dispatch<SetStateAction<number>>;
 }
+
 const EditorContext = createContext<EditorContextType | undefined>(undefined);
 const useEditor = () => {
 	const ctx = useContext(EditorContext);
 	if (!ctx) throw new Error("useEditor must be used within EditorProvider");
 	return ctx;
 };
+
 // --- Components: Unified Clip ---
 const UnifiedClip: React.FC<{
 	layer: ExtendedLayer;
 	isSelected: boolean;
 }> = ({ layer, isSelected }) => {
-	// Determine styles based on type
+	const handles = useAppSelector(handleSelectors.selectEntities);
+	const handle = handles[layer.inputHandleId];
+
+	const name = useMemo(() => resolveLayerLabel(handle, layer), [handle, layer]);
+
+	// Determine styles strictly from configuration
 	const styleConfig = useMemo(() => {
+		const config = dataTypeColors[layer.type] || {
+			bg: "bg-gray-600",
+			border: "border-gray-500",
+			text: "text-gray-100",
+			hex: "#4b5563",
+		};
+
+		// Map icon based on type (since config only handles colors)
+		let Icon = Layers;
 		switch (layer.type) {
 			case "Video":
-				return {
-					bg: "bg-blue-600",
-					border: "border-blue-400",
-					icon: Film,
-					gradient: "from-blue-600 to-blue-700",
-				};
+				Icon = Film;
+				break;
 			case "Audio":
-				return {
-					bg: "bg-orange-600",
-					border: "border-orange-400",
-					icon: Music,
-					gradient: "from-orange-600 to-orange-700",
-				};
+				Icon = Music;
+				break;
 			case "Image":
-				return {
-					bg: "bg-purple-600",
-					border: "border-purple-400",
-					icon: ImageIcon,
-					gradient: "from-purple-600 to-purple-700",
-				};
+				Icon = ImageIcon;
+				break;
 			case "Text":
-				return {
-					bg: "bg-emerald-600",
-					border: "border-emerald-400",
-					icon: Type,
-					gradient: "from-emerald-600 to-emerald-700",
-				};
-			default:
-				return {
-					bg: "bg-gray-600",
-					border: "border-gray-400",
-					icon: Layers,
-					gradient: "from-gray-600 to-gray-700",
-				};
+				Icon = Type;
+				break;
 		}
+
+		return {
+			...config,
+			icon: Icon,
+		};
 	}, [layer.type]);
+
 	const Icon = styleConfig.icon;
+
 	return (
 		<div
-			className={`h-full w-full relative overflow-hidden rounded-md transition-all duration-75
-      bg-linear-to-r ${styleConfig.gradient}
+			className={`h-full w-full relative overflow-hidden rounded-md transition-all duration-75 border
+      ${styleConfig.bg} ${styleConfig.border}
       ${isSelected ? "brightness-110 ring-2 ring-white/70 shadow-lg" : "opacity-90 hover:opacity-100 hover:brightness-105"}
     `}
 		>
@@ -254,7 +286,7 @@ const UnifiedClip: React.FC<{
 				<div className="flex items-center gap-1.5 min-w-0">
 					<Icon className="w-3 h-3 text-white/90 shrink-0" />
 					<span className="text-[10px] text-white font-medium truncate drop-shadow-md select-none">
-						{layer.name || layer.id}
+						{name}
 					</span>
 				</div>
 			</div>
@@ -268,6 +300,7 @@ const UnifiedClip: React.FC<{
 		</div>
 	);
 };
+
 // --- Components: Timeline Core ---
 const InteractionOverlay: React.FC = () => {
 	const {
@@ -803,6 +836,14 @@ const SortableTrackHeader: React.FC<SortableTrackProps> = ({
 		minHeight: `${TRACK_HEIGHT}px`,
 		zIndex: isDragging ? 999 : "auto",
 	};
+
+	// Use label logic
+	const handles = useAppSelector(handleSelectors.selectEntities);
+	const handle = handles[layer.inputHandleId];
+	const name = useMemo(() => resolveLayerLabel(handle, layer), [handle, layer]);
+
+	const colorConfig = dataTypeColors[layer.type];
+
 	return (
 		<button
 			ref={setNodeRef}
@@ -827,10 +868,7 @@ w-full text-left p-0 m-0 bg-transparent border-0
 				<div
 					className={`
                     w-6 h-6 rounded flex items-center justify-center
-                    ${layer.type === "Video" ? "bg-blue-500/20 text-blue-400" : ""}
-                    ${layer.type === "Image" ? "bg-purple-500/20 text-purple-400" : ""}
-                    ${layer.type === "Text" ? "bg-emerald-500/20 text-emerald-400" : ""}
-                    ${layer.type === "Audio" ? "bg-orange-500/20 text-orange-400" : ""}
+                    ${colorConfig ? `${colorConfig.bg}/20 ${colorConfig.text}` : ""}
                 `}
 				>
 					{layer.type === "Video" && <Film className="w-3.5 h-3.5" />}
@@ -839,7 +877,7 @@ w-full text-left p-0 m-0 bg-transparent border-0
 					{layer.type === "Audio" && <Music className="w-3.5 h-3.5" />}
 				</div>
 				<span className="truncate font-medium text-[11px] leading-tight opacity-80">
-					{layer.name || layer.id}
+					{name}
 				</span>
 			</div>
 			{layer.animations && layer.animations.length > 0 && (
@@ -1303,7 +1341,7 @@ const InspectorPanel: React.FC = () => {
 		if (Array.isArray(fontList) && (fontList as string[])?.length > 0) {
 			return fontList as string[];
 		}
-		return ["Geist", "Inter", "Arial", "Courier New", "Times New Roman"];
+		return [];
 	}, [fontList]);
 	// Animation categories with icons for better UX
 	const animationCategories = useMemo(
@@ -1398,42 +1436,6 @@ const InspectorPanel: React.FC = () => {
 			prev.map((l) => (l.id === selectedId ? { ...l, ...patch } : l)),
 		);
 	};
-	const toggleItalic = () => {
-		if (!selectedLayer || selectedLayer.type !== "Text") return;
-
-		const current = selectedLayer.fontStyle === "italic" ? "normal" : "italic";
-
-		update({
-			fontStyle: current,
-			width: undefined,
-			height: undefined,
-		});
-	};
-
-	const toggleBold = () => {
-		if (!selectedLayer || selectedLayer.type !== "Text") return;
-
-		// Note: font-weight is a separate CSS property
-		const current = selectedLayer.fontWeight === "bold" ? "normal" : "bold";
-
-		update({
-			fontWeight: current,
-			width: undefined,
-			height: undefined,
-		});
-	};
-	const toggleUnderline = () => {
-		if (!selectedLayer || selectedLayer.type !== "Text") return;
-		update({
-			textDecoration:
-				selectedLayer.textDecoration === "underline" ? "" : "underline",
-			width: undefined, // Trigger re-measure
-			height: undefined,
-		});
-	};
-	const isBold = selectedLayer?.fontWeight?.includes("bold") ?? false;
-	const isItalic = selectedLayer?.fontStyle?.includes("italic") ?? false;
-	const isUnderline = selectedLayer?.textDecoration === "underline";
 	if (!selectedLayer) {
 		return (
 			<div className="w-80 h-full border-l border-white/5 bg-[#0f0f0f] flex flex-col z-20 shadow-xl shrink-0 overflow-hidden">
@@ -1543,16 +1545,6 @@ const InspectorPanel: React.FC = () => {
 							showScale={true}
 							showLockAspect={selectedLayer.type !== "Text"}
 							onChange={update}
-							onCenter={(axis) => {
-								// Logic for centering if needed, or pass NOOP/dummy if not implemented fully yet
-								// The new component expects onCenter.
-								// Let's implement basic centering logic here if possible, or just ignore.
-								// Since we don't have viewport dimensions in InspectorPanel easily (it's in parent),
-								// we might default to 0 or leave it empty?
-								// Ideally update(center...) logic should be here.
-								// For now, we update x/y relative to standard 1280x720 if unkonwn, but wait, InspectorPanel assumes we are just updating data.
-								// We'll stub it for now or implement if we can pass viewport info.
-							}}
 						/>
 					)}
 
@@ -1589,7 +1581,6 @@ const InspectorPanel: React.FC = () => {
 							align={selectedLayer.align}
 							letterSpacing={selectedLayer.letterSpacing}
 							lineHeight={selectedLayer.lineHeight}
-							wrap={selectedLayer.wrap}
 							onChange={update}
 						/>
 					)}
@@ -1613,10 +1604,12 @@ const InspectorPanel: React.FC = () => {
 						showBackground={
 							selectedLayer.type === "Image" || selectedLayer.type === "Video"
 						}
-						showStroke={true} // Enable for text too
-						showCornerRadius={selectedLayer.type !== "Text"}
+						showStroke={selectedLayer.type !== "Audio"} // Enable for text too
+						showCornerRadius={
+							selectedLayer.type !== "Text" && selectedLayer.type !== "Audio"
+						}
 						showPadding={selectedLayer.type === "Text"}
-						showOpacity={true}
+						showOpacity={selectedLayer.type !== "Audio"}
 						onChange={(updates) => {
 							const mappedUpdates: any = { ...updates };
 							// Map properties back
@@ -1630,8 +1623,6 @@ const InspectorPanel: React.FC = () => {
 								if (updates.strokeWidth !== undefined)
 									mappedUpdates.borderWidth = updates.strokeWidth;
 							}
-							// For Text, we use stroke/strokeWidth directly, so no mapping needed if StyleControls passed stroke/strokeWidth in updates (it does)
-
 							update(mappedUpdates);
 						}}
 					/>
@@ -1786,6 +1777,7 @@ export const VideoDesignerEditor: React.FC<VideoDesignerEditorProps> = ({
 }) => {
 	const nodeConfig = node.config as unknown as VideoCompositorNodeConfig;
 	// --- State ---
+	const handles = useAppSelector(handleSelectors.selectEntities);
 	const [layers, setLayers] = useState<ExtendedLayer[]>([]);
 	const [selectedId, setSelectedId] = useState<string | null>(null);
 	const [isDirty, setIsDirty] = useState(false);
@@ -1922,6 +1914,9 @@ export const VideoDesignerEditor: React.FC<VideoDesignerEditorProps> = ({
 						: DEFAULT_DURATION_FRAMES;
 				const src = item.type !== "Text" ? getAssetUrl(id) : undefined;
 				const text = item.type === "Text" ? getTextData(id) : undefined;
+				const handle = handles[id];
+				const name = handle?.label ?? handle.dataTypes[0] ?? id;
+
 				const base = {
 					id,
 					inputHandleId: id,
@@ -1938,6 +1933,7 @@ export const VideoDesignerEditor: React.FC<VideoDesignerEditorProps> = ({
 					src,
 					text,
 					...saved,
+					name: name,
 				};
 				if (item.type === "Text") {
 					const fontFamily = saved?.fontFamily ?? "Inter";

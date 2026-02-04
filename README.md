@@ -19,7 +19,7 @@ Stop switching between tools. Gatewai offers a unified interface for:
 * **Video**: Text-to-video and first-to-last frame interpolation powered by **Veo 3.1**, alongside professional video composition tools.
 * **Image**: Generative fill, real-time painting, and advanced editing tools (Blur, Crop, Modulate, etc.), with image generation powered by **Nano Banana**.
 * **Audio**: High-fidelity text-to-speech and deep audio understanding via the latest **Gemini 3** models.
-* **Text**: State-of-the-art LLM orchestration using **Gemini 3 Flash or Pro**, depending on your specific use case.
+* **Text**: LLM orchestration using **Gemini 3 Flash or Pro**, depending on your specific use case.
 
 ### Real-Time Creativity
 
