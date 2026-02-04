@@ -56,13 +56,13 @@ const GatewaiLogo = forwardRef<SVGSVGElement, GatewaiLogoProps>(
 			right: 75,
 			top: 6,
 			bottom: 18,
-			v: { left: 63, mid: 68, right: 71, peak: 13 },
+			v: { left: 64, mid: 68, right: 72, peak: 13 }, // Changed from 63, 68, 71 to 64, 68, 72
 		};
 
 		// Letter A (80-92)
 		const a2 = {
 			base: { left: 79, right: 91, y: 18 },
-			apex: { x: 83, y: 6 },
+			apex: { x: 85, y: 6 }, // Changed from 83 to 85 (centered)
 			crossbar: { y: 13, inset: 2 },
 		};
 

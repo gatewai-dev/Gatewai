@@ -153,12 +153,12 @@ const HomePage = () => {
 				{/* 1. Header / Nav (Top Row) */}
 				<div className="md:col-span-12 md:row-span-1 flex items-center justify-between px-2">
 					<div className="flex items-center gap-3">
-						<GatewaiLogo className="size-32 text-primary" />
+						<GatewaiLogo className="size-96 text-primary" />
 					</div>
 				</div>
 
 				{/* 2. Hero Block (Top-Left, Large) */}
-				<div className="md:col-span-7 md:row-span-7 bg-neutral-900/40 border border-neutral-800 rounded-3xl p-8 md:p-12 flex flex-col justify-center relative shadow-sm overflow-hidden">
+				<div className="md:col-span-7 md:row-span-6 bg-neutral-900/40 border border-neutral-800 rounded-3xl p-8 md:p-10 flex flex-col justify-center relative shadow-sm overflow-hidden">
 					<motion.div
 						initial={{ opacity: 0, y: 10 }}
 						animate={{ opacity: 1, y: 0 }}
@@ -166,7 +166,7 @@ const HomePage = () => {
 						className="space-y-8 z-10"
 					>
 						<h1
-							className="text-5xl md:text-7xl font-extrabold tracking-tighter leading-[0.9] text-white"
+							className="text-5xl md:text-6xl font-extrabold tracking-tighter leading-[0.9] text-white"
 							style={{ fontFamily: "'JetBrains Mono', monospace" }}
 						>
 							BUILD <br />
@@ -224,7 +224,7 @@ const HomePage = () => {
 				</div>
 
 				{/* 3. Visual Engine Block (Right Side, Vertical) */}
-				<div className="md:col-span-5 md:row-span-11 bg-neutral-950 border border-neutral-800 rounded-3xl relative overflow-hidden flex flex-col shadow-sm">
+				<div className="md:col-span-5 md:row-span-10 bg-neutral-950 border border-neutral-800 rounded-3xl relative overflow-hidden flex flex-col shadow-sm">
 					<div className="absolute top-6 left-6 z-10 bg-neutral-900/80 backdrop-blur-md px-4 py-1.5 rounded-full border border-neutral-800">
 						<span className="text-xs font-mono font-semibold text-primary tracking-wide">
 							VISUAL GRAPH ENGINE
