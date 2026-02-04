@@ -1,5 +1,11 @@
 # @gatewai/types
 
+## 0.0.9
+
+### Patch Changes
+
+- 99544c6: Editor fixes and layout updates
+
 ## 0.0.8
 
 ### Patch Changes

@@ -1,5 +1,14 @@
 # @gatewai/mcp-server
 
+## 0.0.9
+
+### Patch Changes
+
+- 99544c6: Editor fixes and layout updates
+- Updated dependencies [99544c6]
+  - @gatewai/api-client@0.0.9
+  - @gatewai/types@0.0.9
+
 ## 0.0.8
 
 ### Patch Changes
