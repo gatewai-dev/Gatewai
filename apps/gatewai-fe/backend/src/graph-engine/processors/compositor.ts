@@ -91,7 +91,7 @@ const compositorProcessor: NodeProcessor = async ({ node, data }) => {
 				rotation: 0,
 				zIndex: ++maxZ,
 				blendMode: "source-over",
-				...(type === "Text" ? { ...COMPOSITOR_DEFAULTS, width } : {}),
+				...(type === "Text" ? { ...COMPOSITOR_DEFAULTS } : {}),
 			});
 		}
 
@@ -157,7 +157,6 @@ const compositorProcessor: NodeProcessor = async ({ node, data }) => {
 					letterSpacing:
 						layerConfig.letterSpacing ?? COMPOSITOR_DEFAULTS.LETTER_SPACING,
 					textDecoration: layerConfig.textDecoration ?? "",
-					wrap: layerConfig.wrap ?? (hasWidth ? "word" : "none"),
 					padding: layerConfig.padding ?? COMPOSITOR_DEFAULTS.PADDING,
 					stroke: layerConfig.stroke,
 					strokeWidth:
