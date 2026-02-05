@@ -677,10 +677,6 @@ export class NodeGraphProcessor extends EventEmitter {
 				if (handle.required) {
 					// If parent Failed -> We block if Required.
 					if (parentState.status === TaskStatus.FAILED) return false;
-				} else {
-					// Optional handle.
-					// If parent Failed, we ignore it and proceed (ready = true for this handle).
-					// If parent Completed, we proceed.
 				}
 			}
 		}
@@ -1316,7 +1312,6 @@ export class NodeGraphProcessor extends EventEmitter {
 			const config = TextMergerNodeConfigSchema.parse(node.config);
 			// inputs record is already sorted by handle.createdAt due to collectInputs logic
 			const allTexts = Object.values(inputs).map(
-				// FIX: Handle missing/null output items (e.g. from empty LLM result)
 				(input) => input.outputItem?.data ?? "",
 			);
 			const resultText = allTexts.join(config.join);

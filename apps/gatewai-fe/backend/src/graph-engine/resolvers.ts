@@ -80,6 +80,12 @@ function getInputValue(
 	}
 
 	if (incoming.length > 1) {
+		incoming.sort((a, b) => {
+			const handleA = data.handles.find((h) => h.id === a.targetHandleId);
+			const handleB = data.handles.find((h) => h.id === b.targetHandleId);
+			return (handleA?.order ?? 0) - (handleB?.order ?? 0);
+		});
+
 		console.warn(
 			`Multiple ${options.dataType} edges${options.label ? ` with label "${options.label}"` : ""} connected to node ${targetNodeId}. Using the first one.`,
 		);
@@ -116,6 +122,12 @@ function getInputValuesByType(
 		});
 	}
 
+	incoming.sort((a, b) => {
+		const handleA = data.handles.find((h) => h.id === a.targetHandleId);
+		const handleB = data.handles.find((h) => h.id === b.targetHandleId);
+		return (handleA?.order ?? 0) - (handleB?.order ?? 0);
+	});
+
 	const values = incoming.map((edge) => resolveSourceValue(data, edge));
 	return values;
 }
@@ -129,6 +141,12 @@ function getAllInputValuesWithHandle(
 	targetNodeId: string,
 ) {
 	const incoming = data.edges.filter((e) => e.target === targetNodeId);
+
+	incoming.sort((a, b) => {
+		const handleA = data.handles.find((h) => h.id === a.targetHandleId);
+		const handleB = data.handles.find((h) => h.id === b.targetHandleId);
+		return (handleA?.order ?? 0) - (handleB?.order ?? 0);
+	});
 
 	const values = incoming.map((edge) => ({
 		handle: data.handles.find((h) => h.id === edge.targetHandleId),
