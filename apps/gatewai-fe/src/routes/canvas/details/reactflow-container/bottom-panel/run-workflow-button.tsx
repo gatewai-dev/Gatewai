@@ -34,7 +34,12 @@ const RunWorkflowButton = memo(() => {
 	};
 
 	const ButtonLabel = useMemo(() => {
-		if (isAnyTaskRunning) return "Running..."; // Optional: Change text while running
+		if (isAnyTaskRunning) {
+			if (numberOfTerminalNodes == null || numberOfTerminalNodes === 0) {
+				return "Queue Workflow";
+			}
+			return `Queue ${numberOfTerminalNodes} Node${numberOfTerminalNodes > 1 ? "s" : ""}`;
+		}
 		if (numberOfTerminalNodes == null || numberOfTerminalNodes === 0) {
 			return "Run Workflow";
 		}
@@ -44,8 +49,8 @@ const RunWorkflowButton = memo(() => {
 	return (
 		<Button
 			variant="default"
-			// Disable if no terminal nodes OR if something is already running
-			disabled={!hasAnyTerminalNode || isAnyTaskRunning}
+			// Disable if no terminal nodes
+			disabled={!hasAnyTerminalNode}
 			className="rounded-full px-4 gap-2 shadow-sm"
 			onClick={handleRunAll}
 		>
