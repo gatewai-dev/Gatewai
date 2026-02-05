@@ -21,6 +21,8 @@ export function AgentChatSection({ onClose }: { onClose: () => void }) {
 		selectedModel,
 		setSelectedModel,
 		updatePatchStatus,
+		error,
+		clearError,
 	} = useCanvasAgent();
 
 	// Refs
@@ -172,6 +174,8 @@ export function AgentChatSection({ onClose }: { onClose: () => void }) {
 					textareaRef={textareaRef}
 					selectedModel={selectedModel}
 					setSelectedModel={setSelectedModel}
+					error={error}
+					clearError={clearError}
 				/>
 			) : (
 				<>
@@ -225,6 +229,8 @@ export function AgentChatSection({ onClose }: { onClose: () => void }) {
 							textareaRef={textareaRef}
 							selectedModel={selectedModel}
 							setSelectedModel={setSelectedModel}
+							error={error}
+							clearError={clearError}
 						/>
 						<p className="text-center mt-2 text-[9px] text-muted-foreground/60 pointer-events-auto">
 							AI may make mistakes. Double-check all generated workflow.

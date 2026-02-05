@@ -1,4 +1,4 @@
-import { ArrowRight, StopCircle } from "lucide-react";
+import { ArrowRight, StopCircle, XCircle } from "lucide-react";
 import type { AutosizeTextAreaRef } from "@/components/ui/autosize-textarea";
 import { AutosizeTextarea } from "@/components/ui/autosize-textarea";
 import { Button } from "@/components/ui/button";
@@ -27,6 +27,8 @@ interface InputAreaProps {
 	textareaRef: React.RefObject<AutosizeTextAreaRef | null>;
 	selectedModel: string;
 	setSelectedModel: (value: string) => void;
+	error?: string | null;
+	clearError?: () => void;
 }
 
 export function InputArea({
@@ -39,6 +41,8 @@ export function InputArea({
 	textareaRef,
 	selectedModel,
 	setSelectedModel,
+	error,
+	clearError,
 }: InputAreaProps) {
 	// AutosizeTextarea handles resizing internally.
 
@@ -56,6 +60,26 @@ export function InputArea({
 				!centered && "pointer-events-auto",
 			)}
 		>
+			{error && (
+				<div className="mb-2 mx-1 flex items-center justify-between gap-3 px-3 py-2 rounded-lg bg-background/60 backdrop-blur-md border border-foreground/5 shadow-sm animate-in slide-in-from-bottom-2 duration-200">
+					<div className="flex items-center gap-2.5">
+						<div className="h-1.5 w-1.5 rounded-full bg-orange-500/80 shrink-0" />
+						<span className="text-xs font-medium text-foreground/80">
+							{error}
+						</span>
+					</div>
+					{clearError && (
+						<Button
+							size="icon"
+							variant="ghost"
+							onClick={clearError}
+							className="h-5 w-5 -mr-1 text-muted-foreground/60 hover:text-foreground hover:bg-foreground/5 rounded-full transition-colors"
+						>
+							<XCircle className="h-3.5 w-3.5" />
+						</Button>
+					)}
+				</div>
+			)}
 			<div
 				className={cn(
 					"relative flex flex-col gap-1.5 p-1 rounded-xl border transition-all duration-200",

@@ -58,6 +58,8 @@ type CanvasAgentContextType = {
 	) => void;
 	selectedModel: string;
 	setSelectedModel: (model: string) => void;
+	error: string | null;
+	clearError: () => void;
 };
 
 const CanvasAgentContext = createContext<CanvasAgentContextType | undefined>(
@@ -196,6 +198,8 @@ const CanvasAgentProvider = ({
 		clearPendingPatch,
 		updateMessage,
 		updatePatchStatus,
+		error,
+		clearError,
 	} = useAgentChatStream(canvasId, activeSessionId || "", selectedModel);
 
 	return (
@@ -216,6 +220,8 @@ const CanvasAgentProvider = ({
 				updatePatchStatus,
 				selectedModel,
 				setSelectedModel,
+				error,
+				clearError,
 			}}
 		>
 			{children}

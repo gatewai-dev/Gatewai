@@ -57,6 +57,7 @@ export function useAgentChatStream(
 	const [messages, setMessages] = useState<ChatMessage[]>([]);
 	const [isRequestPending, setIsRequestPending] = useState(false);
 	const [pendingPatchId, setPendingPatchId] = useState<string | null>(null);
+	const [error, setError] = useState<string | null>(null);
 	const abortControllerRef = useRef<AbortController | null>(null);
 
 	// Shared handler for processing stream events
@@ -296,12 +297,20 @@ export function useAgentChatStream(
 					},
 				);
 
+				if (!response.ok) {
+					console.log("Error", response);
+					const errorText = await response.text();
+					console.log("Error text", errorText);
+					throw new Error(errorText || "Failed to send message");
+				}
+
 				if (!response.body) throw new Error("No response body");
 
 				await processStream(response.body.getReader(), aiMsgId);
 			} catch (error) {
 				if (error instanceof Error && error.name !== "AbortError") {
 					console.error("Send message error:", error);
+					setError(error.message);
 					// Mark message as not streaming if error
 					setMessages((prev) =>
 						prev.map((msg) =>
@@ -321,6 +330,10 @@ export function useAgentChatStream(
 		if (abortControllerRef.current) {
 			abortControllerRef.current.abort();
 		}
+		// Ensure that any streaming message is marked as done
+		setMessages((prev) =>
+			prev.map((msg) => (msg.isStreaming ? { ...msg, isStreaming: false } : msg)),
+		);
 		if (sessionId && canvasId) {
 			try {
 				await rpcClient.api.v1.canvas[":id"].agent[":sessionId"].stop.$post({
@@ -357,6 +370,8 @@ export function useAgentChatStream(
 		[],
 	);
 
+	const clearError = useCallback(() => setError(null), []);
+
 	const isStreaming = messages.some((m) => m.isStreaming && m.role === "model");
 	const isLoading = isRequestPending || isStreaming;
 
@@ -370,5 +385,7 @@ export function useAgentChatStream(
 		clearPendingPatch,
 		updateMessage,
 		updatePatchStatus,
+		error,
+		clearError,
 	};
 }

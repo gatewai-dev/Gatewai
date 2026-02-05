@@ -10,6 +10,8 @@ interface EmptyStateProps {
 	textareaRef: React.RefObject<AutosizeTextAreaRef | null>;
 	selectedModel: string;
 	setSelectedModel: (value: string) => void;
+	error?: string | null;
+	clearError?: () => void;
 }
 
 export function EmptyState({
@@ -21,6 +23,8 @@ export function EmptyState({
 	textareaRef,
 	selectedModel,
 	setSelectedModel,
+	error,
+	clearError,
 }: EmptyStateProps) {
 	return (
 		<div className="flex-1 flex flex-col items-center justify-center p-2">
@@ -43,6 +47,8 @@ export function EmptyState({
 					textareaRef={textareaRef}
 					selectedModel={selectedModel}
 					setSelectedModel={setSelectedModel}
+					error={error}
+					clearError={clearError}
 				/>
 			</div>
 		</div>
