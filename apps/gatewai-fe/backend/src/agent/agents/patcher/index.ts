@@ -1,11 +1,5 @@
 import assert from "node:assert";
-import {
-	type Edge,
-	type Handle,
-	type Node,
-	type NodeTemplate,
-	prisma,
-} from "@gatewai/db";
+import { type NodeTemplate, prisma } from "@gatewai/db";
 import { type BulkUpdatePayload, bulkUpdateSchema } from "@gatewai/types";
 import { Agent, tool } from "@openai/agents";
 import { getQuickJS, type QuickJSContext, Scope } from "quickjs-emscripten";
@@ -265,7 +259,15 @@ export function createPatcherAgent(
 					const errorHandle = scope.manage(resultHandle.error);
 					const error = context.dump(errorHandle);
 					console.error("[VM] Execution error dump:", error);
-					throw new Error(error);
+
+					let errorMsg = String(error);
+					if (typeof error === "object" && error !== null) {
+						const name = (error as any).name || "Error";
+						const message = (error as any).message || JSON.stringify(error);
+						const stack = (error as any).stack || "";
+						errorMsg = `${name}: ${message}\n${stack}`;
+					}
+					throw new Error(errorMsg);
 				}
 
 				const valueHandle = scope.manage(resultHandle.value);
@@ -381,101 +383,136 @@ export function createPatcherAgent(
 	});
 	const schemaString = JSON.stringify(jsonSchema, null, 2);
 
-	const systemPrompt = `You are a Canvas Patcher Agent. Your job is to write JavaScript code that transforms canvas state.
+	const systemPrompt = `You are a Canvas Patcher Agent. Your job is to write JavaScript code that transforms canvas state with precision.
+You are executing in a sandboxed QuickJS environment.
 
-## Your Tools
+## Your Workflow
+1. **Analyze**: Read the task and the current canvas state.
+2. **Plan**: Decide which nodes to add, remove, or modify.
+3. **Write Code**: Use \`execute_canvas_code\` to apply changes.
+4. **Verify**: Ensure your code returns the updated \`{ nodes, edges, handles }\` object.
+5. **Submit**: Call \`submit_patch\` once validation passes.
 
-1. **prepare_canvas** - MUST call first to fetch canvas state
-2. **execute_canvas_code** - Write and execute JS code to transform the canvas
-3. **submit_patch** - Submit the final patch for user review
+## Critical Rules (Violating these causes automatic validation failure)
+1. **IDs**: ALWAYS use \`generateId()\` for new Nodes, Handles, and Edges. Never hardcode strings.
+2. **Handle Types**: Input handles must be Type "Input". Output handles must be Type "Output".
+3. **Data Types**: Edges can only connect handles if they share a common dataType (e.g., both support "Image").
+4. **Topology**:
+   - **One Input Rule**: An "Input" handle can have AT MOST ONE incoming edge.
+   - **No Cycles**: Do not create circular dependencies.
+   - **No Self-Loops**: A node cannot connect to itself.
+5. **Compositor/VideoCompositor Configs**:
+   - If configuring \`layerUpdates\`, the KEYS of the object MUST be the valid **ID of the Input Handle**, not the handle name or label.
+   - Example: \`config: { layerUpdates: { [handleId]: { opacity: 0.5 } } }\`
+6. **VideoCompositor**: This node CANNOT have Output handles. It is a terminal node.
+7. **VideoGen**: Maximum 3 image inputs allowed.
 
-## Workflow
+## Layout & Positioning
+- New nodes should be positioned to avoid overlapping existing nodes.
+- Default spacing: 500px horizontal, 400px vertical.
+- Default width: 340px.
 
-1. Extract canvasId and agentSessionId from the task description
-2. Call prepare_canvas with canvasId and agentSessionId
-3. Write JavaScript code to make the required changes
-4. Call execute_canvas_code with your code
-5. If it fails, fix the code and retry
-6. Once successful, call submit_patch
+## Global Variables Available in \`execute_canvas_code\`
+- \`nodes\`: Array of Node objects.
+- \`edges\`: Array of Edge objects.
+- \`handles\`: Array of Handle objects.
+- \`templates\`: Array of NodeTemplate objects (contains \`templateHandles\`).
+- \`generateId()\`: Function to create UUIDs.
+- \`console.log(...args)\`: For debugging.
 
-## Code Guidelines
+## How to Create a Node Correctly
+1. **Find Template**: \`const t = templates.find(t => t.type === 'MyType');\`
+2. **Create Node**: Push to \`nodes\` array. Use \`templateId: t.id\`.
+3. **Create Handles**: Iterate \`t.templateHandles\`. Create a NEW handle for each, copying \`dataTypes\`, \`label\`, \`type\`, and \`required\`. **Set \`nodeId\` to the new node's ID.**
+4. **Connect**: Find source/target handles in the \`handles\` array by \`nodeId\` and \`type\`.
 
-- Code will be run in a sandboxed environment with quickjs-emscripten.
-- Use generateId() for ALL new IDs
-- Access current state via: nodes, edges, handles
-- Access templates via: templates (each has .templateHandles array)
-- Return { nodes, edges, handles } at the end
-- Copy template handle properties EXACTLY (dataTypes, label, required)
-- Position new nodes with proper spacing (500px horizontal, 450px vertical)
-- **Strings with Newlines**: When generating text content with multiple lines, use \`\\n\` characters. DO NOT double-escape them as \`\\\\n\`. The string should look like "Line 1\\nLine 2" in the code, so it becomes a real newline in the resulting string.
-
-## Validation Schema
-
-The output of executeCanvasCodeTool will be validated against the following JSON Schema. 
-Pay special attention to the "config" property of nodes, as it varies by node type.
-Use this schema to understand valid properties and types for node configurations.
+## Validation Schema Reference
+Your output must strictly adhere to this schema. Pay close attention to \`config\` objects.
 
 \`\`\`json
 ${schemaString}
 \`\`\`
 
-## Common Patterns
+## Code Examples
 
-**Add a node with handles:**
+### 1. Adding a Compositor Node (Advanced Config)
 \`\`\`javascript
 const nodeId = generateId();
-const template = templates.find(t => t.type === 'ImageGen');
+const template = templates.find(t => t.type === 'Compositor');
 
-// Add the node
+// 1. Create Node
 nodes.push({
   id: nodeId,
-  name: 'Generate Image',
-  type: 'ImageGen',
+  name: 'Combiner',
+  type: 'Compositor',
   templateId: template.id,
-  position: { x: 600, y: 100 },
+  position: { x: 800, y: 200 },
   width: 340,
-  config: template.defaultConfig || {
-    // Refer to the schema for valid config properties per node type
-    model: 'gemini-2.5-flash-image',
-    aspectRatio: '1:1',
-    imageSize: '1K'
-  }
+  config: { layerUpdates: {} } // Initialize empty
 });
 
-// Add handles from template
+// 2. Create Handles & Track IDs for Config
+const inputHandleIds = [];
 template.templateHandles.forEach((th) => {
+  const hId = generateId();
   handles.push({
-	id: generateId(),
-	type: th.type,
-	dataTypes: th.dataTypes,
-	label: th.label,
-	order: th.order,
-	nodeId: nodeId,
-	required: th.required || false,
-	templateHandleId: th.id
+    id: hId,
+    type: th.type, // 'Input' or 'Output'
+    dataTypes: th.dataTypes,
+    label: th.label,
+    order: th.order,
+    nodeId: nodeId,
+    required: th.required || false,
+    templateHandleId: th.id
   });
+  
+  if (th.type === 'Input') inputHandleIds.push(hId);
 });
+
+// 3. Update Config (using Handle IDs as keys)
+const nodeIndex = nodes.findIndex(n => n.id === nodeId);
+if (inputHandleIds.length > 0) {
+  // Example: Set first layer opacity to 1
+  nodes[nodeIndex].config = {
+    layerUpdates: {
+       [inputHandleIds[0]]: { opacity: 1.0, blendingMode: 'normal' }
+    }
+  };
+}
 
 return { nodes, edges, handles };
 \`\`\`
 
-**Connect two nodes:**
+### 2. Connecting Two Nodes Safely
 \`\`\`javascript
+// Assume sourceNodeId and targetNodeId exist
 const sourceHandle = handles.find(h => h.nodeId === sourceNodeId && h.type === 'Output');
 const targetHandle = handles.find(h => h.nodeId === targetNodeId && h.type === 'Input');
 
-edges.push({
-  id: generateId(),
-  source: sourceNodeId,
-  target: targetNodeId,
-  sourceHandleId: sourceHandle.id,
-  targetHandleId: targetHandle.id
-});
+if (sourceHandle && targetHandle) {
+  // CHECK: Data Type Compatibility
+  const hasCommonType = sourceHandle.dataTypes.some(dt => targetHandle.dataTypes.includes(dt));
+  
+  // CHECK: Target Input Availability (Max 1 edge per input)
+  const isOccupied = edges.some(e => e.targetHandleId === targetHandle.id);
+  
+  if (hasCommonType && !isOccupied) {
+    edges.push({
+      id: generateId(),
+      source: sourceNodeId,
+      target: targetNodeId,
+      sourceHandleId: sourceHandle.id,
+      targetHandleId: targetHandle.id
+    });
+  } else {
+    console.log("Cannot connect: Incompatible types or input occupied");
+  }
+}
 
 return { nodes, edges, handles };
 \`\`\`
 
-Be thorough and precise. Always validate your code logic before executing.`;
+Always validate your logic. If you manipulate \`config\`, verify keys are valid handle IDs.`;
 
 	return new Agent({
 		name: "Canvas_Patcher",

@@ -214,6 +214,42 @@ export async function applyCanvasUpdate(
 		}
 	}
 
+	// --- PHASE 2B: Fix Config References (Remap Handle IDs in Node Configs) ---
+	// Since Nodes are processed before Handles, we need to do a pass here to fix any
+	// references in node configs (like layerUpdates) that point to temp handle IDs
+	// which have now been remapped to server IDs.
+
+	const fixNodeConfig = (node: any) => {
+		if (
+			(node.type === "Compositor" || node.type === "VideoCompositor") &&
+			node.config?.layerUpdates
+		) {
+			const newLayerUpdates: Record<string, any> = {};
+			let hasChanges = false;
+
+			for (const [key, value] of Object.entries(node.config.layerUpdates)) {
+				// check if this key (handleId) was remapped
+				const remappedId = idMap.handles.get(key);
+				if (remappedId) {
+					newLayerUpdates[remappedId] = value;
+					hasChanges = true;
+				} else {
+					newLayerUpdates[key] = value;
+				}
+			}
+
+			if (hasChanges) {
+				node.config = {
+					...node.config,
+					layerUpdates: newLayerUpdates,
+				};
+			}
+		}
+	};
+
+	ops.nodes.create.forEach(fixNodeConfig);
+	ops.nodes.update.forEach(fixNodeConfig);
+
 	// --- PHASE 3: Prepare Transaction ---
 	const deleteIds = {
 		edges: Array.from(dbState.edgeIds).filter(

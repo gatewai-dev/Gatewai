@@ -4,6 +4,7 @@ interface InternalFetchOptions extends RequestInit {
 	timeout?: number;
 	retries?: number;
 	retryDelay?: number;
+	dispatcher?: any;
 }
 
 export const createResilientFetch = (
@@ -15,10 +16,18 @@ export const createResilientFetch = (
 		retryDelay: defaultRetryDelay = 1000,
 	} = defaultOptions;
 
-	return async (url: string | URL | Request, options: RequestInit = {}) => {
-		const retries = (options as any).retries ?? defaultRetries;
-		const retryDelay = (options as any).retryDelay ?? defaultRetryDelay;
-		const timeout = (options as any).timeout ?? defaultTimeout;
+	return async (
+		url: string | URL | Request,
+		options: InternalFetchOptions = {},
+	) => {
+		const {
+			retries = defaultRetries,
+			retryDelay = defaultRetryDelay,
+			timeout = defaultTimeout,
+			dispatcher,
+			signal,
+			...fetchOptions
+		} = options;
 
 		let lastError: any;
 
@@ -26,18 +35,18 @@ export const createResilientFetch = (
 			const controller = new AbortController();
 			const timeoutId = setTimeout(() => controller.abort(), timeout);
 
+			const onAbort = () => controller.abort();
 			// Chain existing signal if provided
-			if (options.signal) {
-				options.signal.addEventListener("abort", () => controller.abort());
+			if (signal) {
+				signal.addEventListener("abort", onAbort, { once: true });
 			}
 
 			try {
 				const response = await fetch(url, {
-					...options,
+					...fetchOptions,
 					signal: controller.signal,
-					// @ts-expect-error - dispatcher is specific to undici/node-fetch environments
-					dispatcher: (options as any).dispatcher,
-				});
+					dispatcher,
+				} as RequestInit & { dispatcher?: any });
 
 				// Check for 5xx errors or 429 to retry
 				if (response.status >= 500 || response.status === 429) {
@@ -50,7 +59,7 @@ export const createResilientFetch = (
 				const isAbort = error.name === "AbortError";
 
 				// Don't retry if it was explicitly aborted by the caller (and not our timeout)
-				if (isAbort && options.signal?.aborted) {
+				if (isAbort && signal?.aborted) {
 					throw error;
 				}
 
@@ -67,6 +76,9 @@ export const createResilientFetch = (
 				}
 			} finally {
 				clearTimeout(timeoutId);
+				if (signal) {
+					signal.removeEventListener("abort", onAbort);
+				}
 			}
 		}
 
