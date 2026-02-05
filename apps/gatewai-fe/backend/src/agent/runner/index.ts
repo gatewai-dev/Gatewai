@@ -1,9 +1,9 @@
 import { run } from "@openai/agents";
+import { logger } from "../../logger.js";
 import { CreateOrchestratorAgentForCanvas } from "../agents/orchestrator/index.js";
 import { PrismaAgentSession } from "../session/gatewai-session.js";
 import { connectMCP } from "../tools/gatewai-mcp.js";
 import { GatewaiRunContext } from "./run-context.js";
-import { logger } from "../../logger.js";
 
 export const RunCanvasAgent = async function* ({
 	canvasId,

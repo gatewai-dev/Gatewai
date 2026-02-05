@@ -332,7 +332,9 @@ export function useAgentChatStream(
 		}
 		// Ensure that any streaming message is marked as done
 		setMessages((prev) =>
-			prev.map((msg) => (msg.isStreaming ? { ...msg, isStreaming: false } : msg)),
+			prev.map((msg) =>
+				msg.isStreaming ? { ...msg, isStreaming: false } : msg,
+			),
 		);
 		if (sessionId && canvasId) {
 			try {
