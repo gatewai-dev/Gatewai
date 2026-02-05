@@ -358,7 +358,6 @@ export const bulkUpdateSchema = z
 				});
 			}
 
-			// Data type compatibility validation
 			if (edge.sourceHandleId && edge.targetHandleId) {
 				const connectionKey = `${edge.sourceHandleId}|${edge.targetHandleId}`;
 				if (connectionSet.has(connectionKey)) {
@@ -369,21 +368,6 @@ export const bulkUpdateSchema = z
 					});
 				}
 				connectionSet.add(connectionKey);
-
-				const sh = handleMap.get(edge.sourceHandleId);
-				const th = handleMap.get(edge.targetHandleId);
-				if (sh && th) {
-					const compatible = sh.dataTypes.some((dt) =>
-						th.dataTypes.includes(dt),
-					);
-					if (!compatible) {
-						ctx.addIssue({
-							code: "custom",
-							path: ["edges", index],
-							message: `Data types between source (${sh.dataTypes.join(", ")}) and target (${th.dataTypes.join(", ")}) handles are incompatible.`,
-						});
-					}
-				}
 			}
 		});
 
@@ -433,5 +417,38 @@ export const bulkUpdateSchema = z
 			});
 		}
 	});
+
+export const agentBulkUpdateSchema = bulkUpdateSchema.superRefine(
+	(val, ctx) => {
+		const { edges = [], handles = [] } = val;
+
+		const handleMap = new Map<string, z.infer<typeof handleSchema>>();
+		handles.forEach((handle) => {
+			if (handle.id) {
+				handleMap.set(handle.id, handle);
+			}
+		});
+
+		edges.forEach((edge, index) => {
+			// Data type compatibility validation (Strict for Agents)
+			if (edge.sourceHandleId && edge.targetHandleId) {
+				const sh = handleMap.get(edge.sourceHandleId);
+				const th = handleMap.get(edge.targetHandleId);
+				if (sh && th) {
+					const compatible = sh.dataTypes.some((dt) =>
+						th.dataTypes.includes(dt),
+					);
+					if (!compatible) {
+						ctx.addIssue({
+							code: "custom",
+							path: ["edges", index],
+							message: `Data types between source (${sh.dataTypes.join(", ")}) and target (${th.dataTypes.join(", ")}) handles are incompatible.`,
+						});
+					}
+				}
+			}
+		});
+	},
+);
 
 export type BulkUpdatePayload = z.infer<typeof bulkUpdateSchema>;

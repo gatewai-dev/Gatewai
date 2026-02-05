@@ -1,6 +1,6 @@
 import assert from "node:assert";
 import { type NodeTemplate, prisma } from "@gatewai/db";
-import { type BulkUpdatePayload, bulkUpdateSchema } from "@gatewai/types";
+import { agentBulkUpdateSchema, type BulkUpdatePayload } from "@gatewai/types";
 import { Agent, tool } from "@openai/agents";
 import { getQuickJS, type QuickJSContext, Scope } from "quickjs-emscripten";
 import { z } from "zod";
@@ -294,7 +294,7 @@ export function createPatcherAgent(
 					handles: result.handles,
 				};
 
-				const validationResult = bulkUpdateSchema.safeParse(payload);
+				const validationResult = agentBulkUpdateSchema.safeParse(payload);
 				if (!validationResult.success) {
 					const errors = validationResult.error.issues
 						.map((i) => `${i.path.join(".")}: ${i.message}`)
@@ -378,7 +378,7 @@ export function createPatcherAgent(
 	});
 
 	// Generate JSON schema for validation reference
-	const jsonSchema = zodToJsonSchema(bulkUpdateSchema, {
+	const jsonSchema = zodToJsonSchema(agentBulkUpdateSchema, {
 		name: "bulkUpdateSchema",
 	});
 	const schemaString = JSON.stringify(jsonSchema, null, 2);

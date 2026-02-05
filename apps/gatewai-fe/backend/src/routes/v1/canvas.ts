@@ -1,5 +1,6 @@
 import { prisma } from "@gatewai/db";
 import {
+	agentBulkUpdateSchema,
 	type BulkUpdatePayload,
 	bulkUpdateSchema,
 	processSchema,
@@ -187,7 +188,7 @@ const canvasRoutes = new Hono<{ Variables: AuthHonoTypes }>({
 	})
 	.post(
 		"/:id/patches",
-		zValidator("json", bulkUpdateSchema),
+		zValidator("json", agentBulkUpdateSchema),
 		zValidator("query", createPatchQuerySchema),
 		async (c) => {
 			const id = c.req.param("id");
