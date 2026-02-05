@@ -79,7 +79,17 @@ async function processAgentJob(job: Job) {
 		if (error instanceof Error && error.name === "AbortError") {
 			logger.info(`Session ${sessionId} was aborted.`);
 		} else {
-			logger.error({ err: error, sessionId }, `Error in session`);
+			// Sanitize error to avoid circular references (e.g. from Axios errors)
+			const safeError =
+				error instanceof Error
+					? {
+						name: error.name,
+						message: error.message,
+						stack: error.stack,
+						cause: (error as any).cause,
+					}
+					: error;
+			logger.error({ err: safeError, sessionId }, `Error in session`);
 			const errorEvent: GatewaiErrorEvent = {
 				type: "error",
 				error: error instanceof Error ? error.message : "Unknown error",

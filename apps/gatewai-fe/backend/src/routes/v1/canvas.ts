@@ -49,11 +49,11 @@ const canvasRoutes = new Hono<{ Variables: AuthHonoTypes }>({
 						isAPICanvas: false,
 						...(q
 							? {
-									name: {
-										contains: q,
-										mode: "insensitive",
-									},
-								}
+								name: {
+									contains: q,
+									mode: "insensitive",
+								},
+							}
 							: {}),
 					},
 					orderBy: {
@@ -83,11 +83,11 @@ const canvasRoutes = new Hono<{ Variables: AuthHonoTypes }>({
 					isAPICanvas: false,
 					...(q
 						? {
-								name: {
-									contains: q,
-									mode: "insensitive",
-								},
-							}
+							name: {
+								contains: q,
+								mode: "insensitive",
+							},
+						}
 						: {}),
 				},
 				orderBy: {
@@ -658,7 +658,7 @@ const canvasRoutes = new Hono<{ Variables: AuthHonoTypes }>({
 	)
 	.post("/:id/agent/:sessionId/stop", async (c) => {
 		const sessionId = c.req.param("sessionId");
-		const stopped = AgentRunnerManager.stop(sessionId);
+		const stopped = await AgentRunnerManager.stop(sessionId);
 		return c.json({ success: stopped });
 	})
 	.get("/:id/agent/:sessionId/stream", async (c) => {

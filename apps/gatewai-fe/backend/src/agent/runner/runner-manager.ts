@@ -1,5 +1,6 @@
 import { agentQueue } from "../../lib/agent-queue.js";
 import { redisPublisher } from "../../lib/redis.js";
+import { logger } from "../../logger.js";
 
 // A Agent runner that uses BullMQ and redis for the events
 // biome-ignore lint/complexity/noStaticOnlyClass: Required for context
@@ -20,8 +21,9 @@ export class AgentRunnerManager {
 		if (existingJob) {
 			const state = await existingJob.getState();
 			if (state === "active" || state === "waiting" || state === "delayed") {
-				console.log(
-					`Session ${sessionId} is already running (Job state: ${state}).`,
+				logger.info(
+					{ sessionId, state },
+					`Session is already running (Job state: ${state}).`,
 				);
 				return;
 			}
@@ -38,16 +40,7 @@ export class AgentRunnerManager {
 			},
 			{
 				jobId: sessionId,
-				removeOnComplete: true, // Auto clean up completed jobs to allow re-running same session if needed?
-				// Actually, if we use same sessionId for multiple turns, we might have ID collision if checking existingJob.
-				// BUT, usually a session is a long living thing?
-				// Wait, "Session" in the user's context seems to be a chat session.
-				// The `RunCanvasAgent` runs an exchange.
-				// If the user sends another message, is it the same sessionId?
-				// The API route `POST /:id/agent/:sessionId` implies yes.
-				// If so, `jobId: sessionId` means we can only have one job per session *at a time*.
-				// Which is correct, we generally queue messages.
-				// But `removeOnComplete: true` is important so we can add a NEW job for the next message.
+				removeOnComplete: true,
 				removeOnFail: false,
 			},
 		);

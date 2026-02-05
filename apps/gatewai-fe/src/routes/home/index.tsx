@@ -130,7 +130,7 @@ const NodeCanvas = () => {
 const HomePage = () => {
 	return (
 		<main
-			className="relative h-screen w-full bg-background text-foreground overflow-y-auto md:overflow-hidden p-4 md:p-6"
+			className="relative min-h-screen w-full bg-background text-foreground p-4 md:p-6"
 			style={{ fontFamily: "'Outfit', sans-serif" }}
 		>
 			<Helmet>
@@ -153,7 +153,7 @@ const HomePage = () => {
 				{/* 1. Header / Nav (Top Row) */}
 				<div className="md:col-span-12 md:row-span-1 flex items-center justify-between px-2">
 					<div className="flex items-center gap-3">
-						<GatewaiLogo className="size-96 text-primary" />
+						<GatewaiLogo className="size-12 text-primary" />
 					</div>
 				</div>
 

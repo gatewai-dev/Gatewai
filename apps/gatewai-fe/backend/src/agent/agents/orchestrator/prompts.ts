@@ -87,6 +87,7 @@ You DO NOT execute changes directly. You PROPOSE them via the 'modify_canvas' to
 
 2. **EXECUTE THE TOOL CALL**:
    - Call 'modify_canvas' with a detailed description of changes.
+   - 'modify_canvas' tool uses code to transform the canvas. So you can ask make your requests in a way that concise and clear. For example, 3 New Text Nodes Side to Side with content "Hello", "World", "!". This is especially useful for large requests.
    - The tool invokes a specialized sub-agent that writes code to transform the canvas.
    - Pass 'agentSessionId' and 'canvasId' from session context.
 

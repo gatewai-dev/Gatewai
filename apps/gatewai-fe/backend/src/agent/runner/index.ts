@@ -3,6 +3,7 @@ import { CreateOrchestratorAgentForCanvas } from "../agents/orchestrator/index.j
 import { PrismaAgentSession } from "../session/gatewai-session.js";
 import { connectMCP } from "../tools/gatewai-mcp.js";
 import { GatewaiRunContext } from "./run-context.js";
+import { logger } from "../../logger.js";
 
 export const RunCanvasAgent = async function* ({
 	canvasId,
@@ -32,9 +33,9 @@ export const RunCanvasAgent = async function* ({
 			context,
 			signal,
 		});
-		console.log(context.getToolLogs());
+		logger.debug({ toolLogs: context.getToolLogs() }, "Agent run completed");
 		for await (const chunk of result.toStream()) {
-			console.log({ chunk: JSON.stringify(chunk, null, 2) });
+			logger.debug({ chunk }, "Agent stream chunk");
 			yield chunk;
 		}
 	} finally {
