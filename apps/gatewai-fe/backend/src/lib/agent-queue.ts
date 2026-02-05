@@ -25,6 +25,9 @@ async function processAgentJob(job: Job) {
 	try {
 		logger.info({ sessionId }, "Starting agent job");
 
+		// Clear previous accumulated text to avoid phantom typing
+		await redisPublisher.del(accumulatedKey);
+
 		const runner = RunCanvasAgent({
 			canvasId,
 			sessionId,
@@ -83,11 +86,11 @@ async function processAgentJob(job: Job) {
 			const safeError =
 				error instanceof Error
 					? {
-						name: error.name,
-						message: error.message,
-						stack: error.stack,
-						cause: (error as any).cause,
-					}
+							name: error.name,
+							message: error.message,
+							stack: error.stack,
+							cause: (error as any).cause,
+						}
 					: error;
 			logger.error({ err: safeError, sessionId }, `Error in session`);
 			const errorEvent: GatewaiErrorEvent = {

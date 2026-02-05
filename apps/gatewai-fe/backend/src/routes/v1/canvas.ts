@@ -49,11 +49,11 @@ const canvasRoutes = new Hono<{ Variables: AuthHonoTypes }>({
 						isAPICanvas: false,
 						...(q
 							? {
-								name: {
-									contains: q,
-									mode: "insensitive",
-								},
-							}
+									name: {
+										contains: q,
+										mode: "insensitive",
+									},
+								}
 							: {}),
 					},
 					orderBy: {
@@ -83,11 +83,11 @@ const canvasRoutes = new Hono<{ Variables: AuthHonoTypes }>({
 					isAPICanvas: false,
 					...(q
 						? {
-							name: {
-								contains: q,
-								mode: "insensitive",
-							},
-						}
+								name: {
+									contains: q,
+									mode: "insensitive",
+								},
+							}
 						: {}),
 				},
 				orderBy: {
@@ -610,12 +610,18 @@ const canvasRoutes = new Hono<{ Variables: AuthHonoTypes }>({
 			c.header("Connection", "keep-alive");
 
 			// Start the agent runner in the background
-			await AgentRunnerManager.start({
+			const started = await AgentRunnerManager.start({
 				canvasId,
 				sessionId,
 				message,
 				model,
 			});
+
+			if (!started) {
+				throw new HTTPException(409, {
+					message: "Agent is currently busy with another request.",
+				});
+			}
 
 			return streamSSE(c, async (stream) => {
 				const channel = `agent:session:${sessionId}`;

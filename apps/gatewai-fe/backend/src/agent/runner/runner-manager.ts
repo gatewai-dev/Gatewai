@@ -25,7 +25,7 @@ export class AgentRunnerManager {
 					{ sessionId, state },
 					`Session is already running (Job state: ${state}).`,
 				);
-				return;
+				return false;
 			}
 		}
 
@@ -44,6 +44,7 @@ export class AgentRunnerManager {
 				removeOnFail: false,
 			},
 		);
+		return true;
 	}
 
 	static async stop(sessionId: string) {

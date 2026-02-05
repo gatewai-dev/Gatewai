@@ -203,27 +203,11 @@ export const bulkUpdateSchema = z
 
 			if (node.type === "VideoGen") {
 				const nodeHandles = nodeHandlesMap.get(node.id);
-				console.log(
-					"Checking VideoGen node:",
-					node.id,
-					"Handle count:",
-					nodeHandles?.size,
-				);
 				if (nodeHandles) {
 					const imageInputCount = Array.from(nodeHandles).filter((hId) => {
 						const h = handleMap.get(hId);
-						console.log(
-							"Handle:",
-							hId,
-							"Type:",
-							h?.type,
-							"DataTypes:",
-							h?.dataTypes,
-						);
 						return h?.type === "Input" && h?.dataTypes.includes("Image");
 					}).length;
-
-					console.log("Image Input Count:", imageInputCount);
 
 					if (imageInputCount > 3) {
 						ctx.addIssue({
