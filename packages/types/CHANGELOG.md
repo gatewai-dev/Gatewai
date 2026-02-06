@@ -1,5 +1,11 @@
 # @gatewai/types
 
+## 0.0.10
+
+### Patch Changes
+
+- 2e6eea3: Misc improvements
+
 ## 0.0.9
 
 ### Patch Changes
