@@ -146,8 +146,9 @@ const processNodeJob = async (job: Job<NodeTaskJobData>) => {
 		remainingTaskIds,
 		isExplicitlySelected,
 		selectionMap,
+		apiKey,
 	} = job.data;
-
+	console.log({ jd: job.data });
 	const startedAt = new Date();
 
 	// If the job was retried after a crash, the task might already be in a terminal state
@@ -160,7 +161,13 @@ const processNodeJob = async (job: Job<NodeTaskJobData>) => {
 	if (existingTask?.status === TaskStatus.COMPLETED) {
 		logger.info(`Task ${taskId} already completed. Skipping execution.`);
 		// Trigger next just in case the previous run crashed *after* success but *before* triggering next
-		await triggerNextTask(batchId, remainingTaskIds, selectionMap, canvasId);
+		await triggerNextTask(
+			batchId,
+			remainingTaskIds,
+			selectionMap,
+			canvasId,
+			apiKey,
+		);
 		return;
 	}
 
@@ -169,7 +176,13 @@ const processNodeJob = async (job: Job<NodeTaskJobData>) => {
 		logger.info(
 			`Task ${taskId} already failed (upstream propagation). Skipping execution.`,
 		);
-		await triggerNextTask(batchId, remainingTaskIds, selectionMap, canvasId);
+		await triggerNextTask(
+			batchId,
+			remainingTaskIds,
+			selectionMap,
+			canvasId,
+			apiKey,
+		);
 		return;
 	}
 
@@ -212,22 +225,31 @@ const processNodeJob = async (job: Job<NodeTaskJobData>) => {
 			logger.info(`Skipping processing for terminal node: ${node.id}`);
 			await completeTask(taskId, startedAt, true);
 			await checkAndFinishBatch(batchId);
-			await triggerNextTask(batchId, remainingTaskIds, selectionMap, canvasId);
+			await triggerNextTask(
+				batchId,
+				remainingTaskIds,
+				selectionMap,
+				canvasId,
+				apiKey,
+			);
 			return;
 		}
 
 		const batchTasks = await prisma.task.findMany({
 			where: { batchId },
 		});
-
+		console.log({ apiKey });
 		// 5. Execute Processor
 		const processor = nodeProcessors[node.type];
-		if (!processor) throw new Error(`No processor for node type ${node.type}`);
+		if (!processor) {
+			logger.error(`No processor for node type ${node.type}`);
+			throw new Error(`No processor for node type ${node.type}`);
+		}
 
 		logger.info(`Processing node: ${node.id} with type: ${node.type}`);
 		const { success, error, newResult } = await processor({
 			node,
-			data: { ...data, tasks: batchTasks, task },
+			data: { ...data, tasks: batchTasks, task, apiKey },
 			prisma,
 		});
 
@@ -269,7 +291,13 @@ const processNodeJob = async (job: Job<NodeTaskJobData>) => {
 
 		if (success) {
 			await checkAndFinishBatch(batchId);
-			await triggerNextTask(batchId, remainingTaskIds, selectionMap, canvasId);
+			await triggerNextTask(
+				batchId,
+				remainingTaskIds,
+				selectionMap,
+				canvasId,
+				apiKey,
+			);
 		} else {
 			await propagateFailure(
 				taskId,
@@ -281,7 +309,13 @@ const processNodeJob = async (job: Job<NodeTaskJobData>) => {
 			// Continue processing remaining tasks - propagateFailure already marked
 			// graph-dependent downstream tasks as FAILED, but independent parallel
 			// branches should still execute
-			await triggerNextTask(batchId, remainingTaskIds, selectionMap, canvasId);
+			await triggerNextTask(
+				batchId,
+				remainingTaskIds,
+				selectionMap,
+				canvasId,
+				apiKey,
+			);
 		}
 	} catch (err: unknown) {
 		logger.error({ err }, `Task execution failed for ${taskId}`);
@@ -306,7 +340,13 @@ const processNodeJob = async (job: Job<NodeTaskJobData>) => {
 		);
 		await checkAndFinishBatch(batchId);
 		// Continue processing remaining tasks even on exception
-		await triggerNextTask(batchId, remainingTaskIds, selectionMap, canvasId);
+		await triggerNextTask(
+			batchId,
+			remainingTaskIds,
+			selectionMap,
+			canvasId,
+			apiKey,
+		);
 		throw err;
 	}
 };
@@ -316,6 +356,7 @@ async function triggerNextTask(
 	remainingTaskIds: string[],
 	selectionMap: Record<string, boolean>,
 	canvasId: string,
+	apiKey?: string,
 ) {
 	if (remainingTaskIds.length === 0) {
 		return;
@@ -332,6 +373,7 @@ async function triggerNextTask(
 		remainingTaskIds: rest,
 		isExplicitlySelected: isSelected,
 		selectionMap,
+		apiKey,
 	});
 }
 

@@ -101,6 +101,7 @@ export class NodeWFProcessor {
 		 * Node ID's to run - It'll run all of them in canvas if not provided
 		 */
 		nodeIds?: Node["id"][],
+		apiKey?: string,
 	): Promise<TaskBatch> {
 		// 1. Fetch current canvas state
 		const data = await GetCanvasEntities(canvasId);
@@ -205,6 +206,7 @@ export class NodeWFProcessor {
 				remainingTaskIds,
 				isExplicitlySelected: selectionMap[firstTaskId],
 				selectionMap,
+				apiKey,
 			};
 
 			// Check for an active batch (started but not finished) on this canvas

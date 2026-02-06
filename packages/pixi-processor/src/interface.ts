@@ -5,18 +5,21 @@ export interface IPixiProcessor {
 		imageUrl: string,
 		config: ModulateNodeConfig,
 		signal?: AbortSignal,
+		apiKey?: string,
 	): Promise<{ dataUrl: Blob; width: number; height: number }>;
 
 	processBlur(
 		imageUrl: string,
 		options: { blurSize: number },
 		signal?: AbortSignal,
+		apiKey?: string,
 	): Promise<{ dataUrl: Blob; width: number; height: number }>;
 
 	processResize(
 		imageUrl: string,
 		options: { width?: number; height?: number },
 		signal?: AbortSignal,
+		apiKey?: string,
 	): Promise<{ dataUrl: Blob; width: number; height: number }>;
 
 	processCrop(
@@ -28,6 +31,7 @@ export interface IPixiProcessor {
 			heightPercentage: number;
 		},
 		signal?: AbortSignal,
+		apiKey?: string,
 	): Promise<{ dataUrl: Blob; width: number; height: number }>;
 
 	processMask(
@@ -35,6 +39,7 @@ export interface IPixiProcessor {
 		imageUrl: string | undefined,
 		maskUrl?: string,
 		signal?: AbortSignal,
+		apiKey?: string,
 	): Promise<{
 		imageWithMask: { dataUrl: Blob; width: number; height: number };
 		onlyMask: { dataUrl: Blob; width: number; height: number };

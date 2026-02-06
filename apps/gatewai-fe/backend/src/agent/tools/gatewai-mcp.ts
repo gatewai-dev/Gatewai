@@ -20,45 +20,48 @@ const mcpLogger = {
 	dontLogToolData: false,
 };
 
-const localGatewaiMCPTool = new MCPServerStreamableHttp({
-	url: ENV_CONFIG.MCP_URL,
-	name: "Gatewai MCP Streamable HTTP Server",
-	clientSessionTimeoutSeconds: 300,
-	timeout: 300000,
-	logger: mcpLogger,
-	reconnectionOptions: {
-		maxRetries: 2,
-		initialReconnectionDelay: 2000,
-		reconnectionDelayGrowFactor: 2,
-		maxReconnectionDelay: 30000,
-	},
-});
+// function to create the tool with user context
+export const createGatewaiMCPTool = (headers: Record<string, string> = {}) => {
+	logger.info(
+		{ headers: Object.keys(headers) },
+		"Creating MCP Tool with headers",
+	);
 
-let isConnecting = false;
-let isConnected = false;
+	// Create a new instance for this context
+	return new MCPServerStreamableHttp({
+		url: ENV_CONFIG.MCP_URL,
+		name: "Gatewai MCP Streamable HTTP Server",
+		clientSessionTimeoutSeconds: 300,
+		timeout: 300000,
+		logger: mcpLogger,
+		requestInit: {
+			headers: {
+				...headers,
+				"Content-Type": "application/json",
+			},
+		},
+		reconnectionOptions: {
+			maxRetries: 2,
+			initialReconnectionDelay: 2000,
+			reconnectionDelayGrowFactor: 2,
+			maxReconnectionDelay: 30000,
+		},
+	});
+};
 
-export const connectMCP = async () => {
-	if (isConnected) return;
-	if (isConnecting) {
-		// Wait for existing connection attempt
-		while (isConnecting) {
-			await new Promise((resolve) => setTimeout(resolve, 100));
-		}
-		return;
-	}
+// Deprecated static instance - retained for backward compat if needed,
+// but we should migrate away from it.
+// For now, initialized without headers (public/service mode if applicable, likely fails auth now)
+export const localGatewaiMCPTool = createGatewaiMCPTool({});
 
-	isConnecting = true;
+// Helper to connect a specific tool instance
+export const connectMCP = async (toolInstance: MCPServerStreamableHttp) => {
 	try {
 		logger.info("Connecting to MCP server...");
-		await localGatewaiMCPTool.connect();
-		isConnected = true;
+		await toolInstance.connect();
 		logger.info("Successfully connected to MCP server");
 	} catch (err) {
 		logger.error({ err }, "Failed to connect to MCP tool");
-		// Don't set isConnected to true, so we can retry later
-	} finally {
-		isConnecting = false;
+		throw err;
 	}
 };
-
-export { localGatewaiMCPTool };

@@ -14,7 +14,7 @@ const connection = {
 export const agentQueue = new Queue("agent-tasks", { connection });
 
 async function processAgentJob(job: Job) {
-	const { canvasId, sessionId, message, model } = job.data;
+	const { canvasId, sessionId, message, model, authHeaders } = job.data;
 	const channel = `agent:session:${sessionId}`;
 	const accumulatedKey = `agent:session:${sessionId}:accumulated`;
 	const stopKey = `agent:session:${sessionId}:stop`;
@@ -34,6 +34,7 @@ async function processAgentJob(job: Job) {
 			userMessage: message,
 			model,
 			signal: controller.signal,
+			authHeaders,
 		});
 
 		for await (const chunk of runner) {

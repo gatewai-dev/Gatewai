@@ -4,6 +4,7 @@ import { setupListeners } from "@reduxjs/toolkit/query";
 import { useDispatch, useSelector } from "react-redux";
 import { toast } from "sonner";
 import { agentSessionsAPI } from "./agent-sessions";
+import { apiKeysAPI } from "./api-keys";
 import { assetsAPI } from "./assets";
 import { canvasDetailsAPI } from "./canvas";
 import { canvasListAPI } from "./canvas-list";
@@ -47,6 +48,7 @@ export const store = configureStore({
 		[canvasDetailsAPI.reducerPath]: canvasDetailsAPI.reducer,
 		[fontListAPI.reducerPath]: fontListAPI.reducer,
 		[agentSessionsAPI.reducerPath]: agentSessionsAPI.reducer,
+		[apiKeysAPI.reducerPath]: apiKeysAPI.reducer,
 	},
 	middleware: (getDefaultMiddleware) =>
 		getDefaultMiddleware()
@@ -56,7 +58,8 @@ export const store = configureStore({
 			.concat(fontListAPI.middleware)
 			.concat(canvasDetailsAPI.middleware)
 			.concat(rtkQueryErrorLogger)
-			.concat(agentSessionsAPI.middleware),
+			.concat(agentSessionsAPI.middleware)
+			.concat(apiKeysAPI.middleware),
 });
 
 setupListeners(store.dispatch);

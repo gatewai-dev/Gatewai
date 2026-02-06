@@ -47,6 +47,8 @@ export type CanvasCtxDataWithTasks = CanvasCtxData & {
 	tasks: Task[];
 	// The task assigned to processor
 	task?: Task;
+	// The API key of the user executing the task
+	apiKey?: string;
 };
 
 export { GetCanvasEntities };

@@ -12,10 +12,12 @@ export const CreateOrchestratorAgentForCanvas = async ({
 	canvasId,
 	session,
 	modelName,
+	mcpTool,
 }: {
 	canvasId: string;
 	session: PrismaAgentSession;
 	modelName: string;
+	mcpTool: any; // Using any to match patcher signature
 }) => {
 	const nodeTemplates = await prisma.nodeTemplate.findMany({
 		include: { templateHandles: true },
@@ -131,7 +133,7 @@ Remember:
 	assertIsValidName(modelName);
 
 	const model = getAgentModel(modelName);
-	const patcherAgentTool = createPatcherAgent(modelName);
+	const patcherAgentTool = createPatcherAgent(modelName, mcpTool);
 	// Note: We return the function reference for instructions to enable dynamic fetching
 	return new Agent({
 		name: "Gatewai_Copilot",

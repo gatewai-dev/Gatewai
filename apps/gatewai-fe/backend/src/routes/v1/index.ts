@@ -1,5 +1,6 @@
 import { Hono } from "hono";
 import { authMiddleware } from "../../auth.js";
+import { apiKeysRoutes } from "./api-keys.js";
 import { apiRunRoutes } from "./api-run.js";
 import { assetsRouter } from "./assets.js";
 import { canvasRoutes } from "./canvas.js";
@@ -14,6 +15,7 @@ const v1Router = new Hono()
 	.route("/assets", assetsRouter)
 	.route("/fonts", fontsRouter)
 	.route("/api-run", apiRunRoutes)
+	.route("/api-keys", apiKeysRoutes)
 	.route("/canvas", canvasRoutes);
 
 export { v1Router };

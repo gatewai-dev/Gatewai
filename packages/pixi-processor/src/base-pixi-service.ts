@@ -50,7 +50,10 @@ export abstract class BasePixiService implements IPixiProcessor {
 	}
 
 	protected abstract createApplication(): Application;
-	protected abstract loadTexture(url: string): Promise<Texture>;
+	protected abstract loadTexture(
+		url: string,
+		apiKey?: string,
+	): Promise<Texture>;
 	protected abstract getPixiImport(): string;
 
 	/**
@@ -151,11 +154,12 @@ export abstract class BasePixiService implements IPixiProcessor {
 		imageUrl: string,
 		config: ModulateNodeConfig,
 		signal?: AbortSignal,
+		apiKey?: string,
 	): Promise<{ dataUrl: Blob; width: number; height: number }> {
 		return this.useApp(async (app) => {
 			this.ensureNotAborted(signal);
 
-			const texture = await this.loadTexture(imageUrl);
+			const texture = await this.loadTexture(imageUrl, apiKey);
 			this.ensureNotAborted(signal);
 
 			const { Sprite, Filter } = await this.getPixiModules();
@@ -189,11 +193,12 @@ export abstract class BasePixiService implements IPixiProcessor {
 		imageUrl: string,
 		options: { blurSize: number },
 		signal?: AbortSignal,
+		apiKey?: string,
 	): Promise<{ dataUrl: Blob; width: number; height: number }> {
 		return this.useApp(async (app) => {
 			this.ensureNotAborted(signal);
-
-			const texture = await this.loadTexture(imageUrl);
+			console.log({ apiKey });
+			const texture = await this.loadTexture(imageUrl, apiKey);
 			this.ensureNotAborted(signal);
 
 			const { Sprite, BlurFilter } = await this.getPixiModules();
@@ -229,11 +234,12 @@ export abstract class BasePixiService implements IPixiProcessor {
 		imageUrl: string,
 		options: { width?: number; height?: number },
 		signal?: AbortSignal,
+		apiKey?: string,
 	): Promise<{ dataUrl: Blob; width: number; height: number }> {
 		return this.useApp(async (app) => {
 			this.ensureNotAborted(signal);
 
-			const texture = await this.loadTexture(imageUrl);
+			const texture = await this.loadTexture(imageUrl, apiKey);
 			this.ensureNotAborted(signal);
 
 			const { Sprite } = await this.getPixiModules();
@@ -294,11 +300,12 @@ export abstract class BasePixiService implements IPixiProcessor {
 			heightPercentage: number;
 		},
 		signal?: AbortSignal,
+		apiKey?: string,
 	): Promise<{ dataUrl: Blob; width: number; height: number }> {
 		return this.useApp(async (app) => {
 			this.ensureNotAborted(signal);
 
-			const originalTexture = await this.loadTexture(imageUrl);
+			const originalTexture = await this.loadTexture(imageUrl, apiKey);
 			this.ensureNotAborted(signal);
 
 			const { Sprite, Rectangle, Texture } = await this.getPixiModules();
@@ -347,6 +354,7 @@ export abstract class BasePixiService implements IPixiProcessor {
 		imageUrl: string | undefined,
 		maskUrl?: string,
 		signal?: AbortSignal,
+		apiKey?: string,
 	): Promise<{
 		imageWithMask: { dataUrl: Blob; width: number; height: number };
 		onlyMask: { dataUrl: Blob; width: number; height: number };
@@ -363,7 +371,7 @@ export abstract class BasePixiService implements IPixiProcessor {
 
 			// Determine dimensions and background
 			if (imageUrl) {
-				const texture = await this.loadTexture(imageUrl);
+				const texture = await this.loadTexture(imageUrl, apiKey);
 				widthToUse = texture.width;
 				heightToUse = texture.height;
 				baseSprite = new Sprite(texture);
@@ -391,7 +399,7 @@ export abstract class BasePixiService implements IPixiProcessor {
 
 			let maskSprite: Sprite | undefined;
 			if (maskUrl) {
-				const maskTexture = await this.loadTexture(maskUrl);
+				const maskTexture = await this.loadTexture(maskUrl, apiKey);
 				maskSprite = new Sprite(maskTexture);
 				maskSprite.width = widthToUse;
 				maskSprite.height = heightToUse;

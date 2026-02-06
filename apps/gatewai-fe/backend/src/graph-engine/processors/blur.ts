@@ -33,6 +33,8 @@ const blurProcessor: NodeProcessor = async ({ node, data }) => {
 			{
 				blurSize,
 			},
+			undefined,
+			data.apiKey,
 		);
 
 		const uploadBuffer = Buffer.from(await dataUrl.arrayBuffer());
