@@ -31,6 +31,7 @@ import { Skeleton } from "@/components/ui/skeleton";
 import { cn } from "@/lib/utils";
 import type { CanvasListRPC } from "@/rpc/types";
 import { CanvasListProvider, useCanvasListCtx } from "../ctx/canvas-list.ctx";
+import { toast } from "sonner";
 
 function CanvasHomeImpl() {
 	const {
@@ -85,7 +86,7 @@ function CanvasHomeImpl() {
 			const result = await createCanvas("untitled").unwrap();
 			nav(`/canvas/${result.id}`);
 		} catch (error) {
-			console.error("Failed to create canvas:", error);
+			toast.error("Failed to create canvas, please try again later.");
 		}
 	};
 
@@ -132,15 +133,6 @@ function CanvasHomeImpl() {
 							Your creative engine, organized.
 						</p>
 					</div>
-					<Button
-						onClick={handleCreateCanvas}
-						disabled={isCreating}
-						size="lg"
-						className="rounded-full px-6 h-12 text-md hover:scale-105 transition-transform shadow-xl shadow-black/5"
-					>
-						<Plus className="h-5 w-5 mr-2 stroke-3" />
-						Create Canvas
-					</Button>
 				</header>
 
 				{/* Controls: Glassmorphism Blur */}

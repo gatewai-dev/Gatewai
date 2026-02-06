@@ -99,8 +99,8 @@ export function InputArea({
 						onChange={(e) => setInputValue(e.target.value)}
 						onKeyDown={handleKeyDown}
 						placeholder="Ask agent to generate a workflow..."
-						className="flex-1 border-0 focus-visible:ring-0 min-h-[24px] focus-visible:ring-offset-0 p-1 text-sm shadow-none bg-transparent placeholder:text-muted-foreground/60"
-						minHeight={24}
+						className="flex-1 border-0 focus-visible:ring-0 min-h-[48px] focus-visible:ring-offset-0 p-1 text-sm shadow-none bg-transparent placeholder:text-muted-foreground/60"
+						minHeight={48}
 						maxHeight={160}
 						aria-label="Message input"
 						disabled={isLoading}

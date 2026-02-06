@@ -1,5 +1,5 @@
 import { motion } from "framer-motion";
-import { ArrowRight, Box, Sparkles, Terminal } from "lucide-react";
+import { ArrowRight, ArrowUpRight, Box, Sparkles, Terminal } from "lucide-react";
 import { useEffect, useRef, useState } from "react";
 import { Helmet } from "react-helmet-async";
 import { FaDiscord, FaGithub } from "react-icons/fa";
@@ -97,10 +97,13 @@ const NodeCanvas = () => {
 				ctx.fill();
 
 				// Node core
-				ctx.fillStyle = "rgba(183, 234, 72, 0.6)";
+				ctx.fillStyle = "rgba(183, 234, 72, 0.8)";
+				ctx.shadowBlur = 10;
+				ctx.shadowColor = "rgba(183, 234, 72, 0.5)";
 				ctx.beginPath();
 				ctx.arc(x, y, node.radius, 0, Math.PI * 2);
 				ctx.fill();
+				ctx.shadowBlur = 0;
 
 				// Inner highlight
 				ctx.fillStyle = "rgba(255, 255, 255, 0.8)";
@@ -130,7 +133,7 @@ const NodeCanvas = () => {
 const HomePage = () => {
 	return (
 		<main
-			className="relative min-h-screen w-full bg-background text-foreground p-4 md:p-6"
+			className="relative w-full bg-background text-foreground p-4 md:p-6 md:h-screen md:min-h-[800px] md:overflow-hidden"
 			style={{ fontFamily: "'Outfit', sans-serif" }}
 		>
 			<Helmet>
@@ -169,12 +172,12 @@ const HomePage = () => {
 							className="text-5xl md:text-6xl font-extrabold tracking-tighter leading-[0.9] text-white"
 							style={{ fontFamily: "'JetBrains Mono', monospace" }}
 						>
-							BUILD <br />
+							BUILD&nbsp;
 							<span className="text-primary">WORKFLOWS</span> <br />
 							VISUALLY
 						</h1>
 						<p className="text-xl text-neutral-400 max-w-lg font-light leading-relaxed">
-							The node-based engine for multi-modal AI. Connect models, chain
+							The node-based vibeflow platform for multi-modal AI. Connect models, chain
 							operations, and orchestrate intelligence.
 						</p>
 
@@ -224,11 +227,17 @@ const HomePage = () => {
 				</div>
 
 				{/* 3. Visual Engine Block (Right Side, Vertical) */}
-				<div className="md:col-span-5 md:row-span-10 bg-neutral-950 border border-neutral-800 rounded-3xl relative overflow-hidden flex flex-col shadow-sm">
-					<div className="absolute top-6 left-6 z-10 bg-neutral-900/80 backdrop-blur-md px-4 py-1.5 rounded-full border border-neutral-800">
-						<span className="text-xs font-mono font-semibold text-primary tracking-wide">
-							VISUAL GRAPH ENGINE
-						</span>
+				<div className="md:col-span-5 md:row-span-10 bg-[#0A0A0A] border border-white/5 rounded-3xl relative overflow-hidden flex flex-col shadow-2xl group">
+					{/* Grid Background */}
+					<div className="absolute inset-0 bg-[linear-gradient(to_right,#80808012_1px,transparent_1px),linear-gradient(to_bottom,#80808012_1px,transparent_1px)] bg-[size:24px_24px] [mask-image:radial-gradient(ellipse_60%_50%_at_50%_0%,#000_70%,transparent_100%)] pointer-events-none" />
+
+					<div className="absolute top-6 left-6 z-10 bg-black/40 backdrop-blur-md px-4 py-1.5 rounded-full border border-white/10 shadow-lg ring-1 ring-white/5">
+						<div className="flex items-center gap-2">
+							<div className="w-1.5 h-1.5 rounded-full bg-primary animate-pulse w-full" />
+							<span className="text-xs font-mono font-semibold text-primary/90 tracking-wide">
+								VISUAL GRAPH ENGINE
+							</span>
+						</div>
 					</div>
 
 					{/* The Animation Canvas */}
@@ -238,15 +247,17 @@ const HomePage = () => {
 						<div className="absolute inset-0 bg-linear-to-b from-transparent via-transparent to-neutral-950/80 pointer-events-none" />
 					</div>
 
-					<div className="p-8 relative z-10">
-						<div className="space-y-2">
-							<h3 className="text-2xl font-bold text-white tracking-tight font-mono">
-								Real-time Execution
-							</h3>
-							<p className="text-neutral-500 leading-snug">
-								Watch data flow between nodes instantly. Debug logic visually
-								with live execution tracing and output previews.
-							</p>
+					<div className="p-8 relative z-10 mt-auto">
+						<div className="bg-neutral-900/60 backdrop-blur-md border border-white/5 rounded-2xl p-6 shadow-xl transform transition-transform duration-300 group-hover:translate-y-[-4px]">
+							<div className="space-y-2">
+								<h3 className="text-2xl font-bold text-white tracking-tight font-mono flex items-center gap-2">
+									Real-time Execution <ArrowUpRight className="w-4 h-4 text-neutral-500" />
+								</h3>
+								<p className="text-neutral-400 leading-snug">
+									Watch data flow between nodes instantly. Debug logic visually
+									with live execution tracing and output previews.
+								</p>
+							</div>
 						</div>
 					</div>
 				</div>
@@ -254,9 +265,6 @@ const HomePage = () => {
 				{/* 4. Feature: Hybrid Runtime (Mid-Left) */}
 				<div className="md:col-span-3 md:row-span-4 bg-neutral-900/20 border border-neutral-800 rounded-3xl p-6 flex flex-col justify-between group hover:border-neutral-700 transition-colors relative overflow-hidden">
 					<div className="relative z-10 space-y-4">
-						<div className="h-10 w-10 rounded-lg bg-neutral-800/50 flex items-center justify-center text-primary">
-							<Box className="size-5" />
-						</div>
 						{/* Mock execution pill */}
 						<div className="bg-neutral-950/50 rounded-lg p-3 border border-neutral-800/50 backdrop-blur-sm">
 							<div className="flex items-center gap-2 mb-2">
@@ -297,9 +305,6 @@ const HomePage = () => {
 				{/* 5. Feature: Copilot (Mid-Center) */}
 				<div className="md:col-span-4 md:row-span-4 bg-neutral-900/20 border border-neutral-800 rounded-3xl p-6 flex flex-col justify-between group hover:border-neutral-700 transition-colors relative overflow-hidden">
 					<div className="relative z-10 flex flex-col gap-3">
-						<div className="h-10 w-10 rounded-lg bg-neutral-800/50 flex items-center justify-center text-primary mb-2">
-							<Sparkles className="size-5" />
-						</div>
 
 						{/* Chat Interface */}
 						<div className="space-y-3 font-mono text-[10px] leading-tight">
