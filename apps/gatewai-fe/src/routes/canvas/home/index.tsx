@@ -183,7 +183,7 @@ function CanvasHomeImpl() {
 								key={`skeleton-${
 									// biome-ignore lint/suspicious/noArrayIndexKey: No other props
 									i
-								}`}
+									}`}
 								className="h-48 rounded-3xl"
 							/>
 						))}
@@ -376,7 +376,7 @@ function CanvasCard({
 				aria-label={`Open canvas ${canvas.name}, edited ${timeAgo} ago, ${nodeCount} nodes`}
 			>
 				<div className="flex flex-col h-full justify-between relative z-10">
-					<div className="flex justify-between items-start">
+					<div className="flex items-center gap-3">
 						{/* Icon Box */}
 						<div
 							className="p-3 rounded-2xl bg-zinc-100 dark:bg-zinc-800 group-hover:bg-primary group-hover:text-white transition-all duration-500 shadow-sm"
@@ -386,7 +386,7 @@ function CanvasCard({
 						</div>
 
 						{/* Open badge (appears on hover) */}
-						<div className="opacity-0 group-hover:opacity-100 transform translate-x-4 group-hover:translate-x-0 transition-all duration-300 px-3 py-1 bg-primary/10 text-primary text-[10px] font-bold tracking-wider uppercase rounded-full">
+						<div className="opacity-0 group-hover:opacity-100 transition-all duration-300 px-3 py-1 bg-primary/10 text-primary text-[10px] font-bold tracking-wider uppercase rounded-full">
 							Open
 						</div>
 					</div>
@@ -395,7 +395,7 @@ function CanvasCard({
 						<h3 className="text-xl font-semibold tracking-tight text-foreground group-hover:text-primary transition-colors truncate pr-8">
 							{canvas.name}
 						</h3>
-						<div className="flex items-center gap-3 text-[11px] font-medium text-muted-foreground group-hover:text-muted-foreground/80 transition-colors">
+						<div className="flex items-center gap-1.5 text-[11px] font-medium text-muted-foreground group-hover:text-muted-foreground/80 transition-colors">
 							<div className="flex items-center gap-1">
 								<Clock className="h-3 w-3" aria-hidden="true" />
 								{timeAgo} ago

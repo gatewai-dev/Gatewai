@@ -2,8 +2,6 @@ import { motion } from "framer-motion";
 import {
 	ArrowRight,
 	ArrowUpRight,
-	Box,
-	Sparkles,
 	Terminal,
 } from "lucide-react";
 import { useEffect, useRef, useState } from "react";
