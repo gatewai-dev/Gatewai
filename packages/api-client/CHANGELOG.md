@@ -1,5 +1,11 @@
 # @gatewai/api-client
 
+## 0.0.11
+
+### Patch Changes
+
+- fb01e62: API keys
+
 ## 0.0.10
 
 ### Patch Changes

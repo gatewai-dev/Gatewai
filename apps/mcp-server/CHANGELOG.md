@@ -1,5 +1,14 @@
 # @gatewai/mcp-server
 
+## 0.0.11
+
+### Patch Changes
+
+- fb01e62: API keys
+- Updated dependencies [fb01e62]
+  - @gatewai/api-client@0.0.11
+  - @gatewai/types@0.0.11
+
 ## 0.0.10
 
 ### Patch Changes
