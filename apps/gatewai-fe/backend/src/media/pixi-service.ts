@@ -44,7 +44,7 @@ export class BackendPixiService extends BasePixiService {
 		});
 	}
 
-	protected async loadTexture(url: string): Promise<Texture> {
+	protected async loadTexture(url: string, apiKey?: string): Promise<Texture> {
 		if (!this.initialized) {
 			await Assets.init();
 			this.initialized = true;
@@ -52,8 +52,8 @@ export class BackendPixiService extends BasePixiService {
 
 		// Prepare headers with API key for authentication
 		const headers: HeadersInit = {};
-		if (ENV_CONFIG.GATEWAI_API_KEY) {
-			headers["X-API-KEY"] = ENV_CONFIG.GATEWAI_API_KEY;
+		if (apiKey) {
+			headers["X-API-KEY"] = apiKey;
 		}
 
 		// Fetch the image with authentication

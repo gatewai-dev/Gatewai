@@ -53,6 +53,8 @@ const paintProcessor: NodeProcessor = async ({ node, data }) => {
 			paintConfig,
 			imageUrl,
 			paintConfig.paintData,
+			undefined,
+			data.apiKey,
 		);
 
 		const { dataUrl: imageDataUrl, ...imageDimensions } = imageWithMask;

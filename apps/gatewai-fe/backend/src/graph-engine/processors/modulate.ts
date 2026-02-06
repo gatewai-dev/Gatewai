@@ -33,6 +33,8 @@ const modulateProcessor: NodeProcessor = async ({ node, data }) => {
 		const { dataUrl, ...dimensions } = await backendPixiService.processModulate(
 			base64Data,
 			modulateConfig,
+			undefined,
+			data.apiKey,
 		);
 
 		const uploadBuffer = Buffer.from(await dataUrl.arrayBuffer());

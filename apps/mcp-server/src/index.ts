@@ -6,12 +6,14 @@ import {
 	McpServer,
 	ResourceTemplate,
 } from "@modelcontextprotocol/sdk/server/mcp.js";
+import assert from "assert";
 import { config } from "dotenv";
 import { Hono } from "hono";
 import { cors } from "hono/cors";
 import { logger } from "hono/logger";
 import { createRequire } from "module";
 import { z } from "zod";
+import { getApiClientSafe, runWithApiClient } from "./context.js";
 
 const require = createRequire(import.meta.url);
 const pkg = require("../package.json");
@@ -22,7 +24,7 @@ const EnvSchema = z.object({
 	BASE_URL: z.string().url("BASE_URL must be a valid URL"),
 	MCP_PORT: z.coerce.number().default(4001),
 	LOG_LEVEL: z.enum(["debug", "info", "error"]).default("info"),
-	GATEWAI_API_KEY: z.string(),
+	GATEWAI_API_KEY: z.string().optional(),
 });
 
 const result = EnvSchema.safeParse(process.env);
@@ -34,11 +36,6 @@ if (!result.success) {
 }
 
 const env = result.data;
-
-const apiClient = new GatewaiApiClient({
-	baseUrl: env.BASE_URL,
-	apiKey: env.GATEWAI_API_KEY,
-});
 
 console.log(`MCP Server initialized with BASE_URL: ${env.BASE_URL}`);
 
@@ -61,8 +58,9 @@ server.registerResource(
 	},
 	async (uri, { id }) => {
 		try {
+			const client = getApiClientSafe();
 			const canvasId = id as string;
-			const canvas = await apiClient.getCanvas(canvasId);
+			const canvas = await client.getCanvas(canvasId);
 
 			return {
 				contents: [
@@ -92,7 +90,8 @@ server.registerResource(
 		mimeType: "application/json",
 	},
 	async (uri) => {
-		const templates = await apiClient.getNodeTemplates();
+		const client = getApiClientSafe();
+		const templates = await client.getNodeTemplates();
 		return {
 			contents: [
 				{
@@ -131,7 +130,8 @@ server.registerTool(
 		}),
 	},
 	async ({ canvasId, canvasState, agentSessionId }) => {
-		const result = await apiClient.createPatch(
+		const client = getApiClientSafe();
+		const result = await client.createPatch(
 			canvasId,
 			canvasState,
 			agentSessionId,
@@ -179,7 +179,8 @@ server.registerTool(
 	},
 	async ({ pageSize, pageIndex, query, type }) => {
 		try {
-			const result = await apiClient.listAssets({
+			const client = getApiClientSafe();
+			const result = await client.listAssets({
 				pageSize,
 				pageIndex,
 				q: query,
@@ -203,6 +204,36 @@ const transport = new StreamableHTTPTransport();
 
 app.use("*", cors());
 app.use("*", logger());
+
+// Auth Context Middleware
+app.use("*", async (c, next) => {
+	// Extract headers
+	const apiKey = c.req.header("x-api-key");
+	const cookie = c.req.header("cookie");
+	const authorization = c.req.header("authorization");
+
+	// Create scoped client if any auth header is present
+	let scopedClient: GatewaiApiClient | undefined;
+	console.log({ apiKey, cookie, authorization });
+	if (apiKey || cookie || authorization) {
+		const headers: Record<string, string> = {};
+		if (apiKey) headers["x-api-key"] = apiKey;
+		if (cookie) headers["cookie"] = cookie;
+		if (authorization) headers["authorization"] = authorization;
+		assert(apiKey, "API key is required");
+		scopedClient = new GatewaiApiClient({
+			baseUrl: env.BASE_URL,
+			apiKey: apiKey, // Use user API key if exists, else fallback to global for client init (but headers map is crucial)
+			headers: headers, // Pass all captured headers including cookies
+		});
+	}
+	assert(scopedClient, "Unauthorized");
+	// Run next() within the context
+	return runWithApiClient(scopedClient, async () => {
+		return await next();
+	});
+});
+
 // Health Check
 app.get("/health", (c) => c.json({ status: "ok", env: env.LOG_LEVEL }));
 

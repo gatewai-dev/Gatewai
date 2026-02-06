@@ -44,6 +44,7 @@ interface PatcherContext {
  */
 export function createPatcherAgent(
 	modelName: (typeof AVAILABLE_AGENT_MODELS)[number],
+	mcpTool: any, // Using any here to avoid cyclic dependency type issues or import complexity, but MCPServerStreamableHttp is better if imported
 ) {
 	let patcherContext: PatcherContext | null = null;
 
@@ -352,14 +353,11 @@ export function createPatcherAgent(
 				};
 
 				// Call MCP tool to create patch
-				const result = await localGatewaiMCPTool.callTool(
-					"propose-canvas-update",
-					{
-						canvasId: patcherContext.canvasId,
-						agentSessionId: patcherContext.agentSessionId,
-						canvasState: payload,
-					},
-				);
+				const result = await mcpTool.callTool("propose-canvas-update", {
+					canvasId: patcherContext.canvasId,
+					agentSessionId: patcherContext.agentSessionId,
+					canvasState: payload,
+				});
 
 				// Clear context after successful submission
 				const canvasId = patcherContext.canvasId;

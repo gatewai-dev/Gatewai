@@ -169,7 +169,6 @@ const processCompositor = async (
 				align: align,
 				verticalAlign:
 					layerConfig.verticalAlign ?? COMPOSITOR_DEFAULTS.VERTICAL_ALIGN,
-				wrap: layerConfig.wrap ?? (hasExplicitWidth ? "word" : "none"),
 				padding: layerConfig.padding ?? COMPOSITOR_DEFAULTS.PADDING,
 				stroke: layerConfig.stroke,
 				strokeWidth:

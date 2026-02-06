@@ -37,6 +37,8 @@ const cropProcessor: NodeProcessor = async ({ node, data }) => {
 				widthPercentage,
 				heightPercentage,
 			},
+			undefined,
+			data.apiKey,
 		);
 
 		const uploadBuffer = Buffer.from(await dataUrl.arrayBuffer());

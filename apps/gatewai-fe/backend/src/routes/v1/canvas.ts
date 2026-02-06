@@ -499,11 +499,24 @@ const canvasRoutes = new Hono<{ Variables: AuthHonoTypes }>({
 	.post("/:id/process", zValidator("json", processSchema), async (c) => {
 		const canvasId = c.req.param("id");
 		const validated = c.req.valid("json");
+		const user = c.get("user");
+
+		let apiKey = c.req.header("x-api-key");
+		if (!apiKey && user) {
+			const userKey = await prisma.apiKey.findFirst({
+				where: { userId: user.id },
+				orderBy: { createdAt: "asc" },
+			});
+			if (userKey) {
+				apiKey = userKey.key;
+			}
+		}
 
 		const wfProcessor = new NodeWFProcessor(prisma);
 		const taskBatch = await wfProcessor.processNodes(
 			canvasId,
 			validated.node_ids,
+			apiKey,
 		);
 
 		return c.json(taskBatch, 201);
@@ -610,12 +623,38 @@ const canvasRoutes = new Hono<{ Variables: AuthHonoTypes }>({
 			c.header("Content-Type", "text/event-stream");
 			c.header("Connection", "keep-alive");
 
+			// Capture Auth Headers to forward to the agent
+			const authHeaders: Record<string, string> = {};
+			const cookieHeader = c.req.header("cookie");
+			if (cookieHeader) authHeaders["cookie"] = cookieHeader;
+
+			const apiKeyHeader = c.req.header("x-api-key");
+			if (apiKeyHeader) authHeaders["x-api-key"] = apiKeyHeader;
+
+			const authHeader = c.req.header("authorization");
+			if (authHeader) authHeaders["authorization"] = authHeader;
+
+			// [NEW] Explicitly fetch User's Default API Key if available
+			// This ensures the Agent uses a stable API Key identity even if the request came via Cookie
+			const user = c.get("user");
+			if (user && !apiKeyHeader) {
+				const userKey = await prisma.apiKey.findFirst({
+					where: { userId: user.id },
+					orderBy: { createdAt: "asc" }, // Assuming the first key created is the default one
+				});
+
+				if (userKey) {
+					authHeaders["x-api-key"] = userKey.key;
+				}
+			}
+
 			// Start the agent runner in the background
 			const started = await AgentRunnerManager.start({
 				canvasId,
 				sessionId,
 				message,
 				model,
+				authHeaders,
 			});
 
 			if (!started) {

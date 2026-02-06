@@ -74,7 +74,7 @@ export type DeleteAssetResponse = InferResponseType<
 export interface APIClientConfig {
 	baseUrl: string;
 	/**
-	 * Service account API KEY (GATEWAI_API_KEY)
+	 * API KEY
 	 */
 	apiKey: string;
 	timeoutMs?: number;
@@ -199,7 +199,6 @@ export class GatewaiApiClient {
 			param: { id },
 			json: payload,
 		});
-		console.log(res);
 		return this.handleResponse(res);
 	}
 

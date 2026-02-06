@@ -37,6 +37,8 @@ const resizeProcessor: NodeProcessor = async ({ node, data }) => {
 				width: resizeConfig.width,
 				height: resizeConfig.height,
 			},
+			undefined,
+			data.apiKey,
 		);
 
 		const uploadBuffer = Buffer.from(await dataUrl.arrayBuffer());

@@ -26,4 +26,6 @@ export interface NodeTaskJobData {
 	isExplicitlySelected: boolean;
 	// Map of TaskID -> isExplicitlySelected for the remaining tasks
 	selectionMap: Record<string, boolean>;
+	// User API Key to use for this job
+	apiKey?: string;
 }

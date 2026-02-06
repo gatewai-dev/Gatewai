@@ -10,11 +10,13 @@ export class AgentRunnerManager {
 		sessionId,
 		message,
 		model,
+		authHeaders,
 	}: {
 		canvasId: string;
 		sessionId: string;
 		message: string;
 		model: string;
+		authHeaders?: Record<string, string>;
 	}) {
 		// Check if job already exists and is running/pending
 		const existingJob = await agentQueue.getJob(sessionId);
@@ -37,6 +39,7 @@ export class AgentRunnerManager {
 				sessionId,
 				message,
 				model,
+				authHeaders,
 			},
 			{
 				jobId: sessionId,

@@ -4,7 +4,7 @@ import { serve } from "@hono/node-server";
 import { serveStatic } from "@hono/node-server/serve-static";
 import { Hono } from "hono";
 import { cors } from "hono/cors";
-import { type AuthHonoTypes, auth } from "./auth.js";
+import { type AuthHonoTypes, auth, ensureUsersAPI_KEY } from "./auth.js";
 import { ENV_CONFIG } from "./config.js";
 import { startWorker } from "./graph-engine/queue/workflow.worker.js";
 import { startAgentWorker } from "./lib/agent-queue.js";
@@ -103,6 +103,7 @@ app
 
 // Run seed check for node templates
 await SEED_createNodeTemplates(prisma);
+await ensureUsersAPI_KEY();
 
 // Initialize canvas worker.
 await startWorker();

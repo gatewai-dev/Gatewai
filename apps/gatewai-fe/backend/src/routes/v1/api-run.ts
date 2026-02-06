@@ -125,7 +125,21 @@ const apiRunRoutes = new Hono<{ Variables: AuthorizedHonoTypes }>({
 
 			// 3. Trigger Workflow
 			const wfProcessor = new NodeWFProcessor(prisma);
-			const taskBatch = await wfProcessor.processNodes(duplicated.id);
+
+			let apiKey = c.req.header("x-api-key");
+			if (!apiKey && user) {
+				const userKey = await prisma.apiKey.findFirst({
+					where: { userId: user.id },
+					orderBy: { createdAt: "asc" },
+				});
+				if (userKey) apiKey = userKey.key;
+			}
+
+			const taskBatch = await wfProcessor.processNodes(
+				duplicated.id,
+				undefined,
+				apiKey,
+			);
 			const result = APIRunResponseSchema.parse({
 				batchHandleId: taskBatch.id,
 				success: true,
