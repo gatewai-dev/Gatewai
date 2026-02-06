@@ -337,7 +337,9 @@ const BaseNode = memo(
 				className={cn(
 					"relative flex flex-col w-full h-full group/node",
 					"rounded-3xl transition-all duration-300",
-					dragging ? "shadow-2xl scale-[1.02] cursor-grabbing" : "shadow-lg hover:shadow-xl",
+					dragging
+						? "shadow-2xl scale-[1.02] cursor-grabbing"
+						: "shadow-lg hover:shadow-xl",
 					"bg-card/85 backdrop-blur-xl border border-white/20 dark:border-white/10", // Glassmorphism
 					selected
 						? "ring-2 ring-primary/50 border-primary shadow-[0_0_30px_rgba(183,234,72,0.15)]"
@@ -372,7 +374,9 @@ const BaseNode = memo(
 								<div
 									className={cn(
 										"text-muted-foreground transition-colors duration-300",
-										selected ? "text-primary" : "group-hover/node:text-foreground",
+										selected
+											? "text-primary"
+											: "group-hover/node:text-foreground",
 									)}
 								>
 									<MainIcon className="w-5 h-5" />

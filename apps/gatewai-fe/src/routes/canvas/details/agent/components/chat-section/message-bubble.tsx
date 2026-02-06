@@ -53,7 +53,10 @@ export function MessageBubble({
 			<div className="space-y-3">
 				<div className="flex w-full justify-start animate-in slide-in-from-bottom-2 duration-300">
 					<div className="bg-white/50 dark:bg-zinc-900/50 backdrop-blur-md border border-border/60 text-foreground rounded-2xl rounded-tl-sm max-w-[90%] px-4 py-3 text-sm leading-relaxed shadow-sm overflow-hidden group">
-						<MarkdownRenderer className="text-sm prose-sm dark:prose-invert" markdown={text} />
+						<MarkdownRenderer
+							className="text-sm prose-sm dark:prose-invert"
+							markdown={text}
+						/>
 						{isStreaming && (
 							<div
 								className={cn(
@@ -75,7 +78,7 @@ export function MessageBubble({
 						<PatchReviewCard
 							patchId={patchId}
 							initialStatus={message.patchStatus}
-							onComplete={onPatchComplete || (() => { })}
+							onComplete={onPatchComplete || (() => {})}
 						/>
 					</div>
 				)}
@@ -96,7 +99,9 @@ export function LoadingIndicator() {
 						<div className="w-1.5 h-1.5 bg-primary/60 rounded-full animate-bounce [animation-delay:-0.15s]" />
 						<div className="w-1.5 h-1.5 bg-primary/60 rounded-full animate-bounce" />
 					</div>
-					<span className="text-xs font-medium text-muted-foreground/80">Thinking...</span>
+					<span className="text-xs font-medium text-muted-foreground/80">
+						Thinking...
+					</span>
 				</div>
 			</div>
 		</div>

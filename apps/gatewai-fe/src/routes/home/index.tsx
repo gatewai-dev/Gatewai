@@ -1,5 +1,11 @@
 import { motion } from "framer-motion";
-import { ArrowRight, ArrowUpRight, Box, Sparkles, Terminal } from "lucide-react";
+import {
+	ArrowRight,
+	ArrowUpRight,
+	Box,
+	Sparkles,
+	Terminal,
+} from "lucide-react";
 import { useEffect, useRef, useState } from "react";
 import { Helmet } from "react-helmet-async";
 import { FaDiscord, FaGithub } from "react-icons/fa";
@@ -177,8 +183,8 @@ const HomePage = () => {
 							VISUALLY
 						</h1>
 						<p className="text-xl text-neutral-400 max-w-lg font-light leading-relaxed">
-							The node-based vibeflow platform for multi-modal AI. Connect models, chain
-							operations, and orchestrate intelligence.
+							The node-based vibeflow platform for multi-modal AI. Connect
+							models, chain operations, and orchestrate intelligence.
 						</p>
 
 						<div className="flex flex-col sm:flex-row gap-4 pt-2">
@@ -251,7 +257,8 @@ const HomePage = () => {
 						<div className="bg-neutral-900/60 backdrop-blur-md border border-white/5 rounded-2xl p-6 shadow-xl transform transition-transform duration-300 group-hover:translate-y-[-4px]">
 							<div className="space-y-2">
 								<h3 className="text-2xl font-bold text-white tracking-tight font-mono flex items-center gap-2">
-									Real-time Execution <ArrowUpRight className="w-4 h-4 text-neutral-500" />
+									Real-time Execution{" "}
+									<ArrowUpRight className="w-4 h-4 text-neutral-500" />
 								</h3>
 								<p className="text-neutral-400 leading-snug">
 									Watch data flow between nodes instantly. Debug logic visually
@@ -305,7 +312,6 @@ const HomePage = () => {
 				{/* 5. Feature: Copilot (Mid-Center) */}
 				<div className="md:col-span-4 md:row-span-4 bg-neutral-900/20 border border-neutral-800 rounded-3xl p-6 flex flex-col justify-between group hover:border-neutral-700 transition-colors relative overflow-hidden">
 					<div className="relative z-10 flex flex-col gap-3">
-
 						{/* Chat Interface */}
 						<div className="space-y-3 font-mono text-[10px] leading-tight">
 							{/* User Message */}

@@ -14,6 +14,7 @@ import {
 import { useEffect, useRef, useState } from "react";
 import { Helmet } from "react-helmet-async";
 import { Link, useNavigate } from "react-router";
+import { toast } from "sonner";
 import {
 	AlertDialog,
 	AlertDialogAction,
@@ -31,7 +32,6 @@ import { Skeleton } from "@/components/ui/skeleton";
 import { cn } from "@/lib/utils";
 import type { CanvasListRPC } from "@/rpc/types";
 import { CanvasListProvider, useCanvasListCtx } from "../ctx/canvas-list.ctx";
-import { toast } from "sonner";
 
 function CanvasHomeImpl() {
 	const {
@@ -183,7 +183,7 @@ function CanvasHomeImpl() {
 								key={`skeleton-${
 									// biome-ignore lint/suspicious/noArrayIndexKey: No other props
 									i
-									}`}
+								}`}
 								className="h-48 rounded-3xl"
 							/>
 						))}
