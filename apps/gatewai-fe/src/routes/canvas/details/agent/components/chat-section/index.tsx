@@ -102,13 +102,14 @@ export function AgentChatSection({ onClose }: { onClose: () => void }) {
 	const processedMessages = (() => {
 		const result: any[] = [];
 		const filtered = messages.filter((msg) => {
+			const isPatchAction = msg.eventType === "patch_action";
 			const hasContent =
 				msg.text.trim() !== "" ||
 				msg.eventType === "patch_proposed" ||
 				msg.isStreaming;
 			const isPending =
 				msg.eventType === "patch_proposed" && msg.patchId === pendingPatchId;
-			return hasContent && !isPending;
+			return hasContent && !isPending && !isPatchAction;
 		});
 
 		for (let i = 0; i < filtered.length; i++) {
