@@ -1,5 +1,17 @@
 # @gatewai/fe
 
+## 0.0.12
+
+### Patch Changes
+
+- f56a3f5: Misc
+- Updated dependencies [f56a3f5]
+  - @gatewai/api-client@0.0.12
+  - @gatewai/db@0.0.12
+  - @gatewai/pixi-processor@0.0.12
+  - @gatewai/tsconfig@0.0.12
+  - @gatewai/types@0.0.12
+
 ## 0.0.11
 
 ### Patch Changes

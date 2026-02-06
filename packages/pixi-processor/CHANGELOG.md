@@ -1,5 +1,11 @@
 # @gatewai/pixi-processor
 
+## 0.0.12
+
+### Patch Changes
+
+- f56a3f5: Misc
+
 ## 0.0.11
 
 ### Patch Changes
