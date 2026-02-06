@@ -208,11 +208,7 @@ const CanvasProvider = ({
 		}
 	}, [dispatch, canvasDetailsResponse, initialNodes, initialEdges]);
 
-	const save = useCallback(() => {
-		if (!canvasId || isReviewingRef.current) {
-			return;
-		}
-
+	const getSavePayload = useCallback(() => {
 		const state = store.getState() as RootState;
 		const currentNodeEntities = Object.values(state.nodes.entities);
 		const currentRfNodes = Object.values(state.reactFlow.nodes);
@@ -258,13 +254,47 @@ const CanvasProvider = ({
 			handles: currentHandleEntities,
 		};
 
+		return body;
+	}, [store]);
+
+	const save = useCallback(async () => {
+		if (!canvasId || isReviewingRef.current) {
+			return;
+		}
+
+		const body = getSavePayload();
+
 		return patchCanvasAsync({
 			json: body,
 			param: {
 				id: canvasId,
 			},
 		});
-	}, [canvasId, patchCanvasAsync, store]);
+	}, [canvasId, patchCanvasAsync, getSavePayload]);
+
+	useEffect(() => {
+		const handleBeforeUnload = () => {
+			if (!canvasId || isReviewingRef.current) return;
+
+			const body = getSavePayload();
+			const url = `/api/v1/canvas/${canvasId}`;
+
+			fetch(url, {
+				method: "PATCH",
+				headers: {
+					"Content-Type": "application/json",
+				},
+				body: JSON.stringify(body),
+				keepalive: true,
+			});
+		};
+
+		window.addEventListener("beforeunload", handleBeforeUnload);
+
+		return () => {
+			window.removeEventListener("beforeunload", handleBeforeUnload);
+		};
+	}, [canvasId, getSavePayload]);
 
 	const scheduleSave = useCallback(
 		(delay?: number, opts?: { preventExtend?: boolean }) => {

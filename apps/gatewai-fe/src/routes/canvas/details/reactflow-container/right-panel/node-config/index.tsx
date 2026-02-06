@@ -8,7 +8,7 @@ import { type NodeEntityType, selectSelectedNodes } from "@/store/nodes";
 import { NODE_ICON_MAP } from "../../../node-templates/node-palette/icon-map";
 import { ImageGenNodeConfigComponent } from "./image-gen";
 import { LLMNodeConfigComponent } from "./llm/llm-config";
-import { SpeechToTextNodeConfigComponent } from "./speec-to-text";
+import { SpeechToTextNodeConfigComponent } from "./speech-to-text";
 import { TextToSpeechNodeConfigComponent } from "./text-to-speech";
 import { VideoGenNodeConfigComponent } from "./video-gen";
 import { VideoGenExtendNodeConfigComponent } from "./video-gen-extend";

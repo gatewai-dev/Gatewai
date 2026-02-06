@@ -1,9 +1,5 @@
 import { motion } from "framer-motion";
-import {
-	ArrowRight,
-	ArrowUpRight,
-	Terminal,
-} from "lucide-react";
+import { ArrowRight, ArrowUpRight, Terminal } from "lucide-react";
 import { useEffect, useRef, useState } from "react";
 import { Helmet } from "react-helmet-async";
 import { FaDiscord, FaGithub } from "react-icons/fa";
