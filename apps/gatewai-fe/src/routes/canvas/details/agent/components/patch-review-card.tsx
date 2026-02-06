@@ -71,7 +71,7 @@ export function PatchReviewCard({
 										Suggested Changes
 									</h4>
 									<p className="text-[10px] text-muted-foreground">
-										Review code updates
+										Review workflow updates
 									</p>
 								</div>
 							</div>
