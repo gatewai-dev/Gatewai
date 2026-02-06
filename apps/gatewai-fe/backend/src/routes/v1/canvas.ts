@@ -241,7 +241,7 @@ const canvasRoutes = new Hono<{ Variables: AuthHonoTypes }>({
 
 				return c.json(patch, 201);
 			} catch (error) {
-				console.log({ error });
+				logger.error(error);
 				throw error;
 			}
 		},

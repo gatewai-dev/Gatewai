@@ -85,7 +85,6 @@ const blurProcessor: NodeProcessor = async ({ node, data }) => {
 
 		return { success: true, newResult };
 	} catch (err: unknown) {
-		console.log(err);
 		return {
 			success: false,
 			error: err instanceof Error ? err.message : "Blur processing failed",

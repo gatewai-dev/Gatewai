@@ -6,6 +6,7 @@ import { getQuickJS, type QuickJSContext, Scope } from "quickjs-emscripten";
 import { z } from "zod";
 import { zodToJsonSchema } from "zod-to-json-schema";
 import { GetCanvasEntities } from "../../../data-ops/canvas.js";
+import { logger } from "../../../logger.js";
 import {
 	type AVAILABLE_AGENT_MODELS,
 	getAgentModel,
@@ -176,7 +177,7 @@ export function createPatcherAgent(
 			if (!patcherContext) {
 				return "Error: Canvas not prepared. Call prepare_canvas first with canvasId and agentSessionId.";
 			}
-			console.log("[VM] Context prepared. Starting execution.");
+			logger.info("[VM] Context prepared. Starting execution.");
 
 			// Use Scope for automatic handle disposal
 			const scope = new Scope();
@@ -189,7 +190,7 @@ export function createPatcherAgent(
 				const undefinedHandle = scope.manage(context.undefined);
 
 				// Helper: Inject JSON data into VM global scope
-				console.log("[VM] Preparing to inject globals");
+				logger.info("[VM] Preparing to inject globals");
 
 				const injectGlobal = (name: string, data: any) => {
 					assert(context);

@@ -121,7 +121,6 @@ const CanvasAgentProvider = ({
 			// RTK Query's unwrap() is fine, but we can check if we still care about the result
 			const res = await createSession({ param: { id: canvasId } }).unwrap();
 
-			console.log("Act", res);
 			if (res?.id) {
 				setActiveSessionId(res.id);
 			}

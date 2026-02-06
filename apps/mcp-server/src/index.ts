@@ -214,7 +214,7 @@ app.use("*", async (c, next) => {
 
 	// Create scoped client if any auth header is present
 	let scopedClient: GatewaiApiClient | undefined;
-	console.log({ apiKey, cookie, authorization });
+
 	if (apiKey || cookie || authorization) {
 		const headers: Record<string, string> = {};
 		if (apiKey) headers["x-api-key"] = apiKey;

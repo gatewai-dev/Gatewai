@@ -298,9 +298,7 @@ export function useAgentChatStream(
 				);
 
 				if (!response.ok) {
-					console.log("Error", response);
 					const errorText = await response.text();
-					console.log("Error text", errorText);
 					throw new Error(errorText || "Failed to send message");
 				}
 

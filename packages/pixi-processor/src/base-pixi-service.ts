@@ -197,7 +197,6 @@ export abstract class BasePixiService implements IPixiProcessor {
 	): Promise<{ dataUrl: Blob; width: number; height: number }> {
 		return this.useApp(async (app) => {
 			this.ensureNotAborted(signal);
-			console.log({ apiKey });
 			const texture = await this.loadTexture(imageUrl, apiKey);
 			this.ensureNotAborted(signal);
 

@@ -39,9 +39,9 @@ export function PatchReviewCard({
 						key="accepted"
 						initial={{ opacity: 0, height: 0 }}
 						animate={{ opacity: 1, height: "auto" }}
-						className="flex items-center gap-2.5 px-3 py-2 rounded-lg border border-green-500/20 bg-green-500/5 text-green-600 dark:text-green-400"
+						className="flex items-center gap-2.5 px-3 py-2 rounded-lg border"
 					>
-						<Check className="w-3.5 h-3.5" />
+						<Check className="w-3.5 h-3.5 text-green-500" />
 						<span className="text-[11px] font-medium">Changes applied</span>
 					</motion.div>
 				) : status === "REJECTED" ? (
@@ -49,9 +49,9 @@ export function PatchReviewCard({
 						key="rejected"
 						initial={{ opacity: 0, height: 0 }}
 						animate={{ opacity: 1, height: "auto" }}
-						className="flex items-center gap-2.5 px-3 py-2 rounded-lg border border-red-500/20 bg-red-500/5 text-red-600 dark:text-red-400"
+						className="flex items-center gap-2.5 px-3 py-2 rounded-lg border"
 					>
-						<X className="w-3.5 h-3.5" />
+						<X className="w-3.5 h-3.5 text-red-500" />
 						<span className="text-[11px] font-medium">Changes discarded</span>
 					</motion.div>
 				) : !isReviewing ? (

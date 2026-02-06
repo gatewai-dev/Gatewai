@@ -179,7 +179,6 @@ const videoGenProcessor: NodeProcessor = async ({ node, data }) => {
 
 		return { success: true, newResult };
 	} catch (err: unknown) {
-		console.log(err);
 		if (err instanceof Error) {
 			logger.error(err.message);
 			return {

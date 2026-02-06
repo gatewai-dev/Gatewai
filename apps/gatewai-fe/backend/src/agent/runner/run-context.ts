@@ -1,4 +1,5 @@
 import { RunContext, type RunToolApprovalItem } from "@openai/agents";
+import { logger } from "../../logger.js";
 
 class GatewaiRunContext<TContext> extends RunContext<TContext> {
 	private toolLogs: Array<{
@@ -21,9 +22,8 @@ class GatewaiRunContext<TContext> extends RunContext<TContext> {
 		this.toolLogs.push(logEntry);
 
 		// Actual logging - you can replace this with a logger like pino or winston
-		console.log(
-			`\x1b[34m[Tool Response]\x1b[0m ${toolName} (${callId}):`,
-			JSON.stringify(result, null, 2),
+		logger.debug(
+			`\x1b[34m[Tool Response]\x1b[0m ${toolName} (${callId}): ${JSON.stringify(result, null, 2)}`,
 		);
 	}
 
@@ -39,7 +39,7 @@ class GatewaiRunContext<TContext> extends RunContext<TContext> {
 		approvalItem: RunToolApprovalItem,
 		options?: { alwaysApprove?: boolean },
 	) {
-		console.log(
+		logger.debug(
 			`\x1b[32m[Approval]\x1b[0m Approving tool: ${approvalItem.toolName}`,
 		);
 		super.approveTool(approvalItem, options);

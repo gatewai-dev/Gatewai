@@ -148,7 +148,7 @@ const processNodeJob = async (job: Job<NodeTaskJobData>) => {
 		selectionMap,
 		apiKey,
 	} = job.data;
-	console.log({ jd: job.data });
+
 	const startedAt = new Date();
 
 	// If the job was retried after a crash, the task might already be in a terminal state
@@ -238,7 +238,7 @@ const processNodeJob = async (job: Job<NodeTaskJobData>) => {
 		const batchTasks = await prisma.task.findMany({
 			where: { batchId },
 		});
-		console.log({ apiKey });
+
 		// 5. Execute Processor
 		const processor = nodeProcessors[node.type];
 		if (!processor) {
