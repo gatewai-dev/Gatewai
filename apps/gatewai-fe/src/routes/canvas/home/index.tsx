@@ -119,14 +119,14 @@ function CanvasHomeImpl() {
 	return (
 		<div className="min-h-screen bg-[#FAFAFA] dark:bg-[#09090B] selection:bg-primary/10">
 			<Helmet>
-				<title>Workspace - Gatewai</title>
+				<title>Canvases - Gatewai</title>
 			</Helmet>
 			<div className="max-w-7xl mx-auto px-6 py-12 lg:px-12 space-y-12">
 				{/* Apple-style Hero Header */}
 				<header className="flex flex-col md:flex-row justify-between items-end gap-6">
 					<div className="space-y-2">
 						<h1 className="text-4xl font-semibold tracking-tight text-foreground">
-							Workspace
+							Canvases
 						</h1>
 						<p className="text-lg text-muted-foreground font-medium">
 							Your creative engine, organized.
@@ -191,7 +191,7 @@ function CanvasHomeImpl() {
 								key={`skeleton-${
 									// biome-ignore lint/suspicious/noArrayIndexKey: No other props
 									i
-								}`}
+									}`}
 								className="h-48 rounded-3xl"
 							/>
 						))}
@@ -205,6 +205,28 @@ function CanvasHomeImpl() {
 								: "space-y-3",
 						)}
 					>
+						{/* Create New Card (Grid View Only) */}
+						{view === "grid" && (
+							<button
+								onClick={handleCreateCanvas}
+								disabled={isCreating}
+								className={cn(
+									"group relative aspect-4/3 rounded-4xl border-2 border-dashed border-zinc-200 dark:border-zinc-800",
+									"bg-transparent hover:border-primary/50 hover:bg-primary/5 transition-all duration-300",
+									"flex flex-col items-center justify-center gap-4 cursor-pointer outline-none focus-visible:ring-2 focus-visible:ring-primary",
+									isCreating && "opacity-50 cursor-wait",
+								)}
+								aria-label="Create new canvas"
+							>
+								<div className="h-14 w-14 rounded-2xl bg-white dark:bg-zinc-800 shadow-sm flex items-center justify-center group-hover:scale-110 group-hover:shadow-md transition-all duration-300 group-hover:text-primary">
+									<Plus className="h-7 w-7" />
+								</div>
+								<span className="font-semibold text-zinc-600 dark:text-zinc-400 group-hover:text-primary transition-colors">
+									Create New Canvas
+								</span>
+							</button>
+						)}
+
 						{canvasList.map((canvas) => (
 							<CanvasCard key={canvas.id} canvas={canvas} view={view} />
 						))}
@@ -358,24 +380,30 @@ function CanvasCard({
 		<div className="group relative">
 			<Link
 				to={`/canvas/${canvas.id}`}
-				className="relative aspect-4/3 rounded-4xl p-6 border border-zinc-200 dark:border-zinc-800 bg-white dark:bg-zinc-900 hover:shadow-2xl hover:-translate-y-1 transition-all duration-300 cursor-pointer overflow-hidden block"
+				className="relative aspect-4/3 rounded-4xl p-6 border border-zinc-200 dark:border-zinc-800 bg-white dark:bg-zinc-900/50 hover:bg-white/80 dark:hover:bg-zinc-900/80 hover:shadow-2xl hover:-translate-y-1 transition-all duration-300 cursor-pointer overflow-hidden block backdrop-blur-sm"
 				aria-label={`Open canvas ${canvas.name}, edited ${timeAgo} ago, ${nodeCount} nodes`}
 			>
 				<div className="flex flex-col h-full justify-between relative z-10">
 					<div className="flex justify-between items-start">
+						{/* Icon Box */}
 						<div
-							className="p-3 rounded-2xl bg-zinc-100 dark:bg-zinc-800 group-hover:bg-primary group-hover:text-white transition-all duration-300"
+							className="p-3 rounded-2xl bg-zinc-100 dark:bg-zinc-800 group-hover:bg-primary group-hover:text-white transition-all duration-500 shadow-sm"
 							aria-hidden="true"
 						>
 							<Network className="h-6 w-6" />
 						</div>
+
+						{/* Open badge (appears on hover) */}
+						<div className="opacity-0 group-hover:opacity-100 transform translate-x-4 group-hover:translate-x-0 transition-all duration-300 px-3 py-1 bg-primary/10 text-primary text-[10px] font-bold tracking-wider uppercase rounded-full">
+							Open
+						</div>
 					</div>
 
 					<div className="space-y-1">
-						<h3 className="text-xl font-semibold tracking-tight group-hover:text-primary transition-colors truncate pr-8">
+						<h3 className="text-xl font-semibold tracking-tight text-foreground group-hover:text-primary transition-colors truncate pr-8">
 							{canvas.name}
 						</h3>
-						<div className="flex items-center gap-3 text-[11px] font-medium text-muted-foreground">
+						<div className="flex items-center gap-3 text-[11px] font-medium text-muted-foreground group-hover:text-muted-foreground/80 transition-colors">
 							<div className="flex items-center gap-1">
 								<Clock className="h-3 w-3" aria-hidden="true" />
 								{timeAgo} ago
@@ -393,11 +421,11 @@ function CanvasCard({
 				</div>
 				{/* Subtle background glow on hover */}
 				<div
-					className="absolute -bottom-12 -right-12 w-32 h-32 bg-primary/5 rounded-full blur-3xl opacity-0 group-hover:opacity-100 transition-opacity"
+					className="absolute -bottom-12 -right-12 w-40 h-40 bg-primary/10 rounded-full blur-3xl opacity-0 group-hover:opacity-100 transition-opacity duration-500"
 					aria-hidden="true"
 				/>
 			</Link>
-			<div className="absolute top-4 right-4 z-20 opacity-0 group-hover:opacity-100 transition-opacity">
+			<div className="absolute top-4 right-4 z-20 opacity-0 group-hover:opacity-100 transition-opacity duration-200">
 				<AlertDialog
 					open={isDeleteDialogOpen}
 					onOpenChange={setIsDeleteDialogOpen}

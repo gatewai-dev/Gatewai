@@ -82,24 +82,24 @@ export function InputArea({
 			)}
 			<div
 				className={cn(
-					"relative flex flex-col gap-1.5 p-1 rounded-xl border transition-all duration-200",
-					"bg-background/80 backdrop-blur-xl",
-					"border-border/60 shadow-xl shadow-black/5",
-					"focus-within:border-primary/50 focus-within:ring-4 focus-within:ring-primary/5",
+					"relative flex flex-col gap-2 p-1.5 rounded-[20px] border transition-all duration-300",
+					"bg-background/95 backdrop-blur-2xl",
+					"border-border/40 hover:border-border/80 shadow-lg shadow-black/5",
+					"focus-within:border-primary/50 focus-within:ring-4 focus-within:ring-primary/10 focus-within:shadow-xl",
 				)}
 			>
 				{/* Input Field */}
-				<div className="flex items-start gap-2 px-1 pt-1">
-					<span className="text-[10px] font-medium bg-primary/10 text-primary px-1.5 py-0.5 rounded-md mt-1 flex-shrink-0">
-						@agent
+				<div className="flex items-start gap-3 px-2 pt-2">
+					<span className="text-[10px] font-bold tracking-wide uppercase bg-primary/10 text-primary px-2 py-1 rounded-md mt-1 flex-shrink-0 select-none">
+						Agent
 					</span>
 					<AutosizeTextarea
 						ref={textareaRef}
 						value={inputValue}
 						onChange={(e) => setInputValue(e.target.value)}
 						onKeyDown={handleKeyDown}
-						placeholder="Enter your request..."
-						className="flex-1 border-0 focus-visible:ring-0 min-h-[24px] focus-visible:ring-offset-0 p-1 text-xs shadow-none"
+						placeholder="Ask agent to generate a workflow..."
+						className="flex-1 border-0 focus-visible:ring-0 min-h-[24px] focus-visible:ring-offset-0 p-1 text-sm shadow-none bg-transparent placeholder:text-muted-foreground/60"
 						minHeight={24}
 						maxHeight={160}
 						aria-label="Message input"
@@ -108,14 +108,14 @@ export function InputArea({
 				</div>
 
 				{/* Controls */}
-				<div className="flex items-center justify-between px-1 pb-1">
+				<div className="flex items-center justify-between px-2 pb-1 pt-1 border-t border-border/10 mt-1">
 					<Select
 						value={selectedModel}
 						onValueChange={setSelectedModel}
 						disabled={isLoading}
 					>
 						<SelectTrigger
-							className="text-[10px] border-0 hover:bg-accent/50 gap-1 px-2 w-auto shadow-none focus:ring-0"
+							className="h-7 text-[10px] uppercase font-bold tracking-wider border-0 bg-transparent hover:bg-accent/50 gap-2 px-2.5 w-auto shadow-none focus:ring-0 rounded-lg text-muted-foreground hover:text-foreground transition-colors"
 							aria-label="Select AI model"
 						>
 							<SelectValue placeholder="Model" />
@@ -134,21 +134,26 @@ export function InputArea({
 							size="icon"
 							variant="ghost"
 							onClick={stopGeneration}
-							className="h-7 w-7 text-destructive hover:bg-destructive/10 rounded-full"
+							className="h-8 w-8 text-destructive bg-destructive/5 hover:bg-destructive/15 rounded-full transition-all duration-200"
 							aria-label="Stop generation"
 							title="Stop generation"
 						>
-							<StopCircle className="w-4 h-4" />
+							<StopCircle className="w-5 h-5 animate-pulse" />
 						</Button>
 					) : (
 						<Button
 							size="icon"
 							onClick={handleSubmit}
 							disabled={!inputValue.trim()}
-							className="h-6 w-6 rounded-full transition-transform active:scale-95 shadow-lg shadow-primary/20"
+							className={cn(
+								"h-8 w-8 rounded-full transition-all duration-300 shadow-md",
+								inputValue.trim()
+									? "bg-primary text-primary-foreground shadow-primary/25 hover:scale-105 hover:shadow-lg"
+									: "bg-muted text-muted-foreground opacity-50 shadow-none",
+							)}
 							aria-label="Send message"
 						>
-							<ArrowRight className="size-3.5" />
+							<ArrowRight className="size-4" />
 						</Button>
 					)}
 				</div>

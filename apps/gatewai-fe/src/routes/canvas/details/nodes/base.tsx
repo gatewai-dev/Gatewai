@@ -258,10 +258,10 @@ const NodeHandle = memo(
 					)}
 				>
 					<span
-						className="text-[10px] font-bold uppercase tracking-wider shadow-sm leading-none"
+						className="text-[10px] font-bold uppercase tracking-wider shadow-sm leading-none bg-background/80 backdrop-blur-md px-1.5 py-0.5 rounded-sm border border-border/50"
 						style={{
 							color: activeColor,
-							textShadow: "0 1px 2px rgba(0,0,0,0.1)",
+							textShadow: "none",
 						}}
 					>
 						{handle.label || handle.dataTypes[0]}
@@ -336,10 +336,12 @@ const BaseNode = memo(
 			<div
 				className={cn(
 					"relative flex flex-col w-full h-full group/node",
-					dragging ? "shadow-lg scale-[1.01]" : "shadow-sm",
-					"bg-card border border-border",
-					"rounded-2xl",
-					selected && "ring-1 ring-primary border-primary",
+					"rounded-3xl transition-all duration-300",
+					dragging ? "shadow-2xl scale-[1.02] cursor-grabbing" : "shadow-lg hover:shadow-xl",
+					"bg-card/85 backdrop-blur-xl border border-white/20 dark:border-white/10", // Glassmorphism
+					selected
+						? "ring-2 ring-primary/50 border-primary shadow-[0_0_30px_rgba(183,234,72,0.15)]"
+						: "hover:border-primary/30",
 					props.className,
 				)}
 			>
@@ -358,16 +360,26 @@ const BaseNode = memo(
 				</div>
 
 				{/* Content Container */}
-				<div className="flex flex-col h-full overflow-hidden">
-					<div className="flex items-center justify-between px-3 py-2 border-b border-border/40 bg-muted/20 drag-handle cursor-grab active:cursor-grabbing">
-						<div className="flex items-center gap-2.5 min-w-0">
+				<div className="flex flex-col h-full overflow-hidden rounded-3xl">
+					<div
+						className={cn(
+							"flex items-center justify-between px-4 py-3 border-b border-border/10 bg-gradient-to-b from-white/5 to-transparent drag-handle cursor-grab active:cursor-grabbing",
+							selected && "bg-primary/5",
+						)}
+					>
+						<div className="flex items-center gap-3 min-w-0">
 							{MainIcon && (
-								<div className="text-foreground">
+								<div
+									className={cn(
+										"text-muted-foreground transition-colors duration-300",
+										selected ? "text-primary" : "group-hover/node:text-foreground",
+									)}
+								>
 									<MainIcon className="w-5 h-5" />
 								</div>
 							)}
 							<div className="flex flex-col min-w-0">
-								<span className="text-xs font-semibold text-foreground truncate">
+								<span className="text-sm font-semibold text-foreground/90 truncate tracking-tight">
 									{node?.name}
 								</span>
 							</div>
@@ -375,7 +387,7 @@ const BaseNode = memo(
 						<NodeMenu id={props.id} />
 					</div>
 
-					<div className="flex-1 p-2 nodrag nopan cursor-auto bg-card/50 rounded-3xl">
+					<div className="flex-1 p-2 nodrag nopan cursor-auto bg-transparent">
 						{props.children}
 					</div>
 				</div>
