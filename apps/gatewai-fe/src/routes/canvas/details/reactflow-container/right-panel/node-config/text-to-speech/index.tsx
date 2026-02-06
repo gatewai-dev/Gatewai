@@ -6,9 +6,9 @@ import {
 	TTS_VOICE_NAMES,
 } from "@gatewai/types";
 import { zodResolver } from "@hookform/resolvers/zod";
-import { isEqual } from "lodash";
+import { debounce, isEqual } from "lodash";
 import { Plus, Trash2 } from "lucide-react";
-import { memo, useCallback, useEffect, useMemo } from "react";
+import { memo, useEffect, useMemo } from "react";
 import { useFieldArray, useForm } from "react-hook-form";
 import { Button } from "@/components/ui/button";
 import {
@@ -29,10 +29,11 @@ import { SelectField } from "../../../../components/fields/select";
 const TextToSpeechNodeConfigComponent = memo(
 	({ node }: { node: NodeEntityType }) => {
 		const { onNodeConfigUpdate } = useCanvasCtx();
-		const updateConfig = useCallback(
-			(cfg: TextToSpeechNodeConfig) => {
-				onNodeConfigUpdate({ id: node.id, newConfig: cfg });
-			},
+		const updateConfig = useMemo(
+			() =>
+				debounce((cfg: TextToSpeechNodeConfig) => {
+					onNodeConfigUpdate({ id: node.id, newConfig: cfg });
+				}, 500),
 			[node.id, onNodeConfigUpdate],
 		);
 		const nodeConfig = node.config as unknown as TextToSpeechNodeConfig;
@@ -61,9 +62,12 @@ const TextToSpeechNodeConfigComponent = memo(
 
 		useEffect(() => {
 			if (node?.config) {
-				form.reset(nodeConfig as TextToSpeechNodeConfig);
+				const currentValues = form.getValues();
+				if (!isEqual(defaultValue, currentValues)) {
+					form.reset(defaultValue);
+				}
 			}
-		}, [node, form, nodeConfig]);
+		}, [node, form, defaultValue]);
 
 		useEffect(() => {
 			const subscription = form.watch((value) => {

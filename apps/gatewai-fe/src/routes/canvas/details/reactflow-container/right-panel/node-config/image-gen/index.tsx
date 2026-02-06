@@ -6,7 +6,8 @@ import {
 	ImageGenNodeConfigSchema,
 } from "@gatewai/types";
 import { zodResolver } from "@hookform/resolvers/zod";
-import { memo, useCallback, useEffect } from "react";
+import { debounce, isEqual } from "lodash";
+import { memo, useEffect, useMemo } from "react";
 import { useForm } from "react-hook-form";
 import { Form } from "@/components/ui/form";
 import { useCanvasCtx } from "@/routes/canvas/details/ctx/canvas-ctx";
@@ -16,10 +17,11 @@ import { SelectField } from "../../../../components/fields/select";
 const ImageGenNodeConfigComponent = memo(
 	({ node }: { node: NodeEntityType }) => {
 		const { onNodeConfigUpdate } = useCanvasCtx();
-		const updateConfig = useCallback(
-			(cfg: ImageGenConfig) => {
-				onNodeConfigUpdate({ id: node.id, newConfig: cfg });
-			},
+		const updateConfig = useMemo(
+			() =>
+				debounce((cfg: ImageGenConfig) => {
+					onNodeConfigUpdate({ id: node.id, newConfig: cfg });
+				}, 500),
 			[node.id, onNodeConfigUpdate],
 		);
 		const nodeConfig = node.config as ImageGenConfig;
@@ -34,7 +36,10 @@ const ImageGenNodeConfigComponent = memo(
 
 		useEffect(() => {
 			if (node?.config) {
-				form.reset(node.config as ImageGenConfig);
+				const currentValues = form.getValues();
+				if (!isEqual(node.config, currentValues)) {
+					form.reset(node.config as ImageGenConfig);
+				}
 			}
 		}, [node, form]);
 

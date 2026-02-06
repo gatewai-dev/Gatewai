@@ -7,7 +7,8 @@ import {
 	VideoGenNodeConfigSchema,
 } from "@gatewai/types";
 import { zodResolver } from "@hookform/resolvers/zod";
-import { memo, useCallback, useEffect, useMemo } from "react";
+import { debounce, isEqual } from "lodash";
+import { memo, useEffect, useMemo } from "react";
 import { useForm } from "react-hook-form";
 import { Form, FormDescription } from "@/components/ui/form";
 import {
@@ -33,10 +34,11 @@ const VideoGenNodeConfigComponent = memo(
 			);
 		}, [handles]);
 
-		const updateConfig = useCallback(
-			(cfg: VideoGenNodeConfig) => {
-				onNodeConfigUpdate({ id: node.id, newConfig: cfg });
-			},
+		const updateConfig = useMemo(
+			() =>
+				debounce((cfg: VideoGenNodeConfig) => {
+					onNodeConfigUpdate({ id: node.id, newConfig: cfg });
+				}, 500),
 			[node.id, onNodeConfigUpdate],
 		);
 		const nodeConfig = node.config as VideoGenNodeConfig;
@@ -53,7 +55,10 @@ const VideoGenNodeConfigComponent = memo(
 
 		useEffect(() => {
 			if (node?.config) {
-				form.reset(node.config as VideoGenNodeConfig);
+				const currentValues = form.getValues();
+				if (!isEqual(node.config, currentValues)) {
+					form.reset(node.config as VideoGenNodeConfig);
+				}
 			}
 		}, [node, form]);
 

@@ -4,7 +4,8 @@ import {
 	LLMNodeConfigSchema,
 } from "@gatewai/types";
 import { zodResolver } from "@hookform/resolvers/zod";
-import { memo, useCallback, useEffect } from "react";
+import { debounce, isEqual } from "lodash";
+import { memo, useEffect, useMemo } from "react";
 import { useForm } from "react-hook-form";
 import { Form } from "@/components/ui/form";
 import { SliderField } from "@/routes/canvas/details/components/fields/slider";
@@ -14,10 +15,11 @@ import { SelectField } from "../../../../components/fields/select";
 
 const LLMNodeConfigComponent = memo(({ node }: { node: NodeEntityType }) => {
 	const { onNodeConfigUpdate } = useCanvasCtx();
-	const updateConfig = useCallback(
-		(cfg: LLMNodeConfig) => {
-			onNodeConfigUpdate({ id: node.id, newConfig: cfg });
-		},
+	const updateConfig = useMemo(
+		() =>
+			debounce((cfg: LLMNodeConfig) => {
+				onNodeConfigUpdate({ id: node.id, newConfig: cfg });
+			}, 500),
 		[node.id, onNodeConfigUpdate],
 	);
 	const nodeConfig = node.config as LLMNodeConfig;
@@ -31,7 +33,11 @@ const LLMNodeConfigComponent = memo(({ node }: { node: NodeEntityType }) => {
 
 	useEffect(() => {
 		if (node?.config) {
-			form.reset(node.config as LLMNodeConfig);
+			const currentValues = form.getValues();
+			// Only reset if external state differs from internal state
+			if (!isEqual(node.config, currentValues)) {
+				form.reset(node.config as LLMNodeConfig);
+			}
 		}
 	}, [node, form]);
 

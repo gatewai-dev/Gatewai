@@ -146,7 +146,6 @@ export function ApiKeysSettings({ open, onOpenChange }: ApiKeysSettingsProps) {
 							</Button>
 						</form>
 					</Form>
-					<Separator />
 					{/* New Key Display */}
 					{createdKey && (
 						<div className="rounded-lg border bg-muted/50 transition-all animate-in fade-in slide-in-from-top-2">
