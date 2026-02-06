@@ -22,56 +22,6 @@ export async function SEED_createNodeTemplates(prisma: PrismaClient) {
 				layerUpdates: {},
 			},
 		},
-		// {
-		// 	type: NodeType.VideoGenExtend,
-		// 	displayName: "Extend Video",
-		// 	category: "AI",
-		// 	description: "Extends gemini videos up to 148 seconds",
-		// 	subcategory: "Video",
-		// 	tokenPrice: 0.0,
-		// 	variableInputs: false,
-		// 	variableOutputs: false,
-		// 	isTerminalNode: true,
-		// 	isTransient: false,
-		// 	templateHandles: {
-		// 		create: [
-		// 			{
-		// 				type: HandleType.Input,
-		// 				dataTypes: [DataType.Video],
-		// 				label: "Video to extend",
-		// 				required: true,
-		// 				order: 0,
-		// 			},
-		// 			{
-		// 				type: HandleType.Input,
-		// 				dataTypes: [DataType.Text],
-		// 				label: "Prompt",
-		// 				required: true,
-		// 				order: 1,
-		// 			},
-		// 			{
-		// 				type: HandleType.Input,
-		// 				dataTypes: [DataType.Text],
-		// 				label: "Negative Prompt",
-		// 				required: false,
-		// 				order: 2,
-		// 			},
-		// 			{
-		// 				type: HandleType.Output,
-		// 				dataTypes: [DataType.Video],
-		// 				label: "Result",
-		// 				order: 0,
-		// 			},
-		// 		],
-		// 	},
-		// 	defaultConfig: {
-		// 		model: "veo-3.1-generate-preview",
-		// 		aspectRatio: "16:9",
-		// 		resolution: "720p",
-		// 		durationSeconds: "8",
-		// 		personGeneration: "allow_all",
-		// 	},
-		// },
 		{
 			type: NodeType.VideoGenFirstLastFrame,
 			displayName: "First to last frame video",
@@ -694,5 +644,18 @@ export async function SEED_createNodeTemplates(prisma: PrismaClient) {
 				data: node,
 			});
 		}
+	}
+
+	try {
+		// Delete all nodes of this type first to avoid FK constraint violation
+		await prisma.node.deleteMany({
+			where: { template: { type: "VideoGenExtend" as any as NodeType } },
+		});
+
+		await prisma.nodeTemplate.delete({
+			where: { type: "VideoGenExtend" as any as NodeType },
+		});
+	} catch (e) {
+		console.log(e);
 	}
 }

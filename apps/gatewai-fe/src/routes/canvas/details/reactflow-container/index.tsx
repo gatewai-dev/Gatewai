@@ -12,6 +12,7 @@ import type { DragEventHandler, MouseEventHandler } from "react";
 import { createContext, useEffect, useRef, useState } from "react";
 import { Helmet } from "react-helmet-async";
 import { useHotkeys } from "react-hotkeys-hook";
+import { LoadingSpinner } from "@/components/ui/loading-spinner";
 import { useAppDispatch, useAppSelector } from "@/store";
 import { setSelectedEdgeIds, setSelectedNodeIds } from "@/store/node-meta";
 import { selectRFEdges, selectRFNodes } from "@/store/rfstate";
@@ -41,6 +42,7 @@ function ReactflowContainer({ children }: ReactFlowProps) {
 		rfInstance,
 		isReviewing,
 		canvas,
+		isLoading,
 	} = useCanvasCtx();
 	const dispatch = useAppDispatch();
 
@@ -156,6 +158,14 @@ function ReactflowContainer({ children }: ReactFlowProps) {
 			event.preventDefault();
 		}
 	};
+
+	if (isLoading) {
+		return (
+			<div className="w-full h-screen bg-black flex items-center justify-center">
+				<LoadingSpinner size={60} />
+			</div>
+		);
+	}
 
 	return (
 		<div

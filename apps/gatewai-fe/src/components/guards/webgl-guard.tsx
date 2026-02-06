@@ -1,6 +1,7 @@
-import { Loader2, MonitorOff, RefreshCw } from "lucide-react";
+import { MonitorOff, RefreshCw } from "lucide-react";
 import { type ReactNode, useEffect, useState } from "react";
 import { Button } from "@/components/ui/button"; // Adjusted path to standard shadcn alias
+import { LoadingSpinner } from "../ui/loading-spinner";
 
 export function useWebGLSupport() {
 	const [isSupported, setIsSupported] = useState<boolean | null>(null);
@@ -34,7 +35,7 @@ const WebGLGuard = ({ children }: { children: ReactNode }) => {
 	if (isSupported === null) {
 		return (
 			<div className="fixed inset-0 z-50 flex flex-col items-center justify-center bg-background p-6 space-y-4">
-				<Loader2 className="w-12 h-12 text-primary animate-spin" />
+				<LoadingSpinner size={60} />
 				<p className="text-sm font-medium text-muted-foreground animate-pulse">
 					Detecting hardware acceleration...
 				</p>
