@@ -5,9 +5,6 @@ Gatewai is a powerful, node-based vibeflow platform designed to bridge the gap b
 > [!NOTE]
 > This project is built for the Gemini 3 Hackathon. For that reason, **main branch is freezed for Hackathon submission until March.** We'll continue building Gatewai in **dev** branch. [Drop us a like](https://devpost.com/software/gatewai-ylt5uo). 
 
-> [!NOTE]
-> The app is in alpha stage, until a stable release, we may break things or make design changes that will make your existing workflows non-functional.
-
 ![Gatewai Workflow](assets/workflow_1.png)
 
 ---
@@ -76,6 +73,8 @@ Gatewai's intelligent agent system uses a sophisticated multi-agent architecture
 
 See [INSTALLATION.md](https://github.com/gatewai-dev/Gatewai/blob/main/docs/INSTALLATION.md)
 
+> [!WARNING]
+> The project is in alpha stage, until a stable release, we may break things or make design changes that will make your existing workflows non-functional.
 
 ### ⭐ Stay Updated
 
@@ -90,3 +89,4 @@ Connect with other creators, share workflows, and vote on upcoming features in o
 ## License
 
 See [LICENSE](https://github.com/gatewai-dev/Gatewai/blob/main/LICENCE)
+
