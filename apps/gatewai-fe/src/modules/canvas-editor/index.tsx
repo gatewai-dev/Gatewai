@@ -55,13 +55,15 @@ import React, {
 } from "react";
 import { useHotkeys } from "react-hotkeys-hook";
 import {
-	Group,
+	Group as KonvaGroup,
 	Image as KonvaImage,
+	Label as KonvaLabel,
 	Layer as KonvaLayer,
 	Text as KonvaText,
 	Line,
 	Rect,
 	Stage,
+	Tag,
 	Transformer,
 } from "react-konva";
 import useImage from "use-image";
@@ -100,15 +102,18 @@ import {
 	TooltipProvider,
 	TooltipTrigger,
 } from "@/components/ui/tooltip";
+import { dataTypeColors } from "@/config/colors";
 import { GetAssetEndpoint, GetFontAssetUrl } from "@/lib/file";
 import { fontManager } from "@/lib/fonts";
+import { CollapsibleSection } from "@/modules/common/CollapsibleSection";
+import { StyleControls } from "@/modules/common/properties/StyleControls";
+import { TransformControls } from "@/modules/common/properties/TransformControls";
+import { TypographyControls } from "@/modules/common/properties/TypographyControls";
+import { useAppSelector } from "@/store";
 import { useGetFontListQuery } from "@/store/fonts";
 import type { HandleEntityType } from "@/store/handles";
+import { handleSelectors } from "@/store/handles";
 import type { NodeEntityType } from "@/store/nodes";
-import { CollapsibleSection } from "../common/CollapsibleSection";
-import { StyleControls } from "../common/properties/StyleControls";
-import { TransformControls } from "../common/properties/TransformControls";
-import { TypographyControls } from "../common/properties/TypographyControls";
 
 //#region CONSTANTS
 // Local defaults removed in favor of shared COMPOSITOR_DEFAULTS
@@ -144,6 +149,33 @@ interface LocalCompositorLayer extends CompositorLayer {
 	computedHeight?: number;
 	computedWidth?: number;
 }
+
+/**
+ * Resolves the display label for a layer based on priority:
+ * 1. Handle Label (if not null/empty)
+ * 2. First DataType from Handle
+ * 3. Layer ID
+ */
+const resolveLayerLabel = (
+	handle: any,
+	layer: LocalCompositorLayer,
+): string => {
+	if (
+		handle?.label &&
+		typeof handle.label === "string" &&
+		handle.label.trim() !== ""
+	) {
+		return handle.label;
+	}
+	if (
+		Array.isArray(handle?.dataTypes) &&
+		handle.dataTypes.length > 0 &&
+		handle.dataTypes[0]
+	) {
+		return handle.dataTypes[0];
+	}
+	return layer.id;
+};
 
 interface EditorContextType {
 	layers: LocalCompositorLayer[];
@@ -183,6 +215,8 @@ interface EditorContextType {
 	getImageUrl: (handleId: HandleEntityType["id"]) => string | undefined;
 	isDirty: boolean;
 	setIsDirty: Dispatch<SetStateAction<boolean>>;
+	hoveredId: string | null;
+	setHoveredId: (id: string | null) => void;
 }
 
 interface Guide {
@@ -301,6 +335,15 @@ const useSnap = () => {
 
 			if (vGuides.length > 0) node.x(newX);
 			if (hGuides.length > 0) node.y(newY);
+
+			// Sync Label Position
+			const labelNode = node.getStage()?.findOne(`#label-${id}`);
+			if (labelNode) {
+				const scale = node.getStage()?.scaleX() || 1;
+				const invScale = 1 / scale;
+				labelNode.x(newX);
+				labelNode.y(newY - 26 * invScale);
+			}
 
 			const guideMap = new Map<string, Guide>();
 			[...vGuides, ...hGuides].forEach((g) => {
@@ -435,6 +478,8 @@ const ImageLayer: React.FC<LayerProps> = ({
 			onDragEnd={onDragEnd}
 			onTransform={handleTransform}
 			onTransformEnd={onTransformEnd}
+			onMouseEnter={() => useEditor().setHoveredId(layer.id)}
+			onMouseLeave={() => useEditor().setHoveredId(null)}
 			globalCompositeOperation={layer.blendMode as GlobalCompositeOperation}
 			opacity={layer.opacity ?? 1}
 			stroke={layer.stroke}
@@ -600,6 +645,8 @@ const TextLayer: React.FC<LayerProps> = ({
 			onDragMove={onDragMove}
 			onDragEnd={onDragEnd}
 			onTransformEnd={onTransformEnd}
+			onMouseEnter={() => useEditor().setHoveredId(layer.id)}
+			onMouseLeave={() => useEditor().setHoveredId(null)}
 			globalCompositeOperation={layer.blendMode as GlobalCompositeOperation}
 			align={layer.align || COMPOSITOR_DEFAULTS.ALIGN}
 			letterSpacing={layer.letterSpacing ?? COMPOSITOR_DEFAULTS.LETTER_SPACING}
@@ -610,6 +657,60 @@ const TextLayer: React.FC<LayerProps> = ({
 			opacity={layer.opacity ?? 1}
 			visible={layer.opacity !== 0}
 		/>
+	);
+};
+
+const LayerLabel: React.FC<{ layer: LocalCompositorLayer }> = ({ layer }) => {
+	const { scale } = useEditor();
+	const handles = useAppSelector(handleSelectors.selectEntities);
+	const handle = handles[layer.inputHandleId];
+	const name = useMemo(() => resolveLayerLabel(handle, layer), [handle, layer]);
+
+	const colorConfig = useMemo(() => {
+		const type = handle?.dataTypes?.[0];
+		// @ts-expect-error
+		return dataTypeColors[type] || { hex: "#555" };
+	}, [handle]);
+
+	const { selectedId, hoveredId } = useEditor();
+	const isVisible = layer.id === selectedId || layer.id === hoveredId;
+
+	// Constant size label (inverse scale)
+	const invScale = 1 / scale;
+
+	if (layer.opacity === 0 || !isVisible) return null;
+
+	// Calculate Y offset to position label ABOVE the layer
+	// Tag height is roughly 24px (fontSize 12 + padding 6*2) => 24. adjust as needed.
+	// We want it slightly above: say 26px.
+	const yOffset = 26 * invScale;
+
+	return (
+		<KonvaLabel
+			id={`label-${layer.id}`}
+			x={layer.x}
+			y={layer.y - yOffset}
+			scaleX={invScale}
+			scaleY={invScale}
+			listening={false}
+		>
+			<Tag
+				fill={colorConfig.hex}
+				cornerRadius={2}
+				opacity={1}
+				shadowColor="black"
+				shadowBlur={2}
+				shadowOpacity={0.2}
+			/>
+			<KonvaText
+				text={name}
+				padding={4}
+				fill="#fff"
+				fontSize={10}
+				fontFamily="Inter"
+				fontStyle="bold"
+			/>
+		</KonvaLabel>
 	);
 };
 
@@ -712,7 +813,7 @@ const ArtboardBackground: React.FC = () => {
 	}, []);
 
 	return (
-		<Group>
+		<KonvaGroup>
 			<Rect
 				x={0}
 				y={0}
@@ -734,7 +835,7 @@ const ArtboardBackground: React.FC = () => {
 				fillPatternRepeat="repeat"
 				listening={false}
 			/>
-		</Group>
+		</KonvaGroup>
 	);
 };
 
@@ -950,6 +1051,12 @@ const Canvas: React.FC = () => {
 					return null;
 				})}
 			</KonvaLayer>
+			{/* Labels on top of content but below UI overlays */}
+			<KonvaLayer listening={false}>
+				{sortedLayers.map((layer) => (
+					<LayerLabel key={layer.id} layer={layer} />
+				))}
+			</KonvaLayer>
 			<KonvaLayer>
 				<TransformerComponent />
 			</KonvaLayer>
@@ -983,6 +1090,9 @@ const LayerItem: React.FC<LayerItemProps> = ({
 		transition,
 		isDragging,
 	} = useSortable({ id: layer.id });
+	const handles = useAppSelector(handleSelectors.selectEntities);
+	const handle = handles[layer.inputHandleId];
+	const name = useMemo(() => resolveLayerLabel(handle, layer), [handle, layer]);
 
 	const style = {
 		transform: CSS.Transform.toString(transform),
@@ -1033,7 +1143,7 @@ const LayerItem: React.FC<LayerItemProps> = ({
 			<span
 				className={`truncate flex-1 text-[11px] font-medium ${isSelected ? "text-blue-100" : "text-gray-300"}`}
 			>
-				{layer.id}
+				{name}
 			</span>
 
 			<div className="flex items-center gap-1 opacity-0 group-hover:opacity-100 transition-opacity">
@@ -1150,9 +1260,6 @@ const LayersPanel: React.FC = () => {
 };
 
 const InspectorPanel: React.FC = () => {
-	const { data: fontList } = useGetFontListQuery({});
-	const fontNames = useMemo(() => fontList ?? [], [fontList]);
-
 	const {
 		selectedId,
 		layers,
@@ -1191,30 +1298,7 @@ const InspectorPanel: React.FC = () => {
 		}
 	};
 
-	const toggleStyle = (style: "bold" | "italic") => {
-		if (!selectedLayer || selectedLayer.type !== "Text") return;
-		const current = selectedLayer.fontStyle || "normal";
-		let next = current;
-		if (next.includes(style)) {
-			next = next.replace(style, "").trim();
-		} else {
-			next = `${style} ${next}`;
-		}
-		if (next.trim() === "") next = "normal";
-		updateLayer({ fontStyle: next });
-	};
-
-	const toggleUnderline = () => {
-		if (!selectedLayer || selectedLayer.type !== "Text") return;
-		updateLayer({
-			textDecoration:
-				selectedLayer.textDecoration === "underline" ? "" : "underline",
-		});
-	};
-
-	const isBold = selectedLayer?.fontStyle?.includes("bold") ?? false;
-	const isItalic = selectedLayer?.fontStyle?.includes("italic") ?? false;
-	const isUnderline = selectedLayer?.textDecoration === "underline";
+	// Unused toggles removed
 
 	if (!selectedLayer) {
 		return (
@@ -1360,7 +1444,9 @@ const InspectorPanel: React.FC = () => {
 							</Label>
 							<Select
 								value={selectedLayer.blendMode || "source-over"}
-								onValueChange={(val) => updateLayer({ blendMode: val })}
+								onValueChange={(val) =>
+									updateLayer({ blendMode: val as GlobalCompositeOperation })
+								}
 							>
 								<SelectTrigger className="h-8 text-[11px] capitalize bg-white/5 border-white/10 text-white">
 									<SelectValue />
@@ -1547,6 +1633,7 @@ export const ImageDesignerEditor: React.FC<ImageDesignerEditorProps> = ({
 	);
 
 	const [selectedId, setSelectedId] = useState<string | null>(null);
+	const [hoveredId, setHoveredId] = useState<string | null>(null);
 	const [viewportWidth, setViewportWidth] = useState(nodeConfig.width ?? 1080);
 	const [viewportHeight, setViewportHeight] = useState(
 		nodeConfig.height ?? 1080,
@@ -1905,6 +1992,8 @@ export const ImageDesignerEditor: React.FC<ImageDesignerEditorProps> = ({
 				getImageUrl,
 				isDirty,
 				setIsDirty,
+				hoveredId,
+				setHoveredId,
 			}}
 		>
 			<div className="flex h-screen w-screen bg-[#050505] overflow-hidden relative text-foreground font-sans selection:bg-blue-500/30">
