@@ -73,10 +73,6 @@ Gatewai's intelligent agent system uses a sophisticated multi-agent architecture
 
 See [INSTALLATION.md](https://github.com/gatewai-dev/Gatewai/blob/main/docs/INSTALLATION.md)
 
-### Contributing
-
-We only accept small fixes and updates, and issues that have the "help wanted" label for now.
-
 ### Community & Support
 
 * **Show Your Support ⭐**: Help us grow by starring the repository!
