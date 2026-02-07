@@ -1,5 +1,14 @@
 # @gatewai/mcp-server
 
+## 0.0.18
+
+### Patch Changes
+
+- ebc1377: Remove handle
+- Updated dependencies [ebc1377]
+  - @gatewai/api-client@0.0.18
+  - @gatewai/types@0.0.18
+
 ## 0.0.17
 
 ### Patch Changes

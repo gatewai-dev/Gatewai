@@ -1,5 +1,11 @@
 # @gatewai/pixi-processor
 
+## 0.0.18
+
+### Patch Changes
+
+- ebc1377: Remove handle
+
 ## 0.0.17
 
 ### Patch Changes
