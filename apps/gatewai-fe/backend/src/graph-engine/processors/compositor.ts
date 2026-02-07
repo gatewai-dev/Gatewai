@@ -148,7 +148,7 @@ const compositorProcessor: NodeProcessor = async ({ node, data }) => {
 					height: layerConfig.height || undefined,
 					fontSize: layerConfig.fontSize ?? COMPOSITOR_DEFAULTS.FONT_SIZE,
 					fontFamily: layerConfig.fontFamily ?? COMPOSITOR_DEFAULTS.FONT_FAMILY,
-					fontStyle: layerConfig.fontStyle ?? "normal",
+					fontStyle: `${layerConfig.fontWeight ?? "normal"} ${layerConfig.fontStyle ?? "normal"}`,
 					fill: layerConfig.fill ?? COMPOSITOR_DEFAULTS.FILL,
 					align: layerConfig.align ?? COMPOSITOR_DEFAULTS.ALIGN,
 					verticalAlign:

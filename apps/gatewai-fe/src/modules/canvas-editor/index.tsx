@@ -428,7 +428,8 @@ const ImageLayer: React.FC<LayerProps> = ({
 	onDragEnd,
 	onTransformEnd,
 }) => {
-	const { setSelectedId, updateLayers, getImageUrl, mode } = useEditor();
+	const { setSelectedId, updateLayers, getImageUrl, mode, setHoveredId } =
+		useEditor();
 	const url = getImageUrl(layer.inputHandleId);
 	const [image] = useImage(url ?? "", "anonymous");
 
@@ -478,8 +479,8 @@ const ImageLayer: React.FC<LayerProps> = ({
 			onDragEnd={onDragEnd}
 			onTransform={handleTransform}
 			onTransformEnd={onTransformEnd}
-			onMouseEnter={() => useEditor().setHoveredId(layer.id)}
-			onMouseLeave={() => useEditor().setHoveredId(null)}
+			onMouseEnter={() => setHoveredId(layer.id)}
+			onMouseLeave={() => setHoveredId(null)}
 			globalCompositeOperation={layer.blendMode as GlobalCompositeOperation}
 			opacity={layer.opacity ?? 1}
 			stroke={layer.stroke}
@@ -507,6 +508,7 @@ const TextLayer: React.FC<LayerProps> = ({
 		stageRef,
 		transformerRef,
 		selectedId,
+		setHoveredId,
 	} = useEditor();
 
 	const text = getTextData(layer.inputHandleId);
@@ -632,7 +634,7 @@ const TextLayer: React.FC<LayerProps> = ({
 			text={text as string}
 			fontSize={layer.fontSize ?? COMPOSITOR_DEFAULTS.FONT_SIZE}
 			fontFamily={layer.fontFamily ?? COMPOSITOR_DEFAULTS.FONT_FAMILY}
-			fontStyle={layer.fontStyle ?? "normal"}
+			fontStyle={`${layer.fontWeight ?? "normal"} ${layer.fontStyle ?? "normal"}`}
 			textDecoration={layer.textDecoration ?? ""}
 			fill={layer.fill ?? COMPOSITOR_DEFAULTS.FILL}
 			rotation={layer.rotation}
@@ -645,8 +647,8 @@ const TextLayer: React.FC<LayerProps> = ({
 			onDragMove={onDragMove}
 			onDragEnd={onDragEnd}
 			onTransformEnd={onTransformEnd}
-			onMouseEnter={() => useEditor().setHoveredId(layer.id)}
-			onMouseLeave={() => useEditor().setHoveredId(null)}
+			onMouseEnter={() => setHoveredId(layer.id)}
+			onMouseLeave={() => setHoveredId(null)}
 			globalCompositeOperation={layer.blendMode as GlobalCompositeOperation}
 			align={layer.align || COMPOSITOR_DEFAULTS.ALIGN}
 			letterSpacing={layer.letterSpacing ?? COMPOSITOR_DEFAULTS.LETTER_SPACING}
@@ -1374,6 +1376,10 @@ const InspectorPanel: React.FC = () => {
 		);
 	}
 
+	const handles = useAppSelector(handleSelectors.selectEntities);
+	const handle = handles[selectedLayer.inputHandleId];
+	const label = resolveLayerLabel(handle, selectedLayer);
+
 	return (
 		<ScrollArea className="w-72 h-full border-l border-white/10 bg-[#0f0f0f] z-20 shadow-xl">
 			<div className="flex items-center justify-between px-4 py-3 border-b border-white/5 bg-neutral-900/50 backdrop-blur">
@@ -1383,7 +1389,7 @@ const InspectorPanel: React.FC = () => {
 					</span>
 					<div className="flex items-center gap-2">
 						<h2 className="text-sm font-semibold text-white truncate max-w-[140px]">
-							{selectedLayer.id}
+							{label}
 						</h2>
 					</div>
 				</div>
@@ -1431,6 +1437,7 @@ const InspectorPanel: React.FC = () => {
 						textDecoration={selectedLayer.textDecoration ?? ""}
 						align={selectedLayer.align}
 						letterSpacing={selectedLayer.letterSpacing}
+						fontWeight={selectedLayer.fontWeight ?? "normal"}
 						lineHeight={selectedLayer.lineHeight}
 						onChange={updateLayer}
 					/>

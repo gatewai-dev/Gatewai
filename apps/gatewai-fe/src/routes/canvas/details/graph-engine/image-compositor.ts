@@ -129,8 +129,8 @@ const processCompositor = async (
 				x: layerConfig.x ?? 0,
 				y: layerConfig.y ?? 0,
 				opacity: layerConfig.opacity ?? 1,
-				width: layerConfig.width ?? width,
-				height: layerConfig.height,
+				width: layerConfig.width ?? img.width,
+				height: layerConfig.height ?? img.height,
 				rotation: layerConfig.rotation ?? 0,
 				stroke: layerConfig.stroke,
 				strokeWidth:
@@ -155,7 +155,7 @@ const processCompositor = async (
 				rotation: layerConfig.rotation ?? 0,
 				fontSize: fontSize,
 				fontFamily: layerConfig.fontFamily ?? COMPOSITOR_DEFAULTS.FONT_FAMILY,
-				fontStyle: layerConfig.fontStyle ?? "normal",
+				fontStyle: `${layerConfig.fontWeight ?? "normal"} ${layerConfig.fontStyle ?? "normal"}`,
 				textDecoration: layerConfig.textDecoration ?? "",
 				fill: layerConfig.fill ?? COMPOSITOR_DEFAULTS.FILL,
 				letterSpacing:
