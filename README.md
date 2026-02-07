@@ -11,11 +11,11 @@ Gatewai is a powerful, node-based vibeflow platform designed to bridge the gap b
 
 ## Key Pillars
 
-### Adaptive Execution Engine
+### ⚙️ Adaptive Execution Engine
 
 Gatewai utilizes a **Flexible Hybrid Model** where nodes are processed across both the frontend and backend. Rather than adhering to rigid roles, our engine evaluates the requirements of each task—from real-time canvas manipulations to heavy AI operations—and executes them in the browser or on the backend as needed for optimal performance.
 
-### Multi-Modal Mastery
+### 🎨 Multi-Modal Mastery
 
 Stop switching between tools. Gatewai offers a unified interface for:
 
@@ -28,7 +28,7 @@ Stop switching between tools. Gatewai offers a unified interface for:
 
 Don't wait for results. Our interactive canvas provides instant feedback, enabling a fluid process where AI becomes a natural extension of your creativity. Gatewai utilizes **WebGL rendering** on both the server and browser to ensure pixel-perfect parity. What you see in the browser is exactly what the AI processes, and vice versa.
 
-### ⚡ Headless Architecture
+### 🏗️ Headless Architecture
 
 Gatewai is built with a **backend-first philosophy**. The execution engine is fully decoupled from the UI, meaning workflows can be executed "headlessly" via API without ever instantiating a browser session. This architecture enables developers to embed Gatewai's powerful generative pipelines directly into their own applications.
 
@@ -69,13 +69,17 @@ Gatewai's intelligent agent system uses a sophisticated multi-agent architecture
 
 ## Getting Started
 
-### Installation
+### 📦 Installation
 
 See [INSTALLATION.md](https://github.com/gatewai-dev/Gatewai/blob/main/docs/INSTALLATION.md)
 
-### Community & Support
 
-* **Show Your Support ⭐**: Help us grow by starring the repository!
+### ⭐ Stay Updated
+
+Star the repository to get notified of new features and updates!
+
+### 🤝 Community
+
 * **Discord**: Connect with other creators, share workflows, and vote on upcoming features in our [Community Discord](https://discord.gg/ha4A8UD7kn).
 
 ---
