@@ -670,7 +670,6 @@ const LayerLabel: React.FC<{ layer: LocalCompositorLayer }> = ({ layer }) => {
 
 	const colorConfig = useMemo(() => {
 		const type = handle?.dataTypes?.[0];
-		// @ts-expect-error
 		return dataTypeColors[type] || { hex: "#555" };
 	}, [handle]);
 
@@ -717,7 +716,7 @@ const LayerLabel: React.FC<{ layer: LocalCompositorLayer }> = ({ layer }) => {
 };
 
 const TransformerComponent: React.FC = () => {
-	const { selectedId, layers, stageRef, mode, transformerRef } = useEditor();
+	const { selectedId, layers, stageRef, transformerRef } = useEditor();
 
 	useEffect(() => {
 		if (selectedId && transformerRef.current && stageRef.current) {
