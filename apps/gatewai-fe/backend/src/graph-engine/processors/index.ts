@@ -32,7 +32,7 @@ const nodeProcessors: Partial<Record<NodeType, NodeProcessor>> = {
 	[NodeType.Modulate]: modulateProcessor,
 	[NodeType.Compositor]: compositorProcessor,
 	[NodeType.VideoGen]: videoGenProcessor,
-	[NodeType.VideoGenExtend]: videoGenExtendProcessor,
+	// [NodeType.VideoGenExtend]: videoGenExtendProcessor,
 	[NodeType.VideoGenFirstLastFrame]: videoGenFirstLastFrameProcessor,
 
 	[NodeType.TextToSpeech]: textToSpeechProcessor,

@@ -138,7 +138,7 @@ const imageGenProcessor: NodeProcessor = async ({ node, data }) => {
 
 		const dimensions = await getImageDimensions(buffer);
 		const randId = generateId();
-		const fileName = `imagegen_${randId}.${extension}`;
+		const fileName = `${node.name}_${randId}.${extension}`;
 		const key = `assets/${fileName}`;
 		const bucket = ENV_CONFIG.GCS_ASSETS_BUCKET;
 

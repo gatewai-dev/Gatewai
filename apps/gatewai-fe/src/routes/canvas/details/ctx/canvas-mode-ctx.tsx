@@ -1,4 +1,10 @@
-import { createContext, type ReactNode, useContext, useState } from "react";
+import {
+	createContext,
+	type ReactNode,
+	useContext,
+	useRef,
+	useState,
+} from "react";
 import { useHotkeys } from "react-hotkeys-hook";
 
 type CanvasMode = "select" | "pan";
@@ -10,6 +16,7 @@ interface CanvasModeContextType {
 	effectivePan: boolean;
 	/** The actual stored mode (not affected by temporary overrides) */
 	baseMode: CanvasMode;
+	setIsMiddleMousePressed: (pressed: boolean) => void;
 }
 
 const CanvasModeContext = createContext<CanvasModeContextType | null>(null);
@@ -25,6 +32,9 @@ export const useCanvasMode = () => {
 export const CanvasModeProvider = ({ children }: { children: ReactNode }) => {
 	const [baseMode, setBaseMode] = useState<CanvasMode>("select");
 	const [isSpacePressed, setIsSpacePressed] = useState(false);
+	const [isMiddleMousePressed, setIsMiddleMousePressed] = useState(false);
+	const [isVPressed, setIsVPressed] = useState(false);
+	const lastVPressTime = useRef(0);
 
 	// Track key press timing for short-press vs long-press detection
 
@@ -32,10 +42,25 @@ export const CanvasModeProvider = ({ children }: { children: ReactNode }) => {
 	useHotkeys(
 		["v", "V"],
 		(e) => {
-			e.preventDefault();
-			setBaseMode("select");
+			if (e.repeat) return;
+			// e.preventDefault(); // Don't prevent default if user is typing in an input?
+			// Usually hotkeys hook handles ignoring inputs by default.
+			// But let's keep preventDefault if valid context.
+			setIsVPressed(true);
+			lastVPressTime.current = Date.now();
 		},
 		{ keydown: true },
+	);
+
+	useHotkeys(
+		["v", "V"],
+		() => {
+			setIsVPressed(false);
+			if (Date.now() - lastVPressTime.current < 200) {
+				setBaseMode("select");
+			}
+		},
+		{ keyup: true },
 	);
 
 	// H key - toggles pan (hand) mode
@@ -68,11 +93,14 @@ export const CanvasModeProvider = ({ children }: { children: ReactNode }) => {
 	);
 
 	// Derived effective mode considering temporary overrides
-	// Priority: Space/MiddleMouse > base mode
+	// Priority: Space/MiddleMouse > V (Temp Select) > base mode
 	const effectiveMode: CanvasMode = (() => {
 		// Space and middle mouse always force pan mode
-		if (isSpacePressed) {
+		if (isSpacePressed || isMiddleMousePressed) {
 			return "pan";
+		}
+		if (isVPressed) {
+			return "select";
 		}
 		return baseMode;
 	})();
@@ -87,6 +115,7 @@ export const CanvasModeProvider = ({ children }: { children: ReactNode }) => {
 				isSpacePressed,
 				effectivePan,
 				baseMode,
+				setIsMiddleMousePressed,
 			}}
 		>
 			{children}

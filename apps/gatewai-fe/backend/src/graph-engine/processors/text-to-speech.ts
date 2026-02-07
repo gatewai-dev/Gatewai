@@ -88,11 +88,11 @@ const textToSpeechProcessor: NodeProcessor = async ({ node, data }) => {
 		const metadata = await mm.parseBuffer(wavBuffer, "audio/wav");
 		const durationInSec = metadata.format.duration ?? 0;
 
-		const extension = ".wav";
+		const extension = "wav";
 
 		const randId = generateId();
-		const fileName = `${randId}${extension}`;
-		const key = `assets/${node.type}/${fileName}`;
+		const fileName = `${node.name}_${randId}.${extension}`;
+		const key = `assets/${fileName}`;
 		const contentType = "audio/wav";
 		const bucket = ENV_CONFIG.GCS_ASSETS_BUCKET;
 

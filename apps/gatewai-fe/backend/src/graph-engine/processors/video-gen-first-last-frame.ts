@@ -125,7 +125,7 @@ const videoGenFirstLastFrameProcessor: NodeProcessor = async ({
 
 		const fileBuffer = await readFile(filePath);
 		const randId = generateId();
-		const fileName = `videogen_interp_${randId}.${extension}`;
+		const fileName = `${node.name}_${randId}.${extension}`;
 		const key = `assets/${fileName}`;
 		const contentType = "video/mp4";
 		const bucket = ENV_CONFIG.GCS_ASSETS_BUCKET;

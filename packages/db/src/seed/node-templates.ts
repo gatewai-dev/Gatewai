@@ -645,17 +645,4 @@ export async function SEED_createNodeTemplates(prisma: PrismaClient) {
 			});
 		}
 	}
-
-	try {
-		// Delete all nodes of this type first to avoid FK constraint violation
-		await prisma.node.deleteMany({
-			where: { template: { type: "VideoGenExtend" as any as NodeType } },
-		});
-
-		await prisma.nodeTemplate.delete({
-			where: { type: "VideoGenExtend" as any as NodeType },
-		});
-	} catch (e) {
-		console.log(e);
-	}
 }

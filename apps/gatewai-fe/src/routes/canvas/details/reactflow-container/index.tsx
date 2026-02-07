@@ -9,6 +9,7 @@ import {
 	SelectionMode,
 } from "@xyflow/react";
 import type { DragEventHandler, MouseEventHandler } from "react";
+import { useEffect } from "react";
 import { Helmet } from "react-helmet-async";
 import { LoadingSpinner } from "@/components/ui/loading-spinner";
 import { useAppDispatch, useAppSelector } from "@/store";
@@ -38,7 +39,7 @@ function ReactflowContainer({ children }: ReactFlowProps) {
 		canvas,
 		isLoading,
 	} = useCanvasCtx();
-	const { effectivePan } = useCanvasMode();
+	const { effectivePan, setIsMiddleMousePressed } = useCanvasMode();
 	const dispatch = useAppDispatch();
 
 	const onSelectionChange = ({
@@ -65,6 +66,22 @@ function ReactflowContainer({ children }: ReactFlowProps) {
 		}
 	};
 
+	const onMouseDown: MouseEventHandler<HTMLDivElement> = (event) => {
+		if (event.button === 1) {
+			setIsMiddleMousePressed(true);
+		}
+	};
+
+	useEffect(() => {
+		const handleMouseUp = (event: MouseEvent) => {
+			if (event.button === 1) {
+				setIsMiddleMousePressed(false);
+			}
+		};
+		window.addEventListener("mouseup", handleMouseUp);
+		return () => window.removeEventListener("mouseup", handleMouseUp);
+	}, [setIsMiddleMousePressed]);
+
 	if (isLoading) {
 		return (
 			<div className="w-full h-screen bg-black flex items-center justify-center">
@@ -76,6 +93,7 @@ function ReactflowContainer({ children }: ReactFlowProps) {
 	return (
 		<div
 			onAuxClick={handleAuxClick}
+			onMouseDown={onMouseDown}
 			className="w-full h-screen bg-black relative"
 		>
 			<Helmet>
