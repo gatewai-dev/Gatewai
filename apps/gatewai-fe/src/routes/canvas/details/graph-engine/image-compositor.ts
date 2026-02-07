@@ -8,8 +8,6 @@ import Konva from "konva";
 import { GetFontAssetUrl } from "@/lib/file";
 import { fontManager } from "@/lib/fonts";
 
-// Local defaults removed in favor of shared COMPOSITOR_DEFAULTS
-
 const processCompositor = async (
 	config: CompositorNodeConfig,
 	inputs: Record<string, { type: "Image" | "Text"; value: string }>,

@@ -7,7 +7,14 @@ import {
 	type Node,
 	Position,
 } from "@xyflow/react";
+import { TrashIcon } from "lucide-react";
 import { type JSX, memo, type ReactNode, useMemo } from "react";
+import {
+	ContextMenu,
+	ContextMenuContent,
+	ContextMenuItem,
+	ContextMenuTrigger,
+} from "@/components/ui/context-menu";
 import {
 	Tooltip,
 	TooltipContent,
@@ -21,6 +28,7 @@ import {
 	makeSelectHandlesByNodeId,
 } from "@/store/handles";
 import { makeSelectNodeById } from "@/store/nodes";
+import { useCanvasCtx } from "../ctx/canvas-ctx";
 import type { HandleState } from "../graph-engine/node-graph-processor";
 import {
 	useEdgeColor,
@@ -168,6 +176,7 @@ const NodeHandle = memo(
 		nodeSelected?: boolean;
 	}) => {
 		const isTarget = type === "target";
+		const { onHandlesDelete } = useCanvasCtx();
 
 		const validation = useNodeValidation(handle.nodeId);
 		const errorCode = validation?.[handle.id];
@@ -240,51 +249,64 @@ const NodeHandle = memo(
 		}
 
 		return (
-			<div
-				className={cn(
-					"absolute z-50 flex items-center group/handle",
-					isTarget ? "-left-[5px]" : "-right-[5px]",
-				)}
-				style={{ top: `${topPosition}px` }}
-			>
-				<div
-					className={cn(
-						"absolute -top-4 pointer-events-none opacity-0 transition-opacity duration-200 w-auto whitespace-nowrap",
-						"group-hover/handle:opacity-100 group-hover/node:opacity-100",
-						{ "opacity-100": nodeSelected },
-						isTarget
-							? "right-3 text-right origin-right"
-							: "left-3 text-left origin-left",
-					)}
-				>
-					<span
-						className="text-[10px] font-bold uppercase tracking-wider shadow-sm leading-none bg-background/80 backdrop-blur-md px-1.5 py-0.5 rounded-sm border border-border/50"
-						style={{
-							color: activeColor,
-							textShadow: "none",
-						}}
-					>
-						{handle.label || handle.dataTypes[0]}
-						{handle.required && (
-							<span className="text-destructive text-lg ml-0.5">*</span>
+			<ContextMenu>
+				<ContextMenuTrigger asChild>
+					<div
+						className={cn(
+							"absolute z-50 flex items-center group/handle",
+							isTarget ? "-left-[5px]" : "-right-[5px]",
 						)}
-					</span>
-				</div>
-
-				{tooltipContent ? (
-					<Tooltip>
-						<TooltipTrigger asChild>{handleComponent}</TooltipTrigger>
-						<TooltipContent
-							side={"bottom"}
-							className="bg-destructive text-destructive-foreground border-none text-[10px] uppercase font-bold"
+						style={{ top: `${topPosition}px` }}
+					>
+						<div
+							className={cn(
+								"absolute -top-4 pointer-events-none opacity-0 transition-opacity duration-200 w-auto whitespace-nowrap",
+								"group-hover/handle:opacity-100 group-hover/node:opacity-100",
+								{ "opacity-100": nodeSelected },
+								isTarget
+									? "right-3 text-right origin-right"
+									: "left-3 text-left origin-left",
+							)}
 						>
-							{tooltipContent}
-						</TooltipContent>
-					</Tooltip>
-				) : (
-					handleComponent
-				)}
-			</div>
+							<span
+								className="text-[10px] font-bold uppercase tracking-wider shadow-sm leading-none bg-background/80 backdrop-blur-md px-1.5 py-0.5 rounded-sm border border-border/50"
+								style={{
+									color: activeColor,
+									textShadow: "none",
+								}}
+							>
+								{handle.label || handle.dataTypes[0]}
+								{handle.required && (
+									<span className="text-destructive text-lg ml-0.5">*</span>
+								)}
+							</span>
+						</div>
+
+						{tooltipContent ? (
+							<Tooltip>
+								<TooltipTrigger asChild>{handleComponent}</TooltipTrigger>
+								<TooltipContent
+									side={"bottom"}
+									className="bg-destructive text-destructive-foreground border-none text-[10px] uppercase font-bold"
+								>
+									{tooltipContent}
+								</TooltipContent>
+							</Tooltip>
+						) : (
+							handleComponent
+						)}
+					</div>
+				</ContextMenuTrigger>
+				<ContextMenuContent className="w-35">
+					<ContextMenuItem
+						disabled={handle.required || !isTarget}
+						onSelect={() => onHandlesDelete([handle.id])}
+					>
+						<TrashIcon className="mr-1 h-4 w-4" />
+						<span className="text-xs">Delete Handle</span>
+					</ContextMenuItem>
+				</ContextMenuContent>
+			</ContextMenu>
 		);
 	},
 );

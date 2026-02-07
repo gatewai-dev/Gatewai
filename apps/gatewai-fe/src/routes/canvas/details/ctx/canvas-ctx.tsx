@@ -121,6 +121,7 @@ interface CanvasContextType {
 	applyPatch: (patchId: string) => Promise<void>;
 	rejectPatch: (patchId: string) => Promise<void>;
 	cancelPreview: () => void;
+	onHandlesDelete: (handleIds: string[]) => void;
 }
 
 const CanvasContext = createContext<CanvasContextType | undefined>(undefined);
@@ -577,6 +578,77 @@ const CanvasProvider = ({
 		[rfEdges, dispatch, scheduleSave],
 	);
 
+	const onHandlesDelete = useCallback(
+		async (handleIds: string[]) => {
+			// Find edges connected to these handles
+			const edgesAsString = rfEdges.filter(
+				(e) =>
+					(e.sourceHandle && handleIds.includes(e.sourceHandle)) ||
+					(e.targetHandle && handleIds.includes(e.targetHandle)),
+			);
+			const edgeIds = edgesAsString.map((e) => e.id);
+
+			// Remove edges
+			if (edgeIds.length > 0) {
+				const newEdges = rfEdges.filter((f) => !edgeIds.includes(f.id));
+				dispatch(setEdges(newEdges));
+				dispatch(deleteManyEdgeEntity(edgeIds));
+			}
+
+			// Handle Layer Updates for Compositor/VideoGen nodes
+			const affectedNodeIds = new Set<string>();
+			for (const handleId of handleIds) {
+				const handle = handleEntities.find((h) => h.id === handleId);
+				if (handle) {
+					affectedNodeIds.add(handle.nodeId);
+					updateNodeInternals(handle.nodeId);
+
+					const state = store.getState() as RootState;
+					const nodeEntity = state.nodes.entities[handle.nodeId];
+
+					if (
+						nodeEntity &&
+						(nodeEntity.type === "Compositor" ||
+							nodeEntity.type === "VideoCompositor")
+					) {
+						// Check if config has layerUpdates
+						// eslint-disable-next-line @typescript-eslint/no-explicit-any
+						const config = nodeEntity.config as any;
+						if (
+							config &&
+							config.layerUpdates &&
+							config.layerUpdates[handleId]
+						) {
+							const newLayerUpdates = { ...config.layerUpdates };
+							delete newLayerUpdates[handleId];
+							dispatch(
+								updateNodeConfig({
+									id: handle.nodeId,
+									newConfig: {
+										layerUpdates: newLayerUpdates,
+									},
+								}),
+							);
+						}
+					}
+				}
+			}
+
+			// Remove handles
+			dispatch(deleteManyHandleEntity(handleIds));
+
+			scheduleSave();
+		},
+		[
+			rfEdges,
+			dispatch,
+			scheduleSave,
+			handleEntities,
+			updateNodeInternals,
+			store,
+		],
+	);
+
 	const runNodes = useCallback(
 		async (node_ids?: Node["id"][]) => {
 			await save();
@@ -1023,6 +1095,7 @@ const CanvasProvider = ({
 			applyPatch,
 			rejectPatch,
 			cancelPreview,
+			onHandlesDelete,
 		}),
 		[
 			canvasDetailsResponse?.canvas,
@@ -1036,6 +1109,7 @@ const CanvasProvider = ({
 			duplicateNodes,
 			onNodesDelete,
 			onEdgesDelete,
+			onHandlesDelete,
 			onNodeConfigUpdate,
 			createNewHandle,
 			onNodeResultUpdate,
