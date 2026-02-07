@@ -1,5 +1,11 @@
 # @gatewai/db
 
+## 0.0.14
+
+### Patch Changes
+
+- 83c10df: hotkeys
+
 ## 0.0.13
 
 ### Patch Changes

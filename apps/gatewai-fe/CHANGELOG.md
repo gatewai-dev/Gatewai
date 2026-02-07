@@ -1,5 +1,17 @@
 # @gatewai/fe
 
+## 0.0.14
+
+### Patch Changes
+
+- 83c10df: hotkeys
+- Updated dependencies [83c10df]
+  - @gatewai/api-client@0.0.14
+  - @gatewai/db@0.0.14
+  - @gatewai/pixi-processor@0.0.14
+  - @gatewai/tsconfig@0.0.14
+  - @gatewai/types@0.0.14
+
 ## 0.0.13
 
 ### Patch Changes
