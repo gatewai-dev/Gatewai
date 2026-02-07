@@ -1,5 +1,14 @@
 # @gatewai/mcp-server
 
+## 0.0.17
+
+### Patch Changes
+
+- ba4bb1d: Transformer visuals
+- Updated dependencies [ba4bb1d]
+  - @gatewai/api-client@0.0.17
+  - @gatewai/types@0.0.17
+
 ## 0.0.16
 
 ### Patch Changes
