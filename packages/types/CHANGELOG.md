@@ -1,5 +1,11 @@
 # @gatewai/types
 
+## 0.0.15
+
+### Patch Changes
+
+- 747b2e8: Image Editor improvements
+
 ## 0.0.14
 
 ### Patch Changes

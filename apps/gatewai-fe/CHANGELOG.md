@@ -1,5 +1,17 @@
 # @gatewai/fe
 
+## 0.0.15
+
+### Patch Changes
+
+- 747b2e8: Image Editor improvements
+- Updated dependencies [747b2e8]
+  - @gatewai/api-client@0.0.15
+  - @gatewai/db@0.0.15
+  - @gatewai/pixi-processor@0.0.15
+  - @gatewai/tsconfig@0.0.15
+  - @gatewai/types@0.0.15
+
 ## 0.0.14
 
 ### Patch Changes
