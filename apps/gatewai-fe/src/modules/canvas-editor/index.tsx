@@ -720,13 +720,9 @@ const TransformerComponent: React.FC = () => {
 	const { selectedId, layers, stageRef, mode, transformerRef } = useEditor();
 
 	useEffect(() => {
-		if (
-			selectedId &&
-			transformerRef.current &&
-			stageRef.current &&
-			mode === "select"
-		) {
-			const node = stageRef.current.findOne(`#${selectedId}`);
+		if (selectedId && transformerRef.current && stageRef.current) {
+			// use findOne with specific function to avoid selector issues with some IDs (like starting with number)
+			const node = stageRef.current.findOne((node) => node.id() === selectedId);
 			if (node) {
 				transformerRef.current.nodes([node]);
 				transformerRef.current.getLayer()?.batchDraw();
@@ -737,7 +733,7 @@ const TransformerComponent: React.FC = () => {
 			transformerRef.current.nodes([]);
 			transformerRef.current.getLayer()?.batchDraw();
 		}
-	}, [selectedId, stageRef, mode, transformerRef]);
+	}, [selectedId, stageRef, transformerRef]);
 
 	const selectedLayer = layers.find((l) => l.id === selectedId);
 
