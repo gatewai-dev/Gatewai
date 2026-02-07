@@ -1,5 +1,14 @@
 # @gatewai/mcp-server
 
+## 0.0.13
+
+### Patch Changes
+
+- c1eaca3: UI & a11y
+- Updated dependencies [c1eaca3]
+  - @gatewai/api-client@0.0.13
+  - @gatewai/types@0.0.13
+
 ## 0.0.12
 
 ### Patch Changes

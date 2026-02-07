@@ -1,5 +1,11 @@
 # @gatewai/pixi-processor
 
+## 0.0.13
+
+### Patch Changes
+
+- c1eaca3: UI & a11y
+
 ## 0.0.12
 
 ### Patch Changes
