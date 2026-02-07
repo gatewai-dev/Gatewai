@@ -1,6 +1,6 @@
 import { useReactFlow, useViewport } from "@xyflow/react";
 import { ChevronDown, Hand, MousePointer } from "lucide-react";
-import { memo, useContext } from "react";
+import { memo } from "react";
 import { Button } from "@/components/ui/button";
 import {
 	Menubar,
@@ -10,7 +10,7 @@ import {
 	MenubarTrigger,
 } from "@/components/ui/menubar";
 import { Separator } from "@/components/ui/separator";
-import { ModeContext } from "..";
+import { useCanvasMode } from "../../ctx/canvas-mode-ctx";
 import { CanvasTasksPanel } from "../tasks";
 import { RunWorkflowButton } from "./run-workflow-button";
 
@@ -19,7 +19,7 @@ const Toolbar = memo(() => {
 
 	const { zoomIn, zoomOut, zoomTo, fitView } = useReactFlow();
 	const zoomPercentage = `${Math.round(zoom * 100)}%`;
-	const ctx = useContext(ModeContext);
+	const { mode, setMode } = useCanvasMode();
 
 	return (
 		<div className="relative flex flex-col items-center gap-2">
@@ -27,19 +27,19 @@ const Toolbar = memo(() => {
 				{/* Selection & Pan Tools */}
 				<Button
 					title="Select (V)"
-					variant={ctx?.mode === "select" ? "secondary" : "ghost"}
+					variant={mode === "select" ? "secondary" : "ghost"}
 					size="icon"
 					className="rounded-full w-9 h-9"
-					onClick={() => ctx?.setMode("select")}
+					onClick={() => setMode("select")}
 				>
 					<MousePointer className="w-4 h-4" />
 				</Button>
 				<Button
 					title="Pan (Space)"
-					variant={ctx?.mode === "pan" ? "secondary" : "ghost"}
+					variant={mode === "pan" ? "secondary" : "ghost"}
 					size="icon"
 					className="rounded-full w-9 h-9"
-					onClick={() => ctx?.setMode("pan")}
+					onClick={() => setMode("pan")}
 				>
 					<Hand className="w-4 h-4" />
 				</Button>

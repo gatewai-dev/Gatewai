@@ -336,14 +336,14 @@ const BaseNode = memo(
 			<div
 				className={cn(
 					"relative flex flex-col w-full h-full group/node",
-					"rounded-3xl transition-all duration-300",
+					"rounded-xl transition-all duration-300",
 					dragging
 						? "shadow-2xl scale-[1.02] cursor-grabbing"
 						: "shadow-lg hover:shadow-xl",
-					"bg-card/85 backdrop-blur-xl border border-white/20 dark:border-white/10", // Glassmorphism
+					"bg-card/90 backdrop-blur-md border border-white/10 dark:border-white/5",
 					selected
-						? "ring-2 ring-primary/50 border-primary shadow-[0_0_30px_rgba(183,234,72,0.15)]"
-						: "hover:border-primary/30",
+						? "ring-1 ring-primary border-primary shadow-[0_0_20px_rgba(183,234,72,0.1)]"
+						: "hover:border-white/30 dark:hover:border-white/20",
 					props.className,
 				)}
 			>
@@ -362,10 +362,10 @@ const BaseNode = memo(
 				</div>
 
 				{/* Content Container */}
-				<div className="flex flex-col h-full overflow-hidden rounded-3xl">
+				<div className="flex flex-col h-full overflow-hidden rounded-xl">
 					<div
 						className={cn(
-							"flex items-center justify-between px-4 py-3 border-b border-border/10 bg-gradient-to-b from-white/5 to-transparent drag-handle cursor-grab active:cursor-grabbing",
+							"flex items-center justify-between px-3 py-2 border-b border-border/5 bg-muted/30 drag-handle cursor-grab active:cursor-grabbing",
 							selected && "bg-primary/5",
 						)}
 					>
