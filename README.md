@@ -80,7 +80,7 @@ Star the repository to get notified of new features and updates!
 
 ### 🤝 Community
 
-* **Discord**: Connect with other creators, share workflows, and vote on upcoming features in our [Community Discord](https://discord.gg/ha4A8UD7kn).
+Connect with other creators, share workflows, and vote on upcoming features in our [Community Discord](https://discord.gg/ha4A8UD7kn).
 
 ---
 
