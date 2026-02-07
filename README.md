@@ -3,7 +3,7 @@
 Gatewai is a powerful, node-based vibeflow platform designed to bridge the gap between complex AI models and intuitive creative workflows. Whether you are generating cinematic videos, composing multi-layered images, or building sophisticated LLM chains, Gatewai provides the canvas for your imagination through a sleek, user-centric interface.
 
 > [!WARNING]
-> This project is built for the Gemini 3 Hackathon. For that reason, **main branch is freezed for Hackathon submission until March.** We'll continue building Gatewai in **dev** branch for latest updates. [Drop us a like](https://devpost.com/software/gatewai-ylt5uo)
+> This project is built for the Gemini 3 Hackathon. For that reason, **main branch is freezed for Hackathon submission until March.** We'll continue building Gatewai in **dev** branch. [Drop us a like](https://devpost.com/software/gatewai-ylt5uo)
 
 ![Gatewai Workflow](assets/workflow_1.png)
 
@@ -24,11 +24,11 @@ Stop switching between tools. Gatewai offers a unified interface for:
 * **Audio**: High-fidelity text-to-speech and deep audio understanding via the latest **Gemini 3** models.
 * **Text**: LLM orchestration using **Gemini 3 Flash or Pro**, depending on your specific use case.
 
-### Real-Time Creativity
+### ⚡ Real-Time Creativity
 
 Don't wait for results. Our interactive canvas provides instant feedback, enabling a fluid process where AI becomes a natural extension of your creativity. Gatewai utilizes **WebGL rendering** on both the server and browser to ensure pixel-perfect parity. What you see in the browser is exactly what the AI processes, and vice versa.
 
-### Headless Architecture
+### ⚡ Headless Architecture
 
 Gatewai is built with a **backend-first philosophy**. The execution engine is fully decoupled from the UI, meaning workflows can be executed "headlessly" via API without ever instantiating a browser session. This architecture enables developers to embed Gatewai's powerful generative pipelines directly into their own applications.
 
