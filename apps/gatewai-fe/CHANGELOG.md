@@ -1,5 +1,17 @@
 # @gatewai/fe
 
+## 0.0.16
+
+### Patch Changes
+
+- 8d048eb: fixes for image compositor
+- Updated dependencies [8d048eb]
+  - @gatewai/api-client@0.0.16
+  - @gatewai/db@0.0.16
+  - @gatewai/pixi-processor@0.0.16
+  - @gatewai/tsconfig@0.0.16
+  - @gatewai/types@0.0.16
+
 ## 0.0.15
 
 ### Patch Changes

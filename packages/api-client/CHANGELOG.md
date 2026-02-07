@@ -1,5 +1,11 @@
 # @gatewai/api-client
 
+## 0.0.16
+
+### Patch Changes
+
+- 8d048eb: fixes for image compositor
+
 ## 0.0.15
 
 ### Patch Changes
