@@ -7,7 +7,7 @@ function AuthRouter() {
 		<Routes>
 			<Route index element={<Navigate to="signin" />} />
 			<Route path="signin" element={<SigninPage />} />
-			<Route path="registr" element={<SignupPage />} />
+			<Route path="signup" element={<SignupPage />} />
 		</Routes>
 	);
 }
