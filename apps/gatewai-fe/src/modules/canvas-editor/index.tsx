@@ -32,7 +32,6 @@ import {
 	Hand,
 	ImageIcon,
 	Layers,
-	LockOpen,
 	MousePointer,
 	MoveHorizontal,
 	MoveVertical,
@@ -110,7 +109,6 @@ import { StyleControls } from "@/modules/common/properties/StyleControls";
 import { TransformControls } from "@/modules/common/properties/TransformControls";
 import { TypographyControls } from "@/modules/common/properties/TypographyControls";
 import { useAppSelector } from "@/store";
-import { useGetFontListQuery } from "@/store/fonts";
 import type { HandleEntityType } from "@/store/handles";
 import { handleSelectors } from "@/store/handles";
 import type { NodeEntityType } from "@/store/nodes";
