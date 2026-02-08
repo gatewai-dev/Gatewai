@@ -38,7 +38,7 @@ Gatewai uses Google Cloud Storage (GCS) for media persistence. You must set up a
 
 1. Go to the [Google Cloud Console](https://console.cloud.google.com/) and create a new project.
 2. Navigate to **Cloud Storage > Buckets** and create a bucket (e.g., `gatewai-media-assets`).
-3. Note the bucket name.
+3. Set GCS_ASSETS_BUCKET env variable to your bucket name.
 
 ### 2. Service Account & Keys
 
@@ -47,7 +47,8 @@ Gatewai uses Google Cloud Storage (GCS) for media persistence. You must set up a
 3. Assign the **Storage Object Admin** role.
 4. Create a JSON Key:
    - Click the account email > **Keys** > **Add Key** > **Create New Key (JSON)**.
-5. **Download the key file** to a secure location on your machine.
+5. **Download the key file** to root of the Gatewai project or a secure location on your machine.
+6. Set GOOGLE_APPLICATION_CREDENTIALS_PATH env variable to the absolute path of the JSON key file.
 
 ### 3. Update Environment Variables
 
@@ -55,6 +56,9 @@ Open `.env.local` and update the following:
 
 - `GCS_ASSETS_BUCKET`: Your bucket name.
 - `GOOGLE_APPLICATION_CREDENTIALS_PATH`: The **absolute path** to the JSON key file you just downloaded.
+
+> [!NOTE]
+> Docker Compose will automatically mount this file into the container based on the path you provide.
 
 **Example:**
 ```env
@@ -67,9 +71,6 @@ POSTGRES_PASSWORD=mypassword
 POSTGRES_DB=mydb
 ```
 
-> [!NOTE]
-> Docker Compose will automatically mount this file into the container based on the path you provide.
-
 ---
 
 ## Step 3: Run with Docker
@@ -78,7 +79,6 @@ Start the entire application stack (App, Database, Redis, MCP server) with a sin
 
 ```bash
 # Start Docker containers
-docker compose -f docker-compose-local.yaml up
 
 pnpm run start:docker
 ```
