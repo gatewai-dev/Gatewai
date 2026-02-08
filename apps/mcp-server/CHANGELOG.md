@@ -1,5 +1,14 @@
 # @gatewai/mcp-server
 
+## 0.0.19
+
+### Patch Changes
+
+- fc0c2c2: RM lock
+- Updated dependencies [fc0c2c2]
+  - @gatewai/api-client@0.0.19
+  - @gatewai/types@0.0.19
+
 ## 0.0.18
 
 ### Patch Changes

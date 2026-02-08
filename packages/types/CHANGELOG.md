@@ -1,5 +1,11 @@
 # @gatewai/types
 
+## 0.0.19
+
+### Patch Changes
+
+- fc0c2c2: RM lock
+
 ## 0.0.18
 
 ### Patch Changes
