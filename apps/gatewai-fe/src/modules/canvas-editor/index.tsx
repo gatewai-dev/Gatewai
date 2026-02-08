@@ -1157,14 +1157,6 @@ const LayerItem: React.FC<LayerItemProps> = ({
 						<Eye className="w-3 h-3" />
 					)}
 				</Button>
-				<Button
-					size="icon"
-					variant="ghost"
-					className="h-5 w-5 hover:bg-white/10"
-					disabled
-				>
-					<LockOpen className="w-3 h-3" />
-				</Button>
 			</div>
 		</button>
 	);
