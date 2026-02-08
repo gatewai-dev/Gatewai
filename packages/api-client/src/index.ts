@@ -15,6 +15,17 @@ export type RunStatusResponse = InferResponseType<
 	ApiRunRoute[":batchId"]["status"]["$get"]
 >;
 
+// File input types for better DX
+export type FileInputBase64 = {
+	type: "base64";
+	data: string;
+	mimeType?: string;
+};
+export type FileInputUrl = { type: "url"; url: string };
+export type FileInputAssetId = { type: "assetId"; assetId: string };
+export type FileInput = FileInputBase64 | FileInputUrl | FileInputAssetId;
+export type NodeInput = string | FileInput;
+
 // 2. Canvas Types
 type CanvasRoute = typeof client.api.v1.canvas;
 
@@ -86,6 +97,34 @@ export class GatewaiApiClient {
 	private apiKey: string;
 	private rpc: ReturnType<typeof hc<AppType>>;
 	private defaultHeaders: Record<string, string>;
+
+	// ==================== STATIC HELPERS ====================
+
+	/**
+	 * Create a base64 file input from raw base64 data.
+	 * @example GatewaiApiClient.fromBase64(base64String, "image/png")
+	 */
+	static fromBase64(data: string, mimeType?: string): FileInputBase64 {
+		return { type: "base64", data, mimeType };
+	}
+
+	/**
+	 * Create a file input from a public URL.
+	 * The server will fetch and process the file.
+	 * @example GatewaiApiClient.fromUrl("https://example.com/image.png")
+	 */
+	static fromUrl(url: string): FileInputUrl {
+		return { type: "url", url };
+	}
+
+	/**
+	 * Create a file input from an existing asset ID.
+	 * Reuses an already uploaded asset without re-uploading.
+	 * @example GatewaiApiClient.fromAssetId("asset-123")
+	 */
+	static fromAssetId(assetId: string): FileInputAssetId {
+		return { type: "assetId", assetId };
+	}
 
 	constructor(config: APIClientConfig) {
 		this.baseUrl = config.baseUrl.replace(/\/$/, "");

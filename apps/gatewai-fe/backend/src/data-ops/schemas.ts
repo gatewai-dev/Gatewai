@@ -1,8 +1,34 @@
 import z from "zod";
 
+// File input types for structured file handling
+export const FileInputSchema = z.discriminatedUnion("type", [
+	z.object({
+		type: z.literal("base64"),
+		data: z.string(),
+		mimeType: z.string().optional(),
+	}),
+	z.object({
+		type: z.literal("url"),
+		url: z.string().url(),
+	}),
+	z.object({
+		type: z.literal("assetId"),
+		assetId: z.string(),
+	}),
+]);
+
+export type FileInput = z.infer<typeof FileInputSchema>;
+
+// Union of simple string (text or legacy base64) and structured file input
+export const NodeInputSchema = z.union([z.string(), FileInputSchema]);
+
+export type NodeInput = z.infer<typeof NodeInputSchema>;
+
 export const APIRunRequestSchema = z.object({
 	canvasId: z.string(),
-	payload: z.record(z.string(), z.string()).optional(),
+	payload: z.record(z.string(), NodeInputSchema).optional(),
+	/** If true (default), duplicates the canvas before execution. Set to false to run on original. */
+	duplicate: z.boolean().default(true),
 });
 
 export type APIRunRequest = z.infer<typeof APIRunRequestSchema>;
