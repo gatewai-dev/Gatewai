@@ -3,7 +3,7 @@
 Gatewai is a powerful, node-based vibeflow platform designed to bridge the gap between complex AI models and intuitive creative workflows. Whether you are generating cinematic videos, composing multi-layered images, or building sophisticated LLM chains, Gatewai provides the canvas for your imagination through a sleek, user-centric interface.
 
 > [!NOTE]
-> This project is built for the Gemini 3 Hackathon. For that reason, **this repository is freezed for Hackathon review until March.** We'll continue building Gatewai in a [different fork](https://github.com/gatewai-dev/Gatewai-dev). [Drop a like](https://devpost.com/software/gatewai-ylt5uo). 
+> This project is built for the Gemini 3 Hackathon. For that reason, **main branch and deployments are freezed for Hackathon review until March.** We'll continue building Gatewai in `dev` branch. [Drop a like](https://devpost.com/software/gatewai-ylt5uo). 
 
 ![Gatewai Workflow](assets/workflow_1.png)
 
