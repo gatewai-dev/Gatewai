@@ -3,6 +3,7 @@ import { type Canvas, prisma } from "@gatewai/db";
 /**
  * Duplicates a canvas, including its nodes, handles, and edges.
  * Preserves mapping from duplicated nodes back to their originals for API data passing.
+ * Remaps handle IDs in node configs (ImageCompositor/VideoCompositor layerUpdates) and results.
  * @param canvasId - The ID of the canvas to duplicate.
  * @param isAPICanvas - Whether or not duplicated canvas will be used for API request.
  * @param keepResults - Whether to keep the results of the nodes in the duplicate.
@@ -13,7 +14,7 @@ import { type Canvas, prisma } from "@gatewai/db";
 async function duplicateCanvas(
 	canvasId: string,
 	isAPICanvas = false,
-	keepResults: boolean = false,
+	keepResults = false,
 	userId?: string,
 ): Promise<Canvas> {
 	const originalCanvas = await prisma.canvas.findUniqueOrThrow({
@@ -49,6 +50,7 @@ async function duplicateCanvas(
 		const oldToNewNodeId: { [oldId: string]: string } = {};
 		const oldToNewHandleId: { [oldId: string]: string } = {};
 
+		// First pass: Create all nodes and handles, build the ID mappings
 		for (const originalNode of originalNodes) {
 			const newNode = await tx.node.create({
 				data: {
@@ -58,9 +60,10 @@ async function duplicateCanvas(
 					position: originalNode.position as unknown as any,
 					width: originalNode.width,
 					height: originalNode.height,
+					// Config will be updated in second pass after handle mappings are complete
 					config: originalNode.config as any,
 					isDirty: false,
-					result: keepResults ? (originalNode.result as any) : undefined,
+					result: undefined, // Results need handle remapping, done in second pass
 					canvasId: newCanvas.id,
 					templateId: originalNode.templateId,
 					originalNodeId: originalNode.id,
@@ -84,6 +87,95 @@ async function duplicateCanvas(
 				});
 
 				oldToNewHandleId[originalHandle.id] = newHandle.id;
+			}
+		}
+
+		// Second pass: Remap handle IDs in configs and results
+		for (const originalNode of originalNodes) {
+			const newNodeId = oldToNewNodeId[originalNode.id];
+			const config = originalNode.config as Record<string, unknown> | null;
+			const result = originalNode.result as Record<string, unknown> | null;
+
+			let needsUpdate = false;
+			let updatedConfig = config;
+			let updatedResult: Record<string, unknown> | undefined;
+
+			// Remap layerUpdates in ImageCompositor and VideoCompositor configs
+			if (
+				config &&
+				"layerUpdates" in config &&
+				typeof config.layerUpdates === "object" &&
+				config.layerUpdates !== null
+			) {
+				const layerUpdates = config.layerUpdates as Record<string, unknown>;
+				const remappedLayerUpdates: Record<string, unknown> = {};
+
+				for (const [oldHandleId, layerConfig] of Object.entries(layerUpdates)) {
+					const newHandleId = oldToNewHandleId[oldHandleId];
+					if (newHandleId) {
+						// Also remap inputHandleId inside the layer config
+						const layer = layerConfig as Record<string, unknown>;
+						remappedLayerUpdates[newHandleId] = {
+							...layer,
+							inputHandleId: newHandleId,
+						};
+					} else {
+						// Keep original if not found (shouldn't happen for valid configs)
+						remappedLayerUpdates[oldHandleId] = layerConfig;
+					}
+				}
+
+				updatedConfig = {
+					...config,
+					layerUpdates: remappedLayerUpdates,
+				};
+				needsUpdate = true;
+			}
+
+			// Remap outputHandleId in results if keepResults is true
+			if (
+				keepResults &&
+				result &&
+				"outputs" in result &&
+				Array.isArray(result.outputs)
+			) {
+				const outputs = result.outputs as Array<{
+					items: Array<Record<string, unknown>>;
+				}>;
+				const remappedOutputs = outputs.map((output) => ({
+					...output,
+					items: output.items.map((item) => {
+						if (
+							item.outputHandleId &&
+							typeof item.outputHandleId === "string"
+						) {
+							const newHandleId = oldToNewHandleId[item.outputHandleId];
+							return {
+								...item,
+								outputHandleId: newHandleId || item.outputHandleId,
+							};
+						}
+						return item;
+					}),
+				}));
+
+				updatedResult = {
+					...result,
+					outputs: remappedOutputs,
+				};
+				needsUpdate = true;
+			}
+
+			if (needsUpdate) {
+				await tx.node.update({
+					where: { id: newNodeId },
+					data: {
+						...(updatedConfig !== config
+							? { config: updatedConfig as any }
+							: {}),
+						...(updatedResult ? { result: updatedResult as any } : {}),
+					},
+				});
 			}
 		}
 

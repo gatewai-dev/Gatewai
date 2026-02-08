@@ -68,7 +68,7 @@ const apiRunRoutes = new Hono<{ Variables: AuthorizedHonoTypes }>({
 	 *   Set to false to run on the original canvas.
 	 *
 	 * Payload supports multiple file input formats:
-	 * - String: Text value or legacy base64 data
+	 * - String: Text value or base64 data
 	 * - { type: "base64", data: string, mimeType?: string }
 	 * - { type: "url", url: string }
 	 * - { type: "assetId", assetId: string }
@@ -171,7 +171,7 @@ const apiRunRoutes = new Hono<{ Variables: AuthorizedHonoTypes }>({
  */
 async function processFileInput(nodeId: string, inputData: NodeInput) {
 	if (typeof inputData === "string") {
-		// Legacy: raw base64 or data URI string
+		// Raw base64 or data URI string
 		await handleBase64Upload(nodeId, inputData);
 	} else if (inputData.type === "base64") {
 		// Structured base64 input
@@ -186,7 +186,7 @@ async function processFileInput(nodeId: string, inputData: NodeInput) {
 }
 
 /**
- * Handle base64 file upload (legacy string or structured)
+ * Handle base64 file upload
  */
 async function handleBase64Upload(
 	nodeId: string,
@@ -226,7 +226,9 @@ async function handleUrlUpload(nodeId: string, url: string): Promise<void> {
 	const filename = urlPath.split("/").pop() || `url-upload-${generateId()}`;
 
 	// Try to get mime type from response headers
-	const mimeType = response.headers.get("content-type") || undefined;
+	const mimeType = response.headers.get("content-type");
+
+	assert(mimeType, "Failed to get mime type from URL");
 
 	await uploadToImportNode({
 		nodeId,

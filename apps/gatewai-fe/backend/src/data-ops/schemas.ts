@@ -27,7 +27,7 @@ export type NodeInput = z.infer<typeof NodeInputSchema>;
 export const APIRunRequestSchema = z.object({
 	canvasId: z.string(),
 	payload: z.record(z.string(), NodeInputSchema).optional(),
-	/** If true (default), duplicates the canvas before execution. Set to false to run on original. */
+	/** If true (default), duplicates the canvas before execution. Set to false to run on original canvas. */
 	duplicate: z.boolean().default(true),
 });
 

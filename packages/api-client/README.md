@@ -1,6 +1,6 @@
 # Gatewai API Client
 
-A TypeScript client library for running Gatewai workflows programmatically.
+A TypeScript client library to access Gatewai API and run Gatewai workflows programmatically.
 
 ## Installation
 
@@ -60,7 +60,7 @@ const result = await client.run({
   canvasId: "canvas-id",
   payload: {
     "text-node-id": "Your custom prompt here",
-    "another-text-node": "Another value",
+    "another-text-node-id": "Another value",
   },
 });
 ```
@@ -123,8 +123,8 @@ import { GatewaiApiClient } from "@gatewai/api-client";
 import fs from "fs";
 
 const client = new GatewaiApiClient({
-  baseUrl: "http://localhost:5456",
-  apiKey: process.env.GATEWAI_API_KEY!,
+  baseUrl: "http://localhost:8081",
+  apiKey: process.env.GATEWAI_API_KEY,
 });
 
 // Read local file as base64
@@ -136,11 +136,11 @@ const result = await client.run({
   canvasId: "my-workflow-canvas",
   payload: {
     // Text input
-    "prompt-node": "A beautiful sunset over mountains",
+    "prompt-node-id": "A beautiful sunset over mountains",
     // File from base64
-    "image-input": GatewaiApiClient.fromBase64(base64Data, "image/png"),
+    "image-input-id": GatewaiApiClient.fromBase64(base64Data, "image/png"),
     // File from URL
-    "reference-image": GatewaiApiClient.fromUrl("https://example.com/ref.jpg"),
+    "reference-image-id": GatewaiApiClient.fromUrl("https://example.com/ref.jpg"),
   },
   duplicate: true, // Default, creates a copy
 });
@@ -164,7 +164,16 @@ For more control, use `startRun()` and `checkStatus()` separately:
 ```typescript
 const batch = await client.startRun({ canvasId: "..." });
 // ... do other work ...
-const status = await client.checkStatus(batch.batchHandleId);
+while (batch.status !== "COMPLETED") {
+  const statusResponse = await client.checkStatus(batch.batchHandleId);
+  if (statusResponse.status === "FAILED") {
+    throw new Error(statusResponse.error);
+  }
+  if (statusResponse.status === "COMPLETED") {
+    break;
+  }
+  await sleep(1000);
+}
 ```
 
 ## Asset Management
@@ -176,7 +185,7 @@ const assets = await client.listAssets({ limit: 10 });
 // Upload from URL
 const asset = await client.uploadAssetFromUrl({
   url: "https://example.com/file.mp4",
-  filename: "video.mp4",
+  filename: "video.mp4",    
 });
 
 // Get asset details
