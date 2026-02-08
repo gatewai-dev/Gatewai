@@ -46,7 +46,7 @@ RUN mkdir -p /app/deploy/packages/db/prisma && \
 
 
 RUN mkdir -p /app/deploy/node_modules/@gatewai/db/dist && \
-    cp packages/db/generated/client/libquery_engine-debian-openssl-1.1.x.so.node \
+    cp packages/db/generated/client/*.so.node \
         /app/deploy/node_modules/@gatewai/db/dist/
 
 

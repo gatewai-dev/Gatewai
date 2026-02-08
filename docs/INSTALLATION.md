@@ -58,7 +58,13 @@ Open `.env.local` and update the following:
 
 **Example:**
 ```env
+# Google Cloud
 GOOGLE_APPLICATION_CREDENTIALS_PATH=/Users/yourname/secrets/gatewai-key.json
+
+# Postgres (Optional - defaults to postgres/postgres/gatewai_db)
+POSTGRES_USER=myuser
+POSTGRES_PASSWORD=mypassword
+POSTGRES_DB=mydb
 ```
 
 > [!NOTE]
