@@ -186,7 +186,7 @@ export function AuthLayout({ children, title, subtitle }: AuthLayoutProps) {
 			</div>
 
 			{/* Right Side - Form */}
-			<div className="relative flex h-full min-h-screen items-center p-8 lg:p-12 bg-[#0a0a0f]">
+			<div className="relative flex h-full min-h-screen items-center p-8 lg:p-12 bg-background">
 				{/* Subtle gradient */}
 				<div className="absolute inset-0 bg-[radial-gradient(ellipse_at_top_right,var(--tw-gradient-stops))] from-primary/10 via-transparent to-transparent pointer-events-none" />
 
