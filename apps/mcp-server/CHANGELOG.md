@@ -1,5 +1,14 @@
 # @gatewai/mcp-server
 
+## 0.0.21
+
+### Patch Changes
+
+- ee2cc40: Auth env usage
+- Updated dependencies [ee2cc40]
+  - @gatewai/api-client@0.0.21
+  - @gatewai/types@0.0.21
+
 ## 0.0.20
 
 ### Patch Changes
