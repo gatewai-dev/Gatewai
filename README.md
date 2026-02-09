@@ -74,7 +74,7 @@ Gatewai's intelligent agent system uses a sophisticated multi-agent architecture
 See [INSTALLATION.md](https://github.com/gatewai-dev/Gatewai/blob/main/docs/INSTALLATION.md)
 
 > [!WARNING]
-> The project is in alpha stage, until a stable release, we may break things or make design changes that will make your existing workflows non-functional.
+> The project is in beta phase, until a stable release, we may break things or make design changes that will make your existing workflows non-functional.
 
 ### ⭐ Stay Updated
 

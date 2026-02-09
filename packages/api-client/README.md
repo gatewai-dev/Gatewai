@@ -94,7 +94,7 @@ const result = await client.run({
   },
 });
 
-// Legacy format (plain string) also works:
+// Plain string also works:
 const result = await client.run({
   canvasId: "canvas-id",
   payload: {
@@ -142,7 +142,7 @@ const result = await client.run({
     // File from URL
     "reference-image-id": GatewaiApiClient.fromUrl("https://example.com/ref.jpg"),
   },
-  duplicate: true, // Default, creates a copy
+  duplicate: true, // Default, creates a copy of workflow for API run
 });
 
 if (result.success && result.result) {
