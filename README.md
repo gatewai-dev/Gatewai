@@ -5,7 +5,7 @@ Gatewai is a powerful, node-based vibeflow platform designed to bridge the gap b
 > [!NOTE]
 > This [project](https://devpost.com/software/gatewai-ylt5uo) is built for the Gemini 3 Hackathon. For that reason, **main branch and deployments are freezed for Hackathon review until March.** We'll continue building Gatewai in `dev` branch.
 
-![Gatewai Workflow](assets/workflow_1.png)
+![Gatewai Workflow](assets/workflow_2.png)
 
 ---
 
