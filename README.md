@@ -1,5 +1,5 @@
 <div align="center">
-  <img src="assets/banner.png" alt="Gatewai" />
+  <img src="assets/banner_logo.png" alt="Gatewai" />
 </div>
 
 # GATEWAI
