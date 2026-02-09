@@ -80,6 +80,7 @@ const app = new Hono<{
 	.get("/env.js", (c) => {
 		const env = {
 			VITE_BASE_URL: ENV_CONFIG.BASE_URL,
+			DISABLE_EMAIL_SIGNUP: ENV_CONFIG.DISABLE_EMAIL_SIGNUP,
 		};
 		return c.text(`window.GATEWAI_ENV = ${JSON.stringify(env)};`, 200, {
 			"Content-Type": "application/javascript",

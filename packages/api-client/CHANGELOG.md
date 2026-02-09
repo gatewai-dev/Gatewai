@@ -1,5 +1,17 @@
 # @gatewai/api-client
 
+## 0.0.21
+
+### Patch Changes
+
+- ee2cc40: Auth env usage
+
+## 0.0.20
+
+### Patch Changes
+
+- 6d4ebb1: API updates
+
 ## 0.0.19
 
 ### Patch Changes
