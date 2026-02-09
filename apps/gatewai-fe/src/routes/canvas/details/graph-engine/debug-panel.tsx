@@ -1,12 +1,12 @@
 import { ChevronDown, ChevronUp } from "lucide-react";
 import { useEffect, useState } from "react";
-import { Button } from "@/components/ui/button";
-import { CardContent, CardHeader, CardTitle } from "@/components/ui/card";
+import { Button } from "@gatewai/ui-kit";
+import { CardContent, CardHeader, CardTitle } from "@gatewai/ui-kit";
 import {
 	Popover,
 	PopoverContent,
 	PopoverTrigger,
-} from "@/components/ui/popover";
+} from "@gatewai/ui-kit";
 import type { NodeEntityType } from "@/store/nodes";
 import { useProcessor } from "./processor-ctx";
 

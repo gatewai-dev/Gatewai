@@ -1,7 +1,7 @@
 import type { NodeType } from "@gatewai/db";
 import { Panel } from "@xyflow/react";
 import { Fragment, memo, type ReactNode, useMemo } from "react";
-import { Separator } from "@/components/ui/separator";
+import { Separator } from "@gatewai/ui-kit";
 import { cn } from "@/lib/utils";
 import { useAppSelector } from "@/store";
 import { type NodeEntityType, selectSelectedNodes } from "@/store/nodes";

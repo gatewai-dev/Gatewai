@@ -14,12 +14,12 @@ import {
 	ContextMenuContent,
 	ContextMenuItem,
 	ContextMenuTrigger,
-} from "@/components/ui/context-menu";
+} from "@gatewai/ui-kit";
 import {
 	Tooltip,
 	TooltipContent,
 	TooltipTrigger,
-} from "@/components/ui/tooltip";
+} from "@gatewai/ui-kit";
 import { dataTypeColors } from "@/config/colors";
 import { cn } from "@/lib/utils";
 import { useAppSelector } from "@/store";

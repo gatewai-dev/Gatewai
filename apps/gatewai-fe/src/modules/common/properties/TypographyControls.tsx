@@ -10,17 +10,17 @@ import {
 } from "lucide-react";
 import type React from "react";
 import { useMemo } from "react";
-import { Button } from "@/components/ui/button";
-import { DraggableNumberInput } from "@/components/ui/draggable-number-input";
-import { Label } from "@/components/ui/label";
+import { Button } from "@gatewai/ui-kit";
+import { DraggableNumberInput } from "@gatewai/ui-kit";
+import { Label } from "@gatewai/ui-kit";
 import {
 	Select,
 	SelectContent,
 	SelectItem,
 	SelectTrigger,
 	SelectValue,
-} from "@/components/ui/select";
-import { Separator } from "@/components/ui/separator";
+} from "@gatewai/ui-kit";
+import { Separator } from "@gatewai/ui-kit";
 import { ColorPicker } from "@/components/util/color-input";
 import { GetFontAssetUrl } from "@/lib/file";
 import { fontManager } from "@/lib/fonts";

@@ -1,8 +1,8 @@
 import { ForwardIcon } from "lucide-react";
 import { memo } from "react";
 import { AiOutlineStop } from "react-icons/ai";
-import { Button, type ButtonProps } from "@/components/ui/button";
-import { Spinner } from "@/components/ui/spinner";
+import { Button, type ButtonProps } from "@gatewai/ui-kit";
+import { Spinner } from "@gatewai/ui-kit";
 import type { NodeEntityType } from "@/store/nodes";
 import { useCanvasCtx } from "../ctx/canvas-ctx";
 import { useNodeTaskRunning } from "../ctx/task-manager-ctx";

@@ -11,7 +11,7 @@ import {
 import type { DragEventHandler, MouseEventHandler } from "react";
 import { useEffect } from "react";
 import { Helmet } from "react-helmet-async";
-import { LoadingSpinner } from "@/components/ui/loading-spinner";
+import { LoadingSpinner } from "@gatewai/ui-kit";
 import { useAppDispatch, useAppSelector } from "@/store";
 import { setSelectedEdgeIds, setSelectedNodeIds } from "@/store/node-meta";
 import { selectRFEdges, selectRFNodes } from "@/store/rfstate";

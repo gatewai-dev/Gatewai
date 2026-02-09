@@ -1,7 +1,7 @@
 import { X } from "lucide-react";
 import { memo } from "react";
-import { Button } from "@/components/ui/button";
-import { Input } from "@/components/ui/input";
+import { Button } from "@gatewai/ui-kit";
+import { Input } from "@gatewai/ui-kit";
 import { useNodePalette } from "./node-palette.ctx";
 
 const SearchInput = memo(() => {
