@@ -101,7 +101,7 @@ import {
 	TooltipProvider,
 	TooltipTrigger,
 } from "@gatewai/ui-kit";
-import { dataTypeColors } from "@/config/colors";
+import { dataTypeColors } from "@gatewai/types";
 import { GetAssetEndpoint, GetFontAssetUrl } from "@/lib/file";
 import { fontManager } from "@/lib/fonts";
 import { CollapsibleSection } from "@/modules/common/CollapsibleSection";
@@ -438,10 +438,10 @@ const ImageLayer: React.FC<LayerProps> = ({
 					prev.map((l) =>
 						l.id === layer.id
 							? {
-									...l,
-									width: Math.round(image.width),
-									height: Math.round(image.height),
-								}
+								...l,
+								width: Math.round(image.width),
+								height: Math.round(image.height),
+							}
 							: l,
 					),
 				false,
@@ -548,10 +548,10 @@ const TextLayer: React.FC<LayerProps> = ({
 						prev.map((l) =>
 							l.id === layer.id
 								? {
-										...l,
-										computedWidth: calculatedWidth,
-										computedHeight: calculatedHeight,
-									}
+									...l,
+									computedWidth: calculatedWidth,
+									computedHeight: calculatedHeight,
+								}
 								: l,
 						),
 					false,

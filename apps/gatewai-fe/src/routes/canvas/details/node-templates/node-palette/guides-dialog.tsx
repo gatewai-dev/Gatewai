@@ -12,7 +12,7 @@ import {
 	TooltipContent,
 	TooltipTrigger,
 } from "@gatewai/ui-kit";
-import { dataTypeColors } from "@/config/colors";
+import { dataTypeColors } from "@gatewai/types";
 import { cn } from "@/lib/utils";
 import { MarkdownRenderer } from "../../components/markdown-renderer";
 
