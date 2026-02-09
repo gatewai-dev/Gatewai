@@ -1,3 +1,7 @@
+<div align="center">
+  <img src="assets/md.png" alt="Gatewai" />
+</div>
+
 # GATEWAI
 
 Gatewai is a powerful, node-based vibeflow platform designed to bridge the gap between complex AI models and intuitive creative workflows. Whether you are generating cinematic videos, composing multi-layered images, or building sophisticated LLM chains, Gatewai provides the canvas for your imagination through a sleek, user-centric interface.
