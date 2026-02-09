@@ -22,7 +22,7 @@ import type {
 	OutputItem,
 } from "@gatewai/types";
 import { COMPOSITOR_DEFAULTS } from "@gatewai/types";
-import { Separator } from "@radix-ui/react-menubar";
+import { Separator } from "@gatewai/ui-kit";
 import type Konva from "konva";
 import type { KonvaEventObject } from "konva/lib/Node";
 import {
