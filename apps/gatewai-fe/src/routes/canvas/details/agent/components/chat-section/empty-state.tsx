@@ -31,7 +31,7 @@ export function EmptyState({
 			<div className="w-full max-w-3xl space-y-8">
 				<div className="space-y-2 px-2">
 					<h1 className="text-2xl font-semibold text-foreground/90">
-						Gatewai Copilot
+						Gatewai Agent
 					</h1>
 					<p className="text-sm text-muted-foreground">
 						Your AI assistant for building workflows.

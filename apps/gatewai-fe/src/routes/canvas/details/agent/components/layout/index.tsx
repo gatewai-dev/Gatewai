@@ -30,7 +30,7 @@ function AgentLayoutInner() {
 				)}
 			>
 				<HiSparkles className="size-6 text-primary" />
-				Copilot
+				Agent
 			</Button>
 			<div
 				className={cn(

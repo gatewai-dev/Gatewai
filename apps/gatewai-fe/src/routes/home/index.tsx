@@ -303,7 +303,7 @@ const HomePage = () => {
 					</div>
 				</div>
 
-				{/* 5. Feature: Copilot (Mid-Center) */}
+				{/* 5. Feature: Agent (Mid-Center) */}
 				<div className="md:col-span-4 md:row-span-4 bg-neutral-900/20 border border-neutral-800 rounded-3xl p-6 flex flex-col justify-between group hover:border-neutral-700 transition-colors relative overflow-hidden">
 					<div className="relative z-10 flex flex-col gap-3">
 						{/* Chat Interface */}
@@ -325,11 +325,11 @@ const HomePage = () => {
 					</div>
 					<div>
 						<h3 className="text-lg font-bold text-white mb-2 font-mono">
-							AI Copilot
+							Workflow Agent
 						</h3>
 						<p className="text-sm text-neutral-500 leading-relaxed">
-							Don't just drag nodes. Describe your intent and let our Agent
-							architect the perfect workflow for you.
+							Don't just drag nodes. Describe your intent and let the Workflow
+							Agent architect the perfect workflow for you.
 						</p>
 					</div>
 
