@@ -28,6 +28,10 @@ export default defineConfig({
 				target: "http://localhost:8081",
 				changeOrigin: true,
 			},
+			"/env.js": {
+				target: "http://localhost:8081",
+				changeOrigin: true,
+			},
 		},
 	},
 	resolve: {
