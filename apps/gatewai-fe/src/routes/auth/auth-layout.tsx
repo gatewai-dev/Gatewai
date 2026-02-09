@@ -3,7 +3,7 @@ import { Workflow } from "lucide-react";
 import type { ReactNode } from "react";
 import { useEffect, useRef, useState } from "react";
 import { Link } from "react-router";
-import { GatewaiLogo } from "@/components/ui/gatewai-logo";
+import { GatewaiLogo } from "@gatewai/ui-kit";
 
 interface AuthLayoutProps {
 	children: ReactNode;

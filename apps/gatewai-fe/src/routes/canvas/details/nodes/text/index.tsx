@@ -1,8 +1,8 @@
 import type { TextNodeConfig } from "@gatewai/types";
 import type { NodeProps } from "@xyflow/react";
 import { memo, useCallback } from "react";
-import { ScrollArea } from "@/components/ui/scroll-area";
-import { Textarea } from "@/components/ui/textarea";
+import { ScrollArea } from "@gatewai/ui-kit";
+import { Textarea } from "@gatewai/ui-kit";
 import { useAppSelector } from "@/store";
 import { makeSelectNodeById } from "@/store/nodes";
 import { useCanvasCtx } from "../../ctx/canvas-ctx";

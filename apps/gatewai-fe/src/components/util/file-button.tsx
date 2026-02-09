@@ -5,7 +5,7 @@ import { cn } from "@/lib/utils";
 import type { UploadFileNodeAssetRPC } from "@/rpc/types";
 import { useUploadFileNodeAssetMutation } from "@/store/assets";
 import type { NodeEntityType } from "@/store/nodes";
-import { Button } from "../ui/button";
+import { Button } from "@gatewai/ui-kit";
 
 interface UploadButtonProps {
 	className?: string;

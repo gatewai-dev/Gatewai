@@ -1,4 +1,4 @@
-import { LoadingSpinner } from "@/components/ui/loading-spinner";
+import { LoadingSpinner } from "@gatewai/ui-kit";
 import { cn } from "@/lib/utils";
 import { MarkdownRenderer } from "../../../components/markdown-renderer";
 import { PatchReviewCard } from "../patch-review-card";

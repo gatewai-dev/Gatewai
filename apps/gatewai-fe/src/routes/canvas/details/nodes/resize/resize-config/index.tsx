@@ -40,12 +40,12 @@ function ResizeConfig({
 }
 
 import { Maximize2 } from "lucide-react";
-import { Button } from "@/components/ui/button";
+import { Button } from "@gatewai/ui-kit";
 import {
 	Tooltip,
 	TooltipContent,
 	TooltipTrigger,
-} from "@/components/ui/tooltip";
+} from "@gatewai/ui-kit";
 import { useCanvasCtx } from "../../../ctx/canvas-ctx";
 
 function ResetButton({

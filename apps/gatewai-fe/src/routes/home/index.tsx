@@ -4,8 +4,8 @@ import { useEffect, useRef, useState } from "react";
 import { Helmet } from "react-helmet-async";
 import { FaDiscord, FaGithub } from "react-icons/fa";
 import { Link } from "react-router";
-import { Button } from "@/components/ui/button";
-import { GatewaiLogo } from "@/components/ui/gatewai-logo";
+import { Button } from "@gatewai/ui-kit";
+import { GatewaiLogo } from "@gatewai/ui-kit";
 
 // Node connection animation component
 const NodeCanvas = () => {

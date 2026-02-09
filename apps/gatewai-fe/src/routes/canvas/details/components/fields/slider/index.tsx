@@ -7,13 +7,13 @@ import {
 	FormItem,
 	FormLabel,
 	FormMessage,
-} from "@/components/ui/form";
-import { Slider } from "@/components/ui/slider";
+} from "@gatewai/ui-kit";
+import { Slider } from "@gatewai/ui-kit";
 import {
 	Tooltip,
 	TooltipContent,
 	TooltipTrigger,
-} from "@/components/ui/tooltip";
+} from "@gatewai/ui-kit";
 
 type SliderFieldProps<T extends FieldValues> = {
 	control: Control<T>;

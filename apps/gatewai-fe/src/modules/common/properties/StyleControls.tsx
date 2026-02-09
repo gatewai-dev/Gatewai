@@ -1,7 +1,7 @@
 import { ImageIcon, Move } from "lucide-react";
 import type React from "react";
-import { DraggableNumberInput } from "@/components/ui/draggable-number-input";
-import { Label } from "@/components/ui/label";
+import { DraggableNumberInput } from "@gatewai/ui-kit";
+import { Label } from "@gatewai/ui-kit";
 import { ColorPicker } from "@/components/util/color-input";
 import { CollapsibleSection } from "../CollapsibleSection";
 

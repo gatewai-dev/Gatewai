@@ -19,15 +19,15 @@ import {
 import { useEffect, useMemo, useState } from "react";
 import { useDebounce } from "use-debounce";
 
-import { Button } from "@/components/ui/button";
-import { Input } from "@/components/ui/input";
+import { Button } from "@gatewai/ui-kit";
+import { Input } from "@gatewai/ui-kit";
 import {
 	Popover,
 	PopoverContent,
 	PopoverTrigger,
-} from "@/components/ui/popover";
-import { ScrollArea } from "@/components/ui/scroll-area";
-import { Tabs, TabsList, TabsTrigger } from "@/components/ui/tabs";
+} from "@gatewai/ui-kit";
+import { ScrollArea } from "@gatewai/ui-kit";
+import { Tabs, TabsList, TabsTrigger } from "@gatewai/ui-kit";
 import { cn } from "@/lib/utils";
 import { useUserAssets } from "@/routes/canvas/assets/user-assets-ctx";
 import { AssetItem } from "./asset-item";

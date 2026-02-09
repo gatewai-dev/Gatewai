@@ -2,14 +2,14 @@ import * as SliderPrimitive from "@radix-ui/react-slider";
 import { Check, Copy, Pipette } from "lucide-react";
 import type React from "react";
 import { useEffect, useRef, useState } from "react";
-import { Button } from "@/components/ui/button";
-import { Input } from "@/components/ui/input";
+import { Button } from "@gatewai/ui-kit";
+import { Input } from "@gatewai/ui-kit";
 import {
 	Popover,
 	PopoverContent,
 	PopoverTrigger,
-} from "@/components/ui/popover";
-import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
+} from "@gatewai/ui-kit";
+import { Tabs, TabsContent, TabsList, TabsTrigger } from "@gatewai/ui-kit";
 import { cn } from "@/lib/utils";
 
 // --- Types ---

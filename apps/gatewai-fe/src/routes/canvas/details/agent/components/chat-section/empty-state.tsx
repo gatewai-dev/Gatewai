@@ -1,4 +1,4 @@
-import type { AutosizeTextAreaRef } from "@/components/ui/autosize-textarea";
+import type { AutosizeTextAreaRef } from "@gatewai/ui-kit";
 import { InputArea } from "./input-area";
 
 interface EmptyStateProps {

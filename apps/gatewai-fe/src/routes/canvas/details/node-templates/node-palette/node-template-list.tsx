@@ -1,5 +1,5 @@
 import { memo, useMemo } from "react";
-import { ScrollArea } from "@/components/ui/scroll-area";
+import { ScrollArea } from "@gatewai/ui-kit";
 import { cn } from "@/lib/utils";
 import type { NodeTemplateListRPC } from "@/rpc/types";
 import { NodeItem } from "./node-item";

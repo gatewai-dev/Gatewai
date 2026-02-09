@@ -1,7 +1,7 @@
 import { AnimatePresence, motion } from "framer-motion";
 import { ArrowRight, Check, GitPullRequest, X } from "lucide-react";
 import { useState } from "react";
-import { Button } from "@/components/ui/button";
+import { Button } from "@gatewai/ui-kit";
 import { useCanvasCtx } from "../../ctx/canvas-ctx";
 
 interface PatchReviewCardProps {

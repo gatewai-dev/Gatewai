@@ -12,13 +12,13 @@ import {
 	FormItem,
 	FormLabel,
 	FormMessage,
-} from "@/components/ui/form";
-import { Switch } from "@/components/ui/switch";
+} from "@gatewai/ui-kit";
+import { Switch } from "@gatewai/ui-kit";
 import {
 	Tooltip,
 	TooltipContent,
 	TooltipTrigger,
-} from "@/components/ui/tooltip";
+} from "@gatewai/ui-kit";
 
 type SwitchFieldProps<T extends FieldValues> = {
 	control: Control<T>;

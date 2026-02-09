@@ -9,7 +9,7 @@ import { useState } from "react";
 import { FaDiscord, FaGithub } from "react-icons/fa";
 import { Link, useNavigate } from "react-router";
 import { ApiKeysSettings } from "@/components/settings/ApiKeysSettings";
-import { Button } from "@/components/ui/button";
+import { Button } from "@gatewai/ui-kit";
 import {
 	DropdownMenu,
 	DropdownMenuContent,
@@ -17,13 +17,13 @@ import {
 	DropdownMenuLabel,
 	DropdownMenuSeparator,
 	DropdownMenuTrigger,
-} from "@/components/ui/dropdown-menu";
-import { GatewaiIcon } from "@/components/ui/gatewai-icon";
+} from "@gatewai/ui-kit";
+import { GatewaiIcon } from "@gatewai/ui-kit";
 import {
 	Tooltip,
 	TooltipContent,
 	TooltipTrigger,
-} from "@/components/ui/tooltip";
+} from "@gatewai/ui-kit";
 import { authClient } from "@/lib/auth-client";
 import { cn } from "@/lib/utils";
 import type { NodeTemplateListRPC } from "@/rpc/types";
