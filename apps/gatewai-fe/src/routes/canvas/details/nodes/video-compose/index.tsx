@@ -5,7 +5,7 @@ import { Download, Loader2, VideoIcon } from "lucide-react";
 import { memo, useEffect, useMemo, useState } from "react";
 import { useNavigate } from "react-router";
 import { toast } from "sonner";
-import { Button } from "@/components/ui/button";
+import { Button } from "@gatewai/ui-kit";
 import { GetAssetEndpoint, GetFontAssetUrl } from "@/lib/file";
 import { fontManager } from "@/lib/fonts";
 import { cn } from "@/lib/utils";

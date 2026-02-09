@@ -25,10 +25,10 @@ import {
 	AlertDialogHeader,
 	AlertDialogTitle,
 	AlertDialogTrigger,
-} from "@/components/ui/alert-dialog";
-import { Button } from "@/components/ui/button";
-import { Input } from "@/components/ui/input";
-import { Skeleton } from "@/components/ui/skeleton";
+} from "@gatewai/ui-kit";
+import { Button } from "@gatewai/ui-kit";
+import { Input } from "@gatewai/ui-kit";
+import { Skeleton } from "@gatewai/ui-kit";
 import { cn } from "@/lib/utils";
 import type { CanvasListRPC } from "@/rpc/types";
 import { CanvasListProvider, useCanvasListCtx } from "../ctx/canvas-list.ctx";

@@ -7,7 +7,7 @@ import {
 import { zodResolver } from "@hookform/resolvers/zod";
 import { memo, useCallback, useEffect } from "react";
 import { useForm } from "react-hook-form";
-import { Form } from "@/components/ui/form";
+import { Form } from "@gatewai/ui-kit";
 import { useCanvasCtx } from "@/routes/canvas/details/ctx/canvas-ctx";
 import type { NodeEntityType } from "@/store/nodes";
 import { SelectField } from "../../../../components/fields/select";

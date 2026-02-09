@@ -23,6 +23,7 @@
 		"@gatewai/pixi-processor": "workspace:*",
 		"@gatewai/tsconfig": "workspace:*",
 		"@gatewai/types": "workspace:*",
+		"@gatewai/ui-kit": "workspace:*",
 		"@google-cloud/secret-manager": "^6.1.1",
 		"@google-cloud/storage": "^7.18.0",
 		"@google/adk": "^0.2.4",

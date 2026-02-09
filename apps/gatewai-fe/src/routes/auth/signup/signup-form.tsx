@@ -4,8 +4,8 @@ import { AlertCircle, Loader2 } from "lucide-react";
 import { useState } from "react";
 import { useForm } from "react-hook-form";
 import { z } from "zod";
-import { Alert, AlertDescription } from "@/components/ui/alert";
-import { Button } from "@/components/ui/button";
+import { Alert, AlertDescription } from "@gatewai/ui-kit";
+import { Button } from "@gatewai/ui-kit";
 import {
 	Form,
 	FormControl,
@@ -13,8 +13,8 @@ import {
 	FormItem,
 	FormLabel,
 	FormMessage,
-} from "@/components/ui/form";
-import { Input } from "@/components/ui/input";
+} from "@gatewai/ui-kit";
+import { Input } from "@gatewai/ui-kit";
 import { authClient } from "@/lib/auth-client";
 
 const formSchema = z

@@ -76,31 +76,31 @@ import {
 	AlertDialogFooter,
 	AlertDialogHeader,
 	AlertDialogTitle,
-} from "@/components/ui/alert-dialog";
-import { Button } from "@/components/ui/button";
-import { DraggableNumberInput } from "@/components/ui/draggable-number-input";
-import { Label } from "@/components/ui/label";
+} from "@gatewai/ui-kit";
+import { Button } from "@gatewai/ui-kit";
+import { DraggableNumberInput } from "@gatewai/ui-kit";
+import { Label } from "@gatewai/ui-kit";
 import {
 	Menubar,
 	MenubarContent,
 	MenubarItem,
 	MenubarMenu,
 	MenubarTrigger,
-} from "@/components/ui/menubar";
-import { ScrollArea } from "@/components/ui/scroll-area";
+} from "@gatewai/ui-kit";
+import { ScrollArea } from "@gatewai/ui-kit";
 import {
 	Select,
 	SelectContent,
 	SelectItem,
 	SelectTrigger,
 	SelectValue,
-} from "@/components/ui/select";
+} from "@gatewai/ui-kit";
 import {
 	Tooltip,
 	TooltipContent,
 	TooltipProvider,
 	TooltipTrigger,
-} from "@/components/ui/tooltip";
+} from "@gatewai/ui-kit";
 import { dataTypeColors } from "@/config/colors";
 import { GetAssetEndpoint, GetFontAssetUrl } from "@/lib/file";
 import { fontManager } from "@/lib/fonts";

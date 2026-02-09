@@ -6,14 +6,14 @@ import {
 	AccordionContent,
 	AccordionItem,
 	AccordionTrigger,
-} from "@/components/ui/accordion";
-import { Button } from "@/components/ui/button";
+} from "@gatewai/ui-kit";
+import { Button } from "@gatewai/ui-kit";
 import {
 	Popover,
 	PopoverContent,
 	PopoverTrigger,
-} from "@/components/ui/popover";
-import { Spinner } from "@/components/ui/spinner";
+} from "@gatewai/ui-kit";
+import { Spinner } from "@gatewai/ui-kit";
 import { useTaskManagerCtx } from "../ctx/task-manager-ctx";
 
 const CanvasTasksPanel = memo(() => {

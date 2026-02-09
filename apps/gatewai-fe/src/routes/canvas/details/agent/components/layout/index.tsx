@@ -1,6 +1,6 @@
 import { Panel } from "@xyflow/react";
 import { HiSparkles } from "react-icons/hi2";
-import { Button } from "@/components/ui/button";
+import { Button } from "@gatewai/ui-kit";
 import { usePersistentState } from "@/lib/hooks/use-persistent-state";
 import { cn } from "@/lib/utils";
 import { CanvasAgentProvider } from "../../ctx/canvas-agent.ctx";

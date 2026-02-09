@@ -4,22 +4,22 @@ import { useState } from "react";
 import { useForm } from "react-hook-form";
 import { toast } from "sonner";
 import { z } from "zod";
-import { Button } from "@/components/ui/button";
+import { Button } from "@gatewai/ui-kit";
 import {
 	Dialog,
 	DialogContent,
 	DialogDescription,
 	DialogHeader,
 	DialogTitle,
-} from "@/components/ui/dialog";
+} from "@gatewai/ui-kit";
 import {
 	Form,
 	FormControl,
 	FormField,
 	FormItem,
 	FormMessage,
-} from "@/components/ui/form";
-import { Input } from "@/components/ui/input";
+} from "@gatewai/ui-kit";
+import { Input } from "@gatewai/ui-kit";
 import {
 	Table,
 	TableBody,
@@ -27,18 +27,18 @@ import {
 	TableHead,
 	TableHeader,
 	TableRow,
-} from "@/components/ui/table";
+} from "@gatewai/ui-kit";
 import {
 	Tooltip,
 	TooltipContent,
 	TooltipTrigger,
-} from "@/components/ui/tooltip";
+} from "@gatewai/ui-kit";
 import {
 	useCreateApiKeyMutation,
 	useDeleteApiKeyMutation,
 	useGetApiKeysQuery,
 } from "@/store/api-keys";
-import { Separator } from "../ui/separator";
+import { Separator } from "@gatewai/ui-kit";
 
 interface ApiKeysSettingsProps {
 	open: boolean;
