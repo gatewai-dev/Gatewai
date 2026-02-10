@@ -1,0 +1,10 @@
+import { GoogleGenAI } from "@google/genai";
+
+/**
+ * Default client for the google gemini
+ */
+const genAI = new GoogleGenAI({
+    apiKey: process.env.GEMINI_API_KEY,
+});
+
+export { genAI };

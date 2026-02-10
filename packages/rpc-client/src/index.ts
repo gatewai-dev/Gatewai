@@ -6,7 +6,7 @@ export type { AppType };
 export const createRpcClient = (baseUrl: string = "/") => {
 	return hc<AppType>(baseUrl, {
 		init: {
-			credentials: "same-origin",
+			credentials: "include",
 		},
 	});
 };

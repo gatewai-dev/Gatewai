@@ -78,14 +78,17 @@ export const nodesSlice = createSlice({
 						// This prevents overwriting user's local selection when polling returns the same generation result
 						if (existing && existing.result && task.node.result) {
 							const { selectedOutputIndex: _e, ...existingRest } =
-								(existing.result as unknown) as NodeResult;
-							const { selectedOutputIndex: _n, ...newRest } =
-								(task.node.result as unknown) as NodeResult;
+								existing.result as unknown as NodeResult;
+							const { selectedOutputIndex: _n, ...newRest } = task.node
+								.result as unknown as NodeResult;
 
 							if (!isEqual(existingRest, newRest)) {
 								completedNodes.push(task.node);
 							}
-						} else if (!existing || !isEqual(existing.result, task.node.result)) {
+						} else if (
+							!existing ||
+							!isEqual(existing.result, task.node.result)
+						) {
 							// Fallback for when node doesn't exist or result is null/undefined
 							completedNodes.push(task.node);
 						}

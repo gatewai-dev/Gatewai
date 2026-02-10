@@ -23,7 +23,6 @@ import textToSpeechNode from "./text-to-speech/manifest.js";
 // ── Video ────────────────────────────────────────────────────────────────────
 import videoCompositorNode from "./video-compositor/manifest.js";
 import videoGenNode from "./video-gen/manifest.js";
-import videoGenExtendNode from "./video-gen-extend/manifest.js";
 import videoGenFirstLastFrameNode from "./video-gen-first-last-frame/manifest.js";
 
 /**
@@ -52,7 +51,6 @@ export const builtinNodes: readonly GatewaiNodeManifest[] = [
 	imageGenNode,
 	videoGenNode,
 	videoGenFirstLastFrameNode,
-	videoGenExtendNode,
 	textToSpeechNode,
 	speechToTextNode,
 
@@ -94,7 +92,6 @@ export {
 	imageGenNode,
 	videoGenNode,
 	videoGenFirstLastFrameNode,
-	videoGenExtendNode,
 	textToSpeechNode,
 	speechToTextNode,
 	textMergerNode,
