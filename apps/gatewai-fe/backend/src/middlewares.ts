@@ -1,6 +1,6 @@
+import { logger } from "@gatewai/core";
 import type { Context, Next } from "hono";
 import { HTTPException } from "hono/http-exception";
-import { logger } from "./logger.js";
 import { assertIsError } from "./utils/misc.js";
 
 // 1. Request/Response Middleware

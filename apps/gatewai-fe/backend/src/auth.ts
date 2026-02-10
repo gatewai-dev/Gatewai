@@ -1,3 +1,4 @@
+import { logger } from "@gatewai/core";
 import { prisma } from "@gatewai/db";
 import { betterAuth } from "better-auth";
 import { prismaAdapter } from "better-auth/adapters/prisma";
@@ -5,7 +6,6 @@ import { apiKey } from "better-auth/plugins";
 import { createMiddleware } from "hono/factory";
 import { HTTPException } from "hono/http-exception";
 import { ENV_CONFIG } from "./config.js";
-import { logger } from "./logger.js";
 
 export const auth = betterAuth({
 	database: prismaAdapter(prisma, {

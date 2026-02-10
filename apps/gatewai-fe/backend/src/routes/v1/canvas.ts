@@ -1,3 +1,4 @@
+import { logger } from "@gatewai/core";
 import { prisma } from "@gatewai/db";
 import {
 	agentBulkUpdateSchema,
@@ -17,7 +18,6 @@ import { GetCanvasEntities } from "../../data-ops/canvas.js";
 import { applyCanvasUpdate } from "../../data-ops/canvas-update.js";
 import { NodeWFProcessor } from "../../graph-engine/canvas-workflow-processor.js";
 import { redisSubscriber } from "../../lib/redis.js";
-import { logger } from "../../logger.js";
 import { assertIsError } from "../../utils/misc.js";
 import {
 	assertCanvasOwnership,

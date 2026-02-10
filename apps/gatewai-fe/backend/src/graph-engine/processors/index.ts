@@ -1,64 +1,134 @@
-import { NodeType } from "@gatewai/db";
+import {
+	blurNode,
+	compositorNode,
+	cropNode,
+	exportNode,
+	imageGenNode,
+	llmNode,
+	modulateNode,
+	paintNode,
+	resizeNode,
+	speechToTextNode,
+	textMergerNode,
+	textNode,
+	textToSpeechNode,
+	videoGenExtendNode,
+	videoGenFirstLastFrameNode,
+	videoGenNode,
+} from "@gatewai/nodes";
 import type {
 	FileResult,
 	NodeResult,
 	VideoCompositorResult,
 } from "@gatewai/types";
-import audioUnderstandingProcessor from "./audio-understanding.js";
-import blurProcessor from "./blur.js";
-import compositorProcessor from "./compositor.js";
-import cropProcessor from "./crop.js";
-import exportProcessor from "./export.js";
-import imageGenProcessor from "./image-gen.js";
-import llmProcessor from "./llm.js";
-import modulateProcessor from "./modulate.js";
-import paintProcessor from "./paint.js";
-import resizeProcessor from "./resize.js";
-import textProcessor from "./text.js";
-import textMergerProcessor from "./text-merger.js";
-import textToSpeechProcessor from "./text-to-speech.js";
-import type { NodeProcessor } from "./types.js";
-import videoGenProcessor from "./video-gen.js";
-import videoGenExtendProcessor from "./video-gen-extend.js";
-import videoGenFirstLastFrameProcessor from "./video-gen-first-last-frame.js";
+import { nodeRegistry } from "../node-registry.js";
+import type { NodeProcessorCtx } from "./types.js";
 
-const nodeProcessors: Partial<Record<NodeType, NodeProcessor>> = {
-	[NodeType.Blur]: blurProcessor,
-	[NodeType.Resize]: resizeProcessor,
-	[NodeType.LLM]: llmProcessor,
-	[NodeType.ImageGen]: imageGenProcessor,
-	[NodeType.Crop]: cropProcessor,
-	[NodeType.Paint]: paintProcessor,
-	[NodeType.Modulate]: modulateProcessor,
-	[NodeType.Compositor]: compositorProcessor,
-	[NodeType.VideoGen]: videoGenProcessor,
-	// [NodeType.VideoGenExtend]: videoGenExtendProcessor,
-	[NodeType.VideoGenFirstLastFrame]: videoGenFirstLastFrameProcessor,
+// ────────────────────────────────────────────────────────────────────────────
+// Register backend processors into the NodeRegistry.
+//
+// The manifests from @gatewai/nodes define the node metadata and the
+// backendProcessor function which contains the execution logic.
+// ────────────────────────────────────────────────────────────────────────────
 
-	[NodeType.TextToSpeech]: textToSpeechProcessor,
-	[NodeType.SpeechToText]: audioUnderstandingProcessor,
-	[NodeType.TextMerger]: textMergerProcessor,
-	[NodeType.Export]: exportProcessor,
+if (blurNode.backendProcessor) {
+	nodeRegistry.registerProcessor(blurNode.type, blurNode.backendProcessor);
+}
+if (resizeNode.backendProcessor) {
+	nodeRegistry.registerProcessor(resizeNode.type, resizeNode.backendProcessor);
+}
+if (llmNode.backendProcessor) {
+	nodeRegistry.registerProcessor(llmNode.type, llmNode.backendProcessor);
+}
+if (imageGenNode.backendProcessor) {
+	nodeRegistry.registerProcessor(
+		imageGenNode.type,
+		imageGenNode.backendProcessor,
+	);
+}
+if (cropNode.backendProcessor) {
+	nodeRegistry.registerProcessor(cropNode.type, cropNode.backendProcessor);
+}
+if (paintNode.backendProcessor) {
+	nodeRegistry.registerProcessor(paintNode.type, paintNode.backendProcessor);
+}
+if (modulateNode.backendProcessor) {
+	nodeRegistry.registerProcessor(
+		modulateNode.type,
+		modulateNode.backendProcessor,
+	);
+}
+if (compositorNode.backendProcessor) {
+	nodeRegistry.registerProcessor(
+		compositorNode.type,
+		compositorNode.backendProcessor,
+	);
+}
 
-	[NodeType.Text]: textProcessor,
-	[NodeType.File]: async ({ node }) => {
-		return { success: true, newResult: node.result as unknown as FileResult };
-	},
-	// No processing*(not really) needed for below node types
-	[NodeType.VideoCompositor]: async ({ node }) => {
+// Video Gen
+if (videoGenNode.backendProcessor) {
+	nodeRegistry.registerProcessor(
+		videoGenNode.type,
+		videoGenNode.backendProcessor,
+	);
+}
+if (videoGenFirstLastFrameNode.backendProcessor) {
+	nodeRegistry.registerProcessor(
+		videoGenFirstLastFrameNode.type,
+		videoGenFirstLastFrameNode.backendProcessor,
+	);
+}
+if (videoGenExtendNode.backendProcessor) {
+	nodeRegistry.registerProcessor(
+		videoGenExtendNode.type,
+		videoGenExtendNode.backendProcessor,
+	);
+}
+
+// Audio / Text
+if (textToSpeechNode.backendProcessor) {
+	nodeRegistry.registerProcessor(
+		textToSpeechNode.type,
+		textToSpeechNode.backendProcessor,
+	);
+}
+if (speechToTextNode.backendProcessor) {
+	nodeRegistry.registerProcessor(
+		speechToTextNode.type,
+		speechToTextNode.backendProcessor,
+	);
+}
+if (textMergerNode.backendProcessor) {
+	nodeRegistry.registerProcessor(
+		textMergerNode.type,
+		textMergerNode.backendProcessor,
+	);
+}
+if (exportNode.backendProcessor) {
+	nodeRegistry.registerProcessor(exportNode.type, exportNode.backendProcessor);
+}
+if (textNode.backendProcessor) {
+	nodeRegistry.registerProcessor(textNode.type, textNode.backendProcessor);
+}
+
+// Passthrough processors for nodes that don't need backend processing
+nodeRegistry.registerProcessor("File", async ({ node }: NodeProcessorCtx) => {
+	return { success: true, newResult: node.result as unknown as FileResult };
+});
+nodeRegistry.registerProcessor(
+	"VideoCompositor",
+	async ({ node }: NodeProcessorCtx) => {
 		return {
 			success: true,
 			newResult: node.result as unknown as VideoCompositorResult,
 		};
 	},
-	// Frontend-Process*(not really) only nodes
-	// We're adding them here so that they doesn't throw false-positive error for missing processors
-	[NodeType.Preview]: async () => {
-		return { success: true, result: null };
-	},
-	[NodeType.Note]: async ({ node }) => {
-		return { success: true, newResult: node.result as unknown as NodeResult };
-	},
-};
+);
+nodeRegistry.registerProcessor("Preview", async () => {
+	return { success: true, result: null };
+});
+nodeRegistry.registerProcessor("Note", async ({ node }: NodeProcessorCtx) => {
+	return { success: true, newResult: node.result as unknown as NodeResult };
+});
 
-export { nodeProcessors };
+export { nodeRegistry };

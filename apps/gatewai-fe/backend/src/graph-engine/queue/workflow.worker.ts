@@ -1,10 +1,13 @@
+import { logger } from "@gatewai/core";
 import { Prisma, prisma, TaskStatus } from "@gatewai/db";
 import { type Job, Worker } from "bullmq";
 import { ENV_CONFIG } from "../../config.js";
 import { GetCanvasEntities } from "../../data-ops/canvas.js";
-import { logger } from "../../logger.js";
 import { assertIsError } from "../../utils/misc.js";
-import { nodeProcessors } from "../processors/index.js";
+import { nodeRegistry } from "../node-registry.js";
+// Side-effect import: registers all backend processors into the registry
+import "../processors/index.js";
+import { nodeServices } from "../node-services.js";
 import { redisConnection } from "./connection.js";
 import {
 	type NodeTaskJobData,
@@ -240,7 +243,7 @@ const processNodeJob = async (job: Job<NodeTaskJobData>) => {
 		});
 
 		// 5. Execute Processor
-		const processor = nodeProcessors[node.type];
+		const processor = nodeRegistry.getProcessor(node.type);
 		if (!processor) {
 			logger.error(`No processor for node type ${node.type}`);
 			throw new Error(`No processor for node type ${node.type}`);
@@ -251,9 +254,8 @@ const processNodeJob = async (job: Job<NodeTaskJobData>) => {
 			node,
 			data: { ...data, tasks: batchTasks, task, apiKey },
 			prisma,
+			services: nodeServices,
 		});
-
-		if (error) logger.error(`${node.id}: Error: ${error}`);
 
 		// 6. Handle Results
 		if (newResult) {

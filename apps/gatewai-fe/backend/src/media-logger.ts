@@ -1,7 +1,7 @@
 import { existsSync, mkdirSync } from "node:fs";
+import { logger } from "@gatewai/core";
 import type { Node } from "@gatewai/db";
 import sharp from "sharp";
-import { logger } from "./logger.js";
 
 async function logImage(
 	buffer: Buffer,

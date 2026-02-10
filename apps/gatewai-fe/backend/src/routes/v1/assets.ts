@@ -1,4 +1,5 @@
 import assert from "node:assert";
+import { logger } from "@gatewai/core";
 import { type FileAssetWhereInput, prisma } from "@gatewai/db";
 import type { NodeResult, Output, OutputItem } from "@gatewai/types";
 import { zValidator } from "@hono/zod-validator";
@@ -8,7 +9,6 @@ import sharp from "sharp";
 import { z } from "zod";
 import type { AuthorizedHonoTypes } from "../../auth.js";
 import { ENV_CONFIG } from "../../config.js";
-import { logger } from "../../logger.js";
 import { uploadToImportNode } from "../../node-fns/import-media.js";
 import {
 	generateImageThumbnail,

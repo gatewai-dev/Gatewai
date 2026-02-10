@@ -1,12 +1,12 @@
 import assert from "node:assert";
+import { logger } from "@gatewai/core";
 import { type NodeTemplate, prisma } from "@gatewai/db";
 import { agentBulkUpdateSchema, type BulkUpdatePayload } from "@gatewai/types";
-import { Agent, tool } from "@openai/agents";
+import { Agent, type MCPServerStreamableHttp, tool } from "@openai/agents";
 import { getQuickJS, type QuickJSContext, Scope } from "quickjs-emscripten";
 import { z } from "zod";
 import { zodToJsonSchema } from "zod-to-json-schema";
 import { GetCanvasEntities } from "../../../data-ops/canvas.js";
-import { logger } from "../../../logger.js";
 import {
 	type AVAILABLE_AGENT_MODELS,
 	getAgentModel,
@@ -45,7 +45,7 @@ interface PatcherContext {
  */
 export function createPatcherAgent(
 	modelName: (typeof AVAILABLE_AGENT_MODELS)[number],
-	mcpTool: any, // Using any here to avoid cyclic dependency type issues or import complexity, but MCPServerStreamableHttp is better if imported
+	mcpTool: MCPServerStreamableHttp,
 ) {
 	let patcherContext: PatcherContext | null = null;
 

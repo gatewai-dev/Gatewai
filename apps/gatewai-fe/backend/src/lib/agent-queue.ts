@@ -1,8 +1,8 @@
+import { logger } from "@gatewai/core";
 import type { GatewaiDoneEvent, GatewaiErrorEvent } from "@gatewai/types";
 import { type Job, Queue, Worker } from "bullmq";
 import { RunCanvasAgent } from "../agent/runner/index.js";
 import { ENV_CONFIG } from "../config.js";
-import { logger } from "../logger.js";
 import { redisPublisher } from "./redis.js";
 
 const connection = {

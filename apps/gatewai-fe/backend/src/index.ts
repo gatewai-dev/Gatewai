@@ -1,4 +1,5 @@
 import { readFile } from "node:fs/promises";
+import { logger as appLogger, logger } from "@gatewai/core";
 import { prisma, SEED_createNodeTemplates } from "@gatewai/db";
 import { serve } from "@hono/node-server";
 import { serveStatic } from "@hono/node-server/serve-static";
@@ -8,7 +9,6 @@ import { type AuthHonoTypes, auth, ensureUsersAPI_KEY } from "./auth.js";
 import { ENV_CONFIG } from "./config.js";
 import { startWorker } from "./graph-engine/queue/workflow.worker.js";
 import { startAgentWorker } from "./lib/agent-queue.js";
-import { logger as appLogger } from "./logger.js";
 import {
 	errorHandler,
 	loggerMiddleware,
@@ -82,7 +82,7 @@ const app = new Hono<{
 			VITE_BASE_URL: ENV_CONFIG.BASE_URL,
 			DISABLE_EMAIL_SIGNUP: ENV_CONFIG.DISABLE_EMAIL_SIGNUP,
 		};
-		return c.text(`window.GATEWAI_ENV = ${JSON.stringify(env)};`, 200, {
+		return c.text(`window.GATEWAI_ENV = ${JSON.stringify(env)}; `, 200, {
 			"Content-Type": "application/javascript",
 		});
 	});

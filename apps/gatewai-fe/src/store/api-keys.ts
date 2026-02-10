@@ -27,7 +27,17 @@ export const apiKeysAPI = createApi({
 					throw new Error("Failed to fetch API keys");
 				}
 				const data = await response.json();
-				return { data };
+				return {
+					data: {
+						keys: data.keys.map((k) => ({
+							...k,
+							name: k.name ?? "",
+							start: k.start ?? "",
+							prefix: k.prefix ?? "",
+							lastUsedAt: k.lastUsedAt ?? null, // Keep null if allowed by type
+						})),
+					},
+				};
 			},
 			providesTags: ["getApiKeys"],
 		}),
@@ -43,7 +53,12 @@ export const apiKeysAPI = createApi({
 					throw new Error("Failed to create API key");
 				}
 				const data = await response.json();
-				return { data };
+				return {
+					data: {
+						...data,
+						key: { ...data.key, name: data.key.name ?? "" },
+					},
+				};
 			},
 			invalidatesTags: ["getApiKeys"],
 		}),

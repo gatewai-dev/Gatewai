@@ -1,5 +1,5 @@
+import { logger } from "@gatewai/core";
 import { run } from "@openai/agents";
-import { logger } from "../../logger.js";
 import { CreateOrchestratorAgentForCanvas } from "../agents/orchestrator/index.js";
 import { PrismaAgentSession } from "../session/gatewai-session.js";
 import { connectMCP, createGatewaiMCPTool } from "../tools/gatewai-mcp.js";

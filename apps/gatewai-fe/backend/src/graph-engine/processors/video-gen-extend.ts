@@ -2,6 +2,7 @@ import { existsSync, mkdirSync } from "node:fs";
 import { readFile } from "node:fs/promises";
 import path from "node:path";
 import { fileURLToPath } from "node:url";
+import { genAI, logger } from "@gatewai/core";
 import { DataType, prisma } from "@gatewai/db";
 import {
 	type OutputItem,
@@ -9,8 +10,6 @@ import {
 	type VideoGenResult,
 } from "@gatewai/types";
 import { ENV_CONFIG } from "../../config.js";
-import { genAI } from "../../genai.js";
-import { logger } from "../../logger.js";
 import { generateId } from "../../utils/misc.js";
 import { generateSignedUrl, uploadToGCS } from "../../utils/storage.js";
 import { getInputValue } from "../resolvers.js";
