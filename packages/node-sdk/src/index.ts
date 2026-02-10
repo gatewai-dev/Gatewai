@@ -7,7 +7,6 @@ export type {
 	FrontendNodeProcessor,
 	FrontendNodeProcessorParams,
 	GatewaiNodeManifest,
-	HandleDefinition,
 	InputFilterOptions,
 	NodeServices,
 } from "./types.js";

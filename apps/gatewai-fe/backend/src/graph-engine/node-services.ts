@@ -1,4 +1,3 @@
-import { genAI, logger } from "@gatewai/core";
 import type { NodeServices } from "@gatewai/node-sdk";
 import type { FileData } from "@gatewai/types";
 import { ENV_CONFIG } from "../config.js";
@@ -9,12 +8,7 @@ import {
 	getImageBuffer,
 	getImageDimensions,
 } from "../utils/image.js";
-import {
-	GetAssetEndpoint,
-	GetProcessDataEndpoint,
-	generateId,
-	ResolveFileDataUrl,
-} from "../utils/misc.js";
+import { generateId, ResolveFileDataUrl } from "../utils/misc.js";
 import {
 	generateSignedUrl,
 	getFromGCS,
@@ -89,5 +83,6 @@ export const nodeServices: NodeServices = {
 	env: {
 		DEBUG_LOG_MEDIA: ENV_CONFIG.DEBUG_LOG_MEDIA,
 		GCS_ASSETS_BUCKET: ENV_CONFIG.GCS_ASSETS_BUCKET,
+		GEMINI_API_KEY: ENV_CONFIG.GEMINI_API_KEY,
 	},
 };

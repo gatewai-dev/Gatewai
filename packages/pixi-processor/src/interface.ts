@@ -1,6 +1,16 @@
 import type { ModulateNodeConfig, PaintNodeConfig } from "@gatewai/types";
+import type { PixiProcessor } from "./types";
 
 export interface IPixiProcessor {
+	registerProcessor(processor: PixiProcessor): void;
+
+	// biome-ignore lint/suspicious/noExplicitAny: <explanation>
+	execute<TInput = any, TOutput = any>(
+		id: string,
+		input: TInput,
+		signal?: AbortSignal,
+	): Promise<TOutput>;
+
 	processModulate(
 		imageUrl: string,
 		config: ModulateNodeConfig,

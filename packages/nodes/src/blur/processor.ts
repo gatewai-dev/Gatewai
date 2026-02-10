@@ -1,6 +1,7 @@
 import assert from "node:assert";
 import { DataType } from "@gatewai/db";
 import type { BackendNodeProcessor } from "@gatewai/node-sdk";
+import type { BlurInput, BlurOutput } from "@gatewai/pixi-processor";
 import {
 	BlurNodeConfigSchema,
 	type BlurResult,
@@ -26,11 +27,14 @@ const blurProcessor: BackendNodeProcessor = async ({
 		const blurSize = blurConfig.size ?? 0;
 
 		const { dataUrl, ...dimensions } =
-			await services.backendPixiService.processBlur(
-				imageUrl,
-				{ blurSize },
+			await services.backendPixiService.execute<BlurInput, BlurOutput>(
+				"blur",
+				{
+					imageUrl,
+					options: { blurSize },
+					apiKey: data.apiKey,
+				},
 				undefined,
-				data.apiKey,
 			);
 
 		const uploadBuffer = Buffer.from(await dataUrl.arrayBuffer());

@@ -12,8 +12,33 @@ import type {
 	Sprite,
 	Texture,
 } from "pixi.js";
-import { BuildModulateFilter } from "./filters/modulate";
 import type { IPixiProcessor } from "./interface";
+import {
+	type BlurInput,
+	type BlurOutput,
+	BlurProcessor,
+} from "./processors/blur";
+import {
+	type CropInput,
+	type CropOutput,
+	CropProcessor,
+} from "./processors/crop";
+import {
+	type MaskInput,
+	type MaskOutput,
+	MaskProcessor,
+} from "./processors/mask";
+import {
+	type ModulateInput,
+	type ModulateOutput,
+	ModulateProcessor,
+} from "./processors/modulate";
+import {
+	type ResizeInput,
+	type ResizeOutput,
+	ResizeProcessor,
+} from "./processors/resize";
+import type { PixiProcessor, PixiProcessorContext } from "./types";
 
 export class ServiceAbortError extends Error {
 	constructor(message = "Operation cancelled") {
@@ -31,6 +56,7 @@ export abstract class BasePixiService implements IPixiProcessor {
 	protected pool: Pool<PixiResource>;
 	// Limit concurrency to prevent GPU context loss or memory exhaustion
 	protected limit = pLimit(12);
+	private processors = new Map<string, PixiProcessor>();
 
 	constructor() {
 		this.pool = createPool(
@@ -47,6 +73,17 @@ export abstract class BasePixiService implements IPixiProcessor {
 				testOnBorrow: true,
 			},
 		);
+
+		// Register default processors
+		this.registerProcessor(BlurProcessor);
+		this.registerProcessor(CropProcessor);
+		this.registerProcessor(MaskProcessor);
+		this.registerProcessor(ModulateProcessor);
+		this.registerProcessor(ResizeProcessor);
+	}
+
+	public registerProcessor(processor: PixiProcessor) {
+		this.processors.set(processor.id, processor);
 	}
 
 	protected abstract createApplication(): Application;
@@ -150,43 +187,41 @@ export abstract class BasePixiService implements IPixiProcessor {
 		}
 	}
 
+	// biome-ignore lint/suspicious/noExplicitAny: <explanation>
+	public async execute<TInput = any, TOutput = any>(
+		id: string,
+		input: TInput,
+		signal?: AbortSignal,
+	): Promise<TOutput> {
+		return this.useApp(async (app) => {
+			const processor = this.processors.get(id);
+			if (!processor) {
+				throw new Error(`Processor '${id}' not found`);
+			}
+
+			const context: PixiProcessorContext = {
+				app,
+				loadTexture: (url, key) => this.loadTexture(url, key),
+				getPixiModules: () => this.getPixiModules(),
+				extractBlob: (target) => this.extractBlob(app.renderer, target),
+				signal,
+			};
+
+			return processor.process(context, input);
+		}, signal);
+	}
+
 	public async processModulate(
 		imageUrl: string,
 		config: ModulateNodeConfig,
 		signal?: AbortSignal,
 		apiKey?: string,
-	): Promise<{ dataUrl: Blob; width: number; height: number }> {
-		return this.useApp(async (app) => {
-			this.ensureNotAborted(signal);
-
-			const texture = await this.loadTexture(imageUrl, apiKey);
-			this.ensureNotAborted(signal);
-
-			const { Sprite, Filter } = await this.getPixiModules();
-			const sprite = new Sprite(texture);
-
-			// Strict resizing of the renderer to match image dimensions
-			app.renderer.resize(texture.width, texture.height);
-
-			const FilterClass = BuildModulateFilter(Filter);
-			const filter = new FilterClass(config);
-			sprite.filters = [filter];
-
-			app.stage.addChild(sprite);
-			this.ensureNotAborted(signal);
-
-			app.render();
-
-			const dataUrl = await Promise.resolve(
-				this.extractBlob(app.renderer, app.stage),
-			);
-
-			return {
-				dataUrl,
-				width: app.renderer.width,
-				height: app.renderer.height,
-			};
-		}, signal);
+	): Promise<ModulateOutput> {
+		return this.execute<ModulateInput, ModulateOutput>(
+			ModulateProcessor.id,
+			{ imageUrl, config, apiKey },
+			signal,
+		);
 	}
 
 	public async processBlur(
@@ -194,39 +229,12 @@ export abstract class BasePixiService implements IPixiProcessor {
 		options: { blurSize: number },
 		signal?: AbortSignal,
 		apiKey?: string,
-	): Promise<{ dataUrl: Blob; width: number; height: number }> {
-		return this.useApp(async (app) => {
-			this.ensureNotAborted(signal);
-			const texture = await this.loadTexture(imageUrl, apiKey);
-			this.ensureNotAborted(signal);
-
-			const { Sprite, BlurFilter } = await this.getPixiModules();
-			const sprite = new Sprite(texture);
-
-			app.renderer.resize(texture.width, texture.height);
-
-			const strength = Math.max(0, options.blurSize);
-			// 8 is high quality blur
-			const blurFilter = new BlurFilter(strength, 8);
-			// Padding ensures blur doesn't get clipped at edges if extract uses bounds
-			blurFilter.padding = strength;
-
-			sprite.filters = [blurFilter];
-			app.stage.addChild(sprite);
-
-			this.ensureNotAborted(signal);
-			app.render();
-
-			const dataUrl = await Promise.resolve(
-				this.extractBlob(app.renderer, app.stage),
-			);
-
-			return {
-				dataUrl,
-				width: app.renderer.width,
-				height: app.renderer.height,
-			};
-		}, signal);
+	): Promise<BlurOutput> {
+		return this.execute<BlurInput, BlurOutput>(
+			BlurProcessor.id,
+			{ imageUrl, options, apiKey },
+			signal,
+		);
 	}
 
 	public async processResize(
@@ -234,60 +242,12 @@ export abstract class BasePixiService implements IPixiProcessor {
 		options: { width?: number; height?: number },
 		signal?: AbortSignal,
 		apiKey?: string,
-	): Promise<{ dataUrl: Blob; width: number; height: number }> {
-		return this.useApp(async (app) => {
-			this.ensureNotAborted(signal);
-
-			const texture = await this.loadTexture(imageUrl, apiKey);
-			this.ensureNotAborted(signal);
-
-			const { Sprite } = await this.getPixiModules();
-			const sprite = new Sprite(texture);
-
-			const originalWidth = texture.width;
-			const originalHeight = texture.height;
-
-			let targetWidth = options.width;
-			let targetHeight = options.height;
-
-			// Logic to preserve aspect ratio if one dimension is missing
-			if (!targetWidth && !targetHeight) {
-				targetWidth = originalWidth;
-				targetHeight = originalHeight;
-			} else if (targetWidth && !targetHeight) {
-				targetHeight = Math.round(
-					originalHeight * (targetWidth / originalWidth),
-				);
-			} else if (!targetWidth && targetHeight) {
-				targetWidth = Math.round(
-					originalWidth * (targetHeight / originalHeight),
-				);
-			}
-
-			if (
-				!targetWidth ||
-				!targetHeight ||
-				targetWidth <= 0 ||
-				targetHeight <= 0
-			) {
-				throw new Error("Invalid resize dimensions calculated");
-			}
-
-			sprite.width = targetWidth;
-			sprite.height = targetHeight;
-
-			app.renderer.resize(targetWidth, targetHeight);
-			app.stage.addChild(sprite);
-
-			this.ensureNotAborted(signal);
-			app.render();
-
-			const dataUrl = await Promise.resolve(
-				this.extractBlob(app.renderer, app.stage),
-			);
-
-			return { dataUrl, width: targetWidth, height: targetHeight };
-		}, signal);
+	): Promise<ResizeOutput> {
+		return this.execute<ResizeInput, ResizeOutput>(
+			ResizeProcessor.id,
+			{ imageUrl, options, apiKey },
+			signal,
+		);
 	}
 
 	public async processCrop(
@@ -300,52 +260,12 @@ export abstract class BasePixiService implements IPixiProcessor {
 		},
 		signal?: AbortSignal,
 		apiKey?: string,
-	): Promise<{ dataUrl: Blob; width: number; height: number }> {
-		return this.useApp(async (app) => {
-			this.ensureNotAborted(signal);
-
-			const originalTexture = await this.loadTexture(imageUrl, apiKey);
-			this.ensureNotAborted(signal);
-
-			const { Sprite, Rectangle, Texture } = await this.getPixiModules();
-
-			const origWidth = originalTexture.width;
-			const origHeight = originalTexture.height;
-
-			const clamp = (val: number) => Math.max(0, Math.min(100, val));
-
-			const left = (clamp(options.leftPercentage) / 100) * origWidth;
-			const top = (clamp(options.topPercentage) / 100) * origHeight;
-			const cropWidth = (clamp(options.widthPercentage) / 100) * origWidth;
-			const cropHeight = (clamp(options.heightPercentage) / 100) * origHeight;
-
-			const leftPx = Math.floor(left);
-			const topPx = Math.floor(top);
-			let widthPx = Math.floor(cropWidth);
-			let heightPx = Math.floor(cropHeight);
-
-			// Ensure we don't sample outside bounds
-			widthPx = Math.max(1, Math.min(widthPx, origWidth - leftPx));
-			heightPx = Math.max(1, Math.min(heightPx, origHeight - topPx));
-
-			// Create a new texture with the cropped frame (best practice for efficiency, avoids unnecessary masking)
-			const frame = new Rectangle(leftPx, topPx, widthPx, heightPx);
-			const croppedTexture = new Texture(originalTexture.baseTexture, frame);
-
-			const sprite = new Sprite(croppedTexture);
-
-			app.renderer.resize(widthPx, heightPx);
-			app.stage.addChild(sprite);
-
-			this.ensureNotAborted(signal);
-			app.render();
-
-			const dataUrl = await Promise.resolve(
-				this.extractBlob(app.renderer, app.stage),
-			);
-
-			return { dataUrl, width: widthPx, height: heightPx };
-		}, signal);
+	): Promise<CropOutput> {
+		return this.execute<CropInput, CropOutput>(
+			CropProcessor.id,
+			{ imageUrl, options, apiKey },
+			signal,
+		);
 	}
 
 	public async processMask(
@@ -354,94 +274,11 @@ export abstract class BasePixiService implements IPixiProcessor {
 		maskUrl?: string,
 		signal?: AbortSignal,
 		apiKey?: string,
-	): Promise<{
-		imageWithMask: { dataUrl: Blob; width: number; height: number };
-		onlyMask: { dataUrl: Blob; width: number; height: number };
-	}> {
-		return this.useApp(async (app) => {
-			const { backgroundColor } = config;
-			this.ensureNotAborted(signal);
-
-			const { Container, Sprite, Graphics } = await this.getPixiModules();
-
-			let widthToUse: number;
-			let heightToUse: number;
-			let baseSprite: Sprite | Graphics | undefined;
-
-			// Determine dimensions and background
-			if (imageUrl) {
-				const texture = await this.loadTexture(imageUrl, apiKey);
-				widthToUse = texture.width;
-				heightToUse = texture.height;
-				baseSprite = new Sprite(texture);
-			} else if (backgroundColor) {
-				widthToUse = config.width;
-				heightToUse = config.height;
-				const graphics = new Graphics();
-				graphics.beginFill(backgroundColor);
-				graphics.drawRect(0, 0, widthToUse, heightToUse);
-				graphics.endFill();
-				baseSprite = graphics;
-			} else {
-				throw new Error("Missing image or background color");
-			}
-
-			app.renderer.resize(widthToUse, heightToUse);
-
-			const container = new Container();
-
-			const spacer = new Graphics();
-			spacer.beginFill(0x000000, 0); // Transparent
-			spacer.drawRect(0, 0, widthToUse, heightToUse);
-			spacer.endFill();
-			container.addChild(spacer);
-
-			let maskSprite: Sprite | undefined;
-			if (maskUrl) {
-				const maskTexture = await this.loadTexture(maskUrl, apiKey);
-				maskSprite = new Sprite(maskTexture);
-				maskSprite.width = widthToUse;
-				maskSprite.height = heightToUse;
-			}
-
-			// 1. Render ONLY Mask
-			if (maskSprite) {
-				container.addChild(maskSprite);
-			}
-			app.stage.addChild(container);
-
-			this.ensureNotAborted(signal);
-			app.render();
-
-			const onlyMaskDataUrl = await Promise.resolve(
-				this.extractBlob(app.renderer, app.stage),
-			);
-
-			// 2. Render Image + Mask
-			if (baseSprite) {
-				// Insert base image *below* the mask (index 1 because spacer is 0)
-				container.addChildAt(baseSprite, 1);
-			}
-
-			this.ensureNotAborted(signal);
-			app.render();
-
-			const imageWithMaskDataUrl = await Promise.resolve(
-				this.extractBlob(app.renderer, app.stage),
-			);
-
-			return {
-				imageWithMask: {
-					dataUrl: imageWithMaskDataUrl,
-					width: widthToUse,
-					height: heightToUse,
-				},
-				onlyMask: {
-					dataUrl: onlyMaskDataUrl,
-					width: widthToUse,
-					height: heightToUse,
-				},
-			};
-		}, signal);
+	): Promise<MaskOutput> {
+		return this.execute<MaskInput, MaskOutput>(
+			MaskProcessor.id,
+			{ config, imageUrl, maskUrl, apiKey },
+			signal,
+		);
 	}
 }

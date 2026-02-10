@@ -3,7 +3,6 @@ import type {
 	DataType,
 	Edge,
 	Handle,
-	HandleType,
 	Node,
 	NodeTemplate,
 	PrismaClient,
@@ -12,26 +11,6 @@ import type {
 import type { IPixiProcessor } from "@gatewai/pixi-processor";
 import type { FileData, NodeResult } from "@gatewai/types";
 import { type ZodTypeAny, z } from "zod";
-
-// ─── Handle Definitions ─────────────────────────────────────────────────────
-
-/**
- * Defines an input or output handle on a node template.
- */
-export interface HandleDefinition {
-	/** The data types this handle accepts or produces (e.g., ["Image"], ["Text", "Image"]) */
-	dataTypes: DataType[];
-	/** Human-readable label for the handle */
-	label: string;
-	/** Whether this input is required for the node to execute */
-	required?: boolean;
-	/** Display order (lower = higher in the UI) */
-	order: number;
-	/** Optional description shown as tooltip */
-	description?: string;
-}
-
-// ─── Node Services (Dependency Injection) ────────────────────────────────────
 
 /**
  * Input filter options used by graph resolver functions.
@@ -46,8 +25,6 @@ export interface InputFilterOptions {
  * This is the DI contract that decouples processors from app-level imports.
  */
 export interface NodeServices {
-	// ── Graph Resolvers ───────────────────────────────────────────────────────
-
 	getInputValue: (
 		data: BackendNodeProcessorCtx["data"],
 		targetNodeId: string,
@@ -132,10 +109,7 @@ export interface NodeServices {
 	// ── Media Processing ──────────────────────────────────────────────────────
 
 	/** Backend pixi service for image transformations */
-	/** Backend pixi service for image transformations */
 	backendPixiService: IPixiProcessor;
-
-	logImage: (buffer: Buffer, extension?: string, nodeId?: string) => void;
 
 	getImageDimensions: (
 		buffer: Buffer,
@@ -151,19 +125,12 @@ export interface NodeServices {
 
 	bufferToDataUrl: (buffer: Buffer, mimeType: string) => string;
 
-	// ── Utilities ──────────────────────────────────────────────────────────────
-
-	generateId: () => string;
-
 	env: {
 		DEBUG_LOG_MEDIA: boolean;
 		GCS_ASSETS_BUCKET: string;
+		GEMINI_API_KEY: string;
 	};
-
-	assertIsError: (error: unknown) => asserts error is Error;
 }
-
-// ─── Backend Processor Types ─────────────────────────────────────────────────
 
 /**
  * Data context passed to a backend node processor during execution.
@@ -205,8 +172,6 @@ export type BackendNodeProcessor = (
 	ctx: BackendNodeProcessorCtx,
 ) => Promise<BackendNodeProcessorResult>;
 
-// ─── Frontend Processor Types ────────────────────────────────────────────────
-
 /**
  * Represents a connected input value for a frontend processor.
  */
@@ -241,8 +206,6 @@ export interface FrontendNodeProcessorParams {
 export type FrontendNodeProcessor = (
 	params: FrontendNodeProcessorParams,
 ) => Promise<NodeResult | null>;
-
-// ─── Node Manifest ──────────────────────────────────────────────────────────
 
 // ─── Node Manifest ──────────────────────────────────────────────────────────
 
