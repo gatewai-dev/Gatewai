@@ -11,23 +11,25 @@ import {
 const resizeProcessor: BackendNodeProcessor = async ({
 	node,
 	data,
-	services,
+	graph,
+	storage,
+	media,
 }) => {
 	try {
-		const imageInput = services.getInputValue(data, node.id, true, {
+		const imageInput = graph.getInputValue(data, node.id, true, {
 			dataType: DataType.Image,
 			label: "Image",
 		})?.data as FileData | null;
 
 		assert(imageInput);
-		const arrayBuffer = await services.loadMediaBuffer(imageInput);
+		const arrayBuffer = await graph.loadMediaBuffer(imageInput);
 		const buffer = Buffer.from(arrayBuffer);
-		const base64Data = services.bufferToDataUrl(buffer, "image/png");
+		const base64Data = media.bufferToDataUrl(buffer, "image/png");
 
 		const resizeConfig = ResizeNodeConfigSchema.parse(node.config);
 
 		const { dataUrl, ...dimensions } =
-			await services.backendPixiService.processResize(
+			await media.backendPixiService.processResize(
 				base64Data,
 				{
 					width: resizeConfig.width ?? 512,
@@ -54,7 +56,7 @@ const resizeProcessor: BackendNodeProcessor = async ({
 		};
 
 		const key = `${(data.task ?? node).id}/${Date.now()}.png`;
-		const { signedUrl, key: tempKey } = await services.uploadToTemporaryFolder(
+		const { signedUrl, key: tempKey } = await storage.uploadToTemporaryFolder(
 			uploadBuffer,
 			mimeType,
 			key,

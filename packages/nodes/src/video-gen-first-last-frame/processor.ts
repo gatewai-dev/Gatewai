@@ -2,13 +2,15 @@ import assert from "node:assert";
 import { existsSync, mkdirSync } from "node:fs";
 import { readFile } from "node:fs/promises";
 import path from "node:path";
-import { generateId, logger } from "@gatewai/core";
+import { type EnvConfig, generateId, logger } from "@gatewai/core";
 import { DataType } from "@gatewai/db";
 import {
 	type BackendNodeProcessorCtx,
 	type BackendNodeProcessorResult,
+	type GraphResolvers,
+	type MediaService,
 	type NodeProcessor,
-	type NodeServices,
+	type StorageService,
 	TOKENS,
 } from "@gatewai/node-sdk";
 import {
@@ -39,7 +41,10 @@ async function ResolveImageData(
 @injectable()
 export default class VideoGenFirstLastFrameProcessor implements NodeProcessor {
 	constructor(
-		@inject(TOKENS.NODE_SERVICES) private services: NodeServices,
+		@inject(TOKENS.ENV) private env: EnvConfig,
+		@inject(TOKENS.GRAPH_RESOLVERS) private graph: GraphResolvers,
+		@inject(TOKENS.STORAGE) private storage: StorageService,
+		@inject(TOKENS.MEDIA) private media: MediaService,
 	) { }
 
 	async process({
@@ -47,14 +52,14 @@ export default class VideoGenFirstLastFrameProcessor implements NodeProcessor {
 		data,
 		prisma,
 	}: BackendNodeProcessorCtx): Promise<BackendNodeProcessorResult> {
-		const genAI = getGenAIClient(this.services.env.GEMINI_API_KEY);
+		const genAI = getGenAIClient(this.env.GEMINI_API_KEY);
 		try {
-			const userPrompt = this.services.getInputValue(data, node.id, true, {
+			const userPrompt = this.graph.getInputValue(data, node.id, true, {
 				dataType: DataType.Text,
 				label: "Prompt",
 			})?.data as string;
 
-			const firstFrameInput = this.services.getInputValue(
+			const firstFrameInput = this.graph.getInputValue(
 				data,
 				node.id,
 				true,
@@ -64,7 +69,7 @@ export default class VideoGenFirstLastFrameProcessor implements NodeProcessor {
 				},
 			) as OutputItem<"Image">;
 
-			const lastFrameInput = this.services.getInputValue(
+			const lastFrameInput = this.graph.getInputValue(
 				data,
 				node.id,
 				true,
@@ -87,8 +92,8 @@ export default class VideoGenFirstLastFrameProcessor implements NodeProcessor {
 				{ base64Data: firstBase64, mimeType: firstMimeType },
 				{ base64Data: lastBase64, mimeType: lastMimeType },
 			] = await Promise.all([
-				ResolveImageData(firstFileData, this.services),
-				ResolveImageData(lastFileData, this.services),
+				ResolveImageData(firstFileData, this.graph),
+				ResolveImageData(lastFileData, this.graph),
 			]);
 
 			let operation = (await genAI.models.generateVideos({
@@ -145,12 +150,12 @@ export default class VideoGenFirstLastFrameProcessor implements NodeProcessor {
 			const fileName = `${node.name}_${randId}.${extension}`;
 			const key = `assets/${fileName}`;
 			const contentType = "video/mp4";
-			const bucket = this.services.env.GCS_ASSETS_BUCKET;
+			const bucket = this.env.GCS_ASSETS_BUCKET;
 
-			await this.services.uploadToGCS(fileBuffer, key, contentType, bucket);
+			await this.storage.uploadToGCS(fileBuffer, key, contentType, bucket);
 
 			const expiresIn = 3600 * 24 * 7;
-			const signedUrl = await this.services.generateSignedUrl(
+			const signedUrl = await this.storage.generateSignedUrl(
 				key,
 				bucket,
 				expiresIn,

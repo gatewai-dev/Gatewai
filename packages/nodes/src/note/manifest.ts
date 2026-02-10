@@ -5,7 +5,6 @@ export default defineNode({
 	displayName: "Sticky Note",
 	description: "A sticky note",
 	category: "Tools",
-	version: "1.0.0",
 	isTerminal: false,
 	isTransient: false,
 	handles: {

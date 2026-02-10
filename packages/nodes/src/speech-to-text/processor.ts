@@ -1,6 +1,4 @@
-import {
-	logger,
-} from "@gatewai/core";
+import { logger } from "@gatewai/core";
 import { DataType } from "@gatewai/db";
 import type { BackendNodeProcessor } from "@gatewai/node-sdk";
 import type {
@@ -8,21 +6,23 @@ import type {
 	SpeechToTextNodeConfig,
 	SpeechToTextResult,
 } from "@gatewai/types";
-import { getGenAIClient } from '../genai.js'
 import { createPartFromUri, createUserContent } from "@google/genai";
+import { getGenAIClient } from "../genai.js";
 
 const audioUnderstandingProcessor: BackendNodeProcessor = async ({
 	node,
 	data,
-	services,
+	graph,
+	storage,
+	env,
 }) => {
 	try {
-		const userPrompt = services.getInputValue(data, node.id, true, {
+		const userPrompt = graph.getInputValue(data, node.id, true, {
 			dataType: DataType.Text,
 			label: "Prompt",
 		})?.data as string;
 
-		const audioInput = services.getInputValue(data, node.id, true, {
+		const audioInput = graph.getInputValue(data, node.id, true, {
 			dataType: DataType.Audio,
 			label: "Audio",
 		})?.data as OutputItem<"Audio">["data"];
@@ -32,7 +32,7 @@ const audioUnderstandingProcessor: BackendNodeProcessor = async ({
 		let fileBlob: Blob;
 		let mimeType: string;
 		if (audioInput?.entity?.signedUrl) {
-			const buffer = await services.getFromGCS(
+			const buffer = await storage.getFromGCS(
 				audioInput.entity.key,
 				audioInput.entity.bucket,
 			);
@@ -41,7 +41,7 @@ const audioUnderstandingProcessor: BackendNodeProcessor = async ({
 			});
 			mimeType = audioInput.entity.mimeType;
 		} else if (audioInput?.processData?.tempKey) {
-			const buffer = await services.getFromGCS(audioInput?.processData.tempKey);
+			const buffer = await storage.getFromGCS(audioInput?.processData.tempKey);
 			fileBlob = new Blob([new Uint8Array(buffer)], {
 				type: audioInput?.processData.mimeType,
 			});
@@ -52,7 +52,7 @@ const audioUnderstandingProcessor: BackendNodeProcessor = async ({
 				error: "Input audio data could not be resolved",
 			};
 		}
-		const genAI = getGenAIClient(services.env.GEMINI_API_KEY);
+		const genAI = getGenAIClient(env.GEMINI_API_KEY);
 
 		const audioFile = await genAI.files.upload({
 			file: fileBlob,

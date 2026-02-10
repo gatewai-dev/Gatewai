@@ -5,7 +5,6 @@ export default defineNode({
 	displayName: "Image Compositor",
 	description: "Compose an image using images and texts",
 	category: "Image",
-	version: "1.0.0",
 	isTerminal: false,
 	isTransient: true,
 	variableInputs: { enabled: true, dataTypes: ["Image", "Text"] },

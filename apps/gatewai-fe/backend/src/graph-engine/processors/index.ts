@@ -1,3 +1,4 @@
+import { nodeRegistry } from "@gatewai/graph-engine";
 import {
 	blurNode,
 	compositorNode,
@@ -20,7 +21,6 @@ import type {
 	NodeResult,
 	VideoCompositorResult,
 } from "@gatewai/types";
-import { nodeRegistry } from "../node-registry.js";
 import type { NodeProcessorCtx } from "./types.js";
 
 // ────────────────────────────────────────────────────────────────────────────

@@ -6,7 +6,6 @@ export default defineNode({
 	displayName: "Modulate",
 	description: "Apply Modulate adjustments to an image",
 	category: "Image",
-	version: "1.0.0",
 	isTerminal: false,
 	isTransient: true,
 	handles: {

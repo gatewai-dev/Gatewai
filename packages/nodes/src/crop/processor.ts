@@ -11,22 +11,24 @@ import {
 const cropProcessor: BackendNodeProcessor = async ({
 	node,
 	data,
-	services,
+	graph,
+	storage,
+	media,
 }) => {
 	try {
-		const imageInput = services.getInputValue(data, node.id, true, {
+		const imageInput = graph.getInputValue(data, node.id, true, {
 			dataType: DataType.Image,
 			label: "Image",
 		})?.data as FileData | null;
 
 		assert(imageInput);
-		const imageUrl = await services.resolveFileDataUrl(imageInput);
+		const imageUrl = await media.resolveFileDataUrl(imageInput);
 		assert(imageUrl);
 
 		const cropConfig = CropNodeConfigSchema.parse(node.config);
 
 		const { dataUrl, ...dimensions } =
-			await services.backendPixiService.processCrop(
+			await media.backendPixiService.processCrop(
 				imageUrl,
 				{
 					leftPercentage: cropConfig.leftPercentage ?? 0,
@@ -55,7 +57,7 @@ const cropProcessor: BackendNodeProcessor = async ({
 		};
 
 		const key = `${(data.task ?? node).id}/${Date.now()}.png`;
-		const { signedUrl, key: tempKey } = await services.uploadToTemporaryFolder(
+		const { signedUrl, key: tempKey } = await storage.uploadToTemporaryFolder(
 			uploadBuffer,
 			mimeType,
 			key,

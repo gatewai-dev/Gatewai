@@ -11,12 +11,14 @@ import {
 const paintProcessor: BackendNodeProcessor = async ({
 	node,
 	data,
-	services,
+	graph,
+	storage,
+	media,
 }) => {
 	try {
 		logger.info(`Processing node ${node.id} of type ${node.type}`);
 
-		const backgroundInput = services.getInputValue(data, node.id, false, {
+		const backgroundInput = graph.getInputValue(data, node.id, false, {
 			dataType: DataType.Image,
 			label: "Background Image",
 		})?.data as FileData | null;
@@ -40,13 +42,13 @@ const paintProcessor: BackendNodeProcessor = async ({
 		let imageUrl: string | undefined;
 
 		if (backgroundInput) {
-			const arrayBuffer = await services.loadMediaBuffer(backgroundInput);
+			const arrayBuffer = await graph.loadMediaBuffer(backgroundInput);
 			const buffer = Buffer.from(arrayBuffer);
-			imageUrl = services.bufferToDataUrl(buffer, "image/png");
+			imageUrl = media.bufferToDataUrl(buffer, "image/png");
 		}
 
 		const { imageWithMask, onlyMask } =
-			await services.backendPixiService.processMask(
+			await media.backendPixiService.processMask(
 				paintConfig,
 				imageUrl,
 				paintConfig.paintData,
@@ -74,7 +76,7 @@ const paintProcessor: BackendNodeProcessor = async ({
 
 		const imageKey = `${node.id}/${now}.png`;
 		const { signedUrl: imageSignedUrl, key: tempImageKey } =
-			await services.uploadToTemporaryFolder(
+			await storage.uploadToTemporaryFolder(
 				imageBuffer,
 				imageMimeType,
 				imageKey,
@@ -82,7 +84,7 @@ const paintProcessor: BackendNodeProcessor = async ({
 
 		const maskKey = `${node.id}/${now}_mask.png`;
 		const { signedUrl: maskSignedUrl, key: tempMaskKey } =
-			await services.uploadToTemporaryFolder(maskBuffer, maskMimeType, maskKey);
+			await storage.uploadToTemporaryFolder(maskBuffer, maskMimeType, maskKey);
 
 		const imageProcessData = {
 			dataUrl: imageSignedUrl,

@@ -1,16 +1,17 @@
 import "reflect-metadata";
 
 import { readFile } from "node:fs/promises";
-import { logger as appLogger, logger, ENV_CONFIG } from "@gatewai/core";
-import { prisma, SEED_createNodeTemplates } from "@gatewai/db";
+import { logger as appLogger, ENV_CONFIG, logger } from "@gatewai/core";
+import { prisma } from "@gatewai/db";
+import { syncNodeTemplates } from "@gatewai/graph-engine";
 import { serve } from "@hono/node-server";
 import { serveStatic } from "@hono/node-server/serve-static";
 import { Hono } from "hono";
 import { cors } from "hono/cors";
+import { startAgentWorker } from "./agent/agent-queue.js";
 import { type AuthHonoTypes, auth, ensureUsersAPI_KEY } from "./auth.js";
 import { registerBackendServices } from "./di-setup.js";
 import { startWorker } from "./graph-engine/queue/workflow.worker.js";
-import { startAgentWorker } from "./agent/agent-queue.js";
 import {
 	errorHandler,
 	loggerMiddleware,
@@ -107,8 +108,8 @@ app
 	})
 	.notFound(notFoundHandler);
 
-// Run seed check for node templates
-await SEED_createNodeTemplates(prisma);
+// Sync node templates from manifest registry
+await syncNodeTemplates(prisma);
 await ensureUsersAPI_KEY();
 
 // Initialize canvas worker.

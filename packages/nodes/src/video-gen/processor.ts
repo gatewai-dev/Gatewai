@@ -11,28 +11,34 @@ import {
 	VideoGenNodeConfigSchema,
 	type VideoGenResult,
 } from "@gatewai/types";
-import type { GenerateVideosConfig, VideoGenerationReferenceImage, VideoGenerationReferenceType } from "@google/genai";
+import type {
+	GenerateVideosConfig,
+	VideoGenerationReferenceImage,
+	VideoGenerationReferenceType,
+} from "@google/genai";
 import { getGenAIClient } from "../genai.js";
 
 const videoGenProcessor: BackendNodeProcessor = async ({
 	node,
 	data,
 	prisma,
-	services,
+	graph,
+	storage,
+	env,
 }) => {
-	const genAI = getGenAIClient(services.env.GEMINI_API_KEY);
+	const genAI = getGenAIClient(env.GEMINI_API_KEY);
 	try {
-		const userPrompt = services.getInputValue(data, node.id, true, {
+		const userPrompt = graph.getInputValue(data, node.id, true, {
 			dataType: DataType.Text,
 			label: "Prompt",
 		})?.data as string;
 
-		const negativePrompt = services.getInputValue(data, node.id, false, {
+		const negativePrompt = graph.getInputValue(data, node.id, false, {
 			dataType: DataType.Text,
 			label: "Negative Prompt",
 		})?.data as string | undefined;
 
-		const imageFileData = services
+		const imageFileData = graph
 			.getInputValuesByType(data, node.id, {
 				dataType: DataType.Image,
 			})
@@ -41,11 +47,11 @@ const videoGenProcessor: BackendNodeProcessor = async ({
 		const config = VideoGenNodeConfigSchema.parse(node.config);
 
 		const LoadImageDataPromises = imageFileData?.map(async (fileData) => {
-			const arrayBuffer = await services.loadMediaBuffer(fileData);
+			const arrayBuffer = await graph.loadMediaBuffer(fileData);
 			const buffer = Buffer.from(arrayBuffer);
 			const base64Data = buffer.toString("base64");
 
-			const mimeType = await services.getFileDataMimeType(fileData);
+			const mimeType = await graph.getFileDataMimeType(fileData);
 			assert(mimeType);
 			return {
 				image: {
@@ -113,8 +119,8 @@ const videoGenProcessor: BackendNodeProcessor = async ({
 		const fileName = `${node.name}_${randId}${extension}`;
 		const key = `assets/${fileName}`;
 		const contentType = "video/mp4";
-		const bucket = services.env.GCS_ASSETS_BUCKET;
-		await services.uploadToGCS(fileBuffer, key, contentType, bucket);
+		const bucket = env.GCS_ASSETS_BUCKET;
+		await storage.uploadToGCS(fileBuffer, key, contentType, bucket);
 
 		// Remove temp file
 		try {
@@ -130,7 +136,7 @@ const videoGenProcessor: BackendNodeProcessor = async ({
 		}
 
 		const expiresIn = 3600 * 24 * 6.9;
-		const signedUrl = await services.generateSignedUrl(key, bucket, expiresIn);
+		const signedUrl = await storage.generateSignedUrl(key, bucket, expiresIn);
 		const signedUrlExp = new Date(Date.now() + expiresIn * 1000);
 
 		const asset = await prisma.fileAsset.create({

@@ -11,7 +11,6 @@ import { type GatewaiNodeManifest, NodeManifestSchema } from "./types.js";
  *   type: "Blur",
  *   displayName: "Blur",
  *   category: "Image",
- *   version: "1.0.0",
  *   isTerminal: true,
  *   handles: {
  *     inputs: [{ dataTypes: ["Image"], label: "Image", required: true, order: 0 }],

@@ -5,7 +5,6 @@ export default defineNode({
 	displayName: "Video Compositor",
 	description: "Compose videos",
 	category: "Video",
-	version: "1.0.0",
 	isTerminal: false,
 	isTransient: true,
 	variableInputs: {

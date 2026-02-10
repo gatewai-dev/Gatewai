@@ -1,10 +1,14 @@
 import assert from "node:assert";
-import { type Node, prisma, type TaskBatch } from "@gatewai/db";
-import type { ExportResult, FileData, MediaService, StorageService } from "@gatewai/types";
 import { ENV_CONFIG } from "@gatewai/core";
-import { TOKENS } from "@gatewai/node-sdk";
+import { type Node, prisma, type TaskBatch } from "@gatewai/db";
 import { container } from "@gatewai/di";
-// bufferToDataUrl is now a method on MediaService
+import { TOKENS } from "@gatewai/node-sdk";
+import type {
+	ExportResult,
+	FileData,
+	MediaService,
+	StorageService,
+} from "@gatewai/types";
 import type { APIRunResponse } from "./schemas.js";
 
 type BatchResult = APIRunResponse["result"];
@@ -24,15 +28,7 @@ async function overrideFileResult(data: FileData) {
 		const media = container.resolve<MediaService>(TOKENS.MEDIA);
 
 		const buffer = await storage.getFromGCS(
-			data.entity.key, // FIX: It was data.entity.id, but StorageService expects key. 
-			// Wait, original code passed `data.entity.id` to getFromGCS? 
-			// getFromGCS(key, bucket). 
-			// `data.entity` is `FileAsset`. It has .key and .bucket.
-			// Why did original code use .id as key? That might have been a bug or `getFromGCS` was overloaded?
-			// Original `getFromGCS(key, bucketName)`.
-			// Let's check `resolve-batch-result.ts` original: `getFromGCS(data.entity.id, ENV_CONFIG.GCS_ASSETS_BUCKET)`.
-			// FileAsset ID usually isn't the key (key is e.g. `assets/...`). key is `data.entity.key`.
-			// I'll assume `.key` is correct.
+			data.entity.key,
 			ENV_CONFIG.GCS_ASSETS_BUCKET,
 		);
 		const dataUrl = media.bufferToDataUrl(buffer, data.entity.mimeType);

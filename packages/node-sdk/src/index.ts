@@ -1,5 +1,10 @@
 export { defineNode } from "./define-node.js";
 export { TOKENS } from "./di.js";
+export {
+	type NodeProcessorDefinition,
+	NodeRegistry,
+	nodeRegistry,
+} from "./registry.js";
 export type {
 	BackendNodeProcessor,
 	BackendNodeProcessorCtx,
@@ -13,6 +18,4 @@ export type {
 	MediaService,
 	NodeProcessor,
 	NodeProcessorConstructor,
-	NodeServices,
-	StorageService,
 } from "./types.js";

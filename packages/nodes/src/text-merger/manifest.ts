@@ -6,7 +6,6 @@ export default defineNode({
 	displayName: "Text Merger",
 	description: "Merges connected texts.",
 	category: "Tools",
-	version: "1.0.0",
 	isTerminal: false,
 	isTransient: false,
 	variableInputs: { enabled: true, dataTypes: ["Text"] },

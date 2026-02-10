@@ -6,7 +6,6 @@ export default defineNode({
 	displayName: "Generate Image",
 	description: "Generate images using prompt and reference image(s)",
 	category: "AI",
-	version: "1.0.0",
 	isTerminal: true,
 	isTransient: false,
 	variableInputs: { enabled: true, dataTypes: ["Image"] },

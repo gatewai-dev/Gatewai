@@ -1,3 +1,4 @@
+import { GetCanvasEntities } from "@gatewai/data-ops";
 import { prisma } from "@gatewai/db";
 import { bulkUpdateSchema } from "@gatewai/types";
 import {
@@ -6,7 +7,6 @@ import {
 	type MCPServerStreamableHttp,
 } from "@openai/agents";
 import { zodToJsonSchema } from "zod-to-json-schema";
-import { GetCanvasEntities } from "../../../data-ops/canvas.js";
 import { getAgentModel } from "../../agent-model.js";
 import type { PrismaAgentSession } from "../../session/gatewai-session.js";
 import { createPatcherAgent } from "../patcher/index.js";

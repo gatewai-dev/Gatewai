@@ -6,7 +6,6 @@ export default defineNode({
 	displayName: "Blur",
 	description: "Apply blur to an image",
 	category: "Image",
-	version: "1.0.0",
 	isTerminal: false,
 	isTransient: true,
 	handles: {

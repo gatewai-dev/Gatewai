@@ -1,3 +1,4 @@
+import type { EnvConfig } from "@gatewai/core";
 import type {
 	Canvas,
 	DataType,
@@ -10,7 +11,6 @@ import type {
 } from "@gatewai/db";
 import type { FileData, NodeResult } from "@gatewai/types";
 import { type ZodTypeAny, z } from "zod";
-import type { EnvConfig } from "@gatewai/core";
 
 /**
  * Input filter options used by graph resolver functions.
@@ -28,17 +28,6 @@ import type {
 
 // Re-export so consumers don't need to import from @gatewai/types directly if they don't want to
 export type { GraphResolvers, MediaService, StorageService };
-
-/**
- * Services injected into backend node processors by the host application.
- * This is the DI contract that decouples processors from app-level imports.
- *
- * @deprecated Use specific interfaces (GraphResolvers, StorageService, MediaService) instead
- * when using class-based processors.
- */
-export interface NodeServices extends GraphResolvers, StorageService, MediaService {
-	env: EnvConfig;
-}
 
 /**
  * Data context passed to a backend node processor during execution.
@@ -59,8 +48,14 @@ export interface BackendNodeProcessorCtx {
 	};
 	/** Prisma database client for direct DB access */
 	prisma: PrismaClient;
-	/** Injected services from the host application */
-	services: NodeServices;
+	/** Graph resolution helpers (input/output value lookups) */
+	graph: GraphResolvers;
+	/** Cloud storage operations (GCS upload, download, signed URLs) */
+	storage: StorageService;
+	/** Media processing utilities (pixi, image dimensions, etc.) */
+	media: MediaService;
+	/** Environment configuration */
+	env: EnvConfig;
 }
 
 /**
@@ -144,8 +139,8 @@ export const NodeManifestSchema = z.object({
 	description: z.string().optional(),
 	category: z.string().min(1),
 	subcategory: z.string().optional(),
-	version: z.string().min(1),
 	showInQuickAccess: z.boolean().optional(),
+	showInSidebar: z.boolean().optional(),
 
 	// I/O Contract
 	handles: z.object({
@@ -174,10 +169,12 @@ export const NodeManifestSchema = z.object({
 	defaultConfig: z.record(z.unknown()).optional(),
 
 	// Processing
-	backendProcessor: z.union([
-		z.custom<BackendNodeProcessor>(),
-		z.custom<NodeProcessorConstructor>(),
-	]).optional(),
+	backendProcessor: z
+		.union([
+			z.custom<BackendNodeProcessor>(),
+			z.custom<NodeProcessorConstructor>(),
+		])
+		.optional(),
 	frontendProcessor: z.custom<FrontendNodeProcessor>().optional(),
 });
 

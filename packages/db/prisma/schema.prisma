@@ -258,6 +258,7 @@ model NodeTemplate {
   category                String?
   subcategory             String?
   showInQuickAccess       Boolean                @default(false)
+  showInSidebar           Boolean                @default(true)
   createdAt               DateTime               @default(now())
   updatedAt               DateTime               @updatedAt
   nodes                   Node[]

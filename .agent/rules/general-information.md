@@ -3,6 +3,7 @@ trigger: always_on
 ---
 
 USE PNPM
+AVOID ANY TYPING UNLESS IT REQUIRES DANCING WITH TYPES 
 
 # Gatewai | System Architecture & Data Schema
 

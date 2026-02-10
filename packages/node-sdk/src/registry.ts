@@ -3,18 +3,20 @@ import type {
 	BackendNodeProcessor,
 	GatewaiNodeManifest,
 	NodeProcessorConstructor,
-} from "@gatewai/node-sdk";
-import { builtinNodes } from "@gatewai/nodes";
-import type { NodeProcessor } from "./processors/types.js";
+} from "./types.js";
+
+/**
+ * Union type for node processors.
+ */
+export type NodeProcessorDefinition =
+	| BackendNodeProcessor
+	| NodeProcessorConstructor;
 
 /**
  * Central registry for node processors and manifests.
  */
 export class NodeRegistry {
-	private processors = new Map<
-		string,
-		BackendNodeProcessor | NodeProcessorConstructor
-	>();
+	private processors = new Map<string, NodeProcessorDefinition>();
 	private manifests = new Map<string, GatewaiNodeManifest>();
 
 	/**
@@ -39,19 +41,14 @@ export class NodeRegistry {
 	 * Register a raw processor function for a node type.
 	 * Used for inline/passthrough processors that don't have full manifests.
 	 */
-	registerProcessor(
-		type: string,
-		processor: BackendNodeProcessor | NodeProcessorConstructor,
-	): void {
+	registerProcessor(type: string, processor: NodeProcessorDefinition): void {
 		this.processors.set(type, processor);
 	}
 
 	/**
 	 * Get the processor for a node type.
 	 */
-	getProcessor(
-		type: string,
-	): BackendNodeProcessor | NodeProcessorConstructor | undefined {
+	getProcessor(type: string): NodeProcessorDefinition | undefined {
 		return this.processors.get(type);
 	}
 
@@ -93,15 +90,5 @@ export class NodeRegistry {
 
 /**
  * Singleton node registry instance.
- * Initialized with built-in nodes from @gatewai/nodes.
  */
 export const nodeRegistry = new NodeRegistry();
-
-// Auto-register all built-in node manifests
-for (const manifest of builtinNodes) {
-	nodeRegistry.register(manifest);
-}
-
-logger.info(
-	`[NodeRegistry] Registered ${nodeRegistry.manifestCount} built-in node manifests`,
-);

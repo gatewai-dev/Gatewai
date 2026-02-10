@@ -7,7 +7,6 @@ export default defineNode({
 	description: "Create text transcript of or extract context from an audio",
 	category: "AI",
 	subcategory: "Audio",
-	version: "1.0.0",
 	isTerminal: true,
 	isTransient: false,
 	handles: {

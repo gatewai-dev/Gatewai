@@ -7,7 +7,6 @@ export default defineNode({
 	description: "A video generation node.",
 	category: "AI",
 	subcategory: "Video",
-	version: "1.0.0",
 	isTerminal: true,
 	isTransient: false,
 	variableInputs: { enabled: true, dataTypes: ["Image"] },

@@ -7,7 +7,6 @@ export default defineNode({
 	description: "Create audio using text",
 	category: "AI",
 	subcategory: "Audio",
-	version: "1.0.0",
 	isTerminal: true,
 	isTransient: false,
 	handles: {

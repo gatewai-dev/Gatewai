@@ -6,7 +6,6 @@ export default defineNode({
 	displayName: "Paint",
 	description: "Draw / Fill Mask on an image",
 	category: "Image",
-	version: "1.0.0",
 	isTerminal: false,
 	isTransient: true,
 	handles: {

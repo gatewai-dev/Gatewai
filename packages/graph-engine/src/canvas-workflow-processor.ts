@@ -1,3 +1,4 @@
+import { type CanvasCtxData, GetCanvasEntities } from "@gatewai/data-ops";
 import {
 	type Canvas,
 	type Node,
@@ -6,7 +7,6 @@ import {
 	type TaskBatch,
 	TaskStatus,
 } from "@gatewai/db";
-import { type CanvasCtxData, GetCanvasEntities } from "../data-ops/canvas.js";
 import { workflowQueue } from "./queue/workflow.queue.js";
 
 /**

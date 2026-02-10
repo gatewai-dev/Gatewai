@@ -2,13 +2,9 @@ import assert from "node:assert";
 import type { BackendNodeProcessor } from "@gatewai/node-sdk";
 import type { ExportResult } from "@gatewai/types";
 
-const exportProcessor: BackendNodeProcessor = async ({
-	node,
-	data,
-	services,
-}) => {
+const exportProcessor: BackendNodeProcessor = async ({ node, data, graph }) => {
 	try {
-		const inputValue = services.getInputValue(data, node.id, true, {});
+		const inputValue = graph.getInputValue(data, node.id, true, {});
 		assert(inputValue);
 
 		const newResult = structuredClone(

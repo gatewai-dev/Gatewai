@@ -6,7 +6,6 @@ export default defineNode({
 	displayName: "Text",
 	description: "A text input",
 	category: "Inputs",
-	version: "1.0.0",
 	isTerminal: false,
 	isTransient: false,
 	showInQuickAccess: true,

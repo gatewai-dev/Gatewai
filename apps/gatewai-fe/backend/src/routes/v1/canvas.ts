@@ -1,5 +1,7 @@
 import { logger } from "@gatewai/core";
+import { applyCanvasUpdate, GetCanvasEntities } from "@gatewai/data-ops";
 import { prisma } from "@gatewai/db";
+import { NodeWFProcessor } from "@gatewai/graph-engine";
 import {
 	agentBulkUpdateSchema,
 	type BulkUpdatePayload,
@@ -14,9 +16,6 @@ import { streamSSE } from "hono/streaming";
 import z from "zod";
 import { AgentRunnerManager } from "../../agent/runner/runner-manager.js";
 import type { AuthHonoTypes } from "../../auth.js";
-import { GetCanvasEntities } from "../../data-ops/canvas.js";
-import { applyCanvasUpdate } from "../../data-ops/canvas-update.js";
-import { NodeWFProcessor } from "../../graph-engine/canvas-workflow-processor.js";
 import { redisSubscriber } from "../../lib/redis.js";
 import { assertIsError } from "../../utils/misc.js";
 import {

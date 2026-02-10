@@ -12,30 +12,34 @@ import {
 const blurProcessor: BackendNodeProcessor = async ({
 	node,
 	data,
-	services,
+	graph,
+	storage,
+	media,
 }) => {
 	try {
-		const imageInput = services.getInputValue(data, node.id, true, {
+		const imageInput = graph.getInputValue(data, node.id, true, {
 			dataType: DataType.Image,
 			label: "Image",
 		})?.data as FileData | null;
 
 		assert(imageInput);
-		const imageUrl = await services.resolveFileDataUrl(imageInput);
+		const imageUrl = await media.resolveFileDataUrl(imageInput);
 		assert(imageUrl);
 		const blurConfig = BlurNodeConfigSchema.parse(node.config);
 		const blurSize = blurConfig.size ?? 0;
 
-		const { dataUrl, ...dimensions } =
-			await services.backendPixiService.execute<BlurInput, BlurOutput>(
-				"blur",
-				{
-					imageUrl,
-					options: { blurSize },
-					apiKey: data.apiKey,
-				},
-				undefined,
-			);
+		const { dataUrl, ...dimensions } = await media.backendPixiService.execute<
+			BlurInput,
+			BlurOutput
+		>(
+			"blur",
+			{
+				imageUrl,
+				options: { blurSize },
+				apiKey: data.apiKey,
+			},
+			undefined,
+		);
 
 		const uploadBuffer = Buffer.from(await dataUrl.arrayBuffer());
 		const mimeType = dataUrl.type;
@@ -54,7 +58,7 @@ const blurProcessor: BackendNodeProcessor = async ({
 		};
 
 		const key = `${(data.task ?? node).id}/${Date.now()}.png`;
-		const { signedUrl, key: tempKey } = await services.uploadToTemporaryFolder(
+		const { signedUrl, key: tempKey } = await storage.uploadToTemporaryFolder(
 			uploadBuffer,
 			mimeType,
 			key,

@@ -7,7 +7,6 @@ export default defineNode({
 	description: "Generate videos using first and last frame images",
 	category: "AI",
 	subcategory: "Video",
-	version: "1.0.0",
 	isTerminal: true,
 	isTransient: false,
 	handles: {

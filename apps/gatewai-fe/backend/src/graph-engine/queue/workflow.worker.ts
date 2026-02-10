@@ -1,27 +1,28 @@
-import { logger } from "@gatewai/core";
+import { ENV_CONFIG, logger } from "@gatewai/core";
+import { GetCanvasEntities } from "@gatewai/data-ops";
 import { Prisma, prisma, TaskStatus } from "@gatewai/db";
-import {
-	type BackendNodeProcessor,
-	type BackendNodeProcessorCtx,
-	type BackendNodeProcessorResult,
-	type NodeProcessor,
-	type NodeProcessorConstructor,
+import { container } from "@gatewai/di";
+import { nodeRegistry } from "@gatewai/graph-engine";
+import type {
+	BackendNodeProcessor,
+	BackendNodeProcessorCtx,
+	BackendNodeProcessorResult,
+	NodeProcessor,
+	NodeProcessorConstructor,
 } from "@gatewai/node-sdk";
 import { type Job, Worker } from "bullmq";
-import { ENV_CONFIG } from "@gatewai/core";
-import { GetCanvasEntities } from "../../data-ops/canvas.js";
-import { container } from "@gatewai/di";
 import { assertIsError } from "../../utils/misc.js";
-import { nodeRegistry } from "../node-registry.js";
 // Side-effect import: registers all backend processors into the registry
 import "../processors/index.js";
-import { nodeServices } from "../node-services.js";
-import { redisConnection } from "./connection.js";
 import {
+	graphResolvers,
+	mediaService,
 	type NodeTaskJobData,
+	redisConnection,
+	storageService,
 	WORKFLOW_QUEUE_NAME,
 	workflowQueue,
-} from "./workflow.queue.js";
+} from "@gatewai/graph-engine";
 
 // Global reference for shutdown handling
 let worker: Worker<NodeTaskJobData> | null = null;
@@ -264,7 +265,10 @@ const processNodeJob = async (job: Job<NodeTaskJobData>) => {
 			node,
 			data: { ...data, tasks: batchTasks, task, apiKey },
 			prisma,
-			services: nodeServices,
+			graph: graphResolvers,
+			storage: storageService,
+			media: mediaService,
+			env: ENV_CONFIG,
 		};
 
 		// Check if it's a class (constructor)

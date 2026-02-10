@@ -10,10 +10,12 @@ import type {
 const modulateProcessor: BackendNodeProcessor = async ({
 	node,
 	data,
-	services,
+	graph,
+	storage,
+	media,
 }) => {
 	try {
-		const imageInput = services.getInputValue(data, node.id, true, {
+		const imageInput = graph.getInputValue(data, node.id, true, {
 			dataType: DataType.Image,
 			label: "Image",
 		})?.data as FileData | null;
@@ -23,12 +25,12 @@ const modulateProcessor: BackendNodeProcessor = async ({
 			return { success: false, error: "No image input provided" };
 		}
 
-		const arrayBuffer = await services.loadMediaBuffer(imageInput);
+		const arrayBuffer = await graph.loadMediaBuffer(imageInput);
 		const buffer = Buffer.from(arrayBuffer);
-		const base64Data = services.bufferToDataUrl(buffer, "image/png");
+		const base64Data = media.bufferToDataUrl(buffer, "image/png");
 
 		const { dataUrl, ...dimensions } =
-			await services.backendPixiService.processModulate(
+			await media.backendPixiService.processModulate(
 				base64Data,
 				modulateConfig,
 				undefined,
@@ -52,7 +54,7 @@ const modulateProcessor: BackendNodeProcessor = async ({
 		};
 
 		const key = `${node.id}/${Date.now()}.png`;
-		const { signedUrl, key: tempKey } = await services.uploadToTemporaryFolder(
+		const { signedUrl, key: tempKey } = await storage.uploadToTemporaryFolder(
 			uploadBuffer,
 			mimeType,
 			key,

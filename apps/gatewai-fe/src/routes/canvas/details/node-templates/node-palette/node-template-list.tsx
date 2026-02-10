@@ -35,7 +35,7 @@ const NodeTemplateList = memo(({ templates }: NodeListProps) => {
 
 	const filtered = useMemo(() => {
 		let result = templates;
-
+		result = result.filter((f) => f.showInSidebar);
 		// 2. Fuzzy Search
 		if (searchQuery) {
 			const q = searchQuery.toLowerCase();

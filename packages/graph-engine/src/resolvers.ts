@@ -1,7 +1,7 @@
 import assert from "node:assert";
+import type { CanvasCtxDataWithTasks } from "@gatewai/data-ops";
 import type { DataType } from "@gatewai/db";
 import type { FileData, NodeResult, StorageService } from "@gatewai/types";
-import type { CanvasCtxDataWithTasks } from "../data-ops/canvas.js";
 
 /**
  * Options for filtering inputs.
@@ -133,10 +133,7 @@ function getAllOutputHandles(data: unknown, nodeId: string) {
 	return ctx.handles.filter((e) => e.nodeId === nodeId && e.type === "Output");
 }
 
-function getAllInputValuesWithHandle(
-	data: unknown,
-	targetNodeId: string,
-) {
+function getAllInputValuesWithHandle(data: unknown, targetNodeId: string) {
 	const ctx = data as CanvasCtxDataWithTasks;
 	const incoming = ctx.edges.filter((e) => e.target === targetNodeId);
 
@@ -179,14 +176,19 @@ async function loadMediaBuffer(storage: StorageService, fileData: FileData) {
 	return arrayBuffer;
 }
 
-async function getFileDataMimeType(storage: StorageService, fileData: FileData) {
+async function getFileDataMimeType(
+	storage: StorageService,
+	fileData: FileData,
+) {
 	if (fileData?.entity?.mimeType) return fileData?.entity?.mimeType;
 	if (fileData?.processData?.mimeType) return fileData?.processData?.mimeType;
 	if (fileData?.processData?.tempKey) {
 		// Trying to get metadata from storage if available
 		// Assuming implementation has it or we catch error
 		try {
-			const metadata = await storage.getObjectMetadata(fileData?.processData?.tempKey);
+			const metadata = await storage.getObjectMetadata(
+				fileData?.processData?.tempKey,
+			);
 			return metadata?.contentType ?? null;
 		} catch (e) {
 			console.warn("Failed to get metadata", e);

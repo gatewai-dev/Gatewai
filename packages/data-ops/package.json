@@ -1,0 +1,35 @@
+{
+	"name": "@gatewai/data-ops",
+	"version": "0.1.0",
+	"description": "Data operations for Gatewai",
+	"type": "module",
+	"main": "./dist/index.js",
+	"module": "./dist/index.js",
+	"types": "./dist/index.d.mts",
+	"exports": {
+		".": {
+			"types": "./dist/index.d.mts",
+			"import": "./dist/index.js"
+		}
+	},
+	"scripts": {
+		"build": "tsdown",
+		"dev": "tsdown --watch",
+		"clean": "rm -rf dist node_modules",
+		"type-check": "tsc --noEmit"
+	},
+	"dependencies": {
+		"@gatewai/core": "workspace:*",
+		"@gatewai/db": "workspace:*",
+		"@gatewai/types": "workspace:*",
+		"@gatewai/node-sdk": "workspace:*",
+		"@gatewai/di": "workspace:*",
+		"hono": "^4.6.14"
+	},
+	"devDependencies": {
+		"@gatewai/tsconfig": "workspace:*",
+		"@types/node": "^22.13.0",
+		"tsdown": "^0.19.0",
+		"typescript": "~5.7.3"
+	}
+}

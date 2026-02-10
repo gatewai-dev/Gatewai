@@ -4,20 +4,26 @@ import type { BackendNodeProcessor } from "@gatewai/node-sdk";
 import type { FileData, LLMNodeConfig, LLMResult } from "@gatewai/types";
 import { getGenAIClient } from "../genai.js";
 
-const llmProcessor: BackendNodeProcessor = async ({ node, data, services }) => {
-	const genAI = getGenAIClient(services.env.GEMINI_API_KEY);
+const llmProcessor: BackendNodeProcessor = async ({
+	node,
+	data,
+	graph,
+	storage,
+	env,
+}) => {
+	const genAI = getGenAIClient(env.GEMINI_API_KEY);
 	try {
-		const systemPrompt = services.getInputValue(data, node.id, false, {
+		const systemPrompt = graph.getInputValue(data, node.id, false, {
 			dataType: DataType.Text,
 			label: "System Prompt",
 		})?.data as string | null;
 
-		const userPrompt = services.getInputValue(data, node.id, true, {
+		const userPrompt = graph.getInputValue(data, node.id, true, {
 			dataType: DataType.Text,
 			label: "Prompt",
 		})?.data as string | null;
 
-		const imageFileData = services.getInputValue(data, node.id, false, {
+		const imageFileData = graph.getInputValue(data, node.id, false, {
 			dataType: DataType.Image,
 			label: "Image",
 		})?.data as FileData | null;
@@ -29,9 +35,9 @@ const llmProcessor: BackendNodeProcessor = async ({ node, data, services }) => {
 		}
 
 		if (imageFileData) {
-			const mimeType = await services.getFileDataMimeType(imageFileData);
+			const mimeType = await graph.getFileDataMimeType(imageFileData);
 			assert(mimeType);
-			const arrayBuffer = await services.loadMediaBuffer(imageFileData);
+			const arrayBuffer = await graph.loadMediaBuffer(imageFileData);
 			const buffer = Buffer.from(arrayBuffer);
 			const base64Data = buffer.toString("base64");
 

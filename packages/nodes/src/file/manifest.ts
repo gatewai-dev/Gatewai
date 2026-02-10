@@ -5,7 +5,6 @@ export default defineNode({
 	displayName: "Import",
 	description: "Upload your media files",
 	category: "Inputs",
-	version: "1.0.0",
 	isTerminal: false,
 	isTransient: false,
 	showInQuickAccess: true,

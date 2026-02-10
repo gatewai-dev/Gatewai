@@ -5,10 +5,10 @@ import type { TextMergerNodeConfig, TextMergerResult } from "@gatewai/types";
 const textMergerProcessor: BackendNodeProcessor = async ({
 	node,
 	data,
-	services,
+	graph,
 }) => {
 	try {
-		const textInputs = services.getInputValuesByType(data, node.id, {
+		const textInputs = graph.getInputValuesByType(data, node.id, {
 			dataType: DataType.Text,
 		});
 

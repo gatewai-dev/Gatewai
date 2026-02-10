@@ -6,7 +6,6 @@ export default defineNode({
 	displayName: "Export",
 	description: "An UI download / API output node",
 	category: "Outputs",
-	version: "1.0.0",
 	isTerminal: true,
 	isTransient: false,
 	showInQuickAccess: true,

@@ -6,7 +6,6 @@ export default defineNode({
 	displayName: "LLM",
 	description: "Run a LLM model",
 	category: "AI",
-	version: "1.0.0",
 	isTerminal: true,
 	isTransient: false,
 	variableInputs: { enabled: true, dataTypes: ["Image"] },

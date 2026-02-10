@@ -1,12 +1,12 @@
 import assert from "node:assert";
 import { logger } from "@gatewai/core";
+import { GetCanvasEntities } from "@gatewai/data-ops";
 import { type NodeTemplate, prisma } from "@gatewai/db";
 import { agentBulkUpdateSchema, type BulkUpdatePayload } from "@gatewai/types";
 import { Agent, type MCPServerStreamableHttp, tool } from "@openai/agents";
 import { getQuickJS, type QuickJSContext, Scope } from "quickjs-emscripten";
 import { z } from "zod";
 import { zodToJsonSchema } from "zod-to-json-schema";
-import { GetCanvasEntities } from "../../../data-ops/canvas.js";
 import {
 	type AVAILABLE_AGENT_MODELS,
 	getAgentModel,

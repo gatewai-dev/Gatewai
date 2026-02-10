@@ -1,4 +1,4 @@
-import { logger, generateId } from "@gatewai/core";
+import { generateId, logger } from "@gatewai/core";
 import { DataType } from "@gatewai/db";
 import type { BackendNodeProcessor } from "@gatewai/node-sdk";
 import {
@@ -31,11 +31,13 @@ const textToSpeechProcessor: BackendNodeProcessor = async ({
 	node,
 	data,
 	prisma,
-	services,
+	graph,
+	storage,
+	env,
 }) => {
-	const genAI = getGenAIClient(services.env.GEMINI_API_KEY);
+	const genAI = getGenAIClient(env.GEMINI_API_KEY);
 	try {
-		const userPrompt = services.getInputValue(data, node.id, true, {
+		const userPrompt = graph.getInputValue(data, node.id, true, {
 			dataType: DataType.Text,
 			label: "Prompt",
 		})?.data as string;
@@ -93,12 +95,12 @@ const textToSpeechProcessor: BackendNodeProcessor = async ({
 		const fileName = `${node.name}_${randId}.${extension}`;
 		const key = `assets/${fileName}`;
 		const contentType = "audio/wav";
-		const bucket = services.env.GCS_ASSETS_BUCKET;
+		const bucket = env.GCS_ASSETS_BUCKET;
 
-		await services.uploadToGCS(wavBuffer, key, contentType, bucket);
+		await storage.uploadToGCS(wavBuffer, key, contentType, bucket);
 
 		const expiresIn = 3600 * 24 * 6.9;
-		const signedUrl = await services.generateSignedUrl(key, bucket, expiresIn);
+		const signedUrl = await storage.generateSignedUrl(key, bucket, expiresIn);
 		const signedUrlExp = new Date(Date.now() + expiresIn * 1000);
 
 		const asset = await prisma.fileAsset.create({

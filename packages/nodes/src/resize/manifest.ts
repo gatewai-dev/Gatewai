@@ -6,7 +6,6 @@ export default defineNode({
 	displayName: "Resize",
 	description: "Resize media",
 	category: "Image",
-	version: "1.0.0",
 	isTerminal: false,
 	isTransient: true,
 	handles: {
