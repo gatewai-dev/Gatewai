@@ -1,7 +1,4 @@
 import {
-	createPartFromUri,
-	createUserContent,
-	genAI,
 	logger,
 } from "@gatewai/core";
 import { DataType } from "@gatewai/db";
@@ -11,6 +8,8 @@ import type {
 	SpeechToTextNodeConfig,
 	SpeechToTextResult,
 } from "@gatewai/types";
+import { getGenAIClient } from '../genai.js'
+import { createPartFromUri, createUserContent } from "@google/genai";
 
 const audioUnderstandingProcessor: BackendNodeProcessor = async ({
 	node,
@@ -53,6 +52,7 @@ const audioUnderstandingProcessor: BackendNodeProcessor = async ({
 				error: "Input audio data could not be resolved",
 			};
 		}
+		const genAI = getGenAIClient(services.env.GEMINI_API_KEY);
 
 		const audioFile = await genAI.files.upload({
 			file: fileBlob,

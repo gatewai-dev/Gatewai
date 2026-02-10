@@ -3,7 +3,7 @@ import fs from "node:fs/promises"; // Use the promises API
 import os from "node:os";
 import path from "node:path";
 import sharp from "sharp";
-import { generateId } from "./misc.js";
+import { generateId } from "@gatewai/core";
 
 /**
  * Gets the duration of media (video/audio) using ffprobe.

@@ -1,8 +1,16 @@
 import { logger } from "@gatewai/core";
 import { Prisma, prisma, TaskStatus } from "@gatewai/db";
+import {
+	type BackendNodeProcessor,
+	type BackendNodeProcessorCtx,
+	type BackendNodeProcessorResult,
+	type NodeProcessor,
+	type NodeProcessorConstructor,
+} from "@gatewai/node-sdk";
 import { type Job, Worker } from "bullmq";
-import { ENV_CONFIG } from "../../config.js";
+import { ENV_CONFIG } from "@gatewai/core";
 import { GetCanvasEntities } from "../../data-ops/canvas.js";
+import { container } from "@gatewai/di";
 import { assertIsError } from "../../utils/misc.js";
 import { nodeRegistry } from "../node-registry.js";
 // Side-effect import: registers all backend processors into the registry
@@ -243,19 +251,42 @@ const processNodeJob = async (job: Job<NodeTaskJobData>) => {
 		});
 
 		// 5. Execute Processor
-		const processor = nodeRegistry.getProcessor(node.type);
-		if (!processor) {
+		const processorOrClass = nodeRegistry.getProcessor(node.type);
+		if (!processorOrClass) {
 			logger.error(`No processor for node type ${node.type}`);
 			throw new Error(`No processor for node type ${node.type}`);
 		}
 
 		logger.info(`Processing node: ${node.id} with type: ${node.type}`);
-		const { success, error, newResult } = await processor({
+
+		let result: BackendNodeProcessorResult;
+		const ctx: BackendNodeProcessorCtx = {
 			node,
 			data: { ...data, tasks: batchTasks, task, apiKey },
 			prisma,
 			services: nodeServices,
-		});
+		};
+
+		// Check if it's a class (constructor)
+		if (
+			typeof processorOrClass === "function" &&
+			processorOrClass.prototype &&
+			processorOrClass.prototype.process
+		) {
+			// It's a class-based processor
+			const ProcessorClass = processorOrClass as NodeProcessorConstructor;
+			// Resolve from DI container
+			const processorInstance = container.resolve(
+				ProcessorClass,
+			) as unknown as NodeProcessor;
+			result = await processorInstance.process(ctx);
+		} else {
+			// It's a functional processor (legacy)
+			const processorFn = processorOrClass as BackendNodeProcessor;
+			result = await processorFn(ctx);
+		}
+
+		const { success, error, newResult } = result;
 
 		// 6. Handle Results
 		if (newResult) {

@@ -2,7 +2,7 @@ import assert from "node:assert";
 import { existsSync, mkdirSync } from "node:fs";
 import { readFile, rm } from "node:fs/promises";
 import path from "node:path";
-import { genAI, logger } from "@gatewai/core";
+import { generateId, logger } from "@gatewai/core";
 
 import { DataType } from "@gatewai/db";
 import type { BackendNodeProcessor } from "@gatewai/node-sdk";
@@ -11,7 +11,8 @@ import {
 	VideoGenNodeConfigSchema,
 	type VideoGenResult,
 } from "@gatewai/types";
-import type { GenerateVideosConfig } from "@google/genai";
+import type { GenerateVideosConfig, VideoGenerationReferenceImage, VideoGenerationReferenceType } from "@google/genai";
+import { getGenAIClient } from "../genai.js";
 
 const videoGenProcessor: BackendNodeProcessor = async ({
 	node,
@@ -19,6 +20,7 @@ const videoGenProcessor: BackendNodeProcessor = async ({
 	prisma,
 	services,
 }) => {
+	const genAI = getGenAIClient(services.env.GEMINI_API_KEY);
 	try {
 		const userPrompt = services.getInputValue(data, node.id, true, {
 			dataType: DataType.Text,
@@ -50,11 +52,12 @@ const videoGenProcessor: BackendNodeProcessor = async ({
 					imageBytes: base64Data,
 					mimeType: mimeType,
 				},
-				referenceType: "ASSET" as const,
+				// TODO: check if we can provide this as config
+				referenceType: "ASSET" as VideoGenerationReferenceType,
 			};
 		});
 
-		let referenceImages: GenerateVideosConfig["referenceImages"] | undefined;
+		let referenceImages: VideoGenerationReferenceImage[] | undefined;
 
 		if (LoadImageDataPromises) {
 			referenceImages = await Promise.all(LoadImageDataPromises);
@@ -106,7 +109,7 @@ const videoGenProcessor: BackendNodeProcessor = async ({
 		});
 
 		const fileBuffer = await readFile(filePath);
-		const randId = services.generateId();
+		const randId = generateId();
 		const fileName = `${node.name}_${randId}${extension}`;
 		const key = `assets/${fileName}`;
 		const contentType = "video/mp4";

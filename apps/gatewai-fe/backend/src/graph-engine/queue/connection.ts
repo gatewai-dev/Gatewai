@@ -1,5 +1,5 @@
 import type { ConnectionOptions } from "bullmq";
-import { ENV_CONFIG } from "../../config.js";
+import { ENV_CONFIG } from "@gatewai/core";
 
 export const redisConnection: ConnectionOptions = {
 	host: ENV_CONFIG.REDIS_HOST,

@@ -6,12 +6,23 @@
 		"strict": true,
 		"verbatimModuleSyntax": true,
 		"skipLibCheck": true,
-		"types": ["node"],
-		"lib": ["DOM"],
+		"types": [
+			"node"
+		],
+		"lib": [
+			"DOM"
+		],
 		"jsx": "react-jsx",
 		"jsxImportSource": "hono/jsx",
-		"outDir": "./dist"
+		"outDir": "./dist",
+		"experimentalDecorators": true,
+		"emitDecoratorMetadata": true
 	},
-	"include": ["src/**/*"],
-	"exclude": ["node_modules", "dist"]
+	"include": [
+		"src/**/*"
+	],
+	"exclude": [
+		"node_modules",
+		"dist"
+	]
 }

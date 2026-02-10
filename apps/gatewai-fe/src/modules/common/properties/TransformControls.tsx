@@ -37,7 +37,7 @@ interface TransformControlsProps {
 		lockAspect?: boolean;
 	}) => void;
 
-	onCenter: (axis: "x" | "y") => void;
+	onCenter?: (axis: "x" | "y") => void;
 }
 
 export const TransformControls: React.FC<TransformControlsProps> = ({
@@ -62,7 +62,7 @@ export const TransformControls: React.FC<TransformControlsProps> = ({
 						variant="outline"
 						size="sm"
 						className="flex-1 h-7 text-[10px] border-white/10 bg-white/5 hover:bg-white/10 hover:text-white text-gray-400"
-						onClick={() => onCenter("x")}
+						onClick={() => onCenter?.("x")}
 					>
 						<AlignCenterHorizontal className="w-3 h-3 mr-1" /> Center X
 					</Button>
@@ -70,7 +70,7 @@ export const TransformControls: React.FC<TransformControlsProps> = ({
 						variant="outline"
 						size="sm"
 						className="flex-1 h-7 text-[10px] border-white/10 bg-white/5 hover:bg-white/10 hover:text-white text-gray-400"
-						onClick={() => onCenter("y")}
+						onClick={() => onCenter?.("y")}
 					>
 						<AlignCenterVertical className="w-3 h-3 mr-1" /> Center Y
 					</Button>

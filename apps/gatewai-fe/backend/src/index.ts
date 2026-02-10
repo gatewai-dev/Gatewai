@@ -1,20 +1,25 @@
+import "reflect-metadata";
+
 import { readFile } from "node:fs/promises";
-import { logger as appLogger, logger } from "@gatewai/core";
+import { logger as appLogger, logger, ENV_CONFIG } from "@gatewai/core";
 import { prisma, SEED_createNodeTemplates } from "@gatewai/db";
 import { serve } from "@hono/node-server";
 import { serveStatic } from "@hono/node-server/serve-static";
 import { Hono } from "hono";
 import { cors } from "hono/cors";
 import { type AuthHonoTypes, auth, ensureUsersAPI_KEY } from "./auth.js";
-import { ENV_CONFIG } from "./config.js";
+import { registerBackendServices } from "./di-setup.js";
 import { startWorker } from "./graph-engine/queue/workflow.worker.js";
-import { startAgentWorker } from "./lib/agent-queue.js";
+import { startAgentWorker } from "./agent/agent-queue.js";
 import {
 	errorHandler,
 	loggerMiddleware,
 	notFoundHandler,
 } from "./middlewares.js";
 import { v1Router } from "./routes/v1/index.js";
+
+// Initialize Dependency Injection Container
+registerBackendServices();
 
 const app = new Hono<{
 	Variables: AuthHonoTypes;

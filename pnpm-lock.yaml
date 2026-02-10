@@ -54,6 +54,9 @@ importers:
       '@gatewai/db':
         specifier: workspace:*
         version: link:../../packages/db
+      '@gatewai/di':
+        specifier: workspace:*
+        version: link:../../packages/di
       '@gatewai/node-sdk':
         specifier: workspace:*
         version: link:../../packages/node-sdk
@@ -336,6 +339,9 @@ importers:
       react-scan:
         specifier: ^0.4.3
         version: 0.4.3(@types/react@19.1.11)(react-dom@19.2.3(react@19.2.3))(react-router@7.8.2(react-dom@19.2.3(react@19.2.3))(react@19.2.3))(react@19.2.3)(rollup@4.45.1)
+      reflect-metadata:
+        specifier: ^0.2.2
+        version: 0.2.2
       remark-gfm:
         specifier: ^4.0.1
         version: 4.0.1
@@ -354,6 +360,9 @@ importers:
       tailwindcss:
         specifier: ^4.1.16
         version: 4.1.16
+      tsyringe:
+        specifier: ^4.10.0
+        version: 4.10.0
       use-debounce:
         specifier: ^10.0.6
         version: 10.0.6(react@19.2.3)
@@ -504,12 +513,18 @@ importers:
 
   packages/core:
     dependencies:
-      '@google/genai':
-        specifier: ^1.40.0
-        version: 1.40.0(@modelcontextprotocol/sdk@1.25.2(hono@4.8.5)(zod@4.3.6))
+      dotenv:
+        specifier: ^16.4.5
+        version: 16.6.1
+      nanoid:
+        specifier: ^5.1.6
+        version: 5.1.6
       pino:
         specifier: ^10.1.0
         version: 10.1.0
+      zod:
+        specifier: ^3.23.8
+        version: 3.25.67
     devDependencies:
       '@gatewai/tsconfig':
         specifier: workspace:*
@@ -555,6 +570,28 @@ importers:
         specifier: ^5.8.3
         version: 5.8.3
 
+  packages/di:
+    dependencies:
+      reflect-metadata:
+        specifier: ^0.2.2
+        version: 0.2.2
+      tsyringe:
+        specifier: ^4.8.0
+        version: 4.10.0
+    devDependencies:
+      '@gatewai/tsconfig':
+        specifier: workspace:*
+        version: link:../tsconfig
+      '@types/node':
+        specifier: ^22.0.0
+        version: 22.19.11
+      tsdown:
+        specifier: ^0.19.0
+        version: 0.19.0(synckit@0.11.11)(typescript@5.8.3)
+      typescript:
+        specifier: ^5.5.4
+        version: 5.8.3
+
   packages/node-sdk:
     dependencies:
       '@gatewai/core':
@@ -569,6 +606,12 @@ importers:
       '@gatewai/types':
         specifier: workspace:*
         version: link:../types
+      reflect-metadata:
+        specifier: ^0.2.2
+        version: 0.2.2
+      tsyringe:
+        specifier: ^4.10.0
+        version: 4.10.0
       zod:
         specifier: 3.25.67
         version: 3.25.67
@@ -604,11 +647,17 @@ importers:
         specifier: workspace:*
         version: link:../types
       '@google/genai':
-        specifier: 1.14.0
-        version: 1.14.0(@modelcontextprotocol/sdk@1.25.2(hono@4.8.5)(zod@3.25.67))
+        specifier: ^1.40.0
+        version: 1.40.0(@modelcontextprotocol/sdk@1.25.2(hono@4.8.5)(zod@3.25.67))
       music-metadata:
         specifier: ^10.6.5
         version: 10.9.1
+      reflect-metadata:
+        specifier: ^0.2.2
+        version: 0.2.2
+      tsyringe:
+        specifier: ^4.10.0
+        version: 4.10.0
       wav:
         specifier: ^1.0.2
         version: 1.0.2
@@ -1370,15 +1419,6 @@ packages:
       '@opentelemetry/sdk-metrics': ^2.1.0
       '@opentelemetry/sdk-trace-base': ^2.1.0
       '@opentelemetry/sdk-trace-node': ^2.1.0
-
-  '@google/genai@1.14.0':
-    resolution: {integrity: sha512-jirYprAAJU1svjwSDVCzyVq+FrJpJd5CSxR/g2Ga/gZ0ZYZpcWjMS75KJl9y71K1mDN+tcx6s21CzCbB2R840g==}
-    engines: {node: '>=20.0.0'}
-    peerDependencies:
-      '@modelcontextprotocol/sdk': ^1.11.0
-    peerDependenciesMeta:
-      '@modelcontextprotocol/sdk':
-        optional: true
 
   '@google/genai@1.32.0':
     resolution: {integrity: sha512-46vaEaHAThIBlqWFTti1fo3xYU6DwCOwnIIotLhYUbNha90wk5cZL79zdf+NoAfKVsx4DPmjCtXvbQNNVPl5ZQ==}
@@ -3934,6 +3974,9 @@ packages:
 
   '@types/node@20.19.9':
     resolution: {integrity: sha512-cuVNgarYWZqxRJDQHEB58GEONhOK79QVR/qYx4S7kcUObQvUwvFnYxJuuHUKm2aieN9X3yZB4LZsuYNU1Qphsw==}
+
+  '@types/node@22.19.11':
+    resolution: {integrity: sha512-BH7YwL6rA93ReqeQS1c4bsPpcfOmJasG+Fkr6Y59q83f9M1WcBRHR2vM+P9eOisYRcN3ujQoiZY8uk5W+1WL8w==}
 
   '@types/node@24.1.0':
     resolution: {integrity: sha512-ut5FthK5moxFKH2T1CUOC6ctR67rQRvvHdFLCD2Ql6KXmMuCrjsSsRI9UsLCm9M18BMwClv4pn327UvB7eeO1w==}
@@ -7810,6 +7853,9 @@ packages:
   redux@5.0.1:
     resolution: {integrity: sha512-M9/ELqF6fy8FwmkpnF0S3YKOqMyoWJ4+CS5Efg2ct3oY9daQvd/Pc71FpGZsVsbl3Cpb+IIcjBDUnnyBdQbq4w==}
 
+  reflect-metadata@0.2.2:
+    resolution: {integrity: sha512-urBwgfrvVP/eAyXx4hluJivBKzuEbSQs9rKWCrCkbSxNv8mxPcUZKeuoF3Uy4mJl3Lwprp6yy5/39VWigZ4K6Q==}
+
   regex-recursion@6.0.2:
     resolution: {integrity: sha512-0YCaSCq2VRIebiaUviZNs0cBz1kg5kVS2UKUfNIx8YVs1cN3AV7NTctO5FOKBA+UT2BPJIWZauYHPqJODG50cg==}
 
@@ -8478,6 +8524,9 @@ packages:
       unplugin-unused:
         optional: true
 
+  tslib@1.14.1:
+    resolution: {integrity: sha512-Xni35NKzjgMrwevysHTCArtLDpPvye8zV/0E4EyYn43P7/7qvQwPh9BGkHewbMulVntbigmcT7rdX3BNo9wRJg==}
+
   tslib@2.6.2:
     resolution: {integrity: sha512-AEYxH93jGFPn/a2iVAwW87VuUIkR1FVUKB77NwMF7nBTDkDrrT/Hpt/IrCJ0QXhW27jTBDcf5ZY7w6RiqTMw2Q==}
 
@@ -8488,6 +8537,10 @@ packages:
     resolution: {integrity: sha512-qjbnuR9Tr+FJOMBqJCW5ehvIo/buZq7vH7qD7JziU98h6l3qGy0a/yPFjwO+y0/T7GFpNgNAvEcPPVfyT8rrPQ==}
     engines: {node: '>=18.0.0'}
     hasBin: true
+
+  tsyringe@4.10.0:
+    resolution: {integrity: sha512-axr3IdNuVIxnaK5XGEUFTu3YmAQ6lllgrvqfEoR16g/HGnYY/6We4oWENtAnzK6/LpJ2ur9PAb80RBt7/U4ugw==}
+    engines: {node: '>= 6.0.0'}
 
   tty-browserify@0.0.1:
     resolution: {integrity: sha512-C3TaO7K81YvjCgQH9Q1S3R3P3BtN3RIM8n+OvX4il1K1zgE8ZhI0op7kClgkxtutIE8hQrcrHBXvIheqKUUCxw==}
@@ -9790,18 +9843,6 @@ snapshots:
       - supports-color
       - utf-8-validate
 
-  '@google/genai@1.14.0(@modelcontextprotocol/sdk@1.25.2(hono@4.8.5)(zod@3.25.67))':
-    dependencies:
-      google-auth-library: 9.15.1(encoding@0.1.13)
-      ws: 8.18.3
-    optionalDependencies:
-      '@modelcontextprotocol/sdk': 1.25.2(hono@4.8.5)(zod@3.25.67)
-    transitivePeerDependencies:
-      - bufferutil
-      - encoding
-      - supports-color
-      - utf-8-validate
-
   '@google/genai@1.32.0(@modelcontextprotocol/sdk@1.25.2(hono@4.8.5)(zod@3.25.76))':
     dependencies:
       google-auth-library: 10.5.0
@@ -9825,13 +9866,13 @@ snapshots:
       - supports-color
       - utf-8-validate
 
-  '@google/genai@1.40.0(@modelcontextprotocol/sdk@1.25.2(hono@4.8.5)(zod@4.3.6))':
+  '@google/genai@1.40.0(@modelcontextprotocol/sdk@1.25.2(hono@4.8.5)(zod@3.25.67))':
     dependencies:
       google-auth-library: 10.5.0
       protobufjs: 7.5.4
       ws: 8.18.3
     optionalDependencies:
-      '@modelcontextprotocol/sdk': 1.25.2(hono@4.8.5)(zod@4.3.6)
+      '@modelcontextprotocol/sdk': 1.25.2(hono@4.8.5)(zod@3.25.67)
     transitivePeerDependencies:
       - bufferutil
       - supports-color
@@ -10281,29 +10322,6 @@ snapshots:
     transitivePeerDependencies:
       - hono
       - supports-color
-
-  '@modelcontextprotocol/sdk@1.25.2(hono@4.8.5)(zod@4.3.6)':
-    dependencies:
-      '@hono/node-server': 1.19.9(hono@4.8.5)
-      ajv: 8.17.1
-      ajv-formats: 3.0.1(ajv@8.17.1)
-      content-type: 1.0.5
-      cors: 2.8.5
-      cross-spawn: 7.0.6
-      eventsource: 3.0.7
-      eventsource-parser: 3.0.6
-      express: 5.2.1
-      express-rate-limit: 7.5.1(express@5.2.1)
-      jose: 6.1.3
-      json-schema-typed: 8.0.2
-      pkce-challenge: 5.0.1
-      raw-body: 3.0.2
-      zod: 4.3.6
-      zod-to-json-schema: 3.25.1(zod@4.3.6)
-    transitivePeerDependencies:
-      - hono
-      - supports-color
-    optional: true
 
   '@msgpackr-extract/msgpackr-extract-darwin-arm64@3.0.3':
     optional: true
@@ -12517,6 +12535,10 @@ snapshots:
   '@types/node@12.20.55': {}
 
   '@types/node@20.19.9':
+    dependencies:
+      undici-types: 6.21.0
+
+  '@types/node@22.19.11':
     dependencies:
       undici-types: 6.21.0
 
@@ -17367,6 +17389,8 @@ snapshots:
 
   redux@5.0.1: {}
 
+  reflect-metadata@0.2.2: {}
+
   regex-recursion@6.0.2:
     dependencies:
       regex-utilities: 2.3.0
@@ -18240,6 +18264,8 @@ snapshots:
       - synckit
       - vue-tsc
 
+  tslib@1.14.1: {}
+
   tslib@2.6.2: {}
 
   tslib@2.8.1: {}
@@ -18250,6 +18276,10 @@ snapshots:
       get-tsconfig: 4.13.0
     optionalDependencies:
       fsevents: 2.3.3
+
+  tsyringe@4.10.0:
+    dependencies:
+      tslib: 1.14.1
 
   tty-browserify@0.0.1: {}
 
@@ -18740,11 +18770,6 @@ snapshots:
   zod-to-json-schema@3.25.1(zod@3.25.76):
     dependencies:
       zod: 3.25.76
-
-  zod-to-json-schema@3.25.1(zod@4.3.6):
-    dependencies:
-      zod: 4.3.6
-    optional: true
 
   zod@3.25.67: {}
 

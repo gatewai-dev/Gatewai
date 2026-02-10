@@ -8,13 +8,14 @@ import { Hono } from "hono";
 import sharp from "sharp";
 import { z } from "zod";
 import type { AuthorizedHonoTypes } from "../../auth.js";
-import { ENV_CONFIG } from "../../config.js";
+import { ENV_CONFIG } from "@gatewai/core";
 import { uploadToImportNode } from "../../node-fns/import-media.js";
 import {
 	generateImageThumbnail,
 	generateVideoThumbnail,
 } from "../../utils/media.js";
-import { assertIsError, generateId } from "../../utils/misc.js";
+import { assertIsError } from "../../utils/misc.js";
+import { generateId } from "@gatewai/core";
 import {
 	deleteFromGCS,
 	fileExistsInGCS,
@@ -502,8 +503,8 @@ const assetsRouter = new Hono<{ Variables: AuthorizedHonoTypes }>({
 									const data = item.data;
 									const entityId =
 										typeof data === "object" &&
-										data !== null &&
-										"entity" in data
+											data !== null &&
+											"entity" in data
 											? (data as { entity?: { id?: string } }).entity?.id
 											: undefined;
 									const matches = entityId === id;

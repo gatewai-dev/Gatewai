@@ -32,10 +32,14 @@
 		"typescript": "5.5.4"
 	},
 	"peerDependencies": {
-		"@gatewai/db": "workspace:*",
-		"@gatewai/types": "workspace:*",
-		"@gatewai/pixi-processor": "workspace:*",
 		"@gatewai/core": "workspace:*",
+		"@gatewai/db": "workspace:*",
+		"@gatewai/pixi-processor": "workspace:*",
+		"@gatewai/types": "workspace:*",
 		"zod": "3.25.67"
+	},
+	"dependencies": {
+		"reflect-metadata": "^0.2.2",
+		"tsyringe": "^4.10.0"
 	}
 }

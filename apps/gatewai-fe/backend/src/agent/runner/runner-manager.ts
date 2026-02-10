@@ -1,5 +1,5 @@
 import { logger } from "@gatewai/core";
-import { agentQueue } from "../../lib/agent-queue.js";
+import { agentQueue } from "../agent-queue.js";
 import { redisPublisher } from "../../lib/redis.js";
 
 // A Agent runner that uses BullMQ and redis for the events

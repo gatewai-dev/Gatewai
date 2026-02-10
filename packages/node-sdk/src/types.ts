@@ -11,6 +11,7 @@ import type {
 import type { IPixiProcessor } from "@gatewai/pixi-processor";
 import type { FileData, NodeResult } from "@gatewai/types";
 import { type ZodTypeAny, z } from "zod";
+import type { EnvConfig } from "@gatewai/core";
 
 /**
  * Input filter options used by graph resolver functions.
@@ -24,7 +25,10 @@ export interface InputFilterOptions {
  * Services injected into backend node processors by the host application.
  * This is the DI contract that decouples processors from app-level imports.
  */
-export interface NodeServices {
+/**
+ * Interface for graph resolution services.
+ */
+export interface GraphResolvers {
 	getInputValue: (
 		data: BackendNodeProcessorCtx["data"],
 		targetNodeId: string,
@@ -63,15 +67,15 @@ export interface NodeServices {
 		targetNodeId: string,
 	) => Array<{
 		handle:
-			| {
-					id: string;
-					type: string;
-					nodeId: string;
-					dataTypes: DataType[];
-					label: string;
-					[key: string]: unknown;
-			  }
-			| undefined;
+		| {
+			id: string;
+			type: string;
+			nodeId: string;
+			dataTypes: DataType[];
+			label: string;
+			[key: string]: unknown;
+		}
+		| undefined;
 		value: {
 			type: DataType;
 			data: unknown;
@@ -82,9 +86,12 @@ export interface NodeServices {
 	loadMediaBuffer: (fileData: FileData) => Promise<Buffer>;
 
 	getFileDataMimeType: (fileData: FileData) => Promise<string | null>;
+}
 
-	// ── Storage ───────────────────────────────────────────────────────────────
-
+/**
+ * Interface for storage operations.
+ */
+export interface StorageService {
 	uploadToTemporaryFolder: (
 		buffer: Buffer,
 		mimeType: string,
@@ -105,9 +112,12 @@ export interface NodeServices {
 	) => Promise<string>;
 
 	getFromGCS: (key: string, bucket?: string) => Promise<Buffer>;
+}
 
-	// ── Media Processing ──────────────────────────────────────────────────────
-
+/**
+ * Interface for media processing and handling.
+ */
+export interface MediaService {
 	/** Backend pixi service for image transformations */
 	backendPixiService: IPixiProcessor;
 
@@ -124,12 +134,17 @@ export interface NodeServices {
 	) => string | Promise<string | null> | null;
 
 	bufferToDataUrl: (buffer: Buffer, mimeType: string) => string;
+}
 
-	env: {
-		DEBUG_LOG_MEDIA: boolean;
-		GCS_ASSETS_BUCKET: string;
-		GEMINI_API_KEY: string;
-	};
+/**
+ * Services injected into backend node processors by the host application.
+ * This is the DI contract that decouples processors from app-level imports.
+ * 
+ * @deprecated Use specific interfaces (GraphResolvers, StorageService, MediaService) instead
+ * when using class-based processors.
+ */
+export interface NodeServices extends GraphResolvers, StorageService, MediaService {
+	env: EnvConfig;
 }
 
 /**
@@ -138,7 +153,7 @@ export interface NodeServices {
  */
 export interface BackendNodeProcessorCtx {
 	/** The node instance being processed */
-	node: Node & { result: unknown; config: unknown };
+	node: Node & { result: unknown; config: unknown; template: NodeTemplate };
 	/** Full canvas context including nodes, edges, handles, tasks */
 	data: {
 		canvas: Canvas;
@@ -171,6 +186,18 @@ export interface BackendNodeProcessorResult {
 export type BackendNodeProcessor = (
 	ctx: BackendNodeProcessorCtx,
 ) => Promise<BackendNodeProcessorResult>;
+
+/**
+ * Interface that class-based node processors must implement.
+ */
+export interface NodeProcessor {
+	process(ctx: BackendNodeProcessorCtx): Promise<BackendNodeProcessorResult>;
+}
+
+/**
+ * Type alias for a class constructor implementing NodeProcessor.
+ */
+export type NodeProcessorConstructor = new (...args: any[]) => NodeProcessor;
 
 /**
  * Represents a connected input value for a frontend processor.
@@ -254,7 +281,10 @@ export const NodeManifestSchema = z.object({
 	defaultConfig: z.record(z.unknown()).optional(),
 
 	// Processing
-	backendProcessor: z.custom<BackendNodeProcessor>().optional(),
+	backendProcessor: z.union([
+		z.custom<BackendNodeProcessor>(),
+		z.custom<NodeProcessorConstructor>(),
+	]).optional(),
 	frontendProcessor: z.custom<FrontendNodeProcessor>().optional(),
 });
 

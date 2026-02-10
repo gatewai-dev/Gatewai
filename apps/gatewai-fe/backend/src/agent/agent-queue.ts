@@ -1,9 +1,9 @@
 import { logger } from "@gatewai/core";
 import type { GatewaiDoneEvent, GatewaiErrorEvent } from "@gatewai/types";
 import { type Job, Queue, Worker } from "bullmq";
-import { RunCanvasAgent } from "../agent/runner/index.js";
-import { ENV_CONFIG } from "../config.js";
-import { redisPublisher } from "./redis.js";
+import { RunCanvasAgent } from "./runner/index.js";
+import { ENV_CONFIG } from "@gatewai/core";
+import { redisPublisher } from "../lib/redis.js";
 
 const connection = {
 	host: ENV_CONFIG.REDIS_HOST,
@@ -87,11 +87,11 @@ async function processAgentJob(job: Job) {
 			const safeError =
 				error instanceof Error
 					? {
-							name: error.name,
-							message: error.message,
-							stack: error.stack,
-							cause: (error as any).cause,
-						}
+						name: error.name,
+						message: error.message,
+						stack: error.stack,
+						cause: (error as any).cause,
+					}
 					: error;
 			logger.error({ err: safeError, sessionId }, `Error in session`);
 			const errorEvent: GatewaiErrorEvent = {

@@ -27,11 +27,5 @@ export function defineNode(
 	// Validate manifest using Zod schema
 	const validated = NodeManifestSchema.parse(manifest);
 
-	// A node must have at least one processor
-	if (!manifest.backendProcessor && !manifest.frontendProcessor) {
-		// This is a warning, not an error — some nodes (File, Preview) are passthrough
-		// and may not need an explicit processor.
-	}
-
 	return Object.freeze(validated);
 }

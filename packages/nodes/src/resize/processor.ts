@@ -40,10 +40,6 @@ const resizeProcessor: BackendNodeProcessor = async ({
 		const uploadBuffer = Buffer.from(await dataUrl.arrayBuffer());
 		const mimeType = dataUrl.type;
 
-		if (services.env.DEBUG_LOG_MEDIA) {
-			services.logImage(uploadBuffer, ".png", node.id);
-		}
-
 		const outputHandle = data.handles.find(
 			(h) => h.nodeId === node.id && h.type === "Output",
 		);

@@ -1,7 +1,7 @@
+import { generateId } from "@gatewai/core";
 import type { NodeUpdateInput } from "@gatewai/db";
 import { prisma } from "@gatewai/db";
 import type { BulkUpdatePayload, NodeResult } from "@gatewai/types";
-import { generateId } from "../utils/misc.js";
 
 export async function applyCanvasUpdate(
 	canvasId: string,

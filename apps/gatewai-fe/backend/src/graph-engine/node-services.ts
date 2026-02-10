@@ -1,14 +1,13 @@
 import type { NodeServices } from "@gatewai/node-sdk";
 import type { FileData } from "@gatewai/types";
-import { ENV_CONFIG } from "../config.js";
+import { ENV_CONFIG } from "@gatewai/core";
 import { backendPixiService } from "../media/pixi-service.js";
-import { logImage } from "../media-logger.js";
 import {
 	bufferToDataUrl,
 	getImageBuffer,
 	getImageDimensions,
 } from "../utils/image.js";
-import { generateId, ResolveFileDataUrl } from "../utils/misc.js";
+import { ResolveFileDataUrl } from "../utils/misc.js";
 import {
 	generateSignedUrl,
 	getFromGCS,
@@ -62,27 +61,10 @@ export const nodeServices: NodeServices = {
 
 	// ── Media Processing ──────────────────────────────────────────────────────
 	backendPixiService,
-	logImage: (buffer: Buffer, extension?: string, nodeId?: string) => {
-		// Cast extension to specific type required by logImage if needed, or update logImage
-		// For now we assume the string is safe or we cast it
-		logImage(buffer, extension as `.${string}`, nodeId);
-	},
 	getImageDimensions,
 	getImageBuffer,
 	resolveFileDataUrl,
 	bufferToDataUrl,
 
-	// ── AI ─────────────────────────────────────────────────────────────────────
-
-	// ── Utilities ──────────────────────────────────────────────────────────────
-	generateId,
-	assertIsError: (error: unknown): asserts error is Error => {
-		if (error instanceof Error) return;
-		throw new Error(String(error));
-	},
-	env: {
-		DEBUG_LOG_MEDIA: ENV_CONFIG.DEBUG_LOG_MEDIA,
-		GCS_ASSETS_BUCKET: ENV_CONFIG.GCS_ASSETS_BUCKET,
-		GEMINI_API_KEY: ENV_CONFIG.GEMINI_API_KEY,
-	},
+	env: ENV_CONFIG,
 };

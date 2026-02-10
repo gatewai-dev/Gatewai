@@ -1,7 +1,7 @@
 import assert from "node:assert";
 import { type Node, prisma, type TaskBatch } from "@gatewai/db";
 import type { ExportResult, FileData } from "@gatewai/types";
-import { ENV_CONFIG } from "../config.js";
+import { ENV_CONFIG } from "@gatewai/core";
 import { bufferToDataUrl } from "../utils/image.js";
 import { getFromGCS } from "../utils/storage.js";
 import type { APIRunResponse } from "./schemas.js";

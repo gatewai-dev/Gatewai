@@ -1,7 +1,6 @@
 import type { FileAsset } from "@gatewai/db";
 import type { FileData, ProcessData } from "@gatewai/types";
-import { customAlphabet } from "nanoid";
-import { ENV_CONFIG } from "../config.js";
+import { ENV_CONFIG } from "@gatewai/core";
 
 export function assertIsError(error: unknown): asserts error is Error {
 	if (!(error instanceof Error)) {
@@ -61,8 +60,3 @@ export function ResolveFileDataUrl(data: FileData | null) {
 		return GetProcessDataEndpoint(data.processData);
 	if (data.entity?.signedUrl) return GetAssetEndpoint(data.entity);
 }
-
-const alphabet =
-	"0123456789abcdefghijklmnopqrstuvwxyzABCDEFGHIJKLMNOPQRSTUVWXYZ";
-
-export const generateId = customAlphabet(alphabet, 22);

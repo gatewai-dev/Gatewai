@@ -1,7 +1,7 @@
 import path from "node:path";
 import { Readable } from "node:stream";
 import { Storage } from "@google-cloud/storage";
-import { ENV_CONFIG } from "../config.js";
+import { ENV_CONFIG } from "@gatewai/core";
 
 const CREDENTIALS_PATH = path.join(
 	ENV_CONFIG.GOOGLE_APPLICATION_CREDENTIALS_PATH ?? "",

@@ -60,16 +60,8 @@ const paintProcessor: BackendNodeProcessor = async ({
 		const imageBuffer = Buffer.from(await imageDataUrl.arrayBuffer());
 		const imageMimeType = imageDataUrl.type;
 
-		if (services.env.DEBUG_LOG_MEDIA) {
-			services.logImage(imageBuffer, ".png", node.id);
-		}
-
 		const maskBuffer = Buffer.from(await maskDataUrl.arrayBuffer());
 		const maskMimeType = maskDataUrl.type;
-
-		if (services.env.DEBUG_LOG_MEDIA) {
-			services.logImage(maskBuffer, ".png", `${node.id}_mask`);
-		}
 
 		const newResult: NodeResult = structuredClone(
 			node.result as NodeResult,

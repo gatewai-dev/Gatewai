@@ -13,7 +13,7 @@ import {
 } from "@pixi/node";
 import { createCanvas, ImageData } from "canvas";
 import sharp from "sharp";
-import { ENV_CONFIG } from "../config.js";
+import { ENV_CONFIG } from "@gatewai/core";
 
 // 1. Polyfill ImageData
 if (typeof global.ImageData === "undefined") {

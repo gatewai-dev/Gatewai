@@ -1,6 +1,6 @@
 import { createGoogleGenerativeAI } from "@ai-sdk/google";
 import { aisdk } from "@openai/agents-extensions";
-import { ENV_CONFIG } from "../config.js";
+import { ENV_CONFIG } from "@gatewai/core";
 
 import { createResilientFetch } from "../lib/resilient-fetch.js";
 

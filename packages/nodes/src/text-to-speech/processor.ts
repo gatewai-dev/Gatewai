@@ -1,4 +1,4 @@
-import { genAI, logger } from "@gatewai/core";
+import { logger, generateId } from "@gatewai/core";
 import { DataType } from "@gatewai/db";
 import type { BackendNodeProcessor } from "@gatewai/node-sdk";
 import {
@@ -7,6 +7,7 @@ import {
 } from "@gatewai/types";
 import { parseBuffer } from "music-metadata";
 import * as wav from "wav";
+import { getGenAIClient } from "../genai.js";
 
 async function encodeWavBuffer(pcmBuffer: Buffer): Promise<Buffer> {
 	return new Promise((resolve, reject) => {
@@ -32,6 +33,7 @@ const textToSpeechProcessor: BackendNodeProcessor = async ({
 	prisma,
 	services,
 }) => {
+	const genAI = getGenAIClient(services.env.GEMINI_API_KEY);
 	try {
 		const userPrompt = services.getInputValue(data, node.id, true, {
 			dataType: DataType.Text,
@@ -87,7 +89,7 @@ const textToSpeechProcessor: BackendNodeProcessor = async ({
 		const durationInSec = metadata.format.duration ?? 0;
 
 		const extension = "wav";
-		const randId = services.generateId();
+		const randId = generateId();
 		const fileName = `${node.name}_${randId}.${extension}`;
 		const key = `assets/${fileName}`;
 		const contentType = "audio/wav";

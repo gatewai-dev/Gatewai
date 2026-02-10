@@ -1,16 +1,16 @@
-import { logger } from "@gatewai/core";
+
+import { logger, ENV_CONFIG } from "@gatewai/core";
 import { prisma } from "@gatewai/db";
 import { betterAuth } from "better-auth";
 import { prismaAdapter } from "better-auth/adapters/prisma";
 import { apiKey } from "better-auth/plugins";
 import { createMiddleware } from "hono/factory";
 import { HTTPException } from "hono/http-exception";
-import { ENV_CONFIG } from "./config.js";
 
 export const auth = betterAuth({
 	database: prismaAdapter(prisma, {
 		provider: "postgresql",
-		debugLogs: false,
+		// debugLogs: false,
 	}),
 	trustedOrigins: [ENV_CONFIG.BASE_URL, "http://localhost:5173"],
 	baseURL: ENV_CONFIG.BASE_URL,
@@ -52,12 +52,12 @@ export const authMiddleware = createMiddleware(async (c, next) => {
 	const session = c.get("session");
 	if (!session) {
 		// Check for API key in headers
-		const apiKey = c.req.header("X-API-KEY");
+		const apiKeyHeader = c.req.header("X-API-KEY");
 
-		if (apiKey) {
+		if (apiKeyHeader) {
 			// 1. Look up API Key
 			const keyRecord = await prisma.apiKey.findUnique({
-				where: { key: apiKey },
+				where: { key: apiKeyHeader },
 				include: { user: true },
 			});
 
@@ -68,7 +68,7 @@ export const authMiddleware = createMiddleware(async (c, next) => {
 					id: "api-key-session",
 					userId: keyRecord.userId,
 					expiresAt: new Date(Date.now() + 1000 * 60 * 60),
-					token: apiKey,
+					token: apiKeyHeader,
 					createdAt: new Date(),
 					updatedAt: new Date(),
 					ipAddress: c.req.header("x-forwarded-for") || null,
@@ -87,7 +87,7 @@ export const authMiddleware = createMiddleware(async (c, next) => {
 			}
 		}
 
-		if (!apiKey) {
+		if (!apiKeyHeader) {
 			// No session, no API key header -> Unauthorized (handled by throwing)
 			const errorResponse = new Response("Unauthorized", {
 				status: 401,
@@ -134,10 +134,14 @@ export const ensureUsersAPI_KEY = async () => {
 	if (users.length > 0) {
 		logger.info(`Found ${users.length} users without API Key. Generating...`);
 		for (const user of users) {
+			const key = `gte_${crypto.randomUUID().replace(/-/g, "")}`;
 			await prisma.apiKey.create({
 				data: {
-					key: `gte_${crypto.randomUUID()}`,
+					key: key,
+					name: "Default API Key",
 					userId: user.id,
+					start: key.substring(0, 4), // Store prefix for display
+					prefix: "gte",
 				},
 			});
 		}

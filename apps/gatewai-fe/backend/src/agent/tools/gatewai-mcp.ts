@@ -1,6 +1,6 @@
 import { logger } from "@gatewai/core";
 import { MCPServerStreamableHttp } from "@openai/agents";
-import { ENV_CONFIG } from "../../config.js";
+import { ENV_CONFIG } from "@gatewai/core";
 
 logger.info(`Initializing MCP Tool with URL: ${ENV_CONFIG.MCP_URL}`);
 

@@ -11,7 +11,6 @@ import {
 	type AVAILABLE_AGENT_MODELS,
 	getAgentModel,
 } from "../../agent-model.js";
-import { localGatewaiMCPTool } from "../../tools/gatewai-mcp.js";
 
 /**
  * Patcher Sub-Agent

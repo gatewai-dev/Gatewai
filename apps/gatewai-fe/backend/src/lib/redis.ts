@@ -1,5 +1,5 @@
 import { Redis } from "ioredis";
-import { ENV_CONFIG } from "../config.js";
+import { ENV_CONFIG } from "@gatewai/core";
 
 const redisConfig = {
 	host: ENV_CONFIG.REDIS_HOST,

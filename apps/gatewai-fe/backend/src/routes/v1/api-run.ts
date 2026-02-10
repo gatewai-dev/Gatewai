@@ -13,7 +13,8 @@ import {
 } from "../../data-ops/schemas.js";
 import { NodeWFProcessor } from "../../graph-engine/canvas-workflow-processor.js";
 import { uploadToImportNode } from "../../node-fns/import-media.js";
-import { assertIsError, generateId } from "../../utils/misc.js";
+import { assertIsError } from "../../utils/misc.js";
+import { generateId } from "@gatewai/core";
 import { assertCanvasOwnership } from "./auth-helpers.js";
 
 const apiRunRoutes = new Hono<{ Variables: AuthorizedHonoTypes }>({

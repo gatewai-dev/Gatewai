@@ -1,5 +1,5 @@
 import { defineNode } from "@gatewai/node-sdk";
-import backendProcessor from "./processor.js";
+import ImageGenProcessor from "./processor.js";
 
 export default defineNode({
 	type: "ImageGen",
@@ -23,5 +23,5 @@ export default defineNode({
 		outputs: [{ dataTypes: ["Image"], label: "Image", order: 0 }],
 	},
 	defaultConfig: { model: "gemini-3-pro-image-preview" },
-	backendProcessor,
+	backendProcessor: ImageGenProcessor,
 });

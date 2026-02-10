@@ -12,7 +12,6 @@ import {
 	textMergerNode,
 	textNode,
 	textToSpeechNode,
-	videoGenExtendNode,
 	videoGenFirstLastFrameNode,
 	videoGenNode,
 } from "@gatewai/nodes";
@@ -76,12 +75,6 @@ if (videoGenFirstLastFrameNode.backendProcessor) {
 	nodeRegistry.registerProcessor(
 		videoGenFirstLastFrameNode.type,
 		videoGenFirstLastFrameNode.backendProcessor,
-	);
-}
-if (videoGenExtendNode.backendProcessor) {
-	nodeRegistry.registerProcessor(
-		videoGenExtendNode.type,
-		videoGenExtendNode.backendProcessor,
 	);
 }
 

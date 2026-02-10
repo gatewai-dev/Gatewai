@@ -1,10 +1,11 @@
 import assert from "node:assert";
-import { genAI } from "@gatewai/core";
 import { DataType } from "@gatewai/db";
 import type { BackendNodeProcessor } from "@gatewai/node-sdk";
 import type { FileData, LLMNodeConfig, LLMResult } from "@gatewai/types";
+import { getGenAIClient } from "../genai.js";
 
 const llmProcessor: BackendNodeProcessor = async ({ node, data, services }) => {
+	const genAI = getGenAIClient(services.env.GEMINI_API_KEY);
 	try {
 		const systemPrompt = services.getInputValue(data, node.id, false, {
 			dataType: DataType.Text,

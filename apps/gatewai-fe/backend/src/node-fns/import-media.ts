@@ -2,9 +2,9 @@ import { type DataType, prisma } from "@gatewai/db";
 import type { FileResult } from "@gatewai/types";
 import { fileTypeFromBuffer } from "file-type";
 import sharp from "sharp";
-import { ENV_CONFIG } from "../config.js";
+import { ENV_CONFIG } from "@gatewai/core";
 import { getMediaDuration } from "../utils/media.js";
-import { generateId } from "../utils/misc.js";
+import { generateId } from "@gatewai/core";
 import { generateSignedUrl, uploadToGCS } from "../utils/storage.js";
 
 interface UploadOptions {
