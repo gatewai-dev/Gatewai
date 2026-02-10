@@ -57,6 +57,9 @@ importers:
       '@gatewai/di':
         specifier: workspace:*
         version: link:../../packages/di
+      '@gatewai/media':
+        specifier: workspace:*
+        version: link:../../packages/media
       '@gatewai/node-sdk':
         specifier: workspace:*
         version: link:../../packages/node-sdk
@@ -66,6 +69,9 @@ importers:
       '@gatewai/pixi-processor':
         specifier: workspace:*
         version: link:../../packages/pixi-processor
+      '@gatewai/storage':
+        specifier: workspace:*
+        version: link:../../packages/storage
       '@gatewai/tsconfig':
         specifier: workspace:*
         version: link:../../packages/tsconfig
@@ -75,9 +81,6 @@ importers:
       '@google-cloud/secret-manager':
         specifier: ^6.1.1
         version: 6.1.1
-      '@google-cloud/storage':
-        specifier: ^7.18.0
-        version: 7.18.0(encoding@0.1.13)
       '@google/adk':
         specifier: ^0.2.4
         version: 0.2.4(49fe1a11536dd5ba249a9fdf66cfd27d)
@@ -105,9 +108,6 @@ importers:
       '@openai/agents-extensions':
         specifier: ^0.4.1
         version: 0.4.1(@ai-sdk/provider@3.0.5)(@openai/agents@0.4.1(hono@4.8.5)(ws@8.18.3)(zod@3.25.67))(hono@4.8.5)(ws@8.18.3)(zod@3.25.67)
-      '@pixi/node':
-        specifier: ^7.3.0
-        version: 7.3.0(encoding@0.1.13)
       '@pixi/webworker':
         specifier: ^7.4.3
         version: 7.4.3
@@ -198,9 +198,6 @@ importers:
       bullmq:
         specifier: ^5.66.4
         version: 5.66.4
-      canvas:
-        specifier: ^3.2.0
-        version: 3.2.0
       class-variance-authority:
         specifier: ^0.7.1
         version: 0.7.1
@@ -348,9 +345,6 @@ importers:
       remotion:
         specifier: 4.0.414
         version: 4.0.414(react-dom@19.2.3(react@19.2.3))(react@19.2.3)
-      sharp:
-        specifier: ^0.34.5
-        version: 0.34.5
       sonner:
         specifier: ^2.0.7
         version: 2.0.7(react-dom@19.2.3(react@19.2.3))(react@19.2.3)
@@ -592,6 +586,46 @@ importers:
         specifier: ^5.5.4
         version: 5.8.3
 
+  packages/media:
+    dependencies:
+      '@gatewai/core':
+        specifier: workspace:*
+        version: link:../core
+      '@gatewai/pixi-processor':
+        specifier: workspace:*
+        version: link:../pixi-processor
+      '@gatewai/types':
+        specifier: workspace:*
+        version: link:../types
+      '@pixi/node':
+        specifier: ^7.3.0
+        version: 7.3.0(encoding@0.1.13)
+      canvas:
+        specifier: ^3.2.0
+        version: 3.2.0
+      pixi.js:
+        specifier: ^7.4.3
+        version: 7.4.3
+      sharp:
+        specifier: ^0.34.5
+        version: 0.34.5
+    devDependencies:
+      '@gatewai/tsconfig':
+        specifier: workspace:*
+        version: link:../tsconfig
+      '@types/node':
+        specifier: ^24.0.4
+        version: 24.10.4
+      '@types/sharp':
+        specifier: ^0.31.1
+        version: 0.31.1
+      tsdown:
+        specifier: ^0.19.0
+        version: 0.19.0(synckit@0.11.11)(typescript@5.5.4)
+      typescript:
+        specifier: 5.5.4
+        version: 5.5.4
+
   packages/node-sdk:
     dependencies:
       '@gatewai/core':
@@ -720,6 +754,31 @@ importers:
       hono:
         specifier: ^4.8.5
         version: 4.8.5
+    devDependencies:
+      '@gatewai/tsconfig':
+        specifier: workspace:*
+        version: link:../tsconfig
+      '@types/node':
+        specifier: ^24.0.4
+        version: 24.10.4
+      tsdown:
+        specifier: ^0.19.0
+        version: 0.19.0(synckit@0.11.11)(typescript@5.5.4)
+      typescript:
+        specifier: 5.5.4
+        version: 5.5.4
+
+  packages/storage:
+    dependencies:
+      '@gatewai/core':
+        specifier: workspace:*
+        version: link:../core
+      '@gatewai/types':
+        specifier: workspace:*
+        version: link:../types
+      '@google-cloud/storage':
+        specifier: ^7.15.0
+        version: 7.18.0(encoding@0.1.13)
     devDependencies:
       '@gatewai/tsconfig':
         specifier: workspace:*
@@ -4010,6 +4069,9 @@ packages:
 
   '@types/request@2.48.13':
     resolution: {integrity: sha512-FGJ6udDNUCjd19pp0Q3iTiDkwhYup7J8hpMW9c4k53NrccQFFWKRho6hvtPPEhnXWKvukfwAlB6DbDz4yhH5Gg==}
+
+  '@types/sharp@0.31.1':
+    resolution: {integrity: sha512-5nWwamN9ZFHXaYEincMSuza8nNfOof8nmO+mcI+Agx1uMUk4/pQnNIcix+9rLPXzKrm1pS34+6WRDbDV0Jn7ag==}
 
   '@types/tough-cookie@4.0.5':
     resolution: {integrity: sha512-/Ad8+nIOV7Rl++6f1BdKxFSMgmoqEoYbHRpPcx3JEfv8VRsQe9Z4mCXeJBzxs7mbHY/XOZZuXlRNfhpVPbs6ZA==}
@@ -12578,6 +12640,10 @@ snapshots:
       '@types/node': 25.0.8
       '@types/tough-cookie': 4.0.5
       form-data: 2.5.5
+
+  '@types/sharp@0.31.1':
+    dependencies:
+      '@types/node': 25.0.8
 
   '@types/tough-cookie@4.0.5': {}
 

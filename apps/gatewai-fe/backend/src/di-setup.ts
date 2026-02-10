@@ -2,14 +2,7 @@ import { TOKENS } from "@gatewai/node-sdk";
 import { container } from "@gatewai/di";
 import { prisma } from "@gatewai/db";
 import { ENV_CONFIG } from "@gatewai/core";
-import { nodeServices } from "./graph-engine/node-services.js";
-import {
-    generateSignedUrl,
-    getFromGCS,
-    uploadToGCS,
-    uploadToTemporaryFolder,
-} from "./utils/storage.js";
-import { backendPixiService } from "./media/pixi-service.js";
+import { nodeServices, storageService, mediaService, graphResolvers } from "./graph-engine/node-services.js";
 
 /**
  * Register backend-specific services into the DI container.
@@ -20,39 +13,22 @@ export function registerBackendServices() {
     container.register(TOKENS.ENV, { useValue: ENV_CONFIG });
 
     // Register Services
+    // nodeServices is deprecated but potentially used by legacy processors
     container.register(TOKENS.NODE_SERVICES, { useValue: nodeServices });
 
-    // Register Storage
+    // Register Storage 
     container.register(TOKENS.STORAGE, {
-        useValue: {
-            uploadToGCS,
-            uploadToTemporaryFolder,
-            getFromGCS,
-            generateSignedUrl,
-        },
+        useValue: storageService,
     });
 
     // Register Media
     container.register(TOKENS.MEDIA, {
-        useValue: {
-            backendPixiService,
-            getImageDimensions: nodeServices.getImageDimensions,
-            getImageBuffer: nodeServices.getImageBuffer,
-            resolveFileDataUrl: nodeServices.resolveFileDataUrl,
-            bufferToDataUrl: nodeServices.bufferToDataUrl,
-        },
+        useValue: mediaService,
     });
 
     // Register Graph Resolvers
     container.register(TOKENS.GRAPH_RESOLVERS, {
-        useValue: {
-            getInputValue: nodeServices.getInputValue,
-            getInputValuesByType: nodeServices.getInputValuesByType,
-            getAllOutputHandles: nodeServices.getAllOutputHandles,
-            getAllInputValuesWithHandle: nodeServices.getAllInputValuesWithHandle,
-            loadMediaBuffer: nodeServices.loadMediaBuffer,
-            getFileDataMimeType: nodeServices.getFileDataMimeType,
-        },
+        useValue: graphResolvers,
     });
 
     return container;

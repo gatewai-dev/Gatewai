@@ -1,11 +1,11 @@
 import { type DataType, prisma } from "@gatewai/db";
-import type { FileResult } from "@gatewai/types";
+import type { FileResult, StorageService, MediaService } from "@gatewai/types";
 import { fileTypeFromBuffer } from "file-type";
-import sharp from "sharp";
 import { ENV_CONFIG } from "@gatewai/core";
-import { getMediaDuration } from "../utils/media.js";
+import { getMediaDuration } from "@gatewai/media";
 import { generateId } from "@gatewai/core";
-import { generateSignedUrl, uploadToGCS } from "../utils/storage.js";
+import { TOKENS } from "@gatewai/node-sdk";
+import { container } from "@gatewai/di";
 
 interface UploadOptions {
 	nodeId: string;
@@ -53,9 +53,10 @@ export async function uploadToImportNode({
 
 	if (contentType.startsWith("image/")) {
 		try {
-			const metadata = await sharp(buffer).metadata();
-			width = metadata.width ?? null;
-			height = metadata.height ?? null;
+			const media = container.resolve<MediaService>(TOKENS.MEDIA);
+			const metadata = await media.getImageDimensions(buffer);
+			width = metadata.width || null;
+			height = metadata.height || null;
 		} catch (error) {
 			console.error("Failed to compute image metadata:", error);
 		}
@@ -74,10 +75,11 @@ export async function uploadToImportNode({
 	const bucket = ENV_CONFIG.GCS_ASSETS_BUCKET ?? "default-bucket";
 	const key = `assets/${generateId()}-${filename}`;
 
-	await uploadToGCS(buffer, key, contentType, bucket);
+	const storage = container.resolve<StorageService>(TOKENS.STORAGE);
+	await storage.uploadToGCS(buffer, key, contentType, bucket);
 
 	const expiresIn = 3600 * 24 * 6.9; // ~1 week
-	const signedUrl = await generateSignedUrl(key, bucket, expiresIn);
+	const signedUrl = await storage.generateSignedUrl(key, bucket, expiresIn);
 	const signedUrlExp = new Date(Date.now() + expiresIn * 1000);
 
 	// 5. Create Asset Record

@@ -5,7 +5,6 @@ import type { NodeResult, Output, OutputItem } from "@gatewai/types";
 import { zValidator } from "@hono/zod-validator";
 import { fileTypeFromBuffer } from "file-type";
 import { Hono } from "hono";
-import sharp from "sharp";
 import { z } from "zod";
 import type { AuthorizedHonoTypes } from "../../auth.js";
 import { ENV_CONFIG } from "@gatewai/core";
@@ -13,18 +12,12 @@ import { uploadToImportNode } from "../../node-fns/import-media.js";
 import {
 	generateImageThumbnail,
 	generateVideoThumbnail,
-} from "../../utils/media.js";
+} from "@gatewai/media"; // Exported as utils
 import { assertIsError } from "../../utils/misc.js";
 import { generateId } from "@gatewai/core";
-import {
-	deleteFromGCS,
-	fileExistsInGCS,
-	generateSignedUrl,
-	getFromGCS,
-	getObjectMetadata,
-	getStreamFromGCS,
-	uploadToGCS,
-} from "../../utils/storage.js";
+import { container } from "@gatewai/di";
+import { TOKENS } from "@gatewai/node-sdk";
+import type { StorageService, MediaService } from "@gatewai/types";
 import { assertAssetOwnership } from "./auth-helpers.js";
 
 const uploadSchema = z.object({
@@ -163,19 +156,21 @@ const assetsRouter = new Hono<{ Variables: AuthorizedHonoTypes }>({
 
 		if (contentType.startsWith("image/")) {
 			try {
-				const metadata = await sharp(buffer).metadata();
-				width = metadata.width ?? null;
-				height = metadata.height ?? null;
+				const media = container.resolve<MediaService>(TOKENS.MEDIA);
+				const metadata = await media.getImageDimensions(buffer);
+				width = metadata.width || null;
+				height = metadata.height || null;
 			} catch (error) {
 				console.error("Failed to compute image metadata:", error);
 			}
 		}
 
 		try {
-			await uploadToGCS(buffer, key, contentType, bucket);
+			const storage = container.resolve<StorageService>(TOKENS.STORAGE);
+			await storage.uploadToGCS(buffer, key, contentType, bucket);
 
 			const expiresIn = 3600 * 24 * 6.9; // A bit less than a week
-			const signedUrl = await generateSignedUrl(key, bucket, expiresIn);
+			const signedUrl = await storage.generateSignedUrl(key, bucket, expiresIn);
 			const signedUrlExp = new Date(Date.now() + expiresIn * 1000);
 
 			const asset = await prisma.fileAsset.create({
@@ -223,9 +218,10 @@ const assetsRouter = new Hono<{ Variables: AuthorizedHonoTypes }>({
 			// Extract image dimensions if it's an image
 			if (contentType.startsWith("image/")) {
 				try {
-					const metadata = await sharp(buffer).metadata();
-					width = metadata.width ?? null;
-					height = metadata.height ?? null;
+					const media = container.resolve<MediaService>(TOKENS.MEDIA);
+					const metadata = await media.getImageDimensions(buffer);
+					width = metadata.width || null;
+					height = metadata.height || null;
 				} catch (error) {
 					assertIsError(error);
 					logger.error(`Failed to compute image metadata: ${error.message}`);
@@ -233,10 +229,11 @@ const assetsRouter = new Hono<{ Variables: AuthorizedHonoTypes }>({
 			}
 
 			// Upload to storage
-			await uploadToGCS(buffer, key, contentType, bucket);
+			const storage = container.resolve<StorageService>(TOKENS.STORAGE);
+			await storage.uploadToGCS(buffer, key, contentType, bucket);
 
 			const expiresIn = 3600 * 24 * 6.9; // A bit less than a week
-			const signedUrl = await generateSignedUrl(key, bucket, expiresIn);
+			const signedUrl = await storage.generateSignedUrl(key, bucket, expiresIn);
 			const signedUrlExp = new Date(Date.now() + expiresIn * 1000);
 
 			// Create asset record in database
@@ -318,10 +315,11 @@ const assetsRouter = new Hono<{ Variables: AuthorizedHonoTypes }>({
 			const cacheKey = `temp/thumbnails/${id}_${width}_${height}.webp`;
 
 			try {
+				const storage = container.resolve<StorageService>(TOKENS.STORAGE);
 				// 2. Check Cache
-				const exists = await fileExistsInGCS(cacheKey, cacheBucket);
+				const exists = await storage.fileExistsInGCS(cacheKey, cacheBucket);
 				if (exists) {
-					const stream = getStreamFromGCS(cacheKey, cacheBucket);
+					const stream = storage.getStreamFromGCS(cacheKey, cacheBucket);
 					return c.body(stream, 200, {
 						"Content-Type": "image/webp",
 						"Access-Control-Allow-Origin": "*",
@@ -341,7 +339,7 @@ const assetsRouter = new Hono<{ Variables: AuthorizedHonoTypes }>({
 				if (asset.mimeType.startsWith("video/")) {
 					// For videos, we need a Signed URL to pass to ffmpeg (remote read)
 					// This avoids downloading the entire video file to memory
-					const sourceUrl = await generateSignedUrl(
+					const sourceUrl = await storage.generateSignedUrl(
 						asset.key,
 						asset.bucket,
 						300, // 5 minutes validity
@@ -353,7 +351,7 @@ const assetsRouter = new Hono<{ Variables: AuthorizedHonoTypes }>({
 					);
 				} else if (asset.mimeType.startsWith("image/")) {
 					// For images, we download the buffer to process with Sharp
-					const originalBuffer = await getFromGCS(asset.key, asset.bucket);
+					const originalBuffer = await storage.getFromGCS(asset.key, asset.bucket);
 					thumbnailBuffer = await generateImageThumbnail(
 						originalBuffer,
 						width,
@@ -364,7 +362,7 @@ const assetsRouter = new Hono<{ Variables: AuthorizedHonoTypes }>({
 				}
 
 				// 5. Upload to Cache
-				await uploadToGCS(thumbnailBuffer, cacheKey, "image/webp", cacheBucket);
+				await storage.uploadToGCS(thumbnailBuffer, cacheKey, "image/webp", cacheBucket);
 
 				// 6. Return Response
 				return c.body(thumbnailBuffer, 200, {
@@ -385,13 +383,14 @@ const assetsRouter = new Hono<{ Variables: AuthorizedHonoTypes }>({
 	.get("/temp/*", async (c) => {
 		const path = c.req.path.split("/temp/")[1];
 		const rawKey = decodeURIComponent(path);
+		const storage = container.resolve<StorageService>(TOKENS.STORAGE);
 
 		assert(rawKey);
-		const fullStream = await getFromGCS(rawKey);
-		const metadata = await getObjectMetadata(rawKey);
+		const fullStream = await storage.getFromGCS(rawKey);
+		const metadata = await storage.getObjectMetadata(rawKey);
 		assert(metadata.contentType);
 
-		return c.body(fullStream, {
+		return c.body(fullStream as any, { // Cast buffer to any/stream compatible
 			headers: {
 				"Content-Type": metadata.contentType,
 				"Access-Control-Allow-Origin": "*",
@@ -405,6 +404,8 @@ const assetsRouter = new Hono<{ Variables: AuthorizedHonoTypes }>({
 		const asset = await prisma.fileAsset.findUnique({ where: { id } });
 
 		if (!asset) return c.json({ error: "Not found" }, 404);
+
+		const storage = container.resolve<StorageService>(TOKENS.STORAGE);
 
 		const range = c.req.header("Range");
 		const fileSize = Number(asset.size);
@@ -422,7 +423,7 @@ const assetsRouter = new Hono<{ Variables: AuthorizedHonoTypes }>({
 			}
 
 			const chunksize = end - start + 1;
-			const stream = getStreamFromGCS(asset.key, asset.bucket, { start, end });
+			const stream = storage.getStreamFromGCS(asset.key, asset.bucket, { start, end });
 
 			return c.body(stream, 206, {
 				"Content-Range": `bytes ${start}-${end}/${fileSize}`,
@@ -434,7 +435,7 @@ const assetsRouter = new Hono<{ Variables: AuthorizedHonoTypes }>({
 		}
 
 		// Full file stream
-		const fullStream = getStreamFromGCS(asset.key, asset.bucket);
+		const fullStream = storage.getStreamFromGCS(asset.key, asset.bucket);
 		return c.body(fullStream, {
 			headers: {
 				"Content-Type": asset.mimeType,
@@ -572,7 +573,8 @@ const assetsRouter = new Hono<{ Variables: AuthorizedHonoTypes }>({
 
 				// 3. Delete from Storage and DB
 				try {
-					await deleteFromGCS(asset.key, asset.bucket);
+					const storage = container.resolve<StorageService>(TOKENS.STORAGE);
+					await storage.deleteFromGCS(asset.key, asset.bucket);
 					logger.info(`Deleted from GCS: ${asset.key}`);
 				} catch (err) {
 					logger.error({ err }, `Failed to delete from GCS: ${asset.key}`);

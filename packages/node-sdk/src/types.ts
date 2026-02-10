@@ -8,7 +8,6 @@ import type {
 	PrismaClient,
 	Task,
 } from "@gatewai/db";
-import type { IPixiProcessor } from "@gatewai/pixi-processor";
 import type { FileData, NodeResult } from "@gatewai/types";
 import { type ZodTypeAny, z } from "zod";
 import type { EnvConfig } from "@gatewai/core";
@@ -21,125 +20,19 @@ export interface InputFilterOptions {
 	label?: string;
 }
 
-/**
- * Services injected into backend node processors by the host application.
- * This is the DI contract that decouples processors from app-level imports.
- */
-/**
- * Interface for graph resolution services.
- */
-export interface GraphResolvers {
-	getInputValue: (
-		data: BackendNodeProcessorCtx["data"],
-		targetNodeId: string,
-		required: boolean,
-		options: InputFilterOptions,
-	) => {
-		type: DataType;
-		data: unknown;
-		outputHandleId: string | undefined;
-	} | null;
+import type {
+	GraphResolvers,
+	MediaService,
+	StorageService,
+} from "@gatewai/types";
 
-	getInputValuesByType: (
-		data: BackendNodeProcessorCtx["data"],
-		targetNodeId: string,
-		options: InputFilterOptions,
-	) => Array<{
-		type: DataType;
-		data: unknown;
-		outputHandleId: string | undefined;
-	} | null>;
-
-	getAllOutputHandles: (
-		data: BackendNodeProcessorCtx["data"],
-		nodeId: string,
-	) => Array<{
-		id: string;
-		type: string;
-		nodeId: string;
-		dataTypes: DataType[];
-		label: string;
-		[key: string]: unknown;
-	}>;
-
-	getAllInputValuesWithHandle: (
-		data: BackendNodeProcessorCtx["data"],
-		targetNodeId: string,
-	) => Array<{
-		handle:
-		| {
-			id: string;
-			type: string;
-			nodeId: string;
-			dataTypes: DataType[];
-			label: string;
-			[key: string]: unknown;
-		}
-		| undefined;
-		value: {
-			type: DataType;
-			data: unknown;
-			outputHandleId: string | undefined;
-		} | null;
-	}>;
-
-	loadMediaBuffer: (fileData: FileData) => Promise<Buffer>;
-
-	getFileDataMimeType: (fileData: FileData) => Promise<string | null>;
-}
-
-/**
- * Interface for storage operations.
- */
-export interface StorageService {
-	uploadToTemporaryFolder: (
-		buffer: Buffer,
-		mimeType: string,
-		key: string,
-	) => Promise<{ signedUrl: string; key: string }>;
-
-	uploadToGCS: (
-		buffer: Buffer,
-		key: string,
-		contentType: string,
-		bucketName: string,
-	) => Promise<void>;
-
-	generateSignedUrl: (
-		key: string,
-		bucketName: string,
-		expiresIn?: number,
-	) => Promise<string>;
-
-	getFromGCS: (key: string, bucket?: string) => Promise<Buffer>;
-}
-
-/**
- * Interface for media processing and handling.
- */
-export interface MediaService {
-	/** Backend pixi service for image transformations */
-	backendPixiService: IPixiProcessor;
-
-	getImageDimensions: (
-		buffer: Buffer,
-	) =>
-		| Promise<{ width: number; height: number }>
-		| { width: number; height: number };
-
-	getImageBuffer: (imageInput: FileData) => Promise<Buffer>;
-
-	resolveFileDataUrl: (
-		data: FileData | null,
-	) => string | Promise<string | null> | null;
-
-	bufferToDataUrl: (buffer: Buffer, mimeType: string) => string;
-}
+// Re-export so consumers don't need to import from @gatewai/types directly if they don't want to
+export type { GraphResolvers, MediaService, StorageService };
 
 /**
  * Services injected into backend node processors by the host application.
  * This is the DI contract that decouples processors from app-level imports.
- * 
+ *
  * @deprecated Use specific interfaces (GraphResolvers, StorageService, MediaService) instead
  * when using class-based processors.
  */
