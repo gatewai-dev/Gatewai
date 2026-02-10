@@ -5,5 +5,5 @@ export * from "./constants.js";
 export * from "./node.js";
 export * from "./node-result.js";
 export * from "./ops/index.js";
-export * from "./services.js";
 export * from "./pixi.js";
+export * from "./services.js";

@@ -1,6 +1,6 @@
+import { ENV_CONFIG } from "@gatewai/core";
 import type { FileAsset } from "@gatewai/db";
 import type { FileData, ProcessData } from "@gatewai/types";
-import { ENV_CONFIG } from "@gatewai/core";
 
 export function assertIsError(error: unknown): asserts error is Error {
 	if (!(error instanceof Error)) {

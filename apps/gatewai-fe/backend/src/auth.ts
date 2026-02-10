@@ -1,5 +1,4 @@
-
-import { logger, ENV_CONFIG } from "@gatewai/core";
+import { ENV_CONFIG, logger } from "@gatewai/core";
 import { prisma } from "@gatewai/db";
 import { betterAuth } from "better-auth";
 import { prismaAdapter } from "better-auth/adapters/prisma";

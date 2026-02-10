@@ -7,7 +7,7 @@ import { container } from "tsyringe";
  * This function should be called at the application's entry point.
  */
 export function initializeDIContainer() {
-    return container;
+	return container;
 }
 
 export { container };

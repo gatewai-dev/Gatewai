@@ -562,6 +562,9 @@ importers:
       hono:
         specifier: ^4.6.14
         version: 4.8.5
+      zod:
+        specifier: 3.25.67
+        version: 3.25.67
     devDependencies:
       '@gatewai/tsconfig':
         specifier: workspace:*

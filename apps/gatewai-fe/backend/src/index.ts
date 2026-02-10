@@ -1,7 +1,7 @@
 import "reflect-metadata";
 
 import { readFile } from "node:fs/promises";
-import { logger as appLogger, ENV_CONFIG, logger } from "@gatewai/core";
+import { logger as appLogger, ENV_CONFIG } from "@gatewai/core";
 import { prisma } from "@gatewai/db";
 import { syncNodeTemplates } from "@gatewai/graph-engine";
 import { serve } from "@hono/node-server";
@@ -21,6 +21,8 @@ import { v1Router } from "./routes/v1/index.js";
 
 // Initialize Dependency Injection Container
 registerBackendServices();
+// Register backend processors
+import "./graph-engine/processors/index.js";
 
 const app = new Hono<{
 	Variables: AuthHonoTypes;
@@ -49,6 +51,19 @@ const app = new Hono<{
 		c.set("session", session.session);
 		return next();
 	})
+	.use(
+		"/api/*",
+		cors({
+			origin:
+				process.env.NODE_ENV === "production"
+					? ENV_CONFIG.BASE_URL
+					: ["http://localhost:5173"],
+			allowMethods: ["POST", "GET", "OPTIONS"],
+			exposeHeaders: ["Content-Length"],
+			maxAge: 600,
+			credentials: true,
+		}),
+	)
 	.on(["POST", "GET"], "/api/auth/*", async (c) => {
 		return await auth.handler(c.req.raw);
 	})
@@ -63,19 +78,6 @@ const app = new Hono<{
 			user,
 		});
 	})
-	.use(
-		"/api/*",
-		cors({
-			origin:
-				process.env.NODE_ENV === "production"
-					? ENV_CONFIG.BASE_URL
-					: ["http://localhost:5173"],
-			allowMethods: ["POST", "GET", "OPTIONS"],
-			exposeHeaders: ["Content-Length"],
-			maxAge: 600,
-			credentials: true,
-		}),
-	)
 	.route("/api/v1", v1Router)
 	.get("/api/v1/test-error", () => {
 		throw new Error("Test Unhandled Exception");

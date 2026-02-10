@@ -1,6 +1,6 @@
 import { logger } from "@gatewai/core";
-import { agentQueue } from "../agent-queue.js";
 import { redisPublisher } from "../../lib/redis.js";
+import { agentQueue } from "../agent-queue.js";
 
 // A Agent runner that uses BullMQ and redis for the events
 // biome-ignore lint/complexity/noStaticOnlyClass: Required for context

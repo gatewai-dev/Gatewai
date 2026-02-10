@@ -1,5 +1,5 @@
 import assert from "node:assert";
-import { generateId, logger, type EnvConfig } from "@gatewai/core";
+import { type EnvConfig, generateId, logger } from "@gatewai/core";
 import { DataType } from "@gatewai/db";
 import {
 	type BackendNodeProcessorCtx,

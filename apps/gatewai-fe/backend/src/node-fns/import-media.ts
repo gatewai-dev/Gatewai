@@ -1,11 +1,10 @@
+import { ENV_CONFIG, generateId } from "@gatewai/core";
 import { type DataType, prisma } from "@gatewai/db";
-import type { FileResult, StorageService, MediaService } from "@gatewai/types";
-import { fileTypeFromBuffer } from "file-type";
-import { ENV_CONFIG } from "@gatewai/core";
-import { getMediaDuration } from "@gatewai/media";
-import { generateId } from "@gatewai/core";
-import { TOKENS } from "@gatewai/node-sdk";
 import { container } from "@gatewai/di";
+import { getMediaDuration } from "@gatewai/media";
+import { TOKENS } from "@gatewai/node-sdk";
+import type { FileResult, MediaService, StorageService } from "@gatewai/types";
+import { fileTypeFromBuffer } from "file-type";
 
 interface UploadOptions {
 	nodeId: string;

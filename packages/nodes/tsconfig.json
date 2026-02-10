@@ -4,12 +4,6 @@
 		"experimentalDecorators": true,
 		"emitDecoratorMetadata": true
 	},
-	"include": [
-		"."
-	],
-	"exclude": [
-		"dist",
-		"build",
-		"node_modules"
-	]
+	"include": ["."],
+	"exclude": ["dist", "build", "node_modules"]
 }

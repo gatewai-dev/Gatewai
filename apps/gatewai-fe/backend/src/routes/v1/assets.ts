@@ -1,23 +1,23 @@
 import assert from "node:assert";
-import { logger } from "@gatewai/core";
+import { ENV_CONFIG, generateId, logger } from "@gatewai/core";
 import { type FileAssetWhereInput, prisma } from "@gatewai/db";
-import type { NodeResult, Output, OutputItem } from "@gatewai/types";
+import { container } from "@gatewai/di";
+import { generateImageThumbnail, generateVideoThumbnail } from "@gatewai/media"; // Exported as utils
+import { TOKENS } from "@gatewai/node-sdk";
+import type {
+	MediaService,
+	NodeResult,
+	Output,
+	OutputItem,
+	StorageService,
+} from "@gatewai/types";
 import { zValidator } from "@hono/zod-validator";
 import { fileTypeFromBuffer } from "file-type";
 import { Hono } from "hono";
 import { z } from "zod";
 import type { AuthorizedHonoTypes } from "../../auth.js";
-import { ENV_CONFIG } from "@gatewai/core";
 import { uploadToImportNode } from "../../node-fns/import-media.js";
-import {
-	generateImageThumbnail,
-	generateVideoThumbnail,
-} from "@gatewai/media"; // Exported as utils
 import { assertIsError } from "../../utils/misc.js";
-import { generateId } from "@gatewai/core";
-import { container } from "@gatewai/di";
-import { TOKENS } from "@gatewai/node-sdk";
-import type { StorageService, MediaService } from "@gatewai/types";
 import { assertAssetOwnership } from "./auth-helpers.js";
 
 const uploadSchema = z.object({
@@ -351,7 +351,10 @@ const assetsRouter = new Hono<{ Variables: AuthorizedHonoTypes }>({
 					);
 				} else if (asset.mimeType.startsWith("image/")) {
 					// For images, we download the buffer to process with Sharp
-					const originalBuffer = await storage.getFromGCS(asset.key, asset.bucket);
+					const originalBuffer = await storage.getFromGCS(
+						asset.key,
+						asset.bucket,
+					);
 					thumbnailBuffer = await generateImageThumbnail(
 						originalBuffer,
 						width,
@@ -362,7 +365,12 @@ const assetsRouter = new Hono<{ Variables: AuthorizedHonoTypes }>({
 				}
 
 				// 5. Upload to Cache
-				await storage.uploadToGCS(thumbnailBuffer, cacheKey, "image/webp", cacheBucket);
+				await storage.uploadToGCS(
+					thumbnailBuffer,
+					cacheKey,
+					"image/webp",
+					cacheBucket,
+				);
 
 				// 6. Return Response
 				return c.body(thumbnailBuffer, 200, {
@@ -390,7 +398,8 @@ const assetsRouter = new Hono<{ Variables: AuthorizedHonoTypes }>({
 		const metadata = await storage.getObjectMetadata(rawKey);
 		assert(metadata.contentType);
 
-		return c.body(fullStream as any, { // Cast buffer to any/stream compatible
+		return c.body(fullStream as any, {
+			// Cast buffer to any/stream compatible
 			headers: {
 				"Content-Type": metadata.contentType,
 				"Access-Control-Allow-Origin": "*",
@@ -423,7 +432,10 @@ const assetsRouter = new Hono<{ Variables: AuthorizedHonoTypes }>({
 			}
 
 			const chunksize = end - start + 1;
-			const stream = storage.getStreamFromGCS(asset.key, asset.bucket, { start, end });
+			const stream = storage.getStreamFromGCS(asset.key, asset.bucket, {
+				start,
+				end,
+			});
 
 			return c.body(stream, 206, {
 				"Content-Range": `bytes ${start}-${end}/${fileSize}`,
@@ -504,8 +516,8 @@ const assetsRouter = new Hono<{ Variables: AuthorizedHonoTypes }>({
 									const data = item.data;
 									const entityId =
 										typeof data === "object" &&
-											data !== null &&
-											"entity" in data
+										data !== null &&
+										"entity" in data
 											? (data as { entity?: { id?: string } }).entity?.id
 											: undefined;
 									const matches = entityId === id;

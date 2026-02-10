@@ -1,148 +1,139 @@
-import { Storage } from "@google-cloud/storage";
-import type { StorageService } from "@gatewai/types";
 import path from "node:path";
+import type { StorageService } from "@gatewai/types";
+import { Storage } from "@google-cloud/storage";
 
 export class GCSStorageService implements StorageService {
-    private storage: Storage;
-    private assetsBucketName: string;
+	private storage: Storage;
+	private assetsBucketName: string;
 
-    constructor(
-        config: {
-            googleApplicationCredentialsPath?: string;
-            googleClientId: string;
-            gcsAssetsBucket: string;
-        }
-    ) {
-        const credentialsPath = config.googleApplicationCredentialsPath
-            ? path.join(config.googleApplicationCredentialsPath)
-            : undefined;
+	constructor(config: {
+		googleApplicationCredentialsPath?: string;
+		googleClientId: string;
+		gcsAssetsBucket: string;
+	}) {
+		const credentialsPath = config.googleApplicationCredentialsPath
+			? path.join(config.googleApplicationCredentialsPath)
+			: undefined;
 
-        this.assetsBucketName = config.gcsAssetsBucket;
+		this.assetsBucketName = config.gcsAssetsBucket;
 
-        // Note: Dynamic import for credentials JSON might need careful handling 
-        // if this code runs in environment where that file doesn't exist at build time.
-        // For now, we assume standard GCS initialization.
+		// Note: Dynamic import for credentials JSON might need careful handling
+		// if this code runs in environment where that file doesn't exist at build time.
+		// For now, we assume standard GCS initialization.
 
-        const storageOptions: any = {
-            projectId: config.googleClientId,
-        };
+		const storageOptions: any = {
+			projectId: config.googleClientId,
+		};
 
-        if (credentialsPath) {
-            storageOptions.keyFilename = credentialsPath;
-        }
+		if (credentialsPath) {
+			storageOptions.keyFilename = credentialsPath;
+		}
 
-        this.storage = new Storage(storageOptions);
-    }
+		this.storage = new Storage(storageOptions);
+	}
 
-    async uploadToGCS(
-        buffer: Buffer,
-        key: string,
-        contentType: string,
-        bucketName: string,
-    ): Promise<void> {
-        const bucket = this.storage.bucket(bucketName);
-        const file = bucket.file(key);
+	async uploadToGCS(
+		buffer: Buffer,
+		key: string,
+		contentType: string,
+		bucketName: string,
+	): Promise<void> {
+		const bucket = this.storage.bucket(bucketName);
+		const file = bucket.file(key);
 
-        await file.save(buffer, {
-            contentType: contentType,
-            resumable: false,
-        });
-    }
+		await file.save(buffer, {
+			contentType: contentType,
+			resumable: false,
+		});
+	}
 
-    async deleteFromGCS(
-        key: string,
-        bucketName: string,
-    ): Promise<void> {
-        await this.storage.bucket(bucketName).file(key).delete();
-    }
+	async deleteFromGCS(key: string, bucketName: string): Promise<void> {
+		await this.storage.bucket(bucketName).file(key).delete();
+	}
 
-    async generateSignedUrl(
-        key: string,
-        bucketName: string,
-        expiresIn: number = 3600,
-    ): Promise<string> {
-        const options = {
-            version: "v4" as const,
-            action: "read" as const,
-            expires: Date.now() + expiresIn * 1000,
-        };
+	async generateSignedUrl(
+		key: string,
+		bucketName: string,
+		expiresIn: number = 3600,
+	): Promise<string> {
+		const options = {
+			version: "v4" as const,
+			action: "read" as const,
+			expires: Date.now() + expiresIn * 1000,
+		};
 
-        const [url] = await this.storage
-            .bucket(bucketName)
-            .file(key)
-            .getSignedUrl(options);
+		const [url] = await this.storage
+			.bucket(bucketName)
+			.file(key)
+			.getSignedUrl(options);
 
-        return url;
-    }
+		return url;
+	}
 
-    async getFromGCS(
-        key: string,
-        bucketName: string = this.assetsBucketName,
-    ): Promise<Buffer> {
-        const [content] = await this.storage.bucket(bucketName).file(key).download();
-        return content;
-    }
+	async getFromGCS(
+		key: string,
+		bucketName: string = this.assetsBucketName,
+	): Promise<Buffer> {
+		const [content] = await this.storage
+			.bucket(bucketName)
+			.file(key)
+			.download();
+		return content;
+	}
 
-    async getObjectMetadata(
-        key: string,
-        bucketName: string = this.assetsBucketName,
-    ) {
-        const [metadata] = await this.storage.bucket(bucketName).file(key).getMetadata();
-        return metadata;
-    }
+	async getObjectMetadata(
+		key: string,
+		bucketName: string = this.assetsBucketName,
+	) {
+		const [metadata] = await this.storage
+			.bucket(bucketName)
+			.file(key)
+			.getMetadata();
+		return metadata;
+	}
 
-    async listFromGCS(
-        prefix: string,
-        bucketName: string,
-    ): Promise<string[]> {
-        const [files] = await this.storage.bucket(bucketName).getFiles({
-            prefix: prefix,
-        });
+	async listFromGCS(prefix: string, bucketName: string): Promise<string[]> {
+		const [files] = await this.storage.bucket(bucketName).getFiles({
+			prefix: prefix,
+		});
 
-        return files.map((file) => file.name);
-    }
+		return files.map((file) => file.name);
+	}
 
-    // Kept as-is logic from original
-    async uploadToTemporaryFolder(
-        buffer: Buffer,
-        mimeType: string,
-        key: string,
-    ) {
-        const keyToUse = `temp/${key}`;
-        await this.uploadToGCS(buffer, keyToUse, mimeType, this.assetsBucketName);
-        const expiresIn = 3600 * 24 * 1.9; // A bit less than 2 days
-        const signedUrl = await this.generateSignedUrl(
-            keyToUse,
-            this.assetsBucketName,
-            expiresIn,
-        );
-        return { signedUrl, key: keyToUse };
-    }
+	// Kept as-is logic from original
+	async uploadToTemporaryFolder(buffer: Buffer, mimeType: string, key: string) {
+		const keyToUse = `temp/${key}`;
+		await this.uploadToGCS(buffer, keyToUse, mimeType, this.assetsBucketName);
+		const expiresIn = 3600 * 24 * 1.9; // A bit less than 2 days
+		const signedUrl = await this.generateSignedUrl(
+			keyToUse,
+			this.assetsBucketName,
+			expiresIn,
+		);
+		return { signedUrl, key: keyToUse };
+	}
 
-    // Helper specific to Node streams, might be needed by Hono
-    getStreamFromGCS(
-        key: string,
-        bucketName: string,
-        range?: { start: number; end: number },
-    ) {
-        const file = this.storage.bucket(bucketName).file(key);
-        const options = range ? { start: range.start, end: range.end } : {};
-        return file.createReadStream(options);
-    }
+	// Helper specific to Node streams, might be needed by Hono
+	getStreamFromGCS(
+		key: string,
+		bucketName: string,
+		range?: { start: number; end: number },
+	) {
+		const file = this.storage.bucket(bucketName).file(key);
+		const options = range ? { start: range.start, end: range.end } : {};
+		return file.createReadStream(options);
+	}
 
-    async fileExistsInGCS(
-        key: string,
-        bucketName: string,
-    ): Promise<boolean> {
-        try {
-            const [exists] = await this.storage.bucket(bucketName).file(key).exists();
-            return exists;
-        } catch (error) {
-            console.warn(
-                `Failed to check existence for ${key} in ${bucketName}`,
-                error,
-            );
-            return false;
-        }
-    }
+	async fileExistsInGCS(key: string, bucketName: string): Promise<boolean> {
+		try {
+			const [exists] = await this.storage.bucket(bucketName).file(key).exists();
+			return exists;
+		} catch (error) {
+			console.warn(
+				`Failed to check existence for ${key} in ${bucketName}`,
+				error,
+			);
+			return false;
+		}
+	}
 }

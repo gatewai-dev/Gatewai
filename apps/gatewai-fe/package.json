@@ -8,7 +8,7 @@
 		"build": "vite build && tsc -p backend/tsconfig.json && pnpm copy-assets",
 		"start-cli": "node backend/dist/index.js",
 		"preview": "vite preview",
-		"be:dev": "tsx watch --conditions development backend/src/index.ts",
+		"be:dev": "tsx watch backend/src/index.ts",
 		"be:build": "tsc -p backend/tsconfig.json && pnpm copy-assets",
 		"copy-assets": "mkdir -p backend/dist && cp -r backend/src/assets backend/dist/",
 		"test": "vitest run"
