@@ -18,4 +18,5 @@ export type {
 	MediaService,
 	NodeProcessor,
 	NodeProcessorConstructor,
+	StorageService,
 } from "./types.js";

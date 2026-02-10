@@ -16,8 +16,15 @@
 		"verbatimModuleSyntax": true,
 		"skipLibCheck": true,
 		"strict": true,
-		"lib": ["ES2022", "ESNext"],
-		"target": "ESNext"
+		"lib": [
+			"ES2022",
+			"ESNext"
+		],
+		"target": "ESNext",
+		"experimentalDecorators": true,
+		"emitDecoratorMetadata": true
 	},
-	"exclude": ["node_modules"]
+	"exclude": [
+		"node_modules"
+	]
 }

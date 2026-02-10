@@ -320,9 +320,8 @@ const assetsRouter = new Hono<{ Variables: AuthorizedHonoTypes }>({
 				const exists = await storage.fileExistsInGCS(cacheKey, cacheBucket);
 				if (exists) {
 					const stream = storage.getStreamFromGCS(cacheKey, cacheBucket);
-					return c.body(stream, 200, {
+					return c.body(stream as any, 200, {
 						"Content-Type": "image/webp",
-						"Access-Control-Allow-Origin": "*",
 						"Cache-Control": "public, max-age=31536000, immutable",
 					});
 				}
@@ -375,7 +374,6 @@ const assetsRouter = new Hono<{ Variables: AuthorizedHonoTypes }>({
 				// 6. Return Response
 				return c.body(thumbnailBuffer, 200, {
 					"Content-Type": "image/webp",
-					"Access-Control-Allow-Origin": "*",
 					"Cache-Control": "public, max-age=31536000, immutable",
 				});
 			} catch (error) {
@@ -402,7 +400,6 @@ const assetsRouter = new Hono<{ Variables: AuthorizedHonoTypes }>({
 			// Cast buffer to any/stream compatible
 			headers: {
 				"Content-Type": metadata.contentType,
-				"Access-Control-Allow-Origin": "*",
 				"Cache-Control": "max-age=2592000",
 			},
 		});
@@ -437,21 +434,19 @@ const assetsRouter = new Hono<{ Variables: AuthorizedHonoTypes }>({
 				end,
 			});
 
-			return c.body(stream, 206, {
+			return c.body(stream as any, 206, {
 				"Content-Range": `bytes ${start}-${end}/${fileSize}`,
 				"Accept-Ranges": "bytes",
 				"Content-Length": chunksize.toString(),
 				"Content-Type": asset.mimeType,
-				"Access-Control-Allow-Origin": "*",
 			});
 		}
 
 		// Full file stream
 		const fullStream = storage.getStreamFromGCS(asset.key, asset.bucket);
-		return c.body(fullStream, {
+		return c.body(fullStream as any, {
 			headers: {
 				"Content-Type": asset.mimeType,
-				"Access-Control-Allow-Origin": "*",
 				"Accept-Ranges": "bytes",
 				"Content-Length": fileSize.toString(),
 				"Cache-Control": "max-age=2592000",
@@ -516,8 +511,8 @@ const assetsRouter = new Hono<{ Variables: AuthorizedHonoTypes }>({
 									const data = item.data;
 									const entityId =
 										typeof data === "object" &&
-										data !== null &&
-										"entity" in data
+											data !== null &&
+											"entity" in data
 											? (data as { entity?: { id?: string } }).entity?.id
 											: undefined;
 									const matches = entityId === id;

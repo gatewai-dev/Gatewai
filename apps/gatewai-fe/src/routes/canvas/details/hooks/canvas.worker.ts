@@ -1,14 +1,14 @@
 type WorkerMessage =
 	| { type: "INIT_CANVAS"; payload: { canvas: OffscreenCanvas } }
 	| {
-			type: "DRAW_IMAGE";
-			payload: {
-				imageUrl: string;
-				zoom: number;
-				canvasWidth: number;
-				dpr: number;
-			};
-	  }
+		type: "DRAW_IMAGE";
+		payload: {
+			imageUrl: string;
+			zoom: number;
+			canvasWidth: number;
+			dpr: number;
+		};
+	}
 	| { type: "CLEAR" };
 
 let canvas: OffscreenCanvas | null = null;
@@ -68,7 +68,9 @@ self.onmessage = async (e: MessageEvent<WorkerMessage>) => {
 			const { imageUrl, canvasWidth, zoom, dpr } = e.data.payload;
 
 			try {
-				const response = await fetch(imageUrl);
+				const response = await fetch(imageUrl, {
+					credentials: "include",
+				});
 				const blob = await response.blob();
 				const bitmap = await createImageBitmap(blob);
 

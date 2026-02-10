@@ -8,36 +8,28 @@ import {
 	type MediaService,
 	type NodeProcessor,
 	type StorageService,
-	TOKENS,
 } from "@gatewai/node-sdk";
 import {
 	type FileData,
 	ImageGenNodeConfigSchema,
 	type ImageGenResult,
 } from "@gatewai/types";
-import { inject, injectable } from "tsyringe";
+import { injectable } from "tsyringe";
 import { getGenAIClient } from "../genai.js";
 
 @injectable()
 export class ImageGenProcessor implements NodeProcessor {
-	constructor(
-		@inject(TOKENS.ENV) private env: EnvConfig,
-		@inject(TOKENS.GRAPH_RESOLVERS) private graph: GraphResolvers,
-		@inject(TOKENS.STORAGE) private storage: StorageService,
-		@inject(TOKENS.MEDIA) private media: MediaService,
-	) { }
-
 	async process(ctx: BackendNodeProcessorCtx): Promise<BackendNodeProcessorResult> {
-		const { node, data, prisma } = ctx;
-		const genAI = getGenAIClient(this.env.GEMINI_API_KEY);
+		const { node, data, prisma, env, graph, storage, media } = ctx;
+		const genAI = getGenAIClient(env.GEMINI_API_KEY);
 
 		try {
-			const userPrompt = this.graph.getInputValue(data, node.id, true, {
+			const userPrompt = graph.getInputValue(data, node.id, true, {
 				dataType: DataType.Text,
 				label: "Prompt",
 			})?.data as string;
 
-			const imageFileData = this.graph
+			const imageFileData = graph
 				.getInputValuesByType(data, node.id, {
 					dataType: DataType.Image,
 				})
@@ -75,7 +67,7 @@ export class ImageGenProcessor implements NodeProcessor {
 				assert(key, "Key must be defined for image retrieval");
 				assert(mimeType, "MimeType must be defined for image retrieval");
 
-				const arrayBuffer = await this.storage.getFromGCS(key, bucket);
+				const arrayBuffer = await storage.getFromGCS(key, bucket);
 				const buffer = Buffer.from(arrayBuffer);
 				const base64Data = buffer.toString("base64");
 
@@ -148,17 +140,17 @@ export class ImageGenProcessor implements NodeProcessor {
 
 			const contentType = mimeType;
 
-			const dimensions = await this.media.getImageDimensions(buffer);
+			const dimensions = await media.getImageDimensions(buffer);
 			const randId = generateId();
 			const fileName = `${node.name}_${randId}.${extension}`;
 			const key = `assets/${fileName}`;
-			const bucket = this.env.GCS_ASSETS_BUCKET;
+			const bucket = env.GCS_ASSETS_BUCKET;
 
-			await this.storage.uploadToGCS(buffer, key, contentType, bucket);
+			await storage.uploadToGCS(buffer, key, contentType, bucket);
 			const size = buffer.length;
 
 			const expiresIn = 3600 * 24 * 6.9;
-			const signedUrl = await this.storage.generateSignedUrl(key, bucket, expiresIn);
+			const signedUrl = await storage.generateSignedUrl(key, bucket, expiresIn);
 			const signedUrlExp = new Date(Date.now() + expiresIn * 1000);
 
 			const asset = await prisma.fileAsset.create({

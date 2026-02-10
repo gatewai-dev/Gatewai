@@ -88,13 +88,13 @@ export const authMiddleware = createMiddleware(async (c, next) => {
 
 		if (!apiKeyHeader) {
 			// No session, no API key header -> Unauthorized (handled by throwing)
-			const errorResponse = new Response("Unauthorized", {
-				status: 401,
-				headers: {
-					Authenticate: 'error="invalid_token"',
+			return c.json(
+				{ error: "Unauthorized", message: "Missing or invalid API key" },
+				401,
+				{
+					"WWW-Authenticate": 'Bearer error="invalid_token"',
 				},
-			});
-			throw new HTTPException(401, { res: errorResponse });
+			);
 		}
 
 		// API Key provided but not found in DB or Global

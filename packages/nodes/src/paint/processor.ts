@@ -1,6 +1,11 @@
 import { logger } from "@gatewai/core";
 import { DataType } from "@gatewai/db";
-import type { BackendNodeProcessor } from "@gatewai/node-sdk";
+import type {
+	BackendNodeProcessorCtx,
+	BackendNodeProcessorResult,
+	NodeProcessor,
+} from "@gatewai/node-sdk";
+import { injectable } from "tsyringe";
 import {
 	type FileData,
 	type NodeResult,
@@ -8,122 +13,127 @@ import {
 	type PaintResult,
 } from "@gatewai/types";
 
-const paintProcessor: BackendNodeProcessor = async ({
-	node,
-	data,
-	graph,
-	storage,
-	media,
-}) => {
-	try {
-		logger.info(`Processing node ${node.id} of type ${node.type}`);
+@injectable()
+export default class PaintProcessor implements NodeProcessor {
+	async process({
+		node,
+		data,
+		graph,
+		storage,
+		media,
+	}: BackendNodeProcessorCtx): Promise<BackendNodeProcessorResult> {
+		try {
+			logger.info(`Processing node ${node.id} of type ${node.type}`);
 
-		const backgroundInput = graph.getInputValue(data, node.id, false, {
-			dataType: DataType.Image,
-			label: "Background Image",
-		})?.data as FileData | null;
+			const backgroundInput = graph.getInputValue(data, node.id, false, {
+				dataType: DataType.Image,
+				label: "Background Image",
+			})?.data as FileData | null;
 
-		const paintConfig = PaintNodeConfigSchema.parse(node.config);
+			const paintConfig = PaintNodeConfigSchema.parse(node.config);
 
-		const outputHandles = data.handles.filter(
-			(h) => h.nodeId === node.id && h.type === "Output",
-		);
-		const imageOutputHandle = outputHandles.find((h) =>
-			h.label.includes("Image"),
-		);
-		const maskOutputHandle = outputHandles.find((h) =>
-			h.label.includes("Mask"),
-		);
-
-		if (!imageOutputHandle || !maskOutputHandle) {
-			return { success: false, error: "Missing required output handles" };
-		}
-
-		let imageUrl: string | undefined;
-
-		if (backgroundInput) {
-			const arrayBuffer = await graph.loadMediaBuffer(backgroundInput);
-			const buffer = Buffer.from(arrayBuffer);
-			imageUrl = media.bufferToDataUrl(buffer, "image/png");
-		}
-
-		const { imageWithMask, onlyMask } =
-			await media.backendPixiService.processMask(
-				paintConfig,
-				imageUrl,
-				paintConfig.paintData,
-				undefined,
-				data.apiKey,
+			const outputHandles = data.handles.filter(
+				(h) => h.nodeId === node.id && h.type === "Output",
+			);
+			const imageOutputHandle = outputHandles.find((h) =>
+				h.label.includes("Image"),
+			);
+			const maskOutputHandle = outputHandles.find((h) =>
+				h.label.includes("Mask"),
 			);
 
-		const { dataUrl: imageDataUrl, ...imageDimensions } = imageWithMask;
-		const { dataUrl: maskDataUrl, ...maskDimensions } = onlyMask;
+			if (!imageOutputHandle || !maskOutputHandle) {
+				return { success: false, error: "Missing required output handles" };
+			}
 
-		const imageBuffer = Buffer.from(await imageDataUrl.arrayBuffer());
-		const imageMimeType = imageDataUrl.type;
+			let imageUrl: string | undefined;
 
-		const maskBuffer = Buffer.from(await maskDataUrl.arrayBuffer());
-		const maskMimeType = maskDataUrl.type;
+			if (backgroundInput) {
+				const arrayBuffer = await graph.loadMediaBuffer(backgroundInput);
+				const buffer = Buffer.from(arrayBuffer);
+				imageUrl = media.bufferToDataUrl(buffer, "image/png");
+			}
 
-		const newResult: NodeResult = structuredClone(
-			node.result as NodeResult,
-		) ?? {
-			outputs: [],
-			selectedOutputIndex: 0,
-		};
+			const { imageWithMask, onlyMask } =
+				await media.backendPixiService.processMask(
+					paintConfig,
+					imageUrl,
+					paintConfig.paintData,
+					undefined,
+					data.apiKey,
+				);
 
-		const now = Date.now();
+			const { dataUrl: imageDataUrl, ...imageDimensions } = imageWithMask;
+			const { dataUrl: maskDataUrl, ...maskDimensions } = onlyMask;
 
-		const imageKey = `${node.id}/${now}.png`;
-		const { signedUrl: imageSignedUrl, key: tempImageKey } =
-			await storage.uploadToTemporaryFolder(
-				imageBuffer,
-				imageMimeType,
-				imageKey,
-			);
+			const imageBuffer = Buffer.from(await imageDataUrl.arrayBuffer());
+			const imageMimeType = imageDataUrl.type;
 
-		const maskKey = `${node.id}/${now}_mask.png`;
-		const { signedUrl: maskSignedUrl, key: tempMaskKey } =
-			await storage.uploadToTemporaryFolder(maskBuffer, maskMimeType, maskKey);
+			const maskBuffer = Buffer.from(await maskDataUrl.arrayBuffer());
+			const maskMimeType = maskDataUrl.type;
 
-		const imageProcessData = {
-			dataUrl: imageSignedUrl,
-			tempKey: tempImageKey,
-			mimeType: imageMimeType,
-			...imageDimensions,
-		};
-		const maskProcessData = {
-			dataUrl: maskSignedUrl,
-			tempKey: tempMaskKey,
-			mimeType: maskMimeType,
-			...maskDimensions,
-		};
+			const newResult: NodeResult = structuredClone(
+				node.result as NodeResult,
+			) ?? {
+				outputs: [],
+				selectedOutputIndex: 0,
+			};
 
-		const newGeneration: PaintResult["outputs"][number] = {
-			items: [
-				{
-					type: DataType.Image,
-					data: { processData: imageProcessData },
-					outputHandleId: imageOutputHandle.id,
-				},
-				{
-					type: DataType.Image,
-					data: { processData: maskProcessData },
-					outputHandleId: maskOutputHandle.id,
-				},
-			],
-		};
+			const now = Date.now();
 
-		newResult.outputs = [newGeneration];
-		newResult.selectedOutputIndex = newResult.outputs.length - 1;
+			const imageKey = `${node.id}/${now}.png`;
+			const { signedUrl: imageSignedUrl, key: tempImageKey } =
+				await storage.uploadToTemporaryFolder(
+					imageBuffer,
+					imageMimeType,
+					imageKey,
+				);
 
-		return { success: true, newResult };
-	} catch (err: unknown) {
-		return {
-			success: false,
-			error: err instanceof Error ? err.message : "Paint processing failed",
-		};
+			const maskKey = `${node.id}/${now}_mask.png`;
+			const { signedUrl: maskSignedUrl, key: tempMaskKey } =
+				await storage.uploadToTemporaryFolder(
+					maskBuffer,
+					maskMimeType,
+					maskKey,
+				);
+
+			const imageProcessData = {
+				dataUrl: imageSignedUrl,
+				tempKey: tempImageKey,
+				mimeType: imageMimeType,
+				...imageDimensions,
+			};
+			const maskProcessData = {
+				dataUrl: maskSignedUrl,
+				tempKey: tempMaskKey,
+				mimeType: maskMimeType,
+				...maskDimensions,
+			};
+
+			const newGeneration: PaintResult["outputs"][number] = {
+				items: [
+					{
+						type: DataType.Image,
+						data: { processData: imageProcessData },
+						outputHandleId: imageOutputHandle.id,
+					},
+					{
+						type: DataType.Image,
+						data: { processData: maskProcessData },
+						outputHandleId: maskOutputHandle.id,
+					},
+				],
+			};
+
+			newResult.outputs = [newGeneration];
+			newResult.selectedOutputIndex = newResult.outputs.length - 1;
+
+			return { success: true, newResult };
+		} catch (err: unknown) {
+			return {
+				success: false,
+				error: err instanceof Error ? err.message : "Paint processing failed",
+			};
+		}
 	}
-};
-
-export default paintProcessor;
+}

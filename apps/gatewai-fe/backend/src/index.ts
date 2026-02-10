@@ -54,10 +54,12 @@ const app = new Hono<{
 	.use(
 		"/api/*",
 		cors({
-			origin:
-				process.env.NODE_ENV === "production"
-					? ENV_CONFIG.BASE_URL
-					: ["http://localhost:5173"],
+			origin: (origin) => {
+				if (process.env.NODE_ENV === "production") {
+					return origin === ENV_CONFIG.BASE_URL ? origin : null;
+				}
+				return origin;
+			},
 			allowMethods: ["POST", "GET", "OPTIONS"],
 			exposeHeaders: ["Content-Length"],
 			maxAge: 600,

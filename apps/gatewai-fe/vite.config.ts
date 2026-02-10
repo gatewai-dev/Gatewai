@@ -12,6 +12,13 @@ export default defineConfig({
 			cache: false,
 		},
 	},
+	esbuild: {
+		tsconfigRaw: {
+			compilerOptions: {
+				experimentalDecorators: true,
+			},
+		},
+	},
 	plugins: [
 		react(),
 		tailwindcss(),

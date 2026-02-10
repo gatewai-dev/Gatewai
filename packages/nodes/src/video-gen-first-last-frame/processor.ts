@@ -2,16 +2,12 @@ import assert from "node:assert";
 import { existsSync, mkdirSync } from "node:fs";
 import { readFile } from "node:fs/promises";
 import path from "node:path";
-import { type EnvConfig, generateId, logger } from "@gatewai/core";
+import { generateId, logger } from "@gatewai/core";
 import { DataType } from "@gatewai/db";
 import {
 	type BackendNodeProcessorCtx,
 	type BackendNodeProcessorResult,
-	type GraphResolvers,
-	type MediaService,
 	type NodeProcessor,
-	type StorageService,
-	TOKENS,
 } from "@gatewai/node-sdk";
 import {
 	type FileData,
@@ -19,7 +15,7 @@ import {
 	VideoGenFirstLastFrameNodeConfigSchema,
 	type VideoGenResult,
 } from "@gatewai/types";
-import { inject, injectable } from "tsyringe";
+import { injectable } from "tsyringe";
 import { getGenAIClient } from "../genai.js";
 
 async function ResolveImageData(
@@ -40,26 +36,16 @@ async function ResolveImageData(
 
 @injectable()
 export default class VideoGenFirstLastFrameProcessor implements NodeProcessor {
-	constructor(
-		@inject(TOKENS.ENV) private env: EnvConfig,
-		@inject(TOKENS.GRAPH_RESOLVERS) private graph: GraphResolvers,
-		@inject(TOKENS.STORAGE) private storage: StorageService,
-		@inject(TOKENS.MEDIA) private media: MediaService,
-	) { }
-
-	async process({
-		node,
-		data,
-		prisma,
-	}: BackendNodeProcessorCtx): Promise<BackendNodeProcessorResult> {
-		const genAI = getGenAIClient(this.env.GEMINI_API_KEY);
+	async process(ctx: BackendNodeProcessorCtx): Promise<BackendNodeProcessorResult> {
+		const { node, data, prisma, env, graph, storage, media } = ctx;
+		const genAI = getGenAIClient(env.GEMINI_API_KEY);
 		try {
-			const userPrompt = this.graph.getInputValue(data, node.id, true, {
+			const userPrompt = graph.getInputValue(data, node.id, true, {
 				dataType: DataType.Text,
 				label: "Prompt",
 			})?.data as string;
 
-			const firstFrameInput = this.graph.getInputValue(
+			const firstFrameInput = graph.getInputValue(
 				data,
 				node.id,
 				true,
@@ -69,7 +55,7 @@ export default class VideoGenFirstLastFrameProcessor implements NodeProcessor {
 				},
 			) as OutputItem<"Image">;
 
-			const lastFrameInput = this.graph.getInputValue(
+			const lastFrameInput = graph.getInputValue(
 				data,
 				node.id,
 				true,
@@ -92,8 +78,8 @@ export default class VideoGenFirstLastFrameProcessor implements NodeProcessor {
 				{ base64Data: firstBase64, mimeType: firstMimeType },
 				{ base64Data: lastBase64, mimeType: lastMimeType },
 			] = await Promise.all([
-				ResolveImageData(firstFileData, this.graph),
-				ResolveImageData(lastFileData, this.graph),
+				ResolveImageData(firstFileData, graph),
+				ResolveImageData(lastFileData, graph),
 			]);
 
 			let operation = (await genAI.models.generateVideos({
@@ -150,12 +136,12 @@ export default class VideoGenFirstLastFrameProcessor implements NodeProcessor {
 			const fileName = `${node.name}_${randId}.${extension}`;
 			const key = `assets/${fileName}`;
 			const contentType = "video/mp4";
-			const bucket = this.env.GCS_ASSETS_BUCKET;
+			const bucket = env.GCS_ASSETS_BUCKET;
 
-			await this.storage.uploadToGCS(fileBuffer, key, contentType, bucket);
+			await storage.uploadToGCS(fileBuffer, key, contentType, bucket);
 
 			const expiresIn = 3600 * 24 * 7;
-			const signedUrl = await this.storage.generateSignedUrl(
+			const signedUrl = await storage.generateSignedUrl(
 				key,
 				bucket,
 				expiresIn,
