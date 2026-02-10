@@ -5,8 +5,8 @@ import { nodeRegistry } from "./node-registry.js";
 /**
  * Synchronise DB NodeTemplate rows from the in-memory manifest registry.
  *
- * For every registered manifest, upserts a NodeTemplate (keyed by unique `type`).
- * On version changes (manifest updates), the template and its handles are updated in place.
+ * For every registered manifest, ensures a NodeTemplate exists (keyed by unique `type`).
+ * If the template already exists, it is NOT updated to preserve existing configurations.
  * This replaces the previous seed-based approach.
  */
 export async function syncNodeTemplates(prisma: PrismaClient) {
@@ -64,31 +64,6 @@ export async function syncNodeTemplates(prisma: PrismaClient) {
 			});
 			synced++;
 			logger.info(`[syncNodeTemplates] Created template: ${m.type}`);
-		} else {
-			// Update existing template fields + replace handles
-			await prisma.$transaction([
-				prisma.nodeTemplateHandle.deleteMany({
-					where: { templateId: existing.id },
-				}),
-				prisma.nodeTemplate.update({
-					where: { id: existing.id },
-					data: {
-						...templateData,
-						templateHandles: {
-							create: allHandles.map((h) => ({
-								type: h.type,
-								dataTypes: h.dataTypes as any,
-								label: h.label,
-								required: h.required ?? false,
-								order: h.order,
-								description: h.description ?? null,
-							})),
-						},
-					},
-				}),
-			]);
-			synced++;
-			logger.info(`[syncNodeTemplates] Updated template: ${m.type}`);
 		}
 	}
 

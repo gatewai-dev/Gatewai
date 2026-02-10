@@ -9,7 +9,14 @@ export default defineNode({
 	isTerminal: false,
 	isTransient: true,
 	handles: {
-		inputs: [{ dataTypes: ["Image"], label: "Background Image", order: 0 }],
+		inputs: [
+			{
+				dataTypes: ["Image"],
+				label: "Background Image",
+				order: 0,
+				required: true,
+			},
+		],
 		outputs: [
 			{
 				dataTypes: ["Image"],

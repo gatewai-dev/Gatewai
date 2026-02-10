@@ -116,6 +116,8 @@ await ensureUsersAPI_KEY();
 
 // Initialize canvas worker.
 await startWorker();
+
+// Initialize agent worker.
 startAgentWorker();
 
 serve(
