@@ -11,32 +11,41 @@ import {
 	ResizeNodeConfigSchema,
 	type ResizeResult,
 } from "@gatewai/types";
-import { injectable } from "tsyringe";
+import { TOKENS } from "@gatewai/node-sdk";
+import { inject, injectable } from "tsyringe";
+import type {
+	GraphResolvers,
+	MediaService,
+	StorageService,
+} from "@gatewai/node-sdk";
 
 @injectable()
 export default class ResizeProcessor implements NodeProcessor {
+	constructor(
+		@inject(TOKENS.STORAGE) private storage: StorageService,
+		@inject(TOKENS.MEDIA) private media: MediaService,
+		@inject(TOKENS.GRAPH_RESOLVERS) private graph: GraphResolvers,
+	) { }
+
 	async process({
 		node,
 		data,
-		graph,
-		storage,
-		media,
 	}: BackendNodeProcessorCtx): Promise<BackendNodeProcessorResult> {
 		try {
-			const imageInput = graph.getInputValue(data, node.id, true, {
+			const imageInput = this.graph.getInputValue(data, node.id, true, {
 				dataType: DataType.Image,
 				label: "Image",
 			})?.data as FileData | null;
 
 			assert(imageInput);
-			const arrayBuffer = await graph.loadMediaBuffer(imageInput);
+			const arrayBuffer = await this.graph.loadMediaBuffer(imageInput);
 			const buffer = Buffer.from(arrayBuffer);
-			const base64Data = media.bufferToDataUrl(buffer, "image/png");
+			const base64Data = this.media.bufferToDataUrl(buffer, "image/png");
 
 			const resizeConfig = ResizeNodeConfigSchema.parse(node.config);
 
 			const { dataUrl, ...dimensions } =
-				await media.backendPixiService.processResize(
+				await this.media.backendPixiService.processResize(
 					base64Data,
 					{
 						width: resizeConfig.width ?? 512,
@@ -63,7 +72,7 @@ export default class ResizeProcessor implements NodeProcessor {
 			};
 
 			const key = `${(data.task ?? node).id}/${Date.now()}.png`;
-			const { signedUrl, key: tempKey } = await storage.uploadToTemporaryFolder(
+			const { signedUrl, key: tempKey } = await this.storage.uploadToTemporaryFolder(
 				uploadBuffer,
 				mimeType,
 				key,

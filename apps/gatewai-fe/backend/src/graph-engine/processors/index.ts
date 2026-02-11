@@ -4,24 +4,22 @@ import {
 	compositorNode,
 	cropNode,
 	exportNode,
+	fileNode,
 	imageGenNode,
 	llmNode,
 	modulateNode,
+	noteNode,
 	paintNode,
+	previewNode,
 	resizeNode,
 	speechToTextNode,
 	textMergerNode,
 	textNode,
 	textToSpeechNode,
+	videoCompositorNode,
 	videoGenFirstLastFrameNode,
 	videoGenNode,
 } from "@gatewai/nodes/node";
-import type {
-	FileResult,
-	NodeResult,
-	VideoCompositorResult,
-} from "@gatewai/types";
-import type { NodeProcessorCtx } from "./types.js";
 
 // ────────────────────────────────────────────────────────────────────────────
 // Register backend processors into the NodeRegistry.
@@ -103,25 +101,22 @@ if (exportNode.backendProcessor) {
 if (textNode.backendProcessor) {
 	nodeRegistry.registerProcessor(textNode.type, textNode.backendProcessor);
 }
+if (fileNode.backendProcessor) {
+	nodeRegistry.registerProcessor(fileNode.type, fileNode.backendProcessor);
+}
+if (videoCompositorNode.backendProcessor) {
+	nodeRegistry.registerProcessor(
+		videoCompositorNode.type,
+		videoCompositorNode.backendProcessor,
+	);
+}
+if (previewNode.backendProcessor) {
+	nodeRegistry.registerProcessor(previewNode.type, previewNode.backendProcessor);
+}
+if (noteNode.backendProcessor) {
+	nodeRegistry.registerProcessor(noteNode.type, noteNode.backendProcessor);
+}
 
-// Passthrough processors for nodes that don't need backend processing
-nodeRegistry.registerProcessor("File", async ({ node }: NodeProcessorCtx) => {
-	return { success: true, newResult: node.result as unknown as FileResult };
-});
-nodeRegistry.registerProcessor(
-	"VideoCompositor",
-	async ({ node }: NodeProcessorCtx) => {
-		return {
-			success: true,
-			newResult: node.result as unknown as VideoCompositorResult,
-		};
-	},
-);
-nodeRegistry.registerProcessor("Preview", async () => {
-	return { success: true, result: null };
-});
-nodeRegistry.registerProcessor("Note", async ({ node }: NodeProcessorCtx) => {
-	return { success: true, newResult: node.result as unknown as NodeResult };
-});
+// ─── Registration End ────────────────────────────────────────────────────────
 
 export { nodeRegistry };

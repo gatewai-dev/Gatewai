@@ -1,4 +1,5 @@
 import { defineNode } from "@gatewai/node-sdk";
+import VideoCompositorProcessor from "./processor.js";
 
 export default defineNode({
 	type: "VideoCompositor",
@@ -21,4 +22,5 @@ export default defineNode({
 		FPS: 24,
 		layerUpdates: {},
 	},
+	backendProcessor: VideoCompositorProcessor,
 });

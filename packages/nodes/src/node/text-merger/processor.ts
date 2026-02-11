@@ -5,17 +5,22 @@ import type {
 	NodeProcessor,
 } from "@gatewai/node-sdk";
 import type { TextMergerNodeConfig, TextMergerResult } from "@gatewai/types";
-import { injectable } from "tsyringe";
+import { TOKENS } from "@gatewai/node-sdk";
+import { inject, injectable } from "tsyringe";
+import { type GraphResolvers } from "@gatewai/node-sdk";
 
 @injectable()
 export default class TextMergerProcessor implements NodeProcessor {
+	constructor(
+		@inject(TOKENS.GRAPH_RESOLVERS) private graph: GraphResolvers,
+	) { }
+
 	async process({
 		node,
 		data,
-		graph,
 	}: BackendNodeProcessorCtx): Promise<BackendNodeProcessorResult> {
 		try {
-			const textInputs = graph.getInputValuesByType(data, node.id, {
+			const textInputs = this.graph.getInputValuesByType(data, node.id, {
 				dataType: DataType.Text,
 			});
 

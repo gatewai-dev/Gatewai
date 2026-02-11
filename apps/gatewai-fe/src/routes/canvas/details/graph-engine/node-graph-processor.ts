@@ -1,5 +1,5 @@
 import { EventEmitter } from "node:events";
-import type { DataType, NodeType } from "@gatewai/db";
+import type { DataType } from "@gatewai/db";
 import type {
 	EdgeEntityType,
 	HandleEntityType,
@@ -466,7 +466,7 @@ export class NodeGraphProcessor extends EventEmitter {
 		}
 	}
 
-	registerProcessor(nodeType: NodeType, processor: NodeProcessor): void {
+	registerProcessor(nodeType: string, processor: NodeProcessor): void {
 		if (this.processors.has(nodeType)) {
 			throw new Error(`Processor for node type:${nodeType} is already set.`);
 		}

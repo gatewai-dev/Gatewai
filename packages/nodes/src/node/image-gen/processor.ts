@@ -14,24 +14,34 @@ import {
 	ImageGenNodeConfigSchema,
 	type ImageGenResult,
 } from "@gatewai/types";
-import { injectable } from "tsyringe";
+import { TOKENS } from "@gatewai/node-sdk";
+import type { PrismaClient } from "@gatewai/db";
+import { inject, injectable } from "tsyringe";
 import { getGenAIClient } from "../genai.js";
 
 @injectable()
 export class ImageGenProcessor implements NodeProcessor {
+	constructor(
+		@inject(TOKENS.PRISMA) private prisma: PrismaClient,
+		@inject(TOKENS.ENV) private env: EnvConfig,
+		@inject(TOKENS.GRAPH_RESOLVERS) private graph: GraphResolvers,
+		@inject(TOKENS.STORAGE) private storage: StorageService,
+		@inject(TOKENS.MEDIA) private media: MediaService,
+	) { }
+
 	async process(
 		ctx: BackendNodeProcessorCtx,
 	): Promise<BackendNodeProcessorResult> {
-		const { node, data, prisma, env, graph, storage, media } = ctx;
-		const genAI = getGenAIClient(env.GEMINI_API_KEY);
+		const { node, data } = ctx;
+		const genAI = getGenAIClient(this.env.GEMINI_API_KEY);
 
 		try {
-			const userPrompt = graph.getInputValue(data, node.id, true, {
+			const userPrompt = this.graph.getInputValue(data, node.id, true, {
 				dataType: DataType.Text,
 				label: "Prompt",
 			})?.data as string;
 
-			const imageFileData = graph
+			const imageFileData = this.graph
 				.getInputValuesByType(data, node.id, {
 					dataType: DataType.Image,
 				})
@@ -69,7 +79,7 @@ export class ImageGenProcessor implements NodeProcessor {
 				assert(key, "Key must be defined for image retrieval");
 				assert(mimeType, "MimeType must be defined for image retrieval");
 
-				const arrayBuffer = await storage.getFromGCS(key, bucket);
+				const arrayBuffer = await this.storage.getFromGCS(key, bucket);
 				const buffer = Buffer.from(arrayBuffer);
 				const base64Data = buffer.toString("base64");
 
@@ -101,9 +111,9 @@ export class ImageGenProcessor implements NodeProcessor {
 					imageConfig:
 						config.model === "gemini-3-pro-image-preview"
 							? {
-									aspectRatio: config.aspectRatio,
-									imageSize: config.imageSize,
-								}
+								aspectRatio: config.aspectRatio,
+								imageSize: config.imageSize,
+							}
 							: undefined,
 				},
 			})) as {
@@ -142,20 +152,20 @@ export class ImageGenProcessor implements NodeProcessor {
 
 			const contentType = mimeType;
 
-			const dimensions = await media.getImageDimensions(buffer);
+			const dimensions = await this.media.getImageDimensions(buffer);
 			const randId = generateId();
 			const fileName = `${node.name}_${randId}.${extension}`;
 			const key = `assets/${fileName}`;
-			const bucket = env.GCS_ASSETS_BUCKET;
+			const bucket = this.env.GCS_ASSETS_BUCKET;
 
-			await storage.uploadToGCS(buffer, key, contentType, bucket);
+			await this.storage.uploadToGCS(buffer, key, contentType, bucket);
 			const size = buffer.length;
 
 			const expiresIn = 3600 * 24 * 6.9;
-			const signedUrl = await storage.generateSignedUrl(key, bucket, expiresIn);
+			const signedUrl = await this.storage.generateSignedUrl(key, bucket, expiresIn);
 			const signedUrlExp = new Date(Date.now() + expiresIn * 1000);
 
-			const asset = await prisma.fileAsset.create({
+			const asset = await this.prisma.fileAsset.create({
 				data: {
 					name: fileName,
 					userId: (data.canvas as unknown as { userId: string }).userId,

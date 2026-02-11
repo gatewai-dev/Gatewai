@@ -12,30 +12,39 @@ import {
 	type FileData,
 	type NodeResult,
 } from "@gatewai/types";
-import { injectable } from "tsyringe";
+import { TOKENS } from "@gatewai/node-sdk";
+import { inject, injectable } from "tsyringe";
+import type {
+	GraphResolvers,
+	MediaService,
+	StorageService,
+} from "@gatewai/node-sdk";
 
 @injectable()
 export default class BlurProcessor implements NodeProcessor {
+	constructor(
+		@inject(TOKENS.STORAGE) private storage: StorageService,
+		@inject(TOKENS.MEDIA) private media: MediaService,
+		@inject(TOKENS.GRAPH_RESOLVERS) private graph: GraphResolvers,
+	) { }
+
 	async process({
 		node,
 		data,
-		graph,
-		storage,
-		media,
 	}: BackendNodeProcessorCtx): Promise<BackendNodeProcessorResult> {
 		try {
-			const imageInput = graph.getInputValue(data, node.id, true, {
+			const imageInput = this.graph.getInputValue(data, node.id, true, {
 				dataType: DataType.Image,
 				label: "Image",
 			})?.data as FileData | null;
 
 			assert(imageInput);
-			const imageUrl = await media.resolveFileDataUrl(imageInput);
+			const imageUrl = await this.media.resolveFileDataUrl(imageInput);
 			assert(imageUrl);
 			const blurConfig = BlurNodeConfigSchema.parse(node.config);
 			const blurSize = blurConfig.size ?? 0;
 
-			const { dataUrl, ...dimensions } = await media.backendPixiService.execute<
+			const { dataUrl, ...dimensions } = await this.media.backendPixiService.execute<
 				BlurInput,
 				BlurOutput
 			>(
@@ -65,7 +74,7 @@ export default class BlurProcessor implements NodeProcessor {
 			};
 
 			const key = `${(data.task ?? node).id}/${Date.now()}.png`;
-			const { signedUrl, key: tempKey } = await storage.uploadToTemporaryFolder(
+			const { signedUrl, key: tempKey } = await this.storage.uploadToTemporaryFolder(
 				uploadBuffer,
 				mimeType,
 				key,

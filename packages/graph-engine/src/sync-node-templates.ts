@@ -34,26 +34,26 @@ export async function syncNodeTemplates(prisma: PrismaClient) {
 			isTerminalNode: m.isTerminal,
 			isTransient: m.isTransient ?? false,
 			variableInputs: m.variableInputs?.enabled ?? false,
-			variableInputDataTypes: (m.variableInputs?.dataTypes as any) ?? [],
+			variableInputDataTypes: (m.variableInputs?.dataTypes) ?? [],
 			variableOutputs: m.variableOutputs?.enabled ?? false,
-			variableOutputDataTypes: (m.variableOutputs?.dataTypes as any) ?? [],
-			defaultConfig: (m.defaultConfig as any) ?? undefined,
+			variableOutputDataTypes: (m.variableOutputs?.dataTypes) ?? [],
+			defaultConfig: (m.defaultConfig) ?? undefined,
 		};
 
 		const existing = await prisma.nodeTemplate.findUnique({
-			where: { type: m.type as any },
+			where: { type: m.type },
 		});
 
 		if (!existing) {
 			// Create new template + handles
 			await prisma.nodeTemplate.create({
 				data: {
-					type: m.type as any,
+					type: m.type,
 					...templateData,
 					templateHandles: {
 						create: allHandles.map((h) => ({
 							type: h.type,
-							dataTypes: h.dataTypes as any,
+							dataTypes: h.dataTypes,
 							label: h.label,
 							required: h.required ?? false,
 							order: h.order,

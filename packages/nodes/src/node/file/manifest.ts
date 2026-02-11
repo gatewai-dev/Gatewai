@@ -1,4 +1,5 @@
 import { defineNode } from "@gatewai/node-sdk";
+import FileProcessor from "./processor.js";
 
 export default defineNode({
 	type: "File",
@@ -14,4 +15,5 @@ export default defineNode({
 			{ dataTypes: ["Audio", "Image", "Video"], label: "File", order: 0 },
 		],
 	},
+	backendProcessor: FileProcessor,
 });

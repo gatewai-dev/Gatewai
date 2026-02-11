@@ -5,17 +5,22 @@ import type {
 	NodeProcessor,
 } from "@gatewai/node-sdk";
 import type { ExportResult } from "@gatewai/types";
-import { injectable } from "tsyringe";
+import { TOKENS } from "@gatewai/node-sdk";
+import { inject, injectable } from "tsyringe";
+import { type GraphResolvers } from "@gatewai/node-sdk";
 
 @injectable()
 export default class ExportProcessor implements NodeProcessor {
+	constructor(
+		@inject(TOKENS.GRAPH_RESOLVERS) private graph: GraphResolvers,
+	) { }
+
 	async process({
 		node,
 		data,
-		graph,
 	}: BackendNodeProcessorCtx): Promise<BackendNodeProcessorResult> {
 		try {
-			const inputValue = graph.getInputValue(data, node.id, true, {});
+			const inputValue = this.graph.getInputValue(data, node.id, true, {});
 			assert(inputValue);
 
 			const newResult = structuredClone(

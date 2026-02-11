@@ -1,4 +1,4 @@
-import type { Node, NodeTemplate, NodeType } from "@gatewai/db";
+import type { Node, NodeTemplate } from "@gatewai/db";
 import type { AllNodeConfig } from "./config/index.js";
 import type { FileData, NodeResult } from "./node-result.js";
 
@@ -9,8 +9,5 @@ export type NodeWithFileType<
 	fileData: FileData | null;
 	config: T;
 	result: R;
-	template: NodeTemplate & {
-		inputTypes: { inputType: NodeType }[];
-		outputTypes: { outputType: NodeType }[];
-	};
+	template: NodeTemplate;
 };

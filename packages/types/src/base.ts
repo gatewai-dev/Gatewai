@@ -17,7 +17,6 @@ export const NodeTypes = [
 	"Modulate",
 	"VideoGen",
 	"VideoGenFirstLastFrame",
-	"VideoGenExtend",
 	"TextToSpeech",
 	"SpeechToText",
 	"VideoCompositor",

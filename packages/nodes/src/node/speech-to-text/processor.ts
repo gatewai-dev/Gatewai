@@ -11,35 +11,45 @@ import type {
 	SpeechToTextResult,
 } from "@gatewai/types";
 import { createPartFromUri, createUserContent } from "@google/genai";
-import { injectable } from "tsyringe";
+import { TOKENS } from "@gatewai/node-sdk";
+import type { EnvConfig } from "@gatewai/core";
+import { inject, injectable } from "tsyringe";
+import {
+	type GraphResolvers,
+	type StorageService,
+} from "@gatewai/node-sdk";
 import { getGenAIClient } from "../genai.js";
 
 @injectable()
 export default class SpeechToTextProcessor implements NodeProcessor {
+	constructor(
+		@inject(TOKENS.STORAGE) private storage: StorageService,
+		@inject(TOKENS.GRAPH_RESOLVERS) private graph: GraphResolvers,
+		@inject(TOKENS.ENV) private env: EnvConfig,
+	) { }
+
 	async process({
 		node,
 		data,
-		graph,
-		storage,
-		env,
 	}: BackendNodeProcessorCtx): Promise<BackendNodeProcessorResult> {
 		try {
-			const userPrompt = graph.getInputValue(data, node.id, true, {
+			const userPrompt = this.graph.getInputValue(data, node.id, true, {
 				dataType: DataType.Text,
 				label: "Prompt",
 			})?.data as string;
 
-			const audioInput = graph.getInputValue(data, node.id, true, {
+			const audioInput = this.graph.getInputValue(data, node.id, true, {
 				dataType: DataType.Audio,
 				label: "Audio",
 			})?.data as OutputItem<"Audio">["data"];
+
 
 			const nodeConfig = node.config as SpeechToTextNodeConfig;
 
 			let fileBlob: Blob;
 			let mimeType: string;
 			if (audioInput?.entity?.signedUrl) {
-				const buffer = await storage.getFromGCS(
+				const buffer = await this.storage.getFromGCS(
 					audioInput.entity.key,
 					audioInput.entity.bucket,
 				);
@@ -48,7 +58,7 @@ export default class SpeechToTextProcessor implements NodeProcessor {
 				});
 				mimeType = audioInput.entity.mimeType;
 			} else if (audioInput?.processData?.tempKey) {
-				const buffer = await storage.getFromGCS(
+				const buffer = await this.storage.getFromGCS(
 					audioInput?.processData.tempKey,
 				);
 				fileBlob = new Blob([new Uint8Array(buffer)], {
@@ -61,7 +71,7 @@ export default class SpeechToTextProcessor implements NodeProcessor {
 					error: "Input audio data could not be resolved",
 				};
 			}
-			const genAI = getGenAIClient(env.GEMINI_API_KEY);
+			const genAI = getGenAIClient(this.env.GEMINI_API_KEY);
 
 			const audioFile = await genAI.files.upload({
 				file: fileBlob,

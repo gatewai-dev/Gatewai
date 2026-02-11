@@ -6,28 +6,36 @@ import type {
 	NodeProcessor,
 } from "@gatewai/node-sdk";
 import type { FileData, LLMNodeConfig, LLMResult } from "@gatewai/types";
-import { injectable } from "tsyringe";
+import { TOKENS } from "@gatewai/node-sdk";
+import { inject, injectable } from "tsyringe";
+import type { EnvConfig } from "@gatewai/core";
+import { type GraphResolvers } from "@gatewai/node-sdk";
 import { getGenAIClient } from "../genai.js";
 
 @injectable()
 export default class LLMProcessor implements NodeProcessor {
+	constructor(
+		@inject(TOKENS.ENV) private env: EnvConfig,
+		@inject(TOKENS.GRAPH_RESOLVERS) private graph: GraphResolvers,
+	) { }
+
 	async process(
 		ctx: BackendNodeProcessorCtx,
 	): Promise<BackendNodeProcessorResult> {
-		const { node, data, graph, env } = ctx;
-		const genAI = getGenAIClient(env.GEMINI_API_KEY);
+		const { node, data } = ctx;
+		const genAI = getGenAIClient(this.env.GEMINI_API_KEY);
 		try {
-			const systemPrompt = graph.getInputValue(data, node.id, false, {
+			const systemPrompt = this.graph.getInputValue(data, node.id, false, {
 				dataType: DataType.Text,
 				label: "System Prompt",
 			})?.data as string | null;
 
-			const userPrompt = graph.getInputValue(data, node.id, true, {
+			const userPrompt = this.graph.getInputValue(data, node.id, true, {
 				dataType: DataType.Text,
 				label: "Prompt",
 			})?.data as string | null;
 
-			const imageFileData = graph.getInputValue(data, node.id, false, {
+			const imageFileData = this.graph.getInputValue(data, node.id, false, {
 				dataType: DataType.Image,
 				label: "Image",
 			})?.data as FileData | null;
@@ -39,9 +47,9 @@ export default class LLMProcessor implements NodeProcessor {
 			}
 
 			if (imageFileData) {
-				const mimeType = await graph.getFileDataMimeType(imageFileData);
+				const mimeType = await this.graph.getFileDataMimeType(imageFileData);
 				assert(mimeType);
-				const arrayBuffer = await graph.loadMediaBuffer(imageFileData);
+				const arrayBuffer = await this.graph.loadMediaBuffer(imageFileData);
 				const buffer = Buffer.from(arrayBuffer);
 				const base64Data = buffer.toString("base64");
 

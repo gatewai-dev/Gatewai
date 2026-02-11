@@ -11,21 +11,30 @@ import {
 	PaintNodeConfigSchema,
 	type PaintResult,
 } from "@gatewai/types";
-import { injectable } from "tsyringe";
+import { TOKENS } from "@gatewai/node-sdk";
+import { inject, injectable } from "tsyringe";
+import type {
+	GraphResolvers,
+	MediaService,
+	StorageService,
+} from "@gatewai/node-sdk";
 
 @injectable()
 export default class PaintProcessor implements NodeProcessor {
+	constructor(
+		@inject(TOKENS.STORAGE) private storage: StorageService,
+		@inject(TOKENS.MEDIA) private media: MediaService,
+		@inject(TOKENS.GRAPH_RESOLVERS) private graph: GraphResolvers,
+	) { }
+
 	async process({
 		node,
 		data,
-		graph,
-		storage,
-		media,
 	}: BackendNodeProcessorCtx): Promise<BackendNodeProcessorResult> {
 		try {
 			logger.info(`Processing node ${node.id} of type ${node.type}`);
 
-			const backgroundInput = graph.getInputValue(data, node.id, false, {
+			const backgroundInput = this.graph.getInputValue(data, node.id, false, {
 				dataType: DataType.Image,
 				label: "Background Image",
 			})?.data as FileData | null;
@@ -49,13 +58,13 @@ export default class PaintProcessor implements NodeProcessor {
 			let imageUrl: string | undefined;
 
 			if (backgroundInput) {
-				const arrayBuffer = await graph.loadMediaBuffer(backgroundInput);
+				const arrayBuffer = await this.graph.loadMediaBuffer(backgroundInput);
 				const buffer = Buffer.from(arrayBuffer);
-				imageUrl = media.bufferToDataUrl(buffer, "image/png");
+				imageUrl = this.media.bufferToDataUrl(buffer, "image/png");
 			}
 
 			const { imageWithMask, onlyMask } =
-				await media.backendPixiService.processMask(
+				await this.media.backendPixiService.processMask(
 					paintConfig,
 					imageUrl,
 					paintConfig.paintData,
@@ -83,7 +92,7 @@ export default class PaintProcessor implements NodeProcessor {
 
 			const imageKey = `${node.id}/${now}.png`;
 			const { signedUrl: imageSignedUrl, key: tempImageKey } =
-				await storage.uploadToTemporaryFolder(
+				await this.storage.uploadToTemporaryFolder(
 					imageBuffer,
 					imageMimeType,
 					imageKey,
@@ -91,7 +100,7 @@ export default class PaintProcessor implements NodeProcessor {
 
 			const maskKey = `${node.id}/${now}_mask.png`;
 			const { signedUrl: maskSignedUrl, key: tempMaskKey } =
-				await storage.uploadToTemporaryFolder(
+				await this.storage.uploadToTemporaryFolder(
 					maskBuffer,
 					maskMimeType,
 					maskKey,

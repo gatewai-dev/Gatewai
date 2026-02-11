@@ -10,19 +10,28 @@ import type {
 	ModulateResult,
 	NodeResult,
 } from "@gatewai/types";
-import { injectable } from "tsyringe";
+import { TOKENS } from "@gatewai/node-sdk";
+import { inject, injectable } from "tsyringe";
+import type {
+	GraphResolvers,
+	MediaService,
+	StorageService,
+} from "@gatewai/node-sdk";
 
 @injectable()
 export default class ModulateProcessor implements NodeProcessor {
+	constructor(
+		@inject(TOKENS.STORAGE) private storage: StorageService,
+		@inject(TOKENS.MEDIA) private media: MediaService,
+		@inject(TOKENS.GRAPH_RESOLVERS) private graph: GraphResolvers,
+	) { }
+
 	async process({
 		node,
 		data,
-		graph,
-		storage,
-		media,
 	}: BackendNodeProcessorCtx): Promise<BackendNodeProcessorResult> {
 		try {
-			const imageInput = graph.getInputValue(data, node.id, true, {
+			const imageInput = this.graph.getInputValue(data, node.id, true, {
 				dataType: DataType.Image,
 				label: "Image",
 			})?.data as FileData | null;
@@ -32,12 +41,12 @@ export default class ModulateProcessor implements NodeProcessor {
 				return { success: false, error: "No image input provided" };
 			}
 
-			const arrayBuffer = await graph.loadMediaBuffer(imageInput);
+			const arrayBuffer = await this.graph.loadMediaBuffer(imageInput);
 			const buffer = Buffer.from(arrayBuffer);
-			const base64Data = media.bufferToDataUrl(buffer, "image/png");
+			const base64Data = this.media.bufferToDataUrl(buffer, "image/png");
 
 			const { dataUrl, ...dimensions } =
-				await media.backendPixiService.processModulate(
+				await this.media.backendPixiService.processModulate(
 					base64Data,
 					modulateConfig,
 					undefined,
@@ -61,7 +70,7 @@ export default class ModulateProcessor implements NodeProcessor {
 			};
 
 			const key = `${node.id}/${Date.now()}.png`;
-			const { signedUrl, key: tempKey } = await storage.uploadToTemporaryFolder(
+			const { signedUrl, key: tempKey } = await this.storage.uploadToTemporaryFolder(
 				uploadBuffer,
 				mimeType,
 				key,

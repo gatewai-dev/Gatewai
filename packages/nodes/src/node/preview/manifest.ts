@@ -1,4 +1,5 @@
 import { defineNode } from "@gatewai/node-sdk";
+import PreviewProcessor from "./processor.js";
 
 export default defineNode({
 	type: "Preview",
@@ -19,4 +20,5 @@ export default defineNode({
 		],
 		outputs: [],
 	},
+	backendProcessor: PreviewProcessor,
 });

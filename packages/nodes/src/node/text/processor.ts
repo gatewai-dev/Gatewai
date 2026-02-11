@@ -9,6 +9,8 @@ import { injectable } from "tsyringe";
 
 @injectable()
 export default class TextProcessor implements NodeProcessor {
+	constructor() { }
+
 	async process({
 		node,
 		data,

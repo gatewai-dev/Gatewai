@@ -46,16 +46,6 @@ export interface BackendNodeProcessorCtx {
 		task?: Task;
 		apiKey?: string;
 	};
-	/** Prisma database client for direct DB access */
-	prisma: PrismaClient;
-	/** Graph resolution helpers (input/output value lookups) */
-	graph: GraphResolvers;
-	/** Cloud storage operations (GCS upload, download, signed URLs) */
-	storage: StorageService;
-	/** Media processing utilities (pixi, image dimensions, etc.) */
-	media: MediaService;
-	/** Environment configuration */
-	env: EnvConfig;
 }
 
 /**

@@ -1,4 +1,5 @@
 import { defineNode } from "@gatewai/node-sdk";
+import NoteProcessor from "./processor.js";
 
 export default defineNode({
 	type: "Note",
@@ -12,4 +13,5 @@ export default defineNode({
 		outputs: [],
 	},
 	defaultConfig: { backgroundColor: "#ffff88", textColor: "#000" },
+	backendProcessor: NoteProcessor,
 });

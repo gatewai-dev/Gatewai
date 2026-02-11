@@ -20,32 +20,42 @@ import type {
 	VideoGenerationReferenceImage,
 	VideoGenerationReferenceType,
 } from "@google/genai";
-import { injectable } from "tsyringe";
+import { TOKENS } from "@gatewai/node-sdk";
+import type { PrismaClient } from "@gatewai/db";
+import type { EnvConfig } from "@gatewai/core";
+import { inject, injectable } from "tsyringe";
+import type {
+	GraphResolvers,
+	StorageService,
+} from "@gatewai/node-sdk";
 import { getGenAIClient } from "../genai.js";
 
 @injectable()
 export default class VideoGenProcessor implements NodeProcessor {
+	constructor(
+		@inject(TOKENS.PRISMA) private prisma: PrismaClient,
+		@inject(TOKENS.GRAPH_RESOLVERS) private graph: GraphResolvers,
+		@inject(TOKENS.STORAGE) private storage: StorageService,
+		@inject(TOKENS.ENV) private env: EnvConfig,
+	) { }
+
 	async process({
 		node,
 		data,
-		prisma,
-		graph,
-		storage,
-		env,
 	}: BackendNodeProcessorCtx): Promise<BackendNodeProcessorResult> {
-		const genAI = getGenAIClient(env.GEMINI_API_KEY);
+		const genAI = getGenAIClient(this.env.GEMINI_API_KEY);
 		try {
-			const userPrompt = graph.getInputValue(data, node.id, true, {
+			const userPrompt = this.graph.getInputValue(data, node.id, true, {
 				dataType: DataType.Text,
 				label: "Prompt",
 			})?.data as string;
 
-			const negativePrompt = graph.getInputValue(data, node.id, false, {
+			const negativePrompt = this.graph.getInputValue(data, node.id, false, {
 				dataType: DataType.Text,
 				label: "Negative Prompt",
 			})?.data as string | undefined;
 
-			const imageFileData = graph
+			const imageFileData = this.graph
 				.getInputValuesByType(data, node.id, {
 					dataType: DataType.Image,
 				})
@@ -54,11 +64,11 @@ export default class VideoGenProcessor implements NodeProcessor {
 			const config = VideoGenNodeConfigSchema.parse(node.config);
 
 			const LoadImageDataPromises = imageFileData?.map(async (fileData) => {
-				const arrayBuffer = await graph.loadMediaBuffer(fileData);
+				const arrayBuffer = await this.graph.loadMediaBuffer(fileData);
 				const buffer = Buffer.from(arrayBuffer);
 				const base64Data = buffer.toString("base64");
 
-				const mimeType = await graph.getFileDataMimeType(fileData);
+				const mimeType = await this.graph.getFileDataMimeType(fileData);
 				assert(mimeType);
 				return {
 					image: {
@@ -128,8 +138,8 @@ export default class VideoGenProcessor implements NodeProcessor {
 			const fileName = `${node.name}_${randId}${extension}`;
 			const key = `assets/${fileName}`;
 			const contentType = "video/mp4";
-			const bucket = env.GCS_ASSETS_BUCKET;
-			await storage.uploadToGCS(fileBuffer, key, contentType, bucket);
+			const bucket = this.env.GCS_ASSETS_BUCKET;
+			await this.storage.uploadToGCS(fileBuffer, key, contentType, bucket);
 
 			// Remove temp file
 			try {
@@ -145,10 +155,10 @@ export default class VideoGenProcessor implements NodeProcessor {
 			}
 
 			const expiresIn = 3600 * 24 * 6.9;
-			const signedUrl = await storage.generateSignedUrl(key, bucket, expiresIn);
+			const signedUrl = await this.storage.generateSignedUrl(key, bucket, expiresIn);
 			const signedUrlExp = new Date(Date.now() + expiresIn * 1000);
 
-			const asset = await prisma.fileAsset.create({
+			const asset = await this.prisma.fileAsset.create({
 				data: {
 					name: fileName,
 					userId: (data.canvas as unknown as { userId: string }).userId,

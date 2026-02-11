@@ -1,4 +1,3 @@
-import type { NodeType } from "@gatewai/db";
 import {
 	type NodeEntityType,
 	selectSelectedNodes,
@@ -22,7 +21,7 @@ type NodeConfigComponentProps = {
 };
 
 const NodeConfigFormMap: Partial<
-	Record<NodeType, (props: NodeConfigComponentProps) => ReactNode>
+	Record<string, (props: NodeConfigComponentProps) => ReactNode>
 > = {
 	LLM: LLMNodeConfigComponent,
 	ImageGen: ImageGenNodeConfigComponent,

@@ -3,12 +3,9 @@ import { GetCanvasEntities } from "@gatewai/data-ops";
 import { Prisma, prisma, TaskStatus } from "@gatewai/db";
 import { container } from "@gatewai/di";
 import {
-	graphResolvers,
-	mediaService,
 	type NodeTaskJobData,
 	nodeRegistry,
 	redisConnection,
-	storageService,
 	WORKFLOW_QUEUE_NAME,
 	workflowQueue,
 } from "@gatewai/graph-engine";
@@ -262,11 +259,6 @@ const processNodeJob = async (job: Job<NodeTaskJobData>) => {
 		const ctx: BackendNodeProcessorCtx = {
 			node,
 			data: { ...data, tasks: batchTasks, task, apiKey },
-			prisma,
-			graph: graphResolvers,
-			storage: storageService,
-			media: mediaService,
-			env: ENV_CONFIG,
 		};
 
 		// Resolve from DI container
