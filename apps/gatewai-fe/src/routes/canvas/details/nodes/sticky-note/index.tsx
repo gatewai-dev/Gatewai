@@ -2,7 +2,7 @@ import type { NoteNodeConfig } from "@gatewai/types";
 import type { NodeProps } from "@xyflow/react";
 import { NodeResizer } from "@xyflow/react";
 import { memo, useCallback } from "react";
-import { Textarea } from "@/components/ui/textarea";
+import { Textarea } from "@gatewai/ui-kit";
 import { useAppSelector } from "@gatewai/react-store";
 import { makeSelectNodeById } from "@gatewai/react-store";
 import { useCanvasCtx } from "../../ctx/canvas-ctx";

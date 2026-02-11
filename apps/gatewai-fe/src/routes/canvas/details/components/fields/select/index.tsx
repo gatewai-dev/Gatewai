@@ -12,19 +12,19 @@ import {
 	FormItem,
 	FormLabel,
 	FormMessage,
-} from "@/components/ui/form";
+} from "@gatewai/ui-kit";
 import {
 	Select,
 	SelectContent,
 	SelectItem,
 	SelectTrigger,
 	SelectValue,
-} from "@/components/ui/select";
+} from "@gatewai/ui-kit";
 import {
 	Tooltip,
 	TooltipContent,
 	TooltipTrigger,
-} from "@/components/ui/tooltip";
+} from "@gatewai/ui-kit";
 
 type SelectFieldProps<T extends FieldValues> = {
 	control: Control<T>;

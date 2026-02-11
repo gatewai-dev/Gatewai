@@ -9,7 +9,7 @@ import type {
 	UserAssetsListRPCParams,
 	UserAssetsUploadRPC,
 } from "@gatewai/rpc-client";
-import { canvasDetailsAPI } from "./canvas";
+import { canvasDetailsAPI } from "./canvas.js";
 
 // Define a service using a base URL and expected endpoints
 export const assetsAPI = createApi({

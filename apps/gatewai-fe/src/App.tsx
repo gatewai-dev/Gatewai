@@ -3,8 +3,7 @@ import { AppRouter } from "./Router";
 import "@xyflow/react/dist/style.css";
 import { Provider as StoreProvider } from "react-redux";
 import { WebGLGuard } from "./components/guards/webgl-guard";
-import { Toaster } from "./components/ui/sonner";
-import { TooltipProvider } from "./components/ui/tooltip";
+import { Toaster, TooltipProvider } from "@gatewai/ui-kit";
 import { store } from "@gatewai/react-store";
 
 function App() {

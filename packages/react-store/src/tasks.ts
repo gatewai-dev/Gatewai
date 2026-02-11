@@ -13,7 +13,7 @@ import type {
 	BatchDetailsRPC,
 	BatchDetailsRPCParams,
 } from "@gatewai/rpc-client";
-import type { RootState } from "./";
+import type { RootState } from "./index.js";
 
 export type BatchEntity = BatchDetailsRPC[number];
 export type BatchNodeData = BatchEntity["tasks"][number];

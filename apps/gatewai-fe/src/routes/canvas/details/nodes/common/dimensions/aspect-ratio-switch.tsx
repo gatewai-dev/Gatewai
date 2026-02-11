@@ -1,12 +1,12 @@
 import type { ResizeNodeConfig } from "@gatewai/types";
 import { Lock, Unlock } from "lucide-react";
 import { memo, useCallback } from "react";
-import { Button } from "@/components/ui/button";
 import {
+	Button,
 	Tooltip,
 	TooltipContent,
 	TooltipTrigger,
-} from "@/components/ui/tooltip";
+} from "@gatewai/ui-kit";
 import type { NodeEntityType } from "@gatewai/react-store";
 import { useCanvasCtx } from "../../../ctx/canvas-ctx";
 

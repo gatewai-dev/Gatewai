@@ -1,6 +1,6 @@
 import { ForwardIcon, Loader2 } from "lucide-react"; // Added Loader2
 import { memo, useMemo } from "react";
-import { Button } from "@/components/ui/button";
+import { Button } from "@gatewai/ui-kit";
 import { useAppSelector } from "@gatewai/react-store";
 import { makeSelectAllNodes, selectSelectedNodes } from "@gatewai/react-store";
 import { useCanvasCtx } from "../../ctx/canvas-ctx";

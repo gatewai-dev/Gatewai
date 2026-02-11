@@ -3,7 +3,7 @@ import type { NodeProps } from "@xyflow/react";
 import { ImagesIcon } from "lucide-react";
 import { memo } from "react";
 import { useNavigate } from "react-router";
-import { Button } from "@/components/ui/button";
+import { Button } from "@gatewai/ui-kit";
 import { ResolveFileDataUrl } from "@/lib/file";
 import { cn } from "@/lib/utils";
 import { useAppSelector } from "@gatewai/react-store";

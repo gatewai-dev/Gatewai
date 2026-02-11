@@ -1,18 +1,18 @@
 import { BookOpen } from "lucide-react";
-import { Button } from "@/components/ui/button";
+import { Button } from "@gatewai/ui-kit";
 import {
 	Dialog,
 	DialogContent,
 	DialogHeader,
 	DialogTitle,
 	DialogTrigger,
-} from "@/components/ui/dialog";
+} from "@gatewai/ui-kit";
 import {
 	Tooltip,
 	TooltipContent,
 	TooltipTrigger,
-} from "@/components/ui/tooltip";
-import { dataTypeColors } from "@/config/colors";
+} from "@gatewai/ui-kit";
+import { dataTypeColors } from "@gatewai/types";
 import { cn } from "@/lib/utils";
 import { MarkdownRenderer } from "../../components/markdown-renderer";
 

@@ -4,14 +4,14 @@ import { PlusIcon } from "lucide-react";
 import { useMemo, useState } from "react";
 import { useForm } from "react-hook-form";
 import { z } from "zod";
-import { Button } from "@/components/ui/button";
+import { Button } from "@gatewai/ui-kit";
 import {
 	Dialog,
 	DialogContent,
 	DialogHeader,
 	DialogTitle,
 	DialogTrigger,
-} from "@/components/ui/dialog";
+} from "@gatewai/ui-kit";
 import {
 	Form,
 	FormControl,
@@ -19,16 +19,16 @@ import {
 	FormItem,
 	FormLabel,
 	FormMessage,
-} from "@/components/ui/form";
-import { Input } from "@/components/ui/input";
+} from "@gatewai/ui-kit";
+import { Input } from "@gatewai/ui-kit";
 import {
 	Select,
 	SelectContent,
 	SelectItem,
 	SelectTrigger,
 	SelectValue,
-} from "@/components/ui/select";
-import { Textarea } from "@/components/ui/textarea";
+} from "@gatewai/ui-kit";
+import { Textarea } from "@gatewai/ui-kit";
 import { generateId } from "@/lib/idgen";
 import { useAppSelector } from "@gatewai/react-store";
 import {

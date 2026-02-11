@@ -10,13 +10,13 @@ import { zodResolver } from "@hookform/resolvers/zod";
 import { debounce, isEqual } from "lodash";
 import { memo, useEffect, useMemo } from "react";
 import { useForm } from "react-hook-form";
-import { Form, FormDescription } from "@/components/ui/form";
+import { Form, FormDescription } from "@gatewai/ui-kit";
 import {
 	Tooltip,
 	TooltipContent,
 	TooltipProvider,
 	TooltipTrigger,
-} from "@/components/ui/tooltip";
+} from "@gatewai/ui-kit";
 import { useCanvasCtx } from "@/routes/canvas/details/ctx/canvas-ctx";
 import { useAppSelector } from "@gatewai/react-store";
 import { makeSelectHandlesByNodeId } from "@gatewai/react-store";

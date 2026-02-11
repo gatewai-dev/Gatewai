@@ -9,7 +9,7 @@ import { zodResolver } from "@hookform/resolvers/zod";
 import { debounce, isEqual } from "lodash";
 import { memo, useEffect, useMemo } from "react";
 import { useForm } from "react-hook-form";
-import { Form } from "@/components/ui/form";
+import { Form } from "@gatewai/ui-kit";
 import { useCanvasCtx } from "@/routes/canvas/details/ctx/canvas-ctx";
 import type { NodeEntityType } from "@gatewai/react-store";
 import { SelectField } from "../../../../components/fields/select";

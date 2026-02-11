@@ -11,16 +11,16 @@ import {
 	FormField,
 	FormItem,
 	FormLabel,
-} from "@/components/ui/form";
+} from "@gatewai/ui-kit";
 import {
 	Select,
 	SelectContent,
 	SelectItem,
 	SelectTrigger,
 	SelectValue,
-} from "@/components/ui/select";
-import { Separator } from "@/components/ui/separator";
-import { Textarea } from "@/components/ui/textarea";
+} from "@gatewai/ui-kit";
+import { Separator } from "@gatewai/ui-kit";
+import { Textarea } from "@gatewai/ui-kit";
 import { useCanvasCtx } from "@/routes/canvas/details/ctx/canvas-ctx";
 import type { NodeEntityType } from "@gatewai/react-store";
 

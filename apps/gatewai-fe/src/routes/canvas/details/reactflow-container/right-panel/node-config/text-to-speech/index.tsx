@@ -10,7 +10,7 @@ import { debounce, isEqual } from "lodash";
 import { Plus, Trash2 } from "lucide-react";
 import { memo, useEffect, useMemo } from "react";
 import { useFieldArray, useForm } from "react-hook-form";
-import { Button } from "@/components/ui/button";
+import { Button } from "@gatewai/ui-kit";
 import {
 	Form,
 	FormControl,
@@ -19,8 +19,8 @@ import {
 	FormItem,
 	FormLabel,
 	FormMessage,
-} from "@/components/ui/form";
-import { Input } from "@/components/ui/input";
+} from "@gatewai/ui-kit";
+import { Input } from "@gatewai/ui-kit";
 import { cn } from "@/lib/utils";
 import { useCanvasCtx } from "@/routes/canvas/details/ctx/canvas-ctx";
 import type { NodeEntityType } from "@gatewai/react-store";

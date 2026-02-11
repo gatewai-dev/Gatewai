@@ -1,8 +1,8 @@
 import { formatDistanceToNow } from "date-fns";
 import { Clock, MessageSquare, Plus } from "lucide-react";
-import { Button } from "@/components/ui/button";
-import { DialogTitle } from "@/components/ui/dialog";
-import { ScrollArea } from "@/components/ui/scroll-area";
+import { Button } from "@gatewai/ui-kit";
+import { DialogTitle } from "@gatewai/ui-kit";
+import { ScrollArea } from "@gatewai/ui-kit";
 import { cn } from "@/lib/utils";
 import { useCanvasAgent } from "../../ctx/canvas-agent.ctx";
 

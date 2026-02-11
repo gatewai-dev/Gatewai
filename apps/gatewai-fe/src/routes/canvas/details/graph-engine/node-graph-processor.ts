@@ -13,7 +13,7 @@ import {
 	TextMergerNodeConfigSchema,
 	TextNodeConfigSchema,
 } from "@gatewai/types";
-import { dataTypeColors } from "@/config/colors";
+import { dataTypeColors } from "@gatewai/types";
 import { GetAssetEndpoint } from "@/lib/file";
 import type { EdgeEntityType } from "@gatewai/react-store";
 import type { HandleEntityType } from "@gatewai/react-store";

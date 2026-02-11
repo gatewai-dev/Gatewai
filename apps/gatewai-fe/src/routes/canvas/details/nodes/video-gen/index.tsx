@@ -4,7 +4,7 @@ import {
 	Popover,
 	PopoverContent,
 	PopoverTrigger,
-} from "@/components/ui/popover";
+} from "@gatewai/ui-kit";
 import { useAppSelector } from "@gatewai/react-store";
 import { makeSelectHandlesByNodeId } from "@gatewai/react-store";
 import { makeSelectNodeById } from "@gatewai/react-store";

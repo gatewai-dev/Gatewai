@@ -3,14 +3,14 @@ import { MenuIcon } from "lucide-react";
 import { memo, useState } from "react";
 import { useForm } from "react-hook-form";
 import { z } from "zod";
-import { Button } from "@/components/ui/button";
+import { Button } from "@gatewai/ui-kit";
 import {
 	Dialog,
 	DialogContent,
 	DialogFooter,
 	DialogHeader,
 	DialogTitle,
-} from "@/components/ui/dialog";
+} from "@gatewai/ui-kit";
 import {
 	DropdownMenu,
 	DropdownMenuContent,
@@ -19,7 +19,7 @@ import {
 	DropdownMenuSeparator,
 	DropdownMenuShortcut,
 	DropdownMenuTrigger,
-} from "@/components/ui/dropdown-menu";
+} from "@gatewai/ui-kit";
 import {
 	Form,
 	FormControl,
@@ -27,8 +27,8 @@ import {
 	FormItem,
 	FormLabel,
 	FormMessage,
-} from "@/components/ui/form";
-import { Input } from "@/components/ui/input";
+} from "@gatewai/ui-kit";
+import { Input } from "@gatewai/ui-kit";
 import { copyTextToClipboard } from "@/lib/clipboard";
 import { useAppDispatch, useAppSelector } from "@gatewai/react-store";
 import {

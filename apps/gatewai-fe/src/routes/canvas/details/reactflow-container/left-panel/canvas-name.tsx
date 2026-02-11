@@ -1,5 +1,5 @@
 import { memo, useEffect, useRef, useState } from "react";
-import { Input } from "@/components/ui/input";
+import { Input } from "@gatewai/ui-kit";
 import { useUpdateNameMutation } from "@gatewai/react-store";
 import { useCanvasCtx } from "../../ctx/canvas-ctx";
 
