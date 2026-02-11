@@ -75,9 +75,6 @@ export function createPatcherAgent(
 					nodes?.map((node) => ({
 						...node,
 						width: node.width ?? 340,
-						position: node.position as unknown as { x: number; y: number },
-						config: node.config as any,
-						result: node.result as Record<string, unknown> | null,
 					})) || [];
 
 				// Store in context for other tools

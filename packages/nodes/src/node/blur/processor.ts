@@ -7,7 +7,6 @@ import type {
 } from "@gatewai/node-sdk";
 import type { BlurInput, BlurOutput } from "@gatewai/pixi-processor";
 import {
-	BlurNodeConfigSchema,
 	type BlurResult,
 	type FileData,
 	type NodeResult,
@@ -19,6 +18,7 @@ import type {
 	MediaService,
 	StorageService,
 } from "@gatewai/node-sdk";
+import { BlurNodeConfigSchema } from "../../configs/blur.config.js";
 
 @injectable()
 export default class BlurProcessor implements NodeProcessor {

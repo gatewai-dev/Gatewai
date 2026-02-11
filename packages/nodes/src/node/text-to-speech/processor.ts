@@ -7,9 +7,9 @@ import type {
 } from "@gatewai/node-sdk";
 import {
 	type OutputItem,
-	TextToSpeechNodeConfigSchema,
 	type TextToSpeechResult,
 } from "@gatewai/types";
+import { TextToSpeechNodeConfigSchema } from "../../configs/text-to-speech.config.js";
 import { parseBuffer } from "music-metadata";
 import { TOKENS } from "@gatewai/node-sdk";
 import type { PrismaClient } from "@gatewai/db";
@@ -63,7 +63,7 @@ export default class TextToSpeechProcessor implements NodeProcessor {
 			const nodeConfig = TextToSpeechNodeConfigSchema.parse(node.config);
 
 			let speechConfig: Record<string, unknown> = {
-				languageCode: nodeConfig.languageCode,
+				languageCode: nodeConfig.languageCode as string,
 			};
 
 			if (
@@ -88,7 +88,7 @@ export default class TextToSpeechProcessor implements NodeProcessor {
 			}
 
 			const response = await genAI.models.generateContent({
-				model: nodeConfig.model,
+				model: nodeConfig.model ?? "gemini-2.5-flash-preview-tts",
 				contents: [{ parts: [{ text: userPrompt }] }],
 				config: {
 					responseModalities: ["AUDIO"],

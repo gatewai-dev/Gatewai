@@ -12,9 +12,9 @@ import type {
 import {
 	type FileData,
 	type OutputItem,
-	VideoGenFirstLastFrameNodeConfigSchema,
 	type VideoGenResult,
 } from "@gatewai/types";
+import { VideoGenFirstLastFrameNodeConfigSchema } from "../../configs/video-gen-first-last-frame.config.js";
 import { TOKENS } from "@gatewai/node-sdk";
 import type { PrismaClient } from "@gatewai/db";
 import type { EnvConfig } from "@gatewai/core";

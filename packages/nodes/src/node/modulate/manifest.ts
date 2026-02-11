@@ -1,4 +1,5 @@
 import { defineNode } from "@gatewai/node-sdk";
+import { ModulateNodeConfigSchema } from "../../configs/modulate.config.js";
 import backendProcessor from "./processor.js";
 
 export default defineNode({
@@ -6,6 +7,7 @@ export default defineNode({
 	displayName: "Modulate",
 	description: "Apply Modulate adjustments to an image",
 	category: "Image",
+	configSchema: ModulateNodeConfigSchema,
 	isTerminal: false,
 	isTransient: true,
 	handles: {

@@ -1,4 +1,5 @@
 import { defineNode } from "@gatewai/node-sdk";
+import { ResizeNodeConfigSchema } from "../../configs/resize.config.js";
 import backendProcessor from "./processor.js";
 
 export default defineNode({
@@ -6,6 +7,7 @@ export default defineNode({
 	displayName: "Resize",
 	description: "Resize media",
 	category: "Image",
+	configSchema: ResizeNodeConfigSchema,
 	isTerminal: false,
 	isTransient: true,
 	handles: {

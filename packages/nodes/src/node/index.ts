@@ -98,3 +98,6 @@ export {
 	noteNode,
 	videoCompositorNode,
 };
+
+export * from "../node-configs.types.js";
+export * from "../node-configs.schema.js";

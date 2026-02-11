@@ -4,7 +4,8 @@ import type {
 	BackendNodeProcessorResult,
 	NodeProcessor,
 } from "@gatewai/node-sdk";
-import type { TextNodeConfig, TextResult } from "@gatewai/types";
+import type { TextResult } from "@gatewai/types";
+import type { TextNodeConfig } from "../../configs/text.config.js";
 import { injectable } from "tsyringe";
 
 @injectable()

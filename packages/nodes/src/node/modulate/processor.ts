@@ -4,12 +4,13 @@ import type {
 	BackendNodeProcessorResult,
 	NodeProcessor,
 } from "@gatewai/node-sdk";
-import type {
-	FileData,
-	ModulateNodeConfig,
-	ModulateResult,
-	NodeResult,
+import {
+	type FileData,
+	type ModulateResult,
+	type NodeResult,
 } from "@gatewai/types";
+import { ModulateNodeConfigSchema } from "../../configs/modulate.config.js";
+import type { ModulateNodeConfig } from "../../configs/modulate.config.js";
 import { TOKENS } from "@gatewai/node-sdk";
 import { inject, injectable } from "tsyringe";
 import type {

@@ -23,6 +23,11 @@
 			"types": "./dist/react.d.ts",
 			"import": "./dist/react.mjs",
 			"default": "./dist/react.mjs"
+		},
+		"./configs": {
+			"types": "./dist/configs.d.ts",
+			"import": "./dist/configs.mjs",
+			"default": "./dist/configs.mjs"
 		}
 	},
 	"files": [

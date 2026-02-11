@@ -1,4 +1,5 @@
 import { defineNode } from "@gatewai/node-sdk";
+import { ImageGenNodeConfigSchema } from "../../configs/image-gen.config.js";
 import ImageGenProcessor from "./processor.js";
 
 export default defineNode({
@@ -6,6 +7,7 @@ export default defineNode({
 	displayName: "Generate Image",
 	description: "Generate images using prompt and reference image(s)",
 	category: "AI",
+	configSchema: ImageGenNodeConfigSchema,
 	isTerminal: true,
 	isTransient: false,
 	variableInputs: { enabled: true, dataTypes: ["Image"] },

@@ -12,9 +12,9 @@ import type {
 } from "@gatewai/node-sdk";
 import {
 	type FileData,
-	VideoGenNodeConfigSchema,
 	type VideoGenResult,
 } from "@gatewai/types";
+import { VideoGenNodeConfigSchema } from "../../configs/video-gen.config.js";
 import type {
 	GenerateVideosConfig,
 	VideoGenerationReferenceImage,

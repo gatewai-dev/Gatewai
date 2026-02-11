@@ -5,11 +5,11 @@ import type {
 	BackendNodeProcessorResult,
 	NodeProcessor,
 } from "@gatewai/node-sdk";
-import type {
-	OutputItem,
-	SpeechToTextNodeConfig,
-	SpeechToTextResult,
+import {
+	type OutputItem,
+	type SpeechToTextResult,
 } from "@gatewai/types";
+import type { SpeechToTextNodeConfig } from "../../configs/speech-to-text.config.js";
 import { createPartFromUri, createUserContent } from "@google/genai";
 import { TOKENS } from "@gatewai/node-sdk";
 import type { EnvConfig } from "@gatewai/core";
@@ -83,7 +83,7 @@ export default class SpeechToTextProcessor implements NodeProcessor {
 			}
 
 			const response = await genAI.models.generateContent({
-				model: nodeConfig.model,
+				model: nodeConfig.model ?? "gemini-2.5-flash",
 				contents: createUserContent([
 					createPartFromUri(audioFile.uri, audioFile.mimeType),
 					userPrompt,

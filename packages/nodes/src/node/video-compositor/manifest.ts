@@ -1,4 +1,5 @@
 import { defineNode } from "@gatewai/node-sdk";
+import { VideoCompositorNodeConfigSchema } from "../../configs/video-compositor.config.js";
 import VideoCompositorProcessor from "./processor.js";
 
 export default defineNode({
@@ -6,6 +7,7 @@ export default defineNode({
 	displayName: "Video Compositor",
 	description: "Compose videos",
 	category: "Video",
+	configSchema: VideoCompositorNodeConfigSchema,
 	isTerminal: false,
 	isTransient: true,
 	variableInputs: {

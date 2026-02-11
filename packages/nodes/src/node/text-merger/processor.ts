@@ -4,7 +4,8 @@ import type {
 	BackendNodeProcessorResult,
 	NodeProcessor,
 } from "@gatewai/node-sdk";
-import type { TextMergerNodeConfig, TextMergerResult } from "@gatewai/types";
+import type { TextMergerResult } from "@gatewai/types";
+import type { TextMergerNodeConfig } from "../../configs/text-merger.config.js";
 import { TOKENS } from "@gatewai/node-sdk";
 import { inject, injectable } from "tsyringe";
 import { type GraphResolvers } from "@gatewai/node-sdk";

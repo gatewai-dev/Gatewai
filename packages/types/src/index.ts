@@ -2,7 +2,6 @@ export * from "./agent.js";
 export * from "./base.js";
 export * from "./config/index.js";
 export * from "./constants.js";
-export * from "./node.js";
 export * from "./node-result.js";
 export * from "./ops/index.js";
 export * from "./pixi.js";

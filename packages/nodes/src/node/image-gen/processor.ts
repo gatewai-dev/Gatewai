@@ -11,9 +11,9 @@ import type {
 } from "@gatewai/node-sdk";
 import {
 	type FileData,
-	ImageGenNodeConfigSchema,
 	type ImageGenResult,
 } from "@gatewai/types";
+import { ImageGenNodeConfigSchema } from "../../configs/image-gen.config.js";
 import { TOKENS } from "@gatewai/node-sdk";
 import type { PrismaClient } from "@gatewai/db";
 import { inject, injectable } from "tsyringe";

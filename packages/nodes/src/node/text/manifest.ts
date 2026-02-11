@@ -1,4 +1,5 @@
 import { defineNode } from "@gatewai/node-sdk";
+import { TextNodeConfigSchema } from "../../configs/text.config.js";
 import backendProcessor from "./processor.js";
 
 export default defineNode({
@@ -6,6 +7,7 @@ export default defineNode({
 	displayName: "Text",
 	description: "A text input",
 	category: "Inputs",
+	configSchema: TextNodeConfigSchema,
 	isTerminal: false,
 	isTransient: false,
 	showInQuickAccess: true,

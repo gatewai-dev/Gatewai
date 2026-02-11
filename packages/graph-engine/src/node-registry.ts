@@ -1,5 +1,5 @@
 import { NodeRegistry, nodeRegistry } from "@gatewai/node-sdk";
-import { builtinNodes } from "@gatewai/nodes";
+import { builtinNodes } from "@gatewai/nodes/node";
 
 // Register built-in nodes
 for (const manifest of builtinNodes) {

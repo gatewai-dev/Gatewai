@@ -1,4 +1,5 @@
 import { defineNode } from "@gatewai/node-sdk";
+import { VideoGenFirstLastFrameNodeConfigSchema } from "../../configs/video-gen-first-last-frame.config.js";
 import backendProcessor from "./processor.js";
 
 export default defineNode({
@@ -7,6 +8,7 @@ export default defineNode({
 	description: "Generate videos using first and last frame images",
 	category: "AI",
 	subcategory: "Video",
+	configSchema: VideoGenFirstLastFrameNodeConfigSchema,
 	isTerminal: true,
 	isTransient: false,
 	handles: {

@@ -5,7 +5,8 @@ import type {
 	BackendNodeProcessorResult,
 	NodeProcessor,
 } from "@gatewai/node-sdk";
-import type { FileData, LLMNodeConfig, LLMResult } from "@gatewai/types";
+import type { FileData, LLMResult } from "@gatewai/types";
+import type { LLMNodeConfig } from "../../configs/llm.config.js";
 import { TOKENS } from "@gatewai/node-sdk";
 import { inject, injectable } from "tsyringe";
 import type { EnvConfig } from "@gatewai/core";
@@ -68,7 +69,7 @@ export default class LLMProcessor implements NodeProcessor {
 			const nodeConfig = node.config as LLMNodeConfig;
 
 			const response = (await genAI.models.generateContent({
-				model: nodeConfig.model,
+				model: nodeConfig.model ?? "gemini-1.5-pro",
 				contents: [
 					{
 						role: "user",

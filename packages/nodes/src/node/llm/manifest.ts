@@ -1,13 +1,15 @@
 import { defineNode } from "@gatewai/node-sdk";
+import { LLMNodeConfigSchema } from "../../configs/llm.config.js";
 import backendProcessor from "./processor.js";
 
 export default defineNode({
 	type: "LLM",
 	displayName: "LLM",
-	description: "Run a LLM model",
+	description: "A large language model node.",
 	category: "AI",
 	isTerminal: true,
 	isTransient: false,
+	configSchema: LLMNodeConfigSchema,
 	variableInputs: { enabled: true, dataTypes: ["Image"] },
 	handles: {
 		inputs: [

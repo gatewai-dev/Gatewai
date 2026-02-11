@@ -1,4 +1,5 @@
 import { defineNode } from "@gatewai/node-sdk";
+import { CropNodeConfigSchema } from "../../configs/crop.config.js";
 import backendProcessor from "./processor.js";
 
 export default defineNode({
@@ -6,6 +7,7 @@ export default defineNode({
 	displayName: "Crop",
 	description: "Crop an image",
 	category: "Image",
+	configSchema: CropNodeConfigSchema,
 	isTerminal: false,
 	isTransient: true,
 	handles: {

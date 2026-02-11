@@ -8,9 +8,9 @@ import type {
 import {
 	type FileData,
 	type NodeResult,
-	PaintNodeConfigSchema,
 	type PaintResult,
 } from "@gatewai/types";
+import { PaintNodeConfigSchema } from "../../configs/paint.config.js";
 import { TOKENS } from "@gatewai/node-sdk";
 import { inject, injectable } from "tsyringe";
 import type {

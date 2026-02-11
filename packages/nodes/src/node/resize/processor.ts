@@ -8,9 +8,9 @@ import type {
 import {
 	type FileData,
 	type NodeResult,
-	ResizeNodeConfigSchema,
 	type ResizeResult,
 } from "@gatewai/types";
+import { ResizeNodeConfigSchema } from "../../configs/resize.config.js";
 import { TOKENS } from "@gatewai/node-sdk";
 import { inject, injectable } from "tsyringe";
 import type {

@@ -1,4 +1,5 @@
 import { defineNode } from "@gatewai/node-sdk";
+import { TextToSpeechNodeConfigSchema } from "../../configs/text-to-speech.config.js";
 import backendProcessor from "./processor.js";
 
 export default defineNode({
@@ -7,6 +8,7 @@ export default defineNode({
 	description: "Create audio using text",
 	category: "AI",
 	subcategory: "Audio",
+	configSchema: TextToSpeechNodeConfigSchema,
 	isTerminal: true,
 	isTransient: false,
 	handles: {

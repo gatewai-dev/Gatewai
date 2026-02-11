@@ -6,7 +6,6 @@ import type {
 	NodeProcessor,
 } from "@gatewai/node-sdk";
 import {
-	CropNodeConfigSchema,
 	type CropResult,
 	type FileData,
 	type NodeResult,
@@ -18,6 +17,7 @@ import type {
 	MediaService,
 	StorageService,
 } from "@gatewai/node-sdk";
+import { CropNodeConfigSchema } from "../../configs/crop.config.js";
 
 @injectable()
 export default class CropProcessor implements NodeProcessor {

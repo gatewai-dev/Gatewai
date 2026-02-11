@@ -4,6 +4,7 @@ export default defineConfig({
 	entry: {
 		node: "src/node/index.ts",
 		react: "src/react/index.ts",
+		configs: "src/index.ts",
 	},
 	format: ["esm"],
 	dts: true,

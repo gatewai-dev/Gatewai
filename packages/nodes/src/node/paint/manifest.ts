@@ -1,4 +1,5 @@
 import { defineNode } from "@gatewai/node-sdk";
+import { PaintNodeConfigSchema } from "../../configs/paint.config.js";
 import backendProcessor from "./processor.js";
 
 export default defineNode({
@@ -6,6 +7,7 @@ export default defineNode({
 	displayName: "Paint",
 	description: "Draw / Fill Mask on an image",
 	category: "Image",
+	configSchema: PaintNodeConfigSchema,
 	isTerminal: false,
 	isTransient: true,
 	handles: {

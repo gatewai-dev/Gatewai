@@ -1,4 +1,5 @@
 import { defineNode } from "@gatewai/node-sdk";
+import { FileNodeConfigSchema } from "../../configs/file.config.js";
 import FileProcessor from "./processor.js";
 
 export default defineNode({
@@ -6,6 +7,7 @@ export default defineNode({
 	displayName: "Import",
 	description: "Upload your media files",
 	category: "Inputs",
+	configSchema: FileNodeConfigSchema,
 	isTerminal: false,
 	isTransient: false,
 	showInQuickAccess: true,

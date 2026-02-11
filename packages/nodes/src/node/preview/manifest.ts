@@ -1,4 +1,5 @@
 import { defineNode } from "@gatewai/node-sdk";
+import { PreviewNodeConfigSchema } from "../../configs/preview.config.js";
 import PreviewProcessor from "./processor.js";
 
 export default defineNode({
@@ -6,6 +7,7 @@ export default defineNode({
 	displayName: "Preview",
 	description: "Preview the output of a connected node",
 	category: "Outputs",
+	configSchema: PreviewNodeConfigSchema,
 	isTerminal: false,
 	isTransient: true,
 	showInQuickAccess: true,

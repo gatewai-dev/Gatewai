@@ -1,4 +1,5 @@
 import { defineNode } from "@gatewai/node-sdk";
+import { BlurNodeConfigSchema } from "../../configs/blur.config.js";
 import backendProcessor from "./processor.js";
 
 export default defineNode({
@@ -6,6 +7,7 @@ export default defineNode({
 	displayName: "Blur",
 	description: "Apply blur to an image",
 	category: "Image",
+	configSchema: BlurNodeConfigSchema,
 	isTerminal: false,
 	isTransient: true,
 	handles: {

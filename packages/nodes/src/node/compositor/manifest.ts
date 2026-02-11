@@ -1,10 +1,12 @@
 import { defineNode } from "@gatewai/node-sdk";
+import { CompositorNodeConfigSchema } from "../../configs/compositor.config.js";
 
 export default defineNode({
 	type: "Compositor",
 	displayName: "Image Compositor",
 	description: "Compose an image using images and texts",
 	category: "Image",
+	configSchema: CompositorNodeConfigSchema,
 	isTerminal: false,
 	isTransient: true,
 	variableInputs: { enabled: true, dataTypes: ["Image", "Text"] },

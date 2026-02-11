@@ -1,4 +1,5 @@
 import { defineNode } from "@gatewai/node-sdk";
+import { ExportNodeConfigSchema } from "../../configs/export.config.js";
 import backendProcessor from "./processor.js";
 
 export default defineNode({
@@ -6,6 +7,7 @@ export default defineNode({
 	displayName: "Export",
 	description: "An UI download / API output node",
 	category: "Outputs",
+	configSchema: ExportNodeConfigSchema,
 	isTerminal: true,
 	isTransient: false,
 	showInQuickAccess: true,

@@ -1,4 +1,5 @@
 import { defineNode } from "@gatewai/node-sdk";
+import { VideoGenNodeConfigSchema } from "../../configs/video-gen.config.js";
 import backendProcessor from "./processor.js";
 
 export default defineNode({
@@ -9,6 +10,7 @@ export default defineNode({
 	subcategory: "Video",
 	isTerminal: true,
 	isTransient: false,
+	configSchema: VideoGenNodeConfigSchema,
 	variableInputs: { enabled: true, dataTypes: ["Image"] },
 	handles: {
 		inputs: [

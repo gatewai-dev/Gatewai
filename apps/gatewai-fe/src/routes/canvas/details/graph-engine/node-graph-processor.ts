@@ -9,15 +9,17 @@ import {
 	type BlurNodeConfig,
 	type CompositorNodeConfig,
 	type CropNodeConfig,
-	dataTypeColors,
-	type FileData,
 	type ModulateNodeConfig,
-	type NodeResult,
-	type OutputItem,
 	type PaintNodeConfig,
 	type ResizeNodeConfig,
 	TextMergerNodeConfigSchema,
 	TextNodeConfigSchema,
+} from "@gatewai/nodes/node";
+import {
+	dataTypeColors,
+	type FileData,
+	type NodeResult,
+	type OutputItem,
 } from "@gatewai/types";
 import { GetAssetEndpoint } from "@/lib/file";
 import { processCompositor } from "./image-compositor";
