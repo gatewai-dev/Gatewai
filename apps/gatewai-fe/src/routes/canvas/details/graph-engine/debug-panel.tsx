@@ -6,7 +6,7 @@ import {
 	Popover,
 	PopoverContent,
 	PopoverTrigger,
-} from "gatewai/ui-kit";
+} from "@gatewai/ui-kit";
 import type { NodeEntityType } from "@gatewai/react-store";
 import { useProcessor } from "./processor-ctx";
 
