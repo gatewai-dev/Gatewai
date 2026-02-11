@@ -26,7 +26,7 @@
 	},
 	"dependencies": {
 		"@gatewai/rpc-client": "workspace:*",
-		"@gatewai/types": "workspace:*",
+		"@gatewai/core": "workspace:*",
 		"@reduxjs/toolkit": "^2.0.0",
 		"@xyflow/react": "^12.8.4",
 		"lodash": "^4.17.21",

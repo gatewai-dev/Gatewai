@@ -1,15 +1,15 @@
 import { generateId, logger } from "@gatewai/core";
+import {
+	type OutputItem,
+	TextToSpeechNodeConfigSchema,
+	type TextToSpeechResult,
+} from "@gatewai/core/types";
 import { DataType } from "@gatewai/db";
 import type {
 	BackendNodeProcessorCtx,
 	BackendNodeProcessorResult,
 	NodeProcessor,
 } from "@gatewai/node-sdk";
-import {
-	type OutputItem,
-	TextToSpeechNodeConfigSchema,
-	type TextToSpeechResult,
-} from "@gatewai/types";
 import { parseBuffer } from "music-metadata";
 import { injectable } from "tsyringe";
 import * as wav from "wav";

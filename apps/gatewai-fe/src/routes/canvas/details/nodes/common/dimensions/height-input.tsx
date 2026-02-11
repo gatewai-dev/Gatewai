@@ -1,5 +1,5 @@
+import type { ResizeNodeConfig } from "@gatewai/core/types";
 import type { NodeEntityType } from "@gatewai/react-store";
-import type { ResizeNodeConfig } from "@gatewai/types";
 import { DraggableNumberInput } from "@gatewai/ui-kit";
 import { ArrowUpDown } from "lucide-react";
 import { memo, useCallback } from "react";

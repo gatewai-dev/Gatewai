@@ -57,9 +57,6 @@ importers:
       '@gatewai/db':
         specifier: workspace:*
         version: link:../../packages/db
-      '@gatewai/di':
-        specifier: workspace:*
-        version: link:../../packages/di
       '@gatewai/graph-engine':
         specifier: workspace:*
         version: link:../../packages/graph-engine
@@ -72,21 +69,12 @@ importers:
       '@gatewai/nodes':
         specifier: workspace:*
         version: link:../../packages/nodes
-      '@gatewai/pixi-processor':
-        specifier: workspace:*
-        version: link:../../packages/pixi-processor
       '@gatewai/react-store':
         specifier: workspace:*
         version: link:../../packages/react-store
-      '@gatewai/storage':
-        specifier: workspace:*
-        version: link:../../packages/storage
       '@gatewai/tsconfig':
         specifier: workspace:*
         version: link:../../packages/tsconfig
-      '@gatewai/types':
-        specifier: workspace:*
-        version: link:../../packages/types
       '@gatewai/ui-kit':
         specifier: workspace:*
         version: link:../../packages/ui-kit
@@ -400,9 +388,9 @@ importers:
       '@gatewai/api-client':
         specifier: workspace:*
         version: link:../../packages/api-client
-      '@gatewai/types':
+      '@gatewai/core':
         specifier: workspace:*
-        version: link:../../packages/types
+        version: link:../../packages/core
       '@hono/mcp':
         specifier: ^0.2.3
         version: 0.2.3(@modelcontextprotocol/sdk@1.25.2(hono@4.8.5)(zod@3.25.67))(hono-rate-limiter@0.4.2(hono@4.8.5))(hono@4.8.5)(zod@3.25.67)
@@ -444,15 +432,15 @@ importers:
         specifier: 3.25.67
         version: 3.25.67
     devDependencies:
+      '@gatewai/core':
+        specifier: workspace:*
+        version: link:../core
       '@gatewai/rpc-client':
         specifier: workspace:*
         version: link:../rpc-client
       '@gatewai/tsconfig':
         specifier: workspace:*
         version: link:../tsconfig
-      '@gatewai/types':
-        specifier: workspace:*
-        version: link:../types
       '@types/node':
         specifier: ^24.0.4
         version: 24.10.4
@@ -465,6 +453,9 @@ importers:
 
   packages/core:
     dependencies:
+      '@google-cloud/storage':
+        specifier: ^7.15.0
+        version: 7.18.0(encoding@0.1.13)
       dotenv:
         specifier: ^16.4.5
         version: 16.6.1
@@ -474,13 +465,25 @@ importers:
       pino:
         specifier: ^10.1.0
         version: 10.1.0
+      reflect-metadata:
+        specifier: ^0.2.2
+        version: 0.2.2
+      tsyringe:
+        specifier: ^4.8.0
+        version: 4.10.0
       zod:
         specifier: ^3.23.8
         version: 3.25.67
     devDependencies:
+      '@gatewai/db':
+        specifier: workspace:*
+        version: link:../db
       '@gatewai/tsconfig':
         specifier: workspace:*
         version: link:../tsconfig
+      '@types/data-urls':
+        specifier: ^3.0.4
+        version: 3.0.4
       '@types/node':
         specifier: ^24.0.4
         version: 24.10.4
@@ -499,15 +502,6 @@ importers:
       '@gatewai/db':
         specifier: workspace:*
         version: link:../db
-      '@gatewai/di':
-        specifier: workspace:*
-        version: link:../di
-      '@gatewai/node-sdk':
-        specifier: workspace:*
-        version: link:../node-sdk
-      '@gatewai/types':
-        specifier: workspace:*
-        version: link:../types
       hono:
         specifier: ^4.6.14
         version: 4.8.5
@@ -559,28 +553,6 @@ importers:
         specifier: ^5.8.3
         version: 5.8.3
 
-  packages/di:
-    dependencies:
-      reflect-metadata:
-        specifier: ^0.2.2
-        version: 0.2.2
-      tsyringe:
-        specifier: ^4.8.0
-        version: 4.10.0
-    devDependencies:
-      '@gatewai/tsconfig':
-        specifier: workspace:*
-        version: link:../tsconfig
-      '@types/node':
-        specifier: ^22.0.0
-        version: 22.19.11
-      tsdown:
-        specifier: ^0.19.0
-        version: 0.19.0(publint@0.3.17)(synckit@0.11.11)(typescript@5.8.3)
-      typescript:
-        specifier: ^5.5.4
-        version: 5.8.3
-
   packages/graph-engine:
     dependencies:
       '@gatewai/core':
@@ -592,9 +564,6 @@ importers:
       '@gatewai/db':
         specifier: workspace:*
         version: link:../db
-      '@gatewai/di':
-        specifier: workspace:*
-        version: link:../di
       '@gatewai/media':
         specifier: workspace:*
         version: link:../media
@@ -604,12 +573,6 @@ importers:
       '@gatewai/nodes':
         specifier: workspace:*
         version: link:../nodes
-      '@gatewai/storage':
-        specifier: workspace:*
-        version: link:../storage
-      '@gatewai/types':
-        specifier: workspace:*
-        version: link:../types
       bullmq:
         specifier: ^5.66.4
         version: 5.66.4
@@ -635,24 +598,27 @@ importers:
       '@gatewai/core':
         specifier: workspace:*
         version: link:../core
-      '@gatewai/pixi-processor':
-        specifier: workspace:*
-        version: link:../pixi-processor
-      '@gatewai/types':
-        specifier: workspace:*
-        version: link:../types
       '@pixi/node':
         specifier: ^7.3.0
         version: 7.3.0(encoding@0.1.13)
       canvas:
         specifier: ^3.2.0
         version: 3.2.0
+      generic-pool:
+        specifier: ^3.9.0
+        version: 3.9.0
+      p-limit:
+        specifier: ^7.2.0
+        version: 7.2.0
       pixi.js:
         specifier: ^7.4.3
         version: 7.4.3
       sharp:
         specifier: ^0.34.5
         version: 0.34.5
+      zod:
+        specifier: 3.25.67
+        version: 3.25.67
     devDependencies:
       '@gatewai/tsconfig':
         specifier: workspace:*
@@ -663,6 +629,9 @@ importers:
       '@types/sharp':
         specifier: ^0.31.1
         version: 0.31.1
+      pixi-filters:
+        specifier: ^5.3.0
+        version: 5.3.0(@pixi/core@7.4.3)(@pixi/filter-alpha@7.4.3(@pixi/core@7.4.3))(@pixi/filter-blur@7.4.3(@pixi/core@7.4.3))
       tsdown:
         specifier: ^0.19.0
         version: 0.19.0(publint@0.3.17)(synckit@0.11.11)(typescript@5.5.4)
@@ -678,12 +647,9 @@ importers:
       '@gatewai/db':
         specifier: workspace:*
         version: link:../db
-      '@gatewai/pixi-processor':
+      '@gatewai/media':
         specifier: workspace:*
-        version: link:../pixi-processor
-      '@gatewai/types':
-        specifier: workspace:*
-        version: link:../types
+        version: link:../media
       reflect-metadata:
         specifier: ^0.2.2
         version: 0.2.2
@@ -715,18 +681,15 @@ importers:
       '@gatewai/db':
         specifier: workspace:*
         version: link:../db
+      '@gatewai/media':
+        specifier: workspace:*
+        version: link:../media
       '@gatewai/node-sdk':
         specifier: workspace:*
         version: link:../node-sdk
-      '@gatewai/pixi-processor':
-        specifier: workspace:*
-        version: link:../pixi-processor
       '@gatewai/react-store':
         specifier: workspace:*
         version: link:../react-store
-      '@gatewai/types':
-        specifier: workspace:*
-        version: link:../types
       '@google/genai':
         specifier: ^1.40.0
         version: 1.40.0(@modelcontextprotocol/sdk@1.25.2(hono@4.8.5)(zod@3.25.67))
@@ -780,12 +743,12 @@ importers:
         specifier: 3.25.67
         version: 3.25.67
     devDependencies:
+      '@gatewai/core':
+        specifier: workspace:*
+        version: link:../core
       '@gatewai/tsconfig':
         specifier: workspace:*
         version: link:../tsconfig
-      '@gatewai/types':
-        specifier: workspace:*
-        version: link:../types
       '@pixi/node':
         specifier: ^7.3.0
         version: 7.3.0(encoding@0.1.13)
@@ -804,12 +767,12 @@ importers:
 
   packages/react-store:
     dependencies:
+      '@gatewai/core':
+        specifier: workspace:*
+        version: link:../core
       '@gatewai/rpc-client':
         specifier: workspace:*
         version: link:../rpc-client
-      '@gatewai/types':
-        specifier: workspace:*
-        version: link:../types
       '@reduxjs/toolkit':
         specifier: ^2.0.0
         version: 2.10.1(react-redux@9.2.0(@types/react@18.3.28)(react@19.2.3)(redux@5.0.1))(react@19.2.3)
@@ -873,57 +836,7 @@ importers:
         specifier: 5.5.4
         version: 5.5.4
 
-  packages/storage:
-    dependencies:
-      '@gatewai/core':
-        specifier: workspace:*
-        version: link:../core
-      '@gatewai/types':
-        specifier: workspace:*
-        version: link:../types
-      '@google-cloud/storage':
-        specifier: ^7.15.0
-        version: 7.18.0(encoding@0.1.13)
-    devDependencies:
-      '@gatewai/tsconfig':
-        specifier: workspace:*
-        version: link:../tsconfig
-      '@types/node':
-        specifier: ^24.0.4
-        version: 24.10.4
-      tsdown:
-        specifier: ^0.19.0
-        version: 0.19.0(publint@0.3.17)(synckit@0.11.11)(typescript@5.5.4)
-      typescript:
-        specifier: 5.5.4
-        version: 5.5.4
-
   packages/tsconfig: {}
-
-  packages/types:
-    dependencies:
-      zod:
-        specifier: 3.25.67
-        version: 3.25.67
-    devDependencies:
-      '@gatewai/db':
-        specifier: workspace:*
-        version: link:../db
-      '@gatewai/tsconfig':
-        specifier: workspace:*
-        version: link:../tsconfig
-      '@types/data-urls':
-        specifier: ^3.0.4
-        version: 3.0.4
-      '@types/node':
-        specifier: ^24.0.4
-        version: 24.1.0
-      tsdown:
-        specifier: ^0.19.0
-        version: 0.19.0(publint@0.3.17)(synckit@0.11.11)(typescript@5.5.4)
-      typescript:
-        specifier: 5.5.4
-        version: 5.5.4
 
   packages/ui-kit:
     dependencies:
@@ -12924,7 +12837,7 @@ snapshots:
   '@types/request@2.48.13':
     dependencies:
       '@types/caseless': 0.12.5
-      '@types/node': 22.19.11
+      '@types/node': 20.19.9
       '@types/tough-cookie': 4.0.5
       form-data: 2.5.5
 

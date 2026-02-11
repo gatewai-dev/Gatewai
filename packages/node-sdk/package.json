@@ -34,8 +34,7 @@
 	"peerDependencies": {
 		"@gatewai/core": "workspace:*",
 		"@gatewai/db": "workspace:*",
-		"@gatewai/pixi-processor": "workspace:*",
-		"@gatewai/types": "workspace:*",
+		"@gatewai/media": "workspace:*",
 		"zod": "3.25.67"
 	},
 	"dependencies": {

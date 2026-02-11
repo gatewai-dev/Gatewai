@@ -1,10 +1,13 @@
+import type {
+	TextMergerNodeConfig,
+	TextMergerResult,
+} from "@gatewai/core/types";
 import { DataType } from "@gatewai/db";
 import type {
 	BackendNodeProcessorCtx,
 	BackendNodeProcessorResult,
 	NodeProcessor,
 } from "@gatewai/node-sdk";
-import type { TextMergerNodeConfig, TextMergerResult } from "@gatewai/types";
 import { injectable } from "tsyringe";
 
 @injectable()

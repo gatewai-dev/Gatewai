@@ -1,40 +1,32 @@
-import type { ModulateNodeConfig, PaintNodeConfig } from "./config/index.js";
-import type {
-	Application,
-	Container,
-	Filter,
-	Graphics,
-	IRenderer,
-	Sprite,
-	Texture,
-} from "./pixi-types-stub.js";
+import type { ModulateNodeConfig, PaintNodeConfig } from "@gatewai/core/types";
+import type { PixiProcessor } from "./types";
 
-/**
- * Common interface for Pixi.js processing service.
- * Allows decoupling the implementation (@gatewai/pixi-processor) from consumers.
- */
 export interface IPixiProcessor {
+	registerProcessor(processor: PixiProcessor): void;
+
+	// biome-ignore lint/suspicious/noExplicitAny: <explanation>
 	processImage(
 		imageUrl: string,
 		operations: (
-			app: Application,
-			sprite: Sprite,
+			app: any,
+			sprite: any,
 			resources: {
-				Filter: typeof Filter;
-				Sprite: typeof Sprite;
-				Container: typeof Container;
-				Graphics: typeof Graphics;
+				Filter: any;
+				Sprite: any;
+				Container: any;
+				Graphics: any;
 				[key: string]: unknown;
 			},
 		) => Promise<void> | void,
 		apiKey?: string,
 	): Promise<Blob>;
 
-	createTexture(url: string, apiKey?: string): Promise<Texture>;
+	createTexture(url: string, apiKey?: string): Promise<any>;
 
-	extract(target: Container, renderer: IRenderer): Promise<Blob>;
+	extract(target: any, renderer: any): Promise<Blob>;
 
-	execute<TInput = unknown, TOutput = unknown>(
+	// biome-ignore lint/suspicious/noExplicitAny: <explanation>
+	execute<TInput = any, TOutput = any>(
 		id: string,
 		input: TInput,
 		signal?: AbortSignal,

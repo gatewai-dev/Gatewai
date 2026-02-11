@@ -1,4 +1,4 @@
-import type { NodeResult } from "@gatewai/types";
+import type { NodeResult } from "@gatewai/core/types";
 import { createSelector } from "@reduxjs/toolkit";
 import { edgeSelectors } from "./edges";
 import { type HandleEntityType, handleSelectors } from "./handles";

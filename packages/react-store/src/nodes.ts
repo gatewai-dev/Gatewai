@@ -1,6 +1,6 @@
+import type { AllNodeConfig, NodeResult } from "@gatewai/core/types";
 import type { CanvasDetailsRPC } from "@gatewai/rpc-client";
 import { createRpcClient } from "@gatewai/rpc-client";
-import type { AllNodeConfig, NodeResult } from "@gatewai/types";
 import {
 	createDraftSafeSelector,
 	createEntityAdapter,

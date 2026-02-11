@@ -1,7 +1,7 @@
 import { ENV_CONFIG, logger } from "@gatewai/core";
+import { container } from "@gatewai/core/di";
 import { GetCanvasEntities } from "@gatewai/data-ops";
 import { Prisma, prisma, TaskStatus } from "@gatewai/db";
-import { container } from "@gatewai/di";
 import {
 	graphResolvers,
 	mediaService,

@@ -1,3 +1,8 @@
+import type {
+	FileResult,
+	NodeResult,
+	VideoCompositorResult,
+} from "@gatewai/core/types";
 import { nodeRegistry } from "@gatewai/graph-engine";
 import {
 	blurNode,
@@ -16,11 +21,6 @@ import {
 	videoGenFirstLastFrameNode,
 	videoGenNode,
 } from "@gatewai/nodes/node";
-import type {
-	FileResult,
-	NodeResult,
-	VideoCompositorResult,
-} from "@gatewai/types";
 import type { NodeProcessorCtx } from "./types.js";
 
 // ────────────────────────────────────────────────────────────────────────────

@@ -1,5 +1,5 @@
+import type { FileData } from "@gatewai/core/types";
 import { makeSelectNodeById, useAppSelector } from "@gatewai/react-store";
-import type { FileData } from "@gatewai/types";
 import { Button } from "@gatewai/ui-kit";
 import type { NodeProps } from "@xyflow/react";
 import { ImagesIcon } from "lucide-react";

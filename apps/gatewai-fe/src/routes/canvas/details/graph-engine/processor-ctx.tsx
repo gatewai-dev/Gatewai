@@ -1,3 +1,4 @@
+import type { FileResult, NodeResult } from "@gatewai/core/types";
 import {
 	type HandleEntityType,
 	makeSelectAllEdges,
@@ -6,7 +7,6 @@ import {
 	type NodeEntityType,
 	useAppSelector,
 } from "@gatewai/react-store";
-import type { FileResult, NodeResult } from "@gatewai/types";
 import { isEqual } from "lodash";
 import {
 	createContext,

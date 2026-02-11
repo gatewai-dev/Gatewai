@@ -1,15 +1,15 @@
+import type {
+	FileData,
+	ModulateNodeConfig,
+	ModulateResult,
+	NodeResult,
+} from "@gatewai/core/types";
 import { DataType } from "@gatewai/db";
 import type {
 	BackendNodeProcessorCtx,
 	BackendNodeProcessorResult,
 	NodeProcessor,
 } from "@gatewai/node-sdk";
-import type {
-	FileData,
-	ModulateNodeConfig,
-	ModulateResult,
-	NodeResult,
-} from "@gatewai/types";
 import { injectable } from "tsyringe";
 
 @injectable()

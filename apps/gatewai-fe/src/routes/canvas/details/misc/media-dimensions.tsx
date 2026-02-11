@@ -1,5 +1,5 @@
+import type { FileData } from "@gatewai/core/types";
 import type { NodeEntityType } from "@gatewai/react-store";
-import type { FileData } from "@gatewai/types";
 import { Ruler } from "lucide-react";
 import { cn } from "@/lib/utils";
 import { useNodeResult } from "../graph-engine/processor-ctx";

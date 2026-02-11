@@ -1,10 +1,10 @@
-import type { NodeEntityType } from "@gatewai/react-store";
 import {
 	VIDEOGEN_NODE_MODELS,
 	VIDEOGEN_PERSON_GENERATION_OPTIONS,
 	type VideoGenExtendNodeConfig,
 	VideoGenExtendNodeConfigSchema,
-} from "@gatewai/types";
+} from "@gatewai/core/types";
+import type { NodeEntityType } from "@gatewai/react-store";
 import { Form, FormDescription } from "@gatewai/ui-kit";
 import { zodResolver } from "@hookform/resolvers/zod";
 import { memo, useCallback, useEffect } from "react";

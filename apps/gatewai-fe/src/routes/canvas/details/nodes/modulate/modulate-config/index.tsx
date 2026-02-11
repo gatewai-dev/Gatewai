@@ -1,8 +1,8 @@
-import type { NodeEntityType } from "@gatewai/react-store";
 import {
 	type ModulateNodeConfig,
 	ModulateNodeConfigSchema,
-} from "@gatewai/types";
+} from "@gatewai/core/types";
+import type { NodeEntityType } from "@gatewai/react-store";
 import { Form } from "@gatewai/ui-kit";
 import { zodResolver } from "@hookform/resolvers/zod";
 import { memo, useCallback, useEffect } from "react";

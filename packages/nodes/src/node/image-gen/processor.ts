@@ -1,5 +1,10 @@
 import assert from "node:assert";
 import { type EnvConfig, generateId, logger } from "@gatewai/core";
+import {
+	type FileData,
+	ImageGenNodeConfigSchema,
+	type ImageGenResult,
+} from "@gatewai/core/types";
 import { DataType } from "@gatewai/db";
 import type {
 	BackendNodeProcessorCtx,
@@ -9,11 +14,6 @@ import type {
 	NodeProcessor,
 	StorageService,
 } from "@gatewai/node-sdk";
-import {
-	type FileData,
-	ImageGenNodeConfigSchema,
-	type ImageGenResult,
-} from "@gatewai/types";
 import { injectable } from "tsyringe";
 import { getGenAIClient } from "../genai.js";
 

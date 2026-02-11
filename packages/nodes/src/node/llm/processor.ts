@@ -1,11 +1,11 @@
 import assert from "node:assert";
+import type { FileData, LLMNodeConfig, LLMResult } from "@gatewai/core/types";
 import { DataType } from "@gatewai/db";
 import type {
 	BackendNodeProcessorCtx,
 	BackendNodeProcessorResult,
 	NodeProcessor,
 } from "@gatewai/node-sdk";
-import type { FileData, LLMNodeConfig, LLMResult } from "@gatewai/types";
 import { injectable } from "tsyringe";
 import { getGenAIClient } from "../genai.js";
 

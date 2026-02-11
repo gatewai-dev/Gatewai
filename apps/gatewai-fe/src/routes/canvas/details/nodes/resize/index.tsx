@@ -1,8 +1,8 @@
+import type { FileData, ResizeNodeConfig } from "@gatewai/core/types";
 import {
 	updateNodeConfigWithoutHistory,
 	useAppDispatch,
 } from "@gatewai/react-store";
-import type { FileData, ResizeNodeConfig } from "@gatewai/types";
 import type { NodeProps } from "@xyflow/react";
 import { memo, useEffect } from "react";
 import { ResolveFileDataUrl } from "@/lib/file";

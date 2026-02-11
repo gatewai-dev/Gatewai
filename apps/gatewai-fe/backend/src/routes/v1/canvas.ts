@@ -1,13 +1,13 @@
 import { logger } from "@gatewai/core";
-import { applyCanvasUpdate, GetCanvasEntities } from "@gatewai/data-ops";
-import { prisma } from "@gatewai/db";
-import { NodeWFProcessor } from "@gatewai/graph-engine";
 import {
 	agentBulkUpdateSchema,
 	type BulkUpdatePayload,
 	bulkUpdateSchema,
 	processSchema,
-} from "@gatewai/types";
+} from "@gatewai/core/types";
+import { applyCanvasUpdate, GetCanvasEntities } from "@gatewai/data-ops";
+import { prisma } from "@gatewai/db";
+import { NodeWFProcessor } from "@gatewai/graph-engine";
 import { zValidator } from "@hono/zod-validator";
 import type { XYPosition } from "@xyflow/react";
 import { Hono } from "hono";

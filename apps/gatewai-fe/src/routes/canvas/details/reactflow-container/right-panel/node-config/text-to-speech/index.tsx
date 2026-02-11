@@ -1,11 +1,11 @@
-import type { NodeEntityType } from "@gatewai/react-store";
 import {
 	type TextToSpeechNodeConfig,
 	TextToSpeechNodeConfigSchema,
 	TTS_LANGUAGES,
 	TTS_NODE_MODELS,
 	TTS_VOICE_NAMES,
-} from "@gatewai/types";
+} from "@gatewai/core/types";
+import type { NodeEntityType } from "@gatewai/react-store";
 import {
 	Button,
 	Form,

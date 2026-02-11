@@ -1,17 +1,17 @@
 import assert from "node:assert";
-import { DataType } from "@gatewai/db";
-import type {
-	BackendNodeProcessorCtx,
-	BackendNodeProcessorResult,
-	NodeProcessor,
-} from "@gatewai/node-sdk";
-import type { BlurInput, BlurOutput } from "@gatewai/pixi-processor";
 import {
 	BlurNodeConfigSchema,
 	type BlurResult,
 	type FileData,
 	type NodeResult,
-} from "@gatewai/types";
+} from "@gatewai/core/types";
+import { DataType } from "@gatewai/db";
+import type { BlurInput, BlurOutput } from "@gatewai/media/pixi";
+import type {
+	BackendNodeProcessorCtx,
+	BackendNodeProcessorResult,
+	NodeProcessor,
+} from "@gatewai/node-sdk";
 import { injectable } from "tsyringe";
 
 @injectable()

@@ -1,16 +1,16 @@
 import assert from "node:assert";
+import {
+	type FileData,
+	type NodeResult,
+	ResizeNodeConfigSchema,
+	type ResizeResult,
+} from "@gatewai/core/types";
 import { DataType } from "@gatewai/db";
 import type {
 	BackendNodeProcessorCtx,
 	BackendNodeProcessorResult,
 	NodeProcessor,
 } from "@gatewai/node-sdk";
-import {
-	type FileData,
-	type NodeResult,
-	ResizeNodeConfigSchema,
-	type ResizeResult,
-} from "@gatewai/types";
 import { injectable } from "tsyringe";
 
 @injectable()

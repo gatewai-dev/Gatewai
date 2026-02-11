@@ -1,5 +1,5 @@
+import type { SpeechToTextResult } from "@gatewai/core/types";
 import { makeSelectNodeById, useAppSelector } from "@gatewai/react-store";
-import type { SpeechToTextResult } from "@gatewai/types";
 import { ScrollArea } from "@gatewai/ui-kit";
 import { memo, useMemo } from "react";
 import { cn } from "@/lib/utils";

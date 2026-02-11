@@ -1,10 +1,10 @@
 import assert from "node:assert";
+import type { ExportResult } from "@gatewai/core/types";
 import type {
 	BackendNodeProcessorCtx,
 	BackendNodeProcessorResult,
 	NodeProcessor,
 } from "@gatewai/node-sdk";
-import type { ExportResult } from "@gatewai/types";
 import { injectable } from "tsyringe";
 
 @injectable()

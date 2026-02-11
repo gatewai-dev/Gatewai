@@ -1,5 +1,9 @@
+import type {
+	FileResult,
+	ImagesResult,
+	VideoGenResult,
+} from "@gatewai/core/types";
 import type { NodeEntityType } from "@gatewai/react-store";
-import type { FileResult, ImagesResult, VideoGenResult } from "@gatewai/types";
 import { FileIcon } from "lucide-react";
 import { useMemo } from "react";
 import { GetAssetEndpoint } from "@/lib/file";

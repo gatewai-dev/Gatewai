@@ -1,3 +1,8 @@
+import type {
+	AllNodeConfig,
+	BulkUpdatePayload,
+	NodeResult,
+} from "@gatewai/core/types";
 import type { NodeType } from "@gatewai/db";
 import type {
 	BatchEntity,
@@ -40,11 +45,6 @@ import {
 	useProcessNodesMutation,
 	useRejectPatchMutation,
 } from "@gatewai/react-store";
-import type {
-	AllNodeConfig,
-	BulkUpdatePayload,
-	NodeResult,
-} from "@gatewai/types";
 import {
 	type Connection,
 	type Edge,

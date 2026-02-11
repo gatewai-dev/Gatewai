@@ -1,16 +1,16 @@
 import { logger } from "@gatewai/core";
+import {
+	type FileData,
+	type NodeResult,
+	PaintNodeConfigSchema,
+	type PaintResult,
+} from "@gatewai/core/types";
 import { DataType } from "@gatewai/db";
 import type {
 	BackendNodeProcessorCtx,
 	BackendNodeProcessorResult,
 	NodeProcessor,
 } from "@gatewai/node-sdk";
-import {
-	type FileData,
-	type NodeResult,
-	PaintNodeConfigSchema,
-	type PaintResult,
-} from "@gatewai/types";
 import { injectable } from "tsyringe";
 
 @injectable()

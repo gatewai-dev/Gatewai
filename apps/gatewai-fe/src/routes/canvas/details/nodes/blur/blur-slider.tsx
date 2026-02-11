@@ -1,5 +1,5 @@
+import type { BlurNodeConfig } from "@gatewai/core/types";
 import type { NodeEntityType } from "@gatewai/react-store";
-import type { BlurNodeConfig } from "@gatewai/types";
 import { Label, Slider } from "@gatewai/ui-kit";
 import { memo, useCallback, useEffect, useState } from "react";
 import { useCanvasCtx } from "../../ctx/canvas-ctx";

@@ -1,6 +1,6 @@
+import { bulkUpdateSchema } from "@gatewai/core/types";
 import { GetCanvasEntities } from "@gatewai/data-ops";
 import { prisma } from "@gatewai/db";
-import { bulkUpdateSchema } from "@gatewai/types";
 import {
 	Agent,
 	type AgentInputItem,

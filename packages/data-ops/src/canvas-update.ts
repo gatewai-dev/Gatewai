@@ -1,14 +1,14 @@
 import { generateId } from "@gatewai/core";
+import type { BulkUpdatePayload, NodeResult } from "@gatewai/core/types";
 import type { NodeUpdateInput } from "@gatewai/db";
 import { prisma } from "@gatewai/db";
-import type { BulkUpdatePayload, NodeResult } from "@gatewai/types";
 
 export async function applyCanvasUpdate(
 	canvasId: string,
 	validated: BulkUpdatePayload,
 ) {
 	// 1. Verify Canvas Existence
-	console.log({ validated });
+
 	const existingCanvas = await prisma.canvas.findFirst({
 		where: { id: canvasId },
 		select: { id: true, version: true },

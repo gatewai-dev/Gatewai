@@ -1,16 +1,16 @@
 import assert from "node:assert";
+import {
+	CropNodeConfigSchema,
+	type CropResult,
+	type FileData,
+	type NodeResult,
+} from "@gatewai/core/types";
 import { DataType } from "@gatewai/db";
 import type {
 	BackendNodeProcessorCtx,
 	BackendNodeProcessorResult,
 	NodeProcessor,
 } from "@gatewai/node-sdk";
-import {
-	CropNodeConfigSchema,
-	type CropResult,
-	type FileData,
-	type NodeResult,
-} from "@gatewai/types";
 import { injectable } from "tsyringe";
 
 @injectable()

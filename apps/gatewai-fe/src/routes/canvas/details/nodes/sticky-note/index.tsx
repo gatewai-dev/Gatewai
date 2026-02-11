@@ -1,5 +1,5 @@
+import type { NoteNodeConfig } from "@gatewai/core/types";
 import { makeSelectNodeById, useAppSelector } from "@gatewai/react-store";
-import type { NoteNodeConfig } from "@gatewai/types";
 import { Textarea } from "@gatewai/ui-kit";
 import type { NodeProps } from "@xyflow/react";
 import { NodeResizer } from "@xyflow/react";

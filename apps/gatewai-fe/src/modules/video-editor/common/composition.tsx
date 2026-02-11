@@ -1,4 +1,4 @@
-import type { VideoCompositorLayer } from "@gatewai/types";
+import type { VideoCompositorLayer } from "@gatewai/core/types";
 import { Video } from "@remotion/media";
 import { useMemo } from "react";
 import {

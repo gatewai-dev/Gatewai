@@ -1,4 +1,5 @@
 import type { EnvConfig } from "@gatewai/core";
+import type { FileData, NodeResult } from "@gatewai/core/types";
 import type {
 	Canvas,
 	DataType,
@@ -9,7 +10,6 @@ import type {
 	PrismaClient,
 	Task,
 } from "@gatewai/db";
-import type { FileData, NodeResult } from "@gatewai/types";
 import { type ZodTypeAny, z } from "zod";
 
 /**
@@ -24,9 +24,9 @@ import type {
 	GraphResolvers,
 	MediaService,
 	StorageService,
-} from "@gatewai/types";
+} from "@gatewai/core/types";
 
-// Re-export so consumers don't need to import from @gatewai/types directly if they don't want to
+// Re-export so consumers don't need to import from @gatewai/core/types directly if they don't want to
 export type { GraphResolvers, MediaService, StorageService };
 
 /**

@@ -3,18 +3,17 @@ import { existsSync, mkdirSync } from "node:fs";
 import { readFile, rm } from "node:fs/promises";
 import path from "node:path";
 import { generateId, logger } from "@gatewai/core";
-
+import {
+	type FileData,
+	VideoGenNodeConfigSchema,
+	type VideoGenResult,
+} from "@gatewai/core/types";
 import { DataType } from "@gatewai/db";
 import type {
 	BackendNodeProcessorCtx,
 	BackendNodeProcessorResult,
 	NodeProcessor,
 } from "@gatewai/node-sdk";
-import {
-	type FileData,
-	VideoGenNodeConfigSchema,
-	type VideoGenResult,
-} from "@gatewai/types";
 import type {
 	GenerateVideosConfig,
 	VideoGenerationReferenceImage,

@@ -1,5 +1,5 @@
 /**
- * Stub types for Pixi.js to avoid direct dependency in @gatewai/types.
+ * Stub types for Pixi.js to avoid direct dependency in @gatewai/core/types.
  * These are used only for interface definitions.
  */
 

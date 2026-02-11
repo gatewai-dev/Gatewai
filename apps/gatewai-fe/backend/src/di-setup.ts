@@ -1,6 +1,6 @@
 import { ENV_CONFIG } from "@gatewai/core";
+import { container } from "@gatewai/core/di";
 import { prisma } from "@gatewai/db";
-import { container } from "@gatewai/di";
 import {
 	graphResolvers,
 	mediaService,

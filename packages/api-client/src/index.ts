@@ -1,5 +1,5 @@
+import type { BulkUpdatePayload } from "@gatewai/core/types";
 import { createRpcClient } from "@gatewai/rpc-client";
-import type { BulkUpdatePayload } from "@gatewai/types";
 import type { InferRequestType, InferResponseType } from "hono/client";
 
 // We create a dummy client instance purely to extract types via Hono's Infer utility.

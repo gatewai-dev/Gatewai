@@ -1,9 +1,9 @@
-import type { NodeEntityType } from "@gatewai/react-store";
 import {
 	type SpeechToTextNodeConfig,
 	SpeechToTextNodeConfigSchema,
 	STT_NODE_MODELS,
-} from "@gatewai/types";
+} from "@gatewai/core/types";
+import type { NodeEntityType } from "@gatewai/react-store";
 import { Form } from "@gatewai/ui-kit";
 import { zodResolver } from "@hookform/resolvers/zod";
 import { memo, useCallback, useEffect } from "react";

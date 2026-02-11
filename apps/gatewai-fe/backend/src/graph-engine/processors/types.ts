@@ -1,12 +1,12 @@
 import type { EnvConfig } from "@gatewai/core";
-import type { CanvasCtxData, CanvasCtxDataWithTasks } from "@gatewai/data-ops";
-import type { PrismaClient } from "@gatewai/db";
 import type {
 	GraphResolvers,
 	MediaService,
 	NodeResult,
 	StorageService,
-} from "@gatewai/types";
+} from "@gatewai/core/types";
+import type { CanvasCtxData, CanvasCtxDataWithTasks } from "@gatewai/data-ops";
+import type { PrismaClient } from "@gatewai/db";
 
 export type NodeProcessorCtx = {
 	node: CanvasCtxData["nodes"][number];

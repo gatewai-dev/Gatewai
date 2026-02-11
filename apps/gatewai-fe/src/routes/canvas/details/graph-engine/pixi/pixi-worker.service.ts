@@ -1,4 +1,4 @@
-import { BasePixiService } from "@gatewai/pixi-processor";
+import { BasePixiService } from "@gatewai/media/pixi";
 import {
 	Application,
 	Assets,

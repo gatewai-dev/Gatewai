@@ -1,4 +1,4 @@
-import { dataTypeColors } from "@gatewai/types";
+import { dataTypeColors } from "@gatewai/core/types";
 import {
 	Button,
 	Dialog,

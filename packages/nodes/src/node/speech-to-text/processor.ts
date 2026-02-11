@@ -1,15 +1,15 @@
 import { logger } from "@gatewai/core";
+import type {
+	OutputItem,
+	SpeechToTextNodeConfig,
+	SpeechToTextResult,
+} from "@gatewai/core/types";
 import { DataType } from "@gatewai/db";
 import type {
 	BackendNodeProcessorCtx,
 	BackendNodeProcessorResult,
 	NodeProcessor,
 } from "@gatewai/node-sdk";
-import type {
-	OutputItem,
-	SpeechToTextNodeConfig,
-	SpeechToTextResult,
-} from "@gatewai/types";
 import { createPartFromUri, createUserContent } from "@google/genai";
 import { injectable } from "tsyringe";
 import { getGenAIClient } from "../genai.js";

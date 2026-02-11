@@ -1,4 +1,4 @@
-import type { GatewaiAgentEvent } from "@gatewai/types";
+import type { GatewaiAgentEvent } from "@gatewai/core/types";
 import { useCallback, useEffect, useRef, useState } from "react";
 import { generateId } from "@/lib/idgen";
 import { rpcClient } from "@/rpc/client";

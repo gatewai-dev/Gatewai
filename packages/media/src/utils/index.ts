@@ -2,7 +2,6 @@ import { spawn } from "node:child_process";
 import fs from "node:fs/promises";
 import os from "node:os";
 import path from "node:path";
-// generateId should be imported from core if needed, or uuid
 import { generateId } from "@gatewai/core";
 import sharp from "sharp";
 

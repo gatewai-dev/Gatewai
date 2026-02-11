@@ -1,5 +1,5 @@
+import type { ResizeNodeConfig } from "@gatewai/core/types";
 import type { NodeEntityType } from "@gatewai/react-store";
-import type { ResizeNodeConfig } from "@gatewai/types";
 import {
 	Button,
 	Tooltip,
