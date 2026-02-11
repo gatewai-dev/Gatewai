@@ -1,12 +1,11 @@
 import { ENV_CONFIG } from "@gatewai/core";
+import { container, TOKENS } from "@gatewai/core/di";
 import { prisma } from "@gatewai/db";
-import { container } from "@gatewai/di";
 import {
 	graphResolvers,
 	mediaService,
 	storageService,
 } from "@gatewai/graph-engine";
-import { TOKENS } from "@gatewai/node-sdk";
 
 /**
  * Register backend-specific services into the DI container.

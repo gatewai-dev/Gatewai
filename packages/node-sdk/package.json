@@ -34,12 +34,8 @@
 	"peerDependencies": {
 		"@gatewai/core": "workspace:*",
 		"@gatewai/db": "workspace:*",
-		"@gatewai/pixi-processor": "workspace:*",
-		"@gatewai/types": "workspace:*",
+		"@gatewai/media": "workspace:*",
 		"zod": "3.25.67"
 	},
-	"dependencies": {
-		"reflect-metadata": "^0.2.2",
-		"tsyringe": "^4.10.0"
-	}
+	"dependencies": {}
 }

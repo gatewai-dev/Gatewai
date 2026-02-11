@@ -4,9 +4,9 @@ import type {
 	BackendNodeProcessorResult,
 	NodeProcessor,
 } from "@gatewai/node-sdk";
-import type { TextResult } from "@gatewai/types";
-import type { TextNodeConfig } from "../../configs/text.config.js";
+import { TextNodeConfigSchema } from "../../node-configs.schema.js";
 import { injectable } from "tsyringe";
+import type { TextResult } from "@gatewai/core/types";
 
 @injectable()
 export default class TextProcessor implements NodeProcessor {
@@ -17,7 +17,7 @@ export default class TextProcessor implements NodeProcessor {
 		data,
 	}: BackendNodeProcessorCtx): Promise<BackendNodeProcessorResult> {
 		try {
-			const nodeConfig = node.config as TextNodeConfig;
+			const nodeConfig = TextNodeConfigSchema.parse(node.config);
 			const outputHandle = data.handles.find(
 				(h) => h.nodeId === node.id && h.type === "Output",
 			);

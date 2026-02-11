@@ -1,10 +1,10 @@
+import type { FileResult } from "@gatewai/core/types";
 import {
 	makeSelectNodeById,
 	updateNodeResult,
 	useAppDispatch,
 	useAppSelector,
 } from "@gatewai/react-store";
-import type { FileResult } from "@gatewai/types";
 import type { NodeProps } from "@xyflow/react";
 import { memo } from "react";
 import { toast } from "sonner";

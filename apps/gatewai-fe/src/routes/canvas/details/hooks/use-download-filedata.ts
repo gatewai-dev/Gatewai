@@ -1,5 +1,5 @@
+import type { FileData } from "@gatewai/core/types";
 import type { DataType } from "@gatewai/db";
-import type { FileData } from "@gatewai/types";
 import {
 	DATA_TYPE_EXTENSIONS,
 	extractExtension,

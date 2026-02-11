@@ -15,15 +15,15 @@ import {
 	verticalListSortingStrategy,
 } from "@dnd-kit/sortable";
 import { CSS } from "@dnd-kit/utilities";
-import type { HandleEntityType, NodeEntityType } from "@gatewai/react-store";
-import { handleSelectors, useAppSelector } from "@gatewai/react-store";
 import type {
 	CompositorLayer,
 	CompositorNodeConfig,
 	FileData,
 	OutputItem,
-} from "@gatewai/types";
-import { COMPOSITOR_DEFAULTS, dataTypeColors } from "@gatewai/types";
+} from "@gatewai/core/types";
+import { COMPOSITOR_DEFAULTS, dataTypeColors } from "@gatewai/core/types";
+import type { HandleEntityType, NodeEntityType } from "@gatewai/react-store";
+import { handleSelectors, useAppSelector } from "@gatewai/react-store";
 // Internal Component Imports
 import {
 	AlertDialog,

@@ -1,4 +1,4 @@
-import type { ModulateNodeConfig, PaintNodeConfig } from "@gatewai/types";
+import type { ModulateNodeConfig, PaintNodeConfig } from "@gatewai/core/types";
 import { createPool, type Pool } from "generic-pool";
 import pLimit from "p-limit";
 import type {
@@ -187,8 +187,7 @@ export abstract class BasePixiService implements IPixiProcessor {
 		}
 	}
 
-	// biome-ignore lint/suspicious/noExplicitAny: <explanation>
-	public async execute<TInput = any, TOutput = any>(
+	public async execute<TInput, TOutput>(
 		id: string,
 		input: TInput,
 		signal?: AbortSignal,
@@ -209,6 +208,41 @@ export abstract class BasePixiService implements IPixiProcessor {
 
 			return processor.process(context, input);
 		}, signal);
+	}
+
+	public async processImage(
+		imageUrl: string,
+		operations: (
+			app: Application,
+			sprite: Sprite,
+			resources: {
+				Filter: typeof Filter;
+				Sprite: typeof Sprite;
+				Container: typeof Container;
+				Graphics: typeof Graphics;
+				[key: string]: unknown;
+			},
+		) => Promise<void> | void,
+		apiKey?: string,
+	): Promise<Blob> {
+		return this.useApp(async (app) => {
+			const texture = await this.loadTexture(imageUrl, apiKey);
+			const modules = await this.getPixiModules();
+			const sprite = new modules.Sprite(texture);
+			app.stage.addChild(sprite);
+
+			await operations(app, sprite, modules);
+
+			return this.extractBlob(app.renderer, app.stage);
+		});
+	}
+
+	public async createTexture(url: string, apiKey?: string): Promise<Texture> {
+		return this.loadTexture(url, apiKey);
+	}
+
+	public async extract(target: Container, renderer: IRenderer): Promise<Blob> {
+		return this.extractBlob(renderer, target);
 	}
 
 	public async processModulate(

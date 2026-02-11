@@ -1,5 +1,5 @@
 // @ts-nocheck
-import type { ModulateNodeConfig } from "@gatewai/types";
+import type { ModulateNodeConfig } from "@gatewai/core/types";
 
 // biome-ignore lint/suspicious/noExplicitAny: Supress warning / it works
 const BuildModulateFilter = (fClass: any) => {

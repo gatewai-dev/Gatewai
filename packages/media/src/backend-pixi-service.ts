@@ -1,6 +1,9 @@
 import type { Readable } from "node:stream";
-import { BasePixiService } from "@gatewai/pixi-processor";
-import type { FileData, IPixiProcessor, MediaService } from "@gatewai/types";
+import type {
+	FileData,
+	IPixiProcessor,
+	MediaService,
+} from "@gatewai/core/types";
 import {
 	Application,
 	Assets,
@@ -14,6 +17,7 @@ import {
 } from "@pixi/node";
 import { createCanvas, ImageData } from "canvas";
 import sharp from "sharp";
+import { BasePixiService } from "./pixi/index.js";
 
 // 1. Polyfill ImageData
 if (typeof global.ImageData === "undefined") {
@@ -98,7 +102,6 @@ class BackendPixiService extends BasePixiService implements IPixiProcessor {
 		return "@pixi/node";
 	}
 
-	// @ts-expect-error - The types from pixi-types-stub might conflict slightly with @pixi/node but implementation is correct
 	protected async extractBlob(renderer: any, target: Container): Promise<Blob> {
 		const bounds = target.getBounds();
 		const width = Math.floor(bounds.width);

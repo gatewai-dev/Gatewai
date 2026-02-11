@@ -1,5 +1,5 @@
 import path from "node:path";
-import type { StorageService } from "@gatewai/types";
+import type { StorageService } from "@gatewai/core/types";
 import { Storage } from "@google-cloud/storage";
 
 export class GCSStorageService implements StorageService {

@@ -3,7 +3,7 @@ import type {
     BackendNodeProcessorResult,
     NodeProcessor,
 } from "@gatewai/node-sdk";
-import type { VideoCompositorResult } from "@gatewai/types";
+import type { VideoCompositorResult } from "@gatewai/core/types";
 import { injectable } from "tsyringe";
 
 @injectable()

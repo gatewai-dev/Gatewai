@@ -1,5 +1,5 @@
+import type { FileData, FileResult } from "@gatewai/core/types";
 import { useDeleteAssetMutation } from "@gatewai/react-store";
-import type { FileData, FileResult } from "@gatewai/types";
 import {
 	AlertDialog,
 	AlertDialogAction,

@@ -1,5 +1,5 @@
+import type { FileData, VideoCompositorNodeConfig } from "@gatewai/core/types";
 import { makeSelectNodeById, useAppSelector } from "@gatewai/react-store";
-import type { FileData, VideoCompositorNodeConfig } from "@gatewai/types";
 import { Button } from "@gatewai/ui-kit";
 import { Player } from "@remotion/player";
 import type { NodeProps } from "@xyflow/react";

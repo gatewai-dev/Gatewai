@@ -1,8 +1,3 @@
-import type { NodeEntityType } from "@gatewai/react-store";
-import {
-	makeSelectHandlesByNodeId,
-	useAppSelector,
-} from "@gatewai/react-store";
 import {
 	VIDEOGEN_ASPECT_RATIOS,
 	VIDEOGEN_DURATIONS,
@@ -10,7 +5,12 @@ import {
 	VIDEOGEN_RESOLUTIONS,
 	type VideoGenNodeConfig,
 	VideoGenNodeConfigSchema,
-} from "@gatewai/types";
+} from "@gatewai/core/types";
+import type { NodeEntityType } from "@gatewai/react-store";
+import {
+	makeSelectHandlesByNodeId,
+	useAppSelector,
+} from "@gatewai/react-store";
 import {
 	Form,
 	FormDescription,

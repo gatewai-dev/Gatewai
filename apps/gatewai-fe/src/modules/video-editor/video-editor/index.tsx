@@ -15,18 +15,18 @@ import {
 	verticalListSortingStrategy,
 } from "@dnd-kit/sortable";
 import { CSS } from "@dnd-kit/utilities";
+import type {
+	FileData,
+	OutputItem,
+	VideoCompositorNodeConfig,
+} from "@gatewai/core/types";
+import { dataTypeColors } from "@gatewai/core/types";
 import type { NodeEntityType } from "@gatewai/react-store";
 import {
 	handleSelectors,
 	useAppSelector,
 	useGetFontListQuery,
 } from "@gatewai/react-store";
-import type {
-	FileData,
-	OutputItem,
-	VideoCompositorNodeConfig,
-} from "@gatewai/types";
-import { dataTypeColors } from "@gatewai/types";
 import {
 	AlertDialog,
 	AlertDialogAction,

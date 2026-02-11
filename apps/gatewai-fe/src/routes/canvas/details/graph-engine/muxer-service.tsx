@@ -2,7 +2,7 @@ import type {
 	FileData,
 	VideoCompositorLayer,
 	VideoCompositorNodeConfig,
-} from "@gatewai/types";
+} from "@gatewai/core/types";
 import { Audio, Video } from "@remotion/media";
 import { renderMediaOnWeb } from "@remotion/web-renderer";
 import type React from "react";

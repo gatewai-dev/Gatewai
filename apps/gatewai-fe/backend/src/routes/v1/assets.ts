@@ -1,16 +1,15 @@
 import assert from "node:assert";
 import { ENV_CONFIG, generateId, logger } from "@gatewai/core";
-import { type FileAssetWhereInput, prisma } from "@gatewai/db";
-import { container } from "@gatewai/di";
-import { generateImageThumbnail, generateVideoThumbnail } from "@gatewai/media"; // Exported as utils
-import { TOKENS } from "@gatewai/node-sdk";
+import { container, TOKENS } from "@gatewai/core/di";
 import type {
 	MediaService,
 	NodeResult,
 	Output,
 	OutputItem,
 	StorageService,
-} from "@gatewai/types";
+} from "@gatewai/core/types";
+import { type FileAssetWhereInput, prisma } from "@gatewai/db";
+import { generateImageThumbnail, generateVideoThumbnail } from "@gatewai/media"; // Exported as utils
 import { zValidator } from "@hono/zod-validator";
 import { fileTypeFromBuffer } from "file-type";
 import { Hono } from "hono";
@@ -511,8 +510,8 @@ const assetsRouter = new Hono<{ Variables: AuthorizedHonoTypes }>({
 									const data = item.data;
 									const entityId =
 										typeof data === "object" &&
-											data !== null &&
-											"entity" in data
+										data !== null &&
+										"entity" in data
 											? (data as { entity?: { id?: string } }).entity?.id
 											: undefined;
 									const matches = entityId === id;

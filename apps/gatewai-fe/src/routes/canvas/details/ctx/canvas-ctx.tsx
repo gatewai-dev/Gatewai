@@ -39,10 +39,6 @@ import {
 	useProcessNodesMutation,
 	useRejectPatchMutation,
 } from "@gatewai/react-store";
-import type {
-	BulkUpdatePayload,
-	NodeResult,
-} from "@gatewai/types";
 import type { AllNodeConfig } from "@gatewai/nodes";
 import {
 	type Connection,

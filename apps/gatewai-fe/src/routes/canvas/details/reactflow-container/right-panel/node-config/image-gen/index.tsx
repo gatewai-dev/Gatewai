@@ -1,11 +1,11 @@
-import type { NodeEntityType } from "@gatewai/react-store";
 import {
 	IMAGEGEN_ASPECT_RATIOS,
 	IMAGEGEN_IMAGE_SIZES,
 	IMAGEGEN_NODE_MODELS,
 	type ImageGenConfig,
 	ImageGenNodeConfigSchema,
-} from "@gatewai/types";
+} from "@gatewai/core/types";
+import type { NodeEntityType } from "@gatewai/react-store";
 import { Form } from "@gatewai/ui-kit";
 import { zodResolver } from "@hookform/resolvers/zod";
 import { debounce, isEqual } from "lodash";

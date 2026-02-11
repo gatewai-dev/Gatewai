@@ -22,12 +22,9 @@
 		"@gatewai/core": "workspace:*",
 		"@gatewai/data-ops": "workspace:*",
 		"@gatewai/db": "workspace:*",
-		"@gatewai/di": "workspace:*",
 		"@gatewai/media": "workspace:*",
 		"@gatewai/nodes": "workspace:*",
 		"@gatewai/node-sdk": "workspace:*",
-		"@gatewai/storage": "workspace:*",
-		"@gatewai/types": "workspace:*",
 		"bullmq": "^5.66.4",
 		"ioredis": "^5.8.0"
 	},

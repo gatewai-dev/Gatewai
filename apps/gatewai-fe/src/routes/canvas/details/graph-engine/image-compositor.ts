@@ -3,7 +3,7 @@ import {
 	type CompositorLayer,
 	type CompositorNodeConfig,
 	type GlobalCompositeOperationType,
-} from "@gatewai/types";
+} from "@gatewai/core/types";
 import Konva from "konva";
 import { GetFontAssetUrl } from "@/lib/file";
 import { fontManager } from "@/lib/fonts";

@@ -1,17 +1,17 @@
 import { generateId, logger } from "@gatewai/core";
+import {
+	type OutputItem,
+	type TextToSpeechResult,
+} from "@gatewai/core/types";
 import { DataType } from "@gatewai/db";
 import type {
 	BackendNodeProcessorCtx,
 	BackendNodeProcessorResult,
 	NodeProcessor,
 } from "@gatewai/node-sdk";
-import {
-	type OutputItem,
-	type TextToSpeechResult,
-} from "@gatewai/types";
 import { TextToSpeechNodeConfigSchema } from "../../configs/text-to-speech.config.js";
 import { parseBuffer } from "music-metadata";
-import { TOKENS } from "@gatewai/node-sdk";
+import { TOKENS } from "@gatewai/core/di";
 import type { PrismaClient } from "@gatewai/db";
 import type { EnvConfig } from "@gatewai/core";
 import { inject, injectable } from "tsyringe";

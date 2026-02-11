@@ -1,5 +1,5 @@
 import { GatewaiApiClient } from "@gatewai/api-client";
-import { bulkUpdateSchema } from "@gatewai/types";
+import { bulkUpdateSchema } from "@gatewai/core/types";
 import { StreamableHTTPTransport } from "@hono/mcp";
 import { serve } from "@hono/node-server";
 import {
@@ -140,7 +140,7 @@ server.registerTool(
 			content: [
 				{
 					type: "text",
-					text: `Patch proposed successfully. Patch ID: ${result.id}. The user has been notified to review the changes.`,
+					text: `Patch proposed successfully. Patch ID: ${result.id}`,
 				},
 			],
 		};

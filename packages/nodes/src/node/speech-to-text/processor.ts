@@ -1,17 +1,17 @@
 import { logger } from "@gatewai/core";
+import type {
+	OutputItem,
+	SpeechToTextResult,
+} from "@gatewai/core/types";
 import { DataType } from "@gatewai/db";
 import type {
 	BackendNodeProcessorCtx,
 	BackendNodeProcessorResult,
 	NodeProcessor,
 } from "@gatewai/node-sdk";
-import {
-	type OutputItem,
-	type SpeechToTextResult,
-} from "@gatewai/types";
-import type { SpeechToTextNodeConfig } from "../../configs/speech-to-text.config.js";
+import { SpeechToTextNodeConfigSchema } from "../../node-configs.schema.js";
 import { createPartFromUri, createUserContent } from "@google/genai";
-import { TOKENS } from "@gatewai/node-sdk";
+import { TOKENS } from "@gatewai/core/di";
 import type { EnvConfig } from "@gatewai/core";
 import { inject, injectable } from "tsyringe";
 import {
@@ -44,7 +44,7 @@ export default class SpeechToTextProcessor implements NodeProcessor {
 			})?.data as OutputItem<"Audio">["data"];
 
 
-			const nodeConfig = node.config as SpeechToTextNodeConfig;
+			const nodeConfig = SpeechToTextNodeConfigSchema.parse(node.config);
 
 			let fileBlob: Blob;
 			let mimeType: string;

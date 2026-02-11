@@ -1,17 +1,10 @@
 import assert from "node:assert";
-import { DataType } from "@gatewai/db";
-import type {
-	BackendNodeProcessorCtx,
-	BackendNodeProcessorResult,
-	NodeProcessor,
-} from "@gatewai/node-sdk";
-import type { BlurInput, BlurOutput } from "@gatewai/pixi-processor";
 import {
 	type BlurResult,
 	type FileData,
 	type NodeResult,
-} from "@gatewai/types";
-import { TOKENS } from "@gatewai/node-sdk";
+} from "@gatewai/core/types";
+import { TOKENS } from "@gatewai/core/di";
 import { inject, injectable } from "tsyringe";
 import type {
 	GraphResolvers,
@@ -19,6 +12,12 @@ import type {
 	StorageService,
 } from "@gatewai/node-sdk";
 import { BlurNodeConfigSchema } from "../../configs/blur.config.js";
+import { DataType } from "@gatewai/db";
+import type {
+	BackendNodeProcessorCtx,
+	BackendNodeProcessorResult,
+	NodeProcessor,
+} from "@gatewai/node-sdk";
 
 @injectable()
 export default class BlurProcessor implements NodeProcessor {
@@ -44,17 +43,9 @@ export default class BlurProcessor implements NodeProcessor {
 			const blurConfig = BlurNodeConfigSchema.parse(node.config);
 			const blurSize = blurConfig.size ?? 0;
 
-			const { dataUrl, ...dimensions } = await this.media.backendPixiService.execute<
-				BlurInput,
-				BlurOutput
-			>(
-				"blur",
-				{
-					imageUrl,
-					options: { blurSize },
-					apiKey: data.apiKey,
-				},
-				undefined,
+			const { dataUrl, ...dimensions } = await this.media.backendPixiService.processBlur(
+				imageUrl,
+				{ blurSize },
 			);
 
 			const uploadBuffer = Buffer.from(await dataUrl.arrayBuffer());

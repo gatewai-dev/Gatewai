@@ -1,2 +1,2 @@
-export * from "./server-media.js";
+export * from "./backend-pixi-service.js";
 export * from "./utils/index.js";

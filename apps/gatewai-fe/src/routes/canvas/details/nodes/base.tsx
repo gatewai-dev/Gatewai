@@ -1,10 +1,10 @@
+import { dataTypeColors } from "@gatewai/core/types";
 import {
 	type HandleEntityType,
 	makeSelectHandlesByNodeId,
 	makeSelectNodeById,
 	useAppSelector,
 } from "@gatewai/react-store";
-import { dataTypeColors } from "@gatewai/types";
 import {
 	ContextMenu,
 	ContextMenuContent,

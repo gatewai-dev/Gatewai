@@ -5,19 +5,15 @@ import type {
 	BackendNodeProcessorResult,
 	NodeProcessor,
 } from "@gatewai/node-sdk";
-import {
-	type FileData,
-	type NodeResult,
-	type ResizeResult,
-} from "@gatewai/types";
-import { ResizeNodeConfigSchema } from "../../configs/resize.config.js";
-import { TOKENS } from "@gatewai/node-sdk";
+import { ResizeNodeConfigSchema } from "../../node-configs.schema.js";
+import { TOKENS } from "@gatewai/core/di";
 import { inject, injectable } from "tsyringe";
 import type {
 	GraphResolvers,
 	MediaService,
 	StorageService,
 } from "@gatewai/node-sdk";
+import type { FileData, ResizeResult } from "@gatewai/core/types";
 
 @injectable()
 export default class ResizeProcessor implements NodeProcessor {
@@ -64,8 +60,8 @@ export default class ResizeProcessor implements NodeProcessor {
 			if (!outputHandle)
 				return { success: false, error: "Output handle is missing." };
 
-			const newResult: NodeResult = structuredClone(
-				node.result as NodeResult,
+			const newResult: ResizeResult = structuredClone(
+				node.result as ResizeResult,
 			) ?? {
 				outputs: [],
 				selectedOutputIndex: 0,
@@ -96,7 +92,7 @@ export default class ResizeProcessor implements NodeProcessor {
 			};
 
 			newResult.outputs = [newGeneration];
-			newResult.selectedOutputIndex = newResult.outputs.length - 1;
+			newResult.selectedOutputIndex = 0;
 
 			return { success: true, newResult };
 		} catch (err: unknown) {

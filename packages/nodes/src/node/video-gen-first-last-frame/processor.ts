@@ -3,19 +3,19 @@ import { existsSync, mkdirSync } from "node:fs";
 import { readFile } from "node:fs/promises";
 import path from "node:path";
 import { generateId, logger } from "@gatewai/core";
+import {
+	type FileData,
+	type OutputItem,
+	type VideoGenResult,
+} from "@gatewai/core/types";
 import { DataType } from "@gatewai/db";
 import type {
 	BackendNodeProcessorCtx,
 	BackendNodeProcessorResult,
 	NodeProcessor,
 } from "@gatewai/node-sdk";
-import {
-	type FileData,
-	type OutputItem,
-	type VideoGenResult,
-} from "@gatewai/types";
 import { VideoGenFirstLastFrameNodeConfigSchema } from "../../configs/video-gen-first-last-frame.config.js";
-import { TOKENS } from "@gatewai/node-sdk";
+import { TOKENS } from "@gatewai/core/di";
 import type { PrismaClient } from "@gatewai/db";
 import type { EnvConfig } from "@gatewai/core";
 import { inject, injectable } from "tsyringe";

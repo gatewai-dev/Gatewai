@@ -1,4 +1,4 @@
-import type { ModulateNodeConfig } from "@gatewai/types";
+import type { ModulateNodeConfig } from "@gatewai/core/types";
 import { BuildModulateFilter } from "../filters/modulate";
 import type { PixiProcessor, PixiProcessorContext } from "../types";
 

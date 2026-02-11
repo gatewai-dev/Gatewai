@@ -1,5 +1,5 @@
+import type { FileData } from "@gatewai/core/types";
 import type { DataType, FileAsset } from "@gatewai/db";
-import type { FileData } from "@gatewai/types";
 
 export const DATA_TYPE_EXTENSIONS: Record<DataType, string> = {
 	Image: "png",

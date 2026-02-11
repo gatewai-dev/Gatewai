@@ -4,11 +4,11 @@ import type {
 	BackendNodeProcessorResult,
 	NodeProcessor,
 } from "@gatewai/node-sdk";
-import type { TextMergerResult } from "@gatewai/types";
-import type { TextMergerNodeConfig } from "../../configs/text-merger.config.js";
-import { TOKENS } from "@gatewai/node-sdk";
+import { TextMergerNodeConfigSchema } from "../../node-configs.schema.js";
+import { TOKENS } from "@gatewai/core/di";
 import { inject, injectable } from "tsyringe";
 import { type GraphResolvers } from "@gatewai/node-sdk";
+import type { TextMergerResult } from "@gatewai/core/types";
 
 @injectable()
 export default class TextMergerProcessor implements NodeProcessor {
@@ -25,7 +25,7 @@ export default class TextMergerProcessor implements NodeProcessor {
 				dataType: DataType.Text,
 			});
 
-			const nodeConfig = node.config as TextMergerNodeConfig;
+			const nodeConfig = TextMergerNodeConfigSchema.parse(node.config);
 			const joinString = nodeConfig?.join ?? "\n";
 
 			const texts = textInputs

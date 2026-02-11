@@ -1,9 +1,9 @@
+import type { AnyOutputItem, NodeResult } from "@gatewai/core/types";
 import type {
 	EdgeEntityType,
 	HandleEntityType,
 	NodeEntityType,
 } from "@gatewai/react-store";
-import type { AnyOutputItem, NodeResult } from "@gatewai/types";
 
 interface ProcessorConfig {
 	nodes: Map<string, NodeEntityType>;

@@ -1,9 +1,9 @@
-import type { NodeEntityType } from "@gatewai/react-store";
 import {
 	LLM_NODE_MODELS,
 	type LLMNodeConfig,
 	LLMNodeConfigSchema,
-} from "@gatewai/types";
+} from "@gatewai/core/types";
+import type { NodeEntityType } from "@gatewai/react-store";
 import { Form } from "@gatewai/ui-kit";
 import { zodResolver } from "@hookform/resolvers/zod";
 import { debounce, isEqual } from "lodash";

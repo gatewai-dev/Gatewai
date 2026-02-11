@@ -9,15 +9,12 @@ import type {
 	NodeProcessor,
 	StorageService,
 } from "@gatewai/node-sdk";
-import {
-	type FileData,
-	type ImageGenResult,
-} from "@gatewai/types";
 import { ImageGenNodeConfigSchema } from "../../configs/image-gen.config.js";
-import { TOKENS } from "@gatewai/node-sdk";
+import { TOKENS } from "@gatewai/core/di";
 import type { PrismaClient } from "@gatewai/db";
 import { inject, injectable } from "tsyringe";
 import { getGenAIClient } from "../genai.js";
+import type { FileData, ImageGenResult } from "@gatewai/core/types";
 
 @injectable()
 export class ImageGenProcessor implements NodeProcessor {

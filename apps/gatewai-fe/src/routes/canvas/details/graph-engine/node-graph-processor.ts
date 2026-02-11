@@ -14,13 +14,7 @@ import {
 	type ResizeNodeConfig,
 	TextMergerNodeConfigSchema,
 	TextNodeConfigSchema,
-} from "@gatewai/nodes/node";
-import {
-	dataTypeColors,
-	type FileData,
-	type NodeResult,
-	type OutputItem,
-} from "@gatewai/types";
+} from "@gatewai/nodes";
 import { GetAssetEndpoint } from "@/lib/file";
 import { processCompositor } from "./image-compositor";
 import { pixiWorkerService } from "./pixi/pixi-worker.service";
@@ -30,6 +24,7 @@ import type {
 	NodeProcessorParams,
 	ProcessorConfig,
 } from "./types";
+import { dataTypeColors, type FileData, type NodeResult, type OutputItem } from "@gatewai/core/types";
 
 export enum TaskStatus {
 	QUEUED = "QUEUED",

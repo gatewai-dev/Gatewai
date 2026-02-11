@@ -1,4 +1,4 @@
-import type { PaintNodeConfig } from "@gatewai/types";
+import type { PaintNodeConfig } from "@gatewai/core/types";
 import type { Graphics, Sprite } from "pixi.js";
 import type { PixiProcessor, PixiProcessorContext } from "../types";
 

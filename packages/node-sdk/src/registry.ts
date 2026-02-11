@@ -1,22 +1,11 @@
 import { logger } from "@gatewai/core";
-import type {
-	BackendNodeProcessor,
-	GatewaiNodeManifest,
-	NodeProcessorConstructor,
-} from "./types.js";
-
-/**
- * Union type for node processors.
- */
-export type NodeProcessorDefinition =
-	| BackendNodeProcessor
-	| NodeProcessorConstructor;
+import type { GatewaiNodeManifest, NodeProcessorConstructor } from "./types.js";
 
 /**
  * Central registry for node processors and manifests.
  */
 export class NodeRegistry {
-	private processors = new Map<string, NodeProcessorDefinition>();
+	private processors = new Map<string, NodeProcessorConstructor>();
 	private manifests = new Map<string, GatewaiNodeManifest>();
 
 	/**
@@ -41,14 +30,14 @@ export class NodeRegistry {
 	 * Register a raw processor function for a node type.
 	 * Used for inline/passthrough processors that don't have full manifests.
 	 */
-	registerProcessor(type: string, processor: NodeProcessorDefinition): void {
+	registerProcessor(type: string, processor: NodeProcessorConstructor): void {
 		this.processors.set(type, processor);
 	}
 
 	/**
 	 * Get the processor for a node type.
 	 */
-	getProcessor(type: string): NodeProcessorDefinition | undefined {
+	getProcessor(type: string): NodeProcessorConstructor | undefined {
 		return this.processors.get(type);
 	}
 

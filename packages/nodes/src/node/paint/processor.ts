@@ -5,19 +5,15 @@ import type {
 	BackendNodeProcessorResult,
 	NodeProcessor,
 } from "@gatewai/node-sdk";
-import {
-	type FileData,
-	type NodeResult,
-	type PaintResult,
-} from "@gatewai/types";
-import { PaintNodeConfigSchema } from "../../configs/paint.config.js";
-import { TOKENS } from "@gatewai/node-sdk";
+import { PaintNodeConfigSchema } from "../../node-configs.schema.js";
+import { TOKENS } from "@gatewai/core/di";
 import { inject, injectable } from "tsyringe";
 import type {
 	GraphResolvers,
 	MediaService,
 	StorageService,
 } from "@gatewai/node-sdk";
+import type { FileData, PaintResult } from "@gatewai/core/types";
 
 @injectable()
 export default class PaintProcessor implements NodeProcessor {
@@ -81,8 +77,8 @@ export default class PaintProcessor implements NodeProcessor {
 			const maskBuffer = Buffer.from(await maskDataUrl.arrayBuffer());
 			const maskMimeType = maskDataUrl.type;
 
-			const newResult: NodeResult = structuredClone(
-				node.result as NodeResult,
+			const newResult: PaintResult = structuredClone(
+				node.result as PaintResult,
 			) ?? {
 				outputs: [],
 				selectedOutputIndex: 0,
@@ -135,7 +131,7 @@ export default class PaintProcessor implements NodeProcessor {
 			};
 
 			newResult.outputs = [newGeneration];
-			newResult.selectedOutputIndex = newResult.outputs.length - 1;
+			newResult.selectedOutputIndex = 0;
 
 			return { success: true, newResult };
 		} catch (err: unknown) {

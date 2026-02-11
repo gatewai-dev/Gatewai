@@ -1,7 +1,7 @@
 import { ENV_CONFIG } from "@gatewai/core";
+import { GCSStorageService } from "@gatewai/core/storage";
+import type { FileData } from "@gatewai/core/types";
 import { ServerMediaService } from "@gatewai/media";
-import { GCSStorageService } from "@gatewai/storage";
-import type { FileData } from "@gatewai/types";
 import {
 	getAllInputValuesWithHandle,
 	getAllOutputHandles,

@@ -1,4 +1,5 @@
 import type { EnvConfig } from "@gatewai/core";
+import type { NodeResult } from "@gatewai/core/types";
 import type {
 	Canvas,
 	DataType,
@@ -9,7 +10,6 @@ import type {
 	PrismaClient,
 	Task,
 } from "@gatewai/db";
-import type { FileData, NodeResult } from "@gatewai/types";
 import { type ZodTypeAny, z } from "zod";
 
 /**
@@ -24,9 +24,9 @@ import type {
 	GraphResolvers,
 	MediaService,
 	StorageService,
-} from "@gatewai/types";
+} from "@gatewai/core/types";
 
-// Re-export so consumers don't need to import from @gatewai/types directly if they don't want to
+// Re-export so consumers don't need to import from @gatewai/core/types directly if they don't want to
 export type { GraphResolvers, MediaService, StorageService };
 
 /**
@@ -56,14 +56,6 @@ export interface BackendNodeProcessorResult {
 	error?: string;
 	newResult?: NodeResult;
 }
-
-/**
- * Backend processor function signature.
- * Receives the execution context (including injected services) and returns a result.
- */
-export type BackendNodeProcessor = (
-	ctx: BackendNodeProcessorCtx,
-) => Promise<BackendNodeProcessorResult>;
 
 /**
  * Interface that class-based node processors must implement.
@@ -159,12 +151,7 @@ export const NodeManifestSchema = z.object({
 	defaultConfig: z.record(z.unknown()).optional(),
 
 	// Processing
-	backendProcessor: z
-		.union([
-			z.custom<BackendNodeProcessor>(),
-			z.custom<NodeProcessorConstructor>(),
-		])
-		.optional(),
+	backendProcessor: z.custom<NodeProcessorConstructor>().optional(),
 	frontendProcessor: z.custom<FrontendNodeProcessor>().optional(),
 });
 

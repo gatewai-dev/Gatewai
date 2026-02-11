@@ -1,8 +1,11 @@
 import assert from "node:assert";
 import { logger } from "@gatewai/core";
+import {
+	agentBulkUpdateSchema,
+	type BulkUpdatePayload,
+} from "@gatewai/core/types";
 import { GetCanvasEntities } from "@gatewai/data-ops";
 import { type NodeTemplate, prisma } from "@gatewai/db";
-import { agentBulkUpdateSchema, type BulkUpdatePayload } from "@gatewai/types";
 import { Agent, type MCPServerStreamableHttp, tool } from "@openai/agents";
 import { getQuickJS, type QuickJSContext, Scope } from "quickjs-emscripten";
 import { z } from "zod";

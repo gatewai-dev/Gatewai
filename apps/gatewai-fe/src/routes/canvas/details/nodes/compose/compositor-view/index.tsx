@@ -1,6 +1,6 @@
+import type { CompositorNodeConfig, OutputItem } from "@gatewai/core/types";
 import type { HandleEntityType } from "@gatewai/react-store";
 import { makeSelectNodeById, useAppSelector } from "@gatewai/react-store";
-import type { CompositorNodeConfig, OutputItem } from "@gatewai/types";
 import { memo, useMemo } from "react";
 import { Helmet } from "react-helmet-async";
 import { useNavigate, useParams } from "react-router";

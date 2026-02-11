@@ -1,17 +1,16 @@
+import type {
+	FileData,
+	ModulateResult,
+	NodeResult,
+} from "@gatewai/core/types";
 import { DataType } from "@gatewai/db";
 import type {
 	BackendNodeProcessorCtx,
 	BackendNodeProcessorResult,
 	NodeProcessor,
 } from "@gatewai/node-sdk";
-import {
-	type FileData,
-	type ModulateResult,
-	type NodeResult,
-} from "@gatewai/types";
 import { ModulateNodeConfigSchema } from "../../configs/modulate.config.js";
-import type { ModulateNodeConfig } from "../../configs/modulate.config.js";
-import { TOKENS } from "@gatewai/node-sdk";
+import { TOKENS } from "@gatewai/core/di";
 import { inject, injectable } from "tsyringe";
 import type {
 	GraphResolvers,
@@ -36,7 +35,7 @@ export default class ModulateProcessor implements NodeProcessor {
 				dataType: DataType.Image,
 				label: "Image",
 			})?.data as FileData | null;
-			const modulateConfig = node.config as ModulateNodeConfig;
+			const modulateConfig = ModulateNodeConfigSchema.parse(node.config);
 
 			if (!imageInput) {
 				return { success: false, error: "No image input provided" };

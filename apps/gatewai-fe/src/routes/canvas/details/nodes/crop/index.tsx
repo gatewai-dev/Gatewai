@@ -1,3 +1,4 @@
+import type { CropNodeConfig, FileData } from "@gatewai/core/types";
 import {
 	makeSelectEdgesByTargetNodeId,
 	makeSelectNodeById,
@@ -5,7 +6,6 @@ import {
 	useAppDispatch,
 	useAppSelector,
 } from "@gatewai/react-store";
-import type { CropNodeConfig, FileData } from "@gatewai/types";
 import type { NodeProps } from "@xyflow/react";
 import { memo, useCallback, useEffect, useMemo, useRef, useState } from "react";
 import { ResolveFileDataUrl } from "@/lib/file";

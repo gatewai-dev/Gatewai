@@ -1,9 +1,9 @@
+import type { FileData, PaintNodeConfig } from "@gatewai/core/types";
 import {
 	makeSelectEdgesByTargetNodeId,
 	makeSelectNodeById,
 	useAppSelector,
 } from "@gatewai/react-store";
-import type { FileData, PaintNodeConfig } from "@gatewai/types";
 import { Button, Label, Separator, Slider } from "@gatewai/ui-kit";
 import type { NodeProps } from "@xyflow/react";
 import { Brush, Eraser, PaintBucket } from "lucide-react";

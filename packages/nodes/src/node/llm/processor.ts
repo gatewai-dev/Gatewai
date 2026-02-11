@@ -1,13 +1,13 @@
 import assert from "node:assert";
+import type { FileData, LLMResult } from "@gatewai/core/types";
 import { DataType } from "@gatewai/db";
 import type {
 	BackendNodeProcessorCtx,
 	BackendNodeProcessorResult,
 	NodeProcessor,
 } from "@gatewai/node-sdk";
-import type { FileData, LLMResult } from "@gatewai/types";
-import type { LLMNodeConfig } from "../../configs/llm.config.js";
-import { TOKENS } from "@gatewai/node-sdk";
+import { LLMNodeConfigSchema } from "../../configs/llm.config.js";
+import { TOKENS } from "@gatewai/core/di";
 import { inject, injectable } from "tsyringe";
 import type { EnvConfig } from "@gatewai/core";
 import { type GraphResolvers } from "@gatewai/node-sdk";
@@ -66,7 +66,7 @@ export default class LLMProcessor implements NodeProcessor {
 				return { success: false, error: "No user prompt or image provided" };
 			}
 
-			const nodeConfig = node.config as LLMNodeConfig;
+			const nodeConfig = LLMNodeConfigSchema.parse(node.config);
 
 			const response = (await genAI.models.generateContent({
 				model: nodeConfig.model ?? "gemini-1.5-pro",

@@ -1,23 +1,19 @@
 import assert from "node:assert";
+import { CropNodeConfigSchema } from "../../configs/crop.config.js";
 import { DataType } from "@gatewai/db";
 import type {
 	BackendNodeProcessorCtx,
 	BackendNodeProcessorResult,
 	NodeProcessor,
 } from "@gatewai/node-sdk";
-import {
-	type CropResult,
-	type FileData,
-	type NodeResult,
-} from "@gatewai/types";
-import { TOKENS } from "@gatewai/node-sdk";
+import { TOKENS } from "@gatewai/core/di";
 import { inject, injectable } from "tsyringe";
 import type {
 	GraphResolvers,
 	MediaService,
 	StorageService,
 } from "@gatewai/node-sdk";
-import { CropNodeConfigSchema } from "../../configs/crop.config.js";
+import type { CropResult, FileData } from "@gatewai/core/types";
 
 @injectable()
 export default class CropProcessor implements NodeProcessor {
@@ -65,8 +61,8 @@ export default class CropProcessor implements NodeProcessor {
 			if (!outputHandle)
 				return { success: false, error: "Output handle is missing." };
 
-			const newResult: NodeResult = structuredClone(
-				node.result as NodeResult,
+			const newResult: CropResult = structuredClone(
+				node.result as CropResult,
 			) ?? {
 				outputs: [],
 				selectedOutputIndex: 0,
@@ -97,7 +93,7 @@ export default class CropProcessor implements NodeProcessor {
 			};
 
 			newResult.outputs = [newGeneration];
-			newResult.selectedOutputIndex = newResult.outputs.length - 1;
+			newResult.selectedOutputIndex = 0;
 
 			return { success: true, newResult };
 		} catch (err: unknown) {
