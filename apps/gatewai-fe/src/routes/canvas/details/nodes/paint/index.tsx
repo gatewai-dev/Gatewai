@@ -1,4 +1,5 @@
-import type { FileData, PaintNodeConfig } from "@gatewai/core/types";
+import type { PaintNodeConfig } from "@gatewai/nodes/configs";
+import type { FileData } from "@gatewai/core/types";
 import {
 	makeSelectEdgesByTargetNodeId,
 	makeSelectNodeById,

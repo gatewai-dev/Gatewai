@@ -3,7 +3,7 @@ import {
 	VIDEOGEN_RESOLUTIONS,
 	type VideoGenFirstLastFrameNodeConfig,
 	VideoGenFirstLastFrameNodeConfigSchema,
-} from "@gatewai/core/types";
+} from "@gatewai/nodes/configs";
 import type { NodeEntityType } from "@gatewai/react-store";
 import { Form } from "@gatewai/ui-kit";
 import { zodResolver } from "@hookform/resolvers/zod";

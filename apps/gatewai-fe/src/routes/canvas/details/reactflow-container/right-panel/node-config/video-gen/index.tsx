@@ -5,7 +5,7 @@ import {
 	VIDEOGEN_RESOLUTIONS,
 	type VideoGenNodeConfig,
 	VideoGenNodeConfigSchema,
-} from "@gatewai/core/types";
+} from "@gatewai/nodes/configs";
 import type { NodeEntityType } from "@gatewai/react-store";
 import {
 	makeSelectHandlesByNodeId,

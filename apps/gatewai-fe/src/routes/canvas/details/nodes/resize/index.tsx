@@ -1,4 +1,5 @@
-import type { FileData, ResizeNodeConfig } from "@gatewai/core/types";
+import type { ResizeNodeConfig } from "@gatewai/nodes/configs";
+import type { FileData } from "@gatewai/core/types";
 import {
 	updateNodeConfigWithoutHistory,
 	useAppDispatch,

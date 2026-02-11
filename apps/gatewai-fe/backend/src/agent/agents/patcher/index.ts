@@ -77,6 +77,7 @@ export function createPatcherAgent(
 				const sanitizedNodes =
 					nodes?.map((node) => ({
 						...node,
+						type: node.type as any,
 						width: node.width ?? 340,
 					})) || [];
 

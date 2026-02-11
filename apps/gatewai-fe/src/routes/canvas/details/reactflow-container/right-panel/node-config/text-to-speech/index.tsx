@@ -4,7 +4,7 @@ import {
 	TTS_LANGUAGES,
 	TTS_NODE_MODELS,
 	TTS_VOICE_NAMES,
-} from "@gatewai/core/types";
+} from "@gatewai/nodes/configs";
 import type { NodeEntityType } from "@gatewai/react-store";
 import {
 	Button,

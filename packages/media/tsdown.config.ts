@@ -10,4 +10,12 @@ export default defineConfig({
 	clean: true,
 	sourcemap: true,
 	treeshake: true,
+	external: [
+		"@gatewai/core",
+		"@pixi/node",
+		"canvas",
+		"sharp",
+		"pixi.js",
+		"@pixi/webworker",
+	],
 });

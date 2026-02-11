@@ -14,7 +14,7 @@ import {
 	type ResizeNodeConfig,
 	TextMergerNodeConfigSchema,
 	TextNodeConfigSchema,
-} from "@gatewai/nodes";
+} from "@gatewai/nodes/configs";
 import { GetAssetEndpoint } from "@/lib/file";
 import { processCompositor } from "./image-compositor";
 import { pixiWorkerService } from "./pixi/pixi-worker.service";

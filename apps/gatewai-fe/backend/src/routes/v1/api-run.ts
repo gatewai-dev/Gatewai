@@ -1,6 +1,6 @@
 import assert from "node:assert";
 import { generateId } from "@gatewai/core";
-import type { TextNodeConfig } from "@gatewai/core/types";
+import { type TextNodeConfig } from "@gatewai/nodes";
 import {
 	APIRunRequestSchema,
 	APIRunResponseSchema,

@@ -3,7 +3,7 @@ import {
 	VIDEOGEN_PERSON_GENERATION_OPTIONS,
 	type VideoGenExtendNodeConfig,
 	VideoGenExtendNodeConfigSchema,
-} from "@gatewai/core/types";
+} from "@gatewai/nodes/configs";
 import type { NodeEntityType } from "@gatewai/react-store";
 import { Form, FormDescription } from "@gatewai/ui-kit";
 import { zodResolver } from "@hookform/resolvers/zod";

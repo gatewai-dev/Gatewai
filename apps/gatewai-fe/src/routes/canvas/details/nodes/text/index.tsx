@@ -1,4 +1,7 @@
-import type { TextNodeConfig } from "@gatewai/core/types";
+import {
+	type TextNodeConfig,
+	TextNodeConfigSchema,
+} from "@gatewai/nodes/configs";
 import { makeSelectNodeById, useAppSelector } from "@gatewai/react-store";
 import { ScrollArea, Textarea } from "@gatewai/ui-kit";
 import type { NodeProps } from "@xyflow/react";

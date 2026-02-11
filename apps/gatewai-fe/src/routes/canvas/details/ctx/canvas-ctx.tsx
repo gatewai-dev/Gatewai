@@ -39,7 +39,7 @@ import {
 	useProcessNodesMutation,
 	useRejectPatchMutation,
 } from "@gatewai/react-store";
-import type { AllNodeConfig } from "@gatewai/nodes";
+import type { AllNodeConfig } from "@gatewai/nodes/configs";
 import {
 	type Connection,
 	type Edge,
