@@ -3,9 +3,9 @@ import {
 	createSlice,
 	type PayloadAction,
 } from "@reduxjs/toolkit";
-import { arrayEquals } from "@/lib/utils";
-import type { EdgeEntityType } from "./edges";
-import type { NodeEntityType } from "./nodes";
+import { arrayEquals } from "./utils.js";
+import type { EdgeEntityType } from "./edges.js";
+import type { NodeEntityType } from "./nodes.js";
 
 export type NodeMetaState = {
 	selectedNodeIds: NodeEntityType["id"][] | null;

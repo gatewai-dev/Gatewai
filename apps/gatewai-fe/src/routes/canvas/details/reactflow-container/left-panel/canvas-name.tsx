@@ -1,6 +1,6 @@
 import { memo, useEffect, useRef, useState } from "react";
 import { Input } from "@/components/ui/input";
-import { useUpdateNameMutation } from "@/store/canvas";
+import { useUpdateNameMutation } from "@gatewai/react-store";
 import { useCanvasCtx } from "../../ctx/canvas-ctx";
 
 const CanvasName = memo(() => {

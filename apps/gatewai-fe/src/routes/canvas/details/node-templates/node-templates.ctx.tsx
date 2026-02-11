@@ -1,6 +1,6 @@
 import { createContext, type PropsWithChildren, useContext } from "react";
-import type { NodeTemplateListRPC } from "@/rpc/types";
-import { useGetAllNodeTemplatesQuery } from "@/store/node-templates";
+import type { NodeTemplateListRPC } from "@gatewai/react-store";
+import { useGetAllNodeTemplatesQuery } from "@gatewai/react-store";
 
 interface NodeTemplatesContextType {
 	nodeTemplates: NodeTemplateListRPC | undefined;

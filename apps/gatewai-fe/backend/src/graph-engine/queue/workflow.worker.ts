@@ -13,9 +13,7 @@ import {
 	workflowQueue,
 } from "@gatewai/graph-engine";
 import type {
-	BackendNodeProcessor,
 	BackendNodeProcessorCtx,
-	BackendNodeProcessorResult,
 	NodeProcessor,
 	NodeProcessorConstructor,
 } from "@gatewai/node-sdk";
@@ -250,15 +248,17 @@ const processNodeJob = async (job: Job<NodeTaskJobData>) => {
 		});
 
 		// 5. Execute Processor
-		const processorOrClass = nodeRegistry.getProcessor(node.type);
-		if (!processorOrClass) {
+		const ProcessorClass = nodeRegistry.getProcessor(
+			node.type,
+		) as NodeProcessorConstructor;
+
+		if (!ProcessorClass) {
 			logger.error(`No processor for node type ${node.type}`);
 			throw new Error(`No processor for node type ${node.type}`);
 		}
 
 		logger.info(`Processing node: ${node.id} with type: ${node.type}`);
 
-		let result: BackendNodeProcessorResult;
 		const ctx: BackendNodeProcessorCtx = {
 			node,
 			data: { ...data, tasks: batchTasks, task, apiKey },
@@ -269,24 +269,11 @@ const processNodeJob = async (job: Job<NodeTaskJobData>) => {
 			env: ENV_CONFIG,
 		};
 
-		// Check if it's a class (constructor)
-		if (
-			typeof processorOrClass === "function" &&
-			processorOrClass.prototype &&
-			processorOrClass.prototype.process
-		) {
-			// It's a class-based processor
-			const ProcessorClass = processorOrClass as NodeProcessorConstructor;
-			// Resolve from DI container
-			const processorInstance = container.resolve(
-				ProcessorClass,
-			) as unknown as NodeProcessor;
-			result = await processorInstance.process(ctx);
-		} else {
-			// It's a functional processor (legacy)
-			const processorFn = processorOrClass as BackendNodeProcessor;
-			result = await processorFn(ctx);
-		}
+		// Resolve from DI container
+		const processorInstance = container.resolve(
+			ProcessorClass,
+		) as unknown as NodeProcessor;
+		const result = await processorInstance.process(ctx);
 
 		const { success, error, newResult } = result;
 

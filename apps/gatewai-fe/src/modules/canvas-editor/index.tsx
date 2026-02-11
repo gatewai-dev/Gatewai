@@ -108,10 +108,10 @@ import { CollapsibleSection } from "@/modules/common/CollapsibleSection";
 import { StyleControls } from "@/modules/common/properties/StyleControls";
 import { TransformControls } from "@/modules/common/properties/TransformControls";
 import { TypographyControls } from "@/modules/common/properties/TypographyControls";
-import { useAppSelector } from "@/store";
-import type { HandleEntityType } from "@/store/handles";
-import { handleSelectors } from "@/store/handles";
-import type { NodeEntityType } from "@/store/nodes";
+import { useAppSelector } from "@gatewai/react-store";
+import type { HandleEntityType } from "@gatewai/react-store";
+import { handleSelectors } from "@gatewai/react-store";
+import type { NodeEntityType } from "@gatewai/react-store";
 
 //#region CONSTANTS
 // Local defaults removed in favor of shared COMPOSITOR_DEFAULTS

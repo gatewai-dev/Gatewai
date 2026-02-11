@@ -27,6 +27,7 @@
 		"@gatewai/node-sdk": "workspace:*",
 		"@gatewai/nodes": "workspace:*",
 		"@gatewai/pixi-processor": "workspace:*",
+		"@gatewai/react-store": "workspace:*",
 		"@gatewai/tsconfig": "workspace:*",
 		"@gatewai/types": "workspace:*",
 		"@gatewai/media": "workspace:*",

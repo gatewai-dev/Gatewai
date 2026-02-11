@@ -2,7 +2,7 @@ import type { ResizeNodeConfig } from "@gatewai/types";
 import { ArrowUpDown } from "lucide-react";
 import { memo, useCallback } from "react";
 import { DraggableNumberInput } from "@/components/ui/draggable-number-input";
-import type { NodeEntityType } from "@/store/nodes";
+import type { NodeEntityType } from "@gatewai/react-store";
 import { useCanvasCtx } from "../../../ctx/canvas-ctx";
 
 const ResizeHeightInput = memo(

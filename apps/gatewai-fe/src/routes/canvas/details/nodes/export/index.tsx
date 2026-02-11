@@ -5,7 +5,7 @@ import { Alert, AlertDescription } from "@/components/ui/alert";
 import { Button } from "@/components/ui/button";
 import { Separator } from "@/components/ui/separator";
 import { isFileData } from "@/lib/file";
-import type { NodeEntityType } from "@/store/nodes";
+import type { NodeEntityType } from "@gatewai/react-store";
 import { useNodeResult } from "../../graph-engine/processor-ctx";
 import { useDownloadFileData } from "../../hooks/use-download-filedata";
 import { BaseNode } from "../base";

@@ -7,7 +7,7 @@ import { memo, useCallback, useEffect } from "react";
 import { useForm } from "react-hook-form";
 import { Form } from "@/components/ui/form";
 import { useCanvasCtx } from "@/routes/canvas/details/ctx/canvas-ctx";
-import type { NodeEntityType } from "@/store/nodes";
+import type { NodeEntityType } from "@gatewai/react-store";
 import { SliderField } from "../../../components/fields/slider";
 
 const ModulateNodeConfigComponent = memo(

@@ -1,12 +1,14 @@
 import { createApi, fetchBaseQuery } from "@reduxjs/toolkit/query/react";
-import { rpcClient } from "@/rpc/client";
+import { createRpcClient } from "@gatewai/rpc-client";
+
+const rpcClient = createRpcClient();
 import type {
 	UploadFileNodeAssetRPC,
 	UploadFileNodeAssetRPCParams,
 	UserAssetsListRPC,
 	UserAssetsListRPCParams,
 	UserAssetsUploadRPC,
-} from "@/rpc/types";
+} from "@gatewai/rpc-client";
 import { canvasDetailsAPI } from "./canvas";
 
 // Define a service using a base URL and expected endpoints

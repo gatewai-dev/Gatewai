@@ -2,8 +2,8 @@ import { Loader2, UploadIcon } from "lucide-react";
 import { useCallback } from "react";
 import { type Accept, useDropzone } from "react-dropzone";
 import type { UploadFileNodeAssetRPC } from "@/rpc/types";
-import { useUploadFileNodeAssetMutation } from "@/store/assets";
-import type { NodeEntityType } from "@/store/nodes";
+import { useUploadFileNodeAssetMutation } from "@gatewai/react-store";
+import type { NodeEntityType } from "@gatewai/react-store";
 
 interface DropzoneProps {
 	className?: string;

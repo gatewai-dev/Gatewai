@@ -8,10 +8,10 @@ import {
 	useRef,
 	useSyncExternalStore,
 } from "react";
-import { useAppSelector } from "@/store";
-import { makeSelectAllEdges } from "@/store/edges";
-import { type HandleEntityType, makeSelectAllHandles } from "@/store/handles";
-import { makeSelectAllNodeEntities, type NodeEntityType } from "@/store/nodes";
+import { useAppSelector } from "@gatewai/react-store";
+import { makeSelectAllEdges } from "@gatewai/react-store";
+import { type HandleEntityType, makeSelectAllHandles } from "@gatewai/react-store";
+import { makeSelectAllNodeEntities, type NodeEntityType } from "@gatewai/react-store";
 import {
 	type HandleState,
 	NodeGraphProcessor,

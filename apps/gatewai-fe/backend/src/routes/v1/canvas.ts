@@ -49,11 +49,11 @@ const canvasRoutes = new Hono<{ Variables: AuthHonoTypes }>({
 						isAPICanvas: false,
 						...(q
 							? {
-									name: {
-										contains: q,
-										mode: "insensitive",
-									},
-								}
+								name: {
+									contains: q,
+									mode: "insensitive",
+								},
+							}
 							: {}),
 					},
 					orderBy: {
@@ -83,11 +83,11 @@ const canvasRoutes = new Hono<{ Variables: AuthHonoTypes }>({
 					isAPICanvas: false,
 					...(q
 						? {
-								name: {
-									contains: q,
-									mode: "insensitive",
-								},
-							}
+							name: {
+								contains: q,
+								mode: "insensitive",
+							},
+						}
 						: {}),
 				},
 				orderBy: {
@@ -646,7 +646,7 @@ const canvasRoutes = new Hono<{ Variables: AuthHonoTypes }>({
 					authHeaders["x-api-key"] = userKey.key;
 				}
 			}
-
+			console.log("Auth headers:", authHeaders);
 			// Start the agent runner in the background
 			const started = await AgentRunnerManager.start({
 				canvasId,

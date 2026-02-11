@@ -15,7 +15,7 @@ import {
 	textToSpeechNode,
 	videoGenFirstLastFrameNode,
 	videoGenNode,
-} from "@gatewai/nodes";
+} from "@gatewai/nodes/node";
 import type {
 	FileResult,
 	NodeResult,

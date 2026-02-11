@@ -3,9 +3,9 @@ import type { NodeProps } from "@xyflow/react";
 import { memo, useCallback, useEffect, useMemo, useRef, useState } from "react";
 import { ResolveFileDataUrl } from "@/lib/file";
 import { cn } from "@/lib/utils";
-import { useAppDispatch, useAppSelector } from "@/store";
-import { makeSelectEdgesByTargetNodeId } from "@/store/edges";
-import { makeSelectNodeById, updateNodeConfig } from "@/store/nodes";
+import { useAppDispatch, useAppSelector } from "@gatewai/react-store";
+import { makeSelectEdgesByTargetNodeId } from "@gatewai/react-store";
+import { makeSelectNodeById, updateNodeConfig } from "@gatewai/react-store";
 import { useNodeResult } from "../../graph-engine/processor-ctx";
 import { BaseNode } from "../base";
 import { CanvasRenderer } from "../common/canvas-renderer";
@@ -13,15 +13,15 @@ import type { CropNode } from "../node-props";
 
 type DragState = {
 	type:
-		| "move"
-		| "resize-nw"
-		| "resize-ne"
-		| "resize-sw"
-		| "resize-se"
-		| "resize-n"
-		| "resize-s"
-		| "resize-w"
-		| "resize-e";
+	| "move"
+	| "resize-nw"
+	| "resize-ne"
+	| "resize-sw"
+	| "resize-se"
+	| "resize-n"
+	| "resize-s"
+	| "resize-w"
+	| "resize-e";
 	startX: number;
 	startY: number;
 	startCrop: CropNodeConfig;

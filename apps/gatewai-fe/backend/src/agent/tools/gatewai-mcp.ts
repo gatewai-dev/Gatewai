@@ -54,8 +54,11 @@ export const connectMCP = async (toolInstance: MCPServerStreamableHttp) => {
 		logger.info("Connecting to MCP server...");
 		await toolInstance.connect();
 		logger.info("Successfully connected to MCP server");
-	} catch (err) {
+	} catch (err: any) {
 		logger.error({ err }, "Failed to connect to MCP tool");
-		throw err;
+		const mcpUrl = ENV_CONFIG.MCP_URL;
+		throw new Error(
+			`Could not connect to MCP server at ${mcpUrl}. Please ensure the MCP server is running and accessible. Details: ${err.message}`,
+		);
 	}
 };

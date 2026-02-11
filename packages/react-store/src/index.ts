@@ -17,6 +17,24 @@ import { nodeTemplatesAPI } from "./node-templates";
 import { nodesReducer } from "./nodes";
 import { reactFlowReducer } from "./rfstate";
 import { tasksReducer } from "./tasks";
+
+export * from "./agent-sessions";
+export * from "./api-keys";
+export * from "./assets";
+export * from "./canvas";
+export * from "./canvas-list";
+export * from "./canvas-patches";
+export * from "./edges";
+export * from "./fonts";
+export * from "./handles";
+export * from "./node-meta";
+export * from "./node-templates";
+export * from "./nodes";
+export * from "./rfstate";
+export * from "./tasks";
+export * from "@gatewai/rpc-client";
+
+
 /**
  * Log a warning and show a toast!
  */

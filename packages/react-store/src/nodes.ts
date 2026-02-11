@@ -5,10 +5,13 @@ import {
 	createSlice,
 } from "@reduxjs/toolkit";
 import { isEqual } from "lodash";
-import type { CanvasDetailsRPC } from "@/rpc/types";
-import type { RootState } from "./";
-import { selectSelectedNodeIds } from "./node-meta";
-import { getBatchDetails } from "./tasks";
+import type { CanvasDetailsRPC } from "@gatewai/rpc-client";
+import { createRpcClient } from "@gatewai/rpc-client";
+
+const rpcClient = createRpcClient();
+import type { RootState } from "./index.js";
+import { selectSelectedNodeIds } from "./node-meta.js";
+import { getBatchDetails } from "./tasks.js";
 
 export type NodeEntityType = CanvasDetailsRPC["nodes"][number];
 

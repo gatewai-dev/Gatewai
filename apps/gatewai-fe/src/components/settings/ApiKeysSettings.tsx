@@ -37,7 +37,7 @@ import {
 	useCreateApiKeyMutation,
 	useDeleteApiKeyMutation,
 	useGetApiKeysQuery,
-} from "@/store/api-keys";
+} from "@gatewai/react-store";
 import { Separator } from "../ui/separator";
 
 interface ApiKeysSettingsProps {

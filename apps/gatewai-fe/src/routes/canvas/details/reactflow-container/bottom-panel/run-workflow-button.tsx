@@ -1,8 +1,8 @@
 import { ForwardIcon, Loader2 } from "lucide-react"; // Added Loader2
 import { memo, useMemo } from "react";
 import { Button } from "@/components/ui/button";
-import { useAppSelector } from "@/store";
-import { makeSelectAllNodes, selectSelectedNodes } from "@/store/nodes";
+import { useAppSelector } from "@gatewai/react-store";
+import { makeSelectAllNodes, selectSelectedNodes } from "@gatewai/react-store";
 import { useCanvasCtx } from "../../ctx/canvas-ctx";
 import { useTaskManagerCtx } from "../../ctx/task-manager-ctx"; // Import your context hook
 

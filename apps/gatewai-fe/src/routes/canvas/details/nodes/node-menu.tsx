@@ -30,12 +30,12 @@ import {
 } from "@/components/ui/form";
 import { Input } from "@/components/ui/input";
 import { copyTextToClipboard } from "@/lib/clipboard";
-import { useAppDispatch, useAppSelector } from "@/store";
+import { useAppDispatch, useAppSelector } from "@gatewai/react-store";
 import {
 	makeSelectNodeById,
 	type NodeEntityType,
 	updateNodeEntity,
-} from "@/store/nodes";
+} from "@gatewai/react-store";
 import { useCanvasCtx } from "../ctx/canvas-ctx";
 
 type RenameNodeDialogProps = {

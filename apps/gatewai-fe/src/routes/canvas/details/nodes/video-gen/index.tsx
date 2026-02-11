@@ -5,9 +5,9 @@ import {
 	PopoverContent,
 	PopoverTrigger,
 } from "@/components/ui/popover";
-import { useAppSelector } from "@/store";
-import { makeSelectHandlesByNodeId } from "@/store/handles";
-import { makeSelectNodeById } from "@/store/nodes";
+import { useAppSelector } from "@gatewai/react-store";
+import { makeSelectHandlesByNodeId } from "@gatewai/react-store";
+import { makeSelectNodeById } from "@gatewai/react-store";
 import { AddCustomHandleButton } from "../../components/add-custom-handle";
 import { RunNodeButton } from "../../components/run-node-button";
 import { useNodeResult } from "../../graph-engine/processor-ctx";

@@ -30,12 +30,12 @@ import {
 } from "@/components/ui/select";
 import { Textarea } from "@/components/ui/textarea";
 import { generateId } from "@/lib/idgen";
-import { useAppSelector } from "@/store";
+import { useAppSelector } from "@gatewai/react-store";
 import {
 	type HandleEntityType,
 	makeSelectHandlesByNodeId,
-} from "@/store/handles";
-import type { NodeEntityType } from "@/store/nodes";
+} from "@gatewai/react-store";
+import type { NodeEntityType } from "@gatewai/react-store";
 import { useCanvasCtx } from "../ctx/canvas-ctx";
 
 const InputTypes = ["Image", "Text", "Audio", "Video"] as const;

@@ -3,8 +3,8 @@ import type { ChangeEvent } from "react";
 import { useRef } from "react";
 import { cn } from "@/lib/utils";
 import type { UploadFileNodeAssetRPC } from "@/rpc/types";
-import { useUploadFileNodeAssetMutation } from "@/store/assets";
-import type { NodeEntityType } from "@/store/nodes";
+import { useUploadFileNodeAssetMutation } from "@gatewai/react-store";
+import type { NodeEntityType } from "@gatewai/react-store";
 import { Button } from "../ui/button";
 
 interface UploadButtonProps {

@@ -5,13 +5,15 @@ import {
 	createSlice,
 	type PayloadAction,
 } from "@reduxjs/toolkit";
-import { rpcClient } from "@/rpc/client";
+import { createRpcClient } from "@gatewai/rpc-client";
+
+const rpcClient = createRpcClient();
 import type {
 	ActiveCanvasBatchListRPC,
 	BatchDetailsRPC,
 	BatchDetailsRPCParams,
-} from "@/rpc/types";
-import type { RootState } from "@/store";
+} from "@gatewai/rpc-client";
+import type { RootState } from "./";
 
 export type BatchEntity = BatchDetailsRPC[number];
 export type BatchNodeData = BatchEntity["tasks"][number];

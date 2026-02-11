@@ -3,9 +3,9 @@ import {
 	createEntityAdapter,
 	createSlice,
 } from "@reduxjs/toolkit";
-import type { CanvasDetailsRPC } from "@/rpc/types";
-import type { RootState } from ".";
-import type { NodeEntityType } from "./nodes";
+import type { CanvasDetailsRPC } from "@gatewai/rpc-client";
+import type { RootState } from "./index.js";
+import type { NodeEntityType } from "./nodes.js";
 
 export type EdgeEntityType = CanvasDetailsRPC["edges"][number];
 

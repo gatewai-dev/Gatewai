@@ -1,5 +1,7 @@
 import { createApi, fetchBaseQuery } from "@reduxjs/toolkit/query/react";
-import { rpcClient } from "@/rpc/client";
+import { createRpcClient } from "@gatewai/rpc-client";
+
+const rpcClient = createRpcClient();
 import type {
 	CanvasListRPC,
 	CanvasListRPCParams,
@@ -7,7 +9,7 @@ import type {
 	CreateCanvasRPCParams,
 	DeleteCanvasRPC,
 	DeleteCanvasRPCParams,
-} from "@/rpc/types";
+} from "@gatewai/rpc-client";
 
 export const canvasListAPI = createApi({
 	reducerPath: "canvasListAPI",

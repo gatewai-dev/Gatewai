@@ -1,7 +1,7 @@
 import type { FileData } from "@gatewai/types";
 import { Ruler } from "lucide-react";
 import { cn } from "@/lib/utils";
-import type { NodeEntityType } from "@/store/nodes";
+import type { NodeEntityType } from "@gatewai/react-store";
 import { useNodeResult } from "../graph-engine/processor-ctx";
 
 function MediaDimensions({

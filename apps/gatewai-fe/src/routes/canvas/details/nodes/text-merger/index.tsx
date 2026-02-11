@@ -1,7 +1,7 @@
 import type { NodeProps } from "@xyflow/react";
 import { memo } from "react";
-import { useAppSelector } from "@/store";
-import { makeSelectNodeById } from "@/store/nodes";
+import { useAppSelector } from "@gatewai/react-store";
+import { makeSelectNodeById } from "@gatewai/react-store";
 import { AddCustomHandleButton } from "../../components/add-custom-handle";
 import { BaseNode } from "../base";
 import type { TextMergerNode } from "../node-props";

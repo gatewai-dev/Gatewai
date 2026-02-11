@@ -10,10 +10,10 @@ import {
 	useRef,
 } from "react";
 import { useAnimatedFavicon } from "@/hooks/use-animated-favicon";
-import type { BatchDetailsRPC, BatchDetailsRPCParams } from "@/rpc/types";
-import { useAppDispatch, useAppSelector } from "@/store";
-import { assetsAPI } from "@/store/assets";
-import type { NodeEntityType } from "@/store/nodes";
+import type { BatchDetailsRPC, BatchDetailsRPCParams } from "@gatewai/react-store";
+import { useAppDispatch, useAppSelector } from "@gatewai/react-store";
+import { assetsAPI } from "@gatewai/react-store";
+import type { NodeEntityType } from "@gatewai/react-store";
 import {
 	addBatchToPoll,
 	getBatchDetails,
@@ -25,7 +25,7 @@ import {
 	selectNodeTaskStatus,
 	selectPollingInterval,
 	setPollingInterval,
-} from "@/store/tasks";
+} from "@gatewai/react-store";
 
 type BatchEntity = BatchDetailsRPC[number];
 type BatchNodeData = BatchEntity["tasks"][number];

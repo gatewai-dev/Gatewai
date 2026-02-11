@@ -18,9 +18,9 @@ import {
 	TooltipTrigger,
 } from "@/components/ui/tooltip";
 import { useCanvasCtx } from "@/routes/canvas/details/ctx/canvas-ctx";
-import { useAppSelector } from "@/store";
-import { makeSelectHandlesByNodeId } from "@/store/handles";
-import type { NodeEntityType } from "@/store/nodes";
+import { useAppSelector } from "@gatewai/react-store";
+import { makeSelectHandlesByNodeId } from "@gatewai/react-store";
+import type { NodeEntityType } from "@gatewai/react-store";
 import { SelectField } from "../../../../components/fields/select";
 
 const VideoGenNodeConfigComponent = memo(

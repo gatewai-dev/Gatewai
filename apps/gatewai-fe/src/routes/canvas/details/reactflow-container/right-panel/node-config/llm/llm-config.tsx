@@ -10,7 +10,7 @@ import { useForm } from "react-hook-form";
 import { Form } from "@/components/ui/form";
 import { SliderField } from "@/routes/canvas/details/components/fields/slider";
 import { useCanvasCtx } from "@/routes/canvas/details/ctx/canvas-ctx";
-import type { NodeEntityType } from "@/store/nodes";
+import type { NodeEntityType } from "@gatewai/react-store";
 import { SelectField } from "../../../../components/fields/select";
 
 const LLMNodeConfigComponent = memo(({ node }: { node: NodeEntityType }) => {

@@ -15,9 +15,9 @@ import {
 } from "@gatewai/types";
 import { dataTypeColors } from "@/config/colors";
 import { GetAssetEndpoint } from "@/lib/file";
-import type { EdgeEntityType } from "@/store/edges";
-import type { HandleEntityType } from "@/store/handles";
-import type { NodeEntityType } from "@/store/nodes";
+import type { EdgeEntityType } from "@gatewai/react-store";
+import type { HandleEntityType } from "@gatewai/react-store";
+import type { NodeEntityType } from "@gatewai/react-store";
 import { processCompositor } from "./image-compositor";
 import { pixiWorkerService } from "./pixi/pixi-worker.service";
 import type {

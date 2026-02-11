@@ -11,7 +11,7 @@ import type { AgentSessionsRPC } from "@/rpc/types";
 import {
 	useCreateCanvasAgentSessionMutation,
 	useGetCanvasAgentSessionListQuery,
-} from "@/store/agent-sessions";
+} from "@gatewai/react-store";
 import { useAgentChatStream } from "../hooks/use-agent-chat";
 
 const SELECTED_MODEL_STORAGE_KEY = "canvas_agent_selected_model";

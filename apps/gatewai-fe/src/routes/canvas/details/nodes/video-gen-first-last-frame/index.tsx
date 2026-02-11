@@ -1,6 +1,6 @@
 import { memo } from "react";
-import { useAppSelector } from "@/store";
-import { makeSelectNodeById } from "@/store/nodes";
+import { useAppSelector } from "@gatewai/react-store";
+import { makeSelectNodeById } from "@gatewai/react-store";
 import { RunNodeButton } from "../../components/run-node-button";
 import { useNodeResult } from "../../graph-engine/processor-ctx";
 import { MediaDimensions } from "../../misc/media-dimensions";

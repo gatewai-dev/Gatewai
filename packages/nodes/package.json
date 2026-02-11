@@ -10,19 +10,27 @@
 	"types": "./dist/index.d.mts",
 	"exports": {
 		".": {
-			"types": "./dist/index.d.mts",
-			"development": "./src/index.ts",
-			"import": "./dist/index.mjs",
-			"default": "./dist/index.mjs"
+			"types": "./dist/node.d.mts",
+			"import": "./dist/node.mjs",
+			"default": "./dist/node.mjs"
 		},
-		"./dist/index.mjs": "./dist/index.mjs"
+		"./node": {
+			"types": "./dist/node.d.ts",
+			"import": "./dist/node.mjs",
+			"default": "./dist/node.mjs"
+		},
+		"./react": {
+			"types": "./dist/react.d.ts",
+			"import": "./dist/react.mjs",
+			"default": "./dist/react.mjs"
+		}
 	},
 	"files": [
 		"dist/**"
 	],
 	"scripts": {
-		"build": "tsdown src/index.ts --format esm",
-		"dev": "tsdown src/index.ts --format esm --watch",
+		"build": "tsdown --format esm",
+		"dev": "tsdown --format esm --watch",
 		"clean": "rm -rf .turbo && rm -rf node_modules && rm -rf dist"
 	},
 	"dependencies": {
@@ -30,6 +38,7 @@
 		"@gatewai/db": "workspace:*",
 		"@gatewai/node-sdk": "workspace:*",
 		"@gatewai/pixi-processor": "workspace:*",
+		"@gatewai/react-store": "workspace:*",
 		"@gatewai/types": "workspace:*",
 		"@google/genai": "^1.40.0",
 		"music-metadata": "^10.6.5",
@@ -44,5 +53,9 @@
 		"@types/wav": "^1.0.4",
 		"tsdown": "^0.19.0",
 		"typescript": "5.5.4"
+	},
+	"peerDependencies": {
+		"react": "^18.0.0 || ^19.0.0",
+		"react-dom": "^18.0.0 || ^19.0.0"
 	}
 }

@@ -22,12 +22,12 @@ import {
 } from "@/components/ui/tooltip";
 import { dataTypeColors } from "@/config/colors";
 import { cn } from "@/lib/utils";
-import { useAppSelector } from "@/store";
+import { useAppSelector } from "@gatewai/react-store";
 import {
 	type HandleEntityType,
 	makeSelectHandlesByNodeId,
-} from "@/store/handles";
-import { makeSelectNodeById } from "@/store/nodes";
+} from "@gatewai/react-store";
+import { makeSelectNodeById } from "@gatewai/react-store";
 import { useCanvasCtx } from "../ctx/canvas-ctx";
 import type { HandleState } from "../graph-engine/node-graph-processor";
 import {

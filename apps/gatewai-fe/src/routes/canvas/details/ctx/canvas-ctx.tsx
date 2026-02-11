@@ -37,8 +37,8 @@ import type {
 	CanvasDetailsRPC,
 	NodeTemplateListItemRPC,
 	PatchCanvasRPCParams,
-} from "@/rpc/types";
-import { type RootState, useAppDispatch, useAppSelector } from "@/store";
+} from "@gatewai/react-store";
+import { type RootState, useAppDispatch, useAppSelector } from "@gatewai/react-store";
 import {
 	useApplyPatchMutation,
 	useGetCanvasDetailsQuery,
@@ -46,12 +46,12 @@ import {
 	usePatchCanvasMutation,
 	useProcessNodesMutation,
 	useRejectPatchMutation,
-} from "@/store/canvas";
+} from "@gatewai/react-store";
 import {
 	deleteManyEdgeEntity,
 	type EdgeEntityType,
 	setAllEdgeEntities,
-} from "@/store/edges";
+} from "@gatewai/react-store";
 import {
 	addManyHandleEntities,
 	createHandleEntity,
@@ -59,8 +59,8 @@ import {
 	type HandleEntityType,
 	handleSelectors,
 	setAllHandleEntities,
-} from "@/store/handles";
-import { setSelectedNodeIds } from "@/store/node-meta";
+} from "@gatewai/react-store";
+import { setSelectedNodeIds } from "@gatewai/react-store";
 import {
 	createNodeEntity,
 	deleteManyNodeEntity,
@@ -69,7 +69,7 @@ import {
 	updateNodeConfig,
 	updateNodeConfigWithoutHistory,
 	updateNodeResult,
-} from "@/store/nodes";
+} from "@gatewai/react-store";
 import {
 	createNode,
 	onEdgeChange,
@@ -78,8 +78,8 @@ import {
 	selectRFNodes,
 	setEdges,
 	setNodes,
-} from "@/store/rfstate";
-import type { BatchEntity } from "@/store/tasks";
+} from "@gatewai/react-store";
+import type { BatchEntity } from "@gatewai/react-store";
 import { useNodeTemplates } from "../node-templates/node-templates.ctx";
 import { useTaskManagerCtx } from "./task-manager-ctx";
 

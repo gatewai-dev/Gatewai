@@ -14,8 +14,8 @@ import {
 	type ExtendedLayer,
 } from "@/modules/video-editor/common/composition";
 import { DEFAULT_DURATION_FRAMES, FPS } from "@/modules/video-editor/config";
-import { useAppSelector } from "@/store";
-import { makeSelectNodeById } from "@/store/nodes";
+import { useAppSelector } from "@gatewai/react-store";
+import { makeSelectNodeById } from "@gatewai/react-store";
 import { AddCustomHandleButton } from "../../components/add-custom-handle";
 import { remotionService } from "../../graph-engine/muxer-service";
 import { useNodeResult } from "../../graph-engine/processor-ctx";
@@ -142,13 +142,13 @@ const VideoCompositorNodeComponent = memo(
 			const durationInFrames =
 				layers.length > 0
 					? Math.max(
-							DEFAULT_DURATION_FRAMES,
-							...layers.map(
-								(l) =>
-									(l.startFrame ?? 0) +
-									(l.durationInFrames ?? DEFAULT_DURATION_FRAMES),
-							),
-						)
+						DEFAULT_DURATION_FRAMES,
+						...layers.map(
+							(l) =>
+								(l.startFrame ?? 0) +
+								(l.durationInFrames ?? DEFAULT_DURATION_FRAMES),
+						),
+					)
 					: DEFAULT_DURATION_FRAMES;
 
 			return { layers, width, height, durationInFrames };

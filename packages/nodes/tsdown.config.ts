@@ -2,7 +2,8 @@ import { defineConfig } from "tsdown";
 
 export default defineConfig({
 	entry: {
-		".": "src/index.ts",
+		node: "src/node/index.ts",
+		react: "src/react/index.ts",
 	},
 	format: ["esm"],
 	dts: true,

@@ -5,7 +5,7 @@ import { Provider as StoreProvider } from "react-redux";
 import { WebGLGuard } from "./components/guards/webgl-guard";
 import { Toaster } from "./components/ui/sonner";
 import { TooltipProvider } from "./components/ui/tooltip";
-import { store } from "./store";
+import { store } from "@gatewai/react-store";
 
 function App() {
 	return (

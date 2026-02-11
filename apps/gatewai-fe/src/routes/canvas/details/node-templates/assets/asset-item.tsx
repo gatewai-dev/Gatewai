@@ -30,7 +30,7 @@ import {
 import { getDataTypeFromMime } from "@/lib/file";
 import { cn } from "@/lib/utils";
 import { useCanvasCtx } from "@/routes/canvas/details/ctx/canvas-ctx";
-import { useDeleteAssetMutation } from "@/store/assets";
+import { useDeleteAssetMutation } from "@gatewai/react-store";
 import { useNodeTemplates } from "../node-templates.ctx";
 import type { FileAssetEntity } from "./types";
 import { GetAssetThumbnailEndpoint } from "./utils";
@@ -256,7 +256,7 @@ export const AssetItem = memo(({ asset }: AssetItemProps) => {
 							<span className="truncate text-[10px] text-muted-foreground">
 								{asset.mimeType || "Unknown type"}
 							</span>
-							{asset.duration && <span>{}</span>}
+							{asset.duration && <span>{ }</span>}
 						</div>
 					</div>
 				</div>

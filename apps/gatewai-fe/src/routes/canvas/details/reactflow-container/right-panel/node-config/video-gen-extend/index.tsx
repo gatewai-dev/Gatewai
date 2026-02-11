@@ -9,7 +9,7 @@ import { memo, useCallback, useEffect } from "react";
 import { useForm } from "react-hook-form";
 import { Form, FormDescription } from "@/components/ui/form";
 import { useCanvasCtx } from "@/routes/canvas/details/ctx/canvas-ctx";
-import type { NodeEntityType } from "@/store/nodes";
+import type { NodeEntityType } from "@gatewai/react-store";
 import { SelectField } from "../../../../components/fields/select";
 
 const VideoGenExtendNodeConfigComponent = memo(

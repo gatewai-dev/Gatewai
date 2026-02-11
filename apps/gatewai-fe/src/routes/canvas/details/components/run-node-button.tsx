@@ -3,7 +3,7 @@ import { memo } from "react";
 import { AiOutlineStop } from "react-icons/ai";
 import { Button, type ButtonProps } from "@/components/ui/button";
 import { Spinner } from "@/components/ui/spinner";
-import type { NodeEntityType } from "@/store/nodes";
+import type { NodeEntityType } from "@gatewai/react-store";
 import { useCanvasCtx } from "../ctx/canvas-ctx";
 import { useNodeTaskRunning } from "../ctx/task-manager-ctx";
 import { useNodeValidation } from "../graph-engine/processor-ctx";

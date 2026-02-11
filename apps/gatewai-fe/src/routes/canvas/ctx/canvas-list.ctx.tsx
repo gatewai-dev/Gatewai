@@ -6,12 +6,12 @@ import {
 	useContext,
 	useState,
 } from "react";
-import type { CanvasListRPC } from "@/rpc/types";
+import type { CanvasListRPC } from "@gatewai/react-store";
 import {
 	useCreateCanvasMutation,
 	useDeleteCanvasMutation,
 	useGetCanvasListQuery,
-} from "@/store/canvas-list";
+} from "@gatewai/react-store";
 
 interface CanvasContextType {
 	canvasList: CanvasListRPC | undefined;
