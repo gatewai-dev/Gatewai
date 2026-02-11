@@ -1,5 +1,5 @@
 import type { EnvConfig } from "@gatewai/core";
-import type { FileData, NodeResult } from "@gatewai/core/types";
+import type { NodeResult } from "@gatewai/core/types";
 import type {
 	Canvas,
 	DataType,
@@ -66,14 +66,6 @@ export interface BackendNodeProcessorResult {
 	error?: string;
 	newResult?: NodeResult;
 }
-
-/**
- * Backend processor function signature.
- * Receives the execution context (including injected services) and returns a result.
- */
-export type BackendNodeProcessor = (
-	ctx: BackendNodeProcessorCtx,
-) => Promise<BackendNodeProcessorResult>;
 
 /**
  * Interface that class-based node processors must implement.
@@ -169,12 +161,7 @@ export const NodeManifestSchema = z.object({
 	defaultConfig: z.record(z.unknown()).optional(),
 
 	// Processing
-	backendProcessor: z
-		.union([
-			z.custom<BackendNodeProcessor>(),
-			z.custom<NodeProcessorConstructor>(),
-		])
-		.optional(),
+	backendProcessor: z.custom<NodeProcessorConstructor>().optional(),
 	frontendProcessor: z.custom<FrontendNodeProcessor>().optional(),
 });
 

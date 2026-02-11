@@ -1,6 +1,6 @@
 import assert from "node:assert";
 import { ENV_CONFIG, generateId, logger } from "@gatewai/core";
-import { container } from "@gatewai/core/di";
+import { container, TOKENS } from "@gatewai/core/di";
 import type {
 	MediaService,
 	NodeResult,
@@ -10,7 +10,6 @@ import type {
 } from "@gatewai/core/types";
 import { type FileAssetWhereInput, prisma } from "@gatewai/db";
 import { generateImageThumbnail, generateVideoThumbnail } from "@gatewai/media"; // Exported as utils
-import { TOKENS } from "@gatewai/node-sdk";
 import { zValidator } from "@hono/zod-validator";
 import { fileTypeFromBuffer } from "file-type";
 import { Hono } from "hono";
