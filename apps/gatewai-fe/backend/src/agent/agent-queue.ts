@@ -20,7 +20,7 @@ async function processAgentJob(job: Job) {
 
 	// Initialize controller for cancellation
 	const controller = new AbortController();
-	console.log(job.data)
+	console.log(job.data);
 	try {
 		logger.info({ sessionId }, "Starting agent job");
 
@@ -86,11 +86,11 @@ async function processAgentJob(job: Job) {
 			const safeError =
 				error instanceof Error
 					? {
-						name: error.name,
-						message: error.message,
-						stack: error.stack,
-						cause: (error as any).cause,
-					}
+							name: error.name,
+							message: error.message,
+							stack: error.stack,
+							cause: (error as any).cause,
+						}
 					: error;
 			logger.error({ err: safeError, sessionId }, `Error in session`);
 			const errorEvent: GatewaiErrorEvent = {

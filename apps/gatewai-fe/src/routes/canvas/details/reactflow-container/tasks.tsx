@@ -1,19 +1,17 @@
-import { formatDistanceToNow } from "date-fns";
-import { AlertCircle } from "lucide-react";
-import { memo } from "react";
 import {
 	Accordion,
 	AccordionContent,
 	AccordionItem,
 	AccordionTrigger,
-} from "@gatewai/ui-kit";
-import { Button } from "@gatewai/ui-kit";
-import {
+	Button,
 	Popover,
 	PopoverContent,
 	PopoverTrigger,
+	Spinner,
 } from "@gatewai/ui-kit";
-import { Spinner } from "@gatewai/ui-kit";
+import { formatDistanceToNow } from "date-fns";
+import { AlertCircle } from "lucide-react";
+import { memo } from "react";
 import { useTaskManagerCtx } from "../ctx/task-manager-ctx";
 
 const CanvasTasksPanel = memo(() => {

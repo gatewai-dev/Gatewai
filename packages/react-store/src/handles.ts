@@ -1,9 +1,9 @@
+import type { CanvasDetailsRPC } from "@gatewai/rpc-client";
 import {
 	createDraftSafeSelector,
 	createEntityAdapter,
 	createSlice,
 } from "@reduxjs/toolkit";
-import type { CanvasDetailsRPC } from "@gatewai/rpc-client";
 import type { RootState } from "./";
 
 export type HandleEntityType = CanvasDetailsRPC["handles"][number];

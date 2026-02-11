@@ -1,16 +1,16 @@
+import type { NodeEntityType } from "@gatewai/react-store";
 import {
 	LLM_NODE_MODELS,
 	type LLMNodeConfig,
 	LLMNodeConfigSchema,
 } from "@gatewai/types";
+import { Form } from "@gatewai/ui-kit";
 import { zodResolver } from "@hookform/resolvers/zod";
 import { debounce, isEqual } from "lodash";
 import { memo, useEffect, useMemo } from "react";
 import { useForm } from "react-hook-form";
-import { Form } from "@gatewai/ui-kit";
 import { SliderField } from "@/routes/canvas/details/components/fields/slider";
 import { useCanvasCtx } from "@/routes/canvas/details/ctx/canvas-ctx";
-import type { NodeEntityType } from "@gatewai/react-store";
 import { SelectField } from "../../../../components/fields/select";
 
 const LLMNodeConfigComponent = memo(({ node }: { node: NodeEntityType }) => {

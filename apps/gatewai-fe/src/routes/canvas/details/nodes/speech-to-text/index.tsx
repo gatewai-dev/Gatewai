@@ -1,9 +1,8 @@
+import { makeSelectNodeById, useAppSelector } from "@gatewai/react-store";
 import type { SpeechToTextResult } from "@gatewai/types";
-import { memo, useMemo } from "react";
 import { ScrollArea } from "@gatewai/ui-kit";
+import { memo, useMemo } from "react";
 import { cn } from "@/lib/utils";
-import { useAppSelector } from "@gatewai/react-store";
-import { makeSelectNodeById } from "@gatewai/react-store";
 import { MarkdownRenderer } from "../../components/markdown-renderer";
 import { RunNodeButton } from "../../components/run-node-button";
 import { useNodeResult } from "../../graph-engine/processor-ctx";

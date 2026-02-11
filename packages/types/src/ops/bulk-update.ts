@@ -36,7 +36,6 @@ export const nodeSchema = z.object({
 	config: NodeConfigSchema.optional()
 		.nullable()
 		.describe("Configuration parameters for this node"),
-	isDirty: z.boolean().optional().default(false),
 	zIndex: z.number().optional(),
 	templateId: z.string(),
 });

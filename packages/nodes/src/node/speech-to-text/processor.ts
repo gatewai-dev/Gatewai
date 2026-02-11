@@ -5,13 +5,13 @@ import type {
 	BackendNodeProcessorResult,
 	NodeProcessor,
 } from "@gatewai/node-sdk";
-import { injectable } from "tsyringe";
 import type {
 	OutputItem,
 	SpeechToTextNodeConfig,
 	SpeechToTextResult,
 } from "@gatewai/types";
 import { createPartFromUri, createUserContent } from "@google/genai";
+import { injectable } from "tsyringe";
 import { getGenAIClient } from "../genai.js";
 
 @injectable()
@@ -48,7 +48,9 @@ export default class SpeechToTextProcessor implements NodeProcessor {
 				});
 				mimeType = audioInput.entity.mimeType;
 			} else if (audioInput?.processData?.tempKey) {
-				const buffer = await storage.getFromGCS(audioInput?.processData.tempKey);
+				const buffer = await storage.getFromGCS(
+					audioInput?.processData.tempKey,
+				);
 				fileBlob = new Blob([new Uint8Array(buffer)], {
 					type: audioInput?.processData.mimeType,
 				});

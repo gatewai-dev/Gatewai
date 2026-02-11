@@ -1,13 +1,13 @@
 import assert from "node:assert";
 import { type EnvConfig, generateId, logger } from "@gatewai/core";
 import { DataType } from "@gatewai/db";
-import {
-	type BackendNodeProcessorCtx,
-	type BackendNodeProcessorResult,
-	type GraphResolvers,
-	type MediaService,
-	type NodeProcessor,
-	type StorageService,
+import type {
+	BackendNodeProcessorCtx,
+	BackendNodeProcessorResult,
+	GraphResolvers,
+	MediaService,
+	NodeProcessor,
+	StorageService,
 } from "@gatewai/node-sdk";
 import {
 	type FileData,
@@ -19,7 +19,9 @@ import { getGenAIClient } from "../genai.js";
 
 @injectable()
 export class ImageGenProcessor implements NodeProcessor {
-	async process(ctx: BackendNodeProcessorCtx): Promise<BackendNodeProcessorResult> {
+	async process(
+		ctx: BackendNodeProcessorCtx,
+	): Promise<BackendNodeProcessorResult> {
 		const { node, data, prisma, env, graph, storage, media } = ctx;
 		const genAI = getGenAIClient(env.GEMINI_API_KEY);
 
@@ -99,9 +101,9 @@ export class ImageGenProcessor implements NodeProcessor {
 					imageConfig:
 						config.model === "gemini-3-pro-image-preview"
 							? {
-								aspectRatio: config.aspectRatio,
-								imageSize: config.imageSize,
-							}
+									aspectRatio: config.aspectRatio,
+									imageSize: config.imageSize,
+								}
 							: undefined,
 				},
 			})) as {

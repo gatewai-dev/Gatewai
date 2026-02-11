@@ -1,3 +1,9 @@
+import {
+	makeSelectNodeById,
+	updateNodeResult,
+	useAppDispatch,
+	useAppSelector,
+} from "@gatewai/react-store";
 import type { FileResult } from "@gatewai/types";
 import type { NodeProps } from "@xyflow/react";
 import { memo } from "react";
@@ -6,8 +12,6 @@ import { UploadButton } from "@/components/util/file-button";
 import { UploadDropzone } from "@/components/util/file-dropzone";
 import { useHasOutputItems } from "@/routes/canvas/hooks";
 import type { UploadFileNodeAssetRPC } from "@/rpc/types";
-import { useAppDispatch, useAppSelector } from "@gatewai/react-store";
-import { makeSelectNodeById, updateNodeResult } from "@gatewai/react-store";
 import { BaseNode } from "../base";
 import { MediaContent } from "../media-content";
 import type { FileNode } from "../node-props";

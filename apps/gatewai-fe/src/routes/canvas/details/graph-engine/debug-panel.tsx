@@ -1,13 +1,15 @@
-import { ChevronDown, ChevronUp } from "lucide-react";
-import { useEffect, useState } from "react";
-import { Button } from "@gatewai/ui-kit";
-import { CardContent, CardHeader, CardTitle } from "@gatewai/ui-kit";
+import type { NodeEntityType } from "@gatewai/react-store";
 import {
+	Button,
+	CardContent,
+	CardHeader,
+	CardTitle,
 	Popover,
 	PopoverContent,
 	PopoverTrigger,
 } from "@gatewai/ui-kit";
-import type { NodeEntityType } from "@gatewai/react-store";
+import { ChevronDown, ChevronUp } from "lucide-react";
+import { useEffect, useState } from "react";
 import { useProcessor } from "./processor-ctx";
 
 function DebugPanel() {

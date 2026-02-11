@@ -4,8 +4,8 @@ import type {
 	BackendNodeProcessorResult,
 	NodeProcessor,
 } from "@gatewai/node-sdk";
-import { injectable } from "tsyringe";
 import type { TextMergerNodeConfig, TextMergerResult } from "@gatewai/types";
+import { injectable } from "tsyringe";
 
 @injectable()
 export default class TextMergerProcessor implements NodeProcessor {

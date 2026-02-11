@@ -1,7 +1,6 @@
+import { Button, LoadingSpinner } from "@gatewai/ui-kit";
 import { MonitorOff, RefreshCw } from "lucide-react";
 import { type ReactNode, useEffect, useState } from "react";
-import { Button } from "@gatewai/ui-kit"; // Adjusted path to standard shadcn alias
-import { LoadingSpinner } from "@gatewai/ui-kit";
 
 export function useWebGLSupport() {
 	const [isSupported, setIsSupported] = useState<boolean | null>(null);

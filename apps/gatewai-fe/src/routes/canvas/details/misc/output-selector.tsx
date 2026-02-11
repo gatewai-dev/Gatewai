@@ -1,7 +1,7 @@
-import type { NodeResult } from "@gatewai/types";
-import { ChevronLeft, ChevronRight } from "lucide-react";
-import { Button } from "@gatewai/ui-kit";
 import type { NodeEntityType } from "@gatewai/react-store";
+import type { NodeResult } from "@gatewai/types";
+import { Button } from "@gatewai/ui-kit";
+import { ChevronLeft, ChevronRight } from "lucide-react";
 import { useCanvasCtx } from "../ctx/canvas-ctx";
 
 function OutputSelector({ node }: { node: NodeEntityType }) {

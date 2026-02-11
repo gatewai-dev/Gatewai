@@ -1,19 +1,17 @@
-import { Info } from "lucide-react";
-import { type JSX, memo } from "react";
-import type { Control, FieldPath, FieldValues } from "react-hook-form";
 import {
 	FormControl,
 	FormField,
 	FormItem,
 	FormLabel,
 	FormMessage,
-} from "@gatewai/ui-kit";
-import { Slider } from "@gatewai/ui-kit";
-import {
+	Slider,
 	Tooltip,
 	TooltipContent,
 	TooltipTrigger,
 } from "@gatewai/ui-kit";
+import { Info } from "lucide-react";
+import { type JSX, memo } from "react";
+import type { Control, FieldPath, FieldValues } from "react-hook-form";
 
 type SliderFieldProps<T extends FieldValues> = {
 	control: Control<T>;

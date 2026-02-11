@@ -1,5 +1,46 @@
 import type { NodeType } from "@gatewai/db";
 import type {
+	BatchEntity,
+	CanvasDetailsRPC,
+	NodeTemplateListItemRPC,
+	PatchCanvasRPCParams,
+} from "@gatewai/react-store";
+import {
+	addManyHandleEntities,
+	createHandleEntity,
+	createNode,
+	createNodeEntity,
+	deleteManyEdgeEntity,
+	deleteManyHandleEntity,
+	deleteManyNodeEntity,
+	type EdgeEntityType,
+	type HandleEntityType,
+	handleSelectors,
+	type NodeEntityType,
+	onEdgeChange,
+	onNodeChange,
+	type RootState,
+	selectRFEdges,
+	selectRFNodes,
+	setAllEdgeEntities,
+	setAllHandleEntities,
+	setAllNodeEntities,
+	setEdges,
+	setNodes,
+	setSelectedNodeIds,
+	updateNodeConfig,
+	updateNodeConfigWithoutHistory,
+	updateNodeResult,
+	useAppDispatch,
+	useApplyPatchMutation,
+	useAppSelector,
+	useGetCanvasDetailsQuery,
+	useLazyGetPatchQuery,
+	usePatchCanvasMutation,
+	useProcessNodesMutation,
+	useRejectPatchMutation,
+} from "@gatewai/react-store";
+import type {
 	AllNodeConfig,
 	BulkUpdatePayload,
 	NodeResult,
@@ -33,53 +74,6 @@ import {
 import { useStore } from "react-redux";
 import { toast } from "sonner";
 import { generateId } from "@/lib/idgen";
-import type {
-	CanvasDetailsRPC,
-	NodeTemplateListItemRPC,
-	PatchCanvasRPCParams,
-} from "@gatewai/react-store";
-import { type RootState, useAppDispatch, useAppSelector } from "@gatewai/react-store";
-import {
-	useApplyPatchMutation,
-	useGetCanvasDetailsQuery,
-	useLazyGetPatchQuery,
-	usePatchCanvasMutation,
-	useProcessNodesMutation,
-	useRejectPatchMutation,
-} from "@gatewai/react-store";
-import {
-	deleteManyEdgeEntity,
-	type EdgeEntityType,
-	setAllEdgeEntities,
-} from "@gatewai/react-store";
-import {
-	addManyHandleEntities,
-	createHandleEntity,
-	deleteManyHandleEntity,
-	type HandleEntityType,
-	handleSelectors,
-	setAllHandleEntities,
-} from "@gatewai/react-store";
-import { setSelectedNodeIds } from "@gatewai/react-store";
-import {
-	createNodeEntity,
-	deleteManyNodeEntity,
-	type NodeEntityType,
-	setAllNodeEntities,
-	updateNodeConfig,
-	updateNodeConfigWithoutHistory,
-	updateNodeResult,
-} from "@gatewai/react-store";
-import {
-	createNode,
-	onEdgeChange,
-	onNodeChange,
-	selectRFEdges,
-	selectRFNodes,
-	setEdges,
-	setNodes,
-} from "@gatewai/react-store";
-import type { BatchEntity } from "@gatewai/react-store";
 import { useNodeTemplates } from "../node-templates/node-templates.ctx";
 import { useTaskManagerCtx } from "./task-manager-ctx";
 
@@ -710,7 +704,6 @@ const CanvasProvider = ({
 				position,
 				width: 340,
 				height: null,
-				isDirty: false,
 				canvasId: canvasId,
 				createdAt: new Date().toISOString(),
 				updatedAt: new Date().toISOString(),
@@ -822,7 +815,6 @@ const CanvasProvider = ({
 					position,
 					width: 340,
 					height: null,
-					isDirty: false,
 					createdAt: new Date().toISOString(),
 					updatedAt: new Date().toISOString(),
 					originalNodeId: null,
@@ -887,7 +879,6 @@ const CanvasProvider = ({
 				const patchNodes: NodeEntityType[] = (patchData.nodes || []).map(
 					(n) => ({
 						...n,
-						isDirty: false,
 						createdAt: new Date().toISOString(),
 						updatedAt: new Date().toISOString(),
 						canvasId,

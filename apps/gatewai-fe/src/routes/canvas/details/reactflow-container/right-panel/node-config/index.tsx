@@ -1,10 +1,13 @@
 import type { NodeType } from "@gatewai/db";
+import {
+	type NodeEntityType,
+	selectSelectedNodes,
+	useAppSelector,
+} from "@gatewai/react-store";
+import { Separator } from "@gatewai/ui-kit";
 import { Panel } from "@xyflow/react";
 import { Fragment, memo, type ReactNode, useMemo } from "react";
-import { Separator } from "@gatewai/ui-kit";
 import { cn } from "@/lib/utils";
-import { useAppSelector } from "@gatewai/react-store";
-import { type NodeEntityType, selectSelectedNodes } from "@gatewai/react-store";
 import { NODE_ICON_MAP } from "../../../node-templates/node-palette/icon-map";
 import { ImageGenNodeConfigComponent } from "./image-gen";
 import { LLMNodeConfigComponent } from "./llm/llm-config";

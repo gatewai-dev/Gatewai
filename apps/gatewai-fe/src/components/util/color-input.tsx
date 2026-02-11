@@ -1,15 +1,18 @@
+import {
+	Button,
+	Input,
+	Popover,
+	PopoverContent,
+	PopoverTrigger,
+	Tabs,
+	TabsContent,
+	TabsList,
+	TabsTrigger,
+} from "@gatewai/ui-kit";
 import * as SliderPrimitive from "@radix-ui/react-slider";
 import { Check, Copy, Pipette } from "lucide-react";
 import type React from "react";
 import { useEffect, useRef, useState } from "react";
-import { Button } from "@gatewai/ui-kit";
-import { Input } from "@gatewai/ui-kit";
-import {
-	Popover,
-	PopoverContent,
-	PopoverTrigger,
-} from "@gatewai/ui-kit";
-import { Tabs, TabsContent, TabsList, TabsTrigger } from "@gatewai/ui-kit";
 import { cn } from "@/lib/utils";
 
 // --- Types ---

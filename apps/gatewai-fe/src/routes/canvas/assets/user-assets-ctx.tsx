@@ -1,3 +1,8 @@
+import type {
+	UserAssetsListRPC,
+	UserAssetsListRPCParams,
+} from "@gatewai/react-store";
+import { useGetUserAssetsQuery } from "@gatewai/react-store";
 import {
 	createContext,
 	type Dispatch,
@@ -6,8 +11,6 @@ import {
 	useContext,
 	useState,
 } from "react";
-import type { UserAssetsListRPC, UserAssetsListRPCParams } from "@gatewai/react-store";
-import { useGetUserAssetsQuery } from "@gatewai/react-store";
 
 interface UserAssetsContextType {
 	assets: UserAssetsListRPC | undefined;

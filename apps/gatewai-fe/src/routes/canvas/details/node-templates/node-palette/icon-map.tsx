@@ -1,3 +1,4 @@
+import type { NodeEntityType } from "@gatewai/react-store";
 import { Gemini } from "@lobehub/icons";
 import type { FC } from "react";
 import {
@@ -21,7 +22,6 @@ import {
 	PiVideoCamera,
 } from "react-icons/pi";
 import { TbAdjustments, TbVolume } from "react-icons/tb";
-import type { NodeEntityType } from "@gatewai/react-store";
 
 export const NODE_ICON_MAP: Record<
 	NodeEntityType["type"],

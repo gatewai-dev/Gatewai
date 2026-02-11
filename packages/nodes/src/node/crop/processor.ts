@@ -5,13 +5,13 @@ import type {
 	BackendNodeProcessorResult,
 	NodeProcessor,
 } from "@gatewai/node-sdk";
-import { injectable } from "tsyringe";
 import {
 	CropNodeConfigSchema,
 	type CropResult,
 	type FileData,
 	type NodeResult,
 } from "@gatewai/types";
+import { injectable } from "tsyringe";
 
 @injectable()
 export default class CropProcessor implements NodeProcessor {

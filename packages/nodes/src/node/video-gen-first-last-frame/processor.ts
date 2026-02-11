@@ -4,10 +4,10 @@ import { readFile } from "node:fs/promises";
 import path from "node:path";
 import { generateId, logger } from "@gatewai/core";
 import { DataType } from "@gatewai/db";
-import {
-	type BackendNodeProcessorCtx,
-	type BackendNodeProcessorResult,
-	type NodeProcessor,
+import type {
+	BackendNodeProcessorCtx,
+	BackendNodeProcessorResult,
+	NodeProcessor,
 } from "@gatewai/node-sdk";
 import {
 	type FileData,
@@ -36,7 +36,9 @@ async function ResolveImageData(
 
 @injectable()
 export default class VideoGenFirstLastFrameProcessor implements NodeProcessor {
-	async process(ctx: BackendNodeProcessorCtx): Promise<BackendNodeProcessorResult> {
+	async process(
+		ctx: BackendNodeProcessorCtx,
+	): Promise<BackendNodeProcessorResult> {
 		const { node, data, prisma, env, graph, storage, media } = ctx;
 		const genAI = getGenAIClient(env.GEMINI_API_KEY);
 		try {
@@ -45,25 +47,15 @@ export default class VideoGenFirstLastFrameProcessor implements NodeProcessor {
 				label: "Prompt",
 			})?.data as string;
 
-			const firstFrameInput = graph.getInputValue(
-				data,
-				node.id,
-				true,
-				{
-					dataType: DataType.Image,
-					label: "First Frame",
-				},
-			) as OutputItem<"Image">;
+			const firstFrameInput = graph.getInputValue(data, node.id, true, {
+				dataType: DataType.Image,
+				label: "First Frame",
+			}) as OutputItem<"Image">;
 
-			const lastFrameInput = graph.getInputValue(
-				data,
-				node.id,
-				true,
-				{
-					dataType: DataType.Image,
-					label: "Last Frame",
-				},
-			) as OutputItem<"Image">;
+			const lastFrameInput = graph.getInputValue(data, node.id, true, {
+				dataType: DataType.Image,
+				label: "Last Frame",
+			}) as OutputItem<"Image">;
 
 			if (!firstFrameInput || !lastFrameInput) {
 				throw new Error("Missing data for First or Last frame.");
@@ -141,11 +133,7 @@ export default class VideoGenFirstLastFrameProcessor implements NodeProcessor {
 			await storage.uploadToGCS(fileBuffer, key, contentType, bucket);
 
 			const expiresIn = 3600 * 24 * 7;
-			const signedUrl = await storage.generateSignedUrl(
-				key,
-				bucket,
-				expiresIn,
-			);
+			const signedUrl = await storage.generateSignedUrl(key, bucket, expiresIn);
 			const signedUrlExp = new Date(Date.now() + expiresIn * 1000);
 
 			const asset = await prisma.fileAsset.create({

@@ -1,13 +1,11 @@
+import { makeSelectNodeById, useAppSelector } from "@gatewai/react-store";
 import type { FileData } from "@gatewai/types";
+import { ScrollArea, Switch } from "@gatewai/ui-kit";
 import type { NodeProps } from "@xyflow/react";
 import { FileIcon } from "lucide-react";
 import { memo, useMemo, useState } from "react";
-import { ScrollArea } from "@gatewai/ui-kit";
-import { Switch } from "@gatewai/ui-kit";
 import { GetAssetEndpoint } from "@/lib/file";
 import { cn } from "@/lib/utils";
-import { useAppSelector } from "@gatewai/react-store";
-import { makeSelectNodeById } from "@gatewai/react-store";
 import { MarkdownRenderer } from "../../components/markdown-renderer";
 import { useNodeResult } from "../../graph-engine/processor-ctx";
 import { MediaDimensions } from "../../misc/media-dimensions";

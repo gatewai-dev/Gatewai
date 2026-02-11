@@ -1,3 +1,4 @@
+import type { NodeEntityType } from "@gatewai/react-store";
 import {
 	IMAGEGEN_ASPECT_RATIOS,
 	IMAGEGEN_IMAGE_SIZES,
@@ -5,13 +6,12 @@ import {
 	type ImageGenConfig,
 	ImageGenNodeConfigSchema,
 } from "@gatewai/types";
+import { Form } from "@gatewai/ui-kit";
 import { zodResolver } from "@hookform/resolvers/zod";
 import { debounce, isEqual } from "lodash";
 import { memo, useEffect, useMemo } from "react";
 import { useForm } from "react-hook-form";
-import { Form } from "@gatewai/ui-kit";
 import { useCanvasCtx } from "@/routes/canvas/details/ctx/canvas-ctx";
-import type { NodeEntityType } from "@gatewai/react-store";
 import { SelectField } from "../../../../components/fields/select";
 
 const ImageGenNodeConfigComponent = memo(

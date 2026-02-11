@@ -1,4 +1,24 @@
 import type { Canvas, Node } from "@gatewai/db";
+import type {
+	BatchDetailsRPC,
+	BatchDetailsRPCParams,
+	NodeEntityType,
+} from "@gatewai/react-store";
+import {
+	addBatchToPoll,
+	assetsAPI,
+	getBatchDetails,
+	getInitialBatches,
+	selectAllBatches,
+	selectBatchIdsToPoll,
+	selectInitialLoading,
+	selectLatestTasksFetchTime,
+	selectNodeTaskStatus,
+	selectPollingInterval,
+	setPollingInterval,
+	useAppDispatch,
+	useAppSelector,
+} from "@gatewai/react-store";
 import {
 	createContext,
 	type Dispatch,
@@ -10,22 +30,6 @@ import {
 	useRef,
 } from "react";
 import { useAnimatedFavicon } from "@/hooks/use-animated-favicon";
-import type { BatchDetailsRPC, BatchDetailsRPCParams } from "@gatewai/react-store";
-import { useAppDispatch, useAppSelector } from "@gatewai/react-store";
-import { assetsAPI } from "@gatewai/react-store";
-import type { NodeEntityType } from "@gatewai/react-store";
-import {
-	addBatchToPoll,
-	getBatchDetails,
-	getInitialBatches,
-	selectAllBatches,
-	selectBatchIdsToPoll,
-	selectInitialLoading,
-	selectLatestTasksFetchTime,
-	selectNodeTaskStatus,
-	selectPollingInterval,
-	setPollingInterval,
-} from "@gatewai/react-store";
 
 type BatchEntity = BatchDetailsRPC[number];
 type BatchNodeData = BatchEntity["tasks"][number];

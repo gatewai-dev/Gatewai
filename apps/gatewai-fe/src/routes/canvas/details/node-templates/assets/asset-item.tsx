@@ -1,4 +1,19 @@
+import { useDeleteAssetMutation } from "@gatewai/react-store";
 import type { FileData, FileResult } from "@gatewai/types";
+import {
+	AlertDialog,
+	AlertDialogAction,
+	AlertDialogCancel,
+	AlertDialogContent,
+	AlertDialogDescription,
+	AlertDialogFooter,
+	AlertDialogHeader,
+	AlertDialogTitle,
+	DropdownMenu,
+	DropdownMenuContent,
+	DropdownMenuItem,
+	DropdownMenuTrigger,
+} from "@gatewai/ui-kit";
 import { useReactFlow } from "@xyflow/react";
 import { motion } from "framer-motion";
 import {
@@ -11,26 +26,9 @@ import {
 import { memo, useEffect, useRef, useState } from "react";
 import { createPortal } from "react-dom";
 import { toast } from "sonner";
-import {
-	AlertDialog,
-	AlertDialogAction,
-	AlertDialogCancel,
-	AlertDialogContent,
-	AlertDialogDescription,
-	AlertDialogFooter,
-	AlertDialogHeader,
-	AlertDialogTitle,
-} from "@gatewai/ui-kit";
-import {
-	DropdownMenu,
-	DropdownMenuContent,
-	DropdownMenuItem,
-	DropdownMenuTrigger,
-} from "@gatewai/ui-kit";
 import { getDataTypeFromMime } from "@/lib/file";
 import { cn } from "@/lib/utils";
 import { useCanvasCtx } from "@/routes/canvas/details/ctx/canvas-ctx";
-import { useDeleteAssetMutation } from "@gatewai/react-store";
 import { useNodeTemplates } from "../node-templates.ctx";
 import type { FileAssetEntity } from "./types";
 import { GetAssetThumbnailEndpoint } from "./utils";
@@ -256,7 +254,7 @@ export const AssetItem = memo(({ asset }: AssetItemProps) => {
 							<span className="truncate text-[10px] text-muted-foreground">
 								{asset.mimeType || "Unknown type"}
 							</span>
-							{asset.duration && <span>{ }</span>}
+							{asset.duration && <span>{}</span>}
 						</div>
 					</div>
 				</div>

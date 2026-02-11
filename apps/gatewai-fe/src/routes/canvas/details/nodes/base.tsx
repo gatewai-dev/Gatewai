@@ -1,4 +1,20 @@
 import {
+	type HandleEntityType,
+	makeSelectHandlesByNodeId,
+	makeSelectNodeById,
+	useAppSelector,
+} from "@gatewai/react-store";
+import { dataTypeColors } from "@gatewai/types";
+import {
+	ContextMenu,
+	ContextMenuContent,
+	ContextMenuItem,
+	ContextMenuTrigger,
+	Tooltip,
+	TooltipContent,
+	TooltipTrigger,
+} from "@gatewai/ui-kit";
+import {
 	BaseEdge,
 	type ConnectionLineComponentProps,
 	type EdgeProps,
@@ -9,25 +25,7 @@ import {
 } from "@xyflow/react";
 import { TrashIcon } from "lucide-react";
 import { type JSX, memo, type ReactNode, useMemo } from "react";
-import {
-	ContextMenu,
-	ContextMenuContent,
-	ContextMenuItem,
-	ContextMenuTrigger,
-} from "@gatewai/ui-kit";
-import {
-	Tooltip,
-	TooltipContent,
-	TooltipTrigger,
-} from "@gatewai/ui-kit";
-import { dataTypeColors } from "@gatewai/types";
 import { cn } from "@/lib/utils";
-import { useAppSelector } from "@gatewai/react-store";
-import {
-	type HandleEntityType,
-	makeSelectHandlesByNodeId,
-} from "@gatewai/react-store";
-import { makeSelectNodeById } from "@gatewai/react-store";
 import { useCanvasCtx } from "../ctx/canvas-ctx";
 import type { HandleState } from "../graph-engine/node-graph-processor";
 import {

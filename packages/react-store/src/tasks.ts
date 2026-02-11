@@ -1,3 +1,4 @@
+import { createRpcClient } from "@gatewai/rpc-client";
 import {
 	createAsyncThunk,
 	createEntityAdapter,
@@ -5,9 +6,9 @@ import {
 	createSlice,
 	type PayloadAction,
 } from "@reduxjs/toolkit";
-import { createRpcClient } from "@gatewai/rpc-client";
 
 const rpcClient = createRpcClient();
+
 import type {
 	ActiveCanvasBatchListRPC,
 	BatchDetailsRPC,

@@ -1,3 +1,4 @@
+import { Button, DraggableNumberInput, Label, Switch } from "@gatewai/ui-kit";
 import {
 	AlignCenterHorizontal,
 	AlignCenterVertical,
@@ -7,10 +8,6 @@ import {
 	RotateCw,
 } from "lucide-react";
 import type React from "react";
-import { Button } from "@gatewai/ui-kit";
-import { DraggableNumberInput } from "@gatewai/ui-kit";
-import { Label } from "@gatewai/ui-kit";
-import { Switch } from "@gatewai/ui-kit";
 import { CollapsibleSection } from "../CollapsibleSection";
 
 interface TransformControlsProps {

@@ -1,4 +1,17 @@
 import {
+	Button,
+	DropdownMenu,
+	DropdownMenuContent,
+	DropdownMenuItem,
+	DropdownMenuLabel,
+	DropdownMenuSeparator,
+	DropdownMenuTrigger,
+	GatewaiIcon,
+	Tooltip,
+	TooltipContent,
+	TooltipTrigger,
+} from "@gatewai/ui-kit";
+import {
 	LayoutGrid,
 	LogOut,
 	PanelLeftClose,
@@ -9,21 +22,6 @@ import { useState } from "react";
 import { FaDiscord, FaGithub } from "react-icons/fa";
 import { Link, useNavigate } from "react-router";
 import { ApiKeysSettings } from "@/components/settings/ApiKeysSettings";
-import { Button } from "@gatewai/ui-kit";
-import {
-	DropdownMenu,
-	DropdownMenuContent,
-	DropdownMenuItem,
-	DropdownMenuLabel,
-	DropdownMenuSeparator,
-	DropdownMenuTrigger,
-} from "@gatewai/ui-kit";
-import { GatewaiIcon } from "@gatewai/ui-kit";
-import {
-	Tooltip,
-	TooltipContent,
-	TooltipTrigger,
-} from "@gatewai/ui-kit";
 import { authClient } from "@/lib/auth-client";
 import { cn } from "@/lib/utils";
 import type { NodeTemplateListRPC } from "@/rpc/types";

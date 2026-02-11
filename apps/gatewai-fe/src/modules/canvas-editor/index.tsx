@@ -15,14 +15,45 @@ import {
 	verticalListSortingStrategy,
 } from "@dnd-kit/sortable";
 import { CSS } from "@dnd-kit/utilities";
+import type { HandleEntityType, NodeEntityType } from "@gatewai/react-store";
+import { handleSelectors, useAppSelector } from "@gatewai/react-store";
 import type {
 	CompositorLayer,
 	CompositorNodeConfig,
 	FileData,
 	OutputItem,
 } from "@gatewai/types";
-import { COMPOSITOR_DEFAULTS } from "@gatewai/types";
-import { Separator } from "@gatewai/ui-kit";
+import { COMPOSITOR_DEFAULTS, dataTypeColors } from "@gatewai/types";
+// Internal Component Imports
+import {
+	AlertDialog,
+	AlertDialogAction,
+	AlertDialogCancel,
+	AlertDialogContent,
+	AlertDialogDescription,
+	AlertDialogFooter,
+	AlertDialogHeader,
+	AlertDialogTitle,
+	Button,
+	DraggableNumberInput,
+	Label,
+	Menubar,
+	MenubarContent,
+	MenubarItem,
+	MenubarMenu,
+	MenubarTrigger,
+	ScrollArea,
+	Select,
+	SelectContent,
+	SelectItem,
+	SelectTrigger,
+	SelectValue,
+	Separator,
+	Tooltip,
+	TooltipContent,
+	TooltipProvider,
+	TooltipTrigger,
+} from "@gatewai/ui-kit";
 import type Konva from "konva";
 import type { KonvaEventObject } from "konva/lib/Node";
 import {
@@ -66,52 +97,12 @@ import {
 	Transformer,
 } from "react-konva";
 import useImage from "use-image";
-// Internal Component Imports
-import {
-	AlertDialog,
-	AlertDialogAction,
-	AlertDialogCancel,
-	AlertDialogContent,
-	AlertDialogDescription,
-	AlertDialogFooter,
-	AlertDialogHeader,
-	AlertDialogTitle,
-} from "@gatewai/ui-kit";
-import { Button } from "@gatewai/ui-kit";
-import { DraggableNumberInput } from "@gatewai/ui-kit";
-import { Label } from "@gatewai/ui-kit";
-import {
-	Menubar,
-	MenubarContent,
-	MenubarItem,
-	MenubarMenu,
-	MenubarTrigger,
-} from "@gatewai/ui-kit";
-import { ScrollArea } from "@gatewai/ui-kit";
-import {
-	Select,
-	SelectContent,
-	SelectItem,
-	SelectTrigger,
-	SelectValue,
-} from "@gatewai/ui-kit";
-import {
-	Tooltip,
-	TooltipContent,
-	TooltipProvider,
-	TooltipTrigger,
-} from "@gatewai/ui-kit";
-import { dataTypeColors } from "@gatewai/types";
 import { GetAssetEndpoint, GetFontAssetUrl } from "@/lib/file";
 import { fontManager } from "@/lib/fonts";
 import { CollapsibleSection } from "@/modules/common/CollapsibleSection";
 import { StyleControls } from "@/modules/common/properties/StyleControls";
 import { TransformControls } from "@/modules/common/properties/TransformControls";
 import { TypographyControls } from "@/modules/common/properties/TypographyControls";
-import { useAppSelector } from "@gatewai/react-store";
-import type { HandleEntityType } from "@gatewai/react-store";
-import { handleSelectors } from "@gatewai/react-store";
-import type { NodeEntityType } from "@gatewai/react-store";
 
 //#region CONSTANTS
 // Local defaults removed in favor of shared COMPOSITOR_DEFAULTS
@@ -438,10 +429,10 @@ const ImageLayer: React.FC<LayerProps> = ({
 					prev.map((l) =>
 						l.id === layer.id
 							? {
-								...l,
-								width: Math.round(image.width),
-								height: Math.round(image.height),
-							}
+									...l,
+									width: Math.round(image.width),
+									height: Math.round(image.height),
+								}
 							: l,
 					),
 				false,
@@ -548,10 +539,10 @@ const TextLayer: React.FC<LayerProps> = ({
 						prev.map((l) =>
 							l.id === layer.id
 								? {
-									...l,
-									computedWidth: calculatedWidth,
-									computedHeight: calculatedHeight,
-								}
+										...l,
+										computedWidth: calculatedWidth,
+										computedHeight: calculatedHeight,
+									}
 								: l,
 						),
 					false,

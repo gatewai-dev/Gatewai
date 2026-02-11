@@ -1,7 +1,8 @@
-import { createApi, fetchBaseQuery } from "@reduxjs/toolkit/query/react";
 import { createRpcClient } from "@gatewai/rpc-client";
+import { createApi, fetchBaseQuery } from "@reduxjs/toolkit/query/react";
 
 const rpcClient = createRpcClient();
+
 import type { FontListRPC, FontListRPCParams } from "@gatewai/rpc-client";
 
 export const fontListAPI = createApi({

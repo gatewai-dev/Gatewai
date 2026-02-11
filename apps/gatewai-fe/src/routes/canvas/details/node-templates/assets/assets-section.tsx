@@ -1,6 +1,17 @@
 "use client";
 
 import {
+	Button,
+	Input,
+	Popover,
+	PopoverContent,
+	PopoverTrigger,
+	ScrollArea,
+	Tabs,
+	TabsList,
+	TabsTrigger,
+} from "@gatewai/ui-kit";
+import {
 	AnimatePresence,
 	type AnimationGeneratorType,
 	motion,
@@ -18,16 +29,6 @@ import {
 } from "lucide-react";
 import { useEffect, useMemo, useState } from "react";
 import { useDebounce } from "use-debounce";
-
-import { Button } from "@gatewai/ui-kit";
-import { Input } from "@gatewai/ui-kit";
-import {
-	Popover,
-	PopoverContent,
-	PopoverTrigger,
-} from "@gatewai/ui-kit";
-import { ScrollArea } from "@gatewai/ui-kit";
-import { Tabs, TabsList, TabsTrigger } from "@gatewai/ui-kit";
 import { cn } from "@/lib/utils";
 import { useUserAssets } from "@/routes/canvas/assets/user-assets-ctx";
 import { AssetItem } from "./asset-item";

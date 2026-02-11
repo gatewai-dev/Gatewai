@@ -1,8 +1,8 @@
+import type { NodeEntityType } from "@gatewai/react-store";
 import type { FileResult, ImagesResult, VideoGenResult } from "@gatewai/types";
 import { FileIcon } from "lucide-react";
 import { useMemo } from "react";
 import { GetAssetEndpoint } from "@/lib/file";
-import type { NodeEntityType } from "@gatewai/react-store";
 import { MediaDimensions } from "../misc/media-dimensions";
 import { OutputSelector } from "../misc/output-selector";
 import { AudioRenderer } from "./common/audio-renderer";
@@ -18,7 +18,7 @@ function MediaContent({
 }) {
 	const selectedOutput =
 		result.outputs?.[
-		Math.min(result.selectedOutputIndex, result.outputs.length - 1)
+			Math.min(result.selectedOutputIndex, result.outputs.length - 1)
 		];
 	const outputItem = selectedOutput?.items?.[0];
 

@@ -1,10 +1,9 @@
+import type { HandleEntityType } from "@gatewai/react-store";
+import { makeSelectNodeById, useAppSelector } from "@gatewai/react-store";
 import type { OutputItem, VideoCompositorNodeConfig } from "@gatewai/types";
 import { memo, useMemo } from "react";
 import { Helmet } from "react-helmet-async";
 import { useNavigate, useParams } from "react-router";
-import { useAppSelector } from "@gatewai/react-store";
-import type { HandleEntityType } from "@gatewai/react-store";
-import { makeSelectNodeById } from "@gatewai/react-store";
 import { useCanvasCtx } from "../../../routes/canvas/details/ctx/canvas-ctx";
 import { useNodeResult } from "../../../routes/canvas/details/graph-engine/processor-ctx";
 import { VideoDesignerEditor } from "../video-editor";

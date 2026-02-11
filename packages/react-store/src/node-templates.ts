@@ -1,7 +1,8 @@
-import { createApi, fetchBaseQuery } from "@reduxjs/toolkit/query/react";
 import { createRpcClient } from "@gatewai/rpc-client";
+import { createApi, fetchBaseQuery } from "@reduxjs/toolkit/query/react";
 
 const rpcClient = createRpcClient();
+
 import type { NodeTemplateListRPC } from "@gatewai/rpc-client";
 
 // Define a service using a base URL and expected endpoints

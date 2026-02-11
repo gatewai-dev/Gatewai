@@ -5,13 +5,13 @@ import type {
 	BackendNodeProcessorResult,
 	NodeProcessor,
 } from "@gatewai/node-sdk";
-import { injectable } from "tsyringe";
 import {
 	type OutputItem,
 	TextToSpeechNodeConfigSchema,
 	type TextToSpeechResult,
 } from "@gatewai/types";
 import { parseBuffer } from "music-metadata";
+import { injectable } from "tsyringe";
 import * as wav from "wav";
 import { getGenAIClient } from "../genai.js";
 

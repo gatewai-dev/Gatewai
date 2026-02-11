@@ -3,11 +3,7 @@
 		"composite": true,
 		"target": "ES2022",
 		"useDefineForClassFields": true,
-		"lib": [
-			"ES2022",
-			"DOM",
-			"DOM.Iterable"
-		],
+		"lib": ["ES2022", "DOM", "DOM.Iterable"],
 		"module": "ESNext",
 		"skipLibCheck": true,
 		"moduleResolution": "bundler",
@@ -24,13 +20,8 @@
 		"emitDecoratorMetadata": true,
 		"baseUrl": ".",
 		"paths": {
-			"@/*": [
-				"./src/*"
-			]
+			"@/*": ["./src/*"]
 		}
 	},
-	"include": [
-		"src",
-		"backend"
-	]
+	"include": ["src", "backend"]
 }

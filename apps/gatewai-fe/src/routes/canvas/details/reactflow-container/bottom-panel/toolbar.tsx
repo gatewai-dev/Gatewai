@@ -1,15 +1,15 @@
-import { useReactFlow, useViewport } from "@xyflow/react";
-import { ChevronDown, Hand, MousePointer } from "lucide-react";
-import { memo } from "react";
-import { Button } from "@gatewai/ui-kit";
 import {
+	Button,
 	Menubar,
 	MenubarContent,
 	MenubarItem,
 	MenubarMenu,
 	MenubarTrigger,
+	Separator,
 } from "@gatewai/ui-kit";
-import { Separator } from "@gatewai/ui-kit";
+import { useReactFlow, useViewport } from "@xyflow/react";
+import { ChevronDown, Hand, MousePointer } from "lucide-react";
+import { memo } from "react";
 import { useCanvasMode } from "../../ctx/canvas-mode-ctx";
 import { CanvasTasksPanel } from "../tasks";
 import { RunWorkflowButton } from "./run-workflow-button";

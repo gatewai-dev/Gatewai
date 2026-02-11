@@ -1,13 +1,11 @@
-import { memo } from "react";
-// Assuming you have a Popover component in your UI library
 import {
-	Popover,
-	PopoverContent,
-	PopoverTrigger,
-} from "@gatewai/ui-kit";
-import { useAppSelector } from "@gatewai/react-store";
-import { makeSelectHandlesByNodeId } from "@gatewai/react-store";
-import { makeSelectNodeById } from "@gatewai/react-store";
+	makeSelectHandlesByNodeId,
+	makeSelectNodeById,
+	useAppSelector,
+} from "@gatewai/react-store";
+// Assuming you have a Popover component in your UI library
+import { Popover, PopoverContent, PopoverTrigger } from "@gatewai/ui-kit";
+import { memo } from "react";
 import { AddCustomHandleButton } from "../../components/add-custom-handle";
 import { RunNodeButton } from "../../components/run-node-button";
 import { useNodeResult } from "../../graph-engine/processor-ctx";

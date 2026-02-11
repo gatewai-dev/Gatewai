@@ -1,3 +1,4 @@
+import type { NodeTemplateListItemRPC } from "@gatewai/react-store";
 import { useReactFlow } from "@xyflow/react";
 import { motion } from "framer-motion";
 import { GripVertical } from "lucide-react";
@@ -5,7 +6,6 @@ import { memo, useEffect, useRef, useState } from "react";
 import { createPortal } from "react-dom";
 import { cn } from "@/lib/utils";
 import { useCanvasCtx } from "@/routes/canvas/details/ctx/canvas-ctx";
-import type { NodeTemplateListItemRPC } from "@gatewai/react-store";
 import { NODE_ICON_MAP } from "./icon-map";
 
 interface NodeItemProps {

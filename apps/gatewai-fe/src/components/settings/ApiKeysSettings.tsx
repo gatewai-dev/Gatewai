@@ -1,44 +1,38 @@
-import { zodResolver } from "@hookform/resolvers/zod";
-import { Check, Copy, Loader2, Plus, Trash2 } from "lucide-react";
-import { useState } from "react";
-import { useForm } from "react-hook-form";
-import { toast } from "sonner";
-import { z } from "zod";
-import { Button } from "@gatewai/ui-kit";
 import {
+	useCreateApiKeyMutation,
+	useDeleteApiKeyMutation,
+	useGetApiKeysQuery,
+} from "@gatewai/react-store";
+import {
+	Button,
 	Dialog,
 	DialogContent,
 	DialogDescription,
 	DialogHeader,
 	DialogTitle,
-} from "@gatewai/ui-kit";
-import {
 	Form,
 	FormControl,
 	FormField,
 	FormItem,
 	FormMessage,
-} from "@gatewai/ui-kit";
-import { Input } from "@gatewai/ui-kit";
-import {
+	Input,
+	Separator,
 	Table,
 	TableBody,
 	TableCell,
 	TableHead,
 	TableHeader,
 	TableRow,
-} from "@gatewai/ui-kit";
-import {
 	Tooltip,
 	TooltipContent,
 	TooltipTrigger,
 } from "@gatewai/ui-kit";
-import {
-	useCreateApiKeyMutation,
-	useDeleteApiKeyMutation,
-	useGetApiKeysQuery,
-} from "@gatewai/react-store";
-import { Separator } from "@gatewai/ui-kit";
+import { zodResolver } from "@hookform/resolvers/zod";
+import { Check, Copy, Loader2, Plus, Trash2 } from "lucide-react";
+import { useState } from "react";
+import { useForm } from "react-hook-form";
+import { toast } from "sonner";
+import { z } from "zod";
 
 interface ApiKeysSettingsProps {
 	open: boolean;

@@ -1,131 +1,131 @@
-import { createRpcClient } from "./factory";
 import type { InferRequestType, InferResponseType } from "hono/client";
+import { createRpcClient } from "./factory";
 
 const rpcClient = createRpcClient();
 
 export type CanvasDetailsRPC = InferResponseType<
-    (typeof rpcClient.api.v1.canvas)[":id"]["$get"]
+	(typeof rpcClient.api.v1.canvas)[":id"]["$get"]
 >;
 export type CanvasDetailsRPCParams = InferRequestType<
-    (typeof rpcClient.api.v1.canvas)[":id"]["$get"]
+	(typeof rpcClient.api.v1.canvas)[":id"]["$get"]
 >;
 export type CanvasDetailsNode = CanvasDetailsRPC["nodes"][number];
 
 export type CanvasListRPC = InferResponseType<
-    typeof rpcClient.api.v1.canvas.$get
+	typeof rpcClient.api.v1.canvas.$get
 >;
 export type CanvasListRPCParams = InferRequestType<
-    typeof rpcClient.api.v1.canvas.$get
+	typeof rpcClient.api.v1.canvas.$get
 >;
 
 export type DeleteCanvasRPC = InferResponseType<
-    (typeof rpcClient.api.v1.canvas)[":id"]["$delete"]
+	(typeof rpcClient.api.v1.canvas)[":id"]["$delete"]
 >;
 export type DeleteCanvasRPCParams = InferRequestType<
-    (typeof rpcClient.api.v1.canvas)[":id"]["$delete"]
+	(typeof rpcClient.api.v1.canvas)[":id"]["$delete"]
 >;
 
 export type CreateCanvasRPC = InferResponseType<
-    typeof rpcClient.api.v1.canvas.$post
+	typeof rpcClient.api.v1.canvas.$post
 >;
 export type CreateCanvasRPCParams = InferRequestType<
-    typeof rpcClient.api.v1.canvas.$post
+	typeof rpcClient.api.v1.canvas.$post
 >;
 
 export type PatchCanvasRPC = InferResponseType<
-    (typeof rpcClient.api.v1.canvas)[":id"]["$patch"]
+	(typeof rpcClient.api.v1.canvas)[":id"]["$patch"]
 >;
 export type PatchCanvasRPCParams = InferRequestType<
-    (typeof rpcClient.api.v1.canvas)[":id"]["$patch"]
+	(typeof rpcClient.api.v1.canvas)[":id"]["$patch"]
 >;
 
 export type UpdateCanvasNameRPC = InferResponseType<
-    (typeof rpcClient.api.v1.canvas)[":id"]["update-name"]["$patch"]
+	(typeof rpcClient.api.v1.canvas)[":id"]["update-name"]["$patch"]
 >;
 export type UpdateCanvasNameRPCParams = InferRequestType<
-    (typeof rpcClient.api.v1.canvas)[":id"]["update-name"]["$patch"]
+	(typeof rpcClient.api.v1.canvas)[":id"]["update-name"]["$patch"]
 >;
 
 export type ProcessNodesRPC = InferResponseType<
-    (typeof rpcClient.api.v1.canvas)[":id"]["process"]["$post"]
+	(typeof rpcClient.api.v1.canvas)[":id"]["process"]["$post"]
 >;
 export type ProcessNodesRPCParams = InferRequestType<
-    (typeof rpcClient.api.v1.canvas)[":id"]["process"]["$post"]
+	(typeof rpcClient.api.v1.canvas)[":id"]["process"]["$post"]
 >;
 
 export type NodeTemplateListRPC = InferResponseType<
-    (typeof rpcClient.api.v1)["node-templates"]["$get"]
+	(typeof rpcClient.api.v1)["node-templates"]["$get"]
 >;
 export type NodeTemplateListItemRPC = NodeTemplateListRPC[number];
 
 export type UserAssetsListRPC = InferResponseType<
-    typeof rpcClient.api.v1.assets.$get
+	typeof rpcClient.api.v1.assets.$get
 >;
 export type UserAssetsListRPCParams = InferRequestType<
-    typeof rpcClient.api.v1.assets.$get
+	typeof rpcClient.api.v1.assets.$get
 >;
 
 export type UserAssetsUploadRPC = InferResponseType<
-    typeof rpcClient.api.v1.assets.$post
+	typeof rpcClient.api.v1.assets.$post
 >;
 
 export type UploadFileNodeAssetRPC = InferResponseType<
-    (typeof rpcClient.api.v1.assets)["node"][":nodeId"]["$post"]
+	(typeof rpcClient.api.v1.assets)["node"][":nodeId"]["$post"]
 >;
 export type UploadFileNodeAssetRPCParams = InferRequestType<
-    (typeof rpcClient.api.v1.assets)["node"][":nodeId"]["$post"]
+	(typeof rpcClient.api.v1.assets)["node"][":nodeId"]["$post"]
 >;
 
 export type ActiveCanvasBatchListRPC = InferResponseType<
-    (typeof rpcClient.api.v1.tasks)[":canvasId"]["$get"]
+	(typeof rpcClient.api.v1.tasks)[":canvasId"]["$get"]
 >;
 export type ActiveCanvasBatchListRPCParams = InferRequestType<
-    (typeof rpcClient.api.v1.tasks)[":canvasId"]["$get"]
+	(typeof rpcClient.api.v1.tasks)[":canvasId"]["$get"]
 >;
 
 export type BatchDetailsRPC = InferResponseType<
-    (typeof rpcClient.api.v1.tasks)["filterby-batch"]["$get"]
+	(typeof rpcClient.api.v1.tasks)["filterby-batch"]["$get"]
 >;
 export type BatchDetailsRPCParams = InferRequestType<
-    (typeof rpcClient.api.v1.tasks)["filterby-batch"]["$get"]
+	(typeof rpcClient.api.v1.tasks)["filterby-batch"]["$get"]
 >;
 
 export type FontListRPC = InferResponseType<typeof rpcClient.api.v1.fonts.$get>;
 
 export type FontListRPCParams = InferRequestType<
-    typeof rpcClient.api.v1.fonts.$get
+	typeof rpcClient.api.v1.fonts.$get
 >;
 
 type AgentSessionsRPCRoute =
-    (typeof rpcClient.api.v1.canvas)[":id"]["agent"]["sessions"]["$get"];
+	(typeof rpcClient.api.v1.canvas)[":id"]["agent"]["sessions"]["$get"];
 export type AgentSessionsRPC = InferResponseType<AgentSessionsRPCRoute>;
 export type AgentSessionsRPCParams = InferRequestType<AgentSessionsRPCRoute>;
 export type AgentSessionEntity = AgentSessionsRPC[number];
 
 type AgentSessionDetailsRPCRoute =
-    (typeof rpcClient.api.v1.canvas)[":id"]["agent"][":sessionId"]["$get"];
+	(typeof rpcClient.api.v1.canvas)[":id"]["agent"][":sessionId"]["$get"];
 export type AgentSessionDetailsRPC =
-    InferResponseType<AgentSessionDetailsRPCRoute>;
+	InferResponseType<AgentSessionDetailsRPCRoute>;
 export type AgentSessionDetailsRPCParams =
-    InferRequestType<AgentSessionDetailsRPCRoute>;
+	InferRequestType<AgentSessionDetailsRPCRoute>;
 
 export type GetPatchRPC = InferResponseType<
-    (typeof rpcClient.api.v1.canvas)[":id"]["patches"][":patchId"]["$get"]
+	(typeof rpcClient.api.v1.canvas)[":id"]["patches"][":patchId"]["$get"]
 >;
 export type GetPatchRPCParams = InferRequestType<
-    (typeof rpcClient.api.v1.canvas)[":id"]["patches"][":patchId"]["$get"]
+	(typeof rpcClient.api.v1.canvas)[":id"]["patches"][":patchId"]["$get"]
 >;
 
 export type ApplyPatchRPC = InferResponseType<
-    (typeof rpcClient.api.v1.canvas)[":id"]["patches"][":patchId"]["apply"]["$post"]
+	(typeof rpcClient.api.v1.canvas)[":id"]["patches"][":patchId"]["apply"]["$post"]
 >;
 export type ApplyPatchRPCParams = InferRequestType<
-    (typeof rpcClient.api.v1.canvas)[":id"]["patches"][":patchId"]["apply"]["$post"]
+	(typeof rpcClient.api.v1.canvas)[":id"]["patches"][":patchId"]["apply"]["$post"]
 >;
 
 export type RejectPatchRPC = InferResponseType<
-    (typeof rpcClient.api.v1.canvas)[":id"]["patches"][":patchId"]["reject"]["$post"]
+	(typeof rpcClient.api.v1.canvas)[":id"]["patches"][":patchId"]["reject"]["$post"]
 >;
 export type RejectPatchRPCParams = InferRequestType<
-    (typeof rpcClient.api.v1.canvas)[":id"]["patches"][":patchId"]["reject"]["$post"]
+	(typeof rpcClient.api.v1.canvas)[":id"]["patches"][":patchId"]["reject"]["$post"]
 >;

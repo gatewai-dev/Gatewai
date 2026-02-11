@@ -1,3 +1,15 @@
+import { useGetFontListQuery } from "@gatewai/react-store";
+import {
+	Button,
+	DraggableNumberInput,
+	Label,
+	Select,
+	SelectContent,
+	SelectItem,
+	SelectTrigger,
+	SelectValue,
+	Separator,
+} from "@gatewai/ui-kit";
 import {
 	AlignCenter,
 	AlignLeft,
@@ -10,21 +22,9 @@ import {
 } from "lucide-react";
 import type React from "react";
 import { useMemo } from "react";
-import { Button } from "@gatewai/ui-kit";
-import { DraggableNumberInput } from "@gatewai/ui-kit";
-import { Label } from "@gatewai/ui-kit";
-import {
-	Select,
-	SelectContent,
-	SelectItem,
-	SelectTrigger,
-	SelectValue,
-} from "@gatewai/ui-kit";
-import { Separator } from "@gatewai/ui-kit";
 import { ColorPicker } from "@/components/util/color-input";
 import { GetFontAssetUrl } from "@/lib/file";
 import { fontManager } from "@/lib/fonts";
-import { useGetFontListQuery } from "@gatewai/react-store";
 import { CollapsibleSection } from "../CollapsibleSection";
 
 interface TypographyControlsProps {

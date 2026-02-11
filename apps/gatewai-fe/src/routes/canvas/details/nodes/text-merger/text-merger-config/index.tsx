@@ -1,28 +1,26 @@
+import type { NodeEntityType } from "@gatewai/react-store";
 import {
 	type TextMergerNodeConfig,
 	TextMergerNodeConfigSchema,
 } from "@gatewai/types";
-import { zodResolver } from "@hookform/resolvers/zod";
-import { memo, useEffect, useState } from "react";
-import { useForm } from "react-hook-form";
 import {
 	Form,
 	FormControl,
 	FormField,
 	FormItem,
 	FormLabel,
-} from "@gatewai/ui-kit";
-import {
 	Select,
 	SelectContent,
 	SelectItem,
 	SelectTrigger,
 	SelectValue,
+	Separator,
+	Textarea,
 } from "@gatewai/ui-kit";
-import { Separator } from "@gatewai/ui-kit";
-import { Textarea } from "@gatewai/ui-kit";
+import { zodResolver } from "@hookform/resolvers/zod";
+import { memo, useEffect, useState } from "react";
+import { useForm } from "react-hook-form";
 import { useCanvasCtx } from "@/routes/canvas/details/ctx/canvas-ctx";
-import type { NodeEntityType } from "@gatewai/react-store";
 
 const EMPTY_STRING_TOKEN = "__EMPTY_JOIN__";
 

@@ -4,13 +4,13 @@ import type {
 	BackendNodeProcessorResult,
 	NodeProcessor,
 } from "@gatewai/node-sdk";
-import { injectable } from "tsyringe";
 import type {
 	FileData,
 	ModulateNodeConfig,
 	ModulateResult,
 	NodeResult,
 } from "@gatewai/types";
+import { injectable } from "tsyringe";
 
 @injectable()
 export default class ModulateProcessor implements NodeProcessor {
@@ -91,7 +91,8 @@ export default class ModulateProcessor implements NodeProcessor {
 		} catch (err: unknown) {
 			return {
 				success: false,
-				error: err instanceof Error ? err.message : "Modulate processing failed",
+				error:
+					err instanceof Error ? err.message : "Modulate processing failed",
 			};
 		}
 	}

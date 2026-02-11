@@ -145,11 +145,7 @@ export default class VideoGenProcessor implements NodeProcessor {
 			}
 
 			const expiresIn = 3600 * 24 * 6.9;
-			const signedUrl = await storage.generateSignedUrl(
-				key,
-				bucket,
-				expiresIn,
-			);
+			const signedUrl = await storage.generateSignedUrl(key, bucket, expiresIn);
 			const signedUrlExp = new Date(Date.now() + expiresIn * 1000);
 
 			const asset = await prisma.fileAsset.create({

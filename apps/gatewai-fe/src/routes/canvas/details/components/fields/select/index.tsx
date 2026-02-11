@@ -1,3 +1,18 @@
+import {
+	FormControl,
+	FormField,
+	FormItem,
+	FormLabel,
+	FormMessage,
+	Select,
+	SelectContent,
+	SelectItem,
+	SelectTrigger,
+	SelectValue,
+	Tooltip,
+	TooltipContent,
+	TooltipTrigger,
+} from "@gatewai/ui-kit";
 import { Info } from "lucide-react";
 import { type JSX, memo, type ReactNode } from "react";
 import type {
@@ -6,25 +21,6 @@ import type {
 	FieldValues,
 	UseControllerProps,
 } from "react-hook-form";
-import {
-	FormControl,
-	FormField,
-	FormItem,
-	FormLabel,
-	FormMessage,
-} from "@gatewai/ui-kit";
-import {
-	Select,
-	SelectContent,
-	SelectItem,
-	SelectTrigger,
-	SelectValue,
-} from "@gatewai/ui-kit";
-import {
-	Tooltip,
-	TooltipContent,
-	TooltipTrigger,
-} from "@gatewai/ui-kit";
 
 type SelectFieldProps<T extends FieldValues> = {
 	control: Control<T>;

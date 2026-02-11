@@ -1,3 +1,8 @@
+import type { NodeEntityType } from "@gatewai/react-store";
+import {
+	makeSelectHandlesByNodeId,
+	useAppSelector,
+} from "@gatewai/react-store";
 import {
 	VIDEOGEN_ASPECT_RATIOS,
 	VIDEOGEN_DURATIONS,
@@ -6,21 +11,19 @@ import {
 	type VideoGenNodeConfig,
 	VideoGenNodeConfigSchema,
 } from "@gatewai/types";
-import { zodResolver } from "@hookform/resolvers/zod";
-import { debounce, isEqual } from "lodash";
-import { memo, useEffect, useMemo } from "react";
-import { useForm } from "react-hook-form";
-import { Form, FormDescription } from "@gatewai/ui-kit";
 import {
+	Form,
+	FormDescription,
 	Tooltip,
 	TooltipContent,
 	TooltipProvider,
 	TooltipTrigger,
 } from "@gatewai/ui-kit";
+import { zodResolver } from "@hookform/resolvers/zod";
+import { debounce, isEqual } from "lodash";
+import { memo, useEffect, useMemo } from "react";
+import { useForm } from "react-hook-form";
 import { useCanvasCtx } from "@/routes/canvas/details/ctx/canvas-ctx";
-import { useAppSelector } from "@gatewai/react-store";
-import { makeSelectHandlesByNodeId } from "@gatewai/react-store";
-import type { NodeEntityType } from "@gatewai/react-store";
 import { SelectField } from "../../../../components/fields/select";
 
 const VideoGenNodeConfigComponent = memo(

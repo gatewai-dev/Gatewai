@@ -1,14 +1,14 @@
 type WorkerMessage =
 	| { type: "INIT_CANVAS"; payload: { canvas: OffscreenCanvas } }
 	| {
-		type: "DRAW_IMAGE";
-		payload: {
-			imageUrl: string;
-			zoom: number;
-			canvasWidth: number;
-			dpr: number;
-		};
-	}
+			type: "DRAW_IMAGE";
+			payload: {
+				imageUrl: string;
+				zoom: number;
+				canvasWidth: number;
+				dpr: number;
+			};
+	  }
 	| { type: "CLEAR" };
 
 let canvas: OffscreenCanvas | null = null;

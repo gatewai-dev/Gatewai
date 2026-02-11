@@ -1,17 +1,17 @@
-import { zodResolver } from "@hookform/resolvers/zod";
-import { MenuIcon } from "lucide-react";
-import { memo, useState } from "react";
-import { useForm } from "react-hook-form";
-import { z } from "zod";
-import { Button } from "@gatewai/ui-kit";
 import {
+	makeSelectNodeById,
+	type NodeEntityType,
+	updateNodeEntity,
+	useAppDispatch,
+	useAppSelector,
+} from "@gatewai/react-store";
+import {
+	Button,
 	Dialog,
 	DialogContent,
 	DialogFooter,
 	DialogHeader,
 	DialogTitle,
-} from "@gatewai/ui-kit";
-import {
 	DropdownMenu,
 	DropdownMenuContent,
 	DropdownMenuGroup,
@@ -19,23 +19,20 @@ import {
 	DropdownMenuSeparator,
 	DropdownMenuShortcut,
 	DropdownMenuTrigger,
-} from "@gatewai/ui-kit";
-import {
 	Form,
 	FormControl,
 	FormField,
 	FormItem,
 	FormLabel,
 	FormMessage,
+	Input,
 } from "@gatewai/ui-kit";
-import { Input } from "@gatewai/ui-kit";
+import { zodResolver } from "@hookform/resolvers/zod";
+import { MenuIcon } from "lucide-react";
+import { memo, useState } from "react";
+import { useForm } from "react-hook-form";
+import { z } from "zod";
 import { copyTextToClipboard } from "@/lib/clipboard";
-import { useAppDispatch, useAppSelector } from "@gatewai/react-store";
-import {
-	makeSelectNodeById,
-	type NodeEntityType,
-	updateNodeEntity,
-} from "@gatewai/react-store";
 import { useCanvasCtx } from "../ctx/canvas-ctx";
 
 type RenameNodeDialogProps = {

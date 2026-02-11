@@ -1,9 +1,15 @@
 import { EventEmitter } from "node:events";
 import type { DataType, NodeType } from "@gatewai/db";
+import type {
+	EdgeEntityType,
+	HandleEntityType,
+	NodeEntityType,
+} from "@gatewai/react-store";
 import {
 	type BlurNodeConfig,
 	type CompositorNodeConfig,
 	type CropNodeConfig,
+	dataTypeColors,
 	type FileData,
 	type ModulateNodeConfig,
 	type NodeResult,
@@ -13,11 +19,7 @@ import {
 	TextMergerNodeConfigSchema,
 	TextNodeConfigSchema,
 } from "@gatewai/types";
-import { dataTypeColors } from "@gatewai/types";
 import { GetAssetEndpoint } from "@/lib/file";
-import type { EdgeEntityType } from "@gatewai/react-store";
-import type { HandleEntityType } from "@gatewai/react-store";
-import type { NodeEntityType } from "@gatewai/react-store";
 import { processCompositor } from "./image-compositor";
 import { pixiWorkerService } from "./pixi/pixi-worker.service";
 import type {

@@ -1,6 +1,6 @@
-import { createContext, type PropsWithChildren, useContext } from "react";
 import type { AgentSessionsRPC } from "@gatewai/react-store";
 import { useGetCanvasAgentSessionListQuery } from "@gatewai/react-store";
+import { createContext, type PropsWithChildren, useContext } from "react";
 
 type CanvasAgentSessionsContextType = {
 	agentSessionsList: AgentSessionsRPC | undefined;

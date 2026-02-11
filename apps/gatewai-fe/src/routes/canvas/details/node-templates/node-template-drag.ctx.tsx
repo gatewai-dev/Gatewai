@@ -1,10 +1,10 @@
+import type { NodeTemplateListRPC } from "@gatewai/react-store";
 import {
 	createContext,
 	type PropsWithChildren,
 	useContext,
 	useState,
 } from "react";
-import type { NodeTemplateListRPC } from "@gatewai/react-store";
 
 type NodeTemplateEntity = NodeTemplateListRPC[number];
 interface NodeTemplateDnDContextType {

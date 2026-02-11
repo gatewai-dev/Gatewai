@@ -5,13 +5,13 @@ import type {
 	BackendNodeProcessorResult,
 	NodeProcessor,
 } from "@gatewai/node-sdk";
-import { injectable } from "tsyringe";
 import {
 	type FileData,
 	type NodeResult,
 	PaintNodeConfigSchema,
 	type PaintResult,
 } from "@gatewai/types";
+import { injectable } from "tsyringe";
 
 @injectable()
 export default class PaintProcessor implements NodeProcessor {

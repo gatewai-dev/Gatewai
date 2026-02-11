@@ -184,7 +184,6 @@ model Node {
   height         Float?
 
   config         Json?
-  isDirty        Boolean         @default(false) // Whether or not previous results or data/config changed
   /*
 
   OutputItem {

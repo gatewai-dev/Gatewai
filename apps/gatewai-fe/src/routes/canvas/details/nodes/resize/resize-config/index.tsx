@@ -1,5 +1,5 @@
-import type { ResizeNodeConfig } from "@gatewai/types";
 import type { NodeEntityType } from "@gatewai/react-store";
+import type { ResizeNodeConfig } from "@gatewai/types";
 import { AspectRatioSwitch } from "../../common/dimensions/aspect-ratio-switch";
 import { ResizeHeightInput } from "../../common/dimensions/height-input";
 import { ResizeWidthInput } from "../../common/dimensions/width-input";
@@ -39,13 +39,13 @@ function ResizeConfig({
 	);
 }
 
-import { Maximize2 } from "lucide-react";
-import { Button } from "@gatewai/ui-kit";
 import {
+	Button,
 	Tooltip,
 	TooltipContent,
 	TooltipTrigger,
 } from "@gatewai/ui-kit";
+import { Maximize2 } from "lucide-react";
 import { useCanvasCtx } from "../../../ctx/canvas-ctx";
 
 function ResetButton({

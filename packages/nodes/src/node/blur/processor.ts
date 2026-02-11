@@ -5,7 +5,6 @@ import type {
 	BackendNodeProcessorResult,
 	NodeProcessor,
 } from "@gatewai/node-sdk";
-import { injectable } from "tsyringe";
 import type { BlurInput, BlurOutput } from "@gatewai/pixi-processor";
 import {
 	BlurNodeConfigSchema,
@@ -13,6 +12,7 @@ import {
 	type FileData,
 	type NodeResult,
 } from "@gatewai/types";
+import { injectable } from "tsyringe";
 
 @injectable()
 export default class BlurProcessor implements NodeProcessor {

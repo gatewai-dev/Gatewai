@@ -1,3 +1,11 @@
+import {
+	type HandleEntityType,
+	makeSelectAllEdges,
+	makeSelectAllHandles,
+	makeSelectAllNodeEntities,
+	type NodeEntityType,
+	useAppSelector,
+} from "@gatewai/react-store";
 import type { FileResult, NodeResult } from "@gatewai/types";
 import { isEqual } from "lodash";
 import {
@@ -8,10 +16,6 @@ import {
 	useRef,
 	useSyncExternalStore,
 } from "react";
-import { useAppSelector } from "@gatewai/react-store";
-import { makeSelectAllEdges } from "@gatewai/react-store";
-import { type HandleEntityType, makeSelectAllHandles } from "@gatewai/react-store";
-import { makeSelectAllNodeEntities, type NodeEntityType } from "@gatewai/react-store";
 import {
 	type HandleState,
 	NodeGraphProcessor,

@@ -8,6 +8,7 @@ export async function applyCanvasUpdate(
 	validated: BulkUpdatePayload,
 ) {
 	// 1. Verify Canvas Existence
+	console.log({ validated });
 	const existingCanvas = await prisma.canvas.findFirst({
 		where: { id: canvasId },
 		select: { id: true, version: true },

@@ -1,41 +1,37 @@
 import type { DataType } from "@gatewai/db";
-import { zodResolver } from "@hookform/resolvers/zod";
-import { PlusIcon } from "lucide-react";
-import { useMemo, useState } from "react";
-import { useForm } from "react-hook-form";
-import { z } from "zod";
-import { Button } from "@gatewai/ui-kit";
+import type { NodeEntityType } from "@gatewai/react-store";
 import {
+	type HandleEntityType,
+	makeSelectHandlesByNodeId,
+	useAppSelector,
+} from "@gatewai/react-store";
+import {
+	Button,
 	Dialog,
 	DialogContent,
 	DialogHeader,
 	DialogTitle,
 	DialogTrigger,
-} from "@gatewai/ui-kit";
-import {
 	Form,
 	FormControl,
 	FormField,
 	FormItem,
 	FormLabel,
 	FormMessage,
-} from "@gatewai/ui-kit";
-import { Input } from "@gatewai/ui-kit";
-import {
+	Input,
 	Select,
 	SelectContent,
 	SelectItem,
 	SelectTrigger,
 	SelectValue,
+	Textarea,
 } from "@gatewai/ui-kit";
-import { Textarea } from "@gatewai/ui-kit";
+import { zodResolver } from "@hookform/resolvers/zod";
+import { PlusIcon } from "lucide-react";
+import { useMemo, useState } from "react";
+import { useForm } from "react-hook-form";
+import { z } from "zod";
 import { generateId } from "@/lib/idgen";
-import { useAppSelector } from "@gatewai/react-store";
-import {
-	type HandleEntityType,
-	makeSelectHandlesByNodeId,
-} from "@gatewai/react-store";
-import type { NodeEntityType } from "@gatewai/react-store";
 import { useCanvasCtx } from "../ctx/canvas-ctx";
 
 const InputTypes = ["Image", "Text", "Audio", "Video"] as const;

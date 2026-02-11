@@ -62,7 +62,6 @@ async function duplicateCanvas(
 					height: originalNode.height,
 					// Config will be updated in second pass after handle mappings are complete
 					config: originalNode.config as any,
-					isDirty: false,
 					result: undefined, // Results need handle remapping, done in second pass
 					canvasId: newCanvas.id,
 					templateId: originalNode.templateId,

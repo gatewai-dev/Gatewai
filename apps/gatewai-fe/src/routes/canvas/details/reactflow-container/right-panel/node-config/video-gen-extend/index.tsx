@@ -1,15 +1,15 @@
+import type { NodeEntityType } from "@gatewai/react-store";
 import {
 	VIDEOGEN_NODE_MODELS,
 	VIDEOGEN_PERSON_GENERATION_OPTIONS,
 	type VideoGenExtendNodeConfig,
 	VideoGenExtendNodeConfigSchema,
 } from "@gatewai/types";
+import { Form, FormDescription } from "@gatewai/ui-kit";
 import { zodResolver } from "@hookform/resolvers/zod";
 import { memo, useCallback, useEffect } from "react";
 import { useForm } from "react-hook-form";
-import { Form, FormDescription } from "@gatewai/ui-kit";
 import { useCanvasCtx } from "@/routes/canvas/details/ctx/canvas-ctx";
-import type { NodeEntityType } from "@gatewai/react-store";
 import { SelectField } from "../../../../components/fields/select";
 
 const VideoGenExtendNodeConfigComponent = memo(

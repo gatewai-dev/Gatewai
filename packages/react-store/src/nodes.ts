@@ -1,3 +1,5 @@
+import type { CanvasDetailsRPC } from "@gatewai/rpc-client";
+import { createRpcClient } from "@gatewai/rpc-client";
 import type { AllNodeConfig, NodeResult } from "@gatewai/types";
 import {
 	createDraftSafeSelector,
@@ -5,10 +7,9 @@ import {
 	createSlice,
 } from "@reduxjs/toolkit";
 import { isEqual } from "lodash";
-import type { CanvasDetailsRPC } from "@gatewai/rpc-client";
-import { createRpcClient } from "@gatewai/rpc-client";
 
 const rpcClient = createRpcClient();
+
 import type { RootState } from "./index.js";
 import { selectSelectedNodeIds } from "./node-meta.js";
 import { getBatchDetails } from "./tasks.js";

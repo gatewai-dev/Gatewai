@@ -1,3 +1,14 @@
+import {
+	FormControl,
+	FormField,
+	FormItem,
+	FormLabel,
+	FormMessage,
+	Switch,
+	Tooltip,
+	TooltipContent,
+	TooltipTrigger,
+} from "@gatewai/ui-kit";
 import { Info } from "lucide-react";
 import { memo, type ReactNode } from "react";
 import type {
@@ -6,19 +17,6 @@ import type {
 	FieldValues,
 	UseControllerProps,
 } from "react-hook-form";
-import {
-	FormControl,
-	FormField,
-	FormItem,
-	FormLabel,
-	FormMessage,
-} from "@gatewai/ui-kit";
-import { Switch } from "@gatewai/ui-kit";
-import {
-	Tooltip,
-	TooltipContent,
-	TooltipTrigger,
-} from "@gatewai/ui-kit";
 
 type SwitchFieldProps<T extends FieldValues> = {
 	control: Control<T>;

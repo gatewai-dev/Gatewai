@@ -18,6 +18,7 @@ import { nodesReducer } from "./nodes";
 import { reactFlowReducer } from "./rfstate";
 import { tasksReducer } from "./tasks";
 
+export * from "@gatewai/rpc-client";
 export * from "./agent-sessions";
 export * from "./api-keys";
 export * from "./assets";
@@ -32,8 +33,6 @@ export * from "./node-templates";
 export * from "./nodes";
 export * from "./rfstate";
 export * from "./tasks";
-export * from "@gatewai/rpc-client";
-
 
 /**
  * Log a warning and show a toast!

@@ -1,11 +1,9 @@
+import type { NodeEntityType } from "@gatewai/react-store";
+import { Alert, AlertDescription, Button, Separator } from "@gatewai/ui-kit";
 import type { NodeProps } from "@xyflow/react";
 import { AlertCircle, Download, InfoIcon, Loader2 } from "lucide-react";
 import { memo, useState } from "react";
-import { Alert, AlertDescription } from "@gatewai/ui-kit";
-import { Button } from "@gatewai/ui-kit";
-import { Separator } from "@gatewai/ui-kit";
 import { isFileData } from "@/lib/file";
-import type { NodeEntityType } from "@gatewai/react-store";
 import { useNodeResult } from "../../graph-engine/processor-ctx";
 import { useDownloadFileData } from "../../hooks/use-download-filedata";
 import { BaseNode } from "../base";

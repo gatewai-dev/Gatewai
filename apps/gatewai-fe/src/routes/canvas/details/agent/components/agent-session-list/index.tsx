@@ -1,8 +1,6 @@
+import { Button, DialogTitle, ScrollArea } from "@gatewai/ui-kit";
 import { formatDistanceToNow } from "date-fns";
 import { Clock, MessageSquare, Plus } from "lucide-react";
-import { Button } from "@gatewai/ui-kit";
-import { DialogTitle } from "@gatewai/ui-kit";
-import { ScrollArea } from "@gatewai/ui-kit";
 import { cn } from "@/lib/utils";
 import { useCanvasAgent } from "../../ctx/canvas-agent.ctx";
 
