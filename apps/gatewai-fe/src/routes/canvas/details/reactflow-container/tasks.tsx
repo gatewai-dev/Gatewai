@@ -1,3 +1,4 @@
+import { useTaskManagerCtx } from "@gatewai/react-canvas";
 import {
 	Accordion,
 	AccordionContent,
@@ -12,7 +13,6 @@ import {
 import { formatDistanceToNow } from "date-fns";
 import { AlertCircle } from "lucide-react";
 import { memo } from "react";
-import { useTaskManagerCtx } from "../ctx/task-manager-ctx";
 
 const CanvasTasksPanel = memo(() => {
 	const { isLoading, taskBatches, latestTasksFetchTime } = useTaskManagerCtx();

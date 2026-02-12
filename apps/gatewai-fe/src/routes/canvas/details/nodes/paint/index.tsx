@@ -1,5 +1,6 @@
 import type { FileData } from "@gatewai/core/types";
 import type { PaintNodeConfig } from "@gatewai/nodes/configs";
+import { BaseNode, useCanvasCtx, useNodeResult } from "@gatewai/react-canvas";
 import {
 	makeSelectEdgesByTargetNodeId,
 	makeSelectNodeById,
@@ -12,9 +13,6 @@ import { memo, useCallback, useEffect, useMemo, useRef, useState } from "react";
 import { ColorPicker } from "@/components/util/color-input";
 import { ResolveFileDataUrl } from "@/lib/file";
 import { cn } from "@/lib/utils";
-import { useCanvasCtx } from "../../../../../../../../packages/react-canvas/src/canvas-ctx";
-import { useNodeResult } from "../../graph-engine/processor-ctx";
-import { BaseNode } from "../base";
 import type { PaintNode } from "../node-props";
 import { PaintDimensionsConfig } from "./paint-config";
 import { colorsSimilar, colorToRgb, getPixel, setPixel } from "./utils";

@@ -1,4 +1,6 @@
+import { generateId } from "@gatewai/core";
 import type { DataType } from "@gatewai/db";
+import { useCanvasCtx } from "@gatewai/react-canvas";
 import type { NodeEntityType } from "@gatewai/react-store";
 import {
 	type HandleEntityType,
@@ -31,8 +33,6 @@ import { PlusIcon } from "lucide-react";
 import { useMemo, useState } from "react";
 import { useForm } from "react-hook-form";
 import { z } from "zod";
-import { generateId } from "@/lib/idgen";
-import { useCanvasCtx } from "../../../../../../../packages/react-canvas/src/canvas-ctx";
 
 const InputTypes = ["Image", "Text", "Audio", "Video"] as const;
 const OutputTypes = ["Image", "Text", "Audio", "Video"] as const;
@@ -53,7 +53,10 @@ type CustomHandleButtonProps = {
 
 function AddCustomHandleButton(props: CustomHandleButtonProps) {
 	const OPTIONS = useMemo(() => {
-		return props?.dataTypes ?? LookupDataTypes[props.type];
+		return (
+			props?.dataTypes ??
+			LookupDataTypes[props.type as keyof typeof LookupDataTypes]
+		);
 	}, [props.dataTypes, props.type]);
 	const existingHandles = useAppSelector(
 		makeSelectHandlesByNodeId(props.nodeId),
@@ -132,7 +135,7 @@ function AddCustomHandleButton(props: CustomHandleButtonProps) {
 											</SelectTrigger>
 										</FormControl>
 										<SelectContent>
-											{OPTIONS.map((opt) => (
+											{OPTIONS.map((opt: string) => (
 												<SelectItem key={opt} value={opt}>
 													{opt}
 												</SelectItem>

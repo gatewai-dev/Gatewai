@@ -1,4 +1,6 @@
 import type { FileData, VideoCompositorNodeConfig } from "@gatewai/core/types";
+import { AddCustomHandleButton } from "@gatewai/node-sdk/client";
+import { BaseNode, useNodeResult } from "@gatewai/react-canvas";
 import { makeSelectNodeById, useAppSelector } from "@gatewai/react-store";
 import { Button } from "@gatewai/ui-kit";
 import { Player } from "@remotion/player";
@@ -15,11 +17,6 @@ import {
 	type ExtendedLayer,
 } from "@/modules/video-editor/common/composition";
 import { DEFAULT_DURATION_FRAMES, FPS } from "@/modules/video-editor/config";
-import { AddCustomHandleButton } from "../../components/add-custom-handle";
-import { remotionService } from "../../graph-engine/muxer-service";
-import { useNodeResult } from "../../graph-engine/processor-ctx";
-import { useDownloadFileData } from "../../hooks/use-download-filedata";
-import { BaseNode } from "../base";
 import type { VideoCompositorNode } from "../node-props";
 
 const VideoCompositorNodeComponent = memo(

@@ -19,6 +19,7 @@ export * from "./input";
 export * from "./item";
 export * from "./label";
 export * from "./loading-spinner";
+export * from "./markdown-renderer";
 export * from "./menubar";
 export * from "./native-select";
 export * from "./popover";

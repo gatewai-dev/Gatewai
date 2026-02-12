@@ -1,5 +1,6 @@
+import { MIME_TYPES } from "@gatewai/core/types";
 import qs from "query-string";
-import { BASE_URL, MIME_TYPES } from "@/lib/file";
+import { BASE_URL } from "@/lib/file";
 import type { FileAssetEntity } from "./types";
 
 export function GetAssetThumbnailEndpoint(

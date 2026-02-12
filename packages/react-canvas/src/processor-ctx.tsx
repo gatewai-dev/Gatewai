@@ -1,4 +1,9 @@
+import { isEqual } from "@gatewai/core";
 import type { FileResult, NodeResult } from "@gatewai/core/types";
+import {
+	NodeUIContext,
+	type NodeUIContextType,
+} from "@gatewai/node-sdk/client";
 import {
 	type HandleEntityType,
 	makeSelectAllEdges,
@@ -7,7 +12,6 @@ import {
 	type NodeEntityType,
 	useAppSelector,
 } from "@gatewai/react-store";
-import { isEqual } from "lodash";
 import {
 	createContext,
 	useCallback,
@@ -17,16 +21,15 @@ import {
 	useRef,
 	useSyncExternalStore,
 } from "react";
-import { NodeUIContext } from "../../../../../../../packages/node-sdk/client/ui";
-import { useCanvasCtx } from "../../../../../../../packages/react-canvas/src/canvas-ctx";
-import { useNodePreview } from "../hooks/node-preview";
-import { BaseNode } from "../nodes/base";
-import { CanvasRenderer } from "../nodes/common/canvas-renderer";
+import { useCanvasCtx } from "./canvas-ctx";
+import { useNodePreview } from "./hooks/node-preview";
 import {
 	type HandleState,
 	NodeGraphProcessor,
 	TaskStatus,
 } from "./node-graph-processor";
+import { BaseNode } from "./nodes/base";
+import { CanvasRenderer } from "./nodes/common/canvas-renderer";
 import type { ConnectedInput } from "./types";
 
 const ProcessorContext = createContext<NodeGraphProcessor | null>(null);

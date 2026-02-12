@@ -1,14 +1,15 @@
 {
-    "extends": "@gatewai/tsconfig/base.json",
-    "compilerOptions": {
-        "jsx": "react-jsx"
-    },
-    "include": [
-        "."
-    ],
-    "exclude": [
-        "dist",
-        "build",
-        "node_modules"
-    ]
+	"extends": "@gatewai/tsconfig/base.json",
+	"compilerOptions": {
+		"module": "ESNext",
+		"moduleResolution": "Bundler",
+		"jsx": "react-jsx",
+		"baseUrl": ".",
+		"paths": {
+			"@/*": ["./src/*"]
+		},
+		"lib": ["dom", "dom.iterable", "ESNext"]
+	},
+	"include": ["."],
+	"exclude": ["dist", "build", "node_modules"]
 }

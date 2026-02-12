@@ -25,15 +25,15 @@ import {
 } from "@xyflow/react";
 import { TrashIcon } from "lucide-react";
 import { type JSX, memo, type ReactNode, useMemo } from "react";
-import { cn } from "@/lib/utils";
-import { useCanvasCtx } from "../../../../../../../packages/react-canvas/src/canvas-ctx";
-import type { HandleState } from "../graph-engine/node-graph-processor";
+import { useCanvasCtx } from "../canvas-ctx";
+import { cn } from "../lib/cn";
+import type { HandleState } from "../node-graph-processor";
 import {
 	useEdgeColor,
 	useNodeResult,
 	useNodeValidation,
-} from "../graph-engine/processor-ctx";
-import { NODE_ICON_MAP } from "../node-templates/node-palette/icon-map";
+} from "../processor-ctx";
+import { NODE_ICON_MAP } from "./icon-map";
 import { NodeMenu } from "./node-menu";
 
 const DEFAULT_COLOR = "#9ca3af";

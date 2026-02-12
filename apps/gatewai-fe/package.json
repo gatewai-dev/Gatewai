@@ -24,6 +24,7 @@
 		"@gatewai/data-ops": "workspace:*",
 		"@gatewai/db": "workspace:*",
 		"@gatewai/graph-engine": "workspace:*",
+		"@gatewai/react-canvas": "workspace:*",
 		"@gatewai/node-sdk": "workspace:*",
 		"@gatewai/nodes": "workspace:*",
 		"@gatewai/media": "workspace:*",

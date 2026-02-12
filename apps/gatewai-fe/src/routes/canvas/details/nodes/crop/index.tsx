@@ -3,6 +3,7 @@ import {
 	type CropNodeConfig,
 	CropNodeConfigSchema,
 } from "@gatewai/nodes/configs";
+import { BaseNode, CanvasRenderer, useNodeResult } from "@gatewai/react-canvas";
 import {
 	makeSelectEdgesByTargetNodeId,
 	makeSelectNodeById,
@@ -14,9 +15,6 @@ import type { NodeProps } from "@xyflow/react";
 import { memo, useCallback, useEffect, useMemo, useRef, useState } from "react";
 import { ResolveFileDataUrl } from "@/lib/file";
 import { cn } from "@/lib/utils";
-import { useNodeResult } from "../../graph-engine/processor-ctx";
-import { BaseNode } from "../base";
-import { CanvasRenderer } from "../common/canvas-renderer";
 import type { CropNode } from "../node-props";
 
 type DragState = {

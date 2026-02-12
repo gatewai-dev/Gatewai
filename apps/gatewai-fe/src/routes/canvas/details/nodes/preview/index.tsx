@@ -1,4 +1,6 @@
 import type { FileData } from "@gatewai/core/types";
+import { MediaDimensions } from "@gatewai/node-sdk/client";
+import { BaseNode, CanvasRenderer, useNodeResult } from "@gatewai/react-canvas";
 import { makeSelectNodeById, useAppSelector } from "@gatewai/react-store";
 import { ScrollArea, Switch } from "@gatewai/ui-kit";
 import type { NodeProps } from "@xyflow/react";
@@ -7,11 +9,7 @@ import { memo, useMemo, useState } from "react";
 import { GetAssetEndpoint } from "@/lib/file";
 import { cn } from "@/lib/utils";
 import { MarkdownRenderer } from "../../components/markdown-renderer";
-import { useNodeResult } from "../../graph-engine/processor-ctx";
-import { MediaDimensions } from "../../misc/media-dimensions";
-import { BaseNode } from "../base";
 import { AudioRenderer } from "../common/audio-renderer";
-import { CanvasRenderer } from "../common/canvas-renderer";
 import { VideoRenderer } from "../common/video-renderer";
 import type { PreviewNode } from "../node-props";
 

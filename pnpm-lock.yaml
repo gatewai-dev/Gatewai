@@ -13,6 +13,31 @@ overrides:
 importers:
 
   .:
+    dependencies:
+      '@hookform/resolvers':
+        specifier: ^3.10.0
+        version: 3.10.0(react-hook-form@7.71.1(react@19.2.3))
+      '@lobehub/icons':
+        specifier: ^2.48.0
+        version: 2.48.0(@babel/core@7.28.0)(@types/mdast@4.0.4)(antd@5.29.2(date-fns@4.1.0)(luxon@3.7.2)(react-dom@19.2.3(react@19.2.3))(react@19.2.3))(framer-motion@12.29.0(react-dom@19.2.3(react@19.2.3))(react@19.2.3))(micromark-util-types@2.0.2)(micromark@4.0.2)(react-dom@19.2.3(react@19.2.3))(react@19.2.3)(vue@3.5.18(typescript@5.8.3))
+      clsx:
+        specifier: ^2.1.1
+        version: 2.1.1
+      lucide-react:
+        specifier: ^0.563.0
+        version: 0.563.0(react@19.2.3)
+      react-hook-form:
+        specifier: ^7.71.1
+        version: 7.71.1(react@19.2.3)
+      react-icons:
+        specifier: ^5.5.0
+        version: 5.5.0(react@19.2.3)
+      tailwind-merge:
+        specifier: ^3.4.0
+        version: 3.4.0
+      zod:
+        specifier: ^4.3.6
+        version: 4.3.6
     devDependencies:
       '@biomejs/biome':
         specifier: 2.3.8
@@ -71,6 +96,9 @@ importers:
       '@gatewai/nodes':
         specifier: workspace:*
         version: link:../../packages/nodes
+      '@gatewai/react-canvas':
+        specifier: workspace:*
+        version: link:../../packages/react-canvas
       '@gatewai/react-store':
         specifier: workspace:*
         version: link:../../packages/react-store
@@ -103,7 +131,7 @@ importers:
         version: 3.10.0(react-hook-form@7.66.0(react@19.2.3))
       '@lobehub/icons':
         specifier: ^2.48.0
-        version: 2.48.0(@babel/core@7.28.0)(@types/mdast@4.0.4)(@types/react-dom@19.2.3(@types/react@19.1.11))(@types/react@19.1.11)(antd@5.29.2(date-fns@4.1.0)(luxon@3.7.2)(react-dom@19.2.3(react@19.2.3))(react@19.2.3))(framer-motion@12.23.26(react-dom@19.2.3(react@19.2.3))(react@19.2.3))(micromark-util-types@2.0.2)(micromark@4.0.2)(react-dom@19.2.3(react@19.2.3))(react@19.2.3)(vue@3.5.18(typescript@5.8.3))
+        version: 2.48.0(@babel/core@7.28.0)(@types/mdast@4.0.4)(@types/react-dom@19.2.3(@types/react@19.1.11))(@types/react@19.1.11)(antd@5.29.2(date-fns@4.1.0)(luxon@3.7.2)(react-dom@19.2.3(react@19.2.3))(react@19.2.3))(framer-motion@12.29.0(react-dom@19.2.3(react@19.2.3))(react@19.2.3))(micromark-util-types@2.0.2)(micromark@4.0.2)(react-dom@19.2.3(react@19.2.3))(react@19.2.3)(vue@3.5.18(typescript@5.5.4))
       '@neodrag/react':
         specifier: ^2.3.1
         version: 2.3.1
@@ -762,6 +790,9 @@ importers:
       '@gatewai/ui-kit':
         specifier: workspace:*
         version: link:../ui-kit
+      '@hookform/resolvers':
+        specifier: ^3.10.0
+        version: 3.10.0(react-hook-form@7.66.0(react@19.2.3))
       '@xyflow/react':
         specifier: ^12.0.0
         version: 12.8.4(@types/react@19.1.11)(immer@11.1.3)(react-dom@19.2.3(react@19.2.3))(react@19.2.3)
@@ -780,6 +811,9 @@ importers:
       react-dom:
         specifier: ^19.2.0
         version: 19.2.3(react@19.2.3)
+      react-hook-form:
+        specifier: ^7.66.0
+        version: 7.66.0(react@19.2.3)
       tailwind-merge:
         specifier: ^3.0.1
         version: 3.3.1
@@ -885,12 +919,42 @@ importers:
       '@gatewai/ui-kit':
         specifier: workspace:*
         version: link:../ui-kit
+      '@hookform/resolvers':
+        specifier: ^3.10.0
+        version: 3.10.0(react-hook-form@7.71.1(react@19.2.3))
+      '@lobehub/icons':
+        specifier: ^2.48.0
+        version: 2.48.0(@babel/core@7.28.0)(@types/mdast@4.0.4)(@types/react-dom@19.2.3(@types/react@19.1.11))(@types/react@19.1.11)(antd@5.29.2(date-fns@4.1.0)(luxon@3.7.2)(react-dom@19.2.3(react@19.2.3))(react@19.2.3))(framer-motion@12.29.0(react-dom@19.2.3(react@19.2.3))(react@19.2.3))(micromark-util-types@2.0.2)(micromark@4.0.2)(react-dom@19.2.3(react@19.2.3))(react@19.2.3)(vue@3.5.18(typescript@5.5.4))
+      '@xyflow/react':
+        specifier: ^12.8.4
+        version: 12.8.4(@types/react@19.1.11)(immer@11.1.3)(react-dom@19.2.3(react@19.2.3))(react@19.2.3)
+      clsx:
+        specifier: ^2.1.1
+        version: 2.1.1
+      lucide-react:
+        specifier: ^0.563.0
+        version: 0.563.0(react@19.2.3)
       react:
         specifier: ^19.2.0
         version: 19.2.3
       react-dom:
         specifier: ^19.2.0
         version: 19.2.3(react@19.2.3)
+      react-hook-form:
+        specifier: ^7.71.1
+        version: 7.71.1(react@19.2.3)
+      react-icons:
+        specifier: ^5.5.0
+        version: 5.5.0(react@19.2.3)
+      sonner:
+        specifier: ^2.0.1
+        version: 2.0.7(react-dom@19.2.3(react@19.2.3))(react@19.2.3)
+      tailwind-merge:
+        specifier: ^3.4.0
+        version: 3.4.0
+      zod:
+        specifier: ^4.3.6
+        version: 4.3.6
     devDependencies:
       '@gatewai/tsconfig':
         specifier: workspace:*
@@ -925,9 +989,6 @@ importers:
       '@xyflow/react':
         specifier: ^12.8.4
         version: 12.8.4(@types/react@19.1.11)(immer@11.1.3)(react-dom@19.2.3(react@19.2.3))(react@19.2.3)
-      lodash:
-        specifier: ^4.17.21
-        version: 4.17.21
       react:
         specifier: ^19.2.0
         version: 19.2.3
@@ -944,9 +1005,6 @@ importers:
       '@gatewai/tsconfig':
         specifier: workspace:*
         version: link:../tsconfig
-      '@types/lodash':
-        specifier: ^4.14.202
-        version: 4.17.21
       '@types/node':
         specifier: ^20.0.0
         version: 20.19.9
@@ -5171,9 +5229,6 @@ packages:
     engines: {node: '>=4'}
     hasBin: true
 
-  csstype@3.1.3:
-    resolution: {integrity: sha512-M1uQkMl8rQK/szD0LNhtqxIPLpimGm8sOBwU7lLnCpSbTyY3yeU1Vc7l4KT5zT4s/yOxHH5O7tIuuLOCnLADRw==}
-
   csstype@3.2.3:
     resolution: {integrity: sha512-z1HGKcYy2xA8AGQfwrn0PAy+PB7X/GSj3UVJW9qKyn43xWa+gl5nXmU4qqLMRzWVLFC8KusUX8T/0kCiOYpAIQ==}
 
@@ -6444,10 +6499,6 @@ packages:
   jws@4.0.1:
     resolution: {integrity: sha512-EKI/M/yqPncGUUh44xz0PxSidXFr/+r0pA70+gIYhjv+et7yxM+s29Y+VGDkovRofQem0fs7Uvf4+YmAdyRduA==}
 
-  katex@0.16.22:
-    resolution: {integrity: sha512-XCHRdUw4lf3SKBaJe4EvgqIuWwkPSo9XoeO8GjQW94Bp7TWv9hNhzZjZ+OH9yf1UmLygb7DIT5GSFQiyt16zYg==}
-    hasBin: true
-
   katex@0.16.27:
     resolution: {integrity: sha512-aeQoDkuRWSqQN6nSvVCEFvfXdqo1OQiCmmW1kc9xSdjutPv7BGO7pqY9sQRJpMOGrEdfDgF2TfRXe5eUAD2Waw==}
     hasBin: true
@@ -6700,6 +6751,11 @@ packages:
 
   lucide-react@0.553.0:
     resolution: {integrity: sha512-BRgX5zrWmNy/lkVAe0dXBgd7XQdZ3HTf+Hwe3c9WK6dqgnj9h+hxV+MDncM88xDWlCq27+TKvHGE70ViODNILw==}
+    peerDependencies:
+      react: ^19.2.0
+
+  lucide-react@0.563.0:
+    resolution: {integrity: sha512-8dXPB2GI4dI8jV4MgUDGBeLdGk8ekfqVZ0BdLcrRzocGgG75ltNEmWS+gE7uokKF/0oSUuczNDT+g9hFJ23FkA==}
     peerDependencies:
       react: ^19.2.0
 
@@ -8018,6 +8074,12 @@ packages:
     peerDependencies:
       react: ^19.2.0
 
+  react-hook-form@7.71.1:
+    resolution: {integrity: sha512-9SUJKCGKo8HUSsCO+y0CtqkqI5nNuaDqTxyqPsZPqIwudpj4rCrAz/jZV+jn57bx5gtZKOh3neQu94DXMc+w5w==}
+    engines: {node: '>=18.0.0'}
+    peerDependencies:
+      react: ^19.2.0
+
   react-hotkeys-hook@5.2.1:
     resolution: {integrity: sha512-xbKh6zJxd/vJHT4Bw4+0pBD662Fk20V+VFhLqciCg+manTVO4qlqRqiwFOYelfHN9dBvWj9vxaPkSS26ZSIJGg==}
     peerDependencies:
@@ -8756,6 +8818,9 @@ packages:
   tailwind-merge@3.3.1:
     resolution: {integrity: sha512-gBXpgUm/3rp1lMZZrM/w7D8GKqshif0zAymAhbCyIt8KMe+0v9DQ7cdYLR4FHH/cKpdTXb+A/tKKU3eolfsI+g==}
 
+  tailwind-merge@3.4.0:
+    resolution: {integrity: sha512-uSaO4gnW+b3Y2aWoWfFpX62vn2sR3skfhbjsEnaBI81WD1wBLlHZe5sWf0AqjksNdYTbGBEd0UasQMT3SNV15g==}
+
   tailwindcss@4.1.16:
     resolution: {integrity: sha512-pONL5awpaQX4LN5eiv7moSiSPd/DLDzKVRJz8Q9PgzmAdd1R4307GQS2ZpfiN7ZmekdQrfhZZiSE5jkLR4WNaA==}
 
@@ -9481,7 +9546,7 @@ snapshots:
       '@emotion/hash': 0.8.0
       '@emotion/unitless': 0.7.5
       classnames: 2.5.1
-      csstype: 3.1.3
+      csstype: 3.2.3
       rc-util: 5.44.4(react-dom@19.2.3(react@19.2.3))(react@19.2.3)
       react: 19.2.3
       react-dom: 19.2.3(react@19.2.3)
@@ -9993,7 +10058,7 @@ snapshots:
       '@emotion/memoize': 0.9.0
       '@emotion/unitless': 0.10.0
       '@emotion/utils': 1.4.2
-      csstype: 3.1.3
+      csstype: 3.2.3
 
   '@emotion/sheet@1.4.0': {}
 
@@ -10201,7 +10266,7 @@ snapshots:
       '@google-cloud/opentelemetry-cloud-monitoring-exporter': 0.21.0(@opentelemetry/api@1.9.0)(@opentelemetry/core@2.4.0(@opentelemetry/api@1.9.0))(@opentelemetry/resources@2.4.0(@opentelemetry/api@1.9.0))(@opentelemetry/sdk-metrics@2.4.0(@opentelemetry/api@1.9.0))(encoding@0.1.13)
       '@google-cloud/opentelemetry-cloud-trace-exporter': 3.0.0(@opentelemetry/api@1.9.0)(@opentelemetry/core@2.4.0(@opentelemetry/api@1.9.0))(@opentelemetry/resources@2.4.0(@opentelemetry/api@1.9.0))(@opentelemetry/sdk-trace-base@2.4.0(@opentelemetry/api@1.9.0))(encoding@0.1.13)
       '@google-cloud/storage': 7.18.0(encoding@0.1.13)
-      '@google/genai': 1.37.0(@modelcontextprotocol/sdk@1.25.2(hono@4.8.5)(zod@3.25.67))
+      '@google/genai': 1.37.0(@modelcontextprotocol/sdk@1.25.2(hono@4.8.5)(zod@3.25.76))
       '@modelcontextprotocol/sdk': 1.25.2(hono@4.8.5)(zod@3.25.76)
       '@opentelemetry/api': 1.9.0
       '@opentelemetry/api-logs': 0.205.0
@@ -10235,7 +10300,7 @@ snapshots:
       - supports-color
       - utf-8-validate
 
-  '@google/genai@1.37.0(@modelcontextprotocol/sdk@1.25.2(hono@4.8.5)(zod@3.25.67))':
+  '@google/genai@1.37.0(@modelcontextprotocol/sdk@1.25.2(hono@4.8.5)(zod@3.25.76))':
     dependencies:
       google-auth-library: 10.5.0
       protobufjs: 7.5.4
@@ -10295,6 +10360,10 @@ snapshots:
   '@hookform/resolvers@3.10.0(react-hook-form@7.66.0(react@19.2.3))':
     dependencies:
       react-hook-form: 7.66.0(react@19.2.3)
+
+  '@hookform/resolvers@3.10.0(react-hook-form@7.71.1(react@19.2.3))':
+    dependencies:
+      react-hook-form: 7.71.1(react@19.2.3)
 
   '@iconify/types@2.0.0': {}
 
@@ -10464,14 +10533,14 @@ snapshots:
 
   '@lobehub/emojilib@1.0.0': {}
 
-  '@lobehub/fluent-emoji@2.0.0(@babel/core@7.28.0)(@types/mdast@4.0.4)(@types/react-dom@19.2.3(@types/react@19.1.11))(@types/react@19.1.11)(antd@5.29.2(date-fns@4.1.0)(luxon@3.7.2)(react-dom@19.2.3(react@19.2.3))(react@19.2.3))(framer-motion@12.23.26(react-dom@19.2.3(react@19.2.3))(react@19.2.3))(micromark-util-types@2.0.2)(micromark@4.0.2)(react-dom@19.2.3(react@19.2.3))(react@19.2.3)(vue@3.5.18(typescript@5.8.3))':
+  '@lobehub/fluent-emoji@2.0.0(@babel/core@7.28.0)(@types/mdast@4.0.4)(@types/react-dom@19.2.3(@types/react@19.1.11))(@types/react@19.1.11)(antd@5.29.2(date-fns@4.1.0)(luxon@3.7.2)(react-dom@19.2.3(react@19.2.3))(react@19.2.3))(framer-motion@12.29.0(react-dom@19.2.3(react@19.2.3))(react@19.2.3))(micromark-util-types@2.0.2)(micromark@4.0.2)(react-dom@19.2.3(react@19.2.3))(react@19.2.3)(vue@3.5.18(typescript@5.5.4))':
     dependencies:
       '@lobehub/emojilib': 1.0.0
-      '@lobehub/ui': 2.24.1(@babel/core@7.28.0)(@types/mdast@4.0.4)(@types/react-dom@19.2.3(@types/react@19.1.11))(@types/react@19.1.11)(antd@5.29.2(date-fns@4.1.0)(luxon@3.7.2)(react-dom@19.2.3(react@19.2.3))(react@19.2.3))(framer-motion@12.23.26(react-dom@19.2.3(react@19.2.3))(react@19.2.3))(micromark-util-types@2.0.2)(micromark@4.0.2)(react-dom@19.2.3(react@19.2.3))(react@19.2.3)(vue@3.5.18(typescript@5.8.3))
+      '@lobehub/ui': 2.24.1(@babel/core@7.28.0)(@types/mdast@4.0.4)(@types/react-dom@19.2.3(@types/react@19.1.11))(@types/react@19.1.11)(antd@5.29.2(date-fns@4.1.0)(luxon@3.7.2)(react-dom@19.2.3(react@19.2.3))(react@19.2.3))(framer-motion@12.29.0(react-dom@19.2.3(react@19.2.3))(react@19.2.3))(micromark-util-types@2.0.2)(micromark@4.0.2)(react-dom@19.2.3(react@19.2.3))(react@19.2.3)(vue@3.5.18(typescript@5.5.4))
       antd: 5.29.2(date-fns@4.1.0)(luxon@3.7.2)(react-dom@19.2.3(react@19.2.3))(react@19.2.3)
       antd-style: 3.7.1(@types/react@19.1.11)(antd@5.29.2(date-fns@4.1.0)(luxon@3.7.2)(react-dom@19.2.3(react@19.2.3))(react@19.2.3))(react-dom@19.2.3(react@19.2.3))(react@19.2.3)
       emoji-regex: 10.6.0
-      lodash-es: 4.17.21
+      lodash-es: 4.17.22
       lucide-react: 0.469.0(react@19.2.3)
       react: 19.2.3
       react-dom: 19.2.3(react@19.2.3)
@@ -10488,9 +10557,33 @@ snapshots:
       - supports-color
       - vue
 
-  '@lobehub/icons@2.48.0(@babel/core@7.28.0)(@types/mdast@4.0.4)(@types/react-dom@19.2.3(@types/react@19.1.11))(@types/react@19.1.11)(antd@5.29.2(date-fns@4.1.0)(luxon@3.7.2)(react-dom@19.2.3(react@19.2.3))(react@19.2.3))(framer-motion@12.23.26(react-dom@19.2.3(react@19.2.3))(react@19.2.3))(micromark-util-types@2.0.2)(micromark@4.0.2)(react-dom@19.2.3(react@19.2.3))(react@19.2.3)(vue@3.5.18(typescript@5.8.3))':
+  '@lobehub/fluent-emoji@2.0.0(@babel/core@7.28.0)(@types/mdast@4.0.4)(antd@5.29.2(date-fns@4.1.0)(luxon@3.7.2)(react-dom@19.2.3(react@19.2.3))(react@19.2.3))(framer-motion@12.29.0(react-dom@19.2.3(react@19.2.3))(react@19.2.3))(micromark-util-types@2.0.2)(micromark@4.0.2)(react-dom@19.2.3(react@19.2.3))(react@19.2.3)(vue@3.5.18(typescript@5.8.3))':
     dependencies:
-      '@lobehub/ui': 2.24.1(@babel/core@7.28.0)(@types/mdast@4.0.4)(@types/react-dom@19.2.3(@types/react@19.1.11))(@types/react@19.1.11)(antd@5.29.2(date-fns@4.1.0)(luxon@3.7.2)(react-dom@19.2.3(react@19.2.3))(react@19.2.3))(framer-motion@12.23.26(react-dom@19.2.3(react@19.2.3))(react@19.2.3))(micromark-util-types@2.0.2)(micromark@4.0.2)(react-dom@19.2.3(react@19.2.3))(react@19.2.3)(vue@3.5.18(typescript@5.8.3))
+      '@lobehub/emojilib': 1.0.0
+      '@lobehub/ui': 2.24.1(@babel/core@7.28.0)(@types/mdast@4.0.4)(antd@5.29.2(date-fns@4.1.0)(luxon@3.7.2)(react-dom@19.2.3(react@19.2.3))(react@19.2.3))(framer-motion@12.29.0(react-dom@19.2.3(react@19.2.3))(react@19.2.3))(micromark-util-types@2.0.2)(micromark@4.0.2)(react-dom@19.2.3(react@19.2.3))(react@19.2.3)(vue@3.5.18(typescript@5.8.3))
+      antd: 5.29.2(date-fns@4.1.0)(luxon@3.7.2)(react-dom@19.2.3(react@19.2.3))(react@19.2.3)
+      antd-style: 3.7.1(@types/react@19.1.11)(antd@5.29.2(date-fns@4.1.0)(luxon@3.7.2)(react-dom@19.2.3(react@19.2.3))(react@19.2.3))(react-dom@19.2.3(react@19.2.3))(react@19.2.3)
+      emoji-regex: 10.6.0
+      lodash-es: 4.17.22
+      lucide-react: 0.469.0(react@19.2.3)
+      react: 19.2.3
+      react-dom: 19.2.3(react@19.2.3)
+      react-layout-kit: 1.9.2(react@19.2.3)
+      url-join: 5.0.0
+    transitivePeerDependencies:
+      - '@babel/core'
+      - '@types/mdast'
+      - '@types/react'
+      - '@types/react-dom'
+      - framer-motion
+      - micromark
+      - micromark-util-types
+      - supports-color
+      - vue
+
+  '@lobehub/icons@2.48.0(@babel/core@7.28.0)(@types/mdast@4.0.4)(@types/react-dom@19.2.3(@types/react@19.1.11))(@types/react@19.1.11)(antd@5.29.2(date-fns@4.1.0)(luxon@3.7.2)(react-dom@19.2.3(react@19.2.3))(react@19.2.3))(framer-motion@12.29.0(react-dom@19.2.3(react@19.2.3))(react@19.2.3))(micromark-util-types@2.0.2)(micromark@4.0.2)(react-dom@19.2.3(react@19.2.3))(react@19.2.3)(vue@3.5.18(typescript@5.5.4))':
+    dependencies:
+      '@lobehub/ui': 2.24.1(@babel/core@7.28.0)(@types/mdast@4.0.4)(@types/react-dom@19.2.3(@types/react@19.1.11))(@types/react@19.1.11)(antd@5.29.2(date-fns@4.1.0)(luxon@3.7.2)(react-dom@19.2.3(react@19.2.3))(react@19.2.3))(framer-motion@12.29.0(react-dom@19.2.3(react@19.2.3))(react@19.2.3))(micromark-util-types@2.0.2)(micromark@4.0.2)(react-dom@19.2.3(react@19.2.3))(react@19.2.3)(vue@3.5.18(typescript@5.5.4))
       antd: 5.29.2(date-fns@4.1.0)(luxon@3.7.2)(react-dom@19.2.3(react@19.2.3))(react@19.2.3)
       antd-style: 3.7.1(@types/react@19.1.11)(antd@5.29.2(date-fns@4.1.0)(luxon@3.7.2)(react-dom@19.2.3(react@19.2.3))(react@19.2.3))(react-dom@19.2.3(react@19.2.3))(react@19.2.3)
       lucide-react: 0.469.0(react@19.2.3)
@@ -10509,7 +10602,28 @@ snapshots:
       - supports-color
       - vue
 
-  '@lobehub/ui@2.24.1(@babel/core@7.28.0)(@types/mdast@4.0.4)(@types/react-dom@19.2.3(@types/react@19.1.11))(@types/react@19.1.11)(antd@5.29.2(date-fns@4.1.0)(luxon@3.7.2)(react-dom@19.2.3(react@19.2.3))(react@19.2.3))(framer-motion@12.23.26(react-dom@19.2.3(react@19.2.3))(react@19.2.3))(micromark-util-types@2.0.2)(micromark@4.0.2)(react-dom@19.2.3(react@19.2.3))(react@19.2.3)(vue@3.5.18(typescript@5.8.3))':
+  '@lobehub/icons@2.48.0(@babel/core@7.28.0)(@types/mdast@4.0.4)(antd@5.29.2(date-fns@4.1.0)(luxon@3.7.2)(react-dom@19.2.3(react@19.2.3))(react@19.2.3))(framer-motion@12.29.0(react-dom@19.2.3(react@19.2.3))(react@19.2.3))(micromark-util-types@2.0.2)(micromark@4.0.2)(react-dom@19.2.3(react@19.2.3))(react@19.2.3)(vue@3.5.18(typescript@5.8.3))':
+    dependencies:
+      '@lobehub/ui': 2.24.1(@babel/core@7.28.0)(@types/mdast@4.0.4)(antd@5.29.2(date-fns@4.1.0)(luxon@3.7.2)(react-dom@19.2.3(react@19.2.3))(react@19.2.3))(framer-motion@12.29.0(react-dom@19.2.3(react@19.2.3))(react@19.2.3))(micromark-util-types@2.0.2)(micromark@4.0.2)(react-dom@19.2.3(react@19.2.3))(react@19.2.3)(vue@3.5.18(typescript@5.8.3))
+      antd: 5.29.2(date-fns@4.1.0)(luxon@3.7.2)(react-dom@19.2.3(react@19.2.3))(react@19.2.3)
+      antd-style: 3.7.1(@types/react@19.1.11)(antd@5.29.2(date-fns@4.1.0)(luxon@3.7.2)(react-dom@19.2.3(react@19.2.3))(react@19.2.3))(react-dom@19.2.3(react@19.2.3))(react@19.2.3)
+      lucide-react: 0.469.0(react@19.2.3)
+      polished: 4.3.1
+      react: 19.2.3
+      react-dom: 19.2.3(react@19.2.3)
+      react-layout-kit: 2.0.1(react@19.2.3)
+    transitivePeerDependencies:
+      - '@babel/core'
+      - '@types/mdast'
+      - '@types/react'
+      - '@types/react-dom'
+      - framer-motion
+      - micromark
+      - micromark-util-types
+      - supports-color
+      - vue
+
+  '@lobehub/ui@2.24.1(@babel/core@7.28.0)(@types/mdast@4.0.4)(@types/react-dom@19.2.3(@types/react@19.1.11))(@types/react@19.1.11)(antd@5.29.2(date-fns@4.1.0)(luxon@3.7.2)(react-dom@19.2.3(react@19.2.3))(react@19.2.3))(framer-motion@12.29.0(react-dom@19.2.3(react@19.2.3))(react@19.2.3))(micromark-util-types@2.0.2)(micromark@4.0.2)(react-dom@19.2.3(react@19.2.3))(react@19.2.3)(vue@3.5.18(typescript@5.5.4))':
     dependencies:
       '@ant-design/cssinjs': 1.24.0(react-dom@19.2.3(react@19.2.3))(react@19.2.3)
       '@dnd-kit/core': 6.3.1(react-dom@19.2.3(react@19.2.3))(react@19.2.3)
@@ -10520,8 +10634,8 @@ snapshots:
       '@emoji-mart/react': 1.1.1(emoji-mart@5.6.0)(react@19.2.3)
       '@floating-ui/react': 0.27.16(react-dom@19.2.3(react@19.2.3))(react@19.2.3)
       '@giscus/react': 3.1.0(react-dom@19.2.3(react@19.2.3))(react@19.2.3)
-      '@lobehub/fluent-emoji': 2.0.0(@babel/core@7.28.0)(@types/mdast@4.0.4)(@types/react-dom@19.2.3(@types/react@19.1.11))(@types/react@19.1.11)(antd@5.29.2(date-fns@4.1.0)(luxon@3.7.2)(react-dom@19.2.3(react@19.2.3))(react@19.2.3))(framer-motion@12.23.26(react-dom@19.2.3(react@19.2.3))(react@19.2.3))(micromark-util-types@2.0.2)(micromark@4.0.2)(react-dom@19.2.3(react@19.2.3))(react@19.2.3)(vue@3.5.18(typescript@5.8.3))
-      '@lobehub/icons': 2.48.0(@babel/core@7.28.0)(@types/mdast@4.0.4)(@types/react-dom@19.2.3(@types/react@19.1.11))(@types/react@19.1.11)(antd@5.29.2(date-fns@4.1.0)(luxon@3.7.2)(react-dom@19.2.3(react@19.2.3))(react@19.2.3))(framer-motion@12.23.26(react-dom@19.2.3(react@19.2.3))(react@19.2.3))(micromark-util-types@2.0.2)(micromark@4.0.2)(react-dom@19.2.3(react@19.2.3))(react@19.2.3)(vue@3.5.18(typescript@5.8.3))
+      '@lobehub/fluent-emoji': 2.0.0(@babel/core@7.28.0)(@types/mdast@4.0.4)(@types/react-dom@19.2.3(@types/react@19.1.11))(@types/react@19.1.11)(antd@5.29.2(date-fns@4.1.0)(luxon@3.7.2)(react-dom@19.2.3(react@19.2.3))(react@19.2.3))(framer-motion@12.29.0(react-dom@19.2.3(react@19.2.3))(react@19.2.3))(micromark-util-types@2.0.2)(micromark@4.0.2)(react-dom@19.2.3(react@19.2.3))(react@19.2.3)(vue@3.5.18(typescript@5.5.4))
+      '@lobehub/icons': 2.48.0(@babel/core@7.28.0)(@types/mdast@4.0.4)(@types/react-dom@19.2.3(@types/react@19.1.11))(@types/react@19.1.11)(antd@5.29.2(date-fns@4.1.0)(luxon@3.7.2)(react-dom@19.2.3(react@19.2.3))(react@19.2.3))(framer-motion@12.29.0(react-dom@19.2.3(react@19.2.3))(react@19.2.3))(micromark-util-types@2.0.2)(micromark@4.0.2)(react-dom@19.2.3(react@19.2.3))(react@19.2.3)(vue@3.5.18(typescript@5.5.4))
       '@mdx-js/mdx': 3.1.1
       '@mdx-js/react': 3.1.1(@types/react@19.1.11)(react@19.2.3)
       '@radix-ui/react-slot': 1.2.4(@types/react@19.1.11)(react@19.2.3)
@@ -10536,11 +10650,91 @@ snapshots:
       dayjs: 1.11.19
       emoji-mart: 5.6.0
       fast-deep-equal: 3.1.3
-      framer-motion: 12.23.26(react-dom@19.2.3(react@19.2.3))(react@19.2.3)
+      framer-motion: 12.29.0(react-dom@19.2.3(react@19.2.3))(react@19.2.3)
       immer: 10.2.0
       katex: 0.16.27
       leva: 0.10.1(@types/react-dom@19.2.3(@types/react@19.1.11))(@types/react@19.1.11)(react-dom@19.2.3(react@19.2.3))(react@19.2.3)
-      lodash-es: 4.17.21
+      lodash-es: 4.17.22
+      lucide-react: 0.553.0(react@19.2.3)
+      marked: 17.0.1
+      mermaid: 11.12.2
+      numeral: 2.0.6
+      polished: 4.3.1
+      query-string: 9.3.1
+      rc-collapse: 4.0.0(react-dom@19.2.3(react@19.2.3))(react@19.2.3)
+      rc-footer: 0.6.8(react-dom@19.2.3(react@19.2.3))(react@19.2.3)
+      rc-image: 7.12.0(react-dom@19.2.3(react@19.2.3))(react@19.2.3)
+      rc-input-number: 9.5.0(react-dom@19.2.3(react@19.2.3))(react@19.2.3)
+      rc-menu: 9.16.1(react-dom@19.2.3(react@19.2.3))(react@19.2.3)
+      re-resizable: 6.11.2(react-dom@19.2.3(react@19.2.3))(react@19.2.3)
+      react: 19.2.3
+      react-avatar-editor: 13.0.2(@babel/core@7.28.0)(react-dom@19.2.3(react@19.2.3))(react@19.2.3)
+      react-dom: 19.2.3(react@19.2.3)
+      react-error-boundary: 6.0.0(react@19.2.3)
+      react-hotkeys-hook: 5.2.1(react-dom@19.2.3(react@19.2.3))(react@19.2.3)
+      react-layout-kit: 2.0.1(react@19.2.3)
+      react-markdown: 10.1.0(@types/react@19.1.11)(react@19.2.3)
+      react-merge-refs: 3.0.2(react@19.2.3)
+      react-rnd: 10.5.2(react-dom@19.2.3(react@19.2.3))(react@19.2.3)
+      react-zoom-pan-pinch: 3.7.0(react-dom@19.2.3(react@19.2.3))(react@19.2.3)
+      rehype-github-alerts: 4.2.0
+      rehype-katex: 7.0.1
+      rehype-raw: 7.0.0
+      remark-breaks: 4.0.0
+      remark-cjk-friendly: 1.2.3(@types/mdast@4.0.4)(micromark-util-types@2.0.2)(micromark@4.0.2)(unified@11.0.5)
+      remark-gfm: 4.0.1
+      remark-github: 12.0.0
+      remark-math: 6.0.0
+      shiki: 3.20.0
+      shiki-stream: 0.1.3(react@19.2.3)(vue@3.5.18(typescript@5.5.4))
+      swr: 2.3.8(react@19.2.3)
+      ts-md5: 2.0.1
+      unified: 11.0.5
+      url-join: 5.0.0
+      use-merge-value: 1.2.0(react@19.2.3)
+      uuid: 13.0.0
+    transitivePeerDependencies:
+      - '@babel/core'
+      - '@types/mdast'
+      - '@types/react'
+      - '@types/react-dom'
+      - micromark
+      - micromark-util-types
+      - supports-color
+      - vue
+
+  '@lobehub/ui@2.24.1(@babel/core@7.28.0)(@types/mdast@4.0.4)(antd@5.29.2(date-fns@4.1.0)(luxon@3.7.2)(react-dom@19.2.3(react@19.2.3))(react@19.2.3))(framer-motion@12.29.0(react-dom@19.2.3(react@19.2.3))(react@19.2.3))(micromark-util-types@2.0.2)(micromark@4.0.2)(react-dom@19.2.3(react@19.2.3))(react@19.2.3)(vue@3.5.18(typescript@5.8.3))':
+    dependencies:
+      '@ant-design/cssinjs': 1.24.0(react-dom@19.2.3(react@19.2.3))(react@19.2.3)
+      '@dnd-kit/core': 6.3.1(react-dom@19.2.3(react@19.2.3))(react@19.2.3)
+      '@dnd-kit/modifiers': 9.0.0(@dnd-kit/core@6.3.1(react-dom@19.2.3(react@19.2.3))(react@19.2.3))(react@19.2.3)
+      '@dnd-kit/sortable': 10.0.0(@dnd-kit/core@6.3.1(react-dom@19.2.3(react@19.2.3))(react@19.2.3))(react@19.2.3)
+      '@dnd-kit/utilities': 3.2.2(react@19.2.3)
+      '@emoji-mart/data': 1.2.1
+      '@emoji-mart/react': 1.1.1(emoji-mart@5.6.0)(react@19.2.3)
+      '@floating-ui/react': 0.27.16(react-dom@19.2.3(react@19.2.3))(react@19.2.3)
+      '@giscus/react': 3.1.0(react-dom@19.2.3(react@19.2.3))(react@19.2.3)
+      '@lobehub/fluent-emoji': 2.0.0(@babel/core@7.28.0)(@types/mdast@4.0.4)(antd@5.29.2(date-fns@4.1.0)(luxon@3.7.2)(react-dom@19.2.3(react@19.2.3))(react@19.2.3))(framer-motion@12.29.0(react-dom@19.2.3(react@19.2.3))(react@19.2.3))(micromark-util-types@2.0.2)(micromark@4.0.2)(react-dom@19.2.3(react@19.2.3))(react@19.2.3)(vue@3.5.18(typescript@5.8.3))
+      '@lobehub/icons': 2.48.0(@babel/core@7.28.0)(@types/mdast@4.0.4)(antd@5.29.2(date-fns@4.1.0)(luxon@3.7.2)(react-dom@19.2.3(react@19.2.3))(react@19.2.3))(framer-motion@12.29.0(react-dom@19.2.3(react@19.2.3))(react@19.2.3))(micromark-util-types@2.0.2)(micromark@4.0.2)(react-dom@19.2.3(react@19.2.3))(react@19.2.3)(vue@3.5.18(typescript@5.8.3))
+      '@mdx-js/mdx': 3.1.1
+      '@mdx-js/react': 3.1.1(@types/react@19.1.11)(react@19.2.3)
+      '@radix-ui/react-slot': 1.2.4(@types/react@19.1.11)(react@19.2.3)
+      '@shikijs/core': 3.20.0
+      '@shikijs/transformers': 3.20.0
+      '@splinetool/runtime': 0.9.526
+      ahooks: 3.9.6(react-dom@19.2.3(react@19.2.3))(react@19.2.3)
+      antd: 5.29.2(date-fns@4.1.0)(luxon@3.7.2)(react-dom@19.2.3(react@19.2.3))(react@19.2.3)
+      antd-style: 3.7.1(@types/react@19.1.11)(antd@5.29.2(date-fns@4.1.0)(luxon@3.7.2)(react-dom@19.2.3(react@19.2.3))(react@19.2.3))(react-dom@19.2.3(react@19.2.3))(react@19.2.3)
+      chroma-js: 3.2.0
+      class-variance-authority: 0.7.1
+      dayjs: 1.11.19
+      emoji-mart: 5.6.0
+      fast-deep-equal: 3.1.3
+      framer-motion: 12.29.0(react-dom@19.2.3(react@19.2.3))(react@19.2.3)
+      immer: 10.2.0
+      katex: 0.16.27
+      leva: 0.10.1(@types/react-dom@19.2.3(@types/react@19.1.11))(@types/react@19.1.11)(react-dom@19.2.3(react@19.2.3))(react@19.2.3)
+      lodash-es: 4.17.22
       lucide-react: 0.553.0(react@19.2.3)
       marked: 17.0.1
       mermaid: 11.12.2
@@ -13114,6 +13308,13 @@ snapshots:
       csstype: 3.2.3
     optional: true
 
+  '@vue/server-renderer@3.5.18(vue@3.5.18(typescript@5.5.4))':
+    dependencies:
+      '@vue/compiler-ssr': 3.5.18
+      '@vue/shared': 3.5.18
+      vue: 3.5.18(typescript@5.5.4)
+    optional: true
+
   '@vue/server-renderer@3.5.18(vue@3.5.18(typescript@5.8.3))':
     dependencies:
       '@vue/compiler-ssr': 3.5.18
@@ -13701,7 +13902,7 @@ snapshots:
   chevrotain-allstar@0.3.1(chevrotain@11.0.3):
     dependencies:
       chevrotain: 11.0.3
-      lodash-es: 4.17.21
+      lodash-es: 4.17.22
 
   chevrotain@11.0.3:
     dependencies:
@@ -13937,8 +14138,6 @@ snapshots:
 
   cssesc@3.0.0: {}
 
-  csstype@3.1.3: {}
-
   csstype@3.2.3: {}
 
   cytoscape-cose-bilkent@4.1.0(cytoscape@3.33.1):
@@ -14123,7 +14322,7 @@ snapshots:
   dagre-d3-es@7.0.13:
     dependencies:
       d3: 7.9.0
-      lodash-es: 4.17.21
+      lodash-es: 4.17.22
 
   data-uri-to-buffer@4.0.1: {}
 
@@ -15417,10 +15616,6 @@ snapshots:
       jwa: 2.0.1
       safe-buffer: 5.2.1
 
-  katex@0.16.22:
-    dependencies:
-      commander: 8.3.0
-
   katex@0.16.27:
     dependencies:
       commander: 8.3.0
@@ -15635,6 +15830,10 @@ snapshots:
       react: 19.2.3
 
   lucide-react@0.553.0(react@19.2.3):
+    dependencies:
+      react: 19.2.3
+
+  lucide-react@0.563.0(react@19.2.3):
     dependencies:
       react: 19.2.3
 
@@ -15906,7 +16105,7 @@ snapshots:
       dompurify: 3.2.6
       katex: 0.16.27
       khroma: 2.1.0
-      lodash-es: 4.17.21
+      lodash-es: 4.17.22
       marked: 16.4.2
       roughjs: 4.6.6
       stylis: 4.3.6
@@ -16013,7 +16212,7 @@ snapshots:
     dependencies:
       '@types/katex': 0.16.7
       devlop: 1.1.0
-      katex: 0.16.22
+      katex: 0.16.27
       micromark-factory-space: 2.0.1
       micromark-util-character: 2.1.1
       micromark-util-symbol: 2.0.1
@@ -17552,6 +17751,10 @@ snapshots:
     dependencies:
       react: 19.2.3
 
+  react-hook-form@7.71.1(react@19.2.3):
+    dependencies:
+      react: 19.2.3
+
   react-hotkeys-hook@5.2.1(react-dom@19.2.3(react@19.2.3))(react@19.2.3):
     dependencies:
       react: 19.2.3
@@ -18249,6 +18452,13 @@ snapshots:
 
   shell-quote@1.8.3: {}
 
+  shiki-stream@0.1.3(react@19.2.3)(vue@3.5.18(typescript@5.5.4)):
+    dependencies:
+      '@shikijs/core': 3.20.0
+    optionalDependencies:
+      react: 19.2.3
+      vue: 3.5.18(typescript@5.5.4)
+
   shiki-stream@0.1.3(react@19.2.3)(vue@3.5.18(typescript@5.8.3)):
     dependencies:
       '@shikijs/core': 3.20.0
@@ -18508,6 +18718,8 @@ snapshots:
   tabbable@6.3.0: {}
 
   tailwind-merge@3.3.1: {}
+
+  tailwind-merge@3.4.0: {}
 
   tailwindcss@4.1.16: {}
 
@@ -19112,6 +19324,17 @@ snapshots:
       vscode-languageserver-protocol: 3.17.5
 
   vscode-uri@3.0.8: {}
+
+  vue@3.5.18(typescript@5.5.4):
+    dependencies:
+      '@vue/compiler-dom': 3.5.18
+      '@vue/compiler-sfc': 3.5.18
+      '@vue/runtime-dom': 3.5.18
+      '@vue/server-renderer': 3.5.18(vue@3.5.18(typescript@5.5.4))
+      '@vue/shared': 3.5.18
+    optionalDependencies:
+      typescript: 5.5.4
+    optional: true
 
   vue@3.5.18(typescript@5.8.3):
     dependencies:

@@ -2,6 +2,12 @@ import type { NodeResult } from "@gatewai/core/types";
 import type React from "react";
 import { createContext, useContext } from "react";
 
+export interface HandleState {
+	valid: boolean;
+	isConnected: boolean;
+	color?: string;
+}
+
 export interface NodeUIContextType {
 	onNodeConfigUpdate: (payload: {
 		id: string;
@@ -18,7 +24,7 @@ export interface NodeUIContextType {
 	useNodeResult: (nodeId: string) => {
 		result: NodeResult | null;
 		inputs: Record<string, any>;
-		handleStatus: Record<string, any>;
+		handleStatus: Record<string, HandleState>;
 		error: string | null;
 		isProcessed: boolean;
 	};

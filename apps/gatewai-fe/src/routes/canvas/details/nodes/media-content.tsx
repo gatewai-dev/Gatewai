@@ -3,15 +3,16 @@ import type {
 	ImagesResult,
 	VideoGenResult,
 } from "@gatewai/core/types";
+import { MediaDimensions, OutputSelector } from "@gatewai/node-sdk/client";
+import {
+	AudioRenderer,
+	CanvasRenderer,
+	GetAssetEndpoint,
+	VideoRenderer,
+} from "@gatewai/react-canvas";
 import type { NodeEntityType } from "@gatewai/react-store";
 import { FileIcon } from "lucide-react";
 import { useMemo } from "react";
-import { GetAssetEndpoint } from "@/lib/file";
-import { MediaDimensions } from "../misc/media-dimensions";
-import { OutputSelector } from "../misc/output-selector";
-import { AudioRenderer } from "./common/audio-renderer";
-import { CanvasRenderer } from "./common/canvas-renderer";
-import { VideoRenderer } from "./common/video-renderer";
 
 function MediaContent({
 	node,

@@ -1,14 +1,15 @@
-import type {
-	OutputItem,
-	VideoCompositorNodeConfig,
-} from "@gatewai/core/types";
+import type { OutputItem } from "@gatewai/core/types";
+import type { VideoCompositorNodeConfig } from "@gatewai/nodes";
+import { useCanvasCtx } from "@gatewai/react-canvas";
 import type { HandleEntityType } from "@gatewai/react-store";
-import { makeSelectNodeById, useAppSelector } from "@gatewai/react-store";
+import {
+	makeSelectNodeById,
+	useAppSelector,
+	useNodeResult,
+} from "@gatewai/react-store";
 import { memo, useMemo } from "react";
 import { Helmet } from "react-helmet-async";
 import { useNavigate, useParams } from "react-router";
-import { useCanvasCtx } from "../../../../../../packages/react-canvas/src/canvas-ctx";
-import { useNodeResult } from "../../../routes/canvas/details/graph-engine/processor-ctx";
 import { VideoDesignerEditor } from "../video-editor";
 
 type InputOutputItems =

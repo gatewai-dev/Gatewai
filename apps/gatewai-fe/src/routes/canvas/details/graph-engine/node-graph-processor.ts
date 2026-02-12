@@ -6,7 +6,7 @@ import {
 	type OutputItem,
 } from "@gatewai/core/types";
 import type { DataType } from "@gatewai/db";
-import { pixiWorkerService } from "@gatewai/media";
+import { pixiWorkerService } from "@gatewai/media/browser";
 import {
 	type BlurNodeConfig,
 	type CompositorNodeConfig,
@@ -722,7 +722,6 @@ export class NodeGraphProcessor extends EventEmitter {
 
 				// IF it's a class, instantiate it.
 				if (typeof PluginClass === "function") {
-					// @ts-expect-error
 					processor = new PluginClass().process.bind(new PluginClass());
 				} else {
 					processor = (PluginClass as any).process;

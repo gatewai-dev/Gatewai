@@ -1,4 +1,11 @@
 import {
+	AddCustomHandleButton,
+	MediaDimensions,
+	OutputSelector,
+	RunNodeButton,
+} from "@gatewai/node-sdk/client";
+import { BaseNode, CanvasRenderer, useNodeResult } from "@gatewai/react-canvas";
+import {
 	makeSelectHandlesByNodeId,
 	makeSelectNodeById,
 	useAppSelector,
@@ -6,12 +13,6 @@ import {
 // Assuming you have a Popover component in your UI library
 import { Popover, PopoverContent, PopoverTrigger } from "@gatewai/ui-kit";
 import { memo } from "react";
-import { AddCustomHandleButton } from "../../components/add-custom-handle";
-import { RunNodeButton } from "../../components/run-node-button";
-import { useNodeResult } from "../../graph-engine/processor-ctx";
-import { MediaDimensions } from "../../misc/media-dimensions";
-import { OutputSelector } from "../../misc/output-selector";
-import { BaseNode } from "../base";
 import { useMediaInputSrc } from "../common/hooks/use-media-src";
 import { VideoRenderer } from "../common/video-renderer";
 

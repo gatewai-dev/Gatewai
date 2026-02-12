@@ -1,6 +1,11 @@
 import type { FileData } from "@gatewai/core/types";
 import type { ResizeNodeConfig } from "@gatewai/nodes/configs";
 import {
+	BaseNode,
+	CanvasRenderer,
+	useNodePreview,
+} from "@gatewai/react-canvas";
+import {
 	updateNodeConfigWithoutHistory,
 	useAppDispatch,
 } from "@gatewai/react-store";
@@ -10,9 +15,6 @@ import { ResolveFileDataUrl } from "@/lib/file";
 import { cn } from "@/lib/utils";
 import { useNodeResult } from "../../graph-engine/processor-ctx";
 import type { ConnectedInput } from "../../graph-engine/types";
-import { useNodePreview } from "../../hooks/node-preview";
-import { BaseNode } from "../base";
-import { CanvasRenderer } from "../common/canvas-renderer";
 import type { ResizeNode } from "../node-props";
 import { ResizeConfig } from "./resize-config";
 

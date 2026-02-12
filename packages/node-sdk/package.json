@@ -38,6 +38,7 @@
 	},
 	"devDependencies": {
 		"@gatewai/tsconfig": "workspace:*",
+		"@gatewai/react-canvas": "workspace:*",
 		"@types/node": "^24.0.4",
 		"@types/react": "^19.2.14",
 		"@types/react-dom": "^19.2.14",
@@ -50,15 +51,20 @@
 		"@gatewai/media": "workspace:*",
 		"@gatewai/ui-kit": "workspace:*",
 		"@gatewai/react-store": "workspace:*",
+		"@gatewai/react-canvas": "workspace:*",
 		"@xyflow/react": "^12.0.0",
 		"lucide-react": "^0.474.0",
 		"react": "^19.2.14",
 		"react-dom": "^19.2.14",
+		"react-hook-form": "^7.66.0",
+		"@hookform/resolvers": "^3.10.0",
 		"zod": "3.25.67"
 	},
 	"dependencies": {
 		"clsx": "^2.1.1",
 		"lodash": "^4.17.21",
+		"react-hook-form": "^7.66.0",
+		"@hookform/resolvers": "^3.10.0",
 		"tailwind-merge": "^3.0.1"
 	}
 }

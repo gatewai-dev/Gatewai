@@ -26,16 +26,14 @@
 		"react-redux": "^9.0.0"
 	},
 	"dependencies": {
-		"@gatewai/rpc-client": "workspace:*",
 		"@gatewai/core": "workspace:*",
+		"@gatewai/rpc-client": "workspace:*",
 		"@reduxjs/toolkit": "^2.0.0",
 		"@xyflow/react": "^12.8.4",
-		"lodash": "^4.17.21",
 		"sonner": "^1.0.0"
 	},
 	"devDependencies": {
 		"@gatewai/tsconfig": "workspace:*",
-		"@types/lodash": "^4.14.202",
 		"@types/node": "^20.0.0",
 		"@types/react": "19.1.11",
 		"@types/react-dom": "19.1.11",

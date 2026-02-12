@@ -1,10 +1,11 @@
+import {
+	MediaDimensions,
+	OutputSelector,
+	RunNodeButton,
+} from "@gatewai/node-sdk/client";
+import { BaseNode, useNodeResult } from "@gatewai/react-canvas";
 import { makeSelectNodeById, useAppSelector } from "@gatewai/react-store";
 import { memo } from "react";
-import { RunNodeButton } from "../../components/run-node-button";
-import { useNodeResult } from "../../graph-engine/processor-ctx";
-import { MediaDimensions } from "../../misc/media-dimensions";
-import { OutputSelector } from "../../misc/output-selector";
-import { BaseNode } from "../base";
 import { useMediaInputSrc } from "../common/hooks/use-media-src";
 import { VideoRenderer } from "../common/video-renderer";
 

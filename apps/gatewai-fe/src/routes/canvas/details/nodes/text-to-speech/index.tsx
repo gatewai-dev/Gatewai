@@ -1,9 +1,7 @@
+import { OutputSelector, RunNodeButton } from "@gatewai/node-sdk/client";
+import { AudioRenderer, BaseNode, useNodeResult } from "@gatewai/react-canvas";
 import { makeSelectNodeById, useAppSelector } from "@gatewai/react-store";
 import { memo } from "react";
-import { RunNodeButton } from "../../components/run-node-button";
-import { useNodeResult } from "../../graph-engine/processor-ctx";
-import { OutputSelector } from "../../misc/output-selector";
-import { BaseNode } from "../base";
 import { AudioRenderer } from "../common/audio-renderer";
 import { useMediaInputSrc } from "../common/hooks/use-media-src";
 

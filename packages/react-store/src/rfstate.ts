@@ -12,7 +12,7 @@ import {
 	type Node,
 	type NodeChange,
 } from "@xyflow/react";
-import type { RootState } from ".";
+import type { RootState } from "./index.js";
 
 export interface RFState {
 	nodes: Node[];

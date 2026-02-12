@@ -1,8 +1,9 @@
+import { generateId } from "@gatewai/core";
+import type { FileData } from "@gatewai/core/types";
 import type {
-	FileData,
 	VideoCompositorLayer,
 	VideoCompositorNodeConfig,
-} from "@gatewai/core/types";
+} from "@gatewai/nodes";
 import { Audio, Video } from "@remotion/media";
 import { renderMediaOnWeb } from "@remotion/web-renderer";
 import type React from "react";
@@ -17,7 +18,6 @@ import {
 	useVideoConfig,
 } from "remotion";
 import { GetAssetEndpoint } from "@/lib/file";
-import { generateId } from "@/lib/idgen";
 import type { NodeProcessorParams } from "./types";
 
 const DynamicComposition: React.FC<{

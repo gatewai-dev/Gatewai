@@ -2,12 +2,11 @@ import {
 	type TextNodeConfig,
 	TextNodeConfigSchema,
 } from "@gatewai/nodes/configs";
+import { BaseNode, useCanvasCtx } from "@gatewai/react-canvas";
 import { makeSelectNodeById, useAppSelector } from "@gatewai/react-store";
 import { ScrollArea, Textarea } from "@gatewai/ui-kit";
 import type { NodeProps } from "@xyflow/react";
 import { memo, useCallback } from "react";
-import { useCanvasCtx } from "../../../../../../../../packages/react-canvas/src/canvas-ctx";
-import { BaseNode } from "../base";
 import type { TextNode } from "../node-props";
 
 const TextNodeComponent = memo((props: NodeProps<TextNode>) => {

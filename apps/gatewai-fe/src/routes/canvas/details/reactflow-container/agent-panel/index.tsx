@@ -1,6 +1,5 @@
-import { Panel } from "@xyflow/react";
+import { useCanvasCtx } from "@gatewai/react-canvas";
 import { CanvasAgentLayout } from "../../agent/components/layout";
-import { useCanvasCtx } from "../../../../../../../../packages/react-canvas/src/canvas-ctx";
 
 function AgentPanel() {
 	const { canvas } = useCanvasCtx();

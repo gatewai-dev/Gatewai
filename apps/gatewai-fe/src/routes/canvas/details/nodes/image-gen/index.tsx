@@ -1,11 +1,15 @@
+import {
+	AddCustomHandleButton,
+	MediaDimensions,
+	OutputSelector,
+	RunNodeButton,
+} from "@gatewai/node-sdk/client";
+import {
+	BaseNode,
+	CanvasRenderer,
+	useNodePreview,
+} from "@gatewai/react-canvas";
 import { memo } from "react";
-import { AddCustomHandleButton } from "../../components/add-custom-handle";
-import { RunNodeButton } from "../../components/run-node-button";
-import { useNodePreview } from "../../hooks/node-preview";
-import { MediaDimensions } from "../../misc/media-dimensions";
-import { OutputSelector } from "../../misc/output-selector";
-import { BaseNode } from "../base";
-import { CanvasRenderer } from "../common/canvas-renderer";
 
 const ImageGenNodeComponent = memo(
 	(props: { selected: boolean; id: string; dragging: boolean }) => {

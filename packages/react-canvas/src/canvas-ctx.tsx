@@ -1,6 +1,5 @@
 import { generateId } from "@gatewai/core";
 import type { BulkUpdatePayload, NodeResult } from "@gatewai/core/types";
-import type { AllNodeConfig } from "@gatewai/nodes/configs";
 import type {
 	BatchEntity,
 	CanvasDetailsRPC,
@@ -41,6 +40,7 @@ import {
 	usePatchCanvasMutation,
 	useProcessNodesMutation,
 	useRejectPatchMutation,
+	useStore,
 } from "@gatewai/react-store";
 import {
 	type Connection,
@@ -68,10 +68,8 @@ import {
 	useRef,
 	useState,
 } from "react";
-import { useStore } from "react-redux";
 import { toast } from "sonner";
-import { useNodeTemplates } from "../../../apps/gatewai-fe/src/routes/canvas/details/node-templates/node-templates.ctx";
-import { useTaskManagerCtx } from "../../../apps/gatewai-fe/src/routes/canvas/details/ctx/task-manager-ctx";
+import { useTaskManagerCtx } from "./task-manager-ctx";
 
 interface CanvasContextType {
 	canvas: CanvasDetailsRPC["canvas"] | undefined;
@@ -92,7 +90,7 @@ interface CanvasContextType {
 	duplicateNodes: (nodeIds: Node["id"][]) => void;
 	onNodeConfigUpdate: (payload: {
 		id: string;
-		newConfig: Partial<AllNodeConfig>;
+		newConfig: Partial<unknown>;
 		appendHistory?: boolean;
 	}) => void;
 	createNewHandle: (newHandle: HandleEntityType) => void;
@@ -350,7 +348,7 @@ const CanvasProvider = ({
 	const onNodeConfigUpdate = useCallback(
 		(payload: {
 			id: string;
-			newConfig: Partial<AllNodeConfig>;
+			newConfig: Partial<unknown>;
 			appendHistory?: boolean;
 		}) => {
 			const dispatchAction = payload.appendHistory

@@ -29,7 +29,6 @@ import {
 	useMemo,
 	useRef,
 } from "react";
-import { useAnimatedFavicon } from "@/hooks/use-animated-favicon";
 
 type BatchEntity = BatchDetailsRPC[number];
 type BatchNodeData = BatchEntity["tasks"][number];
@@ -126,9 +125,6 @@ const TaskManagerProvider = ({
 			),
 		);
 	}, [nodeTaskStatus]);
-
-	// Animate favicon when tasks are running
-	useAnimatedFavicon(isAnyTaskRunning);
 
 	const value: TaskManagerContextType = {
 		pollingInterval,

@@ -2,7 +2,7 @@ import type { NodeResult } from "@gatewai/core/types";
 import type { NodeEntityType } from "@gatewai/react-store";
 import { Button } from "@gatewai/ui-kit";
 import { ChevronLeft, ChevronRight } from "lucide-react";
-import { useNodeUI } from "./ui.js";
+import { useNodeUI } from "../ui.js";
 
 function OutputSelector({ node }: { node: NodeEntityType }) {
 	const { onNodeResultUpdate } = useNodeUI();

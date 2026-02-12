@@ -1,8 +1,8 @@
+import { BaseNode } from "@gatewai/react-canvas";
 import { makeSelectNodeById, useAppSelector } from "@gatewai/react-store";
 import type { NodeProps } from "@xyflow/react";
 import { memo } from "react";
 import { AddCustomHandleButton } from "../../components/add-custom-handle";
-import { BaseNode } from "../base";
 import type { TextMergerNode } from "../node-props";
 import { TextMergerNodeConfigComponent } from "./text-merger-config";
 

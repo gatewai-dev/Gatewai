@@ -1,11 +1,12 @@
+import {
+	useCanvasCtx,
+	useNodeTaskRunning,
+	useNodeValidation,
+} from "@gatewai/react-canvas";
 import type { NodeEntityType } from "@gatewai/react-store";
 import { Button, type ButtonProps, Spinner } from "@gatewai/ui-kit";
 import { ForwardIcon } from "lucide-react";
 import { memo } from "react";
-import { AiOutlineStop } from "react-icons/ai";
-import { useCanvasCtx } from "../../../../../../../packages/react-canvas/src/canvas-ctx";
-import { useNodeTaskRunning } from "../ctx/task-manager-ctx";
-import { useNodeValidation } from "../graph-engine/processor-ctx";
 
 export type RunNodeButtonProps = ButtonProps & {
 	nodeId: NodeEntityType["id"];
@@ -39,7 +40,6 @@ const RunNodeButton = memo(({ nodeId, ...buttonProps }: RunNodeButtonProps) => {
 			)}
 			{isInvalid && (
 				<>
-					<AiOutlineStop className="size-3" />
 					<span className="text-xs">Invalid Inputs</span>
 				</>
 			)}
