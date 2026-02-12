@@ -1,30 +1,54 @@
-import { type GatewaiNodeManifest, NodeManifestSchema } from "./types.js";
+import {
+	type BackendNodePlugin,
+	type FrontendNodePlugin,
+	type GatewaiNodeManifest,
+	NodeManifestSchema,
+	type NodeMetadata,
+	NodeMetadataSchema,
+} from "./types.js";
 
 /**
- * Type-safe factory for defining a Gatewai node manifest.
- *
- * @example
- * ```ts
- * import { defineNode } from "@gatewai/node-sdk";
- *
- * export default defineNode({
- *   type: "Blur",
- *   displayName: "Blur",
- *   category: "Image",
- *   isTerminal: true,
- *   handles: {
- *     inputs: [{ dataTypes: ["Image"], label: "Image", required: true, order: 0 }],
- *     outputs: [{ dataTypes: ["Image"], label: "Output", order: 0 }],
- *   },
- *   backendProcessor: async (ctx) => { ... },
- * });
- * ```
+ * Define the shared metadata for a node.
+ * This should be used in the `metadata.ts` file of a node package.
+ */
+export function defineMetadata(metadata: NodeMetadata): Readonly<NodeMetadata> {
+	return Object.freeze(NodeMetadataSchema.parse(metadata));
+}
+
+/**
+ * Define a backend node implementation.
+ * This should be used in the `node.ts` file of a node package.
  */
 export function defineNode(
+	metadata: NodeMetadata,
+	plugin: Omit<BackendNodePlugin, keyof NodeMetadata>,
+): Readonly<BackendNodePlugin> {
+	return Object.freeze({
+		...metadata,
+		...plugin,
+	});
+}
+
+/**
+ * Define a frontend node implementation.
+ * This should be used in the `client.tsx` file of a node package.
+ */
+export function defineClient(
+	metadata: NodeMetadata,
+	plugin: Omit<FrontendNodePlugin, keyof NodeMetadata>,
+): Readonly<FrontendNodePlugin> {
+	return Object.freeze({
+		...metadata,
+		...plugin,
+	});
+}
+
+/**
+ * @deprecated Use defineMetadata, defineNode, and defineClient for split environment architecture.
+ */
+export function defineLegacyNode(
 	manifest: GatewaiNodeManifest,
 ): Readonly<GatewaiNodeManifest> {
-	// Validate manifest using Zod schema
 	const validated = NodeManifestSchema.parse(manifest);
-
 	return Object.freeze(validated);
 }

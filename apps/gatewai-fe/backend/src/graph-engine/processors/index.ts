@@ -111,7 +111,10 @@ if (videoCompositorNode.backendProcessor) {
 	);
 }
 if (previewNode.backendProcessor) {
-	nodeRegistry.registerProcessor(previewNode.type, previewNode.backendProcessor);
+	nodeRegistry.registerProcessor(
+		previewNode.type,
+		previewNode.backendProcessor,
+	);
 }
 if (noteNode.backendProcessor) {
 	nodeRegistry.registerProcessor(noteNode.type, noteNode.backendProcessor);

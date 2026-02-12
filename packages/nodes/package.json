@@ -21,11 +21,11 @@
 			"import": "./dist/node.mjs",
 			"default": "./dist/node.mjs"
 		},
-		"./react": {
-			"types": "./dist/react.d.ts",
-			"development": "./src/react/index.ts",
-			"import": "./dist/react.mjs",
-			"default": "./dist/react.mjs"
+		"./browser": {
+			"types": "./dist/browser.d.ts",
+			"development": "./src/browser/index.ts",
+			"import": "./dist/browser.mjs",
+			"default": "./dist/browser.mjs"
 		},
 		"./configs": {
 			"types": "./dist/configs.d.ts",

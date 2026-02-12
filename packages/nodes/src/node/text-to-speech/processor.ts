@@ -1,25 +1,23 @@
+import type { EnvConfig } from "@gatewai/core";
 import { generateId, logger } from "@gatewai/core";
-import {
-	type OutputItem,
-	type TextToSpeechResult,
+import { TOKENS } from "@gatewai/core/di";
+import type {
+	OutputItem,
+	TextToSpeechResult,
 } from "@gatewai/core/types";
+import type { PrismaClient } from "@gatewai/db";
 import { DataType } from "@gatewai/db";
 import type {
 	BackendNodeProcessorCtx,
 	BackendNodeProcessorResult,
-	NodeProcessor,
-} from "@gatewai/node-sdk";
-import { TextToSpeechNodeConfigSchema } from "../../configs/text-to-speech.config.js";
-import { parseBuffer } from "music-metadata";
-import { TOKENS } from "@gatewai/core/di";
-import type { PrismaClient } from "@gatewai/db";
-import type { EnvConfig } from "@gatewai/core";
-import { inject, injectable } from "tsyringe";
-import type {
 	GraphResolvers,
+	NodeProcessor,
 	StorageService,
 } from "@gatewai/node-sdk";
+import { parseBuffer } from "music-metadata";
+import { inject, injectable } from "tsyringe";
 import * as wav from "wav";
+import { TextToSpeechNodeConfigSchema } from "../../configs/text-to-speech.config.js";
 import { getGenAIClient } from "../genai.js";
 
 async function encodeWavBuffer(pcmBuffer: Buffer): Promise<Buffer> {

@@ -1,5 +1,8 @@
 import assert from "node:assert";
 import { type EnvConfig, generateId, logger } from "@gatewai/core";
+import { TOKENS } from "@gatewai/core/di";
+import type { FileData, ImageGenResult } from "@gatewai/core/types";
+import type { PrismaClient } from "@gatewai/db";
 import { DataType } from "@gatewai/db";
 import type {
 	BackendNodeProcessorCtx,
@@ -9,12 +12,9 @@ import type {
 	NodeProcessor,
 	StorageService,
 } from "@gatewai/node-sdk";
-import { ImageGenNodeConfigSchema } from "../../configs/image-gen.config.js";
-import { TOKENS } from "@gatewai/core/di";
-import type { PrismaClient } from "@gatewai/db";
 import { inject, injectable } from "tsyringe";
+import { ImageGenNodeConfigSchema } from "../../configs/image-gen.config.js";
 import { getGenAIClient } from "../genai.js";
-import type { FileData, ImageGenResult } from "@gatewai/core/types";
 
 @injectable()
 export class ImageGenProcessor implements NodeProcessor {

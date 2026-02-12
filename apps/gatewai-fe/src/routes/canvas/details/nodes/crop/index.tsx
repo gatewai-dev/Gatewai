@@ -1,8 +1,8 @@
+import type { FileData } from "@gatewai/core/types";
 import {
 	type CropNodeConfig,
 	CropNodeConfigSchema,
 } from "@gatewai/nodes/configs";
-import type { FileData } from "@gatewai/core/types";
 import {
 	makeSelectEdgesByTargetNodeId,
 	makeSelectNodeById,
@@ -21,15 +21,15 @@ import type { CropNode } from "../node-props";
 
 type DragState = {
 	type:
-	| "move"
-	| "resize-nw"
-	| "resize-ne"
-	| "resize-sw"
-	| "resize-se"
-	| "resize-n"
-	| "resize-s"
-	| "resize-w"
-	| "resize-e";
+		| "move"
+		| "resize-nw"
+		| "resize-ne"
+		| "resize-sw"
+		| "resize-se"
+		| "resize-n"
+		| "resize-s"
+		| "resize-w"
+		| "resize-e";
 	startX: number;
 	startY: number;
 	startCrop: CropNodeConfig;

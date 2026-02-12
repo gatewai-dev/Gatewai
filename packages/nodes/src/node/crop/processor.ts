@@ -1,19 +1,17 @@
 import assert from "node:assert";
-import { CropNodeConfigSchema } from "../../configs/crop.config.js";
+import { TOKENS } from "@gatewai/core/di";
+import type { CropResult, FileData } from "@gatewai/core/types";
 import { DataType } from "@gatewai/db";
 import type {
 	BackendNodeProcessorCtx,
 	BackendNodeProcessorResult,
-	NodeProcessor,
-} from "@gatewai/node-sdk";
-import { TOKENS } from "@gatewai/core/di";
-import { inject, injectable } from "tsyringe";
-import type {
 	GraphResolvers,
 	MediaService,
+	NodeProcessor,
 	StorageService,
 } from "@gatewai/node-sdk";
-import type { CropResult, FileData } from "@gatewai/core/types";
+import { inject, injectable } from "tsyringe";
+import { CropNodeConfigSchema } from "../../configs/crop.config.js";
 
 @injectable()
 export default class CropProcessor implements NodeProcessor {

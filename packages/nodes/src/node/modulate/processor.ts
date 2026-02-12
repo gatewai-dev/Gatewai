@@ -1,3 +1,4 @@
+import { TOKENS } from "@gatewai/core/di";
 import type {
 	FileData,
 	ModulateResult,
@@ -7,16 +8,13 @@ import { DataType } from "@gatewai/db";
 import type {
 	BackendNodeProcessorCtx,
 	BackendNodeProcessorResult,
-	NodeProcessor,
-} from "@gatewai/node-sdk";
-import { ModulateNodeConfigSchema } from "../../configs/modulate.config.js";
-import { TOKENS } from "@gatewai/core/di";
-import { inject, injectable } from "tsyringe";
-import type {
 	GraphResolvers,
 	MediaService,
+	NodeProcessor,
 	StorageService,
 } from "@gatewai/node-sdk";
+import { inject, injectable } from "tsyringe";
+import { ModulateNodeConfigSchema } from "../../configs/modulate.config.js";
 
 @injectable()
 export default class ModulateProcessor implements NodeProcessor {

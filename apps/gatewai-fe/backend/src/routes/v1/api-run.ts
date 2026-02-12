@@ -1,6 +1,5 @@
 import assert from "node:assert";
 import { generateId } from "@gatewai/core";
-import { type TextNodeConfig } from "@gatewai/nodes";
 import {
 	APIRunRequestSchema,
 	APIRunResponseSchema,
@@ -10,6 +9,7 @@ import {
 } from "@gatewai/data-ops";
 import { prisma } from "@gatewai/db";
 import { NodeWFProcessor } from "@gatewai/graph-engine";
+import type { TextNodeConfig } from "@gatewai/nodes";
 import { zValidator } from "@hono/zod-validator";
 import { Hono } from "hono";
 import type { AuthorizedHonoTypes } from "../../auth.js";

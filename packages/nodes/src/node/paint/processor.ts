@@ -1,19 +1,17 @@
 import { logger } from "@gatewai/core";
+import { TOKENS } from "@gatewai/core/di";
+import type { FileData, PaintResult } from "@gatewai/core/types";
 import { DataType } from "@gatewai/db";
 import type {
 	BackendNodeProcessorCtx,
 	BackendNodeProcessorResult,
-	NodeProcessor,
-} from "@gatewai/node-sdk";
-import { PaintNodeConfigSchema } from "../../node-configs.schema.js";
-import { TOKENS } from "@gatewai/core/di";
-import { inject, injectable } from "tsyringe";
-import type {
 	GraphResolvers,
 	MediaService,
+	NodeProcessor,
 	StorageService,
 } from "@gatewai/node-sdk";
-import type { FileData, PaintResult } from "@gatewai/core/types";
+import { inject, injectable } from "tsyringe";
+import { PaintNodeConfigSchema } from "../../node-configs.schema.js";
 
 @injectable()
 export default class PaintProcessor implements NodeProcessor {

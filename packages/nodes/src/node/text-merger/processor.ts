@@ -1,14 +1,13 @@
+import { TOKENS } from "@gatewai/core/di";
+import type { TextMergerResult } from "@gatewai/core/types";
 import { DataType } from "@gatewai/db";
 import type {
 	BackendNodeProcessorCtx,
-	BackendNodeProcessorResult,
-	NodeProcessor,
+	BackendNodeProcessorResult,GraphResolvers, 
+	NodeProcessor
 } from "@gatewai/node-sdk";
-import { TextMergerNodeConfigSchema } from "../../node-configs.schema.js";
-import { TOKENS } from "@gatewai/core/di";
 import { inject, injectable } from "tsyringe";
-import { type GraphResolvers } from "@gatewai/node-sdk";
-import type { TextMergerResult } from "@gatewai/core/types";
+import { TextMergerNodeConfigSchema } from "../../node-configs.schema.js";
 
 @injectable()
 export default class TextMergerProcessor implements NodeProcessor {

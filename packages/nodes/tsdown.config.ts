@@ -3,7 +3,7 @@ import { defineConfig } from "tsdown";
 export default defineConfig({
 	entry: {
 		node: "src/node/index.ts",
-		react: "src/react/index.ts",
+		browser: "src/browser/index.ts",
 		configs: "src/index.ts",
 	},
 	format: ["esm"],

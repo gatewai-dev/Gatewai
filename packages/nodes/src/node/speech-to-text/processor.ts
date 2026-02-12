@@ -1,4 +1,6 @@
+import type { EnvConfig } from "@gatewai/core";
 import { logger } from "@gatewai/core";
+import { TOKENS } from "@gatewai/core/di";
 import type {
 	OutputItem,
 	SpeechToTextResult,
@@ -7,17 +9,13 @@ import { DataType } from "@gatewai/db";
 import type {
 	BackendNodeProcessorCtx,
 	BackendNodeProcessorResult,
+	GraphResolvers,
 	NodeProcessor,
+	StorageService,
 } from "@gatewai/node-sdk";
-import { SpeechToTextNodeConfigSchema } from "../../node-configs.schema.js";
 import { createPartFromUri, createUserContent } from "@google/genai";
-import { TOKENS } from "@gatewai/core/di";
-import type { EnvConfig } from "@gatewai/core";
 import { inject, injectable } from "tsyringe";
-import {
-	type GraphResolvers,
-	type StorageService,
-} from "@gatewai/node-sdk";
+import { SpeechToTextNodeConfigSchema } from "../../node-configs.schema.js";
 import { getGenAIClient } from "../genai.js";
 
 @injectable()

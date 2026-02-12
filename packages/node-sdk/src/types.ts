@@ -114,7 +114,11 @@ const HandleDefinitionSchema = z.object({
 	description: z.string().optional(),
 });
 
-export const NodeManifestSchema = z.object({
+/**
+ * Metadata defining the interface and identity of a node.
+ * This is safe to import in any environment.
+ */
+export const NodeMetadataSchema = z.object({
 	// Identity
 	type: z.string().min(1),
 	displayName: z.string().min(1),
@@ -142,24 +146,40 @@ export const NodeManifestSchema = z.object({
 		})
 		.optional(),
 
-	// Execution
+	// Execution Flags
 	isTerminal: z.boolean(),
 	isTransient: z.boolean().optional(),
 
 	// Config
 	configSchema: z.custom<ZodTypeAny>().optional(),
 	defaultConfig: z.record(z.unknown()).optional(),
+});
 
-	// Processing
+export type NodeMetadata = z.infer<typeof NodeMetadataSchema>;
+
+/**
+ * Backend-specific plugin definition.
+ */
+export interface BackendNodePlugin extends NodeMetadata {
+	backendProcessor: NodeProcessorConstructor;
+}
+
+/**
+ * Frontend-specific plugin definition.
+ */
+export interface FrontendNodePlugin extends NodeMetadata {
+	frontendProcessor?: FrontendNodeProcessor;
+	Component: any; // React component
+	ConfigComponent?: any; // React component
+}
+
+/**
+ * Legacy combined manifest.
+ * @deprecated Use split metadata/node/client exports instead.
+ */
+export const NodeManifestSchema = NodeMetadataSchema.extend({
 	backendProcessor: z.custom<NodeProcessorConstructor>().optional(),
 	frontendProcessor: z.custom<FrontendNodeProcessor>().optional(),
 });
 
-/**
- * The complete manifest for a Gatewai node plugin.
- *
- * This is the single export contract a node package needs to implement.
- * The core engine reads this manifest to register the node's processors,
- * template, UI components, and configuration.
- */
 export type GatewaiNodeManifest = z.infer<typeof NodeManifestSchema>;

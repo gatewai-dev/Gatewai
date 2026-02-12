@@ -1,10 +1,11 @@
 import { EventEmitter } from "node:events";
+import {
+	dataTypeColors,
+	type FileData,
+	type NodeResult,
+	type OutputItem,
+} from "@gatewai/core/types";
 import type { DataType } from "@gatewai/db";
-import type {
-	EdgeEntityType,
-	HandleEntityType,
-	NodeEntityType,
-} from "@gatewai/react-store";
 import {
 	type BlurNodeConfig,
 	type CompositorNodeConfig,
@@ -15,6 +16,11 @@ import {
 	TextMergerNodeConfigSchema,
 	TextNodeConfigSchema,
 } from "@gatewai/nodes/configs";
+import type {
+	EdgeEntityType,
+	HandleEntityType,
+	NodeEntityType,
+} from "@gatewai/react-store";
 import { GetAssetEndpoint } from "@/lib/file";
 import { processCompositor } from "./image-compositor";
 import { pixiWorkerService } from "./pixi/pixi-worker.service";
@@ -24,7 +30,6 @@ import type {
 	NodeProcessorParams,
 	ProcessorConfig,
 } from "./types";
-import { dataTypeColors, type FileData, type NodeResult, type OutputItem } from "@gatewai/core/types";
 
 export enum TaskStatus {
 	QUEUED = "QUEUED",
@@ -699,7 +704,36 @@ export class NodeGraphProcessor extends EventEmitter {
 		const node = this.nodes.get(nodeId);
 		if (!node) return;
 
-		const processor = this.processors.get(node.type);
+		let processor = this.processors.get(node.type);
+		if (!processor) {
+			// Try to load from registry
+			const { registeredNodes } = await import("@gatewai/nodes-registry");
+			const registeredNode = Object.values(registeredNodes).find(
+				(n) => n.metadata.type === node.type,
+			);
+
+			if (registeredNode) {
+				const module = await registeredNode.node;
+				const PluginClass = module.default.backendProcessor;
+				// In the frontend, we don't have dependency injection for these classes yet,
+				// so we might need a different way to instantiate them OR just use the function.
+				// For now, let's assume it's an injectable class and we might need to mock DI or handle it.
+				// Actually, many of these nodes depend on Pixi etc which ARE available in the worker.
+
+				// IF it's a class, instantiate it.
+				if (typeof PluginClass === "function") {
+					// @ts-expect-error
+					processor = new PluginClass().process.bind(new PluginClass());
+				} else {
+					processor = (PluginClass as any).process;
+				}
+
+				if (processor) {
+					this.processors.set(node.type, processor);
+				}
+			}
+		}
+
 		if (!processor) {
 			state.error = `No processor found for type ${node.type}`;
 			state.isDirty = false;

@@ -1,19 +1,17 @@
 import assert from "node:assert";
+import { TOKENS } from "@gatewai/core/di";
+import type { FileData, ResizeResult } from "@gatewai/core/types";
 import { DataType } from "@gatewai/db";
 import type {
 	BackendNodeProcessorCtx,
 	BackendNodeProcessorResult,
-	NodeProcessor,
-} from "@gatewai/node-sdk";
-import { ResizeNodeConfigSchema } from "../../node-configs.schema.js";
-import { TOKENS } from "@gatewai/core/di";
-import { inject, injectable } from "tsyringe";
-import type {
 	GraphResolvers,
 	MediaService,
+	NodeProcessor,
 	StorageService,
 } from "@gatewai/node-sdk";
-import type { FileData, ResizeResult } from "@gatewai/core/types";
+import { inject, injectable } from "tsyringe";
+import { ResizeNodeConfigSchema } from "../../node-configs.schema.js";
 
 @injectable()
 export default class ResizeProcessor implements NodeProcessor {

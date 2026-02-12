@@ -1,7 +1,7 @@
 import type { GatewaiAgentEvent } from "@gatewai/core/types";
+import { appRPCClient } from "@gatewai/rpc-client";
 import { useCallback, useEffect, useRef, useState } from "react";
 import { generateId } from "@/lib/idgen";
-import { rpcClient } from "@/rpc/client";
 
 export type MessageRole = "user" | "model" | "system";
 
@@ -182,7 +182,7 @@ export function useAgentChatStream(
 		abortControllerRef.current = new AbortController();
 
 		try {
-			const res = await rpcClient.api.v1.canvas[":id"].agent[
+			const res = await appRPCClient.api.v1.canvas[":id"].agent[
 				":sessionId"
 			].stream.$get(
 				{
@@ -223,7 +223,7 @@ export function useAgentChatStream(
 		const fetchHistoryAndConnect = async () => {
 			setIsRequestPending(true);
 			try {
-				const res = await rpcClient.api.v1.canvas[":id"].agent[
+				const res = await appRPCClient.api.v1.canvas[":id"].agent[
 					":sessionId"
 				].$get({
 					param: { id: canvasId, sessionId },
@@ -283,7 +283,7 @@ export function useAgentChatStream(
 			abortControllerRef.current = new AbortController();
 
 			try {
-				const response = await rpcClient.api.v1.canvas[":id"].agent[
+				const response = await appRPCClient.api.v1.canvas[":id"].agent[
 					":sessionId"
 				].$post(
 					{
@@ -336,7 +336,7 @@ export function useAgentChatStream(
 		);
 		if (sessionId && canvasId) {
 			try {
-				await rpcClient.api.v1.canvas[":id"].agent[":sessionId"].stop.$post({
+				await appRPCClient.api.v1.canvas[":id"].agent[":sessionId"].stop.$post({
 					param: { id: canvasId, sessionId },
 				});
 			} catch (e) {

@@ -1,4 +1,5 @@
 import type { FileResult, NodeResult } from "@gatewai/core/types";
+import { NodeUIContext } from "@gatewai/node-sdk";
 import {
 	type HandleEntityType,
 	makeSelectAllEdges,
@@ -13,9 +14,14 @@ import {
 	useCallback,
 	useContext,
 	useEffect,
+	useMemo,
 	useRef,
 	useSyncExternalStore,
 } from "react";
+import { useCanvasCtx } from "../ctx/canvas-ctx";
+import { useNodePreview } from "../hooks/node-preview";
+import { BaseNode } from "../nodes/base";
+import { CanvasRenderer } from "../nodes/common/canvas-renderer";
 import {
 	type HandleState,
 	NodeGraphProcessor,
@@ -30,6 +36,7 @@ const ProcessorContext = createContext<NodeGraphProcessor | null>(null);
  */
 export function ProcessorProvider({ children }: { children: React.ReactNode }) {
 	const processorRef = useRef<NodeGraphProcessor | null>(null);
+	const { onNodeConfigUpdate, onNodeResultUpdate } = useCanvasCtx();
 
 	if (!processorRef.current) {
 		processorRef.current = new NodeGraphProcessor();
@@ -58,9 +65,24 @@ export function ProcessorProvider({ children }: { children: React.ReactNode }) {
 		return () => processor.destroy();
 	}, [processor]);
 
+	const uiContextValue = useMemo(
+		() => ({
+			onNodeConfigUpdate,
+			onNodeResultUpdate,
+			useNodePreview,
+			useNodeResult,
+			useNodeValidation,
+			BaseNode,
+			CanvasRenderer,
+		}),
+		[onNodeConfigUpdate, onNodeResultUpdate],
+	);
+
 	return (
 		<ProcessorContext.Provider value={processor}>
-			{children}
+			<NodeUIContext.Provider value={uiContextValue as any}>
+				{children}
+			</NodeUIContext.Provider>
 		</ProcessorContext.Provider>
 	);
 }

@@ -426,6 +426,104 @@ importers:
         specifier: ~5.8.3
         version: 5.8.3
 
+  nodes/node-blur:
+    dependencies:
+      '@gatewai/core':
+        specifier: workspace:*
+        version: link:../../packages/core
+      '@gatewai/db':
+        specifier: workspace:*
+        version: link:../../packages/db
+      '@gatewai/node-sdk':
+        specifier: workspace:*
+        version: link:../../packages/node-sdk
+      '@gatewai/react-store':
+        specifier: workspace:*
+        version: link:../../packages/react-store
+      '@gatewai/ui-kit':
+        specifier: workspace:*
+        version: link:../../packages/ui-kit
+      lucide-react:
+        specifier: ^0.473.0
+        version: 0.473.0(react@19.2.3)
+      react:
+        specifier: ^19.2.0
+        version: 19.2.3
+      react-dom:
+        specifier: ^19.2.0
+        version: 19.2.3(react@19.2.3)
+      zod:
+        specifier: 3.25.67
+        version: 3.25.67
+    devDependencies:
+      '@gatewai/tsconfig':
+        specifier: workspace:*
+        version: link:../../packages/tsconfig
+      '@types/node':
+        specifier: ^22.13.10
+        version: 22.19.11
+      '@types/react':
+        specifier: ^19.1.10
+        version: 19.1.11
+      '@types/react-dom':
+        specifier: ^19.1.7
+        version: 19.1.7(@types/react@19.1.11)
+      tsdown:
+        specifier: ^0.19.0
+        version: 0.19.0(publint@0.3.17)(synckit@0.11.11)(typescript@5.8.3)
+      typescript:
+        specifier: ~5.8.3
+        version: 5.8.3
+
+  nodes/node-text:
+    dependencies:
+      '@gatewai/core':
+        specifier: workspace:*
+        version: link:../../packages/core
+      '@gatewai/db':
+        specifier: workspace:*
+        version: link:../../packages/db
+      '@gatewai/node-sdk':
+        specifier: workspace:*
+        version: link:../../packages/node-sdk
+      '@gatewai/react-store':
+        specifier: workspace:*
+        version: link:../../packages/react-store
+      '@gatewai/ui-kit':
+        specifier: workspace:*
+        version: link:../../packages/ui-kit
+      lucide-react:
+        specifier: ^0.473.0
+        version: 0.473.0(react@19.2.3)
+      react:
+        specifier: ^19.2.0
+        version: 19.2.3
+      react-dom:
+        specifier: ^19.2.0
+        version: 19.2.3(react@19.2.3)
+      zod:
+        specifier: 3.25.67
+        version: 3.25.67
+    devDependencies:
+      '@gatewai/tsconfig':
+        specifier: workspace:*
+        version: link:../../packages/tsconfig
+      '@types/node':
+        specifier: ^22.13.10
+        version: 22.19.11
+      '@types/react':
+        specifier: ^19.1.10
+        version: 19.1.11
+      '@types/react-dom':
+        specifier: ^19.1.7
+        version: 19.1.7(@types/react@19.1.11)
+      tsdown:
+        specifier: ^0.19.0
+        version: 0.19.0(publint@0.3.17)(synckit@0.11.11)(typescript@5.8.3)
+      typescript:
+        specifier: ~5.8.3
+        version: 5.8.3
+
   packages/api-client:
     dependencies:
       hono:
@@ -653,6 +751,18 @@ importers:
       '@gatewai/media':
         specifier: workspace:*
         version: link:../media
+      '@xyflow/react':
+        specifier: ^12.0.0
+        version: 12.8.4(@types/react@19.1.11)(immer@11.1.3)(react-dom@19.2.3(react@19.2.3))(react@19.2.3)
+      lodash:
+        specifier: ^4.17.21
+        version: 4.17.21
+      react:
+        specifier: ^19.2.0
+        version: 19.2.3
+      react-dom:
+        specifier: ^19.2.0
+        version: 19.2.3(react@19.2.3)
       zod:
         specifier: 3.25.67
         version: 3.25.67
@@ -727,6 +837,12 @@ importers:
       typescript:
         specifier: 5.5.4
         version: 5.5.4
+
+  packages/nodes-registry:
+    dependencies:
+      '@gatewai/node-sdk':
+        specifier: workspace:*
+        version: link:../node-sdk
 
   packages/react-store:
     dependencies:
@@ -6508,6 +6624,11 @@ packages:
 
   lucide-react@0.469.0:
     resolution: {integrity: sha512-28vvUnnKQ/dBwiCQtwJw7QauYnE7yd2Cyp4tTTJpvglX4EMpbflcdBgrgToX2j71B3YvugK/NH3BGUk+E/p/Fw==}
+    peerDependencies:
+      react: ^19.2.0
+
+  lucide-react@0.473.0:
+    resolution: {integrity: sha512-KW6u5AKeIjkvrxXZ6WuCu9zHE/gEYSXCay+Gre2ZoInD0Je/e3RBtP4OHpJVJ40nDklSvjVKjgH7VU8/e2dzRw==}
     peerDependencies:
       react: ^19.2.0
 
@@ -12800,7 +12921,7 @@ snapshots:
   '@types/request@2.48.13':
     dependencies:
       '@types/caseless': 0.12.5
-      '@types/node': 20.19.9
+      '@types/node': 22.19.11
       '@types/tough-cookie': 4.0.5
       form-data: 2.5.5
 
@@ -15471,6 +15592,10 @@ snapshots:
   lru-cache@7.18.3: {}
 
   lucide-react@0.469.0(react@19.2.3):
+    dependencies:
+      react: 19.2.3
+
+  lucide-react@0.473.0(react@19.2.3):
     dependencies:
       react: 19.2.3
 

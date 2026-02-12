@@ -2,32 +2,30 @@ import assert from "node:assert";
 import { existsSync, mkdirSync } from "node:fs";
 import { readFile, rm } from "node:fs/promises";
 import path from "node:path";
+import type { EnvConfig } from "@gatewai/core";
 import { generateId, logger } from "@gatewai/core";
-import {
-	type FileData,
-	type VideoGenResult,
+import { TOKENS } from "@gatewai/core/di";
+import type {
+	FileData,
+	VideoGenResult,
 } from "@gatewai/core/types";
+import type { PrismaClient } from "@gatewai/db";
 import { DataType } from "@gatewai/db";
 import type {
 	BackendNodeProcessorCtx,
 	BackendNodeProcessorResult,
+	GraphResolvers,
 	NodeProcessor,
+	StorageService,
 } from "@gatewai/node-sdk";
 import type {
 	GenerateVideosConfig,
 	VideoGenerationReferenceImage,
 	VideoGenerationReferenceType,
 } from "@google/genai";
-import { TOKENS } from "@gatewai/core/di";
-import type { PrismaClient } from "@gatewai/db";
-import type { EnvConfig } from "@gatewai/core";
 import { inject, injectable } from "tsyringe";
-import type {
-	GraphResolvers,
-	StorageService,
-} from "@gatewai/node-sdk";
-import { getGenAIClient } from "../genai.js";
 import { VideoGenNodeConfigSchema } from "../../node-configs.schema.js";
+import { getGenAIClient } from "../genai.js";
 
 @injectable()
 export default class VideoGenProcessor implements NodeProcessor {

@@ -1,16 +1,16 @@
+import type { TextResult } from "@gatewai/core/types";
 import { DataType } from "@gatewai/db";
 import type {
 	BackendNodeProcessorCtx,
 	BackendNodeProcessorResult,
 	NodeProcessor,
 } from "@gatewai/node-sdk";
-import { TextNodeConfigSchema } from "../../node-configs.schema.js";
 import { injectable } from "tsyringe";
-import type { TextResult } from "@gatewai/core/types";
+import { TextNodeConfigSchema } from "../../node-configs.schema.js";
 
 @injectable()
 export default class TextProcessor implements NodeProcessor {
-	constructor() { }
+	constructor() {}
 
 	async process({
 		node,

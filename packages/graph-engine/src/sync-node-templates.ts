@@ -34,10 +34,10 @@ export async function syncNodeTemplates(prisma: PrismaClient) {
 			isTerminalNode: m.isTerminal,
 			isTransient: m.isTransient ?? false,
 			variableInputs: m.variableInputs?.enabled ?? false,
-			variableInputDataTypes: (m.variableInputs?.dataTypes) ?? [],
+			variableInputDataTypes: m.variableInputs?.dataTypes ?? [],
 			variableOutputs: m.variableOutputs?.enabled ?? false,
-			variableOutputDataTypes: (m.variableOutputs?.dataTypes) ?? [],
-			defaultConfig: (m.defaultConfig) ?? undefined,
+			variableOutputDataTypes: m.variableOutputs?.dataTypes ?? [],
+			defaultConfig: m.defaultConfig ?? undefined,
 		};
 
 		const existing = await prisma.nodeTemplate.findUnique({
