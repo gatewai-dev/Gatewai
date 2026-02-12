@@ -11,7 +11,7 @@ import type { NodeProps } from "@xyflow/react";
 import { Brush, Eraser, PaintBucket } from "lucide-react";
 import { memo, useCallback, useEffect, useMemo, useRef, useState } from "react";
 import { ColorPicker } from "@/components/util/color-input";
-import { ResolveFileDataUrl } from "@/lib/file";
+import { ResolveFileDataUrl } from "@gatewai/core/browser";
 import { cn } from "@/lib/utils";
 import type { PaintNode } from "../node-props";
 import { PaintDimensionsConfig } from "./paint-config";

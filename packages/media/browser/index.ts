@@ -1,1 +1,1 @@
-export * from './draw-image-canvas';
+export * from './draw-image-canvas.js';

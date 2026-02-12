@@ -4,6 +4,7 @@ import {
 	BaseNode,
 	CanvasRenderer,
 	useNodePreview,
+	useNodeResult,
 } from "@gatewai/react-canvas";
 import {
 	updateNodeConfigWithoutHistory,
@@ -11,9 +12,8 @@ import {
 } from "@gatewai/react-store";
 import type { NodeProps } from "@xyflow/react";
 import { memo, useEffect } from "react";
-import { ResolveFileDataUrl } from "@/lib/file";
+import { ResolveFileDataUrl } from "@gatewai/core/browser";
 import { cn } from "@/lib/utils";
-import { useNodeResult } from "../../graph-engine/processor-ctx";
 import type { ConnectedInput } from "../../graph-engine/types";
 import type { ResizeNode } from "../node-props";
 import { ResizeConfig } from "./resize-config";

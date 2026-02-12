@@ -19,7 +19,7 @@ import {
 	videoCompositorNode,
 	videoGenFirstLastFrameNode,
 	videoGenNode,
-} from "@gatewai/nodes/node";
+} from "@gatewai/nodes/server";
 
 // ────────────────────────────────────────────────────────────────────────────
 // Register backend processors into the NodeRegistry.

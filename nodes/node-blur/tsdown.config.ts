@@ -3,8 +3,8 @@ import { defineConfig } from "tsdown";
 export default defineConfig({
 	entry: {
 		index: "src/metadata.ts",
-		node: "src/node.ts",
-		client: "src/client.tsx",
+		server: "src/server/index.ts",
+		browser: "src/browser/index.tsx",
 	},
 	format: ["esm"],
 	dts: true,

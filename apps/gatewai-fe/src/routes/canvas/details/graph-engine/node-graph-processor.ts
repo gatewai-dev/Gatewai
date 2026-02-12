@@ -22,7 +22,7 @@ import type {
 	HandleEntityType,
 	NodeEntityType,
 } from "@gatewai/react-store";
-import { GetAssetEndpoint } from "@/lib/file";
+import { GetAssetEndpoint } from "@gatewai/core/browser";
 import { processCompositor } from "./image-compositor";
 import type {
 	ConnectedInput,

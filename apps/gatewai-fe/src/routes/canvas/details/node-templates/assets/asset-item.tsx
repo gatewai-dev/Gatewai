@@ -26,7 +26,7 @@ import {
 import { memo, useEffect, useRef, useState } from "react";
 import { createPortal } from "react-dom";
 import { toast } from "sonner";
-import { getDataTypeFromMime } from "@/lib/file";
+import { getDataTypeFromMime } from "@gatewai/core/browser";
 import { cn } from "@/lib/utils";
 import { useCanvasCtx } from "@/routes/canvas/details/ctx/canvas-ctx";
 import { useNodeTemplates } from "../node-templates.ctx";
@@ -254,7 +254,7 @@ export const AssetItem = memo(({ asset }: AssetItemProps) => {
 							<span className="truncate text-[10px] text-muted-foreground">
 								{asset.mimeType || "Unknown type"}
 							</span>
-							{asset.duration && <span>{}</span>}
+							{asset.duration && <span>{ }</span>}
 						</div>
 					</div>
 				</div>

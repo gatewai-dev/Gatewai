@@ -10,15 +10,15 @@
 			"import": "./dist/index.mjs",
 			"default": "./dist/index.mjs"
 		},
-		"./node": {
-			"types": "./dist/node.d.mts",
-			"import": "./dist/node.mjs",
-			"default": "./dist/node.mjs"
+		"./server": {
+			"types": "./dist/server.d.mts",
+			"import": "./dist/server.mjs",
+			"default": "./dist/server.mjs"
 		},
-		"./client": {
-			"types": "./dist/client.d.mts",
-			"import": "./dist/client.mjs",
-			"default": "./dist/client.mjs"
+		"./browser": {
+			"types": "./dist/browser.d.mts",
+			"import": "./dist/browser.mjs",
+			"default": "./dist/browser.mjs"
 		}
 	},
 	"scripts": {

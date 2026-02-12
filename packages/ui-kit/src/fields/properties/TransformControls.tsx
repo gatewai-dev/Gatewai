@@ -1,4 +1,7 @@
-import { Button, DraggableNumberInput, Label, Switch } from "@gatewai/ui-kit";
+import { Button } from "../../ui/button";
+import { DraggableNumberInput } from "../../ui/draggable-number-input";
+import { Label } from "../../ui/label";
+import { Switch } from "../../ui/switch";
 import {
 	AlignCenterHorizontal,
 	AlignCenterVertical,

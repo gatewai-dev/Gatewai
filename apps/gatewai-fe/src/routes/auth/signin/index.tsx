@@ -1,6 +1,6 @@
 import { Helmet } from "react-helmet-async";
 import { Link, useNavigate } from "react-router";
-import { getEnv } from "@/lib/env";
+import { getEnv } from "@gatewai/core/browser";
 import { AuthLayout } from "../auth-layout";
 import { SignInForm } from "./signin-form";
 

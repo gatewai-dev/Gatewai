@@ -23,7 +23,7 @@ import type {
 } from "@gatewai/core/types";
 import { COMPOSITOR_DEFAULTS, dataTypeColors } from "@gatewai/core/types";
 import type { HandleEntityType, NodeEntityType } from "@gatewai/react-store";
-import { handleSelectors, useAppSelector } from "@gatewai/react-store";
+import { handleSelectors, useAppSelector, useGetFontListQuery } from "@gatewai/react-store";
 // Internal Component Imports
 import {
 	AlertDialog,
@@ -53,6 +53,10 @@ import {
 	TooltipContent,
 	TooltipProvider,
 	TooltipTrigger,
+	CollapsibleSection,
+	StyleControls,
+	TransformControls,
+	TypographyControls,
 } from "@gatewai/ui-kit";
 import type Konva from "konva";
 import type { KonvaEventObject } from "konva/lib/Node";
@@ -97,12 +101,8 @@ import {
 	Transformer,
 } from "react-konva";
 import useImage from "use-image";
-import { GetAssetEndpoint, GetFontAssetUrl } from "@/lib/file";
-import { fontManager } from "@/lib/fonts";
-import { CollapsibleSection } from "@/modules/common/CollapsibleSection";
-import { StyleControls } from "@/modules/common/properties/StyleControls";
-import { TransformControls } from "@/modules/common/properties/TransformControls";
-import { TypographyControls } from "@/modules/common/properties/TypographyControls";
+import { fontManager } from "@gatewai/node-sdk/client";
+import { GetAssetEndpoint, GetFontAssetUrl } from "@gatewai/core/browser";
 
 //#region CONSTANTS
 // Local defaults removed in favor of shared COMPOSITOR_DEFAULTS
@@ -190,10 +190,10 @@ interface EditorContextType {
 	transformerRef: RefObject<Konva.Transformer | null>;
 	mode: "select" | "pan";
 	setMode: Dispatch<SetStateAction<"select" | "pan">>;
-	scale: number;
-	setScale: Dispatch<SetStateAction<number>>;
-	stagePos: { x: number; y: number };
-	setStagePos: Dispatch<SetStateAction<{ x: number; y: number }>>;
+	zoom: number;
+	setZoom: (v: number | ((s: number) => number)) => void;
+	pan: { x: number; y: number };
+	setPan: (v: { x: number; y: number }) => void;
 	zoomIn: () => void;
 	zoomOut: () => void;
 	zoomTo: (value: number) => void;
@@ -429,10 +429,10 @@ const ImageLayer: React.FC<LayerProps> = ({
 					prev.map((l) =>
 						l.id === layer.id
 							? {
-									...l,
-									width: Math.round(image.width),
-									height: Math.round(image.height),
-								}
+								...l,
+								width: Math.round(image.width),
+								height: Math.round(image.height),
+							}
 							: l,
 					),
 				false,
@@ -539,10 +539,10 @@ const TextLayer: React.FC<LayerProps> = ({
 						prev.map((l) =>
 							l.id === layer.id
 								? {
-										...l,
-										computedWidth: calculatedWidth,
-										computedHeight: calculatedHeight,
-									}
+									...l,
+									computedWidth: calculatedWidth,
+									computedHeight: calculatedHeight,
+								}
 								: l,
 						),
 					false,
@@ -1643,13 +1643,14 @@ export const ImageDesignerEditor: React.FC<ImageDesignerEditorProps> = ({
 	const [mode, setMode] = useState<"select" | "pan">("select");
 	const lastModeRef = useRef<"select" | "pan">("select");
 
-	const [scale, setScale] = useState(1);
-	const [stagePos, setStagePos] = useState({ x: 0, y: 0 });
+	const [zoom, setZoom] = useState(1);
+	const { data: fontList } = useGetFontListQuery({});
+	const [pan, setPan] = useState({ x: 0, y: 0 });
 	const containerRef = useRef<HTMLDivElement>(null);
 	const [screenWidth, setScreenWidth] = useState(100);
 	const [screenHeight, setScreenHeight] = useState(100);
 
-	const zoomPercentage = `${Math.round(scale * 100)}%`;
+	const zoomPercentage = `${Math.round(zoom * 100)}%`;
 
 	// Resize observer
 	useEffect(() => {
@@ -1677,8 +1678,8 @@ export const ImageDesignerEditor: React.FC<ImageDesignerEditorProps> = ({
 			x: Math.round((screenWidth - viewportWidth * newScale) / 2),
 			y: Math.round((screenHeight - viewportHeight * newScale) / 2),
 		};
-		setScale(newScale);
-		setStagePos(newPos);
+		setZoom(newScale);
+		setPan(newPos);
 	}, [viewportWidth, viewportHeight, screenWidth, screenHeight]);
 
 	// Initial centering
@@ -1686,16 +1687,16 @@ export const ImageDesignerEditor: React.FC<ImageDesignerEditorProps> = ({
 		if (
 			screenWidth > 100 &&
 			screenHeight > 100 &&
-			scale === 1 &&
-			stagePos.x === 0
+			zoom === 1 &&
+			pan.x === 0
 		) {
 			fitView();
 		}
-	}, [screenWidth, screenHeight, fitView, scale, stagePos.x]);
+	}, [screenWidth, screenHeight, fitView, zoom, pan.x]);
 
-	const zoomIn = useCallback(() => setScale((s) => s * 1.2), []);
-	const zoomOut = useCallback(() => setScale((s) => s / 1.2), []);
-	const zoomTo = useCallback((value: number) => setScale(value), []);
+	const zoomIn = useCallback(() => setZoom((s) => s * 1.2), []);
+	const zoomOut = useCallback(() => setZoom((s) => s / 1.2), []);
+	const zoomTo = useCallback((value: number) => setZoom(value), []);
 
 	// Data getters
 	const getTextData = useCallback(
@@ -1961,10 +1962,10 @@ export const ImageDesignerEditor: React.FC<ImageDesignerEditorProps> = ({
 				transformerRef,
 				mode,
 				setMode,
-				scale,
-				setScale,
-				stagePos,
-				setStagePos,
+				zoom,
+				setZoom,
+				pan,
+				setPan,
 				zoomIn,
 				zoomOut,
 				zoomTo,

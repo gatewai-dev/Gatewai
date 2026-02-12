@@ -5,7 +5,7 @@ import {
 	type GlobalCompositeOperationType,
 } from "@gatewai/core/types";
 import Konva from "konva";
-import { GetFontAssetUrl } from "@/lib/file";
+import { GetFontAssetUrl } from "@gatewai/core/browser";
 import { fontManager } from "@/lib/fonts";
 
 const processCompositor = async (

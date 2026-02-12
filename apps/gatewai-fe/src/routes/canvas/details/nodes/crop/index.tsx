@@ -13,21 +13,21 @@ import {
 } from "@gatewai/react-store";
 import type { NodeProps } from "@xyflow/react";
 import { memo, useCallback, useEffect, useMemo, useRef, useState } from "react";
-import { ResolveFileDataUrl } from "@/lib/file";
+import { ResolveFileDataUrl } from "@gatewai/core/browser";
 import { cn } from "@/lib/utils";
 import type { CropNode } from "../node-props";
 
 type DragState = {
 	type:
-		| "move"
-		| "resize-nw"
-		| "resize-ne"
-		| "resize-sw"
-		| "resize-se"
-		| "resize-n"
-		| "resize-s"
-		| "resize-w"
-		| "resize-e";
+	| "move"
+	| "resize-nw"
+	| "resize-ne"
+	| "resize-sw"
+	| "resize-se"
+	| "resize-n"
+	| "resize-s"
+	| "resize-w"
+	| "resize-e";
 	startX: number;
 	startY: number;
 	startCrop: CropNodeConfig;

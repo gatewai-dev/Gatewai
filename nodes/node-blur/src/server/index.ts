@@ -16,7 +16,7 @@ import {
     type StorageService,
 } from "@gatewai/node-sdk";
 import { inject, injectable } from "tsyringe";
-import { metadata } from "./metadata.js";
+import { metadata } from "../metadata.js";
 
 @injectable()
 class BlurProcessor implements NodeProcessor {

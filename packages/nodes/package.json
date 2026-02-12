@@ -7,19 +7,19 @@
 	"license": "MIT",
 	"description": "Built-in node manifests for Gatewai",
 	"module": "./dist/index.mjs",
-	"types": "./dist/index.d.mts",
+	"types": "./dist/server.d.mts",
 	"exports": {
 		".": {
-			"types": "./dist/node.d.mts",
-			"development": "./src/node/index.ts",
-			"import": "./dist/node.mjs",
-			"default": "./dist/node.mjs"
+			"types": "./dist/server.d.mts",
+			"development": "./src/server/index.ts",
+			"import": "./dist/server.mjs",
+			"default": "./dist/server.mjs"
 		},
-		"./node": {
-			"types": "./dist/node.d.ts",
-			"development": "./src/node/index.ts",
-			"import": "./dist/node.mjs",
-			"default": "./dist/node.mjs"
+		"./server": {
+			"types": "./dist/server.d.ts",
+			"development": "./src/server/index.ts",
+			"import": "./dist/server.mjs",
+			"default": "./dist/server.mjs"
 		},
 		"./browser": {
 			"types": "./dist/browser.d.ts",

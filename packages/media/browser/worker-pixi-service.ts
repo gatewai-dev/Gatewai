@@ -1,4 +1,4 @@
-import { BasePixiService } from "@gatewai/media/pixi";
+
 import {
 	Application,
 	Assets,
@@ -11,6 +11,7 @@ import {
 	Sprite,
 	Texture,
 } from "@pixi/webworker";
+import { BasePixiService } from "../common/index.js";
 
 export class WorkerPixiService extends BasePixiService {
 	private initialized = false;

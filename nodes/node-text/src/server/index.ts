@@ -5,7 +5,7 @@ import {
 	defineNode,
 	type NodeProcessor,
 } from "@gatewai/node-sdk";
-import { metadata } from "./metadata.js";
+import { metadata } from "../metadata.js";
 
 class TextProcessor implements NodeProcessor {
 	async process({

@@ -2,7 +2,7 @@ import { defineConfig } from "tsdown";
 
 export default defineConfig({
 	entry: {
-		node: "src/node/index.ts",
+		server: "src/server/index.ts",
 		browser: "src/browser/index.ts",
 		configs: "src/index.ts",
 	},

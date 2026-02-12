@@ -1,15 +1,14 @@
-import { useGetFontListQuery } from "@gatewai/react-store";
+import { Button } from "../../ui/button";
+import { DraggableNumberInput } from "../../ui/draggable-number-input";
+import { Label } from "../../ui/label";
 import {
-	Button,
-	DraggableNumberInput,
-	Label,
 	Select,
 	SelectContent,
 	SelectItem,
 	SelectTrigger,
 	SelectValue,
-	Separator,
-} from "@gatewai/ui-kit";
+} from "../../ui/select";
+import { Separator } from "../../ui/separator";
 import {
 	AlignCenter,
 	AlignLeft,
@@ -22,10 +21,10 @@ import {
 } from "lucide-react";
 import type React from "react";
 import { useMemo } from "react";
-import { ColorPicker } from "@/components/util/color-input";
-import { GetFontAssetUrl } from "@/lib/file";
-import { fontManager } from "@/lib/fonts";
+import { ColorPicker } from "../../components/util/color-input";
+import { GetFontAssetUrl } from "@gatewai/core/browser";
 import { CollapsibleSection } from "../CollapsibleSection";
+import { fontManager } from "@gatewai/node-sdk/client";
 
 interface TypographyControlsProps {
 	fontFamily: string;
@@ -37,7 +36,7 @@ interface TypographyControlsProps {
 	align?: string; // "left" | "center" | "right" | "justify"
 	letterSpacing?: number;
 	lineHeight?: number;
-
+	fontList?: string[];
 	onChange: (updates: {
 		fontFamily?: string;
 		fontSize?: number;
@@ -61,12 +60,12 @@ export const TypographyControls: React.FC<TypographyControlsProps> = ({
 	align,
 	letterSpacing,
 	lineHeight,
+	fontList,
 	onChange,
 }) => {
-	const { data: fontList } = useGetFontListQuery({});
 	const fontNames = useMemo(() => {
-		if (Array.isArray(fontList) && (fontList as string[])?.length > 0) {
-			return fontList as string[];
+		if (Array.isArray(fontList) && fontList.length > 0) {
+			return fontList;
 		}
 		return ["Geist", "Inter", "Arial", "Courier New", "Times New Roman"];
 	}, [fontList]);

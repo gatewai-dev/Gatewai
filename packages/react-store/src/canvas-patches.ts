@@ -4,7 +4,7 @@ import {
 	createSlice,
 	type PayloadAction,
 } from "@reduxjs/toolkit";
-import type { RootState } from ".";
+import type { RootState } from "./index.js";
 
 export const patchAdapter = createEntityAdapter<CanvasPatch>();
 

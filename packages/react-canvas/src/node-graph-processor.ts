@@ -23,13 +23,13 @@ import type {
 	NodeEntityType,
 } from "@gatewai/react-store";
 import { processCompositor } from "./image-compositor";
-import { GetAssetEndpoint } from "./lib/file";
 import type {
 	ConnectedInput,
 	NodeProcessor,
 	NodeProcessorParams,
 	ProcessorConfig,
 } from "./types";
+import { GetAssetEndpoint } from "@gatewai/core/browser";
 
 export enum TaskStatus {
 	QUEUED = "QUEUED",

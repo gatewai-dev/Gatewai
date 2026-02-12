@@ -2,7 +2,7 @@ import { defineClient, useNodeUI } from "@gatewai/node-sdk";
 import { ScrollArea, Textarea } from "@gatewai/ui-kit";
 import type React from "react";
 import { memo, useCallback } from "react";
-import { metadata } from "./metadata.js";
+import { metadata } from "../metadata.js";
 
 const TextNodeComponent = memo((props: any) => {
 	const { onNodeConfigUpdate, useNodePreview, BaseNode } = useNodeUI();

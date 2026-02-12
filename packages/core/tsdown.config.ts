@@ -6,6 +6,7 @@ export default defineConfig({
 		di: "src/di/index.ts",
 		types: "src/types/index.ts",
 		storage: "src/storage/index.ts",
+		browser: "src/browser/index.ts",
 	},
 	format: ["esm"],
 	dts: true, // Create types

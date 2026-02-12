@@ -9,7 +9,7 @@ import { Download, Loader2, VideoIcon } from "lucide-react";
 import { memo, useEffect, useMemo, useState } from "react";
 import { useNavigate } from "react-router";
 import { toast } from "sonner";
-import { GetAssetEndpoint, GetFontAssetUrl } from "@/lib/file";
+import { GetAssetEndpoint, GetFontAssetUrl } from "@gatewai/core/browser";
 import { fontManager } from "@/lib/fonts";
 import { cn } from "@/lib/utils";
 import {
@@ -138,13 +138,13 @@ const VideoCompositorNodeComponent = memo(
 			const durationInFrames =
 				layers.length > 0
 					? Math.max(
-							DEFAULT_DURATION_FRAMES,
-							...layers.map(
-								(l) =>
-									(l.startFrame ?? 0) +
-									(l.durationInFrames ?? DEFAULT_DURATION_FRAMES),
-							),
-						)
+						DEFAULT_DURATION_FRAMES,
+						...layers.map(
+							(l) =>
+								(l.startFrame ?? 0) +
+								(l.durationInFrames ?? DEFAULT_DURATION_FRAMES),
+						),
+					)
 					: DEFAULT_DURATION_FRAMES;
 
 			return { layers, width, height, durationInFrames };
