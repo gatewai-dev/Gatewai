@@ -6,6 +6,7 @@ import {
 	type OutputItem,
 } from "@gatewai/core/types";
 import type { DataType } from "@gatewai/db";
+import { pixiWorkerService } from "@gatewai/media";
 import {
 	type BlurNodeConfig,
 	type CompositorNodeConfig,
@@ -23,7 +24,6 @@ import type {
 } from "@gatewai/react-store";
 import { GetAssetEndpoint } from "@/lib/file";
 import { processCompositor } from "./image-compositor";
-import { pixiWorkerService } from "./pixi/pixi-worker.service";
 import type {
 	ConnectedInput,
 	NodeProcessor,

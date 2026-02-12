@@ -1,6 +1,5 @@
 export {
 	defineClient,
-	defineLegacyNode,
 	defineMetadata,
 	defineNode,
 } from "./define-node.js";
@@ -22,4 +21,3 @@ export type {
 	NodeProcessorConstructor,
 	StorageService,
 } from "./types.js";
-export * from "./ui.js";

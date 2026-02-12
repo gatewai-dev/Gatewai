@@ -6,28 +6,41 @@
 	"sideEffects": false,
 	"license": "MIT",
 	"description": "SDK for building Gatewai node plugins",
-	"module": "./dist/index.mjs",
-	"types": "./dist/index.d.mts",
+	"module": "./dist/server.mjs",
+	"types": "./dist/server.d.mts",
 	"exports": {
 		".": {
-			"types": "./dist/index.d.mts",
-			"development": "./src/index.ts",
-			"import": "./dist/index.mjs",
-			"default": "./dist/index.mjs"
+			"types": "./dist/server.d.mts",
+			"development": "./server/index.ts",
+			"import": "./dist/server.mjs",
+			"default": "./dist/server.mjs"
 		},
-		"./dist/index.mjs": "./dist/index.mjs"
+		"./server": {
+			"types": "./dist/server.d.mts",
+			"development": "./server/index.ts",
+			"import": "./dist/server.mjs",
+			"default": "./dist/server.mjs"
+		},
+		"./client": {
+			"types": "./dist/client.d.mts",
+			"development": "./client/index.ts",
+			"import": "./dist/client.mjs",
+			"default": "./dist/client.mjs"
+		}
 	},
 	"files": [
 		"dist/**"
 	],
 	"scripts": {
-		"build": "tsdown src/index.ts --format esm",
-		"dev": "tsdown src/index.ts --format esm --watch",
+		"build": "tsdown --format esm",
+		"dev": "tsdown --format esm --watch",
 		"clean": "rm -rf .turbo && rm -rf node_modules && rm -rf dist"
 	},
 	"devDependencies": {
 		"@gatewai/tsconfig": "workspace:*",
 		"@types/node": "^24.0.4",
+		"@types/react": "^19.2.14",
+		"@types/react-dom": "^19.2.14",
 		"tsdown": "^0.19.0",
 		"typescript": "5.5.4"
 	},
@@ -35,12 +48,17 @@
 		"@gatewai/core": "workspace:*",
 		"@gatewai/db": "workspace:*",
 		"@gatewai/media": "workspace:*",
+		"@gatewai/ui-kit": "workspace:*",
+		"@gatewai/react-store": "workspace:*",
 		"@xyflow/react": "^12.0.0",
-		"react": "^18.0.0 || ^19.0.0",
-		"react-dom": "^18.0.0 || ^19.0.0",
+		"lucide-react": "^0.474.0",
+		"react": "^19.2.14",
+		"react-dom": "^19.2.14",
 		"zod": "3.25.67"
 	},
 	"dependencies": {
-		"lodash": "^4.17.21"
+		"clsx": "^2.1.1",
+		"lodash": "^4.17.21",
+		"tailwind-merge": "^3.0.1"
 	}
 }

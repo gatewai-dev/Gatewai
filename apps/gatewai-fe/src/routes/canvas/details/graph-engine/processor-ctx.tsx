@@ -1,5 +1,4 @@
 import type { FileResult, NodeResult } from "@gatewai/core/types";
-import { NodeUIContext } from "@gatewai/node-sdk";
 import {
 	type HandleEntityType,
 	makeSelectAllEdges,
@@ -18,6 +17,7 @@ import {
 	useRef,
 	useSyncExternalStore,
 } from "react";
+import { NodeUIContext } from "../../../../../../../packages/node-sdk/client/ui";
 import { useCanvasCtx } from "../ctx/canvas-ctx";
 import { useNodePreview } from "../hooks/node-preview";
 import { BaseNode } from "../nodes/base";

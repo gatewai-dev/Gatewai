@@ -1,4 +1,5 @@
-import type { NodeResult } from "@gatewai/core/types";
+import { generateId } from "@gatewai/core";
+import type { BulkUpdatePayload, NodeResult } from "@gatewai/core/types";
 import type { AllNodeConfig } from "@gatewai/nodes/configs";
 import type {
 	BatchEntity,
@@ -69,7 +70,6 @@ import {
 } from "react";
 import { useStore } from "react-redux";
 import { toast } from "sonner";
-import { generateId } from "@/lib/idgen";
 import { useNodeTemplates } from "../node-templates/node-templates.ctx";
 import { useTaskManagerCtx } from "./task-manager-ctx";
 

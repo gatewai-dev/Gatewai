@@ -1,5 +1,10 @@
 {
 	"extends": "@gatewai/tsconfig/base.json",
+	"compilerOptions": {
+		"experimentalDecorators": true,
+		"emitDecoratorMetadata": true,
+		"jsx": "react-jsx"
+	},
 	"include": ["."],
 	"exclude": ["dist", "build", "node_modules"]
 }

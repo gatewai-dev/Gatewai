@@ -92,10 +92,7 @@ export const CanvasModeProvider = ({ children }: { children: ReactNode }) => {
 		{ keyup: true },
 	);
 
-	// Derived effective mode considering temporary overrides
-	// Priority: Space/MiddleMouse > V (Temp Select) > base mode
 	const effectiveMode: CanvasMode = (() => {
-		// Space and middle mouse always force pan mode
 		if (isSpacePressed || isMiddleMousePressed) {
 			return "pan";
 		}

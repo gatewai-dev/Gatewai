@@ -1,11 +1,13 @@
-import type { NodeEntityType } from "@gatewai/react-store";
+import type {
+	NodeEntityType,
+	UploadFileNodeAssetRPC,
+} from "@gatewai/react-store";
 import { useUploadFileNodeAssetMutation } from "@gatewai/react-store";
 import { Button } from "@gatewai/ui-kit";
 import { Loader2, PlusIcon } from "lucide-react";
 import type { ChangeEvent } from "react";
 import { useRef } from "react";
 import { cn } from "@/lib/utils";
-import type { UploadFileNodeAssetRPC } from "@/rpc/types";
 
 interface UploadButtonProps {
 	className?: string;

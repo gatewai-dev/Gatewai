@@ -1,8 +1,6 @@
 import {
 	type BackendNodePlugin,
 	type FrontendNodePlugin,
-	type GatewaiNodeManifest,
-	NodeManifestSchema,
 	type NodeMetadata,
 	NodeMetadataSchema,
 } from "./types.js";
@@ -41,14 +39,4 @@ export function defineClient(
 		...metadata,
 		...plugin,
 	});
-}
-
-/**
- * @deprecated Use defineMetadata, defineNode, and defineClient for split environment architecture.
- */
-export function defineLegacyNode(
-	manifest: GatewaiNodeManifest,
-): Readonly<GatewaiNodeManifest> {
-	const validated = NodeManifestSchema.parse(manifest);
-	return Object.freeze(validated);
 }

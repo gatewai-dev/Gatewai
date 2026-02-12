@@ -26,7 +26,6 @@ export class WorkerPixiService extends BasePixiService {
 
 	protected async loadTexture(url: string): Promise<Texture> {
 		if (!this.initialized) {
-			// Assets.init works out of the box here
 			await Assets.init();
 			this.initialized = true;
 		}
