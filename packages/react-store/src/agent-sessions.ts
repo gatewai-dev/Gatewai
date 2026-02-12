@@ -1,14 +1,11 @@
-import { createRpcClient } from "@gatewai/rpc-client";
-import { createApi, fetchBaseQuery } from "@reduxjs/toolkit/query/react";
-
-const rpcClient = createRpcClient();
-
 import type {
 	AgentSessionDetailsRPC,
 	AgentSessionDetailsRPCParams,
 	AgentSessionsRPC,
 	AgentSessionsRPCParams,
 } from "@gatewai/rpc-client";
+import { appRPCClient, createRpcClient } from "@gatewai/rpc-client";
+import { createApi, fetchBaseQuery } from "@reduxjs/toolkit/query/react";
 
 export const agentSessionsAPI = createApi({
 	reducerPath: "agentSessionsAPI",
@@ -24,7 +21,7 @@ export const agentSessionsAPI = createApi({
 			providesTags: ["agentSessionList"],
 			queryFn: async (payload) => {
 				const response =
-					await rpcClient.api.v1.canvas[":id"].agent.sessions.$get(payload);
+					await appRPCClient.api.v1.canvas[":id"].agent.sessions.$get(payload);
 				if (!response.ok) {
 					return {
 						error: { status: response.status, data: await response.text() },
@@ -40,7 +37,7 @@ export const agentSessionsAPI = createApi({
 		>({
 			queryFn: async (payload) => {
 				const response =
-					await rpcClient.api.v1.canvas[":id"].agent[":sessionId"].$get(
+					await appRPCClient.api.v1.canvas[":id"].agent[":sessionId"].$get(
 						payload,
 					);
 				if (!response.ok) {
@@ -56,7 +53,7 @@ export const agentSessionsAPI = createApi({
 			invalidatesTags: ["agentSessionList"],
 			queryFn: async (payload) => {
 				const response =
-					await rpcClient.api.v1.canvas[":id"].agent.sessions.$post(payload);
+					await appRPCClient.api.v1.canvas[":id"].agent.sessions.$post(payload);
 				if (!response.ok) {
 					return {
 						error: { status: response.status, data: await response.text() },

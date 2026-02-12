@@ -1,23 +1,21 @@
 import assert from "node:assert";
-import {
-	type BlurResult,
-	type FileData,
-	type NodeResult,
-} from "@gatewai/core/types";
 import { TOKENS } from "@gatewai/core/di";
-import { inject, injectable } from "tsyringe";
 import type {
-	GraphResolvers,
-	MediaService,
-	StorageService,
-} from "@gatewai/node-sdk";
-import { BlurNodeConfigSchema } from "../../configs/blur.config.js";
+	BlurResult,
+	FileData,
+	NodeResult,
+} from "@gatewai/core/types";
 import { DataType } from "@gatewai/db";
 import type {
 	BackendNodeProcessorCtx,
 	BackendNodeProcessorResult,
+	GraphResolvers,
+	MediaService,
 	NodeProcessor,
+	StorageService,
 } from "@gatewai/node-sdk";
+import { inject, injectable } from "tsyringe";
+import { BlurNodeConfigSchema } from "../../configs/blur.config.js";
 
 @injectable()
 export default class BlurProcessor implements NodeProcessor {
@@ -46,6 +44,8 @@ export default class BlurProcessor implements NodeProcessor {
 			const { dataUrl, ...dimensions } = await this.media.backendPixiService.processBlur(
 				imageUrl,
 				{ blurSize },
+				undefined,
+				data.apiKey,
 			);
 
 			const uploadBuffer = Buffer.from(await dataUrl.arrayBuffer());

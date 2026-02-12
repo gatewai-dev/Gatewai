@@ -1,9 +1,6 @@
-import { createRpcClient } from "@gatewai/rpc-client";
-import { createApi, fetchBaseQuery } from "@reduxjs/toolkit/query/react";
-
-const rpcClient = createRpcClient();
-
 import type { NodeTemplateListRPC } from "@gatewai/rpc-client";
+import { appRPCClient } from "@gatewai/rpc-client";
+import { createApi, fetchBaseQuery } from "@reduxjs/toolkit/query/react";
 
 // Define a service using a base URL and expected endpoints
 export const nodeTemplatesAPI = createApi({
@@ -14,7 +11,7 @@ export const nodeTemplatesAPI = createApi({
 	endpoints: (build) => ({
 		getAllNodeTemplates: build.query<NodeTemplateListRPC, null>({
 			queryFn: async () => {
-				const response = await rpcClient.api.v1["node-templates"].$get();
+				const response = await appRPCClient.api.v1["node-templates"].$get();
 				if (!response.ok) {
 					return {
 						error: { status: response.status, data: await response.text() },

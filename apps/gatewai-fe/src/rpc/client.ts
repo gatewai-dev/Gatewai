@@ -1,9 +1,6 @@
-import { hc } from "hono/client";
-import type { AppType } from "./../../backend/src/index";
+import { createRpcClient } from "@gatewai/rpc-client";
 
-const rpcClient = hc<AppType>("/", {
-	init: {
-		credentials: "same-origin",
-	},
+const rpcClient = createRpcClient("/", {
+	credentials: "same-origin",
 });
 export { rpcClient };

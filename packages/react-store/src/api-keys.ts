@@ -1,7 +1,5 @@
-import { createRpcClient } from "@gatewai/rpc-client";
+import { appRPCClient, createRpcClient } from "@gatewai/rpc-client";
 import { createApi, fetchBaseQuery } from "@reduxjs/toolkit/query/react";
-
-const rpcClient = createRpcClient();
 
 export const apiKeysAPI = createApi({
 	reducerPath: "apiKeysAPI",
@@ -24,7 +22,7 @@ export const apiKeysAPI = createApi({
 			void
 		>({
 			queryFn: async () => {
-				const response = await rpcClient.api.v1["api-keys"].$get();
+				const response = await appRPCClient.api.v1["api-keys"].$get();
 				if (!response.ok) {
 					throw new Error("Failed to fetch API keys");
 				}
@@ -48,7 +46,7 @@ export const apiKeysAPI = createApi({
 			{ name: string }
 		>({
 			queryFn: async ({ name }) => {
-				const response = await rpcClient.api.v1["api-keys"].$post({
+				const response = await appRPCClient.api.v1["api-keys"].$post({
 					json: { name },
 				});
 				if (!response.ok) {
@@ -66,7 +64,7 @@ export const apiKeysAPI = createApi({
 		}),
 		deleteApiKey: build.mutation<void, string>({
 			queryFn: async (id) => {
-				const response = await rpcClient.api.v1["api-keys"][":id"].$delete({
+				const response = await appRPCClient.api.v1["api-keys"][":id"].$delete({
 					param: { id },
 				});
 				if (!response.ok) {

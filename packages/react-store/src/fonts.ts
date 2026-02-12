@@ -1,9 +1,6 @@
-import { createRpcClient } from "@gatewai/rpc-client";
-import { createApi, fetchBaseQuery } from "@reduxjs/toolkit/query/react";
-
-const rpcClient = createRpcClient();
-
 import type { FontListRPC, FontListRPCParams } from "@gatewai/rpc-client";
+import { appRPCClient } from "@gatewai/rpc-client";
+import { createApi, fetchBaseQuery } from "@reduxjs/toolkit/query/react";
 
 export const fontListAPI = createApi({
 	reducerPath: "fontListAPI",
@@ -15,7 +12,7 @@ export const fontListAPI = createApi({
 		getFontList: build.query<FontListRPC, FontListRPCParams>({
 			providesTags: ["fontList"],
 			queryFn: async () => {
-				const response = await rpcClient.api.v1.fonts.$get();
+				const response = await appRPCClient.api.v1.fonts.$get();
 				if (!response.ok) {
 					return {
 						error: { status: response.status, data: await response.text() },

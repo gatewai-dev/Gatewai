@@ -7,7 +7,7 @@
 		"dev-mcp": "turbo run dev --filter=@gatewai/mcp-server",
 		"biome": "pnpm exec biome check --write",
 		"biome-hook": "pnpm exec biome check --write --no-errors-on-unmatched --files-ignore-unknown=true --colors=off",
-		"clean": "turbo run clean && rm -rf node_modules",
+		"prune": "turbo run prune",
 		"changeset": "changeset",
 		"version-packages": "changeset version",
 		"release:tags": "changeset version && changeset tag && git tag -a v$(node -p \"require('./apps/gatewai-fe/package.json').version\") -m \"Release v$(node -p \"require('./apps/gatewai-fe/package.json').version\")\" && git push --follow-tags",

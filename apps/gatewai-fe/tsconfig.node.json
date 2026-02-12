@@ -3,24 +3,19 @@
 		"composite": true,
 		"target": "ES2023",
 		"lib": ["ES2023"],
+		"experimentalDecorators": true,
+		"emitDecoratorMetadata": true,
 		"module": "ESNext",
 		"skipLibCheck": true,
-
 		"moduleResolution": "bundler",
 		"allowImportingTsExtensions": true,
 		"verbatimModuleSyntax": true,
 		"moduleDetection": "force",
 		"noEmit": true,
-
 		"strict": true,
 		"noUnusedLocals": true,
 		"noUnusedParameters": true,
 		"noFallthroughCasesInSwitch": true
 	},
-	"include": [
-		"vite.config.ts",
-		"trigger.config.ts",
-		"shared",
-		"backend/src/tasks/processors/video-compositon-component.jsx"
-	]
+	"include": ["vite.config.ts", "backend/src", "../../packages/*/src"]
 }

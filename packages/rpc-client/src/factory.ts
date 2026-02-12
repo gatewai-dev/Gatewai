@@ -1,16 +1,8 @@
 import { hc } from "hono/client";
 import type { AppType } from "../../../apps/gatewai-fe/backend/src/index";
 
-export const createRpcClient = (
-	baseUrl: string = "/",
-	config: {
-		headers: Record<string, string>;
-	} = { headers: {} },
-) => {
+export const createRpcClient = (baseUrl: string = "/", init: RequestInit) => {
 	return hc<AppType>(baseUrl, {
-		init: {
-			credentials: "include",
-			headers: config.headers,
-		},
+		init,
 	});
 };

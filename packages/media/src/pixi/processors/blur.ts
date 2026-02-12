@@ -19,6 +19,7 @@ export const BlurProcessor: PixiProcessor<BlurInput, BlurOutput> = {
 		input: BlurInput,
 	): Promise<BlurOutput> {
 		const { imageUrl, options, apiKey } = input;
+		console.log({ input });
 		const { app, loadTexture, getPixiModules, extractBlob, signal } = context;
 
 		const texture = await loadTexture(imageUrl, apiKey);

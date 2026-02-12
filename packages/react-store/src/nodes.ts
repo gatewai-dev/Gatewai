@@ -1,4 +1,4 @@
-import type { AllNodeConfig, NodeResult } from "@gatewai/core/types";
+import type { NodeResult } from "@gatewai/core/types";
 import type { CanvasDetailsRPC } from "@gatewai/rpc-client";
 import { createRpcClient } from "@gatewai/rpc-client";
 import {
@@ -7,8 +7,6 @@ import {
 	createSlice,
 } from "@reduxjs/toolkit";
 import { isEqual } from "lodash";
-
-const rpcClient = createRpcClient();
 
 import type { RootState } from "./index.js";
 import { selectSelectedNodeIds } from "./node-meta.js";
@@ -28,11 +26,11 @@ export const nodesSlice = createSlice({
 		setAllNodeEntities: nodeAdapter.setAll,
 		updateNodeConfigWithoutHistory: (
 			state,
-			action: { payload: { id: string; newConfig: Partial<AllNodeConfig> } },
+			action: { payload: { id: string; newConfig: Partial<any> } },
 		) => {
 			const { id, newConfig } = action.payload;
 			const node = state.entities[id];
-			const existingConfig = node.config as AllNodeConfig;
+			const existingConfig = node.config as any;
 			if (node) {
 				node.config = {
 					...existingConfig,
@@ -42,11 +40,11 @@ export const nodesSlice = createSlice({
 		},
 		updateNodeConfig: (
 			state,
-			action: { payload: { id: string; newConfig: Partial<AllNodeConfig> } },
+			action: { payload: { id: string; newConfig: Partial<any> } },
 		) => {
 			const { id, newConfig } = action.payload;
 			const node = state.entities[id];
-			const existingConfig = node.config as AllNodeConfig;
+			const existingConfig = node.config as any;
 			if (node) {
 				node.config = {
 					...existingConfig,

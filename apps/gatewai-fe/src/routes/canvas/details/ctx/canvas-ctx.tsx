@@ -1,3 +1,5 @@
+import type { NodeResult } from "@gatewai/core/types";
+import type { AllNodeConfig } from "@gatewai/nodes/configs";
 import type {
 	BatchEntity,
 	CanvasDetailsRPC,
@@ -33,13 +35,12 @@ import {
 	useAppDispatch,
 	useApplyPatchMutation,
 	useAppSelector,
-	useGetCanvasDetailsQuery,
+	useLazyGetCanvasDetailsQuery,
 	useLazyGetPatchQuery,
 	usePatchCanvasMutation,
 	useProcessNodesMutation,
 	useRejectPatchMutation,
 } from "@gatewai/react-store";
-import type { AllNodeConfig } from "@gatewai/nodes/configs";
 import {
 	type Connection,
 	type Edge,
@@ -140,16 +141,36 @@ const CanvasProvider = ({
 
 	const { nodeTemplates } = useNodeTemplates();
 
-	const {
-		data: canvasDetailsResponse,
-		isLoading,
-		isError,
-		refetch: refetchCanvas,
-	} = useGetCanvasDetailsQuery({
-		param: {
-			id: canvasId,
-		},
-	});
+	const [
+		triggerGetCanvasDetails,
+		{ data: canvasDetailsResponse, isLoading, isError },
+	] = useLazyGetCanvasDetailsQuery();
+
+	useEffect(() => {
+		if (canvasId) {
+			triggerGetCanvasDetails(
+				{
+					param: {
+						id: canvasId,
+					},
+				},
+				false,
+			);
+		}
+	}, [canvasId, triggerGetCanvasDetails]);
+
+	const refetchCanvas = useCallback(() => {
+		if (canvasId) {
+			triggerGetCanvasDetails(
+				{
+					param: {
+						id: canvasId,
+					},
+				},
+				false,
+			);
+		}
+	}, [canvasId, triggerGetCanvasDetails]);
 
 	// Use useRef instead of useState for isReviewing to prevent unnecessary re-renders
 	const isReviewingRef = useRef(false);
@@ -266,17 +287,7 @@ const CanvasProvider = ({
 		const handleBeforeUnload = () => {
 			if (!canvasId || isReviewingRef.current) return;
 
-			const body = getSavePayload();
-			const url = `/api/v1/canvas/${canvasId}`;
-
-			fetch(url, {
-				method: "PATCH",
-				headers: {
-					"Content-Type": "application/json",
-				},
-				body: JSON.stringify(body),
-				keepalive: true,
-			});
+			save();
 		};
 
 		window.addEventListener("beforeunload", handleBeforeUnload);
@@ -325,7 +336,9 @@ const CanvasProvider = ({
 	const onNodesChange = useCallback(
 		(changes: NodeChange<Node>[]) => {
 			dispatch(onNodeChange(changes));
-			const shouldSave = changes.some((c) => c.type !== "select");
+			const shouldSave = changes.some(
+				(c) => c.type !== "select" && c.type !== "dimensions",
+			);
 
 			if (shouldSave) {
 				scheduleSave(undefined, { preventExtend: true });

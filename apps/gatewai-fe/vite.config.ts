@@ -44,8 +44,6 @@ export default defineConfig({
 	resolve: {
 		alias: {
 			"@": path.resolve(__dirname, "./src"),
-			"generic-pool": path.resolve(__dirname, "./src/lib/shims/generic-pool.ts"),
-			"p-limit": path.resolve(__dirname, "./src/lib/shims/p-limit.ts"),
 		},
 	},
 });

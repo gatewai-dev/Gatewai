@@ -1,8 +1,3 @@
-import { createRpcClient } from "@gatewai/rpc-client";
-import { createApi, fetchBaseQuery } from "@reduxjs/toolkit/query/react";
-
-const rpcClient = createRpcClient();
-
 import type {
 	ApplyPatchRPC,
 	ApplyPatchRPCParams,
@@ -19,6 +14,8 @@ import type {
 	UpdateCanvasNameRPC,
 	UpdateCanvasNameRPCParams,
 } from "@gatewai/rpc-client";
+import { appRPCClient } from "@gatewai/rpc-client";
+import { createApi, fetchBaseQuery } from "@reduxjs/toolkit/query/react";
 
 export const canvasDetailsAPI = createApi({
 	reducerPath: "canvasDetailsAPI",
@@ -30,7 +27,7 @@ export const canvasDetailsAPI = createApi({
 		getCanvasDetails: build.query<CanvasDetailsRPC, CanvasDetailsRPCParams>({
 			providesTags: ["getCanvasDetails"],
 			queryFn: async (params) => {
-				const response = await rpcClient.api.v1.canvas[":id"].$get(params);
+				const response = await appRPCClient.api.v1.canvas[":id"].$get(params);
 				if (!response.ok) {
 					return {
 						error: { status: response.status, data: await response.text() },
@@ -42,7 +39,7 @@ export const canvasDetailsAPI = createApi({
 		}),
 		patchCanvas: build.mutation<PatchCanvasRPC, PatchCanvasRPCParams>({
 			queryFn: async (params) => {
-				const response = await rpcClient.api.v1.canvas[":id"].$patch(params);
+				const response = await appRPCClient.api.v1.canvas[":id"].$patch(params);
 				if (!response.ok) {
 					return {
 						error: { status: response.status, data: await response.text() },
@@ -56,7 +53,7 @@ export const canvasDetailsAPI = createApi({
 			invalidatesTags: ["getCanvasDetails"],
 			queryFn: async (params) => {
 				const response =
-					await rpcClient.api.v1.canvas[":id"]["update-name"].$patch(params);
+					await appRPCClient.api.v1.canvas[":id"]["update-name"].$patch(params);
 				if (!response.ok) {
 					return {
 						error: { status: response.status, data: await response.text() },
@@ -69,7 +66,7 @@ export const canvasDetailsAPI = createApi({
 		processNodes: build.mutation<ProcessNodesRPC, ProcessNodesRPCParams>({
 			queryFn: async (params) => {
 				const response =
-					await rpcClient.api.v1.canvas[":id"].process.$post(params);
+					await appRPCClient.api.v1.canvas[":id"].process.$post(params);
 				if (!response.ok) {
 					return {
 						error: { status: response.status, data: await response.text() },
@@ -82,7 +79,9 @@ export const canvasDetailsAPI = createApi({
 		getPatch: build.query<GetPatchRPC, GetPatchRPCParams>({
 			queryFn: async (params) => {
 				const response =
-					await rpcClient.api.v1.canvas[":id"].patches[":patchId"].$get(params);
+					await appRPCClient.api.v1.canvas[":id"].patches[":patchId"].$get(
+						params,
+					);
 				if (!response.ok) {
 					return {
 						error: { status: response.status, data: await response.text() },
@@ -96,9 +95,9 @@ export const canvasDetailsAPI = createApi({
 			invalidatesTags: ["getCanvasDetails"],
 			queryFn: async (params) => {
 				const response =
-					await rpcClient.api.v1.canvas[":id"].patches[":patchId"].apply.$post(
-						params,
-					);
+					await appRPCClient.api.v1.canvas[":id"].patches[
+						":patchId"
+					].apply.$post(params);
 				if (!response.ok) {
 					return {
 						error: { status: response.status, data: await response.text() },
@@ -112,9 +111,9 @@ export const canvasDetailsAPI = createApi({
 			invalidatesTags: ["getCanvasDetails"],
 			queryFn: async (params) => {
 				const response =
-					await rpcClient.api.v1.canvas[":id"].patches[":patchId"].reject.$post(
-						params,
-					);
+					await appRPCClient.api.v1.canvas[":id"].patches[
+						":patchId"
+					].reject.$post(params);
 				if (!response.ok) {
 					return {
 						error: { status: response.status, data: await response.text() },
@@ -129,6 +128,7 @@ export const canvasDetailsAPI = createApi({
 
 export const {
 	useGetCanvasDetailsQuery,
+	useLazyGetCanvasDetailsQuery,
 	usePatchCanvasMutation,
 	useProcessNodesMutation,
 	useUpdateNameMutation,

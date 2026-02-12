@@ -1,4 +1,9 @@
-import { createRpcClient } from "@gatewai/rpc-client";
+import type {
+	ActiveCanvasBatchListRPC,
+	BatchDetailsRPC,
+	BatchDetailsRPCParams,
+} from "@gatewai/rpc-client";
+import { appRPCClient } from "@gatewai/rpc-client";
 import {
 	createAsyncThunk,
 	createEntityAdapter,
@@ -6,14 +11,6 @@ import {
 	createSlice,
 	type PayloadAction,
 } from "@reduxjs/toolkit";
-
-const rpcClient = createRpcClient();
-
-import type {
-	ActiveCanvasBatchListRPC,
-	BatchDetailsRPC,
-	BatchDetailsRPCParams,
-} from "@gatewai/rpc-client";
 import type { RootState } from "./index.js";
 
 export type BatchEntity = BatchDetailsRPC[number];
@@ -25,7 +22,8 @@ export const getBatchDetails = createAsyncThunk<
 	BatchDetailsRPC,
 	BatchDetailsRPCParams
 >("tasks/getBatchDetails", async (params) => {
-	const response = await rpcClient.api.v1.tasks["filterby-batch"].$get(params);
+	const response =
+		await appRPCClient.api.v1.tasks["filterby-batch"].$get(params);
 	if (!response.ok) {
 		throw new Error(await response.text());
 	}
@@ -36,7 +34,7 @@ export const getInitialBatches = createAsyncThunk<
 	ActiveCanvasBatchListRPC,
 	{ canvasId: string }
 >("tasks/getInitialBatches", async ({ canvasId }) => {
-	const response = await rpcClient.api.v1.tasks[":canvasId"].$get({
+	const response = await appRPCClient.api.v1.tasks[":canvasId"].$get({
 		param: {
 			canvasId,
 		},

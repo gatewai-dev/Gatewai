@@ -11,21 +11,25 @@
 	"exports": {
 		".": {
 			"types": "./dist/node.d.mts",
+			"development": "./src/node/index.ts",
 			"import": "./dist/node.mjs",
 			"default": "./dist/node.mjs"
 		},
 		"./node": {
 			"types": "./dist/node.d.ts",
+			"development": "./src/node/index.ts",
 			"import": "./dist/node.mjs",
 			"default": "./dist/node.mjs"
 		},
 		"./react": {
 			"types": "./dist/react.d.ts",
+			"development": "./src/react/index.ts",
 			"import": "./dist/react.mjs",
 			"default": "./dist/react.mjs"
 		},
 		"./configs": {
 			"types": "./dist/configs.d.ts",
+			"development": "./src/index.ts",
 			"import": "./dist/configs.mjs",
 			"default": "./dist/configs.mjs"
 		}

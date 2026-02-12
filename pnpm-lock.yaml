@@ -72,6 +72,9 @@ importers:
       '@gatewai/react-store':
         specifier: workspace:*
         version: link:../../packages/react-store
+      '@gatewai/rpc-client':
+        specifier: workspace:*
+        version: link:../../packages/rpc-client
       '@gatewai/tsconfig':
         specifier: workspace:*
         version: link:../../packages/tsconfig
@@ -650,12 +653,6 @@ importers:
       '@gatewai/media':
         specifier: workspace:*
         version: link:../media
-      reflect-metadata:
-        specifier: ^0.2.2
-        version: 0.2.2
-      tsyringe:
-        specifier: ^4.10.0
-        version: 4.10.0
       zod:
         specifier: 3.25.67
         version: 3.25.67
@@ -724,40 +721,6 @@ importers:
       '@types/wav':
         specifier: ^1.0.4
         version: 1.0.4
-      tsdown:
-        specifier: ^0.19.0
-        version: 0.19.0(publint@0.3.17)(synckit@0.11.11)(typescript@5.5.4)
-      typescript:
-        specifier: 5.5.4
-        version: 5.5.4
-
-  packages/pixi-processor:
-    dependencies:
-      generic-pool:
-        specifier: ^3.9.0
-        version: 3.9.0
-      p-limit:
-        specifier: ^7.2.0
-        version: 7.2.0
-      zod:
-        specifier: 3.25.67
-        version: 3.25.67
-    devDependencies:
-      '@gatewai/core':
-        specifier: workspace:*
-        version: link:../core
-      '@gatewai/tsconfig':
-        specifier: workspace:*
-        version: link:../tsconfig
-      '@pixi/node':
-        specifier: ^7.3.0
-        version: 7.3.0(encoding@0.1.13)
-      pixi-filters:
-        specifier: ^5.3.0
-        version: 5.3.0(@pixi/core@7.4.3)(@pixi/filter-alpha@7.4.3(@pixi/core@7.4.3))(@pixi/filter-blur@7.4.3(@pixi/core@7.4.3))
-      pixi.js:
-        specifier: ^7.4.3
-        version: 7.4.3
       tsdown:
         specifier: ^0.19.0
         version: 0.19.0(publint@0.3.17)(synckit@0.11.11)(typescript@5.5.4)

@@ -172,6 +172,16 @@ const canvasRoutes = new Hono<{ Variables: AuthHonoTypes }>({
 		// Only owners can update canvas
 		await assertCanvasOwnership(c, id);
 
+		console.log("PATCH Canvas Request:", {
+			id,
+			validated,
+			contentType: c.req.header("content-type"),
+			hasNodes: !!validated.nodes,
+			nodesCount: validated.nodes?.length,
+			hasEdges: !!validated.edges,
+			hasHandles: !!validated.handles,
+		});
+
 		try {
 			await applyCanvasUpdate(id, validated);
 		} catch (error) {
@@ -498,7 +508,7 @@ const canvasRoutes = new Hono<{ Variables: AuthHonoTypes }>({
 		const canvasId = c.req.param("id");
 		const validated = c.req.valid("json");
 		const user = c.get("user");
-
+		console.log({ payload: c.req.raw.body });
 		let apiKey = c.req.header("x-api-key");
 		if (!apiKey && user) {
 			const userKey = await prisma.apiKey.findFirst({
@@ -511,6 +521,7 @@ const canvasRoutes = new Hono<{ Variables: AuthHonoTypes }>({
 		}
 
 		const wfProcessor = new NodeWFProcessor(prisma);
+		console.log({ canvasId, validated, apiKey });
 		const taskBatch = await wfProcessor.processNodes(
 			canvasId,
 			validated.node_ids,

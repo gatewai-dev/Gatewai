@@ -8,7 +8,7 @@
 		"build": "vite build && tsc -p backend/tsconfig.json && pnpm copy-assets",
 		"start-cli": "node backend/dist/index.js",
 		"preview": "vite preview",
-		"be:dev": "tsx watch --conditions=development backend/src/index.ts",
+		"be:dev": "tsx watch --tsconfig tsconfig.node.json --conditions=development backend/src/index.ts",
 		"be:build": "tsc -p backend/tsconfig.json && pnpm copy-assets",
 		"copy-assets": "mkdir -p backend/dist && cp -r backend/src/assets backend/dist/",
 		"test": "vitest run"
@@ -19,6 +19,7 @@
 		"@dnd-kit/sortable": "^10.0.0",
 		"@dnd-kit/utilities": "^3.2.2",
 		"@gatewai/api-client": "workspace:*",
+		"@gatewai/rpc-client": "workspace:*",
 		"@gatewai/core": "workspace:*",
 		"@gatewai/data-ops": "workspace:*",
 		"@gatewai/db": "workspace:*",

@@ -55,11 +55,11 @@ class BackendPixiService extends BasePixiService implements IPixiProcessor {
 		}
 
 		// Prepare headers with API key for authentication
-		const headers: HeadersInit = {};
+		const headers: Record<string, string> = {};
 		if (apiKey) {
 			headers["X-API-KEY"] = apiKey;
 		}
-
+		console.log({ headers });
 		// Fetch the image with authentication
 		const imageResp = await fetch(url, { headers });
 

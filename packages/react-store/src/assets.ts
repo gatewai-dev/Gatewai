@@ -1,8 +1,3 @@
-import { createRpcClient } from "@gatewai/rpc-client";
-import { createApi, fetchBaseQuery } from "@reduxjs/toolkit/query/react";
-
-const rpcClient = createRpcClient();
-
 import type {
 	UploadFileNodeAssetRPC,
 	UploadFileNodeAssetRPCParams,
@@ -10,6 +5,8 @@ import type {
 	UserAssetsListRPCParams,
 	UserAssetsUploadRPC,
 } from "@gatewai/rpc-client";
+import { appRPCClient, createRpcClient } from "@gatewai/rpc-client";
+import { createApi, fetchBaseQuery } from "@reduxjs/toolkit/query/react";
 import { canvasDetailsAPI } from "./canvas.js";
 
 // Define a service using a base URL and expected endpoints
@@ -22,7 +19,7 @@ export const assetsAPI = createApi({
 	endpoints: (build) => ({
 		getUserAssets: build.query<UserAssetsListRPC, UserAssetsListRPCParams>({
 			queryFn: async ({ query }) => {
-				const response = await rpcClient.api.v1.assets.$get({
+				const response = await appRPCClient.api.v1.assets.$get({
 					query,
 				});
 				const data = await response.json();
@@ -33,7 +30,7 @@ export const assetsAPI = createApi({
 		uploadAsset: build.mutation<UserAssetsUploadRPC, File>({
 			queryFn: async (file) => {
 				const form = { file };
-				const response = await rpcClient.api.v1.assets.$post({
+				const response = await appRPCClient.api.v1.assets.$post({
 					form,
 				});
 				const data = await response.json();
@@ -47,7 +44,7 @@ export const assetsAPI = createApi({
 		>({
 			queryFn: async (payload) => {
 				const response =
-					await rpcClient.api.v1.assets.node[":nodeId"].$post(payload);
+					await appRPCClient.api.v1.assets.node[":nodeId"].$post(payload);
 				const data = await response.json();
 				return { data };
 			},
@@ -55,7 +52,7 @@ export const assetsAPI = createApi({
 		}),
 		deleteAsset: build.mutation<void, string>({
 			queryFn: async (id) => {
-				const response = await rpcClient.api.v1.assets[":id"].$delete({
+				const response = await appRPCClient.api.v1.assets[":id"].$delete({
 					param: { id },
 				});
 				if (!response.ok) {

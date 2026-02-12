@@ -1,4 +1,4 @@
-import type { ModulateNodeConfig, PaintNodeConfig } from "@gatewai/core/types";
+import type {} from "@gatewai/core/types";
 import type { PixiProcessor } from "./types";
 
 export interface IPixiProcessor {
@@ -34,7 +34,12 @@ export interface IPixiProcessor {
 
 	processModulate(
 		imageUrl: string,
-		config: ModulateNodeConfig,
+		config: {
+			hue: number;
+			saturation: number;
+			lightness: number;
+			brightness: number;
+		},
 		signal?: AbortSignal,
 		apiKey?: string,
 	): Promise<{ dataUrl: Blob; width: number; height: number }>;
@@ -66,7 +71,14 @@ export interface IPixiProcessor {
 	): Promise<{ dataUrl: Blob; width: number; height: number }>;
 
 	processMask(
-		config: PaintNodeConfig,
+		config: {
+			width: number;
+			height: number;
+			maintainAspect: boolean;
+			aspectRatio?: number | undefined;
+			backgroundColor?: string | undefined;
+			paintData?: string | undefined;
+		},
 		imageUrl: string | undefined,
 		maskUrl?: string,
 		signal?: AbortSignal,
