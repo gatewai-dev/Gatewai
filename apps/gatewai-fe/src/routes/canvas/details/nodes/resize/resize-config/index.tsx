@@ -49,7 +49,7 @@ import {
 	TooltipTrigger,
 } from "@gatewai/ui-kit";
 import { Maximize2 } from "lucide-react";
-import { useCanvasCtx } from "../../../ctx/canvas-ctx";
+import { useCanvasCtx } from "../../../../../../../../../packages/react-canvas/src/canvas-ctx";
 
 function ResetButton({
 	node,

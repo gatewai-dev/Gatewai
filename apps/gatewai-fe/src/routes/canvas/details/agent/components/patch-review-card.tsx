@@ -2,7 +2,7 @@ import { Button } from "@gatewai/ui-kit";
 import { AnimatePresence, motion } from "framer-motion";
 import { ArrowRight, Check, GitPullRequest, X } from "lucide-react";
 import { useState } from "react";
-import { useCanvasCtx } from "../../ctx/canvas-ctx";
+import { useCanvasCtx } from "../../../../../../../../packages/react-canvas/src/canvas-ctx";
 
 interface PatchReviewCardProps {
 	patchId: string;

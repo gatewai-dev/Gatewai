@@ -1,13 +1,17 @@
-import { useCallback, useEffect, useRef } from "react";
+import { useCallback, useEffect, useRef, useState } from "react";
 
 /**
  * Hook to animate the favicon when tasks are running.
  * Creates a wave animation effect through the 6 dots of the Gatewai logo.
+ * Animation only runs when the user is NOT viewing the tab.
  */
 export function useAnimatedFavicon(isAnimating: boolean) {
 	const animationRef = useRef<number | null>(null);
 	const originalFaviconRef = useRef<string | null>(null);
 	const linkElementRef = useRef<HTMLLinkElement | null>(null);
+	const [isVisible, setIsVisible] = useState(
+		() => document.visibilityState === "visible",
+	);
 
 	// Store dot positions from the original SVG (normalized 0-1)
 	const dots = [
@@ -91,6 +95,17 @@ export function useAnimatedFavicon(isAnimating: boolean) {
 	}, []);
 
 	useEffect(() => {
+		const handleVisibilityChange = () => {
+			setIsVisible(document.visibilityState === "visible");
+		};
+
+		document.addEventListener("visibilitychange", handleVisibilityChange);
+		return () => {
+			document.removeEventListener("visibilitychange", handleVisibilityChange);
+		};
+	}, []);
+
+	useEffect(() => {
 		// Find the favicon link element
 		const linkElement =
 			document.querySelector<HTMLLinkElement>('link[rel="icon"]');
@@ -103,7 +118,9 @@ export function useAnimatedFavicon(isAnimating: boolean) {
 			originalFaviconRef.current = linkElement.href;
 		}
 
-		if (isAnimating) {
+		const shouldAnimate = isAnimating && !isVisible;
+
+		if (shouldAnimate) {
 			startAnimation();
 		} else {
 			stopAnimation();
@@ -112,5 +129,5 @@ export function useAnimatedFavicon(isAnimating: boolean) {
 		return () => {
 			stopAnimation();
 		};
-	}, [isAnimating, startAnimation, stopAnimation]);
+	}, [isAnimating, isVisible, startAnimation, stopAnimation]);
 }

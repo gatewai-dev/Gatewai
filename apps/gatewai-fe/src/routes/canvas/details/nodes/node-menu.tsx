@@ -33,7 +33,7 @@ import { memo, useState } from "react";
 import { useForm } from "react-hook-form";
 import { z } from "zod";
 import { copyTextToClipboard } from "@/lib/clipboard";
-import { useCanvasCtx } from "../ctx/canvas-ctx";
+import { useCanvasCtx } from "../../../../../../../packages/react-canvas/src/canvas-ctx";
 
 type RenameNodeDialogProps = {
 	nodeId: string;

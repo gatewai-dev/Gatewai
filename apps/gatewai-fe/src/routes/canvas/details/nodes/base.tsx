@@ -26,7 +26,7 @@ import {
 import { TrashIcon } from "lucide-react";
 import { type JSX, memo, type ReactNode, useMemo } from "react";
 import { cn } from "@/lib/utils";
-import { useCanvasCtx } from "../ctx/canvas-ctx";
+import { useCanvasCtx } from "../../../../../../../packages/react-canvas/src/canvas-ctx";
 import type { HandleState } from "../graph-engine/node-graph-processor";
 import {
 	useEdgeColor,

@@ -1,3 +1,1 @@
-export const Canvas = () => {
-    return null;
-};
+export * from "./canvas-ctx";

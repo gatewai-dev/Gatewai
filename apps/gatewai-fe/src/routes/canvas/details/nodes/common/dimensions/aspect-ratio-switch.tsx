@@ -8,7 +8,7 @@ import {
 } from "@gatewai/ui-kit";
 import { Lock, Unlock } from "lucide-react";
 import { memo, useCallback } from "react";
-import { useCanvasCtx } from "../../../ctx/canvas-ctx";
+import { useCanvasCtx } from "../../../../../../../../../packages/react-canvas/src/canvas-ctx";
 
 const AspectRatioSwitch = memo(
 	({

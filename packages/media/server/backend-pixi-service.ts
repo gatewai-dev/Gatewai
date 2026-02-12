@@ -18,7 +18,7 @@ import {
 } from "@pixi/node";
 import { createCanvas, ImageData } from "canvas";
 import sharp from "sharp";
-import { BasePixiService } from "./pixi/base-pixi-service.js";
+import { BasePixiService } from "../common/pixi/base-pixi-service.js";
 
 // 1. Polyfill ImageData
 if (typeof global.ImageData === "undefined") {

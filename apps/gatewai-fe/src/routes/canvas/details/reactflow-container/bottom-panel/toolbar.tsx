@@ -10,7 +10,7 @@ import {
 import { useReactFlow, useViewport } from "@xyflow/react";
 import { ChevronDown, Hand, MousePointer } from "lucide-react";
 import { memo } from "react";
-import { useCanvasMode } from "../../ctx/canvas-mode-ctx";
+import { useCanvasMode } from "../../../../../../../../packages/react-canvas/src/canvas-mode-ctx";
 import { CanvasTasksPanel } from "../tasks";
 import { RunWorkflowButton } from "./run-workflow-button";
 

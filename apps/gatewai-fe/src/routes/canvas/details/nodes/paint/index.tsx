@@ -12,7 +12,7 @@ import { memo, useCallback, useEffect, useMemo, useRef, useState } from "react";
 import { ColorPicker } from "@/components/util/color-input";
 import { ResolveFileDataUrl } from "@/lib/file";
 import { cn } from "@/lib/utils";
-import { useCanvasCtx } from "../../ctx/canvas-ctx";
+import { useCanvasCtx } from "../../../../../../../../packages/react-canvas/src/canvas-ctx";
 import { useNodeResult } from "../../graph-engine/processor-ctx";
 import { BaseNode } from "../base";
 import type { PaintNode } from "../node-props";

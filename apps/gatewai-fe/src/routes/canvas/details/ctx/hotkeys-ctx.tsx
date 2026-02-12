@@ -5,7 +5,7 @@ import {
 } from "@gatewai/react-store";
 import { createContext, type PropsWithChildren } from "react";
 import { useHotkeys } from "react-hotkeys-hook";
-import { useCanvasCtx } from "./canvas-ctx";
+import { useCanvasCtx } from "../../../../../../../packages/react-canvas/src/canvas-ctx";
 
 type ShortcutsContextType = null;
 

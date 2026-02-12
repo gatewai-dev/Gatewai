@@ -20,8 +20,8 @@ import {
 import type { DragEventHandler, MouseEventHandler } from "react";
 import { useEffect } from "react";
 import { Helmet } from "react-helmet-async";
-import { useCanvasCtx } from "../ctx/canvas-ctx";
-import { useCanvasMode } from "../ctx/canvas-mode-ctx";
+import { useCanvasCtx } from "../../../../../../../packages/react-canvas/src/canvas-ctx";
+import { useCanvasMode } from "../../../../../../../packages/react-canvas/src/canvas-mode-ctx";
 import { nodeTypes } from "../nodes";
 import { CustomConnectionLine, CustomEdge } from "../nodes/base";
 import { ReactFlowPanels } from "./panels";

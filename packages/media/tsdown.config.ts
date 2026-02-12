@@ -2,8 +2,8 @@ import { defineConfig } from "tsdown";
 
 export default defineConfig({
 	entry: {
-		index: "src/index.ts",
-		pixi: "src/pixi/index.ts",
+		index: "common/index.ts",
+		server: "server/index.ts",
 	},
 	format: ["esm"],
 	dts: true,

@@ -4,7 +4,7 @@ import { Textarea } from "@gatewai/ui-kit";
 import type { NodeProps } from "@xyflow/react";
 import { NodeResizer } from "@xyflow/react";
 import { memo, useCallback } from "react";
-import { useCanvasCtx } from "../../ctx/canvas-ctx";
+import { useCanvasCtx } from "../../../../../../../../packages/react-canvas/src/canvas-ctx";
 import type { NoteNode } from "../node-props";
 
 const NoteNodeComponent = memo((props: NodeProps<NoteNode>) => {

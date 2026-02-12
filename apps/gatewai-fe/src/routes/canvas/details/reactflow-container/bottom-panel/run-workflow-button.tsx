@@ -6,7 +6,7 @@ import {
 import { Button } from "@gatewai/ui-kit";
 import { ForwardIcon, Loader2 } from "lucide-react"; // Added Loader2
 import { memo, useMemo } from "react";
-import { useCanvasCtx } from "../../ctx/canvas-ctx";
+import { useCanvasCtx } from "../../../../../../../../packages/react-canvas/src/canvas-ctx";
 import { useTaskManagerCtx } from "../../ctx/task-manager-ctx"; // Import your context hook
 
 const RunWorkflowButton = memo(() => {

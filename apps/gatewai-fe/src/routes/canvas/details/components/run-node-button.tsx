@@ -3,7 +3,7 @@ import { Button, type ButtonProps, Spinner } from "@gatewai/ui-kit";
 import { ForwardIcon } from "lucide-react";
 import { memo } from "react";
 import { AiOutlineStop } from "react-icons/ai";
-import { useCanvasCtx } from "../ctx/canvas-ctx";
+import { useCanvasCtx } from "../../../../../../../packages/react-canvas/src/canvas-ctx";
 import { useNodeTaskRunning } from "../ctx/task-manager-ctx";
 import { useNodeValidation } from "../graph-engine/processor-ctx";
 

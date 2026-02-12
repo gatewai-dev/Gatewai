@@ -70,8 +70,8 @@ import {
 } from "react";
 import { useStore } from "react-redux";
 import { toast } from "sonner";
-import { useNodeTemplates } from "../node-templates/node-templates.ctx";
-import { useTaskManagerCtx } from "./task-manager-ctx";
+import { useNodeTemplates } from "../../../apps/gatewai-fe/src/routes/canvas/details/node-templates/node-templates.ctx";
+import { useTaskManagerCtx } from "../../../apps/gatewai-fe/src/routes/canvas/details/ctx/task-manager-ctx";
 
 interface CanvasContextType {
 	canvas: CanvasDetailsRPC["canvas"] | undefined;

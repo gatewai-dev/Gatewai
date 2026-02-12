@@ -2,7 +2,9 @@
 	"compilerOptions": {
 		"composite": true,
 		"target": "ES2023",
-		"lib": ["ES2023"],
+		"lib": [
+			"ES2023"
+		],
 		"experimentalDecorators": true,
 		"emitDecoratorMetadata": true,
 		"module": "ESNext",
@@ -17,5 +19,13 @@
 		"noUnusedParameters": true,
 		"noFallthroughCasesInSwitch": true
 	},
-	"include": ["vite.config.ts", "backend/src", "../../packages/*/src"]
+	"include": [
+		"vite.config.ts",
+		"backend/src",
+		"../../packages/*/src",
+		"../../packages/media/browser/draw-image-canvas",
+		"../../packages/media/browser/worker-pixi-service.ts",
+		"../../packages/media/server/utils",
+		"../../packages/media/server/backend-pixi-service.ts"
+	]
 }

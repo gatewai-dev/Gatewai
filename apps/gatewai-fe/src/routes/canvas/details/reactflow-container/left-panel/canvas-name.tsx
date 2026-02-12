@@ -1,7 +1,7 @@
 import { useUpdateNameMutation } from "@gatewai/react-store";
 import { Input } from "@gatewai/ui-kit";
 import { memo, useEffect, useRef, useState } from "react";
-import { useCanvasCtx } from "../../ctx/canvas-ctx";
+import { useCanvasCtx } from "../../../../../../../../packages/react-canvas/src/canvas-ctx";
 
 const CanvasName = memo(() => {
 	const inputRef = useRef<HTMLInputElement>(null);

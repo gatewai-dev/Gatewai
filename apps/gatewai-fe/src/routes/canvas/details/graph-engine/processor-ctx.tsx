@@ -18,7 +18,7 @@ import {
 	useSyncExternalStore,
 } from "react";
 import { NodeUIContext } from "../../../../../../../packages/node-sdk/client/ui";
-import { useCanvasCtx } from "../ctx/canvas-ctx";
+import { useCanvasCtx } from "../../../../../../../packages/react-canvas/src/canvas-ctx";
 import { useNodePreview } from "../hooks/node-preview";
 import { BaseNode } from "../nodes/base";
 import { CanvasRenderer } from "../nodes/common/canvas-renderer";

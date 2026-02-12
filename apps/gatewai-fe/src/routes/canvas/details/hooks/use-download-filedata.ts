@@ -1,7 +1,6 @@
-import type { FileData } from "@gatewai/core/types";
+import { DATA_TYPE_EXTENSIONS, type FileData } from "@gatewai/core/types";
 import type { DataType } from "@gatewai/db";
 import {
-	DATA_TYPE_EXTENSIONS,
 	extractExtension,
 	GetAssetEndpoint,
 } from "@/lib/file";

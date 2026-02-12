@@ -32,7 +32,7 @@ import { useMemo, useState } from "react";
 import { useForm } from "react-hook-form";
 import { z } from "zod";
 import { generateId } from "@/lib/idgen";
-import { useCanvasCtx } from "../ctx/canvas-ctx";
+import { useCanvasCtx } from "../../../../../../../packages/react-canvas/src/canvas-ctx";
 
 const InputTypes = ["Image", "Text", "Audio", "Video"] as const;
 const OutputTypes = ["Image", "Text", "Audio", "Video"] as const;

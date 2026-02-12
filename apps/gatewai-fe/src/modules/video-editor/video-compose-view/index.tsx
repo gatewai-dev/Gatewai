@@ -7,7 +7,7 @@ import { makeSelectNodeById, useAppSelector } from "@gatewai/react-store";
 import { memo, useMemo } from "react";
 import { Helmet } from "react-helmet-async";
 import { useNavigate, useParams } from "react-router";
-import { useCanvasCtx } from "../../../routes/canvas/details/ctx/canvas-ctx";
+import { useCanvasCtx } from "../../../../../../packages/react-canvas/src/canvas-ctx";
 import { useNodeResult } from "../../../routes/canvas/details/graph-engine/processor-ctx";
 import { VideoDesignerEditor } from "../video-editor";
 

@@ -5,7 +5,7 @@ import {
 import type { NodeEntityType } from "@gatewai/react-store";
 import { Label, Slider } from "@gatewai/ui-kit";
 import { memo, useCallback, useEffect, useState } from "react";
-import { useCanvasCtx } from "../../ctx/canvas-ctx";
+import { useCanvasCtx } from "../../../../../../../../packages/react-canvas/src/canvas-ctx";
 
 const BlurValueSlider = memo(({ node }: { node: NodeEntityType }) => {
 	const config: BlurNodeConfig = node.config as BlurNodeConfig;
