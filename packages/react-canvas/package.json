@@ -1,13 +1,46 @@
 {
-	"name": "react-canvas",
-	"version": "1.0.0",
-	"description": "",
-	"main": "index.js",
-	"scripts": {
-		"test": "echo \"Error: no test specified\" && exit 1"
+	"name": "@gatewai/react-canvas",
+	"version": "0.0.1",
+	"private": true,
+	"type": "module",
+	"sideEffects": false,
+	"license": "MIT",
+	"description": "Canvas implementation for Gatewai",
+	"module": "./dist/index.mjs",
+	"types": "./dist/index.d.mts",
+	"exports": {
+		".": {
+			"types": "./dist/index.d.mts",
+			"development": "./src/index.ts",
+			"import": "./dist/index.mjs",
+			"default": "./dist/index.mjs"
+		}
 	},
-	"keywords": [],
-	"author": "",
-	"license": "ISC",
-	"packageManager": "pnpm@10.13.1"
+	"files": [
+		"dist/**"
+	],
+	"scripts": {
+		"build": "tsdown",
+		"dev": "tsdown --watch",
+		"clean": "rm -rf .turbo && rm -rf node_modules && rm -rf dist"
+	},
+	"dependencies": {
+		"@gatewai/core": "workspace:*",
+		"@gatewai/react-store": "workspace:*",
+		"@gatewai/ui-kit": "workspace:*",
+		"react": "^18.0.0 || ^19.0.0",
+		"react-dom": "^18.0.0 || ^19.0.0"
+	},
+	"devDependencies": {
+		"@gatewai/tsconfig": "workspace:*",
+		"@types/node": "^24.0.4",
+		"@types/react": "^18.0.0 || ^19.0.0",
+		"@types/react-dom": "^18.0.0 || ^19.0.0",
+		"tsdown": "^0.19.0",
+		"typescript": "5.5.4"
+	},
+	"peerDependencies": {
+		"react": "^18.0.0 || ^19.0.0",
+		"react-dom": "^18.0.0 || ^19.0.0"
+	}
 }

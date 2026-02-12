@@ -8,7 +8,7 @@ import {
 	Tooltip,
 	TooltipContent,
 	TooltipTrigger,
-} from "@gatewai/ui-kit";
+} from "../../ui";
 import { Info } from "lucide-react";
 import { memo, type ReactNode } from "react";
 import type {

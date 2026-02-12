@@ -1,33 +1,5 @@
-import type { FileData } from "@gatewai/core/types";
-import type { DataType, FileAsset } from "@gatewai/db";
-
-export const DATA_TYPE_EXTENSIONS: Record<DataType, string> = {
-	Image: "png",
-	Video: "mp4",
-	Audio: "mp3",
-	Text: "txt",
-	Number: "txt",
-	Boolean: "txt",
-};
-
-// MIME type mapping
-export const MIME_TYPES: Record<string, string> = {
-	png: "image/png",
-	jpg: "image/jpeg",
-	jpeg: "image/jpeg",
-	gif: "image/gif",
-	webp: "image/webp",
-	svg: "image/svg+xml",
-	mp4: "video/mp4",
-	webm: "video/webm",
-	mov: "video/quicktime",
-	mp3: "audio/mpeg",
-	wav: "audio/wav",
-	ogg: "audio/ogg",
-	pdf: "application/pdf",
-	json: "application/json",
-	txt: "text/plain",
-};
+import { MIME_TYPES, type FileData } from "@gatewai/core/types";
+import type { FileAsset } from "@gatewai/db";
 
 import { getEnv } from "./env";
 

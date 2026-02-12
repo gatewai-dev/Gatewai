@@ -12,7 +12,7 @@ import {
 	Tooltip,
 	TooltipContent,
 	TooltipTrigger,
-} from "@gatewai/ui-kit";
+} from "../../ui";
 import { Info } from "lucide-react";
 import { type JSX, memo, type ReactNode } from "react";
 import type {

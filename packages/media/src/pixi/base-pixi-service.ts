@@ -1,4 +1,4 @@
-import type { ModulateNodeConfig, PaintNodeConfig } from "@gatewai/core/types";
+
 import { createPool, type Pool } from "generic-pool";
 import pLimit from "p-limit";
 import type {
@@ -12,34 +12,33 @@ import type {
 	Sprite,
 	Texture,
 } from "pixi.js";
-import type { IPixiProcessor } from "./interface";
+import type { IPixiProcessor } from "./interface.js";
 import {
 	type BlurInput,
 	type BlurOutput,
 	BlurProcessor,
-} from "./processors/blur";
+} from "./processors/blur.js";
 import {
 	type CropInput,
 	type CropOutput,
 	CropProcessor,
-} from "./processors/crop";
+} from "./processors/crop.js";
 import {
 	type MaskInput,
 	type MaskOutput,
 	MaskProcessor,
-} from "./processors/mask";
+} from "./processors/mask.js";
 import {
 	type ModulateInput,
 	type ModulateOutput,
 	ModulateProcessor,
-} from "./processors/modulate";
+} from "./processors/modulate.js";
 import {
 	type ResizeInput,
 	type ResizeOutput,
 	ResizeProcessor,
-} from "./processors/resize";
-import type { PixiProcessor, PixiProcessorContext } from "./types";
-
+} from "./processors/resize.js";
+import type { PixiProcessor, PixiProcessorContext } from "./types.js";
 export class ServiceAbortError extends Error {
 	constructor(message = "Operation cancelled") {
 		super(message);
@@ -247,7 +246,12 @@ export abstract class BasePixiService implements IPixiProcessor {
 
 	public async processModulate(
 		imageUrl: string,
-		config: ModulateNodeConfig,
+		config: {
+			hue: number;
+			saturation: number;
+			lightness: number;
+			brightness: number;
+		},
 		signal?: AbortSignal,
 		apiKey?: string,
 	): Promise<ModulateOutput> {
@@ -303,7 +307,14 @@ export abstract class BasePixiService implements IPixiProcessor {
 	}
 
 	public async processMask(
-		config: PaintNodeConfig,
+		config: {
+			width: number;
+			height: number;
+			maintainAspect: boolean;
+			aspectRatio?: number | undefined;
+			backgroundColor?: string | undefined;
+			paintData?: string | undefined;
+		},
 		imageUrl: string | undefined,
 		maskUrl?: string,
 		signal?: AbortSignal,

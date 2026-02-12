@@ -1,4 +1,33 @@
+import type { DataType } from "@gatewai/db";
 import { z } from "zod";
+
+export const DATA_TYPE_EXTENSIONS: Record<DataType, string> = {
+	Image: "png",
+	Video: "mp4",
+	Audio: "mp3",
+	Text: "txt",
+	Number: "txt",
+	Boolean: "txt",
+};
+
+// MIME type mapping
+export const MIME_TYPES: Record<string, string> = {
+	png: "image/png",
+	jpg: "image/jpeg",
+	jpeg: "image/jpeg",
+	gif: "image/gif",
+	webp: "image/webp",
+	svg: "image/svg+xml",
+	mp4: "video/mp4",
+	webm: "video/webm",
+	mov: "video/quicktime",
+	mp3: "audio/mpeg",
+	wav: "audio/wav",
+	ogg: "audio/ogg",
+	pdf: "application/pdf",
+	json: "application/json",
+	txt: "text/plain",
+};
 
 // Shared Enums and Constants
 export const COMPOSITE_OPERATIONS = [
@@ -35,9 +64,4 @@ export const COMPOSITE_OPERATIONS = [
 
 export const GlobalCompositeOperation = z.enum(COMPOSITE_OPERATIONS);
 
-// Re-export from nodes if possible, or keep as base
-// Since @gatewai/types is a low-level package, it shouldn't import from @gatewai/nodes.
-// But node-specific layouts/types can live in nodes.
 export const NodeConfigSchema = z.any();
-
-// Keeping only shared primitives if needed, but for now I'll just keep what's left.

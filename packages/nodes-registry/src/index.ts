@@ -2,7 +2,7 @@ import type {
 	BackendNodePlugin,
 	FrontendNodePlugin,
 	NodeMetadata,
-} from "../../node-sdk/client/ui";
+} from "@gatewai/node-sdk/";
 
 export interface NodePackage {
 	metadata: NodeMetadata;

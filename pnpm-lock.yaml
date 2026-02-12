@@ -874,7 +874,42 @@ importers:
         specifier: ^0.19.0
         version: 0.19.0(publint@0.3.17)(synckit@0.11.11)(typescript@5.8.3)
 
-  packages/react-canvas: {}
+  packages/react-canvas:
+    dependencies:
+      '@gatewai/core':
+        specifier: workspace:*
+        version: link:../core
+      '@gatewai/react-store':
+        specifier: workspace:*
+        version: link:../react-store
+      '@gatewai/ui-kit':
+        specifier: workspace:*
+        version: link:../ui-kit
+      react:
+        specifier: ^19.2.0
+        version: 19.2.3
+      react-dom:
+        specifier: ^19.2.0
+        version: 19.2.3(react@19.2.3)
+    devDependencies:
+      '@gatewai/tsconfig':
+        specifier: workspace:*
+        version: link:../tsconfig
+      '@types/node':
+        specifier: ^24.0.4
+        version: 24.10.4
+      '@types/react':
+        specifier: ^19.1.11
+        version: 19.1.11
+      '@types/react-dom':
+        specifier: ^19.1.11
+        version: 19.2.3(@types/react@19.1.11)
+      tsdown:
+        specifier: ^0.19.0
+        version: 0.19.0(publint@0.3.17)(synckit@0.11.11)(typescript@5.5.4)
+      typescript:
+        specifier: 5.5.4
+        version: 5.5.4
 
   packages/react-store:
     dependencies:

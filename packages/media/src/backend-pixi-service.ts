@@ -1,8 +1,9 @@
 import type { Readable } from "node:stream";
-import type {
-	FileData,
-	IPixiProcessor,
-	MediaService,
+import {
+	MIME_TYPES,
+	type FileData,
+	type IPixiProcessor,
+	type MediaService,
 } from "@gatewai/core/types";
 import {
 	Application,
@@ -17,7 +18,7 @@ import {
 } from "@pixi/node";
 import { createCanvas, ImageData } from "canvas";
 import sharp from "sharp";
-import { BasePixiService } from "./pixi/index.js";
+import { BasePixiService } from "./pixi/base-pixi-service.js";
 
 // 1. Polyfill ImageData
 if (typeof global.ImageData === "undefined") {
@@ -176,23 +177,7 @@ export class ServerMediaService implements MediaService {
 		if (data.entity?.signedUrl) {
 			// Logic ported from backend/src/utils/misc.ts GetAssetEndpoint
 			const fileAsset = data.entity;
-			const MIME_TYPES: Record<string, string> = {
-				png: "image/png",
-				jpg: "image/jpeg",
-				jpeg: "image/jpeg",
-				gif: "image/gif",
-				webp: "image/webp",
-				svg: "image/svg+xml",
-				mp4: "video/mp4",
-				webm: "video/webm",
-				mov: "video/quicktime",
-				mp3: "audio/mpeg",
-				wav: "audio/wav",
-				ogg: "audio/ogg",
-				pdf: "application/pdf",
-				json: "application/json",
-				txt: "text/plain",
-			};
+
 
 			const cleanId = fileAsset.id.split(".")[0];
 			const baseUrl = `${this.baseUrl}/api/v1/assets/${cleanId}`;
