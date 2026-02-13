@@ -5,7 +5,6 @@ import {
 	AspectLockSchema,
 	AudioOptionsSchema,
 	BaseLayerSchema,
-	ColorSchema,
 	DimensionSchema,
 	FontOptionsSchema,
 	OpacitySchema,
@@ -36,7 +35,6 @@ export const VideoCompositorLayerSchema = BaseLayerSchema.merge(PositionSchema)
 	.merge(PaddingSchema)
 	.extend({
 		type: z.enum(["Text", "Image", "Video", "Audio"]),
-		// New Remotion Web Renderer compatible properties
 		backgroundColor: z.string().optional(),
 		borderColor: z.string().optional(),
 		borderWidth: z.number().min(0).optional(),
