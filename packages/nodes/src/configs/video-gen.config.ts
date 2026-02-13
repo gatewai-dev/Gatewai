@@ -1,5 +1,4 @@
 import { z } from "zod";
-import { DimensionSchema } from "../common/schemas.js";
 
 export const VIDEOGEN_NODE_MODELS = [
 	"veo-3.1-generate-preview",
@@ -28,21 +27,16 @@ const VideoGenBaseSchema = z.object({
 		.default("allow_adult"),
 });
 
-export const VideoGenNodeConfigSchema = z
-	.object({
-		prompt: z.string().optional(),
-		negativePrompt: z.string().optional(),
-		width: DimensionSchema,
-		height: DimensionSchema,
-		aspectRatio: z.enum(VIDEOGEN_ASPECT_RATIOS).default("16:9"),
-		resolution: z.enum(VIDEOGEN_RESOLUTIONS).default("720p"),
-		durationSeconds: z.enum(VIDEOGEN_DURATIONS).default("6"),
-		personGeneration: z
-			.enum(VIDEOGEN_PERSON_GENERATION_OPTIONS)
-			.default("allow_adult"),
-		model: z.enum(VIDEOGEN_NODE_MODELS).default("veo-3.1-generate-preview"),
-		fps: z.number().int().min(1).max(60).optional(),
-	})
-	.strict();
+export const VideoGenNodeConfigSchema = VideoGenBaseSchema.extend({
+	durationSeconds: z.enum(VIDEOGEN_DURATIONS).default("8"),
+})
+	.strict()
+	.refine(
+		(data) => !(data.resolution === "1080p" && data.durationSeconds !== "8"),
+		{
+			message: "1080p resolution only supports 8s duration",
+			path: ["resolution"],
+		},
+	);
 
 export type VideoGenNodeConfig = z.infer<typeof VideoGenNodeConfigSchema>;
