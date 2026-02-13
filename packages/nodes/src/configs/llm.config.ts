@@ -7,13 +7,8 @@ export const LLM_NODE_MODELS = [
 
 export const LLMNodeConfigSchema = z
 	.object({
-		model: z.string().optional(),
-		systemPrompt: z.string().optional(),
-		prompt: z.string().optional(),
-		temperature: z.number().min(0).max(2).optional(),
-		maxTokens: z.number().int().positive().optional(),
-		jsonMode: z.boolean().optional(),
-		outputSchema: z.string().optional(),
+		model: z.enum(LLM_NODE_MODELS),
+		temperature: z.number().min(0).max(2).optional().default(0),
 	})
 	.strict();
 
