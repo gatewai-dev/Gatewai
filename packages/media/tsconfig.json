@@ -1,20 +1,8 @@
 {
-    "extends": "@gatewai/tsconfig/base.json",
-    "compilerOptions": {
-        "lib": [
-            "ES2022",
-            "DOM",
-            "WebWorker"
-        ]
-    },
-    "include": [
-        "common",
-        "browser",
-        "server"
-    ],
-    "exclude": [
-        "dist",
-        "build",
-        "node_modules"
-    ]
+	"extends": "@gatewai/tsconfig/base.json",
+	"compilerOptions": {
+		"lib": ["ES2022", "DOM", "WebWorker"]
+	},
+	"include": ["common", "browser", "server"],
+	"exclude": ["dist", "build", "node_modules"]
 }

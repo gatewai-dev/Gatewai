@@ -1,3 +1,6 @@
+import { Info } from "lucide-react";
+import { type JSX, memo } from "react";
+import type { Control, FieldPath, FieldValues } from "react-hook-form";
 import {
 	FormControl,
 	FormField,
@@ -9,9 +12,6 @@ import {
 	TooltipContent,
 	TooltipTrigger,
 } from "../../ui";
-import { Info } from "lucide-react";
-import { type JSX, memo } from "react";
-import type { Control, FieldPath, FieldValues } from "react-hook-form";
 
 type SliderFieldProps<T extends FieldValues> = {
 	control: Control<T>;

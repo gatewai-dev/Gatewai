@@ -1,3 +1,4 @@
+import { fontManager, GetFontAssetUrl } from "@gatewai/core/browser";
 import {
 	COMPOSITOR_DEFAULTS,
 	type CompositorLayer,
@@ -5,8 +6,6 @@ import {
 	type GlobalCompositeOperationType,
 } from "@gatewai/core/types";
 import Konva from "konva";
-import { GetFontAssetUrl } from "@gatewai/core/browser";
-import { fontManager } from "@gatewai/core/browser";
 
 const processCompositor = async (
 	config: CompositorNodeConfig,

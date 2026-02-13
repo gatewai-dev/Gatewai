@@ -1,3 +1,4 @@
+import { ResolveFileDataUrl } from "@gatewai/core/browser";
 import type { FileData } from "@gatewai/core/types";
 import { AddCustomHandleButton } from "@gatewai/node-sdk/client";
 import { BaseNode, CanvasRenderer, useNodeResult } from "@gatewai/react-canvas";
@@ -7,7 +8,6 @@ import type { NodeProps } from "@xyflow/react";
 import { ImagesIcon } from "lucide-react";
 import { memo } from "react";
 import { useNavigate } from "react-router";
-import { ResolveFileDataUrl } from "@gatewai/core/browser";
 import { cn } from "@/lib/utils";
 import type { CompositorNode } from "../node-props";
 

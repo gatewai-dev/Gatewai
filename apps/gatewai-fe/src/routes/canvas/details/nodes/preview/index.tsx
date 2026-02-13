@@ -1,3 +1,4 @@
+import { GetAssetEndpoint } from "@gatewai/core/browser";
 import type { FileData } from "@gatewai/core/types";
 import { MediaDimensions } from "@gatewai/node-sdk/client";
 import { BaseNode, CanvasRenderer, useNodeResult } from "@gatewai/react-canvas";
@@ -6,7 +7,6 @@ import { MarkdownRenderer, ScrollArea, Switch } from "@gatewai/ui-kit";
 import type { NodeProps } from "@xyflow/react";
 import { FileIcon } from "lucide-react";
 import { memo, useMemo, useState } from "react";
-import { GetAssetEndpoint } from "@gatewai/core/browser";
 import { cn } from "@/lib/utils";
 import { AudioRenderer } from "../common/audio-renderer";
 import { VideoRenderer } from "../common/video-renderer";

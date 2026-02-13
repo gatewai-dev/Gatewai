@@ -15,6 +15,11 @@ import {
 	verticalListSortingStrategy,
 } from "@dnd-kit/sortable";
 import { CSS } from "@dnd-kit/utilities";
+import {
+	fontManager,
+	GetAssetEndpoint,
+	GetFontAssetUrl,
+} from "@gatewai/core/browser";
 import type {
 	CompositorLayer,
 	CompositorNodeConfig,
@@ -23,7 +28,11 @@ import type {
 } from "@gatewai/core/types";
 import { COMPOSITOR_DEFAULTS, dataTypeColors } from "@gatewai/core/types";
 import type { HandleEntityType, NodeEntityType } from "@gatewai/react-store";
-import { handleSelectors, useAppSelector, useGetFontListQuery } from "@gatewai/react-store";
+import {
+	handleSelectors,
+	useAppSelector,
+	useGetFontListQuery,
+} from "@gatewai/react-store";
 // Internal Component Imports
 import {
 	AlertDialog,
@@ -35,6 +44,7 @@ import {
 	AlertDialogHeader,
 	AlertDialogTitle,
 	Button,
+	CollapsibleSection,
 	DraggableNumberInput,
 	Label,
 	Menubar,
@@ -49,12 +59,11 @@ import {
 	SelectTrigger,
 	SelectValue,
 	Separator,
+	StyleControls,
 	Tooltip,
 	TooltipContent,
 	TooltipProvider,
 	TooltipTrigger,
-	CollapsibleSection,
-	StyleControls,
 	TransformControls,
 	TypographyControls,
 } from "@gatewai/ui-kit";
@@ -101,8 +110,6 @@ import {
 	Transformer,
 } from "react-konva";
 import useImage from "use-image";
-import { fontManager } from "@gatewai/core/browser";
-import { GetAssetEndpoint, GetFontAssetUrl } from "@gatewai/core/browser";
 
 //#region CONSTANTS
 // Local defaults removed in favor of shared COMPOSITOR_DEFAULTS
@@ -429,10 +436,10 @@ const ImageLayer: React.FC<LayerProps> = ({
 					prev.map((l) =>
 						l.id === layer.id
 							? {
-								...l,
-								width: Math.round(image.width),
-								height: Math.round(image.height),
-							}
+									...l,
+									width: Math.round(image.width),
+									height: Math.round(image.height),
+								}
 							: l,
 					),
 				false,
@@ -539,10 +546,10 @@ const TextLayer: React.FC<LayerProps> = ({
 						prev.map((l) =>
 							l.id === layer.id
 								? {
-									...l,
-									computedWidth: calculatedWidth,
-									computedHeight: calculatedHeight,
-								}
+										...l,
+										computedWidth: calculatedWidth,
+										computedHeight: calculatedHeight,
+									}
 								: l,
 						),
 					false,
@@ -1684,12 +1691,7 @@ export const ImageDesignerEditor: React.FC<ImageDesignerEditorProps> = ({
 
 	// Initial centering
 	useEffect(() => {
-		if (
-			screenWidth > 100 &&
-			screenHeight > 100 &&
-			zoom === 1 &&
-			pan.x === 0
-		) {
+		if (screenWidth > 100 && screenHeight > 100 && zoom === 1 && pan.x === 0) {
 			fitView();
 		}
 	}, [screenWidth, screenHeight, fitView, zoom, pan.x]);

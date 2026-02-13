@@ -1,14 +1,4 @@
-import { Button } from "../../ui/button";
-import { DraggableNumberInput } from "../../ui/draggable-number-input";
-import { Label } from "../../ui/label";
-import {
-	Select,
-	SelectContent,
-	SelectItem,
-	SelectTrigger,
-	SelectValue,
-} from "../../ui/select";
-import { Separator } from "../../ui/separator";
+import { fontManager, GetFontAssetUrl } from "@gatewai/core/browser";
 import {
 	AlignCenter,
 	AlignLeft,
@@ -22,7 +12,17 @@ import {
 import type React from "react";
 import { useMemo } from "react";
 import { ColorPicker } from "../../components/util/color-input";
-import { GetFontAssetUrl, fontManager } from "@gatewai/core/browser";
+import { Button } from "../../ui/button";
+import { DraggableNumberInput } from "../../ui/draggable-number-input";
+import { Label } from "../../ui/label";
+import {
+	Select,
+	SelectContent,
+	SelectItem,
+	SelectTrigger,
+	SelectValue,
+} from "../../ui/select";
+import { Separator } from "../../ui/separator";
 import { CollapsibleSection } from "../CollapsibleSection";
 
 interface TypographyControlsProps {

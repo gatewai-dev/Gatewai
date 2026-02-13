@@ -1,9 +1,9 @@
 import type { Readable } from "node:stream";
 import {
-	MIME_TYPES,
 	type FileData,
 	type IPixiProcessor,
 	type MediaService,
+	MIME_TYPES,
 } from "@gatewai/core/types";
 import {
 	Application,
@@ -177,7 +177,6 @@ export class ServerMediaService implements MediaService {
 		if (data.entity?.signedUrl) {
 			// Logic ported from backend/src/utils/misc.ts GetAssetEndpoint
 			const fileAsset = data.entity;
-
 
 			const cleanId = fileAsset.id.split(".")[0];
 			const baseUrl = `${this.baseUrl}/api/v1/assets/${cleanId}`;

@@ -1,4 +1,5 @@
 import { EventEmitter } from "node:events";
+import { GetAssetEndpoint } from "@gatewai/core/browser";
 import {
 	dataTypeColors,
 	type FileData,
@@ -30,8 +31,6 @@ import type {
 	ProcessorConfig,
 } from "./types";
 import { TaskStatus } from "./types";
-import { GetAssetEndpoint } from "@gatewai/core/browser";
-
 
 export class NodeGraphProcessor extends EventEmitter {
 	private nodes = new Map<string, NodeEntityType>();

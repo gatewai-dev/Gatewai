@@ -4,8 +4,8 @@ import { manifest } from "../metadata.js";
 
 @injectable()
 export class VideoCompositorProcessor implements NodeProcessor {
-    async process() {
-        // Implementation placeholder
-        return {};
-    }
+	async process() {
+		// Implementation placeholder
+		return {};
+	}
 }

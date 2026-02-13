@@ -1,3 +1,4 @@
+import { ResolveFileDataUrl } from "@gatewai/core/browser";
 import type { FileData } from "@gatewai/core/types";
 import type { PaintNodeConfig } from "@gatewai/nodes/configs";
 import { BaseNode, useCanvasCtx, useNodeResult } from "@gatewai/react-canvas";
@@ -11,7 +12,6 @@ import type { NodeProps } from "@xyflow/react";
 import { Brush, Eraser, PaintBucket } from "lucide-react";
 import { memo, useCallback, useEffect, useMemo, useRef, useState } from "react";
 import { ColorPicker } from "@/components/util/color-input";
-import { ResolveFileDataUrl } from "@gatewai/core/browser";
 import { cn } from "@/lib/utils";
 import type { PaintNode } from "../node-props";
 import { PaintDimensionsConfig } from "./paint-config";

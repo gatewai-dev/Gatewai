@@ -1,7 +1,7 @@
+import { GetAssetEndpoint } from "@gatewai/core/browser";
 import type { FileData } from "@gatewai/core/types";
 import { makeSelectNodeById, useAppSelector } from "@gatewai/react-store";
 import { useMemo } from "react";
-import { GetAssetEndpoint } from "@gatewai/core/browser";
 import { useNodeResult, useNodeValidation } from "../processor-ctx";
 
 export function useNodePreview(nodeId: string) {

@@ -1,7 +1,3 @@
-import { Button } from "../../ui/button";
-import { DraggableNumberInput } from "../../ui/draggable-number-input";
-import { Label } from "../../ui/label";
-import { Switch } from "../../ui/switch";
 import {
 	AlignCenterHorizontal,
 	AlignCenterVertical,
@@ -11,6 +7,10 @@ import {
 	RotateCw,
 } from "lucide-react";
 import type React from "react";
+import { Button } from "../../ui/button";
+import { DraggableNumberInput } from "../../ui/draggable-number-input";
+import { Label } from "../../ui/label";
+import { Switch } from "../../ui/switch";
 import { CollapsibleSection } from "../CollapsibleSection";
 
 interface TransformControlsProps {

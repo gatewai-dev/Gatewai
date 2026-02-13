@@ -1,3 +1,11 @@
+import { Info } from "lucide-react";
+import { type JSX, memo, type ReactNode } from "react";
+import type {
+	Control,
+	FieldPath,
+	FieldValues,
+	UseControllerProps,
+} from "react-hook-form";
 import {
 	FormControl,
 	FormField,
@@ -13,14 +21,6 @@ import {
 	TooltipContent,
 	TooltipTrigger,
 } from "../../ui";
-import { Info } from "lucide-react";
-import { type JSX, memo, type ReactNode } from "react";
-import type {
-	Control,
-	FieldPath,
-	FieldValues,
-	UseControllerProps,
-} from "react-hook-form";
 
 type SelectFieldProps<T extends FieldValues> = {
 	control: Control<T>;

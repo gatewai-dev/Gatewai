@@ -1,2 +1,2 @@
-export * from './backend-pixi-service.js';
-export * from './utils'
+export * from "./backend-pixi-service.js";
+export * from "./utils";

@@ -1,4 +1,5 @@
 import { generateId } from "@gatewai/core";
+import { GetAssetEndpoint } from "@gatewai/core/browser";
 import type { FileData } from "@gatewai/core/types";
 import type {
 	VideoCompositorLayer,
@@ -17,7 +18,6 @@ import {
 	useCurrentFrame,
 	useVideoConfig,
 } from "remotion";
-import { GetAssetEndpoint } from "@gatewai/core/browser";
 import type { NodeProcessorParams } from "./types/index.js";
 
 const DynamicComposition: React.FC<{

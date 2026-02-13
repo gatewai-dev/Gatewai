@@ -1,8 +1,8 @@
+import { GetAssetEndpoint } from "@gatewai/core/browser";
 import type { VideoGenResult } from "@gatewai/core/types";
+import { useNodeResult } from "@gatewai/react-canvas";
 import type { NodeEntityType } from "@gatewai/react-store";
 import { useMemo } from "react";
-import { GetAssetEndpoint } from "@gatewai/core/browser";
-import { useNodeResult } from "@gatewai/react-canvas";
 
 type MediaTypes = "Image" | "Video" | "Audio";
 

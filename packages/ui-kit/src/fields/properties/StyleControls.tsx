@@ -1,8 +1,8 @@
-import { DraggableNumberInput } from "../../ui/draggable-number-input";
-import { Label } from "../../ui/label";
 import { ImageIcon, Move } from "lucide-react";
 import type React from "react";
 import { ColorPicker } from "../../components/util/color-input";
+import { DraggableNumberInput } from "../../ui/draggable-number-input";
+import { Label } from "../../ui/label";
 import { CollapsibleSection } from "../CollapsibleSection";
 
 // We need a fallback for constants if they are not passed

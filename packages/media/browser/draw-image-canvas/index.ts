@@ -1,2 +1,2 @@
-export * from './canvas.worker.js';
-export * from './use-draw-to-canvas.js';
+export * from "./canvas.worker.js";
+export * from "./use-draw-to-canvas.js";
