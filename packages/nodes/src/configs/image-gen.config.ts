@@ -1,5 +1,4 @@
 import { z } from "zod";
-import { DimensionSchema } from "../common/schemas.js";
 
 export const IMAGEGEN_ASPECT_RATIOS = [
 	"1:1",
@@ -23,20 +22,18 @@ export const IMAGEGEN_NODE_MODELS = [
 
 export const ImageGenNodeConfigSchema = z
 	.object({
-		prompt: z.string().optional(),
-		negativePrompt: z.string().optional(),
-		imageSize: z.enum(IMAGEGEN_IMAGE_SIZES).default("1K"),
-		width: DimensionSchema,
-		height: DimensionSchema,
+		model: z.enum(IMAGEGEN_NODE_MODELS),
 		aspectRatio: z.enum(IMAGEGEN_ASPECT_RATIOS).default("1:1"),
-		batchSize: z.number().int().min(1).max(4).default(1),
-		model: z.enum(IMAGEGEN_NODE_MODELS).default("gemini-3-pro-image-preview"),
-		guidanceScale: z.number().min(0).max(100).optional(),
-		personGeneration: z
-			.enum(["allow_adult", "block_adult"])
-			.default("block_adult"),
-		safetySetting: z.enum(["block_none", "block_most"]).default("block_most"),
+		imageSize: z.enum(IMAGEGEN_IMAGE_SIZES).default("1K"),
 	})
-	.strict();
+	.strict()
+	.refine(
+		(data) =>
+			!(data.model === "gemini-2.5-flash-image" && data.imageSize !== "1K"),
+		{
+			message: "Higher resolutions only supported by pro model",
+			path: ["imageSize"],
+		},
+	);
 
 export type ImageGenNodeConfig = z.infer<typeof ImageGenNodeConfigSchema>;
