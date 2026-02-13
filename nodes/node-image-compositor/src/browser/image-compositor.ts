@@ -6,7 +6,7 @@ import {
 } from "@gatewai/core/types";
 import Konva from "konva";
 import { GetFontAssetUrl } from "@gatewai/core/browser";
-import { fontManager } from "@/lib/fonts";
+import { fontManager } from "@gatewai/core/browser";
 
 const processCompositor = async (
 	config: CompositorNodeConfig,

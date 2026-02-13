@@ -34,7 +34,7 @@ const generateFilename = (
 		}
 	}
 
-	return `export-${id ?? ""}-${timestamp}.${extension}`;
+	return `export-${fileData?.entity?.name ?? id ?? ""}-${timestamp}.${extension}`;
 };
 
 function useDownloadFileData() {

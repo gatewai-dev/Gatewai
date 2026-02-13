@@ -2,6 +2,12 @@
     "extends": "@gatewai/tsconfig/react-library.json",
     "compilerOptions": {
         "baseUrl": ".",
+        "lib": [
+            "ES2022",
+            "ESNext",
+            "DOM",
+            "DOM.Iterable"
+        ],
         "paths": {
             "@/*": [
                 "./src/*"

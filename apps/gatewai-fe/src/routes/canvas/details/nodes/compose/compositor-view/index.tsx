@@ -5,8 +5,7 @@ import { memo, useMemo } from "react";
 import { Helmet } from "react-helmet-async";
 import { useNavigate, useParams } from "react-router";
 import { ImageDesignerEditor } from "@/modules/canvas-editor";
-import { useCanvasCtx } from "../../../../../../../../../packages/react-canvas/src/canvas-ctx";
-import { useNodeResult } from "../../../graph-engine/processor-ctx";
+import { useCanvasCtx, useNodeResult } from "@gatewai/react-canvas";
 
 const CompositorView = memo(() => {
 	const nav = useNavigate();

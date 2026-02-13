@@ -1038,6 +1038,15 @@ importers:
       '@gatewai/core':
         specifier: workspace:*
         version: link:../core
+      '@gatewai/db':
+        specifier: workspace:*
+        version: link:../db
+      '@gatewai/media':
+        specifier: workspace:*
+        version: link:../media
+      '@gatewai/nodes-registry':
+        specifier: workspace:*
+        version: link:../nodes-registry
       '@gatewai/react-store':
         specifier: workspace:*
         version: link:../react-store
@@ -1172,6 +1181,12 @@ importers:
 
   packages/ui-kit:
     dependencies:
+      '@gatewai/core':
+        specifier: workspace:*
+        version: link:../core
+      '@gatewai/node-sdk':
+        specifier: workspace:*
+        version: link:../node-sdk
       '@radix-ui/react-accordion':
         specifier: ^1.2.12
         version: 1.2.12(@types/react-dom@19.2.3(@types/react@19.1.11))(@types/react@19.1.11)(react-dom@19.2.3(react@19.2.3))(react@19.2.3)

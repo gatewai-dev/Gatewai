@@ -1,1 +1,1 @@
-export * from './canvas-editor';
+export * from './canvas-editor/index.js';

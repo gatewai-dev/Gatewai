@@ -22,9 +22,8 @@ import {
 import type React from "react";
 import { useMemo } from "react";
 import { ColorPicker } from "../../components/util/color-input";
-import { GetFontAssetUrl } from "@gatewai/core/browser";
+import { GetFontAssetUrl, fontManager } from "@gatewai/core/browser";
 import { CollapsibleSection } from "../CollapsibleSection";
-import { fontManager } from "@gatewai/node-sdk/client";
 
 interface TypographyControlsProps {
 	fontFamily: string;

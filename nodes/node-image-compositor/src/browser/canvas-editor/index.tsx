@@ -101,7 +101,7 @@ import {
 	Transformer,
 } from "react-konva";
 import useImage from "use-image";
-import { fontManager } from "@gatewai/node-sdk/client";
+import { fontManager } from "@gatewai/core/browser";
 import { GetAssetEndpoint, GetFontAssetUrl } from "@gatewai/core/browser";
 
 //#region CONSTANTS

@@ -24,13 +24,11 @@ import {
 import { useCanvasCtx } from "./canvas-ctx";
 import { useNodePreview } from "./hooks/node-preview";
 import {
-	type HandleState,
 	NodeGraphProcessor,
-	TaskStatus,
 } from "./node-graph-processor";
 import { BaseNode } from "./nodes/base";
 import { CanvasRenderer } from "./nodes/common/canvas-renderer";
-import type { ConnectedInput } from "./types";
+import { TaskStatus, type ConnectedInput, type HandleState } from "./types";
 
 const ProcessorContext = createContext<NodeGraphProcessor | null>(null);
 

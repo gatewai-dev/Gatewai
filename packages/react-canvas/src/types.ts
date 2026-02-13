@@ -11,6 +11,37 @@ interface ProcessorConfig {
 	handles: HandleEntityType[];
 }
 
+export enum TaskStatus {
+	QUEUED = "QUEUED",
+	EXECUTING = "EXECUTING",
+	FAILED = "FAILED",
+	COMPLETED = "COMPLETED",
+}
+
+export interface HandleState {
+	id: string;
+	isConnected: boolean;
+	valid: boolean;
+	type: string | null;
+	color: string | null;
+}
+
+export interface NodeState {
+	id: string;
+	status: TaskStatus | null;
+	isDirty: boolean;
+	startedAt?: number;
+	finishedAt?: number;
+	durationMs?: number;
+	result: NodeResult | null;
+	inputs: Record<string, ConnectedInput> | null;
+	error: string | null;
+	handleStatus: Record<string, HandleState>;
+	abortController: AbortController | null;
+	lastProcessedSignature: string | null;
+	version: number;
+}
+
 type ConnectedInput = {
 	connectionValid: boolean;
 	outputItem: AnyOutputItem | null;
@@ -28,6 +59,8 @@ type NodeProcessor = (
 
 export type {
 	ProcessorConfig,
+	NodeState,
+	HandleState,
 	ConnectedInput,
 	NodeProcessor,
 	NodeProcessorParams,

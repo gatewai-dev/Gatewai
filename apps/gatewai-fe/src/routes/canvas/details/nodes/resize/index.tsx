@@ -14,7 +14,7 @@ import type { NodeProps } from "@xyflow/react";
 import { memo, useEffect } from "react";
 import { ResolveFileDataUrl } from "@gatewai/core/browser";
 import { cn } from "@/lib/utils";
-import type { ConnectedInput } from "../../graph-engine/types";
+import type { ConnectedInput } from "@gatewai/react-canvas";
 import type { ResizeNode } from "../node-props";
 import { ResizeConfig } from "./resize-config";
 

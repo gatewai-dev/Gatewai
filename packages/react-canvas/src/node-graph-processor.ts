@@ -6,7 +6,6 @@ import {
 	type OutputItem,
 } from "@gatewai/core/types";
 import type { DataType } from "@gatewai/db";
-import { pixiWorkerService } from "@gatewai/media/browser";
 import {
 	type BlurNodeConfig,
 	type CompositorNodeConfig,
@@ -22,49 +21,17 @@ import type {
 	HandleEntityType,
 	NodeEntityType,
 } from "@gatewai/react-store";
-import { processCompositor } from "./image-compositor";
 import type {
 	ConnectedInput,
+	HandleState,
 	NodeProcessor,
 	NodeProcessorParams,
+	NodeState,
 	ProcessorConfig,
 } from "./types";
+import { TaskStatus } from "./types";
 import { GetAssetEndpoint } from "@gatewai/core/browser";
 
-export enum TaskStatus {
-	QUEUED = "QUEUED",
-	EXECUTING = "EXECUTING",
-	FAILED = "FAILED",
-	COMPLETED = "COMPLETED",
-}
-
-export interface HandleState {
-	id: string;
-	isConnected: boolean;
-	valid: boolean;
-	type: string | null;
-	color: string | null;
-}
-
-export interface NodeState {
-	id: string;
-	status: TaskStatus | null;
-	isDirty: boolean;
-
-	startedAt?: number;
-	finishedAt?: number;
-	durationMs?: number;
-
-	result: NodeResult | null;
-	inputs: Record<string, ConnectedInput> | null;
-	error: string | null;
-
-	handleStatus: Record<string, HandleState>;
-
-	abortController: AbortController | null;
-	lastProcessedSignature: string | null;
-	version: number;
-}
 
 export class NodeGraphProcessor extends EventEmitter {
 	private nodes = new Map<string, NodeEntityType>();

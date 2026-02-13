@@ -18,7 +18,7 @@ import {
 	useVideoConfig,
 } from "remotion";
 import { GetAssetEndpoint } from "@gatewai/core/browser";
-import type { NodeProcessorParams } from "./types";
+import type { NodeProcessorParams } from "./types/index.js";
 
 const DynamicComposition: React.FC<{
 	config: VideoCompositorNodeConfig;
