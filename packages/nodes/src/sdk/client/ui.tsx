@@ -29,10 +29,6 @@ export interface NodeUIContextType {
 		isProcessed: boolean;
 	};
 	useNodeValidation: (nodeId: string) => Record<string, string>;
-	createNewHandle: (handleEntity: any) => void;
-	runNodes: (nodeIds?: string[]) => Promise<void>;
-	useNodeTaskRunning: (nodeId: string) => boolean;
-
 	// Components provided by host
 	BaseNode: React.ComponentType<any>;
 	CanvasRenderer: React.ComponentType<{ imageUrl: string }>;
@@ -41,18 +37,6 @@ export interface NodeUIContextType {
 export const NodeUIContext = createContext<NodeUIContextType | undefined>(
 	undefined,
 );
-
-export const NodeUIProvider = ({
-	children,
-	value,
-}: {
-	children: React.ReactNode;
-	value: NodeUIContextType;
-}) => {
-	return (
-		<NodeUIContext.Provider value={value}>{children}</NodeUIContext.Provider>
-	);
-};
 
 export function useNodeUI() {
 	const ctx = useContext(NodeUIContext);

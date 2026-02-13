@@ -2,14 +2,18 @@ import type { NodeEntityType } from "@gatewai/react-store";
 import { Button, type ButtonProps, Spinner } from "@gatewai/ui-kit";
 import { ForwardIcon } from "lucide-react";
 import { memo } from "react";
-import { useNodeUI } from "../ui.js"; // Explicitly use .js extension for ESM
+import {
+	useCanvasCtx,
+	useNodeTaskRunning,
+	useNodeValidation,
+} from "../index.js";
 
 export type RunNodeButtonProps = ButtonProps & {
 	nodeId: NodeEntityType["id"];
 };
 
 const RunNodeButton = memo(({ nodeId, ...buttonProps }: RunNodeButtonProps) => {
-	const { runNodes, useNodeTaskRunning, useNodeValidation } = useNodeUI();
+	const { runNodes } = useCanvasCtx();
 
 	const isNodeRunning = useNodeTaskRunning(nodeId);
 

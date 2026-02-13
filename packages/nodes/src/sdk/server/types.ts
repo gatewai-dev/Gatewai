@@ -1,3 +1,4 @@
+import type { EnvConfig } from "@gatewai/core";
 import type { NodeResult } from "@gatewai/core/types";
 import type {
 	Canvas,
@@ -6,6 +7,7 @@ import type {
 	Handle,
 	Node,
 	NodeTemplate,
+	PrismaClient,
 	Task,
 } from "@gatewai/db";
 import { type ZodTypeAny, z } from "zod";
@@ -23,7 +25,6 @@ import type {
 	MediaService,
 	StorageService,
 } from "@gatewai/core/types";
-import type { ReactNode } from "react";
 
 // Re-export so consumers don't need to import from @gatewai/core/types directly if they don't want to
 export type { GraphResolvers, MediaService, StorageService };
@@ -168,8 +169,8 @@ export interface BackendNodePlugin extends NodeMetadata {
  */
 export interface FrontendNodePlugin extends NodeMetadata {
 	frontendProcessor?: FrontendNodeProcessor;
-	Component: ReactNode; // React component
-	ConfigComponent?: ReactNode; // React component
+	Component: any; // React component
+	ConfigComponent?: any; // React component
 }
 
 /**

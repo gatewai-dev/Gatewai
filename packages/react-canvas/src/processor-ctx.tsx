@@ -3,6 +3,7 @@ import type { FileResult, NodeResult } from "@gatewai/core/types";
 import {
 	NodeUIContext,
 	type NodeUIContextType,
+	NodeUIProvider,
 } from "@gatewai/node-sdk/client";
 import {
 	type HandleEntityType,
@@ -23,12 +24,11 @@ import {
 } from "react";
 import { useCanvasCtx } from "./canvas-ctx";
 import { useNodePreview } from "./hooks/node-preview";
-import {
-	NodeGraphProcessor,
-} from "./node-graph-processor";
+import { NodeGraphProcessor } from "./node-graph-processor";
 import { BaseNode } from "./nodes/base";
 import { CanvasRenderer } from "./nodes/common/canvas-renderer";
-import { TaskStatus, type ConnectedInput, type HandleState } from "./types";
+import { useNodeTaskRunning } from "./task-manager-ctx";
+import { type ConnectedInput, type HandleState, TaskStatus } from "./types";
 
 const ProcessorContext = createContext<NodeGraphProcessor | null>(null);
 
@@ -66,24 +66,27 @@ export function ProcessorProvider({ children }: { children: React.ReactNode }) {
 		return () => processor.destroy();
 	}, [processor]);
 
-	const uiContextValue = useMemo(
+	const { createNewHandle, runNodes } = useCanvasCtx();
+
+	const uiContextValue: NodeUIContextType = useMemo(
 		() => ({
 			onNodeConfigUpdate,
 			onNodeResultUpdate,
 			useNodePreview,
 			useNodeResult,
 			useNodeValidation,
+			useNodeTaskRunning, // Imported from task-manager-ctx
+			createNewHandle,
+			runNodes,
 			BaseNode,
 			CanvasRenderer,
 		}),
-		[onNodeConfigUpdate, onNodeResultUpdate],
+		[onNodeConfigUpdate, onNodeResultUpdate, createNewHandle, runNodes],
 	);
 
 	return (
 		<ProcessorContext.Provider value={processor}>
-			<NodeUIContext.Provider value={uiContextValue as any}>
-				{children}
-			</NodeUIContext.Provider>
+			<NodeUIProvider value={uiContextValue}>{children}</NodeUIProvider>
 		</ProcessorContext.Provider>
 	);
 }

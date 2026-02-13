@@ -45,9 +45,10 @@
 	"dependencies": {
 		"@gatewai/core": "workspace:*",
 		"@gatewai/db": "workspace:*",
-		"@gatewai/node-sdk": "workspace:*",
 		"@gatewai/media": "workspace:*",
+		"@gatewai/node-sdk": "workspace:*",
 		"@gatewai/react-store": "workspace:*",
+		"@gatewai/ui-kit": "workspace:*",
 		"@google/genai": "^1.40.0",
 		"music-metadata": "^10.6.5",
 		"reflect-metadata": "^0.2.2",
@@ -58,12 +59,14 @@
 	"devDependencies": {
 		"@gatewai/tsconfig": "workspace:*",
 		"@types/node": "^24.0.4",
+		"@types/react": "^19.1.11",
+		"@types/react-dom": "^19.2.3",
 		"@types/wav": "^1.0.4",
 		"tsdown": "^0.19.0",
 		"typescript": "5.5.4"
 	},
 	"peerDependencies": {
-		"react": "^18.0.0 || ^19.0.0",
-		"react-dom": "^18.0.0 || ^19.0.0"
+		"react": "^19.2.4",
+		"react-dom": "^19.2.4"
 	}
 }

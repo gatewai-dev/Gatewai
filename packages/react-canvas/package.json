@@ -29,6 +29,7 @@
 		"@gatewai/db": "workspace:*",
 		"@gatewai/media": "workspace:*",
 		"@gatewai/nodes-registry": "workspace:*",
+		"@gatewai/node-sdk": "workspace:*",
 		"@gatewai/react-store": "workspace:*",
 		"@gatewai/ui-kit": "workspace:*",
 		"@hookform/resolvers": "^3.10.0",

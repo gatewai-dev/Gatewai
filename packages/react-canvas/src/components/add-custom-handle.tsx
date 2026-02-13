@@ -32,7 +32,7 @@ import { PlusIcon } from "lucide-react";
 import { useMemo, useState } from "react";
 import { useForm } from "react-hook-form";
 import { z } from "zod";
-import { useNodeUI } from "../ui.js";
+import { useCanvasCtx } from "../index.js";
 
 const InputTypes = ["Image", "Text", "Audio", "Video"] as const;
 const OutputTypes = ["Image", "Text", "Audio", "Video"] as const;
@@ -63,7 +63,7 @@ function AddCustomHandleButton(props: CustomHandleButtonProps) {
 	);
 	const enumValues = OPTIONS as unknown as [string, ...string[]];
 
-	const { createNewHandle } = useNodeUI();
+	const { createNewHandle } = useCanvasCtx();
 	const [open, setOpen] = useState(false);
 	const formSchema = z.object({
 		dataType: z.enum(enumValues),
