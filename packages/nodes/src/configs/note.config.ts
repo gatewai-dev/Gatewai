@@ -4,7 +4,7 @@ import { ColorSchema } from "../common/schemas.js";
 export const NoteNodeConfigSchema = z
 	.object({
 		text: z.string().optional(),
-		backgroundColor: z.string().optional(),
+		backgroundColor: ColorSchema,
 		fontSize: z.number().optional(),
 	})
 	.strict();
