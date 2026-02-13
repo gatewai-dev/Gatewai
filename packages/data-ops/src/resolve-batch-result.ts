@@ -26,7 +26,7 @@ async function overrideFileResult(data: FileData) {
 		const storage = container.resolve<StorageService>(TOKENS.STORAGE);
 		const media = container.resolve<MediaService>(TOKENS.MEDIA);
 
-		const buffer = await storage.getFromGCS(
+		const buffer = await storage.getFromStorage(
 			data.entity.key,
 			ENV_CONFIG.GCS_ASSETS_BUCKET,
 		);

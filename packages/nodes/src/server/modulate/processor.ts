@@ -68,7 +68,7 @@ export default class ModulateProcessor implements NodeProcessor {
 			};
 
 			const key = `${node.id}/${Date.now()}.png`;
-			const { signedUrl, key: tempKey } = await this.storage.uploadToTemporaryFolder(
+			const { signedUrl, key: tempKey } = await this.storage.uploadToTemporaryStorageFolder(
 				uploadBuffer,
 				mimeType,
 				key,

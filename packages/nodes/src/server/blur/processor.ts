@@ -65,7 +65,7 @@ export default class BlurProcessor implements NodeProcessor {
 			};
 
 			const key = `${(data.task ?? node).id}/${Date.now()}.png`;
-			const { signedUrl, key: tempKey } = await this.storage.uploadToTemporaryFolder(
+			const { signedUrl, key: tempKey } = await this.storage.uploadToTemporaryStorageFolder(
 				uploadBuffer,
 				mimeType,
 				key,

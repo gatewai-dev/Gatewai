@@ -166,7 +166,7 @@ const assetsRouter = new Hono<{ Variables: AuthorizedHonoTypes }>({
 
 		try {
 			const storage = container.resolve<StorageService>(TOKENS.STORAGE);
-			await storage.uploadToGCS(buffer, key, contentType, bucket);
+			await storage.uploadToStorage(buffer, key, contentType, bucket);
 
 			const expiresIn = 3600 * 24 * 6.9; // A bit less than a week
 			const signedUrl = await storage.generateSignedUrl(key, bucket, expiresIn);
@@ -229,7 +229,7 @@ const assetsRouter = new Hono<{ Variables: AuthorizedHonoTypes }>({
 
 			// Upload to storage
 			const storage = container.resolve<StorageService>(TOKENS.STORAGE);
-			await storage.uploadToGCS(buffer, key, contentType, bucket);
+			await storage.uploadToStorage(buffer, key, contentType, bucket);
 
 			const expiresIn = 3600 * 24 * 6.9; // A bit less than a week
 			const signedUrl = await storage.generateSignedUrl(key, bucket, expiresIn);
@@ -316,9 +316,9 @@ const assetsRouter = new Hono<{ Variables: AuthorizedHonoTypes }>({
 			try {
 				const storage = container.resolve<StorageService>(TOKENS.STORAGE);
 				// 2. Check Cache
-				const exists = await storage.fileExistsInGCS(cacheKey, cacheBucket);
+				const exists = await storage.fileExistsInStorage(cacheKey, cacheBucket);
 				if (exists) {
-					const stream = storage.getStreamFromGCS(cacheKey, cacheBucket);
+					const stream = storage.getStreamFromStorage(cacheKey, cacheBucket);
 					return c.body(stream as any, 200, {
 						"Content-Type": "image/webp",
 						"Cache-Control": "public, max-age=31536000, immutable",
@@ -349,7 +349,7 @@ const assetsRouter = new Hono<{ Variables: AuthorizedHonoTypes }>({
 					);
 				} else if (asset.mimeType.startsWith("image/")) {
 					// For images, we download the buffer to process with Sharp
-					const originalBuffer = await storage.getFromGCS(
+					const originalBuffer = await storage.getFromStorage(
 						asset.key,
 						asset.bucket,
 					);
@@ -363,7 +363,7 @@ const assetsRouter = new Hono<{ Variables: AuthorizedHonoTypes }>({
 				}
 
 				// 5. Upload to Cache
-				await storage.uploadToGCS(
+				await storage.uploadToStorage(
 					thumbnailBuffer,
 					cacheKey,
 					"image/webp",
@@ -391,7 +391,7 @@ const assetsRouter = new Hono<{ Variables: AuthorizedHonoTypes }>({
 		const storage = container.resolve<StorageService>(TOKENS.STORAGE);
 
 		assert(rawKey);
-		const fullStream = await storage.getFromGCS(rawKey);
+		const fullStream = await storage.getFromStorage(rawKey);
 		const metadata = await storage.getObjectMetadata(rawKey);
 		assert(metadata.contentType);
 
@@ -428,7 +428,7 @@ const assetsRouter = new Hono<{ Variables: AuthorizedHonoTypes }>({
 			}
 
 			const chunksize = end - start + 1;
-			const stream = storage.getStreamFromGCS(asset.key, asset.bucket, {
+			const stream = storage.getStreamFromStorage(asset.key, asset.bucket, {
 				start,
 				end,
 			});
@@ -442,7 +442,7 @@ const assetsRouter = new Hono<{ Variables: AuthorizedHonoTypes }>({
 		}
 
 		// Full file stream
-		const fullStream = storage.getStreamFromGCS(asset.key, asset.bucket);
+		const fullStream = storage.getStreamFromStorage(asset.key, asset.bucket);
 		return c.body(fullStream as any, {
 			headers: {
 				"Content-Type": asset.mimeType,
@@ -510,8 +510,8 @@ const assetsRouter = new Hono<{ Variables: AuthorizedHonoTypes }>({
 									const data = item.data;
 									const entityId =
 										typeof data === "object" &&
-										data !== null &&
-										"entity" in data
+											data !== null &&
+											"entity" in data
 											? (data as { entity?: { id?: string } }).entity?.id
 											: undefined;
 									const matches = entityId === id;
@@ -580,7 +580,7 @@ const assetsRouter = new Hono<{ Variables: AuthorizedHonoTypes }>({
 				// 3. Delete from Storage and DB
 				try {
 					const storage = container.resolve<StorageService>(TOKENS.STORAGE);
-					await storage.deleteFromGCS(asset.key, asset.bucket);
+					await storage.deleteFromStorage(asset.key, asset.bucket);
 					logger.info(`Deleted from GCS: ${asset.key}`);
 				} catch (err) {
 					logger.error({ err }, `Failed to delete from GCS: ${asset.key}`);

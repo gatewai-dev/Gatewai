@@ -136,7 +136,7 @@ export default class VideoGenProcessor implements NodeProcessor {
 			const key = `assets/${fileName}`;
 			const contentType = "video/mp4";
 			const bucket = this.env.GCS_ASSETS_BUCKET;
-			await this.storage.uploadToGCS(fileBuffer, key, contentType, bucket);
+			await this.storage.uploadToStorage(fileBuffer, key, contentType, bucket);
 
 			// Remove temp file
 			try {

@@ -3,17 +3,14 @@ import {
 	selectSelectedNodes,
 	useAppSelector,
 } from "@gatewai/react-store";
-import { Separator } from "@gatewai/ui-kit";
+import { cn, Separator } from "@gatewai/ui-kit";
 import { Panel } from "@xyflow/react";
 import { Fragment, memo, type ReactNode, useMemo } from "react";
-import { cn } from "@/lib/utils";
-import { NODE_ICON_MAP } from "../../../node-templates/node-palette/icon-map";
 import { ImageGenNodeConfigComponent } from "./image-gen";
 import { LLMNodeConfigComponent } from "./llm/llm-config";
 import { SpeechToTextNodeConfigComponent } from "./speech-to-text";
 import { TextToSpeechNodeConfigComponent } from "./text-to-speech";
 import { VideoGenNodeConfigComponent } from "./video-gen";
-import { VideoGenExtendNodeConfigComponent } from "./video-gen-extend";
 import { VideoGenFirstLastFrameNodeConfigComponent } from "./video-gen-first-last-frame";
 
 type NodeConfigComponentProps = {
@@ -26,7 +23,6 @@ const NodeConfigFormMap: Partial<
 	LLM: LLMNodeConfigComponent,
 	ImageGen: ImageGenNodeConfigComponent,
 	VideoGen: VideoGenNodeConfigComponent,
-	VideoGenExtend: VideoGenExtendNodeConfigComponent,
 	VideoGenFirstLastFrame: VideoGenFirstLastFrameNodeConfigComponent,
 	TextToSpeech: TextToSpeechNodeConfigComponent,
 	SpeechToText: SpeechToTextNodeConfigComponent,

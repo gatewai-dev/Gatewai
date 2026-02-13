@@ -76,7 +76,7 @@ export class ImageGenProcessor implements NodeProcessor {
 				assert(key, "Key must be defined for image retrieval");
 				assert(mimeType, "MimeType must be defined for image retrieval");
 
-				const arrayBuffer = await this.storage.getFromGCS(key, bucket);
+				const arrayBuffer = await this.storage.getFromStorage(key, bucket);
 				const buffer = Buffer.from(arrayBuffer);
 				const base64Data = buffer.toString("base64");
 
@@ -155,7 +155,7 @@ export class ImageGenProcessor implements NodeProcessor {
 			const key = `assets/${fileName}`;
 			const bucket = this.env.GCS_ASSETS_BUCKET;
 
-			await this.storage.uploadToGCS(buffer, key, contentType, bucket);
+			await this.storage.uploadToStorage(buffer, key, contentType, bucket);
 			const size = buffer.length;
 
 			const expiresIn = 3600 * 24 * 6.9;

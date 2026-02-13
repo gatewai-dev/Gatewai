@@ -1,6 +1,6 @@
 import path from "node:path";
-import type { StorageService } from "@gatewai/core/types";
 import { Storage } from "@google-cloud/storage";
+import type { StorageService } from "./interface.js";
 
 export class GCSStorageService implements StorageService {
 	private storage: Storage;
@@ -32,7 +32,7 @@ export class GCSStorageService implements StorageService {
 		this.storage = new Storage(storageOptions);
 	}
 
-	async uploadToGCS(
+	async uploadToStorage(
 		buffer: Buffer,
 		key: string,
 		contentType: string,
@@ -47,7 +47,7 @@ export class GCSStorageService implements StorageService {
 		});
 	}
 
-	async deleteFromGCS(key: string, bucketName: string): Promise<void> {
+	async deleteFromStorage(key: string, bucketName: string): Promise<void> {
 		await this.storage.bucket(bucketName).file(key).delete();
 	}
 
@@ -70,7 +70,7 @@ export class GCSStorageService implements StorageService {
 		return url;
 	}
 
-	async getFromGCS(
+	async getFromStorage(
 		key: string,
 		bucketName: string = this.assetsBucketName,
 	): Promise<Buffer> {
@@ -92,7 +92,7 @@ export class GCSStorageService implements StorageService {
 		return metadata;
 	}
 
-	async listFromGCS(prefix: string, bucketName: string): Promise<string[]> {
+	async listFromStorage(prefix: string, bucketName: string): Promise<string[]> {
 		const [files] = await this.storage.bucket(bucketName).getFiles({
 			prefix: prefix,
 		});
@@ -101,9 +101,9 @@ export class GCSStorageService implements StorageService {
 	}
 
 	// Kept as-is logic from original
-	async uploadToTemporaryFolder(buffer: Buffer, mimeType: string, key: string) {
+	async uploadToTemporaryStorageFolder(buffer: Buffer, mimeType: string, key: string) {
 		const keyToUse = `temp/${key}`;
-		await this.uploadToGCS(buffer, keyToUse, mimeType, this.assetsBucketName);
+		await this.uploadToStorage(buffer, keyToUse, mimeType, this.assetsBucketName);
 		const expiresIn = 3600 * 24 * 1.9; // A bit less than 2 days
 		const signedUrl = await this.generateSignedUrl(
 			keyToUse,
@@ -114,7 +114,7 @@ export class GCSStorageService implements StorageService {
 	}
 
 	// Helper specific to Node streams, might be needed by Hono
-	getStreamFromGCS(
+	getStreamFromStorage(
 		key: string,
 		bucketName: string,
 		range?: { start: number; end: number },
@@ -124,7 +124,7 @@ export class GCSStorageService implements StorageService {
 		return file.createReadStream(options);
 	}
 
-	async fileExistsInGCS(key: string, bucketName: string): Promise<boolean> {
+	async fileExistsInStorage(key: string, bucketName: string): Promise<boolean> {
 		try {
 			const [exists] = await this.storage.bucket(bucketName).file(key).exists();
 			return exists;

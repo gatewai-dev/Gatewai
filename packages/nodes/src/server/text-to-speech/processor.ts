@@ -113,7 +113,7 @@ export default class TextToSpeechProcessor implements NodeProcessor {
 			const contentType = "audio/wav";
 			const bucket = this.env.GCS_ASSETS_BUCKET;
 
-			await this.storage.uploadToGCS(wavBuffer, key, contentType, bucket);
+			await this.storage.uploadToStorage(wavBuffer, key, contentType, bucket);
 
 			const expiresIn = 3600 * 24 * 6.9;
 			const signedUrl = await this.storage.generateSignedUrl(key, bucket, expiresIn);

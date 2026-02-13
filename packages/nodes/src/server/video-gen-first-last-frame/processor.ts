@@ -144,7 +144,7 @@ export default class VideoGenFirstLastFrameProcessor implements NodeProcessor {
 			const contentType = "video/mp4";
 			const bucket = this.env.GCS_ASSETS_BUCKET;
 
-			await this.storage.uploadToGCS(fileBuffer, key, contentType, bucket);
+			await this.storage.uploadToStorage(fileBuffer, key, contentType, bucket);
 
 			const expiresIn = 3600 * 24 * 7;
 			const signedUrl = await this.storage.generateSignedUrl(key, bucket, expiresIn);

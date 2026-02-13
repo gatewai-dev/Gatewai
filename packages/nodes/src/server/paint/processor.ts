@@ -86,7 +86,7 @@ export default class PaintProcessor implements NodeProcessor {
 
 			const imageKey = `${node.id}/${now}.png`;
 			const { signedUrl: imageSignedUrl, key: tempImageKey } =
-				await this.storage.uploadToTemporaryFolder(
+				await this.storage.uploadToTemporaryStorageFolder(
 					imageBuffer,
 					imageMimeType,
 					imageKey,
@@ -94,7 +94,7 @@ export default class PaintProcessor implements NodeProcessor {
 
 			const maskKey = `${node.id}/${now}_mask.png`;
 			const { signedUrl: maskSignedUrl, key: tempMaskKey } =
-				await this.storage.uploadToTemporaryFolder(
+				await this.storage.uploadToTemporaryStorageFolder(
 					maskBuffer,
 					maskMimeType,
 					maskKey,

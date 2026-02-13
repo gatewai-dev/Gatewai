@@ -78,7 +78,7 @@ export async function uploadToImportNode({
 	const key = `assets/${generateId()}-${filename}`;
 
 	const storage = container.resolve<StorageService>(TOKENS.STORAGE);
-	await storage.uploadToGCS(buffer, key, contentType, bucket);
+	await storage.uploadToStorage(buffer, key, contentType, bucket);
 
 	const expiresIn = 3600 * 24 * 6.9; // ~1 week
 	const signedUrl = await storage.generateSignedUrl(key, bucket, expiresIn);

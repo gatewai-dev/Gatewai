@@ -22,7 +22,6 @@ import type {
 	VideoCompositorNodeConfig,
 } from "./configs/video-compositor.config.js";
 import type { VideoGenNodeConfig } from "./configs/video-gen.config.js";
-import type { VideoGenExtendNodeConfig } from "./configs/video-gen-extend.config.js";
 import type { VideoGenFirstLastFrameNodeConfig } from "./configs/video-gen-first-last-frame.config.js";
 
 export type {
@@ -45,7 +44,6 @@ export type {
 	TextToSpeechNodeConfig,
 	VideoCompositorLayer,
 	VideoCompositorNodeConfig,
-	VideoGenExtendNodeConfig,
 	VideoGenFirstLastFrameNodeConfig,
 	VideoGenNodeConfig,
 };
@@ -66,7 +64,6 @@ export type AllNodeConfig =
 	| LLMNodeConfig
 	| ResizeNodeConfig
 	| VideoGenNodeConfig
-	| VideoGenExtendNodeConfig
 	| VideoGenFirstLastFrameNodeConfig
 	| SpeechToTextNodeConfig
 	| TextToSpeechNodeConfig

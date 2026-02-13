@@ -172,7 +172,7 @@ async function loadMediaBuffer(storage: StorageService, fileData: FileData) {
 	}
 	assert(key);
 	assert(mimeType);
-	const arrayBuffer = await storage.getFromGCS(key, bucket);
+	const arrayBuffer = await storage.getFromStorage(key, bucket);
 	return arrayBuffer;
 }
 

@@ -17,7 +17,6 @@ export * from "./configs/text-merger.config.js";
 export * from "./configs/text-to-speech.config.js";
 export * from "./configs/video-compositor.config.js";
 export * from "./configs/video-gen.config.js";
-export * from "./configs/video-gen-extend.config.js";
 export * from "./configs/video-gen-first-last-frame.config.js";
 
 export * from "./node-configs.schema.js";

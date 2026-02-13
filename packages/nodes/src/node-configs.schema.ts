@@ -17,7 +17,6 @@ import { TextMergerNodeConfigSchema } from "./configs/text-merger.config.js";
 import { TextToSpeechNodeConfigSchema } from "./configs/text-to-speech.config.js";
 import { VideoCompositorNodeConfigSchema } from "./configs/video-compositor.config.js";
 import { VideoGenNodeConfigSchema } from "./configs/video-gen.config.js";
-import { VideoGenExtendNodeConfigSchema } from "./configs/video-gen-extend.config.js";
 import { VideoGenFirstLastFrameNodeConfigSchema } from "./configs/video-gen-first-last-frame.config.js";
 
 export const NodeConfigSchema: ZodTypeAny = z.union([
@@ -36,7 +35,6 @@ export const NodeConfigSchema: ZodTypeAny = z.union([
 	LLMNodeConfigSchema,
 	ResizeNodeConfigSchema,
 	VideoGenNodeConfigSchema,
-	VideoGenExtendNodeConfigSchema,
 	VideoGenFirstLastFrameNodeConfigSchema,
 	SpeechToTextNodeConfigSchema,
 	TextToSpeechNodeConfigSchema,
@@ -61,7 +59,6 @@ export {
 	TextNodeConfigSchema,
 	TextToSpeechNodeConfigSchema,
 	VideoCompositorNodeConfigSchema,
-	VideoGenExtendNodeConfigSchema,
 	VideoGenFirstLastFrameNodeConfigSchema,
 	VideoGenNodeConfigSchema,
 };

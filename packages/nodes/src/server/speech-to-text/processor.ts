@@ -47,7 +47,7 @@ export default class SpeechToTextProcessor implements NodeProcessor {
 			let fileBlob: Blob;
 			let mimeType: string;
 			if (audioInput?.entity?.signedUrl) {
-				const buffer = await this.storage.getFromGCS(
+				const buffer = await this.storage.getFromStorage(
 					audioInput.entity.key,
 					audioInput.entity.bucket,
 				);
@@ -56,7 +56,7 @@ export default class SpeechToTextProcessor implements NodeProcessor {
 				});
 				mimeType = audioInput.entity.mimeType;
 			} else if (audioInput?.processData?.tempKey) {
-				const buffer = await this.storage.getFromGCS(
+				const buffer = await this.storage.getFromStorage(
 					audioInput?.processData.tempKey,
 				);
 				fileBlob = new Blob([new Uint8Array(buffer)], {

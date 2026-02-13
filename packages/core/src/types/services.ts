@@ -58,15 +58,15 @@ export interface GraphResolvers<T = unknown> {
 		targetNodeId: string,
 	) => Array<{
 		handle:
-			| {
-					id: string;
-					type: string;
-					nodeId: string;
-					dataTypes: DataType[];
-					label: string;
-					[key: string]: unknown;
-			  }
-			| undefined;
+		| {
+			id: string;
+			type: string;
+			nodeId: string;
+			dataTypes: DataType[];
+			label: string;
+			[key: string]: unknown;
+		}
+		| undefined;
 		value: {
 			type: DataType;
 			data: unknown;
@@ -77,44 +77,6 @@ export interface GraphResolvers<T = unknown> {
 	loadMediaBuffer: (fileData: FileData) => Promise<Buffer>;
 
 	getFileDataMimeType: (fileData: FileData) => Promise<string | null>;
-}
-
-/**
- * Interface for storage operations.
- */
-export interface StorageService {
-	uploadToTemporaryFolder: (
-		buffer: Buffer,
-		mimeType: string,
-		key: string,
-	) => Promise<{ signedUrl: string; key: string }>;
-
-	uploadToGCS: (
-		buffer: Buffer,
-		key: string,
-		contentType: string,
-		bucketName: string,
-	) => Promise<void>;
-
-	generateSignedUrl: (
-		key: string,
-		bucketName: string,
-		expiresIn?: number,
-	) => Promise<string>;
-
-	getFromGCS: (key: string, bucket?: string) => Promise<Buffer>;
-
-	getObjectMetadata: (key: string, bucket?: string) => Promise<any>;
-
-	deleteFromGCS: (key: string, bucketName: string) => Promise<void>;
-
-	fileExistsInGCS: (key: string, bucketName: string) => Promise<boolean>;
-
-	getStreamFromGCS: (
-		key: string,
-		bucketName: string,
-		range?: { start: number; end: number },
-	) => NodeJS.ReadableStream;
 }
 
 /**
