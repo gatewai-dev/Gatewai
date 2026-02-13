@@ -1,4 +1,3 @@
-import type { ModulateNodeConfig, PaintNodeConfig } from "./config/index.js";
 import type {
 	Application,
 	Container,
@@ -42,7 +41,12 @@ export interface IPixiProcessor {
 
 	processModulate(
 		imageUrl: string,
-		config: ModulateNodeConfig,
+		config: {
+			hue: number;
+			saturation: number;
+			lightness: number;
+			brightness: number;
+		},
 		signal?: AbortSignal,
 		apiKey?: string,
 	): Promise<{ dataUrl: Blob; width: number; height: number }>;

@@ -1,3 +1,4 @@
+import type { IPixiProcessor } from "@gatewai/core/types";
 import { createPool, type Pool } from "generic-pool";
 import pLimit from "p-limit";
 import type {
@@ -11,7 +12,6 @@ import type {
 	Sprite,
 	Texture,
 } from "pixi.js";
-import type { IPixiProcessor } from "./interface.js";
 import {
 	type BlurInput,
 	type BlurOutput,

@@ -8,7 +8,6 @@ import type {
 	NodeTemplate,
 	Task,
 } from "@gatewai/db";
-import { type ZodTypeAny, z } from "zod";
 
 /**
  * Input filter options used by graph resolver functions.
@@ -23,7 +22,6 @@ import type {
 	MediaService,
 	StorageService,
 } from "@gatewai/core/types";
-import type { ReactNode } from "react";
 
 // Re-export so consumers don't need to import from @gatewai/core/types directly if they don't want to
 export type { GraphResolvers, MediaService, StorageService };
@@ -69,116 +67,8 @@ export interface NodeProcessor {
 export type NodeProcessorConstructor = new (...args: any[]) => NodeProcessor;
 
 /**
- * Represents a connected input value for a frontend processor.
- */
-export interface FrontendConnectedInput {
-	connectionValid: boolean;
-	outputItem: {
-		type: DataType;
-		data: unknown;
-		outputHandleId: string | undefined;
-	} | null;
-}
-
-/**
- * Parameters passed to a frontend node processor.
- */
-export interface FrontendNodeProcessorParams {
-	node: {
-		id: string;
-		type: string;
-		config: unknown;
-		result: unknown;
-		[key: string]: unknown;
-	};
-	inputs: Record<string, FrontendConnectedInput>;
-	signal: AbortSignal;
-}
-
-/**
- * Frontend processor function signature.
- * Used for lightweight client-side processing (e.g., blur preview, crop, resize).
- */
-export type FrontendNodeProcessor = (
-	params: FrontendNodeProcessorParams,
-) => Promise<NodeResult | null>;
-
-// ─── Node Manifest ──────────────────────────────────────────────────────────
-
-const HandleDefinitionSchema = z.object({
-	dataTypes: z.custom<DataType[]>(),
-	label: z.string(),
-	required: z.boolean().optional(),
-	order: z.number(),
-	description: z.string().optional(),
-});
-
-/**
- * Metadata defining the interface and identity of a node.
- * This is safe to import in any environment.
- */
-export const NodeMetadataSchema = z.object({
-	// Identity
-	type: z.string().min(1),
-	displayName: z.string().min(1),
-	description: z.string().optional(),
-	category: z.string().min(1),
-	subcategory: z.string().optional(),
-	showInQuickAccess: z.boolean().optional(),
-	showInSidebar: z.boolean().optional(),
-
-	// I/O Contract
-	handles: z.object({
-		inputs: z.array(HandleDefinitionSchema),
-		outputs: z.array(HandleDefinitionSchema),
-	}),
-	variableInputs: z
-		.object({
-			enabled: z.boolean(),
-			dataTypes: z.custom<DataType[]>(),
-		})
-		.optional(),
-	variableOutputs: z
-		.object({
-			enabled: z.boolean(),
-			dataTypes: z.custom<DataType[]>(),
-		})
-		.optional(),
-
-	// Execution Flags
-	isTerminal: z.boolean(),
-	isTransient: z.boolean().optional(),
-
-	// Config
-	configSchema: z.custom<ZodTypeAny>().optional(),
-	defaultConfig: z.record(z.unknown()).optional(),
-});
-
-export type NodeMetadata = z.infer<typeof NodeMetadataSchema>;
-
-/**
  * Backend-specific plugin definition.
  */
 export interface BackendNodePlugin extends NodeMetadata {
 	backendProcessor: NodeProcessorConstructor;
 }
-
-/**
- * Frontend-specific plugin definition.
- */
-export interface FrontendNodePlugin extends NodeMetadata {
-	frontendProcessor?: FrontendNodeProcessor;
-	Component: ReactNode; // React component
-	ConfigComponent?: ReactNode; // React component
-}
-
-/**
- * Legacy combined manifest.
- * @deprecated Use split metadata/node/client exports instead.
- */
-export const NodeManifestSchema = NodeMetadataSchema.extend({
-	backendProcessor: z.custom<NodeProcessorConstructor>().optional(),
-	frontendProcessor: z.custom<FrontendNodeProcessor>().optional(),
-});
-
-export type GatewaiNodeManifest = z.infer<typeof NodeManifestSchema>;

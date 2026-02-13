@@ -24,8 +24,6 @@ const BlurNodeComponent = memo((props: any) => {
 	);
 });
 
-BlurNodeComponent.displayName = "BlurNodeComponent";
-
 export default defineClient(metadata, {
 	Component: BlurNodeComponent,
 	// frontendProcessor can be added here if needed
