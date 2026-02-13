@@ -8,9 +8,7 @@ export const STT_NODE_MODELS = [
 
 export const SpeechToTextNodeConfigSchema = z
 	.object({
-		model: z.string().optional(),
-		language: z.string().optional(),
-		prompt: z.string().optional(),
+		model: z.enum(STT_NODE_MODELS).default("gemini-2.5-flash"),
 	})
 	.strict();
 
