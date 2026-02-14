@@ -1,5 +1,5 @@
 import type { EventEmitter } from "node:events";
-import type { NodeResult } from "@gatewai/core/types";
+import type { NodeResult, NodeRunFunction } from "@gatewai/core/types";
 import type { DataType } from "@gatewai/db";
 import type { ComponentType, MemoExoticComponent } from "react";
 
@@ -70,4 +70,6 @@ export interface FrontendNodePlugin {
 	 * The Page component that opens when user clicks "Page Opener Button"
 	 */
 	PageContentComponent?: MemoExoticComponent<ComponentType<any>>;
+
+	processor: NodeRunFunction;
 }

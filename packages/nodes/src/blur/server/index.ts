@@ -39,11 +39,11 @@ class BlurProcessor implements NodeProcessor {
             assert(imageInput);
             const imageUrl = await this.media.resolveFileDataUrl(imageInput);
             assert(imageUrl);
-            const blurSize = (node.config as any).size ?? 0;
+            const size = (node.config as any).size ?? 0;
 
             const { dataUrl, ...dimensions } = await this.media.backendPixiService.processBlur(
                 imageUrl,
-                { blurSize },
+                { size },
                 undefined,
                 data.apiKey,
             );

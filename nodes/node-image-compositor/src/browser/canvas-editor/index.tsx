@@ -196,10 +196,10 @@ interface EditorContextType {
 	transformerRef: RefObject<Konva.Transformer | null>;
 	mode: "select" | "pan";
 	setMode: Dispatch<SetStateAction<"select" | "pan">>;
-	zoom: number;
-	setZoom: (v: number | ((s: number) => number)) => void;
-	pan: { x: number; y: number };
-	setPan: (v: { x: number; y: number }) => void;
+	scale: number;
+	setScale: Dispatch<SetStateAction<number>>;
+	stagePos: { x: number; y: number };
+	setStagePos: Dispatch<SetStateAction<{ x: number; y: number }>>;
 	zoomIn: () => void;
 	zoomOut: () => void;
 	zoomTo: (value: number) => void;

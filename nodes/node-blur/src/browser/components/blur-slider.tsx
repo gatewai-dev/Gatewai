@@ -1,6 +1,6 @@
-import { useNodeUI } from "@gatewai/node-sdk";
+import { useNodeUI } from "@gatewai/node-sdk/browser";
 import { Label, Slider } from "@gatewai/ui-kit";
-import React, { memo, useCallback, useEffect, useState } from "react";
+import { memo, useCallback, useEffect, useState } from "react";
 
 export const BlurValueSlider = memo(({ node }: { node: any }) => {
 	const { onNodeConfigUpdate } = useNodeUI();

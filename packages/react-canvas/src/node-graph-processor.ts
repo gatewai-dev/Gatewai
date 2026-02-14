@@ -17,6 +17,7 @@ import type {
 import type {
 	ConnectedInput,
 	HandleState,
+	NodeProcessorContext,
 	NodeProcessorParams,
 	NodeRunFunction,
 	NodeState,
@@ -686,7 +687,6 @@ export class NodeGraphProcessor extends EventEmitter implements NodeProcessor {
 				if (typeof PluginClass === "function") {
 					const backendProcessor = new PluginClass();
 					processor = async (params) => {
-						// @ts-expect-error - mismatch in context types but we are patching it
 						const res = await backendProcessor.process(params);
 						if (!res.success) throw new Error(res.error || "Unknown error");
 						return res.newResult ?? null;
@@ -745,7 +745,7 @@ export class NodeGraphProcessor extends EventEmitter implements NodeProcessor {
 
 			this.emit("node:start", { nodeId, inputs, startedAt: state.startedAt });
 
-			const context = {
+			const context: NodeProcessorContext = {
 				registerObjectUrl: (url: string) => this.registerObjectUrl(nodeId, url),
 				getOutputHandle: (type: string, label?: string) => {
 					return this.handles.find(
@@ -756,6 +756,39 @@ export class NodeGraphProcessor extends EventEmitter implements NodeProcessor {
 								? h.label === label
 								: h.dataTypes.includes(type as DataType)),
 					)?.id;
+				},
+				getFirstOutputHandle: (targetNodeId: string, type: string) =>
+					this.handles.find(
+						(h) =>
+							h.nodeId === targetNodeId &&
+							h.type === "Output" &&
+							h.dataTypes.includes(type as DataType),
+					)?.id,
+				findInputData: (
+					inputs: Record<string, ConnectedInput>,
+					requiredType?: string,
+					handleLabel?: string,
+				): string | undefined => {
+					const typeToCheck = requiredType ?? "Image";
+					for (const [
+						handleId,
+						{ connectionValid, outputItem },
+					] of Object.entries(inputs)) {
+						if (!connectionValid || !outputItem) continue;
+						if (outputItem.type !== typeToCheck) continue;
+
+						if (handleLabel) {
+							const handle = this.handles.find((h) => h.id === handleId);
+							if (handle?.label !== handleLabel) continue;
+						}
+
+						const fileData = outputItem.data as FileData;
+						const url = fileData?.entity
+							? GetAssetEndpoint(fileData.entity)
+							: fileData?.processData?.dataUrl;
+						if (url) return url;
+					}
+					return undefined;
 				},
 			};
 
@@ -1240,7 +1273,7 @@ export class NodeGraphProcessor extends EventEmitter implements NodeProcessor {
 			const config = node.config as BlurNodeConfig;
 			const result = await pixiWorkerService.processBlur(
 				imageUrl,
-				{ blurSize: config.size ?? 1 },
+				{ size: config.size ?? 1 },
 				signal,
 			);
 			const outputHandle = getFirstOutputHandle(node.id, "Image");

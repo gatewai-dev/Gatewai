@@ -1,10 +1,14 @@
-import { defineClient, useNodeUI } from "@gatewai/node-sdk";
-import React, { memo } from "react";
-import { BlurValueSlider } from "../components/blur-slider.js";
+import {
+	defineClient,
+	useNodePreview,
+	useNodeUI,
+} from "@gatewai/node-sdk/browser";
+import { memo } from "react";
 import { metadata } from "../metadata.js";
+import { BlurValueSlider } from "./components/blur-slider.js";
 
 const BlurNodeComponent = memo((props: any) => {
-	const { useNodePreview, BaseNode, CanvasRenderer } = useNodeUI();
+	const { BaseNode, CanvasRenderer } = useNodeUI();
 	const { imageUrl, node } = useNodePreview(props.id);
 
 	return (
@@ -23,9 +27,4 @@ const BlurNodeComponent = memo((props: any) => {
 	);
 });
 
-BlurNodeComponent.displayName = "BlurNodeComponent";
-
-export default defineClient(metadata, {
-	Component: BlurNodeComponent,
-	// frontendProcessor can be added here if needed
-});
+export { BlurNodeComponent };

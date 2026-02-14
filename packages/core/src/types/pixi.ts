@@ -8,6 +8,12 @@ import type {
 	Texture,
 } from "./pixi-types-stub.js";
 
+export type PixiProcessOutput = {
+	dataUrl: Blob;
+	width: number;
+	height: number;
+};
+
 /**
  * Common interface for Pixi.js processing service.
  * Allows decoupling the implementation (@gatewai/media/pixi) from consumers.
@@ -33,7 +39,7 @@ export interface IPixiProcessor {
 
 	extract(target: Container, renderer: IRenderer): Promise<Blob>;
 
-	execute<TInput = unknown, TOutput = unknown>(
+	execute<TInput = unknown, TOutput = PixiProcessOutput>(
 		id: string,
 		input: TInput,
 		signal?: AbortSignal,
@@ -53,7 +59,7 @@ export interface IPixiProcessor {
 
 	processBlur(
 		imageUrl: string,
-		options: { blurSize: number },
+		options: { size: number },
 		signal?: AbortSignal,
 		apiKey?: string,
 	): Promise<{ dataUrl: Blob; width: number; height: number }>;

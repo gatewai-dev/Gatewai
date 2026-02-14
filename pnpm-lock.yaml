@@ -464,6 +464,9 @@ importers:
       '@gatewai/db':
         specifier: workspace:*
         version: link:../../packages/db
+      '@gatewai/media':
+        specifier: workspace:*
+        version: link:../../packages/media
       '@gatewai/node-sdk':
         specifier: workspace:*
         version: link:../../packages/node-sdk
@@ -482,6 +485,9 @@ importers:
       react-dom:
         specifier: ^19.2.0
         version: 19.2.3(react@19.2.3)
+      tsyringe:
+        specifier: ^4.10.0
+        version: 4.10.0
       zod:
         specifier: 3.25.67
         version: 3.25.67
@@ -618,9 +624,6 @@ importers:
       '@gatewai/node-sdk':
         specifier: workspace:*
         version: link:../../packages/node-sdk
-      '@gatewai/react-canvas':
-        specifier: workspace:*
-        version: link:../../packages/react-canvas
       '@gatewai/react-store':
         specifier: workspace:*
         version: link:../../packages/react-store

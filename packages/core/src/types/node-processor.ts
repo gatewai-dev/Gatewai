@@ -1,5 +1,6 @@
 import type { DataType } from "@gatewai/db";
 import type { AnyOutputItem, NodeResult } from "./node-result.js";
+import type { IPixiProcessor } from "./pixi.js";
 
 export type ConnectedInput = {
 	connectionValid: boolean;
@@ -7,8 +8,15 @@ export type ConnectedInput = {
 };
 
 export interface NodeProcessorContext {
+	getFirstOutputHandle: (nodeId: string, type: string) => string | undefined;
+	findInputData: (
+		inputs: Record<string, ConnectedInput>,
+		requiredType?: string,
+		handleLabel?: string,
+	) => string | undefined;
 	registerObjectUrl: (url: string) => void;
 	getOutputHandle: (type: string, label?: string) => string | undefined;
+	pixi: IPixiProcessor;
 }
 
 export type NodeProcessorParams<TNode = any> = {

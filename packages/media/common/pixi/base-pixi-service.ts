@@ -263,7 +263,7 @@ export abstract class BasePixiService implements IPixiProcessor {
 
 	public async processBlur(
 		imageUrl: string,
-		options: { blurSize: number },
+		options: { size: number },
 		signal?: AbortSignal,
 		apiKey?: string,
 	): Promise<BlurOutput> {

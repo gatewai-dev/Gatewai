@@ -29,10 +29,12 @@
 	"dependencies": {
 		"@gatewai/node-sdk": "workspace:*",
 		"@gatewai/core": "workspace:*",
+		"@gatewai/media": "workspace:*",
 		"@gatewai/db": "workspace:*",
 		"@gatewai/react-store": "workspace:*",
 		"@gatewai/ui-kit": "workspace:*",
 		"zod": "3.25.67",
+		"tsyringe": "^4.10.0",
 		"lucide-react": "^0.473.0"
 	},
 	"devDependencies": {
@@ -44,7 +46,7 @@
 		"typescript": "~5.8.3"
 	},
 	"peerDependencies": {
-		"react": "^18.0.0 || ^19.0.0",
-		"react-dom": "^18.0.0 || ^19.0.0"
+		"react": "^19.2.14",
+		"react-dom": "^19.2.14"
 	}
 }

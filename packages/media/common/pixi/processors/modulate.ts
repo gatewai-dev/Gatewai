@@ -8,18 +8,12 @@ export interface ModulateInput {
 	apiKey?: string;
 }
 
-export interface ModulateOutput {
-	dataUrl: Blob;
-	width: number;
-	height: number;
-}
-
-export const ModulateProcessor: PixiProcessor<ModulateInput, ModulateOutput> = {
+export const ModulateProcessor: PixiProcessor<ModulateInput> = {
 	id: "modulate",
 	async process(
 		context: PixiProcessorContext,
 		input: ModulateInput,
-	): Promise<ModulateOutput> {
+	): Promise<PixiProcessOutput> {
 		const { imageUrl, config, apiKey } = input;
 		const { app, loadTexture, getPixiModules, extractBlob, signal } = context;
 
