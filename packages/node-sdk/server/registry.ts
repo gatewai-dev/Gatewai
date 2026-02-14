@@ -1,18 +1,18 @@
 import { logger } from "@gatewai/core";
-import type { GatewaiNodeManifest, NodeProcessorConstructor } from "./types.js";
+import type { BackendNodePlugin, NodeProcessorConstructor } from "./types.js";
 
 /**
  * Central registry for node processors and manifests.
  */
 export class NodeRegistry {
 	private processors = new Map<string, NodeProcessorConstructor>();
-	private manifests = new Map<string, GatewaiNodeManifest>();
+	private manifests = new Map<string, BackendNodePlugin>();
 
 	/**
 	 * Register a node manifest. If it has a backendProcessor,
 	 * that processor will be registered for execution.
 	 */
-	register(manifest: GatewaiNodeManifest): void {
+	register(manifest: BackendNodePlugin): void {
 		if (this.manifests.has(manifest.type)) {
 			logger.warn(
 				`[NodeRegistry] Overwriting existing registration for node type: ${manifest.type}`,
@@ -44,14 +44,14 @@ export class NodeRegistry {
 	/**
 	 * Get the manifest for a node type.
 	 */
-	getManifest(type: string): GatewaiNodeManifest | undefined {
+	getManifest(type: string): BackendNodePlugin | undefined {
 		return this.manifests.get(type);
 	}
 
 	/**
 	 * Get all registered manifests.
 	 */
-	getAllManifests(): GatewaiNodeManifest[] {
+	getAllManifests(): BackendNodePlugin[] {
 		return Array.from(this.manifests.values());
 	}
 

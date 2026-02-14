@@ -20,12 +20,7 @@ import {
 	GetAssetEndpoint,
 	GetFontAssetUrl,
 } from "@gatewai/core/browser";
-import type {
-	CompositorLayer,
-	CompositorNodeConfig,
-	FileData,
-	OutputItem,
-} from "@gatewai/core/types";
+import type { FileData, OutputItem } from "@gatewai/core/types";
 import { COMPOSITOR_DEFAULTS, dataTypeColors } from "@gatewai/core/types";
 import type { HandleEntityType, NodeEntityType } from "@gatewai/react-store";
 import {
@@ -110,6 +105,10 @@ import {
 	Transformer,
 } from "react-konva";
 import useImage from "use-image";
+import type {
+	CompositorLayer,
+	CompositorNodeConfig,
+} from "@/shared/compositor.config.js";
 
 //#region CONSTANTS
 // Local defaults removed in favor of shared COMPOSITOR_DEFAULTS

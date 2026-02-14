@@ -4,7 +4,8 @@ import {
 	NodeUIContext,
 	type NodeUIContextType,
 	NodeUIProvider,
-} from "@gatewai/node-sdk/client";
+	useNodeResult,
+} from "@gatewai/node-sdk/browser";
 import {
 	type HandleEntityType,
 	makeSelectAllEdges,
@@ -23,7 +24,6 @@ import {
 	useSyncExternalStore,
 } from "react";
 import { useCanvasCtx } from "./canvas-ctx";
-import { useNodePreview } from "./hooks/node-preview";
 import { NodeGraphProcessor } from "./node-graph-processor";
 import { BaseNode } from "./nodes/base";
 import { CanvasRenderer } from "./nodes/common/canvas-renderer";
@@ -72,16 +72,20 @@ export function ProcessorProvider({ children }: { children: React.ReactNode }) {
 		() => ({
 			onNodeConfigUpdate,
 			onNodeResultUpdate,
-			useNodePreview,
-			useNodeResult,
-			useNodeValidation,
-			useNodeTaskRunning, // Imported from task-manager-ctx
 			createNewHandle,
 			runNodes,
+			useNodeTaskRunning, // Imported from task-manager-ctx
 			BaseNode,
 			CanvasRenderer,
+			processor,
 		}),
-		[onNodeConfigUpdate, onNodeResultUpdate, createNewHandle, runNodes],
+		[
+			onNodeConfigUpdate,
+			onNodeResultUpdate,
+			createNewHandle,
+			runNodes,
+			processor,
+		],
 	);
 
 	return (
@@ -109,157 +113,13 @@ const EMPTY_HANDLES = Object.freeze({});
  * Subscribe to a specific node's result
  * Returns result and updates automatically when processing completes
  */
-export function useNodeResult<T extends NodeResult = NodeResult>(
-	nodeId: string,
-): {
-	result: T | null;
-	inputs: Record<HandleEntityType["id"], ConnectedInput>;
-	handleStatus: Record<string, HandleState>;
-	error: string | null;
-	isProcessed: boolean; // Added property
-} {
-	const processor = useProcessor();
+export {
+	useEdgeColor,
+	useNodePreview,
+	useNodeValidation,
+} from "@gatewai/node-sdk/browser";
 
-	const snapshotRef = useRef<{
-		result: T | null;
-		inputs: Record<HandleEntityType["id"], ConnectedInput>;
-		handleStatus: Record<string, HandleState>;
-		error: string | null;
-		isProcessed: boolean; // Added property
-	} | null>(null);
-
-	const subscribe = (callback: () => void) => {
-		const nodeHandler = (data: { nodeId: string }) => {
-			if (data.nodeId === nodeId) {
-				callback();
-			}
-		};
-
-		const graphHandler = () => {
-			callback();
-		};
-
-		processor.on("node:start", nodeHandler);
-		processor.on("node:processed", nodeHandler);
-		processor.on("node:error", nodeHandler);
-		processor.on("node:queued", nodeHandler);
-		processor.on("graph:updated", graphHandler);
-
-		return () => {
-			processor.off("node:start", nodeHandler);
-			processor.off("node:processed", nodeHandler);
-			processor.off("node:error", nodeHandler);
-			processor.off("node:queued", nodeHandler);
-			processor.off("graph:updated", graphHandler);
-		};
-	};
-
-	const getSnapshot = () => {
-		const state = processor.getNodeState(nodeId);
-
-		const nextResult = state?.result ?? null;
-		const nextInputs = state?.inputs ?? EMPTY_INPUTS;
-		const nextError = state?.error ?? null;
-		const nextHandleStatus = state?.handleStatus ?? EMPTY_HANDLES;
-
-		// Logic for isProcessed: adjust 'processed' to match your actual state enum
-		const nextIsProcessed = state?.status === TaskStatus.COMPLETED;
-
-		const hasChanged =
-			!snapshotRef.current ||
-			snapshotRef.current.result !== nextResult ||
-			snapshotRef.current.error !== nextError ||
-			snapshotRef.current.handleStatus !== nextHandleStatus ||
-			snapshotRef.current.isProcessed !== nextIsProcessed || // Check for change
-			!isEqual(snapshotRef.current.inputs, nextInputs);
-
-		if (hasChanged) {
-			snapshotRef.current = {
-				result: nextResult as T,
-				inputs: nextInputs,
-				handleStatus: nextHandleStatus,
-				error: nextError,
-				isProcessed: nextIsProcessed,
-			};
-		}
-
-		return snapshotRef.current!;
-	};
-
-	return useSyncExternalStore(subscribe, getSnapshot, getSnapshot);
-}
-
-export function useNodeValidation(nodeId: string): Record<string, string> {
-	const processor = useProcessor();
-	const lastSnapshot = useRef<Record<string, string>>({});
-
-	const subscribe = useCallback(
-		(callback: () => void) => {
-			const onValidated = () => callback();
-			processor.on("graph:validated", onValidated);
-			return () => processor.off("graph:validated", onValidated);
-		},
-		[processor],
-	);
-
-	const getSnapshot = () => {
-		const nextValue = processor.getNodeValidation(nodeId);
-
-		// Only update the reference if the content actually changed
-		if (!isEqual(lastSnapshot.current, nextValue)) {
-			lastSnapshot.current = nextValue;
-		}
-
-		return lastSnapshot.current;
-	};
-
-	return useSyncExternalStore(subscribe, getSnapshot, getSnapshot);
-}
-
-/**
- * Hook to get the color for an edge based on its source handle
- */
-export function useEdgeColor(
-	sourceNodeId: string,
-	sourceHandleId: string,
-): string | undefined {
-	const processor = useProcessor();
-	const lastColor = useRef<string | undefined>(undefined);
-
-	const subscribe = useCallback(
-		(callback: () => void) => {
-			const handler = (data: { nodeId: string }) => {
-				if (data.nodeId === sourceNodeId) {
-					callback();
-				}
-			};
-			// Handler for general graph topology updates
-			const graphHandler = () => callback();
-
-			processor.on("node:processed", handler);
-			processor.on("node:queued", handler);
-			processor.on("graph:updated", graphHandler);
-
-			return () => {
-				processor.off("node:processed", handler);
-				processor.off("node:queued", handler);
-				processor.off("graph:updated", graphHandler);
-			};
-		},
-		[processor, sourceNodeId],
-	);
-
-	const getSnapshot = () => {
-		const color =
-			processor.getHandleColor(sourceNodeId, sourceHandleId) ?? undefined;
-		if (color !== lastColor.current) {
-			lastColor.current = color;
-		}
-		return lastColor.current;
-	};
-
-	return useSyncExternalStore(subscribe, getSnapshot, getSnapshot);
-}
+export { useNodeResult };
 
 /**
  * Subscribe to a node's image output for canvas rendering, used by crop etc

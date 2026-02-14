@@ -1,4 +1,4 @@
-import { useNodeUI } from "@gatewai/node-sdk/client";
+import { useNodeUI } from "@gatewai/node-sdk/browser";
 import { Label, Slider } from "@gatewai/ui-kit";
 import React, { memo, useCallback, useEffect, useState } from "react";
 

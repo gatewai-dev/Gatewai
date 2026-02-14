@@ -1,5 +1,8 @@
 import { z } from "zod";
-import { VIDEOGEN_DURATIONS, VideoGenBaseSchema } from "./google.videogen.base.config.js";
+import {
+	VIDEOGEN_DURATIONS,
+	VideoGenBaseSchema,
+} from "./google.videogen.base.config.js";
 
 export const VideoGenNodeConfigSchema = VideoGenBaseSchema.extend({
 	durationSeconds: z.enum(VIDEOGEN_DURATIONS).default("8"),

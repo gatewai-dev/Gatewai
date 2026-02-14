@@ -1,8 +1,5 @@
-import {
-	type BackendNodePlugin,
-	type NodeMetadata,
-	NodeMetadataSchema,
-} from "./types.js";
+import { type NodeMetadata, NodeMetadataSchema } from "@gatewai/core";
+import type { BackendNodePlugin } from "./types.js";
 
 /**
  * Define the shared metadata for a node.

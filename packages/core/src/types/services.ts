@@ -58,15 +58,15 @@ export interface GraphResolvers<T = unknown> {
 		targetNodeId: string,
 	) => Array<{
 		handle:
-		| {
-			id: string;
-			type: string;
-			nodeId: string;
-			dataTypes: DataType[];
-			label: string;
-			[key: string]: unknown;
-		}
-		| undefined;
+			| {
+					id: string;
+					type: string;
+					nodeId: string;
+					dataTypes: DataType[];
+					label: string;
+					[key: string]: unknown;
+			  }
+			| undefined;
 		value: {
 			type: DataType;
 			data: unknown;

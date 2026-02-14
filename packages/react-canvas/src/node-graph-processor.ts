@@ -7,16 +7,8 @@ import {
 	type OutputItem,
 } from "@gatewai/core/types";
 import type { DataType } from "@gatewai/db";
-import {
-	type BlurNodeConfig,
-	type CompositorNodeConfig,
-	type CropNodeConfig,
-	type ModulateNodeConfig,
-	type PaintNodeConfig,
-	type ResizeNodeConfig,
-	TextMergerNodeConfigSchema,
-	TextNodeConfigSchema,
-} from "@gatewai/nodes/configs";
+import { pixiWorkerService } from "@gatewai/media/browser";
+import type { NodeProcessor } from "@gatewai/node-sdk/browser";
 import type {
 	EdgeEntityType,
 	HandleEntityType,
@@ -25,14 +17,14 @@ import type {
 import type {
 	ConnectedInput,
 	HandleState,
-	NodeProcessor,
 	NodeProcessorParams,
+	NodeRunFunction,
 	NodeState,
 	ProcessorConfig,
 } from "./types";
 import { TaskStatus } from "./types";
 
-export class NodeGraphProcessor extends EventEmitter {
+export class NodeGraphProcessor extends EventEmitter implements NodeProcessor {
 	private nodes = new Map<string, NodeEntityType>();
 	private edges: EdgeEntityType[] = [];
 	private handles: HandleEntityType[] = [];
@@ -43,7 +35,7 @@ export class NodeGraphProcessor extends EventEmitter {
 	public graphValidation: Record<string, Record<string, string>> = {};
 
 	private nodeStates = new Map<string, NodeState>();
-	private processors = new Map<string, NodeProcessor>();
+	private processors = new Map<string, NodeRunFunction>();
 	private objectUrls = new Map<string, string[]>();
 	private processingLoopActive = false;
 	private schedulePromise: Promise<void> | null = null;
@@ -405,6 +397,10 @@ export class NodeGraphProcessor extends EventEmitter {
 		return this.nodeStates.get(nodeId) ?? null;
 	}
 
+	getNodeData(nodeId: string): NodeEntityType | undefined {
+		return this.nodes.get(nodeId);
+	}
+
 	/**
 	 * Helper to get the resolved color for a specific handle
 	 * Used for coloring edges based on source handle
@@ -434,7 +430,7 @@ export class NodeGraphProcessor extends EventEmitter {
 		}
 	}
 
-	registerProcessor(nodeType: string, processor: NodeProcessor): void {
+	registerProcessor(nodeType: string, processor: NodeRunFunction): void {
 		if (this.processors.has(nodeType)) {
 			throw new Error(`Processor for node type:${nodeType} is already set.`);
 		}
@@ -688,9 +684,24 @@ export class NodeGraphProcessor extends EventEmitter {
 
 				// IF it's a class, instantiate it.
 				if (typeof PluginClass === "function") {
-					processor = new PluginClass().process.bind(new PluginClass());
+					const backendProcessor = new PluginClass();
+					processor = async (params) => {
+						// @ts-expect-error - mismatch in context types but we are patching it
+						const res = await backendProcessor.process(params);
+						if (!res.success) throw new Error(res.error || "Unknown error");
+						return res.newResult ?? null;
+					};
 				} else {
-					processor = (PluginClass as any).process;
+					// Handle functional processors if any (unlikely for backend types but possible)
+					const originalFn = (PluginClass as any).process;
+					processor = async (params) => {
+						const res = await originalFn(params);
+						if (res && typeof res === "object" && "success" in res) {
+							if (!res.success) throw new Error(res.error || "Unknown error");
+							return res.newResult ?? null;
+						}
+						return res;
+					};
 				}
 
 				if (processor) {
@@ -734,10 +745,26 @@ export class NodeGraphProcessor extends EventEmitter {
 
 			this.emit("node:start", { nodeId, inputs, startedAt: state.startedAt });
 
+			const context = {
+				registerObjectUrl: (url: string) => this.registerObjectUrl(nodeId, url),
+				getOutputHandle: (type: string, label?: string) => {
+					return this.handles.find(
+						(h) =>
+							h.nodeId === nodeId &&
+							h.type === "Output" &&
+							(label
+								? h.label === label
+								: h.dataTypes.includes(type as DataType)),
+					)?.id;
+				},
+			};
+
 			const result = await processor({
 				node,
 				inputs,
 				signal,
+				data: node.data,
+				context,
 			});
 
 			if (signal.aborted) throw new Error("Aborted");
@@ -939,43 +966,19 @@ export class NodeGraphProcessor extends EventEmitter {
 
 			const sourceState = this.nodeStates.get(edge.source);
 			if (!sourceState?.result) {
-				// Parent completed/failed without result.
-				// If handle is required, this is Invalid Connection? Not really, it's just runtime error.
-				// But invalid connections throw error in `executeNode`.
-				// If Optional, we should allow it as valid (null input).
-				// If Required...
-				//   If parent Completed -> we allow it (null input).
-				//   If parent Failed -> we allow it?
-				//      If we marked it as "valid", executeNode will proceed. Processor might fail if it needs data.
-				//      If we mark as "invalid", executeNode throws "Invalid input types".
-				//      User said: "input check should only be made for Required handles, and for invalid connections"
-				//      If upstream FAILED, and handle is OPTIONAL, we should probably mark connection as valid (so we don't throw)
-				//      and let processor handle null.
-
 				const isParentCompleted = sourceState?.status === TaskStatus.COMPLETED;
-				// If parent completed, assume valid null.
 				if (isParentCompleted) {
 					inputs[handle.id] = {
 						connectionValid: true,
 						outputItem: null,
 					};
 				} else {
-					// Parent Failed (or missing state).
-					// If handle is Optional, we want to allow execution -> Valid connection (null data).
 					if (!handle.required) {
 						inputs[handle.id] = {
 							connectionValid: true,
 							outputItem: null,
 						};
 					} else {
-						// Required handle + Failed Parent -> Invalid?
-						// Actually, if parent failed, areInputsReady should have blocked us!
-						// So we shouldn't even be here for Required handles if parent failed.
-						// But if we ARE here, let's mark it as invalid to be safe/consistent?
-						// Or valid=false means "Invalid Type".
-						// Let's stick to: if not ready, we don't execute.
-						// So if we are executing, we assume we are ready.
-						// Be defensive.
 						inputs[handle.id] = {
 							connectionValid: false,
 							outputItem: null,

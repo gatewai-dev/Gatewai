@@ -101,9 +101,18 @@ export class GCSStorageService implements StorageService {
 	}
 
 	// Kept as-is logic from original
-	async uploadToTemporaryStorageFolder(buffer: Buffer, mimeType: string, key: string) {
+	async uploadToTemporaryStorageFolder(
+		buffer: Buffer,
+		mimeType: string,
+		key: string,
+	) {
 		const keyToUse = `temp/${key}`;
-		await this.uploadToStorage(buffer, keyToUse, mimeType, this.assetsBucketName);
+		await this.uploadToStorage(
+			buffer,
+			keyToUse,
+			mimeType,
+			this.assetsBucketName,
+		);
 		const expiresIn = 3600 * 24 * 1.9; // A bit less than 2 days
 		const signedUrl = await this.generateSignedUrl(
 			keyToUse,

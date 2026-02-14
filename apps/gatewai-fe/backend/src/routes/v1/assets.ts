@@ -510,8 +510,8 @@ const assetsRouter = new Hono<{ Variables: AuthorizedHonoTypes }>({
 									const data = item.data;
 									const entityId =
 										typeof data === "object" &&
-											data !== null &&
-											"entity" in data
+										data !== null &&
+										"entity" in data
 											? (data as { entity?: { id?: string } }).entity?.id
 											: undefined;
 									const matches = entityId === id;

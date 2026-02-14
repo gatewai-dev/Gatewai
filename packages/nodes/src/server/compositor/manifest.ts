@@ -1,5 +1,5 @@
 import { defineNode } from "@gatewai/node-sdk";
-import { CompositorNodeConfigSchema } from "../../configs/compositor.config.js";
+import { CompositorNodeConfigSchema } from "../../../../../nodes/node-image-compositor/src/shared/compositor.config.js";
 
 export default defineNode({
 	type: "Compositor",

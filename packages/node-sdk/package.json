@@ -6,14 +6,14 @@
 	"sideEffects": false,
 	"license": "MIT",
 	"description": "SDK for building Gatewai node plugins",
-	"module": "./dist/server.mjs",
-	"types": "./dist/server.d.mts",
+	"module": "./dist/index.mjs",
+	"types": "./dist/index.d.mts",
 	"exports": {
 		".": {
-			"types": "./dist/server.d.mts",
-			"development": "./server/index.ts",
-			"import": "./dist/server.mjs",
-			"default": "./dist/server.mjs"
+			"types": "./dist/index.d.mts",
+			"development": "./index.ts",
+			"import": "./dist/index.mjs",
+			"default": "./dist/index.mjs"
 		},
 		"./server": {
 			"types": "./dist/server.d.mts",
@@ -21,11 +21,11 @@
 			"import": "./dist/server.mjs",
 			"default": "./dist/server.mjs"
 		},
-		"./client": {
-			"types": "./dist/client.d.mts",
-			"development": "./client/index.ts",
-			"import": "./dist/client.mjs",
-			"default": "./dist/client.mjs"
+		"./browser": {
+			"types": "./dist/browser.d.mts",
+			"development": "./browser/index.ts",
+			"import": "./dist/browser.mjs",
+			"default": "./dist/browser.mjs"
 		}
 	},
 	"files": [
@@ -48,15 +48,16 @@
 		"@gatewai/core": "workspace:*",
 		"@gatewai/db": "workspace:*",
 		"@gatewai/media": "workspace:*",
-		"@gatewai/ui-kit": "workspace:*",
 		"@gatewai/react-store": "workspace:*",
+		"@gatewai/ui-kit": "workspace:*",
 		"zod": "3.25.67"
 	},
 	"dependencies": {
+		"@hookform/resolvers": "^3.10.0",
 		"clsx": "^2.1.1",
 		"lodash": "^4.17.21",
+		"react-fast-compare": "^3.2.2",
 		"react-hook-form": "^7.66.0",
-		"@hookform/resolvers": "^3.10.0",
 		"tailwind-merge": "^3.0.1"
 	}
 }

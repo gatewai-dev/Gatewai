@@ -1,6 +1,6 @@
 export * from "./base-pixi-service.js";
 export * from "./filters/index.js";
-export * from "./interface.js";
+// export * from "./interface.js";
 export * from "./processors/blur.js";
 export * from "./processors/crop.js";
 export * from "./processors/mask.js";

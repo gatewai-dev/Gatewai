@@ -4,7 +4,7 @@ import {
 	createEntityAdapter,
 	createSlice,
 } from "@reduxjs/toolkit";
-import type { RootState } from "./";
+import type { RootState } from "./index.js";
 
 export type HandleEntityType = CanvasDetailsRPC["handles"][number];
 

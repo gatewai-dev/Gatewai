@@ -1,4 +1,6 @@
 import type { AnyOutputItem, NodeResult } from "@gatewai/core/types";
+import type { HandleState, NodeState } from "@gatewai/node-sdk/browser";
+import { TaskStatus } from "@gatewai/node-sdk/browser";
 import type {
 	EdgeEntityType,
 	HandleEntityType,
@@ -11,57 +13,35 @@ interface ProcessorConfig {
 	handles: HandleEntityType[];
 }
 
-export enum TaskStatus {
-	QUEUED = "QUEUED",
-	EXECUTING = "EXECUTING",
-	FAILED = "FAILED",
-	COMPLETED = "COMPLETED",
-}
-
-export interface HandleState {
-	id: string;
-	isConnected: boolean;
-	valid: boolean;
-	type: string | null;
-	color: string | null;
-}
-
-export interface NodeState {
-	id: string;
-	status: TaskStatus | null;
-	isDirty: boolean;
-	startedAt?: number;
-	finishedAt?: number;
-	durationMs?: number;
-	result: NodeResult | null;
-	inputs: Record<string, ConnectedInput> | null;
-	error: string | null;
-	handleStatus: Record<string, HandleState>;
-	abortController: AbortController | null;
-	lastProcessedSignature: string | null;
-	version: number;
-}
+// Re-export types from node-sdk to maintain compatibility within react-canvas
+export { TaskStatus };
+export type { HandleState, NodeState };
 
 type ConnectedInput = {
 	connectionValid: boolean;
 	outputItem: AnyOutputItem | null;
 };
 
+export interface NodeProcessorContext {
+	registerObjectUrl: (url: string) => void;
+	getOutputHandle: (type: string, label?: string) => string | undefined;
+}
+
 type NodeProcessorParams = {
 	node: NodeEntityType;
 	inputs: Record<string, ConnectedInput>;
 	signal: AbortSignal;
+	data: any;
+	context: NodeProcessorContext;
 };
 
-type NodeProcessor = (
+type NodeRunFunction = (
 	params: NodeProcessorParams,
 ) => Promise<NodeResult | null>;
 
 export type {
 	ProcessorConfig,
-	NodeState,
-	HandleState,
 	ConnectedInput,
-	NodeProcessor,
+	NodeRunFunction,
 	NodeProcessorParams,
 };

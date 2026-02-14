@@ -1,6 +1,5 @@
 import { useViewport } from "@xyflow/react";
 import { useEffect, useRef, useState } from "react";
-import CanvasWorker from "./canvas.worker.ts?worker";
 
 function useDrawToCanvas(
 	canvasRef: React.RefObject<HTMLCanvasElement | null>,
@@ -18,7 +17,10 @@ function useDrawToCanvas(
 	// Setup Worker and ResizeObserver
 	useEffect(() => {
 		if (!workerRef.current) {
-			workerRef.current = new CanvasWorker();
+			workerRef.current = new Worker(
+				new URL("./canvas.worker.ts", import.meta.url),
+				{ type: "module" },
+			);
 			workerRef.current.onmessage = (e) => {
 				if (e.data.type === "CANVAS_INITIALIZED") {
 					setRenderHeight(e.data.payload.renderHeight);

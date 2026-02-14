@@ -1,11 +1,19 @@
-import type { NodeProcessor } from "@gatewai/node-sdk";
+import type {
+	BackendNodeProcessorCtx,
+	BackendNodeProcessorResult,
+	NodeProcessor,
+	NodeResult,
+} from "@gatewai/core/types";
 import { injectable } from "tsyringe";
-import { manifest } from "../metadata.js";
 
 @injectable()
-export class ImageCompositorProcessor extends NodeProcessor {
-	async process() {
+export class ImageCompositorProcessor implements NodeProcessor {
+	async process(ctx: BackendNodeProcessorCtx) {
+		const result: BackendNodeProcessorResult = {
+			success: true,
+			newResult: ctx.node.result as NodeResult,
+		};
 		// Implementation placeholder
-		return {};
+		return result;
 	}
 }

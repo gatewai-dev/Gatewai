@@ -1,5 +1,4 @@
 export {
-	defineClient,
 	defineMetadata,
 	defineNode,
 } from "./define-node.js";
