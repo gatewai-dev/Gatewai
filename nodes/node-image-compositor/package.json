@@ -32,7 +32,6 @@
 		"@gatewai/db": "workspace:*",
 		"@gatewai/react-store": "workspace:*",
 		"@gatewai/ui-kit": "workspace:*",
-		"@gatewai/react-canvas": "workspace:*",
 		"zod": "3.25.67",
 		"lucide-react": "^0.473.0",
 		"konva": "^10.0.12",

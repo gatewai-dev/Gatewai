@@ -27,9 +27,9 @@ import {
 import { memo, useEffect, useRef, useState } from "react";
 import { createPortal } from "react-dom";
 import { toast } from "sonner";
+import { useCanvasCtx } from "@/canvas-ctx";
 import { cn } from "@/lib/utils";
-import { useCanvasCtx } from "@/routes/canvas/details/ctx/canvas-ctx";
-import { useNodeTemplates } from "../node-templates.ctx";
+import { useNodeTemplates } from "../node-templates/node-templates.ctx";
 import type { FileAssetEntity } from "./types";
 import { GetAssetThumbnailEndpoint } from "./utils";
 

@@ -26,13 +26,13 @@ import {
 import { TrashIcon } from "lucide-react";
 import { type JSX, memo, type ReactNode, useMemo } from "react";
 import { useCanvasCtx } from "../canvas-ctx";
-import { cn } from "../lib/cn";
-import type { HandleState } from "../node-graph-processor";
+import { cn } from "../lib/utils";
 import {
 	useEdgeColor,
 	useNodeResult,
 	useNodeValidation,
 } from "../processor-ctx";
+import type { HandleState } from "../types";
 import { NODE_ICON_MAP } from "./icon-map";
 import { NodeMenu } from "./node-menu";
 

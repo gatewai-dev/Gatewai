@@ -6,13 +6,13 @@ import {
 	DialogHeader,
 	DialogTitle,
 	DialogTrigger,
+	MarkdownRenderer,
 	Tooltip,
 	TooltipContent,
 	TooltipTrigger,
 } from "@gatewai/ui-kit";
 import { BookOpen } from "lucide-react";
 import { cn } from "@/lib/utils";
-import { MarkdownRenderer } from "../../components/markdown-renderer";
 
 const SHORTCUTS_CONTENT = `
 ### Navigation & Shortcuts

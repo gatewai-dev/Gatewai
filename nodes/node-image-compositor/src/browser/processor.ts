@@ -3,8 +3,8 @@ import {
 	GetAssetEndpoint,
 	GetFontAssetUrl,
 } from "@gatewai/core/browser";
+import type { ConnectedInput, NodeRunFunction } from "@gatewai/core/types";
 import { COMPOSITOR_DEFAULTS, type FileData } from "@gatewai/core/types";
-import type { ConnectedInput, NodeRunFunction } from "@gatewai/react-canvas";
 import Konva from "konva";
 import type {
 	CompositorLayer,

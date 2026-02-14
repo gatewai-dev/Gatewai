@@ -1,4 +1,11 @@
-import type { AnyOutputItem, NodeResult } from "@gatewai/core/types";
+import type {
+	AnyOutputItem,
+	ConnectedInput,
+	NodeProcessorContext,
+	NodeProcessorParams,
+	NodeResult,
+	NodeRunFunction,
+} from "@gatewai/core/types";
 import type { HandleState, NodeState } from "@gatewai/node-sdk/browser";
 import { TaskStatus } from "@gatewai/node-sdk/browser";
 import type {
@@ -17,31 +24,12 @@ interface ProcessorConfig {
 export { TaskStatus };
 export type { HandleState, NodeState };
 
-type ConnectedInput = {
-	connectionValid: boolean;
-	outputItem: AnyOutputItem | null;
-};
-
-export interface NodeProcessorContext {
-	registerObjectUrl: (url: string) => void;
-	getOutputHandle: (type: string, label?: string) => string | undefined;
-}
-
-type NodeProcessorParams = {
-	node: NodeEntityType;
-	inputs: Record<string, ConnectedInput>;
-	signal: AbortSignal;
-	data: any;
-	context: NodeProcessorContext;
-};
-
-type NodeRunFunction = (
-	params: NodeProcessorParams,
-) => Promise<NodeResult | null>;
-
+// Re-export specific types from core that differ or are used here
 export type {
-	ProcessorConfig,
 	ConnectedInput,
-	NodeRunFunction,
+	NodeProcessorContext,
 	NodeProcessorParams,
+	NodeRunFunction,
 };
+
+export type { ProcessorConfig };
