@@ -1,5 +1,5 @@
 import { defineMetadata } from "@gatewai/node-sdk";
-import { BlurNodeConfigSchema, BlurNodeConfig } from "./shared/index.js";
+import { BlurNodeConfigSchema, type BlurNodeConfig } from "./shared/index.js";
 
 export const metadata = defineMetadata({
 	type: "Blur",
