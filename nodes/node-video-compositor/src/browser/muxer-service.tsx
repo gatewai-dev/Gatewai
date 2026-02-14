@@ -1,10 +1,7 @@
+import type { VideoCompositorLayer, VideoCompositorNodeConfig } from "@/shared/video-compositor-config.js";
 import { generateId } from "@gatewai/core";
 import { GetAssetEndpoint } from "@gatewai/core/browser";
-import type { FileData } from "@gatewai/core/types";
-import type {
-	VideoCompositorLayer,
-	VideoCompositorNodeConfig,
-} from "@gatewai/nodes";
+import type { FileData, NodeProcessorParams } from "@gatewai/core/types";
 import { Audio, Video } from "@remotion/media";
 import { renderMediaOnWeb } from "@remotion/web-renderer";
 import type React from "react";
@@ -18,7 +15,6 @@ import {
 	useCurrentFrame,
 	useVideoConfig,
 } from "remotion";
-import type { NodeProcessorParams } from "./types/index.js";
 
 const DynamicComposition: React.FC<{
 	config: VideoCompositorNodeConfig;

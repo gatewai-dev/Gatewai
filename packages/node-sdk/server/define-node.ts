@@ -1,13 +1,8 @@
 import { type NodeMetadata, NodeMetadataSchema } from "@gatewai/core";
+import { defineMetadata } from "../shared/define-node.js";
 import type { BackendNodePlugin } from "./types.js";
 
-/**
- * Define the shared metadata for a node.
- * This should be used in the `metadata.ts` file of a node package.
- */
-export function defineMetadata(metadata: NodeMetadata): Readonly<NodeMetadata> {
-	return Object.freeze(NodeMetadataSchema.parse(metadata));
-}
+export { defineMetadata };
 
 /**
  * Define a backend node implementation.

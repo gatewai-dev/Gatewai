@@ -13,7 +13,7 @@ import type {
 	BackendNodeProcessorCtx,
 	NodeProcessor,
 	NodeProcessorConstructor,
-} from "@gatewai/node-sdk";
+} from "@gatewai/node-sdk/server";
 import { type Job, Worker } from "bullmq";
 import { assertIsError } from "../../utils/misc.js";
 

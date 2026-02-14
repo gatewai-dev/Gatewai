@@ -14,9 +14,10 @@ import {
     type MediaService,
     type NodeProcessor,
     type StorageService,
-} from "@gatewai/node-sdk";
+} from "@gatewai/node-sdk/server";
 import { inject, injectable } from "tsyringe";
 import { metadata } from "../metadata.js";
+import { BlurNodeConfigSchema } from "@/shared/index.js";
 
 @injectable()
 class BlurProcessor implements NodeProcessor {
@@ -39,11 +40,11 @@ class BlurProcessor implements NodeProcessor {
             assert(imageInput);
             const imageUrl = await this.media.resolveFileDataUrl(imageInput);
             assert(imageUrl);
-            const blurSize = (node.config as any).size ?? 0;
+            const blurConfig = BlurNodeConfigSchema.parse(node.config);
 
             const { dataUrl, ...dimensions } = await this.media.backendPixiService.processBlur(
                 imageUrl,
-                { blurSize },
+                { blurSize: blurConfig.size },
                 undefined,
                 data.apiKey,
             );
