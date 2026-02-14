@@ -44,6 +44,10 @@
 	"peerDependencies": {
 		"react": "^19.2.14",
 		"react-dom": "^19.2.14",
+		"remotion": "4.0.422",
+		"@remotion/media": "4.0.422",
+		"@remotion/player": "4.0.422",
+		"@remotion/web-renderer": "4.0.422",
 		"tsyringe": "^4.10.0",
 		"zod": "^3.25.67",
 		"lucide-react": "^0.473.0"

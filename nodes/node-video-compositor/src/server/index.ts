@@ -3,7 +3,7 @@ import type {
 	BackendNodeProcessorCtx,
 	BackendNodeProcessorResult,
 	NodeProcessor,
-} from "@gatewai/node-sdk";
+} from "@gatewai/node-sdk/server";
 import { injectable } from "tsyringe";
 import { manifest } from "../metadata.js";
 

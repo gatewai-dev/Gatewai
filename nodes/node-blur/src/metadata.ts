@@ -1,8 +1,6 @@
-import { defineClient } from "@gatewai/node-sdk/browser";
 import { defineMetadata, defineNode } from "@gatewai/node-sdk/server";
-import { z } from "zod";
-import { BlurProcessor } from "./browser/processor.js";
-import { BlurNodeConfigSchema } from "./shared/config.js";
+import { type BlurNodeConfig, BlurNodeConfigSchema } from "./shared/index.js";
+import { BlurProcessor } from "./shared/pixi-blur-processor.js";
 
 export const metadata = defineMetadata({
 	type: "Blur",
@@ -18,7 +16,7 @@ export const metadata = defineMetadata({
 		],
 		outputs: [{ dataTypes: ["Image"], label: "Result", order: 0 }],
 	},
-	defaultConfig: { size: 5 },
+	defaultConfig: { size: 5 } as BlurNodeConfig,
 });
 
 export default defineNode(metadata, {

@@ -1,10 +1,5 @@
-import {
-	defineClient,
-	useNodePreview,
-	useNodeUI,
-} from "@gatewai/node-sdk/browser";
+import { useNodePreview, useNodeUI } from "@gatewai/node-sdk/browser";
 import { memo } from "react";
-import { metadata } from "../metadata.js";
 import { BlurValueSlider } from "./components/blur-slider.js";
 
 const BlurNodeComponent = memo((props: any) => {
