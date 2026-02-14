@@ -1,11 +1,5 @@
 import { defineMetadata } from "@gatewai/node-sdk";
-import { z } from "zod";
-
-export const BlurNodeConfigSchema = z
-	.object({
-		size: z.number().min(0).max(100).default(5),
-	})
-	.strict();
+import { BlurNodeConfigSchema, BlurNodeConfig } from "./shared/index.js";
 
 export const metadata = defineMetadata({
 	type: "Blur",
@@ -21,5 +15,5 @@ export const metadata = defineMetadata({
 		],
 		outputs: [{ dataTypes: ["Image"], label: "Result", order: 0 }],
 	},
-	defaultConfig: { size: 5 },
+	defaultConfig: { size: 5 } as BlurNodeConfig,
 });
