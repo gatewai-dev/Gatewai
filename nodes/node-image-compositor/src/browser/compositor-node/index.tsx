@@ -1,22 +1,28 @@
 import { ResolveFileDataUrl } from "@gatewai/core/browser";
 import type { FileData } from "@gatewai/core/types";
+import {
+	AddCustomHandleButton,
+	useNodeResult,
+	useNodeUI,
+} from "@gatewai/node-sdk/browser";
 import { makeSelectNodeById, useAppSelector } from "@gatewai/react-store";
 import { Button, cn } from "@gatewai/ui-kit";
-import type { NodeProps } from "@xyflow/react";
+import type { Node, NodeProps } from "@xyflow/react";
 import { ImagesIcon } from "lucide-react";
 import { memo } from "react";
 import { useNavigate } from "react-router";
 
-const CompositorNodeComponent = memo((props: NodeProps<CompositorNode>) => {
+const CompositorNodeComponent = memo((props: NodeProps<Node>) => {
+	const { BaseNode, CanvasRenderer } = useNodeUI();
+
 	const node = useAppSelector(makeSelectNodeById(props.id));
 
 	const { result } = useNodeResult(props.id);
 	const outputItem = result?.outputs?.[result.selectedOutputIndex]?.items[0];
 	const inputFileData = outputItem?.data as FileData;
-
 	const imageUrl = ResolveFileDataUrl(inputFileData);
-	const nav = useNavigate();
 
+	const nav = useNavigate();
 	return (
 		<BaseNode selected={props.selected} id={props.id} dragging={props.dragging}>
 			<div className="flex flex-col gap-3 ">

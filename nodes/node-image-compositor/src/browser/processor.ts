@@ -6,9 +6,10 @@ import {
 import type { ConnectedInput, NodeRunFunction } from "@gatewai/core/types";
 import { COMPOSITOR_DEFAULTS, type FileData } from "@gatewai/core/types";
 import Konva from "konva";
-import type {
-	CompositorLayer,
-	CompositorNodeConfig,
+import {
+	type CompositorLayer,
+	type CompositorNodeConfig,
+	CompositorNodeConfigSchema,
 } from "@/shared/compositor.config.js";
 
 const getConnectedInputDataValue = (
@@ -38,7 +39,7 @@ const imageCompositorBrowserProcessor: NodeRunFunction = async ({
 	signal,
 	context,
 }) => {
-	const config = node.config as CompositorNodeConfig;
+	const validatedConfig = CompositorNodeConfigSchema.parse(node.config);
 	const inputDataMap: Record<
 		string,
 		{ type: "Image" | "Text"; value: string }
@@ -54,7 +55,7 @@ const imageCompositorBrowserProcessor: NodeRunFunction = async ({
 		}
 	});
 
-	const result = await processCompositor(config, inputDataMap, signal);
+	const result = await processCompositor(validatedConfig, inputDataMap, signal);
 	const outputHandle = context.getOutputHandle("Image");
 	if (!outputHandle) throw new Error("Missing output handle");
 
