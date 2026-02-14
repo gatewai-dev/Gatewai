@@ -20,7 +20,26 @@
 		"clean": "rm -rf dist"
 	},
 	"dependencies": {
-		"@gatewai/node-sdk": "workspace:*"
+		"@gatewai/node-sdk": "workspace:*",
+		"@gatewai/node-blur": "workspace:*",
+		"@gatewai/node-text": "workspace:*",
+		"@gatewai/node-image-compositor": "workspace:*",
+		"@gatewai/node-video-compositor": "workspace:*",
+		"@gatewai/node-crop": "workspace:*",
+		"@gatewai/node-resize": "workspace:*",
+		"@gatewai/node-modulate": "workspace:*",
+		"@gatewai/node-paint": "workspace:*",
+		"@gatewai/node-export": "workspace:*",
+		"@gatewai/node-file": "workspace:*",
+		"@gatewai/node-preview": "workspace:*",
+		"@gatewai/node-note": "workspace:*",
+		"@gatewai/node-llm": "workspace:*",
+		"@gatewai/node-image-gen": "workspace:*",
+		"@gatewai/node-video-gen": "workspace:*",
+		"@gatewai/node-video-gen-first-last-frame": "workspace:*",
+		"@gatewai/node-text-merger": "workspace:*",
+		"@gatewai/node-text-to-speech": "workspace:*",
+		"@gatewai/node-speech-to-text": "workspace:*"
 	},
 	"devDependencies": {
 		"tsdown": "^0.19.0"

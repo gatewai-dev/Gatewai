@@ -8,4 +8,5 @@ export const TOKENS = {
 	STORAGE: Symbol.for("STORAGE"),
 	MEDIA: Symbol.for("MEDIA"),
 	GRAPH_RESOLVERS: Symbol.for("GRAPH_RESOLVERS"),
+	AI_PROVIDER: Symbol.for("AI_PROVIDER"),
 } as const;

@@ -11,7 +11,6 @@ export default defineConfig({
 	clean: true,
 	sourcemap: true,
 	treeshake: true,
-	// Add external dependencies to avoid bundling them
 	external: [
 		"react",
 		"react-dom",
@@ -21,6 +20,5 @@ export default defineConfig({
 		"@gatewai/ui-kit",
 		"zod",
 		"tsyringe",
-		"node:assert",
 	],
 });

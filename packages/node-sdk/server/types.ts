@@ -19,13 +19,20 @@ export interface InputFilterOptions {
 
 import type { NodeMetadata } from "@gatewai/core";
 import type {
+	AIProvider,
 	GraphResolvers,
 	MediaService,
 	StorageService,
 } from "@gatewai/core/types";
 
 // Re-export so consumers don't need to import from @gatewai/core/types directly if they don't want to
-export type { GraphResolvers, MediaService, NodeMetadata, StorageService };
+export type {
+	AIProvider,
+	GraphResolvers,
+	MediaService,
+	NodeMetadata,
+	StorageService,
+};
 
 /**
  * Data context passed to a backend node processor during execution.

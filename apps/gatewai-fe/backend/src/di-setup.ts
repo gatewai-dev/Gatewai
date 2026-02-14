@@ -6,6 +6,7 @@ import {
 	mediaService,
 	storageService,
 } from "@gatewai/graph-engine";
+import { GoogleGenAI } from "@google/genai";
 
 /**
  * Register backend-specific services into the DI container.
@@ -28,6 +29,13 @@ export function registerBackendServices() {
 	// Register Graph Resolvers
 	container.register(TOKENS.GRAPH_RESOLVERS, {
 		useValue: graphResolvers,
+	});
+
+	// Register AI Provider
+	container.register(TOKENS.AI_PROVIDER, {
+		useValue: {
+			getClient: (apiKey: string) => new GoogleGenAI({ apiKey }),
+		},
 	});
 
 	return container;

@@ -100,3 +100,11 @@ export interface MediaService {
 
 	bufferToDataUrl: (buffer: Buffer, mimeType: string) => string;
 }
+
+/**
+ * Interface for AI provider services.
+ * Used by AI nodes (LLM, ImageGen, VideoGen, TTS, STT) via DI.
+ */
+export interface AIProvider {
+	getClient: (apiKey: string) => any;
+}
