@@ -1,15 +1,20 @@
-import type { FileData, ResizeNodeConfig } from "@gatewai/types";
+import { ResolveFileDataUrl } from "@gatewai/core/browser";
+import type { FileData } from "@gatewai/core/types";
+import type { ResizeNodeConfig } from "@gatewai/nodes/configs";
+import type { ConnectedInput } from "@gatewai/react-canvas";
+import {
+	BaseNode,
+	CanvasRenderer,
+	useNodePreview,
+	useNodeResult,
+} from "@gatewai/react-canvas";
+import {
+	updateNodeConfigWithoutHistory,
+	useAppDispatch,
+} from "@gatewai/react-store";
 import type { NodeProps } from "@xyflow/react";
 import { memo, useEffect } from "react";
-import { ResolveFileDataUrl } from "@/lib/file";
 import { cn } from "@/lib/utils";
-import { useAppDispatch } from "@/store";
-import { updateNodeConfigWithoutHistory } from "@/store/nodes";
-import { useNodeResult } from "../../graph-engine/processor-ctx";
-import type { ConnectedInput } from "../../graph-engine/types";
-import { useNodePreview } from "../../hooks/node-preview";
-import { BaseNode } from "../base";
-import { CanvasRenderer } from "../common/canvas-renderer";
 import type { ResizeNode } from "../node-props";
 import { ResizeConfig } from "./resize-config";
 

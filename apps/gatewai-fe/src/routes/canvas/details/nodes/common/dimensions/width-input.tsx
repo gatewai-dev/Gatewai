@@ -1,9 +1,9 @@
-import type { ResizeNodeConfig } from "@gatewai/types";
+import type { ResizeNodeConfig } from "@gatewai/core/types";
+import type { NodeEntityType } from "@gatewai/react-store";
+import { DraggableNumberInput } from "@gatewai/ui-kit";
 import { ArrowLeftRight } from "lucide-react";
 import { memo, useCallback } from "react";
-import { DraggableNumberInput } from "@gatewai/ui-kit";
-import type { NodeEntityType } from "@/store/nodes";
-import { useCanvasCtx } from "../../../ctx/canvas-ctx";
+import { useCanvasCtx } from "../../../../../../../../../packages/react-canvas/src/canvas-ctx";
 
 const ResizeWidthInput = memo(
 	({

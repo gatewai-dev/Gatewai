@@ -1,8 +1,8 @@
+import { getEnv } from "@gatewai/core/browser";
 import { Helmet } from "react-helmet-async";
 import { Link, useNavigate } from "react-router";
 import { AuthLayout } from "../auth-layout";
 import { SignInForm } from "./signin-form";
-import { getEnv } from "@/lib/env";
 
 function SigninPage() {
 	const nav = useNavigate();
@@ -23,7 +23,6 @@ function SigninPage() {
 			</Helmet>
 			<SignInForm onSuccess={onSuccess} />
 			{!getEnv("DISABLE_EMAIL_SIGNUP") && (
-
 				<div className="text-center text-sm text-zinc-500 mt-4">
 					Not have an account yet?{" "}
 					<Link

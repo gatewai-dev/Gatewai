@@ -1,4 +1,4 @@
-import { logger } from "../logger.js";
+import { logger } from "@gatewai/core";
 
 interface InternalFetchOptions extends RequestInit {
 	timeout?: number;

@@ -1,4 +1,13 @@
 import {
+	selectRFEdges,
+	selectRFNodes,
+	setSelectedEdgeIds,
+	setSelectedNodeIds,
+	useAppDispatch,
+	useAppSelector,
+} from "@gatewai/react-store";
+import { LoadingSpinner } from "@gatewai/ui-kit";
+import {
 	Background,
 	BackgroundVariant,
 	ConnectionLineType,
@@ -11,12 +20,8 @@ import {
 import type { DragEventHandler, MouseEventHandler } from "react";
 import { useEffect } from "react";
 import { Helmet } from "react-helmet-async";
-import { LoadingSpinner } from "@gatewai/ui-kit";
-import { useAppDispatch, useAppSelector } from "@/store";
-import { setSelectedEdgeIds, setSelectedNodeIds } from "@/store/node-meta";
-import { selectRFEdges, selectRFNodes } from "@/store/rfstate";
-import { useCanvasCtx } from "../ctx/canvas-ctx";
-import { useCanvasMode } from "../ctx/canvas-mode-ctx";
+import { useCanvasCtx } from "../../../../../../../packages/react-canvas/src/canvas-ctx";
+import { useCanvasMode } from "../../../../../../../packages/react-canvas/src/canvas-mode-ctx";
 import { nodeTypes } from "../nodes";
 import { CustomConnectionLine, CustomEdge } from "../nodes/base";
 import { ReactFlowPanels } from "./panels";

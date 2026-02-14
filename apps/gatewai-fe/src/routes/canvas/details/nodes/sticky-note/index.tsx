@@ -1,11 +1,10 @@
-import type { NoteNodeConfig } from "@gatewai/types";
+import type { NoteNodeConfig } from "@gatewai/core/types";
+import { useCanvasCtx } from "@gatewai/react-canvas";
+import { makeSelectNodeById, useAppSelector } from "@gatewai/react-store";
+import { Textarea } from "@gatewai/ui-kit";
 import type { NodeProps } from "@xyflow/react";
 import { NodeResizer } from "@xyflow/react";
 import { memo, useCallback } from "react";
-import { Textarea } from "@gatewai/ui-kit";
-import { useAppSelector } from "@/store";
-import { makeSelectNodeById } from "@/store/nodes";
-import { useCanvasCtx } from "../../ctx/canvas-ctx";
 import type { NoteNode } from "../node-props";
 
 const NoteNodeComponent = memo((props: NodeProps<NoteNode>) => {

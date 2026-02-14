@@ -1,8 +1,10 @@
+import {
+	BaseNode,
+	CanvasRenderer,
+	useNodePreview,
+} from "@gatewai/react-canvas";
 import { memo } from "react";
 import { cn } from "@/lib/utils";
-import { useNodePreview } from "../../hooks/node-preview";
-import { BaseNode } from "../base";
-import { CanvasRenderer } from "../common/canvas-renderer";
 import { ModulateNodeConfigComponent } from "./modulate-config";
 
 const ModulateNodeComponent = memo(

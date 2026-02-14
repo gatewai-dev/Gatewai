@@ -1,8 +1,10 @@
+import {
+	BaseNode,
+	CanvasRenderer,
+	useNodePreview,
+} from "@gatewai/react-canvas";
 import type { NodeProps } from "@xyflow/react";
 import { memo } from "react";
-import { useNodePreview } from "../../hooks/node-preview";
-import { BaseNode } from "../base";
-import { CanvasRenderer } from "../common/canvas-renderer";
 import type { BlurNode } from "../node-props";
 import { BlurValueSlider } from "./blur-slider";
 

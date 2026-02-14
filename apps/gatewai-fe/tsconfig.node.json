@@ -3,15 +3,15 @@
 		"composite": true,
 		"target": "ES2023",
 		"lib": ["ES2023"],
+		"experimentalDecorators": true,
+		"emitDecoratorMetadata": true,
 		"module": "ESNext",
 		"skipLibCheck": true,
-
 		"moduleResolution": "bundler",
 		"allowImportingTsExtensions": true,
 		"verbatimModuleSyntax": true,
 		"moduleDetection": "force",
 		"noEmit": true,
-
 		"strict": true,
 		"noUnusedLocals": true,
 		"noUnusedParameters": true,
@@ -19,8 +19,11 @@
 	},
 	"include": [
 		"vite.config.ts",
-		"trigger.config.ts",
-		"shared",
-		"backend/src/tasks/processors/video-compositon-component.jsx"
+		"backend/src",
+		"../../packages/*/src",
+		"../../packages/media/browser/draw-image-canvas",
+		"../../packages/media/browser/worker-pixi-service.ts",
+		"../../packages/media/server/utils",
+		"../../packages/media/server/backend-pixi-service.ts"
 	]
 }

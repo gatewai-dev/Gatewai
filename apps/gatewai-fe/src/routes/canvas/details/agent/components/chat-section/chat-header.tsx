@@ -1,6 +1,5 @@
+import { Button, Dialog, DialogContent, DialogTrigger } from "@gatewai/ui-kit";
 import { Clock, Plus, X } from "lucide-react";
-import { Button } from "@gatewai/ui-kit";
-import { Dialog, DialogContent, DialogTrigger } from "@gatewai/ui-kit";
 import { AgentSessionList } from "../agent-session-list";
 
 interface ChatHeaderProps {

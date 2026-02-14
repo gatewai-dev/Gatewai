@@ -1,6 +1,6 @@
-import { useCallback, useEffect, useRef, useState } from "react";
 import type { AutosizeTextAreaRef } from "@gatewai/ui-kit";
 import { ScrollArea } from "@gatewai/ui-kit";
+import { useCallback, useEffect, useRef, useState } from "react";
 import { useCanvasAgent } from "../../ctx/canvas-agent.ctx";
 import { PatchReviewCard } from "../patch-review-card";
 import { ChatHeader } from "./chat-header";

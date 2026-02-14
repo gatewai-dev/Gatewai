@@ -1,0 +1,3 @@
+export const FPS = 24;
+export const DEFAULT_DURATION_SEC = 5;
+export const DEFAULT_DURATION_FRAMES = FPS * DEFAULT_DURATION_SEC;

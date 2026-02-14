@@ -1,14 +1,14 @@
-import { ArrowRight, StopCircle, XCircle } from "lucide-react";
 import type { AutosizeTextAreaRef } from "@gatewai/ui-kit";
-import { AutosizeTextarea } from "@gatewai/ui-kit";
-import { Button } from "@gatewai/ui-kit";
 import {
+	AutosizeTextarea,
+	Button,
 	Select,
 	SelectContent,
 	SelectItem,
 	SelectTrigger,
 	SelectValue,
 } from "@gatewai/ui-kit";
+import { ArrowRight, StopCircle, XCircle } from "lucide-react";
 import { cn } from "@/lib/utils";
 
 const MODEL_OPTIONS = [

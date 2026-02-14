@@ -3,13 +3,13 @@ import {
 	VIDEOGEN_RESOLUTIONS,
 	type VideoGenFirstLastFrameNodeConfig,
 	VideoGenFirstLastFrameNodeConfigSchema,
-} from "@gatewai/types";
+} from "@gatewai/nodes/configs";
+import type { NodeEntityType } from "@gatewai/react-store";
+import { Form } from "@gatewai/ui-kit";
 import { zodResolver } from "@hookform/resolvers/zod";
 import { memo, useCallback, useEffect } from "react";
 import { useForm } from "react-hook-form";
-import { Form } from "@gatewai/ui-kit";
 import { useCanvasCtx } from "@/routes/canvas/details/ctx/canvas-ctx";
-import type { NodeEntityType } from "@/store/nodes";
 import { SelectField } from "../../../../components/fields/select";
 
 const VideoGenFirstLastFrameNodeConfigComponent = memo(

@@ -1,0 +1,42 @@
+{
+	"name": "@gatewai/node-note",
+	"version": "0.0.0",
+	"private": true,
+	"type": "module",
+	"module": "./dist/index.js",
+	"types": "./dist/index.d.ts",
+	"exports": {
+		".": {
+			"types": "./dist/index.d.ts",
+			"import": "./dist/index.js"
+		},
+		"./server": {
+			"types": "./dist/server.d.ts",
+			"import": "./dist/server.js"
+		},
+		"./browser": {
+			"types": "./dist/browser.d.ts",
+			"import": "./dist/browser.js"
+		}
+	},
+	"scripts": {
+		"build": "tsdown",
+		"dev": "tsdown --watch",
+		"clean": "rm -rf dist"
+	},
+	"dependencies": {
+		"zod": "^3.24.1"
+	},
+	"peerDependencies": {
+		"@gatewai/core": "workspace:*",
+		"@gatewai/db": "workspace:*",
+		"@gatewai/node-sdk": "workspace:*",
+		"react": "^19.0.0",
+		"tsyringe": "^4.8.0"
+	},
+	"devDependencies": {
+		"@gatewai/tsconfig": "workspace:*",
+		"tsdown": "^0.12.5",
+		"typescript": "^5.8.3"
+	}
+}

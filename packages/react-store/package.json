@@ -1,0 +1,43 @@
+{
+	"name": "@gatewai/react-store",
+	"version": "0.0.1",
+	"type": "module",
+	"main": "./dist/index.mjs",
+	"types": "./dist/index.d.mts",
+	"exports": {
+		".": {
+			"types": "./dist/index.d.mts",
+			"development": "./src/index.ts",
+			"import": "./dist/index.mjs",
+			"default": "./dist/index.mjs"
+		}
+	},
+	"files": [
+		"dist"
+	],
+	"scripts": {
+		"build": "tsdown",
+		"dev": "tsdown --watch",
+		"clean": "rm -rf dist node_modules"
+	},
+	"peerDependencies": {
+		"react": "^18.0.0 || ^19.0.0",
+		"react-dom": "^18.0.0 || ^19.0.0",
+		"react-redux": "^9.0.0"
+	},
+	"dependencies": {
+		"@gatewai/core": "workspace:*",
+		"@gatewai/rpc-client": "workspace:*",
+		"@reduxjs/toolkit": "^2.0.0",
+		"@xyflow/react": "^12.8.4",
+		"sonner": "^1.0.0"
+	},
+	"devDependencies": {
+		"@gatewai/tsconfig": "workspace:*",
+		"@types/node": "^20.0.0",
+		"@types/react": "19.1.11",
+		"@types/react-dom": "19.1.11",
+		"tsdown": "^0.19.0",
+		"typescript": "^5.0.0"
+	}
+}

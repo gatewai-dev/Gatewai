@@ -1,13 +1,11 @@
-import type { CompositorNodeConfig, OutputItem } from "@gatewai/types";
+import type { CompositorNodeConfig, OutputItem } from "@gatewai/core/types";
+import { useCanvasCtx, useNodeResult } from "@gatewai/react-canvas";
+import type { HandleEntityType } from "@gatewai/react-store";
+import { makeSelectNodeById, useAppSelector } from "@gatewai/react-store";
 import { memo, useMemo } from "react";
 import { Helmet } from "react-helmet-async";
 import { useNavigate, useParams } from "react-router";
 import { ImageDesignerEditor } from "@/modules/canvas-editor";
-import { useAppSelector } from "@/store";
-import type { HandleEntityType } from "@/store/handles";
-import { makeSelectNodeById } from "@/store/nodes";
-import { useCanvasCtx } from "../../../ctx/canvas-ctx";
-import { useNodeResult } from "../../../graph-engine/processor-ctx";
 
 const CompositorView = memo(() => {
 	const nav = useNavigate();

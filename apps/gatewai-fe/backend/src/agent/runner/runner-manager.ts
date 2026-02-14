@@ -1,6 +1,6 @@
-import { agentQueue } from "../../lib/agent-queue.js";
+import { logger } from "@gatewai/core";
 import { redisPublisher } from "../../lib/redis.js";
-import { logger } from "../../logger.js";
+import { agentQueue } from "../agent-queue.js";
 
 // A Agent runner that uses BullMQ and redis for the events
 // biome-ignore lint/complexity/noStaticOnlyClass: Required for context
@@ -30,6 +30,7 @@ export class AgentRunnerManager {
 				return false;
 			}
 		}
+		console.log({ existingJob });
 
 		// Add to queue with sessionId as jobId for easy retrieval
 		await agentQueue.add(

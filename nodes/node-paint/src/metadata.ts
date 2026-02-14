@@ -1,0 +1,55 @@
+import { defineMetadata } from "@gatewai/node-sdk";
+import { z } from "zod";
+
+const ColorSchema = z.string().regex(/^#([0-9a-fA-F]{3,8})$/);
+
+export const PaintNodeConfigSchema = z
+	.object({
+		width: z.number().int(),
+		height: z.number().int(),
+		maintainAspect: z.boolean(),
+		aspectRatio: z.number().optional(),
+		backgroundColor: ColorSchema,
+		paintData: z.string().optional(),
+	})
+	.strict();
+
+export default defineMetadata({
+	type: "Paint",
+	displayName: "Paint",
+	description: "Draw / Fill Mask on an image",
+	category: "Image",
+	configSchema: PaintNodeConfigSchema,
+	isTerminal: false,
+	isTransient: true,
+	handles: {
+		inputs: [
+			{
+				dataTypes: ["Image"],
+				label: "Background Image",
+				order: 0,
+				required: true,
+			},
+		],
+		outputs: [
+			{
+				dataTypes: ["Image"],
+				label: "Image",
+				order: 0,
+				description: "Image output, with mask",
+			},
+			{
+				dataTypes: ["Image"],
+				label: "Mask",
+				order: 1,
+				description: "Image output, only mask",
+			},
+		],
+	},
+	defaultConfig: {
+		width: 1024,
+		height: 1024,
+		maintainAspect: true,
+		backgroundColor: "#000",
+	},
+});

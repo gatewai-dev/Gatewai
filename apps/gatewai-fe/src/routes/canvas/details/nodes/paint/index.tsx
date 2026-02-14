@@ -1,20 +1,18 @@
-import type { FileData, PaintNodeConfig } from "@gatewai/types";
+import { ResolveFileDataUrl } from "@gatewai/core/browser";
+import type { FileData } from "@gatewai/core/types";
+import type { PaintNodeConfig } from "@gatewai/nodes/configs";
+import { BaseNode, useCanvasCtx, useNodeResult } from "@gatewai/react-canvas";
+import {
+	makeSelectEdgesByTargetNodeId,
+	makeSelectNodeById,
+	useAppSelector,
+} from "@gatewai/react-store";
+import { Button, Label, Separator, Slider } from "@gatewai/ui-kit";
 import type { NodeProps } from "@xyflow/react";
 import { Brush, Eraser, PaintBucket } from "lucide-react";
 import { memo, useCallback, useEffect, useMemo, useRef, useState } from "react";
-import { Button } from "@gatewai/ui-kit";
-import { Label } from "@gatewai/ui-kit";
-import { Separator } from "@gatewai/ui-kit";
-import { Slider } from "@gatewai/ui-kit";
 import { ColorPicker } from "@/components/util/color-input";
-import { ResolveFileDataUrl } from "@/lib/file";
 import { cn } from "@/lib/utils";
-import { useAppSelector } from "@/store";
-import { makeSelectEdgesByTargetNodeId } from "@/store/edges";
-import { makeSelectNodeById } from "@/store/nodes";
-import { useCanvasCtx } from "../../ctx/canvas-ctx";
-import { useNodeResult } from "../../graph-engine/processor-ctx";
-import { BaseNode } from "../base";
 import type { PaintNode } from "../node-props";
 import { PaintDimensionsConfig } from "./paint-config";
 import { colorsSimilar, colorToRgb, getPixel, setPixel } from "./utils";

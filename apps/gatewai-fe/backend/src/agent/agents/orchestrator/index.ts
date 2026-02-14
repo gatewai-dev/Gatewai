@@ -1,8 +1,12 @@
+import { bulkUpdateSchema } from "@gatewai/core/types";
+import { GetCanvasEntities } from "@gatewai/data-ops";
 import { prisma } from "@gatewai/db";
-import { bulkUpdateSchema } from "@gatewai/types";
-import { Agent, type AgentInputItem } from "@openai/agents";
+import {
+	Agent,
+	type AgentInputItem,
+	type MCPServerStreamableHttp,
+} from "@openai/agents";
 import { zodToJsonSchema } from "zod-to-json-schema";
-import { GetCanvasEntities } from "../../../data-ops/canvas.js";
 import { getAgentModel } from "../../agent-model.js";
 import type { PrismaAgentSession } from "../../session/gatewai-session.js";
 import { createPatcherAgent } from "../patcher/index.js";
@@ -17,7 +21,7 @@ export const CreateOrchestratorAgentForCanvas = async ({
 	canvasId: string;
 	session: PrismaAgentSession;
 	modelName: string;
-	mcpTool: any; // Using any to match patcher signature
+	mcpTool: MCPServerStreamableHttp;
 }) => {
 	const nodeTemplates = await prisma.nodeTemplate.findMany({
 		include: { templateHandles: true },

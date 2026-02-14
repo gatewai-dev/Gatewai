@@ -1,10 +1,6 @@
+import { extractExtension, GetAssetEndpoint } from "@gatewai/core/browser";
+import { DATA_TYPE_EXTENSIONS, type FileData } from "@gatewai/core/types";
 import type { DataType } from "@gatewai/db";
-import type { FileData } from "@gatewai/types";
-import {
-	DATA_TYPE_EXTENSIONS,
-	extractExtension,
-	GetAssetEndpoint,
-} from "@/lib/file";
 
 class DownloadError extends Error {
 	constructor(message: string) {
@@ -38,7 +34,7 @@ const generateFilename = (
 		}
 	}
 
-	return `export-${id ?? ""}-${timestamp}.${extension}`;
+	return `export-${fileData?.entity?.name ?? id ?? ""}-${timestamp}.${extension}`;
 };
 
 function useDownloadFileData() {

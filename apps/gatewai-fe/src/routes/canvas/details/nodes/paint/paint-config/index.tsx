@@ -1,5 +1,8 @@
-import type { PaintNodeConfig } from "@gatewai/types";
-import type { NodeEntityType } from "@/store/nodes";
+import {
+	type PaintNodeConfig,
+	PaintNodeConfigSchema,
+} from "@gatewai/nodes/configs";
+import type { NodeEntityType } from "@gatewai/react-store";
 import { AspectRatioSwitch } from "../../common/dimensions/aspect-ratio-switch";
 import { ResizeHeightInput } from "../../common/dimensions/height-input";
 import { ResizeWidthInput } from "../../common/dimensions/width-input";

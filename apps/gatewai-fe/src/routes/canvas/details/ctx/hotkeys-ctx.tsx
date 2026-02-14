@@ -1,9 +1,11 @@
+import { useCanvasCtx } from "@gatewai/react-canvas";
+import {
+	selectSelectedEdgeIds,
+	selectSelectedNodes,
+	useAppSelector,
+} from "@gatewai/react-store";
 import { createContext, type PropsWithChildren } from "react";
 import { useHotkeys } from "react-hotkeys-hook";
-import { useAppSelector } from "@/store";
-import { selectSelectedEdgeIds } from "@/store/node-meta";
-import { selectSelectedNodes } from "@/store/nodes";
-import { useCanvasCtx } from "./canvas-ctx";
 
 type ShortcutsContextType = null;
 

@@ -1,17 +1,14 @@
-import type { FileData } from "@gatewai/types";
+import { ResolveFileDataUrl } from "@gatewai/core/browser";
+import type { FileData } from "@gatewai/core/types";
+import { AddCustomHandleButton } from "@gatewai/node-sdk/client";
+import { BaseNode, CanvasRenderer, useNodeResult } from "@gatewai/react-canvas";
+import { makeSelectNodeById, useAppSelector } from "@gatewai/react-store";
+import { Button } from "@gatewai/ui-kit";
 import type { NodeProps } from "@xyflow/react";
 import { ImagesIcon } from "lucide-react";
 import { memo } from "react";
 import { useNavigate } from "react-router";
-import { Button } from "@gatewai/ui-kit";
-import { ResolveFileDataUrl } from "@/lib/file";
 import { cn } from "@/lib/utils";
-import { useAppSelector } from "@/store";
-import { makeSelectNodeById } from "@/store/nodes";
-import { AddCustomHandleButton } from "../../components/add-custom-handle";
-import { useNodeResult } from "../../graph-engine/processor-ctx";
-import { BaseNode } from "../base";
-import { CanvasRenderer } from "../common/canvas-renderer";
 import type { CompositorNode } from "../node-props";
 
 const CompositorNodeComponent = memo((props: NodeProps<CompositorNode>) => {

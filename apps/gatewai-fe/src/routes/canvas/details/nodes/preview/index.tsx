@@ -1,19 +1,14 @@
-import type { FileData } from "@gatewai/types";
+import { GetAssetEndpoint } from "@gatewai/core/browser";
+import type { FileData } from "@gatewai/core/types";
+import { MediaDimensions } from "@gatewai/node-sdk/client";
+import { BaseNode, CanvasRenderer, useNodeResult } from "@gatewai/react-canvas";
+import { makeSelectNodeById, useAppSelector } from "@gatewai/react-store";
+import { MarkdownRenderer, ScrollArea, Switch } from "@gatewai/ui-kit";
 import type { NodeProps } from "@xyflow/react";
 import { FileIcon } from "lucide-react";
 import { memo, useMemo, useState } from "react";
-import { ScrollArea } from "@gatewai/ui-kit";
-import { Switch } from "@gatewai/ui-kit";
-import { GetAssetEndpoint } from "@/lib/file";
 import { cn } from "@/lib/utils";
-import { useAppSelector } from "@/store";
-import { makeSelectNodeById } from "@/store/nodes";
-import { MarkdownRenderer } from "../../components/markdown-renderer";
-import { useNodeResult } from "../../graph-engine/processor-ctx";
-import { MediaDimensions } from "../../misc/media-dimensions";
-import { BaseNode } from "../base";
 import { AudioRenderer } from "../common/audio-renderer";
-import { CanvasRenderer } from "../common/canvas-renderer";
 import { VideoRenderer } from "../common/video-renderer";
 import type { PreviewNode } from "../node-props";
 

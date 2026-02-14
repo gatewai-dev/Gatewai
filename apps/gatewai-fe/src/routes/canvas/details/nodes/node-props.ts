@@ -26,7 +26,7 @@ import type {
 	TextResult,
 	VideoCompositorNodeConfig,
 	VideoCompositorResult,
-} from "@gatewai/types";
+} from "@gatewai/core/types";
 import type { Node } from "@xyflow/react";
 
 export type TextNode = Node<

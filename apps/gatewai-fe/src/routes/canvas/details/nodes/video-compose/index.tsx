@@ -1,12 +1,15 @@
-import type { FileData, VideoCompositorNodeConfig } from "@gatewai/types";
+import { GetAssetEndpoint, GetFontAssetUrl } from "@gatewai/core/browser";
+import type { FileData, VideoCompositorNodeConfig } from "@gatewai/core/types";
+import { AddCustomHandleButton } from "@gatewai/node-sdk/client";
+import { BaseNode, useNodeResult } from "@gatewai/react-canvas";
+import { makeSelectNodeById, useAppSelector } from "@gatewai/react-store";
+import { Button } from "@gatewai/ui-kit";
 import { Player } from "@remotion/player";
 import type { NodeProps } from "@xyflow/react";
 import { Download, Loader2, VideoIcon } from "lucide-react";
 import { memo, useEffect, useMemo, useState } from "react";
 import { useNavigate } from "react-router";
 import { toast } from "sonner";
-import { Button } from "@gatewai/ui-kit";
-import { GetAssetEndpoint, GetFontAssetUrl } from "@/lib/file";
 import { fontManager } from "@/lib/fonts";
 import { cn } from "@/lib/utils";
 import {
@@ -14,13 +17,6 @@ import {
 	type ExtendedLayer,
 } from "@/modules/video-editor/common/composition";
 import { DEFAULT_DURATION_FRAMES, FPS } from "@/modules/video-editor/config";
-import { useAppSelector } from "@/store";
-import { makeSelectNodeById } from "@/store/nodes";
-import { AddCustomHandleButton } from "../../components/add-custom-handle";
-import { remotionService } from "../../graph-engine/muxer-service";
-import { useNodeResult } from "../../graph-engine/processor-ctx";
-import { useDownloadFileData } from "../../hooks/use-download-filedata";
-import { BaseNode } from "../base";
 import type { VideoCompositorNode } from "../node-props";
 
 const VideoCompositorNodeComponent = memo(

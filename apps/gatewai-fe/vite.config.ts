@@ -12,11 +12,18 @@ export default defineConfig({
 			cache: false,
 		},
 	},
+	esbuild: {
+		tsconfigRaw: {
+			compilerOptions: {
+				experimentalDecorators: true,
+			},
+		},
+	},
 	plugins: [
 		react(),
 		tailwindcss(),
 		nodePolyfills({
-			include: ["events"],
+			include: ["events", "buffer", "process"],
 		}),
 	],
 	optimizeDeps: {

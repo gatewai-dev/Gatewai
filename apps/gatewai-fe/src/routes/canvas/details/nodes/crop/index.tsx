@@ -1,14 +1,20 @@
-import type { CropNodeConfig, FileData } from "@gatewai/types";
+import { ResolveFileDataUrl } from "@gatewai/core/browser";
+import type { FileData } from "@gatewai/core/types";
+import {
+	type CropNodeConfig,
+	CropNodeConfigSchema,
+} from "@gatewai/nodes/configs";
+import { BaseNode, CanvasRenderer, useNodeResult } from "@gatewai/react-canvas";
+import {
+	makeSelectEdgesByTargetNodeId,
+	makeSelectNodeById,
+	updateNodeConfig,
+	useAppDispatch,
+	useAppSelector,
+} from "@gatewai/react-store";
 import type { NodeProps } from "@xyflow/react";
 import { memo, useCallback, useEffect, useMemo, useRef, useState } from "react";
-import { ResolveFileDataUrl } from "@/lib/file";
 import { cn } from "@/lib/utils";
-import { useAppDispatch, useAppSelector } from "@/store";
-import { makeSelectEdgesByTargetNodeId } from "@/store/edges";
-import { makeSelectNodeById, updateNodeConfig } from "@/store/nodes";
-import { useNodeResult } from "../../graph-engine/processor-ctx";
-import { BaseNode } from "../base";
-import { CanvasRenderer } from "../common/canvas-renderer";
 import type { CropNode } from "../node-props";
 
 type DragState = {

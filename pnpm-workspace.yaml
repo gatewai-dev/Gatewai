@@ -1,12 +1,9 @@
 packages:
   - packages/*
   - apps/*
+  - nodes/*
 
 catalogs:
-  '@genkit-ai/ai':
-    '@genkit-ai/ai': ^1.13.0
-  genkit:
-    genkit: ^1.13.0
   prisma:
     prisma: latest
 
