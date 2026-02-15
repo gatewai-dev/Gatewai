@@ -1,9 +1,11 @@
 import type {
 	Application,
+	BlurFilter,
 	Container,
 	Filter,
 	Graphics,
 	IRenderer,
+	Rectangle,
 	Sprite,
 	Texture,
 } from "./pixi-types-stub.js";
@@ -13,6 +15,30 @@ export type PixiProcessOutput = {
 	width: number;
 	height: number;
 };
+
+export interface PixiModules {
+	Sprite: typeof Sprite;
+	Container: typeof Container;
+	Graphics: typeof Graphics;
+	Texture: typeof Texture;
+	BlurFilter: typeof BlurFilter;
+	Filter: typeof Filter;
+	Rectangle: typeof Rectangle;
+}
+
+export interface PixiRunContext {
+	app: Application;
+	loadTexture(url: string, apiKey?: string): Promise<Texture>;
+	getPixiModules(): Promise<PixiModules>;
+	extractBlob(target: Container): Promise<Blob>;
+	signal?: AbortSignal;
+}
+
+// biome-ignore lint/suspicious/noExplicitAny: <explanation>
+export interface PixiRun<TInput = any, TOutput = any> {
+	id: string;
+	run(context: PixiRunContext, input: TInput): Promise<TOutput>;
+}
 
 /**
  * Common interface for Pixi.js processing service.
@@ -42,55 +68,7 @@ export interface IPixiProcessor {
 	execute<TInput = unknown, TOutput = PixiProcessOutput>(
 		id: string,
 		input: TInput,
+		processor: PixiRun,
 		signal?: AbortSignal,
 	): Promise<TOutput>;
-
-	processModulate(
-		imageUrl: string,
-		config: {
-			hue: number;
-			saturation: number;
-			lightness: number;
-			brightness: number;
-		},
-		signal?: AbortSignal,
-		apiKey?: string,
-	): Promise<{ dataUrl: Blob; width: number; height: number }>;
-
-	processBlur(
-		imageUrl: string,
-		options: { size: number },
-		signal?: AbortSignal,
-		apiKey?: string,
-	): Promise<{ dataUrl: Blob; width: number; height: number }>;
-
-	processResize(
-		imageUrl: string,
-		options: { width?: number; height?: number },
-		signal?: AbortSignal,
-		apiKey?: string,
-	): Promise<{ dataUrl: Blob; width: number; height: number }>;
-
-	processCrop(
-		imageUrl: string,
-		options: {
-			leftPercentage: number;
-			topPercentage: number;
-			widthPercentage: number;
-			heightPercentage: number;
-		},
-		signal?: AbortSignal,
-		apiKey?: string,
-	): Promise<{ dataUrl: Blob; width: number; height: number }>;
-
-	processMask(
-		config: PaintNodeConfig,
-		imageUrl: string | undefined,
-		maskUrl?: string,
-		signal?: AbortSignal,
-		apiKey?: string,
-	): Promise<{
-		imageWithMask: { dataUrl: Blob; width: number; height: number };
-		onlyMask: { dataUrl: Blob; width: number; height: number };
-	}>;
 }

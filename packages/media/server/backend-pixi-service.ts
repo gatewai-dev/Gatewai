@@ -161,9 +161,8 @@ export class ServerMediaService implements MediaService {
 	resolveFileDataUrl(data: FileData | null): string | null {
 		if (!data) return null;
 		if (data.processData?.dataUrl) {
-			// Logic ported from backend/src/utils/misc.ts GetProcessDataEndpoint
 			const tempKey = data.processData.tempKey;
-			if (!tempKey) return null; // Or handle as error
+			if (!tempKey) return null;
 
 			const baseUrl = this.baseUrl.endsWith("/")
 				? this.baseUrl.slice(0, -1)

@@ -47,6 +47,7 @@
 	},
 	"peerDependencies": {
 		"react": "^19.2.14",
-		"react-dom": "^19.2.14"
+		"react-dom": "^19.2.14",
+		"@xyflow/react": "^12.8.4"
 	}
 }

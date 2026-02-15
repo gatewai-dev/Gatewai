@@ -1,8 +1,9 @@
 import { useNodePreview, useNodeUI } from "@gatewai/node-sdk/browser";
+import type { NodeProps } from "@xyflow/react";
 import { memo } from "react";
 import { BlurValueSlider } from "./components/blur-slider.js";
 
-const BlurNodeComponent = memo((props: any) => {
+const BlurNodeComponent = memo((props: NodeProps) => {
 	const { BaseNode, CanvasRenderer } = useNodeUI();
 	const { imageUrl, node } = useNodePreview(props.id);
 

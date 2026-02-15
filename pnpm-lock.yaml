@@ -476,6 +476,9 @@ importers:
       '@gatewai/ui-kit':
         specifier: workspace:*
         version: link:../../packages/ui-kit
+      '@xyflow/react':
+        specifier: ^12.8.4
+        version: 12.8.4(@types/react@19.1.11)(immer@11.1.3)(react-dom@19.2.3(react@19.2.3))(react@19.2.3)
       lucide-react:
         specifier: ^0.473.0
         version: 0.473.0(react@19.2.3)
@@ -519,27 +522,54 @@ importers:
       '@gatewai/db':
         specifier: workspace:*
         version: link:../../packages/db
+      '@gatewai/media':
+        specifier: workspace:*
+        version: link:../../packages/media
       '@gatewai/node-sdk':
         specifier: workspace:*
         version: link:../../packages/node-sdk
+      '@gatewai/react-store':
+        specifier: workspace:*
+        version: link:../../packages/react-store
+      '@gatewai/ui-kit':
+        specifier: workspace:*
+        version: link:../../packages/ui-kit
+      '@xyflow/react':
+        specifier: ^12.8.4
+        version: 12.8.4(@types/react@19.1.11)(immer@11.1.3)(react-dom@19.2.3(react@19.2.3))(react@19.2.3)
+      lucide-react:
+        specifier: ^0.473.0
+        version: 0.473.0(react@19.2.3)
       react:
         specifier: ^19.2.0
         version: 19.2.3
+      react-dom:
+        specifier: ^19.2.0
+        version: 19.2.3(react@19.2.3)
       tsyringe:
-        specifier: ^4.8.0
+        specifier: ^4.10.0
         version: 4.10.0
       zod:
-        specifier: ^3.24.1
+        specifier: 3.25.67
         version: 3.25.67
     devDependencies:
       '@gatewai/tsconfig':
         specifier: workspace:*
         version: link:../../packages/tsconfig
+      '@types/node':
+        specifier: ^22.13.10
+        version: 22.19.11
+      '@types/react':
+        specifier: ^19.1.11
+        version: 19.1.11
+      '@types/react-dom':
+        specifier: ^19.1.11
+        version: 19.2.3(@types/react@19.1.11)
       tsdown:
-        specifier: ^0.12.5
-        version: 0.12.9(publint@0.3.17)(typescript@5.8.3)
+        specifier: ^0.19.0
+        version: 0.19.0(publint@0.3.17)(synckit@0.11.11)(typescript@5.8.3)
       typescript:
-        specifier: ^5.8.3
+        specifier: ~5.8.3
         version: 5.8.3
 
   nodes/node-export:
@@ -759,27 +789,54 @@ importers:
       '@gatewai/db':
         specifier: workspace:*
         version: link:../../packages/db
+      '@gatewai/media':
+        specifier: workspace:*
+        version: link:../../packages/media
       '@gatewai/node-sdk':
         specifier: workspace:*
         version: link:../../packages/node-sdk
+      '@gatewai/react-store':
+        specifier: workspace:*
+        version: link:../../packages/react-store
+      '@gatewai/ui-kit':
+        specifier: workspace:*
+        version: link:../../packages/ui-kit
+      '@xyflow/react':
+        specifier: ^12.8.4
+        version: 12.8.4(@types/react@19.1.11)(immer@11.1.3)(react-dom@19.2.3(react@19.2.3))(react@19.2.3)
+      lucide-react:
+        specifier: ^0.473.0
+        version: 0.473.0(react@19.2.3)
       react:
         specifier: ^19.2.0
         version: 19.2.3
+      react-dom:
+        specifier: ^19.2.0
+        version: 19.2.3(react@19.2.3)
       tsyringe:
-        specifier: ^4.8.0
+        specifier: ^4.10.0
         version: 4.10.0
       zod:
-        specifier: ^3.24.1
+        specifier: 3.25.67
         version: 3.25.67
     devDependencies:
       '@gatewai/tsconfig':
         specifier: workspace:*
         version: link:../../packages/tsconfig
+      '@types/node':
+        specifier: ^22.13.10
+        version: 22.19.11
+      '@types/react':
+        specifier: ^19.1.11
+        version: 19.1.11
+      '@types/react-dom':
+        specifier: ^19.1.11
+        version: 19.2.3(@types/react@19.1.11)
       tsdown:
-        specifier: ^0.12.5
-        version: 0.12.9(publint@0.3.17)(typescript@5.8.3)
+        specifier: ^0.19.0
+        version: 0.19.0(publint@0.3.17)(synckit@0.11.11)(typescript@5.8.3)
       typescript:
-        specifier: ^5.8.3
+        specifier: ~5.8.3
         version: 5.8.3
 
   nodes/node-note:
@@ -821,27 +878,54 @@ importers:
       '@gatewai/db':
         specifier: workspace:*
         version: link:../../packages/db
+      '@gatewai/media':
+        specifier: workspace:*
+        version: link:../../packages/media
       '@gatewai/node-sdk':
         specifier: workspace:*
         version: link:../../packages/node-sdk
+      '@gatewai/react-store':
+        specifier: workspace:*
+        version: link:../../packages/react-store
+      '@gatewai/ui-kit':
+        specifier: workspace:*
+        version: link:../../packages/ui-kit
+      '@xyflow/react':
+        specifier: ^12.8.4
+        version: 12.8.4(@types/react@19.1.11)(immer@11.1.3)(react-dom@19.2.3(react@19.2.3))(react@19.2.3)
+      lucide-react:
+        specifier: ^0.473.0
+        version: 0.473.0(react@19.2.3)
       react:
         specifier: ^19.2.0
         version: 19.2.3
+      react-dom:
+        specifier: ^19.2.0
+        version: 19.2.3(react@19.2.3)
       tsyringe:
-        specifier: ^4.8.0
+        specifier: ^4.10.0
         version: 4.10.0
       zod:
-        specifier: ^3.24.1
+        specifier: 3.25.67
         version: 3.25.67
     devDependencies:
       '@gatewai/tsconfig':
         specifier: workspace:*
         version: link:../../packages/tsconfig
+      '@types/node':
+        specifier: ^22.13.10
+        version: 22.19.11
+      '@types/react':
+        specifier: ^19.1.11
+        version: 19.1.11
+      '@types/react-dom':
+        specifier: ^19.1.11
+        version: 19.2.3(@types/react@19.1.11)
       tsdown:
-        specifier: ^0.12.5
-        version: 0.12.9(publint@0.3.17)(typescript@5.8.3)
+        specifier: ^0.19.0
+        version: 0.19.0(publint@0.3.17)(synckit@0.11.11)(typescript@5.8.3)
       typescript:
-        specifier: ^5.8.3
+        specifier: ~5.8.3
         version: 5.8.3
 
   nodes/node-preview:
@@ -883,27 +967,54 @@ importers:
       '@gatewai/db':
         specifier: workspace:*
         version: link:../../packages/db
+      '@gatewai/media':
+        specifier: workspace:*
+        version: link:../../packages/media
       '@gatewai/node-sdk':
         specifier: workspace:*
         version: link:../../packages/node-sdk
+      '@gatewai/react-store':
+        specifier: workspace:*
+        version: link:../../packages/react-store
+      '@gatewai/ui-kit':
+        specifier: workspace:*
+        version: link:../../packages/ui-kit
+      '@xyflow/react':
+        specifier: ^12.8.4
+        version: 12.8.4(@types/react@19.1.11)(immer@11.1.3)(react-dom@19.2.3(react@19.2.3))(react@19.2.3)
+      lucide-react:
+        specifier: ^0.473.0
+        version: 0.473.0(react@19.2.3)
       react:
         specifier: ^19.2.0
         version: 19.2.3
+      react-dom:
+        specifier: ^19.2.0
+        version: 19.2.3(react@19.2.3)
       tsyringe:
-        specifier: ^4.8.0
+        specifier: ^4.10.0
         version: 4.10.0
       zod:
-        specifier: ^3.24.1
+        specifier: 3.25.67
         version: 3.25.67
     devDependencies:
       '@gatewai/tsconfig':
         specifier: workspace:*
         version: link:../../packages/tsconfig
+      '@types/node':
+        specifier: ^22.13.10
+        version: 22.19.11
+      '@types/react':
+        specifier: ^19.1.11
+        version: 19.1.11
+      '@types/react-dom':
+        specifier: ^19.1.11
+        version: 19.2.3(@types/react@19.1.11)
       tsdown:
-        specifier: ^0.12.5
-        version: 0.12.9(publint@0.3.17)(typescript@5.8.3)
+        specifier: ^0.19.0
+        version: 0.19.0(publint@0.3.17)(synckit@0.11.11)(typescript@5.8.3)
       typescript:
-        specifier: ^5.8.3
+        specifier: ~5.8.3
         version: 5.8.3
 
   nodes/node-speech-to-text:

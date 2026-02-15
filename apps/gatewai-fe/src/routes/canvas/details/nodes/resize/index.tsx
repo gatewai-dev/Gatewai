@@ -1,6 +1,5 @@
 import { ResolveFileDataUrl } from "@gatewai/core/browser";
 import type { FileData } from "@gatewai/core/types";
-import type { ResizeNodeConfig } from "@gatewai/nodes/configs";
 import type { ConnectedInput } from "@gatewai/react-canvas";
 import {
 	BaseNode,
@@ -14,7 +13,6 @@ import {
 } from "@gatewai/react-store";
 import type { NodeProps } from "@xyflow/react";
 import { memo, useEffect } from "react";
-import { cn } from "@/lib/utils";
 import type { ResizeNode } from "../node-props";
 import { ResizeConfig } from "./resize-config";
 

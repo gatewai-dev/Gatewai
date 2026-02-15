@@ -16,11 +16,11 @@ import {
     type StorageService,
 } from "@gatewai/node-sdk/server";
 import { inject, injectable } from "tsyringe";
-import { BlurNodeConfigSchema } from "@/shared/index.js";
+import { applyBlur, BlurNodeConfigSchema } from "@/shared/index.js";
 import { metadata } from "../metadata.js";
 
 @injectable()
-class BlurProcessor implements NodeProcessor {
+export class BlurProcessor implements NodeProcessor {
     constructor(
         @inject(TOKENS.STORAGE) private storage: StorageService,
         @inject(TOKENS.MEDIA) private media: MediaService,
@@ -40,13 +40,15 @@ class BlurProcessor implements NodeProcessor {
             assert(imageInput);
             const imageUrl = await this.media.resolveFileDataUrl(imageInput);
             assert(imageUrl);
-            const size = validatedConfig.size;
 
-            const { dataUrl, ...dimensions } = await this.media.backendPixiService.processBlur(
-                imageUrl,
-                { size },
-                undefined,
-                data.apiKey,
+            const { dataUrl, ...dimensions } = await this.media.backendPixiService.execute(
+                node.id,
+                {
+                    imageUrl,
+                    options: validatedConfig,
+                    apiKey: data.apiKey,
+                },
+                applyBlur,
             );
 
             const uploadBuffer = Buffer.from(await dataUrl.arrayBuffer());
@@ -102,6 +104,4 @@ class BlurProcessor implements NodeProcessor {
     }
 }
 
-export default defineNode(metadata, {
-    backendProcessor: BlurProcessor,
-});
+

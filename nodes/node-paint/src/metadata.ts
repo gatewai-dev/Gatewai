@@ -1,18 +1,8 @@
 import { defineMetadata } from "@gatewai/node-sdk";
-import { z } from "zod";
 
-const ColorSchema = z.string().regex(/^#([0-9a-fA-F]{3,8})$/);
+export { PaintNodeConfigSchema } from "./shared/config.js";
 
-export const PaintNodeConfigSchema = z
-	.object({
-		width: z.number().int(),
-		height: z.number().int(),
-		maintainAspect: z.boolean(),
-		aspectRatio: z.number().optional(),
-		backgroundColor: ColorSchema,
-		paintData: z.string().optional(),
-	})
-	.strict();
+import { PaintNodeConfigSchema } from "./shared/config.js";
 
 export default defineMetadata({
 	type: "Paint",

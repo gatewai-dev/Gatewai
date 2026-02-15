@@ -1,4 +1,9 @@
-import type { IPixiProcessor } from "@gatewai/core/types";
+import { ServiceAbortError } from "@gatewai/core";
+import type {
+	IPixiProcessor,
+	PixiRun,
+	PixiRunContext,
+} from "@gatewai/core/types";
 import { createPool, type Pool } from "generic-pool";
 import pLimit from "p-limit";
 import type {
@@ -12,38 +17,6 @@ import type {
 	Sprite,
 	Texture,
 } from "pixi.js";
-import {
-	type BlurInput,
-	type BlurOutput,
-	BlurProcessor,
-} from "./processors/blur.js";
-import {
-	type CropInput,
-	type CropOutput,
-	CropProcessor,
-} from "./processors/crop.js";
-import {
-	type MaskInput,
-	type MaskOutput,
-	MaskProcessor,
-} from "./processors/mask.js";
-import {
-	type ModulateInput,
-	type ModulateOutput,
-	ModulateProcessor,
-} from "./processors/modulate.js";
-import {
-	type ResizeInput,
-	type ResizeOutput,
-	ResizeProcessor,
-} from "./processors/resize.js";
-import type { PixiProcessor, PixiProcessorContext } from "./types.js";
-export class ServiceAbortError extends Error {
-	constructor(message = "Operation cancelled") {
-		super(message);
-		this.name = "AbortError";
-	}
-}
 
 export interface PixiResource {
 	app: Application;
@@ -54,7 +27,7 @@ export abstract class BasePixiService implements IPixiProcessor {
 	protected pool: Pool<PixiResource>;
 	// Limit concurrency to prevent GPU context loss or memory exhaustion
 	protected limit = pLimit(12);
-	private processors = new Map<string, PixiProcessor>();
+	private processors = new Map<string, PixiRun>();
 
 	constructor() {
 		this.pool = createPool(
@@ -71,16 +44,9 @@ export abstract class BasePixiService implements IPixiProcessor {
 				testOnBorrow: true,
 			},
 		);
-
-		// Register default processors
-		this.registerProcessor(BlurProcessor);
-		this.registerProcessor(CropProcessor);
-		this.registerProcessor(MaskProcessor);
-		this.registerProcessor(ModulateProcessor);
-		this.registerProcessor(ResizeProcessor);
 	}
 
-	public registerProcessor(processor: PixiProcessor) {
+	public registerProcessor(processor: PixiRun) {
 		this.processors.set(processor.id, processor);
 	}
 
@@ -188,15 +154,11 @@ export abstract class BasePixiService implements IPixiProcessor {
 	public async execute<TInput, TOutput>(
 		id: string,
 		input: TInput,
+		run: PixiRun,
 		signal?: AbortSignal,
 	): Promise<TOutput> {
 		return this.useApp(async (app) => {
-			const processor = this.processors.get(id);
-			if (!processor) {
-				throw new Error(`Processor '${id}' not found`);
-			}
-
-			const context: PixiProcessorContext = {
+			const context: PixiRunContext = {
 				app,
 				loadTexture: (url, key) => this.loadTexture(url, key),
 				getPixiModules: () => this.getPixiModules(),
@@ -204,7 +166,7 @@ export abstract class BasePixiService implements IPixiProcessor {
 				signal,
 			};
 
-			return processor.process(context, input);
+			return run.run(context, input);
 		}, signal);
 	}
 
@@ -241,88 +203,5 @@ export abstract class BasePixiService implements IPixiProcessor {
 
 	public async extract(target: Container, renderer: IRenderer): Promise<Blob> {
 		return this.extractBlob(renderer, target);
-	}
-
-	public async processModulate(
-		imageUrl: string,
-		config: {
-			hue: number;
-			saturation: number;
-			lightness: number;
-			brightness: number;
-		},
-		signal?: AbortSignal,
-		apiKey?: string,
-	): Promise<ModulateOutput> {
-		return this.execute<ModulateInput, ModulateOutput>(
-			ModulateProcessor.id,
-			{ imageUrl, config, apiKey },
-			signal,
-		);
-	}
-
-	public async processBlur(
-		imageUrl: string,
-		options: { size: number },
-		signal?: AbortSignal,
-		apiKey?: string,
-	): Promise<BlurOutput> {
-		return this.execute<BlurInput, BlurOutput>(
-			BlurProcessor.id,
-			{ imageUrl, options, apiKey },
-			signal,
-		);
-	}
-
-	public async processResize(
-		imageUrl: string,
-		options: { width?: number; height?: number },
-		signal?: AbortSignal,
-		apiKey?: string,
-	): Promise<ResizeOutput> {
-		return this.execute<ResizeInput, ResizeOutput>(
-			ResizeProcessor.id,
-			{ imageUrl, options, apiKey },
-			signal,
-		);
-	}
-
-	public async processCrop(
-		imageUrl: string,
-		options: {
-			leftPercentage: number;
-			topPercentage: number;
-			widthPercentage: number;
-			heightPercentage: number;
-		},
-		signal?: AbortSignal,
-		apiKey?: string,
-	): Promise<CropOutput> {
-		return this.execute<CropInput, CropOutput>(
-			CropProcessor.id,
-			{ imageUrl, options, apiKey },
-			signal,
-		);
-	}
-
-	public async processMask(
-		config: {
-			width: number;
-			height: number;
-			maintainAspect: boolean;
-			aspectRatio?: number | undefined;
-			backgroundColor?: string | undefined;
-			paintData?: string | undefined;
-		},
-		imageUrl: string | undefined,
-		maskUrl?: string,
-		signal?: AbortSignal,
-		apiKey?: string,
-	): Promise<MaskOutput> {
-		return this.execute<MaskInput, MaskOutput>(
-			MaskProcessor.id,
-			{ config, imageUrl, maskUrl, apiKey },
-			signal,
-		);
 	}
 }

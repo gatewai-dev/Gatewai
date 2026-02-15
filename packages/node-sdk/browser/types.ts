@@ -1,5 +1,9 @@
 import type { EventEmitter } from "node:events";
-import type { NodeResult, NodeRunFunction } from "@gatewai/core/types";
+import type {
+	NodeProcessorParams,
+	NodeResult,
+	NodeRunFunction,
+} from "@gatewai/core/types";
 import type { DataType } from "@gatewai/db";
 import type { ComponentType, MemoExoticComponent } from "react";
 
@@ -71,5 +75,11 @@ export interface FrontendNodePlugin {
 	 */
 	PageContentComponent?: MemoExoticComponent<ComponentType<any>>;
 
-	processor: NodeRunFunction;
+	processor: BrowserProcessorConstructor;
 }
+
+export interface IBrowserProcessor {
+	process(params: NodeProcessorParams): Promise<NodeResult | null>;
+}
+
+export type BrowserProcessorConstructor = new () => IBrowserProcessor;

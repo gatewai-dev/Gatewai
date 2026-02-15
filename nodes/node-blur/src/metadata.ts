@@ -1,6 +1,5 @@
-import { defineMetadata, defineNode } from "@gatewai/node-sdk/server";
+import { defineMetadata } from "@gatewai/node-sdk/server";
 import { type BlurNodeConfig, BlurNodeConfigSchema } from "./shared/index.js";
-import { BlurProcessor } from "./shared/pixi-blur-processor.js";
 
 export const metadata = defineMetadata({
 	type: "Blur",
@@ -8,7 +7,9 @@ export const metadata = defineMetadata({
 	description: "Apply blur to an image",
 	category: "Image",
 	configSchema: BlurNodeConfigSchema,
+	// Not a terminal node - it won't process automatically after inputs change on browser
 	isTerminal: false,
+	// Results are stored in the temporary storage, so they are transient
 	isTransient: true,
 	handles: {
 		inputs: [
@@ -17,8 +18,4 @@ export const metadata = defineMetadata({
 		outputs: [{ dataTypes: ["Image"], label: "Result", order: 0 }],
 	},
 	defaultConfig: { size: 5 } as BlurNodeConfig,
-});
-
-export default defineNode(metadata, {
-	backendProcessor: BlurProcessor,
 });

@@ -9,6 +9,8 @@ export type Sprite = any;
 export type Container = any;
 export type Graphics = any;
 export type Filter = any;
+export type BlurFilter = any;
+export type Rectangle = any;
 export type Texture = any;
 export type IRenderer = any;
 
@@ -18,5 +20,7 @@ export const Sprite: any = {};
 export const Container: any = {};
 export const Graphics: any = {};
 export const Filter: any = {};
+export const BlurFilter: any = {};
+export const Rectangle: any = {};
 export const Texture: any = {};
 export const IRenderer: any = {};

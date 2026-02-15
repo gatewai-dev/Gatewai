@@ -1,5 +1,8 @@
-import type { PixiProcessOutput } from "@gatewai/core/types";
-import type { PixiProcessor, PixiProcessorContext } from "@gatewai/media";
+import type {
+	PixiProcessOutput,
+	PixiRun,
+	PixiRunContext,
+} from "@gatewai/core/types";
 import type { BlurNodeConfig } from "./config.js";
 
 export interface PixiBlurInput {
@@ -8,10 +11,10 @@ export interface PixiBlurInput {
 	apiKey?: string;
 }
 
-export const BlurProcessor: PixiProcessor<PixiBlurInput> = {
+export const applyBlur: PixiRun<PixiBlurInput> = {
 	id: "blur",
-	async process(
-		context: PixiProcessorContext,
+	async run(
+		context: PixiRunContext,
 		input: PixiBlurInput,
 	): Promise<PixiProcessOutput> {
 		const { imageUrl, options, apiKey } = input;

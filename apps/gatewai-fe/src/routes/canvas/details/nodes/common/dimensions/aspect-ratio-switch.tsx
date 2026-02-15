@@ -36,10 +36,6 @@ const AspectRatioSwitch = memo(
 				};
 
 				if (checked) {
-					// Logic:
-					// Always lock to CURRENT ratio.
-					// Fallback to original dimensions only if current dimensions are missing.
-
 					let ratio: number | undefined;
 					const w = config.width ?? originalWidth ?? 0;
 					const h = config.height ?? originalHeight ?? 0;

@@ -1,16 +1,8 @@
 import { defineMetadata } from "@gatewai/node-sdk";
-import { z } from "zod";
 
-const DimensionSchema = z.number().int().min(1).max(8192);
+export { ResizeNodeConfigSchema } from "./shared/config.js";
 
-export const ResizeNodeConfigSchema = z
-	.object({
-		width: DimensionSchema,
-		height: DimensionSchema,
-		maintainAspect: z.boolean(),
-		aspectRatio: z.number().optional(),
-	})
-	.strict();
+import { ResizeNodeConfigSchema } from "./shared/config.js";
 
 export default defineMetadata({
 	type: "Resize",

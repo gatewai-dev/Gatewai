@@ -16,7 +16,9 @@ export interface NodeUIContextType {
 
 	// Components provided by host
 	BaseNode: React.ComponentType<any>;
-	CanvasRenderer: React.ComponentType<{ imageUrl: string }>;
+	CanvasRenderer: React.ComponentType<
+		{ imageUrl: string } & React.RefAttributes<HTMLCanvasElement>
+	>;
 
 	// Access to the graph processor engine
 	processor: NodeProcessor;

@@ -1,16 +1,5 @@
 import { defineMetadata } from "@gatewai/node-sdk";
-import { z } from "zod";
-
-const PercentageSchema = z.number().min(0).max(100).default(0);
-
-export const CropNodeConfigSchema = z
-	.object({
-		leftPercentage: PercentageSchema,
-		topPercentage: PercentageSchema,
-		widthPercentage: PercentageSchema,
-		heightPercentage: PercentageSchema,
-	})
-	.strict();
+import { CropNodeConfigSchema } from "./shared/config.js";
 
 export default defineMetadata({
 	type: "Crop",
