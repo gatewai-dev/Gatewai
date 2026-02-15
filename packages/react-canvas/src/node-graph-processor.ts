@@ -3,6 +3,7 @@ import { GetAssetEndpoint } from "@gatewai/core/browser";
 import {
 	dataTypeColors,
 	type FileData,
+	type IPixiProcessor,
 	type NodeResult,
 	type OutputItem,
 } from "@gatewai/core/types";
@@ -16,6 +17,7 @@ import type {
 } from "@gatewai/react-store";
 import type {
 	ConnectedInput,
+	DiscoveredNodeRegistry,
 	HandleState,
 	NodeProcessorContext,
 	NodeProcessorParams,
@@ -40,12 +42,19 @@ export class NodeGraphProcessor extends EventEmitter implements NodeProcessor {
 	private objectUrls = new Map<string, string[]>();
 	private processingLoopActive = false;
 	private schedulePromise: Promise<void> | null = null;
-	private isInitial = true;
 
-	constructor() {
+	private isInitial = true;
+	private registry?: DiscoveredNodeRegistry;
+
+	constructor(registry?: DiscoveredNodeRegistry) {
 		super();
 		this.setMaxListeners(Infinity);
-		this.registerBuiltInProcessors();
+		this.registry = registry;
+		if (!registry) {
+			console.warn(
+				"NodeGraphProcessor initialized without registry. Nodes may not execute.",
+			);
+		}
 	}
 
 	/**
@@ -121,7 +130,7 @@ export class NodeGraphProcessor extends EventEmitter implements NodeProcessor {
 			const state = this.getOrCreateNodeState(nodeId);
 			const validationErrors = this.graphValidation[nodeId];
 			state.status = TaskStatus.FAILED;
-			state.error = `Invalid configuration: ${Object.values(validationErrors).join(", ")}`;
+			state.error = `Invalid configuration: ${Object.values(validationErrors).join(", ")} `;
 			state.isDirty = false;
 			state.startedAt = undefined;
 			state.finishedAt = undefined;
@@ -492,7 +501,7 @@ export class NodeGraphProcessor extends EventEmitter implements NodeProcessor {
 			const validationErrors = this.graphValidation[nodeId];
 			if (validationErrors && Object.keys(validationErrors).length > 0) {
 				state.status = TaskStatus.FAILED;
-				state.error = `Invalid configuration: ${Object.values(validationErrors).join(", ")}`;
+				state.error = `Invalid configuration: ${Object.values(validationErrors).join(", ")} `;
 				state.isDirty = false;
 				state.startedAt = undefined;
 				state.finishedAt = undefined;
@@ -668,44 +677,20 @@ export class NodeGraphProcessor extends EventEmitter implements NodeProcessor {
 		if (!node) return;
 
 		let processor = this.processors.get(node.type);
-		if (!processor) {
-			// Try to load from registry
-			const { registeredNodes } = await import("@gatewai/nodes-registry");
-			const registeredNode = Object.values(registeredNodes).find(
-				(n) => n.metadata.type === node.type,
-			);
 
-			if (registeredNode) {
-				const module = await registeredNode.node;
-				const PluginClass = module.default.backendProcessor;
-				// In the frontend, we don't have dependency injection for these classes yet,
-				// so we might need a different way to instantiate them OR just use the function.
-				// For now, let's assume it's an injectable class and we might need to mock DI or handle it.
-				// Actually, many of these nodes depend on Pixi etc which ARE available in the worker.
-
-				// IF it's a class, instantiate it.
-				if (typeof PluginClass === "function") {
-					const backendProcessor = new PluginClass();
-					processor = async (params) => {
-						const res = await backendProcessor.process(params);
-						if (!res.success) throw new Error(res.error || "Unknown error");
-						return res.newResult ?? null;
-					};
-				} else {
-					// Handle functional processors if any (unlikely for backend types but possible)
-					const originalFn = (PluginClass as any).process;
-					processor = async (params) => {
-						const res = await originalFn(params);
-						if (res && typeof res === "object" && "success" in res) {
-							if (!res.success) throw new Error(res.error || "Unknown error");
-							return res.newResult ?? null;
-						}
-						return res;
-					};
-				}
-
-				if (processor) {
-					this.processors.set(node.type, processor);
+		if (!processor && this.registry) {
+			const entry = this.registry[node.type];
+			if (entry) {
+				try {
+					const module = await entry.browser();
+					const PluginImpl = module.default.processor;
+					if (PluginImpl) {
+						const instance = new PluginImpl();
+						processor = instance.process.bind(instance);
+						this.processors.set(node.type, processor);
+					}
+				} catch (e) {
+					console.error(`Failed to load processor for ${node.type}`, e);
 				}
 			}
 		}
@@ -790,6 +775,7 @@ export class NodeGraphProcessor extends EventEmitter implements NodeProcessor {
 					}
 					return undefined;
 				},
+				pixi: pixiWorkerService as unknown as IPixiProcessor,
 			};
 
 			const result = await processor({
@@ -845,7 +831,7 @@ export class NodeGraphProcessor extends EventEmitter implements NodeProcessor {
 				return;
 			}
 
-			console.error(`Error processing node ${nodeId}:`, error);
+			console.error(`Error processing node ${nodeId}: `, error);
 
 			state.error = error instanceof Error ? error.message : "Unknown error";
 			state.isDirty = false; // It processed, but failed.
@@ -932,7 +918,7 @@ export class NodeGraphProcessor extends EventEmitter implements NodeProcessor {
 				if (!map.has(e.target)) map.set(e.target, new Set());
 				map
 					.get(e.target)
-					?.add(`${e.targetHandleId}|${e.source}|${e.sourceHandleId}`);
+					?.add(`${e.targetHandleId}| ${e.source}| ${e.sourceHandleId} `);
 			});
 			return map;
 		};
@@ -1055,437 +1041,5 @@ export class NodeGraphProcessor extends EventEmitter implements NodeProcessor {
 		}
 
 		return inputs;
-	}
-
-	//#region BUILT-IN PROCESSORS
-	private registerBuiltInProcessors(): void {
-		const findInputData = (
-			inputs: Record<string, ConnectedInput>,
-			requiredType: string = "Image",
-			handleLabel?: string,
-		): string | undefined => {
-			for (const [handleId, { connectionValid, outputItem }] of Object.entries(
-				inputs,
-			)) {
-				if (!connectionValid || !outputItem) continue;
-				if (outputItem.type !== requiredType) continue;
-
-				if (handleLabel) {
-					const handle = this.handles.find((h) => h.id === handleId);
-					if (handle?.label !== handleLabel) continue;
-				}
-
-				const fileData = outputItem.data as FileData;
-				const url = fileData?.entity?.signedUrl
-					? GetAssetEndpoint(fileData.entity)
-					: fileData?.processData?.dataUrl;
-				if (url) return url;
-			}
-			return undefined;
-		};
-
-		const getConnectedInputDataValue = (
-			inputs: Record<string, ConnectedInput>,
-			handleId: string,
-		): { type: "Image" | "Text" | "Audio" | "Video"; value: string } | null => {
-			const input = inputs[handleId];
-			if (!input || !input.connectionValid || !input.outputItem) return null;
-
-			if (
-				input.outputItem.type === "Image" ||
-				input.outputItem.type === "Audio" ||
-				input.outputItem.type === "Video"
-			) {
-				const fileData = input.outputItem.data as FileData;
-				const url = fileData?.entity?.signedUrl
-					? GetAssetEndpoint(fileData.entity)
-					: fileData?.processData?.dataUrl;
-				if (url) return { type: input.outputItem.type, value: url };
-			} else if (input.outputItem.type === "Text") {
-				const text = input.outputItem.data as string;
-				if (text !== undefined) return { type: "Text", value: String(text) };
-			}
-
-			return null;
-		};
-
-		const getFirstOutputHandle = (nodeId: string, type: string) =>
-			this.handles.find(
-				(h) =>
-					h.nodeId === nodeId &&
-					h.type === "Output" &&
-					h.dataTypes.includes(type as DataType),
-			)?.id;
-
-		const getOutputHandleByLabel = (nodeId: string, label: string) =>
-			this.handles.find(
-				(h) => h.nodeId === nodeId && h.type === "Output" && h.label === label,
-			)?.id;
-
-		this.registerProcessor("Crop", async ({ node, inputs, signal }) => {
-			const imageUrl = findInputData(inputs, "Image", "Image");
-			if (!imageUrl) throw new Error("Missing Input Image");
-
-			const config = node.config as CropNodeConfig;
-			const result = await pixiWorkerService.processCrop(
-				imageUrl,
-				{
-					leftPercentage: config.leftPercentage,
-					topPercentage: config.topPercentage,
-					widthPercentage: config.widthPercentage,
-					heightPercentage: config.heightPercentage,
-				},
-				signal,
-			);
-
-			const outputHandle = getFirstOutputHandle(node.id, "Image");
-			if (!outputHandle) throw new Error("Output handle missing");
-
-			const dataUrl = URL.createObjectURL(result.dataUrl);
-			this.registerObjectUrl(node.id, dataUrl);
-
-			return {
-				selectedOutputIndex: 0,
-				outputs: [
-					{
-						items: [
-							{
-								type: "Image",
-								data: {
-									processData: {
-										dataUrl,
-										width: result.width,
-										height: result.height,
-									},
-								},
-								outputHandleId: outputHandle,
-							},
-						],
-					},
-				],
-			};
-		});
-
-		this.registerProcessor("Paint", async ({ node, inputs, signal }) => {
-			const config = node.config as PaintNodeConfig;
-			const imageUrl = findInputData(inputs, "Image");
-			const maskDataUrl = config.paintData;
-			const imageHandle = getOutputHandleByLabel(node.id, "Image");
-			const maskHandle = getOutputHandleByLabel(node.id, "Mask");
-
-			if (!maskHandle) throw new Error("Mask output handle missing");
-
-			const { imageWithMask, onlyMask } = await pixiWorkerService.processMask(
-				config,
-				imageUrl,
-				maskDataUrl,
-				signal,
-			);
-
-			const items: Array<OutputItem<"Image">> = [];
-
-			if (imageHandle && imageWithMask) {
-				const dataUrl = URL.createObjectURL(imageWithMask.dataUrl);
-				this.registerObjectUrl(node.id, dataUrl);
-				items.push({
-					type: "Image",
-					data: {
-						processData: {
-							dataUrl,
-							width: imageWithMask.width,
-							height: imageWithMask.height,
-						},
-					},
-					outputHandleId: imageHandle,
-				});
-			}
-
-			const maskDataUrlResult = URL.createObjectURL(onlyMask.dataUrl);
-			this.registerObjectUrl(node.id, maskDataUrlResult);
-			items.push({
-				type: "Image",
-				data: {
-					processData: {
-						dataUrl: maskDataUrlResult,
-						width: onlyMask.width,
-						height: onlyMask.height,
-					},
-				},
-				outputHandleId: maskHandle,
-			});
-
-			return {
-				selectedOutputIndex: 0,
-				outputs: [{ items }],
-			} as unknown as NodeResult;
-		});
-
-		this.registerProcessor("Compositor", async ({ node, inputs, signal }) => {
-			const config = node.config as CompositorNodeConfig;
-			const inputDataMap: Record<
-				string,
-				{ type: "Image" | "Text"; value: string }
-			> = {};
-
-			Object.entries(inputs).forEach(([inputHandleId]) => {
-				const data = getConnectedInputDataValue(inputs, inputHandleId);
-				if (data && (data.type === "Image" || data.type === "Text")) {
-					inputDataMap[inputHandleId] = data as {
-						type: "Image" | "Text";
-						value: string;
-					};
-				}
-			});
-
-			const result = await processCompositor(config, inputDataMap, signal);
-			const outputHandle = getFirstOutputHandle(node.id, "Image");
-			if (!outputHandle) throw new Error("Missing output handle");
-
-			const compositorUrl = URL.createObjectURL(result.dataUrl);
-			this.registerObjectUrl(node.id, compositorUrl);
-
-			return {
-				selectedOutputIndex: 0,
-				outputs: [
-					{
-						items: [
-							{
-								type: "Image",
-								data: {
-									processData: {
-										dataUrl: compositorUrl,
-										width: result.width,
-										height: result.height,
-									},
-								},
-								outputHandleId: outputHandle,
-							},
-						],
-					},
-				],
-			};
-		});
-
-		this.registerProcessor("Blur", async ({ node, inputs, signal }) => {
-			const imageUrl = findInputData(inputs, "Image");
-			if (!imageUrl) throw new Error("Missing Input Image");
-
-			const config = node.config as BlurNodeConfig;
-			const result = await pixiWorkerService.processBlur(
-				imageUrl,
-				{ size: config.size ?? 1 },
-				signal,
-			);
-			const outputHandle = getFirstOutputHandle(node.id, "Image");
-			if (!outputHandle) throw new Error("Missing output handle");
-
-			const dataUrl = URL.createObjectURL(result.dataUrl);
-			this.registerObjectUrl(node.id, dataUrl);
-
-			return {
-				selectedOutputIndex: 0,
-				outputs: [
-					{
-						items: [
-							{
-								type: "Image",
-								data: {
-									processData: {
-										dataUrl,
-										width: result.width,
-										height: result.height,
-									},
-								},
-								outputHandleId: outputHandle,
-							},
-						],
-					},
-				],
-			};
-		});
-
-		this.registerProcessor("Modulate", async ({ node, inputs, signal }) => {
-			const imageUrl = findInputData(inputs, "Image");
-			if (!imageUrl) throw new Error("Missing Input Image");
-
-			const config = node.config as ModulateNodeConfig;
-			const result = await pixiWorkerService.processModulate(
-				imageUrl,
-				config,
-				signal,
-			);
-			const outputHandle = getFirstOutputHandle(node.id, "Image");
-			if (!outputHandle) throw new Error("Missing output handle");
-
-			const dataUrl = URL.createObjectURL(result.dataUrl);
-			this.registerObjectUrl(node.id, dataUrl);
-
-			return {
-				selectedOutputIndex: 0,
-				outputs: [
-					{
-						items: [
-							{
-								type: "Image",
-								data: {
-									processData: {
-										dataUrl,
-										width: result.width,
-										height: result.height,
-									},
-								},
-								outputHandleId: outputHandle,
-							},
-						],
-					},
-				],
-			};
-		});
-
-		this.registerProcessor("TextMerger", async ({ node, inputs }) => {
-			const config = TextMergerNodeConfigSchema.parse(node.config);
-			// inputs record is already sorted by handle.createdAt due to collectInputs logic
-			const allTexts = Object.values(inputs).map(
-				(input) => input.outputItem?.data ?? "",
-			);
-			const resultText = allTexts.join(config.join);
-
-			const outputHandle = getFirstOutputHandle(node.id, "Text");
-			if (!outputHandle) throw new Error("Missing output handle");
-			return {
-				selectedOutputIndex: 0,
-				outputs: [
-					{
-						items: [
-							{
-								type: "Text",
-								data: resultText,
-								outputHandleId: outputHandle,
-							},
-						],
-					},
-				],
-			};
-		});
-
-		this.registerProcessor("Export", async ({ inputs }) => {
-			const inputEntries = Object.entries(inputs);
-			if (inputEntries.length === 0)
-				throw new Error("Missing input for Export");
-
-			const [_, { outputItem }] = inputEntries[0];
-			if (!outputItem) throw new Error("No input item");
-
-			return {
-				selectedOutputIndex: 0,
-				outputs: [
-					{
-						items: [
-							{
-								type: outputItem.type,
-								data: outputItem.data,
-								outputHandleId: undefined,
-							},
-						],
-					},
-				],
-			} as unknown as NodeResult;
-		});
-
-		this.registerProcessor("Resize", async ({ node, inputs, signal }) => {
-			const imageUrl = findInputData(inputs, "Image");
-			if (!imageUrl) throw new Error("Missing Input Image");
-
-			const config = node.config as ResizeNodeConfig;
-			const result = await pixiWorkerService.processResize(
-				imageUrl,
-				{ width: config.width, height: config.height },
-				signal,
-			);
-			const outputHandle = getFirstOutputHandle(node.id, "Image");
-			if (!outputHandle) throw new Error("Missing output handle");
-
-			const dataUrl = URL.createObjectURL(result.dataUrl);
-			this.registerObjectUrl(node.id, dataUrl);
-
-			return {
-				selectedOutputIndex: 0,
-				outputs: [
-					{
-						items: [
-							{
-								type: "Image",
-								data: {
-									processData: {
-										dataUrl,
-										width: result.width,
-										height: result.height,
-									},
-								},
-								outputHandleId: outputHandle,
-							},
-						],
-					},
-				],
-			};
-		});
-
-		this.registerProcessor("Preview", async ({ inputs }) => {
-			const inputEntries = Object.entries(inputs);
-			if (inputEntries.length === 0) throw new Error("Preview disconnected");
-			const [_, { outputItem }] = inputEntries[0];
-			if (!outputItem) throw new Error("No input item");
-			return {
-				selectedOutputIndex: 0,
-				outputs: [
-					{
-						items: [
-							{
-								type: outputItem.type,
-								data: outputItem.data,
-								outputHandleId: undefined,
-							},
-						],
-					},
-				],
-			} as unknown as NodeResult;
-		});
-
-		// We're passing from config since result updates should be done by processor only not input
-		this.registerProcessor("Text", async ({ node }) => {
-			const outputHandle = getFirstOutputHandle(node.id, "Text");
-			const config = TextNodeConfigSchema.parse(node.config);
-			if (!outputHandle) throw new Error("No input handle");
-			return {
-				selectedOutputIndex: 0,
-				outputs: [
-					{
-						items: [
-							{
-								type: "Text",
-								data: config.content ?? "",
-								outputHandleId: outputHandle,
-							},
-						],
-					},
-				],
-			};
-		});
-
-		// Pass-through computations - No browser processing required.
-		const passthrough = async ({ node }: NodeProcessorParams) =>
-			node.result as unknown as NodeResult;
-
-		// We only render the video when user downloads it, and use remotion player for render on node component.
-		this.registerProcessor("VideoCompositor", passthrough);
-		this.registerProcessor("ImageGen", passthrough);
-		this.registerProcessor("File", passthrough);
-		this.registerProcessor("LLM", passthrough);
-		this.registerProcessor("VideoGen", passthrough);
-		this.registerProcessor("VideoGenExtend", passthrough);
-		this.registerProcessor("VideoGenFirstLastFrame", passthrough);
-		this.registerProcessor("TextToSpeech", passthrough);
-		this.registerProcessor("SpeechToText", passthrough);
-		//#endregion
 	}
 }

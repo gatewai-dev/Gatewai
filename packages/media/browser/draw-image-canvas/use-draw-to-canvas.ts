@@ -18,7 +18,7 @@ function useDrawToCanvas(
 	useEffect(() => {
 		if (!workerRef.current) {
 			workerRef.current = new Worker(
-				new URL("./canvas.worker.ts", import.meta.url),
+				new URL("./canvas-worker.mjs", import.meta.url),
 				{ type: "module" },
 			);
 			workerRef.current.onmessage = (e) => {

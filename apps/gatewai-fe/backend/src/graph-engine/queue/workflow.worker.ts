@@ -16,6 +16,7 @@ import type {
 } from "@gatewai/node-sdk/server";
 import { type Job, Worker } from "bullmq";
 import { assertIsError } from "../../utils/misc.js";
+import { discoverNodes } from "../node-discovery.js";
 
 // Global reference for shutdown handling
 let worker: Worker<NodeTaskJobData> | null = null;
@@ -473,6 +474,29 @@ const WORKER_LOCK_DURATION = FIVE_MINS;
 
 export const startWorker = async () => {
 	logger.info("Starting Workflow Worker...");
+
+	// Discover and register nodes
+	try {
+		const nodes = await discoverNodes();
+		logger.info(`Discovered ${nodes.length} nodes from filesystem.`);
+		for (const entry of nodes) {
+			try {
+				const mod = await entry.server();
+				// Register both manifest + backendProcessor
+				// The module default export is the BackendNodePlugin which contains definition
+				if (mod.default) {
+					nodeRegistry.register(mod.default);
+					logger.info(`Registered node: ${entry.name}`);
+				} else {
+					logger.warn(`Node ${entry.name} has no default export.`);
+				}
+			} catch (e) {
+				logger.error(`Failed to register node ${entry.name}:`, e);
+			}
+		}
+	} catch (err) {
+		logger.error("Failed to discover nodes:", err);
+	}
 
 	try {
 		await recoverDanglingTasks();

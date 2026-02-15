@@ -22,8 +22,11 @@ import { useEffect } from "react";
 import { Helmet } from "react-helmet-async";
 import { useCanvasCtx } from "../../../../../../../packages/react-canvas/src/canvas-ctx";
 import { useCanvasMode } from "../../../../../../../packages/react-canvas/src/canvas-mode-ctx";
+import {
+	CustomConnectionLine,
+	CustomEdge,
+} from "../../../../../../../packages/react-canvas/src/nodes/base";
 import { nodeTypes } from "../nodes";
-import { CustomConnectionLine, CustomEdge } from "../nodes/base";
 import { ReactFlowPanels } from "./panels";
 
 const edgeTypes = {

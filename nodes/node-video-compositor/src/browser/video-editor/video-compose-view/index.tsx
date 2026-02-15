@@ -1,16 +1,10 @@
 import type { OutputItem } from "@gatewai/core/types";
-import type { VideoCompositorNodeConfig } from "@gatewai/nodes";
-import { useCanvasCtx } from "@gatewai/react-canvas";
+import { useNodeResult, useNodeUI } from "@gatewai/node-sdk/browser";
 import type { HandleEntityType } from "@gatewai/react-store";
-import {
-	makeSelectNodeById,
-	useAppSelector,
-	useNodeResult,
-} from "@gatewai/react-store";
+import { makeSelectNodeById, useAppSelector } from "@gatewai/react-store";
 import { memo, useMemo } from "react";
-import { Helmet } from "react-helmet-async";
-import { useNavigate, useParams } from "react-router";
-import { VideoDesignerEditor } from "../video-editor";
+import type { VideoCompositorNodeConfig } from "@/shared/video-compositor-config.js";
+import { VideoDesignerEditor } from "../video-editor/index.js";
 
 type InputOutputItems =
 	| OutputItem<"Text">
@@ -18,59 +12,53 @@ type InputOutputItems =
 	| OutputItem<"Video">
 	| OutputItem<"Audio">;
 
-const VideoCompositorView = memo(() => {
-	const nav = useNavigate();
-	const { nodeId, canvasId } = useParams();
-	if (!nodeId) {
-		throw new Error("Node Id is missing");
-	}
-	const node = useAppSelector(makeSelectNodeById(nodeId));
-	const { inputs } = useNodeResult(nodeId);
-	const { onNodeConfigUpdate, moveViewportToNode } = useCanvasCtx();
+const VideoCompositorView = memo(
+	({
+		nodeId,
+		closeCallback,
+	}: {
+		nodeId: string;
+		closeCallback: () => void;
+	}) => {
+		const node = useAppSelector(makeSelectNodeById(nodeId));
+		const { inputs } = useNodeResult(nodeId);
+		const { onNodeConfigUpdate } = useNodeUI();
 
-	const initialLayers = useMemo(() => {
-		const items = new Map<HandleEntityType["id"], InputOutputItems>();
+		const initialLayers = useMemo(() => {
+			const items = new Map<HandleEntityType["id"], InputOutputItems>();
 
-		for (const key of Object.keys(inputs)) {
-			const value = inputs[key];
-			const handleId = key;
-			if (value.outputItem) {
-				items.set(handleId, value.outputItem as InputOutputItems);
+			for (const key of Object.keys(inputs)) {
+				const value = inputs[key];
+				const handleId = key;
+				if (value.outputItem) {
+					items.set(handleId, value.outputItem as InputOutputItems);
+				}
 			}
-		}
-		return items;
-	}, [inputs]);
+			return items;
+		}, [inputs]);
 
-	const closeAndFocusOnNode = () => {
-		nav(`/canvas/${canvasId}`);
-		setTimeout(() => {
-			moveViewportToNode(node.id);
-		}, 500);
-	};
+		const closeAndFocusOnNode = () => {
+			closeCallback();
+		};
 
-	const onSave = (config: VideoCompositorNodeConfig) => {
-		onNodeConfigUpdate({ id: node.id, newConfig: config });
-		if (!canvasId) {
-			throw new Error("Canvas id is missing in parameters");
-		}
-		closeAndFocusOnNode();
-	};
+		const onSave = (config: VideoCompositorNodeConfig) => {
+			onNodeConfigUpdate({ id: node.id, newConfig: config });
+			closeAndFocusOnNode();
+		};
 
-	return (
-		<div className="inset-0 h-screen w-screen">
-			<Helmet>
-				<title>Video Editor - Gatewai</title>
-			</Helmet>
-			{node && (
-				<VideoDesignerEditor
-					onClose={() => closeAndFocusOnNode()}
-					onSave={onSave}
-					initialLayers={initialLayers}
-					node={node}
-				/>
-			)}
-		</div>
-	);
-});
+		return (
+			<div className="inset-0 h-screen w-screen">
+				{node && (
+					<VideoDesignerEditor
+						onClose={() => closeAndFocusOnNode()}
+						onSave={onSave}
+						initialLayers={initialLayers}
+						node={node}
+					/>
+				)}
+			</div>
+		);
+	},
+);
 
 export { VideoCompositorView };

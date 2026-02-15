@@ -28,19 +28,30 @@ import { NodeGraphProcessor } from "./node-graph-processor";
 import { BaseNode } from "./nodes/base";
 import { CanvasRenderer } from "./nodes/common/canvas-renderer";
 import { useNodeTaskRunning } from "./task-manager-ctx";
-import { type ConnectedInput, type HandleState, TaskStatus } from "./types";
+import {
+	type ConnectedInput,
+	type DiscoveredNodeRegistry,
+	type HandleState,
+	TaskStatus,
+} from "./types";
 
 const ProcessorContext = createContext<NodeGraphProcessor | null>(null);
 
 /**
  * Provider - creates processor instance and syncs with Redux store
  */
-export function ProcessorProvider({ children }: { children: React.ReactNode }) {
+export function ProcessorProvider({
+	children,
+	registry,
+}: {
+	children: React.ReactNode;
+	registry?: DiscoveredNodeRegistry;
+}) {
 	const processorRef = useRef<NodeGraphProcessor | null>(null);
 	const { onNodeConfigUpdate, onNodeResultUpdate } = useCanvasCtx();
 
 	if (!processorRef.current) {
-		processorRef.current = new NodeGraphProcessor();
+		processorRef.current = new NodeGraphProcessor(registry);
 	}
 
 	const processor = processorRef.current;

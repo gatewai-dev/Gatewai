@@ -32,4 +32,16 @@ export type {
 	NodeRunFunction,
 };
 
+import type { NodeMetadata } from "@gatewai/core";
+import type { FrontendNodePlugin } from "@gatewai/node-sdk/browser";
+import type { BackendNodePlugin } from "@gatewai/node-sdk/server";
+
+export type DiscoveredNodeEntry = {
+	metadata: () => Promise<{ metadata: Readonly<NodeMetadata> }>;
+	browser: () => Promise<{ default: Readonly<FrontendNodePlugin> }>;
+	server: () => Promise<{ default: Readonly<BackendNodePlugin> }>;
+};
+
+export type DiscoveredNodeRegistry = Record<string, DiscoveredNodeEntry>;
+
 export type { ProcessorConfig };

@@ -5,6 +5,7 @@ export default defineConfig({
 		index: "common/index.ts",
 		server: "server/index.ts",
 		browser: "browser/index.ts",
+		"canvas-worker": "browser/draw-image-canvas/canvas.worker.ts",
 	},
 	format: ["esm"],
 	dts: true,

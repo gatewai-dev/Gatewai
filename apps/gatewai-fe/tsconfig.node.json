@@ -24,6 +24,7 @@
 		"../../packages/media/browser/draw-image-canvas",
 		"../../packages/media/browser/worker-pixi-service.ts",
 		"../../packages/media/server/utils",
-		"../../packages/media/server/backend-pixi-service.ts"
+		"../../packages/media/server/backend-pixi-service.ts",
+		"vite-plugins"
 	]
 }

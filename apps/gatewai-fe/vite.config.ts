@@ -3,6 +3,7 @@ import tailwindcss from "@tailwindcss/vite";
 import react from "@vitejs/plugin-react-swc";
 import { defineConfig } from "vite";
 import { nodePolyfills } from "vite-plugin-node-polyfills";
+import { nodeDiscovery } from "./vite-plugins/node-discovery";
 
 // https://vite.dev/config/
 export default defineConfig({
@@ -22,6 +23,7 @@ export default defineConfig({
 	plugins: [
 		react(),
 		tailwindcss(),
+		nodeDiscovery(),
 		nodePolyfills({
 			include: ["events", "buffer", "process"],
 		}),
@@ -44,6 +46,16 @@ export default defineConfig({
 	resolve: {
 		alias: {
 			"@": path.resolve(__dirname, "./src"),
+			react: path.resolve(__dirname, "./node_modules/react"),
+			"react-dom": path.resolve(__dirname, "./node_modules/react-dom"),
+			"react/jsx-runtime": path.resolve(
+				__dirname,
+				"./node_modules/react/jsx-runtime.js",
+			),
+			"react/jsx-dev-runtime": path.resolve(
+				__dirname,
+				"./node_modules/react/jsx-dev-runtime.js",
+			),
 		},
 	},
 });
