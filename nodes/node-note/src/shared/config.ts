@@ -1,5 +1,5 @@
-import { z } from "zod";
 import { ColorSchema } from "@gatewai/node-sdk";
+import { z } from "zod";
 
 export const NoteNodeConfigSchema = z
 	.object({

@@ -5,12 +5,12 @@ import {
 	useNodeResult,
 	useNodeUI,
 } from "@gatewai/node-sdk/browser";
+import type { NodeProps } from "@gatewai/react-canvas";
 import {
 	updateNodeConfigWithoutHistory,
 	useAppDispatch,
 } from "@gatewai/react-store";
 import { cn } from "@gatewai/ui-kit";
-import type { NodeProps } from "@xyflow/react";
 import { memo, useEffect } from "react";
 import type { ResizeNodeConfig } from "@/shared/config.js";
 import { ResizeConfig } from "./resize-node-config.js";

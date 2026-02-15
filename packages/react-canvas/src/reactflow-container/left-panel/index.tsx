@@ -1,6 +1,5 @@
-import { Panel } from "@xyflow/react";
+import { Panel } from "@gatewai/react-canvas";
 import { memo } from "react";
-import { NodePalette } from "../../node-templates/node-palette";
 
 const LeftPanel = memo(() => {
 	return (

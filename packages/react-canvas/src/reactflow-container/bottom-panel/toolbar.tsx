@@ -1,3 +1,4 @@
+import { useReactFlow, useViewport } from "@gatewai/react-canvas";
 import {
 	Button,
 	Menubar,
@@ -7,7 +8,6 @@ import {
 	MenubarTrigger,
 	Separator,
 } from "@gatewai/ui-kit";
-import { useReactFlow, useViewport } from "@xyflow/react";
 import { ChevronDown, Hand, MousePointer } from "lucide-react";
 import { memo } from "react";
 import { useCanvasMode } from "../../../../../../../../packages/react-canvas/src/canvas-mode-ctx";

@@ -1,5 +1,6 @@
 import { getDataTypeFromMime } from "@gatewai/core/browser";
 import type { FileData, FileResult } from "@gatewai/core/types";
+import { useReactFlow } from "@gatewai/react-canvas";
 import { useDeleteAssetMutation } from "@gatewai/react-store";
 import {
 	AlertDialog,
@@ -15,7 +16,6 @@ import {
 	DropdownMenuItem,
 	DropdownMenuTrigger,
 } from "@gatewai/ui-kit";
-import { useReactFlow } from "@xyflow/react";
 import { motion } from "framer-motion";
 import {
 	FileImage,

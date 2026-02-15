@@ -1,9 +1,9 @@
+import type { NodeProps } from "@gatewai/react-canvas";
 import {
 	BaseNode,
 	CanvasRenderer,
 	useNodePreview,
 } from "@gatewai/react-canvas";
-import type { NodeProps } from "@xyflow/react";
 import { memo } from "react";
 import type { BlurNode } from "../node-props";
 import { BlurValueSlider } from "./blur-slider";

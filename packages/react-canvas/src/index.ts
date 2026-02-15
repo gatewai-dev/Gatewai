@@ -1,3 +1,4 @@
+export * from "@xyflow/react";
 export * from "./assets/index.js";
 export * from "./canvas-ctx.js";
 export * from "./canvas-mode-ctx.js";
@@ -9,5 +10,6 @@ export * from "./nodes/common/canvas-renderer/index.js";
 export * from "./nodes/common/video-renderer/index.js";
 export * from "./nodes/node-menu.js";
 export * from "./processor-ctx.js";
+export * from "./reactflow-container";
 export * from "./task-manager-ctx.js";
 export * from "./types.js";

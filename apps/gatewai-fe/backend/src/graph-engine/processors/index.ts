@@ -12,12 +12,12 @@ import { paintNode } from "@gatewai/node-paint/server";
 import { previewNode } from "@gatewai/node-preview/server";
 import { resizeNode } from "@gatewai/node-resize/server";
 import { speechToTextNode } from "@gatewai/node-speech-to-text/server";
-import { textMergerNode } from "@gatewai/node-text-merger/server";
 import { textNode } from "@gatewai/node-text/server";
+import { textMergerNode } from "@gatewai/node-text-merger/server";
 import { textToSpeechNode } from "@gatewai/node-text-to-speech/server";
 import { videoCompositorNode } from "@gatewai/node-video-compositor/server";
-import { videoGenFirstLastFrameNode } from "@gatewai/node-video-gen-first-last-frame/server";
 import { videoGenNode } from "@gatewai/node-video-gen/server";
+import { videoGenFirstLastFrameNode } from "@gatewai/node-video-gen-first-last-frame/server";
 
 // ────────────────────────────────────────────────────────────────────────────
 // Register backend processors into the NodeRegistry.

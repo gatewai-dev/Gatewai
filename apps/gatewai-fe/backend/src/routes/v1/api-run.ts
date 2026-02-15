@@ -13,6 +13,7 @@ import type { TextNodeConfigSchema } from "@gatewai/node-text";
 import type { z } from "zod";
 
 type TextNodeConfig = z.infer<typeof TextNodeConfigSchema>;
+
 import { zValidator } from "@hono/zod-validator";
 import { Hono } from "hono";
 import type { AuthorizedHonoTypes } from "../../auth.js";

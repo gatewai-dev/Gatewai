@@ -1,5 +1,5 @@
+import { Panel } from "@gatewai/react-canvas";
 import { Button } from "@gatewai/ui-kit";
-import { Panel } from "@xyflow/react";
 import { HiSparkles } from "react-icons/hi2";
 import { usePersistentState } from "@/lib/hooks/use-persistent-state";
 import { cn } from "@/lib/utils";

@@ -1,8 +1,8 @@
 import { defineMetadata } from "@gatewai/node-sdk";
 import {
+	TextToSpeechNodeConfigSchema,
 	TTS_LANGUAGES,
 	TTS_VOICE_NAMES,
-	TextToSpeechNodeConfigSchema,
 } from "./shared/index.js";
 
 export { TextToSpeechNodeConfigSchema };

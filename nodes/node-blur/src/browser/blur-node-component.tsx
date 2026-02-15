@@ -1,5 +1,5 @@
 import { useNodePreview, useNodeUI } from "@gatewai/node-sdk/browser";
-import type { NodeProps } from "@xyflow/react";
+import type { NodeProps } from "@gatewai/react-canvas";
 import { memo } from "react";
 import { BlurValueSlider } from "./components/blur-slider.js";
 

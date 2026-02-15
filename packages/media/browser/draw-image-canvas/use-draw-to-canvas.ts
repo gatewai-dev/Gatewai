@@ -1,11 +1,10 @@
-import { useViewport } from "@xyflow/react";
 import { useEffect, useRef, useState } from "react";
 
 function useDrawToCanvas(
 	canvasRef: React.RefObject<HTMLCanvasElement | null>,
+	zoom: number,
 	imageUrl?: string | null,
 ) {
-	const { zoom } = useViewport();
 	const workerRef = useRef<Worker | null>(null);
 	const [renderHeight, setRenderHeight] = useState<number | undefined>(
 		undefined,

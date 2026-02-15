@@ -1,7 +1,10 @@
-import { NODE_ICON_MAP, useCanvasCtx } from "@gatewai/react-canvas";
+import {
+	NODE_ICON_MAP,
+	useCanvasCtx,
+	useReactFlow,
+} from "@gatewai/react-canvas";
 import type { NodeTemplateListItemRPC } from "@gatewai/react-store";
 import { cn } from "@gatewai/ui-kit";
-import { useReactFlow } from "@xyflow/react";
 import { motion } from "framer-motion";
 import { GripVertical } from "lucide-react";
 import { memo, useEffect, useRef, useState } from "react";

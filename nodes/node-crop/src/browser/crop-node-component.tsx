@@ -5,6 +5,7 @@ import {
 	useNodeResult,
 	useNodeUI,
 } from "@gatewai/node-sdk/browser";
+import type { NodeProps } from "@gatewai/react-canvas";
 import {
 	makeSelectEdgesByTargetNodeId,
 	makeSelectNodeById,
@@ -13,7 +14,6 @@ import {
 	useAppSelector,
 } from "@gatewai/react-store";
 import { cn } from "@gatewai/ui-kit";
-import type { NodeProps } from "@xyflow/react";
 import { memo, useCallback, useEffect, useMemo, useRef, useState } from "react";
 import type { CropNodeConfig } from "@/shared/config.js";
 

@@ -1,5 +1,14 @@
 import { dataTypeColors } from "@gatewai/core/types";
 import {
+	BaseEdge,
+	type ConnectionLineComponentProps,
+	type EdgeProps,
+	getBezierPath,
+	Handle,
+	type Node,
+	Position,
+} from "@gatewai/react-canvas";
+import {
 	type HandleEntityType,
 	makeSelectHandlesByNodeId,
 	makeSelectNodeById,
@@ -14,15 +23,6 @@ import {
 	TooltipContent,
 	TooltipTrigger,
 } from "@gatewai/ui-kit";
-import {
-	BaseEdge,
-	type ConnectionLineComponentProps,
-	type EdgeProps,
-	getBezierPath,
-	Handle,
-	type Node,
-	Position,
-} from "@xyflow/react";
 import { TrashIcon } from "lucide-react";
 import { type JSX, memo, type ReactNode, useMemo } from "react";
 import { useCanvasCtx } from "../canvas-ctx";

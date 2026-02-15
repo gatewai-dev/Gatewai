@@ -1,5 +1,20 @@
 import { generateId } from "@gatewai/core";
 import type { BulkUpdatePayload, NodeResult } from "@gatewai/core/types";
+import {
+	type Connection,
+	type Edge,
+	type EdgeChange,
+	getConnectedEdges,
+	getOutgoers,
+	type Node,
+	type NodeChange,
+	type OnConnect,
+	type OnEdgesChange,
+	type OnNodesChange,
+	type ReactFlowInstance,
+	useUpdateNodeInternals,
+	type XYPosition,
+} from "@gatewai/react-canvas";
 import type {
 	BatchEntity,
 	CanvasDetailsRPC,
@@ -42,21 +57,6 @@ import {
 	useRejectPatchMutation,
 	useStore,
 } from "@gatewai/react-store";
-import {
-	type Connection,
-	type Edge,
-	type EdgeChange,
-	getConnectedEdges,
-	getOutgoers,
-	type Node,
-	type NodeChange,
-	type OnConnect,
-	type OnEdgesChange,
-	type OnNodesChange,
-	type ReactFlowInstance,
-	useUpdateNodeInternals,
-	type XYPosition,
-} from "@xyflow/react";
 import {
 	createContext,
 	type PropsWithChildren,

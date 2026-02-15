@@ -1,9 +1,7 @@
 import { ResolveFileDataUrl } from "@gatewai/core/browser";
 import type { FileData } from "@gatewai/core/types";
-import {
-	type CropNodeConfig,
-	CropNodeConfigSchema,
-} from "@gatewai/node-crop";
+import { type CropNodeConfig, CropNodeConfigSchema } from "@gatewai/node-crop";
+import type { NodeProps } from "@gatewai/react-canvas";
 import { BaseNode, CanvasRenderer, useNodeResult } from "@gatewai/react-canvas";
 import {
 	makeSelectEdgesByTargetNodeId,
@@ -12,7 +10,6 @@ import {
 	useAppDispatch,
 	useAppSelector,
 } from "@gatewai/react-store";
-import type { NodeProps } from "@xyflow/react";
 import { memo, useCallback, useEffect, useMemo, useRef, useState } from "react";
 import { cn } from "@/lib/utils";
 import type { CropNode } from "../node-props";

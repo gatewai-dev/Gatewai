@@ -8,8 +8,8 @@ import {
 import { applyCanvasUpdate, GetCanvasEntities } from "@gatewai/data-ops";
 import { prisma } from "@gatewai/db";
 import { NodeWFProcessor } from "@gatewai/graph-engine";
+import type { XYPosition } from "@gatewai/react-canvas";
 import { zValidator } from "@hono/zod-validator";
-import type { XYPosition } from "@xyflow/react";
 import { Hono } from "hono";
 import { HTTPException } from "hono/http-exception";
 import { streamSSE } from "hono/streaming";

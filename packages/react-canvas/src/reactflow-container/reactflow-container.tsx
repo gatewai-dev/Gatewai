@@ -1,13 +1,4 @@
 import {
-	selectRFEdges,
-	selectRFNodes,
-	setSelectedEdgeIds,
-	setSelectedNodeIds,
-	useAppDispatch,
-	useAppSelector,
-} from "@gatewai/react-store";
-import { LoadingSpinner } from "@gatewai/ui-kit";
-import {
 	Background,
 	BackgroundVariant,
 	ConnectionLineType,
@@ -16,16 +7,19 @@ import {
 	type Node,
 	ReactFlow,
 	SelectionMode,
-} from "@xyflow/react";
+} from "@gatewai/react-canvas";
+import {
+	selectRFEdges,
+	selectRFNodes,
+	setSelectedEdgeIds,
+	setSelectedNodeIds,
+	useAppDispatch,
+	useAppSelector,
+} from "@gatewai/react-store";
+import { LoadingSpinner } from "@gatewai/ui-kit";
 import type { DragEventHandler, MouseEventHandler } from "react";
 import { useEffect } from "react";
 import { Helmet } from "react-helmet-async";
-import { useCanvasCtx } from "../../../../../../../packages/react-canvas/src/canvas-ctx";
-import { useCanvasMode } from "../../../../../../../packages/react-canvas/src/canvas-mode-ctx";
-import {
-	CustomConnectionLine,
-	CustomEdge,
-} from "../../../../../../../packages/react-canvas/src/nodes/base";
 import { nodeTypes } from "../nodes";
 import { ReactFlowPanels } from "./panels";
 

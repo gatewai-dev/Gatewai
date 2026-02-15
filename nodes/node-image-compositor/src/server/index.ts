@@ -4,8 +4,8 @@ import type {
 	NodeProcessor,
 	NodeResult,
 } from "@gatewai/core/types";
-import { injectable } from "tsyringe";
 import { defineNode } from "@gatewai/node-sdk/server";
+import { injectable } from "tsyringe";
 import { manifest } from "../metadata.js";
 
 @injectable()
