@@ -13,3 +13,4 @@ export * from "./processor-ctx.js";
 export * from "./reactflow-container";
 export * from "./task-manager-ctx.js";
 export * from "./types.js";
+export * from "./nodes/common/media-content.js";

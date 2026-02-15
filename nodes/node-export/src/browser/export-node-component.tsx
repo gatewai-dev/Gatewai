@@ -1,15 +1,12 @@
-import {
-	BaseNode,
-	isFileData,
-	type NodeProps,
-	useNodeResult,
-} from "@gatewai/react-canvas";
+import { BaseNode, isFileData, useNodeResult } from "@gatewai/react-canvas";
 import type { NodeEntityType } from "@gatewai/react-store";
-import { Alert, AlertDescription, Button, Separator } from "@gatewai/ui-kit";
+import { Alert, AlertDescription, Button, Separator, cn } from "@gatewai/ui-kit";
+import type { NodeProps } from "@xyflow/react";
 import { AlertCircle, Download, InfoIcon, Loader2 } from "lucide-react";
 import { memo, useState } from "react";
+import { useDownloadFileData } from "@/routes/canvas/details/hooks/use-download-filedata";
 
-function ExportNodeHandbook({ nodeId }: { nodeId: NodeEntityType["id"] }) {
+function ExportNodeHandbook({ nodeId }: { nodeId: string }) {
 	return (
 		<Alert>
 			<InfoIcon className="size-3" />
@@ -39,9 +36,6 @@ const ExportNodeComponent = memo((props: NodeProps) => {
 	const [isDownloading, setIsDownloading] = useState(false);
 	const [error, setError] = useState<string | null>(null);
 
-	/**
-	 * Download primitive types as text file
-	 */
 	const downloadAsText = async (content: string, filename: string) => {
 		try {
 			const blob = new Blob([content], { type: "text/plain;charset=utf-8" });
@@ -56,7 +50,6 @@ const ExportNodeComponent = memo((props: NodeProps) => {
 			link.click();
 			document.body.removeChild(link);
 
-			// Cleanup
 			setTimeout(() => URL.revokeObjectURL(url), 100);
 		} catch (err) {
 			throw new Error(
@@ -67,9 +60,6 @@ const ExportNodeComponent = memo((props: NodeProps) => {
 
 	const downloadFileData = useDownloadFileData();
 
-	/**
-	 * Main download handler
-	 */
 	const onClickDownload = async () => {
 		if (!result) {
 			setError("No result available to download");
@@ -80,18 +70,15 @@ const ExportNodeComponent = memo((props: NodeProps) => {
 		setError(null);
 
 		try {
-			// Get the selected output
 			const selectedOutput = result.outputs[result.selectedOutputIndex];
 
 			if (!selectedOutput || !selectedOutput.items.length) {
 				throw new Error("No output items found");
 			}
 
-			// Get the first item (primary output)
 			const outputItem = selectedOutput.items[0];
 			const { type, data } = outputItem;
 
-			// Handle different data types
 			if (type === "Text" || type === "Number" || type === "Boolean") {
 				const content = String(data);
 				const filename = `export-${props.id}-${Date.now()}.txt`;
@@ -114,7 +101,7 @@ const ExportNodeComponent = memo((props: NodeProps) => {
 	};
 
 	const hasResult =
-		result && result.outputs[result.selectedOutputIndex]?.items.length > 0;
+		result && result.outputs && result.outputs[result.selectedOutputIndex]?.items.length > 0;
 
 	return (
 		<BaseNode selected={props.selected} id={props.id} dragging={props.dragging}>
@@ -156,5 +143,7 @@ const ExportNodeComponent = memo((props: NodeProps) => {
 		</BaseNode>
 	);
 });
+
+ExportNodeComponent.displayName = "ExportNode";
 
 export { ExportNodeComponent };
