@@ -11,3 +11,4 @@ export * from "./nodes/node-menu.js";
 export * from "./processor-ctx.js";
 export * from "./task-manager-ctx.js";
 export * from "./types.js";
+export * from "./nodes/common/media-content.js";
