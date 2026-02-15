@@ -55,4 +55,6 @@ class ExportProcessor implements NodeProcessor {
     }
 }
 
-export default defineNode(metadata, { backendProcessor: ExportProcessor });
+export const exportNode = defineNode(metadata, { backendProcessor: ExportProcessor });
+
+export default exportNode;

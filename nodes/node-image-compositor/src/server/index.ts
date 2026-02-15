@@ -5,6 +5,8 @@ import type {
 	NodeResult,
 } from "@gatewai/core/types";
 import { injectable } from "tsyringe";
+import { defineNode } from "@gatewai/node-sdk/server";
+import { manifest } from "../metadata.js";
 
 @injectable()
 export class ImageCompositorProcessor implements NodeProcessor {
@@ -17,3 +19,9 @@ export class ImageCompositorProcessor implements NodeProcessor {
 		return result;
 	}
 }
+
+export const compositorNode = defineNode(manifest, {
+	backendProcessor: ImageCompositorProcessor,
+});
+
+export default compositorNode;

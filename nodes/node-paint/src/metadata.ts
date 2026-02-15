@@ -1,8 +1,7 @@
 import { defineMetadata } from "@gatewai/node-sdk";
+import { PaintNodeConfigSchema } from "./shared/index.js";
 
-export { PaintNodeConfigSchema } from "./shared/config.js";
-
-import { PaintNodeConfigSchema } from "./shared/config.js";
+export { PaintNodeConfigSchema };
 
 export default defineMetadata({
 	type: "Paint",

@@ -1,15 +1,11 @@
 import { z } from "zod";
 
-const ColorSchema = z.string().regex(/^#([0-9a-fA-F]{3,8})$/);
-
 export const PaintNodeConfigSchema = z
 	.object({
-		width: z.number().int(),
-		height: z.number().int(),
-		maintainAspect: z.boolean(),
-		aspectRatio: z.number().optional(),
-		backgroundColor: ColorSchema,
-		paintData: z.string().optional(),
+		width: z.number().min(0).default(1024),
+		height: z.number().min(0).default(1024),
+		maintainAspect: z.boolean().default(true),
+		backgroundColor: z.string().optional(),
 	})
 	.strict();
 

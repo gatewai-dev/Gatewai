@@ -1,4 +1,7 @@
-import type { NodeTemplateManifest } from "@gatewai/node-sdk";
+import { defineMetadata, type NodeTemplateManifest } from "@gatewai/node-sdk";
+import { CompositorNodeConfigSchema } from "./shared/index.js";
+
+export { CompositorNodeConfigSchema };
 
 export const manifest: NodeTemplateManifest = {
 	type: "image-compositor",

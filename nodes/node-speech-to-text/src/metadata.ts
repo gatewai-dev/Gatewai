@@ -1,17 +1,7 @@
 import { defineMetadata } from "@gatewai/node-sdk";
-import { z } from "zod";
+import { SpeechToTextNodeConfigSchema } from "./shared/index.js";
 
-export const STT_NODE_MODELS = [
-	"gemini-2.5-flash",
-	"gemini-3-flash-preview",
-	"gemini-3-pro-preview",
-] as const;
-
-export const SpeechToTextNodeConfigSchema = z
-	.object({
-		model: z.enum(STT_NODE_MODELS).default("gemini-2.5-flash"),
-	})
-	.strict();
+export { SpeechToTextNodeConfigSchema };
 
 export default defineMetadata({
 	type: "SpeechToText",
@@ -29,5 +19,5 @@ export default defineMetadata({
 		],
 		outputs: [{ dataTypes: ["Text"], label: "Result", order: 0 }],
 	},
-	defaultConfig: { model: "gemini-2.5-flash" },
+	defaultConfig: { model: "gemini-3-flash-preview" },
 });

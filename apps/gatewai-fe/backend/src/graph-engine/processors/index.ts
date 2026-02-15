@@ -1,25 +1,23 @@
 import { nodeRegistry } from "@gatewai/graph-engine";
-import {
-	blurNode,
-	compositorNode,
-	cropNode,
-	exportNode,
-	fileNode,
-	imageGenNode,
-	llmNode,
-	modulateNode,
-	noteNode,
-	paintNode,
-	previewNode,
-	resizeNode,
-	speechToTextNode,
-	textMergerNode,
-	textNode,
-	textToSpeechNode,
-	videoCompositorNode,
-	videoGenFirstLastFrameNode,
-	videoGenNode,
-} from "@gatewai/nodes/server";
+import { blurNode } from "@gatewai/node-blur/server";
+import { cropNode } from "@gatewai/node-crop/server";
+import { exportNode } from "@gatewai/node-export/server";
+import { fileNode } from "@gatewai/node-file/server";
+import { compositorNode } from "@gatewai/node-image-compositor/server";
+import { imageGenNode } from "@gatewai/node-image-gen/server";
+import { llmNode } from "@gatewai/node-llm/server";
+import { modulateNode } from "@gatewai/node-modulate/server";
+import { noteNode } from "@gatewai/node-note/server";
+import { paintNode } from "@gatewai/node-paint/server";
+import { previewNode } from "@gatewai/node-preview/server";
+import { resizeNode } from "@gatewai/node-resize/server";
+import { speechToTextNode } from "@gatewai/node-speech-to-text/server";
+import { textMergerNode } from "@gatewai/node-text-merger/server";
+import { textNode } from "@gatewai/node-text/server";
+import { textToSpeechNode } from "@gatewai/node-text-to-speech/server";
+import { videoCompositorNode } from "@gatewai/node-video-compositor/server";
+import { videoGenFirstLastFrameNode } from "@gatewai/node-video-gen-first-last-frame/server";
+import { videoGenNode } from "@gatewai/node-video-gen/server";
 
 // ────────────────────────────────────────────────────────────────────────────
 // Register backend processors into the NodeRegistry.

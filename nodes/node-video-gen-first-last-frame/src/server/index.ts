@@ -222,6 +222,8 @@ class VideoGenFirstLastFrameProcessor implements NodeProcessor {
     }
 }
 
-export default defineNode(metadata, {
+export const videoGenFirstLastFrameNode = defineNode(metadata, {
     backendProcessor: VideoGenFirstLastFrameProcessor,
 });
+
+export default videoGenFirstLastFrameNode;

@@ -114,4 +114,6 @@ class LLMProcessor implements NodeProcessor {
     }
 }
 
-export default defineNode(metadata, { backendProcessor: LLMProcessor });
+export const llmNode = defineNode(metadata, { backendProcessor: LLMProcessor });
+
+export default llmNode;

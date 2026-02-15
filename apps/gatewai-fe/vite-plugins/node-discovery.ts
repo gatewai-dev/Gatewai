@@ -79,8 +79,8 @@ export function nodeDiscovery(): Plugin {
 				const imports = Object.entries(nodes)
 					.map(([type, info]) => {
 						return `  "${type}": {
-    metadata: () => import("${info.paths.metadata}"),
-    browser: () => import("${info.paths.browser}"),
+    metadata: () => import("${info.name}"),
+    browser: () => import("${info.name}/browser"),
       server: () => Promise.resolve({ default: {} }),
     }`;
 					})

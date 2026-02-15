@@ -1,7 +1,7 @@
 import {
 	type TextNodeConfig,
 	TextNodeConfigSchema,
-} from "@gatewai/nodes/configs";
+} from "@gatewai/node-text";
 import { BaseNode, useCanvasCtx } from "@gatewai/react-canvas";
 import { makeSelectNodeById, useAppSelector } from "@gatewai/react-store";
 import { ScrollArea, Textarea } from "@gatewai/ui-kit";

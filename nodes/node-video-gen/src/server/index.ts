@@ -218,4 +218,6 @@ class VideoGenProcessor implements NodeProcessor {
     }
 }
 
-export default defineNode(metadata, { backendProcessor: VideoGenProcessor });
+export const videoGenNode = defineNode(metadata, { backendProcessor: VideoGenProcessor });
+
+export default videoGenNode;

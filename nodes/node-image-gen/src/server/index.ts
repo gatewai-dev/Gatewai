@@ -201,4 +201,6 @@ class ImageGenProcessor implements NodeProcessor {
     }
 }
 
-export default defineNode(metadata, { backendProcessor: ImageGenProcessor });
+export const imageGenNode = defineNode(metadata, { backendProcessor: ImageGenProcessor });
+
+export default imageGenNode;

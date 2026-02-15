@@ -1,7 +1,7 @@
 import { defineMetadata } from "@gatewai/node-sdk";
-import { z } from "zod";
+import { PreviewNodeConfigSchema } from "./shared/index.js";
 
-export const PreviewNodeConfigSchema = z.object({}).strict();
+export { PreviewNodeConfigSchema };
 
 export default defineMetadata({
 	type: "Preview",

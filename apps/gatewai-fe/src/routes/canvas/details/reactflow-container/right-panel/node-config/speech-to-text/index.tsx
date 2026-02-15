@@ -2,7 +2,7 @@ import {
 	type SpeechToTextNodeConfig,
 	SpeechToTextNodeConfigSchema,
 	STT_NODE_MODELS,
-} from "@gatewai/nodes/configs";
+} from "@gatewai/node-speech-to-text";
 import type { NodeEntityType } from "@gatewai/react-store";
 import { Form } from "@gatewai/ui-kit";
 import { zodResolver } from "@hookform/resolvers/zod";

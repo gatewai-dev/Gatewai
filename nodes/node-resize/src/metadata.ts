@@ -1,8 +1,7 @@
 import { defineMetadata } from "@gatewai/node-sdk";
+import { ResizeNodeConfigSchema } from "./shared/index.js";
 
-export { ResizeNodeConfigSchema } from "./shared/config.js";
-
-import { ResizeNodeConfigSchema } from "./shared/config.js";
+export { ResizeNodeConfigSchema };
 
 export default defineMetadata({
 	type: "Resize",

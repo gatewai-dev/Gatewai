@@ -1,8 +1,7 @@
 import { defineMetadata } from "@gatewai/node-sdk";
+import { type ModulateNodeConfig, ModulateNodeConfigSchema } from "./shared/index.js";
 
-export { ModulateNodeConfigSchema } from "./shared/config.js";
-
-import { ModulateNodeConfigSchema } from "./shared/config.js";
+export { ModulateNodeConfig, ModulateNodeConfigSchema };
 
 export default defineMetadata({
 	type: "Modulate",

@@ -90,12 +90,66 @@ importers:
       '@gatewai/media':
         specifier: workspace:*
         version: link:../../packages/media
+      '@gatewai/node-blur':
+        specifier: workspace:*
+        version: link:../../nodes/node-blur
+      '@gatewai/node-crop':
+        specifier: workspace:*
+        version: link:../../nodes/node-crop
+      '@gatewai/node-export':
+        specifier: workspace:*
+        version: link:../../nodes/node-export
+      '@gatewai/node-file':
+        specifier: workspace:*
+        version: link:../../nodes/node-file
+      '@gatewai/node-image-compositor':
+        specifier: workspace:*
+        version: link:../../nodes/node-image-compositor
+      '@gatewai/node-image-gen':
+        specifier: workspace:*
+        version: link:../../nodes/node-image-gen
+      '@gatewai/node-llm':
+        specifier: workspace:*
+        version: link:../../nodes/node-llm
+      '@gatewai/node-modulate':
+        specifier: workspace:*
+        version: link:../../nodes/node-modulate
+      '@gatewai/node-note':
+        specifier: workspace:*
+        version: link:../../nodes/node-note
+      '@gatewai/node-paint':
+        specifier: workspace:*
+        version: link:../../nodes/node-paint
+      '@gatewai/node-preview':
+        specifier: workspace:*
+        version: link:../../nodes/node-preview
+      '@gatewai/node-resize':
+        specifier: workspace:*
+        version: link:../../nodes/node-resize
       '@gatewai/node-sdk':
         specifier: workspace:*
         version: link:../../packages/node-sdk
+      '@gatewai/node-speech-to-text':
+        specifier: workspace:*
+        version: link:../../nodes/node-speech-to-text
+      '@gatewai/node-text':
+        specifier: workspace:*
+        version: link:../../nodes/node-text
+      '@gatewai/node-text-merger':
+        specifier: workspace:*
+        version: link:../../nodes/node-text-merger
+      '@gatewai/node-text-to-speech':
+        specifier: workspace:*
+        version: link:../../nodes/node-text-to-speech
       '@gatewai/node-video-compositor':
         specifier: workspace:*
         version: link:../../nodes/node-video-compositor
+      '@gatewai/node-video-gen':
+        specifier: workspace:*
+        version: link:../../nodes/node-video-gen
+      '@gatewai/node-video-gen-first-last-frame':
+        specifier: workspace:*
+        version: link:../../nodes/node-video-gen-first-last-frame
       '@gatewai/react-canvas':
         specifier: workspace:*
         version: link:../../packages/react-canvas
@@ -1582,73 +1636,6 @@ importers:
       '@types/react-dom':
         specifier: ^19.1.11
         version: 19.2.3(@types/react@19.1.11)
-      tsdown:
-        specifier: ^0.19.0
-        version: 0.19.0(publint@0.3.17)(synckit@0.11.11)(typescript@5.5.4)
-      typescript:
-        specifier: 5.5.4
-        version: 5.5.4
-
-  packages/nodes:
-    dependencies:
-      '@gatewai/core':
-        specifier: workspace:*
-        version: link:../core
-      '@gatewai/db':
-        specifier: workspace:*
-        version: link:../db
-      '@gatewai/media':
-        specifier: workspace:*
-        version: link:../media
-      '@gatewai/node-sdk':
-        specifier: workspace:*
-        version: link:../node-sdk
-      '@gatewai/react-store':
-        specifier: workspace:*
-        version: link:../react-store
-      '@gatewai/ui-kit':
-        specifier: workspace:*
-        version: link:../ui-kit
-      '@google/genai':
-        specifier: ^1.40.0
-        version: 1.40.0(@modelcontextprotocol/sdk@1.25.2(hono@4.8.5)(zod@3.25.67))
-      music-metadata:
-        specifier: ^10.6.5
-        version: 10.9.1
-      react:
-        specifier: ^19.2.0
-        version: 19.2.3
-      react-dom:
-        specifier: ^19.2.0
-        version: 19.2.3(react@19.2.3)
-      reflect-metadata:
-        specifier: ^0.2.2
-        version: 0.2.2
-      tsyringe:
-        specifier: ^4.10.0
-        version: 4.10.0
-      wav:
-        specifier: ^1.0.2
-        version: 1.0.2
-      zod:
-        specifier: 3.25.67
-        version: 3.25.67
-    devDependencies:
-      '@gatewai/tsconfig':
-        specifier: workspace:*
-        version: link:../tsconfig
-      '@types/node':
-        specifier: ^24.0.4
-        version: 24.10.4
-      '@types/react':
-        specifier: ^19.1.11
-        version: 19.1.11
-      '@types/react-dom':
-        specifier: ^19.1.11
-        version: 19.2.3(@types/react@19.1.11)
-      '@types/wav':
-        specifier: ^1.0.4
-        version: 1.0.4
       tsdown:
         specifier: ^0.19.0
         version: 0.19.0(publint@0.3.17)(synckit@0.11.11)(typescript@5.5.4)
@@ -4851,9 +4838,6 @@ packages:
     cpu: [x64]
     os: [win32]
 
-  '@sec-ant/readable-stream@0.4.1':
-    resolution: {integrity: sha512-831qok9r2t8AlxLko40y2ebgSDhenenCatLVeW/uBtnHPyhHOvG0C7TvfgecV+wHzIm5KUICgzmVpWS+IMEAeg==}
-
   '@shikijs/core@3.20.0':
     resolution: {integrity: sha512-f2ED7HYV4JEk827mtMDwe/yQ25pRiXZmtHjWF8uzZKuKiEsJR7Ce1nuQ+HhV9FzDcbIo4ObBCD9GPTzNuy9S1g==}
 
@@ -6696,10 +6680,6 @@ packages:
     resolution: {integrity: sha512-QgXo+mXTe8ljeqUFaX3QVHc5osSItJ/Km+xpocx0aSqWGMSCf6qYs/VnzZgS864Pjn5iceMRFigeAV7AfTlaig==}
     engines: {node: '>= 12'}
 
-  file-type@19.6.0:
-    resolution: {integrity: sha512-VZR5I7k5wkD0HgFnMsq5hOsSc710MJMu5Nc5QYsbe38NN5iPV/XTObYLc/cpttRTf6lX538+5uO1ZQRhYibiZQ==}
-    engines: {node: '>=18'}
-
   file-type@21.1.1:
     resolution: {integrity: sha512-ifJXo8zUqbQ/bLbl9sFoqHNTNWbnPY1COImFfM6CCy7z+E+jC1eY9YfOKkx0fckIg+VljAy2/87T61fp0+eEkg==}
     engines: {node: '>=20'}
@@ -6870,10 +6850,6 @@ packages:
   get-proto@1.0.1:
     resolution: {integrity: sha512-sTSfBjoXBp89JvIKIefqw7U2CCebsc74kiY6awiGogKtoSGbgjYE/G/+l9sF3MWFPNc9IcoOC4ODfKHfxFmp0g==}
     engines: {node: '>= 0.4'}
-
-  get-stream@9.0.1:
-    resolution: {integrity: sha512-kVCxPF3vQM/N0B1PmoqVUqgHP+EeVjmZSQn+1oCRPxd2P21P2F19lIgbR3HBosbB1PUhOAoctJnfEn2GbN2eZA==}
-    engines: {node: '>=18'}
 
   get-tsconfig@4.13.0:
     resolution: {integrity: sha512-1VKTZJCwBrvbd+Wn3AOgQP/2Av+TfTCOlE4AcRJE72W1ksZXbAx8PPBR9RzgTeSPzlPMHrbANMH3LbltH73wxQ==}
@@ -7272,10 +7248,6 @@ packages:
     resolution: {integrity: sha512-hFoiJiTl63nn+kstHGBtewWSKnQLpyb155KHheA1l39uvtO9nWIop1p3udqPcUd/xbF1VLMO4n7OI6p7RbngDg==}
     engines: {node: '>=8'}
 
-  is-stream@4.0.1:
-    resolution: {integrity: sha512-Dnz92NInDqYckGEUJv689RbRiTSEHCQ7wOVeALbkOz999YpqT46yMRIGtSNl2iCL1waAZSx40+h59NV/EwzV/A==}
-    engines: {node: '>=18'}
-
   is-subdir@1.2.0:
     resolution: {integrity: sha512-2AT6j+gXe/1ueqbW6fLZJiIw3F8iXGJtt0yDrZaBhAZEG1raiTxKWU+IPqMCzQAXOUCKdA4UDMgacKH25XG2Cw==}
     engines: {node: '>=4'}
@@ -7542,10 +7514,6 @@ packages:
 
   lines-and-columns@1.2.4:
     resolution: {integrity: sha512-7ylylesZQ/PV29jhEDl3Ufjo6ZX7gCqJr5F7PKrqc93v7fzSymt1BpwEU8nAUXs8qzzvqhbjhK5QZg6Mt/HkBg==}
-
-  link@2.1.2:
-    resolution: {integrity: sha512-n+OitQgtITNBGiWmEMgMiXo/fkf3yeyLm2nXm87vO4DDpaYrx57AZs/PMDk25qJIv+l586V226B2mA1H/n9zvg==}
-    hasBin: true
 
   lit-element@4.2.1:
     resolution: {integrity: sha512-WGAWRGzirAgyphK2urmYOV72tlvnxw7YfyLDgQ+OZnM9vQQBQnumQ7jUJe6unEzwGU3ahFOjuz1iz1jjrpCPuw==}
@@ -8036,10 +8004,6 @@ packages:
   msgpackr@1.11.5:
     resolution: {integrity: sha512-UjkUHN0yqp9RWKy0Lplhh+wlpdt9oQBYgULZOiFhV3VclSF1JnSQWZ5r9gORQlNYaUKQoR8itv7g7z1xDDuACA==}
 
-  music-metadata@10.9.1:
-    resolution: {integrity: sha512-9JcxgIlMPD1Mgzc2fTCaRtBR7GMQJ226gmh2iECzHwLRSrms1yPUxTivBbEiyUrshpmFnBv9baDkpkk9uxbfHw==}
-    engines: {node: '>=18'}
-
   music-metadata@11.10.3:
     resolution: {integrity: sha512-j0g/x4cNNZW6I5gdcPAY+GFkJY9WHTpkFDMBJKQLxJQyvSfQbXm57fTE3haGFFuOzCgtsTd4Plwc49Sn9RacDQ==}
     engines: {node: '>=18'}
@@ -8336,10 +8300,6 @@ packages:
   pbkdf2@3.1.5:
     resolution: {integrity: sha512-Q3CG/cYvCO1ye4QKkuH7EXxs3VC/rI1/trd+qX2+PolbaKG0H+bgcZzrTt96mMyRtejk+JMCiLUn3y29W8qmFQ==}
     engines: {node: '>= 0.10'}
-
-  peek-readable@5.4.2:
-    resolution: {integrity: sha512-peBp3qZyuS6cNIJ2akRNG1uo1WJ1d0wTxg/fxMdZ0BqCVhx242bSFHM9eNqflfJVS9SsgkzgT/1UgnsurBOTMg==}
-    engines: {node: '>=14.16'}
 
   perfect-debounce@1.0.0:
     resolution: {integrity: sha512-xCy9V055GLEqoFaHoC1SoLIaLmWctgCUaBaWxDZ7/Zx4CTyX7cJQLJOok/orfjZAh9kEYpjJa4d0KcJmCbctZA==}
@@ -9680,10 +9640,6 @@ packages:
   strtok3@10.3.4:
     resolution: {integrity: sha512-KIy5nylvC5le1OdaaoCJ07L+8iQzJHGH6pWDuzS+d07Cu7n1MZ2x26P8ZKIWfbK02+XIL8Mp4RkWeqdUCrDMfg==}
     engines: {node: '>=18'}
-
-  strtok3@9.1.1:
-    resolution: {integrity: sha512-FhwotcEqjr241ZbjFzjlIYg6c5/L/s4yBGWSMvJ9UoExiSqL+FnFA/CaeZx17WGaZMS/4SOZp8wH18jSS4R4lw==}
-    engines: {node: '>=16'}
 
   stubs@3.0.0:
     resolution: {integrity: sha512-PdHt7hHUJKxvTCgbKX9C1V/ftOcjJQgz8BZwNfV5c4B6dcGqlpelTbJ999jBGZ2jYiPAwcX5dP6oBwVlBlUbxw==}
@@ -13689,8 +13645,6 @@ snapshots:
   '@rollup/rollup-win32-x64-msvc@4.45.1':
     optional: true
 
-  '@sec-ant/readable-stream@0.4.1': {}
-
   '@shikijs/core@3.20.0':
     dependencies:
       '@shikijs/types': 3.20.0
@@ -15718,13 +15672,6 @@ snapshots:
     dependencies:
       tslib: 2.8.1
 
-  file-type@19.6.0:
-    dependencies:
-      get-stream: 9.0.1
-      strtok3: 9.1.1
-      token-types: 6.1.1
-      uint8array-extras: 1.5.0
-
   file-type@21.1.1:
     dependencies:
       '@tokenizer/inflate': 0.4.1
@@ -15926,11 +15873,6 @@ snapshots:
     dependencies:
       dunder-proto: 1.0.1
       es-object-atoms: 1.1.1
-
-  get-stream@9.0.1:
-    dependencies:
-      '@sec-ant/readable-stream': 0.4.1
-      is-stream: 4.0.1
 
   get-tsconfig@4.13.0:
     dependencies:
@@ -16484,8 +16426,6 @@ snapshots:
 
   is-stream@2.0.1: {}
 
-  is-stream@4.0.1: {}
-
   is-subdir@1.2.0:
     dependencies:
       better-path-resolve: 1.0.0
@@ -16711,8 +16651,6 @@ snapshots:
       lightningcss-win32-x64-msvc: 1.30.2
 
   lines-and-columns@1.2.4: {}
-
-  link@2.1.2: {}
 
   lit-element@4.2.1:
     dependencies:
@@ -17507,20 +17445,6 @@ snapshots:
     optionalDependencies:
       msgpackr-extract: 3.0.3
 
-  music-metadata@10.9.1:
-    dependencies:
-      '@tokenizer/token': 0.3.0
-      content-type: 1.0.5
-      debug: 4.4.3
-      file-type: 19.6.0
-      link: 2.1.2
-      media-typer: 1.1.0
-      strtok3: 10.3.4
-      token-types: 6.1.1
-      uint8array-extras: 1.5.0
-    transitivePeerDependencies:
-      - supports-color
-
   music-metadata@11.10.3:
     dependencies:
       '@borewit/text-codec': 0.2.0
@@ -17831,8 +17755,6 @@ snapshots:
       safe-buffer: 5.2.1
       sha.js: 2.4.12
       to-buffer: 1.2.2
-
-  peek-readable@5.4.2: {}
 
   perfect-debounce@1.0.0: {}
 
@@ -19655,11 +19577,6 @@ snapshots:
   strtok3@10.3.4:
     dependencies:
       '@tokenizer/token': 0.3.0
-
-  strtok3@9.1.1:
-    dependencies:
-      '@tokenizer/token': 0.3.0
-      peek-readable: 5.4.2
 
   stubs@3.0.0: {}
 

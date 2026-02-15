@@ -1,11 +1,7 @@
 import { defineMetadata } from "@gatewai/node-sdk";
-import { z } from "zod";
+import { TextMergerNodeConfigSchema } from "./shared/index.js";
 
-export const TextMergerNodeConfigSchema = z
-	.object({
-		join: z.string().optional(),
-	})
-	.strict();
+export { TextMergerNodeConfigSchema };
 
 export default defineMetadata({
 	type: "TextMerger",

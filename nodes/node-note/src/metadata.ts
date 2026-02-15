@@ -1,15 +1,7 @@
 import { defineMetadata } from "@gatewai/node-sdk";
-import { z } from "zod";
+import { NoteNodeConfigSchema } from "./shared/index.js";
 
-const ColorSchema = z.string().regex(/^#([0-9a-fA-F]{3,8})$/);
-
-export const NoteNodeConfigSchema = z
-	.object({
-		text: z.string().optional(),
-		backgroundColor: ColorSchema,
-		fontSize: z.number().optional(),
-	})
-	.strict();
+export { NoteNodeConfigSchema };
 
 export default defineMetadata({
 	type: "Note",

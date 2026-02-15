@@ -133,6 +133,8 @@ class TextToSpeechProcessor implements NodeProcessor {
     }
 }
 
-export default defineNode(metadata, {
+export const textToSpeechNode = defineNode(metadata, {
     backendProcessor: TextToSpeechProcessor,
 });
+
+export default textToSpeechNode;

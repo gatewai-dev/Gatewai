@@ -1,7 +1,7 @@
 import {
 	type ModulateNodeConfig,
 	ModulateNodeConfigSchema,
-} from "@gatewai/nodes/configs";
+} from "@gatewai/node-modulate";
 import type { NodeEntityType } from "@gatewai/react-store";
 import { Form } from "@gatewai/ui-kit";
 import { zodResolver } from "@hookform/resolvers/zod";

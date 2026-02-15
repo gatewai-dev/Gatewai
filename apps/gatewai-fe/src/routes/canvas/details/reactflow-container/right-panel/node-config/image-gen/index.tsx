@@ -4,7 +4,7 @@ import {
 	IMAGEGEN_NODE_MODELS,
 	type ImageGenNodeConfig,
 	ImageGenNodeConfigSchema,
-} from "@gatewai/nodes/configs";
+} from "@gatewai/node-image-gen";
 import type { NodeEntityType } from "@gatewai/react-store";
 import { Form } from "@gatewai/ui-kit";
 import { zodResolver } from "@hookform/resolvers/zod";

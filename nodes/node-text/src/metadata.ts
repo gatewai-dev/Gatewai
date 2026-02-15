@@ -1,11 +1,7 @@
 import { defineMetadata } from "@gatewai/node-sdk";
-import { z } from "zod";
+import { TextNodeConfigSchema } from "./shared/index.js";
 
-export const TextNodeConfigSchema = z
-	.object({
-		content: z.string().default(""),
-	})
-	.strict();
+export { TextNodeConfigSchema };
 
 export const metadata = defineMetadata({
 	type: "Text",
@@ -19,5 +15,5 @@ export const metadata = defineMetadata({
 		inputs: [],
 		outputs: [{ dataTypes: ["Text"], label: "Result", order: 0 }],
 	},
-	defaultConfig: { text: "" },
+	defaultConfig: { content: "" },
 });

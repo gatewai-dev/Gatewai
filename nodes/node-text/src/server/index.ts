@@ -38,6 +38,8 @@ class TextProcessor implements NodeProcessor {
 	}
 }
 
-export default defineNode(metadata, {
+export const textNode = defineNode(metadata, {
 	backendProcessor: TextProcessor,
 });
+
+export default textNode;

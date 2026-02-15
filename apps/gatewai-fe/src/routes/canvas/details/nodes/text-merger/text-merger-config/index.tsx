@@ -1,7 +1,7 @@
 import {
 	type TextMergerNodeConfig,
 	TextMergerNodeConfigSchema,
-} from "@gatewai/nodes/configs";
+} from "@gatewai/node-text-merger";
 import type { NodeEntityType } from "@gatewai/react-store";
 import {
 	Form,

@@ -20,4 +20,6 @@ class NoteProcessor implements NodeProcessor {
 	}
 }
 
-export default defineNode(metadata, { backendProcessor: NoteProcessor });
+export const noteNode = defineNode(metadata, { backendProcessor: NoteProcessor });
+
+export default noteNode;

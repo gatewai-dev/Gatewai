@@ -13,4 +13,6 @@ class PreviewProcessor implements NodeProcessor {
 	}
 }
 
-export default defineNode(metadata, { backendProcessor: PreviewProcessor });
+export const previewNode = defineNode(metadata, { backendProcessor: PreviewProcessor });
+
+export default previewNode;

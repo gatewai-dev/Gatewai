@@ -3,7 +3,7 @@ import type { FileData } from "@gatewai/core/types";
 import {
 	type CropNodeConfig,
 	CropNodeConfigSchema,
-} from "@gatewai/nodes/configs";
+} from "@gatewai/node-crop";
 import { BaseNode, CanvasRenderer, useNodeResult } from "@gatewai/react-canvas";
 import {
 	makeSelectEdgesByTargetNodeId,

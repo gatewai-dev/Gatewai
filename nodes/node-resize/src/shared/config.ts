@@ -1,7 +1,5 @@
 import { z } from "zod";
 
-const DimensionSchema = z.number().int().min(1).max(8192);
-
 export const ResizeNodeConfigSchema = z
 	.object({
 		width: DimensionSchema,

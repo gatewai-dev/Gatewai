@@ -3,20 +3,20 @@
 	"version": "0.0.0",
 	"private": true,
 	"type": "module",
-	"module": "./dist/index.js",
-	"types": "./dist/index.d.ts",
+	"module": "./dist/index.mjs",
+	"types": "./dist/index.d.mts",
 	"exports": {
 		".": {
-			"types": "./dist/index.d.ts",
-			"import": "./dist/index.js"
+			"types": "./dist/index.d.mts",
+			"import": "./dist/index.mjs"
 		},
 		"./server": {
-			"types": "./dist/server.d.ts",
-			"import": "./dist/server.js"
+			"types": "./dist/server.d.mts",
+			"import": "./dist/server.mjs"
 		},
 		"./browser": {
-			"types": "./dist/browser.d.ts",
-			"import": "./dist/browser.js"
+			"types": "./dist/browser.d.mts",
+			"import": "./dist/browser.mjs"
 		}
 	},
 	"scripts": {
@@ -36,7 +36,7 @@
 	},
 	"devDependencies": {
 		"@gatewai/tsconfig": "workspace:*",
-		"tsdown": "^0.12.5",
+		"tsdown": "^0.19.0",
 		"typescript": "^5.8.3"
 	}
 }

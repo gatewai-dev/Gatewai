@@ -1,7 +1,7 @@
 import {
 	type BlurNodeConfig,
 	BlurNodeConfigSchema,
-} from "@gatewai/nodes/configs";
+} from "@gatewai/node-blur";
 import type { NodeEntityType } from "@gatewai/react-store";
 import { Label, Slider } from "@gatewai/ui-kit";
 import { memo, useCallback, useEffect, useState } from "react";

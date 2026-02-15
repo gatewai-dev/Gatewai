@@ -1,5 +1,7 @@
 import { defineMetadata } from "@gatewai/node-sdk";
-import { CropNodeConfigSchema } from "./shared/config.js";
+import { CropNodeConfigSchema } from "./shared/index.js";
+
+export { CropNodeConfigSchema };
 
 export default defineMetadata({
 	type: "Crop",

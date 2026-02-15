@@ -1,7 +1,7 @@
 import { defineMetadata } from "@gatewai/node-sdk";
-import { z } from "zod";
+import { FileNodeConfigSchema } from "./shared/index.js";
 
-export const FileNodeConfigSchema = z.object({}).strict();
+export { FileNodeConfigSchema };
 
 export default defineMetadata({
 	type: "File",

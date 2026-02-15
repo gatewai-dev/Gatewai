@@ -1,19 +1,7 @@
 import { defineMetadata } from "@gatewai/node-sdk";
-import { z } from "zod";
+import { LLMNodeConfigSchema } from "./shared/index.js";
 
-export const LLM_NODE_MODELS = [
-	"gemini-2.5-flash",
-	"gemini-2.5-pro",
-	"gemini-3-flash-preview",
-	"gemini-3-pro-preview",
-] as const;
-
-export const LLMNodeConfigSchema = z
-	.object({
-		model: z.enum(LLM_NODE_MODELS).default("gemini-2.5-flash"),
-		temperature: z.number().min(0).max(2).default(1),
-	})
-	.strict();
+export { LLMNodeConfigSchema };
 
 export default defineMetadata({
 	type: "LLM",
@@ -32,5 +20,5 @@ export default defineMetadata({
 		],
 		outputs: [{ dataTypes: ["Text"], label: "Output", order: 0 }],
 	},
-	defaultConfig: { model: "gemini-2.5-flash", temperature: 1 },
+	defaultConfig: { model: "gemini-3-flash-preview", temperature: 0 },
 });

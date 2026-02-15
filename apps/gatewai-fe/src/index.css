@@ -1,6 +1,6 @@
 @import "tailwindcss";
 @source "../node_modules/@gatewai/ui-kit";
-@source "../node_modules/@gatewai/nodes";
+@source "../../nodes/node-*/src";
 @import "tw-animate-css";
 @plugin "@tailwindcss/typography";
 

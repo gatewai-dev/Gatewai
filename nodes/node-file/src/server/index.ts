@@ -20,4 +20,6 @@ class FileProcessor implements NodeProcessor {
 	}
 }
 
-export default defineNode(metadata, { backendProcessor: FileProcessor });
+export const fileNode = defineNode(metadata, { backendProcessor: FileProcessor });
+
+export default fileNode;

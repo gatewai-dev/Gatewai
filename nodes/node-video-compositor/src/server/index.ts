@@ -4,7 +4,7 @@ import type {
 	BackendNodeProcessorResult,
 	NodeProcessor,
 } from "@gatewai/node-sdk/server";
-import { injectable } from "tsyringe";
+import { defineNode } from "@gatewai/node-sdk/server";
 import { manifest } from "../metadata.js";
 
 @injectable()
@@ -18,3 +18,9 @@ export class VideoCompositorProcessor implements NodeProcessor {
 		return result;
 	}
 }
+
+export const videoCompositorNode = defineNode(manifest, {
+	backendProcessor: VideoCompositorProcessor,
+});
+
+export default videoCompositorNode;

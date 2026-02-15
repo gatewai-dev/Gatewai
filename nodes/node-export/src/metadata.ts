@@ -1,7 +1,7 @@
 import { defineMetadata } from "@gatewai/node-sdk";
-import { z } from "zod";
+import { ExportNodeConfigSchema } from "./shared/index.js";
 
-export const ExportNodeConfigSchema = z.object({}).strict();
+export { ExportNodeConfigSchema };
 
 export default defineMetadata({
 	type: "Export",

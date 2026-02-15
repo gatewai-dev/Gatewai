@@ -67,4 +67,6 @@ class TextMergerProcessor implements NodeProcessor {
     }
 }
 
-export default defineNode(metadata, { backendProcessor: TextMergerProcessor });
+export const textMergerNode = defineNode(metadata, { backendProcessor: TextMergerProcessor });
+
+export default textMergerNode;
