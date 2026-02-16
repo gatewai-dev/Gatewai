@@ -3,6 +3,7 @@ import type { NodeEntityType } from "@gatewai/react-store";
 import { cn } from "@gatewai/ui-kit";
 import { Ruler } from "lucide-react";
 import { useNodeUI } from "../ui.js";
+import { useNodeResult } from "../hooks.js";
 
 function MediaDimensions({
 	node,
@@ -11,7 +12,6 @@ function MediaDimensions({
 	node: NodeEntityType;
 	className?: string;
 }) {
-	const { useNodeResult } = useNodeUI();
 	const { result } = useNodeResult(node?.id);
 
 	const outputItem = result?.outputs?.[result.selectedOutputIndex];

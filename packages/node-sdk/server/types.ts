@@ -22,8 +22,8 @@ import type {
 	AIProvider,
 	GraphResolvers,
 	MediaService,
-	StorageService,
 } from "@gatewai/core/types";
+import type { StorageService } from "@gatewai/core/storage";
 
 // Re-export so consumers don't need to import from @gatewai/core/types directly if they don't want to
 export type {

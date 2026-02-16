@@ -2,10 +2,9 @@ import type { LLMResult } from "@gatewai/core/types";
 import { OutputSelector, RunNodeButton } from "@gatewai/node-sdk/browser";
 import { BaseNode, useNodeResult } from "@gatewai/react-canvas";
 import { makeSelectNodeById, useAppSelector } from "@gatewai/react-store";
-import { ScrollArea } from "@gatewai/ui-kit";
+import { MarkdownRenderer, ScrollArea } from "@gatewai/ui-kit";
 import { memo, useMemo } from "react";
 import { cn } from "@/lib/utils";
-import { MarkdownRenderer } from "../../components/markdown-renderer";
 
 const LlmNodeComponent = memo(
 	(props: { selected: boolean; id: string; dragging: boolean }) => {

@@ -3,8 +3,8 @@ import type { FileData } from "@gatewai/core/types";
 import {
 	AddCustomHandleButton,
 	useNodeResult,
-	useNodeUI,
 } from "@gatewai/node-sdk/browser";
+import { BaseNode, CanvasRenderer } from "@gatewai/react-canvas";
 import { makeSelectNodeById, useAppSelector } from "@gatewai/react-store";
 import { Button, cn } from "@gatewai/ui-kit";
 import type { Node, NodeProps } from "@xyflow/react";
@@ -13,7 +13,6 @@ import { memo } from "react";
 import { useNavigate } from "react-router";
 
 const CompositorNodeComponent = memo((props: NodeProps<Node>) => {
-	const { BaseNode, CanvasRenderer } = useNodeUI();
 
 	const node = useAppSelector(makeSelectNodeById(props.id));
 

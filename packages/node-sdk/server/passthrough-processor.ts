@@ -1,9 +1,14 @@
-import type { NodeProcessor, NodeProcessorParams, NodeProcessorResult } from "@gatewai/core/types";
+import type { NodeResult } from "@gatewai/core/types";
+import type {
+    BackendNodeProcessorCtx,
+    BackendNodeProcessorResult,
+    NodeProcessor,
+} from "./types.js";
 
 export class ServerPassthroughProcessor implements NodeProcessor {
-    process(params: NodeProcessorParams): Promise<NodeProcessorResult> {
+    process(ctx: BackendNodeProcessorCtx): Promise<BackendNodeProcessorResult> {
         return Promise.resolve({
-            result: params.node.result,
+            newResult: ctx.node.result as NodeResult,
             success: true,
         });
     }
