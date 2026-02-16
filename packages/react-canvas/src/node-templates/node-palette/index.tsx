@@ -34,6 +34,9 @@ import { SearchInput } from "./search";
 
 export function NodePalette() {
 	const { nodeTemplates, isLoading } = useNodeTemplates();
+	const { isCollapsed, setIsCollapsed } = useNodePalette();
+	const nav = useNavigate();
+	const [isSettingsOpen, setIsSettingsOpen] = useState(false);
 
 	if (isLoading || !nodeTemplates) {
 		return null;
@@ -41,25 +44,11 @@ export function NodePalette() {
 
 	return (
 		<NodePaletteProvider>
-			<NodePaletteContent templates={nodeTemplates} />
-		</NodePaletteProvider>
-	);
-}
-
-function NodePaletteContent({ templates }: { templates: NodeTemplateListRPC }) {
-	const { isCollapsed, setIsCollapsed } = useNodePalette();
-	const nav = useNavigate();
-	const [isSettingsOpen, setIsSettingsOpen] = useState(false);
-	return (
-		<>
-			<ApiKeysSettings open={isSettingsOpen} onOpenChange={setIsSettingsOpen} />
-			<aside
-				className={cn(
-					"relative z-40 flex h-[calc(100vh-1rem)] my-2 ml-2 flex-col overflow-hidden transition-all duration-500 ease-[cubic-bezier(0.32,0.72,0,1)]",
-					"rounded-3xl border border-white/10 bg-background/60 shadow-2xl backdrop-blur-xl",
-					isCollapsed ? "w-[60px]" : "w-72",
-				)}
-			>
+			<SidePanel>
+				<ApiKeysSettings
+					open={isSettingsOpen}
+					onOpenChange={setIsSettingsOpen}
+				/>
 				<div className="flex shrink-0 items-center justify-between px-3 py-4">
 					<div
 						className={cn(
@@ -93,13 +82,9 @@ function NodePaletteContent({ templates }: { templates: NodeTemplateListRPC }) {
 								<DropdownMenuItem
 									className="cursor-pointer"
 									onClick={async () => {
-										await authClient.signOut({
-											fetchOptions: {
-												onSuccess: () => {
-													nav("/auth/signin");
-												},
-											},
-										});
+										// This logic will be moved to app, but keeping here for backward compat if needed
+										// or just as a placeholder during refactor
+										console.warn("Sign out triggered from NodePalette");
 									}}
 								>
 									<LogOut className="mr-2 h-4 w-4" />
@@ -110,88 +95,131 @@ function NodePaletteContent({ templates }: { templates: NodeTemplateListRPC }) {
 						<CanvasName />
 					</div>
 
-					<Tooltip>
-						<TooltipTrigger asChild>
-							<Button
-								variant="ghost"
-								size="icon"
-								onClick={(e) => {
-									e.stopPropagation();
-									setIsCollapsed(!isCollapsed);
-								}}
-								className="h-8 w-8 p-0 shrink-0 rounded-full text-muted-foreground hover:bg-muted hover:text-foreground"
-							>
-								{isCollapsed ? (
-									<PanelLeftOpen className="size-6" />
-								) : (
-									<PanelLeftClose className="size-6" />
-								)}
-							</Button>
-						</TooltipTrigger>
-						<TooltipContent side="right" className="text-xs">
-							{isCollapsed ? "Expand Library" : "Collapse Library"}
-						</TooltipContent>
-					</Tooltip>
+					<CollapseButton />
 				</div>
 
-				<div className="flex flex-1 flex-col grow h-full overflow-hidden">
-					<div
-						className={cn(
-							"shrink-0 px-3 pb-3 transition-all duration-300",
-							isCollapsed
-								? "-translate-x-full opacity-0"
-								: "translate-x-0 opacity-100",
-						)}
-					>
-						<SearchInput />
-					</div>
+				<NodeLibrary templates={nodeTemplates} />
 
-					<div
-						className={cn(
-							"h-px w-full bg-linear-to-r from-transparent via-border to-transparent",
-							isCollapsed && "hidden",
-						)}
-					/>
+				<SidePanelFooter />
+			</SidePanel>
+		</NodePaletteProvider>
+	);
+}
 
-					{/* Scrollable List */}
-					{!isCollapsed && (
-						<div className="flex-1 overflow-y-auto min-h-0">
-							<NodeTemplateList templates={templates} />
-						</div>
+export function SidePanel({
+	children,
+	className,
+}: {
+	children: React.ReactNode;
+	className?: string;
+}) {
+	const { isCollapsed } = useNodePalette();
+	return (
+		<aside
+			className={cn(
+				"relative z-40 flex h-[calc(100vh-1rem)] my-2 ml-2 flex-col overflow-hidden transition-all duration-500 ease-[cubic-bezier(0.32,0.72,0,1)]",
+				"rounded-3xl border border-white/10 bg-background/60 shadow-2xl backdrop-blur-xl",
+				isCollapsed ? "w-[60px]" : "w-72",
+				className,
+			)}
+		>
+			{children}
+		</aside>
+	);
+}
+
+export function CollapseButton() {
+	const { isCollapsed, setIsCollapsed } = useNodePalette();
+	return (
+		<Tooltip>
+			<TooltipTrigger asChild>
+				<Button
+					variant="ghost"
+					size="icon"
+					onClick={(e) => {
+						e.stopPropagation();
+						setIsCollapsed(!isCollapsed);
+					}}
+					className="h-8 w-8 p-0 shrink-0 rounded-full text-muted-foreground hover:bg-muted hover:text-foreground"
+				>
+					{isCollapsed ? (
+						<PanelLeftOpen className="size-6" />
+					) : (
+						<PanelLeftClose className="size-6" />
 					)}
+				</Button>
+			</TooltipTrigger>
+			<TooltipContent side="right" className="text-xs">
+				{isCollapsed ? "Expand Library" : "Collapse Library"}
+			</TooltipContent>
+		</Tooltip>
+	);
+}
 
-					{isCollapsed && (
-						<div className="flex flex-1 flex-col items-center gap-4 py-4 opacity-50">
-							<div className="h-px w-8 bg-border" />
-						</div>
-					)}
-				</div>
+export function NodeLibrary({ templates }: { templates: NodeTemplateListRPC }) {
+	const { isCollapsed } = useNodePalette();
+	return (
+		<div className="flex flex-1 flex-col grow h-full overflow-hidden">
+			<div
+				className={cn(
+					"shrink-0 px-3 pb-3 transition-all duration-300",
+					isCollapsed
+						? "-translate-x-full opacity-0"
+						: "translate-x-0 opacity-100",
+				)}
+			>
+				<SearchInput />
+			</div>
 
-				<div className=" shrink-0 z-50 flex flex-col">
-					<div
-						className={cn(
-							"flex w-full items-center justify-evenly",
-							isCollapsed && "flex-col gap-4 pb-4",
-						)}
-					>
-						<SocialLink
-							href="https://discord.gg/ha4A8UD7kn"
-							icon={<FaDiscord className="size-5" />}
-							label="Discord"
-							isCollapsed={true}
-						/>
-						<SocialLink
-							href="https://github.com/gatewai-dev/Gatewai"
-							icon={<FaGithub className="size-5" />}
-							label="GitHub"
-							isCollapsed={true}
-						/>
-						<GuidesDialog isCollapsed={true} />
-					</div>
-					<AssetsSection isCollapsed={isCollapsed} />
+			<div
+				className={cn(
+					"h-px w-full bg-linear-to-r from-transparent via-border to-transparent",
+					isCollapsed && "hidden",
+				)}
+			/>
+
+			{/* Scrollable List */}
+			{!isCollapsed && (
+				<div className="flex-1 overflow-y-auto min-h-0">
+					<NodeTemplateList templates={templates} />
 				</div>
-			</aside>
-		</>
+			)}
+
+			{isCollapsed && (
+				<div className="flex flex-1 flex-col items-center gap-4 py-4 opacity-50">
+					<div className="h-px w-8 bg-border" />
+				</div>
+			)}
+		</div>
+	);
+}
+
+export function SidePanelFooter() {
+	const { isCollapsed } = useNodePalette();
+	return (
+		<div className=" shrink-0 z-50 flex flex-col">
+			<div
+				className={cn(
+					"flex w-full items-center justify-evenly",
+					isCollapsed && "flex-col gap-4 pb-4",
+				)}
+			>
+				<SocialLink
+					href="https://discord.gg/ha4A8UD7kn"
+					icon={<FaDiscord className="size-5" />}
+					label="Discord"
+					isCollapsed={true}
+				/>
+				<SocialLink
+					href="https://github.com/gatewai-dev/Gatewai"
+					icon={<FaGithub className="size-5" />}
+					label="GitHub"
+					isCollapsed={true}
+				/>
+				<GuidesDialog isCollapsed={true} />
+			</div>
+			<AssetsSection isCollapsed={isCollapsed} />
+		</div>
 	);
 }
 

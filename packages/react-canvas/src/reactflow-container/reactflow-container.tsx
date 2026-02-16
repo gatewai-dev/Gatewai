@@ -31,9 +31,10 @@ const edgeTypes = {
 
 type ReactFlowProps = {
 	children?: React.ReactNode;
+	leftPanel?: React.ReactNode;
 };
 
-function ReactflowContainer({ children }: ReactFlowProps) {
+function ReactflowContainer({ children, leftPanel }: ReactFlowProps) {
 	const {
 		onEdgesChange,
 		onNodesChange,
@@ -144,7 +145,7 @@ function ReactflowContainer({ children }: ReactFlowProps) {
 			>
 				{children}
 				<Background variant={BackgroundVariant.Dots} />
-				<ReactFlowPanels />
+				<ReactFlowPanels leftPanel={leftPanel} />
 			</ReactFlow>
 		</div>
 	);

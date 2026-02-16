@@ -7,18 +7,20 @@ import { NodeConfigPanel } from "./right-panel/node-config";
 // import { Panel } from "@xyflow/react";
 // import { DebugPanel } from "../graph-engine/debug-panel";
 
-const ReactFlowPanels = memo(() => {
-	return (
-		<>
-			<LeftPanel />
-			<BottomPanel />
-			<AgentPanel />
-			<NodeConfigPanel />
-			{/* <Panel position="top-center">
+const ReactFlowPanels = memo(
+	({ leftPanel }: { leftPanel?: React.ReactNode }) => {
+		return (
+			<>
+				<LeftPanel leftPanel={leftPanel} />
+				<BottomPanel />
+				<AgentPanel />
+				<NodeConfigPanel />
+				{/* <Panel position="top-center">
 				<DebugPanel />
 			</Panel> */}
-		</>
-	);
-});
+			</>
+		);
+	},
+);
 
 export { ReactFlowPanels };
