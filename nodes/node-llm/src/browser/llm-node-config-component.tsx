@@ -15,7 +15,7 @@ import {
 	Textarea,
 } from "@gatewai/ui-kit";
 import { zodResolver } from "@hookform/resolvers/zod";
-import { type JSX, memo, useEffect } from "react";
+import { memo, useEffect } from "react";
 import { useForm } from "react-hook-form";
 import { LLMNodeConfigSchema } from "@/metadata.js";
 import type { LLMNodeConfig } from "@/shared/config.js";

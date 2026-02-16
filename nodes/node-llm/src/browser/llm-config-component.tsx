@@ -1,4 +1,3 @@
-import { useNodeUI } from "@gatewai/node-sdk/browser";
 import type { NodeEntityType } from "@gatewai/react-store";
 import {
 	Form,
@@ -18,16 +17,17 @@ import { zodResolver } from "@hookform/resolvers/zod";
 import { memo, useEffect } from "react";
 import { useForm } from "react-hook-form";
 import { type LLMNodeConfig, LLMNodeConfigSchema } from "../shared/index.js";
+import { useCanvasCtx } from "@gatewai/react-canvas";
 
 const LLMNodeConfigComponent = memo(({ node }: { node: NodeEntityType }) => {
-	const { onNodeConfigUpdate } = useNodeUI();
+	const { onNodeConfigUpdate } = useCanvasCtx();
 	const nodeConfig = node.config as LLMNodeConfig;
 
 	const form = useForm<LLMNodeConfig>({
 		resolver: zodResolver(LLMNodeConfigSchema),
 		defaultValues: {
 			prompt: nodeConfig?.prompt ?? "",
-			model: nodeConfig?.model ?? "gpt-4o",
+			model: nodeConfig?.model,
 			temperature: nodeConfig?.temperature ?? 0.7,
 			maxTokens: nodeConfig?.maxTokens ?? 2048,
 		},
