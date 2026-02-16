@@ -1,13 +1,20 @@
 import { ResolveFileDataUrl } from "@gatewai/core/browser";
 import type { FileData } from "@gatewai/core/types";
-import { BaseNode, useCanvasCtx } from "@gatewai/react-canvas";
 import { useNodeResult } from "@gatewai/node-sdk/browser";
+import { BaseNode, useCanvasCtx } from "@gatewai/react-canvas";
 import {
 	makeSelectEdgesByTargetNodeId,
 	makeSelectNodeById,
 	useAppSelector,
 } from "@gatewai/react-store";
-import { Button, cn, Label, Separator, Slider } from "@gatewai/ui-kit";
+import {
+	Button,
+	ColorPicker,
+	cn,
+	Label,
+	Separator,
+	Slider,
+} from "@gatewai/ui-kit";
 import { Brush, Eraser, PaintBucket } from "lucide-react";
 import { memo, useCallback, useEffect, useMemo, useRef, useState } from "react";
 import { PaintDimensionsConfig } from "./paint-config/index.js";
