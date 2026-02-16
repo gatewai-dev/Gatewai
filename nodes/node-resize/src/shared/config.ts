@@ -1,3 +1,4 @@
+import { DimensionSchema } from "@gatewai/node-sdk";
 import { z } from "zod";
 
 export const ResizeNodeConfigSchema = z

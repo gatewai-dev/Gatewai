@@ -7,4 +7,9 @@ import { NoteNodeComponent } from "./note-node-component.js";
 export default defineClient(metadata, {
 	Component: NoteNodeComponent,
 	mainIconComponent: memo(PiNote),
+	processor: () => {
+		return {
+			success: true,
+		}
+	}
 });

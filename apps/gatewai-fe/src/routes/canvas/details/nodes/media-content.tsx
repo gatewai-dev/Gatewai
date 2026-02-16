@@ -1,3 +1,4 @@
+import { GetAssetEndpoint } from "@gatewai/core/browser";
 import type {
 	FileResult,
 	ImagesResult,
@@ -7,7 +8,6 @@ import { MediaDimensions, OutputSelector } from "@gatewai/node-sdk/browser";
 import {
 	AudioRenderer,
 	CanvasRenderer,
-	GetAssetEndpoint,
 	VideoRenderer,
 } from "@gatewai/react-canvas";
 import type { NodeEntityType } from "@gatewai/react-store";
@@ -23,7 +23,7 @@ function MediaContent({
 }) {
 	const selectedOutput =
 		result.outputs?.[
-			Math.min(result.selectedOutputIndex, result.outputs.length - 1)
+		Math.min(result.selectedOutputIndex, result.outputs.length - 1)
 		];
 	const outputItem = selectedOutput?.items?.[0];
 

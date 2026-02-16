@@ -4,7 +4,7 @@ import {
 	type BackendNodeProcessorResult,
 	defineNode,
 	type NodeProcessor,
-} from "@gatewai/node-sdk";
+} from "@gatewai/node-sdk/server";
 import { metadata } from "../metadata.js";
 
 class TextProcessor implements NodeProcessor {

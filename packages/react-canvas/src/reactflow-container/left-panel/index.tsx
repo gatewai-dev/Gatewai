@@ -1,4 +1,4 @@
-import { Panel } from "@gatewai/react-canvas";
+import { NodePalette, Panel } from "@gatewai/react-canvas";
 import { memo } from "react";
 
 const LeftPanel = memo(({ leftPanel }: { leftPanel?: React.ReactNode }) => {

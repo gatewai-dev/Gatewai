@@ -17,7 +17,6 @@ import {
 } from "@gatewai/node-sdk/server";
 import { inject, injectable } from "tsyringe";
 import { applyBlur, BlurNodeConfigSchema } from "@/shared/index.js";
-import { metadata } from "../metadata.js";
 
 @injectable()
 export class BlurProcessor implements NodeProcessor {

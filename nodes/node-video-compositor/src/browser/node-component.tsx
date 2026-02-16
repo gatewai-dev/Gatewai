@@ -18,7 +18,7 @@ import { Player } from "@remotion/player";
 import { Download, Loader2, VideoIcon } from "lucide-react";
 import { memo, useEffect, useMemo, useState } from "react";
 import { useNavigate } from "react-router";
-import type { VideoCompositorNodeConfig } from "@/shared/config.js";
+import type { VideoCompositorNodeConfig } from "../shared/config.js";
 import { remotionService } from "./muxer-service.js";
 import {
 	CompositionScene,
@@ -144,13 +144,13 @@ const VideoCompositorNodeComponent = memo((props: NodeProps) => {
 		const durationInFrames =
 			layers.length > 0
 				? Math.max(
-						DEFAULT_DURATION_FRAMES,
-						...layers.map(
-							(l) =>
-								(l.startFrame ?? 0) +
-								(l.durationInFrames ?? DEFAULT_DURATION_FRAMES),
-						),
-					)
+					DEFAULT_DURATION_FRAMES,
+					...layers.map(
+						(l) =>
+							(l.startFrame ?? 0) +
+							(l.durationInFrames ?? DEFAULT_DURATION_FRAMES),
+					),
+				)
 				: DEFAULT_DURATION_FRAMES;
 
 		return { layers, width, height, durationInFrames };

@@ -17,7 +17,7 @@ import {
 import type {
 	VideoCompositorLayer,
 	VideoCompositorNodeConfig,
-} from "@/shared/video-compositor-config.js";
+} from "../shared/video-compositor-config.js";
 
 const DynamicComposition: React.FC<{
 	config: VideoCompositorNodeConfig;

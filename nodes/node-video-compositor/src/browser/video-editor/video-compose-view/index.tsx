@@ -3,7 +3,7 @@ import { useNodeResult, useNodeUI } from "@gatewai/node-sdk/browser";
 import type { HandleEntityType } from "@gatewai/react-store";
 import { makeSelectNodeById, useAppSelector } from "@gatewai/react-store";
 import { memo, useMemo } from "react";
-import type { VideoCompositorNodeConfig } from "@/shared/video-compositor-config.js";
+import type { VideoCompositorNodeConfig } from "../../../shared/video-compositor-config.js";
 import { VideoDesignerEditor } from "../video-editor/index.js";
 
 type InputOutputItems =

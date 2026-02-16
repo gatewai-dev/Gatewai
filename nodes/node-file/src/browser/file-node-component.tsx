@@ -9,13 +9,12 @@ import {
 	updateNodeResult,
 	useAppDispatch,
 	useAppSelector,
+	type UploadFileNodeAssetRPC,
 } from "@gatewai/react-store";
 import type { NodeProps } from "@xyflow/react";
 import { memo } from "react";
 import { toast } from "sonner";
-import { UploadButton } from "@/components/util/file-button";
-import { UploadDropzone } from "@/components/util/file-dropzone";
-import type { UploadFileNodeAssetRPC } from "@/rpc/types";
+import { UploadButton, UploadDropzone } from "@gatewai/react-canvas";
 
 type SuccessfulUploadFileNodeAssetRPC = Extract<
 	UploadFileNodeAssetRPC,

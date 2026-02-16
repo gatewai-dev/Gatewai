@@ -3,7 +3,8 @@ import {
 	OutputSelector,
 	RunNodeButton,
 } from "@gatewai/node-sdk/browser";
-import { BaseNode, useNodePreview, VideoRenderer } from "@gatewai/react-canvas";
+import { BaseNode, VideoRenderer } from "@gatewai/react-canvas";
+import { useNodePreview } from "@gatewai/node-sdk/browser";
 import { memo } from "react";
 
 const VideoGenNodeComponent = memo(

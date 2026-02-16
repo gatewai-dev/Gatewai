@@ -1,16 +1,12 @@
 import type { SpeechToTextResult } from "@gatewai/core/types";
 import { OutputSelector, RunNodeButton } from "@gatewai/node-sdk/browser";
-import {
-	BaseNode,
-	MarkdownRenderer,
-	useNodeResult,
-} from "@gatewai/react-canvas";
+import { BaseNode } from "@gatewai/react-canvas";
+import { useNodeResult } from "@gatewai/node-sdk/browser";
 import {
 	makeSelectNodeById,
-	ScrollArea,
 	useAppSelector,
 } from "@gatewai/react-store";
-import { cn } from "@gatewai/ui-kit";
+import { cn, MarkdownRenderer, ScrollArea } from "@gatewai/ui-kit";
 import { memo, useMemo } from "react";
 
 const SpeechToTextNodeComponent = memo(

@@ -6,7 +6,7 @@ import {
 
 export { type ModulateNodeConfig, ModulateNodeConfigSchema };
 
-export default defineMetadata({
+export const metadata = defineMetadata({
 	type: "Modulate",
 	displayName: "Modulate",
 	description: "Apply Modulate adjustments to an image",

@@ -1,9 +1,7 @@
 import { useNodeUI } from "@gatewai/node-sdk/browser";
-import {
-	isFileData,
-	type NodeProps,
-	useNodeResult,
-} from "@gatewai/react-canvas";
+import { type NodeProps } from "@gatewai/react-canvas";
+import { useNodeResult } from "@gatewai/node-sdk/browser";
+import { isFileData } from "@gatewai/core/browser";
 import {
 	Alert,
 	AlertDescription,

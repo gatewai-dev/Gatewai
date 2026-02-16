@@ -11,7 +11,6 @@ import {
 } from "lucide-react";
 import type React from "react";
 import { useMemo } from "react";
-import { ColorPicker } from "../../components/util/color-input";
 import { Button } from "../../ui/button";
 import { DraggableNumberInput } from "../../ui/draggable-number-input";
 import { Label } from "../../ui/label";
@@ -24,6 +23,7 @@ import {
 } from "../../ui/select";
 import { Separator } from "../../ui/separator";
 import { CollapsibleSection } from "../CollapsibleSection";
+import { ColorPicker } from "../../ui/color-input";
 
 interface TypographyControlsProps {
 	fontFamily: string;

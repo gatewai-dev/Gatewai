@@ -3,7 +3,7 @@ import { CropNodeConfigSchema } from "./shared/index.js";
 
 export { CropNodeConfigSchema };
 
-export default defineMetadata({
+export const metadata = defineMetadata({
 	type: "Crop",
 	displayName: "Crop",
 	description: "Crop an image",

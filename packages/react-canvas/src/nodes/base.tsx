@@ -7,7 +7,7 @@ import {
 	Handle,
 	type Node,
 	Position,
-} from "@gatewai/react-canvas";
+} from "@xyflow/react";
 import {
 	type HandleEntityType,
 	makeSelectHandlesByNodeId,

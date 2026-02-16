@@ -1,8 +1,8 @@
 import { ResolveFileDataUrl } from "@gatewai/core/browser";
 import type { FileData } from "@gatewai/core/types";
-import { BaseNode, useCanvasCtx, useNodeResult } from "@gatewai/react-canvas";
+import { BaseNode, useCanvasCtx } from "@gatewai/react-canvas";
+import { useNodeResult } from "@gatewai/node-sdk/browser";
 import {
-	ColorPicker,
 	makeSelectEdgesByTargetNodeId,
 	makeSelectNodeById,
 	useAppSelector,
