@@ -5,7 +5,6 @@ import type { PaintNodeConfig } from "./config.js";
 export interface PixiPaintInput {
 	config: PaintNodeConfig;
 	imageUrl: string | undefined;
-	maskUrl?: string;
 	apiKey?: string;
 }
 
@@ -20,8 +19,8 @@ export const applyPaint: PixiRun<PixiPaintInput, PixiPaintOutput> = {
 		context: PixiRunContext,
 		input: PixiPaintInput,
 	): Promise<PixiPaintOutput> {
-		const { config, imageUrl, maskUrl, apiKey } = input;
-		const { backgroundColor } = config;
+		const { config, imageUrl, apiKey } = input;
+		const { backgroundColor, paintData } = config;
 		const { app, loadTexture, getPixiModules, extractBlob, signal } = context;
 
 		if (signal?.aborted) throw new Error("Operation cancelled");
@@ -61,9 +60,12 @@ export const applyPaint: PixiRun<PixiPaintInput, PixiPaintOutput> = {
 		container.addChild(spacer);
 
 		let maskSprite: Sprite | undefined;
-		if (maskUrl) {
-			const maskTexture = await loadTexture(maskUrl, apiKey);
+		if (paintData) {
+			const maskTexture = await loadTexture(paintData, apiKey);
 			maskSprite = new Sprite(maskTexture);
+			if (!maskSprite) {
+				throw new Error("Could not create Mask Sprite");
+			}
 			maskSprite.width = widthToUse;
 			maskSprite.height = heightToUse;
 		}
