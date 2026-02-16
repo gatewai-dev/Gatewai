@@ -18,12 +18,11 @@ export class PaintBrowserProcessor implements IBrowserProcessor {
 
 		// Parse config
 		const config = PaintNodeConfigSchema.parse(node.config);
-
 		const result = await context.pixi.execute<PixiPaintInput, PixiPaintOutput>(
-			"mask",
+			node.id,
 			{
-				imageUrl: typeof imageUrl === "string" ? imageUrl : undefined,
-				...config,
+				imageUrl,
+				config,
 			},
 			applyPaint,
 			signal,

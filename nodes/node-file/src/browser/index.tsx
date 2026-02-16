@@ -7,4 +7,5 @@ import { FileNodeComponent } from "./file-node-component.js";
 export default defineClient(metadata, {
 	Component: FileNodeComponent,
 	mainIconComponent: memo(PiDownloadSimple),
+	processor
 });

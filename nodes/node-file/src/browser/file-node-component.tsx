@@ -6,9 +6,11 @@ import {
 	UploadDropzone,
 	useHasOutputItems,
 } from "@gatewai/react-canvas";
+import type {
+	UploadFileNodeAssetRPC,
+} from "@gatewai/react-store";
 import {
 	makeSelectNodeById,
-	type UploadFileNodeAssetRPC,
 	updateNodeResult,
 	useAppDispatch,
 	useAppSelector,

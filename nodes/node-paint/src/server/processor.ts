@@ -10,7 +10,7 @@ import type {
     StorageService,
 } from "@gatewai/node-sdk/server";
 import { inject, injectable } from "tsyringe";
-import { applyPaint } from "@/shared/pixi-paint-run.js";
+import { applyPaint, type PixiPaintOutput } from "@/shared/pixi-paint-run.js";
 import { PaintNodeConfigSchema } from "../metadata.js";
 
 @injectable()
@@ -56,7 +56,7 @@ export class PaintProcessor implements NodeProcessor {
             }
 
             const { imageWithMask, onlyMask } =
-                await this.media.backendPixiService.execute(
+                await (this.media.backendPixiService.execute as any)(
                     node.id,
                     {
                         config: paintConfig,
@@ -65,7 +65,7 @@ export class PaintProcessor implements NodeProcessor {
                         apiKey: data.apiKey,
                     },
                     applyPaint
-                );
+                ) as PixiPaintOutput;
 
             const { dataUrl: imageDataUrl, ...imageDimensions } = imageWithMask;
             const { dataUrl: maskDataUrl, ...maskDimensions } = onlyMask;
@@ -77,7 +77,7 @@ export class PaintProcessor implements NodeProcessor {
             const maskMimeType = maskDataUrl.type;
 
             const newResult: PaintResult = structuredClone(
-                node.result as PaintResult,
+                node.result as unknown as PaintResult,
             ) ?? {
                 outputs: [],
                 selectedOutputIndex: 0,

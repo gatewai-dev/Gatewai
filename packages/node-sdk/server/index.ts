@@ -15,3 +15,4 @@ export type {
 	NodeProcessorConstructor,
 	StorageService,
 } from "./types.js";
+export * from "./passthrough-processor.js";

@@ -4,3 +4,4 @@ export * from "./hooks.js";
 export * from "./types.js";
 export * from "./ui.js";
 export * from "./utils/index.js";
+export * from "./passthrough-processor.js";
