@@ -12,7 +12,7 @@ export default defineMetadata({
 	configSchema: LLMNodeConfigSchema,
 	isTerminal: true,
 	isTransient: false,
-	variableInputs: { enabled: true, dataTypes: ["Text", "Image"] },
+	variableInputs: { enabled: true, dataTypes: ["Image"] },
 	handles: {
 		inputs: [
 			{ dataTypes: ["Text"], required: true, label: "Prompt", order: 0 },
