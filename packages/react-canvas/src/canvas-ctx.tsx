@@ -69,8 +69,8 @@ import {
 	useState,
 } from "react";
 import { toast } from "sonner";
-import { useTaskManagerCtx } from "./task-manager-ctx";
 import { useNodeTemplates } from "./node-templates";
+import { useTaskManagerCtx } from "./task-manager-ctx";
 
 interface CanvasContextType {
 	canvas: CanvasDetailsRPC["canvas"] | undefined;

@@ -1,4 +1,7 @@
-import type { NodeEntityType, UploadFileNodeAssetRPC } from "@gatewai/react-store";
+import type {
+	NodeEntityType,
+	UploadFileNodeAssetRPC,
+} from "@gatewai/react-store";
 import { useUploadFileNodeAssetMutation } from "@gatewai/react-store";
 import { Loader2, UploadIcon } from "lucide-react";
 import { useCallback } from "react";

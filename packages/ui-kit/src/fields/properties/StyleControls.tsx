@@ -1,9 +1,9 @@
 import { ImageIcon, Move } from "lucide-react";
 import type React from "react";
+import { ColorPicker } from "../../ui/color-input";
 import { DraggableNumberInput } from "../../ui/draggable-number-input";
 import { Label } from "../../ui/label";
 import { CollapsibleSection } from "../CollapsibleSection";
-import { ColorPicker } from "../../ui/color-input";
 
 // We need a fallback for constants if they are not passed
 const DEFAULTS = {

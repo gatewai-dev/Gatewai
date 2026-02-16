@@ -10,6 +10,6 @@ export default defineClient(metadata, {
 	processor: () => {
 		return {
 			success: true,
-		}
-	}
+		};
+	},
 });

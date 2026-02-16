@@ -2,19 +2,20 @@ import type { FileResult } from "@gatewai/core/types";
 import {
 	BaseNode,
 	MediaContent,
+	UploadButton,
+	UploadDropzone,
 	useHasOutputItems,
 } from "@gatewai/react-canvas";
 import {
 	makeSelectNodeById,
+	type UploadFileNodeAssetRPC,
 	updateNodeResult,
 	useAppDispatch,
 	useAppSelector,
-	type UploadFileNodeAssetRPC,
 } from "@gatewai/react-store";
 import type { NodeProps } from "@xyflow/react";
 import { memo } from "react";
 import { toast } from "sonner";
-import { UploadButton, UploadDropzone } from "@gatewai/react-canvas";
 
 type SuccessfulUploadFileNodeAssetRPC = Extract<
 	UploadFileNodeAssetRPC,

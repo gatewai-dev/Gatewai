@@ -2,9 +2,9 @@ import {
 	MediaDimensions,
 	OutputSelector,
 	RunNodeButton,
+	useNodePreview,
 } from "@gatewai/node-sdk/browser";
 import { BaseNode, VideoRenderer } from "@gatewai/react-canvas";
-import { useNodePreview } from "@gatewai/node-sdk/browser";
 import { memo } from "react";
 
 const VideoGenNodeComponent = memo(

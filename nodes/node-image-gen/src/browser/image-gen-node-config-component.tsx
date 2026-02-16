@@ -1,13 +1,18 @@
-import { ImageGenNodeConfigSchema } from "@/metadata.js";
-import { IMAGEGEN_NODE_MODELS, IMAGEGEN_ASPECT_RATIOS, IMAGEGEN_IMAGE_SIZES, type ImageGenNodeConfig } from "@/shared/config.js";
 import { isEqual } from "@gatewai/core";
 import { useNodeUI } from "@gatewai/node-sdk/browser";
 import type { NodeEntityType } from "@gatewai/react-store";
 import { Form, SelectField } from "@gatewai/ui-kit";
-import { memo, useEffect, useMemo } from "react";
-import { debounce } from "lodash";
-import { useForm } from "react-hook-form";
 import { zodResolver } from "@hookform/resolvers/zod";
+import { debounce } from "lodash";
+import { memo, useEffect, useMemo } from "react";
+import { useForm } from "react-hook-form";
+import { ImageGenNodeConfigSchema } from "@/metadata.js";
+import {
+	IMAGEGEN_ASPECT_RATIOS,
+	IMAGEGEN_IMAGE_SIZES,
+	IMAGEGEN_NODE_MODELS,
+	type ImageGenNodeConfig,
+} from "@/shared/config.js";
 
 const ImageGenNodeConfigComponent = memo(
 	({ node }: { node: NodeEntityType }) => {

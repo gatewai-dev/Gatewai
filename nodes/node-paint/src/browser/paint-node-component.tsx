@@ -1,6 +1,6 @@
 import { ResolveFileDataUrl } from "@gatewai/core/browser";
 import type { FileData } from "@gatewai/core/types";
-import { useNodeResult } from "@gatewai/node-sdk/browser";
+import { useNodeResult, useNodeUI } from "@gatewai/node-sdk/browser";
 import { BaseNode, useCanvasCtx } from "@gatewai/react-canvas";
 import {
 	makeSelectEdgesByTargetNodeId,
@@ -22,7 +22,7 @@ import { colorsSimilar, colorToRgb, getPixel, setPixel } from "./utils.js";
 
 const PaintNodeComponent = memo(
 	(props: { selected: boolean; id: string; dragging: boolean }) => {
-		const { onNodeConfigUpdate } = useCanvasCtx();
+		const { onNodeConfigUpdate } = useNodeUI();
 		const edges = useAppSelector(makeSelectEdgesByTargetNodeId(props.id));
 		const inputHandleId = useMemo(() => {
 			if (!edges || !edges[0]) {

@@ -12,6 +12,7 @@ import {
 import type React from "react";
 import { useMemo } from "react";
 import { Button } from "../../ui/button";
+import { ColorPicker } from "../../ui/color-input";
 import { DraggableNumberInput } from "../../ui/draggable-number-input";
 import { Label } from "../../ui/label";
 import {
@@ -23,7 +24,6 @@ import {
 } from "../../ui/select";
 import { Separator } from "../../ui/separator";
 import { CollapsibleSection } from "../CollapsibleSection";
-import { ColorPicker } from "../../ui/color-input";
 
 interface TypographyControlsProps {
 	fontFamily: string;
