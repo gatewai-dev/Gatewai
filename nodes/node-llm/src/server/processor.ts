@@ -12,6 +12,7 @@ import type {
 } from "@gatewai/node-sdk/server";
 import {
     createUserContent,
+    type GoogleGenAI,
 } from "@google/genai";
 import { inject, injectable } from "tsyringe";
 import { LLMNodeConfigSchema } from "../metadata.js";
@@ -21,7 +22,7 @@ export class LLMProcessor implements NodeProcessor {
     constructor(
         @inject(TOKENS.GRAPH_RESOLVERS) private graph: GraphResolvers,
         @inject(TOKENS.ENV) private env: EnvConfig,
-        @inject(TOKENS.AI_PROVIDER) private aiProvider: AIProvider,
+        @inject(TOKENS.AI_PROVIDER) private aiProvider: AIProvider<GoogleGenAI>,
     ) { }
 
     async process({

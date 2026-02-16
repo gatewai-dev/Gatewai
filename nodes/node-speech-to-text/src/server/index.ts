@@ -3,16 +3,18 @@ import { logger } from "@gatewai/core";
 import { TOKENS } from "@gatewai/core/di";
 import type { OutputItem, SpeechToTextResult } from "@gatewai/core/types";
 import { DataType } from "@gatewai/db";
+import {
+    defineNode,
+} from "@gatewai/node-sdk/server";
 import type {
     AIProvider,
     BackendNodeProcessorCtx,
     BackendNodeProcessorResult,
-    defineNode,
     GraphResolvers,
     NodeProcessor,
     StorageService,
 } from "@gatewai/node-sdk/server";
-import { createPartFromUri, createUserContent } from "@google/genai";
+import { createPartFromUri, createUserContent, type GoogleGenAI } from "@google/genai";
 import { inject, injectable } from "tsyringe";
 import metadata, { SpeechToTextNodeConfigSchema } from "../metadata.js";
 
@@ -22,7 +24,7 @@ class SpeechToTextProcessor implements NodeProcessor {
         @inject(TOKENS.STORAGE) private storage: StorageService,
         @inject(TOKENS.GRAPH_RESOLVERS) private graph: GraphResolvers,
         @inject(TOKENS.ENV) private env: EnvConfig,
-        @inject(TOKENS.AI_PROVIDER) private aiProvider: AIProvider,
+        @inject(TOKENS.AI_PROVIDER) private aiProvider: AIProvider<GoogleGenAI>,
     ) { }
 
     async process({

@@ -4,15 +4,18 @@ import { TOKENS } from "@gatewai/core/di";
 import type { OutputItem, TextToSpeechResult } from "@gatewai/core/types";
 import type { PrismaClient } from "@gatewai/db";
 import { DataType } from "@gatewai/db";
+import {
+    defineNode,
+} from "@gatewai/node-sdk/server";
 import type {
     AIProvider,
     BackendNodeProcessorCtx,
     BackendNodeProcessorResult,
-    defineNode,
     GraphResolvers,
     NodeProcessor,
     StorageService,
 } from "@gatewai/node-sdk/server";
+import { type GoogleGenAI } from "@google/genai";
 import { inject, injectable } from "tsyringe";
 import metadata, { TextToSpeechNodeConfigSchema } from "../metadata.js";
 
@@ -23,7 +26,7 @@ class TextToSpeechProcessor implements NodeProcessor {
         @inject(TOKENS.GRAPH_RESOLVERS) private graph: GraphResolvers,
         @inject(TOKENS.STORAGE) private storage: StorageService,
         @inject(TOKENS.ENV) private env: EnvConfig,
-        @inject(TOKENS.AI_PROVIDER) private aiProvider: AIProvider,
+        @inject(TOKENS.AI_PROVIDER) private aiProvider: AIProvider<GoogleGenAI>,
     ) { }
 
     async process({

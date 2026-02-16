@@ -4,7 +4,7 @@ import { TOKENS } from "@gatewai/core/di";
 import type { FileData, ImageGenResult } from "@gatewai/core/types";
 import type { PrismaClient } from "@gatewai/db";
 import { DataType } from "@gatewai/db";
-import type { Part } from "@google/genai";
+import type { Part, GoogleGenAI } from "@google/genai";
 import type {
     AIProvider,
     BackendNodeProcessorCtx,
@@ -26,7 +26,7 @@ export class ImageGenProcessor implements NodeProcessor {
         @inject(TOKENS.GRAPH_RESOLVERS) private graph: GraphResolvers,
         @inject(TOKENS.STORAGE) private storage: StorageService,
         @inject(TOKENS.MEDIA) private media: MediaService,
-        @inject(TOKENS.AI_PROVIDER) private aiProvider: AIProvider,
+        @inject(TOKENS.AI_PROVIDER) private aiProvider: AIProvider<GoogleGenAI>,
     ) { }
 
     async process({

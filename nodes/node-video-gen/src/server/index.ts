@@ -8,11 +8,13 @@ import { TOKENS } from "@gatewai/core/di";
 import type { FileData, VideoGenResult } from "@gatewai/core/types";
 import type { PrismaClient } from "@gatewai/db";
 import { DataType } from "@gatewai/db";
+import {
+    defineNode,
+} from "@gatewai/node-sdk/server";
 import type {
     AIProvider,
     BackendNodeProcessorCtx,
     BackendNodeProcessorResult,
-    defineNode,
     GraphResolvers,
     NodeProcessor,
     StorageService,
@@ -20,6 +22,7 @@ import type {
 import type {
     VideoGenerationReferenceImage,
     VideoGenerationReferenceType,
+    GoogleGenAI,
 } from "@google/genai";
 import { inject, injectable } from "tsyringe";
 import metadata, { VideoGenNodeConfigSchema } from "../metadata.js";
@@ -31,7 +34,7 @@ class VideoGenProcessor implements NodeProcessor {
         @inject(TOKENS.GRAPH_RESOLVERS) private graph: GraphResolvers,
         @inject(TOKENS.STORAGE) private storage: StorageService,
         @inject(TOKENS.ENV) private env: EnvConfig,
-        @inject(TOKENS.AI_PROVIDER) private aiProvider: AIProvider,
+        @inject(TOKENS.AI_PROVIDER) private aiProvider: AIProvider<GoogleGenAI>,
     ) { }
 
     async process({

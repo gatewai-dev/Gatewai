@@ -4,6 +4,7 @@ export {
 } from "./define-node.js";
 export { NodeRegistry, nodeRegistry } from "./registry.js";
 export type {
+	AIProvider,
 	BackendNodePlugin,
 	BackendNodeProcessorCtx,
 	BackendNodeProcessorResult,

@@ -34,7 +34,7 @@ export function registerBackendServices() {
 	// Register AI Provider
 	container.register(TOKENS.AI_PROVIDER, {
 		useValue: {
-			getClient: () => new GoogleGenAI({ apiKey: ENV_CONFIG.GEMINI_API_KEY }),
+			getClient: (apiKey?: string) => new GoogleGenAI({ apiKey: apiKey ?? ENV_CONFIG.GEMINI_API_KEY }),
 		},
 	});
 

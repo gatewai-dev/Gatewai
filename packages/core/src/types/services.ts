@@ -58,15 +58,15 @@ export interface GraphResolvers<T = unknown> {
 		targetNodeId: string,
 	) => Array<{
 		handle:
-			| {
-					id: string;
-					type: string;
-					nodeId: string;
-					dataTypes: DataType[];
-					label: string;
-					[key: string]: unknown;
-			  }
-			| undefined;
+		| {
+			id: string;
+			type: string;
+			nodeId: string;
+			dataTypes: DataType[];
+			label: string;
+			[key: string]: unknown;
+		}
+		| undefined;
 		value: {
 			type: DataType;
 			data: unknown;
@@ -105,6 +105,6 @@ export interface MediaService {
  * Interface for AI provider services.
  * Used by AI nodes (LLM, ImageGen, VideoGen, TTS, STT) via DI.
  */
-export interface AIProvider {
-	getClient: (apiKey: string) => any;
+export interface AIProvider<T = any> {
+	getClient: (apiKey?: string) => T;
 }
