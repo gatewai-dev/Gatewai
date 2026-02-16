@@ -1,6 +1,7 @@
 @import "tailwindcss";
 @source "../node_modules/@gatewai/ui-kit";
 @source "../../nodes/node-*/src";
+@source "../../packages/react-canvas";
 @import "tw-animate-css";
 @plugin "@tailwindcss/typography";
 
