@@ -2,9 +2,9 @@ import type { FileResult } from "@gatewai/core/types";
 import type {
 	BackendNodeProcessorCtx,
 	BackendNodeProcessorResult,
+	defineNode,
 	NodeProcessor,
-} from "@gatewai/node-sdk";
-import { defineNode } from "@gatewai/node-sdk";
+} from "@gatewai/node-sdk/server";
 import { injectable } from "tsyringe";
 import metadata from "../metadata.js";
 

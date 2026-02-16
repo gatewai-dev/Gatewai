@@ -155,6 +155,4 @@ const ExportNodeComponent = memo((props: NodeProps) => {
 	);
 });
 
-ExportNodeComponent.displayName = "ExportNode";
-
 export { ExportNodeComponent };

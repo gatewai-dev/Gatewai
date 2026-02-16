@@ -1,5 +1,5 @@
-import { CanvasAgentLayout } from "@/agent/components/layout";
-import { useCanvasCtx } from "@/canvas-ctx";
+import { CanvasAgentLayout } from "../../agent/components/layout";
+import { useCanvasCtx } from "../../canvas-ctx";
 
 function AgentPanel() {
 	const { canvas } = useCanvasCtx();

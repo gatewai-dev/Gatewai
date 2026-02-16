@@ -11,14 +11,5 @@ export default defineConfig({
 	clean: true,
 	sourcemap: true,
 	treeshake: true,
-	external: [
-		"react",
-		"react-dom",
-		"@gatewai/node-sdk",
-		"@gatewai/core",
-		"@gatewai/db",
-		"@gatewai/ui-kit",
-		"zod",
-		"tsyringe",
-	],
+	external: ["react", "react-dom", "zod", "tsyringe"],
 });

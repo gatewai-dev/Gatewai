@@ -34,6 +34,4 @@ const ModulateNodeComponent = memo(
 	},
 );
 
-ModulateNodeComponent.displayName = "ModulateNode";
-
 export { ModulateNodeComponent };

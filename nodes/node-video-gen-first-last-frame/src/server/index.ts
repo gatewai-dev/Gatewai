@@ -1,4 +1,5 @@
 import assert from "node:assert";
+import { Buffer } from "node:buffer";
 import { existsSync, mkdirSync } from "node:fs";
 import { readFile } from "node:fs/promises";
 import path from "node:path";
@@ -12,12 +13,12 @@ import type {
     AIProvider,
     BackendNodeProcessorCtx,
     BackendNodeProcessorResult,
+    defineNode,
     GraphResolvers,
     MediaService,
     NodeProcessor,
     StorageService,
-} from "@gatewai/node-sdk";
-import { defineNode } from "@gatewai/node-sdk";
+} from "@gatewai/node-sdk/server";
 import { inject, injectable } from "tsyringe";
 import metadata, {
     VideoGenFirstLastFrameNodeConfigSchema,

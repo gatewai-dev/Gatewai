@@ -11,7 +11,10 @@ import { cors } from "hono/cors";
 import { startAgentWorker } from "./agent/agent-queue.js";
 import { type AuthHonoTypes, auth, ensureUsersAPI_KEY } from "./auth.js";
 import { registerBackendServices } from "./di-setup.js";
-import { startWorker } from "./graph-engine/queue/workflow.worker.js";
+import {
+	registerNodes,
+	startWorker,
+} from "./graph-engine/queue/workflow.worker.js";
 import {
 	errorHandler,
 	loggerMiddleware,
@@ -21,8 +24,6 @@ import { v1Router } from "./routes/v1/index.js";
 
 // Initialize Dependency Injection Container
 registerBackendServices();
-// Register backend processors
-import "./graph-engine/processors/index.js";
 
 const app = new Hono<{
 	Variables: AuthHonoTypes;
@@ -113,6 +114,8 @@ app
 	.notFound(notFoundHandler);
 
 // Sync node templates from manifest registry
+// Register nodes and sync templates
+await registerNodes();
 await syncNodeTemplates(prisma);
 await ensureUsersAPI_KEY();
 

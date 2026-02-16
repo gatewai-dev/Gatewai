@@ -1,4 +1,5 @@
 export * from "@xyflow/react";
+export * from "./agent";
 export * from "./assets";
 export * from "./canvas-ctx";
 export * from "./canvas-mode-ctx";

@@ -1,5 +1,5 @@
 import type { SpeechToTextResult } from "@gatewai/core/types";
-import { OutputSelector, RunNodeButton } from "@gatewai/node-sdk/client";
+import { OutputSelector, RunNodeButton } from "@gatewai/node-sdk/browser";
 import {
 	BaseNode,
 	MarkdownRenderer,
@@ -66,7 +66,5 @@ const SpeechToTextNodeComponent = memo(
 		);
 	},
 );
-
-SpeechToTextNodeComponent.displayName = "SpeechToTextNode";
 
 export { SpeechToTextNodeComponent };

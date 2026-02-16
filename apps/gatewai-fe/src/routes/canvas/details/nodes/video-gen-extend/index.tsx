@@ -2,7 +2,7 @@ import {
 	MediaDimensions,
 	OutputSelector,
 	RunNodeButton,
-} from "@gatewai/node-sdk/client";
+} from "@gatewai/node-sdk/browser";
 import { BaseNode, useNodeResult } from "@gatewai/react-canvas";
 import { makeSelectNodeById, useAppSelector } from "@gatewai/react-store";
 import { memo } from "react";

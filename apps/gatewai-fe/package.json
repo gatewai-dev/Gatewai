@@ -105,7 +105,7 @@
 		"react-dnd": "^16.0.1",
 		"react-dnd-html5-backend": "^16.0.1",
 		"react-dnd-touch-backend": "^16.0.1",
-		"react-dom": "^19.2.0",
+		"react-dom": "^19.2.4",
 		"react-dropzone": "^14.3.8",
 		"react-fast-compare": "^3.2.2",
 		"react-helmet-async": "^2.0.5",

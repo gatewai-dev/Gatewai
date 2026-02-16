@@ -7,7 +7,7 @@ import { cn, Separator } from "@gatewai/ui-kit";
 import { Panel } from "@xyflow/react";
 import { Fragment, memo, type ReactNode, useMemo } from "react";
 import { PiCube } from "react-icons/pi";
-import { useNodeRegistry } from "@/node-registry-ctx";
+import { useNodeRegistry } from "../../../node-registry-ctx";
 
 type NodeConfigComponentProps = {
 	node: NodeEntityType;

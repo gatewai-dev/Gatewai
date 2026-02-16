@@ -1,6 +1,7 @@
 import { discoveredNodes } from "virtual:gatewai-nodes";
 import type { NodeRegistryValue } from "@gatewai/react-canvas";
 import {
+	CanvasAgentSessionsProvider,
 	CanvasModeProvider,
 	CanvasProvider,
 	NodeRegistryProvider,
@@ -8,14 +9,13 @@ import {
 	NodeTemplatesProvider,
 	ProcessorProvider,
 	ReactFlowProvider,
+	ShortcutsProvider,
 	TaskManagerProvider,
 	UserAssetsProvider,
 } from "@gatewai/react-canvas";
 import { LoadingSpinner } from "@gatewai/ui-kit";
 import { Suspense, use } from "react";
 import { Outlet, useParams } from "react-router";
-import { CanvasAgentSessionsProvider } from "./agent/ctx/canvas-sessions.ctx";
-import { ShortcutsProvider } from "./ctx/hotkeys-ctx";
 import { initNodeRegistry } from "./nodes";
 
 // Top-level promise — resolved once, cached by React's `use()`

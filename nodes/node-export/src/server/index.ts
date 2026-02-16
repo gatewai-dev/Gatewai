@@ -1,13 +1,13 @@
 import assert from "node:assert";
 import { TOKENS } from "@gatewai/core/di";
 import type { ExportResult } from "@gatewai/core/types";
-import type {
-    BackendNodeProcessorCtx,
-    BackendNodeProcessorResult,
-    GraphResolvers,
-    NodeProcessor,
-} from "@gatewai/node-sdk";
-import { defineNode } from "@gatewai/node-sdk";
+import {
+    type BackendNodeProcessorCtx,
+    type BackendNodeProcessorResult,
+    defineNode,
+    type GraphResolvers,
+    type NodeProcessor,
+} from "@gatewai/node-sdk/server";
 import { inject, injectable } from "tsyringe";
 import metadata from "../metadata.js";
 

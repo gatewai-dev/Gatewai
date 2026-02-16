@@ -1,5 +1,5 @@
 import { LoadingSpinner, MarkdownRenderer } from "@gatewai/ui-kit";
-import { cn } from "@/lib/utils";
+import { cn } from "../../../lib/utils";
 import { PatchReviewCard } from "../patch-review-card";
 
 export interface MessageProps {

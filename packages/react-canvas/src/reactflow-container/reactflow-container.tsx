@@ -19,10 +19,10 @@ import {
 } from "@xyflow/react";
 import type { DragEventHandler, MouseEventHandler } from "react";
 import { useEffect } from "react";
-import { useCanvasCtx } from "@/canvas-ctx";
-import { useCanvasMode } from "@/canvas-mode-ctx";
-import { CustomConnectionLine, CustomEdge } from "@/nodes/base";
+import { useCanvasCtx } from "../canvas-ctx";
+import { useCanvasMode } from "../canvas-mode-ctx";
 import { useNodeRegistry } from "../node-registry-ctx";
+import { CustomConnectionLine, CustomEdge } from "../nodes/base";
 import { ReactFlowPanels } from "./panels";
 
 const edgeTypes = {

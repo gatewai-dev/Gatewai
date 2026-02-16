@@ -1,16 +1,16 @@
 import type { EnvConfig } from "@gatewai/core";
 import { logger } from "@gatewai/core";
 import { TOKENS } from "@gatewai/core/di";
-import type { FileData, LLMNodeResult } from "@gatewai/core/types";
+import type { FileData } from "@gatewai/core/types";
 import { DataType } from "@gatewai/db";
-import type {
-    AIProvider,
-    BackendNodeProcessorCtx,
-    BackendNodeProcessorResult,
-    GraphResolvers,
-    NodeProcessor,
-} from "@gatewai/node-sdk";
-import { defineNode } from "@gatewai/node-sdk";
+import {
+    type AIProvider,
+    type BackendNodeProcessorCtx,
+    type BackendNodeProcessorResult,
+    defineNode,
+    type GraphResolvers,
+    type NodeProcessor,
+} from "@gatewai/node-sdk/server";
 import {
     createPartFromUri,
     createUserContent,

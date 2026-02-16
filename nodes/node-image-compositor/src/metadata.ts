@@ -1,12 +1,24 @@
-import { defineMetadata, type NodeTemplateManifest } from "@gatewai/node-sdk";
+import { defineMetadata } from "@gatewai/node-sdk";
 import { CompositorNodeConfigSchema } from "./shared/index.js";
 
 export { CompositorNodeConfigSchema };
 
-export const manifest: NodeTemplateManifest = {
-	type: "image-compositor",
+export const manifest = defineMetadata({
+	type: "ImageCompositor",
+	displayName: "Image Compositor",
+	description: "Compose images using Text and Image Inputs.",
 	category: "Image",
-	label: "Image Compositor",
-	handles: [],
-	config: {},
-};
+	subcategory: undefined,
+	configSchema: CompositorNodeConfigSchema,
+	isTerminal: false,
+	isTransient: false,
+	variableInputs: {
+		enabled: true,
+		dataTypes: ["Text", "Image", "Audio", "Video"],
+	},
+	handles: {
+		inputs: [],
+		outputs: [],
+	},
+	defaultConfig: {},
+});

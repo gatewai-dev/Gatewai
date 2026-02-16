@@ -1,5 +1,5 @@
 import type { LLMResult } from "@gatewai/core/types";
-import { OutputSelector, RunNodeButton } from "@gatewai/node-sdk/client";
+import { OutputSelector, RunNodeButton } from "@gatewai/node-sdk/browser";
 import { BaseNode, useNodeResult } from "@gatewai/react-canvas";
 import { makeSelectNodeById, useAppSelector } from "@gatewai/react-store";
 import { ScrollArea } from "@gatewai/ui-kit";

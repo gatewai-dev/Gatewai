@@ -346,6 +346,4 @@ const CropNodeComponent = memo((props: NodeProps) => {
 	);
 });
 
-CropNodeComponent.displayName = "CropNodeComponent";
-
 export { CropNodeComponent };

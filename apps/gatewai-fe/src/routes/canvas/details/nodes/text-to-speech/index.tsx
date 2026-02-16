@@ -1,4 +1,4 @@
-import { OutputSelector, RunNodeButton } from "@gatewai/node-sdk/client";
+import { OutputSelector, RunNodeButton } from "@gatewai/node-sdk/browser";
 import { AudioRenderer, BaseNode, useNodeResult } from "@gatewai/react-canvas";
 import { makeSelectNodeById, useAppSelector } from "@gatewai/react-store";
 import { memo } from "react";

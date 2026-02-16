@@ -1,6 +1,6 @@
 import { ResolveFileDataUrl } from "@gatewai/core/browser";
 import type { FileData } from "@gatewai/core/types";
-import { AddCustomHandleButton } from "@gatewai/node-sdk/client";
+import { AddCustomHandleButton } from "@gatewai/node-sdk/browser";
 import type { NodeProps } from "@gatewai/react-canvas";
 import { BaseNode, CanvasRenderer, useNodeResult } from "@gatewai/react-canvas";
 import { makeSelectNodeById, useAppSelector } from "@gatewai/react-store";

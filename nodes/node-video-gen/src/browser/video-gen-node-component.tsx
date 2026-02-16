@@ -2,7 +2,7 @@ import {
 	MediaDimensions,
 	OutputSelector,
 	RunNodeButton,
-} from "@gatewai/node-sdk/client";
+} from "@gatewai/node-sdk/browser";
 import { BaseNode, useNodePreview, VideoRenderer } from "@gatewai/react-canvas";
 import { memo } from "react";
 
@@ -37,7 +37,5 @@ const VideoGenNodeComponent = memo(
 		);
 	},
 );
-
-VideoGenNodeComponent.displayName = "VideoGenNode";
 
 export { VideoGenNodeComponent };

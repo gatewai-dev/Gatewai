@@ -29,6 +29,4 @@ const TextMergerNodeComponent = memo(
 	},
 );
 
-TextMergerNodeComponent.displayName = "TextMergerNode";
-
 export { TextMergerNodeComponent };

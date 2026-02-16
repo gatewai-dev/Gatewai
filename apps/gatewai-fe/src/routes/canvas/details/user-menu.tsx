@@ -1,4 +1,3 @@
-import { ApiKeysSettings } from "@gatewai/react-canvas";
 import {
 	DropdownMenu,
 	DropdownMenuContent,
@@ -12,6 +11,7 @@ import { LayoutGrid, LogOut, Settings } from "lucide-react";
 import { useState } from "react";
 import { Link, useNavigate } from "react-router";
 import { authClient } from "@/lib/auth-client";
+import { ApiKeysSettings } from "./ApiKeysSettings";
 
 export function UserMenu() {
 	const nav = useNavigate();

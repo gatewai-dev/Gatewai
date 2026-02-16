@@ -1,10 +1,32 @@
 import { Panel } from "@gatewai/react-canvas";
-import { Button } from "@gatewai/ui-kit";
+import { Button, cn } from "@gatewai/ui-kit";
+import { useState } from "react";
 import { HiSparkles } from "react-icons/hi2";
-import { usePersistentState } from "@/lib/hooks/use-persistent-state";
-import { cn } from "@/lib/utils";
 import { CanvasAgentProvider } from "../../ctx/canvas-agent.ctx";
 import { AgentChatSection } from "../chat-section";
+
+export function usePersistentState<T>(key: string, initialValue: T) {
+	const [state, setState] = useState<T>(() => {
+		try {
+			const item = localStorage.getItem(key);
+			return item ? JSON.parse(item) : initialValue;
+		} catch {
+			return initialValue;
+		}
+	});
+
+	const setPersistentState = (value: T | ((val: T) => T)) => {
+		try {
+			const valueToStore = value instanceof Function ? value(state) : value;
+			setState(valueToStore);
+			localStorage.setItem(key, JSON.stringify(valueToStore));
+		} catch (error) {
+			console.error(error);
+		}
+	};
+
+	return [state, setPersistentState] as const;
+}
 
 function AgentLayoutInner() {
 	const [isCollapsed, setIsCollapsed] = usePersistentState(

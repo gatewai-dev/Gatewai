@@ -20,8 +20,10 @@ export async function syncNodeTemplates(prisma: PrismaClient) {
 
 	for (const m of manifests) {
 		const allHandles = [
-			...m.handles.inputs.map((h) => ({ ...h, type: "Input" as const })),
-			...m.handles.outputs.map((h) => ({ ...h, type: "Output" as const })),
+			...(m.handles?.inputs?.map((h) => ({ ...h, type: "Input" as const })) ??
+				[]),
+			...(m.handles?.outputs?.map((h) => ({ ...h, type: "Output" as const })) ??
+				[]),
 		];
 
 		const templateData = {

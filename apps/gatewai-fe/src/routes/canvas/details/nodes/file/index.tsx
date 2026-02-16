@@ -2,6 +2,7 @@ import type { FileResult } from "@gatewai/core/types";
 import { BaseNode } from "@gatewai/react-canvas";
 import {
 	makeSelectNodeById,
+	type UploadFileNodeAssetRPC,
 	updateNodeResult,
 	useAppDispatch,
 	useAppSelector,
@@ -12,7 +13,6 @@ import { toast } from "sonner";
 import { UploadButton } from "@/components/util/file-button";
 import { UploadDropzone } from "@/components/util/file-dropzone";
 import { useHasOutputItems } from "@/routes/canvas/hooks";
-import type { UploadFileNodeAssetRPC } from "@/rpc/types";
 import { MediaContent } from "../media-content";
 import type { FileNode } from "../node-props";
 

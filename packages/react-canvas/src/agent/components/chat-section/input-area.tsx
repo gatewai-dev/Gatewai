@@ -9,7 +9,7 @@ import {
 	SelectValue,
 } from "@gatewai/ui-kit";
 import { ArrowRight, StopCircle, XCircle } from "lucide-react";
-import { cn } from "@/lib/utils";
+import { cn } from "../../../lib/utils";
 
 const MODEL_OPTIONS = [
 	{ value: "gemini-3-pro-preview", label: "Gemini 3 Pro" },

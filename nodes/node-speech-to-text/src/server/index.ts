@@ -7,11 +7,11 @@ import type {
     AIProvider,
     BackendNodeProcessorCtx,
     BackendNodeProcessorResult,
+    defineNode,
     GraphResolvers,
     NodeProcessor,
     StorageService,
-} from "@gatewai/node-sdk";
-import { defineNode } from "@gatewai/node-sdk";
+} from "@gatewai/node-sdk/server";
 import { createPartFromUri, createUserContent } from "@google/genai";
 import { inject, injectable } from "tsyringe";
 import metadata, { SpeechToTextNodeConfigSchema } from "../metadata.js";

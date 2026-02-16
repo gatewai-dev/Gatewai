@@ -36,11 +36,14 @@
 		"@gatewai/db": "workspace:*",
 		"@gatewai/node-sdk": "workspace:*",
 		"react": "^19.0.0",
-		"tsyringe": "^4.8.0"
+		"tsyringe": "^4.8.0",
+		"@gatewai/react-canvas": "workspace:*"
 	},
 	"devDependencies": {
 		"@gatewai/tsconfig": "workspace:*",
+		"@types/node": "^24.0.4",
 		"tsdown": "^0.19.0",
-		"typescript": "^5.8.3"
+		"typescript": "^5.8.3",
+		"@gatewai/react-canvas": "workspace:*"
 	}
 }

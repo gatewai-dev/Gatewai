@@ -1,5 +1,5 @@
 import type { LLMResult } from "@gatewai/core/types";
-import { OutputSelector, RunNodeButton } from "@gatewai/node-sdk/client";
+import { OutputSelector, RunNodeButton } from "@gatewai/node-sdk/browser";
 import {
 	BaseNode,
 	MarkdownRenderer,
@@ -67,7 +67,5 @@ const LlmNodeComponent = memo(
 		);
 	},
 );
-
-LlmNodeComponent.displayName = "LlmNode";
 
 export { LlmNodeComponent };

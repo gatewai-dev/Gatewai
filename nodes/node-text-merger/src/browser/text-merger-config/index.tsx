@@ -33,6 +33,4 @@ const TextMergerNodeConfigComponent = memo(({ node }: { node: any }) => {
 	);
 });
 
-TextMergerNodeConfigComponent.displayName = "TextMergerNodeConfig";
-
 export { TextMergerNodeConfigComponent };

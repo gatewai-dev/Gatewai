@@ -6,11 +6,12 @@ import {
 import { makeSelectNodeById, useAppSelector } from "@gatewai/react-store";
 import { useCallback } from "react";
 import { Route, Routes, useNavigate, useParams } from "react-router";
+import { CanvasDetailsRoot } from ".";
 
 function NodePageView() {
 	const { nodeId, canvasId } = useParams();
 	const nav = useNavigate();
-	const node = useAppSelector(makeSelectNodeById(nodeId));
+	const node = useAppSelector(makeSelectNodeById(nodeId!));
 	const PageComponent = useNodePageComponent(node?.type);
 	const { moveViewportToNode } = useCanvasCtx();
 

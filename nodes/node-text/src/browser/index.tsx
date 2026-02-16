@@ -46,8 +46,6 @@ const TextNodeComponent = memo((props: any) => {
 	);
 });
 
-TextNodeComponent.displayName = "TextNodeComponent";
-
 export default defineClient(metadata, {
 	Component: TextNodeComponent,
 	mainIconComponent: memo(PiTextT),

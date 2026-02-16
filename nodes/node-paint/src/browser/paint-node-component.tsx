@@ -610,6 +610,4 @@ const PaintNodeComponent = memo(
 	},
 );
 
-PaintNodeComponent.displayName = "PaintNode";
-
 export { PaintNodeComponent };

@@ -2,7 +2,7 @@ import {
 	OutputSelector,
 	RunNodeButton,
 	useMediaInputSrc,
-} from "@gatewai/node-sdk/client";
+} from "@gatewai/node-sdk/browser";
 import { AudioRenderer, BaseNode, useNodeResult } from "@gatewai/react-canvas";
 import { makeSelectNodeById, useAppSelector } from "@gatewai/react-store";
 import { memo } from "react";
@@ -43,7 +43,5 @@ const TextToSpeechNodeComponent = memo(
 		);
 	},
 );
-
-TextToSpeechNodeComponent.displayName = "TextToSpeechNode";
 
 export { TextToSpeechNodeComponent };

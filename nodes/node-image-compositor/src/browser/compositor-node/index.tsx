@@ -53,6 +53,4 @@ const CompositorNodeComponent = memo((props: NodeProps<Node>) => {
 	);
 });
 
-CompositorNodeComponent.displayName = "CompositorNodeComponent";
-
 export { CompositorNodeComponent };

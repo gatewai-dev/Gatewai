@@ -1,5 +1,9 @@
 import type { FileResult } from "@gatewai/core/types";
-import { BaseNode, MediaContent } from "@gatewai/react-canvas";
+import {
+	BaseNode,
+	MediaContent,
+	useHasOutputItems,
+} from "@gatewai/react-canvas";
 import {
 	makeSelectNodeById,
 	updateNodeResult,
@@ -11,7 +15,6 @@ import { memo } from "react";
 import { toast } from "sonner";
 import { UploadButton } from "@/components/util/file-button";
 import { UploadDropzone } from "@/components/util/file-dropzone";
-import { useHasOutputItems } from "@/routes/canvas/hooks";
 import type { UploadFileNodeAssetRPC } from "@/rpc/types";
 
 type SuccessfulUploadFileNodeAssetRPC = Extract<
@@ -120,7 +123,5 @@ const FileNodeComponent = memo((props: NodeProps) => {
 		</BaseNode>
 	);
 });
-
-FileNodeComponent.displayName = "FileNode";
 
 export { FileNodeComponent };

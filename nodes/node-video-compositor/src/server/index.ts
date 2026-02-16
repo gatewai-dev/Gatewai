@@ -2,9 +2,9 @@ import type { NodeResult } from "@gatewai/core/types";
 import type {
 	BackendNodeProcessorCtx,
 	BackendNodeProcessorResult,
+	defineNode,
 	NodeProcessor,
 } from "@gatewai/node-sdk/server";
-import { defineNode } from "@gatewai/node-sdk/server";
 import { manifest } from "../metadata.js";
 
 @injectable()

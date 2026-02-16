@@ -6,8 +6,8 @@ import {
 import { Button } from "@gatewai/ui-kit";
 import { ForwardIcon, Loader2 } from "lucide-react"; // Added Loader2
 import { memo, useMemo } from "react";
-import { useTaskManagerCtx } from "@/task-manager-ctx";
 import { useCanvasCtx } from "../../canvas-ctx";
+import { useTaskManagerCtx } from "../../task-manager-ctx";
 
 const RunWorkflowButton = memo(() => {
 	const { runNodes } = useCanvasCtx();

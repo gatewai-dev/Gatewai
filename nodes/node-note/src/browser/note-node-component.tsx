@@ -57,6 +57,4 @@ const NoteNodeComponent = memo(
 	},
 );
 
-NoteNodeComponent.displayName = "NoteNode";
-
 export { NoteNodeComponent };

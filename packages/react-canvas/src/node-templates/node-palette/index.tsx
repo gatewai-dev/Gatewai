@@ -2,30 +2,13 @@ import type { NodeTemplateListRPC } from "@gatewai/react-store";
 import {
 	Button,
 	cn,
-	DropdownMenu,
-	DropdownMenuContent,
-	DropdownMenuItem,
-	DropdownMenuLabel,
-	DropdownMenuSeparator,
-	DropdownMenuTrigger,
-	GatewaiIcon,
 	Tooltip,
 	TooltipContent,
 	TooltipTrigger,
 } from "@gatewai/ui-kit";
-import {
-	LayoutGrid,
-	LogOut,
-	PanelLeftClose,
-	PanelLeftOpen,
-	Settings,
-} from "lucide-react";
-import { useState } from "react";
+import { PanelLeftClose, PanelLeftOpen } from "lucide-react";
 import { FaDiscord, FaGithub } from "react-icons/fa";
-import { Link, useNavigate } from "react-router";
-import { AssetsSection } from "@/assets";
-import { ApiKeysSettings } from "@/components/ApiKeysSettings";
-import { CanvasName } from "@/components/canvas-name";
+import { AssetsSection } from "../../assets";
 import { useNodeTemplates } from "../node-templates.ctx";
 import { GuidesDialog } from "./guides-dialog";
 import { NodePaletteProvider, useNodePalette } from "./node-palette.ctx";
@@ -34,9 +17,6 @@ import { SearchInput } from "./search";
 
 export function NodePalette() {
 	const { nodeTemplates, isLoading } = useNodeTemplates();
-	const { isCollapsed, setIsCollapsed } = useNodePalette();
-	const nav = useNavigate();
-	const [isSettingsOpen, setIsSettingsOpen] = useState(false);
 
 	if (isLoading || !nodeTemplates) {
 		return null;
@@ -45,59 +25,6 @@ export function NodePalette() {
 	return (
 		<NodePaletteProvider>
 			<SidePanel>
-				<ApiKeysSettings
-					open={isSettingsOpen}
-					onOpenChange={setIsSettingsOpen}
-				/>
-				<div className="flex shrink-0 items-center justify-between px-3 py-4">
-					<div
-						className={cn(
-							"flex items-center gap-2 overflow-hidden transition-all duration-300 pr-0.5",
-							isCollapsed ? "w-0 opacity-0" : "w-auto opacity-100",
-						)}
-					>
-						<DropdownMenu>
-							<DropdownMenuTrigger asChild>
-								<button type="button" className="outline-none">
-									<GatewaiIcon className="size-7 shrink-0 text-primary cursor-pointer hover:opacity-80 transition-opacity" />
-								</button>
-							</DropdownMenuTrigger>
-							<DropdownMenuContent align="start" className="w-56 ml-2">
-								<DropdownMenuLabel>My Account</DropdownMenuLabel>
-								<DropdownMenuSeparator />
-								<DropdownMenuItem asChild>
-									<Link to="/canvas" className="cursor-pointer">
-										<LayoutGrid className="mr-2 h-4 w-4" />
-										<span>Back to workspace</span>
-									</Link>
-								</DropdownMenuItem>
-								<DropdownMenuItem
-									className="cursor-pointer"
-									onClick={() => setIsSettingsOpen(true)}
-								>
-									<Settings className="mr-2 h-4 w-4" />
-									<span>Settings</span>
-								</DropdownMenuItem>
-								<DropdownMenuSeparator />
-								<DropdownMenuItem
-									className="cursor-pointer"
-									onClick={async () => {
-										// This logic will be moved to app, but keeping here for backward compat if needed
-										// or just as a placeholder during refactor
-										console.warn("Sign out triggered from NodePalette");
-									}}
-								>
-									<LogOut className="mr-2 h-4 w-4" />
-									<span>Sign out</span>
-								</DropdownMenuItem>
-							</DropdownMenuContent>
-						</DropdownMenu>
-						<CanvasName />
-					</div>
-
-					<CollapseButton />
-				</div>
-
 				<NodeLibrary templates={nodeTemplates} />
 
 				<SidePanelFooter />

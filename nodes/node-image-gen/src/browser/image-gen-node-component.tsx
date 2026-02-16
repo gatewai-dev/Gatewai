@@ -3,7 +3,7 @@ import {
 	MediaDimensions,
 	OutputSelector,
 	RunNodeButton,
-} from "@gatewai/node-sdk/client";
+} from "@gatewai/node-sdk/browser";
 import {
 	BaseNode,
 	CanvasRenderer,
@@ -48,7 +48,5 @@ const ImageGenNodeComponent = memo(
 		);
 	},
 );
-
-ImageGenNodeComponent.displayName = "ImageGenNode";
 
 export { ImageGenNodeComponent };

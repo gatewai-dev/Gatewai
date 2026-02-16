@@ -472,10 +472,8 @@ const FIVE_MINS = 300_000;
 
 const WORKER_LOCK_DURATION = FIVE_MINS;
 
-export const startWorker = async () => {
-	logger.info("Starting Workflow Worker...");
-
-	// Discover and register nodes
+// Discover and register nodes
+export const registerNodes = async () => {
 	try {
 		const nodes = await discoverNodes();
 		logger.info(`Discovered ${nodes.length} nodes from filesystem.`);
@@ -497,6 +495,10 @@ export const startWorker = async () => {
 	} catch (err) {
 		logger.error("Failed to discover nodes:", err);
 	}
+};
+
+export const startWorker = async () => {
+	logger.info("Starting Workflow Worker...");
 
 	try {
 		await recoverDanglingTasks();

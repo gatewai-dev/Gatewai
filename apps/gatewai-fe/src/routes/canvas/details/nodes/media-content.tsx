@@ -3,7 +3,7 @@ import type {
 	ImagesResult,
 	VideoGenResult,
 } from "@gatewai/core/types";
-import { MediaDimensions, OutputSelector } from "@gatewai/node-sdk/client";
+import { MediaDimensions, OutputSelector } from "@gatewai/node-sdk/browser";
 import {
 	AudioRenderer,
 	CanvasRenderer,

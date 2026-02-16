@@ -12,7 +12,7 @@ import {
 	TooltipTrigger,
 } from "@gatewai/ui-kit";
 import { BookOpen } from "lucide-react";
-import { cn } from "@/lib/utils";
+import { cn } from "../../lib/utils";
 
 const SHORTCUTS_CONTENT = `
 ### Navigation & Shortcuts

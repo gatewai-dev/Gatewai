@@ -1,6 +1,6 @@
 import { GetAssetEndpoint } from "@gatewai/core/browser";
 import type { FileData } from "@gatewai/core/types";
-import { MediaDimensions } from "@gatewai/node-sdk/client";
+import { MediaDimensions } from "@gatewai/node-sdk/browser";
 import { BaseNode, CanvasRenderer, useNodeResult } from "@gatewai/react-canvas";
 import { makeSelectNodeById, useAppSelector } from "@gatewai/react-store";
 import { MarkdownRenderer, ScrollArea, Switch } from "@gatewai/ui-kit";

@@ -4,10 +4,10 @@ import { DataType } from "@gatewai/db";
 import type {
     BackendNodeProcessorCtx,
     BackendNodeProcessorResult,
+    defineNode,
     GraphResolvers,
     NodeProcessor,
-} from "@gatewai/node-sdk";
-import { defineNode } from "@gatewai/node-sdk";
+} from "@gatewai/node-sdk/server";
 import { inject, injectable } from "tsyringe";
 import metadata, { TextMergerNodeConfigSchema } from "../metadata.js";
 
