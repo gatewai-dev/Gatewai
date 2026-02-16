@@ -5,11 +5,11 @@
 	"type": "module",
 	"scripts": {
 		"dev": "concurrently \"pnpm be:dev\" \"vite\"",
-		"build": "vite build && tsc -p backend/tsconfig.json && pnpm copy-assets",
-		"start-cli": "node backend/dist/index.js",
+		"build": "vite build && tsc -b tsconfig.node.json && pnpm copy-assets",
+		"start-cli": "node backend/dist/backend/src/index.js",
 		"preview": "vite preview",
 		"be:dev": "tsx watch --tsconfig tsconfig.node.json --conditions=development backend/src/index.ts",
-		"be:build": "tsc -p backend/tsconfig.json && pnpm copy-assets",
+		"be:build": "tsc -b tsconfig.node.json && pnpm copy-assets",
 		"copy-assets": "mkdir -p backend/dist && cp -r backend/src/assets backend/dist/",
 		"test": "vitest run"
 	},

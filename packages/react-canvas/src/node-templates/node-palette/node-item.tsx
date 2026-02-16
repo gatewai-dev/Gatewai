@@ -1,6 +1,6 @@
 import {
-	NODE_ICON_MAP,
 	useCanvasCtx,
+	useNodeRegistry,
 	useReactFlow,
 } from "@gatewai/react-canvas";
 import type { NodeTemplateListItemRPC } from "@gatewai/react-store";
@@ -9,6 +9,7 @@ import { motion } from "framer-motion";
 import { GripVertical } from "lucide-react";
 import { memo, useEffect, useRef, useState } from "react";
 import { createPortal } from "react-dom";
+import { PiCube } from "react-icons/pi";
 
 interface NodeItemProps {
 	template: NodeTemplateListItemRPC;
@@ -22,8 +23,9 @@ const DragOverlay = ({
 	template: NodeTemplateListItemRPC;
 	position: { x: number; y: number };
 }) => {
-	const { mainIcon: MainIcon } = NODE_ICON_MAP[template.type] ?? {
-		mainIcon: NODE_ICON_MAP.File.mainIcon,
+	const { iconMap } = useNodeRegistry();
+	const { mainIcon: MainIcon } = iconMap[template.type] ?? {
+		mainIcon: PiCube,
 	};
 
 	return createPortal(
@@ -69,11 +71,9 @@ export const NodeItem = memo(({ template, id_suffix }: NodeItemProps) => {
 
 	const itemRef = useRef<HTMLDivElement>(null);
 
-	const { mainIcon: MainIcon, optionalIcons = [] } = NODE_ICON_MAP[
-		template.type
-	] ?? {
-		mainIcon: NODE_ICON_MAP.File.mainIcon,
-		optionalIcons: [],
+	const { iconMap } = useNodeRegistry();
+	const { mainIcon: MainIcon } = iconMap[template.type] ?? {
+		mainIcon: PiCube,
 	};
 
 	useEffect(() => {
@@ -161,18 +161,6 @@ export const NodeItem = memo(({ template, id_suffix }: NodeItemProps) => {
 						<span className="truncate text-[13px] font-medium leading-tight text-foreground/90">
 							{template.displayName}
 						</span>
-						{/* Optional Type Badges */}
-						<div className="flex -space-x-1 pl-2">
-							{optionalIcons.slice(0, 2).map((OptIcon, idx) => (
-								<div
-									// biome-ignore lint/suspicious/noArrayIndexKey: No other
-									key={`${idx}_opticon`}
-									className="flex h-4 w-4 items-center justify-center rounded-full bg-background ring-1 ring-border"
-								>
-									<OptIcon className="h-2.5 w-2.5 text-muted-foreground" />
-								</div>
-							))}
-						</div>
 					</div>
 					<span className="text-[11px] text-muted-foreground/80">
 						{template.description || "Drag to add to canvas"}

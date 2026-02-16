@@ -1,34 +1,33 @@
-import {
-	VIDEOGEN_ASPECT_RATIOS,
-	VIDEOGEN_DURATIONS,
-	VIDEOGEN_NODE_MODELS,
-	VIDEOGEN_RESOLUTIONS,
-	type VideoGenNodeConfig,
-	VideoGenNodeConfigSchema,
-} from "@gatewai/node-video-gen";
-import type { NodeEntityType } from "@gatewai/react-store";
+import { isEqual } from "@gatewai/core";
+import { useNodeUI } from "@gatewai/node-sdk/browser";
 import {
 	makeSelectHandlesByNodeId,
+	type NodeEntityType,
 	useAppSelector,
 } from "@gatewai/react-store";
 import {
-	Form,
 	FormDescription,
+	SelectField,
 	Tooltip,
 	TooltipContent,
 	TooltipProvider,
 	TooltipTrigger,
 } from "@gatewai/ui-kit";
 import { zodResolver } from "@hookform/resolvers/zod";
-import { debounce, isEqual } from "lodash";
 import { memo, useEffect, useMemo } from "react";
-import { useForm } from "react-hook-form";
-import { useCanvasCtx } from "@/routes/canvas/details/ctx/canvas-ctx";
-import { SelectField } from "../../../../components/fields/select";
+import { Form, useForm } from "react-hook-form";
+import { VideoGenNodeConfigSchema } from "@/metadata.js";
+import {
+	VIDEOGEN_ASPECT_RATIOS,
+	VIDEOGEN_DURATIONS,
+	VIDEOGEN_NODE_MODELS,
+	VIDEOGEN_RESOLUTIONS,
+	type VideoGenNodeConfig,
+} from "@/shared/config.js";
 
 const VideoGenNodeConfigComponent = memo(
 	({ node }: { node: NodeEntityType }) => {
-		const { onNodeConfigUpdate } = useCanvasCtx();
+		const { onNodeConfigUpdate } = useNodeUI();
 
 		const handles = useAppSelector(makeSelectHandlesByNodeId(node.id));
 		const hasReferenceImageHandle = useMemo(() => {

@@ -1,4 +1,9 @@
 import {
+	createSelector,
+	createSlice,
+	type PayloadAction,
+} from "@reduxjs/toolkit";
+import {
 	addEdge,
 	applyEdgeChanges as applyEdgeChangesBase,
 	applyNodeChanges as applyNodeChangesBase,
@@ -6,12 +11,7 @@ import {
 	type EdgeChange,
 	type Node,
 	type NodeChange,
-} from "@gatewai/react-canvas";
-import {
-	createSelector,
-	createSlice,
-	type PayloadAction,
-} from "@reduxjs/toolkit";
+} from "@xyflow/react";
 import type { RootState } from "./index.js";
 
 export interface RFState {

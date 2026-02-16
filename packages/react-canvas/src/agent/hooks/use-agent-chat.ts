@@ -1,7 +1,7 @@
+import { generateId } from "@gatewai/core";
 import type { GatewaiAgentEvent } from "@gatewai/core/types";
 import { appRPCClient } from "@gatewai/rpc-client";
 import { useCallback, useEffect, useRef, useState } from "react";
-import { generateId } from "@/lib/idgen";
 
 export type MessageRole = "user" | "model" | "system";
 

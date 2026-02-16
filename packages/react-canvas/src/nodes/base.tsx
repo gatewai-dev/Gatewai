@@ -25,15 +25,16 @@ import {
 } from "@gatewai/ui-kit";
 import { TrashIcon } from "lucide-react";
 import { type JSX, memo, type ReactNode, useMemo } from "react";
+import { PiCube } from "react-icons/pi";
 import { useCanvasCtx } from "../canvas-ctx";
 import { cn } from "../lib/utils";
+import { useNodeRegistry } from "../node-registry-ctx";
 import {
 	useEdgeColor,
 	useNodeResult,
 	useNodeValidation,
 } from "../processor-ctx";
 import type { HandleState } from "../types";
-import { NODE_ICON_MAP } from "./icon-map";
 import { NodeMenu } from "./node-menu";
 
 const DEFAULT_COLOR = "#9ca3af";
@@ -347,9 +348,9 @@ const BaseNode = memo(
 			};
 		}, [handles]);
 
-		const { mainIcon: MainIcon } = NODE_ICON_MAP[node?.type] ?? {
-			mainIcon: NODE_ICON_MAP.File.mainIcon,
-			optionalIcons: [],
+		const { iconMap } = useNodeRegistry();
+		const { mainIcon: MainIcon } = iconMap[node?.type] ?? {
+			mainIcon: PiCube,
 		};
 
 		return (
@@ -422,7 +423,7 @@ const BaseNode = memo(
 						<NodeHandle
 							key={handle.id}
 							handle={handle}
-							index={i} // ← index now respects .order
+							index={i}
 							type="source"
 							status={handleStatus[handle.id]}
 							nodeSelected={selected}

@@ -1,10 +1,18 @@
-import { BaseNode, isFileData, useNodeResult } from "@gatewai/react-canvas";
-import type { NodeEntityType } from "@gatewai/react-store";
-import { Alert, AlertDescription, Button, Separator, cn } from "@gatewai/ui-kit";
-import type { NodeProps } from "@xyflow/react";
+import { useNodeUI } from "@gatewai/node-sdk/browser";
+import {
+	isFileData,
+	type NodeProps,
+	useNodeResult,
+} from "@gatewai/react-canvas";
+import {
+	Alert,
+	AlertDescription,
+	Button,
+	cn,
+	Separator,
+} from "@gatewai/ui-kit";
 import { AlertCircle, Download, InfoIcon, Loader2 } from "lucide-react";
 import { memo, useState } from "react";
-import { useDownloadFileData } from "@/routes/canvas/details/hooks/use-download-filedata";
 
 function ExportNodeHandbook({ nodeId }: { nodeId: string }) {
 	return (
@@ -33,6 +41,7 @@ function ExportNodeHandbook({ nodeId }: { nodeId: string }) {
 
 const ExportNodeComponent = memo((props: NodeProps) => {
 	const { result } = useNodeResult(props.id);
+	const { BaseNode } = useNodeUI();
 	const [isDownloading, setIsDownloading] = useState(false);
 	const [error, setError] = useState<string | null>(null);
 
@@ -101,7 +110,9 @@ const ExportNodeComponent = memo((props: NodeProps) => {
 	};
 
 	const hasResult =
-		result && result.outputs && result.outputs[result.selectedOutputIndex]?.items.length > 0;
+		result &&
+		result.outputs &&
+		result.outputs[result.selectedOutputIndex]?.items.length > 0;
 
 	return (
 		<BaseNode selected={props.selected} id={props.id} dragging={props.dragging}>

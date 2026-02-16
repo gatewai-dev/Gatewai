@@ -8,23 +8,14 @@
 		"module": "ESNext",
 		"skipLibCheck": true,
 		"moduleResolution": "bundler",
-		"allowImportingTsExtensions": true,
 		"verbatimModuleSyntax": true,
 		"moduleDetection": "force",
-		"noEmit": true,
+		"outDir": "backend/dist",
+		"rootDir": ".",
 		"strict": true,
 		"noUnusedLocals": true,
 		"noUnusedParameters": true,
 		"noFallthroughCasesInSwitch": true
 	},
-	"include": [
-		"vite.config.ts",
-		"backend/src",
-		"../../packages/*/src",
-		"../../packages/media/browser/draw-image-canvas",
-		"../../packages/media/browser/worker-pixi-service.ts",
-		"../../packages/media/server/utils",
-		"../../packages/media/server/backend-pixi-service.ts",
-		"vite-plugins"
-	]
+	"include": ["vite.config.ts", "backend/src", "vite-plugins"]
 }

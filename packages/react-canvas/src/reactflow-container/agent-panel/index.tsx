@@ -1,5 +1,5 @@
-import { useCanvasCtx } from "@gatewai/react-canvas";
-import { CanvasAgentLayout } from "../../agent/components/layout";
+import { CanvasAgentLayout } from "@/agent/components/layout";
+import { useCanvasCtx } from "@/canvas-ctx";
 
 function AgentPanel() {
 	const { canvas } = useCanvasCtx();

@@ -1,19 +1,3 @@
-import {
-	IMAGEGEN_ASPECT_RATIOS,
-	IMAGEGEN_IMAGE_SIZES,
-	IMAGEGEN_NODE_MODELS,
-	type ImageGenNodeConfig,
-	ImageGenNodeConfigSchema,
-} from "@gatewai/node-image-gen";
-import type { NodeEntityType } from "@gatewai/react-store";
-import { Form } from "@gatewai/ui-kit";
-import { zodResolver } from "@hookform/resolvers/zod";
-import { debounce, isEqual } from "lodash";
-import { memo, useEffect, useMemo } from "react";
-import { useForm } from "react-hook-form";
-import { useCanvasCtx } from "@/routes/canvas/details/ctx/canvas-ctx";
-import { SelectField } from "../../../../components/fields/select";
-
 const ImageGenNodeConfigComponent = memo(
 	({ node }: { node: NodeEntityType }) => {
 		const { onNodeConfigUpdate } = useCanvasCtx();

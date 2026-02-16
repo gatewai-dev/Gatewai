@@ -1,45 +1,26 @@
-import { Panel } from "@gatewai/react-canvas";
 import {
 	type NodeEntityType,
 	selectSelectedNodes,
 	useAppSelector,
 } from "@gatewai/react-store";
 import { cn, Separator } from "@gatewai/ui-kit";
+import { Panel } from "@xyflow/react";
 import { Fragment, memo, type ReactNode, useMemo } from "react";
-import { ImageGenNodeConfigComponent } from "./image-gen";
-import { LLMNodeConfigComponent } from "./llm/llm-config";
-import { SpeechToTextNodeConfigComponent } from "./speech-to-text";
-import { TextToSpeechNodeConfigComponent } from "./text-to-speech";
-import { VideoGenNodeConfigComponent } from "./video-gen";
-import { VideoGenFirstLastFrameNodeConfigComponent } from "./video-gen-first-last-frame";
+import { PiCube } from "react-icons/pi";
+import { useNodeRegistry } from "@/node-registry-ctx";
 
 type NodeConfigComponentProps = {
 	node: NodeEntityType;
 };
 
-const NodeConfigFormMap: Partial<
-	Record<string, (props: NodeConfigComponentProps) => ReactNode>
-> = {
-	LLM: LLMNodeConfigComponent,
-	ImageGen: ImageGenNodeConfigComponent,
-	VideoGen: VideoGenNodeConfigComponent,
-	VideoGenFirstLastFrame: VideoGenFirstLastFrameNodeConfigComponent,
-	TextToSpeech: TextToSpeechNodeConfigComponent,
-	SpeechToText: SpeechToTextNodeConfigComponent,
-};
-
 const NodeConfigItem = memo(({ node }: NodeConfigComponentProps) => {
-	const ConfigComponent = useMemo(() => {
-		return NodeConfigFormMap[node.type] as
-			| ((props: NodeConfigComponentProps) => ReactNode)
-			| undefined;
-	}, [node.type]);
+	const { configMap, iconMap } = useNodeRegistry();
+	const ConfigComponent = configMap[node.type];
 	if (!ConfigComponent) {
 		return null;
 	}
-	const { mainIcon: MainIcon } = NODE_ICON_MAP[node?.type] ?? {
-		mainIcon: NODE_ICON_MAP.File.mainIcon,
-		optionalIcons: [],
+	const { mainIcon: MainIcon } = iconMap[node?.type] ?? {
+		mainIcon: PiCube,
 	};
 
 	return (
@@ -54,9 +35,10 @@ const NodeConfigItem = memo(({ node }: NodeConfigComponentProps) => {
 	);
 });
 
-const NodesWithConfigForm = Object.keys(NodeConfigFormMap);
 const NodeConfigPanel = memo(() => {
 	const selectedNodes = useAppSelector(selectSelectedNodes);
+	const { configMap } = useNodeRegistry();
+	const NodesWithConfigForm = Object.keys(configMap);
 
 	const isVisible = useMemo(() => {
 		return (
@@ -64,7 +46,7 @@ const NodeConfigPanel = memo(() => {
 			selectedNodes.length > 0 &&
 			selectedNodes.some((n) => NodesWithConfigForm.includes(n.type))
 		);
-	}, [selectedNodes]);
+	}, [selectedNodes, NodesWithConfigForm]);
 
 	return (
 		<Panel position="top-right" className="m-0! h-full pointer-events-none ">

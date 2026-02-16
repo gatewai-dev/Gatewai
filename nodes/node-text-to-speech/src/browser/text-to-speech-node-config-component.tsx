@@ -1,31 +1,3 @@
-import {
-	type TextToSpeechNodeConfig,
-	TextToSpeechNodeConfigSchema,
-	TTS_LANGUAGES,
-	TTS_NODE_MODELS,
-	TTS_VOICE_NAMES,
-} from "@gatewai/node-text-to-speech";
-import type { NodeEntityType } from "@gatewai/react-store";
-import {
-	Button,
-	Form,
-	FormControl,
-	FormDescription,
-	FormField,
-	FormItem,
-	FormLabel,
-	FormMessage,
-	Input,
-} from "@gatewai/ui-kit";
-import { zodResolver } from "@hookform/resolvers/zod";
-import { debounce, isEqual } from "lodash";
-import { Plus, Trash2 } from "lucide-react";
-import { memo, useEffect, useMemo } from "react";
-import { useFieldArray, useForm } from "react-hook-form";
-import { cn } from "@/lib/utils";
-import { useCanvasCtx } from "@/routes/canvas/details/ctx/canvas-ctx";
-import { SelectField } from "../../../../components/fields/select";
-
 const TextToSpeechNodeConfigComponent = memo(
 	({ node }: { node: NodeEntityType }) => {
 		const { onNodeConfigUpdate } = useCanvasCtx();

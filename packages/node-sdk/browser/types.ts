@@ -75,6 +75,8 @@ export interface FrontendNodePlugin {
 	 */
 	PageContentComponent?: MemoExoticComponent<ComponentType<any>>;
 
+	mainIconComponent?: MemoExoticComponent<ComponentType<any>>;
+
 	processor: BrowserProcessorConstructor;
 }
 

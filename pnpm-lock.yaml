@@ -185,7 +185,7 @@ importers:
         version: 3.10.0(react-hook-form@7.66.0(react@19.2.4))
       '@lobehub/icons':
         specifier: ^2.48.0
-        version: 2.48.0(@babel/core@7.28.0)(@types/mdast@4.0.4)(@types/react-dom@19.2.3(@types/react@19.1.11))(@types/react@19.1.11)(antd@5.29.2(date-fns@4.1.0)(luxon@3.7.2)(react-dom@19.2.3(react@19.2.4))(react@19.2.4))(framer-motion@12.23.26(react-dom@19.2.3(react@19.2.4))(react@19.2.4))(micromark-util-types@2.0.2)(micromark@4.0.2)(react-dom@19.2.3(react@19.2.4))(react@19.2.4)(vue@3.5.18(typescript@5.8.3))
+        version: 2.48.0(@babel/core@7.28.0)(@types/mdast@4.0.4)(@types/react-dom@19.2.3(@types/react@19.1.11))(@types/react@19.1.11)(antd@5.29.2(date-fns@4.1.0)(luxon@3.7.2)(react-dom@19.2.3(react@19.2.4))(react@19.2.4))(framer-motion@12.29.0(react-dom@19.2.3(react@19.2.4))(react@19.2.4))(micromark-util-types@2.0.2)(micromark@4.0.2)(react-dom@19.2.3(react@19.2.4))(react@19.2.4)(vue@3.5.18(typescript@5.5.4))
       '@neodrag/react':
         specifier: ^2.3.1
         version: 2.3.1
@@ -640,6 +640,15 @@ importers:
       '@gatewai/node-sdk':
         specifier: workspace:*
         version: link:../../packages/node-sdk
+      '@gatewai/react-canvas':
+        specifier: workspace:*
+        version: link:../../packages/react-canvas
+      '@gatewai/react-store':
+        specifier: workspace:*
+        version: link:../../packages/react-store
+      '@gatewai/ui-kit':
+        specifier: workspace:*
+        version: link:../../packages/ui-kit
       react:
         specifier: ^19.2.4
         version: 19.2.4
@@ -653,6 +662,9 @@ importers:
       '@gatewai/tsconfig':
         specifier: workspace:*
         version: link:../../packages/tsconfig
+      '@types/react':
+        specifier: ^19.1.11
+        version: 19.1.11
       tsdown:
         specifier: ^0.19.0
         version: 0.19.0(publint@0.3.17)(synckit@0.11.11)(typescript@5.8.3)
@@ -818,9 +830,18 @@ importers:
       '@google/genai':
         specifier: ^1.3.0
         version: 1.40.0(@modelcontextprotocol/sdk@1.25.2(hono@4.8.5)(zod@3.25.67))
+      '@hookform/resolvers':
+        specifier: ^3.10.0
+        version: 3.10.0(react-hook-form@7.71.1(react@19.2.4))
+      '@types/react':
+        specifier: ^19.1.11
+        version: 19.1.11
       react:
         specifier: ^19.2.4
         version: 19.2.4
+      react-hook-form:
+        specifier: ^7.66.0
+        version: 7.71.1(react@19.2.4)
       tsyringe:
         specifier: ^4.8.0
         version: 4.10.0
@@ -1088,6 +1109,9 @@ importers:
       '@google/genai':
         specifier: ^1.3.0
         version: 1.40.0(@modelcontextprotocol/sdk@1.25.2(hono@4.8.5)(zod@3.25.67))
+      '@types/react':
+        specifier: ^19.1.11
+        version: 19.1.11
       react:
         specifier: ^19.2.4
         version: 19.2.4
@@ -1306,6 +1330,9 @@ importers:
       '@google/genai':
         specifier: ^1.3.0
         version: 1.40.0(@modelcontextprotocol/sdk@1.25.2(hono@4.8.5)(zod@3.25.67))
+      lodash:
+        specifier: ^4.17.21
+        version: 4.17.21
       react:
         specifier: ^19.2.4
         version: 19.2.4
@@ -1319,6 +1346,9 @@ importers:
       '@gatewai/tsconfig':
         specifier: workspace:*
         version: link:../../packages/tsconfig
+      '@types/react':
+        specifier: ^19.1.11
+        version: 19.1.11
       tsdown:
         specifier: ^0.19.0
         version: 0.19.0(publint@0.3.17)(synckit@0.11.11)(typescript@5.8.3)
@@ -1727,6 +1757,9 @@ importers:
       '@gatewai/react-store':
         specifier: workspace:*
         version: link:../react-store
+      '@gatewai/rpc-client':
+        specifier: workspace:*
+        version: link:../rpc-client
       '@gatewai/ui-kit':
         specifier: workspace:*
         version: link:../ui-kit
@@ -1735,13 +1768,16 @@ importers:
         version: 3.10.0(react-hook-form@7.71.1(react@19.2.4))
       '@lobehub/icons':
         specifier: ^2.48.0
-        version: 2.48.0(@babel/core@7.28.0)(@types/mdast@4.0.4)(@types/react-dom@19.2.3(@types/react@19.1.11))(@types/react@19.1.11)(antd@5.29.2(date-fns@4.1.0)(luxon@3.7.2)(react-dom@19.2.3(react@19.2.4))(react@19.2.4))(framer-motion@12.23.26(react-dom@19.2.3(react@19.2.4))(react@19.2.4))(micromark-util-types@2.0.2)(micromark@4.0.2)(react-dom@19.2.3(react@19.2.4))(react@19.2.4)(vue@3.5.18(typescript@5.8.3))
+        version: 2.48.0(@babel/core@7.28.0)(@types/mdast@4.0.4)(@types/react-dom@19.2.3(@types/react@19.1.11))(@types/react@19.1.11)(antd@5.29.2(date-fns@4.1.0)(luxon@3.7.2)(react-dom@19.2.3(react@19.2.4))(react@19.2.4))(framer-motion@12.29.0(react-dom@19.2.3(react@19.2.4))(react@19.2.4))(micromark-util-types@2.0.2)(micromark@4.0.2)(react-dom@19.2.3(react@19.2.4))(react@19.2.4)(vue@3.5.18(typescript@5.5.4))
       '@xyflow/react':
         specifier: ^12.8.4
         version: 12.8.4(@types/react@19.1.11)(immer@11.1.3)(react-dom@19.2.3(react@19.2.4))(react@19.2.4)
       clsx:
         specifier: ^2.1.1
         version: 2.1.1
+      date-fns:
+        specifier: ^4.1.0
+        version: 4.1.0
       framer-motion:
         specifier: ^12.23.26
         version: 12.29.0(react-dom@19.2.3(react@19.2.4))(react@19.2.4)
@@ -11105,7 +11141,7 @@ snapshots:
       '@google-cloud/opentelemetry-cloud-monitoring-exporter': 0.21.0(@opentelemetry/api@1.9.0)(@opentelemetry/core@2.4.0(@opentelemetry/api@1.9.0))(@opentelemetry/resources@2.4.0(@opentelemetry/api@1.9.0))(@opentelemetry/sdk-metrics@2.4.0(@opentelemetry/api@1.9.0))(encoding@0.1.13)
       '@google-cloud/opentelemetry-cloud-trace-exporter': 3.0.0(@opentelemetry/api@1.9.0)(@opentelemetry/core@2.4.0(@opentelemetry/api@1.9.0))(@opentelemetry/resources@2.4.0(@opentelemetry/api@1.9.0))(@opentelemetry/sdk-trace-base@2.4.0(@opentelemetry/api@1.9.0))(encoding@0.1.13)
       '@google-cloud/storage': 7.18.0(encoding@0.1.13)
-      '@google/genai': 1.37.0(@modelcontextprotocol/sdk@1.25.2(hono@4.8.5)(zod@3.25.67))
+      '@google/genai': 1.37.0(@modelcontextprotocol/sdk@1.25.2(hono@4.8.5)(zod@3.25.76))
       '@modelcontextprotocol/sdk': 1.25.2(hono@4.8.5)(zod@3.25.76)
       '@opentelemetry/api': 1.9.0
       '@opentelemetry/api-logs': 0.205.0
@@ -11139,7 +11175,7 @@ snapshots:
       - supports-color
       - utf-8-validate
 
-  '@google/genai@1.37.0(@modelcontextprotocol/sdk@1.25.2(hono@4.8.5)(zod@3.25.67))':
+  '@google/genai@1.37.0(@modelcontextprotocol/sdk@1.25.2(hono@4.8.5)(zod@3.25.76))':
     dependencies:
       google-auth-library: 10.5.0
       protobufjs: 7.5.4
@@ -11372,10 +11408,10 @@ snapshots:
 
   '@lobehub/emojilib@1.0.0': {}
 
-  '@lobehub/fluent-emoji@2.0.0(@babel/core@7.28.0)(@types/mdast@4.0.4)(@types/react-dom@19.2.3(@types/react@19.1.11))(@types/react@19.1.11)(antd@5.29.2(date-fns@4.1.0)(luxon@3.7.2)(react-dom@19.2.3(react@19.2.4))(react@19.2.4))(framer-motion@12.23.26(react-dom@19.2.3(react@19.2.4))(react@19.2.4))(micromark-util-types@2.0.2)(micromark@4.0.2)(react-dom@19.2.3(react@19.2.4))(react@19.2.4)(vue@3.5.18(typescript@5.8.3))':
+  '@lobehub/fluent-emoji@2.0.0(@babel/core@7.28.0)(@types/mdast@4.0.4)(@types/react-dom@19.2.3(@types/react@19.1.11))(@types/react@19.1.11)(antd@5.29.2(date-fns@4.1.0)(luxon@3.7.2)(react-dom@19.2.3(react@19.2.4))(react@19.2.4))(framer-motion@12.29.0(react-dom@19.2.3(react@19.2.4))(react@19.2.4))(micromark-util-types@2.0.2)(micromark@4.0.2)(react-dom@19.2.3(react@19.2.4))(react@19.2.4)(vue@3.5.18(typescript@5.5.4))':
     dependencies:
       '@lobehub/emojilib': 1.0.0
-      '@lobehub/ui': 2.24.1(@babel/core@7.28.0)(@types/mdast@4.0.4)(@types/react-dom@19.2.3(@types/react@19.1.11))(@types/react@19.1.11)(antd@5.29.2(date-fns@4.1.0)(luxon@3.7.2)(react-dom@19.2.3(react@19.2.4))(react@19.2.4))(framer-motion@12.23.26(react-dom@19.2.3(react@19.2.4))(react@19.2.4))(micromark-util-types@2.0.2)(micromark@4.0.2)(react-dom@19.2.3(react@19.2.4))(react@19.2.4)(vue@3.5.18(typescript@5.8.3))
+      '@lobehub/ui': 2.24.1(@babel/core@7.28.0)(@types/mdast@4.0.4)(@types/react-dom@19.2.3(@types/react@19.1.11))(@types/react@19.1.11)(antd@5.29.2(date-fns@4.1.0)(luxon@3.7.2)(react-dom@19.2.3(react@19.2.4))(react@19.2.4))(framer-motion@12.29.0(react-dom@19.2.3(react@19.2.4))(react@19.2.4))(micromark-util-types@2.0.2)(micromark@4.0.2)(react-dom@19.2.3(react@19.2.4))(react@19.2.4)(vue@3.5.18(typescript@5.5.4))
       antd: 5.29.2(date-fns@4.1.0)(luxon@3.7.2)(react-dom@19.2.3(react@19.2.4))(react@19.2.4)
       antd-style: 3.7.1(@types/react@19.1.11)(antd@5.29.2(date-fns@4.1.0)(luxon@3.7.2)(react-dom@19.2.3(react@19.2.4))(react@19.2.4))(react-dom@19.2.3(react@19.2.4))(react@19.2.4)
       emoji-regex: 10.6.0
@@ -11420,9 +11456,9 @@ snapshots:
       - supports-color
       - vue
 
-  '@lobehub/icons@2.48.0(@babel/core@7.28.0)(@types/mdast@4.0.4)(@types/react-dom@19.2.3(@types/react@19.1.11))(@types/react@19.1.11)(antd@5.29.2(date-fns@4.1.0)(luxon@3.7.2)(react-dom@19.2.3(react@19.2.4))(react@19.2.4))(framer-motion@12.23.26(react-dom@19.2.3(react@19.2.4))(react@19.2.4))(micromark-util-types@2.0.2)(micromark@4.0.2)(react-dom@19.2.3(react@19.2.4))(react@19.2.4)(vue@3.5.18(typescript@5.8.3))':
+  '@lobehub/icons@2.48.0(@babel/core@7.28.0)(@types/mdast@4.0.4)(@types/react-dom@19.2.3(@types/react@19.1.11))(@types/react@19.1.11)(antd@5.29.2(date-fns@4.1.0)(luxon@3.7.2)(react-dom@19.2.3(react@19.2.4))(react@19.2.4))(framer-motion@12.29.0(react-dom@19.2.3(react@19.2.4))(react@19.2.4))(micromark-util-types@2.0.2)(micromark@4.0.2)(react-dom@19.2.3(react@19.2.4))(react@19.2.4)(vue@3.5.18(typescript@5.5.4))':
     dependencies:
-      '@lobehub/ui': 2.24.1(@babel/core@7.28.0)(@types/mdast@4.0.4)(@types/react-dom@19.2.3(@types/react@19.1.11))(@types/react@19.1.11)(antd@5.29.2(date-fns@4.1.0)(luxon@3.7.2)(react-dom@19.2.3(react@19.2.4))(react@19.2.4))(framer-motion@12.23.26(react-dom@19.2.3(react@19.2.4))(react@19.2.4))(micromark-util-types@2.0.2)(micromark@4.0.2)(react-dom@19.2.3(react@19.2.4))(react@19.2.4)(vue@3.5.18(typescript@5.8.3))
+      '@lobehub/ui': 2.24.1(@babel/core@7.28.0)(@types/mdast@4.0.4)(@types/react-dom@19.2.3(@types/react@19.1.11))(@types/react@19.1.11)(antd@5.29.2(date-fns@4.1.0)(luxon@3.7.2)(react-dom@19.2.3(react@19.2.4))(react@19.2.4))(framer-motion@12.29.0(react-dom@19.2.3(react@19.2.4))(react@19.2.4))(micromark-util-types@2.0.2)(micromark@4.0.2)(react-dom@19.2.3(react@19.2.4))(react@19.2.4)(vue@3.5.18(typescript@5.5.4))
       antd: 5.29.2(date-fns@4.1.0)(luxon@3.7.2)(react-dom@19.2.3(react@19.2.4))(react@19.2.4)
       antd-style: 3.7.1(@types/react@19.1.11)(antd@5.29.2(date-fns@4.1.0)(luxon@3.7.2)(react-dom@19.2.3(react@19.2.4))(react@19.2.4))(react-dom@19.2.3(react@19.2.4))(react@19.2.4)
       lucide-react: 0.469.0(react@19.2.4)
@@ -11462,7 +11498,7 @@ snapshots:
       - supports-color
       - vue
 
-  '@lobehub/ui@2.24.1(@babel/core@7.28.0)(@types/mdast@4.0.4)(@types/react-dom@19.2.3(@types/react@19.1.11))(@types/react@19.1.11)(antd@5.29.2(date-fns@4.1.0)(luxon@3.7.2)(react-dom@19.2.3(react@19.2.4))(react@19.2.4))(framer-motion@12.23.26(react-dom@19.2.3(react@19.2.4))(react@19.2.4))(micromark-util-types@2.0.2)(micromark@4.0.2)(react-dom@19.2.3(react@19.2.4))(react@19.2.4)(vue@3.5.18(typescript@5.8.3))':
+  '@lobehub/ui@2.24.1(@babel/core@7.28.0)(@types/mdast@4.0.4)(@types/react-dom@19.2.3(@types/react@19.1.11))(@types/react@19.1.11)(antd@5.29.2(date-fns@4.1.0)(luxon@3.7.2)(react-dom@19.2.3(react@19.2.4))(react@19.2.4))(framer-motion@12.29.0(react-dom@19.2.3(react@19.2.4))(react@19.2.4))(micromark-util-types@2.0.2)(micromark@4.0.2)(react-dom@19.2.3(react@19.2.4))(react@19.2.4)(vue@3.5.18(typescript@5.5.4))':
     dependencies:
       '@ant-design/cssinjs': 1.24.0(react-dom@19.2.3(react@19.2.4))(react@19.2.4)
       '@dnd-kit/core': 6.3.1(react-dom@19.2.3(react@19.2.4))(react@19.2.4)
@@ -11473,8 +11509,8 @@ snapshots:
       '@emoji-mart/react': 1.1.1(emoji-mart@5.6.0)(react@19.2.4)
       '@floating-ui/react': 0.27.16(react-dom@19.2.3(react@19.2.4))(react@19.2.4)
       '@giscus/react': 3.1.0(react-dom@19.2.3(react@19.2.4))(react@19.2.4)
-      '@lobehub/fluent-emoji': 2.0.0(@babel/core@7.28.0)(@types/mdast@4.0.4)(@types/react-dom@19.2.3(@types/react@19.1.11))(@types/react@19.1.11)(antd@5.29.2(date-fns@4.1.0)(luxon@3.7.2)(react-dom@19.2.3(react@19.2.4))(react@19.2.4))(framer-motion@12.23.26(react-dom@19.2.3(react@19.2.4))(react@19.2.4))(micromark-util-types@2.0.2)(micromark@4.0.2)(react-dom@19.2.3(react@19.2.4))(react@19.2.4)(vue@3.5.18(typescript@5.8.3))
-      '@lobehub/icons': 2.48.0(@babel/core@7.28.0)(@types/mdast@4.0.4)(@types/react-dom@19.2.3(@types/react@19.1.11))(@types/react@19.1.11)(antd@5.29.2(date-fns@4.1.0)(luxon@3.7.2)(react-dom@19.2.3(react@19.2.4))(react@19.2.4))(framer-motion@12.23.26(react-dom@19.2.3(react@19.2.4))(react@19.2.4))(micromark-util-types@2.0.2)(micromark@4.0.2)(react-dom@19.2.3(react@19.2.4))(react@19.2.4)(vue@3.5.18(typescript@5.8.3))
+      '@lobehub/fluent-emoji': 2.0.0(@babel/core@7.28.0)(@types/mdast@4.0.4)(@types/react-dom@19.2.3(@types/react@19.1.11))(@types/react@19.1.11)(antd@5.29.2(date-fns@4.1.0)(luxon@3.7.2)(react-dom@19.2.3(react@19.2.4))(react@19.2.4))(framer-motion@12.29.0(react-dom@19.2.3(react@19.2.4))(react@19.2.4))(micromark-util-types@2.0.2)(micromark@4.0.2)(react-dom@19.2.3(react@19.2.4))(react@19.2.4)(vue@3.5.18(typescript@5.5.4))
+      '@lobehub/icons': 2.48.0(@babel/core@7.28.0)(@types/mdast@4.0.4)(@types/react-dom@19.2.3(@types/react@19.1.11))(@types/react@19.1.11)(antd@5.29.2(date-fns@4.1.0)(luxon@3.7.2)(react-dom@19.2.3(react@19.2.4))(react@19.2.4))(framer-motion@12.29.0(react-dom@19.2.3(react@19.2.4))(react@19.2.4))(micromark-util-types@2.0.2)(micromark@4.0.2)(react-dom@19.2.3(react@19.2.4))(react@19.2.4)(vue@3.5.18(typescript@5.5.4))
       '@mdx-js/mdx': 3.1.1
       '@mdx-js/react': 3.1.1(@types/react@19.1.11)(react@19.2.4)
       '@radix-ui/react-slot': 1.2.4(@types/react@19.1.11)(react@19.2.4)
@@ -11489,7 +11525,7 @@ snapshots:
       dayjs: 1.11.19
       emoji-mart: 5.6.0
       fast-deep-equal: 3.1.3
-      framer-motion: 12.23.26(react-dom@19.2.3(react@19.2.4))(react@19.2.4)
+      framer-motion: 12.29.0(react-dom@19.2.3(react@19.2.4))(react@19.2.4)
       immer: 10.2.0
       katex: 0.16.27
       leva: 0.10.1(@types/react-dom@19.2.3(@types/react@19.1.11))(@types/react@19.1.11)(react-dom@19.2.3(react@19.2.4))(react@19.2.4)
@@ -11525,7 +11561,7 @@ snapshots:
       remark-github: 12.0.0
       remark-math: 6.0.0
       shiki: 3.20.0
-      shiki-stream: 0.1.3(react@19.2.4)(vue@3.5.18(typescript@5.8.3))
+      shiki-stream: 0.1.3(react@19.2.4)(vue@3.5.18(typescript@5.5.4))
       swr: 2.3.8(react@19.2.4)
       ts-md5: 2.0.1
       unified: 11.0.5
@@ -14166,6 +14202,13 @@ snapshots:
       '@vue/runtime-core': 3.5.18
       '@vue/shared': 3.5.18
       csstype: 3.2.3
+    optional: true
+
+  '@vue/server-renderer@3.5.18(vue@3.5.18(typescript@5.5.4))':
+    dependencies:
+      '@vue/compiler-ssr': 3.5.18
+      '@vue/shared': 3.5.18
+      vue: 3.5.18(typescript@5.5.4)
     optional: true
 
   '@vue/server-renderer@3.5.18(vue@3.5.18(typescript@5.8.3))':
@@ -19285,6 +19328,13 @@ snapshots:
 
   shell-quote@1.8.3: {}
 
+  shiki-stream@0.1.3(react@19.2.4)(vue@3.5.18(typescript@5.5.4)):
+    dependencies:
+      '@shikijs/core': 3.20.0
+    optionalDependencies:
+      react: 19.2.4
+      vue: 3.5.18(typescript@5.5.4)
+
   shiki-stream@0.1.3(react@19.2.4)(vue@3.5.18(typescript@5.8.3)):
     dependencies:
       '@shikijs/core': 3.20.0
@@ -20145,6 +20195,17 @@ snapshots:
       vscode-languageserver-protocol: 3.17.5
 
   vscode-uri@3.0.8: {}
+
+  vue@3.5.18(typescript@5.5.4):
+    dependencies:
+      '@vue/compiler-dom': 3.5.18
+      '@vue/compiler-sfc': 3.5.18
+      '@vue/runtime-dom': 3.5.18
+      '@vue/server-renderer': 3.5.18(vue@3.5.18(typescript@5.5.4))
+      '@vue/shared': 3.5.18
+    optionalDependencies:
+      typescript: 5.5.4
+    optional: true
 
   vue@3.5.18(typescript@5.8.3):
     dependencies:

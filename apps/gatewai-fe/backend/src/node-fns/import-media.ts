@@ -1,12 +1,9 @@
 import { ENV_CONFIG, generateId } from "@gatewai/core";
 import { container, TOKENS } from "@gatewai/core/di";
-import type {
-	FileResult,
-	MediaService,
-	StorageService,
-} from "@gatewai/core/types";
+import type { StorageService } from "@gatewai/core/storage";
+import type { FileResult, MediaService } from "@gatewai/core/types";
 import { type DataType, prisma } from "@gatewai/db";
-import { getMediaDuration } from "@gatewai/media";
+import { getMediaDuration } from "@gatewai/media/server";
 import { fileTypeFromBuffer } from "file-type";
 
 interface UploadOptions {
@@ -75,7 +72,7 @@ export async function uploadToImportNode({
 
 	// 4. Upload to Storage
 	const bucket = ENV_CONFIG.GCS_ASSETS_BUCKET ?? "default-bucket";
-	const key = `assets/${generateId()}-${filename}`;
+	const key = `assets / ${generateId()} -${filename} `;
 
 	const storage = container.resolve<StorageService>(TOKENS.STORAGE);
 	await storage.uploadToStorage(buffer, key, contentType, bucket);
@@ -122,7 +119,7 @@ export async function uploadToImportNode({
 	} else if (contentType.startsWith("audio/")) {
 		dataType = "Audio";
 	} else {
-		throw new Error(`Invalid content type for Import Node: ${contentType}`);
+		throw new Error(`Invalid content type for Import Node: ${contentType} `);
 	}
 
 	const newOutput = {

@@ -1,14 +1,4 @@
 import {
-	Background,
-	BackgroundVariant,
-	ConnectionLineType,
-	ConnectionMode,
-	type Edge,
-	type Node,
-	ReactFlow,
-	SelectionMode,
-} from "@gatewai/react-canvas";
-import {
 	selectRFEdges,
 	selectRFNodes,
 	setSelectedEdgeIds,
@@ -17,10 +7,22 @@ import {
 	useAppSelector,
 } from "@gatewai/react-store";
 import { LoadingSpinner } from "@gatewai/ui-kit";
+import {
+	Background,
+	BackgroundVariant,
+	ConnectionLineType,
+	ConnectionMode,
+	type Edge,
+	type Node,
+	ReactFlow,
+	SelectionMode,
+} from "@xyflow/react";
 import type { DragEventHandler, MouseEventHandler } from "react";
 import { useEffect } from "react";
-import { Helmet } from "react-helmet-async";
-import { nodeTypes } from "../nodes";
+import { useCanvasCtx } from "@/canvas-ctx";
+import { useCanvasMode } from "@/canvas-mode-ctx";
+import { CustomConnectionLine, CustomEdge } from "@/nodes/base";
+import { useNodeRegistry } from "../node-registry-ctx";
 import { ReactFlowPanels } from "./panels";
 
 const edgeTypes = {
@@ -41,6 +43,7 @@ function ReactflowContainer({ children }: ReactFlowProps) {
 		canvas,
 		isLoading,
 	} = useCanvasCtx();
+	const { nodeTypes } = useNodeRegistry();
 	const { effectivePan, setIsMiddleMousePressed } = useCanvasMode();
 	const dispatch = useAppDispatch();
 
@@ -98,9 +101,6 @@ function ReactflowContainer({ children }: ReactFlowProps) {
 			onMouseDown={onMouseDown}
 			className="w-full h-screen bg-black relative"
 		>
-			<Helmet>
-				<title>{canvas?.name ?? "Canvas"} - Gatewai</title>
-			</Helmet>
 			<ReactFlow
 				onInit={(flowInstance) => {
 					rfInstance.current = flowInstance;

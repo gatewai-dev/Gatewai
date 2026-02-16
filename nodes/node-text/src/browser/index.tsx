@@ -6,6 +6,7 @@ import {
 import { ScrollArea, Textarea } from "@gatewai/ui-kit";
 import type React from "react";
 import { memo, useCallback } from "react";
+import { PiTextT } from "react-icons/pi";
 import { metadata } from "../metadata.js";
 
 const TextNodeComponent = memo((props: any) => {
@@ -49,4 +50,5 @@ TextNodeComponent.displayName = "TextNodeComponent";
 
 export default defineClient(metadata, {
 	Component: TextNodeComponent,
+	mainIconComponent: memo(PiTextT),
 });

@@ -1,4 +1,4 @@
-import { useDrawToCanvas } from "@gatewai/media";
+import { useDrawToCanvas } from "@gatewai/media/browser";
 import { forwardRef, memo, useImperativeHandle, useRef } from "react";
 
 interface CanvasRendererProps {

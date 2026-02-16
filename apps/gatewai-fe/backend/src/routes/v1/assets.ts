@@ -1,15 +1,18 @@
 import assert from "node:assert";
 import { ENV_CONFIG, generateId, logger } from "@gatewai/core";
 import { container, TOKENS } from "@gatewai/core/di";
+import type { StorageService } from "@gatewai/core/storage";
 import type {
 	MediaService,
 	NodeResult,
 	Output,
 	OutputItem,
-	StorageService,
 } from "@gatewai/core/types";
 import { type FileAssetWhereInput, prisma } from "@gatewai/db";
-import { generateImageThumbnail, generateVideoThumbnail } from "@gatewai/media"; // Exported as utils
+import {
+	generateImageThumbnail,
+	generateVideoThumbnail,
+} from "@gatewai/media/server"; // Exported as utils
 import { zValidator } from "@hono/zod-validator";
 import { fileTypeFromBuffer } from "file-type";
 import { Hono } from "hono";
@@ -502,7 +505,7 @@ const assetsRouter = new Hono<{ Variables: AuthorizedHonoTypes }>({
 						const currentSelectedIndex = result.selectedOutputIndex ?? 0;
 
 						// First pass: filter items within each output
-						result.outputs.forEach((output: Output, outputIndex: number) => {
+						result.outputs.forEach((output: Output) => {
 							if (output.items && Array.isArray(output.items)) {
 								// Filter out items containing the asset
 								output.items = output.items.filter((item: OutputItem<any>) => {

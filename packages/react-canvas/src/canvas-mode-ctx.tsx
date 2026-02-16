@@ -43,9 +43,6 @@ export const CanvasModeProvider = ({ children }: { children: ReactNode }) => {
 		["v", "V"],
 		(e) => {
 			if (e.repeat) return;
-			// e.preventDefault(); // Don't prevent default if user is typing in an input?
-			// Usually hotkeys hook handles ignoring inputs by default.
-			// But let's keep preventDefault if valid context.
 			setIsVPressed(true);
 			lastVPressTime.current = Date.now();
 		},

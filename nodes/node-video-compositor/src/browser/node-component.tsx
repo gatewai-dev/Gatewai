@@ -17,6 +17,7 @@ import { Button, cn } from "@gatewai/ui-kit";
 import { Player } from "@remotion/player";
 import { Download, Loader2, VideoIcon } from "lucide-react";
 import { memo, useEffect, useMemo, useState } from "react";
+import { useNavigate } from "react-router";
 import type { VideoCompositorNodeConfig } from "@/shared/config.js";
 import { remotionService } from "./muxer-service.js";
 import {
@@ -31,7 +32,7 @@ const VideoCompositorNodeComponent = memo((props: NodeProps) => {
 	const [isDownloading, setIsDownloading] = useState(false);
 	const { inputs } = useNodeResult(props.id);
 	const nav = useNavigate();
-	const downloadFileData = useDownloadFileData();
+	// const downloadFileData = useDownloadFileData();
 	const previewState = useMemo(() => {
 		const config = (node?.config as unknown as VideoCompositorNodeConfig) ?? {};
 		const layerUpdates = config.layerUpdates || {};
@@ -175,14 +176,14 @@ const VideoCompositorNodeComponent = memo((props: NodeProps) => {
 		try {
 			const config = node.config as unknown as VideoCompositorNodeConfig;
 			const result = await remotionService.processVideo(config, inputs);
-			await downloadFileData(
-				{
-					processData: {
-						dataUrl: result.dataUrl,
-					},
-				} as FileData,
-				"Video",
-			);
+			// await downloadFileData(
+			// 	{
+			// 		processData: {
+			// 			dataUrl: result.dataUrl,
+			// 		},
+			// 	} as FileData,
+			// 	"Video",
+			// );
 		} catch (err) {
 			const errorMessage =
 				err instanceof Error ? err.message : "An unknown error occurred";

@@ -1,19 +1,18 @@
+import { useNodeUI } from "@gatewai/node-sdk/browser";
+import type { NodeEntityType } from "@gatewai/react-store";
+import { SelectField } from "@gatewai/ui-kit";
+import { zodResolver } from "@hookform/resolvers/zod";
+import { memo, useCallback, useEffect } from "react";
+import { Form, useForm } from "react-hook-form";
 import {
 	type SpeechToTextNodeConfig,
 	SpeechToTextNodeConfigSchema,
 	STT_NODE_MODELS,
-} from "@gatewai/node-speech-to-text";
-import type { NodeEntityType } from "@gatewai/react-store";
-import { Form } from "@gatewai/ui-kit";
-import { zodResolver } from "@hookform/resolvers/zod";
-import { memo, useCallback, useEffect } from "react";
-import { useForm } from "react-hook-form";
-import { useCanvasCtx } from "@/routes/canvas/details/ctx/canvas-ctx";
-import { SelectField } from "../../../../components/fields/select";
+} from "@/shared/config.js";
 
 const SpeechToTextNodeConfigComponent = memo(
 	({ node }: { node: NodeEntityType }) => {
-		const { onNodeConfigUpdate } = useCanvasCtx();
+		const { onNodeConfigUpdate } = useNodeUI();
 		const updateConfig = useCallback(
 			(cfg: SpeechToTextNodeConfig) => {
 				onNodeConfigUpdate({ id: node.id, newConfig: cfg });
