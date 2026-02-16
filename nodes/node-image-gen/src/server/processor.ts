@@ -26,7 +26,7 @@ export class ImageGenProcessor implements NodeProcessor {
         @inject(TOKENS.GRAPH_RESOLVERS) private graph: GraphResolvers,
         @inject(TOKENS.STORAGE) private storage: StorageService,
         @inject(TOKENS.MEDIA) private media: MediaService,
-        @inject(TOKENS.AI_PROVIDER) private aiProvider: AIProvider<GoogleGenAI>,
+        @inject(TOKENS.AI_PROVIDER) private aiProvider: AIProvider,
     ) { }
 
     async process({
@@ -34,7 +34,7 @@ export class ImageGenProcessor implements NodeProcessor {
         data,
     }: BackendNodeProcessorCtx): Promise<BackendNodeProcessorResult> {
         try {
-            const genAI = this.aiProvider.getClient(this.env.GEMINI_API_KEY);
+            const genAI = this.aiProvider.getGemini<GoogleGenAI>();
 
             const userPrompt = this.graph.getInputValue(data, node.id, true, {
                 dataType: DataType.Text,

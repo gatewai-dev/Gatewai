@@ -24,7 +24,7 @@ class SpeechToTextProcessor implements NodeProcessor {
         @inject(TOKENS.STORAGE) private storage: StorageService,
         @inject(TOKENS.GRAPH_RESOLVERS) private graph: GraphResolvers,
         @inject(TOKENS.ENV) private env: EnvConfig,
-        @inject(TOKENS.AI_PROVIDER) private aiProvider: AIProvider<GoogleGenAI>,
+        @inject(TOKENS.AI_PROVIDER) private aiProvider: AIProvider,
     ) { }
 
     async process({
@@ -69,7 +69,7 @@ class SpeechToTextProcessor implements NodeProcessor {
                     error: "Input audio data could not be resolved",
                 };
             }
-            const genAI = this.aiProvider.getClient(this.env.GEMINI_API_KEY);
+            const genAI = this.aiProvider.getGemini<GoogleGenAI>();
 
             const audioFile = await genAI.files.upload({
                 file: fileBlob,

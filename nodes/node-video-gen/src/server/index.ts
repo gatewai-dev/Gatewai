@@ -34,14 +34,14 @@ class VideoGenProcessor implements NodeProcessor {
         @inject(TOKENS.GRAPH_RESOLVERS) private graph: GraphResolvers,
         @inject(TOKENS.STORAGE) private storage: StorageService,
         @inject(TOKENS.ENV) private env: EnvConfig,
-        @inject(TOKENS.AI_PROVIDER) private aiProvider: AIProvider<GoogleGenAI>,
+        @inject(TOKENS.AI_PROVIDER) private aiProvider: AIProvider,
     ) { }
 
     async process({
         node,
         data,
     }: BackendNodeProcessorCtx): Promise<BackendNodeProcessorResult> {
-        const genAI = this.aiProvider.getClient(this.env.GEMINI_API_KEY);
+        const genAI = this.aiProvider.getGemini<GoogleGenAI>();
         try {
             const userPrompt = this.graph.getInputValue(data, node.id, true, {
                 dataType: DataType.Text,

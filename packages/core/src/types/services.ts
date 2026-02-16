@@ -105,6 +105,6 @@ export interface MediaService {
  * Interface for AI provider services.
  * Used by AI nodes (LLM, ImageGen, VideoGen, TTS, STT) via DI.
  */
-export interface AIProvider<T = any> {
-	getClient: (apiKey?: string) => T;
+export interface AIProvider {
+	getGemini<T>(): T;
 }
