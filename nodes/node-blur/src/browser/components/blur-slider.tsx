@@ -1,10 +1,12 @@
+import type { BlurNodeConfig } from "@/metadata.js";
+import type { Node } from "@gatewai/db";
 import { useNodeUI } from "@gatewai/node-sdk/browser";
 import { Label, Slider } from "@gatewai/ui-kit";
 import { memo, useCallback, useEffect, useState } from "react";
 
-export const BlurValueSlider = memo(({ node }: { node: any }) => {
+export const BlurValueSlider = memo(({ node }: { node: Node }) => {
 	const { onNodeConfigUpdate } = useNodeUI();
-	const config = node.config || {};
+	const config = node.config as BlurNodeConfig || {};
 	const [localSize, setLocalSize] = useState(config.size ?? 0);
 
 	useEffect(() => {
@@ -22,13 +24,13 @@ export const BlurValueSlider = memo(({ node }: { node: any }) => {
 		[node.id, onNodeConfigUpdate],
 	);
 
-	const onValueCommit = useCallback(() => {
+	const onValueCommit = useCallback((value: number[]) => {
 		onNodeConfigUpdate({
 			id: node.id,
-			newConfig: { size: localSize },
+			newConfig: { size: value[0] },
 			appendHistory: true,
 		});
-	}, [localSize, node.id, onNodeConfigUpdate]);
+	}, [node.id, onNodeConfigUpdate]);
 
 	return (
 		<div className="flex flex-col gap-1 flex-1">

@@ -1,7 +1,7 @@
-import type { NodeProcessorParams, NodeResult } from "@gatewai/core/types";
+import type { BlurResult, NodeProcessorParams, NodeResult } from "@gatewai/core/types";
 import type { IBrowserProcessor } from "@gatewai/node-sdk/browser";
 import { BlurNodeConfigSchema } from "@/shared/config.js";
-import { applyBlur } from "@/shared/pixi-blur-run.js";
+import { applyBlur, type PixiBlurInput } from "@/shared/pixi-blur-run.js";
 
 export class BlurBrowserProcessor implements IBrowserProcessor {
 	async process({
@@ -12,11 +12,14 @@ export class BlurBrowserProcessor implements IBrowserProcessor {
 	}: NodeProcessorParams): Promise<NodeResult | null> {
 		const imageUrl = context.findInputData(inputs, "Image");
 		if (!imageUrl) throw new Error("Missing Input Image");
-
+		console.log({imageUrl})
 		const config = BlurNodeConfigSchema.parse(node.config);
-		const result = await context.pixi.execute(
-			imageUrl,
-			config,
+		const result = await context.pixi.execute<PixiBlurInput, BlurResult>(
+			node.id,
+			{
+				imageUrl,
+				options: config,
+			},
 			applyBlur,
 			signal,
 		);

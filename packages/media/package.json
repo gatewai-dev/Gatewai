@@ -25,7 +25,8 @@
 			"development": "./server/index.ts",
 			"import": "./dist/server.mjs",
 			"default": "./dist/server.mjs"
-		}
+		},
+		"./canvas-worker": "./browser/draw-image-canvas/canvas.worker.ts"
 	},
 	"files": [
 		"dist/**"

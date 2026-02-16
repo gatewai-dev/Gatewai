@@ -1,10 +1,12 @@
+import { useViewport } from "@xyflow/react";
 import { useEffect, useRef, useState } from "react";
+import CanvasWorker from "@gatewai/media/canvas-worker?worker";
 
 function useDrawToCanvas(
 	canvasRef: React.RefObject<HTMLCanvasElement | null>,
-	zoom: number,
 	imageUrl?: string | null,
 ) {
+	const { zoom } = useViewport();
 	const workerRef = useRef<Worker | null>(null);
 	const [renderHeight, setRenderHeight] = useState<number | undefined>(
 		undefined,
@@ -15,17 +17,19 @@ function useDrawToCanvas(
 
 	// Setup Worker and ResizeObserver
 	useEffect(() => {
-		if (!workerRef.current) {
-			workerRef.current = new Worker(
-				new URL("./canvas-worker.mjs", import.meta.url),
-				{ type: "module" },
-			);
-			workerRef.current.onmessage = (e) => {
-				if (e.data.type === "CANVAS_INITIALIZED") {
-					setRenderHeight(e.data.payload.renderHeight);
-				}
-			};
+		let worker = workerRef.current;
+		if (!worker) {
+			worker = new CanvasWorker();
+			workerRef.current = worker;
 		}
+
+		const activeWorker = worker!;
+
+		activeWorker.onmessage = (e) => {
+			if (e.data.type === "CANVAS_INITIALIZED") {
+				setRenderHeight(e.data.payload.renderHeight);
+			}
+		};
 
 		const canvas = canvasRef.current;
 		if (!canvas) return;
@@ -33,7 +37,7 @@ function useDrawToCanvas(
 		// Initialize Offscreen
 		if (!canvas.getAttribute("data-offscreen-init")) {
 			const offscreen = canvas.transferControlToOffscreen();
-			workerRef.current.postMessage(
+			activeWorker.postMessage(
 				{ type: "INIT_CANVAS", payload: { canvas: offscreen } },
 				[offscreen],
 			);
@@ -93,4 +97,22 @@ function useDrawToCanvas(
 	return { renderHeight };
 }
 
-export { useDrawToCanvas };
+function CanvasRenderer({ imageUrl }: { imageUrl?: string | null }) {
+	const canvasRef = useRef<HTMLCanvasElement>(null);
+	const { renderHeight } = useDrawToCanvas(canvasRef, imageUrl);
+
+	return (
+		<div className="flex w-full h-full items-center justify-center overflow-hidden">
+			<canvas
+				ref={canvasRef}
+				style={{
+					width: "100%",
+					height: renderHeight ? `${renderHeight}px` : "100%",
+					display: "block",
+				}}
+			/>
+		</div>
+	);
+}
+
+export { useDrawToCanvas, CanvasRenderer };
