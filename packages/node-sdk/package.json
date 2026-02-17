@@ -48,12 +48,13 @@
 		"@gatewai/core": "workspace:*",
 		"@gatewai/db": "workspace:*",
 		"@gatewai/media": "workspace:*",
-		"@gatewai/react-store": "workspace:*",
-		"@gatewai/ui-kit": "workspace:*",
 		"zod": "3.25.67"
 	},
 	"dependencies": {
 		"@hookform/resolvers": "^3.10.0",
+		"@gatewai/react-canvas": "workspace:*",
+		"@gatewai/react-store": "workspace:*",
+		"@gatewai/ui-kit": "workspace:*",
 		"clsx": "^2.1.1",
 		"lodash": "^4.17.21",
 		"react-fast-compare": "^3.2.2",
