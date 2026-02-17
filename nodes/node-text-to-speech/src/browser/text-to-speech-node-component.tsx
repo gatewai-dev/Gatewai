@@ -1,12 +1,10 @@
 import {
-	OutputSelector,
-	RunNodeButton,
-	useNodeResult,
-} from "@gatewai/node-sdk/browser";
-import {
 	AudioRenderer,
 	BaseNode,
+	OutputSelector,
+	RunNodeButton,
 	useMediaInputSrc,
+	useNodeResult,
 } from "@gatewai/react-canvas";
 import { makeSelectNodeById, useAppSelector } from "@gatewai/react-store";
 import { memo } from "react";

@@ -1,17 +1,16 @@
 import {
 	AddCustomHandleButton,
+	BaseNode,
+	CanvasRenderer,
 	MediaDimensions,
 	OutputSelector,
 	RunNodeButton,
 	useNodePreview,
-	useNodeUI,
-} from "@gatewai/node-sdk/browser";
-import { CanvasRenderer } from "@gatewai/react-canvas";
+} from "@gatewai/react-canvas";
 import { memo } from "react";
 
 const ImageGenNodeComponent = memo(
 	(props: { selected: boolean; id: string; dragging: boolean }) => {
-		const { BaseNode } = useNodeUI();
 		const { imageUrl, node, hasMoreThanOneOutput } = useNodePreview(props.id);
 
 		return (

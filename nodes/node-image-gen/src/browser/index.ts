@@ -1,4 +1,7 @@
-import { defineClient } from "@gatewai/node-sdk/browser";
+import {
+	BrowserPassthroughProcessor,
+	defineClient,
+} from "@gatewai/node-sdk/browser";
 import { memo } from "react";
 import { PiMagicWand } from "react-icons/pi";
 import metadata from "../metadata.js";
@@ -9,4 +12,5 @@ export default defineClient(metadata, {
 	Component: ImageGenNodeComponent,
 	mainIconComponent: memo(PiMagicWand),
 	ConfigComponent: ImageGenNodeConfigComponent,
+	processor: BrowserPassthroughProcessor,
 });

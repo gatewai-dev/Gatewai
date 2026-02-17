@@ -1,4 +1,4 @@
-import { useNodeUI } from "@gatewai/node-sdk/browser";
+import { useCanvasCtx } from "@gatewai/react-canvas";
 import type { NodeEntityType } from "@gatewai/react-store";
 import {
 	Form,
@@ -21,7 +21,7 @@ import { LLMNodeConfigSchema } from "@/metadata.js";
 import type { LLMNodeConfig } from "@/shared/config.js";
 
 const LLMNodeConfigComponent = memo(({ node }: { node: NodeEntityType }) => {
-	const { onNodeConfigUpdate } = useNodeUI();
+	const { onNodeConfigUpdate } = useCanvasCtx();
 	const nodeConfig = node.config as LLMNodeConfig;
 
 	const form = useForm<LLMNodeConfig>({

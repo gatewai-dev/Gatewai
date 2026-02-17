@@ -7,6 +7,7 @@ import { makeSelectNodeById, useAppSelector } from "@gatewai/react-store";
 import { useCallback } from "react";
 import { Route, Routes, useNavigate, useParams } from "react-router";
 import { CanvasDetailsRoot } from ".";
+import { CanvasLeftPanel } from "./canvas-left-panel";
 
 function NodePageView() {
 	const { nodeId, canvasId } = useParams();
@@ -33,7 +34,10 @@ function CanvasDetailsRouter() {
 	return (
 		<Routes>
 			<Route path="" element={<CanvasDetailsRoot />}>
-				<Route path="/" element={<ReactflowContainer />} />
+				<Route
+					path="/"
+					element={<ReactflowContainer leftPanel={<CanvasLeftPanel />} />}
+				/>
 				<Route path="/view/:nodeId" element={<NodePageView />} />
 			</Route>
 		</Routes>

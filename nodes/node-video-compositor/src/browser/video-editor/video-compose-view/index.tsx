@@ -1,5 +1,6 @@
 import type { OutputItem } from "@gatewai/core/types";
-import { useNodeResult, useNodeUI } from "@gatewai/node-sdk/browser";
+import { useNodeResult } from "@gatewai/node-sdk/browser";
+import { useCanvasCtx } from "@gatewai/react-canvas";
 import type { HandleEntityType } from "@gatewai/react-store";
 import { makeSelectNodeById, useAppSelector } from "@gatewai/react-store";
 import { memo, useMemo } from "react";
@@ -22,7 +23,7 @@ const VideoCompositorView = memo(
 	}) => {
 		const node = useAppSelector(makeSelectNodeById(nodeId));
 		const { inputs } = useNodeResult(nodeId);
-		const { onNodeConfigUpdate } = useNodeUI();
+		const { onNodeConfigUpdate } = useCanvasCtx();
 
 		const initialLayers = useMemo(() => {
 			const items = new Map<HandleEntityType["id"], InputOutputItems>();

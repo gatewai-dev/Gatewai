@@ -1,4 +1,3 @@
-import { useNodeUI } from "@gatewai/node-sdk/browser";
 import {
 	AspectRatioSwitch,
 	ResizeHeightInput,
@@ -57,7 +56,7 @@ function ResetButton({
 	node: NodeEntityType;
 	disabled?: boolean;
 }) {
-	const { onNodeConfigUpdate } = useNodeUI();
+	const { onNodeConfigUpdate } = useCanvasCtx();
 	const config = node.config as ResizeNodeConfig;
 	const hasOriginals =
 		config.originalWidth != null && config.originalHeight != null;

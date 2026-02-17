@@ -1,12 +1,12 @@
 import type { ModulateNodeConfig } from "@gatewai/node-modulate";
-import { useNodeUI } from "@gatewai/node-sdk/browser";
+import { useCanvasCtx } from "@gatewai/react-canvas";
 import type { NodeEntityType } from "@gatewai/react-store";
 import { Label, Slider } from "@gatewai/ui-kit";
 import { memo } from "react";
 import { useDebouncedCallback } from "use-debounce";
 
 const ModulateConfigComponent = memo(({ node }: { node: NodeEntityType }) => {
-	const { onNodeConfigUpdate } = useNodeUI();
+	const { onNodeConfigUpdate } = useCanvasCtx();
 
 	const updateConfig = useDebouncedCallback(
 		(cfg: Partial<ModulateNodeConfig>) => {

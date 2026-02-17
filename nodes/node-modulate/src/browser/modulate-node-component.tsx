@@ -1,11 +1,11 @@
-import { useNodePreview, useNodeUI } from "@gatewai/node-sdk/browser";
+import { useNodePreview } from "@gatewai/node-sdk/browser";
+import { BaseNode, CanvasRenderer } from "@gatewai/react-canvas";
 import { cn } from "@gatewai/ui-kit";
 import { memo } from "react";
 import { ModulateConfigComponent } from "./modulate-config-component.js";
 
 const ModulateNodeComponent = memo(
 	(props: { selected: boolean; id: string; dragging: boolean }) => {
-		const { BaseNode, CanvasRenderer } = useNodeUI();
 		const { imageUrl, node } = useNodePreview(props.id);
 
 		return (

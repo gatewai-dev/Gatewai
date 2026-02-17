@@ -1,5 +1,5 @@
 import { isEqual } from "@gatewai/core";
-import { useNodeUI } from "@gatewai/node-sdk/browser";
+import { useCanvasCtx } from "@gatewai/react-canvas";
 import {
 	makeSelectHandlesByNodeId,
 	type NodeEntityType,
@@ -16,6 +16,7 @@ import {
 import { zodResolver } from "@hookform/resolvers/zod";
 import { memo, useEffect, useMemo } from "react";
 import { Form, useForm } from "react-hook-form";
+import { useDebouncedCallback } from "use-debounce";
 import { VideoGenNodeConfigSchema } from "@/metadata.js";
 import {
 	VIDEOGEN_ASPECT_RATIOS,
@@ -27,7 +28,7 @@ import {
 
 const VideoGenNodeConfigComponent = memo(
 	({ node }: { node: NodeEntityType }) => {
-		const { onNodeConfigUpdate } = useNodeUI();
+		const { onNodeConfigUpdate } = useCanvasCtx();
 
 		const handles = useAppSelector(makeSelectHandlesByNodeId(node.id));
 		const hasReferenceImageHandle = useMemo(() => {
@@ -36,12 +37,10 @@ const VideoGenNodeConfigComponent = memo(
 			);
 		}, [handles]);
 
-		const updateConfig = useMemo(
-			() =>
-				debounce((cfg: VideoGenNodeConfig) => {
-					onNodeConfigUpdate({ id: node.id, newConfig: cfg });
-				}, 500),
-			[node.id, onNodeConfigUpdate],
+		const updateConfig = useDebouncedCallback(
+			(cfg: VideoGenNodeConfig) =>
+				onNodeConfigUpdate({ id: node.id, newConfig: cfg }),
+			500,
 		);
 		const nodeConfig = node.config as VideoGenNodeConfig;
 		const form = useForm<VideoGenNodeConfig>({

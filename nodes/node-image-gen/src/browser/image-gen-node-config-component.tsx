@@ -1,5 +1,5 @@
 import { isEqual } from "@gatewai/core";
-import { useNodeUI } from "@gatewai/node-sdk/browser";
+import { useCanvasCtx } from "@gatewai/react-canvas";
 import type { NodeEntityType } from "@gatewai/react-store";
 import { Form, SelectField } from "@gatewai/ui-kit";
 import { zodResolver } from "@hookform/resolvers/zod";
@@ -16,7 +16,7 @@ import {
 
 const ImageGenNodeConfigComponent = memo(
 	({ node }: { node: NodeEntityType }) => {
-		const { onNodeConfigUpdate } = useNodeUI();
+		const { onNodeConfigUpdate } = useCanvasCtx();
 		const updateConfig = useMemo(
 			() =>
 				debounce((cfg: ImageGenNodeConfig) => {

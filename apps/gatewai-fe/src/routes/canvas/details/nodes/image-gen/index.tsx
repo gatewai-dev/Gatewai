@@ -1,12 +1,10 @@
 import {
 	AddCustomHandleButton,
+	BaseNode,
+	CanvasRenderer,
 	MediaDimensions,
 	OutputSelector,
 	RunNodeButton,
-} from "@gatewai/node-sdk/browser";
-import {
-	BaseNode,
-	CanvasRenderer,
 	useNodePreview,
 } from "@gatewai/react-canvas";
 import { memo } from "react";

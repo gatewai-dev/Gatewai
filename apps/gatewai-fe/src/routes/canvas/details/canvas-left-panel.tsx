@@ -1,5 +1,4 @@
 import {
-	CanvasName,
 	NodeLibrary,
 	NodePaletteProvider,
 	SidePanel,
@@ -14,6 +13,7 @@ import {
 	TooltipTrigger,
 } from "@gatewai/ui-kit";
 import { PanelLeftClose, PanelLeftOpen } from "lucide-react";
+import { CanvasName } from "./canvas-name";
 import { UserMenu } from "./user-menu";
 
 export function CanvasLeftPanel() {

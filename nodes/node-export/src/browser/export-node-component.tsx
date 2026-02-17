@@ -1,6 +1,10 @@
 import { isFileData } from "@gatewai/core/browser";
-import { useNodeResult, useNodeUI } from "@gatewai/node-sdk/browser";
-import type { NodeProps } from "@gatewai/react-canvas";
+import { useNodeResult } from "@gatewai/node-sdk/browser";
+import {
+	BaseNode,
+	type NodeProps,
+	useDownloadFileData,
+} from "@gatewai/react-canvas";
 import {
 	Alert,
 	AlertDescription,
@@ -38,7 +42,6 @@ function ExportNodeHandbook({ nodeId }: { nodeId: string }) {
 
 const ExportNodeComponent = memo((props: NodeProps) => {
 	const { result } = useNodeResult(props.id);
-	const { BaseNode } = useNodeUI();
 	const [isDownloading, setIsDownloading] = useState(false);
 	const [error, setError] = useState<string | null>(null);
 

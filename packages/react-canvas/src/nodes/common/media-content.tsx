@@ -4,10 +4,11 @@ import type {
 	ImagesResult,
 	VideoGenResult,
 } from "@gatewai/core/types";
-import { MediaDimensions, OutputSelector } from "@gatewai/node-sdk/browser";
 import {
 	AudioRenderer,
 	CanvasRenderer,
+	MediaDimensions,
+	OutputSelector,
 	VideoRenderer,
 } from "@gatewai/react-canvas";
 import type { NodeEntityType } from "@gatewai/react-store";

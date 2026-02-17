@@ -13,7 +13,7 @@ export const TextNodeComponent = memo((props: NodeProps) => {
 		(e: React.ChangeEvent<HTMLTextAreaElement>) => {
 			onNodeConfigUpdate({
 				id: props.id,
-				newConfig: { content: e.currentTarget.value },
+				newConfig: { content: e.target.value },
 			});
 		},
 		[onNodeConfigUpdate, props.id],

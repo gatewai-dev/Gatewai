@@ -1,13 +1,7 @@
-import { isEqual } from "@gatewai/core";
-import type { FileResult, NodeResult } from "@gatewai/core/types";
+import { GetAssetEndpoint, isEqual } from "@gatewai/core";
+import { getEnv } from "@gatewai/core/browser";
+import type { FileData, FileResult, NodeResult } from "@gatewai/core/types";
 import {
-	NodeUIContext,
-	type NodeUIContextType,
-	NodeUIProvider,
-	useNodeResult,
-} from "@gatewai/node-sdk/browser";
-import {
-	type HandleEntityType,
 	makeSelectAllEdges,
 	makeSelectAllHandles,
 	makeSelectAllNodeEntities,
@@ -23,17 +17,8 @@ import {
 	useRef,
 	useSyncExternalStore,
 } from "react";
-import { useCanvasCtx } from "./canvas-ctx";
 import { NodeGraphProcessor } from "./node-graph-processor";
-import { BaseNode } from "./nodes/base";
-import { CanvasRenderer } from "./nodes/common/canvas-renderer";
-import { useNodeTaskRunning } from "./task-manager-ctx";
-import {
-	type ConnectedInput,
-	type DiscoveredNodeRegistry,
-	type HandleState,
-	TaskStatus,
-} from "./types";
+import { type DiscoveredNodeRegistry, TaskStatus } from "./types";
 
 const ProcessorContext = createContext<NodeGraphProcessor | null>(null);
 
@@ -48,7 +33,6 @@ export function ProcessorProvider({
 	registry?: DiscoveredNodeRegistry;
 }) {
 	const processorRef = useRef<NodeGraphProcessor | null>(null);
-	const { onNodeConfigUpdate, onNodeResultUpdate } = useCanvasCtx();
 
 	if (!processorRef.current) {
 		processorRef.current = new NodeGraphProcessor(registry);
@@ -77,31 +61,9 @@ export function ProcessorProvider({
 		return () => processor.destroy();
 	}, [processor]);
 
-	const { createNewHandle, runNodes } = useCanvasCtx();
-
-	const uiContextValue: NodeUIContextType = useMemo(
-		() => ({
-			onNodeConfigUpdate,
-			onNodeResultUpdate,
-			createNewHandle,
-			runNodes,
-			useNodeTaskRunning, // Imported from task-manager-ctx
-			BaseNode,
-			CanvasRenderer,
-			processor,
-		}),
-		[
-			onNodeConfigUpdate,
-			onNodeResultUpdate,
-			createNewHandle,
-			runNodes,
-			processor,
-		],
-	);
-
 	return (
 		<ProcessorContext.Provider value={processor}>
-			<NodeUIProvider value={uiContextValue}>{children}</NodeUIProvider>
+			{children}
 		</ProcessorContext.Provider>
 	);
 }
@@ -116,22 +78,6 @@ export function useProcessor(): NodeGraphProcessor {
 	}
 	return processor;
 }
-
-const EMPTY_INPUTS = Object.freeze({});
-const EMPTY_HANDLES = Object.freeze({});
-
-/**
- * Subscribe to a specific node's result
- * Returns result and updates automatically when processing completes
- */
-export {
-	useEdgeColor,
-	useNodePreview,
-	useNodeValidation,
-} from "@gatewai/node-sdk/browser";
-
-export { useNodeResult };
-
 /**
  * Subscribe to a node's image output for canvas rendering, used by crop etc
  */
@@ -159,4 +105,201 @@ export function useNodeFileOutputUrl(nodeId: string): string | null {
 	const fileData =
 		outputItem.data as FileResult["outputs"][number]["items"][number]["data"];
 	return fileData?.entity?.signedUrl ?? fileData?.processData?.dataUrl ?? null;
+}
+
+const EMPTY_INPUTS = Object.freeze({});
+const EMPTY_HANDLES = Object.freeze({});
+
+/**
+ * Subscribe to a specific node's result
+ * Returns result and updates automatically when processing completes
+ */
+export function useNodeResult<T extends NodeResult = NodeResult>(
+	nodeId: string,
+) {
+	const processor = useProcessor();
+
+	const snapshotRef = useRef<{
+		result: T | null;
+		inputs: Record<string, any>;
+		handleStatus: Record<string, any>;
+		error: string | null;
+		isProcessed: boolean;
+	} | null>(null);
+
+	const subscribe = (callback: () => void) => {
+		const nodeHandler = (data: { nodeId: string }) => {
+			if (data.nodeId === nodeId) {
+				callback();
+			}
+		};
+
+		const graphHandler = () => {
+			callback();
+		};
+
+		processor.on("node:start", nodeHandler);
+		processor.on("node:processed", nodeHandler);
+		processor.on("node:error", nodeHandler);
+		processor.on("node:queued", nodeHandler);
+		processor.on("graph:updated", graphHandler);
+
+		return () => {
+			processor.off("node:start", nodeHandler);
+			processor.off("node:processed", nodeHandler);
+			processor.off("node:error", nodeHandler);
+			processor.off("node:queued", nodeHandler);
+			processor.off("graph:updated", graphHandler);
+		};
+	};
+
+	const getSnapshot = () => {
+		const state = processor.getNodeState(nodeId);
+
+		const nextResult = state?.result ?? null;
+		const nextInputs = state?.inputs ?? EMPTY_INPUTS;
+		const nextError = state?.error ?? null;
+		const nextHandleStatus = state?.handleStatus ?? EMPTY_HANDLES;
+
+		const nextIsProcessed = state?.status === TaskStatus.COMPLETED;
+
+		const hasChanged =
+			!snapshotRef.current ||
+			snapshotRef.current.result !== nextResult ||
+			snapshotRef.current.error !== nextError ||
+			snapshotRef.current.handleStatus !== nextHandleStatus ||
+			snapshotRef.current.isProcessed !== nextIsProcessed ||
+			!isEqual(snapshotRef.current.inputs, nextInputs);
+
+		if (hasChanged) {
+			snapshotRef.current = {
+				result: nextResult as T,
+				inputs: nextInputs,
+				handleStatus: nextHandleStatus,
+				error: nextError,
+				isProcessed: nextIsProcessed,
+			};
+		}
+
+		return snapshotRef.current!;
+	};
+
+	return useSyncExternalStore(subscribe, getSnapshot, getSnapshot);
+}
+
+export function useNodeValidation(nodeId: string): Record<string, string> {
+	const processor = useProcessor();
+	const lastSnapshot = useRef<Record<string, string>>({});
+
+	const subscribe = useCallback(
+		(callback: () => void) => {
+			const onValidated = () => callback();
+			processor.on("graph:validated", onValidated);
+			return () => processor.off("graph:validated", onValidated);
+		},
+		[processor],
+	);
+
+	const getSnapshot = () => {
+		const nextValue = processor.getNodeValidation(nodeId) ?? {};
+
+		// Only update the reference if the content actually changed
+		if (!isEqual(lastSnapshot.current, nextValue)) {
+			lastSnapshot.current = nextValue;
+		}
+
+		return lastSnapshot.current;
+	};
+
+	return useSyncExternalStore(subscribe, getSnapshot, getSnapshot);
+}
+
+export function useEdgeColor(
+	sourceNodeId: string,
+	sourceHandleId: string,
+): string | undefined {
+	const processor = useProcessor();
+	const lastColor = useRef<string | undefined>(undefined);
+
+	const subscribe = useCallback(
+		(callback: () => void) => {
+			const handler = (data: { nodeId: string }) => {
+				if (data.nodeId === sourceNodeId) {
+					callback();
+				}
+			};
+			// Handler for general graph topology updates
+			const graphHandler = () => callback();
+
+			processor.on("node:processed", handler);
+			processor.on("node:queued", handler);
+			processor.on("graph:updated", graphHandler);
+
+			return () => {
+				processor.off("node:processed", handler);
+				processor.off("node:queued", handler);
+				processor.off("graph:updated", graphHandler);
+			};
+		},
+		[processor, sourceNodeId],
+	);
+
+	const getSnapshot = () => {
+		const color =
+			processor.getHandleColor(sourceNodeId, sourceHandleId) ?? undefined;
+		if (color !== lastColor.current) {
+			lastColor.current = color;
+		}
+		return lastColor.current;
+	};
+
+	return useSyncExternalStore(subscribe, getSnapshot, getSnapshot);
+}
+
+export function useNodePreview(nodeId: string) {
+	const processor = useProcessor();
+	const { result } = useNodeResult(nodeId);
+	const validation = useNodeValidation(nodeId);
+
+	// Subscribe to node updates
+	const subscribe = useCallback(
+		(callback: () => void) => {
+			const handler = () => callback();
+			processor.on("graph:updated", handler);
+			return () => processor.off("graph:updated", handler);
+		},
+		[processor],
+	);
+
+	const getSnapshot = () => {
+		return processor.getNodeData(nodeId);
+	};
+
+	const node = useSyncExternalStore(subscribe, getSnapshot, getSnapshot);
+
+	return useMemo(() => {
+		const hasInvalidInput = validation && Object.keys(validation).length > 0;
+		const isTerminalNode = node?.template?.isTerminalNode;
+		const shouldHidePreview = !isTerminalNode && hasInvalidInput;
+
+		const outputItem = result?.outputs?.[result?.selectedOutputIndex]?.items[0];
+		const inputFileData = outputItem?.data as FileData;
+		const baseUrl = getEnv("VITE_BASE_URL");
+		if (!baseUrl || typeof baseUrl !== "string") {
+			throw new Error("Invalid base url");
+		}
+
+		const imageUrl =
+			inputFileData?.processData?.dataUrl ??
+			(inputFileData?.entity
+				? GetAssetEndpoint(baseUrl, inputFileData.entity)
+				: null);
+
+		return {
+			imageUrl: shouldHidePreview ? null : imageUrl,
+			node,
+			result,
+			hasMoreThanOneOutput: (result?.outputs?.length ?? 0) > 1,
+		};
+	}, [node, result, validation]);
 }

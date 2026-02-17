@@ -1,11 +1,11 @@
 import { ResolveFileDataUrl } from "@gatewai/core/browser";
 import type { FileData } from "@gatewai/core/types";
+import { useNodePreview, useNodeResult } from "@gatewai/node-sdk/browser";
 import {
-	useNodePreview,
-	useNodeResult,
-	useNodeUI,
-} from "@gatewai/node-sdk/browser";
-import type { NodeProps } from "@gatewai/react-canvas";
+	BaseNode,
+	CanvasRenderer,
+	type NodeProps,
+} from "@gatewai/react-canvas";
 import {
 	makeSelectEdgesByTargetNodeId,
 	makeSelectNodeById,
@@ -34,7 +34,6 @@ type DragState = {
 };
 
 const CropNodeComponent = memo((props: NodeProps) => {
-	const { BaseNode, CanvasRenderer } = useNodeUI();
 	const dispatch = useAppDispatch();
 	const edges = useAppSelector(makeSelectEdgesByTargetNodeId(props.id));
 	const inputHandleId = useMemo(() => {

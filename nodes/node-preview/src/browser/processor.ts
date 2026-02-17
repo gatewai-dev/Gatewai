@@ -1,7 +1,6 @@
 import type { NodeResult } from "@gatewai/core/types";
 import type { IBrowserProcessor } from "@gatewai/node-sdk/browser";
 import type { NodeProcessorParams } from "@gatewai/react-canvas";
-import { TextNodeConfigSchema } from "../shared/config.js";
 
 export class PreviewBrowserProcessor implements IBrowserProcessor {
 	async process({ inputs }: NodeProcessorParams): Promise<NodeResult | null> {

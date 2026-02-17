@@ -41,7 +41,6 @@ function ReactflowContainer({ children, leftPanel }: ReactFlowProps) {
 		onConnect,
 		rfInstance,
 		isReviewing,
-		canvas,
 		isLoading,
 	} = useCanvasCtx();
 	const { nodeTypes } = useNodeRegistry();
@@ -145,7 +144,7 @@ function ReactflowContainer({ children, leftPanel }: ReactFlowProps) {
 			>
 				{children}
 				<Background variant={BackgroundVariant.Dots} />
-				<ReactFlowPanels leftPanel={leftPanel} />
+				<ReactFlowPanels children={leftPanel} />
 			</ReactFlow>
 		</div>
 	);

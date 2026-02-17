@@ -182,7 +182,7 @@ importers:
         version: 0.7.2(hono@4.8.5)(zod@3.25.67)
       '@hookform/resolvers':
         specifier: ^3.10.0
-        version: 3.10.0(react-hook-form@7.66.0(react@19.2.4))
+        version: 3.10.0(react-hook-form@7.71.1(react@19.2.4))
       '@lobehub/icons':
         specifier: ^2.48.0
         version: 2.48.0(@babel/core@7.28.0)(@types/mdast@4.0.4)(@types/react-dom@19.2.3(@types/react@19.1.11))(@types/react@19.1.11)(antd@5.29.2(date-fns@4.1.0)(luxon@3.7.2)(react-dom@19.2.4(react@19.2.4))(react@19.2.4))(framer-motion@12.23.26(react-dom@19.2.4(react@19.2.4))(react@19.2.4))(micromark-util-types@2.0.2)(micromark@4.0.2)(react-dom@19.2.4(react@19.2.4))(react@19.2.4)(vue@3.5.18(typescript@5.8.3))
@@ -346,8 +346,8 @@ importers:
         specifier: ^2.0.5
         version: 2.0.5(react@19.2.4)
       react-hook-form:
-        specifier: ^7.66.0
-        version: 7.66.0(react@19.2.4)
+        specifier: ^7.71.1
+        version: 7.71.1(react@19.2.4)
       react-hotkeys-hook:
         specifier: ^5.2.1
         version: 5.2.1(react-dom@19.2.4(react@19.2.4))(react@19.2.4)
@@ -3009,7 +3009,7 @@ importers:
         specifier: '*'
         version: 2.0.5(react@19.2.4)
       react-hook-form:
-        specifier: ^7.66.0
+        specifier: ^7.71.1
         version: 7.71.1(react@19.2.4)
       react-hotkeys-hook:
         specifier: ^5.2.1
@@ -7754,7 +7754,7 @@ importers:
         version: link:../ui-kit
       '@hookform/resolvers':
         specifier: ^3.10.0
-        version: 3.10.0(react-hook-form@7.66.0(react@19.2.4))
+        version: 3.10.0(react-hook-form@7.71.1(react@19.2.4))
       clsx:
         specifier: ^2.1.1
         version: 2.1.1
@@ -7765,8 +7765,8 @@ importers:
         specifier: ^3.2.2
         version: 3.2.2
       react-hook-form:
-        specifier: ^7.66.0
-        version: 7.66.0(react@19.2.4)
+        specifier: ^7.71.1
+        version: 7.71.1(react@19.2.4)
       tailwind-merge:
         specifier: ^3.0.1
         version: 3.3.1
@@ -7922,6 +7922,9 @@ importers:
       react-dropzone:
         specifier: ^14.4.1
         version: 14.4.1(react@19.2.4)
+      react-fast-compare:
+        specifier: ^3.2.2
+        version: 3.2.2
       react-hook-form:
         specifier: ^7.71.1
         version: 7.71.1(react@19.2.4)
@@ -8120,8 +8123,8 @@ importers:
         specifier: ^0.4.4
         version: 0.4.6(react-dom@19.2.4(react@19.2.4))(react@19.2.4)
       react-hook-form:
-        specifier: ^7.54.2
-        version: 7.66.0(react@19.2.4)
+        specifier: ^7.71.1
+        version: 7.71.1(react@19.2.4)
       react-markdown:
         specifier: ^10.1.0
         version: 10.1.0(@types/react@19.1.11)(react@19.2.4)
@@ -15049,12 +15052,6 @@ packages:
     peerDependencies:
       react: ^19.2.4
 
-  react-hook-form@7.66.0:
-    resolution: {integrity: sha512-xXBqsWGKrY46ZqaHDo+ZUYiMUgi8suYu5kdrS20EG8KiL7VRQitEbNjm+UcrDYrNi1YLyfpmAeGjCZYXLT9YBw==}
-    engines: {node: '>=18.0.0'}
-    peerDependencies:
-      react: ^19.2.4
-
   react-hook-form@7.71.1:
     resolution: {integrity: sha512-9SUJKCGKo8HUSsCO+y0CtqkqI5nNuaDqTxyqPsZPqIwudpj4rCrAz/jZV+jn57bx5gtZKOh3neQu94DXMc+w5w==}
     engines: {node: '>=18.0.0'}
@@ -17386,10 +17383,6 @@ snapshots:
     dependencies:
       hono: 4.8.5
       zod: 4.3.6
-
-  '@hookform/resolvers@3.10.0(react-hook-form@7.66.0(react@19.2.4))':
-    dependencies:
-      react-hook-form: 7.66.0(react@19.2.4)
 
   '@hookform/resolvers@3.10.0(react-hook-form@7.71.1(react@19.2.4))':
     dependencies:
@@ -24996,10 +24989,6 @@ snapshots:
       react: 19.2.4
       react-fast-compare: 3.2.2
       shallowequal: 1.1.0
-
-  react-hook-form@7.66.0(react@19.2.4):
-    dependencies:
-      react: 19.2.4
 
   react-hook-form@7.71.1(react@19.2.4):
     dependencies:

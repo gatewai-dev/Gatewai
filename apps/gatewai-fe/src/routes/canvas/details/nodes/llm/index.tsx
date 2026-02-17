@@ -1,6 +1,10 @@
 import type { LLMResult } from "@gatewai/core/types";
-import { OutputSelector, RunNodeButton } from "@gatewai/node-sdk/browser";
-import { BaseNode, useNodeResult } from "@gatewai/react-canvas";
+import {
+	BaseNode,
+	OutputSelector,
+	RunNodeButton,
+	useNodeResult,
+} from "@gatewai/react-canvas";
 import { makeSelectNodeById, useAppSelector } from "@gatewai/react-store";
 import { MarkdownRenderer, ScrollArea } from "@gatewai/ui-kit";
 import { memo, useMemo } from "react";

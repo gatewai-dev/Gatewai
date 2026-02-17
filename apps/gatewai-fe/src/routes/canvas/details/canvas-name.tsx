@@ -1,7 +1,7 @@
+import { useCanvasCtx } from "@gatewai/react-canvas";
 import { useUpdateNameMutation } from "@gatewai/react-store";
 import { Input } from "@gatewai/ui-kit";
 import { memo, useEffect, useRef, useState } from "react";
-import { useCanvasCtx } from "../canvas-ctx";
 
 const CanvasName = memo(() => {
 	const inputRef = useRef<HTMLInputElement>(null);
@@ -80,7 +80,6 @@ const CanvasName = memo(() => {
 
 	if (!isEditing) {
 		return (
-			// biome-ignore lint/a11y/useSemanticElements: No need
 			<div
 				className={`${sharedStyles} cursor-pointer select-none`}
 				onClick={enterEditMode}

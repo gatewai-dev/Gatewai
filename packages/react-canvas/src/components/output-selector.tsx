@@ -2,10 +2,10 @@ import type { NodeResult } from "@gatewai/core/types";
 import type { NodeEntityType } from "@gatewai/react-store";
 import { Button } from "@gatewai/ui-kit";
 import { ChevronLeft, ChevronRight } from "lucide-react";
-import { useNodeUI } from "../ui.js";
+import { useCanvasCtx } from "..";
 
 function OutputSelector({ node }: { node: NodeEntityType }) {
-	const { onNodeResultUpdate } = useNodeUI();
+	const { onNodeResultUpdate } = useCanvasCtx();
 
 	const result = node?.result as unknown as NodeResult;
 	if (!result || Number.isNaN(result.selectedOutputIndex)) {

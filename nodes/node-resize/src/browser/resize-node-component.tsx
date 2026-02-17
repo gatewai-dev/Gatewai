@@ -1,11 +1,8 @@
 import { ResolveFileDataUrl } from "@gatewai/core/browser";
 import type { ConnectedInput, FileData } from "@gatewai/core/types";
-import {
-	useNodePreview,
-	useNodeResult,
-	useNodeUI,
-} from "@gatewai/node-sdk/browser";
+import { useNodePreview, useNodeResult } from "@gatewai/node-sdk/browser";
 import type { NodeProps } from "@gatewai/react-canvas";
+import { BaseNode, CanvasRenderer } from "@gatewai/react-canvas";
 import {
 	updateNodeConfigWithoutHistory,
 	useAppDispatch,
@@ -16,7 +13,6 @@ import type { ResizeNodeConfig } from "@/shared/config.js";
 import { ResizeConfig } from "./resize-node-config.js";
 
 const ResizeNodeComponent = memo((props: NodeProps) => {
-	const { BaseNode, CanvasRenderer } = useNodeUI();
 	const { imageUrl, node } = useNodePreview(props.id);
 	const dispatch = useAppDispatch();
 

@@ -1,4 +1,3 @@
-import { useNodeUI } from "@gatewai/node-sdk/browser";
 import type { NodeEntityType } from "@gatewai/react-store";
 import {
 	Button,
@@ -9,6 +8,7 @@ import {
 } from "@gatewai/ui-kit";
 import { ArrowLeftRight, ArrowUpDown, Lock, Unlock } from "lucide-react";
 import { memo, useCallback } from "react";
+import { useCanvasCtx } from "../../../canvas-ctx";
 
 /**
  * Generic interface for a node config that has dimensions and aspect ratio control.
@@ -36,7 +36,7 @@ export const ResizeWidthInput = memo(
 		disabled?: boolean;
 	}) => {
 		const config = node?.config as DimensionConfig;
-		const { onNodeConfigUpdate } = useNodeUI();
+		const { onNodeConfigUpdate } = useCanvasCtx();
 
 		const displayValue = config.width ?? originalWidth ?? 0;
 
@@ -113,8 +113,7 @@ export const ResizeHeightInput = memo(
 		disabled?: boolean;
 	}) => {
 		const config = node?.config as DimensionConfig;
-		const { onNodeConfigUpdate } = useNodeUI();
-
+		const { onNodeConfigUpdate } = useCanvasCtx();
 		const displayValue = config.height ?? originalHeight ?? 0;
 
 		const handleChange = useCallback(
@@ -189,7 +188,7 @@ export const AspectRatioSwitch = memo(
 	}) => {
 		const config = node?.config as DimensionConfig;
 		const maintainAspect = config.maintainAspect ?? true;
-		const { onNodeConfigUpdate } = useNodeUI();
+		const { onNodeConfigUpdate } = useCanvasCtx();
 
 		const handleChange = useCallback(
 			(checked: boolean) => {

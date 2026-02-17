@@ -1,5 +1,4 @@
-import { AddCustomHandleButton } from "@gatewai/node-sdk/browser";
-import { BaseNode } from "@gatewai/react-canvas";
+import { AddCustomHandleButton, BaseNode } from "@gatewai/react-canvas";
 import { makeSelectNodeById, useAppSelector } from "@gatewai/react-store";
 import { memo } from "react";
 import { TextMergerNodeConfigComponent } from "./text-merger-config-component.js";

@@ -1,10 +1,11 @@
 import {
+	BaseNode,
 	MediaDimensions,
 	OutputSelector,
 	RunNodeButton,
 	useNodePreview,
-} from "@gatewai/node-sdk/browser";
-import { BaseNode, VideoRenderer } from "@gatewai/react-canvas";
+	VideoRenderer,
+} from "@gatewai/react-canvas";
 import { memo } from "react";
 
 const VideoGenFirstLastFrameNodeComponent = memo(
