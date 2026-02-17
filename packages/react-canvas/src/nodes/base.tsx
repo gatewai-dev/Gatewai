@@ -412,7 +412,7 @@ const BaseNode = memo(
 						<NodeMenu id={props.id} />
 					</div>
 
-					<div className="flex-1 nodrag nopan cursor-auto bg-transparent">
+					<div className="flex-1 nodrag nopan cursor-auto bg-transparent p-0.5">
 						{props.children}
 					</div>
 				</div>
@@ -434,10 +434,6 @@ const BaseNode = memo(
 		);
 	},
 );
-
-BaseNode.displayName = "BaseNode";
-
-BaseNode.displayName = "BaseNode";
 
 const CustomConnectionLine = memo(
 	({

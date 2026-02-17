@@ -296,6 +296,19 @@ export function createPatcherAgent(
 					handles: result.handles,
 				};
 
+				// Validate Node Types against Templates
+				const validTypes = new Set(patcherContext.templates.map((t) => t.type));
+				const invalidNodes = payload.nodes?.filter(
+					(n) => !validTypes.has(n.type),
+				);
+
+				if (invalidNodes && invalidNodes.length > 0) {
+					const badTypes = Array.from(
+						new Set(invalidNodes.map((n) => n.type)),
+					).join(", ");
+					return `Validation failed: Unknown node types detected: [${badTypes}].\nAvailable types: [${Array.from(validTypes).sort().join(", ")}]`;
+				}
+
 				const validationResult = agentBulkUpdateSchema.safeParse(payload);
 				if (!validationResult.success) {
 					const errors = validationResult.error.issues
