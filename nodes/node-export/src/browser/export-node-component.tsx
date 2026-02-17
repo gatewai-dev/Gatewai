@@ -1,9 +1,9 @@
 import { isFileData } from "@gatewai/core/browser";
-import { useNodeResult } from "@gatewai/node-sdk/browser";
 import {
 	BaseNode,
 	type NodeProps,
 	useDownloadFileData,
+	useNodeResult,
 } from "@gatewai/react-canvas";
 import {
 	Alert,

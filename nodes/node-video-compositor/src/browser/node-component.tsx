@@ -4,11 +4,11 @@ import {
 	GetFontAssetUrl,
 } from "@gatewai/core/browser";
 import type { FileData } from "@gatewai/core/types";
-import { useNodeResult } from "@gatewai/node-sdk/browser";
 import {
 	AddCustomHandleButton,
 	BaseNode,
 	type NodeProps,
+	useNodeResult,
 } from "@gatewai/react-canvas";
 import { makeSelectNodeById, useAppSelector } from "@gatewai/react-store";
 import { Button, cn } from "@gatewai/ui-kit";

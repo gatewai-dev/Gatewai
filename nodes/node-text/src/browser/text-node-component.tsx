@@ -1,5 +1,9 @@
-import { useNodePreview } from "@gatewai/node-sdk/browser";
-import { BaseNode, type NodeProps, useCanvasCtx } from "@gatewai/react-canvas";
+import {
+	BaseNode,
+	type NodeProps,
+	useCanvasCtx,
+	useNodePreview,
+} from "@gatewai/react-canvas";
 import { ScrollArea, Textarea } from "@gatewai/ui-kit";
 import type React from "react";
 import { memo, useCallback } from "react";

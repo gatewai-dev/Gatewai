@@ -1,8 +1,8 @@
-import { useNodePreview } from "@gatewai/node-sdk/browser";
 import {
 	BaseNode,
 	CanvasRenderer,
 	type NodeProps,
+	useNodePreview,
 } from "@gatewai/react-canvas";
 import { memo } from "react";
 import { BlurValueSlider } from "./components/blur-slider.js";

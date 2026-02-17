@@ -1,11 +1,12 @@
 import { GetAssetEndpoint } from "@gatewai/core/browser";
 import type { FileData } from "@gatewai/core/types";
-import { MediaDimensions, useNodeResult } from "@gatewai/node-sdk/browser";
 import {
 	AudioRenderer,
 	BaseNode,
 	CanvasRenderer,
+	MediaDimensions,
 	type NodeProps,
+	useNodeResult,
 	VideoRenderer,
 } from "@gatewai/react-canvas";
 import { makeSelectNodeById, useAppSelector } from "@gatewai/react-store";

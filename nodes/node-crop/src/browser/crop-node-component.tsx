@@ -1,10 +1,11 @@
 import { ResolveFileDataUrl } from "@gatewai/core/browser";
 import type { FileData } from "@gatewai/core/types";
-import { useNodePreview, useNodeResult } from "@gatewai/node-sdk/browser";
 import {
 	BaseNode,
 	CanvasRenderer,
 	type NodeProps,
+	useNodePreview,
+	useNodeResult,
 } from "@gatewai/react-canvas";
 import {
 	makeSelectEdgesByTargetNodeId,

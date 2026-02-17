@@ -1,7 +1,6 @@
 import { ResolveFileDataUrl } from "@gatewai/core/browser";
 import type { FileData } from "@gatewai/core/types";
-import { useNodeResult } from "@gatewai/node-sdk/browser";
-import { BaseNode, useCanvasCtx } from "@gatewai/react-canvas";
+import { BaseNode, useCanvasCtx, useNodeResult } from "@gatewai/react-canvas";
 import {
 	makeSelectEdgesByTargetNodeId,
 	makeSelectNodeById,

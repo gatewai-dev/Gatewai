@@ -1,8 +1,12 @@
 import { ResolveFileDataUrl } from "@gatewai/core/browser";
 import type { ConnectedInput, FileData } from "@gatewai/core/types";
-import { useNodePreview, useNodeResult } from "@gatewai/node-sdk/browser";
 import type { NodeProps } from "@gatewai/react-canvas";
-import { BaseNode, CanvasRenderer } from "@gatewai/react-canvas";
+import {
+	BaseNode,
+	CanvasRenderer,
+	useNodePreview,
+	useNodeResult,
+} from "@gatewai/react-canvas";
 import {
 	updateNodeConfigWithoutHistory,
 	useAppDispatch,

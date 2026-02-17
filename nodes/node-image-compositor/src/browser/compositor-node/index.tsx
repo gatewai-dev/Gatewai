@@ -2,9 +2,10 @@ import { ResolveFileDataUrl } from "@gatewai/core/browser";
 import type { FileData } from "@gatewai/core/types";
 import {
 	AddCustomHandleButton,
+	BaseNode,
+	CanvasRenderer,
 	useNodeResult,
-} from "@gatewai/node-sdk/browser";
-import { BaseNode, CanvasRenderer } from "@gatewai/react-canvas";
+} from "@gatewai/react-canvas";
 import { makeSelectNodeById, useAppSelector } from "@gatewai/react-store";
 import { Button, cn } from "@gatewai/ui-kit";
 import type { Node, NodeProps } from "@xyflow/react";

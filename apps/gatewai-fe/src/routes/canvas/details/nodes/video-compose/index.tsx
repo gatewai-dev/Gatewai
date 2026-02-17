@@ -1,7 +1,10 @@
 import { GetAssetEndpoint, GetFontAssetUrl } from "@gatewai/core/browser";
 import type { FileData, VideoCompositorNodeConfig } from "@gatewai/core/types";
-import { AddCustomHandleButton } from "@gatewai/node-sdk/browser";
-import { BaseNode, useNodeResult } from "@gatewai/react-canvas";
+import {
+	AddCustomHandleButton,
+	BaseNode,
+	useNodeResult,
+} from "@gatewai/react-canvas";
 import { makeSelectNodeById, useAppSelector } from "@gatewai/react-store";
 import { Button } from "@gatewai/ui-kit";
 import { Player } from "@remotion/player";

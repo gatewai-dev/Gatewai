@@ -1,5 +1,8 @@
-import { useNodePreview } from "@gatewai/node-sdk/browser";
-import { BaseNode, CanvasRenderer } from "@gatewai/react-canvas";
+import {
+	BaseNode,
+	CanvasRenderer,
+	useNodePreview,
+} from "@gatewai/react-canvas";
 import { cn } from "@gatewai/ui-kit";
 import { memo } from "react";
 import { ModulateConfigComponent } from "./modulate-config-component.js";
