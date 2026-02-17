@@ -18,7 +18,6 @@ import { fileTypeFromBuffer } from "file-type";
 import { Hono } from "hono";
 import { z } from "zod";
 import type { AuthorizedHonoTypes } from "../../auth.js";
-import { uploadToImportNode } from "../../node-fns/import-media.js";
 import { assertIsError } from "../../utils/misc.js";
 import { assertAssetOwnership } from "./auth-helpers.js";
 
@@ -268,36 +267,7 @@ const assetsRouter = new Hono<{ Variables: AuthorizedHonoTypes }>({
 			);
 		}
 	})
-	.post("/node/:nodeId", zValidator("form", uploadSchema), async (c) => {
-		const { nodeId } = c.req.param();
-		const body = await c.req.parseBody();
-		const file = body.file;
 
-		// Validation: Check if it's strictly a File object (as expected from form-data)
-		if (!(file instanceof File)) {
-			return c.json({ error: "File is required" }, 400);
-		}
-
-		try {
-			const buffer = Buffer.from(await file.arrayBuffer());
-			const updatedNode = await uploadToImportNode({
-				nodeId,
-				buffer,
-				filename: file.name,
-				mimeType: file.type || undefined,
-			});
-
-			return c.json(updatedNode);
-		} catch (error) {
-			assertIsError(error);
-			logger.error(`Node asset upload failed: ${error.message}`);
-			// Return 404 if node missing, otherwise 500
-			if (error.message.includes("not found")) {
-				return c.json({ error: error.message }, 404);
-			}
-			return c.json({ error: "Upload failed" }, 500);
-		}
-	})
 	.get(
 		"/thumbnail/:id",
 		zValidator(

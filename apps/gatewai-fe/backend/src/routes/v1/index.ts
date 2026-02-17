@@ -6,10 +6,12 @@ import { assetsRouter } from "./assets.js";
 import { canvasRoutes } from "./canvas.js";
 import { fontsRouter } from "./fonts.js";
 import { nodeTemplatesRoutes } from "./node-templates.js";
+import { nodesRouter } from "./nodes.js";
 import { tasksRouter } from "./tasks.js";
 
 const v1Router = new Hono()
 	.use(authMiddleware)
+	.route("/nodes", nodesRouter)
 	.route("/node-templates", nodeTemplatesRoutes)
 	.route("/tasks", tasksRouter)
 	.route("/assets", assetsRouter)

@@ -9,7 +9,7 @@ export async function discoverNodes() {
 	// Adjust path to reach root 'nodes' directory from:
 	// apps/gatewai-fe/backend/src/graph-engine/node-discovery.ts
 	// -> ../../../../nodes
-	const nodesDir = path.resolve(__dirname, "../../../../../nodes");
+	const nodesDir = path.resolve(__dirname, "../../../../nodes");
 
 	if (!fs.existsSync(nodesDir)) {
 		console.warn(`Nodes directory not found at ${nodesDir}`);

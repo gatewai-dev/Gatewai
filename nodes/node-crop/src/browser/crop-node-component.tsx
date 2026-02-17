@@ -4,7 +4,6 @@ import {
 	BaseNode,
 	CanvasRenderer,
 	type NodeProps,
-	useNodePreview,
 	useNodeResult,
 } from "@gatewai/react-canvas";
 import {

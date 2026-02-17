@@ -1,9 +1,5 @@
 import type { EventEmitter } from "node:events";
-import type {
-	NodeProcessorParams,
-	NodeResult,
-	NodeRunFunction,
-} from "@gatewai/core/types";
+import type { NodeProcessorParams, NodeResult } from "@gatewai/core/types";
 import type { DataType } from "@gatewai/db";
 import type { ComponentType, MemoExoticComponent } from "react";
 

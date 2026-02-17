@@ -14,10 +14,10 @@ import type { z } from "zod";
 
 type TextNodeConfig = z.infer<typeof TextNodeConfigSchema>;
 
+import { uploadToImportNode } from "@gatewai/media/server";
 import { zValidator } from "@hono/zod-validator";
 import { Hono } from "hono";
 import type { AuthorizedHonoTypes } from "../../auth.js";
-import { uploadToImportNode } from "../../node-fns/import-media.js";
 import { assertIsError } from "../../utils/misc.js";
 import { assertCanvasOwnership } from "./auth-helpers.js";
 

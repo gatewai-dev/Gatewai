@@ -8,6 +8,7 @@ import type {
 	NodeTemplate,
 	Task,
 } from "@gatewai/db";
+import type { Hono } from "hono";
 
 /**
  * Input filter options used by graph resolver functions.
@@ -79,4 +80,5 @@ export type NodeProcessorConstructor = new (...args: any[]) => NodeProcessor;
  */
 export interface BackendNodePlugin extends NodeMetadata {
 	backendProcessor: NodeProcessorConstructor;
+	route?: Hono;
 }

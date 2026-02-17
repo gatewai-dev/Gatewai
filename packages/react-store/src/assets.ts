@@ -5,7 +5,7 @@ import type {
 	UserAssetsListRPCParams,
 	UserAssetsUploadRPC,
 } from "@gatewai/rpc-client";
-import { appRPCClient, createRpcClient } from "@gatewai/rpc-client";
+import { appRPCClient } from "@gatewai/rpc-client";
 import { createApi, fetchBaseQuery } from "@reduxjs/toolkit/query/react";
 import { canvasDetailsAPI } from "./canvas.js";
 
@@ -43,8 +43,22 @@ export const assetsAPI = createApi({
 			UploadFileNodeAssetRPCParams
 		>({
 			queryFn: async (payload) => {
-				const response =
-					await appRPCClient.api.v1.assets.node[":nodeId"].$post(payload);
+				const { param, form } = payload;
+				const nodeId = param.nodeId;
+				const formData = new FormData();
+				formData.append("file", form.file);
+
+				const response = await fetch(`/api/v1/nodes/File/upload/${nodeId}`, {
+					method: "POST",
+					body: formData,
+				});
+
+				if (!response.ok) {
+					return {
+						error: { status: response.status, data: await response.text() },
+					};
+				}
+
 				const data = await response.json();
 				return { data };
 			},

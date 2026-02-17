@@ -189,11 +189,7 @@ const DraggableNumberInput: React.FC<DraggableNumberInputProps> = ({
 					</div>,
 					document.body,
 				)}
-			{label && (
-				<Label className="text-[10px] text-muted-foreground uppercase font-semibold">
-					{label}
-				</Label>
-			)}
+			{label && <Label>{label}</Label>}
 			<div className="group relative flex items-center bg-muted/40 rounded-md border border-input focus-within:ring-1 focus-within:ring-ring focus-within:border-transparent overflow-hidden h-8">
 				{Icon && (
 					<div

@@ -3,8 +3,8 @@ import { container, TOKENS } from "@gatewai/core/di";
 import type { StorageService } from "@gatewai/core/storage";
 import type { FileResult, MediaService } from "@gatewai/core/types";
 import { type DataType, prisma } from "@gatewai/db";
-import { getMediaDuration } from "@gatewai/media/server";
 import { fileTypeFromBuffer } from "file-type";
+import { getMediaDuration } from "./utils/index.js";
 
 interface UploadOptions {
 	nodeId: string;
@@ -45,12 +45,15 @@ export async function uploadToImportNode({
 		contentType = fileTypeResult?.mime ?? "application/octet-stream";
 	}
 
+	// Ensure contentType is a string
+	const finalContentType = contentType || "application/octet-stream";
+
 	// 3. Extract Metadata (Dimensions or Duration)
 	let width: number | null = null;
 	let height: number | null = null;
 	let durationInSec: number | null = null;
 
-	if (contentType.startsWith("image/")) {
+	if (finalContentType.startsWith("image/")) {
 		try {
 			const media = container.resolve<MediaService>(TOKENS.MEDIA);
 			const metadata = await media.getImageDimensions(buffer);
@@ -60,8 +63,8 @@ export async function uploadToImportNode({
 			console.error("Failed to compute image metadata:", error);
 		}
 	} else if (
-		contentType.startsWith("video/") ||
-		contentType.startsWith("audio/")
+		finalContentType.startsWith("video/") ||
+		finalContentType.startsWith("audio/")
 	) {
 		try {
 			durationInSec = await getMediaDuration(buffer);
@@ -72,10 +75,10 @@ export async function uploadToImportNode({
 
 	// 4. Upload to Storage
 	const bucket = ENV_CONFIG.GCS_ASSETS_BUCKET ?? "default-bucket";
-	const key = `assets / ${generateId()} -${filename} `;
+	const key = `assets/${generateId()}-${filename}`;
 
 	const storage = container.resolve<StorageService>(TOKENS.STORAGE);
-	await storage.uploadToStorage(buffer, key, contentType, bucket);
+	await storage.uploadToStorage(buffer, key, finalContentType, bucket);
 
 	const expiresIn = 3600 * 24 * 6.9; // ~1 week
 	const signedUrl = await storage.generateSignedUrl(key, bucket, expiresIn);
@@ -95,7 +98,7 @@ export async function uploadToImportNode({
 			signedUrlExp,
 			width,
 			height,
-			mimeType: contentType,
+			mimeType: finalContentType,
 		},
 	});
 
@@ -112,14 +115,16 @@ export async function uploadToImportNode({
 	}
 
 	let dataType: DataType;
-	if (contentType.startsWith("image/")) {
+	if (finalContentType.startsWith("image/")) {
 		dataType = "Image";
-	} else if (contentType.startsWith("video/")) {
+	} else if (finalContentType.startsWith("video/")) {
 		dataType = "Video";
-	} else if (contentType.startsWith("audio/")) {
+	} else if (finalContentType.startsWith("audio/")) {
 		dataType = "Audio";
 	} else {
-		throw new Error(`Invalid content type for Import Node: ${contentType} `);
+		throw new Error(
+			`Invalid content type for Import Node: ${finalContentType}`,
+		);
 	}
 
 	const newOutput = {

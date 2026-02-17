@@ -17,7 +17,7 @@ export default defineMetadata({
 				dataTypes: ["Image"],
 				label: "Background Image",
 				order: 0,
-				required: true,
+				required: false,
 			},
 		],
 		outputs: [

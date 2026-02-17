@@ -3,11 +3,10 @@ import type {
 	UploadFileNodeAssetRPC,
 } from "@gatewai/react-store";
 import { useUploadFileNodeAssetMutation } from "@gatewai/react-store";
-import { Button } from "@gatewai/ui-kit";
+import { Button, cn } from "@gatewai/ui-kit";
 import { Loader2, PlusIcon } from "lucide-react";
 import type { ChangeEvent } from "react";
 import { useRef } from "react";
-import { cn } from "@/lib/utils";
 
 interface UploadButtonProps {
 	className?: string;

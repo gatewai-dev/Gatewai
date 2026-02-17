@@ -1,4 +1,7 @@
-import { BrowserPassthroughProcessor, defineClient } from "@gatewai/node-sdk/browser";
+import {
+	BrowserPassthroughProcessor,
+	defineClient,
+} from "@gatewai/node-sdk/browser";
 import { memo } from "react";
 import { PiVideoCamera } from "react-icons/pi";
 import metadata from "../metadata.js";

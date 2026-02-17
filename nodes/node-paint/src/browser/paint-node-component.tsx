@@ -507,7 +507,7 @@ const PaintNodeComponent = memo(
 						/>
 						<canvas ref={inputCanvasRef} className="hidden bg-transparent" />
 					</div>
-					<div className="flex flex-col flex-wrap gap-4 items-start text-sm">
+					<div className="flex flex-col flex-wrap gap-4 items-start text-sm p-2">
 						<div className="flex justify-between w-full">
 							<div className="grow">
 								<div className="flex gap-2">

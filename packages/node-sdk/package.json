@@ -52,7 +52,6 @@
 	},
 	"dependencies": {
 		"@hookform/resolvers": "^3.10.0",
-		"@gatewai/react-canvas": "workspace:*",
 		"@gatewai/react-store": "workspace:*",
 		"@gatewai/ui-kit": "workspace:*",
 		"clsx": "^2.1.1",

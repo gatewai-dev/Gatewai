@@ -1,4 +1,7 @@
-import { BrowserPassthroughProcessor, defineClient } from "@gatewai/node-sdk/browser";
+import {
+	BrowserPassthroughProcessor,
+	defineClient,
+} from "@gatewai/node-sdk/browser";
 import { memo } from "react";
 import { TbVolume } from "react-icons/tb";
 import metadata from "../metadata.js";
