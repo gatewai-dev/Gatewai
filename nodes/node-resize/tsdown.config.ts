@@ -4,7 +4,7 @@ export default defineConfig({
 	entry: {
 		index: "src/metadata.ts",
 		server: "src/server/index.ts",
-		browser: "src/browser/index.tsx",
+		,
 	},
 	format: ["esm"],
 	dts: true,
