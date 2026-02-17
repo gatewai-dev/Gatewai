@@ -65,13 +65,13 @@ export interface FrontendNodePlugin {
 	/**
 	 * The (Form) component that shows in sidebar when node selected
 	 */
-	ConfigComponent?: MemoExoticComponent<ComponentType<any>>;
+	ConfigComponent?: ComponentType<any>;
 	/**
 	 * The Page component that opens when user clicks "Page Opener Button"
 	 */
 	PageContentComponent?: MemoExoticComponent<ComponentType<any>>;
 
-	mainIconComponent?: MemoExoticComponent<ComponentType<any>>;
+	mainIconComponent?: ComponentType<any>;
 
 	processor: BrowserProcessorConstructor;
 }

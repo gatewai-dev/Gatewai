@@ -1,5 +1,4 @@
 import { defineClient } from "@gatewai/node-sdk/browser";
-import { memo } from "react";
 import { PiStack } from "react-icons/pi";
 import { manifest } from "../metadata.js";
 import { CompositorView } from "./canvas-editor-page/index.js";
@@ -10,5 +9,5 @@ export default defineClient(manifest, {
 	Component: CompositorNodeComponent,
 	PageContentComponent: CompositorView,
 	processor: ImageCompositorBrowserProcessor,
-	mainIconComponent: memo(PiStack),
+	mainIconComponent: PiStack,
 });
