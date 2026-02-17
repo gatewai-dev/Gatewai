@@ -1,3 +1,4 @@
+import { useCanvasCtx } from "@gatewai/react-canvas";
 import type { NodeEntityType } from "@gatewai/react-store";
 import {
 	Form,
@@ -17,7 +18,6 @@ import { zodResolver } from "@hookform/resolvers/zod";
 import { memo, useEffect } from "react";
 import { useForm } from "react-hook-form";
 import { type LLMNodeConfig, LLMNodeConfigSchema } from "../shared/index.js";
-import { useCanvasCtx } from "@gatewai/react-canvas";
 
 const LLMNodeConfigComponent = memo(({ node }: { node: NodeEntityType }) => {
 	const { onNodeConfigUpdate } = useCanvasCtx();

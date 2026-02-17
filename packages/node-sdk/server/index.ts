@@ -2,6 +2,7 @@ export {
 	defineMetadata,
 	defineNode,
 } from "./define-node.js";
+export * from "./passthrough-processor.js";
 export { NodeRegistry, nodeRegistry } from "./registry.js";
 export type {
 	AIProvider,
@@ -16,4 +17,3 @@ export type {
 	NodeProcessorConstructor,
 	StorageService,
 } from "./types.js";
-export * from "./passthrough-processor.js";

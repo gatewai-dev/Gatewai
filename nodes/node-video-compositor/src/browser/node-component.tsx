@@ -6,12 +6,9 @@ import {
 import type { FileData } from "@gatewai/core/types";
 import {
 	AddCustomHandleButton,
-	defineClient,
-	useNodePreview,
 	useNodeResult,
-	useNodeUI,
 } from "@gatewai/node-sdk/browser";
-import type { NodeProps } from "@gatewai/react-canvas";
+import { BaseNode, type NodeProps } from "@gatewai/react-canvas";
 import { makeSelectNodeById, useAppSelector } from "@gatewai/react-store";
 import { Button, cn } from "@gatewai/ui-kit";
 import { Player } from "@remotion/player";
@@ -27,7 +24,6 @@ import {
 import { DEFAULT_DURATION_FRAMES, FPS } from "./video-editor/config/index.js";
 
 const VideoCompositorNodeComponent = memo((props: NodeProps) => {
-	const { BaseNode } = useNodeUI();
 	const node = useAppSelector(makeSelectNodeById(props.id));
 	const [isDownloading, setIsDownloading] = useState(false);
 	const { inputs } = useNodeResult(props.id);
@@ -262,7 +258,7 @@ const VideoCompositorNodeComponent = memo((props: NodeProps) => {
 									</>
 								)}
 							</Button>
-							<Button onClick={() => nav(`video-editor/${node.id}`)} size="sm">
+							<Button onClick={() => nav(`view/${node.id}`)} size="sm">
 								<VideoIcon className="size-4 mr-1" /> Editor
 							</Button>
 						</div>

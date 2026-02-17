@@ -1,26 +1,9 @@
-import type { NodeResult } from "@gatewai/core/types";
-import type {
-	BackendNodeProcessorCtx,
-	BackendNodeProcessorResult,
+import {
 	defineNode,
-	NodeProcessor,
+	ServerPassthroughProcessor,
 } from "@gatewai/node-sdk/server";
-import { manifest } from "../metadata.js";
+import { metadata } from "../metadata.js";
 
-@injectable()
-export class VideoCompositorProcessor implements NodeProcessor {
-	async process(ctx: BackendNodeProcessorCtx) {
-		const result: BackendNodeProcessorResult = {
-			success: true,
-			newResult: ctx.node.result as NodeResult,
-		};
-		// Implementation placeholder
-		return result;
-	}
-}
-
-export const videoCompositorNode = defineNode(manifest, {
-	backendProcessor: VideoCompositorProcessor,
+export default defineNode(metadata, {
+	backendProcessor: ServerPassthroughProcessor,
 });
-
-export default videoCompositorNode;

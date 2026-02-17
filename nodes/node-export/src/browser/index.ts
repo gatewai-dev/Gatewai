@@ -3,8 +3,10 @@ import { memo } from "react";
 import { PiUploadSimple } from "react-icons/pi";
 import metadata from "../metadata.js";
 import { ExportNodeComponent } from "./export-node-component.js";
+import { ModulateBrowserProcessor } from "./processor.js";
 
 export default defineClient(metadata, {
 	Component: ExportNodeComponent,
 	mainIconComponent: memo(PiUploadSimple),
+	processor: ModulateBrowserProcessor,
 });

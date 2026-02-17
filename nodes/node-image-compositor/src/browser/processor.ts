@@ -3,8 +3,13 @@ import {
 	GetAssetEndpoint,
 	GetFontAssetUrl,
 } from "@gatewai/core/browser";
-import type { ConnectedInput, NodeRunFunction } from "@gatewai/core/types";
+import type {
+	ConnectedInput,
+	NodeProcessorParams,
+	NodeResult,
+} from "@gatewai/core/types";
 import { COMPOSITOR_DEFAULTS, type FileData } from "@gatewai/core/types";
+import type { IBrowserProcessor } from "@gatewai/node-sdk/browser";
 import Konva from "konva";
 import {
 	type CompositorLayer,
@@ -33,56 +38,62 @@ const getConnectedInputDataValue = (
 	return null;
 };
 
-const imageCompositorBrowserProcessor: NodeRunFunction = async ({
-	node,
-	inputs,
-	signal,
-	context,
-}) => {
-	const validatedConfig = CompositorNodeConfigSchema.parse(node.config);
-	const inputDataMap: Record<
-		string,
-		{ type: "Image" | "Text"; value: string }
-	> = {};
+export class ImageCompositorBrowserProcessor implements IBrowserProcessor {
+	async process({
+		node,
+		inputs,
+		signal,
+		context,
+	}: NodeProcessorParams): Promise<NodeResult | null> {
+		const validatedConfig = CompositorNodeConfigSchema.parse(node.config);
+		const inputDataMap: Record<
+			string,
+			{ type: "Image" | "Text"; value: string }
+		> = {};
 
-	Object.entries(inputs).forEach(([inputHandleId]) => {
-		const data = getConnectedInputDataValue(inputs, inputHandleId);
-		if (data && (data.type === "Image" || data.type === "Text")) {
-			inputDataMap[inputHandleId] = data as {
-				type: "Image" | "Text";
-				value: string;
-			};
-		}
-	});
+		Object.entries(inputs).forEach(([inputHandleId]) => {
+			const data = getConnectedInputDataValue(inputs, inputHandleId);
+			if (data && (data.type === "Image" || data.type === "Text")) {
+				inputDataMap[inputHandleId] = data as {
+					type: "Image" | "Text";
+					value: string;
+				};
+			}
+		});
 
-	const result = await processCompositor(validatedConfig, inputDataMap, signal);
-	const outputHandle = context.getOutputHandle("Image");
-	if (!outputHandle) throw new Error("Missing output handle");
+		const result = await processCompositor(
+			validatedConfig,
+			inputDataMap,
+			signal,
+		);
+		const outputHandle = context.getOutputHandle("Image");
+		if (!outputHandle) throw new Error("Missing output handle");
 
-	const compositorUrl = URL.createObjectURL(result.dataUrl);
-	context.registerObjectUrl(compositorUrl);
+		const compositorUrl = URL.createObjectURL(result.dataUrl);
+		context.registerObjectUrl(compositorUrl);
 
-	return {
-		selectedOutputIndex: 0,
-		outputs: [
-			{
-				items: [
-					{
-						type: "Image",
-						data: {
-							processData: {
-								dataUrl: compositorUrl,
-								width: result.width,
-								height: result.height,
+		return {
+			selectedOutputIndex: 0,
+			outputs: [
+				{
+					items: [
+						{
+							type: "Image",
+							data: {
+								processData: {
+									dataUrl: compositorUrl,
+									width: result.width,
+									height: result.height,
+								},
 							},
+							outputHandleId: outputHandle,
 						},
-						outputHandleId: outputHandle,
-					},
-				],
-			},
-		],
-	};
-};
+					],
+				},
+			],
+		};
+	}
+}
 
 const processCompositor = async (
 	config: CompositorNodeConfig,
@@ -274,4 +285,4 @@ const processCompositor = async (
 	return { dataUrl: blob, width, height };
 };
 
-export { processCompositor, imageCompositorBrowserProcessor };
+export { processCompositor };

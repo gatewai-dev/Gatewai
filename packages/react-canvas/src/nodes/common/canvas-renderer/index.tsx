@@ -1,6 +1,6 @@
+import CanvasWorker from "@gatewai/media/canvas-worker?worker";
 import { useViewport } from "@xyflow/react";
 import { useEffect, useRef, useState } from "react";
-import CanvasWorker from "@gatewai/media/canvas-worker?worker";
 
 function useDrawToCanvas(
 	canvasRef: React.RefObject<HTMLCanvasElement | null>,

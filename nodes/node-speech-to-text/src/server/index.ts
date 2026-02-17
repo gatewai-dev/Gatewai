@@ -3,9 +3,6 @@ import { logger } from "@gatewai/core";
 import { TOKENS } from "@gatewai/core/di";
 import type { OutputItem, SpeechToTextResult } from "@gatewai/core/types";
 import { DataType } from "@gatewai/db";
-import {
-    defineNode,
-} from "@gatewai/node-sdk/server";
 import type {
     AIProvider,
     BackendNodeProcessorCtx,
@@ -13,6 +10,9 @@ import type {
     GraphResolvers,
     NodeProcessor,
     StorageService,
+} from "@gatewai/node-sdk/server";
+import {
+    defineNode,
 } from "@gatewai/node-sdk/server";
 import { createPartFromUri, createUserContent, type GoogleGenAI } from "@google/genai";
 import { inject, injectable } from "tsyringe";

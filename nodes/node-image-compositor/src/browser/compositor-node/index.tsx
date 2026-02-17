@@ -13,7 +13,6 @@ import { memo } from "react";
 import { useNavigate } from "react-router";
 
 const CompositorNodeComponent = memo((props: NodeProps<Node>) => {
-
 	const node = useAppSelector(makeSelectNodeById(props.id));
 
 	const { result } = useNodeResult(props.id);

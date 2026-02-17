@@ -1,19 +1,14 @@
-import {
-	defineClient,
-	useNodePreview,
-	useNodeUI,
-} from "@gatewai/node-sdk/browser";
+import { useNodePreview } from "@gatewai/node-sdk/browser";
+import { BaseNode, type NodeProps, useCanvasCtx } from "@gatewai/react-canvas";
 import { ScrollArea, Textarea } from "@gatewai/ui-kit";
 import type React from "react";
 import { memo, useCallback } from "react";
-import { PiTextT } from "react-icons/pi";
-import { metadata } from "../metadata.js";
 
-const TextNodeComponent = memo((props: any) => {
-	const { onNodeConfigUpdate, BaseNode } = useNodeUI();
+export const TextNodeComponent = memo((props: NodeProps) => {
 	const { node } = useNodePreview(props.id);
 	const text = node?.config?.content ?? "";
 
+	const { onNodeConfigUpdate } = useCanvasCtx();
 	const handleChange = useCallback(
 		(e: React.ChangeEvent<HTMLTextAreaElement>) => {
 			onNodeConfigUpdate({
@@ -44,9 +39,4 @@ const TextNodeComponent = memo((props: any) => {
 			</ScrollArea>
 		</BaseNode>
 	);
-});
-
-export default defineClient(metadata, {
-	Component: TextNodeComponent,
-	mainIconComponent: memo(PiTextT),
 });

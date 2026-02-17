@@ -22,7 +22,7 @@ import { colorsSimilar, colorToRgb, getPixel, setPixel } from "./utils.js";
 
 const PaintNodeComponent = memo(
 	(props: { selected: boolean; id: string; dragging: boolean }) => {
-		const { onNodeConfigUpdate } = useNodeUI();
+		const { onNodeConfigUpdate } = useCanvasCtx();
 		const edges = useAppSelector(makeSelectEdgesByTargetNodeId(props.id));
 		const inputHandleId = useMemo(() => {
 			if (!edges || !edges[0]) {

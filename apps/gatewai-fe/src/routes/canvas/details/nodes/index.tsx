@@ -1,6 +1,5 @@
 import { discoveredNodes } from "virtual:gatewai-nodes";
 import type { NodeIconEntry, NodeRegistryValue } from "@gatewai/react-canvas";
-import { memo } from "react";
 import { PiCube } from "react-icons/pi";
 
 /**

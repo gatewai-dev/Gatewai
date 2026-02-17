@@ -3,7 +3,7 @@ import { VideoCompositorNodeConfigSchema } from "./shared/index.js";
 
 export { VideoCompositorNodeConfigSchema };
 
-export default defineMetadata({
+export const metadata = defineMetadata({
 	type: "VideoCompositor",
 	displayName: "Video Compositor",
 	description: "Compose videos using Text, Image, Audio and Video Inputs.",

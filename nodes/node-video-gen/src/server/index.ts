@@ -8,9 +8,6 @@ import { TOKENS } from "@gatewai/core/di";
 import type { FileData, VideoGenResult } from "@gatewai/core/types";
 import type { PrismaClient } from "@gatewai/db";
 import { DataType } from "@gatewai/db";
-import {
-    defineNode,
-} from "@gatewai/node-sdk/server";
 import type {
     AIProvider,
     BackendNodeProcessorCtx,
@@ -19,10 +16,13 @@ import type {
     NodeProcessor,
     StorageService,
 } from "@gatewai/node-sdk/server";
+import {
+    defineNode,
+} from "@gatewai/node-sdk/server";
 import type {
+    GoogleGenAI,
     VideoGenerationReferenceImage,
     VideoGenerationReferenceType,
-    GoogleGenAI,
 } from "@google/genai";
 import { inject, injectable } from "tsyringe";
 import metadata, { VideoGenNodeConfigSchema } from "../metadata.js";

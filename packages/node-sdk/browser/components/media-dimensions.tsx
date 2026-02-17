@@ -2,8 +2,8 @@ import type { FileData } from "@gatewai/core/types";
 import type { NodeEntityType } from "@gatewai/react-store";
 import { cn } from "@gatewai/ui-kit";
 import { Ruler } from "lucide-react";
-import { useNodeUI } from "../ui.js";
 import { useNodeResult } from "../hooks.js";
+import { useNodeUI } from "../ui.js";
 
 function MediaDimensions({
 	node,
