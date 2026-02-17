@@ -1,6 +1,13 @@
 import CanvasWorker from "@gatewai/media/canvas-worker?worker";
 import { useViewport } from "@xyflow/react";
-import { useEffect, useRef, useState } from "react";
+import {
+	forwardRef,
+	memo,
+	useEffect,
+	useImperativeHandle,
+	useRef,
+	useState,
+} from "react";
 
 function useDrawToCanvas(
 	canvasRef: React.RefObject<HTMLCanvasElement | null>,
@@ -97,22 +104,29 @@ function useDrawToCanvas(
 	return { renderHeight };
 }
 
-function CanvasRenderer({ imageUrl }: { imageUrl?: string | null }) {
-	const canvasRef = useRef<HTMLCanvasElement>(null);
-	const { renderHeight } = useDrawToCanvas(canvasRef, imageUrl);
+interface CanvasRendererProps {
+	imageUrl?: string;
+}
 
-	return (
-		<div className="flex w-full h-full items-center justify-center overflow-hidden">
+const CanvasRenderer = memo(
+	forwardRef<HTMLCanvasElement, CanvasRendererProps>(({ imageUrl }, ref) => {
+		const internalRef = useRef<HTMLCanvasElement | null>(null);
+		// Sync the forwarded ref with our internal ref
+		// biome-ignore lint/style/noNonNullAssertion: Not important
+		useImperativeHandle(ref, () => internalRef.current!);
+		const { renderHeight } = useDrawToCanvas(internalRef, imageUrl);
+
+		return (
 			<canvas
-				ref={canvasRef}
+				ref={internalRef}
+				className="w-full flex"
+				height={renderHeight}
 				style={{
-					width: "100%",
-					height: renderHeight ? `${renderHeight}px` : "100%",
-					display: "block",
+					height: renderHeight ? `${renderHeight}px` : "auto",
 				}}
 			/>
-		</div>
-	);
-}
+		);
+	}),
+);
 
 export { useDrawToCanvas, CanvasRenderer };

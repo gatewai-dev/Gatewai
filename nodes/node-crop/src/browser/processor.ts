@@ -20,7 +20,7 @@ export class CropBrowserProcessor implements IBrowserProcessor {
 			applyCrop,
 			signal,
 		);
-		const outputHandle = context.getFirstOutputHandle(node.id, "Image");
+		const outputHandle = context.getFirstOutputHandle(node.id);
 		if (!outputHandle) throw new Error("Missing output handle");
 
 		const dataUrl = URL.createObjectURL(result.dataUrl);
