@@ -8,7 +8,7 @@ export class ImportBrowserProcessor implements IBrowserProcessor {
 		node,
 		context,
 	}: NodeProcessorParams): Promise<NodeResult | null> {
-		const outputHandle = context.getFirstOutputHandle(node.id, "File");
+		const outputHandle = context.getFirstOutputHandle(node.id);
 		const config = ImportNodeConfigSchema.parse(node.config);
 		const asset = config.asset;
 

@@ -3,6 +3,7 @@ import {
 	BaseNode,
 	MediaContent,
 	useHasOutputItems,
+	useNodeResult,
 } from "@gatewai/react-canvas";
 import type { UploadFileNodeAssetRPC } from "@gatewai/react-store";
 import {
@@ -24,10 +25,9 @@ type SuccessfulUploadImportNodeAssetRPC = Extract<
 
 const ImportNodeComponent = memo((props: NodeProps) => {
 	const node = useAppSelector(makeSelectNodeById(props.id));
-	const showResult = useHasOutputItems(node);
+	const { result } = useNodeResult(props.id);
 	const dispatch = useAppDispatch();
 
-	const result = node?.result as unknown as FileResult;
 	const config = node?.config as any;
 	const asset = config?.asset;
 
@@ -64,7 +64,7 @@ const ImportNodeComponent = memo((props: NodeProps) => {
 	const buttonAccept = getFilteredAccept(existingType);
 
 	const buttonLabel =
-		showResult && existingType
+		result && existingType
 			? `Upload another ${existingType}`
 			: "Click to upload a file";
 
@@ -100,12 +100,12 @@ const ImportNodeComponent = memo((props: NodeProps) => {
 			"An error occurred when uploading file, please try again later.",
 		);
 	};
-
+	console.log({ result, config });
 	return (
 		<BaseNode selected={props.selected} id={props.id} dragging={props.dragging}>
 			<div className="flex flex-col gap-2">
-				{showResult && <MediaContent node={node} result={result} />}
-				{!showResult && (
+				{result && <MediaContent node={node} result={result} />}
+				{!result && (
 					<UploadDropzone
 						className="w-full py-16"
 						onUploadSuccess={onUploadSuccess}
@@ -115,7 +115,7 @@ const ImportNodeComponent = memo((props: NodeProps) => {
 						label={dropzoneLabel}
 					/>
 				)}
-				{showResult && (
+				{result && (
 					<UploadButton
 						className="py-0"
 						onUploadSuccess={onUploadSuccess}

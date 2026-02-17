@@ -8,7 +8,7 @@ export type ConnectedInput = {
 };
 
 export interface NodeProcessorContext {
-	getFirstOutputHandle: (nodeId: string, type: string) => string | undefined;
+	getFirstOutputHandle: (nodeId: string, type?: DataType) => string | undefined;
 	findInputData: (
 		inputs: Record<string, ConnectedInput>,
 		requiredType?: string,
