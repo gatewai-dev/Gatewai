@@ -7,7 +7,7 @@ import {
 import type { UploadFileNodeAssetRPC } from "@gatewai/react-store";
 import {
 	makeSelectNodeById,
-	updateNodeResult,
+	updateNodeConfig,
 	useAppDispatch,
 	useAppSelector,
 } from "@gatewai/react-store";
@@ -17,20 +17,21 @@ import { toast } from "sonner";
 import { UploadButton } from "./file-button.js";
 import { UploadDropzone } from "./file-dropzone.js";
 
-type SuccessfulUploadFileNodeAssetRPC = Extract<
+type SuccessfulUploadImportNodeAssetRPC = Extract<
 	UploadFileNodeAssetRPC,
 	{ handles: unknown } | { someOtherSuccessProperty: unknown }
 >;
 
-const FileNodeComponent = memo((props: NodeProps) => {
+const ImportNodeComponent = memo((props: NodeProps) => {
 	const node = useAppSelector(makeSelectNodeById(props.id));
 	const showResult = useHasOutputItems(node);
 	const dispatch = useAppDispatch();
 
 	const result = node?.result as unknown as FileResult;
+	const config = node?.config as any;
+	const asset = config?.asset;
 
-	const existingMimeType =
-		result?.outputs?.[0]?.items?.[0]?.data?.entity?.mimeType;
+	const existingMimeType = asset?.mimeType;
 
 	const existingType = existingMimeType?.startsWith("image/")
 		? "image"
@@ -79,11 +80,16 @@ const FileNodeComponent = memo((props: NodeProps) => {
 			);
 			return;
 		}
-		const successResult = uploadResult as SuccessfulUploadFileNodeAssetRPC;
+		const successResult = uploadResult as SuccessfulUploadImportNodeAssetRPC;
+
+		// The server returns the full updated node, which includes the new config.
+		// We expect successResult to be the Node entity.
+		const newConfig = (successResult as any).config;
+
 		dispatch(
-			updateNodeResult({
+			updateNodeConfig({
 				id: props.id,
-				newResult: successResult.result as unknown as FileResult,
+				newConfig,
 			}),
 		);
 	};
@@ -124,4 +130,4 @@ const FileNodeComponent = memo((props: NodeProps) => {
 	);
 });
 
-export { FileNodeComponent };
+export { ImportNodeComponent };

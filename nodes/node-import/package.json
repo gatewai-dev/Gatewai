@@ -1,5 +1,5 @@
 {
-	"name": "@gatewai/node-file",
+	"name": "@gatewai/node-import",
 	"version": "0.0.0",
 	"private": true,
 	"type": "module",
@@ -57,7 +57,7 @@
 		"@gatewai/node-blur": "workspace:*",
 		"@gatewai/node-crop": "workspace:*",
 		"@gatewai/node-export": "workspace:*",
-		"@gatewai/node-file": "workspace:*",
+		"@gatewai/node-import": "workspace:*",
 		"@gatewai/node-image-compositor": "workspace:*",
 		"@gatewai/node-image-gen": "workspace:*",
 		"@gatewai/node-llm": "workspace:*",

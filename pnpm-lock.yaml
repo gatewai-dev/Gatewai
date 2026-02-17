@@ -102,15 +102,15 @@ importers:
       '@gatewai/node-export':
         specifier: workspace:*
         version: link:../../nodes/node-export
-      '@gatewai/node-file':
-        specifier: workspace:*
-        version: link:../../nodes/node-file
       '@gatewai/node-image-compositor':
         specifier: workspace:*
         version: link:../../nodes/node-image-compositor
       '@gatewai/node-image-gen':
         specifier: workspace:*
         version: link:../../nodes/node-image-gen
+      '@gatewai/node-import':
+        specifier: workspace:*
+        version: link:../../nodes/node-import
       '@gatewai/node-llm':
         specifier: workspace:*
         version: link:../../nodes/node-llm
@@ -557,15 +557,15 @@ importers:
       '@gatewai/node-export':
         specifier: workspace:*
         version: link:../node-export
-      '@gatewai/node-file':
-        specifier: workspace:*
-        version: link:../node-file
       '@gatewai/node-image-compositor':
         specifier: workspace:*
         version: link:../node-image-compositor
       '@gatewai/node-image-gen':
         specifier: workspace:*
         version: link:../node-image-gen
+      '@gatewai/node-import':
+        specifier: workspace:*
+        version: link:../node-import
       '@gatewai/node-llm':
         specifier: workspace:*
         version: link:../node-llm
@@ -927,15 +927,15 @@ importers:
       '@gatewai/node-export':
         specifier: workspace:*
         version: link:../node-export
-      '@gatewai/node-file':
-        specifier: workspace:*
-        version: link:../node-file
       '@gatewai/node-image-compositor':
         specifier: workspace:*
         version: link:../node-image-compositor
       '@gatewai/node-image-gen':
         specifier: workspace:*
         version: link:../node-image-gen
+      '@gatewai/node-import':
+        specifier: workspace:*
+        version: link:../node-import
       '@gatewai/node-llm':
         specifier: workspace:*
         version: link:../node-llm
@@ -1297,382 +1297,15 @@ importers:
       '@gatewai/node-export':
         specifier: workspace:*
         version: 'link:'
-      '@gatewai/node-file':
-        specifier: workspace:*
-        version: link:../node-file
       '@gatewai/node-image-compositor':
         specifier: workspace:*
         version: link:../node-image-compositor
       '@gatewai/node-image-gen':
         specifier: workspace:*
         version: link:../node-image-gen
-      '@gatewai/node-llm':
+      '@gatewai/node-import':
         specifier: workspace:*
-        version: link:../node-llm
-      '@gatewai/node-modulate':
-        specifier: workspace:*
-        version: link:../node-modulate
-      '@gatewai/node-note':
-        specifier: workspace:*
-        version: link:../node-note
-      '@gatewai/node-paint':
-        specifier: workspace:*
-        version: link:../node-paint
-      '@gatewai/node-preview':
-        specifier: workspace:*
-        version: link:../node-preview
-      '@gatewai/node-resize':
-        specifier: workspace:*
-        version: link:../node-resize
-      '@gatewai/node-sdk':
-        specifier: workspace:*
-        version: link:../../packages/node-sdk
-      '@gatewai/node-speech-to-text':
-        specifier: workspace:*
-        version: link:../node-speech-to-text
-      '@gatewai/node-text':
-        specifier: workspace:*
-        version: link:../node-text
-      '@gatewai/node-text-merger':
-        specifier: workspace:*
-        version: link:../node-text-merger
-      '@gatewai/node-text-to-speech':
-        specifier: workspace:*
-        version: link:../node-text-to-speech
-      '@gatewai/node-video-compositor':
-        specifier: workspace:*
-        version: link:../node-video-compositor
-      '@gatewai/node-video-gen':
-        specifier: workspace:*
-        version: link:../node-video-gen
-      '@gatewai/node-video-gen-first-last-frame':
-        specifier: workspace:*
-        version: link:../node-video-gen-first-last-frame
-      '@gatewai/react-canvas':
-        specifier: workspace:*
-        version: link:../../packages/react-canvas
-      '@gatewai/react-store':
-        specifier: workspace:*
-        version: link:../../packages/react-store
-      '@gatewai/rpc-client':
-        specifier: workspace:*
-        version: link:../../packages/rpc-client
-      '@gatewai/ui-kit':
-        specifier: workspace:*
-        version: link:../../packages/ui-kit
-      '@google-cloud/secret-manager':
-        specifier: '*'
-        version: 6.1.1
-      '@google/adk':
-        specifier: '*'
-        version: 0.2.4(49fe1a11536dd5ba249a9fdf66cfd27d)
-      '@google/genai':
-        specifier: '*'
-        version: 1.32.0(@modelcontextprotocol/sdk@1.25.2(hono@4.8.5)(zod@3.25.67))
-      '@hono/node-server':
-        specifier: '*'
-        version: 1.19.9(hono@4.8.5)
-      '@hono/zod-validator':
-        specifier: '*'
-        version: 0.7.2(hono@4.8.5)(zod@3.25.67)
-      '@hookform/resolvers':
-        specifier: '*'
-        version: 3.10.0(react-hook-form@7.71.1(react@19.2.4))
-      '@lobehub/icons':
-        specifier: '*'
-        version: 2.48.0(@babel/core@7.28.0)(@types/mdast@4.0.4)(@types/react-dom@19.2.3(@types/react@19.1.11))(@types/react@19.1.11)(antd@5.29.2(date-fns@4.1.0)(luxon@3.7.2)(react-dom@19.2.4(react@19.2.4))(react@19.2.4))(framer-motion@12.23.26(react-dom@19.2.4(react@19.2.4))(react@19.2.4))(micromark-util-types@2.0.2)(micromark@4.0.2)(react-dom@19.2.4(react@19.2.4))(react@19.2.4)(vue@3.5.18(typescript@5.8.3))
-      '@neodrag/react':
-        specifier: '*'
-        version: 2.3.1
-      '@openai/agents':
-        specifier: '*'
-        version: 0.4.1(hono@4.8.5)(ws@8.18.3)(zod@3.25.67)
-      '@openai/agents-extensions':
-        specifier: '*'
-        version: 0.4.1(@ai-sdk/provider@3.0.5)(@openai/agents@0.4.1(hono@4.8.5)(ws@8.18.3)(zod@3.25.67))(hono@4.8.5)(ws@8.18.3)(zod@3.25.67)
-      '@pixi/webworker':
-        specifier: '*'
-        version: 7.4.3
-      '@radix-ui/react-slider':
-        specifier: '*'
-        version: 1.3.6(@types/react-dom@19.2.3(@types/react@19.1.11))(@types/react@19.1.11)(react-dom@19.2.4(react@19.2.4))(react@19.2.4)
-      '@reduxjs/toolkit':
-        specifier: '*'
-        version: 2.10.1(react-redux@9.2.0(@types/react@19.1.11)(react@19.2.4)(redux@5.0.1))(react@19.2.4)
-      '@remotion/media':
-        specifier: '*'
-        version: 4.0.414(react-dom@19.2.4(react@19.2.4))(react@19.2.4)
-      '@remotion/player':
-        specifier: '*'
-        version: 4.0.414(react-dom@19.2.4(react@19.2.4))(react@19.2.4)
-      '@remotion/web-renderer':
-        specifier: '*'
-        version: 4.0.414(react-dom@19.2.4(react@19.2.4))(react@19.2.4)
-      '@tailwindcss/vite':
-        specifier: '*'
-        version: 4.1.16(vite@7.1.3(@types/node@24.10.4)(jiti@2.6.1)(lightningcss@1.30.2)(terser@5.44.1)(tsx@4.20.3)(yaml@2.8.0))
-      '@xyflow/react':
-        specifier: ^12.8.4
-        version: 12.8.4(@types/react@19.1.11)(immer@11.1.3)(react-dom@19.2.4(react@19.2.4))(react@19.2.4)
-      ai:
-        specifier: '*'
-        version: 6.0.58(zod@3.25.67)
-      better-auth:
-        specifier: '*'
-        version: 1.4.17(@prisma/client@6.19.0(prisma@6.19.0(typescript@5.8.3))(typescript@5.8.3))(pg@8.16.3)(prisma@6.19.0(typescript@5.8.3))(react-dom@19.2.4(react@19.2.4))(react@19.2.4)(vitest@4.0.18(@opentelemetry/api@1.9.0)(@types/node@24.10.4)(jiti@2.6.1)(lightningcss@1.30.2)(terser@5.44.1)(tsx@4.20.3)(yaml@2.8.0))(vue@3.5.18(typescript@5.8.3))
-      bullmq:
-        specifier: '*'
-        version: 5.66.4
-      class-variance-authority:
-        specifier: '*'
-        version: 0.7.1
-      clsx:
-        specifier: ^2.1.1
-        version: 2.1.1
-      cmdk:
-        specifier: '*'
-        version: 1.1.1(@types/react-dom@19.2.3(@types/react@19.1.11))(@types/react@19.1.11)(react-dom@19.2.4(react@19.2.4))(react@19.2.4)
-      color:
-        specifier: '*'
-        version: 5.0.3
-      data-urls:
-        specifier: '*'
-        version: 6.0.0
-      date-fns:
-        specifier: '*'
-        version: 4.1.0
-      dotenv:
-        specifier: '*'
-        version: 17.2.3
-      file-type:
-        specifier: '*'
-        version: 21.1.1
-      framer-motion:
-        specifier: ^12.23.26
-        version: 12.29.0(react-dom@19.2.4(react@19.2.4))(react@19.2.4)
-      generic-pool:
-        specifier: '*'
-        version: 3.9.0
-      gl:
-        specifier: '*'
-        version: 6.0.2
-      hono:
-        specifier: '*'
-        version: 4.8.5
-      ioredis:
-        specifier: '*'
-        version: 5.8.2
-      json-schema-to-zod:
-        specifier: '*'
-        version: 2.7.0
-      konva:
-        specifier: '*'
-        version: 10.0.12
-      lodash:
-        specifier: '*'
-        version: 4.17.23
-      loglevel:
-        specifier: '*'
-        version: 1.9.2
-      lucide-react:
-        specifier: ^0.552.0
-        version: 0.552.0(react@19.2.4)
-      media-chrome:
-        specifier: '*'
-        version: 4.17.2(react@19.2.4)
-      mime-types:
-        specifier: '*'
-        version: 3.0.2
-      motion:
-        specifier: '*'
-        version: 12.29.0(react-dom@19.2.4(react@19.2.4))(react@19.2.4)
-      music-metadata:
-        specifier: '*'
-        version: 11.10.3
-      nanoid:
-        specifier: '*'
-        version: 5.1.6
-      next-themes:
-        specifier: '*'
-        version: 0.4.6(react-dom@19.2.4(react@19.2.4))(react@19.2.4)
-      p-limit:
-        specifier: '*'
-        version: 7.2.0
-      pino:
-        specifier: '*'
-        version: 10.1.0
-      pino-http:
-        specifier: '*'
-        version: 11.0.0
-      pixi.js:
-        specifier: '*'
-        version: 7.4.3
-      query-string:
-        specifier: '*'
-        version: 9.3.1
-      quickjs-emscripten:
-        specifier: '*'
-        version: 0.31.0
-      radix-ui:
-        specifier: '*'
-        version: 1.4.3(@types/react-dom@19.2.3(@types/react@19.1.11))(@types/react@19.1.11)(react-dom@19.2.4(react@19.2.4))(react@19.2.4)
-      react-dnd:
-        specifier: '*'
-        version: 16.0.1(@types/node@24.10.4)(@types/react@19.1.11)(react@19.2.4)
-      react-dnd-html5-backend:
-        specifier: '*'
-        version: 16.0.1
-      react-dnd-touch-backend:
-        specifier: '*'
-        version: 16.0.1
-      react-dom:
-        specifier: ^19.2.4
-        version: 19.2.4(react@19.2.4)
-      react-dropzone:
-        specifier: '*'
-        version: 14.3.8(react@19.2.4)
-      react-fast-compare:
-        specifier: '*'
-        version: 3.2.2
-      react-helmet-async:
-        specifier: '*'
-        version: 2.0.5(react@19.2.4)
-      react-hook-form:
-        specifier: '*'
-        version: 7.71.1(react@19.2.4)
-      react-hotkeys-hook:
-        specifier: ^5.2.1
-        version: 5.2.1(react-dom@19.2.4(react@19.2.4))(react@19.2.4)
-      react-icons:
-        specifier: '*'
-        version: 5.5.0(react@19.2.4)
-      react-konva:
-        specifier: '*'
-        version: 19.2.1(@types/react@19.1.11)(konva@10.0.12)(react-dom@19.2.4(react@19.2.4))(react@19.2.4)
-      react-markdown:
-        specifier: '*'
-        version: 10.1.0(@types/react@19.1.11)(react@19.2.4)
-      react-redux:
-        specifier: '*'
-        version: 9.2.0(@types/react@19.1.11)(react@19.2.4)(redux@5.0.1)
-      react-router:
-        specifier: ^7.8.2
-        version: 7.8.2(react-dom@19.2.4(react@19.2.4))(react@19.2.4)
-      react-scan:
-        specifier: '*'
-        version: 0.4.3(@types/react@19.1.11)(react-dom@19.2.4(react@19.2.4))(react-router@7.8.2(react-dom@19.2.4(react@19.2.4))(react@19.2.4))(react@19.2.4)(rollup@4.45.1)
-      reflect-metadata:
-        specifier: '*'
-        version: 0.2.2
-      remark-gfm:
-        specifier: '*'
-        version: 4.0.1
-      remotion:
-        specifier: '*'
-        version: 4.0.414(react-dom@19.2.4(react@19.2.4))(react@19.2.4)
-      sonner:
-        specifier: '*'
-        version: 2.0.7(react-dom@19.2.4(react@19.2.4))(react@19.2.4)
-      tailwind-merge:
-        specifier: ^3.3.1
-        version: 3.4.0
-      tailwindcss:
-        specifier: '*'
-        version: 4.1.16
-      tsyringe:
-        specifier: ^4.10.0
-        version: 4.10.0
-      use-debounce:
-        specifier: '*'
-        version: 10.0.6(react@19.2.4)
-      use-image:
-        specifier: '*'
-        version: 1.1.4(react-dom@19.2.4(react@19.2.4))(react@19.2.4)
-      vite-plugin-node-polyfills:
-        specifier: '*'
-        version: 0.24.0(rollup@4.45.1)(vite@7.1.3(@types/node@24.10.4)(jiti@2.6.1)(lightningcss@1.30.2)(terser@5.44.1)(tsx@4.20.3)(yaml@2.8.0))
-      wav:
-        specifier: '*'
-        version: 1.0.2
-      webfontloader:
-        specifier: '*'
-        version: 1.6.28
-      zod:
-        specifier: ^3.24.1
-        version: 3.25.67
-      zod-to-json-schema:
-        specifier: '*'
-        version: 3.25.1(zod@3.25.67)
-    devDependencies:
-      '@gatewai/tsconfig':
-        specifier: workspace:*
-        version: link:../../packages/tsconfig
-      '@types/node':
-        specifier: ^24.0.4
-        version: 24.10.4
-      '@types/react':
-        specifier: ^19.1.11
-        version: 19.1.11
-      react:
-        specifier: ^19.2.4
-        version: 19.2.4
-      tsdown:
-        specifier: ^0.19.0
-        version: 0.19.0(publint@0.3.17)(synckit@0.11.11)(typescript@5.8.3)
-      typescript:
-        specifier: ^5.8.3
-        version: 5.8.3
-
-  nodes/node-file:
-    dependencies:
-      '@ai-sdk/google':
-        specifier: '*'
-        version: 3.0.16(zod@3.25.67)
-      '@dnd-kit/core':
-        specifier: ^6.3.1
-        version: 6.3.1(react-dom@19.2.4(react@19.2.4))(react@19.2.4)
-      '@dnd-kit/sortable':
-        specifier: ^10.0.0
-        version: 10.0.0(@dnd-kit/core@6.3.1(react-dom@19.2.4(react@19.2.4))(react@19.2.4))(react@19.2.4)
-      '@dnd-kit/utilities':
-        specifier: ^3.2.2
-        version: 3.2.2(react@19.2.4)
-      '@gatewai/api-client':
-        specifier: workspace:*
-        version: link:../../packages/api-client
-      '@gatewai/core':
-        specifier: workspace:*
-        version: link:../../packages/core
-      '@gatewai/data-ops':
-        specifier: workspace:*
-        version: link:../../packages/data-ops
-      '@gatewai/db':
-        specifier: workspace:*
-        version: link:../../packages/db
-      '@gatewai/graph-engine':
-        specifier: workspace:*
-        version: link:../../packages/graph-engine
-      '@gatewai/media':
-        specifier: workspace:*
-        version: link:../../packages/media
-      '@gatewai/node-blur':
-        specifier: workspace:*
-        version: link:../node-blur
-      '@gatewai/node-crop':
-        specifier: workspace:*
-        version: link:../node-crop
-      '@gatewai/node-export':
-        specifier: workspace:*
-        version: link:../node-export
-      '@gatewai/node-file':
-        specifier: workspace:*
-        version: 'link:'
-      '@gatewai/node-image-compositor':
-        specifier: workspace:*
-        version: link:../node-image-compositor
-      '@gatewai/node-image-gen':
-        specifier: workspace:*
-        version: link:../node-image-gen
+        version: link:../node-import
       '@gatewai/node-llm':
         specifier: workspace:*
         version: link:../node-llm
@@ -2031,15 +1664,15 @@ importers:
       '@gatewai/node-export':
         specifier: workspace:*
         version: link:../node-export
-      '@gatewai/node-file':
-        specifier: workspace:*
-        version: link:../node-file
       '@gatewai/node-image-compositor':
         specifier: workspace:*
         version: 'link:'
       '@gatewai/node-image-gen':
         specifier: workspace:*
         version: link:../node-image-gen
+      '@gatewai/node-import':
+        specifier: workspace:*
+        version: link:../node-import
       '@gatewai/node-llm':
         specifier: workspace:*
         version: link:../node-llm
@@ -2404,15 +2037,15 @@ importers:
       '@gatewai/node-export':
         specifier: workspace:*
         version: link:../node-export
-      '@gatewai/node-file':
-        specifier: workspace:*
-        version: link:../node-file
       '@gatewai/node-image-compositor':
         specifier: workspace:*
         version: link:../node-image-compositor
       '@gatewai/node-image-gen':
         specifier: workspace:*
         version: 'link:'
+      '@gatewai/node-import':
+        specifier: workspace:*
+        version: link:../node-import
       '@gatewai/node-llm':
         specifier: workspace:*
         version: link:../node-llm
@@ -2727,6 +2360,373 @@ importers:
         specifier: ^5.8.3
         version: 5.8.3
 
+  nodes/node-import:
+    dependencies:
+      '@ai-sdk/google':
+        specifier: '*'
+        version: 3.0.16(zod@3.25.67)
+      '@dnd-kit/core':
+        specifier: ^6.3.1
+        version: 6.3.1(react-dom@19.2.4(react@19.2.4))(react@19.2.4)
+      '@dnd-kit/sortable':
+        specifier: ^10.0.0
+        version: 10.0.0(@dnd-kit/core@6.3.1(react-dom@19.2.4(react@19.2.4))(react@19.2.4))(react@19.2.4)
+      '@dnd-kit/utilities':
+        specifier: ^3.2.2
+        version: 3.2.2(react@19.2.4)
+      '@gatewai/api-client':
+        specifier: workspace:*
+        version: link:../../packages/api-client
+      '@gatewai/core':
+        specifier: workspace:*
+        version: link:../../packages/core
+      '@gatewai/data-ops':
+        specifier: workspace:*
+        version: link:../../packages/data-ops
+      '@gatewai/db':
+        specifier: workspace:*
+        version: link:../../packages/db
+      '@gatewai/graph-engine':
+        specifier: workspace:*
+        version: link:../../packages/graph-engine
+      '@gatewai/media':
+        specifier: workspace:*
+        version: link:../../packages/media
+      '@gatewai/node-blur':
+        specifier: workspace:*
+        version: link:../node-blur
+      '@gatewai/node-crop':
+        specifier: workspace:*
+        version: link:../node-crop
+      '@gatewai/node-export':
+        specifier: workspace:*
+        version: link:../node-export
+      '@gatewai/node-image-compositor':
+        specifier: workspace:*
+        version: link:../node-image-compositor
+      '@gatewai/node-image-gen':
+        specifier: workspace:*
+        version: link:../node-image-gen
+      '@gatewai/node-import':
+        specifier: workspace:*
+        version: 'link:'
+      '@gatewai/node-llm':
+        specifier: workspace:*
+        version: link:../node-llm
+      '@gatewai/node-modulate':
+        specifier: workspace:*
+        version: link:../node-modulate
+      '@gatewai/node-note':
+        specifier: workspace:*
+        version: link:../node-note
+      '@gatewai/node-paint':
+        specifier: workspace:*
+        version: link:../node-paint
+      '@gatewai/node-preview':
+        specifier: workspace:*
+        version: link:../node-preview
+      '@gatewai/node-resize':
+        specifier: workspace:*
+        version: link:../node-resize
+      '@gatewai/node-sdk':
+        specifier: workspace:*
+        version: link:../../packages/node-sdk
+      '@gatewai/node-speech-to-text':
+        specifier: workspace:*
+        version: link:../node-speech-to-text
+      '@gatewai/node-text':
+        specifier: workspace:*
+        version: link:../node-text
+      '@gatewai/node-text-merger':
+        specifier: workspace:*
+        version: link:../node-text-merger
+      '@gatewai/node-text-to-speech':
+        specifier: workspace:*
+        version: link:../node-text-to-speech
+      '@gatewai/node-video-compositor':
+        specifier: workspace:*
+        version: link:../node-video-compositor
+      '@gatewai/node-video-gen':
+        specifier: workspace:*
+        version: link:../node-video-gen
+      '@gatewai/node-video-gen-first-last-frame':
+        specifier: workspace:*
+        version: link:../node-video-gen-first-last-frame
+      '@gatewai/react-canvas':
+        specifier: workspace:*
+        version: link:../../packages/react-canvas
+      '@gatewai/react-store':
+        specifier: workspace:*
+        version: link:../../packages/react-store
+      '@gatewai/rpc-client':
+        specifier: workspace:*
+        version: link:../../packages/rpc-client
+      '@gatewai/ui-kit':
+        specifier: workspace:*
+        version: link:../../packages/ui-kit
+      '@google-cloud/secret-manager':
+        specifier: '*'
+        version: 6.1.1
+      '@google/adk':
+        specifier: '*'
+        version: 0.2.4(49fe1a11536dd5ba249a9fdf66cfd27d)
+      '@google/genai':
+        specifier: '*'
+        version: 1.32.0(@modelcontextprotocol/sdk@1.25.2(hono@4.8.5)(zod@3.25.67))
+      '@hono/node-server':
+        specifier: '*'
+        version: 1.19.9(hono@4.8.5)
+      '@hono/zod-validator':
+        specifier: '*'
+        version: 0.7.2(hono@4.8.5)(zod@3.25.67)
+      '@hookform/resolvers':
+        specifier: '*'
+        version: 3.10.0(react-hook-form@7.71.1(react@19.2.4))
+      '@lobehub/icons':
+        specifier: '*'
+        version: 2.48.0(@babel/core@7.28.0)(@types/mdast@4.0.4)(@types/react-dom@19.2.3(@types/react@19.1.11))(@types/react@19.1.11)(antd@5.29.2(date-fns@4.1.0)(luxon@3.7.2)(react-dom@19.2.4(react@19.2.4))(react@19.2.4))(framer-motion@12.23.26(react-dom@19.2.4(react@19.2.4))(react@19.2.4))(micromark-util-types@2.0.2)(micromark@4.0.2)(react-dom@19.2.4(react@19.2.4))(react@19.2.4)(vue@3.5.18(typescript@5.8.3))
+      '@neodrag/react':
+        specifier: '*'
+        version: 2.3.1
+      '@openai/agents':
+        specifier: '*'
+        version: 0.4.1(hono@4.8.5)(ws@8.18.3)(zod@3.25.67)
+      '@openai/agents-extensions':
+        specifier: '*'
+        version: 0.4.1(@ai-sdk/provider@3.0.5)(@openai/agents@0.4.1(hono@4.8.5)(ws@8.18.3)(zod@3.25.67))(hono@4.8.5)(ws@8.18.3)(zod@3.25.67)
+      '@pixi/webworker':
+        specifier: '*'
+        version: 7.4.3
+      '@radix-ui/react-slider':
+        specifier: '*'
+        version: 1.3.6(@types/react-dom@19.2.3(@types/react@19.1.11))(@types/react@19.1.11)(react-dom@19.2.4(react@19.2.4))(react@19.2.4)
+      '@reduxjs/toolkit':
+        specifier: '*'
+        version: 2.10.1(react-redux@9.2.0(@types/react@19.1.11)(react@19.2.4)(redux@5.0.1))(react@19.2.4)
+      '@remotion/media':
+        specifier: '*'
+        version: 4.0.414(react-dom@19.2.4(react@19.2.4))(react@19.2.4)
+      '@remotion/player':
+        specifier: '*'
+        version: 4.0.414(react-dom@19.2.4(react@19.2.4))(react@19.2.4)
+      '@remotion/web-renderer':
+        specifier: '*'
+        version: 4.0.414(react-dom@19.2.4(react@19.2.4))(react@19.2.4)
+      '@tailwindcss/vite':
+        specifier: '*'
+        version: 4.1.16(vite@7.1.3(@types/node@24.10.4)(jiti@2.6.1)(lightningcss@1.30.2)(terser@5.44.1)(tsx@4.20.3)(yaml@2.8.0))
+      '@xyflow/react':
+        specifier: ^12.8.4
+        version: 12.8.4(@types/react@19.1.11)(immer@11.1.3)(react-dom@19.2.4(react@19.2.4))(react@19.2.4)
+      ai:
+        specifier: '*'
+        version: 6.0.58(zod@3.25.67)
+      better-auth:
+        specifier: '*'
+        version: 1.4.17(@prisma/client@6.19.0(prisma@6.19.0(typescript@5.8.3))(typescript@5.8.3))(pg@8.16.3)(prisma@6.19.0(typescript@5.8.3))(react-dom@19.2.4(react@19.2.4))(react@19.2.4)(vitest@4.0.18(@opentelemetry/api@1.9.0)(@types/node@24.10.4)(jiti@2.6.1)(lightningcss@1.30.2)(terser@5.44.1)(tsx@4.20.3)(yaml@2.8.0))(vue@3.5.18(typescript@5.8.3))
+      bullmq:
+        specifier: '*'
+        version: 5.66.4
+      class-variance-authority:
+        specifier: '*'
+        version: 0.7.1
+      clsx:
+        specifier: ^2.1.1
+        version: 2.1.1
+      cmdk:
+        specifier: '*'
+        version: 1.1.1(@types/react-dom@19.2.3(@types/react@19.1.11))(@types/react@19.1.11)(react-dom@19.2.4(react@19.2.4))(react@19.2.4)
+      color:
+        specifier: '*'
+        version: 5.0.3
+      data-urls:
+        specifier: '*'
+        version: 6.0.0
+      date-fns:
+        specifier: '*'
+        version: 4.1.0
+      dotenv:
+        specifier: '*'
+        version: 17.2.3
+      file-type:
+        specifier: '*'
+        version: 21.1.1
+      framer-motion:
+        specifier: ^12.23.26
+        version: 12.29.0(react-dom@19.2.4(react@19.2.4))(react@19.2.4)
+      generic-pool:
+        specifier: '*'
+        version: 3.9.0
+      gl:
+        specifier: '*'
+        version: 6.0.2
+      hono:
+        specifier: '*'
+        version: 4.8.5
+      ioredis:
+        specifier: '*'
+        version: 5.8.2
+      json-schema-to-zod:
+        specifier: '*'
+        version: 2.7.0
+      konva:
+        specifier: '*'
+        version: 10.0.12
+      lodash:
+        specifier: '*'
+        version: 4.17.23
+      loglevel:
+        specifier: '*'
+        version: 1.9.2
+      lucide-react:
+        specifier: ^0.552.0
+        version: 0.552.0(react@19.2.4)
+      media-chrome:
+        specifier: '*'
+        version: 4.17.2(react@19.2.4)
+      mime-types:
+        specifier: '*'
+        version: 3.0.2
+      motion:
+        specifier: '*'
+        version: 12.29.0(react-dom@19.2.4(react@19.2.4))(react@19.2.4)
+      music-metadata:
+        specifier: '*'
+        version: 11.10.3
+      nanoid:
+        specifier: '*'
+        version: 5.1.6
+      next-themes:
+        specifier: '*'
+        version: 0.4.6(react-dom@19.2.4(react@19.2.4))(react@19.2.4)
+      p-limit:
+        specifier: '*'
+        version: 7.2.0
+      pino:
+        specifier: '*'
+        version: 10.1.0
+      pino-http:
+        specifier: '*'
+        version: 11.0.0
+      pixi.js:
+        specifier: '*'
+        version: 7.4.3
+      query-string:
+        specifier: '*'
+        version: 9.3.1
+      quickjs-emscripten:
+        specifier: '*'
+        version: 0.31.0
+      radix-ui:
+        specifier: '*'
+        version: 1.4.3(@types/react-dom@19.2.3(@types/react@19.1.11))(@types/react@19.1.11)(react-dom@19.2.4(react@19.2.4))(react@19.2.4)
+      react-dnd:
+        specifier: '*'
+        version: 16.0.1(@types/node@24.10.4)(@types/react@19.1.11)(react@19.2.4)
+      react-dnd-html5-backend:
+        specifier: '*'
+        version: 16.0.1
+      react-dnd-touch-backend:
+        specifier: '*'
+        version: 16.0.1
+      react-dom:
+        specifier: ^19.2.4
+        version: 19.2.4(react@19.2.4)
+      react-dropzone:
+        specifier: '*'
+        version: 14.4.1(react@19.2.4)
+      react-fast-compare:
+        specifier: '*'
+        version: 3.2.2
+      react-helmet-async:
+        specifier: '*'
+        version: 2.0.5(react@19.2.4)
+      react-hook-form:
+        specifier: '*'
+        version: 7.71.1(react@19.2.4)
+      react-hotkeys-hook:
+        specifier: ^5.2.1
+        version: 5.2.1(react-dom@19.2.4(react@19.2.4))(react@19.2.4)
+      react-icons:
+        specifier: '*'
+        version: 5.5.0(react@19.2.4)
+      react-konva:
+        specifier: '*'
+        version: 19.2.1(@types/react@19.1.11)(konva@10.0.12)(react-dom@19.2.4(react@19.2.4))(react@19.2.4)
+      react-markdown:
+        specifier: '*'
+        version: 10.1.0(@types/react@19.1.11)(react@19.2.4)
+      react-redux:
+        specifier: '*'
+        version: 9.2.0(@types/react@19.1.11)(react@19.2.4)(redux@5.0.1)
+      react-router:
+        specifier: ^7.8.2
+        version: 7.8.2(react-dom@19.2.4(react@19.2.4))(react@19.2.4)
+      react-scan:
+        specifier: '*'
+        version: 0.4.3(@types/react@19.1.11)(react-dom@19.2.4(react@19.2.4))(react-router@7.8.2(react-dom@19.2.4(react@19.2.4))(react@19.2.4))(react@19.2.4)(rollup@4.45.1)
+      reflect-metadata:
+        specifier: '*'
+        version: 0.2.2
+      remark-gfm:
+        specifier: '*'
+        version: 4.0.1
+      remotion:
+        specifier: '*'
+        version: 4.0.414(react-dom@19.2.4(react@19.2.4))(react@19.2.4)
+      sonner:
+        specifier: '*'
+        version: 2.0.7(react-dom@19.2.4(react@19.2.4))(react@19.2.4)
+      tailwind-merge:
+        specifier: ^3.3.1
+        version: 3.4.0
+      tailwindcss:
+        specifier: '*'
+        version: 4.1.16
+      tsyringe:
+        specifier: ^4.10.0
+        version: 4.10.0
+      use-debounce:
+        specifier: '*'
+        version: 10.0.6(react@19.2.4)
+      use-image:
+        specifier: '*'
+        version: 1.1.4(react-dom@19.2.4(react@19.2.4))(react@19.2.4)
+      vite-plugin-node-polyfills:
+        specifier: '*'
+        version: 0.24.0(rollup@4.45.1)(vite@7.1.3(@types/node@24.10.4)(jiti@2.6.1)(lightningcss@1.30.2)(terser@5.44.1)(tsx@4.20.3)(yaml@2.8.0))
+      wav:
+        specifier: '*'
+        version: 1.0.2
+      webfontloader:
+        specifier: '*'
+        version: 1.6.28
+      zod:
+        specifier: ^3.24.1
+        version: 3.25.67
+      zod-to-json-schema:
+        specifier: '*'
+        version: 3.25.1(zod@3.25.67)
+    devDependencies:
+      '@gatewai/tsconfig':
+        specifier: workspace:*
+        version: link:../../packages/tsconfig
+      '@types/node':
+        specifier: ^24.0.4
+        version: 24.10.4
+      '@types/react':
+        specifier: ^19.1.11
+        version: 19.1.11
+      react:
+        specifier: ^19.2.4
+        version: 19.2.4
+      tsdown:
+        specifier: ^0.19.0
+        version: 0.19.0(publint@0.3.17)(synckit@0.11.11)(typescript@5.8.3)
+      typescript:
+        specifier: ^5.8.3
+        version: 5.8.3
+
   nodes/node-llm:
     dependencies:
       '@ai-sdk/google':
@@ -2768,15 +2768,15 @@ importers:
       '@gatewai/node-export':
         specifier: workspace:*
         version: link:../node-export
-      '@gatewai/node-file':
-        specifier: workspace:*
-        version: link:../node-file
       '@gatewai/node-image-compositor':
         specifier: workspace:*
         version: link:../node-image-compositor
       '@gatewai/node-image-gen':
         specifier: workspace:*
         version: link:../node-image-gen
+      '@gatewai/node-import':
+        specifier: workspace:*
+        version: link:../node-import
       '@gatewai/node-llm':
         specifier: workspace:*
         version: 'link:'
@@ -3135,15 +3135,15 @@ importers:
       '@gatewai/node-export':
         specifier: workspace:*
         version: link:../node-export
-      '@gatewai/node-file':
-        specifier: workspace:*
-        version: link:../node-file
       '@gatewai/node-image-compositor':
         specifier: workspace:*
         version: link:../node-image-compositor
       '@gatewai/node-image-gen':
         specifier: workspace:*
         version: link:../node-image-gen
+      '@gatewai/node-import':
+        specifier: workspace:*
+        version: link:../node-import
       '@gatewai/node-llm':
         specifier: workspace:*
         version: link:../node-llm
@@ -3505,15 +3505,15 @@ importers:
       '@gatewai/node-export':
         specifier: workspace:*
         version: link:../node-export
-      '@gatewai/node-file':
-        specifier: workspace:*
-        version: link:../node-file
       '@gatewai/node-image-compositor':
         specifier: workspace:*
         version: link:../node-image-compositor
       '@gatewai/node-image-gen':
         specifier: workspace:*
         version: link:../node-image-gen
+      '@gatewai/node-import':
+        specifier: workspace:*
+        version: link:../node-import
       '@gatewai/node-llm':
         specifier: workspace:*
         version: link:../node-llm
@@ -3872,15 +3872,15 @@ importers:
       '@gatewai/node-export':
         specifier: workspace:*
         version: link:../node-export
-      '@gatewai/node-file':
-        specifier: workspace:*
-        version: link:../node-file
       '@gatewai/node-image-compositor':
         specifier: workspace:*
         version: link:../node-image-compositor
       '@gatewai/node-image-gen':
         specifier: workspace:*
         version: link:../node-image-gen
+      '@gatewai/node-import':
+        specifier: workspace:*
+        version: link:../node-import
       '@gatewai/node-llm':
         specifier: workspace:*
         version: link:../node-llm
@@ -4242,15 +4242,15 @@ importers:
       '@gatewai/node-export':
         specifier: workspace:*
         version: link:../node-export
-      '@gatewai/node-file':
-        specifier: workspace:*
-        version: link:../node-file
       '@gatewai/node-image-compositor':
         specifier: workspace:*
         version: link:../node-image-compositor
       '@gatewai/node-image-gen':
         specifier: workspace:*
         version: link:../node-image-gen
+      '@gatewai/node-import':
+        specifier: workspace:*
+        version: link:../node-import
       '@gatewai/node-llm':
         specifier: workspace:*
         version: link:../node-llm
@@ -4609,15 +4609,15 @@ importers:
       '@gatewai/node-export':
         specifier: workspace:*
         version: link:../node-export
-      '@gatewai/node-file':
-        specifier: workspace:*
-        version: link:../node-file
       '@gatewai/node-image-compositor':
         specifier: workspace:*
         version: link:../node-image-compositor
       '@gatewai/node-image-gen':
         specifier: workspace:*
         version: link:../node-image-gen
+      '@gatewai/node-import':
+        specifier: workspace:*
+        version: link:../node-import
       '@gatewai/node-llm':
         specifier: workspace:*
         version: link:../node-llm
@@ -4979,15 +4979,15 @@ importers:
       '@gatewai/node-export':
         specifier: workspace:*
         version: link:../node-export
-      '@gatewai/node-file':
-        specifier: workspace:*
-        version: link:../node-file
       '@gatewai/node-image-compositor':
         specifier: workspace:*
         version: link:../node-image-compositor
       '@gatewai/node-image-gen':
         specifier: workspace:*
         version: link:../node-image-gen
+      '@gatewai/node-import':
+        specifier: workspace:*
+        version: link:../node-import
       '@gatewai/node-llm':
         specifier: workspace:*
         version: link:../node-llm
@@ -5346,15 +5346,15 @@ importers:
       '@gatewai/node-export':
         specifier: workspace:*
         version: link:../node-export
-      '@gatewai/node-file':
-        specifier: workspace:*
-        version: link:../node-file
       '@gatewai/node-image-compositor':
         specifier: workspace:*
         version: link:../node-image-compositor
       '@gatewai/node-image-gen':
         specifier: workspace:*
         version: link:../node-image-gen
+      '@gatewai/node-import':
+        specifier: workspace:*
+        version: link:../node-import
       '@gatewai/node-llm':
         specifier: workspace:*
         version: link:../node-llm
@@ -5716,15 +5716,15 @@ importers:
       '@gatewai/node-export':
         specifier: workspace:*
         version: link:../node-export
-      '@gatewai/node-file':
-        specifier: workspace:*
-        version: link:../node-file
       '@gatewai/node-image-compositor':
         specifier: workspace:*
         version: link:../node-image-compositor
       '@gatewai/node-image-gen':
         specifier: workspace:*
         version: link:../node-image-gen
+      '@gatewai/node-import':
+        specifier: workspace:*
+        version: link:../node-import
       '@gatewai/node-llm':
         specifier: workspace:*
         version: link:../node-llm
@@ -6083,15 +6083,15 @@ importers:
       '@gatewai/node-export':
         specifier: workspace:*
         version: link:../node-export
-      '@gatewai/node-file':
-        specifier: workspace:*
-        version: link:../node-file
       '@gatewai/node-image-compositor':
         specifier: workspace:*
         version: link:../node-image-compositor
       '@gatewai/node-image-gen':
         specifier: workspace:*
         version: link:../node-image-gen
+      '@gatewai/node-import':
+        specifier: workspace:*
+        version: link:../node-import
       '@gatewai/node-llm':
         specifier: workspace:*
         version: link:../node-llm
@@ -6450,15 +6450,15 @@ importers:
       '@gatewai/node-export':
         specifier: workspace:*
         version: link:../node-export
-      '@gatewai/node-file':
-        specifier: workspace:*
-        version: link:../node-file
       '@gatewai/node-image-compositor':
         specifier: workspace:*
         version: link:../node-image-compositor
       '@gatewai/node-image-gen':
         specifier: workspace:*
         version: link:../node-image-gen
+      '@gatewai/node-import':
+        specifier: workspace:*
+        version: link:../node-import
       '@gatewai/node-llm':
         specifier: workspace:*
         version: link:../node-llm
@@ -6820,15 +6820,15 @@ importers:
       '@gatewai/node-export':
         specifier: workspace:*
         version: link:../node-export
-      '@gatewai/node-file':
-        specifier: workspace:*
-        version: link:../node-file
       '@gatewai/node-image-compositor':
         specifier: workspace:*
         version: link:../node-image-compositor
       '@gatewai/node-image-gen':
         specifier: workspace:*
         version: link:../node-image-gen
+      '@gatewai/node-import':
+        specifier: workspace:*
+        version: link:../node-import
       '@gatewai/node-llm':
         specifier: workspace:*
         version: link:../node-llm
@@ -7187,15 +7187,15 @@ importers:
       '@gatewai/node-export':
         specifier: workspace:*
         version: link:../node-export
-      '@gatewai/node-file':
-        specifier: workspace:*
-        version: link:../node-file
       '@gatewai/node-image-compositor':
         specifier: workspace:*
         version: link:../node-image-compositor
       '@gatewai/node-image-gen':
         specifier: workspace:*
         version: link:../node-image-gen
+      '@gatewai/node-import':
+        specifier: workspace:*
+        version: link:../node-import
       '@gatewai/node-llm':
         specifier: workspace:*
         version: link:../node-llm
@@ -7810,15 +7810,15 @@ importers:
       '@gatewai/node-export':
         specifier: workspace:*
         version: link:../../nodes/node-export
-      '@gatewai/node-file':
-        specifier: workspace:*
-        version: link:../../nodes/node-file
       '@gatewai/node-image-compositor':
         specifier: workspace:*
         version: link:../../nodes/node-image-compositor
       '@gatewai/node-image-gen':
         specifier: workspace:*
         version: link:../../nodes/node-image-gen
+      '@gatewai/node-import':
+        specifier: workspace:*
+        version: link:../../nodes/node-import
       '@gatewai/node-llm':
         specifier: workspace:*
         version: link:../../nodes/node-llm

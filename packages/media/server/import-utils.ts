@@ -102,52 +102,19 @@ export async function uploadToImportNode({
 		},
 	});
 
-	// 6. Update Node Result & Handles
-	const currentResult = (node.result as unknown as FileResult) || {
-		outputs: [],
-	};
-	const outputs = currentResult.outputs || [];
-	const newIndex = outputs.length;
+	// 6. Update Node Config
+	// We store the single asset in config.asset
+	// If the user uploads a new file, it replaces the old one.
 
-	const outputHandle = node.handles[0];
-	if (!outputHandle) {
-		throw new Error("No output handle found for node");
-	}
-
-	let dataType: DataType;
-	if (finalContentType.startsWith("image/")) {
-		dataType = "Image";
-	} else if (finalContentType.startsWith("video/")) {
-		dataType = "Video";
-	} else if (finalContentType.startsWith("audio/")) {
-		dataType = "Audio";
-	} else {
-		throw new Error(
-			`Invalid content type for Import Node: ${finalContentType}`,
-		);
-	}
-
-	const newOutput = {
-		items: [
-			{
-				outputHandleId: outputHandle.id,
-				data: {
-					entity: asset,
-				},
-				type: dataType,
-			},
-		],
-	};
-
-	const updatedResult = {
-		...currentResult,
-		selectedOutputIndex: newIndex,
-		outputs: [...outputs, newOutput],
+	const currentConfig = (node.config as any) || {};
+	const updatedConfig = {
+		...currentConfig,
+		asset,
 	};
 
 	const updatedNode = await prisma.node.update({
 		where: { id: nodeId },
-		data: { result: updatedResult },
+		data: { config: updatedConfig },
 		include: {
 			handles: true,
 		},

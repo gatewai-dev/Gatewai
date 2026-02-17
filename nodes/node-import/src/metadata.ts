@@ -1,14 +1,14 @@
 import { defineMetadata } from "@gatewai/node-sdk";
-import { FileNodeConfigSchema } from "./shared/index.js";
+import { ImportNodeConfigSchema } from "./shared/index.js";
 
-export { FileNodeConfigSchema };
+export { ImportNodeConfigSchema };
 
 export default defineMetadata({
-	type: "File",
+	type: "Import",
 	displayName: "Import",
 	description: "Upload your media files",
 	category: "Inputs",
-	configSchema: FileNodeConfigSchema,
+	configSchema: ImportNodeConfigSchema,
 	isTerminal: false,
 	isTransient: false,
 	showInQuickAccess: true,

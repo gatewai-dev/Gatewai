@@ -48,7 +48,7 @@ export const assetsAPI = createApi({
 				const formData = new FormData();
 				formData.append("file", form.file);
 
-				const response = await fetch(`/api/v1/nodes/File/upload/${nodeId}`, {
+				const response = await fetch(`/api/v1/nodes/Import/upload/${nodeId}`, {
 					method: "POST",
 					body: formData,
 				});

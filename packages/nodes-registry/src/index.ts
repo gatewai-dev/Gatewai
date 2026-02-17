@@ -12,9 +12,9 @@ import { metadata as blurMetadata } from "@gatewai/node-blur";
 // New standalone packages
 import cropMetadata from "@gatewai/node-crop";
 import exportMetadata from "@gatewai/node-export";
-import fileMetadata from "@gatewai/node-file";
 import { manifest as imageCompositorMetadata } from "@gatewai/node-image-compositor";
 import imageGenMetadata from "@gatewai/node-image-gen";
+import fileMetadata from "@gatewai/node-import";
 import llmMetadata from "@gatewai/node-llm";
 import modulateMetadata from "@gatewai/node-modulate";
 import noteMetadata from "@gatewai/node-note";
@@ -77,8 +77,8 @@ export const registeredNodes: Record<string, NodePackage> = {
 	},
 	file: {
 		metadata: fileMetadata,
-		node: import("@gatewai/node-file/server"),
-		client: import("@gatewai/node-file/browser"),
+		node: import("@gatewai/node-import/server"),
+		client: import("@gatewai/node-import/browser"),
 	},
 	preview: {
 		metadata: previewMetadata,

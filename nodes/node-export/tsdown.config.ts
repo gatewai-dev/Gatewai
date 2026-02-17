@@ -25,7 +25,7 @@ export default defineConfig({
 		"@gatewai/node-blur",
 		"@gatewai/node-crop",
 		"@gatewai/node-export",
-		"@gatewai/node-file",
+		"@gatewai/node-import",
 		"@gatewai/node-image-compositor",
 		"@gatewai/node-image-gen",
 		"@gatewai/node-llm",

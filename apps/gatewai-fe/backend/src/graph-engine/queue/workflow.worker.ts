@@ -15,7 +15,6 @@ import type {
 	NodeProcessorConstructor,
 } from "@gatewai/node-sdk/server";
 import { type Job, Worker } from "bullmq";
-import { discoverNodes } from "../../node-discovery.js";
 import { assertIsError } from "../../utils/misc.js";
 
 // Global reference for shutdown handling

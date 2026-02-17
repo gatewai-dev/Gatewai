@@ -61,7 +61,7 @@
 		"@gatewai/node-blur": "workspace:*",
 		"@gatewai/node-crop": "workspace:*",
 		"@gatewai/node-export": "workspace:*",
-		"@gatewai/node-file": "workspace:*",
+		"@gatewai/node-import": "workspace:*",
 		"@gatewai/node-image-compositor": "workspace:*",
 		"@gatewai/node-image-gen": "workspace:*",
 		"@gatewai/node-llm": "workspace:*",
