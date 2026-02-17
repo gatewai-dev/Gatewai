@@ -1,11 +1,4 @@
-import type {
-	AnyOutputItem,
-	ConnectedInput,
-	NodeProcessorContext,
-	NodeProcessorParams,
-	NodeResult,
-	NodeRunFunction,
-} from "@gatewai/core/types";
+import type { NodeRunFunction } from "@gatewai/core/types";
 import type { HandleState, NodeState } from "@gatewai/node-sdk/browser";
 import { TaskStatus } from "@gatewai/node-sdk/browser";
 import type {
