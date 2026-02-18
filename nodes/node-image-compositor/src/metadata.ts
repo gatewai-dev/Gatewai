@@ -3,7 +3,7 @@ import { CompositorNodeConfigSchema } from "./shared/index.js";
 
 export { CompositorNodeConfigSchema };
 
-export const manifest = defineMetadata({
+export default defineMetadata({
 	type: "ImageCompositor",
 	displayName: "Image Compositor",
 	description: "Compose images using Text and Image Inputs.",
