@@ -11,9 +11,7 @@ import {
 	ArrowLeftRight,
 	ArrowUpDown,
 	LinkIcon,
-	Lock,
 	UnlinkIcon,
-	Unlock,
 } from "lucide-react";
 import { memo, useCallback } from "react";
 import { useCanvasCtx } from "../../../canvas-ctx";

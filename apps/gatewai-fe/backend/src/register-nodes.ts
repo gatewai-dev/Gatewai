@@ -14,6 +14,27 @@ export const registerNodes = async () => {
 				// The module default export is the BackendNodePlugin which contains definition
 				if (mod.default) {
 					nodeRegistry.register(mod.default);
+					if (mod.default.configSchema) {
+						// Register the schema for strict validation
+						// We need to import ConfigSchemaRegistry dynamically or ensure it's available
+						// Since this runs in backend, @gatewai/core should be available
+						try {
+							const { ConfigSchemaRegistry } = await import(
+								"@gatewai/core/types"
+							);
+							ConfigSchemaRegistry.register(
+								mod.default.type,
+								mod.default.configSchema,
+							);
+							logger.info(`Registered schema for node: ${entry.name}`);
+						} catch (err) {
+							// Fallback if import fails (e.g. dev vs prod path issues)
+							// or if we decide to export it from @gatewai/core index
+							logger.warn(
+								`Could not register schema for ${entry.name}, module import failed: ${err}`,
+							);
+						}
+					}
 					logger.info(`Registered node: ${entry.name}`);
 				} else {
 					logger.warn(`Node ${entry.name} has no default export.`);

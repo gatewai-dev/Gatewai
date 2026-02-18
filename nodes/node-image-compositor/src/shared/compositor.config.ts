@@ -36,10 +36,13 @@ export const CompositorLayerSchema = BaseLayerSchema.merge(PositionSchema)
 
 export const CompositorNodeConfigSchema = z
 	.object({
-		layerUpdates: z.record(
-			z.string().describe("The ID of input handle"),
-			CompositorLayerSchema,
-		),
+		layerUpdates: z
+			.record(
+				z.string().describe("The ID of input handle"),
+				CompositorLayerSchema,
+			)
+			.optional()
+			.default({}),
 		width: DimensionSchema,
 		height: DimensionSchema,
 	})

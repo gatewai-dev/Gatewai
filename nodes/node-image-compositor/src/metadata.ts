@@ -14,11 +14,15 @@ export const manifest = defineMetadata({
 	isTransient: false,
 	variableInputs: {
 		enabled: true,
-		dataTypes: ["Text", "Image", "Audio", "Video"],
+		dataTypes: ["Text", "Image"],
 	},
 	handles: {
 		inputs: [],
-		outputs: [],
+		outputs: [{ dataTypes: ["Image"], label: "Result", order: 0 }],
 	},
-	defaultConfig: {},
+	defaultConfig: {
+		layerUpdates: {},
+		width: 1024,
+		height: 1024,
+	},
 });

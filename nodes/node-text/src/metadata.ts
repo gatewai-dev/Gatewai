@@ -6,8 +6,8 @@ export { TextNodeConfigSchema };
 export const metadata = defineMetadata({
 	type: "Text",
 	displayName: "Text",
-	description: "Input or display text",
-	category: "Text",
+	description: "Text (prompt) input node",
+	category: "Inputs",
 	showInQuickAccess: true,
 	configSchema: TextNodeConfigSchema,
 	isTerminal: false,

@@ -42,7 +42,7 @@ const CompositorNodeComponent = memo((props: NodeProps<Node>) => {
 						type="Input"
 					/>
 					{node && (
-						<Button onClick={() => nav(`designer/${node.id}`)} size="sm">
+						<Button onClick={() => nav(`view/${node.id}`)} size="sm">
 							<ImagesIcon /> Editor
 						</Button>
 					)}

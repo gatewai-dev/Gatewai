@@ -3,9 +3,9 @@ import { useCanvasCtx } from "@gatewai/react-canvas";
 import type { NodeEntityType } from "@gatewai/react-store";
 import { Form, SelectField } from "@gatewai/ui-kit";
 import { zodResolver } from "@hookform/resolvers/zod";
-import { debounce } from "lodash";
-import { memo, useEffect, useMemo } from "react";
+import { memo, useEffect } from "react";
 import { useForm } from "react-hook-form";
+import { useDebouncedCallback } from "use-debounce";
 import { ImageGenNodeConfigSchema } from "@/metadata.js";
 import {
 	IMAGEGEN_ASPECT_RATIOS,
@@ -17,13 +17,9 @@ import {
 const ImageGenNodeConfigComponent = memo(
 	({ node }: { node: NodeEntityType }) => {
 		const { onNodeConfigUpdate } = useCanvasCtx();
-		const updateConfig = useMemo(
-			() =>
-				debounce((cfg: ImageGenNodeConfig) => {
-					onNodeConfigUpdate({ id: node.id, newConfig: cfg });
-				}, 500),
-			[node.id, onNodeConfigUpdate],
-		);
+		const updateConfig = useDebouncedCallback((cfg: ImageGenNodeConfig) => {
+			onNodeConfigUpdate({ id: node.id, newConfig: cfg });
+		}, 500);
 		const nodeConfig = node.config as ImageGenNodeConfig;
 		const form = useForm<ImageGenNodeConfig>({
 			resolver: zodResolver(ImageGenNodeConfigSchema),

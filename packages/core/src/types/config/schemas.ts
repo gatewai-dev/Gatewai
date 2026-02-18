@@ -64,4 +64,23 @@ export const COMPOSITE_OPERATIONS = [
 
 export const GlobalCompositeOperation = z.enum(COMPOSITE_OPERATIONS);
 
-export const NodeConfigSchema = z.any();
+export const NodeConfigSchema = z.record(z.unknown());
+
+type ZodSchemaType = z.ZodType<any, any, any>;
+
+// biome-ignore lint/complexity/noStaticOnlyClass: Required
+export class ConfigSchemaRegistry {
+	private static schemas = new Map<string, ZodSchemaType>();
+
+	static register(type: string, schema: ZodSchemaType) {
+		ConfigSchemaRegistry.schemas.set(type, schema);
+	}
+
+	static get(type: string): ZodSchemaType | undefined {
+		return ConfigSchemaRegistry.schemas.get(type);
+	}
+
+	static clear() {
+		ConfigSchemaRegistry.schemas.clear();
+	}
+}

@@ -111,7 +111,6 @@ import type {
 } from "@/shared/compositor.config.js";
 
 //#region CONSTANTS
-// Local defaults removed in favor of shared COMPOSITOR_DEFAULTS
 
 const ASPECT_RATIOS = [
 	{ label: "Youtube / HD (16:9)", width: 1280, height: 720 },
@@ -152,7 +151,7 @@ interface LocalCompositorLayer extends CompositorLayer {
  * 3. Layer ID
  */
 const resolveLayerLabel = (
-	handle: any,
+	handle: HandleEntityType,
 	layer: LocalCompositorLayer,
 ): string => {
 	if (
@@ -671,14 +670,10 @@ const LayerLabel: React.FC<{ layer: LocalCompositorLayer }> = ({ layer }) => {
 	const { selectedId, hoveredId } = useEditor();
 	const isVisible = layer.id === selectedId || layer.id === hoveredId;
 
-	// Constant size label (inverse scale)
 	const invScale = 1 / scale;
 
 	if (layer.opacity === 0 || !isVisible) return null;
 
-	// Calculate Y offset to position label ABOVE the layer
-	// Tag height is roughly 24px (fontSize 12 + padding 6*2) => 24. adjust as needed.
-	// We want it slightly above: say 26px.
 	const yOffset = 26 * invScale;
 
 	return (
@@ -715,7 +710,6 @@ const TransformerComponent: React.FC = () => {
 
 	useEffect(() => {
 		if (selectedId && transformerRef.current && stageRef.current) {
-			// use findOne with specific function to avoid selector issues with some IDs (like starting with number)
 			const node = stageRef.current.findOne((node) => node.id() === selectedId);
 			if (node) {
 				transformerRef.current.nodes([node]);
@@ -786,7 +780,6 @@ const Guides: React.FC = () => {
 
 const ArtboardBackground: React.FC = () => {
 	const { viewportWidth, viewportHeight } = useEditor();
-	// Checkered pattern for transparency
 	const patternImage = useMemo(() => {
 		const size = 20;
 		const half = size / 2;
@@ -853,8 +846,6 @@ const Canvas: React.FC = () => {
 		[layers],
 	);
 
-	// --- Hotkeys ---
-
 	useHotkeys("h", () => {
 		setMode("pan");
 	}, []);
@@ -864,7 +855,7 @@ const Canvas: React.FC = () => {
 	useHotkeys(
 		"space",
 		(e) => {
-			e.preventDefault(); // Prevent scrolling
+			e.preventDefault();
 			if (mode !== "pan") {
 				lastModeRef.current = mode;
 				setMode("pan");
@@ -896,12 +887,10 @@ const Canvas: React.FC = () => {
 
 	const handleStageMouseDown = useCallback(
 		(e: KonvaEventObject<MouseEvent>) => {
-			// Middle mouse (button 1) OR Pan Mode
 			if (e.evt.button === 1 || mode === "pan") {
 				e.evt.preventDefault();
 				const stage = e.currentTarget;
 
-				// Ensure we are in pan mode for the cursor style
 				if (mode !== "pan") {
 					lastModeRef.current = mode;
 					setMode("pan");
@@ -912,11 +901,6 @@ const Canvas: React.FC = () => {
 
 				const reset = () => {
 					stage.draggable(false);
-					// If this was a middle-click temporary pan, revert.
-					// If we are holding Space, the keyup handler handles revert.
-					// If we are manually in Pan mode (H), we stay in Pan mode.
-
-					// Logic: If button was 1 (middle), revert.
 					if (e.evt.button === 1) {
 						setMode(lastModeRef.current || "select");
 					}
@@ -934,7 +918,6 @@ const Canvas: React.FC = () => {
 			const stage = stageRef.current;
 			if (!stage) return;
 
-			// Zoom if Ctrl/Meta is pressed
 			if (e.evt.ctrlKey || e.evt.metaKey) {
 				const oldScale = stage.scaleX();
 				const pointer = stage.getPointerPosition();
@@ -962,16 +945,13 @@ const Canvas: React.FC = () => {
 				return;
 			}
 
-			// Pan (Scroll) logic
-			// Shift = Horizontal Pan
-			// Default = Vertical Pan
-			const sensitivity = 1; // Adjust sensitivity as needed
+			const sensitivity = 1;
 			let dx = 0;
 			let dy = 0;
 
 			if (e.evt.shiftKey) {
 				dx = -e.evt.deltaY * sensitivity;
-				dy = -e.evt.deltaX * sensitivity; // Handle horizontal scroll devices
+				dy = -e.evt.deltaX * sensitivity;
 			} else {
 				dx = -e.evt.deltaX * sensitivity;
 				dy = -e.evt.deltaY * sensitivity;
@@ -1043,7 +1023,6 @@ const Canvas: React.FC = () => {
 					return null;
 				})}
 			</KonvaLayer>
-			{/* Labels on top of content but below UI overlays */}
 			<KonvaLayer listening={false}>
 				{sortedLayers.map((layer) => (
 					<LayerLabel key={layer.id} layer={layer} />
@@ -1243,7 +1222,12 @@ const LayersPanel: React.FC = () => {
 	);
 };
 
+// ─── FIX: All hooks are called unconditionally at the top of InspectorPanel.
+// Previously, `useAppSelector` was called AFTER the `if (!selectedLayer) return`
+// early-return, causing a different number of hooks to fire between renders
+// and violating the Rules of Hooks.
 const InspectorPanel: React.FC = () => {
+	const { data: fontList } = useGetFontListQuery({});
 	const {
 		selectedId,
 		layers,
@@ -1254,7 +1238,18 @@ const InspectorPanel: React.FC = () => {
 		updateViewportHeight,
 	} = useEditor();
 
-	const selectedLayer = layers.find((l) => l.id === selectedId);
+	// ── Hoisted above every early-return so the hook call-count is stable ──
+	const handles = useAppSelector(handleSelectors.selectEntities);
+
+	const selectedLayer = layers.find((l) => l.id === selectedId) ?? null;
+
+	// Derive handle and label safely — selectedLayer may be null here
+	const handle = selectedLayer
+		? handles[selectedLayer.inputHandleId]
+		: undefined;
+	const label = selectedLayer
+		? resolveLayerLabel(handle as HandleEntityType, selectedLayer)
+		: "";
 
 	const updateLayer = (updates: Partial<LocalCompositorLayer>) => {
 		if (!selectedId) return;
@@ -1282,8 +1277,7 @@ const InspectorPanel: React.FC = () => {
 		}
 	};
 
-	// Unused toggles removed
-
+	// ── Empty-selection view ──────────────────────────────────────────────────
 	if (!selectedLayer) {
 		return (
 			<ScrollArea className="w-72 h-full border-l border-white/10 bg-[#0f0f0f] z-20 shadow-xl">
@@ -1358,10 +1352,7 @@ const InspectorPanel: React.FC = () => {
 		);
 	}
 
-	const handles = useAppSelector(handleSelectors.selectEntities);
-	const handle = handles[selectedLayer.inputHandleId];
-	const label = resolveLayerLabel(handle, selectedLayer);
-
+	// ── Layer-selected view ───────────────────────────────────────────────────
 	return (
 		<ScrollArea className="w-72 h-full border-l border-white/10 bg-[#0f0f0f] z-20 shadow-xl">
 			<div className="flex items-center justify-between px-4 py-3 border-b border-white/5 bg-neutral-900/50 backdrop-blur">
@@ -1416,6 +1407,7 @@ const InspectorPanel: React.FC = () => {
 						fontSize={selectedLayer.fontSize ?? 40}
 						fill={selectedLayer.fill ?? "#fff"}
 						fontStyle={selectedLayer.fontStyle ?? "normal"}
+						fontList={fontList}
 						textDecoration={selectedLayer.textDecoration ?? ""}
 						align={selectedLayer.align}
 						letterSpacing={selectedLayer.letterSpacing}
@@ -1649,16 +1641,14 @@ export const ImageDesignerEditor: React.FC<ImageDesignerEditorProps> = ({
 	const [mode, setMode] = useState<"select" | "pan">("select");
 	const lastModeRef = useRef<"select" | "pan">("select");
 
-	const [zoom, setZoom] = useState(1);
-	const { data: fontList } = useGetFontListQuery({});
-	const [pan, setPan] = useState({ x: 0, y: 0 });
+	const [scale, setScale] = useState(1);
+	const [stagePos, setStagePos] = useState({ x: 0, y: 0 });
 	const containerRef = useRef<HTMLDivElement>(null);
 	const [screenWidth, setScreenWidth] = useState(100);
 	const [screenHeight, setScreenHeight] = useState(100);
 
-	const zoomPercentage = `${Math.round(zoom * 100)}%`;
+	const zoomPercentage = `${Math.round(scale * 100)}%`;
 
-	// Resize observer
 	useEffect(() => {
 		const updateSize = () => {
 			if (containerRef.current) {
@@ -1672,7 +1662,6 @@ export const ImageDesignerEditor: React.FC<ImageDesignerEditorProps> = ({
 		return () => observer.disconnect();
 	}, []);
 
-	// Fit View logic
 	const fitView = useCallback(() => {
 		const padding = 80;
 		const availableW = screenWidth - padding * 2;
@@ -1684,22 +1673,25 @@ export const ImageDesignerEditor: React.FC<ImageDesignerEditorProps> = ({
 			x: Math.round((screenWidth - viewportWidth * newScale) / 2),
 			y: Math.round((screenHeight - viewportHeight * newScale) / 2),
 		};
-		setZoom(newScale);
-		setPan(newPos);
+		setScale(newScale);
+		setStagePos(newPos);
 	}, [viewportWidth, viewportHeight, screenWidth, screenHeight]);
 
-	// Initial centering
 	useEffect(() => {
-		if (screenWidth > 100 && screenHeight > 100 && zoom === 1 && pan.x === 0) {
+		if (
+			screenWidth > 100 &&
+			screenHeight > 100 &&
+			scale === 1 &&
+			stagePos.x === 0
+		) {
 			fitView();
 		}
-	}, [screenWidth, screenHeight, fitView, zoom, pan.x]);
+	}, [screenWidth, screenHeight, fitView, scale, stagePos.x]);
 
-	const zoomIn = useCallback(() => setZoom((s) => s * 1.2), []);
-	const zoomOut = useCallback(() => setZoom((s) => s / 1.2), []);
-	const zoomTo = useCallback((value: number) => setZoom(value), []);
+	const zoomIn = useCallback(() => setScale((s) => s * 1.2), []);
+	const zoomOut = useCallback(() => setScale((s) => s / 1.2), []);
+	const zoomTo = useCallback((value: number) => setScale(value), []);
 
-	// Data getters
 	const getTextData = useCallback(
 		(handleId: string) => {
 			const layerData = initialLayers.get(handleId) as OutputItem<"Text">;
@@ -1727,7 +1719,6 @@ export const ImageDesignerEditor: React.FC<ImageDesignerEditorProps> = ({
 		[initialLayers],
 	);
 
-	// Initialize layers
 	useEffect(() => {
 		const loadInitialLayers = async () => {
 			const existingConfig = (node.config as CompositorNodeConfig) ?? {
@@ -1814,14 +1805,33 @@ export const ImageDesignerEditor: React.FC<ImageDesignerEditorProps> = ({
 		}
 	}, [mode, selectedId]);
 
-	// Keyboard Shortcuts
+	const handleSave = useCallback(() => {
+		const layerUpdates = layers.reduce<Record<string, CompositorLayer>>(
+			(acc, layer) => {
+				const { computedHeight, computedWidth, ...rest } = layer;
+				acc[layer.inputHandleId] = rest;
+				return acc;
+			},
+			{},
+		);
+		propOnSave({ layerUpdates, width: viewportWidth, height: viewportHeight });
+		setIsDirty(false);
+	}, [layers, propOnSave, viewportHeight, viewportWidth]);
+
+	const handleCloseRequest = useCallback(() => {
+		if (isDirty) {
+			setShowCloseAlert(true);
+		} else {
+			onClose();
+		}
+	}, [isDirty, onClose]);
+
 	useEffect(() => {
 		const handleKeyDown = (e: KeyboardEvent) => {
 			const isInput =
 				document.activeElement?.tagName === "INPUT" ||
 				document.activeElement?.tagName === "TEXTAREA";
 
-			// Save (Ctrl/Cmd + S)
 			if ((e.ctrlKey || e.metaKey) && e.key.toLowerCase() === "s") {
 				e.preventDefault();
 				if (isDirty) handleSave();
@@ -1830,11 +1840,9 @@ export const ImageDesignerEditor: React.FC<ImageDesignerEditorProps> = ({
 
 			if (isInput) return;
 
-			// Tools
 			if (e.key.toLowerCase() === "v") setMode("select");
 			if (e.key.toLowerCase() === "h") setMode("pan");
 
-			// Pan Spacebar
 			if (e.code === "Space" && !e.repeat) {
 				e.preventDefault();
 				if (mode !== "pan") {
@@ -1843,7 +1851,6 @@ export const ImageDesignerEditor: React.FC<ImageDesignerEditorProps> = ({
 				}
 			}
 
-			// Zoom
 			if ((e.ctrlKey || e.metaKey) && (e.key === "=" || e.key === "+")) {
 				e.preventDefault();
 				zoomIn();
@@ -1857,7 +1864,6 @@ export const ImageDesignerEditor: React.FC<ImageDesignerEditorProps> = ({
 				fitView();
 			}
 
-			// Nudge
 			if (
 				selectedId &&
 				["ArrowUp", "ArrowDown", "ArrowLeft", "ArrowRight"].includes(e.key)
@@ -1877,12 +1883,6 @@ export const ImageDesignerEditor: React.FC<ImageDesignerEditorProps> = ({
 				);
 			}
 
-			// Delete
-			if (e.key === "Delete" || e.key === "Backspace") {
-				// Optional: Add layer deletion if desired
-			}
-
-			// Close (Esc)
 			if (e.key === "Escape") {
 				handleCloseRequest();
 			}
@@ -1906,28 +1906,17 @@ export const ImageDesignerEditor: React.FC<ImageDesignerEditorProps> = ({
 			window.removeEventListener("keydown", handleKeyDown);
 			window.removeEventListener("keyup", handleKeyUp);
 		};
-	}, [mode, selectedId, updateLayers, zoomIn, zoomOut, fitView, isDirty]);
-
-	const handleSave = useCallback(() => {
-		const layerUpdates = layers.reduce<Record<string, CompositorLayer>>(
-			(acc, layer) => {
-				const { computedHeight, computedWidth, ...rest } = layer;
-				acc[layer.inputHandleId] = rest;
-				return acc;
-			},
-			{},
-		);
-		propOnSave({ layerUpdates, width: viewportWidth, height: viewportHeight });
-		setIsDirty(false);
-	}, [layers, propOnSave, viewportHeight, viewportWidth]);
-
-	const handleCloseRequest = () => {
-		if (isDirty) {
-			setShowCloseAlert(true);
-		} else {
-			onClose();
-		}
-	};
+	}, [
+		mode,
+		selectedId,
+		updateLayers,
+		zoomIn,
+		zoomOut,
+		fitView,
+		isDirty,
+		handleSave,
+		handleCloseRequest,
+	]);
 
 	const handleDiscardAndClose = () => {
 		setShowCloseAlert(false);
@@ -1963,10 +1952,10 @@ export const ImageDesignerEditor: React.FC<ImageDesignerEditorProps> = ({
 				transformerRef,
 				mode,
 				setMode,
-				zoom,
-				setZoom,
-				pan,
-				setPan,
+				scale,
+				setScale,
+				stagePos,
+				setStagePos,
 				zoomIn,
 				zoomOut,
 				zoomTo,
@@ -2000,7 +1989,6 @@ export const ImageDesignerEditor: React.FC<ImageDesignerEditorProps> = ({
 						<Canvas />
 					</div>
 
-					{/* Floating Toolbar */}
 					<div className="absolute bottom-6 left-1/2 -translate-x-1/2 z-50 transition-all duration-300">
 						<Toolbar onSave={handleSave} onClose={handleCloseRequest} />
 					</div>
@@ -2010,7 +1998,6 @@ export const ImageDesignerEditor: React.FC<ImageDesignerEditorProps> = ({
 					<InspectorPanel />
 				</div>
 
-				{/* Close Confirmation Dialog */}
 				<AlertDialog open={showCloseAlert} onOpenChange={setShowCloseAlert}>
 					<AlertDialogContent className="bg-neutral-900 border-white/10 text-white">
 						<AlertDialogHeader>

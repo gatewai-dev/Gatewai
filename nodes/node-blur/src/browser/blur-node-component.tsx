@@ -4,6 +4,7 @@ import {
 	type NodeProps,
 	useNodePreview,
 } from "@gatewai/react-canvas";
+import { cn } from "@gatewai/ui-kit";
 import { memo } from "react";
 import { BlurValueSlider } from "./components/blur-slider.js";
 
@@ -13,7 +14,12 @@ const BlurNodeComponent = memo((props: NodeProps) => {
 	return (
 		<BaseNode selected={props.selected} id={props.id} dragging={props.dragging}>
 			<div className="flex flex-col">
-				<div className="w-full overflow-hidden min-h-32 rounded media-container relative">
+				<div
+					className={cn("w-full overflow-hidden rounded media-container", {
+						"min-h-32": !imageUrl,
+						"h-full": imageUrl,
+					})}
+				>
 					{imageUrl && <CanvasRenderer imageUrl={imageUrl} />}
 				</div>
 				{node && (

@@ -7,7 +7,7 @@ export default defineMetadata({
 	type: "Preview",
 	displayName: "Preview",
 	description: "Preview the output of a connected node",
-	category: "Outputs",
+	category: "Tools",
 	configSchema: PreviewNodeConfigSchema,
 	isTerminal: false,
 	isTransient: true,

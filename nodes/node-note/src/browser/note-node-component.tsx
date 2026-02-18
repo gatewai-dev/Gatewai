@@ -3,12 +3,13 @@ import { makeSelectNodeById, useAppSelector } from "@gatewai/react-store";
 import { Textarea } from "@gatewai/ui-kit";
 import { NodeResizer } from "@xyflow/react";
 import { memo, useCallback } from "react";
+import type { NoteNodeConfig } from "@/shared/config.js";
 
 const NoteNodeComponent = memo(
 	(props: { selected: boolean; id: string; dragging: boolean }) => {
 		const node = useAppSelector(makeSelectNodeById(props.id));
 		const { onNodeConfigUpdate } = useCanvasCtx();
-		const nodeConfig = (node?.config as any) ?? {};
+		const nodeConfig = (node?.config as NoteNodeConfig) ?? {};
 		const text = nodeConfig?.content ?? "";
 
 		const handleChange = useCallback(

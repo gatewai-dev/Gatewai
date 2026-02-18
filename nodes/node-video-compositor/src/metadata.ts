@@ -20,5 +20,10 @@ export const metadata = defineMetadata({
 		inputs: [],
 		outputs: [],
 	},
-	defaultConfig: {},
+	defaultConfig: {
+		layerUpdates: {},
+		width: 1024,
+		height: 1024,
+		FPS: 24,
+	},
 });

@@ -415,9 +415,6 @@ importers:
         specifier: ^3.25.1
         version: 3.25.1(zod@3.25.67)
     devDependencies:
-      '@tailwindcss/typography':
-        specifier: ^0.5.19
-        version: 0.5.19(tailwindcss@4.1.16)
       '@types/color':
         specifier: ^4.2.0
         version: 4.2.0
@@ -463,9 +460,6 @@ importers:
       tsx:
         specifier: ^4.20.3
         version: 4.20.3
-      tw-animate-css:
-        specifier: ^1.4.0
-        version: 1.4.0
       typescript:
         specifier: ~5.8.3
         version: 5.8.3
@@ -8143,10 +8137,19 @@ importers:
       tailwind-merge:
         specifier: ^3.3.1
         version: 3.3.1
+      tailwindcss:
+        specifier: ^4.1.16
+        version: 4.1.16
+      tw-animate-css:
+        specifier: ^1.4.0
+        version: 1.4.0
     devDependencies:
       '@gatewai/tsconfig':
         specifier: workspace:*
         version: link:../tsconfig
+      '@tailwindcss/typography':
+        specifier: ^0.5.19
+        version: 0.5.19(tailwindcss@4.1.16)
       '@types/react':
         specifier: ^19.1.11
         version: 19.1.11
@@ -8159,9 +8162,6 @@ importers:
       react-dom:
         specifier: ^19.2.4
         version: 19.2.4(react@19.2.4)
-      tailwindcss:
-        specifier: ^4.1.16
-        version: 4.1.16
       tsdown:
         specifier: ^0.19.0
         version: 0.19.0(publint@0.3.17)(synckit@0.11.11)(typescript@5.8.3)

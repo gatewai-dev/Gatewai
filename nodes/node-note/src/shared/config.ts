@@ -3,8 +3,9 @@ import { z } from "zod";
 
 export const NoteNodeConfigSchema = z
 	.object({
-		text: z.string().optional(),
+		content: z.string().optional(),
 		backgroundColor: ColorSchema,
+		textColor: ColorSchema,
 		fontSize: z.number().optional(),
 	})
 	.strict();
