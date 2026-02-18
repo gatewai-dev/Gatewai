@@ -24,7 +24,7 @@ export const CollapsibleSection: React.FC<{
 				/>
 			</button>
 			{isOpen && (
-				<div className="p-3 pt-0 animate-in slide-in-from-top-1 duration-200">
+				<div className="p-3 pt-2 animate-in slide-in-from-top-1 duration-200">
 					{children}
 				</div>
 			)}

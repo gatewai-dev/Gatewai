@@ -66,6 +66,42 @@ import {
 	TypographyControls,
 } from "@gatewai/ui-kit";
 import { Player, type PlayerRef } from "@remotion/player";
+import {
+	AlignCenterHorizontal,
+	AlignCenterVertical,
+	ArrowDown,
+	ArrowLeft,
+	ArrowRight,
+	ArrowUp,
+	ChevronDown,
+	EyeOff,
+	Film,
+	GripHorizontal,
+	GripVertical,
+	Hand,
+	Image as ImageIcon,
+	Layers,
+	Minus,
+	MousePointer,
+	Move,
+	MoveHorizontal,
+	MoveVertical,
+	Music,
+	Pause,
+	Play,
+	Plus,
+	RotateCcw,
+	RotateCw,
+	Save,
+	Settings2,
+	Sparkles,
+	Trash2,
+	Type,
+	XIcon,
+	Zap,
+	ZoomIn,
+	ZoomOut,
+} from "lucide-react";
 import React, {
 	createContext,
 	type Dispatch,
@@ -78,42 +114,6 @@ import React, {
 	useState,
 } from "react";
 import { useHotkeys } from "react-hotkeys-hook";
-// --- Remix Icons Imports ---
-import {
-	RiAddLine,
-	RiArrowDownLine,
-	RiArrowGoBackLine, // Rotate CCW alternative
-	RiArrowGoForwardLine, // Rotate CW alternative
-	RiArrowLeftLine,
-	RiArrowRightLine,
-	RiArrowUpLine,
-	RiCloseLine,
-	RiCursorLine,
-	RiDeleteBinLine,
-	RiDraggable,
-	RiDragMove2Fill,
-	RiDragMoveLine,
-	RiEqualizerLine,
-	RiEyeOffLine,
-	RiFileList3Line,
-	RiFilmLine,
-	RiFlashlightLine,
-	RiHand,
-	RiImageLine,
-	RiMovieLine,
-	RiMusic2Line,
-	RiPauseFill,
-	RiPlayFill,
-	RiRefreshLine,
-	RiSave3Line,
-	RiSettings4Line,
-	RiSparklingLine,
-	RiStackLine,
-	RiSubtractLine,
-	RiText,
-	RiZoomInLine,
-	RiZoomOutLine,
-} from "react-icons/ri";
 import type { VideoCompositorNodeConfig } from "../../../shared/video-compositor-config.js";
 import {
 	type AnimationType,
@@ -126,12 +126,12 @@ import { DEFAULT_DURATION_FRAMES, FPS } from "../config/index.js";
 // --- Constants & Configuration ---
 const RULER_HEIGHT = 28;
 const TRACK_HEIGHT = 32;
-const HEADER_WIDTH = 220; // Slightly wider for better readability
-const DEFAULT_TIMELINE_HEIGHT = 240;
-const MIN_TIMELINE_HEIGHT = 140;
-const MAX_TIMELINE_HEIGHT = 600;
+const HEADER_WIDTH = 200;
+const DEFAULT_TIMELINE_HEIGHT = 208; // h-52 equivalent
+const MIN_TIMELINE_HEIGHT = 120;
+const MAX_TIMELINE_HEIGHT = 400;
 
-// Optimized Presets for Web Editing
+// Optimized Presets for Web Editing (Performance focused)
 const ASPECT_RATIOS = [
 	{ label: "Youtube / HD (16:9)", width: 1280, height: 720 },
 	{ label: "Full HD (16:9)", width: 1920, height: 1080 },
@@ -142,6 +142,13 @@ const ASPECT_RATIOS = [
 
 // --- Helper Functions ---
 
+/**
+ * Resolves the display label for a layer based on priority:
+ * 1. Handle Label (if not null/empty)
+ * 2. First DataType from Handle
+ * 3. Layer Name
+ * 4. Layer ID
+ */
 const resolveLayerLabel = (handle: any, layer: ExtendedLayer): string => {
 	if (
 		handle?.label &&
@@ -217,68 +224,80 @@ const UnifiedClip: React.FC<{
 }> = ({ layer, isSelected }) => {
 	const handles = useAppSelector(handleSelectors.selectEntities);
 	const handle = handles[layer.inputHandleId];
+
 	const name = useMemo(() => resolveLayerLabel(handle, layer), [handle, layer]);
 
+	// Determine styles strictly from configuration
 	const styleConfig = useMemo(() => {
 		const config = dataTypeColors[layer.type] || {
-			bg: "bg-neutral-600",
-			border: "border-neutral-500",
-			text: "text-neutral-100",
+			bg: "bg-gray-600",
+			border: "border-gray-500",
+			text: "text-gray-100",
+			hex: "#4b5563",
 		};
 
-		let Icon = RiStackLine;
+		// Map icon based on type (since config only handles colors)
+		let Icon = Layers;
 		switch (layer.type) {
 			case "Video":
-				Icon = RiMovieLine;
+				Icon = Film;
 				break;
 			case "Audio":
-				Icon = RiMusic2Line;
+				Icon = Music;
 				break;
 			case "Image":
-				Icon = RiImageLine;
+				Icon = ImageIcon;
 				break;
 			case "Text":
-				Icon = RiText;
+				Icon = Type;
 				break;
 		}
 
-		return { ...config, icon: Icon };
+		return {
+			...config,
+			icon: Icon,
+		};
 	}, [layer.type]);
 
 	const Icon = styleConfig.icon;
 
 	return (
 		<div
-			className={`h-full w-full relative overflow-hidden rounded-[4px] transition-all duration-75 border
+			className={`h-full w-full relative overflow-hidden rounded-md transition-all duration-75 border
       ${styleConfig.bg} ${styleConfig.border}
-      ${isSelected ? "brightness-110 ring-1 ring-white shadow-md z-10" : "opacity-90 hover:opacity-100 hover:brightness-105"}
+      ${isSelected ? "brightness-110 ring-2 ring-white/70 shadow-lg" : "opacity-90 hover:opacity-100 hover:brightness-105"}
     `}
 		>
+			{/* Decorative Striping for visual texture without heavy rendering */}
 			<div
 				className="absolute inset-0 opacity-10 pointer-events-none"
 				style={{
 					backgroundImage:
 						"linear-gradient(45deg,rgba(0,0,0,.1) 25%,transparent 25%,transparent 50%,rgba(0,0,0,.1) 50%,rgba(0,0,0,.1) 75%,transparent 75%,transparent)",
-					backgroundSize: "8px 8px",
+					backgroundSize: "10px 10px",
 				}}
 			/>
-			<div className="absolute inset-0 px-2 flex items-center gap-1.5 pointer-events-none">
-				<Icon className="w-3.5 h-3.5 text-white/90 shrink-0" />
-				<span className="text-[10px] text-white font-medium truncate drop-shadow-md select-none font-sans">
-					{name}
-				</span>
+			{/* Clip Label */}
+			<div className="absolute inset-0 px-2 flex items-center justify-between pointer-events-none">
+				<div className="flex items-center gap-1.5 min-w-0">
+					<Icon className="w-3 h-3 text-white/90 shrink-0" />
+					<span className="text-[10px] text-white font-medium truncate drop-shadow-md select-none">
+						{name}
+					</span>
+				</div>
 			</div>
+			{/* Resize Handle Visuals (Only visible on hover/select) */}
 			{isSelected && (
 				<>
-					<div className="absolute left-0 top-0 bottom-0 w-1 bg-white/40" />
-					<div className="absolute right-0 top-0 bottom-0 w-1 bg-white/40" />
+					<div className="absolute left-0 top-0 bottom-0 w-1 bg-white/30" />
+					<div className="absolute right-0 top-0 bottom-0 w-1 bg-white/30" />
 				</>
 			)}
 		</div>
 	);
 };
 
-// --- Components: Interaction Overlay ---
+// --- Components: Timeline Core ---
 const InteractionOverlay: React.FC = () => {
 	const {
 		layers,
@@ -293,7 +312,6 @@ const InteractionOverlay: React.FC = () => {
 		mode,
 		setPan,
 	} = useEditor();
-
 	const [isDragging, setIsDragging] = useState(false);
 	const [isResizing, setIsResizing] = useState(false);
 	const [isRotating, setIsRotating] = useState(false);
@@ -313,6 +331,7 @@ const InteractionOverlay: React.FC = () => {
 	});
 	const [initialAngle, setInitialAngle] = useState(0);
 
+	// Memoize visible layers
 	const visibleLayers = useMemo(() => {
 		return layers
 			.filter(
@@ -331,6 +350,7 @@ const InteractionOverlay: React.FC = () => {
 		layerId?: string,
 		anchor?: "tl" | "tr" | "bl" | "br",
 	) => {
+		// Middle mouse or pan tool
 		if (e.button === 1 || mode === "pan") {
 			e.preventDefault();
 			setIsPanning(true);
@@ -340,14 +360,12 @@ const InteractionOverlay: React.FC = () => {
 		}
 		if (e.button !== 0) return;
 		e.stopPropagation();
-
 		if (!layerId) {
 			setSelectedId(null);
 			return;
 		}
 		const layer = layers.find((l) => l.id === layerId);
 		if (!layer) return;
-
 		setSelectedId(layerId);
 		setDragStart({ x: e.clientX, y: e.clientY });
 		setInitialPos({
@@ -358,7 +376,6 @@ const InteractionOverlay: React.FC = () => {
 			rotation: layer.rotation,
 			scale: layer.scale ?? 1,
 		});
-
 		if (anchor) {
 			setIsResizing(true);
 			setResizeAnchor(anchor);
@@ -373,12 +390,10 @@ const InteractionOverlay: React.FC = () => {
 		setSelectedId(layerId);
 		const layer = layers.find((l) => l.id === layerId);
 		if (!layer) return;
-
 		const centerX = layer.x + (layer.width ?? 0) / 2;
 		const centerY = layer.y + (layer.height ?? 0) / 2;
 		const screenCenterX = centerX * zoom + pan.x;
 		const screenCenterY = centerY * zoom + pan.y;
-
 		setInitialAngle(
 			Math.atan2(e.clientY - screenCenterY, e.clientX - screenCenterX),
 		);
@@ -402,10 +417,8 @@ const InteractionOverlay: React.FC = () => {
 			return;
 		}
 		if (!selectedId) return;
-
 		const dx = (e.clientX - dragStart.x) / zoom;
 		const dy = (e.clientY - dragStart.y) / zoom;
-
 		if (isDragging) {
 			updateLayers((prev) =>
 				prev.map((l) =>
@@ -424,15 +437,12 @@ const InteractionOverlay: React.FC = () => {
 			const sin = Math.sin(theta);
 			let localDx = cos * dx + sin * dy;
 			let localDy = -sin * dx + cos * dy;
-
 			localDx /= initialPos.scale;
 			localDy /= initialPos.scale;
-
 			const signW = resizeAnchor.includes("l") ? -1 : 1;
 			const signH = resizeAnchor.includes("t") ? -1 : 1;
 			let changeW = signW * localDx;
 			let changeH = signH * localDy;
-
 			const layer = layers.find((l) => l.id === selectedId);
 			if (layer && (layer.type === "Image" || layer.type === "Video")) {
 				const ratio = initialPos.height / initialPos.width || 1;
@@ -442,23 +452,18 @@ const InteractionOverlay: React.FC = () => {
 					changeW = changeH / ratio;
 				}
 			}
-
 			localDx = signW * changeW;
 			localDy = signH * changeH;
-
 			const newWidth = Math.max(10, initialPos.width + changeW);
 			const newHeight = Math.max(10, initialPos.height + changeH);
-
 			const worldDx = cos * localDx - sin * localDy;
 			const worldDy = sin * localDx + cos * localDy;
-
 			const newX = resizeAnchor.includes("l")
 				? initialPos.x + worldDx
 				: initialPos.x;
 			const newY = resizeAnchor.includes("t")
 				? initialPos.y + worldDy
 				: initialPos.y;
-
 			updateLayers((prev) =>
 				prev.map((l) =>
 					l.id === selectedId
@@ -475,19 +480,16 @@ const InteractionOverlay: React.FC = () => {
 		} else if (isRotating) {
 			const layer = layers.find((l) => l.id === selectedId);
 			if (!layer) return;
-
 			const centerX = layer.x + (layer.width ?? 0) / 2;
 			const centerY = layer.y + (layer.height ?? 0) / 2;
 			const screenCenterX = centerX * zoom + pan.x;
 			const screenCenterY = centerY * zoom + pan.y;
-
 			const currentAngle = Math.atan2(
 				e.clientY - screenCenterY,
 				e.clientX - screenCenterX,
 			);
 			const delta = currentAngle - initialAngle;
 			const newRot = initialPos.rotation + (delta * 180) / Math.PI;
-
 			updateLayers((prev) =>
 				prev.map((l) =>
 					l.id === selectedId ? { ...l, rotation: Math.round(newRot) } : l,
@@ -543,6 +545,7 @@ const InteractionOverlay: React.FC = () => {
 							transform: `rotate(${layer.rotation}deg) scale(${layer.scale})`,
 						}}
 					>
+						{/* Selection Border */}
 						<div
 							className={`absolute inset-0 pointer-events-none transition-all duration-150 ${
 								selectedId === layer.id
@@ -550,8 +553,10 @@ const InteractionOverlay: React.FC = () => {
 									: "border border-transparent group-hover:border-blue-400/50"
 							}`}
 						/>
+						{/* Controls (Only if selected) */}
 						{selectedId === layer.id && (
 							<>
+								{/* Resize Handles - Explicitly NOT rendered for Text */}
 								{layer.type !== "Text" &&
 									["tl", "tr", "bl", "br"].map((pos) => (
 										<div
@@ -573,6 +578,7 @@ const InteractionOverlay: React.FC = () => {
 											}
 										/>
 									))}
+								{/* Rotation Handle */}
 								<div
 									className="absolute -top-6 left-1/2 -translate-x-1/2 h-6 w-px bg-blue-500"
 									style={{ transform: `scaleX(${1 / zoom})` }}
@@ -580,11 +586,9 @@ const InteractionOverlay: React.FC = () => {
 								<div
 									role="button"
 									tabIndex={-1}
-									className="absolute -top-8 left-1/2 -translate-x-1/2 w-3 h-3 bg-white border border-blue-600 rounded-full shadow-sm cursor-grab active:cursor-grabbing hover:scale-110 flex items-center justify-center"
+									className="absolute -top-8 left-1/2 -translate-x-1/2 w-3 h-3 bg-white border border-blue-600 rounded-full shadow-sm cursor-grab active:cursor-grabbing hover:scale-110"
 									onMouseDown={(e) => handleRotateStart(e, layer.id)}
-								>
-									<RiRefreshLine className="w-2 h-2 text-blue-600" />
-								</div>
+								/>
 							</>
 						)}
 					</button>
@@ -639,10 +643,15 @@ const Toolbar = React.memo<{
 		onClose();
 	}, [onSave, onClose]);
 
+	const handleDiscardAndClose = useCallback(() => {
+		setShowCloseDialog(false);
+		onClose();
+	}, [onClose]);
+
 	return (
 		<>
-			<div className="flex items-center gap-1 p-1.5 rounded-full border border-white/5 bg-[#1e1e1e]/90 backdrop-blur-md shadow-2xl ring-1 ring-black/20 z-50">
-				<TooltipProvider>
+			<TooltipProvider>
+				<div className="flex items-center gap-1.5 p-1.5 rounded-full border border-border/50 bg-background/80 backdrop-blur-md shadow-2xl ring-1 ring-white/5 z-50">
 					<Tooltip>
 						<TooltipTrigger asChild>
 							<Button
@@ -652,9 +661,9 @@ const Toolbar = React.memo<{
 								onClick={handlePlayPause}
 							>
 								{isPlaying ? (
-									<RiPauseFill className="w-5 h-5 fill-current" />
+									<Pause className="w-4 h-4 fill-current" />
 								) : (
-									<RiPlayFill className="w-5 h-5 fill-current ml-0.5" />
+									<Play className="w-4 h-4 fill-current ml-0.5" />
 								)}
 							</Button>
 						</TooltipTrigger>
@@ -662,148 +671,144 @@ const Toolbar = React.memo<{
 							<p>{isPlaying ? "Pause (Space)" : "Play (Space)"}</p>
 						</TooltipContent>
 					</Tooltip>
-				</TooltipProvider>
-
-				<div className="w-px h-5 bg-white/10 mx-1" />
-
-				<div
-					ref={timeRef}
-					className="text-[11px] font-mono tabular-nums text-neutral-400 min-w-[70px] text-center select-none cursor-default font-medium"
-				>
-					{Math.floor(currentFrame / fps)}s :{" "}
-					{(currentFrame % fps).toString().padStart(2, "0")}f
+					<div className="w-px h-5 bg-white/10 mx-1" />
+					{/* Timecode */}
+					<div
+						ref={timeRef}
+						className="text-[11px] font-mono tabular-nums text-neutral-300 min-w-[70px] text-center select-none cursor-default"
+					>
+						{Math.floor(currentFrame / fps)}s :{" "}
+						{(currentFrame % fps).toString().padStart(2, "0")}f
+					</div>
+					<div className="w-px h-5 bg-white/10 mx-1" />
+					{/* Tools */}
+					<div className="flex rounded-full p-0.5">
+						<Tooltip>
+							<TooltipTrigger asChild>
+								<Button
+									variant={mode === "select" ? "secondary" : "ghost"}
+									size="icon"
+									className="rounded-full w-8 h-8"
+									onClick={() => setMode("select")}
+								>
+									<MousePointer className="w-3.5 h-3.5" />
+								</Button>
+							</TooltipTrigger>
+							<TooltipContent>Select Tool (V)</TooltipContent>
+						</Tooltip>
+						<Tooltip>
+							<TooltipTrigger asChild>
+								<Button
+									variant={mode === "pan" ? "secondary" : "ghost"}
+									size="icon"
+									className="rounded-full w-8 h-8"
+									onClick={() => setMode("pan")}
+								>
+									<Hand className="w-3.5 h-3.5" />
+								</Button>
+							</TooltipTrigger>
+							<TooltipContent>Pan Tool (H) or hold Space</TooltipContent>
+						</Tooltip>
+					</div>
+					<div className="w-px h-5 bg-white/10 mx-1" />
+					{/* Zoom */}
+					<Menubar className="border-none bg-transparent h-auto p-0">
+						<MenubarMenu>
+							<MenubarTrigger asChild>
+								<Button
+									variant="ghost"
+									className="h-8 px-3 text-[11px] rounded-full text-gray-300 hover:text-white hover:bg-white/10 font-medium min-w-[80px] justify-between"
+								>
+									{Math.round(zoom * 100)}%
+									<ChevronDown className="w-3 h-3 ml-1.5 opacity-50" />
+								</Button>
+							</MenubarTrigger>
+							<MenubarContent
+								align="center"
+								className="min-w-[160px] bg-neutral-900/95 backdrop-blur-xl border-white/10 text-gray-200"
+							>
+								<MenubarItem onClick={zoomIn}>
+									<span className="flex-1">Zoom In</span>
+									<span className="text-xs text-gray-500 ml-4">+</span>
+								</MenubarItem>
+								<MenubarItem onClick={zoomOut}>
+									<span className="flex-1">Zoom Out</span>
+									<span className="text-xs text-gray-500 ml-4">−</span>
+								</MenubarItem>
+								<MenubarItem onClick={() => zoomTo(1)}>
+									<span className="flex-1">100%</span>
+									<span className="text-xs text-gray-500 ml-4">1</span>
+								</MenubarItem>
+								<MenubarItem onClick={fitView}>
+									<span className="flex-1">Fit to Screen</span>
+									<span className="text-xs text-gray-500 ml-4">0</span>
+								</MenubarItem>
+							</MenubarContent>
+						</MenubarMenu>
+					</Menubar>
+					<div className="w-px h-5 bg-white/10 mx-1" />
+					{/* Actions */}
+					<div className="flex items-center gap-1">
+						<Tooltip>
+							<TooltipTrigger asChild>
+								<Button
+									size="sm"
+									variant="default"
+									className="h-8 text-[11px] font-semibold rounded-full px-4"
+									onClick={onSave}
+									disabled={!isDirty}
+								>
+									<Save className="w-3.5 h-3.5 mr-1" />
+									Save
+								</Button>
+							</TooltipTrigger>
+							<TooltipContent>Save (⌘S)</TooltipContent>
+						</Tooltip>
+						<Tooltip>
+							<TooltipTrigger asChild>
+								<Button
+									size="icon"
+									variant="ghost"
+									className="h-8 w-8 rounded-full text-gray-400 hover:text-white hover:bg-white/10"
+									onClick={handleCloseClick}
+								>
+									<XIcon className="w-4 h-4" />
+								</Button>
+							</TooltipTrigger>
+							<TooltipContent>Close (Esc)</TooltipContent>
+						</Tooltip>
+					</div>
 				</div>
-
-				<div className="w-px h-5 bg-white/10 mx-1" />
-
-				<div className="flex rounded-full p-0.5 gap-0.5">
-					<Tooltip>
-						<TooltipTrigger asChild>
-							<Button
-								variant={mode === "select" ? "secondary" : "ghost"}
-								size="icon"
-								className="rounded-full w-8 h-8"
-								onClick={() => setMode("select")}
-							>
-								<RiCursorLine className="w-4 h-4" />
-							</Button>
-						</TooltipTrigger>
-						<TooltipContent>Select Tool (V)</TooltipContent>
-					</Tooltip>
-					<Tooltip>
-						<TooltipTrigger asChild>
-							<Button
-								variant={mode === "pan" ? "secondary" : "ghost"}
-								size="icon"
-								className="rounded-full w-8 h-8"
-								onClick={() => setMode("pan")}
-							>
-								<RiHand className="w-4 h-4" />
-							</Button>
-						</TooltipTrigger>
-						<TooltipContent>Pan Tool (H)</TooltipContent>
-					</Tooltip>
-				</div>
-
-				<div className="w-px h-5 bg-white/10 mx-1" />
-
-				<Menubar className="border-none bg-transparent h-auto p-0">
-					<MenubarMenu>
-						<MenubarTrigger asChild>
-							<Button
-								variant="ghost"
-								className="h-8 px-3 text-[11px] rounded-full text-gray-300 hover:text-white hover:bg-white/10 font-medium min-w-[80px] justify-between"
-							>
-								{Math.round(zoom * 100)}%
-								<RiArrowDownLine className="w-3 h-3 ml-1.5 opacity-50" />
-							</Button>
-						</MenubarTrigger>
-						<MenubarContent
-							align="center"
-							className="min-w-[160px] bg-[#2a2a2a] border-white/10 text-gray-200"
-						>
-							<MenubarItem onClick={zoomIn}>
-								<span className="flex-1">Zoom In</span>
-								<RiAddLine className="w-3 h-3 text-gray-500" />
-							</MenubarItem>
-							<MenubarItem onClick={zoomOut}>
-								<span className="flex-1">Zoom Out</span>
-								<RiSubtractLine className="w-3 h-3 text-gray-500" />
-							</MenubarItem>
-							<MenubarItem onClick={() => zoomTo(1)}>
-								<span className="flex-1">100%</span>
-							</MenubarItem>
-							<MenubarItem onClick={fitView}>
-								<span className="flex-1">Fit to Screen</span>
-							</MenubarItem>
-						</MenubarContent>
-					</MenubarMenu>
-				</Menubar>
-
-				<div className="w-px h-5 bg-white/10 mx-1" />
-
-				<div className="flex items-center gap-1">
-					<Tooltip>
-						<TooltipTrigger asChild>
-							<Button
-								size="sm"
-								variant="default"
-								className="h-8 text-[11px] font-semibold rounded-full px-4 bg-blue-600 hover:bg-blue-500 text-white"
-								onClick={onSave}
-								disabled={!isDirty}
-							>
-								<RiSave3Line className="w-3.5 h-3.5 mr-1.5" />
-								Save
-							</Button>
-						</TooltipTrigger>
-						<TooltipContent>Save (⌘S)</TooltipContent>
-					</Tooltip>
-					<Tooltip>
-						<TooltipTrigger asChild>
-							<Button
-								size="icon"
-								variant="ghost"
-								className="h-8 w-8 rounded-full text-gray-400 hover:text-white hover:bg-white/10"
-								onClick={handleCloseClick}
-							>
-								<RiCloseLine className="w-4 h-4" />
-							</Button>
-						</TooltipTrigger>
-						<TooltipContent>Close (Esc)</TooltipContent>
-					</Tooltip>
-				</div>
-			</div>
-
+			</TooltipProvider>
+			{/* Unsaved Changes Confirmation Dialog */}
 			<AlertDialog open={showCloseDialog} onOpenChange={setShowCloseDialog}>
-				<AlertDialogContent className="bg-[#1e1e1e] border-white/10">
+				<AlertDialogContent className="bg-neutral-900 border-white/10">
 					<AlertDialogHeader>
 						<AlertDialogTitle className="text-white">
 							Unsaved Changes
 						</AlertDialogTitle>
 						<AlertDialogDescription className="text-gray-400">
-							You have unsaved changes. Save before closing?
+							You have unsaved changes in this composition. Would you like to
+							save before closing?
 						</AlertDialogDescription>
 					</AlertDialogHeader>
 					<AlertDialogFooter>
 						<AlertDialogCancel
 							onClick={() => setShowCloseDialog(false)}
-							className="bg-transparent border-white/10 text-gray-300 hover:bg-white/5"
+							className="bg-transparent border-white/10 text-gray-300 hover:bg-white/5 hover:text-white"
 						>
 							Cancel
 						</AlertDialogCancel>
 						<Button
 							variant="destructive"
-							onClick={() => {
-								setShowCloseDialog(false);
-								onClose();
-							}}
-							className="bg-red-500/10 text-red-400 hover:bg-red-500/20 border-0"
+							onClick={handleDiscardAndClose}
+							className="bg-red-500/20 text-red-400 hover:bg-red-500/30 border-0"
 						>
 							Discard
 						</Button>
 						<AlertDialogAction
 							onClick={handleSaveAndClose}
-							className="bg-blue-600 text-white hover:bg-blue-500"
+							className="bg-primary text-primary-foreground hover:bg-primary/90"
 						>
 							Save & Close
 						</AlertDialogAction>
@@ -842,9 +847,11 @@ const SortableTrackHeader: React.FC<SortableTrackProps> = ({
 		zIndex: isDragging ? 999 : "auto",
 	};
 
+	// Use label logic
 	const handles = useAppSelector(handleSelectors.selectEntities);
 	const handle = handles[layer.inputHandleId];
 	const name = useMemo(() => resolveLayerLabel(handle, layer), [handle, layer]);
+
 	const colorConfig = dataTypeColors[layer.type];
 
 	return (
@@ -853,33 +860,33 @@ const SortableTrackHeader: React.FC<SortableTrackProps> = ({
 			style={style}
 			type="button"
 			className={`
-        w-full text-left p-0 m-0 bg-transparent border-0
+w-full text-left p-0 m-0 bg-transparent border-0
         border-b border-white/5 flex items-center pl-3 pr-2 text-xs gap-3 group outline-none transition-colors select-none
-        ${isSelected ? "bg-[#2a2a2a] text-blue-100" : "hover:bg-[#2a2a2a] text-gray-400"}
-        ${isDragging ? "opacity-50 bg-[#1a1a1a]" : ""}
+        ${isSelected ? "bg-white/5 text-blue-100" : "hover:bg-white/5 text-gray-400"}
+        ${isDragging ? "opacity-50 bg-neutral-900" : ""}
       `}
 			onClick={onSelect}
 		>
 			<div
 				{...attributes}
 				{...listeners}
-				className="cursor-grab active:cursor-grabbing p-1 text-gray-600 hover:text-gray-300 transition-colors rounded hover:bg-white/5"
+				className="cursor-grab active:cursor-grabbing p-1.5 text-gray-600 hover:text-gray-300 transition-colors rounded hover:bg-white/5"
 			>
-				<RiDraggable className="h-4 w-4" />
+				<GripVertical className="h-3.5 w-3.5" />
 			</div>
 			<div className="flex-1 flex items-center gap-2.5 min-w-0">
 				<div
 					className={`
-                    w-5 h-5 rounded flex items-center justify-center
+                    w-6 h-6 rounded flex items-center justify-center
                     ${colorConfig ? `${colorConfig.bg}/20 ${colorConfig.text}` : ""}
                 `}
 				>
-					{layer.type === "Video" && <RiMovieLine className="w-3.5 h-3.5" />}
-					{layer.type === "Image" && <RiImageLine className="w-3.5 h-3.5" />}
-					{layer.type === "Text" && <RiText className="w-3.5 h-3.5" />}
-					{layer.type === "Audio" && <RiMusic2Line className="w-3.5 h-3.5" />}
+					{layer.type === "Video" && <Film className="w-3.5 h-3.5" />}
+					{layer.type === "Image" && <ImageIcon className="w-3.5 h-3.5" />}
+					{layer.type === "Text" && <Type className="w-3.5 h-3.5" />}
+					{layer.type === "Audio" && <Music className="w-3.5 h-3.5" />}
 				</div>
-				<span className="truncate font-medium text-[11px] leading-tight opacity-90 font-sans">
+				<span className="truncate font-medium text-[11px] leading-tight opacity-80">
 					{name}
 				</span>
 			</div>
@@ -887,8 +894,8 @@ const SortableTrackHeader: React.FC<SortableTrackProps> = ({
 				<TooltipProvider>
 					<Tooltip>
 						<TooltipTrigger>
-							<div className="p-0.5 rounded bg-amber-500/10">
-								<RiFlashlightLine className="w-3 h-3 text-amber-400" />
+							<div className="p-1 rounded bg-amber-500/10">
+								<Zap className="w-3 h-3 text-amber-400" />
 							</div>
 						</TooltipTrigger>
 						<TooltipContent>Animations applied</TooltipContent>
@@ -915,19 +922,16 @@ const TimelinePanel: React.FC = () => {
 		timelineHeight,
 		setTimelineHeight,
 	} = useEditor();
-
 	const playheadRef = useRef<HTMLDivElement>(null);
 	const [isPanningTimeline, setIsPanningTimeline] = useState(false);
 	const [dragStartX, setDragStartX] = useState(0);
 	const [initialScroll, setInitialScroll] = useState(0);
-	const [pixelsPerFrame, setPixelsPerFrame] = useState(10);
+	const [pixelsPerFrame, setPixelsPerFrame] = useState(10); // Increased default for better visibility
 	const [isResizingTimeline, setIsResizingTimeline] = useState(false);
-
 	const sortedLayers = useMemo(
 		() => [...layers].sort((a, b) => (b.zIndex ?? 0) - (a.zIndex ?? 0)),
 		[layers],
 	);
-
 	const sensors = useSensors(
 		useSensor(PointerSensor, { activationConstraint: { distance: 5 } }),
 		useSensor(KeyboardSensor, {
@@ -935,6 +939,7 @@ const TimelinePanel: React.FC = () => {
 		}),
 	);
 
+	// --- Drag & Drop Sorting ---
 	const handleDragEnd = (event: DragEndEvent) => {
 		const { active, over } = event;
 		if (over && active.id !== over.id) {
@@ -952,6 +957,7 @@ const TimelinePanel: React.FC = () => {
 		}
 	};
 
+	// --- Playhead & Scroll Sync ---
 	useEffect(() => {
 		let rafId: number | null = null;
 		const loop = () => {
@@ -981,6 +987,7 @@ const TimelinePanel: React.FC = () => {
 		};
 	}, [isPlaying, currentFrame, pixelsPerFrame, playerRef]);
 
+	// --- Timeline Interaction ---
 	const handleTimelineClick = (e: React.MouseEvent) => {
 		const rect = e.currentTarget.getBoundingClientRect();
 		const clickX = e.clientX - rect.left;
@@ -989,19 +996,23 @@ const TimelinePanel: React.FC = () => {
 		setCurrentFrame(frame);
 	};
 
+	// --- Scroll Wheel Navigation (Canva-like) ---
 	useEffect(() => {
 		const el = scrollContainerRef.current;
 		if (!el) return;
 		const handleWheel = (e: WheelEvent) => {
+			// If Shift key is pressed or it's a horizontal scroll
 			if (e.shiftKey || Math.abs(e.deltaX) > Math.abs(e.deltaY)) {
 				e.preventDefault();
 				el.scrollLeft += e.deltaX || e.deltaY;
 			}
+			// Vertical scroll is handled natively
 		};
 		el.addEventListener("wheel", handleWheel, { passive: false });
 		return () => el.removeEventListener("wheel", handleWheel);
 	}, []);
 
+	// --- Clip Manipulation (Move/Trim) with Snapping ---
 	const handleClipManipulation = (
 		e: React.MouseEvent,
 		layerId: string,
@@ -1013,19 +1024,18 @@ const TimelinePanel: React.FC = () => {
 		if (!layer) return;
 		const initialStart = layer.startFrame ?? 0;
 		const initialDuration = layer.durationInFrames ?? DEFAULT_DURATION_FRAMES;
-
 		const onMove = (moveEv: MouseEvent) => {
 			const diffPx = moveEv.clientX - startX;
 			const diffFrames = Math.round(diffPx / pixelsPerFrame);
 			if (type === "move") {
-				let newStart = initialStart + diffFrames;
-				newStart = Math.max(0, newStart);
+				const newStart = Math.max(0, initialStart + diffFrames);
 				updateLayers((prev) =>
 					prev.map((l) =>
 						l.id === layerId ? { ...l, startFrame: newStart } : l,
 					),
 				);
 			} else {
+				// Trimming
 				let newDuration = Math.max(1, initialDuration + diffFrames);
 				if (layer.maxDurationInFrames) {
 					newDuration = Math.min(newDuration, layer.maxDurationInFrames);
@@ -1050,6 +1060,7 @@ const TimelinePanel: React.FC = () => {
 		const startY = e.clientY;
 		const startHeight = timelineHeight;
 		setIsResizingTimeline(true);
+
 		const onMove = (moveEv: MouseEvent) => {
 			const delta = startY - moveEv.clientY;
 			const newHeight = Math.min(
@@ -1058,30 +1069,33 @@ const TimelinePanel: React.FC = () => {
 			);
 			setTimelineHeight(newHeight);
 		};
+
 		const onUp = () => {
 			setIsResizingTimeline(false);
 			window.removeEventListener("mousemove", onMove);
 			window.removeEventListener("mouseup", onUp);
 		};
+
 		window.addEventListener("mousemove", onMove);
 		window.addEventListener("mouseup", onUp);
 	};
 
 	return (
 		<div
-			className="flex flex-col border-t border-white/5 bg-[#121212] shrink-0 select-none z-30 shadow-[0_-4px_20px_rgba(0,0,0,0.6)]"
+			className="flex flex-col border-t border-white/10 bg-[#0f0f0f] shrink-0 select-none z-30 shadow-[0_-5px_20px_rgba(0,0,0,0.5)]"
 			style={{ height: timelineHeight }}
 		>
+			{/* Resize Handle */}
 			<div
-				className={`h-1.5 flex items-center justify-center cursor-ns-resize hover:bg-white/5 transition-colors group ${isResizingTimeline ? "bg-blue-500/20" : ""}`}
+				className={`h-1.5 flex items-center justify-center cursor-ns-resize hover:bg-white/10 transition-colors group ${isResizingTimeline ? "bg-blue-500/20" : ""}`}
 				onMouseDown={handleTimelineResize}
 			>
-				<div className="w-8 h-1 bg-white/10 rounded-full group-hover:bg-white/30" />
+				<GripHorizontal className="w-6 h-3 text-gray-600 group-hover:text-gray-400 transition-colors" />
 			</div>
-
-			<div className="h-9 border-b border-white/5 flex items-center justify-between px-3 bg-[#181818] shrink-0 z-40">
+			{/* Toolbar */}
+			<div className="h-8 border-b border-white/5 flex items-center justify-between px-3 bg-neutral-900 shrink-0 z-40">
 				<div className="text-[10px] font-bold text-neutral-400 tracking-wider flex items-center gap-1.5">
-					<RiFileList3Line className="w-3.5 h-3.5" /> TIMELINE
+					<Layers className="w-3.5 h-3.5" /> TIMELINE
 				</div>
 				<div className="flex items-center gap-2">
 					<Button
@@ -1090,7 +1104,7 @@ const TimelinePanel: React.FC = () => {
 						className="h-6 w-6 rounded hover:bg-white/10 text-gray-400"
 						onClick={() => setPixelsPerFrame((p) => Math.max(1, p - 2))}
 					>
-						<RiZoomOutLine className="h-3 w-3" />
+						<Minus className="h-3 w-3" />
 					</Button>
 					<Slider
 						value={[pixelsPerFrame]}
@@ -1106,11 +1120,11 @@ const TimelinePanel: React.FC = () => {
 						className="h-6 w-6 rounded hover:bg-white/10 text-gray-400"
 						onClick={() => setPixelsPerFrame((p) => Math.min(100, p + 2))}
 					>
-						<RiZoomInLine className="h-3 w-3" />
+						<Plus className="h-3 w-3" />
 					</Button>
 				</div>
 			</div>
-
+			{/* Timeline Content */}
 			<div
 				ref={scrollContainerRef}
 				className="flex-1 overflow-auto bg-[#0a0a0a] timeline-scroll-area custom-scrollbar"
@@ -1150,22 +1164,23 @@ const TimelinePanel: React.FC = () => {
 						),
 					}}
 				>
+					{/* Ruler */}
 					<div
 						className="sticky top-0 z-50 flex shrink-0"
 						style={{ height: RULER_HEIGHT }}
 					>
 						<div
-							className="sticky left-0 z-50 border-r border-b border-white/5 bg-[#181818] shrink-0"
+							className="sticky left-0 z-50 border-r border-b border-white/5 bg-neutral-900 shrink-0 shadow-lg"
 							style={{ width: HEADER_WIDTH }}
 						/>
 						<div
-							className="flex-1 bg-[#181818]/95 backdrop-blur-sm border-b border-white/5 relative cursor-pointer"
+							className="flex-1 bg-neutral-900/90 backdrop-blur-sm border-b border-white/5 relative cursor-pointer"
 							onClick={handleTimelineClick}
 						>
 							<svg
 								role="img"
 								aria-label="tick"
-								className="absolute inset-0 w-full h-full pointer-events-none opacity-40"
+								className="absolute inset-0 w-full h-full pointer-events-none opacity-50"
 							>
 								<defs>
 									<pattern
@@ -1176,6 +1191,7 @@ const TimelinePanel: React.FC = () => {
 										height={RULER_HEIGHT}
 										patternUnits="userSpaceOnUse"
 									>
+										{/* Second Tick */}
 										<line
 											x1="0.5"
 											y1={RULER_HEIGHT}
@@ -1184,6 +1200,7 @@ const TimelinePanel: React.FC = () => {
 											stroke="#666"
 											strokeWidth="1"
 										/>
+										{/* Quarter Second Ticks */}
 										{[0.25, 0.5, 0.75].map((t) => (
 											<line
 												key={t}
@@ -1191,14 +1208,14 @@ const TimelinePanel: React.FC = () => {
 												y1={RULER_HEIGHT}
 												x2={t * fps * pixelsPerFrame + 0.5}
 												y2={RULER_HEIGHT - 6}
-												stroke="#444"
+												stroke="#333"
 											/>
 										))}
 									</pattern>
 								</defs>
 								<rect width="100%" height="100%" fill="url(#ruler-ticks)" />
 							</svg>
-
+							{/* Time Labels */}
 							{Array.from({
 								length: Math.ceil(durationInFrames / fps) + 5,
 							}).map((_, sec) => (
@@ -1207,36 +1224,32 @@ const TimelinePanel: React.FC = () => {
 										// biome-ignore lint/suspicious/noArrayIndexKey: Range used for static labels
 										sec
 									}_label_time`}
-									className="absolute top-1 text-[9px] font-mono text-gray-500 select-none pointer-events-none"
+									className="absolute top-1.5 text-[10px] font-mono text-gray-500 select-none pointer-events-none font-medium"
 									style={{ left: sec * fps * pixelsPerFrame + 4 }}
 								>
 									{sec}s
 								</span>
 							))}
-
+							{/* Playhead */}
 							<div
 								ref={playheadRef}
 								className="absolute top-0 bottom-0 z-60 pointer-events-none h-screen will-change-transform"
 							>
-								<div className="absolute -translate-x-1/2 top-0 text-blue-500 fill-current filter drop-shadow-md">
-									<svg
-										width="13"
-										height="16"
-										viewBox="0 0 13 16"
-										fill="currentColor"
-									>
+								<div className="absolute -translate-x-1/2 top-0 w-3 h-3 text-blue-500 fill-current filter drop-shadow-md">
+									<svg viewBox="0 0 12 12" className="w-full h-full">
 										<title>Playhead</title>
-										<path d="M0.5 0H12.5V8L6.5 16L0.5 8V0Z" />
+										<path d="M0,0 L12,0 L12,8 L6,12 L0,8 Z" />
 									</svg>
 								</div>
 								<div className="w-px h-full bg-blue-500 absolute left-0 shadow-[0_0_4px_rgba(59,130,246,0.5)]" />
 							</div>
 						</div>
 					</div>
-
+					{/* Tracks Body */}
 					<div className="flex relative flex-1">
+						{/* Sidebar / Headers */}
 						<div
-							className="sticky left-0 z-30 bg-[#121212] border-r border-white/5 shrink-0"
+							className="sticky left-0 z-30 bg-[#0f0f0f] border-r border-white/5 shrink-0"
 							style={{ width: HEADER_WIDTH }}
 						>
 							<DndContext
@@ -1259,8 +1272,9 @@ const TimelinePanel: React.FC = () => {
 								</SortableContext>
 							</DndContext>
 						</div>
-
+						{/* Clips Area */}
 						<div className="flex-1 relative timeline-bg min-h-full bg-[#0a0a0a]">
+							{/* Grid */}
 							<div
 								className="absolute inset-0 pointer-events-none opacity-[0.03]"
 								style={{
@@ -1279,7 +1293,7 @@ const TimelinePanel: React.FC = () => {
 										key={layer.id}
 										style={{ height: TRACK_HEIGHT }}
 										className={`border-b border-white/5 relative group/track ${
-											isSelected ? "bg-white/[0.02]" : ""
+											isSelected ? "bg-white/2" : ""
 										}`}
 									>
 										<button
@@ -1288,7 +1302,7 @@ const TimelinePanel: React.FC = () => {
 												if (e.key === "Enter") setSelectedId(layer.id);
 											}}
 											className={`
-                          absolute top-1 bottom-1 rounded-[4px] text-left p-0 m-0 border-0 bg-transparent
+                          absolute top-1 bottom-1 rounded-md text-left p-0 m-0 border-0 bg-transparent
                           flex items-center overflow-hidden cursor-move outline-none
                           ${isSelected ? "z-20" : "z-10"}
                       `}
@@ -1306,13 +1320,14 @@ const TimelinePanel: React.FC = () => {
 											}}
 										>
 											<UnifiedClip layer={layer} isSelected={isSelected} />
+											{/* Resize Handle (Right) - Invisible hit area, visible on hover */}
 											<div
 												className="absolute right-0 top-0 bottom-0 w-3 cursor-e-resize z-30 group/handle"
 												onMouseDown={(e) =>
 													handleClipManipulation(e, layer.id, "trim")
 												}
 											>
-												<div className="absolute right-0.5 top-1/2 -translate-y-1/2 w-1 h-3 bg-black/30 rounded-full group-hover/handle:bg-white/60 transition-colors" />
+												<div className="absolute right-0.5 top-1/2 -translate-y-1/2 w-1 h-4 bg-black/20 rounded-full group-hover/handle:bg-white/50 transition-colors" />
 											</div>
 										</button>
 									</div>
@@ -1341,6 +1356,17 @@ const InspectorPanel: React.FC = () => {
 	const [addAnimOpen, setAddAnimOpen] = useState(false);
 	const { data: fontList } = useGetFontListQuery({});
 
+	// Access handles to resolve the correct label dynamically
+	const handles = useAppSelector(handleSelectors.selectEntities);
+
+	const fontNames = useMemo(() => {
+		if (Array.isArray(fontList) && (fontList as string[])?.length > 0) {
+			return fontList as string[];
+		}
+		return [];
+	}, [fontList]);
+
+	// Animation categories with icons for better UX
 	const animationCategories = useMemo(
 		() => [
 			{
@@ -1350,33 +1376,29 @@ const InspectorPanel: React.FC = () => {
 					{
 						type: "fade-in" as AnimationType,
 						label: "Fade In",
-						icon: RiSparklingLine,
+						icon: Sparkles,
 					},
 					{
 						type: "slide-in-left" as AnimationType,
 						label: "Slide Left",
-						icon: RiArrowRightLine,
+						icon: ArrowRight,
 					},
 					{
 						type: "slide-in-right" as AnimationType,
 						label: "Slide Right",
-						icon: RiArrowLeftLine,
+						icon: ArrowLeft,
 					},
 					{
 						type: "slide-in-top" as AnimationType,
 						label: "Slide Down",
-						icon: RiArrowDownLine,
+						icon: ArrowDown,
 					},
 					{
 						type: "slide-in-bottom" as AnimationType,
 						label: "Slide Up",
-						icon: RiArrowUpLine,
+						icon: ArrowUp,
 					},
-					{
-						type: "zoom-in" as AnimationType,
-						label: "Zoom In",
-						icon: RiZoomInLine,
-					},
+					{ type: "zoom-in" as AnimationType, label: "Zoom In", icon: ZoomIn },
 				],
 			},
 			{
@@ -1386,12 +1408,12 @@ const InspectorPanel: React.FC = () => {
 					{
 						type: "fade-out" as AnimationType,
 						label: "Fade Out",
-						icon: RiEyeOffLine,
+						icon: EyeOff,
 					},
 					{
 						type: "zoom-out" as AnimationType,
 						label: "Zoom Out",
-						icon: RiZoomOutLine,
+						icon: ZoomOut,
 					},
 				],
 			},
@@ -1402,23 +1424,15 @@ const InspectorPanel: React.FC = () => {
 					{
 						type: "rotate-cw" as AnimationType,
 						label: "Rotate CW",
-						icon: RiArrowGoForwardLine,
+						icon: RotateCw,
 					},
 					{
 						type: "rotate-ccw" as AnimationType,
 						label: "Rotate CCW",
-						icon: RiArrowGoBackLine,
+						icon: RotateCcw,
 					},
-					{
-						type: "bounce" as AnimationType,
-						label: "Bounce",
-						icon: RiArrowUpLine,
-					},
-					{
-						type: "shake" as AnimationType,
-						label: "Shake",
-						icon: RiDragMoveLine,
-					},
+					{ type: "bounce" as AnimationType, label: "Bounce", icon: ArrowUp },
+					{ type: "shake" as AnimationType, label: "Shake", icon: Move },
 				],
 			},
 		],
@@ -1450,15 +1464,16 @@ const InspectorPanel: React.FC = () => {
 
 	if (!selectedLayer) {
 		return (
-			<div className="w-80 h-full border-l border-white/5 bg-[#121212] flex flex-col z-20 shadow-xl shrink-0 overflow-hidden">
-				<div className="p-4 bg-[#181818] border-b border-white/5">
+			<div className="w-80 h-full border-l border-white/5 bg-[#0f0f0f] flex flex-col z-20 shadow-xl shrink-0 overflow-hidden">
+				<div className="p-4 bg-neutral-900 border-b border-white/5">
 					<div className="flex items-center gap-2 text-xs font-bold text-gray-200 uppercase tracking-wide">
-						<RiSettings4Line className="w-3.5 h-3.5 text-blue-400" />
+						<Settings2 className="w-3.5 h-3.5 text-blue-400" />
 						Project Settings
 					</div>
 				</div>
 				<ScrollArea className="flex-1 min-h-0">
 					<div className="p-4 pb-6 space-y-6">
+						{/* Canvas Settings Group */}
 						<div className="space-y-4">
 							<div className="space-y-1.5">
 								<Label className="text-[10px] text-gray-500 uppercase font-bold tracking-wider">
@@ -1476,7 +1491,7 @@ const InspectorPanel: React.FC = () => {
 									<SelectTrigger className="h-8 text-[11px] bg-white/5 border-white/10 text-gray-300 focus:ring-blue-500/20">
 										<SelectValue placeholder="Select Aspect Ratio" />
 									</SelectTrigger>
-									<SelectContent className="bg-[#1e1e1e] border-white/10 text-gray-300">
+									<SelectContent className="bg-neutral-800 border-white/10 text-gray-300">
 										{ASPECT_RATIOS.map((r) => (
 											<SelectItem key={r.label} value={r.label}>
 												<span className="flex items-center justify-between w-full gap-6">
@@ -1497,13 +1512,13 @@ const InspectorPanel: React.FC = () => {
 								<div className="grid grid-cols-2 gap-2">
 									<DraggableNumberInput
 										label="W"
-										icon={RiDragMove2Fill} // Horizontal move generic
+										icon={MoveHorizontal}
 										value={Math.round(viewportWidth)}
 										onChange={(v) => updateViewportWidth(Math.max(2, v))}
 									/>
 									<DraggableNumberInput
 										label="H"
-										icon={RiDragMove2Fill} // Vertical move generic
+										icon={MoveVertical}
 										value={Math.round(viewportHeight)}
 										onChange={(v) => updateViewportHeight(Math.max(2, v))}
 									/>
@@ -1512,7 +1527,7 @@ const InspectorPanel: React.FC = () => {
 						</div>
 						<div className="w-full h-px bg-white/5" />
 						<div className="flex flex-col items-center justify-center py-12 px-4 text-center border border-dashed border-white/10 rounded-lg bg-white/2">
-							<RiCursorLine className="w-8 h-8 text-gray-700 mb-3" />
+							<MousePointer className="w-8 h-8 text-gray-700 mb-3" />
 							<p className="text-sm font-medium text-gray-400">
 								No Layer Selected
 							</p>
@@ -1526,15 +1541,19 @@ const InspectorPanel: React.FC = () => {
 		);
 	}
 
+	// Resolve the dynamic name for the header
+	const handle = handles[selectedLayer.inputHandleId];
+	const displayName = resolveLayerLabel(handle, selectedLayer);
+
 	return (
-		<div className="w-80 h-full border-l border-white/5 bg-[#121212] z-20 shadow-xl flex flex-col shrink-0 overflow-hidden">
-			<div className="flex items-center justify-between p-4 border-b border-white/5 bg-[#181818]">
+		<div className="w-80 h-full border-l border-white/5 bg-[#0f0f0f] z-20 shadow-xl flex flex-col shrink-0 overflow-hidden">
+			<div className="flex items-center justify-between p-4 border-b border-white/5 bg-neutral-900/50">
 				<div className="flex flex-col min-w-0">
 					<span className="text-[10px] text-blue-400 uppercase font-bold tracking-wider mb-0.5">
 						Properties
 					</span>
 					<h2 className="text-sm font-semibold text-white truncate max-w-[200px]">
-						{selectedLayer.name || selectedLayer.id}
+						{displayName}
 					</h2>
 				</div>
 				<span className="text-[9px] bg-white/10 px-2 py-1 rounded text-gray-300 font-medium uppercase border border-white/5 tracking-wider">
@@ -1543,6 +1562,7 @@ const InspectorPanel: React.FC = () => {
 			</div>
 			<ScrollArea className="flex-1 min-h-0">
 				<div className="pb-6">
+					{/* Transform */}
 					{selectedLayer.type !== "Audio" && (
 						<TransformControls
 							x={selectedLayer.x}
@@ -1554,14 +1574,30 @@ const InspectorPanel: React.FC = () => {
 							lockAspect={selectedLayer.lockAspect}
 							showDimensions={selectedLayer.type !== "Text"}
 							showScale={true}
+							onCenter={(axis) => {
+								if (axis === "x") {
+									const w = selectedLayer.width ?? 0;
+									update({
+										x: Math.round((viewportWidth - w) / 2),
+									});
+								} else if (axis === "y") {
+									const h = selectedLayer.height ?? 0;
+									update({
+										y: Math.round((viewportHeight - h) / 2),
+									});
+								}
+							}}
 							showLockAspect={selectedLayer.type !== "Text"}
+							canvasWidth={viewportWidth}
+							canvasHeight={viewportHeight}
 							onChange={update}
 						/>
 					)}
 
+					{/* Audio Settings for Video/Audio */}
 					{(selectedLayer.type === "Video" ||
 						selectedLayer.type === "Audio") && (
-						<CollapsibleSection title="Audio" icon={RiEqualizerLine}>
+						<CollapsibleSection title="Audio" icon={Music}>
 							<div className="flex items-center gap-2">
 								<span className="text-[9px] text-gray-500 w-8">Volume</span>
 								<Slider
@@ -1579,6 +1615,7 @@ const InspectorPanel: React.FC = () => {
 						</CollapsibleSection>
 					)}
 
+					{/* Typography */}
 					{selectedLayer.type === "Text" && (
 						<TypographyControls
 							fontFamily={selectedLayer.fontFamily ?? "Inter"}
@@ -1595,6 +1632,7 @@ const InspectorPanel: React.FC = () => {
 						/>
 					)}
 
+					{/* Appearance - for Image/Video layers and Text */}
 					<StyleControls
 						backgroundColor={selectedLayer.backgroundColor}
 						stroke={
@@ -1621,6 +1659,7 @@ const InspectorPanel: React.FC = () => {
 						showOpacity={selectedLayer.type !== "Audio"}
 						onChange={(updates) => {
 							const mappedUpdates: any = { ...updates };
+							// Map properties back
 							if (updates.cornerRadius !== undefined) {
 								mappedUpdates.borderRadius = updates.cornerRadius;
 								delete mappedUpdates.cornerRadius;
@@ -1635,11 +1674,12 @@ const InspectorPanel: React.FC = () => {
 						}}
 					/>
 
+					{/* Animations */}
 					{selectedLayer.type !== "Audio" && (
 						<div className="border-b border-white/5 p-4">
 							<div className="flex items-center justify-between mb-3">
 								<div className="flex items-center gap-2 text-[11px] font-bold text-gray-500 uppercase tracking-wider">
-									<RiFlashlightLine className="w-3.5 h-3.5" /> Animations
+									<Zap className="w-3.5 h-3.5" /> Animations
 								</div>
 							</div>
 							<div className="space-y-3">
@@ -1674,7 +1714,7 @@ const InspectorPanel: React.FC = () => {
 													);
 												}}
 											>
-												<RiDeleteBinLine className="w-3 h-3" />
+												<Trash2 className="w-3 h-3" />
 											</Button>
 										</div>
 										<div className="flex items-center gap-2">
@@ -1714,7 +1754,7 @@ const InspectorPanel: React.FC = () => {
 											variant="outline"
 											className="w-full h-9 text-xs border-dashed border-white/20 bg-transparent hover:bg-white/5 text-gray-400 hover:text-white"
 										>
-											<RiAddLine className="w-3.5 h-3.5 mr-1.5" /> Add Animation
+											<Plus className="w-3.5 h-3.5 mr-1.5" /> Add Animation
 										</Button>
 									</PopoverTrigger>
 									<PopoverContent
@@ -1785,12 +1825,18 @@ export const VideoDesignerEditor: React.FC<VideoDesignerEditorProps> = ({
 	onSave,
 }) => {
 	const nodeConfig = node.config as unknown as VideoCompositorNodeConfig;
+
+	// --- State ---
 	const handles = useAppSelector(handleSelectors.selectEntities);
 	const [layers, setLayers] = useState<ExtendedLayer[]>([]);
 	const [selectedId, setSelectedId] = useState<string | null>(null);
 	const [isDirty, setIsDirty] = useState(false);
 
-	const roundToEven = (num?: number) => Math.round((num ?? 0) / 2) * 2;
+	// Canvas State
+	const roundToEven = useCallback(
+		(num?: number) => Math.round((num ?? 0) / 2) * 2,
+		[],
+	);
 	const [viewportWidth, setViewportWidth] = useState(
 		roundToEven(nodeConfig.width ?? 1280),
 	);
@@ -1802,24 +1848,36 @@ export const VideoDesignerEditor: React.FC<VideoDesignerEditorProps> = ({
 	const [mode, setMode] = useState<"select" | "pan">("select");
 	const [timelineHeight, setTimelineHeight] = useState(DEFAULT_TIMELINE_HEIGHT);
 
+	// Player State
 	const [currentFrame, setCurrentFrame] = useState(0);
 	const [isPlaying, setIsPlayingState] = useState(false);
 	const playerRef = useRef<PlayerRef>(null);
 
+	// Refs
 	const containerRef = useRef<HTMLDivElement>(null);
 	const timeRef = useRef<HTMLDivElement>(null);
 	const lastModeRef = useRef<"select" | "pan">("select");
 	const [containerSize, setContainerSize] = useState({ width: 0, height: 0 });
 	const [sizeKnown, setSizeKnown] = useState(false);
 
-	const updateViewportWidth = (w: number) => {
-		setViewportWidth(roundToEven(Math.max(2, w)));
-		setIsDirty(true);
-	};
-	const updateViewportHeight = (h: number) => {
-		setViewportHeight(roundToEven(Math.max(2, h)));
-		setIsDirty(true);
-	};
+	// --- Actions ---
+	// FIX: Memoize with useCallback so these are stable references and can be
+	// safely included in the contextValue deps array without causing extra renders.
+	const updateViewportWidth = useCallback(
+		(w: number) => {
+			setViewportWidth(roundToEven(Math.max(2, w)));
+			setIsDirty(true);
+		},
+		[roundToEven],
+	);
+
+	const updateViewportHeight = useCallback(
+		(h: number) => {
+			setViewportHeight(roundToEven(Math.max(2, h)));
+			setIsDirty(true);
+		},
+		[roundToEven],
+	);
 
 	const getTextData = useCallback(
 		(id: string) => {
@@ -1886,6 +1944,7 @@ export const VideoDesignerEditor: React.FC<VideoDesignerEditorProps> = ({
 		if (p) playerRef.current?.play();
 		else {
 			playerRef.current?.pause();
+			// Sync frame on pause
 			if (playerRef.current) {
 				setCurrentFrame(playerRef.current.getCurrentFrame());
 			}
@@ -1896,6 +1955,7 @@ export const VideoDesignerEditor: React.FC<VideoDesignerEditorProps> = ({
 		setIsPlayingState(false);
 		setCurrentFrame(0);
 		playerRef.current?.seekTo(0);
+		// Reset timeline scroll to start
 		if (timelineScrollRef.current) {
 			timelineScrollRef.current.scrollLeft = 0;
 		}
@@ -1906,6 +1966,7 @@ export const VideoDesignerEditor: React.FC<VideoDesignerEditorProps> = ({
 		playerRef.current?.seekTo(frame);
 	}, []);
 
+	// --- Initialization ---
 	useEffect(() => {
 		const loadInitialLayers = async () => {
 			const layerUpdates = { ...nodeConfig.layerUpdates };
@@ -1915,6 +1976,7 @@ export const VideoDesignerEditor: React.FC<VideoDesignerEditorProps> = ({
 				0,
 				...Object.values(layerUpdates).map((l) => l.zIndex ?? 0),
 			);
+
 			initialLayers.forEach((item, id) => {
 				const saved = layerUpdates[id] as ExtendedLayer | undefined;
 				const durationMs =
@@ -1930,7 +1992,8 @@ export const VideoDesignerEditor: React.FC<VideoDesignerEditorProps> = ({
 				const src = item.type !== "Text" ? getAssetUrl(id) : undefined;
 				const text = item.type === "Text" ? getTextData(id) : undefined;
 				const handle = handles[id];
-				const name = handle?.label ?? handle.dataTypes[0] ?? id;
+				// FIX: Safe optional chaining — handle may be undefined for unmapped ids.
+				const name = handle?.label ?? handle?.dataTypes?.[0] ?? id;
 
 				const base = {
 					id,
@@ -1948,8 +2011,9 @@ export const VideoDesignerEditor: React.FC<VideoDesignerEditorProps> = ({
 					src,
 					text,
 					...saved,
-					name: name,
+					name,
 				};
+
 				if (item.type === "Text") {
 					const fontFamily = saved?.fontFamily ?? "Inter";
 					loaded.push({
@@ -1964,6 +2028,7 @@ export const VideoDesignerEditor: React.FC<VideoDesignerEditorProps> = ({
 						height: saved?.height,
 						lockAspect: true,
 					});
+					// Queue font loading
 					const fontUrl = GetFontAssetUrl(fontFamily);
 					fontPromises.push(fontManager.loadFont(fontFamily, fontUrl));
 				} else if (item.type === "Image" || item.type === "Video") {
@@ -1991,12 +2056,16 @@ export const VideoDesignerEditor: React.FC<VideoDesignerEditorProps> = ({
 					});
 				}
 			});
+
 			await Promise.all(fontPromises);
 			setLayers(loaded);
 		};
+
 		loadInitialLayers();
 	}, [initialLayers, nodeConfig, getAssetUrl, getTextData]);
 
+	// --- Dynamic Measurement Logic ---
+	// Watches for layers with invalid dimensions (null/undefined width/height) and measures them.
 	useEffect(() => {
 		const layersToMeasure = layers.filter(
 			(l) =>
@@ -2060,7 +2129,7 @@ export const VideoDesignerEditor: React.FC<VideoDesignerEditorProps> = ({
 							}
 							document.body.removeChild(d);
 						}
-					} catch (e) {
+					} catch {
 						updates.set(layer.id, {
 							isPlaceholder: true,
 							width: 100,
@@ -2083,9 +2152,11 @@ export const VideoDesignerEditor: React.FC<VideoDesignerEditorProps> = ({
 		};
 	}, [layers, getAssetUrl, getTextData]);
 
+	// Viewport Logic
 	const zoomIn = useCallback(() => setZoom((z) => Math.min(3, z + 0.1)), []);
 	const zoomOut = useCallback(() => setZoom((z) => Math.max(0.1, z - 0.1)), []);
 	const zoomTo = useCallback((val: number) => setZoom(val), []);
+
 	const fitView = useCallback(() => {
 		if (containerSize.width === 0 || containerSize.height === 0) return;
 		const scale =
@@ -2099,6 +2170,7 @@ export const VideoDesignerEditor: React.FC<VideoDesignerEditorProps> = ({
 		setPan({ x, y });
 	}, [containerSize, viewportWidth, viewportHeight]);
 
+	// biome-ignore lint/correctness/useExhaustiveDependencies: Re-fit required when viewport dims change
 	useEffect(() => {
 		fitView();
 	}, [viewportWidth, viewportHeight, fitView]);
@@ -2121,12 +2193,14 @@ export const VideoDesignerEditor: React.FC<VideoDesignerEditorProps> = ({
 		}
 	}, [containerSize, fitView, sizeKnown]);
 
+	// Wheel Interaction
 	useEffect(() => {
 		const el = containerRef.current;
 		if (!el) return;
 		const handleWheel = (e: WheelEvent) => {
 			e.preventDefault();
 
+			// Zoom if Ctrl/Meta is pressed
 			if (e.ctrlKey || e.metaKey) {
 				const rect = el.getBoundingClientRect();
 				const pointerX = e.clientX - rect.left;
@@ -2148,31 +2222,51 @@ export const VideoDesignerEditor: React.FC<VideoDesignerEditorProps> = ({
 				return;
 			}
 
+			// Pan (Scroll) logic
+			// Shift = Horizontal Pan
+			// Default = Vertical Pan
+			// Note: Trackpads might send deltaX, so we respect it.
 			let dx = e.deltaX;
 			let dy = e.deltaY;
+
 			if (e.shiftKey) {
+				// Shift + Scroll usually means horizontal scrolling on non-trackpads
 				if (dy !== 0 && dx === 0) {
 					dx = dy;
 					dy = 0;
 				}
 			}
-			setPan((p) => ({ ...p, x: p.x - dx, y: p.y - dy }));
+
+			setPan((p) => ({
+				...p,
+				x: p.x - dx,
+				y: p.y - dy,
+			}));
 		};
 		el.addEventListener("wheel", handleWheel, { passive: false });
 		return () => el.removeEventListener("wheel", handleWheel);
 	}, [zoom, pan, mode]);
 
+	// Keyboard Shortcuts
+
+	// Tool Switching
 	useHotkeys("v", () => setMode("select"));
 	useHotkeys("h", () => setMode("pan"));
+
+	// Zoom
 	useHotkeys("=", () => zoomIn());
 	useHotkeys("+", () => zoomIn());
 	useHotkeys("-", () => zoomOut());
 	useHotkeys("0", () => fitView());
 	useHotkeys("1", () => zoomTo(1));
+
+	// General
 	useHotkeys("escape", () => setSelectedId(null));
 	useHotkeys("delete, backspace", () => {
 		if (selectedId) deleteLayer(selectedId);
 	});
+
+	// Space for Pan Mode (Hold)
 	useHotkeys(
 		"space",
 		(e) => {
@@ -2180,6 +2274,7 @@ export const VideoDesignerEditor: React.FC<VideoDesignerEditorProps> = ({
 				document.activeElement?.tagName === "INPUT" ||
 				document.activeElement?.tagName === "TEXTAREA";
 			if (isInput) return;
+
 			e.preventDefault();
 			if (mode !== "pan") {
 				lastModeRef.current = mode;
@@ -2188,6 +2283,7 @@ export const VideoDesignerEditor: React.FC<VideoDesignerEditorProps> = ({
 		},
 		{ keydown: true },
 	);
+
 	useHotkeys(
 		"space",
 		(e) => {
@@ -2195,11 +2291,14 @@ export const VideoDesignerEditor: React.FC<VideoDesignerEditorProps> = ({
 				document.activeElement?.tagName === "INPUT" ||
 				document.activeElement?.tagName === "TEXTAREA";
 			if (isInput) return;
+
 			e.preventDefault();
 			setMode(lastModeRef.current);
 		},
 		{ keyup: true },
 	);
+
+	// Save
 	useHotkeys(
 		"meta+s, ctrl+s",
 		(e) => {
@@ -2288,6 +2387,10 @@ export const VideoDesignerEditor: React.FC<VideoDesignerEditorProps> = ({
 			selectedId,
 			viewportWidth,
 			viewportHeight,
+			// FIX: Include memoized viewport updaters in deps so context consumers
+			// always receive stable, up-to-date references.
+			updateViewportWidth,
+			updateViewportHeight,
 			currentFrame,
 			isPlaying,
 			zoom,
@@ -2312,6 +2415,7 @@ export const VideoDesignerEditor: React.FC<VideoDesignerEditorProps> = ({
 
 	useEffect(() => {
 		playerRef.current?.seekTo(0);
+		// Subscribe to ended event
 		const player = playerRef.current;
 		if (player) {
 			player.addEventListener("ended", handlePlaybackEnded);
@@ -2323,21 +2427,22 @@ export const VideoDesignerEditor: React.FC<VideoDesignerEditorProps> = ({
 
 	return (
 		<EditorContext.Provider value={contextValue}>
-			<div className="flex flex-col h-screen w-full bg-[#090909] text-gray-100 overflow-hidden font-sans select-none">
+			<div className="flex flex-col h-screen w-full bg-[#050505] text-gray-100 overflow-hidden font-sans select-none">
 				<div className="flex flex-1 min-h-0 relative overflow-hidden">
+					{/* Canvas Area */}
 					<div
 						ref={containerRef}
 						className="flex-1 relative overflow-hidden"
 						onMouseDown={() => setSelectedId(null)}
 						style={{
-							backgroundColor: "#0d0d0d",
+							backgroundColor: "#1a1a1a",
 							backgroundImage:
-								"radial-gradient(circle at 1px 1px, rgba(255,255,255,0.08) 1px, transparent 0)",
+								"radial-gradient(circle at 1px 1px, rgba(255,255,255,0.12) 1px, transparent 0)",
 							backgroundSize: "24px 24px",
 						}}
 						role="button"
 						tabIndex={0}
-						onKeyDown={() => {}}
+						onKeyDown={() => {}} // No-op
 					>
 						<div
 							className="absolute origin-top-left"
@@ -2349,18 +2454,23 @@ export const VideoDesignerEditor: React.FC<VideoDesignerEditorProps> = ({
 							}}
 						>
 							<div
-								className="shadow-[0_0_150px_rgba(0,0,0,0.8)] media-container relative bg-[#050505] ring-1 ring-white/10"
+								className="shadow-[0_0_100px_rgba(0,0,0,0.9)] media-container relative bg-[#0a0a0a] ring-2 ring-white/15 rounded-sm"
 								style={{ width: viewportWidth, height: viewportHeight }}
 							>
+								{/* Safety Guides (Action Safe) */}
 								{selectedId && (
-									<div className="absolute inset-0 pointer-events-none opacity-20 border-[40px] border-transparent">
+									<div className="absolute inset-0 pointer-events-none opacity-20 border-40 border-transparent">
 										<div className="w-full h-full border border-white/50 border-dashed" />
 									</div>
 								)}
 								<Player
 									ref={playerRef}
 									component={CompositionScene}
-									inputProps={{ layers, viewportWidth, viewportHeight }}
+									inputProps={{
+										layers,
+										viewportWidth,
+										viewportHeight,
+									}}
 									acknowledgeRemotionLicense
 									durationInFrames={durationInFrames}
 									fps={FPS}
@@ -2375,6 +2485,7 @@ export const VideoDesignerEditor: React.FC<VideoDesignerEditorProps> = ({
 						{!isPlaying && <InteractionOverlay />}
 					</div>
 					<InspectorPanel />
+					{/* Floating Controls */}
 					<div className="absolute bottom-6 left-1/2 -translate-x-1/2 z-40 transition-all duration-300">
 						<Toolbar
 							onClose={onClose}
