@@ -2,6 +2,7 @@ import {
 	AspectRatioSwitch,
 	ResizeHeightInput,
 	ResizeWidthInput,
+	useCanvasCtx,
 } from "@gatewai/react-canvas";
 import type { NodeEntityType } from "@gatewai/react-store";
 import {
@@ -14,42 +15,7 @@ import { Maximize2 } from "lucide-react";
 import { memo } from "react";
 import type { ResizeNodeConfig } from "@/shared/config.js";
 
-function ResizeConfig({
-	node,
-	disabled,
-}: {
-	node: NodeEntityType;
-	disabled?: boolean;
-}) {
-	const nodeConfig = node.config as ResizeNodeConfig;
-	return (
-		<div className="flex items-end gap-2">
-			<ResizeWidthInput
-				node={node}
-				disabled={disabled}
-				originalWidth={nodeConfig?.originalWidth ?? undefined}
-				originalHeight={nodeConfig?.originalHeight ?? undefined}
-				maintainAspect={nodeConfig?.maintainAspect ?? true}
-			/>
-			<ResizeHeightInput
-				node={node}
-				disabled={disabled}
-				originalWidth={nodeConfig?.originalWidth ?? undefined}
-				originalHeight={nodeConfig?.originalHeight ?? undefined}
-				maintainAspect={nodeConfig?.maintainAspect ?? true}
-			/>
-			<AspectRatioSwitch
-				node={node}
-				disabled={disabled}
-				originalWidth={nodeConfig?.originalWidth ?? undefined}
-				originalHeight={nodeConfig?.originalHeight ?? undefined}
-			/>
-			<ResetButton node={node} disabled={disabled} />
-		</div>
-	);
-}
-
-function ResetButton({
+const ResetButton = memo(function ResetButton({
 	node,
 	disabled,
 }: {
@@ -101,6 +67,41 @@ function ResetButton({
 			</TooltipContent>
 		</Tooltip>
 	);
-}
+});
+
+const ResizeConfig = memo(function ResizeConfig({
+	node,
+	disabled,
+}: {
+	node: NodeEntityType;
+	disabled?: boolean;
+}) {
+	const nodeConfig = node.config as ResizeNodeConfig;
+	return (
+		<div className="flex items-end gap-2 p-2">
+			<ResizeWidthInput
+				node={node}
+				disabled={disabled}
+				originalWidth={nodeConfig?.originalWidth ?? undefined}
+				originalHeight={nodeConfig?.originalHeight ?? undefined}
+				maintainAspect={nodeConfig?.maintainAspect ?? true}
+			/>
+			<ResizeHeightInput
+				node={node}
+				disabled={disabled}
+				originalWidth={nodeConfig?.originalWidth ?? undefined}
+				originalHeight={nodeConfig?.originalHeight ?? undefined}
+				maintainAspect={nodeConfig?.maintainAspect ?? true}
+			/>
+			<AspectRatioSwitch
+				node={node}
+				disabled={disabled}
+				originalWidth={nodeConfig?.originalWidth ?? undefined}
+				originalHeight={nodeConfig?.originalHeight ?? undefined}
+			/>
+			<ResetButton node={node} disabled={disabled} />
+		</div>
+	);
+});
 
 export { ResizeConfig };

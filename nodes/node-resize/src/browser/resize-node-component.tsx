@@ -67,7 +67,7 @@ const ResizeNodeComponent = memo((props: NodeProps) => {
 
 	return (
 		<BaseNode selected={props.selected} id={props.id} dragging={props.dragging}>
-			<div className="flex flex-col gap-3">
+			<div className="flex flex-col">
 				<div
 					className={cn(
 						"w-full media-container overflow-hidden rounded relative",

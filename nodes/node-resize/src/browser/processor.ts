@@ -18,13 +18,16 @@ export class ResizeBrowserProcessor implements IBrowserProcessor {
 		const config = ResizeNodeConfigSchema.parse(node.config);
 
 		const result = await context.pixi.execute(
-			imageUrl,
-			config,
+			node.id,
+			{
+				imageUrl,
+				config,
+			},
 			applyResize,
 			signal,
 		);
 
-		const outputHandle = context.getFirstOutputHandle(node.id, "Result");
+		const outputHandle = context.getFirstOutputHandle(node.id);
 		if (!outputHandle) throw new Error("Missing output handle");
 
 		const dataUrl = URL.createObjectURL(result.dataUrl);

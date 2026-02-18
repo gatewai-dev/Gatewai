@@ -15,7 +15,7 @@ function PaintDimensionsConfig({
 }) {
 	const nodeConfig = node.config as PaintNodeConfig;
 	return (
-		<div className="flex items-end gap-2">
+		<div className="flex items-end gap-2 p-2">
 			<ResizeWidthInput
 				node={node}
 				disabled={disabled}

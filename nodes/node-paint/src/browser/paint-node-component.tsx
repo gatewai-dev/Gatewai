@@ -474,7 +474,7 @@ const PaintNodeComponent = memo(
 				id={props.id}
 				dragging={props.dragging}
 			>
-				<div className="flex flex-col gap-3">
+				<div className="flex flex-col">
 					<div
 						className="media-container w-full overflow-hidden relative select-none"
 						style={containerStyle}
@@ -582,7 +582,7 @@ const PaintNodeComponent = memo(
 							</div>
 						)}
 					</div>
-					<Separator />
+					<Separator className="my-1" />
 					{node && nodeConfig?.backgroundColor && (
 						<div className="flex items-center gap-2">
 							<PaintDimensionsConfig

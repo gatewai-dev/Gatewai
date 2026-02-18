@@ -14,7 +14,7 @@ export class PaintBrowserProcessor implements IBrowserProcessor {
 		signal,
 		context,
 	}: NodeProcessorParams): Promise<NodeResult | null> {
-		const imageUrl = context.findInputData(inputs, "Background Image");
+		const imageUrl = context.findInputData(inputs, "Image", "Background Image");
 
 		// Parse config
 		const config = PaintNodeConfigSchema.parse(node.config);
@@ -28,10 +28,16 @@ export class PaintBrowserProcessor implements IBrowserProcessor {
 			signal,
 		);
 
-		const imageOutputHandle = context.getFirstOutputHandle(node.id, "Image");
-		const maskOutputHandle = context.getFirstOutputHandle(node.id, "Mask");
+		const imageOutputHandleId = context.getFirstOutputHandleWithLabel(
+			node.id,
+			"Image",
+		);
+		const maskOutputHandleId = context.getFirstOutputHandleWithLabel(
+			node.id,
+			"Mask",
+		);
 
-		if (!imageOutputHandle || !maskOutputHandle)
+		if (!imageOutputHandleId || !maskOutputHandleId)
 			throw new Error("Missing output handles");
 
 		const imageWithMaskUrl = URL.createObjectURL(result.imageWithMask.dataUrl);
@@ -54,12 +60,8 @@ export class PaintBrowserProcessor implements IBrowserProcessor {
 									height: result.imageWithMask.height,
 								},
 							},
-							outputHandleId: imageOutputHandle,
+							outputHandleId: imageOutputHandleId,
 						},
-					],
-				},
-				{
-					items: [
 						{
 							type: "Image",
 							data: {
@@ -69,7 +71,7 @@ export class PaintBrowserProcessor implements IBrowserProcessor {
 									height: result.onlyMask.height,
 								},
 							},
-							outputHandleId: maskOutputHandle,
+							outputHandleId: maskOutputHandleId,
 						},
 					],
 				},

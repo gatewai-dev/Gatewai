@@ -750,6 +750,17 @@ export class NodeGraphProcessor extends EventEmitter implements NodeProcessor {
 							(type ? h.dataTypes.includes(type as DataType) : true),
 					)?.id;
 				},
+				getFirstOutputHandleWithLabel: (
+					targetNodeId: string,
+					label: string,
+				) => {
+					return this.handles.find(
+						(h) =>
+							h.nodeId === targetNodeId &&
+							h.type === "Output" &&
+							h.label === label,
+					)?.id;
+				},
 				findInputData: (
 					inputs: Record<string, ConnectedInput>,
 					requiredType?: string,

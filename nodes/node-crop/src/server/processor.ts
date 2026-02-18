@@ -43,7 +43,7 @@ export class CropProcessor implements NodeProcessor {
                 node.id,
                 {
                     imageUrl,
-                    options: validatedConfig,
+                    config: validatedConfig,
                     apiKey: data.apiKey,
                 },
                 applyCrop,

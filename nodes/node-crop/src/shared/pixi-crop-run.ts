@@ -7,7 +7,7 @@ import type { CropNodeConfig } from "./config.js";
 
 export interface PixiCropInput {
 	imageUrl: string;
-	options: CropNodeConfig;
+	config: CropNodeConfig;
 	apiKey?: string;
 }
 
@@ -17,7 +17,7 @@ export const applyCrop: PixiRun<PixiCropInput> = {
 		context: PixiRunContext,
 		input: PixiCropInput,
 	): Promise<PixiProcessOutput> {
-		const { imageUrl, options, apiKey } = input;
+		const { imageUrl, config, apiKey } = input;
 		const { app, loadTexture, getPixiModules, extractBlob, signal } = context;
 
 		const originalTexture = await loadTexture(imageUrl, apiKey);
@@ -30,10 +30,10 @@ export const applyCrop: PixiRun<PixiCropInput> = {
 
 		const clamp = (val: number) => Math.max(0, Math.min(100, val));
 
-		const left = (clamp(options.leftPercentage) / 100) * origWidth;
-		const top = (clamp(options.topPercentage) / 100) * origHeight;
-		const cropWidth = (clamp(options.widthPercentage) / 100) * origWidth;
-		const cropHeight = (clamp(options.heightPercentage) / 100) * origHeight;
+		const left = (clamp(config.leftPercentage) / 100) * origWidth;
+		const top = (clamp(config.topPercentage) / 100) * origHeight;
+		const cropWidth = (clamp(config.widthPercentage) / 100) * origWidth;
+		const cropHeight = (clamp(config.heightPercentage) / 100) * origHeight;
 
 		const leftPx = Math.floor(left);
 		const topPx = Math.floor(top);

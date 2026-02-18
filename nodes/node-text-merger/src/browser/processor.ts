@@ -17,7 +17,7 @@ export class TextMergerBrowserProcessor implements IBrowserProcessor {
 		);
 		const resultText = joinText(allTexts, config.join ?? "\n");
 
-		const outputHandle = context.getFirstOutputHandle(node.id, "Text");
+		const outputHandle = context.getFirstOutputHandle(node.id);
 		if (!outputHandle) throw new Error("Missing output handle");
 		const output = {
 			selectedOutputIndex: 0,

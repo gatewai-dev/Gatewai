@@ -1,6 +1,7 @@
 import { useCanvasCtx } from "@gatewai/react-canvas";
 import type { NodeEntityType } from "@gatewai/react-store";
 import {
+	Form,
 	FormControl,
 	FormField,
 	FormItem,
@@ -15,7 +16,7 @@ import {
 } from "@gatewai/ui-kit";
 import { zodResolver } from "@hookform/resolvers/zod";
 import { memo, useEffect, useState } from "react";
-import { Form, useForm } from "react-hook-form";
+import { useForm } from "react-hook-form";
 import {
 	type TextMergerNodeConfig,
 	TextMergerNodeConfigSchema,

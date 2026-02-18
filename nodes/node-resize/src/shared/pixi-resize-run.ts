@@ -7,7 +7,7 @@ import type { ResizeNodeConfig } from "./config.js";
 
 export interface PixiResizeInput {
 	imageUrl: string;
-	options: ResizeNodeConfig;
+	config: ResizeNodeConfig;
 	apiKey?: string;
 }
 
@@ -17,7 +17,7 @@ export const applyResize: PixiRun<PixiResizeInput> = {
 		context: PixiRunContext,
 		input: PixiResizeInput,
 	): Promise<PixiProcessOutput> {
-		const { imageUrl, options, apiKey } = input;
+		const { imageUrl, config, apiKey } = input;
 		const { app, loadTexture, getPixiModules, extractBlob, signal } = context;
 
 		const texture = await loadTexture(imageUrl, apiKey);
@@ -29,8 +29,8 @@ export const applyResize: PixiRun<PixiResizeInput> = {
 		const originalWidth = texture.width;
 		const originalHeight = texture.height;
 
-		let targetWidth = options.width;
-		let targetHeight = options.height;
+		let targetWidth = config.width;
+		let targetHeight = config.height;
 
 		// Logic to preserve aspect ratio if one dimension is missing
 		if (!targetWidth && !targetHeight) {
