@@ -1,4 +1,3 @@
-import type { Readable } from "node:stream";
 import {
 	type FileData,
 	type IPixiProcessor,
@@ -18,7 +17,7 @@ import {
 } from "@pixi/node";
 import { createCanvas, ImageData } from "canvas";
 import sharp from "sharp";
-import { BasePixiService } from "../common/pixi/base-pixi-service.js";
+import { BasePixiService } from "../shared/pixi/base-pixi-service.js";
 
 // 1. Polyfill ImageData
 if (typeof global.ImageData === "undefined") {

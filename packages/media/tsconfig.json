@@ -3,6 +3,6 @@
 	"compilerOptions": {
 		"lib": ["ES2022", "DOM", "WebWorker"]
 	},
-	"include": ["common", "browser", "server"],
+	"include": ["shared", "browser", "server"],
 	"exclude": ["dist", "build", "node_modules"]
 }

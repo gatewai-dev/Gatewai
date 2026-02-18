@@ -96,6 +96,7 @@ function ReactflowContainer({ children, leftPanel }: ReactFlowProps) {
 	}
 
 	return (
+		// biome-ignore lint/a11y/noStaticElementInteractions: Required
 		<div
 			onAuxClick={handleAuxClick}
 			onMouseDown={onMouseDown}
@@ -144,7 +145,7 @@ function ReactflowContainer({ children, leftPanel }: ReactFlowProps) {
 			>
 				{children}
 				<Background variant={BackgroundVariant.Dots} />
-				<ReactFlowPanels children={leftPanel} />
+				<ReactFlowPanels>{leftPanel}</ReactFlowPanels>
 			</ReactFlow>
 		</div>
 	);

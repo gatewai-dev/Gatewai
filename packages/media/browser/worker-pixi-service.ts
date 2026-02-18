@@ -10,7 +10,7 @@ import {
 	Sprite,
 	Texture,
 } from "@pixi/webworker";
-import { BasePixiService } from "../common/index.js";
+import { BasePixiService } from "../shared/index.js";
 
 export class WorkerPixiService extends BasePixiService {
 	private initialized = false;

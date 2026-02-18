@@ -10,7 +10,7 @@
 	"exports": {
 		".": {
 			"types": "./dist/index.d.mts",
-			"development": "./common/index.ts",
+			"development": "./shared/index.ts",
 			"import": "./dist/index.mjs",
 			"default": "./dist/index.mjs"
 		},
