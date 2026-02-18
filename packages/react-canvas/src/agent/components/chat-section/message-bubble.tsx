@@ -64,7 +64,7 @@ export function MessageBubble({
 							>
 								<LoadingSpinner className="size-3.5 text-primary" />
 								<span className="text-xs font-medium text-muted-foreground animate-pulse">
-									Generating workflow...
+									Working...
 								</span>
 							</div>
 						)}
@@ -77,7 +77,7 @@ export function MessageBubble({
 						<PatchReviewCard
 							patchId={patchId}
 							initialStatus={message.patchStatus}
-							onComplete={onPatchComplete || (() => {})}
+							onComplete={onPatchComplete || (() => { })}
 						/>
 					</div>
 				)}

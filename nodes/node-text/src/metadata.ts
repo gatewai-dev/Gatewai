@@ -8,6 +8,7 @@ export const metadata = defineMetadata({
 	displayName: "Text",
 	description: "Input or display text",
 	category: "Text",
+	showInQuickAccess: true,
 	configSchema: TextNodeConfigSchema,
 	isTerminal: false,
 	isTransient: true,
