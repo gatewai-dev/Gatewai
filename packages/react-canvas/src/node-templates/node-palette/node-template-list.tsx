@@ -137,7 +137,7 @@ const NodeTemplateList = memo(({ templates }: NodeListProps) => {
 							.map(([sub, temps]) => (
 								<div key={sub} className="flex flex-col gap-1">
 									{sub && (
-										<h3 className="mb-1 px-2 text-[10px] font-medium text-primary/70">
+										<h3 className="mt-1 px-2 text-[10px] font-medium text-primary/70">
 											{sub}
 										</h3>
 									)}

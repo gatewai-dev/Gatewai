@@ -1,96 +1,86 @@
-import type { ModulateNodeConfig } from "@gatewai/node-modulate";
+import {
+	type ModulateNodeConfig,
+	ModulateNodeConfigSchema,
+} from "@/shared/config.js";
 import { useCanvasCtx } from "@gatewai/react-canvas";
 import type { NodeEntityType } from "@gatewai/react-store";
-import { Label, Slider } from "@gatewai/ui-kit";
-import { memo } from "react";
-import { useDebouncedCallback } from "use-debounce";
+import { Form, SliderField } from "@gatewai/ui-kit";
+import { zodResolver } from "@hookform/resolvers/zod";
+import { memo, useEffect } from "react";
+import { useForm } from "react-hook-form";
 
 const ModulateConfigComponent = memo(({ node }: { node: NodeEntityType }) => {
 	const { onNodeConfigUpdate } = useCanvasCtx();
 
-	const updateConfig = useDebouncedCallback(
-		(cfg: Partial<ModulateNodeConfig>) => {
-			onNodeConfigUpdate({ id: node.id, newConfig: cfg });
-		},
-		150,
-	);
+	const form = useForm<ModulateNodeConfig>({
+		resolver: zodResolver(ModulateNodeConfigSchema),
+		defaultValues: node.config as ModulateNodeConfig,
+	});
 
-	const config = node.config as ModulateNodeConfig;
+	useEffect(() => {
+		if (node?.config) {
+			const currentValues = form.getValues();
+			const newConfig = node.config as ModulateNodeConfig;
+
+			// Prevent infinite loop by only resetting if values actually changed
+			if (
+				currentValues.hue !== newConfig.hue ||
+				currentValues.saturation !== newConfig.saturation ||
+				currentValues.brightness !== newConfig.brightness ||
+				currentValues.lightness !== newConfig.lightness
+			) {
+				form.reset(newConfig);
+			}
+		}
+	}, [node.config, form]);
+
+	useEffect(() => {
+		const subscription = form.watch((value) => {
+			onNodeConfigUpdate({
+				id: node.id,
+				newConfig: value as ModulateNodeConfig,
+			});
+		});
+		return () => subscription.unsubscribe();
+	}, [form, node.id, onNodeConfigUpdate]);
 
 	return (
-		<div className="flex flex-col gap-4 p-1">
-			<div className="flex flex-col gap-2 scale-90 origin-left">
-				<div className="flex justify-between items-center">
-					<Label className="text-[10px] text-muted-foreground uppercase tracking-wider">
-						Hue
-					</Label>
-					<span className="text-[10px] font-medium">
-						{Math.round(config.hue ?? 0)}
-					</span>
-				</div>
-				<Slider
-					value={[config.hue ?? 0]}
+		<Form {...form}>
+			<form className="flex flex-col gap-4 p-1">
+				<SliderField
+					control={form.control}
+					name="hue"
+					label="HUE"
 					min={0}
 					max={360}
 					step={1}
-					onValueChange={([val]) => updateConfig({ hue: val })}
 				/>
-			</div>
-
-			<div className="flex flex-col gap-2 scale-90 origin-left">
-				<div className="flex justify-between items-center">
-					<Label className="text-[10px] text-muted-foreground uppercase tracking-wider">
-						Saturation
-					</Label>
-					<span className="text-[10px] font-medium">
-						{Math.round((config.saturation ?? 1) * 100)}%
-					</span>
-				</div>
-				<Slider
-					value={[config.saturation ?? 1]}
+				<SliderField
+					control={form.control}
+					name="saturation"
+					label="SATURATION"
 					min={0}
 					max={2}
 					step={0.01}
-					onValueChange={([val]) => updateConfig({ saturation: val })}
 				/>
-			</div>
-
-			<div className="flex flex-col gap-2 scale-90 origin-left">
-				<div className="flex justify-between items-center">
-					<Label className="text-[10px] text-muted-foreground uppercase tracking-wider">
-						Brightness
-					</Label>
-					<span className="text-[10px] font-medium">
-						{Math.round((config.brightness ?? 1) * 100)}%
-					</span>
-				</div>
-				<Slider
-					value={[config.brightness ?? 1]}
+				<SliderField
+					control={form.control}
+					name="brightness"
+					label="BRIGHTNESS"
 					min={0}
 					max={2}
 					step={0.01}
-					onValueChange={([val]) => updateConfig({ brightness: val })}
 				/>
-			</div>
-
-			<div className="flex flex-col gap-2 scale-90 origin-left">
-				<div className="flex justify-between items-center">
-					<Label className="text-[10px] text-muted-foreground uppercase tracking-wider">
-						Lightness
-					</Label>
-					<span className="text-[10px] font-medium">
-						{Math.round((config.lightness ?? 1) * 100)}%
-					</span>
-				</div>
-				<Slider
-					value={[config.lightness ?? 1]}
+				<SliderField
+					control={form.control}
+					name="lightness"
+					label="LIGHTNESS"
 					min={0}
 					max={2}
 					step={0.01}
-					onValueChange={([val]) => updateConfig({ lightness: val })}
 				/>
-			</div>
-		</div>
+			</form>
+		</Form>
 	);
 });
 

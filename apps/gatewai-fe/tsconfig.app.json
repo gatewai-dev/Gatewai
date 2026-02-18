@@ -3,7 +3,11 @@
 		"composite": true,
 		"target": "ES2022",
 		"useDefineForClassFields": true,
-		"lib": ["ES2022", "DOM", "DOM.Iterable"],
+		"lib": [
+			"ES2022",
+			"DOM",
+			"DOM.Iterable"
+		],
 		"module": "ESNext",
 		"skipLibCheck": true,
 		"moduleResolution": "bundler",
@@ -20,8 +24,112 @@
 		"emitDecoratorMetadata": true,
 		"baseUrl": ".",
 		"paths": {
-			"@/*": ["./src/*"]
+			"@/*": [
+				"./src/*"
+			],
+			"@gatewai/api-client": [
+				"../../packages/api-client/src/index.ts"
+			],
+			"@gatewai/core": [
+				"../../packages/core/src/index.ts"
+			],
+			"@gatewai/data-ops": [
+				"../../packages/data-ops/src/index.ts"
+			],
+			"@gatewai/db": [
+				"../../packages/db/src/index.ts"
+			],
+			"@gatewai/graph-engine": [
+				"../../packages/graph-engine/src/index.ts"
+			],
+			"@gatewai/nodes-registry": [
+				"../../packages/nodes-registry/src/index.ts"
+			],
+			"@gatewai/react-canvas": [
+				"../../packages/react-canvas/src/index.ts"
+			],
+			"@gatewai/react-store": [
+				"../../packages/react-store/src/index.ts"
+			],
+			"@gatewai/rpc-client": [
+				"../../packages/rpc-client/src/index.ts"
+			],
+			"@gatewai/ui-kit": [
+				"../../packages/ui-kit/src/index.ts"
+			],
+			"@gatewai/node-blur": [
+				"../../nodes/node-blur/src/browser/index.ts"
+			],
+			"@gatewai/node-crop": [
+				"../../nodes/node-crop/src/browser/index.ts"
+			],
+			"@gatewai/node-export": [
+				"../../nodes/node-export/src/browser/index.ts"
+			],
+			"@gatewai/node-image-compositor": [
+				"../../nodes/node-image-compositor/src/browser/index.ts"
+			],
+			"@gatewai/node-image-gen": [
+				"../../nodes/node-image-gen/src/browser/index.ts"
+			],
+			"@gatewai/node-import": [
+				"../../nodes/node-import/src/browser/index.ts"
+			],
+			"@gatewai/node-llm": [
+				"../../nodes/node-llm/src/browser/index.ts"
+			],
+			"@gatewai/node-modulate": [
+				"../../nodes/node-modulate/src/browser/index.ts"
+			],
+			"@gatewai/node-note": [
+				"../../nodes/node-note/src/browser/index.ts"
+			],
+			"@gatewai/node-paint": [
+				"../../nodes/node-paint/src/browser/index.ts"
+			],
+			"@gatewai/node-preview": [
+				"../../nodes/node-preview/src/browser/index.ts"
+			],
+			"@gatewai/node-resize": [
+				"../../nodes/node-resize/src/browser/index.ts"
+			],
+			"@gatewai/node-speech-to-text": [
+				"../../nodes/node-speech-to-text/src/browser/index.ts"
+			],
+			"@gatewai/node-text": [
+				"../../nodes/node-text/src/browser/index.ts"
+			],
+			"@gatewai/node-text-merger": [
+				"../../nodes/node-text-merger/src/browser/index.ts"
+			],
+			"@gatewai/node-text-to-speech": [
+				"../../nodes/node-text-to-speech/src/browser/index.ts"
+			],
+			"@gatewai/node-video-compositor": [
+				"../../nodes/node-video-compositor/src/browser/index.ts"
+			],
+			"@gatewai/node-video-gen": [
+				"../../nodes/node-video-gen/src/browser/index.ts"
+			],
+			"@gatewai/node-video-gen-first-last-frame": [
+				"../../nodes/node-video-gen-first-last-frame/src/browser/index.ts"
+			],
+			"@gatewai/core/di": [
+				"../../packages/core/src/di/index.ts"
+			],
+			"@gatewai/core/types": [
+				"../../packages/core/src/types/index.ts"
+			],
+			"@gatewai/core/storage": [
+				"../../packages/core/src/storage/index.ts"
+			],
+			"@gatewai/core/browser": [
+				"../../packages/core/src/browser/index.ts"
+			]
 		}
 	},
-	"include": ["src", "backend"]
+	"include": [
+		"src",
+		"backend"
+	]
 }

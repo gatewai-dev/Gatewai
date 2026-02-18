@@ -3098,7 +3098,7 @@ importers:
     dependencies:
       '@ai-sdk/google':
         specifier: '*'
-        version: 3.0.16(zod@4.3.6)
+        version: 3.0.16(zod@3.25.67)
       '@dnd-kit/core':
         specifier: ^6.3.1
         version: 6.3.1(react-dom@19.2.4(react@19.2.4))(react@19.2.4)
@@ -3206,13 +3206,13 @@ importers:
         version: 0.2.4(49fe1a11536dd5ba249a9fdf66cfd27d)
       '@google/genai':
         specifier: '*'
-        version: 1.32.0(@modelcontextprotocol/sdk@1.25.2(hono@4.8.5)(zod@4.3.6))
+        version: 1.32.0(@modelcontextprotocol/sdk@1.25.2(hono@4.8.5)(zod@3.25.67))
       '@hono/node-server':
         specifier: '*'
         version: 1.19.9(hono@4.8.5)
       '@hono/zod-validator':
         specifier: '*'
-        version: 0.7.2(hono@4.8.5)(zod@4.3.6)
+        version: 0.7.2(hono@4.8.5)(zod@3.25.67)
       '@hookform/resolvers':
         specifier: '*'
         version: 3.10.0(react-hook-form@7.71.1(react@19.2.4))
@@ -3224,10 +3224,10 @@ importers:
         version: 2.3.1
       '@openai/agents':
         specifier: '*'
-        version: 0.4.1(hono@4.8.5)(ws@8.18.3)(zod@4.3.6)
+        version: 0.4.1(hono@4.8.5)(ws@8.18.3)(zod@3.25.67)
       '@openai/agents-extensions':
         specifier: '*'
-        version: 0.4.1(@ai-sdk/provider@3.0.5)(@openai/agents@0.4.1(hono@4.8.5)(ws@8.18.3)(zod@4.3.6))(hono@4.8.5)(ws@8.18.3)(zod@4.3.6)
+        version: 0.4.1(@ai-sdk/provider@3.0.5)(@openai/agents@0.4.1(hono@4.8.5)(ws@8.18.3)(zod@3.25.67))(hono@4.8.5)(ws@8.18.3)(zod@3.25.67)
       '@pixi/webworker':
         specifier: '*'
         version: 7.4.3
@@ -3254,7 +3254,7 @@ importers:
         version: 12.8.4(@types/react@19.1.11)(immer@11.1.3)(react-dom@19.2.4(react@19.2.4))(react@19.2.4)
       ai:
         specifier: '*'
-        version: 6.0.58(zod@4.3.6)
+        version: 6.0.58(zod@3.25.67)
       better-auth:
         specifier: '*'
         version: 1.4.17(@prisma/client@6.19.0(prisma@6.19.0(typescript@5.8.3))(typescript@5.8.3))(pg@8.16.3)(prisma@6.19.0(typescript@5.8.3))(react-dom@19.2.4(react@19.2.4))(react@19.2.4)(vitest@4.0.18(@opentelemetry/api@1.9.0)(@types/node@22.19.11)(jiti@2.6.1)(lightningcss@1.30.2)(terser@5.44.1)(tsx@4.20.3)(yaml@2.8.0))(vue@3.5.18(typescript@5.8.3))
@@ -3439,11 +3439,11 @@ importers:
         specifier: '*'
         version: 1.6.28
       zod:
-        specifier: ^4.1.8
-        version: 4.3.6
+        specifier: ^3.24.1
+        version: 3.25.67
       zod-to-json-schema:
         specifier: '*'
-        version: 3.25.1(zod@4.3.6)
+        version: 3.25.1(zod@3.25.67)
     devDependencies:
       '@gatewai/tsconfig':
         specifier: workspace:*
@@ -16492,24 +16492,11 @@ snapshots:
       '@vercel/oidc': 3.1.0
       zod: 3.25.67
 
-  '@ai-sdk/gateway@3.0.26(zod@4.3.6)':
-    dependencies:
-      '@ai-sdk/provider': 3.0.5
-      '@ai-sdk/provider-utils': 4.0.10(zod@4.3.6)
-      '@vercel/oidc': 3.1.0
-      zod: 4.3.6
-
   '@ai-sdk/google@3.0.16(zod@3.25.67)':
     dependencies:
       '@ai-sdk/provider': 3.0.5
       '@ai-sdk/provider-utils': 4.0.10(zod@3.25.67)
       zod: 3.25.67
-
-  '@ai-sdk/google@3.0.16(zod@4.3.6)':
-    dependencies:
-      '@ai-sdk/provider': 3.0.5
-      '@ai-sdk/provider-utils': 4.0.10(zod@4.3.6)
-      zod: 4.3.6
 
   '@ai-sdk/provider-utils@4.0.10(zod@3.25.67)':
     dependencies:
@@ -16517,13 +16504,6 @@ snapshots:
       '@standard-schema/spec': 1.1.0
       eventsource-parser: 3.0.6
       zod: 3.25.67
-
-  '@ai-sdk/provider-utils@4.0.10(zod@4.3.6)':
-    dependencies:
-      '@ai-sdk/provider': 3.0.5
-      '@standard-schema/spec': 1.1.0
-      eventsource-parser: 3.0.6
-      zod: 4.3.6
 
   '@ai-sdk/provider@3.0.5':
     dependencies:
@@ -17317,17 +17297,6 @@ snapshots:
       - supports-color
       - utf-8-validate
 
-  '@google/genai@1.32.0(@modelcontextprotocol/sdk@1.25.2(hono@4.8.5)(zod@4.3.6))':
-    dependencies:
-      google-auth-library: 10.5.0
-      ws: 8.18.3
-    optionalDependencies:
-      '@modelcontextprotocol/sdk': 1.25.2(hono@4.8.5)(zod@4.3.6)
-    transitivePeerDependencies:
-      - bufferutil
-      - supports-color
-      - utf-8-validate
-
   '@google/genai@1.37.0(@modelcontextprotocol/sdk@1.25.2(hono@4.8.5)(zod@3.25.67))':
     dependencies:
       google-auth-library: 10.5.0
@@ -17384,11 +17353,6 @@ snapshots:
     dependencies:
       hono: 4.8.5
       zod: 3.25.67
-
-  '@hono/zod-validator@0.7.2(hono@4.8.5)(zod@4.3.6)':
-    dependencies:
-      hono: 4.8.5
-      zod: 4.3.6
 
   '@hookform/resolvers@3.10.0(react-hook-form@7.71.1(react@19.2.4))':
     dependencies:
@@ -17927,29 +17891,6 @@ snapshots:
       - hono
       - supports-color
 
-  '@modelcontextprotocol/sdk@1.25.2(hono@4.8.5)(zod@4.3.6)':
-    dependencies:
-      '@hono/node-server': 1.19.9(hono@4.8.5)
-      ajv: 8.17.1
-      ajv-formats: 3.0.1(ajv@8.17.1)
-      content-type: 1.0.5
-      cors: 2.8.5
-      cross-spawn: 7.0.6
-      eventsource: 3.0.7
-      eventsource-parser: 3.0.6
-      express: 5.2.1
-      express-rate-limit: 7.5.1(express@5.2.1)
-      jose: 6.1.3
-      json-schema-typed: 8.0.2
-      pkce-challenge: 5.0.1
-      raw-body: 3.0.2
-      zod: 4.3.6
-      zod-to-json-schema: 3.25.1(zod@4.3.6)
-    transitivePeerDependencies:
-      - hono
-      - supports-color
-    optional: true
-
   '@msgpackr-extract/msgpackr-extract-darwin-arm64@3.0.3':
     optional: true
 
@@ -18016,19 +17957,6 @@ snapshots:
       - supports-color
       - ws
 
-  '@openai/agents-core@0.4.1(hono@4.8.5)(ws@8.18.3)(zod@4.3.6)':
-    dependencies:
-      debug: 4.4.3
-      openai: 6.16.0(ws@8.18.3)(zod@4.3.6)
-    optionalDependencies:
-      '@modelcontextprotocol/sdk': 1.25.2(hono@4.8.5)(zod@4.3.6)
-      zod: 4.3.6
-    transitivePeerDependencies:
-      - '@cfworker/json-schema'
-      - hono
-      - supports-color
-      - ws
-
   '@openai/agents-extensions@0.4.1(@ai-sdk/provider@3.0.5)(@openai/agents@0.4.1(hono@4.8.5)(ws@8.18.3)(zod@3.25.67))(hono@4.8.5)(ws@8.18.3)(zod@3.25.67)':
     dependencies:
       '@openai/agents': 0.4.1(hono@4.8.5)(ws@8.18.3)(zod@3.25.67)
@@ -18044,39 +17972,12 @@ snapshots:
       - hono
       - supports-color
 
-  '@openai/agents-extensions@0.4.1(@ai-sdk/provider@3.0.5)(@openai/agents@0.4.1(hono@4.8.5)(ws@8.18.3)(zod@4.3.6))(hono@4.8.5)(ws@8.18.3)(zod@4.3.6)':
-    dependencies:
-      '@openai/agents': 0.4.1(hono@4.8.5)(ws@8.18.3)(zod@4.3.6)
-      '@openai/agents-core': 0.4.1(hono@4.8.5)(ws@8.18.3)(zod@4.3.6)
-      '@types/ws': 8.18.1
-      debug: 4.4.3
-      ws: 8.18.3
-      zod: 4.3.6
-    optionalDependencies:
-      '@ai-sdk/provider': 3.0.5
-    transitivePeerDependencies:
-      - '@cfworker/json-schema'
-      - hono
-      - supports-color
-
   '@openai/agents-openai@0.4.1(hono@4.8.5)(ws@8.18.3)(zod@3.25.67)':
     dependencies:
       '@openai/agents-core': 0.4.1(hono@4.8.5)(ws@8.18.3)(zod@3.25.67)
       debug: 4.4.3
       openai: 6.16.0(ws@8.18.3)(zod@3.25.67)
       zod: 3.25.67
-    transitivePeerDependencies:
-      - '@cfworker/json-schema'
-      - hono
-      - supports-color
-      - ws
-
-  '@openai/agents-openai@0.4.1(hono@4.8.5)(ws@8.18.3)(zod@4.3.6)':
-    dependencies:
-      '@openai/agents-core': 0.4.1(hono@4.8.5)(ws@8.18.3)(zod@4.3.6)
-      debug: 4.4.3
-      openai: 6.16.0(ws@8.18.3)(zod@4.3.6)
-      zod: 4.3.6
     transitivePeerDependencies:
       - '@cfworker/json-schema'
       - hono
@@ -18097,20 +17998,6 @@ snapshots:
       - supports-color
       - utf-8-validate
 
-  '@openai/agents-realtime@0.4.1(hono@4.8.5)(zod@4.3.6)':
-    dependencies:
-      '@openai/agents-core': 0.4.1(hono@4.8.5)(ws@8.18.3)(zod@4.3.6)
-      '@types/ws': 8.18.1
-      debug: 4.4.3
-      ws: 8.18.3
-      zod: 4.3.6
-    transitivePeerDependencies:
-      - '@cfworker/json-schema'
-      - bufferutil
-      - hono
-      - supports-color
-      - utf-8-validate
-
   '@openai/agents@0.4.1(hono@4.8.5)(ws@8.18.3)(zod@3.25.67)':
     dependencies:
       '@openai/agents-core': 0.4.1(hono@4.8.5)(ws@8.18.3)(zod@3.25.67)
@@ -18119,22 +18006,6 @@ snapshots:
       debug: 4.4.3
       openai: 6.16.0(ws@8.18.3)(zod@3.25.67)
       zod: 3.25.67
-    transitivePeerDependencies:
-      - '@cfworker/json-schema'
-      - bufferutil
-      - hono
-      - supports-color
-      - utf-8-validate
-      - ws
-
-  '@openai/agents@0.4.1(hono@4.8.5)(ws@8.18.3)(zod@4.3.6)':
-    dependencies:
-      '@openai/agents-core': 0.4.1(hono@4.8.5)(ws@8.18.3)(zod@4.3.6)
-      '@openai/agents-openai': 0.4.1(hono@4.8.5)(ws@8.18.3)(zod@4.3.6)
-      '@openai/agents-realtime': 0.4.1(hono@4.8.5)(zod@4.3.6)
-      debug: 4.4.3
-      openai: 6.16.0(ws@8.18.3)(zod@4.3.6)
-      zod: 4.3.6
     transitivePeerDependencies:
       - '@cfworker/json-schema'
       - bufferutil
@@ -20558,14 +20429,6 @@ snapshots:
       '@ai-sdk/provider-utils': 4.0.10(zod@3.25.67)
       '@opentelemetry/api': 1.9.0
       zod: 3.25.67
-
-  ai@6.0.58(zod@4.3.6):
-    dependencies:
-      '@ai-sdk/gateway': 3.0.26(zod@4.3.6)
-      '@ai-sdk/provider': 3.0.5
-      '@ai-sdk/provider-utils': 4.0.10(zod@4.3.6)
-      '@opentelemetry/api': 1.9.0
-      zod: 4.3.6
 
   ajv-formats@3.0.1(ajv@8.17.1):
     optionalDependencies:
@@ -23959,11 +23822,6 @@ snapshots:
       ws: 8.18.3
       zod: 3.25.67
 
-  openai@6.16.0(ws@8.18.3)(zod@4.3.6):
-    optionalDependencies:
-      ws: 8.18.3
-      zod: 4.3.6
-
   os-browserify@0.3.0: {}
 
   os-tmpdir@1.0.2: {}
@@ -26820,10 +26678,6 @@ snapshots:
   zod-to-json-schema@3.25.1(zod@3.25.76):
     dependencies:
       zod: 3.25.76
-
-  zod-to-json-schema@3.25.1(zod@4.3.6):
-    dependencies:
-      zod: 4.3.6
 
   zod@3.25.67: {}
 

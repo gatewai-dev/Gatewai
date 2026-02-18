@@ -36,7 +36,7 @@
 		"@gatewai/react-canvas": "workspace:*",
 		"@gatewai/ui-kit": "workspace:*",
 		"lodash": "^4.17.23",
-		"zod": "^4.1.8",
+		"zod": "^3.24.1",
 		"tsyringe": "^4.10.0",
 		"lucide-react": "^0.473.0"
 	},

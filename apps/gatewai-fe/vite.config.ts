@@ -44,6 +44,7 @@ export default defineConfig({
 		},
 	},
 	resolve: {
+		conditions: ["development", "browser"],
 		alias: {
 			"@": path.resolve(__dirname, "./src"),
 			react: path.resolve(__dirname, "./node_modules/react"),

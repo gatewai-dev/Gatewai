@@ -1,3 +1,14 @@
+import { VIDEOGEN_NODE_MODELS, VIDEOGEN_RESOLUTIONS, VideoGenFirstLastFrameNodeConfigSchema, type VideoGenFirstLastFrameNodeConfig } from "@/shared/config.js";
+import { useCanvasCtx } from "@gatewai/react-canvas";
+import type { NodeEntityType } from "@gatewai/react-store";
+import {
+	Form,
+	SelectField
+} from "@gatewai/ui-kit";
+import { zodResolver } from "@hookform/resolvers/zod";
+import { memo, useCallback, useEffect } from "react";
+import { useForm } from "react-hook-form";
+
 const VideoGenFirstLastFrameNodeConfigComponent = memo(
 	({ node }: { node: NodeEntityType }) => {
 		const { onNodeConfigUpdate } = useCanvasCtx();
