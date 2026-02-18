@@ -471,7 +471,7 @@ const FIVE_MINS = 300_000;
 
 const WORKER_LOCK_DURATION = FIVE_MINS;
 
-export const startWorker = async () => {
+export const startWorkflowWorker = async () => {
 	logger.info("Starting Workflow Worker...");
 
 	try {

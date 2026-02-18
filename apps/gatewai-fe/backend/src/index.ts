@@ -11,7 +11,7 @@ import { cors } from "hono/cors";
 import { startAgentWorker } from "./agent/agent-queue.js";
 import { type AuthHonoTypes, auth, ensureUsersAPI_KEY } from "./auth.js";
 import { registerBackendServices } from "./di-setup.js";
-import { startWorker } from "./graph-engine/queue/workflow.worker.js";
+import { startWorkflowWorker } from "./graph-engine/queue/workflow.worker.js";
 import {
 	errorHandler,
 	loggerMiddleware,
@@ -22,9 +22,20 @@ import { registerNodes } from "./register-nodes.js";
 // Initialize Dependency Injection Container
 registerBackendServices();
 
-// Sync node templates from manifest registry
-// Register nodes and sync templates
+// Registers backend processors of nodes.
 await registerNodes();
+
+// Sync node templates found in codebase to database
+await syncNodeTemplates(prisma);
+
+// Make sure all users has default API KEY
+await ensureUsersAPI_KEY();
+
+// Initialize canvas worker.
+await startWorkflowWorker();
+
+// Initialize agent worker.
+startAgentWorker();
 
 // Register nodes before importing v1 router for dynamic routes to work
 const { v1Router } = await import("./routes/v1/index.js");
@@ -116,15 +127,6 @@ app
 		}
 	})
 	.notFound(notFoundHandler);
-
-await syncNodeTemplates(prisma);
-await ensureUsersAPI_KEY();
-
-// Initialize canvas worker.
-await startWorker();
-
-// Initialize agent worker.
-startAgentWorker();
 
 serve(
 	{

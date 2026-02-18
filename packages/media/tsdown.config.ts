@@ -2,7 +2,7 @@ import { defineConfig } from "tsdown";
 
 export default defineConfig({
 	entry: {
-		index: "common/index.ts",
+		index: "shared/index.ts",
 		server: "server/index.ts",
 		browser: "browser/index.ts",
 		"canvas-worker": "browser/draw-image-canvas/canvas.worker.ts",

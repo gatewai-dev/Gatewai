@@ -268,8 +268,8 @@ const CropConfigPanel = memo(
 		};
 
 		return (
-			<div className="flex items-center gap-3 p-3 border-t border-border flex-wrap bg-card/50">
-				<div className="flex items-center gap-2 flex-none">
+			<div className="flex items-end gap-3 p-1.5 border-t border-border bg-card/50">
+				<div className="flex flex-col gap-2 flex-none">
 					<span className="text-[11px] text-muted-foreground tracking-wide whitespace-nowrap">
 						Aspect ratio
 					</span>
@@ -285,48 +285,44 @@ const CropConfigPanel = memo(
 							))}
 						</SelectContent>
 					</Select>
-					<Button
-						variant="ghost"
-						size="icon"
-						className={cn(
-							"h-7 w-7 rounded-md transition-colors",
-							isLocked
-								? "text-primary bg-primary/10 hover:bg-primary/20"
-								: "text-muted-foreground hover:text-foreground",
-						)}
-						onClick={onToggleLock}
-						title={isLocked ? "Unlock aspect ratio" : "Lock aspect ratio"}
-					>
-						{isLocked ? (
-							<LinkIcon className="w-3.5 h-3.5" />
-						) : (
-							<UnlinkIcon className="w-3.5 h-3.5" />
-						)}
-					</Button>
 				</div>
+				<DraggableNumberInput
+					label="Width"
+					icon={MoveHorizontal}
+					value={Math.round(wInput)}
+					onChange={(v) => handleDimensionChange("w", v)}
+					min={1}
+					max={naturalWidth ?? 100}
+					className="w-20"
+				/>
+				<DraggableNumberInput
+					label="Height"
+					icon={MoveVertical}
+					value={Math.round(hInput)}
+					onChange={(v) => handleDimensionChange("h", v)}
+					min={1}
+					max={naturalHeight ?? 100}
+					className="w-20"
+				/>
 
-				<Separator orientation="vertical" className="h-5 flex-none" />
-
-				<div className="flex items-center gap-1.5 flex-none">
-					<DraggableNumberInput
-						label="W"
-						icon={MoveHorizontal}
-						value={Math.round(wInput)}
-						onChange={(v) => handleDimensionChange("w", v)}
-						min={1}
-						max={naturalWidth ?? 100}
-						className="w-20"
-					/>
-					<DraggableNumberInput
-						label="H"
-						icon={MoveVertical}
-						value={Math.round(hInput)}
-						onChange={(v) => handleDimensionChange("h", v)}
-						min={1}
-						max={naturalHeight ?? 100}
-						className="w-20"
-					/>
-				</div>
+				<Button
+					variant="ghost"
+					size="icon"
+					className={cn(
+						"h-7 w-7 rounded-md transition-colors",
+						isLocked
+							? "text-primary bg-primary/10 hover:bg-primary/20"
+							: "text-muted-foreground hover:text-foreground",
+					)}
+					onClick={onToggleLock}
+					title={isLocked ? "Unlock aspect ratio" : "Lock aspect ratio"}
+				>
+					{isLocked ? (
+						<LinkIcon className="w-3.5 h-3.5" />
+					) : (
+						<UnlinkIcon className="w-3.5 h-3.5" />
+					)}
+				</Button>
 			</div>
 		);
 	},
