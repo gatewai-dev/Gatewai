@@ -21,7 +21,6 @@ import { LLMNodeConfigSchema } from "../metadata.js";
 export class LLMProcessor implements NodeProcessor {
     constructor(
         @inject(TOKENS.GRAPH_RESOLVERS) private graph: GraphResolvers,
-        @inject(TOKENS.ENV) private env: EnvConfig,
         @inject(TOKENS.AI_PROVIDER) private aiProvider: AIProvider,
     ) { }
 

@@ -1,13 +1,13 @@
-import {
-	type ModulateNodeConfig,
-	ModulateNodeConfigSchema,
-} from "@/shared/config.js";
 import { useCanvasCtx } from "@gatewai/react-canvas";
 import type { NodeEntityType } from "@gatewai/react-store";
 import { Form, SliderField } from "@gatewai/ui-kit";
 import { zodResolver } from "@hookform/resolvers/zod";
 import { memo, useEffect } from "react";
 import { useForm } from "react-hook-form";
+import {
+	type ModulateNodeConfig,
+	ModulateNodeConfigSchema,
+} from "@/shared/config.js";
 
 const ModulateConfigComponent = memo(({ node }: { node: NodeEntityType }) => {
 	const { onNodeConfigUpdate } = useCanvasCtx();

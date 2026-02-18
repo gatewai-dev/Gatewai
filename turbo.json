@@ -2,17 +2,9 @@
 	"$schema": "https://turbo.build/schema.json",
 	"tasks": {
 		"build": {
-			"dependsOn": [
-				"^build",
-				"db:generate"
-			],
-			"outputs": [
-				"dist/**"
-			],
-			"inputs": [
-				"$TURBO_DEFAULT$",
-				".env"
-			]
+			"dependsOn": ["^build", "db:generate"],
+			"outputs": ["dist/**"],
+			"inputs": ["$TURBO_DEFAULT$", ".env"]
 		},
 		"be:build": {
 			"cache": false
@@ -34,34 +26,19 @@
 		},
 		"dev": {
 			"persistent": true,
-			"inputs": [
-				"$TURBO_DEFAULT$",
-				".env.development"
-			]
+			"inputs": ["$TURBO_DEFAULT$", ".env.development"]
 		},
 		"start-cli": {
-			"inputs": [
-				"$TURBO_DEFAULT$",
-				".env"
-			]
+			"inputs": ["$TURBO_DEFAULT$", ".env"]
 		},
 		"start-mcp": {
-			"inputs": [
-				"$TURBO_DEFAULT$",
-				".env"
-			]
+			"inputs": ["$TURBO_DEFAULT$", ".env"]
 		},
 		"dev-mcp": {
-			"inputs": [
-				"$TURBO_DEFAULT$",
-				".env.development"
-			]
+			"inputs": ["$TURBO_DEFAULT$", ".env.development"]
 		},
 		"test": {
-			"dependsOn": [
-				"^build",
-				"db:generate"
-			],
+			"dependsOn": ["^build", "db:generate"],
 			"cache": false
 		}
 	}

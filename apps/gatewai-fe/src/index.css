@@ -3,7 +3,6 @@
 @source "../node_modules/@gatewai/ui-kit";
 @source "../../..";
 
-
 :root {
 	--checker-size: 20px;
 	--checker-half: calc(var(--checker-size) / 2);

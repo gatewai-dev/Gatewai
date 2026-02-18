@@ -64,21 +64,25 @@ import {
 } from "@gatewai/ui-kit";
 import type Konva from "konva";
 import type { KonvaEventObject } from "konva/lib/Node";
+
+// ─── ICON REPLACEMENTS (Remix Icons) ─────────────────────────────────────────
 import {
-	ChevronDown,
-	Eye,
-	EyeOff,
-	Hand,
-	ImageIcon,
-	Layers,
-	MousePointer,
-	MoveHorizontal,
-	MoveVertical,
-	Save,
-	Settings2,
-	Type,
-	X as XIcon,
-} from "lucide-react";
+	RiArrowDownSLine,
+	RiArrowLeftRightLine,
+	RiArrowUpDownLine,
+	RiCloseLine,
+	RiCursorFill,
+	RiEqualizerLine,
+	RiEyeLine,
+	RiEyeOffLine,
+	RiHand,
+	RiImageFill,
+	RiSave3Fill,
+	RiStackLine,
+	RiText,
+} from "react-icons/ri";
+// ─────────────────────────────────────────────────────────────────────────────
+
 import React, {
 	createContext,
 	type Dispatch,
@@ -1105,9 +1109,9 @@ const LayerItem: React.FC<LayerItemProps> = ({
 		>
 			<div className="shrink-0 text-gray-500 group-hover:text-gray-300">
 				{layer.type === "Image" ? (
-					<ImageIcon className="size-3.5" />
+					<RiImageFill className="size-3.5" />
 				) : (
-					<Type className="size-3.5" />
+					<RiText className="size-3.5" />
 				)}
 			</div>
 
@@ -1126,9 +1130,9 @@ const LayerItem: React.FC<LayerItemProps> = ({
 					aria-label={isHidden ? "Show layer" : "Hide layer"}
 				>
 					{isHidden ? (
-						<EyeOff className="w-3 h-3" />
+						<RiEyeOffLine className="w-3 h-3" />
 					) : (
-						<Eye className="w-3 h-3" />
+						<RiEyeLine className="w-3 h-3" />
 					)}
 				</Button>
 			</div>
@@ -1185,7 +1189,7 @@ const LayersPanel: React.FC = () => {
 		<div className="absolute left-0 top-0 bottom-0 w-60 bg-[#0f0f0f] border-r border-white/10 z-20 flex flex-col shadow-2xl">
 			<div className="flex items-center justify-between px-4 py-3 border-b border-white/10 bg-neutral-900/50 backdrop-blur shrink-0 h-10">
 				<span className="text-[10px] font-bold uppercase tracking-wider text-neutral-400 flex items-center gap-2">
-					<Layers className="w-3.5 h-3.5" /> Layers
+					<RiStackLine className="w-3.5 h-3.5" /> Layers
 				</span>
 			</div>
 
@@ -1284,7 +1288,7 @@ const InspectorPanel: React.FC = () => {
 				<div className="flex flex-col min-h-full">
 					<div className="px-4 py-3 bg-neutral-900 border-b border-white/5 shrink-0 h-10 flex items-center">
 						<h2 className="text-[10px] font-bold text-gray-200 uppercase tracking-wide flex items-center gap-2">
-							<Settings2 className="w-3.5 h-3.5 text-blue-400" />
+							<RiEqualizerLine className="w-3.5 h-3.5 text-blue-400" />
 							Canvas Settings
 						</h2>
 					</div>
@@ -1296,14 +1300,14 @@ const InspectorPanel: React.FC = () => {
 							<div className="grid grid-cols-2 gap-3">
 								<DraggableNumberInput
 									label="W"
-									icon={MoveHorizontal}
+									icon={RiArrowLeftRightLine}
 									value={Math.round(viewportWidth)}
 									onChange={(v) => updateViewportWidth(Math.max(1, v))}
 									min={1}
 								/>
 								<DraggableNumberInput
 									label="H"
-									icon={MoveVertical}
+									icon={RiArrowUpDownLine}
 									value={Math.round(viewportHeight)}
 									onChange={(v) => updateViewportHeight(Math.max(1, v))}
 									min={1}
@@ -1338,7 +1342,7 @@ const InspectorPanel: React.FC = () => {
 						</div>
 
 						<div className="flex flex-col items-center justify-center p-8 text-center border border-dashed border-white/10 rounded-lg bg-white/2">
-							<MousePointer className="w-6 h-6 text-gray-700 mb-3" />
+							<RiCursorFill className="w-6 h-6 text-gray-700 mb-3" />
 							<p className="text-[11px] font-medium text-gray-400">
 								No Layer Selected
 							</p>
@@ -1417,7 +1421,7 @@ const InspectorPanel: React.FC = () => {
 					/>
 				)}
 
-				<CollapsibleSection title="Blending" icon={Settings2}>
+				<CollapsibleSection title="Blending" icon={RiEqualizerLine}>
 					<div className="space-y-4">
 						<div className="space-y-2">
 							<Label className="text-[10px] text-gray-500 font-semibold">
@@ -1479,7 +1483,7 @@ const Toolbar = React.memo<{
 								className="rounded-full w-8 h-8"
 								onClick={() => setMode("select")}
 							>
-								<MousePointer className="w-3.5 h-3.5" />
+								<RiCursorFill className="w-3.5 h-3.5" />
 							</Button>
 						</TooltipTrigger>
 						<TooltipContent>Select Tool (V)</TooltipContent>
@@ -1492,7 +1496,7 @@ const Toolbar = React.memo<{
 								className="rounded-full w-8 h-8"
 								onClick={() => setMode("pan")}
 							>
-								<Hand className="w-3.5 h-3.5" />
+								<RiHand className="w-3.5 h-3.5" />
 							</Button>
 						</TooltipTrigger>
 						<TooltipContent>Pan Tool (H) or hold Space</TooltipContent>
@@ -1511,7 +1515,7 @@ const Toolbar = React.memo<{
 							onDoubleClick={() => zoomTo(1)}
 						>
 							{zoomPercentage}
-							<ChevronDown className="w-3 h-3 ml-1.5 opacity-50" />
+							<RiArrowDownSLine className="w-3 h-3 ml-1.5 opacity-50" />
 						</Button>
 					</MenubarTrigger>
 					<MenubarContent
@@ -1553,7 +1557,7 @@ const Toolbar = React.memo<{
 								onClick={onSave}
 								disabled={!isDirty}
 							>
-								<Save className="w-3.5 h-3.5 mr-1" />
+								<RiSave3Fill className="w-3.5 h-3.5 mr-1" />
 								Save
 							</Button>
 						</TooltipTrigger>
@@ -1567,7 +1571,7 @@ const Toolbar = React.memo<{
 								className="h-8 w-8 rounded-full text-gray-400 hover:text-white hover:bg-white/10"
 								onClick={onClose}
 							>
-								<XIcon className="w-4 h-4" />
+								<RiCloseLine className="w-4 h-4" />
 							</Button>
 						</TooltipTrigger>
 						<TooltipContent>Close (Esc)</TooltipContent>

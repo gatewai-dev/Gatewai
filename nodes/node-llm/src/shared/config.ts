@@ -9,7 +9,7 @@ export const LLM_NODE_MODELS = [
 export const LLMNodeConfigSchema = z
 	.object({
 		model: z.enum(LLM_NODE_MODELS).default("gemini-3-flash-preview"),
-		temperature: z.number().min(0).max(2).optional().default(0.7)
+		temperature: z.number().min(0).max(2).optional().default(0.7),
 	})
 	.strict();
 

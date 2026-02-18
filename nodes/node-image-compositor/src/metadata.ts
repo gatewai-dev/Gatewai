@@ -22,7 +22,7 @@ export const manifest = defineMetadata({
 	},
 	defaultConfig: {
 		layerUpdates: {},
-		width: 1024,
-		height: 1024,
+		width: 1080,
+		height: 1080,
 	},
 });

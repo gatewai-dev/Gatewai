@@ -3,8 +3,8 @@ import { z } from "zod";
 
 export const PaintNodeConfigSchema = z
 	.object({
-		width: DimensionSchema.default(1024),
-		height: DimensionSchema.default(1024),
+		width: DimensionSchema.default(1080),
+		height: DimensionSchema.default(1080),
 		maintainAspect: z.boolean().default(true),
 		aspectRatio: z.number().optional(),
 		backgroundColor: z.string().optional(),
