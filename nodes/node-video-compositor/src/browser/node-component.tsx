@@ -8,6 +8,7 @@ import {
 	AddCustomHandleButton,
 	BaseNode,
 	type NodeProps,
+	useDownloadFileData,
 	useNodeResult,
 } from "@gatewai/react-canvas";
 import { makeSelectNodeById, useAppSelector } from "@gatewai/react-store";
@@ -16,6 +17,7 @@ import { Player } from "@remotion/player";
 import { Download, Loader2, VideoIcon } from "lucide-react";
 import { memo, useEffect, useMemo, useState } from "react";
 import { useNavigate } from "react-router";
+import { toast } from "sonner";
 import type { VideoCompositorNodeConfig } from "../shared/config.js";
 import { remotionService } from "./muxer-service.js";
 import {
@@ -29,7 +31,7 @@ const VideoCompositorNodeComponent = memo((props: NodeProps) => {
 	const [isDownloading, setIsDownloading] = useState(false);
 	const { inputs } = useNodeResult(props.id);
 	const nav = useNavigate();
-	// const downloadFileData = useDownloadFileData();
+	const downloadFileData = useDownloadFileData();
 	const previewState = useMemo(() => {
 		const config = (node?.config as unknown as VideoCompositorNodeConfig) ?? {};
 		const layerUpdates = config.layerUpdates || {};
@@ -173,17 +175,18 @@ const VideoCompositorNodeComponent = memo((props: NodeProps) => {
 		try {
 			const config = node.config as unknown as VideoCompositorNodeConfig;
 			const result = await remotionService.processVideo(config, inputs);
-			// await downloadFileData(
-			// 	{
-			// 		processData: {
-			// 			dataUrl: result.dataUrl,
-			// 		},
-			// 	} as FileData,
-			// 	"Video",
-			// );
+			await downloadFileData(
+				{
+					processData: {
+						dataUrl: result.dataUrl,
+					},
+				} as FileData,
+				"Video",
+			);
 		} catch (err) {
 			const errorMessage =
 				err instanceof Error ? err.message : "An unknown error occurred";
+			toast.error(errorMessage);
 			console.error("Download failed:", err);
 		} finally {
 			setIsDownloading(false);
@@ -194,7 +197,7 @@ const VideoCompositorNodeComponent = memo((props: NodeProps) => {
 
 	return (
 		<BaseNode selected={props.selected} id={props.id} dragging={props.dragging}>
-			<div className="flex flex-col gap-3 w-full">
+			<div className="flex flex-col w-full">
 				<div
 					className={cn(
 						"w-full overflow-hidden rounded bg-black/5 relative border border-border",
@@ -233,7 +236,7 @@ const VideoCompositorNodeComponent = memo((props: NodeProps) => {
 					)}
 				</div>
 
-				<div className="flex justify-between items-center gap-2">
+				<div className="flex justify-between items-center gap-2  p-1.5">
 					<AddCustomHandleButton
 						dataTypes={node?.template.variableInputDataTypes}
 						nodeId={props.id}

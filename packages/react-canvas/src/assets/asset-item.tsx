@@ -147,7 +147,7 @@ export const AssetItem = memo(({ asset }: AssetItemProps) => {
 					x: e.clientX,
 					y: e.clientY,
 				});
-				const importTemplate = nodeTemplates?.find((f) => f.type === "File");
+				const importTemplate = nodeTemplates?.find((f) => f.type === "Import");
 				if (!importTemplate) {
 					console.error("Import template not found");
 					return;

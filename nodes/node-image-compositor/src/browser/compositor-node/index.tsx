@@ -24,7 +24,7 @@ const CompositorNodeComponent = memo((props: NodeProps<Node>) => {
 	const nav = useNavigate();
 	return (
 		<BaseNode selected={props.selected} id={props.id} dragging={props.dragging}>
-			<div className="flex flex-col gap-3 ">
+			<div className="flex flex-col">
 				<div
 					className={cn(
 						"w-full overflow-hidden rounded media-container relative",
@@ -35,7 +35,7 @@ const CompositorNodeComponent = memo((props: NodeProps<Node>) => {
 				>
 					{imageUrl && <CanvasRenderer imageUrl={imageUrl} />}
 				</div>
-				<div className="flex justify-between items-center">
+				<div className="flex justify-between items-center p-1.5">
 					<AddCustomHandleButton
 						dataTypes={node?.template.variableInputDataTypes}
 						nodeId={props.id}

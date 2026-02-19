@@ -22,7 +22,7 @@ const TextToSpeechNodeComponent = memo(
 				id={props.id}
 				dragging={props.dragging}
 			>
-				<div className="flex flex-col gap-3">
+				<div className="flex flex-col">
 					<div className="w-full rounded-xs relative">
 						{hasMoreThanOneOutput && (
 							<div className="absolute top-1 left-1 z-10">

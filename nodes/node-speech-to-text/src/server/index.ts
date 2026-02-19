@@ -32,7 +32,7 @@ class SpeechToTextProcessor implements NodeProcessor {
         data,
     }: BackendNodeProcessorCtx): Promise<BackendNodeProcessorResult> {
         try {
-            const userPrompt = this.graph.getInputValue(data, node.id, true, {
+            const userPrompt = this.graph.getInputValue(data, node.id, false, {
                 dataType: DataType.Text,
                 label: "Prompt",
             })?.data as string;
@@ -82,13 +82,18 @@ class SpeechToTextProcessor implements NodeProcessor {
                     error: "Uploaded audio data is corrupted.",
                 };
             }
+            const userContentItems = [
+                    createPartFromUri(audioFile.uri, audioFile.mimeType),
+            ] 
+            if (userPrompt) {
+                userContentItems.push({
+                    text: userPrompt
+                });
+            }
 
             const response = await genAI.models.generateContent({
                 model: nodeConfig.model ?? "gemini-2.5-flash",
-                contents: createUserContent([
-                    createPartFromUri(audioFile.uri, audioFile.mimeType),
-                    userPrompt,
-                ]),
+                contents: createUserContent(userContentItems),
             });
 
             if (!response.text)

@@ -6,7 +6,7 @@ export { ImageGenNodeConfigSchema };
 export default defineMetadata({
 	type: "ImageGen",
 	displayName: "Generate Image",
-	description: "Generate an image using AI",
+	description: "Generate or edit an image using AI",
 	category: "AI",
 	subcategory: "Image",
 	configSchema: ImageGenNodeConfigSchema,
