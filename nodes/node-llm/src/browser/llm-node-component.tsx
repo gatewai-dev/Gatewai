@@ -1,5 +1,6 @@
 import type { LLMResult } from "@gatewai/core/types";
 import {
+	AddCustomHandleButton,
 	BaseNode,
 	OutputSelector,
 	RunNodeButton,
@@ -57,7 +58,15 @@ const LlmNodeComponent = memo(
 							</p>
 						</div>
 					)}
-					<RunNodeButton nodeId={props.id} />
+					<div className="flex justify-between items-center w-full">
+						<AddCustomHandleButton
+							nodeId={props.id}
+							type="Input"
+							label="Add Reference Image"
+							dataTypes={node?.template.variableInputDataTypes}
+						/>
+						<RunNodeButton nodeId={props.id} />
+					</div>
 				</div>
 			</BaseNode>
 		);
