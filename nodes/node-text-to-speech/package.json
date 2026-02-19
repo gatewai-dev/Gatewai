@@ -30,6 +30,7 @@
 		"@gatewai/core": "workspace:*",
 		"@gatewai/db": "workspace:*",
 		"@gatewai/node-sdk": "workspace:*",
+		"@gatewai/ui-kit": "workspace:*",
 		"@gatewai/react-canvas": "workspace:*",
 		"@gatewai/react-store": "workspace:*"
 	},
@@ -42,6 +43,8 @@
 		"@gatewai/tsconfig": "workspace:*",
 		"@types/node": "^24.0.4",
 		"@types/react": "^19.2.4",
+		"waw": "^1.0.2",
+		"music-metadata": "^11.10.3",
 		"tsdown": "^0.19.0",
 		"typescript": "^5.8.3"
 	}

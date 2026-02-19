@@ -17,7 +17,7 @@ export default defineMetadata({
 	isTerminal: true,
 	isTransient: false,
 	handles: {
-		inputs: [{ dataTypes: ["Text"], required: true, label: "Text", order: 0 }],
+		inputs: [{ dataTypes: ["Text"], required: true, label: "Prompt", order: 0 }],
 		outputs: [{ dataTypes: ["Audio"], label: "Audio", order: 0 }],
 	},
 });

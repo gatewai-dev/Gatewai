@@ -1,12 +1,20 @@
+import { TextToSpeechNodeConfigSchema } from "../shared/index.js";
+import { type TextToSpeechNodeConfig, TTS_VOICE_NAMES, TTS_NODE_MODELS, TTS_LANGUAGES } from "../shared/config.js";
+import { isEqual } from "@gatewai/core";
+import { useCanvasCtx } from "@gatewai/react-canvas";
+import type { NodeEntityType } from "@gatewai/react-store";
+import { Form, SelectField, FormLabel, Button, FormDescription, cn, FormField, FormItem, FormControl, Input, FormMessage } from "@gatewai/ui-kit";
+import { memo, useMemo, useEffect, useCallback } from "react";
+import { useFieldArray, useForm } from "react-hook-form";
+import { zodResolver } from "@hookform/resolvers/zod";
+import { BsPlus, BsTrash } from "react-icons/bs"
+
 const TextToSpeechNodeConfigComponent = memo(
 	({ node }: { node: NodeEntityType }) => {
 		const { onNodeConfigUpdate } = useCanvasCtx();
-		const updateConfig = useMemo(
-			() =>
-				debounce((cfg: TextToSpeechNodeConfig) => {
-					onNodeConfigUpdate({ id: node.id, newConfig: cfg });
-				}, 500),
-			[node.id, onNodeConfigUpdate],
+		const updateConfig = useCallback((cfg: TextToSpeechNodeConfig) =>
+				onNodeConfigUpdate({ id: node.id, newConfig: cfg }),
+		[node.id, onNodeConfigUpdate]
 		);
 		const nodeConfig = node.config as unknown as TextToSpeechNodeConfig;
 
@@ -93,7 +101,7 @@ const TextToSpeechNodeConfigComponent = memo(
 									onClick={handleAddSpeaker}
 									className="flex items-center gap-1"
 								>
-									<Plus className="h-4 w-4" />
+									<BsPlus className="h-4 w-4" />
 									Add Speaker
 								</Button>
 							)}
@@ -121,7 +129,7 @@ const TextToSpeechNodeConfigComponent = memo(
 											onClick={() => handleRemoveSpeaker(index)}
 											className="text-destructive hover:text-destructive/90"
 										>
-											<Trash2 className="h-4 w-4" />
+											<BsTrash className="h-4 w-4" />
 										</Button>
 									)}
 								</div>
