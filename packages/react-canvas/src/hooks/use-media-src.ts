@@ -18,7 +18,7 @@ function useMediaInputSrc(nodeId: NodeEntityType["id"], type: MediaTypes) {
 		return null;
 	}, [result, type]);
 
-	const mediaSrc = mediaOutputItem?.entity?.id
+	const mediaSrc = mediaOutputItem?.entity
 		? GetAssetEndpoint(mediaOutputItem?.entity)
 		: null;
 

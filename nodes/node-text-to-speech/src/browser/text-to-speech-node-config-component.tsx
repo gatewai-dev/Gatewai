@@ -1,20 +1,38 @@
-import { TextToSpeechNodeConfigSchema } from "../shared/index.js";
-import { type TextToSpeechNodeConfig, TTS_VOICE_NAMES, TTS_NODE_MODELS, TTS_LANGUAGES } from "../shared/config.js";
 import { isEqual } from "@gatewai/core";
 import { useCanvasCtx } from "@gatewai/react-canvas";
 import type { NodeEntityType } from "@gatewai/react-store";
-import { Form, SelectField, FormLabel, Button, FormDescription, cn, FormField, FormItem, FormControl, Input, FormMessage } from "@gatewai/ui-kit";
-import { memo, useMemo, useEffect, useCallback } from "react";
-import { useFieldArray, useForm } from "react-hook-form";
+import {
+	Button,
+	cn,
+	Form,
+	FormControl,
+	FormDescription,
+	FormField,
+	FormItem,
+	FormLabel,
+	FormMessage,
+	Input,
+	SelectField,
+} from "@gatewai/ui-kit";
 import { zodResolver } from "@hookform/resolvers/zod";
-import { BsPlus, BsTrash } from "react-icons/bs"
+import { memo, useCallback, useEffect, useMemo } from "react";
+import { useFieldArray, useForm } from "react-hook-form";
+import { BsPlus, BsTrash } from "react-icons/bs";
+import {
+	type TextToSpeechNodeConfig,
+	TTS_LANGUAGES,
+	TTS_NODE_MODELS,
+	TTS_VOICE_NAMES,
+} from "../shared/config.js";
+import { TextToSpeechNodeConfigSchema } from "../shared/index.js";
 
 const TextToSpeechNodeConfigComponent = memo(
 	({ node }: { node: NodeEntityType }) => {
 		const { onNodeConfigUpdate } = useCanvasCtx();
-		const updateConfig = useCallback((cfg: TextToSpeechNodeConfig) =>
+		const updateConfig = useCallback(
+			(cfg: TextToSpeechNodeConfig) =>
 				onNodeConfigUpdate({ id: node.id, newConfig: cfg }),
-		[node.id, onNodeConfigUpdate]
+			[node.id, onNodeConfigUpdate],
 		);
 		const nodeConfig = node.config as unknown as TextToSpeechNodeConfig;
 
@@ -91,7 +109,7 @@ const TextToSpeechNodeConfigComponent = memo(
 						options={["Auto-detect", ...TTS_LANGUAGES]}
 					/>
 					<div className="space-y-4">
-						<div className="flex items-center justify-between">
+						<div className="flex h-10 items-center justify-between">
 							<FormLabel>Speaker Configuration</FormLabel>
 							{fields.length < 2 && (
 								<Button

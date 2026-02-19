@@ -37,7 +37,7 @@ const TextToSpeechNodeComponent = memo(
 						</div>
 					)}
 
-					<div className="flex justify-end items-center w-full">
+					<div className="flex justify-end items-center w-full p-1.5">
 						<RunNodeButton nodeId={props.id} />
 					</div>
 				</div>

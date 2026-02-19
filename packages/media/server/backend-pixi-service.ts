@@ -175,20 +175,9 @@ export class ServerMediaService implements MediaService {
 			return `${baseUrl}/api/v1/assets/temp/${path}`;
 		}
 
-		if (data.entity?.signedUrl) {
-			// Logic ported from backend/src/utils/misc.ts GetAssetEndpoint
+		if (data.entity) {
 			const fileAsset = data.entity;
-
-			const cleanId = fileAsset.id.split(".")[0];
-			const baseUrl = `${this.baseUrl}/api/v1/assets/${cleanId}`;
-
-			if (!fileAsset.mimeType) return baseUrl;
-
-			const extension = Object.entries(MIME_TYPES).find(
-				([_, mime]) => mime === fileAsset.mimeType,
-			)?.[0];
-			// Remotion needs this extension to trigger the correct 'bunny'
-			return extension ? `${baseUrl}.${extension}` : baseUrl;
+			return GetAssetEndpoint(this.baseUrl, fileAsset);
 		}
 
 		return null;

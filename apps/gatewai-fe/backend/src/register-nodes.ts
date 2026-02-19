@@ -40,7 +40,8 @@ export const registerNodes = async () => {
 					logger.warn(`Node ${entry.name} has no default export.`);
 				}
 			} catch (e) {
-				logger.error(`Failed to register node ${entry.name}:`, e);
+				logger.error(`Failed to register node ${entry.name}`);
+				console.error(e);
 			}
 		}
 	} catch (err) {

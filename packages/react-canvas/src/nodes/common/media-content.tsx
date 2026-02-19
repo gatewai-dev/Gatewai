@@ -32,7 +32,7 @@ function MediaContent({
 	const hasMoreThanOneOutput = result.outputs.length > 1;
 
 	const assetUrl = useMemo(() => {
-		if (!outputItem?.data?.entity?.id) return null;
+		if (!outputItem?.data?.entity) return null;
 		return GetAssetEndpoint(outputItem.data.entity);
 	}, [outputItem?.data?.entity]);
 

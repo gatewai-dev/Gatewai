@@ -30,7 +30,7 @@ export default defineMetadata({
 				order: 1,
 			},
 		],
-		outputs: [{ dataTypes: ["Video"], label: "Output", order: 0 }],
+		outputs: [{ dataTypes: ["Video"], label: "Result", order: 0 }],
 	},
 	defaultConfig: {
 		model: "veo-3.1-generate-preview",

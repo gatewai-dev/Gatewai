@@ -5,7 +5,6 @@ import {
 	type FileData,
 	type IPixiProcessor,
 	type NodeResult,
-	type OutputItem,
 } from "@gatewai/core/types";
 import type { DataType } from "@gatewai/db";
 import { pixiWorkerService } from "@gatewai/media/browser";
@@ -20,7 +19,6 @@ import type {
 	DiscoveredNodeRegistry,
 	HandleState,
 	NodeProcessorContext,
-	NodeProcessorParams,
 	NodeRunFunction,
 	NodeState,
 	ProcessorConfig,

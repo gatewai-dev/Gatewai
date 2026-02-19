@@ -92,7 +92,7 @@ const ImportNodeComponent = memo((props: NodeProps) => {
 
 	return (
 		<BaseNode selected={props.selected} id={props.id} dragging={props.dragging}>
-			<div className="flex flex-col gap-2">
+			<div className="flex flex-col">
 				{showResult && <MediaContent node={node} result={result} />}
 				{!showResult && (
 					<UploadDropzone
@@ -106,7 +106,7 @@ const ImportNodeComponent = memo((props: NodeProps) => {
 				)}
 				{showResult && (
 					<UploadButton
-						className="py-0"
+						className="h-5 m-1.5"
 						onUploadSuccess={onUploadSuccess}
 						onUploadError={onUploadError}
 						accept={buttonAccept}

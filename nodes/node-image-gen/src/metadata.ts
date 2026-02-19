@@ -17,7 +17,7 @@ export default defineMetadata({
 			{ dataTypes: ["Text"], required: true, label: "Prompt", order: 0 },
 			{ dataTypes: ["Image"], label: "Image", order: 1 },
 		],
-		outputs: [{ dataTypes: ["Image"], label: "Output", order: 0 }],
+		outputs: [{ dataTypes: ["Image"], label: "Result", order: 0 }],
 	},
 	defaultConfig: {
 		model: "gemini-3-pro-image-preview",

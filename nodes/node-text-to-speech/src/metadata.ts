@@ -1,9 +1,5 @@
 import { defineMetadata } from "@gatewai/node-sdk";
-import {
-	TextToSpeechNodeConfigSchema,
-	TTS_LANGUAGES,
-	TTS_VOICE_NAMES,
-} from "./shared/index.js";
+import { TextToSpeechNodeConfigSchema } from "./shared/index.js";
 
 export { TextToSpeechNodeConfigSchema };
 
@@ -17,7 +13,9 @@ export default defineMetadata({
 	isTerminal: true,
 	isTransient: false,
 	handles: {
-		inputs: [{ dataTypes: ["Text"], required: true, label: "Prompt", order: 0 }],
+		inputs: [
+			{ dataTypes: ["Text"], required: true, label: "Prompt", order: 0 },
+		],
 		outputs: [{ dataTypes: ["Audio"], label: "Audio", order: 0 }],
 	},
 });
