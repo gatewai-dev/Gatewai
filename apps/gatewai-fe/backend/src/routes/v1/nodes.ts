@@ -5,7 +5,6 @@ import { Hono } from "hono";
 const nodesRouter = new Hono();
 
 const manifests = nodeRegistry.getAllManifests();
-console.log({ manifests });
 
 for (const manifest of manifests) {
 	if (manifest.route) {

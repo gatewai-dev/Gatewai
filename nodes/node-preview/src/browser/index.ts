@@ -1,6 +1,4 @@
-import {
-	defineClient,
-} from "@gatewai/node-sdk/browser";
+import { defineClient } from "@gatewai/node-sdk/browser";
 import { PiEye } from "react-icons/pi";
 import metadata from "../metadata.js";
 import { PreviewNodeComponent } from "./preview-node-component.js";
