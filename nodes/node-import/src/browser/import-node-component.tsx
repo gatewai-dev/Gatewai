@@ -3,30 +3,29 @@ import {
 	BaseNode,
 	MediaContent,
 	useHasOutputItems,
-	useNodeResult,
 } from "@gatewai/react-canvas";
+import type { UploadFileNodeAssetRPC } from "@gatewai/react-store";
 import {
 	makeSelectNodeById,
-	updateNodeConfig,
+	updateNodeResult,
 	useAppDispatch,
 	useAppSelector,
 } from "@gatewai/react-store";
 import type { NodeProps } from "@xyflow/react";
 import { memo } from "react";
 import { toast } from "sonner";
-import type { ImportNodeConfig } from "@/shared/config.js";
 import { UploadButton } from "./file-button.js";
 import { UploadDropzone } from "./file-dropzone.js";
 
 const ImportNodeComponent = memo((props: NodeProps) => {
 	const node = useAppSelector(makeSelectNodeById(props.id));
-	const { result } = useNodeResult(props.id);
+	const showResult = useHasOutputItems(node);
 	const dispatch = useAppDispatch();
 
-	const config = node?.config as ImportNodeConfig;
-	const asset = config?.asset;
+	const result = node?.result as unknown as FileResult;
 
-	const existingMimeType = asset?.mimeType;
+	const existingMimeType =
+		result?.outputs?.[0]?.items?.[0]?.data?.entity?.mimeType;
 
 	const existingType = existingMimeType?.startsWith("image/")
 		? "image"
@@ -59,7 +58,7 @@ const ImportNodeComponent = memo((props: NodeProps) => {
 	const buttonAccept = getFilteredAccept(existingType);
 
 	const buttonLabel =
-		result && existingType
+		showResult && existingType
 			? `Upload another ${existingType}`
 			: "Click to upload a file";
 
@@ -75,16 +74,11 @@ const ImportNodeComponent = memo((props: NodeProps) => {
 			);
 			return;
 		}
-		const successResult = uploadResult as SuccessfulUploadImportNodeAssetRPC;
-
-		// The server returns the full updated node, which includes the new config.
-		// We expect successResult to be the Node entity.
-		const newConfig = (successResult as any).config;
-
+		const successResult = uploadResult as any;
 		dispatch(
-			updateNodeConfig({
+			updateNodeResult({
 				id: props.id,
-				newConfig,
+				newResult: successResult.result as unknown as FileResult,
 			}),
 		);
 	};
@@ -95,12 +89,12 @@ const ImportNodeComponent = memo((props: NodeProps) => {
 			"An error occurred when uploading file, please try again later.",
 		);
 	};
-	console.log({ result, config });
+
 	return (
 		<BaseNode selected={props.selected} id={props.id} dragging={props.dragging}>
 			<div className="flex flex-col gap-2">
-				{result && <MediaContent node={node} result={result} />}
-				{!result && (
+				{showResult && <MediaContent node={node} result={result} />}
+				{!showResult && (
 					<UploadDropzone
 						className="w-full py-16"
 						onUploadSuccess={onUploadSuccess}
@@ -110,7 +104,7 @@ const ImportNodeComponent = memo((props: NodeProps) => {
 						label={dropzoneLabel}
 					/>
 				)}
-				{result && (
+				{showResult && (
 					<UploadButton
 						className="py-0"
 						onUploadSuccess={onUploadSuccess}

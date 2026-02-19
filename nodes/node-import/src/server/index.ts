@@ -1,16 +1,18 @@
 import { uploadToImportNode } from "@gatewai/media/server";
-import { defineNode } from "@gatewai/node-sdk/server";
+import {
+	defineNode,
+	ServerPassthroughProcessor,
+} from "@gatewai/node-sdk/server";
 import { zValidator } from "@hono/zod-validator";
 import { Hono } from "hono";
 import { z } from "zod";
 import metadata from "../metadata.js";
-import { ImportProcessor } from "./processor.js";
 
 const uploadSchema = z.object({
 	file: z.any(),
 });
 
-const nodeRoute = new Hono().post(
+const nodeRouter = new Hono().post(
 	"/upload/:nodeId",
 	zValidator("form", uploadSchema),
 	async (c) => {
@@ -40,8 +42,10 @@ const nodeRoute = new Hono().post(
 );
 
 export const fileNode = defineNode(metadata, {
-	backendProcessor: ImportProcessor,
-	route: nodeRoute,
+	backendProcessor: ServerPassthroughProcessor,
+	route: nodeRouter,
 });
+
+export type ImportNodeRouterType = typeof nodeRouter;
 
 export default fileNode;

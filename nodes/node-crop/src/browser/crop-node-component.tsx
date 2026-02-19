@@ -186,9 +186,6 @@ function constrain(
 	};
 }
 
-// ─────────────────────────────────────────────────────────────────────────────
-// CropConfigPanel
-// ─────────────────────────────────────────────────────────────────────────────
 interface CropConfigPanelProps {
 	crop: CropNodeConfig;
 	aspectRatioPreset: string;
@@ -657,6 +654,7 @@ const CropNodeComponent = memo((props: NodeProps) => {
 	const { inputs } = useNodeResult(props.id);
 	const inputFileData = inputs[inputHandleId!]?.outputItem?.data as FileData;
 	const imageUrl = ResolveFileDataUrl(inputFileData);
+	console.log({ inputFileData, imageUrl });
 	const node = useAppSelector(makeSelectNodeById(props.id));
 	const nodeConfig = node?.config as CropNodeConfig;
 

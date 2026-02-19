@@ -1,5 +1,5 @@
 import { GetAssetEndpoint, isEqual } from "@gatewai/core";
-import { getEnv } from "@gatewai/core/browser";
+import { getEnv, ResolveFileDataUrl } from "@gatewai/core/browser";
 import type { FileData, FileResult, NodeResult } from "@gatewai/core/types";
 import {
 	makeSelectAllEdges,
@@ -104,7 +104,9 @@ export function useNodeFileOutputUrl(nodeId: string): string | null {
 
 	const fileData =
 		outputItem.data as FileResult["outputs"][number]["items"][number]["data"];
-	return fileData?.entity?.signedUrl ?? fileData?.processData?.dataUrl ?? null;
+	return fileData?.entity
+		? ResolveFileDataUrl(fileData?.entity)
+		: (fileData?.processData?.dataUrl ?? null);
 }
 
 const EMPTY_INPUTS = Object.freeze({});

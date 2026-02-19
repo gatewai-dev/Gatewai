@@ -1,3 +1,4 @@
+import { GetAssetEndpoint } from "@gatewai/core";
 import {
 	type FileData,
 	type IPixiProcessor,
@@ -143,7 +144,9 @@ export class ServerMediaService implements MediaService {
 
 	async getImageBuffer(imageInput: FileData): Promise<Buffer> {
 		const urlToUse =
-			imageInput.processData?.dataUrl ?? imageInput.entity?.signedUrl;
+			(imageInput.processData?.dataUrl ?? imageInput?.entity)
+				? GetAssetEndpoint(this.baseUrl, imageInput.entity)
+				: null;
 
 		if (!urlToUse) {
 			throw new Error("No URL found in FileData");

@@ -46,7 +46,7 @@ class SpeechToTextProcessor implements NodeProcessor {
 
             let fileBlob: Blob;
             let mimeType: string;
-            if (audioInput?.entity?.signedUrl) {
+            if (audioInput?.entity) {
                 const buffer = await this.storage.getFromStorage(
                     audioInput.entity.key,
                     audioInput.entity.bucket,

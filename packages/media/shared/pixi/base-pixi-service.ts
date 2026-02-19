@@ -23,32 +23,40 @@ export interface PixiResource {
 	id: string;
 }
 
+export interface PixiPoolOptions {
+	/** Maximum number of pooled Pixi applications. Defaults to 12. */
+	maxPoolSize?: number;
+	/** Minimum number of idle Pixi applications to keep warm. Defaults to 2. */
+	minPoolSize?: number;
+}
+
 export abstract class BasePixiService implements IPixiProcessor {
 	protected pool: Pool<PixiResource>;
-	// Limit concurrency to prevent GPU context loss or memory exhaustion
-	protected limit = pLimit(12);
-	private processors = new Map<string, PixiRun>();
+	protected limit: ReturnType<typeof pLimit>;
 
-	constructor() {
+	constructor(options: PixiPoolOptions = {}) {
+		const maxSize = options.maxPoolSize ?? 12;
+		const minSize = options.minPoolSize ?? 2;
+
+		// Concurrency limiter must match pool max to avoid exhausting the pool while
+		// queued tasks hold the limit slots.
+		this.limit = pLimit(maxSize);
+
 		this.pool = createPool(
 			{
-				create: async () => this.createResource(),
-				destroy: async (resource: PixiResource) =>
-					this.destroyResource(resource),
-				validate: async (resource: PixiResource) =>
-					this.validateResource(resource),
+				create: () => this.createResource(),
+				destroy: (resource) => this.destroyResource(resource),
+				validate: (resource) => this.validateResource(resource),
 			},
 			{
-				max: 12, // Enough for frontend - may need to parameterize for backend when scaling
-				min: 2,
+				max: maxSize,
+				min: minSize,
 				testOnBorrow: true,
 			},
 		);
 	}
 
-	public registerProcessor(processor: PixiRun) {
-		this.processors.set(processor.id, processor);
-	}
+	// ─── Abstract surface ────────────────────────────────────────────────────
 
 	protected abstract createApplication(): Application;
 	protected abstract loadTexture(
@@ -56,10 +64,16 @@ export abstract class BasePixiService implements IPixiProcessor {
 		apiKey?: string,
 	): Promise<Texture>;
 	protected abstract getPixiImport(): string;
+	protected abstract extractBlob(
+		renderer: IRenderer,
+		target: Container,
+	): Promise<Blob>;
+
+	// ─── Pixi modules ────────────────────────────────────────────────────────
 
 	/**
-	 * Override this to provide Pixi modules.
-	 * Allows separation of concerns between backend (dynamic imports) and frontend (static imports).
+	 * Override to supply statically-imported Pixi modules (avoids a dynamic
+	 * import round-trip on every call in environments that bundle eagerly).
 	 */
 	protected async getPixiModules(): Promise<{
 		Sprite: typeof Sprite;
@@ -82,10 +96,7 @@ export abstract class BasePixiService implements IPixiProcessor {
 		};
 	}
 
-	protected abstract extractBlob(
-		renderer: IRenderer,
-		target: Container,
-	): Promise<Blob>;
+	// ─── Pool resource lifecycle ──────────────────────────────────────────────
 
 	private async createResource(): Promise<PixiResource> {
 		const app = this.createApplication();
@@ -93,7 +104,7 @@ export abstract class BasePixiService implements IPixiProcessor {
 	}
 
 	private async destroyResource(resource: PixiResource): Promise<void> {
-		// Destroying with true ensures context and GL resources are freed
+		// `true` as first arg removes the canvas view from the DOM (no-op in Node/worker).
 		resource.app.destroy(true, {
 			children: true,
 			texture: true,
@@ -102,57 +113,70 @@ export abstract class BasePixiService implements IPixiProcessor {
 	}
 
 	private async validateResource(resource: PixiResource): Promise<boolean> {
-		// Ensure renderer is still active and context isn't lost
-		return !!resource.app.renderer;
+		const renderer = resource.app?.renderer;
+		if (!renderer) return false;
+
+		// Detect WebGL context loss — gl property exists on WebGL renderers only.
+		const gl: WebGLRenderingContext | undefined = (renderer as any).gl;
+		if (gl?.isContextLost?.()) return false;
+
+		return true;
 	}
 
+	// ─── Stage cleanup ────────────────────────────────────────────────────────
+
 	/**
-	 * Helper to safely acquire, use, and release a Pixi app.
-	 * Handles stage cleanup to prevent memory leaks.
+	 * Removes and destroys all stage children.
+	 * `texture: false` keeps cached textures managed by `loadTexture` alive.
+	 */
+	private cleanupStage(app: Application): void {
+		const children = app.stage.removeChildren();
+		for (const child of children) {
+			try {
+				child.destroy({ children: true, texture: false, baseTexture: false });
+			} catch {
+				// Child may already be destroyed; swallow to keep pool healthy.
+			}
+		}
+	}
+
+	// ─── Abort helpers ────────────────────────────────────────────────────────
+
+	private assertNotAborted(signal?: AbortSignal): void {
+		if (signal?.aborted) throw new ServiceAbortError();
+	}
+
+	// ─── Core execution helpers ───────────────────────────────────────────────
+
+	/**
+	 * Safely acquires a Pixi app from the pool, runs `fn`, then releases it.
+	 * Abort is checked both before queuing and after a potentially long pool wait.
 	 */
 	protected async useApp<T>(
 		fn: (app: Application) => Promise<T>,
 		signal?: AbortSignal,
 	): Promise<T> {
+		this.assertNotAborted(signal);
+
 		return this.limit(async () => {
-			this.ensureNotAborted(signal);
+			// Re-check after potentially waiting in the concurrency queue.
+			this.assertNotAborted(signal);
 
 			const resource = await this.pool.acquire();
 			try {
-				// Safety clear before use
 				this.cleanupStage(resource.app);
 				return await fn(resource.app);
 			} finally {
-				// Thorough cleanup after use
 				this.cleanupStage(resource.app);
 				this.pool.release(resource);
 			}
 		});
 	}
 
-	/**
-	 * Cleans the stage by removing and destroying children.
-	 * Note: We set texture: false to avoid destroying cached textures managed by loadTexture.
-	 */
-	private cleanupStage(app: Application) {
-		const children = app.stage.removeChildren();
-		children.forEach((child) => {
-			child.destroy({
-				children: true,
-				texture: false,
-				baseTexture: false,
-			});
-		});
-	}
-
-	private ensureNotAborted(signal?: AbortSignal) {
-		if (signal?.aborted) {
-			throw new ServiceAbortError();
-		}
-	}
+	// ─── IPixiProcessor implementation ───────────────────────────────────────
 
 	public async execute<TInput, TOutput>(
-		id: string,
+		_id: string,
 		input: TInput,
 		run: PixiRun,
 		signal?: AbortSignal,
@@ -165,7 +189,6 @@ export abstract class BasePixiService implements IPixiProcessor {
 				extractBlob: (target) => this.extractBlob(app.renderer, target),
 				signal,
 			};
-
 			return run.run(context, input);
 		}, signal);
 	}
@@ -186,13 +209,13 @@ export abstract class BasePixiService implements IPixiProcessor {
 		apiKey?: string,
 	): Promise<Blob> {
 		return this.useApp(async (app) => {
-			const texture = await this.loadTexture(imageUrl, apiKey);
-			const modules = await this.getPixiModules();
+			const [texture, modules] = await Promise.all([
+				this.loadTexture(imageUrl, apiKey),
+				this.getPixiModules(),
+			]);
 			const sprite = new modules.Sprite(texture);
 			app.stage.addChild(sprite);
-
 			await operations(app, sprite, modules);
-
 			return this.extractBlob(app.renderer, app.stage);
 		});
 	}
@@ -203,5 +226,16 @@ export abstract class BasePixiService implements IPixiProcessor {
 
 	public async extract(target: Container, renderer: IRenderer): Promise<Blob> {
 		return this.extractBlob(renderer, target);
+	}
+
+	// ─── Lifecycle ────────────────────────────────────────────────────────────
+
+	/**
+	 * Drains and destroys the pool. Call during graceful shutdown to free all
+	 * GPU/GL resources and prevent leaks on hot reload.
+	 */
+	public async shutdown(): Promise<void> {
+		await this.pool.drain();
+		await this.pool.clear();
 	}
 }

@@ -122,3 +122,5 @@ export type RejectPatchRPC = InferResponseType<
 export type RejectPatchRPCParams = InferRequestType<
 	(typeof rpcClient.api.v1.canvas)[":id"]["patches"][":patchId"]["reject"]["$post"]
 >;
+
+export type UploadFileNodeAssetRPC = CanvasDetailsNode | { error: string };

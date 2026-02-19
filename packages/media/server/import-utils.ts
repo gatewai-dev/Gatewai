@@ -13,112 +13,172 @@ interface UploadOptions {
 	mimeType?: string;
 }
 
+type SupportedDataType = Extract<DataType, "Image" | "Video" | "Audio">;
+
+function resolveDataType(contentType: string): SupportedDataType {
+	if (contentType.startsWith("image/")) return "Image";
+	if (contentType.startsWith("video/")) return "Video";
+	if (contentType.startsWith("audio/")) return "Audio";
+	throw new Error(`Unsupported content type for Import Node: ${contentType}`);
+}
+
 /**
- * Uploads a buffer to GCS, creates a FileAsset, and updates the Node's output handles.
+ * Uploads a buffer to GCS, creates a FileAsset record, and appends an output
+ * entry to the node's result.
+ *
+ * Ordering guarantees:
+ *  1. Storage upload happens first — no DB rows are written if this fails.
+ *  2. FileAsset creation and node update are wrapped in a transaction —
+ *     failure leaves no orphaned asset records.
  */
 export async function uploadToImportNode({
 	nodeId,
 	buffer,
 	filename,
 	mimeType,
-}: UploadOptions) {
-	// 1. Fetch Node and validate existence
-	const node = await prisma.node.findUnique({
+}: UploadOptions): Promise<Awaited<ReturnType<typeof prisma.node.update>>> {
+	if (!buffer.length) {
+		throw new Error("Upload buffer must not be empty");
+	}
+
+	// ── 1. Resolve content type ───────────────────────────────────────────────
+	// Prefer the caller-supplied MIME type; fall back to magic-byte detection.
+	const finalContentType: string =
+		mimeType ??
+		(await fileTypeFromBuffer(buffer))?.mime ??
+		"application/octet-stream";
+
+	// Validate early so we don't pay for storage + DB work on unsupported types.
+	const dataType = resolveDataType(finalContentType);
+
+	// ── 2. Fetch node (fail fast if missing) ─────────────────────────────────
+	const node = await prisma.node.findUniqueOrThrow({
 		where: { id: nodeId },
 		include: {
-			canvas: true,
+			canvas: { select: { userId: true } },
 			handles: {
 				where: { type: "Output" },
 				orderBy: { order: "asc" },
+				take: 1,
 			},
 		},
 	});
 
-	if (!node) {
-		throw new Error(`Node with id ${nodeId} not found`);
+	const outputHandle = node.handles[0];
+	if (!outputHandle) {
+		throw new Error(`No output handle found for node ${nodeId}`);
 	}
 
-	// 2. Determine Content Type
-	let contentType = mimeType;
-	if (!contentType) {
-		const fileTypeResult = await fileTypeFromBuffer(buffer);
-		contentType = fileTypeResult?.mime ?? "application/octet-stream";
-	}
-
-	// Ensure contentType is a string
-	const finalContentType = contentType || "application/octet-stream";
-
-	// 3. Extract Metadata (Dimensions or Duration)
+	// ── 3. Extract metadata — run concurrently ────────────────────────────────
 	let width: number | null = null;
 	let height: number | null = null;
 	let durationInSec: number | null = null;
 
-	if (finalContentType.startsWith("image/")) {
-		try {
-			const media = container.resolve<MediaService>(TOKENS.MEDIA);
-			const metadata = await media.getImageDimensions(buffer);
-			width = metadata.width || null;
-			height = metadata.height || null;
-		} catch (error) {
-			console.error("Failed to compute image metadata:", error);
-		}
-	} else if (
-		finalContentType.startsWith("video/") ||
-		finalContentType.startsWith("audio/")
-	) {
-		try {
-			durationInSec = await getMediaDuration(buffer);
-		} catch (error) {
-			console.error("Failed to compute media duration:", error);
-		}
-	}
-
-	// 4. Upload to Storage
-	const bucket = ENV_CONFIG.GCS_ASSETS_BUCKET ?? "default-bucket";
+	await Promise.allSettled([
+		(async () => {
+			if (finalContentType.startsWith("image/")) {
+				try {
+					const media = container.resolve<MediaService>(TOKENS.MEDIA);
+					const meta = await media.getImageDimensions(buffer);
+					width = meta.width || null;
+					height = meta.height || null;
+				} catch (err) {
+					console.error("Failed to extract image dimensions:", err);
+				}
+			}
+		})(),
+		(async () => {
+			if (
+				finalContentType.startsWith("video/") ||
+				finalContentType.startsWith("audio/")
+			) {
+				try {
+					durationInSec = await getMediaDuration(buffer);
+				} catch (err) {
+					console.error("Failed to extract media duration:", err);
+				}
+			}
+		})(),
+	]);
 	const key = `assets/${generateId()}-${filename}`;
-
 	const storage = container.resolve<StorageService>(TOKENS.STORAGE);
-	await storage.uploadToStorage(buffer, key, finalContentType, bucket);
 
-	const expiresIn = 3600 * 24 * 6.9; // ~1 week
-	const signedUrl = await storage.generateSignedUrl(key, bucket, expiresIn);
-	const signedUrlExp = new Date(Date.now() + expiresIn * 1000);
+	await storage.uploadToStorage(
+		buffer,
+		key,
+		finalContentType,
+		ENV_CONFIG.GCS_ASSETS_BUCKET,
+	);
 
-	// 5. Create Asset Record
-	const asset = await prisma.fileAsset.create({
-		data: {
-			name: filename,
-			userId: node.canvas.userId,
-			bucket,
-			key,
-			signedUrl,
-			isUploaded: true,
-			duration: durationInSec ? Math.round(durationInSec * 1000) : undefined,
-			size: buffer.length,
-			signedUrlExp,
-			width,
-			height,
-			mimeType: finalContentType,
-		},
-	});
+	// ── 5. Create asset + update node atomically ──────────────────────────────
+	try {
+		const updatedNode = await prisma.$transaction(async (tx) => {
+			const asset = await tx.fileAsset.create({
+				data: {
+					name: filename,
+					userId: node.canvas.userId,
+					bucket: ENV_CONFIG.GCS_ASSETS_BUCKET,
+					key,
+					isUploaded: true,
+					// `!= null` guard: durationInSec could legitimately be 0.
+					duration:
+						durationInSec != null
+							? Math.round(durationInSec * 1000)
+							: undefined,
+					size: buffer.length,
+					width,
+					height,
+					mimeType: finalContentType,
+				},
+			});
 
-	// 6. Update Node Config
-	// We store the single asset in config.asset
-	// If the user uploads a new file, it replaces the old one.
+			// Re-fetch result inside the transaction to avoid a lost-update race
+			// if another request appended an output between our initial read and now.
+			const current = await tx.node.findUniqueOrThrow({
+				where: { id: nodeId },
+				select: { result: true },
+			});
 
-	const currentConfig = (node.config as any) || {};
-	const updatedConfig = {
-		...currentConfig,
-		asset,
-	};
+			const currentResult = (current.result as unknown as FileResult) ?? {
+				outputs: [],
+			};
+			const outputs = currentResult.outputs ?? [];
 
-	const updatedNode = await prisma.node.update({
-		where: { id: nodeId },
-		data: { config: updatedConfig },
-		include: {
-			handles: true,
-		},
-	});
+			const newOutput = {
+				items: [
+					{
+						outputHandleId: outputHandle.id,
+						data: { entity: asset },
+						type: dataType,
+					},
+				],
+			};
 
-	return updatedNode;
+			return tx.node.update({
+				where: { id: nodeId },
+				data: {
+					result: {
+						...currentResult,
+						selectedOutputIndex: outputs.length,
+						outputs: [...outputs, newOutput],
+					},
+				},
+				include: { handles: true },
+			});
+		});
+
+		return updatedNode;
+	} catch (err) {
+		// Best-effort storage cleanup to avoid orphaned blobs accumulating.
+		// Log but don't re-throw the cleanup error — the original error is more useful.
+		storage
+			.deleteFromStorage?.(key, ENV_CONFIG.GCS_ASSETS_BUCKET)
+			.catch((cleanupErr) => {
+				console.error(
+					`Failed to clean up orphaned storage object gs://${ENV_CONFIG.GCS_ASSETS_BUCKET}/${key}:`,
+					cleanupErr,
+				);
+			});
+		throw err;
+	}
 }

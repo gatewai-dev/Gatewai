@@ -26,7 +26,7 @@ const getConnectedInputDataValue = (
 
 	if (input.outputItem.type === "Image") {
 		const fileData = input.outputItem.data as FileData;
-		const url = fileData?.entity?.signedUrl
+		const url = fileData?.entity
 			? GetAssetEndpoint(fileData.entity)
 			: fileData?.processData?.dataUrl;
 		if (url) return { type: "Image", value: url };
