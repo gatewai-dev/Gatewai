@@ -258,7 +258,7 @@ export const CompositionScene: React.FC<SceneProps> = ({
 											: layer.verticalAlign === "bottom"
 												? "flex-end"
 												: "flex-start",
-									whiteSpace: "pre-wrap",
+									whiteSpace: "pre",
 								}}
 							>
 								{textContent}
