@@ -5,7 +5,6 @@ import {
 	useHasOutputItems,
 	useNodeResult,
 } from "@gatewai/react-canvas";
-import type { UploadFileNodeAssetRPC } from "@gatewai/react-store";
 import {
 	makeSelectNodeById,
 	updateNodeConfig,
@@ -15,20 +14,16 @@ import {
 import type { NodeProps } from "@xyflow/react";
 import { memo } from "react";
 import { toast } from "sonner";
+import type { ImportNodeConfig } from "@/shared/config.js";
 import { UploadButton } from "./file-button.js";
 import { UploadDropzone } from "./file-dropzone.js";
-
-type SuccessfulUploadImportNodeAssetRPC = Extract<
-	UploadFileNodeAssetRPC,
-	{ handles: unknown } | { someOtherSuccessProperty: unknown }
->;
 
 const ImportNodeComponent = memo((props: NodeProps) => {
 	const node = useAppSelector(makeSelectNodeById(props.id));
 	const { result } = useNodeResult(props.id);
 	const dispatch = useAppDispatch();
 
-	const config = node?.config as any;
+	const config = node?.config as ImportNodeConfig;
 	const asset = config?.asset;
 
 	const existingMimeType = asset?.mimeType;

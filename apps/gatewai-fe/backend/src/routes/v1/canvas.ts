@@ -8,7 +8,7 @@ import {
 import { applyCanvasUpdate, GetCanvasEntities } from "@gatewai/data-ops";
 import { prisma } from "@gatewai/db";
 import { NodeWFProcessor } from "@gatewai/graph-engine";
-import type { XYPosition } from "@gatewai/react-canvas";
+
 import { zValidator } from "@hono/zod-validator";
 import { Hono } from "hono";
 import { HTTPException } from "hono/http-exception";
@@ -416,7 +416,7 @@ const canvasRoutes = new Hono<{ Variables: AuthHonoTypes }>({
 				data: {
 					name: node.name,
 					type: node.type,
-					position: node.position as XYPosition,
+					position: node.position as any,
 					width: node.width,
 					height: node.height,
 					config: node.config ?? {},

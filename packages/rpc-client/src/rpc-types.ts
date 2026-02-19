@@ -1,7 +1,7 @@
 import type { InferRequestType, InferResponseType } from "hono/client";
 import { createRpcClient } from "./factory";
 
-const rpcClient = createRpcClient();
+const rpcClient = createRpcClient("/", {});
 
 export type CanvasDetailsRPC = InferResponseType<
 	(typeof rpcClient.api.v1.canvas)[":id"]["$get"]
@@ -67,13 +67,6 @@ export type UserAssetsListRPCParams = InferRequestType<
 
 export type UserAssetsUploadRPC = InferResponseType<
 	typeof rpcClient.api.v1.assets.$post
->;
-
-export type UploadFileNodeAssetRPC = InferResponseType<
-	(typeof rpcClient.api.v1.assets)["node"][":nodeId"]["$post"]
->;
-export type UploadFileNodeAssetRPCParams = InferRequestType<
-	(typeof rpcClient.api.v1.assets)["node"][":nodeId"]["$post"]
 >;
 
 export type ActiveCanvasBatchListRPC = InferResponseType<

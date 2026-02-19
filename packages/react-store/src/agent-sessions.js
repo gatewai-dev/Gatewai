@@ -1,12 +1,5 @@
-import type {
-	AgentSessionDetailsRPC,
-	AgentSessionDetailsRPCParams,
-	AgentSessionsRPC,
-	AgentSessionsRPCParams,
-} from "@gatewai/rpc-client";
 import { appRPCClient } from "@gatewai/rpc-client";
 import { createApi, fetchBaseQuery } from "@reduxjs/toolkit/query/react";
-
 export const agentSessionsAPI = createApi({
 	reducerPath: "agentSessionsAPI",
 	baseQuery: fetchBaseQuery({
@@ -14,10 +7,7 @@ export const agentSessionsAPI = createApi({
 	}),
 	tagTypes: ["agentSessionList"],
 	endpoints: (build) => ({
-		getCanvasAgentSessionList: build.query<
-			AgentSessionsRPC,
-			AgentSessionsRPCParams
-		>({
+		getCanvasAgentSessionList: build.query({
 			providesTags: ["agentSessionList"],
 			queryFn: async (payload) => {
 				const response =
@@ -31,10 +21,7 @@ export const agentSessionsAPI = createApi({
 				return { data };
 			},
 		}),
-		getCanvasAgentSessionDetails: build.query<
-			AgentSessionDetailsRPC,
-			AgentSessionDetailsRPCParams
-		>({
+		getCanvasAgentSessionDetails: build.query({
 			queryFn: async (payload) => {
 				const response =
 					await appRPCClient.api.v1.canvas[":id"].agent[":sessionId"].$get(
@@ -49,7 +36,7 @@ export const agentSessionsAPI = createApi({
 				return { data };
 			},
 		}),
-		createCanvasAgentSession: build.mutation<any, { param: { id: string } }>({
+		createCanvasAgentSession: build.mutation({
 			invalidatesTags: ["agentSessionList"],
 			queryFn: async (payload) => {
 				const response =
@@ -65,7 +52,6 @@ export const agentSessionsAPI = createApi({
 		}),
 	}),
 });
-
 export const {
 	useGetCanvasAgentSessionListQuery,
 	useGetCanvasAgentSessionDetailsQuery,

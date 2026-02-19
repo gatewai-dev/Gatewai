@@ -1,6 +1,5 @@
 import { appRPCClient } from "@gatewai/rpc-client";
 import { createApi, fetchBaseQuery } from "@reduxjs/toolkit/query/react";
-
 export const apiKeysAPI = createApi({
 	reducerPath: "apiKeysAPI",
 	tagTypes: ["getApiKeys"],
@@ -8,19 +7,7 @@ export const apiKeysAPI = createApi({
 		baseUrl: `/api/v1/api-keys`,
 	}),
 	endpoints: (build) => ({
-		getApiKeys: build.query<
-			{
-				keys: {
-					id: string;
-					name: string;
-					start: string;
-					createdAt: string;
-					lastUsedAt: string | null;
-					prefix: string;
-				}[];
-			},
-			void
-		>({
+		getApiKeys: build.query({
 			queryFn: async () => {
 				const response = await appRPCClient.api.v1["api-keys"].$get();
 				if (!response.ok) {
@@ -41,10 +28,7 @@ export const apiKeysAPI = createApi({
 			},
 			providesTags: ["getApiKeys"],
 		}),
-		createApiKey: build.mutation<
-			{ key: { id: string; name: string }; fullKey: string },
-			{ name: string }
-		>({
+		createApiKey: build.mutation({
 			queryFn: async ({ name }) => {
 				const response = await appRPCClient.api.v1["api-keys"].$post({
 					json: { name },
@@ -62,13 +46,13 @@ export const apiKeysAPI = createApi({
 			},
 			invalidatesTags: ["getApiKeys"],
 		}),
-		deleteApiKey: build.mutation<void, string>({
+		deleteApiKey: build.mutation({
 			queryFn: async (id) => {
 				const response = await appRPCClient.api.v1["api-keys"][":id"].$delete({
 					param: { id },
 				});
 				if (!response.ok) {
-					const errorData = (await response.json()) as { error?: string };
+					const errorData = await response.json();
 					throw new Error(errorData.error || "Failed to delete API key");
 				}
 				return { data: undefined };
@@ -77,7 +61,6 @@ export const apiKeysAPI = createApi({
 		}),
 	}),
 });
-
 export const {
 	useGetApiKeysQuery,
 	useCreateApiKeyMutation,

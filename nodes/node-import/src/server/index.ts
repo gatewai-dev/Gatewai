@@ -6,13 +6,11 @@ import { z } from "zod";
 import metadata from "../metadata.js";
 import { ImportProcessor } from "./processor.js";
 
-const nodeRoute = new Hono();
-
 const uploadSchema = z.object({
 	file: z.any(),
 });
 
-nodeRoute.post(
+const nodeRoute = new Hono().post(
 	"/upload/:nodeId",
 	zValidator("form", uploadSchema),
 	async (c) => {

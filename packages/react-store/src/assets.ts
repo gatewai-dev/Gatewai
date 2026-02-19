@@ -1,6 +1,4 @@
 import type {
-	UploadFileNodeAssetRPC,
-	UploadFileNodeAssetRPCParams,
 	UserAssetsListRPC,
 	UserAssetsListRPCParams,
 	UserAssetsUploadRPC,
@@ -38,10 +36,7 @@ export const assetsAPI = createApi({
 			},
 			invalidatesTags: ["getUserAssets"],
 		}),
-		uploadFileNodeAsset: build.mutation<
-			UploadFileNodeAssetRPC,
-			UploadFileNodeAssetRPCParams
-		>({
+		uploadFileNodeAsset: build.mutation({
 			queryFn: async (payload) => {
 				const { param, form } = payload;
 				const nodeId = param.nodeId;

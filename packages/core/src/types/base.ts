@@ -41,3 +41,8 @@ export const FileAssetSchema = z.object({
 });
 
 export type FileAsset = z.infer<typeof FileAssetSchema>;
+
+export interface XYPosition {
+	x: number;
+	y: number;
+}

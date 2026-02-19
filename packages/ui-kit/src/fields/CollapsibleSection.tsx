@@ -9,6 +9,7 @@ export const CollapsibleSection: React.FC<{
 	defaultOpen?: boolean;
 }> = ({ title, icon: Icon, children, defaultOpen = true }) => {
 	const [isOpen, setIsOpen] = useState(defaultOpen);
+
 	return (
 		<div className="border-b border-white/5">
 			<button
