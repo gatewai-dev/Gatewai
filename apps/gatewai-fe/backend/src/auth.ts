@@ -8,8 +8,7 @@ import { HTTPException } from "hono/http-exception";
 
 export const auth = betterAuth({
 	database: prismaAdapter(prisma, {
-		provider: "postgresql",
-		// debugLogs: false,
+		provider: "postgresql"
 	}),
 	trustedOrigins: [ENV_CONFIG.BASE_URL, "http://localhost:5173"],
 	baseURL: ENV_CONFIG.BASE_URL,

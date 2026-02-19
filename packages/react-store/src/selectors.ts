@@ -1,8 +1,8 @@
 import type { NodeResult } from "@gatewai/core/types";
 import { createSelector } from "@reduxjs/toolkit";
-import { edgeSelectors } from "./edges";
-import { type HandleEntityType, handleSelectors } from "./handles";
-import { nodeSelectors } from "./nodes";
+import { edgeSelectors } from "./edges.js";
+import { type HandleEntityType, handleSelectors } from "./handles.js";
+import { nodeSelectors } from "./nodes.js";
 
 export const selectConnectedNodeByHandleId = (
 	handleId: HandleEntityType["id"],
