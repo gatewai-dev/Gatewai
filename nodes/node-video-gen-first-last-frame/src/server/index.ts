@@ -1,6 +1,6 @@
 import assert from "node:assert";
 import { Buffer } from "node:buffer";
-import { existsSync, mkdirSync } from "node:fs";
+import { existsSync, mkdirSync, rmSync } from "node:fs";
 import { readFile } from "node:fs/promises";
 import path from "node:path";
 import type { EnvConfig } from "@gatewai/core";
@@ -14,7 +14,6 @@ import type {
     BackendNodeProcessorCtx,
     BackendNodeProcessorResult,
     GraphResolvers,
-    MediaService,
     NodeProcessor,
     StorageService,
 } from "@gatewai/node-sdk/server";
@@ -50,7 +49,6 @@ class VideoGenFirstLastFrameProcessor implements NodeProcessor {
         @inject(TOKENS.ENV) private env: EnvConfig,
         @inject(TOKENS.GRAPH_RESOLVERS) private graph: GraphResolvers,
         @inject(TOKENS.STORAGE) private storage: StorageService,
-        @inject(TOKENS.MEDIA) private media: MediaService,
         @inject(TOKENS.AI_PROVIDER) private aiProvider: AIProvider,
     ) { }
 
@@ -110,15 +108,12 @@ class VideoGenFirstLastFrameProcessor implements NodeProcessor {
                     personGeneration: config.personGeneration,
                     durationSeconds: Number(config.durationSeconds),
                 },
-            })) as {
-                done?: boolean;
-                response?: { generatedVideos?: Array<{ video?: unknown }> };
-            };
+            }))
 
             while (!operation.done) {
                 await new Promise((resolve) => setTimeout(resolve, 10000));
                 operation = (await genAI.operations.getVideosOperation({
-                    operation: operation as any,
+                    operation: operation,
                 })) as typeof operation;
             }
 
@@ -160,14 +155,7 @@ class VideoGenFirstLastFrameProcessor implements NodeProcessor {
                 contentType,
                 bucket,
             );
-
-            const expiresIn = 3600 * 24 * 7;
-            const signedUrl = await this.storage.generateSignedUrl(
-                key,
-                bucket,
-                expiresIn,
-            );
-            const signedUrlExp = new Date(Date.now() + expiresIn * 1000);
+            rmSync(filePath);
 
             const asset = await this.prisma.fileAsset.create({
                 data: {
@@ -176,8 +164,6 @@ class VideoGenFirstLastFrameProcessor implements NodeProcessor {
                     bucket,
                     size: fileBuffer.length,
                     key,
-                    signedUrl,
-                    signedUrlExp,
                     duration: Number(config.durationSeconds) * 1000,
                     mimeType: contentType,
                 },
