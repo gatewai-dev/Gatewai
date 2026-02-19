@@ -6,12 +6,12 @@ import {
 	McpServer,
 	ResourceTemplate,
 } from "@modelcontextprotocol/sdk/server/mcp.js";
-import assert from "assert";
+import assert from "node:assert";
 import { config } from "dotenv";
 import { Hono } from "hono";
 import { cors } from "hono/cors";
 import { logger } from "hono/logger";
-import { createRequire } from "module";
+import { createRequire } from "node:module";
 import { z } from "zod";
 import { getApiClientSafe, runWithApiClient } from "./context.js";
 
