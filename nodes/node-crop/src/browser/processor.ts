@@ -4,8 +4,8 @@ import type {
 	PixiProcessOutput,
 } from "@gatewai/core/types";
 import type { IBrowserProcessor } from "@gatewai/node-sdk/browser";
-import { CropNodeConfigSchema } from "@/shared/config.js";
-import { applyCrop, type PixiCropInput } from "@/shared/pixi-crop-run.js";
+import { CropNodeConfigSchema } from "../shared/config.js";
+import { applyCrop, type PixiCropInput } from "../shared/pixi-crop-run.js";
 
 export class CropBrowserProcessor implements IBrowserProcessor {
 	async process({

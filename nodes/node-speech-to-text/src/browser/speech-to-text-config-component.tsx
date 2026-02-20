@@ -8,7 +8,7 @@ import {
 	type SpeechToTextNodeConfig,
 	SpeechToTextNodeConfigSchema,
 	STT_NODE_MODELS,
-} from "@/shared/config.js";
+} from "../shared/config.js";
 
 const SpeechToTextNodeConfigComponent = memo(
 	({ node }: { node: NodeEntityType }) => {

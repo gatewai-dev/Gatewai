@@ -1,7 +1,7 @@
 import type { NodeProcessorParams, NodeResult } from "@gatewai/core/types";
 import type { IBrowserProcessor } from "@gatewai/node-sdk/browser";
-import { ModulateNodeConfigSchema } from "@/shared/config.js";
-import { applyModulate } from "@/shared/pixi-modulate-run.js";
+import { ModulateNodeConfigSchema } from "../shared/config.js";
+import { applyModulate } from "../shared/pixi-modulate-run.js";
 
 export class ModulateBrowserProcessor implements IBrowserProcessor {
 	async process({

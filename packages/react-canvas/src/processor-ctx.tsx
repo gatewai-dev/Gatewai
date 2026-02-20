@@ -105,7 +105,7 @@ export function useNodeFileOutputUrl(nodeId: string): string | null {
 	const fileData =
 		outputItem.data as FileResult["outputs"][number]["items"][number]["data"];
 	return fileData?.entity
-		? ResolveFileDataUrl(fileData?.entity)
+		? ResolveFileDataUrl(fileData?.entity as any)
 		: (fileData?.processData?.dataUrl ?? null);
 }
 
@@ -291,14 +291,14 @@ export function useNodePreview(nodeId: string) {
 			throw new Error("Invalid base url");
 		}
 
-		const imageUrl =
+		const mediaUrl =
 			inputFileData?.processData?.dataUrl ??
 			(inputFileData?.entity
 				? GetAssetEndpoint(baseUrl, inputFileData.entity)
 				: null);
 
 		return {
-			imageUrl: shouldHidePreview ? null : imageUrl,
+			mediaUrl: shouldHidePreview ? null : mediaUrl,
 			node,
 			result,
 			hasMoreThanOneOutput: (result?.outputs?.length ?? 0) > 1,

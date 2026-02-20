@@ -3,7 +3,7 @@ import { makeSelectNodeById, useAppSelector } from "@gatewai/react-store";
 import { Textarea } from "@gatewai/ui-kit";
 import { NodeResizer } from "@xyflow/react";
 import { memo, useCallback } from "react";
-import type { NoteNodeConfig } from "@/shared/config.js";
+import type { NoteNodeConfig } from "../shared/config.js";
 
 const NoteNodeComponent = memo(
 	(props: { selected: boolean; id: string; dragging: boolean }) => {

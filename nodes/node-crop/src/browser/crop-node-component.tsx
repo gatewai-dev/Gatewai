@@ -22,7 +22,6 @@ import {
 	SelectItem,
 	SelectTrigger,
 	SelectValue,
-	Separator,
 } from "@gatewai/ui-kit";
 import {
 	Link as LinkIcon,
@@ -31,7 +30,7 @@ import {
 	Unlink as UnlinkIcon,
 } from "lucide-react";
 import { memo, useCallback, useEffect, useMemo, useRef, useState } from "react";
-import type { CropNodeConfig } from "@/shared/config.js";
+import type { CropNodeConfig } from "../shared/config.js";
 
 // ─── Global styles ────────────────────────────────────────────────────────────
 const GLOBAL_STYLES = `
@@ -704,7 +703,6 @@ const CropNodeComponent = memo((props: NodeProps) => {
 	const { inputs } = useNodeResult(props.id);
 	const inputFileData = inputs[inputHandleId!]?.outputItem?.data as FileData;
 	const imageUrl = ResolveFileDataUrl(inputFileData);
-	console.log({ inputFileData, imageUrl });
 	const node = useAppSelector(makeSelectNodeById(props.id));
 	const nodeConfig = node?.config as CropNodeConfig;
 

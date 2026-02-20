@@ -24,14 +24,7 @@ import {
 	Position,
 } from "@xyflow/react";
 import { TrashIcon } from "lucide-react";
-import {
-	type JSX,
-	memo,
-	type ReactNode,
-	useCallback,
-	useMemo,
-	useRef,
-} from "react";
+import { type JSX, memo, type ReactNode, useCallback, useMemo } from "react";
 import { PiCube } from "react-icons/pi";
 import { useCanvasCtx } from "../canvas-ctx";
 import { cn } from "../lib/utils";
@@ -674,7 +667,7 @@ const CustomEdge = memo(
 			// `style` spread: in practice this prop is usually a stable empty object
 			// so excluding it from deps would be fine, but we keep it correct here.
 			// eslint-disable-next-line react-hooks/exhaustive-deps
-			[selected, color],
+			[selected, color, style],
 		);
 
 		return (

@@ -4,12 +4,11 @@ import { DataType } from "@gatewai/db";
 import type {
     BackendNodeProcessorCtx,
     BackendNodeProcessorResult,
-    defineNode,
     GraphResolvers,
     NodeProcessor,
 } from "@gatewai/node-sdk/server";
 import { inject, injectable } from "tsyringe";
-import metadata, { TextMergerNodeConfigSchema } from "../metadata.js";
+import { TextMergerNodeConfigSchema } from "../shared/config.js";
 import { joinText } from "../shared/join-fn.js";
 
 @injectable()

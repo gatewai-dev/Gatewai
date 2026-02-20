@@ -9,7 +9,7 @@ import { ModulateConfigComponent } from "./modulate-config-component.js";
 
 const ModulateNodeComponent = memo(
 	(props: { selected: boolean; id: string; dragging: boolean }) => {
-		const { imageUrl, node } = useNodePreview(props.id);
+		const { mediaUrl, node } = useNodePreview(props.id);
 
 		return (
 			<BaseNode
@@ -20,11 +20,11 @@ const ModulateNodeComponent = memo(
 				<div className="flex flex-col gap-3 ">
 					<div
 						className={cn("w-full overflow-hidden rounded media-container", {
-							"min-h-32": !imageUrl,
-							"h-full": imageUrl,
+							"min-h-32": !mediaUrl,
+							"h-full": mediaUrl,
 						})}
 					>
-						{imageUrl && <CanvasRenderer imageUrl={imageUrl} />}
+						{mediaUrl && <CanvasRenderer imageUrl={mediaUrl} />}
 					</div>
 
 					{node && <ModulateConfigComponent node={node} />}

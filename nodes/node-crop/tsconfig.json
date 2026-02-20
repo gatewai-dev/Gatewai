@@ -5,7 +5,9 @@
 		"paths": {
 			"@/*": ["./src/*"]
 		},
-		"lib": ["DOM"]
+		"lib": ["DOM"],
+		"experimentalDecorators": true,
+		"emitDecoratorMetadata": true
 	},
 	"include": ["src"]
 }

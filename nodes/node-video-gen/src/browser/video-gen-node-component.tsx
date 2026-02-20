@@ -5,7 +5,6 @@ import {
 	OutputSelector,
 	RunNodeButton,
 	useMediaInputSrc,
-	useNodePreview,
 	useNodeResult,
 	VideoRenderer,
 } from "@gatewai/react-canvas";

@@ -10,7 +10,7 @@ import { memo } from "react";
 
 const VideoGenFirstLastFrameNodeComponent = memo(
 	(props: { selected: boolean; id: string; dragging: boolean }) => {
-		const { videoUrl, node, hasMoreThanOneOutput } = useNodePreview(props.id);
+		const { mediaUrl, node, hasMoreThanOneOutput } = useNodePreview(props.id);
 
 		return (
 			<BaseNode
@@ -25,7 +25,7 @@ const VideoGenFirstLastFrameNodeComponent = memo(
 								<OutputSelector node={node} />
 							</div>
 						)}
-						{videoUrl && <VideoRenderer src={videoUrl} />}
+						{mediaUrl && <VideoRenderer src={mediaUrl} />}
 						<div className="absolute bottom-1 left-1 z-10">
 							<MediaDimensions node={node} />
 						</div>

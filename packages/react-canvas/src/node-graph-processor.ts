@@ -196,6 +196,18 @@ export class NodeGraphProcessor extends EventEmitter implements NodeProcessor {
 					nodesToInvalidate.add(id);
 				}
 
+				// 1.5 Terminal Node API Execution Rescue
+				// If the node is currently EXECUTING internally, but we just updated the graph
+				// and it is a terminal node, we should invalidate it here so the passthrough
+				// processor can resolve it, even if the data hash is identical.
+				if (
+					state &&
+					state.status === TaskStatus.EXECUTING &&
+					currNode.template.isTerminalNode
+				) {
+					nodesToInvalidate.add(id);
+				}
+
 				// 2. Recovery Detection
 				// If a node was previously FAILED (perhaps due to temporary invalid topology during a patch),
 				// but is now structurally valid, we must force it to re-evaluate/re-process.

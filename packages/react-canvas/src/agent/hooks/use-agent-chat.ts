@@ -214,6 +214,7 @@ export function useAgentChatStream(
 	useEffect(() => {
 		// Clear messages immediately when sessionId changes
 		setMessages([]);
+		setPendingPatchId(null);
 
 		if (!sessionId || !canvasId) {
 			setIsRequestPending(false);

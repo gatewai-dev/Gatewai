@@ -1,5 +1,5 @@
 import type { EntityState } from "@reduxjs/toolkit";
-import type { ExtendedLayer } from "../common/composition";
+import type { ExtendedLayer } from "../common/composition.js";
 
 export interface CanvasState {
 	width: number;

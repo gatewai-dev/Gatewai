@@ -5,7 +5,9 @@
 		"paths": {
 			"@/*": ["./src/*"]
 		},
-		"lib": ["ES2022", "ESNext", "DOM", "DOM.Iterable"]
+		"lib": ["ES2022", "ESNext", "DOM", "DOM.Iterable"],
+		"experimentalDecorators": true,
+		"emitDecoratorMetadata": true
 	},
 	"include": ["src"]
 }

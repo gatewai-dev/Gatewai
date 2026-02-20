@@ -218,8 +218,8 @@ app.use("*", async (c, next) => {
 	if (apiKey || cookie || authorization) {
 		const headers: Record<string, string> = {};
 		if (apiKey) headers["x-api-key"] = apiKey;
-		if (cookie) headers["cookie"] = cookie;
-		if (authorization) headers["authorization"] = authorization;
+		if (cookie) headers.cookie = cookie;
+		if (authorization) headers.authorization = authorization;
 		assert(apiKey, "API key is required");
 		scopedClient = new GatewaiApiClient({
 			baseUrl: env.BASE_URL,

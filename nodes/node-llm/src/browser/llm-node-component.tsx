@@ -28,7 +28,6 @@ const LlmNodeComponent = memo(
 			}
 			return null;
 		}, [result]);
-
 		return (
 			<BaseNode
 				selected={props.selected}

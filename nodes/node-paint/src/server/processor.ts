@@ -10,8 +10,8 @@ import type {
     StorageService,
 } from "@gatewai/node-sdk/server";
 import { inject, injectable } from "tsyringe";
-import { applyPaint, type PixiPaintInput, type PixiPaintOutput } from "@/shared/pixi-paint-run.js";
 import { PaintNodeConfigSchema } from "../metadata.js";
+import { applyPaint, type PixiPaintInput, type PixiPaintOutput } from "../shared/pixi-paint-run.js";
 
 @injectable()
 export class PaintProcessor implements NodeProcessor {

@@ -5,7 +5,9 @@
 		"paths": {
 			"@/*": ["./src/*"]
 		},
-		"lib": ["DOM", "ES2024"]
+		"lib": ["DOM", "ES2024"],
+		"experimentalDecorators": true,
+		"emitDecoratorMetadata": true
 	},
 	"include": ["src"]
 }

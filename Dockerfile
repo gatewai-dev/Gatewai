@@ -12,7 +12,8 @@ RUN npm install -g turbo
 COPY turbo.json package.json pnpm-workspace.yaml pnpm-lock.yaml ./
 COPY packages/ packages/
 COPY apps/ apps/
-RUN turbo prune @gatewai/fe --docker
+COPY nodes/ nodes/
+RUN turbo prune @gatewai/backend @gatewai/fe --docker
 
 # Stage 2: Builder
 FROM base AS builder
@@ -34,11 +35,12 @@ COPY --from=pruner /app/out/full/ .
 RUN pnpm --filter=@gatewai/db db:generate
 
 ENV NODE_OPTIONS="--max-old-space-size=6144"
-# 2. Build the app
-RUN pnpm run build --filter=@gatewai/fe...
+# 2. Build the apps (Frontend and Backend)
+RUN pnpm run build --filter=@gatewai/backend... --filter=@gatewai/fe...
 
-# 3. Deploy production-ready folder
-RUN pnpm deploy --filter=@gatewai/fe --prod --legacy /app/deploy
+# 3. Deploy production-ready folders
+RUN pnpm deploy --filter=@gatewai/backend --prod --legacy /app/deploy
+RUN mkdir -p /app/deploy/frontend && pnpm deploy --filter=@gatewai/fe --prod --legacy /app/deploy/frontend
 
 # Copy Prisma schema for migrations
 RUN mkdir -p /app/deploy/packages/db/prisma && \
@@ -55,9 +57,7 @@ RUN pnpm rebuild canvas sharp gl
 
 # We assume backend dists are handled by the deploy/build process,
 WORKDIR /app
-RUN mkdir -p /app/deploy/backend && \
-    cp -r apps/gatewai-fe/backend/dist /app/deploy/backend/dist && \
-    cp -r apps/gatewai-fe/dist /app/deploy/dist
+RUN cp -r apps/gatewai-fe/dist /app/deploy/frontend-dist
 
 # Stage 3: Runner
 FROM base AS runner
@@ -80,6 +80,7 @@ ENV COREPACK_HOME=/home/gatewai/.cache/corepack
 WORKDIR /app
 # Copy the fully prepared deployment folder
 COPY --from=builder --chown=gatewai:nodejs /app/deploy .
+COPY --from=builder --chown=gatewai:nodejs /app/deploy/frontend-dist ./frontend/dist
 RUN corepack enable && \
     mkdir -p /home/gatewai/.cache/corepack && \
     chown -R gatewai:nodejs /home/gatewai

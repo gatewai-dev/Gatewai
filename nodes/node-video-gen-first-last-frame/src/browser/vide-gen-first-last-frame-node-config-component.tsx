@@ -9,7 +9,7 @@ import {
 	VIDEOGEN_RESOLUTIONS,
 	type VideoGenFirstLastFrameNodeConfig,
 	VideoGenFirstLastFrameNodeConfigSchema,
-} from "@/shared/config.js";
+} from "../shared/config.js";
 
 const VideoGenFirstLastFrameNodeConfigComponent = memo(
 	({ node }: { node: NodeEntityType }) => {

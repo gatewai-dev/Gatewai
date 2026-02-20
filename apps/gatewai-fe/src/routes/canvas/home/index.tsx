@@ -1,3 +1,4 @@
+import type { CanvasListRPC } from "@gatewai/react-canvas";
 import {
 	AlertDialog,
 	AlertDialogAction,
@@ -29,7 +30,6 @@ import { Helmet } from "react-helmet-async";
 import { Link, useNavigate } from "react-router";
 import { toast } from "sonner";
 import { cn } from "@/lib/utils";
-import type { CanvasListRPC } from "@/rpc/types";
 import { CanvasListProvider, useCanvasListCtx } from "../ctx/canvas-list.ctx";
 
 function CanvasHomeImpl() {

@@ -6,7 +6,7 @@ import {
 } from "@gatewai/react-store";
 import { cn, Separator } from "@gatewai/ui-kit";
 import { Panel } from "@xyflow/react";
-import { Fragment, memo, type ReactNode, useMemo } from "react";
+import { Fragment, memo, useMemo } from "react";
 import { PiCube } from "react-icons/pi";
 import { useNodeRegistry } from "../../../node-registry-ctx";
 

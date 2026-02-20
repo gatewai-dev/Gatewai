@@ -1,12 +1,11 @@
-import type { CanvasPatch } from "@gatewai/db";
 import {
 	createEntityAdapter,
 	createSlice,
 	type PayloadAction,
 } from "@reduxjs/toolkit";
-import type { RootState } from "./index.js";
+import type { GetPatchRPC, RootState } from "./index.js";
 
-export const patchAdapter = createEntityAdapter<CanvasPatch>();
+export const patchAdapter = createEntityAdapter<GetPatchRPC>();
 
 export type PatchesState = ReturnType<typeof patchesSlice.reducer>;
 
@@ -18,7 +17,7 @@ export const patchesSlice = createSlice({
 		activePreviewPatchId: null,
 	}),
 	reducers: {
-		addPatch: (state, action: PayloadAction<CanvasPatch>) => {
+		addPatch: (state, action: PayloadAction<GetPatchRPC>) => {
 			patchAdapter.addOne(state, action.payload);
 		},
 		removePatch: (state, action: PayloadAction<string>) => {
@@ -47,5 +46,7 @@ export const makeSelectAllCanvasPatchs = patchSelectors.selectAll;
 export const makeSelectAllCanvasPatchEntities = patchSelectors.selectEntities;
 
 const { actions: patchActions, reducer: canvasPatchesReducer } = patchesSlice;
+
 export const { addPatch, removePatch, setPreviewPatchId } = patchActions;
+
 export { canvasPatchesReducer, patchSelectors };

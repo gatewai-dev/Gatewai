@@ -1,4 +1,3 @@
-import type { EnvConfig } from "@gatewai/core";
 import { logger } from "@gatewai/core";
 import { TOKENS } from "@gatewai/core/di";
 import type { FileData, LLMResult } from "@gatewai/core/types";

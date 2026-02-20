@@ -32,7 +32,7 @@ interface TypographyControlsProps {
 	fontStyle: string; // "italic" | "normal"
 	textDecoration: string; // "underline" | ""
 	fontWeight: string; // "bold" | "normal"
-	align?: string; // "left" | "center" | "right" | "justify"
+	align?: "left" | "center" | "right" | undefined;
 	letterSpacing?: number;
 	lineHeight?: number;
 	fontList?: string[];
@@ -43,7 +43,7 @@ interface TypographyControlsProps {
 		fontStyle?: string;
 		textDecoration?: string;
 		fontWeight?: string;
-		align?: string;
+		align?: "left" | "center" | "right" | undefined;
 		letterSpacing?: number;
 		lineHeight?: number;
 	}) => void;

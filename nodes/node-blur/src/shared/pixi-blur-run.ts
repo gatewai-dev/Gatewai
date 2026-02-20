@@ -18,7 +18,6 @@ export const applyBlur: PixiRun<PixiBlurInput> = {
 		input: PixiBlurInput,
 	): Promise<PixiProcessOutput> {
 		const { imageUrl, options, apiKey } = input;
-		console.log({ input });
 		const { app, loadTexture, getPixiModules, extractBlob, signal } = context;
 
 		const texture = await loadTexture(imageUrl, apiKey);

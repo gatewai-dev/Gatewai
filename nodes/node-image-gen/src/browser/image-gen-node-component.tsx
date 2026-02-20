@@ -11,7 +11,7 @@ import { memo } from "react";
 
 const ImageGenNodeComponent = memo(
 	(props: { selected: boolean; id: string; dragging: boolean }) => {
-		const { imageUrl, node, hasMoreThanOneOutput } = useNodePreview(props.id);
+		const { mediaUrl, node, hasMoreThanOneOutput } = useNodePreview(props.id);
 
 		return (
 			<BaseNode
@@ -26,7 +26,7 @@ const ImageGenNodeComponent = memo(
 								<OutputSelector node={node} />
 							</div>
 						)}
-						{imageUrl && <CanvasRenderer imageUrl={imageUrl} />}
+						{mediaUrl && <CanvasRenderer imageUrl={mediaUrl} />}
 						<div className="absolute bottom-1 left-1 z-10">
 							<MediaDimensions node={node} />
 						</div>

@@ -13,7 +13,7 @@ import {
 } from "@gatewai/ui-kit";
 import { Maximize2 } from "lucide-react";
 import { memo } from "react";
-import type { ResizeNodeConfig } from "@/shared/config.js";
+import type { ResizeNodeConfig } from "../shared/config.js";
 
 const ResetButton = memo(function ResetButton({
 	node,

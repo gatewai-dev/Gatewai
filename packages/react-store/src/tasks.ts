@@ -97,10 +97,18 @@ const tasksSlice = createSlice({
 				const runningBatchIds = batches
 					.filter((f) => f.finishedAt == null)
 					.map((b) => b.id);
+				const finishedBatchIds = batches
+					.filter((f) => f.finishedAt != null)
+					.map((b) => b.id);
+
 				state.batchIdsToPoll = [
-					...new Set([...state.batchIdsToPoll, ...runningBatchIds]),
+					...new Set(
+						state.batchIdsToPoll
+							.filter((id) => !finishedBatchIds.includes(id))
+							.concat(runningBatchIds),
+					),
 				];
-				if (runningBatchIds.length > 0) {
+				if (state.batchIdsToPoll.length > 0) {
 					state.pollingInterval = 3000;
 				} else {
 					state.pollingInterval = 0;

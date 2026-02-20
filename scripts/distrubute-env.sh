@@ -6,6 +6,7 @@ SOURCE_ENV=".env"
 # Target directories
 TARGETS=(
     "apps/gatewai-fe"
+    "apps/gatewai-backend"
     "apps/mcp-server"
     "packages/db"
 )

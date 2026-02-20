@@ -1,4 +1,3 @@
-import type { VideoCompositorLayer } from "@gatewai/core/types";
 import { Video } from "@remotion/media";
 import { useMemo } from "react";
 import {
@@ -11,7 +10,8 @@ import {
 	useCurrentFrame,
 	useVideoConfig,
 } from "remotion";
-import { DEFAULT_DURATION_FRAMES } from "../config";
+import type { VideoCompositorLayer } from "../../../shared/config.js";
+import { DEFAULT_DURATION_FRAMES } from "../config/index.js";
 
 export type AnimationType =
 	| "fade-in"
@@ -34,10 +34,7 @@ export interface VideoAnimation {
 }
 
 export interface ExtendedLayer
-	extends Omit<
-		VideoCompositorLayer,
-		"width" | "height" | "align" | "verticalAlign"
-	> {
+	extends Omit<VideoCompositorLayer, "width" | "height"> {
 	width?: number;
 	height?: number;
 	animations?: VideoAnimation[];
@@ -45,8 +42,6 @@ export interface ExtendedLayer
 	isPlaceholder?: boolean;
 	src?: string; // Resolved URL for rendering
 	text?: string; // Resolved text for rendering
-	align?: string;
-	verticalAlign?: string;
 	letterSpacing?: number;
 	lineHeight?: number;
 	padding?: number;

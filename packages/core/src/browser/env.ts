@@ -18,16 +18,16 @@ export function getEnv(
 	// 1. Try runtime environment (injected via /env.js)
 	if (
 		typeof window !== "undefined" &&
-		(window as any).GATEWAI_ENV &&
-		(window as any).GATEWAI_ENV[key]
+		window.GATEWAI_ENV &&
+		window.GATEWAI_ENV[key]
 	) {
-		return (window as any).GATEWAI_ENV[key];
+		return window.GATEWAI_ENV[key];
 	}
 
 	// 2. Fallback to build-time environment (Vite)
-	// @ts-expect-error
+
 	const env = import.meta.env;
-	if (env && env[key]) {
+	if (env?.[key]) {
 		return env[key];
 	}
 
