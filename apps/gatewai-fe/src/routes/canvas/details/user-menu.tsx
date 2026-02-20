@@ -40,7 +40,7 @@ export function UserMenu() {
 						onClick={() => setIsSettingsOpen(true)}
 					>
 						<Settings className="mr-2 h-4 w-4" />
-						<span>Settings</span>
+						<span>API Keys</span>
 					</DropdownMenuItem>
 					<DropdownMenuSeparator />
 					<DropdownMenuItem
