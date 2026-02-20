@@ -1,4 +1,4 @@
-import { ENV_CONFIG, logger } from "@gatewai/core";
+import { ENV_CONFIG, logger, loggerContext } from "@gatewai/core";
 import { container } from "@gatewai/core/di";
 import { GetCanvasEntities } from "@gatewai/data-ops";
 import { Prisma, prisma, TaskStatus } from "@gatewai/db";
@@ -212,157 +212,169 @@ const processNodeJob = async (job: Job<NodeTaskJobData>) => {
 		select: { id: true, type: true, name: true },
 	});
 
-	try {
-		// 2. Fetch fresh Context Data
-		const data = await GetCanvasEntities(canvasId);
-
-		// 3. Validate Node Exists in data
-		const node = data.nodes.find((n) => n.id === task.nodeId);
-		if (!node) throw new Error("Node not found in canvas entities");
-
-		const template = await prisma.nodeTemplate.findUniqueOrThrow({
-			where: { type: currentNode.type },
-		});
-
-		// 4. Check Terminal Node Logic
-		const isTerminal = template.isTerminalNode;
-		if (isTerminal && !isExplicitlySelected) {
-			logger.info(`Skipping processing for terminal node: ${node.id}`);
-			await completeTask(taskId, startedAt, true);
-			await checkAndFinishBatch(batchId);
-			await triggerNextTask(
-				batchId,
-				remainingTaskIds,
-				selectionMap,
-				canvasId,
-				apiKey,
-			);
-			return;
-		}
-
-		const batchTasks = await prisma.task.findMany({
-			where: { batchId },
-		});
-
-		// 5. Execute Processor
-		const ProcessorClass = nodeRegistry.getProcessor(
-			node.type,
-		) as NodeProcessorConstructor;
-
-		if (!ProcessorClass) {
-			logger.error(`No processor for node type ${node.type}`);
-			throw new Error(`No processor for node type ${node.type}`);
-		}
-
-		logger.info(`Processing node: ${node.id} with type: ${node.type}`);
-
-		const ctx: BackendNodeProcessorCtx = {
-			node,
-			data: { ...data, tasks: batchTasks, task, apiKey },
-		};
-
-		// Resolve from DI container
-		const processorInstance = container.resolve(
-			ProcessorClass,
-		) as unknown as NodeProcessor;
-		const result = await processorInstance.process(ctx);
-
-		const { success, error, newResult } = result;
-
-		// 6. Handle Results
-		if (newResult) {
-			await prisma.task.update({
-				where: { id: taskId },
-				data: { result: newResult as unknown as Prisma.InputJsonValue },
-			});
-
-			if (success && !template.isTransient) {
-				// Wrap in try-catch to avoid failing the task if just the node update fails
-				try {
-					await prisma.node.update({
-						where: { id: node.id },
-						data: { result: newResult as unknown as Prisma.InputJsonValue },
-					});
-				} catch (_updateErr) {
-					logger.warn(
-						`Failed to update node result for ${node.id}, continuing...`,
-					);
-				}
-			}
-		}
-
-		// 7. Finalize Task
-		const finishedAt = new Date();
-		await prisma.task.update({
-			where: { id: taskId },
-			data: {
-				status: success ? TaskStatus.COMPLETED : TaskStatus.FAILED,
-				finishedAt,
-				durationMs: finishedAt.getTime() - startedAt.getTime(),
-				error: error ? { message: error } : undefined,
-			},
-		});
-
-		if (success) {
-			await checkAndFinishBatch(batchId);
-			await triggerNextTask(
-				batchId,
-				remainingTaskIds,
-				selectionMap,
-				canvasId,
-				apiKey,
-			);
-		} else {
-			await propagateFailure(
-				taskId,
-				batchId,
-				currentNode.name ?? currentNode.id,
-				error ?? "Unknown error",
-			);
-			await checkAndFinishBatch(batchId);
-			// Continue processing remaining tasks - propagateFailure already marked
-			// graph-dependent downstream tasks as FAILED, but independent parallel
-			// branches should still execute
-			await triggerNextTask(
-				batchId,
-				remainingTaskIds,
-				selectionMap,
-				canvasId,
-				apiKey,
-			);
-		}
-	} catch (err: unknown) {
-		logger.error({ err }, `Task execution failed for ${taskId}`);
-		const finishedAt = new Date();
-		const errorMessage = err instanceof Error ? err.message : "Unknown error";
-
-		await prisma.task.update({
-			where: { id: taskId },
-			data: {
-				status: TaskStatus.FAILED,
-				finishedAt,
-				durationMs: finishedAt.getTime() - startedAt.getTime(),
-				error: { message: errorMessage },
-			},
-		});
-
-		await propagateFailure(
+	await loggerContext.run(
+		{
+			canvasId,
 			taskId,
 			batchId,
-			currentNode.name ?? currentNode.id,
-			errorMessage,
-		);
-		await checkAndFinishBatch(batchId);
-		// Continue processing remaining tasks even on exception
-		await triggerNextTask(
-			batchId,
-			remainingTaskIds,
-			selectionMap,
-			canvasId,
-			apiKey,
-		);
-		throw err;
-	}
+			nodeType: currentNode.type,
+			nodeName: currentNode.name,
+		},
+		async () => {
+			try {
+				// 2. Fetch fresh Context Data
+				const data = await GetCanvasEntities(canvasId);
+
+				// 3. Validate Node Exists in data
+				const node = data.nodes.find((n) => n.id === task.nodeId);
+				if (!node) throw new Error("Node not found in canvas entities");
+
+				const template = await prisma.nodeTemplate.findUniqueOrThrow({
+					where: { type: currentNode.type },
+				});
+
+				// 4. Check Terminal Node Logic
+				const isTerminal = template.isTerminalNode;
+				if (isTerminal && !isExplicitlySelected) {
+					logger.info(`Skipping processing for terminal node: ${node.id}`);
+					await completeTask(taskId, startedAt, true);
+					await checkAndFinishBatch(batchId);
+					await triggerNextTask(
+						batchId,
+						remainingTaskIds,
+						selectionMap,
+						canvasId,
+						apiKey,
+					);
+					return;
+				}
+
+				const batchTasks = await prisma.task.findMany({
+					where: { batchId },
+				});
+
+				// 5. Execute Processor
+				const ProcessorClass = nodeRegistry.getProcessor(
+					node.type,
+				) as NodeProcessorConstructor;
+
+				if (!ProcessorClass) {
+					logger.error(`No processor for node type ${node.type}`);
+					throw new Error(`No processor for node type ${node.type}`);
+				}
+
+				logger.info(`Processing node: ${node.id} with type: ${node.type}`);
+
+				const ctx: BackendNodeProcessorCtx = {
+					node,
+					data: { ...data, tasks: batchTasks, task, apiKey },
+				};
+
+				// Resolve from DI container
+				const processorInstance = container.resolve(
+					ProcessorClass,
+				) as unknown as NodeProcessor;
+				const result = await processorInstance.process(ctx);
+
+				const { success, error, newResult } = result;
+
+				// 6. Handle Results
+				if (newResult) {
+					await prisma.task.update({
+						where: { id: taskId },
+						data: { result: newResult as unknown as Prisma.InputJsonValue },
+					});
+
+					if (success && !template.isTransient) {
+						// Wrap in try-catch to avoid failing the task if just the node update fails
+						try {
+							await prisma.node.update({
+								where: { id: node.id },
+								data: { result: newResult as unknown as Prisma.InputJsonValue },
+							});
+						} catch (_updateErr) {
+							logger.warn(
+								`Failed to update node result for ${node.id}, continuing...`,
+							);
+						}
+					}
+				}
+
+				// 7. Finalize Task
+				const finishedAt = new Date();
+				await prisma.task.update({
+					where: { id: taskId },
+					data: {
+						status: success ? TaskStatus.COMPLETED : TaskStatus.FAILED,
+						finishedAt,
+						durationMs: finishedAt.getTime() - startedAt.getTime(),
+						error: error ? { message: error } : undefined,
+					},
+				});
+
+				if (success) {
+					await checkAndFinishBatch(batchId);
+					await triggerNextTask(
+						batchId,
+						remainingTaskIds,
+						selectionMap,
+						canvasId,
+						apiKey,
+					);
+				} else {
+					await propagateFailure(
+						taskId,
+						batchId,
+						currentNode.name ?? currentNode.id,
+						error ?? "Unknown error",
+					);
+					await checkAndFinishBatch(batchId);
+					// Continue processing remaining tasks - propagateFailure already marked
+					// graph-dependent downstream tasks as FAILED, but independent parallel
+					// branches should still execute
+					await triggerNextTask(
+						batchId,
+						remainingTaskIds,
+						selectionMap,
+						canvasId,
+						apiKey,
+					);
+				}
+			} catch (err: unknown) {
+				logger.error({ err }, `Task execution failed for ${taskId}`);
+				const finishedAt = new Date();
+				const errorMessage =
+					err instanceof Error ? err.message : "Unknown error";
+
+				await prisma.task.update({
+					where: { id: taskId },
+					data: {
+						status: TaskStatus.FAILED,
+						finishedAt,
+						durationMs: finishedAt.getTime() - startedAt.getTime(),
+						error: { message: errorMessage },
+					},
+				});
+
+				await propagateFailure(
+					taskId,
+					batchId,
+					currentNode.name ?? currentNode.id,
+					errorMessage,
+				);
+				await checkAndFinishBatch(batchId);
+				// Continue processing remaining tasks even on exception
+				await triggerNextTask(
+					batchId,
+					remainingTaskIds,
+					selectionMap,
+					canvasId,
+					apiKey,
+				);
+				throw err;
+			}
+		},
+	);
 };
 
 async function triggerNextTask(

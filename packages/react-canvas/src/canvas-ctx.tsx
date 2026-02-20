@@ -490,7 +490,7 @@ const CanvasProvider = ({
 
 			return { isValid: true };
 		},
-		[getLatestRfState],
+		[getLatestRfState, handleEntities],
 	);
 
 	const onConnect = useCallback(

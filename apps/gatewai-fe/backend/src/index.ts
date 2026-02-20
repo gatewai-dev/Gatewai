@@ -19,8 +19,14 @@ import {
 } from "./middlewares.js";
 import { registerNodes } from "./register-nodes.js";
 
+const sleep = (time: number) =>
+	new Promise((resolve) => setTimeout(resolve, time));
+
 // Initialize Dependency Injection Container
 registerBackendServices();
+
+// Sleep for 2 seconds to allow HMR for node builds on dev.
+await sleep(2000);
 
 // Registers backend processors of nodes.
 await registerNodes();
