@@ -172,16 +172,6 @@ const canvasRoutes = new Hono<{ Variables: AuthHonoTypes }>({
 		// Only owners can update canvas
 		await assertCanvasOwnership(c, id);
 
-		console.log("PATCH Canvas Request:", {
-			id,
-			validated,
-			contentType: c.req.header("content-type"),
-			hasNodes: !!validated.nodes,
-			nodesCount: validated.nodes?.length,
-			hasEdges: !!validated.edges,
-			hasHandles: !!validated.handles,
-		});
-
 		try {
 			await applyCanvasUpdate(id, validated);
 		} catch (error) {
