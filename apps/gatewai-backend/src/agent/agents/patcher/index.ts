@@ -1,3 +1,4 @@
+/** biome-ignore-all lint/suspicious/noExplicitAny: Can't type cast unknown value from quickjs output */
 import assert from "node:assert";
 import { logger } from "@gatewai/core";
 import {
@@ -15,8 +16,6 @@ import {
 	getAgentModel,
 } from "../../agent-model.js";
 
-// ─── Types ────────────────────────────────────────────────────────────────────
-
 interface PatcherContext {
 	canvasId: string;
 	agentSessionId: string;
@@ -26,15 +25,11 @@ interface PatcherContext {
 	templates: NodeTemplate[];
 }
 
-// ─── Constants ────────────────────────────────────────────────────────────────
-
 /** Maximum wall-clock time (ms) the QuickJS VM is allowed to run per invocation. */
 const VM_EXECUTION_TIMEOUT_MS = 10_000;
 
 /** Maximum number of code-execution retries the agent is guided to attempt. */
 const MAX_RETRIES = 3;
-
-// ─── Context Store ────────────────────────────────────────────────────────────
 
 /**
  * Keyed by `${canvasId}:${agentSessionId}` so concurrent agent runs for
@@ -60,8 +55,6 @@ function setContext(ctx: PatcherContext): void {
 function clearContext(canvasId: string, agentSessionId: string): void {
 	contextStore.delete(contextKey(canvasId, agentSessionId));
 }
-
-// ─── VM Execution ─────────────────────────────────────────────────────────────
 
 /**
  * Run `code` inside a QuickJS sandbox with a hard wall-clock timeout.
@@ -261,12 +254,12 @@ export function createPatcherAgent(
 		description: `Execute JavaScript code to transform the canvas state inside a sandboxed VM.
 
 Available globals:
-- nodes        – Array of current Node objects (mutable)
-- edges        – Array of current Edge objects (mutable)
-- handles      – Array of current Handle objects (mutable)
-- templates    – Array of NodeTemplate objects (read-only)
-- generateId() – Returns a "temp-<uuid>" string; use for ALL new IDs
-- console.log  – For debugging
+- nodes        - Array of current Node objects (mutable)
+- edges        - Array of current Edge objects (mutable)
+- handles      - Array of current Handle objects (mutable)
+- templates    - Array of NodeTemplate objects (read-only)
+- generateId() - Returns a "temp-<uuid>" string; use for ALL new IDs
+- console.log  - For debugging
 
 Your code MUST return { nodes, edges, handles }.
 
