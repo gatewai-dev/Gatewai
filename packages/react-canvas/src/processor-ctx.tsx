@@ -105,7 +105,7 @@ export function useNodeFileOutputUrl(nodeId: string): string | null {
 	const fileData =
 		outputItem.data as FileResult["outputs"][number]["items"][number]["data"];
 	return fileData?.entity
-		? ResolveFileDataUrl(fileData?.entity)
+		? ResolveFileDataUrl(fileData?.entity as any)
 		: (fileData?.processData?.dataUrl ?? null);
 }
 

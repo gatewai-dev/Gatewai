@@ -27,7 +27,6 @@ const RunWorkflowButton = memo(() => {
 	);
 
 	const handleRunAll = () => {
-		if (isAnyTaskRunning) return; // Guard clause
 		if (selectedTerminalNodes?.length) {
 			const nodeIdsToRun = selectedTerminalNodes.map((m) => m.id);
 			runNodes(nodeIdsToRun);

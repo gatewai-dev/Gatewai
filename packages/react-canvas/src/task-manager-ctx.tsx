@@ -1,7 +1,7 @@
 import type { Canvas, Node } from "@gatewai/db";
 import type {
-	BatchDetailsRPC,
 	BatchDetailsRPCParams,
+	BatchEntity,
 	NodeEntityType,
 } from "@gatewai/react-store";
 import {
@@ -30,7 +30,6 @@ import {
 	useRef,
 } from "react";
 
-type BatchEntity = BatchDetailsRPC[number];
 type BatchNodeData = BatchEntity["tasks"][number];
 interface TaskManagerContextType {
 	pollingInterval: number;
