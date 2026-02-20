@@ -10,8 +10,8 @@ import type {
     StorageService,
 } from "@gatewai/node-sdk/server";
 import { inject, injectable } from "tsyringe";
-import { applyResize } from "@/shared/pixi-resize-run.js";
 import { ResizeNodeConfigSchema } from "../metadata.js";
+import { applyResize } from "../shared/pixi-resize-run.js";
 
 @injectable()
 export class ResizeProcessor implements NodeProcessor {

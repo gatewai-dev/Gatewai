@@ -1,7 +1,6 @@
 import { isEqual } from "@gatewai/core";
 import type { NodeResult } from "@gatewai/core/types";
 import type { CanvasDetailsRPC } from "@gatewai/rpc-client";
-import { createRpcClient } from "@gatewai/rpc-client";
 import {
 	createDraftSafeSelector,
 	createEntityAdapter,

@@ -1,4 +1,5 @@
 {
+	"extends": "@gatewai/tsconfig/base.json",
 	"compilerOptions": {
 		"composite": true,
 		"target": "ES2023",
@@ -9,12 +10,16 @@
 		"skipLibCheck": true,
 		"moduleResolution": "bundler",
 		"moduleDetection": "force",
-		"outDir": "backend/dist",
-		"rootDir": "../../",
+		"outDir": "dist",
+		"rootDir": ".",
+		"baseUrl": ".",
+		"paths": {
+			"@/*": ["./src/*"]
+		},
 		"strict": true,
 		"noUnusedLocals": true,
 		"noUnusedParameters": true,
 		"noFallthroughCasesInSwitch": true
 	},
-	"include": ["backend/src"]
+	"include": ["src/**/*"]
 }

@@ -12,8 +12,8 @@ import type {
     StorageService,
 } from "@gatewai/node-sdk/server";
 import { inject, injectable } from "tsyringe";
-import { applyCrop } from "@/shared/pixi-crop-run.js";
 import { CropNodeConfigSchema } from "../shared/config.js";
+import { applyCrop } from "../shared/pixi-crop-run.js";
 
 @injectable()
 export class CropProcessor implements NodeProcessor {

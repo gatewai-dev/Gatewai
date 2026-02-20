@@ -7,7 +7,7 @@ import { useForm } from "react-hook-form";
 import {
 	type ModulateNodeConfig,
 	ModulateNodeConfigSchema,
-} from "@/shared/config.js";
+} from "../shared/config.js";
 
 const ModulateConfigComponent = memo(({ node }: { node: NodeEntityType }) => {
 	const { onNodeConfigUpdate } = useCanvasCtx();

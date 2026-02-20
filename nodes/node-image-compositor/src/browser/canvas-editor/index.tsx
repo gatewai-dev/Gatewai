@@ -112,7 +112,7 @@ import useImage from "use-image";
 import type {
 	CompositorLayer,
 	CompositorNodeConfig,
-} from "@/shared/compositor.config.js";
+} from "../../shared/compositor.config.js";
 
 //#region CONSTANTS
 

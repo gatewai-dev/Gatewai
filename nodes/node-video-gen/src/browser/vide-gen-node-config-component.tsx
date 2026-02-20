@@ -17,14 +17,14 @@ import { zodResolver } from "@hookform/resolvers/zod";
 import { memo, useEffect, useMemo } from "react";
 import { Form, useForm } from "react-hook-form";
 import { useDebouncedCallback } from "use-debounce";
-import { VideoGenNodeConfigSchema } from "@/metadata.js";
+import { VideoGenNodeConfigSchema } from "../metadata.js";
 import {
 	VIDEOGEN_ASPECT_RATIOS,
 	VIDEOGEN_DURATIONS,
 	VIDEOGEN_NODE_MODELS,
 	VIDEOGEN_RESOLUTIONS,
 	type VideoGenNodeConfig,
-} from "@/shared/config.js";
+} from "../shared/config.js";
 
 const VideoGenNodeConfigComponent = memo(
 	({ node }: { node: NodeEntityType }) => {
@@ -81,23 +81,15 @@ const VideoGenNodeConfigComponent = memo(
 
 		useEffect(() => {
 			const sub = form.watch((value, { name }) => {
-				if (name === "resolution" || name === "durationSeconds") {
-					const val = value as VideoGenNodeConfig;
+				const val = value as VideoGenNodeConfig;
+				if (name === "resolution") {
 					if (val.resolution === "1080p" && val.durationSeconds !== "8") {
 						form.setValue("durationSeconds", "8", {
 							shouldValidate: true,
 							shouldDirty: true,
 						});
 					}
-				}
-			});
-			return () => sub.unsubscribe();
-		}, [form]);
-
-		useEffect(() => {
-			const sub = form.watch((value, { name }) => {
-				if (name === "durationSeconds" || name === "resolution") {
-					const val = value as VideoGenNodeConfig;
+				} else if (name === "durationSeconds") {
 					if (val.durationSeconds !== "8" && val.resolution === "1080p") {
 						form.setValue("resolution", "720p", {
 							shouldValidate: true,
@@ -133,14 +125,8 @@ const VideoGenNodeConfigComponent = memo(
 			}
 		}, [hasReferenceImageHandle, form]);
 
-		const resolution = form.watch("resolution");
-		const durationSeconds = form.watch("durationSeconds");
-
-		const resolutionOptions =
-			durationSeconds === "8" ? VIDEOGEN_RESOLUTIONS : ["720p" as const];
-
-		const durationOptions =
-			resolution === "1080p" ? ["8" as const] : VIDEOGEN_DURATIONS;
+		const resolutionOptions = VIDEOGEN_RESOLUTIONS;
+		const durationOptions = VIDEOGEN_DURATIONS;
 
 		const aspectRatioField = (
 			<SelectField

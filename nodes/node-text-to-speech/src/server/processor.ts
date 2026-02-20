@@ -1,3 +1,4 @@
+import { spawn } from "node:child_process";
 import type { EnvConfig } from "@gatewai/core";
 import { generateId, logger } from "@gatewai/core";
 import { TOKENS } from "@gatewai/core/di";
@@ -9,31 +10,45 @@ import type {
     BackendNodeProcessorCtx,
     BackendNodeProcessorResult,
     GraphResolvers,
-    MediaService,
     NodeProcessor,
     StorageService,
 } from "@gatewai/node-sdk/server";
 import type { GoogleGenAI, SpeechConfig } from "@google/genai";
 import * as mm from "music-metadata";
 import { inject, injectable } from "tsyringe";
-import wav from "wav";
 import { TextToSpeechNodeConfigSchema } from "../shared/config";
 
 async function encodeWavBuffer(pcmBuffer: Buffer): Promise<Buffer> {
     return new Promise((resolve, reject) => {
-        const writer = new wav.Writer({
-            channels: 1,
-            sampleRate: 24000,
-            bitDepth: 16,
-        });
+        const ffmpeg = spawn("ffmpeg", [
+            "-f", "s16le",
+            "-ar", "24000",
+            "-ac", "1",
+            "-i", "pipe:0",
+            "-f", "wav",
+            "pipe:1"
+        ]);
 
         const chunks: Buffer[] = [];
-        writer.on("data", (chunk: Buffer<ArrayBufferLike>) => chunks.push(chunk));
-        writer.on("end", () => resolve(Buffer.concat(chunks)));
-        writer.on("error", reject);
+        ffmpeg.stdout.on("data", (chunk: Buffer) => chunks.push(chunk));
 
-        writer.write(pcmBuffer);
-        writer.end();
+        let stderrOutput = "";
+        ffmpeg.stderr.on("data", (data: Buffer) => {
+            stderrOutput += data.toString();
+        });
+
+        ffmpeg.on("close", (code) => {
+            if (code === 0) {
+                resolve(Buffer.concat(chunks));
+            } else {
+                reject(new Error(`ffmpeg exited with code ${code}: ${stderrOutput}`));
+            }
+        });
+
+        ffmpeg.on("error", reject);
+
+        ffmpeg.stdin.write(pcmBuffer);
+        ffmpeg.stdin.end();
     });
 }
 
@@ -43,7 +58,6 @@ export class TextToSpeechProcessor implements NodeProcessor {
         @inject(TOKENS.PRISMA) private prisma: PrismaClient,
         @inject(TOKENS.GRAPH_RESOLVERS) private graph: GraphResolvers,
         @inject(TOKENS.STORAGE) private storage: StorageService,
-        @inject(TOKENS.MEDIA) private media: MediaService,
         @inject(TOKENS.ENV) private env: EnvConfig,
         @inject(TOKENS.AI_PROVIDER) private aiProvider: AIProvider,
     ) { }

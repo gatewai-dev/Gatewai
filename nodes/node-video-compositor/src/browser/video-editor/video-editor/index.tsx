@@ -67,8 +67,6 @@ import {
 } from "@gatewai/ui-kit";
 import { Player, type PlayerRef } from "@remotion/player";
 import {
-	AlignCenterHorizontal,
-	AlignCenterVertical,
 	ArrowDown,
 	ArrowLeft,
 	ArrowRight,
@@ -114,7 +112,7 @@ import React, {
 	useState,
 } from "react";
 import { useHotkeys } from "react-hotkeys-hook";
-import type { VideoCompositorNodeConfig } from "../../../shared/video-compositor-config.js";
+import type { VideoCompositorNodeConfig } from "../../../shared/config.js";
 import {
 	type AnimationType,
 	CompositionScene,
@@ -1358,13 +1356,6 @@ const InspectorPanel: React.FC = () => {
 
 	// Access handles to resolve the correct label dynamically
 	const handles = useAppSelector(handleSelectors.selectEntities);
-
-	const fontNames = useMemo(() => {
-		if (Array.isArray(fontList) && (fontList as string[])?.length > 0) {
-			return fontList as string[];
-		}
-		return [];
-	}, [fontList]);
 
 	// Animation categories with icons for better UX
 	const animationCategories = useMemo(

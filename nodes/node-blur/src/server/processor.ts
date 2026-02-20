@@ -6,17 +6,16 @@ import type {
     NodeResult,
 } from "@gatewai/core/types";
 import { DataType } from "@gatewai/db";
-import {
-    type BackendNodeProcessorCtx,
-    type BackendNodeProcessorResult,
-    defineNode,
-    type GraphResolvers,
-    type MediaService,
-    type NodeProcessor,
-    type StorageService,
+import type {
+    BackendNodeProcessorCtx,
+    BackendNodeProcessorResult,
+    GraphResolvers,
+    MediaService,
+    NodeProcessor,
+    StorageService,
 } from "@gatewai/node-sdk/server";
 import { inject, injectable } from "tsyringe";
-import { applyBlur, BlurNodeConfigSchema } from "@/shared/index.js";
+import { applyBlur, BlurNodeConfigSchema } from "../shared/index.js";
 
 @injectable()
 export class BlurProcessor implements NodeProcessor {

@@ -15,7 +15,7 @@ import type {
 } from "@gatewai/node-sdk/server";
 import type { GoogleGenAI, Part } from "@google/genai";
 import { inject, injectable } from "tsyringe";
-import metadata, { ImageGenNodeConfigSchema } from "../metadata.js";
+import { ImageGenNodeConfigSchema } from "../metadata.js";
 
 @injectable()
 export class ImageGenProcessor implements NodeProcessor {

@@ -9,18 +9,18 @@ import { memo } from "react";
 import { BlurValueSlider } from "./components/blur-slider.js";
 
 const BlurNodeComponent = memo((props: NodeProps) => {
-	const { imageUrl, node } = useNodePreview(props.id);
+	const { mediaUrl, node } = useNodePreview(props.id);
 
 	return (
 		<BaseNode selected={props.selected} id={props.id} dragging={props.dragging}>
 			<div className="flex flex-col">
 				<div
 					className={cn("w-full overflow-hidden rounded media-container", {
-						"min-h-32": !imageUrl,
-						"h-full": imageUrl,
+						"min-h-32": !mediaUrl,
+						"h-full": mediaUrl,
 					})}
 				>
-					{imageUrl && <CanvasRenderer imageUrl={imageUrl} />}
+					{mediaUrl && <CanvasRenderer imageUrl={mediaUrl} />}
 				</div>
 				{node && (
 					<div className="flex gap-3 items-end p-2">

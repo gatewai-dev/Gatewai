@@ -10,8 +10,8 @@ import type {
     StorageService,
 } from "@gatewai/node-sdk/server";
 import { inject, injectable } from "tsyringe";
-import { applyModulate } from "@/shared/pixi-modulate-run.js";
 import { ModulateNodeConfigSchema } from "../metadata.js";
+import { applyModulate } from "../shared/pixi-modulate-run.js";
 
 @injectable()
 export class ModulateProcessor implements NodeProcessor {

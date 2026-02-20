@@ -6,13 +6,13 @@ import { zodResolver } from "@hookform/resolvers/zod";
 import { memo, useEffect } from "react";
 import { useForm } from "react-hook-form";
 import { useDebouncedCallback } from "use-debounce";
-import { ImageGenNodeConfigSchema } from "@/metadata.js";
+import { ImageGenNodeConfigSchema } from "../metadata.js";
 import {
 	IMAGEGEN_ASPECT_RATIOS,
 	IMAGEGEN_IMAGE_SIZES,
 	IMAGEGEN_NODE_MODELS,
 	type ImageGenNodeConfig,
-} from "@/shared/config.js";
+} from "../shared/config.js";
 
 const ImageGenNodeConfigComponent = memo(
 	({ node }: { node: NodeEntityType }) => {

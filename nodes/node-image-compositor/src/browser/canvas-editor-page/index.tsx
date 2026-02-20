@@ -4,7 +4,7 @@ import type { HandleEntityType } from "@gatewai/react-store";
 import { makeSelectNodeById, useAppSelector } from "@gatewai/react-store";
 import { memo, useMemo } from "react";
 
-import type { CompositorNodeConfig } from "@/shared/compositor.config.js";
+import type { CompositorNodeConfig } from "../../shared/compositor.config.js";
 import { ImageDesignerEditor } from "../canvas-editor/index.js";
 
 const CompositorView = memo(

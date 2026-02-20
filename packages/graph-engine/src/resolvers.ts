@@ -1,7 +1,8 @@
 import assert from "node:assert";
-import type { FileData, NodeResult, StorageService } from "@gatewai/core/types";
+import type { FileData, NodeResult } from "@gatewai/core/types";
 import type { CanvasCtxDataWithTasks } from "@gatewai/data-ops";
 import type { DataType } from "@gatewai/db";
+import type { StorageService } from "@gatewai/node-sdk/server";
 
 /**
  * Options for filtering inputs.

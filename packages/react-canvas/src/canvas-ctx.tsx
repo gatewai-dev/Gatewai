@@ -21,8 +21,6 @@ import {
 	onEdgeChange,
 	onNodeChange,
 	type RootState,
-	selectRFEdges,
-	selectRFNodes,
 	setAllEdgeEntities,
 	setAllHandleEntities,
 	setAllNodeEntities,
@@ -743,7 +741,7 @@ const CanvasProvider = ({
 			dispatch(addManyHandleEntities(handles));
 
 			let saveDelay: number | undefined;
-			if (template.type === "File") {
+			if (template.type === "Import") {
 				saveDelay = 50;
 			}
 			dispatch(setSelectedNodeIds([newNode.id]));

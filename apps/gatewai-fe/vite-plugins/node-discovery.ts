@@ -8,9 +8,40 @@ const RESOLVED_VIRTUAL_MODULE_ID = "\0" + VIRTUAL_MODULE_ID;
 export function nodeDiscovery(): Plugin {
 	return {
 		name: "gatewai-node-discovery",
-		resolveId(id) {
+		enforce: "pre",
+		async resolveId(id, importer, options) {
 			if (id === VIRTUAL_MODULE_ID) {
 				return RESOLVED_VIRTUAL_MODULE_ID;
+			}
+
+			const feSrcDir = path.resolve(__dirname, "../src");
+
+			if (
+				id.startsWith(feSrcDir) &&
+				importer &&
+				importer.includes("/nodes/node-")
+			) {
+				const match = importer.match(/.*\/nodes\/(node-[^/]+)\//);
+				if (match) {
+					const nodeName = match[1];
+					const nodesDir = path.resolve(__dirname, "../../../nodes");
+					const relativePath = id.slice(feSrcDir.length); // e.g. "/metadata.js" or "/utils/foo.js"
+
+					let targetPath = path.join(nodesDir, nodeName, "src", relativePath);
+					// Strip .js extension since the actual files are .ts/.tsx
+					if (targetPath.endsWith(".js")) {
+						targetPath = targetPath.slice(0, -3);
+					}
+
+					const resolved = await this.resolve(targetPath, importer, {
+						skipSelf: true,
+						...options,
+					});
+					if (resolved) {
+						return resolved.id;
+					}
+					return targetPath;
+				}
 			}
 		},
 		load(id) {
@@ -79,8 +110,8 @@ export function nodeDiscovery(): Plugin {
 				const imports = Object.entries(nodes)
 					.map(([type, info]) => {
 						return `  "${type}": {
-    metadata: () => import("${info.name}"),
-    browser: () => import("${info.name}/browser"),
+    metadata: () => import("${info.paths.metadata}"),
+    browser: () => import("${info.paths.browser}"),
       server: () => Promise.resolve({ default: {} }),
     }`;
 					})

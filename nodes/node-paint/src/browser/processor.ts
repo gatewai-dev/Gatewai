@@ -1,11 +1,11 @@
 import type { NodeProcessorParams, NodeResult } from "@gatewai/core/types";
 import type { IBrowserProcessor } from "@gatewai/node-sdk/browser";
-import { PaintNodeConfigSchema } from "@/shared/config.js";
+import { PaintNodeConfigSchema } from "../shared/config.js";
 import {
 	applyPaint,
 	type PixiPaintInput,
 	type PixiPaintOutput,
-} from "@/shared/pixi-paint-run.js";
+} from "../shared/pixi-paint-run.js";
 
 export class PaintBrowserProcessor implements IBrowserProcessor {
 	async process({

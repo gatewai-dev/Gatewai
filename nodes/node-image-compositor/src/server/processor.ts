@@ -15,7 +15,7 @@ import { loadImage, registerFont } from "canvas";
 import Konva from "konva";
 import { inject, injectable } from "tsyringe";
 import "konva/canvas-backend";
-import type { CompositorLayer, CompositorNodeConfig } from '@/shared/config.js';
+import type { CompositorLayer, CompositorNodeConfig } from '../shared/config.js';
 
 @injectable()
 export class ImageCompositorProcessor implements NodeProcessor {
@@ -140,7 +140,7 @@ export class ImageCompositorProcessor implements NodeProcessor {
 							layerConfig.strokeWidth ?? COMPOSITOR_DEFAULTS.STROKE_WIDTH,
 						opacity: layerConfig.opacity ?? 1,
 						rotation: layerConfig.rotation ?? 0,
-						globalCompositeOperation: layerConfig.blendMode as any,
+						globalCompositeOperation: layerConfig.blendMode,
 					});
 					konvaLayer.add(kText);
 				}
@@ -157,7 +157,7 @@ export class ImageCompositorProcessor implements NodeProcessor {
 
 			const dimensions = this.media.getImageDimensions(resultBuffer);
 			const key = `${(data.task ?? node).id}/${Date.now()}.png`;
-			const { signedUrl, key: tempKey } = await this.storage.uploadToTemporaryFolder(
+			const { signedUrl, key: tempKey } = await this.storage.uploadToTemporaryStorageFolder(
 				resultBuffer,
 				"image/png",
 				key,

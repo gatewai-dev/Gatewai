@@ -4,8 +4,11 @@ import { Form, SelectField, SliderField } from "@gatewai/ui-kit";
 import { zodResolver } from "@hookform/resolvers/zod";
 import { memo, useEffect } from "react";
 import { useForm } from "react-hook-form";
-import { LLMNodeConfigSchema } from "@/metadata.js";
-import { LLM_NODE_MODELS, type LLMNodeConfig } from "@/shared/config.js";
+import {
+	LLM_NODE_MODELS,
+	type LLMNodeConfig,
+	LLMNodeConfigSchema,
+} from "../shared/config.js";
 
 const LLMNodeConfigComponent = memo(({ node }: { node: NodeEntityType }) => {
 	const { onNodeConfigUpdate } = useCanvasCtx();

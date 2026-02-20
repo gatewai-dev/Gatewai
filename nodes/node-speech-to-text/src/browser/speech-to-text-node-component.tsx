@@ -26,7 +26,7 @@ const SpeechToTextNodeComponent = memo(
 			}
 			return null;
 		}, [result]);
-		console.log({ result, node, transcription });
+
 		return (
 			<BaseNode
 				selected={props.selected}

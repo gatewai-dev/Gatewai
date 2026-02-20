@@ -3,7 +3,7 @@ import { useCanvasCtx, useNodeResult } from "@gatewai/react-canvas";
 import type { HandleEntityType } from "@gatewai/react-store";
 import { makeSelectNodeById, useAppSelector } from "@gatewai/react-store";
 import { memo, useMemo } from "react";
-import type { VideoCompositorNodeConfig } from "../../../shared/video-compositor-config.js";
+import type { VideoCompositorNodeConfig } from "../../../shared/config.js";
 import { VideoDesignerEditor } from "../video-editor/index.js";
 
 type InputOutputItems =

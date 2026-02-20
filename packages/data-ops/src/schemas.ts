@@ -19,8 +19,13 @@ export const FileInputSchema = z.discriminatedUnion("type", [
 
 export type FileInput = z.infer<typeof FileInputSchema>;
 
-// Union of simple string (text or legacy base64) and structured file input
-export const NodeInputSchema = z.union([z.string(), FileInputSchema]);
+export const NodeOverrideSchema = z.object({
+	config: z.record(z.unknown()),
+});
+export type NodeOverride = z.infer<typeof NodeOverrideSchema>;
+
+// Union of structured file input, and generic node config overrides
+export const NodeInputSchema = z.union([FileInputSchema, NodeOverrideSchema]);
 
 export type NodeInput = z.infer<typeof NodeInputSchema>;
 

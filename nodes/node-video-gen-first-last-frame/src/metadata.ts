@@ -1,11 +1,5 @@
 import { defineMetadata } from "@gatewai/node-sdk";
-import {
-	VIDEOGEN_ASPECT_RATIOS,
-	VIDEOGEN_NODE_MODELS,
-	VIDEOGEN_PERSON_GENERATION_OPTIONS,
-	VIDEOGEN_RESOLUTIONS,
-	VideoGenFirstLastFrameNodeConfigSchema,
-} from "./shared/index.js";
+import { VideoGenFirstLastFrameNodeConfigSchema } from "./shared/index.js";
 
 export { VideoGenFirstLastFrameNodeConfigSchema };
 

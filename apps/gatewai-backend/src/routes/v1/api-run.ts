@@ -1,5 +1,6 @@
 import assert from "node:assert";
 import { generateId } from "@gatewai/core";
+import { ConfigSchemaRegistry } from "@gatewai/core/types";
 import {
 	APIRunRequestSchema,
 	APIRunResponseSchema,
@@ -9,10 +10,6 @@ import {
 } from "@gatewai/data-ops";
 import { prisma } from "@gatewai/db";
 import { NodeWFProcessor } from "@gatewai/graph-engine";
-import type { TextNodeConfigSchema } from "@gatewai/node-text";
-import type { z } from "zod";
-
-type TextNodeConfig = z.infer<typeof TextNodeConfigSchema>;
 
 import { uploadToImportNode } from "@gatewai/media/server";
 import { zValidator } from "@hono/zod-validator";
@@ -104,7 +101,6 @@ const apiRunRoutes = new Hono<{ Variables: AuthorizedHonoTypes }>({
 						...(duplicate
 							? { originalNodeId: { in: originalNodeIds } }
 							: { id: { in: originalNodeIds } }),
-						type: { in: ["Text", "File"] },
 					},
 				});
 
@@ -116,20 +112,36 @@ const apiRunRoutes = new Hono<{ Variables: AuthorizedHonoTypes }>({
 						assert(payloadKey);
 						const inputData = payload[payloadKey];
 
-						if (node.type === "Text") {
-							// Text nodes only accept string values
-							const textValue =
-								typeof inputData === "string" ? inputData : String(inputData);
-							return prisma.node.update({
+						if (node.type === "Import") {
+							// For Import nodes, we expect a FileInput object (which is distinguished by 'type' property)
+							if (
+								typeof inputData === "object" &&
+								inputData !== null &&
+								"type" in inputData
+							) {
+								await processFileInput(node.id, inputData);
+							}
+						} else if (
+							typeof inputData === "object" &&
+							inputData !== null &&
+							"config" in inputData
+						) {
+							// For all other nodes, validate the provided config
+							const schema = ConfigSchemaRegistry.get(node.type);
+							if (!schema) {
+								throw new Error(
+									`Node type ${node.type} not registered or missing config schema.`,
+								);
+							}
+
+							const validatedConfig = schema.parse(inputData.config);
+
+							await prisma.node.update({
 								where: { id: node.id },
 								data: {
-									config: { content: textValue } as TextNodeConfig,
+									config: validatedConfig,
 								},
 							});
-						}
-
-						if (node.type === "File") {
-							await processFileInput(node.id, inputData);
 						}
 					}),
 				);
@@ -175,10 +187,15 @@ const apiRunRoutes = new Hono<{ Variables: AuthorizedHonoTypes }>({
  * Process file input in various formats
  */
 async function processFileInput(nodeId: string, inputData: NodeInput) {
-	if (typeof inputData === "string") {
-		// Raw base64 or data URI string
-		await handleBase64Upload(nodeId, inputData);
-	} else if (inputData.type === "base64") {
+	if (
+		typeof inputData !== "object" ||
+		inputData === null ||
+		!("type" in inputData)
+	) {
+		return;
+	}
+
+	if (inputData.type === "base64") {
 		// Structured base64 input
 		await handleBase64Upload(nodeId, inputData.data, inputData.mimeType);
 	} else if (inputData.type === "url") {

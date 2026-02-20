@@ -1,7 +1,7 @@
 import type { NodeProcessorParams, NodeResult } from "@gatewai/core/types";
 import type { IBrowserProcessor } from "@gatewai/node-sdk/browser";
-import { ResizeNodeConfigSchema } from "@/shared/config.js";
-import { applyResize } from "@/shared/pixi-resize-run.js";
+import { ResizeNodeConfigSchema } from "../shared/config.js";
+import { applyResize } from "../shared/pixi-resize-run.js";
 
 export class ResizeBrowserProcessor implements IBrowserProcessor {
 	async process({

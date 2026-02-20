@@ -13,11 +13,11 @@ import {
 } from "@gatewai/react-store";
 import { cn } from "@gatewai/ui-kit";
 import { memo, useEffect } from "react";
-import type { ResizeNodeConfig } from "@/shared/config.js";
+import type { ResizeNodeConfig } from "../shared/config.js";
 import { ResizeConfig } from "./resize-node-config.js";
 
 const ResizeNodeComponent = memo((props: NodeProps) => {
-	const { imageUrl, node } = useNodePreview(props.id);
+	const { mediaUrl, node } = useNodePreview(props.id);
 	const dispatch = useAppDispatch();
 
 	const { inputs } = useNodeResult(props.id);
@@ -72,11 +72,11 @@ const ResizeNodeComponent = memo((props: NodeProps) => {
 					className={cn(
 						"w-full media-container overflow-hidden rounded relative",
 						{
-							"h-92": imageUrl == null,
+							"h-92": mediaUrl == null,
 						},
 					)}
 				>
-					{imageUrl && <CanvasRenderer imageUrl={imageUrl} />}
+					{mediaUrl && <CanvasRenderer imageUrl={mediaUrl} />}
 				</div>
 				{node && <ResizeConfig node={node} />}
 			</div>

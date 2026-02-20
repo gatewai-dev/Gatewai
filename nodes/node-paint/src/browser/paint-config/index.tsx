@@ -4,7 +4,7 @@ import {
 	ResizeWidthInput,
 } from "@gatewai/react-canvas";
 import type { NodeEntityType } from "@gatewai/react-store";
-import type { PaintNodeConfig } from "@/shared/config.js";
+import type { PaintNodeConfig } from "../../shared/config.js";
 
 function PaintDimensionsConfig({
 	node,

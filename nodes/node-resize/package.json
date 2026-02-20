@@ -45,7 +45,7 @@
 		"@gatewai/tsconfig": "workspace:*",
 		"@types/react": "^19.2.4",
 		"react": "^19.2.4",
-		"@types/react-dom": "^19.1.7",
+		"@types/react-dom": "^19.2.3",
 		"@types/node": "^22.13.10",
 		"tsdown": "^0.19.0",
 		"typescript": "~5.8.3",
