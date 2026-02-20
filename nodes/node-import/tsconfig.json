@@ -3,9 +3,18 @@
 	"compilerOptions": {
 		"baseUrl": ".",
 		"paths": {
-			"@/*": ["./src/*"]
+			"@/*": [
+				"./src/*"
+			]
 		},
-		"lib": ["DOM", "ES2024"]
+		"lib": [
+			"DOM",
+			"ES2024"
+		],
+		"experimentalDecorators": true,
+		"emitDecoratorMetadata": true
 	},
-	"include": ["src"]
+	"include": [
+		"src"
+	]
 }

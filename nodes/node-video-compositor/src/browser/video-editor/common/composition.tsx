@@ -36,7 +36,7 @@ export interface VideoAnimation {
 export interface ExtendedLayer
 	extends Omit<
 		VideoCompositorLayer,
-		"width" | "height" | "align" | "verticalAlign"
+		"width" | "height"
 	> {
 	width?: number;
 	height?: number;
@@ -45,8 +45,6 @@ export interface ExtendedLayer
 	isPlaceholder?: boolean;
 	src?: string; // Resolved URL for rendering
 	text?: string; // Resolved text for rendering
-	align?: string;
-	verticalAlign?: string;
 	letterSpacing?: number;
 	lineHeight?: number;
 	padding?: number;

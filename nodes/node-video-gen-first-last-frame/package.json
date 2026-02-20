@@ -8,18 +8,18 @@
 	"exports": {
 		".": {
 			"types": "./dist/index.d.mts",
-			"import": "./dist/index.mjs",
-			"development": "./src/metadata.ts"
+			"development": "./src/metadata.ts",
+			"import": "./dist/index.mjs"
 		},
 		"./server": {
 			"types": "./dist/server.d.mts",
-			"import": "./dist/server.mjs",
-			"development": "./src/server/index.ts"
+			"development": "./src/server/index.ts",
+			"import": "./dist/server.mjs"
 		},
 		"./browser": {
 			"types": "./dist/browser.d.mts",
-			"import": "./dist/browser.mjs",
-			"development": "./src/browser/index.ts"
+			"development": "./src/browser/index.ts",
+			"import": "./dist/browser.mjs"
 		}
 	},
 	"scripts": {

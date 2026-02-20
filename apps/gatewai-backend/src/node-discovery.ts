@@ -29,10 +29,26 @@ export async function discoverNodes() {
 		if (fs.existsSync(pkgPath)) {
 			try {
 				const pkg = JSON.parse(fs.readFileSync(pkgPath, "utf-8"));
+
+				let entryPath = `${pkg.name}/server`;
+				const isDev = process.env.NODE_ENV !== "production" || process.env.npm_lifecycle_event === "dev";
+				const serverExports = pkg.exports?.["./server"];
+
+				if (serverExports) {
+					// Use the 'development' condition if in dev, else fallback to 'import' or 'default'
+					const relativePath = isDev && serverExports.development
+						? serverExports.development
+						: (serverExports.import || serverExports.default);
+
+					if (relativePath) {
+						entryPath = "file://" + path.join(nodesDir, dir, relativePath);
+					}
+				}
+
 				// We return the package name so the dynamic import uses the workspace resolution
 				discovered.push({
 					name: pkg.name,
-					server: () => import(`${pkg.name}/server`),
+					server: () => import(entryPath),
 				});
 			} catch (e) {
 				console.warn(`Failed to parse node ${dir}:`, e);
