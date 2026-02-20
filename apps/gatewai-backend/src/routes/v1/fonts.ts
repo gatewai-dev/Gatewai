@@ -23,10 +23,24 @@ const fontsRouter = new Hono<{ Variables: AuthorizedHonoTypes }>({
 	})
 	.get(
 		"/load/:fontName",
-		zValidator("param", z.object({ fontName: z.string() })),
+		zValidator(
+			"param",
+			z.object({
+				// Only allow alphanumeric, hyphens, and underscores — no dots or slashes
+				fontName: z.string().regex(/^[a-zA-Z0-9_-]+$/, {
+					message: "Invalid font name",
+				}),
+			}),
+		),
 		async (c) => {
 			const fontName = c.req.param("fontName");
-			const fontDir = path.join(fontsRootPath, fontName);
+			const fontDir = path.resolve(fontsRootPath, fontName);
+
+			// Guard against path traversal even if the regex above is somehow bypassed
+			if (!fontDir.startsWith(fontsRootPath + path.sep)) {
+				return c.json({ error: "Invalid font name" }, 400);
+			}
+
 			try {
 				const files = await fs.readdir(fontDir);
 				const fontFile = files.find(
