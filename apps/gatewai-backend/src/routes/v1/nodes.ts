@@ -1,3 +1,4 @@
+import { logger } from "@gatewai/core";
 import { nodeRegistry } from "@gatewai/graph-engine";
 import { Hono } from "hono";
 
@@ -12,7 +13,7 @@ for (const manifest of manifests) {
 		// users might want shorter aliases, but type is unique.
 		// We can use the type directly.
 		nodesRouter.route(`/${manifest.type}`, manifest.route);
-		console.log(`Mounted route for node: ${manifest.type}`);
+		logger.info(`Mounted route for node: ${manifest.type}`);
 	}
 }
 

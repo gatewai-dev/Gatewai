@@ -2,21 +2,12 @@
 	"extends": "@gatewai/tsconfig/react-library.json",
 	"compilerOptions": {
 		"baseUrl": ".",
-		"lib": [
-			"ES2022",
-			"ESNext",
-			"DOM",
-			"DOM.Iterable"
-		],
+		"lib": ["ES2022", "ESNext", "DOM", "DOM.Iterable"],
 		"paths": {
-			"@/*": [
-				"./src/*"
-			]
+			"@/*": ["./src/*"]
 		},
 		"experimentalDecorators": true,
 		"emitDecoratorMetadata": true
 	},
-	"include": [
-		"src"
-	]
+	"include": ["src"]
 }

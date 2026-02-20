@@ -34,10 +34,7 @@ export interface VideoAnimation {
 }
 
 export interface ExtendedLayer
-	extends Omit<
-		VideoCompositorLayer,
-		"width" | "height"
-	> {
+	extends Omit<VideoCompositorLayer, "width" | "height"> {
 	width?: number;
 	height?: number;
 	animations?: VideoAnimation[];

@@ -24,14 +24,7 @@ import {
 	Position,
 } from "@xyflow/react";
 import { TrashIcon } from "lucide-react";
-import {
-	type JSX,
-	memo,
-	type ReactNode,
-	useCallback,
-	useMemo,
-	useRef,
-} from "react";
+import { type JSX, memo, type ReactNode, useCallback, useMemo } from "react";
 import { PiCube } from "react-icons/pi";
 import { useCanvasCtx } from "../canvas-ctx";
 import { cn } from "../lib/utils";

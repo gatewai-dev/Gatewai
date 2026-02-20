@@ -1,6 +1,6 @@
 import { discoveredNodes } from "virtual:gatewai-nodes";
 import type { NodeIconEntry, NodeRegistryValue } from "@gatewai/react-canvas";
-import type { ComponentType } from "react";
+import type { ComponentType, MemoExoticComponent } from "react";
 import { PiCube } from "react-icons/pi";
 
 /**
@@ -10,7 +10,7 @@ import { PiCube } from "react-icons/pi";
  * Must be called (and awaited) before the canvas UI renders.
  */
 export async function initNodeRegistry(): Promise<NodeRegistryValue> {
-	const nodeTypes = {};
+	const nodeTypes: Record<string, MemoExoticComponent<ComponentType<any>>> = {};
 	const iconMap: Record<string, NodeIconEntry> = {};
 	const configMap: Record<string, ComponentType<any>> = {};
 	const pageMap: Record<string, ComponentType<any>> = {};

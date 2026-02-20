@@ -3,14 +3,10 @@
 	"compilerOptions": {
 		"baseUrl": ".",
 		"paths": {
-			"@/*": [
-				"./src/*"
-			]
+			"@/*": ["./src/*"]
 		},
 		"experimentalDecorators": true,
 		"emitDecoratorMetadata": true
 	},
-	"include": [
-		"src"
-	]
+	"include": ["src"]
 }

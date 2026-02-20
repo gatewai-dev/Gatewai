@@ -3,15 +3,11 @@
 	"compilerOptions": {
 		"baseUrl": ".",
 		"paths": {
-			"@/*": [
-				"./src/*"
-			]
+			"@/*": ["./src/*"]
 		},
 		"experimentalDecorators": true,
 		"emitDecoratorMetadata": true,
 		"allowJs": true
 	},
-	"include": [
-		"src"
-	]
+	"include": ["src"]
 }
