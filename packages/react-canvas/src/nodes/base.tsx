@@ -667,7 +667,7 @@ const CustomEdge = memo(
 			// `style` spread: in practice this prop is usually a stable empty object
 			// so excluding it from deps would be fine, but we keep it correct here.
 			// eslint-disable-next-line react-hooks/exhaustive-deps
-			[selected, color],
+			[selected, color, style],
 		);
 
 		return (

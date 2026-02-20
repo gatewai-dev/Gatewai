@@ -16,7 +16,7 @@ import type {
 import type { GoogleGenAI, SpeechConfig } from "@google/genai";
 import * as mm from "music-metadata";
 import { inject, injectable } from "tsyringe";
-import { TextToSpeechNodeConfigSchema } from "../shared/config";
+import { TextToSpeechNodeConfigSchema } from "../shared/config.js";
 
 async function encodeWavBuffer(pcmBuffer: Buffer): Promise<Buffer> {
     return new Promise((resolve, reject) => {

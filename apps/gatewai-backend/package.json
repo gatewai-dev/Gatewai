@@ -11,7 +11,7 @@
 		}
 	},
 	"scripts": {
-		"dev": "tsx watch --tsconfig tsconfig.json --conditions=development src/index.ts",
+		"dev": "tsx watch --tsconfig tsconfig.dev.json --conditions=development src/index.ts",
 		"build": "tsc -b tsconfig.json && pnpm copy-assets",
 		"copy-assets": "mkdir -p dist && cp -r src/assets dist/",
 		"start-cli": "node dist/src/index.js",
