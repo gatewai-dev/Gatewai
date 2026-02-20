@@ -15,9 +15,9 @@ const ReactFlowPanels = memo(({ children }: { children: React.ReactNode }) => {
 			<BottomPanel />
 			<AgentPanel />
 			<NodeConfigPanel />
-			<Panel position="top-center">
+			{/* <Panel position="top-center">
 				<DebugPanel />
-			</Panel>
+			</Panel>*/}
 		</>
 	);
 });

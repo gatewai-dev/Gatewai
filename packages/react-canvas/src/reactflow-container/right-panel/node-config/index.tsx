@@ -1,6 +1,7 @@
 import {
-	type NodeEntityType,
-	selectSelectedNodes,
+	makeSelectAllNodes,
+	makeSelectNodeById,
+	selectSelectedNodeIds,
 	useAppSelector,
 } from "@gatewai/react-store";
 import { cn, Separator } from "@gatewai/ui-kit";
@@ -10,11 +11,15 @@ import { PiCube } from "react-icons/pi";
 import { useNodeRegistry } from "../../../node-registry-ctx";
 
 type NodeConfigComponentProps = {
-	node: NodeEntityType;
+	id: string;
 };
 
-const NodeConfigItem = memo(({ node }: NodeConfigComponentProps) => {
+const NodeConfigItem = memo(({ id }: NodeConfigComponentProps) => {
+	const selectNode = useMemo(() => makeSelectNodeById(id), [id]);
+	const node = useAppSelector(selectNode);
 	const { configMap, iconMap } = useNodeRegistry();
+
+	if (!node) return null;
 	const ConfigComponent = configMap[node.type];
 	if (!ConfigComponent) {
 		return null;
@@ -36,17 +41,17 @@ const NodeConfigItem = memo(({ node }: NodeConfigComponentProps) => {
 });
 
 const NodeConfigPanel = memo(() => {
-	const selectedNodes = useAppSelector(selectSelectedNodes);
+	const selectedNodeIds = useAppSelector(selectSelectedNodeIds);
+	const nodes = useAppSelector(makeSelectAllNodes);
 	const { configMap } = useNodeRegistry();
 	const NodesWithConfigForm = Object.keys(configMap);
 
 	const isVisible = useMemo(() => {
-		return (
-			selectedNodes &&
-			selectedNodes.length > 0 &&
-			selectedNodes.some((n) => NodesWithConfigForm.includes(n.type))
-		);
-	}, [selectedNodes, NodesWithConfigForm]);
+		if (!selectedNodeIds || selectedNodeIds.length === 0) return false;
+
+		const selectedNodes = nodes.filter((n) => selectedNodeIds.includes(n.id));
+		return selectedNodes.some((n) => NodesWithConfigForm.includes(n.type));
+	}, [selectedNodeIds, nodes, NodesWithConfigForm]);
 
 	return (
 		<Panel position="top-right" className="m-0! h-full pointer-events-none ">
@@ -62,9 +67,9 @@ const NodeConfigPanel = memo(() => {
 				<div className="flex flex-col">
 					{/* We only map if visible to prevent unnecessary renders while hidden */}
 					{isVisible &&
-						selectedNodes?.map((node) => (
-							<Fragment key={`${node.id}_cfg_section`}>
-								<NodeConfigItem node={node} />
+						selectedNodeIds?.map((id) => (
+							<Fragment key={`${id}_cfg_section`}>
+								<NodeConfigItem id={id} />
 							</Fragment>
 						))}
 				</div>

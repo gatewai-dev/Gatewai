@@ -29,7 +29,7 @@ import {
 } from "@gatewai/ui-kit";
 import { zodResolver } from "@hookform/resolvers/zod";
 import { MenuIcon } from "lucide-react";
-import { memo, useState } from "react";
+import { memo, useMemo, useState } from "react";
 import { useForm } from "react-hook-form";
 import { z } from "zod";
 import { useCanvasCtx } from "../canvas-ctx";
@@ -59,7 +59,7 @@ const RenameNodeDialog = memo(
 			dispatch(
 				updateNodeEntity({
 					id: nodeId,
-					changes: { name: data.name },
+					changes: { name: data.name } as any,
 				}),
 			);
 			onOpenChange(false);
@@ -101,8 +101,8 @@ const NodeMenu = memo((props: { id: NodeEntityType["id"] }) => {
 	const { onNodesDelete, duplicateNodes } = useCanvasCtx();
 	const [renameOpen, setRenameOpen] = useState(false);
 	const isMac = /Mac|iPod|iPhone|iPad/.test(navigator.userAgent);
-	const node = useAppSelector(makeSelectNodeById(props.id));
-	const currentName = node?.name || "";
+	const selectNode = useMemo(() => makeSelectNodeById(props.id), [props.id]);
+	const currentName = useAppSelector((state) => selectNode(state)?.name) || "";
 
 	return (
 		<>

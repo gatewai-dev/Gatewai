@@ -1,7 +1,6 @@
 import * as SliderPrimitive from "@radix-ui/react-slider";
 import { Check, Copy, Pipette } from "lucide-react";
-import type React from "react";
-import { useEffect, useRef, useState } from "react";
+import React, { useEffect, useRef, useState } from "react";
 import { cn } from "../lib/utils";
 import { Button } from "../ui/button";
 import { Input } from "../ui/input";
@@ -271,7 +270,16 @@ const PRESETS = [
 	"#808000",
 ];
 
-export function ColorPicker({
+export const ColorPicker = React.memo(ColorPickerBase, (prev, next) => {
+	return (
+		prev.value === next.value &&
+		prev.disabled === next.disabled &&
+		prev.showAlpha === next.showAlpha &&
+		prev.className === next.className
+	);
+});
+
+function ColorPickerBase({
 	value,
 	onChange,
 	className,

@@ -92,12 +92,55 @@ const CURSOR: Record<HandleType, string> = {
 
 const MIN_PCT = 5;
 
+// ─── Ratio conversion helpers ─────────────────────────────────────────────────
+
+/**
+ * Convert a pixel-space aspect ratio (w/h in real pixels) to percentage-space
+ * (widthPct / heightPct).
+ *
+ * Because 1% of width covers (naturalWidth / 100) pixels, and 1% of height
+ * covers (naturalHeight / 100) pixels:
+ *
+ *   pixelRatio = (widthPct * nw/100) / (heightPct * nh/100)
+ *              = (widthPct / heightPct) * (nw / nh)
+ *
+ * Therefore:
+ *   pctRatio = pixelRatio * (nh / nw)
+ */
+function pixelRatioToPctRatio(
+	pixelRatio: number,
+	naturalSize: { w: number; h: number } | null,
+): number {
+	if (!naturalSize || naturalSize.w === 0 || naturalSize.h === 0) {
+		return pixelRatio;
+	}
+	return pixelRatio * (naturalSize.h / naturalSize.w);
+}
+
+/**
+ * Convert a percentage-space ratio back to pixel-space ratio.
+ * Inverse of pixelRatioToPctRatio.
+ */
+function pctRatioToPixelRatio(
+	pctRatio: number,
+	naturalSize: { w: number; h: number } | null,
+): number {
+	if (!naturalSize || naturalSize.h === 0 || naturalSize.w === 0) {
+		return pctRatio;
+	}
+	return pctRatio * (naturalSize.w / naturalSize.h);
+}
+
 // ─── Constrain ────────────────────────────────────────────────────────────────
 /**
  * Apply bounds + optional aspect-ratio lock.
  *
+ * IMPORTANT: `ratio` here must be in **percentage space** (widthPct / heightPct),
+ * NOT pixel space. Use `pixelRatioToPctRatio` before calling this function
+ * whenever you have a pixel-space ratio.
+ *
  * For ratio-locked resizes the invariant is that the "fixed" edge (opposite to
- * the dragged handle) must not move.  The drag handler preserves this by
+ * the dragged handle) must not move. The drag handler preserves this by
  * adjusting both position and size together (e.g. resize-nw: l += dx, w -= dx).
  * So l+w and t+h already encode the fixed anchor edges when we get here.
  *
@@ -110,7 +153,8 @@ const MIN_PCT = 5;
  */
 function constrain(
 	crop: CropNodeConfig,
-	ratio: number | null = null,
+	// percentage-space ratio (widthPct / heightPct), or null for free
+	pctRatio: number | null = null,
 	dragType: HandleType = "move",
 ): CropNodeConfig {
 	let {
@@ -120,7 +164,7 @@ function constrain(
 		heightPercentage: h,
 	} = crop;
 
-	if (ratio !== null && dragType !== "move") {
+	if (pctRatio !== null && dragType !== "move") {
 		// Which axis drives?
 		const heightDriven = dragType === "resize-n" || dragType === "resize-s";
 
@@ -140,11 +184,11 @@ function constrain(
 
 		// Enforce ratio.
 		if (heightDriven) {
-			w = Math.max(MIN_PCT, h) * ratio;
+			w = Math.max(MIN_PCT, h) * pctRatio;
 			h = Math.max(MIN_PCT, h);
 		} else {
 			w = Math.max(MIN_PCT, w);
-			h = w / ratio;
+			h = w / pctRatio;
 		}
 
 		// Re-anchor position.
@@ -229,7 +273,13 @@ const CropConfigPanel = memo(
 		}, [crop.widthPercentage, crop.heightPercentage, pixelW, pixelH]);
 
 		const handleDimensionChange = (axis: "w" | "h", val: number) => {
-			const currentRatio = crop.widthPercentage / crop.heightPercentage;
+			// Compute the current pixel-space ratio for lock propagation.
+			const currentPixelRatio =
+				naturalWidth && naturalHeight
+					? ((crop.widthPercentage / 100) * naturalWidth) /
+						((crop.heightPercentage / 100) * naturalHeight)
+					: crop.widthPercentage / crop.heightPercentage;
+
 			let newWPct = crop.widthPercentage;
 			let newHPct = crop.heightPercentage;
 
@@ -237,21 +287,21 @@ const CropConfigPanel = memo(
 				setWInput(val);
 				newWPct = naturalWidth ? (val / naturalWidth) * 100 : val;
 				if (isLocked) {
-					newHPct = newWPct / currentRatio;
-					setHInput(
-						Math.round(
-							naturalHeight ? (newHPct / 100) * naturalHeight : newHPct,
-						),
-					);
+					// Maintain pixel ratio: newHpx = newWpx / pixelRatio
+					const newWpx = val;
+					const newHpx = newWpx / currentPixelRatio;
+					newHPct = naturalHeight ? (newHpx / naturalHeight) * 100 : newHpx;
+					setHInput(Math.round(naturalHeight ? newHpx : newHPct));
 				}
 			} else {
 				setHInput(val);
 				newHPct = naturalHeight ? (val / naturalHeight) * 100 : val;
 				if (isLocked) {
-					newWPct = newHPct * currentRatio;
-					setWInput(
-						Math.round(naturalWidth ? (newWPct / 100) * naturalWidth : newWPct),
-					);
+					// Maintain pixel ratio: newWpx = newHpx * pixelRatio
+					const newHpx = val;
+					const newWpx = newHpx * currentPixelRatio;
+					newWPct = naturalWidth ? (newWpx / naturalWidth) * 100 : newWpx;
+					setWInput(Math.round(naturalWidth ? newWpx : newWPct));
 				}
 			}
 
@@ -677,13 +727,37 @@ const CropNodeComponent = memo((props: NodeProps) => {
 		w: number;
 		h: number;
 	} | null>(null);
-	// customRatio: non-null only when Free + locked.
+
+	// customRatio: stored in **pixel space** (real px width / real px height).
+	// Non-null only when preset is "Free" and the user has manually locked.
 	const [customRatio, setCustomRatio] = useState<number | null>(null);
 
-	const effectiveRatio = useMemo(() => {
+	/**
+	 * effectiveRatio — the desired aspect ratio in **pixel space**.
+	 * null  → free (unconstrained)
+	 * number → enforce this pixel-space ratio while dragging / on preset change
+	 */
+	const effectiveRatio = useMemo<number | null>(() => {
 		const preset = ASPECT_RATIO_PRESETS.find((p) => p.label === aspectPreset);
 		return preset?.value ?? customRatio ?? null;
 	}, [aspectPreset, customRatio]);
+
+	/**
+	 * effectivePctRatio — effectiveRatio converted to **percentage space**.
+	 *
+	 * The `constrain` function works purely in percentage coordinates
+	 * (0–100 both axes).  Since the image is typically not square, a 1:1 pixel
+	 * crop does NOT correspond to equal widthPct / heightPct values.
+	 *
+	 * Conversion:  pctRatio = pixelRatio * (naturalHeight / naturalWidth)
+	 *
+	 * This is the value that must be passed to `constrain` and used when
+	 * computing new crop dimensions from a pixel ratio preset.
+	 */
+	const effectivePctRatio = useMemo<number | null>(() => {
+		if (effectiveRatio === null) return null;
+		return pixelRatioToPctRatio(effectiveRatio, naturalSize);
+	}, [effectiveRatio, naturalSize]);
 
 	const isLocked = effectiveRatio !== null;
 
@@ -731,17 +805,28 @@ const CropNodeComponent = memo((props: NodeProps) => {
 
 			const p = ASPECT_RATIO_PRESETS.find((ap) => ap.label === preset);
 			if (!p?.value) return;
-			const ratio = p.value;
+
+			// pixelRatio is the desired real-pixel aspect ratio (e.g. 1 for 1:1).
+			const pixelRatio = p.value;
+
+			// pctRatio is the ratio in percentage space — accounts for the image's
+			// own non-square aspect so the crop rectangle looks correct on screen.
+			const pctRatio = pixelRatioToPctRatio(pixelRatio, naturalSize);
 
 			setCrop((prev) => {
 				const cx = prev.leftPercentage + prev.widthPercentage / 2;
 				const cy = prev.topPercentage + prev.heightPercentage / 2;
+
+				// Keep current width, derive height from the percentage-space ratio.
 				let newW = prev.widthPercentage;
-				let newH = newW / ratio;
+				let newH = newW / pctRatio;
+
+				// If height would overflow, clamp via height and recompute width.
 				if (newH > 100) {
 					newH = 100;
-					newW = newH * ratio;
+					newW = newH * pctRatio;
 				}
+
 				const next = constrain(
 					{
 						leftPercentage: cx - newW / 2,
@@ -749,14 +834,14 @@ const CropNodeComponent = memo((props: NodeProps) => {
 						widthPercentage: newW,
 						heightPercentage: newH,
 					},
-					ratio,
+					pctRatio,
 					"resize-se",
 				);
 				updateConfig(next);
 				return next;
 			});
 		},
-		[updateConfig],
+		[updateConfig, naturalSize],
 	);
 
 	const handleToggleLock = useCallback(() => {
@@ -768,10 +853,15 @@ const CropNodeComponent = memo((props: NodeProps) => {
 			// Free + locked → unlock.
 			setCustomRatio(null);
 		} else {
-			// Free + unlocked → lock to current ratio.
-			setCustomRatio(crop.widthPercentage / crop.heightPercentage);
+			// Free + unlocked → lock to current crop ratio.
+			// Store in pixel space so it's consistent with preset values.
+			const pixelRatio = pctRatioToPixelRatio(
+				crop.widthPercentage / crop.heightPercentage,
+				naturalSize,
+			);
+			setCustomRatio(pixelRatio);
 		}
-	}, [aspectPreset, customRatio, crop]);
+	}, [aspectPreset, customRatio, crop, naturalSize]);
 
 	const handleReset = useCallback(() => {
 		const next = { ...DEFAULT_CROP };
@@ -849,7 +939,9 @@ const CropNodeComponent = memo((props: NodeProps) => {
 					break;
 			}
 
-			const next = constrain(c, effectiveRatio, drag.type);
+			// Use effectivePctRatio (percentage-space ratio) — NOT effectiveRatio
+			// (pixel-space ratio) — so ratio is enforced correctly for non-square images.
+			const next = constrain(c, effectivePctRatio, drag.type);
 			setCrop(next);
 		};
 
@@ -864,7 +956,7 @@ const CropNodeComponent = memo((props: NodeProps) => {
 			window.removeEventListener("pointermove", onMove);
 			window.removeEventListener("pointerup", onUp);
 		};
-	}, [drag, svgSize, updateConfig, effectiveRatio]);
+	}, [drag, svgSize, updateConfig, effectivePctRatio]);
 
 	return (
 		<BaseNode selected={props.selected} id={props.id} dragging={props.dragging}>

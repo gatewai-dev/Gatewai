@@ -29,7 +29,7 @@ import {
 } from "@gatewai/ui-kit";
 import { zodResolver } from "@hookform/resolvers/zod";
 import { PlusIcon } from "lucide-react";
-import { useMemo, useState } from "react";
+import { memo, useMemo, useState } from "react";
 import { useForm } from "react-hook-form";
 import { z } from "zod";
 import { useCanvasCtx } from "../index.js";
@@ -51,16 +51,18 @@ type CustomHandleButtonProps = {
 	placeholder?: string;
 };
 
-function AddCustomHandleButton(props: CustomHandleButtonProps) {
+function AddCustomHandleButtonBase(props: CustomHandleButtonProps) {
 	const OPTIONS = useMemo(() => {
 		return (
 			props?.dataTypes ??
 			LookupDataTypes[props.type as keyof typeof LookupDataTypes]
 		);
 	}, [props.dataTypes, props.type]);
-	const existingHandles = useAppSelector(
-		makeSelectHandlesByNodeId(props.nodeId),
+	const selectHandles = useMemo(
+		() => makeSelectHandlesByNodeId(props.nodeId),
+		[props.nodeId],
 	);
+	const existingHandles = useAppSelector((state) => selectHandles(state));
 	const enumValues = OPTIONS as unknown as [string, ...string[]];
 
 	const { createNewHandle } = useCanvasCtx();
@@ -190,4 +192,4 @@ function AddCustomHandleButton(props: CustomHandleButtonProps) {
 	);
 }
 
-export { AddCustomHandleButton };
+export const AddCustomHandleButton = memo(AddCustomHandleButtonBase);

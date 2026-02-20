@@ -35,7 +35,7 @@ const LlmNodeComponent = memo(
 				id={props.id}
 				dragging={props.dragging}
 			>
-				<div className="flex flex-col gap-2 items-end nowheel relative">
+				<div className="flex flex-col items-end nowheel relative">
 					{hasMoreThanOneOutput && (
 						<div className="absolute top-1 left-1 z-10">
 							<OutputSelector node={node} />
@@ -58,7 +58,7 @@ const LlmNodeComponent = memo(
 							</p>
 						</div>
 					)}
-					<div className="flex justify-between items-center w-full">
+					<div className="flex justify-between items-center w-full p-1.5">
 						<AddCustomHandleButton
 							nodeId={props.id}
 							type="Input"

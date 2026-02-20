@@ -126,8 +126,18 @@ const CanvasProvider = ({
 	const dispatch = useAppDispatch();
 	const store = useStore();
 	const rfInstance = useRef<ReactFlowInstance | undefined>(undefined);
-	const rfNodes = useAppSelector(selectRFNodes);
-	const rfEdges = useAppSelector(selectRFEdges);
+
+	// Instead of reacting to every position change, stable callbacks will read from store
+	const getLatestRfState = useCallback(() => {
+		const state = store.getState() as RootState;
+		return {
+			rfNodes: state.reactFlow.nodes,
+			rfEdges: state.reactFlow.edges,
+			handles: Object.values(state.handles.entities).filter(
+				(f) => !!f,
+			) as HandleEntityType[],
+		};
+	}, [store]);
 
 	const handleEntities = useAppSelector(handleSelectors.selectAll);
 
@@ -388,6 +398,7 @@ const CanvasProvider = ({
 				return;
 			}
 
+			const { rfNodes } = getLatestRfState();
 			const node = rfNodes.find((n) => n.id === nodeId);
 			if (!node) {
 				toast.error(`Node ${nodeId} not found`);
@@ -402,11 +413,12 @@ const CanvasProvider = ({
 				duration: options?.duration ?? 500,
 			});
 		},
-		[rfNodes],
+		[getLatestRfState],
 	);
 
 	const isValidConnection = useCallback(
 		(connection: Connection | Edge): { isValid: boolean; error?: string } => {
+			const { rfNodes, rfEdges } = getLatestRfState();
 			if (!connection.source || !connection.target) {
 				return {
 					isValid: false,
@@ -478,11 +490,12 @@ const CanvasProvider = ({
 
 			return { isValid: true };
 		},
-		[rfNodes, handleEntities, rfEdges],
+		[getLatestRfState],
 	);
 
 	const onConnect = useCallback(
 		(params: Connection) => {
+			const { rfEdges, handles: currentHandles } = getLatestRfState();
 			const { isValid, error } = isValidConnection(params);
 			if (!isValid) {
 				if (error) {
@@ -491,7 +504,7 @@ const CanvasProvider = ({
 				return;
 			}
 
-			const sourceHandle = handleEntities.find(
+			const sourceHandle = currentHandles.find(
 				(h) => h.id === params.sourceHandle,
 			);
 			if (!sourceHandle) {
@@ -544,17 +557,18 @@ const CanvasProvider = ({
 			dispatch(setAllEdgeEntities(edgeEntities));
 			scheduleSave();
 		},
-		[isValidConnection, handleEntities, dispatch, scheduleSave, rfEdges],
+		[isValidConnection, dispatch, scheduleSave, getLatestRfState],
 	);
 
 	const onNodesDelete = useCallback(
 		async (nodeIds: NodeEntityType["id"][]) => {
+			const { rfNodes, rfEdges, handles: currentHandles } = getLatestRfState();
 			const nodesToDelete = rfNodes.filter((n) => nodeIds.includes(n.id));
 			const newNodes = rfNodes.filter((f) => !nodeIds.includes(f.id));
 			const edgesToRemove = getConnectedEdges(nodesToDelete, rfEdges);
 			const deletedEdgeIds = edgesToRemove.map((m) => m.id);
 			const newEdges = rfEdges.filter((f) => !deletedEdgeIds.includes(f.id));
-			const deletedHandleIds = handleEntities
+			const deletedHandleIds = currentHandles
 				.filter((m) => nodeIds.includes(m.nodeId))
 				.map((m) => m.id);
 			dispatch(deleteManyEdgeEntity(deletedEdgeIds));
@@ -565,22 +579,24 @@ const CanvasProvider = ({
 
 			scheduleSave();
 		},
-		[rfEdges, rfNodes, dispatch, handleEntities, scheduleSave],
+		[dispatch, scheduleSave, getLatestRfState],
 	);
 
 	const onEdgesDelete = useCallback(
 		async (edgeIds: NodeEntityType["id"][]) => {
+			const { rfEdges } = getLatestRfState();
 			const newEdges = rfEdges.filter((f) => !edgeIds.includes(f.id));
 			dispatch(setEdges(newEdges));
 			dispatch(deleteManyEdgeEntity(edgeIds));
 
 			scheduleSave();
 		},
-		[rfEdges, dispatch, scheduleSave],
+		[dispatch, scheduleSave, getLatestRfState],
 	);
 
 	const onHandlesDelete = useCallback(
 		async (handleIds: string[]) => {
+			const { rfEdges, handles: currentHandles } = getLatestRfState();
 			// Find edges connected to these handles
 			const edgesAsString = rfEdges.filter(
 				(e) =>
@@ -599,7 +615,7 @@ const CanvasProvider = ({
 			// Handle Layer Updates for Compositor/VideoGen nodes
 			const affectedNodeIds = new Set<string>();
 			for (const handleId of handleIds) {
-				const handle = handleEntities.find((h) => h.id === handleId);
+				const handle = currentHandles.find((h) => h.id === handleId);
 				if (handle) {
 					affectedNodeIds.add(handle.nodeId);
 					updateNodeInternals(handle.nodeId);
@@ -640,14 +656,7 @@ const CanvasProvider = ({
 
 			scheduleSave();
 		},
-		[
-			rfEdges,
-			dispatch,
-			scheduleSave,
-			handleEntities,
-			updateNodeInternals,
-			store,
-		],
+		[dispatch, scheduleSave, updateNodeInternals, store, getLatestRfState],
 	);
 
 	const runNodes = useCallback(
@@ -745,6 +754,7 @@ const CanvasProvider = ({
 
 	const duplicateNodes = useCallback(
 		(nodeIds: Node["id"][]) => {
+			const { rfNodes } = getLatestRfState();
 			const newRfNodes: Node[] = [];
 			const newNodeEntities: NodeEntityType[] = [];
 			const allNewHandles: HandleEntityType[] = [];
@@ -861,7 +871,7 @@ const CanvasProvider = ({
 				scheduleSave();
 			}
 		},
-		[canvasId, dispatch, nodeTemplates, rfNodes, scheduleSave, store],
+		[canvasId, dispatch, nodeTemplates, scheduleSave, store],
 	);
 
 	// --- Patch System Implementation ---

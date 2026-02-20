@@ -5,13 +5,7 @@ import {
 	useDownloadFileData,
 	useNodeResult,
 } from "@gatewai/react-canvas";
-import {
-	Alert,
-	AlertDescription,
-	Button,
-	cn,
-	Separator,
-} from "@gatewai/ui-kit";
+import { Alert, AlertDescription, Button, Separator } from "@gatewai/ui-kit";
 import { AlertCircle, Download, InfoIcon, Loader2 } from "lucide-react";
 import { memo, useState } from "react";
 

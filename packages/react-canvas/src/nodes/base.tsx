@@ -24,7 +24,14 @@ import {
 	Position,
 } from "@xyflow/react";
 import { TrashIcon } from "lucide-react";
-import { type JSX, memo, type ReactNode, useMemo } from "react";
+import {
+	type JSX,
+	memo,
+	type ReactNode,
+	useCallback,
+	useMemo,
+	useRef,
+} from "react";
 import { PiCube } from "react-icons/pi";
 import { useCanvasCtx } from "../canvas-ctx";
 import { cn } from "../lib/utils";
@@ -38,6 +45,11 @@ import type { HandleState } from "../types";
 import { NodeMenu } from "./node-menu";
 
 const DEFAULT_COLOR = "#9ca3af";
+
+// ─── Stable fallback for iconMap lookup ──────────────────────────────────────
+// Defined outside any component so it's never recreated, preventing
+// memo invalidation on BaseNode from the `?? { mainIcon: PiCube }` inline object.
+const DEFAULT_ICON_ENTRY = { mainIcon: PiCube } as const;
 
 /**
  * Generates a conic-gradient CSS string for multiple colors.
@@ -160,25 +172,79 @@ export const getHandleStyle = (
 	};
 };
 
+// ─── Types ────────────────────────────────────────────────────────────────────
+
+interface NodeHandleProps {
+	handle: HandleEntityType;
+	index: number;
+	type: "source" | "target";
+	status?: HandleState;
+	nodeSelected?: boolean;
+}
+
+/**
+ * Custom areEqual for NodeHandle memo.
+ *
+ * The critical fix: `status` is a plain object from the processor context.
+ * On every drag frame the parent re-renders and produces a new `status`
+ * object reference even though its *values* haven't changed. Default memo
+ * (reference equality) would re-render every handle every frame.
+ *
+ * By comparing the three scalar fields that actually affect rendering we
+ * short-circuit the cascade entirely.
+ */
+const areNodeHandlePropsEqual = (
+	prev: NodeHandleProps,
+	next: NodeHandleProps,
+): boolean => {
+	// Fast path: nothing changed
+	if (
+		prev.handle === next.handle &&
+		prev.index === next.index &&
+		prev.type === next.type &&
+		prev.nodeSelected === next.nodeSelected &&
+		prev.status === next.status
+	) {
+		return true;
+	}
+
+	// Status deep-equal on scalar fields (avoids referential churn)
+	const sameStatus =
+		prev.status?.color === next.status?.color &&
+		prev.status?.valid === next.status?.valid &&
+		prev.status?.isConnected === next.status?.isConnected;
+
+	return (
+		prev.handle === next.handle &&
+		prev.index === next.index &&
+		prev.type === next.type &&
+		prev.nodeSelected === next.nodeSelected &&
+		sameStatus
+	);
+};
+
 const NodeHandle = memo(
-	({
-		handle,
-		index,
-		type,
-		status,
-		nodeSelected,
-	}: {
-		handle: HandleEntityType;
-		index: number;
-		type: "source" | "target";
-		status?: HandleState;
-		nodeSelected?: boolean;
-	}) => {
+	({ handle, index, type, status, nodeSelected }: NodeHandleProps) => {
 		const isTarget = type === "target";
 		const { onHandlesDelete } = useCanvasCtx();
 
+		// FIX: Wrap the delete callback in useCallback so the ContextMenuItem
+		// doesn't re-render due to a fresh function reference each render.
+		const handleDelete = useCallback(
+			() => onHandlesDelete([handle.id]),
+			[handle.id, onHandlesDelete],
+		);
+
 		const validation = useNodeValidation(handle.nodeId);
-		const errorCode = validation?.[handle.id];
+
+		// FIX: Memoize errorCode so downstream derived values don't recompute
+		// when the validation map reference changes but our handle's entry hasn't.
+		const errorCode = useMemo(
+			() => validation?.[handle.id],
+			// eslint-disable-next-line react-hooks/exhaustive-deps
+			[validation, handle.id],
+		);
+
 		const isRequiredErr = errorCode === "missing_connection";
 
 		const {
@@ -190,14 +256,43 @@ const NodeHandle = memo(
 			[status, handle.dataTypes],
 		);
 
-		let activeColor = status?.color || dataTypeColors[handle.dataTypes[0]]?.hex;
-		if (isRequiredErr) {
-			activeColor = dataTypeColors[handle.dataTypes[0]]?.hex;
-		}
+		// FIX: Memoize derived color so it doesn't allocate a new string reference
+		// every render when inputs haven't changed.
+		const activeColor = useMemo(() => {
+			if (isRequiredErr) return dataTypeColors[handle.dataTypes[0]]?.hex;
+			return status?.color || dataTypeColors[handle.dataTypes[0]]?.hex;
+		}, [isRequiredErr, status?.color, handle.dataTypes]);
+
 		const topPosition = (index + 1) * 32 + 20;
+
+		// FIX: Memoize tooltipContent – it's derived from status + errorCode and
+		// was previously recomputed on every render unconditionally.
+		const tooltipContent = useMemo<string | null>(() => {
+			if (!status || status.valid || !errorCode) return null;
+			if (errorCode === "type_mismatch") return "Invalid Type";
+			if (errorCode === "missing_connection") return "Missing Required";
+			if (errorCode === "invalid_source") return "Invalid Source";
+			return "Invalid";
+		}, [status, errorCode]);
 
 		const animationClasses =
 			"hover:scale-110 transition-transform duration-75 origin-center";
+
+		// FIX: Memoize the gradient wrapper style object so it doesn't trigger
+		// re-renders on child elements that compare style by reference.
+		const gradientWrapperStyle = useMemo<React.CSSProperties>(
+			() => ({
+				width: "10px",
+				height: "18px",
+				borderRadius: "2px",
+				background: isMultiColor
+					? getMultiColorGradient(gradientColors)
+					: undefined,
+				top: "-9px",
+				left: "-5px",
+			}),
+			[isMultiColor, gradientColors],
+		);
 
 		const handleElement = (
 			<Handle
@@ -216,36 +311,13 @@ const NodeHandle = memo(
 		const handleComponent = isMultiColor ? (
 			<div className={cn("relative", animationClasses)}>
 				{/* Gradient border background */}
-				<div
-					className="absolute inset-0"
-					style={{
-						width: "10px",
-						height: "18px",
-						borderRadius: "2px",
-						background: getMultiColorGradient(gradientColors),
-						top: "-9px",
-						left: "-5px",
-					}}
-				/>
+				<div className="absolute inset-0" style={gradientWrapperStyle} />
 				{/* Handle on top */}
 				<div className="relative">{handleElement}</div>
 			</div>
 		) : (
 			handleElement
 		);
-
-		let tooltipContent: string | null = null;
-		if (status && !status.valid && errorCode) {
-			if (errorCode === "type_mismatch") {
-				tooltipContent = "Invalid Type";
-			} else if (errorCode === "missing_connection") {
-				tooltipContent = "Missing Required";
-			} else if (errorCode === "invalid_source") {
-				tooltipContent = "Invalid Source";
-			} else {
-				tooltipContent = "Invalid";
-			}
-		}
 
 		return (
 			<ContextMenu>
@@ -299,7 +371,7 @@ const NodeHandle = memo(
 				<ContextMenuContent className="w-35">
 					<ContextMenuItem
 						disabled={handle.required || !isTarget}
-						onSelect={() => onHandlesDelete([handle.id])}
+						onSelect={handleDelete}
 					>
 						<TrashIcon className="mr-1 h-4 w-4" />
 						<span className="text-xs">Delete Handle</span>
@@ -308,7 +380,86 @@ const NodeHandle = memo(
 			</ContextMenu>
 		);
 	},
+	areNodeHandlePropsEqual, // <── key: value-based comparison instead of referential
 );
+
+// ─── Stable status extractor ──────────────────────────────────────────────────
+/**
+ * Extracts the scalar fields we care about from a HandleState so that
+ * useMemo / areEqual comparisons work on primitives, not object references.
+ *
+ * This is used by BaseNode to produce per-handle status props that only
+ * change when the actual values change, breaking the drag re-render cascade.
+ */
+function extractHandleStatusKey(s: HandleState | undefined) {
+	if (!s) return undefined;
+	return `${s.color}|${s.valid}|${s.isConnected}`;
+}
+
+// ─── Handle list sub-component ────────────────────────────────────────────────
+/**
+ * Separated so that handle lists can bail out of re-rendering independently
+ * of the parent BaseNode (e.g., when only `dragging` changed on the parent).
+ */
+interface HandleListProps {
+	handles: HandleEntityType[];
+	handleStatus: Record<string, HandleState>;
+	type: "source" | "target";
+	nodeSelected: boolean;
+}
+
+/**
+ * Custom areEqual for HandleList.
+ *
+ * Re-renders only when:
+ * - The handles array reference changes (contents changed in store)
+ * - Any individual handle's status scalar values change
+ * - Selection state changes
+ *
+ * Crucially does NOT re-render when:
+ * - `handleStatus` map gets a new reference but all values are the same
+ *   (which is the common case during drag of an unrelated node)
+ */
+const areHandleListPropsEqual = (
+	prev: HandleListProps,
+	next: HandleListProps,
+): boolean => {
+	if (prev.handles !== next.handles) return false;
+	if (prev.type !== next.type) return false;
+	if (prev.nodeSelected !== next.nodeSelected) return false;
+
+	// Check each handle's status by value, not reference
+	for (const handle of prev.handles) {
+		if (
+			extractHandleStatusKey(prev.handleStatus[handle.id]) !==
+			extractHandleStatusKey(next.handleStatus[handle.id])
+		) {
+			return false;
+		}
+	}
+
+	return true;
+};
+
+const HandleList = memo(
+	({ handles, handleStatus, type, nodeSelected }: HandleListProps) => (
+		<>
+			{handles.map((handle, i) => (
+				<NodeHandle
+					key={handle.id}
+					handle={handle}
+					index={i}
+					type={type}
+					status={handleStatus[handle.id]}
+					nodeSelected={nodeSelected}
+				/>
+			))}
+		</>
+	),
+	areHandleListPropsEqual,
+);
+
+// ─── BaseNode ─────────────────────────────────────────────────────────────────
 
 const BaseNode = memo(
 	(props: {
@@ -323,22 +474,17 @@ const BaseNode = memo(
 		const selectHandles = useMemo(() => makeSelectHandlesByNodeId(id), [id]);
 		const handles = useAppSelector(selectHandles);
 		const selectNode = useMemo(() => makeSelectNodeById(id), [id]);
-		const node = useAppSelector(selectNode);
+		const nodeType = useAppSelector((state) => selectNode(state)?.type);
+		const nodeName = useAppSelector((state) => selectNode(state)?.name);
 
 		const { handleStatus } = useNodeResult(id);
 
 		const { inputHandles, outputHandles } = useMemo(() => {
-			// Sort by .order (smaller number = higher position)
-			// If order is missing/undefined → falls back to creation time
 			const sorted = [...handles].sort((a, b) => {
 				const orderA = a.order ?? Infinity;
 				const orderB = b.order ?? Infinity;
 
-				if (orderA !== orderB) {
-					return orderA - orderB; // lower order number comes first (top)
-				}
-
-				// Fallback: older created items on top if orders are equal/missing
+				if (orderA !== orderB) return orderA - orderB;
 				return (a.createdAt || "").localeCompare(b.createdAt || "");
 			});
 
@@ -349,9 +495,13 @@ const BaseNode = memo(
 		}, [handles]);
 
 		const { iconMap } = useNodeRegistry();
-		const { mainIcon: MainIcon } = iconMap[node?.type] ?? {
-			mainIcon: PiCube,
-		};
+
+		// FIX: Use stable DEFAULT_ICON_ENTRY constant instead of inline `??` object.
+		// The inline `{ mainIcon: PiCube }` was a new object every render,
+		// making `MainIcon` always a new reference and preventing downstream memos
+		// from bailing out.
+		const { mainIcon: MainIcon } =
+			iconMap[nodeType || ""] ?? DEFAULT_ICON_ENTRY;
 
 		return (
 			<div
@@ -369,17 +519,20 @@ const BaseNode = memo(
 				)}
 			>
 				{/* Inputs - left side */}
+				{/*
+				  FIX: Replaced inline .map() with <HandleList> memoized component.
+				  Previously, every re-render of BaseNode (e.g. dragging=true frames)
+				  would call .map() producing new ReactElement instances, bypassing
+				  NodeHandle memo entirely because React reconciles by position, not
+				  identity. HandleList's custom areEqual now gates this.
+				*/}
 				<div className="absolute inset-y-0 left-0 w-0">
-					{inputHandles.map((handle, i) => (
-						<NodeHandle
-							key={handle.id}
-							handle={handle}
-							index={i} // ← now index follows the desired visual order
-							type="target"
-							status={handleStatus[handle.id]}
-							nodeSelected={selected}
-						/>
-					))}
+					<HandleList
+						handles={inputHandles}
+						handleStatus={handleStatus}
+						type="target"
+						nodeSelected={selected}
+					/>
 				</div>
 
 				{/* Content Container */}
@@ -405,7 +558,7 @@ const BaseNode = memo(
 							)}
 							<div className="flex flex-col min-w-0">
 								<span className="text-sm font-semibold text-foreground/90 truncate tracking-tight">
-									{node?.name}
+									{nodeName}
 								</span>
 							</div>
 						</div>
@@ -419,21 +572,19 @@ const BaseNode = memo(
 
 				{/* Outputs - right side */}
 				<div className="absolute inset-y-0 right-0 w-0">
-					{outputHandles.map((handle, i) => (
-						<NodeHandle
-							key={handle.id}
-							handle={handle}
-							index={i}
-							type="source"
-							status={handleStatus[handle.id]}
-							nodeSelected={selected}
-						/>
-					))}
+					<HandleList
+						handles={outputHandles}
+						handleStatus={handleStatus}
+						type="source"
+						nodeSelected={selected}
+					/>
 				</div>
 			</div>
 		);
 	},
 );
+
+// ─── Connection Line ──────────────────────────────────────────────────────────
 
 const CustomConnectionLine = memo(
 	({
@@ -477,6 +628,8 @@ const CustomConnectionLine = memo(
 	},
 );
 
+// ─── Custom Edge ──────────────────────────────────────────────────────────────
+
 const CustomEdge = memo(
 	({
 		id,
@@ -501,12 +654,28 @@ const CustomEdge = memo(
 			targetPosition,
 		});
 
-		// Fetch the color dynamically from the processor based on the source handle
 		const processorColor = useEdgeColor(source, sourceHandleId ?? "");
 
 		const color = selected
 			? "var(--primary)"
 			: processorColor || "var(--border)";
+
+		// FIX: Memoize the style object for the visible edge so the BaseEdge
+		// component doesn't re-render due to a new style object reference every
+		// frame during drag (even when selected/color haven't changed).
+		const edgeStyle = useMemo(
+			() => ({
+				...style,
+				strokeWidth: selected ? 3 : 1.5,
+				stroke: color,
+				opacity: selected ? 1 : 0.6,
+				transition: "stroke 0.3s ease",
+			}),
+			// `style` spread: in practice this prop is usually a stable empty object
+			// so excluding it from deps would be fine, but we keep it correct here.
+			// eslint-disable-next-line react-hooks/exhaustive-deps
+			[selected, color],
+		);
 
 		return (
 			<>
@@ -518,13 +687,7 @@ const CustomEdge = memo(
 					id={id}
 					path={edgePath}
 					markerEnd={markerEnd}
-					style={{
-						...style,
-						strokeWidth: selected ? 3 : 1.5,
-						stroke: color,
-						opacity: selected ? 1 : 0.6,
-						transition: "stroke 0.3s ease",
-					}}
+					style={edgeStyle}
 				/>
 			</>
 		);

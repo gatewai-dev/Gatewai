@@ -22,7 +22,7 @@ const RunNodeButton = memo(({ nodeId, ...buttonProps }: RunNodeButtonProps) => {
 	return (
 		<Button
 			{...buttonProps}
-			disabled={isNodeRunning || isInvalid}
+			disabled={isInvalid}
 			onClick={() => runNodes([nodeId])}
 			size="sm"
 		>
@@ -35,7 +35,7 @@ const RunNodeButton = memo(({ nodeId, ...buttonProps }: RunNodeButtonProps) => {
 			{isNodeRunning && (
 				<>
 					<Spinner className="size-3" />
-					<span className="text-xs">Running...</span>
+					<span className="text-xs">Queue Node</span>
 				</>
 			)}
 			{isInvalid && (
