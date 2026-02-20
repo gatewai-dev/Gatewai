@@ -7,12 +7,12 @@ export const processSchema = z.object({
 
 export const bulkUpdateSchema = z
 	.object({
-		nodes: z.array(nodeSchema).optional(),
-		edges: z.array(edgeSchema).optional(),
-		handles: z.array(handleSchema).optional(),
+		nodes: z.array(nodeSchema).default([]),
+		edges: z.array(edgeSchema).default([]),
+		handles: z.array(handleSchema).default([]),
 	})
 	.superRefine((val, ctx) => {
-		const { nodes = [], edges = [], handles = [] } = val;
+		const { nodes, edges, handles } = val;
 
 		// Build maps for quick lookups
 		const nodeMap = new Map<string, z.infer<typeof nodeSchema>>();

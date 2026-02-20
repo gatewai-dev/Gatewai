@@ -28,7 +28,6 @@ const LlmNodeComponent = memo(
 			}
 			return null;
 		}, [result]);
-		console.log({ hasMoreThanOneOutput });
 		return (
 			<BaseNode
 				selected={props.selected}

@@ -32,7 +32,6 @@ const PreviewNodeComponent = memo((props: NodeProps) => {
 	const { result, error } = useNodeResult(props.id);
 	const node = useAppSelector(makeSelectNodeById(props.id));
 	const [showMarkdown, setShowMarkdown] = useState(false);
-	console.log({ result, error });
 	if (!result || error) {
 		return (
 			<BaseNode {...props}>

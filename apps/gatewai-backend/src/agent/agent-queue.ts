@@ -20,7 +20,6 @@ async function processAgentJob(job: Job) {
 
 	// Initialize controller for cancellation
 	const controller = new AbortController();
-	console.log(job.data);
 	try {
 		logger.info({ sessionId }, "Starting agent job");
 

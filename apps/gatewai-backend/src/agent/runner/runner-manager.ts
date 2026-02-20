@@ -30,7 +30,6 @@ export class AgentRunnerManager {
 				return false;
 			}
 		}
-		console.log({ existingJob });
 
 		// Add to queue with sessionId as jobId for easy retrieval
 		await agentQueue.add(

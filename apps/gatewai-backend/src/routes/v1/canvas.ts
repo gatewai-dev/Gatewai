@@ -191,14 +191,11 @@ const canvasRoutes = new Hono<{ Variables: AuthHonoTypes }>({
 		zValidator("query", createPatchQuerySchema),
 		async (c) => {
 			const id = c.req.param("id");
-			// Validate permission: Owner access required to propose patch
-			// (Agents using API key will bypass this due to auth-helpers change)
 			await assertCanvasOwnership(c, id);
 
 			try {
 				const { agentSessionId } = c.req.valid("query");
 				const validated = c.req.valid("json");
-
 				const patch = await prisma.canvasPatch.create({
 					data: {
 						canvasId: id,
@@ -498,7 +495,6 @@ const canvasRoutes = new Hono<{ Variables: AuthHonoTypes }>({
 		const canvasId = c.req.param("id");
 		const validated = c.req.valid("json");
 		const user = c.get("user");
-		console.log({ payload: c.req.raw.body });
 		let apiKey = c.req.header("x-api-key");
 		if (!apiKey && user) {
 			const userKey = await prisma.apiKey.findFirst({
@@ -511,7 +507,6 @@ const canvasRoutes = new Hono<{ Variables: AuthHonoTypes }>({
 		}
 
 		const wfProcessor = new NodeWFProcessor(prisma);
-		console.log({ canvasId, validated, apiKey });
 		const taskBatch = await wfProcessor.processNodes(
 			canvasId,
 			validated.node_ids,
@@ -646,7 +641,6 @@ const canvasRoutes = new Hono<{ Variables: AuthHonoTypes }>({
 					authHeaders["x-api-key"] = userKey.key;
 				}
 			}
-			console.log("Auth headers:", authHeaders);
 			// Start the agent runner in the background
 			const started = await AgentRunnerManager.start({
 				canvasId,
