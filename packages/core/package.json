@@ -1,0 +1,68 @@
+{
+	"name": "@gatewai/core",
+	"version": "0.0.1",
+	"private": true,
+	"type": "module",
+	"sideEffects": false,
+	"license": "MIT",
+	"module": "./dist/index.mjs",
+	"types": "./dist/index.d.mts",
+	"exports": {
+		".": {
+			"browser": "./dist/browser.mjs",
+			"types": "./dist/index.d.mts",
+			"development": "./src/index.ts",
+			"import": "./dist/index.mjs",
+			"default": "./dist/index.mjs"
+		},
+		"./di": {
+			"types": "./dist/di.d.mts",
+			"development": "./src/di/index.ts",
+			"import": "./dist/di.mjs",
+			"default": "./dist/di.mjs"
+		},
+		"./types": {
+			"types": "./dist/types.d.mts",
+			"development": "./src/types/index.ts",
+			"import": "./dist/types.mjs",
+			"default": "./dist/types.mjs"
+		},
+		"./storage": {
+			"types": "./dist/storage.d.mts",
+			"development": "./src/storage/index.ts",
+			"import": "./dist/storage.mjs",
+			"default": "./dist/storage.mjs"
+		},
+		"./browser": {
+			"types": "./dist/browser.d.mts",
+			"development": "./src/browser/index.ts",
+			"import": "./dist/browser.mjs",
+			"default": "./dist/browser.mjs"
+		}
+	},
+	"files": [
+		"dist/**"
+	],
+	"scripts": {
+		"build": "tsdown",
+		"dev": "tsdown --watch",
+		"clean": "rm -rf .turbo && rm -rf node_modules && rm -rf dist"
+	},
+	"devDependencies": {
+		"@gatewai/db": "workspace:*",
+		"@gatewai/tsconfig": "workspace:*",
+		"@types/data-urls": "^3.0.4",
+		"@types/node": "^24.0.4",
+		"tsdown": "^0.19.0",
+		"typescript": "5.5.4"
+	},
+	"dependencies": {
+		"@google-cloud/storage": "^7.15.0",
+		"nanoid": "^5.1.6",
+		"pino": "^10.1.0",
+		"dotenv": "^16.4.5",
+		"reflect-metadata": "^0.2.2",
+		"tsyringe": "^4.8.0",
+		"zod": "^3.23.8"
+	}
+}

@@ -1,6 +1,5 @@
+import { ENV_CONFIG, logger } from "@gatewai/core";
 import { MCPServerStreamableHttp } from "@openai/agents";
-import { ENV_CONFIG } from "../../config.js";
-import { logger } from "../../logger.js";
 
 logger.info(`Initializing MCP Tool with URL: ${ENV_CONFIG.MCP_URL}`);
 
@@ -49,19 +48,17 @@ export const createGatewaiMCPTool = (headers: Record<string, string> = {}) => {
 	});
 };
 
-// Deprecated static instance - retained for backward compat if needed,
-// but we should migrate away from it.
-// For now, initialized without headers (public/service mode if applicable, likely fails auth now)
-export const localGatewaiMCPTool = createGatewaiMCPTool({});
-
 // Helper to connect a specific tool instance
 export const connectMCP = async (toolInstance: MCPServerStreamableHttp) => {
 	try {
 		logger.info("Connecting to MCP server...");
 		await toolInstance.connect();
 		logger.info("Successfully connected to MCP server");
-	} catch (err) {
+	} catch (err: any) {
 		logger.error({ err }, "Failed to connect to MCP tool");
-		throw err;
+		const mcpUrl = ENV_CONFIG.MCP_URL;
+		throw new Error(
+			`Could not connect to MCP server at ${mcpUrl}. Please ensure the MCP server is running and accessible. Details: ${err.message}`,
+		);
 	}
 };

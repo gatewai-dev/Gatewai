@@ -1,17 +1,17 @@
+import assert from "node:assert";
+import { createRequire } from "node:module";
 import { GatewaiApiClient } from "@gatewai/api-client";
-import { bulkUpdateSchema } from "@gatewai/types";
+import { bulkUpdateSchema } from "@gatewai/core/types";
 import { StreamableHTTPTransport } from "@hono/mcp";
 import { serve } from "@hono/node-server";
 import {
 	McpServer,
 	ResourceTemplate,
 } from "@modelcontextprotocol/sdk/server/mcp.js";
-import assert from "assert";
 import { config } from "dotenv";
 import { Hono } from "hono";
 import { cors } from "hono/cors";
 import { logger } from "hono/logger";
-import { createRequire } from "module";
 import { z } from "zod";
 import { getApiClientSafe, runWithApiClient } from "./context.js";
 
@@ -140,7 +140,7 @@ server.registerTool(
 			content: [
 				{
 					type: "text",
-					text: `Patch proposed successfully. Patch ID: ${result.id}. The user has been notified to review the changes.`,
+					text: `Patch proposed successfully. Patch ID: ${result.id}`,
 				},
 			],
 		};

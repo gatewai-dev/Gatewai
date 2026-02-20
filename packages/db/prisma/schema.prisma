@@ -9,31 +9,6 @@ datasource db {
   url      = env("DATABASE_URL")
 }
 
-enum NodeType {
-  Text
-  TextMerger
-  Preview
-  File
-  Export
-  Crop
-  Resize
-  Paint
-  Blur
-  Compositor
-  Note
-  Modulate
-
-  LLM
-  ImageGen
-  VideoGen
-  VideoGenFirstLastFrame
-  VideoGenExtend
-  VideoCompositor
-
-  TextToSpeech
-  SpeechToText
-}
-
 enum DataType {
   Text
   Number
@@ -176,7 +151,7 @@ model Canvas {
 model Node {
   id             String          @id @default(cuid())
   name           String
-  type           NodeType
+  type           String
   // React Flow position
   position       Json           // To store position as { x: number, y: number }
   // React Flow dimensions (optional, can be auto-calculated)
@@ -184,7 +159,6 @@ model Node {
   height         Float?
 
   config         Json?
-  isDirty        Boolean         @default(false) // Whether or not previous results or data/config changed
   /*
 
   OutputItem {
@@ -246,7 +220,7 @@ model Handle {
 
 model NodeTemplate {
   id                      String                 @id @default(cuid())
-  type                    NodeType               @unique
+  type                    String                 @unique
   displayName             String
   description             String?
   templateHandles         NodeTemplateHandle[]
@@ -258,6 +232,7 @@ model NodeTemplate {
   category                String?
   subcategory             String?
   showInQuickAccess       Boolean                @default(false)
+  showInSidebar           Boolean                @default(true)
   createdAt               DateTime               @default(now())
   updatedAt               DateTime               @updatedAt
   nodes                   Node[]

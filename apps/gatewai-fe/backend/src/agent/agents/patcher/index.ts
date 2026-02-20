@@ -1,17 +1,19 @@
 import assert from "node:assert";
+import { logger } from "@gatewai/core";
+import {
+	agentBulkUpdateSchema,
+	type BulkUpdatePayload,
+} from "@gatewai/core/types";
+import { GetCanvasEntities } from "@gatewai/data-ops";
 import { type NodeTemplate, prisma } from "@gatewai/db";
-import { agentBulkUpdateSchema, type BulkUpdatePayload } from "@gatewai/types";
-import { Agent, tool } from "@openai/agents";
+import { Agent, type MCPServerStreamableHttp, tool } from "@openai/agents";
 import { getQuickJS, type QuickJSContext, Scope } from "quickjs-emscripten";
 import { z } from "zod";
 import { zodToJsonSchema } from "zod-to-json-schema";
-import { GetCanvasEntities } from "../../../data-ops/canvas.js";
-import { logger } from "../../../logger.js";
 import {
 	type AVAILABLE_AGENT_MODELS,
 	getAgentModel,
 } from "../../agent-model.js";
-import { localGatewaiMCPTool } from "../../tools/gatewai-mcp.js";
 
 /**
  * Patcher Sub-Agent
@@ -45,7 +47,7 @@ interface PatcherContext {
  */
 export function createPatcherAgent(
 	modelName: (typeof AVAILABLE_AGENT_MODELS)[number],
-	mcpTool: any, // Using any here to avoid cyclic dependency type issues or import complexity, but MCPServerStreamableHttp is better if imported
+	mcpTool: MCPServerStreamableHttp,
 ) {
 	let patcherContext: PatcherContext | null = null;
 
@@ -75,10 +77,8 @@ export function createPatcherAgent(
 				const sanitizedNodes =
 					nodes?.map((node) => ({
 						...node,
+						type: node.type as any,
 						width: node.width ?? 340,
-						position: node.position as unknown as { x: number; y: number },
-						config: node.config as any,
-						result: node.result as Record<string, unknown> | null,
 					})) || [];
 
 				// Store in context for other tools
@@ -295,6 +295,19 @@ export function createPatcherAgent(
 					edges: result.edges,
 					handles: result.handles,
 				};
+
+				// Validate Node Types against Templates
+				const validTypes = new Set(patcherContext.templates.map((t) => t.type));
+				const invalidNodes = payload.nodes?.filter(
+					(n) => !validTypes.has(n.type),
+				);
+
+				if (invalidNodes && invalidNodes.length > 0) {
+					const badTypes = Array.from(
+						new Set(invalidNodes.map((n) => n.type)),
+					).join(", ");
+					return `Validation failed: Unknown node types detected: [${badTypes}].\nAvailable types: [${Array.from(validTypes).sort().join(", ")}]`;
+				}
 
 				const validationResult = agentBulkUpdateSchema.safeParse(payload);
 				if (!validationResult.success) {

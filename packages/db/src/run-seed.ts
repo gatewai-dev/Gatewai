@@ -1,12 +1,12 @@
 import { config } from "dotenv";
 import { prisma } from "./client.js";
-import { SEED_createNodeTemplates } from "./seed/node-templates.js";
 
 config();
 
 // Entry point for seeding the database
 async function main() {
-	await SEED_createNodeTemplates(prisma);
+	// Node templates are now auto-synced from manifests at application startup.
+	// Add other seed logic here if needed.
 }
 
 main()

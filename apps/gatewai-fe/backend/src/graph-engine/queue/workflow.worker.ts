@@ -1,16 +1,21 @@
+import { ENV_CONFIG, logger } from "@gatewai/core";
+import { container } from "@gatewai/core/di";
+import { GetCanvasEntities } from "@gatewai/data-ops";
 import { Prisma, prisma, TaskStatus } from "@gatewai/db";
-import { type Job, Worker } from "bullmq";
-import { ENV_CONFIG } from "../../config.js";
-import { GetCanvasEntities } from "../../data-ops/canvas.js";
-import { logger } from "../../logger.js";
-import { assertIsError } from "../../utils/misc.js";
-import { nodeProcessors } from "../processors/index.js";
-import { redisConnection } from "./connection.js";
 import {
 	type NodeTaskJobData,
+	nodeRegistry,
+	redisConnection,
 	WORKFLOW_QUEUE_NAME,
 	workflowQueue,
-} from "./workflow.queue.js";
+} from "@gatewai/graph-engine";
+import type {
+	BackendNodeProcessorCtx,
+	NodeProcessor,
+	NodeProcessorConstructor,
+} from "@gatewai/node-sdk/server";
+import { type Job, Worker } from "bullmq";
+import { assertIsError } from "../../utils/misc.js";
 
 // Global reference for shutdown handling
 let worker: Worker<NodeTaskJobData> | null = null;
@@ -240,20 +245,29 @@ const processNodeJob = async (job: Job<NodeTaskJobData>) => {
 		});
 
 		// 5. Execute Processor
-		const processor = nodeProcessors[node.type];
-		if (!processor) {
+		const ProcessorClass = nodeRegistry.getProcessor(
+			node.type,
+		) as NodeProcessorConstructor;
+
+		if (!ProcessorClass) {
 			logger.error(`No processor for node type ${node.type}`);
 			throw new Error(`No processor for node type ${node.type}`);
 		}
 
 		logger.info(`Processing node: ${node.id} with type: ${node.type}`);
-		const { success, error, newResult } = await processor({
+
+		const ctx: BackendNodeProcessorCtx = {
 			node,
 			data: { ...data, tasks: batchTasks, task, apiKey },
-			prisma,
-		});
+		};
 
-		if (error) logger.error(`${node.id}: Error: ${error}`);
+		// Resolve from DI container
+		const processorInstance = container.resolve(
+			ProcessorClass,
+		) as unknown as NodeProcessor;
+		const result = await processorInstance.process(ctx);
+
+		const { success, error, newResult } = result;
 
 		// 6. Handle Results
 		if (newResult) {
@@ -457,7 +471,7 @@ const FIVE_MINS = 300_000;
 
 const WORKER_LOCK_DURATION = FIVE_MINS;
 
-export const startWorker = async () => {
+export const startWorkflowWorker = async () => {
 	logger.info("Starting Workflow Worker...");
 
 	try {

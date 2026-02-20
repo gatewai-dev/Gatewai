@@ -1,20 +1,21 @@
-import { zodResolver } from "@hookform/resolvers/zod";
-import { motion } from "framer-motion";
-import { AlertCircle, Loader2 } from "lucide-react";
-import { useState } from "react";
-import { useForm } from "react-hook-form";
-import { z } from "zod";
-import { Alert, AlertDescription } from "@gatewai/ui-kit";
-import { Button } from "@gatewai/ui-kit";
 import {
+	Alert,
+	AlertDescription,
+	Button,
 	Form,
 	FormControl,
 	FormField,
 	FormItem,
 	FormLabel,
 	FormMessage,
+	Input,
 } from "@gatewai/ui-kit";
-import { Input } from "@gatewai/ui-kit";
+import { zodResolver } from "@hookform/resolvers/zod";
+import { motion } from "framer-motion";
+import { AlertCircle, Loader2 } from "lucide-react";
+import { useState } from "react";
+import { useForm } from "react-hook-form";
+import { z } from "zod";
 import { authClient } from "@/lib/auth-client";
 
 const formSchema = z.object({

@@ -1,20 +1,44 @@
+import "reflect-metadata";
+
 import { readFile } from "node:fs/promises";
-import { prisma, SEED_createNodeTemplates } from "@gatewai/db";
+import { logger as appLogger, ENV_CONFIG } from "@gatewai/core";
+import { prisma } from "@gatewai/db";
+import { syncNodeTemplates } from "@gatewai/graph-engine";
 import { serve } from "@hono/node-server";
 import { serveStatic } from "@hono/node-server/serve-static";
 import { Hono } from "hono";
 import { cors } from "hono/cors";
+import { startAgentWorker } from "./agent/agent-queue.js";
 import { type AuthHonoTypes, auth, ensureUsersAPI_KEY } from "./auth.js";
-import { ENV_CONFIG } from "./config.js";
-import { startWorker } from "./graph-engine/queue/workflow.worker.js";
-import { startAgentWorker } from "./lib/agent-queue.js";
-import { logger as appLogger } from "./logger.js";
+import { registerBackendServices } from "./di-setup.js";
+import { startWorkflowWorker } from "./graph-engine/queue/workflow.worker.js";
 import {
 	errorHandler,
 	loggerMiddleware,
 	notFoundHandler,
 } from "./middlewares.js";
-import { v1Router } from "./routes/v1/index.js";
+import { registerNodes } from "./register-nodes.js";
+
+// Initialize Dependency Injection Container
+registerBackendServices();
+
+// Registers backend processors of nodes.
+await registerNodes();
+
+// Sync node templates found in codebase to database
+await syncNodeTemplates(prisma);
+
+// Make sure all users has default API KEY
+await ensureUsersAPI_KEY();
+
+// Initialize canvas worker.
+await startWorkflowWorker();
+
+// Initialize agent worker.
+startAgentWorker();
+
+// Register nodes before importing v1 router for dynamic routes to work
+const { v1Router } = await import("./routes/v1/index.js");
 
 const app = new Hono<{
 	Variables: AuthHonoTypes;
@@ -43,6 +67,21 @@ const app = new Hono<{
 		c.set("session", session.session);
 		return next();
 	})
+	.use(
+		"/api/*",
+		cors({
+			origin: (origin) => {
+				if (process.env.NODE_ENV === "production") {
+					return origin === ENV_CONFIG.BASE_URL ? origin : null;
+				}
+				return origin;
+			},
+			allowMethods: ["POST", "GET", "OPTIONS"],
+			exposeHeaders: ["Content-Length"],
+			maxAge: 600,
+			credentials: true,
+		}),
+	)
 	.on(["POST", "GET"], "/api/auth/*", async (c) => {
 		return await auth.handler(c.req.raw);
 	})
@@ -57,19 +96,6 @@ const app = new Hono<{
 			user,
 		});
 	})
-	.use(
-		"/api/*",
-		cors({
-			origin:
-				process.env.NODE_ENV === "production"
-					? ENV_CONFIG.BASE_URL
-					: ["http://localhost:5173"],
-			allowMethods: ["POST", "GET", "OPTIONS"],
-			exposeHeaders: ["Content-Length"],
-			maxAge: 600,
-			credentials: true,
-		}),
-	)
 	.route("/api/v1", v1Router)
 	.get("/api/v1/test-error", () => {
 		throw new Error("Test Unhandled Exception");
@@ -82,7 +108,7 @@ const app = new Hono<{
 			VITE_BASE_URL: ENV_CONFIG.BASE_URL,
 			DISABLE_EMAIL_SIGNUP: ENV_CONFIG.DISABLE_EMAIL_SIGNUP,
 		};
-		return c.text(`window.GATEWAI_ENV = ${JSON.stringify(env)};`, 200, {
+		return c.text(`window.GATEWAI_ENV = ${JSON.stringify(env)}; `, 200, {
 			"Content-Type": "application/javascript",
 		});
 	});
@@ -101,14 +127,6 @@ app
 		}
 	})
 	.notFound(notFoundHandler);
-
-// Run seed check for node templates
-await SEED_createNodeTemplates(prisma);
-await ensureUsersAPI_KEY();
-
-// Initialize canvas worker.
-await startWorker();
-startAgentWorker();
 
 serve(
 	{

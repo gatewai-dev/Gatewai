@@ -1,0 +1,11 @@
+{
+	"extends": "@gatewai/tsconfig/react-library.json",
+	"compilerOptions": {
+		"baseUrl": ".",
+		"paths": {
+			"@/*": ["./src/*"]
+		},
+		"lib": ["DOM"]
+	},
+	"include": ["src"]
+}

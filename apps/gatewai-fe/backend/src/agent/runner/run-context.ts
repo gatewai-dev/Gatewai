@@ -1,5 +1,5 @@
+import { logger } from "@gatewai/core";
 import { RunContext, type RunToolApprovalItem } from "@openai/agents";
-import { logger } from "../../logger.js";
 
 class GatewaiRunContext<TContext> extends RunContext<TContext> {
 	private toolLogs: Array<{

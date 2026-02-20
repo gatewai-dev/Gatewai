@@ -1,3 +1,17 @@
+import {
+	AlertDialog,
+	AlertDialogAction,
+	AlertDialogCancel,
+	AlertDialogContent,
+	AlertDialogDescription,
+	AlertDialogFooter,
+	AlertDialogHeader,
+	AlertDialogTitle,
+	AlertDialogTrigger,
+	Button,
+	Input,
+	Skeleton,
+} from "@gatewai/ui-kit";
 import { formatDistanceToNow } from "date-fns";
 import {
 	Clock,
@@ -10,25 +24,10 @@ import {
 	Sparkles,
 	Trash2,
 } from "lucide-react";
-
 import { useEffect, useRef, useState } from "react";
 import { Helmet } from "react-helmet-async";
 import { Link, useNavigate } from "react-router";
 import { toast } from "sonner";
-import {
-	AlertDialog,
-	AlertDialogAction,
-	AlertDialogCancel,
-	AlertDialogContent,
-	AlertDialogDescription,
-	AlertDialogFooter,
-	AlertDialogHeader,
-	AlertDialogTitle,
-	AlertDialogTrigger,
-} from "@gatewai/ui-kit";
-import { Button } from "@gatewai/ui-kit";
-import { Input } from "@gatewai/ui-kit";
-import { Skeleton } from "@gatewai/ui-kit";
 import { cn } from "@/lib/utils";
 import type { CanvasListRPC } from "@/rpc/types";
 import { CanvasListProvider, useCanvasListCtx } from "../ctx/canvas-list.ctx";

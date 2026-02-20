@@ -3,11 +3,11 @@
 	"scripts": {
 		"build": "turbo run build",
 		"be:build": "turbo run be:build --filter=@gatewai/fe",
-		"dev": "turbo run dev",
+		"dev": "turbo run dev --concurrency 35",
 		"dev-mcp": "turbo run dev --filter=@gatewai/mcp-server",
 		"biome": "pnpm exec biome check --write",
 		"biome-hook": "pnpm exec biome check --write --no-errors-on-unmatched --files-ignore-unknown=true --colors=off",
-		"clean": "turbo run clean && rm -rf node_modules",
+		"prune": "turbo run prune",
 		"changeset": "changeset",
 		"version-packages": "changeset version",
 		"release:tags": "changeset version && changeset tag && git tag -a v$(node -p \"require('./apps/gatewai-fe/package.json').version\") -m \"Release v$(node -p \"require('./apps/gatewai-fe/package.json').version\")\" && git push --follow-tags",
@@ -37,8 +37,10 @@
 	},
 	"pnpm": {
 		"overrides": {
-			"react": "^19.2.0",
-			"react-dom": "^19.2.0"
+			"react": "^19.2.4",
+			"react-dom": "^19.2.4",
+			"@types/react": "^19.1.11",
+			"@types/react-dom": "^19.1.11"
 		},
 		"onlyBuiltDependencies": [
 			"@prisma/client",
@@ -62,5 +64,16 @@
 		"sharp",
 		"gl"
 	],
-	"name": "gatewai"
+	"name": "gatewai",
+	"dependencies": {
+		"@hookform/resolvers": "^3.10.0",
+		"@lobehub/icons": "^2.48.0",
+		"clsx": "^2.1.1",
+		"file-type": "^21.1.1",
+		"lucide-react": "^0.563.0",
+		"react-hook-form": "^7.71.1",
+		"react-icons": "^5.5.0",
+		"tailwind-merge": "^3.4.0",
+		"zod": "^4.3.6"
+	}
 }

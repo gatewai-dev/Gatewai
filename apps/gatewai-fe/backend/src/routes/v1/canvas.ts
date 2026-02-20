@@ -1,23 +1,22 @@
-import { prisma } from "@gatewai/db";
+import { logger } from "@gatewai/core";
 import {
 	agentBulkUpdateSchema,
 	type BulkUpdatePayload,
 	bulkUpdateSchema,
 	processSchema,
-} from "@gatewai/types";
+} from "@gatewai/core/types";
+import { applyCanvasUpdate, GetCanvasEntities } from "@gatewai/data-ops";
+import { prisma } from "@gatewai/db";
+import { NodeWFProcessor } from "@gatewai/graph-engine";
+
 import { zValidator } from "@hono/zod-validator";
-import type { XYPosition } from "@xyflow/react";
 import { Hono } from "hono";
 import { HTTPException } from "hono/http-exception";
 import { streamSSE } from "hono/streaming";
 import z from "zod";
 import { AgentRunnerManager } from "../../agent/runner/runner-manager.js";
 import type { AuthHonoTypes } from "../../auth.js";
-import { GetCanvasEntities } from "../../data-ops/canvas.js";
-import { applyCanvasUpdate } from "../../data-ops/canvas-update.js";
-import { NodeWFProcessor } from "../../graph-engine/canvas-workflow-processor.js";
 import { redisSubscriber } from "../../lib/redis.js";
-import { logger } from "../../logger.js";
 import { assertIsError } from "../../utils/misc.js";
 import {
 	assertCanvasOwnership,
@@ -172,6 +171,16 @@ const canvasRoutes = new Hono<{ Variables: AuthHonoTypes }>({
 
 		// Only owners can update canvas
 		await assertCanvasOwnership(c, id);
+
+		console.log("PATCH Canvas Request:", {
+			id,
+			validated,
+			contentType: c.req.header("content-type"),
+			hasNodes: !!validated.nodes,
+			nodesCount: validated.nodes?.length,
+			hasEdges: !!validated.edges,
+			hasHandles: !!validated.handles,
+		});
 
 		try {
 			await applyCanvasUpdate(id, validated);
@@ -407,11 +416,10 @@ const canvasRoutes = new Hono<{ Variables: AuthHonoTypes }>({
 				data: {
 					name: node.name,
 					type: node.type,
-					position: node.position as XYPosition,
+					position: node.position as any,
 					width: node.width,
 					height: node.height,
 					config: node.config ?? {},
-					isDirty: node.isDirty,
 					templateId: node.templateId,
 					canvasId: duplicate.id,
 				},
@@ -500,7 +508,7 @@ const canvasRoutes = new Hono<{ Variables: AuthHonoTypes }>({
 		const canvasId = c.req.param("id");
 		const validated = c.req.valid("json");
 		const user = c.get("user");
-
+		console.log({ payload: c.req.raw.body });
 		let apiKey = c.req.header("x-api-key");
 		if (!apiKey && user) {
 			const userKey = await prisma.apiKey.findFirst({
@@ -513,6 +521,7 @@ const canvasRoutes = new Hono<{ Variables: AuthHonoTypes }>({
 		}
 
 		const wfProcessor = new NodeWFProcessor(prisma);
+		console.log({ canvasId, validated, apiKey });
 		const taskBatch = await wfProcessor.processNodes(
 			canvasId,
 			validated.node_ids,
@@ -647,7 +656,7 @@ const canvasRoutes = new Hono<{ Variables: AuthHonoTypes }>({
 					authHeaders["x-api-key"] = userKey.key;
 				}
 			}
-
+			console.log("Auth headers:", authHeaders);
 			// Start the agent runner in the background
 			const started = await AgentRunnerManager.start({
 				canvasId,

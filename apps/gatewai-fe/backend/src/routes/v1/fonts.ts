@@ -9,13 +9,13 @@ import type { AuthorizedHonoTypes } from "../../auth.js";
 
 const __filename = fileURLToPath(import.meta.url);
 const __dirname = path.dirname(__filename);
+const fontsRootPath = path.join(__dirname, "../../assets/fonts");
 
 const fontsRouter = new Hono<{ Variables: AuthorizedHonoTypes }>({
 	strict: false,
 })
 	.get("/", async (c) => {
-		const assetsDir = path.join(__dirname, "../../assets/fonts");
-		const dirents = await fs.readdir(assetsDir, { withFileTypes: true });
+		const dirents = await fs.readdir(fontsRootPath, { withFileTypes: true });
 		const fontNames = dirents
 			.filter((dirent) => dirent.isDirectory())
 			.map((dirent) => dirent.name);
@@ -26,7 +26,7 @@ const fontsRouter = new Hono<{ Variables: AuthorizedHonoTypes }>({
 		zValidator("param", z.object({ fontName: z.string() })),
 		async (c) => {
 			const fontName = c.req.param("fontName");
-			const fontDir = path.join(__dirname, "../../assets/fonts", fontName);
+			const fontDir = path.join(fontsRootPath, fontName);
 			try {
 				const files = await fs.readdir(fontDir);
 				const fontFile = files.find(

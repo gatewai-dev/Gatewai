@@ -1,0 +1,59 @@
+{
+	"name": "@gatewai/node-paint",
+	"version": "0.0.0",
+	"private": true,
+	"type": "module",
+	"module": "./dist/index.mjs",
+	"types": "./dist/index.d.mts",
+	"exports": {
+		".": {
+			"types": "./dist/index.d.mts",
+			"import": "./dist/index.mjs",
+			"default": "./dist/index.mjs",
+			"development": "./src/metadata.ts"
+		},
+		"./server": {
+			"types": "./dist/server.d.mts",
+			"import": "./dist/server.mjs",
+			"default": "./dist/server.mjs",
+			"development": "./src/server/index.ts"
+		},
+		"./browser": {
+			"types": "./dist/browser.d.mts",
+			"import": "./dist/browser.mjs",
+			"default": "./dist/browser.mjs",
+			"development": "./src/browser/index.ts"
+		}
+	},
+	"scripts": {
+		"build": "tsdown",
+		"dev": "tsdown --watch",
+		"clean": "rm -rf dist"
+	},
+	"dependencies": {
+		"@gatewai/node-sdk": "workspace:*",
+		"@gatewai/core": "workspace:*",
+		"@gatewai/db": "workspace:*",
+		"@gatewai/react-store": "workspace:*",
+		"@gatewai/ui-kit": "workspace:*",
+		"zod": "3.25.67",
+		"tsyringe": "^4.10.0",
+		"lucide-react": "^0.473.0"
+	},
+	"devDependencies": {
+		"@gatewai/tsconfig": "workspace:*",
+		"@types/react": "^19.1.11",
+		"react": "^19.2.4",
+		"@types/react-dom": "^19.1.7",
+		"@types/node": "^22.13.10",
+		"tsdown": "^0.19.0",
+		"typescript": "~5.8.3",
+		"@gatewai/react-canvas": "workspace:*"
+	},
+	"peerDependencies": {
+		"react": "^19.2.4",
+		"@gatewai/react-canvas": "workspace:*",
+		"pixi.js": "*",
+		"react-icons": "*"
+	}
+}
