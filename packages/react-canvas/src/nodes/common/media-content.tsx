@@ -7,6 +7,7 @@ import { useMemo } from "react";
 import { MediaDimensions, OutputSelector } from "../../components";
 import { AudioRenderer } from "./audio-renderer";
 import { CanvasRenderer } from "./canvas-renderer";
+import { MediaPlayer } from "./remotion-player";
 import { VideoRenderer } from "./video-renderer";
 
 function MediaContent({
@@ -25,7 +26,8 @@ function MediaContent({
 	const isImage = outputItem?.type === "Image";
 	const isVideo = outputItem?.type === "Video";
 	const isAudio = outputItem?.type === "Audio";
-	const isOther = !isImage && !isVideo && !isAudio;
+	const isText = outputItem?.type === "Text";
+	const isOther = !isImage && !isVideo && !isAudio && !isText;
 	const hasMoreThanOneOutput = result.outputs.length > 1;
 	console.log({ outputItem });
 	const assetUrl = useMemo(() => {
@@ -66,8 +68,12 @@ function MediaContent({
 				</div>
 			)}
 			{isImage && assetUrl && <CanvasRenderer imageUrl={assetUrl} />}
-			{isVideo && assetUrl && (
-				<VideoRenderer src={assetUrl} durationMs={durationMs} />
+			{isVideo && (
+				<VideoRenderer
+					src={assetUrl || undefined}
+					virtualVideo={outputItem.data as any}
+					durationMs={durationMs}
+				/>
 			)}
 			{isAudio && assetUrl && (
 				<AudioRenderer
@@ -76,6 +82,7 @@ function MediaContent({
 					durationMs={durationMs}
 				/>
 			)}
+			{isText && <MediaPlayer type="Text" data={outputItem.data} />}
 			{isOther && (
 				<div className="flex flex-col items-center gap-2">
 					<FileIcon className="w-5 h-5" />{" "}

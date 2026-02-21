@@ -53,7 +53,6 @@ export const SingleClipComposition: React.FC<{
 			>
 				<Video
 					src={params.sourceUrl}
-					// @ts-expect-error
 					startFrom={startFrame}
 					playbackRate={params.speed}
 					style={{ width: "100%", height: "100%", objectFit: "contain" }}

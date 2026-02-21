@@ -1,3 +1,7 @@
+import {
+	resolveVideoSourceUrl,
+	SingleClipComposition,
+} from "@gatewai/remotion-compositions";
 import { Video } from "@remotion/media";
 import { useMemo } from "react";
 import {
@@ -41,6 +45,7 @@ export interface ExtendedLayer
 	maxDurationInFrames?: number;
 	isPlaceholder?: boolean;
 	src?: string; // Resolved URL for rendering
+	virtualVideo?: any; // VirtualVideoData
 	text?: string; // Resolved text for rendering
 	letterSpacing?: number;
 	lineHeight?: number;
@@ -173,9 +178,10 @@ export const CompositionScene: React.FC<SceneProps> = ({
 				// Optimization: Do not render if out of frame bounds
 				if (frame < startFrame || frame >= endFrame) return null;
 
-				// Source Resolution
-				// In Editor: handled via callbacks. In Node: handled via pre-resolved 'src' prop in ExtendedLayer.
-				const src = layer.src;
+				// Resolve URL: prefer virtualVideo if present, else use layer.src
+				const src = layer.virtualVideo
+					? resolveVideoSourceUrl(layer.virtualVideo)
+					: layer.src;
 				const textContent = layer.text;
 
 				const {
@@ -213,8 +219,10 @@ export const CompositionScene: React.FC<SceneProps> = ({
 						durationInFrames={duration}
 						layout="none"
 					>
-						{layer.type === "Video" && src && (
-							<Video src={src} style={{ ...style }} volume={animVolume} />
+						{layer.type === "Video" && layer.virtualVideo && (
+							<div style={style}>
+								<SingleClipComposition virtualVideo={layer.virtualVideo} />
+							</div>
 						)}
 						{layer.type === "Image" && src && (
 							<Img src={src} style={{ ...style, objectFit: "cover" }} />

@@ -1980,24 +1980,35 @@ export const VideoDesignerEditor: React.FC<VideoDesignerEditorProps> = ({
 
 			initialLayers.forEach((item, id) => {
 				const saved = layerUpdates[id] as ExtendedLayer | undefined;
+
 				let durationMs = 0;
-				if (item.type === "Video") {
-					const vv = item.data as VirtualVideoData;
-					console.log({ vv });
-					durationMs =
-						vv.source.entity?.duration ?? vv.source.processData?.duration ?? 0;
-				} else if (item.type !== "Text") {
+				let text: string | undefined;
+				let src: string | undefined;
+				let virtualVideo: VirtualVideoData | undefined;
+				let layerWidth = saved?.width;
+				let layerHeight = saved?.height;
+
+				if (item.type === "Text") {
+					text = getTextData(id);
+				} else if (item.type === "Video") {
+					virtualVideo = item.data as VirtualVideoData;
+					durationMs = virtualVideo.sourceMeta?.durationMs ?? 0;
+					src = resolveVideoSourceUrl(virtualVideo);
+					layerWidth = layerWidth ?? virtualVideo.sourceMeta?.width;
+					layerHeight = layerHeight ?? virtualVideo.sourceMeta?.height;
+				} else if (item.type === "Image" || item.type === "Audio") {
 					const fileData = item.data as FileData;
 					durationMs =
 						fileData.entity?.duration ?? fileData.processData?.duration ?? 0;
+					src = getAssetUrl(id);
+					layerWidth = layerWidth ?? fileData.processData?.width;
+					layerHeight = layerHeight ?? fileData.processData?.height;
 				}
 
 				const calculatedDurationFrames =
 					(item.type === "Video" || item.type === "Audio") && durationMs > 0
 						? Math.ceil((durationMs / 1000) * FPS)
 						: DEFAULT_DURATION_FRAMES;
-				const src = item.type !== "Text" ? getAssetUrl(id) : undefined;
-				const text = item.type === "Text" ? getTextData(id) : undefined;
 				const handle = handles[id];
 				// FIX: Safe optional chaining — handle may be undefined for unmapped ids.
 				const name = handle?.label ?? handle?.dataTypes?.[0] ?? id;
@@ -2015,10 +2026,11 @@ export const VideoDesignerEditor: React.FC<VideoDesignerEditorProps> = ({
 					durationInFrames: saved?.durationInFrames ?? calculatedDurationFrames,
 					volume: 1,
 					animations: saved?.animations ?? [],
+					...saved,
 					src,
 					text,
-					...saved,
 					name,
+					virtualVideo,
 				};
 
 				if (item.type === "Text") {
@@ -2031,25 +2043,21 @@ export const VideoDesignerEditor: React.FC<VideoDesignerEditorProps> = ({
 						fontStyle: saved?.fontStyle ?? "normal",
 						textDecoration: saved?.textDecoration ?? "",
 						fill: saved?.fill ?? "#ffffff",
-						width: saved?.width,
-						height: saved?.height,
+						width: layerWidth,
+						height: layerHeight,
 						lockAspect: true,
 					});
 					// Queue font loading
 					const fontUrl = GetFontAssetUrl(fontFamily);
-					fontPromises.push(fontManager.loadFont(fontFamily, fontUrl));
-				} else if (item.type === "Image" || item.type === "Video") {
-					let pData: any;
-					if (item.type === "Video") {
-						pData = (item.data as VirtualVideoData).source.processData;
-					} else {
-						pData = (item.data as FileData).processData;
+					if (fontUrl) {
+						fontPromises.push(fontManager.loadFont(fontFamily, fontUrl));
 					}
+				} else if (item.type === "Image" || item.type === "Video") {
 					loaded.push({
 						...base,
 						type: item.type as "Image" | "Video",
-						width: saved?.width ?? pData?.width,
-						height: saved?.height ?? pData?.height,
+						width: layerWidth,
+						height: layerHeight,
 						maxDurationInFrames:
 							item.type === "Video" && durationMs > 0
 								? calculatedDurationFrames

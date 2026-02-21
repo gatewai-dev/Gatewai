@@ -1,3 +1,4 @@
+import { GetAssetEndpoint } from "@gatewai/core/browser";
 import type {
 	ExtendedLayer,
 	NodeProcessorParams,
@@ -5,6 +6,7 @@ import type {
 } from "@gatewai/core/types";
 import type { IBrowserProcessor } from "@gatewai/node-sdk/browser";
 import { defineClient } from "@gatewai/node-sdk/browser";
+import { resolveVideoSourceUrl } from "@gatewai/remotion-compositions";
 import { PiFilmReelLight } from "react-icons/pi";
 import { metadata } from "../metadata.js";
 import type { VideoCompositorNodeConfig } from "../shared/config.js";
@@ -36,6 +38,23 @@ class VideoCompositorBrowserProcessor implements IBrowserProcessor {
 			const saved = (layerUpdates[handleId] ?? {}) as Partial<ExtendedLayer>;
 			const item = input.outputItem;
 
+			// Resolve src for all media types so compose layers are self-contained
+			let src: string | undefined;
+			let virtualVideo: VirtualVideoData | undefined;
+
+			if (item.type === "Video") {
+				const vv = item.data as VirtualVideoData;
+				virtualVideo = vv;
+				src = resolveVideoSourceUrl(vv);
+			} else if (item.type === "Image" || item.type === "Audio") {
+				const fileData = item.data as any;
+				if (fileData?.entity?.id) {
+					src = GetAssetEndpoint(fileData.entity) as string;
+				} else {
+					src = fileData?.processData?.dataUrl;
+				}
+			}
+
 			const layer: ExtendedLayer = {
 				id: saved.id ?? handleId,
 				inputHandleId: handleId,
@@ -53,16 +72,21 @@ class VideoCompositorBrowserProcessor implements IBrowserProcessor {
 				width: saved.width ?? width,
 				height: saved.height ?? height,
 				...saved,
+				// Resolved values AFTER ...saved so they always win
+				src,
+				virtualVideo,
 			};
 
 			if (item.type === "Video") {
-				const vv = item.data as VirtualVideoData;
-				layer.virtualVideo = vv;
 				if (!saved.durationInFrames) {
-					const durMs = vv.sourceMeta?.durationMs ?? 0;
+					const durMs = virtualVideo!.sourceMeta?.durationMs ?? 0;
 					layer.durationInFrames =
 						durMs > 0 ? Math.ceil((durMs / 1000) * fps) : fps * 5;
 				}
+			}
+
+			if (item.type === "Text") {
+				layer.text = (item.data as string) || "";
 			}
 
 			const layerEnd =

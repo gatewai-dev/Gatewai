@@ -100,27 +100,32 @@ const VideoCompositorNodeComponent = memo((props: NodeProps) => {
 					? Math.ceil((durationMs / 1000) * FPS)
 					: DEFAULT_DURATION_FRAMES;
 
-			const base = {
-				scale: 1,
-				zIndex: saved.zIndex ?? ++maxZ,
-				startFrame: 0,
-				durationInFrames: saved.durationInFrames ?? calculatedDurationFrames,
-				volume: 1,
-				animations: saved.animations ?? [],
-				src,
-				text,
-				...saved,
+			const layer: ExtendedLayer = {
+				id: saved.id ?? handleId,
+				inputHandleId: handleId,
+				type: item.type as ExtendedLayer["type"],
 				x: saved.x ?? 0,
 				y: saved.y ?? 0,
 				rotation: saved.rotation ?? 0,
+				scale: saved.scale ?? 1,
 				opacity: saved.opacity ?? 1,
-				id: saved.id ?? handleId,
-				inputHandleId: saved.inputHandleId ?? handleId,
+				zIndex: saved.zIndex ?? ++maxZ,
+				startFrame: saved.startFrame ?? 0,
+				durationInFrames: saved.durationInFrames ?? calculatedDurationFrames,
+				volume: saved.volume ?? 1,
+				animations: saved.animations ?? [],
+				width: layerWidth ?? width,
+				height: layerHeight ?? height,
+				...saved,
+				// Resolved values must come AFTER ...saved to avoid being overridden
+				src,
+				text,
+				virtualVideo,
 			};
 
 			if (item.type === "Text") {
 				layers.push({
-					...base,
+					...layer,
 					type: "Text",
 					fontSize: saved.fontSize ?? 60,
 					fontFamily: saved.fontFamily ?? "Inter",
@@ -130,7 +135,7 @@ const VideoCompositorNodeComponent = memo((props: NodeProps) => {
 				});
 			} else if (item.type === "Image" || item.type === "Video") {
 				layers.push({
-					...base,
+					...layer,
 					type: item.type,
 					width: layerWidth ?? width,
 					height: layerHeight ?? height,
@@ -142,7 +147,7 @@ const VideoCompositorNodeComponent = memo((props: NodeProps) => {
 				});
 			} else if (item.type === "Audio") {
 				layers.push({
-					...base,
+					...layer,
 					type: "Audio",
 					height: 0,
 					width: 0,

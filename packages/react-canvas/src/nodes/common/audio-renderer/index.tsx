@@ -12,7 +12,7 @@ const AudioRenderer = memo(
 		durationMs?: number;
 	}) => {
 		return (
-			<MediaPlayer src={src} isAudio durationMs={durationMs}>
+			<MediaPlayer src={src} isAudio type="Audio" durationMs={durationMs}>
 				<div className="absolute inset-0 flex items-center px-3 pointer-events-none">
 					<div className="flex flex-col">
 						<span className="text-white/40 text-[10px] font-medium uppercase tracking-widest">
