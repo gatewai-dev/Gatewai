@@ -56,6 +56,90 @@ export async function getMediaDuration(buffer: Buffer): Promise<number | null> {
 }
 
 /**
+ * Gets video metadata (width, height, fps, duration) using ffprobe.
+ */
+export async function getVideoMetadata(buffer: Buffer): Promise<{
+	width: number;
+	height: number;
+	fps: number;
+	duration: number;
+} | null> {
+	const tempDir = os.tmpdir();
+	const tempFile = path.join(tempDir, `temp_video_meta_${generateId()}`);
+
+	try {
+		await fs.writeFile(tempFile, buffer);
+
+		return await new Promise((resolve, reject) => {
+			const ffprobe = spawn("ffprobe", [
+				"-v",
+				"error",
+				"-select_streams",
+				"v:0",
+				"-show_entries",
+				"stream=width,height,avg_frame_rate,duration",
+				"-of",
+				"json",
+				tempFile,
+			]);
+
+			let output = "";
+
+			ffprobe.stdout.on("data", (data) => {
+				output += data.toString();
+			});
+
+			ffprobe.on("error", (err) => {
+				reject(new Error(`Failed to start ffprobe: ${err.message}`));
+			});
+
+			ffprobe.on("close", (code) => {
+				if (code === 0) {
+					try {
+						const data = JSON.parse(output);
+						const stream = data.streams?.[0];
+
+						if (!stream) {
+							return resolve(null);
+						}
+
+						const width = Number(stream.width);
+						const height = Number(stream.height);
+						const duration = parseFloat(stream.duration);
+
+						// Parse avg_frame_rate (e.g., "30/1" or "24000/1001")
+						let fps = 0;
+						if (stream.avg_frame_rate) {
+							const [num, den] = stream.avg_frame_rate.split("/");
+							if (num && den) {
+								fps = Number(num) / Number(den);
+							}
+						}
+
+						resolve({
+							width: Number.isNaN(width) ? 0 : width,
+							height: Number.isNaN(height) ? 0 : height,
+							fps: Number.isNaN(fps) ? 0 : fps,
+							duration: Number.isNaN(duration) ? 0 : duration,
+						});
+					} catch (err) {
+						reject(new Error(`Failed to parse ffprobe output: ${err}`));
+					}
+				} else {
+					reject(new Error(`ffprobe exited with code ${code}`));
+				}
+			});
+		});
+	} finally {
+		try {
+			await fs.unlink(tempFile);
+		} catch (err) {
+			console.error("Failed to delete temp file:", err);
+		}
+	}
+}
+
+/**
  * Generates a thumbnail buffer from a video URL using FFmpeg and Sharp.
  */
 export async function generateVideoThumbnail(

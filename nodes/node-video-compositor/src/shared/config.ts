@@ -1,3 +1,4 @@
+import { VideoFilterSchema, VirtualVideoDataSchema } from "@gatewai/core/types";
 import {
 	AlignmentSchema,
 	AnimationSchema,
@@ -39,6 +40,24 @@ export const VideoCompositorLayerSchema = BaseLayerSchema.merge(PositionSchema)
 		borderColor: z.string().optional(),
 		borderWidth: z.number().min(0).optional(),
 		borderRadius: z.number().min(0).optional(),
+
+		virtualVideo: VirtualVideoDataSchema.optional(),
+		trimStart: z.number().min(0).optional(),
+		trimEnd: z.number().min(0).optional(),
+		speed: z.number().min(0.25).max(4.0).optional(),
+		filters: VideoFilterSchema.optional(),
+		transition: z
+			.object({
+				type: z.enum([
+					"crossfade",
+					"wipe-left",
+					"wipe-right",
+					"slide-up",
+					"slide-down",
+				]),
+				durationFrames: z.number().min(1),
+			})
+			.optional(),
 	})
 	.strict();
 
@@ -61,12 +80,11 @@ export type VideoCompositorLayer = z.infer<typeof VideoCompositorLayerSchema>;
 
 import {
 	createOutputItemSchema,
-	FileDataSchema,
 	SingleOutputGenericSchema,
 } from "@gatewai/core/types";
 
 export const VideoCompositorResultSchema = SingleOutputGenericSchema(
-	createOutputItemSchema(z.literal("Video"), FileDataSchema),
+	createOutputItemSchema(z.literal("Video"), VirtualVideoDataSchema),
 );
 
 export type VideoCompositorResult = z.infer<typeof VideoCompositorResultSchema>;

@@ -23,9 +23,15 @@ const ImportNodeComponent = memo((props: NodeProps) => {
 	const dispatch = useAppDispatch();
 
 	const result = node?.result as unknown as ImportResult;
+	const item = result?.outputs?.[0]?.items?.[0];
 
+	// Robust mimeType extraction: handle both VirtualVideoData and FileData
+	const itemData = item?.data as any;
 	const existingMimeType =
-		result?.outputs?.[0]?.items?.[0]?.data?.entity?.mimeType;
+		itemData?.source?.entity?.mimeType ??
+		itemData?.source?.processData?.mimeType ??
+		itemData?.entity?.mimeType ??
+		itemData?.processData?.mimeType;
 
 	const existingType = existingMimeType?.startsWith("image/")
 		? "image"
@@ -93,7 +99,7 @@ const ImportNodeComponent = memo((props: NodeProps) => {
 	return (
 		<BaseNode selected={props.selected} id={props.id} dragging={props.dragging}>
 			<div className="flex flex-col">
-				{showResult && <MediaContent node={node} result={result} />}
+				{showResult && node && <MediaContent node={node} result={result} />}
 				{!showResult && (
 					<UploadDropzone
 						className="w-full py-16"

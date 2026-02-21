@@ -2,6 +2,7 @@ import {
 	createOutputItemSchema,
 	FileDataSchema,
 	MultiOutputGenericSchema,
+	VirtualVideoDataSchema,
 } from "@gatewai/core/types";
 import { z } from "zod";
 
@@ -15,7 +16,7 @@ export type ImportNodeConfig = z.infer<typeof ImportNodeConfigSchema>;
 
 export const ImportResultSchema = z.union([
 	MultiOutputGenericSchema(
-		createOutputItemSchema(z.literal("Video"), FileDataSchema),
+		createOutputItemSchema(z.literal("Video"), VirtualVideoDataSchema),
 	),
 	MultiOutputGenericSchema(
 		createOutputItemSchema(z.literal("Image"), FileDataSchema),

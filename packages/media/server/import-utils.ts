@@ -3,8 +3,9 @@ import { container, TOKENS } from "@gatewai/core/di";
 import type { StorageService } from "@gatewai/core/storage";
 import type { MediaService, NodeResult } from "@gatewai/core/types";
 import { type DataType, prisma } from "@gatewai/db";
+import { createVirtualVideo } from "@gatewai/remotion-compositions";
 import { fileTypeFromBuffer } from "file-type";
-import { getMediaDuration } from "./utils/index.js";
+import { getMediaDuration, getVideoMetadata } from "./utils/index.js";
 
 interface UploadOptions {
 	nodeId: string;
@@ -73,6 +74,7 @@ export async function uploadToImportNode({
 	let width: number | null = null;
 	let height: number | null = null;
 	let durationInSec: number | null = null;
+	let fps: number | null = null;
 
 	await Promise.allSettled([
 		(async () => {
@@ -88,14 +90,23 @@ export async function uploadToImportNode({
 			}
 		})(),
 		(async () => {
-			if (
-				finalContentType.startsWith("video/") ||
-				finalContentType.startsWith("audio/")
-			) {
+			if (finalContentType.startsWith("video/")) {
+				try {
+					const meta = await getVideoMetadata(buffer);
+					if (meta) {
+						width = meta.width;
+						height = meta.height;
+						durationInSec = meta.duration;
+						fps = meta.fps;
+					}
+				} catch (err) {
+					console.error("Failed to extract video metadata:", err);
+				}
+			} else if (finalContentType.startsWith("audio/")) {
 				try {
 					durationInSec = await getMediaDuration(buffer);
 				} catch (err) {
-					console.error("Failed to extract media duration:", err);
+					console.error("Failed to extract audio duration:", err);
 				}
 			}
 		})(),
@@ -128,6 +139,7 @@ export async function uploadToImportNode({
 					size: buffer.length,
 					width,
 					height,
+					fps: fps != null ? Math.round(fps) : undefined,
 					mimeType: finalContentType,
 				},
 			});
@@ -139,7 +151,7 @@ export async function uploadToImportNode({
 				select: { result: true },
 			});
 
-			const currentResult = (current.result as unknown as ImportResult) ?? {
+			const currentResult = (current.result as unknown as NodeResult) ?? {
 				outputs: [],
 			};
 			const outputs = currentResult.outputs ?? [];
@@ -148,7 +160,10 @@ export async function uploadToImportNode({
 				items: [
 					{
 						outputHandleId: outputHandle.id,
-						data: { entity: asset },
+						data:
+							dataType === "Video"
+								? createVirtualVideo({ entity: asset })
+								: { entity: asset },
 						type: dataType,
 					},
 				],

@@ -21,7 +21,11 @@ import {
 	GetAssetEndpoint,
 	GetFontAssetUrl,
 } from "@gatewai/core/browser";
-import type { FileData, OutputItem } from "@gatewai/core/types";
+import type {
+	FileData,
+	OutputItem,
+	VirtualVideoData,
+} from "@gatewai/core/types";
 import { dataTypeColors } from "@gatewai/core/types";
 import type { NodeEntityType } from "@gatewai/react-store";
 import {
@@ -29,6 +33,7 @@ import {
 	useAppSelector,
 	useGetFontListQuery,
 } from "@gatewai/react-store";
+import { resolveVideoSourceUrl } from "@gatewai/remotion-compositions";
 import {
 	AlertDialog,
 	AlertDialogAction,
@@ -1817,7 +1822,7 @@ export const VideoDesignerEditor: React.FC<VideoDesignerEditorProps> = ({
 	onSave,
 }) => {
 	const nodeConfig = node.config as unknown as VideoCompositorNodeConfig;
-
+	console.log({ initialLayers });
 	// --- State ---
 	const handles = useAppSelector(handleSelectors.selectEntities);
 	const [layers, setLayers] = useState<ExtendedLayer[]>([]);
@@ -1886,11 +1891,14 @@ export const VideoDesignerEditor: React.FC<VideoDesignerEditorProps> = ({
 		(id: string) => {
 			const item = initialLayers.get(id);
 			if (!item) return undefined;
-			const processData = item.data as FileData;
-			if (processData.entity?.id) {
-				return GetAssetEndpoint(processData.entity);
+			if (item.type === "Video") {
+				return resolveVideoSourceUrl(item.data as VirtualVideoData);
 			}
-			return processData?.processData?.dataUrl;
+			const fileData = item.data as FileData;
+			if (fileData.entity?.id) {
+				return GetAssetEndpoint(fileData.entity);
+			}
+			return fileData?.processData?.dataUrl;
 		},
 		[initialLayers],
 	);
@@ -1900,11 +1908,12 @@ export const VideoDesignerEditor: React.FC<VideoDesignerEditorProps> = ({
 			if (!id) return undefined;
 			const item = initialLayers.get(id);
 			if (!item) return undefined;
-			const processData = item.data as FileData;
-			if (processData.entity?.id) {
-				return processData.entity.duration;
+			if (item.type === "Video") {
+				const vv = item.data as VirtualVideoData;
+				return vv.sourceMeta?.durationMs;
 			}
-			return processData?.processData?.duration;
+			const fileData = item.data as FileData;
+			return fileData.entity?.duration ?? fileData?.processData?.duration;
 		},
 		[initialLayers],
 	);
@@ -1971,12 +1980,18 @@ export const VideoDesignerEditor: React.FC<VideoDesignerEditorProps> = ({
 
 			initialLayers.forEach((item, id) => {
 				const saved = layerUpdates[id] as ExtendedLayer | undefined;
-				const durationMs =
-					typeof item.data !== "string"
-						? (item.data.entity?.duration ??
-							item.data.processData?.duration ??
-							0)
-						: 0;
+				let durationMs = 0;
+				if (item.type === "Video") {
+					const vv = item.data as VirtualVideoData;
+					console.log({ vv });
+					durationMs =
+						vv.source.entity?.duration ?? vv.source.processData?.duration ?? 0;
+				} else if (item.type !== "Text") {
+					const fileData = item.data as FileData;
+					durationMs =
+						fileData.entity?.duration ?? fileData.processData?.duration ?? 0;
+				}
+
 				const calculatedDurationFrames =
 					(item.type === "Video" || item.type === "Audio") && durationMs > 0
 						? Math.ceil((durationMs / 1000) * FPS)
@@ -2024,7 +2039,12 @@ export const VideoDesignerEditor: React.FC<VideoDesignerEditorProps> = ({
 					const fontUrl = GetFontAssetUrl(fontFamily);
 					fontPromises.push(fontManager.loadFont(fontFamily, fontUrl));
 				} else if (item.type === "Image" || item.type === "Video") {
-					const pData = (item.data as FileData)?.processData;
+					let pData: any;
+					if (item.type === "Video") {
+						pData = (item.data as VirtualVideoData).source.processData;
+					} else {
+						pData = (item.data as FileData).processData;
+					}
 					loaded.push({
 						...base,
 						type: item.type as "Image" | "Video",

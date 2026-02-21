@@ -3,7 +3,11 @@ import {
 	GetAssetEndpoint,
 	GetFontAssetUrl,
 } from "@gatewai/core/browser";
-import type { FileData } from "@gatewai/core/types";
+import type {
+	ExtendedLayer,
+	FileData,
+	VirtualVideoData,
+} from "@gatewai/core/types";
 import {
 	AddCustomHandleButton,
 	BaseNode,
@@ -12,7 +16,12 @@ import {
 	useNodeResult,
 } from "@gatewai/react-canvas";
 import { makeSelectNodeById, useAppSelector } from "@gatewai/react-store";
+import {
+	CompositionScene,
+	resolveVideoSourceUrl,
+} from "@gatewai/remotion-compositions";
 import { Button, cn } from "@gatewai/ui-kit";
+
 import { Player } from "@remotion/player";
 import { Download, Loader2, VideoIcon } from "lucide-react";
 import { memo, useEffect, useMemo, useState } from "react";
@@ -20,10 +29,6 @@ import { useNavigate } from "react-router";
 import { toast } from "sonner";
 import type { VideoCompositorNodeConfig } from "../shared/config.js";
 import { remotionService } from "./muxer-service.js";
-import {
-	CompositionScene,
-	type ExtendedLayer,
-} from "./video-editor/common/composition.js";
 import { DEFAULT_DURATION_FRAMES, FPS } from "./video-editor/config/index.js";
 
 const VideoCompositorNodeComponent = memo((props: NodeProps) => {
@@ -32,6 +37,7 @@ const VideoCompositorNodeComponent = memo((props: NodeProps) => {
 	const { inputs } = useNodeResult(props.id);
 	const nav = useNavigate();
 	const downloadFileData = useDownloadFileData();
+
 	const previewState = useMemo(() => {
 		const config = (node?.config as unknown as VideoCompositorNodeConfig) ?? {};
 		const layerUpdates = config.layerUpdates || {};
@@ -46,39 +52,48 @@ const VideoCompositorNodeComponent = memo((props: NodeProps) => {
 		}
 
 		const layers: ExtendedLayer[] = [];
-		// Iterate over all connected inputs, applying saved updates or defaults
+
 		for (const [handleId, input] of Object.entries(inputs)) {
 			if (!input?.connectionValid) continue;
 			const item = input.outputItem;
-			if (!item) continue; // Skip if no valid output item
+			if (!item) continue;
 
 			const saved = layerUpdates[handleId] ?? {};
 			let src: string | undefined;
 			let text: string | undefined;
 			let layerWidth = saved.width;
 			let layerHeight = saved.height;
+			let virtualVideo: VirtualVideoData | undefined;
 
 			if (item.type === "Text") {
 				text = (item.data as string) || "";
-			} else if (["Image", "Video", "Audio"].includes(item.type)) {
+			} else if (item.type === "Video") {
+				// Video inputs are always VirtualVideoData
+				const vv = item.data as VirtualVideoData;
+				virtualVideo = vv;
+				src = resolveVideoSourceUrl(vv);
+				if (!layerWidth) layerWidth = vv.sourceMeta?.width;
+				if (!layerHeight) layerHeight = vv.sourceMeta?.height;
+			} else if (item.type === "Image" || item.type === "Audio") {
 				const fileData = item.data as FileData;
 				if (fileData) {
 					src = fileData.entity?.id
 						? GetAssetEndpoint(fileData.entity)
 						: fileData.processData?.dataUrl;
-
 					if (!layerWidth) layerWidth = fileData.processData?.width;
 					if (!layerHeight) layerHeight = fileData.processData?.height;
 				}
 			}
 
-			// Base layer properties with defaults
+			// Duration: Video uses sourceMeta, Audio/Image uses FileData
 			const durationMs =
-				item.type !== "Text"
-					? ((item.data as FileData)?.entity?.duration ??
-						(item.data as FileData)?.processData?.duration ??
-						0)
-					: 0;
+				item.type === "Video"
+					? ((item.data as VirtualVideoData).sourceMeta?.durationMs ?? 0)
+					: item.type !== "Text"
+						? ((item.data as FileData)?.entity?.duration ??
+							(item.data as FileData)?.processData?.duration ??
+							0)
+						: 0;
 
 			const calculatedDurationFrames =
 				(item.type === "Video" || item.type === "Audio") && durationMs > 0
@@ -110,15 +125,16 @@ const VideoCompositorNodeComponent = memo((props: NodeProps) => {
 					fontSize: saved.fontSize ?? 60,
 					fontFamily: saved.fontFamily ?? "Inter",
 					fill: saved.fill ?? "#ffffff",
-					width: layerWidth,
-					height: layerHeight,
+					width: layerWidth ?? width,
+					height: layerHeight ?? height,
 				});
 			} else if (item.type === "Image" || item.type === "Video") {
 				layers.push({
 					...base,
 					type: item.type,
-					width: layerWidth,
-					height: layerHeight,
+					width: layerWidth ?? width,
+					height: layerHeight ?? height,
+					virtualVideo,
 					maxDurationInFrames:
 						item.type === "Video" && durationMs > 0
 							? calculatedDurationFrames
@@ -136,10 +152,8 @@ const VideoCompositorNodeComponent = memo((props: NodeProps) => {
 			}
 		}
 
-		// Sort layers by zIndex ascending for correct rendering order
 		layers.sort((a, b) => (a.zIndex ?? 0) - (b.zIndex ?? 0));
 
-		// Calculate total duration matching editor logic
 		const durationInFrames =
 			layers.length > 0
 				? Math.max(
@@ -155,7 +169,6 @@ const VideoCompositorNodeComponent = memo((props: NodeProps) => {
 		return { layers, width, height, durationInFrames };
 	}, [node, inputs]);
 
-	// Memoize aspect ratio to prevent layout shifts
 	const aspectRatio = useMemo(() => {
 		if (!previewState.width || !previewState.height) return 16 / 9;
 		return previewState.width / previewState.height;

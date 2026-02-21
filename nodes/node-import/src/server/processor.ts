@@ -4,6 +4,7 @@ import type {
 	BackendNodeProcessorResult,
 	NodeProcessor,
 } from "@gatewai/node-sdk/server";
+import { createVirtualVideo } from "@gatewai/remotion-compositions";
 import { injectable } from "inversify";
 import { ImportNodeConfigSchema } from "../metadata.js";
 import type { ImportResult } from "../shared/index.js";
@@ -63,9 +64,12 @@ export class ImportProcessor implements NodeProcessor {
 						items: [
 							{
 								type: dataType,
-								data: {
-									entity: asset,
-								},
+								data:
+									dataType === DataType.Video
+										? createVirtualVideo({ entity: asset })
+										: {
+												entity: asset,
+											},
 								outputHandleId: outputHandle.id,
 							},
 						],

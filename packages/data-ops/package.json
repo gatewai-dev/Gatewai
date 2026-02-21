@@ -22,6 +22,7 @@
 	"dependencies": {
 		"@gatewai/core": "workspace:*",
 		"@gatewai/db": "workspace:*",
+		"@gatewai/remotion-compositions": "workspace:*",
 		"hono": "^4.6.14",
 		"zod": "3.25.67"
 	},

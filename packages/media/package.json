@@ -47,6 +47,7 @@
 	"dependencies": {
 		"@gatewai/core": "workspace:*",
 		"@gatewai/db": "workspace:*",
+		"@gatewai/remotion-compositions": "workspace:*",
 		"@pixi/node": "^7.3.0",
 		"@pixi/webworker": "^7.3.0",
 		"@xyflow/react": "^12.8.4",

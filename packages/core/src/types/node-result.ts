@@ -1,5 +1,6 @@
 import type { DataType, FileAsset } from "@gatewai/db";
 import z from "zod";
+import type { VirtualVideoData } from "./video/virtual-video.js";
 
 /**
  * Typing for non-terminal processing
@@ -36,11 +37,13 @@ export type DataForType<R extends DataType> = R extends "Text"
 		? number
 		: R extends "Boolean"
 			? boolean
-			: R extends "Image" | "Audio" | "Video"
+			: R extends "Image" | "Audio"
 				? FileData
-				: R extends "Any"
-					? string | number | boolean | FileData
-					: never;
+				: R extends "Video"
+					? VirtualVideoData
+					: R extends "Any"
+						? string | number | boolean | FileData | VirtualVideoData
+						: never;
 
 export const OutputItemSchema = z.object({
 	type: z.custom<DataType>(),

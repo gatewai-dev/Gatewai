@@ -1,6 +1,11 @@
 import { generateId } from "@gatewai/core";
 import { GetAssetEndpoint } from "@gatewai/core/browser";
-import type { FileData, NodeProcessorParams } from "@gatewai/core/types";
+import type {
+	FileData,
+	NodeProcessorParams,
+	VirtualVideoData,
+} from "@gatewai/core/types";
+import { resolveVideoSourceUrl } from "@gatewai/remotion-compositions";
 import { Audio, Video } from "@remotion/media";
 import { renderMediaOnWeb } from "@remotion/web-renderer";
 import type React from "react";
@@ -148,6 +153,11 @@ const DynamicComposition: React.FC<{
 				};
 
 				const getAssetUrl = () => {
+					if (input.outputItem?.type === "Video") {
+						return resolveVideoSourceUrl(
+							input.outputItem.data as VirtualVideoData,
+						);
+					}
 					const fileData = input.outputItem?.data as FileData;
 					return fileData?.entity?.id
 						? GetAssetEndpoint(fileData.entity)
@@ -224,7 +234,7 @@ export class RemotionWebProcessorService {
 				const item = input.outputItem;
 				if (item.type === "Video" || item.type === "Audio") {
 					const promise = this.getMediaDurationAsSec(
-						item.data as FileData,
+						item.data as FileData | VirtualVideoData,
 						item.type,
 					).then((durSec) => {
 						const actualFrames = Math.floor(durSec * fps);
@@ -271,7 +281,7 @@ export class RemotionWebProcessorService {
 
 				if (itemType === "Video" || itemType === "Audio") {
 					const promise = this.getMediaDurationAsSec(
-						item.data as FileData,
+						item.data as FileData | VirtualVideoData,
 						itemType,
 					).then((durSec) => {
 						defaultLayer.durationInFrames = Math.max(
@@ -325,9 +335,39 @@ export class RemotionWebProcessorService {
 	}
 
 	private async getMediaDurationAsSec(
-		fileData: FileData,
+		data: FileData | VirtualVideoData,
 		type: "Video" | "Audio",
 	): Promise<number> {
+		// For Video, data is VirtualVideoData — read from sourceMeta first
+		if (type === "Video") {
+			const vv = data as VirtualVideoData;
+			if (vv.sourceMeta?.durationMs) {
+				return vv.sourceMeta.durationMs / 1000;
+			}
+			// Fall back to loading from URL
+			const url = resolveVideoSourceUrl(vv);
+			if (!url) return 0;
+			return new Promise((resolve) => {
+				const el = document.createElement("video");
+				el.preload = "metadata";
+				el.src = url;
+				el.onloadedmetadata = () => {
+					const duration = el.duration || 0;
+					el.onloadedmetadata = null;
+					el.onerror = null;
+					el.src = "";
+					el.load();
+					resolve(duration);
+				};
+				el.onerror = () => {
+					el.src = "";
+					resolve(0);
+				};
+			});
+		}
+
+		// For Audio, data is FileData
+		const fileData = data as FileData;
 		const existingDurationMs =
 			fileData?.entity?.duration ?? fileData.processData?.duration;
 		if (existingDurationMs) {
@@ -342,7 +382,7 @@ export class RemotionWebProcessorService {
 		}
 
 		return new Promise((resolve) => {
-			const el = document.createElement(type === "Video" ? "video" : "audio");
+			const el = document.createElement("audio");
 			el.preload = "metadata";
 			el.src = url;
 
