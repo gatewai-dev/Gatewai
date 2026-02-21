@@ -19,7 +19,7 @@ const googleProvider = createGoogleGenerativeAI({
 });
 
 export const AVAILABLE_AGENT_MODELS = [
-	"gemini-3-pro-preview",
+	"gemini-3.1-pro-preview",
 	"gemini-3-flash-preview",
 	"gemini-2.5-pro",
 ] as const;

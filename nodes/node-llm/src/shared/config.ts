@@ -1,7 +1,7 @@
 import { z } from "zod";
 
 export const LLM_NODE_MODELS = [
-	"gemini-3-pro-preview",
+	"gemini-3.1-pro-preview",
 	"gemini-3-flash-preview",
 	"gemini-2.5-pro",
 ] as const;
