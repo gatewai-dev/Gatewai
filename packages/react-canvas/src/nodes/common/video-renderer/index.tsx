@@ -7,10 +7,12 @@ const VideoRenderer = memo(
 		src,
 		durationMs,
 		virtualVideo,
+		className,
 	}: {
 		src?: string;
 		durationMs?: number;
 		virtualVideo?: VirtualVideoData;
+		className?: string;
 	}) => {
 		return (
 			<MediaPlayer
@@ -18,6 +20,7 @@ const VideoRenderer = memo(
 				virtualVideo={virtualVideo}
 				type="Video"
 				durationMs={durationMs}
+				className={className}
 			/>
 		);
 	},

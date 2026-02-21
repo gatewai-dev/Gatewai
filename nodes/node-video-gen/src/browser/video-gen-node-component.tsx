@@ -19,7 +19,9 @@ import { memo } from "react";
 const VideoGenNodeComponent = memo(
 	(props: { selected: boolean; id: string; dragging: boolean }) => {
 		const node = useAppSelector(makeSelectNodeById(props.id));
+
 		const { result } = useNodeResult(props.id);
+
 		const selectHandles = useAppSelector(makeSelectHandlesByNodeId(props.id));
 
 		const inputHandles = selectHandles.filter((f) => f.type === "Input");
@@ -38,13 +40,13 @@ const VideoGenNodeComponent = memo(
 				dragging={props.dragging}
 			>
 				<div className="flex flex-col gap-3">
-					<div className="media-container w-full rounded-xs min-h-[156px] relative">
+					<div className="media-container -mx-0.5 mt-[-2px] min-h-[156px] relative border-b border-white/10 overflow-hidden">
 						{hasMoreThanOneOutput && (
 							<div className="absolute top-1 left-1 z-10">
 								<OutputSelector node={node} />
 							</div>
 						)}
-						{videoSrc && <VideoRenderer src={videoSrc} />}
+						{videoSrc && <VideoRenderer src={videoSrc} className="rounded-none w-full h-full" />}
 						{node && (
 							<div className="absolute bottom-1 left-1 z-10">
 								<MediaDimensions node={node} />
@@ -52,7 +54,7 @@ const VideoGenNodeComponent = memo(
 						)}
 					</div>
 
-					<div className="flex justify-between items-center w-full">
+					<div className="flex justify-between items-center w-full px-2">
 						{/* Popover Logic for the Warning */}
 						<Popover>
 							<PopoverTrigger asChild>

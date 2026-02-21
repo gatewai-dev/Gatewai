@@ -2,7 +2,6 @@ import {
 	resolveVideoSourceUrl,
 	SingleClipComposition,
 } from "@gatewai/remotion-compositions";
-import { Video } from "@remotion/media";
 import { useMemo } from "react";
 import {
 	AbsoluteFill,
@@ -168,7 +167,7 @@ export const CompositionScene: React.FC<SceneProps> = ({
 	);
 
 	return (
-		<AbsoluteFill style={{ backgroundColor: "#000000" }}>
+		<AbsoluteFill>
 			{/* Inject Animation Keyframes for CSS-based previews if needed, though we use Remotion math mostly */}
 			{sortedLayers.map((layer) => {
 				const startFrame = layer.startFrame ?? 0;

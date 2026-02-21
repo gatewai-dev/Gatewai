@@ -26,10 +26,10 @@ const VideoCropNodeComponent = memo(
 				dragging={props.dragging}
 			>
 				<div className="flex flex-col gap-3">
-					<div className="media-container w-full rounded-xs min-h-[156px] relative">
-						{videoSrc && <VideoRenderer src={videoSrc} />}
+					<div className="media-container -mx-0.5 mt-[-2px] relative min-h-[156px] border-b border-white/10">
+						{videoSrc && <VideoRenderer src={videoSrc} className="rounded-none w-full h-full" />}
 					</div>
-					<div className="flex justify-end items-center w-full">
+					<div className="flex justify-end items-center w-full px-2">
 						<RunNodeButton nodeId={props.id} />
 					</div>
 				</div>

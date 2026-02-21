@@ -11,18 +11,15 @@ import type {
 import {
 	AddCustomHandleButton,
 	BaseNode,
+	MediaPlayer,
 	type NodeProps,
 	useDownloadFileData,
 	useNodeResult,
 } from "@gatewai/react-canvas";
 import { makeSelectNodeById, useAppSelector } from "@gatewai/react-store";
-import {
-	CompositionScene,
-	resolveVideoSourceUrl,
-} from "@gatewai/remotion-compositions";
+import { resolveVideoSourceUrl } from "@gatewai/remotion-compositions";
 import { Button, cn } from "@gatewai/ui-kit";
 
-import { Player } from "@remotion/player";
 import { Download, Loader2, VideoIcon } from "lucide-react";
 import { memo, useEffect, useMemo, useState } from "react";
 import { useNavigate } from "react-router";
@@ -101,14 +98,7 @@ const VideoCompositorNodeComponent = memo((props: NodeProps) => {
 					: DEFAULT_DURATION_FRAMES;
 
 			const layer: ExtendedLayer = {
-				id: saved.id ?? handleId,
-				inputHandleId: handleId,
-				type: item.type as ExtendedLayer["type"],
-				x: saved.x ?? 0,
-				y: saved.y ?? 0,
-				rotation: saved.rotation ?? 0,
 				scale: saved.scale ?? 1,
-				opacity: saved.opacity ?? 1,
 				zIndex: saved.zIndex ?? ++maxZ,
 				startFrame: saved.startFrame ?? 0,
 				durationInFrames: saved.durationInFrames ?? calculatedDurationFrames,
@@ -162,13 +152,13 @@ const VideoCompositorNodeComponent = memo((props: NodeProps) => {
 		const durationInFrames =
 			layers.length > 0
 				? Math.max(
-						DEFAULT_DURATION_FRAMES,
-						...layers.map(
-							(l) =>
-								(l.startFrame ?? 0) +
-								(l.durationInFrames ?? DEFAULT_DURATION_FRAMES),
-						),
-					)
+					DEFAULT_DURATION_FRAMES,
+					...layers.map(
+						(l) =>
+							(l.startFrame ?? 0) +
+							(l.durationInFrames ?? DEFAULT_DURATION_FRAMES),
+					),
+				)
 				: DEFAULT_DURATION_FRAMES;
 
 		return { layers, width, height, durationInFrames };
@@ -217,38 +207,23 @@ const VideoCompositorNodeComponent = memo((props: NodeProps) => {
 		<BaseNode selected={props.selected} id={props.id} dragging={props.dragging}>
 			<div className="flex flex-col w-full">
 				<div
-					className={cn(
-						"w-full overflow-hidden rounded bg-black/5 relative border border-border",
-					)}
+					className="-mx-0.5 mt-[-2px]"
 					style={{
 						aspectRatio: `${aspectRatio}`,
 						minHeight: hasInputs ? "120px" : "auto",
 					}}
 				>
 					{hasInputs ? (
-						<Player
-							acknowledgeRemotionLicense
-							component={CompositionScene}
-							inputProps={{
-								layers: previewState.layers,
-								viewportWidth: previewState.width,
-								viewportHeight: previewState.height,
-							}}
+						<MediaPlayer
+							layers={previewState.layers}
+							viewportWidth={previewState.width}
+							viewportHeight={previewState.height}
 							durationInFrames={previewState.durationInFrames}
 							fps={FPS}
-							compositionWidth={previewState.width}
-							compositionHeight={previewState.height}
-							style={{
-								width: "100%",
-								height: "100%",
-								objectFit: "contain",
-							}}
-							controls={true}
-							loop
-							autoPlay={false}
+							className="rounded-none border-b border-white/10"
 						/>
 					) : (
-						<div className="absolute inset-0 flex items-center justify-center text-muted-foreground text-xs italic">
+						<div className="absolute inset-0 flex items-center justify-center text-muted-foreground text-xs italic border-b border-white/10 w-full h-full">
 							No input connected
 						</div>
 					)}

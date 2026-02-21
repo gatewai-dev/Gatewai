@@ -94,7 +94,7 @@ const PreviewNodeComponent = memo((props: NodeProps) => {
 			const src = getMediaSource();
 			if (!src) return null;
 
-			return <VideoRenderer src={src} />;
+			return <VideoRenderer src={src} className="rounded-none w-full h-full" />;
 		}
 
 		if (outputType === "Audio") {
@@ -126,7 +126,7 @@ const PreviewNodeComponent = memo((props: NodeProps) => {
 	return (
 		<BaseNode selected={props.selected} id={props.id} dragging={props.dragging}>
 			<div
-				className={cn("w-full overflow-hidden rounded relative", {
+				className={cn("-mx-0.5 mt-[-2px] mb-[-2px] overflow-hidden relative", {
 					"media-container": isVideoOrImage,
 				})}
 			>

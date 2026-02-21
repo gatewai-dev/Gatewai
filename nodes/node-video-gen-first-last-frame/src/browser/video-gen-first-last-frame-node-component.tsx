@@ -19,13 +19,13 @@ const VideoGenFirstLastFrameNodeComponent = memo(
 				dragging={props.dragging}
 			>
 				<div className="flex flex-col gap-3">
-					<div className="media-container w-full overflow-hidden rounded relative min-h-32">
+					<div className="media-container -mx-0.5 mt-[-2px] overflow-hidden relative min-h-32 border-b border-white/10">
 						{hasMoreThanOneOutput && node && (
 							<div className="absolute top-1 left-1 z-10">
 								<OutputSelector node={node} />
 							</div>
 						)}
-						{mediaUrl && <VideoRenderer src={mediaUrl} />}
+						{mediaUrl && <VideoRenderer src={mediaUrl} className="rounded-none w-full h-full" />}
 						{node && (
 							<div className="absolute bottom-1 left-1 z-10">
 								<MediaDimensions node={node} />
@@ -33,7 +33,7 @@ const VideoGenFirstLastFrameNodeComponent = memo(
 						)}
 					</div>
 
-					<div className="flex justify-end items-center w-full">
+					<div className="flex justify-end items-center w-full px-2">
 						<RunNodeButton nodeId={props.id} />
 					</div>
 				</div>

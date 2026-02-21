@@ -17,7 +17,7 @@ import { zValidator } from "@hono/zod-validator";
 import { fileTypeFromBuffer } from "file-type";
 import { Hono } from "hono";
 import { z } from "zod";
-import type { AuthorizedHonoTypes } from "../../auth.js";
+import type { AuthHonoTypes, AuthorizedHonoTypes } from "../../auth.js";
 import { assertIsError } from "../../utils/misc.js";
 import { assertAssetOwnership } from "./auth-helpers.js";
 
@@ -92,9 +92,174 @@ async function downloadFileFromUrl(url: string): Promise<{
 	return { buffer, filename, contentType };
 }
 
-const assetsRouter = new Hono<{ Variables: AuthorizedHonoTypes }>({
-	strict: false,
-})
+// ---------------------------------------------------------------------------
+// Public routes: streaming, thumbnails, temp files — no auth required.
+// Asset IDs are opaque cuid2 values (security-by-obscurity is acceptable here).
+// Remotion/browser video players fire many parallel range requests which can
+// race against better-auth's session cookie lookup, causing random 401s.
+// ---------------------------------------------------------------------------
+const assetsPublicRouter = new Hono<{ Variables: AuthHonoTypes }>({ strict: false })
+	.get(
+		"/thumbnail/:id",
+		zValidator(
+			"query",
+			z.object({
+				w: z.coerce.number().int().positive().default(50),
+				h: z.coerce.number().int().positive().default(50),
+			}),
+		),
+		async (c) => {
+			const { id: rawId } = c.req.param();
+			const { w: width, h: height } = c.req.valid("query");
+			const id = rawId.split(".")[0]; // Sanitize ID
+
+			// 1. Construct Cache Key
+			const cacheBucket = ENV_CONFIG.GCS_ASSETS_BUCKET;
+			const cacheKey = `temp/thumbnails/${id}_${width}_${height}.webp`;
+
+			try {
+				const storage = container.get<StorageService>(TOKENS.STORAGE);
+				// 2. Check Cache
+				const exists = await storage.fileExistsInStorage(cacheKey, cacheBucket);
+				if (exists) {
+					const stream = storage.getStreamFromStorage(cacheKey, cacheBucket);
+					return c.body(stream as any, 200, {
+						"Content-Type": "image/webp",
+						"Cache-Control": "public, max-age=31536000, immutable",
+					});
+				}
+
+				// 3. Cache Miss: Retrieve Original Asset
+				const asset = await prisma.fileAsset.findUnique({ where: { id } });
+				if (!asset) {
+					return c.json({ error: "Asset not found" }, 404);
+				}
+
+				let thumbnailBuffer: Buffer;
+
+				// 4. Generate Thumbnail based on Type
+				if (asset.mimeType.startsWith("video/")) {
+					// For videos, we need a Signed URL to pass to ffmpeg (remote read)
+					// This avoids downloading the entire video file to memory
+					const sourceUrl = await storage.generateSignedUrl(
+						asset.key,
+						asset.bucket,
+						300, // 5 minutes validity
+					);
+					thumbnailBuffer = await generateVideoThumbnail(
+						sourceUrl,
+						width,
+						height,
+					);
+				} else if (asset.mimeType.startsWith("image/")) {
+					// For images, we download the buffer to process with Sharp
+					const originalBuffer = await storage.getFromStorage(
+						asset.key,
+						asset.bucket,
+					);
+					thumbnailBuffer = await generateImageThumbnail(
+						originalBuffer,
+						width,
+						height,
+					);
+				} else {
+					return c.json({ error: "Unsupported asset type for thumbnail" }, 400);
+				}
+
+				// 5. Upload to Cache
+				await storage.uploadToStorage(
+					thumbnailBuffer,
+					cacheKey,
+					"image/webp",
+					cacheBucket,
+				);
+
+				// 6. Return Response
+				return c.body(thumbnailBuffer, 200, {
+					"Content-Type": "image/webp",
+					"Cache-Control": "public, max-age=31536000, immutable",
+				});
+			} catch (error) {
+				logger.error(`Thumbnail generation failed for ${id}: ${error}`);
+				assertIsError(error);
+				return c.json(
+					{ error: "Thumbnail generation failed", details: error.message },
+					500,
+				);
+			}
+		},
+	)
+	.get("/temp/*", async (c) => {
+		const path = c.req.path.split("/temp/")[1];
+		const rawKey = decodeURIComponent(path);
+		const storage = container.get<StorageService>(TOKENS.STORAGE);
+
+		assert(rawKey);
+		const fullStream = await storage.getFromStorage(rawKey);
+		const metadata = await storage.getObjectMetadata(rawKey);
+		assert(metadata.contentType);
+
+		return c.body(fullStream as any, {
+			headers: {
+				"Content-Type": metadata.contentType,
+				"Cache-Control": "max-age=2592000",
+			},
+		});
+	})
+	.get("/:id", async (c) => {
+		const rawId = c.req.param("id");
+		const id = rawId.split(".")[0];
+		const asset = await prisma.fileAsset.findUnique({ where: { id } });
+
+		if (!asset) return c.json({ error: "Not found" }, 404);
+
+		const storage = container.get<StorageService>(TOKENS.STORAGE);
+
+		const range = c.req.header("Range");
+		const fileSize = Number(asset.size);
+
+		if (range) {
+			const parts = range.replace(/bytes=/, "").split("-");
+			const start = parseInt(parts[0], 10);
+			const end = parts[1] ? parseInt(parts[1], 10) : fileSize - 1;
+
+			// Handle potential NaN or out-of-bounds
+			if (start >= fileSize || end >= fileSize) {
+				return c.text("Requested range not satisfiable", 416, {
+					"Content-Range": `bytes */${fileSize}`,
+				});
+			}
+
+			const chunksize = end - start + 1;
+			const stream = storage.getStreamFromStorage(asset.key, asset.bucket, {
+				start,
+				end,
+			});
+
+			return c.body(stream as any, 206, {
+				"Content-Range": `bytes ${start}-${end}/${fileSize}`,
+				"Accept-Ranges": "bytes",
+				"Content-Length": chunksize.toString(),
+				"Content-Type": asset.mimeType,
+			});
+		}
+
+		// Full file stream
+		const fullStream = storage.getStreamFromStorage(asset.key, asset.bucket);
+		return c.body(fullStream as any, {
+			headers: {
+				"Content-Type": asset.mimeType,
+				"Accept-Ranges": "bytes",
+				"Content-Length": fileSize.toString(),
+				"Cache-Control": "max-age=2592000",
+			},
+		});
+	});
+
+// ---------------------------------------------------------------------------
+// Protected routes: listing, uploading, and deleting assets require auth.
+// ---------------------------------------------------------------------------
+const assetsRouter = new Hono<{ Variables: AuthorizedHonoTypes }>({ strict: false })
 	.get("/", zValidator("query", querySchema), async (c) => {
 		const user = c.get("user");
 		const { pageSize, pageIndex, q, type } = c.req.valid("query");
@@ -267,164 +432,6 @@ const assetsRouter = new Hono<{ Variables: AuthorizedHonoTypes }>({
 			);
 		}
 	})
-
-	.get(
-		"/thumbnail/:id",
-		zValidator(
-			"query",
-			z.object({
-				w: z.coerce.number().int().positive().default(50),
-				h: z.coerce.number().int().positive().default(50),
-			}),
-		),
-		async (c) => {
-			const { id: rawId } = c.req.param();
-			const { w: width, h: height } = c.req.valid("query");
-			const id = rawId.split(".")[0]; // Sanitize ID
-
-			// 1. Construct Cache Key
-			const cacheBucket = ENV_CONFIG.GCS_ASSETS_BUCKET;
-			const cacheKey = `temp/thumbnails/${id}_${width}_${height}.webp`;
-
-			try {
-				const storage = container.get<StorageService>(TOKENS.STORAGE);
-				// 2. Check Cache
-				const exists = await storage.fileExistsInStorage(cacheKey, cacheBucket);
-				if (exists) {
-					const stream = storage.getStreamFromStorage(cacheKey, cacheBucket);
-					return c.body(stream as any, 200, {
-						"Content-Type": "image/webp",
-						"Cache-Control": "public, max-age=31536000, immutable",
-					});
-				}
-
-				// 3. Cache Miss: Retrieve Original Asset
-				const asset = await prisma.fileAsset.findUnique({ where: { id } });
-				if (!asset) {
-					return c.json({ error: "Asset not found" }, 404);
-				}
-
-				let thumbnailBuffer: Buffer;
-
-				// 4. Generate Thumbnail based on Type
-				if (asset.mimeType.startsWith("video/")) {
-					// For videos, we need a Signed URL to pass to ffmpeg (remote read)
-					// This avoids downloading the entire video file to memory
-					const sourceUrl = await storage.generateSignedUrl(
-						asset.key,
-						asset.bucket,
-						300, // 5 minutes validity
-					);
-					thumbnailBuffer = await generateVideoThumbnail(
-						sourceUrl,
-						width,
-						height,
-					);
-				} else if (asset.mimeType.startsWith("image/")) {
-					// For images, we download the buffer to process with Sharp
-					const originalBuffer = await storage.getFromStorage(
-						asset.key,
-						asset.bucket,
-					);
-					thumbnailBuffer = await generateImageThumbnail(
-						originalBuffer,
-						width,
-						height,
-					);
-				} else {
-					return c.json({ error: "Unsupported asset type for thumbnail" }, 400);
-				}
-
-				// 5. Upload to Cache
-				await storage.uploadToStorage(
-					thumbnailBuffer,
-					cacheKey,
-					"image/webp",
-					cacheBucket,
-				);
-
-				// 6. Return Response
-				return c.body(thumbnailBuffer, 200, {
-					"Content-Type": "image/webp",
-					"Cache-Control": "public, max-age=31536000, immutable",
-				});
-			} catch (error) {
-				logger.error(`Thumbnail generation failed for ${id}: ${error}`);
-				assertIsError(error);
-				return c.json(
-					{ error: "Thumbnail generation failed", details: error.message },
-					500,
-				);
-			}
-		},
-	)
-	.get("/temp/*", async (c) => {
-		const path = c.req.path.split("/temp/")[1];
-		const rawKey = decodeURIComponent(path);
-		const storage = container.get<StorageService>(TOKENS.STORAGE);
-
-		assert(rawKey);
-		const fullStream = await storage.getFromStorage(rawKey);
-		const metadata = await storage.getObjectMetadata(rawKey);
-		assert(metadata.contentType);
-
-		return c.body(fullStream as any, {
-			// Cast buffer to any/stream compatible
-			headers: {
-				"Content-Type": metadata.contentType,
-				"Cache-Control": "max-age=2592000",
-			},
-		});
-	})
-	.get("/:id", async (c) => {
-		const rawId = c.req.param("id");
-		const id = rawId.split(".")[0];
-		const asset = await prisma.fileAsset.findUnique({ where: { id } });
-
-		if (!asset) return c.json({ error: "Not found" }, 404);
-
-		const storage = container.get<StorageService>(TOKENS.STORAGE);
-
-		const range = c.req.header("Range");
-		const fileSize = Number(asset.size);
-
-		if (range) {
-			const parts = range.replace(/bytes=/, "").split("-");
-			const start = parseInt(parts[0], 10);
-			const end = parts[1] ? parseInt(parts[1], 10) : fileSize - 1;
-
-			// Handle potential NaN or out-of-bounds
-			if (start >= fileSize || end >= fileSize) {
-				return c.text("Requested range not satisfiable", 416, {
-					"Content-Range": `bytes */${fileSize}`,
-				});
-			}
-
-			const chunksize = end - start + 1;
-			const stream = storage.getStreamFromStorage(asset.key, asset.bucket, {
-				start,
-				end,
-			});
-
-			return c.body(stream as any, 206, {
-				"Content-Range": `bytes ${start}-${end}/${fileSize}`,
-				"Accept-Ranges": "bytes",
-				"Content-Length": chunksize.toString(),
-				"Content-Type": asset.mimeType,
-			});
-		}
-
-		// Full file stream
-		const fullStream = storage.getStreamFromStorage(asset.key, asset.bucket);
-		return c.body(fullStream as any, {
-			headers: {
-				"Content-Type": asset.mimeType,
-				"Accept-Ranges": "bytes",
-				"Content-Length": fileSize.toString(),
-				"Cache-Control": "max-age=2592000",
-			},
-		});
-	})
 	.delete(
 		"/:id",
 		zValidator("param", z.object({ id: z.string() })),
@@ -483,8 +490,8 @@ const assetsRouter = new Hono<{ Variables: AuthorizedHonoTypes }>({
 									const data = item.data;
 									const entityId =
 										typeof data === "object" &&
-										data !== null &&
-										"entity" in data
+											data !== null &&
+											"entity" in data
 											? (data as { entity?: { id?: string } }).entity?.id
 											: undefined;
 									const matches = entityId === id;
@@ -573,4 +580,4 @@ const assetsRouter = new Hono<{ Variables: AuthorizedHonoTypes }>({
 		},
 	);
 
-export { assetsRouter };
+export { assetsPublicRouter, assetsRouter };

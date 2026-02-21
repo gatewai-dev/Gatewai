@@ -22,12 +22,12 @@ export const metadata = defineMetadata({
 	},
 	handles: {
 		inputs: [],
-		outputs: [],
+		outputs: [{dataTypes: ['Video'], label: 'Result', order: 0}],
 	},
-	defaultConfig: {
+	defaultConfig: VideoCompositorNodeConfigSchema.parse({
 		layerUpdates: {},
 		width: 1080,
 		height: 1080,
 		FPS: 24,
-	},
+	}),
 });
