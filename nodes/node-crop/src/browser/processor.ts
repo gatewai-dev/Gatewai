@@ -1,10 +1,10 @@
 import type {
 	NodeProcessorParams,
-	NodeResult,
 	PixiProcessOutput,
 } from "@gatewai/core/types";
 import type { IBrowserProcessor } from "@gatewai/node-sdk/browser";
 import { CropNodeConfigSchema } from "../shared/config.js";
+import type { CropResult } from "../shared/index.js";
 import { applyCrop, type PixiCropInput } from "../shared/pixi-crop-run.js";
 
 export class CropBrowserProcessor implements IBrowserProcessor {
@@ -13,7 +13,7 @@ export class CropBrowserProcessor implements IBrowserProcessor {
 		inputs,
 		signal,
 		context,
-	}: NodeProcessorParams): Promise<NodeResult | null> {
+	}: NodeProcessorParams): Promise<CropResult | null> {
 		const imageUrl = context.findInputData(inputs, "Image");
 		if (!imageUrl) throw new Error("Missing Input Image");
 

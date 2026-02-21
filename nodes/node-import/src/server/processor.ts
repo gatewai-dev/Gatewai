@@ -6,13 +6,16 @@ import type {
 } from "@gatewai/node-sdk/server";
 import { injectable } from "tsyringe";
 import { ImportNodeConfigSchema } from "../metadata.js";
+import type { ImportResult } from "../shared/index.js";
 
 @injectable()
 export class ImportProcessor implements NodeProcessor {
 	async process({
 		node,
 		data,
-	}: BackendNodeProcessorCtx): Promise<BackendNodeProcessorResult> {
+	}: BackendNodeProcessorCtx): Promise<
+		BackendNodeProcessorResult<ImportResult>
+	> {
 		const config = ImportNodeConfigSchema.parse(node.config);
 		const asset = config.asset;
 
@@ -24,7 +27,7 @@ export class ImportProcessor implements NodeProcessor {
 				newResult: {
 					outputs: [],
 					selectedOutputIndex: 0,
-				},
+				} as unknown as ImportResult,
 			};
 		}
 
@@ -69,7 +72,7 @@ export class ImportProcessor implements NodeProcessor {
 					},
 				],
 				selectedOutputIndex: 0,
-			},
+			} as unknown as ImportResult,
 		};
 	}
 }

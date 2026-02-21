@@ -24,7 +24,7 @@ export class ResizeProcessor implements NodeProcessor {
     async process({
         node,
         data,
-    }: BackendNodeProcessorCtx): Promise<BackendNodeProcessorResult> {
+    }: BackendNodeProcessorCtx): Promise<BackendNodeProcessorResult<NodeResult>> {
         try {
             const imageInput = this.graph.getInputValue(data, node.id, true, {
                 dataType: DataType.Image,

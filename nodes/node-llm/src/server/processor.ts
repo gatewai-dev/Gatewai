@@ -1,6 +1,6 @@
 import { logger } from "@gatewai/core";
 import { TOKENS } from "@gatewai/core/di";
-import type { FileData, LLMResult } from "@gatewai/core/types";
+import type { FileData } from "@gatewai/core/types";
 import { DataType } from "@gatewai/db";
 import type {
     AIProvider,
@@ -15,6 +15,7 @@ import {
 } from "@google/genai";
 import { inject, injectable } from "tsyringe";
 import { LLMNodeConfigSchema } from "../metadata.js";
+import type { LLMResult } from "../shared/index.js";
 
 @injectable()
 export class LLMProcessor implements NodeProcessor {
@@ -26,7 +27,7 @@ export class LLMProcessor implements NodeProcessor {
     async process({
         node,
         data,
-    }: BackendNodeProcessorCtx): Promise<BackendNodeProcessorResult> {
+    }: BackendNodeProcessorCtx): Promise<BackendNodeProcessorResult<LLMResult>> {
         try {
             const genAI = this.aiProvider.getGemini<GoogleGenAI>();
 

@@ -57,10 +57,10 @@ export interface BackendNodeProcessorCtx {
 /**
  * Result returned by a backend node processor.
  */
-export interface BackendNodeProcessorResult {
+export interface BackendNodeProcessorResult<T = NodeResult> {
 	success: boolean;
 	error?: string;
-	newResult?: NodeResult;
+	newResult?: T;
 }
 
 /**

@@ -1,7 +1,7 @@
 import { defineMetadata } from "@gatewai/node-sdk";
-import { ExportNodeConfigSchema } from "./shared/index.js";
+import { ExportNodeConfigSchema, ExportResultSchema } from "./shared/index.js";
 
-export { ExportNodeConfigSchema };
+export { ExportNodeConfigSchema, ExportResultSchema };
 
 export default defineMetadata({
 	type: "Export",
@@ -9,6 +9,7 @@ export default defineMetadata({
 	description: "An UI download / API output node",
 	category: "Outputs",
 	configSchema: ExportNodeConfigSchema,
+	resultSchema: ExportResultSchema,
 	isTerminal: true,
 	isTransient: false,
 	showInQuickAccess: true,

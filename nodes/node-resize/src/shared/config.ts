@@ -13,3 +13,15 @@ export const ResizeNodeConfigSchema = z
 	.strict();
 
 export type ResizeNodeConfig = z.infer<typeof ResizeNodeConfigSchema>;
+
+import {
+	createOutputItemSchema,
+	FileDataSchema,
+	SingleOutputGenericSchema,
+} from "@gatewai/core/types";
+
+export const ResizeResultSchema = SingleOutputGenericSchema(
+	createOutputItemSchema(z.literal("Image"), FileDataSchema),
+);
+
+export type ResizeResult = z.infer<typeof ResizeResultSchema>;

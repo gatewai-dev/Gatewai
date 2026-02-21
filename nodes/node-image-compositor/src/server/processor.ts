@@ -10,6 +10,10 @@ import {
 	type NodeResult,
 } from "@gatewai/core/types";
 import { DataType } from "@gatewai/db";
+import type { CompositorResult } from "../shared/index.js";
+
+;
+
 import type { BackendNodeProcessorCtx, BackendNodeProcessorResult, StorageService } from "@gatewai/node-sdk/server";
 import { loadImage, registerFont } from "canvas";
 import Konva from "konva";
@@ -28,7 +32,7 @@ export class ImageCompositorProcessor implements NodeProcessor {
 	async process({
 		node,
 		data,
-	}: BackendNodeProcessorCtx): Promise<BackendNodeProcessorResult> {
+	}: BackendNodeProcessorCtx): Promise<BackendNodeProcessorResult<CompositorResult>> {
 		try {
 			const config = node.config as CompositorNodeConfig;
 			const width = config.width ?? 1080;
@@ -193,7 +197,7 @@ export class ImageCompositorProcessor implements NodeProcessor {
 			// Cleanup
 			stage.destroy();
 
-			return { success: true, newResult };
+			return { success: true, newResult: newResult as unknown as CompositorResult };
 		} catch (err) {
 			if (err instanceof Error) {
 				return { success: false, error: err.message };

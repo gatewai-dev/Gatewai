@@ -1,4 +1,5 @@
-import type { SpeechToTextResult } from "@gatewai/core/types";
+import type { SpeechToTextResult } from "../shared/index.js";
+
 import {
 	BaseNode,
 	OutputSelector,

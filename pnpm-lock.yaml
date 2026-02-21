@@ -39,8 +39,8 @@ importers:
         specifier: ^3.4.0
         version: 3.4.0
       zod:
-        specifier: ^4.3.6
-        version: 4.3.6
+        specifier: ^3.24.1
+        version: 3.25.67
     devDependencies:
       '@biomejs/biome':
         specifier: 2.3.8
@@ -1840,6 +1840,9 @@ importers:
       clsx:
         specifier: ^2.1.1
         version: 2.1.1
+      hono:
+        specifier: ^4.8.5
+        version: 4.8.5
       lodash:
         specifier: ^4.17.21
         version: 4.17.21
@@ -1962,8 +1965,8 @@ importers:
         specifier: ^10.0.6
         version: 10.0.6(react@19.2.4)
       zod:
-        specifier: ^4.3.6
-        version: 4.3.6
+        specifier: ^3.24.1
+        version: 3.25.67
     devDependencies:
       '@gatewai/tsconfig':
         specifier: workspace:*

@@ -1,4 +1,5 @@
-import type { FileResult } from "@gatewai/core/types";
+import type { ImportResult } from "../shared/index.js";
+
 import {
 	BaseNode,
 	MediaContent,
@@ -22,7 +23,7 @@ const ImportNodeComponent = memo((props: NodeProps) => {
 	const showResult = useHasOutputItems(node);
 	const dispatch = useAppDispatch();
 
-	const result = node?.result as unknown as FileResult;
+	const result = node?.result as unknown as ImportResult;
 
 	const existingMimeType =
 		result?.outputs?.[0]?.items?.[0]?.data?.entity?.mimeType;
@@ -78,7 +79,7 @@ const ImportNodeComponent = memo((props: NodeProps) => {
 		dispatch(
 			updateNodeResult({
 				id: props.id,
-				newResult: successResult.result as unknown as FileResult,
+				newResult: successResult.result as unknown as ImportResult,
 			}),
 		);
 	};

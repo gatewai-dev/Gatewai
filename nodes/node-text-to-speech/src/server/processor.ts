@@ -2,7 +2,10 @@ import { spawn } from "node:child_process";
 import type { EnvConfig } from "@gatewai/core";
 import { generateId, logger } from "@gatewai/core";
 import { TOKENS } from "@gatewai/core/di";
-import type { TextToSpeechResult } from "@gatewai/core/types";
+import type { TextToSpeechResult } from "../shared/index.js";
+
+;
+
 import type { PrismaClient } from "@gatewai/db";
 import { DataType } from "@gatewai/db";
 import type {
@@ -65,7 +68,7 @@ export class TextToSpeechProcessor implements NodeProcessor {
     async process({
         node,
         data,
-    }: BackendNodeProcessorCtx): Promise<BackendNodeProcessorResult> {
+    }: BackendNodeProcessorCtx): Promise<BackendNodeProcessorResult<TextToSpeechResult>> {
         try {
             const userPrompt = this.graph.getInputValue(data, node.id, true, {
                 dataType: DataType.Text,

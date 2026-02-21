@@ -3,11 +3,7 @@ import {
 	GetAssetEndpoint,
 	GetFontAssetUrl,
 } from "@gatewai/core/browser";
-import type {
-	ConnectedInput,
-	NodeProcessorParams,
-	NodeResult,
-} from "@gatewai/core/types";
+import type { ConnectedInput, NodeProcessorParams } from "@gatewai/core/types";
 import { COMPOSITOR_DEFAULTS, type FileData } from "@gatewai/core/types";
 import type { IBrowserProcessor } from "@gatewai/node-sdk/browser";
 import Konva from "konva";
@@ -16,6 +12,7 @@ import {
 	type CompositorNodeConfig,
 	CompositorNodeConfigSchema,
 } from "../shared/compositor.config.js";
+import type { CompositorResult } from "../shared/index.js";
 
 const getConnectedInputDataValue = (
 	inputs: Record<string, ConnectedInput>,
@@ -44,7 +41,7 @@ export class ImageCompositorBrowserProcessor implements IBrowserProcessor {
 		inputs,
 		signal,
 		context,
-	}: NodeProcessorParams): Promise<NodeResult | null> {
+	}: NodeProcessorParams): Promise<CompositorResult | null> {
 		const validatedConfig = CompositorNodeConfigSchema.parse(node.config);
 		const inputDataMap: Record<
 			string,

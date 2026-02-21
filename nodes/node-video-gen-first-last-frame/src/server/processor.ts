@@ -6,7 +6,7 @@ import path from "node:path";
 import type { EnvConfig } from "@gatewai/core";
 import { generateId, logger } from "@gatewai/core";
 import { TOKENS } from "@gatewai/core/di";
-import type { FileData, OutputItem, VideoGenResult } from "@gatewai/core/types";
+import type { FileData, OutputItem } from "@gatewai/core/types";
 import type { PrismaClient } from "@gatewai/db";
 import { DataType } from "@gatewai/db";
 import type {
@@ -22,6 +22,7 @@ import { inject, injectable } from "tsyringe";
 import {
     VideoGenFirstLastFrameNodeConfigSchema,
 } from "../metadata.js";
+import type { VideoGenFirstLastFrameResult } from "../shared/index.js";
 
 async function ResolveImageData(
     fileData: FileData,
@@ -52,7 +53,7 @@ export class VideoGenFirstLastFrameProcessor implements NodeProcessor {
     async process({
         node,
         data,
-    }: BackendNodeProcessorCtx): Promise<BackendNodeProcessorResult> {
+    }: BackendNodeProcessorCtx): Promise<BackendNodeProcessorResult<VideoGenFirstLastFrameResult>> {
         const genAI = this.aiProvider.getGemini<GoogleGenAI>();
         try {
             const userPrompt = this.graph.getInputValue(data, node.id, true, {
@@ -172,13 +173,13 @@ export class VideoGenFirstLastFrameProcessor implements NodeProcessor {
             if (!outputHandle) throw new Error("Output handle is missing");
 
             const newResult = structuredClone(
-                node.result as unknown as VideoGenResult,
+                node.result as unknown as VideoGenFirstLastFrameResult,
             ) ?? {
                 outputs: [],
                 selectedOutputIndex: 0,
             };
 
-            const newGeneration: VideoGenResult["outputs"][number] = {
+            const newGeneration: VideoGenFirstLastFrameResult["outputs"][number] = {
                 items: [
                     {
                         type: DataType.Video,

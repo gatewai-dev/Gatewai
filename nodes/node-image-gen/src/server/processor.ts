@@ -1,7 +1,7 @@
 import type { EnvConfig } from "@gatewai/core";
 import { generateId, logger } from "@gatewai/core";
 import { TOKENS } from "@gatewai/core/di";
-import type { FileData, ImageGenResult } from "@gatewai/core/types";
+import type { FileData } from "@gatewai/core/types";
 import type { PrismaClient } from "@gatewai/db";
 import { DataType } from "@gatewai/db";
 import type {
@@ -16,6 +16,7 @@ import type {
 import type { GoogleGenAI, Part } from "@google/genai";
 import { inject, injectable } from "tsyringe";
 import { ImageGenNodeConfigSchema } from "../metadata.js";
+import type { ImageGenResult } from "../shared/index.js";
 
 @injectable()
 export class ImageGenProcessor implements NodeProcessor {
@@ -31,7 +32,7 @@ export class ImageGenProcessor implements NodeProcessor {
     async process({
         node,
         data,
-    }: BackendNodeProcessorCtx): Promise<BackendNodeProcessorResult> {
+    }: BackendNodeProcessorCtx): Promise<BackendNodeProcessorResult<ImageGenResult>> {
         try {
             const genAI = this.aiProvider.getGemini<GoogleGenAI>();
 

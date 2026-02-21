@@ -1,8 +1,9 @@
-import type { NodeProcessorParams, NodeResult } from "@gatewai/core/types";
+import type { NodeProcessorParams } from "@gatewai/core/types";
 import type { IBrowserProcessor } from "@gatewai/node-sdk/browser";
+import type { ExportResult } from "../shared/index.js";
 
-export class ModulateBrowserProcessor implements IBrowserProcessor {
-	async process({ inputs }: NodeProcessorParams): Promise<NodeResult | null> {
+export class ExportBrowserProcessor implements IBrowserProcessor {
+	async process({ inputs }: NodeProcessorParams): Promise<ExportResult | null> {
 		const inputEntries = Object.entries(inputs);
 		if (inputEntries.length === 0) throw new Error("Missing input for Export");
 
@@ -22,6 +23,6 @@ export class ModulateBrowserProcessor implements IBrowserProcessor {
 					],
 				},
 			],
-		} as unknown as NodeResult;
+		} as unknown as ExportResult;
 	}
 }

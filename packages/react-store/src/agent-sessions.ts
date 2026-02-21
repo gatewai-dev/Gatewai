@@ -66,8 +66,9 @@ export const agentSessionsAPI = createApi({
 	}),
 });
 
-export const {
-	useGetCanvasAgentSessionListQuery,
-	useGetCanvasAgentSessionDetailsQuery,
-	useCreateCanvasAgentSessionMutation,
-} = agentSessionsAPI;
+export const useGetCanvasAgentSessionListQuery: any =
+	agentSessionsAPI.useGetCanvasAgentSessionListQuery;
+export const useGetCanvasAgentSessionDetailsQuery: any =
+	agentSessionsAPI.useGetCanvasAgentSessionDetailsQuery;
+export const useCreateCanvasAgentSessionMutation: any =
+	agentSessionsAPI.useCreateCanvasAgentSessionMutation;

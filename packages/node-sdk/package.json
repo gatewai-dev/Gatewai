@@ -48,6 +48,7 @@
 		"@gatewai/core": "workspace:*",
 		"@gatewai/db": "workspace:*",
 		"@gatewai/media": "workspace:*",
+		"hono": "^4.8.5",
 		"zod": "3.25.67"
 	},
 	"dependencies": {

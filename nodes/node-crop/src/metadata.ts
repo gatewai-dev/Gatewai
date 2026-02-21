@@ -1,7 +1,7 @@
 import { defineMetadata } from "@gatewai/node-sdk";
-import { CropNodeConfigSchema } from "./shared/index.js";
+import { CropNodeConfigSchema, CropResultSchema } from "./shared/index.js";
 
-export { CropNodeConfigSchema };
+export { CropNodeConfigSchema, CropResultSchema };
 
 export const metadata = defineMetadata({
 	type: "Crop",
@@ -9,6 +9,7 @@ export const metadata = defineMetadata({
 	description: "Crop an image",
 	category: "Image",
 	configSchema: CropNodeConfigSchema,
+	resultSchema: CropResultSchema,
 	isTerminal: false,
 	isTransient: true,
 	handles: {

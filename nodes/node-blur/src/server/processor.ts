@@ -1,10 +1,6 @@
 import assert from "node:assert";
 import { TOKENS } from "@gatewai/core/di";
-import type {
-    BlurResult,
-    FileData,
-    NodeResult,
-} from "@gatewai/core/types";
+import type { FileData, NodeResult } from "@gatewai/core/types";
 import { DataType } from "@gatewai/db";
 import type {
     BackendNodeProcessorCtx,
@@ -15,6 +11,7 @@ import type {
     StorageService,
 } from "@gatewai/node-sdk/server";
 import { inject, injectable } from "tsyringe";
+import type { BlurResult } from "../shared/index.js";
 import { applyBlur, BlurNodeConfigSchema } from "../shared/index.js";
 
 @injectable()
@@ -28,7 +25,7 @@ export class BlurProcessor implements NodeProcessor {
     async process({
         node,
         data,
-    }: BackendNodeProcessorCtx): Promise<BackendNodeProcessorResult> {
+    }: BackendNodeProcessorCtx): Promise<BackendNodeProcessorResult<BlurResult>> {
         try {
             const imageInput = this.graph.getInputValue(data, node.id, true, {
                 dataType: DataType.Image,
@@ -92,7 +89,7 @@ export class BlurProcessor implements NodeProcessor {
             newResult.outputs = [newGeneration];
             newResult.selectedOutputIndex = newResult.outputs.length - 1;
 
-            return { success: true, newResult };
+            return { success: true, newResult: newResult as unknown as BlurResult };
         } catch (err: unknown) {
             return {
                 success: false,

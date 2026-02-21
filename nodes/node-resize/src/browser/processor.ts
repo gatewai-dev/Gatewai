@@ -1,6 +1,7 @@
-import type { NodeProcessorParams, NodeResult } from "@gatewai/core/types";
+import type { NodeProcessorParams } from "@gatewai/core/types";
 import type { IBrowserProcessor } from "@gatewai/node-sdk/browser";
 import { ResizeNodeConfigSchema } from "../shared/config.js";
+import type { ResizeResult } from "../shared/index.js";
 import { applyResize } from "../shared/pixi-resize-run.js";
 
 export class ResizeBrowserProcessor implements IBrowserProcessor {
@@ -9,7 +10,7 @@ export class ResizeBrowserProcessor implements IBrowserProcessor {
 		inputs,
 		signal,
 		context,
-	}: NodeProcessorParams): Promise<NodeResult | null> {
+	}: NodeProcessorParams): Promise<ResizeResult | null> {
 		const imageUrl = context.findInputData(inputs, "Image");
 		if (!imageUrl) throw new Error("Missing Input Image");
 

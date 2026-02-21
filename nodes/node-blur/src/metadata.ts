@@ -1,7 +1,11 @@
 import { defineMetadata } from "@gatewai/node-sdk/server";
-import { type BlurNodeConfig, BlurNodeConfigSchema } from "./shared/index.js";
+import {
+	type BlurNodeConfig,
+	BlurNodeConfigSchema,
+	BlurResultSchema,
+} from "./shared/index.js";
 
-export { type BlurNodeConfig, BlurNodeConfigSchema };
+export { type BlurNodeConfig, BlurNodeConfigSchema, BlurResultSchema };
 
 export const metadata = defineMetadata({
 	type: "Blur",
@@ -9,6 +13,7 @@ export const metadata = defineMetadata({
 	description: "Apply blur to an image",
 	category: "Image",
 	configSchema: BlurNodeConfigSchema,
+	resultSchema: BlurResultSchema,
 	// Not a terminal node - it won't process automatically after inputs change on browser
 	isTerminal: false,
 	// Results are stored in the temporary storage, so they are transient

@@ -45,9 +45,11 @@ const VideoGenNodeComponent = memo(
 							</div>
 						)}
 						{videoSrc && <VideoRenderer src={videoSrc} />}
-						<div className="absolute bottom-1 left-1 z-10">
-							<MediaDimensions node={node} />
-						</div>
+						{node && (
+							<div className="absolute bottom-1 left-1 z-10">
+								<MediaDimensions node={node} />
+							</div>
+						)}
 					</div>
 
 					<div className="flex justify-between items-center w-full">

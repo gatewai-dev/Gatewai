@@ -2,9 +2,14 @@ import { defineMetadata } from "@gatewai/node-sdk";
 import {
 	type ModulateNodeConfig,
 	ModulateNodeConfigSchema,
+	ModulateResultSchema,
 } from "./shared/index.js";
 
-export { type ModulateNodeConfig, ModulateNodeConfigSchema };
+export {
+	type ModulateNodeConfig,
+	ModulateNodeConfigSchema,
+	ModulateResultSchema,
+};
 
 export const metadata = defineMetadata({
 	type: "Modulate",
@@ -12,6 +17,7 @@ export const metadata = defineMetadata({
 	description: "Apply Modulate adjustments to an image",
 	category: "Image",
 	configSchema: ModulateNodeConfigSchema,
+	resultSchema: ModulateResultSchema,
 	isTerminal: false,
 	isTransient: true,
 	handles: {

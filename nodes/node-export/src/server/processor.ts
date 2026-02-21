@@ -1,6 +1,9 @@
 import assert from "node:assert";
 import { TOKENS } from "@gatewai/core/di";
-import type { ExportResult } from "@gatewai/core/types";
+import type { ExportResult } from "../shared/index.js";
+
+;
+
 import type {
     BackendNodeProcessorCtx,
     BackendNodeProcessorResult,
@@ -18,7 +21,7 @@ export class ExportServerProcessor implements NodeProcessor {
     async process({
         node,
         data,
-    }: BackendNodeProcessorCtx): Promise<BackendNodeProcessorResult> {
+    }: BackendNodeProcessorCtx): Promise<BackendNodeProcessorResult<ExportResult>> {
         try {
             const inputValue = this.graph.getInputValue(data, node.id, true, {});
             assert(inputValue);

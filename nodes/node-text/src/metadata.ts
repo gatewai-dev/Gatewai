@@ -1,7 +1,7 @@
 import { defineMetadata } from "@gatewai/node-sdk";
-import { TextNodeConfigSchema } from "./shared/index.js";
+import { TextNodeConfigSchema, TextResultSchema } from "./shared/index.js";
 
-export { TextNodeConfigSchema };
+export { TextNodeConfigSchema, TextResultSchema };
 
 export const metadata = defineMetadata({
 	type: "Text",
@@ -10,6 +10,7 @@ export const metadata = defineMetadata({
 	category: "Inputs",
 	showInQuickAccess: true,
 	configSchema: TextNodeConfigSchema,
+	resultSchema: TextResultSchema,
 	isTerminal: false,
 	isTransient: true,
 	handles: {

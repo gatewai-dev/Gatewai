@@ -1,7 +1,10 @@
 import { defineMetadata } from "@gatewai/node-sdk";
-import { CompositorNodeConfigSchema } from "./shared/index.js";
+import {
+	CompositorNodeConfigSchema,
+	CompositorResultSchema,
+} from "./shared/index.js";
 
-export { CompositorNodeConfigSchema };
+export { CompositorNodeConfigSchema, CompositorResultSchema };
 
 export default defineMetadata({
 	type: "ImageCompositor",
@@ -10,6 +13,7 @@ export default defineMetadata({
 	category: "Image",
 	subcategory: undefined,
 	configSchema: CompositorNodeConfigSchema,
+	resultSchema: CompositorResultSchema,
 	isTerminal: false,
 	isTransient: false,
 	variableInputs: {

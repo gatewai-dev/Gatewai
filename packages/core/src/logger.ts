@@ -14,7 +14,7 @@ interface ALS {
 // We initialize it with a dummy fallback for browser compatibility
 export let loggerContext: ALS = {
 	getStore: () => undefined,
-	run: (store, callback, ...args) => callback(...args),
+	run: (_store, callback, ...args) => callback(...args),
 };
 
 if (typeof window === "undefined") {

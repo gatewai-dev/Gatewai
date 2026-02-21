@@ -1,7 +1,7 @@
 import { defineMetadata } from "@gatewai/node-sdk";
-import { ResizeNodeConfigSchema } from "./shared/index.js";
+import { ResizeNodeConfigSchema, ResizeResultSchema } from "./shared/index.js";
 
-export { ResizeNodeConfigSchema };
+export { ResizeNodeConfigSchema, ResizeResultSchema };
 
 export default defineMetadata({
 	type: "Resize",
@@ -9,6 +9,7 @@ export default defineMetadata({
 	description: "Resize an image",
 	category: "Image",
 	configSchema: ResizeNodeConfigSchema,
+	resultSchema: ResizeResultSchema,
 	isTerminal: false,
 	isTransient: true,
 	handles: {

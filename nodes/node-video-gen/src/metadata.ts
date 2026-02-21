@@ -1,7 +1,10 @@
 import { defineMetadata } from "@gatewai/node-sdk";
-import { VideoGenNodeConfigSchema } from "./shared/index.js";
+import {
+	VideoGenNodeConfigSchema,
+	VideoGenResultSchema,
+} from "./shared/index.js";
 
-export { VideoGenNodeConfigSchema };
+export { VideoGenNodeConfigSchema, VideoGenResultSchema };
 
 export default defineMetadata({
 	type: "VideoGen",
@@ -10,6 +13,7 @@ export default defineMetadata({
 	category: "AI",
 	subcategory: "Video",
 	configSchema: VideoGenNodeConfigSchema,
+	resultSchema: VideoGenResultSchema,
 	isTerminal: true,
 	isTransient: false,
 	variableInputs: { enabled: true, dataTypes: ["Image"] },

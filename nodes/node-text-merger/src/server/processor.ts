@@ -1,5 +1,8 @@
 import { TOKENS } from "@gatewai/core/di";
-import type { TextMergerResult } from "@gatewai/core/types";
+import type { TextMergerResult } from "../shared/index.js";
+
+;
+
 import { DataType } from "@gatewai/db";
 import type {
     BackendNodeProcessorCtx,
@@ -20,7 +23,7 @@ export class TextMergerServerProcessor implements NodeProcessor {
     async process({
         node,
         data,
-    }: BackendNodeProcessorCtx): Promise<BackendNodeProcessorResult> {
+    }: BackendNodeProcessorCtx): Promise<BackendNodeProcessorResult<TextMergerResult>> {
         try {
             const textInputs = this.graph.getInputValuesByType(data, node.id, {
                 dataType: DataType.Text,

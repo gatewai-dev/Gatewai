@@ -1,4 +1,4 @@
-import type { CanvasListRPC } from "@gatewai/react-canvas";
+import type { CanvasListRPC } from "@gatewai/rpc-client";
 import {
 	AlertDialog,
 	AlertDialogAction,

@@ -927,7 +927,7 @@ const CanvasProvider = ({
 				}));
 
 				const rfPatchEdges: Edge[] = (patchData.edges || []).map((edge) => ({
-					id: edge.id,
+					id: edge.id as string,
 					source: edge.source,
 					target: edge.target,
 					sourceHandle: edge.sourceHandleId || undefined,

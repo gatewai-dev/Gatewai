@@ -50,6 +50,9 @@ export const NodeMetadataSchema = z.object({
 	// Config
 	configSchema: z.custom<ZodTypeAny>().optional(),
 	defaultConfig: z.record(z.unknown()).optional(),
+
+	// Results
+	resultSchema: z.custom<ZodTypeAny>().optional(),
 });
 
 export type NodeMetadata = z.infer<typeof NodeMetadataSchema>;

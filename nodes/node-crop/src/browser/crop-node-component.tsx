@@ -410,8 +410,7 @@ const CropOverlay = memo(
 			y1 = t,
 			x2 = l + w,
 			y2 = t + h;
-		const cx = l + w / 2,
-			cy = t + h / 2;
+		const cx = l + w / 2;
 
 		const thirds = {
 			v1: l + w / 3,

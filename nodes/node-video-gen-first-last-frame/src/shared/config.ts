@@ -28,3 +28,17 @@ export const VideoGenFirstLastFrameNodeConfigSchema = z
 export type VideoGenFirstLastFrameNodeConfig = z.infer<
 	typeof VideoGenFirstLastFrameNodeConfigSchema
 >;
+
+import {
+	createOutputItemSchema,
+	FileDataSchema,
+	MultiOutputGenericSchema,
+} from "@gatewai/core/types";
+
+export const VideoGenFirstLastFrameResultSchema = MultiOutputGenericSchema(
+	createOutputItemSchema(z.literal("Video"), FileDataSchema),
+);
+
+export type VideoGenFirstLastFrameResult = z.infer<
+	typeof VideoGenFirstLastFrameResultSchema
+>;

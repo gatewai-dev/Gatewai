@@ -1579,6 +1579,7 @@ const InspectorPanel: React.FC = () => {
 								}
 							}}
 							showLockAspect={selectedLayer.type !== "Text"}
+							// @ts-expect-error
 							canvasWidth={viewportWidth}
 							canvasHeight={viewportHeight}
 							onChange={update}

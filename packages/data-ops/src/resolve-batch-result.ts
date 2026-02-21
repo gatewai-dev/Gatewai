@@ -1,7 +1,7 @@
 import assert from "node:assert";
 import { ENV_CONFIG, type StorageService } from "@gatewai/core";
 import { container, TOKENS } from "@gatewai/core/di";
-import type { ExportResult, FileData, MediaService } from "@gatewai/core/types";
+import type { FileData, MediaService, NodeResult } from "@gatewai/core/types";
 import { type Node, prisma, type TaskBatch } from "@gatewai/db";
 import type { APIRunResponse } from "./schemas.js";
 
@@ -77,7 +77,7 @@ export async function resolveBatchResult(
 		);
 
 		// Ensure we have both the node and the result
-		const result = exportNode?.result as unknown as ExportResult | null;
+		const result = exportNode?.result as unknown as NodeResult | null;
 		if (!originalNode?.id || !result) continue;
 
 		const selectedOutput = result.outputs[result.selectedOutputIndex];

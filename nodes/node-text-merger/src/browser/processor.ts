@@ -1,4 +1,5 @@
-import type { NodeResult } from "@gatewai/core/types";
+import type { TextMergerResult } from "../shared/index.js";
+
 import type { IBrowserProcessor } from "@gatewai/node-sdk/browser";
 import type { NodeProcessorParams } from "@gatewai/react-canvas";
 import { TextMergerNodeConfigSchema } from "../shared/config.js";
@@ -9,7 +10,7 @@ export class TextMergerBrowserProcessor implements IBrowserProcessor {
 		inputs,
 		node,
 		context,
-	}: NodeProcessorParams): Promise<NodeResult | null> {
+	}: NodeProcessorParams): Promise<TextMergerResult | null> {
 		const config = TextMergerNodeConfigSchema.parse(node.config);
 		// inputs record is already sorted by handle.createdAt due to collectInputs logic
 		const allTexts = Object.values(inputs).map(
@@ -20,7 +21,7 @@ export class TextMergerBrowserProcessor implements IBrowserProcessor {
 		const outputHandle = context.getFirstOutputHandle(node.id);
 		if (!outputHandle) throw new Error("Missing output handle");
 		const output = {
-			selectedOutputIndex: 0,
+			selectedOutputIndex: 0 as const,
 			outputs: [
 				{
 					items: [
@@ -34,6 +35,6 @@ export class TextMergerBrowserProcessor implements IBrowserProcessor {
 			],
 		};
 
-		return output;
+		return output as unknown as TextMergerResult;
 	}
 }

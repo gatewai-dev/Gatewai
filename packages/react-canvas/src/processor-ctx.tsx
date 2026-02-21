@@ -1,6 +1,6 @@
 import { GetAssetEndpoint, isEqual } from "@gatewai/core";
 import { getEnv, ResolveFileDataUrl } from "@gatewai/core/browser";
-import type { FileData, FileResult, NodeResult } from "@gatewai/core/types";
+import type { FileData, NodeResult } from "@gatewai/core/types";
 import {
 	makeSelectAllEdges,
 	makeSelectAllHandles,
@@ -102,8 +102,7 @@ export function useNodeFileOutputUrl(nodeId: string): string | null {
 	const outputItem = output?.items.find((f) => f.type === "Image");
 	if (!outputItem) return null;
 
-	const fileData =
-		outputItem.data as FileResult["outputs"][number]["items"][number]["data"];
+	const fileData = outputItem.data as FileData;
 	return fileData?.entity
 		? ResolveFileDataUrl(fileData?.entity as any)
 		: (fileData?.processData?.dataUrl ?? null);

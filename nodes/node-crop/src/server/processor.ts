@@ -1,7 +1,6 @@
-
 import assert from "node:assert";
 import { TOKENS } from "@gatewai/core/di";
-import type { CropResult, FileData } from "@gatewai/core/types";
+import type { FileData } from "@gatewai/core/types";
 import { DataType } from "@gatewai/db";
 import type {
     BackendNodeProcessorCtx,
@@ -13,6 +12,7 @@ import type {
 } from "@gatewai/node-sdk/server";
 import { inject, injectable } from "tsyringe";
 import { CropNodeConfigSchema } from "../shared/config.js";
+import type { CropResult } from "../shared/index.js";
 import { applyCrop } from "../shared/pixi-crop-run.js";
 
 @injectable()
@@ -26,7 +26,7 @@ export class CropProcessor implements NodeProcessor {
     async process({
         node,
         data,
-    }: BackendNodeProcessorCtx): Promise<BackendNodeProcessorResult> {
+    }: BackendNodeProcessorCtx): Promise<BackendNodeProcessorResult<CropResult>> {
         try {
             const imageInput = this.graph.getInputValue(data, node.id, true, {
                 dataType: DataType.Image,

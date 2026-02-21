@@ -1,7 +1,7 @@
 import { defineMetadata } from "@gatewai/node-sdk";
-import { LLMNodeConfigSchema } from "./shared/index.js";
+import { LLMNodeConfigSchema, LLMResultSchema } from "./shared/index.js";
 
-export { LLMNodeConfigSchema };
+export { LLMNodeConfigSchema, LLMResultSchema };
 
 export default defineMetadata({
 	type: "LLM",
@@ -10,6 +10,7 @@ export default defineMetadata({
 	category: "AI",
 	subcategory: "Text",
 	configSchema: LLMNodeConfigSchema,
+	resultSchema: LLMResultSchema,
 	isTerminal: true,
 	isTransient: false,
 	variableInputs: { enabled: true, dataTypes: ["Image"] },

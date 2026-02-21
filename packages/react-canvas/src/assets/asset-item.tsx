@@ -1,5 +1,5 @@
 import { getDataTypeFromMime } from "@gatewai/core/browser";
-import type { FileData, FileResult } from "@gatewai/core/types";
+import type { FileData, NodeResult } from "@gatewai/core/types";
 import { useReactFlow } from "@gatewai/react-canvas";
 import { useDeleteAssetMutation } from "@gatewai/react-store";
 import {
@@ -180,7 +180,7 @@ export const AssetItem = memo(({ asset }: AssetItemProps) => {
 							],
 						},
 					],
-				} as FileResult;
+				} as NodeResult;
 				createNewNode(importTemplate, position, initialResult);
 			}
 		};

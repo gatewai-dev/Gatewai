@@ -1,7 +1,7 @@
 import { defineMetadata } from "@gatewai/node-sdk";
-import { PaintNodeConfigSchema } from "./shared/index.js";
+import { PaintNodeConfigSchema, PaintResultSchema } from "./shared/index.js";
 
-export { PaintNodeConfigSchema };
+export { PaintNodeConfigSchema, PaintResultSchema };
 
 export default defineMetadata({
 	type: "Paint",
@@ -9,6 +9,7 @@ export default defineMetadata({
 	description: "Draw / Fill Mask on an image",
 	category: "Image",
 	configSchema: PaintNodeConfigSchema,
+	resultSchema: PaintResultSchema,
 	isTerminal: false,
 	isTransient: true,
 	handles: {

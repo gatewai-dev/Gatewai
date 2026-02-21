@@ -1,29 +1,34 @@
 import type { DataType, FileAsset } from "@gatewai/db";
+import z from "zod";
 
 /**
  * Typing for non-terminal processing
  */
-export type ProcessData = {
-	dataUrl: string;
+export const ProcessDataSchema = z.object({
+	dataUrl: z.string(),
 	/**
 	 * Bucket key of temporary file
 	 */
-	tempKey?: string;
-	mimeType?: string;
+	tempKey: z.string().optional(),
+	mimeType: z.string().optional(),
 
 	// For the Image, Video media types
-	width?: number;
-	height?: number;
+	width: z.number().optional(),
+	height: z.number().optional(),
 
 	// For the Audio, Video media types
-	duration?: number;
-	fps?: number;
-};
+	duration: z.number().optional(),
+	fps: z.number().optional(),
+});
 
-export type FileData = {
-	entity?: FileAsset;
-	processData?: ProcessData;
-};
+export type ProcessData = z.infer<typeof ProcessDataSchema>;
+
+export const FileDataSchema = z.object({
+	entity: z.custom<FileAsset>().optional(),
+	processData: ProcessDataSchema.optional(),
+});
+
+export type FileData = z.infer<typeof FileDataSchema>;
 
 export type DataForType<R extends DataType> = R extends "Text"
 	? string
@@ -37,6 +42,24 @@ export type DataForType<R extends DataType> = R extends "Text"
 					? string | number | boolean | FileData
 					: never;
 
+export const OutputItemSchema = z.object({
+	type: z.custom<DataType>(),
+	data: z.any(), // Since DataForType is complex, we just allow any at runtime but type it properly if possible.
+	outputHandleId: z.string().optional(),
+});
+
+// Utility to create strictly-typed output item schemas
+export const createOutputItemSchema = <T extends DataType>(
+	type: z.ZodLiteral<T>,
+	dataSchema: z.ZodTypeAny,
+) => {
+	return z.object({
+		type: type,
+		data: dataSchema,
+		outputHandleId: z.string().optional(),
+	}) as z.ZodType<OutputItem<T>>;
+};
+
 export type OutputItem<R extends DataType> = {
 	type: R;
 	data: DataForType<R>;
@@ -47,80 +70,30 @@ export type Output = {
 	items: OutputItem<DataType>[];
 };
 
+export const SingleOutputGenericSchema = <T extends DataType>(
+	outputItemSchema: z.ZodType<OutputItem<T>>,
+) =>
+	z.object({
+		selectedOutputIndex: z.literal(0),
+		outputs: z.tuple([z.object({ items: z.tuple([outputItemSchema]) })]),
+	});
+
 export type SingleOutputGeneric<T extends DataType> = {
 	selectedOutputIndex: 0;
 	outputs: [{ items: [OutputItem<T>] }];
 };
 
+export const MultiOutputGenericSchema = <T extends DataType>(
+	outputItemSchema: z.ZodType<OutputItem<T>>,
+) =>
+	z.object({
+		selectedOutputIndex: z.number(),
+		outputs: z.tuple([z.object({ items: z.tuple([outputItemSchema]) })]),
+	});
+
 export type MultiOutputGeneric<T extends DataType> = {
 	selectedOutputIndex: number;
 	outputs: [{ items: [OutputItem<T>] }];
-};
-
-export type TextResult = SingleOutputGeneric<"Text">;
-export type ToggleResult = SingleOutputGeneric<"Boolean">;
-
-export type FileResult =
-	| MultiOutputGeneric<"Video">
-	| MultiOutputGeneric<"Image">
-	| MultiOutputGeneric<"Audio">;
-
-export type ImagesResult = MultiOutputGeneric<"Image">;
-
-export type ImageGenResult = ImagesResult;
-
-export type MaskResult = {
-	selectedOutputIndex: 0;
-	outputs: { items: [OutputItem<"Image">, OutputItem<"Image">] }[];
-};
-
-export type NumberResult = SingleOutputGeneric<"Number">;
-
-export type LLMResult = MultiOutputGeneric<"Text">;
-
-export type ResizeResult = SingleOutputGeneric<"Image">;
-
-export type ModulateResult = SingleOutputGeneric<"Image">;
-
-export type PaintResult = {
-	selectedOutputIndex: 0;
-	outputs: [
-		{
-			items: [OutputItem<"Image">, OutputItem<"Image">];
-		},
-	];
-};
-
-export type BlurResult = SingleOutputGeneric<"Image">;
-export type CropResult = SingleOutputGeneric<"Image">;
-
-export type CompositorResult = SingleOutputGeneric<"Image">;
-export type VideoCompositorResult = SingleOutputGeneric<"Video">;
-export type TextMergerResult = SingleOutputGeneric<"Text">;
-
-export type BaseVideoGenResult = MultiOutputGeneric<"Video">;
-
-export type VideoGenResult = BaseVideoGenResult;
-export type VideoGenExtendResult = BaseVideoGenResult;
-export type VideoGenFirstLastFrameResult = BaseVideoGenResult;
-
-export type TextToSpeechResult = MultiOutputGeneric<"Audio">;
-export type SpeechToTextResult = MultiOutputGeneric<"Text">;
-
-export type AnyOutputUnion =
-	| OutputItem<"Video">
-	| OutputItem<"Image">
-	| OutputItem<"Audio">
-	| OutputItem<"Text">
-	| OutputItem<"Number">
-	| OutputItem<"Boolean">;
-
-/**
- * Export result may have
- */
-export type ExportResult = {
-	selectedOutputIndex: number;
-	outputs: { items: AnyOutputUnion[] }[];
 };
 
 export type AnyOutputItem =
@@ -131,26 +104,27 @@ export type AnyOutputItem =
 	| OutputItem<"Video">
 	| OutputItem<"Number">;
 
-export type NodeResult =
-	| TextResult
-	| TextMergerResult
-	| ToggleResult
-	| FileResult
-	| ImagesResult
-	| ImageGenResult
-	| CropResult
-	| MaskResult
-	| NumberResult
-	| LLMResult
-	| ResizeResult
-	| PaintResult
-	| BlurResult
-	| CompositorResult
-	| ModulateResult
-	| VideoGenResult
-	| VideoGenExtendResult
-	| VideoGenFirstLastFrameResult
-	| VideoCompositorResult
-	| ExportResult
-	| TextToSpeechResult
-	| SpeechToTextResult;
+export type AnyOutputUnion =
+	| OutputItem<"Video">
+	| OutputItem<"Image">
+	| OutputItem<"Audio">
+	| OutputItem<"Text">
+	| OutputItem<"Number">
+	| OutputItem<"Boolean">;
+
+export const AnyOutputUnionSchema = z.object({
+	type: z.custom<DataType>(),
+	data: z.any(),
+	outputHandleId: z.string().optional(),
+}) as z.ZodType<AnyOutputUnion>;
+
+export const NodeResultSchema = z.object({
+	selectedOutputIndex: z.number(),
+	outputs: z.array(
+		z.object({
+			items: z.array(AnyOutputUnionSchema),
+		}),
+	),
+});
+
+export type NodeResult = z.infer<typeof NodeResultSchema>;

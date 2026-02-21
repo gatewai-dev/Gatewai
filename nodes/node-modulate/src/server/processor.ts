@@ -1,5 +1,5 @@
 import { TOKENS } from "@gatewai/core/di";
-import type { FileData, ModulateResult, NodeResult } from "@gatewai/core/types";
+import type { FileData, NodeResult } from "@gatewai/core/types";
 import { DataType } from "@gatewai/db";
 import type {
     BackendNodeProcessorCtx,
@@ -11,6 +11,7 @@ import type {
 } from "@gatewai/node-sdk/server";
 import { inject, injectable } from "tsyringe";
 import { ModulateNodeConfigSchema } from "../metadata.js";
+import type { ModulateResult } from "../shared/index.js";
 import { applyModulate } from "../shared/pixi-modulate-run.js";
 
 @injectable()
@@ -24,7 +25,7 @@ export class ModulateProcessor implements NodeProcessor {
     async process({
         node,
         data,
-    }: BackendNodeProcessorCtx): Promise<BackendNodeProcessorResult> {
+    }: BackendNodeProcessorCtx): Promise<BackendNodeProcessorResult<ModulateResult>> {
         try {
             const imageInput = this.graph.getInputValue(data, node.id, true, {
                 dataType: DataType.Image,
@@ -95,7 +96,7 @@ export class ModulateProcessor implements NodeProcessor {
             newResult.outputs = [newGeneration];
             newResult.selectedOutputIndex = newResult.outputs.length - 1;
 
-            return { success: true, newResult };
+            return { success: true, newResult: newResult as unknown as ModulateResult };
         } catch (err: unknown) {
             return {
                 success: false,

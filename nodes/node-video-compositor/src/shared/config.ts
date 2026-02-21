@@ -58,3 +58,15 @@ export type VideoCompositorNodeConfig = z.infer<
 	typeof VideoCompositorNodeConfigSchema
 >;
 export type VideoCompositorLayer = z.infer<typeof VideoCompositorLayerSchema>;
+
+import {
+	createOutputItemSchema,
+	FileDataSchema,
+	SingleOutputGenericSchema,
+} from "@gatewai/core/types";
+
+export const VideoCompositorResultSchema = SingleOutputGenericSchema(
+	createOutputItemSchema(z.literal("Video"), FileDataSchema),
+);
+
+export type VideoCompositorResult = z.infer<typeof VideoCompositorResultSchema>;

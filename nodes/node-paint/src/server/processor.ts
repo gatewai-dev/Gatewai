@@ -1,5 +1,5 @@
 import { TOKENS } from "@gatewai/core/di";
-import type { FileData, PaintResult } from "@gatewai/core/types";
+import type { FileData } from "@gatewai/core/types";
 import { DataType } from "@gatewai/db";
 import type {
     BackendNodeProcessorCtx,
@@ -11,6 +11,7 @@ import type {
 } from "@gatewai/node-sdk/server";
 import { inject, injectable } from "tsyringe";
 import { PaintNodeConfigSchema } from "../metadata.js";
+import type { PaintResult } from "../shared/index.js";
 import { applyPaint, type PixiPaintInput, type PixiPaintOutput } from "../shared/pixi-paint-run.js";
 
 @injectable()
@@ -24,7 +25,7 @@ export class PaintProcessor implements NodeProcessor {
     async process({
         node,
         data,
-    }: BackendNodeProcessorCtx): Promise<BackendNodeProcessorResult> {
+    }: BackendNodeProcessorCtx): Promise<BackendNodeProcessorResult<PaintResult>> {
         try {
             const backgroundInput = this.graph.getInputValue(data, node.id, false, {
                 dataType: DataType.Image,

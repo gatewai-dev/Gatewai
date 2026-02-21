@@ -1,6 +1,6 @@
 import { logger } from "@gatewai/core";
 import { TOKENS } from "@gatewai/core/di";
-import type { OutputItem, SpeechToTextResult } from "@gatewai/core/types";
+import type { OutputItem } from "@gatewai/core/types";
 import { DataType } from "@gatewai/db";
 import type {
     AIProvider,
@@ -13,6 +13,7 @@ import type {
 import { createPartFromUri, createUserContent, type GoogleGenAI } from "@google/genai";
 import { inject, injectable } from "tsyringe";
 import { SpeechToTextNodeConfigSchema } from "../shared/config.js";
+import type { SpeechToTextResult } from "../shared/index.js";
 
 @injectable()
 export class SpeechToTextProcessor implements NodeProcessor {
@@ -25,7 +26,7 @@ export class SpeechToTextProcessor implements NodeProcessor {
     async process({
         node,
         data,
-    }: BackendNodeProcessorCtx): Promise<BackendNodeProcessorResult> {
+    }: BackendNodeProcessorCtx): Promise<BackendNodeProcessorResult<SpeechToTextResult>> {
         try {
             const userPrompt = this.graph.getInputValue(data, node.id, false, {
                 dataType: DataType.Text,

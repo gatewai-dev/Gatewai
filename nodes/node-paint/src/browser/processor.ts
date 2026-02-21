@@ -1,6 +1,7 @@
-import type { NodeProcessorParams, NodeResult } from "@gatewai/core/types";
+import type { NodeProcessorParams } from "@gatewai/core/types";
 import type { IBrowserProcessor } from "@gatewai/node-sdk/browser";
 import { PaintNodeConfigSchema } from "../shared/config.js";
+import type { PaintResult } from "../shared/index.js";
 import {
 	applyPaint,
 	type PixiPaintInput,
@@ -13,7 +14,7 @@ export class PaintBrowserProcessor implements IBrowserProcessor {
 		inputs,
 		signal,
 		context,
-	}: NodeProcessorParams): Promise<NodeResult | null> {
+	}: NodeProcessorParams): Promise<PaintResult | null> {
 		const imageUrl = context.findInputData(inputs, "Image", "Background Image");
 
 		// Parse config

@@ -20,15 +20,17 @@ const VideoGenFirstLastFrameNodeComponent = memo(
 			>
 				<div className="flex flex-col gap-3">
 					<div className="media-container w-full overflow-hidden rounded relative min-h-32">
-						{hasMoreThanOneOutput && (
+						{hasMoreThanOneOutput && node && (
 							<div className="absolute top-1 left-1 z-10">
 								<OutputSelector node={node} />
 							</div>
 						)}
 						{mediaUrl && <VideoRenderer src={mediaUrl} />}
-						<div className="absolute bottom-1 left-1 z-10">
-							<MediaDimensions node={node} />
-						</div>
+						{node && (
+							<div className="absolute bottom-1 left-1 z-10">
+								<MediaDimensions node={node} />
+							</div>
+						)}
 					</div>
 
 					<div className="flex justify-end items-center w-full">

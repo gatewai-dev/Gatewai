@@ -50,5 +50,10 @@ export async function initNodeRegistry(): Promise<NodeRegistryValue> {
 		}),
 	);
 
-	return { nodeTypes, iconMap, configMap, pageMap };
+	return {
+		nodeTypes,
+		iconMap,
+		configMap,
+		pageMap,
+	} as unknown as NodeRegistryValue;
 }

@@ -47,3 +47,15 @@ export const CompositorNodeConfigSchema = z
 
 export type CompositorNodeConfig = z.infer<typeof CompositorNodeConfigSchema>;
 export type CompositorLayer = z.infer<typeof CompositorLayerSchema>;
+
+import {
+	createOutputItemSchema,
+	FileDataSchema,
+	SingleOutputGenericSchema,
+} from "@gatewai/core/types";
+
+export const CompositorResultSchema = SingleOutputGenericSchema(
+	createOutputItemSchema(z.literal("Image"), FileDataSchema),
+);
+
+export type CompositorResult = z.infer<typeof CompositorResultSchema>;

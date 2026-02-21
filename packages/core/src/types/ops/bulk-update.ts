@@ -104,7 +104,8 @@ export const bulkUpdateSchema = z
 					return handle?.type === "Input";
 				});
 
-				const layerUpdates = node.config.layerUpdates ?? {};
+				const layerUpdates =
+					(node.config.layerUpdates as Record<string, unknown>) ?? {};
 				const configKeys = Object.keys(layerUpdates);
 
 				// Validate that all layerUpdates keys are valid input handle IDs

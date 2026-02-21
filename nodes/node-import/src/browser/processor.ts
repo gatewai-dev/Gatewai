@@ -1,4 +1,5 @@
-import type { NodeResult } from "@gatewai/core/types";
+import type { ImportResult } from "../shared/index.js";
+
 import type { IBrowserProcessor } from "@gatewai/node-sdk/browser";
 import type { NodeProcessorParams } from "@gatewai/react-canvas";
 import { ImportNodeConfigSchema } from "../shared/config.js";
@@ -7,18 +8,13 @@ export class ImportBrowserProcessor implements IBrowserProcessor {
 	async process({
 		node,
 		context,
-	}: NodeProcessorParams): Promise<NodeResult | null> {
+	}: NodeProcessorParams): Promise<ImportResult | null> {
 		const outputHandle = context.getFirstOutputHandle(node.id);
 		const config = ImportNodeConfigSchema.parse(node.config);
 		const asset = config.asset;
 
 		if (!outputHandle) throw new Error("No output handle");
-		if (!asset) {
-			return {
-				selectedOutputIndex: 0,
-				outputs: [],
-			};
-		}
+		if (!asset) throw new Error("No asset");
 
 		let dataType: "Image" | "Video" | "Audio" = "Image";
 		if (asset.mimeType.startsWith("image/")) {
@@ -30,7 +26,7 @@ export class ImportBrowserProcessor implements IBrowserProcessor {
 		}
 
 		return {
-			selectedOutputIndex: 0,
+			selectedOutputIndex: 0 as const,
 			outputs: [
 				{
 					items: [
@@ -44,6 +40,6 @@ export class ImportBrowserProcessor implements IBrowserProcessor {
 					],
 				},
 			],
-		};
+		} as any as ImportResult;
 	}
 }

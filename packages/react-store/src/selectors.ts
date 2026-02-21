@@ -24,7 +24,9 @@ export const selectConnectedNodeByHandleId = (
 		},
 	);
 
-export const selectNodeResultByHandleId = (handleId: HandleEntityType["id"]) =>
+export const selectNodeResultByHandleId = (
+	handleId: HandleEntityType["id"],
+): ((state: any) => any) =>
 	createSelector(
 		selectConnectedNodeByHandleId(handleId),
 		edgeSelectors.selectAll,

@@ -34,7 +34,11 @@ export function registerBackendServices() {
 	// Register AI Provider
 	container.register(TOKENS.AI_PROVIDER, {
 		useValue: {
-			getGemini: () => new GoogleGenAI({ apiKey: ENV_CONFIG.GEMINI_API_KEY }),
+			getGemini: () => {
+				if (ENV_CONFIG.GEMINI_API_KEY == null)
+					throw new Error("No Gemini API kep provided");
+				return new GoogleGenAI({ apiKey: ENV_CONFIG.GEMINI_API_KEY });
+			},
 		},
 	});
 

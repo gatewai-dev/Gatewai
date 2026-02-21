@@ -1,7 +1,10 @@
 import { defineMetadata } from "@gatewai/node-sdk";
-import { SpeechToTextNodeConfigSchema } from "./shared/index.js";
+import {
+	SpeechToTextNodeConfigSchema,
+	SpeechToTextResultSchema,
+} from "./shared/index.js";
 
-export { SpeechToTextNodeConfigSchema };
+export { SpeechToTextNodeConfigSchema, SpeechToTextResultSchema };
 
 export default defineMetadata({
 	type: "SpeechToText",
@@ -10,6 +13,7 @@ export default defineMetadata({
 	category: "AI",
 	subcategory: "Audio",
 	configSchema: SpeechToTextNodeConfigSchema,
+	resultSchema: SpeechToTextResultSchema,
 	isTerminal: true,
 	isTransient: false,
 	handles: {

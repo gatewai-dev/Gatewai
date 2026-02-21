@@ -1,3 +1,8 @@
+import {
+	createOutputItemSchema,
+	FileDataSchema,
+	SingleOutputGenericSchema,
+} from "@gatewai/core/types";
 import { z } from "zod";
 
 export const BlurNodeConfigSchema = z
@@ -7,3 +12,9 @@ export const BlurNodeConfigSchema = z
 	.strict();
 
 export type BlurNodeConfig = z.infer<typeof BlurNodeConfigSchema>;
+
+export const BlurResultSchema = SingleOutputGenericSchema(
+	createOutputItemSchema(z.literal("Image"), FileDataSchema),
+);
+
+export type BlurResult = z.infer<typeof BlurResultSchema>;

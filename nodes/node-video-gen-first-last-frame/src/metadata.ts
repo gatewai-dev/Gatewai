@@ -1,7 +1,13 @@
 import { defineMetadata } from "@gatewai/node-sdk";
-import { VideoGenFirstLastFrameNodeConfigSchema } from "./shared/index.js";
+import {
+	VideoGenFirstLastFrameNodeConfigSchema,
+	VideoGenFirstLastFrameResultSchema,
+} from "./shared/index.js";
 
-export { VideoGenFirstLastFrameNodeConfigSchema };
+export {
+	VideoGenFirstLastFrameNodeConfigSchema,
+	VideoGenFirstLastFrameResultSchema,
+};
 
 export default defineMetadata({
 	type: "VideoGenFirstLastFrame",
@@ -10,6 +16,7 @@ export default defineMetadata({
 	category: "AI",
 	subcategory: "Video",
 	configSchema: VideoGenFirstLastFrameNodeConfigSchema,
+	resultSchema: VideoGenFirstLastFrameResultSchema,
 	isTerminal: true,
 	isTransient: false,
 	handles: {

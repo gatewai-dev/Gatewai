@@ -1,7 +1,10 @@
 import { defineMetadata } from "@gatewai/node-sdk";
-import { VideoCompositorNodeConfigSchema } from "./shared/index.js";
+import {
+	VideoCompositorNodeConfigSchema,
+	VideoCompositorResultSchema,
+} from "./shared/index.js";
 
-export { VideoCompositorNodeConfigSchema };
+export { VideoCompositorNodeConfigSchema, VideoCompositorResultSchema };
 
 export const metadata = defineMetadata({
 	type: "VideoCompositor",
@@ -10,6 +13,7 @@ export const metadata = defineMetadata({
 	category: "Video",
 	subcategory: undefined,
 	configSchema: VideoCompositorNodeConfigSchema,
+	resultSchema: VideoCompositorResultSchema,
 	isTerminal: false,
 	isTransient: false,
 	variableInputs: {

@@ -1,6 +1,7 @@
-import type { NodeProcessorParams, NodeResult } from "@gatewai/core/types";
+import type { NodeProcessorParams } from "@gatewai/core/types";
 import type { IBrowserProcessor } from "@gatewai/node-sdk/browser";
 import { ModulateNodeConfigSchema } from "../shared/config.js";
+import type { ModulateResult } from "../shared/index.js";
 import { applyModulate } from "../shared/pixi-modulate-run.js";
 
 export class ModulateBrowserProcessor implements IBrowserProcessor {
@@ -9,7 +10,7 @@ export class ModulateBrowserProcessor implements IBrowserProcessor {
 		inputs,
 		signal,
 		context,
-	}: NodeProcessorParams): Promise<NodeResult | null> {
+	}: NodeProcessorParams): Promise<ModulateResult | null> {
 		const imageUrl = context.findInputData(inputs, "Image");
 		if (!imageUrl) throw new Error("Missing Input Image");
 

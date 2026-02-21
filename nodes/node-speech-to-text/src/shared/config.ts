@@ -14,3 +14,14 @@ export const SpeechToTextNodeConfigSchema = z
 export type SpeechToTextNodeConfig = z.infer<
 	typeof SpeechToTextNodeConfigSchema
 >;
+
+import {
+	createOutputItemSchema,
+	MultiOutputGenericSchema,
+} from "@gatewai/core/types";
+
+export const SpeechToTextResultSchema = MultiOutputGenericSchema(
+	createOutputItemSchema(z.literal("Text"), z.string()),
+);
+
+export type SpeechToTextResult = z.infer<typeof SpeechToTextResultSchema>;

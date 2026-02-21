@@ -714,7 +714,9 @@ const TransformerComponent: React.FC = () => {
 
 	useEffect(() => {
 		if (selectedId && transformerRef.current && stageRef.current) {
-			const node = stageRef.current.findOne((node) => node.id() === selectedId);
+			const node = stageRef.current.findOne(
+				(node: Konva.Node) => node.id() === selectedId,
+			);
 			if (node) {
 				transformerRef.current.nodes([node]);
 				transformerRef.current.getLayer()?.batchDraw();
@@ -1413,7 +1415,9 @@ const InspectorPanel: React.FC = () => {
 						fontStyle={selectedLayer.fontStyle ?? "normal"}
 						fontList={fontList}
 						textDecoration={selectedLayer.textDecoration ?? ""}
-						align={selectedLayer.align}
+						align={
+							selectedLayer.align as "left" | "center" | "right" | undefined
+						}
 						letterSpacing={selectedLayer.letterSpacing}
 						fontWeight={selectedLayer.fontWeight ?? "normal"}
 						lineHeight={selectedLayer.lineHeight}

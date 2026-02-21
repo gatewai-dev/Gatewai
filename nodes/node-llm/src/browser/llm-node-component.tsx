@@ -1,4 +1,5 @@
-import type { LLMResult } from "@gatewai/core/types";
+import type { LLMResult } from "../shared/index.js";
+
 import {
 	AddCustomHandleButton,
 	BaseNode,

@@ -1,3 +1,8 @@
+import {
+	createOutputItemSchema,
+	FileDataSchema,
+	SingleOutputGenericSchema,
+} from "@gatewai/core/types";
 import { z } from "zod";
 
 export const CropNodeConfigSchema = z
@@ -10,3 +15,9 @@ export const CropNodeConfigSchema = z
 	.strict();
 
 export type CropNodeConfig = z.infer<typeof CropNodeConfigSchema>;
+
+export const CropResultSchema = SingleOutputGenericSchema(
+	createOutputItemSchema(z.literal("Image"), FileDataSchema),
+);
+
+export type CropResult = z.infer<typeof CropResultSchema>;

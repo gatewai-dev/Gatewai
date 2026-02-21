@@ -1,3 +1,8 @@
+import {
+	createOutputItemSchema,
+	FileDataSchema,
+	SingleOutputGenericSchema,
+} from "@gatewai/core/types";
 import { z } from "zod";
 
 export const ModulateNodeConfigSchema = z
@@ -10,3 +15,9 @@ export const ModulateNodeConfigSchema = z
 	.strict();
 
 export type ModulateNodeConfig = z.infer<typeof ModulateNodeConfigSchema>;
+
+export const ModulateResultSchema = SingleOutputGenericSchema(
+	createOutputItemSchema(z.literal("Image"), FileDataSchema),
+);
+
+export type ModulateResult = z.infer<typeof ModulateResultSchema>;

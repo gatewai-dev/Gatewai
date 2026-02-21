@@ -76,7 +76,7 @@ function AddCustomHandleButtonBase(props: CustomHandleButtonProps) {
 	type FormValues = z.infer<typeof formSchema>;
 
 	const form = useForm<FormValues>({
-		resolver: zodResolver(formSchema),
+		resolver: zodResolver(formSchema as any),
 		defaultValues: {
 			dataType: OPTIONS[0],
 			label: "",

@@ -1,10 +1,10 @@
 import type {
-	BlurResult,
 	NodeProcessorParams,
 	PixiProcessOutput,
 } from "@gatewai/core/types";
 import type { IBrowserProcessor } from "@gatewai/node-sdk/browser";
 import { BlurNodeConfigSchema } from "../shared/config.js";
+import type { BlurResult } from "../shared/index.js";
 import { applyBlur, type PixiBlurInput } from "../shared/pixi-blur-run.js";
 
 export class BlurBrowserProcessor implements IBrowserProcessor {

@@ -1,10 +1,10 @@
-import type { Node } from "@gatewai/db";
 import { useCanvasCtx } from "@gatewai/react-canvas";
+import type { NodeEntityType } from "@gatewai/react-store";
 import { Label, Slider } from "@gatewai/ui-kit";
 import { memo, useCallback, useEffect, useState } from "react";
 import type { BlurNodeConfig } from "../../shared/config.js";
 
-export const BlurValueSlider = memo(({ node }: { node: Node }) => {
+export const BlurValueSlider = memo(({ node }: { node: NodeEntityType }) => {
 	const { onNodeConfigUpdate } = useCanvasCtx();
 	const config = (node.config as BlurNodeConfig) || {};
 	const [localSize, setLocalSize] = useState(config.size ?? 0);

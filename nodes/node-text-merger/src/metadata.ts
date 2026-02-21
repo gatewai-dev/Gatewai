@@ -1,7 +1,10 @@
 import { defineMetadata } from "@gatewai/node-sdk";
-import { TextMergerNodeConfigSchema } from "./shared/index.js";
+import {
+	TextMergerNodeConfigSchema,
+	TextMergerResultSchema,
+} from "./shared/index.js";
 
-export { TextMergerNodeConfigSchema };
+export { TextMergerNodeConfigSchema, TextMergerResultSchema };
 
 export default defineMetadata({
 	type: "TextMerger",
@@ -9,6 +12,7 @@ export default defineMetadata({
 	description: "Merges connected texts.",
 	category: "Tools",
 	configSchema: TextMergerNodeConfigSchema,
+	resultSchema: TextMergerResultSchema,
 	isTerminal: false,
 	isTransient: false,
 	variableInputs: { enabled: true, dataTypes: ["Text"] },

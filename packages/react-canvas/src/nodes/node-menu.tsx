@@ -51,7 +51,7 @@ const RenameNodeDialog = memo(
 		const dispatch = useAppDispatch();
 
 		const form = useForm<z.infer<typeof renameSchema>>({
-			resolver: zodResolver(renameSchema),
+			resolver: zodResolver(renameSchema as any),
 			defaultValues: { name: currentName },
 		});
 

@@ -37,3 +37,15 @@ export const ImageGenNodeConfigSchema = z
 	);
 
 export type ImageGenNodeConfig = z.infer<typeof ImageGenNodeConfigSchema>;
+
+import {
+	createOutputItemSchema,
+	FileDataSchema,
+	MultiOutputGenericSchema,
+} from "@gatewai/core/types";
+
+export const ImageGenResultSchema = MultiOutputGenericSchema(
+	createOutputItemSchema(z.literal("Image"), FileDataSchema),
+);
+
+export type ImageGenResult = z.infer<typeof ImageGenResultSchema>;

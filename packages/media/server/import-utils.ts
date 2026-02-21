@@ -1,7 +1,7 @@
 import { ENV_CONFIG, generateId } from "@gatewai/core";
 import { container, TOKENS } from "@gatewai/core/di";
 import type { StorageService } from "@gatewai/core/storage";
-import type { FileResult, MediaService } from "@gatewai/core/types";
+import type { MediaService, NodeResult } from "@gatewai/core/types";
 import { type DataType, prisma } from "@gatewai/db";
 import { fileTypeFromBuffer } from "file-type";
 import { getMediaDuration } from "./utils/index.js";
@@ -139,7 +139,7 @@ export async function uploadToImportNode({
 				select: { result: true },
 			});
 
-			const currentResult = (current.result as unknown as FileResult) ?? {
+			const currentResult = (current.result as unknown as ImportResult) ?? {
 				outputs: [],
 			};
 			const outputs = currentResult.outputs ?? [];

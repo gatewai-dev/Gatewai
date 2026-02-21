@@ -1,7 +1,10 @@
 import { defineMetadata } from "@gatewai/node-sdk";
-import { ImageGenNodeConfigSchema } from "./shared/index.js";
+import {
+	ImageGenNodeConfigSchema,
+	ImageGenResultSchema,
+} from "./shared/index.js";
 
-export { ImageGenNodeConfigSchema };
+export { ImageGenNodeConfigSchema, ImageGenResultSchema };
 
 export default defineMetadata({
 	type: "ImageGen",
@@ -10,6 +13,7 @@ export default defineMetadata({
 	category: "AI",
 	subcategory: "Image",
 	configSchema: ImageGenNodeConfigSchema,
+	resultSchema: ImageGenResultSchema,
 	isTerminal: true,
 	isTransient: false,
 	handles: {

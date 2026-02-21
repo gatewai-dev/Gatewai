@@ -14,3 +14,14 @@ export const LLMNodeConfigSchema = z
 	.strict();
 
 export type LLMNodeConfig = z.infer<typeof LLMNodeConfigSchema>;
+
+import {
+	createOutputItemSchema,
+	MultiOutputGenericSchema,
+} from "@gatewai/core/types";
+
+export const LLMResultSchema = MultiOutputGenericSchema(
+	createOutputItemSchema(z.literal("Text"), z.string()),
+);
+
+export type LLMResult = z.infer<typeof LLMResultSchema>;

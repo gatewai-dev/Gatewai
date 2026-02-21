@@ -13,3 +13,19 @@ export const PaintNodeConfigSchema = z
 	.strict();
 
 export type PaintNodeConfig = z.infer<typeof PaintNodeConfigSchema>;
+
+import { createOutputItemSchema, FileDataSchema } from "@gatewai/core/types";
+
+export const PaintResultSchema = z.object({
+	selectedOutputIndex: z.literal(0),
+	outputs: z.tuple([
+		z.object({
+			items: z.tuple([
+				createOutputItemSchema(z.literal("Image"), FileDataSchema),
+				createOutputItemSchema(z.literal("Image"), FileDataSchema),
+			]),
+		}),
+	]),
+});
+
+export type PaintResult = z.infer<typeof PaintResultSchema>;
