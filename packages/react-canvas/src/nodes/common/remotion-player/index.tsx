@@ -100,6 +100,9 @@ export const MediaPlayer = ({
 				}}
 				durationInFrames={durationInFrames}
 				fps={FPS}
+				showPosterWhenBufferingAndPaused
+				bufferStateDelayInMilliseconds={0}
+				showPlaybackRateControl
 				compositionWidth={1920}
 				compositionHeight={resolvedType === "Audio" ? 400 : 1080}
 				style={{

@@ -67,7 +67,6 @@
 	"name": "gatewai",
 	"dependencies": {
 		"@hookform/resolvers": "^3.10.0",
-		"@lobehub/icons": "^2.48.0",
 		"clsx": "^2.1.1",
 		"file-type": "^21.1.1",
 		"lucide-react": "^0.563.0",

@@ -21,7 +21,6 @@
 		"@gatewai/tsconfig": "workspace:*",
 		"@gatewai/ui-kit": "workspace:*",
 		"@hookform/resolvers": "^3.10.0",
-		"@lobehub/icons": "^2.48.0",
 		"@neodrag/react": "^2.3.1",
 		"@pixi/webworker": "^7.4.3",
 		"@radix-ui/react-slider": "^1.3.6",
