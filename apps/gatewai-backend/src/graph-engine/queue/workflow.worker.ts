@@ -267,7 +267,10 @@ const processNodeJob = async (job: Job<NodeTaskJobData>) => {
 					data: { ...data, tasks: batchTasks, task, apiKey },
 				};
 
-				const processorInstance = container.resolve(
+				if (!container.isBound(ProcessorClass)) {
+					container.bind(ProcessorClass).toSelf().inTransientScope();
+				}
+				const processorInstance = container.get(
 					ProcessorClass,
 				) as unknown as NodeProcessor;
 				const result = await processorInstance.process(ctx);

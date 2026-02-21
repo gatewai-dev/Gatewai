@@ -78,7 +78,7 @@ export async function uploadToImportNode({
 		(async () => {
 			if (finalContentType.startsWith("image/")) {
 				try {
-					const media = container.resolve<MediaService>(TOKENS.MEDIA);
+					const media = container.get<MediaService>(TOKENS.MEDIA);
 					const meta = await media.getImageDimensions(buffer);
 					width = meta.width || null;
 					height = meta.height || null;
@@ -101,7 +101,7 @@ export async function uploadToImportNode({
 		})(),
 	]);
 	const key = `assets/${generateId()}-${filename}`;
-	const storage = container.resolve<StorageService>(TOKENS.STORAGE);
+	const storage = container.get<StorageService>(TOKENS.STORAGE);
 
 	await storage.uploadToStorage(
 		buffer,

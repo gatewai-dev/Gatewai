@@ -31,27 +31,27 @@
 		"clean": "rm -rf dist"
 	},
 	"dependencies": {
-		"@gatewai/node-sdk": "workspace:*",
 		"@gatewai/core": "workspace:*",
 		"@gatewai/db": "workspace:*",
-		"@gatewai/react-store": "workspace:*",
+		"@gatewai/node-sdk": "workspace:*",
 		"@gatewai/react-canvas": "workspace:*",
+		"@gatewai/react-store": "workspace:*",
 		"@gatewai/ui-kit": "workspace:*",
-		"zod": "^3.24.1",
-		"tsyringe": "^4.10.0"
+		"zod": "^3.24.1"
 	},
 	"devDependencies": {
 		"@gatewai/tsconfig": "workspace:*",
-		"@types/react": "^19.2.4",
-		"@types/react-dom": "^19.2.4",
 		"@types/node": "^22.13.10",
+		"@types/react": "^19.2.4",
+		"@types/react-dom": "^19.2.3",
 		"tsdown": "^0.19.0",
 		"typescript": "~5.8.3"
 	},
 	"peerDependencies": {
-		"react": "^19.2.4",
 		"@gatewai/react-canvas": "workspace:*",
 		"@hookform/resolvers": "*",
+		"inversify": "^7.11.0",
+		"react": "^19.2.4",
 		"react-hook-form": "*",
 		"react-icons": "*"
 	}

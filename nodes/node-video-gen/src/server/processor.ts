@@ -21,7 +21,7 @@ import type {
     VideoGenerationReferenceImage,
     VideoGenerationReferenceType,
 } from "@google/genai";
-import { inject, injectable } from "tsyringe";
+import { inject, injectable } from "inversify";
 import { VideoGenNodeConfigSchema } from "../metadata.js";
 import type { VideoGenResult } from "../shared/index.js";
 

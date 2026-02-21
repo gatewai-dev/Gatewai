@@ -9,7 +9,7 @@ import type {
     NodeProcessor,
     StorageService,
 } from "@gatewai/node-sdk/server";
-import { inject, injectable } from "tsyringe";
+import { inject, injectable } from "inversify";
 import { ModulateNodeConfigSchema } from "../metadata.js";
 import type { ModulateResult } from "../shared/index.js";
 import { applyModulate } from "../shared/pixi-modulate-run.js";

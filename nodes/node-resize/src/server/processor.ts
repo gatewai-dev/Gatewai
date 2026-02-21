@@ -9,7 +9,7 @@ import type {
     NodeProcessor,
     StorageService,
 } from "@gatewai/node-sdk/server";
-import { inject, injectable } from "tsyringe";
+import { inject, injectable } from "inversify";
 import { ResizeNodeConfigSchema } from "../metadata.js";
 import { applyResize } from "../shared/pixi-resize-run.js";
 

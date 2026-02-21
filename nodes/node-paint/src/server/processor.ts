@@ -9,7 +9,7 @@ import type {
     NodeProcessor,
     StorageService,
 } from "@gatewai/node-sdk/server";
-import { inject, injectable } from "tsyringe";
+import { inject, injectable } from "inversify";
 import { PaintNodeConfigSchema } from "../metadata.js";
 import type { PaintResult } from "../shared/index.js";
 import { applyPaint, type PixiPaintInput, type PixiPaintOutput } from "../shared/pixi-paint-run.js";

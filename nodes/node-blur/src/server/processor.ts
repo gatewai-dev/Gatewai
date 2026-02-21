@@ -10,7 +10,7 @@ import type {
     NodeProcessor,
     StorageService,
 } from "@gatewai/node-sdk/server";
-import { inject, injectable } from "tsyringe";
+import { inject, injectable } from "inversify";
 import type { BlurResult } from "../shared/index.js";
 import { applyBlur, BlurNodeConfigSchema } from "../shared/index.js";
 

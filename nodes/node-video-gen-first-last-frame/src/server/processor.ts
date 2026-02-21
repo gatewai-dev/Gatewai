@@ -18,7 +18,7 @@ import type {
     StorageService,
 } from "@gatewai/node-sdk/server";
 import type { GoogleGenAI } from "@google/genai";
-import { inject, injectable } from "tsyringe";
+import { inject, injectable } from "inversify";
 import {
     VideoGenFirstLastFrameNodeConfigSchema,
 } from "../metadata.js";

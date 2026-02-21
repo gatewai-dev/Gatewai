@@ -10,7 +10,7 @@ import type {
     NodeProcessor,
     StorageService,
 } from "@gatewai/node-sdk/server";
-import { inject, injectable } from "tsyringe";
+import { inject, injectable } from "inversify";
 import { CropNodeConfigSchema } from "../shared/config.js";
 import type { CropResult } from "../shared/index.js";
 import { applyCrop } from "../shared/pixi-crop-run.js";

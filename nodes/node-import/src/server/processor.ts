@@ -4,7 +4,7 @@ import type {
 	BackendNodeProcessorResult,
 	NodeProcessor,
 } from "@gatewai/node-sdk/server";
-import { injectable } from "tsyringe";
+import { injectable } from "inversify";
 import { ImportNodeConfigSchema } from "../metadata.js";
 import type { ImportResult } from "../shared/index.js";
 

@@ -13,7 +13,7 @@ import {
     createUserContent,
     type GoogleGenAI,
 } from "@google/genai";
-import { inject, injectable } from "tsyringe";
+import { inject, injectable } from "inversify";
 import { LLMNodeConfigSchema } from "../metadata.js";
 import type { LLMResult } from "../shared/index.js";
 

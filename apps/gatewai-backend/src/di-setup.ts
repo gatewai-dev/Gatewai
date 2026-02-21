@@ -13,32 +13,24 @@ import { GoogleGenAI } from "@google/genai";
  */
 export function registerBackendServices() {
 	// Register generic values
-	container.register(TOKENS.PRISMA, { useValue: prisma });
-	container.register(TOKENS.ENV, { useValue: ENV_CONFIG });
+	container.bind(TOKENS.PRISMA).toConstantValue(prisma);
+	container.bind(TOKENS.ENV).toConstantValue(ENV_CONFIG);
 
 	// Register Storage
-	container.register(TOKENS.STORAGE, {
-		useValue: storageService,
-	});
+	container.bind(TOKENS.STORAGE).toConstantValue(storageService);
 
 	// Register Media
-	container.register(TOKENS.MEDIA, {
-		useValue: mediaService,
-	});
+	container.bind(TOKENS.MEDIA).toConstantValue(mediaService);
 
 	// Register Graph Resolvers
-	container.register(TOKENS.GRAPH_RESOLVERS, {
-		useValue: graphResolvers,
-	});
+	container.bind(TOKENS.GRAPH_RESOLVERS).toConstantValue(graphResolvers);
 
 	// Register AI Provider
-	container.register(TOKENS.AI_PROVIDER, {
-		useValue: {
-			getGemini: () => {
-				if (ENV_CONFIG.GEMINI_API_KEY == null)
-					throw new Error("No Gemini API kep provided");
-				return new GoogleGenAI({ apiKey: ENV_CONFIG.GEMINI_API_KEY });
-			},
+	container.bind(TOKENS.AI_PROVIDER).toConstantValue({
+		getGemini: () => {
+			if (ENV_CONFIG.GEMINI_API_KEY == null)
+				throw new Error("No Gemini API kep provided");
+			return new GoogleGenAI({ apiKey: ENV_CONFIG.GEMINI_API_KEY });
 		},
 	});
 

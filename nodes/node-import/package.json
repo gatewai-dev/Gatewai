@@ -31,33 +31,32 @@
 		"clean": "rm -rf dist"
 	},
 	"dependencies": {
-		"zod": "^3.24.1",
 		"@gatewai/core": "workspace:*",
 		"@gatewai/db": "workspace:*",
 		"@gatewai/node-sdk": "workspace:*",
 		"@gatewai/react-canvas": "workspace:*",
 		"@gatewai/react-store": "workspace:*",
-		"@gatewai/ui-kit": "workspace:*"
+		"@gatewai/ui-kit": "workspace:*",
+		"zod": "^3.24.1"
 	},
 	"peerDependencies": {
-		"react": "^19.2.4",
-		"tsyringe": "^4.10.0",
-		"@xyflow/react": "^12.8.4",
-		"lucide-react": "^0.552.0",
 		"@gatewai/media": "workspace:*",
 		"@hono/zod-validator": "*",
+		"@xyflow/react": "^12.8.4",
 		"hono": "*",
+		"lucide-react": "^0.552.0",
+		"inversify": "^7.11.0",
+		"react": "^19.2.4",
 		"react-dropzone": "*",
 		"react-icons": "*",
 		"sonner": "*"
 	},
 	"devDependencies": {
+		"@gatewai/react-canvas": "workspace:*",
 		"@gatewai/tsconfig": "workspace:*",
 		"@types/node": "^24.0.4",
 		"@types/react": "^19.2.4",
-		"react": "^19.2.4",
 		"tsdown": "^0.19.0",
-		"typescript": "^5.8.3",
-		"@gatewai/react-canvas": "workspace:*"
+		"typescript": "^5.8.3"
 	}
 }

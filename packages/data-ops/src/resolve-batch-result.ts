@@ -18,8 +18,8 @@ async function overrideFileResult(data: FileData) {
 		return data.processData.dataUrl;
 	}
 	if (data.entity) {
-		const storage = container.resolve<StorageService>(TOKENS.STORAGE);
-		const media = container.resolve<MediaService>(TOKENS.MEDIA);
+		const storage = container.get<StorageService>(TOKENS.STORAGE);
+		const media = container.get<MediaService>(TOKENS.MEDIA);
 
 		const buffer = await storage.getFromStorage(
 			data.entity.key,

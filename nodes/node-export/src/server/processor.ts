@@ -10,7 +10,7 @@ import type {
     GraphResolvers,
     NodeProcessor,
 } from "@gatewai/node-sdk/server";
-import { inject, injectable } from "tsyringe";
+import { inject, injectable } from "inversify";
 
 @injectable()
 export class ExportServerProcessor implements NodeProcessor {

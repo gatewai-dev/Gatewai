@@ -10,7 +10,7 @@ import type {
     GraphResolvers,
     NodeProcessor,
 } from "@gatewai/node-sdk/server";
-import { inject, injectable } from "tsyringe";
+import { inject, injectable } from "inversify";
 import { TextMergerNodeConfigSchema } from "../shared/config.js";
 import { joinText } from "../shared/join-fn.js";
 

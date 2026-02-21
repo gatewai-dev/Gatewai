@@ -157,7 +157,7 @@ const assetsRouter = new Hono<{ Variables: AuthorizedHonoTypes }>({
 
 		if (contentType.startsWith("image/")) {
 			try {
-				const media = container.resolve<MediaService>(TOKENS.MEDIA);
+				const media = container.get<MediaService>(TOKENS.MEDIA);
 				const metadata = await media.getImageDimensions(buffer);
 				width = metadata.width || null;
 				height = metadata.height || null;
@@ -167,7 +167,7 @@ const assetsRouter = new Hono<{ Variables: AuthorizedHonoTypes }>({
 		}
 
 		try {
-			const storage = container.resolve<StorageService>(TOKENS.STORAGE);
+			const storage = container.get<StorageService>(TOKENS.STORAGE);
 			await storage.uploadToStorage(buffer, key, contentType, bucket);
 
 			const expiresIn = 3600 * 24 * 6.9; // A bit less than a week
@@ -219,7 +219,7 @@ const assetsRouter = new Hono<{ Variables: AuthorizedHonoTypes }>({
 			// Extract image dimensions if it's an image
 			if (contentType.startsWith("image/")) {
 				try {
-					const media = container.resolve<MediaService>(TOKENS.MEDIA);
+					const media = container.get<MediaService>(TOKENS.MEDIA);
 					const metadata = await media.getImageDimensions(buffer);
 					width = metadata.width || null;
 					height = metadata.height || null;
@@ -230,7 +230,7 @@ const assetsRouter = new Hono<{ Variables: AuthorizedHonoTypes }>({
 			}
 
 			// Upload to storage
-			const storage = container.resolve<StorageService>(TOKENS.STORAGE);
+			const storage = container.get<StorageService>(TOKENS.STORAGE);
 			await storage.uploadToStorage(buffer, key, contentType, bucket);
 
 			const expiresIn = 3600 * 24 * 6.9; // A bit less than a week
@@ -287,7 +287,7 @@ const assetsRouter = new Hono<{ Variables: AuthorizedHonoTypes }>({
 			const cacheKey = `temp/thumbnails/${id}_${width}_${height}.webp`;
 
 			try {
-				const storage = container.resolve<StorageService>(TOKENS.STORAGE);
+				const storage = container.get<StorageService>(TOKENS.STORAGE);
 				// 2. Check Cache
 				const exists = await storage.fileExistsInStorage(cacheKey, cacheBucket);
 				if (exists) {
@@ -361,7 +361,7 @@ const assetsRouter = new Hono<{ Variables: AuthorizedHonoTypes }>({
 	.get("/temp/*", async (c) => {
 		const path = c.req.path.split("/temp/")[1];
 		const rawKey = decodeURIComponent(path);
-		const storage = container.resolve<StorageService>(TOKENS.STORAGE);
+		const storage = container.get<StorageService>(TOKENS.STORAGE);
 
 		assert(rawKey);
 		const fullStream = await storage.getFromStorage(rawKey);
@@ -383,7 +383,7 @@ const assetsRouter = new Hono<{ Variables: AuthorizedHonoTypes }>({
 
 		if (!asset) return c.json({ error: "Not found" }, 404);
 
-		const storage = container.resolve<StorageService>(TOKENS.STORAGE);
+		const storage = container.get<StorageService>(TOKENS.STORAGE);
 
 		const range = c.req.header("Range");
 		const fileSize = Number(asset.size);
@@ -552,7 +552,7 @@ const assetsRouter = new Hono<{ Variables: AuthorizedHonoTypes }>({
 
 				// 3. Delete from Storage and DB
 				try {
-					const storage = container.resolve<StorageService>(TOKENS.STORAGE);
+					const storage = container.get<StorageService>(TOKENS.STORAGE);
 					await storage.deleteFromStorage(asset.key, asset.bucket);
 					logger.info(`Deleted from GCS: ${asset.key}`);
 				} catch (err) {

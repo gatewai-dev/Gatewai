@@ -33,22 +33,21 @@
 	"dependencies": {
 		"@gatewai/core": "workspace:*",
 		"@gatewai/node-sdk": "workspace:*",
+		"@gatewai/react-canvas": "workspace:*",
 		"@gatewai/ui-kit": "workspace:*",
-		"zod": "^3.24.1",
-		"@gatewai/react-canvas": "workspace:*"
+		"zod": "^3.24.1"
 	},
 	"peerDependencies": {
-		"react": "^19.2.4",
-		"tsyringe": "^4.10.0",
 		"lucide-react": "^0.552.0",
+		"react": "^19.2.4",
+		"inversify": "^7.11.0",
 		"react-icons": "*"
 	},
 	"devDependencies": {
 		"@gatewai/tsconfig": "workspace:*",
 		"@types/node": "^24.0.4",
-		"react": "^19.2.4",
-		"tsdown": "^0.19.0",
 		"@types/react": "^19.2.4",
+		"tsdown": "^0.19.0",
 		"typescript": "^5.8.3"
 	}
 }

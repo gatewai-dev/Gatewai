@@ -4,10 +4,9 @@ import type {
 	BackendNodeProcessorResult,
 	NodeProcessor,
 } from "@gatewai/node-sdk/server";
-import { injectable } from "tsyringe";
-import type { TextResult } from "../shared/index.js";
-
+import { injectable } from "inversify";
 import { TextNodeConfigSchema } from "../metadata.js";
+import type { TextResult } from "../shared/index.js";
 
 @injectable()
 export class TextProcessor implements NodeProcessor {

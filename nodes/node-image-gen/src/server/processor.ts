@@ -14,7 +14,7 @@ import type {
     StorageService,
 } from "@gatewai/node-sdk/server";
 import type { GoogleGenAI, Part } from "@google/genai";
-import { inject, injectable } from "tsyringe";
+import { inject, injectable } from "inversify";
 import { ImageGenNodeConfigSchema } from "../metadata.js";
 import type { ImageGenResult } from "../shared/index.js";
 

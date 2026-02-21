@@ -135,6 +135,9 @@ importers:
       hono:
         specifier: ^4.8.5
         version: 4.8.5
+      inversify:
+        specifier: ^7.11.0
+        version: 7.11.0(reflect-metadata@0.2.2)
       ioredis:
         specifier: ^5.8.0
         version: 5.8.2
@@ -171,9 +174,6 @@ importers:
       reflect-metadata:
         specifier: ^0.2.2
         version: 0.2.2
-      tsyringe:
-        specifier: ^4.10.0
-        version: 4.10.0
       zod:
         specifier: 3.25.67
         version: 3.25.67
@@ -379,6 +379,9 @@ importers:
       react-scan:
         specifier: ^0.4.3
         version: 0.4.3(@types/react@19.2.14)(react-dom@19.2.4(react@19.2.4))(react-router@7.8.2(react-dom@19.2.4(react@19.2.4))(react@19.2.4))(react@19.2.4)(rollup@4.45.1)
+      reflect-metadata:
+        specifier: ^0.2.2
+        version: 0.2.2
       remark-gfm:
         specifier: ^4.0.1
         version: 4.0.1
@@ -504,12 +507,12 @@ importers:
       '@gatewai/ui-kit':
         specifier: workspace:*
         version: link:../../packages/ui-kit
+      inversify:
+        specifier: ^7.11.0
+        version: 7.11.0(reflect-metadata@0.2.2)
       react-icons:
         specifier: '*'
         version: 5.5.0(react@19.2.4)
-      tsyringe:
-        specifier: ^4.10.0
-        version: 4.10.0
       zod:
         specifier: 3.25.67
         version: 3.25.67
@@ -556,15 +559,15 @@ importers:
       '@gatewai/ui-kit':
         specifier: workspace:*
         version: link:../../packages/ui-kit
+      inversify:
+        specifier: ^7.11.0
+        version: 7.11.0(reflect-metadata@0.2.2)
       lucide-react:
         specifier: ^0.473.0
         version: 0.473.0(react@19.2.4)
       react-icons:
         specifier: '*'
         version: 5.5.0(react@19.2.4)
-      tsyringe:
-        specifier: ^4.10.0
-        version: 4.10.0
       zod:
         specifier: 3.25.67
         version: 3.25.67
@@ -608,15 +611,18 @@ importers:
       '@gatewai/ui-kit':
         specifier: workspace:*
         version: link:../../packages/ui-kit
+      inversify:
+        specifier: ^7.11.0
+        version: 7.11.0(reflect-metadata@0.2.2)
       lucide-react:
         specifier: ^0.552.0
         version: 0.552.0(react@19.2.4)
+      react:
+        specifier: ^19.2.4
+        version: 19.2.4
       react-icons:
         specifier: '*'
         version: 5.5.0(react@19.2.4)
-      tsyringe:
-        specifier: ^4.10.0
-        version: 4.10.0
       zod:
         specifier: ^3.24.1
         version: 3.25.67
@@ -630,9 +636,6 @@ importers:
       '@types/react':
         specifier: ^19.2.4
         version: 19.2.14
-      react:
-        specifier: ^19.2.4
-        version: 19.2.4
       tsdown:
         specifier: ^0.19.0
         version: 0.19.0(publint@0.3.17)(synckit@0.11.11)(typescript@5.8.3)
@@ -672,6 +675,9 @@ importers:
       canvas:
         specifier: ^3.2.0
         version: 3.2.0
+      inversify:
+        specifier: ^7.11.0
+        version: 7.11.0(reflect-metadata@0.2.2)
       konva:
         specifier: ^10.0.12
         version: 10.0.12
@@ -693,9 +699,6 @@ importers:
       react-router:
         specifier: ^7.8.2
         version: 7.8.2(react-dom@19.2.4(react@19.2.4))(react@19.2.4)
-      tsyringe:
-        specifier: ^4.10.0
-        version: 4.10.0
       use-image:
         specifier: ^1.1.4
         version: 1.1.4(react-dom@19.2.4(react@19.2.4))(react@19.2.4)
@@ -748,15 +751,18 @@ importers:
       '@hookform/resolvers':
         specifier: '*'
         version: 3.10.0(react-hook-form@7.71.1(react@19.2.4))
+      inversify:
+        specifier: ^7.11.0
+        version: 7.11.0(reflect-metadata@0.2.2)
+      react:
+        specifier: ^19.2.4
+        version: 19.2.4
       react-hook-form:
         specifier: '*'
         version: 7.71.1(react@19.2.4)
       react-icons:
         specifier: '*'
         version: 5.5.0(react@19.2.4)
-      tsyringe:
-        specifier: ^4.10.0
-        version: 4.10.0
       use-debounce:
         specifier: '*'
         version: 10.0.6(react@19.2.4)
@@ -773,9 +779,6 @@ importers:
       '@types/react':
         specifier: ^19.2.4
         version: 19.2.14
-      react:
-        specifier: ^19.2.4
-        version: 19.2.4
       tsdown:
         specifier: ^0.19.0
         version: 0.19.0(publint@0.3.17)(synckit@0.11.11)(typescript@5.8.3)
@@ -815,9 +818,15 @@ importers:
       hono:
         specifier: '*'
         version: 4.8.5
+      inversify:
+        specifier: ^7.11.0
+        version: 7.11.0(reflect-metadata@0.2.2)
       lucide-react:
         specifier: ^0.552.0
         version: 0.552.0(react@19.2.4)
+      react:
+        specifier: ^19.2.4
+        version: 19.2.4
       react-dropzone:
         specifier: '*'
         version: 14.4.1(react@19.2.4)
@@ -827,9 +836,6 @@ importers:
       sonner:
         specifier: '*'
         version: 2.0.7(react-dom@19.2.4(react@19.2.4))(react@19.2.4)
-      tsyringe:
-        specifier: ^4.10.0
-        version: 4.10.0
       zod:
         specifier: ^3.24.1
         version: 3.25.67
@@ -843,9 +849,6 @@ importers:
       '@types/react':
         specifier: ^19.2.4
         version: 19.2.14
-      react:
-        specifier: ^19.2.4
-        version: 19.2.4
       tsdown:
         specifier: ^0.19.0
         version: 0.19.0(publint@0.3.17)(synckit@0.11.11)(typescript@5.8.3)
@@ -879,15 +882,18 @@ importers:
       '@hookform/resolvers':
         specifier: ^3.10.0
         version: 3.10.0(react-hook-form@7.71.1(react@19.2.4))
+      inversify:
+        specifier: ^7.11.0
+        version: 7.11.0(reflect-metadata@0.2.2)
+      react:
+        specifier: ^19.2.4
+        version: 19.2.4
       react-hook-form:
         specifier: ^7.71.1
         version: 7.71.1(react@19.2.4)
       react-icons:
         specifier: '*'
         version: 5.5.0(react@19.2.4)
-      tsyringe:
-        specifier: ^4.10.0
-        version: 4.10.0
       zod:
         specifier: ^3.24.1
         version: 3.25.67
@@ -901,9 +907,6 @@ importers:
       '@types/react':
         specifier: ^19.2.4
         version: 19.2.14
-      react:
-        specifier: ^19.2.4
-        version: 19.2.4
       tsdown:
         specifier: ^0.19.0
         version: 0.19.0(publint@0.3.17)(synckit@0.11.11)(typescript@5.8.3)
@@ -934,6 +937,9 @@ importers:
       '@hookform/resolvers':
         specifier: '*'
         version: 3.10.0(react-hook-form@7.71.1(react@19.2.4))
+      inversify:
+        specifier: ^7.11.0
+        version: 7.11.0(reflect-metadata@0.2.2)
       react:
         specifier: ^19.2.4
         version: 19.2.4
@@ -943,9 +949,6 @@ importers:
       react-icons:
         specifier: '*'
         version: 5.5.0(react@19.2.4)
-      tsyringe:
-        specifier: ^4.10.0
-        version: 4.10.0
       zod:
         specifier: ^3.24.1
         version: 3.25.67
@@ -986,6 +989,9 @@ importers:
       '@xyflow/react':
         specifier: ^12.8.4
         version: 12.8.4(@types/react@19.2.14)(immer@11.1.3)(react-dom@19.2.4(react@19.2.4))(react@19.2.4)
+      inversify:
+        specifier: ^7.11.0
+        version: 7.11.0(reflect-metadata@0.2.2)
       react:
         specifier: ^19.2.4
         version: 19.2.4
@@ -1029,6 +1035,9 @@ importers:
       '@gatewai/ui-kit':
         specifier: workspace:*
         version: link:../../packages/ui-kit
+      inversify:
+        specifier: ^7.11.0
+        version: 7.11.0(reflect-metadata@0.2.2)
       lucide-react:
         specifier: ^0.473.0
         version: 0.473.0(react@19.2.4)
@@ -1038,9 +1047,6 @@ importers:
       react-icons:
         specifier: '*'
         version: 5.5.0(react@19.2.4)
-      tsyringe:
-        specifier: ^4.10.0
-        version: 4.10.0
       zod:
         specifier: 3.25.67
         version: 3.25.67
@@ -1109,6 +1115,9 @@ importers:
       '@types/react':
         specifier: ^19.2.4
         version: 19.2.14
+      inversify:
+        specifier: ^7.11.0
+        version: 7.11.0(reflect-metadata@0.2.2)
       tsdown:
         specifier: ^0.19.0
         version: 0.19.0(publint@0.3.17)(synckit@0.11.11)(typescript@5.8.3)
@@ -1136,15 +1145,18 @@ importers:
       '@gatewai/ui-kit':
         specifier: workspace:*
         version: link:../../packages/ui-kit
+      inversify:
+        specifier: ^7.11.0
+        version: 7.11.0(reflect-metadata@0.2.2)
       lucide-react:
         specifier: ^0.473.0
         version: 0.473.0(react@19.2.4)
+      react:
+        specifier: ^19.2.4
+        version: 19.2.4
       react-icons:
         specifier: '*'
         version: 5.5.0(react@19.2.4)
-      tsyringe:
-        specifier: ^4.10.0
-        version: 4.10.0
       zod:
         specifier: 3.25.67
         version: 3.25.67
@@ -1161,9 +1173,6 @@ importers:
       '@types/react-dom':
         specifier: ^19.2.3
         version: 19.2.3(@types/react@19.2.14)
-      react:
-        specifier: ^19.2.4
-        version: 19.2.4
       tsdown:
         specifier: ^0.19.0
         version: 0.19.0(publint@0.3.17)(synckit@0.11.11)(typescript@5.8.3)
@@ -1197,6 +1206,9 @@ importers:
       '@hookform/resolvers':
         specifier: '*'
         version: 3.10.0(react-hook-form@7.71.1(react@19.2.4))
+      inversify:
+        specifier: ^7.11.0
+        version: 7.11.0(reflect-metadata@0.2.2)
       react:
         specifier: ^19.2.4
         version: 19.2.4
@@ -1206,9 +1218,6 @@ importers:
       react-icons:
         specifier: '*'
         version: 5.5.0(react@19.2.4)
-      tsyringe:
-        specifier: ^4.10.0
-        version: 4.10.0
       zod:
         specifier: ^3.24.1
         version: 3.25.67
@@ -1246,12 +1255,15 @@ importers:
       '@gatewai/ui-kit':
         specifier: workspace:*
         version: link:../../packages/ui-kit
+      inversify:
+        specifier: ^7.11.0
+        version: 7.11.0(reflect-metadata@0.2.2)
+      react:
+        specifier: ^19.2.4
+        version: 19.2.4
       react-icons:
         specifier: '*'
         version: 5.5.0(react@19.2.4)
-      tsyringe:
-        specifier: ^4.10.0
-        version: 4.10.0
       zod:
         specifier: 3.25.67
         version: 3.25.67
@@ -1268,9 +1280,6 @@ importers:
       '@types/react-dom':
         specifier: ^19.2.3
         version: 19.2.3(@types/react@19.2.14)
-      react:
-        specifier: ^19.2.4
-        version: 19.2.4
       tsdown:
         specifier: ^0.19.0
         version: 0.19.0(publint@0.3.17)(synckit@0.11.11)(typescript@5.8.3)
@@ -1301,6 +1310,9 @@ importers:
       '@hookform/resolvers':
         specifier: '*'
         version: 3.10.0(react-hook-form@7.71.1(react@19.2.4))
+      inversify:
+        specifier: ^7.11.0
+        version: 7.11.0(reflect-metadata@0.2.2)
       react:
         specifier: ^19.2.4
         version: 19.2.4
@@ -1310,9 +1322,6 @@ importers:
       react-icons:
         specifier: '*'
         version: 5.5.0(react@19.2.4)
-      tsyringe:
-        specifier: ^4.10.0
-        version: 4.10.0
       zod:
         specifier: ^3.24.1
         version: 3.25.67
@@ -1356,6 +1365,9 @@ importers:
       '@google/genai':
         specifier: ^1.3.0
         version: 1.40.0(@modelcontextprotocol/sdk@1.25.2(hono@4.8.5)(zod@3.25.67))
+      inversify:
+        specifier: ^7.11.0
+        version: 7.11.0(reflect-metadata@0.2.2)
       music-metadata:
         specifier: ^11.10.3
         version: 11.10.3
@@ -1365,9 +1377,6 @@ importers:
       react-icons:
         specifier: '*'
         version: 5.5.0(react@19.2.4)
-      tsyringe:
-        specifier: ^4.10.0
-        version: 4.10.0
       zod:
         specifier: ^3.24.1
         version: 3.25.67
@@ -1426,9 +1435,15 @@ importers:
       '@remotion/web-renderer':
         specifier: '*'
         version: 4.0.414(react-dom@19.2.4(react@19.2.4))(react@19.2.4)
+      inversify:
+        specifier: ^7.11.0
+        version: 7.11.0(reflect-metadata@0.2.2)
       lucide-react:
         specifier: ^0.552.0
         version: 0.552.0(react@19.2.4)
+      react:
+        specifier: ^19.2.4
+        version: 19.2.4
       react-hotkeys-hook:
         specifier: ^5.2.1
         version: 5.2.1(react-dom@19.2.4(react@19.2.4))(react@19.2.4)
@@ -1460,9 +1475,6 @@ importers:
       '@types/react-dom':
         specifier: ^19.2.3
         version: 19.2.3(@types/react@19.2.14)
-      react:
-        specifier: ^19.2.4
-        version: 19.2.4
       tsdown:
         specifier: ^0.19.0
         version: 0.19.0(publint@0.3.17)(synckit@0.11.11)(typescript@5.8.3)
@@ -1496,6 +1508,9 @@ importers:
       '@hookform/resolvers':
         specifier: '*'
         version: 3.10.0(react-hook-form@7.71.1(react@19.2.4))
+      inversify:
+        specifier: ^7.11.0
+        version: 7.11.0(reflect-metadata@0.2.2)
       react:
         specifier: ^19.2.4
         version: 19.2.4
@@ -1505,9 +1520,6 @@ importers:
       react-icons:
         specifier: '*'
         version: 5.5.0(react@19.2.4)
-      tsyringe:
-        specifier: ^4.10.0
-        version: 4.10.0
       use-debounce:
         specifier: '*'
         version: 10.0.6(react@19.2.4)
@@ -1557,6 +1569,9 @@ importers:
       '@hookform/resolvers':
         specifier: '*'
         version: 3.10.0(react-hook-form@7.71.1(react@19.2.4))
+      inversify:
+        specifier: ^7.11.0
+        version: 7.11.0(reflect-metadata@0.2.2)
       react:
         specifier: ^19.2.4
         version: 19.2.4
@@ -1566,9 +1581,6 @@ importers:
       react-icons:
         specifier: '*'
         version: 5.5.0(react@19.2.4)
-      tsyringe:
-        specifier: ^4.10.0
-        version: 4.10.0
       zod:
         specifier: ^3.24.1
         version: 3.25.67
@@ -1625,6 +1637,9 @@ importers:
       dotenv:
         specifier: ^16.4.5
         version: 16.6.1
+      inversify:
+        specifier: ^7.11.0
+        version: 7.11.0(reflect-metadata@0.2.2)
       nanoid:
         specifier: ^5.1.6
         version: 5.1.6
@@ -1634,9 +1649,6 @@ importers:
       reflect-metadata:
         specifier: ^0.2.2
         version: 0.2.2
-      tsyringe:
-        specifier: ^4.8.0
-        version: 4.10.0
       zod:
         specifier: ^3.23.8
         version: 3.25.67
@@ -3040,6 +3052,28 @@ packages:
     engines: {node: ^18.17.0 || ^20.3.0 || >=21.0.0}
     cpu: [x64]
     os: [win32]
+
+  '@inversifyjs/common@1.5.2':
+    resolution: {integrity: sha512-WlzR9xGadABS9gtgZQ+luoZ8V6qm4Ii6RQfcfC9Ho2SOlE6ZuemFo7PKJvKI0ikm8cmKbU8hw5UK6E4qovH21w==}
+
+  '@inversifyjs/container@1.15.0':
+    resolution: {integrity: sha512-U2xYsPrJTz5za2TExi5lg8qOWf8TEVBpN+pQM7B8BVA2rajtbRE9A66SLRHk8c1eGXmg+0K4Hdki6tWAsSQBUA==}
+    peerDependencies:
+      reflect-metadata: ~0.2.2
+
+  '@inversifyjs/core@9.2.0':
+    resolution: {integrity: sha512-Nm7BR6KmpgshIHpVQWuEDehqRVb6GBm8LFEuhc2s4kSZWrArZ15RmXQzROLk4m+hkj4kMXgvMm5Qbopot/D6Sg==}
+
+  '@inversifyjs/plugin@0.2.0':
+    resolution: {integrity: sha512-R/JAdkTSD819pV1zi0HP54mWHyX+H2m8SxldXRgPQarS3ySV4KPyRdosWcfB8Se0JJZWZLHYiUNiS6JvMWSPjw==}
+
+  '@inversifyjs/prototype-utils@0.1.3':
+    resolution: {integrity: sha512-EzRamZzNgE9Sn3QtZ8NncNa2lpPMZfspqbK6BWFguWnOpK8ymp2TUuH46ruFHZhrHKnknPd7fG22ZV7iF517TQ==}
+
+  '@inversifyjs/reflect-metadata-utils@1.4.1':
+    resolution: {integrity: sha512-Cp77C4d2wLaHXiUB7iH6Cxb7i1lD/YDuTIHLTDzKINqGSz0DCSoL/Dg2wVkW/6Qx03r/yQMLJ+32Agl32N2X8g==}
+    peerDependencies:
+      reflect-metadata: ~0.2.2
 
   '@ioredis/commands@1.4.0':
     resolution: {integrity: sha512-aFT2yemJJo+TZCmieA7qnYGQooOS7QfNmYrzGtsYd3g9j5iDP8AimYYAesf79ohjbLG12XxC4nG5DyEnC88AsQ==}
@@ -7281,6 +7315,9 @@ packages:
   invariant@2.2.4:
     resolution: {integrity: sha512-phJfQVBuaJM5raOpJjSfkiD6BpbCE4Ns//LaXl6wGYtUBY83nWS6Rf9tXm2e8VaK60JEjYldbPif/A2B1C2gNA==}
 
+  inversify@7.11.0:
+    resolution: {integrity: sha512-yZDprSSr8TyVeMGI/AOV4ws6gwjX22hj9Z8/oHAVpJORY6WRFTcUzhnZtibBUHEw2U8ArvHcR+i863DplQ3Cwg==}
+
   ioredis@5.8.2:
     resolution: {integrity: sha512-C6uC+kleiIMmjViJINWk80sOQw5lEzse1ZmvD+S/s8p8CWapftSaC+kocGTx6xrbrJ4WmYQGC08ffHLr6ToR6Q==}
     engines: {node: '>=12.22.0'}
@@ -9928,9 +9965,6 @@ packages:
       unplugin-unused:
         optional: true
 
-  tslib@1.14.1:
-    resolution: {integrity: sha512-Xni35NKzjgMrwevysHTCArtLDpPvye8zV/0E4EyYn43P7/7qvQwPh9BGkHewbMulVntbigmcT7rdX3BNo9wRJg==}
-
   tslib@2.6.2:
     resolution: {integrity: sha512-AEYxH93jGFPn/a2iVAwW87VuUIkR1FVUKB77NwMF7nBTDkDrrT/Hpt/IrCJ0QXhW27jTBDcf5ZY7w6RiqTMw2Q==}
 
@@ -9941,10 +9975,6 @@ packages:
     resolution: {integrity: sha512-qjbnuR9Tr+FJOMBqJCW5ehvIo/buZq7vH7qD7JziU98h6l3qGy0a/yPFjwO+y0/T7GFpNgNAvEcPPVfyT8rrPQ==}
     engines: {node: '>=18.0.0'}
     hasBin: true
-
-  tsyringe@4.10.0:
-    resolution: {integrity: sha512-axr3IdNuVIxnaK5XGEUFTu3YmAQ6lllgrvqfEoR16g/HGnYY/6We4oWENtAnzK6/LpJ2ur9PAb80RBt7/U4ugw==}
-    engines: {node: '>= 6.0.0'}
 
   tty-browserify@0.0.1:
     resolution: {integrity: sha512-C3TaO7K81YvjCgQH9Q1S3R3P3BtN3RIM8n+OvX4il1K1zgE8ZhI0op7kClgkxtutIE8hQrcrHBXvIheqKUUCxw==}
@@ -11408,6 +11438,34 @@ snapshots:
 
   '@img/sharp-win32-x64@0.34.5':
     optional: true
+
+  '@inversifyjs/common@1.5.2': {}
+
+  '@inversifyjs/container@1.15.0(reflect-metadata@0.2.2)':
+    dependencies:
+      '@inversifyjs/common': 1.5.2
+      '@inversifyjs/core': 9.2.0(reflect-metadata@0.2.2)
+      '@inversifyjs/plugin': 0.2.0
+      '@inversifyjs/reflect-metadata-utils': 1.4.1(reflect-metadata@0.2.2)
+      reflect-metadata: 0.2.2
+
+  '@inversifyjs/core@9.2.0(reflect-metadata@0.2.2)':
+    dependencies:
+      '@inversifyjs/common': 1.5.2
+      '@inversifyjs/prototype-utils': 0.1.3
+      '@inversifyjs/reflect-metadata-utils': 1.4.1(reflect-metadata@0.2.2)
+    transitivePeerDependencies:
+      - reflect-metadata
+
+  '@inversifyjs/plugin@0.2.0': {}
+
+  '@inversifyjs/prototype-utils@0.1.3':
+    dependencies:
+      '@inversifyjs/common': 1.5.2
+
+  '@inversifyjs/reflect-metadata-utils@1.4.1(reflect-metadata@0.2.2)':
+    dependencies:
+      reflect-metadata: 0.2.2
 
   '@ioredis/commands@1.4.0': {}
 
@@ -16343,6 +16401,14 @@ snapshots:
     dependencies:
       loose-envify: 1.4.0
 
+  inversify@7.11.0(reflect-metadata@0.2.2):
+    dependencies:
+      '@inversifyjs/common': 1.5.2
+      '@inversifyjs/container': 1.15.0(reflect-metadata@0.2.2)
+      '@inversifyjs/core': 9.2.0(reflect-metadata@0.2.2)
+    transitivePeerDependencies:
+      - reflect-metadata
+
   ioredis@5.8.2:
     dependencies:
       '@ioredis/commands': 1.4.0
@@ -19810,8 +19876,6 @@ snapshots:
       - synckit
       - vue-tsc
 
-  tslib@1.14.1: {}
-
   tslib@2.6.2: {}
 
   tslib@2.8.1: {}
@@ -19822,10 +19886,6 @@ snapshots:
       get-tsconfig: 4.13.0
     optionalDependencies:
       fsevents: 2.3.3
-
-  tsyringe@4.10.0:
-    dependencies:
-      tslib: 1.14.1
 
   tty-browserify@0.0.1: {}
 

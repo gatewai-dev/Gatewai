@@ -17,8 +17,8 @@ import type {
     StorageService,
 } from "@gatewai/node-sdk/server";
 import type { GoogleGenAI, SpeechConfig } from "@google/genai";
+import { inject, injectable } from "inversify";
 import * as mm from "music-metadata";
-import { inject, injectable } from "tsyringe";
 import { TextToSpeechNodeConfigSchema } from "../shared/config.js";
 
 async function encodeWavBuffer(pcmBuffer: Buffer): Promise<Buffer> {

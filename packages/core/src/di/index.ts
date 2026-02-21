@@ -1,6 +1,6 @@
 import "reflect-metadata";
 
-import { container } from "tsyringe";
+import { Container } from "inversify";
 
-export { container };
+export const container = new Container();
 export * from "./tokens.js";

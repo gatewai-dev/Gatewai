@@ -16,8 +16,8 @@ import type { CompositorResult } from "../shared/index.js";
 
 import type { BackendNodeProcessorCtx, BackendNodeProcessorResult, StorageService } from "@gatewai/node-sdk/server";
 import { loadImage, registerFont } from "canvas";
+import { inject, injectable } from "inversify";
 import Konva from "konva";
-import { inject, injectable } from "tsyringe";
 import "konva/canvas-backend";
 import type { CompositorLayer, CompositorNodeConfig } from '../shared/config.js';
 

@@ -32,14 +32,14 @@
 		"@gatewai/db": "workspace:*",
 		"@gatewai/node-sdk": "workspace:*",
 		"@gatewai/react-canvas": "workspace:*",
-		"zod": "^3.24.1",
-		"@gatewai/react-store": "workspace:*"
+		"@gatewai/react-store": "workspace:*",
+		"zod": "^3.24.1"
 	},
 	"peerDependencies": {
-		"react": "^19.2.4",
-		"tsyringe": "^4.10.0",
 		"@gatewai/ui-kit": "workspace:*",
 		"@hookform/resolvers": "*",
+		"inversify": "^7.11.0",
+		"react": "^19.2.4",
 		"react-hook-form": "*",
 		"react-icons": "*"
 	},

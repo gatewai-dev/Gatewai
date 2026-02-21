@@ -41,9 +41,9 @@
 	},
 	"peerDependencies": {
 		"@google/genai": "^1.3.0",
+		"inversify": "^7.11.0",
 		"react": "^19.2.4",
 		"react-icons": "*",
-		"tsyringe": "^4.10.0",
 		"zod": "^3.24.1"
 	},
 	"devDependencies": {

@@ -11,7 +11,7 @@ import type {
     StorageService,
 } from "@gatewai/node-sdk/server";
 import { createPartFromUri, createUserContent, type GoogleGenAI } from "@google/genai";
-import { inject, injectable } from "tsyringe";
+import { inject, injectable } from "inversify";
 import { SpeechToTextNodeConfigSchema } from "../shared/config.js";
 import type { SpeechToTextResult } from "../shared/index.js";
 
