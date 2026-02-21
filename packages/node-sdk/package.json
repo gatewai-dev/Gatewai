@@ -1,0 +1,64 @@
+{
+	"name": "@gatewai/node-sdk",
+	"version": "0.0.1",
+	"private": true,
+	"type": "module",
+	"sideEffects": false,
+	"license": "MIT",
+	"description": "SDK for building Gatewai node plugins",
+	"module": "./dist/index.mjs",
+	"types": "./dist/index.d.mts",
+	"exports": {
+		".": {
+			"types": "./dist/index.d.mts",
+			"development": "./index.ts",
+			"import": "./dist/index.mjs",
+			"default": "./dist/index.mjs"
+		},
+		"./server": {
+			"types": "./dist/server.d.mts",
+			"development": "./server/index.ts",
+			"import": "./dist/server.mjs",
+			"default": "./dist/server.mjs"
+		},
+		"./browser": {
+			"types": "./dist/browser.d.mts",
+			"development": "./browser/index.ts",
+			"import": "./dist/browser.mjs",
+			"default": "./dist/browser.mjs"
+		}
+	},
+	"files": [
+		"dist/**"
+	],
+	"scripts": {
+		"build": "tsdown --format esm",
+		"dev": "tsdown --format esm --watch",
+		"clean": "rm -rf .turbo && rm -rf node_modules && rm -rf dist"
+	},
+	"devDependencies": {
+		"@gatewai/tsconfig": "workspace:*",
+		"@types/node": "^24.0.4",
+		"@types/react": "^19.2.4",
+		"@types/react-dom": "^19.2.3",
+		"tsdown": "^0.19.0",
+		"typescript": "5.5.4"
+	},
+	"peerDependencies": {
+		"@gatewai/core": "workspace:*",
+		"@gatewai/db": "workspace:*",
+		"@gatewai/media": "workspace:*",
+		"hono": "^4.8.5",
+		"zod": "3.25.67"
+	},
+	"dependencies": {
+		"@hookform/resolvers": "^3.10.0",
+		"@gatewai/react-store": "workspace:*",
+		"@gatewai/ui-kit": "workspace:*",
+		"clsx": "^2.1.1",
+		"lodash": "^4.17.21",
+		"react-fast-compare": "^3.2.2",
+		"react-hook-form": "^7.71.1",
+		"tailwind-merge": "^3.0.1"
+	}
+}

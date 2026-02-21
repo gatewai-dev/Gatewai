@@ -25,7 +25,6 @@
 			"cache": false
 		},
 		"dev": {
-			"dependsOn": ["^build"],
 			"persistent": true,
 			"inputs": ["$TURBO_DEFAULT$", ".env.development"]
 		},

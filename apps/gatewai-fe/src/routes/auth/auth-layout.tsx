@@ -1,9 +1,9 @@
+import { GatewaiLogo } from "@gatewai/ui-kit";
 import { motion } from "framer-motion";
 import { Workflow } from "lucide-react";
 import type { ReactNode } from "react";
 import { useEffect, useRef, useState } from "react";
 import { Link } from "react-router";
-import { GatewaiLogo } from "@/components/ui/gatewai-logo";
 
 interface AuthLayoutProps {
 	children: ReactNode;

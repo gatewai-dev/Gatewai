@@ -1,0 +1,64 @@
+{
+	"name": "@gatewai/media",
+	"version": "0.0.1",
+	"private": true,
+	"type": "module",
+	"sideEffects": false,
+	"license": "MIT",
+	"module": "./dist/index.mjs",
+	"types": "./dist/index.d.mts",
+	"exports": {
+		".": {
+			"types": "./dist/index.d.mts",
+			"development": "./shared/index.ts",
+			"import": "./dist/index.mjs",
+			"default": "./dist/index.mjs"
+		},
+		"./browser": {
+			"types": "./dist/browser.d.mts",
+			"development": "./browser/index.ts",
+			"import": "./dist/browser.mjs",
+			"default": "./dist/browser.mjs"
+		},
+		"./server": {
+			"types": "./dist/server.d.mts",
+			"development": "./server/index.ts",
+			"import": "./dist/server.mjs",
+			"default": "./dist/server.mjs"
+		},
+		"./canvas-worker": "./browser/draw-image-canvas/canvas.worker.ts"
+	},
+	"files": [
+		"dist/**"
+	],
+	"scripts": {
+		"build": "tsdown",
+		"dev": "tsdown --watch",
+		"clean": "rm -rf .turbo && rm -rf node_modules && rm -rf dist"
+	},
+	"devDependencies": {
+		"@gatewai/tsconfig": "workspace:*",
+		"@types/node": "^24.0.4",
+		"@types/sharp": "^0.31.1",
+		"pixi-filters": "^5.3.0",
+		"tsdown": "^0.19.0",
+		"typescript": "5.5.4"
+	},
+	"dependencies": {
+		"@gatewai/core": "workspace:*",
+		"@gatewai/db": "workspace:*",
+		"@pixi/node": "^7.3.0",
+		"@pixi/webworker": "^7.3.0",
+		"@xyflow/react": "^12.8.4",
+		"canvas": "^3.2.0",
+		"generic-pool": "^3.9.0",
+		"p-limit": "^7.2.0",
+		"pixi.js": "^7.4.3",
+		"sharp": "^0.34.5",
+		"zod": "3.25.67"
+	},
+	"peerDependencies": {
+		"react": "^19.2.4",
+		"@types/react": "19.2.4"
+	}
+}

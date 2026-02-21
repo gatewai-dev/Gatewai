@@ -1,0 +1,54 @@
+import type { CanvasDetailsRPC } from "@gatewai/rpc-client";
+import {
+	createDraftSafeSelector,
+	createEntityAdapter,
+	createSlice,
+} from "@reduxjs/toolkit";
+import type { RootState } from "./index.js";
+
+export type HandleEntityType = CanvasDetailsRPC["handles"][number];
+
+export const handleAdapter = createEntityAdapter<HandleEntityType>();
+
+const handlesSlice = createSlice({
+	name: "handles",
+	initialState: handleAdapter.getInitialState(),
+	reducers: {
+		createHandleEntity: handleAdapter.addOne,
+		updateHandleEntity: handleAdapter.updateOne,
+		deleteManyHandleEntity: handleAdapter.removeMany,
+		addManyHandleEntities: handleAdapter.addMany,
+		setAllHandleEntities: handleAdapter.setAll,
+	},
+});
+
+export type HandlesState = ReturnType<typeof handlesSlice.reducer>;
+
+const handleSelectors = handleAdapter.getSelectors<RootState>(
+	(state) => state.handles,
+);
+
+export const selectHandlesState = (state: RootState) => state.handles;
+
+export const makeSelectHandleById = (id: string) => {
+	return (state: RootState) => handleSelectors.selectById(state, id);
+};
+export const makeSelectHandlesByNodeId = (nodeId: string) =>
+	createDraftSafeSelector(handleSelectors.selectAll, (handles) =>
+		handles.filter((f) => f.nodeId === nodeId),
+	);
+
+export const makeSelectAllHandles = handleSelectors.selectAll;
+
+// Extract the action creators object and the reducer
+const { actions, reducer: handlesReducer } = handlesSlice;
+// Extract and export each action creator by name
+export const {
+	createHandleEntity,
+	updateHandleEntity,
+	deleteManyHandleEntity,
+	addManyHandleEntities,
+	setAllHandleEntities,
+} = actions;
+// Export the reducer, either as a default or named export
+export { handlesReducer, handleSelectors };

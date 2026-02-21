@@ -1,3 +1,18 @@
+import type { CanvasListRPC } from "@gatewai/rpc-client";
+import {
+	AlertDialog,
+	AlertDialogAction,
+	AlertDialogCancel,
+	AlertDialogContent,
+	AlertDialogDescription,
+	AlertDialogFooter,
+	AlertDialogHeader,
+	AlertDialogTitle,
+	AlertDialogTrigger,
+	Button,
+	Input,
+	Skeleton,
+} from "@gatewai/ui-kit";
 import { formatDistanceToNow } from "date-fns";
 import {
 	Clock,
@@ -10,27 +25,11 @@ import {
 	Sparkles,
 	Trash2,
 } from "lucide-react";
-
 import { useEffect, useRef, useState } from "react";
 import { Helmet } from "react-helmet-async";
 import { Link, useNavigate } from "react-router";
 import { toast } from "sonner";
-import {
-	AlertDialog,
-	AlertDialogAction,
-	AlertDialogCancel,
-	AlertDialogContent,
-	AlertDialogDescription,
-	AlertDialogFooter,
-	AlertDialogHeader,
-	AlertDialogTitle,
-	AlertDialogTrigger,
-} from "@/components/ui/alert-dialog";
-import { Button } from "@/components/ui/button";
-import { Input } from "@/components/ui/input";
-import { Skeleton } from "@/components/ui/skeleton";
 import { cn } from "@/lib/utils";
-import type { CanvasListRPC } from "@/rpc/types";
 import { CanvasListProvider, useCanvasListCtx } from "../ctx/canvas-list.ctx";
 
 function CanvasHomeImpl() {

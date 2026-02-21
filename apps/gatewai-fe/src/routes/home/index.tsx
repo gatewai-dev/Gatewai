@@ -1,11 +1,10 @@
+import { Button, GatewaiLogo } from "@gatewai/ui-kit";
 import { motion } from "framer-motion";
 import { ArrowRight, ArrowUpRight, Terminal } from "lucide-react";
 import { useEffect, useRef, useState } from "react";
 import { Helmet } from "react-helmet-async";
 import { FaDiscord, FaGithub } from "react-icons/fa";
 import { Link } from "react-router";
-import { Button } from "@/components/ui/button";
-import { GatewaiLogo } from "@/components/ui/gatewai-logo";
 
 // Node connection animation component
 const NodeCanvas = () => {

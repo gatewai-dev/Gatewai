@@ -16,10 +16,28 @@
 		"noUnusedLocals": true,
 		"noUnusedParameters": true,
 		"noFallthroughCasesInSwitch": true,
+		"experimentalDecorators": true,
+		"emitDecoratorMetadata": true,
 		"baseUrl": ".",
 		"paths": {
-			"@/*": ["./src/*"]
+			"@/*": ["./src/*"],
+			"@gatewai/api-client": ["../../packages/api-client/src/index.ts"],
+			"@gatewai/core": ["../../packages/core/src/index.ts"],
+			"@gatewai/react-canvas": ["../../packages/react-canvas/src/index.ts"],
+			"@gatewai/react-store": ["../../packages/react-store/src/index.ts"],
+			"@gatewai/rpc-client": ["../../packages/rpc-client/src/index.ts"],
+			"@gatewai/ui-kit": ["../../packages/ui-kit/src/index.ts"],
+			"@gatewai/core/types": ["../../packages/core/src/types/index.ts"],
+			"@gatewai/core/browser": ["../../packages/core/src/browser/index.ts"]
 		}
 	},
-	"include": ["src", "backend"]
+	"include": [
+		"src",
+		"backend",
+		"../../packages/*/src",
+		"../../nodes/*/src",
+		"../../packages/*/src/**/*.tsx",
+		"../../packages/*/src/**/*.ts",
+		"../../packages/*/generated/**/*.ts"
+	]
 }

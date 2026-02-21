@@ -1,0 +1,25 @@
+{
+	"extends": "@gatewai/tsconfig/base.json",
+	"compilerOptions": {
+		"composite": true,
+		"target": "ES2023",
+		"lib": ["ES2023"],
+		"experimentalDecorators": true,
+		"emitDecoratorMetadata": true,
+		"module": "ESNext",
+		"skipLibCheck": true,
+		"moduleResolution": "bundler",
+		"moduleDetection": "force",
+		"outDir": "dist",
+		"rootDir": ".",
+		"baseUrl": ".",
+		"paths": {
+			"@/*": ["./src/*"]
+		},
+		"strict": true,
+		"noUnusedLocals": true,
+		"noUnusedParameters": true,
+		"noFallthroughCasesInSwitch": true
+	},
+	"include": ["src/**/*"]
+}
