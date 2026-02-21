@@ -1,5 +1,3 @@
-import type { SpeechToTextResult } from "../shared/index.js";
-
 import {
 	BaseNode,
 	OutputSelector,
@@ -9,6 +7,7 @@ import {
 import { makeSelectNodeById, useAppSelector } from "@gatewai/react-store";
 import { cn, MarkdownRenderer, ScrollArea } from "@gatewai/ui-kit";
 import { memo, useMemo } from "react";
+import type { SpeechToTextResult } from "../shared/index.js";
 
 const SpeechToTextNodeComponent = memo(
 	(props: { selected: boolean; id: string; dragging: boolean }) => {

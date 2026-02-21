@@ -1,5 +1,3 @@
-import type { LLMResult } from "../shared/index.js";
-
 import {
 	AddCustomHandleButton,
 	BaseNode,
@@ -10,6 +8,7 @@ import {
 import { makeSelectNodeById, useAppSelector } from "@gatewai/react-store";
 import { cn, MarkdownRenderer, ScrollArea } from "@gatewai/ui-kit";
 import { memo, useMemo } from "react";
+import type { LLMResult } from "../shared/index.js";
 
 const LlmNodeComponent = memo(
 	(props: { selected: boolean; id: string; dragging: boolean }) => {

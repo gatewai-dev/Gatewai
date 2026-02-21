@@ -1,8 +1,7 @@
-import type { ImportResult } from "../shared/index.js";
-
 import type { IBrowserProcessor } from "@gatewai/node-sdk/browser";
 import type { NodeProcessorParams } from "@gatewai/react-canvas";
 import { ImportNodeConfigSchema } from "../shared/config.js";
+import type { ImportResult } from "../shared/index.js";
 
 export class ImportBrowserProcessor implements IBrowserProcessor {
 	async process({

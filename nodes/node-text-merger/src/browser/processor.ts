@@ -1,8 +1,7 @@
-import type { TextMergerResult } from "../shared/index.js";
-
 import type { IBrowserProcessor } from "@gatewai/node-sdk/browser";
 import type { NodeProcessorParams } from "@gatewai/react-canvas";
 import { TextMergerNodeConfigSchema } from "../shared/config.js";
+import type { TextMergerResult } from "../shared/index.js";
 import { joinText } from "../shared/join-fn.js";
 
 export class TextMergerBrowserProcessor implements IBrowserProcessor {

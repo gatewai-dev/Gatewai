@@ -1,5 +1,3 @@
-import type { ImportResult } from "../shared/index.js";
-
 import {
 	BaseNode,
 	MediaContent,
@@ -15,6 +13,7 @@ import {
 import type { NodeProps } from "@xyflow/react";
 import { memo } from "react";
 import { toast } from "sonner";
+import type { ImportResult } from "../shared/index.js";
 import { UploadButton } from "./file-button.js";
 import { UploadDropzone } from "./file-dropzone.js";
 
