@@ -17,8 +17,8 @@ import {
 	useNodeResult,
 } from "@gatewai/react-canvas";
 import { makeSelectNodeById, useAppSelector } from "@gatewai/react-store";
-import { resolveVideoSourceUrl } from "@gatewai/remotion-compositions";
-import { Button, cn } from "@gatewai/ui-kit";
+import { computeRenderParams } from "@gatewai/remotion-compositions";
+import { Button } from "@gatewai/ui-kit";
 
 import { Download, Loader2, VideoIcon } from "lucide-react";
 import { memo, useEffect, useMemo, useState } from "react";
@@ -68,9 +68,12 @@ const VideoCompositorNodeComponent = memo((props: NodeProps) => {
 				// Video inputs are always VirtualVideoData
 				const vv = item.data as VirtualVideoData;
 				virtualVideo = vv;
-				src = resolveVideoSourceUrl(vv);
-				if (!layerWidth) layerWidth = vv.sourceMeta?.width;
-				if (!layerHeight) layerHeight = vv.sourceMeta?.height;
+				const params = computeRenderParams(vv);
+				src = params.sourceUrl;
+				if (!layerWidth)
+					layerWidth = params.cropRegion?.width ?? vv.sourceMeta?.width;
+				if (!layerHeight)
+					layerHeight = params.cropRegion?.height ?? vv.sourceMeta?.height;
 			} else if (item.type === "Image" || item.type === "Audio") {
 				const fileData = item.data as FileData;
 				if (fileData) {
@@ -152,22 +155,17 @@ const VideoCompositorNodeComponent = memo((props: NodeProps) => {
 		const durationInFrames =
 			layers.length > 0
 				? Math.max(
-					DEFAULT_DURATION_FRAMES,
-					...layers.map(
-						(l) =>
-							(l.startFrame ?? 0) +
-							(l.durationInFrames ?? DEFAULT_DURATION_FRAMES),
-					),
-				)
+						DEFAULT_DURATION_FRAMES,
+						...layers.map(
+							(l) =>
+								(l.startFrame ?? 0) +
+								(l.durationInFrames ?? DEFAULT_DURATION_FRAMES),
+						),
+					)
 				: DEFAULT_DURATION_FRAMES;
 
 		return { layers, width, height, durationInFrames };
 	}, [node, inputs]);
-
-	const aspectRatio = useMemo(() => {
-		if (!previewState.width || !previewState.height) return 16 / 9;
-		return previewState.width / previewState.height;
-	}, [previewState.width, previewState.height]);
 
 	useEffect(() => {
 		previewState?.layers.forEach((layer) => {
@@ -207,10 +205,9 @@ const VideoCompositorNodeComponent = memo((props: NodeProps) => {
 		<BaseNode selected={props.selected} id={props.id} dragging={props.dragging}>
 			<div className="flex flex-col w-full">
 				<div
-					className="-mx-0.5 mt-[-2px]"
+					className="relative"
 					style={{
-						aspectRatio: `${aspectRatio}`,
-						minHeight: hasInputs ? "120px" : "auto",
+						minHeight: hasInputs ? "120px" : "120px",
 					}}
 				>
 					{hasInputs ? (

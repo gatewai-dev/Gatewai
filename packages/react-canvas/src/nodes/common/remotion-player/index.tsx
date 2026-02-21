@@ -1,15 +1,21 @@
-import type { VirtualVideoData } from "@gatewai/core/types";
-import type { ExtendedLayer } from "@gatewai/core/types";
+import type { ExtendedLayer, VirtualVideoData } from "@gatewai/core/types";
 import {
 	CompositionScene,
 	SingleClipComposition,
 } from "@gatewai/remotion-compositions";
 import { Audio, Video } from "@remotion/media";
-import { Player } from "@remotion/player";
 import type { PlayerRef } from "@remotion/player";
-import { MdFullscreen, MdPause, MdPlayArrow, MdRefresh, MdVolumeOff, MdVolumeUp } from "react-icons/md";
+import { Player } from "@remotion/player";
 import type { ReactNode } from "react";
 import { useEffect, useRef, useState } from "react";
+import {
+	MdFullscreen,
+	MdPause,
+	MdPlayArrow,
+	MdRefresh,
+	MdVolumeOff,
+	MdVolumeUp,
+} from "react-icons/md";
 import { AbsoluteFill, Img } from "remotion";
 
 const FPS = 24;
@@ -37,60 +43,60 @@ const MediaComposition: React.FC<{
 	viewportHeight,
 	children,
 }) => {
-		const resolvedType = type || (isAudio ? "Audio" : "Video");
+	const resolvedType = type || (isAudio ? "Audio" : "Video");
 
-		// Compositor mode: multiple layers
-		if (layers && layers.length > 0) {
-			return (
-				<AbsoluteFill>
-					<CompositionScene
-						layers={layers}
-						viewportWidth={viewportWidth ?? 1920}
-						viewportHeight={viewportHeight ?? 1080}
-					/>
-					{children}
-				</AbsoluteFill>
-			);
-		}
-
+	// Compositor mode: multiple layers
+	if (layers && layers.length > 0) {
 		return (
 			<AbsoluteFill>
-				{resolvedType === "Video" && virtualVideo ? (
-					<SingleClipComposition virtualVideo={virtualVideo} />
-				) : resolvedType === "Video" && src ? (
-					<Video
-						src={src}
-						style={{ width: "100%", height: "100%", objectFit: "contain" }}
-					/>
-				) : resolvedType === "Audio" && src ? (
-					<Audio src={src} />
-				) : resolvedType === "Image" && src ? (
-					<Img
-						src={src}
-						style={{ width: "100%", height: "100%", objectFit: "contain" }}
-					/>
-				) : resolvedType === "Text" ? (
-					<div
-						style={{
-							width: "100%",
-							height: "100%",
-							display: "flex",
-							alignItems: "center",
-							justifyContent: "center",
-							color: "white",
-							fontSize: "40px",
-							whiteSpace: "pre-wrap",
-							textAlign: "center",
-							padding: "20px",
-						}}
-					>
-						{typeof data === "string" ? data : JSON.stringify(data)}
-					</div>
-				) : null}
+				<CompositionScene
+					layers={layers}
+					viewportWidth={viewportWidth ?? 1920}
+					viewportHeight={viewportHeight ?? 1080}
+				/>
 				{children}
 			</AbsoluteFill>
 		);
-	};
+	}
+
+	return (
+		<AbsoluteFill>
+			{resolvedType === "Video" && virtualVideo ? (
+				<SingleClipComposition virtualVideo={virtualVideo} />
+			) : resolvedType === "Video" && src ? (
+				<Video
+					src={src}
+					style={{ width: "100%", height: "100%", objectFit: "contain" }}
+				/>
+			) : resolvedType === "Audio" && src ? (
+				<Audio src={src} />
+			) : resolvedType === "Image" && src ? (
+				<Img
+					src={src}
+					style={{ width: "100%", height: "100%", objectFit: "contain" }}
+				/>
+			) : resolvedType === "Text" ? (
+				<div
+					style={{
+						width: "100%",
+						height: "100%",
+						display: "flex",
+						alignItems: "center",
+						justifyContent: "center",
+						color: "white",
+						fontSize: "40px",
+						whiteSpace: "pre-wrap",
+						textAlign: "center",
+						padding: "20px",
+					}}
+				>
+					{typeof data === "string" ? data : JSON.stringify(data)}
+				</div>
+			) : null}
+			{children}
+		</AbsoluteFill>
+	);
+};
 
 // ---------- Custom Controls ----------
 
@@ -298,6 +304,7 @@ export interface MediaPlayerProps {
 	/** Override total frames directly (compositor usage) */
 	durationInFrames?: number;
 	fps?: number;
+	controls?: boolean;
 	className?: string;
 	children?: ReactNode;
 }
@@ -314,6 +321,7 @@ export const MediaPlayer = ({
 	viewportHeight,
 	durationInFrames: durationInFramesProp,
 	fps = FPS,
+	controls = true,
 	className,
 	children,
 }: MediaPlayerProps) => {
@@ -340,50 +348,60 @@ export const MediaPlayer = ({
 		return 30 * fps;
 	})();
 
-	const compWidth = isCompositor ? (viewportWidth ?? 1920) : (virtualVideo?.sourceMeta?.width ?? 1920);
+	const compWidth = isCompositor
+		? (viewportWidth ?? 1920)
+		: (virtualVideo?.sourceMeta?.width ?? 1920);
 	const compHeight = isCompositor
 		? (viewportHeight ?? 1080)
 		: resolvedType === "Audio"
 			? 400
 			: (virtualVideo?.sourceMeta?.height ?? 1080);
 
-	const showControls = resolvedType !== "Image" && resolvedType !== "Text";
+	const showControls =
+		controls && resolvedType !== "Image" && resolvedType !== "Text";
 
 	return (
-		<div
-			ref={containerRef}
-			className={`relative w-full overflow-hidden select-none bg-black ${resolvedType === "Audio" ? "h-32" : ""} ${className || "rounded"}`}
-			style={{ aspectRatio: resolvedType !== "Audio" ? `${compWidth} / ${compHeight}` : undefined }}
-		>
-			{/* Video frame — no native controls */}
-			<div className={showControls ? "h-[calc(100%-2.25rem)]" : "h-full"}>
-				<Player
-					ref={playerRef}
-					component={MediaComposition}
-					inputProps={{
-						src,
-						isAudio,
-						type: resolvedType,
-						data,
-						virtualVideo,
-						layers,
-						viewportWidth,
-						viewportHeight,
-						children,
-					}}
-					durationInFrames={durationInFrames}
-					fps={fps}
-					compositionWidth={compWidth}
-					compositionHeight={compHeight}
-					style={{ width: "100%", height: "100%" }}
-					// Remotion's native controls are OFF — we use custom ones
-					controls={false}
-					doubleClickToFullscreen={false}
-					// Buffer handling
-					showPosterWhenBufferingAndPaused
-					bufferStateDelayInMilliseconds={0}
-					acknowledgeRemotionLicense
-				/>
+		<div className="flex flex-col items-stretch">
+			<div
+				ref={containerRef}
+				className={`relative w-full overflow-hidden select-none bg-black ${resolvedType === "Audio" ? "h-32" : ""} ${className || "rounded"}`}
+				style={{
+					aspectRatio:
+						resolvedType !== "Audio"
+							? `${compWidth} / ${compHeight}`
+							: undefined,
+				}}
+			>
+				{/* Video frame — no native controls */}
+				<div className="h-full">
+					<Player
+						ref={playerRef}
+						component={MediaComposition}
+						inputProps={{
+							src,
+							isAudio,
+							type: resolvedType,
+							data,
+							virtualVideo,
+							layers,
+							viewportWidth,
+							viewportHeight,
+							children,
+						}}
+						durationInFrames={durationInFrames}
+						fps={fps}
+						compositionWidth={compWidth}
+						compositionHeight={compHeight}
+						style={{ width: "100%", height: "100%" }}
+						// Remotion's native controls are OFF — we use custom ones
+						controls={false}
+						doubleClickToFullscreen={false}
+						// Buffer handling
+						showPosterWhenBufferingAndPaused
+						bufferStateDelayInMilliseconds={0}
+						acknowledgeRemotionLicense
+					/>
+				</div>
 			</div>
 
 			{/* Custom controls — rendered OUTSIDE the video frame */}

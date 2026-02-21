@@ -10,8 +10,10 @@ import {
 	useCurrentFrame,
 	useVideoConfig,
 } from "remotion";
-import { buildCSSFilterString } from "../utils/apply-operations.js";
-import { resolveVideoSourceUrl } from "../utils/resolve-video.js";
+import {
+	buildCSSFilterString,
+	computeRenderParams,
+} from "../utils/apply-operations.js";
 
 const DEFAULT_DURATION_FRAMES = 24 * 5; // 5 sec at 24 fps
 
@@ -122,15 +124,35 @@ export const LayerRenderer: React.FC<{
 	const startFrame = layer.startFrame ?? 0;
 	const duration = layer.durationInFrames ?? DEFAULT_DURATION_FRAMES;
 
-	// Resolve the playable URL — prefer virtualVideo if present
-	const src = layer.virtualVideo
-		? resolveVideoSourceUrl(layer.virtualVideo)
-		: layer.src;
+	let src = layer.src;
+	let trimStartSec = 0;
+	let playbackRate = layer.speed ?? 1;
+	let vvFilterString = "";
+	let crop: { x: number; y: number; width: number; height: number } | null =
+		null;
+	let vvFlipH = false,
+		vvFlipV = false,
+		vvRotation = 0;
+	let sw = 1920,
+		sh = 1080;
 
-	// Compute CSS filter string from per-layer filter overrides (if any)
+	if (layer.virtualVideo) {
+		const params = computeRenderParams(layer.virtualVideo);
+		src = params.sourceUrl;
+		trimStartSec = params.trimStartSec;
+		playbackRate = (layer.speed ?? 1) * params.speed;
+		vvFilterString = params.cssFilterString;
+		crop = params.cropRegion;
+		vvFlipH = params.flipH;
+		vvFlipV = params.flipV;
+		vvRotation = params.rotation;
+		sw = layer.virtualVideo.sourceMeta?.width ?? 1920;
+		sh = layer.virtualVideo.sourceMeta?.height ?? 1080;
+	}
+
 	const filterString = (() => {
 		const cf = layer.filters?.cssFilters;
-		if (!cf) return undefined;
+		if (!cf && !vvFilterString) return undefined;
 		const defaults = {
 			brightness: 100,
 			contrast: 100,
@@ -141,7 +163,8 @@ export const LayerRenderer: React.FC<{
 			sepia: 0,
 			invert: 0,
 		};
-		return buildCSSFilterString({ ...defaults, ...cf });
+		const layerCss = cf ? buildCSSFilterString({ ...defaults, ...cf }) : "";
+		return [vvFilterString, layerCss].filter(Boolean).join(" ");
 	})();
 
 	const {
@@ -171,20 +194,53 @@ export const LayerRenderer: React.FC<{
 
 	const textContent = layer.text;
 
+	const transforms: string[] = [];
+	if (vvFlipH) transforms.push("scaleX(-1)");
+	if (vvFlipV) transforms.push("scaleY(-1)");
+	if (vvRotation) transforms.push(`rotate(${vvRotation}deg)`);
+
+	const videoInnerStyle: React.CSSProperties = {
+		width: "100%",
+		height: "100%",
+		objectFit: crop ? "fill" : "cover",
+		transform: transforms.length ? transforms.join(" ") : undefined,
+	};
+	const startFromFrame = Math.floor(
+		((layer.trimStart ?? 0) + trimStartSec) * fps,
+	);
+
 	return (
 		<Sequence from={startFrame} durationInFrames={duration} layout="none">
-			{layer.type === "Video" && src && (
-				<Video
-					src={src}
-					style={{ ...style }}
-					volume={animVolume}
-					// @ts-expect-error
-					startFrom={
-						layer.trimStart ? Math.floor(layer.trimStart * fps) : undefined
-					}
-					playbackRate={layer.speed ?? 1}
-				/>
-			)}
+			{layer.type === "Video" &&
+				src &&
+				(crop ? (
+					<div style={{ ...style, overflow: "hidden" }}>
+						<Video
+							src={src}
+							volume={animVolume}
+							// @ts-expect-error
+							startFrom={startFromFrame}
+							playbackRate={playbackRate}
+							style={{
+								...videoInnerStyle,
+								position: "absolute",
+								left: `${(-crop.x / crop.width) * 100}%`,
+								top: `${(-crop.y / crop.height) * 100}%`,
+								width: `${(sw / crop.width) * 100}%`,
+								height: `${(sh / crop.height) * 100}%`,
+							}}
+						/>
+					</div>
+				) : (
+					<Video
+						src={src}
+						volume={animVolume}
+						// @ts-expect-error
+						startFrom={startFromFrame}
+						playbackRate={playbackRate}
+						style={{ ...style, ...videoInnerStyle }}
+					/>
+				))}
 			{layer.type === "Image" && src && (
 				<Img src={src} style={{ ...style, objectFit: "cover" }} />
 			)}

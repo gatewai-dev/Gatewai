@@ -121,7 +121,7 @@ class VideoCompositorBrowserProcessor implements IBrowserProcessor {
 		if (!outputHandle) {
 			return { selectedOutputIndex: 0, outputs: [] };
 		}
-
+		console.log({ outputHandle });
 		return {
 			selectedOutputIndex: 0,
 			outputs: [

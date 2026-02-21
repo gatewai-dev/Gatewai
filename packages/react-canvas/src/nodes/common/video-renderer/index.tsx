@@ -7,11 +7,13 @@ const VideoRenderer = memo(
 		src,
 		durationMs,
 		virtualVideo,
+		controls,
 		className,
 	}: {
 		src?: string;
 		durationMs?: number;
 		virtualVideo?: VirtualVideoData;
+		controls?: boolean;
 		className?: string;
 	}) => {
 		return (
@@ -19,6 +21,7 @@ const VideoRenderer = memo(
 				src={src}
 				virtualVideo={virtualVideo}
 				type="Video"
+				controls={controls}
 				durationMs={durationMs}
 				className={className}
 			/>
