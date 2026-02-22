@@ -1,6 +1,8 @@
 import type { ExtendedLayer, VirtualVideoData } from "@gatewai/core/types";
 import {
 	CompositionScene,
+	getActiveVideoMetadata,
+	resolveVideoSourceUrl,
 	SingleClipComposition,
 } from "@gatewai/remotion-compositions";
 import { Audio, Video } from "@remotion/media";
@@ -43,60 +45,60 @@ const MediaComposition: React.FC<{
 	viewportHeight,
 	children,
 }) => {
-	const resolvedType = type || (isAudio ? "Audio" : "Video");
+		const resolvedType = type || (isAudio ? "Audio" : "Video");
 
-	// Compositor mode: multiple layers
-	if (layers && layers.length > 0) {
+		// Compositor mode: multiple layers
+		if (layers && layers.length > 0) {
+			return (
+				<AbsoluteFill>
+					<CompositionScene
+						layers={layers}
+						viewportWidth={viewportWidth ?? 1920}
+						viewportHeight={viewportHeight ?? 1080}
+					/>
+					{children}
+				</AbsoluteFill>
+			);
+		}
+
 		return (
 			<AbsoluteFill>
-				<CompositionScene
-					layers={layers}
-					viewportWidth={viewportWidth ?? 1920}
-					viewportHeight={viewportHeight ?? 1080}
-				/>
+				{resolvedType === "Video" && virtualVideo ? (
+					<SingleClipComposition virtualVideo={virtualVideo} />
+				) : resolvedType === "Video" && src ? (
+					<Html5Video
+						src={src}
+						style={{ width: "100%", height: "100%", objectFit: "contain" }}
+					/>
+				) : resolvedType === "Audio" && src ? (
+					<Html5Audio src={src} />
+				) : resolvedType === "Image" && src ? (
+					<Img
+						src={src}
+						style={{ width: "100%", height: "100%", objectFit: "contain" }}
+					/>
+				) : resolvedType === "Text" ? (
+					<div
+						style={{
+							width: "100%",
+							height: "100%",
+							display: "flex",
+							alignItems: "center",
+							justifyContent: "center",
+							color: "white",
+							fontSize: "40px",
+							whiteSpace: "pre-wrap",
+							textAlign: "center",
+							padding: "20px",
+						}}
+					>
+						{typeof data === "string" ? data : JSON.stringify(data)}
+					</div>
+				) : null}
 				{children}
 			</AbsoluteFill>
 		);
-	}
-
-	return (
-		<AbsoluteFill>
-			{resolvedType === "Video" && virtualVideo ? (
-				<SingleClipComposition virtualVideo={virtualVideo} />
-			) : resolvedType === "Video" && src ? (
-				<Html5Video
-					src={src}
-					style={{ width: "100%", height: "100%", objectFit: "contain" }}
-				/>
-			) : resolvedType === "Audio" && src ? (
-				<Html5Audio src={src} />
-			) : resolvedType === "Image" && src ? (
-				<Img
-					src={src}
-					style={{ width: "100%", height: "100%", objectFit: "contain" }}
-				/>
-			) : resolvedType === "Text" ? (
-				<div
-					style={{
-						width: "100%",
-						height: "100%",
-						display: "flex",
-						alignItems: "center",
-						justifyContent: "center",
-						color: "white",
-						fontSize: "40px",
-						whiteSpace: "pre-wrap",
-						textAlign: "center",
-						padding: "20px",
-					}}
-				>
-					{typeof data === "string" ? data : JSON.stringify(data)}
-				</div>
-			) : null}
-			{children}
-		</AbsoluteFill>
-	);
-};
+	};
 
 // ---------- Custom Controls ----------
 
@@ -365,30 +367,37 @@ export const MediaPlayer = ({
 
 	// Duration resolution priority:
 	// 1. explicit durationInFrames (compositor passes this)
-	// 2. VirtualVideoData sourceMeta
+	// 2. VirtualVideoData active metadata
 	// 3. durationMs prop
 	// 4. fallback 30 * FPS
 	const durationInFrames = (() => {
 		if (durationInFramesProp && durationInFramesProp > 0)
 			return durationInFramesProp;
-		if (virtualVideo?.sourceMeta?.durationMs) {
-			return Math.max(
-				1,
-				Math.ceil((virtualVideo.sourceMeta.durationMs / 1000) * fps),
-			);
+		if (virtualVideo) {
+			const activeMeta = getActiveVideoMetadata(virtualVideo);
+			if (activeMeta.durationMs) {
+				return Math.max(
+					1,
+					Math.ceil((activeMeta.durationMs / 1000) * fps),
+				);
+			}
 		}
 		if (durationMs) return Math.max(1, Math.ceil((durationMs / 1000) * fps));
 		return 30 * fps;
 	})();
 
+	const activeMeta = virtualVideo
+		? getActiveVideoMetadata(virtualVideo)
+		: undefined;
+
 	const compWidth = isCompositor
 		? (viewportWidth ?? 1920)
-		: (virtualVideo?.sourceMeta?.width ?? 1920);
+		: (activeMeta?.width ?? 1920);
 	const compHeight = isCompositor
 		? (viewportHeight ?? 1080)
 		: resolvedType === "Audio"
 			? 400
-			: (virtualVideo?.sourceMeta?.height ?? 1080);
+			: (activeMeta?.height ?? 1080);
 
 	const showControls =
 		controls && resolvedType !== "Image" && resolvedType !== "Text";

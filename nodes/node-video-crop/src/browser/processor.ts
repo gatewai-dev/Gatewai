@@ -3,7 +3,10 @@ import type {
 	VirtualVideoData,
 } from "@gatewai/core/types";
 import type { IBrowserProcessor } from "@gatewai/node-sdk/browser";
-import { appendOperation } from "@gatewai/remotion-compositions";
+import {
+	appendOperation,
+	getActiveVideoMetadata,
+} from "@gatewai/remotion-compositions";
 import { VideoCropConfigSchema } from "../shared/config.js";
 import type { VideoCropResult } from "../shared/index.js";
 
@@ -26,12 +29,24 @@ export class VideoCropBrowserProcessor implements IBrowserProcessor {
 		const inputVideo = videoInput.outputItem.data as VirtualVideoData;
 		const config = VideoCropConfigSchema.parse(node.config);
 
+		const currentMeta = getActiveVideoMetadata(inputVideo);
+		const currentWidth = currentMeta.width ?? 1920;
+		const currentHeight = currentMeta.height ?? 1080;
+
+		const newWidth = (currentWidth * config.widthPercentage) / 100;
+		const newHeight = (currentHeight * config.heightPercentage) / 100;
+
 		const output = appendOperation(inputVideo, {
 			op: "crop",
 			leftPercentage: config.leftPercentage,
 			topPercentage: config.topPercentage,
 			widthPercentage: config.widthPercentage,
 			heightPercentage: config.heightPercentage,
+			metadata: {
+				...currentMeta,
+				width: Math.round(newWidth),
+				height: Math.round(newHeight),
+			},
 		});
 
 		const outputHandle = context.getFirstOutputHandle(node.id);

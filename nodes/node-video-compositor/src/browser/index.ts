@@ -113,6 +113,12 @@ class VideoCompositorBrowserProcessor implements IBrowserProcessor {
 					height,
 					fps,
 					durationInFrames,
+					metadata: {
+						width,
+						height,
+						fps,
+						durationMs: (durationInFrames / fps) * 1000,
+					},
 				},
 			],
 		};

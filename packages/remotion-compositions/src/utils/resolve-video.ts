@@ -1,5 +1,9 @@
 import { GetAssetEndpoint } from "@gatewai/core/browser";
-import type { VideoOperation, VirtualVideoData } from "@gatewai/core/types";
+import type {
+	VideoMetadata,
+	VideoOperation,
+	VirtualVideoData,
+} from "@gatewai/core/types";
 
 /**
  * Create a VirtualVideoData from a FileData source.
@@ -47,4 +51,23 @@ export function appendOperation(
 		...vv,
 		operations: [...vv.operations, operation],
 	};
+}
+
+/**
+ * Get the active metadata from the latest operation that provides/modifies it.
+ * Falls back to sourceMeta if no operations have metadata.
+ */
+export function getActiveVideoMetadata(vv: VirtualVideoData): VideoMetadata {
+	// Start with source metadata
+	const metadata: VideoMetadata = { ...vv.sourceMeta };
+
+	// Iterate from newest to oldest to find the first operation with metadata
+	for (let i = vv.operations.length - 1; i >= 0; i--) {
+		const op = vv.operations[i];
+		if (op.metadata) {
+			return { ...op.metadata };
+		}
+	}
+
+	return metadata;
 }

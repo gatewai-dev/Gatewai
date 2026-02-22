@@ -17,6 +17,16 @@ export const VideoSourceSchema = z.object({
 		.optional(),
 });
 
+// --- Video Metadata: current state of the video ---
+export const VideoMetadataSchema = z.object({
+	width: z.number().optional(),
+	height: z.number().optional(),
+	durationMs: z.number().optional(),
+	fps: z.number().optional(),
+});
+
+export type VideoMetadata = z.infer<typeof VideoMetadataSchema>;
+
 // --- Operations ---
 export const CropOperationSchema = z.object({
 	op: z.literal("crop"),
@@ -24,33 +34,39 @@ export const CropOperationSchema = z.object({
 	topPercentage: z.number().min(0).max(100),
 	widthPercentage: z.number().min(0).max(100),
 	heightPercentage: z.number().min(0).max(100),
+	metadata: VideoMetadataSchema.optional(),
 });
 
 export const CutOperationSchema = z.object({
 	op: z.literal("cut"),
 	startSec: z.number().min(0),
 	endSec: z.number().min(0).nullable(), // null = to end
+	metadata: VideoMetadataSchema.optional(),
 });
 
 export const SpeedOperationSchema = z.object({
 	op: z.literal("speed"),
 	rate: z.number().min(0.25).max(4.0),
+	metadata: VideoMetadataSchema.optional(),
 });
 
 export const FilterOperationSchema = z.object({
 	op: z.literal("filter"),
 	filters: VideoFilterSchema,
+	metadata: VideoMetadataSchema.optional(),
 });
 
 export const FlipOperationSchema = z.object({
 	op: z.literal("flip"),
 	horizontal: z.boolean().default(false),
 	vertical: z.boolean().default(false),
+	metadata: VideoMetadataSchema.optional(),
 });
 
 export const RotateOperationSchema = z.object({
 	op: z.literal("rotate"),
 	degrees: z.number(),
+	metadata: VideoMetadataSchema.optional(),
 });
 
 export const ComposeOperationSchema = z.object({
@@ -60,6 +76,7 @@ export const ComposeOperationSchema = z.object({
 	height: z.number(),
 	fps: z.number(),
 	durationInFrames: z.number(),
+	metadata: VideoMetadataSchema.optional(),
 });
 
 export const VideoOperationSchema = z.discriminatedUnion("op", [
@@ -80,12 +97,7 @@ export const VirtualVideoDataSchema = z.object({
 	source: VideoSourceSchema,
 
 	/** Source dimensions/duration before any operations */
-	sourceMeta: z.object({
-		width: z.number().optional(),
-		height: z.number().optional(),
-		durationMs: z.number().optional(),
-		fps: z.number().optional(),
-	}),
+	sourceMeta: VideoMetadataSchema,
 
 	/** Ordered operation stack (each node appends to this) */
 	operations: z.array(VideoOperationSchema).default([]),

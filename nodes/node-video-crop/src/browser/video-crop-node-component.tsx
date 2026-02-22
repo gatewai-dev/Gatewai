@@ -250,7 +250,7 @@ const CropConfigPanel = memo(
 		const handleDimensionChange = (axis: "w" | "h", val: number) => {
 			const currentPixelRatio = sourceSize
 				? ((crop.widthPct / 100) * sourceSize.w) /
-					((crop.heightPct / 100) * sourceSize.h)
+				((crop.heightPct / 100) * sourceSize.h)
 				: crop.widthPct / crop.heightPct;
 
 			let newWPct = crop.widthPct;
@@ -948,11 +948,6 @@ const VideoCropNodeComponent = memo(
 						onAspectRatioChange={handleAspectRatioChange}
 						onToggleLock={handleToggleLock}
 					/>
-
-					{/* ── Run button ────────────────────────────────────── */}
-					<div className="flex justify-end items-center w-full px-2 py-1.5 border-t border-border">
-						<RunNodeButton nodeId={props.id} />
-					</div>
 				</div>
 			</BaseNode>
 		);
