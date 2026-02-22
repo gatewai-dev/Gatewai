@@ -140,7 +140,7 @@ export const SingleClipComposition: React.FC<{
 		}
 
 		if (!params.sourceUrl) {
-			return <AbsoluteFill style={{ backgroundColor: "#000" }} />;
+			return <AbsoluteFill />;
 		}
 
 		const startFrame = Math.floor(
@@ -176,7 +176,6 @@ export const SingleClipComposition: React.FC<{
 					display: "flex",
 					alignItems: "center",
 					justifyContent: "center",
-					backgroundColor: "#000",
 				}}
 			>
 				<div
@@ -220,7 +219,7 @@ export const SingleClipComposition: React.FC<{
 	}
 
 	return (
-		<AbsoluteFill style={{ backgroundColor: "#000" }}>
+		<AbsoluteFill>
 			<AbsoluteFill
 				style={{
 					filter: params.cssFilterString || undefined,

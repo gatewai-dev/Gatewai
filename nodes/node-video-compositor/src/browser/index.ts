@@ -6,7 +6,10 @@ import type {
 } from "@gatewai/core/types";
 import type { IBrowserProcessor } from "@gatewai/node-sdk/browser";
 import { defineClient } from "@gatewai/node-sdk/browser";
-import { resolveVideoSourceUrl } from "@gatewai/remotion-compositions";
+import {
+	getActiveVideoMetadata,
+	resolveVideoSourceUrl,
+} from "@gatewai/remotion-compositions";
 import { PiFilmReelLight } from "react-icons/pi";
 import { metadata } from "../metadata.js";
 import type { VideoCompositorNodeConfig } from "../shared/config.js";
@@ -46,6 +49,15 @@ class VideoCompositorBrowserProcessor implements IBrowserProcessor {
 				const vv = item.data as VirtualVideoData;
 				virtualVideo = vv;
 				src = resolveVideoSourceUrl(vv);
+
+				const activeMeta = getActiveVideoMetadata(vv);
+				if (!saved.width) saved.width = activeMeta.width;
+				if (!saved.height) saved.height = activeMeta.height;
+				if (!saved.durationInFrames) {
+					const durMs = activeMeta.durationMs ?? 0;
+					saved.durationInFrames =
+						durMs > 0 ? Math.ceil((durMs / 1000) * fps) : fps * 5;
+				}
 			} else if (item.type === "Image" || item.type === "Audio") {
 				const fileData = item.data as any;
 				if (fileData?.entity?.id) {
@@ -77,13 +89,6 @@ class VideoCompositorBrowserProcessor implements IBrowserProcessor {
 				virtualVideo,
 			};
 
-			if (item.type === "Video") {
-				if (!saved.durationInFrames) {
-					const durMs = virtualVideo!.sourceMeta?.durationMs ?? 0;
-					layer.durationInFrames =
-						durMs > 0 ? Math.ceil((durMs / 1000) * fps) : fps * 5;
-				}
-			}
 
 			if (item.type === "Text") {
 				layer.text = (item.data as string) || "";
