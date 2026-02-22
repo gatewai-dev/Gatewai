@@ -18,26 +18,39 @@ export const SingleClipComposition: React.FC<{
 }> = ({ virtualVideo }) => {
 	const { fps } = useVideoConfig();
 
-	// Check for compose operation — compositor output
-	const composeOp = virtualVideo.operations.find((op) => op.op === "compose");
-	if (composeOp && composeOp.op === "compose") {
-		return (
-			<CompositionScene
-				layers={composeOp.layers as ExtendedLayer[]}
-				viewportWidth={composeOp.width}
-				viewportHeight={composeOp.height}
-			/>
-		);
-	}
-
-	// Single-clip: collapse operation stack to render params
+	// Collapse operation stack to render params
 	const params = computeRenderParams(virtualVideo);
 
-	if (!params.sourceUrl) {
-		return <AbsoluteFill style={{ backgroundColor: "#000" }} />;
-	}
+	// Check for compose operation — compositor output
+	const composeOp = virtualVideo.operations.find((op) => op.op === "compose");
 
-	const startFrame = Math.floor(params.trimStartSec * fps);
+	const renderContent = () => {
+		if (composeOp && composeOp.op === "compose") {
+			return (
+				<CompositionScene
+					layers={composeOp.layers as ExtendedLayer[]}
+					viewportWidth={composeOp.width}
+					viewportHeight={composeOp.height}
+				/>
+			);
+		}
+
+		if (!params.sourceUrl) {
+			return <AbsoluteFill style={{ backgroundColor: "#000" }} />;
+		}
+
+		const startFrame = Math.floor(params.trimStartSec * fps);
+
+		return (
+			<Video
+				src={params.sourceUrl}
+				playbackRate={params.speed}
+				startFrom={startFrame}
+				style={{ width: "100%", height: "100%", objectFit: "contain" }}
+			/>
+		);
+	};
+
 	const transforms: string[] = [];
 	if (params.flipH) transforms.push("scaleX(-1)");
 	if (params.flipV) transforms.push("scaleY(-1)");
@@ -80,20 +93,18 @@ export const SingleClipComposition: React.FC<{
 							overflow: "hidden",
 						}}
 					>
-						<Video
-							src={params.sourceUrl}
-							playbackRate={params.speed}
-							startFrom={startFrame}
+						<div
 							style={{
 								position: "absolute",
 								left: `${(-params.cropRegion.x / cw) * 100}%`,
 								top: `${(-params.cropRegion.y / ch) * 100}%`,
 								width: `${(sw / cw) * 100}%`,
 								height: `${(sh / ch) * 100}%`,
-								objectFit: "fill",
 								transform: transforms.length ? transforms.join(" ") : undefined,
 							}}
-						/>
+						>
+							{renderContent()}
+						</div>
 					</div>
 				</div>
 			</AbsoluteFill>
@@ -108,12 +119,7 @@ export const SingleClipComposition: React.FC<{
 					transform: transforms.length ? transforms.join(" ") : undefined,
 				}}
 			>
-				<Video
-					src={params.sourceUrl}
-					playbackRate={params.speed}
-					startFrom={startFrame}
-					style={{ width: "100%", height: "100%", objectFit: "contain" }}
-				/>
+				{renderContent()}
 			</AbsoluteFill>
 		</AbsoluteFill>
 	);

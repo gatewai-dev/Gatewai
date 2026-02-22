@@ -92,12 +92,6 @@ async function downloadFileFromUrl(url: string): Promise<{
 	return { buffer, filename, contentType };
 }
 
-// ---------------------------------------------------------------------------
-// Public routes: streaming, thumbnails, temp files — no auth required.
-// Asset IDs are opaque cuid2 values (security-by-obscurity is acceptable here).
-// Remotion/browser video players fire many parallel range requests which can
-// race against better-auth's session cookie lookup, causing random 401s.
-// ---------------------------------------------------------------------------
 const assetsPublicRouter = new Hono<{ Variables: AuthHonoTypes }>({
 	strict: false,
 })
@@ -215,10 +209,27 @@ const assetsPublicRouter = new Hono<{ Variables: AuthHonoTypes }>({
 
 		if (!asset) return c.json({ error: "Not found" }, 404);
 
-		const storage = container.get<StorageService>(TOKENS.STORAGE);
-
-		const range = c.req.header("Range");
 		const fileSize = Number(asset.size);
+		
+		// 1. Generate a unique ETag based on the asset ID and size
+		// The W/ prefix stands for "Weak validator", which is standard practice for dynamic streams
+		const etag = `W/"${asset.id}-${fileSize}"`;
+
+		// 2. Check if the browser already has this exact version cached
+		const ifNoneMatch = c.req.header("If-None-Match");
+		if (ifNoneMatch === etag) {
+			// Return 304 Not Modified immediately with an empty body
+			return new Response(null, {
+				status: 304,
+				headers: {
+					"Cache-Control": "public, max-age=2592000, immutable",
+					"ETag": etag,
+				},
+			});
+		}
+
+		const storage = container.get<StorageService>(TOKENS.STORAGE);
+		const range = c.req.header("Range");
 
 		if (range) {
 			const parts = range.replace(/bytes=/, "").split("-");
@@ -237,12 +248,14 @@ const assetsPublicRouter = new Hono<{ Variables: AuthHonoTypes }>({
 				start,
 				end,
 			});
-
+			console.log({start, end, diff: end - start})
 			return c.body(stream as any, 206, {
 				"Content-Range": `bytes ${start}-${end}/${fileSize}`,
 				"Accept-Ranges": "bytes",
 				"Content-Length": chunksize.toString(),
 				"Content-Type": asset.mimeType,
+				"Cache-Control": "public, max-age=2592000, immutable",
+				"ETag": etag, // 3. Attach ETag to Partial Content
 			});
 		}
 
@@ -253,7 +266,8 @@ const assetsPublicRouter = new Hono<{ Variables: AuthHonoTypes }>({
 				"Content-Type": asset.mimeType,
 				"Accept-Ranges": "bytes",
 				"Content-Length": fileSize.toString(),
-				"Cache-Control": "max-age=2592000",
+				"Cache-Control": "public, max-age=2592000, immutable",
+				"ETag": etag,
 			},
 		});
 	});
