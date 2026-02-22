@@ -1,6 +1,4 @@
-export * from "./compositions/layer-renderer.js";
 export * from "./compositions/scene.js";
-export * from "./compositions/single-clip.js";
 export * from "./effects/animations.js";
 export * from "./effects/transitions.js";
 export * from "./filters/color-grading.js";

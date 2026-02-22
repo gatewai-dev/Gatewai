@@ -3,7 +3,7 @@ import {
 	type RenderMediaOnWebProgress,
 	renderMediaOnWeb,
 } from "@remotion/web-renderer";
-import { SingleClipComposition } from "../compositions/single-clip.js";
+import { SingleClipComposition } from "../compositions/scene.js";
 import { computeRenderParams } from "./apply-operations.js";
 
 export type RenderOptions = {

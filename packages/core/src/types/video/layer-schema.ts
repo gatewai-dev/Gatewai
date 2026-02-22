@@ -3,6 +3,31 @@ import { VideoFilterSchema } from "./filter-schema.js";
 import { TransitionSchema } from "./transition-schema.js";
 import { VirtualVideoDataSchema } from "./virtual-video.js";
 
+export const AnimationTypeSchema = z.enum([
+	"fade-in",
+	"fade-out",
+	"slide-in-left",
+	"slide-in-right",
+	"slide-in-top",
+	"slide-in-bottom",
+	"zoom-in",
+	"zoom-out",
+	"rotate-cw",
+	"rotate-ccw",
+	"bounce",
+	"shake",
+]);
+
+export type AnimationType = z.infer<typeof AnimationTypeSchema>;
+
+export const VideoAnimationSchema = z.object({
+	id: z.string(),
+	type: AnimationTypeSchema,
+	value: z.number(),
+});
+
+export type VideoAnimation = z.infer<typeof VideoAnimationSchema>;
+
 export const ExtendedLayerSchema = z
 	.object({
 		id: z.string(),
@@ -15,8 +40,8 @@ export const ExtendedLayerSchema = z
 		// Shared spatial properties (re-used from compositor logic)
 		x: z.number(),
 		y: z.number(),
-		width: z.number(),
-		height: z.number(),
+		width: z.number().optional(),
+		height: z.number().optional(),
 		rotation: z.number().default(0),
 		opacity: z.number().min(0).max(1).default(1),
 		scale: z.number().default(1),
@@ -67,7 +92,7 @@ export const ExtendedLayerSchema = z
 		zIndex: z.number().optional(),
 
 		// Animations
-		animations: z.array(z.any()).optional(),
+		animations: z.array(VideoAnimationSchema).optional(),
 
 		// Handle info for mapping
 		inputHandleId: z.string().optional(),
@@ -78,3 +103,4 @@ export const ExtendedLayerSchema = z
 	.strict();
 
 export type ExtendedLayer = z.infer<typeof ExtendedLayerSchema>;
+
