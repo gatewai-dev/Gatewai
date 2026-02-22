@@ -27,8 +27,6 @@ export function createVirtualVideo(source: any): VirtualVideoData {
 
 /**
  * Resolve the actual playable URL from a VirtualVideoData or FileData source.
- * Uses the GCS signed URL stored on the entity, or falls back to
- * the in-memory processData.dataUrl for browser-generated videos.
  */
 export function resolveVideoSourceUrl(
 	vv: VirtualVideoData | any,

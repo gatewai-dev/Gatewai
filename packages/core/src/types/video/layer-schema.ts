@@ -99,8 +99,9 @@ export const ExtendedLayerSchema = z
 
 		// Internal
 		isPlaceholder: z.boolean().optional(),
+
+		autoDimensions: z.boolean().optional(),
 	})
 	.strict();
 
 export type ExtendedLayer = z.infer<typeof ExtendedLayerSchema>;
-

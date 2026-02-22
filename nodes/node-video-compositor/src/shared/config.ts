@@ -46,6 +46,7 @@ export const VideoCompositorLayerSchema = BaseLayerSchema.merge(PositionSchema)
 		trimEnd: z.number().min(0).optional(),
 		speed: z.number().min(0.25).max(4.0).optional(),
 		filters: VideoFilterSchema.optional(),
+		autoDimensions: z.boolean().optional(),
 		transition: z
 			.object({
 				type: z.enum([

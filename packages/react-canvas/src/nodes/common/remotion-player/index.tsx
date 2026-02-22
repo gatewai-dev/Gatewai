@@ -20,7 +20,6 @@ import {
 import { AbsoluteFill, Img } from "remotion";
 import { CompositionScene } from "./composition-scene.js";
 
-
 const FPS = 24;
 
 // ---------- Inner Remotion composition ----------
@@ -46,61 +45,60 @@ const MediaComposition: React.FC<{
 	viewportHeight,
 	children,
 }) => {
-		const resolvedType = type || (isAudio ? "Audio" : "Video");
+	const resolvedType = type || (isAudio ? "Audio" : "Video");
 
-		if (layers && layers.length > 0) {
-			return (
-				<AbsoluteFill>
-					<CompositionScene
-						layers={layers}
-						viewportWidth={viewportWidth ?? 1920}
-						viewportHeight={viewportHeight ?? 1080}
-					/>
-					{children}
-				</AbsoluteFill>
-			);
-		}
-
+	if (layers && layers.length > 0) {
 		return (
 			<AbsoluteFill>
-				{resolvedType === "Video" && virtualVideo ? (
-					<SingleClipComposition virtualVideo={virtualVideo} />
-				) : resolvedType === "Video" && src ? (
-					<Video
-						src={src}
-						style={{ width: "100%", height: "100%", objectFit: "contain" }}
-					/>
-				) : resolvedType === "Audio" && src ? (
-					<Audio src={src} />
-				) : resolvedType === "Image" && src ? (
-					<Img
-						src={src}
-						style={{ width: "100%", height: "100%", objectFit: "contain" }}
-						alt="Media content"
-					/>
-				) : resolvedType === "Text" ? (
-					<div
-						style={{
-							width: "100%",
-							height: "100%",
-							display: "flex",
-							alignItems: "center",
-							justifyContent: "center",
-							color: "white",
-							fontSize: "40px",
-							whiteSpace: "pre-wrap",
-							textAlign: "center",
-							padding: "20px",
-						}}
-					>
-						{typeof data === "string" ? data : JSON.stringify(data)}
-					</div>
-				) : null}
+				<CompositionScene
+					layers={layers}
+					viewportWidth={viewportWidth ?? 1920}
+					viewportHeight={viewportHeight ?? 1080}
+				/>
 				{children}
 			</AbsoluteFill>
 		);
-	};
+	}
 
+	return (
+		<AbsoluteFill>
+			{resolvedType === "Video" && virtualVideo ? (
+				<SingleClipComposition virtualVideo={virtualVideo} />
+			) : resolvedType === "Video" && src ? (
+				<Video
+					src={src}
+					style={{ width: "100%", height: "100%", objectFit: "contain" }}
+				/>
+			) : resolvedType === "Audio" && src ? (
+				<Audio src={src} />
+			) : resolvedType === "Image" && src ? (
+				<Img
+					src={src}
+					style={{ width: "100%", height: "100%", objectFit: "contain" }}
+					alt="Media content"
+				/>
+			) : resolvedType === "Text" ? (
+				<div
+					style={{
+						width: "100%",
+						height: "100%",
+						display: "flex",
+						alignItems: "center",
+						justifyContent: "center",
+						color: "white",
+						fontSize: "40px",
+						whiteSpace: "pre-wrap",
+						textAlign: "center",
+						padding: "20px",
+					}}
+				>
+					{typeof data === "string" ? data : JSON.stringify(data)}
+				</div>
+			) : null}
+			{children}
+		</AbsoluteFill>
+	);
+};
 
 // ---------- Utility functions ----------
 
@@ -538,11 +536,13 @@ export const MediaPlayer = ({
 					fps={fps}
 					compositionWidth={compWidth}
 					compositionHeight={compHeight}
+					spaceKeyToPlayOrPause={false}
+					showPosterWhenUnplayed={false}
 					style={{ width: "100%", height: "100%" }}
 					controls={false}
-					clickToPlay={true}
+					clickToPlay={false}
 					doubleClickToFullscreen={false}
-					bufferStateDelayInMilliseconds={100}
+					bufferStateDelayInMilliseconds={300}
 					acknowledgeRemotionLicense
 				/>
 				{overlay}

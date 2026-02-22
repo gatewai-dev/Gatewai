@@ -210,10 +210,10 @@ const assetsPublicRouter = new Hono<{ Variables: AuthHonoTypes }>({
 		if (!asset) return c.json({ error: "Not found" }, 404);
 
 		const fileSize = Number(asset.size);
-		
+
 		// 1. Generate a unique ETag based on the asset ID and size
 		// The W/ prefix stands for "Weak validator", which is standard practice for dynamic streams
-		const etag = `W/"${asset.id}-${fileSize}"`;
+		const etag = `"${asset.id}-${fileSize}"`;
 
 		// 2. Check if the browser already has this exact version cached
 		const ifNoneMatch = c.req.header("If-None-Match");
@@ -223,7 +223,7 @@ const assetsPublicRouter = new Hono<{ Variables: AuthHonoTypes }>({
 				status: 304,
 				headers: {
 					"Cache-Control": "public, max-age=2592000, immutable",
-					"ETag": etag,
+					ETag: etag,
 				},
 			});
 		}
@@ -248,14 +248,14 @@ const assetsPublicRouter = new Hono<{ Variables: AuthHonoTypes }>({
 				start,
 				end,
 			});
-			console.log({start, end, diff: end - start})
+			console.log({ start, end, diff: end - start });
 			return c.body(stream as any, 206, {
 				"Content-Range": `bytes ${start}-${end}/${fileSize}`,
 				"Accept-Ranges": "bytes",
 				"Content-Length": chunksize.toString(),
 				"Content-Type": asset.mimeType,
 				"Cache-Control": "public, max-age=2592000, immutable",
-				"ETag": etag, // 3. Attach ETag to Partial Content
+				ETag: etag, // 3. Attach ETag to Partial Content
 			});
 		}
 
@@ -267,7 +267,7 @@ const assetsPublicRouter = new Hono<{ Variables: AuthHonoTypes }>({
 				"Accept-Ranges": "bytes",
 				"Content-Length": fileSize.toString(),
 				"Cache-Control": "public, max-age=2592000, immutable",
-				"ETag": etag,
+				ETag: etag,
 			},
 		});
 	});

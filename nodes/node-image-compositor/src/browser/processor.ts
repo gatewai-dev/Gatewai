@@ -11,7 +11,7 @@ import {
 	type CompositorLayer,
 	type CompositorNodeConfig,
 	CompositorNodeConfigSchema,
-} from "../shared/compositor.config.js";
+} from "../shared/config.js";
 import type { CompositorResult } from "../shared/index.js";
 
 const getConnectedInputDataValue = (

@@ -121,7 +121,12 @@ export const SingleClipComposition: React.FC<{
 	volume?: number;
 	playbackRateOverride?: number;
 	trimStartOverride?: number;
-}> = ({ virtualVideo, volume = 1, playbackRateOverride, trimStartOverride }) => {
+}> = ({
+	virtualVideo,
+	volume = 1,
+	playbackRateOverride,
+	trimStartOverride,
+}) => {
 	const { fps } = useVideoConfig();
 	const params = computeRenderParams(virtualVideo);
 
@@ -272,17 +277,7 @@ export const LayerRenderer: React.FC<{
 	const filterString = (() => {
 		const cf = layer.filters?.cssFilters;
 		if (!cf) return undefined;
-		return buildCSSFilterString({
-			brightness: 100,
-			contrast: 100,
-			saturation: 100,
-			hueRotate: 0,
-			blur: 0,
-			grayscale: 0,
-			sepia: 0,
-			invert: 0,
-			...cf,
-		} as any);
+		return buildCSSFilterString(cf);
 	})();
 
 	return (

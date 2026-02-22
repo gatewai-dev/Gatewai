@@ -22,18 +22,28 @@ import {
 	GetFontAssetUrl,
 } from "@gatewai/core/browser";
 import type {
+	AnimationType,
+	ExtendedLayer,
 	FileData,
 	OutputItem,
+	VideoAnimation,
 	VirtualVideoData,
 } from "@gatewai/core/types";
 import { dataTypeColors } from "@gatewai/core/types";
+import {
+	CompositionScene,
+	calculateLayerTransform,
+} from "@gatewai/react-canvas";
 import type { NodeEntityType } from "@gatewai/react-store";
 import {
 	handleSelectors,
 	useAppSelector,
 	useGetFontListQuery,
 } from "@gatewai/react-store";
-import { resolveVideoSourceUrl } from "@gatewai/remotion-compositions";
+import {
+	getActiveVideoMetadata,
+	resolveVideoSourceUrl,
+} from "@gatewai/remotion-compositions";
 import {
 	AlertDialog,
 	AlertDialogAction,
@@ -120,27 +130,20 @@ import React, {
 } from "react";
 import { useHotkeys } from "react-hotkeys-hook";
 import type { VideoCompositorNodeConfig } from "../../../shared/config.js";
-import {
-	CompositionScene,
-	calculateLayerTransform,
-} from "@gatewai/react-canvas";
-import type {
-	AnimationType,
-	ExtendedLayer,
-	VideoAnimation,
-} from "@gatewai/core/types";
 import { DEFAULT_DURATION_FRAMES, FPS } from "../config/index.js";
 
+// --- Local Type Extension ---
+// Extends the base layer to support the autoDimensions flag securely
+export type EditorLayer = ExtendedLayer & { autoDimensions?: boolean };
 
 // --- Constants & Configuration ---
 const RULER_HEIGHT = 28;
 const TRACK_HEIGHT = 32;
 const HEADER_WIDTH = 200;
-const DEFAULT_TIMELINE_HEIGHT = 208; // h-52 equivalent
+const DEFAULT_TIMELINE_HEIGHT = 208;
 const MIN_TIMELINE_HEIGHT = 120;
 const MAX_TIMELINE_HEIGHT = 400;
 
-// Optimized Presets for Web Editing (Performance focused)
 const ASPECT_RATIOS = [
 	{ label: "Youtube / HD (16:9)", width: 1280, height: 720 },
 	{ label: "Full HD (16:9)", width: 1920, height: 1080 },
@@ -150,7 +153,7 @@ const ASPECT_RATIOS = [
 ];
 
 // --- Helper Functions ---
-const resolveLayerLabel = (handle: any, layer: ExtendedLayer): string => {
+const resolveLayerLabel = (handle: any, layer: EditorLayer): string => {
 	if (
 		handle?.label &&
 		typeof handle.label === "string" &&
@@ -170,9 +173,9 @@ const resolveLayerLabel = (handle: any, layer: ExtendedLayer): string => {
 
 // --- Context & Types ---
 interface EditorContextType {
-	layers: ExtendedLayer[];
+	layers: EditorLayer[];
 	updateLayers: (
-		updater: SetStateAction<ExtendedLayer[]>,
+		updater: SetStateAction<EditorLayer[]>,
 		isUserChange?: boolean,
 	) => void;
 	deleteLayer: (id: string) => void;
@@ -209,6 +212,7 @@ interface EditorContextType {
 	timelineScrollRef: React.RefObject<HTMLDivElement | null>;
 	timelineHeight: number;
 	setTimelineHeight: Dispatch<SetStateAction<number>>;
+	initialLayersData: Map<string, OutputItem<any>>;
 }
 
 const EditorContext = createContext<EditorContextType | undefined>(undefined);
@@ -220,7 +224,7 @@ const useEditor = () => {
 
 // --- Components: Unified Clip ---
 const UnifiedClip: React.FC<{
-	layer: ExtendedLayer;
+	layer: EditorLayer;
 	isSelected: boolean;
 }> = ({ layer, isSelected }) => {
 	const handles = useAppSelector(handleSelectors.selectEntities);
@@ -333,8 +337,8 @@ const InteractionOverlay: React.FC = () => {
 					l.type !== "Audio" &&
 					currentFrame >= (l.startFrame ?? 0) &&
 					currentFrame <
-					(l.startFrame ?? 0) +
-					(l.durationInFrames ?? DEFAULT_DURATION_FRAMES),
+						(l.startFrame ?? 0) +
+							(l.durationInFrames ?? DEFAULT_DURATION_FRAMES),
 			)
 			.sort((a, b) => (a.zIndex ?? 0) - (b.zIndex ?? 0));
 	}, [layers, currentFrame]);
@@ -417,10 +421,10 @@ const InteractionOverlay: React.FC = () => {
 				prev.map((l) =>
 					l.id === selectedId
 						? {
-							...l,
-							x: Math.round(initialPos.x + dx),
-							y: Math.round(initialPos.y + dy),
-						}
+								...l,
+								x: Math.round(initialPos.x + dx),
+								y: Math.round(initialPos.y + dy),
+							}
 						: l,
 				),
 			);
@@ -494,12 +498,13 @@ const InteractionOverlay: React.FC = () => {
 				prev.map((l) =>
 					l.id === selectedId
 						? {
-							...l,
-							width: Math.round(newWidth),
-							height: Math.round(newHeight),
-							x: Math.round(newX),
-							y: Math.round(newY),
-						}
+								...l,
+								width: Math.round(newWidth),
+								height: Math.round(newHeight),
+								x: Math.round(newX),
+								y: Math.round(newY),
+								autoDimensions: false, // Turn off auto dimensions on manual resize
+							}
 						: l,
 				),
 			);
@@ -542,7 +547,7 @@ const InteractionOverlay: React.FC = () => {
 			onMouseDown={(e) => handleMouseDown(e)}
 			role="button"
 			tabIndex={0}
-			onKeyDown={() => { }}
+			onKeyDown={() => {}}
 		>
 			<div
 				className="absolute origin-top-left"
@@ -560,8 +565,9 @@ const InteractionOverlay: React.FC = () => {
 							if (e.key === "Enter") setSelectedId(layer.id);
 						}}
 						onMouseDown={(e) => handleMouseDown(e, layer.id)}
-						className={`absolute group outline-none select-none p-0 m-0 border-0 bg-transparent text-left ${selectedId === layer.id ? "z-50" : "z-auto"
-							}`}
+						className={`absolute group outline-none select-none p-0 m-0 border-0 bg-transparent text-left ${
+							selectedId === layer.id ? "z-50" : "z-auto"
+						}`}
 						style={{
 							left: layer.x,
 							top: layer.y,
@@ -573,10 +579,11 @@ const InteractionOverlay: React.FC = () => {
 						}}
 					>
 						<div
-							className={`absolute inset-0 pointer-events-none transition-all duration-150 ${selectedId === layer.id
-								? "border-2 border-blue-500 shadow-[0_0_0_1px_rgba(59,130,246,0.2)]"
-								: "border border-transparent group-hover:border-blue-400/50"
-								}`}
+							className={`absolute inset-0 pointer-events-none transition-all duration-150 ${
+								selectedId === layer.id
+									? "border-2 border-blue-500 shadow-[0_0_0_1px_rgba(59,130,246,0.2)]"
+									: "border border-transparent group-hover:border-blue-400/50"
+							}`}
 						/>
 						{selectedId === layer.id && (
 							<>
@@ -639,7 +646,7 @@ const InteractionOverlay: React.FC = () => {
 	);
 };
 
-// ... remaining Toolbar, TimelinePanel, and InspectorPanel implementations stay unmodified ...
+// --- Toolbar ---
 const Toolbar = React.memo<{
 	onClose: () => void;
 	onSave: () => void;
@@ -857,7 +864,7 @@ const Toolbar = React.memo<{
 
 // --- Timeline Panel ---
 interface SortableTrackProps {
-	layer: ExtendedLayer;
+	layer: EditorLayer;
 	isSelected: boolean;
 	onSelect: () => void;
 }
@@ -1033,7 +1040,7 @@ const TimelinePanel: React.FC = () => {
 		};
 		el.addEventListener("wheel", handleWheel, { passive: false });
 		return () => el.removeEventListener("wheel", handleWheel);
-	}, []);
+	}, [scrollContainerRef]);
 
 	const handleClipManipulation = (
 		e: React.MouseEvent,
@@ -1171,7 +1178,7 @@ const TimelinePanel: React.FC = () => {
 				onMouseLeave={() => setIsPanningTimeline(false)}
 				role="button"
 				tabIndex={0}
-				onKeyDown={() => { }}
+				onKeyDown={() => {}}
 			>
 				<div
 					className="relative flex flex-col min-h-full"
@@ -1234,10 +1241,7 @@ const TimelinePanel: React.FC = () => {
 								length: Math.ceil(durationInFrames / fps) + 5,
 							}).map((_, sec) => (
 								<span
-									key={`${
-										// biome-ignore lint/suspicious/noArrayIndexKey: Range used for static labels
-										sec
-										}_label_time`}
+									key={`${sec}_label_time`}
 									className="absolute top-1.5 text-[10px] font-mono text-gray-500 select-none pointer-events-none font-medium"
 									style={{ left: sec * fps * pixelsPerFrame + 4 }}
 								>
@@ -1301,8 +1305,9 @@ const TimelinePanel: React.FC = () => {
 									<div
 										key={layer.id}
 										style={{ height: TRACK_HEIGHT }}
-										className={`border-b border-white/5 relative group/track ${isSelected ? "bg-white/2" : ""
-											}`}
+										className={`border-b border-white/5 relative group/track ${
+											isSelected ? "bg-white/2" : ""
+										}`}
 									>
 										<button
 											type="button"
@@ -1358,6 +1363,7 @@ const InspectorPanel: React.FC = () => {
 		viewportHeight,
 		updateViewportWidth,
 		updateViewportHeight,
+		initialLayersData,
 	} = useEditor();
 	const selectedLayer = layers.find((f) => f.id === selectedId);
 	const [addAnimOpen, setAddAnimOpen] = useState(false);
@@ -1454,7 +1460,7 @@ const InspectorPanel: React.FC = () => {
 		setAddAnimOpen(false);
 	};
 
-	const update = (patch: Partial<ExtendedLayer>) => {
+	const update = (patch: Partial<EditorLayer>) => {
 		updateLayers((prev) =>
 			prev.map((l) => (l.id === selectedId ? { ...l, ...patch } : l)),
 		);
@@ -1562,8 +1568,69 @@ const InspectorPanel: React.FC = () => {
 				<div className="pb-6">
 					{selectedLayer.type !== "Audio" && (
 						<div className="border-b border-white/5 p-4 space-y-3">
-							<div className="flex items-center gap-2 text-[11px] font-bold text-gray-500 uppercase tracking-wider mb-2">
-								<Move className="w-3.5 h-3.5" /> Transform
+							<div className="flex items-center justify-between mb-2">
+								<div className="flex items-center gap-2 text-[11px] font-bold text-gray-500 uppercase tracking-wider">
+									<Move className="w-3.5 h-3.5" /> Transform
+								</div>
+								{(selectedLayer.type === "Image" ||
+									selectedLayer.type === "Video") && (
+									<TooltipProvider>
+										<Tooltip>
+											<TooltipTrigger asChild>
+												<Button
+													variant={
+														selectedLayer.autoDimensions ? "secondary" : "ghost"
+													}
+													size="sm"
+													className={cn(
+														"h-6 text-[10px] px-2",
+														selectedLayer.autoDimensions
+															? "text-blue-400 bg-blue-500/10 hover:bg-blue-500/20"
+															: "text-gray-500 hover:text-gray-300 bg-white/5",
+													)}
+													onClick={() => {
+														if (selectedLayer.autoDimensions) {
+															update({ autoDimensions: false });
+														} else {
+															let newW = selectedLayer.width;
+															let newH = selectedLayer.height;
+															const initialItem = initialLayersData.get(
+																selectedLayer.id,
+															);
+															if (initialItem) {
+																if (initialItem.type === "Video") {
+																	const meta = (
+																		initialItem.data as VirtualVideoData
+																	).sourceMeta;
+
+																	console.log({ meta });
+																	if (meta?.width) newW = meta.width;
+																	if (meta?.height) newH = meta.height;
+																} else if (initialItem.type === "Image") {
+																	const meta = (initialItem.data as FileData)
+																		.processData;
+																	if (meta?.width) newW = meta.width;
+																	if (meta?.height) newH = meta.height;
+																}
+															}
+															update({
+																autoDimensions: true,
+																width: newW,
+																height: newH,
+															});
+														}
+													}}
+												>
+													<Sparkles className="w-3 h-3 mr-1" />
+													Auto W/H
+												</Button>
+											</TooltipTrigger>
+											<TooltipContent>
+												Sync dimensions with source media
+											</TooltipContent>
+										</Tooltip>
+									</TooltipProvider>
+								)}
 							</div>
 
 							<div className="grid grid-cols-2 gap-2">
@@ -1595,6 +1662,7 @@ const InspectorPanel: React.FC = () => {
 													height: selectedLayer.lockAspect
 														? Math.max(2, Math.round(v * ratio))
 														: selectedLayer.height,
+													autoDimensions: false, // Turn off auto resize if user intervenes manually
 												});
 											}}
 										/>
@@ -1646,6 +1714,7 @@ const InspectorPanel: React.FC = () => {
 													width: selectedLayer.lockAspect
 														? Math.max(2, Math.round(v / ratio))
 														: selectedLayer.width,
+													autoDimensions: false,
 												});
 											}}
 										/>
@@ -1671,23 +1740,23 @@ const InspectorPanel: React.FC = () => {
 
 					{(selectedLayer.type === "Video" ||
 						selectedLayer.type === "Audio") && (
-							<CollapsibleSection title="Audio" icon={Music}>
-								<div className="flex items-center gap-2">
-									<span className="text-[9px] text-gray-500 w-8">Volume</span>
-									<Slider
-										className="flex-1"
-										value={[(selectedLayer.volume ?? 1) * 100]}
-										min={0}
-										max={100}
-										step={1}
-										onValueChange={([v]) => update({ volume: v / 100 })}
-									/>
-									<span className="text-[9px] text-gray-400 w-6 text-right">
-										{Math.round((selectedLayer.volume ?? 1) * 100)}%
-									</span>
-								</div>
-							</CollapsibleSection>
-						)}
+						<CollapsibleSection title="Audio" icon={Music}>
+							<div className="flex items-center gap-2">
+								<span className="text-[9px] text-gray-500 w-8">Volume</span>
+								<Slider
+									className="flex-1"
+									value={[(selectedLayer.volume ?? 1) * 100]}
+									min={0}
+									max={100}
+									step={1}
+									onValueChange={([v]) => update({ volume: v / 100 })}
+								/>
+								<span className="text-[9px] text-gray-400 w-6 text-right">
+									{Math.round((selectedLayer.volume ?? 1) * 100)}%
+								</span>
+							</div>
+						</CollapsibleSection>
+					)}
 
 					{selectedLayer.type === "Text" && (
 						<TypographyControls
@@ -1774,11 +1843,11 @@ const InspectorPanel: React.FC = () => {
 														prev.map((l) =>
 															l.id === selectedId
 																? {
-																	...l,
-																	animations: l.animations?.filter(
-																		(a) => a.id !== anim.id,
-																	),
-																}
+																		...l,
+																		animations: l.animations?.filter(
+																			(a) => a.id !== anim.id,
+																		),
+																	}
 																: l,
 														),
 													);
@@ -1802,11 +1871,11 @@ const InspectorPanel: React.FC = () => {
 														prev.map((l) =>
 															l.id === selectedId
 																? {
-																	...l,
-																	animations: l.animations?.map((a) =>
-																		a.id === anim.id ? { ...a, value: v } : a,
-																	),
-																}
+																		...l,
+																		animations: l.animations?.map((a) =>
+																			a.id === anim.id ? { ...a, value: v } : a,
+																		),
+																	}
 																: l,
 														),
 													);
@@ -1897,7 +1966,7 @@ export const VideoDesignerEditor: React.FC<VideoDesignerEditorProps> = ({
 	const nodeConfig = node.config as unknown as VideoCompositorNodeConfig;
 
 	const handles = useAppSelector(handleSelectors.selectEntities);
-	const [layers, setLayers] = useState<ExtendedLayer[]>([]);
+	const [layers, setLayers] = useState<EditorLayer[]>([]);
 	const [selectedId, setSelectedId] = useState<string | null>(null);
 	const [isDirty, setIsDirty] = useState(false);
 
@@ -1985,10 +2054,7 @@ export const VideoDesignerEditor: React.FC<VideoDesignerEditorProps> = ({
 	);
 
 	const updateLayersHandler = useCallback(
-		(
-			updater: SetStateAction<ExtendedLayer[]>,
-			isUserChange: boolean = true,
-		) => {
+		(updater: SetStateAction<EditorLayer[]>, isUserChange: boolean = true) => {
 			setLayers(updater);
 			if (isUserChange) setIsDirty(true);
 		},
@@ -2034,7 +2100,7 @@ export const VideoDesignerEditor: React.FC<VideoDesignerEditorProps> = ({
 	useEffect(() => {
 		const loadInitialLayers = async () => {
 			const layerUpdates = { ...nodeConfig.layerUpdates };
-			const loaded: ExtendedLayer[] = [];
+			const loaded: EditorLayer[] = [];
 			const fontPromises: Promise<void>[] = [];
 			let maxZ = Math.max(
 				0,
@@ -2042,7 +2108,9 @@ export const VideoDesignerEditor: React.FC<VideoDesignerEditorProps> = ({
 			);
 
 			initialLayers.forEach((item, id) => {
-				const saved = layerUpdates[id] as ExtendedLayer | undefined;
+				const saved = layerUpdates[id] as EditorLayer | undefined;
+				// Auto Dimensions: ON by default unless explicitly disabled
+				const isAutoDimensions = saved?.autoDimensions ?? true;
 
 				let durationMs = 0;
 				let text: string | undefined;
@@ -2055,17 +2123,30 @@ export const VideoDesignerEditor: React.FC<VideoDesignerEditorProps> = ({
 					text = getTextData(id);
 				} else if (item.type === "Video") {
 					virtualVideo = item.data as VirtualVideoData;
-					durationMs = virtualVideo.sourceMeta?.durationMs ?? 0;
+					const metadata = getActiveVideoMetadata(virtualVideo);
+					durationMs = metadata.durationMs ?? 0;
 					src = resolveVideoSourceUrl(virtualVideo);
-					layerWidth = layerWidth ?? virtualVideo.sourceMeta?.width;
-					layerHeight = layerHeight ?? virtualVideo.sourceMeta?.height;
+
+					if (isAutoDimensions) {
+						layerWidth = metadata.width;
+						layerHeight = metadata.height;
+					} else {
+						layerWidth = layerWidth ?? metadata.width;
+						layerHeight = layerHeight ?? metadata.height;
+					}
 				} else if (item.type === "Image" || item.type === "Audio") {
 					const fileData = item.data as FileData;
 					durationMs =
 						fileData.entity?.duration ?? fileData.processData?.duration ?? 0;
 					src = getAssetUrl(id);
-					layerWidth = layerWidth ?? fileData.processData?.width;
-					layerHeight = layerHeight ?? fileData.processData?.height;
+
+					if (isAutoDimensions && fileData.processData) {
+						layerWidth = fileData.processData.width;
+						layerHeight = fileData.processData.height;
+					} else {
+						layerWidth = layerWidth ?? fileData.processData?.width;
+						layerHeight = layerHeight ?? fileData.processData?.height;
+					}
 				}
 
 				const calculatedDurationFrames =
@@ -2093,6 +2174,7 @@ export const VideoDesignerEditor: React.FC<VideoDesignerEditorProps> = ({
 					text,
 					name,
 					virtualVideo,
+					autoDimensions: isAutoDimensions,
 				};
 
 				if (item.type === "Text") {
@@ -2108,6 +2190,7 @@ export const VideoDesignerEditor: React.FC<VideoDesignerEditorProps> = ({
 						width: layerWidth,
 						height: layerHeight,
 						lockAspect: true,
+						autoDimensions: false, // Text is measured dynamically
 					});
 					const fontUrl = GetFontAssetUrl(fontFamily);
 					if (fontUrl) {
@@ -2149,13 +2232,16 @@ export const VideoDesignerEditor: React.FC<VideoDesignerEditorProps> = ({
 		const layersToMeasure = layers.filter(
 			(l) =>
 				l.type !== "Audio" &&
-				(l.width == null || l.height == null || l.type === "Text") &&
+				(l.width == null ||
+					l.height == null ||
+					l.type === "Text" ||
+					l.autoDimensions) &&
 				!l.isPlaceholder,
 		);
 		if (layersToMeasure.length === 0) return;
 		let mounted = true;
 		const measure = async () => {
-			const updates = new Map<string, Partial<ExtendedLayer>>();
+			const updates = new Map<string, Partial<EditorLayer>>();
 			await Promise.all(
 				layersToMeasure.map(async (layer) => {
 					const url = getAssetUrl(layer.inputHandleId);
@@ -2165,21 +2251,52 @@ export const VideoDesignerEditor: React.FC<VideoDesignerEditorProps> = ({
 							const img = new Image();
 							img.src = url!;
 							await img.decode();
-							updates.set(layer.id, {
-								width: img.naturalWidth,
-								height: img.naturalHeight,
-							});
+							// Update only if Auto is enabled or dimensions are missing, AND values differ
+							if (layer.autoDimensions || layer.width == null) {
+								if (
+									layer.width !== img.naturalWidth ||
+									layer.height !== img.naturalHeight
+								) {
+									updates.set(layer.id, {
+										width: img.naturalWidth,
+										height: img.naturalHeight,
+									});
+								}
+							}
 						} else if (layer.type === "Video") {
-							const video = document.createElement("video");
-							video.src = url!;
-							await new Promise((res) => {
-								video.onloadedmetadata = res;
-								video.onerror = res;
-							});
-							updates.set(layer.id, {
-								width: video.videoWidth,
-								height: video.videoHeight,
-							});
+							// For VirtualVideo, prefer active metadata over measuring source video
+							if (layer.virtualVideo) {
+								const metadata = getActiveVideoMetadata(layer.virtualVideo);
+								if (layer.autoDimensions || layer.width == null) {
+									if (
+										layer.width !== metadata.width ||
+										layer.height !== metadata.height
+									) {
+										updates.set(layer.id, {
+											width: metadata.width,
+											height: metadata.height,
+										});
+									}
+								}
+							} else {
+								const video = document.createElement("video");
+								video.src = url!;
+								await new Promise((res) => {
+									video.onloadedmetadata = res;
+									video.onerror = res;
+								});
+								if (layer.autoDimensions || layer.width == null) {
+									if (
+										layer.width !== video.videoWidth ||
+										layer.height !== video.videoHeight
+									) {
+										updates.set(layer.id, {
+											width: video.videoWidth,
+											height: video.videoHeight,
+										});
+									}
+								}
+							}
 						} else if (layer.type === "Text") {
 							const text = getTextData(layer.inputHandleId);
 							const d = document.createElement("div");
@@ -2366,7 +2483,7 @@ export const VideoDesignerEditor: React.FC<VideoDesignerEditorProps> = ({
 					Record<
 						string,
 						Omit<
-							ExtendedLayer,
+							EditorLayer,
 							"src" | "text" | "isPlaceholder" | "maxDurationInFrames"
 						>
 					>
@@ -2440,6 +2557,7 @@ export const VideoDesignerEditor: React.FC<VideoDesignerEditorProps> = ({
 			timelineScrollRef,
 			timelineHeight,
 			setTimelineHeight,
+			initialLayersData: initialLayers,
 		}),
 		[
 			layers,
@@ -2467,6 +2585,7 @@ export const VideoDesignerEditor: React.FC<VideoDesignerEditorProps> = ({
 			zoomTo,
 			fitView,
 			timelineHeight,
+			initialLayers,
 		],
 	);
 
@@ -2497,7 +2616,7 @@ export const VideoDesignerEditor: React.FC<VideoDesignerEditorProps> = ({
 						}}
 						role="button"
 						tabIndex={0}
-						onKeyDown={() => { }}
+						onKeyDown={() => {}}
 					>
 						<div
 							className="absolute origin-top-left"
@@ -2547,7 +2666,7 @@ export const VideoDesignerEditor: React.FC<VideoDesignerEditorProps> = ({
 									Record<
 										string,
 										Omit<
-											ExtendedLayer,
+											EditorLayer,
 											"src" | "text" | "isPlaceholder" | "maxDurationInFrames"
 										>
 									>
