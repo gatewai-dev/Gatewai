@@ -887,7 +887,7 @@ const VideoCropNodeComponent = memo(
 		}, [drag, svgSize, updateConfig, effectivePctRatio]);
 
 		const overlay =
-			videoSrc && !isFullscreen ? (
+			inputVideo && !isFullscreen ? (
 				<div
 					ref={svgRef}
 					className="absolute inset-0 w-full h-full pointer-events-none"
@@ -914,10 +914,12 @@ const VideoCropNodeComponent = memo(
 				<div className="select-none rounded-xl overflow-hidden bg-card border border-border">
 					{/* ── Video + overlay ───────────────────────────────── */}
 					<div
-						className={cn("relative w-full bg-black/20", { "h-64": !videoSrc })}
-						style={{ minHeight: videoSrc ? undefined : "12rem" }}
+						className={cn("relative w-full bg-black/20", {
+							"h-64": !inputVideo,
+						})}
+						style={{ minHeight: inputVideo ? undefined : "12rem" }}
 					>
-						{videoSrc ? (
+						{inputVideo ? (
 							<VideoRenderer
 								src={videoSrc}
 								virtualVideo={inputVideo}
