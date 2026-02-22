@@ -35,15 +35,12 @@ export class VideoCropProcessor implements NodeProcessor {
 
             const config = VideoCropConfigSchema.parse(node.config);
 
-            const width = config.width ?? inputVideo.sourceMeta.width ?? 1920;
-            const height = config.height ?? inputVideo.sourceMeta.height ?? 1080;
-
             const output = appendOperation(inputVideo, {
                 op: "crop",
-                x: config.x,
-                y: config.y,
-                width,
-                height,
+                leftPercentage: config.leftPercentage,
+                topPercentage: config.topPercentage,
+                widthPercentage: config.widthPercentage,
+                heightPercentage: config.heightPercentage,
             });
 
             const outputHandle = data.handles.find(

@@ -25,7 +25,12 @@ const VideoGenFirstLastFrameNodeComponent = memo(
 								<OutputSelector node={node} />
 							</div>
 						)}
-						{mediaUrl && <VideoRenderer src={mediaUrl} className="rounded-none w-full h-full" />}
+						{mediaUrl && (
+							<VideoRenderer
+								src={mediaUrl}
+								className="rounded-none w-full h-full"
+							/>
+						)}
 						{node && (
 							<div className="absolute bottom-1 left-1 z-10">
 								<MediaDimensions node={node} />

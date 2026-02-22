@@ -235,7 +235,6 @@ export const LayerRenderer: React.FC<{
 					<Video
 						src={src}
 						volume={animVolume}
-						// @ts-expect-error
 						startFrom={startFromFrame}
 						playbackRate={playbackRate}
 						style={{ ...style, ...videoInnerStyle }}

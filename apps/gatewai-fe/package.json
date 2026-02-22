@@ -16,6 +16,7 @@
 		"@gatewai/api-client": "workspace:*",
 		"@gatewai/core": "workspace:*",
 		"@gatewai/data-ops": "workspace:*",
+		"@gatewai/media": "workspace:*",
 		"@gatewai/react-canvas": "workspace:*",
 		"@gatewai/react-store": "workspace:*",
 		"@gatewai/tsconfig": "workspace:*",

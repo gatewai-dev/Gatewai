@@ -22,7 +22,7 @@ export const metadata = defineMetadata({
 	},
 	handles: {
 		inputs: [],
-		outputs: [{dataTypes: ['Video'], label: 'Result', order: 0}],
+		outputs: [{ dataTypes: ["Video"], label: "Result", order: 0 }],
 	},
 	defaultConfig: VideoCompositorNodeConfigSchema.parse({
 		layerUpdates: {},

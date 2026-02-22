@@ -46,7 +46,12 @@ const VideoGenNodeComponent = memo(
 								<OutputSelector node={node} />
 							</div>
 						)}
-						{videoSrc && <VideoRenderer src={videoSrc} className="rounded-none w-full h-full" />}
+						{videoSrc && (
+							<VideoRenderer
+								src={videoSrc}
+								className="rounded-none w-full h-full"
+							/>
+						)}
 						{node && (
 							<div className="absolute bottom-1 left-1 z-10">
 								<MediaDimensions node={node} />

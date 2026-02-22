@@ -226,6 +226,9 @@ importers:
       '@gatewai/data-ops':
         specifier: workspace:*
         version: link:../../packages/data-ops
+      '@gatewai/media':
+        specifier: workspace:*
+        version: link:../../packages/media
       '@gatewai/react-canvas':
         specifier: workspace:*
         version: link:../../packages/react-canvas

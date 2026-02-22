@@ -7,10 +7,10 @@ import { z } from "zod";
 
 export const VideoCropConfigSchema = z
 	.object({
-		x: z.number().min(0).default(0),
-		y: z.number().min(0).default(0),
-		width: z.number().min(1).nullable().default(null),
-		height: z.number().min(1).nullable().default(null),
+		leftPercentage: z.number().min(0).max(100).default(0),
+		topPercentage: z.number().min(0).max(100).default(0),
+		widthPercentage: z.number().min(0).max(100).default(100),
+		heightPercentage: z.number().min(0).max(100).default(100),
 	})
 	.strict();
 

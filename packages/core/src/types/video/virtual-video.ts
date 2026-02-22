@@ -20,10 +20,10 @@ export const VideoSourceSchema = z.object({
 // --- Operations ---
 export const CropOperationSchema = z.object({
 	op: z.literal("crop"),
-	x: z.number().min(0),
-	y: z.number().min(0),
-	width: z.number().min(1),
-	height: z.number().min(1),
+	leftPercentage: z.number().min(0).max(100),
+	topPercentage: z.number().min(0).max(100),
+	widthPercentage: z.number().min(0).max(100),
+	heightPercentage: z.number().min(0).max(100),
 });
 
 export const CutOperationSchema = z.object({

@@ -1,5 +1,6 @@
 import { defineMetadata } from "@gatewai/node-sdk";
 import {
+	type VideoCropConfig,
 	VideoCropConfigSchema,
 	VideoCropResultSchema,
 } from "./shared/index.js";
@@ -22,9 +23,9 @@ export const metadata = defineMetadata({
 		outputs: [{ dataTypes: ["Video"], label: "Result", order: 0 }],
 	},
 	defaultConfig: {
-		x: 0,
-		y: 0,
-		width: null,
-		height: null,
-	},
+		leftPercentage: 0,
+		topPercentage: 0,
+		widthPercentage: 100,
+		heightPercentage: 100,
+	} as VideoCropConfig,
 });

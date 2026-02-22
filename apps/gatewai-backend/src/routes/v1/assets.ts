@@ -98,7 +98,9 @@ async function downloadFileFromUrl(url: string): Promise<{
 // Remotion/browser video players fire many parallel range requests which can
 // race against better-auth's session cookie lookup, causing random 401s.
 // ---------------------------------------------------------------------------
-const assetsPublicRouter = new Hono<{ Variables: AuthHonoTypes }>({ strict: false })
+const assetsPublicRouter = new Hono<{ Variables: AuthHonoTypes }>({
+	strict: false,
+})
 	.get(
 		"/thumbnail/:id",
 		zValidator(
@@ -259,7 +261,9 @@ const assetsPublicRouter = new Hono<{ Variables: AuthHonoTypes }>({ strict: fals
 // ---------------------------------------------------------------------------
 // Protected routes: listing, uploading, and deleting assets require auth.
 // ---------------------------------------------------------------------------
-const assetsRouter = new Hono<{ Variables: AuthorizedHonoTypes }>({ strict: false })
+const assetsRouter = new Hono<{ Variables: AuthorizedHonoTypes }>({
+	strict: false,
+})
 	.get("/", zValidator("query", querySchema), async (c) => {
 		const user = c.get("user");
 		const { pageSize, pageIndex, q, type } = c.req.valid("query");
@@ -490,8 +494,8 @@ const assetsRouter = new Hono<{ Variables: AuthorizedHonoTypes }>({ strict: fals
 									const data = item.data;
 									const entityId =
 										typeof data === "object" &&
-											data !== null &&
-											"entity" in data
+										data !== null &&
+										"entity" in data
 											? (data as { entity?: { id?: string } }).entity?.id
 											: undefined;
 									const matches = entityId === id;

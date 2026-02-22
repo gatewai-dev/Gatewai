@@ -73,9 +73,16 @@ export function computeRenderParams(vv: VirtualVideoData): RenderParams {
 			case "speed":
 				speed *= op.rate;
 				break;
-			case "crop":
-				cropRegion = { x: op.x, y: op.y, width: op.width, height: op.height };
+			case "crop": {
+				const sw = vv.sourceMeta.width ?? 1920;
+				const sh = vv.sourceMeta.height ?? 1080;
+				const x = Math.round((op.leftPercentage / 100) * sw);
+				const y = Math.round((op.topPercentage / 100) * sh);
+				const cw = Math.max(1, Math.round((op.widthPercentage / 100) * sw));
+				const ch = Math.max(1, Math.round((op.heightPercentage / 100) * sh));
+				cropRegion = { x, y, width: cw, height: ch };
 				break;
+			}
 			case "filter":
 				if (op.filters.cssFilters) {
 					filters = mergeFilters(filters, op.filters.cssFilters);

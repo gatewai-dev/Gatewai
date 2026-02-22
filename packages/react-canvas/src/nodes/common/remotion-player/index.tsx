@@ -16,7 +16,7 @@ import {
 	MdVolumeOff,
 	MdVolumeUp,
 } from "react-icons/md";
-import { AbsoluteFill, Img } from "remotion";
+import { AbsoluteFill, Html5Audio, Html5Video, Img } from "remotion";
 
 const FPS = 24;
 
@@ -64,12 +64,12 @@ const MediaComposition: React.FC<{
 			{resolvedType === "Video" && virtualVideo ? (
 				<SingleClipComposition virtualVideo={virtualVideo} />
 			) : resolvedType === "Video" && src ? (
-				<Video
+				<Html5Video
 					src={src}
 					style={{ width: "100%", height: "100%", objectFit: "contain" }}
 				/>
 			) : resolvedType === "Audio" && src ? (
-				<Audio src={src} />
+				<Html5Audio src={src} />
 			) : resolvedType === "Image" && src ? (
 				<Img
 					src={src}
@@ -124,6 +124,10 @@ const CustomControls = ({
 	const [isBuffering, setIsBuffering] = useState(false);
 	const [isMuted, setIsMuted] = useState(false);
 
+	const isPlayingRef = useRef(false);
+	const wasPlayingBeforeBufferRef = useRef(false);
+	const wasPlayingBeforeSeekRef = useRef(false);
+
 	// Track current frame via Remotion's frameupdate event
 	useEffect(() => {
 		const p = playerRef.current;
@@ -140,24 +144,32 @@ const CustomControls = ({
 		if (!p) return;
 
 		const onPlay = () => {
+			isPlayingRef.current = true;
 			setIsPlaying(true);
 		};
 		const onPause = () => {
+			isPlayingRef.current = false;
 			setIsPlaying(false);
 			setCurrentFrame(p.getCurrentFrame());
 		};
 		const onEnded = () => {
+			isPlayingRef.current = false;
 			setIsPlaying(false);
 			setCurrentFrame(0);
 			p.seekTo(0);
 		};
 		const onWaiting = () => {
+			wasPlayingBeforeBufferRef.current = isPlayingRef.current;
 			setIsBuffering(true);
 			// Pause the player so it truly stops while buffering
 			p.pause();
 		};
 		const onResume = () => {
 			setIsBuffering(false);
+			if (wasPlayingBeforeBufferRef.current) {
+				p.play();
+			}
+			wasPlayingBeforeBufferRef.current = false;
 		};
 
 		p.addEventListener("play", onPlay);
@@ -207,6 +219,22 @@ const CustomControls = ({
 		}
 	};
 
+	const onSeekStart = () => {
+		const p = playerRef.current;
+		if (!p) return;
+		wasPlayingBeforeSeekRef.current = isPlayingRef.current;
+		p.pause();
+	};
+
+	const onSeekEnd = () => {
+		const p = playerRef.current;
+		if (!p) return;
+		if (wasPlayingBeforeSeekRef.current) {
+			p.play();
+		}
+		wasPlayingBeforeSeekRef.current = false;
+	};
+
 	const onSeek = (e: React.ChangeEvent<HTMLInputElement>) => {
 		const frame = Number(e.target.value);
 		const p = playerRef.current;
@@ -252,6 +280,9 @@ const CustomControls = ({
 					max={durationInFrames}
 					value={currentFrame}
 					onChange={onSeek}
+					onPointerDown={onSeekStart}
+					onPointerUp={onSeekEnd}
+					onPointerCancel={onSeekEnd}
 					className="absolute inset-0 w-full opacity-0 cursor-pointer h-full"
 				/>
 			</div>
@@ -307,6 +338,7 @@ export interface MediaPlayerProps {
 	controls?: boolean;
 	className?: string;
 	children?: ReactNode;
+	overlay?: ReactNode;
 }
 
 export const MediaPlayer = ({
@@ -324,6 +356,7 @@ export const MediaPlayer = ({
 	controls = true,
 	className,
 	children,
+	overlay,
 }: MediaPlayerProps) => {
 	const playerRef = useRef<PlayerRef>(null);
 	const containerRef = useRef<HTMLDivElement>(null);
@@ -402,6 +435,7 @@ export const MediaPlayer = ({
 						acknowledgeRemotionLicense
 					/>
 				</div>
+				{overlay}
 			</div>
 
 			{/* Custom controls — rendered OUTSIDE the video frame */}

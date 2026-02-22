@@ -83,7 +83,6 @@ export const SingleClipComposition: React.FC<{
 						<Video
 							src={params.sourceUrl}
 							playbackRate={params.speed}
-							// @ts-expect-error
 							startFrom={startFrame}
 							style={{
 								position: "absolute",
@@ -112,7 +111,6 @@ export const SingleClipComposition: React.FC<{
 				<Video
 					src={params.sourceUrl}
 					playbackRate={params.speed}
-					// @ts-expect-error
 					startFrom={startFrame}
 					style={{ width: "100%", height: "100%", objectFit: "contain" }}
 				/>

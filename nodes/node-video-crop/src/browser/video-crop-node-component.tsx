@@ -56,7 +56,13 @@ type HandleType =
 	| "resize-sw"
 	| "resize-w";
 
-// Internal percentage-based crop state (mirrors node-crop approach)
+/**
+ * Internal percentage-based crop state.
+ * All values are in [0, 100] representing percentages of the source video dimensions.
+ *
+ * VideoCropConfig now stores the same percentage representation, so conversions
+ * between config and PctCrop are trivial identity mappings.
+ */
 type PctCrop = {
 	leftPct: number;
 	topPct: number;
@@ -99,7 +105,12 @@ const CURSOR: Record<HandleType, string> = {
 
 const MIN_PCT = 5;
 
-// ─── Ratio helpers ─────────────────────────────────────────────────────────────
+// ─── Ratio helpers ────────────────────────────────────────────────────────────
+/**
+ * Convert a pixel aspect ratio (w/h) to a percentage-space ratio.
+ * The SVG viewBox is 0-100 in both axes regardless of video aspect ratio, so a
+ * 1:1 pixel crop is NOT a square in percentage space for non-square videos.
+ */
 function pixelRatioToPctRatio(
 	pixelRatio: number,
 	sourceSize: { w: number; h: number } | null,
@@ -175,38 +186,27 @@ function constrain(
 	return { leftPct: l, topPct: t, widthPct: w, heightPct: h };
 }
 
-// ─── Conversion helpers ───────────────────────────────────────────────────────
-function configToPct(
-	config: VideoCropConfig,
-	sourceSize: { w: number; h: number } | null,
-): PctCrop {
-	if (!sourceSize || sourceSize.w === 0 || sourceSize.h === 0) {
-		return { leftPct: 0, topPct: 0, widthPct: 100, heightPct: 100 };
-	}
-	const x = config.x ?? 0;
-	const y = config.y ?? 0;
-	const w = config.width ?? sourceSize.w;
-	const h = config.height ?? sourceSize.h;
+// ─── Config ↔ PctCrop conversions ────────────────────────────────────────────
+/**
+ * Config now stores percentages directly, so this is a straight field rename.
+ * Falls back to full-frame (0, 0, 100, 100) when config values are absent.
+ */
+function configToPct(config: VideoCropConfig): PctCrop {
 	return {
-		leftPct: (x / sourceSize.w) * 100,
-		topPct: (y / sourceSize.h) * 100,
-		widthPct: (w / sourceSize.w) * 100,
-		heightPct: (h / sourceSize.h) * 100,
+		leftPct: config.leftPercentage ?? 0,
+		topPct: config.topPercentage ?? 0,
+		widthPct: config.widthPercentage ?? 100,
+		heightPct: config.heightPercentage ?? 100,
 	};
 }
 
-function pctToConfig(
-	pct: PctCrop,
-	sourceSize: { w: number; h: number } | null,
-): VideoCropConfig {
-	if (!sourceSize || sourceSize.w === 0 || sourceSize.h === 0) {
-		return { x: 0, y: 0, width: null, height: null };
-	}
+/** Convert PctCrop back to the percentage-based config for the node store. */
+function pctToConfig(pct: PctCrop): VideoCropConfig {
 	return {
-		x: Math.round((pct.leftPct / 100) * sourceSize.w),
-		y: Math.round((pct.topPct / 100) * sourceSize.h),
-		width: Math.max(1, Math.round((pct.widthPct / 100) * sourceSize.w)),
-		height: Math.max(1, Math.round((pct.heightPct / 100) * sourceSize.h)),
+		leftPercentage: pct.leftPct,
+		topPercentage: pct.topPct,
+		widthPercentage: pct.widthPct,
+		heightPercentage: pct.heightPct,
 	};
 }
 
@@ -231,6 +231,7 @@ const CropConfigPanel = memo(
 		onAspectRatioChange,
 		onToggleLock,
 	}: CropConfigPanelProps) => {
+		// Display pixel values derived from percentages + sourceSize (UI only — not stored).
 		const pixelW = sourceSize
 			? Math.round((crop.widthPct / 100) * sourceSize.w)
 			: null;
@@ -424,7 +425,13 @@ const CropOverlay = memo(
 						<rect x="0" y="0" width="100" height="100" fill="white" />
 						<rect x={x1} y={y1} width={w} height={h} fill="black" />
 					</mask>
-					<filter id="vhShadow" x="-200%" y="-200%" width="500%" height="500%">
+					<filter
+						id="vcropShadow"
+						x="-200%"
+						y="-200%"
+						width="500%"
+						height="500%"
+					>
 						<feDropShadow
 							dx="0"
 							dy="0.4"
@@ -574,7 +581,7 @@ const CropOverlay = memo(
 							strokeWidth="2.4"
 							strokeLinecap="round"
 							className="pointer-events-none"
-							filter="url(#vhShadow)"
+							filter="url(#vcropShadow)"
 						/>
 						<path
 							d={cornerPath(dir)}
@@ -632,9 +639,7 @@ const CropOverlay = memo(
 	},
 );
 
-// ─────────────────────────────────────────────────────────────────────────────
-// VideoCropNodeComponent
-// ─────────────────────────────────────────────────────────────────────────────
+// ─── Default state ────────────────────────────────────────────────────────────
 const DEFAULT_PCT: PctCrop = {
 	leftPct: 10,
 	topPct: 10,
@@ -642,10 +647,13 @@ const DEFAULT_PCT: PctCrop = {
 	heightPct: 80,
 };
 
+// ─── VideoCropNodeComponent ───────────────────────────────────────────────────
 const VideoCropNodeComponent = memo(
 	(props: { selected: boolean; id: string; dragging: boolean }) => {
 		const dispatch = useAppDispatch();
-		const edges = useAppSelector(makeSelectEdgesByTargetNodeId(props.id));
+		const edges = useAppSelector(
+			makeSelectEdgesByTargetNodeId(props.id),
+		) as any[];
 		const inputHandleId = useMemo(() => edges?.[0]?.targetHandleId, [edges]);
 		const { inputs } = useNodeResult(props.id);
 
@@ -655,7 +663,9 @@ const VideoCropNodeComponent = memo(
 
 		const videoSrc = inputVideo ? resolveVideoSourceUrl(inputVideo) : undefined;
 
-		// Derive sourceSize from the input video's sourceMeta
+		// sourceSize is only used for pixel-value display in the UI panel and for
+		// converting between pixel aspect-ratio presets and percentage-space ratios.
+		// It is no longer involved in reading/writing the config.
 		const sourceSize = useMemo(() => {
 			if (!inputVideo?.sourceMeta) return null;
 			const { width: w, height: h } = inputVideo.sourceMeta;
@@ -663,23 +673,30 @@ const VideoCropNodeComponent = memo(
 			return { w, h };
 		}, [inputVideo]);
 
-		const node = useAppSelector(makeSelectNodeById(props.id));
-		const nodeConfig = node?.config as VideoCropConfig | undefined;
+		const node = useAppSelector(makeSelectNodeById(props.id)) as any;
+		const nodeConfig = node?.data?.config as VideoCropConfig | undefined;
 
 		const svgRef = useRef<HTMLDivElement>(null);
 		const latestCropRef = useRef<PctCrop | null>(null);
+		const [isFullscreen, setIsFullscreen] = useState(false);
 
-		// Convert from pixel config → percentage state
+		useEffect(() => {
+			const onFullscreenChange = () => {
+				setIsFullscreen(!!document.fullscreenElement);
+			};
+			document.addEventListener("fullscreenchange", onFullscreenChange);
+			return () =>
+				document.removeEventListener("fullscreenchange", onFullscreenChange);
+		}, []);
+
+		// Config → internal PctCrop is now a direct field rename — no sourceSize math.
 		const configAsPct = useMemo(
-			() => (nodeConfig ? configToPct(nodeConfig, sourceSize) : DEFAULT_PCT),
-			// recompute only when sourceSize is available and config changes
-			// eslint-disable-next-line react-hooks/exhaustive-deps
+			() => (nodeConfig ? configToPct(nodeConfig) : DEFAULT_PCT),
 			[
-				nodeConfig?.x,
-				nodeConfig?.y,
-				nodeConfig?.width,
-				nodeConfig?.height,
-				sourceSize,
+				nodeConfig?.leftPercentage,
+				nodeConfig?.topPercentage,
+				nodeConfig?.widthPercentage,
+				nodeConfig?.heightPercentage,
 			],
 		);
 
@@ -687,7 +704,6 @@ const VideoCropNodeComponent = memo(
 		const [drag, setDrag] = useState<DragState | null>(null);
 		const [svgSize, setSvgSize] = useState({ w: 1, h: 1 });
 		const [aspectPreset, setAspectPreset] = useState("Free");
-
 		const [customRatio, setCustomRatio] = useState<number | null>(null);
 
 		const effectiveRatio = useMemo<number | null>(() => {
@@ -695,6 +711,8 @@ const VideoCropNodeComponent = memo(
 			return preset?.value ?? customRatio ?? null;
 		}, [aspectPreset, customRatio]);
 
+		// Aspect ratio presets are expressed as pixel ratios (e.g. 16/9).
+		// The overlay works in percentage space, so we convert when constraining.
 		const effectivePctRatio = useMemo<number | null>(() => {
 			if (effectiveRatio === null) return null;
 			return pixelRatioToPctRatio(effectiveRatio, sourceSize);
@@ -706,14 +724,11 @@ const VideoCropNodeComponent = memo(
 			latestCropRef.current = crop;
 		}, [crop]);
 
-		// Sync external config changes (e.g. undo/redo) into local state
+		// Sync external config changes (undo/redo, remote updates) into local state.
 		useEffect(() => {
-			if (nodeConfig && sourceSize) {
-				setCrop(configToPct(nodeConfig, sourceSize));
-			}
-		}, [nodeConfig, sourceSize]);
+			if (nodeConfig) setCrop(configToPct(nodeConfig));
+		}, [nodeConfig]);
 
-		// Observe container for size (accurate px↔% during drag)
 		useEffect(() => {
 			if (!svgRef.current) return;
 			const ro = new ResizeObserver(([entry]) => {
@@ -724,15 +739,16 @@ const VideoCropNodeComponent = memo(
 			return () => ro.disconnect();
 		}, []);
 
+		// Config is now percentage-based — no sourceSize conversion needed here.
 		const updateConfig = useCallback(
 			(c: PctCrop) =>
 				dispatch(
 					updateNodeConfig({
 						id: props.id,
-						newConfig: pctToConfig(c, sourceSize),
+						newConfig: pctToConfig(c),
 					}),
 				),
-			[dispatch, props.id, sourceSize],
+			[dispatch, props.id],
 		);
 
 		const handleAspectRatioChange = useCallback(
@@ -745,8 +761,7 @@ const VideoCropNodeComponent = memo(
 				const p = ASPECT_RATIO_PRESETS.find((ap) => ap.label === preset);
 				if (!p?.value) return;
 
-				const pixelRatio = p.value;
-				const pctRatio = pixelRatioToPctRatio(pixelRatio, sourceSize);
+				const pctRatio = pixelRatioToPctRatio(p.value, sourceSize);
 
 				setCrop((prev) => {
 					const cx = prev.leftPct + prev.widthPct / 2;
@@ -781,6 +796,7 @@ const VideoCropNodeComponent = memo(
 			} else if (customRatio !== null) {
 				setCustomRatio(null);
 			} else {
+				// Lock to the current crop's pixel ratio (converted from pct space).
 				const pixelRatio = pctRatioToPixelRatio(
 					crop.widthPct / crop.heightPct,
 					sourceSize,
@@ -854,8 +870,7 @@ const VideoCropNodeComponent = memo(
 						break;
 				}
 
-				const next = constrain(c, effectivePctRatio, drag.type);
-				setCrop(next);
+				setCrop(constrain(c, effectivePctRatio, drag.type));
 			};
 
 			const onUp = () => {
@@ -871,6 +886,23 @@ const VideoCropNodeComponent = memo(
 			};
 		}, [drag, svgSize, updateConfig, effectivePctRatio]);
 
+		const overlay =
+			videoSrc && !isFullscreen ? (
+				<div
+					ref={svgRef}
+					className="absolute inset-0 w-full h-full pointer-events-none"
+				>
+					<CropOverlay
+						crop={crop}
+						svgSize={svgSize}
+						isDragging={drag !== null}
+						drag={drag}
+						sourceSize={sourceSize}
+						onStartDrag={startDrag}
+					/>
+				</div>
+			) : undefined;
+
 		return (
 			<BaseNode
 				selected={props.selected}
@@ -880,42 +912,28 @@ const VideoCropNodeComponent = memo(
 				<style>{GLOBAL_STYLES}</style>
 
 				<div className="select-none rounded-xl overflow-hidden bg-card border border-border">
-					{/* ── Video + overlay ──────────────────────────────── */}
+					{/* ── Video + overlay ───────────────────────────────── */}
 					<div
-						ref={svgRef}
 						className={cn("relative w-full bg-black/20", { "h-64": !videoSrc })}
 						style={{ minHeight: videoSrc ? undefined : "12rem" }}
 					>
-						{videoSrc && (
-							<>
-								<div className="overflow-hidden w-full h-full pointer-events-none">
-									<VideoRenderer
-										src={videoSrc}
-										virtualVideo={inputVideo}
-										durationMs={inputVideo?.sourceMeta?.durationMs}
-										controls={false}
-										className="rounded-none w-full h-full"
-									/>
-								</div>
-								<CropOverlay
-									crop={crop}
-									svgSize={svgSize}
-									isDragging={drag !== null}
-									drag={drag}
-									sourceSize={sourceSize}
-									onStartDrag={startDrag}
-								/>
-							</>
-						)}
-
-						{!videoSrc && (
+						{videoSrc ? (
+							<VideoRenderer
+								src={videoSrc}
+								virtualVideo={inputVideo}
+								durationMs={inputVideo?.sourceMeta?.durationMs}
+								controls={true}
+								className="rounded-none w-full h-full"
+								overlay={overlay}
+							/>
+						) : (
 							<div className="absolute inset-0 flex items-center justify-center text-muted-foreground/40 text-xs tracking-wide">
 								No video connected
 							</div>
 						)}
 					</div>
 
-					{/* ── Config panel ─────────────────────────────────── */}
+					{/* ── Config panel ──────────────────────────────────── */}
 					<CropConfigPanel
 						crop={crop}
 						aspectRatioPreset={aspectPreset}
