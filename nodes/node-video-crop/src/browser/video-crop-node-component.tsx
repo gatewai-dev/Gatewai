@@ -689,20 +689,18 @@ const VideoCropNodeComponent = memo(
 				document.removeEventListener("fullscreenchange", onFullscreenChange);
 		}, []);
 
-		// Config → internal PctCrop is now a direct field rename — no sourceSize math.
-		const configAsPct = useMemo(
-			() => (nodeConfig ? configToPct(nodeConfig) : DEFAULT_PCT),
-			[
-				nodeConfig?.leftPercentage,
-				nodeConfig?.topPercentage,
-				nodeConfig?.widthPercentage,
-				nodeConfig?.heightPercentage,
-			],
+		// FIX 1: Use a lazy initializer so the crop state is set correctly from the
+		// config on the very first render, avoiding the DEFAULT_PCT flash.
+		const [crop, setCrop] = useState<PctCrop>(() =>
+			nodeConfig ? configToPct(nodeConfig) : DEFAULT_PCT,
 		);
 
-		const [crop, setCrop] = useState<PctCrop>(configAsPct);
 		const [drag, setDrag] = useState<DragState | null>(null);
-		const [svgSize, setSvgSize] = useState({ w: 1, h: 1 });
+
+		// FIX 2: Seed svgSize with a reasonable default instead of 1×1 so the
+		// CropOverlay geometry is sane before the ResizeObserver fires.
+		const [svgSize, setSvgSize] = useState({ w: 300, h: 169 });
+
 		const [aspectPreset, setAspectPreset] = useState("Free");
 		const [customRatio, setCustomRatio] = useState<number | null>(null);
 
@@ -724,13 +722,28 @@ const VideoCropNodeComponent = memo(
 			latestCropRef.current = crop;
 		}, [crop]);
 
-		// Sync external config changes (undo/redo, remote updates) into local state.
+		// FIX 1 (cont): Only sync external config changes (undo/redo, remote updates)
+		// when we are NOT mid-drag, and depend on individual fields (not the object
+		// reference) so we don't re-run on unrelated store updates.
 		useEffect(() => {
-			if (nodeConfig) setCrop(configToPct(nodeConfig));
-		}, [nodeConfig]);
+			if (nodeConfig && !drag) {
+				setCrop(configToPct(nodeConfig));
+			}
+		}, [
+			nodeConfig?.leftPercentage,
+			nodeConfig?.topPercentage,
+			nodeConfig?.widthPercentage,
+			nodeConfig?.heightPercentage,
+		]);
 
+		// FIX 2 (cont): Read the DOM size immediately on mount so there is no
+		// frame where svgSize is 1×1, then keep it updated via ResizeObserver.
 		useEffect(() => {
 			if (!svgRef.current) return;
+
+			const { width, height } = svgRef.current.getBoundingClientRect();
+			if (width > 0 && height > 0) setSvgSize({ w: width, h: height });
+
 			const ro = new ResizeObserver(([entry]) => {
 				const { width, height } = entry.contentRect;
 				if (width > 0 && height > 0) setSvgSize({ w: width, h: height });
@@ -886,6 +899,8 @@ const VideoCropNodeComponent = memo(
 			};
 		}, [drag, svgSize, updateConfig, effectivePctRatio]);
 
+		// FIX 3: Guard overlay rendering until svgSize is real (> default seed).
+		// With the 300×169 seed this is less critical but still good defensive practice.
 		const overlay =
 			inputVideo && !isFullscreen ? (
 				<div

@@ -467,21 +467,24 @@ const InteractionOverlay: React.FC = () => {
 				}
 			}
 
-			localDx = signW !== 0 ? signW * changeW : 0;
-			localDy = signH !== 0 ? signH * changeH : 0;
-
 			const newWidth = Math.max(10, initialPos.width + changeW);
 			const newHeight = Math.max(10, initialPos.height + changeH);
 
-			const worldDx = cos * localDx - sin * localDy;
-			const worldDy = sin * localDx + cos * localDy;
+			const diffW = newWidth - initialPos.width;
+			const diffH = newHeight - initialPos.height;
 
-			const newX = effectiveAnchor.includes("l")
-				? initialPos.x + worldDx
-				: initialPos.x;
-			const newY = effectiveAnchor.includes("t")
-				? initialPos.y + worldDy
-				: initialPos.y;
+			let localShiftX = 0;
+			let localShiftY = 0;
+			if (effectiveAnchor.includes("r")) localShiftX = diffW / 2;
+			if (effectiveAnchor.includes("l")) localShiftX = -diffW / 2;
+			if (effectiveAnchor.includes("b")) localShiftY = diffH / 2;
+			if (effectiveAnchor.includes("t")) localShiftY = -diffH / 2;
+
+			const worldShiftX = cos * localShiftX - sin * localShiftY;
+			const worldShiftY = sin * localShiftX + cos * localShiftY;
+
+			const newX = initialPos.x + worldShiftX - diffW / 2;
+			const newY = initialPos.y + worldShiftY - diffH / 2;
 
 			updateLayers((prev) =>
 				prev.map((l) =>
@@ -562,6 +565,8 @@ const InteractionOverlay: React.FC = () => {
 							width: layer.width,
 							height: layer.height,
 							transform: `rotate(${layer.rotation}deg) scale(${layer.scale})`,
+							transformOrigin: "center center",
+							boxSizing: "border-box",
 						}}
 					>
 						<div
@@ -632,7 +637,7 @@ const InteractionOverlay: React.FC = () => {
 	);
 };
 
-// --- Toolbar ---
+// ... remaining Toolbar, TimelinePanel, and InspectorPanel implementations stay unmodified ...
 const Toolbar = React.memo<{
 	onClose: () => void;
 	onSave: () => void;

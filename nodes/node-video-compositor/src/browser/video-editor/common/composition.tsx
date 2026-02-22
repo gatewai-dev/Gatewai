@@ -166,109 +166,137 @@ export const CompositionScene: React.FC<SceneProps> = ({
 		[layers],
 	);
 
+	const resolvedViewportW = viewportWidth || 1920;
+	const resolvedViewportH = viewportHeight || 1080;
+
 	return (
-		<AbsoluteFill>
-			{/* Inject Animation Keyframes for CSS-based previews if needed, though we use Remotion math mostly */}
-			{sortedLayers.map((layer) => {
-				const startFrame = layer.startFrame ?? 0;
-				const duration = layer.durationInFrames ?? DEFAULT_DURATION_FRAMES;
-				const endFrame = startFrame + duration;
-
-				// Optimization: Do not render if out of frame bounds
-				if (frame < startFrame || frame >= endFrame) return null;
-
-				// Resolve URL: prefer virtualVideo if present, else use layer.src
-				const src = layer.virtualVideo
-					? resolveVideoSourceUrl(layer.virtualVideo)
-					: layer.src;
-				const textContent = layer.text;
-
-				const {
-					x: animX,
-					y: animY,
-					scale: animScale,
-					rotation: animRotation,
-					opacity: animOpacity,
-					volume: animVolume,
-				} = calculateLayerTransform(layer, frame, fps, {
-					w: viewportWidth,
-					h: viewportHeight,
-				});
-
-				const style: React.CSSProperties = {
-					position: "absolute",
-					left: animX,
-					top: animY,
-					width: layer.width,
-					height: layer.height,
-					transform: `rotate(${animRotation}deg) scale(${animScale})`,
-					opacity: animOpacity,
-					// New Remotion-compatible properties
-					backgroundColor: layer.backgroundColor,
-					borderColor: layer.borderColor,
-					borderWidth: layer.borderWidth,
-					borderRadius: layer.borderRadius,
-					borderStyle: layer.borderWidth ? "solid" : undefined,
-				};
-
-				return (
-					<Sequence
-						key={layer.id}
-						from={layer.startFrame}
-						durationInFrames={duration}
-						layout="none"
+		<AbsoluteFill style={{ overflow: "hidden", pointerEvents: "none" }}>
+			<svg
+				viewBox={`0 0 ${resolvedViewportW} ${resolvedViewportH}`}
+				style={{ width: "100%", height: "100%", position: "absolute", inset: 0 }}
+				preserveAspectRatio="xMidYMid meet"
+			>
+				<foreignObject
+					x="0"
+					y="0"
+					width={resolvedViewportW}
+					height={resolvedViewportH}
+					style={{ pointerEvents: "auto" }}
+				>
+					<div
+						xmlns="http://www.w3.org/1999/xhtml"
+						style={{
+							width: resolvedViewportW,
+							height: resolvedViewportH,
+							position: "relative",
+						}}
 					>
-						{layer.type === "Video" && layer.virtualVideo && (
-							<div style={style}>
-								<SingleClipComposition virtualVideo={layer.virtualVideo} />
-							</div>
-						)}
-						{layer.type === "Image" && src && (
-							<Img src={src} style={{ ...style, objectFit: "cover" }} />
-						)}
-						{layer.type === "Audio" && src && (
-							<Html5Audio src={src} volume={animVolume} />
-						)}
-						{layer.type === "Text" && (
-							<div
-								style={{
-									...style,
-									color: layer.fill,
-									fontSize: layer.fontSize,
-									fontFamily: layer.fontFamily,
-									fontStyle: layer.fontStyle,
-									fontWeight: layer.fontWeight,
-									textDecoration: layer.textDecoration,
-									lineHeight: layer.lineHeight ?? 1.2,
-									letterSpacing: layer.letterSpacing
-										? `${layer.letterSpacing}px`
-										: undefined,
-									textAlign:
-										(layer.align as "left" | "center" | "right") ?? "left",
-									padding: layer.padding,
+						{/* Inject Animation Keyframes for CSS-based previews if needed, though we use Remotion math mostly */}
+						{sortedLayers.map((layer) => {
+							const startFrame = layer.startFrame ?? 0;
+							const duration = layer.durationInFrames ?? DEFAULT_DURATION_FRAMES;
+							const endFrame = startFrame + duration;
 
-									WebkitTextStroke:
-										layer.strokeWidth && layer.stroke
-											? `${layer.strokeWidth}px ${layer.stroke}`
-											: undefined,
-									paintOrder: "stroke fill",
-									display: "flex",
-									flexDirection: "column",
-									justifyContent:
-										layer.verticalAlign === "middle"
-											? "center"
-											: layer.verticalAlign === "bottom"
-												? "flex-end"
-												: "flex-start",
-									whiteSpace: "pre",
-								}}
-							>
-								{textContent}
-							</div>
-						)}
-					</Sequence>
-				);
-			})}
+							// Optimization: Do not render if out of frame bounds
+							if (frame < startFrame || frame >= endFrame) return null;
+
+							// Resolve URL: prefer virtualVideo if present, else use layer.src
+							const src = layer.virtualVideo
+								? resolveVideoSourceUrl(layer.virtualVideo)
+								: layer.src;
+							const textContent = layer.text;
+
+							const {
+								x: animX,
+								y: animY,
+								scale: animScale,
+								rotation: animRotation,
+								opacity: animOpacity,
+								volume: animVolume,
+							} = calculateLayerTransform(layer, frame, fps, {
+								w: resolvedViewportW,
+								h: resolvedViewportH,
+							});
+
+							const style: React.CSSProperties = {
+								position: "absolute",
+								left: animX,
+								top: animY,
+								width: layer.width,
+								height: layer.height,
+								transform: `rotate(${animRotation}deg) scale(${animScale})`,
+								transformOrigin: "center center",
+								boxSizing: "border-box",
+								opacity: animOpacity,
+								// New Remotion-compatible properties
+								backgroundColor: layer.backgroundColor,
+								borderColor: layer.borderColor,
+								borderWidth: layer.borderWidth,
+								borderRadius: layer.borderRadius,
+								borderStyle: layer.borderWidth ? "solid" : undefined,
+							};
+
+							return (
+								<Sequence
+									key={layer.id}
+									from={layer.startFrame}
+									durationInFrames={duration}
+									layout="none"
+								>
+									{layer.type === "Video" && layer.virtualVideo && (
+										<div style={style}>
+											<SingleClipComposition virtualVideo={layer.virtualVideo} />
+										</div>
+									)}
+									{layer.type === "Image" && src && (
+										<Img src={src} style={{ ...style, objectFit: "cover" }} />
+									)}
+									{layer.type === "Audio" && src && (
+										<Html5Audio src={src} volume={animVolume} />
+									)}
+									{layer.type === "Text" && (
+										<div
+											style={{
+												...style,
+												color: layer.fill,
+												fontSize: layer.fontSize,
+												fontFamily: layer.fontFamily,
+												fontStyle: layer.fontStyle,
+												fontWeight: layer.fontWeight,
+												textDecoration: layer.textDecoration,
+												lineHeight: layer.lineHeight ?? 1.2,
+												letterSpacing: layer.letterSpacing
+													? `${layer.letterSpacing}px`
+													: undefined,
+												textAlign:
+													(layer.align as "left" | "center" | "right") ?? "left",
+												padding: layer.padding,
+
+												WebkitTextStroke:
+													layer.strokeWidth && layer.stroke
+														? `${layer.strokeWidth}px ${layer.stroke}`
+														: undefined,
+												paintOrder: "stroke fill",
+												display: "flex",
+												flexDirection: "column",
+												justifyContent:
+													layer.verticalAlign === "middle"
+														? "center"
+														: layer.verticalAlign === "bottom"
+															? "flex-end"
+															: "flex-start",
+												whiteSpace: "pre",
+											}}
+										>
+											{textContent}
+										</div>
+									)}
+								</Sequence>
+							);
+						})}
+					</div>
+				</foreignObject>
+			</svg>
 		</AbsoluteFill>
 	);
 };
