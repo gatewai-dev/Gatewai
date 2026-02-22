@@ -4,13 +4,12 @@ import {
 	BaseNode,
 	CanvasRenderer,
 	type NodeProps,
+	useCanvasCtx,
 	useNodeResult,
 } from "@gatewai/react-canvas";
 import {
 	makeSelectEdgesByTargetNodeId,
 	makeSelectNodeById,
-	updateNodeConfig,
-	useAppDispatch,
 	useAppSelector,
 } from "@gatewai/react-store";
 import {
@@ -462,6 +461,7 @@ const CropOverlay = memo(
 					animation: "cropFadeIn 0.25s cubic-bezier(0.16,1,0.3,1) both",
 				}}
 			>
+				<title>Crop box</title>
 				<defs>
 					<mask id={maskId}>
 						<rect x="0" y="0" width="100" height="100" fill="white" />
@@ -695,8 +695,7 @@ const DEFAULT_CROP: CropNodeConfig = {
 };
 
 const CropNodeComponent = memo((props: NodeProps) => {
-	const dispatch = useAppDispatch();
-
+	const { onNodeConfigUpdate } = useCanvasCtx();
 	const edges = useAppSelector(makeSelectEdgesByTargetNodeId(props.id));
 	const inputHandleId = useMemo(() => edges?.[0]?.targetHandleId, [edges]);
 	const { inputs } = useNodeResult(props.id);
@@ -786,9 +785,8 @@ const CropNodeComponent = memo((props: NodeProps) => {
 	}, []);
 
 	const updateConfig = useCallback(
-		(c: CropNodeConfig) =>
-			dispatch(updateNodeConfig({ id: props.id, newConfig: c })),
-		[dispatch, props.id],
+		(c: CropNodeConfig) => onNodeConfigUpdate({ id: props.id, newConfig: c }),
+		[props.id, onNodeConfigUpdate],
 	);
 
 	const handleAspectRatioChange = useCallback(

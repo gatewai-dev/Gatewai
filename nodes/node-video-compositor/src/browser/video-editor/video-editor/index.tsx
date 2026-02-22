@@ -2381,6 +2381,7 @@ export const VideoDesignerEditor: React.FC<VideoDesignerEditorProps> = ({
 				onSave({
 					layerUpdates,
 					width: viewportWidth,
+					FPS: FPS,
 					height: viewportHeight,
 				});
 				setIsDirty(false);

@@ -29,7 +29,6 @@ function MediaContent({
 	const isText = outputItem?.type === "Text";
 	const isOther = !isImage && !isVideo && !isAudio && !isText;
 	const hasMoreThanOneOutput = result.outputs.length > 1;
-	console.log({ outputItem });
 	const assetUrl = useMemo(() => {
 		if (!outputItem?.data) return null;
 		if (outputItem.type === "Video") {
@@ -71,7 +70,7 @@ function MediaContent({
 			{isVideo && (
 				<VideoRenderer
 					src={assetUrl || undefined}
-					virtualVideo={outputItem.data as any}
+					virtualVideo={outputItem.data}
 					durationMs={durationMs}
 				/>
 			)}

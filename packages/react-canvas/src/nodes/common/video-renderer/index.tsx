@@ -23,6 +23,7 @@ const VideoRenderer = memo(
 	}) => {
 		return (
 			<MediaPlayer
+				key={src}
 				src={src}
 				virtualVideo={virtualVideo}
 				type="Video"

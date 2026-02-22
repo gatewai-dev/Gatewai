@@ -1,15 +1,13 @@
 import type { VirtualVideoData } from "@gatewai/core/types";
 import {
 	BaseNode,
-	RunNodeButton,
+	useCanvasCtx,
 	useNodeResult,
 	VideoRenderer,
 } from "@gatewai/react-canvas";
 import {
 	makeSelectEdgesByTargetNodeId,
 	makeSelectNodeById,
-	updateNodeConfig,
-	useAppDispatch,
 	useAppSelector,
 } from "@gatewai/react-store";
 import { resolveVideoSourceUrl } from "@gatewai/remotion-compositions";
@@ -56,18 +54,11 @@ type HandleType =
 	| "resize-sw"
 	| "resize-w";
 
-/**
- * Internal percentage-based crop state.
- * All values are in [0, 100] representing percentages of the source video dimensions.
- *
- * VideoCropConfig now stores the same percentage representation, so conversions
- * between config and PctCrop are trivial identity mappings.
- */
 type PctCrop = {
-	leftPct: number;
-	topPct: number;
-	widthPct: number;
-	heightPct: number;
+	leftPercentage: number;
+	topPercentage: number;
+	widthPercentage: number;
+	heightPercentage: number;
 };
 
 type DragState = {
@@ -104,13 +95,8 @@ const CURSOR: Record<HandleType, string> = {
 };
 
 const MIN_PCT = 5;
+const DEFAULT_SVG_SIZE = { w: 300, h: 169 };
 
-// ─── Ratio helpers ────────────────────────────────────────────────────────────
-/**
- * Convert a pixel aspect ratio (w/h) to a percentage-space ratio.
- * The SVG viewBox is 0-100 in both axes regardless of video aspect ratio, so a
- * 1:1 pixel crop is NOT a square in percentage space for non-square videos.
- */
 function pixelRatioToPctRatio(
 	pixelRatio: number,
 	sourceSize: { w: number; h: number } | null,
@@ -120,23 +106,29 @@ function pixelRatioToPctRatio(
 	return pixelRatio * (sourceSize.h / sourceSize.w);
 }
 
-function pctRatioToPixelRatio(
-	pctRatio: number,
+function percentageRatioToPixelRatio(
+	percentageRatio: number,
 	sourceSize: { w: number; h: number } | null,
 ): number {
-	if (!sourceSize || sourceSize.h === 0 || sourceSize.w === 0) return pctRatio;
-	return pctRatio * (sourceSize.w / sourceSize.h);
+	if (!sourceSize || sourceSize.h === 0 || sourceSize.w === 0)
+		return percentageRatio;
+	return percentageRatio * (sourceSize.w / sourceSize.h);
 }
 
 // ─── Constrain ────────────────────────────────────────────────────────────────
 function constrain(
 	crop: PctCrop,
-	pctRatio: number | null = null,
+	percentageRatio: number | null = null,
 	dragType: HandleType = "move",
 ): PctCrop {
-	let { leftPct: l, topPct: t, widthPct: w, heightPct: h } = crop;
+	let {
+		leftPercentage: l,
+		topPercentage: t,
+		widthPercentage: w,
+		heightPercentage: h,
+	} = crop;
 
-	if (pctRatio !== null && dragType !== "move") {
+	if (percentageRatio !== null && dragType !== "move") {
 		const heightDriven = dragType === "resize-n" || dragType === "resize-s";
 		const rightAnchor =
 			dragType === "resize-w" ||
@@ -151,11 +143,11 @@ function constrain(
 		const bottomEdge = t + h;
 
 		if (heightDriven) {
-			w = Math.max(MIN_PCT, h) * pctRatio;
+			w = Math.max(MIN_PCT, h) * percentageRatio;
 			h = Math.max(MIN_PCT, h);
 		} else {
 			w = Math.max(MIN_PCT, w);
-			h = w / pctRatio;
+			h = w / percentageRatio;
 		}
 
 		if (rightAnchor) l = rightEdge - w;
@@ -183,32 +175,21 @@ function constrain(
 	l = Math.max(0, Math.min(100 - w, l));
 	t = Math.max(0, Math.min(100 - h, t));
 
-	return { leftPct: l, topPct: t, widthPct: w, heightPct: h };
-}
-
-// ─── Config ↔ PctCrop conversions ────────────────────────────────────────────
-/**
- * Config now stores percentages directly, so this is a straight field rename.
- * Falls back to full-frame (0, 0, 100, 100) when config values are absent.
- */
-function configToPct(config: VideoCropConfig): PctCrop {
 	return {
-		leftPct: config.leftPercentage ?? 0,
-		topPct: config.topPercentage ?? 0,
-		widthPct: config.widthPercentage ?? 100,
-		heightPct: config.heightPercentage ?? 100,
+		leftPercentage: l,
+		topPercentage: t,
+		widthPercentage: w,
+		heightPercentage: h,
 	};
 }
 
-/** Convert PctCrop back to the percentage-based config for the node store. */
-function pctToConfig(pct: PctCrop): VideoCropConfig {
-	return {
-		leftPercentage: pct.leftPct,
-		topPercentage: pct.topPct,
-		widthPercentage: pct.widthPct,
-		heightPercentage: pct.heightPct,
-	};
-}
+// ─── Default state ────────────────────────────────────────────────────────────
+const DEFAULT_PCT: PctCrop = {
+	leftPercentage: 0,
+	topPercentage: 0,
+	widthPercentage: 100,
+	heightPercentage: 100,
+};
 
 // ─── CropConfigPanel ─────────────────────────────────────────────────────────
 interface CropConfigPanelProps {
@@ -233,28 +214,32 @@ const CropConfigPanel = memo(
 	}: CropConfigPanelProps) => {
 		// Display pixel values derived from percentages + sourceSize (UI only — not stored).
 		const pixelW = sourceSize
-			? Math.round((crop.widthPct / 100) * sourceSize.w)
+			? Math.round((crop.widthPercentage / 100) * sourceSize.w)
 			: null;
 		const pixelH = sourceSize
-			? Math.round((crop.heightPct / 100) * sourceSize.h)
+			? Math.round((crop.heightPercentage / 100) * sourceSize.h)
 			: null;
 
-		const [wInput, setWInput] = useState(pixelW ?? Math.round(crop.widthPct));
-		const [hInput, setHInput] = useState(pixelH ?? Math.round(crop.heightPct));
+		const [wInput, setWInput] = useState(
+			pixelW ?? Math.round(crop.widthPercentage),
+		);
+		const [hInput, setHInput] = useState(
+			pixelH ?? Math.round(crop.heightPercentage),
+		);
 
 		useEffect(() => {
-			setWInput(pixelW ?? Math.round(crop.widthPct));
-			setHInput(pixelH ?? Math.round(crop.heightPct));
-		}, [crop.widthPct, crop.heightPct, pixelW, pixelH]);
+			setWInput(pixelW ?? Math.round(crop.widthPercentage));
+			setHInput(pixelH ?? Math.round(crop.heightPercentage));
+		}, [crop.widthPercentage, crop.heightPercentage, pixelW, pixelH]);
 
 		const handleDimensionChange = (axis: "w" | "h", val: number) => {
 			const currentPixelRatio = sourceSize
-				? ((crop.widthPct / 100) * sourceSize.w) /
-				((crop.heightPct / 100) * sourceSize.h)
-				: crop.widthPct / crop.heightPct;
+				? ((crop.widthPercentage / 100) * sourceSize.w) /
+					((crop.heightPercentage / 100) * sourceSize.h)
+				: crop.widthPercentage / crop.heightPercentage;
 
-			let newWPct = crop.widthPct;
-			let newHPct = crop.heightPct;
+			let newWPct = crop.widthPercentage;
+			let newHPct = crop.heightPercentage;
 
 			if (axis === "w") {
 				setWInput(val);
@@ -277,8 +262,8 @@ const CropConfigPanel = memo(
 			onChange(
 				constrain({
 					...crop,
-					widthPct: newWPct,
-					heightPct: newHPct,
+					widthPercentage: newWPct,
+					heightPercentage: newHPct,
 				}),
 			);
 		};
@@ -366,7 +351,12 @@ const CropOverlay = memo(
 			`vcm-${Math.random().toString(36).slice(2, 9)}`,
 		).current;
 
-		const { leftPct: l, topPct: t, widthPct: w, heightPct: h } = crop;
+		const {
+			leftPercentage: l,
+			topPercentage: t,
+			widthPercentage: w,
+			heightPercentage: h,
+		} = crop;
 		const x1 = l,
 			y1 = t,
 			x2 = l + w,
@@ -380,6 +370,7 @@ const CropOverlay = memo(
 			h2: t + (h * 2) / 3,
 		};
 
+		// Convert a real-pixel measurement to SVG percentage units along the width axis.
 		const px = (n: number) => (n / svgSize.w) * 100;
 		const ARM = px(13);
 		const CORNER_HIT = px(13);
@@ -420,6 +411,7 @@ const CropOverlay = memo(
 					animation: "vcropFadeIn 0.25s cubic-bezier(0.16,1,0.3,1) both",
 				}}
 			>
+				<title>Crop Transformer</title>
 				<defs>
 					<mask id={maskId}>
 						<rect x="0" y="0" width="100" height="100" fill="white" />
@@ -639,21 +631,10 @@ const CropOverlay = memo(
 	},
 );
 
-// ─── Default state ────────────────────────────────────────────────────────────
-const DEFAULT_PCT: PctCrop = {
-	leftPct: 10,
-	topPct: 10,
-	widthPct: 80,
-	heightPct: 80,
-};
-
-// ─── VideoCropNodeComponent ───────────────────────────────────────────────────
 const VideoCropNodeComponent = memo(
 	(props: { selected: boolean; id: string; dragging: boolean }) => {
-		const dispatch = useAppDispatch();
-		const edges = useAppSelector(
-			makeSelectEdgesByTargetNodeId(props.id),
-		) as any[];
+		const { onNodeConfigUpdate } = useCanvasCtx();
+		const edges = useAppSelector(makeSelectEdgesByTargetNodeId(props.id));
 		const inputHandleId = useMemo(() => edges?.[0]?.targetHandleId, [edges]);
 		const { inputs } = useNodeResult(props.id);
 
@@ -663,9 +644,6 @@ const VideoCropNodeComponent = memo(
 
 		const videoSrc = inputVideo ? resolveVideoSourceUrl(inputVideo) : undefined;
 
-		// sourceSize is only used for pixel-value display in the UI panel and for
-		// converting between pixel aspect-ratio presets and percentage-space ratios.
-		// It is no longer involved in reading/writing the config.
 		const sourceSize = useMemo(() => {
 			if (!inputVideo?.sourceMeta) return null;
 			const { width: w, height: h } = inputVideo.sourceMeta;
@@ -673,44 +651,59 @@ const VideoCropNodeComponent = memo(
 			return { w, h };
 		}, [inputVideo]);
 
-		const node = useAppSelector(makeSelectNodeById(props.id)) as any;
-		const nodeConfig = node?.data?.config as VideoCropConfig | undefined;
+		const node = useAppSelector(makeSelectNodeById(props.id));
+		const nodeConfig = node?.config as VideoCropConfig | undefined;
 
-		const svgRef = useRef<HTMLDivElement>(null);
-		const latestCropRef = useRef<PctCrop | null>(null);
-		const [isFullscreen, setIsFullscreen] = useState(false);
+		// ── Refs ──────────────────────────────────────────────────────────────
 
-		useEffect(() => {
-			const onFullscreenChange = () => {
-				setIsFullscreen(!!document.fullscreenElement);
-			};
-			document.addEventListener("fullscreenchange", onFullscreenChange);
-			return () =>
-				document.removeEventListener("fullscreenchange", onFullscreenChange);
+		const latestCropRef = useRef<PctCrop>(DEFAULT_PCT);
+		const svgSizeRef = useRef(DEFAULT_SVG_SIZE);
+
+		const roRef = useRef<ResizeObserver | null>(null);
+
+		// Stable size update helper — also keeps the ref in sync with state.
+		const applySvgSize = useCallback((w: number, h: number) => {
+			if (w > 0 && h > 0) {
+				svgSizeRef.current = { w, h };
+				setSvgSize({ w, h });
+			}
 		}, []);
 
-		// FIX 1: Use a lazy initializer so the crop state is set correctly from the
-		// config on the very first render, avoiding the DEFAULT_PCT flash.
-		const [crop, setCrop] = useState<PctCrop>(() =>
-			nodeConfig ? configToPct(nodeConfig) : DEFAULT_PCT,
+		const svgCallbackRef = useCallback(
+			(node: HTMLDivElement | null) => {
+				// Tear down any existing observer first (handles unmount + remount).
+				roRef.current?.disconnect();
+				roRef.current = null;
+
+				if (!node) return;
+
+				// Read immediately so the first render cycle has accurate geometry.
+				const { width, height } = node.getBoundingClientRect();
+				applySvgSize(width, height);
+
+				roRef.current = new ResizeObserver(([entry]) => {
+					applySvgSize(entry.contentRect.width, entry.contentRect.height);
+				});
+				roRef.current.observe(node);
+			},
+			[applySvgSize],
 		);
 
+		const [crop, setCrop] = useState<PctCrop>(() => nodeConfig ?? DEFAULT_PCT);
+
 		const [drag, setDrag] = useState<DragState | null>(null);
-
-		// FIX 2: Seed svgSize with a reasonable default instead of 1×1 so the
-		// CropOverlay geometry is sane before the ResizeObserver fires.
-		const [svgSize, setSvgSize] = useState({ w: 300, h: 169 });
-
+		const [svgSize, setSvgSize] = useState(DEFAULT_SVG_SIZE);
+		const [isFullscreen, setIsFullscreen] = useState(false);
 		const [aspectPreset, setAspectPreset] = useState("Free");
 		const [customRatio, setCustomRatio] = useState<number | null>(null);
+
+		// ── Derived ───────────────────────────────────────────────────────────
 
 		const effectiveRatio = useMemo<number | null>(() => {
 			const preset = ASPECT_RATIO_PRESETS.find((p) => p.label === aspectPreset);
 			return preset?.value ?? customRatio ?? null;
 		}, [aspectPreset, customRatio]);
 
-		// Aspect ratio presets are expressed as pixel ratios (e.g. 16/9).
-		// The overlay works in percentage space, so we convert when constraining.
 		const effectivePctRatio = useMemo<number | null>(() => {
 			if (effectiveRatio === null) return null;
 			return pixelRatioToPctRatio(effectiveRatio, sourceSize);
@@ -718,50 +711,40 @@ const VideoCropNodeComponent = memo(
 
 		const isLocked = effectiveRatio !== null;
 
+		// Keep latestCropRef in sync for the drag `pointerup` handler.
 		useEffect(() => {
 			latestCropRef.current = crop;
 		}, [crop]);
 
-		// FIX 1 (cont): Only sync external config changes (undo/redo, remote updates)
-		// when we are NOT mid-drag, and depend on individual fields (not the object
-		// reference) so we don't re-run on unrelated store updates.
+		// Fullscreen detection.
 		useEffect(() => {
+			const onFullscreenChange = () =>
+				setIsFullscreen(!!document.fullscreenElement);
+			document.addEventListener("fullscreenchange", onFullscreenChange);
+			return () =>
+				document.removeEventListener("fullscreenchange", onFullscreenChange);
+		}, []);
+
+		useEffect(() => {
+			// Do not overwrite local drag state with the store value mid-gesture.
 			if (nodeConfig && !drag) {
-				setCrop(configToPct(nodeConfig));
+				setCrop(nodeConfig);
 			}
 		}, [
 			nodeConfig?.leftPercentage,
 			nodeConfig?.topPercentage,
 			nodeConfig?.widthPercentage,
 			nodeConfig?.heightPercentage,
+			drag,
+			// ↑ `nodeConfig` object reference intentionally omitted — see comment above.
 		]);
 
-		// FIX 2 (cont): Read the DOM size immediately on mount so there is no
-		// frame where svgSize is 1×1, then keep it updated via ResizeObserver.
-		useEffect(() => {
-			if (!svgRef.current) return;
+		// ── Callbacks ─────────────────────────────────────────────────────────
 
-			const { width, height } = svgRef.current.getBoundingClientRect();
-			if (width > 0 && height > 0) setSvgSize({ w: width, h: height });
-
-			const ro = new ResizeObserver(([entry]) => {
-				const { width, height } = entry.contentRect;
-				if (width > 0 && height > 0) setSvgSize({ w: width, h: height });
-			});
-			ro.observe(svgRef.current);
-			return () => ro.disconnect();
-		}, []);
-
-		// Config is now percentage-based — no sourceSize conversion needed here.
+		// Config is percentage-based — no sourceSize conversion needed here.
 		const updateConfig = useCallback(
-			(c: PctCrop) =>
-				dispatch(
-					updateNodeConfig({
-						id: props.id,
-						newConfig: pctToConfig(c),
-					}),
-				),
-			[dispatch, props.id],
+			(c: PctCrop) => onNodeConfigUpdate({ id: props.id, newConfig: c }),
+			[props.id, onNodeConfigUpdate],
 		);
 
 		const handleAspectRatioChange = useCallback(
@@ -774,25 +757,25 @@ const VideoCropNodeComponent = memo(
 				const p = ASPECT_RATIO_PRESETS.find((ap) => ap.label === preset);
 				if (!p?.value) return;
 
-				const pctRatio = pixelRatioToPctRatio(p.value, sourceSize);
+				const percentageRatio = pixelRatioToPctRatio(p.value, sourceSize);
 
 				setCrop((prev) => {
-					const cx = prev.leftPct + prev.widthPct / 2;
-					const cy = prev.topPct + prev.heightPct / 2;
-					let newW = prev.widthPct;
-					let newH = newW / pctRatio;
+					const cx = prev.leftPercentage + prev.widthPercentage / 2;
+					const cy = prev.topPercentage + prev.heightPercentage / 2;
+					let newW = prev.widthPercentage;
+					let newH = newW / percentageRatio;
 					if (newH > 100) {
 						newH = 100;
-						newW = newH * pctRatio;
+						newW = newH * percentageRatio;
 					}
 					const next = constrain(
 						{
-							leftPct: cx - newW / 2,
-							topPct: cy - newH / 2,
-							widthPct: newW,
-							heightPct: newH,
+							leftPercentage: cx - newW / 2,
+							topPercentage: cy - newH / 2,
+							widthPercentage: newW,
+							heightPercentage: newH,
 						},
-						pctRatio,
+						percentageRatio,
 						"resize-se",
 					);
 					updateConfig(next);
@@ -809,9 +792,9 @@ const VideoCropNodeComponent = memo(
 			} else if (customRatio !== null) {
 				setCustomRatio(null);
 			} else {
-				// Lock to the current crop's pixel ratio (converted from pct space).
-				const pixelRatio = pctRatioToPixelRatio(
-					crop.widthPct / crop.heightPct,
+				// Lock to the current crop's pixel ratio (converted from percentage space).
+				const pixelRatio = percentageRatioToPixelRatio(
+					crop.widthPercentage / crop.heightPercentage,
 					sourceSize,
 				);
 				setCustomRatio(pixelRatio);
@@ -822,7 +805,7 @@ const VideoCropNodeComponent = memo(
 			(e: React.PointerEvent, type: HandleType) => {
 				e.preventDefault();
 				e.stopPropagation();
-				(e.currentTarget as HTMLElement).setPointerCapture?.(e.pointerId);
+				(e.currentTarget as Element).setPointerCapture?.(e.pointerId);
 				setDrag({
 					type,
 					startX: e.clientX,
@@ -833,53 +816,57 @@ const VideoCropNodeComponent = memo(
 			[crop],
 		);
 
+		// Drag gesture handler.
 		useEffect(() => {
 			if (!drag) return;
 
 			const onMove = (e: PointerEvent) => {
 				e.preventDefault();
-				const dx = ((e.clientX - drag.startX) / svgSize.w) * 100;
-				const dy = ((e.clientY - drag.startY) / svgSize.h) * 100;
+
+				// FIX 3 (applied): read the ref, not the stale state closure value.
+				const { w: svgW, h: svgH } = svgSizeRef.current;
+				const dx = ((e.clientX - drag.startX) / svgW) * 100;
+				const dy = ((e.clientY - drag.startY) / svgH) * 100;
 				const c: PctCrop = { ...drag.startCrop };
 
 				switch (drag.type) {
 					case "move":
-						c.leftPct += dx;
-						c.topPct += dy;
+						c.leftPercentage += dx;
+						c.topPercentage += dy;
 						break;
 					case "resize-nw":
-						c.leftPct += dx;
-						c.widthPct -= dx;
-						c.topPct += dy;
-						c.heightPct -= dy;
+						c.leftPercentage += dx;
+						c.widthPercentage -= dx;
+						c.topPercentage += dy;
+						c.heightPercentage -= dy;
 						break;
 					case "resize-n":
-						c.topPct += dy;
-						c.heightPct -= dy;
+						c.topPercentage += dy;
+						c.heightPercentage -= dy;
 						break;
 					case "resize-ne":
-						c.widthPct += dx;
-						c.topPct += dy;
-						c.heightPct -= dy;
+						c.widthPercentage += dx;
+						c.topPercentage += dy;
+						c.heightPercentage -= dy;
 						break;
 					case "resize-e":
-						c.widthPct += dx;
+						c.widthPercentage += dx;
 						break;
 					case "resize-se":
-						c.widthPct += dx;
-						c.heightPct += dy;
+						c.widthPercentage += dx;
+						c.heightPercentage += dy;
 						break;
 					case "resize-s":
-						c.heightPct += dy;
+						c.heightPercentage += dy;
 						break;
 					case "resize-sw":
-						c.leftPct += dx;
-						c.widthPct -= dx;
-						c.heightPct += dy;
+						c.leftPercentage += dx;
+						c.widthPercentage -= dx;
+						c.heightPercentage += dy;
 						break;
 					case "resize-w":
-						c.leftPct += dx;
-						c.widthPct -= dx;
+						c.leftPercentage += dx;
+						c.widthPercentage -= dx;
 						break;
 				}
 
@@ -887,7 +874,8 @@ const VideoCropNodeComponent = memo(
 			};
 
 			const onUp = () => {
-				if (latestCropRef.current) updateConfig(latestCropRef.current);
+				// Flush the latest local crop state to the store on gesture end.
+				updateConfig(latestCropRef.current);
 				setDrag(null);
 			};
 
@@ -897,14 +885,15 @@ const VideoCropNodeComponent = memo(
 				window.removeEventListener("pointermove", onMove);
 				window.removeEventListener("pointerup", onUp);
 			};
-		}, [drag, svgSize, updateConfig, effectivePctRatio]);
+		}, [drag, updateConfig, effectivePctRatio]);
+		// ↑ `svgSize` state intentionally omitted — drag handler reads `svgSizeRef`.
 
-		// FIX 3: Guard overlay rendering until svgSize is real (> default seed).
-		// With the 300×169 seed this is less critical but still good defensive practice.
+		// ── Render ────────────────────────────────────────────────────────────
+
 		const overlay =
 			inputVideo && !isFullscreen ? (
 				<div
-					ref={svgRef}
+					ref={svgCallbackRef}
 					className="absolute inset-0 w-full h-full pointer-events-none"
 				>
 					<CropOverlay
