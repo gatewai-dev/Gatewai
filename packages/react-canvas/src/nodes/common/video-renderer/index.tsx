@@ -5,7 +5,6 @@ import { MediaPlayer } from "../remotion-player";
 
 const VideoRenderer = memo(
 	({
-		src,
 		durationMs,
 		virtualVideo,
 		controls,
@@ -13,7 +12,6 @@ const VideoRenderer = memo(
 		children,
 		overlay,
 	}: {
-		src?: string;
 		durationMs?: number;
 		virtualVideo?: VirtualVideoData;
 		controls?: boolean;
@@ -23,8 +21,6 @@ const VideoRenderer = memo(
 	}) => {
 		return (
 			<MediaPlayer
-				key={src}
-				src={src}
 				virtualVideo={virtualVideo}
 				type="Video"
 				controls={controls}

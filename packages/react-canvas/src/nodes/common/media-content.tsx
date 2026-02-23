@@ -29,7 +29,8 @@ function MediaContent({
 	const isImage = outputItem?.type === "Image";
 	const isVideo = outputItem?.type === "Video";
 	const isAudio = outputItem?.type === "Audio";
-	const isOther = !isImage && !isVideo && !isAudio;
+	const isText = outputItem?.type === "Text";
+	const isOther = !isImage && !isVideo && !isAudio && !isText;
 	const hasMoreThanOneOutput = result.outputs.length > 1;
 
 	const assetUrl = useMemo(() => {
@@ -40,6 +41,16 @@ function MediaContent({
 		const fileData = outputItem.data as FileData;
 		if (!fileData.entity) return null;
 		return GetAssetEndpoint(fileData.entity);
+	}, [outputItem]);
+
+	const imageDimensions = useMemo(() => {
+		if (!outputItem || outputItem.type !== "Image") return null;
+		const fileData = outputItem.data as FileData;
+		if (!fileData.processData) return null;
+		return {
+			width: fileData.processData.width,
+			height: fileData.processData.height,
+		};
 	}, [outputItem]);
 
 	const activeMeta = useMemo(() => {

@@ -15,10 +15,7 @@ import type {
 	ExtendedLayer as SharedExtendedLayer,
 	VideoAnimation as SharedVideoAnimation,
 } from "@gatewai/core/types";
-import {
-	calculateLayerTransform as sharedCalculateLayerTransform,
-	CompositionScene,
-} from "@gatewai/remotion-compositions";
+import { calculateLayerTransform as sharedCalculateLayerTransform } from "@gatewai/remotion-compositions";
 
 export type AnimationType = SharedAnimationType;
 export type VideoAnimation = SharedVideoAnimation;

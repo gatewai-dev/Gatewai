@@ -13,6 +13,7 @@ export const VideoSourceSchema = z.object({
 			fps: z.number().optional(),
 			mimeType: z.string().optional(),
 			tempKey: z.string().optional(),
+			text: z.string().optional(),
 		})
 		.optional(),
 });
@@ -102,6 +103,27 @@ export const LayerOperationSchema = z.object({
 	durationInFrames: z.number().optional(),
 	zIndex: z.number().optional(),
 	metadata: VideoMetadataSchema.optional(),
+
+	// Content & Styling (to prevent loss when wrapping in layer ops)
+	text: z.string().optional(),
+	fontSize: z.number().optional(),
+	fontFamily: z.string().optional(),
+	fontStyle: z.string().optional(),
+	fontWeight: z.union([z.number(), z.string()]).optional(),
+	textDecoration: z.string().optional(),
+	fill: z.string().optional(),
+	align: z.string().optional(),
+	verticalAlign: z.string().optional(),
+	letterSpacing: z.number().optional(),
+	lineHeight: z.number().optional(),
+	padding: z.number().optional(),
+	stroke: z.string().optional(),
+	strokeWidth: z.number().optional(),
+	backgroundColor: z.string().optional(),
+	borderColor: z.string().optional(),
+	borderWidth: z.number().optional(),
+	borderRadius: z.number().optional(),
+	autoDimensions: z.boolean().optional(),
 });
 
 export const ComposeOperationSchema = z.object({

@@ -9,7 +9,7 @@ import { Audio, Video } from "@remotion/media";
 import type { PlayerRef } from "@remotion/player";
 import { Player } from "@remotion/player";
 import type { ReactNode } from "react";
-import { useCallback, useEffect, useRef, useState } from "react";
+import { useCallback, useEffect, useMemo, useRef, useState } from "react";
 import {
 	MdFullscreen,
 	MdFullscreenExit,
@@ -404,21 +404,28 @@ export const MediaPlayer = ({
 	const wrapperRef = useRef<HTMLDivElement>(null);
 	const resolvedType = type || (isAudio ? "Audio" : "Video");
 
+	const activeMeta = useMemo(() => {
+		if (virtualVideo) {
+			return getActiveVideoMetadata(virtualVideo);
+		}
+		return null;
+	}, [virtualVideo]);
+
 	const durationInFrames = (() => {
 		if (durationInFramesProp && durationInFramesProp > 0)
 			return durationInFramesProp;
-		if (virtualVideo) {
-			const activeMeta = getActiveVideoMetadata(virtualVideo);
-			if (activeMeta.durationMs)
-				return Math.max(1, Math.ceil((activeMeta.durationMs / 1000) * fps));
-		}
+		if (activeMeta?.durationMs)
+			return Math.max(1, Math.ceil((activeMeta.durationMs / 1000) * fps));
 		if (durationMs) return Math.max(1, Math.ceil((durationMs / 1000) * fps));
 		return 30 * fps;
 	})();
 
-	const compWidth = viewportWidth ?? 1920;
+	const compWidth = viewportWidth ?? activeMeta?.width ?? 1920;
 
-	const compHeight = resolvedType === "Audio" ? 400 : (viewportHeight ?? 1080);
+	const compHeight =
+		resolvedType === "Audio"
+			? 400
+			: (viewportHeight ?? activeMeta?.height ?? 1080);
 
 	const showControls =
 		controls && resolvedType !== "Image" && resolvedType !== "Text";

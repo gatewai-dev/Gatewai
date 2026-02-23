@@ -13,20 +13,16 @@ export function createVirtualVideo(
 	source: any,
 	type: "Video" | "Audio" | "Image" | "Text" = "Video",
 ): VirtualVideoData {
-	if (type === "Text") {
-		const text = typeof source === "string" ? source : (source.text ?? "");
-		return {
-			metadata: {
-				width: 1920, // Default for text if not specified
+	if (type === "Text" && typeof source === "string") {
+		source = {
+			processData: {
+				text: source,
+				mimeType: "text/plain",
+				width: 1920,
 				height: 1080,
 				fps: 24,
-				durationMs: 5000,
+				duration: 5,
 			},
-			operation: {
-				op: "text",
-				text: text,
-			},
-			children: [],
 		};
 	}
 
@@ -37,18 +33,69 @@ export function createVirtualVideo(
 		fps: source.processData?.fps,
 	};
 
+	const mimeType =
+		source.entity?.mimeType ??
+		source.processData?.mimeType ??
+		(type === "Video"
+			? "video/mp4"
+			: type === "Audio"
+				? "audio/mpeg"
+				: type === "Image"
+					? "image/png"
+					: type === "Text"
+						? "text/plain"
+						: undefined);
+
+	const text =
+		type === "Text"
+			? typeof source === "string"
+				? source
+				: (source.text ?? source.processData?.text)
+			: undefined;
+
 	return {
 		metadata: sourceMeta,
 		operation: {
 			op: "source",
 			source: {
 				entity: source.entity,
-				processData: source.processData,
+				processData: {
+					...(source.processData ?? {}),
+					mimeType,
+					text: text || (source.processData ?? {}).text,
+				},
 			},
 			sourceMeta: sourceMeta,
 		},
 		children: [],
 	};
+}
+
+/**
+ * Identify if a VirtualVideoData node is intended to be Video, Audio, Image, or Text.
+ */
+export function getMediaType(
+	vv: VirtualVideoData | any,
+): "Video" | "Audio" | "Image" | "Text" {
+	if (!vv) return "Video";
+
+	const op = vv.operation;
+	if (op?.op === "text") return "Text";
+
+	if (op?.op === "source") {
+		const mime = op.source?.processData?.mimeType || "";
+		if (mime.startsWith("video/")) return "Video";
+		if (mime.startsWith("audio/")) return "Audio";
+		if (mime.startsWith("image/")) return "Image";
+		if (mime.startsWith("text/")) return "Text";
+	}
+
+	// Recurse down children for non-compose operations
+	if (op?.op !== "compose" && vv.children?.length > 0) {
+		return getMediaType(vv.children[0]);
+	}
+
+	return "Video"; // Default
 }
 
 /**
@@ -177,8 +224,5 @@ export function getActiveVideoMetadata(
 	vv: VirtualVideoData | any,
 ): VideoMetadata {
 	if (!vv) return { width: 1920, height: 1080, fps: 24, durationMs: 0 };
-	return (
-		vv.metadata ??
-		vv.sourceMeta ?? { width: 1920, height: 1080, fps: 24, durationMs: 0 }
-	);
+	return vv.metadata ?? { width: 1920, height: 1080, fps: 24, durationMs: 0 };
 }

@@ -35,12 +35,19 @@ export function buildCSSFilterString(f: Filters): string {
 	return parts.join(" ");
 }
 
+export type CropRegion = {
+	leftPct: number;
+	topPct: number;
+	widthPct: number;
+	heightPct: number;
+};
+
 export type RenderParams = {
 	sourceUrl: string | undefined;
 	trimStartSec: number;
 	trimEndSec: number | null;
 	speed: number;
-	cropRegion: { x: number; y: number; width: number; height: number } | null;
+	cropRegion: CropRegion | null;
 	flipH: boolean;
 	flipV: boolean;
 	rotation: number;
@@ -70,8 +77,6 @@ export function computeRenderParams(vv: VirtualVideoData): RenderParams {
 	const baseMeta = getActiveVideoMetadata(vv);
 	let currentWidth = baseMeta.width ?? 1920;
 	let currentHeight = baseMeta.height ?? 1080;
-	let totalOffsetX = 0;
-	let totalOffsetY = 0;
 
 	// Recursive walker
 	function walk(node: VirtualVideoData | any) {
@@ -109,29 +114,20 @@ export function computeRenderParams(vv: VirtualVideoData): RenderParams {
 				params.speed *= op.rate;
 				break;
 			case "crop": {
-				const x = (op.leftPercentage / 100) * currentWidth;
-				const y = (op.topPercentage / 100) * currentHeight;
-				const cw = Math.max(
-					1,
-					Math.round((op.widthPercentage / 100) * currentWidth),
-				);
-				const ch = Math.max(
-					1,
-					Math.round((op.heightPercentage / 100) * currentHeight),
-				);
-
-				totalOffsetX += x;
-				totalOffsetY += y;
+				const leftPct = op.leftPercentage;
+				const topPct = op.topPercentage;
+				const widthPct = op.widthPercentage;
+				const heightPct = op.heightPercentage;
 
 				params.cropRegion = {
-					x: Math.round(totalOffsetX),
-					y: Math.round(totalOffsetY),
-					width: cw,
-					height: ch,
+					leftPct,
+					topPct,
+					widthPct,
+					heightPct,
 				};
 
-				currentWidth = cw;
-				currentHeight = ch;
+				currentWidth = (widthPct / 100) * currentWidth;
+				currentHeight = (heightPct / 100) * currentHeight;
 				break;
 			}
 			case "filter":
@@ -150,11 +146,8 @@ export function computeRenderParams(vv: VirtualVideoData): RenderParams {
 				}
 				break;
 			case "compose":
-				// Reset spatial/timing state for a new composition
 				currentWidth = op.width;
 				currentHeight = op.height;
-				totalOffsetX = 0;
-				totalOffsetY = 0;
 				params.cropRegion = null;
 				params.trimStartSec = 0;
 				params.trimEndSec = null;

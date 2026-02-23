@@ -338,11 +338,11 @@ export class RemotionWebProcessorService {
 		data: FileData | VirtualVideoData,
 		type: "Video" | "Audio",
 	): Promise<number> {
-		// For Video, data is VirtualVideoData — read from sourceMeta first
+		// For Video, data is VirtualVideoData — read from metadata first
 		if (type === "Video") {
 			const vv = data as VirtualVideoData;
-			if (vv.sourceMeta?.durationMs) {
-				return vv.sourceMeta.durationMs / 1000;
+			if (vv.metadata?.durationMs) {
+				return vv.metadata.durationMs / 1000;
 			}
 			// Fall back to loading from URL
 			const url = resolveVideoSourceUrl(vv);

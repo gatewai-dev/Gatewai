@@ -70,10 +70,15 @@ const VideoCompositorNodeComponent = memo((props: NodeProps) => {
 				virtualVideo = vv;
 				const params = computeRenderParams(vv);
 				src = params.sourceUrl;
-				if (!layerWidth)
-					layerWidth = params.cropRegion?.width ?? vv.sourceMeta?.width;
-				if (!layerHeight)
-					layerHeight = params.cropRegion?.height ?? vv.sourceMeta?.height;
+				if (!layerWidth && params.cropRegion) {
+					layerWidth = (params.cropRegion.widthPct / 100) * vv.metadata.width;
+				}
+				if (!layerHeight && params.cropRegion) {
+					layerHeight =
+						(params.cropRegion.heightPct / 100) * vv.metadata.height;
+				}
+				if (!layerWidth) layerWidth = vv.metadata.width;
+				if (!layerHeight) layerHeight = vv.metadata.height;
 			} else if (item.type === "Image" || item.type === "Audio") {
 				const fileData = item.data as FileData;
 				if (fileData) {
@@ -85,10 +90,10 @@ const VideoCompositorNodeComponent = memo((props: NodeProps) => {
 				}
 			}
 
-			// Duration: Video uses sourceMeta, Audio/Image uses FileData
+			// Duration: Video uses metadata, Audio/Image uses FileData
 			const durationMs =
 				item.type === "Video"
-					? ((item.data as VirtualVideoData).sourceMeta?.durationMs ?? 0)
+					? ((item.data as VirtualVideoData).metadata?.durationMs ?? 0)
 					: item.type !== "Text"
 						? ((item.data as FileData)?.entity?.duration ??
 							(item.data as FileData)?.processData?.duration ??
@@ -101,6 +106,7 @@ const VideoCompositorNodeComponent = memo((props: NodeProps) => {
 					: DEFAULT_DURATION_FRAMES;
 
 			const layer: ExtendedLayer = {
+				id: handleId,
 				scale: saved.scale ?? 1,
 				zIndex: saved.zIndex ?? ++maxZ,
 				startFrame: saved.startFrame ?? 0,
@@ -110,7 +116,6 @@ const VideoCompositorNodeComponent = memo((props: NodeProps) => {
 				width: layerWidth ?? width,
 				height: layerHeight ?? height,
 				...saved,
-				// Resolved values must come AFTER ...saved to avoid being overridden
 				src,
 				text,
 				virtualVideo,

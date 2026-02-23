@@ -20,10 +20,10 @@ export async function renderVirtualVideo(
 ): Promise<Blob> {
 	const params = computeRenderParams(virtualVideo);
 
-	// Default values if not present in sourceMeta
-	const width = virtualVideo.sourceMeta.width ?? 1280;
-	const height = virtualVideo.sourceMeta.height ?? 720;
-	const fps = virtualVideo.sourceMeta.fps ?? 30;
+	// Default values if not present in metadata
+	const width = virtualVideo.metadata.width ?? 1280;
+	const height = virtualVideo.metadata.height ?? 720;
+	const fps = virtualVideo.metadata.fps ?? 30;
 
 	// Calculate total duration in frames
 	const durationInFrames = Math.max(
