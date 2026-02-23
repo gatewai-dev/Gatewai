@@ -127,9 +127,17 @@ export function computeRenderParams(vv: VirtualVideoData): RenderParams {
 			case "compose":
 				currentWidth = op.width;
 				currentHeight = op.height;
-				// Reset offsets because the composition is the new "base content"
+				// Reset ALL state because the composition is the new "base content"
 				totalOffsetX = 0;
 				totalOffsetY = 0;
+				cropRegion = null;
+				trimStartSec = 0;
+				trimEndSec = null;
+				speed = 1.0;
+				flipH = false;
+				flipV = false;
+				rotation = 0;
+				filters = { ...DEFAULT_FILTERS };
 				break;
 		}
 	}

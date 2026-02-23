@@ -90,6 +90,7 @@ export function getActiveVideoMetadata(vv: VirtualVideoData): VideoMetadata {
 				case "compose": {
 					width = op.width;
 					height = op.height;
+					durationMs = (op.durationInFrames / op.fps) * 1000;
 					break;
 				}
 				case "cut": {

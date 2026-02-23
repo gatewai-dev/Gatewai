@@ -1,7 +1,10 @@
 import { GetAssetEndpoint } from "@gatewai/core/browser";
 import type { FileData, NodeResult } from "@gatewai/core/types";
 import type { NodeEntityType } from "@gatewai/react-store";
-import { resolveVideoSourceUrl } from "@gatewai/remotion-compositions";
+import {
+	getActiveVideoMetadata,
+	resolveVideoSourceUrl,
+} from "@gatewai/remotion-compositions";
 import { FileIcon } from "lucide-react";
 import { useMemo } from "react";
 import { MediaDimensions, OutputSelector } from "../../components";
@@ -19,7 +22,7 @@ function MediaContent({
 }) {
 	const selectedOutput =
 		result.outputs?.[
-			Math.min(result.selectedOutputIndex, result.outputs.length - 1)
+		Math.min(result.selectedOutputIndex, result.outputs.length - 1)
 		];
 	const outputItem = selectedOutput?.items?.[0];
 
@@ -39,14 +42,21 @@ function MediaContent({
 		return GetAssetEndpoint(fileData.entity);
 	}, [outputItem]);
 	console.log({ assetUrl, result });
+	const activeMeta = useMemo(() => {
+		if (outputItem?.type === "Video") {
+			return getActiveVideoMetadata(outputItem.data);
+		}
+		return null;
+	}, [outputItem]);
+
 	const durationMs = useMemo(() => {
 		if (!outputItem?.data) return undefined;
 		if (outputItem.type === "Video") {
-			return outputItem.data.sourceMeta?.durationMs;
+			return activeMeta?.durationMs;
 		}
 		const fileData = outputItem.data as FileData;
 		return fileData?.entity?.duration ?? fileData?.processData?.duration;
-	}, [outputItem]);
+	}, [outputItem, activeMeta]);
 
 	const assetName = useMemo(() => {
 		if (!outputItem?.data) return undefined;

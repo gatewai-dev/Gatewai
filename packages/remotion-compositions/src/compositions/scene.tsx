@@ -131,7 +131,9 @@ export const SingleClipComposition: React.FC<{
 		const { fps } = useVideoConfig();
 		const params = computeRenderParams(virtualVideo);
 
-		const composeOp = virtualVideo.operations.find((op) => op.op === "compose");
+		const composeOp = [...virtualVideo.operations]
+			.reverse()
+			.find((op) => op.op === "compose");
 
 		const renderContent = () => {
 			if (composeOp) {
@@ -176,15 +178,25 @@ export const SingleClipComposition: React.FC<{
 		if (params.cropRegion) {
 			// Calculate the "base" dimensions of the content we are cropping.
 			// These are the dimensions AFTER all operations BEFORE the crop.
-			const cropIndex = virtualVideo.operations.findIndex((op) => op.op === "crop");
+			const lastComposeIndex = [...virtualVideo.operations]
+				.reverse()
+				.findIndex((op) => op.op === "compose");
+			const actualLastComposeIndex =
+				lastComposeIndex === -1
+					? -1
+					: virtualVideo.operations.length - 1 - lastComposeIndex;
+
+			const cropIndex = virtualVideo.operations.findIndex(
+				(op, idx) => op.op === "crop" && idx > actualLastComposeIndex,
+			);
 			const preCropMeta = getActiveVideoMetadata({
 				...virtualVideo,
 				operations:
 					cropIndex === -1 ? [] : virtualVideo.operations.slice(0, cropIndex),
 			});
 
-			const baseWidth = preCropMeta.width ?? 1920;
-			const baseHeight = preCropMeta.height ?? 1080;
+			const baseWidth = preCropMeta.width || 1920;
+			const baseHeight = preCropMeta.height || 1080;
 
 			// The crop region in "base content" pixels.
 			const { x: cx, y: cy, width: cw, height: ch } = params.cropRegion;
@@ -203,11 +215,18 @@ export const SingleClipComposition: React.FC<{
 							top: `${(-cy / ch) * 100}%`,
 							width: `${(baseWidth / cw) * 100}%`,
 							height: `${(baseHeight / ch) * 100}%`,
-							transform: transformStr,
-							transformOrigin: "top left",
 						}}
 					>
-						{renderContent()}
+						<div
+							style={{
+								width: "100%",
+								height: "100%",
+								transform: transformStr,
+								transformOrigin: "center center",
+							}}
+						>
+							{renderContent()}
+						</div>
 					</div>
 				</AbsoluteFill>
 			);
