@@ -7,7 +7,10 @@ import type {
     GraphResolvers,
     NodeProcessor,
 } from "@gatewai/node-sdk/server";
-import { appendOperation } from "@gatewai/remotion-compositions";
+import {
+    appendOperation,
+    getActiveVideoMetadata,
+} from "@gatewai/remotion-compositions";
 import { inject, injectable } from "inversify";
 import { VideoCropConfigSchema } from "../shared/config.js";
 import type { VideoCropResult } from "../shared/index.js";
@@ -35,12 +38,23 @@ export class VideoCropProcessor implements NodeProcessor {
 
             const config = VideoCropConfigSchema.parse(node.config);
 
+            const activeMeta = getActiveVideoMetadata(inputVideo);
+            const sw = activeMeta.width ?? 1920;
+            const sh = activeMeta.height ?? 1080;
+            const cw = Math.max(1, Math.round((config.widthPercentage / 100) * sw));
+            const ch = Math.max(1, Math.round((config.heightPercentage / 100) * sh));
+
             const output = appendOperation(inputVideo, {
                 op: "crop",
                 leftPercentage: config.leftPercentage,
                 topPercentage: config.topPercentage,
                 widthPercentage: config.widthPercentage,
                 heightPercentage: config.heightPercentage,
+                metadata: {
+                    ...activeMeta,
+                    width: cw,
+                    height: ch,
+                },
             });
 
             const outputHandle = data.handles.find(

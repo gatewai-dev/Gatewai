@@ -12,11 +12,8 @@ import {
 	useCurrentFrame,
 	useVideoConfig,
 } from "remotion";
-import {
-	buildCSSFilterString,
-	computeRenderParams,
-} from "../utils/apply-operations.js";
-import { resolveVideoSourceUrl } from "../utils/resolve-video.js";
+import { buildCSSFilterString, computeRenderParams } from "../utils/apply-operations.js";
+import { resolveVideoSourceUrl, getActiveVideoMetadata } from "../utils/resolve-video.js";
 
 const DEFAULT_DURATION_FRAMES = 24 * 5; // 5 sec at 24 fps
 
@@ -131,109 +128,104 @@ export const SingleClipComposition: React.FC<{
 	playbackRateOverride,
 	trimStartOverride,
 }) => {
-	const { fps } = useVideoConfig();
-	const params = computeRenderParams(virtualVideo);
+		const { fps } = useVideoConfig();
+		const params = computeRenderParams(virtualVideo);
 
-	const composeOp = virtualVideo.operations.find((op) => op.op === "compose");
+		const composeOp = virtualVideo.operations.find((op) => op.op === "compose");
 
-	const renderContent = () => {
-		if (composeOp) {
+		const renderContent = () => {
+			if (composeOp) {
+				return (
+					<CompositionScene
+						layers={composeOp.layers as ExtendedLayer[]}
+						viewportWidth={composeOp.width}
+						viewportHeight={composeOp.height}
+					/>
+				);
+			}
+
+			if (!params.sourceUrl) {
+				return <AbsoluteFill />;
+			}
+
+			const startFrame = Math.floor(
+				((trimStartOverride ?? 0) + params.trimStartSec) * fps,
+			);
+			const finalPlaybackRate = (playbackRateOverride ?? 1) * params.speed;
+
 			return (
-				<CompositionScene
-					layers={composeOp.layers as ExtendedLayer[]}
-					viewportWidth={composeOp.width}
-					viewportHeight={composeOp.height}
+				<Video
+					src={params.sourceUrl}
+					playbackRate={finalPlaybackRate}
+					startFrom={startFrame}
+					volume={volume}
+					// Use fill so the video exactly covers its containing div.
+					// The containing div's aspect ratio is already controlled by the
+					// crop math below (or by the layer's own w/h for uncropped layers).
+					style={{ width: "100%", height: "100%", objectFit: "fill" }}
 				/>
+			);
+		};
+
+		const transforms: string[] = [];
+		if (params.flipH) transforms.push("scaleX(-1)");
+		if (params.flipV) transforms.push("scaleY(-1)");
+		if (params.rotation) transforms.push(`rotate(${params.rotation}deg)`);
+		const transformStr = transforms.length ? transforms.join(" ") : undefined;
+
+		if (params.cropRegion) {
+			// Calculate the "base" dimensions of the content we are cropping.
+			// These are the dimensions AFTER all operations BEFORE the crop.
+			const cropIndex = virtualVideo.operations.findIndex((op) => op.op === "crop");
+			const preCropMeta = getActiveVideoMetadata({
+				...virtualVideo,
+				operations:
+					cropIndex === -1 ? [] : virtualVideo.operations.slice(0, cropIndex),
+			});
+
+			const baseWidth = preCropMeta.width ?? 1920;
+			const baseHeight = preCropMeta.height ?? 1080;
+
+			// The crop region in "base content" pixels.
+			const { x: cx, y: cy, width: cw, height: ch } = params.cropRegion;
+
+			return (
+				<AbsoluteFill
+					style={{
+						overflow: "hidden",
+						filter: params.cssFilterString || undefined,
+					}}
+				>
+					<div
+						style={{
+							position: "absolute",
+							left: `${(-cx / cw) * 100}%`,
+							top: `${(-cy / ch) * 100}%`,
+							width: `${(baseWidth / cw) * 100}%`,
+							height: `${(baseHeight / ch) * 100}%`,
+							transform: transformStr,
+							transformOrigin: "top left",
+						}}
+					>
+						{renderContent()}
+					</div>
+				</AbsoluteFill>
 			);
 		}
 
-		if (!params.sourceUrl) {
-			return <AbsoluteFill />;
-		}
-
-		const startFrame = Math.floor(
-			((trimStartOverride ?? 0) + params.trimStartSec) * fps,
-		);
-		const finalPlaybackRate = (playbackRateOverride ?? 1) * params.speed;
-
 		return (
-			<Video
-				src={params.sourceUrl}
-				playbackRate={finalPlaybackRate}
-				startFrom={startFrame}
-				volume={volume}
-				// Use fill so the video exactly covers its containing div.
-				// The containing div's aspect ratio is already controlled by the
-				// crop math below (or by the layer's own w/h for uncropped layers).
-				style={{ width: "100%", height: "100%", objectFit: "fill" }}
-			/>
-		);
-	};
-
-	const transforms: string[] = [];
-	if (params.flipH) transforms.push("scaleX(-1)");
-	if (params.flipV) transforms.push("scaleY(-1)");
-	if (params.rotation) transforms.push(`rotate(${params.rotation}deg)`);
-	const transformStr = transforms.length ? transforms.join(" ") : undefined;
-
-	if (params.cropRegion) {
-		// Source video's full pixel dimensions (before crop).
-		const sw = virtualVideo.sourceMeta?.width ?? 1920;
-		const sh = virtualVideo.sourceMeta?.height ?? 1080;
-
-		// The crop region in source pixels.
-		const { x: cx, y: cy, width: cw, height: ch } = params.cropRegion;
-
-		// The outer container is already `layer.width × layer.height` (set by
-		// LayerRenderer). We treat that as 100% × 100%.
-		//
-		// To show only the crop region, we:
-		//   - Size the inner (source) div so that its crop portion = 100% of container.
-		//     i.e.  innerWidth  = (sw / cw) × 100%
-		//           innerHeight = (sh / ch) × 100%
-		//   - Offset it so the crop's top-left aligns with the container's origin.
-		//     i.e.  left = -(cx / cw) × 100%
-		//           top  = -(cy / ch) × 100%
-		//
-		// This is purely percentage-based so it works for any layer size.
-
-		return (
-			<AbsoluteFill
-				style={{
-					overflow: "hidden",
-					filter: params.cssFilterString || undefined,
-				}}
-			>
-				<div
+			<AbsoluteFill>
+				<AbsoluteFill
 					style={{
-						position: "absolute",
-						left: `${(-cx / cw) * 100}%`,
-						top: `${(-cy / ch) * 100}%`,
-						width: `${(sw / cw) * 100}%`,
-						height: `${(sh / ch) * 100}%`,
+						filter: params.cssFilterString || undefined,
 						transform: transformStr,
-						transformOrigin: "top left",
 					}}
 				>
 					{renderContent()}
-				</div>
+				</AbsoluteFill>
 			</AbsoluteFill>
 		);
-	}
-
-	return (
-		<AbsoluteFill>
-			<AbsoluteFill
-				style={{
-					filter: params.cssFilterString || undefined,
-					transform: transformStr,
-				}}
-			>
-				{renderContent()}
-			</AbsoluteFill>
-		</AbsoluteFill>
-	);
-};
+	};
 
 // ---------------------------------------------------------------------------
 // LayerRenderer — renders one ExtendedLayer.
@@ -264,12 +256,15 @@ export const LayerRenderer: React.FC<{
 		width: layer.width,
 		height: layer.height,
 		transform: `rotate(${animRotation}deg) scale(${animScale})`,
+		transformOrigin: "center center",
 		opacity: animOpacity,
 		backgroundColor: layer.backgroundColor,
 		borderColor: layer.borderColor,
 		borderWidth: layer.borderWidth,
 		borderRadius: layer.borderRadius,
 		borderStyle: layer.borderWidth ? "solid" : undefined,
+		overflow: "hidden",
+		boxSizing: "border-box",
 	};
 
 	const filterString = (() => {
@@ -366,30 +361,74 @@ export const CompositionScene: React.FC<SceneProps> = ({
 	viewportHeight,
 }) => {
 	const frame = useCurrentFrame();
+	const { fps } = useVideoConfig();
 
 	const sortedLayers = useMemo(
 		() => [...layers].sort((a, b) => (a.zIndex ?? 0) - (b.zIndex ?? 0)),
 		[layers],
 	);
 
+	const resolvedViewportW = viewportWidth || 1920;
+	const resolvedViewportH = viewportHeight || 1080;
+
 	return (
-		<AbsoluteFill style={{ backgroundColor: "#000000" }}>
-			{sortedLayers.map((layer) => {
-				const startFrame = layer.startFrame ?? 0;
-				const duration = layer.durationInFrames ?? DEFAULT_DURATION_FRAMES;
-				const endFrame = startFrame + duration;
+		<AbsoluteFill style={{ backgroundColor: "#000000", overflow: "hidden", pointerEvents: "none" }}>
+			<svg
+				viewBox={`0 0 ${resolvedViewportW} ${resolvedViewportH}`}
+				style={{
+					width: "100%",
+					height: "100%",
+					position: "absolute",
+					inset: 0,
+				}}
+				preserveAspectRatio="xMidYMid meet"
+			>
+				<foreignObject
+					x="0"
+					y="0"
+					width={resolvedViewportW}
+					height={resolvedViewportH}
+					style={{ pointerEvents: "auto" }}
+				>
+					<div
+						style={{
+							width: resolvedViewportW,
+							height: resolvedViewportH,
+							position: "relative",
+						}}
+					>
+						{sortedLayers.map((layer) => {
+							const startFrame = layer.startFrame ?? 0;
+							const duration = layer.durationInFrames ?? DEFAULT_DURATION_FRAMES;
+							const endFrame = startFrame + duration;
 
-				// Skip layers that aren't active at this frame
-				if (frame < startFrame || frame >= endFrame) return null;
+							// Skip layers that aren't active at this frame
+							if (frame < startFrame || frame >= endFrame) return null;
 
-				return (
-					<LayerRenderer
-						key={layer.id}
-						layer={layer}
-						viewport={{ w: viewportWidth, h: viewportHeight }}
-					/>
-				);
-			})}
+							let derivedWidth = layer.width;
+							let derivedHeight = layer.height;
+
+							if (layer.virtualVideo && layer.autoDimensions) {
+								const activeMeta = getActiveVideoMetadata(layer.virtualVideo);
+								derivedWidth = activeMeta.width ?? derivedWidth;
+								derivedHeight = activeMeta.height ?? derivedHeight;
+							}
+
+							return (
+								<LayerRenderer
+									key={layer.id}
+									layer={{
+										...layer,
+										width: derivedWidth,
+										height: derivedHeight,
+									}}
+									viewport={{ w: resolvedViewportW, h: resolvedViewportH }}
+								/>
+							);
+						})}
+					</div>
+				</foreignObject>
+			</svg>
 		</AbsoluteFill>
 	);
 };

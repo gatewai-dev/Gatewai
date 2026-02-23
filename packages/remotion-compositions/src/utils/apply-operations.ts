@@ -64,6 +64,12 @@ export function computeRenderParams(vv: VirtualVideoData): RenderParams {
 	let rotation = 0;
 	let filters: Filters = { ...DEFAULT_FILTERS };
 
+	// Track current dimensions and total offsets as we process operations
+	let currentWidth = vv.sourceMeta.width ?? 1920;
+	let currentHeight = vv.sourceMeta.height ?? 1080;
+	let totalOffsetX = 0;
+	let totalOffsetY = 0;
+
 	for (const op of vv.operations) {
 		switch (op.op) {
 			case "cut":
@@ -74,13 +80,32 @@ export function computeRenderParams(vv: VirtualVideoData): RenderParams {
 				speed *= op.rate;
 				break;
 			case "crop": {
-				const sw = vv.sourceMeta.width ?? 1920;
-				const sh = vv.sourceMeta.height ?? 1080;
-				const x = Math.round((op.leftPercentage / 100) * sw);
-				const y = Math.round((op.topPercentage / 100) * sh);
-				const cw = Math.max(1, Math.round((op.widthPercentage / 100) * sw));
-				const ch = Math.max(1, Math.round((op.heightPercentage / 100) * sh));
-				cropRegion = { x, y, width: cw, height: ch };
+				const x = (op.leftPercentage / 100) * currentWidth;
+				const y = (op.topPercentage / 100) * currentHeight;
+				const cw = Math.max(
+					1,
+					Math.round((op.widthPercentage / 100) * currentWidth),
+				);
+				const ch = Math.max(
+					1,
+					Math.round((op.heightPercentage / 100) * currentHeight),
+				);
+
+				// Accumulate offset based on current rotation
+				// (Assuming rotation happens AFTER previous crops' offsets were applied)
+				totalOffsetX += x;
+				totalOffsetY += y;
+
+				cropRegion = {
+					x: Math.round(totalOffsetX),
+					y: Math.round(totalOffsetY),
+					width: cw,
+					height: ch,
+				};
+
+				// Update current dimensions for subsequent operations
+				currentWidth = cw;
+				currentHeight = ch;
 				break;
 			}
 			case "filter":
@@ -94,8 +119,18 @@ export function computeRenderParams(vv: VirtualVideoData): RenderParams {
 				break;
 			case "rotate":
 				rotation = (rotation + op.degrees) % 360;
+				// If rotated 90 or 270, swap current tracked dimensions
+				if (op.degrees % 180 !== 0) {
+					[currentWidth, currentHeight] = [currentHeight, currentWidth];
+				}
 				break;
-			// "compose" ops are handled separately (compositor)
+			case "compose":
+				currentWidth = op.width;
+				currentHeight = op.height;
+				// Reset offsets because the composition is the new "base content"
+				totalOffsetX = 0;
+				totalOffsetY = 0;
+				break;
 		}
 	}
 

@@ -30,17 +30,17 @@ import type {
 	VirtualVideoData,
 } from "@gatewai/core/types";
 import { dataTypeColors } from "@gatewai/core/types";
-import { CompositionScene } from "@gatewai/react-canvas";
+import {
+	getActiveVideoMetadata,
+	resolveVideoSourceUrl,
+	CompositionScene,
+} from "@gatewai/remotion-compositions";
 import type { HandleEntityType, NodeEntityType } from "@gatewai/react-store";
 import {
 	handleSelectors,
 	useAppSelector,
 	useGetFontListQuery,
 } from "@gatewai/react-store";
-import {
-	getActiveVideoMetadata,
-	resolveVideoSourceUrl,
-} from "@gatewai/remotion-compositions";
 import {
 	AlertDialog,
 	AlertDialogAction,
@@ -424,8 +424,8 @@ const InteractionOverlay: React.FC = () => {
 					l.type !== "Audio" &&
 					currentFrame >= (l.startFrame ?? 0) &&
 					currentFrame <
-						(l.startFrame ?? 0) +
-							(l.durationInFrames ?? DEFAULT_DURATION_FRAMES),
+					(l.startFrame ?? 0) +
+					(l.durationInFrames ?? DEFAULT_DURATION_FRAMES),
 			)
 			.sort((a, b) => (a.zIndex ?? 0) - (b.zIndex ?? 0));
 	}, [layers, currentFrame]);
@@ -508,10 +508,10 @@ const InteractionOverlay: React.FC = () => {
 				prev.map((l) =>
 					l.id === selectedId
 						? {
-								...l,
-								x: Math.round(initialPos.x + dx),
-								y: Math.round(initialPos.y + dy),
-							}
+							...l,
+							x: Math.round(initialPos.x + dx),
+							y: Math.round(initialPos.y + dy),
+						}
 						: l,
 				),
 			);
@@ -585,13 +585,13 @@ const InteractionOverlay: React.FC = () => {
 				prev.map((l) =>
 					l.id === selectedId
 						? {
-								...l,
-								width: Math.round(newWidth),
-								height: Math.round(newHeight),
-								x: Math.round(newX),
-								y: Math.round(newY),
-								autoDimensions: false,
-							}
+							...l,
+							width: Math.round(newWidth),
+							height: Math.round(newHeight),
+							x: Math.round(newX),
+							y: Math.round(newY),
+							autoDimensions: false,
+						}
 						: l,
 				),
 			);
@@ -634,7 +634,7 @@ const InteractionOverlay: React.FC = () => {
 			onMouseDown={(e) => handleMouseDown(e)}
 			role="button"
 			tabIndex={0}
-			onKeyDown={() => {}}
+			onKeyDown={() => { }}
 		>
 			<div
 				className="absolute origin-top-left"
@@ -652,9 +652,8 @@ const InteractionOverlay: React.FC = () => {
 							if (e.key === "Enter") setSelectedId(layer.id);
 						}}
 						onMouseDown={(e) => handleMouseDown(e, layer.id)}
-						className={`absolute group outline-none select-none p-0 m-0 border-0 bg-transparent text-left ${
-							selectedId === layer.id ? "z-50" : "z-auto"
-						}`}
+						className={`absolute group outline-none select-none p-0 m-0 border-0 bg-transparent text-left ${selectedId === layer.id ? "z-50" : "z-auto"
+							}`}
 						style={{
 							left: layer.x,
 							top: layer.y,
@@ -666,11 +665,10 @@ const InteractionOverlay: React.FC = () => {
 						}}
 					>
 						<div
-							className={`absolute inset-0 pointer-events-none transition-all duration-150 ${
-								selectedId === layer.id
-									? "border-2 border-blue-500 shadow-[0_0_0_1px_rgba(59,130,246,0.2)]"
-									: "border border-transparent group-hover:border-blue-400/50"
-							}`}
+							className={`absolute inset-0 pointer-events-none transition-all duration-150 ${selectedId === layer.id
+								? "border-2 border-blue-500 shadow-[0_0_0_1px_rgba(59,130,246,0.2)]"
+								: "border border-transparent group-hover:border-blue-400/50"
+								}`}
 						/>
 						{selectedId === layer.id && (
 							<>
@@ -1265,7 +1263,7 @@ const TimelinePanel: React.FC = () => {
 				onMouseLeave={() => setIsPanningTimeline(false)}
 				role="button"
 				tabIndex={0}
-				onKeyDown={() => {}}
+				onKeyDown={() => { }}
 			>
 				<div
 					className="relative flex flex-col min-h-full"
@@ -1392,9 +1390,8 @@ const TimelinePanel: React.FC = () => {
 									<div
 										key={layer.id}
 										style={{ height: TRACK_HEIGHT }}
-										className={`border-b border-white/5 relative group/track ${
-											isSelected ? "bg-white/2" : ""
-										}`}
+										className={`border-b border-white/5 relative group/track ${isSelected ? "bg-white/2" : ""
+											}`}
 									>
 										<button
 											type="button"
@@ -1667,64 +1664,64 @@ const InspectorPanel: React.FC = () => {
 								</div>
 								{(selectedLayer.type === "Image" ||
 									selectedLayer.type === "Video") && (
-									<TooltipProvider>
-										<Tooltip>
-											<TooltipTrigger asChild>
-												<Button
-													variant={
-														selectedLayer.autoDimensions ? "secondary" : "ghost"
-													}
-													size="sm"
-													className={cn(
-														"h-6 text-[10px] px-2",
-														selectedLayer.autoDimensions
-															? "text-blue-400 bg-blue-500/10 hover:bg-blue-500/20"
-															: "text-gray-500 hover:text-gray-300 bg-white/5",
-													)}
-													onClick={() => {
-														if (selectedLayer.autoDimensions) {
-															update({ autoDimensions: false });
-														} else {
-															let newW = selectedLayer.width;
-															let newH = selectedLayer.height;
-															const initialItem = initialLayersData.get(
-																selectedLayer.id,
-															);
-															if (initialItem) {
-																if (initialItem.type === "Video") {
-																	const vvData =
-																		initialItem.data as VirtualVideoData;
-																	// Use active (post-operations) metadata for correct crop dimensions
-																	const meta = getActiveVideoMetadata(vvData);
-																	if (meta?.width) newW = meta.width;
-																	if (meta?.height) newH = meta.height;
-																} else if (initialItem.type === "Image") {
-																	const meta = (initialItem.data as FileData)
-																		.processData;
-																	if (meta?.width) newW = meta.width;
-																	if (meta?.height) newH = meta.height;
-																}
-															}
-															update({
-																autoDimensions: true,
-																width: newW,
-																height: newH,
-															});
+										<TooltipProvider>
+											<Tooltip>
+												<TooltipTrigger asChild>
+													<Button
+														variant={
+															selectedLayer.autoDimensions ? "secondary" : "ghost"
 														}
-													}}
-												>
-													<Sparkles className="w-3 h-3 mr-1" />
-													Auto W/H
-												</Button>
-											</TooltipTrigger>
-											<TooltipContent>
-												{hasCropDimensions
-													? "Sync dimensions with cropped source media"
-													: "Sync dimensions with source media"}
-											</TooltipContent>
-										</Tooltip>
-									</TooltipProvider>
-								)}
+														size="sm"
+														className={cn(
+															"h-6 text-[10px] px-2",
+															selectedLayer.autoDimensions
+																? "text-blue-400 bg-blue-500/10 hover:bg-blue-500/20"
+																: "text-gray-500 hover:text-gray-300 bg-white/5",
+														)}
+														onClick={() => {
+															if (selectedLayer.autoDimensions) {
+																update({ autoDimensions: false });
+															} else {
+																let newW = selectedLayer.width;
+																let newH = selectedLayer.height;
+																const initialItem = initialLayersData.get(
+																	selectedLayer.id,
+																);
+																if (initialItem) {
+																	if (initialItem.type === "Video") {
+																		const vvData =
+																			initialItem.data as VirtualVideoData;
+																		// Use active (post-operations) metadata for correct crop dimensions
+																		const meta = getActiveVideoMetadata(vvData);
+																		if (meta?.width) newW = meta.width;
+																		if (meta?.height) newH = meta.height;
+																	} else if (initialItem.type === "Image") {
+																		const meta = (initialItem.data as FileData)
+																			.processData;
+																		if (meta?.width) newW = meta.width;
+																		if (meta?.height) newH = meta.height;
+																	}
+																}
+																update({
+																	autoDimensions: true,
+																	width: newW,
+																	height: newH,
+																});
+															}
+														}}
+													>
+														<Sparkles className="w-3 h-3 mr-1" />
+														Auto W/H
+													</Button>
+												</TooltipTrigger>
+												<TooltipContent>
+													{hasCropDimensions
+														? "Sync dimensions with cropped source media"
+														: "Sync dimensions with source media"}
+												</TooltipContent>
+											</Tooltip>
+										</TooltipProvider>
+									)}
 							</div>
 
 							<div className="grid grid-cols-2 gap-2">
@@ -1834,23 +1831,23 @@ const InspectorPanel: React.FC = () => {
 
 					{(selectedLayer.type === "Video" ||
 						selectedLayer.type === "Audio") && (
-						<CollapsibleSection title="Audio" icon={Music}>
-							<div className="flex items-center gap-2">
-								<span className="text-[9px] text-gray-500 w-8">Volume</span>
-								<Slider
-									className="flex-1"
-									value={[(selectedLayer.volume ?? 1) * 100]}
-									min={0}
-									max={100}
-									step={1}
-									onValueChange={([v]) => update({ volume: v / 100 })}
-								/>
-								<span className="text-[9px] text-gray-400 w-6 text-right">
-									{Math.round((selectedLayer.volume ?? 1) * 100)}%
-								</span>
-							</div>
-						</CollapsibleSection>
-					)}
+							<CollapsibleSection title="Audio" icon={Music}>
+								<div className="flex items-center gap-2">
+									<span className="text-[9px] text-gray-500 w-8">Volume</span>
+									<Slider
+										className="flex-1"
+										value={[(selectedLayer.volume ?? 1) * 100]}
+										min={0}
+										max={100}
+										step={1}
+										onValueChange={([v]) => update({ volume: v / 100 })}
+									/>
+									<span className="text-[9px] text-gray-400 w-6 text-right">
+										{Math.round((selectedLayer.volume ?? 1) * 100)}%
+									</span>
+								</div>
+							</CollapsibleSection>
+						)}
 
 					{selectedLayer.type === "Text" && (
 						<TypographyControls
@@ -1937,11 +1934,11 @@ const InspectorPanel: React.FC = () => {
 														prev.map((l) =>
 															l.id === selectedId
 																? {
-																		...l,
-																		animations: l.animations?.filter(
-																			(a) => a.id !== anim.id,
-																		),
-																	}
+																	...l,
+																	animations: l.animations?.filter(
+																		(a) => a.id !== anim.id,
+																	),
+																}
 																: l,
 														),
 													);
@@ -1965,11 +1962,11 @@ const InspectorPanel: React.FC = () => {
 														prev.map((l) =>
 															l.id === selectedId
 																? {
-																		...l,
-																		animations: l.animations?.map((a) =>
-																			a.id === anim.id ? { ...a, value: v } : a,
-																		),
-																	}
+																	...l,
+																	animations: l.animations?.map((a) =>
+																		a.id === anim.id ? { ...a, value: v } : a,
+																	),
+																}
 																: l,
 														),
 													);
@@ -2770,7 +2767,7 @@ export const VideoDesignerEditor: React.FC<VideoDesignerEditorProps> = ({
 						}}
 						role="button"
 						tabIndex={0}
-						onKeyDown={() => {}}
+						onKeyDown={() => { }}
 					>
 						<div
 							className="absolute origin-top-left"

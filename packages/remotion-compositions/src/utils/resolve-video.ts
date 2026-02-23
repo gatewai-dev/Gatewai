@@ -56,16 +56,56 @@ export function appendOperation(
  * Falls back to sourceMeta if no operations have metadata.
  */
 export function getActiveVideoMetadata(vv: VirtualVideoData): VideoMetadata {
-	// Start with source metadata
-	const metadata: VideoMetadata = { ...vv.sourceMeta };
+	let width = vv.sourceMeta.width ?? 1920;
+	let height = vv.sourceMeta.height ?? 1080;
+	let durationMs = vv.sourceMeta.durationMs ?? 0;
+	const fps = vv.sourceMeta.fps;
 
-	// Iterate from newest to oldest to find the first operation with metadata
-	for (let i = vv.operations.length - 1; i >= 0; i--) {
-		const op = vv.operations[i];
+	for (const op of vv.operations) {
+		// If an operation explicitly provides metadata, we use it as a base/override
 		if (op.metadata) {
-			return { ...op.metadata };
+			width = op.metadata.width ?? width;
+			height = op.metadata.height ?? height;
+			durationMs = op.metadata.durationMs ?? durationMs;
+		} else {
+			// Otherwise, we infer changes from the operation itself
+			switch (op.op) {
+				case "crop": {
+					width = Math.max(
+						1,
+						Math.round((op.widthPercentage / 100) * width),
+					);
+					height = Math.max(
+						1,
+						Math.round((op.heightPercentage / 100) * height),
+					);
+					break;
+				}
+				case "rotate": {
+					if (op.degrees % 180 !== 0) {
+						[width, height] = [height, width];
+					}
+					break;
+				}
+				case "compose": {
+					width = op.width;
+					height = op.height;
+					break;
+				}
+				case "cut": {
+					const speed = 1.0; // Simplified, speed ops are separate
+					durationMs = ((op.endSec ?? durationMs / 1000) - op.startSec) * 1000;
+					break;
+				}
+				// Speed changes don't change pixel dimensions, so we ignore them here
+			}
 		}
 	}
 
-	return metadata;
+	return {
+		width,
+		height,
+		durationMs,
+		fps,
+	};
 }
