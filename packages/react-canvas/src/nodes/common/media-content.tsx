@@ -10,7 +10,6 @@ import { useMemo } from "react";
 import { MediaDimensions, OutputSelector } from "../../components";
 import { AudioRenderer } from "./audio-renderer";
 import { CanvasRenderer } from "./canvas-renderer";
-import { MediaPlayer } from "./remotion-player";
 import { VideoRenderer } from "./video-renderer";
 
 function MediaContent({
@@ -43,16 +42,6 @@ function MediaContent({
 		return GetAssetEndpoint(fileData.entity);
 	}, [outputItem]);
 
-	const imageDimensions = useMemo(() => {
-		if (!outputItem || outputItem.type !== "Image") return null;
-		const fileData = outputItem.data as FileData;
-		if (!fileData.processData) return null;
-		return {
-			width: fileData.processData.width,
-			height: fileData.processData.height,
-		};
-	}, [outputItem]);
-
 	const activeMeta = useMemo(() => {
 		if (outputItem?.type === "Video") {
 			return getActiveVideoMetadata(outputItem.data);
@@ -71,17 +60,10 @@ function MediaContent({
 
 	const assetName = useMemo(() => {
 		if (!outputItem?.data) return undefined;
-		const data = outputItem.data as any;
-		if (outputItem.type === "Video") {
-			// Try new structure: find leaf source name if possible, or use metadata
-			if (data.operation?.op === "source") {
-				return data.operation.source?.entity?.name;
-			}
-			// Legacy fallback
-			return data.source?.entity?.name;
-		}
+		const data = outputItem.data;
 		return (data as FileData)?.entity?.name;
 	}, [outputItem]);
+
 	if (!outputItem) {
 		return null;
 	}
