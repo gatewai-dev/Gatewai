@@ -30,11 +30,8 @@ import type {
 	VirtualVideoData,
 } from "@gatewai/core/types";
 import { dataTypeColors } from "@gatewai/core/types";
-import {
-	CompositionScene,
-	calculateLayerTransform,
-} from "@gatewai/react-canvas";
-import type { NodeEntityType } from "@gatewai/react-store";
+import { CompositionScene } from "@gatewai/react-canvas";
+import type { HandleEntityType, NodeEntityType } from "@gatewai/react-store";
 import {
 	handleSelectors,
 	useAppSelector,
@@ -133,8 +130,24 @@ import type { VideoCompositorNodeConfig } from "../../../shared/config.js";
 import { DEFAULT_DURATION_FRAMES, FPS } from "../config/index.js";
 
 // --- Local Type Extension ---
-// Extends the base layer to support the autoDimensions flag securely
-export type EditorLayer = ExtendedLayer & { autoDimensions?: boolean };
+/**
+ * Extends the base layer with editor-specific and crop-rendering properties.
+ *
+ * Crop rendering properties (populated from VirtualVideoData.operations):
+ *   - videoNaturalWidth/Height: the un-cropped source dimensions
+ *   - videoCropOffsetX/Y: negative pixel offset to position source video inside
+ *     the (overflow:hidden) layer container so the correct region is visible
+ *
+ * These allow CompositionScene (and CropAwareCompositionScene) to render the
+ * cropped region correctly without server-side processing.
+ */
+export type EditorLayer = ExtendedLayer & {
+	// Crop rendering — set whenever the virtualVideo has a crop operation
+	videoNaturalWidth?: number;
+	videoNaturalHeight?: number;
+	videoCropOffsetX?: number; // pixels, typically negative
+	videoCropOffsetY?: number; // pixels, typically negative
+};
 
 // --- Constants & Configuration ---
 const RULER_HEIGHT = 28;
@@ -153,7 +166,10 @@ const ASPECT_RATIOS = [
 ];
 
 // --- Helper Functions ---
-const resolveLayerLabel = (handle: any, layer: EditorLayer): string => {
+const resolveLayerLabel = (
+	handle: HandleEntityType,
+	layer: EditorLayer,
+): string => {
 	if (
 		handle?.label &&
 		typeof handle.label === "string" &&
@@ -170,6 +186,77 @@ const resolveLayerLabel = (handle: any, layer: EditorLayer): string => {
 	}
 	return layer.name ?? layer.id;
 };
+
+/**
+ * Inspects the operation stack of a VirtualVideoData and extracts the
+ * information needed to render the crop visually in the editor preview.
+ *
+ * The caller should apply the result like:
+ *
+ *   <div style={{ width: croppedW, height: croppedH, overflow:'hidden', position:'relative' }}>
+ *     <video style={{ position:'absolute', width: naturalW, height: naturalH,
+ *                     left: offsetX, top: offsetY }} />
+ *   </div>
+ *
+ * Returns null when no crop operation is present.
+ */
+function computeVideoCropRenderProps(virtualVideo: VirtualVideoData): {
+	videoNaturalWidth: number;
+	videoNaturalHeight: number;
+	videoCropOffsetX: number;
+	videoCropOffsetY: number;
+} | null {
+	const ops = virtualVideo.operations ?? [];
+
+	// Walk the operation stack, tracking accumulated dimensions so we can
+	// map crop percentages back to pixels at the time of each crop.
+	let currentW = virtualVideo.sourceMeta?.width ?? 0;
+	let currentH = virtualVideo.sourceMeta?.height ?? 0;
+
+	// Accumulate crop offsets in source-video pixel space
+	let totalOffsetX = 0; // pixels from the left of the *original* source
+	let totalOffsetY = 0; // pixels from the top of the *original* source
+
+	let hasCrop = false;
+
+	for (const op of ops) {
+		if (op.op === "crop") {
+			hasCrop = true;
+			// The crop percentages are relative to `currentW/H` at this step
+			const cropLeftPx = (op.leftPercentage / 100) * currentW;
+			const cropTopPx = (op.topPercentage / 100) * currentH;
+			const cropW = (op.widthPercentage / 100) * currentW;
+			const cropH = (op.heightPercentage / 100) * currentH;
+
+			totalOffsetX += cropLeftPx;
+			totalOffsetY += cropTopPx;
+			currentW = cropW;
+			currentH = cropH;
+		} else if (op.op === "speed") {
+			// Speed doesn't change spatial dimensions
+		} else if (op.op === "cut") {
+			// Cut doesn't change spatial dimensions
+		} else if (op.metadata) {
+			// For other ops that update metadata (rotate, flip, etc.),
+			// update current dimensions from the metadata
+			if (op.metadata.width) currentW = op.metadata.width;
+			if (op.metadata.height) currentH = op.metadata.height;
+		}
+	}
+
+	if (!hasCrop) return null;
+
+	const sourceW = virtualVideo.sourceMeta?.width ?? 1;
+	const sourceH = virtualVideo.sourceMeta?.height ?? 1;
+
+	return {
+		videoNaturalWidth: sourceW,
+		videoNaturalHeight: sourceH,
+		// Negative because we shift the video *left/up* to bring the crop region into view
+		videoCropOffsetX: -totalOffsetX,
+		videoCropOffsetY: -totalOffsetY,
+	};
+}
 
 // --- Context & Types ---
 interface EditorContextType {
@@ -503,7 +590,7 @@ const InteractionOverlay: React.FC = () => {
 								height: Math.round(newHeight),
 								x: Math.round(newX),
 								y: Math.round(newY),
-								autoDimensions: false, // Turn off auto dimensions on manual resize
+								autoDimensions: false,
 							}
 						: l,
 				),
@@ -1549,6 +1636,12 @@ const InspectorPanel: React.FC = () => {
 		: undefined;
 	const displayName = resolveLayerLabel(handle, selectedLayer);
 
+	// Whether the crop source dimensions are available for this layer
+	const hasCropDimensions =
+		selectedLayer.type === "Video" &&
+		selectedLayer.videoNaturalWidth != null &&
+		selectedLayer.videoNaturalHeight != null;
+
 	return (
 		<div className="w-80 h-full border-l border-white/5 bg-[#0f0f0f] z-20 shadow-xl flex flex-col shrink-0 overflow-hidden">
 			<div className="flex items-center justify-between p-4 border-b border-white/5 bg-neutral-900/50">
@@ -1599,11 +1692,10 @@ const InspectorPanel: React.FC = () => {
 															);
 															if (initialItem) {
 																if (initialItem.type === "Video") {
-																	const meta = (
-																		initialItem.data as VirtualVideoData
-																	).sourceMeta;
-
-																	console.log({ meta });
+																	const vvData =
+																		initialItem.data as VirtualVideoData;
+																	// Use active (post-operations) metadata for correct crop dimensions
+																	const meta = getActiveVideoMetadata(vvData);
 																	if (meta?.width) newW = meta.width;
 																	if (meta?.height) newH = meta.height;
 																} else if (initialItem.type === "Image") {
@@ -1626,7 +1718,9 @@ const InspectorPanel: React.FC = () => {
 												</Button>
 											</TooltipTrigger>
 											<TooltipContent>
-												Sync dimensions with source media
+												{hasCropDimensions
+													? "Sync dimensions with cropped source media"
+													: "Sync dimensions with source media"}
 											</TooltipContent>
 										</Tooltip>
 									</TooltipProvider>
@@ -1662,7 +1756,7 @@ const InspectorPanel: React.FC = () => {
 													height: selectedLayer.lockAspect
 														? Math.max(2, Math.round(v * ratio))
 														: selectedLayer.height,
-													autoDimensions: false, // Turn off auto resize if user intervenes manually
+													autoDimensions: false,
 												});
 											}}
 										/>
@@ -2097,6 +2191,9 @@ export const VideoDesignerEditor: React.FC<VideoDesignerEditorProps> = ({
 		playerRef.current?.seekTo(frame);
 	}, []);
 
+	// -----------------------------------------------------------------------
+	// Layer initialisation
+	// -----------------------------------------------------------------------
 	useEffect(() => {
 		const loadInitialLayers = async () => {
 			const layerUpdates = { ...nodeConfig.layerUpdates };
@@ -2109,7 +2206,6 @@ export const VideoDesignerEditor: React.FC<VideoDesignerEditorProps> = ({
 
 			initialLayers.forEach((item, id) => {
 				const saved = layerUpdates[id] as EditorLayer | undefined;
-				// Auto Dimensions: ON by default unless explicitly disabled
 				const isAutoDimensions = saved?.autoDimensions ?? true;
 
 				let durationMs = 0;
@@ -2119,6 +2215,10 @@ export const VideoDesignerEditor: React.FC<VideoDesignerEditorProps> = ({
 				let layerWidth = saved?.width;
 				let layerHeight = saved?.height;
 
+				// Crop rendering props — populated only for Video layers with crop ops
+				let cropRenderProps: ReturnType<typeof computeVideoCropRenderProps> =
+					null;
+
 				if (item.type === "Text") {
 					text = getTextData(id);
 				} else if (item.type === "Video") {
@@ -2127,7 +2227,11 @@ export const VideoDesignerEditor: React.FC<VideoDesignerEditorProps> = ({
 					durationMs = metadata.durationMs ?? 0;
 					src = resolveVideoSourceUrl(virtualVideo);
 
+					// Compute crop rendering parameters from the operation stack
+					cropRenderProps = computeVideoCropRenderProps(virtualVideo);
+
 					if (isAutoDimensions) {
+						// Use post-operations (possibly cropped) metadata dimensions
 						layerWidth = metadata.width;
 						layerHeight = metadata.height;
 					} else {
@@ -2156,7 +2260,7 @@ export const VideoDesignerEditor: React.FC<VideoDesignerEditorProps> = ({
 				const handle = handles[id];
 				const name = handle?.label ?? handle?.dataTypes?.[0] ?? id;
 
-				const base = {
+				const base: Partial<EditorLayer> = {
 					id,
 					inputHandleId: id,
 					x: 0,
@@ -2175,6 +2279,8 @@ export const VideoDesignerEditor: React.FC<VideoDesignerEditorProps> = ({
 					name,
 					virtualVideo,
 					autoDimensions: isAutoDimensions,
+					// Spread crop render props if present (undefined otherwise)
+					...(cropRenderProps ?? {}),
 				};
 
 				if (item.type === "Text") {
@@ -2190,8 +2296,8 @@ export const VideoDesignerEditor: React.FC<VideoDesignerEditorProps> = ({
 						width: layerWidth,
 						height: layerHeight,
 						lockAspect: true,
-						autoDimensions: false, // Text is measured dynamically
-					});
+						autoDimensions: false, // Text dimensions are measured dynamically
+					} as EditorLayer);
 					const fontUrl = GetFontAssetUrl(fontFamily);
 					if (fontUrl) {
 						fontPromises.push(fontManager.loadFont(fontFamily, fontUrl));
@@ -2207,7 +2313,7 @@ export const VideoDesignerEditor: React.FC<VideoDesignerEditorProps> = ({
 								? calculatedDurationFrames
 								: undefined,
 						lockAspect: true,
-					});
+					} as EditorLayer);
 				} else if (item.type === "Audio") {
 					loaded.push({
 						...base,
@@ -2217,7 +2323,7 @@ export const VideoDesignerEditor: React.FC<VideoDesignerEditorProps> = ({
 						maxDurationInFrames:
 							durationMs > 0 ? calculatedDurationFrames : undefined,
 						lockAspect: true,
-					});
+					} as EditorLayer);
 				}
 			});
 
@@ -2226,79 +2332,130 @@ export const VideoDesignerEditor: React.FC<VideoDesignerEditorProps> = ({
 		};
 
 		loadInitialLayers();
-	}, [initialLayers, nodeConfig, getAssetUrl, getTextData]);
+		// eslint-disable-next-line react-hooks/exhaustive-deps
+	}, [initialLayers, nodeConfig]);
+
+	// -----------------------------------------------------------------------
+	// Measurement effect — derives pixel dimensions for layers that need it.
+	//
+	// Key invariants:
+	//   1. Video layers with virtualVideo → use getActiveVideoMetadata (already
+	//      reflects crop), never touch the DOM video element.
+	//   2. Image layers with autoDimensions → decode the image element.
+	//   3. Text layers → always re-measure because the rendered size depends on
+	//      font metrics that may change.
+	//   4. We compare old vs new values before calling setLayers to avoid
+	//      spurious re-renders / infinite loops.
+	//
+	// The effect depends on a stable "signature" key derived from each layer's
+	// measurement-relevant properties so it only re-runs when something that
+	// actually affects dimensions changes.
+	// -----------------------------------------------------------------------
+
+	// Stable signature: only re-run measurement when these properties change
+	const measurementSignature = useMemo(() => {
+		return layers
+			.filter((l) => l.type !== "Audio" && !l.isPlaceholder)
+			.map((l) => {
+				if (l.type === "Text") {
+					// Re-measure when text content or typography changes
+					return `${l.id}:text:${l.fontFamily}:${l.fontSize}:${l.fontStyle}:${l.textDecoration}:${l.lineHeight}`;
+				}
+				if (l.type === "Video" && l.virtualVideo) {
+					// Operations are stable after load; re-measure if autoDimensions flips
+					return `${l.id}:video:${l.autoDimensions}:${l.virtualVideo.operations.length}`;
+				}
+				// Image: re-measure if autoDimensions is on or dims are missing
+				return `${l.id}:${l.type}:${l.autoDimensions}:${l.width ?? "null"}:${l.height ?? "null"}`;
+			})
+			.join("|");
+		// eslint-disable-next-line react-hooks/exhaustive-deps
+	}, [
+		// Deliberately not including the full `layers` array — we only want to
+		// recompute the signature when specific measurement-relevant fields change.
+		// Using a derived string keeps the dep stable across unrelated layer updates.
+		layers
+			.map(
+				(l) =>
+					`${l.id}:${l.type}:${l.autoDimensions}:${l.width}:${l.height}:${l.fontFamily}:${l.fontSize}:${l.fontStyle}:${l.textDecoration}:${l.lineHeight}:${(l as any).virtualVideo?.operations?.length ?? 0}`,
+			)
+			.join("|"),
+	]);
 
 	useEffect(() => {
 		const layersToMeasure = layers.filter(
 			(l) =>
 				l.type !== "Audio" &&
+				!l.isPlaceholder &&
 				(l.width == null ||
 					l.height == null ||
 					l.type === "Text" ||
-					l.autoDimensions) &&
-				!l.isPlaceholder,
+					// Only re-measure non-text layers when autoDimensions is explicitly on
+					(l.type !== "Text" && l.autoDimensions === true)),
 		);
+
 		if (layersToMeasure.length === 0) return;
+
 		let mounted = true;
 		const measure = async () => {
 			const updates = new Map<string, Partial<EditorLayer>>();
+
 			await Promise.all(
 				layersToMeasure.map(async (layer) => {
-					const url = getAssetUrl(layer.inputHandleId);
-					if (!url && layer.type !== "Text") return;
 					try {
-						if (layer.type === "Image") {
-							const img = new Image();
-							img.src = url!;
-							await img.decode();
-							// Update only if Auto is enabled or dimensions are missing, AND values differ
-							if (layer.autoDimensions || layer.width == null) {
-								if (
-									layer.width !== img.naturalWidth ||
-									layer.height !== img.naturalHeight
-								) {
-									updates.set(layer.id, {
-										width: img.naturalWidth,
-										height: img.naturalHeight,
-									});
-								}
+						if (layer.type === "Video" && layer.virtualVideo) {
+							// Virtual video: always derive dimensions from the operation
+							// metadata so crop dimensions are respected correctly.
+							const metadata = getActiveVideoMetadata(layer.virtualVideo);
+							const newW = metadata.width;
+							const newH = metadata.height;
+
+							if (
+								newW != null &&
+								newH != null &&
+								(layer.width !== newW || layer.height !== newH)
+							) {
+								updates.set(layer.id, { width: newW, height: newH });
 							}
-						} else if (layer.type === "Video") {
-							// For VirtualVideo, prefer active metadata over measuring source video
-							if (layer.virtualVideo) {
-								const metadata = getActiveVideoMetadata(layer.virtualVideo);
-								if (layer.autoDimensions || layer.width == null) {
-									if (
-										layer.width !== metadata.width ||
-										layer.height !== metadata.height
-									) {
-										updates.set(layer.id, {
-											width: metadata.width,
-											height: metadata.height,
-										});
-									}
-								}
-							} else {
-								const video = document.createElement("video");
-								video.src = url!;
-								await new Promise((res) => {
-									video.onloadedmetadata = res;
-									video.onerror = res;
+							return;
+						}
+
+						const url = getAssetUrl(layer.inputHandleId);
+
+						if (layer.type === "Image" && url) {
+							const img = new Image();
+							img.src = url;
+							await img.decode();
+							if (
+								layer.width !== img.naturalWidth ||
+								layer.height !== img.naturalHeight
+							) {
+								updates.set(layer.id, {
+									width: img.naturalWidth,
+									height: img.naturalHeight,
 								});
-								if (layer.autoDimensions || layer.width == null) {
-									if (
-										layer.width !== video.videoWidth ||
-										layer.height !== video.videoHeight
-									) {
-										updates.set(layer.id, {
-											width: video.videoWidth,
-											height: video.videoHeight,
-										});
-									}
-								}
+							}
+						} else if (layer.type === "Video" && url) {
+							// Plain (non-virtual) video — measure from DOM element
+							const video = document.createElement("video");
+							video.src = url;
+							await new Promise<void>((res) => {
+								video.onloadedmetadata = () => res();
+								video.onerror = () => res();
+							});
+							if (
+								video.videoWidth > 0 &&
+								video.videoHeight > 0 &&
+								(layer.width !== video.videoWidth ||
+									layer.height !== video.videoHeight)
+							) {
+								updates.set(layer.id, {
+									width: video.videoWidth,
+									height: video.videoHeight,
+								});
 							}
 						} else if (layer.type === "Text") {
-							const text = getTextData(layer.inputHandleId);
+							const textContent = getTextData(layer.inputHandleId);
 							const d = document.createElement("div");
 							d.style.fontFamily = layer.fontFamily || "Inter";
 							d.style.fontSize = `${layer.fontSize || 40}px`;
@@ -2308,32 +2465,29 @@ export const VideoDesignerEditor: React.FC<VideoDesignerEditorProps> = ({
 							d.style.position = "absolute";
 							d.style.visibility = "hidden";
 							d.style.whiteSpace = "pre";
-							d.textContent = text;
+							d.textContent = textContent;
 							document.body.appendChild(d);
-
 							const newW = d.offsetWidth;
 							const newH = d.offsetHeight;
+							document.body.removeChild(d);
 
 							if (
 								Math.abs((layer.width ?? 0) - newW) > 1 ||
 								Math.abs((layer.height ?? 0) - newH) > 1
 							) {
-								updates.set(layer.id, {
-									width: newW,
-									height: newH,
-								});
+								updates.set(layer.id, { width: newW, height: newH });
 							}
-							document.body.removeChild(d);
 						}
 					} catch {
 						updates.set(layer.id, {
 							isPlaceholder: true,
-							width: 100,
-							height: 100,
+							width: layer.width ?? 100,
+							height: layer.height ?? 100,
 						});
 					}
 				}),
 			);
+
 			if (mounted && updates.size > 0) {
 				setLayers((prev) =>
 					prev.map((l) =>
@@ -2342,11 +2496,13 @@ export const VideoDesignerEditor: React.FC<VideoDesignerEditorProps> = ({
 				);
 			}
 		};
+
 		measure();
 		return () => {
 			mounted = false;
 		};
-	}, [layers, getAssetUrl, getTextData]);
+		// eslint-disable-next-line react-hooks/exhaustive-deps
+	}, [measurementSignature, getAssetUrl, getTextData]);
 
 	const zoomIn = useCallback(() => setZoom((z) => Math.min(3, z + 0.1)), []);
 	const zoomOut = useCallback(() => setZoom((z) => Math.max(0.1, z - 0.1)), []);
@@ -2452,7 +2608,6 @@ export const VideoDesignerEditor: React.FC<VideoDesignerEditorProps> = ({
 				document.activeElement?.tagName === "INPUT" ||
 				document.activeElement?.tagName === "TEXTAREA";
 			if (isInput) return;
-
 			e.preventDefault();
 			if (mode !== "pan") {
 				lastModeRef.current = mode;
@@ -2468,7 +2623,6 @@ export const VideoDesignerEditor: React.FC<VideoDesignerEditorProps> = ({
 				document.activeElement?.tagName === "INPUT" ||
 				document.activeElement?.tagName === "TEXTAREA";
 			if (isInput) return;
-
 			e.preventDefault();
 			setMode(lastModeRef.current);
 		},

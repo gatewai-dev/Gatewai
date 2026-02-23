@@ -34,7 +34,6 @@ export const calculateLayerTransform = (
 	let opacity = layer.opacity;
 	const volume = layer.volume ?? 1;
 
-	// Use default if undefined
 	const duration = layer.durationInFrames ?? DEFAULT_DURATION_FRAMES;
 
 	const animations = layer.animations ?? [];
@@ -135,7 +134,7 @@ export const CompositionScene: React.FC<SceneProps> = ({
 
 	const resolvedViewportW = viewportWidth || 1920;
 	const resolvedViewportH = viewportHeight || 1080;
-
+	console.log({ layers });
 	return (
 		<AbsoluteFill style={{ overflow: "hidden", pointerEvents: "none" }}>
 			<svg
@@ -177,6 +176,31 @@ export const CompositionScene: React.FC<SceneProps> = ({
 								: layer.src;
 							const textContent = layer.text;
 
+							// --- Determine strictly the derived bounding box dimensions ---
+							let derivedWidth = layer.width;
+							let derivedHeight = layer.height;
+
+							if (layer.virtualVideo) {
+								const ops = layer.virtualVideo.operations || [];
+
+								if (layer.autoDimensions) {
+									// Reverse through operations to find the latest one with dimension metadata
+									const latestOpWithMeta = [...ops]
+										.reverse()
+										.find(
+											(op) =>
+												op.metadata?.width !== undefined &&
+												op.metadata?.height !== undefined,
+										);
+
+									if (latestOpWithMeta?.metadata) {
+										derivedWidth = latestOpWithMeta.metadata.width;
+										derivedHeight = latestOpWithMeta.metadata.height;
+									}
+								}
+							}
+							// --------------------------------------------------------------
+
 							const {
 								x: animX,
 								y: animY,
@@ -193,8 +217,8 @@ export const CompositionScene: React.FC<SceneProps> = ({
 								position: "absolute",
 								left: animX,
 								top: animY,
-								width: layer.width,
-								height: layer.height,
+								width: derivedWidth,
+								height: derivedHeight,
 								transform: `rotate(${animRotation}deg) scale(${animScale})`,
 								transformOrigin: "center center",
 								boxSizing: "border-box",
@@ -204,6 +228,7 @@ export const CompositionScene: React.FC<SceneProps> = ({
 								borderWidth: layer.borderWidth,
 								borderRadius: layer.borderRadius,
 								borderStyle: layer.borderWidth ? "solid" : undefined,
+								overflow: "hidden", // Bounds the component seamlessly
 							};
 
 							return (
@@ -215,6 +240,7 @@ export const CompositionScene: React.FC<SceneProps> = ({
 								>
 									{layer.type === "Video" && layer.virtualVideo && (
 										<div style={style}>
+											{/* Delegate rendering entirely to SingleClipComposition */}
 											<SingleClipComposition
 												virtualVideo={layer.virtualVideo}
 											/>

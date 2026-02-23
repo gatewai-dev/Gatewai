@@ -89,7 +89,6 @@ class VideoCompositorBrowserProcessor implements IBrowserProcessor {
 				virtualVideo,
 			};
 
-
 			if (item.type === "Text") {
 				layer.text = (item.data as string) || "";
 			}

@@ -115,6 +115,10 @@ export const calculateLayerTransform = (
 
 // ---------------------------------------------------------------------------
 // SingleClipComposition — renders one VirtualVideoData.
+//
+// IMPORTANT: This component is always rendered inside a container div that is
+// already sized to layer.width × layer.height by LayerRenderer. All layout
+// math here must be relative to that container (use %, not px from viewport).
 // ---------------------------------------------------------------------------
 export const SingleClipComposition: React.FC<{
 	virtualVideo: VirtualVideoData;
@@ -130,7 +134,6 @@ export const SingleClipComposition: React.FC<{
 	const { fps } = useVideoConfig();
 	const params = computeRenderParams(virtualVideo);
 
-	// Check for compose operation — compositor output
 	const composeOp = virtualVideo.operations.find((op) => op.op === "compose");
 
 	const renderContent = () => {
@@ -159,7 +162,10 @@ export const SingleClipComposition: React.FC<{
 				playbackRate={finalPlaybackRate}
 				startFrom={startFrame}
 				volume={volume}
-				style={{ width: "100%", height: "100%", objectFit: "contain" }}
+				// Use fill so the video exactly covers its containing div.
+				// The containing div's aspect ratio is already controlled by the
+				// crop math below (or by the layer's own w/h for uncropped layers).
+				style={{ width: "100%", height: "100%", objectFit: "fill" }}
 			/>
 		);
 	};
@@ -168,56 +174,48 @@ export const SingleClipComposition: React.FC<{
 	if (params.flipH) transforms.push("scaleX(-1)");
 	if (params.flipV) transforms.push("scaleY(-1)");
 	if (params.rotation) transforms.push(`rotate(${params.rotation}deg)`);
+	const transformStr = transforms.length ? transforms.join(" ") : undefined;
 
 	if (params.cropRegion) {
+		// Source video's full pixel dimensions (before crop).
 		const sw = virtualVideo.sourceMeta?.width ?? 1920;
 		const sh = virtualVideo.sourceMeta?.height ?? 1080;
-		const cw = params.cropRegion.width;
-		const ch = params.cropRegion.height;
+
+		// The crop region in source pixels.
+		const { x: cx, y: cy, width: cw, height: ch } = params.cropRegion;
+
+		// The outer container is already `layer.width × layer.height` (set by
+		// LayerRenderer). We treat that as 100% × 100%.
+		//
+		// To show only the crop region, we:
+		//   - Size the inner (source) div so that its crop portion = 100% of container.
+		//     i.e.  innerWidth  = (sw / cw) × 100%
+		//           innerHeight = (sh / ch) × 100%
+		//   - Offset it so the crop's top-left aligns with the container's origin.
+		//     i.e.  left = -(cx / cw) × 100%
+		//           top  = -(cy / ch) × 100%
+		//
+		// This is purely percentage-based so it works for any layer size.
 
 		return (
 			<AbsoluteFill
 				style={{
-					display: "flex",
-					alignItems: "center",
-					justifyContent: "center",
+					overflow: "hidden",
+					filter: params.cssFilterString || undefined,
 				}}
 			>
 				<div
 					style={{
-						position: "relative",
-						width: "100%",
-						height: "100%",
-						filter: params.cssFilterString || undefined,
+						position: "absolute",
+						left: `${(-cx / cw) * 100}%`,
+						top: `${(-cy / ch) * 100}%`,
+						width: `${(sw / cw) * 100}%`,
+						height: `${(sh / ch) * 100}%`,
+						transform: transformStr,
+						transformOrigin: "top left",
 					}}
 				>
-					<div
-						style={{
-							position: "absolute",
-							left: "50%",
-							top: "50%",
-							transform: "translate(-50%, -50%)",
-							width: "100%",
-							height: "100%",
-							maxWidth: "100%",
-							maxHeight: "100%",
-							aspectRatio: `${cw} / ${ch}`,
-							overflow: "hidden",
-						}}
-					>
-						<div
-							style={{
-								position: "absolute",
-								left: `${(-params.cropRegion.x / cw) * 100}%`,
-								top: `${(-params.cropRegion.y / ch) * 100}%`,
-								width: `${(sw / cw) * 100}%`,
-								height: `${(sh / ch) * 100}%`,
-								transform: transforms.length ? transforms.join(" ") : undefined,
-							}}
-						>
-							{renderContent()}
-						</div>
-					</div>
+					{renderContent()}
 				</div>
 			</AbsoluteFill>
 		);
@@ -228,7 +226,7 @@ export const SingleClipComposition: React.FC<{
 			<AbsoluteFill
 				style={{
 					filter: params.cssFilterString || undefined,
-					transform: transforms.length ? transforms.join(" ") : undefined,
+					transform: transformStr,
 				}}
 			>
 				{renderContent()}

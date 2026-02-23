@@ -1,5 +1,6 @@
 import type { ExtendedLayer, VirtualVideoData } from "@gatewai/core/types";
 import {
+	computeRenderParams,
 	getActiveVideoMetadata,
 	SingleClipComposition,
 } from "@gatewai/remotion-compositions";
@@ -493,14 +494,21 @@ export const MediaPlayer = ({
 	const activeMeta = virtualVideo
 		? getActiveVideoMetadata(virtualVideo)
 		: undefined;
+
+	const renderParams = virtualVideo
+		? computeRenderParams(virtualVideo)
+		: undefined;
+
 	const compWidth = isCompositor
 		? (viewportWidth ?? 1920)
-		: (activeMeta?.width ?? 1920);
+		: (renderParams?.cropRegion?.width ?? activeMeta?.width ?? 1920);
+
 	const compHeight = isCompositor
 		? (viewportHeight ?? 1080)
 		: resolvedType === "Audio"
 			? 400
-			: (activeMeta?.height ?? 1080);
+			: (renderParams?.cropRegion?.height ?? activeMeta?.height ?? 1080);
+
 	const showControls =
 		controls && resolvedType !== "Image" && resolvedType !== "Text";
 
