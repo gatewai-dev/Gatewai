@@ -424,7 +424,7 @@ export const MediaPlayer = ({
 
 	const compHeight =
 		resolvedType === "Audio"
-			? 400
+			? 600
 			: (viewportHeight ?? activeMeta?.height ?? 1080);
 
 	const showControls =
@@ -468,7 +468,7 @@ export const MediaPlayer = ({
 					controls={false}
 					clickToPlay={false}
 					doubleClickToFullscreen={false}
-					bufferStateDelayInMilliseconds={300}
+					bufferStateDelayInMilliseconds={0}
 					acknowledgeRemotionLicense
 				/>
 				{overlay}

@@ -204,7 +204,25 @@ const compareVirtualVideo = (
 				aOp.startFrame !== bLayer.startFrame ||
 				aOp.durationInFrames !== bLayer.durationInFrames ||
 				aOp.zIndex !== bLayer.zIndex ||
-				aOp.text !== bLayer.text
+				aOp.text !== bLayer.text ||
+				aOp.fontSize !== bLayer.fontSize ||
+				aOp.fontFamily !== bLayer.fontFamily ||
+				aOp.fontStyle !== bLayer.fontStyle ||
+				aOp.fontWeight !== bLayer.fontWeight ||
+				aOp.textDecoration !== bLayer.textDecoration ||
+				aOp.fill !== bLayer.fill ||
+				aOp.align !== bLayer.align ||
+				aOp.verticalAlign !== bLayer.verticalAlign ||
+				aOp.letterSpacing !== bLayer.letterSpacing ||
+				aOp.lineHeight !== bLayer.lineHeight ||
+				aOp.padding !== bLayer.padding ||
+				aOp.stroke !== bLayer.stroke ||
+				aOp.strokeWidth !== bLayer.strokeWidth ||
+				aOp.backgroundColor !== bLayer.backgroundColor ||
+				aOp.borderColor !== bLayer.borderColor ||
+				aOp.borderWidth !== bLayer.borderWidth ||
+				aOp.borderRadius !== bLayer.borderRadius ||
+				aOp.autoDimensions !== bLayer.autoDimensions
 			)
 				return false;
 			break;
@@ -260,6 +278,24 @@ const compareLayerProps = (
 		prevLayer.startFrame === nextLayer.startFrame &&
 		prevLayer.durationInFrames === nextLayer.durationInFrames &&
 		prevLayer.autoDimensions === nextLayer.autoDimensions &&
+		prevLayer.text === nextLayer.text &&
+		prevLayer.fontSize === nextLayer.fontSize &&
+		prevLayer.fontFamily === nextLayer.fontFamily &&
+		prevLayer.fontStyle === nextLayer.fontStyle &&
+		prevLayer.fontWeight === nextLayer.fontWeight &&
+		prevLayer.textDecoration === nextLayer.textDecoration &&
+		prevLayer.fill === nextLayer.fill &&
+		prevLayer.align === nextLayer.align &&
+		prevLayer.verticalAlign === nextLayer.verticalAlign &&
+		prevLayer.letterSpacing === nextLayer.letterSpacing &&
+		prevLayer.lineHeight === nextLayer.lineHeight &&
+		prevLayer.padding === nextLayer.padding &&
+		prevLayer.stroke === nextLayer.stroke &&
+		prevLayer.strokeWidth === nextLayer.strokeWidth &&
+		prevLayer.backgroundColor === nextLayer.backgroundColor &&
+		prevLayer.borderColor === nextLayer.borderColor &&
+		prevLayer.borderWidth === nextLayer.borderWidth &&
+		prevLayer.borderRadius === nextLayer.borderRadius &&
 		compareVirtualVideo(prevLayer.virtualVideo, nextLayer.virtualVideo)
 	);
 };
@@ -375,7 +411,7 @@ export const SingleClipComposition: React.FC<{
 							height: "100%",
 							display: "flex",
 							flexDirection: "column",
-							alignItems: "center",
+							alignItems: "stretch", // Use stretch to let width: 100% and textAlign work together
 							justifyContent:
 								mergedStyle.verticalAlign === "middle"
 									? "center"
@@ -391,6 +427,14 @@ export const SingleClipComposition: React.FC<{
 							textAlign: (mergedStyle.align as any) ?? "center",
 							padding: mergedStyle.padding,
 							lineHeight: mergedStyle.lineHeight ?? 1.2,
+							letterSpacing: mergedStyle.letterSpacing
+								? `${mergedStyle.letterSpacing}px`
+								: undefined,
+							WebkitTextStroke:
+								mergedStyle.strokeWidth && mergedStyle.stroke
+									? `${mergedStyle.strokeWidth}px ${mergedStyle.stroke}`
+									: undefined,
+							paintOrder: "stroke fill",
 							whiteSpace: "pre",
 						}}
 					>
@@ -528,6 +572,7 @@ const LayerContentRenderer: React.FC<{
 					volume={animVolume}
 					playbackRateOverride={layer.speed}
 					trimStartOverride={layer.trimStart}
+					textStyle={layer}
 				/>
 			);
 		}
@@ -538,6 +583,7 @@ const LayerContentRenderer: React.FC<{
 						virtualVideo={layer.virtualVideo}
 						volume={animVolume}
 						trimStartOverride={layer.trimStart}
+						textStyle={layer}
 					/>
 				);
 			}
@@ -556,6 +602,7 @@ const LayerContentRenderer: React.FC<{
 						volume={animVolume}
 						playbackRateOverride={layer.speed}
 						trimStartOverride={layer.trimStart}
+						textStyle={layer}
 					/>
 				);
 			}
@@ -568,6 +615,7 @@ const LayerContentRenderer: React.FC<{
 						virtualVideo={layer.virtualVideo}
 						volume={animVolume}
 						trimStartOverride={layer.trimStart}
+						textStyle={layer}
 					/>
 				);
 			}

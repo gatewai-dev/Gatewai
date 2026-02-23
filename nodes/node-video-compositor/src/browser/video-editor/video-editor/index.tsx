@@ -132,6 +132,41 @@ import { DEFAULT_DURATION_FRAMES, FPS } from "../config/index.js";
 // --- Extracted Statics & Utilities ---
 const roundToEven = (num?: number) => Math.round((num ?? 0) / 2) * 2;
 
+const measureText = (text: string, style: Partial<EditorLayer>) => {
+	if (typeof document === "undefined") return { width: 100, height: 40 };
+
+	const canvas = document.createElement("canvas");
+	const ctx = canvas.getContext("2d");
+	if (!ctx) return { width: 100, height: 40 };
+
+	const fontSize = style.fontSize ?? 40;
+	const fontFamily = style.fontFamily ?? "Inter";
+	const fontWeight = style.fontWeight ?? "normal";
+	const fontStyle = style.fontStyle ?? "normal";
+	const letterSpacing = style.letterSpacing ?? 0;
+	const lineHeight = style.lineHeight ?? 1.2;
+	const padding = style.padding ?? 0;
+
+	ctx.font = `${fontStyle} ${fontWeight} ${fontSize}px ${fontFamily}`;
+	ctx.letterSpacing = `${letterSpacing}px`;
+
+	const lines = text.split("\n");
+	let maxWidth = 0;
+
+	for (const line of lines) {
+		const metrics = ctx.measureText(line);
+		maxWidth = Math.max(maxWidth, metrics.width);
+	}
+
+	const height = lines.length * fontSize * lineHeight;
+	const width = maxWidth;
+
+	return {
+		width: Math.round(width + padding * 2),
+		height: Math.round(height + padding * 2),
+	};
+};
+
 const ANIMATION_CATEGORIES = [
 	{
 		label: "Entrance",
@@ -1451,7 +1486,36 @@ const InspectorPanel: React.FC = () => {
 
 	const update = (patch: Partial<EditorLayer>) => {
 		updateLayers((prev) =>
-			prev.map((l) => (l.id === selectedId ? { ...l, ...patch } : l)),
+			prev.map((l) => {
+				if (l.id !== selectedId) return l;
+
+				const nextLayer = { ...l, ...patch };
+
+				if (nextLayer.type === "Text") {
+					const propertiesAffectingDimensions = [
+						"text",
+						"fontSize",
+						"fontFamily",
+						"fontWeight",
+						"fontStyle",
+						"letterSpacing",
+						"lineHeight",
+						"padding",
+					];
+
+					const hasDimensionAffectingChange =
+						propertiesAffectingDimensions.some((prop) => prop in patch);
+
+					if (hasDimensionAffectingChange) {
+						const text = nextLayer.text || "";
+						const dims = measureText(text, nextLayer);
+						nextLayer.width = dims.width;
+						nextLayer.height = dims.height;
+					}
+				}
+
+				return nextLayer;
+			}),
 		);
 	};
 
@@ -1627,11 +1691,13 @@ const InspectorPanel: React.FC = () => {
 							<div className="grid grid-cols-2 gap-2">
 								<DraggableNumberInput
 									label="X"
+									icon={MoveHorizontal}
 									value={Math.round(selectedLayer.x)}
 									onChange={(v) => update({ x: v })}
 								/>
 								<DraggableNumberInput
 									label="Y"
+									icon={MoveVertical}
 									value={Math.round(selectedLayer.y)}
 									onChange={(v) => update({ y: v })}
 								/>
@@ -1716,11 +1782,13 @@ const InspectorPanel: React.FC = () => {
 							<div className="grid grid-cols-2 gap-2">
 								<DraggableNumberInput
 									label="Rot"
+									icon={RotateCw}
 									value={Math.round(selectedLayer.rotation)}
 									onChange={(v) => update({ rotation: v })}
 								/>
 								<DraggableNumberInput
 									label="Scale"
+									icon={Move}
 									value={Number((selectedLayer.scale ?? 1).toFixed(2))}
 									step={0.1}
 									onChange={(v) => update({ scale: v })}
