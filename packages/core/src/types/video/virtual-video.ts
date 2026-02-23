@@ -28,6 +28,22 @@ export const VideoMetadataSchema = z.object({
 export type VideoMetadata = z.infer<typeof VideoMetadataSchema>;
 
 // --- Operations ---
+
+/** Original source file (leaf node) */
+export const SourceOperationSchema = z.object({
+	op: z.literal("source"),
+	source: VideoSourceSchema,
+	sourceMeta: VideoMetadataSchema,
+});
+
+/** Text content (leaf node) */
+export const TextOperationSchema = z.object({
+	op: z.literal("text"),
+	text: z.string(),
+	// Text doesn't have intrinsic dimensions like video, but we can provide hints/metadata
+	metadata: VideoMetadataSchema.optional(),
+});
+
 export const CropOperationSchema = z.object({
 	op: z.literal("crop"),
 	leftPercentage: z.number().min(0).max(100),
@@ -69,9 +85,27 @@ export const RotateOperationSchema = z.object({
 	metadata: VideoMetadataSchema.optional(),
 });
 
+/**
+ * Wraps a child with spatial and timing properties.
+ * This effectively makes the "layer" part of the operator tree.
+ */
+export const LayerOperationSchema = z.object({
+	op: z.literal("layer"),
+	x: z.number().default(0),
+	y: z.number().default(0),
+	width: z.number().optional(),
+	height: z.number().optional(),
+	rotation: z.number().default(0),
+	scale: z.number().default(1),
+	opacity: z.number().default(1),
+	startFrame: z.number().default(0),
+	durationInFrames: z.number().optional(),
+	zIndex: z.number().optional(),
+	metadata: VideoMetadataSchema.optional(),
+});
+
 export const ComposeOperationSchema = z.object({
 	op: z.literal("compose"),
-	layers: z.array(z.any()),
 	width: z.number(),
 	height: z.number(),
 	fps: z.number(),
@@ -80,27 +114,37 @@ export const ComposeOperationSchema = z.object({
 });
 
 export const VideoOperationSchema = z.discriminatedUnion("op", [
+	SourceOperationSchema,
+	TextOperationSchema,
 	CropOperationSchema,
 	CutOperationSchema,
 	SpeedOperationSchema,
 	FilterOperationSchema,
 	FlipOperationSchema,
 	RotateOperationSchema,
+	LayerOperationSchema,
 	ComposeOperationSchema,
 ]);
 
 export type VideoOperation = z.infer<typeof VideoOperationSchema>;
 
-// --- VirtualVideoData: THE data type for all Video outputs ---
-export const VirtualVideoDataSchema = z.object({
-	/** Original source file */
-	source: VideoSourceSchema,
+// --- VirtualVideoData: THE recursive data type for all Video outputs ---
 
-	/** Source dimensions/duration before any operations */
-	sourceMeta: VideoMetadataSchema,
+export type VirtualVideoData = {
+	metadata: VideoMetadata;
+	operation: VideoOperation;
+	children: VirtualVideoData[];
+};
 
-	/** Ordered operation stack (each node appends to this) */
-	operations: z.array(VideoOperationSchema).default([]),
-});
+export const VirtualVideoDataSchema: z.ZodType<VirtualVideoData> = z.lazy(() =>
+	z.object({
+		/** Current dimensions/duration of this node's output */
+		metadata: VideoMetadataSchema,
 
-export type VirtualVideoData = z.infer<typeof VirtualVideoDataSchema>;
+		/** The operation applied at this node */
+		operation: VideoOperationSchema,
+
+		/** Recursive children (inputs to this operation) */
+		children: z.array(VirtualVideoDataSchema).default([]),
+	}),
+);

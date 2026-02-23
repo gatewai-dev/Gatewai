@@ -99,14 +99,6 @@ export type MultiOutputGeneric<T extends DataType> = {
 	outputs: [{ items: [OutputItem<T>] }];
 };
 
-export type AnyOutputItem =
-	| OutputItem<"Audio">
-	| OutputItem<"Text">
-	| OutputItem<"Boolean">
-	| OutputItem<"Image">
-	| OutputItem<"Video">
-	| OutputItem<"Number">;
-
 export type AnyOutputUnion =
 	| OutputItem<"Video">
 	| OutputItem<"Image">

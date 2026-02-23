@@ -1,5 +1,8 @@
 import type { VirtualVideoData } from "@gatewai/core/types";
-import { resolveVideoSourceUrl } from "./resolve-video.js";
+import {
+	getActiveVideoMetadata,
+	resolveVideoSourceUrl,
+} from "./resolve-video.js";
 
 /** Default filter values (no-op) */
 const DEFAULT_FILTERS = {
@@ -46,38 +49,64 @@ export type RenderParams = {
 };
 
 /**
- * Collapse the full operation stack into concrete render parameters
- * for Remotion or FFmpeg.
+ * Collapse the full operation tree into concrete render parameters
+ * for Remotion or FFmpeg. Recursively walks the tree.
  */
 export function computeRenderParams(vv: VirtualVideoData): RenderParams {
-	let trimStartSec = 0;
-	let trimEndSec: number | null = null;
-	let speed = 1.0;
-	let cropRegion: {
-		x: number;
-		y: number;
-		width: number;
-		height: number;
-	} | null = null;
-	let flipH = false;
-	let flipV = false;
-	let rotation = 0;
-	let filters: Filters = { ...DEFAULT_FILTERS };
+	const params: RenderParams = {
+		sourceUrl: undefined,
+		trimStartSec: 0,
+		trimEndSec: null,
+		speed: 1.0,
+		cropRegion: null,
+		flipH: false,
+		flipV: false,
+		rotation: 0,
+		cssFilterString: "",
+		effectiveDurationSec: 0,
+	};
 
-	// Track current dimensions and total offsets as we process operations
-	let currentWidth = vv.sourceMeta.width ?? 1920;
-	let currentHeight = vv.sourceMeta.height ?? 1080;
+	let filters: Filters = { ...DEFAULT_FILTERS };
+	const baseMeta = getActiveVideoMetadata(vv);
+	let currentWidth = baseMeta.width ?? 1920;
+	let currentHeight = baseMeta.height ?? 1080;
 	let totalOffsetX = 0;
 	let totalOffsetY = 0;
 
-	for (const op of vv.operations) {
+	// Recursive walker
+	function walk(node: VirtualVideoData | any) {
+		if (!node) return;
+
+		// Walk children first (depth-first) to build base content
+		if (node.children && Array.isArray(node.children)) {
+			for (const child of node.children) {
+				walk(child);
+			}
+		}
+
+		const op = node.operation;
+		if (!op) {
+			// Legacy fallback: if it's a leaf with sourceUrl, resolve it
+			if (node.source || node.processData) {
+				params.sourceUrl = resolveVideoSourceUrl(node);
+			}
+			return;
+		}
+
 		switch (op.op) {
+			case "source":
+				params.sourceUrl = resolveVideoSourceUrl(node);
+				break;
+			case "text":
+				// Text is handled by the renderer, but URL is undefined
+				params.sourceUrl = undefined;
+				break;
 			case "cut":
-				trimStartSec = op.startSec;
-				trimEndSec = op.endSec;
+				params.trimStartSec = op.startSec;
+				params.trimEndSec = op.endSec;
 				break;
 			case "speed":
-				speed *= op.rate;
+				params.speed *= op.rate;
 				break;
 			case "crop": {
 				const x = (op.leftPercentage / 100) * currentWidth;
@@ -91,19 +120,16 @@ export function computeRenderParams(vv: VirtualVideoData): RenderParams {
 					Math.round((op.heightPercentage / 100) * currentHeight),
 				);
 
-				// Accumulate offset based on current rotation
-				// (Assuming rotation happens AFTER previous crops' offsets were applied)
 				totalOffsetX += x;
 				totalOffsetY += y;
 
-				cropRegion = {
+				params.cropRegion = {
 					x: Math.round(totalOffsetX),
 					y: Math.round(totalOffsetY),
 					width: cw,
 					height: ch,
 				};
 
-				// Update current dimensions for subsequent operations
 				currentWidth = cw;
 				currentHeight = ch;
 				break;
@@ -114,48 +140,44 @@ export function computeRenderParams(vv: VirtualVideoData): RenderParams {
 				}
 				break;
 			case "flip":
-				if (op.horizontal) flipH = !flipH;
-				if (op.vertical) flipV = !flipV;
+				if (op.horizontal) params.flipH = !params.flipH;
+				if (op.vertical) params.flipV = !params.flipV;
 				break;
 			case "rotate":
-				rotation = (rotation + op.degrees) % 360;
-				// If rotated 90 or 270, swap current tracked dimensions
+				params.rotation = (params.rotation + op.degrees) % 360;
 				if (op.degrees % 180 !== 0) {
 					[currentWidth, currentHeight] = [currentHeight, currentWidth];
 				}
 				break;
 			case "compose":
+				// Reset spatial/timing state for a new composition
 				currentWidth = op.width;
 				currentHeight = op.height;
-				// Reset ALL state because the composition is the new "base content"
 				totalOffsetX = 0;
 				totalOffsetY = 0;
-				cropRegion = null;
-				trimStartSec = 0;
-				trimEndSec = null;
-				speed = 1.0;
-				flipH = false;
-				flipV = false;
-				rotation = 0;
+				params.cropRegion = null;
+				params.trimStartSec = 0;
+				params.trimEndSec = null;
+				params.speed = 1.0;
+				params.flipH = false;
+				params.flipV = false;
+				params.rotation = 0;
 				filters = { ...DEFAULT_FILTERS };
+				break;
+			case "layer":
+				// Layer params are mostly handled by the LayerRenderer,
+				// but we might want to accumulate some state if needed.
 				break;
 		}
 	}
 
-	const sourceDurationSec = (vv.sourceMeta.durationMs ?? 0) / 1000;
-	const effectiveDurationSec =
-		((trimEndSec ?? sourceDurationSec) - trimStartSec) / speed;
+	walk(vv);
 
-	return {
-		sourceUrl: resolveVideoSourceUrl(vv),
-		trimStartSec,
-		trimEndSec,
-		speed,
-		cropRegion,
-		flipH,
-		flipV,
-		rotation,
-		cssFilterString: buildCSSFilterString(filters),
-		effectiveDurationSec,
-	};
+	params.cssFilterString = buildCSSFilterString(filters);
+	const sourceDurationSec = (baseMeta.durationMs ?? 0) / 1000;
+	params.effectiveDurationSec =
+		((params.trimEndSec ?? sourceDurationSec) - params.trimStartSec) /
+		params.speed;
+
+	return params;
 }

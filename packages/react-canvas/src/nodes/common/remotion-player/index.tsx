@@ -1,9 +1,9 @@
 import type { ExtendedLayer, VirtualVideoData } from "@gatewai/core/types";
 import {
+	CompositionScene,
 	computeRenderParams,
 	getActiveVideoMetadata,
 	SingleClipComposition,
-	CompositionScene,
 } from "@gatewai/remotion-compositions";
 import { Audio, Video } from "@remotion/media";
 import type { PlayerRef } from "@remotion/player";
@@ -25,81 +25,7 @@ const FPS = 24;
 
 // ---------- Inner Remotion composition ----------
 
-const MediaComposition: React.FC<{
-	src?: string;
-	isAudio?: boolean;
-	type?: "Video" | "Audio" | "Image" | "Text" | string;
-	data?: unknown;
-	virtualVideo?: VirtualVideoData;
-	layers?: ExtendedLayer[];
-	viewportWidth?: number;
-	viewportHeight?: number;
-	children?: ReactNode;
-}> = ({
-	src,
-	isAudio,
-	type,
-	data,
-	virtualVideo,
-	layers,
-	viewportWidth,
-	viewportHeight,
-	children,
-}) => {
-		const resolvedType = type || (isAudio ? "Audio" : "Video");
-
-		if (layers && layers.length > 0) {
-			return (
-				<AbsoluteFill>
-					<CompositionScene
-						layers={layers}
-						viewportWidth={viewportWidth ?? 1920}
-						viewportHeight={viewportHeight ?? 1080}
-					/>
-					{children}
-				</AbsoluteFill>
-			);
-		}
-
-		return (
-			<AbsoluteFill>
-				{resolvedType === "Video" && virtualVideo ? (
-					<SingleClipComposition virtualVideo={virtualVideo} />
-				) : resolvedType === "Video" && src ? (
-					<Video
-						src={src}
-						style={{ width: "100%", height: "100%", objectFit: "contain" }}
-					/>
-				) : resolvedType === "Audio" && src ? (
-					<Audio src={src} />
-				) : resolvedType === "Image" && src ? (
-					<Img
-						src={src}
-						style={{ width: "100%", height: "100%", objectFit: "contain" }}
-						alt="Media content"
-					/>
-				) : resolvedType === "Text" ? (
-					<div
-						style={{
-							width: "100%",
-							height: "100%",
-							display: "flex",
-							alignItems: "center",
-							justifyContent: "center",
-							color: "white",
-							fontSize: "40px",
-							whiteSpace: "pre-wrap",
-							textAlign: "center",
-							padding: "20px",
-						}}
-					>
-						{typeof data === "string" ? data : JSON.stringify(data)}
-					</div>
-				) : null}
-				{children}
-			</AbsoluteFill>
-		);
-	};
+// Local MediaComposition removed in favor of unified CompositionScene from @gatewai/remotion-compositions
 
 // ---------- Utility functions ----------
 
@@ -477,7 +403,6 @@ export const MediaPlayer = ({
 	const playerRef = useRef<PlayerRef>(null);
 	const wrapperRef = useRef<HTMLDivElement>(null);
 	const resolvedType = type || (isAudio ? "Audio" : "Video");
-	const isCompositor = layers && layers.length > 0;
 
 	const durationInFrames = (() => {
 		if (durationInFramesProp && durationInFramesProp > 0)
@@ -491,23 +416,9 @@ export const MediaPlayer = ({
 		return 30 * fps;
 	})();
 
-	const activeMeta = virtualVideo
-		? getActiveVideoMetadata(virtualVideo)
-		: undefined;
+	const compWidth = viewportWidth ?? 1920;
 
-	const renderParams = virtualVideo
-		? computeRenderParams(virtualVideo)
-		: undefined;
-
-	const compWidth = isCompositor
-		? (viewportWidth ?? 1920)
-		: (renderParams?.cropRegion?.width ?? activeMeta?.width ?? 1920);
-
-	const compHeight = isCompositor
-		? (viewportHeight ?? 1080)
-		: resolvedType === "Audio"
-			? 400
-			: (renderParams?.cropRegion?.height ?? activeMeta?.height ?? 1080);
+	const compHeight = resolvedType === "Audio" ? 400 : (viewportHeight ?? 1080);
 
 	const showControls =
 		controls && resolvedType !== "Image" && resolvedType !== "Text";
@@ -528,7 +439,7 @@ export const MediaPlayer = ({
 			>
 				<Player
 					ref={playerRef}
-					component={MediaComposition}
+					component={CompositionScene}
 					inputProps={{
 						src,
 						isAudio,
@@ -536,8 +447,8 @@ export const MediaPlayer = ({
 						data,
 						virtualVideo,
 						layers,
-						viewportWidth,
-						viewportHeight,
+						viewportWidth: compWidth,
+						viewportHeight: compHeight,
 						children,
 					}}
 					durationInFrames={durationInFrames}

@@ -22,16 +22,16 @@ function MediaContent({
 }) {
 	const selectedOutput =
 		result.outputs?.[
-		Math.min(result.selectedOutputIndex, result.outputs.length - 1)
+			Math.min(result.selectedOutputIndex, result.outputs.length - 1)
 		];
 	const outputItem = selectedOutput?.items?.[0];
 
 	const isImage = outputItem?.type === "Image";
 	const isVideo = outputItem?.type === "Video";
 	const isAudio = outputItem?.type === "Audio";
-	const isText = outputItem?.type === "Text";
-	const isOther = !isImage && !isVideo && !isAudio && !isText;
+	const isOther = !isImage && !isVideo && !isAudio;
 	const hasMoreThanOneOutput = result.outputs.length > 1;
+
 	const assetUrl = useMemo(() => {
 		if (!outputItem?.data) return null;
 		if (outputItem.type === "Video") {
@@ -41,7 +41,7 @@ function MediaContent({
 		if (!fileData.entity) return null;
 		return GetAssetEndpoint(fileData.entity);
 	}, [outputItem]);
-	console.log({ assetUrl, result });
+
 	const activeMeta = useMemo(() => {
 		if (outputItem?.type === "Video") {
 			return getActiveVideoMetadata(outputItem.data);
@@ -60,10 +60,16 @@ function MediaContent({
 
 	const assetName = useMemo(() => {
 		if (!outputItem?.data) return undefined;
+		const data = outputItem.data as any;
 		if (outputItem.type === "Video") {
-			return outputItem.data.source?.entity?.name;
+			// Try new structure: find leaf source name if possible, or use metadata
+			if (data.operation?.op === "source") {
+				return data.operation.source?.entity?.name;
+			}
+			// Legacy fallback
+			return data.source?.entity?.name;
 		}
-		return (outputItem.data as FileData)?.entity?.name;
+		return (data as FileData)?.entity?.name;
 	}, [outputItem]);
 	if (!outputItem) {
 		return null;
@@ -78,11 +84,7 @@ function MediaContent({
 			)}
 			{isImage && assetUrl && <CanvasRenderer imageUrl={assetUrl} />}
 			{isVideo && (
-				<VideoRenderer
-					src={assetUrl || undefined}
-					virtualVideo={outputItem.data}
-					durationMs={durationMs}
-				/>
+				<VideoRenderer virtualVideo={outputItem.data} durationMs={durationMs} />
 			)}
 			{isAudio && assetUrl && (
 				<AudioRenderer
@@ -91,7 +93,6 @@ function MediaContent({
 					durationMs={durationMs}
 				/>
 			)}
-			{isText && <MediaPlayer type="Text" data={outputItem.data} />}
 			{isOther && (
 				<div className="flex flex-col items-center gap-2">
 					<FileIcon className="w-5 h-5" />{" "}

@@ -1,10 +1,10 @@
 import type { DataType } from "@gatewai/db";
-import type { AnyOutputItem, NodeResult } from "./node-result.js";
+import type { AnyOutputUnion, NodeResult } from "./node-result.js";
 import type { IPixiProcessor } from "./pixi.js";
 
 export type ConnectedInput = {
 	connectionValid: boolean;
-	outputItem: AnyOutputItem | null;
+	outputItem: AnyOutputUnion | null;
 };
 
 export interface NodeProcessorContext {

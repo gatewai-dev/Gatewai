@@ -11,6 +11,7 @@ import type {
 import {
 	AddCustomHandleButton,
 	BaseNode,
+	MediaContent,
 	MediaPlayer,
 	type NodeProps,
 	useDownloadFileData,
@@ -31,10 +32,9 @@ import { DEFAULT_DURATION_FRAMES, FPS } from "./video-editor/config/index.js";
 const VideoCompositorNodeComponent = memo((props: NodeProps) => {
 	const node = useAppSelector(makeSelectNodeById(props.id));
 	const [isDownloading, setIsDownloading] = useState(false);
-	const { inputs } = useNodeResult(props.id);
+	const { inputs, result } = useNodeResult(props.id);
 	const nav = useNavigate();
 	const downloadFileData = useDownloadFileData();
-
 	const previewState = useMemo(() => {
 		const config = (node?.config as unknown as VideoCompositorNodeConfig) ?? {};
 		const layerUpdates = config.layerUpdates || {};
@@ -200,7 +200,7 @@ const VideoCompositorNodeComponent = memo((props: NodeProps) => {
 	};
 
 	const hasInputs = previewState && previewState.layers.length > 0;
-
+	console.log({ result });
 	return (
 		<BaseNode selected={props.selected} id={props.id} dragging={props.dragging}>
 			<div className="flex flex-col w-full">
@@ -210,15 +210,8 @@ const VideoCompositorNodeComponent = memo((props: NodeProps) => {
 						minHeight: hasInputs ? "120px" : "120px",
 					}}
 				>
-					{hasInputs ? (
-						<MediaPlayer
-							layers={previewState.layers}
-							viewportWidth={previewState.width}
-							viewportHeight={previewState.height}
-							durationInFrames={previewState.durationInFrames}
-							fps={FPS}
-							className="rounded-none border-b border-white/10"
-						/>
+					{result && node ? (
+						<MediaContent node={node} result={result} />
 					) : (
 						<div className="absolute inset-0 flex items-center justify-center text-muted-foreground text-xs italic border-b border-white/10 w-full h-full">
 							No input connected

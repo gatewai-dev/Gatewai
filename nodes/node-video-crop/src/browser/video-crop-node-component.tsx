@@ -10,7 +10,7 @@ import {
 	makeSelectNodeById,
 	useAppSelector,
 } from "@gatewai/react-store";
-import { resolveVideoSourceUrl } from "@gatewai/remotion-compositions";
+import { getActiveVideoMetadata } from "@gatewai/remotion-compositions";
 import {
 	Button,
 	cn,
@@ -642,11 +642,9 @@ const VideoCropNodeComponent = memo(
 			| VirtualVideoData
 			| undefined;
 
-		const videoSrc = inputVideo ? resolveVideoSourceUrl(inputVideo) : undefined;
-
 		const sourceSize = useMemo(() => {
-			if (!inputVideo?.sourceMeta) return null;
-			const { width: w, height: h } = inputVideo.sourceMeta;
+			const activeMeta = getActiveVideoMetadata(inputVideo);
+			const { width: w, height: h } = activeMeta;
 			if (!w || !h) return null;
 			return { w, h };
 		}, [inputVideo]);
@@ -925,9 +923,8 @@ const VideoCropNodeComponent = memo(
 					>
 						{inputVideo ? (
 							<VideoRenderer
-								src={videoSrc}
 								virtualVideo={inputVideo}
-								durationMs={inputVideo?.sourceMeta?.durationMs}
+								durationMs={getActiveVideoMetadata(inputVideo).durationMs}
 								controls={true}
 								className="rounded-none w-full h-full"
 								overlay={overlay}

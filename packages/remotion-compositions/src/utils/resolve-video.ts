@@ -6,99 +6,156 @@ import type {
 } from "@gatewai/core/types";
 
 /**
- * Create a VirtualVideoData from a FileData source.
- * Used by Import and VideoGen nodes to wrap concrete file assets.
+ * Create a VirtualVideoData from a FileData source or Text.
+ * Used by Import, VideoGen, and Text nodes to wrap concrete content.
  */
-export function createVirtualVideo(source: any): VirtualVideoData {
+export function createVirtualVideo(
+	source: any,
+	type: "Video" | "Audio" | "Image" | "Text" = "Video",
+): VirtualVideoData {
+	if (type === "Text") {
+		const text = typeof source === "string" ? source : (source.text ?? "");
+		return {
+			metadata: {
+				width: 1920, // Default for text if not specified
+				height: 1080,
+				fps: 24,
+				durationMs: 5000,
+			},
+			operation: {
+				op: "text",
+				text: text,
+			},
+			children: [],
+		};
+	}
+
+	const sourceMeta = {
+		width: source.entity?.width ?? source.processData?.width,
+		height: source.entity?.height ?? source.processData?.height,
+		durationMs: source.entity?.duration ?? source.processData?.duration,
+		fps: source.processData?.fps,
+	};
+
 	return {
-		source: {
-			entity: source.entity,
-			processData: source.processData,
+		metadata: sourceMeta,
+		operation: {
+			op: "source",
+			source: {
+				entity: source.entity,
+				processData: source.processData,
+			},
+			sourceMeta: sourceMeta,
 		},
-		sourceMeta: {
-			width: source.entity?.width ?? source.processData?.width,
-			height: source.entity?.height ?? source.processData?.height,
-			durationMs: source.entity?.duration ?? source.processData?.duration,
-			fps: source.processData?.fps,
-		},
-		operations: [],
+		children: [],
 	};
 }
 
 /**
- * Resolve the actual playable URL from a VirtualVideoData or FileData source.
+ * Resolve the actual playable URL from a VirtualVideoData.
+ * Walks down the tree to find the 'source' operation.
+ * Supports legacy formats for backward compatibility.
  */
 export function resolveVideoSourceUrl(
 	vv: VirtualVideoData | any,
 ): string | undefined {
-	const source = (vv as VirtualVideoData).source ?? vv;
-	if (source.entity) {
+	if (!vv) return undefined;
+
+	// New structure: leaf source node
+	if (vv.operation?.op === "source") {
+		const source = vv.operation.source;
+		if (source?.entity) {
+			return GetAssetEndpoint(source.entity) as string;
+		}
+		return source?.processData?.dataUrl;
+	}
+
+	// New structure: walk down children (assuming single path for non-compose)
+	if (vv.children?.length > 0) {
+		return resolveVideoSourceUrl(vv.children[0]);
+	}
+
+	// Legacy structure or direct FileData
+	const source = vv.source ?? vv;
+	if (source?.entity) {
 		return GetAssetEndpoint(source.entity) as string;
 	}
-	return source.processData?.dataUrl;
+	return source?.processData?.dataUrl;
 }
 
 /**
- * Append an operation to an existing VirtualVideoData (immutable).
+ * Append an operation to an existing VirtualVideoData (recursive).
+ * This creates a new parent node wrapping the current one as a child.
  */
 export function appendOperation(
-	vv: VirtualVideoData,
+	vv: VirtualVideoData | any,
 	operation: VideoOperation,
 ): VirtualVideoData {
+	const nextMeta = computeNextMetadata(getActiveVideoMetadata(vv), operation);
 	return {
-		...vv,
-		operations: [...vv.operations, operation],
+		metadata: nextMeta,
+		operation,
+		children: [vv],
 	};
 }
 
 /**
- * Get the active metadata from the latest operation that provides/modifies it.
- * Falls back to sourceMeta if no operations have metadata.
+ * Helper to compute the metadata of the NEXT node in the operator tree.
  */
-export function getActiveVideoMetadata(vv: VirtualVideoData): VideoMetadata {
-	let width = vv.sourceMeta.width ?? 1920;
-	let height = vv.sourceMeta.height ?? 1080;
-	let durationMs = vv.sourceMeta.durationMs ?? 0;
-	const fps = vv.sourceMeta.fps;
+function computeNextMetadata(
+	baseMeta: VideoMetadata,
+	op: VideoOperation,
+): VideoMetadata {
+	let {
+		width = 1920,
+		height = 1080,
+		durationMs = 0,
+		fps = 24,
+	} = baseMeta || {};
 
-	for (const op of vv.operations) {
-		// If an operation explicitly provides metadata, we use it as a base/override
-		if (op.metadata) {
-			width = op.metadata.width ?? width;
-			height = op.metadata.height ?? height;
-			durationMs = op.metadata.durationMs ?? durationMs;
-		} else {
-			// Otherwise, we infer changes from the operation itself
-			switch (op.op) {
-				case "crop": {
-					width = Math.max(
-						1,
-						Math.round((op.widthPercentage / 100) * width),
-					);
-					height = Math.max(
-						1,
-						Math.round((op.heightPercentage / 100) * height),
-					);
-					break;
+	// If an operation explicitly provides metadata, we use it as a base/override
+	if ("metadata" in op && op.metadata) {
+		width = op.metadata.width ?? width;
+		height = op.metadata.height ?? height;
+		durationMs = op.metadata.durationMs ?? durationMs;
+	} else {
+		// Otherwise, we infer changes from the operation itself
+		switch (op.op) {
+			case "crop": {
+				width = Math.max(
+					1,
+					Math.round((op.widthPercentage / 100) * (width ?? 1920)),
+				);
+				height = Math.max(
+					1,
+					Math.round((op.heightPercentage / 100) * (height ?? 1080)),
+				);
+				break;
+			}
+			case "rotate": {
+				if (op.degrees % 180 !== 0) {
+					[width, height] = [height, width];
 				}
-				case "rotate": {
-					if (op.degrees % 180 !== 0) {
-						[width, height] = [height, width];
-					}
-					break;
+				break;
+			}
+			case "compose": {
+				width = op.width;
+				height = op.height;
+				durationMs = (op.durationInFrames / op.fps) * 1000;
+				break;
+			}
+			case "cut": {
+				durationMs =
+					((op.endSec ?? (durationMs ?? 0) / 1000) - op.startSec) * 1000;
+				break;
+			}
+			case "layer": {
+				width = op.width ?? width;
+				height = op.height ?? height;
+				if (op.durationInFrames && fps) {
+					durationMs = (op.durationInFrames / fps) * 1000;
 				}
-				case "compose": {
-					width = op.width;
-					height = op.height;
-					durationMs = (op.durationInFrames / op.fps) * 1000;
-					break;
-				}
-				case "cut": {
-					const speed = 1.0; // Simplified, speed ops are separate
-					durationMs = ((op.endSec ?? durationMs / 1000) - op.startSec) * 1000;
-					break;
-				}
-				// Speed changes don't change pixel dimensions, so we ignore them here
+				break;
 			}
 		}
 	}
@@ -109,4 +166,19 @@ export function getActiveVideoMetadata(vv: VirtualVideoData): VideoMetadata {
 		durationMs,
 		fps,
 	};
+}
+
+/**
+ * Get the active metadata from the VirtualVideoData node.
+ * Simply returns the metadata property of the node.
+ * Supports legacy formats (sourceMeta).
+ */
+export function getActiveVideoMetadata(
+	vv: VirtualVideoData | any,
+): VideoMetadata {
+	if (!vv) return { width: 1920, height: 1080, fps: 24, durationMs: 0 };
+	return (
+		vv.metadata ??
+		vv.sourceMeta ?? { width: 1920, height: 1080, fps: 24, durationMs: 0 }
+	);
 }
