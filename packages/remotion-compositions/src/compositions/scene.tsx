@@ -1,5 +1,5 @@
 import type { ExtendedLayer, VirtualVideoData } from "@gatewai/core/types";
-import { Video } from "@remotion/media";
+import { Audio } from "@remotion/media";
 import type React from "react";
 import { memo, useEffect, useMemo, useRef } from "react";
 import {
@@ -7,6 +7,7 @@ import {
 	Html5Audio,
 	Img,
 	interpolate,
+	OffthreadVideo,
 	Sequence,
 	spring,
 	useCurrentFrame,
@@ -154,23 +155,6 @@ const compareVirtualVideo = (
 				aOp.heightPercentage !== bCrop.heightPercentage;
 
 			if (isDifferent) {
-				console.log(
-					"[compareVirtualVideo] Crop parameters mismatch! Triggering re-render.",
-					{
-						from: {
-							left: aOp.leftPercentage,
-							top: aOp.topPercentage,
-							width: aOp.widthPercentage,
-							height: aOp.heightPercentage,
-						},
-						to: {
-							left: bCrop.leftPercentage,
-							top: bCrop.topPercentage,
-							width: bCrop.widthPercentage,
-							height: bCrop.heightPercentage,
-						},
-					},
-				);
 				return false;
 			}
 			break;
@@ -178,25 +162,6 @@ const compareVirtualVideo = (
 		case "cut": {
 			const bCut = bOp;
 			if (aOp.startSec !== bCut.startSec || aOp.endSec !== bCut.endSec)
-				return false;
-			break;
-		}
-		case "speed": {
-			const bSpeed = bOp as any;
-			if (aOp.rate !== bSpeed.rate) return false;
-			break;
-		}
-		case "rotate": {
-			const bRotate = bOp as any;
-			if (aOp.degrees !== bRotate.degrees) return false;
-			break;
-		}
-		case "flip": {
-			const bFlip = bOp as any;
-			if (
-				aOp.horizontal !== bFlip.horizontal ||
-				aOp.vertical !== bFlip.vertical
-			)
 				return false;
 			break;
 		}
@@ -334,42 +299,11 @@ export const SingleClipComposition: React.FC<{
 	const { fps } = useVideoConfig();
 	const op = virtualVideo?.operation;
 
-	// --- Crop Debugging Hooks ---
-	const prevCropRef = useRef<any>(null);
-
-	useEffect(() => {
-		if (op?.op === "crop") {
-			const current = {
-				wp: Number(op.widthPercentage) || 100,
-				hp: Number(op.heightPercentage) || 100,
-				lp: Number(op.leftPercentage) || 0,
-				tp: Number(op.topPercentage) || 0,
-			};
-			const prev = prevCropRef.current;
-
-			if (!prev) {
-				console.log("[Crop Layer Mounted]", { initialCrop: current });
-			} else if (
-				prev.wp !== current.wp ||
-				prev.hp !== current.hp ||
-				prev.lp !== current.lp ||
-				prev.tp !== current.tp
-			) {
-				console.log("[Crop Layer Changed]", {
-					changedFrom: prev,
-					changedTo: current,
-				});
-			}
-
-			prevCropRef.current = current;
-		}
-	}, [op]);
-
 	// -----------------------------------------------------------------------
 	// compose: delegate to CompositionScene
 	// -----------------------------------------------------------------------
 	if (op.op === "compose") {
-		return (
+		const composeNode = (
 			<CompositionScene
 				layers={
 					(virtualVideo.children || [])
@@ -420,6 +354,22 @@ export const SingleClipComposition: React.FC<{
 				viewportHeight={op.height}
 			/>
 		);
+
+		// If this compositor node is wrapped inside a Cut node, we use a negative Sequence
+		// "from" offset to shift the internal timeframe backward.
+		const trimFrames = trimStartOverride
+			? Math.floor(trimStartOverride * fps)
+			: 0;
+
+		if (trimFrames > 0) {
+			return (
+				<Sequence from={-trimFrames} layout="none">
+					{composeNode}
+				</Sequence>
+			);
+		}
+
+		return composeNode;
 	}
 
 	// -----------------------------------------------------------------------
@@ -479,16 +429,20 @@ export const SingleClipComposition: React.FC<{
 
 		if (!params.sourceUrl) return <AbsoluteFill />;
 
-		const startFrame = Math.floor(
-			((trimStartOverride ?? 0) + params.trimStartSec) * fps,
-		);
-		const finalPlaybackRate = (playbackRateOverride ?? 1) * params.speed;
+		const baseRate = Number(playbackRateOverride) || 1;
+		const paramsRate = Number(params.speed) || 1;
+		const finalPlaybackRate = baseRate * paramsRate;
+
+		// Correctly accumulate both external cut nodes (trimStartOverride) and internal asset trims
+		const effectiveTrimSec =
+			(trimStartOverride ?? 0) + (Number(params.trimStartSec) || 0);
+		const startFrame = Math.floor((effectiveTrimSec * fps) / finalPlaybackRate);
 
 		if (mediaType === "Audio") {
 			return (
-				<Video
+				<Audio
 					src={params.sourceUrl}
-					startFrom={startFrame}
+					trimBefore={startFrame}
 					playbackRate={finalPlaybackRate}
 					volume={volume}
 				/>
@@ -512,10 +466,10 @@ export const SingleClipComposition: React.FC<{
 		}
 
 		return (
-			<Video
+			<OffthreadVideo
 				src={params.sourceUrl}
 				playbackRate={finalPlaybackRate}
-				startFrom={startFrame}
+				trimBefore={startFrame}
 				volume={volume}
 				style={{
 					position: "absolute",
@@ -531,7 +485,7 @@ export const SingleClipComposition: React.FC<{
 	}
 
 	// -----------------------------------------------------------------------
-	// speed: pass through override
+	// speed: accumulate playback rate, pass trim through unchanged.
 	// -----------------------------------------------------------------------
 	if (op.op === "speed") {
 		const childVideo = virtualVideo.children[0];
@@ -540,7 +494,9 @@ export const SingleClipComposition: React.FC<{
 			<SingleClipComposition
 				virtualVideo={childVideo}
 				volume={volume}
-				playbackRateOverride={(playbackRateOverride ?? 1) * op.rate}
+				playbackRateOverride={
+					(Number(playbackRateOverride) || 1) * (Number(op.rate) || 1)
+				}
 				trimStartOverride={trimStartOverride}
 				textStyle={textStyle}
 			/>
@@ -548,24 +504,29 @@ export const SingleClipComposition: React.FC<{
 	}
 
 	// -----------------------------------------------------------------------
-	// cut: pass through override
+	// cut: accumulate the start offset into trimStartOverride so the leaf
+	// Video node can seek to the correct source position via startFrom.
+	// Duration is handled externally (composition config / Sequence props).
 	// -----------------------------------------------------------------------
 	if (op.op === "cut") {
 		const childVideo = virtualVideo.children[0];
 		if (!childVideo) return null;
+
+		const accumulatedTrim = (trimStartOverride ?? 0) + (op.startSec ?? 0);
+		console.log({ accumulatedTrim });
 		return (
 			<SingleClipComposition
 				virtualVideo={childVideo}
 				volume={volume}
 				playbackRateOverride={playbackRateOverride}
-				trimStartOverride={(trimStartOverride ?? 0) + op.startSec}
+				trimStartOverride={accumulatedTrim}
 				textStyle={textStyle}
 			/>
 		);
 	}
 
 	// -----------------------------------------------------------------------
-	// Transformers
+	// Transformers (crop, rotate, flip, filter, layer)
 	// -----------------------------------------------------------------------
 	const childVideo = virtualVideo.children[0];
 
