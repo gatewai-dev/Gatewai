@@ -17,10 +17,8 @@ import {
 	computeRenderParams,
 } from "../utils/apply-operations.js";
 import {
-	computeVideoCropRenderProps,
 	getActiveVideoMetadata,
 	getMediaType,
-	resolveVideoSourceUrl,
 } from "../utils/resolve-video.js";
 
 const DEFAULT_DURATION_FRAMES = 24 * 5; // 5 sec at 24 fps
@@ -987,7 +985,7 @@ export const CompositionScene: React.FC<SceneProps> = ({
 				backgroundColor: "#000000",
 				overflow: "hidden",
 				pointerEvents: "none",
-				containerType: "size" as any,
+				containerType: "size",
 			}}
 		>
 			<div

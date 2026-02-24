@@ -1,9 +1,8 @@
 import { GetAssetEndpoint } from "@gatewai/core";
-import {
-	type FileData,
-	type IPixiProcessor,
-	type MediaService,
-	MIME_TYPES,
+import type {
+	FileData,
+	IPixiProcessor,
+	MediaService,
 } from "@gatewai/core/types";
 import {
 	Application,

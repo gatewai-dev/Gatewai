@@ -3,7 +3,7 @@
 	"scripts": {
 		"build": "turbo run build",
 		"be:build": "turbo run be:build --filter=@gatewai/fe",
-		"dev": "turbo run dev --concurrency 35",
+		"dev": "turbo run dev --concurrency 36",
 		"dev-mcp": "turbo run dev --filter=@gatewai/mcp-server",
 		"biome": "pnpm exec biome check --write",
 		"biome-hook": "pnpm exec biome check --write --no-errors-on-unmatched --files-ignore-unknown=true --colors=off",
