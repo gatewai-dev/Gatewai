@@ -10,7 +10,7 @@ import {
 import { VideoCutConfigSchema } from "../shared/config.js";
 import type { VideoCutResult } from "../shared/index.js";
 
-export class VideoCropBrowserProcessor implements IBrowserProcessor {
+export class VideoCutBrowserProcessor implements IBrowserProcessor {
 	async process({
 		node,
 		inputs,
@@ -30,6 +30,14 @@ export class VideoCropBrowserProcessor implements IBrowserProcessor {
 		const { startSec, endSec } = VideoCutConfigSchema.parse(node.config);
 
 		const currentMeta = getActiveVideoMetadata(inputVideo);
+		if (!currentMeta?.durationMs) throw new Error("The duration of input video is unknown");
+
+		const startMs = startSec * 1000;
+		const endMs = endSec ? (endSec * 1000) : currentMeta.durationMs;
+		console.log({endMs})
+		if (endMs <= startMs) {
+			throw new Error("End timestamp must be bigger than start");
+		}
 
 		const output = appendOperation(inputVideo, {
 			op: "cut",
@@ -37,7 +45,7 @@ export class VideoCropBrowserProcessor implements IBrowserProcessor {
 			endSec,
 			metadata: {
 				...currentMeta,
-				durationMs: (startSec - endSec) * 1000,
+				durationMs: (endMs - startMs),
 			},
 		});
 

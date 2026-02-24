@@ -67,7 +67,7 @@ function MediaContent({
 	if (!outputItem) {
 		return null;
 	}
-
+	console.log({durationMs})
 	return (
 		<div className="relative h-full w-full group">
 			{hasMoreThanOneOutput && (

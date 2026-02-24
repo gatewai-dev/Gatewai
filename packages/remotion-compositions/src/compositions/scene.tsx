@@ -176,7 +176,7 @@ const compareVirtualVideo = (
 			break;
 		}
 		case "cut": {
-			const bCut = bOp as any;
+			const bCut = bOp;
 			if (aOp.startSec !== bCut.startSec || aOp.endSec !== bCut.endSec)
 				return false;
 			break;

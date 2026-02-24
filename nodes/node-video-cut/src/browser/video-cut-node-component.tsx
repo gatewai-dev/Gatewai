@@ -1,6 +1,7 @@
 import type { VirtualVideoData } from "@gatewai/core/types";
 import {
 	BaseNode,
+	MediaContent,
 	useCanvasCtx,
 	useNodeResult,
 	VideoRenderer,
@@ -32,7 +33,7 @@ const VideoCutNodeComponent = memo(
 		const { onNodeConfigUpdate } = useCanvasCtx();
 		const edges = useAppSelector(makeSelectEdgesByTargetNodeId(props.id));
 		const inputHandleId = useMemo(() => edges?.[0]?.targetHandleId, [edges]);
-		const { inputs } = useNodeResult(props.id);
+		const { inputs, result } = useNodeResult(props.id);
 
 		const inputVideo = inputs[inputHandleId!]?.outputItem?.data as
 			| VirtualVideoData
@@ -98,17 +99,15 @@ const VideoCutNodeComponent = memo(
 				dragging={props.dragging}
 			>
 				<div className="select-none rounded-xl overflow-hidden bg-card border border-border">
-					<div className="relative w-full bg-black/20">
-						{inputVideo ? (
-							<VideoRenderer
-								virtualVideo={inputVideo}
-								durationMs={trimmedDurationMs}
-								controls={true}
-								className="rounded-none w-full h-full"
-							/>
+					<div
+						className="relative min-h-32"
+						
+					>
+						{result && node ? (
+							<MediaContent node={node} result={result} />
 						) : (
-							<div className="h-64 flex items-center justify-center text-muted-foreground/40 text-xs">
-								No video connected
+							<div className="absolute inset-0 flex items-center justify-center text-muted-foreground text-xs italic border-b border-white/10 w-full h-full">
+								No input connected
 							</div>
 						)}
 					</div>
