@@ -589,23 +589,24 @@ export const SingleClipComposition: React.FC<{
 		const lp = Number(op.leftPercentage) || 0;
 		const tp = Number(op.topPercentage) || 0;
 
-		const scaleX = 100 / wp;
-		const scaleY = 100 / hp;
-		const translateX = -lp * scaleX;
-		const translateY = -tp * scaleY;
+		// Use reciprocal percentage bounds instead of CSS Transform
+		// This sidesteps double-scaling conflicts when working with container queries
+		const innerWidth = (100 / wp) * 100;
+		const innerHeight = (100 / hp) * 100;
+		const innerLeft = (lp / wp) * 100;
+		const innerTop = (tp / hp) * 100;
 
 		console.log("[SingleClipComposition] Applying Crop", {
 			input: { wp, hp, lp, tp },
-			calculated: { scaleX, scaleY, translateX, translateY },
+			calculated: { innerWidth, innerHeight, innerLeft, innerTop },
 		});
 
 		const innerStyle: React.CSSProperties = {
 			position: "absolute",
-			width: "100%",
-			height: "100%",
-			transform: `translate(${translateX}%, ${translateY}%) scale(${scaleX}, ${scaleY})`,
-			transformOrigin: "top left",
-			willChange: "transform",
+			width: `${innerWidth}%`,
+			height: `${innerHeight}%`,
+			left: `-${innerLeft}%`,
+			top: `-${innerTop}%`,
 		};
 
 		return (
