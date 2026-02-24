@@ -589,12 +589,6 @@ export const SingleClipComposition: React.FC<{
 		const lp = Number(op.leftPercentage) || 0;
 		const tp = Number(op.topPercentage) || 0;
 
-		// FIX: The translation should be relative to the original source coordinates.
-		// Since the parent AbsoluteFill (the crop window) already has the cropped meta width/height,
-		// and we are scaling the content by 100/wp (making it original size),
-		// a translation of -lp% will move it by exactly lp% of the original width.
-		// The previous formula -(lp / wp) * 100 was overshooting because it forgot that
-		// the scale (100/wp) is applied to the translation as well if transformOrigin is 'top left'.
 		const scaleX = 100 / wp;
 		const scaleY = 100 / hp;
 		const translateX = -lp * scaleX;
@@ -605,7 +599,7 @@ export const SingleClipComposition: React.FC<{
 			calculated: { scaleX, scaleY, translateX, translateY },
 		});
 
-		const innerStyle = {
+		const innerStyle: React.CSSProperties = {
 			position: "absolute",
 			width: "100%",
 			height: "100%",
@@ -992,13 +986,18 @@ export const CompositionScene: React.FC<SceneProps> = ({
 				backgroundColor: "#000000",
 				overflow: "hidden",
 				pointerEvents: "none",
+				containerType: "size" as any,
 			}}
 		>
 			<div
 				style={{
 					width: resolvedViewportW,
 					height: resolvedViewportH,
-					position: "relative",
+					position: "absolute",
+					top: 0,
+					left: 0,
+					transform: `scale(calc(100cqw / ${resolvedViewportW}), calc(100cqh / ${resolvedViewportH}))`,
+					transformOrigin: "top left",
 				}}
 			>
 				{layersToRender.map((layer) => {
