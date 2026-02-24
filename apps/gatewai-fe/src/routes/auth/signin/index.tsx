@@ -16,7 +16,7 @@ function SigninPage() {
 	return (
 		<AuthLayout
 			title="WELCOME BACK"
-			subtitle="Sign in to continue building workflows"
+			subtitle="Sign in to your workspace"
 		>
 			<Helmet>
 				<title>Sign In - Gatewai</title>

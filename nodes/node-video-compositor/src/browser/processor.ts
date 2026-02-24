@@ -9,7 +9,7 @@ import {
 	getActiveVideoMetadata,
 } from "@gatewai/remotion-compositions";
 import type { VideoCompositorNodeConfig } from "../shared/config.js";
-import { FPS } from "./video-editor/config/index.js";
+import { DEFAULT_DURATION_FRAMES, FPS } from "./video-editor/config/index.js";
 
 export class VideoCompositorBrowserProcessor implements IBrowserProcessor {
 	async process({ node, inputs, context }: NodeProcessorParams) {
@@ -27,7 +27,7 @@ export class VideoCompositorBrowserProcessor implements IBrowserProcessor {
 			maxZ = Math.max(maxZ, (update as ExtendedLayer).zIndex ?? 0);
 		}
 
-		let durationInFrames = fps * 5; // default minimum
+		let durationInFrames = DEFAULT_DURATION_FRAMES; // default minimum
 
 		// Build recursive VirtualVideoData
 		const compositionChildren: VirtualVideoData[] = [];
@@ -52,12 +52,17 @@ export class VideoCompositorBrowserProcessor implements IBrowserProcessor {
 
 			const activeMeta = getActiveVideoMetadata(childVV);
 
+			const layerDurationInFrames =
+				saved.durationInFrames ??
+				Math.ceil(((activeMeta.durationMs ?? 0) / 1000) * fps);
+
 			// Wrap in a layer operation
 			const layerOp: VirtualVideoData = {
 				metadata: {
 					...activeMeta,
 					width: saved.width ?? activeMeta.width,
 					height: saved.height ?? activeMeta.height,
+					durationMs: (layerDurationInFrames / fps) * 1000,
 				},
 				operation: {
 					op: "layer",
@@ -69,11 +74,7 @@ export class VideoCompositorBrowserProcessor implements IBrowserProcessor {
 					scale: saved.scale ?? 1,
 					opacity: saved.opacity ?? 1,
 					startFrame: saved.startFrame ?? 0,
-					durationInFrames:
-						saved.durationInFrames ??
-						(item.type === "Video" || item.type === "Audio"
-							? Math.ceil(((activeMeta.durationMs ?? 0) / 1000) * fps)
-							: fps * 5),
+					durationInFrames: layerDurationInFrames,
 					zIndex: saved.zIndex ?? 0,
 					// Content & Styling
 					text: saved.text,
@@ -101,7 +102,7 @@ export class VideoCompositorBrowserProcessor implements IBrowserProcessor {
 
 			const layerEnd =
 				(layerOp.operation as any).startFrame +
-				((layerOp.operation as any).durationInFrames ?? fps * 5);
+				((layerOp.operation as any).durationInFrames ?? DEFAULT_DURATION_FRAMES);
 			if (layerEnd > durationInFrames) durationInFrames = layerEnd;
 
 			compositionChildren.push(layerOp);

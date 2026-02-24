@@ -2492,7 +2492,7 @@ export const VideoDesignerEditor: React.FC<VideoDesignerEditorProps> = ({
 							(l.durationInFrames ?? DEFAULT_DURATION_FRAMES),
 					),
 				);
-
+	console.log({durationInFrames})
 	// Unmemoized Context: This context value contains state (currentFrame, pan, zoom, isPlaying) that updates extremely fast.
 	// In the original code, the dependency array was huge and invalidated almost constantly, offering zero memoization benefit
 	// and masking stale closure errors. A fast re-render pass is better than costly and ineffective dependency tracking here.

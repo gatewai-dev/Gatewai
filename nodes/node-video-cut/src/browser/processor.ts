@@ -34,7 +34,7 @@ export class VideoCutBrowserProcessor implements IBrowserProcessor {
 
 		const startMs = startSec * 1000;
 		const endMs = endSec ? (endSec * 1000) : currentMeta.durationMs;
-		console.log({endMs})
+
 		if (endMs <= startMs) {
 			throw new Error("End timestamp must be bigger than start");
 		}

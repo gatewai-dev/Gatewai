@@ -389,7 +389,6 @@ export const MediaPlayer = ({
 	layers,
 	viewportWidth,
 	viewportHeight,
-	durationInFrames: durationInFramesProp,
 	fps = FPS,
 	controls = true,
 	className,
@@ -403,8 +402,6 @@ export const MediaPlayer = ({
 	const activeMeta = virtualVideo ? getActiveVideoMetadata(virtualVideo) : null;
 
 	const durationInFrames = (() => {
-		if (durationInFramesProp && durationInFramesProp > 0)
-			return durationInFramesProp;
 		if (activeMeta?.durationMs)
 			return Math.max(1, Math.ceil((activeMeta.durationMs / 1000) * fps));
 		if (durationMs) return Math.max(1, Math.ceil((durationMs / 1000) * fps));
@@ -421,7 +418,7 @@ export const MediaPlayer = ({
 	const showControls =
 		controls && resolvedType !== "Image" && resolvedType !== "Text";
 
-	console.log({ compWidth, compHeight });
+	console.log({ compWidth, compHeight, durationInFrames });
 	return (
 		<div
 			ref={wrapperRef}
