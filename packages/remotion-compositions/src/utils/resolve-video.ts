@@ -226,3 +226,62 @@ export function getActiveVideoMetadata(
 	if (!vv) return { width: 1920, height: 1080, fps: 24, durationMs: 0 };
 	return vv.metadata ?? { width: 1920, height: 1080, fps: 24, durationMs: 0 };
 }
+/**
+ * Compute the dimensions and offsets for rendering a cropped video.
+ * Traverses the VirtualVideoData tree to find nested crops and source dimensions.
+ */
+export function computeVideoCropRenderProps(virtualVideo: VirtualVideoData): {
+	videoNaturalWidth: number;
+	videoNaturalHeight: number;
+	cropTranslatePercentageX: number; // Changed from Px to Percentage
+	cropTranslatePercentageY: number; // Changed from Px to Percentage
+} | null {
+	let totalOffsetX = 0;
+	let totalOffsetY = 0;
+	let hasCrop = false;
+	let sourceMetaFound: any = null;
+
+	// Traverse the recursive tree to find crops and the source dimensions
+	let currentNode: VirtualVideoData | undefined = virtualVideo;
+	while (currentNode) {
+		const op = currentNode.operation;
+
+		if (op.op === "crop") {
+			hasCrop = true;
+			const inputMeta = currentNode.children[0]?.metadata;
+			const inputW = inputMeta?.width ?? 0;
+			const inputH = inputMeta?.height ?? 0;
+
+			if (inputW > 0 && inputH > 0) {
+				const cropLeftPx = (op.leftPercentage / 100) * inputW;
+				const cropTopPx = (op.topPercentage / 100) * inputH;
+
+				totalOffsetX += cropLeftPx;
+				totalOffsetY += cropTopPx;
+			}
+		}
+
+		if (op.op === "source") {
+			sourceMetaFound = op.sourceMeta ?? currentNode.metadata;
+		}
+
+		// Move down the tree
+		currentNode = currentNode.children[0];
+	}
+
+	if (!hasCrop || !sourceMetaFound) return null;
+
+	const sourceW = sourceMetaFound.width ?? 1;
+	const sourceH = sourceMetaFound.height ?? 1;
+
+	// Convert absolute pixels back to a percentage relative to the source!
+	const translatePctX = -(totalOffsetX / sourceW) * 100;
+	const translatePctY = -(totalOffsetY / sourceH) * 100;
+
+	return {
+		videoNaturalWidth: sourceW,
+		videoNaturalHeight: sourceH,
+		cropTranslatePercentageX: translatePctX,
+		cropTranslatePercentageY: translatePctY,
+	};
+}

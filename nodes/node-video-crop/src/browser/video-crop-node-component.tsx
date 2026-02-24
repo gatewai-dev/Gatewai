@@ -396,10 +396,6 @@ const CropOverlay = memo(
 			["resize-se", "se", x2, y2],
 		];
 
-		const badgeLabel = sourceSize
-			? `${Math.round((w / 100) * sourceSize.w)} × ${Math.round((h / 100) * sourceSize.h)} px`
-			: `${Math.round(w)}% × ${Math.round(h)}%`;
-
 		const isMoveDrag = drag?.type === "move";
 
 		return (
@@ -595,37 +591,6 @@ const CropOverlay = memo(
 						/>
 					</g>
 				))}
-
-				{/* Dimension badge */}
-				{isDragging && (
-					<g
-						className="pointer-events-none"
-						style={{
-							animation: "vcropBadgePop 0.18s cubic-bezier(0.16,1,0.3,1) both",
-						}}
-					>
-						<rect
-							x={cx - 12}
-							y={y2 + 1.5}
-							width={24}
-							height={5.2}
-							rx="2"
-							fill="rgba(0,0,0,0.7)"
-						/>
-						<text
-							x={cx}
-							y={y2 + 5.2}
-							textAnchor="middle"
-							fill="rgba(255,255,255,0.9)"
-							fontSize="2.8"
-							fontFamily="-apple-system,'SF Pro Display',BlinkMacSystemFont,monospace"
-							fontWeight="500"
-							letterSpacing="0.02em"
-						>
-							{badgeLabel}
-						</text>
-					</g>
-				)}
 			</svg>
 		);
 	},
@@ -902,6 +867,25 @@ const VideoCropNodeComponent = memo(
 						sourceSize={sourceSize}
 						onStartDrag={startDrag}
 					/>
+
+					{/* Dimension badge (HTML layer to avoid SVG distortion) */}
+					{drag && (
+						<div
+							className="absolute pointer-events-none px-2 py-0.5 rounded-md bg-black/75 text-white/95 text-[11px] font-medium tracking-wide flex items-center justify-center whitespace-nowrap shadow-sm border border-white/10"
+							style={{
+								left: `${crop.leftPercentage + crop.widthPercentage / 2}%`,
+								top: `${crop.topPercentage + crop.heightPercentage}%`,
+								transform: "translate(-50%, 6px)",
+								animation: "vcropBadgePop 0.2s cubic-bezier(0.16,1,0.3,1) both",
+								fontFamily:
+									"-apple-system,'SF Pro Display',BlinkMacSystemFont,monospace",
+							}}
+						>
+							{sourceSize
+								? `${Math.round((crop.widthPercentage / 100) * sourceSize.w)} × ${Math.round((crop.heightPercentage / 100) * sourceSize.h)} px`
+								: `${Math.round(crop.widthPercentage)}% × ${Math.round(crop.heightPercentage)}%`}
+						</div>
+					)}
 				</div>
 			) : undefined;
 

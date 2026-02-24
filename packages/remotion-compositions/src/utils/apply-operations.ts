@@ -56,10 +56,108 @@ export type RenderParams = {
 };
 
 /**
- * Collapse the full operation tree into concrete render parameters
- * for Remotion or FFmpeg. Recursively walks the tree.
+ * Compute render parameters for the CURRENT node only — does NOT recurse into
+ * children. Each node in the VirtualVideo tree is responsible for exactly its
+ * own operation; `SingleClipComposition` drives traversal via React recursion.
+ *
+ * This is the correct function to use inside the Remotion renderer.
+ * For FFmpeg/export pipelines that need the fully-collapsed params for the
+ * entire subtree, use `computeFullRenderParams` below.
  */
 export function computeRenderParams(vv: VirtualVideoData): RenderParams {
+	const op = vv.operation;
+	const baseMeta = getActiveVideoMetadata(vv);
+
+	const params: RenderParams = {
+		sourceUrl: undefined,
+		trimStartSec: 0,
+		trimEndSec: null,
+		speed: 1.0,
+		cropRegion: null,
+		flipH: false,
+		flipV: false,
+		rotation: 0,
+		cssFilterString: "",
+		effectiveDurationSec: 0,
+	};
+
+	let filters: Filters = { ...DEFAULT_FILTERS };
+
+	if (!op) {
+		// Legacy / bare node fallback
+		params.sourceUrl = resolveVideoSourceUrl(vv);
+		return params;
+	}
+
+	switch (op.op) {
+		case "source":
+			params.sourceUrl = resolveVideoSourceUrl(vv);
+			break;
+
+		case "text":
+			// Rendered as a DOM element by the caller; no media URL needed.
+			params.sourceUrl = undefined;
+			break;
+
+		case "cut":
+			params.trimStartSec = op.startSec;
+			params.trimEndSec = op.endSec;
+			break;
+
+		case "speed":
+			params.speed = op.rate;
+			break;
+
+		case "crop":
+			params.cropRegion = {
+				leftPct: op.leftPercentage,
+				topPct: op.topPercentage,
+				widthPct: op.widthPercentage,
+				heightPct: op.heightPercentage,
+			};
+			break;
+
+		case "filter":
+			if (op.filters?.cssFilters) {
+				filters = mergeFilters(filters, op.filters.cssFilters);
+			}
+			break;
+
+		case "flip":
+			params.flipH = op.horizontal ?? false;
+			params.flipV = op.vertical ?? false;
+			break;
+
+		case "rotate":
+			params.rotation = op.degrees % 360;
+			break;
+
+		// compose and layer: no per-node transform — handled structurally by
+		// CompositionScene / LayerRenderer.
+		case "compose":
+		case "layer":
+			break;
+	}
+
+	params.cssFilterString = buildCSSFilterString(filters);
+
+	const sourceDurationSec = (baseMeta.durationMs ?? 0) / 1000;
+	params.effectiveDurationSec =
+		((params.trimEndSec ?? sourceDurationSec) - params.trimStartSec) /
+		params.speed;
+
+	return params;
+}
+
+/**
+ * Collapse the FULL operation subtree into a single flat RenderParams object.
+ * Intended for server-side / FFmpeg rendering where all parameters must be
+ * resolved up-front rather than applied incrementally via React recursion.
+ *
+ * Do NOT use this inside `SingleClipComposition` — it would cause every
+ * operation to be applied twice (once here, once by the recursive renderer).
+ */
+export function computeFullRenderParams(vv: VirtualVideoData): RenderParams {
 	const params: RenderParams = {
 		sourceUrl: undefined,
 		trimStartSec: 0,
@@ -78,11 +176,11 @@ export function computeRenderParams(vv: VirtualVideoData): RenderParams {
 	let currentWidth = baseMeta.width ?? 1920;
 	let currentHeight = baseMeta.height ?? 1080;
 
-	// Recursive walker
 	function walk(node: VirtualVideoData | any) {
 		if (!node) return;
 
-		// Walk children first (depth-first) to build base content
+		// Depth-first: process children before the current node so that
+		// ancestor operations override descendant ones where they conflict.
 		if (node.children && Array.isArray(node.children)) {
 			for (const child of node.children) {
 				walk(child);
@@ -91,7 +189,6 @@ export function computeRenderParams(vv: VirtualVideoData): RenderParams {
 
 		const op = node.operation;
 		if (!op) {
-			// Legacy fallback: if it's a leaf with sourceUrl, resolve it
 			if (node.source || node.processData) {
 				params.sourceUrl = resolveVideoSourceUrl(node);
 			}
@@ -103,7 +200,6 @@ export function computeRenderParams(vv: VirtualVideoData): RenderParams {
 				params.sourceUrl = resolveVideoSourceUrl(node);
 				break;
 			case "text":
-				// Text is handled by the renderer, but URL is undefined
 				params.sourceUrl = undefined;
 				break;
 			case "cut":
@@ -114,24 +210,18 @@ export function computeRenderParams(vv: VirtualVideoData): RenderParams {
 				params.speed *= op.rate;
 				break;
 			case "crop": {
-				const leftPct = op.leftPercentage;
-				const topPct = op.topPercentage;
-				const widthPct = op.widthPercentage;
-				const heightPct = op.heightPercentage;
-
 				params.cropRegion = {
-					leftPct,
-					topPct,
-					widthPct,
-					heightPct,
+					leftPct: op.leftPercentage,
+					topPct: op.topPercentage,
+					widthPct: op.widthPercentage,
+					heightPct: op.heightPercentage,
 				};
-
-				currentWidth = (widthPct / 100) * currentWidth;
-				currentHeight = (heightPct / 100) * currentHeight;
+				currentWidth = (op.widthPercentage / 100) * currentWidth;
+				currentHeight = (op.heightPercentage / 100) * currentHeight;
 				break;
 			}
 			case "filter":
-				if (op.filters.cssFilters) {
+				if (op.filters?.cssFilters) {
 					filters = mergeFilters(filters, op.filters.cssFilters);
 				}
 				break;
@@ -158,8 +248,6 @@ export function computeRenderParams(vv: VirtualVideoData): RenderParams {
 				filters = { ...DEFAULT_FILTERS };
 				break;
 			case "layer":
-				// Layer params are mostly handled by the LayerRenderer,
-				// but we might want to accumulate some state if needed.
 				break;
 		}
 	}

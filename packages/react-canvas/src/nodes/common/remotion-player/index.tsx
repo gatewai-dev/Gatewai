@@ -1,11 +1,8 @@
 import type { ExtendedLayer, VirtualVideoData } from "@gatewai/core/types";
 import {
 	CompositionScene,
-	computeRenderParams,
 	getActiveVideoMetadata,
-	SingleClipComposition,
 } from "@gatewai/remotion-compositions";
-import { Audio, Video } from "@remotion/media";
 import type { PlayerRef } from "@remotion/player";
 import { Player } from "@remotion/player";
 import type { ReactNode } from "react";
@@ -19,7 +16,6 @@ import {
 	MdVolumeOff,
 	MdVolumeUp,
 } from "react-icons/md";
-import { AbsoluteFill, Img } from "remotion";
 
 const FPS = 24;
 
@@ -404,12 +400,7 @@ export const MediaPlayer = ({
 	const wrapperRef = useRef<HTMLDivElement>(null);
 	const resolvedType = type || (isAudio ? "Audio" : "Video");
 
-	const activeMeta = useMemo(() => {
-		if (virtualVideo) {
-			return getActiveVideoMetadata(virtualVideo);
-		}
-		return null;
-	}, [virtualVideo]);
+	const activeMeta = virtualVideo ? getActiveVideoMetadata(virtualVideo) : null;
 
 	const durationInFrames = (() => {
 		if (durationInFramesProp && durationInFramesProp > 0)
@@ -430,6 +421,7 @@ export const MediaPlayer = ({
 	const showControls =
 		controls && resolvedType !== "Image" && resolvedType !== "Text";
 
+	console.log({ compWidth, compHeight });
 	return (
 		<div
 			ref={wrapperRef}
@@ -457,6 +449,7 @@ export const MediaPlayer = ({
 						viewportWidth: compWidth,
 						viewportHeight: compHeight,
 						children,
+						autoDimensions: true,
 					}}
 					durationInFrames={durationInFrames}
 					fps={fps}

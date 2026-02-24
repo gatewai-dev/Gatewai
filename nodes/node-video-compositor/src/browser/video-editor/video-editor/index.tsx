@@ -38,6 +38,7 @@ import {
 } from "@gatewai/react-store";
 import {
 	CompositionScene,
+	computeVideoCropRenderProps,
 	getActiveVideoMetadata,
 	resolveVideoSourceUrl,
 } from "@gatewai/remotion-compositions";
@@ -266,50 +267,6 @@ const resolveLayerLabel = (
 	}
 	return layer.name ?? layer.id;
 };
-
-function computeVideoCropRenderProps(virtualVideo: VirtualVideoData): {
-	videoNaturalWidth: number;
-	videoNaturalHeight: number;
-	videoCropOffsetX: number;
-	videoCropOffsetY: number;
-} | null {
-	const ops = virtualVideo.operations ?? [];
-	let currentW = virtualVideo.sourceMeta?.width ?? 0;
-	let currentH = virtualVideo.sourceMeta?.height ?? 0;
-	let totalOffsetX = 0;
-	let totalOffsetY = 0;
-	let hasCrop = false;
-
-	for (const op of ops) {
-		if (op.op === "crop") {
-			hasCrop = true;
-			const cropLeftPx = (op.leftPercentage / 100) * currentW;
-			const cropTopPx = (op.topPercentage / 100) * currentH;
-			const cropW = (op.widthPercentage / 100) * currentW;
-			const cropH = (op.heightPercentage / 100) * currentH;
-
-			totalOffsetX += cropLeftPx;
-			totalOffsetY += cropTopPx;
-			currentW = cropW;
-			currentH = cropH;
-		} else if (op.metadata) {
-			if (op.metadata.width) currentW = op.metadata.width;
-			if (op.metadata.height) currentH = op.metadata.height;
-		}
-	}
-
-	if (!hasCrop) return null;
-
-	const sourceW = virtualVideo.sourceMeta?.width ?? 1;
-	const sourceH = virtualVideo.sourceMeta?.height ?? 1;
-
-	return {
-		videoNaturalWidth: sourceW,
-		videoNaturalHeight: sourceH,
-		videoCropOffsetX: -totalOffsetX,
-		videoCropOffsetY: -totalOffsetY,
-	};
-}
 
 // --- Context & Types ---
 interface EditorContextType {
@@ -2082,7 +2039,7 @@ export const VideoDesignerEditor: React.FC<VideoDesignerEditorProps> = ({
 		const item = initialLayers.get(id);
 		if (!item) return undefined;
 		if (item.type === "Video")
-			return (item.data as VirtualVideoData).sourceMeta?.durationMs;
+			return (item.data as VirtualVideoData).metadata?.durationMs;
 		const fileData = item.data as FileData;
 		return fileData.entity?.duration ?? fileData?.processData?.duration;
 	};

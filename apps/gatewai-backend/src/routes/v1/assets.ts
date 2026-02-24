@@ -248,7 +248,17 @@ const assetsPublicRouter = new Hono<{ Variables: AuthHonoTypes }>({
 				start,
 				end,
 			});
-			console.log({ start, end, diff: end - start });
+			stream.on("error", (err) => {
+				const isAbort =
+					err.name === "AbortError" ||
+					err.message.includes("The operation was aborted");
+				if (isAbort) return;
+
+				logger.error(
+					{ err: err.message, name: err.name, assetId: asset.id, start, end },
+					"Range stream error",
+				);
+			});
 			return c.body(stream as any, 206, {
 				"Content-Range": `bytes ${start}-${end}/${fileSize}`,
 				"Accept-Ranges": "bytes",
@@ -261,6 +271,17 @@ const assetsPublicRouter = new Hono<{ Variables: AuthHonoTypes }>({
 
 		// Full file stream
 		const fullStream = storage.getStreamFromStorage(asset.key, asset.bucket);
+		fullStream.on("error", (err) => {
+			const isAbort =
+				err.name === "AbortError" ||
+				err.message.includes("The operation was aborted");
+			if (isAbort) return;
+
+			logger.error(
+				{ err: err.message, name: err.name, assetId: asset.id },
+				"Full stream error",
+			);
+		});
 		return c.body(fullStream as any, {
 			headers: {
 				"Content-Type": asset.mimeType,

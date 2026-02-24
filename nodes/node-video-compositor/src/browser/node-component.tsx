@@ -70,13 +70,6 @@ const VideoCompositorNodeComponent = memo((props: NodeProps) => {
 				virtualVideo = vv;
 				const params = computeRenderParams(vv);
 				src = params.sourceUrl;
-				if (!layerWidth && params.cropRegion) {
-					layerWidth = (params.cropRegion.widthPct / 100) * vv.metadata.width;
-				}
-				if (!layerHeight && params.cropRegion) {
-					layerHeight =
-						(params.cropRegion.heightPct / 100) * vv.metadata.height;
-				}
 				if (!layerWidth) layerWidth = vv.metadata.width;
 				if (!layerHeight) layerHeight = vv.metadata.height;
 			} else if (item.type === "Image" || item.type === "Audio") {
@@ -205,7 +198,7 @@ const VideoCompositorNodeComponent = memo((props: NodeProps) => {
 	};
 
 	const hasInputs = previewState && previewState.layers.length > 0;
-	console.log({ result });
+
 	return (
 		<BaseNode selected={props.selected} id={props.id} dragging={props.dragging}>
 			<div className="flex flex-col w-full">

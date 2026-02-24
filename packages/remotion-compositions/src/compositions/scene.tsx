@@ -1,7 +1,7 @@
 import type { ExtendedLayer, VirtualVideoData } from "@gatewai/core/types";
 import { Video } from "@remotion/media";
 import type React from "react";
-import { memo } from "react";
+import { memo, useEffect, useMemo, useRef } from "react";
 import {
 	AbsoluteFill,
 	Html5Audio,
@@ -17,6 +17,7 @@ import {
 	computeRenderParams,
 } from "../utils/apply-operations.js";
 import {
+	computeVideoCropRenderProps,
 	getActiveVideoMetadata,
 	getMediaType,
 	resolveVideoSourceUrl,
@@ -148,13 +149,32 @@ const compareVirtualVideo = (
 		}
 		case "crop": {
 			const bCrop = bOp as any;
-			if (
+			const isDifferent =
 				aOp.leftPercentage !== bCrop.leftPercentage ||
 				aOp.topPercentage !== bCrop.topPercentage ||
 				aOp.widthPercentage !== bCrop.widthPercentage ||
-				aOp.heightPercentage !== bCrop.heightPercentage
-			)
+				aOp.heightPercentage !== bCrop.heightPercentage;
+
+			if (isDifferent) {
+				console.log(
+					"[compareVirtualVideo] Crop parameters mismatch! Triggering re-render.",
+					{
+						from: {
+							left: aOp.leftPercentage,
+							top: aOp.topPercentage,
+							width: aOp.widthPercentage,
+							height: aOp.heightPercentage,
+						},
+						to: {
+							left: bCrop.leftPercentage,
+							top: bCrop.topPercentage,
+							width: bCrop.widthPercentage,
+							height: bCrop.heightPercentage,
+						},
+					},
+				);
 				return false;
+			}
 			break;
 		}
 		case "cut": {
@@ -306,259 +326,331 @@ export const SingleClipComposition: React.FC<{
 	playbackRateOverride?: number;
 	trimStartOverride?: number;
 	textStyle?: Partial<ExtendedLayer>;
-}> = memo(
-	({
-		virtualVideo,
-		volume = 1,
-		playbackRateOverride,
-		trimStartOverride,
-		textStyle,
-	}) => {
-		const { fps } = useVideoConfig();
-		const op = virtualVideo?.operation;
+}> = ({
+	virtualVideo,
+	volume = 1,
+	playbackRateOverride,
+	trimStartOverride,
+	textStyle,
+}) => {
+	const { fps } = useVideoConfig();
+	const op = virtualVideo?.operation;
 
-		if (!op) {
-			const sourceUrl = resolveVideoSourceUrl(virtualVideo);
-			if (sourceUrl) {
-				const type = getMediaType(virtualVideo);
-				if (type === "Audio") {
-					return <Html5Audio src={sourceUrl} volume={volume} />;
-				}
-				if (type === "Image") {
-					return (
-						<Img
-							src={sourceUrl}
-							style={{ width: "100%", height: "100%", objectFit: "fill" }}
-						/>
-					);
-				}
-				return <Video src={sourceUrl} volume={volume} />;
+	// --- Crop Debugging Hooks ---
+	const prevCropRef = useRef<any>(null);
+
+	useEffect(() => {
+		if (op?.op === "crop") {
+			const current = {
+				wp: Number(op.widthPercentage) || 100,
+				hp: Number(op.heightPercentage) || 100,
+				lp: Number(op.leftPercentage) || 0,
+				tp: Number(op.topPercentage) || 0,
+			};
+			const prev = prevCropRef.current;
+
+			if (!prev) {
+				console.log("[Crop Layer Mounted]", { initialCrop: current });
+			} else if (
+				prev.wp !== current.wp ||
+				prev.hp !== current.hp ||
+				prev.lp !== current.lp ||
+				prev.tp !== current.tp
+			) {
+				console.log("[Crop Layer Changed]", {
+					changedFrom: prev,
+					changedTo: current,
+				});
 			}
-			return null;
-		}
 
-		if (op.op === "compose") {
+			prevCropRef.current = current;
+		}
+	}, [op]);
+
+	// -----------------------------------------------------------------------
+	// compose: delegate to CompositionScene
+	// -----------------------------------------------------------------------
+	if (op.op === "compose") {
+		return (
+			<CompositionScene
+				layers={
+					(virtualVideo.children || [])
+						.map((child, index) => {
+							if (child.operation?.op === "layer") {
+								const lop = child.operation;
+								const contentType = getMediaType(child.children[0]);
+								return {
+									id: `child-${index}`,
+									type: contentType,
+									virtualVideo: child.children[0],
+									x: lop.x,
+									y: lop.y,
+									width: lop.width,
+									height: lop.height,
+									rotation: lop.rotation,
+									scale: lop.scale,
+									opacity: lop.opacity,
+									startFrame: lop.startFrame,
+									durationInFrames: lop.durationInFrames ?? 1,
+									zIndex: lop.zIndex,
+									text: lop.text,
+									fontSize: lop.fontSize,
+									fontFamily: lop.fontFamily,
+									fontStyle: lop.fontStyle,
+									fontWeight: lop.fontWeight,
+									textDecoration: lop.textDecoration,
+									fill: lop.fill,
+									align: lop.align,
+									verticalAlign: lop.verticalAlign,
+									letterSpacing: lop.letterSpacing,
+									lineHeight: lop.lineHeight,
+									padding: lop.padding,
+									stroke: lop.stroke,
+									strokeWidth: lop.strokeWidth,
+									backgroundColor: lop.backgroundColor,
+									borderColor: lop.borderColor,
+									borderWidth: lop.borderWidth,
+									borderRadius: lop.borderRadius,
+									autoDimensions: lop.autoDimensions,
+								} as ExtendedLayer;
+							}
+							return null;
+						})
+						.filter(Boolean) as ExtendedLayer[]
+				}
+				viewportWidth={op.width}
+				viewportHeight={op.height}
+			/>
+		);
+	}
+
+	// -----------------------------------------------------------------------
+	// source / text: leaf nodes — render media directly.
+	// -----------------------------------------------------------------------
+	if (op.op === "source" || op.op === "text") {
+		const params = computeRenderParams(virtualVideo);
+		const mediaType = getMediaType(virtualVideo);
+
+		if (mediaType === "Text") {
+			const mergedStyle = { ...textStyle, ...(op as any) };
+			const textContent =
+				op.op === "text"
+					? op.text
+					: op.op === "source"
+						? op.source?.processData?.text
+						: (op as any).text;
+
 			return (
-				<CompositionScene
-					layers={
-						(virtualVideo.children || [])
-							.map((child) => {
-								if (child.operation?.op === "layer") {
-									const lop = child.operation;
-									const contentType = getMediaType(child.children[0]);
-									return {
-										id: Math.random().toString(),
-										type: contentType,
-										virtualVideo: child.children[0],
-										x: lop.x,
-										y: lop.y,
-										width: lop.width,
-										height: lop.height,
-										rotation: lop.rotation,
-										scale: lop.scale,
-										opacity: lop.opacity,
-										startFrame: lop.startFrame,
-										durationInFrames: lop.durationInFrames ?? 1,
-										zIndex: lop.zIndex,
-										text: lop.text,
-										fontSize: lop.fontSize,
-										fontFamily: lop.fontFamily,
-										fontStyle: lop.fontStyle,
-										fontWeight: lop.fontWeight,
-										textDecoration: lop.textDecoration,
-										fill: lop.fill,
-										align: lop.align,
-										verticalAlign: lop.verticalAlign,
-										letterSpacing: lop.letterSpacing,
-										lineHeight: lop.lineHeight,
-										padding: lop.padding,
-										stroke: lop.stroke,
-										strokeWidth: lop.strokeWidth,
-										backgroundColor: lop.backgroundColor,
-										borderColor: lop.borderColor,
-										borderWidth: lop.borderWidth,
-										borderRadius: lop.borderRadius,
-										autoDimensions: lop.autoDimensions,
-									} as ExtendedLayer;
-								}
-								return null;
-							})
-							.filter(Boolean) as ExtendedLayer[]
-					}
-					viewportWidth={op.width}
-					viewportHeight={op.height}
-				/>
+				<div
+					style={{
+						width: "100%",
+						height: "100%",
+						display: "flex",
+						flexDirection: "column",
+						alignItems: "stretch",
+						justifyContent:
+							mergedStyle.verticalAlign === "middle"
+								? "center"
+								: mergedStyle.verticalAlign === "bottom"
+									? "flex-end"
+									: "flex-start",
+						color: mergedStyle.fill,
+						fontSize: mergedStyle.fontSize,
+						fontFamily: mergedStyle.fontFamily,
+						fontStyle: mergedStyle.fontStyle,
+						fontWeight: mergedStyle.fontWeight,
+						textDecoration: mergedStyle.textDecoration,
+						textAlign: (mergedStyle.align as any) ?? "center",
+						padding: mergedStyle.padding,
+						lineHeight: mergedStyle.lineHeight ?? 1.2,
+						letterSpacing: mergedStyle.letterSpacing
+							? `${mergedStyle.letterSpacing}px`
+							: undefined,
+						WebkitTextStroke:
+							mergedStyle.strokeWidth && mergedStyle.stroke
+								? `${mergedStyle.strokeWidth}px ${mergedStyle.stroke}`
+								: undefined,
+						paintOrder: "stroke fill",
+						whiteSpace: "pre",
+					}}
+				>
+					{textContent}
+				</div>
 			);
 		}
 
-		if (op.op === "source" || op.op === "text") {
-			const params = computeRenderParams(virtualVideo);
-			const mediaType = getMediaType(virtualVideo);
+		if (!params.sourceUrl) return <AbsoluteFill />;
 
-			if (mediaType === "Text") {
-				const mergedStyle = { ...textStyle, ...(op as any) };
-				const textContent =
-					op.op === "text"
-						? op.text
-						: op.op === "source"
-							? op.source?.processData?.text
-							: (op as any).text;
+		const startFrame = Math.floor(
+			((trimStartOverride ?? 0) + params.trimStartSec) * fps,
+		);
+		const finalPlaybackRate = (playbackRateOverride ?? 1) * params.speed;
 
-				return (
-					<div
-						style={{
-							width: "100%",
-							height: "100%",
-							display: "flex",
-							flexDirection: "column",
-							alignItems: "stretch", // Use stretch to let width: 100% and textAlign work together
-							justifyContent:
-								mergedStyle.verticalAlign === "middle"
-									? "center"
-									: mergedStyle.verticalAlign === "bottom"
-										? "flex-end"
-										: "flex-start",
-							color: mergedStyle.fill,
-							fontSize: mergedStyle.fontSize,
-							fontFamily: mergedStyle.fontFamily,
-							fontStyle: mergedStyle.fontStyle,
-							fontWeight: mergedStyle.fontWeight,
-							textDecoration: mergedStyle.textDecoration,
-							textAlign: (mergedStyle.align as any) ?? "center",
-							padding: mergedStyle.padding,
-							lineHeight: mergedStyle.lineHeight ?? 1.2,
-							letterSpacing: mergedStyle.letterSpacing
-								? `${mergedStyle.letterSpacing}px`
-								: undefined,
-							WebkitTextStroke:
-								mergedStyle.strokeWidth && mergedStyle.stroke
-									? `${mergedStyle.strokeWidth}px ${mergedStyle.stroke}`
-									: undefined,
-							paintOrder: "stroke fill",
-							whiteSpace: "pre",
-						}}
-					>
-						{textContent}
-					</div>
-				);
-			}
-
-			if (!params.sourceUrl) return <AbsoluteFill />;
-
-			const startFrame = Math.floor(
-				((trimStartOverride ?? 0) + params.trimStartSec) * fps,
-			);
-			const finalPlaybackRate = (playbackRateOverride ?? 1) * params.speed;
-
-			if (mediaType === "Audio") {
-				return (
-					<Html5Audio
-						src={params.sourceUrl}
-						startFrom={startFrame}
-						playbackRate={finalPlaybackRate}
-						volume={volume}
-					/>
-				);
-			}
-
-			if (mediaType === "Image") {
-				return (
-					<Img
-						src={params.sourceUrl}
-						style={{ width: "100%", height: "100%", objectFit: "fill" }}
-					/>
-				);
-			}
-
+		if (mediaType === "Audio") {
 			return (
 				<Video
 					src={params.sourceUrl}
-					playbackRate={finalPlaybackRate}
 					startFrom={startFrame}
+					playbackRate={finalPlaybackRate}
 					volume={volume}
-					style={{ width: "100%", height: "100%", objectFit: "fill" }}
 				/>
 			);
 		}
 
-		const params = computeRenderParams(virtualVideo);
-		const transforms: string[] = [];
-		if (params.flipH) transforms.push("scaleX(-1)");
-		if (params.flipV) transforms.push("scaleY(-1)");
-		if (params.rotation) transforms.push(`rotate(${params.rotation}deg)`);
-		const transformStr = transforms.length ? transforms.join(" ") : undefined;
+		if (mediaType === "Image") {
+			return (
+				<Img
+					src={params.sourceUrl}
+					style={{
+						position: "absolute",
+						top: 0,
+						left: 0,
+						width: "100%",
+						height: "100%",
+						objectFit: "fill",
+					}}
+				/>
+			);
+		}
 
+		return (
+			<Video
+				src={params.sourceUrl}
+				playbackRate={finalPlaybackRate}
+				startFrom={startFrame}
+				volume={volume}
+				style={{
+					position: "absolute",
+					top: 0,
+					left: 0,
+					width: "100%",
+					height: "100%",
+					objectFit: "fill",
+					display: "block",
+				}}
+			/>
+		);
+	}
+
+	// -----------------------------------------------------------------------
+	// speed: pass through override
+	// -----------------------------------------------------------------------
+	if (op.op === "speed") {
 		const childVideo = virtualVideo.children[0];
-		const content = childVideo ? (
+		if (!childVideo) return null;
+		return (
+			<SingleClipComposition
+				virtualVideo={childVideo}
+				volume={volume}
+				playbackRateOverride={(playbackRateOverride ?? 1) * op.rate}
+				trimStartOverride={trimStartOverride}
+				textStyle={textStyle}
+			/>
+		);
+	}
+
+	// -----------------------------------------------------------------------
+	// cut: pass through override
+	// -----------------------------------------------------------------------
+	if (op.op === "cut") {
+		const childVideo = virtualVideo.children[0];
+		if (!childVideo) return null;
+		return (
 			<SingleClipComposition
 				virtualVideo={childVideo}
 				volume={volume}
 				playbackRateOverride={playbackRateOverride}
-				trimStartOverride={trimStartOverride}
-				textStyle={
-					op.op === "layer" ? { ...textStyle, ...(op as any) } : textStyle
-				}
+				trimStartOverride={(trimStartOverride ?? 0) + op.startSec}
+				textStyle={textStyle}
 			/>
-		) : null;
+		);
+	}
 
-		if (params.cropRegion) {
-			const { leftPct, topPct, widthPct, heightPct } = params.cropRegion;
+	// -----------------------------------------------------------------------
+	// Transformers
+	// -----------------------------------------------------------------------
+	const childVideo = virtualVideo.children[0];
 
-			return (
-				<AbsoluteFill
-					style={{
-						overflow: "hidden",
-						filter: params.cssFilterString || undefined,
-					}}
-				>
-					<div
-						style={{
-							position: "absolute",
-							width: `${(100 / widthPct) * 100}%`,
-							height: `${(100 / heightPct) * 100}%`,
-							left: `${(-leftPct / widthPct) * 100}%`,
-							top: `${(-topPct / heightPct) * 100}%`,
-						}}
-					>
-						<div
-							style={{
-								width: "100%",
-								height: "100%",
-								transform: transformStr,
-								transformOrigin: "center center",
-							}}
-						>
-							{content}
-						</div>
-					</div>
-				</AbsoluteFill>
-			);
-		}
+	const content = childVideo ? (
+		<SingleClipComposition
+			virtualVideo={childVideo}
+			volume={volume}
+			playbackRateOverride={playbackRateOverride}
+			trimStartOverride={trimStartOverride}
+			textStyle={
+				op.op === "layer" ? { ...textStyle, ...(op as any) } : textStyle
+			}
+		/>
+	) : null;
+
+	if (op.op === "crop") {
+		const wp = Math.max(0.01, Number(op.widthPercentage) || 100);
+		const hp = Math.max(0.01, Number(op.heightPercentage) || 100);
+		const lp = Number(op.leftPercentage) || 0;
+		const tp = Number(op.topPercentage) || 0;
+
+		// FIX: The translation should be relative to the original source coordinates.
+		// Since the parent AbsoluteFill (the crop window) already has the cropped meta width/height,
+		// and we are scaling the content by 100/wp (making it original size),
+		// a translation of -lp% will move it by exactly lp% of the original width.
+		// The previous formula -(lp / wp) * 100 was overshooting because it forgot that
+		// the scale (100/wp) is applied to the translation as well if transformOrigin is 'top left'.
+		const scaleX = 100 / wp;
+		const scaleY = 100 / hp;
+		const translateX = -lp * scaleX;
+		const translateY = -tp * scaleY;
+
+		console.log("[SingleClipComposition] Applying Crop", {
+			input: { wp, hp, lp, tp },
+			calculated: { scaleX, scaleY, translateX, translateY },
+		});
+
+		const innerStyle = {
+			position: "absolute",
+			width: "100%",
+			height: "100%",
+			transform: `translate(${translateX}%, ${translateY}%) scale(${scaleX}, ${scaleY})`,
+			transformOrigin: "top left",
+			willChange: "transform",
+		};
 
 		return (
-			<AbsoluteFill>
-				<AbsoluteFill
-					style={{
-						filter: params.cssFilterString || undefined,
-						transform: transformStr,
-					}}
+			<AbsoluteFill style={{ overflow: "hidden" }}>
+				<div
+					style={innerStyle}
+					key={`crop-${wp}-${hp}-${lp}-${tp}`} // Force remount on change
 				>
-					{content}
-				</AbsoluteFill>
+					<AbsoluteFill>{content}</AbsoluteFill>
+				</div>
 			</AbsoluteFill>
 		);
-	},
-	(prevProps, nextProps) => {
-		return (
-			compareVirtualVideo(prevProps.virtualVideo, nextProps.virtualVideo) &&
-			prevProps.volume === nextProps.volume &&
-			prevProps.playbackRateOverride === nextProps.playbackRateOverride &&
-			prevProps.trimStartOverride === nextProps.trimStartOverride &&
-			JSON.stringify(prevProps.textStyle) ===
-				JSON.stringify(nextProps.textStyle)
-		);
-	},
-);
+	}
+
+	let transformStr: string | undefined;
+	let cssFilterString: string | undefined;
+
+	if (op.op === "rotate") {
+		transformStr = `rotate(${(op as any).degrees}deg)`;
+	} else if (op.op === "flip") {
+		const transforms = [];
+		if (op.horizontal) transforms.push("scaleX(-1)");
+		if (op.vertical) transforms.push("scaleY(-1)");
+		transformStr = transforms.length ? transforms.join(" ") : undefined;
+	} else if (op.op === "filter") {
+		cssFilterString = buildCSSFilterString((op as any).filters.cssFilters);
+	}
+
+	return (
+		<AbsoluteFill
+			style={{
+				filter: cssFilterString,
+				transform: transformStr,
+			}}
+		>
+			{content}
+		</AbsoluteFill>
+	);
+};
 
 const LayerContentRenderer: React.FC<{
 	layer: ExtendedLayer;
@@ -789,58 +881,110 @@ export const CompositionScene: React.FC<SceneProps> = ({
 }) => {
 	const frame = useCurrentFrame();
 
-	// Computed inline - fast logical derivations, prevents memo thrashing on remotion renders
-	let resolvedLayers = layers;
-	if (layers.length === 0 && (src || virtualVideo || type === "Text")) {
-		const resolvedType = type || (isAudio ? "Audio" : "Video");
-		resolvedLayers = [
-			{
-				id: "single-source-layer",
-				type: resolvedType as any,
-				src,
-				virtualVideo,
-				text:
-					text ||
-					(typeof data === "string"
-						? data
-						: (data as any)?.text || JSON.stringify(data)),
-				width: viewportWidth,
-				height: viewportHeight,
-				x: 0,
-				y: 0,
-				zIndex: 0,
-				opacity: 1,
-				scale: 1,
-				rotation: 0,
-				fontSize,
-				fontFamily,
-				fontStyle,
-				fontWeight,
-				textDecoration,
-				fill,
-				align,
-				verticalAlign,
-				letterSpacing,
-				lineHeight,
-				padding,
-				stroke,
-				strokeWidth,
-				backgroundColor,
-				borderColor,
-				borderWidth,
-				borderRadius,
-				autoDimensions,
-			} as ExtendedLayer,
-		];
-	}
+	const resolvedLayers = useMemo(() => {
+		if (layers.length > 0) return layers;
 
-	// Sort is fast enough to run synchronously, no useMemo overhead required
-	const sortedLayers = [...resolvedLayers].sort(
-		(a, b) => (a.zIndex ?? 0) - (b.zIndex ?? 0),
-	);
+		if (src || virtualVideo || type === "Text") {
+			const resolvedType = type || (isAudio ? "Audio" : "Video");
+			return [
+				{
+					id: "single-source-layer",
+					type: resolvedType as any,
+					src,
+					virtualVideo,
+					text:
+						text ||
+						(typeof data === "string"
+							? data
+							: (data as any)?.text || JSON.stringify(data)),
+					width: viewportWidth,
+					height: viewportHeight,
+					x: 0,
+					y: 0,
+					zIndex: 0,
+					opacity: 1,
+					scale: 1,
+					rotation: 0,
+					fontSize,
+					fontFamily,
+					fontStyle,
+					fontWeight,
+					textDecoration,
+					fill,
+					align,
+					verticalAlign,
+					letterSpacing,
+					lineHeight,
+					padding,
+					stroke,
+					strokeWidth,
+					backgroundColor,
+					borderColor,
+					borderWidth,
+					borderRadius,
+					autoDimensions,
+				} as ExtendedLayer,
+			];
+		}
+		return [];
+	}, [
+		layers,
+		src,
+		virtualVideo,
+		type,
+		isAudio,
+		text,
+		data,
+		viewportWidth,
+		viewportHeight,
+		fontSize,
+		fontFamily,
+		fontStyle,
+		fontWeight,
+		textDecoration,
+		fill,
+		align,
+		verticalAlign,
+		letterSpacing,
+		lineHeight,
+		padding,
+		stroke,
+		strokeWidth,
+		backgroundColor,
+		borderColor,
+		borderWidth,
+		borderRadius,
+		autoDimensions,
+	]);
+
+	const layersToRender = useMemo(() => {
+		return [...resolvedLayers]
+			.sort((a, b) => (a.zIndex ?? 0) - (b.zIndex ?? 0))
+			.map((layer) => {
+				let derivedWidth = layer.width;
+				let derivedHeight = layer.height;
+
+				if (layer.virtualVideo && layer.autoDimensions) {
+					const activeMeta = getActiveVideoMetadata(layer.virtualVideo);
+					derivedWidth = activeMeta.width ?? derivedWidth;
+					derivedHeight = activeMeta.height ?? derivedHeight;
+				}
+
+				return {
+					...layer,
+					width: derivedWidth,
+					height: derivedHeight,
+				};
+			});
+	}, [resolvedLayers]);
 
 	const resolvedViewportW = viewportWidth || 1920;
 	const resolvedViewportH = viewportHeight || 1080;
+
+	const viewport = useMemo(
+		() => ({ w: resolvedViewportW, h: resolvedViewportH }),
+		[resolvedViewportW, resolvedViewportH],
+	);
 
 	return (
 		<AbsoluteFill
@@ -857,32 +1001,15 @@ export const CompositionScene: React.FC<SceneProps> = ({
 					position: "relative",
 				}}
 			>
-				{sortedLayers.map((layer) => {
+				{layersToRender.map((layer) => {
 					const startFrame = layer.startFrame ?? 0;
 					const duration = layer.durationInFrames ?? DEFAULT_DURATION_FRAMES;
 					const endFrame = startFrame + duration;
 
 					if (frame < startFrame || frame >= endFrame) return null;
 
-					let derivedWidth = layer.width;
-					let derivedHeight = layer.height;
-
-					if (layer.virtualVideo && layer.autoDimensions) {
-						const activeMeta = getActiveVideoMetadata(layer.virtualVideo);
-						derivedWidth = activeMeta.width ?? derivedWidth;
-						derivedHeight = activeMeta.height ?? derivedHeight;
-					}
-
 					return (
-						<LayerRenderer
-							key={layer.id}
-							layer={{
-								...layer,
-								width: derivedWidth,
-								height: derivedHeight,
-							}}
-							viewport={{ w: resolvedViewportW, h: resolvedViewportH }}
-						/>
+						<LayerRenderer key={layer.id} layer={layer} viewport={viewport} />
 					);
 				})}
 				{children}
