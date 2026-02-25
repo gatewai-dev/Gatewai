@@ -424,7 +424,7 @@ const InteractionOverlay: React.FC = () => {
 				l.type !== "Audio" &&
 				currentFrame >= (l.startFrame ?? 0) &&
 				currentFrame <
-					(l.startFrame ?? 0) + (l.durationInFrames ?? DEFAULT_DURATION_FRAMES),
+				(l.startFrame ?? 0) + (l.durationInFrames ?? DEFAULT_DURATION_FRAMES),
 		)
 		.sort((a, b) => (a.zIndex ?? 0) - (b.zIndex ?? 0));
 
@@ -507,10 +507,10 @@ const InteractionOverlay: React.FC = () => {
 				prev.map((l) =>
 					l.id === selectedId
 						? {
-								...l,
-								x: Math.round(initialPos.x + dx),
-								y: Math.round(initialPos.y + dy),
-							}
+							...l,
+							x: Math.round(initialPos.x + dx),
+							y: Math.round(initialPos.y + dy),
+						}
 						: l,
 				),
 			);
@@ -584,13 +584,13 @@ const InteractionOverlay: React.FC = () => {
 				prev.map((l) =>
 					l.id === selectedId
 						? {
-								...l,
-								width: Math.round(newWidth),
-								height: Math.round(newHeight),
-								x: Math.round(newX),
-								y: Math.round(newY),
-								autoDimensions: false,
-							}
+							...l,
+							width: Math.round(newWidth),
+							height: Math.round(newHeight),
+							x: Math.round(newX),
+							y: Math.round(newY),
+							autoDimensions: false,
+						}
 						: l,
 				),
 			);
@@ -662,11 +662,10 @@ const InteractionOverlay: React.FC = () => {
 						}}
 					>
 						<div
-							className={`absolute inset-0 pointer-events-none transition-all duration-150 ${
-								selectedId === layer.id
+							className={`absolute inset-0 pointer-events-none transition-all duration-150 ${selectedId === layer.id
 									? "border-2 border-blue-500 shadow-[0_0_0_1px_rgba(59,130,246,0.2)]"
 									: "border border-transparent group-hover:border-blue-400/50"
-							}`}
+								}`}
 						/>
 						{selectedId === layer.id && (
 							<>
@@ -1481,7 +1480,7 @@ const InspectorPanel: React.FC = () => {
 			<div className="w-80 h-full border-l border-white/5 bg-[#0f0f0f] flex flex-col z-20 shadow-xl shrink-0 overflow-hidden">
 				<div className="p-4 bg-neutral-900 border-b border-white/5">
 					<div className="flex items-center gap-2 text-xs font-bold text-gray-200 uppercase tracking-wide">
-						<Settings2 className="w-3.5 h-3.5 text-blue-400" /> Project Settings
+						<Settings2 className="w-3.5 h-3.5 text-blue-400" /> Canvas Settings
 					</div>
 				</div>
 				<ScrollArea className="flex-1 min-h-0">
@@ -1587,62 +1586,62 @@ const InspectorPanel: React.FC = () => {
 								</div>
 								{(selectedLayer.type === "Image" ||
 									selectedLayer.type === "Video") && (
-									<TooltipProvider>
-										<Tooltip>
-											<TooltipTrigger asChild>
-												<Button
-													variant={
-														selectedLayer.autoDimensions ? "secondary" : "ghost"
-													}
-													size="sm"
-													className={cn(
-														"h-6 text-[10px] px-2",
-														selectedLayer.autoDimensions
-															? "text-blue-400 bg-blue-500/10 hover:bg-blue-500/20"
-															: "text-gray-500 hover:text-gray-300 bg-white/5",
-													)}
-													onClick={() => {
-														if (selectedLayer.autoDimensions) {
-															update({ autoDimensions: false });
-														} else {
-															let newW = selectedLayer.width;
-															let newH = selectedLayer.height;
-															const initialItem = initialLayersData.get(
-																selectedLayer.id,
-															);
-															if (initialItem) {
-																if (initialItem.type === "Video") {
-																	const vvData =
-																		initialItem.data as VirtualMediaData;
-																	const meta = getActiveVideoMetadata(vvData);
-																	if (meta?.width) newW = meta.width;
-																	if (meta?.height) newH = meta.height;
-																} else if (initialItem.type === "Image") {
-																	const meta = (initialItem.data as FileData)
-																		.processData;
-																	if (meta?.width) newW = meta.width;
-																	if (meta?.height) newH = meta.height;
-																}
-															}
-															update({
-																autoDimensions: true,
-																width: newW,
-																height: newH,
-															});
+										<TooltipProvider>
+											<Tooltip>
+												<TooltipTrigger asChild>
+													<Button
+														variant={
+															selectedLayer.autoDimensions ? "secondary" : "ghost"
 														}
-													}}
-												>
-													<Sparkles className="w-3 h-3 mr-1" /> Auto W/H
-												</Button>
-											</TooltipTrigger>
-											<TooltipContent>
-												{hasCropDimensions
-													? "Sync dimensions with cropped source media"
-													: "Sync dimensions with source media"}
-											</TooltipContent>
-										</Tooltip>
-									</TooltipProvider>
-								)}
+														size="sm"
+														className={cn(
+															"h-6 text-[10px] px-2",
+															selectedLayer.autoDimensions
+																? "text-blue-400 bg-blue-500/10 hover:bg-blue-500/20"
+																: "text-gray-500 hover:text-gray-300 bg-white/5",
+														)}
+														onClick={() => {
+															if (selectedLayer.autoDimensions) {
+																update({ autoDimensions: false });
+															} else {
+																let newW = selectedLayer.width;
+																let newH = selectedLayer.height;
+																const initialItem = initialLayersData.get(
+																	selectedLayer.id,
+																);
+																if (initialItem) {
+																	if (initialItem.type === "Video") {
+																		const vvData =
+																			initialItem.data as VirtualMediaData;
+																		const meta = getActiveVideoMetadata(vvData);
+																		if (meta?.width) newW = meta.width;
+																		if (meta?.height) newH = meta.height;
+																	} else if (initialItem.type === "Image") {
+																		const meta = (initialItem.data as FileData)
+																			.processData;
+																		if (meta?.width) newW = meta.width;
+																		if (meta?.height) newH = meta.height;
+																	}
+																}
+																update({
+																	autoDimensions: true,
+																	width: newW,
+																	height: newH,
+																});
+															}
+														}}
+													>
+														<Sparkles className="w-3 h-3 mr-1" /> Auto W/H
+													</Button>
+												</TooltipTrigger>
+												<TooltipContent>
+													{hasCropDimensions
+														? "Sync dimensions with cropped source media"
+														: "Sync dimensions with source media"}
+												</TooltipContent>
+											</Tooltip>
+										</TooltipProvider>
+									)}
 							</div>
 
 							<div className="grid grid-cols-2 gap-2">
@@ -1756,23 +1755,23 @@ const InspectorPanel: React.FC = () => {
 
 					{(selectedLayer.type === "Video" ||
 						selectedLayer.type === "Audio") && (
-						<CollapsibleSection title="Audio" icon={Music}>
-							<div className="flex items-center gap-2">
-								<span className="text-[9px] text-gray-500 w-8">Volume</span>
-								<Slider
-									className="flex-1"
-									value={[(selectedLayer.volume ?? 1) * 100]}
-									min={0}
-									max={100}
-									step={1}
-									onValueChange={([v]) => update({ volume: v / 100 })}
-								/>
-								<span className="text-[9px] text-gray-400 w-6 text-right">
-									{Math.round((selectedLayer.volume ?? 1) * 100)}%
-								</span>
-							</div>
-						</CollapsibleSection>
-					)}
+							<CollapsibleSection title="Audio" icon={Music}>
+								<div className="flex items-center gap-2">
+									<span className="text-[9px] text-gray-500 w-8">Volume</span>
+									<Slider
+										className="flex-1"
+										value={[(selectedLayer.volume ?? 1) * 100]}
+										min={0}
+										max={100}
+										step={1}
+										onValueChange={([v]) => update({ volume: v / 100 })}
+									/>
+									<span className="text-[9px] text-gray-400 w-6 text-right">
+										{Math.round((selectedLayer.volume ?? 1) * 100)}%
+									</span>
+								</div>
+							</CollapsibleSection>
+						)}
 
 					{selectedLayer.type === "Text" && (
 						<TypographyControls
@@ -1859,11 +1858,11 @@ const InspectorPanel: React.FC = () => {
 														prev.map((l) =>
 															l.id === selectedId
 																? {
-																		...l,
-																		animations: l.animations?.filter(
-																			(a) => a.id !== anim.id,
-																		),
-																	}
+																	...l,
+																	animations: l.animations?.filter(
+																		(a) => a.id !== anim.id,
+																	),
+																}
 																: l,
 														),
 													)
@@ -1887,11 +1886,11 @@ const InspectorPanel: React.FC = () => {
 														prev.map((l) =>
 															l.id === selectedId
 																? {
-																		...l,
-																		animations: l.animations?.map((a) =>
-																			a.id === anim.id ? { ...a, value: v } : a,
-																		),
-																	}
+																	...l,
+																	animations: l.animations?.map((a) =>
+																		a.id === anim.id ? { ...a, value: v } : a,
+																	),
+																}
 																: l,
 														),
 													)
@@ -2485,13 +2484,13 @@ export const VideoDesignerEditor: React.FC<VideoDesignerEditorProps> = ({
 		layers.length === 0
 			? DEFAULT_DURATION_FRAMES
 			: Math.max(
-					DEFAULT_DURATION_FRAMES,
-					...layers.map(
-						(l) =>
-							(l.startFrame ?? 0) +
-							(l.durationInFrames ?? DEFAULT_DURATION_FRAMES),
-					),
-				);
+				DEFAULT_DURATION_FRAMES,
+				...layers.map(
+					(l) =>
+						(l.startFrame ?? 0) +
+						(l.durationInFrames ?? DEFAULT_DURATION_FRAMES),
+				),
+			);
 	console.log({ durationInFrames });
 	// Unmemoized Context: This context value contains state (currentFrame, pan, zoom, isPlaying) that updates extremely fast.
 	// In the original code, the dependency array was huge and invalidated almost constantly, offering zero memoization benefit

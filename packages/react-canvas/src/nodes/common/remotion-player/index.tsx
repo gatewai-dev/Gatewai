@@ -392,7 +392,6 @@ export const MediaPlayer = ({
 	fps = FPS,
 	controls = true,
 	className,
-	children,
 	overlay,
 }: MediaPlayerProps) => {
 	const playerRef = useRef<PlayerRef>(null);
@@ -445,7 +444,6 @@ export const MediaPlayer = ({
 						layers,
 						viewportWidth: compWidth,
 						viewportHeight: compHeight,
-						children,
 						autoDimensions: true,
 					}}
 					durationInFrames={durationInFrames}

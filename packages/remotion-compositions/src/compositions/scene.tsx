@@ -968,7 +968,7 @@ export const CompositionScene: React.FC<SceneProps> = ({
 					position: "absolute",
 					top: 0,
 					left: 0,
-					transform: `scale(calc(100cqw / ${resolvedViewportW}), calc(100cqh / ${resolvedViewportH}))`,
+					transform: `scale(calc(100cqw / (${resolvedViewportW} * 1px)), calc(100cqh / (${resolvedViewportH} * 1px)))`,
 					transformOrigin: "top left",
 				}}
 			>
@@ -983,7 +983,6 @@ export const CompositionScene: React.FC<SceneProps> = ({
 						<LayerRenderer key={layer.id} layer={layer} viewport={viewport} />
 					);
 				})}
-				{children}
 			</div>
 		</AbsoluteFill>
 	);
