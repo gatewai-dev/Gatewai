@@ -11,7 +11,6 @@ export class PreviewBrowserProcessor implements IBrowserProcessor {
 		const inputEntries = Object.entries(inputs);
 		if (inputEntries.length === 0) throw new Error("Preview disconnected");
 		const [_, { outputItem }] = inputEntries[0];
-		console.log({ inputEntries });
 		if (!outputItem) throw new Error("No input item");
 		return {
 			selectedOutputIndex: 0,

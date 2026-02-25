@@ -130,6 +130,48 @@ import { useHotkeys } from "react-hotkeys-hook";
 import type { VideoCompositorNodeConfig } from "../../../shared/config.js";
 import { DEFAULT_DURATION_FRAMES, FPS } from "../config/index.js";
 
+const getEffectiveDurationMs = (
+	virtualMedia: VirtualMediaData | undefined | null,
+	accumulatedStartSec = 0,
+): number | null => {
+	if (!virtualMedia) return null;
+	const op = virtualMedia.operation;
+
+	if (op?.op === "cut") {
+		const cutStart = (Number(op.startSec) || 0) + accumulatedStartSec;
+		const cutEnd = Number(op.endSec) || 0;
+		const cutDurationMs = Math.max(0, cutEnd - cutStart) * 1000;
+
+		// Check if child also has cuts that further constrain
+		const child = virtualMedia.children?.[0];
+		if (child) {
+			const childDurationMs = getEffectiveDurationMs(child, cutStart);
+			if (childDurationMs !== null) {
+				return Math.min(cutDurationMs, childDurationMs);
+			}
+		}
+		return cutDurationMs;
+	}
+
+	if (op?.op === "speed") {
+		const rate = Number((op as any).rate) || 1;
+		const child = virtualMedia.children?.[0];
+		if (child) {
+			const childMs = getEffectiveDurationMs(child, accumulatedStartSec / rate);
+			if (childMs !== null) return childMs * rate;
+		}
+		return null;
+	}
+
+	// Transparent nodes (crop, filter, rotate, flip, layer) — pass through
+	for (const child of virtualMedia.children ?? []) {
+		const found = getEffectiveDurationMs(child, accumulatedStartSec);
+		if (found !== null) return found;
+	}
+
+	return null;
+};
+
 // --- Extracted Statics & Utilities ---
 const roundToEven = (num?: number) => Math.round((num ?? 0) / 2) * 2;
 
@@ -424,7 +466,7 @@ const InteractionOverlay: React.FC = () => {
 				l.type !== "Audio" &&
 				currentFrame >= (l.startFrame ?? 0) &&
 				currentFrame <
-				(l.startFrame ?? 0) + (l.durationInFrames ?? DEFAULT_DURATION_FRAMES),
+					(l.startFrame ?? 0) + (l.durationInFrames ?? DEFAULT_DURATION_FRAMES),
 		)
 		.sort((a, b) => (a.zIndex ?? 0) - (b.zIndex ?? 0));
 
@@ -507,10 +549,10 @@ const InteractionOverlay: React.FC = () => {
 				prev.map((l) =>
 					l.id === selectedId
 						? {
-							...l,
-							x: Math.round(initialPos.x + dx),
-							y: Math.round(initialPos.y + dy),
-						}
+								...l,
+								x: Math.round(initialPos.x + dx),
+								y: Math.round(initialPos.y + dy),
+							}
 						: l,
 				),
 			);
@@ -584,13 +626,13 @@ const InteractionOverlay: React.FC = () => {
 				prev.map((l) =>
 					l.id === selectedId
 						? {
-							...l,
-							width: Math.round(newWidth),
-							height: Math.round(newHeight),
-							x: Math.round(newX),
-							y: Math.round(newY),
-							autoDimensions: false,
-						}
+								...l,
+								width: Math.round(newWidth),
+								height: Math.round(newHeight),
+								x: Math.round(newX),
+								y: Math.round(newY),
+								autoDimensions: false,
+							}
 						: l,
 				),
 			);
@@ -662,10 +704,11 @@ const InteractionOverlay: React.FC = () => {
 						}}
 					>
 						<div
-							className={`absolute inset-0 pointer-events-none transition-all duration-150 ${selectedId === layer.id
+							className={`absolute inset-0 pointer-events-none transition-all duration-150 ${
+								selectedId === layer.id
 									? "border-2 border-blue-500 shadow-[0_0_0_1px_rgba(59,130,246,0.2)]"
 									: "border border-transparent group-hover:border-blue-400/50"
-								}`}
+							}`}
 						/>
 						{selectedId === layer.id && (
 							<>
@@ -1586,62 +1629,62 @@ const InspectorPanel: React.FC = () => {
 								</div>
 								{(selectedLayer.type === "Image" ||
 									selectedLayer.type === "Video") && (
-										<TooltipProvider>
-											<Tooltip>
-												<TooltipTrigger asChild>
-													<Button
-														variant={
-															selectedLayer.autoDimensions ? "secondary" : "ghost"
-														}
-														size="sm"
-														className={cn(
-															"h-6 text-[10px] px-2",
-															selectedLayer.autoDimensions
-																? "text-blue-400 bg-blue-500/10 hover:bg-blue-500/20"
-																: "text-gray-500 hover:text-gray-300 bg-white/5",
-														)}
-														onClick={() => {
-															if (selectedLayer.autoDimensions) {
-																update({ autoDimensions: false });
-															} else {
-																let newW = selectedLayer.width;
-																let newH = selectedLayer.height;
-																const initialItem = initialLayersData.get(
-																	selectedLayer.id,
-																);
-																if (initialItem) {
-																	if (initialItem.type === "Video") {
-																		const vvData =
-																			initialItem.data as VirtualMediaData;
-																		const meta = getActiveVideoMetadata(vvData);
-																		if (meta?.width) newW = meta.width;
-																		if (meta?.height) newH = meta.height;
-																	} else if (initialItem.type === "Image") {
-																		const meta = (initialItem.data as FileData)
-																			.processData;
-																		if (meta?.width) newW = meta.width;
-																		if (meta?.height) newH = meta.height;
-																	}
+									<TooltipProvider>
+										<Tooltip>
+											<TooltipTrigger asChild>
+												<Button
+													variant={
+														selectedLayer.autoDimensions ? "secondary" : "ghost"
+													}
+													size="sm"
+													className={cn(
+														"h-6 text-[10px] px-2",
+														selectedLayer.autoDimensions
+															? "text-blue-400 bg-blue-500/10 hover:bg-blue-500/20"
+															: "text-gray-500 hover:text-gray-300 bg-white/5",
+													)}
+													onClick={() => {
+														if (selectedLayer.autoDimensions) {
+															update({ autoDimensions: false });
+														} else {
+															let newW = selectedLayer.width;
+															let newH = selectedLayer.height;
+															const initialItem = initialLayersData.get(
+																selectedLayer.id,
+															);
+															if (initialItem) {
+																if (initialItem.type === "Video") {
+																	const vvData =
+																		initialItem.data as VirtualMediaData;
+																	const meta = getActiveVideoMetadata(vvData);
+																	if (meta?.width) newW = meta.width;
+																	if (meta?.height) newH = meta.height;
+																} else if (initialItem.type === "Image") {
+																	const meta = (initialItem.data as FileData)
+																		.processData;
+																	if (meta?.width) newW = meta.width;
+																	if (meta?.height) newH = meta.height;
 																}
-																update({
-																	autoDimensions: true,
-																	width: newW,
-																	height: newH,
-																});
 															}
-														}}
-													>
-														<Sparkles className="w-3 h-3 mr-1" /> Auto W/H
-													</Button>
-												</TooltipTrigger>
-												<TooltipContent>
-													{hasCropDimensions
-														? "Sync dimensions with cropped source media"
-														: "Sync dimensions with source media"}
-												</TooltipContent>
-											</Tooltip>
-										</TooltipProvider>
-									)}
+															update({
+																autoDimensions: true,
+																width: newW,
+																height: newH,
+															});
+														}
+													}}
+												>
+													<Sparkles className="w-3 h-3 mr-1" /> Auto W/H
+												</Button>
+											</TooltipTrigger>
+											<TooltipContent>
+												{hasCropDimensions
+													? "Sync dimensions with cropped source media"
+													: "Sync dimensions with source media"}
+											</TooltipContent>
+										</Tooltip>
+									</TooltipProvider>
+								)}
 							</div>
 
 							<div className="grid grid-cols-2 gap-2">
@@ -1755,23 +1798,23 @@ const InspectorPanel: React.FC = () => {
 
 					{(selectedLayer.type === "Video" ||
 						selectedLayer.type === "Audio") && (
-							<CollapsibleSection title="Audio" icon={Music}>
-								<div className="flex items-center gap-2">
-									<span className="text-[9px] text-gray-500 w-8">Volume</span>
-									<Slider
-										className="flex-1"
-										value={[(selectedLayer.volume ?? 1) * 100]}
-										min={0}
-										max={100}
-										step={1}
-										onValueChange={([v]) => update({ volume: v / 100 })}
-									/>
-									<span className="text-[9px] text-gray-400 w-6 text-right">
-										{Math.round((selectedLayer.volume ?? 1) * 100)}%
-									</span>
-								</div>
-							</CollapsibleSection>
-						)}
+						<CollapsibleSection title="Audio" icon={Music}>
+							<div className="flex items-center gap-2">
+								<span className="text-[9px] text-gray-500 w-8">Volume</span>
+								<Slider
+									className="flex-1"
+									value={[(selectedLayer.volume ?? 1) * 100]}
+									min={0}
+									max={100}
+									step={1}
+									onValueChange={([v]) => update({ volume: v / 100 })}
+								/>
+								<span className="text-[9px] text-gray-400 w-6 text-right">
+									{Math.round((selectedLayer.volume ?? 1) * 100)}%
+								</span>
+							</div>
+						</CollapsibleSection>
+					)}
 
 					{selectedLayer.type === "Text" && (
 						<TypographyControls
@@ -1858,11 +1901,11 @@ const InspectorPanel: React.FC = () => {
 														prev.map((l) =>
 															l.id === selectedId
 																? {
-																	...l,
-																	animations: l.animations?.filter(
-																		(a) => a.id !== anim.id,
-																	),
-																}
+																		...l,
+																		animations: l.animations?.filter(
+																			(a) => a.id !== anim.id,
+																		),
+																	}
 																: l,
 														),
 													)
@@ -1886,11 +1929,11 @@ const InspectorPanel: React.FC = () => {
 														prev.map((l) =>
 															l.id === selectedId
 																? {
-																	...l,
-																	animations: l.animations?.map((a) =>
-																		a.id === anim.id ? { ...a, value: v } : a,
-																	),
-																}
+																		...l,
+																		animations: l.animations?.map((a) =>
+																			a.id === anim.id ? { ...a, value: v } : a,
+																		),
+																	}
 																: l,
 														),
 													)
@@ -2107,7 +2150,9 @@ export const VideoDesignerEditor: React.FC<VideoDesignerEditorProps> = ({
 				} else if (item.type === "Video" || item.type === "Audio") {
 					virtualMedia = item.data as VirtualMediaData;
 					const metadata = getActiveVideoMetadata(virtualMedia);
-					durationMs = metadata.durationMs ?? 0;
+					// Prefer cut duration over full source duration so the clip can't exceed its trim bounds
+					const cutDurationMs = getEffectiveDurationMs(virtualMedia);
+					durationMs = cutDurationMs ?? metadata.durationMs ?? 0;
 					src = resolveVideoSourceUrl(virtualMedia);
 					cropRenderProps = computeVideoCropRenderProps(virtualMedia);
 					if (isAutoDimensions) {
@@ -2484,13 +2529,13 @@ export const VideoDesignerEditor: React.FC<VideoDesignerEditorProps> = ({
 		layers.length === 0
 			? DEFAULT_DURATION_FRAMES
 			: Math.max(
-				DEFAULT_DURATION_FRAMES,
-				...layers.map(
-					(l) =>
-						(l.startFrame ?? 0) +
-						(l.durationInFrames ?? DEFAULT_DURATION_FRAMES),
-				),
-			);
+					DEFAULT_DURATION_FRAMES,
+					...layers.map(
+						(l) =>
+							(l.startFrame ?? 0) +
+							(l.durationInFrames ?? DEFAULT_DURATION_FRAMES),
+					),
+				);
 	console.log({ durationInFrames });
 	// Unmemoized Context: This context value contains state (currentFrame, pan, zoom, isPlaying) that updates extremely fast.
 	// In the original code, the dependency array was huge and invalidated almost constantly, offering zero memoization benefit
