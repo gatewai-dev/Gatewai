@@ -224,7 +224,7 @@ const CropConfigPanel = memo(
 			const currentPixelRatio =
 				naturalWidth && naturalHeight
 					? ((crop.widthPercentage / 100) * naturalWidth) /
-					((crop.heightPercentage / 100) * naturalHeight)
+						((crop.heightPercentage / 100) * naturalHeight)
 					: crop.widthPercentage / crop.heightPercentage;
 
 			let newWPct = crop.widthPercentage;

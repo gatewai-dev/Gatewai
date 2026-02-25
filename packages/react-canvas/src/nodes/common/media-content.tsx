@@ -21,7 +21,7 @@ function MediaContent({
 }) {
 	const selectedOutput =
 		result.outputs?.[
-		Math.min(result.selectedOutputIndex, result.outputs.length - 1)
+			Math.min(result.selectedOutputIndex, result.outputs.length - 1)
 		];
 	const outputItem = selectedOutput?.items?.[0];
 

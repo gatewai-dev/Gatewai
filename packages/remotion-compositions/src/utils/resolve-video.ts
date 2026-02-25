@@ -230,9 +230,21 @@ export function getActiveVideoMetadata(
 	const op = vv.operation;
 	if (op?.op === "source") {
 		const sm = op.sourceMeta || {};
-		width = width ?? sm.width ?? op.source?.processData?.width ?? op.source?.entity?.width;
-		height = height ?? sm.height ?? op.source?.processData?.height ?? op.source?.entity?.height;
-		durationMs = durationMs ?? sm.durationMs ?? op.source?.processData?.duration ?? op.source?.entity?.duration;
+		width =
+			width ??
+			sm.width ??
+			op.source?.processData?.width ??
+			op.source?.entity?.width;
+		height =
+			height ??
+			sm.height ??
+			op.source?.processData?.height ??
+			op.source?.entity?.height;
+		durationMs =
+			durationMs ??
+			sm.durationMs ??
+			op.source?.processData?.duration ??
+			op.source?.entity?.duration;
 		fps = fps ?? sm.fps ?? op.source?.processData?.fps;
 	}
 

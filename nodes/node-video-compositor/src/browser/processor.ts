@@ -54,7 +54,9 @@ export class VideoCompositorBrowserProcessor implements IBrowserProcessor {
 
 			const layerDurationInFrames =
 				saved.durationInFrames ??
-				(activeMeta ? Math.ceil(((activeMeta.durationMs ?? 0) / 1000) * fps) : 0);
+				(activeMeta
+					? Math.ceil(((activeMeta.durationMs ?? 0) / 1000) * fps)
+					: 0);
 
 			// Wrap in a layer operation
 			const layerOp: VirtualMediaData = {

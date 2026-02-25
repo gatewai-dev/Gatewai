@@ -153,13 +153,11 @@ const VideoCompositorNodeComponent = memo((props: NodeProps) => {
 		const durationInFrames =
 			layers.length > 0
 				? Math.max(
-					0,
-					...layers.map(
-						(l) =>
-							(l.startFrame ?? 0) +
-							(l.durationInFrames ?? 0),
-					),
-				)
+						0,
+						...layers.map(
+							(l) => (l.startFrame ?? 0) + (l.durationInFrames ?? 0),
+						),
+					)
 				: 0;
 
 		return { layers, width, height, durationInFrames };
