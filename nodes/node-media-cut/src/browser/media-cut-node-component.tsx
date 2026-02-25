@@ -1,4 +1,4 @@
-import type { VirtualVideoData } from "@gatewai/core/types";
+import type { VirtualMediaData } from "@gatewai/core/types";
 import {
 	BaseNode,
 	MediaContent,
@@ -506,7 +506,7 @@ const MediaCutNodeComponent = memo(
 		const { inputs, result } = useNodeResult(props.id);
 
 		const inputMedia = inputs[inputHandleId!]?.outputItem?.data as
-			| VirtualVideoData
+			| VirtualMediaData
 			| undefined;
 		const inputType = inputs[inputHandleId!]?.outputItem?.type as
 			| "Video"

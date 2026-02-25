@@ -1,6 +1,6 @@
 # Video Editing & Processing Implementation Spec
 
-> **Goal**: Build a fast, elegant, Remotion-powered video editing pipeline with excellent node-developer DX — using **VirtualVideo as the native data type** for all video outputs, enabling zero-cost node chaining through declarative operation stacks.
+> **Goal**: Build a fast, elegant, Remotion-powered video editing pipeline with excellent node-developer DX — using **VirtualMedia as the native data type** for all video outputs, enabling zero-cost node chaining through declarative operation stacks.
 
 ---
 
@@ -47,15 +47,15 @@ Currently, `OutputItem<"Video">` carries `data: FileData` — a concrete file re
 
 ---
 
-## 2. Core Concept: VirtualVideo as the Native Video Type
+## 2. Core Concept: VirtualMedia as the Native Video Type
 
 ### 2.1 Design Principle
 
-> **`OutputItem<"Video">` data IS `VirtualVideoData`. Always. No exceptions.**
+> **`OutputItem<"Video">` data IS `VirtualMediaData`. Always. No exceptions.**
 
-Every node that produces a Video output — Import, VideoGen, Compositor, Crop, Cut — outputs `VirtualVideoData`. There is no fallback pattern, no `wrapAsVirtual()`, no checking. Downstream nodes always receive `VirtualVideoData` and can rely on its shape.
+Every node that produces a Video output — Import, VideoGen, Compositor, Crop, Cut — outputs `VirtualMediaData`. There is no fallback pattern, no `wrapAsVirtual()`, no checking. Downstream nodes always receive `VirtualMediaData` and can rely on its shape.
 
-### 2.2 VirtualVideoData Schema
+### 2.2 VirtualMediaData Schema
 
 ```ts
 // packages/remotion-compositions/src/schemas/virtual-video.ts
@@ -133,8 +133,8 @@ export const VideoOperationSchema = z.discriminatedUnion("op", [
 
 export type VideoOperation = z.infer<typeof VideoOperationSchema>;
 
-// --- VirtualVideoData: THE data type for all Video outputs ---
-export const VirtualVideoDataSchema = z.object({
+// --- VirtualMediaData: THE data type for all Video outputs ---
+export const VirtualMediaDataSchema = z.object({
   /** Original source file */
   source: VideoSourceSchema,
 
@@ -150,14 +150,14 @@ export const VirtualVideoDataSchema = z.object({
   operations: z.array(VideoOperationSchema).default([]),
 });
 
-export type VirtualVideoData = z.infer<typeof VirtualVideoDataSchema>;
+export type VirtualMediaData = z.infer<typeof VirtualMediaDataSchema>;
 ```
 
 ### 2.3 Update to Core Type System
 
 #### Modify `packages/core/src/types/node-result.ts`
 
-The `DataForType<"Video">` mapping changes from `FileData` to `VirtualVideoData`:
+The `DataForType<"Video">` mapping changes from `FileData` to `VirtualMediaData`:
 
 ```diff
 -export type DataForType<R extends DataType> = R extends "Text"
@@ -170,11 +170,11 @@ The `DataForType<"Video">` mapping changes from `FileData` to `VirtualVideoData`
 +  : R extends "Image" | "Audio"
 +    ? FileData
 +    : R extends "Video"
-+      ? VirtualVideoData    // Video outputs are ALWAYS VirtualVideo
++      ? VirtualMediaData    // Video outputs are ALWAYS VirtualMedia
 +      : ...;
 ```
 
-`FileData` remains unchanged and is still used for Image and Audio. `VirtualVideoData` is a new type specifically for video that embeds its source and operation history.
+`FileData` remains unchanged and is still used for Image and Audio. `VirtualMediaData` is a new type specifically for video that embeds its source and operation history.
 
 ### 2.4 Core Utility Functions
 
@@ -182,18 +182,18 @@ The `DataForType<"Video">` mapping changes from `FileData` to `VirtualVideoData`
 // packages/remotion-compositions/src/utils/resolve-video.ts
 
 /**
- * Resolve the actual playable URL from a VirtualVideoData
+ * Resolve the actual playable URL from a VirtualMediaData
  */
-export function resolveVideoSourceUrl(vv: VirtualVideoData): string | undefined {
+export function resolveVideoSourceUrl(vv: VirtualMediaData): string | undefined {
   return vv.source.entity?.id
     ? GetAssetEndpoint(vv.source.entity)
     : vv.source.processData?.dataUrl;
 }
 
 /**
- * Create a VirtualVideoData from a FileData source (used by Import, VideoGen)
+ * Create a VirtualMediaData from a FileData source (used by Import, VideoGen)
  */
-export function createVirtualVideo(source: FileData): VirtualVideoData {
+export function createVirtualMedia(source: FileData): VirtualMediaData {
   return {
     source: {
       entity: source.entity,
@@ -210,12 +210,12 @@ export function createVirtualVideo(source: FileData): VirtualVideoData {
 }
 
 /**
- * Append an operation to an existing VirtualVideoData (used by processing nodes)
+ * Append an operation to an existing VirtualMediaData (used by processing nodes)
  */
 export function appendOperation(
-  vv: VirtualVideoData,
+  vv: VirtualMediaData,
   operation: VideoOperation,
-): VirtualVideoData {
+): VirtualMediaData {
   return {
     ...vv,
     operations: [...vv.operations, operation],
@@ -226,7 +226,7 @@ export function appendOperation(
  * Collapse the full operation stack into concrete render parameters
  * for Remotion or FFmpeg
  */
-export function computeRenderParams(vv: VirtualVideoData) {
+export function computeRenderParams(vv: VirtualMediaData) {
   let trimStartSec = 0;
   let trimEndSec: number | null = null;
   let speed = 1.0;
@@ -279,23 +279,23 @@ export function computeRenderParams(vv: VirtualVideoData) {
 
 ## 3. Node Changes
 
-### 3.1 Source Nodes — Output VirtualVideoData Natively
+### 3.1 Source Nodes — Output VirtualMediaData Natively
 
 #### Import Node (`nodes/node-import`)
 
 **Changes to `browser/processor.ts`:**
 
 ```ts
-import { createVirtualVideo } from "@gatewai/remotion-compositions";
+import { createVirtualMedia } from "@gatewai/remotion-compositions";
 
-// When the imported file is a Video, output VirtualVideoData
+// When the imported file is a Video, output VirtualMediaData
 if (dataType === "Video") {
   return {
     selectedOutputIndex: 0,
     outputs: [{
       items: [{
         type: "Video",
-        data: createVirtualVideo({ entity: asset }),  // VirtualVideoData, not FileData
+        data: createVirtualMedia({ entity: asset }),  // VirtualMediaData, not FileData
         outputHandleId: outputHandle,
       }],
     }],
@@ -304,14 +304,14 @@ if (dataType === "Video") {
 // Image and Audio still output FileData as before
 ```
 
-**Changes to `server/processor.ts`:** Same pattern — wrap in `createVirtualVideo()`.
+**Changes to `server/processor.ts`:** Same pattern — wrap in `createVirtualMedia()`.
 
 **Changes to `shared/config.ts` — Result schema:**
 
 ```ts
 export const ImportResultSchema = z.union([
   MultiOutputGenericSchema(
-    createOutputItemSchema(z.literal("Video"), VirtualVideoDataSchema),  // NEW
+    createOutputItemSchema(z.literal("Video"), VirtualMediaDataSchema),  // NEW
   ),
   MultiOutputGenericSchema(
     createOutputItemSchema(z.literal("Image"), FileDataSchema),
@@ -327,13 +327,13 @@ export const ImportResultSchema = z.union([
 **Changes to `server/processor.ts`:**
 
 ```ts
-import { createVirtualVideo } from "@gatewai/remotion-compositions";
+import { createVirtualMedia } from "@gatewai/remotion-compositions";
 
 // After generating video and creating asset:
 const newGeneration = {
   items: [{
     type: DataType.Video,
-    data: createVirtualVideo({ entity: asset }),  // VirtualVideoData, not FileData
+    data: createVirtualMedia({ entity: asset }),  // VirtualMediaData, not FileData
     outputHandleId: outputHandle.id,
   }],
 };
@@ -343,7 +343,7 @@ const newGeneration = {
 
 ```ts
 export const VideoGenResultSchema = MultiOutputGenericSchema(
-  createOutputItemSchema(z.literal("Video"), VirtualVideoDataSchema),  // NEW
+  createOutputItemSchema(z.literal("Video"), VirtualMediaDataSchema),  // NEW
 );
 ```
 
@@ -414,7 +414,7 @@ export const VideoCropConfigSchema = z.object({
 export type VideoCropConfig = z.infer<typeof VideoCropConfigSchema>;
 
 export const VideoCropResultSchema = SingleOutputGenericSchema(
-  createOutputItemSchema(z.literal("Video"), VirtualVideoDataSchema),
+  createOutputItemSchema(z.literal("Video"), VirtualMediaDataSchema),
 );
 ```
 
@@ -425,7 +425,7 @@ import { appendOperation } from "@gatewai/remotion-compositions";
 
 export class VideoCropBrowserProcessor implements IBrowserProcessor {
   async process({ node, inputs, context }) {
-    const inputVideo = /* get VirtualVideoData from connected Video input */;
+    const inputVideo = /* get VirtualMediaData from connected Video input */;
     const config = VideoCropConfigSchema.parse(node.config);
 
     const width = config.width ?? inputVideo.sourceMeta.width ?? 1920;
@@ -455,11 +455,11 @@ export class VideoCropBrowserProcessor implements IBrowserProcessor {
 ```tsx
 const VideoCropNodeComponent = memo((props) => {
   const { result } = useNodeResult(props.id);
-  const virtualVideo = result?.outputs?.[0]?.items?.[0]?.data as VirtualVideoData;
+  const virtualMedia = result?.outputs?.[0]?.items?.[0]?.data as VirtualMediaData;
 
-  if (!virtualVideo) return <BaseNode ...><EmptyState /></BaseNode>;
+  if (!virtualMedia) return <BaseNode ...><EmptyState /></BaseNode>;
 
-  const params = computeRenderParams(virtualVideo);
+  const params = computeRenderParams(virtualMedia);
   const durationFrames = Math.ceil(params.effectiveDurationSec * FPS);
 
   return (
@@ -467,7 +467,7 @@ const VideoCropNodeComponent = memo((props) => {
       <Player
         acknowledgeRemotionLicense
         component={SingleClipComposition}
-        inputProps={{ virtualVideo }}
+        inputProps={{ virtualMedia }}
         durationInFrames={Math.max(1, durationFrames)}
         fps={FPS}
         style={{ width: "100%", height: "100%" }}
@@ -490,7 +490,7 @@ const VideoCropNodeComponent = memo((props) => {
 
 #### Server Processor
 
-Same logic as browser processor — append crop operation to VirtualVideoData. No rendering.
+Same logic as browser processor — append crop operation to VirtualMediaData. No rendering.
 
 ---
 
@@ -555,7 +555,7 @@ export const VideoCutConfigSchema = z.object({
 export type VideoCutConfig = z.infer<typeof VideoCutConfigSchema>;
 
 export const VideoCutResultSchema = SingleOutputGenericSchema(
-  createOutputItemSchema(z.literal("Video"), VirtualVideoDataSchema),
+  createOutputItemSchema(z.literal("Video"), VirtualMediaDataSchema),
 );
 ```
 
@@ -566,7 +566,7 @@ import { appendOperation } from "@gatewai/remotion-compositions";
 
 export class VideoCutBrowserProcessor implements IBrowserProcessor {
   async process({ node, inputs, context }) {
-    const inputVideo = /* get VirtualVideoData from connected Video input */;
+    const inputVideo = /* get VirtualMediaData from connected Video input */;
     const config = VideoCutConfigSchema.parse(node.config);
 
     const output = appendOperation(inputVideo, {
@@ -591,11 +591,11 @@ export class VideoCutBrowserProcessor implements IBrowserProcessor {
 ```tsx
 const VideoCutNodeComponent = memo((props) => {
   const { result } = useNodeResult(props.id);
-  const virtualVideo = result?.outputs?.[0]?.items?.[0]?.data as VirtualVideoData;
+  const virtualMedia = result?.outputs?.[0]?.items?.[0]?.data as VirtualMediaData;
 
-  if (!virtualVideo) return <BaseNode ...><EmptyState /></BaseNode>;
+  if (!virtualMedia) return <BaseNode ...><EmptyState /></BaseNode>;
 
-  const params = computeRenderParams(virtualVideo);
+  const params = computeRenderParams(virtualMedia);
   const durationFrames = Math.ceil(params.effectiveDurationSec * FPS);
 
   return (
@@ -603,7 +603,7 @@ const VideoCutNodeComponent = memo((props) => {
       <Player
         acknowledgeRemotionLicense
         component={SingleClipComposition}
-        inputProps={{ virtualVideo }}
+        inputProps={{ virtualMedia }}
         durationInFrames={Math.max(1, durationFrames)}
         fps={FPS}
         style={{ width: "100%", height: "100%" }}
@@ -632,38 +632,38 @@ Same as browser — append cut operation. No rendering.
 
 ### 3.4 Refactor `nodes/node-video-compositor`
 
-#### 3.4.1 Input Handling — VirtualVideoData is Guaranteed
+#### 3.4.1 Input Handling — VirtualMediaData is Guaranteed
 
-Since all Video outputs are now VirtualVideoData, the compositor can directly read them:
+Since all Video outputs are now VirtualMediaData, the compositor can directly read them:
 
 ```ts
 // In node-component.tsx — building layers from inputs
 for (const [handleId, input] of Object.entries(inputs)) {
   const item = input.outputItem;
   if (item.type === "Video") {
-    const vv = item.data as VirtualVideoData;  // Always VirtualVideoData, no checking
+    const vv = item.data as VirtualMediaData;  // Always VirtualMediaData, no checking
     layers.push({
       ...base,
       type: "Video",
-      virtualVideo: vv,
+      virtualMedia: vv,
       src: resolveVideoSourceUrl(vv),
     });
   }
 }
 ```
 
-#### 3.4.2 Compositor Output — VirtualVideoData with Compose Operation
+#### 3.4.2 Compositor Output — VirtualMediaData with Compose Operation
 
-The compositor outputs VirtualVideoData with a `compose` operation, enabling chaining:
+The compositor outputs VirtualMediaData with a `compose` operation, enabling chaining:
 
 ```ts
 // When compositor result is consumed by another video node:
-const compositorOutput: VirtualVideoData = {
+const compositorOutput: VirtualMediaData = {
   source: { /* empty — this is a generated composition, not a file */ },
   sourceMeta: { width, height, durationMs, fps },
   operations: [{
     op: "compose",
-    layers: processedLayers,  // Each layer carries its own VirtualVideoData
+    layers: processedLayers,  // Each layer carries its own VirtualMediaData
     width, height, fps,
     durationInFrames,
   }],
@@ -672,7 +672,7 @@ const compositorOutput: VirtualVideoData = {
 
 This allows: `Compositor → Color Grade → Export` — the color grade node appends a filter operation after the compose operation.
 
-#### 3.4.3 CompositionScene — Renders VirtualVideoData Layers
+#### 3.4.3 CompositionScene — Renders VirtualMediaData Layers
 
 ```tsx
 // @gatewai/remotion-compositions/compositions/scene.tsx
@@ -690,7 +690,7 @@ export const CompositionScene = ({ layers, viewportWidth, viewportHeight }) => {
   );
 };
 
-// LayerRenderer applies the full VirtualVideoData operation stack for each layer:
+// LayerRenderer applies the full VirtualMediaData operation stack for each layer:
 // - Resolves source URL from vv.source
 // - Computes CSS filters, crop clip-path, trim start frame, playback rate
 // - Renders <Video> with all transforms applied
@@ -728,8 +728,8 @@ Add to compositor layer config:
 
 ```ts
 .extend({
-  // VirtualVideoData from upstream (always present for Video inputs)
-  virtualVideo: VirtualVideoDataSchema.optional(),
+  // VirtualMediaData from upstream (always present for Video inputs)
+  virtualMedia: VirtualMediaDataSchema.optional(),
 
   // Per-layer editing in compositor timeline (applied on top of upstream ops)
   trimStart: z.number().min(0).optional(),
@@ -760,13 +760,13 @@ packages/remotion-compositions/
     ├── index.ts                    # Public API
     ├── schemas/
     │   ├── index.ts
-    │   ├── virtual-video.ts        # VirtualVideoDataSchema, VideoOperationSchema
+    │   ├── virtual-video.ts        # VirtualMediaDataSchema, VideoOperationSchema
     │   ├── filter-schema.ts        # CSSFilterSchema, ColorGradingSchema
     │   ├── layer-schema.ts         # ExtendedLayer for compositor
     │   └── transition-schema.ts    # Transition types
     ├── compositions/
     │   ├── scene.tsx               # Multi-layer CompositionScene
-    │   ├── single-clip.tsx         # SingleClipComposition (renders one VirtualVideoData)
+    │   ├── single-clip.tsx         # SingleClipComposition (renders one VirtualMediaData)
     │   └── layer-renderer.tsx      # Per-layer renderer (applies operation stack)
     ├── filters/
     │   ├── css-filters.tsx         # CSS filter wrapper component
@@ -775,7 +775,7 @@ packages/remotion-compositions/
     │   ├── transitions.tsx         # Crossfade, wipe, slide
     │   └── animations.ts          # Animation math (from current compositor)
     └── utils/
-        ├── resolve-video.ts        # resolveVideoSourceUrl(), createVirtualVideo(), appendOperation()
+        ├── resolve-video.ts        # resolveVideoSourceUrl(), createVirtualMedia(), appendOperation()
         ├── apply-operations.ts     # computeRenderParams() — collapses stack to render props
         ├── timing.ts               # Frame/time conversion
         └── media-duration.ts       # getMediaDurationAsSec
@@ -786,12 +786,12 @@ packages/remotion-compositions/
 Used by every atomic video node for preview:
 
 ```tsx
-export const SingleClipComposition = ({ virtualVideo }) => {
+export const SingleClipComposition = ({ virtualMedia }) => {
   const { fps } = useVideoConfig();
-  const params = computeRenderParams(virtualVideo);
+  const params = computeRenderParams(virtualMedia);
 
   // Handle "compose" operations (compositor output)
-  const composeOp = virtualVideo.operations.find(op => op.op === "compose");
+  const composeOp = virtualMedia.operations.find(op => op.op === "compose");
   if (composeOp) {
     return <CompositionScene layers={composeOp.layers} viewportWidth={composeOp.width} viewportHeight={composeOp.height} />;
   }
@@ -860,7 +860,7 @@ When a terminal node (Export, Download) or `renderMediaOnWeb` needs a real video
 ### 5.2 Server Export (FFmpeg)
 
 ```ts
-function virtualVideoToFFmpegArgs(vv: VirtualVideoData): string[] {
+function virtualMediaToFFmpegArgs(vv: VirtualMediaData): string[] {
   const args = [];
   const filters = [];
 
@@ -919,7 +919,7 @@ import { appendOperation } from "@gatewai/remotion-compositions";
 
 export class InvertProcessor implements IBrowserProcessor {
   async process({ node, inputs, context }) {
-    const inputVideo = /* get VirtualVideoData from Video input — guaranteed shape */;
+    const inputVideo = /* get VirtualMediaData from Video input — guaranteed shape */;
     const output = appendOperation(inputVideo, {
       op: "filter",
       filters: { cssFilters: { invert: 100 } },
@@ -934,9 +934,9 @@ export class InvertProcessor implements IBrowserProcessor {
 ```
 
 **That's it.** No rendering, no wrapping, no type checking. The node:
-- ✅ Accepts VirtualVideoData (guaranteed by type system)
+- ✅ Accepts VirtualMediaData (guaranteed by type system)
 - ✅ Appends one operation
-- ✅ Outputs VirtualVideoData (guaranteed by type system)
+- ✅ Outputs VirtualMediaData (guaranteed by type system)
 - ✅ Preview works via `SingleClipComposition`
 - ✅ Chains with any other video node
 
@@ -946,15 +946,15 @@ export class InvertProcessor implements IBrowserProcessor {
 import { Player } from "@remotion/player";
 import { SingleClipComposition, computeRenderParams } from "@gatewai/remotion-compositions";
 
-const VideoNodePreview = ({ virtualVideo }: { virtualVideo: VirtualVideoData }) => {
-  const params = computeRenderParams(virtualVideo);
+const VideoNodePreview = ({ virtualMedia }: { virtualMedia: VirtualMediaData }) => {
+  const params = computeRenderParams(virtualMedia);
   const durationFrames = Math.ceil(params.effectiveDurationSec * 24);
 
   return (
     <Player
       acknowledgeRemotionLicense
       component={SingleClipComposition}
-      inputProps={{ virtualVideo }}
+      inputProps={{ virtualMedia }}
       durationInFrames={Math.max(1, durationFrames)}
       fps={24}
       style={{ width: "100%", height: "100%" }}
@@ -968,9 +968,9 @@ const VideoNodePreview = ({ virtualVideo }: { virtualVideo: VirtualVideoData }) 
 
 ## 7. Performance
 
-### 7.1 Why VirtualVideo is Fast
+### 7.1 Why VirtualMedia is Fast
 
-| Without VirtualVideo | With VirtualVideo |
+| Without VirtualMedia | With VirtualMedia |
 |---|---|
 | Import → **render** → Crop → **render** → Cut → **render** → Compositor | Import → append → append → append → Compositor → **render once** |
 | N full re-encodes | 0 intermediate renders |
@@ -990,7 +990,7 @@ const VideoNodePreview = ({ virtualVideo }: { virtualVideo: VirtualVideoData }) 
 
 ```mermaid
 graph TD
-  A["1. packages/remotion-compositions<br>(schemas, VirtualVideo, compositions)"] --> B["2. Modify core FileData → VirtualVideoData"]
+  A["1. packages/remotion-compositions<br>(schemas, VirtualMedia, compositions)"] --> B["2. Modify core FileData → VirtualMediaData"]
   B --> C["3. Update Import + VideoGen nodes"]
   C --> D["4. node-video-crop"]
   C --> E["5. node-video-cut"]
@@ -1003,20 +1003,20 @@ graph TD
 ### Checklist
 
 1. **`packages/remotion-compositions`**
-   - [ ] VirtualVideoData schema + operation schemas
-   - [ ] `createVirtualVideo()`, `appendOperation()`, `computeRenderParams()`
+   - [ ] VirtualMediaData schema + operation schemas
+   - [ ] `createVirtualMedia()`, `appendOperation()`, `computeRenderParams()`
    - [ ] `SingleClipComposition` (preview for atomic nodes)
    - [ ] Extract `CompositionScene` + animations from compositor
    - [ ] CSS filter components
    - [ ] Transition components
 
 2. **Core type changes**
-   - [ ] `DataForType<"Video">` → `VirtualVideoData`
+   - [ ] `DataForType<"Video">` → `VirtualMediaData`
    - [ ] Update `createOutputItemSchema` usage for Video
 
 3. **Update source nodes**
-   - [ ] Import node: output `createVirtualVideo()` for video files
-   - [ ] VideoGen node: output `createVirtualVideo()` after generating
+   - [ ] Import node: output `createVirtualMedia()` for video files
+   - [ ] VideoGen node: output `createVirtualMedia()` after generating
 
 4. **`node-video-crop`**
    - [ ] Package setup (metadata, config, shared)
@@ -1033,16 +1033,16 @@ graph TD
    - [ ] Server processor (same append logic)
 
 6. **Refactor `node-video-compositor`**
-   - [ ] Read VirtualVideoData from inputs (no checking needed)
+   - [ ] Read VirtualMediaData from inputs (no checking needed)
    - [ ] Use shared CompositionScene
-   - [ ] Output VirtualVideoData with compose operation
+   - [ ] Output VirtualMediaData with compose operation
    - [ ] Split editor into modules
    - [ ] Add per-layer filter/trim/speed controls
 
 7. **Export / Materialize**
    - [ ] Browser: `renderMediaOnWeb` with SingleClipComposition/CompositionScene
    - [ ] Server: FFmpeg translation of operation stack
-   - [ ] Export node: detect and materialize VirtualVideoData
+   - [ ] Export node: detect and materialize VirtualMediaData
 
 8. **Polish**
    - [ ] Web Worker for export
@@ -1056,7 +1056,7 @@ graph TD
 
 | Path | Description |
 |---|---|
-| `packages/remotion-compositions/` (all) | Shared: VirtualVideo schemas, compositions, filters, utilities |
+| `packages/remotion-compositions/` (all) | Shared: VirtualMedia schemas, compositions, filters, utilities |
 | `nodes/node-video-crop/` (all) | Atomic video crop node |
 | `nodes/node-video-cut/` (all) | Atomic video cut/trim node |
 
@@ -1064,15 +1064,15 @@ graph TD
 
 | Path | Changes |
 |---|---|
-| `packages/core/src/types/node-result.ts` | `DataForType<"Video">` → `VirtualVideoData` |
-| `nodes/node-import/src/browser/processor.ts` | Output `createVirtualVideo()` for video files |
+| `packages/core/src/types/node-result.ts` | `DataForType<"Video">` → `VirtualMediaData` |
+| `nodes/node-import/src/browser/processor.ts` | Output `createVirtualMedia()` for video files |
 | `nodes/node-import/src/server/processor.ts` | Same |
-| `nodes/node-import/src/shared/config.ts` | Result schema uses `VirtualVideoDataSchema` for Video |
-| `nodes/node-video-gen/src/server/processor.ts` | Output `createVirtualVideo()` |
-| `nodes/node-video-gen/src/shared/config.ts` | Result schema uses `VirtualVideoDataSchema` |
-| `nodes/node-video-compositor/src/shared/config.ts` | Add `virtualVideo`, per-layer trim/speed/filters, transitions |
-| `nodes/node-video-compositor/src/browser/muxer-service.tsx` | Use shared compositions, handle VirtualVideoData |
-| `nodes/node-video-compositor/src/browser/node-component.tsx` | Read VirtualVideoData from inputs directly |
+| `nodes/node-import/src/shared/config.ts` | Result schema uses `VirtualMediaDataSchema` for Video |
+| `nodes/node-video-gen/src/server/processor.ts` | Output `createVirtualMedia()` |
+| `nodes/node-video-gen/src/shared/config.ts` | Result schema uses `VirtualMediaDataSchema` |
+| `nodes/node-video-compositor/src/shared/config.ts` | Add `virtualMedia`, per-layer trim/speed/filters, transitions |
+| `nodes/node-video-compositor/src/browser/muxer-service.tsx` | Use shared compositions, handle VirtualMediaData |
+| `nodes/node-video-compositor/src/browser/node-component.tsx` | Read VirtualMediaData from inputs directly |
 | `nodes/node-video-compositor/src/browser/video-editor/` | Split into modules |
 | `nodes/node-video-compositor/src/browser/video-editor/common/composition.tsx` | Delete → use shared package |
 | `nodes/node-video-compositor/package.json` | Add `@gatewai/remotion-compositions` dep |
@@ -1080,11 +1080,11 @@ graph TD
 ### Verification
 
 - [ ] `pnpm build` passes across all packages
-- [ ] Import node outputs VirtualVideoData for video files
-- [ ] VideoGen node outputs VirtualVideoData
+- [ ] Import node outputs VirtualMediaData for video files
+- [ ] VideoGen node outputs VirtualMediaData
 - [ ] `Import → VideoCrop → VideoCut → Compositor` chain works end-to-end
 - [ ] Each atomic node shows live preview via Player
-- [ ] Compositor reads VirtualVideoData from upstream nodes correctly
+- [ ] Compositor reads VirtualMediaData from upstream nodes correctly
 - [ ] Compositor output feeds into another video node
-- [ ] Export materializes VirtualVideoData into real video
+- [ ] Export materializes VirtualMediaData into real video
 - [ ] No regressions in Image/Audio flows

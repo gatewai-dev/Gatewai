@@ -6,7 +6,7 @@ import {
 import type {
 	ExtendedLayer,
 	FileData,
-	VirtualVideoData,
+	VirtualMediaData,
 } from "@gatewai/core/types";
 import {
 	AddCustomHandleButton,
@@ -30,7 +30,7 @@ import { remotionService } from "./muxer-service.js";
 import { DEFAULT_DURATION_FRAMES, FPS } from "./video-editor/config/index.js";
 
 const VideoCompositorNodeComponent = memo((props: NodeProps) => {
-	const node = useAppSelector(makeSelectNodeById(props.id));
+	const node = useAppSelector(makeSelectNodeById(props.id)) as any;
 	const [isDownloading, setIsDownloading] = useState(false);
 	const { inputs, result } = useNodeResult(props.id);
 	const nav = useNavigate();
@@ -60,14 +60,14 @@ const VideoCompositorNodeComponent = memo((props: NodeProps) => {
 			let text: string | undefined;
 			let layerWidth = saved.width;
 			let layerHeight = saved.height;
-			let virtualVideo: VirtualVideoData | undefined;
+			let virtualMedia: VirtualMediaData | undefined;
 
 			if (item.type === "Text") {
 				text = (item.data as string) || "";
 			} else if (item.type === "Video") {
-				// Video inputs are always VirtualVideoData
-				const vv = item.data as VirtualVideoData;
-				virtualVideo = vv;
+				// Video inputs are always VirtualMediaData
+				const vv = item.data as VirtualMediaData;
+				virtualMedia = vv;
 				const params = computeRenderParams(vv);
 				src = params.sourceUrl;
 				if (!layerWidth) layerWidth = vv.metadata.width;
@@ -86,7 +86,7 @@ const VideoCompositorNodeComponent = memo((props: NodeProps) => {
 			// Duration: Video uses metadata, Audio/Image uses FileData
 			const durationMs =
 				item.type === "Video" || item.type === "Audio"
-					? ((item.data as VirtualVideoData).metadata?.durationMs ?? 0)
+					? ((item.data as VirtualMediaData).metadata?.durationMs ?? 0)
 					: item.type !== "Text"
 						? ((item.data as FileData)?.entity?.duration ??
 							(item.data as FileData)?.processData?.duration ??
@@ -96,9 +96,10 @@ const VideoCompositorNodeComponent = memo((props: NodeProps) => {
 			const calculatedDurationFrames =
 				(item.type === "Video" || item.type === "Audio") && durationMs > 0
 					? Math.ceil((durationMs / 1000) * FPS)
-					: DEFAULT_DURATION_FRAMES;
+					: 0; // Default to 0, let the layer or composition decide if it needs more
 
 			const layer: ExtendedLayer = {
+				...saved,
 				id: handleId,
 				scale: saved.scale ?? 1,
 				zIndex: saved.zIndex ?? ++maxZ,
@@ -108,10 +109,9 @@ const VideoCompositorNodeComponent = memo((props: NodeProps) => {
 				animations: saved.animations ?? [],
 				width: layerWidth ?? width,
 				height: layerHeight ?? height,
-				...saved,
 				src,
 				text,
-				virtualVideo,
+				virtualMedia,
 			};
 
 			if (item.type === "Text") {
@@ -130,7 +130,7 @@ const VideoCompositorNodeComponent = memo((props: NodeProps) => {
 					type: item.type,
 					width: layerWidth ?? width,
 					height: layerHeight ?? height,
-					virtualVideo,
+					virtualMedia,
 					maxDurationInFrames:
 						item.type === "Video" && durationMs > 0
 							? calculatedDurationFrames
@@ -153,14 +153,14 @@ const VideoCompositorNodeComponent = memo((props: NodeProps) => {
 		const durationInFrames =
 			layers.length > 0
 				? Math.max(
-						DEFAULT_DURATION_FRAMES,
-						...layers.map(
-							(l) =>
-								(l.startFrame ?? 0) +
-								(l.durationInFrames ?? DEFAULT_DURATION_FRAMES),
-						),
-					)
-				: DEFAULT_DURATION_FRAMES;
+					0,
+					...layers.map(
+						(l) =>
+							(l.startFrame ?? 0) +
+							(l.durationInFrames ?? 0),
+					),
+				)
+				: 0;
 
 		return { layers, width, height, durationInFrames };
 	}, [node, inputs]);

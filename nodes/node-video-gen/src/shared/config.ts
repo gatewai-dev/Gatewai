@@ -40,11 +40,11 @@ export type VideoGenNodeConfig = z.infer<typeof VideoGenNodeConfigSchema>;
 import {
 	createOutputItemSchema,
 	MultiOutputGenericSchema,
-	VirtualVideoDataSchema,
+	VirtualMediaDataSchema,
 } from "@gatewai/core/types";
 
 export const VideoGenResultSchema = MultiOutputGenericSchema(
-	createOutputItemSchema(z.literal("Video"), VirtualVideoDataSchema),
+	createOutputItemSchema(z.literal("Video"), VirtualMediaDataSchema),
 );
 
 export type VideoGenResult = z.infer<typeof VideoGenResultSchema>;

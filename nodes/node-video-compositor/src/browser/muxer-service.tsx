@@ -3,7 +3,7 @@ import { GetAssetEndpoint } from "@gatewai/core/browser";
 import type {
 	FileData,
 	NodeProcessorParams,
-	VirtualVideoData,
+	VirtualMediaData,
 } from "@gatewai/core/types";
 import { resolveVideoSourceUrl } from "@gatewai/remotion-compositions";
 import { Audio, Video } from "@remotion/media";
@@ -155,7 +155,7 @@ const DynamicComposition: React.FC<{
 				const getAssetUrl = () => {
 					if (input.outputItem?.type === "Video") {
 						return resolveVideoSourceUrl(
-							input.outputItem.data as VirtualVideoData,
+							input.outputItem.data as VirtualMediaData,
 						);
 					}
 					const fileData = input.outputItem?.data as FileData;
@@ -234,7 +234,7 @@ export class RemotionWebProcessorService {
 				const item = input.outputItem;
 				if (item.type === "Video" || item.type === "Audio") {
 					const promise = this.getMediaDurationAsSec(
-						item.data as VirtualVideoData,
+						item.data as VirtualMediaData,
 						item.type,
 					).then((durSec) => {
 						const actualFrames = Math.floor(durSec * fps);
@@ -281,7 +281,7 @@ export class RemotionWebProcessorService {
 
 				if (itemType === "Video" || itemType === "Audio") {
 					const promise = this.getMediaDurationAsSec(
-						item.data as FileData | VirtualVideoData,
+						item.data as FileData | VirtualMediaData,
 						itemType,
 					).then((durSec) => {
 						defaultLayer.durationInFrames = Math.max(
@@ -335,12 +335,12 @@ export class RemotionWebProcessorService {
 	}
 
 	private async getMediaDurationAsSec(
-		data: VirtualVideoData,
+		data: VirtualMediaData,
 		type: "Video" | "Audio",
 	): Promise<number> {
-		// For Video, data is VirtualVideoData — read from metadata first
+		// For Video, data is VirtualMediaData — read from metadata first
 		if (type === "Video") {
-			const vv = data as VirtualVideoData;
+			const vv = data as VirtualMediaData;
 			if (vv.metadata?.durationMs) {
 				return vv.metadata.durationMs / 1000;
 			}

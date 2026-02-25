@@ -1,11 +1,11 @@
 import type {
 	ExtendedLayer,
 	NodeProcessorParams,
-	VirtualVideoData,
+	VirtualMediaData,
 } from "@gatewai/core/types";
 import type { IBrowserProcessor } from "@gatewai/node-sdk/browser";
 import {
-	createVirtualVideo,
+	createVirtualMedia,
 	getActiveVideoMetadata,
 } from "@gatewai/remotion-compositions";
 import type { VideoCompositorNodeConfig } from "../shared/config.js";
@@ -20,17 +20,17 @@ export class VideoCompositorBrowserProcessor implements IBrowserProcessor {
 		const height = config.height ?? 1080;
 		const fps = config.FPS ?? FPS;
 
-		// Build layers with virtualVideo references from connected Video inputs
+		// Build layers with virtualMedia references from connected Video inputs
 		const layers: ExtendedLayer[] = [];
 		let maxZ = 0;
 		for (const update of Object.values(layerUpdates)) {
 			maxZ = Math.max(maxZ, (update as ExtendedLayer).zIndex ?? 0);
 		}
 
-		let durationInFrames = DEFAULT_DURATION_FRAMES; // default minimum
+		let durationInFrames = 0; // Starts at 0, will expand based on layers
 
-		// Build recursive VirtualVideoData
-		const compositionChildren: VirtualVideoData[] = [];
+		// Build recursive VirtualMediaData
+		const compositionChildren: VirtualMediaData[] = [];
 
 		for (const [handleId, input] of Object.entries(inputs)) {
 			if (!input?.connectionValid || !input.outputItem) continue;
@@ -38,14 +38,14 @@ export class VideoCompositorBrowserProcessor implements IBrowserProcessor {
 			const saved = (layerUpdates[handleId] ?? {}) as Partial<ExtendedLayer>;
 			const item = input.outputItem;
 
-			let childVV: VirtualVideoData;
+			let childVV: VirtualMediaData;
 
 			if (item.type === "Video" || item.type === "Audio") {
-				childVV = item.data as VirtualVideoData;
+				childVV = item.data as VirtualMediaData;
 			} else if (item.type === "Image") {
-				childVV = createVirtualVideo(item.data, item.type);
+				childVV = createVirtualMedia(item.data, item.type);
 			} else if (item.type === "Text") {
-				childVV = createVirtualVideo(item.data, "Text");
+				childVV = createVirtualMedia(item.data, "Text");
 			} else {
 				continue;
 			}
@@ -54,22 +54,22 @@ export class VideoCompositorBrowserProcessor implements IBrowserProcessor {
 
 			const layerDurationInFrames =
 				saved.durationInFrames ??
-				Math.ceil(((activeMeta.durationMs ?? 0) / 1000) * fps);
+				(activeMeta ? Math.ceil(((activeMeta.durationMs ?? 0) / 1000) * fps) : 0);
 
 			// Wrap in a layer operation
-			const layerOp: VirtualVideoData = {
+			const layerOp: VirtualMediaData = {
 				metadata: {
 					...activeMeta,
-					width: saved.width ?? activeMeta.width,
-					height: saved.height ?? activeMeta.height,
+					width: saved.width ?? activeMeta?.width,
+					height: saved.height ?? activeMeta?.height,
 					durationMs: (layerDurationInFrames / fps) * 1000,
 				},
 				operation: {
 					op: "layer",
 					x: saved.x ?? 0,
 					y: saved.y ?? 0,
-					width: saved.width ?? activeMeta.width,
-					height: saved.height ?? activeMeta.height,
+					width: saved.width ?? activeMeta?.width,
+					height: saved.height ?? activeMeta?.height,
 					rotation: saved.rotation ?? 0,
 					scale: saved.scale ?? 1,
 					opacity: saved.opacity ?? 1,
@@ -109,8 +109,8 @@ export class VideoCompositorBrowserProcessor implements IBrowserProcessor {
 			compositionChildren.push(layerOp);
 		}
 
-		// Output VirtualVideoData with a compose operation
-		const outputVV: VirtualVideoData = {
+		// Output VirtualMediaData with a compose operation
+		const outputVV: VirtualMediaData = {
 			metadata: {
 				width,
 				height,

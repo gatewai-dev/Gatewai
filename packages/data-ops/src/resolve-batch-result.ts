@@ -5,7 +5,7 @@ import type {
 	FileData,
 	MediaService,
 	NodeResult,
-	VirtualVideoData,
+	VirtualMediaData,
 } from "@gatewai/core/types";
 import { type Node, prisma, type TaskBatch } from "@gatewai/db";
 import type { APIRunResponse } from "./schemas.js";
@@ -16,11 +16,11 @@ const isOutputItemFileData = (data: any): data is FileData => {
 	return typeof data === "object" && !("source" in data);
 };
 
-const isOutputItemVirtualVideoData = (data: any): data is VirtualVideoData => {
+const isOutputItemVirtualMediaData = (data: any): data is VirtualMediaData => {
 	return typeof data === "object" && "source" in data;
 };
 
-async function overrideFileResult(data: FileData | VirtualVideoData) {
+async function overrideFileResult(data: FileData | VirtualMediaData) {
 	const processData =
 		"source" in data ? data.source.processData : data.processData;
 	const entity = "source" in data ? data.source.entity : data.entity;
@@ -98,7 +98,7 @@ export async function resolveBatchResult(
 
 		if (
 			isOutputItemFileData(outputItem.data) ||
-			isOutputItemVirtualVideoData(outputItem.data)
+			isOutputItemVirtualMediaData(outputItem.data)
 		) {
 			outputData = await overrideFileResult(outputItem.data);
 		} else {

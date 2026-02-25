@@ -1,5 +1,5 @@
 import { ResolveFileDataUrl } from "@gatewai/core/browser";
-import type { FileData, VirtualVideoData } from "@gatewai/core/types";
+import type { FileData, VirtualMediaData } from "@gatewai/core/types";
 import {
 	BaseNode,
 	CanvasRenderer,
@@ -224,7 +224,7 @@ const CropConfigPanel = memo(
 			const currentPixelRatio =
 				naturalWidth && naturalHeight
 					? ((crop.widthPercentage / 100) * naturalWidth) /
-						((crop.heightPercentage / 100) * naturalHeight)
+					((crop.heightPercentage / 100) * naturalHeight)
 					: crop.widthPercentage / crop.heightPercentage;
 
 			let newWPct = crop.widthPercentage;
@@ -622,13 +622,15 @@ const CropNodeComponent = memo((props: NodeProps) => {
 	const { inputs } = useNodeResult(props.id);
 
 	const inputItem = inputs[inputHandleId!]?.outputItem;
-	const inputType = inputItem?.type as "Image" | "Video" | undefined;
+	const inputType = inputItem?.type as "Image" | "Video" | "Audio" | undefined;
 	const inputData = inputItem?.data;
 
 	const imageUrl =
 		inputType === "Image" ? ResolveFileDataUrl(inputData as FileData) : null;
-	const inputVideo =
-		inputType === "Video" ? (inputData as VirtualVideoData) : null;
+	const inputMedia =
+		inputType === "Video" || inputType === "Audio"
+			? (inputData as VirtualMediaData)
+			: null;
 
 	const node = useAppSelector(makeSelectNodeById(props.id));
 	const nodeConfig = node?.config as CropNodeConfig | undefined;
@@ -655,14 +657,14 @@ const CropNodeComponent = memo((props: NodeProps) => {
 	const [customRatio, setCustomRatio] = useState<number | null>(null);
 
 	const sourceSize = useMemo(() => {
-		if (inputType === "Video" && inputVideo) {
-			const activeMeta = getActiveVideoMetadata(inputVideo);
+		if ((inputType === "Video" || inputType === "Audio") && inputMedia) {
+			const activeMeta = getActiveVideoMetadata(inputMedia);
 			const { width: w, height: h } = activeMeta;
 			if (!w || !h) return null;
 			return { w, h };
 		}
 		return naturalSize;
-	}, [inputType, inputVideo, naturalSize]);
+	}, [inputType, inputMedia, naturalSize]);
 
 	const effectiveRatio = useMemo<number | null>(() => {
 		const preset = ASPECT_RATIO_PRESETS.find((p) => p.label === aspectPreset);
@@ -848,10 +850,11 @@ const CropNodeComponent = memo((props: NodeProps) => {
 		};
 	}, [drag, svgSize, updateConfig, effectivePctRatio]);
 
-	const showVideo = inputType === "Video" && inputVideo;
+	const showMedia =
+		(inputType === "Video" || inputType === "Audio") && inputMedia;
 	const showImage = inputType === "Image" && imageUrl;
 
-	const videoOverlay = showVideo ? (
+	const videoOverlay = showMedia ? (
 		<CropOverlay
 			crop={crop}
 			svgSize={svgSize}
@@ -870,14 +873,14 @@ const CropNodeComponent = memo((props: NodeProps) => {
 				<div
 					ref={svgRef}
 					className={cn("relative w-full media-container", {
-						"h-64": !showImage && !showVideo,
+						"h-64": !showImage && !showMedia,
 					})}
-					style={{ minHeight: showImage || showVideo ? undefined : "12rem" }}
+					style={{ minHeight: showImage || showMedia ? undefined : "12rem" }}
 				>
-					{showVideo && (
+					{showMedia && (
 						<VideoRenderer
-							virtualVideo={inputVideo}
-							durationMs={getActiveVideoMetadata(inputVideo).durationMs}
+							virtualMedia={inputMedia}
+							durationMs={getActiveVideoMetadata(inputMedia!).durationMs}
 							controls={true}
 							className="rounded-none w-full h-full"
 							overlay={videoOverlay}
@@ -911,7 +914,7 @@ const CropNodeComponent = memo((props: NodeProps) => {
 						</>
 					)}
 
-					{!showImage && !showVideo && (
+					{!showImage && !showMedia && (
 						<div className="absolute inset-0 flex items-center justify-center text-muted-foreground/40 text-xs tracking-wide">
 							No input connected
 						</div>

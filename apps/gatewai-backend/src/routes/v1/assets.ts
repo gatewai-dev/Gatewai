@@ -229,45 +229,45 @@ const assetsPublicRouter = new Hono<{ Variables: AuthHonoTypes }>({
 		}
 
 		const storage = container.get<StorageService>(TOKENS.STORAGE);
-		//const range = c.req.header("Range");
-		//
-		//if (range) {
-		//	const parts = range.replace(/bytes=/, "").split("-");
-		//	const start = parseInt(parts[0], 10);
-		//	const end = parts[1] ? parseInt(parts[1], 10) : fileSize - 1;
-		//
-		//	// Handle potential NaN or out-of-bounds
-		//	if (start >= fileSize || end >= fileSize) {
-		//		return c.text("Requested range not satisfiable", 416, {
-		//			"Content-Range": `bytes */${fileSize}`,
-		//		});
-		//	}
-		//
-		//	const chunksize = end - start + 1;
-		//	const stream = storage.getStreamFromStorage(asset.key, asset.bucket, {
-		//		start,
-		//		end,
-		//	});
-		//	stream.on("error", (err) => {
-		//		const isAbort =
-		//			err.name === "AbortError" ||
-		//			err.message.includes("The operation was aborted");
-		//		if (isAbort) return;
-		//
-		//		logger.error(
-		//			{ err: err.message, name: err.name, assetId: asset.id, start, end },
-		//			"Range stream error",
-		//		);
-		//	});
-		//	return c.body(stream as any, 206, {
-		//		"Content-Range": `bytes ${start}-${end}/${fileSize}`,
-		//		"Accept-Ranges": "bytes",
-		//		"Content-Length": chunksize.toString(),
-		//		"Content-Type": asset.mimeType,
-		//		"Cache-Control": "public, max-age=2592000, immutable",
-		//		ETag: etag, // 3. Attach ETag to Partial Content
-		//	});
-		//}
+		const range = c.req.header("Range");
+		
+		if (range) {
+			const parts = range.replace(/bytes=/, "").split("-");
+			const start = parseInt(parts[0], 10);
+			const end = parts[1] ? parseInt(parts[1], 10) : fileSize - 1;
+		
+			// Handle potential NaN or out-of-bounds
+			if (start >= fileSize || end >= fileSize) {
+				return c.text("Requested range not satisfiable", 416, {
+					"Content-Range": `bytes */${fileSize}`,
+				});
+			}
+		
+			const chunksize = end - start + 1;
+			const stream = storage.getStreamFromStorage(asset.key, asset.bucket, {
+				start,
+				end,
+			});
+			stream.on("error", (err) => {
+				const isAbort =
+					err.name === "AbortError" ||
+					err.message.includes("The operation was aborted");
+				if (isAbort) return;
+		
+				logger.error(
+					{ err: err.message, name: err.name, assetId: asset.id, start, end },
+					"Range stream error",
+				);
+			});
+			return c.body(stream as any, 206, {
+				"Content-Range": `bytes ${start}-${end}/${fileSize}`,
+				"Accept-Ranges": "bytes",
+				"Content-Length": chunksize.toString(),
+				"Content-Type": asset.mimeType,
+				"Cache-Control": "public, max-age=2592000, immutable",
+				ETag: etag, // 3. Attach ETag to Partial Content
+			});
+		}
 
 		// Full file stream
 		const fullStream = storage.getStreamFromStorage(asset.key, asset.bucket);

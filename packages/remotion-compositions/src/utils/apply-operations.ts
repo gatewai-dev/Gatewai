@@ -1,4 +1,4 @@
-import type { VirtualVideoData } from "@gatewai/core/types";
+import type { VirtualMediaData } from "@gatewai/core/types";
 import {
 	getActiveVideoMetadata,
 	resolveVideoSourceUrl,
@@ -57,14 +57,14 @@ export type RenderParams = {
 
 /**
  * Compute render parameters for the CURRENT node only — does NOT recurse into
- * children. Each node in the VirtualVideo tree is responsible for exactly its
+ * children. Each node in the VirtualMedia tree is responsible for exactly its
  * own operation; `SingleClipComposition` drives traversal via React recursion.
  *
  * This is the correct function to use inside the Remotion renderer.
  * For FFmpeg/export pipelines that need the fully-collapsed params for the
  * entire subtree, use `computeFullRenderParams` below.
  */
-export function computeRenderParams(vv: VirtualVideoData): RenderParams {
+export function computeRenderParams(vv: VirtualMediaData): RenderParams {
 	const op = vv.operation;
 	const baseMeta = getActiveVideoMetadata(vv);
 
@@ -151,7 +151,7 @@ export function computeRenderParams(vv: VirtualVideoData): RenderParams {
  * Do NOT use this inside `SingleClipComposition` — it would cause every
  * operation to be applied twice (once here, once by the recursive renderer).
  */
-export function computeFullRenderParams(vv: VirtualVideoData): RenderParams {
+export function computeFullRenderParams(vv: VirtualMediaData): RenderParams {
 	const params: RenderParams = {
 		sourceUrl: undefined,
 		trimStartSec: 0,
@@ -170,7 +170,7 @@ export function computeFullRenderParams(vv: VirtualVideoData): RenderParams {
 	let currentWidth = baseMeta?.width ?? 1920;
 	let currentHeight = baseMeta?.height ?? 1080;
 
-	function walk(node: VirtualVideoData | any) {
+	function walk(node: VirtualMediaData | any) {
 		if (!node) return;
 
 		// Depth-first: process children before the current node so that

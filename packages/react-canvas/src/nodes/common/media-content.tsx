@@ -21,7 +21,7 @@ function MediaContent({
 }) {
 	const selectedOutput =
 		result.outputs?.[
-			Math.min(result.selectedOutputIndex, result.outputs.length - 1)
+		Math.min(result.selectedOutputIndex, result.outputs.length - 1)
 		];
 	const outputItem = selectedOutput?.items?.[0];
 
@@ -80,13 +80,14 @@ function MediaContent({
 			)}
 			{isImage && assetUrl && <CanvasRenderer imageUrl={assetUrl} />}
 			{isVideo && (
-				<VideoRenderer virtualVideo={outputItem.data} durationMs={durationMs} />
+				<VideoRenderer virtualMedia={outputItem.data} durationMs={durationMs} />
 			)}
 			{isAudio && assetUrl && (
 				<AudioRenderer
 					title={assetName}
 					src={assetUrl}
 					durationMs={durationMs}
+					virtualMedia={outputItem.data as any}
 				/>
 			)}
 			{isOther && (

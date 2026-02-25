@@ -1,7 +1,7 @@
 import { z } from "zod";
 import { VideoFilterSchema } from "./filter-schema.js";
 import { TransitionSchema } from "./transition-schema.js";
-import { VirtualVideoDataSchema } from "./virtual-video.js";
+import { VirtualMediaDataSchema } from "./virtual-video.js";
 
 export const AnimationTypeSchema = z.enum([
 	"fade-in",
@@ -34,8 +34,8 @@ export const ExtendedLayerSchema = z
 		name: z.string().optional(),
 		type: z.enum(["Video", "Image", "Audio", "Text"]),
 
-		// VirtualVideoData from upstream
-		virtualVideo: VirtualVideoDataSchema.optional(),
+		// VirtualMediaData from upstream
+		virtualMedia: VirtualMediaDataSchema.optional(),
 
 		// Shared spatial properties (re-used from compositor logic)
 		x: z.number(),

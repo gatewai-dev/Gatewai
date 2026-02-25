@@ -1,4 +1,4 @@
-import type { VirtualVideoData } from "@gatewai/core/types";
+import type { VirtualMediaData } from "@gatewai/core/types";
 import type { ReactNode } from "react";
 import { memo } from "react";
 import { MediaPlayer } from "../remotion-player";
@@ -6,14 +6,14 @@ import { MediaPlayer } from "../remotion-player";
 const VideoRenderer = memo(
 	({
 		durationMs,
-		virtualVideo,
+		virtualMedia,
 		controls,
 		className,
 		children,
 		overlay,
 	}: {
 		durationMs?: number;
-		virtualVideo?: VirtualVideoData;
+		virtualMedia?: VirtualMediaData;
 		controls?: boolean;
 		className?: string;
 		children?: ReactNode;
@@ -21,7 +21,7 @@ const VideoRenderer = memo(
 	}) => {
 		return (
 			<MediaPlayer
-				virtualVideo={virtualVideo}
+				virtualMedia={virtualMedia}
 				type="Video"
 				controls={controls}
 				durationMs={durationMs}

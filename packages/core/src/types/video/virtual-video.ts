@@ -101,6 +101,9 @@ export const LayerOperationSchema = z.object({
 	opacity: z.number().default(1),
 	startFrame: z.number().default(0),
 	durationInFrames: z.number().optional(),
+	trimStart: z.number().min(0).optional(),
+	trimEnd: z.number().min(0).optional(),
+	speed: z.number().min(0.25).max(4.0).optional(),
 	zIndex: z.number().optional(),
 	metadata: VideoMetadataSchema.optional(),
 
@@ -150,15 +153,15 @@ export const VideoOperationSchema = z.discriminatedUnion("op", [
 
 export type VideoOperation = z.infer<typeof VideoOperationSchema>;
 
-// --- VirtualVideoData: THE recursive data type for all Video outputs ---
+// --- VirtualMediaData: THE recursive data type for all Video outputs ---
 
-export type VirtualVideoData = {
+export type VirtualMediaData = {
 	metadata: VideoMetadata;
 	operation: VideoOperation;
-	children: VirtualVideoData[];
+	children: VirtualMediaData[];
 };
 
-export const VirtualVideoDataSchema: z.ZodType<VirtualVideoData> = z.lazy(() =>
+export const VirtualMediaDataSchema: z.ZodType<VirtualMediaData> = z.lazy(() =>
 	z.object({
 		/** Current dimensions/duration of this node's output */
 		metadata: VideoMetadataSchema,
@@ -167,6 +170,6 @@ export const VirtualVideoDataSchema: z.ZodType<VirtualVideoData> = z.lazy(() =>
 		operation: VideoOperationSchema,
 
 		/** Recursive children (inputs to this operation) */
-		children: z.array(VirtualVideoDataSchema).default([]),
+		children: z.array(VirtualMediaDataSchema).default([]),
 	}),
 );

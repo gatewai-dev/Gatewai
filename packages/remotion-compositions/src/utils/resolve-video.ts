@@ -2,20 +2,20 @@ import { GetAssetEndpoint } from "@gatewai/core/browser";
 import type {
 	VideoMetadata,
 	VideoOperation,
-	VirtualVideoData,
+	VirtualMediaData,
 } from "@gatewai/core/types";
 
 /**
- * Create a VirtualVideoData from a FileData source or Text.
+ * Create a VirtualMediaData from a FileData source or Text.
  * Used by Import, VideoGen, and Text nodes to wrap concrete content.
  */
-export function createVirtualVideo(
+export function createVirtualMedia(
 	source: any,
-	type: "Video" | "Audio" = "Video",
-): VirtualVideoData {
-	// If it's already a VirtualVideoData, return it
+	type: "Video" | "Audio" | "Image" | "Text" = "Video",
+): VirtualMediaData {
+	// If it's already a VirtualMediaData, return it
 	if (source && typeof source === "object" && "operation" in source) {
-		return source as VirtualVideoData;
+		return source as VirtualMediaData;
 	}
 
 	const sourceMeta = {
@@ -57,10 +57,10 @@ export function createVirtualVideo(
 }
 
 /**
- * Identify if a VirtualVideoData node is intended to be Video, Audio, Image, or Text.
+ * Identify if a VirtualMediaData node is intended to be Video, Audio, Image, or Text.
  */
 export function getMediaType(
-	vv: VirtualVideoData,
+	vv: VirtualMediaData,
 ): "Video" | "Audio" | "Image" | "Text" {
 	if (!vv) return "Video";
 
@@ -84,12 +84,12 @@ export function getMediaType(
 }
 
 /**
- * Resolve the actual playable URL from a VirtualVideoData.
+ * Resolve the actual playable URL from a VirtualMediaData.
  * Walks down the tree to find the 'source' operation.
  * Supports legacy formats for backward compatibility.
  */
 export function resolveVideoSourceUrl(
-	vv: VirtualVideoData,
+	vv: VirtualMediaData,
 ): string | undefined {
 	if (!vv) return undefined;
 
@@ -111,13 +111,13 @@ export function resolveVideoSourceUrl(
 }
 
 /**
- * Append an operation to an existing VirtualVideoData (recursive).
+ * Append an operation to an existing VirtualMediaData (recursive).
  * This creates a new parent node wrapping the current one as a child.
  */
 export function appendOperation(
-	vv: VirtualVideoData,
+	vv: VirtualMediaData,
 	operation: VideoOperation,
-): VirtualVideoData {
+): VirtualMediaData {
 	const nextMeta = computeNextMetadata(getActiveVideoMetadata(vv), operation);
 	return {
 		metadata: nextMeta,
@@ -136,7 +136,7 @@ function computeNextMetadata(
 	let {
 		width = 1920,
 		height = 1080,
-		durationMs = 0,
+		durationMs = undefined,
 		fps = 24,
 	} = baseMeta || {};
 
@@ -196,64 +196,62 @@ function computeNextMetadata(
 }
 
 /**
- * Get the active metadata from the VirtualVideoData node.
+ * Get the active metadata from the VirtualMediaData node.
  * Simply returns the metadata property of the node.
  * Supports legacy formats (sourceMeta) and extracts from source if needed.
  */
 export function getActiveVideoMetadata(
-	vv: VirtualVideoData,
+	vv: VirtualMediaData,
 ): VideoMetadata | null {
 	if (!vv) return null;
 
-	// 1. Check if node has explicit metadata
+	let width = vv.metadata?.width;
+	let height = vv.metadata?.height;
+	let durationMs = vv.metadata?.durationMs;
+	let fps = vv.metadata?.fps;
+
+	// Fill missing fields from children for non-compose/non-layer operators
 	if (
-		vv.metadata &&
-		(vv.metadata.width !== undefined ||
-			vv.metadata.height !== undefined ||
-			vv.metadata.durationMs !== undefined)
+		(width === undefined || height === undefined || durationMs === undefined) &&
+		vv.children?.length > 0 &&
+		vv.operation?.op !== "compose" &&
+		vv.operation?.op !== "layer"
 	) {
-		return vv.metadata;
+		const childMeta = getActiveVideoMetadata(vv.children[0]);
+		if (childMeta) {
+			width = width ?? childMeta.width;
+			height = height ?? childMeta.height;
+			durationMs = durationMs ?? childMeta.durationMs;
+			fps = fps ?? childMeta.fps;
+		}
 	}
 
-	// 2. Check operation for source or text
+	// Check operation for source or text leaf nodes
 	const op = vv.operation;
 	if (op?.op === "source") {
-		// New-ish structure has sourceMeta
-		if (
-			op.sourceMeta &&
-			(op.sourceMeta.width !== undefined ||
-				op.sourceMeta.height !== undefined ||
-				op.sourceMeta.durationMs !== undefined)
-		) {
-			return op.sourceMeta;
-		}
-
-		// Pull from entity or processData
-		const source = op.source;
-		if (source) {
-			const width = source.entity?.width ?? source.processData?.width;
-			const height = source.entity?.height ?? source.processData?.height;
-			const durationMs =
-				source.entity?.duration ?? source.processData?.duration;
-			const fps = source.processData?.fps;
-
-			if (
-				width !== undefined ||
-				height !== undefined ||
-				durationMs !== undefined
-			) {
-				return { width, height, durationMs, fps };
-			}
-		}
+		const sm = op.sourceMeta || {};
+		width = width ?? sm.width ?? op.source?.processData?.width ?? op.source?.entity?.width;
+		height = height ?? sm.height ?? op.source?.processData?.height ?? op.source?.entity?.height;
+		durationMs = durationMs ?? sm.durationMs ?? op.source?.processData?.duration ?? op.source?.entity?.duration;
+		fps = fps ?? sm.fps ?? op.source?.processData?.fps;
 	}
 
-	return null;
+	if (width === undefined && height === undefined && durationMs === undefined) {
+		return null;
+	}
+
+	return {
+		width,
+		height,
+		durationMs: durationMs === 0 ? undefined : durationMs, // Avoid 0 duration falling back incorrectly
+		fps,
+	};
 }
 /**
  * Compute the dimensions and offsets for rendering a cropped video.
- * Traverses the VirtualVideoData tree to find nested crops and source dimensions.
+ * Traverses the VirtualMediaData tree to find nested crops and source dimensions.
  */
-export function computeVideoCropRenderProps(virtualVideo: VirtualVideoData): {
+export function computeVideoCropRenderProps(virtualMedia: VirtualMediaData): {
 	videoNaturalWidth: number;
 	videoNaturalHeight: number;
 	cropTranslatePercentageX: number; // Changed from Px to Percentage
@@ -265,7 +263,7 @@ export function computeVideoCropRenderProps(virtualVideo: VirtualVideoData): {
 	let sourceMetaFound = null;
 
 	// Traverse the recursive tree to find crops and the source dimensions
-	let currentNode: VirtualVideoData | undefined = virtualVideo;
+	let currentNode: VirtualMediaData | undefined = virtualMedia;
 	while (currentNode) {
 		const op = currentNode.operation;
 

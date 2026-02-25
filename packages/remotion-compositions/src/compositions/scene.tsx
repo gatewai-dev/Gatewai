@@ -1,10 +1,9 @@
-import type { ExtendedLayer, VirtualVideoData } from "@gatewai/core/types";
+import type { ExtendedLayer, VirtualMediaData } from "@gatewai/core/types";
 import { Audio, Video } from "@remotion/media";
 import type React from "react";
 import { memo, useMemo } from "react";
 import {
 	AbsoluteFill,
-	Html5Audio,
 	Img,
 	interpolate,
 	Sequence,
@@ -120,9 +119,9 @@ export const calculateLayerTransform = (
 // SingleClipComposition
 // ---------------------------------------------------------------------------
 
-const compareVirtualVideo = (
-	a: VirtualVideoData | undefined,
-	b: VirtualVideoData | undefined,
+const compareVirtualMedia = (
+	a: VirtualMediaData | undefined,
+	b: VirtualMediaData | undefined,
 ): boolean => {
 	if (a === b) return true;
 	if (!a || !b) return false;
@@ -134,24 +133,23 @@ const compareVirtualVideo = (
 
 	switch (aOp.op) {
 		case "source": {
-			const bSource = bOp as any;
-			const aDataUrl = aOp.source?.processData?.dataUrl;
-			const bDataUrl = bSource.source?.processData?.dataUrl;
-			if (aDataUrl !== bDataUrl) return false;
+			if (bOp.op !== "source") return false;
+			if (aOp.source?.processData?.dataUrl !== bOp.source?.processData?.dataUrl)
+				return false;
 			break;
 		}
 		case "text": {
-			const bText = bOp as any;
-			if (aOp.text !== bText.text) return false;
+			if (bOp.op !== "text") return false;
+			if (aOp.text !== bOp.text) return false;
 			break;
 		}
 		case "crop": {
-			const bCrop = bOp as any;
+			if (bOp.op !== "crop") return false;
 			const isDifferent =
-				aOp.leftPercentage !== bCrop.leftPercentage ||
-				aOp.topPercentage !== bCrop.topPercentage ||
-				aOp.widthPercentage !== bCrop.widthPercentage ||
-				aOp.heightPercentage !== bCrop.heightPercentage;
+				aOp.leftPercentage !== bOp.leftPercentage ||
+				aOp.topPercentage !== bOp.topPercentage ||
+				aOp.widthPercentage !== bOp.widthPercentage ||
+				aOp.heightPercentage !== bOp.heightPercentage;
 
 			if (isDifferent) {
 				return false;
@@ -159,69 +157,69 @@ const compareVirtualVideo = (
 			break;
 		}
 		case "cut": {
-			const bCut = bOp;
-			if (aOp.startSec !== bCut.startSec || aOp.endSec !== bCut.endSec)
+			if (bOp.op !== "cut") return false;
+			if (aOp.startSec !== bOp.startSec || aOp.endSec !== bOp.endSec)
 				return false;
 			break;
 		}
 		case "filter": {
-			const bFilter = bOp as any;
+			if (bOp.op !== "filter") return false;
 			if (
 				JSON.stringify(aOp.filters.cssFilters) !==
-				JSON.stringify(bFilter.filters.cssFilters)
+				JSON.stringify(bOp.filters.cssFilters)
 			)
 				return false;
 			break;
 		}
 		case "layer": {
-			const bLayer = bOp as any;
+			if (bOp.op !== "layer") return false;
 			if (
-				aOp.x !== bLayer.x ||
-				aOp.y !== bLayer.y ||
-				aOp.width !== bLayer.width ||
-				aOp.height !== bLayer.height ||
-				aOp.rotation !== bLayer.rotation ||
-				aOp.scale !== bLayer.scale ||
-				aOp.opacity !== bLayer.opacity ||
-				aOp.startFrame !== bLayer.startFrame ||
-				aOp.durationInFrames !== bLayer.durationInFrames ||
-				aOp.zIndex !== bLayer.zIndex ||
-				aOp.text !== bLayer.text ||
-				aOp.fontSize !== bLayer.fontSize ||
-				aOp.fontFamily !== bLayer.fontFamily ||
-				aOp.fontStyle !== bLayer.fontStyle ||
-				aOp.fontWeight !== bLayer.fontWeight ||
-				aOp.textDecoration !== bLayer.textDecoration ||
-				aOp.fill !== bLayer.fill ||
-				aOp.align !== bLayer.align ||
-				aOp.verticalAlign !== bLayer.verticalAlign ||
-				aOp.letterSpacing !== bLayer.letterSpacing ||
-				aOp.lineHeight !== bLayer.lineHeight ||
-				aOp.padding !== bLayer.padding ||
-				aOp.stroke !== bLayer.stroke ||
-				aOp.strokeWidth !== bLayer.strokeWidth ||
-				aOp.backgroundColor !== bLayer.backgroundColor ||
-				aOp.borderColor !== bLayer.borderColor ||
-				aOp.borderWidth !== bLayer.borderWidth ||
-				aOp.borderRadius !== bLayer.borderRadius ||
-				aOp.autoDimensions !== bLayer.autoDimensions
+				aOp.x !== bOp.x ||
+				aOp.y !== bOp.y ||
+				aOp.width !== bOp.width ||
+				aOp.height !== bOp.height ||
+				aOp.rotation !== bOp.rotation ||
+				aOp.scale !== bOp.scale ||
+				aOp.opacity !== bOp.opacity ||
+				aOp.startFrame !== bOp.startFrame ||
+				aOp.durationInFrames !== bOp.durationInFrames ||
+				aOp.zIndex !== bOp.zIndex ||
+				aOp.text !== bOp.text ||
+				aOp.fontSize !== bOp.fontSize ||
+				aOp.fontFamily !== bOp.fontFamily ||
+				aOp.fontStyle !== bOp.fontStyle ||
+				aOp.fontWeight !== bOp.fontWeight ||
+				aOp.textDecoration !== bOp.textDecoration ||
+				aOp.fill !== bOp.fill ||
+				aOp.align !== bOp.align ||
+				aOp.verticalAlign !== bOp.verticalAlign ||
+				aOp.letterSpacing !== bOp.letterSpacing ||
+				aOp.lineHeight !== bOp.lineHeight ||
+				aOp.padding !== bOp.padding ||
+				aOp.stroke !== bOp.stroke ||
+				aOp.strokeWidth !== bOp.strokeWidth ||
+				aOp.backgroundColor !== bOp.backgroundColor ||
+				aOp.borderColor !== bOp.borderColor ||
+				aOp.borderWidth !== bOp.borderWidth ||
+				aOp.borderRadius !== bOp.borderRadius ||
+				aOp.autoDimensions !== bOp.autoDimensions
 			)
 				return false;
 			break;
 		}
 		case "compose": {
-			const bCompose = bOp as any;
+			if (bOp.op !== "compose") return false;
 			if (
-				aOp.width !== bCompose.width ||
-				aOp.height !== bCompose.height ||
-				aOp.fps !== bCompose.fps ||
-				aOp.durationInFrames !== bCompose.durationInFrames
+				aOp.width !== bOp.width ||
+				aOp.height !== bOp.height ||
+				aOp.fps !== bOp.fps ||
+				aOp.durationInFrames !== bOp.durationInFrames
 			)
 				return false;
 
 			if (a.children.length !== b.children.length) return false;
 			for (let i = 0; i < a.children.length; i++) {
-				if (!compareVirtualVideo(a.children[i], b.children[i])) return false;
+				if (!compareVirtualMedia(a.children[i], b.children[i])) return false;
 			}
 			return true;
 		}
@@ -238,7 +236,7 @@ const compareVirtualVideo = (
 
 	if (a.children.length !== b.children.length) return false;
 	if (a.children.length > 0) {
-		return compareVirtualVideo(a.children[0], b.children[0]);
+		return compareVirtualMedia(a.children[0], b.children[0]);
 	}
 
 	return true;
@@ -278,180 +276,201 @@ const compareLayerProps = (
 		prevLayer.borderColor === nextLayer.borderColor &&
 		prevLayer.borderWidth === nextLayer.borderWidth &&
 		prevLayer.borderRadius === nextLayer.borderRadius &&
-		compareVirtualVideo(prevLayer.virtualVideo, nextLayer.virtualVideo)
+		compareVirtualMedia(prevLayer.virtualMedia, nextLayer.virtualMedia)
 	);
 };
 
 export const SingleClipComposition: React.FC<{
-	virtualVideo: VirtualVideoData;
+	virtualMedia: VirtualMediaData;
 	volume?: number;
 	playbackRateOverride?: number;
 	trimStartOverride?: number;
 	textStyle?: Partial<ExtendedLayer>;
 }> = ({
-	virtualVideo,
+	virtualMedia,
 	volume = 1,
 	playbackRateOverride,
 	trimStartOverride,
 	textStyle,
 }) => {
-	const { fps } = useVideoConfig();
-	const op = virtualVideo?.operation;
+		const { fps } = useVideoConfig();
+		const op = virtualMedia?.operation;
 
-	// -----------------------------------------------------------------------
-	// compose: delegate to CompositionScene
-	// -----------------------------------------------------------------------
-	if (op.op === "compose") {
-		const composeNode = (
-			<CompositionScene
-				layers={
-					(virtualVideo.children || [])
-						.map((child, index) => {
-							if (child.operation?.op === "layer") {
-								const lop = child.operation;
-								const contentType = getMediaType(child.children[0]);
-								return {
-									id: `child-${index}`,
-									type: contentType,
-									virtualVideo: child.children[0],
-									x: lop.x,
-									y: lop.y,
-									width: lop.width,
-									height: lop.height,
-									rotation: lop.rotation,
-									scale: lop.scale,
-									opacity: lop.opacity,
-									startFrame: lop.startFrame,
-									durationInFrames: lop.durationInFrames ?? 1,
-									zIndex: lop.zIndex,
-									text: lop.text,
-									fontSize: lop.fontSize,
-									fontFamily: lop.fontFamily,
-									fontStyle: lop.fontStyle,
-									fontWeight: lop.fontWeight,
-									textDecoration: lop.textDecoration,
-									fill: lop.fill,
-									align: lop.align,
-									verticalAlign: lop.verticalAlign,
-									letterSpacing: lop.letterSpacing,
-									lineHeight: lop.lineHeight,
-									padding: lop.padding,
-									stroke: lop.stroke,
-									strokeWidth: lop.strokeWidth,
-									backgroundColor: lop.backgroundColor,
-									borderColor: lop.borderColor,
-									borderWidth: lop.borderWidth,
-									borderRadius: lop.borderRadius,
-									autoDimensions: lop.autoDimensions,
-								} as ExtendedLayer;
-							}
-							return null;
-						})
-						.filter(Boolean) as ExtendedLayer[]
-				}
-				viewportWidth={op.width}
-				viewportHeight={op.height}
-			/>
-		);
-
-		// If this compositor node is wrapped inside a Cut node, we use a negative Sequence
-		// "from" offset to shift the internal timeframe backward.
-		const trimFrames = trimStartOverride
-			? Math.floor(trimStartOverride * fps)
-			: 0;
-
-		if (trimFrames > 0) {
-			return (
-				<Sequence from={-trimFrames} layout="none">
-					{composeNode}
-				</Sequence>
-			);
-		}
-
-		return composeNode;
-	}
-
-	// -----------------------------------------------------------------------
-	// source / text: leaf nodes — render media directly.
-	// -----------------------------------------------------------------------
-	if (op.op === "source" || op.op === "text") {
-		const params = computeRenderParams(virtualVideo);
-		const mediaType = getMediaType(virtualVideo);
-
-		if (mediaType === "Text") {
-			const mergedStyle = { ...textStyle, ...(op as any) };
-			const textContent =
-				op.op === "text"
-					? op.text
-					: op.op === "source"
-						? op.source?.processData?.text
-						: undefined;
-
-			return (
-				<div
-					style={{
-						width: "100%",
-						height: "100%",
-						display: "flex",
-						flexDirection: "column",
-						alignItems: "stretch",
-						justifyContent:
-							mergedStyle.verticalAlign === "middle"
-								? "center"
-								: mergedStyle.verticalAlign === "bottom"
-									? "flex-end"
-									: "flex-start",
-						color: mergedStyle.fill,
-						fontSize: mergedStyle.fontSize,
-						fontFamily: mergedStyle.fontFamily,
-						fontStyle: mergedStyle.fontStyle,
-						fontWeight: mergedStyle.fontWeight,
-						textDecoration: mergedStyle.textDecoration,
-						textAlign: (mergedStyle.align as any) ?? "center",
-						padding: mergedStyle.padding,
-						lineHeight: mergedStyle.lineHeight ?? 1.2,
-						letterSpacing: mergedStyle.letterSpacing
-							? `${mergedStyle.letterSpacing}px`
-							: undefined,
-						WebkitTextStroke:
-							mergedStyle.strokeWidth && mergedStyle.stroke
-								? `${mergedStyle.strokeWidth}px ${mergedStyle.stroke}`
-								: undefined,
-						paintOrder: "stroke fill",
-						whiteSpace: "pre",
-					}}
-				>
-					{textContent}
-				</div>
-			);
-		}
-
-		if (!params.sourceUrl) return <AbsoluteFill />;
-
-		const baseRate = Number(playbackRateOverride) || 1;
-		const paramsRate = Number(params.speed) || 1;
-		const finalPlaybackRate = baseRate * paramsRate;
-
-		// Correctly accumulate both external cut nodes (trimStartOverride) and internal asset trims
-		const effectiveTrimSec =
-			(trimStartOverride ?? 0) + (Number(params.trimStartSec) || 0);
-		const startFrame = Math.floor((effectiveTrimSec * fps) / finalPlaybackRate);
-		console.log({ mediaType, params });
-		if (mediaType === "Audio") {
-			return (
-				<Audio
-					src={params.sourceUrl}
-					trimBefore={startFrame}
-					playbackRate={finalPlaybackRate}
-					volume={volume}
+		// -----------------------------------------------------------------------
+		// compose: delegate to CompositionScene
+		// -----------------------------------------------------------------------
+		if (op.op === "compose") {
+			const composeNode = (
+				<CompositionScene
+					layers={
+						(virtualMedia.children || [])
+							.map((child, index) => {
+								if (child.operation?.op === "layer") {
+									const lop = child.operation;
+									const contentType = getMediaType(child.children[0]);
+									return {
+										id: `child-${index}`,
+										type: contentType,
+										virtualMedia: child.children[0],
+										x: lop.x,
+										y: lop.y,
+										width: lop.width,
+										height: lop.height,
+										rotation: lop.rotation,
+										scale: lop.scale,
+										opacity: lop.opacity,
+										startFrame: lop.startFrame,
+										durationInFrames: lop.durationInFrames ?? 1,
+										zIndex: lop.zIndex,
+										trimStart: lop.trimStart,
+										trimEnd: lop.trimEnd,
+										speed: lop.speed,
+										text: lop.text,
+										fontSize: lop.fontSize,
+										fontFamily: lop.fontFamily,
+										fontStyle: lop.fontStyle,
+										fontWeight: lop.fontWeight,
+										textDecoration: lop.textDecoration,
+										fill: lop.fill,
+										align: lop.align,
+										verticalAlign: lop.verticalAlign,
+										letterSpacing: lop.letterSpacing,
+										lineHeight: lop.lineHeight,
+										padding: lop.padding,
+										stroke: lop.stroke,
+										strokeWidth: lop.strokeWidth,
+										backgroundColor: lop.backgroundColor,
+										borderColor: lop.borderColor,
+										borderWidth: lop.borderWidth,
+										borderRadius: lop.borderRadius,
+										autoDimensions: lop.autoDimensions,
+									} as ExtendedLayer;
+								}
+								return null;
+							})
+							.filter(Boolean) as ExtendedLayer[]
+					}
+					viewportWidth={op.width}
+					viewportHeight={op.height}
 				/>
 			);
-		}
 
-		if (mediaType === "Image") {
+			// If this compositor node is wrapped inside a Cut node, we use a negative Sequence
+			// "from" offset to shift the internal timeframe backward.
+			const trimFrames = trimStartOverride
+				? Math.floor(trimStartOverride * fps)
+				: 0;
+
+			if (trimFrames > 0) {
+				return (
+					<Sequence from={-trimFrames} layout="none">
+						{composeNode}
+					</Sequence>
+				);
+			}
+
+			return composeNode;
+		}
+		console.log({ op })
+		// -----------------------------------------------------------------------
+		// source / text: leaf nodes — render media directly.
+		// -----------------------------------------------------------------------
+		if (op.op === "source" || op.op === "text") {
+			const params = computeRenderParams(virtualMedia);
+			const mediaType = getMediaType(virtualMedia);
+
+			if (mediaType === "Text") {
+				const mergedStyle = { ...textStyle, ...(op as any) };
+				const textContent =
+					op.op === "text"
+						? op.text
+						: op.op === "source"
+							? op.source?.processData?.text
+							: undefined;
+
+				return (
+					<div
+						style={{
+							width: "100%",
+							height: "100%",
+							display: "flex",
+							flexDirection: "column",
+							alignItems: "stretch",
+							justifyContent:
+								mergedStyle.verticalAlign === "middle"
+									? "center"
+									: mergedStyle.verticalAlign === "bottom"
+										? "flex-end"
+										: "flex-start",
+							color: mergedStyle.fill,
+							fontSize: mergedStyle.fontSize,
+							fontFamily: mergedStyle.fontFamily,
+							fontStyle: mergedStyle.fontStyle,
+							fontWeight: mergedStyle.fontWeight,
+							textDecoration: mergedStyle.textDecoration,
+							textAlign: (mergedStyle.align as any) ?? "center",
+							padding: mergedStyle.padding,
+							lineHeight: mergedStyle.lineHeight ?? 1.2,
+							letterSpacing: mergedStyle.letterSpacing
+								? `${mergedStyle.letterSpacing}px`
+								: undefined,
+							WebkitTextStroke:
+								mergedStyle.strokeWidth && mergedStyle.stroke
+									? `${mergedStyle.strokeWidth}px ${mergedStyle.stroke}`
+									: undefined,
+							paintOrder: "stroke fill",
+							whiteSpace: "pre",
+						}}
+					>
+						{textContent}
+					</div>
+				);
+			}
+
+			if (!params.sourceUrl) return <AbsoluteFill />;
+
+			const baseRate = Number(playbackRateOverride) || 1;
+			const paramsRate = Number(params.speed) || 1;
+			const finalPlaybackRate = baseRate * paramsRate;
+
+			// Correctly accumulate both external cut nodes (trimStartOverride) and internal asset trims
+			const effectiveTrimSec =
+				(trimStartOverride ?? 0) + (Number(params.trimStartSec) || 0);
+			const startFrame = Math.floor(effectiveTrimSec * fps);
+			console.log({ mediaType, params, startFrame });
+			if (mediaType === "Audio") {
+				return (
+					<Audio
+						src={params.sourceUrl}
+						trimBefore={startFrame}
+						playbackRate={finalPlaybackRate}
+						volume={volume}
+					/>
+				);
+			}
+
+			if (mediaType === "Image") {
+				return (
+					<Img
+						src={params.sourceUrl}
+						style={{
+							position: "absolute",
+							top: 0,
+							left: 0,
+							width: "100%",
+							height: "100%",
+							objectFit: "fill",
+						}}
+					/>
+				);
+			}
+
 			return (
-				<Img
+				<Video
 					src={params.sourceUrl}
+					playbackRate={finalPlaybackRate}
+					trimBefore={startFrame}
+					volume={volume}
 					style={{
 						position: "absolute",
 						top: 0,
@@ -459,161 +478,143 @@ export const SingleClipComposition: React.FC<{
 						width: "100%",
 						height: "100%",
 						objectFit: "fill",
+						display: "block",
 					}}
 				/>
 			);
 		}
 
-		return (
-			<Video
-				src={params.sourceUrl}
-				playbackRate={finalPlaybackRate}
-				trimBefore={startFrame}
-				volume={volume}
-				style={{
-					position: "absolute",
-					top: 0,
-					left: 0,
-					width: "100%",
-					height: "100%",
-					objectFit: "fill",
-					display: "block",
-				}}
-			/>
-		);
-	}
+		// -----------------------------------------------------------------------
+		// speed: accumulate playback rate, pass trim through unchanged.
+		// -----------------------------------------------------------------------
+		if (op.op === "speed") {
+			const childVideo = virtualMedia.children[0];
+			if (!childVideo) return null;
+			return (
+				<SingleClipComposition
+					virtualMedia={childVideo}
+					volume={volume}
+					playbackRateOverride={
+						(Number(playbackRateOverride) || 1) * (Number(op.rate) || 1)
+					}
+					trimStartOverride={trimStartOverride}
+					textStyle={textStyle}
+				/>
+			);
+		}
 
-	// -----------------------------------------------------------------------
-	// speed: accumulate playback rate, pass trim through unchanged.
-	// -----------------------------------------------------------------------
-	if (op.op === "speed") {
-		const childVideo = virtualVideo.children[0];
-		if (!childVideo) return null;
-		return (
+		// -----------------------------------------------------------------------
+		// cut: accumulate the start offset into trimStartOverride so the leaf
+		// Video node can seek to the correct source position via startFrom.
+		// Duration is handled externally (composition config / Sequence props).
+		// -----------------------------------------------------------------------
+		if (op.op === "cut") {
+			const childVideo = virtualMedia.children[0];
+			if (!childVideo) return null;
+
+			const accumulatedTrim = (trimStartOverride ?? 0) + (op.startSec ?? 0);
+			console.log({ accumulatedTrim });
+			return (
+				<SingleClipComposition
+					virtualMedia={childVideo}
+					volume={volume}
+					playbackRateOverride={playbackRateOverride}
+					trimStartOverride={accumulatedTrim}
+					textStyle={textStyle}
+				/>
+			);
+		}
+
+		// -----------------------------------------------------------------------
+		// Transformers (crop, rotate, flip, filter, layer)
+		// -----------------------------------------------------------------------
+		const childVideo = virtualMedia.children[0];
+
+		const content = childVideo ? (
 			<SingleClipComposition
-				virtualVideo={childVideo}
-				volume={volume}
-				playbackRateOverride={
-					(Number(playbackRateOverride) || 1) * (Number(op.rate) || 1)
-				}
-				trimStartOverride={trimStartOverride}
-				textStyle={textStyle}
-			/>
-		);
-	}
-
-	// -----------------------------------------------------------------------
-	// cut: accumulate the start offset into trimStartOverride so the leaf
-	// Video node can seek to the correct source position via startFrom.
-	// Duration is handled externally (composition config / Sequence props).
-	// -----------------------------------------------------------------------
-	if (op.op === "cut") {
-		const childVideo = virtualVideo.children[0];
-		if (!childVideo) return null;
-
-		const accumulatedTrim = (trimStartOverride ?? 0) + (op.startSec ?? 0);
-		console.log({ accumulatedTrim });
-		return (
-			<SingleClipComposition
-				virtualVideo={childVideo}
+				virtualMedia={childVideo}
 				volume={volume}
 				playbackRateOverride={playbackRateOverride}
-				trimStartOverride={accumulatedTrim}
-				textStyle={textStyle}
+				trimStartOverride={trimStartOverride}
+				textStyle={
+					op.op === "layer" ? { ...textStyle, ...(op as any) } : textStyle
+				}
 			/>
-		);
-	}
+		) : null;
 
-	// -----------------------------------------------------------------------
-	// Transformers (crop, rotate, flip, filter, layer)
-	// -----------------------------------------------------------------------
-	const childVideo = virtualVideo.children[0];
+		if (op.op === "crop") {
+			const wp = Math.max(0.01, Number(op.widthPercentage) || 100);
+			const hp = Math.max(0.01, Number(op.heightPercentage) || 100);
+			const lp = Number(op.leftPercentage) || 0;
+			const tp = Number(op.topPercentage) || 0;
 
-	const content = childVideo ? (
-		<SingleClipComposition
-			virtualVideo={childVideo}
-			volume={volume}
-			playbackRateOverride={playbackRateOverride}
-			trimStartOverride={trimStartOverride}
-			textStyle={
-				op.op === "layer" ? { ...textStyle, ...(op as any) } : textStyle
-			}
-		/>
-	) : null;
+			// Use reciprocal percentage bounds instead of CSS Transform
+			// This sidesteps double-scaling conflicts when working with container queries
+			const innerWidth = (100 / wp) * 100;
+			const innerHeight = (100 / hp) * 100;
+			const innerLeft = (lp / wp) * 100;
+			const innerTop = (tp / hp) * 100;
 
-	if (op.op === "crop") {
-		const wp = Math.max(0.01, Number(op.widthPercentage) || 100);
-		const hp = Math.max(0.01, Number(op.heightPercentage) || 100);
-		const lp = Number(op.leftPercentage) || 0;
-		const tp = Number(op.topPercentage) || 0;
+			console.log("[SingleClipComposition] Applying Crop", {
+				input: { wp, hp, lp, tp },
+				calculated: { innerWidth, innerHeight, innerLeft, innerTop },
+			});
 
-		// Use reciprocal percentage bounds instead of CSS Transform
-		// This sidesteps double-scaling conflicts when working with container queries
-		const innerWidth = (100 / wp) * 100;
-		const innerHeight = (100 / hp) * 100;
-		const innerLeft = (lp / wp) * 100;
-		const innerTop = (tp / hp) * 100;
+			const innerStyle: React.CSSProperties = {
+				position: "absolute",
+				width: `${innerWidth}%`,
+				height: `${innerHeight}%`,
+				left: `-${innerLeft}%`,
+				top: `-${innerTop}%`,
+			};
 
-		console.log("[SingleClipComposition] Applying Crop", {
-			input: { wp, hp, lp, tp },
-			calculated: { innerWidth, innerHeight, innerLeft, innerTop },
-		});
+			return (
+				<AbsoluteFill style={{ overflow: "hidden" }}>
+					<div
+						style={innerStyle}
+						key={`crop-${wp}-${hp}-${lp}-${tp}`} // Force remount on change
+					>
+						<AbsoluteFill>{content}</AbsoluteFill>
+					</div>
+				</AbsoluteFill>
+			);
+		}
 
-		const innerStyle: React.CSSProperties = {
-			position: "absolute",
-			width: `${innerWidth}%`,
-			height: `${innerHeight}%`,
-			left: `-${innerLeft}%`,
-			top: `-${innerTop}%`,
-		};
+		let transformStr: string | undefined;
+		let cssFilterString: string | undefined;
+
+		if (op.op === "rotate") {
+			transformStr = `rotate(${(op as any).degrees}deg)`;
+		} else if (op.op === "flip") {
+			const transforms = [];
+			if (op.horizontal) transforms.push("scaleX(-1)");
+			if (op.vertical) transforms.push("scaleY(-1)");
+			transformStr = transforms.length ? transforms.join(" ") : undefined;
+		} else if (op.op === "filter") {
+			cssFilterString = buildCSSFilterString((op as any).filters.cssFilters);
+		}
 
 		return (
-			<AbsoluteFill style={{ overflow: "hidden" }}>
-				<div
-					style={innerStyle}
-					key={`crop-${wp}-${hp}-${lp}-${tp}`} // Force remount on change
-				>
-					<AbsoluteFill>{content}</AbsoluteFill>
-				</div>
+			<AbsoluteFill
+				style={{
+					filter: cssFilterString,
+					transform: transformStr,
+				}}
+			>
+				{content}
 			</AbsoluteFill>
 		);
-	}
-
-	let transformStr: string | undefined;
-	let cssFilterString: string | undefined;
-
-	if (op.op === "rotate") {
-		transformStr = `rotate(${(op as any).degrees}deg)`;
-	} else if (op.op === "flip") {
-		const transforms = [];
-		if (op.horizontal) transforms.push("scaleX(-1)");
-		if (op.vertical) transforms.push("scaleY(-1)");
-		transformStr = transforms.length ? transforms.join(" ") : undefined;
-	} else if (op.op === "filter") {
-		cssFilterString = buildCSSFilterString((op as any).filters.cssFilters);
-	}
-
-	return (
-		<AbsoluteFill
-			style={{
-				filter: cssFilterString,
-				transform: transformStr,
-			}}
-		>
-			{content}
-		</AbsoluteFill>
-	);
-};
+	};
 
 const LayerContentRenderer: React.FC<{
 	layer: ExtendedLayer;
 	animVolume: number;
 }> = memo(
 	({ layer, animVolume }) => {
-		if (layer.type === "Video" && layer.virtualVideo) {
+		if (layer.type === "Video" && layer.virtualMedia) {
 			return (
 				<SingleClipComposition
-					virtualVideo={layer.virtualVideo}
+					virtualMedia={layer.virtualMedia}
 					volume={animVolume}
 					playbackRateOverride={layer.speed}
 					trimStartOverride={layer.trimStart}
@@ -621,11 +622,11 @@ const LayerContentRenderer: React.FC<{
 				/>
 			);
 		}
-		if (layer.type === "Image" && (layer.src || layer.virtualVideo)) {
-			if (layer.virtualVideo) {
+		if (layer.type === "Image" && (layer.src || layer.virtualMedia)) {
+			if (layer.virtualMedia) {
 				return (
 					<SingleClipComposition
-						virtualVideo={layer.virtualVideo}
+						virtualMedia={layer.virtualMedia}
 						volume={animVolume}
 						trimStartOverride={layer.trimStart}
 						textStyle={layer}
@@ -639,11 +640,11 @@ const LayerContentRenderer: React.FC<{
 				/>
 			);
 		}
-		if (layer.type === "Audio" && (layer.src || layer.virtualVideo)) {
-			if (layer.virtualVideo) {
+		if (layer.type === "Audio" && (layer.src || layer.virtualMedia)) {
+			if (layer.virtualMedia) {
 				return (
 					<SingleClipComposition
-						virtualVideo={layer.virtualVideo}
+						virtualMedia={layer.virtualMedia}
 						volume={animVolume}
 						playbackRateOverride={layer.speed}
 						trimStartOverride={layer.trimStart}
@@ -651,13 +652,13 @@ const LayerContentRenderer: React.FC<{
 					/>
 				);
 			}
-			return <Html5Audio src={layer.src!} volume={animVolume} />;
+			return <Audio src={layer.src!} volume={animVolume} />;
 		}
-		if (layer.type === "Text" && (layer.text || layer.virtualVideo)) {
-			if (layer.virtualVideo) {
+		if (layer.type === "Text" && (layer.text || layer.virtualMedia)) {
+			if (layer.virtualMedia) {
 				return (
 					<SingleClipComposition
-						virtualVideo={layer.virtualVideo}
+						virtualMedia={layer.virtualMedia}
 						volume={animVolume}
 						trimStartOverride={layer.trimStart}
 						textStyle={layer}
@@ -777,7 +778,7 @@ export interface SceneProps {
 	isAudio?: boolean;
 	type?: "Video" | "Audio" | "Image" | "Text" | string;
 	data?: unknown;
-	virtualVideo?: VirtualVideoData;
+	virtualMedia?: VirtualMediaData;
 	children?: React.ReactNode;
 	text?: string;
 	fontSize?: number;
@@ -810,7 +811,7 @@ export const CompositionScene: React.FC<SceneProps> = ({
 	isAudio,
 	type,
 	data,
-	virtualVideo,
+	virtualMedia,
 	children,
 	text,
 	fontSize,
@@ -833,18 +834,28 @@ export const CompositionScene: React.FC<SceneProps> = ({
 	autoDimensions,
 }) => {
 	const frame = useCurrentFrame();
+	const { fps } = useVideoConfig();
 
 	const resolvedLayers = useMemo(() => {
 		if (layers.length > 0) return layers;
 
-		if (src || virtualVideo || type === "Text") {
+		if (src || virtualMedia || type === "Text") {
 			const resolvedType = type || (isAudio ? "Audio" : "Video");
+
+			let durationInFrames = undefined;
+			if (virtualMedia) {
+				const activeMeta = getActiveVideoMetadata(virtualMedia);
+				if (activeMeta?.durationMs) {
+					durationInFrames = Math.ceil((activeMeta.durationMs / 1000) * (fps || 24));
+				}
+			}
+
 			return [
 				{
 					id: "single-source-layer",
 					type: resolvedType as any,
 					src,
-					virtualVideo,
+					virtualMedia,
 					text:
 						text ||
 						(typeof data === "string"
@@ -858,6 +869,7 @@ export const CompositionScene: React.FC<SceneProps> = ({
 					opacity: 1,
 					scale: 1,
 					rotation: 0,
+					durationInFrames,
 					fontSize,
 					fontFamily,
 					fontStyle,
@@ -883,13 +895,14 @@ export const CompositionScene: React.FC<SceneProps> = ({
 	}, [
 		layers,
 		src,
-		virtualVideo,
+		virtualMedia,
 		type,
 		isAudio,
 		text,
 		data,
 		viewportWidth,
 		viewportHeight,
+		fps,
 		fontSize,
 		fontFamily,
 		fontStyle,
@@ -917,8 +930,8 @@ export const CompositionScene: React.FC<SceneProps> = ({
 				let derivedWidth = layer.width;
 				let derivedHeight = layer.height;
 
-				if (layer.virtualVideo && layer.autoDimensions) {
-					const activeMeta = getActiveVideoMetadata(layer.virtualVideo);
+				if (layer.virtualMedia && layer.autoDimensions) {
+					const activeMeta = getActiveVideoMetadata(layer.virtualMedia);
 					derivedWidth = activeMeta?.width ?? derivedWidth;
 					derivedHeight = activeMeta?.height ?? derivedHeight;
 				}

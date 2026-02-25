@@ -27,7 +27,7 @@ import type {
 	FileData,
 	OutputItem,
 	VideoAnimation,
-	VirtualVideoData,
+	VirtualMediaData,
 } from "@gatewai/core/types";
 import { dataTypeColors } from "@gatewai/core/types";
 import type { HandleEntityType, NodeEntityType } from "@gatewai/react-store";
@@ -1613,7 +1613,7 @@ const InspectorPanel: React.FC = () => {
 															if (initialItem) {
 																if (initialItem.type === "Video") {
 																	const vvData =
-																		initialItem.data as VirtualVideoData;
+																		initialItem.data as VirtualMediaData;
 																	const meta = getActiveVideoMetadata(vvData);
 																	if (meta?.width) newW = meta.width;
 																	if (meta?.height) newH = meta.height;
@@ -2027,7 +2027,7 @@ export const VideoDesignerEditor: React.FC<VideoDesignerEditorProps> = ({
 		const item = initialLayers.get(id);
 		if (!item) return undefined;
 		if (item.type === "Video" || item.type === "Audio")
-			return resolveVideoSourceUrl(item.data as VirtualVideoData);
+			return resolveVideoSourceUrl(item.data as VirtualMediaData);
 		const fileData = item.data as FileData;
 		return fileData.entity?.id
 			? GetAssetEndpoint(fileData.entity)
@@ -2039,7 +2039,7 @@ export const VideoDesignerEditor: React.FC<VideoDesignerEditorProps> = ({
 		const item = initialLayers.get(id);
 		if (!item) return undefined;
 		if (item.type === "Video" || item.type === "Audio")
-			return (item.data as VirtualVideoData).metadata?.durationMs;
+			return (item.data as VirtualMediaData).metadata?.durationMs;
 		const fileData = item.data as FileData;
 		return fileData.entity?.duration ?? fileData?.processData?.duration;
 	};
@@ -2097,7 +2097,7 @@ export const VideoDesignerEditor: React.FC<VideoDesignerEditorProps> = ({
 				let durationMs = 0;
 				let text: string | undefined;
 				let src: string | undefined;
-				let virtualVideo: VirtualVideoData | undefined;
+				let virtualMedia: VirtualMediaData | undefined;
 				let layerWidth = saved?.width;
 				let layerHeight = saved?.height;
 				let cropRenderProps: ReturnType<typeof computeVideoCropRenderProps> =
@@ -2106,11 +2106,11 @@ export const VideoDesignerEditor: React.FC<VideoDesignerEditorProps> = ({
 				if (item.type === "Text") {
 					text = getTextData(id);
 				} else if (item.type === "Video" || item.type === "Audio") {
-					virtualVideo = item.data as VirtualVideoData;
-					const metadata = getActiveVideoMetadata(virtualVideo);
+					virtualMedia = item.data as VirtualMediaData;
+					const metadata = getActiveVideoMetadata(virtualMedia);
 					durationMs = metadata.durationMs ?? 0;
-					src = resolveVideoSourceUrl(virtualVideo);
-					cropRenderProps = computeVideoCropRenderProps(virtualVideo);
+					src = resolveVideoSourceUrl(virtualMedia);
+					cropRenderProps = computeVideoCropRenderProps(virtualMedia);
 					if (isAutoDimensions) {
 						layerWidth = metadata.width;
 						layerHeight = metadata.height;
@@ -2156,7 +2156,7 @@ export const VideoDesignerEditor: React.FC<VideoDesignerEditorProps> = ({
 					src,
 					text,
 					name,
-					virtualVideo,
+					virtualMedia,
 					autoDimensions: isAutoDimensions,
 					...(cropRenderProps ?? {}),
 				};
@@ -2217,8 +2217,8 @@ export const VideoDesignerEditor: React.FC<VideoDesignerEditorProps> = ({
 		.map((l) => {
 			if (l.type === "Text")
 				return `${l.id}:text:${l.fontFamily}:${l.fontSize}:${l.fontStyle}:${l.textDecoration}:${l.lineHeight}`;
-			if (l.type === "Video" && l.virtualVideo)
-				return `${l.id}:video:${l.autoDimensions}:${l.virtualVideo.operation.op}`;
+			if (l.type === "Video" && l.virtualMedia)
+				return `${l.id}:video:${l.autoDimensions}:${l.virtualMedia.operation.op}`;
 			return `${l.id}:${l.type}:${l.autoDimensions}:${l.width ?? "null"}:${l.height ?? "null"}`;
 		})
 		.join("|");
@@ -2238,8 +2238,8 @@ export const VideoDesignerEditor: React.FC<VideoDesignerEditorProps> = ({
 			await Promise.all(
 				layersToMeasure.map(async (layer) => {
 					try {
-						if (layer.type === "Video" && layer.virtualVideo) {
-							const metadata = getActiveVideoMetadata(layer.virtualVideo);
+						if (layer.type === "Video" && layer.virtualMedia) {
+							const metadata = getActiveVideoMetadata(layer.virtualMedia);
 							if (
 								metadata.width != null &&
 								metadata.height != null &&

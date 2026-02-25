@@ -647,7 +647,7 @@ type DataForType<R extends DataType> = R extends "Text"
       : R extends "Image" | "Audio"
         ? FileData
         : R extends "Video"
-          ? VirtualVideoData
+          ? VirtualMediaData
           : never;
 
 // Node result structure
@@ -677,15 +677,15 @@ type FileData = {
 };
 ```
 
-### VirtualVideoData Structure
+### VirtualMediaData Structure
 
 **The native video type that enables zero-cost node chaining:**
 
 ```typescript
-type VirtualVideoData = {
+type VirtualMediaData = {
   metadata: VideoMetadata;
   operation: VideoOperation;
-  children: VirtualVideoData[];
+  children: VirtualMediaData[];
 };
 
 type VideoMetadata = {

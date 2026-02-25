@@ -3,7 +3,7 @@ import { container, TOKENS } from "@gatewai/core/di";
 import type { StorageService } from "@gatewai/core/storage";
 import type { MediaService, NodeResult } from "@gatewai/core/types";
 import { type DataType, prisma } from "@gatewai/db";
-import { createVirtualVideo } from "@gatewai/remotion-compositions";
+import { createVirtualMedia } from "@gatewai/remotion-compositions";
 import { fileTypeFromBuffer } from "file-type";
 import { getMediaDuration, getVideoMetadata } from "./utils/index.js";
 
@@ -157,7 +157,7 @@ export async function uploadToImportNode({
 						outputHandleId: outputHandle.id,
 						data:
 							dataType === "Video" || dataType === "Audio"
-								? createVirtualVideo({ entity: asset }, dataType)
+								? createVirtualMedia({ entity: asset }, dataType)
 								: { entity: asset },
 						type: dataType,
 					},

@@ -1,7 +1,7 @@
 # node-video-cut Implementation Spec
 
 ## Overview
-Implement `node-video-cut` - a node to trim/cut video by specifying start and end times. Uses VirtualVideoData with `cut` operation.
+Implement `node-video-cut` - a node to trim/cut video by specifying start and end times. Uses VirtualMediaData with `cut` operation.
 
 ---
 
@@ -63,10 +63,10 @@ The cut operation is already implemented in `packages/remotion-compositions/src/
 **Rendering** (lines 553-565):
 ```tsx
 if (op.op === "cut") {
-  const childVideo = virtualVideo.children[0];
+  const childVideo = virtualMedia.children[0];
   return (
     <SingleClipComposition
-      virtualVideo={childVideo}
+      virtualMedia={childVideo}
       trimStartOverride={(trimStartOverride ?? 0) + op.startSec}
     />
   );

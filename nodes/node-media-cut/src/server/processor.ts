@@ -1,5 +1,5 @@
 import { TOKENS } from "@gatewai/core/di";
-import type { VirtualVideoData } from "@gatewai/core/types";
+import type { VirtualMediaData } from "@gatewai/core/types";
 import { DataType } from "@gatewai/db";
 import type {
 	BackendNodeProcessorCtx,
@@ -34,7 +34,7 @@ export class MediaCutProcessor implements NodeProcessor {
 			});
 
 			const connectedInput = videoInputs[0] ?? audioInputs[0];
-			const inputMedia = connectedInput?.data as VirtualVideoData | undefined;
+			const inputMedia = connectedInput?.data as VirtualMediaData | undefined;
 
 			if (!connectedInput || !inputMedia) {
 				return { success: false, error: "Missing Video or Audio input" };

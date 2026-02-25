@@ -17,7 +17,7 @@ import type {
     NodeProcessor,
     StorageService,
 } from "@gatewai/node-sdk/server";
-import { createVirtualVideo } from "@gatewai/remotion-compositions";
+import { createVirtualMedia } from "@gatewai/remotion-compositions";
 import type { GoogleGenAI } from "@google/genai";
 import { inject, injectable } from "inversify";
 import {
@@ -184,7 +184,7 @@ export class VideoGenFirstLastFrameProcessor implements NodeProcessor {
                 items: [
                     {
                         type: DataType.Video,
-                        data: createVirtualVideo({ entity: asset }),
+                        data: createVirtualMedia({ entity: asset }),
                         outputHandleId: outputHandle.id,
                     },
                 ],

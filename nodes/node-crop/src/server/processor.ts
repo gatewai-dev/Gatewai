@@ -1,6 +1,6 @@
 import assert from "node:assert";
 import { TOKENS } from "@gatewai/core/di";
-import type { FileData, VirtualVideoData } from "@gatewai/core/types";
+import type { FileData, VirtualMediaData } from "@gatewai/core/types";
 import { DataType } from "@gatewai/db";
 import type {
 	BackendNodeProcessorCtx,
@@ -56,7 +56,7 @@ export class CropProcessor implements NodeProcessor {
 
 			if (hasVideo) {
 				return this.processVideo(
-					hasVideo as VirtualVideoData,
+					hasVideo as VirtualMediaData,
 					videoInputs[0]!.type as "Video" | "Audio",
 					config,
 					data,
@@ -74,7 +74,7 @@ export class CropProcessor implements NodeProcessor {
 	}
 
 	private async processVideo(
-		inputVideo: VirtualVideoData,
+		inputVideo: VirtualMediaData,
 		inputVideoType: "Video" | "Audio",
 		config: typeof import("../shared/config.js").CropNodeConfigSchema._type,
 		data: BackendNodeProcessorCtx["data"],

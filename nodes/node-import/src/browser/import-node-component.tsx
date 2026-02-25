@@ -25,7 +25,7 @@ const ImportNodeComponent = memo((props: NodeProps) => {
 	const result = node?.result as unknown as ImportResult;
 	const item = result?.outputs?.[0]?.items?.[0];
 
-	// Robust mimeType extraction: handle both VirtualVideoData and FileData
+	// Robust mimeType extraction: handle both VirtualMediaData and FileData
 	const itemData = item?.data as any;
 	const existingMimeType =
 		itemData?.source?.entity?.mimeType ??

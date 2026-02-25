@@ -1,6 +1,6 @@
 import type {
 	NodeProcessorParams,
-	VirtualVideoData,
+	VirtualMediaData,
 } from "@gatewai/core/types";
 import type { IBrowserProcessor } from "@gatewai/node-sdk/browser";
 import {
@@ -40,7 +40,7 @@ export class MediaCutBrowserProcessor implements IBrowserProcessor {
 			throw new Error("Missing Video or Audio input");
 		}
 
-		const inputMedia = connectedInput.outputItem.data as VirtualVideoData;
+		const inputMedia = connectedInput.outputItem.data as VirtualMediaData;
 		console.log({ inputMedia });
 		const { startSec, endSec } = MediaCutConfigSchema.parse(node.config);
 

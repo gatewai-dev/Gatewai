@@ -1,4 +1,4 @@
-import type { VirtualVideoData } from "@gatewai/core/types";
+import type { VirtualMediaData } from "@gatewai/core/types";
 import {
 	type RenderMediaOnWebProgress,
 	renderMediaOnWeb,
@@ -12,18 +12,18 @@ export type RenderOptions = {
 };
 
 /**
- * Renders a VirtualVideoData object into a real video Blob using Remotion in the browser.
+ * Renders a VirtualMediaData object into a real video Blob using Remotion in the browser.
  */
-export async function renderVirtualVideo(
-	virtualVideo: VirtualVideoData,
+export async function renderVirtualMedia(
+	virtualMedia: VirtualMediaData,
 	options: RenderOptions = {},
 ): Promise<Blob> {
-	const params = computeRenderParams(virtualVideo);
+	const params = computeRenderParams(virtualMedia);
 
 	// Default values if not present in metadata
-	const width = virtualVideo.metadata.width ?? 1280;
-	const height = virtualVideo.metadata.height ?? 720;
-	const fps = virtualVideo.metadata.fps ?? 30;
+	const width = virtualMedia.metadata.width ?? 1280;
+	const height = virtualMedia.metadata.height ?? 720;
+	const fps = virtualMedia.metadata.fps ?? 30;
 
 	// Calculate total duration in frames
 	const durationInFrames = Math.max(
@@ -39,9 +39,9 @@ export async function renderVirtualVideo(
 			fps,
 			width,
 			height,
-			defaultProps: { virtualVideo },
+			defaultProps: { virtualMedia },
 		},
-		inputProps: { virtualVideo },
+		inputProps: { virtualMedia },
 		onProgress: options.onProgress,
 		signal: options.signal,
 	});

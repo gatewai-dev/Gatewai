@@ -2,7 +2,7 @@ import type {
 	NodeProcessorContext,
 	NodeProcessorParams,
 	PixiProcessOutput,
-	VirtualVideoData,
+	VirtualMediaData,
 } from "@gatewai/core/types";
 import type { IBrowserProcessor } from "@gatewai/node-sdk/browser";
 import {
@@ -23,7 +23,9 @@ export class CropBrowserProcessor implements IBrowserProcessor {
 		const inputEntry = Object.values(inputs).find(
 			({ connectionValid, outputItem }) =>
 				connectionValid &&
-				(outputItem?.type === "Image" || outputItem?.type === "Video"),
+				(outputItem?.type === "Image" ||
+					outputItem?.type === "Video" ||
+					outputItem?.type === "Audio"),
 		);
 
 		if (!inputEntry?.outputItem) {
@@ -33,23 +35,25 @@ export class CropBrowserProcessor implements IBrowserProcessor {
 		const inputType = inputEntry.outputItem.type;
 		const config = CropNodeConfigSchema.parse(node.config);
 
-		if (inputType === "Video") {
-			return this.processVideo(
-				inputEntry.outputItem.data as VirtualVideoData,
+		if (inputType === "Video" || inputType === "Audio") {
+			return this.processMedia(
+				inputEntry.outputItem.data as VirtualMediaData,
 				config,
 				context,
 				node.id,
+				inputType,
 			);
 		} else {
 			return this.processImage(inputs, config, signal, context, node.id);
 		}
 	}
 
-	private async processVideo(
-		inputVideo: VirtualVideoData,
+	private async processMedia(
+		inputVideo: VirtualMediaData,
 		config: CropNodeConfig,
 		context: NodeProcessorContext,
 		nodeId: string,
+		mediaType: "Video" | "Audio",
 	): Promise<VideoCropResult> {
 		const currentMeta = getActiveVideoMetadata(inputVideo);
 		const currentWidth = currentMeta.width ?? 1920;
@@ -80,7 +84,7 @@ export class CropBrowserProcessor implements IBrowserProcessor {
 				{
 					items: [
 						{
-							type: "Video",
+							type: mediaType,
 							data: output,
 							outputHandleId: outputHandle,
 						},

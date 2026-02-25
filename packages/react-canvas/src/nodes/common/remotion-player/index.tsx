@@ -1,4 +1,4 @@
-import type { ExtendedLayer, VirtualVideoData } from "@gatewai/core/types";
+import type { ExtendedLayer, VirtualMediaData } from "@gatewai/core/types";
 import {
 	CompositionScene,
 	getActiveVideoMetadata,
@@ -366,7 +366,7 @@ export interface MediaPlayerProps {
 	isAudio?: boolean;
 	type?: "Video" | "Audio" | "Image" | "Text" | string;
 	data?: unknown;
-	virtualVideo?: VirtualVideoData;
+	virtualMedia?: VirtualMediaData;
 	durationMs?: number;
 	layers?: ExtendedLayer[];
 	viewportWidth?: number;
@@ -384,7 +384,7 @@ export const MediaPlayer = ({
 	isAudio = false,
 	type,
 	data,
-	virtualVideo,
+	virtualMedia,
 	durationMs,
 	layers,
 	viewportWidth,
@@ -399,7 +399,7 @@ export const MediaPlayer = ({
 	const wrapperRef = useRef<HTMLDivElement>(null);
 	const resolvedType = type || (isAudio ? "Audio" : "Video");
 
-	const activeMeta = virtualVideo ? getActiveVideoMetadata(virtualVideo) : null;
+	const activeMeta = virtualMedia ? getActiveVideoMetadata(virtualMedia) : null;
 
 	const durationInFrames = (() => {
 		if (activeMeta?.durationMs)
@@ -441,7 +441,7 @@ export const MediaPlayer = ({
 						isAudio,
 						type: resolvedType,
 						data,
-						virtualVideo,
+						virtualMedia,
 						layers,
 						viewportWidth: compWidth,
 						viewportHeight: compHeight,

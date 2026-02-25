@@ -1,12 +1,12 @@
 import { isFileData } from "@gatewai/core/browser";
-import type { VirtualVideoData } from "@gatewai/core/types";
+import type { VirtualMediaData } from "@gatewai/core/types";
 import {
 	BaseNode,
 	type NodeProps,
 	useDownloadFileData,
 	useNodeResult,
 } from "@gatewai/react-canvas";
-import { renderVirtualVideo } from "@gatewai/remotion-compositions";
+import { renderVirtualMedia } from "@gatewai/remotion-compositions";
 import { Alert, AlertDescription, Button, Separator } from "@gatewai/ui-kit";
 import { AlertCircle, Download, InfoIcon, Loader2 } from "lucide-react";
 import { memo, useState } from "react";
@@ -89,8 +89,8 @@ const ExportNodeComponent = memo((props: NodeProps) => {
 				const filename = `export-${props.id}-${Date.now()}.txt`;
 				await downloadAsText(content, filename);
 			} else if (type === "Video") {
-				const vv = data as VirtualVideoData;
-				const blob = await renderVirtualVideo(vv);
+				const vv = data as VirtualMediaData;
+				const blob = await renderVirtualMedia(vv);
 				const url = URL.createObjectURL(blob);
 
 				const link = document.createElement("a");

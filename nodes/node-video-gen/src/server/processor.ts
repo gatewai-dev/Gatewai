@@ -16,7 +16,7 @@ import type {
     NodeProcessor,
     StorageService,
 } from "@gatewai/node-sdk/server";
-import { createVirtualVideo } from "@gatewai/remotion-compositions";
+import { createVirtualMedia } from "@gatewai/remotion-compositions";
 import type {
     GoogleGenAI,
     VideoGenerationReferenceImage,
@@ -197,7 +197,7 @@ export class VideoGenProcessor implements NodeProcessor {
                 items: [
                     {
                         type: DataType.Video,
-                        data: createVirtualVideo({ entity: asset }),
+                        data: createVirtualMedia({ entity: asset }),
                         outputHandleId: outputHandle.id,
                     },
                 ],
