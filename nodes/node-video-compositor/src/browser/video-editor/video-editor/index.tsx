@@ -2026,7 +2026,7 @@ export const VideoDesignerEditor: React.FC<VideoDesignerEditorProps> = ({
 	const getAssetUrl = (id: string) => {
 		const item = initialLayers.get(id);
 		if (!item) return undefined;
-		if (item.type === "Video")
+		if (item.type === "Video" || item.type === "Audio")
 			return resolveVideoSourceUrl(item.data as VirtualVideoData);
 		const fileData = item.data as FileData;
 		return fileData.entity?.id
@@ -2038,7 +2038,7 @@ export const VideoDesignerEditor: React.FC<VideoDesignerEditorProps> = ({
 		if (!id) return undefined;
 		const item = initialLayers.get(id);
 		if (!item) return undefined;
-		if (item.type === "Video")
+		if (item.type === "Video" || item.type === "Audio")
 			return (item.data as VirtualVideoData).metadata?.durationMs;
 		const fileData = item.data as FileData;
 		return fileData.entity?.duration ?? fileData?.processData?.duration;
@@ -2105,7 +2105,7 @@ export const VideoDesignerEditor: React.FC<VideoDesignerEditorProps> = ({
 
 				if (item.type === "Text") {
 					text = getTextData(id);
-				} else if (item.type === "Video") {
+				} else if (item.type === "Video" || item.type === "Audio") {
 					virtualVideo = item.data as VirtualVideoData;
 					const metadata = getActiveVideoMetadata(virtualVideo);
 					durationMs = metadata.durationMs ?? 0;
@@ -2118,7 +2118,7 @@ export const VideoDesignerEditor: React.FC<VideoDesignerEditorProps> = ({
 						layerWidth = layerWidth ?? metadata.width;
 						layerHeight = layerHeight ?? metadata.height;
 					}
-				} else if (item.type === "Image" || item.type === "Audio") {
+				} else if (item.type === "Image") {
 					const fileData = item.data as FileData;
 					durationMs =
 						fileData.entity?.duration ?? fileData.processData?.duration ?? 0;
@@ -2492,7 +2492,7 @@ export const VideoDesignerEditor: React.FC<VideoDesignerEditorProps> = ({
 							(l.durationInFrames ?? DEFAULT_DURATION_FRAMES),
 					),
 				);
-	console.log({durationInFrames})
+	console.log({ durationInFrames });
 	// Unmemoized Context: This context value contains state (currentFrame, pan, zoom, isPlaying) that updates extremely fast.
 	// In the original code, the dependency array was huge and invalidated almost constantly, offering zero memoization benefit
 	// and masking stale closure errors. A fast re-render pass is better than costly and ineffective dependency tracking here.

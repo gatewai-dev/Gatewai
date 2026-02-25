@@ -76,41 +76,36 @@ export async function uploadToImportNode({
 	let durationInSec: number | null = null;
 	let fps: number | null = null;
 
-	await Promise.allSettled([
-		(async () => {
-			if (finalContentType.startsWith("image/")) {
-				try {
-					const media = container.get<MediaService>(TOKENS.MEDIA);
-					const meta = await media.getImageDimensions(buffer);
-					width = meta.width || null;
-					height = meta.height || null;
-				} catch (err) {
-					console.error("Failed to extract image dimensions:", err);
-				}
-			}
-		})(),
-		(async () => {
-			if (finalContentType.startsWith("video/")) {
-				try {
-					const meta = await getVideoMetadata(buffer);
-					if (meta) {
-						width = meta.width;
-						height = meta.height;
-						durationInSec = meta.duration;
-						fps = meta.fps;
-					}
-				} catch (err) {
-					console.error("Failed to extract video metadata:", err);
-				}
-			} else if (finalContentType.startsWith("audio/")) {
-				try {
-					durationInSec = await getMediaDuration(buffer);
-				} catch (err) {
-					console.error("Failed to extract audio duration:", err);
-				}
-			}
-		})(),
-	]);
+	if (finalContentType.startsWith("image/")) {
+		const media = container.get<MediaService>(TOKENS.MEDIA);
+		const meta = await media.getImageDimensions(buffer);
+		width = meta.width || null;
+		height = meta.height || null;
+
+		if (width == null || height == null) {
+			throw new Error("Failed to extract image dimensions");
+		}
+	} else if (finalContentType.startsWith("video/")) {
+		const meta = await getVideoMetadata(buffer);
+		if (!meta) {
+			throw new Error("Failed to extract video metadata");
+		}
+		width = meta.width;
+		height = meta.height;
+		durationInSec = meta.duration;
+		fps = meta.fps;
+
+		if (width === 0 || height === 0 || durationInSec === 0 || fps === 0) {
+			throw new Error(
+				`Incomplete video metadata: width=${width}, height=${height}, duration=${durationInSec}, fps=${fps}`,
+			);
+		}
+	} else if (finalContentType.startsWith("audio/")) {
+		durationInSec = await getMediaDuration(buffer, finalContentType);
+		if (durationInSec == null || durationInSec === 0) {
+			throw new Error("Failed to extract audio duration");
+		}
+	}
 	const key = `assets/${generateId()}-${filename}`;
 	const storage = container.get<StorageService>(TOKENS.STORAGE);
 
@@ -161,8 +156,8 @@ export async function uploadToImportNode({
 					{
 						outputHandleId: outputHandle.id,
 						data:
-							dataType === "Video"
-								? createVirtualVideo({ entity: asset })
+							dataType === "Video" || dataType === "Audio"
+								? createVirtualVideo({ entity: asset }, dataType)
 								: { entity: asset },
 						type: dataType,
 					},

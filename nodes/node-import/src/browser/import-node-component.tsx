@@ -80,7 +80,7 @@ const ImportNodeComponent = memo((props: NodeProps) => {
 			);
 			return;
 		}
-		const successResult = uploadResult as any;
+		const successResult = uploadResult;
 		dispatch(
 			updateNodeResult({
 				id: props.id,

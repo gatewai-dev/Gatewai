@@ -83,12 +83,6 @@ export function computeRenderParams(vv: VirtualVideoData): RenderParams {
 
 	let filters: Filters = { ...DEFAULT_FILTERS };
 
-	if (!op) {
-		// Legacy / bare node fallback
-		params.sourceUrl = resolveVideoSourceUrl(vv);
-		return params;
-	}
-
 	switch (op.op) {
 		case "source":
 			params.sourceUrl = resolveVideoSourceUrl(vv);
@@ -141,7 +135,7 @@ export function computeRenderParams(vv: VirtualVideoData): RenderParams {
 
 	params.cssFilterString = buildCSSFilterString(filters);
 
-	const sourceDurationSec = (baseMeta.durationMs ?? 0) / 1000;
+	const sourceDurationSec = (baseMeta?.durationMs ?? 0) / 1000;
 	params.effectiveDurationSec =
 		((params.trimEndSec ?? sourceDurationSec) - params.trimStartSec) /
 		params.speed;
@@ -173,8 +167,8 @@ export function computeFullRenderParams(vv: VirtualVideoData): RenderParams {
 
 	let filters: Filters = { ...DEFAULT_FILTERS };
 	const baseMeta = getActiveVideoMetadata(vv);
-	let currentWidth = baseMeta.width ?? 1920;
-	let currentHeight = baseMeta.height ?? 1080;
+	let currentWidth = baseMeta?.width ?? 1920;
+	let currentHeight = baseMeta?.height ?? 1080;
 
 	function walk(node: VirtualVideoData | any) {
 		if (!node) return;
@@ -188,12 +182,6 @@ export function computeFullRenderParams(vv: VirtualVideoData): RenderParams {
 		}
 
 		const op = node.operation;
-		if (!op) {
-			if (node.source || node.processData) {
-				params.sourceUrl = resolveVideoSourceUrl(node);
-			}
-			return;
-		}
 
 		switch (op.op) {
 			case "source":
@@ -255,7 +243,7 @@ export function computeFullRenderParams(vv: VirtualVideoData): RenderParams {
 	walk(vv);
 
 	params.cssFilterString = buildCSSFilterString(filters);
-	const sourceDurationSec = (baseMeta.durationMs ?? 0) / 1000;
+	const sourceDurationSec = (baseMeta?.durationMs ?? 0) / 1000;
 	params.effectiveDurationSec =
 		((params.trimEndSec ?? sourceDurationSec) - params.trimStartSec) /
 		params.speed;

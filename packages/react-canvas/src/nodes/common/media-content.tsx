@@ -34,16 +34,19 @@ function MediaContent({
 
 	const assetUrl = useMemo(() => {
 		if (!outputItem?.data) return null;
-		if (outputItem.type === "Video") {
+		if (outputItem.type === "Video" || outputItem.type === "Audio") {
 			return resolveVideoSourceUrl(outputItem.data);
 		}
 		const fileData = outputItem.data as FileData;
+		if (fileData.processData) {
+			return fileData.processData.dataUrl;
+		}
 		if (!fileData.entity) return null;
 		return GetAssetEndpoint(fileData.entity);
 	}, [outputItem]);
 
 	const activeMeta = useMemo(() => {
-		if (outputItem?.type === "Video") {
+		if (outputItem?.type === "Video" || outputItem?.type === "Audio") {
 			return getActiveVideoMetadata(outputItem.data);
 		}
 		return null;
@@ -51,7 +54,7 @@ function MediaContent({
 
 	const durationMs = useMemo(() => {
 		if (!outputItem?.data) return undefined;
-		if (outputItem.type === "Video") {
+		if (outputItem.type === "Video" || outputItem.type === "Audio") {
 			return activeMeta?.durationMs;
 		}
 		const fileData = outputItem.data as FileData;
@@ -67,7 +70,7 @@ function MediaContent({
 	if (!outputItem) {
 		return null;
 	}
-	console.log({durationMs})
+	console.log({ assetUrl, selectedOutput });
 	return (
 		<div className="relative h-full w-full group">
 			{hasMoreThanOneOutput && (

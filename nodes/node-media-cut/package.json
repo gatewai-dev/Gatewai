@@ -1,5 +1,5 @@
 {
-	"name": "@gatewai/node-video-crop",
+	"name": "@gatewai/node-media-cut",
 	"version": "0.0.0",
 	"private": true,
 	"type": "module",

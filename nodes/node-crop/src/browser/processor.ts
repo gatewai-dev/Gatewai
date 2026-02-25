@@ -1,10 +1,16 @@
 import type {
+	NodeProcessorContext,
 	NodeProcessorParams,
 	PixiProcessOutput,
+	VirtualVideoData,
 } from "@gatewai/core/types";
 import type { IBrowserProcessor } from "@gatewai/node-sdk/browser";
-import { CropNodeConfigSchema } from "../shared/config.js";
-import type { CropResult } from "../shared/index.js";
+import {
+	appendOperation,
+	getActiveVideoMetadata,
+} from "@gatewai/remotion-compositions";
+import { type CropNodeConfig, CropNodeConfigSchema } from "../shared/config.js";
+import type { CropResult, VideoCropResult } from "../shared/index.js";
 import { applyCrop, type PixiCropInput } from "../shared/pixi-crop-run.js";
 
 export class CropBrowserProcessor implements IBrowserProcessor {
@@ -13,13 +19,89 @@ export class CropBrowserProcessor implements IBrowserProcessor {
 		inputs,
 		signal,
 		context,
-	}: NodeProcessorParams): Promise<CropResult | null> {
+	}: NodeProcessorParams): Promise<CropResult | VideoCropResult | null> {
+		const inputEntry = Object.values(inputs).find(
+			({ connectionValid, outputItem }) =>
+				connectionValid &&
+				(outputItem?.type === "Image" || outputItem?.type === "Video"),
+		);
+
+		if (!inputEntry?.outputItem) {
+			throw new Error("Missing input");
+		}
+
+		const inputType = inputEntry.outputItem.type;
+		const config = CropNodeConfigSchema.parse(node.config);
+
+		if (inputType === "Video") {
+			return this.processVideo(
+				inputEntry.outputItem.data as VirtualVideoData,
+				config,
+				context,
+				node.id,
+			);
+		} else {
+			return this.processImage(inputs, config, signal, context, node.id);
+		}
+	}
+
+	private async processVideo(
+		inputVideo: VirtualVideoData,
+		config: CropNodeConfig,
+		context: NodeProcessorContext,
+		nodeId: string,
+	): Promise<VideoCropResult> {
+		const currentMeta = getActiveVideoMetadata(inputVideo);
+		const currentWidth = currentMeta.width ?? 1920;
+		const currentHeight = currentMeta.height ?? 1080;
+
+		const newWidth = (currentWidth * config.widthPercentage) / 100;
+		const newHeight = (currentHeight * config.heightPercentage) / 100;
+
+		const output = appendOperation(inputVideo, {
+			op: "crop",
+			leftPercentage: config.leftPercentage,
+			topPercentage: config.topPercentage,
+			widthPercentage: config.widthPercentage,
+			heightPercentage: config.heightPercentage,
+			metadata: {
+				...currentMeta,
+				width: Math.round(newWidth),
+				height: Math.round(newHeight),
+			},
+		});
+
+		const outputHandle = context.getFirstOutputHandle(nodeId);
+		if (!outputHandle) throw new Error("Missing output handle");
+
+		return {
+			selectedOutputIndex: 0,
+			outputs: [
+				{
+					items: [
+						{
+							type: "Video",
+							data: output,
+							outputHandleId: outputHandle,
+						},
+					],
+				},
+			],
+		};
+	}
+
+	private async processImage(
+		inputs: NodeProcessorParams["inputs"],
+		config: CropNodeConfig,
+		signal: AbortSignal | undefined,
+		context: NodeProcessorContext,
+		nodeId: string,
+	): Promise<CropResult> {
 		const imageUrl = context.findInputData(inputs, "Image");
 		if (!imageUrl) throw new Error("Missing Input Image");
 
-		const config = CropNodeConfigSchema.parse(node.config);
 		const result = await context.pixi.execute<PixiCropInput, PixiProcessOutput>(
-			node.id,
+			nodeId,
 			{
 				imageUrl,
 				config,
@@ -27,11 +109,11 @@ export class CropBrowserProcessor implements IBrowserProcessor {
 			applyCrop,
 			signal,
 		);
-		const outputHandle = context.getFirstOutputHandle(node.id);
+
+		const outputHandle = context.getFirstOutputHandle(nodeId);
 		if (!outputHandle) throw new Error("Missing output handle");
 
 		const dataUrl = URL.createObjectURL(result.dataUrl);
-		// This is required to prevent memory leakbrowser.
 		context.registerObjectUrl(dataUrl);
 
 		return {

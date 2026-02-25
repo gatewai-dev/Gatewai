@@ -14,10 +14,7 @@ function SigninPage() {
 	};
 
 	return (
-		<AuthLayout
-			title="WELCOME BACK"
-			subtitle="Sign in to your workspace"
-		>
+		<AuthLayout title="WELCOME BACK" subtitle="Sign in to your workspace">
 			<Helmet>
 				<title>Sign In - Gatewai</title>
 			</Helmet>

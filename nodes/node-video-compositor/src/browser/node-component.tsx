@@ -85,7 +85,7 @@ const VideoCompositorNodeComponent = memo((props: NodeProps) => {
 
 			// Duration: Video uses metadata, Audio/Image uses FileData
 			const durationMs =
-				item.type === "Video"
+				item.type === "Video" || item.type === "Audio"
 					? ((item.data as VirtualVideoData).metadata?.durationMs ?? 0)
 					: item.type !== "Text"
 						? ((item.data as FileData)?.entity?.duration ??

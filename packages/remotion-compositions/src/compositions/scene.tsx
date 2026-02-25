@@ -1,13 +1,12 @@
 import type { ExtendedLayer, VirtualVideoData } from "@gatewai/core/types";
-import { Audio } from "@remotion/media";
+import { Audio, Video } from "@remotion/media";
 import type React from "react";
-import { memo, useEffect, useMemo, useRef } from "react";
+import { memo, useMemo } from "react";
 import {
 	AbsoluteFill,
 	Html5Audio,
 	Img,
 	interpolate,
-	OffthreadVideo,
 	Sequence,
 	spring,
 	useCurrentFrame,
@@ -386,7 +385,7 @@ export const SingleClipComposition: React.FC<{
 					? op.text
 					: op.op === "source"
 						? op.source?.processData?.text
-						: (op as any).text;
+						: undefined;
 
 			return (
 				<div
@@ -437,7 +436,7 @@ export const SingleClipComposition: React.FC<{
 		const effectiveTrimSec =
 			(trimStartOverride ?? 0) + (Number(params.trimStartSec) || 0);
 		const startFrame = Math.floor((effectiveTrimSec * fps) / finalPlaybackRate);
-
+		console.log({ mediaType, params });
 		if (mediaType === "Audio") {
 			return (
 				<Audio
@@ -466,7 +465,7 @@ export const SingleClipComposition: React.FC<{
 		}
 
 		return (
-			<OffthreadVideo
+			<Video
 				src={params.sourceUrl}
 				playbackRate={finalPlaybackRate}
 				trimBefore={startFrame}
@@ -920,8 +919,8 @@ export const CompositionScene: React.FC<SceneProps> = ({
 
 				if (layer.virtualVideo && layer.autoDimensions) {
 					const activeMeta = getActiveVideoMetadata(layer.virtualVideo);
-					derivedWidth = activeMeta.width ?? derivedWidth;
-					derivedHeight = activeMeta.height ?? derivedHeight;
+					derivedWidth = activeMeta?.width ?? derivedWidth;
+					derivedHeight = activeMeta?.height ?? derivedHeight;
 				}
 
 				return {

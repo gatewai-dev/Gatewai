@@ -234,7 +234,7 @@ export class RemotionWebProcessorService {
 				const item = input.outputItem;
 				if (item.type === "Video" || item.type === "Audio") {
 					const promise = this.getMediaDurationAsSec(
-						item.data as FileData | VirtualVideoData,
+						item.data as VirtualVideoData,
 						item.type,
 					).then((durSec) => {
 						const actualFrames = Math.floor(durSec * fps);
@@ -335,7 +335,7 @@ export class RemotionWebProcessorService {
 	}
 
 	private async getMediaDurationAsSec(
-		data: FileData | VirtualVideoData,
+		data: VirtualVideoData,
 		type: "Video" | "Audio",
 	): Promise<number> {
 		// For Video, data is VirtualVideoData — read from metadata first

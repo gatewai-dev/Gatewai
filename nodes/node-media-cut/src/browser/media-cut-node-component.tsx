@@ -11,8 +11,9 @@ import {
 	useAppSelector,
 } from "@gatewai/react-store";
 import { getActiveVideoMetadata } from "@gatewai/remotion-compositions";
+import { Button } from "@gatewai/ui-kit";
 import { memo, useCallback, useEffect, useMemo, useRef, useState } from "react";
-import type { VideoCutConfig } from "../shared/config.js";
+import type { MediaCutConfig } from "../shared/config.js";
 
 /* ─────────────────────────────────────────────
    Helpers
@@ -497,28 +498,32 @@ const TimeStat = ({
 /* ─────────────────────────────────────────────
    Main Node
 ───────────────────────────────────────────── */
-const VideoCutNodeComponent = memo(
+const MediaCutNodeComponent = memo(
 	(props: { selected: boolean; id: string; dragging: boolean }) => {
 		const { onNodeConfigUpdate } = useCanvasCtx();
 		const edges = useAppSelector(makeSelectEdgesByTargetNodeId(props.id));
 		const inputHandleId = useMemo(() => edges?.[0]?.targetHandleId, [edges]);
 		const { inputs, result } = useNodeResult(props.id);
 
-		const inputVideo = inputs[inputHandleId!]?.outputItem?.data as
+		const inputMedia = inputs[inputHandleId!]?.outputItem?.data as
 			| VirtualVideoData
+			| undefined;
+		const inputType = inputs[inputHandleId!]?.outputItem?.type as
+			| "Video"
+			| "Audio"
 			| undefined;
 
 		const sourceMeta = useMemo(() => {
-			const activeMeta = getActiveVideoMetadata(inputVideo);
+			const activeMeta = getActiveVideoMetadata(inputMedia);
 			return {
-				width: activeMeta.width ?? 1920,
-				height: activeMeta.height ?? 1080,
-				durationSec: (activeMeta.durationMs ?? 0) / 1000,
+				width: activeMeta?.width ?? 1920,
+				height: activeMeta?.height ?? 1080,
+				durationSec: (activeMeta?.durationMs ?? 0) / 1000,
 			};
-		}, [inputVideo]);
+		}, [inputMedia]);
 
 		const node = useAppSelector(makeSelectNodeById(props.id));
-		const nodeConfig = node?.config as VideoCutConfig | undefined;
+		const nodeConfig = node?.config as MediaCutConfig | undefined;
 
 		// Pure local state for lightning-fast UI rendering
 		const [startSec, setStartSec] = useState(0);
@@ -648,39 +653,13 @@ const VideoCutNodeComponent = memo(
 
 				{/* ── Footer ── */}
 				<div className="flex justify-end" style={{ padding: "0 16px 12px" }}>
-					<button
-						onClick={() => handleCommit(0, null)}
-						style={{
-							fontFamily: "var(--font-mono)",
-							fontSize: 9,
-							letterSpacing: "0.1em",
-							textTransform: "uppercase",
-							color: "var(--muted-foreground)",
-							background: "transparent",
-							border: "none",
-							cursor: "pointer",
-							padding: "3px 6px",
-							borderRadius: "var(--radius-sm)",
-							opacity: 0.45,
-							transition: "opacity 0.15s, color 0.15s",
-						}}
-						onMouseEnter={(e) => {
-							const el = e.target as HTMLButtonElement;
-							el.style.opacity = "1";
-							el.style.color = "var(--primary)";
-						}}
-						onMouseLeave={(e) => {
-							const el = e.target as HTMLButtonElement;
-							el.style.opacity = "0.45";
-							el.style.color = "var(--muted-foreground)";
-						}}
-					>
+					<Button variant="ghost" size="sm" className="text-muted-foreground">
 						Reset
-					</button>
+					</Button>
 				</div>
 			</BaseNode>
 		);
 	},
 );
 
-export { VideoCutNodeComponent };
+export { MediaCutNodeComponent };

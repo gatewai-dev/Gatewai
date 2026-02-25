@@ -550,6 +550,9 @@ importers:
       '@gatewai/react-store':
         specifier: workspace:*
         version: link:../../packages/react-store
+      '@gatewai/remotion-compositions':
+        specifier: workspace:*
+        version: link:../../packages/remotion-compositions
       '@gatewai/ui-kit':
         specifier: workspace:*
         version: link:../../packages/ui-kit
@@ -1483,58 +1486,6 @@ importers:
         version: 0.19.0(publint@0.3.17)(synckit@0.11.11)(typescript@5.8.3)
       typescript:
         specifier: ~5.8.3
-        version: 5.8.3
-
-  nodes/node-video-crop:
-    dependencies:
-      '@gatewai/core':
-        specifier: workspace:*
-        version: link:../../packages/core
-      '@gatewai/db':
-        specifier: workspace:*
-        version: link:../../packages/db
-      '@gatewai/node-sdk':
-        specifier: workspace:*
-        version: link:../../packages/node-sdk
-      '@gatewai/react-canvas':
-        specifier: workspace:*
-        version: link:../../packages/react-canvas
-      '@gatewai/react-store':
-        specifier: workspace:*
-        version: link:../../packages/react-store
-      '@gatewai/remotion-compositions':
-        specifier: workspace:*
-        version: link:../../packages/remotion-compositions
-      '@gatewai/ui-kit':
-        specifier: workspace:*
-        version: link:../../packages/ui-kit
-      inversify:
-        specifier: ^7.11.0
-        version: 7.11.0(reflect-metadata@0.2.2)
-      react:
-        specifier: ^19.2.4
-        version: 19.2.4
-      react-icons:
-        specifier: '*'
-        version: 5.5.0(react@19.2.4)
-      zod:
-        specifier: ^3.24.1
-        version: 3.25.67
-    devDependencies:
-      '@gatewai/tsconfig':
-        specifier: workspace:*
-        version: link:../../packages/tsconfig
-      '@types/node':
-        specifier: ^24.0.4
-        version: 24.10.4
-      '@types/react':
-        specifier: ^19.2.4
-        version: 19.2.14
-      tsdown:
-        specifier: ^0.19.0
-        version: 0.19.0(publint@0.3.17)(synckit@0.11.11)(typescript@5.8.3)
-      typescript:
-        specifier: ^5.8.3
         version: 5.8.3
 
   nodes/node-video-cut:

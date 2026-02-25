@@ -11,26 +11,18 @@ import type {
  */
 export function createVirtualVideo(
 	source: any,
-	type: "Video" | "Audio" | "Image" | "Text" = "Video",
+	type: "Video" | "Audio" = "Video",
 ): VirtualVideoData {
-	if (type === "Text" && typeof source === "string") {
-		source = {
-			processData: {
-				text: source,
-				mimeType: "text/plain",
-				width: 1920,
-				height: 1080,
-				fps: 24,
-				duration: 5,
-			},
-		};
+	// If it's already a VirtualVideoData, return it
+	if (source && typeof source === "object" && "operation" in source) {
+		return source as VirtualVideoData;
 	}
 
 	const sourceMeta = {
 		width: source.entity?.width ?? source.processData?.width,
 		height: source.entity?.height ?? source.processData?.height,
 		durationMs: source.entity?.duration ?? source.processData?.duration,
-		fps: source.processData?.fps,
+		fps: source.entity?.fps ?? source.processData?.fps,
 	};
 
 	const mimeType =
@@ -46,13 +38,6 @@ export function createVirtualVideo(
 						? "text/plain"
 						: undefined);
 
-	const text =
-		type === "Text"
-			? typeof source === "string"
-				? source
-				: (source.text ?? source.processData?.text)
-			: undefined;
-
 	return {
 		metadata: sourceMeta,
 		operation: {
@@ -62,7 +47,7 @@ export function createVirtualVideo(
 				processData: {
 					...(source.processData ?? {}),
 					mimeType,
-					text: text || (source.processData ?? {}).text,
+					text: (source.processData ?? {}).text,
 				},
 			},
 			sourceMeta: sourceMeta,
@@ -75,7 +60,7 @@ export function createVirtualVideo(
  * Identify if a VirtualVideoData node is intended to be Video, Audio, Image, or Text.
  */
 export function getMediaType(
-	vv: VirtualVideoData | any,
+	vv: VirtualVideoData,
 ): "Video" | "Audio" | "Image" | "Text" {
 	if (!vv) return "Video";
 
@@ -104,7 +89,7 @@ export function getMediaType(
  * Supports legacy formats for backward compatibility.
  */
 export function resolveVideoSourceUrl(
-	vv: VirtualVideoData | any,
+	vv: VirtualVideoData,
 ): string | undefined {
 	if (!vv) return undefined;
 
@@ -122,12 +107,7 @@ export function resolveVideoSourceUrl(
 		return resolveVideoSourceUrl(vv.children[0]);
 	}
 
-	// Legacy structure or direct FileData
-	const source = vv.source ?? vv;
-	if (source?.entity) {
-		return GetAssetEndpoint(source.entity) as string;
-	}
-	return source?.processData?.dataUrl;
+	return undefined;
 }
 
 /**
@@ -135,7 +115,7 @@ export function resolveVideoSourceUrl(
  * This creates a new parent node wrapping the current one as a child.
  */
 export function appendOperation(
-	vv: VirtualVideoData | any,
+	vv: VirtualVideoData,
 	operation: VideoOperation,
 ): VirtualVideoData {
 	const nextMeta = computeNextMetadata(getActiveVideoMetadata(vv), operation);
@@ -150,7 +130,7 @@ export function appendOperation(
  * Helper to compute the metadata of the NEXT node in the operator tree.
  */
 function computeNextMetadata(
-	baseMeta: VideoMetadata,
+	baseMeta: VideoMetadata | null,
 	op: VideoOperation,
 ): VideoMetadata {
 	let {
@@ -218,13 +198,56 @@ function computeNextMetadata(
 /**
  * Get the active metadata from the VirtualVideoData node.
  * Simply returns the metadata property of the node.
- * Supports legacy formats (sourceMeta).
+ * Supports legacy formats (sourceMeta) and extracts from source if needed.
  */
 export function getActiveVideoMetadata(
-	vv: VirtualVideoData | any,
-): VideoMetadata {
-	if (!vv) return { width: 1920, height: 1080, fps: 24, durationMs: 0 };
-	return vv.metadata ?? { width: 1920, height: 1080, fps: 24, durationMs: 0 };
+	vv: VirtualVideoData,
+): VideoMetadata | null {
+	if (!vv) return null;
+
+	// 1. Check if node has explicit metadata
+	if (
+		vv.metadata &&
+		(vv.metadata.width !== undefined ||
+			vv.metadata.height !== undefined ||
+			vv.metadata.durationMs !== undefined)
+	) {
+		return vv.metadata;
+	}
+
+	// 2. Check operation for source or text
+	const op = vv.operation;
+	if (op?.op === "source") {
+		// New-ish structure has sourceMeta
+		if (
+			op.sourceMeta &&
+			(op.sourceMeta.width !== undefined ||
+				op.sourceMeta.height !== undefined ||
+				op.sourceMeta.durationMs !== undefined)
+		) {
+			return op.sourceMeta;
+		}
+
+		// Pull from entity or processData
+		const source = op.source;
+		if (source) {
+			const width = source.entity?.width ?? source.processData?.width;
+			const height = source.entity?.height ?? source.processData?.height;
+			const durationMs =
+				source.entity?.duration ?? source.processData?.duration;
+			const fps = source.processData?.fps;
+
+			if (
+				width !== undefined ||
+				height !== undefined ||
+				durationMs !== undefined
+			) {
+				return { width, height, durationMs, fps };
+			}
+		}
+	}
+
+	return null;
 }
 /**
  * Compute the dimensions and offsets for rendering a cropped video.
@@ -239,7 +262,7 @@ export function computeVideoCropRenderProps(virtualVideo: VirtualVideoData): {
 	let totalOffsetX = 0;
 	let totalOffsetY = 0;
 	let hasCrop = false;
-	let sourceMetaFound: any = null;
+	let sourceMetaFound = null;
 
 	// Traverse the recursive tree to find crops and the source dimensions
 	let currentNode: VirtualVideoData | undefined = virtualVideo;

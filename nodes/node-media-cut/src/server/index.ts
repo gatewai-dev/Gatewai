@@ -1,7 +1,7 @@
 import { defineNode } from "@gatewai/node-sdk/server";
 import { metadata } from "../metadata.js";
-import { VideoCutProcessor } from "./processor.js";
+import { MediaCutProcessor } from "./processor.js";
 
 export default defineNode(metadata, {
-	backendProcessor: VideoCutProcessor,
+	backendProcessor: MediaCutProcessor,
 });

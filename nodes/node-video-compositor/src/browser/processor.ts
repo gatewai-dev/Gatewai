@@ -40,16 +40,16 @@ export class VideoCompositorBrowserProcessor implements IBrowserProcessor {
 
 			let childVV: VirtualVideoData;
 
-			if (item.type === "Video") {
+			if (item.type === "Video" || item.type === "Audio") {
 				childVV = item.data as VirtualVideoData;
-			} else if (item.type === "Image" || item.type === "Audio") {
+			} else if (item.type === "Image") {
 				childVV = createVirtualVideo(item.data, item.type);
 			} else if (item.type === "Text") {
 				childVV = createVirtualVideo(item.data, "Text");
 			} else {
 				continue;
 			}
-
+			console.log({ childVV });
 			const activeMeta = getActiveVideoMetadata(childVV);
 
 			const layerDurationInFrames =
@@ -102,7 +102,8 @@ export class VideoCompositorBrowserProcessor implements IBrowserProcessor {
 
 			const layerEnd =
 				(layerOp.operation as any).startFrame +
-				((layerOp.operation as any).durationInFrames ?? DEFAULT_DURATION_FRAMES);
+				((layerOp.operation as any).durationInFrames ??
+					DEFAULT_DURATION_FRAMES);
 			if (layerEnd > durationInFrames) durationInFrames = layerEnd;
 
 			compositionChildren.push(layerOp);
