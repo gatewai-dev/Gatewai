@@ -298,6 +298,9 @@ importers:
       lodash:
         specifier: ^4.17.21
         version: 4.17.23
+      lottie-web:
+        specifier: ^5.13.0
+        version: 5.13.0
       lucide-react:
         specifier: ^0.552.0
         version: 0.552.0(react@19.2.4)
@@ -2118,7 +2121,7 @@ importers:
   packages/remotion-compositions:
     dependencies:
       '@remotion/lottie':
-        specifier: ^4.0.429
+        specifier: '*'
         version: 4.0.429(lottie-web@5.13.0)(react-dom@19.2.4(react@19.2.4))(react@19.2.4)
       '@remotion/media':
         specifier: '*'
@@ -2127,7 +2130,7 @@ importers:
         specifier: '*'
         version: 4.0.429(react-dom@19.2.4(react@19.2.4))(react@19.2.4)
       lottie-web:
-        specifier: ^5.13.0
+        specifier: '*'
         version: 5.13.0
       react:
         specifier: ^19.2.4

@@ -952,7 +952,6 @@ export interface SceneProps {
 	borderColor?: string;
 	borderWidth?: number;
 	borderRadius?: number;
-	// ↓ NEW: animations support for single-source rendering via MediaPlayer
 	animations?: VideoAnimation[];
 	startFrame?: number;
 	durationInFrames?: number;
