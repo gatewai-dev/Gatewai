@@ -11,6 +11,7 @@ export default defineConfig({
 		sourcemap: false,
 		rollupOptions: {
 			cache: false,
+			external: ["@gatewai/db", "@prisma/client", "prisma"],
 		},
 	},
 	esbuild: {

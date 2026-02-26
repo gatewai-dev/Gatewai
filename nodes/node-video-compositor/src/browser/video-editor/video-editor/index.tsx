@@ -272,6 +272,8 @@ export type EditorLayer = ExtendedLayer & {
 	videoNaturalHeight?: number;
 	videoCropOffsetX?: number;
 	videoCropOffsetY?: number;
+	cropTranslatePercentageX?: number;
+	cropTranslatePercentageY?: number;
 };
 
 const RULER_HEIGHT = 28;
@@ -2508,6 +2510,10 @@ export const VideoDesignerEditor: React.FC<VideoDesignerEditorProps> = ({
 						text,
 						isPlaceholder,
 						maxDurationInFrames,
+						videoNaturalWidth,
+						videoNaturalHeight,
+						cropTranslatePercentageX,
+						cropTranslatePercentageY,
 						...savedLayer
 					} = layer;
 					acc[layer.id] = savedLayer;
@@ -2650,6 +2656,10 @@ export const VideoDesignerEditor: React.FC<VideoDesignerEditorProps> = ({
 										text,
 										isPlaceholder,
 										maxDurationInFrames,
+										videoNaturalWidth,
+										videoNaturalHeight,
+										cropTranslatePercentageX,
+										cropTranslatePercentageY,
 										...savedLayer
 									} = layer;
 									acc[layer.id] = savedLayer;

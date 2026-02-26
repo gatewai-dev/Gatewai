@@ -6,12 +6,12 @@ export const VideoSourceSchema = z.object({
 	entity: z.any().optional(), // FileAsset from Import/VideoGen
 	processData: z
 		.object({
-			dataUrl: z.string(),
-			width: z.number().optional(),
-			height: z.number().optional(),
-			duration: z.number().optional(), // ms
-			fps: z.number().optional(),
-			mimeType: z.string().optional(),
+			dataUrl: z.string().optional(),
+			width: z.number().optional().nullable(),
+			height: z.number().optional().nullable(),
+			duration: z.number().optional().nullable(), // ms
+			fps: z.number().optional().nullable(),
+			mimeType: z.string().optional().nullable(),
 			tempKey: z.string().optional(),
 			text: z.string().optional(),
 		})
@@ -20,10 +20,10 @@ export const VideoSourceSchema = z.object({
 
 // --- Video Metadata: current state of the video ---
 export const VideoMetadataSchema = z.object({
-	width: z.number().optional(),
-	height: z.number().optional(),
-	durationMs: z.number().optional(),
-	fps: z.number().optional(),
+	width: z.number().optional().nullable(),
+	height: z.number().optional().nullable(),
+	durationMs: z.number().optional().nullable(),
+	fps: z.number().optional().nullable(),
 });
 
 export type VideoMetadata = z.infer<typeof VideoMetadataSchema>;

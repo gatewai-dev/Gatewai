@@ -16,6 +16,9 @@ enum DataType {
   Image
   Video
   Audio
+  3D
+  SVG // Text and Image for some
+  Lottie // Text and Video for some
 }
 
 enum TaskStatus {
