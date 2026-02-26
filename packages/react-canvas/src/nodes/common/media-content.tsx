@@ -24,6 +24,7 @@ function MediaContent({
 			Math.min(result.selectedOutputIndex, result.outputs.length - 1)
 		];
 	const outputItem = selectedOutput?.items?.[0];
+	console.log({ outputItem });
 
 	const isImage = outputItem?.type === "Image";
 	const isVideo = outputItem?.type === "Video";
@@ -85,7 +86,6 @@ function MediaContent({
 	if (!outputItem) {
 		return null;
 	}
-	console.log({ assetUrl, selectedOutput });
 	return (
 		<div className="relative h-full w-full group">
 			{hasMoreThanOneOutput && (
@@ -94,13 +94,9 @@ function MediaContent({
 				</div>
 			)}
 			{isImage && assetUrl && <CanvasRenderer imageUrl={assetUrl} />}
-			{isVideo ||
-				(isLottie && (
-					<VideoRenderer
-						virtualMedia={outputItem.data}
-						durationMs={durationMs}
-					/>
-				))}
+			{(isVideo || isLottie) && (
+				<VideoRenderer virtualMedia={outputItem.data} durationMs={durationMs} />
+			)}
 			{isAudio && assetUrl && (
 				<AudioRenderer
 					title={assetName}

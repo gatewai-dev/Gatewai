@@ -32,7 +32,15 @@ export const ExtendedLayerSchema = z
 	.object({
 		id: z.string(),
 		name: z.string().optional(),
-		type: z.enum(["Video", "Image", "Audio", "Text"]),
+		type: z.enum([
+			"Video",
+			"Image",
+			"Audio",
+			"Text",
+			"Lottie",
+			"ThreeD",
+			"Caption",
+		]),
 
 		// VirtualMediaData from upstream
 		virtualMedia: VirtualMediaDataSchema.optional(),

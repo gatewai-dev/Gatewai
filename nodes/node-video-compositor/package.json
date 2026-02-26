@@ -51,6 +51,7 @@
 		"remotion": "*",
 		"sonner": "*",
 		"@remotion/media": "*",
+		"@remotion/lottie": "*",
 		"@remotion/player": "*",
 		"@remotion/web-renderer": "*",
 		"zod": "*",

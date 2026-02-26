@@ -32,6 +32,35 @@ import {
 const DEFAULT_DURATION_FRAMES = 24 * 5; // 5 sec at 24 fps
 
 // ---------------------------------------------------------------------------
+// Lottie type detection helpers
+// ---------------------------------------------------------------------------
+
+/**
+ * Returns true if a VirtualMediaData source node should be rendered as Lottie.
+ * `getMediaType()` only knows video/audio/image/text — it has no Lottie branch,
+ * so JSON sources fall through to Video. We detect Lottie explicitly here using
+ * the entity mimeType and file-key extension as fallbacks.
+ */
+const isLottieSource = (virtualMedia: VirtualMediaData): boolean => {
+	const op = virtualMedia?.operation;
+	if (!op || op.op !== "source") return false;
+
+	const src = op.source;
+	if (!src) return false;
+
+	// Primary signal: MIME type from processData or the entity record
+	const mimeType: string =
+		src.processData?.mimeType ?? src.entity?.mimeType ?? "";
+	if (mimeType === "application/json") return true;
+
+	// Secondary signal: file extension on the S3 key or any URL-like field
+	const key: string = src.entity?.key ?? src.entity?.name ?? "";
+	if (key.toLowerCase().endsWith(".json")) return true;
+
+	return false;
+};
+
+// ---------------------------------------------------------------------------
 // LottieFromUrl — loads Lottie JSON from a URL, pausing Remotion until ready.
 // ---------------------------------------------------------------------------
 
@@ -398,6 +427,7 @@ export const SingleClipComposition: React.FC<{
 }) => {
 	const { fps } = useVideoConfig();
 	const op = virtualMedia?.operation;
+	console.log({ op });
 
 	// -----------------------------------------------------------------------
 	// compose: delegate to CompositionScene
@@ -460,8 +490,6 @@ export const SingleClipComposition: React.FC<{
 			/>
 		);
 
-		// If this compositor node is wrapped inside a Cut node, we use a negative Sequence
-		// "from" offset to shift the internal timeframe backward.
 		const trimFrames = trimStartOverride
 			? Math.floor(trimStartOverride * fps)
 			: 0;
@@ -482,6 +510,26 @@ export const SingleClipComposition: React.FC<{
 	// -----------------------------------------------------------------------
 	if (op.op === "source" || op.op === "text") {
 		const params = computeRenderParams(virtualMedia);
+
+		// ✅ FIX: getMediaType() has no Lottie branch — JSON files fall through
+		// to Video and render nothing. We detect Lottie first using the mimeType
+		// and file-key extension present on the source entity.
+		if (isLottieSource(virtualMedia)) {
+			if (!params.sourceUrl) return <AbsoluteFill />;
+			return (
+				<LottieFromUrl
+					src={params.sourceUrl}
+					style={{
+						position: "absolute",
+						top: 0,
+						left: 0,
+						width: "100%",
+						height: "100%",
+					}}
+				/>
+			);
+		}
+
 		const mediaType = getMediaType(virtualMedia);
 
 		if (mediaType === "Text") {
@@ -538,7 +586,6 @@ export const SingleClipComposition: React.FC<{
 		const paramsRate = Number(params.speed) || 1;
 		const finalPlaybackRate = baseRate * paramsRate;
 
-		// Correctly accumulate both external cut nodes (trimStartOverride) and internal asset trims
 		const effectiveTrimSec =
 			(trimStartOverride ?? 0) + (Number(params.trimStartSec) || 0);
 		const startFrame = Math.floor(effectiveTrimSec * fps);
@@ -569,8 +616,8 @@ export const SingleClipComposition: React.FC<{
 				/>
 			);
 		}
-
-		// ✅ Lottie: load JSON from URL, pause Remotion until ready.
+		// mediaType === "Lottie" — kept as belt-and-suspenders for cases where
+		// getMediaType() is updated upstream to return "Lottie" correctly.
 		if (mediaType === "Lottie") {
 			return (
 				<LottieFromUrl
@@ -655,9 +702,6 @@ export const SingleClipComposition: React.FC<{
 	let childContainerWidth = containerWidth;
 	let childContainerHeight = containerHeight;
 
-	// Scale the container dimensions UP based on crop percentage.
-	// e.g., if we crop to 50% width, the inner video must be 200% as wide
-	// to properly fit that crop section into the physical bounds.
 	if (op.op === "crop") {
 		const wp = Math.max(0.01, Number(op.widthPercentage) || 100);
 		const hp = Math.max(0.01, Number(op.heightPercentage) || 100);
@@ -700,10 +744,7 @@ export const SingleClipComposition: React.FC<{
 
 		return (
 			<AbsoluteFill style={{ overflow: "hidden" }}>
-				<div
-					style={innerStyle}
-					key={`crop-${wp}-${hp}-${lp}-${tp}`} // Force remount on change
-				>
+				<div style={innerStyle} key={`crop-${wp}-${hp}-${lp}-${tp}`}>
 					<AbsoluteFill>{content}</AbsoluteFill>
 				</div>
 			</AbsoluteFill>
@@ -742,7 +783,6 @@ const LayerContentRenderer: React.FC<{
 	viewport: { w: number; h: number };
 }> = memo(
 	({ layer, animVolume, viewport }) => {
-		// Calculate precise parent bounds explicitly (fallback to viewport)
 		const cWidth = layer.width ?? viewport.w;
 		const cHeight = layer.height ?? viewport.h;
 
@@ -779,6 +819,35 @@ const LayerContentRenderer: React.FC<{
 				/>
 			);
 		}
+
+		if (layer.type === "Lottie") {
+			if (layer.virtualMedia) {
+				// Walk down to the source leaf. We need the signed/resolved URL that
+				// computeRenderParams() would produce for the asset.
+				const params = computeRenderParams(layer.virtualMedia);
+				const lottieSrc = params.sourceUrl;
+
+				if (lottieSrc) {
+					return (
+						<LottieFromUrl
+							src={lottieSrc}
+							style={{ width: "100%", height: "100%" }}
+						/>
+					);
+				}
+			}
+			console.log({ layer });
+			// Fallback: plain src string (e.g. from VideoDesignerEditor)
+			if (layer.src) {
+				return (
+					<LottieFromUrl
+						src={layer.src}
+						style={{ width: "100%", height: "100%" }}
+					/>
+				);
+			}
+		}
+
 		if (layer.type === "Audio" && (layer.src || layer.virtualMedia)) {
 			if (layer.virtualMedia) {
 				return (
@@ -927,7 +996,7 @@ export interface SceneProps {
 	containerHeight?: number;
 	src?: string;
 	isAudio?: boolean;
-	type?: "Video" | "Audio" | "Image" | "Text" | string;
+	type?: "Video" | "Audio" | "Image" | "Text" | "Lottie" | string;
 	data?: unknown;
 	virtualMedia?: VirtualMediaData;
 	children?: React.ReactNode;
@@ -974,36 +1043,7 @@ export const CompositionScene: React.FC<SceneProps> = ({
 	type,
 	data,
 	virtualMedia,
-	children,
-	text,
-	fontSize,
-	fontFamily,
-	fontStyle,
-	fontWeight,
-	textDecoration,
-	fill,
-	align,
-	verticalAlign,
-	letterSpacing,
-	lineHeight,
-	padding,
-	stroke,
-	strokeWidth,
-	backgroundColor,
-	borderColor,
-	borderWidth,
-	borderRadius,
-	autoDimensions,
-	// ↓ NEW
-	animations,
-	startFrame,
 	durationInFrames,
-	opacity,
-	volume,
-	scale,
-	rotation,
-	x,
-	y,
 }) => {
 	const frame = useCurrentFrame();
 	const { fps } = useVideoConfig();
@@ -1011,7 +1051,7 @@ export const CompositionScene: React.FC<SceneProps> = ({
 	const resolvedLayers = useMemo(() => {
 		if (layers.length > 0) return layers;
 
-		if (src || virtualMedia || type === "Text") {
+		if (src || virtualMedia || type === "Text" || type === "Lottie") {
 			const resolvedType = type || (isAudio ? "Audio" : "Video");
 
 			let resolvedDurationInFrames = durationInFrames;
@@ -1031,41 +1071,11 @@ export const CompositionScene: React.FC<SceneProps> = ({
 					src,
 					virtualMedia,
 					text:
-						text ||
-						(typeof data === "string"
+						typeof data === "string"
 							? data
-							: (data as any)?.text || JSON.stringify(data)),
+							: (data as any)?.text || JSON.stringify(data),
 					width: viewportWidth,
 					height: viewportHeight,
-					x: x ?? 0,
-					y: y ?? 0,
-					zIndex: 0,
-					opacity: opacity ?? 1,
-					scale: scale ?? 1,
-					rotation: rotation ?? 0,
-					volume: volume ?? 1,
-					durationInFrames: resolvedDurationInFrames,
-					startFrame: startFrame ?? 0,
-					// ↓ NEW: thread animations through to the synthetic layer
-					animations: animations ?? [],
-					fontSize,
-					fontFamily,
-					fontStyle,
-					fontWeight,
-					textDecoration,
-					fill,
-					align,
-					verticalAlign,
-					letterSpacing,
-					lineHeight,
-					padding,
-					stroke,
-					strokeWidth,
-					backgroundColor,
-					borderColor,
-					borderWidth,
-					borderRadius,
-					autoDimensions,
 				} as ExtendedLayer,
 			];
 		}
@@ -1076,38 +1086,10 @@ export const CompositionScene: React.FC<SceneProps> = ({
 		virtualMedia,
 		type,
 		isAudio,
-		text,
 		data,
 		viewportWidth,
 		viewportHeight,
 		fps,
-		animations,
-		startFrame,
-		durationInFrames,
-		opacity,
-		volume,
-		scale,
-		rotation,
-		x,
-		y,
-		fontSize,
-		fontFamily,
-		fontStyle,
-		fontWeight,
-		textDecoration,
-		fill,
-		align,
-		verticalAlign,
-		letterSpacing,
-		lineHeight,
-		padding,
-		stroke,
-		strokeWidth,
-		backgroundColor,
-		borderColor,
-		borderWidth,
-		borderRadius,
-		autoDimensions,
 	]);
 
 	const layersToRender = useMemo(() => {

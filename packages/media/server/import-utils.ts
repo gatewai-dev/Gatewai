@@ -4,6 +4,7 @@ import type { StorageService } from "@gatewai/core/storage";
 import type { MediaService, NodeResult } from "@gatewai/core/types";
 import { type DataType, prisma } from "@gatewai/db";
 import { createVirtualMedia } from "@gatewai/remotion-compositions/server";
+import AdmZip from "adm-zip";
 import { fileTypeFromBuffer } from "file-type";
 import { getMediaDuration, getVideoMetadata } from "./utils/index.js";
 
@@ -163,6 +164,33 @@ export async function uploadToImportNode({
 }: UploadOptions): Promise<Awaited<ReturnType<typeof prisma.node.update>>> {
 	if (!buffer.length) {
 		throw new Error("Upload buffer must not be empty");
+	}
+
+	// ── 0. Handle DotLottie extraction ────────────────────────────────────────
+	if (filename.toLowerCase().endsWith(".lottie")) {
+		try {
+			const zip = new AdmZip(buffer);
+			const manifestEntry = zip.getEntry("manifest.json");
+			if (manifestEntry) {
+				const manifest = JSON.parse(manifestEntry.getData().toString("utf-8"));
+				const animationId = manifest.animations?.[0]?.id;
+				if (animationId) {
+					// Some .lottie files might not have the folder prefix if they are simple
+					let animationEntry = zip.getEntry(`animations/${animationId}.json`);
+					if (!animationEntry) {
+						animationEntry = zip.getEntry(`${animationId}.json`);
+					}
+
+					if (animationEntry) {
+						buffer = animationEntry.getData();
+						filename = `${filename.replace(/\.lottie$/i, "")}.json`;
+						mimeType = "application/json";
+					}
+				}
+			}
+		} catch (error) {
+			console.error("Failed to extract DotLottie:", error);
+		}
 	}
 
 	// ── 1. Resolve content type ───────────────────────────────────────────────

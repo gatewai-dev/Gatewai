@@ -393,7 +393,6 @@ export const MediaPlayer = ({
 	data,
 	virtualMedia,
 	durationMs,
-	layers,
 	viewportWidth,
 	viewportHeight,
 	fps = FPS,
@@ -432,7 +431,7 @@ export const MediaPlayer = ({
 	const showControls =
 		controls && resolvedType !== "Image" && resolvedType !== "Text";
 
-	console.log({ compWidth, compHeight, durationInFrames });
+	console.log({ virtualMedia });
 	return (
 		<div
 			ref={wrapperRef}
@@ -456,18 +455,9 @@ export const MediaPlayer = ({
 						type: resolvedType,
 						data,
 						virtualMedia,
-						layers,
 						viewportWidth: compWidth,
 						viewportHeight: compHeight,
-						autoDimensions: true,
-						// ↓ NEW: thread animation & transform props into CompositionScene
-						animations,
-						opacity,
-						volume,
-						scale,
-						rotation,
-						x,
-						y,
+						durationInFrames,
 					}}
 					durationInFrames={durationInFrames}
 					fps={fps}

@@ -34,21 +34,35 @@ const ImportNodeComponent = memo((props: NodeProps) => {
 		itemData?.processData?.mimeType;
 
 	const existingType =
-		existingMimeType === "image/svg+xml"
+		item?.type === "SVG"
 			? "svg"
-			: existingMimeType?.startsWith("image/")
+			: item?.type === "Image"
 				? "image"
-				: existingMimeType?.startsWith("video/")
+				: item?.type === "Video"
 					? "video"
-					: existingMimeType?.startsWith("audio/")
+					: item?.type === "Audio"
 						? "audio"
-						: existingMimeType === "application/json"
+						: item?.type === "Lottie"
 							? "lottie"
-							: existingMimeType?.startsWith("model/")
+							: item?.type === "ThreeD"
 								? "threed"
-								: existingMimeType === "text/srt"
+								: item?.type === "Caption"
 									? "caption"
-									: null;
+									: existingMimeType === "image/svg+xml"
+										? "svg"
+										: existingMimeType?.startsWith("image/")
+											? "image"
+											: existingMimeType?.startsWith("video/")
+												? "video"
+												: existingMimeType?.startsWith("audio/")
+													? "audio"
+													: existingMimeType === "application/json"
+														? "lottie"
+														: existingMimeType?.startsWith("model/")
+															? "threed"
+															: existingMimeType === "text/srt"
+																? "caption"
+																: null;
 
 	const accept = {
 		"image/jpeg": [".jpg", ".jpeg"],
@@ -82,21 +96,33 @@ const ImportNodeComponent = memo((props: NodeProps) => {
 			| "caption"
 			| null,
 	) => {
+		if (!type) return Object.keys(accept);
+
+		if (type === "lottie") return ["application/json", ".json", ".lottie"];
+		if (type === "svg") return ["image/svg+xml", ".svg"];
+		if (type === "caption") return ["text/srt", ".srt"];
+
 		const keys = Object.keys(accept);
-		if (!type) return keys;
-		if (type === "lottie") return ["application/json"];
-		if (type === "svg") return ["image/svg+xml"];
-		if (type === "caption") return ["text/srt"];
-		if (type === "threed")
-			return keys.filter((mime) => mime.startsWith("model/"));
-		return keys.filter((mime) => mime.startsWith(`${type}/`));
+		const filteredMimes =
+			type === "threed"
+				? keys.filter((mime) => mime.startsWith("model/"))
+				: keys.filter((mime) => mime.startsWith(`${type}/`));
+
+		// Include both mimes and their associated extensions
+		const extensions = filteredMimes.flatMap(
+			(mime) => accept[mime as keyof typeof accept] || [],
+		);
+
+		return [...filteredMimes, ...extensions];
 	};
 
 	const buttonAccept = getFilteredAccept(existingType as any);
 
+	const displayType = existingType === "threed" ? "3D Model" : existingType;
+
 	const buttonLabel =
 		showResult && existingType
-			? `Upload another ${existingType}`
+			? `Upload another ${displayType}`
 			: "Click to upload a file";
 
 	const dropzoneLabel =
