@@ -28,13 +28,20 @@ function MediaContent({
 	const isImage = outputItem?.type === "Image";
 	const isVideo = outputItem?.type === "Video";
 	const isAudio = outputItem?.type === "Audio";
+	const isLottie = outputItem?.type === "Lottie";
+	const isJson = outputItem?.type === "Json";
 	const isText = outputItem?.type === "Text";
-	const isOther = !isImage && !isVideo && !isAudio && !isText;
+	const isOther =
+		!isImage && !isVideo && !isAudio && !isLottie && !isJson && !isText;
 	const hasMoreThanOneOutput = result.outputs.length > 1;
 
 	const assetUrl = useMemo(() => {
 		if (!outputItem?.data) return null;
-		if (outputItem.type === "Video" || outputItem.type === "Audio") {
+		if (
+			outputItem.type === "Video" ||
+			outputItem.type === "Audio" ||
+			outputItem.type === "Lottie"
+		) {
 			return resolveVideoSourceUrl(outputItem.data);
 		}
 		const fileData = outputItem.data as FileData;
@@ -46,7 +53,11 @@ function MediaContent({
 	}, [outputItem]);
 
 	const activeMeta = useMemo(() => {
-		if (outputItem?.type === "Video" || outputItem?.type === "Audio") {
+		if (
+			outputItem?.type === "Video" ||
+			outputItem?.type === "Audio" ||
+			outputItem?.type === "Lottie"
+		) {
 			return getActiveVideoMetadata(outputItem.data);
 		}
 		return null;
@@ -54,7 +65,11 @@ function MediaContent({
 
 	const durationMs = useMemo(() => {
 		if (!outputItem?.data) return undefined;
-		if (outputItem.type === "Video" || outputItem.type === "Audio") {
+		if (
+			outputItem.type === "Video" ||
+			outputItem.type === "Audio" ||
+			outputItem.type === "Lottie"
+		) {
 			return activeMeta?.durationMs;
 		}
 		const fileData = outputItem.data as FileData;
@@ -79,9 +94,13 @@ function MediaContent({
 				</div>
 			)}
 			{isImage && assetUrl && <CanvasRenderer imageUrl={assetUrl} />}
-			{isVideo && (
-				<VideoRenderer virtualMedia={outputItem.data} durationMs={durationMs} />
-			)}
+			{isVideo ||
+				(isLottie && (
+					<VideoRenderer
+						virtualMedia={outputItem.data}
+						durationMs={durationMs}
+					/>
+				))}
 			{isAudio && assetUrl && (
 				<AudioRenderer
 					title={assetName}

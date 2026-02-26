@@ -15,7 +15,20 @@ export default defineMetadata({
 	handles: {
 		inputs: [],
 		outputs: [
-			{ dataTypes: ["Audio", "Image", "Video"], label: "File", order: 0 },
+			{
+				dataTypes: [
+					"Audio",
+					"Image",
+					"Video",
+					"Lottie",
+					"Json",
+					"ThreeD",
+					"SVG",
+					"Caption",
+				],
+				label: "Result",
+				order: 0,
+			},
 		],
 	},
 });

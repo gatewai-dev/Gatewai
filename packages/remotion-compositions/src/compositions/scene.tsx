@@ -3,11 +3,16 @@ import type {
 	VideoAnimation,
 	VirtualMediaData,
 } from "@gatewai/core/types";
+import type { LottieAnimationData } from "@remotion/lottie";
+import { Lottie } from "@remotion/lottie";
 import { Audio, Video } from "@remotion/media";
 import type React from "react";
-import { memo, useMemo } from "react";
+import { memo, useEffect, useMemo, useRef, useState } from "react";
 import {
 	AbsoluteFill,
+	cancelRender,
+	continueRender,
+	delayRender,
 	Img,
 	interpolate,
 	Sequence,
@@ -25,6 +30,96 @@ import {
 } from "../utils/resolve-video.js";
 
 const DEFAULT_DURATION_FRAMES = 24 * 5; // 5 sec at 24 fps
+
+// ---------------------------------------------------------------------------
+// LottieFromUrl — loads Lottie JSON from a URL, pausing Remotion until ready.
+// ---------------------------------------------------------------------------
+
+interface LottieFromUrlProps {
+	src: string;
+	style?: React.CSSProperties;
+}
+
+/**
+ * Fetches a Lottie JSON animation from `src` and renders it via
+ * @remotion/lottie. The Remotion player / renderer is paused (via
+ * delayRender) until the JSON has been fetched, so no blank frames are
+ * exported.
+ */
+const LottieFromUrl: React.FC<LottieFromUrlProps> = ({ src, style }) => {
+	const [animationData, setAnimationData] =
+		useState<LottieAnimationData | null>(null);
+
+	// Store the delayRender handle in a ref so the cleanup function and the
+	// fetch callback always reference the same value even after re-renders.
+	const handleRef = useRef<number | null>(null);
+
+	useEffect(() => {
+		handleRef.current = delayRender(`Loading Lottie from: ${src}`);
+		let cancelled = false;
+
+		fetch(src)
+			.then((res) => {
+				if (!res.ok) {
+					throw new Error(
+						`Failed to fetch Lottie file: ${res.status} ${res.statusText}`,
+					);
+				}
+				return res.json() as Promise<LottieAnimationData>;
+			})
+			.then((data) => {
+				if (cancelled) return;
+				setAnimationData(data);
+				if (handleRef.current !== null) {
+					continueRender(handleRef.current);
+					handleRef.current = null;
+				}
+			})
+			.catch((err: unknown) => {
+				if (cancelled) return;
+				console.error("[LottieFromUrl] Error loading animation:", err);
+				cancelRender(err instanceof Error ? err : new Error(String(err)));
+			});
+
+		return () => {
+			cancelled = true;
+			// Release the handle on unmount so the renderer never hangs.
+			if (handleRef.current !== null) {
+				continueRender(handleRef.current);
+				handleRef.current = null;
+			}
+		};
+	}, [src]);
+
+	if (!animationData) {
+		// Invisible placeholder — delayRender keeps the player paused here.
+		return (
+			<div
+				style={{
+					position: "absolute",
+					inset: 0,
+					width: "100%",
+					height: "100%",
+					...style,
+				}}
+			/>
+		);
+	}
+
+	return (
+		<Lottie
+			animationData={animationData}
+			style={{
+				position: "absolute",
+				top: 0,
+				left: 0,
+				width: "100%",
+				height: "100%",
+				...style,
+			}}
+		/>
+	);
+};
 
 // ---------------------------------------------------------------------------
 // Animation math & Transformation
@@ -470,6 +565,22 @@ export const SingleClipComposition: React.FC<{
 						width: "100%",
 						height: "100%",
 						objectFit: "fill",
+					}}
+				/>
+			);
+		}
+
+		// ✅ Lottie: load JSON from URL, pause Remotion until ready.
+		if (mediaType === "Lottie") {
+			return (
+				<LottieFromUrl
+					src={params.sourceUrl}
+					style={{
+						position: "absolute",
+						top: 0,
+						left: 0,
+						width: "100%",
+						height: "100%",
 					}}
 				/>
 			);

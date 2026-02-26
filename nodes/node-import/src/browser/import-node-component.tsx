@@ -33,18 +33,28 @@ const ImportNodeComponent = memo((props: NodeProps) => {
 		itemData?.entity?.mimeType ??
 		itemData?.processData?.mimeType;
 
-	const existingType = existingMimeType?.startsWith("image/")
-		? "image"
-		: existingMimeType?.startsWith("video/")
-			? "video"
-			: existingMimeType?.startsWith("audio/")
-				? "audio"
-				: null;
+	const existingType =
+		existingMimeType === "image/svg+xml"
+			? "svg"
+			: existingMimeType?.startsWith("image/")
+				? "image"
+				: existingMimeType?.startsWith("video/")
+					? "video"
+					: existingMimeType?.startsWith("audio/")
+						? "audio"
+						: existingMimeType === "application/json"
+							? "lottie"
+							: existingMimeType?.startsWith("model/")
+								? "threed"
+								: existingMimeType === "text/srt"
+									? "caption"
+									: null;
 
 	const accept = {
 		"image/jpeg": [".jpg", ".jpeg"],
 		"image/png": [".png"],
 		"image/webp": [".webp"],
+		"image/svg+xml": [".svg"],
 		"video/mp4": [".mp4"],
 		"video/quicktime": [".mov"],
 		"video/webm": [".webm"],
@@ -53,15 +63,36 @@ const ImportNodeComponent = memo((props: NodeProps) => {
 		"audio/ogg": [".ogg"],
 		"audio/aac": [".aac"],
 		"audio/flac": [".flac"],
+		"application/json": [".json", ".lottie"],
+		"model/gltf-binary": [".glb"],
+		"model/gltf+json": [".gltf"],
+		"model/obj": [".obj"],
+		"model/stl": [".stl"],
+		"text/srt": [".srt"],
 	};
 
-	const getFilteredAccept = (type: "image" | "video" | "audio" | null) => {
+	const getFilteredAccept = (
+		type:
+			| "image"
+			| "video"
+			| "audio"
+			| "lottie"
+			| "svg"
+			| "threed"
+			| "caption"
+			| null,
+	) => {
 		const keys = Object.keys(accept);
 		if (!type) return keys;
+		if (type === "lottie") return ["application/json"];
+		if (type === "svg") return ["image/svg+xml"];
+		if (type === "caption") return ["text/srt"];
+		if (type === "threed")
+			return keys.filter((mime) => mime.startsWith("model/"));
 		return keys.filter((mime) => mime.startsWith(`${type}/`));
 	};
 
-	const buttonAccept = getFilteredAccept(existingType);
+	const buttonAccept = getFilteredAccept(existingType as any);
 
 	const buttonLabel =
 		showResult && existingType
@@ -69,7 +100,7 @@ const ImportNodeComponent = memo((props: NodeProps) => {
 			: "Click to upload a file";
 
 	const dropzoneLabel =
-		"Click or drag & drop an image, video, or audio file here";
+		"Click or drag & drop an image, SVG, video, audio, Lottie, 3D, or SRT file here";
 
 	const onUploadSuccess = (uploadResult: UploadFileNodeAssetRPC) => {
 		if (Object.hasOwn(uploadResult, "error")) {
@@ -84,7 +115,7 @@ const ImportNodeComponent = memo((props: NodeProps) => {
 		dispatch(
 			updateNodeResult({
 				id: props.id,
-				newResult: successResult.result as unknown as ImportResult,
+				newResult: successResult.result as any,
 			}),
 		);
 	};
@@ -99,7 +130,9 @@ const ImportNodeComponent = memo((props: NodeProps) => {
 	return (
 		<BaseNode selected={props.selected} id={props.id} dragging={props.dragging}>
 			<div className="flex flex-col">
-				{showResult && node && <MediaContent node={node} result={result} />}
+				{showResult && node && (
+					<MediaContent node={node} result={result as any} />
+				)}
 				{!showResult && (
 					<UploadDropzone
 						className="w-full py-16"

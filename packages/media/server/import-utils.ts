@@ -3,7 +3,7 @@ import { container, TOKENS } from "@gatewai/core/di";
 import type { StorageService } from "@gatewai/core/storage";
 import type { MediaService, NodeResult } from "@gatewai/core/types";
 import { type DataType, prisma } from "@gatewai/db";
-import { createVirtualMedia } from "@gatewai/remotion-compositions";
+import { createVirtualMedia } from "@gatewai/remotion-compositions/server";
 import { fileTypeFromBuffer } from "file-type";
 import { getMediaDuration, getVideoMetadata } from "./utils/index.js";
 
@@ -14,12 +14,135 @@ interface UploadOptions {
 	mimeType?: string;
 }
 
-type SupportedDataType = Extract<DataType, "Image" | "Video" | "Audio">;
+type SupportedDataType = Extract<
+	DataType,
+	"Image" | "Video" | "Audio" | "Lottie" | "Json" | "SVG" | "ThreeD" | "Caption"
+>;
 
-function resolveDataType(contentType: string): SupportedDataType {
+function isValidLottieJson(json: unknown): json is {
+	w: number;
+	h: number;
+	fr?: number;
+	ip?: number;
+	op?: number;
+	layers?: unknown[];
+	assets?: unknown[];
+} {
+	if (!json || typeof json !== "object") return false;
+	const obj = json as Record<string, unknown>;
+	return (
+		typeof obj.w === "number" &&
+		typeof obj.h === "number" &&
+		obj.w > 0 &&
+		obj.h > 0 &&
+		(Array.isArray(obj.layers) || Array.isArray(obj.assets))
+	);
+}
+
+function extractLottieMetadata(buffer: Buffer): {
+	width: number;
+	height: number;
+	durationInSec: number | null;
+	fps: number | null;
+} | null {
+	try {
+		const str = buffer.toString("utf-8");
+		const json = JSON.parse(str);
+		if (!isValidLottieJson(json)) return null;
+
+		const width = json.w;
+		const height = json.h;
+		const fps = json.fr ?? 30;
+		const ip = json.ip ?? 0;
+		const op = json.op ?? 0;
+
+		const durationInSec = op > ip ? (op - ip) / fps : null;
+
+		return { width, height, durationInSec, fps };
+	} catch {
+		return null;
+	}
+}
+
+const dropzoneLabel =
+	"Click or drag & drop an image, SVG, video, audio, Lottie, 3D, or SRT file here";
+
+const accept = {
+	"image/*": [".png", ".gif", ".jpeg", ".jpg", ".webp"],
+	"image/svg+xml": [".svg"],
+	"video/*": [".mp4", ".mov", ".webm"],
+	"audio/*": [".mp3", ".wav", ".ogg"],
+	"application/json": [".json", ".lottie"],
+	"model/gltf+json": [".gltf"],
+	"model/gltf-binary": [".glb"],
+	"model/obj": [".obj"],
+	"model/stl": [".stl"],
+	"text/srt": [".srt"],
+};
+
+const getFilteredAccept = (
+	type:
+		| "image"
+		| "video"
+		| "audio"
+		| "lottie"
+		| "svg"
+		| "threed"
+		| "caption"
+		| null,
+) => {
+	const keys = Object.keys(accept);
+	if (!type) return keys;
+	if (type === "lottie") return ["application/json"];
+	if (type === "svg") return ["image/svg+xml"];
+	if (type === "caption") return ["text/srt"];
+	if (type === "threed")
+		return keys.filter((mime) => mime.startsWith("model/"));
+	return keys.filter((mime) => mime.startsWith(`${type}/`));
+};
+
+function resolveDataType(
+	contentType: string,
+	filename: string,
+	buffer?: Buffer,
+): SupportedDataType {
+	if (contentType === "image/svg+xml") return "SVG";
 	if (contentType.startsWith("image/")) return "Image";
 	if (contentType.startsWith("video/")) return "Video";
 	if (contentType.startsWith("audio/")) return "Audio";
+	if (contentType.startsWith("model/")) return "ThreeD";
+
+	const isJsonContent =
+		contentType === "application/json" || contentType === "text/plain";
+	const isLottieExtension = filename.toLowerCase().endsWith(".lottie");
+
+	if (isLottieExtension) {
+		return "Lottie";
+	}
+
+	if (isJsonContent && buffer) {
+		const lottieMeta = extractLottieMetadata(buffer);
+		if (lottieMeta) {
+			return "Lottie";
+		}
+		return "Json";
+	}
+
+	if (isJsonContent) {
+		return "Json";
+	}
+
+	// Fallback for some common 3D formats if mime-type detection failed or is generic
+	const ext = filename.toLowerCase().split(".").pop();
+	if (ext && ["glb", "gltf", "obj", "stl"].includes(ext)) {
+		return "ThreeD";
+	}
+	if (ext === "srt") {
+		return "Caption";
+	}
+
+	if (contentType === "text/srt") return "Caption";
+
 	throw new Error(`Unsupported content type for Import Node: ${contentType}`);
 }
 
@@ -50,7 +173,7 @@ export async function uploadToImportNode({
 		"application/octet-stream";
 
 	// Validate early so we don't pay for storage + DB work on unsupported types.
-	const dataType = resolveDataType(finalContentType);
+	const dataType = resolveDataType(finalContentType, filename, buffer);
 
 	// ── 2. Fetch node (fail fast if missing) ─────────────────────────────────
 	const node = await prisma.node.findUniqueOrThrow({
@@ -105,6 +228,23 @@ export async function uploadToImportNode({
 		if (durationInSec == null || durationInSec === 0) {
 			throw new Error("Failed to extract audio duration");
 		}
+	} else if (dataType === "Lottie") {
+		const lottieMeta = extractLottieMetadata(buffer);
+		if (lottieMeta) {
+			width = lottieMeta.width;
+			height = lottieMeta.height;
+			durationInSec = lottieMeta.durationInSec;
+			fps = lottieMeta.fps;
+		}
+	} else if (dataType === "SVG") {
+		try {
+			const media = container.get<MediaService>(TOKENS.MEDIA);
+			const meta = await media.getImageDimensions(buffer);
+			width = meta.width || null;
+			height = meta.height || null;
+		} catch (error) {
+			console.error("Failed to extract SVG dimensions:", error);
+		}
 	}
 	const key = `assets/${generateId()}-${filename}`;
 	const storage = container.get<StorageService>(TOKENS.STORAGE);
@@ -146,7 +286,7 @@ export async function uploadToImportNode({
 				select: { result: true },
 			});
 
-			const currentResult = (current.result as unknown as NodeResult) ?? {
+			const currentResult = (current.result as any) ?? {
 				outputs: [],
 			};
 			const outputs = currentResult.outputs ?? [];
@@ -156,7 +296,9 @@ export async function uploadToImportNode({
 					{
 						outputHandleId: outputHandle.id,
 						data:
-							dataType === "Video" || dataType === "Audio"
+							dataType === "Video" ||
+							dataType === "Audio" ||
+							dataType === "Lottie"
 								? createVirtualMedia({ entity: asset }, dataType)
 								: { entity: asset },
 						type: dataType,

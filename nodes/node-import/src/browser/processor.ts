@@ -21,8 +21,11 @@ export class ImportBrowserProcessor implements IBrowserProcessor {
 					type: m.type,
 					outputHandleId: outputHandle,
 					data:
-						m.type === "Video" || m.type === "Audio"
-							? createVirtualMedia(m.data, m.type as "Video" | "Audio")
+						m.type === "Video" || m.type === "Audio" || m.type === "Lottie"
+							? createVirtualMedia(
+									m.data,
+									m.type as "Video" | "Audio" | "Lottie",
+								)
 							: m.data,
 				})),
 			})),

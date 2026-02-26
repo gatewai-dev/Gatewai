@@ -3,7 +3,7 @@ import type {
 	BackendNodeProcessorResult,
 	NodeProcessor,
 } from "@gatewai/node-sdk/server";
-import { createVirtualMedia } from "@gatewai/remotion-compositions";
+import { createVirtualMedia } from "@gatewai/remotion-compositions/server";
 import { injectable } from "inversify";
 import type { ImportResult } from "../shared/index.js";
 
@@ -44,15 +44,21 @@ export class ImportProcessor implements NodeProcessor {
 				...result,
 				outputs: result.outputs?.map((output) => ({
 					items: output.items.map((m) => ({
-						type: m.type,
+						type: m.type as any,
 						outputHandleId: outputHandle.id,
 						data:
-							m.type === "Video" || m.type === "Audio"
-								? createVirtualMedia(m.data, m.type as "Video" | "Audio")
+							m.type === "Video" ||
+							m.type === "Audio" ||
+							m.type === "Lottie" ||
+							m.type === "Caption"
+								? createVirtualMedia(
+										m.data,
+										m.type as "Video" | "Audio" | "Lottie" | "Caption",
+									)
 								: m.data,
 					})),
 				})),
-			} as ImportResult,
+			} as any,
 		};
 	}
 }

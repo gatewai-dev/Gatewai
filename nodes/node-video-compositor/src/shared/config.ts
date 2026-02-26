@@ -19,6 +19,15 @@ import {
 } from "@gatewai/node-sdk";
 import { z } from "zod";
 
+export const VariableInputDataTypes = [
+	"Text",
+	"Image",
+	"Video",
+	"Audio",
+	"Lottie",
+	"ThreeD",
+	"SVG",
+] as const;
 // Video Compositor Layer (extends base with video-specific fields)
 export const VideoCompositorLayerSchema = BaseLayerSchema.merge(PositionSchema)
 	.merge(SizeSchema)
@@ -35,7 +44,7 @@ export const VideoCompositorLayerSchema = BaseLayerSchema.merge(PositionSchema)
 	.merge(StrokeSchema)
 	.merge(PaddingSchema)
 	.extend({
-		type: z.enum(["Text", "Image", "Video", "Audio"]),
+		type: z.enum(VariableInputDataTypes),
 		backgroundColor: z.string().optional(),
 		borderColor: z.string().optional(),
 		borderWidth: z.number().min(0).optional(),

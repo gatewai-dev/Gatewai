@@ -10,7 +10,7 @@ import type {
 import {
 	appendOperation,
 	getActiveVideoMetadata,
-} from "@gatewai/remotion-compositions";
+} from "@gatewai/remotion-compositions/server";
 import { inject, injectable } from "inversify";
 import { MediaCutConfigSchema } from "../shared/config.js";
 import type { MediaCutResult } from "../shared/index.js";

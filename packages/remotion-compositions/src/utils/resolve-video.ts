@@ -11,7 +11,15 @@ import type {
  */
 export function createVirtualMedia(
 	source: any,
-	type: "Video" | "Audio" | "Image" | "Text" = "Video",
+	type:
+		| "Audio"
+		| "Image"
+		| "Video"
+		| "Lottie"
+		| "Json"
+		| "ThreeD"
+		| "SVG"
+		| "Caption" = "Video",
 ): VirtualMediaData {
 	// If it's already a VirtualMediaData, return it
 	if (source && typeof source === "object" && "operation" in source) {
@@ -34,9 +42,17 @@ export function createVirtualMedia(
 				? "audio/mpeg"
 				: type === "Image"
 					? "image/png"
-					: type === "Text"
-						? "text/plain"
-						: undefined);
+					: type === "SVG"
+						? "image/svg+xml"
+						: type === "Lottie" || type === "Json"
+							? "application/json"
+							: type === "ThreeD"
+								? "model/gltf-binary"
+								: type === "Caption"
+									? "text/srt"
+									: type === "Text"
+										? "text/plain"
+										: undefined);
 
 	return {
 		metadata: sourceMeta,
@@ -57,11 +73,19 @@ export function createVirtualMedia(
 }
 
 /**
- * Identify if a VirtualMediaData node is intended to be Video, Audio, Image, or Text.
+ * Identify if a VirtualMediaData node is intended to be Video, Audio, Image, Lottie, or Text.
  */
 export function getMediaType(
 	vv: VirtualMediaData,
-): "Video" | "Audio" | "Image" | "Text" {
+):
+	| "Video"
+	| "Audio"
+	| "Image"
+	| "Lottie"
+	| "Text"
+	| "SVG"
+	| "ThreeD"
+	| "Caption" {
 	if (!vv) return "Video";
 
 	const op = vv.operation;
@@ -69,10 +93,14 @@ export function getMediaType(
 
 	if (op?.op === "source") {
 		const mime = op.source?.processData?.mimeType || "";
+		if (mime === "image/svg+xml") return "SVG";
+		if (mime.startsWith("image/")) return "Image";
 		if (mime.startsWith("video/")) return "Video";
 		if (mime.startsWith("audio/")) return "Audio";
-		if (mime.startsWith("image/")) return "Image";
+		if (mime === "application/json") return "Lottie";
+		if (mime === "text/srt") return "Caption";
 		if (mime.startsWith("text/")) return "Text";
+		if (mime.startsWith("model/")) return "ThreeD";
 	}
 
 	// Recurse down children for non-compose operations

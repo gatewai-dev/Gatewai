@@ -1,5 +1,7 @@
+import type { DataType } from "@gatewai/db";
 import { defineMetadata } from "@gatewai/node-sdk";
 import {
+	VariableInputDataTypes,
 	VideoCompositorNodeConfigSchema,
 	VideoCompositorResultSchema,
 } from "./shared/index.js";
@@ -18,7 +20,7 @@ export const metadata = defineMetadata({
 	isTransient: false,
 	variableInputs: {
 		enabled: true,
-		dataTypes: ["Text", "Image", "Audio", "Video"],
+		dataTypes: [...VariableInputDataTypes] as DataType[],
 	},
 	handles: {
 		inputs: [],

@@ -7,7 +7,14 @@ export const DataTypes = [
 	"Image",
 	"Video",
 	"Audio",
+	"ThreeD",
+	"SVG",
+	"Lottie",
+	"Json",
+	"Caption",
 ] as const;
+
+export type DataTypeEnum = (typeof DataTypes)[number];
 
 /**
  * Zod schema for the FileAsset model

@@ -13,6 +13,12 @@
 			"development": "./src/index.ts",
 			"import": "./dist/index.mjs",
 			"default": "./dist/index.mjs"
+		},
+		"./server": {
+			"types": "./dist/server.d.mts",
+			"development": "./src/server.ts",
+			"import": "./dist/server.mjs",
+			"default": "./dist/server.mjs"
 		}
 	},
 	"files": [
@@ -30,13 +36,11 @@
 		"tsdown": "^0.19.0",
 		"typescript": "5.5.4"
 	},
-	"dependencies": {
-		"@remotion/lottie": "^4.0.429",
-		"lottie-web": "^5.13.0",
-		"zod": "^3.23.8"
-	},
 	"peerDependencies": {
 		"@remotion/media": "*",
+		"lottie-web": "*",
+		"zod": "^3.23.8",
+		"@remotion/lottie": "*",
 		"@remotion/web-renderer": "*",
 		"react": "^19.2.4",
 		"remotion": "*"

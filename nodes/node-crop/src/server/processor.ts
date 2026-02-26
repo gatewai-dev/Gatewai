@@ -13,7 +13,7 @@ import type {
 import {
 	appendOperation,
 	getActiveVideoMetadata,
-} from "@gatewai/remotion-compositions";
+} from "@gatewai/remotion-compositions/server";
 import { inject, injectable } from "inversify";
 import { CropNodeConfigSchema } from "../shared/config.js";
 import type { CropResult, VideoCropResult } from "../shared/index.js";

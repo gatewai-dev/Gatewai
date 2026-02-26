@@ -37,9 +37,9 @@ export type DataForType<R extends DataType> = R extends "Text"
 		? number
 		: R extends "Boolean"
 			? boolean
-			: R extends "Image"
+			: R extends "Image" | "SVG" | "ThreeD" | "Caption" | "Json"
 				? FileData
-				: R extends "Video" | "Audio"
+				: R extends "Video" | "Audio" | "Lottie"
 					? VirtualMediaData
 					: R extends "Any"
 						? string | number | boolean | FileData | VirtualMediaData
@@ -105,7 +105,12 @@ export type AnyOutputUnion =
 	| OutputItem<"Audio">
 	| OutputItem<"Text">
 	| OutputItem<"Number">
-	| OutputItem<"Boolean">;
+	| OutputItem<"Lottie">
+	| OutputItem<"Json">
+	| OutputItem<"Boolean">
+	| OutputItem<"SVG">
+	| OutputItem<"ThreeD">
+	| OutputItem<"Caption">;
 
 export const AnyOutputUnionSchema = z.object({
 	type: z.custom<DataType>(),
