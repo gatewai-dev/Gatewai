@@ -1,4 +1,8 @@
-import type { ExtendedLayer, VirtualMediaData } from "@gatewai/core/types";
+import type {
+	ExtendedLayer,
+	VideoAnimation,
+	VirtualMediaData,
+} from "@gatewai/core/types";
 import {
 	CompositionScene,
 	getActiveVideoMetadata,
@@ -18,10 +22,6 @@ import {
 } from "react-icons/md";
 
 const FPS = 24;
-
-// ---------- Inner Remotion composition ----------
-
-// Local MediaComposition removed in favor of unified CompositionScene from @gatewai/remotion-compositions
 
 // ---------- Utility functions ----------
 
@@ -67,7 +67,7 @@ const CustomControls = ({
 
 		const onFrameUpdate = ({ detail }: { detail: { frame: number } }) => {
 			setCurrentFrame(detail.frame);
-			setIsBuffering(false); // Safety net: if the frame renders, we are no longer buffering
+			setIsBuffering(false);
 		};
 		const onPlay = () => {
 			isPlayingRef.current = true;
@@ -87,8 +87,8 @@ const CustomControls = ({
 		};
 		const onWaiting = () => setIsBuffering(true);
 		const onResume = () => setIsBuffering(false);
-		const onSeeked = () => setIsBuffering(false); // Clear buffering state when a seek finishes
-		const onError = () => setIsBuffering(false); // Clear on error so the spinner doesn't get stuck
+		const onSeeked = () => setIsBuffering(false);
+		const onError = () => setIsBuffering(false);
 
 		p.addEventListener("frameupdate", onFrameUpdate);
 		p.addEventListener("play", onPlay);
@@ -172,7 +172,6 @@ const CustomControls = ({
 				activeElement?.tagName === "TEXTAREA";
 			if (isInputActive) return;
 
-			// Only trigger if our player wrapper is focused, or we're in fullscreen
 			if (
 				!wrapperRef.current?.contains(activeElement) &&
 				!document.fullscreenElement
@@ -250,7 +249,7 @@ const CustomControls = ({
 
 	return (
 		<div className="flex flex-col w-full bg-[#0f0f0f] px-3 py-2 shrink-0">
-			{/* YouTube-style Timeline - Replaced JS hovers with pure CSS group-hover/focus-within for better A11y */}
+			{/* YouTube-style Timeline */}
 			<div className="relative flex items-center h-4 group">
 				<div className="absolute inset-x-0 bg-white/20 rounded-full transition-all duration-200 h-1 group-hover:h-1.5 group-focus-within:h-1.5" />
 				<div
@@ -377,6 +376,14 @@ export interface MediaPlayerProps {
 	className?: string;
 	children?: ReactNode;
 	overlay?: ReactNode;
+	// ↓ NEW: pass animations through when rendering a single-source layer
+	animations?: VideoAnimation[];
+	opacity?: number;
+	volume?: number;
+	scale?: number;
+	rotation?: number;
+	x?: number;
+	y?: number;
 }
 
 export const MediaPlayer = ({
@@ -393,6 +400,14 @@ export const MediaPlayer = ({
 	controls = true,
 	className,
 	overlay,
+	// ↓ NEW
+	animations,
+	opacity,
+	volume,
+	scale,
+	rotation,
+	x,
+	y,
 }: MediaPlayerProps) => {
 	const playerRef = useRef<PlayerRef>(null);
 	const wrapperRef = useRef<HTMLDivElement>(null);
@@ -445,6 +460,14 @@ export const MediaPlayer = ({
 						viewportWidth: compWidth,
 						viewportHeight: compHeight,
 						autoDimensions: true,
+						// ↓ NEW: thread animation & transform props into CompositionScene
+						animations,
+						opacity,
+						volume,
+						scale,
+						rotation,
+						x,
+						y,
 					}}
 					durationInFrames={durationInFrames}
 					fps={fps}

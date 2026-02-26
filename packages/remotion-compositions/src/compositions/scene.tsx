@@ -1,4 +1,8 @@
-import type { ExtendedLayer, VirtualMediaData } from "@gatewai/core/types";
+import type {
+	ExtendedLayer,
+	VideoAnimation,
+	VirtualMediaData,
+} from "@gatewai/core/types";
 import { Audio, Video } from "@remotion/media";
 import type React from "react";
 import { memo, useMemo } from "react";
@@ -286,12 +290,16 @@ export const SingleClipComposition: React.FC<{
 	playbackRateOverride?: number;
 	trimStartOverride?: number;
 	textStyle?: Partial<ExtendedLayer>;
+	containerWidth: number;
+	containerHeight: number;
 }> = ({
 	virtualMedia,
 	volume = 1,
 	playbackRateOverride,
 	trimStartOverride,
 	textStyle,
+	containerWidth,
+	containerHeight,
 }) => {
 	const { fps } = useVideoConfig();
 	const op = virtualMedia?.operation;
@@ -352,6 +360,8 @@ export const SingleClipComposition: React.FC<{
 				}
 				viewportWidth={op.width}
 				viewportHeight={op.height}
+				containerWidth={containerWidth}
+				containerHeight={containerHeight}
 			/>
 		);
 
@@ -371,7 +381,7 @@ export const SingleClipComposition: React.FC<{
 
 		return composeNode;
 	}
-	console.log({ op });
+
 	// -----------------------------------------------------------------------
 	// source / text: leaf nodes — render media directly.
 	// -----------------------------------------------------------------------
@@ -437,7 +447,7 @@ export const SingleClipComposition: React.FC<{
 		const effectiveTrimSec =
 			(trimStartOverride ?? 0) + (Number(params.trimStartSec) || 0);
 		const startFrame = Math.floor(effectiveTrimSec * fps);
-		console.log({ mediaType, params, startFrame });
+
 		if (mediaType === "Audio") {
 			return (
 				<Audio
@@ -499,6 +509,8 @@ export const SingleClipComposition: React.FC<{
 				}
 				trimStartOverride={trimStartOverride}
 				textStyle={textStyle}
+				containerWidth={containerWidth}
+				containerHeight={containerHeight}
 			/>
 		);
 	}
@@ -506,14 +518,12 @@ export const SingleClipComposition: React.FC<{
 	// -----------------------------------------------------------------------
 	// cut: accumulate the start offset into trimStartOverride so the leaf
 	// Video node can seek to the correct source position via startFrom.
-	// Duration is handled externally (composition config / Sequence props).
 	// -----------------------------------------------------------------------
 	if (op.op === "cut") {
 		const childVideo = virtualMedia.children[0];
 		if (!childVideo) return null;
 
 		const accumulatedTrim = (trimStartOverride ?? 0) + (op.startSec ?? 0);
-		console.log({ accumulatedTrim });
 		return (
 			<SingleClipComposition
 				virtualMedia={childVideo}
@@ -521,6 +531,8 @@ export const SingleClipComposition: React.FC<{
 				playbackRateOverride={playbackRateOverride}
 				trimStartOverride={accumulatedTrim}
 				textStyle={textStyle}
+				containerWidth={containerWidth}
+				containerHeight={containerHeight}
 			/>
 		);
 	}
@@ -529,6 +541,18 @@ export const SingleClipComposition: React.FC<{
 	// Transformers (crop, rotate, flip, filter, layer)
 	// -----------------------------------------------------------------------
 	const childVideo = virtualMedia.children[0];
+	let childContainerWidth = containerWidth;
+	let childContainerHeight = containerHeight;
+
+	// Scale the container dimensions UP based on crop percentage.
+	// e.g., if we crop to 50% width, the inner video must be 200% as wide
+	// to properly fit that crop section into the physical bounds.
+	if (op.op === "crop") {
+		const wp = Math.max(0.01, Number(op.widthPercentage) || 100);
+		const hp = Math.max(0.01, Number(op.heightPercentage) || 100);
+		childContainerWidth = containerWidth * (100 / wp);
+		childContainerHeight = containerHeight * (100 / hp);
+	}
 
 	const content = childVideo ? (
 		<SingleClipComposition
@@ -539,6 +563,8 @@ export const SingleClipComposition: React.FC<{
 			textStyle={
 				op.op === "layer" ? { ...textStyle, ...(op as any) } : textStyle
 			}
+			containerWidth={childContainerWidth}
+			containerHeight={childContainerHeight}
 		/>
 	) : null;
 
@@ -548,17 +574,10 @@ export const SingleClipComposition: React.FC<{
 		const lp = Number(op.leftPercentage) || 0;
 		const tp = Number(op.topPercentage) || 0;
 
-		// Use reciprocal percentage bounds instead of CSS Transform
-		// This sidesteps double-scaling conflicts when working with container queries
 		const innerWidth = (100 / wp) * 100;
 		const innerHeight = (100 / hp) * 100;
 		const innerLeft = (lp / wp) * 100;
 		const innerTop = (tp / hp) * 100;
-
-		console.log("[SingleClipComposition] Applying Crop", {
-			input: { wp, hp, lp, tp },
-			calculated: { innerWidth, innerHeight, innerLeft, innerTop },
-		});
 
 		const innerStyle: React.CSSProperties = {
 			position: "absolute",
@@ -609,8 +628,13 @@ export const SingleClipComposition: React.FC<{
 const LayerContentRenderer: React.FC<{
 	layer: ExtendedLayer;
 	animVolume: number;
+	viewport: { w: number; h: number };
 }> = memo(
-	({ layer, animVolume }) => {
+	({ layer, animVolume, viewport }) => {
+		// Calculate precise parent bounds explicitly (fallback to viewport)
+		const cWidth = layer.width ?? viewport.w;
+		const cHeight = layer.height ?? viewport.h;
+
 		if (layer.type === "Video" && layer.virtualMedia) {
 			return (
 				<SingleClipComposition
@@ -619,6 +643,8 @@ const LayerContentRenderer: React.FC<{
 					playbackRateOverride={layer.speed}
 					trimStartOverride={layer.trimStart}
 					textStyle={layer}
+					containerWidth={cWidth}
+					containerHeight={cHeight}
 				/>
 			);
 		}
@@ -630,6 +656,8 @@ const LayerContentRenderer: React.FC<{
 						volume={animVolume}
 						trimStartOverride={layer.trimStart}
 						textStyle={layer}
+						containerWidth={cWidth}
+						containerHeight={cHeight}
 					/>
 				);
 			}
@@ -649,6 +677,8 @@ const LayerContentRenderer: React.FC<{
 						playbackRateOverride={layer.speed}
 						trimStartOverride={layer.trimStart}
 						textStyle={layer}
+						containerWidth={cWidth}
+						containerHeight={cHeight}
 					/>
 				);
 			}
@@ -662,6 +692,8 @@ const LayerContentRenderer: React.FC<{
 						volume={animVolume}
 						trimStartOverride={layer.trimStart}
 						textStyle={layer}
+						containerWidth={cWidth}
+						containerHeight={cHeight}
 					/>
 				);
 			}
@@ -707,7 +739,9 @@ const LayerContentRenderer: React.FC<{
 	(prevProps, nextProps) => {
 		return (
 			compareLayerProps(prevProps, nextProps) &&
-			prevProps.animVolume === nextProps.animVolume
+			prevProps.animVolume === nextProps.animVolume &&
+			prevProps.viewport.w === nextProps.viewport.w &&
+			prevProps.viewport.h === nextProps.viewport.h
 		);
 	},
 );
@@ -759,7 +793,11 @@ export const LayerRenderer: React.FC<{
 		<Sequence from={startFrame} durationInFrames={duration} layout="none">
 			<div style={{ ...style, filter: filterString }}>
 				<AbsoluteFill>
-					<LayerContentRenderer layer={layer} animVolume={animVolume} />
+					<LayerContentRenderer
+						layer={layer}
+						animVolume={animVolume}
+						viewport={viewport}
+					/>
 				</AbsoluteFill>
 			</div>
 		</Sequence>
@@ -774,6 +812,8 @@ export interface SceneProps {
 	layers?: ExtendedLayer[];
 	viewportWidth: number;
 	viewportHeight: number;
+	containerWidth?: number;
+	containerHeight?: number;
 	src?: string;
 	isAudio?: boolean;
 	type?: "Video" | "Audio" | "Image" | "Text" | string;
@@ -801,12 +841,24 @@ export interface SceneProps {
 	borderColor?: string;
 	borderWidth?: number;
 	borderRadius?: number;
+	// ↓ NEW: animations support for single-source rendering via MediaPlayer
+	animations?: VideoAnimation[];
+	startFrame?: number;
+	durationInFrames?: number;
+	opacity?: number;
+	volume?: number;
+	scale?: number;
+	rotation?: number;
+	x?: number;
+	y?: number;
 }
 
 export const CompositionScene: React.FC<SceneProps> = ({
 	layers = [],
 	viewportWidth,
 	viewportHeight,
+	containerWidth,
+	containerHeight,
 	src,
 	isAudio,
 	type,
@@ -832,6 +884,16 @@ export const CompositionScene: React.FC<SceneProps> = ({
 	borderWidth,
 	borderRadius,
 	autoDimensions,
+	// ↓ NEW
+	animations,
+	startFrame,
+	durationInFrames,
+	opacity,
+	volume,
+	scale,
+	rotation,
+	x,
+	y,
 }) => {
 	const frame = useCurrentFrame();
 	const { fps } = useVideoConfig();
@@ -842,11 +904,11 @@ export const CompositionScene: React.FC<SceneProps> = ({
 		if (src || virtualMedia || type === "Text") {
 			const resolvedType = type || (isAudio ? "Audio" : "Video");
 
-			let durationInFrames;
-			if (virtualMedia) {
+			let resolvedDurationInFrames = durationInFrames;
+			if (!resolvedDurationInFrames && virtualMedia) {
 				const activeMeta = getActiveVideoMetadata(virtualMedia);
 				if (activeMeta?.durationMs) {
-					durationInFrames = Math.ceil(
+					resolvedDurationInFrames = Math.ceil(
 						(activeMeta.durationMs / 1000) * (fps || 24),
 					);
 				}
@@ -865,13 +927,17 @@ export const CompositionScene: React.FC<SceneProps> = ({
 							: (data as any)?.text || JSON.stringify(data)),
 					width: viewportWidth,
 					height: viewportHeight,
-					x: 0,
-					y: 0,
+					x: x ?? 0,
+					y: y ?? 0,
 					zIndex: 0,
-					opacity: 1,
-					scale: 1,
-					rotation: 0,
-					durationInFrames,
+					opacity: opacity ?? 1,
+					scale: scale ?? 1,
+					rotation: rotation ?? 0,
+					volume: volume ?? 1,
+					durationInFrames: resolvedDurationInFrames,
+					startFrame: startFrame ?? 0,
+					// ↓ NEW: thread animations through to the synthetic layer
+					animations: animations ?? [],
 					fontSize,
 					fontFamily,
 					fontStyle,
@@ -905,6 +971,15 @@ export const CompositionScene: React.FC<SceneProps> = ({
 		viewportWidth,
 		viewportHeight,
 		fps,
+		animations,
+		startFrame,
+		durationInFrames,
+		opacity,
+		volume,
+		scale,
+		rotation,
+		x,
+		y,
 		fontSize,
 		fontFamily,
 		fontStyle,
@@ -954,13 +1029,17 @@ export const CompositionScene: React.FC<SceneProps> = ({
 		[resolvedViewportW, resolvedViewportH],
 	);
 
+	const scaleX =
+		containerWidth !== undefined ? containerWidth / resolvedViewportW : 1;
+	const scaleY =
+		containerHeight !== undefined ? containerHeight / resolvedViewportH : 1;
+
 	return (
 		<AbsoluteFill
 			style={{
 				backgroundColor: "#000000",
 				overflow: "hidden",
 				pointerEvents: "none",
-				containerType: "size",
 			}}
 		>
 			<div
@@ -970,7 +1049,7 @@ export const CompositionScene: React.FC<SceneProps> = ({
 					position: "absolute",
 					top: 0,
 					left: 0,
-					transform: `scale(calc(100cqw / (${resolvedViewportW} * 1px)), calc(100cqh / (${resolvedViewportH} * 1px)))`,
+					transform: `scale(${scaleX}, ${scaleY})`,
 					transformOrigin: "top left",
 				}}
 			>

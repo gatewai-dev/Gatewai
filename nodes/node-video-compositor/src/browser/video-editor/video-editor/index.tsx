@@ -2052,11 +2052,25 @@ export const VideoDesignerEditor: React.FC<VideoDesignerEditorProps> = ({
 
 	const updateViewportWidth = (w: number) => {
 		setViewportWidth(roundToEven(Math.max(2, w)));
+		setLayers((prev) =>
+			prev.map((layer) => {
+				if (layer.type !== "Video" || !layer.virtualMedia) return layer;
+				const cropRenderProps = computeVideoCropRenderProps(layer.virtualMedia);
+				return { ...layer, ...(cropRenderProps ?? {}) };
+			}),
+		);
 		setIsDirty(true);
 	};
 
 	const updateViewportHeight = (h: number) => {
 		setViewportHeight(roundToEven(Math.max(2, h)));
+		setLayers((prev) =>
+			prev.map((layer) => {
+				if (layer.type !== "Video" || !layer.virtualMedia) return layer;
+				const cropRenderProps = computeVideoCropRenderProps(layer.virtualMedia);
+				return { ...layer, ...(cropRenderProps ?? {}) };
+			}),
+		);
 		setIsDirty(true);
 	};
 
