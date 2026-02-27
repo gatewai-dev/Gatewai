@@ -107,7 +107,7 @@ const ImportNodeComponent = memo((props: NodeProps) => {
 			: "Click to upload a file";
 
 	const dropzoneLabel =
-		"Click or drag & drop an image, SVG, video, audio, Lottie, 3D, or SRT file here";
+		"Click or drag & drop an image, SVG, video, audio, Lottie, or SRT file here";
 
 	const onUploadSuccess = (uploadResult: UploadFileNodeAssetRPC) => {
 		if (Object.hasOwn(uploadResult, "error")) {

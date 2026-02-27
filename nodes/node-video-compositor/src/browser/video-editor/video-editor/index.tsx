@@ -137,109 +137,46 @@ import type { VideoCompositorNodeConfig } from "../../../shared/config.js";
 import { DEFAULT_DURATION_FRAMES, FPS } from "../config/index.js";
 
 // ---------------------------------------------------------------------------
-// Helpers
+// Types
 // ---------------------------------------------------------------------------
 
-const getEffectiveDurationMs = (
-	virtualMedia: VirtualMediaData | undefined | null,
-	accumulatedStartSec = 0,
-): number | null => {
-	if (!virtualMedia) return null;
-	const op = virtualMedia.operation;
-
-	if (op?.op === "cut") {
-		const cutStart = (Number(op.startSec) || 0) + accumulatedStartSec;
-		const cutEnd = Number(op.endSec) || 0;
-		const cutDurationMs = Math.max(0, cutEnd - cutStart) * 1000;
-
-		const child = virtualMedia.children?.[0];
-		if (child) {
-			const childDurationMs = getEffectiveDurationMs(child, cutStart);
-			if (childDurationMs !== null) {
-				return Math.min(cutDurationMs, childDurationMs);
-			}
-		}
-		return cutDurationMs;
-	}
-
-	if (op?.op === "speed") {
-		const rate = Number((op as any).rate) || 1;
-		const child = virtualMedia.children?.[0];
-		if (child) {
-			const childMs = getEffectiveDurationMs(child, accumulatedStartSec / rate);
-			if (childMs !== null) return childMs * rate;
-		}
-		return null;
-	}
-
-	for (const child of virtualMedia.children ?? []) {
-		const found = getEffectiveDurationMs(child, accumulatedStartSec);
-		if (found !== null) return found;
-	}
-
-	return null;
+export type EditorLayer = ExtendedLayer & {
+	videoNaturalWidth?: number;
+	videoNaturalHeight?: number;
+	videoCropOffsetX?: number;
+	videoCropOffsetY?: number;
+	cropTranslatePercentageX?: number;
+	cropTranslatePercentageY?: number;
 };
 
-const roundToEven = (num?: number) => Math.round((num ?? 0) / 2) * 2;
-
-const measureText = (text: string, style: Partial<EditorLayer>) => {
-	if (typeof document === "undefined") return { width: 100, height: 40 };
-
-	const canvas = document.createElement("canvas");
-	const ctx = canvas.getContext("2d");
-	if (!ctx) return { width: 100, height: 40 };
-
-	const fontSize = style.fontSize ?? 40;
-	const fontFamily = style.fontFamily ?? "Inter";
-	const fontWeight = style.fontWeight ?? "normal";
-	const fontStyle = style.fontStyle ?? "normal";
-	const letterSpacing = style.letterSpacing ?? 0;
-	const lineHeight = style.lineHeight ?? 1.2;
-	const padding = style.padding ?? 0;
-
-	ctx.font = `${fontStyle} ${fontWeight} ${fontSize}px ${fontFamily}`;
-	ctx.letterSpacing = `${letterSpacing}px`;
-
-	const lines = text.split("\n");
-	let maxWidth = 0;
-
-	for (const line of lines) {
-		const metrics = ctx.measureText(line);
-		maxWidth = Math.max(maxWidth, metrics.width);
-	}
-
-	const height = lines.length * fontSize * lineHeight;
-	const width = maxWidth;
-
-	return {
-		width: Math.round(width + padding * 2),
-		height: Math.round(height + padding * 2),
-	};
-};
-
-const fetchLottieMetadata = async (
-	url: string,
-): Promise<{ width: number; height: number; durationMs: number } | null> => {
-	try {
-		const res = await fetch(url);
-		if (!res.ok) return null;
-		const json = await res.json();
-		const w = Number(json.w) || 0;
-		const h = Number(json.h) || 0;
-		const fr = Number(json.fr) || 30;
-		const op = Number(json.op) || 0;
-		if (w > 0 && h > 0 && op > 0) {
-			return { width: w, height: h, durationMs: (op / fr) * 1000 };
-		}
-		return w > 0 && h > 0 ? { width: w, height: h, durationMs: 0 } : null;
-	} catch {
-		return null;
-	}
-};
+type ResizeAnchor = "tl" | "tr" | "bl" | "br" | "t" | "b" | "l" | "r";
+type EditorMode = "select" | "pan";
 
 // ---------------------------------------------------------------------------
 // Constants
 // ---------------------------------------------------------------------------
+
+const RULER_HEIGHT = 28;
+const TRACK_HEIGHT = 32;
+const HEADER_WIDTH = 200;
+const DEFAULT_TIMELINE_HEIGHT = 208;
+const MIN_TIMELINE_HEIGHT = 120;
+const MAX_TIMELINE_HEIGHT = 400;
+
+const LOTTIE_COLOR = {
+	bg: "bg-amber-700",
+	border: "border-amber-600",
+	text: "text-amber-100",
+	hex: "#b45309",
+};
+
+const ASPECT_RATIOS = [
+	{ label: "Youtube / HD (16:9)", width: 1280, height: 720 },
+	{ label: "Full HD (16:9)", width: 1920, height: 1080 },
+	{ label: "TikTok / Reel (9:16)", width: 720, height: 1280 },
+	{ label: "Square (1:1)", width: 1080, height: 1080 },
+	{ label: "Portrait (4:5)", width: 1080, height: 1350 },
+];
 
 const ANIMATION_CATEGORIES = [
 	{
@@ -298,40 +235,110 @@ const ANIMATION_CATEGORIES = [
 	},
 ];
 
-export type EditorLayer = ExtendedLayer & {
-	videoNaturalWidth?: number;
-	videoNaturalHeight?: number;
-	videoCropOffsetX?: number;
-	videoCropOffsetY?: number;
-	cropTranslatePercentageX?: number;
-	cropTranslatePercentageY?: number;
+// ---------------------------------------------------------------------------
+// Helpers
+// ---------------------------------------------------------------------------
+
+const roundToEven = (num?: number) => Math.round((num ?? 0) / 2) * 2;
+
+const getEffectiveDurationMs = (
+	virtualMedia: VirtualMediaData | undefined | null,
+	accumulatedStartSec = 0,
+): number | null => {
+	if (!virtualMedia) return null;
+	const op = virtualMedia.operation;
+
+	if (op?.op === "cut") {
+		const cutStart = (Number(op.startSec) || 0) + accumulatedStartSec;
+		const cutEnd = Number(op.endSec) || 0;
+		const cutDurationMs = Math.max(0, cutEnd - cutStart) * 1000;
+		const child = virtualMedia.children?.[0];
+		if (child) {
+			const childDurationMs = getEffectiveDurationMs(child, cutStart);
+			if (childDurationMs !== null)
+				return Math.min(cutDurationMs, childDurationMs);
+		}
+		return cutDurationMs;
+	}
+
+	if (op?.op === "speed") {
+		const rate = Number((op as any).rate) || 1;
+		const child = virtualMedia.children?.[0];
+		if (child) {
+			const childMs = getEffectiveDurationMs(child, accumulatedStartSec / rate);
+			if (childMs !== null) return childMs * rate;
+		}
+		return null;
+	}
+
+	for (const child of virtualMedia.children ?? []) {
+		const found = getEffectiveDurationMs(child, accumulatedStartSec);
+		if (found !== null) return found;
+	}
+
+	return null;
 };
 
-const RULER_HEIGHT = 28;
-const TRACK_HEIGHT = 32;
-const HEADER_WIDTH = 200;
-const DEFAULT_TIMELINE_HEIGHT = 208;
-const MIN_TIMELINE_HEIGHT = 120;
-const MAX_TIMELINE_HEIGHT = 400;
+const measureText = (text: string, style: Partial<EditorLayer>) => {
+	if (typeof document === "undefined") return { width: 100, height: 40 };
+	const canvas = document.createElement("canvas");
+	const ctx = canvas.getContext("2d");
+	if (!ctx) return { width: 100, height: 40 };
 
-const LOTTIE_COLOR = {
-	bg: "bg-amber-700",
-	border: "border-amber-600",
-	text: "text-amber-100",
-	hex: "#b45309",
+	const fontSize = style.fontSize ?? 40;
+	const fontFamily = style.fontFamily ?? "Inter";
+	const fontWeight = style.fontWeight ?? "normal";
+	const fontStyle = style.fontStyle ?? "normal";
+	const letterSpacing = style.letterSpacing ?? 0;
+	const lineHeight = style.lineHeight ?? 1.2;
+	const padding = style.padding ?? 0;
+
+	ctx.font = `${fontStyle} ${fontWeight} ${fontSize}px ${fontFamily}`;
+	ctx.letterSpacing = `${letterSpacing}px`;
+
+	const lines = text.split("\n");
+	let maxWidth = 0;
+	for (const line of lines) {
+		maxWidth = Math.max(maxWidth, ctx.measureText(line).width);
+	}
+
+	return {
+		width: Math.round(maxWidth + padding * 2),
+		height: Math.round(lines.length * fontSize * lineHeight + padding * 2),
+	};
 };
 
-const ASPECT_RATIOS = [
-	{ label: "Youtube / HD (16:9)", width: 1280, height: 720 },
-	{ label: "Full HD (16:9)", width: 1920, height: 1080 },
-	{ label: "TikTok / Reel (9:16)", width: 720, height: 1280 },
-	{ label: "Square (1:1)", width: 1080, height: 1080 },
-	{ label: "Portrait (4:5)", width: 1080, height: 1350 },
-];
+const fetchLottieMetadata = async (
+	url: string,
+): Promise<{ width: number; height: number; durationMs: number } | null> => {
+	try {
+		const res = await fetch(url);
+		if (!res.ok) return null;
+		const json = await res.json();
+		const w = Number(json.w) || 0;
+		const h = Number(json.h) || 0;
+		const fr = Number(json.fr) || 30;
+		const op = Number(json.op) || 0;
+		if (w > 0 && h > 0) {
+			return { width: w, height: h, durationMs: op > 0 ? (op / fr) * 1000 : 0 };
+		}
+		return null;
+	} catch {
+		return null;
+	}
+};
 
-// ---------------------------------------------------------------------------
-// Shared sub-components
-// ---------------------------------------------------------------------------
+const resolveColorConfig = (layer: EditorLayer) => {
+	if (layer.type === "Lottie") return LOTTIE_COLOR;
+	return (
+		dataTypeColors[layer.type] ?? {
+			bg: "bg-gray-600",
+			border: "border-gray-500",
+			text: "text-gray-100",
+			hex: "#4b5563",
+		}
+	);
+};
 
 const resolveLayerLabel = (
 	handle: HandleEntityType | undefined,
@@ -353,6 +360,42 @@ const resolveLayerLabel = (
 	}
 	return layer.name ?? layer.id;
 };
+
+const serializeLayersForSave = (layers: EditorLayer[]) =>
+	layers.reduce<
+		Record<
+			string,
+			Omit<
+				EditorLayer,
+				| "src"
+				| "text"
+				| "isPlaceholder"
+				| "maxDurationInFrames"
+				| "videoNaturalWidth"
+				| "videoNaturalHeight"
+				| "cropTranslatePercentageX"
+				| "cropTranslatePercentageY"
+			>
+		>
+	>((acc, layer) => {
+		const {
+			src,
+			text,
+			isPlaceholder,
+			maxDurationInFrames,
+			videoNaturalWidth,
+			videoNaturalHeight,
+			cropTranslatePercentageX,
+			cropTranslatePercentageY,
+			...savedLayer
+		} = layer;
+		acc[layer.id] = savedLayer;
+		return acc;
+	}, {});
+
+// ---------------------------------------------------------------------------
+// Context
+// ---------------------------------------------------------------------------
 
 interface EditorContextType {
 	layers: EditorLayer[];
@@ -387,8 +430,8 @@ interface EditorContextType {
 	zoomOut: () => void;
 	zoomTo: (val: number) => void;
 	fitView: () => void;
-	mode: "select" | "pan";
-	setMode: Dispatch<SetStateAction<"select" | "pan">>;
+	mode: EditorMode;
+	setMode: Dispatch<SetStateAction<EditorMode>>;
 	isDirty: boolean;
 	setIsDirty: Dispatch<SetStateAction<boolean>>;
 	timelineScrollRef: React.RefObject<HTMLDivElement | null>;
@@ -398,47 +441,30 @@ interface EditorContextType {
 }
 
 const EditorContext = createContext<EditorContextType | undefined>(undefined);
+
 const useEditor = () => {
 	const ctx = useContext(EditorContext);
 	if (!ctx) throw new Error("useEditor must be used within EditorProvider");
 	return ctx;
 };
 
-const resolveColorConfig = (layer: EditorLayer) => {
-	if (layer.type === "Lottie") return LOTTIE_COLOR;
-	return (
-		dataTypeColors[layer.type] ?? {
-			bg: "bg-gray-600",
-			border: "border-gray-500",
-			text: "text-gray-100",
-			hex: "#4b5563",
-		}
-	);
-};
+// ---------------------------------------------------------------------------
+// Shared sub-components
+// ---------------------------------------------------------------------------
 
 const LayerIcon: React.FC<{ type: string; className?: string }> = ({
 	type,
 	className = "w-3 h-3",
 }) => {
-	switch (type) {
-		case "Video":
-			return <Film className={className} />;
-		case "Audio":
-			return <Music className={className} />;
-		case "Image":
-			return <ImageIcon className={className} />;
-		case "Text":
-			return <Type className={className} />;
-		case "Lottie":
-			return <Sparkles className={className} />;
-		default:
-			return <Layers className={className} />;
-	}
+	const icons: Record<string, React.ReactNode> = {
+		Video: <Film className={className} />,
+		Audio: <Music className={className} />,
+		Image: <ImageIcon className={className} />,
+		Text: <Type className={className} />,
+		Lottie: <Sparkles className={className} />,
+	};
+	return <>{icons[type] ?? <Layers className={className} />}</>;
 };
-
-// ---------------------------------------------------------------------------
-// Section divider used inside inspector panels
-// ---------------------------------------------------------------------------
 
 const InspectorDivider: React.FC<{ label: string; accent?: string }> = ({
 	label,
@@ -454,6 +480,18 @@ const InspectorDivider: React.FC<{ label: string; accent?: string }> = ({
 	</div>
 );
 
+const WithTooltip: React.FC<{
+	tip: React.ReactNode;
+	children: React.ReactElement;
+}> = ({ tip, children }) => (
+	<TooltipProvider>
+		<Tooltip>
+			<TooltipTrigger asChild>{children}</TooltipTrigger>
+			<TooltipContent>{tip}</TooltipContent>
+		</Tooltip>
+	</TooltipProvider>
+);
+
 // ---------------------------------------------------------------------------
 // LottieInspectorSection
 // ---------------------------------------------------------------------------
@@ -466,6 +504,7 @@ const LottieInspectorSection: React.FC<{
 		? (layer.lottieDurationMs / 1000).toFixed(2)
 		: "–";
 	const fps = layer.lottieFrameRate ?? "–";
+
 	return (
 		<CollapsibleSection title="Lottie Animation" icon={Sparkles} defaultOpen>
 			<div className="flex items-center gap-3 mb-3 p-2 rounded-md bg-amber-500/5 border border-amber-500/10">
@@ -548,7 +587,11 @@ const UnifiedClip: React.FC<{ layer: EditorLayer; isSelected: boolean }> = ({
 
 	return (
 		<div
-			className={`h-full w-full relative overflow-hidden rounded-md transition-all duration-75 border ${baseConfig.bg} ${baseConfig.border} ${isSelected ? "brightness-110 ring-2 ring-white/70 shadow-lg" : "opacity-90 hover:opacity-100 hover:brightness-105"}`}
+			className={`h-full w-full relative overflow-hidden rounded-md transition-all duration-75 border ${baseConfig.bg} ${baseConfig.border} ${
+				isSelected
+					? "brightness-110 ring-2 ring-white/70 shadow-lg"
+					: "opacity-90 hover:opacity-100 hover:brightness-105"
+			}`}
 		>
 			<div
 				className="absolute inset-0 opacity-10 pointer-events-none"
@@ -589,6 +632,45 @@ const UnifiedClip: React.FC<{ layer: EditorLayer; isSelected: boolean }> = ({
 // InteractionOverlay
 // ---------------------------------------------------------------------------
 
+const RESIZE_HANDLE_CONFIG: Array<{
+	pos: ResizeAnchor;
+	cursor: string;
+	posClass: string;
+}> = [
+	{ pos: "tl", cursor: "cursor-nwse-resize", posClass: "-top-1.5 -left-1.5" },
+	{
+		pos: "t",
+		cursor: "cursor-ns-resize",
+		posClass: "-top-1.5 left-1/2 -translate-x-1/2",
+	},
+	{ pos: "tr", cursor: "cursor-nesw-resize", posClass: "-top-1.5 -right-1.5" },
+	{
+		pos: "r",
+		cursor: "cursor-ew-resize",
+		posClass: "top-1/2 -right-1.5 -translate-y-1/2",
+	},
+	{
+		pos: "br",
+		cursor: "cursor-nwse-resize",
+		posClass: "-bottom-1.5 -right-1.5",
+	},
+	{
+		pos: "b",
+		cursor: "cursor-ns-resize",
+		posClass: "-bottom-1.5 left-1/2 -translate-x-1/2",
+	},
+	{
+		pos: "bl",
+		cursor: "cursor-nesw-resize",
+		posClass: "-bottom-1.5 -left-1.5",
+	},
+	{
+		pos: "l",
+		cursor: "cursor-ew-resize",
+		posClass: "top-1/2 -left-1.5 -translate-y-1/2",
+	},
+];
+
 const InteractionOverlay: React.FC = () => {
 	const {
 		layers,
@@ -603,13 +685,12 @@ const InteractionOverlay: React.FC = () => {
 		mode,
 		setPan,
 	} = useEditor();
+
 	const [isDragging, setIsDragging] = useState(false);
 	const [isResizing, setIsResizing] = useState(false);
 	const [isRotating, setIsRotating] = useState(false);
 	const [isPanning, setIsPanning] = useState(false);
-	const [resizeAnchor, setResizeAnchor] = useState<
-		"tl" | "tr" | "bl" | "br" | "t" | "b" | "l" | "r" | null
-	>(null);
+	const [resizeAnchor, setResizeAnchor] = useState<ResizeAnchor | null>(null);
 	const [dragStart, setDragStart] = useState({ x: 0, y: 0 });
 	const [initialPan, setInitialPan] = useState({ x: 0, y: 0 });
 	const [initialPos, setInitialPos] = useState({
@@ -632,10 +713,23 @@ const InteractionOverlay: React.FC = () => {
 		)
 		.sort((a, b) => (a.zIndex ?? 0) - (b.zIndex ?? 0));
 
+	const captureLayer = (layerId: string) => {
+		const layer = layers.find((l) => l.id === layerId);
+		if (!layer) return null;
+		return {
+			x: layer.x,
+			y: layer.y,
+			width: layer.width ?? 0,
+			height: layer.height ?? 0,
+			rotation: layer.rotation,
+			scale: layer.scale ?? 1,
+		};
+	};
+
 	const handleMouseDown = (
 		e: React.MouseEvent,
 		layerId?: string,
-		anchor?: "tl" | "tr" | "bl" | "br" | "t" | "b" | "l" | "r",
+		anchor?: ResizeAnchor,
 	) => {
 		if (e.button === 1 || mode === "pan") {
 			e.preventDefault();
@@ -650,18 +744,11 @@ const InteractionOverlay: React.FC = () => {
 			setSelectedId(null);
 			return;
 		}
-		const layer = layers.find((l) => l.id === layerId);
-		if (!layer) return;
+		const pos = captureLayer(layerId);
+		if (!pos) return;
 		setSelectedId(layerId);
 		setDragStart({ x: e.clientX, y: e.clientY });
-		setInitialPos({
-			x: layer.x,
-			y: layer.y,
-			width: layer.width ?? 0,
-			height: layer.height ?? 0,
-			rotation: layer.rotation,
-			scale: layer.scale ?? 1,
-		});
+		setInitialPos(pos);
 		if (anchor) {
 			setIsResizing(true);
 			setResizeAnchor(anchor);
@@ -674,35 +761,30 @@ const InteractionOverlay: React.FC = () => {
 		e.stopPropagation();
 		e.preventDefault();
 		setSelectedId(layerId);
-		const layer = layers.find((l) => l.id === layerId);
-		if (!layer) return;
-		const centerX = layer.x + (layer.width ?? 0) / 2;
-		const centerY = layer.y + (layer.height ?? 0) / 2;
-		const screenCenterX = centerX * zoom + pan.x;
-		const screenCenterY = centerY * zoom + pan.y;
+		const pos = captureLayer(layerId);
+		if (!pos) return;
+		const centerX = pos.x + pos.width / 2;
+		const centerY = pos.y + pos.height / 2;
 		setInitialAngle(
-			Math.atan2(e.clientY - screenCenterY, e.clientX - screenCenterX),
+			Math.atan2(
+				e.clientY - (centerY * zoom + pan.y),
+				e.clientX - (centerX * zoom + pan.x),
+			),
 		);
-		setInitialPos({
-			...layer,
-			width: layer.width ?? 0,
-			height: layer.height ?? 0,
-			x: layer.x,
-			y: layer.y,
-			rotation: layer.rotation,
-			scale: layer.scale ?? 1,
-		});
+		setInitialPos(pos);
 		setIsRotating(true);
 	};
 
 	const handleMouseMove = (e: React.MouseEvent) => {
 		if (isPanning) {
-			const dx = e.clientX - dragStart.x;
-			const dy = e.clientY - dragStart.y;
-			setPan({ x: initialPan.x + dx, y: initialPan.y + dy });
+			setPan({
+				x: initialPan.x + (e.clientX - dragStart.x),
+				y: initialPan.y + (e.clientY - dragStart.y),
+			});
 			return;
 		}
 		if (!selectedId) return;
+
 		const dx = (e.clientX - dragStart.x) / zoom;
 		const dy = (e.clientY - dragStart.y) / zoom;
 
@@ -718,15 +800,16 @@ const InteractionOverlay: React.FC = () => {
 						: l,
 				),
 			);
-		} else if (isResizing && resizeAnchor) {
+			return;
+		}
+
+		if (isResizing && resizeAnchor) {
 			const layer = layers.find((l) => l.id === selectedId);
 			const theta = initialPos.rotation * (Math.PI / 180);
 			const cos = Math.cos(theta);
 			const sin = Math.sin(theta);
-			let localDx = cos * dx + sin * dy;
-			let localDy = -sin * dx + cos * dy;
-			localDx /= initialPos.scale;
-			localDy /= initialPos.scale;
+			const localDx = (cos * dx + sin * dy) / initialPos.scale;
+			const localDy = (-sin * dx + cos * dy) / initialPos.scale;
 
 			let effectiveAnchor = resizeAnchor;
 			if (layer?.lockAspect) {
@@ -752,36 +835,32 @@ const InteractionOverlay: React.FC = () => {
 
 			if (layer?.lockAspect) {
 				const ratio = initialPos.height / initialPos.width || 1;
-				if (resizeAnchor === "r" || resizeAnchor === "l") {
+				if (resizeAnchor === "r" || resizeAnchor === "l")
 					changeH = changeW * ratio;
-				} else if (resizeAnchor === "b" || resizeAnchor === "t") {
+				else if (resizeAnchor === "b" || resizeAnchor === "t")
 					changeW = changeH / ratio;
-				} else {
-					if (Math.abs(changeW) * ratio > Math.abs(changeH)) {
+				else {
+					if (Math.abs(changeW) * ratio > Math.abs(changeH))
 						changeH = changeW * ratio;
-					} else {
-						changeW = changeH / ratio;
-					}
+					else changeW = changeH / ratio;
 				}
 			}
 
 			const newWidth = Math.max(10, initialPos.width + changeW);
 			const newHeight = Math.max(10, initialPos.height + changeH);
-
 			const diffW = newWidth - initialPos.width;
 			const diffH = newHeight - initialPos.height;
 
-			let localShiftX = 0;
-			let localShiftY = 0;
-			if (effectiveAnchor.includes("r")) localShiftX = diffW / 2;
-			if (effectiveAnchor.includes("l")) localShiftX = -diffW / 2;
-			if (effectiveAnchor.includes("b")) localShiftY = diffH / 2;
-			if (effectiveAnchor.includes("t")) localShiftY = -diffH / 2;
-
-			const worldShiftX = cos * localShiftX - sin * localShiftY;
-			const worldShiftY = sin * localShiftX + cos * localShiftY;
-			const newX = initialPos.x + worldShiftX - diffW / 2;
-			const newY = initialPos.y + worldShiftY - diffH / 2;
+			const localShiftX = effectiveAnchor.includes("r")
+				? diffW / 2
+				: effectiveAnchor.includes("l")
+					? -diffW / 2
+					: 0;
+			const localShiftY = effectiveAnchor.includes("b")
+				? diffH / 2
+				: effectiveAnchor.includes("t")
+					? -diffH / 2
+					: 0;
 
 			updateLayers((prev) =>
 				prev.map((l) =>
@@ -790,26 +869,35 @@ const InteractionOverlay: React.FC = () => {
 								...l,
 								width: Math.round(newWidth),
 								height: Math.round(newHeight),
-								x: Math.round(newX),
-								y: Math.round(newY),
+								x: Math.round(
+									initialPos.x +
+										(cos * localShiftX - sin * localShiftY) -
+										diffW / 2,
+								),
+								y: Math.round(
+									initialPos.y +
+										(sin * localShiftX + cos * localShiftY) -
+										diffH / 2,
+								),
 								autoDimensions: false,
 							}
 						: l,
 				),
 			);
-		} else if (isRotating) {
+			return;
+		}
+
+		if (isRotating) {
 			const layer = layers.find((l) => l.id === selectedId);
 			if (!layer) return;
 			const centerX = layer.x + (layer.width ?? 0) / 2;
 			const centerY = layer.y + (layer.height ?? 0) / 2;
-			const screenCenterX = centerX * zoom + pan.x;
-			const screenCenterY = centerY * zoom + pan.y;
 			const currentAngle = Math.atan2(
-				e.clientY - screenCenterY,
-				e.clientX - screenCenterX,
+				e.clientY - (centerY * zoom + pan.y),
+				e.clientX - (centerX * zoom + pan.x),
 			);
-			const delta = currentAngle - initialAngle;
-			const newRot = initialPos.rotation + (delta * 180) / Math.PI;
+			const newRot =
+				initialPos.rotation + ((currentAngle - initialAngle) * 180) / Math.PI;
 			updateLayers((prev) =>
 				prev.map((l) =>
 					l.id === selectedId ? { ...l, rotation: Math.round(newRot) } : l,
@@ -853,7 +941,9 @@ const InteractionOverlay: React.FC = () => {
 							if (e.key === "Enter") setSelectedId(layer.id);
 						}}
 						onMouseDown={(e) => handleMouseDown(e, layer.id)}
-						className={`absolute group outline-none select-none p-0 m-0 border-0 bg-transparent text-left ${selectedId === layer.id ? "z-50" : "z-auto"}`}
+						className={`absolute group outline-none select-none p-0 m-0 border-0 bg-transparent text-left ${
+							selectedId === layer.id ? "z-50" : "z-auto"
+						}`}
 						style={{
 							left: layer.x,
 							top: layer.y,
@@ -865,45 +955,28 @@ const InteractionOverlay: React.FC = () => {
 						}}
 					>
 						<div
-							className={`absolute inset-0 pointer-events-none transition-all duration-150 ${selectedId === layer.id ? "border-2 border-blue-500 shadow-[0_0_0_1px_rgba(59,130,246,0.2)]" : layer.type === "Lottie" ? "border border-transparent group-hover:border-amber-400/50" : "border border-transparent group-hover:border-blue-400/50"}`}
+							className={`absolute inset-0 pointer-events-none transition-all duration-150 ${
+								selectedId === layer.id
+									? "border-2 border-blue-500 shadow-[0_0_0_1px_rgba(59,130,246,0.2)]"
+									: layer.type === "Lottie"
+										? "border border-transparent group-hover:border-amber-400/50"
+										: "border border-transparent group-hover:border-blue-400/50"
+							}`}
 						/>
 						{selectedId === layer.id && (
 							<>
 								{layer.type !== "Text" &&
-									(["tl", "t", "tr", "r", "br", "b", "bl", "l"] as const).map(
-										(pos) => {
-											let cursor = "";
-											let posClass = "";
-											if (pos === "tl" || pos === "br")
-												cursor = "cursor-nwse-resize";
-											else if (pos === "tr" || pos === "bl")
-												cursor = "cursor-nesw-resize";
-											else if (pos === "t" || pos === "b")
-												cursor = "cursor-ns-resize";
-											else cursor = "cursor-ew-resize";
-											if (pos === "tl") posClass = "-top-1.5 -left-1.5";
-											if (pos === "t")
-												posClass = "-top-1.5 left-1/2 -translate-x-1/2";
-											if (pos === "tr") posClass = "-top-1.5 -right-1.5";
-											if (pos === "r")
-												posClass = "top-1/2 -right-1.5 -translate-y-1/2";
-											if (pos === "br") posClass = "-bottom-1.5 -right-1.5";
-											if (pos === "b")
-												posClass = "-bottom-1.5 left-1/2 -translate-x-1/2";
-											if (pos === "bl") posClass = "-bottom-1.5 -left-1.5";
-											if (pos === "l")
-												posClass = "top-1/2 -left-1.5 -translate-y-1/2";
-											return (
-												<div
-													key={pos}
-													role="button"
-													tabIndex={-1}
-													className={`absolute bg-white border border-blue-600 rounded-full shadow-sm z-50 transition-transform hover:scale-125 ${pos.length === 1 ? "w-2.5 h-2.5" : "w-3 h-3"} ${posClass} ${cursor}`}
-													onMouseDown={(e) => handleMouseDown(e, layer.id, pos)}
-												/>
-											);
-										},
-									)}
+									RESIZE_HANDLE_CONFIG.map(({ pos, cursor, posClass }) => (
+										<div
+											key={pos}
+											role="button"
+											tabIndex={-1}
+											className={`absolute bg-white border border-blue-600 rounded-full shadow-sm z-50 transition-transform hover:scale-125 ${
+												pos.length === 1 ? "w-2.5 h-2.5" : "w-3 h-3"
+											} ${posClass} ${cursor}`}
+											onMouseDown={(e) => handleMouseDown(e, layer.id, pos)}
+										/>
+									))}
 								<div
 									className="absolute -top-6 left-1/2 -translate-x-1/2 h-6 w-px bg-blue-500"
 									style={{ transform: `scaleX(${1 / zoom})` }}
@@ -948,6 +1021,7 @@ const Toolbar: React.FC<{
 		setMode,
 	} = useEditor();
 	const [showCloseDialog, setShowCloseDialog] = useState(false);
+
 	const handlePlayPause = () => {
 		if (playerRef.current) {
 			if (isPlaying) playerRef.current.pause();
@@ -955,6 +1029,13 @@ const Toolbar: React.FC<{
 			setIsPlaying(!isPlaying);
 		}
 	};
+
+	const zoomMenuItems = [
+		{ label: "Zoom In", shortcut: "+", action: zoomIn },
+		{ label: "Zoom Out", shortcut: "−", action: zoomOut },
+		{ label: "100%", shortcut: "1", action: () => zoomTo(1) },
+		{ label: "Fit to Screen", shortcut: "0", action: fitView },
+	];
 
 	return (
 		<>
@@ -965,7 +1046,11 @@ const Toolbar: React.FC<{
 							<Button
 								variant="ghost"
 								size="icon"
-								className={`rounded-full w-9 h-9 transition-colors ${isPlaying ? "bg-red-500/20 text-red-400 hover:bg-red-500/30" : "hover:bg-white/10 text-white"}`}
+								className={`rounded-full w-9 h-9 transition-colors ${
+									isPlaying
+										? "bg-red-500/20 text-red-400 hover:bg-red-500/30"
+										: "hover:bg-white/10 text-white"
+								}`}
 								onClick={handlePlayPause}
 							>
 								{isPlaying ? (
@@ -979,7 +1064,9 @@ const Toolbar: React.FC<{
 							<p>{isPlaying ? "Pause (Space)" : "Play (Space)"}</p>
 						</TooltipContent>
 					</Tooltip>
+
 					<div className="w-px h-5 bg-white/10 mx-1" />
+
 					<div
 						ref={timeRef}
 						className="text-[11px] font-mono tabular-nums text-neutral-300 min-w-[70px] text-center select-none cursor-default"
@@ -987,36 +1074,37 @@ const Toolbar: React.FC<{
 						{Math.floor(currentFrame / fps)}s :{" "}
 						{(currentFrame % fps).toString().padStart(2, "0")}f
 					</div>
+
 					<div className="w-px h-5 bg-white/10 mx-1" />
+
 					<div className="flex rounded-full p-0.5">
-						<Tooltip>
-							<TooltipTrigger asChild>
-								<Button
-									variant={mode === "select" ? "secondary" : "ghost"}
-									size="icon"
-									className="rounded-full w-8 h-8"
-									onClick={() => setMode("select")}
-								>
-									<MousePointer className="w-3.5 h-3.5" />
-								</Button>
-							</TooltipTrigger>
-							<TooltipContent>Select Tool (V)</TooltipContent>
-						</Tooltip>
-						<Tooltip>
-							<TooltipTrigger asChild>
-								<Button
-									variant={mode === "pan" ? "secondary" : "ghost"}
-									size="icon"
-									className="rounded-full w-8 h-8"
-									onClick={() => setMode("pan")}
-								>
-									<Hand className="w-3.5 h-3.5" />
-								</Button>
-							</TooltipTrigger>
-							<TooltipContent>Pan Tool (H) or hold Space</TooltipContent>
-						</Tooltip>
+						{(["select", "pan"] as const).map((m) => (
+							<Tooltip key={m}>
+								<TooltipTrigger asChild>
+									<Button
+										variant={mode === m ? "secondary" : "ghost"}
+										size="icon"
+										className="rounded-full w-8 h-8"
+										onClick={() => setMode(m)}
+									>
+										{m === "select" ? (
+											<MousePointer className="w-3.5 h-3.5" />
+										) : (
+											<Hand className="w-3.5 h-3.5" />
+										)}
+									</Button>
+								</TooltipTrigger>
+								<TooltipContent>
+									{m === "select"
+										? "Select Tool (V)"
+										: "Pan Tool (H) or hold Space"}
+								</TooltipContent>
+							</Tooltip>
+						))}
 					</div>
+
 					<div className="w-px h-5 bg-white/10 mx-1" />
+
 					<Menubar className="border-none bg-transparent h-auto p-0">
 						<MenubarMenu>
 							<MenubarTrigger asChild>
@@ -1032,26 +1120,20 @@ const Toolbar: React.FC<{
 								align="center"
 								className="min-w-[160px] bg-neutral-900/95 backdrop-blur-xl border-white/10 text-gray-200"
 							>
-								<MenubarItem onClick={zoomIn}>
-									<span className="flex-1">Zoom In</span>
-									<span className="text-xs text-gray-500 ml-4">+</span>
-								</MenubarItem>
-								<MenubarItem onClick={zoomOut}>
-									<span className="flex-1">Zoom Out</span>
-									<span className="text-xs text-gray-500 ml-4">−</span>
-								</MenubarItem>
-								<MenubarItem onClick={() => zoomTo(1)}>
-									<span className="flex-1">100%</span>
-									<span className="text-xs text-gray-500 ml-4">1</span>
-								</MenubarItem>
-								<MenubarItem onClick={fitView}>
-									<span className="flex-1">Fit to Screen</span>
-									<span className="text-xs text-gray-500 ml-4">0</span>
-								</MenubarItem>
+								{zoomMenuItems.map(({ label, shortcut, action }) => (
+									<MenubarItem key={label} onClick={action}>
+										<span className="flex-1">{label}</span>
+										<span className="text-xs text-gray-500 ml-4">
+											{shortcut}
+										</span>
+									</MenubarItem>
+								))}
 							</MenubarContent>
 						</MenubarMenu>
 					</Menubar>
+
 					<div className="w-px h-5 bg-white/10 mx-1" />
+
 					<div className="flex items-center gap-1">
 						<Tooltip>
 							<TooltipTrigger asChild>
@@ -1085,6 +1167,7 @@ const Toolbar: React.FC<{
 					</div>
 				</div>
 			</TooltipProvider>
+
 			<AlertDialog open={showCloseDialog} onOpenChange={setShowCloseDialog}>
 				<AlertDialogContent className="bg-neutral-900 border-white/10">
 					<AlertDialogHeader>
@@ -1134,16 +1217,11 @@ const Toolbar: React.FC<{
 // SortableTrackHeader
 // ---------------------------------------------------------------------------
 
-interface SortableTrackProps {
+const SortableTrackHeader: React.FC<{
 	layer: EditorLayer;
 	isSelected: boolean;
 	onSelect: () => void;
-}
-const SortableTrackHeader: React.FC<SortableTrackProps> = ({
-	layer,
-	isSelected,
-	onSelect,
-}) => {
+}> = ({ layer, isSelected, onSelect }) => {
 	const {
 		attributes,
 		listeners,
@@ -1152,13 +1230,6 @@ const SortableTrackHeader: React.FC<SortableTrackProps> = ({
 		transition,
 		isDragging,
 	} = useSortable({ id: layer.id });
-	const style = {
-		transform: CSS.Transform.toString(transform),
-		transition,
-		height: TRACK_HEIGHT,
-		minHeight: `${TRACK_HEIGHT}px`,
-		zIndex: isDragging ? 999 : "auto",
-	};
 	const handles = useAppSelector(handleSelectors.selectEntities);
 	const handle = layer.inputHandleId ? handles[layer.inputHandleId] : undefined;
 	const name = resolveLayerLabel(handle, layer);
@@ -1167,9 +1238,19 @@ const SortableTrackHeader: React.FC<SortableTrackProps> = ({
 	return (
 		<button
 			ref={setNodeRef}
-			style={style}
+			style={{
+				transform: CSS.Transform.toString(transform),
+				transition,
+				height: TRACK_HEIGHT,
+				minHeight: `${TRACK_HEIGHT}px`,
+				zIndex: isDragging ? 999 : "auto",
+			}}
 			type="button"
-			className={`w-full text-left p-0 m-0 bg-transparent border-0 border-b border-white/5 flex items-center pl-3 pr-2 text-xs gap-3 group outline-none transition-colors select-none ${isSelected ? "bg-white/5 text-blue-100" : "hover:bg-white/5 text-gray-400"} ${isDragging ? "opacity-50 bg-neutral-900" : ""}`}
+			className={`w-full text-left p-0 m-0 bg-transparent border-0 border-b border-white/5 flex items-center pl-3 pr-2 text-xs gap-3 group outline-none transition-colors select-none ${
+				isSelected
+					? "bg-white/5 text-blue-100"
+					: "hover:bg-white/5 text-gray-400"
+			} ${isDragging ? "opacity-50 bg-neutral-900" : ""}`}
 			onClick={onSelect}
 		>
 			<div
@@ -1190,16 +1271,11 @@ const SortableTrackHeader: React.FC<SortableTrackProps> = ({
 				</span>
 			</div>
 			{layer.animations && layer.animations.length > 0 && (
-				<TooltipProvider>
-					<Tooltip>
-						<TooltipTrigger>
-							<div className="p-1 rounded bg-amber-500/10">
-								<Zap className="w-3 h-3 text-amber-400" />
-							</div>
-						</TooltipTrigger>
-						<TooltipContent>Animations applied</TooltipContent>
-					</Tooltip>
-				</TooltipProvider>
+				<WithTooltip tip="Animations applied">
+					<div className="p-1 rounded bg-amber-500/10">
+						<Zap className="w-3 h-3 text-amber-400" />
+					</div>
+				</WithTooltip>
 			)}
 		</button>
 	);
@@ -1225,6 +1301,7 @@ const TimelinePanel: React.FC = () => {
 		timelineHeight,
 		setTimelineHeight,
 	} = useEditor();
+
 	const playheadRef = useRef<HTMLDivElement>(null);
 	const [isPanningTimeline, setIsPanningTimeline] = useState(false);
 	const [dragStartX, setDragStartX] = useState(0);
@@ -1235,6 +1312,7 @@ const TimelinePanel: React.FC = () => {
 	const sortedLayers = [...layers].sort(
 		(a, b) => (b.zIndex ?? 0) - (a.zIndex ?? 0),
 	);
+
 	const sensors = useSensors(
 		useSensor(PointerSensor, { activationConstraint: { distance: 5 } }),
 		useSensor(KeyboardSensor, {
@@ -1244,19 +1322,19 @@ const TimelinePanel: React.FC = () => {
 
 	const handleDragEnd = (event: DragEndEvent) => {
 		const { active, over } = event;
-		if (over && active.id !== over.id) {
-			const oldIndex = sortedLayers.findIndex((l) => l.id === active.id);
-			const newIndex = sortedLayers.findIndex((l) => l.id === over.id);
-			const newSorted = arrayMove(sortedLayers, oldIndex, newIndex);
-			const updatedLayers = newSorted.map((l, idx) => ({
+		if (!over || active.id === over.id) return;
+		const oldIndex = sortedLayers.findIndex((l) => l.id === active.id);
+		const newIndex = sortedLayers.findIndex((l) => l.id === over.id);
+		const newSorted = arrayMove(sortedLayers, oldIndex, newIndex).map(
+			(l, idx, arr) => ({
 				...l,
-				zIndex: newSorted.length - idx,
-			}));
-			updateLayers((prev) => {
-				const updateMap = new Map(updatedLayers.map((l) => [l.id, l]));
-				return prev.map((l) => updateMap.get(l.id) || l);
-			});
-		}
+				zIndex: arr.length - idx,
+			}),
+		);
+		updateLayers((prev) => {
+			const updateMap = new Map(newSorted.map((l) => [l.id, l]));
+			return prev.map((l) => updateMap.get(l.id) || l);
+		});
 	};
 
 	useEffect(() => {
@@ -1264,8 +1342,9 @@ const TimelinePanel: React.FC = () => {
 		const loop = () => {
 			if (playerRef.current) {
 				const frame = playerRef.current.getCurrentFrame();
-				if (playheadRef.current)
+				if (playheadRef.current) {
 					playheadRef.current.style.transform = `translateX(${frame * pixelsPerFrame}px)`;
+				}
 				if (isPlaying && scrollContainerRef.current) {
 					const x = frame * pixelsPerFrame;
 					const width = scrollContainerRef.current.clientWidth - HEADER_WIDTH;
@@ -1276,9 +1355,11 @@ const TimelinePanel: React.FC = () => {
 			}
 			rafId = requestAnimationFrame(loop);
 		};
-		if (isPlaying) loop();
-		else if (playheadRef.current)
+		if (isPlaying) {
+			loop();
+		} else if (playheadRef.current) {
 			playheadRef.current.style.transform = `translateX(${currentFrame * pixelsPerFrame}px)`;
+		}
 		return () => {
 			if (rafId) cancelAnimationFrame(rafId);
 		};
@@ -1286,9 +1367,11 @@ const TimelinePanel: React.FC = () => {
 
 	const handleTimelineClick = (e: React.MouseEvent) => {
 		const rect = e.currentTarget.getBoundingClientRect();
-		const clickX = e.clientX - rect.left;
-		const frame = Math.max(0, Math.floor(clickX / pixelsPerFrame));
-		if (playerRef.current) playerRef.current.seekTo(frame);
+		const frame = Math.max(
+			0,
+			Math.floor((e.clientX - rect.left) / pixelsPerFrame),
+		);
+		playerRef.current?.seekTo(frame);
 		setCurrentFrame(frame);
 	};
 
@@ -1298,19 +1381,20 @@ const TimelinePanel: React.FC = () => {
 		type: "move" | "trim",
 	) => {
 		e.stopPropagation();
-		const startX = e.clientX;
 		const layer = layers.find((l) => l.id === layerId);
 		if (!layer) return;
+		const startX = e.clientX;
 		const initialStart = layer.startFrame ?? 0;
 		const initialDuration = layer.durationInFrames ?? DEFAULT_DURATION_FRAMES;
-		const onMove = (moveEv: MouseEvent) => {
-			const diffPx = moveEv.clientX - startX;
-			const diffFrames = Math.round(diffPx / pixelsPerFrame);
+
+		const onMove = (ev: MouseEvent) => {
+			const diffFrames = Math.round((ev.clientX - startX) / pixelsPerFrame);
 			if (type === "move") {
-				const newStart = Math.max(0, initialStart + diffFrames);
 				updateLayers((prev) =>
 					prev.map((l) =>
-						l.id === layerId ? { ...l, startFrame: newStart } : l,
+						l.id === layerId
+							? { ...l, startFrame: Math.max(0, initialStart + diffFrames) }
+							: l,
 					),
 				);
 			} else {
@@ -1337,13 +1421,13 @@ const TimelinePanel: React.FC = () => {
 		const startY = e.clientY;
 		const startHeight = timelineHeight;
 		setIsResizingTimeline(true);
-		const onMove = (moveEv: MouseEvent) => {
-			const delta = startY - moveEv.clientY;
-			const newHeight = Math.min(
-				MAX_TIMELINE_HEIGHT,
-				Math.max(MIN_TIMELINE_HEIGHT, startHeight + delta),
+		const onMove = (ev: MouseEvent) => {
+			setTimelineHeight(
+				Math.min(
+					MAX_TIMELINE_HEIGHT,
+					Math.max(MIN_TIMELINE_HEIGHT, startHeight + (startY - ev.clientY)),
+				),
 			);
-			setTimelineHeight(newHeight);
 		};
 		const onUp = () => {
 			setIsResizingTimeline(false);
@@ -1365,6 +1449,7 @@ const TimelinePanel: React.FC = () => {
 			>
 				<GripHorizontal className="w-6 h-3 text-gray-600 group-hover:text-gray-400 transition-colors" />
 			</div>
+
 			<div className="h-8 border-b border-white/5 flex items-center justify-between px-3 bg-neutral-900 shrink-0 z-40">
 				<div className="text-[10px] font-bold text-neutral-400 tracking-wider flex items-center gap-1.5">
 					<Layers className="w-3.5 h-3.5" /> TIMELINE
@@ -1396,6 +1481,7 @@ const TimelinePanel: React.FC = () => {
 					</Button>
 				</div>
 			</div>
+
 			<div
 				ref={scrollContainerRef}
 				className="flex-1 overflow-auto bg-[#0a0a0a] timeline-scroll-area custom-scrollbar"
@@ -1415,9 +1501,10 @@ const TimelinePanel: React.FC = () => {
 					}
 				}}
 				onMouseMove={(e) => {
-					if (isPanningTimeline && scrollContainerRef.current)
+					if (isPanningTimeline && scrollContainerRef.current) {
 						scrollContainerRef.current.scrollLeft =
 							initialScroll - (e.clientX - dragStartX);
+					}
 				}}
 				onMouseUp={() => setIsPanningTimeline(false)}
 				onMouseLeave={() => setIsPanningTimeline(false)}
@@ -1433,6 +1520,7 @@ const TimelinePanel: React.FC = () => {
 						),
 					}}
 				>
+					{/* Ruler */}
 					<div
 						className="sticky top-0 z-50 flex shrink-0"
 						style={{ height: RULER_HEIGHT }}
@@ -1506,6 +1594,8 @@ const TimelinePanel: React.FC = () => {
 							</div>
 						</div>
 					</div>
+
+					{/* Tracks */}
 					<div className="flex relative flex-1">
 						<div
 							className="sticky left-0 z-30 bg-[#0f0f0f] border-r border-white/5 shrink-0"
@@ -1531,6 +1621,7 @@ const TimelinePanel: React.FC = () => {
 								</SortableContext>
 							</DndContext>
 						</div>
+
 						<div className="flex-1 relative timeline-bg min-h-full bg-[#0a0a0a]">
 							<div
 								className="absolute inset-0 pointer-events-none opacity-[0.03]"
@@ -1543,7 +1634,6 @@ const TimelinePanel: React.FC = () => {
 							{sortedLayers.map((layer) => {
 								const duration =
 									layer.durationInFrames ?? DEFAULT_DURATION_FRAMES;
-								const width = Math.max(10, duration * pixelsPerFrame);
 								const isSelected = layer.id === selectedId;
 								return (
 									<div
@@ -1559,7 +1649,7 @@ const TimelinePanel: React.FC = () => {
 											className={`absolute top-1 bottom-1 rounded-md text-left p-0 m-0 border-0 bg-transparent flex items-center overflow-hidden cursor-move outline-none ${isSelected ? "z-20" : "z-10"}`}
 											style={{
 												left: (layer.startFrame ?? 0) * pixelsPerFrame,
-												width,
+												width: Math.max(10, duration * pixelsPerFrame),
 												minWidth: "10px",
 											}}
 											onMouseDown={(e) =>
@@ -1606,6 +1696,7 @@ const InspectorPanel: React.FC = () => {
 		updateViewportHeight,
 		initialLayersData,
 	} = useEditor();
+
 	const selectedLayer = layers.find((f) => f.id === selectedId);
 	const [addAnimOpen, setAddAnimOpen] = useState(false);
 	const { data: fontList } = useGetFontListQuery({});
@@ -1630,7 +1721,7 @@ const InspectorPanel: React.FC = () => {
 				if (l.id !== selectedId) return l;
 				const nextLayer = { ...l, ...patch };
 				if (nextLayer.type === "Text") {
-					const propertiesAffectingDimensions = [
+					const textProps = [
 						"text",
 						"fontSize",
 						"fontFamily",
@@ -1640,11 +1731,8 @@ const InspectorPanel: React.FC = () => {
 						"lineHeight",
 						"padding",
 					];
-					const hasDimensionAffectingChange =
-						propertiesAffectingDimensions.some((prop) => prop in patch);
-					if (hasDimensionAffectingChange) {
-						const text = nextLayer.text || "";
-						const dims = measureText(text, nextLayer);
+					if (textProps.some((prop) => prop in patch)) {
+						const dims = measureText(nextLayer.text || "", nextLayer);
 						nextLayer.width = dims.width;
 						nextLayer.height = dims.height;
 					}
@@ -1740,13 +1828,44 @@ const InspectorPanel: React.FC = () => {
 		selectedLayer.videoNaturalWidth != null &&
 		selectedLayer.videoNaturalHeight != null;
 
+	const handleAutoDimensions = () => {
+		if (selectedLayer.autoDimensions) {
+			update({ autoDimensions: false });
+			return;
+		}
+		let newW = selectedLayer.width;
+		let newH = selectedLayer.height;
+		if (selectedLayer.type !== "Lottie") {
+			const initialItem = initialLayersData.get(selectedLayer.id);
+			if (initialItem) {
+				if (initialItem.type === "Video") {
+					const meta = getActiveMediaMetadata(
+						initialItem.data as VirtualMediaData,
+					);
+					if (meta?.width) newW = meta.width;
+					if (meta?.height) newH = meta.height;
+				} else if (initialItem.type === "Image") {
+					const meta = (initialItem.data as FileData).processData;
+					if (meta?.width) newW = meta.width;
+					if (meta?.height) newH = meta.height;
+				}
+			}
+		}
+		update({ autoDimensions: true, width: newW, height: newH });
+	};
+
+	const autoDimensionsTooltip =
+		selectedLayer.type === "Lottie"
+			? "Sync dimensions with Lottie native size"
+			: hasCropDimensions
+				? "Sync dimensions with cropped source media"
+				: "Sync dimensions with source media";
+
 	return (
 		<div className="w-80 h-full border-l border-white/5 bg-[#0f0f0f] z-20 shadow-xl flex flex-col shrink-0 overflow-hidden">
 			<div className="flex items-center justify-between p-4 border-b border-white/5 bg-neutral-900/50">
 				<div className="flex flex-col min-w-0">
-					<span
-						className={`text-[10px] uppercase font-bold tracking-wider mb-0.5 ${selectedLayer.type === "Lottie" ? "text-blue-400" : "text-blue-400"}`}
-					>
+					<span className="text-[10px] uppercase font-bold tracking-wider mb-0.5 text-blue-400">
 						Properties
 					</span>
 					<h2 className="text-sm font-semibold text-white truncate max-w-[200px]">
@@ -1764,6 +1883,7 @@ const InspectorPanel: React.FC = () => {
 					{selectedLayer.type}
 				</span>
 			</div>
+
 			<ScrollArea className="flex-1 min-h-0">
 				<div className="pb-6">
 					{selectedLayer.type !== "Audio" && (
@@ -1775,69 +1895,26 @@ const InspectorPanel: React.FC = () => {
 								{(selectedLayer.type === "Image" ||
 									selectedLayer.type === "Video" ||
 									selectedLayer.type === "Lottie") && (
-									<TooltipProvider>
-										<Tooltip>
-											<TooltipTrigger asChild>
-												<Button
-													variant={
-														selectedLayer.autoDimensions ? "secondary" : "ghost"
-													}
-													size="sm"
-													className={cn(
-														"h-6 text-[10px] px-2",
-														selectedLayer.autoDimensions
-															? "text-blue-400 bg-blue-500/10 hover:bg-blue-500/20"
-															: "text-gray-500 hover:text-gray-300 bg-white/5",
-													)}
-													onClick={() => {
-														if (selectedLayer.autoDimensions) {
-															update({ autoDimensions: false });
-														} else {
-															let newW = selectedLayer.width;
-															let newH = selectedLayer.height;
-															if (selectedLayer.type === "Lottie") {
-																// keep as-is; no source intrinsics to fetch
-															} else {
-																const initialItem = initialLayersData.get(
-																	selectedLayer.id,
-																);
-																if (initialItem) {
-																	if (initialItem.type === "Video") {
-																		const vvData =
-																			initialItem.data as VirtualMediaData;
-																		const meta = getActiveMediaMetadata(vvData);
-																		if (meta?.width) newW = meta.width;
-																		if (meta?.height) newH = meta.height;
-																	} else if (initialItem.type === "Image") {
-																		const meta = (initialItem.data as FileData)
-																			.processData;
-																		if (meta?.width) newW = meta.width;
-																		if (meta?.height) newH = meta.height;
-																	}
-																}
-															}
-															update({
-																autoDimensions: true,
-																width: newW,
-																height: newH,
-															});
-														}
-													}}
-												>
-													<Sparkles className="w-3 h-3 mr-1" /> Auto W/H
-												</Button>
-											</TooltipTrigger>
-											<TooltipContent>
-												{selectedLayer.type === "Lottie"
-													? "Sync dimensions with Lottie native size"
-													: hasCropDimensions
-														? "Sync dimensions with cropped source media"
-														: "Sync dimensions with source media"}
-											</TooltipContent>
-										</Tooltip>
-									</TooltipProvider>
+									<WithTooltip tip={autoDimensionsTooltip}>
+										<Button
+											variant={
+												selectedLayer.autoDimensions ? "secondary" : "ghost"
+											}
+											size="sm"
+											className={cn(
+												"h-6 text-[10px] px-2",
+												selectedLayer.autoDimensions
+													? "text-blue-400 bg-blue-500/10 hover:bg-blue-500/20"
+													: "text-gray-500 hover:text-gray-300 bg-white/5",
+											)}
+											onClick={handleAutoDimensions}
+										>
+											<Sparkles className="w-3 h-3 mr-1" /> Auto W/H
+										</Button>
+									</WithTooltip>
 								)}
 							</div>
+
 							<div className="grid grid-cols-2 gap-2">
 								<DraggableNumberInput
 									label="X"
@@ -1852,6 +1929,7 @@ const InspectorPanel: React.FC = () => {
 									onChange={(v) => update({ y: v })}
 								/>
 							</div>
+
 							{selectedLayer.type !== "Text" && (
 								<TooltipProvider>
 									<div className="flex items-end gap-2">
@@ -1922,6 +2000,7 @@ const InspectorPanel: React.FC = () => {
 									</div>
 								</TooltipProvider>
 							)}
+
 							<div className="grid grid-cols-2 gap-2">
 								<DraggableNumberInput
 									label="Rot"
@@ -1939,9 +2018,11 @@ const InspectorPanel: React.FC = () => {
 							</div>
 						</div>
 					)}
+
 					{selectedLayer.type === "Lottie" && (
 						<LottieInspectorSection layer={selectedLayer} update={update} />
 					)}
+
 					{(selectedLayer.type === "Video" ||
 						selectedLayer.type === "Audio") && (
 						<CollapsibleSection title="Audio" icon={Music}>
@@ -1961,6 +2042,7 @@ const InspectorPanel: React.FC = () => {
 							</div>
 						</CollapsibleSection>
 					)}
+
 					{selectedLayer.type === "Text" && (
 						<TypographyControls
 							fontFamily={selectedLayer.fontFamily ?? "Inter"}
@@ -1976,6 +2058,7 @@ const InspectorPanel: React.FC = () => {
 							onChange={update}
 						/>
 					)}
+
 					<StyleControls
 						backgroundColor={selectedLayer.backgroundColor}
 						stroke={
@@ -1991,11 +2074,9 @@ const InspectorPanel: React.FC = () => {
 						cornerRadius={selectedLayer.borderRadius}
 						padding={selectedLayer.padding}
 						opacity={selectedLayer.opacity}
-						showBackground={
-							selectedLayer.type === "Image" ||
-							selectedLayer.type === "Video" ||
-							selectedLayer.type === "Lottie"
-						}
+						showBackground={["Image", "Video", "Lottie"].includes(
+							selectedLayer.type,
+						)}
 						showStroke={selectedLayer.type !== "Audio"}
 						showCornerRadius={
 							selectedLayer.type !== "Text" && selectedLayer.type !== "Audio"
@@ -2045,6 +2126,7 @@ export const VideoDesignerEditor: React.FC<VideoDesignerEditorProps> = ({
 }) => {
 	const nodeConfig = node.config as unknown as VideoCompositorNodeConfig;
 	const handles = useAppSelector(handleSelectors.selectEntities);
+
 	const [layers, setLayers] = useState<EditorLayer[]>([]);
 	const [selectedId, setSelectedId] = useState<string | null>(null);
 	const [isDirty, setIsDirty] = useState(false);
@@ -2056,41 +2138,22 @@ export const VideoDesignerEditor: React.FC<VideoDesignerEditorProps> = ({
 	);
 	const [zoom, setZoom] = useState(0.5);
 	const [pan, setPan] = useState({ x: 0, y: 0 });
-	const [mode, setMode] = useState<"select" | "pan">("select");
+	const [mode, setMode] = useState<EditorMode>("select");
 	const [timelineHeight, setTimelineHeight] = useState(DEFAULT_TIMELINE_HEIGHT);
 	const [currentFrame, setCurrentFrame] = useState(0);
 	const [isPlaying, setIsPlayingState] = useState(false);
+	const [containerSize, setContainerSize] = useState({ width: 0, height: 0 });
+	const [sizeKnown, setSizeKnown] = useState(false);
 
 	const playerRef = useRef<PlayerRef>(null);
 	const containerRef = useRef<HTMLDivElement>(null);
 	const timeRef = useRef<HTMLDivElement>(null);
-	const lastModeRef = useRef<"select" | "pan">("select");
-	const [containerSize, setContainerSize] = useState({ width: 0, height: 0 });
-	const [sizeKnown, setSizeKnown] = useState(false);
+	const lastModeRef = useRef<EditorMode>("select");
 	const timelineScrollRef = useRef<HTMLDivElement>(null);
 
-	const updateViewportWidth = (w: number) => {
-		setViewportWidth(roundToEven(Math.max(2, w)));
-		setLayers((prev) =>
-			prev.map((layer) => {
-				if (layer.type !== "Video" || !layer.virtualMedia) return layer;
-				const cropRenderProps = computeVideoCropRenderProps(layer.virtualMedia);
-				return { ...layer, ...(cropRenderProps ?? {}) };
-			}),
-		);
-		setIsDirty(true);
-	};
-	const updateViewportHeight = (h: number) => {
-		setViewportHeight(roundToEven(Math.max(2, h)));
-		setLayers((prev) =>
-			prev.map((layer) => {
-				if (layer.type !== "Video" || !layer.virtualMedia) return layer;
-				const cropRenderProps = computeVideoCropRenderProps(layer.virtualMedia);
-				return { ...layer, ...(cropRenderProps ?? {}) };
-			}),
-		);
-		setIsDirty(true);
-	};
+	// ---------------------------------------------------------------------------
+	// Derived helpers bound to initialLayers
+	// ---------------------------------------------------------------------------
 
 	const getTextData = (id: string) => {
 		const item = initialLayers.get(id);
@@ -2098,6 +2161,7 @@ export const VideoDesignerEditor: React.FC<VideoDesignerEditorProps> = ({
 			? (item as OutputItem<"Text">).data || "Text"
 			: "";
 	};
+
 	const getAssetUrl = (id: string) => {
 		const item = initialLayers.get(id);
 		if (!item) return undefined;
@@ -2119,18 +2183,53 @@ export const VideoDesignerEditor: React.FC<VideoDesignerEditorProps> = ({
 		return fileData.entity?.duration ?? fileData?.processData?.duration;
 	};
 
+	// ---------------------------------------------------------------------------
+	// Layer management
+	// ---------------------------------------------------------------------------
+
 	const updateLayersHandler = (
 		updater: SetStateAction<EditorLayer[]>,
-		isUserChange: boolean = true,
+		isUserChange = true,
 	) => {
 		setLayers(updater);
 		if (isUserChange) setIsDirty(true);
 	};
+
 	const deleteLayer = (id: string) => {
 		setLayers((prev) => prev.filter((l) => l.id !== id));
 		if (selectedId === id) setSelectedId(null);
 		setIsDirty(true);
 	};
+
+	// ---------------------------------------------------------------------------
+	// Viewport
+	// ---------------------------------------------------------------------------
+
+	const recomputeVideoCrops = (prev: EditorLayer[]) =>
+		prev.map((layer) => {
+			if (layer.type !== "Video" || !layer.virtualMedia) return layer;
+			return {
+				...layer,
+				...(computeVideoCropRenderProps(layer.virtualMedia) ?? {}),
+			};
+		});
+
+	const updateViewportWidth = (w: number) => {
+		setViewportWidth(roundToEven(Math.max(2, w)));
+		setLayers(recomputeVideoCrops);
+		setIsDirty(true);
+	};
+
+	const updateViewportHeight = (h: number) => {
+		setViewportHeight(roundToEven(Math.max(2, h)));
+		setLayers(recomputeVideoCrops);
+		setIsDirty(true);
+	};
+
+	// ---------------------------------------------------------------------------
+	// Playback
+	// ---------------------------------------------------------------------------
+
 	const setIsPlaying = (p: boolean) => {
 		setIsPlayingState(p);
 		if (p) playerRef.current?.play();
@@ -2140,31 +2239,76 @@ export const VideoDesignerEditor: React.FC<VideoDesignerEditorProps> = ({
 				setCurrentFrame(playerRef.current.getCurrentFrame());
 		}
 	};
+
 	const handlePlaybackEnded = () => {
 		setIsPlayingState(false);
 		setCurrentFrame(0);
 		playerRef.current?.seekTo(0);
 		if (timelineScrollRef.current) timelineScrollRef.current.scrollLeft = 0;
 	};
+
 	const setCurrentFrameHandler = (frame: number) => {
 		setCurrentFrame(frame);
 		playerRef.current?.seekTo(frame);
 	};
+
+	// ---------------------------------------------------------------------------
+	// Zoom / pan
+	// ---------------------------------------------------------------------------
+
+	const zoomIn = () => setZoom((z) => Math.min(3, z + 0.1));
+	const zoomOut = () => setZoom((z) => Math.max(0.1, z - 0.1));
+	const zoomTo = (val: number) => setZoom(val);
+
+	const fitView = useCallback(() => {
+		if (containerSize.width === 0 || containerSize.height === 0) return;
+		const scale =
+			Math.min(
+				containerSize.width / viewportWidth,
+				containerSize.height / viewportHeight,
+			) * 0.9;
+		setZoom(scale);
+		setPan({
+			x: (containerSize.width - viewportWidth * scale) / 2,
+			y: (containerSize.height - viewportHeight * scale) / 2,
+		});
+	}, [containerSize, viewportWidth, viewportHeight]);
+
+	// ---------------------------------------------------------------------------
+	// Save
+	// ---------------------------------------------------------------------------
+
+	const handleSave = () => {
+		onSave({
+			layerUpdates: serializeLayersForSave(layers),
+			width: viewportWidth,
+			height: viewportHeight,
+			FPS,
+		});
+		setIsDirty(false);
+	};
+
+	// ---------------------------------------------------------------------------
+	// Effects
+	// ---------------------------------------------------------------------------
 
 	useEffect(() => {
 		const loadInitialLayers = async () => {
 			const layerUpdates = { ...nodeConfig.layerUpdates };
 			const loaded: EditorLayer[] = [];
 			const fontPromises: Promise<void>[] = [];
+			const asyncTasks: Promise<void>[] = [];
+
 			let maxZ = Math.max(
 				0,
-				...Object.values(layerUpdates).map((l) => l.zIndex ?? 0),
+				...Object.values(layerUpdates).map((l) => (l as any).zIndex ?? 0),
 			);
-			const asyncTasks: Promise<void>[] = [];
 
 			initialLayers.forEach((item, id) => {
 				const saved = layerUpdates[id] as EditorLayer | undefined;
 				const isAutoDimensions = saved?.autoDimensions ?? true;
+				const handle = handles[id];
+				const name = handle?.label ?? handle?.dataTypes?.[0] ?? id;
 
 				let durationMs = 0;
 				let text: string | undefined;
@@ -2209,12 +2353,12 @@ export const VideoDesignerEditor: React.FC<VideoDesignerEditorProps> = ({
 					}
 				}
 
-				const calculatedDurationFrames =
-					(item.type === "Video" || item.type === "Audio") && durationMs > 0
-						? Math.ceil((durationMs / 1000) * FPS)
-						: DEFAULT_DURATION_FRAMES;
-				const handle = handles[id];
-				const name = handle?.label ?? handle?.dataTypes?.[0] ?? id;
+				const hasNativeDuration =
+					(item.type === "Video" || item.type === "Audio") && durationMs > 0;
+				const calculatedDurationFrames = hasNativeDuration
+					? Math.ceil((durationMs / 1000) * FPS)
+					: DEFAULT_DURATION_FRAMES;
+
 				const base: Partial<EditorLayer> = {
 					id,
 					inputHandleId: id,
@@ -2292,6 +2436,7 @@ export const VideoDesignerEditor: React.FC<VideoDesignerEditorProps> = ({
 						speed: saved?.speed ?? 1,
 					} as EditorLayer;
 					loaded.push(lottieLayer);
+
 					if (src && !saved?.lottieFrameRate) {
 						const lottieSrc = src;
 						const layerId = id;
@@ -2327,6 +2472,7 @@ export const VideoDesignerEditor: React.FC<VideoDesignerEditorProps> = ({
 			await Promise.all([...fontPromises, ...asyncTasks]);
 			setLayers(loaded);
 		};
+
 		loadInitialLayers();
 	}, [initialLayers, nodeConfig]);
 
@@ -2350,6 +2496,7 @@ export const VideoDesignerEditor: React.FC<VideoDesignerEditorProps> = ({
 				(l.width == null || l.height == null || l.autoDimensions === true),
 		);
 		if (layersToMeasure.length === 0) return;
+
 		let mounted = true;
 		const measure = async () => {
 			const updates = new Map<string, Partial<EditorLayer>>();
@@ -2363,11 +2510,12 @@ export const VideoDesignerEditor: React.FC<VideoDesignerEditorProps> = ({
 								metadata.height != null &&
 								(layer.width !== metadata.width ||
 									layer.height !== metadata.height)
-							)
+							) {
 								updates.set(layer.id, {
 									width: metadata.width,
 									height: metadata.height,
 								});
+							}
 							return;
 						}
 						const url = getAssetUrl(layer.inputHandleId);
@@ -2378,11 +2526,12 @@ export const VideoDesignerEditor: React.FC<VideoDesignerEditorProps> = ({
 							if (
 								layer.width !== img.naturalWidth ||
 								layer.height !== img.naturalHeight
-							)
+							) {
 								updates.set(layer.id, {
 									width: img.naturalWidth,
 									height: img.naturalHeight,
 								});
+							}
 						} else if (layer.type === "Video" && url) {
 							const video = document.createElement("video");
 							video.src = url;
@@ -2395,21 +2544,24 @@ export const VideoDesignerEditor: React.FC<VideoDesignerEditorProps> = ({
 								video.videoHeight > 0 &&
 								(layer.width !== video.videoWidth ||
 									layer.height !== video.videoHeight)
-							)
+							) {
 								updates.set(layer.id, {
 									width: video.videoWidth,
 									height: video.videoHeight,
 								});
+							}
 						} else if (layer.type === "Text") {
 							const d = document.createElement("div");
-							d.style.fontFamily = layer.fontFamily || "Inter";
-							d.style.fontSize = `${layer.fontSize || 40}px`;
-							d.style.fontStyle = layer.fontStyle || "normal";
-							d.style.textDecoration = layer.textDecoration || "";
-							d.style.lineHeight = `${layer.lineHeight ?? 1.2}`;
-							d.style.position = "absolute";
-							d.style.visibility = "hidden";
-							d.style.whiteSpace = "pre";
+							Object.assign(d.style, {
+								fontFamily: layer.fontFamily || "Inter",
+								fontSize: `${layer.fontSize || 40}px`,
+								fontStyle: layer.fontStyle || "normal",
+								textDecoration: layer.textDecoration || "",
+								lineHeight: `${layer.lineHeight ?? 1.2}`,
+								position: "absolute",
+								visibility: "hidden",
+								whiteSpace: "pre",
+							});
 							d.textContent = getTextData(layer.inputHandleId);
 							document.body.appendChild(d);
 							const newW = d.offsetWidth;
@@ -2418,8 +2570,9 @@ export const VideoDesignerEditor: React.FC<VideoDesignerEditorProps> = ({
 							if (
 								Math.abs((layer.width ?? 0) - newW) > 1 ||
 								Math.abs((layer.height ?? 0) - newH) > 1
-							)
+							) {
 								updates.set(layer.id, { width: newW, height: newH });
+							}
 						}
 					} catch {
 						updates.set(layer.id, {
@@ -2430,35 +2583,19 @@ export const VideoDesignerEditor: React.FC<VideoDesignerEditorProps> = ({
 					}
 				}),
 			);
-			if (mounted && updates.size > 0)
+			if (mounted && updates.size > 0) {
 				setLayers((prev) =>
 					prev.map((l) =>
 						updates.has(l.id) ? { ...l, ...updates.get(l.id) } : l,
 					),
 				);
+			}
 		};
 		measure();
 		return () => {
 			mounted = false;
 		};
 	}, [measurementSignature]);
-
-	const zoomIn = () => setZoom((z) => Math.min(3, z + 0.1));
-	const zoomOut = () => setZoom((z) => Math.max(0.1, z - 0.1));
-	const zoomTo = (val: number) => setZoom(val);
-	const fitView = useCallback(() => {
-		if (containerSize.width === 0 || containerSize.height === 0) return;
-		const scale =
-			Math.min(
-				containerSize.width / viewportWidth,
-				containerSize.height / viewportHeight,
-			) * 0.9;
-		setZoom(scale);
-		setPan({
-			x: (containerSize.width - viewportWidth * scale) / 2,
-			y: (containerSize.height - viewportHeight * scale) / 2,
-		});
-	}, [containerSize, viewportWidth, viewportHeight]);
 
 	useEffect(() => {
 		fitView();
@@ -2493,8 +2630,10 @@ export const VideoDesignerEditor: React.FC<VideoDesignerEditorProps> = ({
 				const rect = el.getBoundingClientRect();
 				const pointerX = e.clientX - rect.left;
 				const pointerY = e.clientY - rect.top;
-				const delta = -e.deltaY * 0.003;
-				const newZoom = Math.min(Math.max(zoom * Math.exp(delta), 0.1), 5);
+				const newZoom = Math.min(
+					Math.max(zoom * Math.exp(-e.deltaY * 0.003), 0.1),
+					5,
+				);
 				if (newZoom !== zoom) {
 					const mousePointTo = {
 						x: (pointerX - pan.x) / zoom,
@@ -2514,16 +2653,28 @@ export const VideoDesignerEditor: React.FC<VideoDesignerEditorProps> = ({
 				dx = dy;
 				dy = 0;
 			}
-			setPan((p) => ({ ...p, x: p.x - dx, y: p.y - dy }));
+			setPan((p) => ({ x: p.x - dx, y: p.y - dy }));
 		};
 		el.addEventListener("wheel", handleWheel, { passive: false });
 		return () => el.removeEventListener("wheel", handleWheel);
 	}, [zoom, pan, mode]);
 
+	useEffect(() => {
+		playerRef.current?.seekTo(0);
+		const player = playerRef.current;
+		if (player) {
+			player.addEventListener("ended", handlePlaybackEnded);
+			return () => player.removeEventListener("ended", handlePlaybackEnded);
+		}
+	}, []);
+
+	// ---------------------------------------------------------------------------
+	// Hotkeys
+	// ---------------------------------------------------------------------------
+
 	useHotkeys("v", () => setMode("select"));
 	useHotkeys("h", () => setMode("pan"));
-	useHotkeys("=", () => zoomIn());
-	useHotkeys("+", () => zoomIn());
+	useHotkeys("=,+", () => zoomIn());
 	useHotkeys("-", () => zoomOut());
 	useHotkeys("0", () => fitView());
 	useHotkeys("1", () => zoomTo(1));
@@ -2564,33 +2715,14 @@ export const VideoDesignerEditor: React.FC<VideoDesignerEditorProps> = ({
 		"meta+s, ctrl+s",
 		(e) => {
 			e.preventDefault();
-			if (isDirty) {
-				const layerUpdates = layers.reduce<any>((acc, layer) => {
-					const {
-						src,
-						text,
-						isPlaceholder,
-						maxDurationInFrames,
-						videoNaturalWidth,
-						videoNaturalHeight,
-						cropTranslatePercentageX,
-						cropTranslatePercentageY,
-						...savedLayer
-					} = layer;
-					acc[layer.id] = savedLayer;
-					return acc;
-				}, {});
-				onSave({
-					layerUpdates,
-					width: viewportWidth,
-					FPS: FPS,
-					height: viewportHeight,
-				});
-				setIsDirty(false);
-			}
+			if (isDirty) handleSave();
 		},
 		{ enableOnFormTags: true },
 	);
+
+	// ---------------------------------------------------------------------------
+	// Derived
+	// ---------------------------------------------------------------------------
 
 	const durationInFrames =
 		layers.length === 0
@@ -2641,15 +2773,6 @@ export const VideoDesignerEditor: React.FC<VideoDesignerEditorProps> = ({
 		setTimelineHeight,
 		initialLayersData: initialLayers,
 	};
-
-	useEffect(() => {
-		playerRef.current?.seekTo(0);
-		const player = playerRef.current;
-		if (player) {
-			player.addEventListener("ended", handlePlaybackEnded);
-			return () => player.removeEventListener("ended", handlePlaybackEnded);
-		}
-	}, []);
 
 	return (
 		<EditorContext.Provider value={contextValue}>
@@ -2703,35 +2826,11 @@ export const VideoDesignerEditor: React.FC<VideoDesignerEditorProps> = ({
 						</div>
 						{!isPlaying && <InteractionOverlay />}
 					</div>
+
 					<InspectorPanel />
+
 					<div className="absolute bottom-6 left-1/2 -translate-x-1/2 z-40 transition-all duration-300">
-						<Toolbar
-							onClose={onClose}
-							onSave={() => {
-								const layerUpdates = layers.reduce<any>((acc, layer) => {
-									const {
-										src,
-										text,
-										isPlaceholder,
-										maxDurationInFrames,
-										videoNaturalWidth,
-										videoNaturalHeight,
-										cropTranslatePercentageX,
-										cropTranslatePercentageY,
-										...savedLayer
-									} = layer;
-									acc[layer.id] = savedLayer;
-									return acc;
-								}, {});
-								onSave({
-									layerUpdates,
-									width: viewportWidth,
-									height: viewportHeight,
-								});
-								setIsDirty(false);
-							}}
-							timeRef={timeRef}
-						/>
+						<Toolbar onClose={onClose} onSave={handleSave} timeRef={timeRef} />
 					</div>
 				</div>
 				<TimelinePanel />

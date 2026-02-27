@@ -25,6 +25,7 @@ export const VariableInputDataTypes = [
 	"Video",
 	"Audio",
 	"Lottie",
+	"Caption",
 	"SVG",
 ] as const;
 // Video Compositor Layer (extends base with video-specific fields)
