@@ -7,6 +7,17 @@ type WorkerMessage =
 				zoom: number;
 				canvasWidth: number;
 				dpr: number;
+				width?: number;
+				height?: number;
+			};
+	  }
+	| {
+			type: "DRAW_IMAGE_BITMAP";
+			payload: {
+				bitmap: ImageBitmap;
+				zoom: number;
+				canvasWidth: number;
+				dpr: number;
 			};
 	  }
 	| { type: "CLEAR" };
@@ -65,88 +76,110 @@ self.onmessage = async (e: MessageEvent<WorkerMessage>) => {
 		}
 		case "DRAW_IMAGE": {
 			if (!gl || !canvas || !program) return;
-			const { imageUrl, canvasWidth, zoom, dpr } = e.data.payload;
+			const { imageUrl, canvasWidth, zoom, dpr, width, height } =
+				e.data.payload;
 
 			try {
 				const response = await fetch(imageUrl, {
 					credentials: "include",
 				});
 				const blob = await response.blob();
+
+				if (blob.type.includes("svg")) {
+					self.postMessage({
+						type: "REQUEST_SVG_DECODE",
+						payload: { imageUrl, canvasWidth, zoom, dpr, width, height },
+					});
+					return;
+				}
+
 				const bitmap = await createImageBitmap(blob);
-
-				const aspectRatio = bitmap.height / bitmap.width;
-				const cssHeight = canvasWidth * aspectRatio;
-
-				// Set internal resolution
-				canvas.width = canvasWidth * zoom * dpr;
-				canvas.height = cssHeight * zoom * dpr;
-
-				gl.viewport(0, 0, canvas.width, canvas.height);
-				gl.clearColor(0, 0, 0, 0);
-				gl.clear(gl.COLOR_BUFFER_BIT);
-
-				// biome-ignore lint/correctness/useHookAtTopLevel: Not a hook
-				gl.useProgram(program);
-
-				// Setup Buffers (rect for the image)
-				const positionBuffer = gl.createBuffer();
-				gl.bindBuffer(gl.ARRAY_BUFFER, positionBuffer);
-				gl.bufferData(
-					gl.ARRAY_BUFFER,
-					new Float32Array([-1, -1, 1, -1, -1, 1, -1, 1, 1, -1, 1, 1]),
-					gl.STATIC_DRAW,
-				);
-
-				const texCoordBuffer = gl.createBuffer();
-				gl.bindBuffer(gl.ARRAY_BUFFER, texCoordBuffer);
-				gl.bufferData(
-					gl.ARRAY_BUFFER,
-					new Float32Array([0, 1, 1, 1, 0, 0, 0, 0, 1, 1, 1, 0]),
-					gl.STATIC_DRAW,
-				);
-
-				// Create and bind texture
-				const texture = gl.createTexture();
-				gl.bindTexture(gl.TEXTURE_2D, texture);
-
-				// Upload the bitmap to GPU
-				gl.texImage2D(
-					gl.TEXTURE_2D,
-					0,
-					gl.RGBA,
-					gl.RGBA,
-					gl.UNSIGNED_BYTE,
-					bitmap,
-				);
-
-				// Texture
-				gl.texParameteri(gl.TEXTURE_2D, gl.TEXTURE_WRAP_S, gl.CLAMP_TO_EDGE);
-				gl.texParameteri(gl.TEXTURE_2D, gl.TEXTURE_WRAP_T, gl.CLAMP_TO_EDGE);
-				gl.texParameteri(gl.TEXTURE_2D, gl.TEXTURE_MIN_FILTER, gl.LINEAR);
-
-				// Draw
-				const posLoc = gl.getAttribLocation(program, "a_position");
-				gl.enableVertexAttribArray(posLoc);
-				gl.bindBuffer(gl.ARRAY_BUFFER, positionBuffer);
-				gl.vertexAttribPointer(posLoc, 2, gl.FLOAT, false, 0, 0);
-
-				const texLoc = gl.getAttribLocation(program, "a_texCoord");
-				gl.enableVertexAttribArray(texLoc);
-				gl.bindBuffer(gl.ARRAY_BUFFER, texCoordBuffer);
-				gl.vertexAttribPointer(texLoc, 2, gl.FLOAT, false, 0, 0);
-
-				gl.drawArrays(gl.TRIANGLES, 0, 6);
-
-				self.postMessage({
-					type: "CANVAS_INITIALIZED",
-					payload: { renderHeight: cssHeight },
-				});
-
-				bitmap.close();
+				drawBitmapToCanvas(bitmap, canvasWidth, zoom, dpr);
 			} catch (err) {
 				console.error("WebGL Draw Error:", err);
 			}
 			break;
 		}
+		case "DRAW_IMAGE_BITMAP": {
+			if (!gl || !canvas || !program) return;
+			const { bitmap, canvasWidth, zoom, dpr } = e.data.payload;
+			try {
+				drawBitmapToCanvas(bitmap, canvasWidth, zoom, dpr);
+			} catch (err) {
+				console.error("WebGL Draw Bitmap Error:", err);
+			}
+			break;
+		}
 	}
 };
+
+function drawBitmapToCanvas(
+	bitmap: ImageBitmap,
+	canvasWidth: number,
+	zoom: number,
+	dpr: number,
+) {
+	if (!gl || !canvas || !program) return;
+
+	const aspectRatio = bitmap.height / bitmap.width;
+	const cssHeight = canvasWidth * aspectRatio;
+
+	// Set internal resolution
+	canvas.width = canvasWidth * zoom * dpr;
+	canvas.height = cssHeight * zoom * dpr;
+
+	gl.viewport(0, 0, canvas.width, canvas.height);
+	gl.clearColor(0, 0, 0, 0);
+	gl.clear(gl.COLOR_BUFFER_BIT);
+
+	gl.useProgram(program);
+
+	// Setup Buffers (rect for the image)
+	const positionBuffer = gl.createBuffer();
+	gl.bindBuffer(gl.ARRAY_BUFFER, positionBuffer);
+	gl.bufferData(
+		gl.ARRAY_BUFFER,
+		new Float32Array([-1, -1, 1, -1, -1, 1, -1, 1, 1, -1, 1, 1]),
+		gl.STATIC_DRAW,
+	);
+
+	const texCoordBuffer = gl.createBuffer();
+	gl.bindBuffer(gl.ARRAY_BUFFER, texCoordBuffer);
+	gl.bufferData(
+		gl.ARRAY_BUFFER,
+		new Float32Array([0, 1, 1, 1, 0, 0, 0, 0, 1, 1, 1, 0]),
+		gl.STATIC_DRAW,
+	);
+
+	// Create and bind texture
+	const texture = gl.createTexture();
+	gl.bindTexture(gl.TEXTURE_2D, texture);
+
+	// Upload the bitmap to GPU
+	gl.texImage2D(gl.TEXTURE_2D, 0, gl.RGBA, gl.RGBA, gl.UNSIGNED_BYTE, bitmap);
+
+	// Texture
+	gl.texParameteri(gl.TEXTURE_2D, gl.TEXTURE_WRAP_S, gl.CLAMP_TO_EDGE);
+	gl.texParameteri(gl.TEXTURE_2D, gl.TEXTURE_WRAP_T, gl.CLAMP_TO_EDGE);
+	gl.texParameteri(gl.TEXTURE_2D, gl.TEXTURE_MIN_FILTER, gl.LINEAR);
+
+	// Draw
+	const posLoc = gl.getAttribLocation(program, "a_position");
+	gl.enableVertexAttribArray(posLoc);
+	gl.bindBuffer(gl.ARRAY_BUFFER, positionBuffer);
+	gl.vertexAttribPointer(posLoc, 2, gl.FLOAT, false, 0, 0);
+
+	const texLoc = gl.getAttribLocation(program, "a_texCoord");
+	gl.enableVertexAttribArray(texLoc);
+	gl.bindBuffer(gl.ARRAY_BUFFER, texCoordBuffer);
+	gl.vertexAttribPointer(texLoc, 2, gl.FLOAT, false, 0, 0);
+
+	gl.drawArrays(gl.TRIANGLES, 0, 6);
+
+	self.postMessage({
+		type: "CANVAS_INITIALIZED",
+		payload: { renderHeight: cssHeight },
+	});
+
+	bitmap.close();
+}

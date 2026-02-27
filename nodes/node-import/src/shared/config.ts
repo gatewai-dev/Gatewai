@@ -22,9 +22,6 @@ export const ImportResultSchema = z.union([
 		createOutputItemSchema(z.literal("Json"), FileDataSchema),
 	),
 	MultiOutputGenericSchema(
-		createOutputItemSchema(z.literal("ThreeD"), FileDataSchema),
-	),
-	MultiOutputGenericSchema(
 		createOutputItemSchema(z.literal("SVG"), FileDataSchema),
 	),
 	MultiOutputGenericSchema(

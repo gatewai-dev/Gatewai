@@ -46,18 +46,45 @@ export class WorkerPixiService extends BasePixiService {
 
 		// Pixi's default WorkerManager.loadImageBitmap omits credentials, causing
 		// 401s for authenticated backend assets. Bypass it with a credentialed fetch.
-		if (
-			url.includes("/api/v1/assets/") &&
-			!url.startsWith("blob:") &&
-			!url.startsWith("data:")
-		) {
-			const response = await fetch(url, { credentials: "include" });
+		const shouldFetch =
+			url.includes("/api/v1/assets/") ||
+			url.startsWith("blob:") ||
+			url.startsWith("data:");
+
+		if (shouldFetch) {
+			const fetchOpts: RequestInit = url.includes("/api/v1/assets/")
+				? { credentials: "include" }
+				: {};
+			const response = await fetch(url, fetchOpts);
 			if (!response.ok) {
 				throw new Error(
 					`Failed to fetch texture from ${url}: ${response.status} ${response.statusText}`,
 				);
 			}
 			const blob = await response.blob();
+
+			// createImageBitmap throws InvalidStateError for SVGs in many browsers.
+			// If we are on the main thread, we can use an Image element to decode it.
+			if (blob.type.includes("svg")) {
+				if (typeof globalThis.Image !== "undefined") {
+					return new Promise<Texture>((resolve, reject) => {
+						const img = new globalThis.Image();
+						const objectUrl = URL.createObjectURL(blob);
+						img.onload = () => {
+							resolve(Texture.from(img));
+							URL.revokeObjectURL(objectUrl);
+						};
+						img.onerror = () => {
+							reject(new Error(`Failed to decode SVG Image from ${url}`));
+							URL.revokeObjectURL(objectUrl);
+						};
+						img.src = objectUrl;
+					});
+				}
+				// If we are truly in a worker without Image, Pixi's Assets.load might have a worker-compatible SVG parser (rare),
+				// but more likely it will fail. We'll fallback to trying createImageBitmap just in case the browser supports it.
+			}
+
 			const bitmap = await createImageBitmap(blob);
 			const texture = Texture.from(bitmap);
 

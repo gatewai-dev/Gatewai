@@ -11,7 +11,7 @@ import { MediaDimensions, OutputSelector } from "../../components";
 import { useNodeResult } from "../../processor-ctx";
 import { AudioRenderer } from "./audio-renderer";
 import { CanvasRenderer } from "./canvas-renderer";
-import { ThreeDRenderer } from "./three-d-renderer";
+import { SVGRenderer } from "./svg-renderer";
 import { VideoRenderer } from "./video-renderer";
 
 function MediaContent({ node }: { node: NodeEntityType }) {
@@ -21,33 +21,14 @@ function MediaContent({ node }: { node: NodeEntityType }) {
 			Math.min(result.selectedOutputIndex, result.outputs.length - 1)
 		];
 	const outputItem = selectedOutput?.items?.[0];
-	console.log({ outputItem });
 
-	const isImage = outputItem?.type === "Image";
-	const isVideo = outputItem?.type === "Video";
-	const isAudio = outputItem?.type === "Audio";
-	const isLottie = outputItem?.type === "Lottie";
-	const isJson = outputItem?.type === "Json";
-	const isText = outputItem?.type === "Text";
-	const isThreeD = outputItem?.type === "ThreeD";
-	const isOther =
-		!isImage &&
-		!isVideo &&
-		!isAudio &&
-		!isLottie &&
-		!isJson &&
-		!isText &&
-		!isThreeD;
-	const hasMoreThanOneOutput = result?.outputs?.length > 1;
-
-	console.log({ outputItem });
+	const hasMoreThanOneOutput = (result?.outputs?.length ?? 0) > 1;
 
 	const assetUrl = useMemo(() => {
 		if (!outputItem?.data) return null;
 		if (
 			outputItem.type === "Video" ||
 			outputItem.type === "Audio" ||
-			outputItem.type === "ThreeD" ||
 			outputItem.type === "Lottie"
 		) {
 			return resolveMediaSourceUrl(outputItem.data);
@@ -60,11 +41,36 @@ function MediaContent({ node }: { node: NodeEntityType }) {
 		return GetAssetEndpoint(fileData.entity);
 	}, [outputItem]);
 
+	const isSVGFileUrl = assetUrl?.toLowerCase().includes(".svg") ?? false;
+	const itemDataAny = outputItem?.data as any;
+	const isMimeTypeSVG =
+		itemDataAny?.entity?.mimeType === "image/svg+xml" ||
+		itemDataAny?.processData?.mimeType === "image/svg+xml" ||
+		itemDataAny?.source?.entity?.mimeType === "image/svg+xml" ||
+		itemDataAny?.source?.processData?.mimeType === "image/svg+xml";
+
+	const isActualSVG =
+		outputItem?.type === "SVG" || isSVGFileUrl || isMimeTypeSVG;
+	const isImage = outputItem?.type === "Image" && !isActualSVG;
+	const isSVG = isActualSVG;
+	const isVideo = outputItem?.type === "Video";
+	const isAudio = outputItem?.type === "Audio";
+	const isLottie = outputItem?.type === "Lottie";
+	const isJson = outputItem?.type === "Json";
+	const isText = outputItem?.type === "Text";
+	const isOther =
+		!isImage &&
+		!isVideo &&
+		!isAudio &&
+		!isLottie &&
+		!isJson &&
+		!isText &&
+		!isSVG;
+
 	const activeMeta = useMemo(() => {
 		if (
 			outputItem?.type === "Video" ||
 			outputItem?.type === "Audio" ||
-			outputItem?.type === "ThreeD" ||
 			outputItem?.type === "Lottie"
 		) {
 			return getActiveMediaMetadata(outputItem.data);
@@ -91,21 +97,22 @@ function MediaContent({ node }: { node: NodeEntityType }) {
 		return (data as FileData)?.entity?.name;
 	}, [outputItem]);
 
+	const dimensions = useMemo(() => {
+		if (!outputItem?.data) return { width: undefined, height: undefined };
+		const data = outputItem.data;
+		const entity = (data as FileData)?.entity;
+		const processData = (data as FileData)?.processData;
+		return {
+			width: entity?.width ?? processData?.width,
+			height: entity?.height ?? processData?.height,
+		};
+	}, [outputItem]);
+
 	if (!outputItem) {
 		return null;
 	}
 
-	console.log({ isThreeD, assetUrl });
-
 	return (
-		/*
-		 * FIX: Removed `h-full` from the wrapper. `h-full` propagates zero when
-		 * no ancestor in the flex/block chain has an explicit height, which is
-		 * exactly the situation inside a canvas node's content area. Each renderer
-		 * is now responsible for establishing its own height (ThreeDRenderer uses
-		 * minHeight: 280; CanvasRenderer, VideoRenderer, etc. use their own
-		 * intrinsic sizing). This prevents the silent 0-height collapse.
-		 */
 		<div className="relative w-full group">
 			{hasMoreThanOneOutput && (
 				<div className="absolute top-1 left-1 z-10">
@@ -113,28 +120,36 @@ function MediaContent({ node }: { node: NodeEntityType }) {
 				</div>
 			)}
 
-			{isImage && assetUrl && <CanvasRenderer imageUrl={assetUrl} />}
+			{isImage && assetUrl && (
+				<CanvasRenderer
+					imageUrl={assetUrl}
+					width={dimensions.width ?? undefined}
+					height={dimensions.height ?? undefined}
+				/>
+			)}
+			{isSVG && assetUrl && (
+				<SVGRenderer
+					imageUrl={assetUrl}
+					width={dimensions.width ?? undefined}
+					height={dimensions.height ?? undefined}
+				/>
+			)}
 
 			{(isVideo || isLottie) && (
-				<VideoRenderer virtualMedia={outputItem.data} durationMs={durationMs} />
+				<VideoRenderer
+					virtualMedia={outputItem.data}
+					durationMs={durationMs ?? undefined}
+				/>
 			)}
 
 			{isAudio && assetUrl && (
 				<AudioRenderer
 					title={assetName}
 					src={assetUrl}
-					durationMs={durationMs}
+					durationMs={durationMs ?? undefined}
 					virtualMedia={outputItem.data}
 				/>
 			)}
-
-			{/*
-			 * FIX: ThreeDRenderer previously used `absolute inset-0` internally,
-			 * which required a sized ancestor. The renderer is now self-sizing
-			 * (relative + minHeight), so no wrapper div with an explicit height
-			 * is needed here — it just participates in normal block flow.
-			 */}
-			{isThreeD && <ThreeDRenderer virtualMedia={outputItem.data} />}
 
 			{isOther && (
 				<div className="flex flex-col items-center gap-2">

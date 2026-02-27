@@ -12,6 +12,8 @@ import {
 function useDrawToCanvas(
 	canvasRef: React.RefObject<HTMLCanvasElement | null>,
 	imageUrl?: string | null,
+	width?: number,
+	height?: number,
 ) {
 	const { zoom } = useViewport();
 	const workerRef = useRef<Worker | null>(null);
@@ -32,9 +34,62 @@ function useDrawToCanvas(
 
 		const activeWorker = worker!;
 
-		activeWorker.onmessage = (e) => {
+		activeWorker.onmessage = async (e) => {
 			if (e.data.type === "CANVAS_INITIALIZED") {
 				setRenderHeight(e.data.payload.renderHeight);
+			} else if (e.data.type === "REQUEST_SVG_DECODE") {
+				const { imageUrl, canvasWidth, zoom, dpr, width, height } =
+					e.data.payload;
+				try {
+					const response = await fetch(imageUrl, { credentials: "include" });
+					const blob = await response.blob();
+					const isSvg =
+						blob.type.includes("svg") ||
+						imageUrl.toLowerCase().includes(".svg");
+					const img = new Image();
+					const objectUrl = URL.createObjectURL(blob);
+					img.src = objectUrl;
+					await new Promise((res, rej) => {
+						img.onload = res;
+						img.onerror = rej;
+					});
+
+					let bitmap: ImageBitmap;
+					if (isSvg || !img.naturalWidth || !img.naturalHeight) {
+						let resizeWidth =
+							width && width > 0 ? width : img.naturalWidth || 1024;
+						let resizeHeight =
+							height && height > 0 ? height : img.naturalHeight || 1024;
+
+						// Use ratio if possible
+						if (resizeWidth && resizeHeight) {
+							const ratio = 1024 / Math.min(resizeWidth, resizeHeight);
+							if (ratio > 1) {
+								resizeWidth = Math.max(1024, Math.round(resizeWidth * ratio));
+								resizeHeight = Math.max(1024, Math.round(resizeHeight * ratio));
+							}
+						}
+
+						bitmap = await createImageBitmap(img, {
+							resizeWidth,
+							resizeHeight,
+						});
+					} else {
+						bitmap = await createImageBitmap(img);
+					}
+
+					URL.revokeObjectURL(objectUrl);
+
+					activeWorker.postMessage(
+						{
+							type: "DRAW_IMAGE_BITMAP",
+							payload: { bitmap, canvasWidth, zoom, dpr },
+						},
+						[bitmap],
+					);
+				} catch (err) {
+					console.error("Main thread SVG decode failed:", err);
+				}
 			}
 		};
 
@@ -73,6 +128,8 @@ function useDrawToCanvas(
 						canvasWidth: containerWidth,
 						zoom: zoom,
 						dpr: window.devicePixelRatio || 1,
+						width,
+						height,
 					},
 				});
 			};
@@ -99,34 +156,43 @@ function useDrawToCanvas(
 				clearTimeout(timeoutRef.current);
 			}
 		};
-	}, [imageUrl, containerWidth, zoom]);
+	}, [imageUrl, containerWidth, zoom, width, height]);
 
 	return { renderHeight };
 }
 
 interface CanvasRendererProps {
 	imageUrl?: string;
+	width?: number;
+	height?: number;
 }
 
 const CanvasRenderer = memo(
-	forwardRef<HTMLCanvasElement, CanvasRendererProps>(({ imageUrl }, ref) => {
-		const internalRef = useRef<HTMLCanvasElement | null>(null);
-		// Sync the forwarded ref with our internal ref
-		// biome-ignore lint/style/noNonNullAssertion: Not important
-		useImperativeHandle(ref, () => internalRef.current!);
-		const { renderHeight } = useDrawToCanvas(internalRef, imageUrl);
+	forwardRef<HTMLCanvasElement, CanvasRendererProps>(
+		({ imageUrl, width, height }, ref) => {
+			const internalRef = useRef<HTMLCanvasElement | null>(null);
+			// Sync the forwarded ref with our internal ref
+			// biome-ignore lint/style/noNonNullAssertion: Not important
+			useImperativeHandle(ref, () => internalRef.current!);
+			const { renderHeight } = useDrawToCanvas(
+				internalRef,
+				imageUrl,
+				width,
+				height,
+			);
 
-		return (
-			<canvas
-				ref={internalRef}
-				className="w-full flex"
-				height={renderHeight}
-				style={{
-					height: renderHeight ? `${renderHeight}px` : "auto",
-				}}
-			/>
-		);
-	}),
+			return (
+				<canvas
+					ref={internalRef}
+					className="w-full flex"
+					height={renderHeight}
+					style={{
+						height: renderHeight ? `${renderHeight}px` : "auto",
+					}}
+				/>
+			);
+		},
+	),
 );
 
 export { useDrawToCanvas, CanvasRenderer };

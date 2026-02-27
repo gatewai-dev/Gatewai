@@ -22,7 +22,6 @@ export default defineMetadata({
 					"Video",
 					"Lottie",
 					"Json",
-					"ThreeD",
 					"SVG",
 					"Caption",
 				],

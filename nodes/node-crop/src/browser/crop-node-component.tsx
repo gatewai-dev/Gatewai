@@ -4,6 +4,7 @@ import {
 	BaseNode,
 	CanvasRenderer,
 	type NodeProps,
+	SVGRenderer,
 	useCanvasCtx,
 	useNodeResult,
 	VideoRenderer,
@@ -622,15 +623,15 @@ const CropNodeComponent = memo((props: NodeProps) => {
 	const { inputs } = useNodeResult(props.id);
 
 	const inputItem = inputs[inputHandleId!]?.outputItem;
-	const inputType = inputItem?.type as "Image" | "Video" | "Audio" | undefined;
+	const inputType = inputItem?.type as "Image" | "SVG" | "Video" | undefined;
 	const inputData = inputItem?.data;
 
 	const imageUrl =
-		inputType === "Image" ? ResolveFileDataUrl(inputData as FileData) : null;
-	const inputMedia =
-		inputType === "Video" || inputType === "Audio"
-			? (inputData as VirtualMediaData)
+		inputType === "Image" || inputType === "SVG"
+			? ResolveFileDataUrl(inputData as FileData)
 			: null;
+	const inputMedia =
+		inputType === "Video" ? (inputData as VirtualMediaData) : null;
 
 	const node = useAppSelector(makeSelectNodeById(props.id));
 	const nodeConfig = node?.config as CropNodeConfig | undefined;
@@ -657,7 +658,7 @@ const CropNodeComponent = memo((props: NodeProps) => {
 	const [customRatio, setCustomRatio] = useState<number | null>(null);
 
 	const sourceSize = useMemo(() => {
-		if ((inputType === "Video" || inputType === "Audio") && inputMedia) {
+		if (inputType === "Video" && inputMedia) {
 			const activeMeta = getActiveMediaMetadata(inputMedia);
 			const { width: w, height: h } = activeMeta;
 			if (!w || !h) return null;
@@ -850,9 +851,18 @@ const CropNodeComponent = memo((props: NodeProps) => {
 		};
 	}, [drag, svgSize, updateConfig, effectivePctRatio]);
 
-	const showMedia =
-		(inputType === "Video" || inputType === "Audio") && inputMedia;
-	const showImage = inputType === "Image" && imageUrl;
+	const showMedia = inputType === "Video" && inputMedia;
+
+	const isSVGFileUrl = imageUrl?.toLowerCase().includes(".svg") ?? false;
+	const isMimeTypeSVG =
+		(inputData as FileData)?.entity?.mimeType === "image/svg+xml";
+
+	const isActualSVG = inputType === "SVG" || isSVGFileUrl || isMimeTypeSVG;
+	const isImage = inputType === "Image" && !isActualSVG;
+	const isSVG = isActualSVG;
+
+	const showImage = isImage && imageUrl;
+	const showSVG = isSVG && imageUrl;
 
 	const videoOverlay = showMedia ? (
 		<CropOverlay
@@ -873,14 +883,18 @@ const CropNodeComponent = memo((props: NodeProps) => {
 				<div
 					ref={svgRef}
 					className={cn("relative w-full media-container", {
-						"h-64": !showImage && !showMedia,
+						"h-64": !showImage && !showMedia && !showSVG,
 					})}
-					style={{ minHeight: showImage || showMedia ? undefined : "12rem" }}
+					style={{
+						minHeight: showImage || showMedia || showSVG ? undefined : "12rem",
+					}}
 				>
 					{showMedia && (
 						<VideoRenderer
 							virtualMedia={inputMedia}
-							durationMs={getActiveMediaMetadata(inputMedia!).durationMs}
+							durationMs={
+								getActiveMediaMetadata(inputMedia!).durationMs ?? undefined
+							}
 							controls={true}
 							className="rounded-none w-full h-full"
 							overlay={videoOverlay}
@@ -890,7 +904,11 @@ const CropNodeComponent = memo((props: NodeProps) => {
 					{showImage && (
 						<>
 							<div className="overflow-hidden w-full h-full">
-								<CanvasRenderer imageUrl={imageUrl} />
+								<CanvasRenderer
+									imageUrl={imageUrl}
+									width={sourceSize ? sourceSize.w : undefined}
+									height={sourceSize ? sourceSize.h : undefined}
+								/>
 								<img
 									ref={imgRef}
 									src={imageUrl}
@@ -914,7 +932,38 @@ const CropNodeComponent = memo((props: NodeProps) => {
 						</>
 					)}
 
-					{!showImage && !showMedia && (
+					{showSVG && (
+						<>
+							<div className="overflow-hidden w-full h-full">
+								<SVGRenderer
+									imageUrl={imageUrl}
+									width={sourceSize ? sourceSize.w : undefined}
+									height={sourceSize ? sourceSize.h : undefined}
+								/>
+								<img
+									ref={imgRef}
+									src={imageUrl}
+									alt=""
+									className="hidden"
+									onLoad={(e) => {
+										const { naturalWidth: nw, naturalHeight: nh } =
+											e.currentTarget;
+										setNaturalSize({ w: nw, h: nh });
+									}}
+								/>
+							</div>
+							<CropOverlay
+								crop={crop}
+								svgSize={svgSize}
+								isDragging={drag !== null}
+								drag={drag}
+								naturalSize={sourceSize}
+								onStartDrag={startDrag}
+							/>
+						</>
+					)}
+
+					{!showImage && !showMedia && !showSVG && (
 						<div className="absolute inset-0 flex items-center justify-center text-muted-foreground/40 text-xs tracking-wide">
 							No input connected
 						</div>

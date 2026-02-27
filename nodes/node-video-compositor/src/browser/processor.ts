@@ -48,7 +48,7 @@ export class VideoCompositorBrowserProcessor implements IBrowserProcessor {
 			} else if (item.type === "Text") {
 				sourceText = (item.data as string) || "";
 				childVV = createVirtualMedia(item.data, "Text");
-			} else if (item.type === "Lottie" || item.type === "ThreeD") {
+			} else if (item.type === "Lottie") {
 				childVV = createVirtualMedia(item.data, item.type);
 			} else {
 				continue;

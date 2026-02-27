@@ -17,7 +17,6 @@ export function createVirtualMedia(
 		| "Video"
 		| "Lottie"
 		| "Json"
-		| "ThreeD"
 		| "SVG"
 		| "Caption"
 		| "Text" = "Video",
@@ -47,13 +46,11 @@ export function createVirtualMedia(
 						? "image/svg+xml"
 						: type === "Lottie" || type === "Json"
 							? "application/json"
-							: type === "ThreeD"
-								? "model/gltf-binary"
-								: type === "Caption"
-									? "text/srt"
-									: type === "Text"
-										? "text/plain"
-										: undefined);
+							: type === "Caption"
+								? "text/srt"
+								: type === "Text"
+									? "text/plain"
+									: undefined);
 
 	return {
 		metadata: sourceMeta,
@@ -78,22 +75,15 @@ export function createVirtualMedia(
  */
 export function getMediaType(
 	vv: VirtualMediaData,
-):
-	| "Video"
-	| "Audio"
-	| "Image"
-	| "Lottie"
-	| "Text"
-	| "SVG"
-	| "ThreeD"
-	| "Caption" {
+): "Video" | "Audio" | "Image" | "Lottie" | "Text" | "SVG" | "Caption" {
 	if (!vv) return "Video";
 
 	const op = vv.operation;
 	if (op?.op === "text") return "Text";
 
 	if (op?.op === "source") {
-		const mime = op.source?.processData?.mimeType || "";
+		const mime =
+			op.source?.entity?.mimeType || op.source?.processData?.mimeType || "";
 		if (mime === "image/svg+xml") return "SVG";
 		if (mime.startsWith("image/")) return "Image";
 		if (mime.startsWith("video/")) return "Video";
@@ -101,7 +91,21 @@ export function getMediaType(
 		if (mime === "application/json") return "Lottie";
 		if (mime === "text/srt") return "Caption";
 		if (mime.startsWith("text/")) return "Text";
-		if (mime.startsWith("model/")) return "ThreeD";
+
+		// Fallback to extension if mimeType is generic or missing
+		const originalName =
+			op.source?.entity?.name || op.source?.processData?.dataUrl;
+		if (originalName) {
+			const ext = originalName.split(".").pop()?.toLowerCase();
+			if (ext === "svg") return "SVG";
+			if (ext === "json" || ext === "lottie") return "Lottie";
+			if (ext === "srt") return "Caption";
+			if (["png", "jpg", "jpeg", "webp", "gif"].includes(ext || ""))
+				return "Image";
+			if (["mp4", "webm", "mov"].includes(ext || "")) return "Video";
+			if (["mp3", "wav", "ogg", "aac", "flac"].includes(ext || ""))
+				return "Audio";
+		}
 	}
 
 	// Recurse down children for non-compose operations

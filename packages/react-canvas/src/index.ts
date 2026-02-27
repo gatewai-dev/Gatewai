@@ -17,9 +17,8 @@ export * from "./nodes/common/audio-renderer/index.js";
 export * from "./nodes/common/canvas-renderer/index.js";
 export * from "./nodes/common/dimensions/index.js";
 export * from "./nodes/common/media-content.js";
-export * from "./nodes/common/media-content.js";
 export * from "./nodes/common/remotion-player/index.js";
-
+export * from "./nodes/common/svg-renderer/index.js";
 export * from "./nodes/common/video-renderer/index.js";
 export * from "./nodes/node-menu.js";
 export * from "./processor-ctx.js";

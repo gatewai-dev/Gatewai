@@ -3,21 +3,11 @@ import type {
 	VideoAnimation,
 	VirtualMediaData,
 } from "@gatewai/core/types";
-import { Stage, useGLTF } from "@react-three/drei";
-import { useLoader, useThree } from "@react-three/fiber";
 import type { LottieAnimationData } from "@remotion/lottie";
 import { Lottie } from "@remotion/lottie";
 import { Audio, Video } from "@remotion/media";
-import { ThreeCanvas } from "@remotion/three";
 import type React from "react";
-import {
-	Suspense,
-	useEffect,
-	useLayoutEffect,
-	useMemo,
-	useRef,
-	useState,
-} from "react";
+import { useEffect, useRef, useState } from "react";
 import {
 	AbsoluteFill,
 	cancelRender,
@@ -30,9 +20,6 @@ import {
 	useCurrentFrame,
 	useVideoConfig,
 } from "remotion";
-import * as THREE from "three";
-import { OBJLoader } from "three/addons/loaders/OBJLoader.js";
-import { STLLoader } from "three/addons/loaders/STLLoader.js";
 import {
 	buildCSSFilterString,
 	computeRenderParams,
@@ -43,148 +30,6 @@ import {
 } from "../utils/resolve-video.js";
 
 const DEFAULT_DURATION_FRAMES = 24 * 5;
-
-const CameraSetup = () => {
-	const camera = useThree((state) => state.camera);
-	useEffect(() => {
-		camera.position.set(0, 0, 10);
-		camera.near = 0.1;
-		camera.far = 10000;
-		camera.lookAt(0, 0, 0);
-		camera.updateProjectionMatrix();
-	}, [camera]);
-	return null;
-};
-
-// 2. Deterministic Centering & Scaling (Replaces <Stage>)
-const AutoCenterModel = ({ children }: { children: React.ReactNode }) => {
-	const groupRef = useRef<THREE.Group>(null);
-	const wrapperRef = useRef<THREE.Group>(null);
-
-	useLayoutEffect(() => {
-		// ← was useEffect
-		if (groupRef.current && wrapperRef.current) {
-			const box = new THREE.Box3().setFromObject(groupRef.current);
-			const center = box.getCenter(new THREE.Vector3());
-			const size = box.getSize(new THREE.Vector3());
-
-			groupRef.current.position.set(-center.x, -center.y, -center.z);
-
-			const maxDim = Math.max(size.x, size.y, size.z);
-			if (maxDim > 0) {
-				wrapperRef.current.scale.setScalar(6 / maxDim);
-			}
-		}
-	}, [children]);
-
-	return (
-		<group ref={wrapperRef}>
-			<group ref={groupRef}>{children}</group>
-		</group>
-	);
-};
-// ---------------------------------------------------------------------------
-// 3D Rendering Component
-// ---------------------------------------------------------------------------
-
-function OBJModel({ url }: { url: string }) {
-	const obj = useLoader(OBJLoader, url);
-	return <primitive object={obj} />;
-}
-
-function STLModel({ url }: { url: string }) {
-	const stl = useLoader(STLLoader, url);
-	useEffect(() => {
-		stl.computeVertexNormals();
-	}, [stl]);
-	return (
-		<mesh geometry={stl}>
-			<meshStandardMaterial color="#cccccc" />
-		</mesh>
-	);
-}
-
-function GLTFModel({ url }: { url: string }) {
-	const gltf = useGLTF(url);
-	const objectToRender = gltf.scene || gltf.scenes?.[0];
-	if (!objectToRender) return null;
-	return <primitive object={objectToRender} />;
-}
-
-function Model({ url, mimeType }: { url: string; mimeType?: string }) {
-	const extension = useMemo(() => {
-		if (mimeType === "model/stl") return "stl";
-		if (mimeType === "model/obj") return "obj";
-		if (mimeType?.includes("gltf") || mimeType?.includes("glb")) return "gltf";
-		try {
-			return new URL(url).pathname.split(".").pop()?.toLowerCase();
-		} catch {
-			return url.split(".").pop()?.toLowerCase();
-		}
-	}, [url, mimeType]);
-
-	if (extension === "obj") return <OBJModel url={url} />;
-	if (extension === "stl") return <STLModel url={url} />;
-	return <GLTFModel url={url} />;
-}
-
-function ModelLoadController({
-	url,
-	mimeType,
-}: {
-	url: string;
-	mimeType?: string;
-}) {
-	// 1. Grab a lock immediately before the child components Suspend
-	const [handle] = useState(() => delayRender(`Loading 3D Model: ${url}`));
-
-	// 2. React only runs this effect AFTER Suspense resolves and the component mounts
-	useEffect(() => {
-		continueRender(handle);
-		return () => continueRender(handle); // Failsafe cleanup
-	}, [handle]);
-
-	const extension = useMemo(() => {
-		if (mimeType === "model/stl") return "stl";
-		if (mimeType === "model/obj") return "obj";
-		if (mimeType?.includes("gltf") || mimeType?.includes("glb")) return "gltf";
-
-		try {
-			const path = new URL(url).pathname;
-			return path.split(".").pop()?.toLowerCase();
-		} catch (e) {
-			return url.split(".").pop()?.toLowerCase();
-		}
-	}, [url, mimeType]);
-
-	if (extension === "obj") return <OBJModel url={url} />;
-	if (extension === "stl") return <STLModel url={url} />;
-	return <GLTFModel url={url} />;
-}
-
-const ThreeDFromUrl: React.FC<{
-	src: string;
-	style?: React.CSSProperties;
-	mimeType?: string;
-	width: number; // ← add
-	height: number; // ← add
-}> = ({ src, style, mimeType, width, height }) => {
-	return (
-		<div style={{ ...style, position: "absolute", inset: 0 }}>
-			{/* 'linear' flag like the template to fix color space issues */}
-			<ThreeCanvas linear width={width} height={height}>
-				<CameraSetup />
-				<ambientLight intensity={1.5} color={0xffffff} />
-				<pointLight position={[10, 10, 10]} />
-				<Suspense fallback={null}>
-					<AutoCenterModel>
-						<Model url={src} mimeType={mimeType} />
-					</AutoCenterModel>
-				</Suspense>
-			</ThreeCanvas>
-		</div>
-	);
-};
 
 // ---------------------------------------------------------------------------
 // Format Detection helpers
@@ -200,35 +45,6 @@ const isLottieSource = (virtualMedia: VirtualMediaData): boolean => {
 	if (mimeType === "application/json") return true;
 	const key: string = src.entity?.key ?? src.entity?.name ?? "";
 	if (key.toLowerCase().endsWith(".json")) return true;
-	return false;
-};
-
-const isThreeDSource = (virtualMedia: VirtualMediaData): boolean => {
-	const op = virtualMedia?.operation;
-	if (!op || op.op !== "source") return false;
-	const src = op.source;
-	if (!src) return false;
-	const mimeType: string =
-		src.processData?.mimeType ?? src.entity?.mimeType ?? "";
-
-	// Check for standard 3D MIME types
-	if (
-		mimeType.includes("model/gltf") ||
-		mimeType.includes("model/obj") ||
-		mimeType.includes("model/stl")
-	)
-		return true;
-
-	const key: string = src.entity?.key ?? src.entity?.name ?? "";
-	const ext = key.toLowerCase();
-	if (
-		ext.endsWith(".glb") ||
-		ext.endsWith(".gltf") ||
-		ext.endsWith(".obj") ||
-		ext.endsWith(".stl")
-	)
-		return true;
-
 	return false;
 };
 
@@ -616,27 +432,6 @@ export const SingleClipComposition: React.FC<{
 	if (op.op === "source" || op.op === "text") {
 		const params = computeRenderParams(virtualMedia);
 
-		if (isThreeDSource(virtualMedia)) {
-			if (!params.sourceUrl) return <AbsoluteFill />;
-			const baseRate = Number(playbackRateOverride) || 1;
-			const paramsRate = Number(params.speed) || 1;
-			const finalPlaybackRate = baseRate * paramsRate;
-
-			return (
-				<ThreeDFromUrl
-					src={params.sourceUrl}
-					playbackRate={finalPlaybackRate}
-					style={{
-						position: "absolute",
-						top: 0,
-						left: 0,
-						width: "100%",
-						height: "100%",
-					}}
-				/>
-			);
-		}
-
 		if (isLottieSource(virtualMedia)) {
 			if (!params.sourceUrl) return <AbsoluteFill />;
 			const baseRate = Number(playbackRateOverride) || 1;
@@ -946,31 +741,6 @@ const LayerContentRenderer: React.FC<{
 			);
 	}
 
-	if (layer.type === "ThreeD") {
-		let srcUrl = layer.src;
-		let mimeType: string | undefined | null;
-
-		if (layer.virtualMedia) {
-			const params = computeRenderParams(layer.virtualMedia);
-			srcUrl = params.sourceUrl;
-			const op = layer.virtualMedia.operation;
-			mimeType =
-				op?.op === "source" ? op.source?.processData?.mimeType : undefined;
-		}
-
-		if (srcUrl) {
-			return (
-				<ThreeDFromUrl
-					src={srcUrl}
-					mimeType={mimeType}
-					width={cWidth} // ← pass layer dimensions
-					height={cHeight}
-					style={{ width: "100%", height: "100%" }}
-				/>
-			);
-		}
-	}
-
 	if (layer.type === "Audio" && (layer.src || layer.virtualMedia)) {
 		if (layer.virtualMedia)
 			return (
@@ -1100,7 +870,7 @@ export interface SceneProps {
 	containerHeight?: number;
 	src?: string;
 	isAudio?: boolean;
-	type?: "Video" | "Audio" | "Image" | "Text" | "Lottie" | "ThreeD" | string;
+	type?: "Video" | "Audio" | "Image" | "Text" | "Lottie" | string;
 	data?: unknown;
 	virtualMedia?: VirtualMediaData;
 	children?: React.ReactNode;
@@ -1154,13 +924,7 @@ export const CompositionScene: React.FC<SceneProps> = ({
 
 	const resolvedLayers = (() => {
 		if (layers.length > 0) return layers;
-		if (
-			src ||
-			virtualMedia ||
-			type === "Text" ||
-			type === "Lottie" ||
-			type === "ThreeD"
-		) {
+		if (src || virtualMedia || type === "Text" || type === "Lottie") {
 			const resolvedType = type || (isAudio ? "Audio" : "Video");
 			let resolvedDurationInFrames = durationInFrames;
 			if (!resolvedDurationInFrames && virtualMedia) {

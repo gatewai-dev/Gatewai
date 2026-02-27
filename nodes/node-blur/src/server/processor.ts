@@ -28,8 +28,7 @@ export class BlurProcessor implements NodeProcessor {
     }: BackendNodeProcessorCtx): Promise<BackendNodeProcessorResult<BlurResult>> {
         try {
             const imageInput = this.graph.getInputValue(data, node.id, true, {
-                dataType: DataType.Image,
-                label: "Image",
+                label: "Input",
             })?.data as FileData | null;
             const validatedConfig = BlurNodeConfigSchema.parse(node.config);
             assert(imageInput);

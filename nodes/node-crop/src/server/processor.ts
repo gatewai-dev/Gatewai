@@ -32,10 +32,15 @@ export class CropProcessor implements NodeProcessor {
 		data,
 	}: BackendNodeProcessorCtx): Promise<BackendNodeProcessorResult<CropResult | VideoCropResult>> {
 		try {
-			const imageInput = this.graph.getInputValue(data, node.id, true, {
-				dataType: DataType.Image,
-				label: "Input",
-			});
+			const imageInput =
+				this.graph.getInputValue(data, node.id, true, {
+					dataType: DataType.Image,
+					label: "Input",
+				}) ||
+				this.graph.getInputValue(data, node.id, true, {
+					dataType: DataType.SVG,
+					label: "Input",
+				});
 			const videoInputsOnly = this.graph.getInputValuesByType(data, node.id, {
 				dataType: DataType.Video,
 			});
@@ -81,8 +86,8 @@ export class CropProcessor implements NodeProcessor {
 		node: BackendNodeProcessorCtx["node"],
 	): Promise<BackendNodeProcessorResult<VideoCropResult>> {
 		const activeMeta = getActiveMediaMetadata(inputVideo);
-		const sw = activeMeta.width ?? 1920;
-		const sh = activeMeta.height ?? 1080;
+		const sw = activeMeta?.width ?? 1920;
+		const sh = activeMeta?.height ?? 1080;
 		const cw = Math.max(1, Math.round((config.widthPercentage / 100) * sw));
 		const ch = Math.max(1, Math.round((config.heightPercentage / 100) * sh));
 

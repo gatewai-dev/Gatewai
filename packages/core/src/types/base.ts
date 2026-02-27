@@ -7,7 +7,6 @@ export const DataTypes = [
 	"Image",
 	"Video",
 	"Audio",
-	"ThreeD",
 	"SVG",
 	"Lottie",
 	"Json",

@@ -24,24 +24,22 @@ export class CropBrowserProcessor implements IBrowserProcessor {
 			({ connectionValid, outputItem }) =>
 				connectionValid &&
 				(outputItem?.type === "Image" ||
-					outputItem?.type === "Video" ||
-					outputItem?.type === "Audio"),
+					outputItem?.type === "SVG" ||
+					outputItem?.type === "Video"),
 		);
 
 		if (!inputEntry?.outputItem) {
 			throw new Error("Missing input");
 		}
 
-		const inputType = inputEntry.outputItem.type;
 		const config = CropNodeConfigSchema.parse(node.config);
 
-		if (inputType === "Video" || inputType === "Audio") {
+		if (inputEntry.outputItem.type === "Video") {
 			return this.processMedia(
 				inputEntry.outputItem.data as VirtualMediaData,
 				config,
 				context,
 				node.id,
-				inputType,
 			);
 		} else {
 			return this.processImage(inputs, config, signal, context, node.id);
@@ -53,11 +51,10 @@ export class CropBrowserProcessor implements IBrowserProcessor {
 		config: CropNodeConfig,
 		context: NodeProcessorContext,
 		nodeId: string,
-		mediaType: "Video" | "Audio",
 	): Promise<VideoCropResult> {
 		const currentMeta = getActiveMediaMetadata(inputVideo);
-		const currentWidth = currentMeta.width ?? 1920;
-		const currentHeight = currentMeta.height ?? 1080;
+		const currentWidth = currentMeta?.width ?? 1920;
+		const currentHeight = currentMeta?.height ?? 1080;
 
 		const newWidth = (currentWidth * config.widthPercentage) / 100;
 		const newHeight = (currentHeight * config.heightPercentage) / 100;
@@ -84,7 +81,7 @@ export class CropBrowserProcessor implements IBrowserProcessor {
 				{
 					items: [
 						{
-							type: mediaType,
+							type: "Video",
 							data: output,
 							outputHandleId: outputHandle,
 						},
@@ -101,7 +98,9 @@ export class CropBrowserProcessor implements IBrowserProcessor {
 		context: NodeProcessorContext,
 		nodeId: string,
 	): Promise<CropResult> {
-		const imageUrl = context.findInputData(inputs, "Image");
+		const imageUrl =
+			context.findInputData(inputs, "Image") ||
+			context.findInputData(inputs, "SVG");
 		if (!imageUrl) throw new Error("Missing Input Image");
 
 		const result = await context.pixi.execute<PixiCropInput, PixiProcessOutput>(

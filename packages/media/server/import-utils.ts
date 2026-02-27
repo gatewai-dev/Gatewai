@@ -17,7 +17,7 @@ interface UploadOptions {
 
 type SupportedDataType = Extract<
 	DataType,
-	"Image" | "Video" | "Audio" | "Lottie" | "Json" | "SVG" | "ThreeD" | "Caption"
+	"Image" | "Video" | "Audio" | "Lottie" | "Json" | "SVG" | "Caption"
 >;
 
 function isValidLottieJson(json: unknown): json is {
@@ -65,6 +65,54 @@ function extractLottieMetadata(buffer: Buffer): {
 	}
 }
 
+function extractSvgDimensions(buffer: Buffer): { w: number; h: number } | null {
+	try {
+		const str = buffer.toString("utf-8");
+		const match = str.match(/<svg[^>]*>/i);
+		if (!match) return null;
+
+		const svgTag = match[0];
+
+		const getAttr = (name: string) => {
+			const attrMatch = svgTag.match(
+				new RegExp(`${name}=["']([^"']+)["']`, "i"),
+			);
+			if (!attrMatch) return null;
+			const val = parseFloat(attrMatch[1].replace(/[a-z%]/gi, ""));
+			return isNaN(val) ? null : val;
+		};
+
+		let w = getAttr("width");
+		let h = getAttr("height");
+
+		const viewBoxMatch = svgTag.match(/viewBox=["']([^"']+)["']/i);
+		if (viewBoxMatch) {
+			const parts = viewBoxMatch[1].split(/[\s,]+/).map(parseFloat);
+			if (parts.length >= 4 && !isNaN(parts[2]) && !isNaN(parts[3])) {
+				const vbW = parts[2];
+				const vbH = parts[3];
+
+				if (w == null && h == null) {
+					w = vbW;
+					h = vbH;
+				} else if (w != null && h == null) {
+					h = w * (vbH / vbW);
+				} else if (h != null && w == null) {
+					w = h * (vbW / vbH);
+				}
+			}
+		}
+
+		if (w != null && h != null && w > 0 && h > 0) {
+			return { w, h };
+		}
+		return null;
+	} catch (error) {
+		console.error("Error parsing SVG dimensions", error);
+		return null;
+	}
+}
+
 const dropzoneLabel =
 	"Click or drag & drop an image, SVG, video, audio, Lottie, 3D, or SRT file here";
 
@@ -81,27 +129,6 @@ const accept = {
 	"text/srt": [".srt"],
 };
 
-const getFilteredAccept = (
-	type:
-		| "image"
-		| "video"
-		| "audio"
-		| "lottie"
-		| "svg"
-		| "threed"
-		| "caption"
-		| null,
-) => {
-	const keys = Object.keys(accept);
-	if (!type) return keys;
-	if (type === "lottie") return ["application/json"];
-	if (type === "svg") return ["image/svg+xml"];
-	if (type === "caption") return ["text/srt"];
-	if (type === "threed")
-		return keys.filter((mime) => mime.startsWith("model/"));
-	return keys.filter((mime) => mime.startsWith(`${type}/`));
-};
-
 function resolveDataType(
 	contentType: string,
 	filename: string,
@@ -111,7 +138,6 @@ function resolveDataType(
 	if (contentType.startsWith("image/")) return "Image";
 	if (contentType.startsWith("video/")) return "Video";
 	if (contentType.startsWith("audio/")) return "Audio";
-	if (contentType.startsWith("model/")) return "ThreeD";
 
 	const isJsonContent =
 		contentType === "application/json" || contentType === "text/plain";
@@ -133,11 +159,7 @@ function resolveDataType(
 		return "Json";
 	}
 
-	// Fallback for some common 3D formats if mime-type detection failed or is generic
 	const ext = filename.toLowerCase().split(".").pop();
-	if (ext && ["glb", "gltf", "obj", "stl"].includes(ext)) {
-		return "ThreeD";
-	}
 	if (ext === "srt") {
 		return "Caption";
 	}
@@ -266,12 +288,28 @@ export async function uploadToImportNode({
 		}
 	} else if (dataType === "SVG") {
 		try {
-			const media = container.get<MediaService>(TOKENS.MEDIA);
-			const meta = await media.getImageDimensions(buffer);
-			width = meta.width || null;
-			height = meta.height || null;
+			const dim = extractSvgDimensions(buffer);
+			const w = dim?.w || 0;
+			const h = dim?.h || 0;
+
+			if (w === 0 || h === 0) {
+				width = 1024;
+				height = 1024;
+			} else {
+				const aspectRatio = w / h;
+				if (w < h) {
+					width = 1024;
+					height = Math.round(1024 / aspectRatio);
+				} else {
+					height = 1024;
+					width = Math.round(1024 * aspectRatio);
+				}
+			}
 		} catch (error) {
 			console.error("Failed to extract SVG dimensions:", error);
+			// Default fallback if parsing fails completely
+			width = 1024;
+			height = 1024;
 		}
 	}
 	const key = `assets/${generateId()}-${filename}`;
@@ -326,7 +364,6 @@ export async function uploadToImportNode({
 						data:
 							dataType === "Video" ||
 							dataType === "Audio" ||
-							dataType === "ThreeD" ||
 							dataType === "Lottie"
 								? createVirtualMedia({ entity: asset }, dataType)
 								: { entity: asset },

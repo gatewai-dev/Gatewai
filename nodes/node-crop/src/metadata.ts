@@ -10,7 +10,7 @@ export { CropNodeConfigSchema, CropResultSchema, VideoCropResultSchema };
 export const metadata = defineMetadata({
 	type: "Crop",
 	displayName: "Crop",
-	description: "Crop an image or video",
+	description: "Crop Video, Image or SVG",
 	category: "Media",
 	configSchema: CropNodeConfigSchema,
 	resultSchema: CropResultSchema,
@@ -19,7 +19,7 @@ export const metadata = defineMetadata({
 	handles: {
 		inputs: [
 			{
-				dataTypes: ["Image", "Video"],
+				dataTypes: ["Image", "Video", "SVG"],
 				required: true,
 				label: "Input",
 				order: 0,

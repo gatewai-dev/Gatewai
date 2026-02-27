@@ -58,13 +58,6 @@ export const dataTypeColors: Record<
 		text: "text-indigo-500",
 		border: "border-indigo-500",
 	},
-	ThreeD: {
-		bg: "bg-cyan-500",
-		stroke: "stroke-cyan-500",
-		hex: "#06b6d4",
-		text: "text-cyan-500",
-		border: "border-cyan-500",
-	},
 	SVG: {
 		bg: "bg-lime-500",
 		stroke: "stroke-lime-500",

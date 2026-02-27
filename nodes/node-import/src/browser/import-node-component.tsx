@@ -44,25 +44,21 @@ const ImportNodeComponent = memo((props: NodeProps) => {
 						? "audio"
 						: item?.type === "Lottie"
 							? "lottie"
-							: item?.type === "ThreeD"
-								? "threed"
-								: item?.type === "Caption"
-									? "caption"
-									: existingMimeType === "image/svg+xml"
-										? "svg"
-										: existingMimeType?.startsWith("image/")
-											? "image"
-											: existingMimeType?.startsWith("video/")
-												? "video"
-												: existingMimeType?.startsWith("audio/")
-													? "audio"
-													: existingMimeType === "application/json"
-														? "lottie"
-														: existingMimeType?.startsWith("model/")
-															? "threed"
-															: existingMimeType === "text/srt"
-																? "caption"
-																: null;
+							: item?.type === "Caption"
+								? "caption"
+								: existingMimeType === "image/svg+xml"
+									? "svg"
+									: existingMimeType?.startsWith("image/")
+										? "image"
+										: existingMimeType?.startsWith("video/")
+											? "video"
+											: existingMimeType?.startsWith("audio/")
+												? "audio"
+												: existingMimeType === "application/json"
+													? "lottie"
+													: existingMimeType === "text/srt"
+														? "caption"
+														: null;
 
 	const accept = {
 		"image/jpeg": [".jpg", ".jpeg"],
@@ -78,23 +74,11 @@ const ImportNodeComponent = memo((props: NodeProps) => {
 		"audio/aac": [".aac"],
 		"audio/flac": [".flac"],
 		"application/json": [".json", ".lottie"],
-		"model/gltf-binary": [".glb"],
-		"model/gltf+json": [".gltf"],
-		"model/obj": [".obj"],
-		"model/stl": [".stl"],
 		"text/srt": [".srt"],
 	};
 
 	const getFilteredAccept = (
-		type:
-			| "image"
-			| "video"
-			| "audio"
-			| "lottie"
-			| "svg"
-			| "threed"
-			| "caption"
-			| null,
+		type: "image" | "video" | "audio" | "lottie" | "svg" | "caption" | null,
 	) => {
 		if (!type) return Object.keys(accept);
 
@@ -103,10 +87,7 @@ const ImportNodeComponent = memo((props: NodeProps) => {
 		if (type === "caption") return ["text/srt", ".srt"];
 
 		const keys = Object.keys(accept);
-		const filteredMimes =
-			type === "threed"
-				? keys.filter((mime) => mime.startsWith("model/"))
-				: keys.filter((mime) => mime.startsWith(`${type}/`));
+		const filteredMimes = keys.filter((mime) => mime.startsWith(`${type}/`));
 
 		// Include both mimes and their associated extensions
 		const extensions = filteredMimes.flatMap(
@@ -118,7 +99,7 @@ const ImportNodeComponent = memo((props: NodeProps) => {
 
 	const buttonAccept = getFilteredAccept(existingType as any);
 
-	const displayType = existingType === "threed" ? "3D Model" : existingType;
+	const displayType = existingType;
 
 	const buttonLabel =
 		showResult && existingType

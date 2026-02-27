@@ -78,11 +78,13 @@ const VideoCompositorNodeComponent = memo((props: NodeProps) => {
 				if (!layerHeight) layerHeight = vv.metadata.height;
 			} else if (
 				item.type === "Image" ||
-				item.type === "ThreeD" ||
 				item.type === "Audio" ||
 				item.type === "Lottie"
 			) {
 				const fileData = item.data as FileData;
+				// IMPORTANT: Convert FileData -> VirtualMediaData here so the downstream Player gets the right format
+				virtualMedia = createVirtualMedia(fileData, item.type as any);
+
 				if (fileData) {
 					src = fileData.entity?.id
 						? GetAssetEndpoint(fileData.entity)

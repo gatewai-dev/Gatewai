@@ -54,6 +54,7 @@ import {
 	AlertDialogTitle,
 	Button,
 	CollapsibleSection,
+	ColorPicker,
 	cn,
 	DraggableNumberInput,
 	Label,
@@ -111,9 +112,11 @@ import {
 	Save,
 	Settings2,
 	Sparkles,
+	Sun,
 	Trash2,
 	Type,
 	Unlink as UnlinkIcon,
+	Video,
 	XIcon,
 	Zap,
 	ZoomIn,
@@ -132,6 +135,10 @@ import React, {
 import { useHotkeys } from "react-hotkeys-hook";
 import type { VideoCompositorNodeConfig } from "../../../shared/config.js";
 import { DEFAULT_DURATION_FRAMES, FPS } from "../config/index.js";
+
+// ---------------------------------------------------------------------------
+// Helpers
+// ---------------------------------------------------------------------------
 
 const getEffectiveDurationMs = (
 	virtualMedia: VirtualMediaData | undefined | null,
@@ -210,10 +217,6 @@ const measureText = (text: string, style: Partial<EditorLayer>) => {
 	};
 };
 
-// ---------------------------------------------------------------------------
-// Lottie helpers: fetch natural dimensions and frame count from JSON metadata
-// ---------------------------------------------------------------------------
-
 const fetchLottieMetadata = async (
 	url: string,
 ): Promise<{ width: number; height: number; durationMs: number } | null> => {
@@ -233,6 +236,10 @@ const fetchLottieMetadata = async (
 		return null;
 	}
 };
+
+// ---------------------------------------------------------------------------
+// Constants
+// ---------------------------------------------------------------------------
 
 const ANIMATION_CATEGORIES = [
 	{
@@ -314,13 +321,6 @@ const LOTTIE_COLOR = {
 	hex: "#b45309",
 };
 
-const THREED_COLOR = {
-	bg: "bg-purple-700",
-	border: "border-purple-600",
-	text: "text-purple-100",
-	hex: "#7e22ce",
-};
-
 const ASPECT_RATIOS = [
 	{ label: "Youtube / HD (16:9)", width: 1280, height: 720 },
 	{ label: "Full HD (16:9)", width: 1920, height: 1080 },
@@ -328,6 +328,10 @@ const ASPECT_RATIOS = [
 	{ label: "Square (1:1)", width: 1080, height: 1080 },
 	{ label: "Portrait (4:5)", width: 1080, height: 1350 },
 ];
+
+// ---------------------------------------------------------------------------
+// Shared sub-components
+// ---------------------------------------------------------------------------
 
 const resolveLayerLabel = (
 	handle: HandleEntityType | undefined,
@@ -402,7 +406,6 @@ const useEditor = () => {
 
 const resolveColorConfig = (layer: EditorLayer) => {
 	if (layer.type === "Lottie") return LOTTIE_COLOR;
-	if (layer.type === "ThreeD") return THREED_COLOR;
 	return (
 		dataTypeColors[layer.type] ?? {
 			bg: "bg-gray-600",
@@ -428,12 +431,111 @@ const LayerIcon: React.FC<{ type: string; className?: string }> = ({
 			return <Type className={className} />;
 		case "Lottie":
 			return <Sparkles className={className} />;
-		case "ThreeD":
-			return <Box className={className} />;
 		default:
 			return <Layers className={className} />;
 	}
 };
+
+// ---------------------------------------------------------------------------
+// Section divider used inside inspector panels
+// ---------------------------------------------------------------------------
+
+const InspectorDivider: React.FC<{ label: string; accent?: string }> = ({
+	label,
+	accent = "text-purple-300",
+}) => (
+	<div className="flex items-center gap-2 pt-1">
+		<span
+			className={`text-[10px] font-bold uppercase tracking-wider ${accent}`}
+		>
+			{label}
+		</span>
+		<div className="flex-1 h-px bg-white/8" />
+	</div>
+);
+
+// ---------------------------------------------------------------------------
+// LottieInspectorSection
+// ---------------------------------------------------------------------------
+
+const LottieInspectorSection: React.FC<{
+	layer: EditorLayer;
+	update: (patch: Partial<EditorLayer>) => void;
+}> = ({ layer, update }) => {
+	const durationSec = layer.lottieDurationMs
+		? (layer.lottieDurationMs / 1000).toFixed(2)
+		: "–";
+	const fps = layer.lottieFrameRate ?? "–";
+	return (
+		<CollapsibleSection title="Lottie Animation" icon={Sparkles} defaultOpen>
+			<div className="flex items-center gap-3 mb-3 p-2 rounded-md bg-amber-500/5 border border-amber-500/10">
+				<Sparkles className="w-4 h-4 text-amber-400 shrink-0" />
+				<div className="flex flex-col min-w-0">
+					<span className="text-[10px] font-semibold text-amber-300">
+						Lottie / JSON Animation
+					</span>
+					<span className="text-[9px] text-gray-500">
+						{durationSec}s · {fps} fps
+					</span>
+				</div>
+			</div>
+			<div className="flex items-center justify-between mb-3">
+				<div className="flex items-center gap-2">
+					<RefreshCw className="w-3.5 h-3.5 text-gray-400" />
+					<span className="text-[11px] text-gray-300">Loop animation</span>
+				</div>
+				<Switch
+					checked={layer.lottieLoop !== false}
+					onCheckedChange={(checked) => update({ lottieLoop: checked })}
+					className="data-[state=checked]:bg-amber-500"
+				/>
+			</div>
+			<div className="space-y-1.5">
+				<div className="flex items-center justify-between">
+					<span className="text-[9px] text-gray-500 uppercase tracking-wider font-bold">
+						Playback Speed
+					</span>
+					<span className="text-[10px] font-mono text-amber-300">
+						{(layer.speed ?? 1).toFixed(1)}×
+					</span>
+				</div>
+				<Slider
+					value={[(layer.speed ?? 1) * 100]}
+					min={10}
+					max={400}
+					step={10}
+					onValueChange={([v]) => update({ speed: v / 100 })}
+					className="[&_[data-orientation=horizontal]]:h-1 [&_[role=slider]]:bg-amber-400 [&_[role=slider]]:border-amber-500"
+				/>
+				<div className="flex justify-between text-[9px] text-gray-600">
+					<span>0.1×</span>
+					<span>1×</span>
+					<span>4×</span>
+				</div>
+			</div>
+			{layer.lottieDurationMs != null && layer.lottieDurationMs > 0 && (
+				<Button
+					variant="ghost"
+					size="sm"
+					className="w-full mt-3 h-7 text-[10px] text-amber-400 hover:text-amber-300 hover:bg-amber-500/10 border border-dashed border-amber-500/20"
+					onClick={() => {
+						const nativeFrames = Math.ceil(
+							(layer.lottieDurationMs! / 1000) * FPS,
+						);
+						update({ durationInFrames: nativeFrames, speed: 1 });
+					}}
+				>
+					<RefreshCw className="w-3 h-3 mr-1.5" />
+					Reset to native duration ({durationSec}s)
+				</Button>
+			)}
+		</CollapsibleSection>
+	);
+};
+
+// ---------------------------------------------------------------------------
+// UnifiedClip
+// ---------------------------------------------------------------------------
 
 const UnifiedClip: React.FC<{ layer: EditorLayer; isSelected: boolean }> = ({
 	layer,
@@ -482,6 +584,10 @@ const UnifiedClip: React.FC<{ layer: EditorLayer; isSelected: boolean }> = ({
 		</div>
 	);
 };
+
+// ---------------------------------------------------------------------------
+// InteractionOverlay
+// ---------------------------------------------------------------------------
 
 const InteractionOverlay: React.FC = () => {
 	const {
@@ -817,6 +923,10 @@ const InteractionOverlay: React.FC = () => {
 	);
 };
 
+// ---------------------------------------------------------------------------
+// Toolbar
+// ---------------------------------------------------------------------------
+
 const Toolbar: React.FC<{
 	onClose: () => void;
 	onSave: () => void;
@@ -1020,6 +1130,10 @@ const Toolbar: React.FC<{
 	);
 };
 
+// ---------------------------------------------------------------------------
+// SortableTrackHeader
+// ---------------------------------------------------------------------------
+
 interface SortableTrackProps {
 	layer: EditorLayer;
 	isSelected: boolean;
@@ -1090,6 +1204,10 @@ const SortableTrackHeader: React.FC<SortableTrackProps> = ({
 		</button>
 	);
 };
+
+// ---------------------------------------------------------------------------
+// TimelinePanel
+// ---------------------------------------------------------------------------
 
 const TimelinePanel: React.FC = () => {
 	const {
@@ -1473,80 +1591,9 @@ const TimelinePanel: React.FC = () => {
 	);
 };
 
-const LottieInspectorSection: React.FC<{
-	layer: EditorLayer;
-	update: (patch: Partial<EditorLayer>) => void;
-}> = ({ layer, update }) => {
-	const durationSec = layer.lottieDurationMs
-		? (layer.lottieDurationMs / 1000).toFixed(2)
-		: "–";
-	const fps = layer.lottieFrameRate ?? "–";
-	return (
-		<CollapsibleSection title="Lottie Animation" icon={Sparkles} defaultOpen>
-			<div className="flex items-center gap-3 mb-3 p-2 rounded-md bg-amber-500/5 border border-amber-500/10">
-				<Sparkles className="w-4 h-4 text-amber-400 shrink-0" />
-				<div className="flex flex-col min-w-0">
-					<span className="text-[10px] font-semibold text-amber-300">
-						Lottie / JSON Animation
-					</span>
-					<span className="text-[9px] text-gray-500">
-						{durationSec}s · {fps} fps
-					</span>
-				</div>
-			</div>
-			<div className="flex items-center justify-between mb-3">
-				<div className="flex items-center gap-2">
-					<RefreshCw className="w-3.5 h-3.5 text-gray-400" />
-					<span className="text-[11px] text-gray-300">Loop animation</span>
-				</div>
-				<Switch
-					checked={layer.lottieLoop !== false}
-					onCheckedChange={(checked) => update({ lottieLoop: checked })}
-					className="data-[state=checked]:bg-amber-500"
-				/>
-			</div>
-			<div className="space-y-1.5">
-				<div className="flex items-center justify-between">
-					<span className="text-[9px] text-gray-500 uppercase tracking-wider font-bold">
-						Playback Speed
-					</span>
-					<span className="text-[10px] font-mono text-amber-300">
-						{(layer.speed ?? 1).toFixed(1)}×
-					</span>
-				</div>
-				<Slider
-					value={[(layer.speed ?? 1) * 100]}
-					min={10}
-					max={400}
-					step={10}
-					onValueChange={([v]) => update({ speed: v / 100 })}
-					className="[&_[data-orientation=horizontal]]:h-1 [&_[role=slider]]:bg-amber-400 [&_[role=slider]]:border-amber-500"
-				/>
-				<div className="flex justify-between text-[9px] text-gray-600">
-					<span>0.1×</span>
-					<span>1×</span>
-					<span>4×</span>
-				</div>
-			</div>
-			{layer.lottieDurationMs != null && layer.lottieDurationMs > 0 && (
-				<Button
-					variant="ghost"
-					size="sm"
-					className="w-full mt-3 h-7 text-[10px] text-amber-400 hover:text-amber-300 hover:bg-amber-500/10 border border-dashed border-amber-500/20"
-					onClick={() => {
-						const nativeFrames = Math.ceil(
-							(layer.lottieDurationMs! / 1000) * FPS,
-						);
-						update({ durationInFrames: nativeFrames, speed: 1 });
-					}}
-				>
-					<RefreshCw className="w-3 h-3 mr-1.5" />
-					Reset to native duration ({durationSec}s)
-				</Button>
-			)}
-		</CollapsibleSection>
-	);
-};
+// ---------------------------------------------------------------------------
+// InspectorPanel
+// ---------------------------------------------------------------------------
 
 const InspectorPanel: React.FC = () => {
 	const {
@@ -1698,7 +1745,7 @@ const InspectorPanel: React.FC = () => {
 			<div className="flex items-center justify-between p-4 border-b border-white/5 bg-neutral-900/50">
 				<div className="flex flex-col min-w-0">
 					<span
-						className={`text-[10px] uppercase font-bold tracking-wider mb-0.5 ${selectedLayer.type === "Lottie" ? "text-amber-400" : selectedLayer.type === "ThreeD" ? "text-purple-400" : "text-blue-400"}`}
+						className={`text-[10px] uppercase font-bold tracking-wider mb-0.5 ${selectedLayer.type === "Lottie" ? "text-blue-400" : "text-blue-400"}`}
 					>
 						Properties
 					</span>
@@ -1711,9 +1758,7 @@ const InspectorPanel: React.FC = () => {
 						"text-[9px] px-2 py-1 rounded font-medium uppercase border tracking-wider",
 						selectedLayer.type === "Lottie"
 							? "bg-amber-500/10 text-amber-300 border-amber-500/20"
-							: selectedLayer.type === "ThreeD"
-								? "bg-purple-500/10 text-purple-300 border-purple-500/20"
-								: "bg-white/10 text-gray-300 border-white/5",
+							: "bg-white/10 text-gray-300 border-white/5",
 					)}
 				>
 					{selectedLayer.type}
@@ -1729,8 +1774,7 @@ const InspectorPanel: React.FC = () => {
 								</div>
 								{(selectedLayer.type === "Image" ||
 									selectedLayer.type === "Video" ||
-									selectedLayer.type === "Lottie" ||
-									selectedLayer.type === "ThreeD") && (
+									selectedLayer.type === "Lottie") && (
 									<TooltipProvider>
 										<Tooltip>
 											<TooltipTrigger asChild>
@@ -1751,10 +1795,8 @@ const InspectorPanel: React.FC = () => {
 														} else {
 															let newW = selectedLayer.width;
 															let newH = selectedLayer.height;
-															if (
-																selectedLayer.type === "Lottie" ||
-																selectedLayer.type === "ThreeD"
-															) {
+															if (selectedLayer.type === "Lottie") {
+																// keep as-is; no source intrinsics to fetch
 															} else {
 																const initialItem = initialLayersData.get(
 																	selectedLayer.id,
@@ -1952,8 +1994,7 @@ const InspectorPanel: React.FC = () => {
 						showBackground={
 							selectedLayer.type === "Image" ||
 							selectedLayer.type === "Video" ||
-							selectedLayer.type === "Lottie" ||
-							selectedLayer.type === "ThreeD"
+							selectedLayer.type === "Lottie"
 						}
 						showStroke={selectedLayer.type !== "Audio"}
 						showCornerRadius={
@@ -1982,10 +2023,14 @@ const InspectorPanel: React.FC = () => {
 	);
 };
 
+// ---------------------------------------------------------------------------
+// VideoDesignerEditor — root component
+// ---------------------------------------------------------------------------
+
 export interface VideoDesignerEditorProps {
 	initialLayers: Map<
 		string,
-		OutputItem<"Text" | "Image" | "Video" | "Audio" | "Lottie" | "ThreeD">
+		OutputItem<"Text" | "Image" | "Video" | "Audio" | "Lottie">
 	>;
 	node: NodeEntityType;
 	onClose: () => void;
@@ -2056,11 +2101,7 @@ export const VideoDesignerEditor: React.FC<VideoDesignerEditorProps> = ({
 	const getAssetUrl = (id: string) => {
 		const item = initialLayers.get(id);
 		if (!item) return undefined;
-		if (
-			item.type === "Video" ||
-			item.type === "Audio" ||
-			item.type === "ThreeD"
-		)
+		if (item.type === "Video" || item.type === "Audio")
 			return resolveMediaSourceUrl(item.data as VirtualMediaData);
 		const fileData = item.data as FileData;
 		return fileData.entity?.id
@@ -2072,11 +2113,7 @@ export const VideoDesignerEditor: React.FC<VideoDesignerEditorProps> = ({
 		if (!id) return undefined;
 		const item = initialLayers.get(id);
 		if (!item) return undefined;
-		if (
-			item.type === "Video" ||
-			item.type === "Audio" ||
-			item.type === "ThreeD"
-		)
+		if (item.type === "Video" || item.type === "Audio")
 			return (item.data as VirtualMediaData).metadata?.durationMs;
 		const fileData = item.data as FileData;
 		return fileData.entity?.duration ?? fileData?.processData?.duration;
@@ -2143,8 +2180,7 @@ export const VideoDesignerEditor: React.FC<VideoDesignerEditorProps> = ({
 				} else if (
 					item.type === "Video" ||
 					item.type === "Audio" ||
-					item.type === "Lottie" ||
-					item.type === "ThreeD"
+					item.type === "Lottie"
 				) {
 					virtualMedia = item.data as VirtualMediaData;
 					const metadata = getActiveMediaMetadata(virtualMedia);
@@ -2174,10 +2210,7 @@ export const VideoDesignerEditor: React.FC<VideoDesignerEditorProps> = ({
 				}
 
 				const calculatedDurationFrames =
-					(item.type === "Video" ||
-						item.type === "Audio" ||
-						item.type === "ThreeD") &&
-					durationMs > 0
+					(item.type === "Video" || item.type === "Audio") && durationMs > 0
 						? Math.ceil((durationMs / 1000) * FPS)
 						: DEFAULT_DURATION_FRAMES;
 				const handle = handles[id];
@@ -2223,19 +2256,14 @@ export const VideoDesignerEditor: React.FC<VideoDesignerEditorProps> = ({
 					const fontUrl = GetFontAssetUrl(fontFamily);
 					if (fontUrl)
 						fontPromises.push(fontManager.loadFont(fontFamily, fontUrl));
-				} else if (
-					item.type === "Image" ||
-					item.type === "Video" ||
-					item.type === "ThreeD"
-				) {
+				} else if (item.type === "Image" || item.type === "Video") {
 					loaded.push({
 						...base,
-						type: item.type as "Image" | "Video" | "ThreeD",
+						type: item.type as "Image" | "Video",
 						width: layerWidth ?? 400,
 						height: layerHeight ?? 400,
 						maxDurationInFrames:
-							(item.type === "Video" || item.type === "ThreeD") &&
-							durationMs > 0
+							item.type === "Video" && durationMs > 0
 								? calculatedDurationFrames
 								: undefined,
 						lockAspect: true,
@@ -2307,7 +2335,7 @@ export const VideoDesignerEditor: React.FC<VideoDesignerEditorProps> = ({
 		.map((l) => {
 			if (l.type === "Text")
 				return `${l.id}:text:${l.fontFamily}:${l.fontSize}:${l.fontStyle}:${l.textDecoration}:${l.lineHeight}`;
-			if ((l.type === "Video" || l.type === "ThreeD") && l.virtualMedia)
+			if (l.type === "Video" && l.virtualMedia)
 				return `${l.id}:${l.type.toLowerCase()}:${l.autoDimensions}:${l.virtualMedia.operation.op}`;
 			return `${l.id}:${l.type}:${l.autoDimensions}:${l.width ?? "null"}:${l.height ?? "null"}`;
 		})
@@ -2318,7 +2346,6 @@ export const VideoDesignerEditor: React.FC<VideoDesignerEditorProps> = ({
 			(l) =>
 				l.type !== "Audio" &&
 				l.type !== "Lottie" &&
-				l.type !== "ThreeD" &&
 				!l.isPlaceholder &&
 				(l.width == null || l.height == null || l.autoDimensions === true),
 		);
@@ -2436,6 +2463,7 @@ export const VideoDesignerEditor: React.FC<VideoDesignerEditorProps> = ({
 	useEffect(() => {
 		fitView();
 	}, [viewportWidth, viewportHeight, fitView]);
+
 	useEffect(() => {
 		const el = containerRef.current;
 		if (!el) return;
@@ -2448,12 +2476,14 @@ export const VideoDesignerEditor: React.FC<VideoDesignerEditorProps> = ({
 		observer.observe(el);
 		return () => observer.disconnect();
 	}, []);
+
 	useEffect(() => {
 		if (!sizeKnown && containerSize.width > 0) {
 			fitView();
 			setSizeKnown(true);
 		}
 	}, [containerSize, fitView, sizeKnown]);
+
 	useEffect(() => {
 		const el = containerRef.current;
 		if (!el) return;
@@ -2573,7 +2603,8 @@ export const VideoDesignerEditor: React.FC<VideoDesignerEditorProps> = ({
 							(l.durationInFrames ?? DEFAULT_DURATION_FRAMES),
 					),
 				);
-	const contextValue = {
+
+	const contextValue: EditorContextType = {
 		layers,
 		updateLayers: updateLayersHandler,
 		deleteLayer,

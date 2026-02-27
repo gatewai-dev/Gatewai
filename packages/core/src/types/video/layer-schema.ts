@@ -2,8 +2,6 @@ import { z } from "zod";
 import { VideoFilterSchema } from "./filter-schema.js";
 import { TransitionSchema } from "./transition-schema.js";
 import {
-	type AnimationType,
-	type VideoAnimation,
 	VideoAnimationSchema,
 	VirtualMediaDataSchema,
 } from "./virtual-video.js";
@@ -18,7 +16,6 @@ export const ExtendedLayerSchema = z
 			"Audio",
 			"Text",
 			"Lottie",
-			"ThreeD",
 			"Caption",
 			"SVG",
 		]),

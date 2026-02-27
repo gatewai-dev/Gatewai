@@ -16,7 +16,6 @@ enum DataType {
   Image
   Video
   Audio
-  ThreeD
   SVG // Text and Image
   Lottie // Text and Video
   Caption // Text Sub
