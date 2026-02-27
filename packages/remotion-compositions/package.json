@@ -46,6 +46,7 @@
 		"@types/three": "*",
 		"three": "*",
 		"@react-three/fiber": "*",
+		"@react-three/drei": "*",
 		"react": "^19.2.4",
 		"remotion": "*"
 	}

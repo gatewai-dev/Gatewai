@@ -39,12 +39,14 @@ export class VideoCompositorBrowserProcessor implements IBrowserProcessor {
 			const item = input.outputItem;
 
 			let childVV: VirtualMediaData;
+			let sourceText: string | undefined;
 
 			if (item.type === "Video" || item.type === "Audio") {
 				childVV = item.data as VirtualMediaData;
 			} else if (item.type === "Image") {
 				childVV = createVirtualMedia(item.data, item.type);
 			} else if (item.type === "Text") {
+				sourceText = (item.data as string) || "";
 				childVV = createVirtualMedia(item.data, "Text");
 			} else if (item.type === "Lottie" || item.type === "ThreeD") {
 				childVV = createVirtualMedia(item.data, item.type);
@@ -81,13 +83,14 @@ export class VideoCompositorBrowserProcessor implements IBrowserProcessor {
 					durationInFrames: layerDurationInFrames,
 					zIndex: saved.zIndex ?? 0,
 					// Content & Styling
-					text: saved.text,
-					fontSize: saved.fontSize,
-					fontFamily: saved.fontFamily,
+					text: item.type === "Text" ? sourceText : saved.text,
+					fontSize: saved.fontSize ?? (item.type === "Text" ? 60 : undefined),
+					fontFamily:
+						saved.fontFamily ?? (item.type === "Text" ? "Inter" : undefined),
 					fontStyle: saved.fontStyle,
 					fontWeight: saved.fontWeight,
 					textDecoration: saved.textDecoration,
-					fill: saved.fill,
+					fill: saved.fill ?? (item.type === "Text" ? "#ffffff" : undefined),
 					align: saved.align,
 					verticalAlign: saved.verticalAlign,
 					letterSpacing: saved.letterSpacing,

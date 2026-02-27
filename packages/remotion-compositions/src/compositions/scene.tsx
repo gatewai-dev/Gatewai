@@ -665,11 +665,11 @@ export const SingleClipComposition: React.FC<{
 		if (mediaType === "Text") {
 			const mergedStyle = { ...textStyle, ...(op as any) };
 			const textContent =
-				op.op === "text"
+				op.op === "text" && op.text
 					? op.text
-					: op.op === "source"
+					: op.op === "source" && op.source?.processData?.text
 						? op.source?.processData?.text
-						: undefined;
+						: mergedStyle.text;
 			return (
 				<div
 					style={{
