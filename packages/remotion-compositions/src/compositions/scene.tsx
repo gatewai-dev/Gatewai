@@ -7,7 +7,7 @@ import type { LottieAnimationData } from "@remotion/lottie";
 import { Lottie } from "@remotion/lottie";
 import { Audio, Video } from "@remotion/media";
 import type React from "react";
-import { memo, useEffect, useMemo, useRef, useState } from "react";
+import { useEffect, useRef, useState } from "react";
 import {
 	AbsoluteFill,
 	cancelRender,
@@ -67,6 +67,8 @@ const isLottieSource = (virtualMedia: VirtualMediaData): boolean => {
 interface LottieFromUrlProps {
 	src: string;
 	style?: React.CSSProperties;
+	loop?: boolean;
+	playbackRate?: number;
 }
 
 /**
@@ -75,7 +77,12 @@ interface LottieFromUrlProps {
  * delayRender) until the JSON has been fetched, so no blank frames are
  * exported.
  */
-const LottieFromUrl: React.FC<LottieFromUrlProps> = ({ src, style }) => {
+const LottieFromUrl: React.FC<LottieFromUrlProps> = ({
+	src,
+	style,
+	loop = true,
+	playbackRate = 1,
+}) => {
 	const [animationData, setAnimationData] =
 		useState<LottieAnimationData | null>(null);
 
@@ -138,6 +145,8 @@ const LottieFromUrl: React.FC<LottieFromUrlProps> = ({ src, style }) => {
 	return (
 		<Lottie
 			animationData={animationData}
+			loop={loop}
+			playbackRate={playbackRate}
 			style={{
 				position: "absolute",
 				top: 0,
@@ -330,7 +339,12 @@ const compareVirtualMedia = (
 				aOp.borderColor !== bOp.borderColor ||
 				aOp.borderWidth !== bOp.borderWidth ||
 				aOp.borderRadius !== bOp.borderRadius ||
-				aOp.autoDimensions !== bOp.autoDimensions
+				aOp.autoDimensions !== bOp.autoDimensions ||
+				aOp.speed !== bOp.speed ||
+				aOp.lottieLoop !== bOp.lottieLoop ||
+				aOp.lottieFrameRate !== bOp.lottieFrameRate ||
+				aOp.lottieDurationMs !== bOp.lottieDurationMs ||
+				JSON.stringify(aOp.animations) !== JSON.stringify(bOp.animations)
 			)
 				return false;
 			break;
@@ -404,6 +418,12 @@ const compareLayerProps = (
 		prevLayer.borderColor === nextLayer.borderColor &&
 		prevLayer.borderWidth === nextLayer.borderWidth &&
 		prevLayer.borderRadius === nextLayer.borderRadius &&
+		prevLayer.speed === nextLayer.speed &&
+		prevLayer.lottieLoop === nextLayer.lottieLoop &&
+		prevLayer.lottieFrameRate === nextLayer.lottieFrameRate &&
+		prevLayer.lottieDurationMs === nextLayer.lottieDurationMs &&
+		JSON.stringify(prevLayer.animations) ===
+			JSON.stringify(nextLayer.animations) &&
 		compareVirtualMedia(prevLayer.virtualMedia, nextLayer.virtualMedia)
 	);
 };
@@ -477,6 +497,10 @@ export const SingleClipComposition: React.FC<{
 									borderWidth: lop.borderWidth,
 									borderRadius: lop.borderRadius,
 									autoDimensions: lop.autoDimensions,
+									lottieLoop: lop.lottieLoop,
+									lottieFrameRate: lop.lottieFrameRate,
+									lottieDurationMs: lop.lottieDurationMs,
+									animations: lop.animations,
 								} as ExtendedLayer;
 							}
 							return null;
@@ -516,9 +540,18 @@ export const SingleClipComposition: React.FC<{
 		// and file-key extension present on the source entity.
 		if (isLottieSource(virtualMedia)) {
 			if (!params.sourceUrl) return <AbsoluteFill />;
+
+			const baseRate = Number(playbackRateOverride) || 1;
+			const paramsRate = Number(params.speed) || 1;
+			const finalPlaybackRate = baseRate * paramsRate;
+
+			const lottieLoop = textStyle?.lottieLoop ?? true;
+
 			return (
 				<LottieFromUrl
 					src={params.sourceUrl}
+					loop={lottieLoop}
+					playbackRate={finalPlaybackRate}
 					style={{
 						position: "absolute",
 						top: 0,
@@ -619,9 +652,12 @@ export const SingleClipComposition: React.FC<{
 		// mediaType === "Lottie" — kept as belt-and-suspenders for cases where
 		// getMediaType() is updated upstream to return "Lottie" correctly.
 		if (mediaType === "Lottie") {
+			const lottieLoop = textStyle?.lottieLoop ?? true;
 			return (
 				<LottieFromUrl
 					src={params.sourceUrl}
+					loop={lottieLoop}
+					playbackRate={finalPlaybackRate}
 					style={{
 						position: "absolute",
 						top: 0,
@@ -781,12 +817,81 @@ const LayerContentRenderer: React.FC<{
 	layer: ExtendedLayer;
 	animVolume: number;
 	viewport: { w: number; h: number };
-}> = memo(
-	({ layer, animVolume, viewport }) => {
-		const cWidth = layer.width ?? viewport.w;
-		const cHeight = layer.height ?? viewport.h;
+}> = ({ layer, animVolume, viewport }) => {
+	const cWidth = layer.width ?? viewport.w;
+	const cHeight = layer.height ?? viewport.h;
 
-		if (layer.type === "Video" && layer.virtualMedia) {
+	if (layer.type === "Video" && layer.virtualMedia) {
+		return (
+			<SingleClipComposition
+				virtualMedia={layer.virtualMedia}
+				volume={animVolume}
+				playbackRateOverride={layer.speed}
+				trimStartOverride={layer.trimStart}
+				textStyle={layer}
+				containerWidth={cWidth}
+				containerHeight={cHeight}
+			/>
+		);
+	}
+	if (layer.type === "Image" && (layer.src || layer.virtualMedia)) {
+		if (layer.virtualMedia) {
+			return (
+				<SingleClipComposition
+					virtualMedia={layer.virtualMedia}
+					volume={animVolume}
+					trimStartOverride={layer.trimStart}
+					textStyle={layer}
+					containerWidth={cWidth}
+					containerHeight={cHeight}
+				/>
+			);
+		}
+		return (
+			<Img
+				src={layer.src!}
+				style={{ width: "100%", height: "100%", objectFit: "cover" }}
+			/>
+		);
+	}
+
+	if (layer.type === "Lottie") {
+		const loop = layer.lottieLoop ?? true;
+		const playbackRate = layer.speed ?? 1;
+
+		if (layer.virtualMedia) {
+			// Walk down to the source leaf. We need the signed/resolved URL that
+			// computeRenderParams() would produce for the asset.
+			const params = computeRenderParams(layer.virtualMedia);
+			const lottieSrc = params.sourceUrl;
+
+			if (lottieSrc) {
+				return (
+					<LottieFromUrl
+						src={lottieSrc}
+						loop={loop}
+						playbackRate={playbackRate}
+						style={{ width: "100%", height: "100%" }}
+					/>
+				);
+			}
+		}
+		console.log({ layer });
+		// Fallback: plain src string (e.g. from VideoDesignerEditor)
+		if (layer.src) {
+			return (
+				<LottieFromUrl
+					src={layer.src}
+					loop={loop}
+					playbackRate={playbackRate}
+					style={{ width: "100%", height: "100%" }}
+				/>
+			);
+		}
+	}
+
+	if (layer.type === "Audio" && (layer.src || layer.virtualMedia)) {
+		if (layer.virtualMedia) {
 			return (
 				<SingleClipComposition
 					virtualMedia={layer.virtualMedia}
@@ -799,137 +904,65 @@ const LayerContentRenderer: React.FC<{
 				/>
 			);
 		}
-		if (layer.type === "Image" && (layer.src || layer.virtualMedia)) {
-			if (layer.virtualMedia) {
-				return (
-					<SingleClipComposition
-						virtualMedia={layer.virtualMedia}
-						volume={animVolume}
-						trimStartOverride={layer.trimStart}
-						textStyle={layer}
-						containerWidth={cWidth}
-						containerHeight={cHeight}
-					/>
-				);
-			}
+		return <Audio src={layer.src!} volume={animVolume} />;
+	}
+	if (layer.type === "Text" && (layer.text || layer.virtualMedia)) {
+		if (layer.virtualMedia) {
 			return (
-				<Img
-					src={layer.src!}
-					style={{ width: "100%", height: "100%", objectFit: "cover" }}
+				<SingleClipComposition
+					virtualMedia={layer.virtualMedia}
+					volume={animVolume}
+					trimStartOverride={layer.trimStart}
+					textStyle={layer}
+					containerWidth={cWidth}
+					containerHeight={cHeight}
 				/>
 			);
 		}
-
-		if (layer.type === "Lottie") {
-			if (layer.virtualMedia) {
-				// Walk down to the source leaf. We need the signed/resolved URL that
-				// computeRenderParams() would produce for the asset.
-				const params = computeRenderParams(layer.virtualMedia);
-				const lottieSrc = params.sourceUrl;
-
-				if (lottieSrc) {
-					return (
-						<LottieFromUrl
-							src={lottieSrc}
-							style={{ width: "100%", height: "100%" }}
-						/>
-					);
-				}
-			}
-			console.log({ layer });
-			// Fallback: plain src string (e.g. from VideoDesignerEditor)
-			if (layer.src) {
-				return (
-					<LottieFromUrl
-						src={layer.src}
-						style={{ width: "100%", height: "100%" }}
-					/>
-				);
-			}
-		}
-
-		if (layer.type === "Audio" && (layer.src || layer.virtualMedia)) {
-			if (layer.virtualMedia) {
-				return (
-					<SingleClipComposition
-						virtualMedia={layer.virtualMedia}
-						volume={animVolume}
-						playbackRateOverride={layer.speed}
-						trimStartOverride={layer.trimStart}
-						textStyle={layer}
-						containerWidth={cWidth}
-						containerHeight={cHeight}
-					/>
-				);
-			}
-			return <Audio src={layer.src!} volume={animVolume} />;
-		}
-		if (layer.type === "Text" && (layer.text || layer.virtualMedia)) {
-			if (layer.virtualMedia) {
-				return (
-					<SingleClipComposition
-						virtualMedia={layer.virtualMedia}
-						volume={animVolume}
-						trimStartOverride={layer.trimStart}
-						textStyle={layer}
-						containerWidth={cWidth}
-						containerHeight={cHeight}
-					/>
-				);
-			}
-			return (
-				<div
-					style={{
-						width: "100%",
-						height: "100%",
-						color: layer.fill,
-						fontSize: layer.fontSize,
-						fontFamily: layer.fontFamily,
-						fontStyle: layer.fontStyle,
-						fontWeight: layer.fontWeight,
-						textDecoration: layer.textDecoration,
-						lineHeight: layer.lineHeight ?? 1.2,
-						letterSpacing: layer.letterSpacing
-							? `${layer.letterSpacing}px`
-							: undefined,
-						textAlign: (layer.align as "left" | "center" | "right") ?? "left",
-						padding: layer.padding,
-						WebkitTextStroke:
-							layer.strokeWidth && layer.stroke
-								? `${layer.strokeWidth}px ${layer.stroke}`
-								: undefined,
-						paintOrder: "stroke fill",
-						display: "flex",
-						flexDirection: "column",
-						justifyContent:
-							layer.verticalAlign === "middle"
-								? "center"
-								: layer.verticalAlign === "bottom"
-									? "flex-end"
-									: "flex-start",
-						whiteSpace: "pre",
-					}}
-				>
-					{layer.text}
-				</div>
-			);
-		}
-		return null;
-	},
-	(prevProps, nextProps) => {
 		return (
-			compareLayerProps(prevProps, nextProps) &&
-			prevProps.animVolume === nextProps.animVolume &&
-			prevProps.viewport.w === nextProps.viewport.w &&
-			prevProps.viewport.h === nextProps.viewport.h
+			<div
+				style={{
+					width: "100%",
+					height: "100%",
+					color: layer.fill,
+					fontSize: layer.fontSize,
+					fontFamily: layer.fontFamily,
+					fontStyle: layer.fontStyle,
+					fontWeight: layer.fontWeight,
+					textDecoration: layer.textDecoration,
+					lineHeight: layer.lineHeight ?? 1.2,
+					letterSpacing: layer.letterSpacing
+						? `${layer.letterSpacing}px`
+						: undefined,
+					textAlign: (layer.align as "left" | "center" | "right") ?? "left",
+					padding: layer.padding,
+					WebkitTextStroke:
+						layer.strokeWidth && layer.stroke
+							? `${layer.strokeWidth}px ${layer.stroke}`
+							: undefined,
+					paintOrder: "stroke fill",
+					display: "flex",
+					flexDirection: "column",
+					justifyContent:
+						layer.verticalAlign === "middle"
+							? "center"
+							: layer.verticalAlign === "bottom"
+								? "flex-end"
+								: "flex-start",
+					whiteSpace: "pre",
+				}}
+			>
+				{layer.text}
+			</div>
 		);
-	},
-);
+	}
+	return null;
+};
 
 export const LayerRenderer: React.FC<{
 	layer: ExtendedLayer;
 	viewport: { w: number; h: number };
-}> = memo(({ layer, viewport }) => {
+}> = ({ layer, viewport }) => {
 	const frame = useCurrentFrame();
 	const { fps } = useVideoConfig();
 
@@ -982,7 +1015,7 @@ export const LayerRenderer: React.FC<{
 			</div>
 		</Sequence>
 	);
-});
+};
 
 // ---------------------------------------------------------------------------
 // CompositionScene — renders an ordered list of ExtendedLayer objects.
@@ -1048,7 +1081,7 @@ export const CompositionScene: React.FC<SceneProps> = ({
 	const frame = useCurrentFrame();
 	const { fps } = useVideoConfig();
 
-	const resolvedLayers = useMemo(() => {
+	const resolvedLayers = (() => {
 		if (layers.length > 0) return layers;
 
 		if (src || virtualMedia || type === "Text" || type === "Lottie") {
@@ -1080,46 +1113,31 @@ export const CompositionScene: React.FC<SceneProps> = ({
 			];
 		}
 		return [];
-	}, [
-		layers,
-		src,
-		virtualMedia,
-		type,
-		isAudio,
-		data,
-		viewportWidth,
-		viewportHeight,
-		fps,
-	]);
+	})();
 
-	const layersToRender = useMemo(() => {
-		return [...resolvedLayers]
-			.sort((a, b) => (a.zIndex ?? 0) - (b.zIndex ?? 0))
-			.map((layer) => {
-				let derivedWidth = layer.width;
-				let derivedHeight = layer.height;
+	const layersToRender = [...resolvedLayers]
+		.sort((a, b) => (a.zIndex ?? 0) - (b.zIndex ?? 0))
+		.map((layer) => {
+			let derivedWidth = layer.width;
+			let derivedHeight = layer.height;
 
-				if (layer.virtualMedia && layer.autoDimensions) {
-					const activeMeta = getActiveVideoMetadata(layer.virtualMedia);
-					derivedWidth = activeMeta?.width ?? derivedWidth;
-					derivedHeight = activeMeta?.height ?? derivedHeight;
-				}
+			if (layer.virtualMedia && layer.autoDimensions) {
+				const activeMeta = getActiveVideoMetadata(layer.virtualMedia);
+				derivedWidth = activeMeta?.width ?? derivedWidth;
+				derivedHeight = activeMeta?.height ?? derivedHeight;
+			}
 
-				return {
-					...layer,
-					width: derivedWidth,
-					height: derivedHeight,
-				};
-			});
-	}, [resolvedLayers]);
+			return {
+				...layer,
+				width: derivedWidth,
+				height: derivedHeight,
+			};
+		});
 
 	const resolvedViewportW = viewportWidth || 1920;
 	const resolvedViewportH = viewportHeight || 1080;
 
-	const viewport = useMemo(
-		() => ({ w: resolvedViewportW, h: resolvedViewportH }),
-		[resolvedViewportW, resolvedViewportH],
-	);
+	const viewport = { w: resolvedViewportW, h: resolvedViewportH };
 
 	const scaleX =
 		containerWidth !== undefined ? containerWidth / resolvedViewportW : 1;

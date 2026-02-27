@@ -46,6 +46,8 @@ export class VideoCompositorBrowserProcessor implements IBrowserProcessor {
 				childVV = createVirtualMedia(item.data, item.type);
 			} else if (item.type === "Text") {
 				childVV = createVirtualMedia(item.data, "Text");
+			} else if (item.type === "Lottie") {
+				childVV = createVirtualMedia(item.data, "Lottie");
 			} else {
 				continue;
 			}
@@ -70,8 +72,8 @@ export class VideoCompositorBrowserProcessor implements IBrowserProcessor {
 					op: "layer",
 					x: saved.x ?? 0,
 					y: saved.y ?? 0,
-					width: saved.width ?? activeMeta?.width,
-					height: saved.height ?? activeMeta?.height,
+					width: saved.width ?? activeMeta?.width ?? undefined,
+					height: saved.height ?? activeMeta?.height ?? undefined,
 					rotation: saved.rotation ?? 0,
 					scale: saved.scale ?? 1,
 					opacity: saved.opacity ?? 1,
@@ -98,6 +100,11 @@ export class VideoCompositorBrowserProcessor implements IBrowserProcessor {
 					borderWidth: saved.borderWidth,
 					borderRadius: saved.borderRadius,
 					autoDimensions: saved.autoDimensions,
+					animations: saved.animations,
+					speed: saved.speed,
+					lottieLoop: saved.lottieLoop,
+					lottieFrameRate: saved.lottieFrameRate,
+					lottieDurationMs: saved.lottieDurationMs,
 				},
 				children: [childVV],
 			};

@@ -72,7 +72,11 @@ const VideoCompositorNodeComponent = memo((props: NodeProps) => {
 				src = params.sourceUrl;
 				if (!layerWidth) layerWidth = vv.metadata.width;
 				if (!layerHeight) layerHeight = vv.metadata.height;
-			} else if (item.type === "Image" || item.type === "Audio") {
+			} else if (
+				item.type === "Image" ||
+				item.type === "Audio" ||
+				item.type === "Lottie"
+			) {
 				const fileData = item.data as FileData;
 				if (fileData) {
 					src = fileData.entity?.id
@@ -112,6 +116,7 @@ const VideoCompositorNodeComponent = memo((props: NodeProps) => {
 				src,
 				text,
 				virtualMedia,
+				lottieLoop: saved.lottieLoop,
 			};
 
 			if (item.type === "Text") {
@@ -144,6 +149,21 @@ const VideoCompositorNodeComponent = memo((props: NodeProps) => {
 					width: 0,
 					maxDurationInFrames:
 						durationMs > 0 ? calculatedDurationFrames : undefined,
+				});
+			} else if (item.type === "Lottie") {
+				// Base maxDuration on either the fetched JSON metadata or derived duration
+				const lottieFrames = saved.lottieDurationMs
+					? Math.ceil((saved.lottieDurationMs / 1000) * FPS)
+					: durationMs > 0
+						? calculatedDurationFrames
+						: undefined;
+
+				layers.push({
+					...layer,
+					type: "Lottie",
+					width: layerWidth ?? width,
+					height: layerHeight ?? height,
+					maxDurationInFrames: lottieFrames,
 				});
 			}
 		}

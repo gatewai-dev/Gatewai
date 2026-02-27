@@ -124,7 +124,6 @@ import React, {
 	useCallback,
 	useContext,
 	useEffect,
-	useMemo,
 	useRef,
 	useState,
 } from "react";
@@ -299,13 +298,6 @@ export type EditorLayer = ExtendedLayer & {
 	videoCropOffsetY?: number;
 	cropTranslatePercentageX?: number;
 	cropTranslatePercentageY?: number;
-	// ── Lottie-specific ────────────────────────────────────────────────────────
-	/** Whether the Lottie animation loops. Defaults to true. */
-	lottieLoop?: boolean;
-	/** Intrinsic Lottie frame rate (read from JSON, used to compute duration). */
-	lottieFrameRate?: number;
-	/** Native animation duration in ms (read from Lottie JSON). */
-	lottieDurationMs?: number;
 };
 
 const RULER_HEIGHT = 28;
@@ -843,11 +835,11 @@ const InteractionOverlay: React.FC = () => {
 };
 
 // --- Toolbar ---
-const Toolbar = React.memo<{
+const Toolbar: React.FC<{
 	onClose: () => void;
 	onSave: () => void;
 	timeRef: React.RefObject<HTMLDivElement | null>;
-}>(({ onClose, onSave, timeRef }) => {
+}> = ({ onClose, onSave, timeRef }) => {
 	const {
 		zoom,
 		zoomIn,
@@ -1045,7 +1037,7 @@ const Toolbar = React.memo<{
 			</AlertDialog>
 		</>
 	);
-});
+};
 
 // --- Timeline Panel ---
 interface SortableTrackProps {

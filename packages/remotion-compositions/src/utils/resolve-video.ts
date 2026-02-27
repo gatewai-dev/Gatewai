@@ -19,7 +19,8 @@ export function createVirtualMedia(
 		| "Json"
 		| "ThreeD"
 		| "SVG"
-		| "Caption" = "Video",
+		| "Caption"
+		| "Text" = "Video",
 ): VirtualMediaData {
 	// If it's already a VirtualMediaData, return it
 	if (source && typeof source === "object" && "operation" in source) {

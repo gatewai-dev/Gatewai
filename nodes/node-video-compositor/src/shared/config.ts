@@ -68,6 +68,9 @@ export const VideoCompositorLayerSchema = BaseLayerSchema.merge(PositionSchema)
 				durationFrames: z.number().min(1),
 			})
 			.optional(),
+		lottieLoop: z.boolean().optional(),
+		lottieFrameRate: z.number().optional(),
+		lottieDurationMs: z.number().optional(),
 	})
 	.strict();
 

@@ -1,32 +1,12 @@
 import { z } from "zod";
 import { VideoFilterSchema } from "./filter-schema.js";
 import { TransitionSchema } from "./transition-schema.js";
-import { VirtualMediaDataSchema } from "./virtual-video.js";
-
-export const AnimationTypeSchema = z.enum([
-	"fade-in",
-	"fade-out",
-	"slide-in-left",
-	"slide-in-right",
-	"slide-in-top",
-	"slide-in-bottom",
-	"zoom-in",
-	"zoom-out",
-	"rotate-cw",
-	"rotate-ccw",
-	"bounce",
-	"shake",
-]);
-
-export type AnimationType = z.infer<typeof AnimationTypeSchema>;
-
-export const VideoAnimationSchema = z.object({
-	id: z.string(),
-	type: AnimationTypeSchema,
-	value: z.number(),
-});
-
-export type VideoAnimation = z.infer<typeof VideoAnimationSchema>;
+import {
+	type AnimationType,
+	type VideoAnimation,
+	VideoAnimationSchema,
+	VirtualMediaDataSchema,
+} from "./virtual-video.js";
 
 export const ExtendedLayerSchema = z
 	.object({
@@ -40,6 +20,7 @@ export const ExtendedLayerSchema = z
 			"Lottie",
 			"ThreeD",
 			"Caption",
+			"SVG",
 		]),
 
 		// VirtualMediaData from upstream
@@ -105,10 +86,14 @@ export const ExtendedLayerSchema = z
 		// Handle info for mapping
 		inputHandleId: z.string().optional(),
 
-		// Internal
 		isPlaceholder: z.boolean().optional(),
 
 		autoDimensions: z.boolean().optional(),
+
+		// Lottie specific
+		lottieLoop: z.boolean().optional(),
+		lottieFrameRate: z.number().optional(),
+		lottieDurationMs: z.number().optional(),
 	})
 	.strict();
 

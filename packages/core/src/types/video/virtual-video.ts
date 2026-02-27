@@ -1,6 +1,31 @@
 import { z } from "zod";
 import { VideoFilterSchema } from "./filter-schema.js";
 
+export const AnimationTypeSchema = z.enum([
+	"fade-in",
+	"fade-out",
+	"slide-in-left",
+	"slide-in-right",
+	"slide-in-top",
+	"slide-in-bottom",
+	"zoom-in",
+	"zoom-out",
+	"rotate-cw",
+	"rotate-ccw",
+	"bounce",
+	"shake",
+]);
+
+export type AnimationType = z.infer<typeof AnimationTypeSchema>;
+
+export const VideoAnimationSchema = z.object({
+	id: z.string(),
+	type: AnimationTypeSchema,
+	value: z.number(),
+});
+
+export type VideoAnimation = z.infer<typeof VideoAnimationSchema>;
+
 // --- Source: the real underlying file ---
 export const VideoSourceSchema = z.object({
 	entity: z.any().optional(), // FileAsset from Import/VideoGen
@@ -127,6 +152,12 @@ export const LayerOperationSchema = z.object({
 	borderWidth: z.number().optional(),
 	borderRadius: z.number().optional(),
 	autoDimensions: z.boolean().optional(),
+
+	animations: z.array(VideoAnimationSchema).optional(),
+
+	lottieLoop: z.boolean().optional(),
+	lottieFrameRate: z.number().optional(),
+	lottieDurationMs: z.number().optional(),
 });
 
 export const ComposeOperationSchema = z.object({
