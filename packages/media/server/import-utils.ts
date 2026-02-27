@@ -326,6 +326,7 @@ export async function uploadToImportNode({
 						data:
 							dataType === "Video" ||
 							dataType === "Audio" ||
+							dataType === "ThreeD" ||
 							dataType === "Lottie"
 								? createVirtualMedia({ entity: asset }, dataType)
 								: { entity: asset },

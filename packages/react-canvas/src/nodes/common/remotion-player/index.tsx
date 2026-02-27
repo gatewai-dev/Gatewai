@@ -5,12 +5,12 @@ import type {
 } from "@gatewai/core/types";
 import {
 	CompositionScene,
-	getActiveVideoMetadata,
+	getActiveMediaMetadata,
 } from "@gatewai/remotion-compositions";
 import type { PlayerRef } from "@remotion/player";
 import { Player } from "@remotion/player";
 import type { ReactNode } from "react";
-import { useCallback, useEffect, useMemo, useRef, useState } from "react";
+import { useCallback, useEffect, useRef, useState } from "react";
 import {
 	MdFullscreen,
 	MdFullscreenExit,
@@ -399,20 +399,12 @@ export const MediaPlayer = ({
 	controls = true,
 	className,
 	overlay,
-	// ↓ NEW
-	animations,
-	opacity,
-	volume,
-	scale,
-	rotation,
-	x,
-	y,
 }: MediaPlayerProps) => {
 	const playerRef = useRef<PlayerRef>(null);
 	const wrapperRef = useRef<HTMLDivElement>(null);
 	const resolvedType = type || (isAudio ? "Audio" : "Video");
 
-	const activeMeta = virtualMedia ? getActiveVideoMetadata(virtualMedia) : null;
+	const activeMeta = virtualMedia ? getActiveMediaMetadata(virtualMedia) : null;
 
 	const durationInFrames = (() => {
 		if (activeMeta?.durationMs)
@@ -431,7 +423,6 @@ export const MediaPlayer = ({
 	const showControls =
 		controls && resolvedType !== "Image" && resolvedType !== "Text";
 
-	console.log({ virtualMedia });
 	return (
 		<div
 			ref={wrapperRef}

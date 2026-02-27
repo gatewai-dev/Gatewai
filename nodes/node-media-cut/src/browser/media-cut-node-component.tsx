@@ -10,7 +10,7 @@ import {
 	makeSelectNodeById,
 	useAppSelector,
 } from "@gatewai/react-store";
-import { getActiveVideoMetadata } from "@gatewai/remotion-compositions";
+import { getActiveMediaMetadata } from "@gatewai/remotion-compositions";
 import { Button } from "@gatewai/ui-kit";
 import { memo, useCallback, useEffect, useMemo, useRef, useState } from "react";
 import type { MediaCutConfig } from "../shared/config.js";
@@ -514,7 +514,7 @@ const MediaCutNodeComponent = memo(
 			| undefined;
 
 		const sourceMeta = useMemo(() => {
-			const activeMeta = getActiveVideoMetadata(inputMedia);
+			const activeMeta = getActiveMediaMetadata(inputMedia);
 			return {
 				width: activeMeta?.width ?? 1920,
 				height: activeMeta?.height ?? 1080,
@@ -570,7 +570,7 @@ const MediaCutNodeComponent = memo(
 				{/* ── Video preview — no height constraint, controls fully visible ── */}
 				<div className="border-b border-border">
 					{result && node ? (
-						<MediaContent node={node} result={result} />
+						<MediaContent node={node} />
 					) : (
 						<div
 							className="flex flex-col items-center justify-center gap-2"

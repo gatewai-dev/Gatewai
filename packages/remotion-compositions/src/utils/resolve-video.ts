@@ -64,7 +64,7 @@ export function createVirtualMedia(
 				processData: {
 					...(source.processData ?? {}),
 					mimeType,
-					text: (source.processData ?? {}).text,
+					text: source?.processData?.text,
 				},
 			},
 			sourceMeta: sourceMeta,
@@ -117,7 +117,7 @@ export function getMediaType(
  * Walks down the tree to find the 'source' operation.
  * Supports legacy formats for backward compatibility.
  */
-export function resolveVideoSourceUrl(
+export function resolveMediaSourceUrl(
 	vv: VirtualMediaData,
 ): string | undefined {
 	if (!vv) return undefined;
@@ -133,7 +133,7 @@ export function resolveVideoSourceUrl(
 
 	// New structure: walk down children (assuming single path for non-compose)
 	if (vv.children?.length > 0) {
-		return resolveVideoSourceUrl(vv.children[0]);
+		return resolveMediaSourceUrl(vv.children[0]);
 	}
 
 	return undefined;
@@ -147,7 +147,7 @@ export function appendOperation(
 	vv: VirtualMediaData,
 	operation: VideoOperation,
 ): VirtualMediaData {
-	const nextMeta = computeNextMetadata(getActiveVideoMetadata(vv), operation);
+	const nextMeta = computeNextMetadata(getActiveMediaMetadata(vv), operation);
 	return {
 		metadata: nextMeta,
 		operation,
@@ -229,7 +229,7 @@ function computeNextMetadata(
  * Simply returns the metadata property of the node.
  * Supports legacy formats (sourceMeta) and extracts from source if needed.
  */
-export function getActiveVideoMetadata(
+export function getActiveMediaMetadata(
 	vv: VirtualMediaData,
 ): VideoMetadata | null {
 	if (!vv) return null;
@@ -246,7 +246,7 @@ export function getActiveVideoMetadata(
 		vv.operation?.op !== "compose" &&
 		vv.operation?.op !== "layer"
 	) {
-		const childMeta = getActiveVideoMetadata(vv.children[0]);
+		const childMeta = getActiveMediaMetadata(vv.children[0]);
 		if (childMeta) {
 			width = width ?? childMeta.width;
 			height = height ?? childMeta.height;

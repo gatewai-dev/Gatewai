@@ -39,9 +39,17 @@ export async function renderVirtualMedia(
 			fps,
 			width,
 			height,
-			defaultProps: { virtualMedia },
+			defaultProps: {
+				virtualMedia,
+				containerWidth: width,
+				containerHeight: height,
+			},
 		},
-		inputProps: { virtualMedia },
+		inputProps: {
+			virtualMedia,
+			containerWidth: width,
+			containerHeight: height,
+		},
 		onProgress: options.onProgress,
 		signal: options.signal,
 	});

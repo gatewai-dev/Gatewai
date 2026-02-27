@@ -9,7 +9,7 @@ import type {
 } from "@gatewai/node-sdk/server";
 import {
 	appendOperation,
-	getActiveVideoMetadata,
+	getActiveMediaMetadata,
 } from "@gatewai/remotion-compositions/server";
 import { inject, injectable } from "inversify";
 import { MediaCutConfigSchema } from "../shared/config.js";
@@ -45,7 +45,7 @@ export class MediaCutProcessor implements NodeProcessor {
 			}
 
 			const config = MediaCutConfigSchema.parse(node.config);
-			const activeMeta = getActiveVideoMetadata(inputMedia);
+			const activeMeta = getActiveMediaMetadata(inputMedia);
 
 			if (!activeMeta) {
 				return { success: false, error: "Unable to read media metadata" };

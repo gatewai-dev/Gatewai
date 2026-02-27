@@ -12,6 +12,7 @@ export const DATA_TYPE_EXTENSIONS: Record<DataType, string> = {
 	SVG: "svg",
 	Lottie: "json",
 	Json: "json",
+	Caption: "srt",
 };
 
 // MIME type mapping
@@ -30,8 +31,15 @@ export const MIME_TYPES: Record<string, string> = {
 	ogg: "audio/ogg",
 	pdf: "application/pdf",
 	json: "application/json",
+	lottie: "application/json",
 	txt: "text/plain",
 	glb: "model/gltf-binary",
+	gltf: "model/gltf+json",
+	obj: "model/obj",
+	stl: "model/stl",
+	srt: "text/srt",
+	aac: "audio/aac",
+	flac: "audio/flac",
 };
 
 // Shared Enums and Constants

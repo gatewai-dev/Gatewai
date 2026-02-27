@@ -7,7 +7,7 @@ import type {
 import type { IBrowserProcessor } from "@gatewai/node-sdk/browser";
 import {
 	appendOperation,
-	getActiveVideoMetadata,
+	getActiveMediaMetadata,
 } from "@gatewai/remotion-compositions";
 import { type CropNodeConfig, CropNodeConfigSchema } from "../shared/config.js";
 import type { CropResult, VideoCropResult } from "../shared/index.js";
@@ -55,7 +55,7 @@ export class CropBrowserProcessor implements IBrowserProcessor {
 		nodeId: string,
 		mediaType: "Video" | "Audio",
 	): Promise<VideoCropResult> {
-		const currentMeta = getActiveVideoMetadata(inputVideo);
+		const currentMeta = getActiveMediaMetadata(inputVideo);
 		const currentWidth = currentMeta.width ?? 1920;
 		const currentHeight = currentMeta.height ?? 1080;
 

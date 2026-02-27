@@ -12,7 +12,7 @@ import type {
 } from "@gatewai/node-sdk/server";
 import {
 	appendOperation,
-	getActiveVideoMetadata,
+	getActiveMediaMetadata,
 } from "@gatewai/remotion-compositions/server";
 import { inject, injectable } from "inversify";
 import { CropNodeConfigSchema } from "../shared/config.js";
@@ -80,7 +80,7 @@ export class CropProcessor implements NodeProcessor {
 		data: BackendNodeProcessorCtx["data"],
 		node: BackendNodeProcessorCtx["node"],
 	): Promise<BackendNodeProcessorResult<VideoCropResult>> {
-		const activeMeta = getActiveVideoMetadata(inputVideo);
+		const activeMeta = getActiveMediaMetadata(inputVideo);
 		const sw = activeMeta.width ?? 1920;
 		const sh = activeMeta.height ?? 1080;
 		const cw = Math.max(1, Math.round((config.widthPercentage / 100) * sw));

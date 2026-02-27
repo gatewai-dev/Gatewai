@@ -5,7 +5,7 @@ import type {
 	NodeProcessorParams,
 	VirtualMediaData,
 } from "@gatewai/core/types";
-import { resolveVideoSourceUrl } from "@gatewai/remotion-compositions";
+import { resolveMediaSourceUrl } from "@gatewai/remotion-compositions";
 import { Audio, Video } from "@remotion/media";
 import { renderMediaOnWeb } from "@remotion/web-renderer";
 import type React from "react";
@@ -154,7 +154,7 @@ const DynamicComposition: React.FC<{
 
 				const getAssetUrl = () => {
 					if (input.outputItem?.type === "Video") {
-						return resolveVideoSourceUrl(
+						return resolveMediaSourceUrl(
 							input.outputItem.data as VirtualMediaData,
 						);
 					}
@@ -345,7 +345,7 @@ export class RemotionWebProcessorService {
 				return vv.metadata.durationMs / 1000;
 			}
 			// Fall back to loading from URL
-			const url = resolveVideoSourceUrl(vv);
+			const url = resolveMediaSourceUrl(vv);
 			if (!url) return 0;
 			return new Promise((resolve) => {
 				const el = document.createElement("video");

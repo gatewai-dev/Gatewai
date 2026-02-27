@@ -18,7 +18,10 @@ import {
 	useNodeResult,
 } from "@gatewai/react-canvas";
 import { makeSelectNodeById, useAppSelector } from "@gatewai/react-store";
-import { computeRenderParams } from "@gatewai/remotion-compositions";
+import {
+	computeRenderParams,
+	createVirtualMedia,
+} from "@gatewai/remotion-compositions";
 import { Button } from "@gatewai/ui-kit";
 
 import { Download, Loader2, VideoIcon } from "lucide-react";
@@ -27,7 +30,7 @@ import { useNavigate } from "react-router";
 import { toast } from "sonner";
 import type { VideoCompositorNodeConfig } from "../shared/config.js";
 import { remotionService } from "./muxer-service.js";
-import { DEFAULT_DURATION_FRAMES, FPS } from "./video-editor/config/index.js";
+import { FPS } from "./video-editor/config/index.js";
 
 const VideoCompositorNodeComponent = memo((props: NodeProps) => {
 	const node = useAppSelector(makeSelectNodeById(props.id)) as any;
@@ -64,6 +67,7 @@ const VideoCompositorNodeComponent = memo((props: NodeProps) => {
 
 			if (item.type === "Text") {
 				text = (item.data as string) || "";
+				virtualMedia = createVirtualMedia(text, "Text");
 			} else if (item.type === "Video") {
 				// Video inputs are always VirtualMediaData
 				const vv = item.data as VirtualMediaData;
@@ -74,6 +78,7 @@ const VideoCompositorNodeComponent = memo((props: NodeProps) => {
 				if (!layerHeight) layerHeight = vv.metadata.height;
 			} else if (
 				item.type === "Image" ||
+				item.type === "ThreeD" ||
 				item.type === "Audio" ||
 				item.type === "Lottie"
 			) {
@@ -128,6 +133,7 @@ const VideoCompositorNodeComponent = memo((props: NodeProps) => {
 					fill: saved.fill ?? "#ffffff",
 					width: layerWidth ?? width,
 					height: layerHeight ?? height,
+					virtualMedia,
 				});
 			} else if (item.type === "Image" || item.type === "Video") {
 				layers.push({
@@ -227,7 +233,7 @@ const VideoCompositorNodeComponent = memo((props: NodeProps) => {
 					}}
 				>
 					{result && node ? (
-						<MediaContent node={node} result={result} />
+						<MediaContent node={node} />
 					) : (
 						<div className="absolute inset-0 flex items-center justify-center text-muted-foreground text-xs italic border-b border-white/10 w-full h-full">
 							No input connected

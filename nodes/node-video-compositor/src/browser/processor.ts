@@ -6,7 +6,7 @@ import type {
 import type { IBrowserProcessor } from "@gatewai/node-sdk/browser";
 import {
 	createVirtualMedia,
-	getActiveVideoMetadata,
+	getActiveMediaMetadata,
 } from "@gatewai/remotion-compositions";
 import type { VideoCompositorNodeConfig } from "../shared/config.js";
 import { DEFAULT_DURATION_FRAMES, FPS } from "./video-editor/config/index.js";
@@ -46,13 +46,13 @@ export class VideoCompositorBrowserProcessor implements IBrowserProcessor {
 				childVV = createVirtualMedia(item.data, item.type);
 			} else if (item.type === "Text") {
 				childVV = createVirtualMedia(item.data, "Text");
-			} else if (item.type === "Lottie") {
-				childVV = createVirtualMedia(item.data, "Lottie");
+			} else if (item.type === "Lottie" || item.type === "ThreeD") {
+				childVV = createVirtualMedia(item.data, item.type);
 			} else {
 				continue;
 			}
 			console.log({ childVV });
-			const activeMeta = getActiveVideoMetadata(childVV);
+			const activeMeta = getActiveMediaMetadata(childVV);
 
 			const layerDurationInFrames =
 				saved.durationInFrames ??

@@ -24,7 +24,7 @@ const PreviewNodeComponent = memo((props: NodeProps) => {
 	return (
 		<BaseNode selected={props.selected} id={props.id} dragging={props.dragging}>
 			<div className="-mx-0.5 mt-[-2px] mb-[-2px] overflow-hidden relative">
-				<MediaContent node={node} result={result} />
+				<MediaContent node={node} />
 			</div>
 		</BaseNode>
 	);

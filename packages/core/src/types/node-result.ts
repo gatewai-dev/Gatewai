@@ -37,9 +37,9 @@ export type DataForType<R extends DataType> = R extends "Text"
 		? number
 		: R extends "Boolean"
 			? boolean
-			: R extends "Image" | "SVG" | "ThreeD" | "Caption" | "Json"
+			: R extends "Image" | "SVG" | "Caption" | "Json"
 				? FileData
-				: R extends "Video" | "Audio" | "Lottie"
+				: R extends "Video" | "Audio" | "Lottie" | "ThreeD"
 					? VirtualMediaData
 					: R extends "Any"
 						? string | number | boolean | FileData | VirtualMediaData

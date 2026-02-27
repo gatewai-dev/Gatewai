@@ -184,7 +184,7 @@ The `DataForType<"Video">` mapping changes from `FileData` to `VirtualMediaData`
 /**
  * Resolve the actual playable URL from a VirtualMediaData
  */
-export function resolveVideoSourceUrl(vv: VirtualMediaData): string | undefined {
+export function resolveMediaSourceUrl(vv: VirtualMediaData): string | undefined {
   return vv.source.entity?.id
     ? GetAssetEndpoint(vv.source.entity)
     : vv.source.processData?.dataUrl;
@@ -261,7 +261,7 @@ export function computeRenderParams(vv: VirtualMediaData) {
     }
   }
 
-  const sourceUrl = resolveVideoSourceUrl(vv);
+  const sourceUrl = resolveMediaSourceUrl(vv);
   const sourceDurationSec = (vv.sourceMeta.durationMs ?? 0) / 1000;
   const effectiveDurationSec = ((trimEndSec ?? sourceDurationSec) - trimStartSec) / speed;
 
@@ -646,7 +646,7 @@ for (const [handleId, input] of Object.entries(inputs)) {
       ...base,
       type: "Video",
       virtualMedia: vv,
-      src: resolveVideoSourceUrl(vv),
+      src: resolveMediaSourceUrl(vv),
     });
   }
 }
@@ -775,7 +775,7 @@ packages/remotion-compositions/
     │   ├── transitions.tsx         # Crossfade, wipe, slide
     │   └── animations.ts          # Animation math (from current compositor)
     └── utils/
-        ├── resolve-video.ts        # resolveVideoSourceUrl(), createVirtualMedia(), appendOperation()
+        ├── resolve-video.ts        # resolveMediaSourceUrl(), createVirtualMedia(), appendOperation()
         ├── apply-operations.ts     # computeRenderParams() — collapses stack to render props
         ├── timing.ts               # Frame/time conversion
         └── media-duration.ts       # getMediaDurationAsSec

@@ -42,10 +42,10 @@
 		"zod": "^3.23.8",
 		"@remotion/lottie": "*",
 		"@remotion/web-renderer": "*",
-		"@react-three/fiber": "*",
 		"@remotion/three": "*",
 		"@types/three": "*",
 		"three": "*",
+		"@react-three/fiber": "*",
 		"react": "^19.2.4",
 		"remotion": "*"
 	}

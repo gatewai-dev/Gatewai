@@ -5,7 +5,7 @@ import type {
 import type { IBrowserProcessor } from "@gatewai/node-sdk/browser";
 import {
 	appendOperation,
-	getActiveVideoMetadata,
+	getActiveMediaMetadata,
 } from "@gatewai/remotion-compositions";
 import { MediaCutConfigSchema } from "../shared/config.js";
 import type { MediaCutResult } from "../shared/index.js";
@@ -44,7 +44,7 @@ export class MediaCutBrowserProcessor implements IBrowserProcessor {
 		console.log({ inputMedia });
 		const { startSec, endSec } = MediaCutConfigSchema.parse(node.config);
 
-		const currentMeta = getActiveVideoMetadata(inputMedia);
+		const currentMeta = getActiveMediaMetadata(inputMedia);
 		if (!currentMeta) {
 			throw new Error("Unable to read media metadata");
 		}

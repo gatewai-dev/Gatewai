@@ -155,10 +155,8 @@ const ImportNodeComponent = memo((props: NodeProps) => {
 
 	return (
 		<BaseNode selected={props.selected} id={props.id} dragging={props.dragging}>
-			<div className="flex flex-col">
-				{showResult && node && (
-					<MediaContent node={node} result={result as any} />
-				)}
+			<div className="flex flex-col w-full">
+				{showResult && node && <MediaContent node={node} />}
 				{!showResult && (
 					<UploadDropzone
 						className="w-full py-16"

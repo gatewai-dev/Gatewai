@@ -3,11 +3,21 @@ import type {
 	VideoAnimation,
 	VirtualMediaData,
 } from "@gatewai/core/types";
+import { Stage, useGLTF } from "@react-three/drei";
+import { useLoader, useThree } from "@react-three/fiber";
 import type { LottieAnimationData } from "@remotion/lottie";
 import { Lottie } from "@remotion/lottie";
 import { Audio, Video } from "@remotion/media";
+import { ThreeCanvas } from "@remotion/three";
 import type React from "react";
-import { useEffect, useRef, useState } from "react";
+import {
+	Suspense,
+	useEffect,
+	useLayoutEffect,
+	useMemo,
+	useRef,
+	useState,
+} from "react";
 import {
 	AbsoluteFill,
 	cancelRender,
@@ -20,48 +30,210 @@ import {
 	useCurrentFrame,
 	useVideoConfig,
 } from "remotion";
+import * as THREE from "three";
+import { OBJLoader } from "three/addons/loaders/OBJLoader.js";
+import { STLLoader } from "three/addons/loaders/STLLoader.js";
 import {
 	buildCSSFilterString,
 	computeRenderParams,
 } from "../utils/apply-operations.js";
 import {
-	getActiveVideoMetadata,
+	getActiveMediaMetadata,
 	getMediaType,
 } from "../utils/resolve-video.js";
 
-const DEFAULT_DURATION_FRAMES = 24 * 5; // 5 sec at 24 fps
+const DEFAULT_DURATION_FRAMES = 24 * 5;
+
+const CameraSetup = () => {
+	const camera = useThree((state) => state.camera);
+	useEffect(() => {
+		camera.position.set(0, 0, 10);
+		camera.near = 0.1;
+		camera.far = 10000;
+		camera.lookAt(0, 0, 0);
+		camera.updateProjectionMatrix();
+	}, [camera]);
+	return null;
+};
+
+// 2. Deterministic Centering & Scaling (Replaces <Stage>)
+const AutoCenterModel = ({ children }: { children: React.ReactNode }) => {
+	const groupRef = useRef<THREE.Group>(null);
+	const wrapperRef = useRef<THREE.Group>(null);
+
+	useLayoutEffect(() => {
+		// ← was useEffect
+		if (groupRef.current && wrapperRef.current) {
+			const box = new THREE.Box3().setFromObject(groupRef.current);
+			const center = box.getCenter(new THREE.Vector3());
+			const size = box.getSize(new THREE.Vector3());
+
+			groupRef.current.position.set(-center.x, -center.y, -center.z);
+
+			const maxDim = Math.max(size.x, size.y, size.z);
+			if (maxDim > 0) {
+				wrapperRef.current.scale.setScalar(6 / maxDim);
+			}
+		}
+	}, [children]);
+
+	return (
+		<group ref={wrapperRef}>
+			<group ref={groupRef}>{children}</group>
+		</group>
+	);
+};
+// ---------------------------------------------------------------------------
+// 3D Rendering Component
+// ---------------------------------------------------------------------------
+
+function OBJModel({ url }: { url: string }) {
+	const obj = useLoader(OBJLoader, url);
+	return <primitive object={obj} />;
+}
+
+function STLModel({ url }: { url: string }) {
+	const stl = useLoader(STLLoader, url);
+	useEffect(() => {
+		stl.computeVertexNormals();
+	}, [stl]);
+	return (
+		<mesh geometry={stl}>
+			<meshStandardMaterial color="#cccccc" />
+		</mesh>
+	);
+}
+
+function GLTFModel({ url }: { url: string }) {
+	const gltf = useGLTF(url);
+	const objectToRender = gltf.scene || gltf.scenes?.[0];
+	if (!objectToRender) return null;
+	return <primitive object={objectToRender} />;
+}
+
+function Model({ url, mimeType }: { url: string; mimeType?: string }) {
+	const extension = useMemo(() => {
+		if (mimeType === "model/stl") return "stl";
+		if (mimeType === "model/obj") return "obj";
+		if (mimeType?.includes("gltf") || mimeType?.includes("glb")) return "gltf";
+		try {
+			return new URL(url).pathname.split(".").pop()?.toLowerCase();
+		} catch {
+			return url.split(".").pop()?.toLowerCase();
+		}
+	}, [url, mimeType]);
+
+	if (extension === "obj") return <OBJModel url={url} />;
+	if (extension === "stl") return <STLModel url={url} />;
+	return <GLTFModel url={url} />;
+}
+
+function ModelLoadController({
+	url,
+	mimeType,
+}: {
+	url: string;
+	mimeType?: string;
+}) {
+	// 1. Grab a lock immediately before the child components Suspend
+	const [handle] = useState(() => delayRender(`Loading 3D Model: ${url}`));
+
+	// 2. React only runs this effect AFTER Suspense resolves and the component mounts
+	useEffect(() => {
+		continueRender(handle);
+		return () => continueRender(handle); // Failsafe cleanup
+	}, [handle]);
+
+	const extension = useMemo(() => {
+		if (mimeType === "model/stl") return "stl";
+		if (mimeType === "model/obj") return "obj";
+		if (mimeType?.includes("gltf") || mimeType?.includes("glb")) return "gltf";
+
+		try {
+			const path = new URL(url).pathname;
+			return path.split(".").pop()?.toLowerCase();
+		} catch (e) {
+			return url.split(".").pop()?.toLowerCase();
+		}
+	}, [url, mimeType]);
+
+	if (extension === "obj") return <OBJModel url={url} />;
+	if (extension === "stl") return <STLModel url={url} />;
+	return <GLTFModel url={url} />;
+}
+
+const ThreeDFromUrl: React.FC<{
+	src: string;
+	style?: React.CSSProperties;
+	mimeType?: string;
+	width: number; // ← add
+	height: number; // ← add
+}> = ({ src, style, mimeType, width, height }) => {
+	return (
+		<div style={{ ...style, position: "absolute", inset: 0 }}>
+			{/* 'linear' flag like the template to fix color space issues */}
+			<ThreeCanvas linear width={width} height={height}>
+				<CameraSetup />
+				<ambientLight intensity={1.5} color={0xffffff} />
+				<pointLight position={[10, 10, 10]} />
+				<Suspense fallback={null}>
+					<AutoCenterModel>
+						<Model url={src} mimeType={mimeType} />
+					</AutoCenterModel>
+				</Suspense>
+			</ThreeCanvas>
+		</div>
+	);
+};
 
 // ---------------------------------------------------------------------------
-// Lottie type detection helpers
+// Format Detection helpers
 // ---------------------------------------------------------------------------
 
-/**
- * Returns true if a VirtualMediaData source node should be rendered as Lottie.
- * `getMediaType()` only knows video/audio/image/text — it has no Lottie branch,
- * so JSON sources fall through to Video. We detect Lottie explicitly here using
- * the entity mimeType and file-key extension as fallbacks.
- */
 const isLottieSource = (virtualMedia: VirtualMediaData): boolean => {
 	const op = virtualMedia?.operation;
 	if (!op || op.op !== "source") return false;
-
 	const src = op.source;
 	if (!src) return false;
-
-	// Primary signal: MIME type from processData or the entity record
 	const mimeType: string =
 		src.processData?.mimeType ?? src.entity?.mimeType ?? "";
 	if (mimeType === "application/json") return true;
-
-	// Secondary signal: file extension on the S3 key or any URL-like field
 	const key: string = src.entity?.key ?? src.entity?.name ?? "";
 	if (key.toLowerCase().endsWith(".json")) return true;
+	return false;
+};
+
+const isThreeDSource = (virtualMedia: VirtualMediaData): boolean => {
+	const op = virtualMedia?.operation;
+	if (!op || op.op !== "source") return false;
+	const src = op.source;
+	if (!src) return false;
+	const mimeType: string =
+		src.processData?.mimeType ?? src.entity?.mimeType ?? "";
+
+	// Check for standard 3D MIME types
+	if (
+		mimeType.includes("model/gltf") ||
+		mimeType.includes("model/obj") ||
+		mimeType.includes("model/stl")
+	)
+		return true;
+
+	const key: string = src.entity?.key ?? src.entity?.name ?? "";
+	const ext = key.toLowerCase();
+	if (
+		ext.endsWith(".glb") ||
+		ext.endsWith(".gltf") ||
+		ext.endsWith(".obj") ||
+		ext.endsWith(".stl")
+	)
+		return true;
 
 	return false;
 };
 
 // ---------------------------------------------------------------------------
-// LottieFromUrl — loads Lottie JSON from a URL, pausing Remotion until ready.
+// LottieFromUrl
 // ---------------------------------------------------------------------------
 
 interface LottieFromUrlProps {
@@ -71,12 +243,6 @@ interface LottieFromUrlProps {
 	playbackRate?: number;
 }
 
-/**
- * Fetches a Lottie JSON animation from `src` and renders it via
- * @remotion/lottie. The Remotion player / renderer is paused (via
- * delayRender) until the JSON has been fetched, so no blank frames are
- * exported.
- */
 const LottieFromUrl: React.FC<LottieFromUrlProps> = ({
 	src,
 	style,
@@ -85,9 +251,6 @@ const LottieFromUrl: React.FC<LottieFromUrlProps> = ({
 }) => {
 	const [animationData, setAnimationData] =
 		useState<LottieAnimationData | null>(null);
-
-	// Store the delayRender handle in a ref so the cleanup function and the
-	// fetch callback always reference the same value even after re-renders.
 	const handleRef = useRef<number | null>(null);
 
 	useEffect(() => {
@@ -96,11 +259,10 @@ const LottieFromUrl: React.FC<LottieFromUrlProps> = ({
 
 		fetch(src)
 			.then((res) => {
-				if (!res.ok) {
+				if (!res.ok)
 					throw new Error(
 						`Failed to fetch Lottie file: ${res.status} ${res.statusText}`,
 					);
-				}
 				return res.json() as Promise<LottieAnimationData>;
 			})
 			.then((data) => {
@@ -113,13 +275,11 @@ const LottieFromUrl: React.FC<LottieFromUrlProps> = ({
 			})
 			.catch((err: unknown) => {
 				if (cancelled) return;
-				console.error("[LottieFromUrl] Error loading animation:", err);
 				cancelRender(err instanceof Error ? err : new Error(String(err)));
 			});
 
 		return () => {
 			cancelled = true;
-			// Release the handle on unmount so the renderer never hangs.
 			if (handleRef.current !== null) {
 				continueRender(handleRef.current);
 				handleRef.current = null;
@@ -127,8 +287,7 @@ const LottieFromUrl: React.FC<LottieFromUrlProps> = ({
 		};
 	}, [src]);
 
-	if (!animationData) {
-		// Invisible placeholder — delayRender keeps the player paused here.
+	if (!animationData)
 		return (
 			<div
 				style={{
@@ -140,8 +299,6 @@ const LottieFromUrl: React.FC<LottieFromUrlProps> = ({
 				}}
 			/>
 		);
-	}
-
 	return (
 		<Lottie
 			animationData={animationData}
@@ -159,10 +316,6 @@ const LottieFromUrl: React.FC<LottieFromUrlProps> = ({
 	);
 };
 
-// ---------------------------------------------------------------------------
-// Animation math & Transformation
-// ---------------------------------------------------------------------------
-
 export const calculateLayerTransform = (
 	layer: ExtendedLayer,
 	frame: number,
@@ -176,7 +329,6 @@ export const calculateLayerTransform = (
 	let rotation = layer.rotation;
 	let opacity = layer.opacity ?? 1;
 	const volume = layer.volume ?? 1;
-
 	const duration = layer.durationInFrames ?? DEFAULT_DURATION_FRAMES;
 	const animations = layer.animations ?? [];
 	if (animations.length === 0)
@@ -187,7 +339,6 @@ export const calculateLayerTransform = (
 		const isOut = anim.type.includes("-out");
 		const startAnimFrame = isOut ? duration - durFrames : 0;
 		const endAnimFrame = isOut ? duration : durFrames;
-
 		if (relativeFrame < startAnimFrame || relativeFrame > endAnimFrame) return;
 
 		const progress = interpolate(
@@ -196,7 +347,6 @@ export const calculateLayerTransform = (
 			[0, 1],
 			{ extrapolateLeft: "clamp", extrapolateRight: "clamp" },
 		);
-
 		switch (anim.type) {
 			case "fade-in":
 				opacity *= progress;
@@ -252,20 +402,14 @@ export const calculateLayerTransform = (
 	return { x, y, scale, rotation, opacity, volume };
 };
 
-// ---------------------------------------------------------------------------
-// SingleClipComposition
-// ---------------------------------------------------------------------------
-
 const compareVirtualMedia = (
 	a: VirtualMediaData | undefined,
 	b: VirtualMediaData | undefined,
 ): boolean => {
 	if (a === b) return true;
 	if (!a || !b) return false;
-
 	const aOp = a.operation;
 	const bOp = b.operation;
-
 	if (aOp?.op !== bOp?.op) return false;
 
 	switch (aOp.op) {
@@ -287,10 +431,7 @@ const compareVirtualMedia = (
 				aOp.topPercentage !== bOp.topPercentage ||
 				aOp.widthPercentage !== bOp.widthPercentage ||
 				aOp.heightPercentage !== bOp.heightPercentage;
-
-			if (isDifferent) {
-				return false;
-			}
+			if (isDifferent) return false;
 			break;
 		}
 		case "cut": {
@@ -358,7 +499,6 @@ const compareVirtualMedia = (
 				aOp.durationInFrames !== bOp.durationInFrames
 			)
 				return false;
-
 			if (a.children.length !== b.children.length) return false;
 			for (let i = 0; i < a.children.length; i++) {
 				if (!compareVirtualMedia(a.children[i], b.children[i])) return false;
@@ -372,60 +512,12 @@ const compareVirtualMedia = (
 		a.metadata.height !== b.metadata.height ||
 		a.metadata.fps !== b.metadata.fps ||
 		a.metadata.durationMs !== b.metadata.durationMs
-	) {
+	)
 		return false;
-	}
-
 	if (a.children.length !== b.children.length) return false;
-	if (a.children.length > 0) {
+	if (a.children.length > 0)
 		return compareVirtualMedia(a.children[0], b.children[0]);
-	}
-
 	return true;
-};
-
-const compareLayerProps = (
-	prev: { layer: ExtendedLayer },
-	next: { layer: ExtendedLayer },
-): boolean => {
-	const prevLayer = prev.layer;
-	const nextLayer = next.layer;
-	return (
-		prevLayer.id === nextLayer.id &&
-		prevLayer.type === nextLayer.type &&
-		prevLayer.x === nextLayer.x &&
-		prevLayer.y === nextLayer.y &&
-		prevLayer.width === nextLayer.width &&
-		prevLayer.height === nextLayer.height &&
-		prevLayer.startFrame === nextLayer.startFrame &&
-		prevLayer.durationInFrames === nextLayer.durationInFrames &&
-		prevLayer.autoDimensions === nextLayer.autoDimensions &&
-		prevLayer.text === nextLayer.text &&
-		prevLayer.fontSize === nextLayer.fontSize &&
-		prevLayer.fontFamily === nextLayer.fontFamily &&
-		prevLayer.fontStyle === nextLayer.fontStyle &&
-		prevLayer.fontWeight === nextLayer.fontWeight &&
-		prevLayer.textDecoration === nextLayer.textDecoration &&
-		prevLayer.fill === nextLayer.fill &&
-		prevLayer.align === nextLayer.align &&
-		prevLayer.verticalAlign === nextLayer.verticalAlign &&
-		prevLayer.letterSpacing === nextLayer.letterSpacing &&
-		prevLayer.lineHeight === nextLayer.lineHeight &&
-		prevLayer.padding === nextLayer.padding &&
-		prevLayer.stroke === nextLayer.stroke &&
-		prevLayer.strokeWidth === nextLayer.strokeWidth &&
-		prevLayer.backgroundColor === nextLayer.backgroundColor &&
-		prevLayer.borderColor === nextLayer.borderColor &&
-		prevLayer.borderWidth === nextLayer.borderWidth &&
-		prevLayer.borderRadius === nextLayer.borderRadius &&
-		prevLayer.speed === nextLayer.speed &&
-		prevLayer.lottieLoop === nextLayer.lottieLoop &&
-		prevLayer.lottieFrameRate === nextLayer.lottieFrameRate &&
-		prevLayer.lottieDurationMs === nextLayer.lottieDurationMs &&
-		JSON.stringify(prevLayer.animations) ===
-			JSON.stringify(nextLayer.animations) &&
-		compareVirtualMedia(prevLayer.virtualMedia, nextLayer.virtualMedia)
-	);
 };
 
 export const SingleClipComposition: React.FC<{
@@ -447,11 +539,7 @@ export const SingleClipComposition: React.FC<{
 }) => {
 	const { fps } = useVideoConfig();
 	const op = virtualMedia?.operation;
-	console.log({ op });
 
-	// -----------------------------------------------------------------------
-	// compose: delegate to CompositionScene
-	// -----------------------------------------------------------------------
 	if (op.op === "compose") {
 		const composeNode = (
 			<CompositionScene
@@ -513,38 +601,47 @@ export const SingleClipComposition: React.FC<{
 				containerHeight={containerHeight}
 			/>
 		);
-
 		const trimFrames = trimStartOverride
 			? Math.floor(trimStartOverride * fps)
 			: 0;
-
-		if (trimFrames > 0) {
+		if (trimFrames > 0)
 			return (
 				<Sequence from={-trimFrames} layout="none">
 					{composeNode}
 				</Sequence>
 			);
-		}
-
 		return composeNode;
 	}
 
-	// -----------------------------------------------------------------------
-	// source / text: leaf nodes — render media directly.
-	// -----------------------------------------------------------------------
 	if (op.op === "source" || op.op === "text") {
 		const params = computeRenderParams(virtualMedia);
 
-		// ✅ FIX: getMediaType() has no Lottie branch — JSON files fall through
-		// to Video and render nothing. We detect Lottie first using the mimeType
-		// and file-key extension present on the source entity.
-		if (isLottieSource(virtualMedia)) {
+		if (isThreeDSource(virtualMedia)) {
 			if (!params.sourceUrl) return <AbsoluteFill />;
-
 			const baseRate = Number(playbackRateOverride) || 1;
 			const paramsRate = Number(params.speed) || 1;
 			const finalPlaybackRate = baseRate * paramsRate;
 
+			return (
+				<ThreeDFromUrl
+					src={params.sourceUrl}
+					playbackRate={finalPlaybackRate}
+					style={{
+						position: "absolute",
+						top: 0,
+						left: 0,
+						width: "100%",
+						height: "100%",
+					}}
+				/>
+			);
+		}
+
+		if (isLottieSource(virtualMedia)) {
+			if (!params.sourceUrl) return <AbsoluteFill />;
+			const baseRate = Number(playbackRateOverride) || 1;
+			const paramsRate = Number(params.speed) || 1;
+			const finalPlaybackRate = baseRate * paramsRate;
 			const lottieLoop = textStyle?.lottieLoop ?? true;
 
 			return (
@@ -573,7 +670,6 @@ export const SingleClipComposition: React.FC<{
 					: op.op === "source"
 						? op.source?.processData?.text
 						: undefined;
-
 			return (
 				<div
 					style={{
@@ -618,12 +714,11 @@ export const SingleClipComposition: React.FC<{
 		const baseRate = Number(playbackRateOverride) || 1;
 		const paramsRate = Number(params.speed) || 1;
 		const finalPlaybackRate = baseRate * paramsRate;
-
 		const effectiveTrimSec =
 			(trimStartOverride ?? 0) + (Number(params.trimStartSec) || 0);
 		const startFrame = Math.floor(effectiveTrimSec * fps);
 
-		if (mediaType === "Audio") {
+		if (mediaType === "Audio")
 			return (
 				<Audio
 					src={params.sourceUrl}
@@ -632,9 +727,7 @@ export const SingleClipComposition: React.FC<{
 					volume={volume}
 				/>
 			);
-		}
-
-		if (mediaType === "Image") {
+		if (mediaType === "Image")
 			return (
 				<Img
 					src={params.sourceUrl}
@@ -648,9 +741,6 @@ export const SingleClipComposition: React.FC<{
 					}}
 				/>
 			);
-		}
-		// mediaType === "Lottie" — kept as belt-and-suspenders for cases where
-		// getMediaType() is updated upstream to return "Lottie" correctly.
 		if (mediaType === "Lottie") {
 			const lottieLoop = textStyle?.lottieLoop ?? true;
 			return (
@@ -688,9 +778,6 @@ export const SingleClipComposition: React.FC<{
 		);
 	}
 
-	// -----------------------------------------------------------------------
-	// speed: accumulate playback rate, pass trim through unchanged.
-	// -----------------------------------------------------------------------
 	if (op.op === "speed") {
 		const childVideo = virtualMedia.children[0];
 		if (!childVideo) return null;
@@ -708,15 +795,9 @@ export const SingleClipComposition: React.FC<{
 			/>
 		);
 	}
-
-	// -----------------------------------------------------------------------
-	// cut: accumulate the start offset into trimStartOverride so the leaf
-	// Video node can seek to the correct source position via startFrom.
-	// -----------------------------------------------------------------------
 	if (op.op === "cut") {
 		const childVideo = virtualMedia.children[0];
 		if (!childVideo) return null;
-
 		const accumulatedTrim = (trimStartOverride ?? 0) + (op.startSec ?? 0);
 		return (
 			<SingleClipComposition
@@ -731,20 +812,15 @@ export const SingleClipComposition: React.FC<{
 		);
 	}
 
-	// -----------------------------------------------------------------------
-	// Transformers (crop, rotate, flip, filter, layer)
-	// -----------------------------------------------------------------------
 	const childVideo = virtualMedia.children[0];
 	let childContainerWidth = containerWidth;
 	let childContainerHeight = containerHeight;
-
 	if (op.op === "crop") {
 		const wp = Math.max(0.01, Number(op.widthPercentage) || 100);
 		const hp = Math.max(0.01, Number(op.heightPercentage) || 100);
 		childContainerWidth = containerWidth * (100 / wp);
 		childContainerHeight = containerHeight * (100 / hp);
 	}
-
 	const content = childVideo ? (
 		<SingleClipComposition
 			virtualMedia={childVideo}
@@ -764,12 +840,10 @@ export const SingleClipComposition: React.FC<{
 		const hp = Math.max(0.01, Number(op.heightPercentage) || 100);
 		const lp = Number(op.leftPercentage) || 0;
 		const tp = Number(op.topPercentage) || 0;
-
 		const innerWidth = (100 / wp) * 100;
 		const innerHeight = (100 / hp) * 100;
 		const innerLeft = (lp / wp) * 100;
 		const innerTop = (tp / hp) * 100;
-
 		const innerStyle: React.CSSProperties = {
 			position: "absolute",
 			width: `${innerWidth}%`,
@@ -777,7 +851,6 @@ export const SingleClipComposition: React.FC<{
 			left: `-${innerLeft}%`,
 			top: `-${innerTop}%`,
 		};
-
 		return (
 			<AbsoluteFill style={{ overflow: "hidden" }}>
 				<div style={innerStyle} key={`crop-${wp}-${hp}-${lp}-${tp}`}>
@@ -789,7 +862,6 @@ export const SingleClipComposition: React.FC<{
 
 	let transformStr: string | undefined;
 	let cssFilterString: string | undefined;
-
 	if (op.op === "rotate") {
 		transformStr = `rotate(${(op as any).degrees}deg)`;
 	} else if (op.op === "flip") {
@@ -802,12 +874,7 @@ export const SingleClipComposition: React.FC<{
 	}
 
 	return (
-		<AbsoluteFill
-			style={{
-				filter: cssFilterString,
-				transform: transformStr,
-			}}
-		>
+		<AbsoluteFill style={{ filter: cssFilterString, transform: transformStr }}>
 			{content}
 		</AbsoluteFill>
 	);
@@ -821,7 +888,7 @@ const LayerContentRenderer: React.FC<{
 	const cWidth = layer.width ?? viewport.w;
 	const cHeight = layer.height ?? viewport.h;
 
-	if (layer.type === "Video" && layer.virtualMedia) {
+	if (layer.type === "Video" && layer.virtualMedia)
 		return (
 			<SingleClipComposition
 				virtualMedia={layer.virtualMedia}
@@ -833,9 +900,8 @@ const LayerContentRenderer: React.FC<{
 				containerHeight={cHeight}
 			/>
 		);
-	}
 	if (layer.type === "Image" && (layer.src || layer.virtualMedia)) {
-		if (layer.virtualMedia) {
+		if (layer.virtualMedia)
 			return (
 				<SingleClipComposition
 					virtualMedia={layer.virtualMedia}
@@ -846,7 +912,6 @@ const LayerContentRenderer: React.FC<{
 					containerHeight={cHeight}
 				/>
 			);
-		}
 		return (
 			<Img
 				src={layer.src!}
@@ -854,18 +919,13 @@ const LayerContentRenderer: React.FC<{
 			/>
 		);
 	}
-
 	if (layer.type === "Lottie") {
 		const loop = layer.lottieLoop ?? true;
 		const playbackRate = layer.speed ?? 1;
-
 		if (layer.virtualMedia) {
-			// Walk down to the source leaf. We need the signed/resolved URL that
-			// computeRenderParams() would produce for the asset.
 			const params = computeRenderParams(layer.virtualMedia);
 			const lottieSrc = params.sourceUrl;
-
-			if (lottieSrc) {
+			if (lottieSrc)
 				return (
 					<LottieFromUrl
 						src={lottieSrc}
@@ -874,11 +934,8 @@ const LayerContentRenderer: React.FC<{
 						style={{ width: "100%", height: "100%" }}
 					/>
 				);
-			}
 		}
-		console.log({ layer });
-		// Fallback: plain src string (e.g. from VideoDesignerEditor)
-		if (layer.src) {
+		if (layer.src)
 			return (
 				<LottieFromUrl
 					src={layer.src}
@@ -887,11 +944,35 @@ const LayerContentRenderer: React.FC<{
 					style={{ width: "100%", height: "100%" }}
 				/>
 			);
+	}
+
+	if (layer.type === "ThreeD") {
+		let srcUrl = layer.src;
+		let mimeType: string | undefined | null;
+
+		if (layer.virtualMedia) {
+			const params = computeRenderParams(layer.virtualMedia);
+			srcUrl = params.sourceUrl;
+			const op = layer.virtualMedia.operation;
+			mimeType =
+				op?.op === "source" ? op.source?.processData?.mimeType : undefined;
+		}
+
+		if (srcUrl) {
+			return (
+				<ThreeDFromUrl
+					src={srcUrl}
+					mimeType={mimeType}
+					width={cWidth} // ← pass layer dimensions
+					height={cHeight}
+					style={{ width: "100%", height: "100%" }}
+				/>
+			);
 		}
 	}
 
 	if (layer.type === "Audio" && (layer.src || layer.virtualMedia)) {
-		if (layer.virtualMedia) {
+		if (layer.virtualMedia)
 			return (
 				<SingleClipComposition
 					virtualMedia={layer.virtualMedia}
@@ -903,11 +984,10 @@ const LayerContentRenderer: React.FC<{
 					containerHeight={cHeight}
 				/>
 			);
-		}
 		return <Audio src={layer.src!} volume={animVolume} />;
 	}
 	if (layer.type === "Text" && (layer.text || layer.virtualMedia)) {
-		if (layer.virtualMedia) {
+		if (layer.virtualMedia)
 			return (
 				<SingleClipComposition
 					virtualMedia={layer.virtualMedia}
@@ -918,7 +998,6 @@ const LayerContentRenderer: React.FC<{
 					containerHeight={cHeight}
 				/>
 			);
-		}
 		return (
 			<div
 				style={{
@@ -965,10 +1044,8 @@ export const LayerRenderer: React.FC<{
 }> = ({ layer, viewport }) => {
 	const frame = useCurrentFrame();
 	const { fps } = useVideoConfig();
-
 	const startFrame = layer.startFrame ?? 0;
 	const duration = layer.durationInFrames ?? DEFAULT_DURATION_FRAMES;
-
 	const {
 		x: animX,
 		y: animY,
@@ -977,7 +1054,6 @@ export const LayerRenderer: React.FC<{
 		opacity: animOpacity,
 		volume: animVolume,
 	} = calculateLayerTransform(layer, frame, fps, viewport);
-
 	const style: React.CSSProperties = {
 		position: "absolute",
 		left: animX,
@@ -995,7 +1071,6 @@ export const LayerRenderer: React.FC<{
 		overflow: "hidden",
 		boxSizing: "border-box",
 	};
-
 	const filterString = (() => {
 		const cf = layer.filters?.cssFilters;
 		if (!cf) return undefined;
@@ -1017,10 +1092,6 @@ export const LayerRenderer: React.FC<{
 	);
 };
 
-// ---------------------------------------------------------------------------
-// CompositionScene — renders an ordered list of ExtendedLayer objects.
-// ---------------------------------------------------------------------------
-
 export interface SceneProps {
 	layers?: ExtendedLayer[];
 	viewportWidth: number;
@@ -1029,7 +1100,7 @@ export interface SceneProps {
 	containerHeight?: number;
 	src?: string;
 	isAudio?: boolean;
-	type?: "Video" | "Audio" | "Image" | "Text" | "Lottie" | string;
+	type?: "Video" | "Audio" | "Image" | "Text" | "Lottie" | "ThreeD" | string;
 	data?: unknown;
 	virtualMedia?: VirtualMediaData;
 	children?: React.ReactNode;
@@ -1083,20 +1154,22 @@ export const CompositionScene: React.FC<SceneProps> = ({
 
 	const resolvedLayers = (() => {
 		if (layers.length > 0) return layers;
-
-		if (src || virtualMedia || type === "Text" || type === "Lottie") {
+		if (
+			src ||
+			virtualMedia ||
+			type === "Text" ||
+			type === "Lottie" ||
+			type === "ThreeD"
+		) {
 			const resolvedType = type || (isAudio ? "Audio" : "Video");
-
 			let resolvedDurationInFrames = durationInFrames;
 			if (!resolvedDurationInFrames && virtualMedia) {
-				const activeMeta = getActiveVideoMetadata(virtualMedia);
-				if (activeMeta?.durationMs) {
+				const activeMeta = getActiveMediaMetadata(virtualMedia);
+				if (activeMeta?.durationMs)
 					resolvedDurationInFrames = Math.ceil(
 						(activeMeta.durationMs / 1000) * (fps || 24),
 					);
-				}
 			}
-
 			return [
 				{
 					id: "single-source-layer",
@@ -1120,25 +1193,17 @@ export const CompositionScene: React.FC<SceneProps> = ({
 		.map((layer) => {
 			let derivedWidth = layer.width;
 			let derivedHeight = layer.height;
-
 			if (layer.virtualMedia && layer.autoDimensions) {
-				const activeMeta = getActiveVideoMetadata(layer.virtualMedia);
+				const activeMeta = getActiveMediaMetadata(layer.virtualMedia);
 				derivedWidth = activeMeta?.width ?? derivedWidth;
 				derivedHeight = activeMeta?.height ?? derivedHeight;
 			}
-
-			return {
-				...layer,
-				width: derivedWidth,
-				height: derivedHeight,
-			};
+			return { ...layer, width: derivedWidth, height: derivedHeight };
 		});
 
 	const resolvedViewportW = viewportWidth || 1920;
 	const resolvedViewportH = viewportHeight || 1080;
-
 	const viewport = { w: resolvedViewportW, h: resolvedViewportH };
-
 	const scaleX =
 		containerWidth !== undefined ? containerWidth / resolvedViewportW : 1;
 	const scaleY =
@@ -1167,9 +1232,7 @@ export const CompositionScene: React.FC<SceneProps> = ({
 					const startFrame = layer.startFrame ?? 0;
 					const duration = layer.durationInFrames ?? DEFAULT_DURATION_FRAMES;
 					const endFrame = startFrame + duration;
-
 					if (frame < startFrame || frame >= endFrame) return null;
-
 					return (
 						<LayerRenderer key={layer.id} layer={layer} viewport={viewport} />
 					);

@@ -13,7 +13,7 @@ import {
 	makeSelectNodeById,
 	useAppSelector,
 } from "@gatewai/react-store";
-import { getActiveVideoMetadata } from "@gatewai/remotion-compositions";
+import { getActiveMediaMetadata } from "@gatewai/remotion-compositions";
 import {
 	Button,
 	cn,
@@ -658,7 +658,7 @@ const CropNodeComponent = memo((props: NodeProps) => {
 
 	const sourceSize = useMemo(() => {
 		if ((inputType === "Video" || inputType === "Audio") && inputMedia) {
-			const activeMeta = getActiveVideoMetadata(inputMedia);
+			const activeMeta = getActiveMediaMetadata(inputMedia);
 			const { width: w, height: h } = activeMeta;
 			if (!w || !h) return null;
 			return { w, h };
@@ -880,7 +880,7 @@ const CropNodeComponent = memo((props: NodeProps) => {
 					{showMedia && (
 						<VideoRenderer
 							virtualMedia={inputMedia}
-							durationMs={getActiveVideoMetadata(inputMedia!).durationMs}
+							durationMs={getActiveMediaMetadata(inputMedia!).durationMs}
 							controls={true}
 							className="rounded-none w-full h-full"
 							overlay={videoOverlay}
