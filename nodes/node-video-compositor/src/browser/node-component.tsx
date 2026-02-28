@@ -59,6 +59,7 @@ const VideoCompositorNodeComponent = memo((props: NodeProps) => {
 			if (!item) continue;
 
 			const saved = layerUpdates[handleId] ?? {};
+			const isAutoDimensions = saved.autoDimensions ?? true;
 			let src: string | undefined;
 			let text: string | undefined;
 			let layerWidth = saved.width;
@@ -74,10 +75,21 @@ const VideoCompositorNodeComponent = memo((props: NodeProps) => {
 				virtualMedia = vv;
 				const params = computeRenderParams(vv);
 				src = params.sourceUrl;
-				if (!layerWidth) layerWidth = vv.metadata.width;
-				if (!layerHeight) layerHeight = vv.metadata.height;
+				const metadata = vv.metadata || ({} as any);
+				if (
+					isAutoDimensions &&
+					metadata.width != null &&
+					metadata.height != null
+				) {
+					layerWidth = metadata.width ?? undefined;
+					layerHeight = metadata.height ?? undefined;
+				} else {
+					layerWidth = layerWidth ?? metadata.width ?? undefined;
+					layerHeight = layerHeight ?? metadata.height ?? undefined;
+				}
 			} else if (
 				item.type === "Image" ||
+				item.type === "SVG" ||
 				item.type === "Audio" ||
 				item.type === "Lottie"
 			) {
@@ -89,8 +101,21 @@ const VideoCompositorNodeComponent = memo((props: NodeProps) => {
 					src = fileData.entity?.id
 						? GetAssetEndpoint(fileData.entity)
 						: fileData.processData?.dataUrl;
-					if (!layerWidth) layerWidth = fileData.processData?.width;
-					if (!layerHeight) layerHeight = fileData.processData?.height;
+
+					const initialW =
+						fileData.processData?.width ?? fileData.entity?.width ?? undefined;
+					const initialH =
+						fileData.processData?.height ??
+						fileData.entity?.height ??
+						undefined;
+
+					if (isAutoDimensions && initialW != null && initialH != null) {
+						layerWidth = initialW;
+						layerHeight = initialH;
+					} else {
+						layerWidth = layerWidth ?? initialW;
+						layerHeight = layerHeight ?? initialH;
+					}
 				}
 			}
 
@@ -137,10 +162,14 @@ const VideoCompositorNodeComponent = memo((props: NodeProps) => {
 					height: layerHeight ?? height,
 					virtualMedia,
 				});
-			} else if (item.type === "Image" || item.type === "Video") {
+			} else if (
+				item.type === "Image" ||
+				item.type === "Video" ||
+				item.type === "SVG"
+			) {
 				layers.push({
 					...layer,
-					type: item.type,
+					type: item.type as any,
 					width: layerWidth ?? width,
 					height: layerHeight ?? height,
 					virtualMedia,

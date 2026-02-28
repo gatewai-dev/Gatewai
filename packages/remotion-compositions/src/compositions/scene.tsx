@@ -1,8 +1,4 @@
-import type {
-	ExtendedLayer,
-	VideoAnimation,
-	VirtualMediaData,
-} from "@gatewai/core/types";
+import type { ExtendedLayer, VirtualMediaData } from "@gatewai/core/types";
 import type { LottieAnimationData } from "@remotion/lottie";
 import { Lottie } from "@remotion/lottie";
 import { Audio, Video } from "@remotion/media";
@@ -32,7 +28,7 @@ import {
 const DEFAULT_DURATION_FRAMES = 24 * 5;
 
 // ---------------------------------------------------------------------------
-// Format Detection helpers
+// Format Detection Helpers
 // ---------------------------------------------------------------------------
 
 const isLottieSource = (virtualMedia: VirtualMediaData): boolean => {
@@ -47,6 +43,12 @@ const isLottieSource = (virtualMedia: VirtualMediaData): boolean => {
 	if (key.toLowerCase().endsWith(".json")) return true;
 	return false;
 };
+
+/**
+ * Ensures unified processing paths for flat static visual formats.
+ */
+const isStaticVisualMedia = (type?: string): boolean =>
+	type === "Image" || type === "SVG";
 
 // ---------------------------------------------------------------------------
 // LottieFromUrl
@@ -67,10 +69,9 @@ const LottieFromUrl: React.FC<LottieFromUrlProps> = ({
 }) => {
 	const [animationData, setAnimationData] =
 		useState<LottieAnimationData | null>(null);
-	const handleRef = useRef<number | null>(null);
+	const [handle] = useState(() => delayRender(`Loading Lottie from: ${src}`));
 
 	useEffect(() => {
-		handleRef.current = delayRender(`Loading Lottie from: ${src}`);
 		let cancelled = false;
 
 		fetch(src)
@@ -84,10 +85,7 @@ const LottieFromUrl: React.FC<LottieFromUrlProps> = ({
 			.then((data) => {
 				if (cancelled) return;
 				setAnimationData(data);
-				if (handleRef.current !== null) {
-					continueRender(handleRef.current);
-					handleRef.current = null;
-				}
+				continueRender(handle);
 			})
 			.catch((err: unknown) => {
 				if (cancelled) return;
@@ -96,12 +94,8 @@ const LottieFromUrl: React.FC<LottieFromUrlProps> = ({
 
 		return () => {
 			cancelled = true;
-			if (handleRef.current !== null) {
-				continueRender(handleRef.current);
-				handleRef.current = null;
-			}
 		};
-	}, [src]);
+	}, [src, handle]);
 
 	if (!animationData)
 		return (
@@ -115,6 +109,7 @@ const LottieFromUrl: React.FC<LottieFromUrlProps> = ({
 				}}
 			/>
 		);
+	console.log({ animationData });
 	return (
 		<Lottie
 			animationData={animationData}
@@ -522,7 +517,8 @@ export const SingleClipComposition: React.FC<{
 					volume={volume}
 				/>
 			);
-		if (mediaType === "Image")
+
+		if (isStaticVisualMedia(mediaType))
 			return (
 				<Img
 					src={params.sourceUrl}
@@ -536,6 +532,7 @@ export const SingleClipComposition: React.FC<{
 					}}
 				/>
 			);
+
 		if (mediaType === "Lottie") {
 			const lottieLoop = textStyle?.lottieLoop ?? true;
 			return (
@@ -695,7 +692,8 @@ const LayerContentRenderer: React.FC<{
 				containerHeight={cHeight}
 			/>
 		);
-	if (layer.type === "Image" && (layer.src || layer.virtualMedia)) {
+
+	if (isStaticVisualMedia(layer.type) && (layer.src || layer.virtualMedia)) {
 		if (layer.virtualMedia)
 			return (
 				<SingleClipComposition
@@ -714,6 +712,7 @@ const LayerContentRenderer: React.FC<{
 			/>
 		);
 	}
+
 	if (layer.type === "Lottie") {
 		const loop = layer.lottieLoop ?? true;
 		const playbackRate = layer.speed ?? 1;
@@ -870,40 +869,10 @@ export interface SceneProps {
 	containerHeight?: number;
 	src?: string;
 	isAudio?: boolean;
-	type?: "Video" | "Audio" | "Image" | "Text" | "Lottie" | string;
+	type?: "Video" | "Audio" | "Image" | "SVG" | "Text" | "Lottie" | string;
 	data?: unknown;
 	virtualMedia?: VirtualMediaData;
-	children?: React.ReactNode;
-	text?: string;
-	fontSize?: number;
-	fontFamily?: string;
-	fontStyle?: string;
-	fontWeight?: number | string;
-	WebkitTextStroke?: string;
-	paintOrder?: string;
-	autoDimensions?: boolean;
-	textDecoration?: string;
-	fill?: string;
-	align?: string;
-	verticalAlign?: string;
-	letterSpacing?: number;
-	lineHeight?: number;
-	padding?: number;
-	stroke?: string;
-	strokeWidth?: number;
-	backgroundColor?: string;
-	borderColor?: string;
-	borderWidth?: number;
-	borderRadius?: number;
-	animations?: VideoAnimation[];
-	startFrame?: number;
 	durationInFrames?: number;
-	opacity?: number;
-	volume?: number;
-	scale?: number;
-	rotation?: number;
-	x?: number;
-	y?: number;
 }
 
 export const CompositionScene: React.FC<SceneProps> = ({
@@ -964,7 +933,7 @@ export const CompositionScene: React.FC<SceneProps> = ({
 			}
 			return { ...layer, width: derivedWidth, height: derivedHeight };
 		});
-
+	console.log({ layersToRender });
 	const resolvedViewportW = viewportWidth || 1920;
 	const resolvedViewportH = viewportHeight || 1080;
 	const viewport = { w: resolvedViewportW, h: resolvedViewportH };

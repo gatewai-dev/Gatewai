@@ -1,5 +1,6 @@
 /** biome-ignore-all lint/suspicious/noExplicitAny: Can't type cast unknown value from quickjs output */
-import assert from "node:assert";
+
+import { runInSandbox } from "@gatewai/ai-agent";
 import { logger } from "@gatewai/core";
 import {
 	agentBulkUpdateSchema,
@@ -8,7 +9,6 @@ import {
 import { GetCanvasEntities } from "@gatewai/data-ops";
 import { type NodeTemplate, prisma } from "@gatewai/db";
 import { Agent, type MCPServerStreamableHttp, tool } from "@openai/agents";
-import { getQuickJS, type QuickJSContext, Scope } from "quickjs-emscripten";
 import { z } from "zod";
 import { zodToJsonSchema } from "zod-to-json-schema";
 import {
@@ -57,126 +57,40 @@ function clearContext(canvasId: string, agentSessionId: string): void {
 }
 
 /**
- * Run `code` inside a QuickJS sandbox with a hard wall-clock timeout.
- * Returns the dumped JS value on success, or throws on error.
+ * Run `code` inside a QuickJS sandbox with injected canvas state.
+ * Returns `{ nodes, edges, handles }` on success, or throws on error.
  */
 async function runInVM(
 	code: string,
 	ctx: PatcherContext,
 ): Promise<{ nodes: unknown[]; edges: unknown[]; handles: unknown[] }> {
-	const scope = new Scope();
-	let vmContext: QuickJSContext | undefined;
-
-	let timeoutId: ReturnType<typeof setTimeout> | undefined;
-	const timeoutPromise = new Promise<never>((_, reject) => {
-		timeoutId = setTimeout(
-			() =>
-				reject(
-					new Error(
-						`VM execution exceeded ${VM_EXECUTION_TIMEOUT_MS}ms timeout`,
-					),
-				),
-			VM_EXECUTION_TIMEOUT_MS,
-		);
+	const result = await runInSandbox<Record<string, unknown>>({
+		code,
+		globals: {
+			nodes: ctx.nodes,
+			edges: ctx.edges,
+			handles: ctx.handles,
+			templates: ctx.templates,
+		},
+		functions: {
+			generateId: () => `temp-${crypto.randomUUID()}`,
+		},
+		timeoutMs: VM_EXECUTION_TIMEOUT_MS,
 	});
 
-	const executionPromise = (async () => {
-		try {
-			const QuickJS = await getQuickJS();
-			vmContext = QuickJS.newContext();
-			assert(vmContext, "QuickJS context creation failed");
-
-			const undefinedHandle = scope.manage(vmContext.undefined);
-
-			const injectGlobal = (name: string, data: unknown): void => {
-				assert(vmContext);
-				const jsonHandle = scope.manage(
-					vmContext.newString(JSON.stringify(data)),
-				);
-				const parseResult = vmContext.evalCode("JSON.parse");
-				if (parseResult.error) {
-					scope.manage(parseResult.error).dispose();
-					throw new Error("Failed to access JSON.parse in QuickJS VM");
-				}
-				const parseFn = scope.manage(vmContext.unwrapResult(parseResult));
-				const objHandle = scope.manage(
-					vmContext.unwrapResult(
-						vmContext.callFunction(parseFn, undefinedHandle, jsonHandle),
-					),
-				);
-				vmContext.setProp(vmContext.global, name, objHandle);
-			};
-
-			injectGlobal("nodes", ctx.nodes);
-			injectGlobal("edges", ctx.edges);
-			injectGlobal("handles", ctx.handles);
-			injectGlobal("templates", ctx.templates);
-
-			// generateId — return value is VM-owned, intentionally NOT wrapped in Scope
-			const generateIdHandle = scope.manage(
-				vmContext.newFunction("generateId", () => {
-					assert(vmContext);
-					return vmContext.newString(`temp-${crypto.randomUUID()}`);
-				}),
-			);
-			vmContext.setProp(vmContext.global, "generateId", generateIdHandle);
-
-			// console.log — dispose each arg handle immediately after dump
-			const consoleHandle = scope.manage(vmContext.newObject());
-			const logHandle = scope.manage(
-				vmContext.newFunction("log", (...args) => {
-					assert(vmContext);
-					const logArgs = args.map((arg) => {
-						const dumped = vmContext!.dump(arg);
-						arg.dispose();
-						return dumped;
-					});
-					console.log("[VM]", ...logArgs);
-				}),
-			);
-			vmContext.setProp(consoleHandle, "log", logHandle);
-			vmContext.setProp(vmContext.global, "console", consoleHandle);
-
-			const resultHandle = vmContext.evalCode(`(function() {\n${code}\n})()`);
-
-			if (resultHandle.error) {
-				const errorHandle = scope.manage(resultHandle.error);
-				const error = vmContext.dump(errorHandle);
-				const name = (error as any)?.name ?? "Error";
-				const message = (error as any)?.message ?? JSON.stringify(error);
-				const stack = (error as any)?.stack ?? "";
-				throw new Error(`${name}: ${message}${stack ? `\n${stack}` : ""}`);
-			}
-
-			const valueHandle = scope.manage(resultHandle.value);
-			const result = vmContext.dump(valueHandle);
-
-			if (!result || typeof result !== "object") {
-				throw new Error(
-					"Code must return an object: { nodes: [...], edges: [...], handles: [...] }",
-				);
-			}
-
-			const { nodes, edges, handles } = result as Record<string, unknown>;
-			if (!Array.isArray(nodes))
-				throw new Error("result.nodes must be an array");
-			if (!Array.isArray(edges))
-				throw new Error("result.edges must be an array");
-			if (!Array.isArray(handles))
-				throw new Error("result.handles must be an array");
-
-			return { nodes, edges, handles };
-		} finally {
-			scope.dispose();
-			vmContext?.dispose();
-		}
-	})();
-
-	try {
-		return await Promise.race([executionPromise, timeoutPromise]);
-	} finally {
-		clearTimeout(timeoutId);
+	if (!result || typeof result !== "object") {
+		throw new Error(
+			"Code must return an object: { nodes: [...], edges: [...], handles: [...] }",
+		);
 	}
+
+	const { nodes, edges, handles } = result;
+	if (!Array.isArray(nodes)) throw new Error("result.nodes must be an array");
+	if (!Array.isArray(edges)) throw new Error("result.edges must be an array");
+	if (!Array.isArray(handles))
+		throw new Error("result.handles must be an array");
+
+	return { nodes, edges, handles };
 }
 
 // ─── Patcher Agent Factory ────────────────────────────────────────────────────

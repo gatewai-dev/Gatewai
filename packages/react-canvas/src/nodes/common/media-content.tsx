@@ -1,10 +1,8 @@
 import { GetAssetEndpoint } from "@gatewai/core/browser";
-import type { FileData, NodeResult } from "@gatewai/core/types";
+import type { FileData } from "@gatewai/core/types";
 import type { NodeEntityType } from "@gatewai/react-store";
-import {
-	getActiveMediaMetadata,
-	resolveMediaSourceUrl,
-} from "@gatewai/remotion-compositions";
+import { getActiveMediaMetadata } from "@gatewai/remotion-compositions";
+import { resolveMediaSourceUrlBrowser } from "@gatewai/remotion-compositions/browser";
 import { FileIcon } from "lucide-react";
 import { useMemo } from "react";
 import { MediaDimensions, OutputSelector } from "../../components";
@@ -31,7 +29,7 @@ function MediaContent({ node }: { node: NodeEntityType }) {
 			outputItem.type === "Audio" ||
 			outputItem.type === "Lottie"
 		) {
-			return resolveMediaSourceUrl(outputItem.data);
+			return resolveMediaSourceUrlBrowser(outputItem.data);
 		}
 		const fileData = outputItem.data as FileData;
 		if (fileData.processData) {
@@ -41,16 +39,7 @@ function MediaContent({ node }: { node: NodeEntityType }) {
 		return GetAssetEndpoint(fileData.entity);
 	}, [outputItem]);
 
-	const isSVGFileUrl = assetUrl?.toLowerCase().includes(".svg") ?? false;
-	const itemDataAny = outputItem?.data as any;
-	const isMimeTypeSVG =
-		itemDataAny?.entity?.mimeType === "image/svg+xml" ||
-		itemDataAny?.processData?.mimeType === "image/svg+xml" ||
-		itemDataAny?.source?.entity?.mimeType === "image/svg+xml" ||
-		itemDataAny?.source?.processData?.mimeType === "image/svg+xml";
-
-	const isActualSVG =
-		outputItem?.type === "SVG" || isSVGFileUrl || isMimeTypeSVG;
+	const isActualSVG = outputItem?.type === "SVG";
 	const isImage = outputItem?.type === "Image" && !isActualSVG;
 	const isSVG = isActualSVG;
 	const isVideo = outputItem?.type === "Video";

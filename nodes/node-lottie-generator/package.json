@@ -1,5 +1,5 @@
 {
-	"name": "@gatewai/node-svg",
+	"name": "@gatewai/node-lottie-generator",
 	"version": "0.0.0",
 	"private": true,
 	"type": "module",
@@ -41,6 +41,7 @@
 		"@gatewai/db": "workspace:*",
 		"@gatewai/node-sdk": "workspace:*",
 		"@gatewai/react-canvas": "workspace:*",
+		"@gatewai/remotion-compositions": "workspace:*",
 		"@gatewai/ui-kit": "workspace:*",
 		"@hookform/resolvers": "*",
 		"inversify": "^7.11.0",

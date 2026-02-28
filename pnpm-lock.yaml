@@ -63,6 +63,9 @@ importers:
       '@ai-sdk/google':
         specifier: ^3.0.16
         version: 3.0.31(zod@3.25.67)
+      '@gatewai/ai-agent':
+        specifier: workspace:*
+        version: link:../../packages/ai-agent
       '@gatewai/api-client':
         specifier: workspace:*
         version: link:../../packages/api-client
@@ -917,6 +920,70 @@ importers:
         specifier: ^5.8.3
         version: 5.8.3
 
+  nodes/node-lottie-generator:
+    dependencies:
+      '@gatewai/ai-agent':
+        specifier: workspace:*
+        version: link:../../packages/ai-agent
+      '@gatewai/core':
+        specifier: workspace:*
+        version: link:../../packages/core
+      '@gatewai/db':
+        specifier: workspace:*
+        version: link:../../packages/db
+      '@gatewai/node-sdk':
+        specifier: workspace:*
+        version: link:../../packages/node-sdk
+      '@gatewai/react-store':
+        specifier: workspace:*
+        version: link:../../packages/react-store
+      '@gatewai/remotion-compositions':
+        specifier: workspace:*
+        version: link:../../packages/remotion-compositions
+      '@gatewai/ui-kit':
+        specifier: workspace:*
+        version: link:../../packages/ui-kit
+      '@google/genai':
+        specifier: ^1.3.0
+        version: 1.32.0(@modelcontextprotocol/sdk@1.27.1(zod@3.25.67))
+      '@hookform/resolvers':
+        specifier: '*'
+        version: 3.10.0(react-hook-form@7.71.2(react@19.2.4))
+      inversify:
+        specifier: ^7.11.0
+        version: 7.11.0(reflect-metadata@0.2.2)
+      react:
+        specifier: ^19.2.4
+        version: 19.2.4
+      react-hook-form:
+        specifier: '*'
+        version: 7.71.2(react@19.2.4)
+      react-icons:
+        specifier: '*'
+        version: 5.5.0(react@19.2.4)
+      use-debounce:
+        specifier: '*'
+        version: 10.1.0(react@19.2.4)
+      zod:
+        specifier: ^3.24.1
+        version: 3.25.67
+    devDependencies:
+      '@gatewai/react-canvas':
+        specifier: workspace:*
+        version: link:../../packages/react-canvas
+      '@gatewai/tsconfig':
+        specifier: workspace:*
+        version: link:../../packages/tsconfig
+      '@types/react':
+        specifier: ^19.2.4
+        version: 19.2.14
+      tsdown:
+        specifier: ^0.19.0
+        version: 0.19.0(typescript@5.8.3)
+      typescript:
+        specifier: ^5.8.3
+        version: 5.8.3
+
   nodes/node-media-cut:
     dependencies:
       '@gatewai/core':
@@ -1295,6 +1362,9 @@ importers:
 
   nodes/node-svg:
     dependencies:
+      '@gatewai/ai-agent':
+        specifier: workspace:*
+        version: link:../../packages/ai-agent
       '@gatewai/core':
         specifier: workspace:*
         version: link:../../packages/core
@@ -1724,6 +1794,43 @@ importers:
         version: 0.19.0(typescript@5.8.3)
       typescript:
         specifier: ^5.8.3
+        version: 5.8.3
+
+  packages/ai-agent:
+    dependencies:
+      '@ai-sdk/google':
+        specifier: ^3.0.16
+        version: 3.0.31(zod@3.25.67)
+      '@gatewai/core':
+        specifier: workspace:*
+        version: link:../core
+      '@openai/agents':
+        specifier: ^0.4.1
+        version: 0.4.15(ws@8.19.0)(zod@3.25.67)
+      '@openai/agents-extensions':
+        specifier: ^0.4.1
+        version: 0.4.15(@ai-sdk/provider@3.0.8)(@openai/agents@0.4.15(ws@8.19.0)(zod@3.25.67))(ai@6.0.101(zod@3.25.67))(ws@8.19.0)(zod@3.25.67)
+      quickjs-emscripten:
+        specifier: ^0.31.0
+        version: 0.31.0
+      zod:
+        specifier: 3.25.67
+        version: 3.25.67
+      zod-to-json-schema:
+        specifier: ^3.25.1
+        version: 3.25.1(zod@3.25.67)
+    devDependencies:
+      '@gatewai/tsconfig':
+        specifier: workspace:*
+        version: link:../tsconfig
+      '@types/node':
+        specifier: ^22.13.0
+        version: 22.19.12
+      tsdown:
+        specifier: ^0.19.0
+        version: 0.19.0(typescript@5.8.3)
+      typescript:
+        specifier: ~5.8.3
         version: 5.8.3
 
   packages/api-client:
@@ -9950,7 +10057,7 @@ snapshots:
       '@google-cloud/opentelemetry-cloud-monitoring-exporter': 0.21.0(@opentelemetry/api@1.9.0)(@opentelemetry/core@2.5.1(@opentelemetry/api@1.9.0))(@opentelemetry/resources@2.5.1(@opentelemetry/api@1.9.0))(@opentelemetry/sdk-metrics@2.5.1(@opentelemetry/api@1.9.0))(encoding@0.1.13)
       '@google-cloud/opentelemetry-cloud-trace-exporter': 3.0.0(@opentelemetry/api@1.9.0)(@opentelemetry/core@2.5.1(@opentelemetry/api@1.9.0))(@opentelemetry/resources@2.5.1(@opentelemetry/api@1.9.0))(@opentelemetry/sdk-trace-base@2.5.1(@opentelemetry/api@1.9.0))(encoding@0.1.13)
       '@google-cloud/storage': 7.19.0(encoding@0.1.13)
-      '@google/genai': 1.43.0(@modelcontextprotocol/sdk@1.27.1(zod@3.25.76))
+      '@google/genai': 1.43.0(@modelcontextprotocol/sdk@1.27.1(zod@3.25.67))
       '@modelcontextprotocol/sdk': 1.27.1(zod@3.25.76)
       '@opentelemetry/api': 1.9.0
       '@opentelemetry/api-logs': 0.205.0
@@ -9994,7 +10101,7 @@ snapshots:
       - supports-color
       - utf-8-validate
 
-  '@google/genai@1.43.0(@modelcontextprotocol/sdk@1.27.1(zod@3.25.76))':
+  '@google/genai@1.43.0(@modelcontextprotocol/sdk@1.27.1(zod@3.25.67))':
     dependencies:
       google-auth-library: 10.6.1
       p-retry: 4.6.2
@@ -12377,7 +12484,7 @@ snapshots:
   '@types/request@2.48.13':
     dependencies:
       '@types/caseless': 0.12.5
-      '@types/node': 24.10.14
+      '@types/node': 22.19.12
       '@types/tough-cookie': 4.0.5
       form-data: 2.5.5
 
@@ -12385,7 +12492,7 @@ snapshots:
 
   '@types/sharp@0.31.1':
     dependencies:
-      '@types/node': 24.10.14
+      '@types/node': 22.19.12
 
   '@types/stats.js@0.17.4': {}
 
@@ -12409,7 +12516,7 @@ snapshots:
 
   '@types/wav@1.0.4':
     dependencies:
-      '@types/node': 20.19.34
+      '@types/node': 22.19.12
 
   '@types/webfontloader@1.6.38': {}
 
@@ -12425,7 +12532,7 @@ snapshots:
 
   '@types/ws@8.18.1':
     dependencies:
-      '@types/node': 20.19.34
+      '@types/node': 22.19.12
 
   '@ungap/structured-clone@1.3.0': {}
 
@@ -12447,6 +12554,14 @@ snapshots:
       '@vitest/utils': 4.0.18
       chai: 6.2.2
       tinyrainbow: 3.0.3
+
+  '@vitest/mocker@4.0.18(vite@7.3.1(@types/node@20.19.34)(jiti@2.6.1)(lightningcss@1.31.1)(tsx@4.21.0))':
+    dependencies:
+      '@vitest/spy': 4.0.18
+      estree-walker: 3.0.3
+      magic-string: 0.30.21
+    optionalDependencies:
+      vite: 7.3.1(@types/node@20.19.34)(jiti@2.6.1)(lightningcss@1.31.1)(tsx@4.21.0)
 
   '@vitest/mocker@4.0.18(vite@7.3.1(@types/node@25.3.1)(jiti@2.6.1)(lightningcss@1.31.1)(tsx@4.21.0))':
     dependencies:
@@ -15396,7 +15511,7 @@ snapshots:
       '@protobufjs/path': 1.1.2
       '@protobufjs/pool': 1.1.0
       '@protobufjs/utf8': 1.1.0
-      '@types/node': 20.19.34
+      '@types/node': 22.19.12
       long: 5.3.2
 
   proxy-addr@2.0.7:
@@ -16750,7 +16865,7 @@ snapshots:
   vitest@4.0.18(@opentelemetry/api@1.9.0)(@types/node@20.19.34)(jiti@2.6.1)(lightningcss@1.31.1)(tsx@4.21.0):
     dependencies:
       '@vitest/expect': 4.0.18
-      '@vitest/mocker': 4.0.18(vite@7.3.1(@types/node@25.3.1)(jiti@2.6.1)(lightningcss@1.31.1)(tsx@4.21.0))
+      '@vitest/mocker': 4.0.18(vite@7.3.1(@types/node@20.19.34)(jiti@2.6.1)(lightningcss@1.31.1)(tsx@4.21.0))
       '@vitest/pretty-format': 4.0.18
       '@vitest/runner': 4.0.18
       '@vitest/snapshot': 4.0.18

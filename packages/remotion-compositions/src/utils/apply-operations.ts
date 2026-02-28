@@ -1,8 +1,6 @@
 import type { VirtualMediaData } from "@gatewai/core/types";
-import {
-	getActiveMediaMetadata,
-	resolveMediaSourceUrl,
-} from "./resolve-video.js";
+import { resolveMediaSourceUrlBrowser } from "../browser.js";
+import { getActiveMediaMetadata } from "./resolve-video.js";
 
 /** Default filter values (no-op) */
 const DEFAULT_FILTERS = {
@@ -85,7 +83,7 @@ export function computeRenderParams(vv: VirtualMediaData): RenderParams {
 
 	switch (op.op) {
 		case "source":
-			params.sourceUrl = resolveMediaSourceUrl(vv);
+			params.sourceUrl = resolveMediaSourceUrlBrowser(vv);
 			break;
 
 		case "text":
@@ -185,7 +183,7 @@ export function computeFullRenderParams(vv: VirtualMediaData): RenderParams {
 
 		switch (op.op) {
 			case "source":
-				params.sourceUrl = resolveMediaSourceUrl(node);
+				params.sourceUrl = resolveMediaSourceUrlBrowser(node);
 				break;
 			case "text":
 				params.sourceUrl = undefined;

@@ -107,4 +107,5 @@ export interface MediaService {
  */
 export interface AIProvider {
 	getGemini<T>(): T;
+	getAgentModel<T>(modelName: string): T;
 }

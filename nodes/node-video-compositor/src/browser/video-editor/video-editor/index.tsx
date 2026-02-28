@@ -41,8 +41,8 @@ import {
 	computeVideoCropRenderProps,
 	createVirtualMedia,
 	getActiveMediaMetadata,
-	resolveMediaSourceUrl,
 } from "@gatewai/remotion-compositions";
+import { resolveMediaSourceUrlBrowser } from "@gatewai/remotion-compositions/browser";
 import {
 	AlertDialog,
 	AlertDialogAction,
@@ -238,6 +238,13 @@ const ANIMATION_CATEGORIES = [
 // ---------------------------------------------------------------------------
 // Helpers
 // ---------------------------------------------------------------------------
+
+/**
+ * Returns true for layer types backed by a FileData asset (not VirtualMedia).
+ * Centralises the Image / SVG equivalence so no branch needs to list both.
+ */
+const isFileMedia = (type: string): boolean =>
+	type === "Image" || type === "SVG";
 
 const roundToEven = (num?: number) => Math.round((num ?? 0) / 2) * 2;
 
@@ -460,6 +467,7 @@ const LayerIcon: React.FC<{ type: string; className?: string }> = ({
 		Video: <Film className={className} />,
 		Audio: <Music className={className} />,
 		Image: <ImageIcon className={className} />,
+		SVG: <ImageIcon className={className} />,
 		Text: <Type className={className} />,
 		Lottie: <Sparkles className={className} />,
 	};
@@ -491,6 +499,160 @@ const WithTooltip: React.FC<{
 		</Tooltip>
 	</TooltipProvider>
 );
+
+// ---------------------------------------------------------------------------
+// AnimationsInspectorSection
+// ---------------------------------------------------------------------------
+
+const AnimationsInspectorSection: React.FC<{
+	layer: EditorLayer;
+	update: (patch: Partial<EditorLayer>) => void;
+}> = ({ layer, update }) => {
+	const [addAnimOpen, setAddAnimOpen] = useState(false);
+
+	const addAnimation = (type: AnimationType) => {
+		const newAnimation: VideoAnimation = { id: generateId(), type, value: 1 };
+		update({ animations: [...(layer.animations || []), newAnimation] });
+		setAddAnimOpen(false);
+	};
+
+	const updateAnimation = (animId: string, patch: Partial<VideoAnimation>) => {
+		update({
+			animations: (layer.animations || []).map((a) =>
+				a.id === animId ? { ...a, ...patch } : a,
+			),
+		});
+	};
+
+	const removeAnimation = (animId: string) => {
+		update({
+			animations: (layer.animations || []).filter((a) => a.id !== animId),
+		});
+	};
+
+	const getAnimMeta = (type: AnimationType) => {
+		for (const cat of ANIMATION_CATEGORIES) {
+			const found = cat.animations.find((a) => a.type === type);
+			if (found) return { ...found, catColor: cat.color };
+		}
+		return { label: type, icon: Zap, catColor: "text-gray-400" };
+	};
+
+	return (
+		<CollapsibleSection title="Animations" icon={Zap} defaultOpen>
+			<div className="space-y-3">
+				{layer.animations && layer.animations.length > 0 && (
+					<div className="space-y-2">
+						{layer.animations.map((anim) => {
+							const meta = getAnimMeta(anim.type);
+							const Icon = meta.icon;
+							return (
+								<div
+									key={anim.id}
+									className="group relative bg-black/20 border border-white/10 rounded-lg p-2.5 transition-all hover:bg-black/40 hover:border-white/20"
+								>
+									<div className="flex items-center justify-between mb-2">
+										<div className="flex items-center gap-2">
+											<div
+												className={cn(
+													"p-1.5 rounded-md bg-white/5",
+													meta.catColor,
+												)}
+											>
+												<Icon className="w-3.5 h-3.5" />
+											</div>
+											<span className="text-[11px] font-medium text-gray-200">
+												{meta.label}
+											</span>
+										</div>
+										<Button
+											variant="ghost"
+											size="icon"
+											className="h-6 w-6 text-gray-500 hover:text-red-400 hover:bg-red-500/10 opacity-0 group-hover:opacity-100 transition-opacity"
+											onClick={() => removeAnimation(anim.id)}
+										>
+											<Trash2 className="w-3.5 h-3.5" />
+										</Button>
+									</div>
+									<div className="flex items-center gap-3 px-1">
+										<span className="text-[9px] font-bold uppercase tracking-wider text-gray-500">
+											Duration
+										</span>
+										<Slider
+											value={[anim.value]}
+											min={0.1}
+											max={5}
+											step={0.1}
+											onValueChange={([v]) =>
+												updateAnimation(anim.id, { value: v })
+											}
+											className="flex-1"
+										/>
+										<span className="text-[10px] font-mono text-gray-400 w-6 text-right">
+											{anim.value.toFixed(1)}s
+										</span>
+									</div>
+								</div>
+							);
+						})}
+					</div>
+				)}
+
+				<Popover open={addAnimOpen} onOpenChange={setAddAnimOpen}>
+					<PopoverTrigger asChild>
+						<Button
+							variant="outline"
+							size="sm"
+							className="w-full h-8 border-dashed border-white/20 bg-transparent hover:bg-white/5 hover:border-white/30 text-gray-300 transition-colors"
+						>
+							<Plus className="w-3.5 h-3.5 mr-1.5" /> Add Animation
+						</Button>
+					</PopoverTrigger>
+					<PopoverContent
+						className="w-56 p-2 bg-neutral-900 border-white/10 shadow-xl"
+						align="center"
+						side="bottom"
+					>
+						<ScrollArea className="h-64 pr-2 -mr-2">
+							{ANIMATION_CATEGORIES.map((cat, idx) => (
+								<div
+									key={cat.label}
+									className={cn(
+										"mb-3 last:mb-0",
+										idx > 0 && "pt-3 border-t border-white/5",
+									)}
+								>
+									<div
+										className={cn(
+											"text-[10px] font-bold uppercase tracking-wider mb-1.5 px-2",
+											cat.color,
+										)}
+									>
+										{cat.label}
+									</div>
+									<div className="space-y-0.5">
+										{cat.animations.map((a) => (
+											<Button
+												key={a.type}
+												variant="ghost"
+												size="sm"
+												className="w-full justify-start h-7 px-2 text-[11px] font-medium text-gray-300 hover:text-white hover:bg-white/10"
+												onClick={() => addAnimation(a.type)}
+											>
+												<a.icon className={cn("w-3.5 h-3.5 mr-2", cat.color)} />
+												{a.label}
+											</Button>
+										))}
+									</div>
+								</div>
+							))}
+						</ScrollArea>
+					</PopoverContent>
+				</Popover>
+			</div>
+		</CollapsibleSection>
+	);
+};
 
 // ---------------------------------------------------------------------------
 // LottieInspectorSection
@@ -1262,7 +1424,9 @@ const SortableTrackHeader: React.FC<{
 			</div>
 			<div className="flex-1 flex items-center gap-2.5 min-w-0">
 				<div
-					className={`w-6 h-6 rounded flex items-center justify-center ${colorConfig ? `${colorConfig.bg}/20 ${colorConfig.text}` : ""}`}
+					className={`w-6 h-6 rounded flex items-center justify-center ${
+						colorConfig ? `${colorConfig.bg}/20 ${colorConfig.text}` : ""
+					}`}
 				>
 					<LayerIcon type={layer.type} className="w-3.5 h-3.5" />
 				</div>
@@ -1343,7 +1507,9 @@ const TimelinePanel: React.FC = () => {
 			if (playerRef.current) {
 				const frame = playerRef.current.getCurrentFrame();
 				if (playheadRef.current) {
-					playheadRef.current.style.transform = `translateX(${frame * pixelsPerFrame}px)`;
+					playheadRef.current.style.transform = `translateX(${
+						frame * pixelsPerFrame
+					}px)`;
 				}
 				if (isPlaying && scrollContainerRef.current) {
 					const x = frame * pixelsPerFrame;
@@ -1358,7 +1524,9 @@ const TimelinePanel: React.FC = () => {
 		if (isPlaying) {
 			loop();
 		} else if (playheadRef.current) {
-			playheadRef.current.style.transform = `translateX(${currentFrame * pixelsPerFrame}px)`;
+			playheadRef.current.style.transform = `translateX(${
+				currentFrame * pixelsPerFrame
+			}px)`;
 		}
 		return () => {
 			if (rafId) cancelAnimationFrame(rafId);
@@ -1444,7 +1612,9 @@ const TimelinePanel: React.FC = () => {
 			style={{ height: timelineHeight }}
 		>
 			<div
-				className={`h-1.5 flex items-center justify-center cursor-ns-resize hover:bg-white/10 transition-colors group ${isResizingTimeline ? "bg-blue-500/20" : ""}`}
+				className={`h-1.5 flex items-center justify-center cursor-ns-resize hover:bg-white/10 transition-colors group ${
+					isResizingTimeline ? "bg-blue-500/20" : ""
+				}`}
 				onMouseDown={handleTimelineResize}
 			>
 				<GripHorizontal className="w-6 h-3 text-gray-600 group-hover:text-gray-400 transition-colors" />
@@ -1639,14 +1809,18 @@ const TimelinePanel: React.FC = () => {
 									<div
 										key={layer.id}
 										style={{ height: TRACK_HEIGHT }}
-										className={`border-b border-white/5 relative group/track ${isSelected ? "bg-white/2" : ""}`}
+										className={`border-b border-white/5 relative group/track ${
+											isSelected ? "bg-white/2" : ""
+										}`}
 									>
 										<button
 											type="button"
 											onKeyDown={(e) => {
 												if (e.key === "Enter") setSelectedId(layer.id);
 											}}
-											className={`absolute top-1 bottom-1 rounded-md text-left p-0 m-0 border-0 bg-transparent flex items-center overflow-hidden cursor-move outline-none ${isSelected ? "z-20" : "z-10"}`}
+											className={`absolute top-1 bottom-1 rounded-md text-left p-0 m-0 border-0 bg-transparent flex items-center overflow-hidden cursor-move outline-none ${
+												isSelected ? "z-20" : "z-10"
+											}`}
 											style={{
 												left: (layer.startFrame ?? 0) * pixelsPerFrame,
 												width: Math.max(10, duration * pixelsPerFrame),
@@ -1698,22 +1872,8 @@ const InspectorPanel: React.FC = () => {
 	} = useEditor();
 
 	const selectedLayer = layers.find((f) => f.id === selectedId);
-	const [addAnimOpen, setAddAnimOpen] = useState(false);
 	const { data: fontList } = useGetFontListQuery({});
 	const handles = useAppSelector(handleSelectors.selectEntities);
-
-	const addAnimation = (type: AnimationType) => {
-		if (!selectedLayer) return;
-		const newAnimation: VideoAnimation = { id: generateId(), type, value: 1 };
-		updateLayers((prev) =>
-			prev.map((l) =>
-				l.id === selectedId
-					? { ...l, animations: [...(l.animations || []), newAnimation] }
-					: l,
-			),
-		);
-		setAddAnimOpen(false);
-	};
 
 	const update = (patch: Partial<EditorLayer>) => {
 		updateLayers((prev) =>
@@ -1844,10 +2004,12 @@ const InspectorPanel: React.FC = () => {
 					);
 					if (meta?.width) newW = meta.width;
 					if (meta?.height) newH = meta.height;
-				} else if (initialItem.type === "Image") {
-					const meta = (initialItem.data as FileData).processData;
-					if (meta?.width) newW = meta.width;
-					if (meta?.height) newH = meta.height;
+				} else if (isFileMedia(initialItem.type)) {
+					const fileData = initialItem.data as FileData;
+					const metaW = fileData.processData?.width ?? fileData.entity?.width;
+					const metaH = fileData.processData?.height ?? fileData.entity?.height;
+					if (metaW) newW = metaW;
+					if (metaH) newH = metaH;
 				}
 			}
 		}
@@ -1893,6 +2055,7 @@ const InspectorPanel: React.FC = () => {
 									<Move className="w-3.5 h-3.5" /> Transform
 								</div>
 								{(selectedLayer.type === "Image" ||
+									selectedLayer.type === "SVG" ||
 									selectedLayer.type === "Video" ||
 									selectedLayer.type === "Lottie") && (
 									<WithTooltip tip={autoDimensionsTooltip}>
@@ -2019,6 +2182,10 @@ const InspectorPanel: React.FC = () => {
 						</div>
 					)}
 
+					{selectedLayer.type !== "Audio" && (
+						<AnimationsInspectorSection layer={selectedLayer} update={update} />
+					)}
+
 					{selectedLayer.type === "Lottie" && (
 						<LottieInspectorSection layer={selectedLayer} update={update} />
 					)}
@@ -2074,7 +2241,7 @@ const InspectorPanel: React.FC = () => {
 						cornerRadius={selectedLayer.borderRadius}
 						padding={selectedLayer.padding}
 						opacity={selectedLayer.opacity}
-						showBackground={["Image", "Video", "Lottie"].includes(
+						showBackground={["Image", "SVG", "Video", "Lottie"].includes(
 							selectedLayer.type,
 						)}
 						showStroke={selectedLayer.type !== "Audio"}
@@ -2111,7 +2278,7 @@ const InspectorPanel: React.FC = () => {
 export interface VideoDesignerEditorProps {
 	initialLayers: Map<
 		string,
-		OutputItem<"Text" | "Image" | "Video" | "Audio" | "Lottie">
+		OutputItem<"Text" | "Image" | "SVG" | "Video" | "Audio" | "Lottie">
 	>;
 	node: NodeEntityType;
 	onClose: () => void;
@@ -2166,7 +2333,8 @@ export const VideoDesignerEditor: React.FC<VideoDesignerEditorProps> = ({
 		const item = initialLayers.get(id);
 		if (!item) return undefined;
 		if (item.type === "Video" || item.type === "Audio")
-			return resolveMediaSourceUrl(item.data as VirtualMediaData);
+			return resolveMediaSourceUrlBrowser(item.data as VirtualMediaData);
+		// Image, SVG, Lottie — all stored as FileData
 		const fileData = item.data as FileData;
 		return fileData.entity?.id
 			? GetAssetEndpoint(fileData.entity)
@@ -2179,6 +2347,7 @@ export const VideoDesignerEditor: React.FC<VideoDesignerEditorProps> = ({
 		if (!item) return undefined;
 		if (item.type === "Video" || item.type === "Audio")
 			return (item.data as VirtualMediaData).metadata?.durationMs;
+		// Image, SVG, Lottie
 		const fileData = item.data as FileData;
 		return fileData.entity?.duration ?? fileData?.processData?.duration;
 	};
@@ -2330,7 +2499,7 @@ export const VideoDesignerEditor: React.FC<VideoDesignerEditorProps> = ({
 					const metadata = getActiveMediaMetadata(virtualMedia);
 					const cutDurationMs = getEffectiveDurationMs(virtualMedia);
 					durationMs = cutDurationMs ?? metadata.durationMs ?? 0;
-					src = resolveMediaSourceUrl(virtualMedia);
+					src = resolveMediaSourceUrlBrowser(virtualMedia);
 					cropRenderProps = computeVideoCropRenderProps(virtualMedia);
 					if (isAutoDimensions) {
 						layerWidth = metadata.width;
@@ -2339,17 +2508,26 @@ export const VideoDesignerEditor: React.FC<VideoDesignerEditorProps> = ({
 						layerWidth = layerWidth ?? metadata.width;
 						layerHeight = layerHeight ?? metadata.height;
 					}
-				} else if (item.type === "Image") {
+				} else if (isFileMedia(item.type)) {
+					// Handles both "Image" and "SVG" — identical data shape (FileData)
 					const fileData = item.data as FileData;
 					durationMs =
 						fileData.entity?.duration ?? fileData.processData?.duration ?? 0;
 					src = getAssetUrl(id);
-					if (isAutoDimensions && fileData.processData) {
-						layerWidth = fileData.processData.width;
-						layerHeight = fileData.processData.height;
+
+					const initialW =
+						fileData.processData?.width ?? fileData.entity?.width ?? undefined;
+					const initialH =
+						fileData.processData?.height ??
+						fileData.entity?.height ??
+						undefined;
+
+					if (isAutoDimensions && initialW != null && initialH != null) {
+						layerWidth = initialW;
+						layerHeight = initialH;
 					} else {
-						layerWidth = layerWidth ?? fileData.processData?.width;
-						layerHeight = layerHeight ?? fileData.processData?.height;
+						layerWidth = layerWidth ?? initialW;
+						layerHeight = layerHeight ?? initialH;
 					}
 				}
 
@@ -2400,16 +2578,23 @@ export const VideoDesignerEditor: React.FC<VideoDesignerEditorProps> = ({
 					const fontUrl = GetFontAssetUrl(fontFamily);
 					if (fontUrl)
 						fontPromises.push(fontManager.loadFont(fontFamily, fontUrl));
-				} else if (item.type === "Image" || item.type === "Video") {
+				} else if (isFileMedia(item.type)) {
+					// Handles both "Image" and "SVG" with identical layer properties
 					loaded.push({
 						...base,
-						type: item.type as "Image" | "Video",
+						type: item.type as "Image" | "SVG",
+						width: layerWidth ?? 400,
+						height: layerHeight ?? 400,
+						lockAspect: true,
+					} as EditorLayer);
+				} else if (item.type === "Video") {
+					loaded.push({
+						...base,
+						type: "Video",
 						width: layerWidth ?? 400,
 						height: layerHeight ?? 400,
 						maxDurationInFrames:
-							item.type === "Video" && durationMs > 0
-								? calculatedDurationFrames
-								: undefined,
+							durationMs > 0 ? calculatedDurationFrames : undefined,
 						lockAspect: true,
 					} as EditorLayer);
 				} else if (item.type === "Audio") {
@@ -2482,8 +2667,12 @@ export const VideoDesignerEditor: React.FC<VideoDesignerEditorProps> = ({
 			if (l.type === "Text")
 				return `${l.id}:text:${l.fontFamily}:${l.fontSize}:${l.fontStyle}:${l.textDecoration}:${l.lineHeight}`;
 			if (l.type === "Video" && l.virtualMedia)
-				return `${l.id}:${l.type.toLowerCase()}:${l.autoDimensions}:${l.virtualMedia.operation.op}`;
-			return `${l.id}:${l.type}:${l.autoDimensions}:${l.width ?? "null"}:${l.height ?? "null"}`;
+				return `${l.id}:${l.type.toLowerCase()}:${l.autoDimensions}:${
+					l.virtualMedia.operation.op
+				}`;
+			return `${l.id}:${l.type}:${l.autoDimensions}:${l.width ?? "null"}:${
+				l.height ?? "null"
+			}`;
 		})
 		.join("|");
 
@@ -2519,17 +2708,23 @@ export const VideoDesignerEditor: React.FC<VideoDesignerEditorProps> = ({
 							return;
 						}
 						const url = getAssetUrl(layer.inputHandleId);
-						if (layer.type === "Image" && url) {
+						if (isFileMedia(layer.type) && url) {
+							// Image and SVG both decode naturally via HTMLImageElement
 							const img = new Image();
 							img.src = url;
 							await img.decode();
-							if (
-								layer.width !== img.naturalWidth ||
-								layer.height !== img.naturalHeight
-							) {
+							// SVGs without intrinsic size may report 0; fall back to a
+							// reasonable default so the layer is still usable on canvas.
+							const naturalW =
+								img.naturalWidth > 0 ? img.naturalWidth : (layer.width ?? 400);
+							const naturalH =
+								img.naturalHeight > 0
+									? img.naturalHeight
+									: (layer.height ?? 400);
+							if (layer.width !== naturalW || layer.height !== naturalH) {
 								updates.set(layer.id, {
-									width: img.naturalWidth,
-									height: img.naturalHeight,
+									width: naturalW,
+									height: naturalH,
 								});
 							}
 						} else if (layer.type === "Video" && url) {

@@ -19,6 +19,12 @@
 			"development": "./src/server.ts",
 			"import": "./dist/server.mjs",
 			"default": "./dist/server.mjs"
+		},
+		"./browser": {
+			"types": "./dist/browser.d.mts",
+			"development": "./src/browser.ts",
+			"import": "./dist/browser.mjs",
+			"default": "./dist/browser.mjs"
 		}
 	},
 	"files": [

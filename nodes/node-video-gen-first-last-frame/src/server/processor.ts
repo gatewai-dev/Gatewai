@@ -17,7 +17,7 @@ import type {
     NodeProcessor,
     StorageService,
 } from "@gatewai/node-sdk/server";
-import { createVirtualMedia } from "@gatewai/remotion-compositions";
+import { createVirtualMedia } from "@gatewai/remotion-compositions/server";
 import type { GoogleGenAI } from "@google/genai";
 import { inject, injectable } from "inversify";
 import {

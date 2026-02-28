@@ -1,4 +1,5 @@
-import { type EnvConfig, extractSvgDimensions, generateId, logger } from "@gatewai/core";
+import { createCodeGenAgent, runCodeGenAgent } from "@gatewai/ai-agent";
+import { type EnvConfig, extractSvgDimensions, generateId, logger, type StorageService } from "@gatewai/core";
 import { TOKENS } from "@gatewai/core/di";
 import type { FileData } from "@gatewai/core/types";
 import { DataType, type PrismaClient } from "@gatewai/db";
@@ -8,26 +9,28 @@ import type {
     BackendNodeProcessorResult,
     GraphResolvers,
     NodeProcessor,
-    StorageService,
 } from "@gatewai/node-sdk/server";
-import { createUserContent, type GoogleGenAI, type PartListUnion } from "@google/genai";
 import { inject, injectable } from "inversify";
+import { z } from "zod";
 import { SvgNodeConfigSchema } from "../metadata.js";
 import type { SvgResult } from "../shared/index.js";
 
-function extractSVG(text: string): string | null {
-    // Simple extraction: look for `<svg...` and `</svg>`
-    const svgMatch = text.match(/<svg[\s\S]*?<\/svg>/i);
-    return svgMatch ? svgMatch[0] : null;
-}
+const MAX_RETRIES = 3;
+
+/**
+ * Result schema for the agent
+ */
+const SvgSandboxResultSchema = z.object({
+    svg: z.string().describe("The generated SVG XML string"),
+});
 
 @injectable()
 export class SvgProcessor implements NodeProcessor {
     constructor(
         @inject(TOKENS.PRISMA) private prisma: PrismaClient,
-        @inject(TOKENS.GRAPH_RESOLVERS) private graph: GraphResolvers,
-        @inject(TOKENS.STORAGE) private storage: StorageService,
         @inject(TOKENS.ENV) private env: EnvConfig,
+        @inject(TOKENS.STORAGE) private storage: StorageService,
+        @inject(TOKENS.GRAPH_RESOLVERS) private graph: GraphResolvers,
         @inject(TOKENS.AI_PROVIDER) private aiProvider: AIProvider,
     ) { }
 
@@ -36,8 +39,6 @@ export class SvgProcessor implements NodeProcessor {
         data,
     }: BackendNodeProcessorCtx): Promise<BackendNodeProcessorResult<SvgResult>> {
         try {
-            const genAI = this.aiProvider.getGemini<GoogleGenAI>();
-
             const userPrompt = this.graph.getInputValue(data, node.id, true, {
                 dataType: DataType.Text,
                 label: "Prompt",
@@ -49,37 +50,63 @@ export class SvgProcessor implements NodeProcessor {
             })?.data as FileData | undefined;
 
             const nodeConfig = SvgNodeConfigSchema.parse(node.config);
+            const agentModel = this.aiProvider.getAgentModel<any>(nodeConfig.model);
 
-            const parts: PartListUnion = [];
-
+            // Load source SVG content if provided
+            let sourceSvgContent: string | null = null;
             if (sourceSvgInput) {
                 const arrayBuffer = await this.graph.loadMediaBuffer(sourceSvgInput);
-                const buffer = Buffer.from(arrayBuffer);
-                const svgText = buffer.toString("utf-8");
-                parts.push(`Here is the source SVG to edit:\n\`\`\`xml\n${svgText}\n\`\`\``);
+                sourceSvgContent = Buffer.from(arrayBuffer).toString("utf-8");
             }
 
-            parts.push(userPrompt);
+            // ── System Prompt for Code-Gen Agent ──────────────────────
+            const systemPrompt = `You are an expert SVG graphics programmer.
+Your task is to write JavaScript code that generates a high-quality SVG based on the user's prompt.
 
-            const systemInstruction = "You are a specialized SVG generator. Provide only raw valid XML SVG code. Do not wrap the response in markdown blocks or explain it. Do not include markdown like ```xml. Always generate SVGs with a large 'width' and 'height' attribute (e.g., at least 1024x1024) for high-quality rendering, and ensure the 'viewBox' matches these dimensions unless user prompts otherwise.";
+You have access to the following global variables:
+- \`prompt\`: The user's request (string)
+- \`sourceSvg\`: The source SVG string if we are editing an existing SVG, otherwise null (string | null)
 
-            const response = await genAI.models.generateContent({
-                model: nodeConfig.model,
-                contents: createUserContent(parts),
-                config: {
-                    systemInstruction,
-                    temperature: nodeConfig.temperature,
+You MUST return a valid result object with an \`svg\` property containing the final SVG XML string.
+Example return:
+return { svg: '<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 1024 1024"><circle cx="512" cy="512" r="512" fill="red"/></svg>' };
+
+Guidelines:
+- Create visually stunning, modern, and highly detailed SVGs.
+- Use a large canvas (e.g. 1024x1024) and set the \`xmlns\`, \`width\`, \`height\`, and \`viewBox\` properly.
+- You do NOT need to use markdown to wrap your response since this is code execute.
+- Use the available JavaScript Math functions and loops to construct complex procedural graphics if appropriate.
+- If \`sourceSvg\` is provided, you must parse/manipulate it using string operations or regex, and return the modified SVG.`;
+
+            // ── Setup Code-Gen Agent ─────────────────────────────────
+            const { agent, resultStore } = createCodeGenAgent<{ svg: string }>({
+                name: "SvgGenAgent",
+                model: agentModel,
+                systemPrompt,
+                globals: {
+                    prompt: userPrompt,
+                    sourceSvg: sourceSvgContent,
                 },
+                resultSchema: SvgSandboxResultSchema,
+                maxRetries: MAX_RETRIES,
+                timeoutMs: 10_000,
             });
 
-            if (!response.text) return { success: false, error: "LLM response is empty" };
+            // ── Run Agent ─────────────────────────────────────────────
+            // The agent will loop, write code, run it, validate, and retry if needed.
+            const result = await runCodeGenAgent<{ svg: string }>({
+                agent,
+                resultStore,
+                prompt: userPrompt,
+            });
 
-            const svgContent = extractSVG(response.text);
-            if (!svgContent) {
-                logger.error(`Failed to extract SVG from response: ${response.text}`);
-                return { success: false, error: "Response did not contain valid SVG" };
+            if (!result?.svg) {
+                return { success: false, error: "Agent failed to return a valid SVG." };
             }
 
+            const svgContent = result.svg;
+
+            // ── Upload & store ───────────────────────────────────────
             const outputHandle = data.handles.find(
                 (h) => h.nodeId === node.id && h.type === "Output",
             );
@@ -95,7 +122,6 @@ export class SvgProcessor implements NodeProcessor {
             await this.storage.uploadToStorage(buffer, key, contentType, bucket);
             const size = buffer.length;
 
-            // Parse viewBox to get actual width/height instead of 512x512
             const dim = extractSvgDimensions(buffer);
             const rawW = dim?.w || 0;
             const rawH = dim?.h || 0;
@@ -145,8 +171,8 @@ export class SvgProcessor implements NodeProcessor {
 
             return { success: true, newResult };
         } catch (err: unknown) {
-            logger.error(err instanceof Error ? err.message : "SVG Generation Failed");
-            return { success: false, error: "SVG Generation failed" };
+            logger.error({ err }, "SVG Generation Failed");
+            return { success: false, error: err instanceof Error ? err.message : "SVG Generation failed" };
         }
     }
 }

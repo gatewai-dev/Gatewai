@@ -106,7 +106,8 @@ export class ImageCompositorBrowserProcessor implements IBrowserProcessor {
  */
 const loadRasterNode = (
 	url: string,
-	layerConfig: CompositorLayer,
+	// Type extension to ensure TS knows about the editor's autoDimensions flag
+	layerConfig: CompositorLayer & { autoDimensions?: boolean },
 ): Promise<Konva.Image> =>
 	new Promise((resolve, reject) => {
 		const img = new Image();
@@ -118,8 +119,15 @@ const loadRasterNode = (
 					x: layerConfig.x ?? 0,
 					y: layerConfig.y ?? 0,
 					opacity: layerConfig.opacity ?? 1,
-					width: layerConfig.width ?? img.width,
-					height: layerConfig.height ?? img.height,
+
+					// FIX: autoDimensions overrides any explicit editor-baked dimensions
+					width: layerConfig.autoDimensions
+						? img.width
+						: (layerConfig.width ?? img.width),
+					height: layerConfig.autoDimensions
+						? img.height
+						: (layerConfig.height ?? img.height),
+
 					rotation: layerConfig.rotation ?? 0,
 					stroke: layerConfig.stroke,
 					strokeWidth:

@@ -19,6 +19,7 @@
 	},
 	"dependencies": {
 		"@ai-sdk/google": "^3.0.16",
+		"@gatewai/ai-agent": "workspace:*",
 		"@gatewai/api-client": "workspace:*",
 		"@gatewai/core": "workspace:*",
 		"@gatewai/data-ops": "workspace:*",

@@ -7,6 +7,7 @@ import {
 	storageService,
 } from "@gatewai/graph-engine";
 import { GoogleGenAI } from "@google/genai";
+import { getAgentModel } from "./agent/agent-model";
 
 /**
  * Register backend-specific services into the DI container.
@@ -31,6 +32,9 @@ export function registerBackendServices() {
 			if (ENV_CONFIG.GEMINI_API_KEY == null)
 				throw new Error("No Gemini API kep provided");
 			return new GoogleGenAI({ apiKey: ENV_CONFIG.GEMINI_API_KEY });
+		},
+		getAgentModel: (name: string) => {
+			return getAgentModel(name as any);
 		},
 	});
 
