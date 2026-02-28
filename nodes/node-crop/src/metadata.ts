@@ -1,22 +1,31 @@
 import { defineMetadata } from "@gatewai/node-sdk";
-import { CropNodeConfigSchema, CropResultSchema } from "./shared/index.js";
+import {
+	CropNodeConfigSchema,
+	CropResultSchema,
+	VideoCropResultSchema,
+} from "./shared/index.js";
 
-export { CropNodeConfigSchema, CropResultSchema };
+export { CropNodeConfigSchema, CropResultSchema, VideoCropResultSchema };
 
 export const metadata = defineMetadata({
 	type: "Crop",
 	displayName: "Crop",
-	description: "Crop an image",
-	category: "Image",
+	description: "Crop Video, Image or SVG",
+	category: "Media",
 	configSchema: CropNodeConfigSchema,
 	resultSchema: CropResultSchema,
 	isTerminal: false,
 	isTransient: true,
 	handles: {
 		inputs: [
-			{ dataTypes: ["Image"], required: true, label: "Image", order: 0 },
+			{
+				dataTypes: ["Image", "Video", "SVG"],
+				required: true,
+				label: "Input",
+				order: 0,
+			},
 		],
-		outputs: [{ dataTypes: ["Image"], label: "Result", order: 0 }],
+		outputs: [{ dataTypes: ["Image", "Video"], label: "Result", order: 0 }],
 	},
 	defaultConfig: {
 		leftPercentage: 0,

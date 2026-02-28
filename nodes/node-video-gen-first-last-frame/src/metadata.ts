@@ -9,7 +9,7 @@ export {
 	VideoGenFirstLastFrameResultSchema,
 };
 
-export default defineMetadata({
+export const metadata = defineMetadata({
 	type: "VideoGenFirstLastFrame",
 	displayName: "First to last frame video",
 	description: "Generate videos using first and last frame images",

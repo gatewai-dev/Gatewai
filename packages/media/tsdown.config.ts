@@ -14,6 +14,7 @@ export default defineConfig({
 	treeshake: true,
 	external: [
 		"@gatewai/core",
+		"@gatewai/db",
 		"@pixi/node",
 		"canvas",
 		"sharp",

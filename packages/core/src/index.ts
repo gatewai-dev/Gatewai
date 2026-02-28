@@ -5,3 +5,4 @@ export * from "./logger.js";
 export * from "./node-metadata.js";
 export * from "./storage/index.js";
 export * from "./utils/is-equal.js";
+export * from "./utils/svg.js";

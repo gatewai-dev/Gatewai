@@ -1,4 +1,4 @@
-import type { DataType } from "@gatewai/db";
+import type { DataType } from "@gatewai/db/types";
 import { z } from "zod";
 
 export const DATA_TYPE_EXTENSIONS: Record<DataType, string> = {
@@ -8,6 +8,10 @@ export const DATA_TYPE_EXTENSIONS: Record<DataType, string> = {
 	Text: "txt",
 	Number: "txt",
 	Boolean: "txt",
+	SVG: "svg",
+	Lottie: "json",
+	Json: "json",
+	Caption: "srt",
 };
 
 // MIME type mapping
@@ -26,7 +30,11 @@ export const MIME_TYPES: Record<string, string> = {
 	ogg: "audio/ogg",
 	pdf: "application/pdf",
 	json: "application/json",
+	lottie: "application/json",
 	txt: "text/plain",
+	srt: "text/srt",
+	aac: "audio/aac",
+	flac: "audio/flac",
 };
 
 // Shared Enums and Constants

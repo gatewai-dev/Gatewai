@@ -3,33 +3,39 @@ import {
 	GetAssetEndpoint,
 	GetFontAssetUrl,
 } from "@gatewai/core/browser";
-import type { FileData } from "@gatewai/core/types";
+import type {
+	ExtendedLayer,
+	FileData,
+	VirtualMediaData,
+} from "@gatewai/core/types";
 import {
 	AddCustomHandleButton,
 	BaseNode,
+	MediaContent,
+	MediaPlayer,
 	type NodeProps,
 	useDownloadFileData,
 	useNodeResult,
 } from "@gatewai/react-canvas";
 import { makeSelectNodeById, useAppSelector } from "@gatewai/react-store";
-import { Button, cn } from "@gatewai/ui-kit";
-import { Player } from "@remotion/player";
+import {
+	computeRenderParams,
+	createVirtualMedia,
+} from "@gatewai/remotion-compositions";
+import { Button } from "@gatewai/ui-kit";
+
 import { Download, Loader2, VideoIcon } from "lucide-react";
 import { memo, useEffect, useMemo, useState } from "react";
 import { useNavigate } from "react-router";
 import { toast } from "sonner";
 import type { VideoCompositorNodeConfig } from "../shared/config.js";
 import { remotionService } from "./muxer-service.js";
-import {
-	CompositionScene,
-	type ExtendedLayer,
-} from "./video-editor/common/composition.js";
-import { DEFAULT_DURATION_FRAMES, FPS } from "./video-editor/config/index.js";
+import { FPS } from "./video-editor/config/index.js";
 
 const VideoCompositorNodeComponent = memo((props: NodeProps) => {
-	const node = useAppSelector(makeSelectNodeById(props.id));
+	const node = useAppSelector(makeSelectNodeById(props.id)) as any;
 	const [isDownloading, setIsDownloading] = useState(false);
-	const { inputs } = useNodeResult(props.id);
+	const { inputs, result } = useNodeResult(props.id);
 	const nav = useNavigate();
 	const downloadFileData = useDownloadFileData();
 	const previewState = useMemo(() => {
@@ -46,79 +52,127 @@ const VideoCompositorNodeComponent = memo((props: NodeProps) => {
 		}
 
 		const layers: ExtendedLayer[] = [];
-		// Iterate over all connected inputs, applying saved updates or defaults
+
 		for (const [handleId, input] of Object.entries(inputs)) {
 			if (!input?.connectionValid) continue;
 			const item = input.outputItem;
-			if (!item) continue; // Skip if no valid output item
+			if (!item) continue;
 
 			const saved = layerUpdates[handleId] ?? {};
+			const isAutoDimensions = saved.autoDimensions ?? true;
 			let src: string | undefined;
 			let text: string | undefined;
 			let layerWidth = saved.width;
 			let layerHeight = saved.height;
+			let virtualMedia: VirtualMediaData | undefined;
 
 			if (item.type === "Text") {
 				text = (item.data as string) || "";
-			} else if (["Image", "Video", "Audio"].includes(item.type)) {
+				virtualMedia = createVirtualMedia(text, "Text");
+			} else if (item.type === "Video") {
+				// Video inputs are always VirtualMediaData
+				const vv = item.data as VirtualMediaData;
+				virtualMedia = vv;
+				const params = computeRenderParams(vv);
+				src = params.sourceUrl;
+				const metadata = vv.metadata || ({} as any);
+				if (
+					isAutoDimensions &&
+					metadata.width != null &&
+					metadata.height != null
+				) {
+					layerWidth = metadata.width ?? undefined;
+					layerHeight = metadata.height ?? undefined;
+				} else {
+					layerWidth = layerWidth ?? metadata.width ?? undefined;
+					layerHeight = layerHeight ?? metadata.height ?? undefined;
+				}
+			} else if (
+				item.type === "Image" ||
+				item.type === "SVG" ||
+				item.type === "Audio" ||
+				item.type === "Lottie"
+			) {
 				const fileData = item.data as FileData;
+				// IMPORTANT: Convert FileData -> VirtualMediaData here so the downstream Player gets the right format
+				virtualMedia = createVirtualMedia(fileData, item.type as any);
+
 				if (fileData) {
 					src = fileData.entity?.id
 						? GetAssetEndpoint(fileData.entity)
 						: fileData.processData?.dataUrl;
 
-					if (!layerWidth) layerWidth = fileData.processData?.width;
-					if (!layerHeight) layerHeight = fileData.processData?.height;
+					const initialW =
+						fileData.processData?.width ?? fileData.entity?.width ?? undefined;
+					const initialH =
+						fileData.processData?.height ??
+						fileData.entity?.height ??
+						undefined;
+
+					if (isAutoDimensions && initialW != null && initialH != null) {
+						layerWidth = initialW;
+						layerHeight = initialH;
+					} else {
+						layerWidth = layerWidth ?? initialW;
+						layerHeight = layerHeight ?? initialH;
+					}
 				}
 			}
 
-			// Base layer properties with defaults
+			// Duration: Video uses metadata, Audio/Image uses FileData
 			const durationMs =
-				item.type !== "Text"
-					? ((item.data as FileData)?.entity?.duration ??
-						(item.data as FileData)?.processData?.duration ??
-						0)
-					: 0;
+				item.type === "Video" || item.type === "Audio"
+					? ((item.data as VirtualMediaData).metadata?.durationMs ?? 0)
+					: item.type !== "Text"
+						? ((item.data as FileData)?.entity?.duration ??
+							(item.data as FileData)?.processData?.duration ??
+							0)
+						: 0;
 
 			const calculatedDurationFrames =
 				(item.type === "Video" || item.type === "Audio") && durationMs > 0
 					? Math.ceil((durationMs / 1000) * FPS)
-					: DEFAULT_DURATION_FRAMES;
+					: 0; // Default to 0, let the layer or composition decide if it needs more
 
-			const base = {
-				scale: 1,
+			const layer: ExtendedLayer = {
+				...saved,
+				id: handleId,
+				scale: saved.scale ?? 1,
 				zIndex: saved.zIndex ?? ++maxZ,
-				startFrame: 0,
+				startFrame: saved.startFrame ?? 0,
 				durationInFrames: saved.durationInFrames ?? calculatedDurationFrames,
-				volume: 1,
+				volume: saved.volume ?? 1,
 				animations: saved.animations ?? [],
+				width: layerWidth ?? width,
+				height: layerHeight ?? height,
 				src,
 				text,
-				...saved,
-				x: saved.x ?? 0,
-				y: saved.y ?? 0,
-				rotation: saved.rotation ?? 0,
-				opacity: saved.opacity ?? 1,
-				id: saved.id ?? handleId,
-				inputHandleId: saved.inputHandleId ?? handleId,
+				virtualMedia,
+				lottieLoop: saved.lottieLoop,
 			};
 
 			if (item.type === "Text") {
 				layers.push({
-					...base,
+					...layer,
 					type: "Text",
 					fontSize: saved.fontSize ?? 60,
 					fontFamily: saved.fontFamily ?? "Inter",
 					fill: saved.fill ?? "#ffffff",
-					width: layerWidth,
-					height: layerHeight,
+					width: layerWidth ?? width,
+					height: layerHeight ?? height,
+					virtualMedia,
 				});
-			} else if (item.type === "Image" || item.type === "Video") {
+			} else if (
+				item.type === "Image" ||
+				item.type === "Video" ||
+				item.type === "SVG"
+			) {
 				layers.push({
-					...base,
-					type: item.type,
-					width: layerWidth,
-					height: layerHeight,
+					...layer,
+					type: item.type as any,
+					width: layerWidth ?? width,
+					height: layerHeight ?? height,
+					virtualMedia,
 					maxDurationInFrames:
 						item.type === "Video" && durationMs > 0
 							? calculatedDurationFrames
@@ -126,40 +180,45 @@ const VideoCompositorNodeComponent = memo((props: NodeProps) => {
 				});
 			} else if (item.type === "Audio") {
 				layers.push({
-					...base,
+					...layer,
 					type: "Audio",
 					height: 0,
 					width: 0,
 					maxDurationInFrames:
 						durationMs > 0 ? calculatedDurationFrames : undefined,
 				});
+			} else if (item.type === "Lottie") {
+				// Base maxDuration on either the fetched JSON metadata or derived duration
+				const lottieFrames = saved.lottieDurationMs
+					? Math.ceil((saved.lottieDurationMs / 1000) * FPS)
+					: durationMs > 0
+						? calculatedDurationFrames
+						: undefined;
+
+				layers.push({
+					...layer,
+					type: "Lottie",
+					width: layerWidth ?? width,
+					height: layerHeight ?? height,
+					maxDurationInFrames: lottieFrames,
+				});
 			}
 		}
 
-		// Sort layers by zIndex ascending for correct rendering order
 		layers.sort((a, b) => (a.zIndex ?? 0) - (b.zIndex ?? 0));
 
-		// Calculate total duration matching editor logic
 		const durationInFrames =
 			layers.length > 0
 				? Math.max(
-						DEFAULT_DURATION_FRAMES,
+						0,
 						...layers.map(
-							(l) =>
-								(l.startFrame ?? 0) +
-								(l.durationInFrames ?? DEFAULT_DURATION_FRAMES),
+							(l) => (l.startFrame ?? 0) + (l.durationInFrames ?? 0),
 						),
 					)
-				: DEFAULT_DURATION_FRAMES;
+				: 0;
 
 		return { layers, width, height, durationInFrames };
 	}, [node, inputs]);
-
-	// Memoize aspect ratio to prevent layout shifts
-	const aspectRatio = useMemo(() => {
-		if (!previewState.width || !previewState.height) return 16 / 9;
-		return previewState.width / previewState.height;
-	}, [previewState.width, previewState.height]);
 
 	useEffect(() => {
 		previewState?.layers.forEach((layer) => {
@@ -199,38 +258,15 @@ const VideoCompositorNodeComponent = memo((props: NodeProps) => {
 		<BaseNode selected={props.selected} id={props.id} dragging={props.dragging}>
 			<div className="flex flex-col w-full">
 				<div
-					className={cn(
-						"w-full overflow-hidden rounded bg-black/5 relative border border-border",
-					)}
+					className="relative"
 					style={{
-						aspectRatio: `${aspectRatio}`,
-						minHeight: hasInputs ? "120px" : "auto",
+						minHeight: hasInputs ? "120px" : "120px",
 					}}
 				>
-					{hasInputs ? (
-						<Player
-							acknowledgeRemotionLicense
-							component={CompositionScene}
-							inputProps={{
-								layers: previewState.layers,
-								viewportWidth: previewState.width,
-								viewportHeight: previewState.height,
-							}}
-							durationInFrames={previewState.durationInFrames}
-							fps={FPS}
-							compositionWidth={previewState.width}
-							compositionHeight={previewState.height}
-							style={{
-								width: "100%",
-								height: "100%",
-								objectFit: "contain",
-							}}
-							controls={true}
-							loop
-							autoPlay={false}
-						/>
+					{result && node ? (
+						<MediaContent node={node} />
 					) : (
-						<div className="absolute inset-0 flex items-center justify-center text-muted-foreground text-xs italic">
+						<div className="absolute inset-0 flex items-center justify-center text-muted-foreground text-xs italic border-b border-white/10 w-full h-full">
 							No input connected
 						</div>
 					)}

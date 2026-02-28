@@ -3,7 +3,7 @@ import { LLMNodeConfigSchema, LLMResultSchema } from "./shared/index.js";
 
 export { LLMNodeConfigSchema, LLMResultSchema };
 
-export default defineMetadata({
+export const metadata = defineMetadata({
 	type: "LLM",
 	displayName: "LLM",
 	description: "Prompt a large language model",

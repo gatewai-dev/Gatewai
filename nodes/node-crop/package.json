@@ -35,6 +35,7 @@
 		"@gatewai/db": "workspace:*",
 		"@gatewai/node-sdk": "workspace:*",
 		"@gatewai/react-store": "workspace:*",
+		"@gatewai/remotion-compositions": "workspace:*",
 		"@gatewai/ui-kit": "workspace:*",
 		"lucide-react": "^0.473.0",
 		"zod": "3.25.67"

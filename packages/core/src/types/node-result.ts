@@ -1,5 +1,6 @@
 import type { DataType, FileAsset } from "@gatewai/db";
 import z from "zod";
+import type { VirtualMediaData } from "./video/virtual-video.js";
 
 /**
  * Typing for non-terminal processing
@@ -36,11 +37,13 @@ export type DataForType<R extends DataType> = R extends "Text"
 		? number
 		: R extends "Boolean"
 			? boolean
-			: R extends "Image" | "Audio" | "Video"
+			: R extends "Image" | "SVG" | "Caption" | "Json"
 				? FileData
-				: R extends "Any"
-					? string | number | boolean | FileData
-					: never;
+				: R extends "Video" | "Audio" | "Lottie"
+					? VirtualMediaData
+					: R extends "Any"
+						? string | number | boolean | FileData | VirtualMediaData
+						: never;
 
 export const OutputItemSchema = z.object({
 	type: z.custom<DataType>(),
@@ -96,21 +99,17 @@ export type MultiOutputGeneric<T extends DataType> = {
 	outputs: [{ items: [OutputItem<T>] }];
 };
 
-export type AnyOutputItem =
-	| OutputItem<"Audio">
-	| OutputItem<"Text">
-	| OutputItem<"Boolean">
-	| OutputItem<"Image">
-	| OutputItem<"Video">
-	| OutputItem<"Number">;
-
 export type AnyOutputUnion =
 	| OutputItem<"Video">
 	| OutputItem<"Image">
 	| OutputItem<"Audio">
 	| OutputItem<"Text">
 	| OutputItem<"Number">
-	| OutputItem<"Boolean">;
+	| OutputItem<"Lottie">
+	| OutputItem<"Json">
+	| OutputItem<"Boolean">
+	| OutputItem<"SVG">
+	| OutputItem<"Caption">;
 
 export const AnyOutputUnionSchema = z.object({
 	type: z.custom<DataType>(),

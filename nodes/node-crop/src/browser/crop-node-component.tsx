@@ -1,18 +1,20 @@
 import { ResolveFileDataUrl } from "@gatewai/core/browser";
-import type { FileData } from "@gatewai/core/types";
+import type { FileData, VirtualMediaData } from "@gatewai/core/types";
 import {
 	BaseNode,
 	CanvasRenderer,
 	type NodeProps,
+	SVGRenderer,
+	useCanvasCtx,
 	useNodeResult,
+	VideoRenderer,
 } from "@gatewai/react-canvas";
 import {
 	makeSelectEdgesByTargetNodeId,
 	makeSelectNodeById,
-	updateNodeConfig,
-	useAppDispatch,
 	useAppSelector,
 } from "@gatewai/react-store";
+import { getActiveMediaMetadata } from "@gatewai/remotion-compositions";
 import {
 	Button,
 	cn,
@@ -32,7 +34,6 @@ import {
 import { memo, useCallback, useEffect, useMemo, useRef, useState } from "react";
 import type { CropNodeConfig } from "../shared/config.js";
 
-// ─── Global styles ────────────────────────────────────────────────────────────
 const GLOBAL_STYLES = `
   @keyframes cropFadeIn {
     from { opacity: 0; transform: scale(0.995); }
@@ -44,7 +45,6 @@ const GLOBAL_STYLES = `
   }
 `;
 
-// ─── Types ────────────────────────────────────────────────────────────────────
 type HandleType =
 	| "move"
 	| "resize-nw"
@@ -65,7 +65,6 @@ type DragState = {
 
 type AspectRatioPreset = { label: string; value: number | null };
 
-// ─── Constants ────────────────────────────────────────────────────────────────
 const ASPECT_RATIO_PRESETS: AspectRatioPreset[] = [
 	{ label: "Free", value: null },
 	{ label: "1:1", value: 1 },
@@ -90,22 +89,8 @@ const CURSOR: Record<HandleType, string> = {
 };
 
 const MIN_PCT = 5;
+const DEFAULT_SVG_SIZE = { w: 300, h: 169 };
 
-// ─── Ratio conversion helpers ─────────────────────────────────────────────────
-
-/**
- * Convert a pixel-space aspect ratio (w/h in real pixels) to percentage-space
- * (widthPct / heightPct).
- *
- * Because 1% of width covers (naturalWidth / 100) pixels, and 1% of height
- * covers (naturalHeight / 100) pixels:
- *
- *   pixelRatio = (widthPct * nw/100) / (heightPct * nh/100)
- *              = (widthPct / heightPct) * (nw / nh)
- *
- * Therefore:
- *   pctRatio = pixelRatio * (nh / nw)
- */
 function pixelRatioToPctRatio(
 	pixelRatio: number,
 	naturalSize: { w: number; h: number } | null,
@@ -116,10 +101,6 @@ function pixelRatioToPctRatio(
 	return pixelRatio * (naturalSize.h / naturalSize.w);
 }
 
-/**
- * Convert a percentage-space ratio back to pixel-space ratio.
- * Inverse of pixelRatioToPctRatio.
- */
 function pctRatioToPixelRatio(
 	pctRatio: number,
 	naturalSize: { w: number; h: number } | null,
@@ -130,29 +111,8 @@ function pctRatioToPixelRatio(
 	return pctRatio * (naturalSize.w / naturalSize.h);
 }
 
-// ─── Constrain ────────────────────────────────────────────────────────────────
-/**
- * Apply bounds + optional aspect-ratio lock.
- *
- * IMPORTANT: `ratio` here must be in **percentage space** (widthPct / heightPct),
- * NOT pixel space. Use `pixelRatioToPctRatio` before calling this function
- * whenever you have a pixel-space ratio.
- *
- * For ratio-locked resizes the invariant is that the "fixed" edge (opposite to
- * the dragged handle) must not move. The drag handler preserves this by
- * adjusting both position and size together (e.g. resize-nw: l += dx, w -= dx).
- * So l+w and t+h already encode the fixed anchor edges when we get here.
- *
- * Strategy:
- *   1. Enforce ratio from the driving axis (w for h/e-drags, h for n/s-drags).
- *   2. Reposition so the anchor edge stays put.
- *   3. If the result overflows the [0,100] canvas, uniformly scale the crop
- *      down until it fits, then re-anchor.
- *   4. Final position clamp so nothing goes outside the canvas.
- */
 function constrain(
 	crop: CropNodeConfig,
-	// percentage-space ratio (widthPct / heightPct), or null for free
 	pctRatio: number | null = null,
 	dragType: HandleType = "move",
 ): CropNodeConfig {
@@ -164,10 +124,8 @@ function constrain(
 	} = crop;
 
 	if (pctRatio !== null && dragType !== "move") {
-		// Which axis drives?
 		const heightDriven = dragType === "resize-n" || dragType === "resize-s";
 
-		// The drag handler preserves l+w for right-anchor drags and t+h for bottom-anchor drags.
 		const rightAnchor =
 			dragType === "resize-w" ||
 			dragType === "resize-nw" ||
@@ -177,11 +135,9 @@ function constrain(
 			dragType === "resize-nw" ||
 			dragType === "resize-ne";
 
-		// Capture the fixed edges before we mutate w / h.
 		const rightEdge = l + w;
 		const bottomEdge = t + h;
 
-		// Enforce ratio.
 		if (heightDriven) {
 			w = Math.max(MIN_PCT, h) * pctRatio;
 			h = Math.max(MIN_PCT, h);
@@ -190,15 +146,12 @@ function constrain(
 			h = w / pctRatio;
 		}
 
-		// Re-anchor position.
 		if (rightAnchor) l = rightEdge - w;
 		if (bottomAnchor) t = bottomEdge - h;
 
-		// Max available space from the anchor side.
 		const availW = rightAnchor ? rightEdge : 100 - l;
 		const availH = bottomAnchor ? bottomEdge : 100 - t;
 
-		// If the ratio-enforced crop overflows or is too small, scale uniformly.
 		const overflow = w > availW || h > availH;
 		const underflow = w < MIN_PCT || h < MIN_PCT;
 
@@ -212,12 +165,10 @@ function constrain(
 			if (bottomAnchor) t = bottomEdge - h;
 		}
 	} else {
-		// Unconstrained: simple clamp.
 		w = Math.min(100, Math.max(MIN_PCT, w));
 		h = Math.min(100, Math.max(MIN_PCT, h));
 	}
 
-	// Final position clamp — never let the crop escape the canvas.
 	l = Math.max(0, Math.min(100 - w, l));
 	t = Math.max(0, Math.min(100 - h, t));
 
@@ -238,7 +189,7 @@ interface CropConfigPanelProps {
 	onChange: (crop: CropNodeConfig) => void;
 	onAspectRatioChange: (preset: string) => void;
 	onToggleLock: () => void;
-	onReset: () => void;
+	isSVG?: boolean;
 }
 
 const CropConfigPanel = memo(
@@ -251,6 +202,7 @@ const CropConfigPanel = memo(
 		onChange,
 		onAspectRatioChange,
 		onToggleLock,
+		isSVG,
 	}: CropConfigPanelProps) => {
 		const pixelW = naturalWidth
 			? Math.round((crop.widthPercentage / 100) * naturalWidth)
@@ -272,7 +224,6 @@ const CropConfigPanel = memo(
 		}, [crop.widthPercentage, crop.heightPercentage, pixelW, pixelH]);
 
 		const handleDimensionChange = (axis: "w" | "h", val: number) => {
-			// Compute the current pixel-space ratio for lock propagation.
 			const currentPixelRatio =
 				naturalWidth && naturalHeight
 					? ((crop.widthPercentage / 100) * naturalWidth) /
@@ -286,7 +237,6 @@ const CropConfigPanel = memo(
 				setWInput(val);
 				newWPct = naturalWidth ? (val / naturalWidth) * 100 : val;
 				if (isLocked) {
-					// Maintain pixel ratio: newHpx = newWpx / pixelRatio
 					const newWpx = val;
 					const newHpx = newWpx / currentPixelRatio;
 					newHPct = naturalHeight ? (newHpx / naturalHeight) * 100 : newHpx;
@@ -296,10 +246,9 @@ const CropConfigPanel = memo(
 				setHInput(val);
 				newHPct = naturalHeight ? (val / naturalHeight) * 100 : val;
 				if (isLocked) {
-					// Maintain pixel ratio: newWpx = newHpx * pixelRatio
 					const newHpx = val;
 					const newWpx = newHpx * currentPixelRatio;
-					newWPct = naturalWidth ? (newWpx / naturalWidth) * 100 : newWpx;
+					newWPct = naturalWidth ? (newWpx / naturalWidth) * 100 : newWPct;
 					setWInput(Math.round(naturalWidth ? newWpx : newWPct));
 				}
 			}
@@ -340,6 +289,7 @@ const CropConfigPanel = memo(
 					min={1}
 					max={naturalWidth ?? 100}
 					className="w-20"
+					suffix={isSVG ? "%" : undefined}
 				/>
 				<DraggableNumberInput
 					label="Height"
@@ -349,6 +299,7 @@ const CropConfigPanel = memo(
 					min={1}
 					max={naturalHeight ?? 100}
 					className="w-20"
+					suffix={isSVG ? "%" : undefined}
 				/>
 
 				<Button
@@ -374,9 +325,6 @@ const CropConfigPanel = memo(
 	},
 );
 
-// ─────────────────────────────────────────────────────────────────────────────
-// CropOverlay
-// ─────────────────────────────────────────────────────────────────────────────
 interface CropOverlayProps {
 	crop: CropNodeConfig;
 	svgSize: { w: number; h: number };
@@ -395,7 +343,6 @@ const CropOverlay = memo(
 		naturalSize,
 		onStartDrag,
 	}: CropOverlayProps) => {
-		// Stable mask ID — one per component instance.
 		const maskId = useRef(
 			`cm-${Math.random().toString(36).slice(2, 9)}`,
 		).current;
@@ -419,12 +366,11 @@ const CropOverlay = memo(
 			h2: t + (h * 2) / 3,
 		};
 
-		// Convert physical pixels to SVG viewBox units (viewBox is 0–100 both axes).
 		const px = (n: number) => (n / svgSize.w) * 100;
 
-		const ARM = px(13); // corner L-arm length
-		const CORNER_HIT = px(13); // corner hit-area half-size
-		const EDGE_HIT = px(7); // border-line hit-area half-thickness
+		const ARM = px(13);
+		const CORNER_HIT = px(13);
+		const EDGE_HIT = px(7);
 
 		const cornerPath = (dir: "nw" | "ne" | "sw" | "se") => {
 			switch (dir) {
@@ -446,7 +392,6 @@ const CropOverlay = memo(
 			["resize-se", "se", x2, y2],
 		];
 
-		// Dimension badge label: px if we know naturalSize, else %.
 		const badgeLabel = naturalSize
 			? `${Math.round((w / 100) * naturalSize.w)} × ${Math.round((h / 100) * naturalSize.h)} px`
 			: `${Math.round(w)}% × ${Math.round(h)}%`;
@@ -454,256 +399,238 @@ const CropOverlay = memo(
 		const isMoveDrag = drag?.type === "move";
 
 		return (
-			<svg
-				viewBox="0 0 100 100"
-				preserveAspectRatio="none"
+			<div
 				className="absolute inset-0 w-full h-full pointer-events-none overflow-visible"
 				style={{
 					animation: "cropFadeIn 0.25s cubic-bezier(0.16,1,0.3,1) both",
 				}}
 			>
-				<defs>
-					<mask id={maskId}>
-						<rect x="0" y="0" width="100" height="100" fill="white" />
-						<rect x={x1} y={y1} width={w} height={h} fill="black" />
-					</mask>
-					<filter id="hShadow" x="-200%" y="-200%" width="500%" height="500%">
-						<feDropShadow
-							dx="0"
-							dy="0.4"
-							stdDeviation="1"
-							floodColor="rgba(0,0,0,0.65)"
-						/>
-					</filter>
-				</defs>
-
-				{/* ── Backdrop ─────────────────────────────────────── */}
-				<rect
-					x="0"
-					y="0"
-					width="100"
-					height="100"
-					fill="rgba(0,0,0,0.42)"
-					mask={`url(#${maskId})`}
-					className="pointer-events-none"
-				/>
-
-				{/* ── Rule-of-thirds ───────────────────────────────── */}
-				<g
-					className="pointer-events-none"
-					style={{
-						opacity: isDragging ? 0.28 : 0.1,
-						transition: "opacity 0.4s ease",
-					}}
+				<svg
+					viewBox="0 0 100 100"
+					preserveAspectRatio="none"
+					className="absolute inset-0 w-full h-full pointer-events-none overflow-visible"
 				>
-					<line
-						x1={thirds.v1}
-						y1={y1}
-						x2={thirds.v1}
-						y2={y2}
-						stroke="white"
-						strokeWidth="0.2"
+					<title>Crop box</title>
+					<defs>
+						<mask id={maskId}>
+							<rect x="0" y="0" width="100" height="100" fill="white" />
+							<rect x={x1} y={y1} width={w} height={h} fill="black" />
+						</mask>
+						<filter id="hShadow" x="-200%" y="-200%" width="500%" height="500%">
+							<feDropShadow
+								dx="0"
+								dy="0.4"
+								stdDeviation="1"
+								floodColor="rgba(0,0,0,0.65)"
+							/>
+						</filter>
+					</defs>
+
+					<rect
+						x="0"
+						y="0"
+						width="100"
+						height="100"
+						fill="rgba(0,0,0,0.42)"
+						mask={`url(#${maskId})`}
+						className="pointer-events-none"
 					/>
-					<line
-						x1={thirds.v2}
-						y1={y1}
-						x2={thirds.v2}
-						y2={y2}
-						stroke="white"
-						strokeWidth="0.2"
-					/>
-					<line
-						x1={x1}
-						y1={thirds.h1}
-						x2={x2}
-						y2={thirds.h1}
-						stroke="white"
-						strokeWidth="0.2"
-					/>
-					<line
-						x1={x1}
-						y1={thirds.h2}
-						x2={x2}
-						y2={thirds.h2}
-						stroke="white"
-						strokeWidth="0.2"
-					/>
-				</g>
 
-				{/* ── Crop border ───────────────────────────────────── */}
-				{/* Shadow stroke */}
-				<rect
-					x={x1}
-					y={y1}
-					width={w}
-					height={h}
-					fill="none"
-					stroke="rgba(0,0,0,0.25)"
-					strokeWidth="1.2"
-					className="pointer-events-none"
-				/>
-				{/* Primary stroke — intentionally thin */}
-				<rect
-					x={x1}
-					y={y1}
-					width={w}
-					height={h}
-					fill="none"
-					stroke="rgba(255,255,255,0.88)"
-					strokeWidth="0.4"
-					className="pointer-events-none"
-				/>
-
-				{/* ── Interior move hit-area ────────────────────────── */}
-				{/* Slightly inset so corner hit-areas take priority */}
-				<rect
-					x={x1 + CORNER_HIT}
-					y={y1 + CORNER_HIT}
-					width={Math.max(0, w - CORNER_HIT * 2)}
-					height={Math.max(0, h - CORNER_HIT * 2)}
-					fill="transparent"
-					style={{ cursor: isMoveDrag ? "grabbing" : "grab" }}
-					className="pointer-events-auto"
-					onPointerDown={(e) => onStartDrag(e, "move")}
-				/>
-
-				{/* ── Edge border hit-areas (draggable lines) ───────── */}
-				{/* N edge */}
-				<rect
-					x={x1 + CORNER_HIT}
-					y={y1 - EDGE_HIT}
-					width={Math.max(0, w - CORNER_HIT * 2)}
-					height={EDGE_HIT * 2}
-					fill="transparent"
-					style={{ cursor: CURSOR["resize-n"] }}
-					className="pointer-events-auto"
-					onPointerDown={(e) => onStartDrag(e, "resize-n")}
-				/>
-				{/* S edge */}
-				<rect
-					x={x1 + CORNER_HIT}
-					y={y2 - EDGE_HIT}
-					width={Math.max(0, w - CORNER_HIT * 2)}
-					height={EDGE_HIT * 2}
-					fill="transparent"
-					style={{ cursor: CURSOR["resize-s"] }}
-					className="pointer-events-auto"
-					onPointerDown={(e) => onStartDrag(e, "resize-s")}
-				/>
-				{/* E edge */}
-				<rect
-					x={x2 - EDGE_HIT}
-					y={y1 + CORNER_HIT}
-					width={EDGE_HIT * 2}
-					height={Math.max(0, h - CORNER_HIT * 2)}
-					fill="transparent"
-					style={{ cursor: CURSOR["resize-e"] }}
-					className="pointer-events-auto"
-					onPointerDown={(e) => onStartDrag(e, "resize-e")}
-				/>
-				{/* W edge */}
-				<rect
-					x={x1 - EDGE_HIT}
-					y={y1 + CORNER_HIT}
-					width={EDGE_HIT * 2}
-					height={Math.max(0, h - CORNER_HIT * 2)}
-					fill="transparent"
-					style={{ cursor: CURSOR["resize-w"] }}
-					className="pointer-events-auto"
-					onPointerDown={(e) => onStartDrag(e, "resize-w")}
-				/>
-
-				{/* ── Corner handles ────────────────────────────────── */}
-				{corners.map(([type, dir, hx, hy]) => (
-					<g key={type} className="pointer-events-auto">
-						{/* Shadow */}
-						<path
-							d={cornerPath(dir)}
-							fill="none"
-							stroke="rgba(0,0,0,0.45)"
-							strokeWidth="2.4"
-							strokeLinecap="round"
-							className="pointer-events-none"
-							filter="url(#hShadow)"
-						/>
-						{/* White arm */}
-						<path
-							d={cornerPath(dir)}
-							fill="none"
-							stroke="white"
-							strokeWidth="1.6"
-							strokeLinecap="round"
-							className="pointer-events-none"
-						/>
-						{/* Hit area */}
-						<rect
-							x={hx - CORNER_HIT}
-							y={hy - CORNER_HIT}
-							width={CORNER_HIT * 2}
-							height={CORNER_HIT * 2}
-							fill="transparent"
-							style={{ cursor: CURSOR[type] }}
-							className="pointer-events-auto"
-							onPointerDown={(e) => onStartDrag(e, type)}
-						/>
-					</g>
-				))}
-
-				{/* ── Dimension badge ────────────────────────────────── */}
-				{isDragging && (
 					<g
 						className="pointer-events-none"
 						style={{
-							animation: "badgePop 0.18s cubic-bezier(0.16,1,0.3,1) both",
+							opacity: isDragging ? 0.28 : 0.1,
+							transition: "opacity 0.4s ease",
 						}}
 					>
-						<rect
-							x={cx - 12}
-							y={y2 + 1.5}
-							width={24}
-							height={5.2}
-							rx="2"
-							fill="rgba(0,0,0,0.7)"
+						<line
+							x1={thirds.v1}
+							y1={y1}
+							x2={thirds.v1}
+							y2={y2}
+							stroke="white"
+							strokeWidth="0.2"
 						/>
-						<text
-							x={cx}
-							y={y2 + 5.2}
-							textAnchor="middle"
-							fill="rgba(255,255,255,0.9)"
-							fontSize="2.8"
-							fontFamily="-apple-system,'SF Pro Display',BlinkMacSystemFont,monospace"
-							fontWeight="500"
-							letterSpacing="0.02em"
-						>
-							{badgeLabel}
-						</text>
+						<line
+							x1={thirds.v2}
+							y1={y1}
+							x2={thirds.v2}
+							y2={y2}
+							stroke="white"
+							strokeWidth="0.2"
+						/>
+						<line
+							x1={x1}
+							y1={thirds.h1}
+							x2={x2}
+							y2={thirds.h1}
+							stroke="white"
+							strokeWidth="0.2"
+						/>
+						<line
+							x1={x1}
+							y1={thirds.h2}
+							x2={x2}
+							y2={thirds.h2}
+							stroke="white"
+							strokeWidth="0.2"
+						/>
 					</g>
+
+					<rect
+						x={x1}
+						y={y1}
+						width={w}
+						height={h}
+						fill="none"
+						stroke="rgba(0,0,0,0.25)"
+						strokeWidth="1.2"
+						className="pointer-events-none"
+					/>
+					<rect
+						x={x1}
+						y={y1}
+						width={w}
+						height={h}
+						fill="none"
+						stroke="rgba(255,255,255,0.88)"
+						strokeWidth="0.4"
+						className="pointer-events-none"
+					/>
+
+					<rect
+						x={x1 + CORNER_HIT}
+						y={y1 + CORNER_HIT}
+						width={Math.max(0, w - CORNER_HIT * 2)}
+						height={Math.max(0, h - CORNER_HIT * 2)}
+						fill="transparent"
+						style={{ cursor: isMoveDrag ? "grabbing" : "grab" }}
+						className="pointer-events-auto"
+						onPointerDown={(e) => onStartDrag(e, "move")}
+					/>
+
+					<rect
+						x={x1 + CORNER_HIT}
+						y={y1 - EDGE_HIT}
+						width={Math.max(0, w - CORNER_HIT * 2)}
+						height={EDGE_HIT * 2}
+						fill="transparent"
+						style={{ cursor: CURSOR["resize-n"] }}
+						className="pointer-events-auto"
+						onPointerDown={(e) => onStartDrag(e, "resize-n")}
+					/>
+					<rect
+						x={x1 + CORNER_HIT}
+						y={y2 - EDGE_HIT}
+						width={Math.max(0, w - CORNER_HIT * 2)}
+						height={EDGE_HIT * 2}
+						fill="transparent"
+						style={{ cursor: CURSOR["resize-s"] }}
+						className="pointer-events-auto"
+						onPointerDown={(e) => onStartDrag(e, "resize-s")}
+					/>
+					<rect
+						x={x2 - EDGE_HIT}
+						y={y1 + CORNER_HIT}
+						width={EDGE_HIT * 2}
+						height={Math.max(0, h - CORNER_HIT * 2)}
+						fill="transparent"
+						style={{ cursor: CURSOR["resize-e"] }}
+						className="pointer-events-auto"
+						onPointerDown={(e) => onStartDrag(e, "resize-e")}
+					/>
+					<rect
+						x={x1 - EDGE_HIT}
+						y={y1 + CORNER_HIT}
+						width={EDGE_HIT * 2}
+						height={Math.max(0, h - CORNER_HIT * 2)}
+						fill="transparent"
+						style={{ cursor: CURSOR["resize-w"] }}
+						className="pointer-events-auto"
+						onPointerDown={(e) => onStartDrag(e, "resize-w")}
+					/>
+
+					{corners.map(([type, dir, hx, hy]) => (
+						<g key={type} className="pointer-events-auto">
+							<path
+								d={cornerPath(dir)}
+								fill="none"
+								stroke="rgba(0,0,0,0.45)"
+								strokeWidth="2.4"
+								strokeLinecap="round"
+								className="pointer-events-none"
+								filter="url(#hShadow)"
+							/>
+							<path
+								d={cornerPath(dir)}
+								fill="none"
+								stroke="white"
+								strokeWidth="1.6"
+								strokeLinecap="round"
+								className="pointer-events-none"
+							/>
+							<rect
+								x={hx - CORNER_HIT}
+								y={hy - CORNER_HIT}
+								width={CORNER_HIT * 2}
+								height={CORNER_HIT * 2}
+								fill="transparent"
+								style={{ cursor: CURSOR[type] }}
+								className="pointer-events-auto"
+								onPointerDown={(e) => onStartDrag(e, type)}
+							/>
+						</g>
+					))}
+				</svg>
+
+				{isDragging && (
+					<div
+						className="absolute pointer-events-none flex items-center justify-center bg-black/70 text-white/90 font-medium tracking-wide"
+						style={{
+							left: `${cx}%`,
+							top: `calc(${y2}% + 8px)`,
+							transform: "translateX(-50%)",
+							padding: "4px 8px",
+							fontSize: "11px",
+							animation: "badgePop 0.18s cubic-bezier(0.16,1,0.3,1) both",
+							fontFamily:
+								"-apple-system, 'SF Pro Display', BlinkMacSystemFont, monospace",
+						}}
+					>
+						{badgeLabel}
+					</div>
 				)}
-			</svg>
+			</div>
 		);
 	},
 );
 
-// ─────────────────────────────────────────────────────────────────────────────
-// CropNodeComponent
-// ─────────────────────────────────────────────────────────────────────────────
 const DEFAULT_CROP: CropNodeConfig = {
-	leftPercentage: 10,
-	topPercentage: 10,
-	widthPercentage: 80,
-	heightPercentage: 80,
+	leftPercentage: 0,
+	topPercentage: 0,
+	widthPercentage: 100,
+	heightPercentage: 100,
 };
 
 const CropNodeComponent = memo((props: NodeProps) => {
-	const dispatch = useAppDispatch();
-
+	const { onNodeConfigUpdate } = useCanvasCtx();
 	const edges = useAppSelector(makeSelectEdgesByTargetNodeId(props.id));
 	const inputHandleId = useMemo(() => edges?.[0]?.targetHandleId, [edges]);
 	const { inputs } = useNodeResult(props.id);
-	const inputFileData = inputs[inputHandleId!]?.outputItem?.data as FileData;
-	const imageUrl = ResolveFileDataUrl(inputFileData);
+
+	const inputItem = inputs[inputHandleId!]?.outputItem;
+	const inputType = inputItem?.type as "Image" | "SVG" | "Video" | undefined;
+	const inputData = inputItem?.data;
+
+	const imageUrl =
+		inputType === "Image" || inputType === "SVG"
+			? ResolveFileDataUrl(inputData as FileData)
+			: null;
+	const inputMedia =
+		inputType === "Video" ? (inputData as VirtualMediaData) : null;
+
 	const node = useAppSelector(makeSelectNodeById(props.id));
-	const nodeConfig = node?.config as CropNodeConfig;
+	const nodeConfig = node?.config as CropNodeConfig | undefined;
 
 	const svgRef = useRef<HTMLDivElement>(null);
 	const latestCropRef = useRef<CropNodeConfig | null>(null);
@@ -718,43 +645,33 @@ const CropNodeComponent = memo((props: NodeProps) => {
 			nodeConfig?.heightPercentage ?? DEFAULT_CROP.heightPercentage,
 	}));
 	const [drag, setDrag] = useState<DragState | null>(null);
-	const [svgSize, setSvgSize] = useState({ w: 1, h: 1 });
+	const [svgSize, setSvgSize] = useState(DEFAULT_SVG_SIZE);
 	const [aspectPreset, setAspectPreset] = useState("Free");
 	const [naturalSize, setNaturalSize] = useState<{
 		w: number;
 		h: number;
 	} | null>(null);
-
-	// customRatio: stored in **pixel space** (real px width / real px height).
-	// Non-null only when preset is "Free" and the user has manually locked.
 	const [customRatio, setCustomRatio] = useState<number | null>(null);
 
-	/**
-	 * effectiveRatio — the desired aspect ratio in **pixel space**.
-	 * null  → free (unconstrained)
-	 * number → enforce this pixel-space ratio while dragging / on preset change
-	 */
+	const sourceSize = useMemo(() => {
+		if (inputType === "Video" && inputMedia) {
+			const activeMeta = getActiveMediaMetadata(inputMedia);
+			const { width: w, height: h } = activeMeta;
+			if (!w || !h) return null;
+			return { w, h };
+		}
+		return naturalSize;
+	}, [inputType, inputMedia, naturalSize]);
+
 	const effectiveRatio = useMemo<number | null>(() => {
 		const preset = ASPECT_RATIO_PRESETS.find((p) => p.label === aspectPreset);
 		return preset?.value ?? customRatio ?? null;
 	}, [aspectPreset, customRatio]);
 
-	/**
-	 * effectivePctRatio — effectiveRatio converted to **percentage space**.
-	 *
-	 * The `constrain` function works purely in percentage coordinates
-	 * (0–100 both axes).  Since the image is typically not square, a 1:1 pixel
-	 * crop does NOT correspond to equal widthPct / heightPct values.
-	 *
-	 * Conversion:  pctRatio = pixelRatio * (naturalHeight / naturalWidth)
-	 *
-	 * This is the value that must be passed to `constrain` and used when
-	 * computing new crop dimensions from a pixel ratio preset.
-	 */
 	const effectivePctRatio = useMemo<number | null>(() => {
 		if (effectiveRatio === null) return null;
-		return pixelRatioToPctRatio(effectiveRatio, naturalSize);
-	}, [effectiveRatio, naturalSize]);
+		return pixelRatioToPctRatio(effectiveRatio, sourceSize);
+	}, [effectiveRatio, sourceSize]);
 
 	const isLocked = effectiveRatio !== null;
 
@@ -762,7 +679,6 @@ const CropNodeComponent = memo((props: NodeProps) => {
 		latestCropRef.current = crop;
 	}, [crop]);
 
-	// Sync external config changes into local state (e.g. undo/redo).
 	useEffect(() => {
 		if (nodeConfig) {
 			setCrop({
@@ -774,7 +690,6 @@ const CropNodeComponent = memo((props: NodeProps) => {
 		}
 	}, [nodeConfig]);
 
-	// Observe container size for accurate px↔% translation during drag.
 	useEffect(() => {
 		if (!svgRef.current) return;
 		const ro = new ResizeObserver(([entry]) => {
@@ -786,9 +701,8 @@ const CropNodeComponent = memo((props: NodeProps) => {
 	}, []);
 
 	const updateConfig = useCallback(
-		(c: CropNodeConfig) =>
-			dispatch(updateNodeConfig({ id: props.id, newConfig: c })),
-		[dispatch, props.id],
+		(c: CropNodeConfig) => onNodeConfigUpdate({ id: props.id, newConfig: c }),
+		[props.id, onNodeConfigUpdate],
 	);
 
 	const handleAspectRatioChange = useCallback(
@@ -803,22 +717,16 @@ const CropNodeComponent = memo((props: NodeProps) => {
 			const p = ASPECT_RATIO_PRESETS.find((ap) => ap.label === preset);
 			if (!p?.value) return;
 
-			// pixelRatio is the desired real-pixel aspect ratio (e.g. 1 for 1:1).
 			const pixelRatio = p.value;
-
-			// pctRatio is the ratio in percentage space — accounts for the image's
-			// own non-square aspect so the crop rectangle looks correct on screen.
-			const pctRatio = pixelRatioToPctRatio(pixelRatio, naturalSize);
+			const pctRatio = pixelRatioToPctRatio(pixelRatio, sourceSize);
 
 			setCrop((prev) => {
 				const cx = prev.leftPercentage + prev.widthPercentage / 2;
 				const cy = prev.topPercentage + prev.heightPercentage / 2;
 
-				// Keep current width, derive height from the percentage-space ratio.
 				let newW = prev.widthPercentage;
 				let newH = newW / pctRatio;
 
-				// If height would overflow, clamp via height and recompute width.
 				if (newH > 100) {
 					newH = 100;
 					newW = newH * pctRatio;
@@ -838,35 +746,23 @@ const CropNodeComponent = memo((props: NodeProps) => {
 				return next;
 			});
 		},
-		[updateConfig, naturalSize],
+		[updateConfig, sourceSize],
 	);
 
 	const handleToggleLock = useCallback(() => {
 		if (aspectPreset !== "Free") {
-			// Preset active → unlock → switch to Free.
 			setAspectPreset("Free");
 			setCustomRatio(null);
 		} else if (customRatio !== null) {
-			// Free + locked → unlock.
 			setCustomRatio(null);
 		} else {
-			// Free + unlocked → lock to current crop ratio.
-			// Store in pixel space so it's consistent with preset values.
 			const pixelRatio = pctRatioToPixelRatio(
 				crop.widthPercentage / crop.heightPercentage,
-				naturalSize,
+				sourceSize,
 			);
 			setCustomRatio(pixelRatio);
 		}
-	}, [aspectPreset, customRatio, crop, naturalSize]);
-
-	const handleReset = useCallback(() => {
-		const next = { ...DEFAULT_CROP };
-		setCrop(next);
-		updateConfig(next);
-		setAspectPreset("Free");
-		setCustomRatio(null);
-	}, [updateConfig]);
+	}, [aspectPreset, customRatio, crop, sourceSize]);
 
 	const startDrag = useCallback(
 		(e: React.PointerEvent, type: HandleType) => {
@@ -883,7 +779,6 @@ const CropNodeComponent = memo((props: NodeProps) => {
 		[crop],
 	);
 
-	// Global pointer handlers — attached only while dragging.
 	useEffect(() => {
 		if (!drag) return;
 
@@ -893,7 +788,6 @@ const CropNodeComponent = memo((props: NodeProps) => {
 			const dx = ((e.clientX - drag.startX) / svgSize.w) * 100;
 			const dy = ((e.clientY - drag.startY) / svgSize.h) * 100;
 
-			// Apply raw drag delta.
 			const c: CropNodeConfig = { ...drag.startCrop };
 			switch (drag.type) {
 				case "move":
@@ -936,8 +830,6 @@ const CropNodeComponent = memo((props: NodeProps) => {
 					break;
 			}
 
-			// Use effectivePctRatio (percentage-space ratio) — NOT effectiveRatio
-			// (pixel-space ratio) — so ratio is enforced correctly for non-square images.
 			const next = constrain(c, effectivePctRatio, drag.type);
 			setCrop(next);
 		};
@@ -955,22 +847,64 @@ const CropNodeComponent = memo((props: NodeProps) => {
 		};
 	}, [drag, svgSize, updateConfig, effectivePctRatio]);
 
+	const showMedia = inputType === "Video" && inputMedia;
+
+	const isSVGFileUrl = imageUrl?.toLowerCase().includes(".svg") ?? false;
+	const isMimeTypeSVG =
+		(inputData as FileData)?.entity?.mimeType === "image/svg+xml";
+
+	const isActualSVG = inputType === "SVG" || isSVGFileUrl || isMimeTypeSVG;
+	const isImage = inputType === "Image" && !isActualSVG;
+	const isSVG = isActualSVG;
+
+	const showImage = isImage && imageUrl;
+	const showSVG = isSVG && imageUrl;
+
+	const videoOverlay = showMedia ? (
+		<CropOverlay
+			crop={crop}
+			svgSize={svgSize}
+			isDragging={drag !== null}
+			drag={drag}
+			naturalSize={sourceSize}
+			onStartDrag={startDrag}
+		/>
+	) : undefined;
+
 	return (
 		<BaseNode selected={props.selected} id={props.id} dragging={props.dragging}>
 			<style>{GLOBAL_STYLES}</style>
 
 			<div className="select-none rounded-xl overflow-hidden bg-card border border-border">
-				{/* ── Image + overlay ──────────────────────────────── */}
 				<div
 					ref={svgRef}
-					className={cn("relative w-full bg-black/20", { "h-64": !imageUrl })}
-					style={{ minHeight: imageUrl ? undefined : "12rem" }}
+					className={cn("relative w-full media-container", {
+						"h-64": !showImage && !showMedia && !showSVG,
+					})}
+					style={{
+						minHeight: showImage || showMedia || showSVG ? undefined : "12rem",
+					}}
 				>
-					{imageUrl && (
+					{showMedia && (
+						<VideoRenderer
+							virtualMedia={inputMedia}
+							durationMs={
+								getActiveMediaMetadata(inputMedia!).durationMs ?? undefined
+							}
+							controls={true}
+							className="rounded-none w-full h-full"
+							overlay={videoOverlay}
+						/>
+					)}
+
+					{showImage && (
 						<>
 							<div className="overflow-hidden w-full h-full">
-								<CanvasRenderer imageUrl={imageUrl} />
-								{/* Hidden img to read naturalWidth/Height */}
+								<CanvasRenderer
+									imageUrl={imageUrl}
+									width={sourceSize ? sourceSize.w : undefined}
+									height={sourceSize ? sourceSize.h : undefined}
+								/>
 								<img
 									ref={imgRef}
 									src={imageUrl}
@@ -988,37 +922,56 @@ const CropNodeComponent = memo((props: NodeProps) => {
 								svgSize={svgSize}
 								isDragging={drag !== null}
 								drag={drag}
-								naturalSize={naturalSize}
+								naturalSize={sourceSize}
 								onStartDrag={startDrag}
 							/>
 						</>
 					)}
 
-					{!imageUrl && (
+					{showSVG && (
+						<>
+							<div className="overflow-hidden w-full h-full">
+								<SVGRenderer
+									imageUrl={imageUrl}
+									width={sourceSize ? sourceSize.w : undefined}
+									height={sourceSize ? sourceSize.h : undefined}
+								/>
+							</div>
+							<CropOverlay
+								crop={crop}
+								svgSize={svgSize}
+								isDragging={drag !== null}
+								drag={drag}
+								naturalSize={sourceSize}
+								onStartDrag={startDrag}
+							/>
+						</>
+					)}
+
+					{!showImage && !showMedia && !showSVG && (
 						<div className="absolute inset-0 flex items-center justify-center text-muted-foreground/40 text-xs tracking-wide">
-							No image connected
+							No input connected
 						</div>
 					)}
 				</div>
 
-				{/* ── Config panel ─────────────────────────────────── */}
 				<CropConfigPanel
 					crop={crop}
 					aspectRatioPreset={aspectPreset}
 					isLocked={isLocked}
-					naturalWidth={naturalSize?.w}
-					naturalHeight={naturalSize?.h}
+					naturalWidth={sourceSize?.w}
+					naturalHeight={sourceSize?.h}
+					isSVG={isSVG}
 					onChange={(next) => {
 						setCrop(next);
 						updateConfig(next);
 					}}
 					onAspectRatioChange={handleAspectRatioChange}
 					onToggleLock={handleToggleLock}
-					onReset={handleReset}
 				/>
 			</div>
 		</BaseNode>
 	);
 });
 
-export { CropNodeComponent, CropConfigPanel };
+export { CropNodeComponent };

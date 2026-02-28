@@ -1,20 +1,37 @@
+import type { VirtualMediaData } from "@gatewai/core/types";
+import type { ReactNode } from "react";
 import { memo } from "react";
-import { MediaShell, SharedControlBar } from "../media-chrome";
+import { MediaPlayer } from "../remotion-player";
 
-const VideoRenderer = memo(({ src }: { src: string }) => {
-	return (
-		<MediaShell>
-			{/** biome-ignore lint/a11y/useMediaCaption: No caption exists */}
-			<video
-				slot="media"
-				src={src}
-				preload="metadata"
-				playsInline
-				className="w-full h-full bg-transparent"
-			/>
-			<SharedControlBar />
-		</MediaShell>
-	);
-});
+const VideoRenderer = memo(
+	({
+		durationMs,
+		virtualMedia,
+		controls,
+		className,
+		children,
+		overlay,
+	}: {
+		durationMs?: number;
+		virtualMedia?: VirtualMediaData;
+		controls?: boolean;
+		className?: string;
+		children?: ReactNode;
+		overlay?: ReactNode;
+	}) => {
+		return (
+			<MediaPlayer
+				virtualMedia={virtualMedia}
+				type="Video"
+				controls={controls}
+				durationMs={durationMs}
+				className={className}
+				overlay={overlay}
+			>
+				{children}
+			</MediaPlayer>
+		);
+	},
+);
 
 export { VideoRenderer };

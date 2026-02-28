@@ -1,31 +1,42 @@
 import assert from "node:assert";
 import { ENV_CONFIG, type StorageService } from "@gatewai/core";
 import { container, TOKENS } from "@gatewai/core/di";
-import type { FileData, MediaService, NodeResult } from "@gatewai/core/types";
+import type {
+	FileData,
+	MediaService,
+	NodeResult,
+	VirtualMediaData,
+} from "@gatewai/core/types";
 import { type Node, prisma, type TaskBatch } from "@gatewai/db";
 import type { APIRunResponse } from "./schemas.js";
 
 type BatchResult = APIRunResponse["result"];
 
-const isOutputItemFileData = (
-	data: string | number | boolean | FileData,
-): data is FileData => {
-	return typeof data === "object";
+const isOutputItemFileData = (data: any): data is FileData => {
+	return typeof data === "object" && !("source" in data);
 };
 
-async function overrideFileResult(data: FileData) {
-	if (data.processData) {
-		return data.processData.dataUrl;
+const isOutputItemVirtualMediaData = (data: any): data is VirtualMediaData => {
+	return typeof data === "object" && "source" in data;
+};
+
+async function overrideFileResult(data: FileData | VirtualMediaData) {
+	const processData =
+		"source" in data ? data.source.processData : data.processData;
+	const entity = "source" in data ? data.source.entity : data.entity;
+
+	if (processData?.dataUrl) {
+		return processData.dataUrl;
 	}
-	if (data.entity) {
+	if (entity) {
 		const storage = container.get<StorageService>(TOKENS.STORAGE);
 		const media = container.get<MediaService>(TOKENS.MEDIA);
 
 		const buffer = await storage.getFromStorage(
-			data.entity.key,
+			entity.key,
 			ENV_CONFIG.GCS_ASSETS_BUCKET,
 		);
-		const dataUrl = media.bufferToDataUrl(buffer, data.entity.mimeType);
+		const dataUrl = media.bufferToDataUrl(buffer, entity.mimeType);
 		return dataUrl;
 	}
 }
@@ -85,7 +96,10 @@ export async function resolveBatchResult(
 
 		let outputData: string | number | boolean | undefined;
 
-		if (isOutputItemFileData(outputItem.data)) {
+		if (
+			isOutputItemFileData(outputItem.data) ||
+			isOutputItemVirtualMediaData(outputItem.data)
+		) {
 			outputData = await overrideFileResult(outputItem.data);
 		} else {
 			outputData = outputItem.data;

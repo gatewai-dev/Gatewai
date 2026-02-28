@@ -1,0 +1,55 @@
+{
+	"name": "@gatewai/remotion-compositions",
+	"version": "0.0.1",
+	"private": true,
+	"type": "module",
+	"sideEffects": false,
+	"license": "MIT",
+	"module": "./dist/index.mjs",
+	"types": "./dist/index.d.mts",
+	"exports": {
+		".": {
+			"types": "./dist/index.d.mts",
+			"development": "./src/index.ts",
+			"import": "./dist/index.mjs",
+			"default": "./dist/index.mjs"
+		},
+		"./server": {
+			"types": "./dist/server.d.mts",
+			"development": "./src/server.ts",
+			"import": "./dist/server.mjs",
+			"default": "./dist/server.mjs"
+		},
+		"./browser": {
+			"types": "./dist/browser.d.mts",
+			"development": "./src/browser.ts",
+			"import": "./dist/browser.mjs",
+			"default": "./dist/browser.mjs"
+		}
+	},
+	"files": [
+		"dist/**"
+	],
+	"scripts": {
+		"build": "tsdown",
+		"dev": "tsdown --watch",
+		"clean": "rm -rf .turbo && rm -rf node_modules && rm -rf dist"
+	},
+	"devDependencies": {
+		"@gatewai/core": "workspace:*",
+		"@gatewai/tsconfig": "workspace:*",
+		"@types/react": "^19.2.4",
+		"tsdown": "^0.19.0",
+		"typescript": "5.5.4"
+	},
+	"peerDependencies": {
+		"@remotion/media": "*",
+		"lottie-web": "*",
+		"zod": "^3.23.8",
+		"@remotion/lottie": "*",
+		"@remotion/web-renderer": "*",
+		"@remotion/three": "*",
+		"react": "^19.2.4",
+		"remotion": "*"
+	}
+}

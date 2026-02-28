@@ -807,7 +807,7 @@ export class NodeGraphProcessor extends EventEmitter implements NodeProcessor {
 				data: node.data,
 				context,
 			});
-
+			console.log({ result });
 			if (signal.aborted) throw new Error("Aborted");
 
 			state.result = result;

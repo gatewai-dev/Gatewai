@@ -28,9 +28,10 @@ export const CompositorLayerSchema = BaseLayerSchema.merge(PositionSchema)
 	.merge(CornerRadiusSchema)
 	.merge(PaddingSchema)
 	.extend({
-		type: z.enum(["Text", "Image"]),
+		type: z.enum(["Text", "Image", "SVG"]),
 		align: z.string().optional(),
 		verticalAlign: z.string().optional(),
+		autoDimensions: z.boolean().optional().default(true),
 	})
 	.strict();
 

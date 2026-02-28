@@ -9,6 +9,8 @@ import {
 	ContextMenu,
 	ContextMenuContent,
 	ContextMenuItem,
+	ContextMenuLabel,
+	ContextMenuSeparator,
 	ContextMenuTrigger,
 	Tooltip,
 	TooltipContent,
@@ -361,14 +363,35 @@ const NodeHandle = memo(
 						)}
 					</div>
 				</ContextMenuTrigger>
-				<ContextMenuContent className="w-35">
-					<ContextMenuItem
-						disabled={handle.required || !isTarget}
-						onSelect={handleDelete}
-					>
-						<TrashIcon className="mr-1 h-4 w-4" />
-						<span className="text-xs">Delete Handle</span>
-					</ContextMenuItem>
+				<ContextMenuContent className="w-40">
+					<ContextMenuLabel className="text-xs font-semibold text-muted-foreground px-2 py-1.5 pointer-events-none">
+						{handle.type === "Input" ? "Accepted" : "Output"} Types
+					</ContextMenuLabel>
+					{handle.dataTypes.map((type) => {
+						const bgColor = dataTypeColors[type]?.hex || DEFAULT_COLOR;
+						return (
+							<ContextMenuItem
+								key={type}
+								className="flex items-center gap-2 !opacity-100"
+								disabled
+							>
+								<div
+									className="w-3 h-3 rounded-sm border border-border/50"
+									style={{ backgroundColor: bgColor }}
+								/>
+								<span className="text-xs font-medium">{type}</span>
+							</ContextMenuItem>
+						);
+					})}
+					{isTarget && !handle.required && (
+						<>
+							<ContextMenuSeparator />
+							<ContextMenuItem onSelect={handleDelete}>
+								<TrashIcon className="mr-1 h-4 w-4 text-destructive" />
+								<span className="text-xs text-destructive">Delete Handle</span>
+							</ContextMenuItem>
+						</>
+					)}
 				</ContextMenuContent>
 			</ContextMenu>
 		);

@@ -1,4 +1,5 @@
 import { createContext, type ReactNode, useContext, useState } from "react";
+import { usePersistentState } from "../../lib/persistent-state";
 
 interface NodePaletteContextType {
 	searchQuery: string;
@@ -13,7 +14,10 @@ const NodePaletteContext = createContext<NodePaletteContextType | undefined>(
 
 export function NodePaletteProvider({ children }: { children: ReactNode }) {
 	const [searchQuery, setSearchQuery] = useState("");
-	const [isCollapsed, setIsCollapsed] = useState(false);
+	const [isCollapsed, setIsCollapsed] = usePersistentState(
+		"node-palette-collapsed",
+		false,
+	);
 
 	return (
 		<NodePaletteContext.Provider

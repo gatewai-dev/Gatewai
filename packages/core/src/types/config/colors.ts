@@ -44,4 +44,32 @@ export const dataTypeColors: Record<
 		text: "text-yellow-500",
 		border: "border-yellow-500",
 	},
+	Lottie: {
+		bg: "bg-fuchsia-500",
+		stroke: "stroke-fuchsia-500",
+		hex: "#d946ef",
+		text: "text-fuchsia-500",
+		border: "border-fuchsia-500",
+	},
+	Json: {
+		bg: "bg-indigo-500",
+		stroke: "stroke-indigo-500",
+		hex: "#6366f1",
+		text: "text-indigo-500",
+		border: "border-indigo-500",
+	},
+	SVG: {
+		bg: "bg-lime-500",
+		stroke: "stroke-lime-500",
+		hex: "#84cc16",
+		text: "text-lime-500",
+		border: "border-lime-500",
+	},
+	Caption: {
+		bg: "bg-rose-500",
+		stroke: "stroke-rose-500",
+		hex: "#f43f5e",
+		text: "text-rose-500",
+		border: "border-rose-500",
+	},
 };

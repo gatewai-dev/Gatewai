@@ -18,7 +18,7 @@ export default defineMetadata({
 	isTransient: false,
 	variableInputs: {
 		enabled: true,
-		dataTypes: ["Text", "Image"],
+		dataTypes: ["Text", "Image", "SVG"],
 	},
 	handles: {
 		inputs: [],

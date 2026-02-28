@@ -2,6 +2,7 @@ import {
 	createOutputItemSchema,
 	FileDataSchema,
 	SingleOutputGenericSchema,
+	VirtualMediaDataSchema,
 } from "@gatewai/core/types";
 import { z } from "zod";
 
@@ -21,3 +22,12 @@ export const CropResultSchema = SingleOutputGenericSchema(
 );
 
 export type CropResult = z.infer<typeof CropResultSchema>;
+
+export const VideoCropResultSchema = SingleOutputGenericSchema(
+	z.union([
+		createOutputItemSchema(z.literal("Video"), VirtualMediaDataSchema),
+		createOutputItemSchema(z.literal("Audio"), VirtualMediaDataSchema),
+	]),
+);
+
+export type VideoCropResult = z.infer<typeof VideoCropResultSchema>;

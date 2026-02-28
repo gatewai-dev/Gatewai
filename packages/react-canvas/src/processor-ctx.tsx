@@ -1,5 +1,9 @@
-import { GetAssetEndpoint, isEqual } from "@gatewai/core";
-import { getEnv, ResolveFileDataUrl } from "@gatewai/core/browser";
+import { isEqual } from "@gatewai/core";
+import {
+	GetAssetEndpoint,
+	getEnv,
+	ResolveFileDataUrl,
+} from "@gatewai/core/browser";
 import type { FileData, NodeResult } from "@gatewai/core/types";
 import {
 	makeSelectAllEdges,
@@ -283,18 +287,47 @@ export function useNodePreview(nodeId: string) {
 		const isTerminalNode = node?.template?.isTerminalNode;
 		const shouldHidePreview = !isTerminalNode && hasInvalidInput;
 
-		const outputItem = result?.outputs?.[result?.selectedOutputIndex]?.items[0];
-		const inputFileData = outputItem?.data as FileData;
+		const outputItem =
+			result?.outputs?.[result?.selectedOutputIndex ?? 0]?.items?.[0];
 		const baseUrl = getEnv("VITE_BASE_URL");
 		if (!baseUrl || typeof baseUrl !== "string") {
 			throw new Error("Invalid base url");
 		}
 
-		const mediaUrl =
-			inputFileData?.processData?.dataUrl ??
-			(inputFileData?.entity
-				? GetAssetEndpoint(baseUrl, inputFileData.entity)
-				: null);
+		let mediaUrl: string | null = null;
+
+		if (outputItem) {
+			if (
+				outputItem.type === "Video" ||
+				outputItem.type === "Audio" ||
+				outputItem.type === "Lottie" ||
+				(outputItem.data &&
+					typeof outputItem.data === "object" &&
+					"operation" in outputItem.data)
+			) {
+				const vv =
+					outputItem.data as import("@gatewai/core/types").VirtualMediaData;
+
+				// Helper to find the source URL locally avoiding an extra import loop
+				const findSourceUrl = (v: any): string | null => {
+					if (v?.operation?.op === "source") {
+						const source = v.operation.source;
+						if (source?.entity)
+							return GetAssetEndpoint(source.entity) as string;
+						return source?.processData?.dataUrl ?? null;
+					}
+					if (v?.children?.length > 0) return findSourceUrl(v.children[0]);
+					return null;
+				};
+
+				mediaUrl = findSourceUrl(vv);
+			} else {
+				const fileData = outputItem.data as FileData;
+				mediaUrl =
+					fileData?.processData?.dataUrl ??
+					(fileData?.entity ? GetAssetEndpoint(fileData.entity) : null);
+			}
+		}
 
 		return {
 			mediaUrl: shouldHidePreview ? null : mediaUrl,
