@@ -104,7 +104,7 @@ const LottieFromUrl: React.FC<LottieFromUrlProps> = ({
 				}}
 			/>
 		);
-	console.log({ animationData });
+
 	return (
 		<Lottie
 			animationData={animationData}

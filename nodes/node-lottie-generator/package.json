@@ -2,6 +2,9 @@
 	"name": "@gatewai/node-lottie-generator",
 	"version": "0.0.0",
 	"private": true,
+	"gatewai": {
+		"enabled": false
+	},
 	"type": "module",
 	"module": "./dist/index.mjs",
 	"types": "./dist/index.d.mts",
