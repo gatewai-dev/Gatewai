@@ -1,4 +1,4 @@
-import { GetAssetEndpoint } from "@gatewai/core";
+import { GetAssetEndpointBackend } from "@gatewai/core";
 import type {
 	FileData,
 	IPixiProcessor,
@@ -143,7 +143,7 @@ export class ServerMediaService implements MediaService {
 	async getImageBuffer(imageInput: FileData): Promise<Buffer> {
 		const urlToUse =
 			(imageInput.processData?.dataUrl ?? imageInput?.entity)
-				? GetAssetEndpoint(this.baseUrl, imageInput.entity)
+				? GetAssetEndpointBackend(this.baseUrl, imageInput.entity)
 				: null;
 
 		if (!urlToUse) {
@@ -175,7 +175,7 @@ export class ServerMediaService implements MediaService {
 
 		if (data.entity) {
 			const fileAsset = data.entity;
-			return GetAssetEndpoint(this.baseUrl, fileAsset);
+			return GetAssetEndpointBackend(this.baseUrl, fileAsset);
 		}
 
 		return null;

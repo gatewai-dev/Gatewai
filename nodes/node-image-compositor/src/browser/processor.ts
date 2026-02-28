@@ -14,19 +14,29 @@ import {
 } from "../shared/config.js";
 import type { CompositorResult } from "../shared/index.js";
 
+// ─── Type helpers ─────────────────────────────────────────────────────────────
+
+type RasterType = "Image" | "SVG";
+type LayerInputType = RasterType | "Text";
+
+const isRasterType = (type: string): type is RasterType =>
+	type === "Image" || type === "SVG";
+
+// ─────────────────────────────────────────────────────────────────────────────
+
 const getConnectedInputDataValue = (
 	inputs: Record<string, ConnectedInput>,
 	handleId: string,
-): { type: "Image" | "Text"; value: string } | null => {
+): { type: LayerInputType; value: string } | null => {
 	const input = inputs[handleId];
 	if (!input || !input.connectionValid || !input.outputItem) return null;
 
-	if (input.outputItem.type === "Image") {
+	if (isRasterType(input.outputItem.type)) {
 		const fileData = input.outputItem.data as FileData;
 		const url = fileData?.entity
 			? GetAssetEndpoint(fileData.entity)
 			: fileData?.processData?.dataUrl;
-		if (url) return { type: "Image", value: url };
+		if (url) return { type: input.outputItem.type as RasterType, value: url };
 	} else if (input.outputItem.type === "Text") {
 		const text = input.outputItem.data;
 		if (text !== undefined) return { type: "Text", value: String(text) };
@@ -45,17 +55,12 @@ export class ImageCompositorBrowserProcessor implements IBrowserProcessor {
 		const validatedConfig = CompositorNodeConfigSchema.parse(node.config);
 		const inputDataMap: Record<
 			string,
-			{ type: "Image" | "Text"; value: string }
+			{ type: LayerInputType; value: string }
 		> = {};
 
-		Object.entries(inputs).forEach(([inputHandleId]) => {
+		Object.keys(inputs).forEach((inputHandleId) => {
 			const data = getConnectedInputDataValue(inputs, inputHandleId);
-			if (data && (data.type === "Image" || data.type === "Text")) {
-				inputDataMap[inputHandleId] = data as {
-					type: "Image" | "Text";
-					value: string;
-				};
-			}
+			if (data) inputDataMap[inputHandleId] = data;
 		});
 
 		const result = await processCompositor(
@@ -92,9 +97,50 @@ export class ImageCompositorBrowserProcessor implements IBrowserProcessor {
 	}
 }
 
+// ─── Raster rendering helper ──────────────────────────────────────────────────
+
+/**
+ * Loads a raster source (Image or SVG) into a Konva.Image node.
+ * SVGs are loaded identically to raster images — browsers render both natively
+ * via HTMLImageElement; Konva is agnostic to the underlying format.
+ */
+const loadRasterNode = (
+	url: string,
+	layerConfig: CompositorLayer,
+): Promise<Konva.Image> =>
+	new Promise((resolve, reject) => {
+		const img = new Image();
+		img.crossOrigin = "Anonymous";
+		img.onload = () => {
+			resolve(
+				new Konva.Image({
+					image: img,
+					x: layerConfig.x ?? 0,
+					y: layerConfig.y ?? 0,
+					opacity: layerConfig.opacity ?? 1,
+					width: layerConfig.width ?? img.width,
+					height: layerConfig.height ?? img.height,
+					rotation: layerConfig.rotation ?? 0,
+					stroke: layerConfig.stroke,
+					strokeWidth:
+						layerConfig.strokeWidth ?? COMPOSITOR_DEFAULTS.STROKE_WIDTH,
+					cornerRadius:
+						layerConfig.cornerRadius ?? COMPOSITOR_DEFAULTS.CORNER_RADIUS,
+					globalCompositeOperation:
+						(layerConfig.blendMode as GlobalCompositeOperation) ??
+						"source-over",
+				}),
+			);
+		};
+		img.onerror = reject;
+		img.src = url;
+	});
+
+// ─────────────────────────────────────────────────────────────────────────────
+
 const processCompositor = async (
 	config: CompositorNodeConfig,
-	inputs: Record<string, { type: "Image" | "Text"; value: string }>,
+	inputs: Record<string, { type: LayerInputType; value: string }>,
 	signal?: AbortSignal,
 ): Promise<{ dataUrl: Blob; width: number; height: number }> => {
 	if (signal?.aborted) throw new DOMException("Cancelled", "AbortError");
@@ -103,21 +149,15 @@ const processCompositor = async (
 	const height = config.height ?? 1080;
 
 	const container = document.createElement("div");
-	const stage = new Konva.Stage({
-		container: container,
-		width: width,
-		height: height,
-	});
-
+	const stage = new Konva.Stage({ container, width, height });
 	const layer = new Konva.Layer();
 	stage.add(layer);
 
 	const explicitLayers = Object.values(config.layerUpdates || {});
 	const allLayers: CompositorLayer[] = [...explicitLayers];
-
 	let maxZ = Math.max(...explicitLayers.map((l) => l.zIndex ?? 0), 0);
 
-	// Default layer generation matching server-side logic
+	// Default layer generation — mirrors editor initialisation logic
 	for (const [handleId, input] of Object.entries(inputs)) {
 		if (explicitLayers.some((l) => l.inputHandleId === handleId)) continue;
 
@@ -145,10 +185,10 @@ const processCompositor = async (
 				verticalAlign: COMPOSITOR_DEFAULTS.VERTICAL_ALIGN,
 			});
 		} else {
+			// Raster (Image + SVG): resolve intrinsic dimensions
 			const img = new Image();
 			img.crossOrigin = "Anonymous";
 			img.src = input.value;
-
 			await new Promise<void>((resolve, reject) => {
 				img.onload = () => {
 					defaultLayer.width = Math.round(img.width);
@@ -168,73 +208,41 @@ const processCompositor = async (
 		(a, b) => (a.zIndex ?? 0) - (b.zIndex ?? 0),
 	);
 
-	// 3. Collect and Load Fonts
+	// Collect and load fonts
 	const fontsToLoad = new Set<string>();
-	for (const layerConfig of sortedLayers) {
-		if (layerConfig.type === "Text" && layerConfig.fontFamily) {
-			fontsToLoad.add(layerConfig.fontFamily);
-		}
+	for (const l of sortedLayers) {
+		if (l.type === "Text" && l.fontFamily) fontsToLoad.add(l.fontFamily);
 	}
-
-	const fontLoadPromises = Array.from(fontsToLoad).map(async (fontFamily) => {
-		try {
-			const fontUrl = GetFontAssetUrl(fontFamily);
-			await fontManager.loadFont(fontFamily, fontUrl);
-		} catch (err) {
-			console.warn(`Failed to load font: ${fontFamily}`, err);
-		}
-	});
-
-	await Promise.all(fontLoadPromises);
+	await Promise.all(
+		Array.from(fontsToLoad).map(async (fontFamily) => {
+			try {
+				await fontManager.loadFont(fontFamily, GetFontAssetUrl(fontFamily));
+			} catch (err) {
+				console.warn(`Failed to load font: ${fontFamily}`, err);
+			}
+		}),
+	);
 	await document.fonts.ready;
 
-	// 4. Render Loop
+	// Render loop
 	for (const layerConfig of sortedLayers) {
 		if (signal?.aborted) throw new DOMException("Cancelled", "AbortError");
 
 		const inputData = inputs[layerConfig.inputHandleId];
-		if (!inputData) continue;
-		if (layerConfig.opacity === 0) continue;
+		if (!inputData || layerConfig.opacity === 0) continue;
 
-		if (inputData.type === "Image") {
-			const img = new Image();
-			img.crossOrigin = "Anonymous";
-			img.src = inputData.value;
-
-			await new Promise((resolve, reject) => {
-				img.onload = resolve;
-				img.onerror = reject;
-			});
-
-			const kImage = new Konva.Image({
-				image: img,
-				x: layerConfig.x ?? 0,
-				y: layerConfig.y ?? 0,
-				opacity: layerConfig.opacity ?? 1,
-				width: layerConfig.width ?? img.width,
-				height: layerConfig.height ?? img.height,
-				rotation: layerConfig.rotation ?? 0,
-				stroke: layerConfig.stroke,
-				strokeWidth:
-					layerConfig.strokeWidth ?? COMPOSITOR_DEFAULTS.STROKE_WIDTH,
-				cornerRadius:
-					layerConfig.cornerRadius ?? COMPOSITOR_DEFAULTS.CORNER_RADIUS,
-				globalCompositeOperation:
-					(layerConfig.blendMode as GlobalCompositeOperation) ?? "source-over",
-			});
+		if (isRasterType(inputData.type)) {
+			const kImage = await loadRasterNode(inputData.value, layerConfig);
 			layer.add(kImage);
 		} else if (inputData.type === "Text") {
-			const fontSize = layerConfig.fontSize ?? COMPOSITOR_DEFAULTS.FONT_SIZE;
-			const align = layerConfig.align ?? COMPOSITOR_DEFAULTS.ALIGN;
 			const hasExplicitWidth = !!(layerConfig.width && layerConfig.width > 0);
-
 			const kText = new Konva.Text({
 				text: inputData.value,
 				x: layerConfig.x ?? 0,
 				y: layerConfig.y ?? 0,
 				opacity: layerConfig.opacity ?? 1,
 				rotation: layerConfig.rotation ?? 0,
-				fontSize: fontSize,
+				fontSize: layerConfig.fontSize ?? COMPOSITOR_DEFAULTS.FONT_SIZE,
 				fontFamily: layerConfig.fontFamily ?? COMPOSITOR_DEFAULTS.FONT_FAMILY,
 				fontStyle: `${layerConfig.fontWeight ?? "normal"} ${layerConfig.fontStyle ?? "normal"}`,
 				textDecoration: layerConfig.textDecoration ?? "",
@@ -247,7 +255,7 @@ const processCompositor = async (
 					layerConfig.height && layerConfig.height > 0
 						? layerConfig.height
 						: undefined,
-				align: align,
+				align: layerConfig.align ?? COMPOSITOR_DEFAULTS.ALIGN,
 				verticalAlign:
 					layerConfig.verticalAlign ?? COMPOSITOR_DEFAULTS.VERTICAL_ALIGN,
 				padding: layerConfig.padding ?? COMPOSITOR_DEFAULTS.PADDING,
@@ -257,7 +265,6 @@ const processCompositor = async (
 				globalCompositeOperation:
 					(layerConfig.blendMode as GlobalCompositeOperation) ?? "source-over",
 			});
-
 			kText.listening(false);
 			layer.add(kText);
 		}
@@ -271,7 +278,7 @@ const processCompositor = async (
 			pixelRatio: 1,
 			callback(blob) {
 				if (blob) return resolve(blob);
-				return reject();
+				return reject(new Error("stage.toBlob produced no output"));
 			},
 		});
 	});

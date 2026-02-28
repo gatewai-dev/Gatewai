@@ -8,6 +8,7 @@ export const BASE_URL = getEnv("VITE_BASE_URL") as string;
  * Appends a file extension hint to the URL.
  */
 export function GetAssetEndpoint(fileAsset: FileAsset) {
+	console.log({ fileAsset });
 	const cleanId = fileAsset.id.split(".")[0];
 	const baseUrl = `${BASE_URL}/api/v1/assets/${cleanId}`;
 	if (!fileAsset.mimeType) return baseUrl;

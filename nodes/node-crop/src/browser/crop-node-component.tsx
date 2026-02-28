@@ -189,6 +189,7 @@ interface CropConfigPanelProps {
 	onChange: (crop: CropNodeConfig) => void;
 	onAspectRatioChange: (preset: string) => void;
 	onToggleLock: () => void;
+	isSVG?: boolean;
 }
 
 const CropConfigPanel = memo(
@@ -201,6 +202,7 @@ const CropConfigPanel = memo(
 		onChange,
 		onAspectRatioChange,
 		onToggleLock,
+		isSVG,
 	}: CropConfigPanelProps) => {
 		const pixelW = naturalWidth
 			? Math.round((crop.widthPercentage / 100) * naturalWidth)
@@ -287,6 +289,7 @@ const CropConfigPanel = memo(
 					min={1}
 					max={naturalWidth ?? 100}
 					className="w-20"
+					suffix={isSVG ? "%" : undefined}
 				/>
 				<DraggableNumberInput
 					label="Height"
@@ -296,6 +299,7 @@ const CropConfigPanel = memo(
 					min={1}
 					max={naturalHeight ?? 100}
 					className="w-20"
+					suffix={isSVG ? "%" : undefined}
 				/>
 
 				<Button
@@ -395,216 +399,208 @@ const CropOverlay = memo(
 		const isMoveDrag = drag?.type === "move";
 
 		return (
-			<svg
-				viewBox="0 0 100 100"
-				preserveAspectRatio="none"
+			<div
 				className="absolute inset-0 w-full h-full pointer-events-none overflow-visible"
 				style={{
 					animation: "cropFadeIn 0.25s cubic-bezier(0.16,1,0.3,1) both",
 				}}
 			>
-				<title>Crop box</title>
-				<defs>
-					<mask id={maskId}>
-						<rect x="0" y="0" width="100" height="100" fill="white" />
-						<rect x={x1} y={y1} width={w} height={h} fill="black" />
-					</mask>
-					<filter id="hShadow" x="-200%" y="-200%" width="500%" height="500%">
-						<feDropShadow
-							dx="0"
-							dy="0.4"
-							stdDeviation="1"
-							floodColor="rgba(0,0,0,0.65)"
-						/>
-					</filter>
-				</defs>
-
-				<rect
-					x="0"
-					y="0"
-					width="100"
-					height="100"
-					fill="rgba(0,0,0,0.42)"
-					mask={`url(#${maskId})`}
-					className="pointer-events-none"
-				/>
-
-				<g
-					className="pointer-events-none"
-					style={{
-						opacity: isDragging ? 0.28 : 0.1,
-						transition: "opacity 0.4s ease",
-					}}
+				<svg
+					viewBox="0 0 100 100"
+					preserveAspectRatio="none"
+					className="absolute inset-0 w-full h-full pointer-events-none overflow-visible"
 				>
-					<line
-						x1={thirds.v1}
-						y1={y1}
-						x2={thirds.v1}
-						y2={y2}
-						stroke="white"
-						strokeWidth="0.2"
+					<title>Crop box</title>
+					<defs>
+						<mask id={maskId}>
+							<rect x="0" y="0" width="100" height="100" fill="white" />
+							<rect x={x1} y={y1} width={w} height={h} fill="black" />
+						</mask>
+						<filter id="hShadow" x="-200%" y="-200%" width="500%" height="500%">
+							<feDropShadow
+								dx="0"
+								dy="0.4"
+								stdDeviation="1"
+								floodColor="rgba(0,0,0,0.65)"
+							/>
+						</filter>
+					</defs>
+
+					<rect
+						x="0"
+						y="0"
+						width="100"
+						height="100"
+						fill="rgba(0,0,0,0.42)"
+						mask={`url(#${maskId})`}
+						className="pointer-events-none"
 					/>
-					<line
-						x1={thirds.v2}
-						y1={y1}
-						x2={thirds.v2}
-						y2={y2}
-						stroke="white"
-						strokeWidth="0.2"
-					/>
-					<line
-						x1={x1}
-						y1={thirds.h1}
-						x2={x2}
-						y2={thirds.h1}
-						stroke="white"
-						strokeWidth="0.2"
-					/>
-					<line
-						x1={x1}
-						y1={thirds.h2}
-						x2={x2}
-						y2={thirds.h2}
-						stroke="white"
-						strokeWidth="0.2"
-					/>
-				</g>
 
-				<rect
-					x={x1}
-					y={y1}
-					width={w}
-					height={h}
-					fill="none"
-					stroke="rgba(0,0,0,0.25)"
-					strokeWidth="1.2"
-					className="pointer-events-none"
-				/>
-				<rect
-					x={x1}
-					y={y1}
-					width={w}
-					height={h}
-					fill="none"
-					stroke="rgba(255,255,255,0.88)"
-					strokeWidth="0.4"
-					className="pointer-events-none"
-				/>
-
-				<rect
-					x={x1 + CORNER_HIT}
-					y={y1 + CORNER_HIT}
-					width={Math.max(0, w - CORNER_HIT * 2)}
-					height={Math.max(0, h - CORNER_HIT * 2)}
-					fill="transparent"
-					style={{ cursor: isMoveDrag ? "grabbing" : "grab" }}
-					className="pointer-events-auto"
-					onPointerDown={(e) => onStartDrag(e, "move")}
-				/>
-
-				<rect
-					x={x1 + CORNER_HIT}
-					y={y1 - EDGE_HIT}
-					width={Math.max(0, w - CORNER_HIT * 2)}
-					height={EDGE_HIT * 2}
-					fill="transparent"
-					style={{ cursor: CURSOR["resize-n"] }}
-					className="pointer-events-auto"
-					onPointerDown={(e) => onStartDrag(e, "resize-n")}
-				/>
-				<rect
-					x={x1 + CORNER_HIT}
-					y={y2 - EDGE_HIT}
-					width={Math.max(0, w - CORNER_HIT * 2)}
-					height={EDGE_HIT * 2}
-					fill="transparent"
-					style={{ cursor: CURSOR["resize-s"] }}
-					className="pointer-events-auto"
-					onPointerDown={(e) => onStartDrag(e, "resize-s")}
-				/>
-				<rect
-					x={x2 - EDGE_HIT}
-					y={y1 + CORNER_HIT}
-					width={EDGE_HIT * 2}
-					height={Math.max(0, h - CORNER_HIT * 2)}
-					fill="transparent"
-					style={{ cursor: CURSOR["resize-e"] }}
-					className="pointer-events-auto"
-					onPointerDown={(e) => onStartDrag(e, "resize-e")}
-				/>
-				<rect
-					x={x1 - EDGE_HIT}
-					y={y1 + CORNER_HIT}
-					width={EDGE_HIT * 2}
-					height={Math.max(0, h - CORNER_HIT * 2)}
-					fill="transparent"
-					style={{ cursor: CURSOR["resize-w"] }}
-					className="pointer-events-auto"
-					onPointerDown={(e) => onStartDrag(e, "resize-w")}
-				/>
-
-				{corners.map(([type, dir, hx, hy]) => (
-					<g key={type} className="pointer-events-auto">
-						<path
-							d={cornerPath(dir)}
-							fill="none"
-							stroke="rgba(0,0,0,0.45)"
-							strokeWidth="2.4"
-							strokeLinecap="round"
-							className="pointer-events-none"
-							filter="url(#hShadow)"
-						/>
-						<path
-							d={cornerPath(dir)}
-							fill="none"
-							stroke="white"
-							strokeWidth="1.6"
-							strokeLinecap="round"
-							className="pointer-events-none"
-						/>
-						<rect
-							x={hx - CORNER_HIT}
-							y={hy - CORNER_HIT}
-							width={CORNER_HIT * 2}
-							height={CORNER_HIT * 2}
-							fill="transparent"
-							style={{ cursor: CURSOR[type] }}
-							className="pointer-events-auto"
-							onPointerDown={(e) => onStartDrag(e, type)}
-						/>
-					</g>
-				))}
-
-				{isDragging && (
 					<g
 						className="pointer-events-none"
 						style={{
-							animation: "badgePop 0.18s cubic-bezier(0.16,1,0.3,1) both",
+							opacity: isDragging ? 0.28 : 0.1,
+							transition: "opacity 0.4s ease",
 						}}
 					>
-						<rect
-							x={cx - 12}
-							y={y2 + 1.5}
-							width={24}
-							height={5.2}
-							rx="2"
-							fill="rgba(0,0,0,0.7)"
+						<line
+							x1={thirds.v1}
+							y1={y1}
+							x2={thirds.v1}
+							y2={y2}
+							stroke="white"
+							strokeWidth="0.2"
 						/>
-						<text
-							x={cx}
-							y={y2 + 5.2}
-							textAnchor="middle"
-							fill="rgba(255,255,255,0.9)"
-							fontSize="2.8"
-							fontFamily="-apple-system,'SF Pro Display',BlinkMacSystemFont,monospace"
-							fontWeight="500"
-							letterSpacing="0.02em"
-						>
-							{badgeLabel}
-						</text>
+						<line
+							x1={thirds.v2}
+							y1={y1}
+							x2={thirds.v2}
+							y2={y2}
+							stroke="white"
+							strokeWidth="0.2"
+						/>
+						<line
+							x1={x1}
+							y1={thirds.h1}
+							x2={x2}
+							y2={thirds.h1}
+							stroke="white"
+							strokeWidth="0.2"
+						/>
+						<line
+							x1={x1}
+							y1={thirds.h2}
+							x2={x2}
+							y2={thirds.h2}
+							stroke="white"
+							strokeWidth="0.2"
+						/>
 					</g>
+
+					<rect
+						x={x1}
+						y={y1}
+						width={w}
+						height={h}
+						fill="none"
+						stroke="rgba(0,0,0,0.25)"
+						strokeWidth="1.2"
+						className="pointer-events-none"
+					/>
+					<rect
+						x={x1}
+						y={y1}
+						width={w}
+						height={h}
+						fill="none"
+						stroke="rgba(255,255,255,0.88)"
+						strokeWidth="0.4"
+						className="pointer-events-none"
+					/>
+
+					<rect
+						x={x1 + CORNER_HIT}
+						y={y1 + CORNER_HIT}
+						width={Math.max(0, w - CORNER_HIT * 2)}
+						height={Math.max(0, h - CORNER_HIT * 2)}
+						fill="transparent"
+						style={{ cursor: isMoveDrag ? "grabbing" : "grab" }}
+						className="pointer-events-auto"
+						onPointerDown={(e) => onStartDrag(e, "move")}
+					/>
+
+					<rect
+						x={x1 + CORNER_HIT}
+						y={y1 - EDGE_HIT}
+						width={Math.max(0, w - CORNER_HIT * 2)}
+						height={EDGE_HIT * 2}
+						fill="transparent"
+						style={{ cursor: CURSOR["resize-n"] }}
+						className="pointer-events-auto"
+						onPointerDown={(e) => onStartDrag(e, "resize-n")}
+					/>
+					<rect
+						x={x1 + CORNER_HIT}
+						y={y2 - EDGE_HIT}
+						width={Math.max(0, w - CORNER_HIT * 2)}
+						height={EDGE_HIT * 2}
+						fill="transparent"
+						style={{ cursor: CURSOR["resize-s"] }}
+						className="pointer-events-auto"
+						onPointerDown={(e) => onStartDrag(e, "resize-s")}
+					/>
+					<rect
+						x={x2 - EDGE_HIT}
+						y={y1 + CORNER_HIT}
+						width={EDGE_HIT * 2}
+						height={Math.max(0, h - CORNER_HIT * 2)}
+						fill="transparent"
+						style={{ cursor: CURSOR["resize-e"] }}
+						className="pointer-events-auto"
+						onPointerDown={(e) => onStartDrag(e, "resize-e")}
+					/>
+					<rect
+						x={x1 - EDGE_HIT}
+						y={y1 + CORNER_HIT}
+						width={EDGE_HIT * 2}
+						height={Math.max(0, h - CORNER_HIT * 2)}
+						fill="transparent"
+						style={{ cursor: CURSOR["resize-w"] }}
+						className="pointer-events-auto"
+						onPointerDown={(e) => onStartDrag(e, "resize-w")}
+					/>
+
+					{corners.map(([type, dir, hx, hy]) => (
+						<g key={type} className="pointer-events-auto">
+							<path
+								d={cornerPath(dir)}
+								fill="none"
+								stroke="rgba(0,0,0,0.45)"
+								strokeWidth="2.4"
+								strokeLinecap="round"
+								className="pointer-events-none"
+								filter="url(#hShadow)"
+							/>
+							<path
+								d={cornerPath(dir)}
+								fill="none"
+								stroke="white"
+								strokeWidth="1.6"
+								strokeLinecap="round"
+								className="pointer-events-none"
+							/>
+							<rect
+								x={hx - CORNER_HIT}
+								y={hy - CORNER_HIT}
+								width={CORNER_HIT * 2}
+								height={CORNER_HIT * 2}
+								fill="transparent"
+								style={{ cursor: CURSOR[type] }}
+								className="pointer-events-auto"
+								onPointerDown={(e) => onStartDrag(e, type)}
+							/>
+						</g>
+					))}
+				</svg>
+
+				{isDragging && (
+					<div
+						className="absolute pointer-events-none flex items-center justify-center bg-black/70 text-white/90 font-medium tracking-wide"
+						style={{
+							left: `${cx}%`,
+							top: `calc(${y2}% + 8px)`,
+							transform: "translateX(-50%)",
+							padding: "4px 8px",
+							fontSize: "11px",
+							animation: "badgePop 0.18s cubic-bezier(0.16,1,0.3,1) both",
+							fontFamily:
+								"-apple-system, 'SF Pro Display', BlinkMacSystemFont, monospace",
+						}}
+					>
+						{badgeLabel}
+					</div>
 				)}
-			</svg>
+			</div>
 		);
 	},
 );
@@ -940,17 +936,6 @@ const CropNodeComponent = memo((props: NodeProps) => {
 									width={sourceSize ? sourceSize.w : undefined}
 									height={sourceSize ? sourceSize.h : undefined}
 								/>
-								<img
-									ref={imgRef}
-									src={imageUrl}
-									alt=""
-									className="hidden"
-									onLoad={(e) => {
-										const { naturalWidth: nw, naturalHeight: nh } =
-											e.currentTarget;
-										setNaturalSize({ w: nw, h: nh });
-									}}
-								/>
 							</div>
 							<CropOverlay
 								crop={crop}
@@ -976,6 +961,7 @@ const CropNodeComponent = memo((props: NodeProps) => {
 					isLocked={isLocked}
 					naturalWidth={sourceSize?.w}
 					naturalHeight={sourceSize?.h}
+					isSVG={isSVG}
 					onChange={(next) => {
 						setCrop(next);
 						updateConfig(next);

@@ -1,4 +1,4 @@
-import { ENV_CONFIG, generateId } from "@gatewai/core";
+import { ENV_CONFIG, extractSvgDimensions, generateId } from "@gatewai/core";
 import { container, TOKENS } from "@gatewai/core/di";
 import type { StorageService } from "@gatewai/core/storage";
 import type { MediaService, NodeResult } from "@gatewai/core/types";
@@ -61,54 +61,6 @@ function extractLottieMetadata(buffer: Buffer): {
 
 		return { width, height, durationInSec, fps };
 	} catch {
-		return null;
-	}
-}
-
-function extractSvgDimensions(buffer: Buffer): { w: number; h: number } | null {
-	try {
-		const str = buffer.toString("utf-8");
-		const match = str.match(/<svg[^>]*>/i);
-		if (!match) return null;
-
-		const svgTag = match[0];
-
-		const getAttr = (name: string) => {
-			const attrMatch = svgTag.match(
-				new RegExp(`${name}=["']([^"']+)["']`, "i"),
-			);
-			if (!attrMatch) return null;
-			const val = parseFloat(attrMatch[1].replace(/[a-z%]/gi, ""));
-			return isNaN(val) ? null : val;
-		};
-
-		let w = getAttr("width");
-		let h = getAttr("height");
-
-		const viewBoxMatch = svgTag.match(/viewBox=["']([^"']+)["']/i);
-		if (viewBoxMatch) {
-			const parts = viewBoxMatch[1].split(/[\s,]+/).map(parseFloat);
-			if (parts.length >= 4 && !isNaN(parts[2]) && !isNaN(parts[3])) {
-				const vbW = parts[2];
-				const vbH = parts[3];
-
-				if (w == null && h == null) {
-					w = vbW;
-					h = vbH;
-				} else if (w != null && h == null) {
-					h = w * (vbH / vbW);
-				} else if (h != null && w == null) {
-					w = h * (vbW / vbH);
-				}
-			}
-		}
-
-		if (w != null && h != null && w > 0 && h > 0) {
-			return { w, h };
-		}
-		return null;
-	} catch (error) {
-		console.error("Error parsing SVG dimensions", error);
 		return null;
 	}
 }

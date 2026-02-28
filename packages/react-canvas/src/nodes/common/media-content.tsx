@@ -113,7 +113,7 @@ function MediaContent({ node }: { node: NodeEntityType }) {
 	}
 
 	return (
-		<div className="relative w-full group">
+		<div className="relative w-full group media-container flex items-center justify-center">
 			{hasMoreThanOneOutput && (
 				<div className="absolute top-1 left-1 z-10">
 					<OutputSelector node={node} />
@@ -127,13 +127,7 @@ function MediaContent({ node }: { node: NodeEntityType }) {
 					height={dimensions.height ?? undefined}
 				/>
 			)}
-			{isSVG && assetUrl && (
-				<SVGRenderer
-					imageUrl={assetUrl}
-					width={dimensions.width ?? undefined}
-					height={dimensions.height ?? undefined}
-				/>
-			)}
+			{isSVG && assetUrl && <SVGRenderer imageUrl={assetUrl} />}
 
 			{(isVideo || isLottie) && (
 				<VideoRenderer

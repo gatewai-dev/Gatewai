@@ -289,12 +289,10 @@ export function useNodePreview(nodeId: string) {
 		if (!baseUrl || typeof baseUrl !== "string") {
 			throw new Error("Invalid base url");
 		}
-
+		console.log({ inputFileData, outputItem, result });
 		const mediaUrl =
 			inputFileData?.processData?.dataUrl ??
-			(inputFileData?.entity
-				? GetAssetEndpoint(baseUrl, inputFileData.entity)
-				: null);
+			(inputFileData?.entity ? GetAssetEndpoint(inputFileData.entity) : null);
 
 		return {
 			mediaUrl: shouldHidePreview ? null : mediaUrl,
