@@ -43,6 +43,8 @@
 		"@gatewai/react-canvas": "workspace:*",
 		"@gatewai/remotion-compositions": "workspace:*",
 		"@gatewai/ui-kit": "workspace:*",
+		"@lottie-animation-community/lottie-specs": "*",
+		"ajv": "*",
 		"@hookform/resolvers": "*",
 		"inversify": "^7.11.0",
 		"react": "^19.2.4",

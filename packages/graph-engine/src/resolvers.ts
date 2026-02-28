@@ -1,5 +1,9 @@
 import assert from "node:assert";
-import type { FileData, NodeResult } from "@gatewai/core/types";
+import type {
+	FileData,
+	NodeResult,
+	VirtualMediaData,
+} from "@gatewai/core/types";
 import type { CanvasCtxDataWithTasks } from "@gatewai/data-ops";
 import type { DataType } from "@gatewai/db";
 import type { StorageService } from "@gatewai/node-sdk/server";
@@ -151,11 +155,37 @@ function getAllInputValuesWithHandle(data: unknown, targetNodeId: string) {
 	return values;
 }
 
+function getActualFileData(fileData: any): FileData | null {
+	if (!fileData) return null;
+	if ("operation" in fileData) {
+		const v = fileData as VirtualMediaData;
+		if (v.operation.op === "source") {
+			return v.operation.source as FileData;
+		}
+		const findSource = (node: VirtualMediaData): FileData | null => {
+			if (node.operation.op === "source") {
+				return node.operation.source as FileData;
+			}
+			for (const child of node.children || []) {
+				const found = findSource(child);
+				if (found) return found;
+			}
+			return null;
+		};
+		return findSource(v) || (fileData as FileData);
+	}
+	return fileData as FileData;
+}
+
 /**
- * @param fileData Filedata of node
+ * @param rawFileData Filedata of node
  * @returns Returns file data from Storage (GCS)
  */
-async function loadMediaBuffer(storage: StorageService, fileData: FileData) {
+async function loadMediaBuffer(
+	storage: StorageService,
+	rawFileData: FileData | VirtualMediaData | any,
+) {
+	const fileData = getActualFileData(rawFileData);
 	let mimeType: string | undefined;
 	let key: string | undefined;
 	let bucket: string | undefined;
@@ -179,8 +209,9 @@ async function loadMediaBuffer(storage: StorageService, fileData: FileData) {
 
 async function getFileDataMimeType(
 	storage: StorageService,
-	fileData: FileData,
+	rawFileData: FileData | VirtualMediaData | any,
 ) {
+	const fileData = getActualFileData(rawFileData);
 	if (fileData?.entity?.mimeType) return fileData?.entity?.mimeType;
 	if (fileData?.processData?.mimeType) return fileData?.processData?.mimeType;
 	if (fileData?.processData?.tempKey) {

@@ -451,6 +451,12 @@ export const SingleClipComposition: React.FC<{
 		}
 
 		const mediaType = getMediaType(virtualMedia);
+		console.log(
+			"mediaType:",
+			mediaType,
+			"isLottie:",
+			isLottieSource(virtualMedia),
+		);
 
 		if (mediaType === "Text") {
 			const mergedStyle = { ...textStyle, ...(op as any) };
