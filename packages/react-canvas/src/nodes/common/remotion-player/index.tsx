@@ -21,7 +21,7 @@ import {
 	MdVolumeUp,
 } from "react-icons/md";
 
-const FPS = 24;
+const FPS = 30;
 
 // ---------- Utility functions ----------
 

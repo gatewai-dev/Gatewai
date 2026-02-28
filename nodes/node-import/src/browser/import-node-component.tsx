@@ -1,6 +1,7 @@
 import {
 	BaseNode,
 	MediaContent,
+	type NodeProps,
 	useHasOutputItems,
 } from "@gatewai/react-canvas";
 import type { UploadFileNodeAssetRPC } from "@gatewai/react-store";
@@ -10,7 +11,6 @@ import {
 	useAppDispatch,
 	useAppSelector,
 } from "@gatewai/react-store";
-import type { NodeProps } from "@xyflow/react";
 import { memo } from "react";
 import { toast } from "sonner";
 import type { ImportResult } from "../shared/index.js";
@@ -25,7 +25,6 @@ const ImportNodeComponent = memo((props: NodeProps) => {
 	const result = node?.result as unknown as ImportResult;
 	const item = result?.outputs?.[0]?.items?.[0];
 
-	// Robust mimeType extraction: handle both VirtualMediaData and FileData
 	const itemData = item?.data as any;
 	const existingMimeType =
 		itemData?.source?.entity?.mimeType ??
@@ -60,6 +59,8 @@ const ImportNodeComponent = memo((props: NodeProps) => {
 														? "caption"
 														: null;
 
+	const isLottie = existingType === "lottie";
+
 	const accept = {
 		"image/jpeg": [".jpg", ".jpeg"],
 		"image/png": [".png"],
@@ -81,31 +82,23 @@ const ImportNodeComponent = memo((props: NodeProps) => {
 		type: "image" | "video" | "audio" | "lottie" | "svg" | "caption" | null,
 	) => {
 		if (!type) return Object.keys(accept);
-
 		if (type === "lottie") return ["application/json", ".json", ".lottie"];
 		if (type === "svg") return ["image/svg+xml", ".svg"];
 		if (type === "caption") return ["text/srt", ".srt"];
-
 		const keys = Object.keys(accept);
 		const filteredMimes = keys.filter((mime) => mime.startsWith(`${type}/`));
-
-		// Include both mimes and their associated extensions
 		const extensions = filteredMimes.flatMap(
 			(mime) => accept[mime as keyof typeof accept] || [],
 		);
-
 		return [...filteredMimes, ...extensions];
 	};
 
 	const buttonAccept = getFilteredAccept(existingType as any);
-
 	const displayType = existingType;
-
 	const buttonLabel =
 		showResult && existingType
 			? `Upload another ${displayType}`
 			: "Click to upload a file";
-
 	const dropzoneLabel =
 		"Click or drag & drop an image, SVG, video, audio, Lottie, or SRT file here";
 
@@ -157,6 +150,16 @@ const ImportNodeComponent = memo((props: NodeProps) => {
 						label={buttonLabel}
 						nodeId={props.id}
 					/>
+				)}
+
+				{isLottie && (
+					<div className="flex items-center gap-1 px-2 py-1 mb-1 rounded text-xs text-amber-400/80 bg-amber-400/10">
+						<span>⚠</span>
+						<span>
+							Lottie support is not complete. Expect issues with some Lottie
+							features.
+						</span>
+					</div>
 				)}
 			</div>
 		</BaseNode>

@@ -107,6 +107,14 @@ Your code MUST return the result object. If the code fails validation, read the 
 						const path = issue.path.join(".") || "(root)";
 						return `  • ${path}: ${issue.message}`;
 					});
+					console.log(
+						[
+							`Validation failed (${validation.error.issues.length} issue(s)):`,
+							...errors,
+							"",
+							`Fix only the issues listed above and retry. You have ${maxRetries} attempts total.`,
+						].join("\n"),
+					);
 					return [
 						`Validation failed (${validation.error.issues.length} issue(s)):`,
 						...errors,

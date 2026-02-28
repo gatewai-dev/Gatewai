@@ -69,33 +69,28 @@ const LottieFromUrl: React.FC<LottieFromUrlProps> = ({
 }) => {
 	const [animationData, setAnimationData] =
 		useState<LottieAnimationData | null>(null);
-	const [handle] = useState(() => delayRender(`Loading Lottie from: ${src}`));
 
 	useEffect(() => {
+		const handle = delayRender(`Loading Lottie from: ${src}`);
 		let cancelled = false;
 
 		fetch(src)
-			.then((res) => {
-				if (!res.ok)
-					throw new Error(
-						`Failed to fetch Lottie file: ${res.status} ${res.statusText}`,
-					);
-				return res.json() as Promise<LottieAnimationData>;
-			})
+			.then((res) => res.json())
 			.then((data) => {
-				if (cancelled) return;
-				setAnimationData(data);
-				continueRender(handle);
+				if (!cancelled) {
+					setAnimationData(data);
+				}
+				continueRender(handle); // Always clear the block
 			})
-			.catch((err: unknown) => {
-				if (cancelled) return;
+			.catch((err) => {
 				cancelRender(err instanceof Error ? err : new Error(String(err)));
 			});
 
 		return () => {
 			cancelled = true;
+			continueRender(handle); // Failsafe: clears the block if unmounted early
 		};
-	}, [src, handle]);
+	}, [src]);
 
 	if (!animationData)
 		return (
@@ -833,8 +828,8 @@ export const LayerRenderer: React.FC<{
 		position: "absolute",
 		left: animX,
 		top: animY,
-		width: layer.width,
-		height: layer.height,
+		width: layer.width ?? "100%",
+		height: layer.height ?? "100%",
 		transform: `rotate(${animRotation}deg) scale(${animScale})`,
 		transformOrigin: "center center",
 		opacity: animOpacity,

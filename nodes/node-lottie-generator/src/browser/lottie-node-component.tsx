@@ -49,6 +49,14 @@ const LottieNodeComponent = memo(
 						/>
 						<RunNodeButton nodeId={props.id} />
 					</div>
+
+					<div className="flex items-center gap-1 px-2 py-1 rounded text-xs text-amber-400/80 bg-amber-400/10">
+						<span>⚠</span>
+						<span>
+							Lottie support is not complete. Expect issues with some Lottie
+							features.
+						</span>
+					</div>
 				</div>
 			</BaseNode>
 		);
