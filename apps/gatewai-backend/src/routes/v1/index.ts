@@ -3,11 +3,13 @@ import { authMiddleware } from "../../auth.js";
 import { apiKeysRoutes } from "./api-keys.js";
 import { apiRunRoutes } from "./api-run.js";
 import { assetsPublicRouter, assetsRouter } from "./assets.js";
+import { billingRouter } from "./billing.js";
 import { canvasRoutes } from "./canvas.js";
 import { fontsRouter } from "./fonts.js";
 import { nodeTemplatesRoutes } from "./node-templates.js";
 import { nodesRouter } from "./nodes.js";
 import { tasksRouter } from "./tasks.js";
+import { lemonsqueezyRouter } from "./webhooks/lemonsqueezy.js";
 
 const v1Router = new Hono()
 	.route("/fonts", fontsRouter)
@@ -16,6 +18,7 @@ const v1Router = new Hono()
 	// Browser video players fire parallel range requests which can race against
 	// the session lookup, causing intermittent 401s when behind authMiddleware.
 	.route("/assets", assetsPublicRouter)
+	.route("/webhooks/lemonsqueezy", lemonsqueezyRouter)
 	.use(authMiddleware)
 	.route("/nodes", nodesRouter)
 	.route("/node-templates", nodeTemplatesRoutes)
@@ -23,6 +26,7 @@ const v1Router = new Hono()
 	.route("/assets", assetsRouter)
 	.route("/api-run", apiRunRoutes)
 	.route("/api-keys", apiKeysRoutes)
-	.route("/canvas", canvasRoutes);
+	.route("/canvas", canvasRoutes)
+	.route("/billing", billingRouter);
 
 export { v1Router };

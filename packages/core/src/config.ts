@@ -3,32 +3,50 @@ import { z } from "zod";
 
 config();
 
-const envSchema = z.object({
-	BASE_URL: z.string().url(),
-	PORT: z.coerce.number().default(3000),
-	REDIS_HOST: z.string().min(1),
-	REDIS_PORT: z.coerce.number(), // Changed to number for easier use with Redis clients
-	REDIS_PASSWORD: z.string().optional(),
-	GEMINI_API_KEY: z.string().min(1),
-	GCS_ASSETS_BUCKET: z.string().min(1),
-	GOOGLE_APPLICATION_CREDENTIALS_PATH: z.string().min(1).optional(),
-	GOOGLE_CLIENT_ID: z.string().min(1),
-	MCP_URL: z.string(),
-	GOOGLE_CLIENT_SECRET: z.string().min(1),
-	LOG_LEVEL: z.string().default("info"),
-	DEBUG_LOG_MEDIA: z
-		.string()
-		.toLowerCase()
-		.transform((val: string) => val === "true")
-		.default("false"),
-	DISABLE_EMAIL_SIGNUP: z
-		.string()
-		.toLowerCase()
-		.transform((val: string) => val === "true")
-		.default("false"),
-	MAX_CONCURRENT_ASSISTANT_JOBS: z.coerce.number().default(5),
-	MAX_CONCURRENT_WORKFLOW_JOBS: z.coerce.number().default(5),
-});
+const envSchema = z
+	.object({
+		BASE_URL: z.string().url(),
+		PORT: z.coerce.number().default(3000),
+		REDIS_HOST: z.string().min(1),
+		REDIS_PORT: z.coerce.number(), // Changed to number for easier use with Redis clients
+		REDIS_PASSWORD: z.string().optional(),
+		GEMINI_API_KEY: z.string().min(1),
+		GCS_ASSETS_BUCKET: z.string().min(1),
+		GOOGLE_APPLICATION_CREDENTIALS_PATH: z.string().min(1).optional(),
+		GOOGLE_CLIENT_ID: z.string().min(1),
+		MCP_URL: z.string(),
+		GOOGLE_CLIENT_SECRET: z.string().min(1),
+		LOG_LEVEL: z.string().default("info"),
+		DEBUG_LOG_MEDIA: z
+			.string()
+			.toLowerCase()
+			.transform((val: string) => val === "true")
+			.default("false"),
+		DISABLE_EMAIL_SIGNUP: z
+			.string()
+			.toLowerCase()
+			.transform((val: string) => val === "true")
+			.default("false"),
+		MAX_CONCURRENT_ASSISTANT_JOBS: z.coerce.number().default(5),
+		MAX_CONCURRENT_WORKFLOW_JOBS: z.coerce.number().default(5),
+
+		DEFAULT_FREE_TOKENS: z.coerce.number().default(20),
+		ENABLE_PRICING: z.boolean().default(true),
+
+		LEMON_SQUEEZY_WEBHOOK_SECRET: z.string().optional(),
+	})
+	.refine(
+		(data) => {
+			if (data.ENABLE_PRICING && !data.LEMON_SQUEEZY_WEBHOOK_SECRET) {
+				return false;
+			}
+			return true;
+		},
+		{
+			message:
+				"LEMON_SQUEEZY_WEBHOOK_SECRET is required when ENABLE_PRICING is true",
+		},
+	);
 
 const parsed = envSchema.safeParse(process.env);
 

@@ -11,7 +11,8 @@ export { VideoCompositorNodeConfigSchema, VideoCompositorResultSchema };
 export const metadata = defineMetadata({
 	type: "VideoCompositor",
 	displayName: "Video Compositor",
-	description: "Compose videos using Text, Image, Audio and Video Inputs.",
+	description:
+		"Compose videos using Text, Image, SVG, Audio, Caption and Video Inputs.",
 	category: "Video",
 	subcategory: undefined,
 	configSchema: VideoCompositorNodeConfigSchema,
@@ -30,9 +31,7 @@ export const metadata = defineMetadata({
 		layerUpdates: {},
 		width: 1080,
 		height: 1080,
-		FPS: 24,
+		FPS: 30,
 	}),
-	pricing: {
-		price: 5,
-	},
+	pricing: () => 5,
 });

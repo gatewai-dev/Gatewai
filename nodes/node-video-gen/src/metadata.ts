@@ -36,7 +36,5 @@ export default defineMetadata({
 		durationSeconds: "8",
 		personGeneration: "allow_all",
 	},
-	pricing: {
-		price: 100,
-	},
+	pricing: () => 100,
 });

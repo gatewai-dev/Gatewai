@@ -1,10 +1,5 @@
-import {
-	calculateNodePrice,
-	ENV_CONFIG,
-	logger,
-	loggerContext,
-} from "@gatewai/core";
-import { container } from "@gatewai/core/di";
+import { ENV_CONFIG, logger, loggerContext } from "@gatewai/core";
+import { container, TOKENS } from "@gatewai/core/di";
 import { GetCanvasEntities } from "@gatewai/data-ops";
 import { Prisma, prisma, TaskStatus } from "@gatewai/db";
 import {
@@ -20,6 +15,7 @@ import type {
 	NodeProcessorConstructor,
 } from "@gatewai/node-sdk/server";
 import { type Job, Worker } from "bullmq";
+import type { PricingService } from "../../lib/pricing.service.js";
 import { assertIsError } from "../../utils/misc.js";
 
 // Global reference for shutdown handling
@@ -281,16 +277,13 @@ const processNodeJob = async (job: Job<NodeTaskJobData>) => {
 				const result = await processorInstance.process(ctx);
 				const { success, error, newResult } = result;
 
-				const isDevMode = task.isTest || process.env.NODE_ENV !== "production";
+				const pricingEnabled = ENV_CONFIG.ENABLE_PRICING;
 				const manifest = nodeRegistry.getManifest(node.type);
-				const price = calculateNodePrice({
-					input: {
-						nodeType: node.type,
-						config: (node.config as Record<string, unknown>) ?? {},
-						pricing: manifest?.pricing,
-					},
-					isDevMode,
-				});
+				const price =
+					pricingEnabled && typeof manifest?.pricing === "function"
+						? manifest.pricing(node.config)
+						: 0;
+
 				if (newResult) {
 					await prisma.task.update({
 						where: { id: taskId },
@@ -307,6 +300,55 @@ const processNodeJob = async (job: Job<NodeTaskJobData>) => {
 							logger.warn(
 								`Failed to update node result for ${node.id}, continuing...`,
 							);
+						}
+					}
+				}
+
+				if (success && price > 0) {
+					try {
+						let userId: string | undefined;
+						if (apiKey) {
+							const keyRecord = await prisma.apiKey.findUnique({
+								where: { key: apiKey },
+								select: { userId: true },
+							});
+							userId = keyRecord?.userId;
+						} else {
+							const canvas = await prisma.canvas.findUnique({
+								where: { id: canvasId },
+								select: { userId: true },
+							});
+							userId = canvas?.userId ?? undefined;
+						}
+
+						if (userId) {
+							const pricingService = container.get<PricingService>(
+								TOKENS.PRICING_SERVICE,
+							);
+
+							// Pre-execution check (ideally done before starting, but we do it here for now)
+							const canAfford = await pricingService.canAfford(userId, price);
+							if (!canAfford) {
+								throw new Error(
+									`Insufficient tokens for user ${userId}. Required: ${price}`,
+								);
+							}
+
+							await pricingService.deductTokens(userId, price, taskId);
+							await pricingService.trackUsage(userId, "tokensUsed", price);
+							await pricingService.trackUsage(userId, "tasksUsed", 1);
+						}
+					} catch (tokenErr) {
+						logger.error(
+							{ tokenErr },
+							`Failed to process pricing for task ${taskId}`,
+						);
+						// If pre-check fails or deduction fails, we should fail the task
+						if (
+							tokenErr instanceof Error &&
+							tokenErr.message.includes("tokens")
+						) {
+							throw tokenErr;
 						}
 					}
 				}

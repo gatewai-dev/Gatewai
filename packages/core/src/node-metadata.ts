@@ -2,7 +2,7 @@
 
 import type { DataType } from "@gatewai/db";
 import z, { type ZodTypeAny } from "zod";
-import { NodePricingSchema } from "./pricing.js";
+import type { NodePricingFn } from "./pricing.js";
 
 const HandleDefinitionSchema = z.object({
 	dataTypes: z.custom<DataType[]>(),
@@ -53,10 +53,15 @@ export const NodeMetadataSchema = z.object({
 	defaultConfig: z.record(z.unknown()).optional(),
 
 	// Pricing
-	pricing: NodePricingSchema.optional(),
+	pricing: z.any().optional(),
 
 	// Results
 	resultSchema: z.custom<ZodTypeAny>().optional(),
 });
 
-export type NodeMetadata = z.infer<typeof NodeMetadataSchema>;
+export type NodeMetadata<TConfig = any> = Omit<
+	z.infer<typeof NodeMetadataSchema>,
+	"pricing"
+> & {
+	pricing?: (config: TConfig) => number;
+};

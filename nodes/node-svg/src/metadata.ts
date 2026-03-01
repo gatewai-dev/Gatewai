@@ -1,5 +1,9 @@
 import { defineMetadata } from "@gatewai/node-sdk";
-import { SvgNodeConfigSchema, SvgResultSchema } from "./shared/index.js";
+import {
+	type SvgNodeConfig,
+	SvgNodeConfigSchema,
+	SvgResultSchema,
+} from "./shared/index.js";
 
 export { SvgNodeConfigSchema, SvgResultSchema };
 
@@ -20,5 +24,13 @@ export const metadata = defineMetadata({
 		],
 		outputs: [{ dataTypes: ["SVG"], label: "Result", order: 0 }],
 	},
-	defaultConfig: { model: "gemini-3-flash-preview", temperature: 0 },
+	defaultConfig: { model: "gemini-3-flash-preview" },
+	pricing: (config: SvgNodeConfig) => {
+		const MODEL_TOKEN_PRICING: Record<SvgNodeConfig["model"], number> = {
+			"gemini-3-flash-preview": 5,
+			"gemini-3.1-pro-preview": 15,
+			"gemini-2.5-pro": 10,
+		};
+		return MODEL_TOKEN_PRICING[config.model] || 10;
+	},
 });

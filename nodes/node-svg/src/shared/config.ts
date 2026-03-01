@@ -14,7 +14,6 @@ export const SVG_NODE_MODELS = [
 export const SvgNodeConfigSchema = z
 	.object({
 		model: z.enum(SVG_NODE_MODELS),
-		temperature: z.number().min(0).max(2).default(0),
 	})
 	.strict();
 

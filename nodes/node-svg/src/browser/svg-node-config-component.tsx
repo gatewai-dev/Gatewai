@@ -18,7 +18,6 @@ const SvgNodeConfigComponent = memo(({ node }: { node: NodeEntityType }) => {
 		resolver: zodResolver(SvgNodeConfigSchema),
 		defaultValues: {
 			model: nodeConfig?.model,
-			temperature: nodeConfig?.temperature,
 		},
 	});
 
@@ -49,15 +48,6 @@ const SvgNodeConfigComponent = memo(({ node }: { node: NodeEntityType }) => {
 					label="Model"
 					placeholder="Select a model"
 					options={SVG_NODE_MODELS}
-				/>
-
-				<SliderField
-					control={form.control}
-					name="temperature"
-					label="Temperature"
-					min={0}
-					max={2}
-					step={0.1}
 				/>
 			</form>
 		</Form>

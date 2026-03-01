@@ -22,7 +22,5 @@ export default defineMetadata({
 		],
 		outputs: [{ dataTypes: ["Audio"], label: "Audio", order: 0 }],
 	},
-	pricing: {
-		price: 10,
-	},
+	pricing: () => 10,
 });

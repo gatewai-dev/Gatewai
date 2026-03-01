@@ -8,6 +8,7 @@ import {
 } from "@gatewai/graph-engine";
 import { GoogleGenAI } from "@google/genai";
 import { getAgentModel } from "./agent/agent-model";
+import { PricingService } from "./lib/pricing.service";
 
 /**
  * Register backend-specific services into the DI container.
@@ -26,7 +27,6 @@ export function registerBackendServices() {
 	// Register Graph Resolvers
 	container.bind(TOKENS.GRAPH_RESOLVERS).toConstantValue(graphResolvers);
 
-	// Register AI Provider
 	container.bind(TOKENS.AI_PROVIDER).toConstantValue({
 		getGemini: () => {
 			if (ENV_CONFIG.GEMINI_API_KEY == null)
@@ -37,6 +37,9 @@ export function registerBackendServices() {
 			return getAgentModel(name as any);
 		},
 	});
+
+	// Register Pricing Service
+	container.bind(TOKENS.PRICING_SERVICE).to(PricingService).inSingletonScope();
 
 	return container;
 }

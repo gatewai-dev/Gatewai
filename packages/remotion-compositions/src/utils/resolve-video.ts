@@ -175,7 +175,6 @@ function computeNextMetadata(
 			case "compose": {
 				width = op.width;
 				height = op.height;
-				durationMs = op.durationInMS;
 				break;
 			}
 			case "cut": {
