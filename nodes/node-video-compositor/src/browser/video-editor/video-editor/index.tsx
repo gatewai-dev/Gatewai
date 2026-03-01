@@ -417,6 +417,7 @@ const serializeLayersForSave = (layers: EditorLayer[]) =>
 				| "text"
 				| "isPlaceholder"
 				| "maxDurationInFrames"
+				| "maxDurationInMS"
 				| "videoNaturalWidth"
 				| "videoNaturalHeight"
 				| "cropTranslatePercentageX"
@@ -429,6 +430,7 @@ const serializeLayersForSave = (layers: EditorLayer[]) =>
 			text,
 			isPlaceholder,
 			maxDurationInFrames,
+			maxDurationInMS,
 			videoNaturalWidth,
 			videoNaturalHeight,
 			cropTranslatePercentageX,
@@ -1799,6 +1801,7 @@ const TimelinePanel: React.FC = () => {
 		timelineScrollRef: scrollContainerRef,
 		timelineHeight,
 		setTimelineHeight,
+		initialLayersData,
 	} = useEditor();
 
 	const playheadRef = useRef<HTMLDivElement>(null);
@@ -1903,8 +1906,20 @@ const TimelinePanel: React.FC = () => {
 			} else {
 				const diffMS = (diffFrames / fps) * 1000;
 				let newDuration = Math.max(1, initialDuration + diffMS);
-				if (layer.maxDurationInMS)
-					newDuration = Math.min(newDuration, layer.maxDurationInMS);
+				const initialItem = initialLayersData.get(layerId);
+				if (
+					initialItem &&
+					(initialItem.type === "Video" ||
+						initialItem.type === "Audio" ||
+						initialItem.type === "Lottie")
+				) {
+					const metadata = getActiveMediaMetadata(
+						initialItem.data as VirtualMediaData,
+					);
+					if (metadata?.durationMs) {
+						newDuration = Math.min(newDuration, metadata.durationMs);
+					}
+				}
 				updateLayers((prev) =>
 					prev.map((l) =>
 						l.id === layerId ? { ...l, durationInMS: newDuration } : l,
@@ -3151,7 +3166,6 @@ export const VideoDesignerEditor: React.FC<VideoDesignerEditorProps> = ({
 											? {
 													...l,
 													durationInMS: srtDurationMs,
-													maxDurationInMS: srtDurationMs,
 												}
 											: l,
 									),
@@ -3173,7 +3187,6 @@ export const VideoDesignerEditor: React.FC<VideoDesignerEditorProps> = ({
 						type: "Video",
 						width: layerWidth ?? 400,
 						height: layerHeight ?? 400,
-						maxDurationInMS: durationMs > 0 ? durationMs : undefined,
 						lockAspect: true,
 					} as EditorLayer);
 				} else if (item.type === "Audio") {
@@ -3182,7 +3195,6 @@ export const VideoDesignerEditor: React.FC<VideoDesignerEditorProps> = ({
 						type: "Audio",
 						height: 0,
 						width: 0,
-						maxDurationInMS: durationMs > 0 ? durationMs : undefined,
 						lockAspect: true,
 					} as EditorLayer);
 				} else if (item.type === "Lottie") {
@@ -3194,7 +3206,6 @@ export const VideoDesignerEditor: React.FC<VideoDesignerEditorProps> = ({
 						lottieLoop: saved?.lottieLoop !== false,
 						lottieFrameRate: saved?.lottieFrameRate,
 						lottieDurationMs: saved?.lottieDurationMs,
-						maxDurationInMS: saved?.maxDurationInMS,
 						lockAspect: true,
 						speed: saved?.speed ?? 1,
 					} as EditorLayer;
@@ -3220,7 +3231,6 @@ export const VideoDesignerEditor: React.FC<VideoDesignerEditorProps> = ({
 															: l.lottieFrameRate,
 													lottieDurationMs: meta.durationMs,
 													durationInMS: saved?.durationInMS ?? meta.durationMs,
-													maxDurationInMS: meta.durationMs || undefined,
 												}
 											: l,
 									),

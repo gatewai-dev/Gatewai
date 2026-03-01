@@ -4,6 +4,8 @@ import type {
 	VirtualMediaData,
 } from "@gatewai/core/types";
 
+const DEFAULT_DURATION_MS = 5000;
+
 /**
  * Create a VirtualMediaData from a FileData source or Text.
  * Used by Import, VideoGen, and Text nodes to wrap concrete content.
@@ -251,6 +253,16 @@ export function getActiveMediaMetadata(
 			op.source?.processData?.duration ??
 			op.source?.entity?.duration;
 		fps = fps ?? sm.fps ?? op.source?.processData?.fps;
+
+		if (durationMs === undefined) {
+			const mimeType =
+				op.source?.entity?.mimeType ?? op.source?.processData?.mimeType ?? "";
+			const isStaticMedia =
+				mimeType.startsWith("image/") || mimeType === "image/svg+xml";
+			if (isStaticMedia) {
+				durationMs = DEFAULT_DURATION_MS;
+			}
+		}
 	}
 
 	if (width === undefined && height === undefined && durationMs === undefined) {

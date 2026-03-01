@@ -1041,13 +1041,17 @@ export const SingleClipComposition: React.FC<{
 	const op = virtualMedia?.operation;
 
 	if (op.op === "compose") {
+		const composeDuration = op.durationInMS ?? DEFAULT_DURATION_MS;
 		const composeNode = (
 			<CompositionScene
 				layers={
 					(virtualMedia.children || [])
 						.map((child, index) => {
-							if (child.operation?.op === "layer") {
-								const lop = child.operation;
+							const childOp = child.operation;
+							if (!childOp) return null;
+
+							if (childOp.op === "layer") {
+								const lop = childOp;
 								const contentType = getMediaType(child.children[0]);
 								return {
 									id: `child-${index}`,
@@ -1072,7 +1076,7 @@ export const SingleClipComposition: React.FC<{
 									fontStyle: lop.fontStyle,
 									fontWeight: lop.fontWeight,
 									textDecoration: lop.textDecoration,
-									textShadow: lop.textShadow, // Add this
+									textShadow: lop.textShadow,
 									fill: lop.fill,
 									align: lop.align,
 									verticalAlign: lop.verticalAlign,
@@ -1094,6 +1098,33 @@ export const SingleClipComposition: React.FC<{
 									useRoundedTextBox: (lop as any).useRoundedTextBox,
 								} as ExtendedLayer;
 							}
+
+							if (childOp.op === "source" || childOp.op === "text") {
+								const contentType = getMediaType(child);
+								const childMeta = getActiveMediaMetadata(child);
+								const childWidth = childMeta?.width ?? op.width;
+								const childHeight = childMeta?.height ?? op.height;
+								const childDuration =
+									childMeta?.durationMs ??
+									composeDuration ??
+									DEFAULT_DURATION_MS;
+								return {
+									id: `child-${index}`,
+									type: contentType,
+									virtualMedia: child,
+									x: 0,
+									y: 0,
+									width: childWidth,
+									height: childHeight,
+									rotation: 0,
+									scale: 1,
+									opacity: 1,
+									startFrame: 0,
+									durationInMS: childDuration,
+									zIndex: index,
+								} as ExtendedLayer;
+							}
+
 							return null;
 						})
 						.filter(Boolean) as ExtendedLayer[]
