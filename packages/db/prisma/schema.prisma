@@ -50,9 +50,7 @@ model User {
 
   tokens Float @default(0)
 
-  lemonSqueezyCustomerId String?       @map("lemon_squeezy_customer_id")
-  subscription           Subscription?
-  tokenTransactions     TokenTransaction[]
+  tokenTransactions TokenTransaction[]
 
   @@unique([email])
   @@map("user")
@@ -478,57 +476,6 @@ enum PatchStatus {
   REJECTED
 }
 
-model Subscription {
-  id                 String          @id @default(cuid())
-  lemonSqueezyId     String          @unique @map("lemon_squeezy_id")
-  orderId            Int             @map("order_id")
-  name               String
-  email              String
-  status             String
-  statusFormatted    String          @map("status_formatted")
-  renewsAt           DateTime?       @map("renews_at")
-  endsAt             DateTime?       @map("ends_at")
-  trialEndsAt        DateTime?       @map("trial_ends_at")
-  price              String
-  isPaused           Boolean         @default(false) @map("is_paused")
-  subscriptionItemId Int             @map("subscription_item_id")
-  userId             String          @unique @map("user_id")
-  user               User            @relation(fields: [userId], references: [id])
-  billingInterval    BillingInterval @default(MONTHLY) @map("billing_interval")
-  pricingPlanId      String?         @map("pricing_plan_id")
-  pricingPlan        PricingPlan?    @relation(fields: [pricingPlanId], references: [id])
-  createdAt          DateTime        @default(now()) @map("created_at")
-  updatedAt          DateTime        @updatedAt @map("updated_at")
-
-  @@map("subscription")
-}
-
-enum BillingInterval {
-  MONTHLY
-  YEARLY
-}
-
-model PricingPlan {
-  id             String   @id @default(cuid())
-  name           String   @unique
-  description    String?
-  monthlyPrice   Float    @default(0) @map("monthly_price")
-  yearlyPrice    Float?   @map("yearly_price")
-  tokenCredits   Int      @default(0) @map("token_credits")
-  taskLimit      Int?     @map("task_limit")
-  storageLimitMb Int?     @map("storage_limit_mb")
-  apiCallsLimit  Int?     @map("api_calls_limit")
-  features       Json     @default("{}")
-  isActive       Boolean  @default(true) @map("is_active")
-  sortOrder      Int      @default(0) @map("sort_order")
-  createdAt      DateTime @default(now()) @map("created_at")
-  updatedAt      DateTime @updatedAt @map("updated_at")
-
-  subscriptions Subscription[]
-
-  @@map("pricing_plan")
-}
-
 model UsageRecord {
   id           String   @id @default(cuid())
   userId       String   @map("user_id")
@@ -541,28 +488,6 @@ model UsageRecord {
 
   @@unique([userId, month])
   @@map("usage_record")
-}
-
-model TokenPurchase {
-  id             String         @id @default(cuid())
-  userId         String         @map("user_id")
-  amount         Int // Tokens purchased
-  pricePaid      Float          @map("price_paid")
-  currency       String         @default("USD")
-  lemonSqueezyId String?        @map("lemon_squeezy_id")
-  variantId      Int?           @map("variant_id")
-  status         PurchaseStatus @default(PENDING)
-  createdAt      DateTime       @default(now()) @map("created_at")
-  updatedAt      DateTime       @updatedAt @map("updated_at")
-
-  @@map("token_purchase")
-}
-
-enum PurchaseStatus {
-  PENDING
-  COMPLETED
-  FAILED
-  REFUNDED
 }
 
 model TokenTransaction {

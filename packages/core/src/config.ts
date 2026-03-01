@@ -33,18 +33,19 @@ const envSchema = z
 		DEFAULT_FREE_TOKENS: z.coerce.number().default(20),
 		ENABLE_PRICING: z.boolean().default(true),
 
-		LEMON_SQUEEZY_WEBHOOK_SECRET: z.string().optional(),
+		POLAR_ACCESS_TOKEN: z.string().optional(),
+		POLAR_WEBHOOK_SECRET: z.string().optional(),
+		POLAR_SUCCESS_URL: z.string().optional(),
 	})
 	.refine(
 		(data) => {
-			if (data.ENABLE_PRICING && !data.LEMON_SQUEEZY_WEBHOOK_SECRET) {
+			if (data.ENABLE_PRICING && !data.POLAR_ACCESS_TOKEN) {
 				return false;
 			}
 			return true;
 		},
 		{
-			message:
-				"LEMON_SQUEEZY_WEBHOOK_SECRET is required when ENABLE_PRICING is true",
+			message: "POLAR_ACCESS_TOKEN is required when ENABLE_PRICING is true",
 		},
 	);
 

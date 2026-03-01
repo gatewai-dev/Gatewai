@@ -1,18 +1,3 @@
-/**
- * scene.tsx – Remotion composition renderer
- *
- * Changes in this revision
- * ─────────────────────────
- * • RoundedTextRenderer: new shared component that renders text with a
- * pill-shaped SVG background via createRoundedTextBox() + measureText().
- * Activated when layer.useRoundedTextBox === true.
- * • Applied to Text layers in LayerContentRenderer and SingleClipComposition.
- * • Applied to Caption default preset in CaptionsFromUrl.
- * • LayerRenderer suppresses outer backgroundColor / borderRadius when
- * useRoundedTextBox is active so the SVG pill owns the visual.
- * • Added backgroundColor to SceneProps and mapped it to the root AbsoluteFill.
- */
-
 import type { ExtendedLayer, VirtualMediaData } from "@gatewai/core/types";
 import type { Caption } from "@remotion/captions";
 import { parseSrt } from "@remotion/captions";
@@ -45,8 +30,6 @@ import {
 
 const DEFAULT_DURATION_MS = 5000;
 
-// ─── Format Detection ────────────────────────────────────────────────────────
-
 const isLottieSource = (virtualMedia: VirtualMediaData): boolean => {
 	const op = virtualMedia?.operation;
 	if (!op || op.op !== "source") return false;
@@ -61,8 +44,6 @@ const isLottieSource = (virtualMedia: VirtualMediaData): boolean => {
 
 const isStaticVisualMedia = (type?: string): boolean =>
 	type === "Image" || type === "SVG";
-
-// ─── LottieFromUrl ───────────────────────────────────────────────────────────
 
 interface LottieFromUrlProps {
 	src: string;
@@ -136,11 +117,6 @@ const LottieFromUrl: React.FC<LottieFromUrlProps> = ({
 		/>
 	);
 };
-
-// ─── RoundedTextRenderer ─────────────────────────────────────────────────────
-// Renders text with a pill-shaped rounded background using createRoundedTextBox.
-// One measurement per line → the path hugs each line width individually, giving
-// the classic CapCut / TikTok "sticker subtitle" look for static text layers.
 
 interface RoundedTextRendererProps {
 	text: string;
@@ -216,6 +192,7 @@ const RoundedTextRenderer: React.FC<RoundedTextRendererProps> = ({
 			lineHeight,
 			letterSpacing,
 			textDecoration,
+			lines.map,
 		],
 	);
 
@@ -309,8 +286,6 @@ const RoundedTextRenderer: React.FC<RoundedTextRendererProps> = ({
 	);
 };
 
-// ─── TikTok Captions ─────────────────────────────────────────────────────────
-
 type TikTokToken = { text: string; fromMs: number; toMs: number };
 type LineGroup = { tokens: TikTokToken[]; text: string };
 
@@ -364,8 +339,6 @@ function buildLines(
 	}
 	return groups;
 }
-
-// ─── TikTokCaptionPage ───────────────────────────────────────────────────────
 
 interface TikTokCaptionPageProps {
 	page: {
@@ -506,7 +479,7 @@ const TikTokCaptionPage: React.FC<TikTokCaptionPageProps> = ({
 							const isActive =
 								currentTimeMs >= token.fromMs && currentTimeMs < token.toMs;
 							return (
-								<React.Fragment key={tokenIdx}>
+								<React.Fragment key={`${tokenIdx}_token`}>
 									{tokenIdx > 0 && " "}
 									<span
 										style={{
@@ -533,8 +506,6 @@ const TikTokCaptionPage: React.FC<TikTokCaptionPageProps> = ({
 		</div>
 	);
 };
-
-// ─── CaptionsFromUrl ─────────────────────────────────────────────────────────
 
 interface CaptionsFromUrlProps {
 	src: string;
@@ -605,9 +576,6 @@ const CaptionsFromUrl: React.FC<CaptionsFromUrlProps> = ({
 				? "flex-end"
 				: "center";
 
-	// ════════════════════════════════════════════════════════════════════════
-	// TikTok preset
-	// ════════════════════════════════════════════════════════════════════════
 	if (preset === "tiktok") {
 		const fontFamily = (style?.fontFamily as string) || "Impact, sans-serif";
 		const fontSize = (style?.fontSize as number) || 60;
@@ -679,15 +647,11 @@ const CaptionsFromUrl: React.FC<CaptionsFromUrlProps> = ({
 		);
 	}
 
-	// ════════════════════════════════════════════════════════════════════════
-	// Default preset
-	// ════════════════════════════════════════════════════════════════════════
 	const currentCaption = captions.find(
 		(c) => currentTimeMs >= c.startMs && currentTimeMs < c.endMs,
 	);
 	if (!currentCaption) return null;
 
-	// ── Default + rounded box ────────────────────────────────────────────────
 	if (useRoundedTextBox) {
 		const fontSize = (style?.fontSize as number) ?? 48;
 		const fontFamily = (style?.fontFamily as string) ?? "Inter";
@@ -748,7 +712,6 @@ const CaptionsFromUrl: React.FC<CaptionsFromUrlProps> = ({
 		);
 	}
 
-	// ── Default plain ────────────────────────────────────────────────────────
 	return (
 		<div
 			style={{
@@ -776,8 +739,6 @@ const CaptionsFromUrl: React.FC<CaptionsFromUrlProps> = ({
 	);
 };
 
-// ─── Shared Style Helpers ────────────────────────────────────────────────────
-
 const verticalAlignToJustify = (v?: string): string =>
 	v === "middle" ? "center" : v === "bottom" ? "flex-end" : "flex-start";
 
@@ -804,8 +765,6 @@ const buildLayerTextStyle = (
 		s.strokeWidth && s.stroke ? `${s.strokeWidth}px ${s.stroke}` : undefined,
 	paintOrder: "stroke fill",
 });
-
-// ─── Layer Transform ─────────────────────────────────────────────────────────
 
 export const calculateLayerTransform = (
 	layer: ExtendedLayer,
@@ -895,8 +854,6 @@ export const calculateLayerTransform = (
 
 	return { x, y, scale, rotation, opacity, volume };
 };
-
-// ─── Virtual-media equality ───────────────────────────────────────────────────
 
 const compareVirtualMedia = (
 	a: VirtualMediaData | undefined,
@@ -1017,8 +974,6 @@ const compareVirtualMedia = (
 		return compareVirtualMedia(a.children[0], b.children[0]);
 	return true;
 };
-
-// ─── SingleClipComposition ───────────────────────────────────────────────────
 
 export const SingleClipComposition: React.FC<{
 	virtualMedia: VirtualMediaData;
@@ -1182,7 +1137,6 @@ export const SingleClipComposition: React.FC<{
 						? op.source.processData.text
 						: mergedStyle.text;
 
-			// ── Rounded text box path ───────────────────────────────────────
 			if ((mergedStyle as any).useRoundedTextBox && textContent) {
 				return (
 					<RoundedTextRenderer
@@ -1207,7 +1161,6 @@ export const SingleClipComposition: React.FC<{
 				);
 			}
 
-			// ── Plain text path ─────────────────────────────────────────────
 			return (
 				<div
 					style={{
@@ -1401,8 +1354,6 @@ export const SingleClipComposition: React.FC<{
 	);
 };
 
-// ─── LayerContentRenderer ────────────────────────────────────────────────────
-
 const LayerContentRenderer: React.FC<{
 	layer: ExtendedLayer;
 	animVolume: number;
@@ -1490,7 +1441,6 @@ const LayerContentRenderer: React.FC<{
 	}
 
 	if (layer.type === "Text" && (layer.text || layer.virtualMedia)) {
-		// ── virtualMedia path ─────────────────────────────────────────────────
 		if (layer.virtualMedia)
 			return (
 				<SingleClipComposition
@@ -1503,7 +1453,6 @@ const LayerContentRenderer: React.FC<{
 				/>
 			);
 
-		// ── Rounded text box ──────────────────────────────────────────────────
 		if (useRoundedBox && layer.text) {
 			return (
 				<RoundedTextRenderer
@@ -1528,7 +1477,6 @@ const LayerContentRenderer: React.FC<{
 			);
 		}
 
-		// ── Plain text ────────────────────────────────────────────────────────
 		return (
 			<div
 				style={{
@@ -1576,8 +1524,6 @@ const LayerContentRenderer: React.FC<{
 
 	return null;
 };
-
-// ─── LayerRenderer ───────────────────────────────────────────────────────────
 
 export const LayerRenderer: React.FC<{
 	layer: ExtendedLayer;
@@ -1644,8 +1590,6 @@ export const LayerRenderer: React.FC<{
 		</Sequence>
 	);
 };
-
-// ─── CompositionScene ────────────────────────────────────────────────────────
 
 export interface SceneProps {
 	layers?: ExtendedLayer[];

@@ -88,19 +88,5 @@ export class PricingService {
             },
         });
     }
-
-    async getUserPlan(userId: string) {
-        const user = await this.prisma.user.findUnique({
-            where: { id: userId },
-            include: {
-                subscription: {
-                    include: {
-                        pricingPlan: true,
-                    },
-                },
-            },
-        });
-
-        return user?.subscription?.pricingPlan ?? null;
-    }
 }
+

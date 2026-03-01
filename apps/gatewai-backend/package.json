@@ -36,6 +36,8 @@
 		"@lottie-animation-community/lottie-specs": "^0.3.2",
 		"@openai/agents": "^0.4.1",
 		"@openai/agents-extensions": "^0.4.1",
+		"@polar-sh/better-auth": "^1.8.1",
+		"@polar-sh/sdk": "^0.45.1",
 		"ai": "^6.0.58",
 		"ajs": "^1.3.4",
 		"better-auth": "^1.4.17",
