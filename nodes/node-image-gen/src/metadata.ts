@@ -28,4 +28,11 @@ export default defineMetadata({
 		aspectRatio: "1:1",
 		imageSize: "1K",
 	},
+	pricing: {
+		price: 20,
+		variantPrices: {
+			"gemini-3-pro-image-preview": 30,
+			"gemini-2.5-flash-image": 10,
+		},
+	},
 });

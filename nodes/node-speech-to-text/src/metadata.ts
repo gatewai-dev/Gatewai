@@ -24,4 +24,7 @@ export default defineMetadata({
 		outputs: [{ dataTypes: ["Text"], label: "Result", order: 0 }],
 	},
 	defaultConfig: { model: "gemini-3-flash-preview" },
+	pricing: {
+		price: 10,
+	},
 });

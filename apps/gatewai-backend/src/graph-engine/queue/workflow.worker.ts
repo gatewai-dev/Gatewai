@@ -1,4 +1,9 @@
-import { ENV_CONFIG, logger, loggerContext } from "@gatewai/core";
+import {
+	calculateNodePrice,
+	ENV_CONFIG,
+	logger,
+	loggerContext,
+} from "@gatewai/core";
 import { container } from "@gatewai/core/di";
 import { GetCanvasEntities } from "@gatewai/data-ops";
 import { Prisma, prisma, TaskStatus } from "@gatewai/db";
@@ -274,9 +279,18 @@ const processNodeJob = async (job: Job<NodeTaskJobData>) => {
 					ProcessorClass,
 				) as unknown as NodeProcessor;
 				const result = await processorInstance.process(ctx);
-
 				const { success, error, newResult } = result;
 
+				const isDevMode = task.isTest || process.env.NODE_ENV !== "production";
+				const manifest = nodeRegistry.getManifest(node.type);
+				const price = calculateNodePrice({
+					input: {
+						nodeType: node.type,
+						config: (node.config as Record<string, unknown>) ?? {},
+						pricing: manifest?.pricing,
+					},
+					isDevMode,
+				});
 				if (newResult) {
 					await prisma.task.update({
 						where: { id: taskId },
@@ -305,6 +319,7 @@ const processNodeJob = async (job: Job<NodeTaskJobData>) => {
 						finishedAt,
 						durationMs: finishedAt.getTime() - startedAt.getTime(),
 						error: error ? { message: error } : undefined,
+						price,
 					},
 				});
 

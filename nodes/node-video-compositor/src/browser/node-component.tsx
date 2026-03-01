@@ -33,16 +33,20 @@ import { remotionService } from "./muxer-service.js";
 import { FPS } from "./video-editor/config/index.js";
 
 const VideoCompositorNodeComponent = memo((props: NodeProps) => {
-	const node = useAppSelector(makeSelectNodeById(props.id)) as any;
+	const node = useAppSelector(makeSelectNodeById(props.id));
+	const nodeConfig = node?.config as VideoCompositorNodeConfig | undefined;
 	const [isDownloading, setIsDownloading] = useState(false);
 	const { inputs, result } = useNodeResult(props.id);
 	const nav = useNavigate();
 	const downloadFileData = useDownloadFileData();
-	console.log({ result });
 	const onClickDownload = async () => {
 		setIsDownloading(true);
 		try {
-			const config = node.config as unknown as VideoCompositorNodeConfig;
+			const config = nodeConfig ?? {
+				layerUpdates: {},
+				width: 1080,
+				height: 1080,
+			};
 			const result = await remotionService.processVideo(config, inputs);
 			await downloadFileData(
 				{

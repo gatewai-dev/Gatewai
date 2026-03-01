@@ -1,3 +1,4 @@
+import { NodePricingSchema } from "@gatewai/core/pricing";
 import { defineMetadata } from "@gatewai/node-sdk";
 import { LLMNodeConfigSchema, LLMResultSchema } from "./shared/index.js";
 
@@ -22,4 +23,12 @@ export const metadata = defineMetadata({
 		outputs: [{ dataTypes: ["Text"], label: "Result", order: 0 }],
 	},
 	defaultConfig: { model: "gemini-3-flash-preview", temperature: 0 },
+	pricing: {
+		price: 10,
+		variantPrices: {
+			"gemini-3.1-pro-preview": 50,
+			"gemini-3-flash-preview": 10,
+			"gemini-2.5-pro": 30,
+		},
+	},
 });

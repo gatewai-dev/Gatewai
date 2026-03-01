@@ -32,4 +32,7 @@ export const metadata = defineMetadata({
 		height: 1080,
 		FPS: 24,
 	}),
+	pricing: {
+		price: 5,
+	},
 });

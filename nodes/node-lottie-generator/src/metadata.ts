@@ -21,4 +21,7 @@ export const metadata = defineMetadata({
 		outputs: [{ dataTypes: ["Lottie"], label: "Result", order: 0 }],
 	},
 	defaultConfig: { model: "gemini-3-flash-preview", temperature: 0 },
+	pricing: {
+		price: 20,
+	},
 });

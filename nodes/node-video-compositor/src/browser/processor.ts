@@ -9,16 +9,17 @@ import {
 	getActiveMediaMetadata,
 } from "@gatewai/remotion-compositions";
 import type { VideoCompositorNodeConfig } from "../shared/config.js";
-import { DEFAULT_DURATION_MS, FPS } from "./video-editor/config/index.js";
+import { DEFAULT_DURATION_MS } from "./video-editor/config/index.js";
 
 export class VideoCompositorBrowserProcessor implements IBrowserProcessor {
 	async process({ node, inputs, context }: NodeProcessorParams) {
 		const config = (node.config as unknown as VideoCompositorNodeConfig) ?? {};
 		const layerUpdates = config.layerUpdates ?? {};
 
-		const width = config.width ?? 1920;
+		const width = config.width ?? 1080;
 		const height = config.height ?? 1080;
-		const fps = config.FPS ?? FPS;
+		const fps = config.FPS ?? 24;
+		const backgroundColor = config.backgroundColor ?? "#000000";
 
 		// Build layers with virtualMedia references from connected Video inputs
 		const layers: ExtendedLayer[] = [];
@@ -55,26 +56,28 @@ export class VideoCompositorBrowserProcessor implements IBrowserProcessor {
 			} else {
 				continue;
 			}
-			console.log({ childVV });
 			const activeMeta = getActiveMediaMetadata(childVV);
 
 			const layerDurationInMS =
 				saved.durationInMS ?? (activeMeta ? (activeMeta.durationMs ?? 0) : 0);
 
 			// Wrap in a layer operation
+			const layerOpWidth = saved.width ?? activeMeta?.width ?? width;
+			const layerOpHeight = saved.height ?? activeMeta?.height ?? height;
+
 			const layerOp: VirtualMediaData = {
 				metadata: {
 					...activeMeta,
-					width: saved.width ?? activeMeta?.width,
-					height: saved.height ?? activeMeta?.height,
+					width: layerOpWidth,
+					height: layerOpHeight,
 					durationMs: layerDurationInMS,
 				},
 				operation: {
 					op: "layer",
 					x: saved.x ?? 0,
 					y: saved.y ?? 0,
-					width: saved.width ?? activeMeta?.width ?? undefined,
-					height: saved.height ?? activeMeta?.height ?? undefined,
+					width: layerOpWidth,
+					height: layerOpHeight,
 					rotation: saved.rotation ?? 0,
 					scale: saved.scale ?? 1,
 					opacity: saved.opacity ?? 1,
@@ -114,8 +117,8 @@ export class VideoCompositorBrowserProcessor implements IBrowserProcessor {
 			};
 
 			const layerEnd =
-				((layerOp.operation as any).startFrame / fps) * 1000 +
-				((layerOp.operation as any).durationInMS ?? DEFAULT_DURATION_MS);
+				((saved.startFrame ?? 0) / fps) * 1000 +
+				(layerDurationInMS ?? DEFAULT_DURATION_MS);
 			if (layerEnd > durationInMS) durationInMS = layerEnd;
 
 			compositionChildren.push(layerOp);
@@ -134,7 +137,13 @@ export class VideoCompositorBrowserProcessor implements IBrowserProcessor {
 				width,
 				height,
 				fps,
-				durationInMS,
+				backgroundColor,
+				metadata: {
+					durationMs: durationInMS,
+					width,
+					height,
+					fps,
+				},
 			},
 			children: compositionChildren,
 		};

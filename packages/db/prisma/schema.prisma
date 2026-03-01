@@ -324,6 +324,9 @@ model Task {
   // Storing result for recovery - This field is not being used in frontend.
   result          Json?
 
+  // Price in tokens/millicents for this execution
+  price           Float?       @default(0)
+
   @@map("task")
 }
 
