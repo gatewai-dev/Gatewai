@@ -5,6 +5,7 @@ import {
 	AspectLockSchema,
 	AudioOptionsSchema,
 	BaseLayerSchema,
+	ColorSchema,
 	DimensionSchema,
 	FontOptionsSchema,
 	OpacitySchema,
@@ -65,12 +66,15 @@ export const VideoCompositorLayerSchema = BaseLayerSchema.merge(PositionSchema)
 					"slide-up",
 					"slide-down",
 				]),
-				durationFrames: z.number().min(1),
+				durationInMS: z.number().min(1),
 			})
 			.optional(),
 		lottieLoop: z.boolean().optional(),
 		lottieFrameRate: z.number().optional(),
 		lottieDurationMs: z.number().optional(),
+
+		captionPreset: z.string().optional(),
+		useRoundedTextBox: z.boolean().optional(),
 	})
 	.strict();
 
@@ -82,7 +86,8 @@ export const VideoCompositorNodeConfigSchema = z
 		),
 		width: DimensionSchema,
 		height: DimensionSchema,
-		FPS: z.number().optional(),
+		backgroundColor: ColorSchema,
+		FPS: z.number().max(120).min(1).optional(),
 	})
 	.strict();
 

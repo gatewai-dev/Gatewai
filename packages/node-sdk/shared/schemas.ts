@@ -85,8 +85,7 @@ export const ZIndexSchema = z.object({
 
 export const VideoTimingSchema = z.object({
 	startFrame: z.number().optional(),
-	durationInFrames: z.number().optional(),
-	duration: z.number().optional(),
+	durationInMS: z.number().optional(),
 });
 
 export const AudioOptionsSchema = z.object({

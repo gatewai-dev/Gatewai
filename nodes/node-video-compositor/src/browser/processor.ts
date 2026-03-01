@@ -9,7 +9,7 @@ import {
 	getActiveMediaMetadata,
 } from "@gatewai/remotion-compositions";
 import type { VideoCompositorNodeConfig } from "../shared/config.js";
-import { DEFAULT_DURATION_FRAMES, FPS } from "./video-editor/config/index.js";
+import { DEFAULT_DURATION_MS, FPS } from "./video-editor/config/index.js";
 
 export class VideoCompositorBrowserProcessor implements IBrowserProcessor {
 	async process({ node, inputs, context }: NodeProcessorParams) {
@@ -27,7 +27,7 @@ export class VideoCompositorBrowserProcessor implements IBrowserProcessor {
 			maxZ = Math.max(maxZ, (update as ExtendedLayer).zIndex ?? 0);
 		}
 
-		let durationInFrames = 0; // Starts at 0, will expand based on layers
+		let durationInMS = 0; // Starts at 0, will expand based on layers
 
 		// Build recursive VirtualMediaData
 		const compositionChildren: VirtualMediaData[] = [];
@@ -56,11 +56,8 @@ export class VideoCompositorBrowserProcessor implements IBrowserProcessor {
 			console.log({ childVV });
 			const activeMeta = getActiveMediaMetadata(childVV);
 
-			const layerDurationInFrames =
-				saved.durationInFrames ??
-				(activeMeta
-					? Math.ceil(((activeMeta.durationMs ?? 0) / 1000) * fps)
-					: 0);
+			const layerDurationInMS =
+				saved.durationInMS ?? (activeMeta ? (activeMeta.durationMs ?? 0) : 0);
 
 			// Wrap in a layer operation
 			const layerOp: VirtualMediaData = {
@@ -68,7 +65,7 @@ export class VideoCompositorBrowserProcessor implements IBrowserProcessor {
 					...activeMeta,
 					width: saved.width ?? activeMeta?.width,
 					height: saved.height ?? activeMeta?.height,
-					durationMs: (layerDurationInFrames / fps) * 1000,
+					durationMs: layerDurationInMS,
 				},
 				operation: {
 					op: "layer",
@@ -80,7 +77,7 @@ export class VideoCompositorBrowserProcessor implements IBrowserProcessor {
 					scale: saved.scale ?? 1,
 					opacity: saved.opacity ?? 1,
 					startFrame: saved.startFrame ?? 0,
-					durationInFrames: layerDurationInFrames,
+					durationInMS: layerDurationInMS,
 					zIndex: saved.zIndex ?? 0,
 					// Content & Styling
 					text: item.type === "Text" ? sourceText : saved.text,
@@ -108,15 +105,16 @@ export class VideoCompositorBrowserProcessor implements IBrowserProcessor {
 					lottieLoop: saved.lottieLoop,
 					lottieFrameRate: saved.lottieFrameRate,
 					lottieDurationMs: saved.lottieDurationMs,
+					captionPreset: saved.captionPreset,
+					useRoundedTextBox: saved.useRoundedTextBox,
 				},
 				children: [childVV],
 			};
 
 			const layerEnd =
-				(layerOp.operation as any).startFrame +
-				((layerOp.operation as any).durationInFrames ??
-					DEFAULT_DURATION_FRAMES);
-			if (layerEnd > durationInFrames) durationInFrames = layerEnd;
+				((layerOp.operation as any).startFrame / fps) * 1000 +
+				((layerOp.operation as any).durationInMS ?? DEFAULT_DURATION_MS);
+			if (layerEnd > durationInMS) durationInMS = layerEnd;
 
 			compositionChildren.push(layerOp);
 		}
@@ -127,14 +125,14 @@ export class VideoCompositorBrowserProcessor implements IBrowserProcessor {
 				width,
 				height,
 				fps,
-				durationMs: (durationInFrames / fps) * 1000,
+				durationMs: durationInMS,
 			},
 			operation: {
 				op: "compose",
 				width,
 				height,
 				fps,
-				durationInFrames,
+				durationInMS,
 			},
 			children: compositionChildren,
 		};

@@ -52,7 +52,9 @@ const DynamicComposition: React.FC<{
 				if (!input) return null;
 
 				const startFrame = layer.startFrame ?? 0;
-				const layerDuration = layer.durationInFrames ?? totalDuration;
+				const layerDurationMS =
+					layer.durationInMS ?? (totalDuration / fps) * 1000;
+				const layerDurationFrames = (layerDurationMS / 1000) * fps;
 				const relativeFrame = frame - startFrame;
 
 				// Initial Properties
@@ -67,8 +69,8 @@ const DynamicComposition: React.FC<{
 				(layer.animations ?? []).forEach((anim) => {
 					const durFrames = anim.value * fps;
 					const isOut = anim.type.includes("-out");
-					const startAnimFrame = isOut ? layerDuration - durFrames : 0;
-					const endAnimFrame = isOut ? layerDuration : durFrames;
+					const startAnimFrame = isOut ? layerDurationFrames - durFrames : 0;
+					const endAnimFrame = isOut ? layerDurationFrames : durFrames;
 
 					if (relativeFrame < startAnimFrame || relativeFrame > endAnimFrame)
 						return;
@@ -174,7 +176,7 @@ const DynamicComposition: React.FC<{
 					<Sequence
 						key={layer.inputHandleId}
 						from={startFrame}
-						durationInFrames={Math.max(1, layerDuration)}
+						durationInFrames={Math.max(1, Math.ceil(layerDurationFrames))}
 					>
 						{input.outputItem?.type === "Video" && assetSrc && (
 							<Video src={assetSrc} style={{ ...style }} volume={animVolume} />
@@ -234,20 +236,20 @@ export class RemotionWebProcessorService {
 				const item = input.outputItem;
 				if (item.type === "Video" || item.type === "Audio") {
 					const promise = this.getMediaDurationAsSec(
-						item.data as VirtualMediaData,
-						item.type,
+						item.data as any,
+						item.type as any,
 					).then((durSec) => {
-						const actualFrames = Math.floor(durSec * fps);
+						const actualMS = durSec * 1000;
 						// Force clamp: never allow layer duration to be longer than the actual file
-						const requestedDuration = layer.durationInFrames ?? actualFrames;
-						layerUpdatesCopy[layerKey].durationInFrames = Math.max(
+						const requestedDurationMS = layer.durationInMS ?? actualMS;
+						layerUpdatesCopy[layerKey].durationInMS = Math.max(
 							1,
-							Math.min(requestedDuration, actualFrames),
+							Math.min(requestedDurationMS, actualMS),
 						);
 					});
 					mediaPromises.push(promise);
-				} else if (layer.durationInFrames == null) {
-					layerUpdatesCopy[layerKey].durationInFrames = fps * 5;
+				} else if (layer.durationInMS == null) {
+					layerUpdatesCopy[layerKey].durationInMS = 5000;
 				}
 			}
 		} else {
@@ -281,18 +283,15 @@ export class RemotionWebProcessorService {
 
 				if (itemType === "Video" || itemType === "Audio") {
 					const promise = this.getMediaDurationAsSec(
-						item.data as FileData | VirtualMediaData,
-						itemType,
+						item.data as any,
+						itemType as any,
 					).then((durSec) => {
-						defaultLayer.durationInFrames = Math.max(
-							1,
-							Math.floor(durSec * fps),
-						);
+						defaultLayer.durationInMS = Math.max(1, durSec * 1000);
 						layerUpdatesCopy[inputHandleId] = defaultLayer;
 					});
 					mediaPromises.push(promise);
 				} else {
-					defaultLayer.durationInFrames = fps * 5;
+					defaultLayer.durationInMS = 5000;
 					layerUpdatesCopy[inputHandleId] = defaultLayer;
 				}
 			}
@@ -301,12 +300,14 @@ export class RemotionWebProcessorService {
 		await Promise.all(mediaPromises);
 
 		// Calculate total duration based on the clamped layers
-		const totalDuration = Math.max(
+		const totalDurationMS = Math.max(
 			...Object.values(layerUpdatesCopy).map(
-				(l) => (l.startFrame ?? 0) + (l.durationInFrames ?? 0),
+				(l) => ((l.startFrame ?? 0) / fps) * 1000 + (l.durationInMS ?? 0),
 			),
 			1,
 		);
+
+		const totalDurationInFrames = Math.ceil((totalDurationMS / 1000) * fps);
 
 		const finalConfig = {
 			...config,
@@ -319,7 +320,7 @@ export class RemotionWebProcessorService {
 			composition: {
 				id: "dynamic-video",
 				component: DynamicComposition,
-				durationInFrames: totalDuration,
+				durationInFrames: totalDurationInFrames,
 				fps,
 				width,
 				height,

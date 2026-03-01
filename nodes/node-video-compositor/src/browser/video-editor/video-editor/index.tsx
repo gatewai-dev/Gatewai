@@ -87,6 +87,7 @@ import {
 	ArrowLeft,
 	ArrowRight,
 	ArrowUp,
+	Blend,
 	Box,
 	ChevronDown,
 	EyeOff,
@@ -112,6 +113,7 @@ import {
 	Save,
 	Settings2,
 	Sparkles,
+	Subtitles,
 	Sun,
 	Trash2,
 	Type,
@@ -129,12 +131,13 @@ import React, {
 	useCallback,
 	useContext,
 	useEffect,
+	useMemo,
 	useRef,
 	useState,
 } from "react";
 import { useHotkeys } from "react-hotkeys-hook";
 import type { VideoCompositorNodeConfig } from "../../../shared/config.js";
-import { DEFAULT_DURATION_FRAMES, FPS } from "../config/index.js";
+import { DEFAULT_DURATION_MS, FPS } from "../config/index.js";
 
 // ---------------------------------------------------------------------------
 // Types
@@ -147,6 +150,14 @@ export type EditorLayer = ExtendedLayer & {
 	videoCropOffsetY?: number;
 	cropTranslatePercentageX?: number;
 	cropTranslatePercentageY?: number;
+	captionPreset?: "default" | "tiktok";
+	/**
+	 * When true, Text and Caption layers render their background using
+	 * createRoundedTextBox() — a pill-shaped SVG that hugs each text line.
+	 * The fill colour is layer.backgroundColor, padding is layer.padding,
+	 * and corner radius is layer.borderRadius.
+	 */
+	useRoundedTextBox?: boolean;
 };
 
 type ResizeAnchor = "tl" | "tr" | "bl" | "br" | "t" | "b" | "l" | "r";
@@ -235,16 +246,21 @@ const ANIMATION_CATEGORIES = [
 	},
 ];
 
+// Default rounded-box values so the inspector reflects sensible initial state.
+const ROUNDED_BOX_DEFAULTS = {
+	backgroundColor: "rgba(0, 0, 0, 0.7)",
+	padding: 16,
+	borderRadius: 8,
+} as const;
+
 // ---------------------------------------------------------------------------
 // Helpers
 // ---------------------------------------------------------------------------
 
-/**
- * Returns true for layer types backed by a FileData asset (not VirtualMedia).
- * Centralises the Image / SVG equivalence so no branch needs to list both.
- */
 const isFileMedia = (type: string): boolean =>
-	type === "Image" || type === "SVG";
+	type === "Image" || type === "SVG" || type === "Caption";
+
+const isCaptionLayer = (type: string): boolean => type === "Caption";
 
 const roundToEven = (num?: number) => Math.round((num ?? 0) / 2) * 2;
 
@@ -335,6 +351,29 @@ const fetchLottieMetadata = async (
 	}
 };
 
+const fetchSrtDurationMs = async (url: string): Promise<number | null> => {
+	try {
+		const res = await fetch(url);
+		if (!res.ok) return null;
+		const text = await res.text();
+		const RE_TIMESTAMP =
+			/(\d{2}):(\d{2}):(\d{2}),(\d{3})\s*-->\s*(\d{2}):(\d{2}):(\d{2}),(\d{3})/g;
+		let maxEndMs = 0;
+		let match: RegExpExecArray | null;
+		while ((match = RE_TIMESTAMP.exec(text)) !== null) {
+			const endMs =
+				Number(match[5]) * 3_600_000 +
+				Number(match[6]) * 60_000 +
+				Number(match[7]) * 1_000 +
+				Number(match[8]);
+			if (endMs > maxEndMs) maxEndMs = endMs;
+		}
+		return maxEndMs > 0 ? maxEndMs : null;
+	} catch {
+		return null;
+	}
+};
+
 const resolveColorConfig = (layer: EditorLayer) => {
 	if (layer.type === "Lottie") return LOTTIE_COLOR;
 	return (
@@ -400,6 +439,22 @@ const serializeLayersForSave = (layers: EditorLayer[]) =>
 		return acc;
 	}, {});
 
+const parseTextShadowStr = (shadowStr?: string) => {
+	if (!shadowStr) return null;
+	const match = shadowStr.match(
+		/^\s*(-?[\d.]+)px\s+(-?[\d.]+)px\s+([\d.]+)px\s+(.+)\s*$/,
+	);
+	if (match) {
+		return {
+			x: parseFloat(match[1]),
+			y: parseFloat(match[2]),
+			blur: parseFloat(match[3]),
+			color: match[4].trim(),
+		};
+	}
+	return { x: 2, y: 2, blur: 4, color: "rgba(0,0,0,0.75)" };
+};
+
 // ---------------------------------------------------------------------------
 // Context
 // ---------------------------------------------------------------------------
@@ -415,6 +470,10 @@ interface EditorContextType {
 	setSelectedId: (id: string | null) => void;
 	getTextData: (id: string) => string;
 	getAssetUrl: (id: string) => string | undefined;
+	fps: number;
+	setFps: (fps: number) => void;
+	backgroundColor: string;
+	setBackgroundColor: (color: string) => void;
 	getMediaDuration: (
 		id: string | undefined | null,
 	) => number | null | undefined;
@@ -422,8 +481,7 @@ interface EditorContextType {
 	viewportHeight: number;
 	updateViewportWidth: (w: number) => void;
 	updateViewportHeight: (h: number) => void;
-	fps: number;
-	durationInFrames: number;
+	durationInMS: number;
 	currentFrame: number;
 	setCurrentFrame: (frame: number) => void;
 	isPlaying: boolean;
@@ -469,24 +527,11 @@ const LayerIcon: React.FC<{ type: string; className?: string }> = ({
 		Image: <ImageIcon className={className} />,
 		SVG: <ImageIcon className={className} />,
 		Text: <Type className={className} />,
+		Caption: <Subtitles className={className} />,
 		Lottie: <Sparkles className={className} />,
 	};
 	return <>{icons[type] ?? <Layers className={className} />}</>;
 };
-
-const InspectorDivider: React.FC<{ label: string; accent?: string }> = ({
-	label,
-	accent = "text-purple-300",
-}) => (
-	<div className="flex items-center gap-2 pt-1">
-		<span
-			className={`text-[10px] font-bold uppercase tracking-wider ${accent}`}
-		>
-			{label}
-		</span>
-		<div className="flex-1 h-px bg-white/8" />
-	</div>
-);
 
 const WithTooltip: React.FC<{
 	tip: React.ReactNode;
@@ -499,6 +544,133 @@ const WithTooltip: React.FC<{
 		</Tooltip>
 	</TooltipProvider>
 );
+
+// ---------------------------------------------------------------------------
+// TextShadowSection
+// ---------------------------------------------------------------------------
+
+const TextShadowSection: React.FC<{
+	layer: EditorLayer;
+	update: (patch: Partial<EditorLayer>) => void;
+}> = ({ layer, update }) => {
+	const shadowParams = useMemo(
+		() => parseTextShadowStr(layer.textShadow),
+		[layer.textShadow],
+	);
+	const isOn = !!layer.textShadow;
+
+	const handleToggle = (checked: boolean) => {
+		if (checked) {
+			update({ textShadow: "0px 4px 12px rgba(0,0,0,0.6)" });
+		} else {
+			update({ textShadow: undefined });
+		}
+	};
+
+	const updateParam = (key: "x" | "y" | "blur" | "color", val: any) => {
+		const current = shadowParams || {
+			x: 0,
+			y: 4,
+			blur: 12,
+			color: "rgba(0,0,0,0.6)",
+		};
+		const next = { ...current, [key]: val };
+		update({
+			textShadow: `${next.x}px ${next.y}px ${next.blur}px ${next.color}`,
+		});
+	};
+
+	if (layer.type !== "Text" && layer.type !== "Caption") return null;
+
+	return (
+		<CollapsibleSection title="Drop Shadow" icon={Blend} defaultOpen>
+			<div className="space-y-3">
+				<div className="flex items-center justify-between">
+					<div className="flex items-center gap-2">
+						<Blend className="w-3.5 h-3.5 text-purple-400" />
+						<span className="text-[11px] text-gray-300">Text Shadow</span>
+					</div>
+					<Switch
+						checked={isOn}
+						onCheckedChange={handleToggle}
+						className="data-[state=checked]:bg-purple-500"
+					/>
+				</div>
+
+				{isOn && shadowParams && (
+					<>
+						<div className="space-y-1.5">
+							<span className="text-[9px] font-bold uppercase tracking-wider text-gray-500">
+								Shadow Color
+							</span>
+							<ColorPicker
+								value={shadowParams.color}
+								onChange={(v) => updateParam("color", v)}
+							/>
+						</div>
+
+						<div className="grid grid-cols-3 gap-2">
+							<div className="space-y-1">
+								<span className="text-[9px] font-bold uppercase tracking-wider text-gray-500 block">
+									X Offset
+								</span>
+								<DraggableNumberInput
+									label="px"
+									value={shadowParams.x}
+									onChange={(v) => updateParam("x", v)}
+								/>
+							</div>
+							<div className="space-y-1">
+								<span className="text-[9px] font-bold uppercase tracking-wider text-gray-500 block">
+									Y Offset
+								</span>
+								<DraggableNumberInput
+									label="px"
+									value={shadowParams.y}
+									onChange={(v) => updateParam("y", v)}
+								/>
+							</div>
+							<div className="space-y-1">
+								<span className="text-[9px] font-bold uppercase tracking-wider text-gray-500 block">
+									Blur
+								</span>
+								<DraggableNumberInput
+									label="px"
+									value={shadowParams.blur}
+									onChange={(v) => updateParam("blur", Math.max(0, v))}
+								/>
+							</div>
+						</div>
+
+						<div className="space-y-1.5">
+							<span className="text-[9px] font-bold uppercase tracking-wider text-gray-500">
+								Quick Presets
+							</span>
+							<div className="flex gap-1.5 flex-wrap">
+								{[
+									{ label: "Soft", val: "0px 4px 12px rgba(0,0,0,0.6)" },
+									{ label: "Hard", val: "3px 3px 0px rgba(0,0,0,0.9)" },
+									{ label: "Glow", val: "0px 0px 10px rgba(255,255,255,0.8)" },
+									{ label: "Neon", val: "0px 0px 15px rgba(59,130,246,0.9)" },
+								].map((preset) => (
+									<Button
+										key={preset.label}
+										variant="outline"
+										size="sm"
+										className="h-6 text-[10px] px-2.5 border-white/10 bg-white/5 hover:bg-white/10 hover:border-white/20 text-gray-300 transition-colors"
+										onClick={() => update({ textShadow: preset.val })}
+									>
+										{preset.label}
+									</Button>
+								))}
+							</div>
+						</div>
+					</>
+				)}
+			</div>
+		</CollapsibleSection>
+	);
+};
 
 // ---------------------------------------------------------------------------
 // AnimationsInspectorSection
@@ -735,6 +907,147 @@ const LottieInspectorSection: React.FC<{
 };
 
 // ---------------------------------------------------------------------------
+// TextBoxSection
+// ---------------------------------------------------------------------------
+
+const TextBoxSection: React.FC<{
+	layer: EditorLayer;
+	update: (patch: Partial<EditorLayer>) => void;
+}> = ({ layer, update }) => {
+	const isOn = layer.useRoundedTextBox === true;
+
+	const handleToggle = (checked: boolean) => {
+		if (checked) {
+			update({
+				useRoundedTextBox: true,
+				backgroundColor:
+					layer.backgroundColor ?? ROUNDED_BOX_DEFAULTS.backgroundColor,
+				padding: layer.padding ?? ROUNDED_BOX_DEFAULTS.padding,
+				borderRadius: layer.borderRadius ?? ROUNDED_BOX_DEFAULTS.borderRadius,
+			});
+		} else {
+			update({
+				useRoundedTextBox: false,
+				backgroundColor: undefined,
+			});
+		}
+	};
+
+	return (
+		<CollapsibleSection title="Text Box" icon={Box} defaultOpen>
+			<div className="space-y-3">
+				<div className="flex items-center justify-between">
+					<div className="flex items-center gap-2">
+						<Box className="w-3.5 h-3.5 text-blue-400" />
+						<span className="text-[11px] text-gray-300">
+							Rounded Background
+						</span>
+					</div>
+					<Switch
+						checked={isOn}
+						onCheckedChange={handleToggle}
+						className="data-[state=checked]:bg-blue-500"
+					/>
+				</div>
+
+				{isOn && (
+					<>
+						<div className="space-y-1.5">
+							<span className="text-[9px] font-bold uppercase tracking-wider text-gray-500">
+								Background Colour
+							</span>
+							<ColorPicker
+								value={
+									layer.backgroundColor ?? ROUNDED_BOX_DEFAULTS.backgroundColor
+								}
+								onChange={(v) => update({ backgroundColor: v })}
+							/>
+						</div>
+
+						<div className="grid grid-cols-2 gap-2">
+							<div className="space-y-1">
+								<span className="text-[9px] font-bold uppercase tracking-wider text-gray-500 block">
+									H-Padding
+								</span>
+								<DraggableNumberInput
+									label="px"
+									icon={MoveHorizontal}
+									value={layer.padding ?? ROUNDED_BOX_DEFAULTS.padding}
+									onChange={(v) => update({ padding: Math.max(0, v) })}
+								/>
+							</div>
+							<div className="space-y-1">
+								<span className="text-[9px] font-bold uppercase tracking-wider text-gray-500 block">
+									Corner Radius
+								</span>
+								<DraggableNumberInput
+									label="px"
+									icon={Box}
+									value={
+										layer.borderRadius ?? ROUNDED_BOX_DEFAULTS.borderRadius
+									}
+									onChange={(v) => update({ borderRadius: Math.max(0, v) })}
+								/>
+							</div>
+						</div>
+
+						<div className="space-y-1.5">
+							<span className="text-[9px] font-bold uppercase tracking-wider text-gray-500">
+								Quick Presets
+							</span>
+							<div className="flex gap-1.5 flex-wrap">
+								{[
+									{
+										label: "Pill",
+										padding: 20,
+										borderRadius: 999,
+										backgroundColor: "rgba(0,0,0,0.75)",
+									},
+									{
+										label: "Chip",
+										padding: 12,
+										borderRadius: 6,
+										backgroundColor: "rgba(0,0,0,0.6)",
+									},
+									{
+										label: "Bold",
+										padding: 16,
+										borderRadius: 4,
+										backgroundColor: "#000000",
+									},
+									{
+										label: "Soft",
+										padding: 18,
+										borderRadius: 16,
+										backgroundColor: "rgba(255,255,255,0.15)",
+									},
+								].map((preset) => (
+									<Button
+										key={preset.label}
+										variant="outline"
+										size="sm"
+										className="h-6 text-[10px] px-2.5 border-white/10 bg-white/5 hover:bg-white/10 hover:border-white/20 text-gray-300"
+										onClick={() =>
+											update({
+												padding: preset.padding,
+												borderRadius: preset.borderRadius,
+												backgroundColor: preset.backgroundColor,
+											})
+										}
+									>
+										{preset.label}
+									</Button>
+								))}
+							</div>
+						</div>
+					</>
+				)}
+			</div>
+		</CollapsibleSection>
+	);
+};
+
+// ---------------------------------------------------------------------------
 // UnifiedClip
 // ---------------------------------------------------------------------------
 
@@ -767,6 +1080,12 @@ const UnifiedClip: React.FC<{ layer: EditorLayer; isSelected: boolean }> = ({
 				<div className="absolute right-1 top-1/2 -translate-y-1/2 flex items-center gap-0.5 bg-amber-500/20 px-1 py-0.5 rounded text-[8px] font-bold text-amber-300 border border-amber-500/30 pointer-events-none">
 					<Sparkles className="w-2 h-2" />
 					{layer.lottieLoop !== false ? "LOOP" : "ONCE"}
+				</div>
+			)}
+			{layer.useRoundedTextBox && (
+				<div className="absolute right-1 top-1/2 -translate-y-1/2 flex items-center gap-0.5 bg-blue-500/20 px-1 py-0.5 rounded text-[8px] font-bold text-blue-300 border border-blue-500/30 pointer-events-none">
+					<Box className="w-2 h-2" />
+					BOX
 				</div>
 			)}
 			<div className="absolute inset-0 px-2 flex items-center justify-between pointer-events-none">
@@ -871,7 +1190,8 @@ const InteractionOverlay: React.FC = () => {
 				l.type !== "Audio" &&
 				currentFrame >= (l.startFrame ?? 0) &&
 				currentFrame <
-					(l.startFrame ?? 0) + (l.durationInFrames ?? DEFAULT_DURATION_FRAMES),
+					(l.startFrame ?? 0) +
+						((l.durationInMS ?? DEFAULT_DURATION_MS) / 1000) * FPS,
 		)
 		.sort((a, b) => (a.zIndex ?? 0) - (b.zIndex ?? 0));
 
@@ -1128,6 +1448,7 @@ const InteractionOverlay: React.FC = () => {
 						{selectedId === layer.id && (
 							<>
 								{layer.type !== "Text" &&
+									!isCaptionLayer(layer.type) &&
 									RESIZE_HANDLE_CONFIG.map(({ pos, cursor, posClass }) => (
 										<div
 											key={pos}
@@ -1441,19 +1762,33 @@ const SortableTrackHeader: React.FC<{
 					</div>
 				</WithTooltip>
 			)}
+			{layer.useRoundedTextBox && (
+				<WithTooltip tip="Rounded text box active">
+					<div className="p-1 rounded bg-blue-500/10">
+						<Box className="w-3 h-3 text-blue-400" />
+					</div>
+				</WithTooltip>
+			)}
 		</button>
 	);
 };
 
-// ---------------------------------------------------------------------------
-// TimelinePanel
-// ---------------------------------------------------------------------------
+const formatTimecode = (totalSeconds: number): string => {
+	const h = Math.floor(totalSeconds / 3600);
+	const m = Math.floor((totalSeconds % 3600) / 60);
+	const s = Math.floor(totalSeconds % 60);
+
+	const pad = (n: number) => n.toString().padStart(2, "0");
+
+	if (h > 0) return `${h}:${pad(m)}:${pad(s)}`;
+	return `${pad(m)}:${pad(s)}`;
+};
 
 const TimelinePanel: React.FC = () => {
 	const {
 		layers,
 		updateLayers,
-		durationInFrames,
+		durationInMS,
 		currentFrame,
 		setCurrentFrame,
 		playerRef,
@@ -1553,7 +1888,7 @@ const TimelinePanel: React.FC = () => {
 		if (!layer) return;
 		const startX = e.clientX;
 		const initialStart = layer.startFrame ?? 0;
-		const initialDuration = layer.durationInFrames ?? DEFAULT_DURATION_FRAMES;
+		const initialDuration = layer.durationInMS ?? DEFAULT_DURATION_MS;
 
 		const onMove = (ev: MouseEvent) => {
 			const diffFrames = Math.round((ev.clientX - startX) / pixelsPerFrame);
@@ -1566,12 +1901,13 @@ const TimelinePanel: React.FC = () => {
 					),
 				);
 			} else {
-				let newDuration = Math.max(1, initialDuration + diffFrames);
-				if (layer.maxDurationInFrames)
-					newDuration = Math.min(newDuration, layer.maxDurationInFrames);
+				const diffMS = (diffFrames / fps) * 1000;
+				let newDuration = Math.max(1, initialDuration + diffMS);
+				if (layer.maxDurationInMS)
+					newDuration = Math.min(newDuration, layer.maxDurationInMS);
 				updateLayers((prev) =>
 					prev.map((l) =>
-						l.id === layerId ? { ...l, durationInFrames: newDuration } : l,
+						l.id === layerId ? { ...l, durationInMS: newDuration } : l,
 					),
 				);
 			}
@@ -1606,6 +1942,53 @@ const TimelinePanel: React.FC = () => {
 		window.addEventListener("mouseup", onUp);
 	};
 
+	// --- Dynamic Scaling Engine ---
+	const pixelsPerSecond = fps * pixelsPerFrame;
+
+	const { majorTickSeconds, minorTickSeconds } = useMemo(() => {
+		const minSpacingPx = 90; // Minimum pixel gap between time labels to avoid crowding
+		const targetSeconds = minSpacingPx / pixelsPerSecond;
+
+		// Snappy, human-readable time intervals
+		const steps = [
+			0.5,
+			1,
+			2,
+			5,
+			10,
+			15,
+			30, // Seconds
+			60,
+			120,
+			300,
+			600,
+			900,
+			1800, // 1m, 2m, 5m, 10m, 15m, 30m
+			3600,
+			7200, // 1h, 2h
+		];
+
+		// Find the most appropriate major tick step
+		const major =
+			steps.find((step) => step >= targetSeconds) || steps[steps.length - 1];
+
+		// Define minor divisions based on major step
+		let minor = major / 5; // Default division
+		if (major === 0.5) minor = 0.1;
+		else if (major === 1) minor = 0.25;
+		else if (major === 2) minor = 0.5;
+		else if (major === 15) minor = 5;
+		else if (major === 30) minor = 10;
+		else if (major >= 60) minor = major / 4;
+
+		return { majorTickSeconds: major, minorTickSeconds: minor };
+	}, [pixelsPerSecond]);
+
+	const totalSeconds = durationInMS / 1000;
+	const ticksCount = Math.ceil(totalSeconds / majorTickSeconds) + 2; // +2 for buffer
+	const patternWidth = majorTickSeconds * pixelsPerSecond;
+	const subTicksCount = Math.round(majorTickSeconds / minorTickSeconds);
+
 	return (
 		<div
 			className="flex flex-col border-t border-white/10 bg-[#0f0f0f] shrink-0 select-none z-30 shadow-[0_-5px_20px_rgba(0,0,0,0.5)]"
@@ -1629,15 +2012,17 @@ const TimelinePanel: React.FC = () => {
 						variant="ghost"
 						size="icon"
 						className="h-6 w-6 rounded hover:bg-white/10 text-gray-400"
-						onClick={() => setPixelsPerFrame((p) => Math.max(1, p - 2))}
+						onClick={() =>
+							setPixelsPerFrame((p) => Math.max(0.1, p - (p > 5 ? 2 : 0.5)))
+						}
 					>
 						<Minus className="h-3 w-3" />
 					</Button>
 					<Slider
 						value={[pixelsPerFrame]}
-						min={1}
-						max={60}
-						step={1}
+						min={0.1}
+						max={100}
+						step={0.1}
 						onValueChange={([v]) => setPixelsPerFrame(v)}
 						className="w-24"
 					/>
@@ -1645,7 +2030,9 @@ const TimelinePanel: React.FC = () => {
 						variant="ghost"
 						size="icon"
 						className="h-6 w-6 rounded hover:bg-white/10 text-gray-400"
-						onClick={() => setPixelsPerFrame((p) => Math.min(100, p + 2))}
+						onClick={() =>
+							setPixelsPerFrame((p) => Math.min(100, p + (p > 5 ? 2 : 0.5)))
+						}
 					>
 						<Plus className="h-3 w-3" />
 					</Button>
@@ -1686,7 +2073,7 @@ const TimelinePanel: React.FC = () => {
 					style={{
 						width: Math.max(
 							scrollContainerRef.current?.clientWidth || 0,
-							HEADER_WIDTH + durationInFrames * pixelsPerFrame + 800,
+							HEADER_WIDTH + totalSeconds * pixelsPerSecond + 800,
 						),
 					}}
 				>
@@ -1705,7 +2092,7 @@ const TimelinePanel: React.FC = () => {
 						>
 							<svg
 								role="img"
-								aria-label="tick"
+								aria-label="ruler ticks"
 								className="absolute inset-0 w-full h-full pointer-events-none opacity-50"
 							>
 								<defs>
@@ -1713,7 +2100,7 @@ const TimelinePanel: React.FC = () => {
 										id="ruler-ticks"
 										x="0"
 										y="0"
-										width={fps * pixelsPerFrame}
+										width={patternWidth}
 										height={RULER_HEIGHT}
 										patternUnits="userSpaceOnUse"
 									>
@@ -1725,31 +2112,41 @@ const TimelinePanel: React.FC = () => {
 											stroke="#666"
 											strokeWidth="1"
 										/>
-										{[0.25, 0.5, 0.75].map((t) => (
-											<line
-												key={t}
-												x1={t * fps * pixelsPerFrame + 0.5}
-												y1={RULER_HEIGHT}
-												x2={t * fps * pixelsPerFrame + 0.5}
-												y2={RULER_HEIGHT - 6}
-												stroke="#333"
-											/>
-										))}
+										{Array.from({ length: Math.max(0, subTicksCount - 1) }).map(
+											(_, i) => {
+												const x =
+													(i + 1) * minorTickSeconds * pixelsPerSecond + 0.5;
+												return (
+													<line
+														key={i}
+														x1={x}
+														y1={RULER_HEIGHT}
+														x2={x}
+														y2={RULER_HEIGHT - 6}
+														stroke="#333"
+													/>
+												);
+											},
+										)}
 									</pattern>
 								</defs>
 								<rect width="100%" height="100%" fill="url(#ruler-ticks)" />
 							</svg>
-							{Array.from({
-								length: Math.ceil(durationInFrames / fps) + 5,
-							}).map((_, sec) => (
-								<span
-									key={`${sec}_label_time`}
-									className="absolute top-1.5 text-[10px] font-mono text-gray-500 select-none pointer-events-none font-medium"
-									style={{ left: sec * fps * pixelsPerFrame + 4 }}
-								>
-									{sec}s
-								</span>
-							))}
+
+							{/* High Performance Label Rendering */}
+							{Array.from({ length: ticksCount }).map((_, i) => {
+								const sec = i * majorTickSeconds;
+								return (
+									<span
+										key={`label_${sec}`}
+										className="absolute top-1.5 text-[10px] font-mono text-gray-500 select-none pointer-events-none font-medium"
+										style={{ left: sec * pixelsPerSecond + 4 }}
+									>
+										{formatTimecode(sec)}
+									</span>
+								);
+							})}
+
 							<div
 								ref={playheadRef}
 								className="absolute top-0 bottom-0 z-60 pointer-events-none h-screen will-change-transform"
@@ -1793,17 +2190,17 @@ const TimelinePanel: React.FC = () => {
 						</div>
 
 						<div className="flex-1 relative timeline-bg min-h-full bg-[#0a0a0a]">
+							{/* Synchronized Background Grid */}
 							<div
 								className="absolute inset-0 pointer-events-none opacity-[0.03]"
 								style={{
 									backgroundImage:
 										"linear-gradient(90deg, #fff 1px, transparent 1px)",
-									backgroundSize: `${fps * pixelsPerFrame}px 100%`,
+									backgroundSize: `${patternWidth}px 100%`,
 								}}
 							/>
 							{sortedLayers.map((layer) => {
-								const duration =
-									layer.durationInFrames ?? DEFAULT_DURATION_FRAMES;
+								const durationMS = layer.durationInMS ?? DEFAULT_DURATION_MS;
 								const isSelected = layer.id === selectedId;
 								return (
 									<div
@@ -1823,7 +2220,10 @@ const TimelinePanel: React.FC = () => {
 											}`}
 											style={{
 												left: (layer.startFrame ?? 0) * pixelsPerFrame,
-												width: Math.max(10, duration * pixelsPerFrame),
+												width: Math.max(
+													10,
+													(durationMS / 1000) * fps * pixelsPerFrame,
+												),
 												minWidth: "10px",
 											}}
 											onMouseDown={(e) =>
@@ -1869,6 +2269,10 @@ const InspectorPanel: React.FC = () => {
 		updateViewportWidth,
 		updateViewportHeight,
 		initialLayersData,
+		fps,
+		setFps,
+		backgroundColor,
+		setBackgroundColor,
 	} = useEditor();
 
 	const selectedLayer = layers.find((f) => f.id === selectedId);
@@ -1895,6 +2299,14 @@ const InspectorPanel: React.FC = () => {
 						const dims = measureText(nextLayer.text || "", nextLayer);
 						nextLayer.width = dims.width;
 						nextLayer.height = dims.height;
+					}
+				} else if (nextLayer.type === "Caption") {
+					const captionProps = ["fontSize", "lineHeight", "padding"];
+					if (captionProps.some((prop) => prop in patch)) {
+						const fSize = nextLayer.fontSize ?? 48;
+						const lHeight = nextLayer.lineHeight ?? 1.2;
+						const pad = nextLayer.padding ?? 0;
+						nextLayer.height = Math.round(fSize * lHeight * 3 + pad * 2);
 					}
 				}
 				return nextLayer;
@@ -1962,6 +2374,41 @@ const InspectorPanel: React.FC = () => {
 									/>
 								</div>
 							</div>
+							{/* NEW: Background Colour Control */}
+							<div className="space-y-1.5">
+								<Label className="text-[10px] text-gray-500 uppercase font-bold tracking-wider">
+									Background Colour
+								</Label>
+								<ColorPicker
+									showAlpha={false}
+									value={backgroundColor}
+									onChange={setBackgroundColor}
+								/>
+							</div>
+
+							{/* NEW: Frame Rate (FPS) Control */}
+							<div className="space-y-1.5">
+								<Label className="text-[10px] text-gray-500 uppercase font-bold tracking-wider">
+									Frame Rate
+								</Label>
+								<Select
+									value={fps.toString()}
+									onValueChange={(val) => setFps(Number(val))}
+								>
+									<SelectTrigger className="h-8 text-[11px] bg-white/5 border-white/10 text-gray-300 focus:ring-blue-500/20">
+										<SelectValue placeholder="Select FPS" />
+									</SelectTrigger>
+									<SelectContent className="bg-neutral-800 border-white/10 text-gray-300">
+										{[24, 25, 30, 50, 60].map((rate) => (
+											<SelectItem key={rate} value={rate.toString()}>
+												<span className="flex items-center justify-between w-full gap-6">
+													<span>{rate} FPS</span>
+												</span>
+											</SelectItem>
+										))}
+									</SelectContent>
+								</Select>
+							</div>
 						</div>
 						<div className="w-full h-px bg-white/5" />
 						<div className="flex flex-col items-center justify-center py-12 px-4 text-center border border-dashed border-white/10 rounded-lg bg-white/2">
@@ -1987,6 +2434,13 @@ const InspectorPanel: React.FC = () => {
 		selectedLayer.type === "Video" &&
 		selectedLayer.videoNaturalWidth != null &&
 		selectedLayer.videoNaturalHeight != null;
+
+	const showAutoDimensions =
+		(selectedLayer.type === "Image" ||
+			selectedLayer.type === "SVG" ||
+			selectedLayer.type === "Video" ||
+			selectedLayer.type === "Lottie") &&
+		!isCaptionLayer(selectedLayer.type);
 
 	const handleAutoDimensions = () => {
 		if (selectedLayer.autoDimensions) {
@@ -2023,6 +2477,13 @@ const InspectorPanel: React.FC = () => {
 				? "Sync dimensions with cropped source media"
 				: "Sync dimensions with source media";
 
+	const suppressSizeInputs =
+		selectedLayer.type === "Text" || isCaptionLayer(selectedLayer.type);
+
+	const isTextOrCaption =
+		selectedLayer.type === "Text" || selectedLayer.type === "Caption";
+	const roundedBoxActive = isTextOrCaption && selectedLayer.useRoundedTextBox;
+
 	return (
 		<div className="w-80 h-full border-l border-white/5 bg-[#0f0f0f] z-20 shadow-xl flex flex-col shrink-0 overflow-hidden">
 			<div className="flex items-center justify-between p-4 border-b border-white/5 bg-neutral-900/50">
@@ -2054,10 +2515,7 @@ const InspectorPanel: React.FC = () => {
 								<div className="flex items-center gap-2 text-[11px] font-bold text-gray-500 uppercase tracking-wider">
 									<Move className="w-3.5 h-3.5" /> Transform
 								</div>
-								{(selectedLayer.type === "Image" ||
-									selectedLayer.type === "SVG" ||
-									selectedLayer.type === "Video" ||
-									selectedLayer.type === "Lottie") && (
+								{showAutoDimensions && (
 									<WithTooltip tip={autoDimensionsTooltip}>
 										<Button
 											variant={
@@ -2093,7 +2551,7 @@ const InspectorPanel: React.FC = () => {
 								/>
 							</div>
 
-							{selectedLayer.type !== "Text" && (
+							{!suppressSizeInputs && (
 								<TooltipProvider>
 									<div className="flex items-end gap-2">
 										<DraggableNumberInput
@@ -2190,6 +2648,16 @@ const InspectorPanel: React.FC = () => {
 						<LottieInspectorSection layer={selectedLayer} update={update} />
 					)}
 
+					{/* ── Text Box (rounded pill background) ────────────────────── */}
+					{isTextOrCaption && (
+						<TextBoxSection layer={selectedLayer} update={update} />
+					)}
+
+					{/* ── Text Shadow Section ────────────────────── */}
+					{isTextOrCaption && (
+						<TextShadowSection layer={selectedLayer} update={update} />
+					)}
+
 					{(selectedLayer.type === "Video" ||
 						selectedLayer.type === "Audio") && (
 						<CollapsibleSection title="Audio" icon={Music}>
@@ -2210,7 +2678,8 @@ const InspectorPanel: React.FC = () => {
 						</CollapsibleSection>
 					)}
 
-					{selectedLayer.type === "Text" && (
+					{(selectedLayer.type === "Text" ||
+						selectedLayer.type === "Caption") && (
 						<TypographyControls
 							fontFamily={selectedLayer.fontFamily ?? "Inter"}
 							fontSize={selectedLayer.fontSize ?? 40}
@@ -2226,29 +2695,71 @@ const InspectorPanel: React.FC = () => {
 						/>
 					)}
 
+					{selectedLayer.type === "Caption" && (
+						<CollapsibleSection
+							title="Caption Style"
+							icon={Subtitles}
+							defaultOpen
+						>
+							<div className="space-y-3">
+								<div className="flex flex-col gap-1.5">
+									<Label className="text-[10px] text-gray-400">Preset</Label>
+									<Select
+										value={(selectedLayer as any).captionPreset || "default"}
+										onValueChange={(v) =>
+											update({ captionPreset: v as "default" | "tiktok" })
+										}
+									>
+										<SelectTrigger className="h-7 text-[10px] bg-black/20 border-white/10">
+											<SelectValue placeholder="Select preset" />
+										</SelectTrigger>
+										<SelectContent>
+											<SelectItem value="default" className="text-[10px]">
+												Default Subtitles
+											</SelectItem>
+											<SelectItem value="tiktok" className="text-[10px]">
+												TikTok Style
+											</SelectItem>
+										</SelectContent>
+									</Select>
+								</div>
+							</div>
+						</CollapsibleSection>
+					)}
+
 					<StyleControls
 						backgroundColor={selectedLayer.backgroundColor}
 						stroke={
-							selectedLayer.type === "Text"
+							selectedLayer.type === "Text" || selectedLayer.type === "Caption"
 								? selectedLayer.stroke
 								: selectedLayer.borderColor
 						}
 						strokeWidth={
-							selectedLayer.type === "Text"
+							selectedLayer.type === "Text" || selectedLayer.type === "Caption"
 								? selectedLayer.strokeWidth
 								: selectedLayer.borderWidth
 						}
 						cornerRadius={selectedLayer.borderRadius}
 						padding={selectedLayer.padding}
 						opacity={selectedLayer.opacity}
-						showBackground={["Image", "SVG", "Video", "Lottie"].includes(
-							selectedLayer.type,
-						)}
+						showBackground={
+							["Image", "SVG", "Video", "Lottie"].includes(
+								selectedLayer.type,
+							) ||
+							(isTextOrCaption && !roundedBoxActive)
+						}
 						showStroke={selectedLayer.type !== "Audio"}
 						showCornerRadius={
-							selectedLayer.type !== "Text" && selectedLayer.type !== "Audio"
+							!roundedBoxActive &&
+							selectedLayer.type !== "Text" &&
+							selectedLayer.type !== "Caption" &&
+							selectedLayer.type !== "Audio"
 						}
-						showPadding={selectedLayer.type === "Text"}
+						showPadding={
+							!roundedBoxActive &&
+							(selectedLayer.type === "Text" ||
+								selectedLayer.type === "Caption")
+						}
 						showOpacity={selectedLayer.type !== "Audio"}
 						onChange={(updates) => {
 							const mappedUpdates: any = { ...updates };
@@ -2256,7 +2767,10 @@ const InspectorPanel: React.FC = () => {
 								mappedUpdates.borderRadius = updates.cornerRadius;
 								delete mappedUpdates.cornerRadius;
 							}
-							if (selectedLayer.type !== "Text") {
+							if (
+								selectedLayer.type !== "Text" &&
+								selectedLayer.type !== "Caption"
+							) {
 								if (updates.stroke !== undefined)
 									mappedUpdates.borderColor = updates.stroke;
 								if (updates.strokeWidth !== undefined)
@@ -2294,6 +2808,10 @@ export const VideoDesignerEditor: React.FC<VideoDesignerEditorProps> = ({
 	const nodeConfig = node.config as unknown as VideoCompositorNodeConfig;
 	const handles = useAppSelector(handleSelectors.selectEntities);
 
+	const [fps, setFps] = useState(nodeConfig.FPS ?? FPS);
+	const [backgroundColor, setBackgroundColor] = useState(
+		nodeConfig.backgroundColor ?? "#000000",
+	);
 	const [layers, setLayers] = useState<EditorLayer[]>([]);
 	const [selectedId, setSelectedId] = useState<string | null>(null);
 	const [isDirty, setIsDirty] = useState(false);
@@ -2334,7 +2852,6 @@ export const VideoDesignerEditor: React.FC<VideoDesignerEditorProps> = ({
 		if (!item) return undefined;
 		if (item.type === "Video" || item.type === "Audio")
 			return resolveMediaSourceUrlBrowser(item.data as VirtualMediaData);
-		// Image, SVG, Lottie — all stored as FileData
 		const fileData = item.data as FileData;
 		return fileData.entity?.id
 			? GetAssetEndpoint(fileData.entity)
@@ -2347,7 +2864,6 @@ export const VideoDesignerEditor: React.FC<VideoDesignerEditorProps> = ({
 		if (!item) return undefined;
 		if (item.type === "Video" || item.type === "Audio")
 			return (item.data as VirtualMediaData).metadata?.durationMs;
-		// Image, SVG, Lottie
 		const fileData = item.data as FileData;
 		return fileData.entity?.duration ?? fileData?.processData?.duration;
 	};
@@ -2452,7 +2968,8 @@ export const VideoDesignerEditor: React.FC<VideoDesignerEditorProps> = ({
 			layerUpdates: serializeLayersForSave(layers),
 			width: viewportWidth,
 			height: viewportHeight,
-			FPS,
+			FPS: fps,
+			backgroundColor: backgroundColor,
 		});
 		setIsDirty(false);
 	};
@@ -2509,33 +3026,38 @@ export const VideoDesignerEditor: React.FC<VideoDesignerEditorProps> = ({
 						layerHeight = layerHeight ?? metadata.height;
 					}
 				} else if (isFileMedia(item.type)) {
-					// Handles both "Image" and "SVG" — identical data shape (FileData)
 					const fileData = item.data as FileData;
 					durationMs =
 						fileData.entity?.duration ?? fileData.processData?.duration ?? 0;
 					src = getAssetUrl(id);
 
-					const initialW =
-						fileData.processData?.width ?? fileData.entity?.width ?? undefined;
-					const initialH =
-						fileData.processData?.height ??
-						fileData.entity?.height ??
-						undefined;
-
-					if (isAutoDimensions && initialW != null && initialH != null) {
-						layerWidth = initialW;
-						layerHeight = initialH;
-					} else {
-						layerWidth = layerWidth ?? initialW;
-						layerHeight = layerHeight ?? initialH;
+					if (item.type !== "Caption") {
+						const initialW =
+							fileData.processData?.width ??
+							fileData.entity?.width ??
+							undefined;
+						const initialH =
+							fileData.processData?.height ??
+							fileData.entity?.height ??
+							undefined;
+						if (isAutoDimensions && initialW != null && initialH != null) {
+							layerWidth = initialW;
+							layerHeight = initialH;
+						} else {
+							layerWidth = layerWidth ?? initialW;
+							layerHeight = layerHeight ?? initialH;
+						}
 					}
 				}
 
 				const hasNativeDuration =
-					(item.type === "Video" || item.type === "Audio") && durationMs > 0;
-				const calculatedDurationFrames = hasNativeDuration
-					? Math.ceil((durationMs / 1000) * FPS)
-					: DEFAULT_DURATION_FRAMES;
+					(item.type === "Video" ||
+						item.type === "Audio" ||
+						item.type === "Caption") &&
+					durationMs > 0;
+				const calculatedDurationMS = hasNativeDuration
+					? durationMs
+					: DEFAULT_DURATION_MS;
 
 				const base: Partial<EditorLayer> = {
 					id,
@@ -2547,7 +3069,7 @@ export const VideoDesignerEditor: React.FC<VideoDesignerEditorProps> = ({
 					opacity: 1,
 					zIndex: saved?.zIndex ?? ++maxZ,
 					startFrame: 0,
-					durationInFrames: saved?.durationInFrames ?? calculatedDurationFrames,
+					durationInMS: saved?.durationInMS ?? calculatedDurationMS,
 					volume: 1,
 					animations: saved?.animations ?? [],
 					...saved,
@@ -2578,8 +3100,66 @@ export const VideoDesignerEditor: React.FC<VideoDesignerEditorProps> = ({
 					const fontUrl = GetFontAssetUrl(fontFamily);
 					if (fontUrl)
 						fontPromises.push(fontManager.loadFont(fontFamily, fontUrl));
-				} else if (isFileMedia(item.type)) {
-					// Handles both "Image" and "SVG" with identical layer properties
+				} else if (item.type === "Caption") {
+					const fSize = saved?.fontSize ?? 48;
+					const lHeight = saved?.lineHeight ?? 1.2;
+					const pad = saved?.padding ?? 0;
+
+					// Compute an auto-height sufficient for ~3 subtitle lines to prevent interaction blocking.
+					const autoHeight = Math.round(fSize * lHeight * 3 + pad * 2);
+
+					// Compute standard bottom positioning.
+					const defaultY = Math.max(
+						0,
+						viewportHeight - autoHeight - Math.round(viewportHeight * 0.1),
+					);
+
+					// If the saved state had full legacy viewport height, reset to default placement to unblock interactions.
+					const isLegacyFullscreen =
+						saved?.height !== undefined &&
+						saved?.height >= viewportHeight * 0.9;
+					const initialY = isLegacyFullscreen
+						? defaultY
+						: (saved?.y ?? defaultY);
+
+					const captionLayer: EditorLayer = {
+						...base,
+						type: "Caption" as any,
+						width: viewportWidth, // Always force full width
+						height: autoHeight, // Dynamic auto height based on font size
+						y: initialY,
+						fontSize: fSize,
+						fontFamily: saved?.fontFamily ?? "Inter",
+						fill: saved?.fill ?? "#ffffff",
+						align: saved?.align ?? "center",
+						verticalAlign: saved?.verticalAlign ?? "bottom",
+						captionPreset: (saved as any)?.captionPreset ?? "default",
+						lockAspect: false,
+						autoDimensions: false,
+					} as EditorLayer;
+					loaded.push(captionLayer);
+
+					if (src && !saved?.durationInMS) {
+						const captionSrc = src;
+						const layerId = id;
+						asyncTasks.push(
+							fetchSrtDurationMs(captionSrc).then((srtDurationMs) => {
+								if (!srtDurationMs) return;
+								setLayers((prev) =>
+									prev.map((l) =>
+										l.id === layerId
+											? {
+													...l,
+													durationInMS: srtDurationMs,
+													maxDurationInMS: srtDurationMs,
+												}
+											: l,
+									),
+								);
+							}),
+						);
+					}
+				} else if (item.type === "Image" || item.type === "SVG") {
 					loaded.push({
 						...base,
 						type: item.type as "Image" | "SVG",
@@ -2593,8 +3173,7 @@ export const VideoDesignerEditor: React.FC<VideoDesignerEditorProps> = ({
 						type: "Video",
 						width: layerWidth ?? 400,
 						height: layerHeight ?? 400,
-						maxDurationInFrames:
-							durationMs > 0 ? calculatedDurationFrames : undefined,
+						maxDurationInMS: durationMs > 0 ? durationMs : undefined,
 						lockAspect: true,
 					} as EditorLayer);
 				} else if (item.type === "Audio") {
@@ -2603,8 +3182,7 @@ export const VideoDesignerEditor: React.FC<VideoDesignerEditorProps> = ({
 						type: "Audio",
 						height: 0,
 						width: 0,
-						maxDurationInFrames:
-							durationMs > 0 ? calculatedDurationFrames : undefined,
+						maxDurationInMS: durationMs > 0 ? durationMs : undefined,
 						lockAspect: true,
 					} as EditorLayer);
 				} else if (item.type === "Lottie") {
@@ -2616,7 +3194,7 @@ export const VideoDesignerEditor: React.FC<VideoDesignerEditorProps> = ({
 						lottieLoop: saved?.lottieLoop !== false,
 						lottieFrameRate: saved?.lottieFrameRate,
 						lottieDurationMs: saved?.lottieDurationMs,
-						maxDurationInFrames: saved?.maxDurationInFrames,
+						maxDurationInMS: saved?.maxDurationInMS,
 						lockAspect: true,
 						speed: saved?.speed ?? 1,
 					} as EditorLayer;
@@ -2641,9 +3219,8 @@ export const VideoDesignerEditor: React.FC<VideoDesignerEditorProps> = ({
 															? Math.round((meta.durationMs / 1000) * FPS)
 															: l.lottieFrameRate,
 													lottieDurationMs: meta.durationMs,
-													durationInFrames:
-														saved?.durationInFrames ?? nativeFrames,
-													maxDurationInFrames: nativeFrames || undefined,
+													durationInMS: saved?.durationInMS ?? meta.durationMs,
+													maxDurationInMS: meta.durationMs || undefined,
 												}
 											: l,
 									),
@@ -2667,12 +3244,10 @@ export const VideoDesignerEditor: React.FC<VideoDesignerEditorProps> = ({
 			if (l.type === "Text")
 				return `${l.id}:text:${l.fontFamily}:${l.fontSize}:${l.fontStyle}:${l.textDecoration}:${l.lineHeight}`;
 			if (l.type === "Video" && l.virtualMedia)
-				return `${l.id}:${l.type.toLowerCase()}:${l.autoDimensions}:${
-					l.virtualMedia.operation.op
-				}`;
-			return `${l.id}:${l.type}:${l.autoDimensions}:${l.width ?? "null"}:${
-				l.height ?? "null"
-			}`;
+				return `${l.id}:${l.type.toLowerCase()}:${l.autoDimensions}:${l.virtualMedia.operation.op}`;
+			if (l.type === "Caption")
+				return `${l.id}:caption:${viewportWidth}x${viewportHeight}`;
+			return `${l.id}:${l.type}:${l.autoDimensions}:${l.width ?? "null"}:${l.height ?? "null"}`;
 		})
 		.join("|");
 
@@ -2681,6 +3256,7 @@ export const VideoDesignerEditor: React.FC<VideoDesignerEditorProps> = ({
 			(l) =>
 				l.type !== "Audio" &&
 				l.type !== "Lottie" &&
+				l.type !== "Caption" &&
 				!l.isPlaceholder &&
 				(l.width == null || l.height == null || l.autoDimensions === true),
 		);
@@ -2709,12 +3285,9 @@ export const VideoDesignerEditor: React.FC<VideoDesignerEditorProps> = ({
 						}
 						const url = getAssetUrl(layer.inputHandleId);
 						if (isFileMedia(layer.type) && url) {
-							// Image and SVG both decode naturally via HTMLImageElement
 							const img = new Image();
 							img.src = url;
 							await img.decode();
-							// SVGs without intrinsic size may report 0; fall back to a
-							// reasonable default so the layer is still usable on canvas.
 							const naturalW =
 								img.naturalWidth > 0 ? img.naturalWidth : (layer.width ?? 400);
 							const naturalH =
@@ -2791,6 +3364,25 @@ export const VideoDesignerEditor: React.FC<VideoDesignerEditorProps> = ({
 			mounted = false;
 		};
 	}, [measurementSignature]);
+
+	// Keep Caption layers in sync with canvas resolution.
+	useEffect(() => {
+		setLayers((prev) =>
+			prev.map((l) => {
+				if (l.type === "Caption") {
+					const fSize = l.fontSize ?? 48;
+					const lHeight = l.lineHeight ?? 1.2;
+					const pad = l.padding ?? 0;
+
+					// Maintain dynamic auto height to prevent fullscreen blocking
+					const autoHeight = Math.round(fSize * lHeight * 3 + pad * 2);
+
+					return { ...l, width: viewportWidth, height: autoHeight };
+				}
+				return l;
+			}),
+		);
+	}, [viewportWidth, viewportHeight]);
 
 	useEffect(() => {
 		fitView();
@@ -2919,18 +3511,16 @@ export const VideoDesignerEditor: React.FC<VideoDesignerEditorProps> = ({
 	// Derived
 	// ---------------------------------------------------------------------------
 
-	const durationInFrames =
-		layers.length === 0
-			? DEFAULT_DURATION_FRAMES
-			: Math.max(
-					DEFAULT_DURATION_FRAMES,
+	const durationInMS =
+		layers.length > 0
+			? Math.max(
 					...layers.map(
 						(l) =>
-							(l.startFrame ?? 0) +
-							(l.durationInFrames ?? DEFAULT_DURATION_FRAMES),
+							(l.startFrame / fps) * 1000 +
+							(l.durationInMS ?? DEFAULT_DURATION_MS),
 					),
-				);
-
+				)
+			: DEFAULT_DURATION_MS;
 	const contextValue: EditorContextType = {
 		layers,
 		updateLayers: updateLayersHandler,
@@ -2944,8 +3534,17 @@ export const VideoDesignerEditor: React.FC<VideoDesignerEditorProps> = ({
 		viewportHeight,
 		updateViewportWidth,
 		updateViewportHeight,
-		fps: FPS,
-		durationInFrames,
+		fps,
+		setFps: (val) => {
+			setFps(val);
+			setIsDirty(true);
+		},
+		backgroundColor,
+		setBackgroundColor: (val) => {
+			setBackgroundColor(val);
+			setIsDirty(true);
+		},
+		durationInMS,
 		currentFrame,
 		setCurrentFrame: setCurrentFrameHandler,
 		isPlaying,
@@ -3007,10 +3606,15 @@ export const VideoDesignerEditor: React.FC<VideoDesignerEditorProps> = ({
 								<Player
 									ref={playerRef}
 									component={CompositionScene}
-									inputProps={{ layers, viewportWidth, viewportHeight }}
+									inputProps={{
+										layers,
+										viewportWidth,
+										viewportHeight,
+										backgroundColor,
+									}}
 									acknowledgeRemotionLicense
-									durationInFrames={durationInFrames}
-									fps={FPS}
+									durationInFrames={Math.round((durationInMS / 1000) * fps)}
+									fps={fps}
 									compositionWidth={viewportWidth}
 									compositionHeight={viewportHeight}
 									style={{ width: "100%", height: "100%" }}

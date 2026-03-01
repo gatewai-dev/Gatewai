@@ -259,18 +259,27 @@ importers:
       '@reduxjs/toolkit':
         specifier: ^2.10.1
         version: 2.11.2(react-redux@9.2.0(@types/react@19.2.14)(react@19.2.4)(redux@5.0.1))(react@19.2.4)
+      '@remotion/captions':
+        specifier: 4.0.431
+        version: 4.0.431
+      '@remotion/layout-utils':
+        specifier: 4.0.431
+        version: 4.0.431
       '@remotion/lottie':
-        specifier: 4.0.429
-        version: 4.0.429(lottie-web@5.13.0)(react-dom@19.2.4(react@19.2.4))(react@19.2.4)
+        specifier: 4.0.431
+        version: 4.0.431(lottie-web@5.13.0)(react-dom@19.2.4(react@19.2.4))(react@19.2.4)
       '@remotion/media':
-        specifier: 4.0.429
-        version: 4.0.429(react-dom@19.2.4(react@19.2.4))(react@19.2.4)
+        specifier: 4.0.431
+        version: 4.0.431(react-dom@19.2.4(react@19.2.4))(react@19.2.4)
       '@remotion/player':
-        specifier: 4.0.429
-        version: 4.0.429(react-dom@19.2.4(react@19.2.4))(react@19.2.4)
+        specifier: 4.0.431
+        version: 4.0.431(react-dom@19.2.4(react@19.2.4))(react@19.2.4)
+      '@remotion/rounded-text-box':
+        specifier: 4.0.431
+        version: 4.0.431
       '@remotion/web-renderer':
-        specifier: 4.0.429
-        version: 4.0.429(react-dom@19.2.4(react@19.2.4))(react@19.2.4)
+        specifier: 4.0.431
+        version: 4.0.431(react-dom@19.2.4(react@19.2.4))(react@19.2.4)
       '@tailwindcss/vite':
         specifier: ^4.1.16
         version: 4.2.1(vite@7.3.1(@types/node@20.19.34)(jiti@2.6.1)(lightningcss@1.31.1)(tsx@4.21.0))
@@ -386,8 +395,8 @@ importers:
         specifier: ^4.0.1
         version: 4.0.1
       remotion:
-        specifier: 4.0.429
-        version: 4.0.429(react-dom@19.2.4(react@19.2.4))(react@19.2.4)
+        specifier: 4.0.431
+        version: 4.0.431(react-dom@19.2.4(react@19.2.4))(react@19.2.4)
       sonner:
         specifier: ^2.0.7
         version: 2.0.7(react-dom@19.2.4(react@19.2.4))(react@19.2.4)
@@ -1624,6 +1633,9 @@ importers:
       '@reduxjs/toolkit':
         specifier: '*'
         version: 2.11.2(react-redux@9.2.0(@types/react@19.2.14)(react@19.2.4)(redux@5.0.1))(react@19.2.4)
+      '@remotion/captions':
+        specifier: '*'
+        version: 4.0.429
       '@remotion/lottie':
         specifier: '*'
         version: 4.0.429(lottie-web@5.13.0)(react-dom@19.2.4(react@19.2.4))(react@19.2.4)
@@ -1633,6 +1645,9 @@ importers:
       '@remotion/player':
         specifier: '*'
         version: 4.0.429(react-dom@19.2.4(react@19.2.4))(react@19.2.4)
+      '@remotion/rounded-text-box':
+        specifier: '*'
+        version: 4.0.429
       '@remotion/web-renderer':
         specifier: '*'
         version: 4.0.429(react-dom@19.2.4(react@19.2.4))(react@19.2.4)
@@ -2312,12 +2327,21 @@ importers:
 
   packages/remotion-compositions:
     dependencies:
+      '@remotion/captions':
+        specifier: '*'
+        version: 4.0.429
+      '@remotion/layout-utils':
+        specifier: '*'
+        version: 4.0.429
       '@remotion/lottie':
         specifier: '*'
         version: 4.0.429(lottie-web@5.13.0)(react-dom@19.2.4(react@19.2.4))(react@19.2.4)
       '@remotion/media':
         specifier: '*'
         version: 4.0.429(react-dom@19.2.4(react@19.2.4))(react@19.2.4)
+      '@remotion/rounded-text-box':
+        specifier: '*'
+        version: 4.0.429
       '@remotion/three':
         specifier: '*'
         version: 4.0.429(@react-three/fiber@9.5.0(@types/react@19.2.14)(immer@11.1.4)(react-dom@19.2.4(react@19.2.4))(react@19.2.4)(three@0.183.1))(react-dom@19.2.4(react@19.2.4))(react@19.2.4)(remotion@4.0.429(react-dom@19.2.4(react@19.2.4))(react@19.2.4))(three@0.183.1)
@@ -4959,11 +4983,33 @@ packages:
       react-redux:
         optional: true
 
+  '@remotion/captions@4.0.429':
+    resolution: {integrity: sha512-BW4D3Vgky6gCmcTNixqXPy7YqKwONC3fGaH5xwj8ixld5U4JBm0JbbN7A7tY7ncx+331l+Tv94+2mO5r4eK3aw==}
+
+  '@remotion/captions@4.0.431':
+    resolution: {integrity: sha512-nQ7vEWczTzUmavlS9a1jaslmnSY/y2rfAaSrd6X58xzAFtZRWsgoRmO2DOpQD2NpIdx2NoxPNbDUxQiVDEqy3A==}
+
+  '@remotion/layout-utils@4.0.429':
+    resolution: {integrity: sha512-UQ1dh5XQ3XeICtBvkLJqqa6Ot4qvtJN5MQOBEfEgt1WTlpcosHbYmqNTVW0X2TA09Ep2lxi7ODT8pKMSITeb7A==}
+
+  '@remotion/layout-utils@4.0.431':
+    resolution: {integrity: sha512-EwIkWCKWF/cT3w3ocVa5NtsUPZxk9wQklHFxWiHCSS2Gc6AdVd43ilYXAwKTWoKVhtZ9Kj9GzzB6EUB53RK7DQ==}
+
   '@remotion/licensing@4.0.429':
     resolution: {integrity: sha512-dZxojOI2+MVKIFDF74t3EkRuD5AGtgzVGFbFbsbLPR4RbdeLhsCF7mtw/Y6ZhcWRfVPqZhjl56ALPqXq+1CYCw==}
 
+  '@remotion/licensing@4.0.431':
+    resolution: {integrity: sha512-FOg5gAWB2ewf427y/OoBVbBsGBGvbpzKq8D8v7Q5ZsPmDB80LJ/o5tL6jNutDHo/p6MADQt456HiH+4siJj55Q==}
+
   '@remotion/lottie@4.0.429':
     resolution: {integrity: sha512-8WHlTK5iSBnNDpiGrc4WCOaXrXJqIHY4SLbVQOSGQs/HfpAHCTGkW0pFvX1PXbPl9gvsQ86mdXmEb0h+G0YMGw==}
+    peerDependencies:
+      lottie-web: ^5
+      react: ^19.2.4
+      react-dom: ^19.2.4
+
+  '@remotion/lottie@4.0.431':
+    resolution: {integrity: sha512-OvCyRxdW+ta6dUeDcCjMz//FOmsQa6Y8qIqT19FjO/rGXwlm9Aa+sLgdM25dUhI/9PfcwupjRvpjTjPydFCLpg==}
     peerDependencies:
       lottie-web: ^5
       react: ^19.2.4
@@ -4975,11 +5021,35 @@ packages:
       react: ^19.2.4
       react-dom: ^19.2.4
 
+  '@remotion/media@4.0.431':
+    resolution: {integrity: sha512-527QKKTikZr33YFJ21R/bDx2TKlq33Dsos7fBGUolLvLcKp3PC+Z2sc3ycShD1ni8M7T0H7h+7WnoN3kHjXvZQ==}
+    peerDependencies:
+      react: ^19.2.4
+      react-dom: ^19.2.4
+
+  '@remotion/paths@4.0.429':
+    resolution: {integrity: sha512-24z1yXQQoIHALn7b2xFSWcsrWhLWs5xLygrOBWXg/a0ywFuyCf3/J0XXv1zs2lZ/VsC4Rw2oSxjkvbcmhjsipA==}
+
+  '@remotion/paths@4.0.431':
+    resolution: {integrity: sha512-NJzxEcpFXOtACZFVl1xaCYPPGoKTwOr3UPSVh8FvlG+w3e14rd7XysU+h7qkywQCRzuha/BQBHugbmnTSAYlKA==}
+
   '@remotion/player@4.0.429':
     resolution: {integrity: sha512-OJM08HvKxwEn8tCS4LphiBLMgTnDcfq+BWwmfkpu1FhbWFxWZPRO5A8RhWokxRgurL4mEwtWLeHYCsZ48JfAvw==}
     peerDependencies:
       react: ^19.2.4
       react-dom: ^19.2.4
+
+  '@remotion/player@4.0.431':
+    resolution: {integrity: sha512-acyDqVAQNOG3lKV4hszvnuCZZm5EZ+K2xbMoEqIsKA5WkdQxLoBWm8CttLYEZkGim0jjIydZ0ng9Svnb99Jc7g==}
+    peerDependencies:
+      react: ^19.2.4
+      react-dom: ^19.2.4
+
+  '@remotion/rounded-text-box@4.0.429':
+    resolution: {integrity: sha512-jQQiNOtPcY88bxWMYqFXUEpCs/+uBpqlyrP7Ro7gS07Q4CyFjRwa1eg7/7KpGSnefSkUqBFbHpFqufPS6G1uRg==}
+
+  '@remotion/rounded-text-box@4.0.431':
+    resolution: {integrity: sha512-M4GPB2aYgeSafgaRQNAlsjlxGuxjq0DRqqcgbeU9e5/1U6+Ib1Q1a8i1vzXJF4Rl4Pw5YZzwqYAe223a9Cph4w==}
 
   '@remotion/three@4.0.429':
     resolution: {integrity: sha512-EH+0BzLzTS2DyOMToJl4b+8PX69Tmg93s3oIn2ohO2gQimkhlwaNVTZLTMOQQgHmGxJfmxCpZ5a2w41KFkwjAw==}
@@ -4992,6 +5062,12 @@ packages:
 
   '@remotion/web-renderer@4.0.429':
     resolution: {integrity: sha512-dRKvWK40aeOn5vapJi62TbPQ+4Mz1lvU2cCPL5vHTQ/nSvBOC/rWmHJCuzyEHOblAWLOPOqaTdK0ztvEL40TAw==}
+    peerDependencies:
+      react: ^19.2.4
+      react-dom: ^19.2.4
+
+  '@remotion/web-renderer@4.0.431':
+    resolution: {integrity: sha512-svP4jZEfpAJmPFWcnqA0A2KR6/RntvTy1ctJ23/IDAwjewIFoHF1SFT2UkI69meTdZQEKGEdy6H8prK+tVoOPA==}
     peerDependencies:
       react: ^19.2.4
       react-dom: ^19.2.4
@@ -7609,6 +7685,9 @@ packages:
   mediabunny@1.34.5:
     resolution: {integrity: sha512-Hs31rd+ane6GQJClM77KfNnf49DenK7yRU9MC4JeHwpNIFCSww/XUoGyKleAVrylw6Snrep2Sm+BhD2CS5ARkg==}
 
+  mediabunny@1.35.1:
+    resolution: {integrity: sha512-VrprpjkLTZyIyhzBAc9D3HqgXarAE+le7+6x0Sdu9WN2SD86L8bUy0hz06Xwf14dVPqS7OwpY2KOhlUyqmI2eQ==}
+
   merge-descriptors@2.0.0:
     resolution: {integrity: sha512-Snk314V5ayFLhp3fkUREub6WtjBfPdCPY1Ln8/8munuLuiYhsABgBVWsozAG+MWMbVEvcdcpbi9R7ww22l9Q3g==}
     engines: {node: '>=18'}
@@ -8613,6 +8692,12 @@ packages:
 
   remotion@4.0.429:
     resolution: {integrity: sha512-SkYwttZ0q/3S28qm/s8eFqmNadTEnZA5U328F7e7kziT48TCFWPyBA9RQ+eUd8g7VmAcv+5AccS8n7cZvB91VA==}
+    peerDependencies:
+      react: ^19.2.4
+      react-dom: ^19.2.4
+
+  remotion@4.0.431:
+    resolution: {integrity: sha512-Y9q6Qgk2nqtaX6fuDVQ+unVVkvOQVOdwaShbJnmLd4vFOwJzDF/XCuCieKsuos3sAR9rPnurxCLRO0VCix2YbA==}
     peerDependencies:
       react: ^19.2.4
       react-dom: ^19.2.4
@@ -12179,7 +12264,17 @@ snapshots:
       react: 19.2.4
       react-redux: 9.2.0(@types/react@19.2.14)(react@19.2.4)(redux@5.0.1)
 
+  '@remotion/captions@4.0.429': {}
+
+  '@remotion/captions@4.0.431': {}
+
+  '@remotion/layout-utils@4.0.429': {}
+
+  '@remotion/layout-utils@4.0.431': {}
+
   '@remotion/licensing@4.0.429': {}
+
+  '@remotion/licensing@4.0.431': {}
 
   '@remotion/lottie@4.0.429(lottie-web@5.13.0)(react-dom@19.2.4(react@19.2.4))(react@19.2.4)':
     dependencies:
@@ -12187,6 +12282,13 @@ snapshots:
       react: 19.2.4
       react-dom: 19.2.4(react@19.2.4)
       remotion: 4.0.429(react-dom@19.2.4(react@19.2.4))(react@19.2.4)
+
+  '@remotion/lottie@4.0.431(lottie-web@5.13.0)(react-dom@19.2.4(react@19.2.4))(react@19.2.4)':
+    dependencies:
+      lottie-web: 5.13.0
+      react: 19.2.4
+      react-dom: 19.2.4(react@19.2.4)
+      remotion: 4.0.431(react-dom@19.2.4(react@19.2.4))(react@19.2.4)
 
   '@remotion/media@4.0.429(react-dom@19.2.4(react@19.2.4))(react@19.2.4)':
     dependencies:
@@ -12196,11 +12298,39 @@ snapshots:
       remotion: 4.0.429(react-dom@19.2.4(react@19.2.4))(react@19.2.4)
       zod: 4.3.6
 
+  '@remotion/media@4.0.431(react-dom@19.2.4(react@19.2.4))(react@19.2.4)':
+    dependencies:
+      mediabunny: 1.35.1
+      react: 19.2.4
+      react-dom: 19.2.4(react@19.2.4)
+      remotion: 4.0.431(react-dom@19.2.4(react@19.2.4))(react@19.2.4)
+      zod: 4.3.6
+
+  '@remotion/paths@4.0.429': {}
+
+  '@remotion/paths@4.0.431': {}
+
   '@remotion/player@4.0.429(react-dom@19.2.4(react@19.2.4))(react@19.2.4)':
     dependencies:
       react: 19.2.4
       react-dom: 19.2.4(react@19.2.4)
       remotion: 4.0.429(react-dom@19.2.4(react@19.2.4))(react@19.2.4)
+
+  '@remotion/player@4.0.431(react-dom@19.2.4(react@19.2.4))(react@19.2.4)':
+    dependencies:
+      react: 19.2.4
+      react-dom: 19.2.4(react@19.2.4)
+      remotion: 4.0.431(react-dom@19.2.4(react@19.2.4))(react@19.2.4)
+
+  '@remotion/rounded-text-box@4.0.429':
+    dependencies:
+      '@remotion/layout-utils': 4.0.429
+      '@remotion/paths': 4.0.429
+
+  '@remotion/rounded-text-box@4.0.431':
+    dependencies:
+      '@remotion/layout-utils': 4.0.431
+      '@remotion/paths': 4.0.431
 
   '@remotion/three@4.0.429(@react-three/fiber@9.5.0(@types/react@19.2.14)(immer@11.1.4)(react-dom@19.2.4(react@19.2.4))(react@19.2.4)(three@0.183.1))(react-dom@19.2.4(react@19.2.4))(react@19.2.4)(remotion@4.0.429(react-dom@19.2.4(react@19.2.4))(react@19.2.4))(three@0.183.1)':
     dependencies:
@@ -12217,6 +12347,14 @@ snapshots:
       react: 19.2.4
       react-dom: 19.2.4(react@19.2.4)
       remotion: 4.0.429(react-dom@19.2.4(react@19.2.4))(react@19.2.4)
+
+  '@remotion/web-renderer@4.0.431(react-dom@19.2.4(react@19.2.4))(react@19.2.4)':
+    dependencies:
+      '@remotion/licensing': 4.0.431
+      mediabunny: 1.35.1
+      react: 19.2.4
+      react-dom: 19.2.4(react@19.2.4)
+      remotion: 4.0.431(react-dom@19.2.4(react@19.2.4))(react@19.2.4)
 
   '@rolldown/binding-android-arm64@1.0.0-beta.59':
     optional: true
@@ -14938,6 +15076,11 @@ snapshots:
       '@types/dom-mediacapture-transform': 0.1.11
       '@types/dom-webcodecs': 0.1.13
 
+  mediabunny@1.35.1:
+    dependencies:
+      '@types/dom-mediacapture-transform': 0.1.11
+      '@types/dom-webcodecs': 0.1.13
+
   merge-descriptors@2.0.0: {}
 
   merge2@1.4.1: {}
@@ -16256,6 +16399,11 @@ snapshots:
       unified: 11.0.5
 
   remotion@4.0.429(react-dom@19.2.4(react@19.2.4))(react@19.2.4):
+    dependencies:
+      react: 19.2.4
+      react-dom: 19.2.4(react@19.2.4)
+
+  remotion@4.0.431(react-dom@19.2.4(react@19.2.4))(react@19.2.4):
     dependencies:
       react: 19.2.4
       react-dom: 19.2.4(react@19.2.4)

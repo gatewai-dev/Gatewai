@@ -65,6 +65,28 @@ function extractLottieMetadata(buffer: Buffer): {
 	}
 }
 
+function extractCaptionDuration(buffer: Buffer): number | null {
+	try {
+		const str = buffer.toString("utf-8");
+		const regex = /(\d{2}):(\d{2}):(\d{2}),(\d{3})/g;
+		let maxTimeSec = 0;
+		let match;
+		while ((match = regex.exec(str)) !== null) {
+			const hours = parseInt(match[1], 10);
+			const minutes = parseInt(match[2], 10);
+			const seconds = parseInt(match[3], 10);
+			const ms = parseInt(match[4], 10);
+			const timeSec = hours * 3600 + minutes * 60 + seconds + ms / 1000;
+			if (timeSec > maxTimeSec) {
+				maxTimeSec = timeSec;
+			}
+		}
+		return maxTimeSec > 0 ? maxTimeSec : null;
+	} catch {
+		return null;
+	}
+}
+
 const dropzoneLabel =
 	"Click or drag & drop an image, SVG, video, audio, Lottie, 3D, or SRT file here";
 
@@ -237,6 +259,11 @@ export async function uploadToImportNode({
 			height = lottieMeta.height;
 			durationInSec = lottieMeta.durationInSec;
 			fps = lottieMeta.fps;
+		}
+	} else if (dataType === "Caption") {
+		const captionDuration = extractCaptionDuration(buffer);
+		if (captionDuration) {
+			durationInSec = captionDuration;
 		}
 	} else if (dataType === "SVG") {
 		try {

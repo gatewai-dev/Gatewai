@@ -125,7 +125,7 @@ export const LayerOperationSchema = z.object({
 	scale: z.number().default(1),
 	opacity: z.number().default(1),
 	startFrame: z.number().default(0),
-	durationInFrames: z.number().optional(),
+	durationInMS: z.number().optional(),
 	trimStart: z.number().min(0).optional(),
 	trimEnd: z.number().min(0).optional(),
 	speed: z.number().min(0.25).max(4.0).optional(),
@@ -158,6 +158,11 @@ export const LayerOperationSchema = z.object({
 	lottieLoop: z.boolean().optional(),
 	lottieFrameRate: z.number().optional(),
 	lottieDurationMs: z.number().optional(),
+
+	captionPreset: z.string().optional(),
+	useRoundedTextBox: z.boolean().optional(),
+
+	textShadow: z.string().optional(),
 });
 
 export const ComposeOperationSchema = z.object({
@@ -165,7 +170,7 @@ export const ComposeOperationSchema = z.object({
 	width: z.number(),
 	height: z.number(),
 	fps: z.number(),
-	durationInFrames: z.number(),
+	backgroundColor: z.string().optional().default("#000000"),
 	metadata: VideoMetadataSchema.optional(),
 });
 

@@ -44,8 +44,8 @@ export const ExtendedLayerSchema = z
 
 		// Timing in the composition
 		startFrame: z.number().default(0),
-		durationInFrames: z.number(),
-		maxDurationInFrames: z.number().optional(),
+		durationInMS: z.number(),
+		maxDurationInMS: z.number().optional(),
 
 		// Content (resolved before render)
 		src: z.string().optional(),
@@ -66,6 +66,7 @@ export const ExtendedLayerSchema = z
 		padding: z.number().optional(),
 		stroke: z.string().optional(),
 		strokeWidth: z.number().optional(),
+		textShadow: z.string().optional(), // Added Text Shadow support
 		lockAspect: z.boolean().optional(),
 
 		// Border / bg
@@ -91,6 +92,12 @@ export const ExtendedLayerSchema = z
 		lottieLoop: z.boolean().optional(),
 		lottieFrameRate: z.number().optional(),
 		lottieDurationMs: z.number().optional(),
+
+		// Caption specific
+		captionPreset: z.string().optional(),
+
+		// Style/UI hints
+		useRoundedTextBox: z.boolean().optional(),
 	})
 	.strict();
 

@@ -173,7 +173,7 @@ function computeNextMetadata(
 			case "compose": {
 				width = op.width;
 				height = op.height;
-				durationMs = (op.durationInFrames / op.fps) * 1000;
+				durationMs = op.durationInMS;
 				break;
 			}
 			case "cut": {
@@ -184,8 +184,8 @@ function computeNextMetadata(
 			case "layer": {
 				width = op.width ?? width;
 				height = op.height ?? height;
-				if (op.durationInFrames && fps) {
-					durationMs = (op.durationInFrames / fps) * 1000;
+				if (op.durationInMS) {
+					durationMs = op.durationInMS;
 				}
 				break;
 			}
