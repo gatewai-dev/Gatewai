@@ -160,7 +160,9 @@ export class SvgProcessor implements NodeProcessor {
             }
 
             const isEditing = sourceSvgContent !== null;
-
+            if (!isEditing) {
+                throw new Error("BAD ERROR")
+            }
             // ── Setup agent ──────────────────────────────────────────────
             const nodeConfig = SvgNodeConfigSchema.parse(node.config);
             const agentModel = this.aiProvider.getAgentModel<any>(nodeConfig.model);

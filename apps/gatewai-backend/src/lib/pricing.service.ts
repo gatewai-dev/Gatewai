@@ -73,6 +73,16 @@ export class PricingService implements IPricingService {
                 },
             });
 
+            // Report refund to Polar Benefit Metrics (as negative usage)
+            if (type === "REFUND") {
+                try {
+                    const { ingestUsageEvent } = await import("../polar.js");
+                    await ingestUsageEvent(userId, -amount);
+                } catch (err) {
+                    logger.error(`Failed to report refund to Polar for user ${userId}:`, err);
+                }
+            }
+
             logger.info(`Credited ${amount} tokens to user ${userId} (${type})`);
         });
     }
