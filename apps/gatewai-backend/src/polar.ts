@@ -13,15 +13,6 @@ import type { Order } from "@polar-sh/sdk/models/components/order.js";
 import type { Subscription } from "@polar-sh/sdk/models/components/subscription.js";
 import { SubscriptionProrationBehavior } from "@polar-sh/sdk/models/components/subscriptionprorationbehavior.js";
 
-export interface Plan {
-	id: string;
-	name: string;
-	price: number;
-	tokens: number;
-	features: string[];
-	tier: number;
-}
-
 export const polarClient = new Polar({
 	accessToken: ENV_CONFIG.POLAR_ACCESS_TOKEN,
 	server: "sandbox",
@@ -248,55 +239,13 @@ export const updateUserSubscription = async (
 	};
 };
 
-export const getPlans = async (): Promise<Plan[]> => {
+export const getPlans = async () => {
 	try {
-		const productsResult = await polarClient.products.list({
-			// Filter for products with tokenCredits or meter benefits
-		});
-		const products = productsResult.result.items;
-
-		const plans: Plan[] = products
-			.filter(
-				(p) =>
-					p.metadata?.tokenCredits !== undefined ||
-					p.benefits.some((b) => b.type === "meter_credit"),
-			)
-			.map((p) => {
-				const price = p.prices?.[0];
-				const priceAmount =
-					price && "priceAmount" in price ? price.priceAmount / 100 : 0;
-
-				// Parse features from description (split by newline and remove bullets)
-				const features = p.description
-					? p.description
-							.split("\n")
-							.map((f) => f.replace(/^[*-]\s*/, "").trim())
-							.filter(Boolean)
-					: [];
-
-				const meterBenefit = p.benefits.find(
-					(b): b is BenefitMeterCredit => b.type === "meter_credit",
-				);
-				const tokens =
-					Number(p.metadata.tokenCredits) ||
-					meterBenefit?.properties.units ||
-					0;
-
-				return {
-					id: p.id,
-					name: p.name,
-					price: priceAmount,
-					tokens,
-					features,
-					tier: Number(p.metadata.tier) || 0,
-				};
-			})
-			.sort((a, b) => a.tier - b.tier);
-
-		return plans;
+		const productsResult = await polarClient.products.list({});
+		return productsResult.result.items;
 	} catch (error) {
 		logger.error("Failed to fetch plans from Polar:", error);
-		return [];
+		return null;
 	}
 };
 
@@ -305,8 +254,11 @@ export const ingestUsageEvent = async (userId: string, tokens: number) => {
 		await polarClient.events.ingest({
 			events: [
 				{
-					name: "tokens",
+					name: "token_usage",
 					externalCustomerId: userId,
+					metadata: {
+						amount: tokens,
+					},
 				},
 			],
 		});
@@ -327,8 +279,9 @@ export const syncTokenBalance = async (userId: string) => {
 		const meters = metersResult.result.items;
 		// Find the meter for tokens. Look for "token" in name.
 		const tokenMeter =
-			meters.find((m) => m.meter.name.toLowerCase().includes("token")) ||
-			meters[0];
+			meters.find((m) =>
+				m.meter.name.toLowerCase().includes("Gatewai Tokens"),
+			) || meters[0];
 
 		if (tokenMeter) {
 			await prisma.user.update({

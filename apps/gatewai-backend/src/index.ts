@@ -26,7 +26,7 @@ const smee = new SmeeClient({
 	logger: console,
 });
 
-const events = smee.start();
+smee.start();
 
 const sleep = (time: number) =>
 	new Promise((resolve) => setTimeout(resolve, time));
