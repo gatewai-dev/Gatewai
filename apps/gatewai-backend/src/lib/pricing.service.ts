@@ -42,6 +42,14 @@ export class PricingService {
                 },
             });
 
+            // Report usage to Polar Benefit Metrics
+            try {
+                const { ingestUsageEvent } = await import("../polar.js");
+                await ingestUsageEvent(userId, price);
+            } catch (err) {
+                logger.error(`Failed to report usage to Polar for user ${userId}:`, err);
+            }
+
             logger.info(`Deducted ${price} tokens from user ${userId} for task ${taskId}`);
         });
     }

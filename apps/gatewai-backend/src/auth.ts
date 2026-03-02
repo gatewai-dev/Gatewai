@@ -1,25 +1,13 @@
 import { ENV_CONFIG, logger } from "@gatewai/core";
 import { prisma } from "@gatewai/db";
-import {
-	checkout,
-	polar,
-	portal,
-	usage,
-	webhooks,
-} from "@polar-sh/better-auth";
-import { Polar } from "@polar-sh/sdk";
 import { betterAuth } from "better-auth";
 import { prismaAdapter } from "better-auth/adapters/prisma";
 import { apiKey } from "better-auth/plugins";
 import { createMiddleware } from "hono/factory";
 import { HTTPException } from "hono/http-exception";
-import { BASIC_PRODUCT_ID, MAX_PRODUCT_ID, PRO_PRODUCT_ID } from "./polar";
+import { polarPlugin } from "./polar";
 
-export const polarClient = new Polar({
-	accessToken: ENV_CONFIG.POLAR_ACCESS_TOKEN,
-	server: "sandbox",
-	debugLogger: console,
-});
+// Polar product mapping removed (consolidated in polar.ts)
 
 export const auth = betterAuth({
 	database: prismaAdapter(prisma, {
@@ -39,141 +27,7 @@ export const auth = betterAuth({
 		apiKey({
 			apiKeyHeaders: "X-API-KEY",
 		}),
-		polar({
-			client: polarClient,
-			createCustomerOnSignUp: true,
-			use: [
-				checkout({
-					products: [
-						{
-							productId: BASIC_PRODUCT_ID,
-							slug: "basic",
-						},
-						{
-							productId: PRO_PRODUCT_ID,
-							slug: "pro",
-						},
-						{
-							productId: MAX_PRODUCT_ID,
-							slug: "max",
-						},
-					],
-					successUrl: "/success?checkout_id={CHECKOUT_ID}",
-					authenticatedUsersOnly: true,
-				}),
-				portal(),
-				usage(),
-				webhooks({
-					secret: ENV_CONFIG.POLAR_WEBHOOK_SECRET || "",
-					onOrderPaid: async (payload) => {
-						const order = payload.data;
-						const customerId = order.customerId;
-						const userId = order.customer?.externalId;
-						if (!userId) {
-							logger.warn(
-								`Polar onOrderPaid: no externalId for customer ${customerId}`,
-							);
-							return;
-						}
-						const tokenAmount =
-							(order.product?.metadata as Record<string, unknown>)
-								?.tokenCredits ?? 0;
-						if (typeof tokenAmount === "number" && tokenAmount > 0) {
-							await prisma.$transaction([
-								prisma.user.update({
-									where: { id: userId },
-									data: { tokens: { increment: tokenAmount } },
-								}),
-								prisma.tokenTransaction.create({
-									data: {
-										userId,
-										amount: tokenAmount,
-										type: "PURCHASE",
-										metadata: {
-											polarOrderId: order.id,
-											productId: order.productId,
-										},
-									},
-								}),
-							]);
-							logger.info(
-								`Credited ${tokenAmount} tokens to user ${userId} via Polar order ${order.id}`,
-							);
-						}
-					},
-					onSubscriptionActive: async (payload) => {
-						const sub = payload.data;
-						const userId = sub.customer?.externalId;
-						if (!userId) return;
-
-						const tokenCredits =
-							(sub.product?.metadata as Record<string, unknown>)
-								?.tokenCredits ?? 0;
-						if (typeof tokenCredits === "number" && tokenCredits > 0) {
-							await prisma.$transaction([
-								prisma.user.update({
-									where: { id: userId },
-									data: { tokens: { increment: tokenCredits } },
-								}),
-								prisma.tokenTransaction.create({
-									data: {
-										userId,
-										amount: tokenCredits,
-										type: "SUBSCRIPTION_REFILL",
-										metadata: {
-											polarSubscriptionId: sub.id,
-											productId: sub.productId,
-										},
-									},
-								}),
-							]);
-							logger.info(
-								`Refilled ${tokenCredits} tokens for user ${userId} (subscription ${sub.id})`,
-							);
-						}
-					},
-					onOrderRefunded: async (payload) => {
-						const order = payload.data;
-						const userId = order.customer?.externalId;
-						if (!userId) return;
-						const tokenAmount =
-							(order.product?.metadata as Record<string, unknown>)
-								?.tokenCredits ?? 0;
-						if (typeof tokenAmount === "number" && tokenAmount > 0) {
-							await prisma.$transaction([
-								prisma.user.update({
-									where: { id: userId },
-									data: { tokens: { decrement: tokenAmount } },
-								}),
-								prisma.tokenTransaction.create({
-									data: {
-										userId,
-										amount: -tokenAmount,
-										type: "REFUND",
-										metadata: {
-											polarOrderId: order.id,
-											refundedAt: new Date().toISOString(),
-										},
-									},
-								}),
-							]);
-							logger.info(
-								`Refund processed for Polar order ${order.id}: deducted ${tokenAmount} from user ${userId}`,
-							);
-						}
-					},
-					onPayload: async (payload) => {
-						console.log({ payload });
-						await prisma.webhookEvent.create({
-							data: {
-								eventName: payload.type,
-								body: payload,
-							},
-						});
-					},
-				}),
-			],
-		}),
+		polarPlugin,
 	],
 	databaseHooks: {
 		user: {
