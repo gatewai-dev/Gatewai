@@ -8,6 +8,7 @@ import { serve } from "@hono/node-server";
 import { serveStatic } from "@hono/node-server/serve-static";
 import { Hono } from "hono";
 import { cors } from "hono/cors";
+import SmeeClient from "smee-client";
 import { startAgentWorker } from "./agent/agent-queue.js";
 import { type AuthHonoTypes, auth, ensureUsersAPI_KEY } from "./auth.js";
 import { registerBackendServices } from "./di-setup.js";
@@ -18,6 +19,14 @@ import {
 	notFoundHandler,
 } from "./middlewares.js";
 import { registerNodes } from "./register-nodes.js";
+
+const smee = new SmeeClient({
+	source: ENV_CONFIG.WEBHOOK_PROXY_URL,
+	target: `${ENV_CONFIG.BASE_URL}/api/auth/polar/webhooks`,
+	logger: console,
+});
+
+const events = smee.start();
 
 const sleep = (time: number) =>
 	new Promise((resolve) => setTimeout(resolve, time));
@@ -144,5 +153,10 @@ serve(
 		appLogger.info(`Server is running on port ${info.port} (0.0.0.0)`);
 	},
 );
+
+process.on("SIGINT", async () => {
+	await smee.close();
+	process.exit(0);
+});
 
 export type AppType = typeof app;

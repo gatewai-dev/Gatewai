@@ -27,15 +27,16 @@ const envSchema = z
 			.toLowerCase()
 			.transform((val: string) => val === "true")
 			.default("false"),
-		MAX_CONCURRENT_ASSISTANT_JOBS: z.coerce.number().default(5),
+		MAX_CONCURRENT_ASSISTANT_JOBS: z.coerce.number().default(15),
 		MAX_CONCURRENT_WORKFLOW_JOBS: z.coerce.number().default(5),
 
 		DEFAULT_FREE_TOKENS: z.coerce.number().default(20),
 		ENABLE_PRICING: z.boolean().default(true),
 
+		WEBHOOK_PROXY_URL: z.string().optional(),
+
 		POLAR_ACCESS_TOKEN: z.string().optional(),
 		POLAR_WEBHOOK_SECRET: z.string().optional(),
-		POLAR_SUCCESS_URL: z.string().optional(),
 	})
 	.refine(
 		(data) => {

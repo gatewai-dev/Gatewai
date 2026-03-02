@@ -133,3 +133,6 @@ export type PricingPlanListRPC = InferResponseType<
 export type SubscriptionRPC = InferResponseType<
 	typeof rpcClient.api.v1.billing.subscription.$get
 >;
+export type SubscriptionUpdateRPC = InferResponseType<
+	typeof rpcClient.api.v1.billing.subscription.update.$post
+>;

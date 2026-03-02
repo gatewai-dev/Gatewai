@@ -263,6 +263,45 @@ const processNodeJob = async (job: Job<NodeTaskJobData>) => {
 
 				logger.info(`Processing node: ${node.id} with type: ${node.type}`);
 
+				// ── Pricing: resolve price + userId BEFORE processing ──
+				const pricingEnabled = ENV_CONFIG.ENABLE_PRICING;
+				const manifest = nodeRegistry.getManifest(node.type);
+				const price =
+					pricingEnabled && typeof manifest?.pricing === "function"
+						? manifest.pricing(node.config)
+						: 0;
+
+				let resolvedUserId: string | undefined;
+				if (pricingEnabled && price > 0) {
+					if (apiKey) {
+						const keyRecord = await prisma.apiKey.findUnique({
+							where: { key: apiKey },
+							select: { userId: true },
+						});
+						resolvedUserId = keyRecord?.userId;
+					} else {
+						const canvas = await prisma.canvas.findUnique({
+							where: { id: canvasId },
+							select: { userId: true },
+						});
+						resolvedUserId = canvas?.userId ?? undefined;
+					}
+
+					if (resolvedUserId) {
+						const pricingService = container.get<PricingService>(
+							TOKENS.PRICING_SERVICE,
+						);
+						const canAfford = await pricingService.canAfford(
+							resolvedUserId,
+							price,
+						);
+						if (!canAfford) {
+							throw new Error(`Insufficient tokens. Required: ${price}`);
+						}
+					}
+				}
+
+				// ── Execute the node processor ──
 				const ctx: BackendNodeProcessorCtx = {
 					node,
 					data: { ...data, tasks: batchTasks, task, apiKey },
@@ -276,13 +315,6 @@ const processNodeJob = async (job: Job<NodeTaskJobData>) => {
 				) as unknown as NodeProcessor;
 				const result = await processorInstance.process(ctx);
 				const { success, error, newResult } = result;
-
-				const pricingEnabled = ENV_CONFIG.ENABLE_PRICING;
-				const manifest = nodeRegistry.getManifest(node.type);
-				const price =
-					pricingEnabled && typeof manifest?.pricing === "function"
-						? manifest.pricing(node.config)
-						: 0;
 
 				if (newResult) {
 					await prisma.task.update({
@@ -304,46 +336,24 @@ const processNodeJob = async (job: Job<NodeTaskJobData>) => {
 					}
 				}
 
-				if (success && price > 0) {
+				// ── Deduct tokens only on success ──
+				if (success && price > 0 && resolvedUserId) {
 					try {
-						let userId: string | undefined;
-						if (apiKey) {
-							const keyRecord = await prisma.apiKey.findUnique({
-								where: { key: apiKey },
-								select: { userId: true },
-							});
-							userId = keyRecord?.userId;
-						} else {
-							const canvas = await prisma.canvas.findUnique({
-								where: { id: canvasId },
-								select: { userId: true },
-							});
-							userId = canvas?.userId ?? undefined;
-						}
-
-						if (userId) {
-							const pricingService = container.get<PricingService>(
-								TOKENS.PRICING_SERVICE,
-							);
-
-							// Pre-execution check (ideally done before starting, but we do it here for now)
-							const canAfford = await pricingService.canAfford(userId, price);
-							if (!canAfford) {
-								throw new Error(
-									`Insufficient tokens for user ${userId}. Required: ${price}`,
-								);
-							}
-
-							await pricingService.deductTokens(userId, price, taskId);
-							await pricingService.trackUsage(userId, "tokensUsed", price);
-							await pricingService.trackUsage(userId, "tasksUsed", 1);
-						}
+						const pricingService = container.get<PricingService>(
+							TOKENS.PRICING_SERVICE,
+						);
+						await pricingService.deductTokens(resolvedUserId, price, taskId);
+						await pricingService.trackUsage(
+							resolvedUserId,
+							"tokensUsed",
+							price,
+						);
+						await pricingService.trackUsage(resolvedUserId, "tasksUsed", 1);
 					} catch (tokenErr) {
 						logger.error(
 							{ tokenErr },
-							`Failed to process pricing for task ${taskId}`,
+							`Failed to deduct tokens for task ${taskId}`,
 						);
-						// If pre-check fails or deduction fails, we should fail the task
 						if (
 							tokenErr instanceof Error &&
 							tokenErr.message.includes("tokens")

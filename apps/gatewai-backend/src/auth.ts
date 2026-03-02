@@ -15,8 +15,10 @@ import { createMiddleware } from "hono/factory";
 import { HTTPException } from "hono/http-exception";
 import { BASIC_PRODUCT_ID, MAX_PRODUCT_ID, PRO_PRODUCT_ID } from "./polar";
 
-const polarClient = new Polar({
+export const polarClient = new Polar({
 	accessToken: ENV_CONFIG.POLAR_ACCESS_TOKEN,
+	server: "sandbox",
+	debugLogger: console,
 });
 
 export const auth = betterAuth({
@@ -62,7 +64,7 @@ export const auth = betterAuth({
 				portal(),
 				usage(),
 				webhooks({
-					secret: ENV_CONFIG.POLAR_WEBHOOK_SECRET,
+					secret: ENV_CONFIG.POLAR_WEBHOOK_SECRET || "",
 					onOrderPaid: async (payload) => {
 						const order = payload.data;
 						const customerId = order.customerId;
@@ -161,10 +163,11 @@ export const auth = betterAuth({
 						}
 					},
 					onPayload: async (payload) => {
+						console.log({ payload });
 						await prisma.webhookEvent.create({
 							data: {
 								eventName: payload.type,
-								body: payload as any,
+								body: payload,
 							},
 						});
 					},

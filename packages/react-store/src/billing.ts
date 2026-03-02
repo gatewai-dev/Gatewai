@@ -6,13 +6,19 @@ import type {
 import { appRPCClient } from "@gatewai/rpc-client";
 import { createApi, fetchBaseQuery } from "@reduxjs/toolkit/query/react";
 
+export type BalanceRPC = { tokens: number };
+
 export const billingAPI = createApi({
 	reducerPath: "billingAPI",
 	baseQuery: fetchBaseQuery({
 		baseUrl: "/api/v1/billing",
 	}),
-	tagTypes: ["Usage", "Plans", "Subscription"],
+	tagTypes: ["Usage", "Plans", "Subscription", "Balance"],
 	endpoints: (build) => ({
+		getBalance: build.query<BalanceRPC, void>({
+			providesTags: ["Balance"],
+			query: () => "/balance",
+		}),
 		getUsage: build.query<UsageRecordRPC, void>({
 			providesTags: ["Usage"],
 			queryFn: async () => {
@@ -55,5 +61,9 @@ export const billingAPI = createApi({
 	}),
 });
 
-export const { useGetUsageQuery, useGetPlansQuery, useGetSubscriptionQuery } =
-	billingAPI;
+export const {
+	useGetBalanceQuery,
+	useGetUsageQuery,
+	useGetPlansQuery,
+	useGetSubscriptionQuery,
+} = billingAPI;

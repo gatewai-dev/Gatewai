@@ -226,7 +226,6 @@ model NodeTemplate {
   displayName             String
   description             String?
   templateHandles         NodeTemplateHandle[]
-  tokenPrice              Float?               @default(0.0)
   variableInputs          Boolean              @default(false)
   variableInputDataTypes  DataType[]
   variableOutputs         Boolean              @default(false)

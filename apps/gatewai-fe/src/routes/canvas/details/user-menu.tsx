@@ -7,19 +7,25 @@ import {
 	DropdownMenuTrigger,
 	GatewaiIcon,
 } from "@gatewai/ui-kit";
-import { LayoutGrid, LogOut, Settings } from "lucide-react";
+import { LayoutGrid, LogOut, Settings, Sparkles } from "lucide-react";
 import { useState } from "react";
 import { Link, useNavigate } from "react-router";
 import { authClient } from "@/lib/auth-client";
 import { ApiKeysSettings } from "./ApiKeysSettings";
+import { SubscriptionDialog } from "./SubscriptionDialog";
 
 export function UserMenu() {
 	const nav = useNavigate();
 	const [isSettingsOpen, setIsSettingsOpen] = useState(false);
+	const [isSubscriptionOpen, setIsSubscriptionOpen] = useState(false);
 
 	return (
 		<>
 			<ApiKeysSettings open={isSettingsOpen} onOpenChange={setIsSettingsOpen} />
+			<SubscriptionDialog
+				open={isSubscriptionOpen}
+				onOpenChange={setIsSubscriptionOpen}
+			/>
 			<DropdownMenu>
 				<DropdownMenuTrigger asChild>
 					<button type="button" className="outline-none">
@@ -41,6 +47,13 @@ export function UserMenu() {
 					>
 						<Settings className="mr-2 h-4 w-4" />
 						<span>API Keys</span>
+					</DropdownMenuItem>
+					<DropdownMenuItem
+						className="cursor-pointer"
+						onClick={() => setIsSubscriptionOpen(true)}
+					>
+						<Sparkles className="mr-2 h-4 w-4" />
+						<span>Subscription</span>
 					</DropdownMenuItem>
 					<DropdownMenuSeparator />
 					<DropdownMenuItem

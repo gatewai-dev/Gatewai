@@ -1,11 +1,15 @@
 import { discoveredNodes } from "virtual:gatewai-nodes";
-import type { NodeIconEntry, NodeRegistryValue } from "@gatewai/react-canvas";
+import type {
+	NodeIconEntry,
+	NodePricingFn,
+	NodeRegistryValue,
+} from "@gatewai/react-canvas";
 import type { ComponentType, MemoExoticComponent } from "react";
 import { PiCube } from "react-icons/pi";
 
 /**
- * Eagerly resolves all discovered node browser modules and builds the three
- * registry maps: nodeTypes, iconMap, and configMap.
+ * Eagerly resolves all discovered node browser modules and builds the
+ * registry maps: nodeTypes, iconMap, configMap, pageMap, and pricingMap.
  *
  * Must be called (and awaited) before the canvas UI renders.
  */
@@ -14,6 +18,7 @@ export async function initNodeRegistry(): Promise<NodeRegistryValue> {
 	const iconMap: Record<string, NodeIconEntry> = {};
 	const configMap: Record<string, ComponentType<any>> = {};
 	const pageMap: Record<string, ComponentType<any>> = {};
+	const pricingMap: Record<string, NodePricingFn> = {};
 
 	// We'll use PiCube as a fallback for everything initially
 	const fallbackIcon = { mainIcon: PiCube };
@@ -24,11 +29,6 @@ export async function initNodeRegistry(): Promise<NodeRegistryValue> {
 			const plugin = mod.default;
 
 			// 1. Component (nodeTypes)
-			// wrapping in lazy (even though we loaded it) to match ReactFlow expectation or just direct?
-			// ReactFlow nodeTypes values are components. Since we loaded it, we can pass it directly.
-			// But wait, the previous code was using lazy() for nodeTypes to avoid loading all at start.
-			// But here we ARE loading all at start (initNodeRegistry).
-			// So we can just use the component directly.
 			nodeTypes[type] = plugin.Component;
 
 			// 2. Icon (iconMap)
@@ -47,6 +47,12 @@ export async function initNodeRegistry(): Promise<NodeRegistryValue> {
 			if (plugin.PageContentComponent) {
 				pageMap[type] = plugin.PageContentComponent;
 			}
+
+			// 5. Pricing (pricingMap) — spread from metadata via defineClient
+			const pricingFn = (plugin as any).pricing;
+			if (typeof pricingFn === "function") {
+				pricingMap[type] = pricingFn;
+			}
 		}),
 	);
 
@@ -55,5 +61,6 @@ export async function initNodeRegistry(): Promise<NodeRegistryValue> {
 		iconMap,
 		configMap,
 		pageMap,
+		pricingMap,
 	} as unknown as NodeRegistryValue;
 }
