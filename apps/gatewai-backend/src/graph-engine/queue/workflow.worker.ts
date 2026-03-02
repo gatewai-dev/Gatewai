@@ -137,13 +137,67 @@ async function propagateFailure(
 
 	await collectDownstream(taskId);
 
+	await collectDownstream(taskId);
+
 	if (failedTaskIds.size === 0) return;
+
+	const idsToUpdate = Array.from(failedTaskIds);
+
+	// Fetch tasks to be failed to calculate refund
+	const tasksToFail = await prisma.task.findMany({
+		where: {
+			id: { in: idsToUpdate },
+			status: { in: [TaskStatus.QUEUED, TaskStatus.EXECUTING] },
+		},
+		select: { id: true, price: true, batchId: true },
+	});
+
+	// Refund tokens for skipped tasks
+	if (tasksToFail.length > 0) {
+		const totalRefund = tasksToFail.reduce((acc, t) => acc + (t.price ?? 0), 0);
+		if (totalRefund > 0) {
+			try {
+				const batch = await prisma.taskBatch.findUnique({
+					where: { id: batchId },
+					select: { canvasId: true },
+				});
+				if (batch) {
+					const canvas = await prisma.canvas.findUnique({
+						where: { id: batch.canvasId },
+						select: { userId: true },
+					});
+					if (canvas?.userId) {
+						const pricingService = container.get<PricingService>(
+							TOKENS.PRICING_SERVICE,
+						);
+						await pricingService.creditTokens(
+							canvas.userId,
+							totalRefund,
+							"REFUND",
+							{
+								batchId,
+								reason: "Upstream failure",
+							},
+						);
+						logger.info(
+							`Refunded ${totalRefund} tokens for ${tasksToFail.length} downstream tasks in batch ${batchId}`,
+						);
+					}
+				}
+			} catch (refundErr) {
+				logger.error(
+					{ refundErr },
+					`Failed to refund tokens for downstream tasks in batch ${batchId}`,
+				);
+			}
+		}
+	}
 
 	// Single bulk write for all downstream tasks.
 	const finishedAt = new Date();
 	await prisma.task.updateMany({
 		where: {
-			id: { in: Array.from(failedTaskIds) },
+			id: { in: idsToUpdate },
 			// Only touch tasks that haven't already reached a terminal state.
 			status: { in: [TaskStatus.QUEUED, TaskStatus.EXECUTING] },
 		},
@@ -214,6 +268,29 @@ const processNodeJob = async (job: Job<NodeTaskJobData>) => {
 		select: { id: true, type: true, name: true },
 	});
 
+	// Re-evaluate price from task record (best)
+	const taskPrice = task.price ?? 0;
+	const pricingEnabled = ENV_CONFIG.ENABLE_PRICING;
+
+	let resolvedUserId: string | undefined;
+	const pricingService = container.get<PricingService>(TOKENS.PRICING_SERVICE);
+
+	if (pricingEnabled && taskPrice > 0) {
+		if (apiKey) {
+			const keyRecord = await prisma.apiKey.findUnique({
+				where: { key: apiKey },
+				select: { userId: true },
+			});
+			resolvedUserId = keyRecord?.userId;
+		} else {
+			const canvas = await prisma.canvas.findUnique({
+				where: { id: canvasId },
+				select: { userId: true },
+			});
+			resolvedUserId = canvas?.userId ?? undefined;
+		}
+	}
+
 	await loggerContext.run(
 		{
 			canvasId,
@@ -263,56 +340,18 @@ const processNodeJob = async (job: Job<NodeTaskJobData>) => {
 
 				logger.info(`Processing node: ${node.id} with type: ${node.type}`);
 
-				// ── Pricing: resolve price + userId BEFORE processing ──
-				const pricingEnabled = ENV_CONFIG.ENABLE_PRICING;
-				const manifest = nodeRegistry.getManifest(node.type);
-				const price =
-					pricingEnabled && typeof manifest?.pricing === "function"
-						? manifest.pricing(node.config)
-						: 0;
-
-				let resolvedUserId: string | undefined;
-				if (pricingEnabled && price > 0) {
-					if (apiKey) {
-						const keyRecord = await prisma.apiKey.findUnique({
-							where: { key: apiKey },
-							select: { userId: true },
-						});
-						resolvedUserId = keyRecord?.userId;
-					} else {
-						const canvas = await prisma.canvas.findUnique({
-							where: { id: canvasId },
-							select: { userId: true },
-						});
-						resolvedUserId = canvas?.userId ?? undefined;
-					}
-
-					if (resolvedUserId) {
-						const pricingService = container.get<PricingService>(
-							TOKENS.PRICING_SERVICE,
-						);
-						const canAfford = await pricingService.canAfford(
-							resolvedUserId,
-							price,
-						);
-						if (!canAfford) {
-							throw new Error(`Insufficient tokens. Required: ${price}`);
-						}
-					}
-				}
-
-				// ── Execute the node processor ──
-				const ctx: BackendNodeProcessorCtx = {
-					node,
-					data: { ...data, tasks: batchTasks, task, apiKey },
-				};
-
 				if (!container.isBound(ProcessorClass)) {
 					container.bind(ProcessorClass).toSelf().inTransientScope();
 				}
 				const processorInstance = container.get(
 					ProcessorClass,
 				) as unknown as NodeProcessor;
+
+				const ctx: BackendNodeProcessorCtx = {
+					node,
+					data: { ...data, tasks: batchTasks, task, apiKey },
+				};
+
 				const result = await processorInstance.process(ctx);
 				const { success, error, newResult } = result;
 
@@ -337,29 +376,17 @@ const processNodeJob = async (job: Job<NodeTaskJobData>) => {
 				}
 
 				// ── Deduct tokens only on success ──
-				if (success && price > 0 && resolvedUserId) {
-					try {
-						const pricingService = container.get<PricingService>(
-							TOKENS.PRICING_SERVICE,
-						);
-						await pricingService.deductTokens(resolvedUserId, price, taskId);
+				// Removed: Tokens are now deducted upfront in NodeWFProcessor.
+
+				if (success) {
+					// Track usage on success
+					if (resolvedUserId && taskPrice > 0) {
 						await pricingService.trackUsage(
 							resolvedUserId,
 							"tokensUsed",
-							price,
+							taskPrice,
 						);
 						await pricingService.trackUsage(resolvedUserId, "tasksUsed", 1);
-					} catch (tokenErr) {
-						logger.error(
-							{ tokenErr },
-							`Failed to deduct tokens for task ${taskId}`,
-						);
-						if (
-							tokenErr instanceof Error &&
-							tokenErr.message.includes("tokens")
-						) {
-							throw tokenErr;
-						}
 					}
 				}
 
@@ -371,7 +398,7 @@ const processNodeJob = async (job: Job<NodeTaskJobData>) => {
 						finishedAt,
 						durationMs: finishedAt.getTime() - startedAt.getTime(),
 						error: error ? { message: error } : undefined,
-						price,
+						price: taskPrice,
 					},
 				});
 
@@ -385,6 +412,26 @@ const processNodeJob = async (job: Job<NodeTaskJobData>) => {
 						apiKey,
 					);
 				} else {
+					// Refund for the failed task itself
+					if (resolvedUserId && taskPrice > 0) {
+						try {
+							await pricingService.creditTokens(
+								resolvedUserId,
+								taskPrice,
+								"REFUND",
+								{
+									taskId,
+									batchId,
+								},
+							);
+						} catch (refundErr) {
+							logger.error(
+								{ refundErr },
+								`Failed to refund tokens for failed task ${taskId}`,
+							);
+						}
+					}
+
 					await propagateFailure(
 						taskId,
 						batchId,
@@ -405,6 +452,26 @@ const processNodeJob = async (job: Job<NodeTaskJobData>) => {
 				const finishedAt = new Date();
 				const errorMessage =
 					err instanceof Error ? err.message : "Unknown error";
+
+				if (resolvedUserId && taskPrice > 0) {
+					try {
+						await pricingService.creditTokens(
+							resolvedUserId,
+							taskPrice,
+							"REFUND",
+							{
+								taskId,
+								batchId,
+								error: errorMessage,
+							},
+						);
+					} catch (refundErr) {
+						logger.error(
+							{ refundErr },
+							`Failed to refund tokens for unexpectedly failed task ${taskId}`,
+						);
+					}
+				}
 
 				await prisma.task.update({
 					where: { id: taskId },
@@ -534,6 +601,36 @@ export async function recoverDanglingTasks() {
 				},
 			});
 
+			// Refund for abandoned task
+			if (task.price && task.price > 0 && task.batch?.canvasId) {
+				try {
+					const canvas = await prisma.canvas.findUnique({
+						where: { id: task.batch.canvasId },
+						select: { userId: true },
+					});
+					if (canvas?.userId) {
+						const pricingService = container.get<PricingService>(
+							TOKENS.PRICING_SERVICE,
+						);
+						await pricingService.creditTokens(
+							canvas.userId,
+							task.price,
+							"REFUND",
+							{
+								taskId: task.id,
+								batchId: task.batchId,
+								reason: "System recovery",
+							},
+						);
+					}
+				} catch (refundErr) {
+					logger.error(
+						{ refundErr },
+						`Failed to refund tokens for recovered task ${task.id}`,
+					);
+				}
+			}
+
 			await propagateFailure(
 				task.id,
 				task.batchId,
@@ -599,6 +696,47 @@ export const startWorkflowWorker = async () => {
 				},
 			});
 
+			// Refund for stalled task
+			const taskWithPrice = await prisma.task.findUnique({
+				where: { id: task.id },
+				select: { price: true, batchId: true },
+			});
+
+			if (taskWithPrice?.price && taskWithPrice.price > 0) {
+				try {
+					const batch = await prisma.taskBatch.findUnique({
+						where: { id: taskWithPrice.batchId },
+						select: { canvasId: true },
+					});
+					if (batch) {
+						const canvas = await prisma.canvas.findUnique({
+							where: { id: batch.canvasId },
+							select: { userId: true },
+						});
+						if (canvas?.userId) {
+							const pricingService = container.get<PricingService>(
+								TOKENS.PRICING_SERVICE,
+							);
+							await pricingService.creditTokens(
+								canvas.userId,
+								taskWithPrice.price,
+								"REFUND",
+								{
+									taskId: task.id,
+									batchId: task.batchId,
+									reason: "Task stalled",
+								},
+							);
+						}
+					}
+				} catch (refundErr) {
+					logger.error(
+						{ refundErr },
+						`Failed to refund tokens for stalled task ${task.id}`,
+					);
+				}
+			}
+
 			await propagateFailure(
 				task.id,
 				task.batchId,
@@ -630,6 +768,48 @@ export const startWorkflowWorker = async () => {
 					? finishedAt.getTime() - currentTask.startedAt.getTime()
 					: 0;
 				const errorMsg = `Job failed/stalled: ${err.message}`;
+
+				// Fetch task with price for refund
+				const taskWithPrice = await prisma.task.findUnique({
+					where: { id: taskId },
+					select: { price: true },
+				});
+
+				// Refund for permanently failed BullMQ job
+				if (taskWithPrice?.price && taskWithPrice.price > 0) {
+					try {
+						const batch = await prisma.taskBatch.findUnique({
+							where: { id: batchId },
+							select: { canvasId: true },
+						});
+						if (batch) {
+							const canvas = await prisma.canvas.findUnique({
+								where: { id: batch.canvasId },
+								select: { userId: true },
+							});
+							if (canvas?.userId) {
+								const pricingService = container.get<PricingService>(
+									TOKENS.PRICING_SERVICE,
+								);
+								await pricingService.creditTokens(
+									canvas.userId,
+									taskWithPrice.price,
+									"REFUND",
+									{
+										taskId,
+										batchId,
+										reason: "BullMQ job permanently failed",
+									},
+								);
+							}
+						}
+					} catch (refundErr) {
+						logger.error(
+							{ refundErr },
+							`Failed to refund tokens for permanently failed BullMQ job for task ${taskId}`,
+						);
+					}
+				}
 
 				await prisma.task.update({
 					where: { id: taskId },

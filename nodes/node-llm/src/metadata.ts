@@ -28,9 +28,9 @@ export const metadata = defineMetadata({
 	defaultConfig: { model: "gemini-3-flash-preview", temperature: 0 },
 	pricing: (config: LLMNodeConfig) => {
 		const MODEL_TOKEN_PRICING: Record<LLMNodeConfig["model"], number> = {
-			"gemini-3-flash-preview": 1,
-			"gemini-3.1-pro-preview": 3,
-			"gemini-2.5-pro": 2,
+			"gemini-3-flash-preview": 5,
+			"gemini-3.1-pro-preview": 15,
+			"gemini-2.5-pro": 10,
 		};
 		return MODEL_TOKEN_PRICING[config.model] || 0;
 	},

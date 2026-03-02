@@ -1,10 +1,11 @@
+import type { IPricingService } from '@gatewai/core';
 import { logger } from "@gatewai/core";
 import { TOKENS } from "@gatewai/core/di";
 import type { PrismaClient } from "@gatewai/db";
 import { inject, injectable } from "inversify";
 
 @injectable()
-export class PricingService {
+export class PricingService implements IPricingService {
     constructor(
         @inject(TOKENS.PRISMA) private prisma: PrismaClient,
     ) { }

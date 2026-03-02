@@ -2,7 +2,7 @@
 
 import type { DataType } from "@gatewai/db";
 import z, { type ZodTypeAny } from "zod";
-import type { NodePricingFn } from "./pricing.js";
+import type { NodePricingFn } from "./pricing/pricing.js";
 
 const HandleDefinitionSchema = z.object({
 	dataTypes: z.custom<DataType[]>(),

@@ -1,5 +1,11 @@
 import { createCodeGenAgent, runCodeGenAgent } from "@gatewai/ai-agent";
-import { type EnvConfig, extractSvgDimensions, generateId, logger, type StorageService } from "@gatewai/core";
+import {
+    type EnvConfig,
+    extractSvgDimensions,
+    generateId,
+    logger,
+    type StorageService,
+} from "@gatewai/core";
 import { TOKENS } from "@gatewai/core/di";
 import type { FileData } from "@gatewai/core/types";
 import { DataType, type PrismaClient } from "@gatewai/db";
@@ -14,15 +20,107 @@ import { inject, injectable } from "inversify";
 import { z } from "zod";
 import { SvgNodeConfigSchema } from "../metadata.js";
 import type { SvgResult } from "../shared/index.js";
+import { SVG_HELPER_API_DOCS, SVG_HELPERS_CODE } from "./svg-helpers.js";
+
+// ─── Constants ────────────────────────────────────────────────────────────────
 
 const MAX_RETRIES = 3;
+const CANVAS_SIZE = 1024;
 
-/**
- * Result schema for the agent
- */
+// ─── Zod schema ──────────────────────────────────────────────────────────────
+
 const SvgSandboxResultSchema = z.object({
-    svg: z.string().describe("The generated SVG XML string"),
+    svg: z
+        .string()
+        .min(1, "SVG string must not be empty")
+        .refine((s) => s.trimStart().startsWith("<svg"), {
+            message: 'SVG string must start with an <svg element, not a backtick or markdown fence',
+        }),
 });
+
+// ─── System prompt factory ────────────────────────────────────────────────────
+
+function buildSystemPrompt(isEditing: boolean): string {
+    return `You are an expert SVG graphics engineer.
+Your sole task is to write JavaScript code that generates a visually stunning, high-quality SVG.
+
+## Available globals (access directly — no imports needed)
+- \`prompt\`    {string}  The user's graphic request
+${isEditing ? "- `sourceSvg` {string}  The existing SVG XML you must modify" : "- `sourceSvg` {null}    No source SVG (create from scratch)"}
+
+## Helper library (pre-loaded — all functions are already global)
+
+${SVG_HELPER_API_DOCS}
+
+## Required return format
+Your code MUST return an object with a single \`svg\` property:
+\`\`\`js
+return {
+  svg: '<svg xmlns="http://www.w3.org/2000/svg" width="${CANVAS_SIZE}" height="${CANVAS_SIZE}" viewBox="0 0 ${CANVAS_SIZE} ${CANVAS_SIZE}">...</svg>'
+};
+\`\`\`
+
+## Canvas & structure rules
+- Always use a ${CANVAS_SIZE}×${CANVAS_SIZE} canvas with \`xmlns\`, \`width\`, \`height\`, and \`viewBox\`.
+- Put all \`<defs>\` content first (gradients, filters, patterns).
+- Use \`svgRoot(w, h, content, defs)\` to assemble the final SVG — it handles the wrapper correctly.
+- The returned string must be raw SVG XML — NOT wrapped in backticks, code fences, or quotes.
+
+## Design philosophy
+- Favour procedural generation: loops, Math functions, and helpers over hand-coded coordinates.
+- Layer depth: background gradient → midground shapes → foreground detail → highlights.
+- Use \`linearGradient\` / \`radialGradient\` for fills rather than flat colours.
+- Add \`dropShadowFilter\` or \`glowFilter\` for dimensionality.
+- Pick a harmonious palette with \`harmonicPalette(baseHue, n)\` or \`gradientPalette(h1, h2, n)\`.
+- Use \`seedRand(42)\` for reproducible pseudo-randomness when scattering elements.
+
+## Composition patterns (pick what fits the prompt)
+\`\`\`js
+// ── Example 1: Concentric rings with glow ───────────────────────
+const rng = seedRand(7);
+const palette = harmonicPalette(200, 6);
+const defs = [
+  radialGradient('bg', 512, 512, 800, [['0%', '#0a0a1a'], ['100%', '#000']]),
+  glowFilter('glow', palette[0], 12),
+].join('');
+let shapes = rect(0, 0, 1024, 1024, { fill: 'url(#bg)' });
+for (let i = 0; i < 8; i++) {
+  const r = 80 + i * 55;
+  const color = palette[i % palette.length];
+  shapes += circle(512, 512, r, {
+    fill: 'none', stroke: color,
+    'stroke-width': 2 + rng() * 4,
+    'stroke-opacity': 0.6 + rng() * 0.4,
+    filter: 'url(#glow)',
+  });
+}
+return { svg: svgRoot(1024, 1024, shapes, defs) };
+
+// ── Example 2: Edit mode — change fill colours ──────────────────
+const updated = sourceSvg
+  .replace(/fill="#[0-9a-fA-F]{3,6}"/g, (m, i) =>
+    \`fill="\${hsl((i * 37) % 360, 70, 55)}"\`
+  );
+return { svg: updated };
+\`\`\`
+
+${isEditing
+            ? `## Editing an existing SVG
+- Parse \`sourceSvg\` with string operations or regex — no DOM APIs available.
+- When replacing elements, preserve the outer \`<svg>\` wrapper exactly (attributes + namespace).
+- Only modify what the prompt asks for; keep everything else intact.
+- Return the full modified SVG string (not a diff or partial).`
+            : ""
+        }
+
+## What NOT to do
+- Do NOT use \`import\`, \`require\`, \`export\`, \`async\`, \`await\`, \`fetch\`, or DOM APIs.
+- Do NOT return a partial SVG or an object without the \`svg\` key.
+- Do NOT JSON.stringify the SVG string before returning.
+`.trim();
+}
+
+// ─── Processor ────────────────────────────────────────────────────────────────
 
 @injectable()
 export class SvgProcessor implements NodeProcessor {
@@ -39,50 +137,39 @@ export class SvgProcessor implements NodeProcessor {
         data,
     }: BackendNodeProcessorCtx): Promise<BackendNodeProcessorResult<SvgResult>> {
         try {
+            // ── Resolve inputs ───────────────────────────────────────────
             const userPrompt = this.graph.getInputValue(data, node.id, true, {
                 dataType: DataType.Text,
                 label: "Prompt",
             })?.data as string;
+
+            if (!userPrompt?.trim()) {
+                return { success: false, error: "Prompt is required." };
+            }
 
             const sourceSvgInput = this.graph.getInputValue(data, node.id, false, {
                 dataType: DataType.SVG,
                 label: "Source SVG (Editing)",
             })?.data as FileData | undefined;
 
-            const nodeConfig = SvgNodeConfigSchema.parse(node.config);
-            const agentModel = this.aiProvider.getAgentModel<any>(nodeConfig.model);
-
-            // Load source SVG content if provided
+            // ── Load source SVG ──────────────────────────────────────────
             let sourceSvgContent: string | null = null;
             if (sourceSvgInput) {
                 const arrayBuffer = await this.graph.loadMediaBuffer(sourceSvgInput);
                 sourceSvgContent = Buffer.from(arrayBuffer).toString("utf-8");
             }
 
-            // ── System Prompt for Code-Gen Agent ──────────────────────
-            const systemPrompt = `You are an expert SVG graphics programmer.
-Your task is to write JavaScript code that generates a high-quality SVG based on the user's prompt.
+            const isEditing = sourceSvgContent !== null;
 
-You have access to the following global variables:
-- \`prompt\`: The user's request (string)
-- \`sourceSvg\`: The source SVG string if we are editing an existing SVG, otherwise null (string | null)
+            // ── Setup agent ──────────────────────────────────────────────
+            const nodeConfig = SvgNodeConfigSchema.parse(node.config);
+            const agentModel = this.aiProvider.getAgentModel<any>(nodeConfig.model);
 
-You MUST return a valid result object with an \`svg\` property containing the final SVG XML string.
-Example return:
-return { svg: '<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 1024 1024"><circle cx="512" cy="512" r="512" fill="red"/></svg>' };
-
-Guidelines:
-- Create visually stunning, modern, and highly detailed SVGs.
-- Use a large canvas (e.g. 1024x1024) and set the \`xmlns\`, \`width\`, \`height\`, and \`viewBox\` properly.
-- You do NOT need to use markdown to wrap your response since this is code execute.
-- Use the available JavaScript Math functions and loops to construct complex procedural graphics if appropriate.
-- If \`sourceSvg\` is provided, you must parse/manipulate it using string operations or regex, and return the modified SVG.`;
-
-            // ── Setup Code-Gen Agent ─────────────────────────────────
             const { agent, resultStore } = createCodeGenAgent<{ svg: string }>({
                 name: "SvgGenAgent",
                 model: agentModel,
-                systemPrompt,
+                systemPrompt: buildSystemPrompt(isEditing),
+                preamble: SVG_HELPERS_CODE,
                 globals: {
                     prompt: userPrompt,
                     sourceSvg: sourceSvgContent,
@@ -92,25 +179,35 @@ Guidelines:
                 timeoutMs: 10_000,
             });
 
-            // ── Run Agent ─────────────────────────────────────────────
-            // The agent will loop, write code, run it, validate, and retry if needed.
+            // ── Run agent ────────────────────────────────────────────────
             const result = await runCodeGenAgent<{ svg: string }>({
                 agent,
                 resultStore,
-                prompt: userPrompt,
+                prompt: isEditing
+                    ? `Edit the provided SVG as follows: ${userPrompt}`
+                    : `Create an SVG: ${userPrompt}`,
             });
 
             if (!result?.svg) {
                 return { success: false, error: "Agent failed to return a valid SVG." };
             }
 
-            const svgContent = result.svg;
+            // ── Validate basic SVG structure ─────────────────────────────
+            const svgContent = result.svg.trim();
+            if (!svgContent.includes("<svg") || !svgContent.includes("</svg>")) {
+                return {
+                    success: false,
+                    error: "Agent returned malformed SVG (missing opening or closing tag).",
+                };
+            }
 
-            // ── Upload & store ───────────────────────────────────────
+            // ── Upload to storage ────────────────────────────────────────
             const outputHandle = data.handles.find(
                 (h) => h.nodeId === node.id && h.type === "Output",
             );
-            if (!outputHandle) return { success: false, error: "Output handle is missing." };
+            if (!outputHandle) {
+                return { success: false, error: "Output handle is missing." };
+            }
 
             const buffer = Buffer.from(svgContent, "utf-8");
             const randId = generateId();
@@ -120,43 +217,32 @@ Guidelines:
             const contentType = "image/svg+xml";
 
             await this.storage.uploadToStorage(buffer, key, contentType, bucket);
-            const size = buffer.length;
 
+            // ── Derive display dimensions ────────────────────────────────
             const dim = extractSvgDimensions(buffer);
-            const rawW = dim?.w || 0;
-            const rawH = dim?.h || 0;
+            const { width, height } = normaliseDimensions(dim?.w, dim?.h);
 
-            let width = 512;
-            let height = 512;
-
-            if (rawW > 0 && rawH > 0) {
-                const aspectRatio = rawW / rawH;
-                if (rawW < rawH) {
-                    width = 512;
-                    height = Math.round(512 / aspectRatio);
-                } else {
-                    height = 512;
-                    width = Math.round(512 * aspectRatio);
-                }
-            }
-
+            // ── Persist asset record ─────────────────────────────────────
             const asset = await this.prisma.fileAsset.create({
                 data: {
                     name: fileName,
                     userId: data.canvas.userId,
                     bucket,
                     key,
-                    size,
+                    size: buffer.length,
                     width,
                     height,
                     mimeType: contentType,
                 },
             });
 
-            const newResult = structuredClone(node.result as unknown as SvgResult) ?? {
-                outputs: [],
-                selectedOutputIndex: 0,
-            };
+            // ── Build result ─────────────────────────────────────────────
+            const newResult = (
+                structuredClone(node.result as unknown as SvgResult) ?? {
+                    outputs: [],
+                    selectedOutputIndex: 0,
+                }
+            );
 
             newResult.outputs.push({
                 items: [
@@ -172,7 +258,36 @@ Guidelines:
             return { success: true, newResult };
         } catch (err: unknown) {
             logger.error({ err }, "SVG Generation Failed");
-            return { success: false, error: err instanceof Error ? err.message : "SVG Generation failed" };
+            return {
+                success: false,
+                error: err instanceof Error ? err.message : "SVG Generation failed",
+            };
         }
     }
+}
+
+// ─── Helpers ──────────────────────────────────────────────────────────────────
+
+/**
+ * Normalise raw SVG intrinsic dimensions to a bounded display size.
+ * Preserves aspect ratio while capping the longer edge at TARGET_PX.
+ */
+function normaliseDimensions(
+    rawW: number | undefined,
+    rawH: number | undefined,
+    targetPx = 512,
+): { width: number; height: number } {
+    if (!rawW || !rawH || rawW <= 0 || rawH <= 0) {
+        return { width: targetPx, height: targetPx };
+    }
+    if (rawW >= rawH) {
+        return {
+            width: targetPx,
+            height: Math.round(targetPx * (rawH / rawW)),
+        };
+    }
+    return {
+        width: Math.round(targetPx * (rawW / rawH)),
+        height: targetPx,
+    };
 }
