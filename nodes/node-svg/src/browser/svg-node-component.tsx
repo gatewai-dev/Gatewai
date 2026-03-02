@@ -7,6 +7,7 @@ import {
 	SVGRenderer,
 	useNodePreview,
 } from "@gatewai/react-canvas";
+import { cn } from "@gatewai/ui-kit";
 import { memo } from "react";
 
 const SvgNodeComponent = memo(
@@ -19,8 +20,15 @@ const SvgNodeComponent = memo(
 				id={props.id}
 				dragging={props.dragging}
 			>
-				<div className="flex flex-col gap-3 min-w-[200px]">
-					<div className="media-container w-full overflow-hidden rounded bg-white/10 min-h-[150px] relative flex items-center justify-center">
+				<div className="flex flex-col gap-3">
+					<div
+						className={cn(
+							"media-container w-full overflow-hidden rounded bg-white/10  relative flex items-center justify-center",
+							{
+								"h-[200px]": !mediaUrl,
+							},
+						)}
+					>
 						{hasMoreThanOneOutput && node && (
 							<div className="absolute top-1 left-1 z-10">
 								<OutputSelector node={node} />

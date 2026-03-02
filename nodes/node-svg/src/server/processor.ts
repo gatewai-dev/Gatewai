@@ -24,8 +24,8 @@ import { SVG_HELPER_API_DOCS, SVG_HELPERS_CODE } from "./svg-helpers.js";
 
 // ─── Constants ────────────────────────────────────────────────────────────────
 
-const MAX_RETRIES = 3;
-const CANVAS_SIZE = 1024;
+const MAX_RETRIES = 4;
+const DEFAULT_CANVAS_SIZE = 1024;
 
 // ─── Zod schema ──────────────────────────────────────────────────────────────
 
@@ -40,7 +40,7 @@ const SvgSandboxResultSchema = z.object({
 
 // ─── System prompt factory ────────────────────────────────────────────────────
 
-function buildSystemPrompt(isEditing: boolean): string {
+function buildSystemPrompt(isEditing: boolean, canvasW: number, canvasH: number): string {
     return `You are an expert SVG graphics engineer.
 Your sole task is to write JavaScript code that generates a visually stunning, high-quality SVG.
 
@@ -56,12 +56,12 @@ ${SVG_HELPER_API_DOCS}
 Your code MUST return an object with a single \`svg\` property:
 \`\`\`js
 return {
-  svg: '<svg xmlns="http://www.w3.org/2000/svg" width="${CANVAS_SIZE}" height="${CANVAS_SIZE}" viewBox="0 0 ${CANVAS_SIZE} ${CANVAS_SIZE}">...</svg>'
+  svg: '<svg xmlns="http://www.w3.org/2000/svg" width="${canvasW}" height="${canvasH}" viewBox="0 0 ${canvasW} ${canvasH}">...</svg>'
 };
 \`\`\`
 
 ## Canvas & structure rules
-- Always use a ${CANVAS_SIZE}×${CANVAS_SIZE} canvas with \`xmlns\`, \`width\`, \`height\`, and \`viewBox\`.
+- Always use a ${canvasW}×${canvasH} canvas with \`xmlns\`, \`width\`, \`height\`, and \`viewBox\`.
 - Put all \`<defs>\` content first (gradients, filters, patterns).
 - Use \`svgRoot(w, h, content, defs)\` to assemble the final SVG — it handles the wrapper correctly.
 - The returned string must be raw SVG XML — NOT wrapped in backticks, code fences, or quotes.
@@ -77,24 +77,25 @@ return {
 ## Composition patterns (pick what fits the prompt)
 \`\`\`js
 // ── Example 1: Concentric rings with glow ───────────────────────
+const cx = ${canvasW} / 2, cy = ${canvasH} / 2;
 const rng = seedRand(7);
 const palette = harmonicPalette(200, 6);
 const defs = [
-  radialGradient('bg', 512, 512, 800, [['0%', '#0a0a1a'], ['100%', '#000']]),
+  radialGradient('bg', cx, cy, Math.max(${canvasW}, ${canvasH}) * 0.8, [['0%', '#0a0a1a'], ['100%', '#000']]),
   glowFilter('glow', palette[0], 12),
 ].join('');
-let shapes = rect(0, 0, 1024, 1024, { fill: 'url(#bg)' });
+let shapes = rect(0, 0, ${canvasW}, ${canvasH}, { fill: 'url(#bg)' });
 for (let i = 0; i < 8; i++) {
   const r = 80 + i * 55;
   const color = palette[i % palette.length];
-  shapes += circle(512, 512, r, {
+  shapes += circle(cx, cy, r, {
     fill: 'none', stroke: color,
     'stroke-width': 2 + rng() * 4,
     'stroke-opacity': 0.6 + rng() * 0.4,
     filter: 'url(#glow)',
   });
 }
-return { svg: svgRoot(1024, 1024, shapes, defs) };
+return { svg: svgRoot(${canvasW}, ${canvasH}, shapes, defs) };
 
 // ── Example 2: Edit mode — change fill colours ──────────────────
 const updated = sourceSvg
@@ -160,17 +161,19 @@ export class SvgProcessor implements NodeProcessor {
             }
 
             const isEditing = sourceSvgContent !== null;
-            if (!isEditing) {
-                throw new Error("BAD ERROR")
-            }
-            // ── Setup agent ──────────────────────────────────────────────
+
+            // ── Resolve canvas dimensions from config ────────────────────
             const nodeConfig = SvgNodeConfigSchema.parse(node.config);
+            const canvasW = nodeConfig.autoDimensions ? DEFAULT_CANVAS_SIZE : nodeConfig.width;
+            const canvasH = nodeConfig.autoDimensions ? DEFAULT_CANVAS_SIZE : nodeConfig.height;
+
+            // ── Setup agent ──────────────────────────────────────────────
             const agentModel = this.aiProvider.getAgentModel<any>(nodeConfig.model);
 
             const { agent, resultStore } = createCodeGenAgent<{ svg: string }>({
                 name: "SvgGenAgent",
                 model: agentModel,
-                systemPrompt: buildSystemPrompt(isEditing),
+                systemPrompt: buildSystemPrompt(isEditing, canvasW, canvasH),
                 preamble: SVG_HELPERS_CODE,
                 globals: {
                     prompt: userPrompt,
@@ -221,8 +224,15 @@ export class SvgProcessor implements NodeProcessor {
             await this.storage.uploadToStorage(buffer, key, contentType, bucket);
 
             // ── Derive display dimensions ────────────────────────────────
-            const dim = extractSvgDimensions(buffer);
-            const { width, height } = normaliseDimensions(dim?.w, dim?.h);
+            let width: number;
+            let height: number;
+
+            if (nodeConfig.autoDimensions) {
+                const dim = extractSvgDimensions(buffer);
+                ({ width, height } = normaliseDimensions(dim?.w, dim?.h));
+            } else {
+                ({ width, height } = normaliseDimensions(canvasW, canvasH));
+            }
 
             // ── Persist asset record ─────────────────────────────────────
             const asset = await this.prisma.fileAsset.create({

@@ -24,7 +24,12 @@ export const metadata = defineMetadata({
 		],
 		outputs: [{ dataTypes: ["SVG"], label: "Result", order: 0 }],
 	},
-	defaultConfig: { model: "gemini-3-flash-preview" },
+	defaultConfig: {
+		model: "gemini-3-flash-preview",
+		autoDimensions: true,
+		width: 1024,
+		height: 1024,
+	},
 	pricing: (config: SvgNodeConfig) => {
 		const MODEL_TOKEN_PRICING: Record<SvgNodeConfig["model"], number> = {
 			"gemini-3-flash-preview": 5,
