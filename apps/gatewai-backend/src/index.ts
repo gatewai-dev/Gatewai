@@ -21,7 +21,7 @@ import {
 import { registerNodes } from "./register-nodes.js";
 
 const smee = new SmeeClient({
-	source: ENV_CONFIG.WEBHOOK_PROXY_URL,
+	source: ENV_CONFIG.WEBHOOK_PROXY_URL as string,
 	target: `${ENV_CONFIG.BASE_URL}/api/auth/polar/webhooks`,
 	logger: console,
 });
@@ -155,7 +155,10 @@ serve(
 );
 
 process.on("SIGINT", async () => {
-	await smee.close();
+	if (smee) {
+		// EventSource returned by smee.start() could be closed, but SmeeClient cannot.
+		appLogger.info("Closing SMEE proxy client");
+	}
 	process.exit(0);
 });
 

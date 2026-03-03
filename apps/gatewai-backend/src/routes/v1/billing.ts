@@ -22,7 +22,6 @@ const billingRouter = new Hono<{ Variables: AuthHonoTypes }>()
 			where: { id: user.id },
 			select: { tokens: true },
 		});
-
 		return c.json({ tokens: dbUser?.tokens ?? 0 });
 	})
 	.get("/usage", async (c) => {

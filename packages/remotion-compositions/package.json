@@ -31,15 +31,18 @@
 		"dist/**"
 	],
 	"scripts": {
-		"build": "tsdown",
-		"dev": "tsdown --watch",
+		"build": "tsdown && pnpm run build:bundle",
+		"build:bundle": "tsx scripts/bundle-remotion.ts",
+		"dev": "pnpm run build:bundle && tsdown --watch",
 		"clean": "rm -rf .turbo && rm -rf node_modules && rm -rf dist"
 	},
 	"devDependencies": {
 		"@gatewai/core": "workspace:*",
 		"@gatewai/tsconfig": "workspace:*",
+		"@remotion/bundler": "4.0.431",
 		"@types/react": "^19.2.4",
 		"tsdown": "^0.19.0",
+		"tsx": "^4.20.3",
 		"typescript": "5.5.4"
 	},
 	"peerDependencies": {

@@ -4,9 +4,10 @@ import {
 	useGetBalanceQuery,
 	useGetPlansQuery,
 } from "@gatewai/react-store";
-import { Button, Dialog, DialogContent } from "@gatewai/ui-kit";
+import { Button, Dialog, DialogContent, SparklesIcon } from "@gatewai/ui-kit";
 import { CheckCircle2, ExternalLink, Loader2 } from "lucide-react";
 import { useEffect, useState } from "react";
+import { HiOutlineSparkles } from "react-icons/hi2";
 import { RiRocket2Fill, RiSeedlingLine, RiVipCrown2Fill } from "react-icons/ri";
 import { authClient } from "@/lib/auth-client";
 
@@ -42,9 +43,12 @@ export function SubscriptionDialog({
 		const priceB = (b.prices?.[0] as any)?.priceAmount ?? 0;
 		return priceA - priceB;
 	});
+	const displayedPlans = sortedPlans.filter(
+		(p) => !p.isArchived || p.id === activeSub?.productId,
+	);
 	console.log({ sortedPlans });
 	useEffect(() => {
-		if (!open || !plans.length) return;
+		if (!open || !displayedPlans.length) return;
 		setSubsLoading(true);
 		authClient.customer.subscriptions
 			.list({ query: { page: 1, limit: 10, active: true } })
@@ -57,9 +61,9 @@ export function SubscriptionDialog({
 				// Sort by tier from our fetched plans
 				const sorted = [...data.result.items].sort((a, b) => {
 					const ta =
-						plans.find((p) => p.id === a.productId)?.tokenCredits ?? -1;
+						sortedPlans.find((p) => p.id === a.productId)?.tokenCredits ?? -1;
 					const tb =
-						plans.find((p) => p.id === b.productId)?.tokenCredits ?? -1;
+						sortedPlans.find((p) => p.id === b.productId)?.tokenCredits ?? -1;
 					return tb - ta;
 				});
 				const top = sorted[0];
@@ -69,7 +73,7 @@ export function SubscriptionDialog({
 			.finally(() => setSubsLoading(false));
 	}, [open, plans]);
 
-	const activePlan = plans.find((p) => p.id === activeSub?.productId);
+	const activePlan = sortedPlans.find((p) => p.id === activeSub?.productId);
 	const activeIndex = Number(activePlan?.metadata?.tier || 0) || -1;
 
 	/**
@@ -128,7 +132,7 @@ export function SubscriptionDialog({
 			setPortalLoading(false);
 		}
 	}
-
+	console.log({ plans });
 	return (
 		<Dialog open={open} onOpenChange={onOpenChange}>
 			{/* Elevated Container Sizing: Wider, beautifully rounded, strictly defined height bounds */}
@@ -148,7 +152,7 @@ export function SubscriptionDialog({
 					<div className="flex items-center gap-3 shrink-0">
 						{/* Token Balance Pill */}
 						<div className="flex items-center gap-2 h-9 px-4 rounded-full bg-white dark:bg-zinc-900 border border-zinc-200 dark:border-zinc-700 shadow-sm">
-							<RiSeedlingLine className="size-4 text-zinc-400 shrink-0" />
+							<SparklesIcon />
 							{balanceLoading ? (
 								<Loader2 className="size-4 animate-spin text-zinc-400" />
 							) : (
@@ -185,7 +189,7 @@ export function SubscriptionDialog({
 							<Loader2 className="size-8 animate-spin text-zinc-400" />
 						</div>
 					) : (
-						sortedPlans.map((plan) => {
+						displayedPlans.map((plan) => {
 							const tier = Number(plan.metadata?.tier || 0);
 							const Icon = PLAN_ICONS[tier] || RiSeedlingLine;
 							const isLoading = loadingPlanId === plan.id;

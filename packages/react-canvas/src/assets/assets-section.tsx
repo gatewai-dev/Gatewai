@@ -18,6 +18,7 @@ import {
 	motion,
 } from "framer-motion";
 import {
+	Film,
 	Grid,
 	Image as ImageIcon,
 	Images,
@@ -25,10 +26,12 @@ import {
 	Music,
 	PackageOpen,
 	Search,
+	Shapes,
 	Video,
 	X,
 } from "lucide-react";
 import { useEffect, useMemo, useState } from "react";
+import { BsFileEarmarkText, BsFileEarmarkZip } from "react-icons/bs";
 import { useDebounce } from "use-debounce";
 import { AssetItem } from "./asset-item";
 import type { FileAssetEntity } from "./types";
@@ -38,13 +41,25 @@ interface AssetsSectionProps {
 	isCollapsed: boolean;
 }
 
-type AssetTypeFilter = "all" | "image" | "video" | "audio";
+type AssetTypeFilter =
+	| "all"
+	| "image"
+	| "video"
+	| "audio"
+	| "svg"
+	| "lottie"
+	| "caption"
+	| "other";
 
 const FILTER_CONFIG = {
 	all: { label: "All", icon: Grid, value: undefined },
 	image: { label: "Images", icon: ImageIcon, value: "image" },
 	video: { label: "Videos", icon: Video, value: "video" },
 	audio: { label: "Audio", icon: Music, value: "audio" },
+	svg: { label: "SVG", icon: Shapes, value: "svg" },
+	lottie: { label: "Lottie", icon: Film, value: "lottie" },
+	caption: { label: "Caption", icon: BsFileEarmarkText, value: "caption" },
+	other: { label: "Other", icon: BsFileEarmarkZip, value: "other" },
 } as const;
 
 // Engineering Note: Standardized spring for brand consistency
@@ -121,7 +136,7 @@ export function AssetsSection({ isCollapsed }: AssetsSectionProps) {
 				side="right"
 				align="end"
 				sideOffset={12}
-				className="w-[380px] overflow-hidden p-0 shadow-2xl ring-1 ring-black/5 dark:ring-white/10"
+				className="w-[680px] overflow-hidden p-0 shadow-2xl ring-1 ring-black/5 dark:ring-white/10"
 			>
 				<div className="flex h-[680px] flex-col bg-background">
 					{/* Header */}

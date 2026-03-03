@@ -34,7 +34,9 @@ const querySchema = z.object({
 	pageSize: z.coerce.number().int().positive().max(1000).default(1000),
 	pageIndex: z.coerce.number().int().nonnegative().default(0),
 	q: z.string().default(""),
-	type: z.enum(["image", "video", "audio"]).optional(),
+	type: z
+		.enum(["image", "video", "audio", "svg", "lottie", "caption", "other"])
+		.optional(),
 });
 
 /**
@@ -147,6 +149,12 @@ const assetsPublicRouter = new Hono<{ Variables: AuthHonoTypes }>({
 						width,
 						height,
 					);
+				} else if (asset.mimeType === "image/svg+xml") {
+					const stream = storage.getStreamFromStorage(asset.key, asset.bucket);
+					return c.body(stream as any, 200, {
+						"Content-Type": "image/svg+xml",
+						"Cache-Control": "public, max-age=31536000, immutable",
+					});
 				} else if (asset.mimeType.startsWith("image/")) {
 					// For images, we download the buffer to process with Sharp
 					const originalBuffer = await storage.getFromStorage(
@@ -315,9 +323,32 @@ const assetsRouter = new Hono<{ Variables: AuthorizedHonoTypes }>({
 		};
 
 		if (type) {
-			where.mimeType = {
-				startsWith: `${type}/`,
-			};
+			if (type === "svg") {
+				where.mimeType = { startsWith: "image/svg" };
+			} else if (type === "lottie") {
+				where.mimeType = { startsWith: "application/json" };
+			} else if (type === "caption") {
+				// Captions can be text/vtt, text/srt, text/csv etc.
+				where.mimeType = { startsWith: "text/" };
+			} else if (type === "other") {
+				// Everything else not captured by image, video, audio, application/json, text/
+				where.NOT = [
+					{ mimeType: { startsWith: "image/" } },
+					{ mimeType: { startsWith: "video/" } },
+					{ mimeType: { startsWith: "audio/" } },
+					{ mimeType: { startsWith: "application/json" } },
+					{ mimeType: { startsWith: "text/" } },
+				];
+			} else if (type === "image") {
+				where.mimeType = {
+					startsWith: "image/",
+					not: { startsWith: "image/svg" }, // Usually SVGs are filtered separately
+				};
+			} else {
+				where.mimeType = {
+					startsWith: `${type}/`,
+				};
+			}
 		}
 
 		const [assets, total] = await Promise.all([

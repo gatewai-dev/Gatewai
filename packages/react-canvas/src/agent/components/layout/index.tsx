@@ -1,6 +1,6 @@
 import { Panel } from "@gatewai/react-canvas";
 import { Button, cn } from "@gatewai/ui-kit";
-import { HiSparkles } from "react-icons/hi2";
+import { GitBranchPlus } from "lucide-react";
 import { usePersistentState } from "../../../lib/persistent-state";
 import { CanvasAgentProvider } from "../../ctx/canvas-agent.ctx";
 import { AgentChatSection } from "../chat-section";
@@ -28,7 +28,7 @@ function AgentLayoutInner() {
 					},
 				)}
 			>
-				<HiSparkles className="size-6 text-primary" />
+				<GitBranchPlus className="size-6 text-primary" />
 				Agent
 			</Button>
 			<div

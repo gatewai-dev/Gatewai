@@ -19,6 +19,7 @@ import {
 import { motion } from "framer-motion";
 import {
 	FileImage,
+	Film,
 	Loader2,
 	MoreHorizontal,
 	Music,
@@ -109,6 +110,7 @@ export const AssetItem = memo(({ asset }: AssetItemProps) => {
 	const [deleteAsset, { isLoading: isDeleting }] = useDeleteAssetMutation();
 	const [showDeleteDialog, setShowDeleteDialog] = useState(false);
 	const isAudio = asset.mimeType?.startsWith("audio/");
+	const isLottie = asset.mimeType?.startsWith("application/zip+dotlottie");
 
 	const handleDelete = async () => {
 		try {
@@ -230,6 +232,10 @@ export const AssetItem = memo(({ asset }: AssetItemProps) => {
 						{isAudio ? (
 							<div className="flex h-full w-full items-center justify-center bg-primary/5">
 								<Music className="h-4 w-4 text-primary/70" />
+							</div>
+						) : isLottie ? (
+							<div className="flex h-full w-full items-center justify-center bg-primary/5">
+								<Film className="h-4 w-4 text-primary/70" />
 							</div>
 						) : thumbnail ? (
 							<img

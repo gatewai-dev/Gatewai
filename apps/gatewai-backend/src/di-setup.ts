@@ -9,6 +9,7 @@ import {
 import { GoogleGenAI } from "@google/genai";
 import { getAgentModel } from "./agent/agent-model";
 import { PricingService } from "./lib/pricing.service";
+import { VideoRendererService } from "./lib/video-renderer.service";
 
 /**
  * Register backend-specific services into the DI container.
@@ -40,6 +41,12 @@ export function registerBackendServices() {
 
 	// Register Pricing Service
 	container.bind(TOKENS.PRICING_SERVICE).to(PricingService).inSingletonScope();
+
+	// Register Video Renderer
+	container
+		.bind(TOKENS.VIDEO_RENDERER)
+		.to(VideoRendererService)
+		.inSingletonScope();
 
 	return container;
 }

@@ -1,14 +1,18 @@
 import assert from "node:assert";
-import { TOKENS } from "@gatewai/core/di";
+import { container, TOKENS } from "@gatewai/core/di";
 import type { ExportResult } from "../shared/index.js";
 
 ;
 
+import { readFile, rm } from "node:fs/promises";
+import { type EnvConfig, type IVideoRendererService, logger } from "@gatewai/core";
+import type { VirtualMediaData } from "@gatewai/core/types";
+import type { PrismaClient } from "@gatewai/db";
 import type {
     BackendNodeProcessorCtx,
     BackendNodeProcessorResult,
     GraphResolvers,
-    NodeProcessor,
+    NodeProcessor,StorageService 
 } from "@gatewai/node-sdk/server";
 import { inject, injectable } from "inversify";
 
@@ -16,6 +20,9 @@ import { inject, injectable } from "inversify";
 export class ExportServerProcessor implements NodeProcessor {
     constructor(
         @inject(TOKENS.GRAPH_RESOLVERS) private graph: GraphResolvers,
+        @inject(TOKENS.PRISMA) private prisma: PrismaClient,
+        @inject(TOKENS.ENV) private env: EnvConfig,
+        @inject(TOKENS.STORAGE) private storage: StorageService,
     ) { }
 
     async process({
@@ -23,15 +30,75 @@ export class ExportServerProcessor implements NodeProcessor {
         data,
     }: BackendNodeProcessorCtx): Promise<BackendNodeProcessorResult<ExportResult>> {
         try {
-            const inputValue = this.graph.getInputValue(data, node.id, true, {});
+            const inputValue = this.graph.getInputValue(data, node.id, false, {});
             assert(inputValue);
-
             const newResult = structuredClone(
                 node.result as unknown as ExportResult,
             ) ?? {
                 outputs: [],
                 selectedOutputIndex: 0,
             };
+            console.log({ inputValue })
+            const rendererSerice = container.get<IVideoRendererService>(TOKENS.VIDEO_RENDERER);
+            // If the input value is VirtualMediaData, render it
+            if (inputValue.type === "Video") {
+                const virtualMedia = inputValue.data as VirtualMediaData;
+                if (!virtualMedia.metadata.width || !virtualMedia.metadata.height || !virtualMedia.metadata.fps || !virtualMedia.metadata.durationMs) {
+                    throw new Error("VirtualMediaData must have width, height, fps and durationInFrames");
+                }
+                console.log({ virtualMedia });
+                const renderedVideo = await rendererSerice.renderComposition({
+                    compositionId: "CompositionScene",
+                    inputProps: virtualMedia,
+                    width: virtualMedia.metadata.width,
+                    height: virtualMedia.metadata.height,
+                    fps: virtualMedia.metadata.fps,
+                    durationInFrames: virtualMedia.metadata.durationMs / 1000 * virtualMedia.metadata.fps,
+                });
+                logger.info(`Rendered video: ${renderedVideo.filePath}`);
+                const contentType = "video/mp4";
+                const fileBuffer = await readFile(renderedVideo.filePath);
+
+                const fileName = `render-export-${data.task?.id ?? node.id}-${new Date().getDate()}.mp4`;
+                const key = `assets/exports/${fileName}`;
+
+                // Upload to storage
+                await this.storage.uploadToStorage(
+                    fileBuffer,
+                    key,
+                    contentType,
+                    this.env.GCS_ASSETS_BUCKET
+                );
+
+                // Clean up temp file
+                try {
+                    await rm(renderedVideo.filePath, { force: true });
+                } catch (cleanupErr) {
+                    logger.warn(`Failed to cleanup temp file: ${renderedVideo.filePath}`);
+                }
+
+                // Calculate duration properly
+                const fps = virtualMedia.metadata.fps ?? 30;
+                const durationMs = virtualMedia.metadata.durationMs ?? 1000;
+
+                const asset = await this.prisma.fileAsset.create({
+                    data: {
+                        name: fileName,
+                        userId: (data.canvas as unknown as { userId: string }).userId,
+                        bucket: this.env.GCS_ASSETS_BUCKET,
+                        key,
+                        size: fileBuffer.length,
+                        width: virtualMedia.metadata.width ?? 1920,
+                        height: virtualMedia.metadata.height ?? 1080,
+                        fps: Math.round(fps),
+                        duration: durationMs,
+                        mimeType: contentType,
+                    },
+                });
+
+                // Set the asset into the input value's data so it passes down correctly to the output
+                inputValue.data = { entity: asset };
+            }
 
             const newGeneration: ExportResult["outputs"][number] = {
                 items: [

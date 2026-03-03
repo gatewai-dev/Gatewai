@@ -7,3 +7,4 @@ export * from "./pricing/index.js";
 export * from "./storage/index.js";
 export * from "./utils/is-equal.js";
 export * from "./utils/svg.js";
+export * from "./video/index.js";

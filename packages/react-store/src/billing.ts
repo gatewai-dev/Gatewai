@@ -17,7 +17,16 @@ export const billingAPI = createApi({
 	endpoints: (build) => ({
 		getBalance: build.query<BalanceRPC, void>({
 			providesTags: ["Balance"],
-			query: () => "/balance",
+			queryFn: async () => {
+				const response = await appRPCClient.api.v1.billing.balance.$get();
+				if (!response.ok) {
+					return {
+						error: { status: response.status, data: await response.text() },
+					};
+				}
+				const data = await response.json();
+				return { data };
+			},
 		}),
 		getUsage: build.query<UsageRecordRPC, void>({
 			providesTags: ["Usage"],
@@ -42,7 +51,6 @@ export const billingAPI = createApi({
 					};
 				}
 				const data = await response.json();
-				console.log({ data });
 				return { data };
 			},
 		}),

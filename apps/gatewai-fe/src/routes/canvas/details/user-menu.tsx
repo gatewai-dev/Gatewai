@@ -1,3 +1,4 @@
+import { useGetBalanceQuery } from "@gatewai/react-store";
 import {
 	DropdownMenu,
 	DropdownMenuContent,
@@ -6,8 +7,9 @@ import {
 	DropdownMenuSeparator,
 	DropdownMenuTrigger,
 	GatewaiIcon,
+	SparklesIcon,
 } from "@gatewai/ui-kit";
-import { LayoutGrid, LogOut, Settings, Sparkles } from "lucide-react";
+import { LayoutGrid, LogOut, Settings } from "lucide-react";
 import { useState } from "react";
 import { Link, useNavigate } from "react-router";
 import { authClient } from "@/lib/auth-client";
@@ -16,6 +18,9 @@ import { SubscriptionDialog } from "./SubscriptionDialog";
 
 export function UserMenu() {
 	const nav = useNavigate();
+	const { data: balance } = useGetBalanceQuery(undefined, {
+		pollingInterval: 30_000,
+	});
 	const [isSettingsOpen, setIsSettingsOpen] = useState(false);
 	const [isSubscriptionOpen, setIsSubscriptionOpen] = useState(false);
 
@@ -49,11 +54,18 @@ export function UserMenu() {
 						<span>API Keys</span>
 					</DropdownMenuItem>
 					<DropdownMenuItem
-						className="cursor-pointer"
+						className="cursor-pointer flex items-center justify-between group"
 						onClick={() => setIsSubscriptionOpen(true)}
 					>
-						<Sparkles className="mr-2 h-4 w-4" />
-						<span>Subscription</span>
+						<div className="flex items-center gap-2">
+							<span>Subscription</span>
+						</div>
+						{balance !== undefined && (
+							<span className="text-[11px] font-semibold text-muted-foreground mr-1">
+								<SparklesIcon size="sm" className="mr-1" />
+								{balance.tokens.toLocaleString()}
+							</span>
+						)}
 					</DropdownMenuItem>
 					<DropdownMenuSeparator />
 					<DropdownMenuItem

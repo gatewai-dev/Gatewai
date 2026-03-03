@@ -11,6 +11,7 @@ import {
 	createSlice,
 	type PayloadAction,
 } from "@reduxjs/toolkit";
+import { billingAPI } from "./billing.js";
 import type { RootState } from "./index.js";
 
 export type BatchEntity = BatchDetailsRPC[number];
@@ -21,13 +22,17 @@ export const batchAdapter = createEntityAdapter<BatchEntity>();
 export const getBatchDetails = createAsyncThunk<
 	BatchDetailsRPC,
 	BatchDetailsRPCParams
->("tasks/getBatchDetails", async (params) => {
+>("tasks/getBatchDetails", async (params, { dispatch }) => {
 	const response =
 		await appRPCClient.api.v1.tasks["filterby-batch"].$get(params);
 	if (!response.ok) {
 		throw new Error(await response.text());
 	}
-	return await response.json();
+	const data = (await response.json()) as BatchDetailsRPC;
+	if (data.some((b: BatchEntity) => b.finishedAt != null)) {
+		dispatch(billingAPI.util.invalidateTags(["Balance"]));
+	}
+	return data;
 });
 
 export const getInitialBatches = createAsyncThunk<
