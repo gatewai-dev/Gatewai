@@ -22,6 +22,7 @@ export interface SceneProps {
 	virtualMedia?: VirtualMediaData;
 	durationInMS?: number;
 	backgroundColor?: string;
+	[key: string]: unknown;
 }
 
 export type RenderMediaOnProgress = (progress: RenderMediaProgress) => void;
@@ -39,6 +40,7 @@ export interface VideoRenderOptions {
 	/** Render up to this time (exclusive). Omit to render until end. */
 	endMS?: number;
 	onProgress?: RenderMediaOnProgress;
+	envVariables?: Record<string, string>;
 }
 
 export interface IVideoRendererService {

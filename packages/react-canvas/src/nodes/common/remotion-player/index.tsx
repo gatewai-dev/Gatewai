@@ -399,6 +399,13 @@ export const MediaPlayer = ({
 	controls = true,
 	className,
 	overlay,
+	animations,
+	opacity,
+	volume,
+	scale,
+	rotation,
+	x,
+	y,
 }: MediaPlayerProps) => {
 	const playerRef = useRef<PlayerRef>(null);
 	const wrapperRef = useRef<HTMLDivElement>(null);
@@ -448,7 +455,14 @@ export const MediaPlayer = ({
 						virtualMedia,
 						viewportWidth: compWidth,
 						viewportHeight: compHeight,
-						durationInFrames,
+						durationInMS: (durationInFrames / fps) * 1000,
+						animations,
+						opacity,
+						volume,
+						scale,
+						rotation,
+						x,
+						y,
 					}}
 					durationInFrames={durationInFrames}
 					fps={fps}

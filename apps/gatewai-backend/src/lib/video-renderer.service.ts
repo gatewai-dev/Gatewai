@@ -64,13 +64,22 @@ export class VideoRendererService implements IVideoRendererService {
 			serveUrl,
 			id: options.compositionId,
 			inputProps: options.inputProps,
+			logLevel: "verbose",
+			...(options.envVariables ? { envVariables: options.envVariables } : {}),
 		});
 
 		// Override composition metadata with caller-specified values
-		composition.width = options.width;
-		composition.height = options.height;
+		composition.width = Math.round(options.width);
+		composition.height = Math.round(options.height);
 		composition.fps = options.fps;
-		composition.durationInFrames = options.durationInFrames;
+
+		// Remotion expects duration and frame limits to be strict integers.
+		// A decimal durationInFrames causes RangeError when creating frame arrays.
+		const safeDurationInFrames = Math.max(
+			1,
+			Math.round(options.durationInFrames),
+		);
+		composition.durationInFrames = safeDurationInFrames;
 
 		// Convert startMS / endMS to frame range
 		let frameRange: [number, number] | null = null;
@@ -80,10 +89,10 @@ export class VideoRendererService implements IVideoRendererService {
 				: 0;
 			const endFrame = options.endMS
 				? Math.ceil((options.endMS / 1000) * options.fps) - 1
-				: options.durationInFrames - 1;
+				: safeDurationInFrames - 1;
 			frameRange = [
 				Math.max(0, startFrame),
-				Math.min(endFrame, options.durationInFrames - 1),
+				Math.min(endFrame, safeDurationInFrames - 1),
 			];
 		}
 
@@ -110,6 +119,7 @@ export class VideoRendererService implements IVideoRendererService {
 			outputLocation: outputPath,
 			inputProps: options.inputProps,
 			...(frameRange ? { frameRange } : {}),
+			...(options.envVariables ? { envVariables: options.envVariables } : {}),
 			onProgress: options.onProgress,
 		});
 

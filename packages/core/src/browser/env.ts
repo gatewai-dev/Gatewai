@@ -31,5 +31,10 @@ export function getEnv(
 		return env[key];
 	}
 
+	// 3. Fallback to process.env (webpack / Remotion server-side rendering)
+	if (typeof process !== "undefined" && process.env?.[key]) {
+		return process.env[key];
+	}
+
 	return undefined;
 }

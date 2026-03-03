@@ -12,7 +12,7 @@ import type {
     BackendNodeProcessorCtx,
     BackendNodeProcessorResult,
     GraphResolvers,
-    NodeProcessor,StorageService 
+    NodeProcessor, StorageService
 } from "@gatewai/node-sdk/server";
 import { inject, injectable } from "inversify";
 
@@ -47,14 +47,28 @@ export class ExportServerProcessor implements NodeProcessor {
                     throw new Error("VirtualMediaData must have width, height, fps and durationInFrames");
                 }
                 console.log({ virtualMedia });
-                const renderedVideo = await rendererSerice.renderComposition({
-                    compositionId: "CompositionScene",
-                    inputProps: virtualMedia,
-                    width: virtualMedia.metadata.width,
-                    height: virtualMedia.metadata.height,
-                    fps: virtualMedia.metadata.fps,
-                    durationInFrames: virtualMedia.metadata.durationMs / 1000 * virtualMedia.metadata.fps,
-                });
+                let renderedVideo;
+                try {
+                    renderedVideo = await rendererSerice.renderComposition({
+                        compositionId: "CompositionScene",
+                        inputProps: {
+                            virtualMedia,
+                            viewportWidth: virtualMedia.metadata.width,
+                            viewportHeight: virtualMedia.metadata.height,
+                            type: "Video",
+                        },
+                        width: virtualMedia.metadata.width,
+                        height: virtualMedia.metadata.height,
+                        fps: virtualMedia.metadata.fps,
+                        durationInFrames: virtualMedia.metadata.durationMs / 1000 * virtualMedia.metadata.fps,
+                        envVariables: {
+                            VITE_BASE_URL: this.env.BASE_URL,
+                        },
+                    });
+                } catch (error) {
+                    console.error({ errorW: error })
+                    throw error;
+                }
                 logger.info(`Rendered video: ${renderedVideo.filePath}`);
                 const contentType = "video/mp4";
                 const fileBuffer = await readFile(renderedVideo.filePath);

@@ -12,12 +12,14 @@ const RemotionRoot = () => (
 			component={CompositionScene}
 			calculateMetadata={({ props }) => {
 				const sceneProps = props as any;
+				const fps = sceneProps.fps || 30;
 				return {
 					durationInFrames:
 						sceneProps.durationInFrames ||
-						sceneProps.durationInMS ||
-						1 * (sceneProps.fps || 30),
-					fps: sceneProps.fps || 30,
+						(sceneProps.durationInMS
+							? Math.round((sceneProps.durationInMS / 1000) * fps)
+							: fps),
+					fps,
 					width: sceneProps.width || sceneProps.viewportWidth || 1920,
 					height: sceneProps.height || sceneProps.viewportHeight || 1080,
 				};

@@ -1,4 +1,8 @@
-import type { ExtendedLayer, VirtualMediaData } from "@gatewai/core/types";
+import type {
+	ExtendedLayer,
+	VideoAnimation,
+	VirtualMediaData,
+} from "@gatewai/core/types";
 import type { Caption } from "@remotion/captions";
 import { parseSrt } from "@remotion/captions";
 import { measureText } from "@remotion/layout-utils";
@@ -780,7 +784,7 @@ export const calculateLayerTransform = (
 	let opacity = layer.opacity ?? 1;
 	const volume = layer.volume ?? 1;
 	const duration = Math.round(
-		((layer.durationInMS ?? DEFAULT_DURATION_MS) / 1000) * fps,
+		((layer.durationInMS || DEFAULT_DURATION_MS) / 1000) * fps,
 	);
 	const animations = layer.animations ?? [];
 	if (animations.length === 0)
@@ -951,7 +955,7 @@ const compareVirtualMedia = (
 				aOp.width !== bOp.width ||
 				aOp.height !== bOp.height ||
 				aOp.fps !== bOp.fps ||
-				aOp.durationInMS !== bOp.durationInMS
+				(aOp as any).durationInMS !== (bOp as any).durationInMS
 			)
 				return false;
 			if (a.children.length !== b.children.length) return false;
@@ -996,7 +1000,7 @@ export const SingleClipComposition: React.FC<{
 	const op = virtualMedia?.operation;
 
 	if (op.op === "compose") {
-		const composeDuration = op.durationInMS ?? DEFAULT_DURATION_MS;
+		const composeDuration = (op as any).durationInMS || DEFAULT_DURATION_MS;
 		const composeNode = (
 			<CompositionScene
 				layers={
@@ -1020,7 +1024,7 @@ export const SingleClipComposition: React.FC<{
 									scale: lop.scale,
 									opacity: lop.opacity,
 									startFrame: lop.startFrame,
-									durationInMS: lop.durationInMS ?? 1,
+									durationInMS: lop.durationInMS || composeDuration,
 									zIndex: lop.zIndex,
 									trimStart: lop.trimStart,
 									trimEnd: lop.trimEnd,
@@ -1049,6 +1053,7 @@ export const SingleClipComposition: React.FC<{
 									lottieFrameRate: lop.lottieFrameRate,
 									lottieDurationMs: lop.lottieDurationMs,
 									animations: lop.animations,
+									...textStyle,
 									captionPreset: (lop as any).captionPreset,
 									useRoundedTextBox: (lop as any).useRoundedTextBox,
 								} as ExtendedLayer;
@@ -1533,7 +1538,7 @@ export const LayerRenderer: React.FC<{
 	const { fps } = useVideoConfig();
 	const startFrame = layer.startFrame ?? 0;
 	const duration = Math.round(
-		((layer.durationInMS ?? DEFAULT_DURATION_MS) / 1000) * fps,
+		((layer.durationInMS || DEFAULT_DURATION_MS) / 1000) * fps,
 	);
 	const {
 		x: animX,
@@ -1604,6 +1609,13 @@ export interface SceneProps {
 	virtualMedia?: VirtualMediaData;
 	durationInMS?: number;
 	backgroundColor?: string;
+	animations?: VideoAnimation[];
+	opacity?: number;
+	volume?: number;
+	scale?: number;
+	rotation?: number;
+	x?: number;
+	y?: number;
 }
 
 export const CompositionScene: React.FC<SceneProps> = ({
@@ -1619,6 +1631,13 @@ export const CompositionScene: React.FC<SceneProps> = ({
 	virtualMedia,
 	durationInMS,
 	backgroundColor,
+	animations,
+	opacity,
+	volume,
+	scale,
+	rotation,
+	x,
+	y,
 }) => {
 	const frame = useCurrentFrame();
 	const { fps } = useVideoConfig();
@@ -1657,6 +1676,14 @@ export const CompositionScene: React.FC<SceneProps> = ({
 							: (data as any)?.text || JSON.stringify(data),
 					width: viewportWidth,
 					height: viewportHeight,
+					...(typeof data === "object" && data !== null ? data : {}),
+					animations,
+					opacity,
+					volume,
+					scale,
+					rotation,
+					x,
+					y,
 					// Caption defaults — display at bottom centre with readable styling
 					...(isCaption
 						? {
@@ -1748,7 +1775,7 @@ export const CompositionScene: React.FC<SceneProps> = ({
 				{layersToRender.map((layer) => {
 					const startFrame = layer.startFrame ?? 0;
 					const duration = Math.round(
-						((layer.durationInMS ?? DEFAULT_DURATION_MS) / 1000) * fps,
+						((layer.durationInMS || DEFAULT_DURATION_MS) / 1000) * fps,
 					);
 					const endFrame = startFrame + duration;
 					if (frame < startFrame || frame >= endFrame) return null;
