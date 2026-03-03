@@ -404,11 +404,6 @@ const assetsRouter = new Hono<{ Variables: AuthorizedHonoTypes }>({
 		try {
 			const storage = container.get<StorageService>(TOKENS.STORAGE);
 			await storage.uploadToStorage(buffer, key, contentType, bucket);
-
-			const expiresIn = 3600 * 24 * 6.9; // A bit less than a week
-			const signedUrl = await storage.generateSignedUrl(key, bucket, expiresIn);
-			const signedUrlExp = new Date(Date.now() + expiresIn * 1000);
-
 			const asset = await prisma.fileAsset.create({
 				data: {
 					name: filename,
@@ -417,8 +412,6 @@ const assetsRouter = new Hono<{ Variables: AuthorizedHonoTypes }>({
 					key,
 					isUploaded: true,
 					size: fileSize,
-					signedUrl,
-					signedUrlExp,
 					width,
 					height,
 					mimeType: contentType,
@@ -467,11 +460,6 @@ const assetsRouter = new Hono<{ Variables: AuthorizedHonoTypes }>({
 			// Upload to storage
 			const storage = container.get<StorageService>(TOKENS.STORAGE);
 			await storage.uploadToStorage(buffer, key, contentType, bucket);
-
-			const expiresIn = 3600 * 24 * 6.9; // A bit less than a week
-			const signedUrl = await storage.generateSignedUrl(key, bucket, expiresIn);
-			const signedUrlExp = new Date(Date.now() + expiresIn * 1000);
-
 			// Create asset record in database
 			const asset = await prisma.fileAsset.create({
 				data: {
@@ -481,8 +469,6 @@ const assetsRouter = new Hono<{ Variables: AuthorizedHonoTypes }>({
 					key,
 					isUploaded: true,
 					size: fileSize,
-					signedUrl,
-					signedUrlExp,
 					width,
 					height,
 					mimeType: contentType,

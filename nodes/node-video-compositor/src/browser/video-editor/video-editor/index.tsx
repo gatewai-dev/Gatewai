@@ -3100,12 +3100,24 @@ export const VideoDesignerEditor: React.FC<VideoDesignerEditorProps> = ({
 
 				if (item.type === "Text") {
 					const fontFamily = saved?.fontFamily ?? "Inter";
-					loaded.push({
-						...base,
-						type: "Text",
+					const textLayerStyle: Partial<EditorLayer> = {
 						fontSize: saved?.fontSize ?? 60,
 						fontFamily,
 						fontStyle: saved?.fontStyle ?? "normal",
+						fontWeight: saved?.fontWeight,
+						letterSpacing: saved?.letterSpacing,
+						lineHeight: saved?.lineHeight,
+						padding: saved?.padding ?? 0,
+					};
+					if (!layerWidth || !layerHeight) {
+						const dims = measureText(text ?? "", textLayerStyle);
+						layerWidth = dims.width;
+						layerHeight = dims.height;
+					}
+					loaded.push({
+						...base,
+						type: "Text",
+						...textLayerStyle,
 						textDecoration: saved?.textDecoration ?? "",
 						fill: saved?.fill ?? "#ffffff",
 						width: layerWidth,

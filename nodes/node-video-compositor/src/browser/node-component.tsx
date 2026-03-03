@@ -1,36 +1,21 @@
-import {
-	fontManager,
-	GetAssetEndpoint,
-	GetFontAssetUrl,
-} from "@gatewai/core/browser";
-import type {
-	ExtendedLayer,
-	FileData,
-	VirtualMediaData,
-} from "@gatewai/core/types";
+import type { FileData } from "@gatewai/core/types";
 import {
 	AddCustomHandleButton,
 	BaseNode,
 	MediaContent,
-	MediaPlayer,
 	type NodeProps,
 	useDownloadFileData,
 	useNodeResult,
 } from "@gatewai/react-canvas";
 import { makeSelectNodeById, useAppSelector } from "@gatewai/react-store";
-import {
-	computeRenderParams,
-	createVirtualMedia,
-} from "@gatewai/remotion-compositions";
 import { Button } from "@gatewai/ui-kit";
 
 import { Download, Loader2, VideoIcon } from "lucide-react";
-import { memo, useEffect, useMemo, useState } from "react";
+import { memo, useState } from "react";
 import { useNavigate } from "react-router";
 import { toast } from "sonner";
 import type { VideoCompositorNodeConfig } from "../shared/config.js";
 import { remotionService } from "./muxer-service.js";
-import { FPS } from "./video-editor/config/index.js";
 
 const VideoCompositorNodeComponent = memo((props: NodeProps) => {
 	const node = useAppSelector(makeSelectNodeById(props.id));

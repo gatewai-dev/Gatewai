@@ -69,7 +69,7 @@ export class ResizeProcessor implements NodeProcessor {
             };
 
             const key = `${node.id}/${Date.now()}.png`;
-            const { signedUrl, key: tempKey } =
+            const { key: tempKey } =
                 await this.storage.uploadToTemporaryStorageFolder(
                     uploadBuffer,
                     mimeType,
