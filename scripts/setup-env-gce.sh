@@ -22,6 +22,7 @@ fi
 cat << EOF > "$ENV_FILE"
 # --- App Configuration ---
 PORT=8081
+NODE_ENV=production
 VITE_BASE_URL=https://gatewai.studio
 BASE_URL=https://gatewai.studio
 GCS_ASSETS_BUCKET=gatewai-media

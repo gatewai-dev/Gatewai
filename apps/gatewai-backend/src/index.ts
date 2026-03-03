@@ -20,13 +20,15 @@ import {
 } from "./middlewares.js";
 import { registerNodes } from "./register-nodes.js";
 
-const smee = new SmeeClient({
-	source: ENV_CONFIG.WEBHOOK_PROXY_URL as string,
-	target: `${ENV_CONFIG.BASE_URL}/api/auth/polar/webhooks`,
-	logger: console,
-});
-
-smee.start();
+let smeeProxy: any = null;
+if (process.env.NODE_ENV !== "production" && ENV_CONFIG.WEBHOOK_PROXY_URL) {
+	const smee = new SmeeClient({
+		source: ENV_CONFIG.WEBHOOK_PROXY_URL as string,
+		target: `${ENV_CONFIG.BASE_URL}/api/auth/polar/webhooks`,
+		logger: console,
+	});
+	smeeProxy = smee.start();
+}
 
 const sleep = (time: number) =>
 	new Promise((resolve) => setTimeout(resolve, time));
@@ -35,7 +37,9 @@ const sleep = (time: number) =>
 registerBackendServices();
 
 // Sleep for 2 seconds to allow HMR for node builds on dev.
-await sleep(2000);
+if (process.env.NODE_ENV !== "production") {
+	await sleep(2000);
+}
 
 // Registers backend processors of nodes.
 await registerNodes();
@@ -72,6 +76,11 @@ const app = new Hono<{
 	})
 	.onError(errorHandler)
 	.use("*", async (c, next) => {
+		// Optimization: Only run session check for API routes and /session
+		if (!c.req.path.startsWith("/api") && c.req.path !== "/session") {
+			return next();
+		}
+
 		const session = await auth.api.getSession({ headers: c.req.raw.headers });
 		if (!session) {
 			c.set("user", null);
@@ -155,9 +164,14 @@ serve(
 );
 
 process.on("SIGINT", async () => {
-	if (smee) {
-		// EventSource returned by smee.start() could be closed, but SmeeClient cannot.
+	if (smeeProxy) {
 		appLogger.info("Closing SMEE proxy client");
+		try {
+			// smeeProxy is the EventSource returned by start()
+			smeeProxy.close();
+		} catch (e) {
+			// ignore
+		}
 	}
 	process.exit(0);
 });

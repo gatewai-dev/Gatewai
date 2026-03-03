@@ -1,212 +1,108 @@
 import { generateId } from "@gatewai/core";
-import { GetAssetEndpoint } from "@gatewai/core/browser";
 import type {
+	ExtendedLayer,
 	FileData,
 	NodeProcessorParams,
 	VirtualMediaData,
 } from "@gatewai/core/types";
-import { resolveMediaSourceUrlBrowser } from "@gatewai/remotion-compositions/browser";
-import { Audio, Video } from "@remotion/media";
-import { renderMediaOnWeb } from "@remotion/web-renderer";
-import type React from "react";
-import { useMemo } from "react";
 import {
-	AbsoluteFill,
-	Img,
-	interpolate,
-	Sequence,
-	spring,
-	useCurrentFrame,
-	useVideoConfig,
-} from "remotion";
+	CompositionScene,
+	createVirtualMedia,
+	getActiveMediaMetadata,
+} from "@gatewai/remotion-compositions";
+import { resolveMediaSourceUrlBrowser } from "@gatewai/remotion-compositions/browser";
+import { renderMediaOnWeb } from "@remotion/web-renderer";
 import type {
 	VideoCompositorLayer,
 	VideoCompositorNodeConfig,
 } from "../shared/config.js";
 
-const DynamicComposition: React.FC<{
-	config: VideoCompositorNodeConfig;
-	inputDataMap: NodeProcessorParams["inputs"];
-}> = ({ config, inputDataMap }) => {
-	const {
-		fps,
-		width: viewportWidth,
-		height: viewportHeight,
-		durationInFrames: totalDuration,
-	} = useVideoConfig();
-	const frame = useCurrentFrame();
+/**
+ * Build an ExtendedLayer from a VideoCompositorLayer config entry and its input data.
+ */
+function buildExtendedLayer(
+	layer: VideoCompositorLayer,
+	input: NodeProcessorParams["inputs"][string],
+): ExtendedLayer | null {
+	if (!input?.outputItem) return null;
 
-	const layers = Object.values(
-		config.layerUpdates ?? {},
-	) as VideoCompositorLayer[];
+	const item = input.outputItem;
+	const itemType = item.type;
 
-	const sortedLayers = useMemo(
-		() => [...layers].sort((a, b) => (a.zIndex ?? 0) - (b.zIndex ?? 0)),
-		[layers],
-	);
+	// Resolve virtualMedia based on the type
+	let virtualMedia: VirtualMediaData | undefined;
+	let text: string | undefined;
 
-	return (
-		<AbsoluteFill>
-			{sortedLayers.map((layer) => {
-				const input = inputDataMap[layer.inputHandleId];
-				if (!input) return null;
+	if (itemType === "Video" || itemType === "Audio" || itemType === "Lottie") {
+		// Already VirtualMediaData
+		virtualMedia = item.data as VirtualMediaData;
+	} else if (
+		itemType === "Image" ||
+		itemType === "SVG" ||
+		itemType === "Caption"
+	) {
+		// FileData → wrap in VirtualMediaData
+		virtualMedia = createVirtualMedia(item.data as FileData, itemType);
+	} else if (itemType === "Text") {
+		text = String(item.data);
+	}
 
-				const startFrame = layer.startFrame ?? 0;
-				const layerDurationMS =
-					layer.durationInMS ?? (totalDuration / fps) * 1000;
-				const layerDurationFrames = (layerDurationMS / 1000) * fps;
-				const relativeFrame = frame - startFrame;
-
-				// Initial Properties
-				let animX = layer.x ?? 0;
-				let animY = layer.y ?? 0;
-				let animScale = layer.scale ?? 1;
-				let animRotation = layer.rotation ?? 0;
-				let animOpacity = layer.opacity ?? 1;
-				const animVolume = layer.volume ?? 1;
-
-				// Match Editor Animation Logic
-				(layer.animations ?? []).forEach((anim) => {
-					const durFrames = anim.value * fps;
-					const isOut = anim.type.includes("-out");
-					const startAnimFrame = isOut ? layerDurationFrames - durFrames : 0;
-					const endAnimFrame = isOut ? layerDurationFrames : durFrames;
-
-					if (relativeFrame < startAnimFrame || relativeFrame > endAnimFrame)
-						return;
-
-					const progress = interpolate(
-						relativeFrame,
-						[startAnimFrame, endAnimFrame],
-						[0, 1],
-						{ extrapolateLeft: "clamp", extrapolateRight: "clamp" },
-					);
-
-					switch (anim.type) {
-						case "fade-in":
-							animOpacity *= progress;
-							break;
-						case "fade-out":
-							animOpacity *= 1 - progress;
-							break;
-						case "slide-in-left":
-						case "slide-in-right": {
-							const dirX = anim.type === "slide-in-left" ? -1 : 1;
-							animX += dirX * viewportWidth * (1 - progress);
-							break;
-						}
-						case "slide-in-top":
-						case "slide-in-bottom": {
-							const dirY = anim.type === "slide-in-top" ? -1 : 1;
-							animY += dirY * viewportHeight * (1 - progress);
-							break;
-						}
-						case "zoom-in":
-							animScale *= progress; // Matches editor interpolate(progress, [0,1], [0,1])
-							break;
-						case "zoom-out":
-							animScale *= 1 - progress;
-							break;
-						case "rotate-cw":
-						case "rotate-ccw": {
-							const dirRot = anim.type === "rotate-cw" ? 1 : -1;
-							animRotation += dirRot * 360 * progress;
-							break;
-						}
-						case "bounce": {
-							const bounceProgress = spring({
-								frame: relativeFrame - startAnimFrame,
-								fps,
-								config: { damping: 10, mass: 0.5, stiffness: 100 },
-								durationInFrames: durFrames,
-							});
-							animScale *= bounceProgress;
-							break;
-						}
-						case "shake": {
-							const intensity = 20;
-							const frequency = 10;
-							const shakeProgress = 1 - progress;
-							animX +=
-								intensity *
-								Math.sin(
-									(relativeFrame * frequency * 2 * Math.PI) / durFrames,
-								) *
-								shakeProgress;
-							break;
-						}
-					}
-				});
-
-				const style: React.CSSProperties = {
-					position: "absolute",
-					left: animX,
-					top: animY,
-					width: layer.width,
-					height: layer.height,
-					transform: `rotate(${animRotation}deg) scale(${animScale})`,
-					opacity: animOpacity,
-					// New Remotion-compatible properties
-					backgroundColor: layer.backgroundColor,
-					borderColor: layer.borderColor,
-					borderWidth: layer.borderWidth,
-					borderRadius: layer.borderRadius,
-					borderStyle: layer.borderWidth ? "solid" : undefined,
-				};
-
-				const getAssetUrl = () => {
-					if (input.outputItem?.type === "Video") {
-						return resolveMediaSourceUrlBrowser(
-							input.outputItem.data as VirtualMediaData,
-						);
-					}
-					const fileData = input.outputItem?.data as FileData;
-					return fileData?.entity?.id
-						? GetAssetEndpoint(fileData.entity)
-						: fileData?.processData?.dataUrl;
-				};
-
-				const assetSrc = getAssetUrl();
-				const textContent =
-					input.outputItem?.type === "Text"
-						? String(input.outputItem.data)
-						: "";
-
-				return (
-					<Sequence
-						key={layer.inputHandleId}
-						from={startFrame}
-						durationInFrames={Math.max(1, Math.ceil(layerDurationFrames))}
-					>
-						{input.outputItem?.type === "Video" && assetSrc && (
-							<Video src={assetSrc} style={{ ...style }} volume={animVolume} />
-						)}
-						{input.outputItem?.type === "Image" && assetSrc && (
-							<Img src={assetSrc} style={{ ...style, objectFit: "cover" }} />
-						)}
-						{input.outputItem?.type === "Audio" && assetSrc && (
-							<Audio src={assetSrc} volume={animVolume} />
-						)}
-						{input.outputItem?.type === "Text" && (
-							<div
-								style={{
-									...style,
-									color: layer.fill,
-									fontSize: layer.fontSize ?? 60,
-									fontFamily: layer.fontFamily ?? "Inter",
-									lineHeight: layer.lineHeight ?? 1.2,
-									whiteSpace: "pre-wrap",
-								}}
-							>
-								{textContent}
-							</div>
-						)}
-					</Sequence>
-				);
-			})}
-		</AbsoluteFill>
-	);
-};
+	return {
+		id: layer.id ?? generateId(),
+		inputHandleId: layer.inputHandleId,
+		type: (layer.type ?? itemType) as ExtendedLayer["type"],
+		virtualMedia,
+		text,
+		x: layer.x ?? 0,
+		y: layer.y ?? 0,
+		width: layer.width,
+		height: layer.height,
+		rotation: layer.rotation ?? 0,
+		scale: layer.scale ?? 1,
+		opacity: layer.opacity ?? 1,
+		startFrame: layer.startFrame ?? 0,
+		durationInMS: layer.durationInMS,
+		zIndex: layer.zIndex,
+		lockAspect: layer.lockAspect ?? true,
+		volume:
+			itemType === "Video" || itemType === "Audio"
+				? (layer.volume ?? 1)
+				: undefined,
+		// Styling
+		fill: layer.fill,
+		fontSize: layer.fontSize,
+		fontFamily: layer.fontFamily,
+		fontStyle: layer.fontStyle,
+		fontWeight: layer.fontWeight,
+		textDecoration: layer.textDecoration,
+		textShadow: layer.textShadow,
+		align: layer.align,
+		verticalAlign: layer.verticalAlign,
+		letterSpacing: layer.letterSpacing,
+		lineHeight: layer.lineHeight,
+		padding: layer.padding,
+		stroke: layer.stroke,
+		strokeWidth: layer.strokeWidth,
+		backgroundColor: layer.backgroundColor,
+		borderColor: layer.borderColor,
+		borderWidth: layer.borderWidth,
+		borderRadius: layer.borderRadius,
+		autoDimensions: layer.autoDimensions,
+		animations: layer.animations,
+		// Media
+		trimStart: layer.trimStart,
+		trimEnd: layer.trimEnd,
+		speed: layer.speed,
+		filters: layer.filters,
+		// Lottie
+		lottieLoop: layer.lottieLoop,
+		lottieFrameRate: layer.lottieFrameRate,
+		lottieDurationMs: layer.lottieDurationMs,
+		// Caption
+		captionPreset: layer.captionPreset,
+		useRoundedTextBox: layer.useRoundedTextBox,
+	} as ExtendedLayer;
+}
 
 export class RemotionWebProcessorService {
 	async processVideo(
@@ -234,13 +130,16 @@ export class RemotionWebProcessorService {
 				if (!input?.outputItem) continue;
 
 				const item = input.outputItem;
-				if (item.type === "Video" || item.type === "Audio") {
+				if (
+					item.type === "Video" ||
+					item.type === "Audio" ||
+					item.type === "Lottie"
+				) {
 					const promise = this.getMediaDurationAsSec(
-						item.data as any,
-						item.type as any,
+						item.data as VirtualMediaData,
+						item.type,
 					).then((durSec) => {
 						const actualMS = durSec * 1000;
-						// Force clamp: never allow layer duration to be longer than the actual file
 						const requestedDurationMS = layer.durationInMS ?? actualMS;
 						layerUpdatesCopy[layerKey].durationInMS = Math.max(
 							1,
@@ -281,10 +180,14 @@ export class RemotionWebProcessorService {
 					volume: itemType === "Video" || itemType === "Audio" ? 1 : undefined,
 				};
 
-				if (itemType === "Video" || itemType === "Audio") {
+				if (
+					itemType === "Video" ||
+					itemType === "Audio" ||
+					itemType === "Lottie"
+				) {
 					const promise = this.getMediaDurationAsSec(
-						item.data as any,
-						itemType as any,
+						item.data as VirtualMediaData,
+						itemType,
 					).then((durSec) => {
 						defaultLayer.durationInMS = Math.max(1, durSec * 1000);
 						layerUpdatesCopy[inputHandleId] = defaultLayer;
@@ -309,24 +212,40 @@ export class RemotionWebProcessorService {
 
 		const totalDurationInFrames = Math.ceil((totalDurationMS / 1000) * fps);
 
-		const finalConfig = {
-			...config,
-			layerUpdates: layerUpdatesCopy,
-		};
+		// Build ExtendedLayer[] from the resolved layerUpdatesCopy
+		const extendedLayers: ExtendedLayer[] = [];
+		for (const layerKey in layerUpdatesCopy) {
+			const layer = layerUpdatesCopy[layerKey];
+			const input = inputDataMap[layer.inputHandleId];
+			const extLayer = buildExtendedLayer(layer, input);
+			if (extLayer) {
+				extendedLayers.push(extLayer);
+			}
+		}
 
 		const { getBlob } = await renderMediaOnWeb({
 			signal,
 			licenseKey: "free-license",
 			composition: {
 				id: "dynamic-video",
-				component: DynamicComposition,
+				component: CompositionScene as any,
 				durationInFrames: totalDurationInFrames,
 				fps,
 				width,
 				height,
-				defaultProps: { config: finalConfig, inputDataMap },
+				defaultProps: {
+					layers: extendedLayers,
+					viewportWidth: width,
+					viewportHeight: height,
+					backgroundColor: config.backgroundColor,
+				},
 			},
-			inputProps: { config: finalConfig, inputDataMap },
+			inputProps: {
+				layers: extendedLayers,
+				viewportWidth: width,
+				viewportHeight: height,
+				backgroundColor: config.backgroundColor,
+			},
 		});
 
 		if (signal?.aborted) throw new Error("Aborted");
@@ -337,21 +256,24 @@ export class RemotionWebProcessorService {
 
 	private async getMediaDurationAsSec(
 		data: VirtualMediaData,
-		type: "Video" | "Audio",
+		type: "Video" | "Audio" | "Lottie",
 	): Promise<number> {
-		// For Video, data is VirtualMediaData — read from metadata first
-		if (type === "Video") {
-			const vv = data as VirtualMediaData;
-			if (vv.metadata?.durationMs) {
-				return vv.metadata.durationMs / 1000;
-			}
-			// Fall back to loading from URL
-			const url = resolveMediaSourceUrlBrowser(vv);
-			if (!url) return 0;
+		// Try to read duration from VirtualMediaData metadata first
+		const meta = getActiveMediaMetadata(data);
+		if (meta?.durationMs) {
+			return meta.durationMs / 1000;
+		}
+
+		// Fall back to loading the media element from URL
+		const url = resolveMediaSourceUrlBrowser(data);
+		if (!url) return 0;
+
+		if (type === "Audio") {
 			return new Promise((resolve) => {
-				const el = document.createElement("video");
+				const el = document.createElement("audio");
 				el.preload = "metadata";
 				el.src = url;
+
 				el.onloadedmetadata = () => {
 					const duration = el.duration || 0;
 					el.onloadedmetadata = null;
@@ -360,6 +282,7 @@ export class RemotionWebProcessorService {
 					el.load();
 					resolve(duration);
 				};
+
 				el.onerror = () => {
 					el.src = "";
 					resolve(0);
@@ -367,26 +290,11 @@ export class RemotionWebProcessorService {
 			});
 		}
 
-		// For Audio, data is FileData
-		const fileData = data as FileData;
-		const existingDurationMs =
-			fileData?.entity?.duration ?? fileData.processData?.duration;
-		if (existingDurationMs) {
-			return Number(existingDurationMs) / 1000;
-		}
-
-		const url = fileData.entity?.id
-			? GetAssetEndpoint(fileData.entity)
-			: fileData.processData?.dataUrl;
-		if (!url) {
-			return 0;
-		}
-
+		// Video / Lottie — probe as video element
 		return new Promise((resolve) => {
-			const el = document.createElement("audio");
+			const el = document.createElement("video");
 			el.preload = "metadata";
 			el.src = url;
-
 			el.onloadedmetadata = () => {
 				const duration = el.duration || 0;
 				el.onloadedmetadata = null;
@@ -395,7 +303,6 @@ export class RemotionWebProcessorService {
 				el.load();
 				resolve(duration);
 			};
-
 			el.onerror = () => {
 				el.src = "";
 				resolve(0);

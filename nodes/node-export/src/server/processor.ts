@@ -38,7 +38,8 @@ export class ExportServerProcessor implements NodeProcessor {
                 outputs: [],
                 selectedOutputIndex: 0,
             };
-            console.log({ inputValue })
+
+            let dataToPass = inputValue.data;
             const rendererSerice = container.get<IVideoRendererService>(TOKENS.VIDEO_RENDERER);
             // If the input value is VirtualMediaData, render it
             if (inputValue.type === "Video") {
@@ -46,7 +47,7 @@ export class ExportServerProcessor implements NodeProcessor {
                 if (!virtualMedia.metadata.width || !virtualMedia.metadata.height || !virtualMedia.metadata.fps || !virtualMedia.metadata.durationMs) {
                     throw new Error("VirtualMediaData must have width, height, fps and durationInFrames");
                 }
-                console.log({ virtualMedia });
+
                 let renderedVideo;
                 try {
                     renderedVideo = await rendererSerice.renderComposition({
@@ -111,14 +112,14 @@ export class ExportServerProcessor implements NodeProcessor {
                 });
 
                 // Set the asset into the input value's data so it passes down correctly to the output
-                inputValue.data = { entity: asset };
+                dataToPass = { entity: asset };
             }
 
             const newGeneration: ExportResult["outputs"][number] = {
                 items: [
                     {
                         type: inputValue.type,
-                        data: inputValue.data,
+                        data: dataToPass,
                         outputHandleId: undefined,
                     } as unknown as ExportResult["outputs"][number]["items"][number],
                 ],

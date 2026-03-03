@@ -6,6 +6,9 @@ config();
 const envSchema = z
 	.object({
 		BASE_URL: z.string().url(),
+		NODE_ENV: z
+			.enum(["development", "production", "test"])
+			.default("development"),
 		PORT: z.coerce.number().default(3000),
 		REDIS_HOST: z.string().min(1),
 		REDIS_PORT: z.coerce.number(), // Changed to number for easier use with Redis clients
