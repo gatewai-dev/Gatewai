@@ -2807,7 +2807,9 @@ const InspectorPanel: React.FC = () => {
 export interface VideoDesignerEditorProps {
 	initialLayers: Map<
 		string,
-		OutputItem<"Text" | "Image" | "SVG" | "Video" | "Audio" | "Lottie">
+		OutputItem<
+			"Text" | "Image" | "SVG" | "Video" | "Audio" | "Lottie" | "Caption"
+		>
 	>;
 	node: NodeEntityType;
 	onClose: () => void;

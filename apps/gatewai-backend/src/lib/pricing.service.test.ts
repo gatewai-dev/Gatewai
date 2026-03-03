@@ -1,5 +1,4 @@
 import "reflect-metadata";
-import type { PrismaClient } from "@gatewai/db";
 import { beforeEach, describe, expect, it, vi } from "vitest";
 import { PricingService } from "./pricing.service";
 

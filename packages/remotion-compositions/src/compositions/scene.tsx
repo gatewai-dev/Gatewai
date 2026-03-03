@@ -1,3 +1,4 @@
+import { GetFontAssetUrl } from "@gatewai/core/browser";
 import type {
 	ExtendedLayer,
 	VideoAnimation,
@@ -133,13 +134,10 @@ interface RoundedTextRendererProps {
 	lineHeight?: number;
 	letterSpacing?: number;
 	align?: "left" | "center" | "right";
-	textShadow?: string; // Add this
+	textShadow?: string;
 	verticalAlign?: string;
-	/** Horizontal padding inside the pill (px). Maps to layer.padding. */
 	padding?: number;
-	/** Corner radius (px). Maps to layer.borderRadius. */
 	borderRadius?: number;
-	/** Pill fill colour. Maps to layer.backgroundColor. */
 	backgroundColor?: string;
 	stroke?: string;
 	strokeWidth?: number;
@@ -167,7 +165,6 @@ const RoundedTextRenderer: React.FC<RoundedTextRendererProps> = ({
 	const fw = String(fontWeight);
 	const lines = text.split("\n");
 
-	// measureText is synchronous in headless Chrome — safe in useMemo.
 	const textMeasurements = useMemo(
 		() =>
 			lines.map((line) =>
@@ -186,7 +183,6 @@ const RoundedTextRenderer: React.FC<RoundedTextRendererProps> = ({
 					},
 				} as Parameters<typeof measureText>[0]),
 			),
-		// eslint-disable-next-line react-hooks/exhaustive-deps
 		[
 			text,
 			fontFamily,
@@ -238,7 +234,6 @@ const RoundedTextRenderer: React.FC<RoundedTextRendererProps> = ({
 		paddingLeft: padding,
 		paddingRight: padding,
 		whiteSpace: "pre",
-		// No background here — the SVG handles it.
 		background: "none",
 	};
 
@@ -253,9 +248,7 @@ const RoundedTextRenderer: React.FC<RoundedTextRendererProps> = ({
 				justifyContent,
 			}}
 		>
-			{/* Bounding container sized to match the SVG path exactly */}
 			<div style={{ position: "relative", width: boundingBox.width }}>
-				{/* Pill background */}
 				<svg
 					viewBox={boundingBox.viewBox}
 					style={{
@@ -272,15 +265,9 @@ const RoundedTextRenderer: React.FC<RoundedTextRendererProps> = ({
 					<path fill={backgroundColor} d={d} />
 				</svg>
 
-				{/* Text content — one div per line so heights align with measurements */}
 				<div style={{ position: "relative" }}>
 					{lines.map((line, i) => (
-						<div
-							// biome-ignore lint/suspicious/noArrayIndexKey: stable line order
-							key={i}
-							style={lineStyle}
-						>
-							{/* Preserve empty lines visually */}
+						<div key={i} style={lineStyle}>
 							{line || "\u00A0"}
 						</div>
 					))}
@@ -392,7 +379,6 @@ const TikTokCaptionPage: React.FC<TikTokCaptionPageProps> = ({
 				fontWeight,
 				fontStyle,
 			),
-		// eslint-disable-next-line react-hooks/exhaustive-deps
 		[page.tokens, maxWidth, fontFamily, fontSize, fontWeight, fontStyle],
 	);
 
@@ -463,7 +449,6 @@ const TikTokCaptionPage: React.FC<TikTokCaptionPageProps> = ({
 			<div style={{ position: "relative" }}>
 				{lines.map((line, lineIdx) => (
 					<div
-						// biome-ignore lint/suspicious/noArrayIndexKey: stable
 						key={lineIdx}
 						style={{
 							fontSize,
@@ -475,7 +460,6 @@ const TikTokCaptionPage: React.FC<TikTokCaptionPageProps> = ({
 							textAlign: "center",
 							paddingLeft: horizontalPadding,
 							paddingRight: horizontalPadding,
-							// Let the browser handle standard natural text layout so it identically matches measureText
 							whiteSpace: "nowrap",
 						}}
 					>
@@ -515,7 +499,6 @@ interface CaptionsFromUrlProps {
 	src: string;
 	style?: React.CSSProperties;
 	preset?: "default" | "tiktok";
-	/** When true, the default preset renders each caption with a pill background. */
 	useRoundedTextBox?: boolean;
 }
 
@@ -594,7 +577,6 @@ const CaptionsFromUrl: React.FC<CaptionsFromUrlProps> = ({
 		const horizontalPadding = 22;
 		const borderRadius = 12;
 
-		// Sentence-level SRT: distribute word timings evenly across the entry.
 		const currentCaption = captions.find(
 			(c) => currentTimeMs >= c.startMs && currentTimeMs < c.endMs,
 		);
@@ -746,11 +728,6 @@ const CaptionsFromUrl: React.FC<CaptionsFromUrlProps> = ({
 const verticalAlignToJustify = (v?: string): string =>
 	v === "middle" ? "center" : v === "bottom" ? "flex-end" : "flex-start";
 
-/**
- * Build the common CSS typography properties from a layer's ExtendedLayer shape.
- * Eliminates duplication across LayerContentRenderer, SingleClipComposition,
- * and CaptionsFromUrl style prop.
- */
 const buildLayerTextStyle = (
 	s: Partial<ExtendedLayer> & Record<string, any>,
 ): React.CSSProperties => ({
@@ -763,7 +740,7 @@ const buildLayerTextStyle = (
 	textShadow: s.textShadow,
 	lineHeight: s.lineHeight ?? 1.2,
 	letterSpacing: s.letterSpacing ? `${s.letterSpacing}px` : undefined,
-	textAlign: (s.align as "left" | "center" | "right") ?? "center",
+	textAlign: (s.align as "left" | "center" | "right") ?? "left",
 	padding: s.padding,
 	WebkitTextStroke:
 		s.strokeWidth && s.stroke ? `${s.strokeWidth}px ${s.stroke}` : undefined,
@@ -1367,7 +1344,6 @@ const LayerContentRenderer: React.FC<{
 	const cWidth = layer.width ?? viewport.w;
 	const cHeight = layer.height ?? viewport.h;
 
-	// editor-only flag carried through the layer shape at runtime
 	const useRoundedBox = (layer as any).useRoundedTextBox === true;
 
 	if (layer.type === "Video" && layer.virtualMedia)
@@ -1515,7 +1491,6 @@ const LayerContentRenderer: React.FC<{
 						{
 							...buildLayerTextStyle(layer),
 							verticalAlign: layer.verticalAlign ?? "bottom",
-							// Pill fill colour for rounded box (default preset)
 							...(layer.backgroundColor
 								? { captionBackgroundColor: layer.backgroundColor }
 								: {}),
@@ -1549,9 +1524,6 @@ export const LayerRenderer: React.FC<{
 		volume: animVolume,
 	} = calculateLayerTransform(layer, frame, fps, viewport);
 
-	// When useRoundedTextBox is active the SVG pill owns the background, so we
-	// suppress the outer div's backgroundColor and borderRadius to avoid double
-	// styling (a plain rect behind the shaped SVG would look wrong).
 	const useRoundedBox =
 		(layer.type === "Text" || layer.type === "Caption") &&
 		(layer as any).useRoundedTextBox === true;
@@ -1560,12 +1532,11 @@ export const LayerRenderer: React.FC<{
 		position: "absolute",
 		left: animX,
 		top: animY,
-		width: layer.width ?? "100%",
-		height: layer.height ?? "100%",
+		width: layer.width ?? (layer.type === "Text" ? "max-content" : "100%"),
+		height: layer.height ?? (layer.type === "Text" ? "max-content" : "100%"),
 		transform: `rotate(${animRotation}deg) scale(${animScale})`,
 		transformOrigin: "center center",
 		opacity: animOpacity,
-		// Pill owns background when rounded text box is active.
 		backgroundColor: useRoundedBox ? undefined : layer.backgroundColor,
 		borderColor: useRoundedBox ? undefined : layer.borderColor,
 		borderWidth: useRoundedBox ? undefined : layer.borderWidth,
@@ -1595,6 +1566,105 @@ export const LayerRenderer: React.FC<{
 		</Sequence>
 	);
 };
+
+function extractFonts(
+	layers: ExtendedLayer[],
+	virtualMedia: VirtualMediaData | undefined,
+): string[] {
+	const fonts = new Set<string>();
+
+	const walkLayer = (layer: ExtendedLayer) => {
+		if (layer.fontFamily) fonts.add(layer.fontFamily);
+		if (layer.virtualMedia) walkVirtualMedia(layer.virtualMedia);
+	};
+
+	const walkVirtualMedia = (vmd: VirtualMediaData) => {
+		if (!vmd) return;
+		if (vmd.operation?.op === "layer" && (vmd.operation as any).fontFamily) {
+			fonts.add((vmd.operation as any).fontFamily);
+		}
+		if (vmd.operation?.op === "text" && (vmd.operation as any).fontFamily) {
+			fonts.add((vmd.operation as any).fontFamily);
+		}
+		if (vmd.children) {
+			for (const child of vmd.children) {
+				walkVirtualMedia(child);
+			}
+		}
+	};
+
+	if (layers) {
+		for (const layer of layers) {
+			walkLayer(layer);
+		}
+	}
+	if (virtualMedia) {
+		walkVirtualMedia(virtualMedia);
+	}
+
+	return Array.from(fonts);
+}
+
+function useEnsureFontsLoaded(
+	layers: ExtendedLayer[],
+	virtualMedia: VirtualMediaData | undefined,
+) {
+	const [loaded, setLoaded] = useState(false);
+
+	useEffect(() => {
+		const fonts = extractFonts(layers, virtualMedia);
+		if (fonts.length === 0) {
+			setLoaded(true);
+			return;
+		}
+
+		console.log("Ensuring custom fonts are loaded:", fonts);
+		const handle = delayRender("Loading custom fonts");
+		let isCancelled = false;
+
+		Promise.all(
+			fonts.map(async (fontFamily) => {
+				const cleanFontFamily = fontFamily
+					.split(",")[0]
+					.replace(/['"]/g, "")
+					.trim();
+				// Basic generic fallback fonts filter
+				if (
+					[
+						"sans-serif",
+						"serif",
+						"monospace",
+						"cursive",
+						"fantasy",
+						"system-ui",
+					].includes(cleanFontFamily.toLowerCase())
+				) {
+					return;
+				}
+
+				try {
+					const fontUrl = GetFontAssetUrl(cleanFontFamily.replace(/\s+/g, "_"));
+					const font = new FontFace(cleanFontFamily, `url('${fontUrl}')`);
+					await font.load();
+					if (!isCancelled) document.fonts.add(font);
+				} catch (err) {
+					console.warn(`Failed to load font ${cleanFontFamily}`, err);
+				}
+			}),
+		).then(() => {
+			if (!isCancelled) {
+				setLoaded(true);
+				continueRender(handle);
+			}
+		});
+
+		return () => {
+			isCancelled = true;
+		};
+	}, [layers, virtualMedia]);
+
+	return loaded;
+}
 
 export interface SceneProps {
 	layers?: ExtendedLayer[];
@@ -1642,6 +1712,8 @@ export const CompositionScene: React.FC<SceneProps> = ({
 	const frame = useCurrentFrame();
 	const { fps } = useVideoConfig();
 
+	useEnsureFontsLoaded(layers, virtualMedia);
+
 	const resolvedLayers = (() => {
 		if (layers.length > 0) return layers;
 
@@ -1664,6 +1736,27 @@ export const CompositionScene: React.FC<SceneProps> = ({
 					resolvedDurationInMS = activeMeta.durationMs;
 			}
 			const isCaption = resolvedType === "Caption";
+			const isText = resolvedType === "Text";
+			const isVisualMedia =
+				resolvedType === "Image" ||
+				resolvedType === "SVG" ||
+				resolvedType === "Video" ||
+				resolvedType === "Lottie";
+
+			let defaultWidth: number | string | undefined = viewportWidth;
+			let defaultHeight: number | string | undefined = viewportHeight;
+
+			if (isText) {
+				defaultWidth = undefined;
+				defaultHeight = undefined;
+			} else if (isVisualMedia) {
+				const activeMeta = virtualMedia
+					? getActiveMediaMetadata(virtualMedia)
+					: null;
+				defaultWidth = activeMeta?.width ?? 400;
+				defaultHeight = activeMeta?.height ?? 400;
+			}
+
 			return [
 				{
 					id: "single-source-layer",
@@ -1674,17 +1767,29 @@ export const CompositionScene: React.FC<SceneProps> = ({
 						typeof data === "string"
 							? data
 							: (data as any)?.text || JSON.stringify(data),
-					width: viewportWidth,
-					height: viewportHeight,
+					width: defaultWidth,
+					height: defaultHeight,
 					...(typeof data === "object" && data !== null ? data : {}),
 					animations,
 					opacity,
 					volume,
 					scale,
 					rotation,
-					x,
-					y,
-					// Caption defaults — display at bottom centre with readable styling
+					x: x ?? 0,
+					y: y ?? 0,
+					lockAspect: isText || isVisualMedia,
+					autoDimensions: false,
+					...(resolvedType === "Lottie" ? { lottieLoop: true, speed: 1 } : {}),
+					...(isText
+						? {
+								fontSize: 60,
+								fontFamily: "Inter",
+								fill: "#ffffff",
+								fontStyle: "normal",
+								textDecoration: "",
+								align: "left",
+							}
+						: {}),
 					...(isCaption
 						? {
 								fontSize: 48,
@@ -1692,8 +1797,16 @@ export const CompositionScene: React.FC<SceneProps> = ({
 								fill: "#ffffff",
 								align: "center",
 								verticalAlign: "bottom",
-								padding: 20,
+								padding: 0,
 								lineHeight: 1.2,
+								height: Math.round(48 * 1.2 * 3),
+								y: Math.max(
+									0,
+									viewportHeight -
+										Math.round(48 * 1.2 * 3) -
+										Math.round(viewportHeight * 0.1),
+								),
+								width: viewportWidth,
 							}
 						: {}),
 				} as ExtendedLayer,
