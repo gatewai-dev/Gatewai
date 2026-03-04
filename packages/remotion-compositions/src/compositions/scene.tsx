@@ -474,23 +474,22 @@ const CaptionsFromUrl: React.FC<CaptionsFromUrlProps> = ({
 				: "center";
 
 	const vAlign =
-		(style as any)?.verticalAlign === "top"
+		style?.verticalAlign === "top"
 			? "flex-start"
-			: (style as any)?.verticalAlign === "bottom"
+			: style?.verticalAlign === "bottom"
 				? "flex-end"
 				: "center";
 
 	if (preset === "tiktok") {
-		const fontFamily = (style?.fontFamily as string) || "Impact, sans-serif";
-		const fontSize = (style?.fontSize as number) || 60;
+		const fontFamily = style?.fontFamily || "Impact, sans-serif";
+		const fontSize = style?.fontSize || 60;
 		const fontWeight = String(style?.fontWeight ?? "700");
-		const fontStyle = (style?.fontStyle as string) || "normal";
-		const textDecoration = (style?.textDecoration as string) || "none";
+		const fontStyle = style?.fontStyle || "normal";
+		const textDecoration = style?.textDecoration || "none";
 		const lineHeight = Number(style?.lineHeight) || 1.35;
-		const activeColor = (style?.color as string) || "#FFFC00";
+		const activeColor = style?.color || "#FFFC00";
 		const textColor = "white";
-		const backgroundColor =
-			(style as any)?.captionBackgroundColor ?? "rgba(0,0,0,0.72)";
+		const backgroundColor = style?.backgroundColor ?? "rgba(0,0,0,0.72)";
 		const horizontalPadding = 22;
 		const borderRadius = 12;
 
@@ -556,25 +555,24 @@ const CaptionsFromUrl: React.FC<CaptionsFromUrlProps> = ({
 	if (!currentCaption) return null;
 
 	if (useRoundedTextBox) {
-		const fontSize = (style?.fontSize as number) ?? 48;
-		const fontFamily = (style?.fontFamily as string) ?? "Inter";
+		const fontSize = style?.fontSize ?? 48;
+		const fontFamily = style?.fontFamily ?? "Inter";
 		const fontWeight = String(style?.fontWeight ?? "normal");
-		const fontStyle = (style?.fontStyle as string) ?? "normal";
-		const textDecoration = (style?.textDecoration as string) ?? "none";
-		const textShadow = (style?.textShadow as string) ?? undefined;
+		const fontStyle = style?.fontStyle ?? "normal";
+		const textDecoration = style?.textDecoration ?? "none";
+		const textShadow = style?.textShadow ?? undefined;
 		const lineHeight = Number(style?.lineHeight ?? 1.2);
 		const letterSpacing = style?.letterSpacing
 			? Number.parseFloat(String(style.letterSpacing))
 			: undefined;
-		const fill = (style?.color as string) ?? "#ffffff";
-		const backgroundColor =
-			(style as any)?.captionBackgroundColor ?? "rgba(0,0,0,0.7)";
+		const fill = style?.color ?? "#ffffff";
+		const backgroundColor = style?.backgroundColor ?? "rgba(0,0,0,0.7)";
 		const padding = style?.padding
 			? Number.parseFloat(String(style.padding))
 			: 16;
 		const borderRadius = 8;
 		const align = (style?.textAlign as "left" | "center" | "right") ?? "center";
-		const verticalAlign = (style as any)?.verticalAlign ?? "bottom";
+		const verticalAlign = style?.verticalAlign ?? "bottom";
 		const stroke = style?.WebkitTextStroke
 			? String(style.WebkitTextStroke).split(" ").slice(1).join(" ")
 			: undefined;
@@ -848,7 +846,7 @@ const compareVirtualMedia = (
 				aOp.width !== bOp.width ||
 				aOp.height !== bOp.height ||
 				aOp.fps !== bOp.fps ||
-				(aOp as any).durationInMS !== (bOp as any).durationInMS
+				aOp.metadata?.durationMs !== bOp.metadata?.durationMs
 			)
 				return false;
 			if (a.children.length !== b.children.length) return false;
@@ -894,12 +892,12 @@ export const SingleClipComposition: React.FC<{
 	if (!op) return null;
 
 	if (op.op === "compose") {
-		const composeDuration = (op as any).durationInMS || DEFAULT_DURATION_MS;
+		const composeDuration = op.metadata?.durationMs ?? DEFAULT_DURATION_MS;
 		const composeNode = (
 			<CompositionScene
 				layers={
 					(virtualMedia.children || [])
-						.filter((child) => child && child.operation)
+						.filter((child) => child?.operation)
 						.map((child, index) => {
 							const childOp = child.operation;
 
@@ -954,12 +952,9 @@ export const SingleClipComposition: React.FC<{
 										lop.autoDimensions ?? textStyle?.autoDimensions,
 									animations: lop.animations ?? textStyle?.animations,
 
-									captionPreset:
-										(lop as any).captionPreset ??
-										(textStyle as any)?.captionPreset,
+									captionPreset: lop.captionPreset ?? textStyle?.captionPreset,
 									useRoundedTextBox:
-										(lop as any).useRoundedTextBox ??
-										(textStyle as any)?.useRoundedTextBox,
+										lop.useRoundedTextBox ?? textStyle?.useRoundedTextBox,
 								} as ExtendedLayer;
 							}
 
@@ -1013,7 +1008,7 @@ export const SingleClipComposition: React.FC<{
 		const mediaType = getMediaType(virtualMedia);
 
 		if (mediaType === "Text") {
-			const mergedStyle = { ...textStyle, ...(op as any) };
+			const mergedStyle = { ...textStyle, ...op };
 			const textContent =
 				op.op === "text" && op.text
 					? op.text
@@ -1021,7 +1016,7 @@ export const SingleClipComposition: React.FC<{
 						? op.source.processData.text
 						: mergedStyle.text;
 
-			if ((mergedStyle as any).useRoundedTextBox && textContent) {
+			if (mergedStyle.useRoundedTextBox && textContent) {
 				return (
 					<RoundedTextRenderer
 						text={textContent}
@@ -1165,9 +1160,7 @@ export const SingleClipComposition: React.FC<{
 			volume={volume}
 			playbackRateOverride={playbackRateOverride}
 			trimStartOverride={trimStartOverride}
-			textStyle={
-				op.op === "layer" ? { ...textStyle, ...(op as any) } : textStyle
-			}
+			textStyle={op.op === "layer" ? { ...textStyle, ...op } : textStyle}
 			containerWidth={childContainerWidth}
 			containerHeight={childContainerHeight}
 		/>
@@ -1203,14 +1196,14 @@ export const SingleClipComposition: React.FC<{
 	let transformStr: string | undefined;
 	let cssFilterString: string | undefined;
 	if (op.op === "rotate") {
-		transformStr = `rotate(${(op as any).degrees}deg)`;
+		transformStr = `rotate(${op.degrees}deg)`;
 	} else if (op.op === "flip") {
 		const transforms: string[] = [];
 		if (op.horizontal) transforms.push("scaleX(-1)");
 		if (op.vertical) transforms.push("scaleY(-1)");
 		transformStr = transforms.length ? transforms.join(" ") : undefined;
 	} else if (op.op === "filter") {
-		cssFilterString = buildCSSFilterString((op as any).filters.cssFilters);
+		cssFilterString = buildCSSFilterString(op.filters.cssFilters);
 	}
 
 	return (
@@ -1228,7 +1221,7 @@ const LayerContentRenderer: React.FC<{
 	const cWidth = layer.width ?? viewport.w;
 	const cHeight = layer.height ?? viewport.h;
 
-	const useRoundedBox = (layer as any).useRoundedTextBox === true;
+	const useRoundedBox = layer.useRoundedTextBox === true;
 
 	if (layer.type === "Video" && layer.virtualMedia)
 		return (
@@ -1334,7 +1327,7 @@ const LayerContentRenderer: React.FC<{
 	}
 
 	if (layer.type === "Caption") {
-		const preset = (layer as any).captionPreset || "default";
+		const preset = layer.captionPreset || "default";
 		let captionSrc = layer.src;
 		if (!captionSrc && layer.virtualMedia) {
 			const params = computeRenderParams(layer.virtualMedia);
@@ -1388,7 +1381,7 @@ export const LayerRenderer: React.FC<{
 
 	const useRoundedBox =
 		(layer.type === "Text" || layer.type === "Caption") &&
-		(layer as any).useRoundedTextBox === true;
+		layer.useRoundedTextBox === true;
 
 	const style: React.CSSProperties = {
 		position: "absolute",
@@ -1442,11 +1435,11 @@ function extractFonts(
 
 	const walkVirtualMedia = (vmd: VirtualMediaData) => {
 		if (!vmd) return;
-		if (vmd.operation?.op === "layer" && (vmd.operation as any).fontFamily) {
-			fonts.add((vmd.operation as any).fontFamily);
+		if (vmd.operation?.op === "layer" && vmd.operation.fontFamily) {
+			fonts.add(vmd.operation.fontFamily);
 		}
-		if (vmd.operation?.op === "text" && (vmd.operation as any).fontFamily) {
-			fonts.add((vmd.operation as any).fontFamily);
+		if (vmd.operation?.op === "text" && vmd.operation.fontFamily) {
+			fonts.add(vmd.operation.fontFamily);
 		}
 		if (vmd.children) {
 			for (const child of vmd.children) {
@@ -1622,13 +1615,13 @@ export const CompositionScene: React.FC<SceneProps> = ({
 			return [
 				{
 					id: `single-source-${resolvedType}`,
-					type: resolvedType as any,
+					type: resolvedType,
 					src,
 					virtualMedia,
 					text:
 						typeof data === "string"
 							? data
-							: (data as any)?.text || JSON.stringify(data),
+							: data?.text || JSON.stringify(data),
 					width: defaultWidth,
 					height: defaultHeight,
 					...(typeof data === "object" && data !== null ? data : {}),
