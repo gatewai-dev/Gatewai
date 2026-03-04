@@ -25,7 +25,7 @@ import { SVG_HELPER_API_DOCS, SVG_HELPERS_CODE } from "./svg-helpers.js";
 // ─── Constants ────────────────────────────────────────────────────────────────
 
 const MAX_RETRIES = 4;
-const DEFAULT_CANVAS_SIZE = 1024;
+const DEFAULT_CANVAS_SIZE = 1080;
 
 // ─── Zod schema ──────────────────────────────────────────────────────────────
 

@@ -35,7 +35,7 @@ const querySchema = z.object({
 	pageIndex: z.coerce.number().int().nonnegative().default(0),
 	q: z.string().default(""),
 	type: z
-		.enum(["image", "video", "audio", "svg", "lottie", "caption", "other"])
+		.enum(["image", "video", "audio", "svg", "caption", "other"])
 		.optional(),
 });
 
@@ -325,8 +325,6 @@ const assetsRouter = new Hono<{ Variables: AuthorizedHonoTypes }>({
 		if (type) {
 			if (type === "svg") {
 				where.mimeType = { startsWith: "image/svg" };
-			} else if (type === "lottie") {
-				where.mimeType = { startsWith: "application/json" };
 			} else if (type === "caption") {
 				// Captions can be text/vtt, text/srt, text/csv etc.
 				where.mimeType = { startsWith: "text/" };

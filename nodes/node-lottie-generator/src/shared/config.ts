@@ -7,14 +7,37 @@ import { z } from "zod";
 
 export const LOTTIE_NODE_MODELS = [
 	"gemini-3.1-pro-preview",
-	"gemini-3-flash-preview",
+	"gemini-3.1-flash-lite",
 	"gemini-2.5-pro",
 ] as const;
+
+export const LOTTIE_DIMENSIONS = { min: 1, max: 1080 } as const;
+export const LOTTIE_FPS = { min: 15, max: 60 } as const;
+export const LOTTIE_DURATION = { min: 1, max: 12 } as const;
 
 export const LottieNodeConfigSchema = z
 	.object({
 		model: z.enum(LOTTIE_NODE_MODELS),
 		temperature: z.number().min(0).max(2).default(0),
+		autoDimensions: z.boolean().default(true),
+		width: z
+			.number()
+			.int()
+			.min(LOTTIE_DIMENSIONS.min)
+			.max(LOTTIE_DIMENSIONS.max)
+			.default(512),
+		height: z
+			.number()
+			.int()
+			.min(LOTTIE_DIMENSIONS.min)
+			.max(LOTTIE_DIMENSIONS.max)
+			.default(512),
+		fps: z.number().int().min(LOTTIE_FPS.min).max(LOTTIE_FPS.max).default(30),
+		duration: z
+			.number()
+			.min(LOTTIE_DURATION.min)
+			.max(LOTTIE_DURATION.max)
+			.default(3),
 	})
 	.strict();
 

@@ -998,49 +998,64 @@ export const SingleClipComposition: React.FC<{
 								const lop = childOp;
 								const contentType = getMediaType(child.children[0]);
 								return {
+									...textStyle, // Base inheritance MUST come first
+
+									// Structural overrides MUST be explicit to prevent overwrite bugs
 									id: `child-${index}`,
 									type: contentType,
 									virtualMedia: child.children[0],
-									x: lop.x,
-									y: lop.y,
-									width: lop.width,
-									height: lop.height,
-									rotation: lop.rotation,
-									scale: lop.scale,
-									opacity: lop.opacity,
-									startFrame: lop.startFrame,
+
+									// Use operation props if present, fallback to inherited textStyle safely
+									x: lop.x ?? textStyle?.x ?? 0,
+									y: lop.y ?? textStyle?.y ?? 0,
+									width: lop.width ?? textStyle?.width,
+									height: lop.height ?? textStyle?.height,
+									rotation: lop.rotation ?? textStyle?.rotation ?? 0,
+									scale: lop.scale ?? textStyle?.scale ?? 1,
+									opacity: lop.opacity ?? textStyle?.opacity ?? 1,
+									startFrame: lop.startFrame ?? textStyle?.startFrame ?? 0,
 									durationInMS: lop.durationInMS || composeDuration,
-									zIndex: lop.zIndex,
-									trimStart: lop.trimStart,
-									trimEnd: lop.trimEnd,
-									speed: lop.speed,
-									text: lop.text,
-									fontSize: lop.fontSize,
-									fontFamily: lop.fontFamily,
-									fontStyle: lop.fontStyle,
-									fontWeight: lop.fontWeight,
-									textDecoration: lop.textDecoration,
-									textShadow: lop.textShadow,
-									fill: lop.fill,
-									align: lop.align,
-									verticalAlign: lop.verticalAlign,
-									letterSpacing: lop.letterSpacing,
-									lineHeight: lop.lineHeight,
-									padding: lop.padding,
-									stroke: lop.stroke,
-									strokeWidth: lop.strokeWidth,
-									backgroundColor: lop.backgroundColor,
-									borderColor: lop.borderColor,
-									borderWidth: lop.borderWidth,
-									borderRadius: lop.borderRadius,
-									autoDimensions: lop.autoDimensions,
-									lottieLoop: lop.lottieLoop,
-									lottieFrameRate: lop.lottieFrameRate,
-									lottieDurationMs: lop.lottieDurationMs,
-									animations: lop.animations,
-									...textStyle,
-									captionPreset: (lop as any).captionPreset,
-									useRoundedTextBox: (lop as any).useRoundedTextBox,
+									zIndex: lop.zIndex ?? textStyle?.zIndex ?? index,
+									trimStart: lop.trimStart ?? textStyle?.trimStart,
+									trimEnd: lop.trimEnd ?? textStyle?.trimEnd,
+									speed: lop.speed ?? textStyle?.speed,
+
+									text: lop.text ?? textStyle?.text,
+									fontSize: lop.fontSize ?? textStyle?.fontSize,
+									fontFamily: lop.fontFamily ?? textStyle?.fontFamily,
+									fontStyle: lop.fontStyle ?? textStyle?.fontStyle,
+									fontWeight: lop.fontWeight ?? textStyle?.fontWeight,
+									textDecoration:
+										lop.textDecoration ?? textStyle?.textDecoration,
+									textShadow: lop.textShadow ?? textStyle?.textShadow,
+									fill: lop.fill ?? textStyle?.fill,
+									align: lop.align ?? textStyle?.align,
+									verticalAlign: lop.verticalAlign ?? textStyle?.verticalAlign,
+									letterSpacing: lop.letterSpacing ?? textStyle?.letterSpacing,
+									lineHeight: lop.lineHeight ?? textStyle?.lineHeight,
+									padding: lop.padding ?? textStyle?.padding,
+									stroke: lop.stroke ?? textStyle?.stroke,
+									strokeWidth: lop.strokeWidth ?? textStyle?.strokeWidth,
+									backgroundColor:
+										lop.backgroundColor ?? textStyle?.backgroundColor,
+									borderColor: lop.borderColor ?? textStyle?.borderColor,
+									borderWidth: lop.borderWidth ?? textStyle?.borderWidth,
+									borderRadius: lop.borderRadius ?? textStyle?.borderRadius,
+									autoDimensions:
+										lop.autoDimensions ?? textStyle?.autoDimensions,
+									lottieLoop: lop.lottieLoop ?? textStyle?.lottieLoop,
+									lottieFrameRate:
+										lop.lottieFrameRate ?? textStyle?.lottieFrameRate,
+									lottieDurationMs:
+										lop.lottieDurationMs ?? textStyle?.lottieDurationMs,
+									animations: lop.animations ?? textStyle?.animations,
+
+									captionPreset:
+										(lop as any).captionPreset ??
+										(textStyle as any)?.captionPreset,
+									useRoundedTextBox:
+										(lop as any).useRoundedTextBox ??
+										(textStyle as any)?.useRoundedTextBox,
 								} as ExtendedLayer;
 							}
 
@@ -1619,15 +1634,22 @@ function useEnsureFontsLoaded(
 ) {
 	const [loaded, setLoaded] = useState(false);
 
-	useEffect(() => {
+	// FIX: Generate a stable primitive string instead of passing an unstable layer mapping
+	// Every frame re-render of SingleClipComposition produced a new array causing infinite re-fetching.
+	const fontsToLoad = useMemo(() => {
 		const fonts = extractFonts(layers, virtualMedia);
-		if (fonts.length === 0) {
+		return fonts.sort().join(",");
+	}, [layers, virtualMedia]);
+
+	useEffect(() => {
+		if (!fontsToLoad) {
 			setLoaded(true);
 			return;
 		}
 
+		const fonts = fontsToLoad.split(",");
 		console.log("Ensuring custom fonts are loaded:", fonts);
-		const handle = delayRender("Loading custom fonts");
+		const handle = delayRender(`Loading custom fonts for: ${fontsToLoad}`);
 		let isCancelled = false;
 
 		Promise.all(
@@ -1669,7 +1691,7 @@ function useEnsureFontsLoaded(
 		return () => {
 			isCancelled = true;
 		};
-	}, [layers, virtualMedia]);
+	}, [fontsToLoad]); // Strict reliance on primitive string to break the freeze.
 
 	return loaded;
 }
