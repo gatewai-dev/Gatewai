@@ -52,7 +52,6 @@
 		"sonner": "*",
 		"@remotion/media": "*",
 		"@remotion/captions": "*",
-		"@remotion/lottie": "*",
 		"@remotion/player": "*",
 		"@remotion/rounded-text-box": "*",
 		"@remotion/web-renderer": "*",

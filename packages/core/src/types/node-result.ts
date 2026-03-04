@@ -37,9 +37,9 @@ export type DataForType<R extends DataType> = R extends "Text"
 		? number
 		: R extends "Boolean"
 			? boolean
-			: R extends "Image" | "SVG" | "Caption" | "Json"
+			: R extends "Image" | "SVG" | "Caption"
 				? FileData
-				: R extends "Video" | "Audio" | "Lottie"
+				: R extends "Video" | "Audio"
 					? VirtualMediaData
 					: R extends "Any"
 						? string | number | boolean | FileData | VirtualMediaData
@@ -105,8 +105,6 @@ export type AnyOutputUnion =
 	| OutputItem<"Audio">
 	| OutputItem<"Text">
 	| OutputItem<"Number">
-	| OutputItem<"Lottie">
-	| OutputItem<"Json">
 	| OutputItem<"Boolean">
 	| OutputItem<"SVG">
 	| OutputItem<"Caption">;

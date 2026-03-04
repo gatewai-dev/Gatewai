@@ -10,15 +10,7 @@ export const ExtendedLayerSchema = z
 	.object({
 		id: z.string(),
 		name: z.string().optional(),
-		type: z.enum([
-			"Video",
-			"Image",
-			"Audio",
-			"Text",
-			"Lottie",
-			"Caption",
-			"SVG",
-		]),
+		type: z.enum(["Video", "Image", "Audio", "Text", "Caption", "SVG"]),
 
 		// VirtualMediaData from upstream
 		virtualMedia: VirtualMediaDataSchema.optional(),
@@ -87,11 +79,6 @@ export const ExtendedLayerSchema = z
 		isPlaceholder: z.boolean().optional(),
 
 		autoDimensions: z.boolean().optional(),
-
-		// Lottie specific
-		lottieLoop: z.boolean().optional(),
-		lottieFrameRate: z.number().optional(),
-		lottieDurationMs: z.number().optional(),
 
 		// Caption specific
 		captionPreset: z.string().optional(),

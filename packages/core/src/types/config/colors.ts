@@ -44,13 +44,6 @@ export const dataTypeColors: Record<
 		text: "text-yellow-500",
 		border: "border-yellow-500",
 	},
-	Lottie: {
-		bg: "bg-fuchsia-500",
-		stroke: "stroke-fuchsia-500",
-		hex: "#d946ef",
-		text: "text-fuchsia-500",
-		border: "border-fuchsia-500",
-	},
 	Json: {
 		bg: "bg-indigo-500",
 		stroke: "stroke-indigo-500",

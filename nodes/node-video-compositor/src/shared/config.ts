@@ -25,7 +25,6 @@ export const VariableInputDataTypes = [
 	"Image",
 	"Video",
 	"Audio",
-	"Lottie",
 	"Caption",
 	"SVG",
 ] as const;
@@ -70,9 +69,6 @@ export const VideoCompositorLayerSchema = BaseLayerSchema.merge(PositionSchema)
 				durationInMS: z.number().min(1),
 			})
 			.optional(),
-		lottieLoop: z.boolean().optional(),
-		lottieFrameRate: z.number().optional(),
-		lottieDurationMs: z.number().optional(),
 
 		captionPreset: z.string().optional(),
 		useRoundedTextBox: z.boolean().optional(),

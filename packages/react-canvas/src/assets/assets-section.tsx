@@ -47,7 +47,6 @@ type AssetTypeFilter =
 	| "video"
 	| "audio"
 	| "svg"
-	| "lottie"
 	| "caption"
 	| "other";
 
@@ -57,7 +56,6 @@ const FILTER_CONFIG = {
 	video: { label: "Videos", icon: Video, value: "video" },
 	audio: { label: "Audio", icon: Music, value: "audio" },
 	svg: { label: "SVG", icon: Shapes, value: "svg" },
-	lottie: { label: "Lottie", icon: Film, value: "lottie" },
 	caption: { label: "Caption", icon: BsFileEarmarkText, value: "caption" },
 	other: { label: "Other", icon: BsFileEarmarkZip, value: "other" },
 } as const;

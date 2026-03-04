@@ -177,13 +177,6 @@ const DEFAULT_TIMELINE_HEIGHT = 208;
 const MIN_TIMELINE_HEIGHT = 120;
 const MAX_TIMELINE_HEIGHT = 400;
 
-const LOTTIE_COLOR = {
-	bg: "bg-amber-700",
-	border: "border-amber-600",
-	text: "text-amber-100",
-	hex: "#b45309",
-};
-
 const ASPECT_RATIOS = [
 	{ label: "Youtube / HD (16:9)", width: 1280, height: 720 },
 	{ label: "Full HD (16:9)", width: 1920, height: 1080 },
@@ -334,26 +327,6 @@ const measureText = (text: string, style: Partial<EditorLayer>) => {
 	};
 };
 
-const fetchLottieMetadata = async (
-	url: string,
-): Promise<{ width: number; height: number; durationMs: number } | null> => {
-	try {
-		const res = await fetch(url);
-		if (!res.ok) return null;
-		const json = await res.json();
-		const w = Number(json.w) || 0;
-		const h = Number(json.h) || 0;
-		const fr = Number(json.fr) || 30;
-		const op = Number(json.op) || 0;
-		if (w > 0 && h > 0) {
-			return { width: w, height: h, durationMs: op > 0 ? (op / fr) * 1000 : 0 };
-		}
-		return null;
-	} catch {
-		return null;
-	}
-};
-
 const fetchSrtDurationMs = async (url: string): Promise<number | null> => {
 	try {
 		const res = await fetch(url);
@@ -378,7 +351,6 @@ const fetchSrtDurationMs = async (url: string): Promise<number | null> => {
 };
 
 const resolveColorConfig = (layer: EditorLayer) => {
-	if (layer.type === "Lottie") return LOTTIE_COLOR;
 	return (
 		dataTypeColors[layer.type] ?? {
 			bg: "bg-gray-600",
@@ -529,7 +501,6 @@ const LayerIcon: React.FC<{ type: string; className?: string }> = ({
 		SVG: <ImageIcon className={className} />,
 		Text: <Type className={className} />,
 		Caption: <Subtitles className={className} />,
-		Lottie: <Sparkles className={className} />,
 	};
 	return <>{icons[type] ?? <Layers className={className} />}</>;
 };
@@ -828,86 +799,6 @@ const AnimationsInspectorSection: React.FC<{
 };
 
 // ---------------------------------------------------------------------------
-// LottieInspectorSection
-// ---------------------------------------------------------------------------
-
-const LottieInspectorSection: React.FC<{
-	layer: EditorLayer;
-	update: (patch: Partial<EditorLayer>) => void;
-}> = ({ layer, update }) => {
-	const durationSec = layer.lottieDurationMs
-		? (layer.lottieDurationMs / 1000).toFixed(2)
-		: "–";
-	const fps = layer.lottieFrameRate ?? "–";
-
-	return (
-		<CollapsibleSection title="Lottie Animation" icon={Sparkles} defaultOpen>
-			<div className="flex items-center gap-3 mb-3 p-2 rounded-md bg-amber-500/5 border border-amber-500/10">
-				<Sparkles className="w-4 h-4 text-amber-400 shrink-0" />
-				<div className="flex flex-col min-w-0">
-					<span className="text-[10px] font-semibold text-amber-300">
-						Lottie / JSON Animation
-					</span>
-					<span className="text-[9px] text-gray-500">
-						{durationSec}s · {fps} fps
-					</span>
-				</div>
-			</div>
-			<div className="flex items-center justify-between mb-3">
-				<div className="flex items-center gap-2">
-					<RefreshCw className="w-3.5 h-3.5 text-gray-400" />
-					<span className="text-[11px] text-gray-300">Loop animation</span>
-				</div>
-				<Switch
-					checked={layer.lottieLoop !== false}
-					onCheckedChange={(checked) => update({ lottieLoop: checked })}
-					className="data-[state=checked]:bg-amber-500"
-				/>
-			</div>
-			<div className="space-y-1.5">
-				<div className="flex items-center justify-between">
-					<span className="text-[9px] text-gray-500 uppercase tracking-wider font-bold">
-						Playback Speed
-					</span>
-					<span className="text-[10px] font-mono text-amber-300">
-						{(layer.speed ?? 1).toFixed(1)}×
-					</span>
-				</div>
-				<Slider
-					value={[(layer.speed ?? 1) * 100]}
-					min={10}
-					max={400}
-					step={10}
-					onValueChange={([v]) => update({ speed: v / 100 })}
-					className="[&_[data-orientation=horizontal]]:h-1 [&_[role=slider]]:bg-amber-400 [&_[role=slider]]:border-amber-500"
-				/>
-				<div className="flex justify-between text-[9px] text-gray-600">
-					<span>0.1×</span>
-					<span>1×</span>
-					<span>4×</span>
-				</div>
-			</div>
-			{layer.lottieDurationMs != null && layer.lottieDurationMs > 0 && (
-				<Button
-					variant="ghost"
-					size="sm"
-					className="w-full mt-3 h-7 text-[10px] text-amber-400 hover:text-amber-300 hover:bg-amber-500/10 border border-dashed border-amber-500/20"
-					onClick={() => {
-						const nativeFrames = Math.ceil(
-							(layer.lottieDurationMs! / 1000) * FPS,
-						);
-						update({ durationInMS: nativeFrames, speed: 1 });
-					}}
-				>
-					<RefreshCw className="w-3 h-3 mr-1.5" />
-					Reset to native duration ({durationSec}s)
-				</Button>
-			)}
-		</CollapsibleSection>
-	);
-};
-
-// ---------------------------------------------------------------------------
 // TextBoxSection
 // ---------------------------------------------------------------------------
 
@@ -1078,12 +969,6 @@ const UnifiedClip: React.FC<{ layer: EditorLayer; isSelected: boolean }> = ({
 					backgroundSize: "10px 10px",
 				}}
 			/>
-			{layer.type === "Lottie" && (
-				<div className="absolute right-1 top-1/2 -translate-y-1/2 flex items-center gap-0.5 bg-amber-500/20 px-1 py-0.5 rounded text-[8px] font-bold text-amber-300 border border-amber-500/30 pointer-events-none">
-					<Sparkles className="w-2 h-2" />
-					{layer.lottieLoop !== false ? "LOOP" : "ONCE"}
-				</div>
-			)}
 			{layer.useRoundedTextBox && (
 				<div className="absolute right-1 top-1/2 -translate-y-1/2 flex items-center gap-0.5 bg-blue-500/20 px-1 py-0.5 rounded text-[8px] font-bold text-blue-300 border border-blue-500/30 pointer-events-none">
 					<Box className="w-2 h-2" />
@@ -1442,9 +1327,7 @@ const InteractionOverlay: React.FC = () => {
 							className={`absolute inset-0 pointer-events-none transition-all duration-150 ${
 								selectedId === layer.id
 									? "border-2 border-blue-500 shadow-[0_0_0_1px_rgba(59,130,246,0.2)]"
-									: layer.type === "Lottie"
-										? "border border-transparent group-hover:border-amber-400/50"
-										: "border border-transparent group-hover:border-blue-400/50"
+									: "border border-transparent group-hover:border-blue-400/50"
 							}`}
 						/>
 						{selectedId === layer.id && (
@@ -1922,9 +1805,7 @@ const TimelinePanel: React.FC = () => {
 				const initialItem = initialLayersData.get(layerId);
 				if (
 					initialItem &&
-					(initialItem.type === "Video" ||
-						initialItem.type === "Audio" ||
-						initialItem.type === "Lottie")
+					(initialItem.type === "Video" || initialItem.type === "Audio")
 				) {
 					const metadata = getActiveMediaMetadata(
 						initialItem.data as VirtualMediaData,
@@ -2465,8 +2346,7 @@ const InspectorPanel: React.FC = () => {
 	const showAutoDimensions =
 		(selectedLayer.type === "Image" ||
 			selectedLayer.type === "SVG" ||
-			selectedLayer.type === "Video" ||
-			selectedLayer.type === "Lottie") &&
+			selectedLayer.type === "Video") &&
 		!isCaptionLayer(selectedLayer.type);
 
 	const handleAutoDimensions = () => {
@@ -2474,35 +2354,14 @@ const InspectorPanel: React.FC = () => {
 			update({ autoDimensions: false });
 			return;
 		}
-		let newW = selectedLayer.width;
-		let newH = selectedLayer.height;
-		if (selectedLayer.type !== "Lottie") {
-			const initialItem = initialLayersData.get(selectedLayer.id);
-			if (initialItem) {
-				if (initialItem.type === "Video") {
-					const meta = getActiveMediaMetadata(
-						initialItem.data as VirtualMediaData,
-					);
-					if (meta?.width != null) newW = meta.width;
-					if (meta?.height != null) newH = meta.height;
-				} else if (isFileMedia(initialItem.type)) {
-					const fileData = initialItem.data as FileData;
-					const metaW = fileData.processData?.width ?? fileData.entity?.width;
-					const metaH = fileData.processData?.height ?? fileData.entity?.height;
-					if (metaW != null) newW = metaW;
-					if (metaH != null) newH = metaH;
-				}
-			}
-		}
+		const newW = selectedLayer.width;
+		const newH = selectedLayer.height;
 		update({ autoDimensions: true, width: newW, height: newH });
 	};
 
-	const autoDimensionsTooltip =
-		selectedLayer.type === "Lottie"
-			? "Sync dimensions with Lottie native size"
-			: hasCropDimensions
-				? "Sync dimensions with cropped source media"
-				: "Sync dimensions with source media";
+	const autoDimensionsTooltip = hasCropDimensions
+		? "Sync dimensions with cropped source media"
+		: "Sync dimensions with source media";
 
 	const suppressSizeInputs =
 		selectedLayer.type === "Text" || isCaptionLayer(selectedLayer.type);
@@ -2525,9 +2384,7 @@ const InspectorPanel: React.FC = () => {
 				<span
 					className={cn(
 						"text-[9px] px-2 py-1 rounded font-medium uppercase border tracking-wider",
-						selectedLayer.type === "Lottie"
-							? "bg-amber-500/10 text-amber-300 border-amber-500/20"
-							: "bg-white/10 text-gray-300 border-white/5",
+						"bg-white/10 text-gray-300 border-white/5",
 					)}
 				>
 					{selectedLayer.type}
@@ -2671,10 +2528,6 @@ const InspectorPanel: React.FC = () => {
 						<AnimationsInspectorSection layer={selectedLayer} update={update} />
 					)}
 
-					{selectedLayer.type === "Lottie" && (
-						<LottieInspectorSection layer={selectedLayer} update={update} />
-					)}
-
 					{/* ── Text Box (rounded pill background) ────────────────────── */}
 					{isTextOrCaption && (
 						<TextBoxSection layer={selectedLayer} update={update} />
@@ -2775,9 +2628,7 @@ const InspectorPanel: React.FC = () => {
 						padding={selectedLayer.padding}
 						opacity={selectedLayer.opacity}
 						showBackground={
-							["Image", "SVG", "Video", "Lottie"].includes(
-								selectedLayer.type,
-							) ||
+							["Image", "SVG", "Video"].includes(selectedLayer.type) ||
 							(isTextOrCaption && !roundedBoxActive)
 						}
 						showStroke={selectedLayer.type !== "Audio"}
@@ -2824,9 +2675,7 @@ const InspectorPanel: React.FC = () => {
 export interface VideoDesignerEditorProps {
 	initialLayers: Map<
 		string,
-		OutputItem<
-			"Text" | "Image" | "SVG" | "Video" | "Audio" | "Lottie" | "Caption"
-		>
+		OutputItem<"Text" | "Image" | "SVG" | "Video" | "Audio" | "Caption">
 	>;
 	node: NodeEntityType;
 	onClose: () => void;
@@ -3042,11 +2891,7 @@ export const VideoDesignerEditor: React.FC<VideoDesignerEditorProps> = ({
 
 				if (item.type === "Text") {
 					text = getTextData(id);
-				} else if (
-					item.type === "Video" ||
-					item.type === "Audio" ||
-					item.type === "Lottie"
-				) {
+				} else if (item.type === "Video" || item.type === "Audio") {
 					virtualMedia = item.data as VirtualMediaData;
 					const metadata = getActiveMediaMetadata(virtualMedia);
 					const cutDurationMs = getEffectiveDurationMs(virtualMedia);
@@ -3236,47 +3081,6 @@ export const VideoDesignerEditor: React.FC<VideoDesignerEditorProps> = ({
 						width: 0,
 						lockAspect: true,
 					} as EditorLayer);
-				} else if (item.type === "Lottie") {
-					const lottieLayer: EditorLayer = {
-						...base,
-						type: "Lottie" as any,
-						width: saved?.width ?? layerWidth ?? 400,
-						height: saved?.height ?? layerHeight ?? 400,
-						lottieLoop: saved?.lottieLoop !== false,
-						lottieFrameRate: saved?.lottieFrameRate,
-						lottieDurationMs: saved?.lottieDurationMs,
-						lockAspect: true,
-						speed: saved?.speed ?? 1,
-					} as EditorLayer;
-					loaded.push(lottieLayer);
-
-					if (src && !saved?.lottieFrameRate) {
-						const lottieSrc = src;
-						const layerId = id;
-						asyncTasks.push(
-							fetchLottieMetadata(lottieSrc).then((meta) => {
-								if (!meta) return;
-								const nativeFrames = Math.ceil((meta.durationMs / 1000) * FPS);
-								setLayers((prev) =>
-									prev.map((l) =>
-										l.id === layerId
-											? {
-													...l,
-													width: saved?.width ?? meta.width,
-													height: saved?.height ?? meta.height,
-													lottieFrameRate:
-														meta.durationMs > 0
-															? Math.round((meta.durationMs / 1000) * FPS)
-															: l.lottieFrameRate,
-													lottieDurationMs: meta.durationMs,
-													durationInMS: saved?.durationInMS ?? meta.durationMs,
-												}
-											: l,
-									),
-								);
-							}),
-						);
-					}
 				}
 			});
 
@@ -3304,7 +3108,6 @@ export const VideoDesignerEditor: React.FC<VideoDesignerEditorProps> = ({
 		const layersToMeasure = layers.filter(
 			(l) =>
 				l.type !== "Audio" &&
-				l.type !== "Lottie" &&
 				l.type !== "Caption" &&
 				!l.isPlaceholder &&
 				(l.width == null || l.height == null || l.autoDimensions === true),

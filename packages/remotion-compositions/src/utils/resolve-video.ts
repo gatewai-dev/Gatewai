@@ -11,15 +11,7 @@ import { DEFAULT_DURATION_MS } from "../rendering-defaults.js";
  */
 export function createVirtualMedia(
 	source: any,
-	type:
-		| "Audio"
-		| "Image"
-		| "Video"
-		| "Lottie"
-		| "Json"
-		| "SVG"
-		| "Caption"
-		| "Text" = "Video",
+	type: "Audio" | "Image" | "Video" | "SVG" | "Caption" | "Text" = "Video",
 ): VirtualMediaData {
 	// If it's already a VirtualMediaData, return it
 	if (source && typeof source === "object" && "operation" in source) {
@@ -44,13 +36,11 @@ export function createVirtualMedia(
 					? "image/png"
 					: type === "SVG"
 						? "image/svg+xml"
-						: type === "Lottie" || type === "Json"
-							? "application/json"
-							: type === "Caption"
-								? "text/srt"
-								: type === "Text"
-									? "text/plain"
-									: undefined);
+						: type === "Caption"
+							? "text/srt"
+							: type === "Text"
+								? "text/plain"
+								: undefined);
 
 	return {
 		metadata: sourceMeta,
@@ -71,11 +61,11 @@ export function createVirtualMedia(
 }
 
 /**
- * Identify if a VirtualMediaData node is intended to be Video, Audio, Image, Lottie, or Text.
+ * Identify if a VirtualMediaData node is intended to be Video, Audio, Image, or Text.
  */
 export function getMediaType(
 	vv: VirtualMediaData,
-): "Video" | "Audio" | "Image" | "Lottie" | "Text" | "SVG" | "Caption" {
+): "Video" | "Audio" | "Image" | "Text" | "SVG" | "Caption" {
 	if (!vv) return "Video";
 
 	const op = vv.operation;
@@ -88,7 +78,6 @@ export function getMediaType(
 		if (mime.startsWith("image/")) return "Image";
 		if (mime.startsWith("video/")) return "Video";
 		if (mime.startsWith("audio/")) return "Audio";
-		if (mime === "application/json") return "Lottie";
 		if (mime === "text/srt") return "Caption";
 		if (mime.startsWith("text/")) return "Text";
 
@@ -98,7 +87,6 @@ export function getMediaType(
 		if (originalName) {
 			const ext = originalName.split(".").pop()?.toLowerCase();
 			if (ext === "svg") return "SVG";
-			if (ext === "json" || ext === "lottie") return "Lottie";
 			if (ext === "srt") return "Caption";
 			if (["png", "jpg", "jpeg", "webp", "gif"].includes(ext || ""))
 				return "Image";

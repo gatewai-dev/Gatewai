@@ -16,7 +16,7 @@ interface UploadOptions {
 
 type SupportedDataType = Extract<
 	DataType,
-	"Image" | "Video" | "Audio" | "Json" | "SVG" | "Caption"
+	"Image" | "Video" | "Audio" | "SVG" | "Caption"
 >;
 
 function extractCaptionDuration(buffer: Buffer): number | null {
@@ -44,23 +44,11 @@ function extractCaptionDuration(buffer: Buffer): number | null {
 function resolveDataType(
 	contentType: string,
 	filename: string,
-	buffer?: Buffer,
 ): SupportedDataType {
 	if (contentType === "image/svg+xml") return "SVG";
 	if (contentType.startsWith("image/")) return "Image";
 	if (contentType.startsWith("video/")) return "Video";
 	if (contentType.startsWith("audio/")) return "Audio";
-
-	const isJsonContent =
-		contentType === "application/json" || contentType === "text/plain";
-
-	if (isJsonContent && buffer) {
-		return "Json";
-	}
-
-	if (isJsonContent) {
-		return "Json";
-	}
 
 	const ext = filename.toLowerCase().split(".").pop();
 	if (ext === "srt") {
@@ -99,7 +87,7 @@ export async function uploadToImportNode({
 		"application/octet-stream";
 
 	// Validate early so we don't pay for storage + DB work on unsupported types.
-	const dataType = resolveDataType(finalContentType, filename, buffer);
+	const dataType = resolveDataType(finalContentType, filename);
 
 	// ── 2. Fetch node (fail fast if missing) ─────────────────────────────────
 	const node = await prisma.node.findUniqueOrThrow({

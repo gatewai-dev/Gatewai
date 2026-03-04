@@ -7,8 +7,6 @@ import type {
 import type { Caption } from "@remotion/captions";
 import { parseSrt } from "@remotion/captions";
 import { measureText } from "@remotion/layout-utils";
-import type { LottieAnimationData } from "@remotion/lottie";
-import { Lottie } from "@remotion/lottie";
 import { Audio, Video } from "@remotion/media";
 import { createRoundedTextBox } from "@remotion/rounded-text-box";
 import React, { useEffect, useMemo, useState } from "react";
@@ -28,7 +26,6 @@ import {
 	CAPTION_LAYER_DEFAULTS,
 	DEFAULT_DURATION_MS,
 	DEFAULT_MEDIA_DIMENSION,
-	LOTTIE_LAYER_DEFAULTS,
 	TEXT_LAYER_DEFAULTS,
 } from "../rendering-defaults.js";
 import {
@@ -40,93 +37,8 @@ import {
 	getMediaType,
 } from "../utils/resolve-video.js";
 
-const isLottieSource = (virtualMedia: VirtualMediaData): boolean => {
-	const op = virtualMedia?.operation;
-	if (!op || op.op !== "source") return false;
-	const src = op.source;
-	if (!src) return false;
-	const mimeType: string =
-		src.processData?.mimeType ?? src.entity?.mimeType ?? "";
-	if (mimeType === "application/json") return true;
-	const key: string = src.entity?.key ?? src.entity?.name ?? "";
-	return key.toLowerCase().endsWith(".json");
-};
-
 const isStaticVisualMedia = (type?: string): boolean =>
 	type === "Image" || type === "SVG";
-
-interface LottieFromUrlProps {
-	src: string;
-	style?: React.CSSProperties;
-	loop?: boolean;
-	playbackRate?: number;
-}
-
-const LottieFromUrl: React.FC<LottieFromUrlProps> = ({
-	src,
-	style,
-	loop = true,
-	playbackRate = 1,
-}) => {
-	const [animationData, setAnimationData] =
-		useState<LottieAnimationData | null>(null);
-
-	useEffect(() => {
-		const handle = delayRender(`Loading Lottie from: ${src}`);
-		let cancelled = false;
-
-		fetch(src)
-			.then((res) => res.json())
-			.then((data) => {
-				if (cancelled) {
-					continueRender(handle);
-					return;
-				}
-				setAnimationData(data);
-				continueRender(handle);
-			})
-			.catch((err) => {
-				if (cancelled) {
-					continueRender(handle);
-					return;
-				}
-				cancelRender(err instanceof Error ? err : new Error(String(err)));
-			});
-
-		return () => {
-			cancelled = true;
-		};
-	}, [src]);
-
-	if (!animationData)
-		return (
-			<div
-				style={{
-					position: "absolute",
-					inset: 0,
-					width: "100%",
-					height: "100%",
-					...style,
-				}}
-			/>
-		);
-
-	return (
-		<Lottie
-			animationData={animationData}
-			loop={loop}
-			playbackRate={playbackRate}
-			style={{
-				position: "absolute",
-				top: 0,
-				left: 0,
-				width: "100%",
-				height: "100%",
-				...style,
-			}}
-		/>
-	);
-};
 
 interface RoundedTextRendererProps {
 	text: string;
@@ -925,9 +837,6 @@ const compareVirtualMedia = (
 				aOp.borderRadius !== bOp.borderRadius ||
 				aOp.autoDimensions !== bOp.autoDimensions ||
 				aOp.speed !== bOp.speed ||
-				aOp.lottieLoop !== bOp.lottieLoop ||
-				aOp.lottieFrameRate !== bOp.lottieFrameRate ||
-				aOp.lottieDurationMs !== bOp.lottieDurationMs ||
 				JSON.stringify(aOp.animations) !== JSON.stringify(bOp.animations)
 			)
 				return false;
@@ -1043,11 +952,6 @@ export const SingleClipComposition: React.FC<{
 									borderRadius: lop.borderRadius ?? textStyle?.borderRadius,
 									autoDimensions:
 										lop.autoDimensions ?? textStyle?.autoDimensions,
-									lottieLoop: lop.lottieLoop ?? textStyle?.lottieLoop,
-									lottieFrameRate:
-										lop.lottieFrameRate ?? textStyle?.lottieFrameRate,
-									lottieDurationMs:
-										lop.lottieDurationMs ?? textStyle?.lottieDurationMs,
 									animations: lop.animations ?? textStyle?.animations,
 
 									captionPreset:
@@ -1105,27 +1009,6 @@ export const SingleClipComposition: React.FC<{
 
 	if (op.op === "source" || op.op === "text") {
 		const params = computeRenderParams(virtualMedia);
-
-		if (isLottieSource(virtualMedia)) {
-			if (!params.sourceUrl) return <AbsoluteFill />;
-			const finalPlaybackRate =
-				(Number(playbackRateOverride) || 1) * (Number(params.speed) || 1);
-			const lottieLoop = textStyle?.lottieLoop ?? true;
-			return (
-				<LottieFromUrl
-					src={params.sourceUrl}
-					loop={lottieLoop}
-					playbackRate={finalPlaybackRate}
-					style={{
-						position: "absolute",
-						top: 0,
-						left: 0,
-						width: "100%",
-						height: "100%",
-					}}
-				/>
-			);
-		}
 
 		const mediaType = getMediaType(virtualMedia);
 
@@ -1212,24 +1095,6 @@ export const SingleClipComposition: React.FC<{
 					}}
 				/>
 			);
-
-		if (mediaType === "Lottie") {
-			const lottieLoop = textStyle?.lottieLoop ?? true;
-			return (
-				<LottieFromUrl
-					src={params.sourceUrl}
-					loop={lottieLoop}
-					playbackRate={finalPlaybackRate}
-					style={{
-						position: "absolute",
-						top: 0,
-						left: 0,
-						width: "100%",
-						height: "100%",
-					}}
-				/>
-			);
-		}
 
 		return (
 			<Video
@@ -1396,32 +1261,6 @@ const LayerContentRenderer: React.FC<{
 				style={{ width: "100%", height: "100%", objectFit: "fill" }}
 			/>
 		);
-	}
-
-	if (layer.type === "Lottie") {
-		const loop = layer.lottieLoop ?? true;
-		const playbackRate = layer.speed ?? 1;
-		if (layer.virtualMedia) {
-			const params = computeRenderParams(layer.virtualMedia);
-			if (params.sourceUrl)
-				return (
-					<LottieFromUrl
-						src={params.sourceUrl}
-						loop={loop}
-						playbackRate={playbackRate}
-						style={{ width: "100%", height: "100%" }}
-					/>
-				);
-		}
-		if (layer.src)
-			return (
-				<LottieFromUrl
-					src={layer.src}
-					loop={loop}
-					playbackRate={playbackRate}
-					style={{ width: "100%", height: "100%" }}
-				/>
-			);
 	}
 
 	if (layer.type === "Audio" && (layer.src || layer.virtualMedia)) {
@@ -1704,7 +1543,7 @@ export interface SceneProps {
 	containerHeight?: number;
 	src?: string;
 	isAudio?: boolean;
-	type?: "Video" | "Audio" | "Image" | "SVG" | "Text" | "Lottie" | string;
+	type?: "Video" | "Audio" | "Image" | "SVG" | "Text" | string;
 	data?: unknown;
 	virtualMedia?: VirtualMediaData;
 	durationInMS?: number;
@@ -1751,13 +1590,7 @@ export const CompositionScene: React.FC<SceneProps> = ({
 			return null;
 		}
 
-		if (
-			src ||
-			virtualMedia ||
-			type === "Text" ||
-			type === "Lottie" ||
-			type === "Caption"
-		) {
+		if (src || virtualMedia || type === "Text" || type === "Caption") {
 			const resolvedType = type || (isAudio ? "Audio" : "Video");
 			let resolvedDurationInMS = durationInMS;
 			if (!resolvedDurationInMS && virtualMedia) {
@@ -1770,8 +1603,7 @@ export const CompositionScene: React.FC<SceneProps> = ({
 			const isVisualMedia =
 				resolvedType === "Image" ||
 				resolvedType === "SVG" ||
-				resolvedType === "Video" ||
-				resolvedType === "Lottie";
+				resolvedType === "Video";
 
 			let defaultWidth: number | string | undefined = viewportWidth;
 			let defaultHeight: number | string | undefined = viewportHeight;
@@ -1809,7 +1641,6 @@ export const CompositionScene: React.FC<SceneProps> = ({
 					y: y ?? 0,
 					lockAspect: isText || isVisualMedia,
 					autoDimensions: false,
-					...(resolvedType === "Lottie" ? LOTTIE_LAYER_DEFAULTS : {}),
 					...(isText ? TEXT_LAYER_DEFAULTS : {}),
 					...(isCaption
 						? {

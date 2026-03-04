@@ -155,10 +155,6 @@ export const LayerOperationSchema = z.object({
 
 	animations: z.array(VideoAnimationSchema).optional(),
 
-	lottieLoop: z.boolean().optional(),
-	lottieFrameRate: z.number().optional(),
-	lottieDurationMs: z.number().optional(),
-
 	captionPreset: z.string().optional(),
 	useRoundedTextBox: z.boolean().optional(),
 
