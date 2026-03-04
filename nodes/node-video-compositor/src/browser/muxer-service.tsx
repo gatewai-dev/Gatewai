@@ -6,9 +6,13 @@ import type {
 	VirtualMediaData,
 } from "@gatewai/core/types";
 import {
+	CAPTION_LAYER_DEFAULTS,
 	CompositionScene,
 	createVirtualMedia,
+	DEFAULT_DURATION_MS,
 	getActiveMediaMetadata,
+	LOTTIE_LAYER_DEFAULTS,
+	TEXT_LAYER_DEFAULTS,
 } from "@gatewai/remotion-compositions";
 import { resolveMediaSourceUrlBrowser } from "@gatewai/remotion-compositions/browser";
 import { renderMediaOnWeb } from "@remotion/web-renderer";
@@ -47,61 +51,89 @@ function buildExtendedLayer(
 		text = String(item.data);
 	}
 
-	return {
+	const src = virtualMedia
+		? resolveMediaSourceUrlBrowser(virtualMedia)
+		: undefined;
+	const activeMeta = virtualMedia ? getActiveMediaMetadata(virtualMedia) : null;
+
+	// Prepare layer-specific defaults (only for specific types)
+	const layerTypeDefaults =
+		itemType === "Text"
+			? TEXT_LAYER_DEFAULTS
+			: itemType === "Caption"
+				? CAPTION_LAYER_DEFAULTS
+				: itemType === "Lottie"
+					? LOTTIE_LAYER_DEFAULTS
+					: {};
+
+	// Create the result by merging:
+	// 1. Per-type defaults (Text/Caption/Lottie)
+	// 2. Base fields (coordinates, ID, etc.)
+	// 3. Layer config (only non-undefined values)
+	// We do this to ensure defaults are NOT overwritten by 'undefined' in the 'layer' object.
+
+	const result: ExtendedLayer = {
+		...layerTypeDefaults,
 		id: layer.id ?? generateId(),
 		inputHandleId: layer.inputHandleId,
 		type: (layer.type ?? itemType) as ExtendedLayer["type"],
+		src,
 		virtualMedia,
 		text,
 		x: layer.x ?? 0,
 		y: layer.y ?? 0,
-		width: layer.width,
-		height: layer.height,
+		width: layer.width ?? activeMeta?.width ?? undefined,
+		height: layer.height ?? activeMeta?.height ?? undefined,
 		rotation: layer.rotation ?? 0,
 		scale: layer.scale ?? 1,
 		opacity: layer.opacity ?? 1,
 		startFrame: layer.startFrame ?? 0,
-		durationInMS: layer.durationInMS,
-		zIndex: layer.zIndex,
+		durationInMS: layer.durationInMS ?? 0,
+		zIndex: layer.zIndex ?? 0,
 		lockAspect: layer.lockAspect ?? true,
-		volume:
-			itemType === "Video" || itemType === "Audio"
-				? (layer.volume ?? 1)
-				: undefined,
-		// Styling
-		fill: layer.fill,
-		fontSize: layer.fontSize,
-		fontFamily: layer.fontFamily,
-		fontStyle: layer.fontStyle,
-		fontWeight: layer.fontWeight,
-		textDecoration: layer.textDecoration,
-		textShadow: layer.textShadow,
-		align: layer.align,
-		verticalAlign: layer.verticalAlign,
-		letterSpacing: layer.letterSpacing,
-		lineHeight: layer.lineHeight,
-		padding: layer.padding,
-		stroke: layer.stroke,
-		strokeWidth: layer.strokeWidth,
-		backgroundColor: layer.backgroundColor,
-		borderColor: layer.borderColor,
-		borderWidth: layer.borderWidth,
-		borderRadius: layer.borderRadius,
-		autoDimensions: layer.autoDimensions,
-		animations: layer.animations,
-		// Media
-		trimStart: layer.trimStart,
-		trimEnd: layer.trimEnd,
-		speed: layer.speed,
-		filters: layer.filters,
-		// Lottie
-		lottieLoop: layer.lottieLoop,
-		lottieFrameRate: layer.lottieFrameRate,
-		lottieDurationMs: layer.lottieDurationMs,
-		// Caption
-		captionPreset: layer.captionPreset,
-		useRoundedTextBox: layer.useRoundedTextBox,
-	} as ExtendedLayer;
+		volume: layer.volume ?? 1,
+	};
+
+	// Explicitly assign optional fields if they are defined in 'layer'
+	const optionalFields: (keyof ExtendedLayer)[] = [
+		"fill",
+		"fontSize",
+		"fontFamily",
+		"fontStyle",
+		"fontWeight",
+		"textDecoration",
+		"textShadow",
+		"align",
+		"verticalAlign",
+		"letterSpacing",
+		"lineHeight",
+		"padding",
+		"stroke",
+		"strokeWidth",
+		"backgroundColor",
+		"borderColor",
+		"borderWidth",
+		"borderRadius",
+		"autoDimensions",
+		"animations",
+		"trimStart",
+		"trimEnd",
+		"speed",
+		"filters",
+		"lottieLoop",
+		"lottieFrameRate",
+		"lottieDurationMs",
+		"captionPreset",
+		"useRoundedTextBox",
+	];
+
+	for (const key of optionalFields) {
+		if ((layer as any)[key] !== undefined) {
+			(result as any)[key] = (layer as any)[key];
+		}
+	}
+
+	return result;
 }
 
 export class RemotionWebProcessorService {
@@ -148,7 +180,7 @@ export class RemotionWebProcessorService {
 					});
 					mediaPromises.push(promise);
 				} else if (layer.durationInMS == null) {
-					layerUpdatesCopy[layerKey].durationInMS = 5000;
+					layerUpdatesCopy[layerKey].durationInMS = DEFAULT_DURATION_MS;
 				}
 			}
 		} else {
@@ -161,6 +193,19 @@ export class RemotionWebProcessorService {
 				const item = input.outputItem;
 				const itemType = item.type;
 
+				let defaultWidth: number | undefined;
+				let defaultHeight: number | undefined;
+
+				if (itemType === "Image" || itemType === "SVG") {
+					const fileData = item.data as FileData;
+					defaultWidth =
+						fileData.processData?.width ?? fileData.entity?.width ?? undefined;
+					defaultHeight =
+						fileData.processData?.height ??
+						fileData.entity?.height ??
+						undefined;
+				}
+
 				// Create a base default layer
 				const defaultLayer: VideoCompositorLayer = {
 					inputHandleId,
@@ -172,6 +217,8 @@ export class RemotionWebProcessorService {
 					type: itemType as VideoCompositorLayer["type"],
 					x: 0,
 					y: 0,
+					width: defaultWidth,
+					height: defaultHeight,
 					scale: 1,
 					rotation: 0,
 					id: generateId(),
@@ -194,7 +241,7 @@ export class RemotionWebProcessorService {
 					});
 					mediaPromises.push(promise);
 				} else {
-					defaultLayer.durationInMS = 5000;
+					defaultLayer.durationInMS = DEFAULT_DURATION_MS;
 					layerUpdatesCopy[inputHandleId] = defaultLayer;
 				}
 			}
@@ -311,4 +358,4 @@ export class RemotionWebProcessorService {
 	}
 }
 
-export const remotionService = new RemotionWebProcessorService();
+export const remotionWebRendererService = new RemotionWebProcessorService();

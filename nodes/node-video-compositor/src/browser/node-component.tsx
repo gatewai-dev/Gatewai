@@ -15,7 +15,7 @@ import { memo, useState } from "react";
 import { useNavigate } from "react-router";
 import { toast } from "sonner";
 import type { VideoCompositorNodeConfig } from "../shared/config.js";
-import { remotionService } from "./muxer-service.js";
+import { remotionWebRendererService } from "./muxer-service.js";
 
 const VideoCompositorNodeComponent = memo((props: NodeProps) => {
 	const node = useAppSelector(makeSelectNodeById(props.id));
@@ -32,7 +32,10 @@ const VideoCompositorNodeComponent = memo((props: NodeProps) => {
 				width: 1080,
 				height: 1080,
 			};
-			const result = await remotionService.processVideo(config, inputs);
+			const result = await remotionWebRendererService.processVideo(
+				config,
+				inputs,
+			);
 			await downloadFileData(
 				{
 					processData: {

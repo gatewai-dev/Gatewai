@@ -25,6 +25,13 @@ import {
 	useVideoConfig,
 } from "remotion";
 import {
+	CAPTION_LAYER_DEFAULTS,
+	DEFAULT_DURATION_MS,
+	DEFAULT_MEDIA_DIMENSION,
+	LOTTIE_LAYER_DEFAULTS,
+	TEXT_LAYER_DEFAULTS,
+} from "../rendering-defaults.js";
+import {
 	buildCSSFilterString,
 	computeRenderParams,
 } from "../utils/apply-operations.js";
@@ -32,8 +39,6 @@ import {
 	getActiveMediaMetadata,
 	getMediaType,
 } from "../utils/resolve-video.js";
-
-const DEFAULT_DURATION_MS = 5000;
 
 const isLottieSource = (virtualMedia: VirtualMediaData): boolean => {
 	const op = virtualMedia?.operation;
@@ -977,6 +982,7 @@ export const SingleClipComposition: React.FC<{
 }) => {
 	const { fps } = useVideoConfig();
 	const op = virtualMedia?.operation;
+	if (!op) return null;
 
 	if (op.op === "compose") {
 		const composeDuration = (op as any).durationInMS || DEFAULT_DURATION_MS;
@@ -984,9 +990,9 @@ export const SingleClipComposition: React.FC<{
 			<CompositionScene
 				layers={
 					(virtualMedia.children || [])
+						.filter((child) => child && child.operation)
 						.map((child, index) => {
 							const childOp = child.operation;
-							if (!childOp) return null;
 
 							if (childOp.op === "layer") {
 								const lop = childOp;
@@ -1038,33 +1044,29 @@ export const SingleClipComposition: React.FC<{
 								} as ExtendedLayer;
 							}
 
-							if (childOp.op === "source" || childOp.op === "text") {
-								const contentType = getMediaType(child);
-								const childMeta = getActiveMediaMetadata(child);
-								const childWidth = childMeta?.width ?? op.width;
-								const childHeight = childMeta?.height ?? op.height;
-								const childDuration =
-									childMeta?.durationMs ??
-									composeDuration ??
-									DEFAULT_DURATION_MS;
-								return {
-									id: `child-${index}`,
-									type: contentType,
-									virtualMedia: child,
-									x: 0,
-									y: 0,
-									width: childWidth,
-									height: childHeight,
-									rotation: 0,
-									scale: 1,
-									opacity: 1,
-									startFrame: 0,
-									durationInMS: childDuration,
-									zIndex: index,
-								} as ExtendedLayer;
-							}
+							// Handle other operations (crop, rotate, filter, flig, speed, cut, source, text)
+							const contentType = getMediaType(child);
+							const childMeta = getActiveMediaMetadata(child);
+							const childWidth = childMeta?.width ?? op.width;
+							const childHeight = childMeta?.height ?? op.height;
+							const childDuration =
+								childMeta?.durationMs ?? composeDuration ?? DEFAULT_DURATION_MS;
 
-							return null;
+							return {
+								id: `child-${index}`,
+								type: contentType,
+								virtualMedia: child,
+								x: 0,
+								y: 0,
+								width: childWidth,
+								height: childHeight,
+								rotation: 0,
+								scale: 1,
+								opacity: 1,
+								startFrame: 0,
+								durationInMS: childDuration,
+								zIndex: index,
+							} as ExtendedLayer;
 						})
 						.filter(Boolean) as ExtendedLayer[]
 				}
@@ -1759,13 +1761,13 @@ export const CompositionScene: React.FC<SceneProps> = ({
 				const activeMeta = virtualMedia
 					? getActiveMediaMetadata(virtualMedia)
 					: null;
-				defaultWidth = activeMeta?.width ?? 400;
-				defaultHeight = activeMeta?.height ?? 400;
+				defaultWidth = activeMeta?.width ?? DEFAULT_MEDIA_DIMENSION;
+				defaultHeight = activeMeta?.height ?? DEFAULT_MEDIA_DIMENSION;
 			}
 
 			return [
 				{
-					id: "single-source-layer",
+					id: `single-source-${resolvedType}`,
 					type: resolvedType as any,
 					src,
 					virtualMedia,
@@ -1785,32 +1787,27 @@ export const CompositionScene: React.FC<SceneProps> = ({
 					y: y ?? 0,
 					lockAspect: isText || isVisualMedia,
 					autoDimensions: false,
-					...(resolvedType === "Lottie" ? { lottieLoop: true, speed: 1 } : {}),
-					...(isText
-						? {
-								fontSize: 60,
-								fontFamily: "Inter",
-								fill: "#ffffff",
-								fontStyle: "normal",
-								textDecoration: "",
-								align: "left",
-							}
-						: {}),
+					...(resolvedType === "Lottie" ? LOTTIE_LAYER_DEFAULTS : {}),
+					...(isText ? TEXT_LAYER_DEFAULTS : {}),
 					...(isCaption
 						? {
-								fontSize: 48,
-								fontFamily: "Inter",
-								fill: "#ffffff",
-								align: "center",
-								verticalAlign: "bottom",
-								padding: 0,
-								lineHeight: 1.2,
-								height: Math.round(48 * 1.2 * 3),
+								...CAPTION_LAYER_DEFAULTS,
+								// Dynamic default Y position based on viewport
 								y: Math.max(
 									0,
 									viewportHeight -
-										Math.round(48 * 1.2 * 3) -
+										Math.round(
+											(CAPTION_LAYER_DEFAULTS.fontSize as number) *
+												(CAPTION_LAYER_DEFAULTS.lineHeight as number) *
+												3,
+										) -
 										Math.round(viewportHeight * 0.1),
+								),
+								// Auto height for ~3 lines
+								height: Math.round(
+									(CAPTION_LAYER_DEFAULTS.fontSize as number) *
+										(CAPTION_LAYER_DEFAULTS.lineHeight as number) *
+										3,
 								),
 								width: viewportWidth,
 							}

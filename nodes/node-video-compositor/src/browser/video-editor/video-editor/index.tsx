@@ -37,10 +37,12 @@ import {
 	useGetFontListQuery,
 } from "@gatewai/react-store";
 import {
+	CAPTION_LAYER_DEFAULTS,
 	CompositionScene,
 	computeVideoCropRenderProps,
 	createVirtualMedia,
 	getActiveMediaMetadata,
+	TEXT_LAYER_DEFAULTS,
 } from "@gatewai/remotion-compositions";
 import { resolveMediaSourceUrlBrowser } from "@gatewai/remotion-compositions/browser";
 import {
@@ -3115,15 +3117,19 @@ export const VideoDesignerEditor: React.FC<VideoDesignerEditorProps> = ({
 				};
 
 				if (item.type === "Text") {
-					const fontFamily = saved?.fontFamily ?? "Inter";
+					const { captionPreset: _captionPreset, ...restTextDefaults } =
+						TEXT_LAYER_DEFAULTS;
+					const fontFamily =
+						saved?.fontFamily ?? TEXT_LAYER_DEFAULTS.fontFamily;
 					const textLayerStyle: Partial<EditorLayer> = {
-						fontSize: saved?.fontSize ?? 60,
+						...restTextDefaults,
+						fontSize: saved?.fontSize ?? TEXT_LAYER_DEFAULTS.fontSize,
 						fontFamily,
-						fontStyle: saved?.fontStyle ?? "normal",
+						fontStyle: saved?.fontStyle ?? TEXT_LAYER_DEFAULTS.fontStyle,
 						fontWeight: saved?.fontWeight,
 						letterSpacing: saved?.letterSpacing,
 						lineHeight: saved?.lineHeight,
-						padding: saved?.padding ?? 0,
+						padding: saved?.padding ?? TEXT_LAYER_DEFAULTS.padding,
 					};
 					if (!layerWidth || !layerHeight) {
 						const dims = measureText(text ?? "", textLayerStyle);
@@ -3134,20 +3140,23 @@ export const VideoDesignerEditor: React.FC<VideoDesignerEditorProps> = ({
 						...base,
 						type: "Text",
 						...textLayerStyle,
-						textDecoration: saved?.textDecoration ?? "",
-						fill: saved?.fill ?? "#ffffff",
+						textDecoration:
+							saved?.textDecoration ?? TEXT_LAYER_DEFAULTS.textDecoration,
+						fill: saved?.fill ?? TEXT_LAYER_DEFAULTS.fill,
 						width: layerWidth,
 						height: layerHeight,
 						lockAspect: true,
 						autoDimensions: false,
 						virtualMedia: createVirtualMedia(text ?? "", "Text"),
 					} as EditorLayer);
-					const fontUrl = GetFontAssetUrl(fontFamily);
+					const fontUrl = GetFontAssetUrl(fontFamily!);
 					if (fontUrl)
-						fontPromises.push(fontManager.loadFont(fontFamily, fontUrl));
+						fontPromises.push(fontManager.loadFont(fontFamily!, fontUrl));
 				} else if (item.type === "Caption") {
-					const fSize = saved?.fontSize ?? 48;
-					const lHeight = saved?.lineHeight ?? 1.2;
+					const fSize =
+						saved?.fontSize ?? (CAPTION_LAYER_DEFAULTS.fontSize as number);
+					const lHeight =
+						saved?.lineHeight ?? (CAPTION_LAYER_DEFAULTS.lineHeight as number);
 					const pad = saved?.padding ?? 0;
 
 					// Compute an auto-height sufficient for ~3 subtitle lines to prevent interaction blocking.
@@ -3528,7 +3537,7 @@ export const VideoDesignerEditor: React.FC<VideoDesignerEditorProps> = ({
 	});
 	useHotkeys(
 		"space",
-		(e) => {
+		(e: KeyboardEvent) => {
 			if (
 				document.activeElement?.tagName === "INPUT" ||
 				document.activeElement?.tagName === "TEXTAREA"
@@ -3544,7 +3553,7 @@ export const VideoDesignerEditor: React.FC<VideoDesignerEditorProps> = ({
 	);
 	useHotkeys(
 		"space",
-		(e) => {
+		(e: KeyboardEvent) => {
 			if (
 				document.activeElement?.tagName === "INPUT" ||
 				document.activeElement?.tagName === "TEXTAREA"
@@ -3557,7 +3566,7 @@ export const VideoDesignerEditor: React.FC<VideoDesignerEditorProps> = ({
 	);
 	useHotkeys(
 		"meta+s, ctrl+s",
-		(e) => {
+		(e: any) => {
 			e.preventDefault();
 			if (isDirty) handleSave();
 		},

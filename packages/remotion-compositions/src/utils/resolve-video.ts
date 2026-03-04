@@ -3,8 +3,7 @@ import type {
 	VideoOperation,
 	VirtualMediaData,
 } from "@gatewai/core/types";
-
-const DEFAULT_DURATION_MS = 5000;
+import { DEFAULT_DURATION_MS } from "../rendering-defaults.js";
 
 /**
  * Create a VirtualMediaData from a FileData source or Text.

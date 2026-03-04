@@ -1,4 +1,4 @@
-import type { DataType } from "@gatewai/db";
+import type { DataTypeEnum as DataType } from "@gatewai/core/types";
 import { defineMetadata } from "@gatewai/node-sdk";
 import {
 	VariableInputDataTypes,

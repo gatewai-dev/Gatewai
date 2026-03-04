@@ -5,6 +5,7 @@ import type {
 } from "@gatewai/core/types";
 import {
 	CompositionScene,
+	DEFAULT_FPS as FPS,
 	getActiveMediaMetadata,
 } from "@gatewai/remotion-compositions";
 import type { PlayerRef } from "@remotion/player";
@@ -20,8 +21,6 @@ import {
 	MdVolumeOff,
 	MdVolumeUp,
 } from "react-icons/md";
-
-const FPS = 30;
 
 // ---------- Utility functions ----------
 

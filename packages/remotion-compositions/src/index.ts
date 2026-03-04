@@ -3,6 +3,7 @@ export * from "./effects/animations.js";
 export * from "./effects/transitions.js";
 export * from "./filters/color-grading.js";
 export * from "./filters/css-filters.js";
+export * from "./rendering-defaults.js";
 export * from "./utils/apply-operations.js";
 export * from "./utils/browser-render.js";
 export * from "./utils/resolve-video.js";

@@ -87,22 +87,6 @@ function extractCaptionDuration(buffer: Buffer): number | null {
 	}
 }
 
-const dropzoneLabel =
-	"Click or drag & drop an image, SVG, video, audio, Lottie, 3D, or SRT file here";
-
-const accept = {
-	"image/*": [".png", ".gif", ".jpeg", ".jpg", ".webp"],
-	"image/svg+xml": [".svg"],
-	"video/*": [".mp4", ".mov", ".webm"],
-	"audio/*": [".mp3", ".wav", ".ogg"],
-	"application/json": [".json", ".lottie"],
-	"model/gltf+json": [".gltf"],
-	"model/gltf-binary": [".glb"],
-	"model/obj": [".obj"],
-	"model/stl": [".stl"],
-	"text/srt": [".srt"],
-};
-
 function resolveDataType(
 	contentType: string,
 	filename: string,

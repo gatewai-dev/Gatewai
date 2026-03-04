@@ -773,10 +773,11 @@ const CropNodeComponent = memo((props: NodeProps) => {
 				type,
 				startX: e.clientX,
 				startY: e.clientY,
-				startCrop: { ...crop },
+				startCrop: { ...(latestCropRef.current ?? crop) }, // use ref
 			});
 		},
-		[crop],
+		// remove `crop` from deps — read from ref instead
+		[latestCropRef],
 	);
 
 	useEffect(() => {
@@ -860,16 +861,19 @@ const CropNodeComponent = memo((props: NodeProps) => {
 	const showImage = isImage && imageUrl;
 	const showSVG = isSVG && imageUrl;
 
-	const videoOverlay = showMedia ? (
-		<CropOverlay
-			crop={crop}
-			svgSize={svgSize}
-			isDragging={drag !== null}
-			drag={drag}
-			naturalSize={sourceSize}
-			onStartDrag={startDrag}
-		/>
-	) : undefined;
+	const videoOverlay = useMemo(() => {
+		if (!showMedia) return undefined;
+		return (
+			<CropOverlay
+				crop={crop}
+				svgSize={svgSize}
+				isDragging={drag !== null}
+				drag={drag}
+				naturalSize={sourceSize}
+				onStartDrag={startDrag}
+			/>
+		);
+	}, [showMedia, crop, svgSize, drag, sourceSize, startDrag]);
 
 	return (
 		<BaseNode selected={props.selected} id={props.id} dragging={props.dragging}>
