@@ -35,7 +35,7 @@ export async function getMediaDuration(
 	}
 
 	const tempFile = path.join(tempDir, `temp_media_${generateId()}${ext}`);
-	console.log({ tempFile });
+
 	try {
 		await fs.writeFile(tempFile, buffer);
 

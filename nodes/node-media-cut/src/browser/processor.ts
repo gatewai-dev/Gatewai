@@ -41,7 +41,7 @@ export class MediaCutBrowserProcessor implements IBrowserProcessor {
 		}
 
 		const inputMedia = connectedInput.outputItem.data as VirtualMediaData;
-		console.log({ inputMedia });
+
 		const { startSec, endSec } = MediaCutConfigSchema.parse(node.config);
 
 		const currentMeta = getActiveMediaMetadata(inputMedia);

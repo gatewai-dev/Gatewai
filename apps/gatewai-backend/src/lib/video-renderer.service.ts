@@ -58,7 +58,7 @@ export class VideoRendererService implements IVideoRendererService {
 		logger.info(
 			`[VideoRenderer] Starting render: ${options.compositionId} (${options.width}x${options.height} @ ${options.fps}fps)`,
 		);
-		console.log({ options });
+
 		// Select the composition — this opens a headless browser to evaluate it
 		const composition = await selectComposition({
 			serveUrl,

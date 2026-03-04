@@ -1,4 +1,5 @@
 import type {
+	FileData,
 	VideoMetadata,
 	VideoOperation,
 	VirtualMediaData,
@@ -10,7 +11,7 @@ import { DEFAULT_DURATION_MS } from "../rendering-defaults.js";
  * Used by Import, VideoGen, and Text nodes to wrap concrete content.
  */
 export function createVirtualMedia(
-	source: any,
+	source: VirtualMediaData | FileData,
 	type: "Audio" | "Image" | "Video" | "SVG" | "Caption" | "Text" = "Video",
 ): VirtualMediaData {
 	// If it's already a VirtualMediaData, return it
