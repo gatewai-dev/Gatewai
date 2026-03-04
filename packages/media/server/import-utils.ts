@@ -1,7 +1,7 @@
 import { ENV_CONFIG, extractSvgDimensions, generateId } from "@gatewai/core";
 import { container, TOKENS } from "@gatewai/core/di";
 import type { StorageService } from "@gatewai/core/storage";
-import type { MediaService, NodeResult } from "@gatewai/core/types";
+import type { MediaService } from "@gatewai/core/types";
 import { type DataType, prisma } from "@gatewai/db";
 import { createVirtualMedia } from "@gatewai/remotion-compositions/server";
 import { fileTypeFromBuffer } from "file-type";
@@ -208,8 +208,6 @@ export async function uploadToImportNode({
 				},
 			});
 
-			// Re-fetch result inside the transaction to avoid a lost-update race
-			// if another request appended an output between our initial read and now.
 			const current = await tx.node.findUniqueOrThrow({
 				where: { id: nodeId },
 				select: { result: true },
