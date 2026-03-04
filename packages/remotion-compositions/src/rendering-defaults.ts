@@ -32,9 +32,3 @@ export const CAPTION_LAYER_DEFAULTS: Partial<ExtendedLayer> = {
 	padding: 0,
 	lineHeight: 1.2,
 };
-
-/** Default properties for Lottie layers. */
-export const LOTTIE_LAYER_DEFAULTS: Partial<ExtendedLayer> = {
-	lottieLoop: true,
-	speed: 1,
-};

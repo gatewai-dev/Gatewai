@@ -11,7 +11,6 @@ import {
 	createVirtualMedia,
 	DEFAULT_DURATION_MS,
 	getActiveMediaMetadata,
-	LOTTIE_LAYER_DEFAULTS,
 	TEXT_LAYER_DEFAULTS,
 } from "@gatewai/remotion-compositions";
 import { resolveMediaSourceUrlBrowser } from "@gatewai/remotion-compositions/browser";
@@ -37,7 +36,7 @@ function buildExtendedLayer(
 	let virtualMedia: VirtualMediaData | undefined;
 	let text: string | undefined;
 
-	if (itemType === "Video" || itemType === "Audio" || itemType === "Lottie") {
+	if (itemType === "Video" || itemType === "Audio") {
 		// Already VirtualMediaData
 		virtualMedia = item.data as VirtualMediaData;
 	} else if (
@@ -62,12 +61,10 @@ function buildExtendedLayer(
 			? TEXT_LAYER_DEFAULTS
 			: itemType === "Caption"
 				? CAPTION_LAYER_DEFAULTS
-				: itemType === "Lottie"
-					? LOTTIE_LAYER_DEFAULTS
-					: {};
+				: {};
 
 	// Create the result by merging:
-	// 1. Per-type defaults (Text/Caption/Lottie)
+	// 1. Per-type defaults (Text/Caption/)
 	// 2. Base fields (coordinates, ID, etc.)
 	// 3. Layer config (only non-undefined values)
 	// We do this to ensure defaults are NOT overwritten by 'undefined' in the 'layer' object.
@@ -120,9 +117,6 @@ function buildExtendedLayer(
 		"trimEnd",
 		"speed",
 		"filters",
-		"lottieLoop",
-		"lottieFrameRate",
-		"lottieDurationMs",
 		"captionPreset",
 		"useRoundedTextBox",
 	];
@@ -162,11 +156,7 @@ export class RemotionWebProcessorService {
 				if (!input?.outputItem) continue;
 
 				const item = input.outputItem;
-				if (
-					item.type === "Video" ||
-					item.type === "Audio" ||
-					item.type === "Lottie"
-				) {
+				if (item.type === "Video" || item.type === "Audio") {
 					const promise = this.getMediaDurationAsSec(
 						item.data as VirtualMediaData,
 						item.type,
@@ -227,11 +217,7 @@ export class RemotionWebProcessorService {
 					volume: itemType === "Video" || itemType === "Audio" ? 1 : undefined,
 				};
 
-				if (
-					itemType === "Video" ||
-					itemType === "Audio" ||
-					itemType === "Lottie"
-				) {
+				if (itemType === "Video" || itemType === "Audio") {
 					const promise = this.getMediaDurationAsSec(
 						item.data as VirtualMediaData,
 						itemType,
@@ -303,7 +289,7 @@ export class RemotionWebProcessorService {
 
 	private async getMediaDurationAsSec(
 		data: VirtualMediaData,
-		type: "Video" | "Audio" | "Lottie",
+		type: "Video" | "Audio",
 	): Promise<number> {
 		// Try to read duration from VirtualMediaData metadata first
 		const meta = getActiveMediaMetadata(data);
@@ -337,7 +323,7 @@ export class RemotionWebProcessorService {
 			});
 		}
 
-		// Video / Lottie — probe as video element
+		// Video — probe as video element
 		return new Promise((resolve) => {
 			const el = document.createElement("video");
 			el.preload = "metadata";

@@ -17,7 +17,7 @@ export interface SceneProps {
 	containerHeight?: number;
 	src?: string;
 	isAudio?: boolean;
-	type?: "Video" | "Audio" | "Image" | "SVG" | "Text" | "Lottie" | string;
+	type?: "Video" | "Audio" | "Image" | "SVG" | "Text" | string;
 	data?: unknown;
 	virtualMedia?: VirtualMediaData;
 	durationInMS?: number;

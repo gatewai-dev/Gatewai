@@ -49,8 +49,6 @@ export class VideoCompositorBrowserProcessor implements IBrowserProcessor {
 			} else if (item.type === "Text") {
 				sourceText = (item.data as string) || "";
 				childVV = createVirtualMedia(item.data, "Text");
-			} else if (item.type === "Lottie") {
-				childVV = createVirtualMedia(item.data, item.type);
 			} else if (item.type === "Caption") {
 				childVV = createVirtualMedia(item.data, "Caption");
 			} else {
@@ -107,9 +105,6 @@ export class VideoCompositorBrowserProcessor implements IBrowserProcessor {
 					autoDimensions: saved.autoDimensions,
 					animations: saved.animations,
 					speed: saved.speed,
-					lottieLoop: saved.lottieLoop,
-					lottieFrameRate: saved.lottieFrameRate,
-					lottieDurationMs: saved.lottieDurationMs,
 					captionPreset: saved.captionPreset,
 					useRoundedTextBox: saved.useRoundedTextBox,
 				},

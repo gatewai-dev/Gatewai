@@ -47,13 +47,10 @@ export class ImportProcessor implements NodeProcessor {
 						type: m.type as any,
 						outputHandleId: outputHandle.id,
 						data:
-							m.type === "Video" ||
-							m.type === "Audio" ||
-							m.type === "Lottie" ||
-							m.type === "Caption"
+							m.type === "Video" || m.type === "Audio" || m.type === "Caption"
 								? createVirtualMedia(
 										m.data,
-										m.type as "Video" | "Audio" | "Lottie" | "Caption",
+										m.type as "Video" | "Audio" | "Caption",
 									)
 								: m.data,
 					})),

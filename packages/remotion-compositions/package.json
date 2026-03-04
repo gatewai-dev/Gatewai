@@ -47,10 +47,7 @@
 	},
 	"peerDependencies": {
 		"@remotion/media": "*",
-		"lottie-web": "*",
 		"zod": "^3.23.8",
-		"@remotion/lottie": "*",
-		"lottie-react": "*",
 		"@remotion/captions": "*",
 		"@remotion/web-renderer": "*",
 		"@remotion/rounded-text-box": "*",

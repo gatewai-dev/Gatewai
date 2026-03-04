@@ -9,7 +9,6 @@ import {
 	FormLabel,
 	FormMessage,
 	SelectField,
-	SliderField,
 	Switch,
 } from "@gatewai/ui-kit";
 import { zodResolver } from "@hookform/resolvers/zod";
@@ -31,8 +30,8 @@ const SvgNodeConfigComponent = memo(({ node }: { node: NodeEntityType }) => {
 		defaultValues: {
 			model: nodeConfig?.model,
 			autoDimensions: nodeConfig?.autoDimensions ?? true,
-			width: nodeConfig?.width ?? 1024,
-			height: nodeConfig?.height ?? 1024,
+			width: nodeConfig?.width ?? 1080,
+			height: nodeConfig?.height ?? 1080,
 		},
 	});
 
@@ -44,8 +43,8 @@ const SvgNodeConfigComponent = memo(({ node }: { node: NodeEntityType }) => {
 			form.reset({
 				model: config.model,
 				autoDimensions: config.autoDimensions ?? true,
-				width: config.width ?? 1024,
-				height: config.height ?? 1024,
+				width: config.width ?? 1080,
+				height: config.height ?? 1080,
 			});
 		}
 	}, [node.config, form]);

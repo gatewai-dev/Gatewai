@@ -38,7 +38,6 @@
 	},
 	"devDependencies": {
 		"@gatewai/tsconfig": "workspace:*",
-		"@types/adm-zip": "^0.5.7",
 		"@types/node": "^24.0.4",
 		"@types/sharp": "^0.31.1",
 		"pixi-filters": "^5.3.0",
@@ -52,7 +51,6 @@
 		"@pixi/node": "^7.3.0",
 		"@pixi/webworker": "^7.3.0",
 		"@xyflow/react": "^12.8.4",
-		"adm-zip": "^0.5.16",
 		"canvas": "^3.2.0",
 		"generic-pool": "^3.9.0",
 		"p-limit": "^7.2.0",

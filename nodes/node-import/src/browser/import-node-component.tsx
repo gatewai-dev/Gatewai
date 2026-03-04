@@ -41,25 +41,19 @@ const ImportNodeComponent = memo((props: NodeProps) => {
 					? "video"
 					: item?.type === "Audio"
 						? "audio"
-						: item?.type === "Lottie"
-							? "lottie"
-							: item?.type === "Caption"
-								? "caption"
-								: existingMimeType === "image/svg+xml"
-									? "svg"
-									: existingMimeType?.startsWith("image/")
-										? "image"
-										: existingMimeType?.startsWith("video/")
-											? "video"
-											: existingMimeType?.startsWith("audio/")
-												? "audio"
-												: existingMimeType === "application/json"
-													? "lottie"
-													: existingMimeType === "text/srt"
-														? "caption"
-														: null;
-
-	const isLottie = existingType === "lottie";
+						: item?.type === "Caption"
+							? "caption"
+							: existingMimeType === "image/svg+xml"
+								? "svg"
+								: existingMimeType?.startsWith("image/")
+									? "image"
+									: existingMimeType?.startsWith("video/")
+										? "video"
+										: existingMimeType?.startsWith("audio/")
+											? "audio"
+											: existingMimeType === "text/srt"
+												? "caption"
+												: null;
 
 	const accept = {
 		"image/jpeg": [".jpg", ".jpeg"],
@@ -74,15 +68,13 @@ const ImportNodeComponent = memo((props: NodeProps) => {
 		"audio/ogg": [".ogg"],
 		"audio/aac": [".aac"],
 		"audio/flac": [".flac"],
-		"application/json": [".json", ".lottie"],
 		"text/srt": [".srt"],
 	};
 
 	const getFilteredAccept = (
-		type: "image" | "video" | "audio" | "lottie" | "svg" | "caption" | null,
+		type: "image" | "video" | "audio" | "svg" | "caption" | null,
 	) => {
 		if (!type) return Object.keys(accept);
-		if (type === "lottie") return ["application/json", ".json", ".lottie"];
 		if (type === "svg") return ["image/svg+xml", ".svg"];
 		if (type === "caption") return ["text/srt", ".srt"];
 		const keys = Object.keys(accept);
@@ -100,7 +92,7 @@ const ImportNodeComponent = memo((props: NodeProps) => {
 			? `Upload another ${displayType}`
 			: "Click to upload a file";
 	const dropzoneLabel =
-		"Click or drag & drop an image, SVG, video, audio, Lottie, or SRT file here";
+		"Click or drag & drop an image, SVG, video, audio, or SRT file here";
 
 	const onUploadSuccess = (uploadResult: UploadFileNodeAssetRPC) => {
 		if (Object.hasOwn(uploadResult, "error")) {
@@ -150,16 +142,6 @@ const ImportNodeComponent = memo((props: NodeProps) => {
 						label={buttonLabel}
 						nodeId={props.id}
 					/>
-				)}
-
-				{isLottie && (
-					<div className="flex items-center gap-1 px-2 py-1 mb-1 rounded text-xs text-amber-400/80 bg-amber-400/10">
-						<span>⚠</span>
-						<span>
-							Lottie support is not complete. Expect issues with some Lottie
-							features.
-						</span>
-					</div>
 				)}
 			</div>
 		</BaseNode>

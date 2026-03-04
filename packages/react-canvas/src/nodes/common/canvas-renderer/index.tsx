@@ -57,16 +57,16 @@ function useDrawToCanvas(
 					let bitmap: ImageBitmap;
 					if (isSvg || !img.naturalWidth || !img.naturalHeight) {
 						let resizeWidth =
-							width && width > 0 ? width : img.naturalWidth || 1024;
+							width && width > 0 ? width : img.naturalWidth || 1080;
 						let resizeHeight =
-							height && height > 0 ? height : img.naturalHeight || 1024;
+							height && height > 0 ? height : img.naturalHeight || 1080;
 
 						// Use ratio if possible
 						if (resizeWidth && resizeHeight) {
-							const ratio = 1024 / Math.min(resizeWidth, resizeHeight);
+							const ratio = 1080 / Math.min(resizeWidth, resizeHeight);
 							if (ratio > 1) {
-								resizeWidth = Math.max(1024, Math.round(resizeWidth * ratio));
-								resizeHeight = Math.max(1024, Math.round(resizeHeight * ratio));
+								resizeWidth = Math.max(1080, Math.round(resizeWidth * ratio));
+								resizeHeight = Math.max(1080, Math.round(resizeHeight * ratio));
 							}
 						}
 

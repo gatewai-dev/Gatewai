@@ -15,8 +15,8 @@ export const SvgNodeConfigSchema = z
 	.object({
 		model: z.enum(SVG_NODE_MODELS),
 		autoDimensions: z.boolean().default(true),
-		width: z.number().min(1).max(4096).default(1024),
-		height: z.number().min(1).max(4096).default(1024),
+		width: z.number().min(1).max(4096).default(1080),
+		height: z.number().min(1).max(4096).default(1080),
 	})
 	.strict();
 

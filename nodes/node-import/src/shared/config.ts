@@ -16,12 +16,6 @@ export const ImportResultSchema = z.union([
 		createOutputItemSchema(z.literal("Audio"), FileDataSchema),
 	),
 	MultiOutputGenericSchema(
-		createOutputItemSchema(z.literal("Lottie"), FileDataSchema),
-	),
-	MultiOutputGenericSchema(
-		createOutputItemSchema(z.literal("Json"), FileDataSchema),
-	),
-	MultiOutputGenericSchema(
 		createOutputItemSchema(z.literal("SVG"), FileDataSchema),
 	),
 	MultiOutputGenericSchema(

@@ -300,7 +300,6 @@ export function useNodePreview(nodeId: string) {
 			if (
 				outputItem.type === "Video" ||
 				outputItem.type === "Audio" ||
-				outputItem.type === "Lottie" ||
 				(outputItem.data &&
 					typeof outputItem.data === "object" &&
 					"operation" in outputItem.data)

@@ -9,7 +9,6 @@ export const DATA_TYPE_EXTENSIONS: Record<DataType, string> = {
 	Number: "txt",
 	Boolean: "txt",
 	SVG: "svg",
-	Lottie: "json",
 	Json: "json",
 	Caption: "srt",
 };
@@ -30,7 +29,6 @@ export const MIME_TYPES: Record<string, string> = {
 	ogg: "audio/ogg",
 	pdf: "application/pdf",
 	json: "application/json",
-	lottie: "application/json",
 	txt: "text/plain",
 	srt: "text/srt",
 	aac: "audio/aac",

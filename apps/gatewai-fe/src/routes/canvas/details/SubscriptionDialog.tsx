@@ -28,7 +28,7 @@ export function SubscriptionDialog({
 }: SubscriptionDialogProps) {
 	const { data: balance, isLoading: balanceLoading } = useGetBalanceQuery(
 		undefined,
-		{ pollingInterval: 30_000 },
+		{ pollingInterval: 90_000 },
 	);
 	const { data: plans = [], isLoading: plansLoading } = useGetPlansQuery();
 	const [loadingPlanId, setLoadingPlanId] = useState<string | null>(null);

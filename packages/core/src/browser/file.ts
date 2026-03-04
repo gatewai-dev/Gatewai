@@ -51,9 +51,6 @@ export function getDataTypeFromMime(mimeType: string) {
 	if (mimeType.startsWith("image/")) return "Image";
 	if (mimeType.startsWith("video/")) return "Video";
 	if (mimeType.startsWith("audio/")) return "Audio";
-	if (mimeType === "application/json+dotlottie") return "Lottie";
-	if (mimeType === "application/json") return "Json";
-	if (mimeType.includes("zip+dotlottie")) return "Lottie";
 	if (mimeType === "text/srt" || mimeType === "application/x-subrip")
 		return "Caption";
 	if (mimeType === "text/plain") return "Text";

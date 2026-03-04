@@ -4,7 +4,6 @@ import type { StorageService } from "@gatewai/core/storage";
 import type { MediaService, NodeResult } from "@gatewai/core/types";
 import { type DataType, prisma } from "@gatewai/db";
 import { createVirtualMedia } from "@gatewai/remotion-compositions/server";
-import AdmZip from "adm-zip";
 import { fileTypeFromBuffer } from "file-type";
 import { getMediaDuration, getVideoMetadata } from "./utils/index.js";
 
@@ -17,53 +16,8 @@ interface UploadOptions {
 
 type SupportedDataType = Extract<
 	DataType,
-	"Image" | "Video" | "Audio" | "Lottie" | "Json" | "SVG" | "Caption"
+	"Image" | "Video" | "Audio" | "SVG" | "Caption"
 >;
-
-function isValidLottieJson(json: unknown): json is {
-	w: number;
-	h: number;
-	fr?: number;
-	ip?: number;
-	op?: number;
-	layers?: unknown[];
-	assets?: unknown[];
-} {
-	if (!json || typeof json !== "object") return false;
-	const obj = json as Record<string, unknown>;
-	return (
-		typeof obj.w === "number" &&
-		typeof obj.h === "number" &&
-		obj.w > 0 &&
-		obj.h > 0 &&
-		(Array.isArray(obj.layers) || Array.isArray(obj.assets))
-	);
-}
-
-function extractLottieMetadata(buffer: Buffer): {
-	width: number;
-	height: number;
-	durationInSec: number | null;
-	fps: number | null;
-} | null {
-	try {
-		const str = buffer.toString("utf-8");
-		const json = JSON.parse(str);
-		if (!isValidLottieJson(json)) return null;
-
-		const width = json.w;
-		const height = json.h;
-		const fps = json.fr ?? 30;
-		const ip = json.ip ?? 0;
-		const op = json.op ?? 0;
-
-		const durationInSec = op > ip ? (op - ip) / fps : null;
-
-		return { width, height, durationInSec, fps };
-	} catch {
-		return null;
-	}
-}
 
 function extractCaptionDuration(buffer: Buffer): number | null {
 	try {
@@ -90,32 +44,11 @@ function extractCaptionDuration(buffer: Buffer): number | null {
 function resolveDataType(
 	contentType: string,
 	filename: string,
-	buffer?: Buffer,
 ): SupportedDataType {
 	if (contentType === "image/svg+xml") return "SVG";
 	if (contentType.startsWith("image/")) return "Image";
 	if (contentType.startsWith("video/")) return "Video";
 	if (contentType.startsWith("audio/")) return "Audio";
-
-	const isJsonContent =
-		contentType === "application/json" || contentType === "text/plain";
-	const isLottieExtension = filename.toLowerCase().endsWith(".lottie");
-
-	if (isLottieExtension) {
-		return "Lottie";
-	}
-
-	if (isJsonContent && buffer) {
-		const lottieMeta = extractLottieMetadata(buffer);
-		if (lottieMeta) {
-			return "Lottie";
-		}
-		return "Json";
-	}
-
-	if (isJsonContent) {
-		return "Json";
-	}
 
 	const ext = filename.toLowerCase().split(".").pop();
 	if (ext === "srt") {
@@ -132,9 +65,9 @@ function resolveDataType(
  * entry to the node's result.
  *
  * Ordering guarantees:
- *  1. Storage upload happens first — no DB rows are written if this fails.
- *  2. FileAsset creation and node update are wrapped in a transaction —
- *     failure leaves no orphaned asset records.
+ * 1. Storage upload happens first — no DB rows are written if this fails.
+ * 2. FileAsset creation and node update are wrapped in a transaction —
+ * failure leaves no orphaned asset records.
  */
 export async function uploadToImportNode({
 	nodeId,
@@ -146,33 +79,6 @@ export async function uploadToImportNode({
 		throw new Error("Upload buffer must not be empty");
 	}
 
-	// ── 0. Handle DotLottie extraction ────────────────────────────────────────
-	if (filename.toLowerCase().endsWith(".lottie")) {
-		try {
-			const zip = new AdmZip(buffer);
-			const manifestEntry = zip.getEntry("manifest.json");
-			if (manifestEntry) {
-				const manifest = JSON.parse(manifestEntry.getData().toString("utf-8"));
-				const animationId = manifest.animations?.[0]?.id;
-				if (animationId) {
-					// Some .lottie files might not have the folder prefix if they are simple
-					let animationEntry = zip.getEntry(`animations/${animationId}.json`);
-					if (!animationEntry) {
-						animationEntry = zip.getEntry(`${animationId}.json`);
-					}
-
-					if (animationEntry) {
-						buffer = animationEntry.getData();
-						filename = `${filename.replace(/\.lottie$/i, "")}.json`;
-						mimeType = "application/json";
-					}
-				}
-			}
-		} catch (error) {
-			console.error("Failed to extract DotLottie:", error);
-		}
-	}
-
 	// ── 1. Resolve content type ───────────────────────────────────────────────
 	// Prefer the caller-supplied MIME type; fall back to magic-byte detection.
 	const finalContentType: string =
@@ -181,7 +87,7 @@ export async function uploadToImportNode({
 		"application/octet-stream";
 
 	// Validate early so we don't pay for storage + DB work on unsupported types.
-	const dataType = resolveDataType(finalContentType, filename, buffer);
+	const dataType = resolveDataType(finalContentType, filename);
 
 	// ── 2. Fetch node (fail fast if missing) ─────────────────────────────────
 	const node = await prisma.node.findUniqueOrThrow({
@@ -236,14 +142,6 @@ export async function uploadToImportNode({
 		if (durationInSec == null || durationInSec === 0) {
 			throw new Error("Failed to extract audio duration");
 		}
-	} else if (dataType === "Lottie") {
-		const lottieMeta = extractLottieMetadata(buffer);
-		if (lottieMeta) {
-			width = lottieMeta.width;
-			height = lottieMeta.height;
-			durationInSec = lottieMeta.durationInSec;
-			fps = lottieMeta.fps;
-		}
 	} else if (dataType === "Caption") {
 		const captionDuration = extractCaptionDuration(buffer);
 		if (captionDuration) {
@@ -256,25 +154,27 @@ export async function uploadToImportNode({
 			const h = dim?.h || 0;
 
 			if (w === 0 || h === 0) {
-				width = 1024;
-				height = 1024;
+				width = 1080;
+				height = 1080;
 			} else {
 				const aspectRatio = w / h;
 				if (w < h) {
-					width = 1024;
-					height = Math.round(1024 / aspectRatio);
+					width = 1080;
+					height = Math.round(1080 / aspectRatio);
 				} else {
-					height = 1024;
-					width = Math.round(1024 * aspectRatio);
+					height = 1080;
+					width = Math.round(1080 * aspectRatio);
 				}
 			}
 		} catch (error) {
 			console.error("Failed to extract SVG dimensions:", error);
 			// Default fallback if parsing fails completely
-			width = 1024;
-			height = 1024;
+			width = 1080;
+			height = 1080;
 		}
 	}
+
+	// ── 4. Upload to Storage ──────────────────────────────────────────────────
 	const key = `assets/${generateId()}-${filename}`;
 	const storage = container.get<StorageService>(TOKENS.STORAGE);
 
@@ -325,9 +225,7 @@ export async function uploadToImportNode({
 					{
 						outputHandleId: outputHandle.id,
 						data:
-							dataType === "Video" ||
-							dataType === "Audio" ||
-							dataType === "Lottie"
+							dataType === "Video" || dataType === "Audio"
 								? createVirtualMedia({ entity: asset }, dataType)
 								: { entity: asset },
 						type: dataType,

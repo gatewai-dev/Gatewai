@@ -8,8 +8,6 @@ export const DataTypes = [
 	"Video",
 	"Audio",
 	"SVG",
-	"Lottie",
-	"Json",
 	"Caption",
 ] as const;
 

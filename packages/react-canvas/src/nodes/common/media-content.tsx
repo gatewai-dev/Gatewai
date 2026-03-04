@@ -24,11 +24,7 @@ function MediaContent({ node }: { node: NodeEntityType }) {
 
 	const assetUrl = useMemo(() => {
 		if (!outputItem?.data) return null;
-		if (
-			outputItem.type === "Video" ||
-			outputItem.type === "Audio" ||
-			outputItem.type === "Lottie"
-		) {
+		if (outputItem.type === "Video" || outputItem.type === "Audio") {
 			return resolveMediaSourceUrlBrowser(outputItem.data);
 		}
 		const fileData = outputItem.data as FileData;
@@ -44,24 +40,12 @@ function MediaContent({ node }: { node: NodeEntityType }) {
 	const isSVG = isActualSVG;
 	const isVideo = outputItem?.type === "Video";
 	const isAudio = outputItem?.type === "Audio";
-	const isLottie = outputItem?.type === "Lottie";
-	const isJson = outputItem?.type === "Json";
 	const isText = outputItem?.type === "Text";
 	const isOther =
-		!isImage &&
-		!isVideo &&
-		!isAudio &&
-		!isLottie &&
-		!isJson &&
-		!isText &&
-		!isSVG;
+		!isImage && !isVideo && !isAudio && !isJson && !isText && !isSVG;
 
 	const activeMeta = useMemo(() => {
-		if (
-			outputItem?.type === "Video" ||
-			outputItem?.type === "Audio" ||
-			outputItem?.type === "Lottie"
-		) {
+		if (outputItem?.type === "Video" || outputItem?.type === "Audio") {
 			return getActiveMediaMetadata(outputItem.data);
 		}
 		return null;
@@ -69,11 +53,7 @@ function MediaContent({ node }: { node: NodeEntityType }) {
 
 	const durationMs = useMemo(() => {
 		if (!outputItem?.data) return undefined;
-		if (
-			outputItem.type === "Video" ||
-			outputItem.type === "Audio" ||
-			outputItem.type === "Lottie"
-		) {
+		if (outputItem.type === "Video" || outputItem.type === "Audio") {
 			return activeMeta?.durationMs;
 		}
 		const fileData = outputItem.data as FileData;
@@ -118,7 +98,7 @@ function MediaContent({ node }: { node: NodeEntityType }) {
 			)}
 			{isSVG && assetUrl && <SVGRenderer imageUrl={assetUrl} />}
 
-			{(isVideo || isLottie) && (
+			{isVideo && (
 				<VideoRenderer
 					virtualMedia={outputItem.data}
 					durationMs={durationMs ?? undefined}

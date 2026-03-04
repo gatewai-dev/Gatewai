@@ -16,15 +16,7 @@ export default defineMetadata({
 		inputs: [],
 		outputs: [
 			{
-				dataTypes: [
-					"Audio",
-					"Image",
-					"Video",
-					"Lottie",
-					"Json",
-					"SVG",
-					"Caption",
-				],
+				dataTypes: ["Audio", "Image", "Video", "SVG", "Caption"],
 				label: "Result",
 				order: 0,
 			},
