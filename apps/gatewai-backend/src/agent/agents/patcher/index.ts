@@ -15,6 +15,12 @@ import {
 	type AVAILABLE_AGENT_MODELS,
 	getAgentModel,
 } from "../../agent-model.js";
+import {
+	PATCHER_HELPER_API_DOCS,
+	PATCHER_HELPERS_CODE,
+} from "./patcher-helpers.js";
+
+// ─── Types ────────────────────────────────────────────────────────────────────
 
 interface PatcherContext {
 	canvasId: string;
@@ -25,11 +31,15 @@ interface PatcherContext {
 	templates: NodeTemplate[];
 }
 
+// ─── Constants ────────────────────────────────────────────────────────────────
+
 /** Maximum wall-clock time (ms) the QuickJS VM is allowed to run per invocation. */
 const VM_EXECUTION_TIMEOUT_MS = 10_000;
 
 /** Maximum number of code-execution retries the agent is guided to attempt. */
 const MAX_RETRIES = 3;
+
+// ─── Context Store ────────────────────────────────────────────────────────────
 
 /**
  * Keyed by `${canvasId}:${agentSessionId}` so concurrent agent runs for
@@ -56,8 +66,11 @@ function clearContext(canvasId: string, agentSessionId: string): void {
 	contextStore.delete(contextKey(canvasId, agentSessionId));
 }
 
+// ─── VM Execution ─────────────────────────────────────────────────────────────
+
 /**
- * Run `code` inside a QuickJS sandbox with injected canvas state.
+ * Run `code` inside a QuickJS sandbox with injected canvas state and the
+ * patcher helper library pre-loaded as a preamble.
  * Returns `{ nodes, edges, handles }` on success, or throws on error.
  */
 async function runInVM(
@@ -65,6 +78,9 @@ async function runInVM(
 	ctx: PatcherContext,
 ): Promise<{ nodes: unknown[]; edges: unknown[]; handles: unknown[] }> {
 	const result = await runInSandbox<Record<string, unknown>>({
+		// Helpers are injected first so every helper function is in scope
+		// when the agent's code runs — identical pattern to SVG preamble.
+		preamble: PATCHER_HELPERS_CODE,
 		code,
 		globals: {
 			nodes: ctx.nodes,
@@ -114,8 +130,6 @@ export function createPatcherAgent(
 		name: "prepare_canvas",
 		description:
 			"Fetch the current canvas state and available node templates. Call this FIRST before execute_canvas_code.",
-		// No ID params — canvasId and agentSessionId are captured from the closure.
-		// This prevents the model from ever supplying wrong/hallucinated IDs.
 		parameters: z.object({}),
 		async execute() {
 			try {
@@ -167,25 +181,26 @@ export function createPatcherAgent(
 		name: "execute_canvas_code",
 		description: `Execute JavaScript code to transform the canvas state inside a sandboxed VM.
 
-Available globals:
-- nodes        - Array of current Node objects (mutable)
-- edges        - Array of current Edge objects (mutable)
-- handles      - Array of current Handle objects (mutable)
-- templates    - Array of NodeTemplate objects (read-only)
-- generateId() - Returns a "temp-<uuid>" string; use for ALL new IDs
-- console.log  - For debugging
+## Available globals (direct access — no imports)
+- \`nodes\`        Array of current Node objects (mutable)
+- \`edges\`        Array of current Edge objects (mutable)
+- \`handles\`      Array of current Handle objects (mutable)
+- \`templates\`    Array of NodeTemplate objects (read-only)
+- \`generateId()\` Returns a "temp-<uuid>" — use for ALL new IDs
 
-Your code MUST return { nodes, edges, handles }.
+## Helper library (pre-loaded — all functions are already in scope)
+${PATCHER_HELPER_API_DOCS}
 
-RULES (automatic validation failure if violated):
-1. Use generateId() for every new Node, Handle, and Edge ID.
-2. Copy dataTypes, label, type, order, and required EXACTLY from template.templateHandles.
-3. Edges connect an Output handle (sourceHandleId) to an Input handle (targetHandleId).
-4. Each Input handle supports at most ONE incoming edge.
-5. No circular dependencies or self-loops.
-6. Compositor layerUpdates keys MUST be the actual Input Handle ID, not the label.
-7. VideoCompositor has no Output handles.
-8. VideoGen accepts at most 3 image inputs.
+## Required return
+Your code MUST end with: \`return { nodes, edges, handles };\`
+
+## Key rules (validation auto-fails on violation)
+1. Always use helper functions — raw array pushes are for edge cases only.
+2. Edges connect Output → Input handles only.
+3. Each Input handle supports at most ONE incoming edge.
+4. No circular dependencies or self-loops.
+5. Compositor layerUpdates keys MUST be the actual Input Handle ID (use setCompositorLayer).
+6. VideoGen accepts at most 3 image inputs.
 
 If validation fails, read the error carefully and fix only the reported issues.
 You have ${MAX_RETRIES} attempts total.`,
@@ -197,7 +212,6 @@ You have ${MAX_RETRIES} attempts total.`,
 				),
 		}),
 		async execute({ code }) {
-			// canvasId and agentSessionId come from the closure — safe, no parsing needed
 			const ctx = getContext(canvasId, agentSessionId);
 			if (!ctx) {
 				return "Error: Canvas not prepared. Call prepare_canvas first.";
@@ -267,13 +281,14 @@ You have ${MAX_RETRIES} attempts total.`,
 				return [
 					`Code execution failed: ${msg}`,
 					"",
+					"Read the error — it will tell you exactly what is wrong.",
 					"Common causes:",
-					"  • Syntax error — check for missing brackets or semicolons.",
-					"  • Using a handle label as a layerUpdates key — use the handle's ID instead.",
-					"  • Connecting incompatible dataTypes — check source and target handle dataTypes.",
-					"  • Adding an edge to an already-occupied Input handle.",
+					"  • Wrong handle type passed to connectHandles() — check Output vs Input.",
+					"  • Occupied Input handle — use tryConnect() to debug or pick a different target.",
+					"  • Incompatible dataTypes — helper error message lists both sides.",
+					"  • Missing return { nodes, edges, handles } at end of code.",
 					"",
-					"Fix the code and retry (make sure to return { nodes, edges, handles }).",
+					"Fix the code and retry.",
 				].join("\n");
 			}
 		},
@@ -284,7 +299,6 @@ You have ${MAX_RETRIES} attempts total.`,
 		name: "submit_patch",
 		description:
 			"Submit the validated canvas state as a patch for user review. Only call this after execute_canvas_code succeeds.",
-		// No ID params — captured from closure; model cannot supply wrong values
 		parameters: z.object({}),
 		async execute() {
 			const ctx = getContext(canvasId, agentSessionId);
@@ -338,115 +352,90 @@ You have ${MAX_RETRIES} attempts total.`,
 
 ## Workflow (follow exactly in order)
 1. Call \`prepare_canvas\` — no arguments needed.
-2. Analyse the returned state and plan your changes based on the task description.
+2. Analyse the returned canvas state and plan your changes.
 3. Call \`execute_canvas_code\` with your JavaScript.
-4. If validation fails, read the error carefully and fix **only** the reported issues. Retry up to ${MAX_RETRIES} times total.
+4. If validation fails, read the error and fix **only** the reported issues. Retry up to ${MAX_RETRIES} times total.
 5. Once execution succeeds, call \`submit_patch\` — no arguments needed.
+
+## Helper Library
+A set of helper functions is **pre-loaded in the VM** — you do not need to define them.
+Always prefer helpers over raw array manipulation; they encode every hard rule automatically.
+
+${PATCHER_HELPER_API_DOCS}
 
 ## Hard Rules (automatic validation failure if violated)
 | Rule | Detail |
 |---|---|
 | IDs | Always use \`generateId()\`. Never hardcode strings. |
-| Handle type | Input handles → type "Input". Output handles → type "Output". |
-| Data types | Edges only connect handles sharing ≥1 common dataType. |
-| Input occupancy | Each Input handle supports at most ONE incoming edge. Check before adding. |
+| Handle direction | \`connectHandles\` / \`connect\` enforce Output→Input automatically. |
+| Data types | Helpers check compatibility and throw on mismatch. |
+| Input occupancy | Each Input handle supports at most ONE incoming edge. Helpers enforce this. |
 | No cycles | No circular dependency chains. |
-| No self-loops | A node cannot connect to itself. |
-| Compositor config | \`layerUpdates\` keys must be the **Handle ID**, not the handle label. |
+| No self-loops | Helpers throw on same-node connections. |
+| Compositor config | Use \`setCompositorLayer(node.id, inputHandle, config)\` — never set layerUpdates keys manually. |
 | VideoCompositor | Terminal node — has NO Output handles. |
 | VideoGen | At most 3 image reference inputs. |
 
 ## Layout
 - Default node width: 340 px
-- Horizontal spacing: 500 px (position-to-position)
-- Vertical spacing: 400 px
-- Avoid overlapping existing nodes
+- Use \`nextPosition(referenceNodeId, 'right')\` to place nodes beside existing ones.
+- Use \`autoLayout(nodeIds)\` to arrange a batch of new nodes.
+- Avoid overlapping existing nodes.
 
-## How to Create a Node
+## Typical Patterns
+
+### Add a single node and connect it
 \`\`\`javascript
-const nodeId = generateId();
-const template = templates.find(t => t.type === 'Text');
+// Step 1 — inspect what's already on canvas (optional, helpful)
+inspectCanvas();
 
-nodes.push({
-  id: nodeId,
-  name: 'My Node',
-  type: template.type,
-  templateId: template.id,
-  position: { x: 100, y: 100 },
-  width: 340,
-  config: { content: 'Hello' }
+// Step 2 — create the new node
+const { node: textNode, outputHandles } = createNode({
+  type: 'Text',
+  name: 'Intro Text',
+  position: { x: 100, y: 200 },
+  config: { content: 'Hello world' },
 });
 
-template.templateHandles.forEach((th) => {
-  handles.push({
-    id: generateId(),
-    type: th.type,           // 'Input' or 'Output' — copy exactly
-    dataTypes: th.dataTypes, // copy exactly
-    label: th.label,         // copy exactly
-    order: th.order,
-    nodeId: nodeId,
-    required: th.required ?? false,
-    templateHandleId: th.id,
-  });
-});
+// Step 3 — find the existing downstream node and connect
+const downstream = findNodeByName('Video Generator');
+connect(textNode.id, downstream.id); // auto-resolves first Output → first Input
 
 return { nodes, edges, handles };
 \`\`\`
 
-## How to Connect Two Nodes Safely
+### Build a multi-node pipeline from scratch
 \`\`\`javascript
-const sourceHandle = handles.find(h => h.nodeId === sourceNodeId && h.type === 'Output');
-const targetHandle = handles.find(h => h.nodeId === targetNodeId && h.type === 'Input');
+const { node: src, outputHandles: [srcOut] } = createNode({ type: 'ImageSource', name: 'BG Image', position: { x: 100, y: 200 } });
+const { node: gen } = createNode({ type: 'VideoGen', name: 'Generator', position: nextPosition(src.id) });
+const { node: comp, inputHandles: compInputs } = createCompositorNode({
+  type: 'VideoCompositor',
+  name: 'Final',
+  position: nextPosition(gen.id),
+  layers: [{ handleIndex: 0, config: { opacity: 1, blendingMode: 'normal' } }],
+});
 
-if (sourceHandle && targetHandle) {
-  const typesCompatible = sourceHandle.dataTypes.some(dt => targetHandle.dataTypes.includes(dt));
-  const inputFree = !edges.some(e => e.targetHandleId === targetHandle.id);
-
-  if (typesCompatible && inputFree) {
-    edges.push({
-      id: generateId(),
-      source: sourceNodeId,
-      target: targetNodeId,
-      sourceHandleId: sourceHandle.id,
-      targetHandleId: targetHandle.id,
-    });
-  } else {
-    console.log('Skipping edge: incompatible types or occupied input');
-  }
-}
+connect(src.id, gen.id);
+connect(gen.id, comp.id);
 
 return { nodes, edges, handles };
 \`\`\`
 
-## How to Configure a Compositor Node
+### Modify an existing node
 \`\`\`javascript
-const nodeId = generateId();
-const template = templates.find(t => t.type === 'Compositor');
-const inputHandleIds = [];
+const node = findNodeByName('Intro Text');
+updateNodeConfig(node.id, { content: 'Updated copy' });
+return { nodes, edges, handles };
+\`\`\`
 
-nodes.push({
-  id: nodeId,
-  name: 'Combiner',
-  type: template.type,
-  templateId: template.id,
-  position: { x: 800, y: 200 },
-  width: 340,
-  config: { layerUpdates: {} },
-});
+### Remove a node and rewire
+\`\`\`javascript
+const old = findNodeByName('Old Filter');
+const upstream = findNodesByType('ImageSource')[0];
+const downstream = findNodeByName('Compositor');
 
-template.templateHandles.forEach((th) => {
-  const hId = generateId();
-  handles.push({ id: hId, type: th.type, dataTypes: th.dataTypes, label: th.label, order: th.order, nodeId, required: th.required ?? false, templateHandleId: th.id });
-  if (th.type === 'Input') inputHandleIds.push(hId);
-});
-
-// IMPORTANT: keys are Handle IDs, NOT handle labels
-const nodeRef = nodes.find(n => n.id === nodeId);
-nodeRef.config = {
-  layerUpdates: {
-    [inputHandleIds[0]]: { opacity: 1.0, blendingMode: 'normal' },
-  },
-};
+removeNode(old.id); // also removes its edges
+connect(upstream.id, downstream.id);
 
 return { nodes, edges, handles };
 \`\`\`
