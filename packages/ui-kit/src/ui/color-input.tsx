@@ -321,7 +321,7 @@ function ColorPickerBase({
 			const newHsva = parseColorToHsva(result.sRGBHex);
 			handleHsvaChange({ ...newHsva, a: hsva.a });
 		} catch (_e) {
-			console.log("Eyedropper canceled");
+			// User cancelled or error occurred, silently ignore
 		}
 	};
 

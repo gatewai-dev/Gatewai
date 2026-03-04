@@ -1487,7 +1487,7 @@ function useEnsureFontsLoaded(
 		}
 
 		const fonts = fontsToLoad.split(",");
-		console.log("Ensuring custom fonts are loaded:", fonts);
+
 		const handle = delayRender(`Loading custom fonts for: ${fontsToLoad}`);
 		let isCancelled = false;
 

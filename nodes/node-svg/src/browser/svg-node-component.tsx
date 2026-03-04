@@ -13,7 +13,7 @@ import { memo } from "react";
 const SvgNodeComponent = memo(
 	(props: { selected: boolean; id: string; dragging: boolean }) => {
 		const { mediaUrl, node, hasMoreThanOneOutput } = useNodePreview(props.id);
-		console.log({ mediaUrl, node, hasMoreThanOneOutput });
+
 		return (
 			<BaseNode
 				selected={props.selected}

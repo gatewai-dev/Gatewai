@@ -3269,17 +3269,6 @@ export const VideoDesignerEditor: React.FC<VideoDesignerEditorProps> = ({
 	useEffect(() => {
 		const el = containerRef.current;
 		if (!el) return;
-		const handlePlayerDragOver = (e: React.DragEvent<HTMLDivElement>) => {
-			e.preventDefault();
-		};
-		const handlePlayerDrop = (e: React.DragEvent<HTMLDivElement>) => {
-			e.preventDefault();
-			const type = e.dataTransfer.getData("assetType");
-			const id = e.dataTransfer.getData("assetId");
-			// Logic to handle dropping the asset onto the canvas
-			// For example, add a new layer at the drop position
-			console.log(`Dropped asset: Type=${type}, ID=${id}`);
-		};
 		const handleWheel = (e: WheelEvent) => {
 			e.preventDefault();
 			if (e.ctrlKey || e.metaKey) {
