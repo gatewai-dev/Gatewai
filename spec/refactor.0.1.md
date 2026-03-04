@@ -195,7 +195,7 @@ export function CanvasProviders({ children }) {
 | Inline CSS | `routes/home/index.tsx` | Move to CSS modules |
 | Hardcoded polling interval | `user-menu.tsx:22` | Extract to constant |
 | Hardcoded demo credentials | `signin-form.tsx:44` | Remove or document |
-| Multiple icon libraries | Various | Standardize on `react-icons` |
+| Multiple icon libraries | Various | Standardize on `react-icons` by replacing lucide-react ones |
 
 ---
 
