@@ -42,7 +42,7 @@ const VideoCompositorView = memo(
 		};
 
 		const onSave = (config: VideoCompositorNodeConfig) => {
-			onNodeConfigUpdate({ id: node.id, newConfig: config });
+			onNodeConfigUpdate({ id: (node as any).id, newConfig: config });
 			closeAndFocusOnNode();
 		};
 

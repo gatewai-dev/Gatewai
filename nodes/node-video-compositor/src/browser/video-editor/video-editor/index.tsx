@@ -119,6 +119,7 @@ import {
 	Type,
 	Unlink as UnlinkIcon,
 	Video,
+	Volume2,
 	XIcon,
 	Zap,
 	ZoomIn,
@@ -416,8 +417,6 @@ const serializeLayersForSave = (layers: EditorLayer[]) =>
 				| "src"
 				| "text"
 				| "isPlaceholder"
-				| "maxDurationInFrames"
-				| "maxDurationInMS"
 				| "videoNaturalWidth"
 				| "videoNaturalHeight"
 				| "cropTranslatePercentageX"
@@ -429,8 +428,6 @@ const serializeLayersForSave = (layers: EditorLayer[]) =>
 			src,
 			text,
 			isPlaceholder,
-			maxDurationInFrames,
-			maxDurationInMS,
 			videoNaturalWidth,
 			videoNaturalHeight,
 			cropTranslatePercentageX,
@@ -897,7 +894,7 @@ const LottieInspectorSection: React.FC<{
 						const nativeFrames = Math.ceil(
 							(layer.lottieDurationMs! / 1000) * FPS,
 						);
-						update({ durationInFrames: nativeFrames, speed: 1 });
+						update({ durationInMS: nativeFrames, speed: 1 });
 					}}
 				>
 					<RefreshCw className="w-3 h-3 mr-1.5" />
@@ -1058,7 +1055,8 @@ const UnifiedClip: React.FC<{ layer: EditorLayer; isSelected: boolean }> = ({
 	isSelected,
 }) => {
 	const handles = useAppSelector(handleSelectors.selectEntities);
-	const handle = layer.inputHandleId ? handles[layer.inputHandleId] : undefined;
+	const handleId = layer.inputHandleId ?? "";
+	const handle = handleId ? (handles as any)[handleId] : undefined;
 	const name = resolveLayerLabel(handle, layer);
 	const baseConfig = resolveColorConfig(layer);
 
@@ -1421,10 +1419,10 @@ const InteractionOverlay: React.FC = () => {
 					<button
 						key={layer.id}
 						type="button"
-						onKeyDown={(e) => {
+						onKeyDown={(e: React.KeyboardEvent) => {
 							if (e.key === "Enter") setSelectedId(layer.id);
 						}}
-						onMouseDown={(e) => handleMouseDown(e, layer.id)}
+						onMouseDown={(e: React.MouseEvent) => handleMouseDown(e, layer.id)}
 						className={`absolute group outline-none select-none p-0 m-0 border-0 bg-transparent text-left ${
 							selectedId === layer.id ? "z-50" : "z-auto"
 						}`}
@@ -1459,7 +1457,9 @@ const InteractionOverlay: React.FC = () => {
 											className={`absolute bg-white border border-blue-600 rounded-full shadow-sm z-50 transition-transform hover:scale-125 ${
 												pos.length === 1 ? "w-2.5 h-2.5" : "w-3 h-3"
 											} ${posClass} ${cursor}`}
-											onMouseDown={(e) => handleMouseDown(e, layer.id, pos)}
+											onMouseDown={(e: React.MouseEvent) =>
+												handleMouseDown(e, layer.id, pos)
+											}
 										/>
 									))}
 								<div
@@ -1470,7 +1470,9 @@ const InteractionOverlay: React.FC = () => {
 									role="button"
 									tabIndex={-1}
 									className="absolute -top-8 left-1/2 -translate-x-1/2 w-3 h-3 bg-white border border-blue-600 rounded-full shadow-sm cursor-grab active:cursor-grabbing hover:scale-110"
-									onMouseDown={(e) => handleRotateStart(e, layer.id)}
+									onMouseDown={(e: React.MouseEvent) =>
+										handleRotateStart(e, layer.id)
+									}
 								/>
 							</>
 						)}
@@ -1508,6 +1510,14 @@ const Toolbar: React.FC<{
 	const [showCloseDialog, setShowCloseDialog] = useState(false);
 
 	const handlePlayPause = () => {
+		if (playerRef.current) {
+			if (isPlaying) playerRef.current.pause();
+			else playerRef.current.play();
+			setIsPlaying(!isPlaying);
+		}
+	};
+
+	const handlePlayerDragStart = (e: React.DragEvent<HTMLDivElement>) => {
 		if (playerRef.current) {
 			if (isPlaying) playerRef.current.pause();
 			else playerRef.current.play();
@@ -1716,7 +1726,8 @@ const SortableTrackHeader: React.FC<{
 		isDragging,
 	} = useSortable({ id: layer.id });
 	const handles = useAppSelector(handleSelectors.selectEntities);
-	const handle = layer.inputHandleId ? handles[layer.inputHandleId] : undefined;
+	const handleId = layer.inputHandleId ?? "";
+	const handle = handleId ? (handles as any)[handleId] : undefined;
 	const name = resolveLayerLabel(handle, layer);
 	const colorConfig = resolveColorConfig(layer);
 
@@ -2062,7 +2073,7 @@ const TimelinePanel: React.FC = () => {
 					scrollbarWidth: "thin",
 					scrollbarColor: "#333 #0a0a0a",
 				}}
-				onMouseDown={(e) => {
+				onMouseDown={(e: React.MouseEvent) => {
 					if (
 						e.button === 0 &&
 						(e.target as HTMLElement).classList.contains("timeline-bg")
@@ -2072,7 +2083,7 @@ const TimelinePanel: React.FC = () => {
 						setInitialScroll(scrollContainerRef.current?.scrollLeft || 0);
 					}
 				}}
-				onMouseMove={(e) => {
+				onMouseMove={(e: React.MouseEvent) => {
 					if (isPanningTimeline && scrollContainerRef.current) {
 						scrollContainerRef.current.scrollLeft =
 							initialScroll - (e.clientX - dragStartX);
@@ -2227,7 +2238,7 @@ const TimelinePanel: React.FC = () => {
 									>
 										<button
 											type="button"
-											onKeyDown={(e) => {
+											onKeyDown={(e: React.KeyboardEvent) => {
 												if (e.key === "Enter") setSelectedId(layer.id);
 											}}
 											className={`absolute top-1 bottom-1 rounded-md text-left p-0 m-0 border-0 bg-transparent flex items-center overflow-hidden cursor-move outline-none ${
@@ -2241,10 +2252,10 @@ const TimelinePanel: React.FC = () => {
 												),
 												minWidth: "10px",
 											}}
-											onMouseDown={(e) =>
+											onMouseDown={(e: React.MouseEvent) =>
 												handleClipManipulation(e, layer.id, "move")
 											}
-											onClick={(e) => {
+											onClick={(e: React.MouseEvent) => {
 												e.stopPropagation();
 												setSelectedId(layer.id);
 											}}
@@ -2252,7 +2263,7 @@ const TimelinePanel: React.FC = () => {
 											<UnifiedClip layer={layer} isSelected={isSelected} />
 											<div
 												className="absolute right-0 top-0 bottom-0 w-3 cursor-e-resize z-30 group/handle"
-												onMouseDown={(e) =>
+												onMouseDown={(e: React.MouseEvent) =>
 													handleClipManipulation(e, layer.id, "trim")
 												}
 											>
@@ -2441,9 +2452,8 @@ const InspectorPanel: React.FC = () => {
 		);
 	}
 
-	const handle = selectedLayer.inputHandleId
-		? handles[selectedLayer.inputHandleId]
-		: undefined;
+	const targetHandleId = selectedLayer.inputHandleId ?? "";
+	const handle = targetHandleId ? (handles as any)[targetHandleId] : null;
 	const displayName = resolveLayerLabel(handle, selectedLayer);
 	const hasCropDimensions =
 		selectedLayer.type === "Video" &&
@@ -2471,14 +2481,14 @@ const InspectorPanel: React.FC = () => {
 					const meta = getActiveMediaMetadata(
 						initialItem.data as VirtualMediaData,
 					);
-					if (meta?.width) newW = meta.width;
-					if (meta?.height) newH = meta.height;
+					if (meta?.width != null) newW = meta.width;
+					if (meta?.height != null) newH = meta.height;
 				} else if (isFileMedia(initialItem.type)) {
 					const fileData = initialItem.data as FileData;
 					const metaW = fileData.processData?.width ?? fileData.entity?.width;
 					const metaH = fileData.processData?.height ?? fileData.entity?.height;
-					if (metaW) newW = metaW;
-					if (metaH) newH = metaH;
+					if (metaW != null) newW = metaW;
+					if (metaH != null) newH = metaH;
 				}
 			}
 		}
@@ -2676,19 +2686,20 @@ const InspectorPanel: React.FC = () => {
 					{(selectedLayer.type === "Video" ||
 						selectedLayer.type === "Audio") && (
 						<CollapsibleSection title="Audio" icon={Music}>
-							<div className="flex items-center gap-2">
-								<span className="text-[9px] text-gray-500 w-8">Volume</span>
-								<Slider
-									className="flex-1"
-									value={[(selectedLayer.volume ?? 1) * 100]}
-									min={0}
-									max={100}
-									step={1}
-									onValueChange={([v]) => update({ volume: v / 100 })}
-								/>
-								<span className="text-[9px] text-gray-400 w-6 text-right">
-									{Math.round((selectedLayer.volume ?? 1) * 100)}%
-								</span>
+							<div className="space-y-3">
+								<div className="flex items-center gap-2">
+									<Volume2 className="w-4 h-4 text-gray-500 shrink-0" />
+									<Slider
+										value={[selectedLayer.volume ?? 1]}
+										min={0}
+										max={1}
+										step={0.01}
+										onValueChange={([v]) => update({ volume: v })}
+									/>
+									<span className="text-[9px] text-gray-400 w-6 text-right">
+										{Math.round((selectedLayer.volume ?? 1) * 100)}%
+									</span>
+								</div>
 							</div>
 						</CollapsibleSection>
 					)}
@@ -2701,7 +2712,11 @@ const InspectorPanel: React.FC = () => {
 							fill={selectedLayer.fill ?? "#fff"}
 							fontStyle={selectedLayer.fontStyle ?? "normal"}
 							textDecoration={selectedLayer.textDecoration ?? ""}
-							fontWeight={selectedLayer.fontWeight?.toString()}
+							fontWeight={
+								selectedLayer.fontWeight
+									? String(selectedLayer.fontWeight)
+									: "400"
+							}
 							align={selectedLayer.align as any}
 							letterSpacing={selectedLayer.letterSpacing}
 							lineHeight={selectedLayer.lineHeight}
@@ -2822,21 +2837,21 @@ export const VideoDesignerEditor: React.FC<VideoDesignerEditorProps> = ({
 	onClose,
 	onSave,
 }) => {
-	const nodeConfig = node.config as unknown as VideoCompositorNodeConfig;
+	const nodeConfig = node.config;
 	const handles = useAppSelector(handleSelectors.selectEntities);
 
-	const [fps, setFps] = useState(nodeConfig.FPS ?? FPS);
+	const [fps, setFps] = useState(nodeConfig?.FPS ?? FPS);
 	const [backgroundColor, setBackgroundColor] = useState(
-		nodeConfig.backgroundColor ?? "#000000",
+		nodeConfig?.backgroundColor ?? "#000000",
 	);
 	const [layers, setLayers] = useState<EditorLayer[]>([]);
 	const [selectedId, setSelectedId] = useState<string | null>(null);
 	const [isDirty, setIsDirty] = useState(false);
 	const [viewportWidth, setViewportWidth] = useState(
-		roundToEven(nodeConfig.width ?? 1280),
+		roundToEven(nodeConfig?.width ?? 1280),
 	);
 	const [viewportHeight, setViewportHeight] = useState(
-		roundToEven(nodeConfig.height) || 720,
+		roundToEven(nodeConfig?.height) || 720,
 	);
 	const [zoom, setZoom] = useState(0.5);
 	const [pan, setPan] = useState({ x: 0, y: 0 });
@@ -2982,7 +2997,7 @@ export const VideoDesignerEditor: React.FC<VideoDesignerEditorProps> = ({
 
 	const handleSave = () => {
 		onSave({
-			layerUpdates: serializeLayersForSave(layers),
+			layerUpdates: serializeLayersForSave(layers) as any,
 			width: viewportWidth,
 			height: viewportHeight,
 			FPS: fps,
@@ -2997,7 +3012,7 @@ export const VideoDesignerEditor: React.FC<VideoDesignerEditorProps> = ({
 
 	useEffect(() => {
 		const loadInitialLayers = async () => {
-			const layerUpdates = { ...nodeConfig.layerUpdates };
+			const layerUpdates = { ...nodeConfig?.layerUpdates };
 			const loaded: EditorLayer[] = [];
 			const fontPromises: Promise<void>[] = [];
 			const asyncTasks: Promise<void>[] = [];
@@ -3010,7 +3025,8 @@ export const VideoDesignerEditor: React.FC<VideoDesignerEditorProps> = ({
 			initialLayers.forEach((item, id) => {
 				const saved = layerUpdates[id] as EditorLayer | undefined;
 				const isAutoDimensions = saved?.autoDimensions ?? true;
-				const handle = handles[id];
+				const handleId = id ?? "";
+				const handle = (handles as any)[handleId];
 				const name = handle?.label ?? handle?.dataTypes?.[0] ?? id;
 
 				let durationMs = 0;
@@ -3032,15 +3048,15 @@ export const VideoDesignerEditor: React.FC<VideoDesignerEditorProps> = ({
 					virtualMedia = item.data as VirtualMediaData;
 					const metadata = getActiveMediaMetadata(virtualMedia);
 					const cutDurationMs = getEffectiveDurationMs(virtualMedia);
-					durationMs = cutDurationMs ?? metadata.durationMs ?? 0;
+					durationMs = cutDurationMs ?? metadata?.durationMs ?? 0;
 					src = resolveMediaSourceUrlBrowser(virtualMedia);
 					cropRenderProps = computeVideoCropRenderProps(virtualMedia);
 					if (isAutoDimensions) {
-						layerWidth = metadata.width;
-						layerHeight = metadata.height;
+						layerWidth = metadata?.width ?? undefined;
+						layerHeight = metadata?.height ?? undefined;
 					} else {
-						layerWidth = layerWidth ?? metadata.width;
-						layerHeight = layerHeight ?? metadata.height;
+						layerWidth = layerWidth ?? metadata?.width ?? undefined;
+						layerHeight = layerHeight ?? metadata?.height ?? undefined;
 					}
 				} else if (isFileMedia(item.type)) {
 					const fileData = item.data as FileData;
@@ -3294,20 +3310,24 @@ export const VideoDesignerEditor: React.FC<VideoDesignerEditorProps> = ({
 					try {
 						if (layer.type === "Video" && layer.virtualMedia) {
 							const metadata = getActiveMediaMetadata(layer.virtualMedia);
-							if (
-								metadata.width != null &&
-								metadata.height != null &&
-								(layer.width !== metadata.width ||
-									layer.height !== metadata.height)
-							) {
-								updates.set(layer.id, {
-									width: metadata.width,
-									height: metadata.height,
-								});
+							if (metadata) {
+								if (
+									metadata.width != null &&
+									metadata.height != null &&
+									(layer.width !== metadata.width ||
+										layer.height !== metadata.height)
+								) {
+									updates.set(layer.id, {
+										width: metadata.width,
+										height: metadata.height,
+									});
+								}
 							}
 							return;
 						}
-						const url = getAssetUrl(layer.inputHandleId);
+						const url = layer.inputHandleId
+							? getAssetUrl(layer.inputHandleId)
+							: undefined;
 						if (isFileMedia(layer.type) && url) {
 							const img = new Image();
 							img.src = url;
@@ -3354,7 +3374,9 @@ export const VideoDesignerEditor: React.FC<VideoDesignerEditorProps> = ({
 								visibility: "hidden",
 								whiteSpace: "pre",
 							});
-							d.textContent = getTextData(layer.inputHandleId);
+							d.textContent = layer.inputHandleId
+								? getTextData(layer.inputHandleId)
+								: "";
 							document.body.appendChild(d);
 							const newW = d.offsetWidth;
 							const newH = d.offsetHeight;
@@ -3435,6 +3457,17 @@ export const VideoDesignerEditor: React.FC<VideoDesignerEditorProps> = ({
 	useEffect(() => {
 		const el = containerRef.current;
 		if (!el) return;
+		const handlePlayerDragOver = (e: React.DragEvent<HTMLDivElement>) => {
+			e.preventDefault();
+		};
+		const handlePlayerDrop = (e: React.DragEvent<HTMLDivElement>) => {
+			e.preventDefault();
+			const type = e.dataTransfer.getData("assetType");
+			const id = e.dataTransfer.getData("assetId");
+			// Logic to handle dropping the asset onto the canvas
+			// For example, add a new layer at the drop position
+			console.log(`Dropped asset: Type=${type}, ID=${id}`);
+		};
 		const handleWheel = (e: WheelEvent) => {
 			e.preventDefault();
 			if (e.ctrlKey || e.metaKey) {

@@ -760,9 +760,11 @@ export const calculateLayerTransform = (
 	let rotation = layer.rotation;
 	let opacity = layer.opacity ?? 1;
 	const volume = layer.volume ?? 1;
-	const duration = Math.round(
-		((layer.durationInMS || DEFAULT_DURATION_MS) / 1000) * fps,
-	);
+	const layerDurationMs =
+		layer.durationInMS ||
+		layer.virtualMedia?.metadata?.durationMs ||
+		DEFAULT_DURATION_MS;
+	const duration = Math.round((layerDurationMs / 1000) * fps);
 	const animations = layer.animations ?? [];
 	if (animations.length === 0)
 		return { x, y, scale, rotation, opacity, volume };
@@ -1512,9 +1514,13 @@ export const LayerRenderer: React.FC<{
 	const frame = useCurrentFrame();
 	const { fps } = useVideoConfig();
 	const startFrame = layer.startFrame ?? 0;
-	const duration = Math.round(
-		((layer.durationInMS || DEFAULT_DURATION_MS) / 1000) * fps,
-	);
+
+	// Use explicit duration, or intrinsic metadata duration, or fallback
+	const layerDurationMs =
+		layer.durationInMS ||
+		layer.virtualMedia?.metadata?.durationMs ||
+		DEFAULT_DURATION_MS;
+	const duration = Math.round((layerDurationMs / 1000) * fps);
 	const {
 		x: animX,
 		y: animY,
@@ -1887,10 +1893,14 @@ export const CompositionScene: React.FC<SceneProps> = ({
 			>
 				{layersToRender.map((layer) => {
 					const startFrame = layer.startFrame ?? 0;
-					const duration = Math.round(
-						((layer.durationInMS || DEFAULT_DURATION_MS) / 1000) * fps,
+					const explicitLayerDuration =
+						layer.durationInMS ||
+						layer.virtualMedia?.metadata?.durationMs ||
+						DEFAULT_DURATION_MS;
+					const layerNativeDuration = Math.round(
+						(explicitLayerDuration / 1000) * fps,
 					);
-					const endFrame = startFrame + duration;
+					const endFrame = startFrame + layerNativeDuration;
 					if (frame < startFrame || frame >= endFrame) return null;
 					return (
 						<LayerRenderer key={layer.id} layer={layer} viewport={viewport} />

@@ -62,14 +62,14 @@ export class VideoCompositorProcessor implements NodeProcessor {
                 if (item.type === "Video" || item.type === "Audio") {
                     childVV = item.data as VirtualMediaData;
                 } else if (item.type === "Image" || item.type === "SVG") {
-                    childVV = createVirtualMedia(item.data, item.type as any);
+                    childVV = createVirtualMedia(item.data, item.type);
                 } else if (item.type === "Text") {
                     sourceText = (item.data as string) || "";
-                    childVV = createVirtualMedia(item.data, "Text");
+                    childVV = createVirtualMedia(item.data, item.type);
                 } else if (item.type === "Lottie") {
-                    childVV = createVirtualMedia(item.data, item.type as any);
+                    childVV = createVirtualMedia(item.data, item.type);
                 } else if (item.type === "Caption") {
-                    childVV = createVirtualMedia(item.data, "Caption");
+                    childVV = createVirtualMedia(item.data, item.type);
                 } else {
                     continue;
                 }
@@ -78,8 +78,22 @@ export class VideoCompositorProcessor implements NodeProcessor {
 
                 const activeMeta = getActiveMediaMetadata(childVV);
 
-                const layerDurationInMS =
-                    saved.durationInMS ?? (activeMeta ? (activeMeta.durationMs ?? 0) : 0);
+                let layerDurationInMS = 0;
+                if (item.type === "Video" || item.type === "Audio" || item.type === "Lottie") {
+                    const actualMS = activeMeta?.durationMs ?? 0;
+                    const requestedDurationMS = saved.durationInMS;
+
+                    if (actualMS > 0) {
+                        layerDurationInMS = requestedDurationMS ? Math.max(1, Math.min(requestedDurationMS, actualMS)) : actualMS;
+                    } else {
+                        layerDurationInMS = Math.max(1, requestedDurationMS || DEFAULT_DURATION_MS);
+                    }
+                } else if (item.type === "Caption") {
+                    const actualMS = activeMeta?.durationMs ?? 0;
+                    layerDurationInMS = saved.durationInMS || (actualMS > 0 ? actualMS : DEFAULT_DURATION_MS);
+                } else {
+                    layerDurationInMS = saved.durationInMS ?? DEFAULT_DURATION_MS;
+                }
 
                 const layerOpWidth = saved.width ?? activeMeta?.width ?? width;
                 const layerOpHeight = saved.height ?? activeMeta?.height ?? height;
