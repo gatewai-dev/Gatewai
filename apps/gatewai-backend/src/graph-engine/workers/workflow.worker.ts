@@ -341,7 +341,7 @@ export async function triggerNextTask(
 			selectionMap,
 			apiKey,
 		},
-		{ jobId: nextTaskId }, // FIX #1: consistent job ID for deduplication
+		{ jobId: nextTaskId },
 	);
 }
 

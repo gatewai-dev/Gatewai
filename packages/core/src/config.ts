@@ -33,7 +33,7 @@ const envSchema = z.object({
 	MAX_CONCURRENT_WORKFLOW_JOBS: z.coerce.number().default(5),
 
 	DEFAULT_FREE_TOKENS: z.coerce.number().default(20),
-	ENABLE_PRICING: z.boolean().default(false),
+	ENABLE_PRICING: z.coerce.boolean().default(false),
 
 	WEBHOOK_PROXY_URL: z.string().optional(),
 

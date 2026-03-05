@@ -101,6 +101,12 @@ const tasksSlice = createSlice({
 			}
 			state.pollingInterval = 3000;
 		},
+		clearTasks: (state) => {
+			batchAdapter.removeAll(state);
+			state.batchIdsToPoll = [];
+			state.pollingInterval = 0;
+			state.latestTasksFetchTime = null;
+		},
 	},
 	extraReducers: (builder) => {
 		builder
@@ -166,17 +172,12 @@ const tasksSlice = createSlice({
 						finishedAt: new Date().toISOString(),
 					},
 				});
-				state.batchIdsToPoll = state.batchIdsToPoll.filter(
-					(id) => id !== batchId,
-				);
-				if (state.batchIdsToPoll.length === 0) {
-					state.pollingInterval = 0;
-				}
 			});
 	},
 });
 
-export const { setPollingInterval, addBatchToPoll } = tasksSlice.actions;
+export const { setPollingInterval, addBatchToPoll, clearTasks } =
+	tasksSlice.actions;
 
 export const tasksReducer = tasksSlice.reducer;
 

@@ -131,7 +131,7 @@ const tasksRouter = new Hono<{ Variables: AuthorizedHonoTypes }>({
 				await tx.task.updateMany({
 					where: {
 						batchId,
-						status: { in: [TaskStatus.QUEUED, TaskStatus.EXECUTING] },
+						status: { in: [TaskStatus.QUEUED] },
 					},
 					data: {
 						status: TaskStatus.CANCELLED,
