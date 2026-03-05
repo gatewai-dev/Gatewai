@@ -6,7 +6,7 @@ import {
 } from "@gatewai/core";
 import { container, TOKENS } from "@gatewai/core/di";
 import { GetCanvasEntities } from "@gatewai/data-ops";
-import { Prisma, prisma, TaskStatus } from "@gatewai/db";
+import { type Prisma, prisma, TaskStatus } from "@gatewai/db";
 import {
 	type NodeTaskJobData,
 	nodeRegistry,
@@ -22,202 +22,12 @@ import type {
 import { type Job, Worker } from "bullmq";
 import { assertIsError } from "../../utils/misc.js";
 
+import { checkAndFinishBatch } from "./batch-manager.js";
+import { propagateFailure } from "./failure-propagator.js";
+import { recoverDanglingTasks } from "./task-recovery.js";
+
 // Global reference for shutdown handling
 let worker: Worker<NodeTaskJobData> | null = null;
-
-async function checkAndFinishBatch(batchId: string) {
-	try {
-		const pendingCount = await prisma.task.count({
-			where: {
-				batchId,
-				status: { in: [TaskStatus.QUEUED, TaskStatus.EXECUTING] },
-			},
-		});
-
-		if (pendingCount !== 0) return;
-
-		// Atomic guard: only the first caller that sets finishedAt will proceed.
-		const updated = await prisma.taskBatch.updateMany({
-			where: { id: batchId, finishedAt: null },
-			data: { finishedAt: new Date() },
-		});
-
-		if (updated.count > 0) {
-			// ── Reconcile tokens: refund for tasks that didn't succeed ──
-			await reconcileBatchTokens(batchId);
-
-			const batch = await prisma.taskBatch.findUnique({
-				where: { id: batchId },
-				select: { canvasId: true },
-			});
-			if (batch) {
-				await dispatchNextPendingBatch(batch.canvasId);
-			}
-		}
-	} catch (e) {
-		assertIsError(e);
-		logger.warn(`Could not check and finish batch ${batchId}: ${e.message}`);
-	}
-}
-
-/**
- * Single reconciliation point: refund tokens for tasks that were charged
- * upfront but did not complete successfully.
- */
-async function reconcileBatchTokens(batchId: string) {
-	if (!ENV_CONFIG.ENABLE_PRICING) return;
-
-	try {
-		const batch = await prisma.taskBatch.findUnique({
-			where: { id: batchId },
-			select: { canvasId: true },
-		});
-		if (!batch) return;
-
-		const canvas = await prisma.canvas.findUnique({
-			where: { id: batch.canvasId },
-			select: { userId: true },
-		});
-		if (!canvas?.userId) return;
-
-		const tasks = await prisma.task.findMany({
-			where: { batchId },
-			select: { price: true, status: true },
-		});
-
-		const totalCharged = tasks.reduce((sum, t) => sum + (t.price ?? 0), 0);
-		const successCost = tasks
-			.filter((t) => t.status === TaskStatus.COMPLETED)
-			.reduce((sum, t) => sum + (t.price ?? 0), 0);
-		const refundAmount = totalCharged - successCost;
-
-		if (refundAmount > 0) {
-			const pricingService = container.get<IPricingService>(
-				TOKENS.PRICING_SERVICE,
-			);
-			await pricingService.creditTokens(canvas.userId, refundAmount, "REFUND", {
-				batchId,
-				reason: "Batch reconciliation",
-			});
-			logger.info(
-				`Reconciled batch ${batchId}: refunded ${refundAmount} tokens (charged ${totalCharged}, success ${successCost})`,
-			);
-		}
-	} catch (e) {
-		assertIsError(e);
-		logger.error(
-			`Failed to reconcile tokens for batch ${batchId}: ${e.message}`,
-		);
-	}
-}
-
-async function dispatchNextPendingBatch(canvasId: string) {
-	try {
-		const nextBatch = await prisma.taskBatch.findFirst({
-			where: {
-				canvasId,
-				pendingJobData: { not: Prisma.JsonNull },
-				startedAt: null,
-			},
-			orderBy: { createdAt: "asc" },
-		});
-
-		if (!nextBatch?.pendingJobData) return;
-
-		const jobData = nextBatch.pendingJobData as unknown as NodeTaskJobData;
-
-		// Enqueue first — if this throws, the DB record stays intact and can be
-		// retried on the next batch-completion cycle.
-		await workflowQueue.add("process-node", jobData, {
-			jobId: jobData.taskId, // FIX #1: tie BullMQ job ID to taskId
-		});
-
-		// Only clear pendingJobData once we know the job was accepted by the queue.
-		await prisma.taskBatch.update({
-			where: { id: nextBatch.id },
-			data: {
-				startedAt: new Date(),
-				pendingJobData: Prisma.DbNull,
-			},
-		});
-
-		logger.info(
-			`Dispatched pending batch ${nextBatch.id} for canvas ${canvasId}`,
-		);
-	} catch (e) {
-		assertIsError(e);
-		logger.error(
-			`Failed to dispatch next pending batch for canvas ${canvasId}: ${e.message}`,
-		);
-	}
-}
-
-async function propagateFailure(
-	taskId: string,
-	batchId: string,
-	failedNodeIdentifier: string,
-	errorMessage: string,
-) {
-	// Collect all transitively-reachable downstream task IDs first.
-	const failedTaskIds = new Set<string>();
-
-	async function collectDownstream(currentTaskId: string) {
-		const currentTask = await prisma.task.findUnique({
-			where: { id: currentTaskId },
-			select: { nodeId: true },
-		});
-		if (!currentTask?.nodeId) return;
-
-		const outgoingEdges = await prisma.edge.findMany({
-			where: { source: currentTask.nodeId },
-			select: { target: true },
-		});
-
-		const downstreamNodeIds = outgoingEdges.map((e) => e.target);
-		if (downstreamNodeIds.length === 0) return;
-
-		const downstreamTasks = await prisma.task.findMany({
-			where: {
-				nodeId: { in: downstreamNodeIds },
-				batchId,
-				status: { in: [TaskStatus.QUEUED, TaskStatus.EXECUTING] },
-			},
-			select: { id: true },
-		});
-
-		for (const dt of downstreamTasks) {
-			if (!failedTaskIds.has(dt.id)) {
-				failedTaskIds.add(dt.id);
-				await collectDownstream(dt.id);
-			}
-		}
-	}
-
-	await collectDownstream(taskId);
-
-	if (failedTaskIds.size === 0) return;
-
-	const idsToUpdate = Array.from(failedTaskIds);
-
-	// Single bulk write for all downstream tasks.
-	const finishedAt = new Date();
-	await prisma.task.updateMany({
-		where: {
-			id: { in: idsToUpdate },
-			// Only touch tasks that haven't already reached a terminal state.
-			status: { in: [TaskStatus.QUEUED, TaskStatus.EXECUTING] },
-		},
-		data: {
-			status: TaskStatus.FAILED,
-			finishedAt,
-			error: {
-				message: `Upstream failure in node ${failedNodeIdentifier}: ${errorMessage}`,
-			},
-		},
-	});
-	// NOTE: Token refunds for failed/skipped tasks are handled by
-	// reconcileBatchTokens() when the batch finishes.
-}
 
 const processNodeJob = async (job: Job<NodeTaskJobData>) => {
 	const {
@@ -383,9 +193,6 @@ const processNodeJob = async (job: Job<NodeTaskJobData>) => {
 					}
 				}
 
-				// ── Deduct tokens only on success ──
-				// Removed: Tokens are now deducted upfront in NodeWFProcessor.
-
 				if (success) {
 					// Track usage on success
 					if (resolvedUserId && taskPrice > 0) {
@@ -473,7 +280,7 @@ const processNodeJob = async (job: Job<NodeTaskJobData>) => {
 	);
 };
 
-async function triggerNextTask(
+export async function triggerNextTask(
 	batchId: string,
 	remainingTaskIds: string[],
 	selectionMap: Record<string, boolean>,
@@ -530,68 +337,6 @@ async function completeTask(taskId: string, startedAt: Date, success: boolean) {
 			durationMs: finishedAt.getTime() - startedAt.getTime(),
 		},
 	});
-}
-
-export async function recoverDanglingTasks() {
-	logger.info("Starting startup recovery check...");
-
-	const danglingTasks = await prisma.task.findMany({
-		where: { status: TaskStatus.EXECUTING },
-		include: {
-			batch: true,
-			node: { select: { name: true } },
-		},
-	});
-
-	if (danglingTasks.length === 0) {
-		logger.info("No dangling tasks found.");
-		return;
-	}
-
-	logger.warn(
-		`Found ${danglingTasks.length} dangling EXECUTING task(s). Recovering...`,
-	);
-
-	let cleanedCount = 0;
-
-	for (const task of danglingTasks) {
-		try {
-			const finishedAt = new Date();
-			const durationMs = task.startedAt
-				? finishedAt.getTime() - task.startedAt.getTime()
-				: 0;
-			const errorMsg = "Task abandoned due to system restart/crash.";
-
-			await prisma.task.update({
-				where: { id: task.id },
-				data: {
-					status: TaskStatus.FAILED,
-					finishedAt,
-					durationMs,
-					error: { message: errorMsg },
-				},
-			});
-
-			// Refund handled by reconcileBatchTokens at batch completion
-
-			await propagateFailure(
-				task.id,
-				task.batchId,
-				task.node?.name ?? task.id,
-				errorMsg,
-			);
-			await checkAndFinishBatch(task.batchId);
-			cleanedCount++;
-		} catch (e) {
-			assertIsError(e);
-			logger.error(`Failed to recover task ${task.id}: ${e.message}`);
-		}
-	}
-
-	// FIX #4: report actual cleaned count, not total found.
-	logger.info(
-		`Recovery check complete. Cleaned up ${cleanedCount} of ${danglingTasks.length} dangling task(s).`,
-	);
 }
 
 const FIVE_MINS = 300_000;

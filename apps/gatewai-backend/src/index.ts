@@ -12,7 +12,7 @@ import SmeeClient from "smee-client";
 import { startAgentWorker } from "./agent/agent-queue.js";
 import { type AuthHonoTypes, auth, ensureUsersAPI_KEY } from "./auth.js";
 import { registerBackendServices } from "./di-setup.js";
-import { startWorkflowWorker } from "./graph-engine/queue/workflow.worker.js";
+import { startWorkflowWorker } from "./graph-engine/workers/workflow.worker.js";
 import {
 	errorHandler,
 	loggerMiddleware,
