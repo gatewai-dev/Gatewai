@@ -6,14 +6,16 @@ import type {
 } from "@gatewai/node-sdk/server";
 import { injectable } from "inversify";
 import { TextNodeConfigSchema } from "../metadata.js";
-import type { TextResult } from "../shared/index.js";
+import type { TextNodeResult } from "../shared/index.js";
 
 @injectable()
 export class TextProcessor implements NodeProcessor {
 	async process({
 		node,
 		data,
-	}: BackendNodeProcessorCtx): Promise<BackendNodeProcessorResult<TextResult>> {
+	}: BackendNodeProcessorCtx): Promise<
+		BackendNodeProcessorResult<TextNodeResult>
+	> {
 		const text = TextNodeConfigSchema.parse(node.config).content ?? "";
 
 		const outputHandle = data.handles.find(

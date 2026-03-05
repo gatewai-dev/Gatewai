@@ -1,4 +1,10 @@
-import { DimensionSchema } from "@gatewai/node-sdk";
+import {
+	AudioResultSchema,
+	DimensionSchema,
+	ImageResultSchema,
+	TextResultSchema,
+	VideoResultSchema,
+} from "@gatewai/node-sdk";
 import { z } from "zod";
 
 export const ResizeNodeConfigSchema = z
@@ -20,8 +26,6 @@ import {
 	SingleOutputGenericSchema,
 } from "@gatewai/core/types";
 
-export const ResizeResultSchema = SingleOutputGenericSchema(
-	createOutputItemSchema(z.literal("Image"), FileDataSchema),
-);
+export const ResizeResultSchema = ImageResultSchema;
 
 export type ResizeResult = z.infer<typeof ResizeResultSchema>;

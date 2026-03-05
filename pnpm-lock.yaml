@@ -105,9 +105,6 @@ importers:
       '@hono/zod-validator':
         specifier: ^0.7.2
         version: 0.7.6(hono@4.12.2)(zod@3.25.67)
-      '@lottie-animation-community/lottie-specs':
-        specifier: ^0.3.2
-        version: 0.3.2
       '@openai/agents':
         specifier: ^0.4.1
         version: 0.4.15(ws@8.19.0)(zod@3.25.67)
@@ -280,9 +277,6 @@ importers:
       '@remotion/layout-utils':
         specifier: 4.0.431
         version: 4.0.431
-      '@remotion/lottie':
-        specifier: 4.0.431
-        version: 4.0.431(lottie-web@5.13.0)(react-dom@19.2.4(react@19.2.4))(react@19.2.4)
       '@remotion/media':
         specifier: 4.0.431
         version: 4.0.431(react-dom@19.2.4(react@19.2.4))(react@19.2.4)
@@ -331,9 +325,6 @@ importers:
       lodash:
         specifier: ^4.17.21
         version: 4.17.23
-      lottie-web:
-        specifier: ^5.13.0
-        version: 5.13.0
       lucide-react:
         specifier: ^0.552.0
         version: 0.552.0(react@19.2.4)
@@ -531,6 +522,9 @@ importers:
       '@gatewai/node-sdk':
         specifier: workspace:*
         version: link:../../packages/node-sdk
+      '@gatewai/react-store':
+        specifier: workspace:*
+        version: link:../../packages/react-store
       '@gatewai/ui-kit':
         specifier: workspace:*
         version: link:../../packages/ui-kit
@@ -943,76 +937,6 @@ importers:
       '@types/node':
         specifier: ^24.0.4
         version: 24.10.14
-      '@types/react':
-        specifier: ^19.2.4
-        version: 19.2.14
-      tsdown:
-        specifier: ^0.19.0
-        version: 0.19.0(typescript@5.8.3)
-      typescript:
-        specifier: ^5.8.3
-        version: 5.8.3
-
-  nodes/node-lottie-generator:
-    dependencies:
-      '@gatewai/ai-agent':
-        specifier: workspace:*
-        version: link:../../packages/ai-agent
-      '@gatewai/core':
-        specifier: workspace:*
-        version: link:../../packages/core
-      '@gatewai/db':
-        specifier: workspace:*
-        version: link:../../packages/db
-      '@gatewai/node-sdk':
-        specifier: workspace:*
-        version: link:../../packages/node-sdk
-      '@gatewai/react-store':
-        specifier: workspace:*
-        version: link:../../packages/react-store
-      '@gatewai/remotion-compositions':
-        specifier: workspace:*
-        version: link:../../packages/remotion-compositions
-      '@gatewai/ui-kit':
-        specifier: workspace:*
-        version: link:../../packages/ui-kit
-      '@google/genai':
-        specifier: ^1.3.0
-        version: 1.32.0(@modelcontextprotocol/sdk@1.27.1(zod@3.25.67))
-      '@hookform/resolvers':
-        specifier: '*'
-        version: 3.10.0(react-hook-form@7.71.2(react@19.2.4))
-      '@lottie-animation-community/lottie-specs':
-        specifier: '*'
-        version: 0.3.2
-      ajv:
-        specifier: '*'
-        version: 8.18.0
-      inversify:
-        specifier: ^7.11.0
-        version: 7.11.0(reflect-metadata@0.2.2)
-      react:
-        specifier: ^19.2.4
-        version: 19.2.4
-      react-hook-form:
-        specifier: '*'
-        version: 7.71.2(react@19.2.4)
-      react-icons:
-        specifier: '*'
-        version: 5.5.0(react@19.2.4)
-      use-debounce:
-        specifier: '*'
-        version: 10.1.0(react@19.2.4)
-      zod:
-        specifier: ^3.24.1
-        version: 3.25.67
-    devDependencies:
-      '@gatewai/react-canvas':
-        specifier: workspace:*
-        version: link:../../packages/react-canvas
-      '@gatewai/tsconfig':
-        specifier: workspace:*
-        version: link:../../packages/tsconfig
       '@types/react':
         specifier: ^19.2.4
         version: 19.2.14
@@ -1654,9 +1578,6 @@ importers:
       '@remotion/captions':
         specifier: '*'
         version: 4.0.429
-      '@remotion/lottie':
-        specifier: '*'
-        version: 4.0.429(lottie-web@5.13.0)(react-dom@19.2.4(react@19.2.4))(react@19.2.4)
       '@remotion/media':
         specifier: '*'
         version: 4.0.429(react-dom@19.2.4(react@19.2.4))(react@19.2.4)
@@ -2071,9 +1992,6 @@ importers:
       '@xyflow/react':
         specifier: ^12.8.4
         version: 12.10.1(@types/react@19.2.14)(immer@11.1.4)(react-dom@19.2.4(react@19.2.4))(react@19.2.4)
-      adm-zip:
-        specifier: ^0.5.16
-        version: 0.5.16
       canvas:
         specifier: ^3.2.0
         version: 3.2.1
@@ -2099,9 +2017,6 @@ importers:
       '@gatewai/tsconfig':
         specifier: workspace:*
         version: link:../tsconfig
-      '@types/adm-zip':
-        specifier: ^0.5.7
-        version: 0.5.7
       '@types/node':
         specifier: ^24.0.4
         version: 24.10.14
@@ -2144,6 +2059,9 @@ importers:
       hono:
         specifier: ^4.8.5
         version: 4.12.2
+      inversify:
+        specifier: '*'
+        version: 7.11.0(reflect-metadata@0.2.2)
       lodash:
         specifier: ^4.17.21
         version: 4.17.23
@@ -2351,9 +2269,6 @@ importers:
       '@remotion/layout-utils':
         specifier: '*'
         version: 4.0.429
-      '@remotion/lottie':
-        specifier: '*'
-        version: 4.0.429(lottie-web@5.13.0)(react-dom@19.2.4(react@19.2.4))(react@19.2.4)
       '@remotion/media':
         specifier: '*'
         version: 4.0.429(react-dom@19.2.4(react@19.2.4))(react@19.2.4)
@@ -2366,12 +2281,6 @@ importers:
       '@remotion/web-renderer':
         specifier: '*'
         version: 4.0.429(react-dom@19.2.4(react@19.2.4))(react@19.2.4)
-      lottie-react:
-        specifier: '*'
-        version: 2.4.1(react-dom@19.2.4(react@19.2.4))(react@19.2.4)
-      lottie-web:
-        specifier: '*'
-        version: 5.13.0
       react:
         specifier: ^19.2.4
         version: 19.2.4
@@ -3647,10 +3556,6 @@ packages:
 
   '@js-sdsl/ordered-map@4.4.2':
     resolution: {integrity: sha512-iUKgm52T8HOE/makSxjqoWhe95ZJA1/G1sYsGev2JDKUSS14KAgg1LHb+Ba+IPow0xflbnSkOsZcO08C7w1gYw==}
-
-  '@lottie-animation-community/lottie-specs@0.3.2':
-    resolution: {integrity: sha512-riB112WfFOGSk/jssZqDxTMIofB67zOh+lEoJYvmuhOLcsBr94Lghm3saihsrcZ33lk1z5hyiE09l0DB4bs6qg==}
-    hasBin: true
 
   '@manypkg/find-root@1.1.0':
     resolution: {integrity: sha512-mki5uBvhHzO8kYYix/WRy2WX8S3B5wdVSc9D6KcU5lQNglP2yt58/VfLuAK49glRXChosY8ap2oJ1qgma3GUVA==}
@@ -5273,20 +5178,6 @@ packages:
   '@remotion/licensing@4.0.431':
     resolution: {integrity: sha512-FOg5gAWB2ewf427y/OoBVbBsGBGvbpzKq8D8v7Q5ZsPmDB80LJ/o5tL6jNutDHo/p6MADQt456HiH+4siJj55Q==}
 
-  '@remotion/lottie@4.0.429':
-    resolution: {integrity: sha512-8WHlTK5iSBnNDpiGrc4WCOaXrXJqIHY4SLbVQOSGQs/HfpAHCTGkW0pFvX1PXbPl9gvsQ86mdXmEb0h+G0YMGw==}
-    peerDependencies:
-      lottie-web: ^5
-      react: ^19.2.4
-      react-dom: ^19.2.4
-
-  '@remotion/lottie@4.0.431':
-    resolution: {integrity: sha512-OvCyRxdW+ta6dUeDcCjMz//FOmsQa6Y8qIqT19FjO/rGXwlm9Aa+sLgdM25dUhI/9PfcwupjRvpjTjPydFCLpg==}
-    peerDependencies:
-      lottie-web: ^5
-      react: ^19.2.4
-      react-dom: ^19.2.4
-
   '@remotion/media-parser@4.0.431':
     resolution: {integrity: sha512-wwhVFUNB6DM11qEhIECMC1JSSxKpZZuifCBmanhUkD2BdGk34jw0tOAdDdYTLAeJLDVqtxWaxijeot00EY1ihg==}
 
@@ -5980,9 +5871,6 @@ packages:
   '@tybys/wasm-util@0.10.1':
     resolution: {integrity: sha512-9tTaPJLSiejZKx+Bmog4uSubteqTvFrVrURwkmHixBo0G4seD0zUxp98E1DzUBJxLQ3NPwXrGKDiVjwx/DpPsg==}
 
-  '@types/adm-zip@0.5.7':
-    resolution: {integrity: sha512-DNEs/QvmyRLurdQPChqq0Md4zGvPwHerAJYWk9l2jCbD1VPpnzRJorOdiq4zsw09NFbYnhfsoEhWtxIzXpn2yw==}
-
   '@types/caseless@0.12.5':
     resolution: {integrity: sha512-hWtVTC2q7hc7xZ/RLbxapMvDMgUnDvKvMOpKal4DrMyfGBUfB1oKaZlIRr6mJL+If3bAP6sV/QneGzF6tJjZDg==}
 
@@ -6305,10 +6193,6 @@ packages:
     resolution: {integrity: sha512-UVJyE9MttOsBQIDKw1skb9nAwQuR5wuGD3+82K6JgJlm/Y+KI92oNsMNGZCYdDsVtRHSak0pcV5Dno5+4jh9sw==}
     engines: {node: '>=0.4.0'}
     hasBin: true
-
-  adm-zip@0.5.16:
-    resolution: {integrity: sha512-TGw5yVi4saajsSEgz25grObGHEUaDrniwvA2qwSC060KfqGPdglhvPMA2lPIoxs3PQIItj2iag35fONcQqgUaQ==}
-    engines: {node: '>=12.0'}
 
   agent-base@6.0.2:
     resolution: {integrity: sha512-RZNwNclF7+MS/8bDg70amg32dyeZGZxiDuQmZxKLAlQjr3jGyLx+4Kkk58UO7D2QdgFIQCovuSuZESne6RG6XQ==}
@@ -8288,15 +8172,6 @@ packages:
   loose-envify@1.4.0:
     resolution: {integrity: sha512-lyuxPGr/Wfhrlem2CL/UcnUc1zcqKAImBDzukY7Y5F/yQiNdko6+fRLevlw1HgMySw7f611UIY408EtxRSoK3Q==}
     hasBin: true
-
-  lottie-react@2.4.1:
-    resolution: {integrity: sha512-LQrH7jlkigIIv++wIyrOYFLHSKQpEY4zehPicL9bQsrt1rnoKRYCYgpCUe5maqylNtacy58/sQDZTkwMcTRxZw==}
-    peerDependencies:
-      react: ^19.2.4
-      react-dom: ^19.2.4
-
-  lottie-web@5.13.0:
-    resolution: {integrity: sha512-+gfBXl6sxXMPe8tKQm7qzLnUy5DUPJPKIyRHwtpCpyUEYjHYRJC/5gjUvdkuO2c3JllrPtHXH5UJJK8LRYl5yQ==}
 
   lru-cache@10.4.3:
     resolution: {integrity: sha512-JNAzZcXrCt42VGLuYz0zfAzDfAvJWW6AfYlDBQyDV5DClI2m5sAmK+OIO7s59XfsRsWHp02jAJrRadPRGTt6SQ==}
@@ -11651,10 +11526,6 @@ snapshots:
 
   '@js-sdsl/ordered-map@4.4.2': {}
 
-  '@lottie-animation-community/lottie-specs@0.3.2':
-    dependencies:
-      ajv: 8.18.0
-
   '@manypkg/find-root@1.1.0':
     dependencies:
       '@babel/runtime': 7.28.6
@@ -13481,20 +13352,6 @@ snapshots:
 
   '@remotion/licensing@4.0.431': {}
 
-  '@remotion/lottie@4.0.429(lottie-web@5.13.0)(react-dom@19.2.4(react@19.2.4))(react@19.2.4)':
-    dependencies:
-      lottie-web: 5.13.0
-      react: 19.2.4
-      react-dom: 19.2.4(react@19.2.4)
-      remotion: 4.0.429(react-dom@19.2.4(react@19.2.4))(react@19.2.4)
-
-  '@remotion/lottie@4.0.431(lottie-web@5.13.0)(react-dom@19.2.4(react@19.2.4))(react@19.2.4)':
-    dependencies:
-      lottie-web: 5.13.0
-      react: 19.2.4
-      react-dom: 19.2.4(react@19.2.4)
-      remotion: 4.0.431(react-dom@19.2.4(react@19.2.4))(react@19.2.4)
-
   '@remotion/media-parser@4.0.431': {}
 
   '@remotion/media-utils@4.0.431(react-dom@19.2.4(react@19.2.4))(react@19.2.4)':
@@ -14045,10 +13902,6 @@ snapshots:
       tslib: 2.8.1
     optional: true
 
-  '@types/adm-zip@0.5.7':
-    dependencies:
-      '@types/node': 22.19.12
-
   '@types/caseless@0.12.5': {}
 
   '@types/chai@5.2.3':
@@ -14434,8 +14287,6 @@ snapshots:
       acorn: 8.16.0
 
   acorn@8.16.0: {}
-
-  adm-zip@0.5.16: {}
 
   agent-base@6.0.2:
     dependencies:
@@ -16552,14 +16403,6 @@ snapshots:
   loose-envify@1.4.0:
     dependencies:
       js-tokens: 4.0.0
-
-  lottie-react@2.4.1(react-dom@19.2.4(react@19.2.4))(react@19.2.4):
-    dependencies:
-      lottie-web: 5.13.0
-      react: 19.2.4
-      react-dom: 19.2.4(react@19.2.4)
-
-  lottie-web@5.13.0: {}
 
   lru-cache@10.4.3: {}
 

@@ -1,3 +1,9 @@
+import {
+	createOutputItemSchema,
+	FileDataSchema,
+	SingleOutputGenericSchema,
+	VirtualMediaDataSchema,
+} from "@gatewai/core/types";
 import { z } from "zod";
 
 // Shared Enums and Constants
@@ -143,3 +149,24 @@ export const BaseLayerSchema = z.object({
 	fill: ColorSchema,
 	blendMode: GlobalCompositeOperation.optional(),
 });
+
+// Result Schemas shared across nodes
+export const ImageResultSchema = SingleOutputGenericSchema(
+	createOutputItemSchema(z.literal("Image"), FileDataSchema),
+);
+export type ImageResult = z.infer<typeof ImageResultSchema>;
+
+export const VideoResultSchema = SingleOutputGenericSchema(
+	createOutputItemSchema(z.literal("Video"), VirtualMediaDataSchema),
+);
+export type VideoResult = z.infer<typeof VideoResultSchema>;
+
+export const AudioResultSchema = SingleOutputGenericSchema(
+	createOutputItemSchema(z.literal("Audio"), VirtualMediaDataSchema),
+);
+export type AudioResult = z.infer<typeof AudioResultSchema>;
+
+export const TextResultSchema = SingleOutputGenericSchema(
+	createOutputItemSchema(z.literal("Text"), z.string()),
+);
+export type TextResult = z.infer<typeof TextResultSchema>;

@@ -180,6 +180,7 @@ const processCompositor = async (
 			lockAspect: true,
 			blendMode: "source-over",
 			zIndex: ++maxZ,
+			autoDimensions: true,
 		};
 
 		if (input.type === "Text") {

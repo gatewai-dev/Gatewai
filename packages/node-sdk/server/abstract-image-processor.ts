@@ -18,9 +18,9 @@ export abstract class AbstractImageProcessor implements NodeProcessor {
 		protected graph: GraphResolvers,
 	) {}
 
-	abstract getPixiRunFunction(): any;
+	protected abstract getPixiRunFunction(): any;
 
-	abstract getPixiExecuteArgs(
+	protected abstract getPixiExecuteArgs(
 		node: BackendNodeProcessorCtx["node"],
 		imageUrl: string,
 		apiKey?: string,

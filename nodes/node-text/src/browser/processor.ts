@@ -1,13 +1,13 @@
 import type { IBrowserProcessor } from "@gatewai/node-sdk/browser";
 import type { NodeProcessorParams } from "@gatewai/react-canvas";
 import { TextNodeConfigSchema } from "../shared/config.js";
-import type { TextResult } from "../shared/index.js";
+import type { TextNodeResult } from "../shared/index.js";
 
 export class TextBrowserProcessor implements IBrowserProcessor {
 	async process({
 		node,
 		context,
-	}: NodeProcessorParams): Promise<TextResult | null> {
+	}: NodeProcessorParams): Promise<TextNodeResult | null> {
 		const outputHandle = context.getFirstOutputHandle(node.id, "Text");
 		const config = TextNodeConfigSchema.parse(node.config);
 		if (!outputHandle) throw new Error("No input handle");

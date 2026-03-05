@@ -1,5 +1,5 @@
 import type { DataType } from "@gatewai/db";
-import z, { type ZodTypeAny } from "zod";
+import z, { ZodType, type ZodTypeAny } from "zod";
 import type { NodeResult } from "./types/node-result.js";
 
 const HandleDefinitionSchema = z.object({
@@ -73,7 +73,7 @@ export const NodeMetadataSchema = z.object({
 	pricing: z.any().optional(),
 
 	// The result schema of the node's execution. This is used to validate the output of the node at runtime. This should be a Zod schema.
-	resultSchema: z.custom<NodeResult>().optional(),
+	resultSchema: z.custom<ZodTypeAny>().optional(),
 });
 
 export type NodeMetadata<TConfig = any> = Omit<

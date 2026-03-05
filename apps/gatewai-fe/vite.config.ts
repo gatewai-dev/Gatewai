@@ -66,6 +66,10 @@ export default defineConfig({
 				__dirname,
 				"./node_modules/react/jsx-dev-runtime.js",
 			),
+			"vite-plugin-node-polyfills": path.resolve(
+				__dirname,
+				"./node_modules/vite-plugin-node-polyfills",
+			),
 		},
 	},
 });

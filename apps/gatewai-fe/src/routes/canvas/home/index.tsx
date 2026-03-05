@@ -25,10 +25,11 @@ import {
 	Sparkles,
 	Trash2,
 } from "lucide-react";
-import { useEffect, useRef, useState } from "react";
+import { useEffect, useState } from "react";
 import { Helmet } from "react-helmet-async";
 import { Link, useNavigate } from "react-router";
 import { toast } from "sonner";
+import { useDebounce } from "use-debounce";
 import { cn } from "@/lib/utils";
 import { CanvasListProvider, useCanvasListCtx } from "../ctx/canvas-list.ctx";
 
@@ -45,32 +46,17 @@ function CanvasHomeImpl() {
 
 	// Local state for immediate input updates
 	const [localSearchQuery, setLocalSearchQuery] = useState(searchQuery);
-	const debounceTimerRef = useRef<NodeJS.Timeout | null>(null);
+	const [debouncedQuery] = useDebounce(localSearchQuery, 300);
 
 	// Sync local state with context state when context changes externally
 	useEffect(() => {
 		setLocalSearchQuery(searchQuery);
 	}, [searchQuery]);
 
-	// Debounce the search query updates
+	// Update the context when the debounced query changes
 	useEffect(() => {
-		// Clear existing timer
-		if (debounceTimerRef.current) {
-			clearTimeout(debounceTimerRef.current);
-		}
-
-		// Set new timer to update context after 300ms
-		debounceTimerRef.current = setTimeout(() => {
-			setSearchQuery(localSearchQuery);
-		}, 300);
-
-		// Cleanup on unmount or when localSearchQuery changes
-		return () => {
-			if (debounceTimerRef.current) {
-				clearTimeout(debounceTimerRef.current);
-			}
-		};
-	}, [localSearchQuery, setSearchQuery]);
+		setSearchQuery(debouncedQuery);
+	}, [debouncedQuery, setSearchQuery]);
 
 	// Client-side filtering based on search query
 	const canvasList = rawCanvasList?.filter((canvas) =>

@@ -52,7 +52,6 @@ export function createVirtualMedia(
 				processData: {
 					...(source.processData ?? {}),
 					mimeType,
-					text: source?.processData?.text,
 				},
 			},
 			sourceMeta: sourceMeta,

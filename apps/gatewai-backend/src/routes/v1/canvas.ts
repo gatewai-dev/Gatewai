@@ -12,12 +12,12 @@ import { NodeWFProcessor } from "@gatewai/graph-engine";
 import { zValidator } from "@hono/zod-validator";
 import { Hono } from "hono";
 import { HTTPException } from "hono/http-exception";
-import { streamSSE } from "hono/streaming";
 import z from "zod";
 import { AgentRunnerManager } from "../../agent/runner/runner-manager.js";
 import type { AuthHonoTypes } from "../../auth.js";
 import { duplicateCanvas } from "../../lib/canvas-duplication.service.js";
-import { redisSubscriber } from "../../lib/redis.js";
+import { getUserDefaultApiKey } from "../../lib/get-user-default-api-key.js";
+import { createSSEStream } from "../../lib/sse-stream.js";
 import { assertIsError } from "../../utils/misc.js";
 import {
 	assertCanvasOwnership,
@@ -387,13 +387,7 @@ const canvasRoutes = new Hono<{ Variables: AuthHonoTypes }>({
 		const user = c.get("user");
 		let apiKey = c.req.header("x-api-key");
 		if (!apiKey && user) {
-			const userKey = await prisma.apiKey.findFirst({
-				where: { userId: user.id },
-				orderBy: { createdAt: "asc" },
-			});
-			if (userKey) {
-				apiKey = userKey.key;
-			}
+			apiKey = await getUserDefaultApiKey(user.id);
 		}
 
 		const wfProcessor = new NodeWFProcessor(prisma);
@@ -522,13 +516,9 @@ const canvasRoutes = new Hono<{ Variables: AuthHonoTypes }>({
 			// This ensures the Agent uses a stable API Key identity even if the request came via Cookie
 			const user = c.get("user");
 			if (user && !apiKeyHeader) {
-				const userKey = await prisma.apiKey.findFirst({
-					where: { userId: user.id },
-					orderBy: { createdAt: "asc" }, // Assuming the first key created is the default one
-				});
-
+				const userKey = await getUserDefaultApiKey(user.id);
 				if (userKey) {
-					authHeaders["x-api-key"] = userKey.key;
+					authHeaders["x-api-key"] = userKey;
 				}
 			}
 			// Start the agent runner in the background
@@ -546,42 +536,10 @@ const canvasRoutes = new Hono<{ Variables: AuthHonoTypes }>({
 				});
 			}
 
-			return streamSSE(c, async (stream) => {
-				const channel = `agent:session:${sessionId}`;
-				const subscriber = redisSubscriber.duplicate(); // Use a duplicate connection for subscription
-
-				await subscriber.subscribe(channel);
-
-				let isDone = false;
-				const onMessage = async (chan: string, msg: string) => {
-					if (chan === channel) {
-						await stream.writeSSE({
-							data: msg,
-						});
-
-						try {
-							const event = JSON.parse(msg);
-							if (event.type === "done" || event.type === "error") {
-								isDone = true;
-							}
-						} catch (e) {
-							// Ignore parse errors
-						}
-					}
-				};
-
-				subscriber.on("message", onMessage);
-
-				// Keep the stream open until the client disconnects or agent finishes
-				while (!isDone) {
-					await new Promise((resolve) => setTimeout(resolve, 500));
-					if (c.req.raw.signal.aborted) {
-						break;
-					}
+			return createSSEStream(c, sessionId, (event) => {
+				if (event.type === "done" || event.type === "error") {
+					// Handler just tracks done state internally
 				}
-
-				await subscriber.unsubscribe(channel);
-				await subscriber.quit();
 			});
 		},
 	)
@@ -593,46 +551,7 @@ const canvasRoutes = new Hono<{ Variables: AuthHonoTypes }>({
 	.get("/:id/agent/:sessionId/stream", async (c) => {
 		const sessionId = c.req.param("sessionId");
 
-		c.header("X-Accel-Buffering", "no");
-		c.header("Cache-Control", "no-cache");
-		c.header("Content-Type", "text/event-stream");
-
-		return streamSSE(c, async (stream) => {
-			const channel = `agent:session:${sessionId}`;
-			const subscriber = redisSubscriber.duplicate();
-
-			await subscriber.subscribe(channel);
-
-			let isDone = false;
-			const onMessage = async (chan: string, msg: string) => {
-				if (chan === channel) {
-					await stream.writeSSE({
-						data: msg,
-					});
-
-					try {
-						const event = JSON.parse(msg);
-						if (event.type === "done" || event.type === "error") {
-							isDone = true;
-						}
-					} catch (e) {
-						// Ignore parse errors
-					}
-				}
-			};
-
-			subscriber.on("message", onMessage);
-
-			while (!isDone) {
-				await new Promise((resolve) => setTimeout(resolve, 500));
-				if (c.req.raw.signal.aborted) {
-					break;
-				}
-			}
-
-			await subscriber.unsubscribe(channel);
-			await subscriber.quit();
-		});
+		return createSSEStream(c, sessionId);
 	})
 	.get("/:id/agent/:sessionId", async (c) => {
 		const canvasId = c.req.param("id");

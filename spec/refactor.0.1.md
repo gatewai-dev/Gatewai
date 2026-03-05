@@ -41,7 +41,7 @@ src/graph-engine/
 
 ---
 
-### 1.3 Backend: Deduplicate SSE Stream Handling
+### 1.3 Backend: Deduplicate SSE Stream Handling [DONE]
 
 **Location:** `apps/gatewai-backend/src/routes/v1/canvas.ts` (lines 659-695, 710-745)
 
@@ -51,11 +51,11 @@ src/graph-engine/
 
 ---
 
-### 1.4 Backend: Deduplicate API Key Lookup
+### 1.4 Backend: Deduplicate API Key Lookup [DONE]
 
 **Problem:** API key lookup pattern repeated in:
-- `canvas.ts` (lines 498-507, 633-643)
-- `api-run.ts` (lines 153-160)
+- `canvas.ts` (lines 389-396, 519-526)
+- `api-run.ts` (lines 155-160)
 
 **Solution:** Create `getUserDefaultApiKey()` utility in `src/lib/`.
 
@@ -73,7 +73,7 @@ src/graph-engine/
 
 ## Priority 2: Node SDK Improvements
 
-### 2.1 Create Abstract Image Processor Base Class
+### 2.1 Create Abstract Image Processor Base Class [DONE]
 
 **Problem:** Image processing nodes (`blur`, `crop`, `modulate`, `resize`) have nearly identical processor code.
 
@@ -141,7 +141,7 @@ export function CanvasProviders({ children }) {
 
 ---
 
-### 3.2 Split Large Components
+### 3.2 Split Large Components [SKIP]
 
 **Location:** `apps/gatewai-fe/src/routes/canvas/home/index.tsx` (520 lines)
 
@@ -153,7 +153,7 @@ export function CanvasProviders({ children }) {
 
 ---
 
-### 3.3 Use Existing Debounce Library
+### 3.3 Use Existing Debounce Library [DONE]
 
 **Location:** `canvas/home/index.tsx` (lines 46-73)
 

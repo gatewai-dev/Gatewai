@@ -6,7 +6,7 @@ import {
 
 export { CompositorNodeConfigSchema, CompositorResultSchema };
 
-export default defineMetadata({
+export const metadata = defineMetadata({
 	type: "ImageCompositor",
 	displayName: "Image Compositor",
 	description: "Compose images using Text and Image Inputs.",

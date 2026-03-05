@@ -4,6 +4,12 @@ import {
 	SingleOutputGenericSchema,
 	VirtualMediaDataSchema,
 } from "@gatewai/core/types";
+import {
+	AudioResultSchema,
+	ImageResultSchema,
+	TextResultSchema,
+	VideoResultSchema,
+} from "@gatewai/node-sdk";
 import { z } from "zod";
 
 export const CropNodeConfigSchema = z
@@ -17,9 +23,7 @@ export const CropNodeConfigSchema = z
 
 export type CropNodeConfig = z.infer<typeof CropNodeConfigSchema>;
 
-export const CropResultSchema = SingleOutputGenericSchema(
-	createOutputItemSchema(z.literal("Image"), FileDataSchema),
-);
+export const CropResultSchema = ImageResultSchema;
 
 export type CropResult = z.infer<typeof CropResultSchema>;
 
