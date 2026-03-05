@@ -25,6 +25,7 @@ enum TaskStatus {
   EXECUTING
   FAILED
   COMPLETED
+  CANCELLED
 }
 
 enum HandleType {

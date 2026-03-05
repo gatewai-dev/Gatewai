@@ -73,6 +73,11 @@ const processNodeJob = async (job: Job<NodeTaskJobData>) => {
 		return;
 	}
 
+	if (existingTask?.status === TaskStatus.CANCELLED) {
+		logger.info(`Task ${taskId} already cancelled. Skipping execution.`);
+		return;
+	}
+
 	await prisma.task.update({
 		where: { id: taskId },
 		data: { status: TaskStatus.EXECUTING, startedAt },
@@ -288,6 +293,19 @@ export async function triggerNextTask(
 	apiKey?: string,
 ) {
 	if (remainingTaskIds.length === 0) return;
+
+	// Check if batch is already finished/stopped
+	const batch = await prisma.taskBatch.findUnique({
+		where: { id: batchId },
+		select: { finishedAt: true },
+	});
+
+	if (batch?.finishedAt) {
+		logger.info(
+			`Batch ${batchId} is already finished. Skipping triggerNextTask.`,
+		);
+		return;
+	}
 
 	// Fetch the current statuses of all remaining tasks in one query.
 	const taskStatuses = await prisma.task.findMany({

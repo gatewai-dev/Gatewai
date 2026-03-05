@@ -43,7 +43,6 @@ export function registerBackendServices() {
 			return getAgentModel(name);
 		},
 	});
-
 	if (ENV_CONFIG.ENABLE_PRICING) {
 		container
 			.bind(TOKENS.PRICING_SERVICE)

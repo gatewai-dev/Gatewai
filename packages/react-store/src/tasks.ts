@@ -53,6 +53,23 @@ export const getInitialBatches = createAsyncThunk<
 	return await response.json();
 });
 
+export const stopBatch = createAsyncThunk<
+	{ success: boolean },
+	{ batchId: string }
+>("tasks/stopBatch", async ({ batchId }) => {
+	const response = await (appRPCClient.api.v1.tasks as any)["stop-batch"][
+		":batchId"
+	].$post({
+		param: {
+			batchId,
+		},
+	});
+	if (!response.ok) {
+		throw new Error(await response.text());
+	}
+	return await response.json();
+});
+
 type TasksState = ReturnType<typeof batchAdapter.getInitialState> & {
 	pollingInterval: number;
 	batchIdsToPoll: string[];
@@ -140,6 +157,21 @@ const tasksSlice = createSlice({
 				}
 				state.initialLoading = false;
 				state.latestTasksFetchTime = Date.now();
+			})
+			.addCase(stopBatch.fulfilled, (state, action) => {
+				const { batchId } = action.meta.arg;
+				batchAdapter.updateOne(state, {
+					id: batchId,
+					changes: {
+						finishedAt: new Date().toISOString(),
+					},
+				});
+				state.batchIdsToPoll = state.batchIdsToPoll.filter(
+					(id) => id !== batchId,
+				);
+				if (state.batchIdsToPoll.length === 0) {
+					state.pollingInterval = 0;
+				}
 			});
 	},
 });

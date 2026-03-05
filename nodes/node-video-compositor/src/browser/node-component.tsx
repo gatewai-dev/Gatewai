@@ -84,7 +84,8 @@ const VideoCompositorNodeComponent = memo((props: NodeProps) => {
 					<div className="mx-2 mt-1 mb-0.5 px-3 py-1.5 rounded-md bg-amber-500/10 border border-amber-500/20 flex items-center gap-2">
 						<AlertCircle className="size-3.5 text-amber-500 shrink-0" />
 						<span className="text-[11px] font-medium text-amber-200/80 leading-tight">
-							Rendering Animated SVG's doesn't work well
+							Rendering Animated SVG's doesn't work when rendering the Video.
+							Expect issues if SVG is animated.
 						</span>
 					</div>
 				)}

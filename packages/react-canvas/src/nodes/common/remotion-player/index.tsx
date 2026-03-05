@@ -412,6 +412,12 @@ export const MediaPlayer = ({
 
 	const activeMeta = virtualMedia ? getActiveMediaMetadata(virtualMedia) : null;
 
+	const isSvgType = resolvedType === "SVG";
+	const isImageType = resolvedType === "Image";
+
+	const defaultDimension =
+		isSvgType || isImageType ? 1080 : resolvedType === "Audio" ? 600 : 1080;
+
 	const durationInFrames = (() => {
 		if (activeMeta?.durationMs)
 			return Math.max(1, Math.ceil((activeMeta.durationMs / 1000) * fps));
@@ -419,15 +425,18 @@ export const MediaPlayer = ({
 		return 30 * fps;
 	})();
 
-	const compWidth = viewportWidth ?? activeMeta?.width ?? 1920;
+	const compWidth = viewportWidth ?? activeMeta?.width ?? defaultDimension;
 
 	const compHeight =
 		resolvedType === "Audio"
 			? 600
-			: (viewportHeight ?? activeMeta?.height ?? 1080);
+			: (viewportHeight ?? activeMeta?.height ?? defaultDimension);
 
 	const showControls =
-		controls && resolvedType !== "Image" && resolvedType !== "Text";
+		controls &&
+		resolvedType !== "Image" &&
+		resolvedType !== "Text" &&
+		resolvedType !== "SVG";
 
 	return (
 		<div

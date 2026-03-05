@@ -15,6 +15,7 @@ import {
 	selectNodeTaskStatus,
 	selectPollingInterval,
 	setPollingInterval,
+	stopBatch,
 	useAppDispatch,
 	useAppSelector,
 } from "@gatewai/react-store";
@@ -39,6 +40,7 @@ interface TaskManagerContextType {
 	taskBatches: BatchEntity[];
 	latestTasksFetchTime: number | null;
 	isAnyTaskRunning: boolean;
+	stopBatch: (batchId: string) => void;
 }
 
 const TaskManagerContext = createContext<TaskManagerContextType | undefined>(
@@ -137,6 +139,9 @@ const TaskManagerProvider = ({
 		taskBatches,
 		latestTasksFetchTime,
 		isAnyTaskRunning,
+		stopBatch: (batchId: string) => {
+			dispatch(stopBatch({ batchId }));
+		},
 	};
 
 	return (

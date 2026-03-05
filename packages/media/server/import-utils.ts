@@ -157,18 +157,11 @@ export async function uploadToImportNode({
 				width = 1080;
 				height = 1080;
 			} else {
-				const aspectRatio = w / h;
-				if (w < h) {
-					width = 1080;
-					height = Math.round(1080 / aspectRatio);
-				} else {
-					height = 1080;
-					width = Math.round(1080 * aspectRatio);
-				}
+				width = w;
+				height = h;
 			}
 		} catch (error) {
 			console.error("Failed to extract SVG dimensions:", error);
-			// Default fallback if parsing fails completely
 			width = 1080;
 			height = 1080;
 		}
