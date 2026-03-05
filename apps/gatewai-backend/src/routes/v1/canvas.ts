@@ -16,6 +16,7 @@ import { streamSSE } from "hono/streaming";
 import z from "zod";
 import { AgentRunnerManager } from "../../agent/runner/runner-manager.js";
 import type { AuthHonoTypes } from "../../auth.js";
+import { duplicateCanvas } from "../../lib/canvas-duplication.service.js";
 import { redisSubscriber } from "../../lib/redis.js";
 import { assertIsError } from "../../utils/misc.js";
 import {
@@ -370,126 +371,15 @@ const canvasRoutes = new Hono<{ Variables: AuthHonoTypes }>({
 		const id = c.req.param("id");
 		const user = requireUser(c);
 
-		// User needs access to duplicate
 		await assertCanvasOwnership(c, id);
 
-		const original = await prisma.canvas.findFirst({
-			where: { id },
-			include: {
-				nodes: {
-					include: {
-						template: true,
-						handles: true,
-					},
-				},
-			},
-		});
-
-		if (!original) {
-			throw new HTTPException(404, { message: "Canvas not found" });
-		}
-
-		const originalEdges = await prisma.edge.findMany({
-			where: { sourceNode: { canvasId: id } },
-		});
-
-		// Duplicate belongs to the current user
-		const duplicate = await prisma.canvas.create({
-			data: { name: `${original.name} (Copy)`, userId: user.id },
-		});
-
-		const nodeCreations = original.nodes.map((node) =>
-			prisma.node.create({
-				data: {
-					name: node.name,
-					type: node.type,
-					position: node.position as any,
-					width: node.width,
-					height: node.height,
-					config: node.config ?? {},
-					templateId: node.templateId,
-					canvasId: duplicate.id,
-				},
-			}),
+		const result = await duplicateCanvas(
+			id,
+			`${user.name}'s Canvas Copy`,
+			user.id,
 		);
 
-		const newNodes = await prisma.$transaction(nodeCreations);
-
-		const nodeIdMap = new Map<string, string>();
-		original.nodes.forEach((oldNode, index) => {
-			nodeIdMap.set(oldNode.id, newNodes[index].id);
-		});
-
-		const handleCreations = [];
-		const tempHandleMapping: { oldId: string; newNodeId: string }[] = [];
-
-		for (let i = 0; i < original.nodes.length; i++) {
-			const oldNode = original.nodes[i];
-			const newNodeId = newNodes[i].id;
-			for (const oldHandle of oldNode.handles) {
-				tempHandleMapping.push({
-					oldId: oldHandle.id,
-					newNodeId: newNodeId,
-				});
-
-				handleCreations.push(
-					prisma.handle.create({
-						data: {
-							nodeId: newNodeId,
-							type: oldHandle.type,
-							dataTypes: oldHandle.dataTypes,
-							label: oldHandle.label,
-							order: oldHandle.order,
-							required: oldHandle.required,
-							templateHandleId: oldHandle.templateHandleId,
-						},
-					}),
-				);
-			}
-		}
-
-		const newHandles = await prisma.$transaction(handleCreations);
-
-		const handleIdMap = new Map<string, string>();
-		for (let i = 0; i < tempHandleMapping.length; i++) {
-			handleIdMap.set(tempHandleMapping[i].oldId, newHandles[i].id);
-		}
-
-		const edgeCreations = originalEdges
-			.map((edge) => {
-				const hasHandleIds = edge.sourceHandleId && edge.targetHandleId;
-				if (!hasHandleIds) return null;
-
-				const newSource = nodeIdMap.get(edge.source);
-				const newTarget = nodeIdMap.get(edge.target);
-				const newSourceHandleId = handleIdMap.get(edge.sourceHandleId);
-				const newTargetHandleId = handleIdMap.get(edge.targetHandleId);
-
-				if (
-					!newSource ||
-					!newTarget ||
-					!newSourceHandleId ||
-					!newTargetHandleId
-				) {
-					return null;
-				}
-
-				return prisma.edge.create({
-					data: {
-						source: newSource,
-						target: newTarget,
-						sourceHandleId: newSourceHandleId,
-						targetHandleId: newTargetHandleId,
-					},
-				});
-			})
-			.filter((e) => e !== null);
-
-		if (edgeCreations.length > 0) {
-			await prisma.$transaction(edgeCreations);
-		}
-
-		return c.json({ canvas: { ...duplicate, nodes: newNodes } }, 201);
+		return c.json(result, 201);
 	})
 	.post("/:id/process", zValidator("json", processSchema), async (c) => {
 		const canvasId = c.req.param("id");

@@ -31,7 +31,7 @@ src/graph-engine/
 
 ---
 
-### 1.2 Backend: Extract Canvas Duplication Logic
+### 1.2 Backend: Extract Canvas Duplication Logic [DONE]
 
 **Location:** `apps/gatewai-backend/src/routes/v1/canvas.ts` (lines 369-493)
 
