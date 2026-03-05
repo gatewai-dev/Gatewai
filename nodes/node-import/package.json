@@ -36,6 +36,7 @@
 		"@gatewai/node-sdk": "workspace:*",
 		"@gatewai/react-canvas": "workspace:*",
 		"@gatewai/react-store": "workspace:*",
+		"@gatewai/remotion-compositions": "workspace:*",
 		"@gatewai/ui-kit": "workspace:*",
 		"zod": "^3.24.1"
 	},

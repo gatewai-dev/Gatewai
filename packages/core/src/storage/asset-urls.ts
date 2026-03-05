@@ -1,8 +1,8 @@
-import type { FileAsset } from "@gatewai/db";
+import type { FileAsset } from "@gatewai/db/types";
 import { MIME_TYPES } from "../types/index.js";
 import type { FileData, ProcessData } from "../types/node-result.js";
 
-export function GetAssetEndpoint(baseUrl: string, fileAsset: FileAsset) {
+export function GetAssetEndpointBackend(baseUrl: string, fileAsset: FileAsset) {
 	// Ensure the ID itself doesn't already have an extension
 	const cleanId = fileAsset.id.split(".")[0];
 	const assetUrl = `${baseUrl}/api/v1/assets/${cleanId}`;
@@ -31,5 +31,5 @@ export function ResolveFileDataUrl(baseUrl: string, data: FileData | null) {
 	if (!data) return null;
 	if (data.processData)
 		return GetProcessDataEndpoint(baseUrl, data.processData);
-	if (data.entity) return GetAssetEndpoint(baseUrl, data.entity);
+	if (data.entity) return GetAssetEndpointBackend(baseUrl, data.entity);
 }

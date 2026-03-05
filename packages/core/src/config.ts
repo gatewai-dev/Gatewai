@@ -5,6 +5,9 @@ config();
 
 const envSchema = z.object({
 	BASE_URL: z.string().url(),
+	NODE_ENV: z
+		.enum(["development", "production", "test"])
+		.default("development"),
 	PORT: z.coerce.number().default(3000),
 	REDIS_HOST: z.string().min(1),
 	REDIS_PORT: z.coerce.number(), // Changed to number for easier use with Redis clients
@@ -26,8 +29,16 @@ const envSchema = z.object({
 		.toLowerCase()
 		.transform((val: string) => val === "true")
 		.default("false"),
-	MAX_CONCURRENT_ASSISTANT_JOBS: z.coerce.number().default(5),
+	MAX_CONCURRENT_ASSISTANT_JOBS: z.coerce.number().default(15),
 	MAX_CONCURRENT_WORKFLOW_JOBS: z.coerce.number().default(5),
+
+	DEFAULT_FREE_TOKENS: z.coerce.number().default(20),
+	ENABLE_PRICING: z.boolean().default(false),
+
+	WEBHOOK_PROXY_URL: z.string().optional(),
+
+	POLAR_ACCESS_TOKEN: z.string().optional(),
+	POLAR_WEBHOOK_SECRET: z.string().optional(),
 });
 
 const parsed = envSchema.safeParse(process.env);

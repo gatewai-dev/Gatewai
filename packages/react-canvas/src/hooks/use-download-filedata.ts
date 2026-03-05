@@ -1,6 +1,9 @@
 import { extractExtension, GetAssetEndpoint } from "@gatewai/core/browser";
-import { DATA_TYPE_EXTENSIONS, type FileData } from "@gatewai/core/types";
-import type { DataType } from "@gatewai/db";
+import {
+	DATA_TYPE_EXTENSIONS,
+	type DataType,
+	type FileData,
+} from "@gatewai/core/types";
 
 class DownloadError extends Error {
 	constructor(message: string) {

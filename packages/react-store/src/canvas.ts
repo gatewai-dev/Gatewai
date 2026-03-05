@@ -16,6 +16,7 @@ import type {
 } from "@gatewai/rpc-client";
 import { appRPCClient } from "@gatewai/rpc-client";
 import { createApi, fetchBaseQuery } from "@reduxjs/toolkit/query/react";
+import { billingAPI } from "./billing.js";
 
 export const canvasDetailsAPI = createApi({
 	reducerPath: "canvasDetailsAPI",
@@ -74,6 +75,12 @@ export const canvasDetailsAPI = createApi({
 				}
 				const data = await response.json();
 				return { data };
+			},
+			async onQueryStarted(arg, { dispatch, queryFulfilled }) {
+				try {
+					await queryFulfilled;
+					dispatch(billingAPI.util.invalidateTags(["Balance"]));
+				} catch {}
 			},
 		}),
 		getPatch: build.query<GetPatchRPC, GetPatchRPCParams>({

@@ -21,7 +21,11 @@ export async function syncNodeTemplates(prisma: PrismaClient) {
 		(t) => !manifestTypes.has(t.type),
 	);
 
-	if (templatesToRemove.length > 0) {
+	if (nodeRegistry.hasErrors) {
+		logger.warn(
+			"[syncNodeTemplates] Skipping removal of obsolete templates because one or more nodes failed to load.",
+		);
+	} else if (templatesToRemove.length > 0) {
 		logger.info(
 			`[syncNodeTemplates] Removing ${templatesToRemove.length} obsolete templates...`,
 		);

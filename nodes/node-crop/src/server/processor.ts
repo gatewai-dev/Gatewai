@@ -1,104 +1,157 @@
 import assert from "node:assert";
 import { TOKENS } from "@gatewai/core/di";
-import type { FileData } from "@gatewai/core/types";
+import type { FileData, VirtualMediaData } from "@gatewai/core/types";
 import { DataType } from "@gatewai/db";
 import type {
-    BackendNodeProcessorCtx,
-    BackendNodeProcessorResult,
-    GraphResolvers,
-    MediaService,
-    NodeProcessor,
-    StorageService,
+	BackendNodeProcessorCtx,
+	BackendNodeProcessorResult,
+	GraphResolvers,
+	MediaService,
+	StorageService,
 } from "@gatewai/node-sdk/server";
+import { AbstractImageProcessor } from "@gatewai/node-sdk/server";
+import {
+	appendOperation,
+	getActiveMediaMetadata,
+} from "@gatewai/remotion-compositions/server";
 import { inject, injectable } from "inversify";
 import { CropNodeConfigSchema } from "../shared/config.js";
-import type { CropResult } from "../shared/index.js";
+import type { CropNodeConfig, CropResult, VideoCropResult } from "../shared/index.js";
 import { applyCrop } from "../shared/pixi-crop-run.js";
 
 @injectable()
-export class CropProcessor implements NodeProcessor {
-    constructor(
-        @inject(TOKENS.STORAGE) private storage: StorageService,
-        @inject(TOKENS.MEDIA) private media: MediaService,
-        @inject(TOKENS.GRAPH_RESOLVERS) private graph: GraphResolvers,
-    ) { }
+export class CropProcessor extends AbstractImageProcessor {
+	constructor(
+		@inject(TOKENS.STORAGE) storage: StorageService,
+		@inject(TOKENS.MEDIA) media: MediaService,
+		@inject(TOKENS.GRAPH_RESOLVERS) graph: GraphResolvers,
+	) {
+		super(storage, media, graph);
+	}
 
-    async process({
-        node,
-        data,
-    }: BackendNodeProcessorCtx): Promise<BackendNodeProcessorResult<CropResult>> {
-        try {
-            const imageInput = this.graph.getInputValue(data, node.id, true, {
-                dataType: DataType.Image,
-                label: "Image",
-            })?.data as FileData | null;
+	protected getPixiRunFunction() {
+		return applyCrop;
+	}
 
-            assert(imageInput);
-            const imageUrl = await this.media.resolveFileDataUrl(imageInput);
-            assert(imageUrl);
+	protected getPixiExecuteArgs(
+		node: BackendNodeProcessorCtx["node"],
+		imageUrl: string,
+		apiKey?: string,
+	) {
+		const config = CropNodeConfigSchema.parse(node.config);
+		return {
+			imageUrl,
+			config,
+			apiKey,
+		};
+	}
 
-            const validatedConfig = CropNodeConfigSchema.parse(node.config);
+	protected getImageInput(ctx: BackendNodeProcessorCtx) {
+		return (
+			this.graph.getInputValue(ctx.data, ctx.node.id, true, {
+				dataType: DataType.Image,
+				label: "Input",
+			})?.data ||
+			this.graph.getInputValue(ctx.data, ctx.node.id, true, {
+				dataType: DataType.SVG,
+				label: "Input",
+			})?.data
+		) as FileData | null;
+	}
 
-            const { dataUrl, ...dimensions } = await this.media.backendPixiService.execute(
-                node.id,
-                {
-                    imageUrl,
-                    config: validatedConfig,
-                    apiKey: data.apiKey,
-                },
-                applyCrop,
-            );
+	async process(
+		ctx: BackendNodeProcessorCtx,
+	): Promise<BackendNodeProcessorResult<CropResult | VideoCropResult>> {
+		try {
+			const { node, data } = ctx;
+			const imageInput = this.getImageInput(ctx);
+			const videoInputsOnly = this.graph.getInputValuesByType(data, node.id, {
+				dataType: DataType.Video,
+			});
+			const audioInputsOnly = this.graph.getInputValuesByType(data, node.id, {
+				dataType: DataType.Audio,
+			});
 
-            const uploadBuffer = Buffer.from(await dataUrl.arrayBuffer());
-            const mimeType = dataUrl.type;
+			const videoInputs = [...videoInputsOnly, ...audioInputsOnly];
 
-            const outputHandle = data.handles.find(
-                (h) => h.nodeId === node.id && h.type === "Output",
-            );
-            if (!outputHandle)
-                return { success: false, error: "Output handle is missing." };
+			const hasImage = imageInput;
+			const hasVideo = videoInputs[0]?.data;
 
-            const newResult: CropResult = structuredClone(
-                node.result as unknown as CropResult,
-            ) ?? {
-                outputs: [],
-                selectedOutputIndex: 0,
-            };
+			if (!hasImage && !hasVideo) {
+				return { success: false, error: "Missing Image or Video input" };
+			}
 
-            const key = `${(data.task ?? node).id}/${Date.now()}.png`;
-            const { signedUrl, key: tempKey } =
-                await this.storage.uploadToTemporaryStorageFolder(
-                    uploadBuffer,
-                    mimeType,
-                    key,
-                );
+			const config = CropNodeConfigSchema.parse(node.config);
 
-            const newGeneration: CropResult["outputs"][number] = {
-                items: [
-                    {
-                        type: DataType.Image,
-                        data: {
-                            processData: {
-                                dataUrl: signedUrl,
-                                tempKey,
-                                mimeType,
-                                ...dimensions,
-                            },
-                        },
-                        outputHandleId: outputHandle.id,
-                    },
-                ],
-            };
+			if (hasVideo) {
+				assert(videoInputs[0], "Video Input is missing data")
+				return this.processVideo(
+					hasVideo as VirtualMediaData,
+					videoInputs[0].type as "Video" | "Audio",
+					config,
+					data,
+					node,
+				);
+			} else {
+				return super.process(ctx);
+			}
+		} catch (err: unknown) {
+			return {
+				success: false,
+				error: err instanceof Error ? err.message : "Crop processing failed",
+			};
+		}
+	}
 
-            newResult.outputs = [newGeneration];
-            newResult.selectedOutputIndex = 0;
+	private async processVideo(
+		inputVideo: VirtualMediaData,
+		inputVideoType: "Video" | "Audio",
+		config: CropNodeConfig,
+		data: BackendNodeProcessorCtx["data"],
+		node: BackendNodeProcessorCtx["node"],
+	): Promise<BackendNodeProcessorResult<VideoCropResult>> {
+		const activeMeta = getActiveMediaMetadata(inputVideo);
+		if (!activeMeta || !activeMeta.width || !activeMeta.height) {
+			return { success: false, error: "No active media metadata found" };
+		}
+		const sw = activeMeta.width;
+		const sh = activeMeta.height;
+		const cw = Math.max(1, Math.round((config.widthPercentage / 100) * sw));
+		const ch = Math.max(1, Math.round((config.heightPercentage / 100) * sh));
 
-            return { success: true, newResult };
-        } catch (err: unknown) {
-            return {
-                success: false,
-                error: err instanceof Error ? err.message : "Crop processing failed",
-            };
-        }
-    }
+		const output = appendOperation(inputVideo, {
+			op: "crop",
+			leftPercentage: config.leftPercentage,
+			topPercentage: config.topPercentage,
+			widthPercentage: config.widthPercentage,
+			heightPercentage: config.heightPercentage,
+			metadata: {
+				...activeMeta,
+				width: cw,
+				height: ch,
+			},
+		});
+
+		const outputHandle = data.handles.find(
+			(h) => h.nodeId === node.id && h.type === "Output",
+		);
+		if (!outputHandle) return { success: false, error: "Output handle is missing" };
+
+		const newResult: VideoCropResult = {
+			selectedOutputIndex: 0,
+			outputs: [
+				{
+					items: [
+						{
+							type: inputVideoType,
+							data: output,
+							outputHandleId: outputHandle.id,
+						},
+					],
+				},
+			],
+		};
+
+		return { success: true, newResult };
+	}
 }

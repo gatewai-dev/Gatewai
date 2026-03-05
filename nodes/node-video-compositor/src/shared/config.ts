@@ -1,9 +1,11 @@
+import { VideoFilterSchema, VirtualMediaDataSchema } from "@gatewai/core/types";
 import {
 	AlignmentSchema,
 	AnimationSchema,
 	AspectLockSchema,
 	AudioOptionsSchema,
 	BaseLayerSchema,
+	ColorSchema,
 	DimensionSchema,
 	FontOptionsSchema,
 	OpacitySchema,
@@ -13,11 +15,20 @@ import {
 	ScaleSchema,
 	SizeSchema,
 	StrokeSchema,
+	VideoResultSchema,
 	VideoTimingSchema,
 	ZIndexSchema,
 } from "@gatewai/node-sdk";
 import { z } from "zod";
 
+export const VariableInputDataTypes = [
+	"Text",
+	"Image",
+	"Video",
+	"Audio",
+	"Caption",
+	"SVG",
+] as const;
 // Video Compositor Layer (extends base with video-specific fields)
 export const VideoCompositorLayerSchema = BaseLayerSchema.merge(PositionSchema)
 	.merge(SizeSchema)
@@ -34,11 +45,34 @@ export const VideoCompositorLayerSchema = BaseLayerSchema.merge(PositionSchema)
 	.merge(StrokeSchema)
 	.merge(PaddingSchema)
 	.extend({
-		type: z.enum(["Text", "Image", "Video", "Audio"]),
+		type: z.enum(VariableInputDataTypes),
 		backgroundColor: z.string().optional(),
 		borderColor: z.string().optional(),
 		borderWidth: z.number().min(0).optional(),
 		borderRadius: z.number().min(0).optional(),
+
+		virtualMedia: VirtualMediaDataSchema.optional(),
+		trimStart: z.number().min(0).optional(),
+		trimEnd: z.number().min(0).optional(),
+		speed: z.number().min(0.25).max(4.0).optional(),
+		filters: VideoFilterSchema.optional(),
+		autoDimensions: z.boolean().optional(),
+		textShadow: z.string().optional(),
+		transition: z
+			.object({
+				type: z.enum([
+					"crossfade",
+					"wipe-left",
+					"wipe-right",
+					"slide-up",
+					"slide-down",
+				]),
+				durationInMS: z.number().min(1),
+			})
+			.optional(),
+
+		captionPreset: z.string().optional(),
+		useRoundedTextBox: z.boolean().optional(),
 	})
 	.strict();
 
@@ -50,7 +84,8 @@ export const VideoCompositorNodeConfigSchema = z
 		),
 		width: DimensionSchema,
 		height: DimensionSchema,
-		FPS: z.number().optional(),
+		backgroundColor: ColorSchema,
+		FPS: z.number().max(120).min(1).optional(),
 	})
 	.strict();
 
@@ -59,14 +94,6 @@ export type VideoCompositorNodeConfig = z.infer<
 >;
 export type VideoCompositorLayer = z.infer<typeof VideoCompositorLayerSchema>;
 
-import {
-	createOutputItemSchema,
-	FileDataSchema,
-	SingleOutputGenericSchema,
-} from "@gatewai/core/types";
-
-export const VideoCompositorResultSchema = SingleOutputGenericSchema(
-	createOutputItemSchema(z.literal("Video"), FileDataSchema),
-);
+export const VideoCompositorResultSchema = VideoResultSchema;
 
 export type VideoCompositorResult = z.infer<typeof VideoCompositorResultSchema>;

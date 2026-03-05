@@ -1,14 +1,17 @@
-import type { DataType } from "@gatewai/db";
-import type { AnyOutputItem, NodeResult } from "./node-result.js";
+import type { DataTypeEnum } from "./base.js";
+import type { AnyOutputUnion, NodeResult } from "./node-result.js";
 import type { IPixiProcessor } from "./pixi.js";
 
 export type ConnectedInput = {
 	connectionValid: boolean;
-	outputItem: AnyOutputItem | null;
+	outputItem: AnyOutputUnion | null;
 };
 
 export interface NodeProcessorContext {
-	getFirstOutputHandle: (nodeId: string, type?: DataType) => string | undefined;
+	getFirstOutputHandle: (
+		nodeId: string,
+		type?: DataTypeEnum,
+	) => string | undefined;
 	getFirstOutputHandleWithLabel: (
 		nodeId: string,
 		label: string,

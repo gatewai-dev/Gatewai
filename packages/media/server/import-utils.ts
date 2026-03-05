@@ -1,10 +1,11 @@
-import { ENV_CONFIG, generateId } from "@gatewai/core";
+import { ENV_CONFIG, extractSvgDimensions, generateId } from "@gatewai/core";
 import { container, TOKENS } from "@gatewai/core/di";
 import type { StorageService } from "@gatewai/core/storage";
-import type { MediaService, NodeResult } from "@gatewai/core/types";
+import type { MediaService } from "@gatewai/core/types";
 import { type DataType, prisma } from "@gatewai/db";
+import { createVirtualMedia } from "@gatewai/remotion-compositions/server";
 import { fileTypeFromBuffer } from "file-type";
-import { getMediaDuration } from "./utils/index.js";
+import { getMediaDuration, getVideoMetadata } from "./utils/index.js";
 
 interface UploadOptions {
 	nodeId: string;
@@ -13,12 +14,49 @@ interface UploadOptions {
 	mimeType?: string;
 }
 
-type SupportedDataType = Extract<DataType, "Image" | "Video" | "Audio">;
+type SupportedDataType = Extract<
+	DataType,
+	"Image" | "Video" | "Audio" | "SVG" | "Caption"
+>;
 
-function resolveDataType(contentType: string): SupportedDataType {
+function extractCaptionDuration(buffer: Buffer): number | null {
+	try {
+		const str = buffer.toString("utf-8");
+		const regex = /(\d{2}):(\d{2}):(\d{2}),(\d{3})/g;
+		let maxTimeSec = 0;
+		let match;
+		while ((match = regex.exec(str)) !== null) {
+			const hours = parseInt(match[1], 10);
+			const minutes = parseInt(match[2], 10);
+			const seconds = parseInt(match[3], 10);
+			const ms = parseInt(match[4], 10);
+			const timeSec = hours * 3600 + minutes * 60 + seconds + ms / 1000;
+			if (timeSec > maxTimeSec) {
+				maxTimeSec = timeSec;
+			}
+		}
+		return maxTimeSec > 0 ? maxTimeSec : null;
+	} catch {
+		return null;
+	}
+}
+
+function resolveDataType(
+	contentType: string,
+	filename: string,
+): SupportedDataType {
+	if (contentType === "image/svg+xml") return "SVG";
 	if (contentType.startsWith("image/")) return "Image";
 	if (contentType.startsWith("video/")) return "Video";
 	if (contentType.startsWith("audio/")) return "Audio";
+
+	const ext = filename.toLowerCase().split(".").pop();
+	if (ext === "srt") {
+		return "Caption";
+	}
+
+	if (contentType === "text/srt") return "Caption";
+
 	throw new Error(`Unsupported content type for Import Node: ${contentType}`);
 }
 
@@ -27,9 +65,9 @@ function resolveDataType(contentType: string): SupportedDataType {
  * entry to the node's result.
  *
  * Ordering guarantees:
- *  1. Storage upload happens first — no DB rows are written if this fails.
- *  2. FileAsset creation and node update are wrapped in a transaction —
- *     failure leaves no orphaned asset records.
+ * 1. Storage upload happens first — no DB rows are written if this fails.
+ * 2. FileAsset creation and node update are wrapped in a transaction —
+ * failure leaves no orphaned asset records.
  */
 export async function uploadToImportNode({
 	nodeId,
@@ -49,7 +87,7 @@ export async function uploadToImportNode({
 		"application/octet-stream";
 
 	// Validate early so we don't pay for storage + DB work on unsupported types.
-	const dataType = resolveDataType(finalContentType);
+	const dataType = resolveDataType(finalContentType, filename);
 
 	// ── 2. Fetch node (fail fast if missing) ─────────────────────────────────
 	const node = await prisma.node.findUniqueOrThrow({
@@ -73,33 +111,63 @@ export async function uploadToImportNode({
 	let width: number | null = null;
 	let height: number | null = null;
 	let durationInSec: number | null = null;
+	let fps: number | null = null;
 
-	await Promise.allSettled([
-		(async () => {
-			if (finalContentType.startsWith("image/")) {
-				try {
-					const media = container.get<MediaService>(TOKENS.MEDIA);
-					const meta = await media.getImageDimensions(buffer);
-					width = meta.width || null;
-					height = meta.height || null;
-				} catch (err) {
-					console.error("Failed to extract image dimensions:", err);
-				}
+	if (finalContentType.startsWith("image/")) {
+		const media = container.get<MediaService>(TOKENS.MEDIA);
+		const meta = await media.getImageDimensions(buffer);
+		width = meta.width || null;
+		height = meta.height || null;
+
+		if (width == null || height == null) {
+			throw new Error("Failed to extract image dimensions");
+		}
+	} else if (finalContentType.startsWith("video/")) {
+		const meta = await getVideoMetadata(buffer);
+		if (!meta) {
+			throw new Error("Failed to extract video metadata");
+		}
+		width = meta.width;
+		height = meta.height;
+		durationInSec = meta.duration;
+		fps = meta.fps;
+
+		if (width === 0 || height === 0 || durationInSec === 0 || fps === 0) {
+			throw new Error(
+				`Incomplete video metadata: width=${width}, height=${height}, duration=${durationInSec}, fps=${fps}`,
+			);
+		}
+	} else if (finalContentType.startsWith("audio/")) {
+		durationInSec = await getMediaDuration(buffer, finalContentType);
+		if (durationInSec == null || durationInSec === 0) {
+			throw new Error("Failed to extract audio duration");
+		}
+	} else if (dataType === "Caption") {
+		const captionDuration = extractCaptionDuration(buffer);
+		if (captionDuration) {
+			durationInSec = captionDuration;
+		}
+	} else if (dataType === "SVG") {
+		try {
+			const dim = extractSvgDimensions(buffer);
+			const w = dim?.w || 0;
+			const h = dim?.h || 0;
+
+			if (w === 0 || h === 0) {
+				width = 1080;
+				height = 1080;
+			} else {
+				width = w;
+				height = h;
 			}
-		})(),
-		(async () => {
-			if (
-				finalContentType.startsWith("video/") ||
-				finalContentType.startsWith("audio/")
-			) {
-				try {
-					durationInSec = await getMediaDuration(buffer);
-				} catch (err) {
-					console.error("Failed to extract media duration:", err);
-				}
-			}
-		})(),
-	]);
+		} catch (error) {
+			console.error("Failed to extract SVG dimensions:", error);
+			width = 1080;
+			height = 1080;
+		}
+	}
+
+	// ── 4. Upload to Storage ──────────────────────────────────────────────────
 	const key = `assets/${generateId()}-${filename}`;
 	const storage = container.get<StorageService>(TOKENS.STORAGE);
 
@@ -128,18 +196,17 @@ export async function uploadToImportNode({
 					size: buffer.length,
 					width,
 					height,
+					fps: fps != null ? Math.round(fps) : undefined,
 					mimeType: finalContentType,
 				},
 			});
 
-			// Re-fetch result inside the transaction to avoid a lost-update race
-			// if another request appended an output between our initial read and now.
 			const current = await tx.node.findUniqueOrThrow({
 				where: { id: nodeId },
 				select: { result: true },
 			});
 
-			const currentResult = (current.result as unknown as ImportResult) ?? {
+			const currentResult = (current.result as any) ?? {
 				outputs: [],
 			};
 			const outputs = currentResult.outputs ?? [];
@@ -148,7 +215,10 @@ export async function uploadToImportNode({
 				items: [
 					{
 						outputHandleId: outputHandle.id,
-						data: { entity: asset },
+						data:
+							dataType === "Video" || dataType === "Audio"
+								? createVirtualMedia({ entity: asset }, dataType)
+								: { entity: asset },
 						type: dataType,
 					},
 				],

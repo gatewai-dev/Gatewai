@@ -10,7 +10,8 @@ GEMINI_API_KEY=$(gcloud secrets versions access latest --secret="GEMINI_API_KEY"
 GOOGLE_CLIENT_ID=$(gcloud secrets versions access latest --secret="GOOGLE_CLIENT_ID")
 GOOGLE_CLIENT_SECRET=$(gcloud secrets versions access latest --secret="GOOGLE_CLIENT_SECRET")
 BETTER_AUTH_SECRET=$(gcloud secrets versions access latest --secret="BETTER_AUTH_SECRET")
-
+POLAR_WEBHOOK_SECRET=$(gcloud secrets versions access latest --secret="POLAR_WEBHOOK_SECRET")
+POLAR_ACCESS_TOKEN=$(gcloud secrets versions access latest --secret="POLAR_ACCESS_TOKEN")
 # Check if secrets were fetched successfully before overwriting
 if [ -z "$GEMINI_API_KEY" ]; then
   echo "Error: Failed to fetch secrets. Aborting to protect existing .env file."
@@ -21,6 +22,7 @@ fi
 cat << EOF > "$ENV_FILE"
 # --- App Configuration ---
 PORT=8081
+NODE_ENV=production
 VITE_BASE_URL=https://gatewai.studio
 BASE_URL=https://gatewai.studio
 GCS_ASSETS_BUCKET=gatewai-media
@@ -38,6 +40,8 @@ GEMINI_API_KEY=$GEMINI_API_KEY
 GOOGLE_CLIENT_ID=$GOOGLE_CLIENT_ID
 GOOGLE_CLIENT_SECRET=$GOOGLE_CLIENT_SECRET
 BETTER_AUTH_SECRET=$BETTER_AUTH_SECRET
+POLAR_WEBHOOK_SECRET=$POLAR_WEBHOOK_SECRET
+POLAR_ACCESS_TOKEN=$POLAR_ACCESS_TOKEN
 
 # --- Database & Redis ---
 DATABASE_URL="postgresql://postgres:postgres@postgres:5432/gatewai_db"
@@ -54,6 +58,7 @@ DISABLE_EMAIL_SIGNUP=true
 
 MAX_CONCURRENT_ASSISTANT_JOBS=5
 MAX_CONCURRENT_WORKFLOW_JOBS=5
+
 EOF
 
 echo "Successfully updated and overwrote $ENV_FILE"

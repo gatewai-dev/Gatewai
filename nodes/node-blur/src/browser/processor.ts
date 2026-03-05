@@ -14,7 +14,9 @@ export class BlurBrowserProcessor implements IBrowserProcessor {
 		signal,
 		context,
 	}: NodeProcessorParams): Promise<BlurResult | null> {
-		const imageUrl = context.findInputData(inputs, "Image");
+		const imageUrl =
+			context.findInputData(inputs, "Image", "Input") ||
+			context.findInputData(inputs, "SVG", "Input");
 		if (!imageUrl) throw new Error("Missing Input Image");
 
 		const config = BlurNodeConfigSchema.parse(node.config);
@@ -27,7 +29,10 @@ export class BlurBrowserProcessor implements IBrowserProcessor {
 			applyBlur,
 			signal,
 		);
-		const outputHandle = context.getFirstOutputHandle(node.id, "Image");
+		const outputHandle = context.getFirstOutputHandleWithLabel(
+			node.id,
+			"Result",
+		);
 		if (!outputHandle) throw new Error("Missing output handle");
 
 		const dataUrl = URL.createObjectURL(result.dataUrl);

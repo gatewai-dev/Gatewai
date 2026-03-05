@@ -5,6 +5,9 @@ import { prismaAdapter } from "better-auth/adapters/prisma";
 import { apiKey } from "better-auth/plugins";
 import { createMiddleware } from "hono/factory";
 import { HTTPException } from "hono/http-exception";
+import { polarPlugin } from "./polar";
+
+// Polar product mapping removed (consolidated in polar.ts)
 
 export const auth = betterAuth({
 	database: prismaAdapter(prisma, {
@@ -24,6 +27,7 @@ export const auth = betterAuth({
 		apiKey({
 			apiKeyHeaders: "X-API-KEY",
 		}),
+		...(polarPlugin ? [polarPlugin] : []),
 	],
 	databaseHooks: {
 		user: {

@@ -34,6 +34,7 @@
 		"@gatewai/core": "workspace:*",
 		"@gatewai/node-sdk": "workspace:*",
 		"@gatewai/react-canvas": "workspace:*",
+		"@gatewai/remotion-compositions": "workspace:*",
 		"@gatewai/ui-kit": "workspace:*",
 		"zod": "^3.24.1"
 	},
@@ -47,6 +48,7 @@
 		"@gatewai/tsconfig": "workspace:*",
 		"@types/node": "^24.0.4",
 		"@types/react": "^19.2.4",
+		"@gatewai/db": "workspace:*",
 		"tsdown": "^0.19.0",
 		"typescript": "^5.8.3"
 	}

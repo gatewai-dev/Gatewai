@@ -20,7 +20,7 @@ export const metadata = defineMetadata({
 	isTransient: true,
 	handles: {
 		inputs: [
-			{ dataTypes: ["Image"], required: true, label: "Image", order: 0 },
+			{ dataTypes: ["Image", "SVG"], required: true, label: "Input", order: 0 },
 		],
 		outputs: [{ dataTypes: ["Image"], label: "Result", order: 0 }],
 	},

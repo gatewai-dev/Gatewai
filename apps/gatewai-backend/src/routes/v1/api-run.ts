@@ -1,6 +1,6 @@
 import assert from "node:assert";
 import { generateId } from "@gatewai/core";
-import { ConfigSchemaRegistry } from "@gatewai/core/types";
+import { ConfigSchemaRegistry, type NodeResult } from "@gatewai/core/types";
 import {
 	APIRunRequestSchema,
 	APIRunResponseSchema,
@@ -15,6 +15,7 @@ import { uploadToImportNode } from "@gatewai/media/server";
 import { zValidator } from "@hono/zod-validator";
 import { Hono } from "hono";
 import type { AuthorizedHonoTypes } from "../../auth.js";
+import { getUserDefaultApiKey } from "../../lib/get-user-default-api-key.js";
 import { assertIsError } from "../../utils/misc.js";
 import { assertCanvasOwnership } from "./auth-helpers.js";
 
@@ -152,11 +153,7 @@ const apiRunRoutes = new Hono<{ Variables: AuthorizedHonoTypes }>({
 
 			let apiKey = c.req.header("x-api-key");
 			if (!apiKey && user) {
-				const userKey = await prisma.apiKey.findFirst({
-					where: { userId: user.id },
-					orderBy: { createdAt: "asc" },
-				});
-				if (userKey) apiKey = userKey.key;
+				apiKey = await getUserDefaultApiKey(user.id);
 			}
 
 			const taskBatch = await wfProcessor.processNodes(
@@ -305,7 +302,7 @@ async function handleAssetCopy(nodeId: string, assetId: string): Promise<void> {
 	}
 
 	// Build the result structure
-	const currentResult = (node.result as any) || { outputs: [] };
+	const currentResult = (node.result as NodeResult) || { outputs: [] };
 	const outputs = currentResult.outputs || [];
 	const newIndex = outputs.length;
 

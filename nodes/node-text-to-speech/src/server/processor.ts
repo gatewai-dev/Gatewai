@@ -2,10 +2,6 @@ import { spawn } from "node:child_process";
 import type { EnvConfig } from "@gatewai/core";
 import { generateId, logger } from "@gatewai/core";
 import { TOKENS } from "@gatewai/core/di";
-import type { TextToSpeechResult } from "../shared/index.js";
-
-;
-
 import type { PrismaClient } from "@gatewai/db";
 import { DataType } from "@gatewai/db";
 import type {
@@ -20,6 +16,7 @@ import type { GoogleGenAI, SpeechConfig } from "@google/genai";
 import { inject, injectable } from "inversify";
 import * as mm from "music-metadata";
 import { TextToSpeechNodeConfigSchema } from "../shared/config.js";
+import type { TextToSpeechResult } from "../shared/index.js";
 
 async function encodeWavBuffer(pcmBuffer: Buffer): Promise<Buffer> {
     return new Promise((resolve, reject) => {

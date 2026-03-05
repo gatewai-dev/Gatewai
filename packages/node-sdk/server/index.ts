@@ -1,3 +1,4 @@
+export * from "./abstract-image-processor.js";
 export {
 	defineMetadata,
 	defineNode,

@@ -1,0 +1,5 @@
+-- AlterTable
+ALTER TABLE "task" ADD COLUMN     "price" DOUBLE PRECISION DEFAULT 0;
+
+-- AlterTable
+ALTER TABLE "user" ADD COLUMN     "tokens" DOUBLE PRECISION NOT NULL DEFAULT 0;

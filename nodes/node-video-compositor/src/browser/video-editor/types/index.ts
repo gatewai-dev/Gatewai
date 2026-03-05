@@ -12,7 +12,7 @@ export interface CanvasState {
 export interface PlaybackState {
 	isPlaying: boolean;
 	currentFrame: number;
-	durationInFrames: number;
+	durationInMS: number;
 	fps: number;
 }
 

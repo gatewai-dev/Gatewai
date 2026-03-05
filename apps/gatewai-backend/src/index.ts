@@ -8,16 +8,28 @@ import { serve } from "@hono/node-server";
 import { serveStatic } from "@hono/node-server/serve-static";
 import { Hono } from "hono";
 import { cors } from "hono/cors";
+import SmeeClient from "smee-client";
 import { startAgentWorker } from "./agent/agent-queue.js";
 import { type AuthHonoTypes, auth, ensureUsersAPI_KEY } from "./auth.js";
 import { registerBackendServices } from "./di-setup.js";
-import { startWorkflowWorker } from "./graph-engine/queue/workflow.worker.js";
+import { startWorkflowWorker } from "./graph-engine/workers/workflow.worker.js";
 import {
 	errorHandler,
 	loggerMiddleware,
 	notFoundHandler,
 } from "./middlewares.js";
 import { registerNodes } from "./register-nodes.js";
+
+// biome-ignore lint/suspicious/noExplicitAny: Smee
+let smeeProxy: any = null;
+if (process.env.NODE_ENV !== "production" && ENV_CONFIG.WEBHOOK_PROXY_URL) {
+	const smee = new SmeeClient({
+		source: ENV_CONFIG.WEBHOOK_PROXY_URL as string,
+		target: `${ENV_CONFIG.BASE_URL}/api/auth/polar/webhooks`,
+		logger: console,
+	});
+	smeeProxy = smee.start();
+}
 
 const sleep = (time: number) =>
 	new Promise((resolve) => setTimeout(resolve, time));
@@ -26,7 +38,9 @@ const sleep = (time: number) =>
 registerBackendServices();
 
 // Sleep for 2 seconds to allow HMR for node builds on dev.
-await sleep(2000);
+if (process.env.NODE_ENV !== "production") {
+	await sleep(2000);
+}
 
 // Registers backend processors of nodes.
 await registerNodes();
@@ -63,6 +77,11 @@ const app = new Hono<{
 	})
 	.onError(errorHandler)
 	.use("*", async (c, next) => {
+		// Optimization: Only run session check for API routes and /session
+		if (!c.req.path.startsWith("/api") && c.req.path !== "/session") {
+			return next();
+		}
+
 		const session = await auth.api.getSession({ headers: c.req.raw.headers });
 		if (!session) {
 			c.set("user", null);
@@ -113,6 +132,7 @@ const app = new Hono<{
 		const env = {
 			VITE_BASE_URL: ENV_CONFIG.BASE_URL,
 			DISABLE_EMAIL_SIGNUP: ENV_CONFIG.DISABLE_EMAIL_SIGNUP,
+			VITE_ENABLE_PRICING: ENV_CONFIG.ENABLE_PRICING,
 		};
 		return c.text(`window.GATEWAI_ENV = ${JSON.stringify(env)}; `, 200, {
 			"Content-Type": "application/javascript",
@@ -144,5 +164,18 @@ serve(
 		appLogger.info(`Server is running on port ${info.port} (0.0.0.0)`);
 	},
 );
+
+process.on("SIGINT", async () => {
+	if (smeeProxy) {
+		appLogger.info("Closing SMEE proxy client");
+		try {
+			// smeeProxy is the EventSource returned by start()
+			smeeProxy.close();
+		} catch (e) {
+			// ignore
+		}
+	}
+	process.exit(0);
+});
 
 export type AppType = typeof app;

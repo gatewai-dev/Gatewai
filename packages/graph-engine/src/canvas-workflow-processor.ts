@@ -1,3 +1,6 @@
+import type { IPricingService } from "@gatewai/core";
+import { ENV_CONFIG } from "@gatewai/core";
+import { container, TOKENS } from "@gatewai/core/di";
 import { type CanvasCtxData, GetCanvasEntities } from "@gatewai/data-ops";
 import {
 	type Canvas,
@@ -7,6 +10,7 @@ import {
 	type TaskBatch,
 	TaskStatus,
 } from "@gatewai/db";
+import { nodeRegistry } from "@gatewai/node-sdk/server";
 import { workflowQueue } from "./queue/workflow.queue.js";
 
 /**
@@ -167,11 +171,19 @@ export class NodeWFProcessor {
 		// We need to store selection state to pass to worker
 		const selectionMap: Record<string, boolean> = {};
 
+		// 8. Calculate total cost and deduct tokens upfront
+		let totalBatchPrice = 0;
 		for (const nodeId of topoOrder) {
 			const node = data.nodes.find((n) => n.id === nodeId);
-			if (!node) {
-				throw new Error(`Node ${nodeId} not found in canvas data`);
-			}
+			if (!node) continue;
+
+			const pricingEnabled = ENV_CONFIG.ENABLE_PRICING;
+			const manifest = nodeRegistry.getManifest(node.type);
+			const price =
+				pricingEnabled && typeof manifest?.pricing === "function"
+					? manifest.pricing(node.config)
+					: 0;
+
 			const task = await this.prisma.task.create({
 				data: {
 					name: `Process node ${node.name || node.id}`,
@@ -179,10 +191,59 @@ export class NodeWFProcessor {
 					status: TaskStatus.QUEUED,
 					isTest: false,
 					batchId: batch.id,
+					price,
 				},
 			});
 			tasksMap.set(nodeId, { id: task.id, nodeId });
 			selectionMap[task.id] = nodeIds ? nodeIds.includes(nodeId) : true;
+			totalBatchPrice += price;
+		}
+
+		if (ENV_CONFIG.ENABLE_PRICING && totalBatchPrice > 0) {
+			let resolvedUserId: string | undefined;
+			if (apiKey) {
+				const keyRecord = await this.prisma.apiKey.findUnique({
+					where: { key: apiKey },
+					select: { userId: true },
+				});
+				resolvedUserId = keyRecord?.userId;
+			} else {
+				const canvas = await this.prisma.canvas.findUnique({
+					where: { id: canvasId },
+					select: { userId: true },
+				});
+				resolvedUserId = canvas?.userId ?? undefined;
+			}
+
+			if (resolvedUserId) {
+				const pricingService = container.get<IPricingService>(
+					TOKENS.PRICING_SERVICE,
+				);
+				const canAfford = await pricingService.canAfford(
+					resolvedUserId,
+					totalBatchPrice,
+				);
+				if (!canAfford) {
+					// Mark all tasks as failed immediately if user can't afford
+					await this.prisma.task.updateMany({
+						where: { batchId: batch.id },
+						data: {
+							status: TaskStatus.FAILED,
+							error: {
+								message: `Insufficient tokens. Required: ${totalBatchPrice}`,
+							},
+						},
+					});
+					throw new Error(`Insufficient tokens. Required: ${totalBatchPrice}`);
+				}
+
+				// Deduct total upfront
+				await pricingService.deductTokens(
+					resolvedUserId,
+					totalBatchPrice,
+					`batch_${batch.id}`,
+				);
+			}
 		}
 
 		// 8. Check if another batch is currently running for this canvas

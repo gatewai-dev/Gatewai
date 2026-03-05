@@ -124,3 +124,15 @@ export type RejectPatchRPCParams = InferRequestType<
 >;
 
 export type UploadFileNodeAssetRPC = CanvasDetailsNode | { error: string };
+export type UsageRecordRPC = InferResponseType<
+	typeof rpcClient.api.v1.billing.usage.$get
+>;
+export type PricingPlanListRPC = InferResponseType<
+	typeof rpcClient.api.v1.billing.plans.$get
+>;
+export type SubscriptionRPC = InferResponseType<
+	typeof rpcClient.api.v1.billing.subscription.$get
+>;
+export type SubscriptionUpdateRPC = InferResponseType<
+	typeof rpcClient.api.v1.billing.subscription.update.$post
+>;

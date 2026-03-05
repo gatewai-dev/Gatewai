@@ -3,7 +3,7 @@
 	"scripts": {
 		"build": "turbo run build",
 		"be:build": "turbo run be:build --filter=@gatewai/fe",
-		"dev": "turbo run dev --concurrency 35",
+		"dev": "turbo run dev --concurrency 38",
 		"dev-mcp": "turbo run dev --filter=@gatewai/mcp-server",
 		"biome": "pnpm exec biome check --write",
 		"biome-hook": "pnpm exec biome check --write --no-errors-on-unmatched --files-ignore-unknown=true --colors=off",
@@ -67,7 +67,6 @@
 	"name": "gatewai",
 	"dependencies": {
 		"@hookform/resolvers": "^3.10.0",
-		"@lobehub/icons": "^2.48.0",
 		"clsx": "^2.1.1",
 		"file-type": "^21.1.1",
 		"lucide-react": "^0.563.0",

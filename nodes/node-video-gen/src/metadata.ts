@@ -8,7 +8,7 @@ export { VideoGenNodeConfigSchema, VideoGenResultSchema };
 
 export default defineMetadata({
 	type: "VideoGen",
-	displayName: "Generate Video",
+	displayName: "Video Generator",
 	description: "A video generation node.",
 	category: "AI",
 	subcategory: "Video",
@@ -36,4 +36,5 @@ export default defineMetadata({
 		durationSeconds: "8",
 		personGeneration: "allow_all",
 	},
+	pricing: () => 100,
 });

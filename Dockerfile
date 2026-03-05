@@ -35,12 +35,15 @@ COPY --from=pruner /app/out/full/ .
 RUN pnpm --filter=@gatewai/db db:generate
 
 ENV NODE_OPTIONS="--max-old-space-size=6144"
-# 2. Build the apps (Frontend and Backend)
-RUN pnpm run build --filter=@gatewai/backend... --filter=@gatewai/fe...
+# 2. Build the apps (Frontend, Backend, and Nodes)
+RUN pnpm run build --filter=@gatewai/backend... --filter=@gatewai/fe... --filter='./nodes/*'
 
 # 3. Deploy production-ready folders
 RUN pnpm deploy --filter=@gatewai/backend --prod --legacy /app/deploy
 RUN mkdir -p /app/deploy/frontend && pnpm deploy --filter=@gatewai/fe --prod --legacy /app/deploy/frontend
+
+# 4. Copy built node packages for filesystem-based node discovery
+RUN mkdir -p /app/deploy/nodes && cp -r nodes/* /app/deploy/nodes/
 
 # Copy Prisma schema for migrations
 RUN mkdir -p /app/deploy/packages/db/prisma && \

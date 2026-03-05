@@ -51,7 +51,7 @@ Design principles:
 - Break tasks into 3-7 stages; each node has one clear responsibility.
 - Avoid monolithic nodes. Example: Text -> LLM (enhance) -> ImageGen -> VideoGen, not Text -> VideoGen.
 - Use separate Text nodes for independent variables (character, style, setting) to make them easy to swap.
-- A single File/Import node can feed multiple downstream nodes.
+- A single node can feed multiple downstream nodes.
 
 **Data Flow Resilience**
 - Use TextMerger nodes as prompt-engineering control points.
@@ -59,30 +59,30 @@ Design principles:
 - Do not leave orphaned or disconnected nodes.
 
 **Extensibility**
-- Leave >= 450 px vertical spacing between rows for future insertions.
+- Leave >= 350 px vertical spacing between rows for future insertions.
 - Create branching points at natural variation opportunities.
-- Use descriptive handle labels.
+- Use descriptive handle labels and descriptions.
 
 **Node Positioning -- CALCULATE PRECISELY**
 | Parameter | Value |
 |---|---|
 | Default node width | 340 px |
 | Min horizontal gap (edge-to-edge) | 160 px |
-| Horizontal step (pos-to-pos) | 500 px |
-| Min vertical step | 450 px |
+| Horizontal step (pos-to-pos) | 420 px |
+| Min vertical step | 350 px |
 | First node | x=100, y=100 |
 | Branch vertical offset | >= 250 px |
 
 Formula:
-- Next column: \`prevX + 500\`
-- Next row: \`prevY + 450\`
+- Next column: \`prevX + 420\`
+- Next row: \`prevY + 350\`
 
 ---
 
 # PHASE 3 -- PROPOSAL & TOOL CALL
 
-**Step 1 -- Chat message (1-2 sentences max):**
-- Describe the *value* of the change, not the mechanics.
+**Step 1 -- Chat message (3-4 sentences max):**
+- Describe the *value* of the change, and 1-2 sentences max mechanics (only if it is complex).
 - Example: "I'll build a comprehensive demo across five tracks covering video, image, generative art, audio, and motion."
 - Never list coordinates, node IDs, canvasId, or agentSessionId in the chat.
 

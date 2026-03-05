@@ -5,14 +5,6 @@ import {
 } from "@gatewai/core/types";
 import { z } from "zod";
 
-export const ImportNodeConfigSchema = z
-	.object({
-		asset: z.any().optional(),
-	})
-	.strict();
-
-export type ImportNodeConfig = z.infer<typeof ImportNodeConfigSchema>;
-
 export const ImportResultSchema = z.union([
 	MultiOutputGenericSchema(
 		createOutputItemSchema(z.literal("Video"), FileDataSchema),
@@ -22,6 +14,12 @@ export const ImportResultSchema = z.union([
 	),
 	MultiOutputGenericSchema(
 		createOutputItemSchema(z.literal("Audio"), FileDataSchema),
+	),
+	MultiOutputGenericSchema(
+		createOutputItemSchema(z.literal("SVG"), FileDataSchema),
+	),
+	MultiOutputGenericSchema(
+		createOutputItemSchema(z.literal("Caption"), FileDataSchema),
 	),
 ]);
 

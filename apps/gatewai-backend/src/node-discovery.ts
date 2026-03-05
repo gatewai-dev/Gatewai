@@ -7,7 +7,7 @@ const __dirname = path.dirname(__filename);
 
 export async function discoverNodes() {
 	// Adjust path to reach root 'nodes' directory from:
-	// apps/gatewai-fe/backend/src/graph-engine/node-discovery.ts
+	// apps/gatewai-backend/src/node-discovery.ts (or dist/src/ in production)
 	// -> ../../../nodes
 	const nodesDir = path.resolve(__dirname, "../../../nodes");
 
@@ -16,9 +16,17 @@ export async function discoverNodes() {
 		return [];
 	}
 
+	const disabledNodesStr = process.env.DISABLED_NODES || "";
+	const disabledNodes = disabledNodesStr
+		.split(",")
+		.map((n) => n.trim())
+		.filter(Boolean);
+
 	const entries = fs.readdirSync(nodesDir).filter((d) => {
 		return (
-			d.startsWith("node-") && fs.statSync(path.join(nodesDir, d)).isDirectory()
+			d.startsWith("node-") &&
+			!disabledNodes.includes(d) &&
+			fs.statSync(path.join(nodesDir, d)).isDirectory()
 		);
 	});
 
@@ -29,6 +37,11 @@ export async function discoverNodes() {
 		if (fs.existsSync(pkgPath)) {
 			try {
 				const pkg = JSON.parse(fs.readFileSync(pkgPath, "utf-8"));
+
+				if (pkg.gatewai?.enabled === false) {
+					console.info(`Skipping explicitly disabled node: ${pkg.name}`);
+					continue;
+				}
 
 				let entryPath = `${pkg.name}/server`;
 				const isDev =

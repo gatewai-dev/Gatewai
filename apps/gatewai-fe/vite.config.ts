@@ -11,6 +11,7 @@ export default defineConfig({
 		sourcemap: false,
 		rollupOptions: {
 			cache: false,
+			external: ["@gatewai/db", "@prisma/client", "prisma"],
 		},
 	},
 	esbuild: {
@@ -64,6 +65,10 @@ export default defineConfig({
 			"react/jsx-dev-runtime": path.resolve(
 				__dirname,
 				"./node_modules/react/jsx-dev-runtime.js",
+			),
+			"vite-plugin-node-polyfills": path.resolve(
+				__dirname,
+				"./node_modules/vite-plugin-node-polyfills",
 			),
 		},
 	},

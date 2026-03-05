@@ -14,6 +14,7 @@ const TaskStatuses = [
 	TaskStatus.FAILED,
 	TaskStatus.EXECUTING,
 	TaskStatus.QUEUED,
+	TaskStatus.CANCELLED,
 ] as const;
 
 const tasksQueryParams = z.object({
@@ -99,6 +100,47 @@ const tasksRouter = new Hono<{ Variables: AuthorizedHonoTypes }>({
 				},
 			});
 			return c.json(batches);
+		},
+	)
+	.post(
+		"/stop-batch/:batchId",
+		zValidator(
+			"param",
+			z.object({
+				batchId: z.string(),
+			}),
+		),
+		async (c) => {
+			const { batchId } = c.req.valid("param");
+
+			await prisma.$transaction(async (tx) => {
+				const batch = await tx.taskBatch.findUnique({
+					where: { id: batchId },
+					select: { finishedAt: true },
+				});
+
+				if (batch?.finishedAt) {
+					return;
+				}
+
+				await tx.taskBatch.update({
+					where: { id: batchId },
+					data: { finishedAt: new Date() },
+				});
+
+				await tx.task.updateMany({
+					where: {
+						batchId,
+						status: { in: [TaskStatus.QUEUED, TaskStatus.EXECUTING] },
+					},
+					data: {
+						status: TaskStatus.CANCELLED,
+						finishedAt: new Date(),
+					},
+				});
+			});
+
+			return c.json({ success: true });
 		},
 	);
 

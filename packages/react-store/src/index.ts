@@ -6,6 +6,7 @@ import { toast } from "sonner";
 import { agentSessionsAPI } from "./agent-sessions.js";
 import { apiKeysAPI } from "./api-keys.js";
 import { assetsAPI } from "./assets.js";
+import { billingAPI } from "./billing.js";
 import { canvasDetailsAPI } from "./canvas.js";
 import { canvasListAPI } from "./canvas-list.js";
 import { canvasPatchesReducer } from "./canvas-patches.js";
@@ -23,6 +24,7 @@ export * from "react-redux";
 export * from "./agent-sessions.js";
 export * from "./api-keys.js";
 export * from "./assets.js";
+export * from "./billing.js";
 export * from "./canvas.js";
 export * from "./canvas-list.js";
 export * from "./canvas-patches.js";
@@ -66,6 +68,7 @@ export const store = configureStore({
 		[fontListAPI.reducerPath]: fontListAPI.reducer,
 		[agentSessionsAPI.reducerPath]: agentSessionsAPI.reducer,
 		[apiKeysAPI.reducerPath]: apiKeysAPI.reducer,
+		[billingAPI.reducerPath]: billingAPI.reducer,
 	},
 	middleware: (getDefaultMiddleware) =>
 		getDefaultMiddleware()
@@ -76,7 +79,8 @@ export const store = configureStore({
 			.concat(canvasDetailsAPI.middleware)
 			.concat(rtkQueryErrorLogger)
 			.concat(agentSessionsAPI.middleware)
-			.concat(apiKeysAPI.middleware),
+			.concat(apiKeysAPI.middleware)
+			.concat(billingAPI.middleware),
 });
 
 setupListeners(store.dispatch);

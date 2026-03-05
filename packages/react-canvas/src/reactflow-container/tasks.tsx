@@ -11,11 +11,12 @@ import {
 	Spinner,
 } from "@gatewai/ui-kit";
 import { formatDistanceToNow } from "date-fns";
-import { AlertCircle } from "lucide-react";
+import { AlertCircle, XCircle } from "lucide-react";
 import { memo } from "react";
 
 const CanvasTasksPanel = memo(() => {
-	const { isLoading, taskBatches, latestTasksFetchTime } = useTaskManagerCtx();
+	const { isLoading, taskBatches, latestTasksFetchTime, stopBatch } =
+		useTaskManagerCtx();
 
 	if (isLoading) {
 		return (
@@ -133,6 +134,15 @@ const CanvasTasksPanel = memo(() => {
 															{queued} in queue
 														</span>
 													</div>
+													<Button
+														variant="ghost"
+														size="icon"
+														className="ml-auto h-6 w-6 text-muted-foreground/50 hover:text-destructive transition-colors"
+														onClick={() => stopBatch(tb.id)}
+														title="Stop Workflow"
+													>
+														<XCircle className="h-4 w-4" />
+													</Button>
 												</div>
 											);
 										})}
@@ -165,6 +175,15 @@ const CanvasTasksPanel = memo(() => {
 															{taskCount} tasks waiting
 														</span>
 													</div>
+													<Button
+														variant="ghost"
+														size="icon"
+														className="ml-auto h-6 w-6 text-muted-foreground/50 hover:text-destructive transition-colors"
+														onClick={() => stopBatch(tb.id)}
+														title="Cancel Workflow"
+													>
+														<XCircle className="h-4 w-4" />
+													</Button>
 												</div>
 											);
 										})}

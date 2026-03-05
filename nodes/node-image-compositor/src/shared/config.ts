@@ -5,6 +5,7 @@ import {
 	CornerRadiusSchema,
 	DimensionSchema,
 	FontOptionsSchema,
+	ImageResultSchema,
 	OpacitySchema,
 	PaddingSchema,
 	PositionSchema,
@@ -28,9 +29,10 @@ export const CompositorLayerSchema = BaseLayerSchema.merge(PositionSchema)
 	.merge(CornerRadiusSchema)
 	.merge(PaddingSchema)
 	.extend({
-		type: z.enum(["Text", "Image"]),
+		type: z.enum(["Text", "Image", "SVG"]),
 		align: z.string().optional(),
 		verticalAlign: z.string().optional(),
+		autoDimensions: z.boolean().optional().default(true),
 	})
 	.strict();
 
@@ -48,14 +50,6 @@ export const CompositorNodeConfigSchema = z
 export type CompositorNodeConfig = z.infer<typeof CompositorNodeConfigSchema>;
 export type CompositorLayer = z.infer<typeof CompositorLayerSchema>;
 
-import {
-	createOutputItemSchema,
-	FileDataSchema,
-	SingleOutputGenericSchema,
-} from "@gatewai/core/types";
-
-export const CompositorResultSchema = SingleOutputGenericSchema(
-	createOutputItemSchema(z.literal("Image"), FileDataSchema),
-);
+export const CompositorResultSchema = ImageResultSchema;
 
 export type CompositorResult = z.infer<typeof CompositorResultSchema>;

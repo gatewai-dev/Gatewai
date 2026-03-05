@@ -15,6 +15,7 @@ interface DraggableNumberInputProps {
 	step?: number;
 	className?: string;
 	disabled?: boolean;
+	suffix?: string;
 }
 
 const DraggableNumberInput: React.FC<DraggableNumberInputProps> = ({
@@ -28,6 +29,7 @@ const DraggableNumberInput: React.FC<DraggableNumberInputProps> = ({
 	min,
 	max,
 	step = 1,
+	suffix,
 }) => {
 	const [isDragging, setIsDragging] = useState(false);
 	const [text, setText] = useState(value.toString());
@@ -213,6 +215,11 @@ const DraggableNumberInput: React.FC<DraggableNumberInputProps> = ({
 					onKeyDown={handleKeyDown}
 					className="h-full border-0 rounded-none bg-transparent px-2 text-xs font-mono focus-visible:ring-0 focus-visible:ring-offset-0 shadow-none"
 				/>
+				{suffix && (
+					<span className="flex items-center pr-2 text-xs text-muted-foreground whitespace-nowrap">
+						{suffix}
+					</span>
+				)}
 			</div>
 		</div>
 	);

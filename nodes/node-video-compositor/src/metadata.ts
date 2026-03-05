@@ -1,5 +1,7 @@
+import type { DataTypeEnum as DataType } from "@gatewai/core/types";
 import { defineMetadata } from "@gatewai/node-sdk";
 import {
+	VariableInputDataTypes,
 	VideoCompositorNodeConfigSchema,
 	VideoCompositorResultSchema,
 } from "./shared/index.js";
@@ -9,7 +11,8 @@ export { VideoCompositorNodeConfigSchema, VideoCompositorResultSchema };
 export const metadata = defineMetadata({
 	type: "VideoCompositor",
 	displayName: "Video Compositor",
-	description: "Compose videos using Text, Image, Audio and Video Inputs.",
+	description:
+		"Compose videos using Text, Image, SVG, Audio, Caption and Video Inputs.",
 	category: "Video",
 	subcategory: undefined,
 	configSchema: VideoCompositorNodeConfigSchema,
@@ -18,16 +21,17 @@ export const metadata = defineMetadata({
 	isTransient: false,
 	variableInputs: {
 		enabled: true,
-		dataTypes: ["Text", "Image", "Audio", "Video"],
+		dataTypes: [...VariableInputDataTypes] as DataType[],
 	},
 	handles: {
 		inputs: [],
-		outputs: [],
+		outputs: [{ dataTypes: ["Video"], label: "Result", order: 0 }],
 	},
-	defaultConfig: {
+	defaultConfig: VideoCompositorNodeConfigSchema.parse({
 		layerUpdates: {},
 		width: 1080,
 		height: 1080,
-		FPS: 24,
-	},
+		FPS: 30,
+	}),
+	pricing: () => 5,
 });

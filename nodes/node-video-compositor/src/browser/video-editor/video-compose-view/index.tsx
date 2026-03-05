@@ -23,7 +23,6 @@ const VideoCompositorView = memo(
 		const node = useAppSelector(makeSelectNodeById(nodeId));
 		const { inputs } = useNodeResult(nodeId);
 		const { onNodeConfigUpdate } = useCanvasCtx();
-
 		const initialLayers = useMemo(() => {
 			const items = new Map<HandleEntityType["id"], InputOutputItems>();
 

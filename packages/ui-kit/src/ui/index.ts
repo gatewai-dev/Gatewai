@@ -30,6 +30,7 @@ export * from "./separator";
 export * from "./skeleton";
 export * from "./slider";
 export * from "./sonner";
+export * from "./sparkles-icon";
 export * from "./spinner";
 export * from "./switch";
 export * from "./table";

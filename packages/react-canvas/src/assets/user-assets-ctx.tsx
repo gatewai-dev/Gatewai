@@ -27,8 +27,8 @@ const UserAssetsContext = createContext<UserAssetsContextType | undefined>(
 const UserAssetsProvider = ({ children }: PropsWithChildren) => {
 	const [queryParams, setQueryParams] = useState<UserAssetsListRPCParams>({
 		query: {
-			pageIndex: "0",
-			pageSize: "50",
+			pageIndex: 0,
+			pageSize: 50,
 			q: "",
 			type: undefined,
 		},

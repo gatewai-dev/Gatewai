@@ -34,6 +34,7 @@
 		"@gatewai/core": "workspace:*",
 		"@gatewai/react-store": "workspace:*",
 		"@gatewai/react-canvas": "workspace:*",
+		"@gatewai/remotion-compositions": "workspace:*",
 		"@gatewai/ui-kit": "workspace:*"
 	},
 	"devDependencies": {
@@ -50,7 +51,9 @@
 		"remotion": "*",
 		"sonner": "*",
 		"@remotion/media": "*",
+		"@remotion/captions": "*",
 		"@remotion/player": "*",
+		"@remotion/rounded-text-box": "*",
 		"@remotion/web-renderer": "*",
 		"zod": "*",
 		"lucide-react": "^0.552.0",

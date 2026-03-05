@@ -7,6 +7,7 @@ import type { BackendNodePlugin, NodeProcessorConstructor } from "./types.js";
 export class NodeRegistry {
 	private processors = new Map<string, NodeProcessorConstructor>();
 	private manifests = new Map<string, BackendNodePlugin>();
+	public hasErrors = false;
 
 	/**
 	 * Register a node manifest. If it has a backendProcessor,

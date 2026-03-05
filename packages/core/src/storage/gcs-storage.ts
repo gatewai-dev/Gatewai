@@ -129,7 +129,9 @@ export class GCSStorageService implements StorageService {
 		range?: { start: number; end: number },
 	) {
 		const file = this.storage.bucket(bucketName).file(key);
-		const options = range ? { start: range.start, end: range.end } : {};
+		const options = range
+			? { start: range.start, end: range.end, validation: false as const }
+			: { validation: false as const };
 		return file.createReadStream(options);
 	}
 

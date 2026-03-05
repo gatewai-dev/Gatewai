@@ -1,6 +1,6 @@
 generator client {
-  provider        = "prisma-client"
-  output          = "../generated/client"
+  provider      = "prisma-client"
+  output        = "../generated/client"
   binaryTargets = ["native", "debian-openssl-1.1.x", "linux-arm64-openssl-1.1.x"]
 }
 
@@ -16,6 +16,8 @@ enum DataType {
   Image
   Video
   Audio
+  SVG // Text and Image
+  Caption // Text Sub
 }
 
 enum TaskStatus {
@@ -23,6 +25,7 @@ enum TaskStatus {
   EXECUTING
   FAILED
   COMPLETED
+  CANCELLED
 }
 
 enum HandleType {
@@ -31,7 +34,7 @@ enum HandleType {
 }
 
 model User {
-  id            String    @id
+  id            String      @id
   name          String
   email         String
   emailVerified Boolean
@@ -40,33 +43,36 @@ model User {
   updatedAt     DateTime
   sessions      Session[]
   accounts      Account[]
-  canvases      Canvas[]       @relation("UserCanvases")
-  assets        FileAsset[]    @relation("UserAssets")
+  canvases      Canvas[]    @relation("UserCanvases")
+  assets        FileAsset[] @relation("UserAssets")
   apiKeys       ApiKey[]
+
+  tokens Float @default(0)
+
+  tokenTransactions TokenTransaction[]
 
   @@unique([email])
   @@map("user")
 }
 
-
 model ApiKey {
-  id          String    @id @default(cuid())
-  key         String    @unique
-  name        String?
-  userId      String
-  user        User      @relation(fields: [userId], references: [id], onDelete: Cascade)
-  
-  start       String?
-  prefix      String?
-  
+  id     String  @id @default(cuid())
+  key    String  @unique
+  name   String?
+  userId String
+  user   User    @relation(fields: [userId], references: [id], onDelete: Cascade)
+
+  start  String?
+  prefix String?
+
   permissions Json?
   metadata    Json?
-  
-  expiresAt   DateTime?
-  lastUsedAt  DateTime?
-  
-  createdAt   DateTime  @default(now())
-  updatedAt   DateTime  @updatedAt
+
+  expiresAt  DateTime?
+  lastUsedAt DateTime?
+
+  createdAt DateTime @default(now())
+  updatedAt DateTime @updatedAt
 
   @@index([userId])
   @@map("apikey")
@@ -117,313 +123,302 @@ model Verification {
   @@map("verification")
 }
 
-
 model Canvas {
-  id               String       @id @default(cuid())
-  name             String
-  description      String?
-  createdAt        DateTime     @default(now())
-  updatedAt        DateTime     @updatedAt
-  userId           String?
-  user             User?         @relation("UserCanvases", fields: [userId], references: [id], onDelete: Cascade)
-  nodes            Node[]
-  taskBatches      TaskBatch[]
+  id          String      @id @default(cuid())
+  name        String
+  description String?
+  createdAt   DateTime    @default(now())
+  updatedAt   DateTime    @updatedAt
+  userId      String?
+  user        User?       @relation("UserCanvases", fields: [userId], references: [id], onDelete: Cascade)
+  nodes       Node[]
+  taskBatches TaskBatch[]
   /**
-    True for Duplicated canvases created for API requests.
-  */
-  isAPICanvas      Boolean?     @default(false)
+   * True for Duplicated canvases created for API requests.
+   */
+  isAPICanvas Boolean?    @default(false)
   /**
-    Version of the canvas. Introduced to "sync" AI agent and User patch requests
-  */
-  version          Int          @default(0)
+   * Version of the canvas. Introduced to "sync" AI agent and User patch requests
+   */
+  version     Int         @default(0)
 
   originalCanvasId String?
-  originalCanvas   Canvas?      @relation("CanvasDuplicates", fields: [originalCanvasId], references: [id])
-  duplicates       Canvas[]     @relation("CanvasDuplicates")
+  originalCanvas   Canvas?  @relation("CanvasDuplicates", fields: [originalCanvasId], references: [id])
+  duplicates       Canvas[] @relation("CanvasDuplicates")
 
-  agentSessions       AgentSession[]
-  patches             CanvasPatch[]
+  agentSessions AgentSession[]
+  patches       CanvasPatch[]
 
   @@index([userId])
   @@map("canvas")
 }
 
 model Node {
-  id             String          @id @default(cuid())
-  name           String
-  type           String
+  id       String @id @default(cuid())
+  name     String
+  type     String
   // React Flow position
-  position       Json           // To store position as { x: number, y: number }
+  position Json // To store position as { x: number, y: number }
   // React Flow dimensions (optional, can be auto-calculated)
-  width          Float?
-  height         Float?
+  width    Float?
+  height   Float?
 
-  config         Json?
-  /*
-
-  OutputItem {
-    type: DataType;
-    data: FileData | string | boolean | number;
-    outputHandleId: string
-  }
-
-  Output {
-    items: OutputItem[]
-  }
-
-  Result {
-    selectedOutputIndex?: number
-    outputs: Output[];
-  }
-  */
-  result         Json?           // Node processing result
+  config     Json?
+  /**
+   * OutputItem {
+   * type: DataType;
+   * data: FileData | string | boolean | number;
+   * outputHandleId: string
+   * }
+   * Output {
+   * items: OutputItem[]
+   * }
+   * Result {
+   * selectedOutputIndex?: number
+   * outputs: Output[];
+   * }
+   */
+  result     Json? // Node processing result
   // Timestamps - DB managed
-  createdAt      DateTime        @default(now())
-  updatedAt      DateTime        @updatedAt
+  createdAt  DateTime     @default(now())
+  updatedAt  DateTime     @updatedAt
   // Relationships
-  handles        Handle[]        @relation("NodeHandles")
-  edgesFrom      Edge[]          @relation("EdgesFrom")
-  edgesTo        Edge[]          @relation("EdgesTo")
-  canvas         Canvas          @relation(fields: [canvasId], references: [id], onDelete: Cascade)
-  canvasId       String
-  tasks          Task[]
-  templateId     String
-  template       NodeTemplate    @relation(fields: [templateId], references: [id], onDelete: Restrict)
+  handles    Handle[]     @relation("NodeHandles")
+  edgesFrom  Edge[]       @relation("EdgesFrom")
+  edgesTo    Edge[]       @relation("EdgesTo")
+  canvas     Canvas       @relation(fields: [canvasId], references: [id], onDelete: Cascade)
+  canvasId   String
+  tasks      Task[]
+  templateId String
+  template   NodeTemplate @relation(fields: [templateId], references: [id], onDelete: Restrict)
 
   originalNodeId String?
-  originalNode   Node?           @relation("NodeDuplicates", fields: [originalNodeId], references: [id], onDelete: SetNull)
-  duplicates     Node[]          @relation("NodeDuplicates")
-
+  originalNode   Node?   @relation("NodeDuplicates", fields: [originalNodeId], references: [id], onDelete: SetNull)
+  duplicates     Node[]  @relation("NodeDuplicates")
 
   @@map("node")
 }
 
 model Handle {
-  id                 String              @id @default(cuid())
-  type               HandleType
-  dataTypes          DataType[]
-  label              String
-  description        String?
-  order              Int                 @default(0)
-  required           Boolean             @default(false)
-  templateHandleId   String?
-  templateHandle     NodeTemplateHandle? @relation(fields: [templateHandleId], references: [id], onDelete: Restrict)
-  nodeId             String
-  node               Node                @relation("NodeHandles", fields: [nodeId], references: [id], onDelete: Cascade)
-  createdAt          DateTime            @default(now())
-  updatedAt          DateTime            @updatedAt
-  sourceEdges        Edge[]              @relation("SourceHandle")
-  targetEdges        Edge[]              @relation("TargetHandle")
+  id               String              @id @default(cuid())
+  type             HandleType
+  dataTypes        DataType[]
+  label            String
+  description      String?
+  order            Int                 @default(0)
+  required         Boolean             @default(false)
+  templateHandleId String?
+  templateHandle   NodeTemplateHandle? @relation(fields: [templateHandleId], references: [id], onDelete: Restrict)
+  nodeId           String
+  node             Node                @relation("NodeHandles", fields: [nodeId], references: [id], onDelete: Cascade)
+  createdAt        DateTime            @default(now())
+  updatedAt        DateTime            @updatedAt
+  sourceEdges      Edge[]              @relation("SourceHandle")
+  targetEdges      Edge[]              @relation("TargetHandle")
 
   @@map("handle")
 }
 
 model NodeTemplate {
-  id                      String                 @id @default(cuid())
-  type                    String                 @unique
+  id                      String               @id @default(cuid())
+  type                    String               @unique
   displayName             String
   description             String?
   templateHandles         NodeTemplateHandle[]
-  tokenPrice              Float?                 @default(0.0)
-  variableInputs          Boolean                @default(false)
+  variableInputs          Boolean              @default(false)
   variableInputDataTypes  DataType[]
-  variableOutputs         Boolean                @default(false)
+  variableOutputs         Boolean              @default(false)
   variableOutputDataTypes DataType[]
   category                String?
   subcategory             String?
-  showInQuickAccess       Boolean                @default(false)
-  showInSidebar           Boolean                @default(true)
-  createdAt               DateTime               @default(now())
-  updatedAt               DateTime               @updatedAt
+  showInQuickAccess       Boolean              @default(false)
+  showInSidebar           Boolean              @default(true)
+  createdAt               DateTime             @default(now())
+  updatedAt               DateTime             @updatedAt
   nodes                   Node[]
   defaultConfig           Json?
-  isTerminalNode          Boolean                @default(false)
-  isTransient             Boolean @default(false)
+  isTerminalNode          Boolean              @default(false)
+  isTransient             Boolean              @default(false)
 
   @@map("nodeTemplate")
 }
 
 model NodeTemplateHandle {
-  id              String        @id @default(cuid())
-  templateId      String
-  template        NodeTemplate  @relation(fields: [templateId], references: [id], onDelete: Cascade)
-  type            HandleType
-  dataTypes       DataType[]
-  label           String
-  required        Boolean       @default(false)
-  order           Int
-  description     String?
-  handles         Handle[]
-  createdAt       DateTime     @default(now())
-  updatedAt       DateTime     @updatedAt
+  id          String       @id @default(cuid())
+  templateId  String
+  template    NodeTemplate @relation(fields: [templateId], references: [id], onDelete: Cascade)
+  type        HandleType
+  dataTypes   DataType[]
+  label       String
+  required    Boolean      @default(false)
+  order       Int
+  description String?
+  handles     Handle[]
+  createdAt   DateTime     @default(now())
+  updatedAt   DateTime     @updatedAt
 
   @@map("nodeTemplateHandle")
 }
 
 model Edge {
-  id               String       @id @default(cuid())
-  source           String
-  target           String
-  sourceHandleId   String
-  targetHandleId   String
-  createdAt        DateTime     @default(now())
-  updatedAt        DateTime     @updatedAt
+  id             String   @id @default(cuid())
+  source         String
+  target         String
+  sourceHandleId String
+  targetHandleId String
+  createdAt      DateTime @default(now())
+  updatedAt      DateTime @updatedAt
 
-  sourceNode       Node         @relation("EdgesFrom", fields: [source], references: [id], onDelete: Cascade)
-  targetNode       Node         @relation("EdgesTo", fields: [target], references: [id], onDelete: Cascade)
-  sourceHandle     Handle       @relation("SourceHandle", fields: [sourceHandleId], references: [id], onDelete: Cascade)
-  targetHandle     Handle       @relation("TargetHandle", fields: [targetHandleId], references: [id], onDelete: Cascade)
+  sourceNode   Node   @relation("EdgesFrom", fields: [source], references: [id], onDelete: Cascade)
+  targetNode   Node   @relation("EdgesTo", fields: [target], references: [id], onDelete: Cascade)
+  sourceHandle Handle @relation("SourceHandle", fields: [sourceHandleId], references: [id], onDelete: Cascade)
+  targetHandle Handle @relation("TargetHandle", fields: [targetHandleId], references: [id], onDelete: Cascade)
 
   // Unique constraint to prevent duplicate connections between same handles
   @@unique([sourceHandleId, targetHandleId])
   @@map("edge")
 }
 
-
 model TaskBatch {
-  id              String       @id @default(cuid())
-  createdAt       DateTime     @default(now())
-  updatedAt       DateTime     @updatedAt
-  tasks           Task[]
-  canvas          Canvas       @relation(fields: [canvasId], references: [id], onDelete: Cascade)
-  canvasId        String
+  id        String   @id @default(cuid())
+  createdAt DateTime @default(now())
+  updatedAt DateTime @updatedAt
+  tasks     Task[]
+  canvas    Canvas   @relation(fields: [canvasId], references: [id], onDelete: Cascade)
+  canvasId  String
 
-  finishedAt      DateTime?
+  finishedAt     DateTime?
   // When the batch actually started executing (first task dispatched)
-  startedAt       DateTime?
+  startedAt      DateTime?
   // Stores job data when batch is waiting for previous batch to complete
-  pendingJobData  Json?
+  pendingJobData Json?
 
   @@map("taskBatch")
 }
 
 model Task {
-  id              String       @id @default(cuid())
-  name            String
-  createdAt       DateTime     @default(now())
-  updatedAt       DateTime     @updatedAt
+  id        String   @id @default(cuid())
+  name      String
+  createdAt DateTime @default(now())
+  updatedAt DateTime @updatedAt
 
-  node            Node?        @relation(fields: [nodeId], references: [id], onDelete: SetNull)
-  nodeId          String?
+  node   Node?   @relation(fields: [nodeId], references: [id], onDelete: SetNull)
+  nodeId String?
 
-  status          TaskStatus?
-  durationMs      Float?
-  finishedAt      DateTime?
-  expiredAt       DateTime?
-  startedAt       DateTime?
-  error           Json?
-  isTest          Boolean     @default(false)
+  status     TaskStatus?
+  durationMs Float?
+  finishedAt DateTime?
+  expiredAt  DateTime?
+  startedAt  DateTime?
+  error      Json?
+  isTest     Boolean     @default(false)
 
-  batch          TaskBatch    @relation(fields: [batchId], references: [id], onDelete: Cascade)
-  batchId        String
+  batch   TaskBatch @relation(fields: [batchId], references: [id], onDelete: Cascade)
+  batchId String
 
   // Storing result for recovery - This field is not being used in frontend.
-  result          Json?
+  result Json?
+
+  // Price in tokens/millicents for this execution
+  price Float? @default(0)
 
   @@map("task")
 }
 
-
 model FileAsset {
-  id              String       @id @default(cuid())
-  name            String
-  createdAt       DateTime     @default(now())
-  updatedAt       DateTime     @updatedAt
-  userId          String?
-  user            User?         @relation("UserAssets", fields: [userId], references: [id], onDelete: Cascade)
+  id        String   @id @default(cuid())
+  name      String
+  createdAt DateTime @default(now())
+  updatedAt DateTime @updatedAt
+  userId    String?
+  user      User?    @relation("UserAssets", fields: [userId], references: [id], onDelete: Cascade)
 
-  width           Int?
-  height          Int?
-  bucket          String
+  width        Int?
+  height       Int?
+  bucket       String
   // File size
-  size            Int
-  mimeType        String
-  key             String
-  signedUrl       String?
-  signedUrlExp    DateTime?
+  size         Int
+  mimeType     String
+  key          String
+  signedUrl    String?
+  signedUrlExp DateTime?
 
   // Whether or not user is uploaded (true) or AI generated/System generated (false)
-  isUploaded      Boolean     @default(true)
+  isUploaded Boolean @default(true)
 
   // Duration by milliseconds
-  duration        Int?
+  duration Int?
 
   // Media metadata - optional
-  metadata        Json?
-  fps             Int?
+  metadata Json?
+  fps      Int?
 
   @@index([userId])
   @@map("fileAsset")
 }
 
-
-
 model AgentSession {
-  id                String    @id @default(cuid())
-  canvasId          String
-  canvas            Canvas    @relation(fields: [canvasId], references: [id], onDelete: Cascade)
-  events            Event[]
+  id       String  @id @default(cuid())
+  canvasId String
+  canvas   Canvas  @relation(fields: [canvasId], references: [id], onDelete: Cascade)
+  events   Event[]
 
-  // OpenAI thread ID if using Assistants API
-  threadId          String?   @unique
-  
   // Assistant configuration
-  assistantId       String?
-  
+  assistantId String?
+
   // AI model used for this session
-  model             String?
-  
+  model String?
+
   // Session state
-  status            SessionStatus @default(ACTIVE)
-  
+  status SessionStatus @default(ACTIVE)
+
   // Metadata for the conversation (tools, instructions, etc.)
-  metadata          Json?
+  metadata Json?
 
-  createdAt         DateTime  @default(now())
-  updatedAt         DateTime  @updatedAt
+  createdAt DateTime @default(now())
+  updatedAt DateTime @updatedAt
 
-  patches           CanvasPatch[]
+  patches CanvasPatch[]
 
   @@index([canvasId])
-  @@index([threadId])
   @@map("agent_session")
 }
 
 model Event {
-  id              String        @id @default(cuid())
-  agentSessionId  String
-  agentSession    AgentSession  @relation(fields: [agentSessionId], references: [id], onDelete: Cascade)
-  
+  id             String       @id @default(cuid())
+  agentSessionId String
+  agentSession   AgentSession @relation(fields: [agentSessionId], references: [id], onDelete: Cascade)
+
   // Event type from OpenAI (thread.message.created, thread.run.step.completed, etc.)
-  eventType       String
-  
+  eventType String
+
   // Role for message events
-  role            EventRole?
-  
+  role EventRole?
+
   // Content can be text, tool calls, tool results, etc.
-  content         Json
-  
+  content Json
+
   // OpenAI specific IDs
-  messageId       String?       // OpenAI message ID
-  runId           String?       // OpenAI run ID
-  stepId          String?       // OpenAI step ID
-  
+  messageId String? // OpenAI message ID
+  runId     String? // OpenAI run ID
+  stepId    String? // OpenAI step ID
+
   // For tool calls
-  toolCallId      String?
-  toolName        String?
-  
+  toolCallId String?
+  toolName   String?
+
   // Token usage tracking
-  promptTokens    Int?
+  promptTokens     Int?
   completionTokens Int?
-  totalTokens     Int?
-  
+  totalTokens      Int?
+
   // Additional metadata (annotations, citations, etc.)
-  metadata        Json?
-  
+  metadata Json?
+
   // Status for async operations
-  status          EventStatus?  @default(COMPLETED)
-  
-  createdAt       DateTime      @default(now())
+  status EventStatus? @default(COMPLETED)
+
+  createdAt DateTime @default(now())
 
   @@index([agentSessionId, createdAt])
   @@index([messageId])
@@ -455,18 +450,18 @@ enum SessionStatus {
 }
 
 model CanvasPatch {
-  id        String   @id @default(cuid())
-  canvasId  String
-  canvas    Canvas   @relation(fields: [canvasId], references: [id], onDelete: Cascade)
-  
+  id       String @id @default(cuid())
+  canvasId String
+  canvas   Canvas @relation(fields: [canvasId], references: [id], onDelete: Cascade)
+
   // The proposed changes (JSON)
-  patch     Json
-  
-  status    PatchStatus @default(PENDING)
+  patch Json
+
+  status PatchStatus @default(PENDING)
 
   agentSessionId String?
   agentSession   AgentSession? @relation(fields: [agentSessionId], references: [id], onDelete: SetNull)
-  
+
   createdAt DateTime @default(now())
   updatedAt DateTime @updatedAt
 
@@ -477,4 +472,51 @@ enum PatchStatus {
   PENDING
   ACCEPTED
   REJECTED
+}
+
+model UsageRecord {
+  id           String   @id @default(cuid())
+  userId       String   @map("user_id")
+  month        String // "2026-03" format
+  tasksUsed    Int      @default(0) @map("tasks_used")
+  tokensUsed   Float    @default(0) @map("tokens_used")
+  storageUsed  Int      @default(0) @map("storage_used_mb")
+  apiCallsUsed Int      @default(0) @map("api_calls_used")
+  updatedAt    DateTime @updatedAt @map("updated_at")
+
+  @@unique([userId, month])
+  @@map("usage_record")
+}
+
+model TokenTransaction {
+  id        String          @id @default(cuid())
+  userId    String          @map("user_id")
+  user      User            @relation(fields: [userId], references: [id], onDelete: Cascade)
+  amount    Float           // Positive for credits, negative for debits
+  type      TransactionType
+  metadata  Json?           // { taskId: "...", orderId: "...", reason: "..." }
+  createdAt DateTime        @default(now()) @map("created_at")
+
+  @@index([userId])
+  @@map("token_transaction")
+}
+
+enum TransactionType {
+  PURCHASE
+  SUBSCRIPTION_REFILL
+  USAGE
+  REFUND
+  BONUS
+}
+
+model WebhookEvent {
+  id              String   @id @default(cuid())
+  eventName       String   @map("event_name")
+  processed       Boolean  @default(false)
+  body            Json
+  processingError String?  @map("processing_error")
+  createdAt       DateTime @default(now()) @map("created_at")
+  updatedAt       DateTime @updatedAt @map("updated_at")
+
+  @@map("webhook_event")
 }

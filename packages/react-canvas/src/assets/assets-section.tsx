@@ -1,5 +1,3 @@
-"use client";
-
 import {
 	Button,
 	cn,
@@ -25,10 +23,12 @@ import {
 	Music,
 	PackageOpen,
 	Search,
+	Shapes,
 	Video,
 	X,
 } from "lucide-react";
 import { useEffect, useMemo, useState } from "react";
+import { BsFileEarmarkText, BsFileEarmarkZip } from "react-icons/bs";
 import { useDebounce } from "use-debounce";
 import { AssetItem } from "./asset-item";
 import type { FileAssetEntity } from "./types";
@@ -38,13 +38,23 @@ interface AssetsSectionProps {
 	isCollapsed: boolean;
 }
 
-type AssetTypeFilter = "all" | "image" | "video" | "audio";
+type AssetTypeFilter =
+	| "all"
+	| "image"
+	| "video"
+	| "audio"
+	| "svg"
+	| "caption"
+	| "other";
 
 const FILTER_CONFIG = {
 	all: { label: "All", icon: Grid, value: undefined },
 	image: { label: "Images", icon: ImageIcon, value: "image" },
 	video: { label: "Videos", icon: Video, value: "video" },
 	audio: { label: "Audio", icon: Music, value: "audio" },
+	svg: { label: "SVG", icon: Shapes, value: "svg" },
+	caption: { label: "Caption", icon: BsFileEarmarkText, value: "caption" },
+	other: { label: "Other", icon: BsFileEarmarkZip, value: "other" },
 } as const;
 
 // Engineering Note: Standardized spring for brand consistency
@@ -70,7 +80,7 @@ export function AssetsSection({ isCollapsed }: AssetsSectionProps) {
 				...prev.query,
 				q: debouncedSearch.trim() || undefined,
 				type: FILTER_CONFIG[activeFilter].value,
-				pageIndex: "0",
+				pageIndex: 0,
 			},
 		}));
 	}, [debouncedSearch, activeFilter, setQueryParams]);
@@ -121,9 +131,9 @@ export function AssetsSection({ isCollapsed }: AssetsSectionProps) {
 				side="right"
 				align="end"
 				sideOffset={12}
-				className="w-[380px] overflow-hidden p-0 shadow-2xl ring-1 ring-black/5 dark:ring-white/10"
+				className="w-170 overflow-hidden p-0 shadow-2xl ring-1 ring-black/5 dark:ring-white/10"
 			>
-				<div className="flex h-[680px] flex-col bg-background">
+				<div className="flex h-170 flex-col bg-background">
 					{/* Header */}
 					<div className="space-y-3 border-b bg-muted/20 p-4">
 						<div className="flex items-center justify-between">
@@ -193,7 +203,7 @@ export function AssetsSection({ isCollapsed }: AssetsSectionProps) {
 						<ScrollArea className="h-full">
 							<div className="p-4">
 								{isLoading ? (
-									<div className="flex min-h-[400px] flex-col items-center justify-center gap-3">
+									<div className="flex min-h-100 flex-col items-center justify-center gap-3">
 										<Loader2 className="h-6 w-6 animate-spin text-primary/60" />
 										<p className="text-xs font-medium text-muted-foreground">
 											Fetching assets...
@@ -223,13 +233,13 @@ export function AssetsSection({ isCollapsed }: AssetsSectionProps) {
 									<motion.div
 										initial={{ opacity: 0 }}
 										animate={{ opacity: 1 }}
-										className="flex min-h-[400px] flex-col items-center justify-center px-6 text-center"
+										className="flex min-h-100 flex-col items-center justify-center px-6 text-center"
 									>
 										<div className="mb-4 rounded-2xl bg-muted/50 p-4 ring-1 ring-muted-foreground/10">
 											<PackageOpen className="h-8 w-8 text-muted-foreground/40" />
 										</div>
 										<h3 className="text-sm font-semibold">No results</h3>
-										<p className="mt-1 max-w-[180px] text-xs leading-relaxed text-muted-foreground">
+										<p className="mt-1 max-w-45 text-xs leading-relaxed text-muted-foreground">
 											{hasActiveFilters
 												? "Try a different search term or filter."
 												: "Your library is empty. Upload assets to see them here."}

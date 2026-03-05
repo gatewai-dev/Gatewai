@@ -272,7 +272,7 @@ export const AssetItem = memo(({ asset }: AssetItemProps) => {
 							)}
 						</button>
 					</DropdownMenuTrigger>
-					<DropdownMenuContent align="end" className="w-[160px]">
+					<DropdownMenuContent align="end" className="w-40">
 						<DropdownMenuItem
 							className="focus:bg-destructive/10 cursor-pointer gap-2"
 							onClick={(e) => {

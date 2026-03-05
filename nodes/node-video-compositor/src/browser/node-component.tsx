@@ -1,180 +1,41 @@
-import {
-	fontManager,
-	GetAssetEndpoint,
-	GetFontAssetUrl,
-} from "@gatewai/core/browser";
 import type { FileData } from "@gatewai/core/types";
 import {
 	AddCustomHandleButton,
 	BaseNode,
+	MediaContent,
 	type NodeProps,
 	useDownloadFileData,
 	useNodeResult,
 } from "@gatewai/react-canvas";
 import { makeSelectNodeById, useAppSelector } from "@gatewai/react-store";
-import { Button, cn } from "@gatewai/ui-kit";
-import { Player } from "@remotion/player";
-import { Download, Loader2, VideoIcon } from "lucide-react";
-import { memo, useEffect, useMemo, useState } from "react";
+import { Button } from "@gatewai/ui-kit";
+
+import { AlertCircle, Download, Loader2, VideoIcon } from "lucide-react";
+import { memo, useMemo, useState } from "react";
 import { useNavigate } from "react-router";
 import { toast } from "sonner";
 import type { VideoCompositorNodeConfig } from "../shared/config.js";
-import { remotionService } from "./muxer-service.js";
-import {
-	CompositionScene,
-	type ExtendedLayer,
-} from "./video-editor/common/composition.js";
-import { DEFAULT_DURATION_FRAMES, FPS } from "./video-editor/config/index.js";
+import { remotionWebRendererService } from "./muxer-service.js";
 
 const VideoCompositorNodeComponent = memo((props: NodeProps) => {
 	const node = useAppSelector(makeSelectNodeById(props.id));
+	const nodeConfig = node?.config as VideoCompositorNodeConfig | undefined;
 	const [isDownloading, setIsDownloading] = useState(false);
-	const { inputs } = useNodeResult(props.id);
+	const { inputs, result } = useNodeResult(props.id);
 	const nav = useNavigate();
 	const downloadFileData = useDownloadFileData();
-	const previewState = useMemo(() => {
-		const config = (node?.config as unknown as VideoCompositorNodeConfig) ?? {};
-		const layerUpdates = config.layerUpdates || {};
-
-		const width = config.width ?? 1920;
-		const height = config.height ?? 1080;
-
-		// Compute maxZ from existing layerUpdates to preserve ordering for new layers
-		let maxZ = 0;
-		for (const update of Object.values(layerUpdates)) {
-			maxZ = Math.max(maxZ, (update as ExtendedLayer).zIndex ?? 0);
-		}
-
-		const layers: ExtendedLayer[] = [];
-		// Iterate over all connected inputs, applying saved updates or defaults
-		for (const [handleId, input] of Object.entries(inputs)) {
-			if (!input?.connectionValid) continue;
-			const item = input.outputItem;
-			if (!item) continue; // Skip if no valid output item
-
-			const saved = layerUpdates[handleId] ?? {};
-			let src: string | undefined;
-			let text: string | undefined;
-			let layerWidth = saved.width;
-			let layerHeight = saved.height;
-
-			if (item.type === "Text") {
-				text = (item.data as string) || "";
-			} else if (["Image", "Video", "Audio"].includes(item.type)) {
-				const fileData = item.data as FileData;
-				if (fileData) {
-					src = fileData.entity?.id
-						? GetAssetEndpoint(fileData.entity)
-						: fileData.processData?.dataUrl;
-
-					if (!layerWidth) layerWidth = fileData.processData?.width;
-					if (!layerHeight) layerHeight = fileData.processData?.height;
-				}
-			}
-
-			// Base layer properties with defaults
-			const durationMs =
-				item.type !== "Text"
-					? ((item.data as FileData)?.entity?.duration ??
-						(item.data as FileData)?.processData?.duration ??
-						0)
-					: 0;
-
-			const calculatedDurationFrames =
-				(item.type === "Video" || item.type === "Audio") && durationMs > 0
-					? Math.ceil((durationMs / 1000) * FPS)
-					: DEFAULT_DURATION_FRAMES;
-
-			const base = {
-				scale: 1,
-				zIndex: saved.zIndex ?? ++maxZ,
-				startFrame: 0,
-				durationInFrames: saved.durationInFrames ?? calculatedDurationFrames,
-				volume: 1,
-				animations: saved.animations ?? [],
-				src,
-				text,
-				...saved,
-				x: saved.x ?? 0,
-				y: saved.y ?? 0,
-				rotation: saved.rotation ?? 0,
-				opacity: saved.opacity ?? 1,
-				id: saved.id ?? handleId,
-				inputHandleId: saved.inputHandleId ?? handleId,
-			};
-
-			if (item.type === "Text") {
-				layers.push({
-					...base,
-					type: "Text",
-					fontSize: saved.fontSize ?? 60,
-					fontFamily: saved.fontFamily ?? "Inter",
-					fill: saved.fill ?? "#ffffff",
-					width: layerWidth,
-					height: layerHeight,
-				});
-			} else if (item.type === "Image" || item.type === "Video") {
-				layers.push({
-					...base,
-					type: item.type,
-					width: layerWidth,
-					height: layerHeight,
-					maxDurationInFrames:
-						item.type === "Video" && durationMs > 0
-							? calculatedDurationFrames
-							: undefined,
-				});
-			} else if (item.type === "Audio") {
-				layers.push({
-					...base,
-					type: "Audio",
-					height: 0,
-					width: 0,
-					maxDurationInFrames:
-						durationMs > 0 ? calculatedDurationFrames : undefined,
-				});
-			}
-		}
-
-		// Sort layers by zIndex ascending for correct rendering order
-		layers.sort((a, b) => (a.zIndex ?? 0) - (b.zIndex ?? 0));
-
-		// Calculate total duration matching editor logic
-		const durationInFrames =
-			layers.length > 0
-				? Math.max(
-						DEFAULT_DURATION_FRAMES,
-						...layers.map(
-							(l) =>
-								(l.startFrame ?? 0) +
-								(l.durationInFrames ?? DEFAULT_DURATION_FRAMES),
-						),
-					)
-				: DEFAULT_DURATION_FRAMES;
-
-		return { layers, width, height, durationInFrames };
-	}, [node, inputs]);
-
-	// Memoize aspect ratio to prevent layout shifts
-	const aspectRatio = useMemo(() => {
-		if (!previewState.width || !previewState.height) return 16 / 9;
-		return previewState.width / previewState.height;
-	}, [previewState.width, previewState.height]);
-
-	useEffect(() => {
-		previewState?.layers.forEach((layer) => {
-			if (layer.type === "Text" && layer.fontFamily) {
-				const url = GetFontAssetUrl(layer.fontFamily);
-				if (url) fontManager.loadFont(layer.fontFamily, url);
-			}
-		});
-	}, [previewState]);
-
 	const onClickDownload = async () => {
 		setIsDownloading(true);
 		try {
-			const config = node.config as unknown as VideoCompositorNodeConfig;
-			const result = await remotionService.processVideo(config, inputs);
+			const config = nodeConfig ?? {
+				layerUpdates: {},
+				width: 1080,
+				height: 1080,
+			};
+			const result = await remotionWebRendererService.processVideo(
+				config,
+				inputs,
+			);
 			await downloadFileData(
 				{
 					processData: {
@@ -193,48 +54,41 @@ const VideoCompositorNodeComponent = memo((props: NodeProps) => {
 		}
 	};
 
-	const hasInputs = previewState && previewState.layers.length > 0;
+	const hasInputs = inputs.length > 0;
+
+	const isSVGConnected = useMemo(() => {
+		return Object.values(inputs).some(
+			(input) => input.outputItem?.type === "SVG",
+		);
+	}, [inputs]);
 
 	return (
 		<BaseNode selected={props.selected} id={props.id} dragging={props.dragging}>
 			<div className="flex flex-col w-full">
 				<div
-					className={cn(
-						"w-full overflow-hidden rounded bg-black/5 relative border border-border",
-					)}
+					className="relative"
 					style={{
-						aspectRatio: `${aspectRatio}`,
-						minHeight: hasInputs ? "120px" : "auto",
+						minHeight: hasInputs ? "120px" : "120px",
 					}}
 				>
-					{hasInputs ? (
-						<Player
-							acknowledgeRemotionLicense
-							component={CompositionScene}
-							inputProps={{
-								layers: previewState.layers,
-								viewportWidth: previewState.width,
-								viewportHeight: previewState.height,
-							}}
-							durationInFrames={previewState.durationInFrames}
-							fps={FPS}
-							compositionWidth={previewState.width}
-							compositionHeight={previewState.height}
-							style={{
-								width: "100%",
-								height: "100%",
-								objectFit: "contain",
-							}}
-							controls={true}
-							loop
-							autoPlay={false}
-						/>
+					{result && node ? (
+						<MediaContent node={node} />
 					) : (
-						<div className="absolute inset-0 flex items-center justify-center text-muted-foreground text-xs italic">
+						<div className="absolute inset-0 flex items-center justify-center text-muted-foreground text-xs italic border-b border-white/10 w-full h-full">
 							No input connected
 						</div>
 					)}
 				</div>
+
+				{isSVGConnected && (
+					<div className="mx-2 mt-1 mb-0.5 px-3 py-1.5 rounded-md bg-amber-500/10 border border-amber-500/20 flex items-center gap-2">
+						<AlertCircle className="size-3.5 text-amber-500 shrink-0" />
+						<span className="text-[11px] font-medium text-amber-200/80 leading-tight">
+							Rendering Animated SVG's doesn't work when rendering the Video.
+							Expect issues if SVG is animated.
+						</span>
+					</div>
+				)}
 
 				<div className="flex justify-between items-center gap-2  p-1.5">
 					<AddCustomHandleButton

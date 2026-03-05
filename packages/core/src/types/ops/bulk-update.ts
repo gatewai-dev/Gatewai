@@ -83,22 +83,6 @@ export const bulkUpdateSchema = z
 				const nodeHandles = nodeHandlesMap.get(node.id);
 				if (!nodeHandles) return;
 
-				if (isVideoCompositor) {
-					const hasOutputHandle = Array.from(nodeHandles).some((hId) => {
-						const handle = handleMap.get(hId);
-						return handle?.type === "Output";
-					});
-
-					if (hasOutputHandle) {
-						ctx.addIssue({
-							code: "custom",
-							path: ["nodes", nodeIndex],
-							message:
-								"VideoCompositor node cannot have output handles. It has download button on UI.",
-						});
-					}
-				}
-
 				const inputHandleIds = Array.from(nodeHandles).filter((hId) => {
 					const handle = handleMap.get(hId);
 					return handle?.type === "Input";

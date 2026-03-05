@@ -1,5 +1,6 @@
 import { defineMetadata } from "@gatewai/node-sdk";
 import {
+	type ImageGenNodeConfig,
 	ImageGenNodeConfigSchema,
 	ImageGenResultSchema,
 } from "./shared/index.js";
@@ -27,5 +28,12 @@ export default defineMetadata({
 		model: "gemini-3-pro-image-preview",
 		aspectRatio: "1:1",
 		imageSize: "1K",
+	},
+	pricing: (config: ImageGenNodeConfig) => {
+		const variantPrices: Record<string, number> = {
+			"gemini-3-pro-image-preview": 30,
+			"gemini-2.5-flash-image": 10,
+		};
+		return variantPrices[config.model] || 20;
 	},
 });

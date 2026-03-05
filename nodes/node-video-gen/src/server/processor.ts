@@ -16,6 +16,7 @@ import type {
     NodeProcessor,
     StorageService,
 } from "@gatewai/node-sdk/server";
+import { createVirtualMedia } from "@gatewai/remotion-compositions/server";
 import type {
     GoogleGenAI,
     VideoGenerationReferenceImage,
@@ -158,14 +159,6 @@ export class VideoGenProcessor implements NodeProcessor {
                 );
             }
 
-            const expiresIn = 3600 * 24 * 6.9;
-            const signedUrl = await this.storage.generateSignedUrl(
-                key,
-                bucket,
-                expiresIn,
-            );
-            const signedUrlExp = new Date(Date.now() + expiresIn * 1000);
-
             const asset = await this.prisma.fileAsset.create({
                 data: {
                     name: fileName,
@@ -173,8 +166,6 @@ export class VideoGenProcessor implements NodeProcessor {
                     bucket,
                     key,
                     size: fileBuffer.length,
-                    signedUrl,
-                    signedUrlExp,
                     duration: Number(config.durationSeconds) * 1000,
                     mimeType: contentType,
                 },
@@ -196,7 +187,7 @@ export class VideoGenProcessor implements NodeProcessor {
                 items: [
                     {
                         type: DataType.Video,
-                        data: { entity: asset },
+                        data: createVirtualMedia({ entity: asset }),
                         outputHandleId: outputHandle.id,
                     },
                 ],

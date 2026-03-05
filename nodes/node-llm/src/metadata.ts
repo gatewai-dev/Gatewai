@@ -1,9 +1,13 @@
 import { defineMetadata } from "@gatewai/node-sdk";
-import { LLMNodeConfigSchema, LLMResultSchema } from "./shared/index.js";
+import {
+	type LLMNodeConfig,
+	LLMNodeConfigSchema,
+	LLMResultSchema,
+} from "./shared/index.js";
 
 export { LLMNodeConfigSchema, LLMResultSchema };
 
-export default defineMetadata({
+export const metadata = defineMetadata({
 	type: "LLM",
 	displayName: "LLM",
 	description: "Prompt a large language model",
@@ -22,4 +26,12 @@ export default defineMetadata({
 		outputs: [{ dataTypes: ["Text"], label: "Result", order: 0 }],
 	},
 	defaultConfig: { model: "gemini-3-flash-preview", temperature: 0 },
+	pricing: (config: LLMNodeConfig) => {
+		const MODEL_TOKEN_PRICING: Record<LLMNodeConfig["model"], number> = {
+			"gemini-3-flash-preview": 5,
+			"gemini-3.1-pro-preview": 15,
+			"gemini-2.5-pro": 10,
+		};
+		return MODEL_TOKEN_PRICING[config.model] || 0;
+	},
 });

@@ -28,7 +28,6 @@ import {
 	useAppSelector,
 	useGetFontListQuery,
 } from "@gatewai/react-store";
-// Internal Component Imports
 import {
 	AlertDialog,
 	AlertDialogAction,
@@ -40,6 +39,7 @@ import {
 	AlertDialogTitle,
 	Button,
 	CollapsibleSection,
+	cn,
 	DraggableNumberInput,
 	Label,
 	Menubar,
@@ -64,25 +64,6 @@ import {
 } from "@gatewai/ui-kit";
 import type Konva from "konva";
 import type { KonvaEventObject } from "konva/lib/Node";
-
-// ─── ICON REPLACEMENTS (Remix Icons) ─────────────────────────────────────────
-import {
-	RiArrowDownSLine,
-	RiArrowLeftRightLine,
-	RiArrowUpDownLine,
-	RiCloseLine,
-	RiCursorFill,
-	RiEqualizerLine,
-	RiEyeLine,
-	RiEyeOffLine,
-	RiHand,
-	RiImageFill,
-	RiSave3Fill,
-	RiStackLine,
-	RiText,
-} from "react-icons/ri";
-// ─────────────────────────────────────────────────────────────────────────────
-
 import React, {
 	createContext,
 	type Dispatch,
@@ -96,6 +77,26 @@ import React, {
 	useState,
 } from "react";
 import { useHotkeys } from "react-hotkeys-hook";
+import {
+	RiArrowDownSLine,
+	RiArrowLeftRightLine,
+	RiArrowUpDownLine,
+	RiCloseLine,
+	RiCursorFill,
+	RiEqualizerLine,
+	RiEyeLine,
+	RiEyeOffLine,
+	RiFileCodeLine,
+	RiHand,
+	RiImageFill,
+	RiLinksLine,
+	RiLinkUnlink,
+	RiLinkUnlinkM,
+	RiMagicLine,
+	RiSave3Fill,
+	RiStackLine,
+	RiText,
+} from "react-icons/ri";
 import {
 	Group as KonvaGroup,
 	Image as KonvaImage,
@@ -112,7 +113,7 @@ import useImage from "use-image";
 import type {
 	CompositorLayer,
 	CompositorNodeConfig,
-} from "../../shared/compositor.config.js";
+} from "../../shared/config.js";
 
 //#region CONSTANTS
 
@@ -146,14 +147,19 @@ const BLEND_MODES = [
 interface LocalCompositorLayer extends CompositorLayer {
 	computedHeight?: number;
 	computedWidth?: number;
+	/**
+	 * When true the layer's width/height are kept in sync with the natural
+	 * dimensions of the source asset (image or SVG). Setting it to false lets
+	 * the user freely resize. Defaults to true for newly created raster layers.
+	 */
+	autoDimensions?: boolean;
 }
 
-/**
- * Resolves the display label for a layer based on priority:
- * 1. Handle Label (if not null/empty)
- * 2. First DataType from Handle
- * 3. Layer ID
- */
+// ─── Layer type helpers ───────────────────────────────────────────────────────
+
+const isRasterLayer = (type: string): boolean =>
+	type === "Image" || type === "SVG";
+
 const resolveLayerLabel = (
 	handle: HandleEntityType,
 	layer: LocalCompositorLayer,
@@ -174,6 +180,22 @@ const resolveLayerLabel = (
 	}
 	return layer.id;
 };
+
+// ─── Shared tooltip wrapper (mirrors video compositor) ────────────────────────
+
+const WithTooltip: React.FC<{
+	tip: React.ReactNode;
+	children: React.ReactElement;
+}> = ({ tip, children }) => (
+	<TooltipProvider>
+		<Tooltip>
+			<TooltipTrigger asChild>{children}</TooltipTrigger>
+			<TooltipContent>{tip}</TooltipContent>
+		</Tooltip>
+	</TooltipProvider>
+);
+
+//#region Context
 
 interface EditorContextType {
 	layers: LocalCompositorLayer[];
@@ -231,6 +253,8 @@ const useEditor = () => {
 	}
 	return context;
 };
+
+//#region Snap hook
 
 const useSnap = () => {
 	const { layers, updateLayers, viewportWidth, viewportHeight, setGuides } =
@@ -334,7 +358,6 @@ const useSnap = () => {
 			if (vGuides.length > 0) node.x(newX);
 			if (hGuides.length > 0) node.y(newY);
 
-			// Sync Label Position
 			const labelNode = node.getStage()?.findOne(`#label-${id}`);
 			if (labelNode) {
 				const scale = node.getStage()?.scaleX() || 1;
@@ -393,6 +416,8 @@ const useSnap = () => {
 					if (l.type !== "Text") {
 						updates.width = Math.round(node.width() * scaleX);
 						updates.height = Math.round(node.height() * scaleY);
+						// Manual resize via transformer disables auto-sync
+						updates.autoDimensions = false;
 					}
 
 					return { ...l, ...updates };
@@ -409,7 +434,7 @@ const useSnap = () => {
 	};
 };
 
-//#region Components
+//#region Canvas Layer Components
 
 interface LayerProps {
 	layer: LocalCompositorLayer;
@@ -419,7 +444,15 @@ interface LayerProps {
 	onTransformEnd: (e: KonvaEventObject<Event>) => void;
 }
 
-const ImageLayer: React.FC<LayerProps> = ({
+/**
+ * Shared raster renderer for Image and SVG.
+ *
+ * Dimension sync rules (mirrors video compositor `autoDimensions`):
+ * - `autoDimensions === true`  → always sync width/height from the loaded bitmap
+ * - `autoDimensions !== true` AND (no width OR no height) → first-time init sync
+ * - `autoDimensions === false` AND dimensions already set → user owns the size
+ */
+const RasterLayer: React.FC<LayerProps> = ({
 	layer,
 	onDragStart,
 	onDragMove,
@@ -432,22 +465,36 @@ const ImageLayer: React.FC<LayerProps> = ({
 	const [image] = useImage(url ?? "", "anonymous");
 
 	useEffect(() => {
-		if (image && (!layer.width || !layer.height)) {
-			updateLayers(
-				(prev) =>
-					prev.map((l) =>
-						l.id === layer.id
-							? {
-									...l,
-									width: Math.round(image.width),
-									height: Math.round(image.height),
-								}
-							: l,
-					),
-				false,
-			);
-		}
-	}, [image, layer.id, layer.width, layer.height, updateLayers]);
+		if (!image) return;
+
+		const shouldSync =
+			layer.autoDimensions === true ||
+			layer.width == null ||
+			layer.height == null;
+
+		if (!shouldSync) return;
+
+		const newW = Math.round(image.width);
+		const newH = Math.round(image.height);
+
+		// Avoid needless re-renders when values haven't changed
+		if (newW === layer.width && newH === layer.height) return;
+
+		updateLayers(
+			(prev) =>
+				prev.map((l) =>
+					l.id === layer.id ? { ...l, width: newW, height: newH } : l,
+				),
+			false, // dimension sync is not a user-driven dirty change
+		);
+	}, [
+		image,
+		layer.id,
+		layer.width,
+		layer.height,
+		layer.autoDimensions,
+		updateLayers,
+	]);
 
 	const handleSelect = () => setSelectedId(layer.id);
 
@@ -753,7 +800,9 @@ const TransformerComponent: React.FC = () => {
 			anchorSize={9}
 			anchorCornerRadius={2}
 			padding={2}
-			keepRatio={selectedLayer?.type === "Image" && selectedLayer.lockAspect}
+			keepRatio={
+				isRasterLayer(selectedLayer?.type ?? "") && selectedLayer?.lockAspect
+			}
 			enabledAnchors={enabledAnchors}
 			boundBoxFunc={(oldBox, newBox) => {
 				if (newBox.width < 5 || newBox.height < 5) return oldBox;
@@ -830,6 +879,8 @@ const ArtboardBackground: React.FC = () => {
 	);
 };
 
+//#region Canvas
+
 const Canvas: React.FC = () => {
 	const {
 		layers,
@@ -852,12 +903,8 @@ const Canvas: React.FC = () => {
 		[layers],
 	);
 
-	useHotkeys("h", () => {
-		setMode("pan");
-	}, []);
-	useHotkeys("v", () => {
-		setMode("select");
-	}, []);
+	useHotkeys("h", () => setMode("pan"), []);
+	useHotkeys("v", () => setMode("select"), []);
 	useHotkeys(
 		"space",
 		(e) => {
@@ -873,9 +920,7 @@ const Canvas: React.FC = () => {
 		"space",
 		(e) => {
 			e.preventDefault();
-			if (mode === "pan") {
-				setMode(lastModeRef.current || "select");
-			}
+			if (mode === "pan") setMode(lastModeRef.current || "select");
 		},
 		{ keyup: true },
 	);
@@ -884,9 +929,7 @@ const Canvas: React.FC = () => {
 		(e: KonvaEventObject<TouchEvent | MouseEvent>) => {
 			const clickedOnEmpty =
 				e.target === stageRef.current || e.target.name() === "artboard-bg";
-			if (clickedOnEmpty) {
-				setSelectedId(null);
-			}
+			if (clickedOnEmpty) setSelectedId(null);
 		},
 		[stageRef, setSelectedId],
 	);
@@ -907,9 +950,7 @@ const Canvas: React.FC = () => {
 
 				const reset = () => {
 					stage.draggable(false);
-					if (e.evt.button === 1) {
-						setMode(lastModeRef.current || "select");
-					}
+					if (e.evt.button === 1) setMode(lastModeRef.current || "select");
 					window.removeEventListener("mouseup", reset);
 				};
 				window.addEventListener("mouseup", reset);
@@ -963,10 +1004,7 @@ const Canvas: React.FC = () => {
 				dy = -e.evt.deltaY * sensitivity;
 			}
 
-			setStagePos({
-				x: stagePos.x + dx,
-				y: stagePos.y + dy,
-			});
+			setStagePos({ x: stagePos.x + dx, y: stagePos.y + dy });
 		},
 		[stageRef, setScale, setStagePos, stagePos],
 	);
@@ -982,9 +1020,7 @@ const Canvas: React.FC = () => {
 	useEffect(() => {
 		const stage = stageRef.current;
 		if (!stage) return;
-		const handleDragEndStage = () => {
-			setStagePos(stage.position());
-		};
+		const handleDragEndStage = () => setStagePos(stage.position());
 		stage.on("dragend", handleDragEndStage);
 		return () => {
 			stage.off("dragend", handleDragEndStage);
@@ -1020,12 +1056,10 @@ const Canvas: React.FC = () => {
 							handleTransformEnd(e);
 						},
 					};
-					if (layer.type === "Image") {
-						return <ImageLayer key={layer.id} {...props} />;
-					}
-					if (layer.type === "Text") {
+					if (isRasterLayer(layer.type))
+						return <RasterLayer key={layer.id} {...props} />;
+					if (layer.type === "Text")
 						return <TextLayer key={layer.id} {...props} />;
-					}
 					return null;
 				})}
 			</KonvaLayer>
@@ -1052,6 +1086,12 @@ interface LayerItemProps {
 	setSelectedId: (id: string) => void;
 	updateLayer: (id: string, updates: Partial<LocalCompositorLayer>) => void;
 }
+
+const LayerTypeIcon: React.FC<{ type: string }> = ({ type }) => {
+	if (type === "SVG") return <RiFileCodeLine className="size-3.5" />;
+	if (type === "Image") return <RiImageFill className="size-3.5" />;
+	return <RiText className="size-3.5" />;
+};
 
 const LayerItem: React.FC<LayerItemProps> = ({
 	layer,
@@ -1099,26 +1139,27 @@ const LayerItem: React.FC<LayerItemProps> = ({
 			style={style}
 			{...attributes}
 			{...listeners}
-			className={`
-        flex items-center gap-2 px-3 py-2 border-b border-white/5 cursor-pointer outline-none group transition-colors select-none w-full text-left
-        ${isSelected ? "bg-blue-600/20 text-blue-100" : "hover:bg-white/5 text-gray-400"}
-        ${isDragging ? "bg-neutral-800" : ""}
-      `}
+			className={cn(
+				"flex items-center gap-2 px-3 py-2 border-b border-white/5 cursor-pointer outline-none group transition-colors select-none w-full text-left",
+				isSelected
+					? "bg-blue-600/20 text-blue-100"
+					: "hover:bg-white/5 text-gray-400",
+				isDragging && "bg-neutral-800",
+			)}
 			onClick={() => !isDragging && setSelectedId(layer.id)}
 			onKeyDown={handleKeyDown}
 			tabIndex={0}
 			type="button"
 		>
 			<div className="shrink-0 text-gray-500 group-hover:text-gray-300">
-				{layer.type === "Image" ? (
-					<RiImageFill className="size-3.5" />
-				) : (
-					<RiText className="size-3.5" />
-				)}
+				<LayerTypeIcon type={layer.type} />
 			</div>
 
 			<span
-				className={`truncate flex-1 text-[11px] font-medium ${isSelected ? "text-blue-100" : "text-gray-300"}`}
+				className={cn(
+					"truncate flex-1 text-[11px] font-medium",
+					isSelected ? "text-blue-100" : "text-gray-300",
+				)}
 			>
 				{name}
 			</span>
@@ -1170,9 +1211,7 @@ const LayersPanel: React.FC = () => {
 				);
 				const oldIndex = currentSorted.findIndex((l) => l.id === active.id);
 				const newIndex = currentSorted.findIndex((l) => l.id === over.id);
-
 				const newSorted = arrayMove(currentSorted, oldIndex, newIndex);
-
 				return currentLayers.map((l) => {
 					const pos = newSorted.findIndex((s) => s.id === l.id);
 					return { ...l, zIndex: newSorted.length - pos };
@@ -1228,10 +1267,11 @@ const LayersPanel: React.FC = () => {
 	);
 };
 
-// ─── FIX: All hooks are called unconditionally at the top of InspectorPanel.
-// Previously, `useAppSelector` was called AFTER the `if (!selectedLayer) return`
-// early-return, causing a different number of hooks to fire between renders
-// and violating the Rules of Hooks.
+// ─── InspectorPanel ───────────────────────────────────────────────────────────
+// All hooks are unconditionally called at the top (Rules of Hooks safe).
+// Transform section mirrors video compositor layout with:
+//   • Auto W/H toggle button for raster layers
+//   • Inline lock-aspect-ratio button between W and H inputs
 const InspectorPanel: React.FC = () => {
 	const { data: fontList } = useGetFontListQuery({});
 	const {
@@ -1242,14 +1282,14 @@ const InspectorPanel: React.FC = () => {
 		updateViewportWidth,
 		viewportHeight,
 		updateViewportHeight,
+		getImageUrl,
 	} = useEditor();
 
-	// ── Hoisted above every early-return so the hook call-count is stable ──
+	// Hoisted above every early-return → stable hook call count
 	const handles = useAppSelector(handleSelectors.selectEntities);
 
 	const selectedLayer = layers.find((l) => l.id === selectedId) ?? null;
 
-	// Derive handle and label safely — selectedLayer may be null here
 	const handle = selectedLayer
 		? handles[selectedLayer.inputHandleId]
 		: undefined;
@@ -1257,16 +1297,18 @@ const InspectorPanel: React.FC = () => {
 		? resolveLayerLabel(handle as HandleEntityType, selectedLayer)
 		: "";
 
-	const updateLayer = (updates: Partial<LocalCompositorLayer>) => {
-		if (!selectedId) return;
-		updateLayers((prev) =>
-			prev.map((l) => (l.id === selectedId ? { ...l, ...updates } : l)),
-		);
-	};
+	const updateLayer = useCallback(
+		(updates: Partial<LocalCompositorLayer>) => {
+			if (!selectedId) return;
+			updateLayers((prev) =>
+				prev.map((l) => (l.id === selectedId ? { ...l, ...updates } : l)),
+			);
+		},
+		[selectedId, updateLayers],
+	);
 
 	const centerLayer = (axis: "x" | "y") => {
 		if (!selectedLayer) return;
-
 		const effectiveWidth =
 			selectedLayer.type === "Text"
 				? (selectedLayer.computedWidth ?? 0)
@@ -1283,73 +1325,105 @@ const InspectorPanel: React.FC = () => {
 		}
 	};
 
+	/**
+	 * Toggles autoDimensions for raster layers.
+	 * Enabling it: clears explicit dimensions so the RasterLayer effect can
+	 * re-sync from the decoded bitmap (same pattern as video compositor).
+	 * Disabling it: keeps current dimensions and lets user drive them manually.
+	 */
+	const handleAutoDimensions = useCallback(() => {
+		if (!selectedLayer || !isRasterLayer(selectedLayer.type)) return;
+
+		if (selectedLayer.autoDimensions) {
+			// Turn off → freeze current values, user now owns size
+			updateLayer({ autoDimensions: false });
+			return;
+		}
+
+		// Turn on → clear w/h so RasterLayer will re-sync from the decoded image
+		updateLayer({ autoDimensions: true, width: undefined, height: undefined });
+	}, [selectedLayer, updateLayer]);
+
 	// ── Empty-selection view ──────────────────────────────────────────────────
 	if (!selectedLayer) {
 		return (
 			<ScrollArea className="w-72 h-full border-l border-white/10 bg-[#0f0f0f] z-20 shadow-xl">
 				<div className="flex flex-col min-h-full">
-					<div className="px-4 py-3 bg-neutral-900 border-b border-white/5 shrink-0 h-10 flex items-center">
+					{/* Header — matches video compositor canvas settings header */}
+					<div className="p-4 bg-neutral-900 border-b border-white/5 shrink-0 h-10 flex items-center">
 						<h2 className="text-[10px] font-bold text-gray-200 uppercase tracking-wide flex items-center gap-2">
 							<RiEqualizerLine className="w-3.5 h-3.5 text-blue-400" />
 							Canvas Settings
 						</h2>
 					</div>
+
 					<div className="p-4 space-y-6">
+						{/* Preset dropdown — matches video compositor */}
 						<div className="space-y-3">
-							<Label className="text-[10px] text-gray-500 uppercase font-bold tracking-wide">
-								Dimensions
-							</Label>
-							<div className="grid grid-cols-2 gap-3">
-								<DraggableNumberInput
-									label="W"
-									icon={RiArrowLeftRightLine}
-									value={Math.round(viewportWidth)}
-									onChange={(v) => updateViewportWidth(Math.max(1, v))}
-									min={1}
-								/>
-								<DraggableNumberInput
-									label="H"
-									icon={RiArrowUpDownLine}
-									value={Math.round(viewportHeight)}
-									onChange={(v) => updateViewportHeight(Math.max(1, v))}
-									min={1}
-								/>
+							<div className="space-y-1.5">
+								<Label className="text-[10px] text-gray-500 uppercase font-bold tracking-wide">
+									Preset
+								</Label>
+								<Select
+									onValueChange={(val) => {
+										const preset = ASPECT_RATIOS.find((r) => r.label === val);
+										if (preset) {
+											updateViewportWidth(preset.width);
+											updateViewportHeight(preset.height);
+										}
+									}}
+								>
+									<SelectTrigger className="h-8 text-[11px] bg-white/5 border-white/10 text-gray-300">
+										<SelectValue placeholder="Select Preset" />
+									</SelectTrigger>
+									<SelectContent className="bg-neutral-800 border-white/10 text-gray-300">
+										{ASPECT_RATIOS.map((r) => (
+											<SelectItem key={r.label} value={r.label}>
+												<span className="flex items-center justify-between w-full gap-6">
+													<span>{r.label}</span>
+													<span className="text-[10px] text-gray-500 font-mono">
+														{r.width}x{r.height}
+													</span>
+												</span>
+											</SelectItem>
+										))}
+									</SelectContent>
+								</Select>
 							</div>
 
-							<Select
-								onValueChange={(val) => {
-									const preset = ASPECT_RATIOS.find((r) => r.label === val);
-									if (preset) {
-										updateViewportWidth(preset.width);
-										updateViewportHeight(preset.height);
-									}
-								}}
-							>
-								<SelectTrigger className="h-8 text-[11px] bg-white/5 border-white/10 text-gray-300">
-									<SelectValue placeholder="Select Preset" />
-								</SelectTrigger>
-								<SelectContent className="bg-neutral-800 border-white/10 text-gray-300">
-									{ASPECT_RATIOS.map((r) => (
-										<SelectItem key={r.label} value={r.label}>
-											<span className="flex items-center justify-between w-full gap-6">
-												<span>{r.label}</span>
-												<span className="text-[10px] text-gray-500 font-mono">
-													{r.width}x{r.height}
-												</span>
-											</span>
-										</SelectItem>
-									))}
-								</SelectContent>
-							</Select>
+							{/* Resolution inputs — matches video compositor grid layout */}
+							<div className="space-y-2">
+								<Label className="text-[10px] text-gray-500 uppercase font-bold tracking-wide">
+									Dimensions
+								</Label>
+								<div className="grid grid-cols-2 gap-2">
+									<DraggableNumberInput
+										label="W"
+										icon={RiArrowLeftRightLine}
+										value={Math.round(viewportWidth)}
+										onChange={(v) => updateViewportWidth(Math.max(1, v))}
+										min={1}
+									/>
+									<DraggableNumberInput
+										label="H"
+										icon={RiArrowUpDownLine}
+										value={Math.round(viewportHeight)}
+										onChange={(v) => updateViewportHeight(Math.max(1, v))}
+										min={1}
+									/>
+								</div>
+							</div>
 						</div>
 
-						<div className="flex flex-col items-center justify-center p-8 text-center border border-dashed border-white/10 rounded-lg bg-white/2">
-							<RiCursorFill className="w-6 h-6 text-gray-700 mb-3" />
-							<p className="text-[11px] font-medium text-gray-400">
+						{/* Empty state — matches video compositor empty state */}
+						<div className="w-full h-px bg-white/5" />
+						<div className="flex flex-col items-center justify-center py-12 px-4 text-center border border-dashed border-white/10 rounded-lg bg-white/2">
+							<RiCursorFill className="w-8 h-8 text-gray-700 mb-3" />
+							<p className="text-sm font-medium text-gray-400">
 								No Layer Selected
 							</p>
-							<p className="text-[10px] text-gray-600 mt-1">
-								Select a layer to edit properties
+							<p className="text-xs text-gray-600 mt-1">
+								Select a layer to edit its properties.
 							</p>
 						</div>
 					</div>
@@ -1359,39 +1433,165 @@ const InspectorPanel: React.FC = () => {
 	}
 
 	// ── Layer-selected view ───────────────────────────────────────────────────
+	const isRaster = isRasterLayer(selectedLayer.type);
+
 	return (
 		<ScrollArea className="w-72 h-full border-l border-white/10 bg-[#0f0f0f] z-20 shadow-xl">
+			{/* Header */}
 			<div className="flex items-center justify-between px-4 py-3 border-b border-white/5 bg-neutral-900/50 backdrop-blur">
 				<div className="flex flex-col min-w-0">
 					<span className="text-[10px] text-blue-400 uppercase font-bold tracking-wider mb-0.5">
 						Properties
 					</span>
-					<div className="flex items-center gap-2">
-						<h2 className="text-sm font-semibold text-white truncate max-w-[140px]">
-							{label}
-						</h2>
-					</div>
+					<h2 className="text-sm font-semibold text-white truncate max-w-[160px]">
+						{label}
+					</h2>
 				</div>
-				<span className="text-[9px] bg-white/10 px-2 py-1 rounded text-gray-300 font-medium uppercase border border-white/5 tracking-wider">
+				<span
+					className={cn(
+						"text-[9px] px-2 py-1 rounded font-medium uppercase border tracking-wider",
+						"bg-white/10 text-gray-300 border-white/5",
+					)}
+				>
 					{selectedLayer.type}
 				</span>
 			</div>
 
 			<div className="pb-20">
-				<TransformControls
-					x={selectedLayer.x}
-					y={selectedLayer.y}
-					width={selectedLayer.width}
-					height={selectedLayer.height}
-					rotation={selectedLayer.rotation}
-					lockAspect={selectedLayer.lockAspect}
-					showDimensions={selectedLayer.type !== "Text"}
-					showScale={false}
-					showLockAspect={selectedLayer.type === "Image"}
-					onChange={updateLayer}
-					onCenter={centerLayer}
-				/>
+				{/* ── Transform Section ─────────────────────────────────────────── */}
+				<div className="border-b border-white/5 p-4 space-y-3">
+					{/* Section header with optional Auto W/H button (raster only) */}
+					<div className="flex items-center justify-between mb-1">
+						<span className="text-[10px] font-bold text-gray-500 uppercase tracking-wider">
+							Transform
+						</span>
 
+						{isRaster && (
+							<WithTooltip tip="Sync dimensions with source image / SVG">
+								<Button
+									variant={selectedLayer.autoDimensions ? "secondary" : "ghost"}
+									size="sm"
+									className={cn(
+										"h-6 text-[10px] px-2",
+										selectedLayer.autoDimensions
+											? "text-blue-400 bg-blue-500/10 hover:bg-blue-500/20"
+											: "text-gray-500 hover:text-gray-300 bg-white/5",
+									)}
+									onClick={handleAutoDimensions}
+								>
+									<RiMagicLine className="w-3 h-3 mr-1" />
+									Auto W/H
+								</Button>
+							</WithTooltip>
+						)}
+					</div>
+
+					{/* X / Y */}
+					<div className="grid grid-cols-2 gap-2">
+						<DraggableNumberInput
+							label="X"
+							icon={RiArrowLeftRightLine}
+							value={Math.round(selectedLayer.x)}
+							onChange={(v) => updateLayer({ x: v })}
+						/>
+						<DraggableNumberInput
+							label="Y"
+							icon={RiArrowUpDownLine}
+							value={Math.round(selectedLayer.y)}
+							onChange={(v) => updateLayer({ y: v })}
+						/>
+					</div>
+
+					{/* W / Lock / H  — only for non-Text layers (Text auto-sizes) */}
+					{selectedLayer.type !== "Text" && (
+						<TooltipProvider>
+							<div className="flex items-end gap-2">
+								<DraggableNumberInput
+									label="W"
+									icon={RiArrowLeftRightLine}
+									value={Math.round(selectedLayer.width ?? 0)}
+									onChange={(v) => {
+										const ratio =
+											(selectedLayer.height ?? 1) / (selectedLayer.width ?? 1);
+										updateLayer({
+											width: Math.max(1, v),
+											height: selectedLayer.lockAspect
+												? Math.max(1, Math.round(v * ratio))
+												: selectedLayer.height,
+											autoDimensions: false,
+										});
+									}}
+									min={1}
+								/>
+
+								{/* Lock aspect ratio — mirrors video compositor */}
+								<Tooltip>
+									<TooltipTrigger asChild>
+										<Button
+											variant="ghost"
+											size="icon"
+											className={cn(
+												"h-7 w-7 rounded-md transition-colors shrink-0",
+												selectedLayer.lockAspect
+													? "text-blue-400 bg-blue-500/10 hover:bg-blue-500/20"
+													: "text-gray-500 hover:text-gray-300 bg-white/5",
+											)}
+											onClick={() =>
+												updateLayer({ lockAspect: !selectedLayer.lockAspect })
+											}
+										>
+											{selectedLayer.lockAspect ? (
+												<RiLinksLine className="w-3.5 h-3.5" />
+											) : (
+												<RiLinkUnlinkM className="w-3.5 h-3.5" />
+											)}
+										</Button>
+									</TooltipTrigger>
+									<TooltipContent>
+										{selectedLayer.lockAspect
+											? "Unlock aspect ratio"
+											: "Lock aspect ratio"}
+									</TooltipContent>
+								</Tooltip>
+
+								<DraggableNumberInput
+									label="H"
+									icon={RiArrowUpDownLine}
+									value={Math.round(selectedLayer.height ?? 0)}
+									onChange={(v) => {
+										const ratio =
+											(selectedLayer.width ?? 1) / (selectedLayer.height ?? 1);
+										updateLayer({
+											height: Math.max(1, v),
+											width: selectedLayer.lockAspect
+												? Math.max(1, Math.round(v * ratio))
+												: selectedLayer.width,
+											autoDimensions: false,
+										});
+									}}
+									min={1}
+								/>
+							</div>
+						</TooltipProvider>
+					)}
+
+					{/* Rotation */}
+					<TransformControls
+						x={selectedLayer.x}
+						y={selectedLayer.y}
+						width={selectedLayer.width}
+						height={selectedLayer.height}
+						rotation={selectedLayer.rotation}
+						lockAspect={selectedLayer.lockAspect}
+						showDimensions={false} /* dimensions rendered above */
+						showScale={false}
+						showLockAspect={false} /* lock button rendered inline above */
+						onChange={updateLayer}
+						onCenter={centerLayer}
+					/>
+				</div>
+
+				{/* ── Style Controls ────────────────────────────────────────────── */}
 				<StyleControls
 					backgroundColor={undefined}
 					stroke={selectedLayer.stroke}
@@ -1401,12 +1601,13 @@ const InspectorPanel: React.FC = () => {
 					opacity={selectedLayer.opacity}
 					showBackground={false}
 					showStroke={true}
-					showCornerRadius={selectedLayer.type === "Image"}
+					showCornerRadius={isRaster}
 					showPadding={selectedLayer.type === "Text"}
 					showOpacity={true}
 					onChange={updateLayer}
 				/>
 
+				{/* ── Typography Controls (Text only) ───────────────────────────── */}
 				{selectedLayer.type === "Text" && (
 					<TypographyControls
 						fontFamily={selectedLayer.fontFamily ?? "Inter"}
@@ -1425,6 +1626,7 @@ const InspectorPanel: React.FC = () => {
 					/>
 				)}
 
+				{/* ── Blending ──────────────────────────────────────────────────── */}
 				<CollapsibleSection title="Blending" icon={RiEqualizerLine}>
 					<div className="space-y-4">
 						<div className="space-y-2">
@@ -1460,138 +1662,140 @@ const InspectorPanel: React.FC = () => {
 	);
 };
 
-const Toolbar = React.memo<{
-	onSave: () => void;
-	onClose: () => void;
-}>(({ onSave, onClose }) => {
-	const {
-		mode,
-		setMode,
-		zoomIn,
-		zoomOut,
-		zoomTo,
-		fitView,
-		zoomPercentage,
-		isDirty,
-	} = useEditor();
+//#region Toolbar
 
-	return (
-		<div className="flex items-center gap-1.5 p-1.5 rounded-full border border-border/50 bg-background/80 backdrop-blur-md shadow-2xl ring-1 ring-white/5 z-50 animate-in fade-in slide-in-from-bottom-4">
-			<TooltipProvider>
-				<div className="flex rounded-full p-0.5">
-					<Tooltip>
-						<TooltipTrigger asChild>
-							<Button
-								variant={mode === "select" ? "secondary" : "ghost"}
-								size="icon"
-								className="rounded-full w-8 h-8"
-								onClick={() => setMode("select")}
-							>
-								<RiCursorFill className="w-3.5 h-3.5" />
-							</Button>
-						</TooltipTrigger>
-						<TooltipContent>Select Tool (V)</TooltipContent>
-					</Tooltip>
-					<Tooltip>
-						<TooltipTrigger asChild>
-							<Button
-								variant={mode === "pan" ? "secondary" : "ghost"}
-								size="icon"
-								className="rounded-full w-8 h-8"
-								onClick={() => setMode("pan")}
-							>
-								<RiHand className="w-3.5 h-3.5" />
-							</Button>
-						</TooltipTrigger>
-						<TooltipContent>Pan Tool (H) or hold Space</TooltipContent>
-					</Tooltip>
-				</div>
-			</TooltipProvider>
+const Toolbar = React.memo<{ onSave: () => void; onClose: () => void }>(
+	({ onSave, onClose }) => {
+		const {
+			mode,
+			setMode,
+			zoomIn,
+			zoomOut,
+			zoomTo,
+			fitView,
+			zoomPercentage,
+			isDirty,
+		} = useEditor();
 
-			<div className="w-px h-5 bg-white/10 mx-1" />
-
-			<Menubar className="border-none bg-transparent h-auto p-0">
-				<MenubarMenu>
-					<MenubarTrigger asChild>
-						<Button
-							variant="ghost"
-							className="h-8 px-3 text-[11px] rounded-full text-gray-300 hover:text-white hover:bg-white/10 font-medium min-w-[80px] justify-between"
-							onDoubleClick={() => zoomTo(1)}
-						>
-							{zoomPercentage}
-							<RiArrowDownSLine className="w-3 h-3 ml-1.5 opacity-50" />
-						</Button>
-					</MenubarTrigger>
-					<MenubarContent
-						align="center"
-						sideOffset={10}
-						className="min-w-40 bg-neutral-900/95 backdrop-blur-xl border-white/10 text-gray-200"
-					>
-						<MenubarItem onClick={() => zoomIn()}>
-							<span className="flex-1">Zoom In</span>
-							<span className="text-xs text-gray-500 ml-4">+</span>
-						</MenubarItem>
-						<MenubarItem onClick={() => zoomOut()}>
-							<span className="flex-1">Zoom Out</span>
-							<span className="text-xs text-gray-500 ml-4">−</span>
-						</MenubarItem>
-						<MenubarItem onClick={() => zoomTo(1)}>
-							<span className="flex-1">Actual Size</span>
-							<span className="text-xs text-gray-500 ml-4">1</span>
-						</MenubarItem>
-						<Separator className="my-1 bg-white/10" />
-						<MenubarItem onClick={() => fitView()}>
-							<span className="flex-1">Fit to Screen</span>
-							<span className="text-xs text-gray-500 ml-4">0</span>
-						</MenubarItem>
-					</MenubarContent>
-				</MenubarMenu>
-			</Menubar>
-
-			<div className="w-px h-5 bg-white/10 mx-1" />
-
-			<div className="flex items-center gap-1">
+		return (
+			<div className="flex items-center gap-1.5 p-1.5 rounded-full border border-border/50 bg-background/80 backdrop-blur-md shadow-2xl ring-1 ring-white/5 z-50 animate-in fade-in slide-in-from-bottom-4">
 				<TooltipProvider>
-					<Tooltip>
-						<TooltipTrigger asChild>
-							<Button
-								size="sm"
-								variant="default"
-								className="h-8 text-[11px] font-semibold rounded-full px-4"
-								onClick={onSave}
-								disabled={!isDirty}
+					{/* Mode buttons */}
+					<div className="flex rounded-full p-0.5">
+						<Tooltip>
+							<TooltipTrigger asChild>
+								<Button
+									variant={mode === "select" ? "secondary" : "ghost"}
+									size="icon"
+									className="rounded-full w-8 h-8"
+									onClick={() => setMode("select")}
+								>
+									<RiCursorFill className="w-3.5 h-3.5" />
+								</Button>
+							</TooltipTrigger>
+							<TooltipContent>Select Tool (V)</TooltipContent>
+						</Tooltip>
+						<Tooltip>
+							<TooltipTrigger asChild>
+								<Button
+									variant={mode === "pan" ? "secondary" : "ghost"}
+									size="icon"
+									className="rounded-full w-8 h-8"
+									onClick={() => setMode("pan")}
+								>
+									<RiHand className="w-3.5 h-3.5" />
+								</Button>
+							</TooltipTrigger>
+							<TooltipContent>Pan Tool (H) or hold Space</TooltipContent>
+						</Tooltip>
+					</div>
+
+					<div className="w-px h-5 bg-white/10 mx-1" />
+
+					{/* Zoom menu */}
+					<Menubar className="border-none bg-transparent h-auto p-0">
+						<MenubarMenu>
+							<MenubarTrigger asChild>
+								<Button
+									variant="ghost"
+									className="h-8 px-3 text-[11px] rounded-full text-gray-300 hover:text-white hover:bg-white/10 font-medium min-w-[80px] justify-between"
+									onDoubleClick={() => zoomTo(1)}
+								>
+									{zoomPercentage}
+									<RiArrowDownSLine className="w-3 h-3 ml-1.5 opacity-50" />
+								</Button>
+							</MenubarTrigger>
+							<MenubarContent
+								align="center"
+								sideOffset={10}
+								className="min-w-40 bg-neutral-900/95 backdrop-blur-xl border-white/10 text-gray-200"
 							>
-								<RiSave3Fill className="w-3.5 h-3.5 mr-1" />
-								Save
-							</Button>
-						</TooltipTrigger>
-						<TooltipContent>Save (⌘S)</TooltipContent>
-					</Tooltip>
-					<Tooltip>
-						<TooltipTrigger asChild>
-							<Button
-								size="icon"
-								variant="ghost"
-								className="h-8 w-8 rounded-full text-gray-400 hover:text-white hover:bg-white/10"
-								onClick={onClose}
-							>
-								<RiCloseLine className="w-4 h-4" />
-							</Button>
-						</TooltipTrigger>
-						<TooltipContent>Close (Esc)</TooltipContent>
-					</Tooltip>
+								<MenubarItem onClick={() => zoomIn()}>
+									<span className="flex-1">Zoom In</span>
+									<span className="text-xs text-gray-500 ml-4">+</span>
+								</MenubarItem>
+								<MenubarItem onClick={() => zoomOut()}>
+									<span className="flex-1">Zoom Out</span>
+									<span className="text-xs text-gray-500 ml-4">−</span>
+								</MenubarItem>
+								<MenubarItem onClick={() => zoomTo(1)}>
+									<span className="flex-1">Actual Size</span>
+									<span className="text-xs text-gray-500 ml-4">1</span>
+								</MenubarItem>
+								<Separator className="my-1 bg-white/10" />
+								<MenubarItem onClick={() => fitView()}>
+									<span className="flex-1">Fit to Screen</span>
+									<span className="text-xs text-gray-500 ml-4">0</span>
+								</MenubarItem>
+							</MenubarContent>
+						</MenubarMenu>
+					</Menubar>
+
+					<div className="w-px h-5 bg-white/10 mx-1" />
+
+					{/* Save / Close */}
+					<div className="flex items-center gap-1">
+						<Tooltip>
+							<TooltipTrigger asChild>
+								<Button
+									size="sm"
+									variant="default"
+									className="h-8 text-[11px] font-semibold rounded-full px-4"
+									onClick={onSave}
+									disabled={!isDirty}
+								>
+									<RiSave3Fill className="w-3.5 h-3.5 mr-1" />
+									Save
+								</Button>
+							</TooltipTrigger>
+							<TooltipContent>Save (⌘S)</TooltipContent>
+						</Tooltip>
+						<Tooltip>
+							<TooltipTrigger asChild>
+								<Button
+									size="icon"
+									variant="ghost"
+									className="h-8 w-8 rounded-full text-gray-400 hover:text-white hover:bg-white/10"
+									onClick={onClose}
+								>
+									<RiCloseLine className="w-4 h-4" />
+								</Button>
+							</TooltipTrigger>
+							<TooltipContent>Close (Esc)</TooltipContent>
+						</Tooltip>
+					</div>
 				</TooltipProvider>
 			</div>
-		</div>
-	);
-});
+		);
+	},
+);
 
 //#region Main Editor
 
 interface ImageDesignerEditorProps {
 	initialLayers: Map<
 		HandleEntityType["id"],
-		OutputItem<"Text"> | OutputItem<"Image">
+		OutputItem<"Text"> | OutputItem<"Image"> | OutputItem<"SVG">
 	>;
 	node: NodeEntityType;
 	onClose: () => void;
@@ -1614,9 +1818,7 @@ export const ImageDesignerEditor: React.FC<ImageDesignerEditorProps> = ({
 			isUserChange: boolean = true,
 		) => {
 			setLayers(updater);
-			if (isUserChange) {
-				setIsDirty(true);
-			}
+			if (isUserChange) setIsDirty(true);
 		},
 		[],
 	);
@@ -1710,7 +1912,9 @@ export const ImageDesignerEditor: React.FC<ImageDesignerEditorProps> = ({
 
 	const getImageData = useCallback(
 		(handleId: string) => {
-			const layerData = initialLayers.get(handleId) as OutputItem<"Image">;
+			const layerData = initialLayers.get(handleId) as
+				| OutputItem<"Image">
+				| OutputItem<"SVG">;
 			return layerData?.data ?? {};
 		},
 		[initialLayers],
@@ -1718,15 +1922,17 @@ export const ImageDesignerEditor: React.FC<ImageDesignerEditorProps> = ({
 
 	const getImageUrl = useCallback(
 		(handleId: string) => {
-			const layerData = initialLayers.get(handleId) as OutputItem<"Image">;
-			if (layerData?.data.entity) {
+			const layerData = initialLayers.get(handleId) as
+				| OutputItem<"Image">
+				| OutputItem<"SVG">;
+			if (layerData?.data.entity)
 				return GetAssetEndpoint(layerData.data.entity);
-			}
 			return layerData?.data?.processData?.dataUrl;
 		},
 		[initialLayers],
 	);
 
+	// ── Load initial layers ────────────────────────────────────────────────────
 	useEffect(() => {
 		const loadInitialLayers = async () => {
 			const existingConfig = (node.config as CompositorNodeConfig) ?? {
@@ -1752,6 +1958,8 @@ export const ImageDesignerEditor: React.FC<ImageDesignerEditorProps> = ({
 						blendMode: "source-over",
 						zIndex: ++maxZ,
 						opacity: 1,
+						// New raster layers default to auto-syncing dimensions
+						autoDimensions: isRasterLayer(output.type) ? true : undefined,
 					};
 
 					if (newLayer.type === "Text") {
@@ -1769,7 +1977,7 @@ export const ImageDesignerEditor: React.FC<ImageDesignerEditorProps> = ({
 						newLayer.computedWidth = undefined;
 					}
 
-					if (newLayer.type === "Image") {
+					if (isRasterLayer(newLayer.type)) {
 						const fData = getImageData(handleId);
 						if (fData.entity) {
 							newLayer.width = Math.round(
@@ -1792,9 +2000,18 @@ export const ImageDesignerEditor: React.FC<ImageDesignerEditorProps> = ({
 					}
 
 					layerUpdates[handleId] = newLayer;
+				} else {
+					// Restore autoDimensions persisted in config (user may have set it)
+					// For layers saved before autoDimensions existed, raster layers
+					// that have explicit dimensions default to false (manual).
+					const saved = layerUpdates[handleId] as LocalCompositorLayer;
+					if (isRasterLayer(saved.type) && saved.autoDimensions === undefined) {
+						(layerUpdates[handleId] as LocalCompositorLayer).autoDimensions =
+							saved.width == null && saved.height == null ? true : false;
+					}
 				}
 
-				const layer = layerUpdates[handleId];
+				const layer = layerUpdates[handleId] as LocalCompositorLayer;
 				if (layer.type === "Text" && layer.fontFamily) {
 					const fontUrl = GetFontAssetUrl(layer.fontFamily);
 					fontPromises.push(fontManager.loadFont(layer.fontFamily, fontUrl));
@@ -1802,17 +2019,19 @@ export const ImageDesignerEditor: React.FC<ImageDesignerEditorProps> = ({
 			});
 
 			await Promise.all(fontPromises);
-			updateLayers(Object.values(layerUpdates), false);
+			updateLayers(
+				Object.values(layerUpdates) as LocalCompositorLayer[],
+				false,
+			);
 		};
 		loadInitialLayers();
 	}, [initialLayers, node.config, getImageData, updateLayers]);
 
 	useEffect(() => {
-		if (mode === "pan" && selectedId) {
-			setSelectedId(null);
-		}
+		if (mode === "pan" && selectedId) setSelectedId(null);
 	}, [mode, selectedId]);
 
+	// ── Save ──────────────────────────────────────────────────────────────────
 	const handleSave = useCallback(() => {
 		const layerUpdates = layers.reduce<Record<string, CompositorLayer>>(
 			(acc, layer) => {
@@ -1827,13 +2046,11 @@ export const ImageDesignerEditor: React.FC<ImageDesignerEditorProps> = ({
 	}, [layers, propOnSave, viewportHeight, viewportWidth]);
 
 	const handleCloseRequest = useCallback(() => {
-		if (isDirty) {
-			setShowCloseAlert(true);
-		} else {
-			onClose();
-		}
+		if (isDirty) setShowCloseAlert(true);
+		else onClose();
 	}, [isDirty, onClose]);
 
+	// ── Global keyboard shortcuts ─────────────────────────────────────────────
 	useEffect(() => {
 		const handleKeyDown = (e: KeyboardEvent) => {
 			const isInput =
@@ -1891,9 +2108,7 @@ export const ImageDesignerEditor: React.FC<ImageDesignerEditorProps> = ({
 				);
 			}
 
-			if (e.key === "Escape") {
-				handleCloseRequest();
-			}
+			if (e.key === "Escape") handleCloseRequest();
 		};
 
 		const handleKeyUp = (e: KeyboardEvent) => {
@@ -1979,10 +2194,12 @@ export const ImageDesignerEditor: React.FC<ImageDesignerEditorProps> = ({
 			}}
 		>
 			<div className="flex h-screen w-screen bg-[#050505] overflow-hidden relative text-foreground font-sans selection:bg-blue-500/30">
+				{/* Left — Layers Panel */}
 				<div className="relative shrink-0 z-20">
 					<LayersPanel />
 				</div>
 
+				{/* Center — Canvas */}
 				<div className="flex-1 flex flex-col relative min-w-0 z-0">
 					<div
 						ref={containerRef}
@@ -1997,15 +2214,18 @@ export const ImageDesignerEditor: React.FC<ImageDesignerEditorProps> = ({
 						<Canvas />
 					</div>
 
+					{/* Floating bottom toolbar */}
 					<div className="absolute bottom-6 left-1/2 -translate-x-1/2 z-50 transition-all duration-300">
 						<Toolbar onSave={handleSave} onClose={handleCloseRequest} />
 					</div>
 				</div>
 
+				{/* Right — Inspector Panel */}
 				<div className="relative shrink-0 z-20">
 					<InspectorPanel />
 				</div>
 
+				{/* Unsaved changes dialog */}
 				<AlertDialog open={showCloseAlert} onOpenChange={setShowCloseAlert}>
 					<AlertDialogContent className="bg-neutral-900 border-white/10 text-white">
 						<AlertDialogHeader>

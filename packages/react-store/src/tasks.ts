@@ -11,6 +11,7 @@ import {
 	createSlice,
 	type PayloadAction,
 } from "@reduxjs/toolkit";
+import { billingAPI } from "./billing.js";
 import type { RootState } from "./index.js";
 
 export type BatchEntity = BatchDetailsRPC[number];
@@ -21,13 +22,17 @@ export const batchAdapter = createEntityAdapter<BatchEntity>();
 export const getBatchDetails = createAsyncThunk<
 	BatchDetailsRPC,
 	BatchDetailsRPCParams
->("tasks/getBatchDetails", async (params) => {
+>("tasks/getBatchDetails", async (params, { dispatch }) => {
 	const response =
 		await appRPCClient.api.v1.tasks["filterby-batch"].$get(params);
 	if (!response.ok) {
 		throw new Error(await response.text());
 	}
-	return await response.json();
+	const data = (await response.json()) as BatchDetailsRPC;
+	if (data.some((b: BatchEntity) => b.finishedAt != null)) {
+		dispatch(billingAPI.util.invalidateTags(["Balance"]));
+	}
+	return data;
 });
 
 export const getInitialBatches = createAsyncThunk<
@@ -40,6 +45,23 @@ export const getInitialBatches = createAsyncThunk<
 		},
 		query: {
 			taskStatus: ["QUEUED", "EXECUTING"],
+		},
+	});
+	if (!response.ok) {
+		throw new Error(await response.text());
+	}
+	return await response.json();
+});
+
+export const stopBatch = createAsyncThunk<
+	{ success: boolean },
+	{ batchId: string }
+>("tasks/stopBatch", async ({ batchId }) => {
+	const response = await (appRPCClient.api.v1.tasks as any)["stop-batch"][
+		":batchId"
+	].$post({
+		param: {
+			batchId,
 		},
 	});
 	if (!response.ok) {
@@ -135,6 +157,21 @@ const tasksSlice = createSlice({
 				}
 				state.initialLoading = false;
 				state.latestTasksFetchTime = Date.now();
+			})
+			.addCase(stopBatch.fulfilled, (state, action) => {
+				const { batchId } = action.meta.arg;
+				batchAdapter.updateOne(state, {
+					id: batchId,
+					changes: {
+						finishedAt: new Date().toISOString(),
+					},
+				});
+				state.batchIdsToPoll = state.batchIdsToPoll.filter(
+					(id) => id !== batchId,
+				);
+				if (state.batchIdsToPoll.length === 0) {
+					state.pollingInterval = 0;
+				}
 			});
 	},
 });

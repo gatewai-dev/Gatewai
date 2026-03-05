@@ -8,6 +8,7 @@ declare global {
 		GATEWAI_ENV?: {
 			VITE_BASE_URL?: string;
 			DISABLE_EMAIL_SIGNUP?: boolean;
+			VITE_ENABLE_PRICING?: boolean;
 		};
 	}
 }
@@ -29,6 +30,11 @@ export function getEnv(
 	const env = import.meta.env;
 	if (env?.[key]) {
 		return env[key];
+	}
+
+	// 3. Fallback to process.env (webpack / Remotion server-side rendering)
+	if (typeof process !== "undefined" && process.env?.[key]) {
+		return process.env[key];
 	}
 
 	return undefined;
