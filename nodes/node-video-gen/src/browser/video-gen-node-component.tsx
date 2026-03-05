@@ -6,7 +6,7 @@ import {
 	RunNodeButton,
 	useMediaInputSrc,
 	useNodeResult,
-	VideoRenderer,
+	VideoPlayer,
 } from "@gatewai/react-canvas";
 import {
 	makeSelectHandlesByNodeId,
@@ -47,7 +47,7 @@ const VideoGenNodeComponent = memo(
 							</div>
 						)}
 						{videoSrc && (
-							<VideoRenderer
+							<VideoPlayer
 								src={videoSrc}
 								className="rounded-none w-full h-full"
 							/>

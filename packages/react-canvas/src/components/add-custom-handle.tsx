@@ -1,5 +1,5 @@
 import { generateId } from "@gatewai/core";
-import type { DataType } from "@gatewai/db";
+import type { DataType } from "@gatewai/core/types";
 import type { NodeEntityType } from "@gatewai/react-store";
 import {
 	type HandleEntityType,
@@ -62,7 +62,7 @@ function AddCustomHandleButtonBase(props: CustomHandleButtonProps) {
 		() => makeSelectHandlesByNodeId(props.nodeId),
 		[props.nodeId],
 	);
-	const existingHandles = useAppSelector((state) => selectHandles(state));
+	const existingHandles = useAppSelector(selectHandles);
 	const enumValues = OPTIONS as unknown as [string, ...string[]];
 
 	const { createNewHandle } = useCanvasCtx();

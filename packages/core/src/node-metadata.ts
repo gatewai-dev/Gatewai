@@ -1,6 +1,5 @@
-import type { DataType } from "@gatewai/db";
-import z, { ZodType, type ZodTypeAny } from "zod";
-import type { NodeResult } from "./types/node-result.js";
+import z, { type ZodTypeAny } from "zod";
+import type { DataType } from "./types/base.js";
 
 const HandleDefinitionSchema = z.object({
 	dataTypes: z.custom<DataType[]>(),

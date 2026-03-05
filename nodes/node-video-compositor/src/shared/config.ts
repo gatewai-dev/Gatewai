@@ -4,12 +4,10 @@ import {
 	AnimationSchema,
 	AspectLockSchema,
 	AudioOptionsSchema,
-	AudioResultSchema,
 	BaseLayerSchema,
 	ColorSchema,
 	DimensionSchema,
 	FontOptionsSchema,
-	ImageResultSchema,
 	OpacitySchema,
 	PaddingSchema,
 	PositionSchema,
@@ -17,7 +15,6 @@ import {
 	ScaleSchema,
 	SizeSchema,
 	StrokeSchema,
-	TextResultSchema,
 	VideoResultSchema,
 	VideoTimingSchema,
 	ZIndexSchema,
@@ -96,11 +93,6 @@ export type VideoCompositorNodeConfig = z.infer<
 	typeof VideoCompositorNodeConfigSchema
 >;
 export type VideoCompositorLayer = z.infer<typeof VideoCompositorLayerSchema>;
-
-import {
-	createOutputItemSchema,
-	SingleOutputGenericSchema,
-} from "@gatewai/core/types";
 
 export const VideoCompositorResultSchema = VideoResultSchema;
 

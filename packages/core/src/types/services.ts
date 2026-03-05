@@ -1,4 +1,4 @@
-import type { DataType } from "@gatewai/db";
+import type { DataType } from "./base.js";
 import type { FileData } from "./index.js";
 import type { IPixiProcessor } from "./pixi.js";
 

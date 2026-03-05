@@ -1,5 +1,5 @@
-import type { DataType } from "@gatewai/db/types";
 import { z } from "zod";
+import type { DataType } from "../base.js";
 
 export const DATA_TYPE_EXTENSIONS: Record<DataType, string> = {
 	Image: "png",
@@ -9,7 +9,6 @@ export const DATA_TYPE_EXTENSIONS: Record<DataType, string> = {
 	Number: "txt",
 	Boolean: "txt",
 	SVG: "svg",
-	Json: "json",
 	Caption: "srt",
 };
 

@@ -5,18 +5,21 @@ import type {
 	FileData,
 	MediaService,
 	NodeResult,
+	OutputItem,
 	VirtualMediaData,
 } from "@gatewai/core/types";
-import { type Node, prisma, type TaskBatch } from "@gatewai/db";
+import { type DataType, type Node, prisma, type TaskBatch } from "@gatewai/db";
 import type { APIRunResponse } from "./schemas.js";
 
 type BatchResult = APIRunResponse["result"];
 
-const isOutputItemFileData = (data: any): data is FileData => {
+const isOutputItemFileData = (data: OutputItem<DataType>): data is FileData => {
 	return typeof data === "object" && !("source" in data);
 };
 
-const isOutputItemVirtualMediaData = (data: any): data is VirtualMediaData => {
+const isOutputItemVirtualMediaData = (
+	item: OutputItem<DataType>,
+): item is VirtualMediaData => {
 	return typeof data === "object" && "source" in data;
 };
 
@@ -109,7 +112,7 @@ export async function resolveBatchResult(
 			allResults[originalNode.id] = {
 				type: outputItem.type,
 				data: outputData,
-			} as any;
+			};
 		}
 	}
 

@@ -1,12 +1,12 @@
 import { EventEmitter } from "node:events";
 import { GetAssetEndpoint } from "@gatewai/core/browser";
 import {
+	type DataType,
 	dataTypeColors,
 	type FileData,
 	type IPixiProcessor,
 	type NodeResult,
 } from "@gatewai/core/types";
-import type { DataType } from "@gatewai/db";
 import { pixiWorkerService } from "@gatewai/media/browser";
 import type { NodeProcessor } from "@gatewai/node-sdk/browser";
 import type {

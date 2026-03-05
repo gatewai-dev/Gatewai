@@ -10,8 +10,8 @@ import {
 import { makeSelectNodeById, useAppSelector } from "@gatewai/react-store";
 import { Button } from "@gatewai/ui-kit";
 
-import { Download, Loader2, VideoIcon } from "lucide-react";
-import { memo, useState } from "react";
+import { AlertCircle, Download, Loader2, VideoIcon } from "lucide-react";
+import { memo, useMemo, useState } from "react";
 import { useNavigate } from "react-router";
 import { toast } from "sonner";
 import type { VideoCompositorNodeConfig } from "../shared/config.js";
@@ -56,6 +56,12 @@ const VideoCompositorNodeComponent = memo((props: NodeProps) => {
 
 	const hasInputs = inputs.length > 0;
 
+	const isSVGConnected = useMemo(() => {
+		return Object.values(inputs).some(
+			(input) => input.outputItem?.type === "SVG",
+		);
+	}, [inputs]);
+
 	return (
 		<BaseNode selected={props.selected} id={props.id} dragging={props.dragging}>
 			<div className="flex flex-col w-full">
@@ -73,6 +79,15 @@ const VideoCompositorNodeComponent = memo((props: NodeProps) => {
 						</div>
 					)}
 				</div>
+
+				{isSVGConnected && (
+					<div className="mx-2 mt-1 mb-0.5 px-3 py-1.5 rounded-md bg-amber-500/10 border border-amber-500/20 flex items-center gap-2">
+						<AlertCircle className="size-3.5 text-amber-500 shrink-0" />
+						<span className="text-[11px] font-medium text-amber-200/80 leading-tight">
+							Rendering Animated SVG's doesn't work well
+						</span>
+					</div>
+				)}
 
 				<div className="flex justify-between items-center gap-2  p-1.5">
 					<AddCustomHandleButton

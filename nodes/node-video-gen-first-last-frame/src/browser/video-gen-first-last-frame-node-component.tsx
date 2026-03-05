@@ -4,7 +4,7 @@ import {
 	OutputSelector,
 	RunNodeButton,
 	useNodePreview,
-	VideoRenderer,
+	VideoPlayer,
 } from "@gatewai/react-canvas";
 import { memo } from "react";
 
@@ -26,7 +26,7 @@ const VideoGenFirstLastFrameNodeComponent = memo(
 							</div>
 						)}
 						{mediaUrl && (
-							<VideoRenderer
+							<VideoPlayer
 								src={mediaUrl}
 								className="rounded-none w-full h-full"
 							/>

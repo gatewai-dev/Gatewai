@@ -1,5 +1,4 @@
-import type { FileData, NodeResult } from "@gatewai/core/types";
-import { DataType } from "@gatewai/db";
+import { DataType, type FileData, type NodeResult } from "@gatewai/core/types";
 import { injectable } from "inversify";
 import type {
 	BackendNodeProcessorCtx,

@@ -168,7 +168,7 @@ export function computeFullRenderParams(vv: VirtualMediaData): RenderParams {
 	let currentWidth = baseMeta?.width ?? 1920;
 	let currentHeight = baseMeta?.height ?? 1080;
 
-	function walk(node: VirtualMediaData | any) {
+	function walk(node: VirtualMediaData) {
 		if (!node) return;
 
 		// Depth-first: process children before the current node so that

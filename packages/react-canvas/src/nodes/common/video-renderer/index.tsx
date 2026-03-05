@@ -3,7 +3,7 @@ import type { ReactNode } from "react";
 import { memo } from "react";
 import { MediaPlayer } from "../remotion-player";
 
-const VideoRenderer = memo(
+const VideoPlayer = memo(
 	({
 		durationMs,
 		virtualMedia,
@@ -34,4 +34,4 @@ const VideoRenderer = memo(
 	},
 );
 
-export { VideoRenderer };
+export { VideoPlayer };

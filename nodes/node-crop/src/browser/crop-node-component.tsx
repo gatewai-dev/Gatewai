@@ -7,7 +7,7 @@ import {
 	SVGRenderer,
 	useCanvasCtx,
 	useNodeResult,
-	VideoRenderer,
+	VideoPlayer,
 } from "@gatewai/react-canvas";
 import {
 	makeSelectEdgesByTargetNodeId,
@@ -656,6 +656,9 @@ const CropNodeComponent = memo((props: NodeProps) => {
 	const sourceSize = useMemo(() => {
 		if (inputType === "Video" && inputMedia) {
 			const activeMeta = getActiveMediaMetadata(inputMedia);
+			if (!activeMeta) {
+				return null;
+			}
 			const { width: w, height: h } = activeMeta;
 			if (!w || !h) return null;
 			return { w, h };
@@ -777,7 +780,7 @@ const CropNodeComponent = memo((props: NodeProps) => {
 			});
 		},
 		// remove `crop` from deps — read from ref instead
-		[latestCropRef],
+		[crop],
 	);
 
 	useEffect(() => {
@@ -890,10 +893,10 @@ const CropNodeComponent = memo((props: NodeProps) => {
 					}}
 				>
 					{showMedia && (
-						<VideoRenderer
+						<VideoPlayer
 							virtualMedia={inputMedia}
 							durationMs={
-								getActiveMediaMetadata(inputMedia!).durationMs ?? undefined
+								getActiveMediaMetadata(inputMedia)?.durationMs ?? undefined
 							}
 							controls={true}
 							className="rounded-none w-full h-full"
@@ -935,11 +938,7 @@ const CropNodeComponent = memo((props: NodeProps) => {
 					{showSVG && (
 						<>
 							<div className="overflow-hidden w-full h-full">
-								<SVGRenderer
-									imageUrl={imageUrl}
-									width={sourceSize ? sourceSize.w : undefined}
-									height={sourceSize ? sourceSize.h : undefined}
-								/>
+								<SVGRenderer imageUrl={imageUrl} />
 							</div>
 							<CropOverlay
 								crop={crop}

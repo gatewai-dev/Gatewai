@@ -25,7 +25,7 @@ const SvgNodeComponent = memo(
 						className={cn(
 							"media-container w-full overflow-hidden rounded bg-white/10  relative flex items-center justify-center",
 							{
-								"h-[200px]": !mediaUrl,
+								"h-50": !mediaUrl,
 							},
 						)}
 					>
@@ -48,13 +48,7 @@ const SvgNodeComponent = memo(
 						)}
 					</div>
 
-					<div className="flex justify-between items-center w-full p-1.5">
-						<AddCustomHandleButton
-							nodeId={props.id}
-							type="Input"
-							label="Add Reference SVG"
-							dataTypes={node?.template.variableInputDataTypes}
-						/>
+					<div className="flex justify-end items-center w-full p-1.5">
 						<RunNodeButton nodeId={props.id} />
 					</div>
 				</div>

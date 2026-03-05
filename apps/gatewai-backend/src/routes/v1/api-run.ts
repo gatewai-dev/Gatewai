@@ -1,6 +1,6 @@
 import assert from "node:assert";
 import { generateId } from "@gatewai/core";
-import { ConfigSchemaRegistry } from "@gatewai/core/types";
+import { ConfigSchemaRegistry, type NodeResult } from "@gatewai/core/types";
 import {
 	APIRunRequestSchema,
 	APIRunResponseSchema,
@@ -302,7 +302,7 @@ async function handleAssetCopy(nodeId: string, assetId: string): Promise<void> {
 	}
 
 	// Build the result structure
-	const currentResult = (node.result as any) || { outputs: [] };
+	const currentResult = (node.result as NodeResult) || { outputs: [] };
 	const outputs = currentResult.outputs || [];
 	const newIndex = outputs.length;
 

@@ -16,7 +16,7 @@ export const metadata = defineMetadata({
 	resultSchema: SvgResultSchema,
 	isTerminal: true,
 	isTransient: false,
-	variableInputs: { enabled: true, dataTypes: ["SVG"] },
+	variableInputs: { enabled: false, dataTypes: ["SVG"] },
 	handles: {
 		inputs: [
 			{ dataTypes: ["Text"], required: true, label: "Prompt", order: 0 },

@@ -1,5 +1,5 @@
 import type { IPricingService } from "@gatewai/core";
-import { ENV_CONFIG, logger } from "@gatewai/core";
+import { ENV_CONFIG } from "@gatewai/core";
 import { container, TOKENS } from "@gatewai/core/di";
 import { type CanvasCtxData, GetCanvasEntities } from "@gatewai/data-ops";
 import {

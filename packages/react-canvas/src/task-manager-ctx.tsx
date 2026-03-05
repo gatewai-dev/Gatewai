@@ -1,4 +1,3 @@
-import type { Canvas, Node } from "@gatewai/db";
 import type {
 	BatchDetailsRPCParams,
 	BatchEntity,
@@ -35,7 +34,7 @@ interface TaskManagerContextType {
 	pollingInterval: number;
 	setPollingInterval: Dispatch<SetStateAction<number>>;
 	addBatch: (batch: BatchEntity) => void;
-	nodeTaskStatus: Record<Node["id"], BatchNodeData[]>;
+	nodeTaskStatus: Record<string, BatchNodeData[]>;
 	isLoading: boolean;
 	taskBatches: BatchEntity[];
 	latestTasksFetchTime: number | null;
@@ -49,13 +48,17 @@ const TaskManagerContext = createContext<TaskManagerContextType | undefined>(
 const TaskManagerProvider = ({
 	children,
 	canvasId,
-}: PropsWithChildren<{ canvasId: Canvas["id"] }>) => {
+}: PropsWithChildren<{
+	canvasId: string;
+}>) => {
 	const dispatch = useAppDispatch();
 	const pollingInterval = useAppSelector(selectPollingInterval);
 	const batchIdsToPoll = useAppSelector(selectBatchIdsToPoll);
 	const nodeTaskStatus = useAppSelector(selectNodeTaskStatus);
 	const isLoading = useAppSelector(selectInitialLoading);
-	const taskBatches = useAppSelector(selectAllBatches);
+	const taskBatches = useAppSelector(
+		selectAllBatches,
+	) as unknown as BatchEntity[];
 	const latestTasksFetchTime = useAppSelector(selectLatestTasksFetchTime);
 
 	const prevFinishedBatchesRef = useRef<Set<string>>(new Set());

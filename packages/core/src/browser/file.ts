@@ -1,4 +1,4 @@
-import type { FileAsset } from "@gatewai/db";
+import type { FileAsset } from "@gatewai/db/types";
 import { type FileData, MIME_TYPES } from "../types/index.js";
 import { getEnv } from "./env.js";
 

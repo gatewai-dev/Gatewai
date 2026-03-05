@@ -1,5 +1,6 @@
-import type { DataType, FileAsset } from "@gatewai/db";
+import type { FileAsset } from "@gatewai/db/types";
 import z from "zod";
+import type { DataType } from "./base.js";
 import type { VirtualMediaData } from "./video/virtual-video.js";
 
 /**

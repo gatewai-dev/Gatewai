@@ -10,7 +10,7 @@ import { useNodeResult } from "../../processor-ctx";
 import { AudioRenderer } from "./audio-renderer";
 import { CanvasRenderer } from "./canvas-renderer";
 import { SVGRenderer } from "./svg-renderer";
-import { VideoRenderer } from "./video-renderer";
+import { VideoPlayer } from "./video-renderer";
 
 function MediaContent({ node }: { node: NodeEntityType }) {
 	const { result } = useNodeResult(node.id);
@@ -41,8 +41,7 @@ function MediaContent({ node }: { node: NodeEntityType }) {
 	const isVideo = outputItem?.type === "Video";
 	const isAudio = outputItem?.type === "Audio";
 	const isText = outputItem?.type === "Text";
-	const isOther =
-		!isImage && !isVideo && !isAudio && !isJson && !isText && !isSVG;
+	const isOther = !isImage && !isVideo && !isAudio && !isText && !isSVG;
 
 	const activeMeta = useMemo(() => {
 		if (outputItem?.type === "Video" || outputItem?.type === "Audio") {
@@ -99,7 +98,7 @@ function MediaContent({ node }: { node: NodeEntityType }) {
 			{isSVG && assetUrl && <SVGRenderer imageUrl={assetUrl} />}
 
 			{isVideo && (
-				<VideoRenderer
+				<VideoPlayer
 					virtualMedia={outputItem.data}
 					durationMs={durationMs ?? undefined}
 				/>

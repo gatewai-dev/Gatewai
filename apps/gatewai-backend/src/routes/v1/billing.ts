@@ -51,7 +51,7 @@ const billingRouter = new Hono<{ Variables: AuthHonoTypes }>()
 	 * Get the list of available pricing plans.
 	 */
 	.get("/plans", async (c) => {
-		const plans = await getPlans();
+		const plans = (await getPlans()) ?? [];
 		return c.json(plans);
 	})
 	/**

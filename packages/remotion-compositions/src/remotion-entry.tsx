@@ -1,4 +1,3 @@
-import React from "react";
 import { Composition, registerRoot } from "remotion";
 import {
 	CompositionScene,
@@ -11,17 +10,15 @@ const RemotionRoot = () => (
 			id="CompositionScene"
 			component={CompositionScene}
 			calculateMetadata={({ props }) => {
-				const sceneProps = props as any;
-				const fps = sceneProps.fps || 30;
+				const sceneProps = props;
+				const fps = (sceneProps.FPS as number) || 30;
 				return {
-					durationInFrames:
-						sceneProps.durationInFrames ||
-						(sceneProps.durationInMS
-							? Math.round((sceneProps.durationInMS / 1000) * fps)
-							: fps),
+					durationInFrames: sceneProps.durationInMS
+						? Math.round(((sceneProps.durationInMS as number) / 1000) * fps)
+						: fps,
 					fps,
-					width: sceneProps.width || sceneProps.viewportWidth || 1920,
-					height: sceneProps.height || sceneProps.viewportHeight || 1080,
+					width: sceneProps.viewportWidth,
+					height: sceneProps.viewportHeight,
 				};
 			}}
 		/>

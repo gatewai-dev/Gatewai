@@ -49,7 +49,7 @@ export async function initNodeRegistry(): Promise<NodeRegistryValue> {
 			}
 
 			// 5. Pricing (pricingMap) — spread from metadata via defineClient
-			const pricingFn = (plugin as any).pricing;
+			const pricingFn = plugin.pricing;
 			if (typeof pricingFn === "function") {
 				pricingMap[type] = pricingFn;
 			}

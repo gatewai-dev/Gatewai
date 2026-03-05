@@ -1,6 +1,9 @@
 import type { EventEmitter } from "node:events";
-import type { NodeProcessorParams, NodeResult } from "@gatewai/core/types";
-import type { DataType } from "@gatewai/db";
+import type {
+	DataType,
+	NodeProcessorParams,
+	NodeResult,
+} from "@gatewai/core/types";
 import type { ComponentType, MemoExoticComponent } from "react";
 
 export enum TaskStatus {

@@ -1,17 +1,21 @@
 import z from "zod";
 
-export const DataTypes = [
-	"Text",
-	"Number",
-	"Boolean",
-	"Image",
-	"Video",
-	"Audio",
-	"SVG",
-	"Caption",
-] as const;
+export const DataType = {
+	Text: "Text",
+	Number: "Number",
+	Boolean: "Boolean",
+	Image: "Image",
+	Video: "Video",
+	Audio: "Audio",
+	SVG: "SVG",
+	Caption: "Caption",
+} as const;
 
-export type DataTypeEnum = (typeof DataTypes)[number];
+export type DataType = (typeof DataType)[keyof typeof DataType];
+
+export const DataTypes = Object.values(DataType) as [DataType, ...DataType[]];
+
+export type DataTypeEnum = DataType;
 
 /**
  * Zod schema for the FileAsset model

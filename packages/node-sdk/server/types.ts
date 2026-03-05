@@ -7,7 +7,7 @@ import type {
 	Node,
 	NodeTemplate,
 	Task,
-} from "@gatewai/db";
+} from "@gatewai/db/types";
 import type { Hono } from "hono";
 
 /**

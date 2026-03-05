@@ -34,8 +34,13 @@ export function registerBackendServices() {
 				throw new Error("No Gemini API kep provided");
 			return new GoogleGenAI({ apiKey: ENV_CONFIG.GEMINI_API_KEY });
 		},
-		getAgentModel: (name: string) => {
-			return getAgentModel(name as any);
+		getAgentModel: (
+			name:
+				| "gemini-3.1-pro-preview"
+				| "gemini-3-flash-preview"
+				| "gemini-2.5-pro",
+		) => {
+			return getAgentModel(name);
 		},
 	});
 

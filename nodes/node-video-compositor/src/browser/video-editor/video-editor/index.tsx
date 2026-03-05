@@ -109,18 +109,15 @@ import {
 	Pause,
 	Play,
 	Plus,
-	RefreshCw,
 	RotateCcw,
 	RotateCw,
 	Save,
 	Settings2,
 	Sparkles,
 	Subtitles,
-	Sun,
 	Trash2,
 	Type,
 	Unlink as UnlinkIcon,
-	Video,
 	Volume2,
 	XIcon,
 	Zap,
@@ -281,7 +278,7 @@ const getEffectiveDurationMs = (
 	}
 
 	if (op?.op === "speed") {
-		const rate = Number((op as any).rate) || 1;
+		const rate = Number(op.rate) || 1;
 		const child = virtualMedia.children?.[0];
 		if (child) {
 			const childMs = getEffectiveDurationMs(child, accumulatedStartSec / rate);
@@ -949,7 +946,7 @@ const UnifiedClip: React.FC<{ layer: EditorLayer; isSelected: boolean }> = ({
 }) => {
 	const handles = useAppSelector(handleSelectors.selectEntities);
 	const handleId = layer.inputHandleId ?? "";
-	const handle = handleId ? (handles as any)[handleId] : undefined;
+	const handle = handleId ? handles[handleId] : undefined;
 	const name = resolveLayerLabel(handle, layer);
 	const baseConfig = resolveColorConfig(layer);
 
@@ -1402,17 +1399,9 @@ const Toolbar: React.FC<{
 		}
 	};
 
-	const handlePlayerDragStart = (e: React.DragEvent<HTMLDivElement>) => {
-		if (playerRef.current) {
-			if (isPlaying) playerRef.current.pause();
-			else playerRef.current.play();
-			setIsPlaying(!isPlaying);
-		}
-	};
-
 	const zoomMenuItems = [
 		{ label: "Zoom In", shortcut: "+", action: zoomIn },
-		{ label: "Zoom Out", shortcut: "−", action: zoomOut },
+		{ label: "Zoom Out", shortcut: "-", action: zoomOut },
 		{ label: "100%", shortcut: "1", action: () => zoomTo(1) },
 		{ label: "Fit to Screen", shortcut: "0", action: fitView },
 	];
@@ -1449,7 +1438,7 @@ const Toolbar: React.FC<{
 
 					<div
 						ref={timeRef}
-						className="text-[11px] font-mono tabular-nums text-neutral-300 min-w-[70px] text-center select-none cursor-default"
+						className="text-[11px] font-mono tabular-nums text-neutral-300 min-w-17.5 text-center select-none cursor-default"
 					>
 						{Math.floor(currentFrame / fps)}s :{" "}
 						{(currentFrame % fps).toString().padStart(2, "0")}f
@@ -1490,7 +1479,7 @@ const Toolbar: React.FC<{
 							<MenubarTrigger asChild>
 								<Button
 									variant="ghost"
-									className="h-8 px-3 text-[11px] rounded-full text-gray-300 hover:text-white hover:bg-white/10 font-medium min-w-[80px] justify-between"
+									className="h-8 px-3 text-[11px] rounded-full text-gray-300 hover:text-white hover:bg-white/10 font-medium min-w-20 justify-between"
 								>
 									{Math.round(zoom * 100)}%
 									<ChevronDown className="w-3 h-3 ml-1.5 opacity-50" />
@@ -1498,7 +1487,7 @@ const Toolbar: React.FC<{
 							</MenubarTrigger>
 							<MenubarContent
 								align="center"
-								className="min-w-[160px] bg-neutral-900/95 backdrop-blur-xl border-white/10 text-gray-200"
+								className="min-w-40 bg-neutral-900/95 backdrop-blur-xl border-white/10 text-gray-200"
 							>
 								{zoomMenuItems.map(({ label, shortcut, action }) => (
 									<MenubarItem key={label} onClick={action}>
@@ -1612,7 +1601,7 @@ const SortableTrackHeader: React.FC<{
 	} = useSortable({ id: layer.id });
 	const handles = useAppSelector(handleSelectors.selectEntities);
 	const handleId = layer.inputHandleId ?? "";
-	const handle = handleId ? (handles as any)[handleId] : undefined;
+	const handle = handleId ? handles[handleId] : undefined;
 	const name = resolveLayerLabel(handle, layer);
 	const colorConfig = resolveColorConfig(layer);
 
@@ -2336,7 +2325,7 @@ const InspectorPanel: React.FC = () => {
 	}
 
 	const targetHandleId = selectedLayer.inputHandleId ?? "";
-	const handle = targetHandleId ? (handles as any)[targetHandleId] : null;
+	const handle = targetHandleId ? handles[targetHandleId] : null;
 	const displayName = resolveLayerLabel(handle, selectedLayer);
 	const hasCropDimensions =
 		selectedLayer.type === "Video" &&
@@ -2377,7 +2366,7 @@ const InspectorPanel: React.FC = () => {
 					<span className="text-[10px] uppercase font-bold tracking-wider mb-0.5 text-blue-400">
 						Properties
 					</span>
-					<h2 className="text-sm font-semibold text-white truncate max-w-[200px]">
+					<h2 className="text-sm font-semibold text-white truncate max-w-50">
 						{displayName}
 					</h2>
 				</div>
@@ -2645,7 +2634,7 @@ const InspectorPanel: React.FC = () => {
 						}
 						showOpacity={selectedLayer.type !== "Audio"}
 						onChange={(updates) => {
-							const mappedUpdates: any = { ...updates };
+							const mappedUpdates = { ...updates };
 							if (updates.cornerRadius !== undefined) {
 								mappedUpdates.borderRadius = updates.cornerRadius;
 								delete mappedUpdates.cornerRadius;
@@ -2848,7 +2837,7 @@ export const VideoDesignerEditor: React.FC<VideoDesignerEditorProps> = ({
 
 	const handleSave = () => {
 		onSave({
-			layerUpdates: serializeLayersForSave(layers) as any,
+			layerUpdates: serializeLayersForSave(layers),
 			width: viewportWidth,
 			height: viewportHeight,
 			FPS: fps,
@@ -2870,14 +2859,14 @@ export const VideoDesignerEditor: React.FC<VideoDesignerEditorProps> = ({
 
 			let maxZ = Math.max(
 				0,
-				...Object.values(layerUpdates).map((l) => (l as any).zIndex ?? 0),
+				...Object.values(layerUpdates).map((l) => l.zIndex ?? 0),
 			);
 
 			initialLayers.forEach((item, id) => {
 				const saved = layerUpdates[id] as EditorLayer | undefined;
 				const isAutoDimensions = saved?.autoDimensions ?? true;
 				const handleId = id ?? "";
-				const handle = (handles as any)[handleId];
+				const handle = handles[handleId];
 				const name = handle?.label ?? handle?.dataTypes?.[0] ?? id;
 
 				let durationMs = 0;
@@ -2994,9 +2983,11 @@ export const VideoDesignerEditor: React.FC<VideoDesignerEditorProps> = ({
 						autoDimensions: false,
 						virtualMedia: createVirtualMedia(text ?? "", "Text"),
 					} as EditorLayer);
-					const fontUrl = GetFontAssetUrl(fontFamily!);
-					if (fontUrl)
-						fontPromises.push(fontManager.loadFont(fontFamily!, fontUrl));
+					if (!fontFamily) {
+						const fontUrl = GetFontAssetUrl(fontFamily);
+						if (fontUrl)
+							fontPromises.push(fontManager.loadFont(fontFamily, fontUrl));
+					}
 				} else if (item.type === "Caption") {
 					const fSize =
 						saved?.fontSize ?? (CAPTION_LAYER_DEFAULTS.fontSize as number);
@@ -3023,7 +3014,7 @@ export const VideoDesignerEditor: React.FC<VideoDesignerEditorProps> = ({
 
 					const captionLayer: EditorLayer = {
 						...base,
-						type: "Caption" as any,
+						type: "Caption",
 						width: viewportWidth, // Always force full width
 						height: autoHeight, // Dynamic auto height based on font size
 						y: initialY,
@@ -3032,7 +3023,7 @@ export const VideoDesignerEditor: React.FC<VideoDesignerEditorProps> = ({
 						fill: saved?.fill ?? "#ffffff",
 						align: saved?.align ?? "center",
 						verticalAlign: saved?.verticalAlign ?? "bottom",
-						captionPreset: (saved as any)?.captionPreset ?? "default",
+						captionPreset: saved?.captionPreset ?? "default",
 						lockAspect: false,
 						autoDimensions: false,
 					} as EditorLayer;
@@ -3358,16 +3349,12 @@ export const VideoDesignerEditor: React.FC<VideoDesignerEditorProps> = ({
 	);
 	useHotkeys(
 		"meta+s, ctrl+s",
-		(e: any) => {
+		(e) => {
 			e.preventDefault();
 			if (isDirty) handleSave();
 		},
 		{ enableOnFormTags: true },
 	);
-
-	// ---------------------------------------------------------------------------
-	// Derived
-	// ---------------------------------------------------------------------------
 
 	const durationInMS =
 		layers.length > 0

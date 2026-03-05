@@ -1,4 +1,4 @@
-import type { FileAsset } from "@gatewai/db";
+import type { FileAsset } from "@gatewai/db/types";
 import { MIME_TYPES } from "../types/index.js";
 import type { FileData, ProcessData } from "../types/node-result.js";
 

@@ -1,6 +1,6 @@
 import { Button, GatewaiLogo } from "@gatewai/ui-kit";
 import { motion } from "framer-motion";
-import { ArrowRight, Play, Sparkles, Terminal } from "lucide-react";
+import { ArrowRight, Play, Sparkles } from "lucide-react";
 import { Helmet } from "react-helmet-async";
 import { FaDiscord, FaGithub } from "react-icons/fa";
 import { Link } from "react-router";
@@ -50,22 +50,11 @@ const HomePage = () => {
             `}</style>
 
 			{/* 1. Sticky Transparent Navbar */}
-			<header className="fixed top-0 left-0 right-0 z-50 flex items-center justify-between px-6 py-4 bg-gradient-to-b from-black/80 to-transparent backdrop-blur-sm border-b border-white/5">
+			<header className="fixed top-0 left-0 right-0 z-50 flex items-center justify-between px-6 py-4 bg-linear-to-b from-black/80 to-transparent backdrop-blur-sm border-b border-white/5">
 				<div className="flex items-center gap-3">
 					<GatewaiLogo className="h-8 w-auto text-primary" />
 				</div>
 				<div className="flex items-center gap-4">
-					<div className="hidden md:flex items-center gap-6 mr-4 text-sm font-medium text-neutral-300">
-						<a href="#" className="hover:text-white transition-colors">
-							Showcase
-						</a>
-						<a href="#" className="hover:text-white transition-colors">
-							Documentation
-						</a>
-						<a href="#" className="hover:text-white transition-colors">
-							Pricing
-						</a>
-					</div>
 					<a
 						href="https://github.com/gatewai-dev/Gatewai"
 						target="_blank"
@@ -125,7 +114,7 @@ const HomePage = () => {
 						style={{ fontFamily: "'JetBrains Mono', monospace" }}
 					>
 						ORCHESTRATE <br />
-						<span className="text-transparent bg-clip-text bg-gradient-to-r from-primary via-[#b7ea48] to-green-400">
+						<span className="text-transparent bg-clip-text bg-linear-to-r from-primary via-[#b7ea48] to-green-400">
 							INTELLIGENCE.
 						</span>
 					</motion.h1>
@@ -163,9 +152,9 @@ const HomePage = () => {
 			</section>
 
 			{/* 3. Tech Stack Ticker (Remade Style) */}
-			<section className="relative py-10 border-y border-white/5 bg-white/[0.02]">
-				<div className="absolute left-0 top-0 bottom-0 w-32 bg-gradient-to-r from-[#050505] to-transparent z-10" />
-				<div className="absolute right-0 top-0 bottom-0 w-32 bg-gradient-to-l from-[#050505] to-transparent z-10" />
+			<section className="relative py-10 border-y border-white/5 bg-white/2">
+				<div className="absolute left-0 top-0 bottom-0 w-32 bg-linear-to-r from-[#050505] to-transparent z-10" />
+				<div className="absolute right-0 top-0 bottom-0 w-32 bg-linear-to-l from-[#050505] to-transparent z-10" />
 
 				<div className="flex overflow-hidden">
 					<div className="flex items-center gap-16 animate-marquee whitespace-nowrap opacity-50 hover:opacity-100 transition-opacity duration-500">
@@ -195,7 +184,7 @@ const HomePage = () => {
 			</section>
 
 			{/* 4. Masonry Showcase Gallery (The core "Remade" look) */}
-			<section className="py-24 px-4 md:px-8 max-w-[1800px] mx-auto">
+			<section className="py-24 px-4 md:px-8 max-w-450 mx-auto">
 				<div className="flex flex-col md:flex-row md:items-end justify-between mb-12 gap-6">
 					<div>
 						<h2
@@ -224,16 +213,9 @@ const HomePage = () => {
 							className="relative group overflow-hidden rounded-2xl bg-neutral-900 border border-white/5 break-inside-avoid cursor-pointer"
 						>
 							{/* Placeholder Image */}
-							<img
-								src={`https://picsum.photos/seed/${item.seed}/600/${item.height}`}
-								alt={`Workflow Output ${item.id}`}
-								className="w-full object-cover transition-transform duration-700 group-hover:scale-105"
-								style={{ height: `${item.height}px` }}
-								loading="lazy"
-							/>
 
 							{/* Hover Overlay */}
-							<div className="absolute inset-0 bg-gradient-to-t from-black/90 via-black/20 to-transparent opacity-0 group-hover:opacity-100 transition-opacity duration-300 flex flex-col justify-end p-5">
+							<div className="absolute inset-0 bg-linear-to-t from-black/90 via-black/20 to-transparent opacity-0 group-hover:opacity-100 transition-opacity duration-300 flex flex-col justify-end p-5">
 								<div className="translate-y-4 group-hover:translate-y-0 transition-transform duration-300">
 									<div className="flex items-center gap-2 mb-2">
 										<span className="px-2 py-1 rounded-md bg-white/20 backdrop-blur-md text-[10px] font-mono text-white">

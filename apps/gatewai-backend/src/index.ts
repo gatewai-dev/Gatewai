@@ -20,6 +20,7 @@ import {
 } from "./middlewares.js";
 import { registerNodes } from "./register-nodes.js";
 
+// biome-ignore lint/suspicious/noExplicitAny: Smee
 let smeeProxy: any = null;
 if (process.env.NODE_ENV !== "production" && ENV_CONFIG.WEBHOOK_PROXY_URL) {
 	const smee = new SmeeClient({

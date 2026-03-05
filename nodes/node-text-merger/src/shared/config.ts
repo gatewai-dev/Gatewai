@@ -1,13 +1,4 @@
-import {
-	createOutputItemSchema,
-	SingleOutputGenericSchema,
-} from "@gatewai/core/types";
-import {
-	AudioResultSchema,
-	ImageResultSchema,
-	TextResultSchema,
-	VideoResultSchema,
-} from "@gatewai/node-sdk";
+import { TextResultSchema } from "@gatewai/node-sdk";
 import { z } from "zod";
 
 export const TextMergerNodeConfigSchema = z

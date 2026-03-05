@@ -16,7 +16,7 @@ import {
 } from "@gatewai/remotion-compositions/server";
 import { inject, injectable } from "inversify";
 import { CropNodeConfigSchema } from "../shared/config.js";
-import type { CropResult, VideoCropResult } from "../shared/index.js";
+import type { CropNodeConfig, CropResult, VideoCropResult } from "../shared/index.js";
 import { applyCrop } from "../shared/pixi-crop-run.js";
 
 @injectable()
@@ -84,9 +84,10 @@ export class CropProcessor extends AbstractImageProcessor {
 			const config = CropNodeConfigSchema.parse(node.config);
 
 			if (hasVideo) {
+				assert(videoInputs[0], "Video Input is missing data")
 				return this.processVideo(
 					hasVideo as VirtualMediaData,
-					videoInputs[0]!.type as "Video" | "Audio",
+					videoInputs[0].type as "Video" | "Audio",
 					config,
 					data,
 					node,
@@ -105,7 +106,7 @@ export class CropProcessor extends AbstractImageProcessor {
 	private async processVideo(
 		inputVideo: VirtualMediaData,
 		inputVideoType: "Video" | "Audio",
-		config: typeof import("../shared/config.js").CropNodeConfigSchema._type,
+		config: CropNodeConfig,
 		data: BackendNodeProcessorCtx["data"],
 		node: BackendNodeProcessorCtx["node"],
 	): Promise<BackendNodeProcessorResult<VideoCropResult>> {

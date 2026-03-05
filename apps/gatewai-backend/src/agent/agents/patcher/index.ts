@@ -34,10 +34,10 @@ interface PatcherContext {
 // ─── Constants ────────────────────────────────────────────────────────────────
 
 /** Maximum wall-clock time (ms) the QuickJS VM is allowed to run per invocation. */
-const VM_EXECUTION_TIMEOUT_MS = 10_000;
+const VM_EXECUTION_TIMEOUT_MS = 15_000;
 
 /** Maximum number of code-execution retries the agent is guided to attempt. */
-const MAX_RETRIES = 3;
+const MAX_RETRIES = 4;
 
 // ─── Context Store ────────────────────────────────────────────────────────────
 
