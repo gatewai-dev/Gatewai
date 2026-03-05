@@ -297,31 +297,28 @@ const getEffectiveDurationMs = (
 
 const measureText = (text: string, style: Partial<EditorLayer>) => {
 	if (typeof document === "undefined") return { width: 100, height: 40 };
-	const canvas = document.createElement("canvas");
-	const ctx = canvas.getContext("2d");
-	if (!ctx) return { width: 100, height: 40 };
 
-	const fontSize = style.fontSize ?? 40;
-	const fontFamily = style.fontFamily ?? "Inter";
-	const fontWeight = style.fontWeight ?? "normal";
-	const fontStyle = style.fontStyle ?? "normal";
-	const letterSpacing = style.letterSpacing ?? 0;
-	const lineHeight = style.lineHeight ?? 1.2;
-	const padding = style.padding ?? 0;
+	const d = document.createElement("div");
+	Object.assign(d.style, {
+		fontFamily: style.fontFamily ?? "Inter",
+		fontSize: `${style.fontSize ?? 40}px`,
+		fontWeight: style.fontWeight ?? "normal",
+		fontStyle: style.fontStyle ?? "normal",
+		letterSpacing: `${style.letterSpacing ?? 0}px`,
+		lineHeight: `${style.lineHeight ?? 1.2}`,
+		padding: `${style.padding ?? 0}px`,
+		position: "absolute",
+		visibility: "hidden",
+		whiteSpace: "pre",
+		width: "max-content",
+	});
+	d.textContent = text;
+	document.body.appendChild(d);
+	const width = d.offsetWidth;
+	const height = d.offsetHeight;
+	document.body.removeChild(d);
 
-	ctx.font = `${fontStyle} ${fontWeight} ${fontSize}px ${fontFamily}`;
-	ctx.letterSpacing = `${letterSpacing}px`;
-
-	const lines = text.split("\n");
-	let maxWidth = 0;
-	for (const line of lines) {
-		maxWidth = Math.max(maxWidth, ctx.measureText(line).width);
-	}
-
-	return {
-		width: Math.round(maxWidth + padding * 2),
-		height: Math.round(lines.length * fontSize * lineHeight + padding * 2),
-	};
+	return { width, height };
 };
 
 const fetchSrtDurationMs = async (url: string): Promise<number | null> => {
@@ -2983,7 +2980,7 @@ export const VideoDesignerEditor: React.FC<VideoDesignerEditorProps> = ({
 						autoDimensions: false,
 						virtualMedia: createVirtualMedia(text ?? "", "Text"),
 					} as EditorLayer);
-					if (!fontFamily) {
+					if (fontFamily) {
 						const fontUrl = GetFontAssetUrl(fontFamily);
 						if (fontUrl)
 							fontPromises.push(fontManager.loadFont(fontFamily, fontUrl));
@@ -3022,7 +3019,6 @@ export const VideoDesignerEditor: React.FC<VideoDesignerEditorProps> = ({
 						fontFamily: saved?.fontFamily ?? "Inter",
 						fill: saved?.fill ?? "#ffffff",
 						align: saved?.align ?? "center",
-						verticalAlign: saved?.verticalAlign ?? "bottom",
 						captionPreset: saved?.captionPreset ?? "default",
 						lockAspect: false,
 						autoDimensions: false,

@@ -13,13 +13,16 @@ import type { Order } from "@polar-sh/sdk/models/components/order.js";
 import type { Subscription } from "@polar-sh/sdk/models/components/subscription.js";
 import { SubscriptionProrationBehavior } from "@polar-sh/sdk/models/components/subscriptionprorationbehavior.js";
 
-export const polarClient = new Polar({
-	accessToken: ENV_CONFIG.POLAR_ACCESS_TOKEN,
-	server: "sandbox",
-	debugLogger: console,
-});
+export const polarClient = ENV_CONFIG.ENABLE_PRICING
+	? new Polar({
+			accessToken: ENV_CONFIG.POLAR_ACCESS_TOKEN,
+			server: "sandbox",
+			debugLogger: console,
+		})
+	: undefined;
 
 export const handleOrderPaid = async (order: Order) => {
+	if (!polarClient) return;
 	const customerId = order.customerId;
 	const userId = order.customer?.externalId;
 	const customerEmail = order.customer?.email;
@@ -82,6 +85,7 @@ export const handleOrderPaid = async (order: Order) => {
 };
 
 export const handleSubscriptionActive = async (sub: Subscription) => {
+	if (!polarClient) return;
 	const userId = sub.customer?.externalId;
 	const customerEmail = sub.customer?.email;
 
@@ -136,6 +140,7 @@ export const handleSubscriptionActive = async (sub: Subscription) => {
 };
 
 export const handleOrderRefunded = async (order: Order) => {
+	if (!polarClient) return;
 	const userId = order.customer?.externalId;
 	const customerEmail = order.customer?.email;
 
@@ -184,6 +189,7 @@ export const handleOrderRefunded = async (order: Order) => {
 };
 
 export const getUserSubscription = async (userId: string) => {
+	if (!polarClient) throw new Error("Pricing is not enabled");
 	const subsResult = await polarClient.subscriptions.list({
 		externalCustomerId: userId,
 		active: true,
@@ -197,6 +203,7 @@ export const updateUserSubscription = async (
 	userId: string,
 	productId: string,
 ) => {
+	if (!polarClient) throw new Error("Pricing is not enabled");
 	const subsResult = await polarClient.subscriptions.list({
 		externalCustomerId: userId,
 		active: true,
@@ -240,6 +247,7 @@ export const updateUserSubscription = async (
 };
 
 export const getPlans = async () => {
+	if (!polarClient) return [];
 	try {
 		const productsResult = await polarClient.products.list({});
 		return productsResult.result.items;
@@ -250,6 +258,7 @@ export const getPlans = async () => {
 };
 
 export const ingestUsageEvent = async (userId: string, tokens: number) => {
+	if (!polarClient) return;
 	try {
 		await polarClient.events.ingest({
 			events: [
@@ -271,6 +280,7 @@ export const ingestUsageEvent = async (userId: string, tokens: number) => {
 };
 
 export const syncTokenBalance = async (userId: string) => {
+	if (!polarClient) return null;
 	try {
 		const metersResult = await polarClient.customerMeters.list({
 			externalCustomerId: userId,
@@ -301,108 +311,115 @@ export const syncTokenBalance = async (userId: string) => {
 	return null;
 };
 
-// Fetch products at startup to configure the checkout plugin
-const initialProductsResult = await polarClient.products.list({
-	// Filter for products with tokenCredits to distinguish plans from other products
-});
-const initialProducts = initialProductsResult.result.items.filter(
-	(p) => p.metadata?.tokenCredits !== undefined,
-);
+export const polarPlugin = ENV_CONFIG.ENABLE_PRICING
+	? (() => {
+			if (!polarClient) return undefined;
 
-export const polarPlugin = polar({
-	client: polarClient,
-	createCustomerOnSignUp: true,
-	use: [
-		checkout({
-			products: initialProducts.map((p) => ({
-				productId: p.id,
-				slug: p.name.toLowerCase(),
-			})),
-			successUrl: "/success?checkout_id={CHECKOUT_ID}",
-			authenticatedUsersOnly: true,
-		}),
-		portal(),
-		usage(),
-		webhooks({
-			secret: ENV_CONFIG.POLAR_WEBHOOK_SECRET || "",
-			onCheckoutCreated: async (payload) => {
-				const checkout = payload.data;
-				logger.info(
-					`Polar Webhook [onCheckoutCreated]: Checkout ${checkout.id} created for ${checkout.customerEmail}. Product: ${checkout.productId}`,
-				);
-			},
-			onCheckoutUpdated: async (payload) => {
-				const checkout = payload.data;
-				logger.info(
-					`Polar Webhook [onCheckoutUpdated]: Checkout ${checkout.id} updated. Status: ${checkout.status}`,
-				);
-			},
-			onOrderPaid: async (payload) => {
-				await handleOrderPaid(payload.data);
-			},
-			onSubscriptionActive: async (payload) => {
-				await handleSubscriptionActive(payload.data);
-			},
-			onSubscriptionUpdated: async (payload) => {
-				const sub = payload.data;
-				const userId = sub.customer?.externalId;
-				const customerEmail = sub.customer?.email;
+			const initialProductsResult = polarClient.products.list({});
+			const initialProducts = initialProductsResult.then((res) =>
+				res.result.items.filter((p) => p.metadata?.tokenCredits !== undefined),
+			);
 
-				logger.info(
-					`Polar Webhook [onSubscriptionUpdated]: Subscription ${sub.id} updated for ${customerEmail} (ExternalID: ${userId}). Product: ${sub.productId}, Status: ${sub.status}`,
-				);
-			},
-			onSubscriptionCanceled: async (payload) => {
-				const sub = payload.data;
-				const userId = sub.customer?.externalId;
-				const customerEmail = sub.customer?.email;
+			return polar({
+				client: polarClient,
+				createCustomerOnSignUp: true,
+				use: [
+					checkout({
+						products: initialProducts.then((products) =>
+							products.map((p) => ({
+								productId: p.id,
+								slug: p.name.toLowerCase(),
+							})),
+						),
+						successUrl: "/success?checkout_id={CHECKOUT_ID}",
+						authenticatedUsersOnly: true,
+					}),
+					portal(),
+					usage(),
+					webhooks({
+						secret: ENV_CONFIG.POLAR_WEBHOOK_SECRET || "",
+						onCheckoutCreated: async (payload) => {
+							const checkout = payload.data;
+							logger.info(
+								`Polar Webhook [onCheckoutCreated]: Checkout ${checkout.id} created for ${checkout.customerEmail}. Product: ${checkout.productId}`,
+							);
+						},
+						onCheckoutUpdated: async (payload) => {
+							const checkout = payload.data;
+							logger.info(
+								`Polar Webhook [onCheckoutUpdated]: Checkout ${checkout.id} updated. Status: ${checkout.status}`,
+							);
+						},
+						onOrderPaid: async (payload) => {
+							await handleOrderPaid(payload.data);
+						},
+						onSubscriptionActive: async (payload) => {
+							await handleSubscriptionActive(payload.data);
+						},
+						onSubscriptionUpdated: async (payload) => {
+							const sub = payload.data;
+							const userId = sub.customer?.externalId;
+							const customerEmail = sub.customer?.email;
 
-				logger.info(
-					`Polar Webhook [onSubscriptionCanceled]: Subscription ${sub.id} canceled for ${customerEmail} (ExternalID: ${userId}). Will end at ${sub.endsAt ?? "period end"}.`,
-				);
-			},
-			onSubscriptionRevoked: async (payload) => {
-				const sub = payload.data;
-				const userId = sub.customer?.externalId;
-				const customerEmail = sub.customer?.email;
+							logger.info(
+								`Polar Webhook [onSubscriptionUpdated]: Subscription ${sub.id} updated for ${customerEmail} (ExternalID: ${userId}). Product: ${sub.productId}, Status: ${sub.status}`,
+							);
+						},
+						onSubscriptionCanceled: async (payload) => {
+							const sub = payload.data;
+							const userId = sub.customer?.externalId;
+							const customerEmail = sub.customer?.email;
 
-				logger.info(
-					`Polar Webhook [onSubscriptionRevoked]: Subscription ${sub.id} revoked for ${customerEmail} (ExternalID: ${userId}). Access terminated.`,
-				);
-			},
-			onSubscriptionUncanceled: async (payload) => {
-				const sub = payload.data;
-				const userId = sub.customer?.externalId;
-				const customerEmail = sub.customer?.email;
+							logger.info(
+								`Polar Webhook [onSubscriptionCanceled]: Subscription ${sub.id} canceled for ${customerEmail} (ExternalID: ${userId}). Will end at ${sub.endsAt ?? "period end"}.`,
+							);
+						},
+						onSubscriptionRevoked: async (payload) => {
+							const sub = payload.data;
+							const userId = sub.customer?.externalId;
+							const customerEmail = sub.customer?.email;
 
-				logger.info(
-					`Polar Webhook [onSubscriptionUncanceled]: Subscription ${sub.id} uncanceled for ${customerEmail} (ExternalID: ${userId}).`,
-				);
-			},
-			onOrderRefunded: async (payload) => {
-				await handleOrderRefunded(payload.data);
-			},
-			onBenefitGrantCreated: async (payload) => {
-				const grant = payload.data;
-				logger.info(
-					`Polar Webhook [onBenefitGrantCreated]: Benefit grant ${grant.id} created for customer ${grant.customerId}. Benefit: ${grant.benefitId}`,
-				);
-			},
-			onBenefitGrantRevoked: async (payload) => {
-				const grant = payload.data;
-				logger.info(
-					`Polar Webhook [onBenefitGrantRevoked]: Benefit grant ${grant.id} revoked for customer ${grant.customerId}.`,
-				);
-			},
-			onPayload: async (payload) => {
-				logger.info(`Polar Webhook [onPayload]: Received ${payload.type}`);
-				await prisma.webhookEvent.create({
-					data: {
-						eventName: payload.type,
-						body: payload,
-					},
-				});
-			},
-		}),
-	],
-});
+							logger.info(
+								`Polar Webhook [onSubscriptionRevoked]: Subscription ${sub.id} revoked for ${customerEmail} (ExternalID: ${userId}). Access terminated.`,
+							);
+						},
+						onSubscriptionUncanceled: async (payload) => {
+							const sub = payload.data;
+							const userId = sub.customer?.externalId;
+							const customerEmail = sub.customer?.email;
+
+							logger.info(
+								`Polar Webhook [onSubscriptionUncanceled]: Subscription ${sub.id} uncanceled for ${customerEmail} (ExternalID: ${userId}).`,
+							);
+						},
+						onOrderRefunded: async (payload) => {
+							await handleOrderRefunded(payload.data);
+						},
+						onBenefitGrantCreated: async (payload) => {
+							const grant = payload.data;
+							logger.info(
+								`Polar Webhook [onBenefitGrantCreated]: Benefit grant ${grant.id} created for customer ${grant.customerId}. Benefit: ${grant.benefitId}`,
+							);
+						},
+						onBenefitGrantRevoked: async (payload) => {
+							const grant = payload.data;
+							logger.info(
+								`Polar Webhook [onBenefitGrantRevoked]: Benefit grant ${grant.id} revoked for customer ${grant.customerId}.`,
+							);
+						},
+						onPayload: async (payload) => {
+							logger.info(
+								`Polar Webhook [onPayload]: Received ${payload.type}`,
+							);
+							await prisma.webhookEvent.create({
+								data: {
+									eventName: payload.type,
+									body: payload,
+								},
+							});
+						},
+					}),
+				],
+			});
+		})()
+	: undefined;

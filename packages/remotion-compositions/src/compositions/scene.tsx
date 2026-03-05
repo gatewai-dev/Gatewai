@@ -52,7 +52,6 @@ interface RoundedTextRendererProps {
 	letterSpacing?: number;
 	align?: "left" | "center" | "right";
 	textShadow?: string;
-	verticalAlign?: string;
 	padding?: number;
 	borderRadius?: number;
 	backgroundColor?: string;
@@ -72,7 +71,6 @@ const RoundedTextRenderer: React.FC<RoundedTextRendererProps> = ({
 	lineHeight = 1.2,
 	letterSpacing,
 	align = "center",
-	verticalAlign,
 	padding = 16,
 	borderRadius = 8,
 	backgroundColor = "rgba(0,0,0,0.7)",
@@ -127,13 +125,6 @@ const RoundedTextRenderer: React.FC<RoundedTextRendererProps> = ({
 	const alignItems =
 		align === "right" ? "flex-end" : align === "left" ? "flex-start" : "center";
 
-	const justifyContent =
-		verticalAlign === "middle"
-			? "center"
-			: verticalAlign === "bottom"
-				? "flex-end"
-				: "flex-start";
-
 	const lineStyle: React.CSSProperties = {
 		fontSize,
 		fontFamily,
@@ -162,7 +153,7 @@ const RoundedTextRenderer: React.FC<RoundedTextRendererProps> = ({
 				display: "flex",
 				flexDirection: "column",
 				alignItems,
-				justifyContent,
+				justifyContent: "flex-start",
 			}}
 		>
 			<div style={{ position: "relative", width: boundingBox.width }}>
@@ -473,13 +464,6 @@ const CaptionsFromUrl: React.FC<CaptionsFromUrlProps> = ({
 				? "flex-end"
 				: "center";
 
-	const vAlign =
-		style?.verticalAlign === "top"
-			? "flex-start"
-			: style?.verticalAlign === "bottom"
-				? "flex-end"
-				: "center";
-
 	if (preset === "tiktok") {
 		const fontFamily = style?.fontFamily || "Impact, sans-serif";
 		const fontSize = style?.fontSize || 60;
@@ -524,7 +508,7 @@ const CaptionsFromUrl: React.FC<CaptionsFromUrlProps> = ({
 					display: "flex",
 					flexDirection: "column",
 					alignItems: hAlign,
-					justifyContent: vAlign,
+					justifyContent: "flex-end",
 					padding: style?.padding,
 					pointerEvents: "none",
 				}}
@@ -572,7 +556,6 @@ const CaptionsFromUrl: React.FC<CaptionsFromUrlProps> = ({
 			: 16;
 		const borderRadius = 8;
 		const align = (style?.textAlign as "left" | "center" | "right") ?? "center";
-		const verticalAlign = style?.verticalAlign ?? "bottom";
 		const stroke = style?.WebkitTextStroke
 			? String(style.WebkitTextStroke).split(" ").slice(1).join(" ")
 			: undefined;
@@ -586,7 +569,7 @@ const CaptionsFromUrl: React.FC<CaptionsFromUrlProps> = ({
 					display: "flex",
 					flexDirection: "column",
 					alignItems: hAlign,
-					justifyContent: vAlign,
+					justifyContent: "flex-end",
 					pointerEvents: "none",
 				}}
 			>
@@ -602,7 +585,6 @@ const CaptionsFromUrl: React.FC<CaptionsFromUrlProps> = ({
 					lineHeight={lineHeight}
 					letterSpacing={letterSpacing}
 					align={align}
-					verticalAlign={verticalAlign}
 					padding={padding}
 					borderRadius={borderRadius}
 					backgroundColor={backgroundColor}
@@ -621,7 +603,7 @@ const CaptionsFromUrl: React.FC<CaptionsFromUrlProps> = ({
 				display: "flex",
 				flexDirection: "column",
 				alignItems: hAlign,
-				justifyContent: vAlign,
+				justifyContent: "flex-end",
 				...style,
 			}}
 		>
@@ -639,9 +621,6 @@ const CaptionsFromUrl: React.FC<CaptionsFromUrlProps> = ({
 		</div>
 	);
 };
-
-const verticalAlignToJustify = (v?: string): string =>
-	v === "middle" ? "center" : v === "bottom" ? "flex-end" : "flex-start";
 
 const buildLayerTextStyle = (
 	s: Partial<ExtendedLayer> & Record<string, any>,
@@ -823,7 +802,6 @@ const compareVirtualMedia = (
 				aOp.textShadow !== bOp.textShadow ||
 				aOp.fill !== bOp.fill ||
 				aOp.align !== bOp.align ||
-				aOp.verticalAlign !== bOp.verticalAlign ||
 				aOp.letterSpacing !== bOp.letterSpacing ||
 				aOp.lineHeight !== bOp.lineHeight ||
 				aOp.padding !== bOp.padding ||
@@ -937,7 +915,6 @@ export const SingleClipComposition: React.FC<{
 									textShadow: lop.textShadow ?? textStyle?.textShadow,
 									fill: lop.fill ?? textStyle?.fill,
 									align: lop.align ?? textStyle?.align,
-									verticalAlign: lop.verticalAlign ?? textStyle?.verticalAlign,
 									letterSpacing: lop.letterSpacing ?? textStyle?.letterSpacing,
 									lineHeight: lop.lineHeight ?? textStyle?.lineHeight,
 									padding: lop.padding ?? textStyle?.padding,
@@ -1030,7 +1007,6 @@ export const SingleClipComposition: React.FC<{
 						lineHeight={mergedStyle.lineHeight as number | undefined}
 						letterSpacing={mergedStyle.letterSpacing as number | undefined}
 						align={mergedStyle.align as "left" | "center" | "right" | undefined}
-						verticalAlign={mergedStyle.verticalAlign as string | undefined}
 						padding={mergedStyle.padding as number | undefined}
 						borderRadius={mergedStyle.borderRadius as number | undefined}
 						backgroundColor={mergedStyle.backgroundColor as string | undefined}
@@ -1049,7 +1025,7 @@ export const SingleClipComposition: React.FC<{
 						display: "flex",
 						flexDirection: "column",
 						alignItems: "stretch",
-						justifyContent: verticalAlignToJustify(mergedStyle.verticalAlign),
+						justifyContent: "flex-start",
 						whiteSpace: "pre",
 					}}
 				>
@@ -1299,7 +1275,6 @@ const LayerContentRenderer: React.FC<{
 					lineHeight={layer.lineHeight}
 					letterSpacing={layer.letterSpacing}
 					align={layer.align as "left" | "center" | "right" | undefined}
-					verticalAlign={layer.verticalAlign}
 					padding={layer.padding}
 					borderRadius={layer.borderRadius}
 					backgroundColor={layer.backgroundColor}
@@ -1317,7 +1292,7 @@ const LayerContentRenderer: React.FC<{
 					height: "100%",
 					display: "flex",
 					flexDirection: "column",
-					justifyContent: verticalAlignToJustify(layer.verticalAlign),
+					justifyContent: "flex-start",
 					whiteSpace: "pre",
 				}}
 			>
@@ -1341,7 +1316,6 @@ const LayerContentRenderer: React.FC<{
 					style={
 						{
 							...buildLayerTextStyle(layer),
-							verticalAlign: layer.verticalAlign ?? "bottom",
 							...(layer.backgroundColor
 								? { captionBackgroundColor: layer.backgroundColor }
 								: {}),

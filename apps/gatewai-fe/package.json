@@ -79,6 +79,7 @@
 		"zod": "3.25.67"
 	},
 	"devDependencies": {
+		"@polar-sh/sdk": "^0.45.1",
 		"@types/color": "^4.2.0",
 		"@types/data-urls": "^3.0.4",
 		"@types/gl": "^6.0.5",

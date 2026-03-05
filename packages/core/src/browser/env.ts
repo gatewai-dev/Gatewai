@@ -8,6 +8,7 @@ declare global {
 		GATEWAI_ENV?: {
 			VITE_BASE_URL?: string;
 			DISABLE_EMAIL_SIGNUP?: boolean;
+			VITE_ENABLE_PRICING?: boolean;
 		};
 	}
 }

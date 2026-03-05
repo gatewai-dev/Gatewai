@@ -132,6 +132,7 @@ const app = new Hono<{
 		const env = {
 			VITE_BASE_URL: ENV_CONFIG.BASE_URL,
 			DISABLE_EMAIL_SIGNUP: ENV_CONFIG.DISABLE_EMAIL_SIGNUP,
+			VITE_ENABLE_PRICING: ENV_CONFIG.ENABLE_PRICING,
 		};
 		return c.text(`window.GATEWAI_ENV = ${JSON.stringify(env)}; `, 200, {
 			"Content-Type": "application/javascript",

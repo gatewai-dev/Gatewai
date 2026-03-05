@@ -1,5 +1,5 @@
 import type { IPricingService } from '@gatewai/core';
-import { logger } from "@gatewai/core";
+import { ENV_CONFIG, logger } from "@gatewai/core";
 import { TOKENS } from "@gatewai/core/di";
 import type { PrismaClient } from "@gatewai/db";
 import { inject, injectable } from "inversify";
@@ -11,6 +11,7 @@ export class PricingService implements IPricingService {
     ) { }
 
     async canAfford(userId: string, price: number): Promise<boolean> {
+        if (!ENV_CONFIG.ENABLE_PRICING) return true;
         if (price <= 0) return true;
 
         const user = await this.prisma.user.findUnique({
@@ -22,6 +23,7 @@ export class PricingService implements IPricingService {
     }
 
     async deductTokens(userId: string, price: number, taskId: string): Promise<void> {
+        if (!ENV_CONFIG.ENABLE_PRICING) return;
         if (price <= 0) return;
 
         await this.prisma.$transaction(async (tx) => {
@@ -56,6 +58,7 @@ export class PricingService implements IPricingService {
     }
 
     async creditTokens(userId: string, amount: number, type: "PURCHASE" | "SUBSCRIPTION_REFILL" | "BONUS" | "REFUND", metadata?: any): Promise<void> {
+        if (!ENV_CONFIG.ENABLE_PRICING) return;
         if (amount <= 0) return;
 
         await this.prisma.$transaction(async (tx) => {

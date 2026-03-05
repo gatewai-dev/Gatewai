@@ -44,8 +44,12 @@ export function registerBackendServices() {
 		},
 	});
 
-	// Register Pricing Service
-	container.bind(TOKENS.PRICING_SERVICE).to(PricingService).inSingletonScope();
+	if (ENV_CONFIG.ENABLE_PRICING) {
+		container
+			.bind(TOKENS.PRICING_SERVICE)
+			.to(PricingService)
+			.inSingletonScope();
+	}
 
 	// Register Video Renderer
 	container

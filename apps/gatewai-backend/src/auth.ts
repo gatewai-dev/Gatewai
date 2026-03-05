@@ -27,7 +27,7 @@ export const auth = betterAuth({
 		apiKey({
 			apiKeyHeaders: "X-API-KEY",
 		}),
-		polarPlugin,
+		...(polarPlugin ? [polarPlugin] : []),
 	],
 	databaseHooks: {
 		user: {
