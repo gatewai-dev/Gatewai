@@ -10,49 +10,14 @@ import {
 import { makeSelectNodeById, useAppSelector } from "@gatewai/react-store";
 import { Button } from "@gatewai/ui-kit";
 
-import { AlertCircle, Download, Loader2, VideoIcon } from "lucide-react";
-import { memo, useMemo, useState } from "react";
+import { AlertCircle, VideoIcon } from "lucide-react";
+import { memo, useMemo } from "react";
 import { useNavigate } from "react-router";
-import { toast } from "sonner";
-import type { VideoCompositorNodeConfig } from "../shared/config.js";
-import { remotionWebRendererService } from "./muxer-service.js";
 
 const VideoCompositorNodeComponent = memo((props: NodeProps) => {
 	const node = useAppSelector(makeSelectNodeById(props.id));
-	const nodeConfig = node?.config as VideoCompositorNodeConfig | undefined;
-	const [isDownloading, setIsDownloading] = useState(false);
 	const { inputs, result } = useNodeResult(props.id);
 	const nav = useNavigate();
-	const downloadFileData = useDownloadFileData();
-	const onClickDownload = async () => {
-		setIsDownloading(true);
-		try {
-			const config = nodeConfig ?? {
-				layerUpdates: {},
-				width: 1080,
-				height: 1080,
-			};
-			const result = await remotionWebRendererService.processVideo(
-				config,
-				inputs,
-			);
-			await downloadFileData(
-				{
-					processData: {
-						dataUrl: result.dataUrl,
-					},
-				} as FileData,
-				"Video",
-			);
-		} catch (err) {
-			const errorMessage =
-				err instanceof Error ? err.message : "An unknown error occurred";
-			toast.error(errorMessage);
-			console.error("Download failed:", err);
-		} finally {
-			setIsDownloading(false);
-		}
-	};
 
 	const hasInputs = inputs.length > 0;
 
@@ -98,24 +63,6 @@ const VideoCompositorNodeComponent = memo((props: NodeProps) => {
 					/>
 					{node && (
 						<div className="flex gap-2 shrink-0">
-							<Button
-								onClick={onClickDownload}
-								variant="ghost"
-								disabled={isDownloading}
-								size="sm"
-							>
-								{isDownloading ? (
-									<>
-										<Loader2 className="size-3 mr-1 animate-spin" />
-										Rendering...
-									</>
-								) : (
-									<>
-										<Download className="size-3 mr-1" />
-										Download
-									</>
-								)}
-							</Button>
 							<Button onClick={() => nav(`view/${node.id}`)} size="sm">
 								<VideoIcon className="size-4 mr-1" /> Editor
 							</Button>
