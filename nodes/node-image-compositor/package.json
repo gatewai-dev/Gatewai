@@ -1,0 +1,68 @@
+{
+	"name": "@gatewai/node-image-compositor",
+	"version": "0.0.1",
+	"private": true,
+	"type": "module",
+	"license": "MIT",
+	"exports": {
+		".": {
+			"types": "./dist/index.d.mts",
+			"development": "./src/metadata.ts",
+			"import": "./dist/index.mjs",
+			"default": "./dist/index.mjs"
+		},
+		"./server": {
+			"types": "./dist/server.d.mts",
+			"development": "./src/server/index.ts",
+			"import": "./dist/server.mjs",
+			"default": "./dist/server.mjs"
+		},
+		"./browser": {
+			"types": "./dist/browser.d.mts",
+			"development": "./src/browser/index.ts",
+			"import": "./dist/browser.mjs",
+			"default": "./dist/browser.mjs"
+		}
+	},
+	"scripts": {
+		"build": "tsdown",
+		"dev": "tsdown --watch",
+		"clean": "rm -rf dist .turbo"
+	},
+	"dependencies": {
+		"@dnd-kit/core": "^6.3.1",
+		"@dnd-kit/sortable": "^10.0.0",
+		"@dnd-kit/utilities": "^3.2.2",
+		"@gatewai/core": "workspace:*",
+		"@gatewai/db": "workspace:*",
+		"@gatewai/node-sdk": "workspace:*",
+		"@gatewai/react-store": "workspace:*",
+		"@gatewai/ui-kit": "workspace:*",
+		"canvas": "^3.2.0",
+		"konva": "^10.0.12",
+		"lucide-react": "^0.473.0",
+		"react-hotkeys-hook": "^5.2.1",
+		"react-konva": "^19.2.1",
+		"use-image": "^1.1.4",
+		"zod": "3.25.67"
+	},
+	"devDependencies": {
+		"@gatewai/react-canvas": "workspace:*",
+		"@gatewai/tsconfig": "workspace:*",
+		"@types/node": "^22.13.10",
+		"@types/react": "^19.2.4",
+		"@types/react-dom": "^19.2.3",
+		"tsdown": "^0.19.0",
+		"typescript": "~5.8.3"
+	},
+	"peerDependencies": {
+		"@gatewai/react-canvas": "workspace:*",
+		"@xyflow/react": "^12.8.4",
+		"lucide-react": "^0.552.0",
+		"inversify": "^7.11.0",
+		"react": "^19.2.4",
+		"react-icons": "*",
+		"react-router": "^7.8.2",
+		"zod": "*"
+	}
+}

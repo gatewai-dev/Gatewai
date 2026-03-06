@@ -1,0 +1,58 @@
+{
+	"name": "@gatewai/node-llm",
+	"version": "0.0.0",
+	"private": true,
+	"type": "module",
+	"module": "./dist/index.mjs",
+	"types": "./dist/index.d.mts",
+	"exports": {
+		".": {
+			"types": "./dist/index.d.mts",
+			"development": "./src/metadata.ts",
+			"import": "./dist/index.mjs",
+			"default": "./dist/index.mjs"
+		},
+		"./server": {
+			"types": "./dist/server.d.mts",
+			"development": "./src/server/index.ts",
+			"import": "./dist/server.mjs",
+			"default": "./dist/server.mjs"
+		},
+		"./browser": {
+			"types": "./dist/browser.d.mts",
+			"development": "./src/browser/index.ts",
+			"import": "./dist/browser.mjs",
+			"default": "./dist/browser.mjs"
+		}
+	},
+	"scripts": {
+		"build": "tsdown",
+		"dev": "tsdown --watch",
+		"clean": "rm -rf dist"
+	},
+	"dependencies": {
+		"@gatewai/react-store": "workspace:*",
+		"@google/genai": "^1.3.0",
+		"@hookform/resolvers": "^3.10.0",
+		"react-hook-form": "^7.71.1",
+		"zod": "^3.24.1"
+	},
+	"peerDependencies": {
+		"@gatewai/core": "workspace:*",
+		"@gatewai/db": "workspace:*",
+		"@gatewai/node-sdk": "workspace:*",
+		"@gatewai/react-canvas": "workspace:*",
+		"@gatewai/react-store": "workspace:*",
+		"@gatewai/ui-kit": "workspace:*",
+		"inversify": "^7.11.0",
+		"react": "^19.2.4",
+		"react-icons": "*"
+	},
+	"devDependencies": {
+		"@gatewai/tsconfig": "workspace:*",
+		"@types/node": "^24.0.4",
+		"@types/react": "^19.2.4",
+		"tsdown": "^0.19.0",
+		"typescript": "^5.8.3"
+	}
+}

@@ -1,0 +1,60 @@
+import {
+	AddCustomHandleButton,
+	BaseNode,
+	MediaDimensions,
+	OutputSelector,
+	RunNodeButton,
+	SVGRenderer,
+	useNodePreview,
+} from "@gatewai/react-canvas";
+import { cn } from "@gatewai/ui-kit";
+import { memo } from "react";
+
+const SvgNodeComponent = memo(
+	(props: { selected: boolean; id: string; dragging: boolean }) => {
+		const { mediaUrl, node, hasMoreThanOneOutput } = useNodePreview(props.id);
+
+		return (
+			<BaseNode
+				selected={props.selected}
+				id={props.id}
+				dragging={props.dragging}
+			>
+				<div className="flex flex-col gap-3">
+					<div
+						className={cn(
+							"media-container w-full overflow-hidden rounded bg-white/10  relative flex items-center justify-center",
+							{
+								"h-50": !mediaUrl,
+							},
+						)}
+					>
+						{hasMoreThanOneOutput && node && (
+							<div className="absolute top-1 left-1 z-10">
+								<OutputSelector node={node} />
+							</div>
+						)}
+						{mediaUrl ? (
+							<SVGRenderer imageUrl={mediaUrl} />
+						) : (
+							<div className="text-xs w-full text-muted-foreground italic text-center p-4 border rounded-md border-dashed">
+								No SVG generated yet
+							</div>
+						)}
+						{node && mediaUrl && (
+							<div className="absolute bottom-1 left-1 z-10">
+								<MediaDimensions node={node} />
+							</div>
+						)}
+					</div>
+
+					<div className="flex justify-end items-center w-full p-1.5">
+						<RunNodeButton nodeId={props.id} />
+					</div>
+				</div>
+			</BaseNode>
+		);
+	},
+);
+
+export { SvgNodeComponent };

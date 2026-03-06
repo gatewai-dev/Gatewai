@@ -19,6 +19,7 @@ First, clone the project and prepare your environment variables.
 ```bash
 # Clone the repository
 git clone https://github.com/gatewai-dev/Gatewai
+git checkout dev
 cd Gatewai
 
 # Initialize environment variables

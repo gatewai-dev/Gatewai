@@ -1,9 +1,8 @@
+import { GatewaiLogo } from "@gatewai/ui-kit";
 import { motion } from "framer-motion";
-import { Workflow } from "lucide-react";
 import type { ReactNode } from "react";
-import { useEffect, useRef, useState } from "react";
+import { useEffect, useRef } from "react";
 import { Link } from "react-router";
-import { GatewaiLogo } from "@/components/ui/gatewai-logo";
 
 interface AuthLayoutProps {
 	children: ReactNode;
@@ -11,25 +10,8 @@ interface AuthLayoutProps {
 	subtitle: string;
 }
 
-// Workflow canvas animation for auth pages
-const WorkflowCanvas = () => {
+const GridCanvas = () => {
 	const canvasRef = useRef<HTMLCanvasElement>(null);
-	const [dimensions, setDimensions] = useState({ width: 0, height: 0 });
-
-	useEffect(() => {
-		const updateDimensions = () => {
-			if (canvasRef.current) {
-				const { width, height } = canvasRef.current.getBoundingClientRect();
-				setDimensions({ width, height });
-				canvasRef.current.width = width;
-				canvasRef.current.height = height;
-			}
-		};
-
-		updateDimensions();
-		window.addEventListener("resize", updateDimensions);
-		return () => window.removeEventListener("resize", updateDimensions);
-	}, []);
 
 	useEffect(() => {
 		const canvas = canvasRef.current;
@@ -38,76 +20,76 @@ const WorkflowCanvas = () => {
 		const ctx = canvas.getContext("2d");
 		if (!ctx) return;
 
-		// Vertical workflow nodes
-		const nodes = [
-			{ x: 0.5, y: 0.15, radius: 6, connections: [1] },
-			{ x: 0.3, y: 0.35, radius: 5, connections: [2] },
-			{ x: 0.7, y: 0.35, radius: 5, connections: [2] },
-			{ x: 0.5, y: 0.55, radius: 7, connections: [3, 4] },
-			{ x: 0.35, y: 0.75, radius: 5, connections: [] },
-			{ x: 0.65, y: 0.75, radius: 5, connections: [] },
-		];
-
 		let animationFrame: number;
 		let time = 0;
 
+		const resize = () => {
+			canvas.width = canvas.offsetWidth;
+			canvas.height = canvas.offsetHeight;
+		};
+
+		resize();
+		window.addEventListener("resize", resize);
+
 		const animate = () => {
-			ctx.clearRect(0, 0, dimensions.width, dimensions.height);
-			time += 0.008;
+			const { width, height } = canvas;
+			ctx.clearRect(0, 0, width, height);
+			time += 0.004;
 
-			// Draw connections
-			nodes.forEach((node, i) => {
-				node.connections.forEach((targetIdx) => {
-					const target = nodes[targetIdx];
-					const startX = node.x * dimensions.width;
-					const startY = node.y * dimensions.height;
-					const endX = target.x * dimensions.width;
-					const endY = target.y * dimensions.height;
+			const cols = 8;
+			const rows = 12;
+			const cellW = width / cols;
+			const cellH = height / rows;
 
-					// Connection line
-					ctx.strokeStyle = "rgba(183, 234, 72, 0.15)";
-					ctx.lineWidth = 2;
+			for (let r = 0; r <= rows; r++) {
+				for (let c = 0; c <= cols; c++) {
+					const x = c * cellW;
+					const y = r * cellH;
+
+					// Subtle wave distortion per intersection
+					const wave = Math.sin(time + c * 0.6 + r * 0.4) * 0.5 + 0.5;
+					const alpha = wave * 0.12 + 0.03;
+
+					// Dot at intersection
 					ctx.beginPath();
-					ctx.moveTo(startX, startY);
-					ctx.lineTo(endX, endY);
-					ctx.stroke();
-
-					// Flow particle
-					const progress = (Math.sin(time + i * 0.7) + 1) / 2;
-					const particleX = startX + (endX - startX) * progress;
-					const particleY = startY + (endY - startY) * progress;
-
-					ctx.fillStyle = "rgba(183, 234, 72, 0.7)";
-					ctx.beginPath();
-					ctx.arc(particleX, particleY, 2.5, 0, Math.PI * 2);
+					ctx.arc(x, y, 1.2, 0, Math.PI * 2);
+					ctx.fillStyle = `rgba(183, 234, 72, ${alpha})`;
 					ctx.fill();
-				});
-			});
+				}
+			}
 
-			// Draw nodes
-			nodes.forEach((node, i) => {
-				const x = node.x * dimensions.width;
-				const y = node.y * dimensions.height;
-				const pulse = Math.sin(time * 2 + i * 0.5) * 0.2 + 1;
-
-				// Glow
-				ctx.fillStyle = "rgba(183, 234, 72, 0.1)";
+			// Horizontal lines
+			for (let r = 0; r <= rows; r++) {
+				const y = r * cellH;
+				const wave = Math.sin(time * 0.7 + r * 0.5) * 0.5 + 0.5;
+				ctx.strokeStyle = `rgba(183, 234, 72, ${wave * 0.06 + 0.02})`;
+				ctx.lineWidth = 1;
 				ctx.beginPath();
-				ctx.arc(x, y, node.radius * pulse * 2.5, 0, Math.PI * 2);
-				ctx.fill();
+				ctx.moveTo(0, y);
+				ctx.lineTo(width, y);
+				ctx.stroke();
+			}
 
-				// Node
-				ctx.fillStyle = "rgba(183, 234, 72, 0.5)";
+			// Vertical lines
+			for (let c = 0; c <= cols; c++) {
+				const x = c * cellW;
+				const wave = Math.sin(time * 0.9 + c * 0.6) * 0.5 + 0.5;
+				ctx.strokeStyle = `rgba(183, 234, 72, ${wave * 0.06 + 0.02})`;
+				ctx.lineWidth = 1;
 				ctx.beginPath();
-				ctx.arc(x, y, node.radius, 0, Math.PI * 2);
-				ctx.fill();
+				ctx.moveTo(x, 0);
+				ctx.lineTo(x, height);
+				ctx.stroke();
+			}
 
-				// Highlight
-				ctx.fillStyle = "rgba(255, 255, 255, 0.9)";
-				ctx.beginPath();
-				ctx.arc(x, y, node.radius * 0.35, 0, Math.PI * 2);
-				ctx.fill();
-			});
+			// Single traveling highlight dot
+			const tx = (Math.sin(time * 0.8) * 0.5 + 0.5) * width;
+			const ty = (Math.sin(time * 0.5 + 1.2) * 0.5 + 0.5) * height;
+			const grad = ctx.createRadialGradient(tx, ty, 0, tx, ty, 160);
+			grad.addColorStop(0, "rgba(183, 234, 72, 0.12)");
+			grad.addColorStop(1, "rgba(183, 234, 72, 0)");
+			ctx.fillStyle = grad;
+			ctx.fillRect(0, 0, width, height);
 
 			animationFrame = requestAnimationFrame(animate);
 		};
@@ -115,105 +97,98 @@ const WorkflowCanvas = () => {
 		animate();
 
 		return () => {
-			if (animationFrame) cancelAnimationFrame(animationFrame);
+			window.removeEventListener("resize", resize);
+			cancelAnimationFrame(animationFrame);
 		};
-	}, [dimensions]);
+	}, []);
 
-	return (
-		<canvas
-			ref={canvasRef}
-			className="absolute inset-0 w-full h-full"
-			style={{ width: "100%", height: "100%" }}
-		/>
-	);
+	return <canvas ref={canvasRef} className="absolute inset-0 w-full h-full" />;
 };
 
 export function AuthLayout({ children, title, subtitle }: AuthLayoutProps) {
 	return (
 		<div
-			className="relative min-h-screen flex-col items-center justify-center lg:grid lg:max-w-none lg:grid-cols-2 lg:px-0 bg-[#0a0a0f] text-white overflow-hidden"
+			className="min-h-screen flex bg-[#09090c] text-white overflow-hidden"
 			style={{ fontFamily: "'Outfit', sans-serif" }}
 		>
-			{/* Google Fonts */}
 			<style>{`
-				@import url('https://fonts.googleapis.com/css2?family=JetBrains+Mono:wght@600;700;800&family=Outfit:wght@300;400;600;700&display=swap');
+				@import url('https://fonts.googleapis.com/css2?family=JetBrains+Mono:wght@500;700&family=Outfit:wght@300;400;500&display=swap');
 			`}</style>
 
-			{/* Left Side - Workflow Visualization */}
-			<div className="relative hidden h-full flex-col bg-[#0f0a15] p-12 lg:flex border-r border-primary/10">
-				{/* Animated Background */}
-				<div className="absolute inset-0 overflow-hidden">
-					<WorkflowCanvas />
-					<div className="absolute top-1/2 left-1/2 -translate-x-1/2 -translate-y-1/2 h-[500px] w-[500px] rounded-full bg-primary/10 blur-[120px]" />
-				</div>
+			{/* ── Left panel ── */}
+			<div className="relative hidden lg:flex lg:w-[46%] flex-col justify-between p-14 border-r border-white/[0.06] overflow-hidden">
+				<GridCanvas />
+
+				{/* Vignette bottom-left */}
+				<div className="absolute bottom-0 left-0 w-full h-1/2 bg-gradient-to-t from-[#09090c] to-transparent pointer-events-none" />
 
 				{/* Logo */}
 				<motion.div
-					initial={{ opacity: 0, y: -20 }}
-					animate={{ opacity: 1, y: 0 }}
-					transition={{ duration: 0.6 }}
-					className="relative z-20 flex items-center gap-3"
+					initial={{ opacity: 0 }}
+					animate={{ opacity: 1 }}
+					transition={{ duration: 1 }}
+					className="relative z-10"
 				>
-					<GatewaiLogo className="size-22 text-primary" />
+					<GatewaiLogo className="h-7 w-auto text-white" />
 				</motion.div>
 
-				{/* Content */}
-				<div className="relative z-20 mt-auto space-y-6">
-					<motion.div
-						initial={{ opacity: 0, y: 20 }}
-						animate={{ opacity: 1, y: 0 }}
-						transition={{ delay: 0.3, duration: 0.6 }}
-					>
-						<Workflow className="h-12 w-12 text-primary mb-6" />
-						<h2
-							className="text-4xl font-bold tracking-tight mb-4 leading-tight"
-							style={{ fontFamily: "'JetBrains Mono', monospace" }}
-						>
-							BUILD AI
-							<br />
-							WORKFLOWS
-							<br />
-							<span className="text-transparent bg-clip-text bg-linear-to-r from-primary to-secondary">
-								VISUALLY
-							</span>
-						</h2>
-						<p className="text-lg text-zinc-400 leading-relaxed max-w-md">
-							Connect nodes. Chain operations. Deploy intelligence. The
-							next-generation platform for multi-modal AI.
-						</p>
-					</motion.div>
-				</div>
+				{/* Bottom copy */}
+				<motion.div
+					initial={{ opacity: 0, y: 16 }}
+					animate={{ opacity: 1, y: 0 }}
+					transition={{ duration: 0.9, delay: 0.2, ease: "easeOut" }}
+					className="relative z-10 space-y-5"
+				>
+					<p className="text-[11px] tracking-[0.2em] uppercase text-white/25 font-medium">
+						Multi-modal AI
+					</p>
+
+					<h2 className="text-[2.6rem] font-bold leading-[1.1] tracking-tight">
+						Build workflows
+						<br />
+						<span className="text-[#b7ea48]">visually.</span>
+					</h2>
+
+					<p className="text-sm text-white/35 leading-relaxed max-w-[260px] font-light">
+						Connect nodes, chain operations, and create living canvases using
+						the help of AI.
+					</p>
+				</motion.div>
 			</div>
 
-			{/* Right Side - Form */}
-			<div className="relative flex h-full min-h-screen items-center p-8 lg:p-12 bg-background">
-				{/* Subtle gradient */}
-				<div className="absolute inset-0 bg-[radial-gradient(ellipse_at_top_right,var(--tw-gradient-stops))] from-primary/10 via-transparent to-transparent pointer-events-none" />
+			{/* ── Right panel ── */}
+			<div className="relative flex flex-1 flex-col items-center justify-center px-8 py-16">
+				{/* Radial glow */}
+				<div className="absolute top-0 right-0 w-[480px] h-[480px] bg-[#b7ea48]/[0.04] rounded-full blur-[100px] pointer-events-none -translate-y-1/3 translate-x-1/3" />
 
-				{/* Back to home link */}
 				<Link
 					to="/"
-					className="absolute top-8 left-8 text-sm text-zinc-500 hover:text-primary transition-colors flex items-center gap-2"
+					className="absolute top-8 left-8 text-[11px] tracking-widest uppercase text-white/25 hover:text-white/60 transition-colors duration-300"
 				>
-					← Back to home
+					← Home
 				</Link>
 
 				<motion.div
-					initial={{ opacity: 0, x: 20 }}
-					animate={{ opacity: 1, x: 0 }}
+					initial={{ opacity: 0, y: 12 }}
+					animate={{ opacity: 1, y: 0 }}
 					transition={{ duration: 0.7, ease: "easeOut" }}
-					className="mx-auto flex w-full flex-col justify-center space-y-8 sm:w-[420px]"
+					className="w-full max-w-[360px] space-y-10"
 				>
-					<div className="flex flex-col space-y-3 text-center">
+					{/* Heading */}
+					<div className="space-y-2">
 						<h1
-							className="text-4xl font-bold tracking-tighter text-white"
+							className="text-3xl font-bold tracking-tight text-white"
 							style={{ fontFamily: "'JetBrains Mono', monospace" }}
 						>
 							{title}
 						</h1>
-						<p className="text-base text-zinc-400">{subtitle}</p>
+						<p className="text-sm text-white/35 font-light">{subtitle}</p>
 					</div>
 
+					{/* Divider */}
+					<div className="h-px w-full bg-white/[0.06]" />
+
+					{/* Form slot */}
 					{children}
 				</motion.div>
 			</div>

@@ -3,6 +3,7 @@ import tailwindcss from "@tailwindcss/vite";
 import react from "@vitejs/plugin-react-swc";
 import { defineConfig } from "vite";
 import { nodePolyfills } from "vite-plugin-node-polyfills";
+import { nodeDiscovery } from "./vite-plugins/node-discovery";
 
 // https://vite.dev/config/
 export default defineConfig({
@@ -10,13 +11,22 @@ export default defineConfig({
 		sourcemap: false,
 		rollupOptions: {
 			cache: false,
+			external: ["@gatewai/db", "@prisma/client", "prisma"],
+		},
+	},
+	esbuild: {
+		tsconfigRaw: {
+			compilerOptions: {
+				experimentalDecorators: true,
+			},
 		},
 	},
 	plugins: [
 		react(),
 		tailwindcss(),
+		nodeDiscovery(),
 		nodePolyfills({
-			include: ["events"],
+			include: ["events", "buffer", "process"],
 		}),
 	],
 	optimizeDeps: {
@@ -35,8 +45,31 @@ export default defineConfig({
 		},
 	},
 	resolve: {
+		conditions: ["development", "browser"],
 		alias: {
 			"@": path.resolve(__dirname, "./src"),
+			react: path.resolve(__dirname, "./node_modules/react"),
+			"react-dom": path.resolve(__dirname, "./node_modules/react-dom"),
+			"react-router": path.resolve(__dirname, "./node_modules/react-router"),
+			"@xyflow/react": path.resolve(__dirname, "./node_modules/@xyflow/react"),
+			"lucide-react": path.resolve(__dirname, "./node_modules/lucide-react"),
+			"framer-motion": path.resolve(__dirname, "./node_modules/framer-motion"),
+			"react-hotkeys-hook": path.resolve(
+				__dirname,
+				"./node_modules/react-hotkeys-hook",
+			),
+			"react/jsx-runtime": path.resolve(
+				__dirname,
+				"./node_modules/react/jsx-runtime.js",
+			),
+			"react/jsx-dev-runtime": path.resolve(
+				__dirname,
+				"./node_modules/react/jsx-dev-runtime.js",
+			),
+			"vite-plugin-node-polyfills": path.resolve(
+				__dirname,
+				"./node_modules/vite-plugin-node-polyfills",
+			),
 		},
 	},
 });

@@ -1,0 +1,1729 @@
+import { GetFontAssetUrl } from "@gatewai/core/browser";
+import type {
+	ExtendedLayer,
+	VideoAnimation,
+	VirtualMediaData,
+} from "@gatewai/core/types";
+import type { Caption } from "@remotion/captions";
+import { parseSrt } from "@remotion/captions";
+import { measureText } from "@remotion/layout-utils";
+import { Audio, Video } from "@remotion/media";
+import { createRoundedTextBox } from "@remotion/rounded-text-box";
+import React, { useEffect, useMemo, useState } from "react";
+import {
+	AbsoluteFill,
+	cancelRender,
+	continueRender,
+	delayRender,
+	Img,
+	interpolate,
+	Sequence,
+	spring,
+	useCurrentFrame,
+	useVideoConfig,
+} from "remotion";
+import {
+	CAPTION_LAYER_DEFAULTS,
+	DEFAULT_DURATION_MS,
+	DEFAULT_MEDIA_DIMENSION,
+	TEXT_LAYER_DEFAULTS,
+} from "../rendering-defaults.js";
+import {
+	buildCSSFilterString,
+	computeRenderParams,
+} from "../utils/apply-operations.js";
+import {
+	getActiveMediaMetadata,
+	getMediaType,
+} from "../utils/resolve-video.js";
+
+const isStaticVisualMedia = (type?: string): boolean =>
+	type === "Image" || type === "SVG";
+
+interface RoundedTextRendererProps {
+	text: string;
+	fill?: string;
+	fontSize?: number;
+	fontFamily?: string;
+	fontWeight?: string | number;
+	fontStyle?: string;
+	textDecoration?: string;
+	lineHeight?: number;
+	letterSpacing?: number;
+	align?: "left" | "center" | "right";
+	textShadow?: string;
+	padding?: number;
+	borderRadius?: number;
+	backgroundColor?: string;
+	stroke?: string;
+	strokeWidth?: number;
+}
+
+const RoundedTextRenderer: React.FC<RoundedTextRendererProps> = ({
+	text,
+	fill = "#ffffff",
+	fontSize = 40,
+	fontFamily = "Inter",
+	fontWeight = "normal",
+	fontStyle = "normal",
+	textShadow,
+	textDecoration = "none",
+	lineHeight = 1.2,
+	letterSpacing,
+	align = "center",
+	padding = 16,
+	borderRadius = 8,
+	backgroundColor = "rgba(0,0,0,0.7)",
+	stroke,
+	strokeWidth,
+}) => {
+	const fw = String(fontWeight);
+	const lines = text.split("\n");
+
+	const textMeasurements = useMemo(
+		() =>
+			lines.map((line) =>
+				measureText({
+					text: line || "\u00A0",
+					fontFamily,
+					fontSize,
+					fontVariantNumeric: "normal",
+					fontWeight: fw,
+					letterSpacing: letterSpacing ? `${letterSpacing}px` : "normal",
+					textTransform: "none",
+					additionalStyles: {
+						fontStyle,
+						lineHeight: String(lineHeight),
+						textDecoration,
+					},
+				} as Parameters<typeof measureText>[0]),
+			),
+		[
+			text,
+			fontFamily,
+			fontSize,
+			fw,
+			fontStyle,
+			lineHeight,
+			letterSpacing,
+			textDecoration,
+			lines.map,
+		],
+	);
+
+	const { d, boundingBox } = useMemo(
+		() =>
+			createRoundedTextBox({
+				textMeasurements,
+				textAlign: align,
+				horizontalPadding: padding,
+				borderRadius,
+			}),
+		[textMeasurements, align, padding, borderRadius],
+	);
+
+	const alignItems =
+		align === "right" ? "flex-end" : align === "left" ? "flex-start" : "center";
+
+	const lineStyle: React.CSSProperties = {
+		fontSize,
+		fontFamily,
+		fontWeight: fw,
+		fontStyle,
+		textShadow,
+		textDecoration,
+		lineHeight,
+		textAlign: align,
+		color: fill,
+		letterSpacing: letterSpacing ? `${letterSpacing}px` : undefined,
+		WebkitTextStroke:
+			strokeWidth && stroke ? `${strokeWidth}px ${stroke}` : undefined,
+		paintOrder: "stroke fill",
+		paddingLeft: padding,
+		paddingRight: padding,
+		whiteSpace: "pre",
+		background: "none",
+	};
+
+	return (
+		<div
+			style={{
+				width: "100%",
+				height: "100%",
+				display: "flex",
+				flexDirection: "column",
+				alignItems,
+				justifyContent: "flex-start",
+			}}
+		>
+			<div style={{ position: "relative", width: boundingBox.width }}>
+				<svg
+					viewBox={boundingBox.viewBox}
+					style={{
+						position: "absolute",
+						top: 0,
+						left: 0,
+						width: boundingBox.width,
+						height: boundingBox.height,
+						overflow: "visible",
+						pointerEvents: "none",
+					}}
+					aria-hidden="true"
+				>
+					<path fill={backgroundColor} d={d} />
+				</svg>
+
+				<div style={{ position: "relative" }}>
+					{lines.map((line, i) => (
+						<div key={i} style={lineStyle}>
+							{line || "\u00A0"}
+						</div>
+					))}
+				</div>
+			</div>
+		</div>
+	);
+};
+
+type TikTokToken = { text: string; fromMs: number; toMs: number };
+type LineGroup = { tokens: TikTokToken[]; text: string };
+
+function buildLines(
+	tokens: TikTokToken[],
+	maxWidth: number,
+	fontFamily: string,
+	fontSize: number,
+	fontWeight: string,
+	fontStyle: string,
+): LineGroup[] {
+	const measure = (t: string) =>
+		measureText({
+			text: t,
+			fontFamily,
+			fontSize,
+			fontVariantNumeric: "normal",
+			fontWeight,
+			letterSpacing: "normal",
+			textTransform: "none",
+			additionalStyles: { fontStyle },
+		} as Parameters<typeof measureText>[0]).width;
+
+	const spaceW = measure(" ");
+	const groups: LineGroup[] = [];
+	let currentTokens: TikTokToken[] = [];
+	let currentWidth = 0;
+
+	for (const token of tokens) {
+		const word = token.text.trimStart();
+		const wordW = measure(word);
+		const addW = currentTokens.length > 0 ? spaceW + wordW : wordW;
+
+		if (currentTokens.length > 0 && currentWidth + addW > maxWidth) {
+			groups.push({
+				tokens: currentTokens,
+				text: currentTokens.map((t) => t.text.trim()).join(" "),
+			});
+			currentTokens = [token];
+			currentWidth = wordW;
+		} else {
+			currentTokens.push(token);
+			currentWidth += addW;
+		}
+	}
+	if (currentTokens.length > 0) {
+		groups.push({
+			tokens: currentTokens,
+			text: currentTokens.map((t) => t.text.trim()).join(" "),
+		});
+	}
+	return groups;
+}
+
+interface TikTokCaptionPageProps {
+	page: {
+		tokens: TikTokToken[];
+		text: string;
+		startMs: number;
+		durationMs: number;
+	};
+	currentTimeMs: number;
+	fontFamily: string;
+	fontSize: number;
+	fontWeight: string;
+	textColor: string;
+	activeColor: string;
+	backgroundColor: string;
+	horizontalPadding: number;
+	borderRadius: number;
+	lineHeight: number;
+	fontStyle: string;
+	textDecoration: string;
+	maxWidth: number;
+}
+
+const TikTokCaptionPage: React.FC<TikTokCaptionPageProps> = ({
+	page,
+	currentTimeMs,
+	fontFamily,
+	fontSize,
+	fontWeight,
+	textColor,
+	activeColor,
+	backgroundColor,
+	horizontalPadding,
+	borderRadius,
+	lineHeight,
+	fontStyle,
+	textDecoration,
+	maxWidth,
+}) => {
+	const lines = useMemo(
+		() =>
+			buildLines(
+				page.tokens,
+				maxWidth,
+				fontFamily,
+				fontSize,
+				fontWeight,
+				fontStyle,
+			),
+		[page.tokens, maxWidth, fontFamily, fontSize, fontWeight, fontStyle],
+	);
+
+	const textMeasurements = useMemo(
+		() =>
+			lines.map((line) =>
+				measureText({
+					text: line.text,
+					fontFamily,
+					fontSize,
+					additionalStyles: {
+						lineHeight: String(lineHeight),
+						fontStyle,
+						textDecoration,
+					},
+					fontVariantNumeric: "normal",
+					fontWeight,
+					letterSpacing: "normal",
+					textTransform: "none",
+				} as Parameters<typeof measureText>[0]),
+			),
+		[
+			lines,
+			fontFamily,
+			fontSize,
+			fontWeight,
+			lineHeight,
+			fontStyle,
+			textDecoration,
+		],
+	);
+
+	const { d, boundingBox } = useMemo(
+		() =>
+			createRoundedTextBox({
+				textMeasurements,
+				textAlign: "center",
+				horizontalPadding,
+				borderRadius,
+			}),
+		[textMeasurements, horizontalPadding, borderRadius],
+	);
+
+	return (
+		<div
+			style={{
+				position: "relative",
+				width: boundingBox.width,
+				margin: "0 auto",
+			}}
+		>
+			<svg
+				viewBox={boundingBox.viewBox}
+				style={{
+					position: "absolute",
+					top: 0,
+					left: 0,
+					width: boundingBox.width,
+					height: boundingBox.height,
+					overflow: "visible",
+					pointerEvents: "none",
+				}}
+				aria-hidden="true"
+			>
+				<path fill={backgroundColor} d={d} />
+			</svg>
+
+			<div style={{ position: "relative" }}>
+				{lines.map((line, lineIdx) => (
+					<div
+						key={lineIdx}
+						style={{
+							fontSize,
+							fontWeight,
+							fontFamily,
+							fontStyle,
+							textDecoration,
+							lineHeight: String(lineHeight),
+							textAlign: "center",
+							paddingLeft: horizontalPadding,
+							paddingRight: horizontalPadding,
+							whiteSpace: "nowrap",
+						}}
+					>
+						{line.tokens.map((token, tokenIdx) => {
+							const isActive =
+								currentTimeMs >= token.fromMs && currentTimeMs < token.toMs;
+							return (
+								<React.Fragment key={`${tokenIdx}_token`}>
+									{tokenIdx > 0 && " "}
+									<span
+										style={{
+											display: "inline-block",
+											color: isActive ? activeColor : textColor,
+											transform: isActive ? "scale(1.15)" : "scale(1)",
+											transformOrigin: "center center",
+											transition:
+												"transform 0.1s cubic-bezier(0.175, 0.885, 0.32, 1.275), color 0.1s ease-out",
+											textShadow: isActive
+												? `0 0 12px ${activeColor}80`
+												: "0 2px 4px rgba(0,0,0,0.4)",
+											willChange: "transform, color",
+										}}
+									>
+										{token.text.trim()}
+									</span>
+								</React.Fragment>
+							);
+						})}
+					</div>
+				))}
+			</div>
+		</div>
+	);
+};
+
+interface CaptionsFromUrlProps {
+	src: string;
+	style?: React.CSSProperties;
+	preset?: "default" | "tiktok";
+	useRoundedTextBox?: boolean;
+}
+
+const CaptionsFromUrl: React.FC<CaptionsFromUrlProps> = ({
+	src,
+	style,
+	preset = "default",
+	useRoundedTextBox = false,
+}) => {
+	const [captions, setCaptions] = useState<Caption[] | null>(null);
+	const frame = useCurrentFrame();
+	const { fps, width: compositionWidth } = useVideoConfig();
+
+	useEffect(() => {
+		const handle = delayRender(`Loading Captions from: ${src}`);
+		let cancelled = false;
+
+		fetch(src)
+			.then((res) => res.text())
+			.then((text) => {
+				if (cancelled) {
+					continueRender(handle);
+					return;
+				}
+				try {
+					const { captions: parsed } = parseSrt({ input: text });
+					setCaptions(parsed);
+				} catch (e) {
+					console.error("Failed to parse SRT", e);
+					setCaptions([]);
+				}
+				continueRender(handle);
+			})
+			.catch((err) => {
+				if (cancelled) {
+					continueRender(handle);
+					return;
+				}
+				cancelRender(err instanceof Error ? err : new Error(String(err)));
+			});
+
+		return () => {
+			cancelled = true;
+		};
+	}, [src]);
+
+	if (!captions) return null;
+
+	const currentTimeMs = (frame / fps) * 1000;
+
+	const hAlign =
+		style?.textAlign === "left"
+			? "flex-start"
+			: style?.textAlign === "right"
+				? "flex-end"
+				: "center";
+
+	if (preset === "tiktok") {
+		const fontFamily = style?.fontFamily || "Impact, sans-serif";
+		const fontSize = style?.fontSize || 60;
+		const fontWeight = String(style?.fontWeight ?? "700");
+		const fontStyle = style?.fontStyle || "normal";
+		const textDecoration = style?.textDecoration || "none";
+		const lineHeight = Number(style?.lineHeight) || 1.35;
+		const activeColor = style?.color || "#FFFC00";
+		const textColor = "white";
+		const backgroundColor = style?.backgroundColor ?? "rgba(0,0,0,0.72)";
+		const horizontalPadding = 22;
+		const borderRadius = 12;
+
+		const currentCaption = captions.find(
+			(c) => currentTimeMs >= c.startMs && currentTimeMs < c.endMs,
+		);
+		if (!currentCaption) return null;
+
+		const words = currentCaption.text.trim().split(/\s+/).filter(Boolean);
+		const entryDuration = currentCaption.endMs - currentCaption.startMs;
+		const wordDurationMs =
+			words.length > 0 ? entryDuration / words.length : entryDuration;
+
+		const tokens: TikTokToken[] = words.map((word, i) => ({
+			text: word,
+			fromMs: currentCaption.startMs + i * wordDurationMs,
+			toMs: currentCaption.startMs + (i + 1) * wordDurationMs,
+		}));
+
+		const page = {
+			tokens,
+			text: words.join(" "),
+			startMs: currentCaption.startMs,
+			durationMs: entryDuration,
+		};
+
+		const maxWidth = compositionWidth * 0.8 - horizontalPadding * 2;
+
+		return (
+			<AbsoluteFill
+				style={{
+					display: "flex",
+					flexDirection: "column",
+					alignItems: hAlign,
+					justifyContent: "flex-end",
+					padding: style?.padding,
+					pointerEvents: "none",
+				}}
+			>
+				<TikTokCaptionPage
+					page={page}
+					currentTimeMs={currentTimeMs}
+					fontFamily={fontFamily}
+					fontSize={fontSize}
+					fontWeight={fontWeight}
+					fontStyle={fontStyle}
+					textDecoration={textDecoration}
+					textColor={textColor}
+					activeColor={activeColor}
+					backgroundColor={backgroundColor}
+					horizontalPadding={horizontalPadding}
+					borderRadius={borderRadius}
+					lineHeight={lineHeight}
+					maxWidth={maxWidth}
+				/>
+			</AbsoluteFill>
+		);
+	}
+
+	const currentCaption = captions.find(
+		(c) => currentTimeMs >= c.startMs && currentTimeMs < c.endMs,
+	);
+	if (!currentCaption) return null;
+
+	if (useRoundedTextBox) {
+		const fontSize = style?.fontSize ?? 48;
+		const fontFamily = style?.fontFamily ?? "Inter";
+		const fontWeight = String(style?.fontWeight ?? "normal");
+		const fontStyle = style?.fontStyle ?? "normal";
+		const textDecoration = style?.textDecoration ?? "none";
+		const textShadow = style?.textShadow ?? undefined;
+		const lineHeight = Number(style?.lineHeight ?? 1.2);
+		const letterSpacing = style?.letterSpacing
+			? Number.parseFloat(String(style.letterSpacing))
+			: undefined;
+		const fill = style?.color ?? "#ffffff";
+		const backgroundColor = style?.backgroundColor ?? "rgba(0,0,0,0.7)";
+		const padding = style?.padding
+			? Number.parseFloat(String(style.padding))
+			: 16;
+		const borderRadius = 8;
+		const align = (style?.textAlign as "left" | "center" | "right") ?? "center";
+		const stroke = style?.WebkitTextStroke
+			? String(style.WebkitTextStroke).split(" ").slice(1).join(" ")
+			: undefined;
+		const strokeWidth = style?.WebkitTextStroke
+			? Number.parseFloat(String(style.WebkitTextStroke))
+			: undefined;
+
+		return (
+			<AbsoluteFill
+				style={{
+					display: "flex",
+					flexDirection: "column",
+					alignItems: hAlign,
+					justifyContent: "flex-end",
+					pointerEvents: "none",
+				}}
+			>
+				<RoundedTextRenderer
+					text={currentCaption.text}
+					fill={fill}
+					fontSize={fontSize}
+					fontFamily={fontFamily}
+					textShadow={textShadow}
+					fontWeight={fontWeight}
+					fontStyle={fontStyle}
+					textDecoration={textDecoration}
+					lineHeight={lineHeight}
+					letterSpacing={letterSpacing}
+					align={align}
+					padding={padding}
+					borderRadius={borderRadius}
+					backgroundColor={backgroundColor}
+					stroke={stroke}
+					strokeWidth={strokeWidth}
+				/>
+			</AbsoluteFill>
+		);
+	}
+
+	return (
+		<div
+			style={{
+				position: "absolute",
+				inset: 0,
+				display: "flex",
+				flexDirection: "column",
+				alignItems: hAlign,
+				justifyContent: "flex-end",
+				...style,
+			}}
+		>
+			<span
+				style={{
+					color: style?.color ?? "white",
+					fontStyle: style?.fontStyle,
+					textDecoration: style?.textDecoration,
+					textShadow: style?.textShadow,
+					WebkitTextStroke: style?.WebkitTextStroke,
+				}}
+			>
+				{currentCaption.text}
+			</span>
+		</div>
+	);
+};
+
+const buildLayerTextStyle = (
+	s: Partial<ExtendedLayer> & Record<string, any>,
+): React.CSSProperties => ({
+	color: s.fill,
+	fontSize: s.fontSize,
+	fontFamily: s.fontFamily,
+	fontStyle: s.fontStyle,
+	fontWeight: s.fontWeight,
+	textDecoration: s.textDecoration,
+	textShadow: s.textShadow,
+	lineHeight: s.lineHeight ?? 1.2,
+	letterSpacing: s.letterSpacing ? `${s.letterSpacing}px` : undefined,
+	textAlign: (s.align as "left" | "center" | "right") ?? "left",
+	padding: s.padding,
+	WebkitTextStroke:
+		s.strokeWidth && s.stroke ? `${s.strokeWidth}px ${s.stroke}` : undefined,
+	paintOrder: "stroke fill",
+});
+
+export const calculateLayerTransform = (
+	layer: ExtendedLayer,
+	frame: number,
+	fps: number,
+	viewport: { w: number; h: number },
+) => {
+	const relativeFrame = frame - (layer.startFrame ?? 0);
+	let x = layer.x;
+	let y = layer.y;
+	let scale = layer.scale ?? 1;
+	let rotation = layer.rotation;
+	let opacity = layer.opacity ?? 1;
+	const volume = layer.volume ?? 1;
+	const layerDurationMs =
+		layer.durationInMS ||
+		layer.virtualMedia?.metadata?.durationMs ||
+		DEFAULT_DURATION_MS;
+	const duration = Math.round((layerDurationMs / 1000) * fps);
+	const animations = layer.animations ?? [];
+	if (animations.length === 0)
+		return { x, y, scale, rotation, opacity, volume };
+
+	animations.forEach((anim) => {
+		const durFrames = anim.value * fps;
+		const isOut = anim.type.includes("-out");
+		const startAnimFrame = isOut ? duration - durFrames : 0;
+		const endAnimFrame = isOut ? duration : durFrames;
+		if (relativeFrame < startAnimFrame || relativeFrame > endAnimFrame) return;
+
+		const progress = interpolate(
+			relativeFrame,
+			[startAnimFrame, endAnimFrame],
+			[0, 1],
+			{ extrapolateLeft: "clamp", extrapolateRight: "clamp" },
+		);
+
+		switch (anim.type) {
+			case "fade-in":
+				opacity *= progress;
+				break;
+			case "fade-out":
+				opacity *= 1 - progress;
+				break;
+			case "slide-in-left":
+				x += -1 * viewport.w * (1 - progress);
+				break;
+			case "slide-in-right":
+				x += 1 * viewport.w * (1 - progress);
+				break;
+			case "slide-in-top":
+				y += -1 * viewport.h * (1 - progress);
+				break;
+			case "slide-in-bottom":
+				y += 1 * viewport.h * (1 - progress);
+				break;
+			case "zoom-in":
+				scale *= interpolate(progress, [0, 1], [0, 1]);
+				break;
+			case "zoom-out":
+				scale *= interpolate(progress, [0, 1], [1, 0]);
+				break;
+			case "rotate-cw":
+				rotation += 360 * progress;
+				break;
+			case "rotate-ccw":
+				rotation += -360 * progress;
+				break;
+			case "bounce": {
+				const bounceVal = spring({
+					frame: relativeFrame - startAnimFrame,
+					fps,
+					config: { damping: 10, mass: 0.5, stiffness: 100 },
+					durationInFrames: durFrames,
+				});
+				scale *= bounceVal;
+				break;
+			}
+			case "shake": {
+				const intensity = 20;
+				x +=
+					intensity *
+					Math.sin((relativeFrame * 10 * 2 * Math.PI) / durFrames) *
+					(1 - progress);
+				break;
+			}
+		}
+	});
+
+	return { x, y, scale, rotation, opacity, volume };
+};
+
+const compareVirtualMedia = (
+	a: VirtualMediaData | undefined,
+	b: VirtualMediaData | undefined,
+): boolean => {
+	if (a === b) return true;
+	if (!a || !b) return false;
+	const aOp = a.operation;
+	const bOp = b.operation;
+	if (aOp?.op !== bOp?.op) return false;
+
+	switch (aOp.op) {
+		case "source": {
+			if (bOp.op !== "source") return false;
+			if (aOp.source?.processData?.dataUrl !== bOp.source?.processData?.dataUrl)
+				return false;
+			break;
+		}
+		case "text": {
+			if (bOp.op !== "text") return false;
+			if (aOp.text !== bOp.text) return false;
+			break;
+		}
+		case "crop": {
+			if (bOp.op !== "crop") return false;
+			if (
+				aOp.leftPercentage !== bOp.leftPercentage ||
+				aOp.topPercentage !== bOp.topPercentage ||
+				aOp.widthPercentage !== bOp.widthPercentage ||
+				aOp.heightPercentage !== bOp.heightPercentage
+			)
+				return false;
+			break;
+		}
+		case "cut": {
+			if (bOp.op !== "cut") return false;
+			if (aOp.startSec !== bOp.startSec || aOp.endSec !== bOp.endSec)
+				return false;
+			break;
+		}
+		case "filter": {
+			if (bOp.op !== "filter") return false;
+			if (
+				JSON.stringify(aOp.filters.cssFilters) !==
+				JSON.stringify(bOp.filters.cssFilters)
+			)
+				return false;
+			break;
+		}
+		case "layer": {
+			if (bOp.op !== "layer") return false;
+			if (
+				aOp.x !== bOp.x ||
+				aOp.y !== bOp.y ||
+				aOp.width !== bOp.width ||
+				aOp.height !== bOp.height ||
+				aOp.rotation !== bOp.rotation ||
+				aOp.scale !== bOp.scale ||
+				aOp.opacity !== bOp.opacity ||
+				aOp.startFrame !== bOp.startFrame ||
+				aOp.durationInMS !== bOp.durationInMS ||
+				aOp.zIndex !== bOp.zIndex ||
+				aOp.text !== bOp.text ||
+				aOp.fontSize !== bOp.fontSize ||
+				aOp.fontFamily !== bOp.fontFamily ||
+				aOp.fontStyle !== bOp.fontStyle ||
+				aOp.fontWeight !== bOp.fontWeight ||
+				aOp.textDecoration !== bOp.textDecoration ||
+				aOp.textShadow !== bOp.textShadow ||
+				aOp.fill !== bOp.fill ||
+				aOp.align !== bOp.align ||
+				aOp.letterSpacing !== bOp.letterSpacing ||
+				aOp.lineHeight !== bOp.lineHeight ||
+				aOp.padding !== bOp.padding ||
+				aOp.stroke !== bOp.stroke ||
+				aOp.strokeWidth !== bOp.strokeWidth ||
+				aOp.backgroundColor !== bOp.backgroundColor ||
+				aOp.borderColor !== bOp.borderColor ||
+				aOp.borderWidth !== bOp.borderWidth ||
+				aOp.borderRadius !== bOp.borderRadius ||
+				aOp.autoDimensions !== bOp.autoDimensions ||
+				aOp.speed !== bOp.speed ||
+				JSON.stringify(aOp.animations) !== JSON.stringify(bOp.animations)
+			)
+				return false;
+			break;
+		}
+		case "compose": {
+			if (bOp.op !== "compose") return false;
+			if (
+				aOp.width !== bOp.width ||
+				aOp.height !== bOp.height ||
+				aOp.fps !== bOp.fps ||
+				aOp.metadata?.durationMs !== bOp.metadata?.durationMs
+			)
+				return false;
+			if (a.children.length !== b.children.length) return false;
+			for (let i = 0; i < a.children.length; i++) {
+				if (!compareVirtualMedia(a.children[i], b.children[i])) return false;
+			}
+			return true;
+		}
+	}
+
+	if (
+		a.metadata.width !== b.metadata.width ||
+		a.metadata.height !== b.metadata.height ||
+		a.metadata.fps !== b.metadata.fps ||
+		a.metadata.durationMs !== b.metadata.durationMs
+	)
+		return false;
+	if (a.children.length !== b.children.length) return false;
+	if (a.children.length > 0)
+		return compareVirtualMedia(a.children[0], b.children[0]);
+	return true;
+};
+
+export const SingleClipComposition: React.FC<{
+	virtualMedia: VirtualMediaData;
+	volume?: number;
+	playbackRateOverride?: number;
+	trimStartOverride?: number;
+	textStyle?: Partial<ExtendedLayer>;
+	containerWidth: number;
+	containerHeight: number;
+}> = ({
+	virtualMedia,
+	volume = 1,
+	playbackRateOverride,
+	trimStartOverride,
+	textStyle,
+	containerWidth,
+	containerHeight,
+}) => {
+	const { fps } = useVideoConfig();
+	const op = virtualMedia?.operation;
+	if (!op) return null;
+
+	if (op.op === "compose") {
+		const composeDuration = op.metadata?.durationMs ?? DEFAULT_DURATION_MS;
+		const composeNode = (
+			<CompositionScene
+				layers={
+					(virtualMedia.children || [])
+						.filter((child) => child?.operation)
+						.map((child, index) => {
+							const childOp = child.operation;
+
+							if (childOp.op === "layer") {
+								const lop = childOp;
+								const contentType = getMediaType(child.children[0]);
+								return {
+									...textStyle, // Base inheritance MUST come first
+
+									// Structural overrides MUST be explicit to prevent overwrite bugs
+									id: `child-${index}`,
+									type: contentType,
+									virtualMedia: child.children[0],
+
+									// Use operation props if present, fallback to inherited textStyle safely
+									x: lop.x ?? textStyle?.x ?? 0,
+									y: lop.y ?? textStyle?.y ?? 0,
+									width: lop.width ?? textStyle?.width,
+									height: lop.height ?? textStyle?.height,
+									rotation: lop.rotation ?? textStyle?.rotation ?? 0,
+									scale: lop.scale ?? textStyle?.scale ?? 1,
+									opacity: lop.opacity ?? textStyle?.opacity ?? 1,
+									startFrame: lop.startFrame ?? textStyle?.startFrame ?? 0,
+									durationInMS: lop.durationInMS || composeDuration,
+									zIndex: lop.zIndex ?? textStyle?.zIndex ?? index,
+									trimStart: lop.trimStart ?? textStyle?.trimStart,
+									trimEnd: lop.trimEnd ?? textStyle?.trimEnd,
+									speed: lop.speed ?? textStyle?.speed,
+
+									text: lop.text ?? textStyle?.text,
+									fontSize: lop.fontSize ?? textStyle?.fontSize,
+									fontFamily: lop.fontFamily ?? textStyle?.fontFamily,
+									fontStyle: lop.fontStyle ?? textStyle?.fontStyle,
+									fontWeight: lop.fontWeight ?? textStyle?.fontWeight,
+									textDecoration:
+										lop.textDecoration ?? textStyle?.textDecoration,
+									textShadow: lop.textShadow ?? textStyle?.textShadow,
+									fill: lop.fill ?? textStyle?.fill,
+									align: lop.align ?? textStyle?.align,
+									letterSpacing: lop.letterSpacing ?? textStyle?.letterSpacing,
+									lineHeight: lop.lineHeight ?? textStyle?.lineHeight,
+									padding: lop.padding ?? textStyle?.padding,
+									stroke: lop.stroke ?? textStyle?.stroke,
+									strokeWidth: lop.strokeWidth ?? textStyle?.strokeWidth,
+									backgroundColor:
+										lop.backgroundColor ?? textStyle?.backgroundColor,
+									borderColor: lop.borderColor ?? textStyle?.borderColor,
+									borderWidth: lop.borderWidth ?? textStyle?.borderWidth,
+									borderRadius: lop.borderRadius ?? textStyle?.borderRadius,
+									autoDimensions:
+										lop.autoDimensions ?? textStyle?.autoDimensions,
+									animations: lop.animations ?? textStyle?.animations,
+
+									captionPreset: lop.captionPreset ?? textStyle?.captionPreset,
+									useRoundedTextBox:
+										lop.useRoundedTextBox ?? textStyle?.useRoundedTextBox,
+								} as ExtendedLayer;
+							}
+
+							// Handle other operations (crop, rotate, filter, flig, speed, cut, source, text)
+							const contentType = getMediaType(child);
+							const childMeta = getActiveMediaMetadata(child);
+							const childWidth = childMeta?.width ?? op.width;
+							const childHeight = childMeta?.height ?? op.height;
+							const childDuration =
+								childMeta?.durationMs ?? composeDuration ?? DEFAULT_DURATION_MS;
+
+							return {
+								id: `child-${index}`,
+								type: contentType,
+								virtualMedia: child,
+								x: 0,
+								y: 0,
+								width: childWidth,
+								height: childHeight,
+								rotation: 0,
+								scale: 1,
+								opacity: 1,
+								startFrame: 0,
+								durationInMS: childDuration,
+								zIndex: index,
+							} as ExtendedLayer;
+						})
+						.filter(Boolean) as ExtendedLayer[]
+				}
+				viewportWidth={op.width}
+				viewportHeight={op.height}
+				containerWidth={containerWidth}
+				containerHeight={containerHeight}
+			/>
+		);
+		const trimFrames = trimStartOverride
+			? Math.floor(trimStartOverride * fps)
+			: 0;
+		if (trimFrames > 0)
+			return (
+				<Sequence from={-trimFrames} layout="none">
+					{composeNode}
+				</Sequence>
+			);
+		return composeNode;
+	}
+
+	if (op.op === "source" || op.op === "text") {
+		const params = computeRenderParams(virtualMedia);
+
+		const mediaType = getMediaType(virtualMedia);
+
+		if (mediaType === "Text") {
+			const mergedStyle = { ...textStyle, ...op };
+			const textContent =
+				op.op === "text" && op.text
+					? op.text
+					: op.op === "source" && op.source?.processData?.text
+						? op.source.processData.text
+						: mergedStyle.text;
+
+			if (mergedStyle.useRoundedTextBox && textContent) {
+				return (
+					<RoundedTextRenderer
+						text={textContent}
+						fill={mergedStyle.fill as string | undefined}
+						fontSize={mergedStyle.fontSize as number | undefined}
+						fontFamily={mergedStyle.fontFamily as string | undefined}
+						fontWeight={mergedStyle.fontWeight}
+						fontStyle={mergedStyle.fontStyle as string | undefined}
+						textShadow={mergedStyle.textShadow as string | undefined}
+						textDecoration={mergedStyle.textDecoration as string | undefined}
+						lineHeight={mergedStyle.lineHeight as number | undefined}
+						letterSpacing={mergedStyle.letterSpacing as number | undefined}
+						align={mergedStyle.align as "left" | "center" | "right" | undefined}
+						padding={mergedStyle.padding as number | undefined}
+						borderRadius={mergedStyle.borderRadius as number | undefined}
+						backgroundColor={mergedStyle.backgroundColor as string | undefined}
+						stroke={mergedStyle.stroke as string | undefined}
+						strokeWidth={mergedStyle.strokeWidth as number | undefined}
+					/>
+				);
+			}
+
+			return (
+				<div
+					style={{
+						...buildLayerTextStyle(mergedStyle),
+						width: "100%",
+						height: "100%",
+						display: "flex",
+						flexDirection: "column",
+						alignItems: "stretch",
+						justifyContent: "flex-start",
+						whiteSpace: "pre",
+					}}
+				>
+					{textContent}
+				</div>
+			);
+		}
+
+		if (!params.sourceUrl) return <AbsoluteFill />;
+
+		const finalPlaybackRate =
+			(Number(playbackRateOverride) || 1) * (Number(params.speed) || 1);
+		const effectiveTrimSec =
+			(trimStartOverride ?? 0) + (Number(params.trimStartSec) || 0);
+		const startFrame = Math.floor(effectiveTrimSec * fps);
+
+		if (mediaType === "Audio")
+			return (
+				<Audio
+					src={params.sourceUrl}
+					trimBefore={startFrame}
+					playbackRate={finalPlaybackRate}
+					volume={volume}
+				/>
+			);
+
+		if (isStaticVisualMedia(mediaType))
+			return (
+				<Img
+					src={params.sourceUrl}
+					style={{
+						position: "absolute",
+						top: 0,
+						left: 0,
+						width: "100%",
+						height: "100%",
+						objectFit: "fill",
+					}}
+				/>
+			);
+
+		return (
+			<Video
+				src={params.sourceUrl}
+				playbackRate={finalPlaybackRate}
+				trimBefore={startFrame}
+				volume={volume}
+				style={{
+					position: "absolute",
+					top: 0,
+					left: 0,
+					width: "100%",
+					height: "100%",
+					objectFit: "fill",
+					display: "block",
+				}}
+			/>
+		);
+	}
+
+	if (op.op === "speed") {
+		const childVideo = virtualMedia.children[0];
+		if (!childVideo) return null;
+		return (
+			<SingleClipComposition
+				virtualMedia={childVideo}
+				volume={volume}
+				playbackRateOverride={
+					(Number(playbackRateOverride) || 1) * (Number(op.rate) || 1)
+				}
+				trimStartOverride={trimStartOverride}
+				textStyle={textStyle}
+				containerWidth={containerWidth}
+				containerHeight={containerHeight}
+			/>
+		);
+	}
+
+	if (op.op === "cut") {
+		const childVideo = virtualMedia.children[0];
+		if (!childVideo) return null;
+		return (
+			<SingleClipComposition
+				virtualMedia={childVideo}
+				volume={volume}
+				playbackRateOverride={playbackRateOverride}
+				trimStartOverride={(trimStartOverride ?? 0) + (op.startSec ?? 0)}
+				textStyle={textStyle}
+				containerWidth={containerWidth}
+				containerHeight={containerHeight}
+			/>
+		);
+	}
+
+	const childVideo = virtualMedia.children[0];
+	let childContainerWidth = containerWidth;
+	let childContainerHeight = containerHeight;
+	if (op.op === "crop") {
+		const wp = Math.max(0.01, Number(op.widthPercentage) || 100);
+		const hp = Math.max(0.01, Number(op.heightPercentage) || 100);
+		childContainerWidth = containerWidth * (100 / wp);
+		childContainerHeight = containerHeight * (100 / hp);
+	}
+
+	const content = childVideo ? (
+		<SingleClipComposition
+			virtualMedia={childVideo}
+			volume={volume}
+			playbackRateOverride={playbackRateOverride}
+			trimStartOverride={trimStartOverride}
+			textStyle={op.op === "layer" ? { ...textStyle, ...op } : textStyle}
+			containerWidth={childContainerWidth}
+			containerHeight={childContainerHeight}
+		/>
+	) : null;
+
+	if (op.op === "crop") {
+		const wp = Math.max(0.01, Number(op.widthPercentage) || 100);
+		const hp = Math.max(0.01, Number(op.heightPercentage) || 100);
+		const lp = Number(op.leftPercentage) || 0;
+		const tp = Number(op.topPercentage) || 0;
+		const innerWidth = (100 / wp) * 100;
+		const innerHeight = (100 / hp) * 100;
+		const innerLeft = (lp / wp) * 100;
+		const innerTop = (tp / hp) * 100;
+		return (
+			<AbsoluteFill style={{ overflow: "hidden" }}>
+				<div
+					style={{
+						position: "absolute",
+						width: `${innerWidth}%`,
+						height: `${innerHeight}%`,
+						left: `-${innerLeft}%`,
+						top: `-${innerTop}%`,
+					}}
+					key={`crop-${wp}-${hp}-${lp}-${tp}`}
+				>
+					<AbsoluteFill>{content}</AbsoluteFill>
+				</div>
+			</AbsoluteFill>
+		);
+	}
+
+	let transformStr: string | undefined;
+	let cssFilterString: string | undefined;
+	if (op.op === "rotate") {
+		transformStr = `rotate(${op.degrees}deg)`;
+	} else if (op.op === "flip") {
+		const transforms: string[] = [];
+		if (op.horizontal) transforms.push("scaleX(-1)");
+		if (op.vertical) transforms.push("scaleY(-1)");
+		transformStr = transforms.length ? transforms.join(" ") : undefined;
+	} else if (op.op === "filter") {
+		cssFilterString = buildCSSFilterString(op.filters.cssFilters);
+	}
+
+	return (
+		<AbsoluteFill style={{ filter: cssFilterString, transform: transformStr }}>
+			{content}
+		</AbsoluteFill>
+	);
+};
+
+const LayerContentRenderer: React.FC<{
+	layer: ExtendedLayer;
+	animVolume: number;
+	viewport: { w: number; h: number };
+}> = ({ layer, animVolume, viewport }) => {
+	const cWidth = layer.width ?? viewport.w;
+	const cHeight = layer.height ?? viewport.h;
+
+	const useRoundedBox = layer.useRoundedTextBox === true;
+
+	if (layer.type === "Video" && layer.virtualMedia)
+		return (
+			<SingleClipComposition
+				virtualMedia={layer.virtualMedia}
+				volume={animVolume}
+				playbackRateOverride={layer.speed}
+				trimStartOverride={layer.trimStart}
+				textStyle={layer}
+				containerWidth={cWidth}
+				containerHeight={cHeight}
+			/>
+		);
+
+	if (isStaticVisualMedia(layer.type) && (layer.src || layer.virtualMedia)) {
+		if (layer.virtualMedia)
+			return (
+				<SingleClipComposition
+					virtualMedia={layer.virtualMedia}
+					volume={animVolume}
+					trimStartOverride={layer.trimStart}
+					textStyle={layer}
+					containerWidth={cWidth}
+					containerHeight={cHeight}
+				/>
+			);
+		return (
+			<Img
+				src={layer.src!}
+				style={{ width: "100%", height: "100%", objectFit: "fill" }}
+			/>
+		);
+	}
+
+	if (layer.type === "Audio" && (layer.src || layer.virtualMedia)) {
+		if (layer.virtualMedia)
+			return (
+				<SingleClipComposition
+					virtualMedia={layer.virtualMedia}
+					volume={animVolume}
+					playbackRateOverride={layer.speed}
+					trimStartOverride={layer.trimStart}
+					textStyle={layer}
+					containerWidth={cWidth}
+					containerHeight={cHeight}
+				/>
+			);
+		return <Audio src={layer.src!} volume={animVolume} />;
+	}
+
+	if (layer.type === "Text" && (layer.text || layer.virtualMedia)) {
+		if (layer.virtualMedia)
+			return (
+				<SingleClipComposition
+					virtualMedia={layer.virtualMedia}
+					volume={animVolume}
+					trimStartOverride={layer.trimStart}
+					textStyle={layer}
+					containerWidth={cWidth}
+					containerHeight={cHeight}
+				/>
+			);
+
+		if (useRoundedBox && layer.text) {
+			return (
+				<RoundedTextRenderer
+					text={layer.text}
+					fill={layer.fill}
+					fontSize={layer.fontSize}
+					fontFamily={layer.fontFamily}
+					fontWeight={layer.fontWeight}
+					fontStyle={layer.fontStyle}
+					textDecoration={layer.textDecoration}
+					textShadow={layer.textShadow}
+					lineHeight={layer.lineHeight}
+					letterSpacing={layer.letterSpacing}
+					align={layer.align as "left" | "center" | "right" | undefined}
+					padding={layer.padding}
+					borderRadius={layer.borderRadius}
+					backgroundColor={layer.backgroundColor}
+					stroke={layer.stroke}
+					strokeWidth={layer.strokeWidth}
+				/>
+			);
+		}
+
+		return (
+			<div
+				style={{
+					...buildLayerTextStyle(layer),
+					width: "100%",
+					height: "100%",
+					display: "flex",
+					flexDirection: "column",
+					justifyContent: "flex-start",
+					whiteSpace: "pre",
+				}}
+			>
+				{layer.text}
+			</div>
+		);
+	}
+
+	if (layer.type === "Caption") {
+		const preset = layer.captionPreset || "default";
+		let captionSrc = layer.src;
+		if (!captionSrc && layer.virtualMedia) {
+			const params = computeRenderParams(layer.virtualMedia);
+			captionSrc = params.sourceUrl;
+		}
+		if (captionSrc) {
+			return (
+				<CaptionsFromUrl
+					src={captionSrc}
+					useRoundedTextBox={useRoundedBox}
+					style={
+						{
+							...buildLayerTextStyle(layer),
+							...(layer.backgroundColor
+								? { captionBackgroundColor: layer.backgroundColor }
+								: {}),
+						} as React.CSSProperties
+					}
+					preset={preset}
+				/>
+			);
+		}
+	}
+
+	return null;
+};
+
+export const LayerRenderer: React.FC<{
+	layer: ExtendedLayer;
+	viewport: { w: number; h: number };
+}> = ({ layer, viewport }) => {
+	const frame = useCurrentFrame();
+	const { fps } = useVideoConfig();
+	const startFrame = layer.startFrame ?? 0;
+
+	// Use explicit duration, or intrinsic metadata duration, or fallback
+	const layerDurationMs =
+		layer.durationInMS ||
+		layer.virtualMedia?.metadata?.durationMs ||
+		DEFAULT_DURATION_MS;
+	const duration = Math.round((layerDurationMs / 1000) * fps);
+	const {
+		x: animX,
+		y: animY,
+		scale: animScale,
+		rotation: animRotation,
+		opacity: animOpacity,
+		volume: animVolume,
+	} = calculateLayerTransform(layer, frame, fps, viewport);
+
+	const useRoundedBox =
+		(layer.type === "Text" || layer.type === "Caption") &&
+		layer.useRoundedTextBox === true;
+
+	const style: React.CSSProperties = {
+		position: "absolute",
+		left: animX,
+		top: animY,
+		width: layer.width ?? (layer.type === "Text" ? "max-content" : "100%"),
+		height: layer.height ?? (layer.type === "Text" ? "max-content" : "100%"),
+		transform: `rotate(${animRotation}deg) scale(${animScale})`,
+		transformOrigin: "center center",
+		opacity: animOpacity,
+		backgroundColor: useRoundedBox ? undefined : layer.backgroundColor,
+		borderColor: useRoundedBox ? undefined : layer.borderColor,
+		borderWidth: useRoundedBox ? undefined : layer.borderWidth,
+		borderRadius: useRoundedBox ? undefined : layer.borderRadius,
+		borderStyle: !useRoundedBox && layer.borderWidth ? "solid" : undefined,
+		overflow: "hidden",
+		boxSizing: "border-box",
+	};
+
+	const filterString = (() => {
+		const cf = layer.filters?.cssFilters;
+		if (!cf) return undefined;
+		return buildCSSFilterString(cf);
+	})();
+
+	return (
+		<Sequence from={startFrame} durationInFrames={duration} layout="none">
+			<div style={{ ...style, filter: filterString }}>
+				<AbsoluteFill>
+					<LayerContentRenderer
+						layer={layer}
+						animVolume={animVolume}
+						viewport={viewport}
+					/>
+				</AbsoluteFill>
+			</div>
+		</Sequence>
+	);
+};
+
+function extractFonts(
+	layers: ExtendedLayer[],
+	virtualMedia: VirtualMediaData | undefined,
+): string[] {
+	const fonts = new Set<string>();
+
+	const walkLayer = (layer: ExtendedLayer) => {
+		if (layer.fontFamily) fonts.add(layer.fontFamily);
+		if (layer.virtualMedia) walkVirtualMedia(layer.virtualMedia);
+	};
+
+	const walkVirtualMedia = (vmd: VirtualMediaData) => {
+		if (!vmd) return;
+		if (vmd.operation?.op === "layer" && vmd.operation.fontFamily) {
+			fonts.add(vmd.operation.fontFamily);
+		}
+		if (vmd.operation?.op === "text" && vmd.operation.fontFamily) {
+			fonts.add(vmd.operation.fontFamily);
+		}
+		if (vmd.children) {
+			for (const child of vmd.children) {
+				walkVirtualMedia(child);
+			}
+		}
+	};
+
+	if (layers) {
+		for (const layer of layers) {
+			walkLayer(layer);
+		}
+	}
+	if (virtualMedia) {
+		walkVirtualMedia(virtualMedia);
+	}
+
+	return Array.from(fonts);
+}
+
+function useEnsureFontsLoaded(
+	layers: ExtendedLayer[],
+	virtualMedia: VirtualMediaData | undefined,
+) {
+	const [loaded, setLoaded] = useState(false);
+
+	// FIX: Generate a stable primitive string instead of passing an unstable layer mapping
+	// Every frame re-render of SingleClipComposition produced a new array causing infinite re-fetching.
+	const fontsToLoad = useMemo(() => {
+		const fonts = extractFonts(layers, virtualMedia);
+		return fonts.sort().join(",");
+	}, [layers, virtualMedia]);
+
+	useEffect(() => {
+		if (!fontsToLoad) {
+			setLoaded(true);
+			return;
+		}
+
+		const fonts = fontsToLoad.split(",");
+
+		const handle = delayRender(`Loading custom fonts for: ${fontsToLoad}`);
+		let isCancelled = false;
+
+		Promise.all(
+			fonts.map(async (fontFamily) => {
+				const cleanFontFamily = fontFamily
+					.split(",")[0]
+					.replace(/['"]/g, "")
+					.trim();
+				// Basic generic fallback fonts filter
+				if (
+					[
+						"sans-serif",
+						"serif",
+						"monospace",
+						"cursive",
+						"fantasy",
+						"system-ui",
+					].includes(cleanFontFamily.toLowerCase())
+				) {
+					return;
+				}
+
+				try {
+					const fontUrl = GetFontAssetUrl(cleanFontFamily.replace(/\s+/g, "_"));
+					const font = new FontFace(cleanFontFamily, `url('${fontUrl}')`);
+					await font.load();
+					if (!isCancelled) document.fonts.add(font);
+				} catch (err) {
+					console.warn(`Failed to load font ${cleanFontFamily}`, err);
+				}
+			}),
+		).then(() => {
+			if (!isCancelled) {
+				setLoaded(true);
+				continueRender(handle);
+			}
+		});
+
+		return () => {
+			isCancelled = true;
+		};
+	}, [fontsToLoad]); // Strict reliance on primitive string to break the freeze.
+
+	return loaded;
+}
+
+export interface SceneProps {
+	layers?: ExtendedLayer[];
+	viewportWidth: number;
+	viewportHeight: number;
+	containerWidth?: number;
+	containerHeight?: number;
+	src?: string;
+	isAudio?: boolean;
+	type?: "Video" | "Audio" | "Image" | "SVG" | "Text" | string;
+	data?: unknown;
+	virtualMedia?: VirtualMediaData;
+	durationInMS?: number;
+	backgroundColor?: string;
+	animations?: VideoAnimation[];
+	opacity?: number;
+	volume?: number;
+	scale?: number;
+	rotation?: number;
+	x?: number;
+	y?: number;
+}
+
+export const CompositionScene: React.FC<SceneProps> = ({
+	layers = [],
+	viewportWidth,
+	viewportHeight,
+	containerWidth,
+	containerHeight,
+	src,
+	isAudio,
+	type,
+	data,
+	virtualMedia,
+	durationInMS,
+	backgroundColor,
+	animations,
+	opacity,
+	volume,
+	scale,
+	rotation,
+	x,
+	y,
+}) => {
+	const frame = useCurrentFrame();
+	const { fps } = useVideoConfig();
+
+	useEnsureFontsLoaded(layers, virtualMedia);
+
+	const resolvedLayers = (() => {
+		if (layers.length > 0) return layers;
+
+		if (virtualMedia?.operation?.op === "compose") {
+			return null;
+		}
+
+		if (src || virtualMedia || type === "Text" || type === "Caption") {
+			const resolvedType = type || (isAudio ? "Audio" : "Video");
+			let resolvedDurationInMS = durationInMS;
+			if (!resolvedDurationInMS && virtualMedia) {
+				const activeMeta = getActiveMediaMetadata(virtualMedia);
+				if (activeMeta?.durationMs)
+					resolvedDurationInMS = activeMeta.durationMs;
+			}
+			const isCaption = resolvedType === "Caption";
+			const isText = resolvedType === "Text";
+			const isVisualMedia =
+				resolvedType === "Image" ||
+				resolvedType === "SVG" ||
+				resolvedType === "Video";
+
+			let defaultWidth: number | string | undefined = viewportWidth;
+			let defaultHeight: number | string | undefined = viewportHeight;
+
+			if (isText) {
+				defaultWidth = undefined;
+				defaultHeight = undefined;
+			} else if (isVisualMedia) {
+				const activeMeta = virtualMedia
+					? getActiveMediaMetadata(virtualMedia)
+					: null;
+				defaultWidth = activeMeta?.width ?? DEFAULT_MEDIA_DIMENSION;
+				defaultHeight = activeMeta?.height ?? DEFAULT_MEDIA_DIMENSION;
+			}
+
+			return [
+				{
+					id: `single-source-${resolvedType}`,
+					type: resolvedType,
+					src,
+					virtualMedia,
+					text:
+						typeof data === "string"
+							? data
+							: data?.text || JSON.stringify(data),
+					width: defaultWidth,
+					height: defaultHeight,
+					...(typeof data === "object" && data !== null ? data : {}),
+					animations,
+					opacity,
+					volume,
+					scale,
+					rotation,
+					x: x ?? 0,
+					y: y ?? 0,
+					lockAspect: isText || isVisualMedia,
+					autoDimensions: false,
+					...(isText ? TEXT_LAYER_DEFAULTS : {}),
+					...(isCaption
+						? {
+								...CAPTION_LAYER_DEFAULTS,
+								// Dynamic default Y position based on viewport
+								y: Math.max(
+									0,
+									viewportHeight -
+										Math.round(
+											(CAPTION_LAYER_DEFAULTS.fontSize as number) *
+												(CAPTION_LAYER_DEFAULTS.lineHeight as number) *
+												3,
+										) -
+										Math.round(viewportHeight * 0.1),
+								),
+								// Auto height for ~3 lines
+								height: Math.round(
+									(CAPTION_LAYER_DEFAULTS.fontSize as number) *
+										(CAPTION_LAYER_DEFAULTS.lineHeight as number) *
+										3,
+								),
+								width: viewportWidth,
+							}
+						: {}),
+				} as ExtendedLayer,
+			];
+		}
+		return [];
+	})();
+
+	const resolvedViewportW = viewportWidth || 1920;
+	const resolvedViewportH = viewportHeight || 1080;
+	const viewport = { w: resolvedViewportW, h: resolvedViewportH };
+	const scaleX =
+		containerWidth !== undefined ? containerWidth / resolvedViewportW : 1;
+	const scaleY =
+		containerHeight !== undefined ? containerHeight / resolvedViewportH : 1;
+
+	if (resolvedLayers === null && virtualMedia?.operation?.op === "compose") {
+		return (
+			<AbsoluteFill
+				style={{
+					backgroundColor: backgroundColor ?? "#000000",
+					overflow: "hidden",
+					pointerEvents: "none",
+				}}
+			>
+				<div
+					style={{
+						width: resolvedViewportW,
+						height: resolvedViewportH,
+						position: "absolute",
+						top: 0,
+						left: 0,
+						transform: `scale(${scaleX}, ${scaleY})`,
+						transformOrigin: "top left",
+					}}
+				>
+					<SingleClipComposition
+						virtualMedia={virtualMedia}
+						containerWidth={resolvedViewportW}
+						containerHeight={resolvedViewportH}
+					/>
+				</div>
+			</AbsoluteFill>
+		);
+	}
+
+	const layersToRender = [...(resolvedLayers || [])]
+		.sort((a, b) => (a.zIndex ?? 0) - (b.zIndex ?? 0))
+		.map((layer) => {
+			let derivedWidth = layer.width;
+			let derivedHeight = layer.height;
+			if (layer.virtualMedia && layer.autoDimensions) {
+				const activeMeta = getActiveMediaMetadata(layer.virtualMedia);
+				derivedWidth = activeMeta?.width ?? derivedWidth;
+				derivedHeight = activeMeta?.height ?? derivedHeight;
+			}
+			return { ...layer, width: derivedWidth, height: derivedHeight };
+		});
+
+	return (
+		<AbsoluteFill
+			style={{
+				backgroundColor: backgroundColor ?? "#000000",
+				overflow: "hidden",
+				pointerEvents: "none",
+			}}
+		>
+			<div
+				style={{
+					width: resolvedViewportW,
+					height: resolvedViewportH,
+					position: "absolute",
+					top: 0,
+					left: 0,
+					transform: `scale(${scaleX}, ${scaleY})`,
+					transformOrigin: "top left",
+				}}
+			>
+				{layersToRender.map((layer) => {
+					const startFrame = layer.startFrame ?? 0;
+					const explicitLayerDuration =
+						layer.durationInMS ||
+						layer.virtualMedia?.metadata?.durationMs ||
+						DEFAULT_DURATION_MS;
+					const layerNativeDuration = Math.round(
+						(explicitLayerDuration / 1000) * fps,
+					);
+					const endFrame = startFrame + layerNativeDuration;
+					if (frame < startFrame || frame >= endFrame) return null;
+					return (
+						<LayerRenderer key={layer.id} layer={layer} viewport={viewport} />
+					);
+				})}
+			</div>
+		</AbsoluteFill>
+	);
+};

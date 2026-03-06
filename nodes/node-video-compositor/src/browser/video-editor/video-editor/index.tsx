@@ -1,0 +1,3480 @@
+import {
+	closestCenter,
+	DndContext,
+	type DragEndEvent,
+	KeyboardSensor,
+	PointerSensor,
+	useSensor,
+	useSensors,
+} from "@dnd-kit/core";
+import {
+	arrayMove,
+	SortableContext,
+	sortableKeyboardCoordinates,
+	useSortable,
+	verticalListSortingStrategy,
+} from "@dnd-kit/sortable";
+import { CSS } from "@dnd-kit/utilities";
+import { generateId } from "@gatewai/core";
+import {
+	fontManager,
+	GetAssetEndpoint,
+	GetFontAssetUrl,
+} from "@gatewai/core/browser";
+import type {
+	AnimationType,
+	ExtendedLayer,
+	FileData,
+	OutputItem,
+	VideoAnimation,
+	VirtualMediaData,
+} from "@gatewai/core/types";
+import { dataTypeColors } from "@gatewai/core/types";
+import type { HandleEntityType, NodeEntityType } from "@gatewai/react-store";
+import {
+	handleSelectors,
+	useAppSelector,
+	useGetFontListQuery,
+} from "@gatewai/react-store";
+import {
+	CAPTION_LAYER_DEFAULTS,
+	CompositionScene,
+	computeVideoCropRenderProps,
+	createVirtualMedia,
+	getActiveMediaMetadata,
+	TEXT_LAYER_DEFAULTS,
+} from "@gatewai/remotion-compositions";
+import { resolveMediaSourceUrlBrowser } from "@gatewai/remotion-compositions/browser";
+import {
+	AlertDialog,
+	AlertDialogAction,
+	AlertDialogCancel,
+	AlertDialogContent,
+	AlertDialogDescription,
+	AlertDialogFooter,
+	AlertDialogHeader,
+	AlertDialogTitle,
+	Button,
+	CollapsibleSection,
+	ColorPicker,
+	cn,
+	DraggableNumberInput,
+	Label,
+	Menubar,
+	MenubarContent,
+	MenubarItem,
+	MenubarMenu,
+	MenubarTrigger,
+	Popover,
+	PopoverContent,
+	PopoverTrigger,
+	ScrollArea,
+	Select,
+	SelectContent,
+	SelectItem,
+	SelectTrigger,
+	SelectValue,
+	Slider,
+	StyleControls,
+	Switch,
+	Tooltip,
+	TooltipContent,
+	TooltipProvider,
+	TooltipTrigger,
+	TypographyControls,
+} from "@gatewai/ui-kit";
+import { Player, type PlayerRef } from "@remotion/player";
+import {
+	ArrowDown,
+	ArrowLeft,
+	ArrowRight,
+	ArrowUp,
+	Blend,
+	Box,
+	ChevronDown,
+	EyeOff,
+	Film,
+	GripHorizontal,
+	GripVertical,
+	Hand,
+	Image as ImageIcon,
+	Layers,
+	Link as LinkIcon,
+	Minus,
+	MousePointer,
+	Move,
+	MoveHorizontal,
+	MoveVertical,
+	Music,
+	Pause,
+	Play,
+	Plus,
+	RotateCcw,
+	RotateCw,
+	Save,
+	Settings2,
+	Sparkles,
+	Subtitles,
+	Trash2,
+	Type,
+	Unlink as UnlinkIcon,
+	Volume2,
+	XIcon,
+	Zap,
+	ZoomIn,
+	ZoomOut,
+} from "lucide-react";
+import React, {
+	createContext,
+	type Dispatch,
+	type SetStateAction,
+	useCallback,
+	useContext,
+	useEffect,
+	useMemo,
+	useRef,
+	useState,
+} from "react";
+import { useHotkeys } from "react-hotkeys-hook";
+import type { VideoCompositorNodeConfig } from "../../../shared/config.js";
+import { DEFAULT_DURATION_MS, FPS } from "../config/index.js";
+
+// ---------------------------------------------------------------------------
+// Types
+// ---------------------------------------------------------------------------
+
+export type EditorLayer = ExtendedLayer & {
+	videoNaturalWidth?: number;
+	videoNaturalHeight?: number;
+	videoCropOffsetX?: number;
+	videoCropOffsetY?: number;
+	cropTranslatePercentageX?: number;
+	cropTranslatePercentageY?: number;
+	captionPreset?: "default" | "tiktok";
+	/**
+	 * When true, Text and Caption layers render their background using
+	 * createRoundedTextBox() — a pill-shaped SVG that hugs each text line.
+	 * The fill colour is layer.backgroundColor, padding is layer.padding,
+	 * and corner radius is layer.borderRadius.
+	 */
+	useRoundedTextBox?: boolean;
+};
+
+type ResizeAnchor = "tl" | "tr" | "bl" | "br" | "t" | "b" | "l" | "r";
+type EditorMode = "select" | "pan";
+
+// ---------------------------------------------------------------------------
+// Constants
+// ---------------------------------------------------------------------------
+
+const RULER_HEIGHT = 28;
+const TRACK_HEIGHT = 32;
+const HEADER_WIDTH = 200;
+const DEFAULT_TIMELINE_HEIGHT = 208;
+const MIN_TIMELINE_HEIGHT = 120;
+const MAX_TIMELINE_HEIGHT = 400;
+
+const ASPECT_RATIOS = [
+	{ label: "Youtube / HD (16:9)", width: 1280, height: 720 },
+	{ label: "Full HD (16:9)", width: 1920, height: 1080 },
+	{ label: "TikTok / Reel (9:16)", width: 720, height: 1280 },
+	{ label: "Square (1:1)", width: 1080, height: 1080 },
+	{ label: "Portrait (4:5)", width: 1080, height: 1350 },
+];
+
+const ANIMATION_CATEGORIES = [
+	{
+		label: "Entrance",
+		color: "text-green-400",
+		animations: [
+			{ type: "fade-in" as AnimationType, label: "Fade In", icon: Sparkles },
+			{
+				type: "slide-in-left" as AnimationType,
+				label: "Slide Left",
+				icon: ArrowRight,
+			},
+			{
+				type: "slide-in-right" as AnimationType,
+				label: "Slide Right",
+				icon: ArrowLeft,
+			},
+			{
+				type: "slide-in-top" as AnimationType,
+				label: "Slide Down",
+				icon: ArrowDown,
+			},
+			{
+				type: "slide-in-bottom" as AnimationType,
+				label: "Slide Up",
+				icon: ArrowUp,
+			},
+			{ type: "zoom-in" as AnimationType, label: "Zoom In", icon: ZoomIn },
+		],
+	},
+	{
+		label: "Exit",
+		color: "text-red-400",
+		animations: [
+			{ type: "fade-out" as AnimationType, label: "Fade Out", icon: EyeOff },
+			{ type: "zoom-out" as AnimationType, label: "Zoom Out", icon: ZoomOut },
+		],
+	},
+	{
+		label: "Emphasis",
+		color: "text-yellow-400",
+		animations: [
+			{
+				type: "rotate-cw" as AnimationType,
+				label: "Rotate CW",
+				icon: RotateCw,
+			},
+			{
+				type: "rotate-ccw" as AnimationType,
+				label: "Rotate CCW",
+				icon: RotateCcw,
+			},
+			{ type: "bounce" as AnimationType, label: "Bounce", icon: ArrowUp },
+			{ type: "shake" as AnimationType, label: "Shake", icon: Move },
+		],
+	},
+];
+
+// Default rounded-box values so the inspector reflects sensible initial state.
+const ROUNDED_BOX_DEFAULTS = {
+	backgroundColor: "rgba(0, 0, 0, 0.7)",
+	padding: 16,
+	borderRadius: 8,
+} as const;
+
+// ---------------------------------------------------------------------------
+// Helpers
+// ---------------------------------------------------------------------------
+
+const isFileMedia = (type: string): boolean =>
+	type === "Image" || type === "SVG" || type === "Caption";
+
+const isCaptionLayer = (type: string): boolean => type === "Caption";
+
+const roundToEven = (num?: number) => Math.round((num ?? 0) / 2) * 2;
+
+const getEffectiveDurationMs = (
+	virtualMedia: VirtualMediaData | undefined | null,
+	accumulatedStartSec = 0,
+): number | null => {
+	if (!virtualMedia) return null;
+	const op = virtualMedia.operation;
+
+	if (op?.op === "cut") {
+		const cutStart = (Number(op.startSec) || 0) + accumulatedStartSec;
+		const cutEnd = Number(op.endSec) || 0;
+		const cutDurationMs = Math.max(0, cutEnd - cutStart) * 1000;
+		const child = virtualMedia.children?.[0];
+		if (child) {
+			const childDurationMs = getEffectiveDurationMs(child, cutStart);
+			if (childDurationMs !== null)
+				return Math.min(cutDurationMs, childDurationMs);
+		}
+		return cutDurationMs;
+	}
+
+	if (op?.op === "speed") {
+		const rate = Number(op.rate) || 1;
+		const child = virtualMedia.children?.[0];
+		if (child) {
+			const childMs = getEffectiveDurationMs(child, accumulatedStartSec / rate);
+			if (childMs !== null) return childMs * rate;
+		}
+		return null;
+	}
+
+	for (const child of virtualMedia.children ?? []) {
+		const found = getEffectiveDurationMs(child, accumulatedStartSec);
+		if (found !== null) return found;
+	}
+
+	return null;
+};
+
+const measureText = (text: string, style: Partial<EditorLayer>) => {
+	if (typeof document === "undefined") return { width: 100, height: 40 };
+
+	const d = document.createElement("div");
+	Object.assign(d.style, {
+		fontFamily: style.fontFamily ?? "Inter",
+		fontSize: `${style.fontSize ?? 40}px`,
+		fontWeight: style.fontWeight ?? "normal",
+		fontStyle: style.fontStyle ?? "normal",
+		letterSpacing: `${style.letterSpacing ?? 0}px`,
+		lineHeight: `${style.lineHeight ?? 1.2}`,
+		padding: `${style.padding ?? 0}px`,
+		position: "absolute",
+		visibility: "hidden",
+		whiteSpace: "pre",
+		width: "max-content",
+	});
+	d.textContent = text;
+	document.body.appendChild(d);
+	const width = d.offsetWidth;
+	const height = d.offsetHeight;
+	document.body.removeChild(d);
+
+	return { width, height };
+};
+
+const fetchSrtDurationMs = async (url: string): Promise<number | null> => {
+	try {
+		const res = await fetch(url);
+		if (!res.ok) return null;
+		const text = await res.text();
+		const RE_TIMESTAMP =
+			/(\d{2}):(\d{2}):(\d{2}),(\d{3})\s*-->\s*(\d{2}):(\d{2}):(\d{2}),(\d{3})/g;
+		let maxEndMs = 0;
+		let match: RegExpExecArray | null;
+		while ((match = RE_TIMESTAMP.exec(text)) !== null) {
+			const endMs =
+				Number(match[5]) * 3_600_000 +
+				Number(match[6]) * 60_000 +
+				Number(match[7]) * 1_000 +
+				Number(match[8]);
+			if (endMs > maxEndMs) maxEndMs = endMs;
+		}
+		return maxEndMs > 0 ? maxEndMs : null;
+	} catch {
+		return null;
+	}
+};
+
+const resolveColorConfig = (layer: EditorLayer) => {
+	return (
+		dataTypeColors[layer.type] ?? {
+			bg: "bg-gray-600",
+			border: "border-gray-500",
+			text: "text-gray-100",
+			hex: "#4b5563",
+		}
+	);
+};
+
+const resolveLayerLabel = (
+	handle: HandleEntityType | undefined,
+	layer: EditorLayer,
+): string => {
+	if (
+		handle?.label &&
+		typeof handle.label === "string" &&
+		handle.label.trim() !== ""
+	) {
+		return handle.label;
+	}
+	if (
+		Array.isArray(handle?.dataTypes) &&
+		handle.dataTypes.length > 0 &&
+		handle.dataTypes[0]
+	) {
+		return handle.dataTypes[0];
+	}
+	return layer.name ?? layer.id;
+};
+
+const serializeLayersForSave = (layers: EditorLayer[]) =>
+	layers.reduce<
+		Record<
+			string,
+			Omit<
+				EditorLayer,
+				| "src"
+				| "text"
+				| "isPlaceholder"
+				| "videoNaturalWidth"
+				| "videoNaturalHeight"
+				| "cropTranslatePercentageX"
+				| "cropTranslatePercentageY"
+			>
+		>
+	>((acc, layer) => {
+		const {
+			src,
+			text,
+			isPlaceholder,
+			videoNaturalWidth,
+			videoNaturalHeight,
+			cropTranslatePercentageX,
+			cropTranslatePercentageY,
+			...savedLayer
+		} = layer;
+		acc[layer.id] = savedLayer;
+		return acc;
+	}, {});
+
+const parseTextShadowStr = (shadowStr?: string) => {
+	if (!shadowStr) return null;
+	const match = shadowStr.match(
+		/^\s*(-?[\d.]+)px\s+(-?[\d.]+)px\s+([\d.]+)px\s+(.+)\s*$/,
+	);
+	if (match) {
+		return {
+			x: parseFloat(match[1]),
+			y: parseFloat(match[2]),
+			blur: parseFloat(match[3]),
+			color: match[4].trim(),
+		};
+	}
+	return { x: 2, y: 2, blur: 4, color: "rgba(0,0,0,0.75)" };
+};
+
+// ---------------------------------------------------------------------------
+// Context
+// ---------------------------------------------------------------------------
+
+interface EditorContextType {
+	layers: EditorLayer[];
+	updateLayers: (
+		updater: SetStateAction<EditorLayer[]>,
+		isUserChange?: boolean,
+	) => void;
+	deleteLayer: (id: string) => void;
+	selectedId: string | null;
+	setSelectedId: (id: string | null) => void;
+	getTextData: (id: string) => string;
+	getAssetUrl: (id: string) => string | undefined;
+	fps: number;
+	setFps: (fps: number) => void;
+	backgroundColor: string;
+	setBackgroundColor: (color: string) => void;
+	getMediaDuration: (
+		id: string | undefined | null,
+	) => number | null | undefined;
+	viewportWidth: number;
+	viewportHeight: number;
+	updateViewportWidth: (w: number) => void;
+	updateViewportHeight: (h: number) => void;
+	durationInMS: number;
+	currentFrame: number;
+	setCurrentFrame: (frame: number) => void;
+	isPlaying: boolean;
+	setIsPlaying: (playing: boolean) => void;
+	playerRef: React.RefObject<PlayerRef | null>;
+	zoom: number;
+	setZoom: Dispatch<SetStateAction<number>>;
+	pan: { x: number; y: number };
+	setPan: Dispatch<SetStateAction<{ x: number; y: number }>>;
+	zoomIn: () => void;
+	zoomOut: () => void;
+	zoomTo: (val: number) => void;
+	fitView: () => void;
+	mode: EditorMode;
+	setMode: Dispatch<SetStateAction<EditorMode>>;
+	isDirty: boolean;
+	setIsDirty: Dispatch<SetStateAction<boolean>>;
+	timelineScrollRef: React.RefObject<HTMLDivElement | null>;
+	timelineHeight: number;
+	setTimelineHeight: Dispatch<SetStateAction<number>>;
+	initialLayersData: Map<string, OutputItem<any>>;
+}
+
+const EditorContext = createContext<EditorContextType | undefined>(undefined);
+
+const useEditor = () => {
+	const ctx = useContext(EditorContext);
+	if (!ctx) throw new Error("useEditor must be used within EditorProvider");
+	return ctx;
+};
+
+// ---------------------------------------------------------------------------
+// Shared sub-components
+// ---------------------------------------------------------------------------
+
+const LayerIcon: React.FC<{ type: string; className?: string }> = ({
+	type,
+	className = "w-3 h-3",
+}) => {
+	const icons: Record<string, React.ReactNode> = {
+		Video: <Film className={className} />,
+		Audio: <Music className={className} />,
+		Image: <ImageIcon className={className} />,
+		SVG: <ImageIcon className={className} />,
+		Text: <Type className={className} />,
+		Caption: <Subtitles className={className} />,
+	};
+	return <>{icons[type] ?? <Layers className={className} />}</>;
+};
+
+const WithTooltip: React.FC<{
+	tip: React.ReactNode;
+	children: React.ReactElement;
+}> = ({ tip, children }) => (
+	<TooltipProvider>
+		<Tooltip>
+			<TooltipTrigger asChild>{children}</TooltipTrigger>
+			<TooltipContent>{tip}</TooltipContent>
+		</Tooltip>
+	</TooltipProvider>
+);
+
+// ---------------------------------------------------------------------------
+// TextShadowSection
+// ---------------------------------------------------------------------------
+
+const TextShadowSection: React.FC<{
+	layer: EditorLayer;
+	update: (patch: Partial<EditorLayer>) => void;
+}> = ({ layer, update }) => {
+	const shadowParams = useMemo(
+		() => parseTextShadowStr(layer.textShadow),
+		[layer.textShadow],
+	);
+	const isOn = !!layer.textShadow;
+
+	const handleToggle = (checked: boolean) => {
+		if (checked) {
+			update({ textShadow: "0px 4px 12px rgba(0,0,0,0.6)" });
+		} else {
+			update({ textShadow: undefined });
+		}
+	};
+
+	const updateParam = (key: "x" | "y" | "blur" | "color", val: any) => {
+		const current = shadowParams || {
+			x: 0,
+			y: 4,
+			blur: 12,
+			color: "rgba(0,0,0,0.6)",
+		};
+		const next = { ...current, [key]: val };
+		update({
+			textShadow: `${next.x}px ${next.y}px ${next.blur}px ${next.color}`,
+		});
+	};
+
+	if (layer.type !== "Text" && layer.type !== "Caption") return null;
+
+	return (
+		<CollapsibleSection title="Drop Shadow" icon={Blend} defaultOpen>
+			<div className="space-y-3">
+				<div className="flex items-center justify-between">
+					<div className="flex items-center gap-2">
+						<Blend className="w-3.5 h-3.5 text-purple-400" />
+						<span className="text-[11px] text-gray-300">Text Shadow</span>
+					</div>
+					<Switch
+						checked={isOn}
+						onCheckedChange={handleToggle}
+						className="data-[state=checked]:bg-purple-500"
+					/>
+				</div>
+
+				{isOn && shadowParams && (
+					<>
+						<div className="space-y-1.5">
+							<span className="text-[9px] font-bold uppercase tracking-wider text-gray-500">
+								Shadow Color
+							</span>
+							<ColorPicker
+								value={shadowParams.color}
+								onChange={(v) => updateParam("color", v)}
+							/>
+						</div>
+
+						<div className="grid grid-cols-3 gap-2">
+							<div className="space-y-1">
+								<span className="text-[9px] font-bold uppercase tracking-wider text-gray-500 block">
+									X Offset
+								</span>
+								<DraggableNumberInput
+									label="px"
+									value={shadowParams.x}
+									onChange={(v) => updateParam("x", v)}
+								/>
+							</div>
+							<div className="space-y-1">
+								<span className="text-[9px] font-bold uppercase tracking-wider text-gray-500 block">
+									Y Offset
+								</span>
+								<DraggableNumberInput
+									label="px"
+									value={shadowParams.y}
+									onChange={(v) => updateParam("y", v)}
+								/>
+							</div>
+							<div className="space-y-1">
+								<span className="text-[9px] font-bold uppercase tracking-wider text-gray-500 block">
+									Blur
+								</span>
+								<DraggableNumberInput
+									label="px"
+									value={shadowParams.blur}
+									onChange={(v) => updateParam("blur", Math.max(0, v))}
+								/>
+							</div>
+						</div>
+
+						<div className="space-y-1.5">
+							<span className="text-[9px] font-bold uppercase tracking-wider text-gray-500">
+								Quick Presets
+							</span>
+							<div className="flex gap-1.5 flex-wrap">
+								{[
+									{ label: "Soft", val: "0px 4px 12px rgba(0,0,0,0.6)" },
+									{ label: "Hard", val: "3px 3px 0px rgba(0,0,0,0.9)" },
+									{ label: "Glow", val: "0px 0px 10px rgba(255,255,255,0.8)" },
+									{ label: "Neon", val: "0px 0px 15px rgba(59,130,246,0.9)" },
+								].map((preset) => (
+									<Button
+										key={preset.label}
+										variant="outline"
+										size="sm"
+										className="h-6 text-[10px] px-2.5 border-white/10 bg-white/5 hover:bg-white/10 hover:border-white/20 text-gray-300 transition-colors"
+										onClick={() => update({ textShadow: preset.val })}
+									>
+										{preset.label}
+									</Button>
+								))}
+							</div>
+						</div>
+					</>
+				)}
+			</div>
+		</CollapsibleSection>
+	);
+};
+
+// ---------------------------------------------------------------------------
+// AnimationsInspectorSection
+// ---------------------------------------------------------------------------
+
+const AnimationsInspectorSection: React.FC<{
+	layer: EditorLayer;
+	update: (patch: Partial<EditorLayer>) => void;
+}> = ({ layer, update }) => {
+	const [addAnimOpen, setAddAnimOpen] = useState(false);
+
+	const addAnimation = (type: AnimationType) => {
+		const newAnimation: VideoAnimation = { id: generateId(), type, value: 1 };
+		update({ animations: [...(layer.animations || []), newAnimation] });
+		setAddAnimOpen(false);
+	};
+
+	const updateAnimation = (animId: string, patch: Partial<VideoAnimation>) => {
+		update({
+			animations: (layer.animations || []).map((a) =>
+				a.id === animId ? { ...a, ...patch } : a,
+			),
+		});
+	};
+
+	const removeAnimation = (animId: string) => {
+		update({
+			animations: (layer.animations || []).filter((a) => a.id !== animId),
+		});
+	};
+
+	const getAnimMeta = (type: AnimationType) => {
+		for (const cat of ANIMATION_CATEGORIES) {
+			const found = cat.animations.find((a) => a.type === type);
+			if (found) return { ...found, catColor: cat.color };
+		}
+		return { label: type, icon: Zap, catColor: "text-gray-400" };
+	};
+
+	return (
+		<CollapsibleSection title="Animations" icon={Zap} defaultOpen>
+			<div className="space-y-3">
+				{layer.animations && layer.animations.length > 0 && (
+					<div className="space-y-2">
+						{layer.animations.map((anim) => {
+							const meta = getAnimMeta(anim.type);
+							const Icon = meta.icon;
+							return (
+								<div
+									key={anim.id}
+									className="group relative bg-black/20 border border-white/10 rounded-lg p-2.5 transition-all hover:bg-black/40 hover:border-white/20"
+								>
+									<div className="flex items-center justify-between mb-2">
+										<div className="flex items-center gap-2">
+											<div
+												className={cn(
+													"p-1.5 rounded-md bg-white/5",
+													meta.catColor,
+												)}
+											>
+												<Icon className="w-3.5 h-3.5" />
+											</div>
+											<span className="text-[11px] font-medium text-gray-200">
+												{meta.label}
+											</span>
+										</div>
+										<Button
+											variant="ghost"
+											size="icon"
+											className="h-6 w-6 text-gray-500 hover:text-red-400 hover:bg-red-500/10 opacity-0 group-hover:opacity-100 transition-opacity"
+											onClick={() => removeAnimation(anim.id)}
+										>
+											<Trash2 className="w-3.5 h-3.5" />
+										</Button>
+									</div>
+									<div className="flex items-center gap-3 px-1">
+										<span className="text-[9px] font-bold uppercase tracking-wider text-gray-500">
+											Duration
+										</span>
+										<Slider
+											value={[anim.value]}
+											min={0.1}
+											max={5}
+											step={0.1}
+											onValueChange={([v]) =>
+												updateAnimation(anim.id, { value: v })
+											}
+											className="flex-1"
+										/>
+										<span className="text-[10px] font-mono text-gray-400 w-6 text-right">
+											{anim.value.toFixed(1)}s
+										</span>
+									</div>
+								</div>
+							);
+						})}
+					</div>
+				)}
+
+				<Popover open={addAnimOpen} onOpenChange={setAddAnimOpen}>
+					<PopoverTrigger asChild>
+						<Button
+							variant="outline"
+							size="sm"
+							className="w-full h-8 border-dashed border-white/20 bg-transparent hover:bg-white/5 hover:border-white/30 text-gray-300 transition-colors"
+						>
+							<Plus className="w-3.5 h-3.5 mr-1.5" /> Add Animation
+						</Button>
+					</PopoverTrigger>
+					<PopoverContent
+						className="w-56 p-2 bg-neutral-900 border-white/10 shadow-xl"
+						align="center"
+						side="bottom"
+					>
+						<ScrollArea className="h-64 pr-2 -mr-2">
+							{ANIMATION_CATEGORIES.map((cat, idx) => (
+								<div
+									key={cat.label}
+									className={cn(
+										"mb-3 last:mb-0",
+										idx > 0 && "pt-3 border-t border-white/5",
+									)}
+								>
+									<div
+										className={cn(
+											"text-[10px] font-bold uppercase tracking-wider mb-1.5 px-2",
+											cat.color,
+										)}
+									>
+										{cat.label}
+									</div>
+									<div className="space-y-0.5">
+										{cat.animations.map((a) => (
+											<Button
+												key={a.type}
+												variant="ghost"
+												size="sm"
+												className="w-full justify-start h-7 px-2 text-[11px] font-medium text-gray-300 hover:text-white hover:bg-white/10"
+												onClick={() => addAnimation(a.type)}
+											>
+												<a.icon className={cn("w-3.5 h-3.5 mr-2", cat.color)} />
+												{a.label}
+											</Button>
+										))}
+									</div>
+								</div>
+							))}
+						</ScrollArea>
+					</PopoverContent>
+				</Popover>
+			</div>
+		</CollapsibleSection>
+	);
+};
+
+// ---------------------------------------------------------------------------
+// TextBoxSection
+// ---------------------------------------------------------------------------
+
+const TextBoxSection: React.FC<{
+	layer: EditorLayer;
+	update: (patch: Partial<EditorLayer>) => void;
+}> = ({ layer, update }) => {
+	const isOn = layer.useRoundedTextBox === true;
+
+	const handleToggle = (checked: boolean) => {
+		if (checked) {
+			update({
+				useRoundedTextBox: true,
+				backgroundColor:
+					layer.backgroundColor ?? ROUNDED_BOX_DEFAULTS.backgroundColor,
+				padding: layer.padding ?? ROUNDED_BOX_DEFAULTS.padding,
+				borderRadius: layer.borderRadius ?? ROUNDED_BOX_DEFAULTS.borderRadius,
+			});
+		} else {
+			update({
+				useRoundedTextBox: false,
+				backgroundColor: undefined,
+			});
+		}
+	};
+
+	return (
+		<CollapsibleSection title="Text Box" icon={Box} defaultOpen>
+			<div className="space-y-3">
+				<div className="flex items-center justify-between">
+					<div className="flex items-center gap-2">
+						<Box className="w-3.5 h-3.5 text-blue-400" />
+						<span className="text-[11px] text-gray-300">
+							Rounded Background
+						</span>
+					</div>
+					<Switch
+						checked={isOn}
+						onCheckedChange={handleToggle}
+						className="data-[state=checked]:bg-blue-500"
+					/>
+				</div>
+
+				{isOn && (
+					<>
+						<div className="space-y-1.5">
+							<span className="text-[9px] font-bold uppercase tracking-wider text-gray-500">
+								Background Colour
+							</span>
+							<ColorPicker
+								value={
+									layer.backgroundColor ?? ROUNDED_BOX_DEFAULTS.backgroundColor
+								}
+								onChange={(v) => update({ backgroundColor: v })}
+							/>
+						</div>
+
+						<div className="grid grid-cols-2 gap-2">
+							<div className="space-y-1">
+								<span className="text-[9px] font-bold uppercase tracking-wider text-gray-500 block">
+									H-Padding
+								</span>
+								<DraggableNumberInput
+									label="px"
+									icon={MoveHorizontal}
+									value={layer.padding ?? ROUNDED_BOX_DEFAULTS.padding}
+									onChange={(v) => update({ padding: Math.max(0, v) })}
+								/>
+							</div>
+							<div className="space-y-1">
+								<span className="text-[9px] font-bold uppercase tracking-wider text-gray-500 block">
+									Corner Radius
+								</span>
+								<DraggableNumberInput
+									label="px"
+									icon={Box}
+									value={
+										layer.borderRadius ?? ROUNDED_BOX_DEFAULTS.borderRadius
+									}
+									onChange={(v) => update({ borderRadius: Math.max(0, v) })}
+								/>
+							</div>
+						</div>
+
+						<div className="space-y-1.5">
+							<span className="text-[9px] font-bold uppercase tracking-wider text-gray-500">
+								Quick Presets
+							</span>
+							<div className="flex gap-1.5 flex-wrap">
+								{[
+									{
+										label: "Pill",
+										padding: 20,
+										borderRadius: 999,
+										backgroundColor: "rgba(0,0,0,0.75)",
+									},
+									{
+										label: "Chip",
+										padding: 12,
+										borderRadius: 6,
+										backgroundColor: "rgba(0,0,0,0.6)",
+									},
+									{
+										label: "Bold",
+										padding: 16,
+										borderRadius: 4,
+										backgroundColor: "#000000",
+									},
+									{
+										label: "Soft",
+										padding: 18,
+										borderRadius: 16,
+										backgroundColor: "rgba(255,255,255,0.15)",
+									},
+								].map((preset) => (
+									<Button
+										key={preset.label}
+										variant="outline"
+										size="sm"
+										className="h-6 text-[10px] px-2.5 border-white/10 bg-white/5 hover:bg-white/10 hover:border-white/20 text-gray-300"
+										onClick={() =>
+											update({
+												padding: preset.padding,
+												borderRadius: preset.borderRadius,
+												backgroundColor: preset.backgroundColor,
+											})
+										}
+									>
+										{preset.label}
+									</Button>
+								))}
+							</div>
+						</div>
+					</>
+				)}
+			</div>
+		</CollapsibleSection>
+	);
+};
+
+// ---------------------------------------------------------------------------
+// UnifiedClip
+// ---------------------------------------------------------------------------
+
+const UnifiedClip: React.FC<{ layer: EditorLayer; isSelected: boolean }> = ({
+	layer,
+	isSelected,
+}) => {
+	const handles = useAppSelector(handleSelectors.selectEntities);
+	const handleId = layer.inputHandleId ?? "";
+	const handle = handleId ? handles[handleId] : undefined;
+	const name = resolveLayerLabel(handle, layer);
+	const baseConfig = resolveColorConfig(layer);
+
+	return (
+		<div
+			className={`h-full w-full relative overflow-hidden rounded-md transition-all duration-75 border ${baseConfig.bg} ${baseConfig.border} ${
+				isSelected
+					? "brightness-110 ring-2 ring-white/70 shadow-lg"
+					: "opacity-90 hover:opacity-100 hover:brightness-105"
+			}`}
+		>
+			<div
+				className="absolute inset-0 opacity-10 pointer-events-none"
+				style={{
+					backgroundImage:
+						"linear-gradient(45deg,rgba(0,0,0,.1) 25%,transparent 25%,transparent 50%,rgba(0,0,0,.1) 50%,rgba(0,0,0,.1) 75%,transparent 75%,transparent)",
+					backgroundSize: "10px 10px",
+				}}
+			/>
+			{layer.useRoundedTextBox && (
+				<div className="absolute right-1 top-1/2 -translate-y-1/2 flex items-center gap-0.5 bg-blue-500/20 px-1 py-0.5 rounded text-[8px] font-bold text-blue-300 border border-blue-500/30 pointer-events-none">
+					<Box className="w-2 h-2" />
+					BOX
+				</div>
+			)}
+			<div className="absolute inset-0 px-2 flex items-center justify-between pointer-events-none">
+				<div className="flex items-center gap-1.5 min-w-0">
+					<LayerIcon
+						type={layer.type}
+						className="w-3 h-3 text-white/90 shrink-0"
+					/>
+					<span className="text-[10px] text-white font-medium truncate drop-shadow-md select-none">
+						{name}
+					</span>
+				</div>
+			</div>
+			{isSelected && (
+				<>
+					<div className="absolute left-0 top-0 bottom-0 w-1 bg-white/30" />
+					<div className="absolute right-0 top-0 bottom-0 w-1 bg-white/30" />
+				</>
+			)}
+		</div>
+	);
+};
+
+// ---------------------------------------------------------------------------
+// InteractionOverlay
+// ---------------------------------------------------------------------------
+
+const RESIZE_HANDLE_CONFIG: Array<{
+	pos: ResizeAnchor;
+	cursor: string;
+	posClass: string;
+}> = [
+	{ pos: "tl", cursor: "cursor-nwse-resize", posClass: "-top-1.5 -left-1.5" },
+	{
+		pos: "t",
+		cursor: "cursor-ns-resize",
+		posClass: "-top-1.5 left-1/2 -translate-x-1/2",
+	},
+	{ pos: "tr", cursor: "cursor-nesw-resize", posClass: "-top-1.5 -right-1.5" },
+	{
+		pos: "r",
+		cursor: "cursor-ew-resize",
+		posClass: "top-1/2 -right-1.5 -translate-y-1/2",
+	},
+	{
+		pos: "br",
+		cursor: "cursor-nwse-resize",
+		posClass: "-bottom-1.5 -right-1.5",
+	},
+	{
+		pos: "b",
+		cursor: "cursor-ns-resize",
+		posClass: "-bottom-1.5 left-1/2 -translate-x-1/2",
+	},
+	{
+		pos: "bl",
+		cursor: "cursor-nesw-resize",
+		posClass: "-bottom-1.5 -left-1.5",
+	},
+	{
+		pos: "l",
+		cursor: "cursor-ew-resize",
+		posClass: "top-1/2 -left-1.5 -translate-y-1/2",
+	},
+];
+
+const InteractionOverlay: React.FC = () => {
+	const {
+		layers,
+		selectedId,
+		setSelectedId,
+		updateLayers,
+		zoom,
+		pan,
+		viewportWidth,
+		viewportHeight,
+		currentFrame,
+		mode,
+		setPan,
+	} = useEditor();
+
+	const [isDragging, setIsDragging] = useState(false);
+	const [isResizing, setIsResizing] = useState(false);
+	const [isRotating, setIsRotating] = useState(false);
+	const [isPanning, setIsPanning] = useState(false);
+	const [resizeAnchor, setResizeAnchor] = useState<ResizeAnchor | null>(null);
+	const [dragStart, setDragStart] = useState({ x: 0, y: 0 });
+	const [initialPan, setInitialPan] = useState({ x: 0, y: 0 });
+	const [initialPos, setInitialPos] = useState({
+		x: 0,
+		y: 0,
+		width: 0,
+		height: 0,
+		rotation: 0,
+		scale: 1,
+	});
+	const [initialAngle, setInitialAngle] = useState(0);
+
+	const visibleLayers = layers
+		.filter(
+			(l) =>
+				l.type !== "Audio" &&
+				currentFrame >= (l.startFrame ?? 0) &&
+				currentFrame <
+					(l.startFrame ?? 0) +
+						((l.durationInMS ?? DEFAULT_DURATION_MS) / 1000) * FPS,
+		)
+		.sort((a, b) => (a.zIndex ?? 0) - (b.zIndex ?? 0));
+
+	const captureLayer = (layerId: string) => {
+		const layer = layers.find((l) => l.id === layerId);
+		if (!layer) return null;
+		return {
+			x: layer.x,
+			y: layer.y,
+			width: layer.width ?? 0,
+			height: layer.height ?? 0,
+			rotation: layer.rotation,
+			scale: layer.scale ?? 1,
+		};
+	};
+
+	const handleMouseDown = (
+		e: React.MouseEvent,
+		layerId?: string,
+		anchor?: ResizeAnchor,
+	) => {
+		if (e.button === 1 || mode === "pan") {
+			e.preventDefault();
+			setIsPanning(true);
+			setDragStart({ x: e.clientX, y: e.clientY });
+			setInitialPan({ x: pan.x, y: pan.y });
+			return;
+		}
+		if (e.button !== 0) return;
+		e.stopPropagation();
+		if (!layerId) {
+			setSelectedId(null);
+			return;
+		}
+		const pos = captureLayer(layerId);
+		if (!pos) return;
+		setSelectedId(layerId);
+		setDragStart({ x: e.clientX, y: e.clientY });
+		setInitialPos(pos);
+		if (anchor) {
+			setIsResizing(true);
+			setResizeAnchor(anchor);
+		} else {
+			setIsDragging(true);
+		}
+	};
+
+	const handleRotateStart = (e: React.MouseEvent, layerId: string) => {
+		e.stopPropagation();
+		e.preventDefault();
+		setSelectedId(layerId);
+		const pos = captureLayer(layerId);
+		if (!pos) return;
+		const centerX = pos.x + pos.width / 2;
+		const centerY = pos.y + pos.height / 2;
+		setInitialAngle(
+			Math.atan2(
+				e.clientY - (centerY * zoom + pan.y),
+				e.clientX - (centerX * zoom + pan.x),
+			),
+		);
+		setInitialPos(pos);
+		setIsRotating(true);
+	};
+
+	const handleMouseMove = (e: React.MouseEvent) => {
+		if (isPanning) {
+			setPan({
+				x: initialPan.x + (e.clientX - dragStart.x),
+				y: initialPan.y + (e.clientY - dragStart.y),
+			});
+			return;
+		}
+		if (!selectedId) return;
+
+		const dx = (e.clientX - dragStart.x) / zoom;
+		const dy = (e.clientY - dragStart.y) / zoom;
+
+		if (isDragging) {
+			updateLayers((prev) =>
+				prev.map((l) =>
+					l.id === selectedId
+						? {
+								...l,
+								x: Math.round(initialPos.x + dx),
+								y: Math.round(initialPos.y + dy),
+							}
+						: l,
+				),
+			);
+			return;
+		}
+
+		if (isResizing && resizeAnchor) {
+			const layer = layers.find((l) => l.id === selectedId);
+			const theta = initialPos.rotation * (Math.PI / 180);
+			const cos = Math.cos(theta);
+			const sin = Math.sin(theta);
+			const localDx = (cos * dx + sin * dy) / initialPos.scale;
+			const localDy = (-sin * dx + cos * dy) / initialPos.scale;
+
+			let effectiveAnchor = resizeAnchor;
+			if (layer?.lockAspect) {
+				if (resizeAnchor === "r") effectiveAnchor = "br";
+				if (resizeAnchor === "l") effectiveAnchor = "bl";
+				if (resizeAnchor === "b") effectiveAnchor = "br";
+				if (resizeAnchor === "t") effectiveAnchor = "tr";
+			}
+
+			const signW = effectiveAnchor.includes("l")
+				? -1
+				: effectiveAnchor.includes("r")
+					? 1
+					: 0;
+			const signH = effectiveAnchor.includes("t")
+				? -1
+				: effectiveAnchor.includes("b")
+					? 1
+					: 0;
+
+			let changeW = signW !== 0 ? localDx * signW : 0;
+			let changeH = signH !== 0 ? localDy * signH : 0;
+
+			if (layer?.lockAspect) {
+				const ratio = initialPos.height / initialPos.width || 1;
+				if (resizeAnchor === "r" || resizeAnchor === "l")
+					changeH = changeW * ratio;
+				else if (resizeAnchor === "b" || resizeAnchor === "t")
+					changeW = changeH / ratio;
+				else {
+					if (Math.abs(changeW) * ratio > Math.abs(changeH))
+						changeH = changeW * ratio;
+					else changeW = changeH / ratio;
+				}
+			}
+
+			const newWidth = Math.max(10, initialPos.width + changeW);
+			const newHeight = Math.max(10, initialPos.height + changeH);
+			const diffW = newWidth - initialPos.width;
+			const diffH = newHeight - initialPos.height;
+
+			const localShiftX = effectiveAnchor.includes("r")
+				? diffW / 2
+				: effectiveAnchor.includes("l")
+					? -diffW / 2
+					: 0;
+			const localShiftY = effectiveAnchor.includes("b")
+				? diffH / 2
+				: effectiveAnchor.includes("t")
+					? -diffH / 2
+					: 0;
+
+			updateLayers((prev) =>
+				prev.map((l) =>
+					l.id === selectedId
+						? {
+								...l,
+								width: Math.round(newWidth),
+								height: Math.round(newHeight),
+								x: Math.round(
+									initialPos.x +
+										(cos * localShiftX - sin * localShiftY) -
+										diffW / 2,
+								),
+								y: Math.round(
+									initialPos.y +
+										(sin * localShiftX + cos * localShiftY) -
+										diffH / 2,
+								),
+								autoDimensions: false,
+							}
+						: l,
+				),
+			);
+			return;
+		}
+
+		if (isRotating) {
+			const layer = layers.find((l) => l.id === selectedId);
+			if (!layer) return;
+			const centerX = layer.x + (layer.width ?? 0) / 2;
+			const centerY = layer.y + (layer.height ?? 0) / 2;
+			const currentAngle = Math.atan2(
+				e.clientY - (centerY * zoom + pan.y),
+				e.clientX - (centerX * zoom + pan.x),
+			);
+			const newRot =
+				initialPos.rotation + ((currentAngle - initialAngle) * 180) / Math.PI;
+			updateLayers((prev) =>
+				prev.map((l) =>
+					l.id === selectedId ? { ...l, rotation: Math.round(newRot) } : l,
+				),
+			);
+		}
+	};
+
+	const handleMouseUp = () => {
+		setIsDragging(false);
+		setIsResizing(false);
+		setResizeAnchor(null);
+		setIsRotating(false);
+		setIsPanning(false);
+	};
+
+	return (
+		<div
+			className="absolute inset-0 z-10 overflow-hidden outline-none"
+			style={{ cursor: isPanning || mode === "pan" ? "grab" : "default" }}
+			onMouseMove={handleMouseMove}
+			onMouseUp={handleMouseUp}
+			onMouseLeave={handleMouseUp}
+			onMouseDown={handleMouseDown}
+			role="button"
+			tabIndex={0}
+		>
+			<div
+				className="absolute origin-top-left"
+				style={{
+					width: viewportWidth,
+					height: viewportHeight,
+					transform: `translate(${pan.x}px, ${pan.y}px) scale(${zoom})`,
+				}}
+			>
+				{visibleLayers.map((layer) => (
+					<button
+						key={layer.id}
+						type="button"
+						onKeyDown={(e: React.KeyboardEvent) => {
+							if (e.key === "Enter") setSelectedId(layer.id);
+						}}
+						onMouseDown={(e: React.MouseEvent) => handleMouseDown(e, layer.id)}
+						className={`absolute group outline-none select-none p-0 m-0 border-0 bg-transparent text-left ${
+							selectedId === layer.id ? "z-50" : "z-auto"
+						}`}
+						style={{
+							left: layer.x,
+							top: layer.y,
+							width: layer.width,
+							height: layer.height,
+							transform: `rotate(${layer.rotation}deg) scale(${layer.scale})`,
+							transformOrigin: "center center",
+							boxSizing: "border-box",
+						}}
+					>
+						<div
+							className={`absolute inset-0 pointer-events-none transition-all duration-150 ${
+								selectedId === layer.id
+									? "border-2 border-blue-500 shadow-[0_0_0_1px_rgba(59,130,246,0.2)]"
+									: "border border-transparent group-hover:border-blue-400/50"
+							}`}
+						/>
+						{selectedId === layer.id && (
+							<>
+								{layer.type !== "Text" &&
+									!isCaptionLayer(layer.type) &&
+									RESIZE_HANDLE_CONFIG.map(({ pos, cursor, posClass }) => (
+										<div
+											key={pos}
+											role="button"
+											tabIndex={-1}
+											className={`absolute bg-white border border-blue-600 rounded-full shadow-sm z-50 transition-transform hover:scale-125 ${
+												pos.length === 1 ? "w-2.5 h-2.5" : "w-3 h-3"
+											} ${posClass} ${cursor}`}
+											onMouseDown={(e: React.MouseEvent) =>
+												handleMouseDown(e, layer.id, pos)
+											}
+										/>
+									))}
+								<div
+									className="absolute -top-6 left-1/2 -translate-x-1/2 h-6 w-px bg-blue-500"
+									style={{ transform: `scaleX(${1 / zoom})` }}
+								/>
+								<div
+									role="button"
+									tabIndex={-1}
+									className="absolute -top-8 left-1/2 -translate-x-1/2 w-3 h-3 bg-white border border-blue-600 rounded-full shadow-sm cursor-grab active:cursor-grabbing hover:scale-110"
+									onMouseDown={(e: React.MouseEvent) =>
+										handleRotateStart(e, layer.id)
+									}
+								/>
+							</>
+						)}
+					</button>
+				))}
+			</div>
+		</div>
+	);
+};
+
+// ---------------------------------------------------------------------------
+// Toolbar
+// ---------------------------------------------------------------------------
+
+const Toolbar: React.FC<{
+	onClose: () => void;
+	onSave: () => void;
+	timeRef: React.RefObject<HTMLDivElement | null>;
+}> = ({ onClose, onSave, timeRef }) => {
+	const {
+		zoom,
+		zoomIn,
+		zoomOut,
+		zoomTo,
+		fitView,
+		isDirty,
+		isPlaying,
+		setIsPlaying,
+		playerRef,
+		currentFrame,
+		fps,
+		mode,
+		setMode,
+	} = useEditor();
+	const [showCloseDialog, setShowCloseDialog] = useState(false);
+
+	const handlePlayPause = () => {
+		if (playerRef.current) {
+			if (isPlaying) playerRef.current.pause();
+			else playerRef.current.play();
+			setIsPlaying(!isPlaying);
+		}
+	};
+
+	const zoomMenuItems = [
+		{ label: "Zoom In", shortcut: "+", action: zoomIn },
+		{ label: "Zoom Out", shortcut: "-", action: zoomOut },
+		{ label: "100%", shortcut: "1", action: () => zoomTo(1) },
+		{ label: "Fit to Screen", shortcut: "0", action: fitView },
+	];
+
+	return (
+		<>
+			<TooltipProvider>
+				<div className="flex items-center gap-1.5 p-1.5 rounded-full border border-border/50 bg-background/80 backdrop-blur-md shadow-2xl ring-1 ring-white/5 z-50">
+					<Tooltip>
+						<TooltipTrigger asChild>
+							<Button
+								variant="ghost"
+								size="icon"
+								className={`rounded-full w-9 h-9 transition-colors ${
+									isPlaying
+										? "bg-red-500/20 text-red-400 hover:bg-red-500/30"
+										: "hover:bg-white/10 text-white"
+								}`}
+								onClick={handlePlayPause}
+							>
+								{isPlaying ? (
+									<Pause className="w-4 h-4 fill-current" />
+								) : (
+									<Play className="w-4 h-4 fill-current ml-0.5" />
+								)}
+							</Button>
+						</TooltipTrigger>
+						<TooltipContent>
+							<p>{isPlaying ? "Pause (Space)" : "Play (Space)"}</p>
+						</TooltipContent>
+					</Tooltip>
+
+					<div className="w-px h-5 bg-white/10 mx-1" />
+
+					<div
+						ref={timeRef}
+						className="text-[11px] font-mono tabular-nums text-neutral-300 min-w-17.5 text-center select-none cursor-default"
+					>
+						{Math.floor(currentFrame / fps)}s :{" "}
+						{(currentFrame % fps).toString().padStart(2, "0")}f
+					</div>
+
+					<div className="w-px h-5 bg-white/10 mx-1" />
+
+					<div className="flex rounded-full p-0.5">
+						{(["select", "pan"] as const).map((m) => (
+							<Tooltip key={m}>
+								<TooltipTrigger asChild>
+									<Button
+										variant={mode === m ? "secondary" : "ghost"}
+										size="icon"
+										className="rounded-full w-8 h-8"
+										onClick={() => setMode(m)}
+									>
+										{m === "select" ? (
+											<MousePointer className="w-3.5 h-3.5" />
+										) : (
+											<Hand className="w-3.5 h-3.5" />
+										)}
+									</Button>
+								</TooltipTrigger>
+								<TooltipContent>
+									{m === "select"
+										? "Select Tool (V)"
+										: "Pan Tool (H) or hold Space"}
+								</TooltipContent>
+							</Tooltip>
+						))}
+					</div>
+
+					<div className="w-px h-5 bg-white/10 mx-1" />
+
+					<Menubar className="border-none bg-transparent h-auto p-0">
+						<MenubarMenu>
+							<MenubarTrigger asChild>
+								<Button
+									variant="ghost"
+									className="h-8 px-3 text-[11px] rounded-full text-gray-300 hover:text-white hover:bg-white/10 font-medium min-w-20 justify-between"
+								>
+									{Math.round(zoom * 100)}%
+									<ChevronDown className="w-3 h-3 ml-1.5 opacity-50" />
+								</Button>
+							</MenubarTrigger>
+							<MenubarContent
+								align="center"
+								className="min-w-40 bg-neutral-900/95 backdrop-blur-xl border-white/10 text-gray-200"
+							>
+								{zoomMenuItems.map(({ label, shortcut, action }) => (
+									<MenubarItem key={label} onClick={action}>
+										<span className="flex-1">{label}</span>
+										<span className="text-xs text-gray-500 ml-4">
+											{shortcut}
+										</span>
+									</MenubarItem>
+								))}
+							</MenubarContent>
+						</MenubarMenu>
+					</Menubar>
+
+					<div className="w-px h-5 bg-white/10 mx-1" />
+
+					<div className="flex items-center gap-1">
+						<Tooltip>
+							<TooltipTrigger asChild>
+								<Button
+									size="sm"
+									variant="default"
+									className="h-8 text-[11px] font-semibold rounded-full px-4"
+									onClick={onSave}
+									disabled={!isDirty}
+								>
+									<Save className="w-3.5 h-3.5 mr-1" /> Save
+								</Button>
+							</TooltipTrigger>
+							<TooltipContent>Save (⌘S)</TooltipContent>
+						</Tooltip>
+						<Tooltip>
+							<TooltipTrigger asChild>
+								<Button
+									size="icon"
+									variant="ghost"
+									className="h-8 w-8 rounded-full text-gray-400 hover:text-white hover:bg-white/10"
+									onClick={() =>
+										isDirty ? setShowCloseDialog(true) : onClose()
+									}
+								>
+									<XIcon className="w-4 h-4" />
+								</Button>
+							</TooltipTrigger>
+							<TooltipContent>Close (Esc)</TooltipContent>
+						</Tooltip>
+					</div>
+				</div>
+			</TooltipProvider>
+
+			<AlertDialog open={showCloseDialog} onOpenChange={setShowCloseDialog}>
+				<AlertDialogContent className="bg-neutral-900 border-white/10">
+					<AlertDialogHeader>
+						<AlertDialogTitle className="text-white">
+							Unsaved Changes
+						</AlertDialogTitle>
+						<AlertDialogDescription className="text-gray-400">
+							You have unsaved changes in this composition. Would you like to
+							save before closing?
+						</AlertDialogDescription>
+					</AlertDialogHeader>
+					<AlertDialogFooter>
+						<AlertDialogCancel
+							onClick={() => setShowCloseDialog(false)}
+							className="bg-transparent border-white/10 text-gray-300 hover:bg-white/5 hover:text-white"
+						>
+							Cancel
+						</AlertDialogCancel>
+						<Button
+							variant="destructive"
+							onClick={() => {
+								setShowCloseDialog(false);
+								onClose();
+							}}
+							className="bg-red-500/20 text-red-400 hover:bg-red-500/30 border-0"
+						>
+							Discard
+						</Button>
+						<AlertDialogAction
+							onClick={() => {
+								onSave();
+								setShowCloseDialog(false);
+								onClose();
+							}}
+							className="bg-primary text-primary-foreground hover:bg-primary/90"
+						>
+							Save & Close
+						</AlertDialogAction>
+					</AlertDialogFooter>
+				</AlertDialogContent>
+			</AlertDialog>
+		</>
+	);
+};
+
+// ---------------------------------------------------------------------------
+// SortableTrackHeader
+// ---------------------------------------------------------------------------
+
+const SortableTrackHeader: React.FC<{
+	layer: EditorLayer;
+	isSelected: boolean;
+	onSelect: () => void;
+}> = ({ layer, isSelected, onSelect }) => {
+	const {
+		attributes,
+		listeners,
+		setNodeRef,
+		transform,
+		transition,
+		isDragging,
+	} = useSortable({ id: layer.id });
+	const handles = useAppSelector(handleSelectors.selectEntities);
+	const handleId = layer.inputHandleId ?? "";
+	const handle = handleId ? handles[handleId] : undefined;
+	const name = resolveLayerLabel(handle, layer);
+	const colorConfig = resolveColorConfig(layer);
+
+	return (
+		<button
+			ref={setNodeRef}
+			style={{
+				transform: CSS.Transform.toString(transform),
+				transition,
+				height: TRACK_HEIGHT,
+				minHeight: `${TRACK_HEIGHT}px`,
+				zIndex: isDragging ? 999 : "auto",
+			}}
+			type="button"
+			className={`w-full text-left p-0 m-0 bg-transparent border-0 border-b border-white/5 flex items-center pl-3 pr-2 text-xs gap-3 group outline-none transition-colors select-none ${
+				isSelected
+					? "bg-white/5 text-blue-100"
+					: "hover:bg-white/5 text-gray-400"
+			} ${isDragging ? "opacity-50 bg-neutral-900" : ""}`}
+			onClick={onSelect}
+		>
+			<div
+				{...attributes}
+				{...listeners}
+				className="cursor-grab active:cursor-grabbing p-1.5 text-gray-600 hover:text-gray-300 transition-colors rounded hover:bg-white/5"
+			>
+				<GripVertical className="h-3.5 w-3.5" />
+			</div>
+			<div className="flex-1 flex items-center gap-2.5 min-w-0">
+				<div
+					className={`w-6 h-6 rounded flex items-center justify-center ${
+						colorConfig ? `${colorConfig.bg}/20 ${colorConfig.text}` : ""
+					}`}
+				>
+					<LayerIcon type={layer.type} className="w-3.5 h-3.5" />
+				</div>
+				<span className="truncate font-medium text-[11px] leading-tight opacity-80">
+					{name}
+				</span>
+			</div>
+			{layer.animations && layer.animations.length > 0 && (
+				<WithTooltip tip="Animations applied">
+					<div className="p-1 rounded bg-amber-500/10">
+						<Zap className="w-3 h-3 text-amber-400" />
+					</div>
+				</WithTooltip>
+			)}
+			{layer.useRoundedTextBox && (
+				<WithTooltip tip="Rounded text box active">
+					<div className="p-1 rounded bg-blue-500/10">
+						<Box className="w-3 h-3 text-blue-400" />
+					</div>
+				</WithTooltip>
+			)}
+		</button>
+	);
+};
+
+const formatTimecode = (totalSeconds: number): string => {
+	const h = Math.floor(totalSeconds / 3600);
+	const m = Math.floor((totalSeconds % 3600) / 60);
+	const s = Math.floor(totalSeconds % 60);
+
+	const pad = (n: number) => n.toString().padStart(2, "0");
+
+	if (h > 0) return `${h}:${pad(m)}:${pad(s)}`;
+	return `${pad(m)}:${pad(s)}`;
+};
+
+const TimelinePanel: React.FC = () => {
+	const {
+		layers,
+		updateLayers,
+		durationInMS,
+		currentFrame,
+		setCurrentFrame,
+		playerRef,
+		selectedId,
+		setSelectedId,
+		isPlaying,
+		fps,
+		timelineScrollRef: scrollContainerRef,
+		timelineHeight,
+		setTimelineHeight,
+		initialLayersData,
+	} = useEditor();
+
+	const playheadRef = useRef<HTMLDivElement>(null);
+	const [isPanningTimeline, setIsPanningTimeline] = useState(false);
+	const [dragStartX, setDragStartX] = useState(0);
+	const [initialScroll, setInitialScroll] = useState(0);
+	const [pixelsPerFrame, setPixelsPerFrame] = useState(10);
+	const [isResizingTimeline, setIsResizingTimeline] = useState(false);
+
+	const sortedLayers = [...layers].sort(
+		(a, b) => (b.zIndex ?? 0) - (a.zIndex ?? 0),
+	);
+
+	const sensors = useSensors(
+		useSensor(PointerSensor, { activationConstraint: { distance: 5 } }),
+		useSensor(KeyboardSensor, {
+			coordinateGetter: sortableKeyboardCoordinates,
+		}),
+	);
+
+	const handleDragEnd = (event: DragEndEvent) => {
+		const { active, over } = event;
+		if (!over || active.id === over.id) return;
+		const oldIndex = sortedLayers.findIndex((l) => l.id === active.id);
+		const newIndex = sortedLayers.findIndex((l) => l.id === over.id);
+		const newSorted = arrayMove(sortedLayers, oldIndex, newIndex).map(
+			(l, idx, arr) => ({
+				...l,
+				zIndex: arr.length - idx,
+			}),
+		);
+		updateLayers((prev) => {
+			const updateMap = new Map(newSorted.map((l) => [l.id, l]));
+			return prev.map((l) => updateMap.get(l.id) || l);
+		});
+	};
+
+	useEffect(() => {
+		let rafId: number | null = null;
+		const loop = () => {
+			if (playerRef.current) {
+				const frame = playerRef.current.getCurrentFrame();
+				if (playheadRef.current) {
+					playheadRef.current.style.transform = `translateX(${
+						frame * pixelsPerFrame
+					}px)`;
+				}
+				if (isPlaying && scrollContainerRef.current) {
+					const x = frame * pixelsPerFrame;
+					const width = scrollContainerRef.current.clientWidth - HEADER_WIDTH;
+					const scroll = scrollContainerRef.current.scrollLeft;
+					if (x > scroll + width - 150)
+						scrollContainerRef.current.scrollLeft = x - 150;
+				}
+			}
+			rafId = requestAnimationFrame(loop);
+		};
+		if (isPlaying) {
+			loop();
+		} else if (playheadRef.current) {
+			playheadRef.current.style.transform = `translateX(${
+				currentFrame * pixelsPerFrame
+			}px)`;
+		}
+		return () => {
+			if (rafId) cancelAnimationFrame(rafId);
+		};
+	}, [isPlaying, currentFrame, pixelsPerFrame, playerRef]);
+
+	const handleTimelineClick = (e: React.MouseEvent) => {
+		const rect = e.currentTarget.getBoundingClientRect();
+		const frame = Math.max(
+			0,
+			Math.floor((e.clientX - rect.left) / pixelsPerFrame),
+		);
+		playerRef.current?.seekTo(frame);
+		setCurrentFrame(frame);
+	};
+
+	const handleClipManipulation = (
+		e: React.MouseEvent,
+		layerId: string,
+		type: "move" | "trim",
+	) => {
+		e.stopPropagation();
+		const layer = layers.find((l) => l.id === layerId);
+		if (!layer) return;
+		const startX = e.clientX;
+		const initialStart = layer.startFrame ?? 0;
+		const initialDuration = layer.durationInMS ?? DEFAULT_DURATION_MS;
+
+		const onMove = (ev: MouseEvent) => {
+			const diffFrames = Math.round((ev.clientX - startX) / pixelsPerFrame);
+			if (type === "move") {
+				updateLayers((prev) =>
+					prev.map((l) =>
+						l.id === layerId
+							? { ...l, startFrame: Math.max(0, initialStart + diffFrames) }
+							: l,
+					),
+				);
+			} else {
+				const diffMS = (diffFrames / fps) * 1000;
+				let newDuration = Math.max(1, initialDuration + diffMS);
+				const initialItem = initialLayersData.get(layerId);
+				if (
+					initialItem &&
+					(initialItem.type === "Video" || initialItem.type === "Audio")
+				) {
+					const metadata = getActiveMediaMetadata(
+						initialItem.data as VirtualMediaData,
+					);
+					if (metadata?.durationMs) {
+						newDuration = Math.min(newDuration, metadata.durationMs);
+					}
+				}
+				updateLayers((prev) =>
+					prev.map((l) =>
+						l.id === layerId ? { ...l, durationInMS: newDuration } : l,
+					),
+				);
+			}
+		};
+		const onUp = () => {
+			window.removeEventListener("mousemove", onMove);
+			window.removeEventListener("mouseup", onUp);
+		};
+		window.addEventListener("mousemove", onMove);
+		window.addEventListener("mouseup", onUp);
+	};
+
+	const handleTimelineResize = (e: React.MouseEvent) => {
+		e.preventDefault();
+		const startY = e.clientY;
+		const startHeight = timelineHeight;
+		setIsResizingTimeline(true);
+		const onMove = (ev: MouseEvent) => {
+			setTimelineHeight(
+				Math.min(
+					MAX_TIMELINE_HEIGHT,
+					Math.max(MIN_TIMELINE_HEIGHT, startHeight + (startY - ev.clientY)),
+				),
+			);
+		};
+		const onUp = () => {
+			setIsResizingTimeline(false);
+			window.removeEventListener("mousemove", onMove);
+			window.removeEventListener("mouseup", onUp);
+		};
+		window.addEventListener("mousemove", onMove);
+		window.addEventListener("mouseup", onUp);
+	};
+
+	// --- Dynamic Scaling Engine ---
+	const pixelsPerSecond = fps * pixelsPerFrame;
+
+	const { majorTickSeconds, minorTickSeconds } = useMemo(() => {
+		const minSpacingPx = 90; // Minimum pixel gap between time labels to avoid crowding
+		const targetSeconds = minSpacingPx / pixelsPerSecond;
+
+		// Snappy, human-readable time intervals
+		const steps = [
+			0.5,
+			1,
+			2,
+			5,
+			10,
+			15,
+			30, // Seconds
+			60,
+			120,
+			300,
+			600,
+			900,
+			1800, // 1m, 2m, 5m, 10m, 15m, 30m
+			3600,
+			7200, // 1h, 2h
+		];
+
+		// Find the most appropriate major tick step
+		const major =
+			steps.find((step) => step >= targetSeconds) || steps[steps.length - 1];
+
+		// Define minor divisions based on major step
+		let minor = major / 5; // Default division
+		if (major === 0.5) minor = 0.1;
+		else if (major === 1) minor = 0.25;
+		else if (major === 2) minor = 0.5;
+		else if (major === 15) minor = 5;
+		else if (major === 30) minor = 10;
+		else if (major >= 60) minor = major / 4;
+
+		return { majorTickSeconds: major, minorTickSeconds: minor };
+	}, [pixelsPerSecond]);
+
+	const totalSeconds = durationInMS / 1000;
+	const ticksCount = Math.ceil(totalSeconds / majorTickSeconds) + 2; // +2 for buffer
+	const patternWidth = majorTickSeconds * pixelsPerSecond;
+	const subTicksCount = Math.round(majorTickSeconds / minorTickSeconds);
+
+	return (
+		<div
+			className="flex flex-col border-t border-white/10 bg-[#0f0f0f] shrink-0 select-none z-30 shadow-[0_-5px_20px_rgba(0,0,0,0.5)]"
+			style={{ height: timelineHeight }}
+		>
+			<div
+				className={`h-1.5 flex items-center justify-center cursor-ns-resize hover:bg-white/10 transition-colors group ${
+					isResizingTimeline ? "bg-blue-500/20" : ""
+				}`}
+				onMouseDown={handleTimelineResize}
+			>
+				<GripHorizontal className="w-6 h-3 text-gray-600 group-hover:text-gray-400 transition-colors" />
+			</div>
+
+			<div className="h-8 border-b border-white/5 flex items-center justify-between px-3 bg-neutral-900 shrink-0 z-40">
+				<div className="text-[10px] font-bold text-neutral-400 tracking-wider flex items-center gap-1.5">
+					<Layers className="w-3.5 h-3.5" /> TIMELINE
+				</div>
+				<div className="flex items-center gap-2">
+					<Button
+						variant="ghost"
+						size="icon"
+						className="h-6 w-6 rounded hover:bg-white/10 text-gray-400"
+						onClick={() =>
+							setPixelsPerFrame((p) => Math.max(0.1, p - (p > 5 ? 2 : 0.5)))
+						}
+					>
+						<Minus className="h-3 w-3" />
+					</Button>
+					<Slider
+						value={[pixelsPerFrame]}
+						min={0.1}
+						max={100}
+						step={0.1}
+						onValueChange={([v]) => setPixelsPerFrame(v)}
+						className="w-24"
+					/>
+					<Button
+						variant="ghost"
+						size="icon"
+						className="h-6 w-6 rounded hover:bg-white/10 text-gray-400"
+						onClick={() =>
+							setPixelsPerFrame((p) => Math.min(100, p + (p > 5 ? 2 : 0.5)))
+						}
+					>
+						<Plus className="h-3 w-3" />
+					</Button>
+				</div>
+			</div>
+
+			<div
+				ref={scrollContainerRef}
+				className="flex-1 overflow-auto bg-[#0a0a0a] timeline-scroll-area custom-scrollbar"
+				style={{
+					cursor: isPanningTimeline ? "grabbing" : "default",
+					scrollbarWidth: "thin",
+					scrollbarColor: "#333 #0a0a0a",
+				}}
+				onMouseDown={(e: React.MouseEvent) => {
+					if (
+						e.button === 0 &&
+						(e.target as HTMLElement).classList.contains("timeline-bg")
+					) {
+						setIsPanningTimeline(true);
+						setDragStartX(e.clientX);
+						setInitialScroll(scrollContainerRef.current?.scrollLeft || 0);
+					}
+				}}
+				onMouseMove={(e: React.MouseEvent) => {
+					if (isPanningTimeline && scrollContainerRef.current) {
+						scrollContainerRef.current.scrollLeft =
+							initialScroll - (e.clientX - dragStartX);
+					}
+				}}
+				onMouseUp={() => setIsPanningTimeline(false)}
+				onMouseLeave={() => setIsPanningTimeline(false)}
+				role="button"
+				tabIndex={0}
+			>
+				<div
+					className="relative flex flex-col min-h-full"
+					style={{
+						width: Math.max(
+							scrollContainerRef.current?.clientWidth || 0,
+							HEADER_WIDTH + totalSeconds * pixelsPerSecond + 800,
+						),
+					}}
+				>
+					{/* Ruler */}
+					<div
+						className="sticky top-0 z-50 flex shrink-0"
+						style={{ height: RULER_HEIGHT }}
+					>
+						<div
+							className="sticky left-0 z-50 border-r border-b border-white/5 bg-neutral-900 shrink-0 shadow-lg"
+							style={{ width: HEADER_WIDTH }}
+						/>
+						<div
+							className="flex-1 bg-neutral-900/90 backdrop-blur-sm border-b border-white/5 relative cursor-pointer"
+							onClick={handleTimelineClick}
+						>
+							<svg
+								role="img"
+								aria-label="ruler ticks"
+								className="absolute inset-0 w-full h-full pointer-events-none opacity-50"
+							>
+								<defs>
+									<pattern
+										id="ruler-ticks"
+										x="0"
+										y="0"
+										width={patternWidth}
+										height={RULER_HEIGHT}
+										patternUnits="userSpaceOnUse"
+									>
+										<line
+											x1="0.5"
+											y1={RULER_HEIGHT}
+											x2="0.5"
+											y2={RULER_HEIGHT - 12}
+											stroke="#666"
+											strokeWidth="1"
+										/>
+										{Array.from({ length: Math.max(0, subTicksCount - 1) }).map(
+											(_, i) => {
+												const x =
+													(i + 1) * minorTickSeconds * pixelsPerSecond + 0.5;
+												return (
+													<line
+														key={i}
+														x1={x}
+														y1={RULER_HEIGHT}
+														x2={x}
+														y2={RULER_HEIGHT - 6}
+														stroke="#333"
+													/>
+												);
+											},
+										)}
+									</pattern>
+								</defs>
+								<rect width="100%" height="100%" fill="url(#ruler-ticks)" />
+							</svg>
+
+							{/* High Performance Label Rendering */}
+							{Array.from({ length: ticksCount }).map((_, i) => {
+								const sec = i * majorTickSeconds;
+								return (
+									<span
+										key={`label_${sec}`}
+										className="absolute top-1.5 text-[10px] font-mono text-gray-500 select-none pointer-events-none font-medium"
+										style={{ left: sec * pixelsPerSecond + 4 }}
+									>
+										{formatTimecode(sec)}
+									</span>
+								);
+							})}
+
+							<div
+								ref={playheadRef}
+								className="absolute top-0 bottom-0 z-60 pointer-events-none h-screen will-change-transform"
+							>
+								<div className="absolute -translate-x-1/2 top-0 w-3 h-3 text-blue-500 fill-current filter drop-shadow-md">
+									<svg viewBox="0 0 12 12" className="w-full h-full">
+										<title>Playhead</title>
+										<path d="M0,0 L12,0 L12,8 L6,12 L0,8 Z" />
+									</svg>
+								</div>
+								<div className="w-px h-full bg-blue-500 absolute left-0 shadow-[0_0_4px_rgba(59,130,246,0.5)]" />
+							</div>
+						</div>
+					</div>
+
+					{/* Tracks */}
+					<div className="flex relative flex-1">
+						<div
+							className="sticky left-0 z-30 bg-[#0f0f0f] border-r border-white/5 shrink-0"
+							style={{ width: HEADER_WIDTH }}
+						>
+							<DndContext
+								sensors={sensors}
+								collisionDetection={closestCenter}
+								onDragEnd={handleDragEnd}
+							>
+								<SortableContext
+									items={sortedLayers.map((l) => l.id)}
+									strategy={verticalListSortingStrategy}
+								>
+									{sortedLayers.map((layer) => (
+										<SortableTrackHeader
+											key={layer.id}
+											layer={layer}
+											isSelected={layer.id === selectedId}
+											onSelect={() => setSelectedId(layer.id)}
+										/>
+									))}
+								</SortableContext>
+							</DndContext>
+						</div>
+
+						<div className="flex-1 relative timeline-bg min-h-full bg-[#0a0a0a]">
+							{/* Synchronized Background Grid */}
+							<div
+								className="absolute inset-0 pointer-events-none opacity-[0.03]"
+								style={{
+									backgroundImage:
+										"linear-gradient(90deg, #fff 1px, transparent 1px)",
+									backgroundSize: `${patternWidth}px 100%`,
+								}}
+							/>
+							{sortedLayers.map((layer) => {
+								const durationMS = layer.durationInMS ?? DEFAULT_DURATION_MS;
+								const isSelected = layer.id === selectedId;
+								return (
+									<div
+										key={layer.id}
+										style={{ height: TRACK_HEIGHT }}
+										className={`border-b border-white/5 relative group/track ${
+											isSelected ? "bg-white/2" : ""
+										}`}
+									>
+										<button
+											type="button"
+											onKeyDown={(e: React.KeyboardEvent) => {
+												if (e.key === "Enter") setSelectedId(layer.id);
+											}}
+											className={`absolute top-1 bottom-1 rounded-md text-left p-0 m-0 border-0 bg-transparent flex items-center overflow-hidden cursor-move outline-none ${
+												isSelected ? "z-20" : "z-10"
+											}`}
+											style={{
+												left: (layer.startFrame ?? 0) * pixelsPerFrame,
+												width: Math.max(
+													10,
+													(durationMS / 1000) * fps * pixelsPerFrame,
+												),
+												minWidth: "10px",
+											}}
+											onMouseDown={(e: React.MouseEvent) =>
+												handleClipManipulation(e, layer.id, "move")
+											}
+											onClick={(e: React.MouseEvent) => {
+												e.stopPropagation();
+												setSelectedId(layer.id);
+											}}
+										>
+											<UnifiedClip layer={layer} isSelected={isSelected} />
+											<div
+												className="absolute right-0 top-0 bottom-0 w-3 cursor-e-resize z-30 group/handle"
+												onMouseDown={(e: React.MouseEvent) =>
+													handleClipManipulation(e, layer.id, "trim")
+												}
+											>
+												<div className="absolute right-0.5 top-1/2 -translate-y-1/2 w-1 h-4 bg-black/20 rounded-full group-hover/handle:bg-white/50 transition-colors" />
+											</div>
+										</button>
+									</div>
+								);
+							})}
+						</div>
+					</div>
+				</div>
+			</div>
+		</div>
+	);
+};
+
+// ---------------------------------------------------------------------------
+// InspectorPanel
+// ---------------------------------------------------------------------------
+
+const InspectorPanel: React.FC = () => {
+	const {
+		selectedId,
+		layers,
+		updateLayers,
+		viewportWidth,
+		viewportHeight,
+		updateViewportWidth,
+		updateViewportHeight,
+		initialLayersData,
+		fps,
+		setFps,
+		backgroundColor,
+		setBackgroundColor,
+	} = useEditor();
+
+	const selectedLayer = layers.find((f) => f.id === selectedId);
+	const { data: fontList } = useGetFontListQuery({});
+	const handles = useAppSelector(handleSelectors.selectEntities);
+
+	const update = (patch: Partial<EditorLayer>) => {
+		updateLayers((prev) =>
+			prev.map((l) => {
+				if (l.id !== selectedId) return l;
+				const nextLayer = { ...l, ...patch };
+				if (nextLayer.type === "Text") {
+					const textProps = [
+						"text",
+						"fontSize",
+						"fontFamily",
+						"fontWeight",
+						"fontStyle",
+						"letterSpacing",
+						"lineHeight",
+						"padding",
+					];
+					if (textProps.some((prop) => prop in patch)) {
+						const dims = measureText(nextLayer.text || "", nextLayer);
+						nextLayer.width = dims.width;
+						nextLayer.height = dims.height;
+					}
+				} else if (nextLayer.type === "Caption") {
+					const captionProps = ["fontSize", "lineHeight", "padding"];
+					if (captionProps.some((prop) => prop in patch)) {
+						const fSize = nextLayer.fontSize ?? 48;
+						const lHeight = nextLayer.lineHeight ?? 1.2;
+						const pad = nextLayer.padding ?? 0;
+						nextLayer.height = Math.round(fSize * lHeight * 3 + pad * 2);
+					}
+				}
+				return nextLayer;
+			}),
+		);
+	};
+
+	if (!selectedLayer) {
+		return (
+			<div className="w-80 h-full border-l border-white/5 bg-[#0f0f0f] flex flex-col z-20 shadow-xl shrink-0 overflow-hidden">
+				<div className="p-4 bg-neutral-900 border-b border-white/5">
+					<div className="flex items-center gap-2 text-xs font-bold text-gray-200 uppercase tracking-wide">
+						<Settings2 className="w-3.5 h-3.5 text-blue-400" /> Canvas Settings
+					</div>
+				</div>
+				<ScrollArea className="flex-1 min-h-0">
+					<div className="p-4 pb-6 space-y-6">
+						<div className="space-y-4">
+							<div className="space-y-1.5">
+								<Label className="text-[10px] text-gray-500 uppercase font-bold tracking-wider">
+									Preset
+								</Label>
+								<Select
+									onValueChange={(val) => {
+										const preset = ASPECT_RATIOS.find((r) => r.label === val);
+										if (preset) {
+											updateViewportWidth(preset.width);
+											updateViewportHeight(preset.height);
+										}
+									}}
+								>
+									<SelectTrigger className="h-8 text-[11px] bg-white/5 border-white/10 text-gray-300 focus:ring-blue-500/20">
+										<SelectValue placeholder="Select Aspect Ratio" />
+									</SelectTrigger>
+									<SelectContent className="bg-neutral-800 border-white/10 text-gray-300">
+										{ASPECT_RATIOS.map((r) => (
+											<SelectItem key={r.label} value={r.label}>
+												<span className="flex items-center justify-between w-full gap-6">
+													<span>{r.label}</span>
+													<span className="text-[10px] text-gray-500 font-mono">
+														{r.width}x{r.height}
+													</span>
+												</span>
+											</SelectItem>
+										))}
+									</SelectContent>
+								</Select>
+							</div>
+							<div className="space-y-2">
+								<Label className="text-[10px] text-gray-500 uppercase font-bold tracking-wider">
+									Resolution
+								</Label>
+								<div className="grid grid-cols-2 gap-2">
+									<DraggableNumberInput
+										label="W"
+										icon={MoveHorizontal}
+										value={Math.round(viewportWidth)}
+										onChange={(v) => updateViewportWidth(Math.max(2, v))}
+									/>
+									<DraggableNumberInput
+										label="H"
+										icon={MoveVertical}
+										value={Math.round(viewportHeight)}
+										onChange={(v) => updateViewportHeight(Math.max(2, v))}
+									/>
+								</div>
+							</div>
+							{/* NEW: Background Colour Control */}
+							<div className="space-y-1.5">
+								<Label className="text-[10px] text-gray-500 uppercase font-bold tracking-wider">
+									Background Colour
+								</Label>
+								<ColorPicker
+									showAlpha={false}
+									value={backgroundColor}
+									onChange={setBackgroundColor}
+								/>
+							</div>
+
+							{/* NEW: Frame Rate (FPS) Control */}
+							<div className="space-y-1.5">
+								<Label className="text-[10px] text-gray-500 uppercase font-bold tracking-wider">
+									Frame Rate
+								</Label>
+								<Select
+									value={fps.toString()}
+									onValueChange={(val) => setFps(Number(val))}
+								>
+									<SelectTrigger className="h-8 text-[11px] bg-white/5 border-white/10 text-gray-300 focus:ring-blue-500/20">
+										<SelectValue placeholder="Select FPS" />
+									</SelectTrigger>
+									<SelectContent className="bg-neutral-800 border-white/10 text-gray-300">
+										{[24, 25, 30, 50, 60].map((rate) => (
+											<SelectItem key={rate} value={rate.toString()}>
+												<span className="flex items-center justify-between w-full gap-6">
+													<span>{rate} FPS</span>
+												</span>
+											</SelectItem>
+										))}
+									</SelectContent>
+								</Select>
+							</div>
+						</div>
+						<div className="w-full h-px bg-white/5" />
+						<div className="flex flex-col items-center justify-center py-12 px-4 text-center border border-dashed border-white/10 rounded-lg bg-white/2">
+							<MousePointer className="w-8 h-8 text-gray-700 mb-3" />
+							<p className="text-sm font-medium text-gray-400">
+								No Layer Selected
+							</p>
+							<p className="text-xs text-gray-600 mt-1">
+								Click on a clip in the timeline or canvas to edit properties.
+							</p>
+						</div>
+					</div>
+				</ScrollArea>
+			</div>
+		);
+	}
+
+	const targetHandleId = selectedLayer.inputHandleId ?? "";
+	const handle = targetHandleId ? handles[targetHandleId] : null;
+	const displayName = resolveLayerLabel(handle, selectedLayer);
+	const hasCropDimensions =
+		selectedLayer.type === "Video" &&
+		selectedLayer.videoNaturalWidth != null &&
+		selectedLayer.videoNaturalHeight != null;
+
+	const showAutoDimensions =
+		(selectedLayer.type === "Image" ||
+			selectedLayer.type === "SVG" ||
+			selectedLayer.type === "Video") &&
+		!isCaptionLayer(selectedLayer.type);
+
+	const handleAutoDimensions = () => {
+		if (selectedLayer.autoDimensions) {
+			update({ autoDimensions: false });
+			return;
+		}
+		const newW = selectedLayer.width;
+		const newH = selectedLayer.height;
+		update({ autoDimensions: true, width: newW, height: newH });
+	};
+
+	const autoDimensionsTooltip = hasCropDimensions
+		? "Sync dimensions with cropped source media"
+		: "Sync dimensions with source media";
+
+	const suppressSizeInputs =
+		selectedLayer.type === "Text" || isCaptionLayer(selectedLayer.type);
+
+	const isTextOrCaption =
+		selectedLayer.type === "Text" || selectedLayer.type === "Caption";
+	const roundedBoxActive = isTextOrCaption && selectedLayer.useRoundedTextBox;
+
+	return (
+		<div className="w-80 h-full border-l border-white/5 bg-[#0f0f0f] z-20 shadow-xl flex flex-col shrink-0 overflow-hidden">
+			<div className="flex items-center justify-between p-4 border-b border-white/5 bg-neutral-900/50">
+				<div className="flex flex-col min-w-0">
+					<span className="text-[10px] uppercase font-bold tracking-wider mb-0.5 text-blue-400">
+						Properties
+					</span>
+					<h2 className="text-sm font-semibold text-white truncate max-w-50">
+						{displayName}
+					</h2>
+				</div>
+				<span
+					className={cn(
+						"text-[9px] px-2 py-1 rounded font-medium uppercase border tracking-wider",
+						"bg-white/10 text-gray-300 border-white/5",
+					)}
+				>
+					{selectedLayer.type}
+				</span>
+			</div>
+
+			<ScrollArea className="flex-1 min-h-0">
+				<div className="pb-6">
+					{selectedLayer.type !== "Audio" && (
+						<div className="border-b border-white/5 p-4 space-y-3">
+							<div className="flex items-center justify-between mb-2">
+								<div className="flex items-center gap-2 text-[11px] font-bold text-gray-500 uppercase tracking-wider">
+									<Move className="w-3.5 h-3.5" /> Transform
+								</div>
+								{showAutoDimensions && (
+									<WithTooltip tip={autoDimensionsTooltip}>
+										<Button
+											variant={
+												selectedLayer.autoDimensions ? "secondary" : "ghost"
+											}
+											size="sm"
+											className={cn(
+												"h-6 text-[10px] px-2",
+												selectedLayer.autoDimensions
+													? "text-blue-400 bg-blue-500/10 hover:bg-blue-500/20"
+													: "text-gray-500 hover:text-gray-300 bg-white/5",
+											)}
+											onClick={handleAutoDimensions}
+										>
+											<Sparkles className="w-3 h-3 mr-1" /> Auto W/H
+										</Button>
+									</WithTooltip>
+								)}
+							</div>
+
+							<div className="grid grid-cols-2 gap-2">
+								<DraggableNumberInput
+									label="X"
+									icon={MoveHorizontal}
+									value={Math.round(selectedLayer.x)}
+									onChange={(v) => update({ x: v })}
+								/>
+								<DraggableNumberInput
+									label="Y"
+									icon={MoveVertical}
+									value={Math.round(selectedLayer.y)}
+									onChange={(v) => update({ y: v })}
+								/>
+							</div>
+
+							{!suppressSizeInputs && (
+								<TooltipProvider>
+									<div className="flex items-end gap-2">
+										<DraggableNumberInput
+											label="W"
+											icon={MoveHorizontal}
+											value={Math.round(selectedLayer.width ?? 0)}
+											onChange={(v) => {
+												const ratio =
+													(selectedLayer.height || 1) /
+													(selectedLayer.width || 1);
+												update({
+													width: Math.max(2, v),
+													height: selectedLayer.lockAspect
+														? Math.max(2, Math.round(v * ratio))
+														: selectedLayer.height,
+													autoDimensions: false,
+												});
+											}}
+										/>
+										<Tooltip>
+											<TooltipTrigger asChild>
+												<Button
+													variant="ghost"
+													size="icon"
+													className={cn(
+														"h-7 w-7 rounded-md transition-colors shrink-0",
+														selectedLayer.lockAspect
+															? "text-blue-400 bg-blue-500/10 hover:bg-blue-500/20"
+															: "text-gray-500 hover:text-gray-300 bg-white/5",
+													)}
+													onClick={() =>
+														update({ lockAspect: !selectedLayer.lockAspect })
+													}
+												>
+													{selectedLayer.lockAspect ? (
+														<LinkIcon className="w-3.5 h-3.5" />
+													) : (
+														<UnlinkIcon className="w-3.5 h-3.5" />
+													)}
+												</Button>
+											</TooltipTrigger>
+											<TooltipContent>
+												<p>
+													{selectedLayer.lockAspect
+														? "Unlock Aspect Ratio"
+														: "Lock Aspect Ratio"}
+												</p>
+											</TooltipContent>
+										</Tooltip>
+										<DraggableNumberInput
+											label="H"
+											icon={MoveVertical}
+											value={Math.round(selectedLayer.height ?? 0)}
+											onChange={(v) => {
+												const ratio =
+													(selectedLayer.width || 1) /
+													(selectedLayer.height || 1);
+												update({
+													height: Math.max(2, v),
+													width: selectedLayer.lockAspect
+														? Math.max(2, Math.round(v / ratio))
+														: selectedLayer.width,
+													autoDimensions: false,
+												});
+											}}
+										/>
+									</div>
+								</TooltipProvider>
+							)}
+
+							<div className="grid grid-cols-2 gap-2">
+								<DraggableNumberInput
+									label="Rot"
+									icon={RotateCw}
+									value={Math.round(selectedLayer.rotation)}
+									onChange={(v) => update({ rotation: v })}
+								/>
+								<DraggableNumberInput
+									label="Scale"
+									icon={Move}
+									value={Number((selectedLayer.scale ?? 1).toFixed(2))}
+									step={0.1}
+									onChange={(v) => update({ scale: v })}
+								/>
+							</div>
+						</div>
+					)}
+
+					{selectedLayer.type !== "Audio" && (
+						<AnimationsInspectorSection layer={selectedLayer} update={update} />
+					)}
+
+					{/* ── Text Box (rounded pill background) ────────────────────── */}
+					{isTextOrCaption && (
+						<TextBoxSection layer={selectedLayer} update={update} />
+					)}
+
+					{/* ── Text Shadow Section ────────────────────── */}
+					{isTextOrCaption && (
+						<TextShadowSection layer={selectedLayer} update={update} />
+					)}
+
+					{(selectedLayer.type === "Video" ||
+						selectedLayer.type === "Audio") && (
+						<CollapsibleSection title="Audio" icon={Music}>
+							<div className="space-y-3">
+								<div className="flex items-center gap-2">
+									<Volume2 className="w-4 h-4 text-gray-500 shrink-0" />
+									<Slider
+										value={[selectedLayer.volume ?? 1]}
+										min={0}
+										max={1}
+										step={0.01}
+										onValueChange={([v]) => update({ volume: v })}
+									/>
+									<span className="text-[9px] text-gray-400 w-6 text-right">
+										{Math.round((selectedLayer.volume ?? 1) * 100)}%
+									</span>
+								</div>
+							</div>
+						</CollapsibleSection>
+					)}
+
+					{(selectedLayer.type === "Text" ||
+						selectedLayer.type === "Caption") && (
+						<TypographyControls
+							fontFamily={selectedLayer.fontFamily ?? "Inter"}
+							fontSize={selectedLayer.fontSize ?? 40}
+							fill={selectedLayer.fill ?? "#fff"}
+							fontStyle={selectedLayer.fontStyle ?? "normal"}
+							textDecoration={selectedLayer.textDecoration ?? ""}
+							fontWeight={
+								selectedLayer.fontWeight
+									? String(selectedLayer.fontWeight)
+									: "400"
+							}
+							align={selectedLayer.align as any}
+							letterSpacing={selectedLayer.letterSpacing}
+							lineHeight={selectedLayer.lineHeight}
+							fontList={fontList as string[]}
+							onChange={update}
+						/>
+					)}
+
+					{selectedLayer.type === "Caption" && (
+						<CollapsibleSection
+							title="Caption Style"
+							icon={Subtitles}
+							defaultOpen
+						>
+							<div className="space-y-3">
+								<div className="flex flex-col gap-1.5">
+									<Label className="text-[10px] text-gray-400">Preset</Label>
+									<Select
+										value={(selectedLayer as any).captionPreset || "default"}
+										onValueChange={(v) =>
+											update({ captionPreset: v as "default" | "tiktok" })
+										}
+									>
+										<SelectTrigger className="h-7 text-[10px] bg-black/20 border-white/10">
+											<SelectValue placeholder="Select preset" />
+										</SelectTrigger>
+										<SelectContent>
+											<SelectItem value="default" className="text-[10px]">
+												Default Subtitles
+											</SelectItem>
+											<SelectItem value="tiktok" className="text-[10px]">
+												TikTok Style
+											</SelectItem>
+										</SelectContent>
+									</Select>
+								</div>
+							</div>
+						</CollapsibleSection>
+					)}
+
+					<StyleControls
+						backgroundColor={selectedLayer.backgroundColor}
+						stroke={
+							selectedLayer.type === "Text" || selectedLayer.type === "Caption"
+								? selectedLayer.stroke
+								: selectedLayer.borderColor
+						}
+						strokeWidth={
+							selectedLayer.type === "Text" || selectedLayer.type === "Caption"
+								? selectedLayer.strokeWidth
+								: selectedLayer.borderWidth
+						}
+						cornerRadius={selectedLayer.borderRadius}
+						padding={selectedLayer.padding}
+						opacity={selectedLayer.opacity}
+						showBackground={
+							["Image", "SVG", "Video"].includes(selectedLayer.type) ||
+							(isTextOrCaption && !roundedBoxActive)
+						}
+						showStroke={selectedLayer.type !== "Audio"}
+						showCornerRadius={
+							!roundedBoxActive &&
+							selectedLayer.type !== "Text" &&
+							selectedLayer.type !== "Caption" &&
+							selectedLayer.type !== "Audio"
+						}
+						showPadding={
+							!roundedBoxActive &&
+							(selectedLayer.type === "Text" ||
+								selectedLayer.type === "Caption")
+						}
+						showOpacity={selectedLayer.type !== "Audio"}
+						onChange={(updates) => {
+							const mappedUpdates = { ...updates };
+							if (updates.cornerRadius !== undefined) {
+								mappedUpdates.borderRadius = updates.cornerRadius;
+								delete mappedUpdates.cornerRadius;
+							}
+							if (
+								selectedLayer.type !== "Text" &&
+								selectedLayer.type !== "Caption"
+							) {
+								if (updates.stroke !== undefined)
+									mappedUpdates.borderColor = updates.stroke;
+								if (updates.strokeWidth !== undefined)
+									mappedUpdates.borderWidth = updates.strokeWidth;
+							}
+							update(mappedUpdates);
+						}}
+					/>
+				</div>
+			</ScrollArea>
+		</div>
+	);
+};
+
+// ---------------------------------------------------------------------------
+// VideoDesignerEditor — root component
+// ---------------------------------------------------------------------------
+
+export interface VideoDesignerEditorProps {
+	initialLayers: Map<
+		string,
+		OutputItem<"Text" | "Image" | "SVG" | "Video" | "Audio" | "Caption">
+	>;
+	node: NodeEntityType;
+	onClose: () => void;
+	onSave: (config: VideoCompositorNodeConfig) => void;
+}
+
+export const VideoDesignerEditor: React.FC<VideoDesignerEditorProps> = ({
+	initialLayers,
+	node,
+	onClose,
+	onSave,
+}) => {
+	const nodeConfig = node.config;
+	const handles = useAppSelector(handleSelectors.selectEntities);
+
+	const [fps, setFps] = useState(nodeConfig?.FPS ?? FPS);
+	const [backgroundColor, setBackgroundColor] = useState(
+		nodeConfig?.backgroundColor ?? "#000000",
+	);
+	const [layers, setLayers] = useState<EditorLayer[]>([]);
+	const [selectedId, setSelectedId] = useState<string | null>(null);
+	const [isDirty, setIsDirty] = useState(false);
+	const [viewportWidth, setViewportWidth] = useState(
+		roundToEven(nodeConfig?.width ?? 1280),
+	);
+	const [viewportHeight, setViewportHeight] = useState(
+		roundToEven(nodeConfig?.height) || 720,
+	);
+	const [zoom, setZoom] = useState(0.5);
+	const [pan, setPan] = useState({ x: 0, y: 0 });
+	const [mode, setMode] = useState<EditorMode>("select");
+	const [timelineHeight, setTimelineHeight] = useState(DEFAULT_TIMELINE_HEIGHT);
+	const [currentFrame, setCurrentFrame] = useState(0);
+	const [isPlaying, setIsPlayingState] = useState(false);
+	const [containerSize, setContainerSize] = useState({ width: 0, height: 0 });
+	const [sizeKnown, setSizeKnown] = useState(false);
+
+	const playerRef = useRef<PlayerRef>(null);
+	const containerRef = useRef<HTMLDivElement>(null);
+	const timeRef = useRef<HTMLDivElement>(null);
+	const lastModeRef = useRef<EditorMode>("select");
+	const timelineScrollRef = useRef<HTMLDivElement>(null);
+
+	// ---------------------------------------------------------------------------
+	// Derived helpers bound to initialLayers
+	// ---------------------------------------------------------------------------
+
+	const getTextData = (id: string) => {
+		const item = initialLayers.get(id);
+		return item?.type === "Text"
+			? (item as OutputItem<"Text">).data || "Text"
+			: "";
+	};
+
+	const getAssetUrl = (id: string) => {
+		const item = initialLayers.get(id);
+		if (!item) return undefined;
+		if (item.type === "Video" || item.type === "Audio")
+			return resolveMediaSourceUrlBrowser(item.data as VirtualMediaData);
+		const fileData = item.data as FileData;
+		return fileData.entity?.id
+			? GetAssetEndpoint(fileData.entity)
+			: fileData?.processData?.dataUrl;
+	};
+
+	const getMediaDuration = (id: string | undefined | null) => {
+		if (!id) return undefined;
+		const item = initialLayers.get(id);
+		if (!item) return undefined;
+		if (item.type === "Video" || item.type === "Audio")
+			return (item.data as VirtualMediaData).metadata?.durationMs;
+		const fileData = item.data as FileData;
+		return fileData.entity?.duration ?? fileData?.processData?.duration;
+	};
+
+	// ---------------------------------------------------------------------------
+	// Layer management
+	// ---------------------------------------------------------------------------
+
+	const updateLayersHandler = (
+		updater: SetStateAction<EditorLayer[]>,
+		isUserChange = true,
+	) => {
+		setLayers(updater);
+		if (isUserChange) setIsDirty(true);
+	};
+
+	const deleteLayer = (id: string) => {
+		setLayers((prev) => prev.filter((l) => l.id !== id));
+		if (selectedId === id) setSelectedId(null);
+		setIsDirty(true);
+	};
+
+	// ---------------------------------------------------------------------------
+	// Viewport
+	// ---------------------------------------------------------------------------
+
+	const recomputeVideoCrops = (prev: EditorLayer[]) =>
+		prev.map((layer) => {
+			if (layer.type !== "Video" || !layer.virtualMedia) return layer;
+			return {
+				...layer,
+				...(computeVideoCropRenderProps(layer.virtualMedia) ?? {}),
+			};
+		});
+
+	const updateViewportWidth = (w: number) => {
+		setViewportWidth(roundToEven(Math.max(2, w)));
+		setLayers(recomputeVideoCrops);
+		setIsDirty(true);
+	};
+
+	const updateViewportHeight = (h: number) => {
+		setViewportHeight(roundToEven(Math.max(2, h)));
+		setLayers(recomputeVideoCrops);
+		setIsDirty(true);
+	};
+
+	// ---------------------------------------------------------------------------
+	// Playback
+	// ---------------------------------------------------------------------------
+
+	const setIsPlaying = (p: boolean) => {
+		setIsPlayingState(p);
+		if (p) playerRef.current?.play();
+		else {
+			playerRef.current?.pause();
+			if (playerRef.current)
+				setCurrentFrame(playerRef.current.getCurrentFrame());
+		}
+	};
+
+	const handlePlaybackEnded = () => {
+		setIsPlayingState(false);
+		setCurrentFrame(0);
+		playerRef.current?.seekTo(0);
+		if (timelineScrollRef.current) timelineScrollRef.current.scrollLeft = 0;
+	};
+
+	const setCurrentFrameHandler = (frame: number) => {
+		setCurrentFrame(frame);
+		playerRef.current?.seekTo(frame);
+	};
+
+	// ---------------------------------------------------------------------------
+	// Zoom / pan
+	// ---------------------------------------------------------------------------
+
+	const zoomIn = () => setZoom((z) => Math.min(3, z + 0.1));
+	const zoomOut = () => setZoom((z) => Math.max(0.1, z - 0.1));
+	const zoomTo = (val: number) => setZoom(val);
+
+	const fitView = useCallback(() => {
+		if (containerSize.width === 0 || containerSize.height === 0) return;
+		const scale =
+			Math.min(
+				containerSize.width / viewportWidth,
+				containerSize.height / viewportHeight,
+			) * 0.9;
+		setZoom(scale);
+		setPan({
+			x: (containerSize.width - viewportWidth * scale) / 2,
+			y: (containerSize.height - viewportHeight * scale) / 2,
+		});
+	}, [containerSize, viewportWidth, viewportHeight]);
+
+	// ---------------------------------------------------------------------------
+	// Save
+	// ---------------------------------------------------------------------------
+
+	const handleSave = () => {
+		onSave({
+			layerUpdates: serializeLayersForSave(layers),
+			width: viewportWidth,
+			height: viewportHeight,
+			FPS: fps,
+			backgroundColor: backgroundColor,
+		});
+		setIsDirty(false);
+	};
+
+	// ---------------------------------------------------------------------------
+	// Effects
+	// ---------------------------------------------------------------------------
+
+	useEffect(() => {
+		const loadInitialLayers = async () => {
+			const layerUpdates = { ...nodeConfig?.layerUpdates };
+			const loaded: EditorLayer[] = [];
+			const fontPromises: Promise<void>[] = [];
+			const asyncTasks: Promise<void>[] = [];
+
+			let maxZ = Math.max(
+				0,
+				...Object.values(layerUpdates).map((l) => l.zIndex ?? 0),
+			);
+
+			initialLayers.forEach((item, id) => {
+				const saved = layerUpdates[id] as EditorLayer | undefined;
+				const isAutoDimensions = saved?.autoDimensions ?? true;
+				const handleId = id ?? "";
+				const handle = handles[handleId];
+				const name = handle?.label ?? handle?.dataTypes?.[0] ?? id;
+
+				let durationMs = 0;
+				let text: string | undefined;
+				let src: string | undefined;
+				let virtualMedia: VirtualMediaData | undefined;
+				let layerWidth = saved?.width;
+				let layerHeight = saved?.height;
+				let cropRenderProps: ReturnType<typeof computeVideoCropRenderProps> =
+					null;
+
+				if (item.type === "Text") {
+					text = getTextData(id);
+				} else if (item.type === "Video" || item.type === "Audio") {
+					virtualMedia = item.data as VirtualMediaData;
+					const metadata = getActiveMediaMetadata(virtualMedia);
+					const cutDurationMs = getEffectiveDurationMs(virtualMedia);
+					durationMs = cutDurationMs ?? metadata?.durationMs ?? 0;
+					src = resolveMediaSourceUrlBrowser(virtualMedia);
+					cropRenderProps = computeVideoCropRenderProps(virtualMedia);
+					if (isAutoDimensions) {
+						layerWidth = metadata?.width ?? undefined;
+						layerHeight = metadata?.height ?? undefined;
+					} else {
+						layerWidth = layerWidth ?? metadata?.width ?? undefined;
+						layerHeight = layerHeight ?? metadata?.height ?? undefined;
+					}
+				} else if (isFileMedia(item.type)) {
+					const fileData = item.data as FileData;
+					durationMs =
+						fileData.entity?.duration ?? fileData.processData?.duration ?? 0;
+					src = getAssetUrl(id);
+
+					if (item.type !== "Caption") {
+						const initialW =
+							fileData.processData?.width ??
+							fileData.entity?.width ??
+							undefined;
+						const initialH =
+							fileData.processData?.height ??
+							fileData.entity?.height ??
+							undefined;
+						if (isAutoDimensions && initialW != null && initialH != null) {
+							layerWidth = initialW;
+							layerHeight = initialH;
+						} else {
+							layerWidth = layerWidth ?? initialW;
+							layerHeight = layerHeight ?? initialH;
+						}
+					}
+				}
+
+				const hasNativeDuration =
+					(item.type === "Video" ||
+						item.type === "Audio" ||
+						item.type === "Caption") &&
+					durationMs > 0;
+				const calculatedDurationMS = hasNativeDuration
+					? durationMs
+					: DEFAULT_DURATION_MS;
+
+				const base: Partial<EditorLayer> = {
+					id,
+					inputHandleId: id,
+					x: 0,
+					y: 0,
+					rotation: 0,
+					scale: 1,
+					opacity: 1,
+					zIndex: saved?.zIndex ?? ++maxZ,
+					startFrame: 0,
+					durationInMS: saved?.durationInMS ?? calculatedDurationMS,
+					volume: 1,
+					animations: saved?.animations ?? [],
+					...saved,
+					src,
+					text,
+					name,
+					virtualMedia,
+					autoDimensions: isAutoDimensions,
+					...(cropRenderProps ?? {}),
+				};
+
+				if (item.type === "Text") {
+					const { captionPreset: _captionPreset, ...restTextDefaults } =
+						TEXT_LAYER_DEFAULTS;
+					const fontFamily =
+						saved?.fontFamily ?? TEXT_LAYER_DEFAULTS.fontFamily;
+					const textLayerStyle: Partial<EditorLayer> = {
+						...restTextDefaults,
+						fontSize: saved?.fontSize ?? TEXT_LAYER_DEFAULTS.fontSize,
+						fontFamily,
+						fontStyle: saved?.fontStyle ?? TEXT_LAYER_DEFAULTS.fontStyle,
+						fontWeight: saved?.fontWeight,
+						letterSpacing: saved?.letterSpacing,
+						lineHeight: saved?.lineHeight,
+						padding: saved?.padding ?? TEXT_LAYER_DEFAULTS.padding,
+					};
+					if (!layerWidth || !layerHeight) {
+						const dims = measureText(text ?? "", textLayerStyle);
+						layerWidth = dims.width;
+						layerHeight = dims.height;
+					}
+					loaded.push({
+						...base,
+						type: "Text",
+						...textLayerStyle,
+						textDecoration:
+							saved?.textDecoration ?? TEXT_LAYER_DEFAULTS.textDecoration,
+						fill: saved?.fill ?? TEXT_LAYER_DEFAULTS.fill,
+						width: layerWidth,
+						height: layerHeight,
+						lockAspect: true,
+						autoDimensions: false,
+						virtualMedia: createVirtualMedia(text ?? "", "Text"),
+					} as EditorLayer);
+					if (fontFamily) {
+						const fontUrl = GetFontAssetUrl(fontFamily);
+						if (fontUrl)
+							fontPromises.push(fontManager.loadFont(fontFamily, fontUrl));
+					}
+				} else if (item.type === "Caption") {
+					const fSize =
+						saved?.fontSize ?? (CAPTION_LAYER_DEFAULTS.fontSize as number);
+					const lHeight =
+						saved?.lineHeight ?? (CAPTION_LAYER_DEFAULTS.lineHeight as number);
+					const pad = saved?.padding ?? 0;
+
+					// Compute an auto-height sufficient for ~3 subtitle lines to prevent interaction blocking.
+					const autoHeight = Math.round(fSize * lHeight * 3 + pad * 2);
+
+					// Compute standard bottom positioning.
+					const defaultY = Math.max(
+						0,
+						viewportHeight - autoHeight - Math.round(viewportHeight * 0.1),
+					);
+
+					// If the saved state had full legacy viewport height, reset to default placement to unblock interactions.
+					const isLegacyFullscreen =
+						saved?.height !== undefined &&
+						saved?.height >= viewportHeight * 0.9;
+					const initialY = isLegacyFullscreen
+						? defaultY
+						: (saved?.y ?? defaultY);
+
+					const captionLayer: EditorLayer = {
+						...base,
+						type: "Caption",
+						width: viewportWidth, // Always force full width
+						height: autoHeight, // Dynamic auto height based on font size
+						y: initialY,
+						fontSize: fSize,
+						fontFamily: saved?.fontFamily ?? "Inter",
+						fill: saved?.fill ?? "#ffffff",
+						align: saved?.align ?? "center",
+						captionPreset: saved?.captionPreset ?? "default",
+						lockAspect: false,
+						autoDimensions: false,
+					} as EditorLayer;
+					loaded.push(captionLayer);
+
+					if (src && !saved?.durationInMS) {
+						const captionSrc = src;
+						const layerId = id;
+						asyncTasks.push(
+							fetchSrtDurationMs(captionSrc).then((srtDurationMs) => {
+								if (!srtDurationMs) return;
+								setLayers((prev) =>
+									prev.map((l) =>
+										l.id === layerId
+											? {
+													...l,
+													durationInMS: srtDurationMs,
+												}
+											: l,
+									),
+								);
+							}),
+						);
+					}
+				} else if (item.type === "Image" || item.type === "SVG") {
+					loaded.push({
+						...base,
+						type: item.type as "Image" | "SVG",
+						width: layerWidth ?? 400,
+						height: layerHeight ?? 400,
+						lockAspect: true,
+					} as EditorLayer);
+				} else if (item.type === "Video") {
+					loaded.push({
+						...base,
+						type: "Video",
+						width: layerWidth ?? 400,
+						height: layerHeight ?? 400,
+						lockAspect: true,
+					} as EditorLayer);
+				} else if (item.type === "Audio") {
+					loaded.push({
+						...base,
+						type: "Audio",
+						height: 0,
+						width: 0,
+						lockAspect: true,
+					} as EditorLayer);
+				}
+			});
+
+			await Promise.all([...fontPromises, ...asyncTasks]);
+			setLayers(loaded);
+		};
+
+		loadInitialLayers();
+	}, [initialLayers, nodeConfig]);
+
+	const measurementSignature = layers
+		.filter((l) => l.type !== "Audio" && !l.isPlaceholder)
+		.map((l) => {
+			if (l.type === "Text")
+				return `${l.id}:text:${l.fontFamily}:${l.fontSize}:${l.fontStyle}:${l.textDecoration}:${l.lineHeight}`;
+			if (l.type === "Video" && l.virtualMedia)
+				return `${l.id}:${l.type.toLowerCase()}:${l.autoDimensions}:${l.virtualMedia.operation.op}`;
+			if (l.type === "Caption")
+				return `${l.id}:caption:${viewportWidth}x${viewportHeight}`;
+			return `${l.id}:${l.type}:${l.autoDimensions}:${l.width ?? "null"}:${l.height ?? "null"}`;
+		})
+		.join("|");
+
+	useEffect(() => {
+		const layersToMeasure = layers.filter(
+			(l) =>
+				l.type !== "Audio" &&
+				l.type !== "Caption" &&
+				!l.isPlaceholder &&
+				(l.width == null || l.height == null || l.autoDimensions === true),
+		);
+		if (layersToMeasure.length === 0) return;
+
+		let mounted = true;
+		const measure = async () => {
+			const updates = new Map<string, Partial<EditorLayer>>();
+			await Promise.all(
+				layersToMeasure.map(async (layer) => {
+					try {
+						if (layer.type === "Video" && layer.virtualMedia) {
+							const metadata = getActiveMediaMetadata(layer.virtualMedia);
+							if (metadata) {
+								if (
+									metadata.width != null &&
+									metadata.height != null &&
+									(layer.width !== metadata.width ||
+										layer.height !== metadata.height)
+								) {
+									updates.set(layer.id, {
+										width: metadata.width,
+										height: metadata.height,
+									});
+								}
+							}
+							return;
+						}
+						const url = layer.inputHandleId
+							? getAssetUrl(layer.inputHandleId)
+							: undefined;
+						if (isFileMedia(layer.type) && url) {
+							const img = new Image();
+							img.src = url;
+							await img.decode();
+							const naturalW =
+								img.naturalWidth > 0 ? img.naturalWidth : (layer.width ?? 400);
+							const naturalH =
+								img.naturalHeight > 0
+									? img.naturalHeight
+									: (layer.height ?? 400);
+							if (layer.width !== naturalW || layer.height !== naturalH) {
+								updates.set(layer.id, {
+									width: naturalW,
+									height: naturalH,
+								});
+							}
+						} else if (layer.type === "Video" && url) {
+							const video = document.createElement("video");
+							video.src = url;
+							await new Promise<void>((res) => {
+								video.onloadedmetadata = () => res();
+								video.onerror = () => res();
+							});
+							if (
+								video.videoWidth > 0 &&
+								video.videoHeight > 0 &&
+								(layer.width !== video.videoWidth ||
+									layer.height !== video.videoHeight)
+							) {
+								updates.set(layer.id, {
+									width: video.videoWidth,
+									height: video.videoHeight,
+								});
+							}
+						} else if (layer.type === "Text") {
+							const d = document.createElement("div");
+							Object.assign(d.style, {
+								fontFamily: layer.fontFamily || "Inter",
+								fontSize: `${layer.fontSize || 40}px`,
+								fontStyle: layer.fontStyle || "normal",
+								textDecoration: layer.textDecoration || "",
+								lineHeight: `${layer.lineHeight ?? 1.2}`,
+								position: "absolute",
+								visibility: "hidden",
+								whiteSpace: "pre",
+							});
+							d.textContent = layer.inputHandleId
+								? getTextData(layer.inputHandleId)
+								: "";
+							document.body.appendChild(d);
+							const newW = d.offsetWidth;
+							const newH = d.offsetHeight;
+							document.body.removeChild(d);
+							if (
+								Math.abs((layer.width ?? 0) - newW) > 1 ||
+								Math.abs((layer.height ?? 0) - newH) > 1
+							) {
+								updates.set(layer.id, { width: newW, height: newH });
+							}
+						}
+					} catch {
+						updates.set(layer.id, {
+							isPlaceholder: true,
+							width: layer.width ?? 100,
+							height: layer.height ?? 100,
+						});
+					}
+				}),
+			);
+			if (mounted && updates.size > 0) {
+				setLayers((prev) =>
+					prev.map((l) =>
+						updates.has(l.id) ? { ...l, ...updates.get(l.id) } : l,
+					),
+				);
+			}
+		};
+		measure();
+		return () => {
+			mounted = false;
+		};
+	}, [measurementSignature]);
+
+	// Keep Caption layers in sync with canvas resolution.
+	useEffect(() => {
+		setLayers((prev) =>
+			prev.map((l) => {
+				if (l.type === "Caption") {
+					const fSize = l.fontSize ?? 48;
+					const lHeight = l.lineHeight ?? 1.2;
+					const pad = l.padding ?? 0;
+
+					// Maintain dynamic auto height to prevent fullscreen blocking
+					const autoHeight = Math.round(fSize * lHeight * 3 + pad * 2);
+
+					return { ...l, width: viewportWidth, height: autoHeight };
+				}
+				return l;
+			}),
+		);
+	}, [viewportWidth, viewportHeight]);
+
+	useEffect(() => {
+		fitView();
+	}, [viewportWidth, viewportHeight, fitView]);
+
+	useEffect(() => {
+		const el = containerRef.current;
+		if (!el) return;
+		const observer = new ResizeObserver((entries) => {
+			setContainerSize({
+				width: entries[0].contentRect.width,
+				height: entries[0].contentRect.height,
+			});
+		});
+		observer.observe(el);
+		return () => observer.disconnect();
+	}, []);
+
+	useEffect(() => {
+		if (!sizeKnown && containerSize.width > 0) {
+			fitView();
+			setSizeKnown(true);
+		}
+	}, [containerSize, fitView, sizeKnown]);
+
+	useEffect(() => {
+		const el = containerRef.current;
+		if (!el) return;
+		const handleWheel = (e: WheelEvent) => {
+			e.preventDefault();
+			if (e.ctrlKey || e.metaKey) {
+				const rect = el.getBoundingClientRect();
+				const pointerX = e.clientX - rect.left;
+				const pointerY = e.clientY - rect.top;
+				const newZoom = Math.min(
+					Math.max(zoom * Math.exp(-e.deltaY * 0.003), 0.1),
+					5,
+				);
+				if (newZoom !== zoom) {
+					const mousePointTo = {
+						x: (pointerX - pan.x) / zoom,
+						y: (pointerY - pan.y) / zoom,
+					};
+					setPan({
+						x: pointerX - mousePointTo.x * newZoom,
+						y: pointerY - mousePointTo.y * newZoom,
+					});
+					setZoom(newZoom);
+				}
+				return;
+			}
+			let dx = e.deltaX;
+			let dy = e.deltaY;
+			if (e.shiftKey && dy !== 0 && dx === 0) {
+				dx = dy;
+				dy = 0;
+			}
+			setPan((p) => ({ x: p.x - dx, y: p.y - dy }));
+		};
+		el.addEventListener("wheel", handleWheel, { passive: false });
+		return () => el.removeEventListener("wheel", handleWheel);
+	}, [zoom, pan, mode]);
+
+	useEffect(() => {
+		playerRef.current?.seekTo(0);
+		const player = playerRef.current;
+		if (player) {
+			player.addEventListener("ended", handlePlaybackEnded);
+			return () => player.removeEventListener("ended", handlePlaybackEnded);
+		}
+	}, []);
+
+	// ---------------------------------------------------------------------------
+	// Hotkeys
+	// ---------------------------------------------------------------------------
+
+	useHotkeys("v", () => setMode("select"));
+	useHotkeys("h", () => setMode("pan"));
+	useHotkeys("=,+", () => zoomIn());
+	useHotkeys("-", () => zoomOut());
+	useHotkeys("0", () => fitView());
+	useHotkeys("1", () => zoomTo(1));
+	useHotkeys("escape", () => setSelectedId(null));
+	useHotkeys("delete, backspace", () => {
+		if (selectedId) deleteLayer(selectedId);
+	});
+	useHotkeys(
+		"space",
+		(e: KeyboardEvent) => {
+			if (
+				document.activeElement?.tagName === "INPUT" ||
+				document.activeElement?.tagName === "TEXTAREA"
+			)
+				return;
+			e.preventDefault();
+			if (mode !== "pan") {
+				lastModeRef.current = mode;
+				setMode("pan");
+			}
+		},
+		{ keydown: true },
+	);
+	useHotkeys(
+		"space",
+		(e: KeyboardEvent) => {
+			if (
+				document.activeElement?.tagName === "INPUT" ||
+				document.activeElement?.tagName === "TEXTAREA"
+			)
+				return;
+			e.preventDefault();
+			setMode(lastModeRef.current);
+		},
+		{ keyup: true },
+	);
+	useHotkeys(
+		"meta+s, ctrl+s",
+		(e) => {
+			e.preventDefault();
+			if (isDirty) handleSave();
+		},
+		{ enableOnFormTags: true },
+	);
+
+	const durationInMS =
+		layers.length > 0
+			? Math.max(
+					...layers.map(
+						(l) =>
+							(l.startFrame / fps) * 1000 +
+							(l.durationInMS ?? DEFAULT_DURATION_MS),
+					),
+				)
+			: DEFAULT_DURATION_MS;
+	const contextValue: EditorContextType = {
+		layers,
+		updateLayers: updateLayersHandler,
+		deleteLayer,
+		selectedId,
+		setSelectedId,
+		getTextData,
+		getAssetUrl,
+		getMediaDuration,
+		viewportWidth,
+		viewportHeight,
+		updateViewportWidth,
+		updateViewportHeight,
+		fps,
+		setFps: (val) => {
+			setFps(val);
+			setIsDirty(true);
+		},
+		backgroundColor,
+		setBackgroundColor: (val) => {
+			setBackgroundColor(val);
+			setIsDirty(true);
+		},
+		durationInMS,
+		currentFrame,
+		setCurrentFrame: setCurrentFrameHandler,
+		isPlaying,
+		setIsPlaying,
+		playerRef,
+		zoom,
+		setZoom,
+		pan,
+		setPan,
+		zoomIn,
+		zoomOut,
+		zoomTo,
+		fitView,
+		mode,
+		setMode,
+		isDirty,
+		setIsDirty,
+		timelineScrollRef,
+		timelineHeight,
+		setTimelineHeight,
+		initialLayersData: initialLayers,
+	};
+
+	return (
+		<EditorContext.Provider value={contextValue}>
+			<div className="flex flex-col h-screen w-full bg-[#050505] text-gray-100 overflow-hidden font-sans select-none">
+				<div className="flex flex-1 min-h-0 relative overflow-hidden">
+					<div
+						ref={containerRef}
+						className="flex-1 relative overflow-hidden"
+						onMouseDown={() => setSelectedId(null)}
+						style={{
+							backgroundColor: "#1a1a1a",
+							backgroundImage:
+								"radial-gradient(circle at 1px 1px, rgba(255,255,255,0.12) 1px, transparent 0)",
+							backgroundSize: "24px 24px",
+						}}
+						role="button"
+						tabIndex={0}
+					>
+						<div
+							className="absolute origin-top-left"
+							style={{
+								transform: `translate(${pan.x}px, ${pan.y}px) scale(${zoom})`,
+								width: viewportWidth,
+								height: viewportHeight,
+								visibility: sizeKnown ? "visible" : "hidden",
+							}}
+						>
+							<div
+								className="shadow-[0_0_100px_rgba(0,0,0,0.9)] media-container relative bg-[#0a0a0a] ring-2 ring-white/15 rounded-sm"
+								style={{ width: viewportWidth, height: viewportHeight }}
+							>
+								{selectedId && (
+									<div className="absolute inset-0 pointer-events-none opacity-20 border-40 border-transparent">
+										<div className="w-full h-full border border-white/50 border-dashed" />
+									</div>
+								)}
+								<Player
+									ref={playerRef}
+									component={CompositionScene}
+									inputProps={{
+										layers,
+										viewportWidth,
+										viewportHeight,
+										backgroundColor,
+									}}
+									acknowledgeRemotionLicense
+									durationInFrames={Math.round((durationInMS / 1000) * fps)}
+									fps={fps}
+									compositionWidth={viewportWidth}
+									compositionHeight={viewportHeight}
+									style={{ width: "100%", height: "100%" }}
+									controls={false}
+									doubleClickToFullscreen={false}
+								/>
+							</div>
+						</div>
+						{!isPlaying && <InteractionOverlay />}
+					</div>
+
+					<InspectorPanel />
+
+					<div className="absolute bottom-6 left-1/2 -translate-x-1/2 z-40 transition-all duration-300">
+						<Toolbar onClose={onClose} onSave={handleSave} timeRef={timeRef} />
+					</div>
+				</div>
+				<TimelinePanel />
+			</div>
+		</EditorContext.Provider>
+	);
+};

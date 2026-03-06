@@ -16,6 +16,11 @@
 			"types": "./dist/index.d.mts",
 			"development": "./src/index.ts",
 			"import": "./dist/index.mjs"
+		},
+		"./types": {
+			"types": "./dist/types.d.mts",
+			"development": "./src/types.ts",
+			"import": "./dist/types.mjs"
 		}
 	},
 	"scripts": {

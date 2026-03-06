@@ -1,11 +1,10 @@
-import type { BulkUpdatePayload } from "@gatewai/types";
+import type { BulkUpdatePayload } from "@gatewai/core/types";
+import { createRpcClient } from "@gatewai/rpc-client";
 import type { InferRequestType, InferResponseType } from "hono/client";
-import { hc } from "hono/client";
-import type { AppType } from "../../../apps/gatewai-fe/backend/src/index";
 
 // We create a dummy client instance purely to extract types via Hono's Infer utility.
-// This ensures your client types automatically stay in sync with your Zod schemas.
-const client = hc<AppType>("");
+// This ensures your client types automatically stay in sync with Zod schemas.
+const client = createRpcClient();
 
 // 1. API Run Types
 type ApiRunRoute = (typeof client.api.v1)["api-run"];
@@ -95,7 +94,7 @@ export interface APIClientConfig {
 export class GatewaiApiClient {
 	private baseUrl: string;
 	private apiKey: string;
-	private rpc: ReturnType<typeof hc<AppType>>;
+	private rpc: ReturnType<typeof createRpcClient>;
 	private defaultHeaders: Record<string, string>;
 
 	// ==================== STATIC HELPERS ====================
@@ -133,7 +132,7 @@ export class GatewaiApiClient {
 			"X-API-KEY": this.apiKey,
 			...config.headers,
 		};
-		this.rpc = hc<AppType>(this.baseUrl, {
+		this.rpc = createRpcClient(this.baseUrl, {
 			headers: this.defaultHeaders,
 		});
 	}

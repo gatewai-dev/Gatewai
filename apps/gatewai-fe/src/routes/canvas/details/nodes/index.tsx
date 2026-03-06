@@ -1,67 +1,66 @@
-import { BlurNodeComponent } from "./blur";
-import { CompositorNodeComponent } from "./compose";
-import { CropNodeComponent } from "./crop";
-import { ExportNodeComponent } from "./export";
-import { FileNodeComponent } from "./file";
-import { ImageGenNodeComponent } from "./image-gen";
-import { LlmNodeComponent } from "./llm";
-import { ModulateNodeComponent } from "./modulate";
-import { PaintNodeComponent } from "./paint";
-import { PreviewNodeComponent } from "./preview";
-import { ResizeNodeComponent } from "./resize";
-import { SpeechToTextNodeComponent } from "./speech-to-text";
-import { NoteNodeComponent } from "./sticky-note";
-import { TextNodeComponent } from "./text";
-import { TextMergerNodeComponent } from "./text-merger";
-import { TextToSpeechNodeComponent } from "./text-to-speech";
-import { VideoCompositorNodeComponent } from "./video-compose";
-import { VideoGenNodeComponent } from "./video-gen";
-import { VideoGenExtendNodeComponent } from "./video-gen-extend";
-import { VideoGenFirstLastFrameNodeComponent } from "./video-gen-first-last-frame";
+import { discoveredNodes } from "virtual:gatewai-nodes";
+import type {
+	NodeIconEntry,
+	NodePricingFn,
+	NodeRegistryValue,
+} from "@gatewai/react-canvas";
+import type { ComponentType, MemoExoticComponent } from "react";
+import { PiCube } from "react-icons/pi";
 
-// Node types mapping
-const nodeTypes = {
-	LLM: LlmNodeComponent,
-	Text: TextNodeComponent,
-	ImageGen: ImageGenNodeComponent,
-	Blur: BlurNodeComponent,
-	Resize: ResizeNodeComponent,
-	File: FileNodeComponent,
-	Crop: CropNodeComponent,
-	Paint: PaintNodeComponent,
-	Note: NoteNodeComponent,
-	Preview: PreviewNodeComponent,
-	Modulate: ModulateNodeComponent,
-	Export: ExportNodeComponent,
-	Compositor: CompositorNodeComponent,
-	VideoGen: VideoGenNodeComponent,
-	VideoGenExtend: VideoGenExtendNodeComponent,
-	VideoGenFirstLastFrame: VideoGenFirstLastFrameNodeComponent,
-	SpeechToText: SpeechToTextNodeComponent,
-	TextToSpeech: TextToSpeechNodeComponent,
-	VideoCompositor: VideoCompositorNodeComponent,
-	TextMerger: TextMergerNodeComponent,
-};
+/**
+ * Eagerly resolves all discovered node browser modules and builds the
+ * registry maps: nodeTypes, iconMap, configMap, pageMap, and pricingMap.
+ *
+ * Must be called (and awaited) before the canvas UI renders.
+ */
+export async function initNodeRegistry(): Promise<NodeRegistryValue> {
+	const nodeTypes: Record<string, MemoExoticComponent<ComponentType<any>>> = {};
+	const iconMap: Record<string, NodeIconEntry> = {};
+	const configMap: Record<string, ComponentType<any>> = {};
+	const pageMap: Record<string, ComponentType<any>> = {};
+	const pricingMap: Record<string, NodePricingFn> = {};
 
-export {
-	nodeTypes,
-	LlmNodeComponent,
-	TextNodeComponent,
-	ResizeNodeComponent,
-	ImageGenNodeComponent,
-	NoteNodeComponent,
-	BlurNodeComponent,
-	CropNodeComponent,
-	FileNodeComponent,
-	PaintNodeComponent,
-	PreviewNodeComponent,
-	ModulateNodeComponent,
-	ExportNodeComponent,
-	CompositorNodeComponent,
-	VideoGenNodeComponent,
-	VideoGenExtendNodeComponent,
-	VideoGenFirstLastFrameNodeComponent,
-	SpeechToTextNodeComponent,
-	TextToSpeechNodeComponent,
-	TextMergerNodeComponent,
-};
+	// We'll use PiCube as a fallback for everything initially
+	const fallbackIcon = { mainIcon: PiCube };
+
+	await Promise.all(
+		Object.entries(discoveredNodes).map(async ([type, entry]) => {
+			const mod = await entry.browser();
+			const plugin = mod.default;
+
+			// 1. Component (nodeTypes)
+			nodeTypes[type] = plugin.Component;
+
+			// 2. Icon (iconMap)
+			if (plugin.mainIconComponent) {
+				iconMap[type] = { mainIcon: plugin.mainIconComponent };
+			} else {
+				iconMap[type] = fallbackIcon;
+			}
+
+			// 3. Config (configMap)
+			if (plugin.ConfigComponent) {
+				configMap[type] = plugin.ConfigComponent;
+			}
+
+			// 4. Page (pageMap)
+			if (plugin.PageContentComponent) {
+				pageMap[type] = plugin.PageContentComponent;
+			}
+
+			// 5. Pricing (pricingMap) — spread from metadata via defineClient
+			const pricingFn = plugin.pricing;
+			if (typeof pricingFn === "function") {
+				pricingMap[type] = pricingFn;
+			}
+		}),
+	);
+
+	return {
+		nodeTypes,
+		iconMap,
+		configMap,
+		pageMap,
+		pricingMap,
+	} as unknown as NodeRegistryValue;
+}

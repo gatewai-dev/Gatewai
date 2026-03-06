@@ -1,0 +1,15 @@
+{
+	"extends": "@gatewai/tsconfig/base.json",
+	"compilerOptions": {
+		"outDir": "dist",
+		"rootDir": "src",
+		"declaration": true,
+		"declarationMap": true,
+		"module": "ESNext",
+		"moduleResolution": "Bundler",
+		"skipLibCheck": true,
+		"noEmit": true
+	},
+	"include": ["src"],
+	"exclude": ["node_modules", "dist"]
+}

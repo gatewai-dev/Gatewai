@@ -1,3 +1,9 @@
+import type { CanvasListRPC } from "@gatewai/react-store";
+import {
+	useCreateCanvasMutation,
+	useDeleteCanvasMutation,
+	useGetCanvasListQuery,
+} from "@gatewai/react-store";
 import {
 	createContext,
 	type Dispatch,
@@ -6,12 +12,6 @@ import {
 	useContext,
 	useState,
 } from "react";
-import type { CanvasListRPC } from "@/rpc/types";
-import {
-	useCreateCanvasMutation,
-	useDeleteCanvasMutation,
-	useGetCanvasListQuery,
-} from "@/store/canvas-list";
 
 interface CanvasContextType {
 	canvasList: CanvasListRPC | undefined;
