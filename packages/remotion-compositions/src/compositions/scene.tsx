@@ -643,6 +643,24 @@ const buildLayerTextStyle = (
 	paintOrder: "stroke fill",
 });
 
+/**
+ * Resolves the final duration of a layer cleanly by capping the requested layer
+ * duration to the maximum allowable duration defined by intrinsic virtual media metadata
+ * (such as cuts/crops that dictate actual media bounds).
+ */
+export const resolveLayerDuration = (
+	layerDurationInMS?: number,
+	metaDurationMs?: number,
+	defaultDuration: number = DEFAULT_DURATION_MS,
+): number => {
+	// If both exist, layer duration should never natively exceed its actual cut/crop metadata ceiling
+	if (layerDurationInMS && metaDurationMs) {
+		return Math.min(layerDurationInMS, metaDurationMs);
+	}
+	// Fall back securely
+	return layerDurationInMS || metaDurationMs || defaultDuration;
+};
+
 export const calculateLayerTransform = (
 	layer: ExtendedLayer,
 	frame: number,
@@ -656,10 +674,13 @@ export const calculateLayerTransform = (
 	let rotation = layer.rotation;
 	let opacity = layer.opacity ?? 1;
 	const volume = layer.volume ?? 1;
-	const layerDurationMs =
-		layer.durationInMS ||
-		layer.virtualMedia?.metadata?.durationMs ||
-		DEFAULT_DURATION_MS;
+
+	const layerDurationMs = resolveLayerDuration(
+		layer.durationInMS,
+		layer.virtualMedia?.metadata?.durationMs,
+		DEFAULT_DURATION_MS,
+	);
+
 	const duration = Math.round((layerDurationMs / 1000) * fps);
 	const animations = layer.animations ?? [];
 	if (animations.length === 0)
@@ -886,14 +907,17 @@ export const SingleClipComposition: React.FC<{
 
 							if (childOp.op === "layer") {
 								const lop = childOp;
-								const contentType = getMediaType(child.children?.[0]);
+								const childVirtualMedia = child.children?.[0];
+								const contentType = getMediaType(childVirtualMedia);
+								const childMeta = getActiveMediaMetadata(childVirtualMedia);
+
 								return {
 									...textStyle, // Base inheritance MUST come first
 
 									// Structural overrides MUST be explicit to prevent overwrite bugs
 									id: `child-${index}`,
 									type: contentType,
-									virtualMedia: child.children?.[0],
+									virtualMedia: childVirtualMedia,
 
 									// Use operation props if present, fallback to inherited textStyle safely
 									x: lop.x ?? textStyle?.x ?? 0,
@@ -904,7 +928,14 @@ export const SingleClipComposition: React.FC<{
 									scale: lop.scale ?? textStyle?.scale ?? 1,
 									opacity: lop.opacity ?? textStyle?.opacity ?? 1,
 									startFrame: lop.startFrame ?? textStyle?.startFrame ?? 0,
-									durationInMS: lop.durationInMS || composeDuration,
+
+									// Correctly cap the layer definition's requested duration by the child media ceiling
+									durationInMS: resolveLayerDuration(
+										lop.durationInMS ?? textStyle?.durationInMS,
+										childMeta?.durationMs,
+										composeDuration,
+									),
+
 									zIndex: lop.zIndex ?? textStyle?.zIndex ?? index,
 									trimStart: lop.trimStart ?? textStyle?.trimStart,
 									trimEnd: lop.trimEnd ?? textStyle?.trimEnd,
@@ -945,8 +976,11 @@ export const SingleClipComposition: React.FC<{
 							const childMeta = getActiveMediaMetadata(child);
 							const childWidth = childMeta?.width ?? op.width;
 							const childHeight = childMeta?.height ?? op.height;
-							const childDuration =
-								childMeta?.durationMs ?? composeDuration ?? DEFAULT_DURATION_MS;
+							const childDuration = resolveLayerDuration(
+								undefined,
+								childMeta?.durationMs,
+								composeDuration ?? DEFAULT_DURATION_MS,
+							);
 
 							return {
 								id: `child-${index}`,
@@ -1388,15 +1422,18 @@ export const LayerRenderer: React.FC<{
 	const fps = Math.max(1, config.fps);
 	const startFrame = Math.max(0, layer.startFrame ?? 0);
 
-	// Use explicit duration, or intrinsic metadata duration, or fallback securely.
+	// Use explicit duration, or intrinsic metadata duration, capped at metadata if explicit exceeds.
 	const layerDurationMs = Math.max(
 		1,
-		layer.durationInMS ||
-			layer.virtualMedia?.metadata?.durationMs ||
+		resolveLayerDuration(
+			layer.durationInMS,
+			layer.virtualMedia?.metadata?.durationMs,
 			DEFAULT_DURATION_MS,
+		),
 	);
 
-	// Defensive check: A Sequence cannot have a durationInFrames less than 1.
+	// By restricting durationInFrames on the container Sequence to intrinsic metadata boundaries,
+	// Remotion automatically enforces absolute cutouts of media playing.
 	const duration = Math.max(1, Math.round((layerDurationMs / 1000) * fps));
 
 	const {
@@ -1615,18 +1652,22 @@ export const CompositionScene: React.FC<SceneProps> = ({
 
 		if (src || virtualMedia || type === "Text" || type === "Caption") {
 			const resolvedType = type || (isAudio ? "Audio" : "Video");
-			let resolvedDurationInMS = durationInMS;
-			if (!resolvedDurationInMS && virtualMedia) {
-				const activeMeta = getActiveMediaMetadata(virtualMedia);
-				if (activeMeta?.durationMs)
-					resolvedDurationInMS = activeMeta.durationMs;
-			}
 			const isCaption = resolvedType === "Caption";
 			const isText = resolvedType === "Text";
 			const isVisualMedia =
 				resolvedType === "Image" ||
 				resolvedType === "SVG" ||
 				resolvedType === "Video";
+
+			const activeMeta = virtualMedia
+				? getActiveMediaMetadata(virtualMedia)
+				: null;
+
+			const resolvedDurationInMS = resolveLayerDuration(
+				durationInMS,
+				activeMeta?.durationMs,
+				durationInMS, // default to prop duration if unavailable
+			);
 
 			let defaultWidth: number | string | undefined = viewportWidth;
 			let defaultHeight: number | string | undefined = viewportHeight;
@@ -1635,9 +1676,6 @@ export const CompositionScene: React.FC<SceneProps> = ({
 				defaultWidth = undefined;
 				defaultHeight = undefined;
 			} else if (isVisualMedia) {
-				const activeMeta = virtualMedia
-					? getActiveMediaMetadata(virtualMedia)
-					: null;
 				defaultWidth = activeMeta?.width ?? DEFAULT_MEDIA_DIMENSION;
 				defaultHeight = activeMeta?.height ?? DEFAULT_MEDIA_DIMENSION;
 			}
@@ -1654,6 +1692,7 @@ export const CompositionScene: React.FC<SceneProps> = ({
 							: data?.text || JSON.stringify(data),
 					width: defaultWidth,
 					height: defaultHeight,
+					durationInMS: resolvedDurationInMS, // Defend against overshoot natively
 					...(typeof data === "object" && data !== null ? data : {}),
 					animations,
 					opacity,
@@ -1766,11 +1805,15 @@ export const CompositionScene: React.FC<SceneProps> = ({
 			>
 				{layersToRender.map((layer) => {
 					const startFrame = Math.max(0, layer.startFrame ?? 0);
+
+					// Final ceiling pass to safely bound rendering loops for the component frame block
 					const explicitLayerDurationMs = Math.max(
 						1,
-						layer.durationInMS ||
-							layer.virtualMedia?.metadata?.durationMs ||
+						resolveLayerDuration(
+							layer.durationInMS,
+							layer.virtualMedia?.metadata?.durationMs,
 							DEFAULT_DURATION_MS,
+						),
 					);
 					const layerNativeDuration = Math.max(
 						1,

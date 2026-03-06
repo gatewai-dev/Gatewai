@@ -2824,7 +2824,6 @@ const InspectorPanel: React.FC = () => {
 		viewportHeight,
 		updateViewportWidth,
 		updateViewportHeight,
-		initialLayersData,
 		fps,
 		setFps,
 		backgroundColor,
