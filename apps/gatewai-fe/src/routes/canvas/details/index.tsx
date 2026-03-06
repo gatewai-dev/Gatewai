@@ -15,6 +15,7 @@ import {
 } from "@gatewai/react-canvas";
 import { LoadingSpinner } from "@gatewai/ui-kit";
 import { Suspense, use } from "react";
+import { Helmet } from "react-helmet-async";
 import { Outlet, useParams } from "react-router";
 import { initNodeRegistry } from "./nodes";
 
@@ -67,6 +68,9 @@ function CanvasDetailsRoot() {
 				</div>
 			}
 		>
+			<Helmet>
+				<title>Canvas - Gatewai</title>
+			</Helmet>
 			<CanvasDetailsInner />
 		</Suspense>
 	);

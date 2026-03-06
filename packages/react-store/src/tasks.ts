@@ -166,12 +166,25 @@ const tasksSlice = createSlice({
 			})
 			.addCase(stopBatch.fulfilled, (state, action) => {
 				const { batchId } = action.meta.arg;
-				batchAdapter.updateOne(state, {
-					id: batchId,
-					changes: {
-						finishedAt: new Date().toISOString(),
-					},
-				});
+				const batch = state.entities[batchId];
+				if (batch) {
+					const updatedTasks = batch.tasks.map((t) => {
+						if (t.status === "QUEUED") {
+							return {
+								...t,
+								status: "CANCELLED" as any,
+								finishedAt: new Date().toISOString(),
+							};
+						}
+						return t;
+					});
+					batchAdapter.updateOne(state, {
+						id: batchId,
+						changes: {
+							tasks: updatedTasks,
+						},
+					});
+				}
 			});
 	},
 });

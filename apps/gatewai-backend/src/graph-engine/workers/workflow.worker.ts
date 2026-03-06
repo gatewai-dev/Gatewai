@@ -318,7 +318,8 @@ export async function triggerNextTask(
 			.filter(
 				(t) =>
 					(t.status && t.status === TaskStatus.COMPLETED) ||
-					t.status === TaskStatus.FAILED,
+					t.status === TaskStatus.FAILED ||
+					t.status === TaskStatus.CANCELLED,
 			)
 			.map((t) => t.id),
 	);

@@ -35,12 +35,12 @@ const CanvasTasksPanel = memo(() => {
 			(tb) => tb.startedAt == null && tb.finishedAt == null,
 		) ?? [];
 	const oneHourAgo = new Date(Date.now() - 60 * 60 * 1000);
-	const failedTaskBatches =
+	const terminalTaskBatches =
 		taskBatches?.filter(
 			(tb) =>
 				tb.finishedAt != null &&
 				new Date(tb.finishedAt) > oneHourAgo &&
-				tb.tasks.some((t) => t.status === "FAILED"),
+				tb.tasks.some((t) => t.status === "FAILED" || t.status === "CANCELLED"),
 		) ?? [];
 
 	const sortedExecuting = [...executingTaskBatches].sort(
@@ -49,17 +49,17 @@ const CanvasTasksPanel = memo(() => {
 	const sortedQueued = [...queuedTaskBatches].sort(
 		(a, b) => new Date(b.createdAt).getTime() - new Date(a.createdAt).getTime(),
 	);
-	const sortedFailed = [...failedTaskBatches].sort(
+	const sortedFailed = [...terminalTaskBatches].sort(
 		(a, b) => new Date(b.createdAt).getTime() - new Date(a.createdAt).getTime(),
 	);
 
 	const executingCount = sortedExecuting.length;
 	const queuedCount = sortedQueued.length;
-	const failedCount = sortedFailed.length;
-	const totalCount = executingCount + queuedCount + failedCount;
+	const terminalCount = sortedFailed.length;
+	const totalCount = executingCount + queuedCount + terminalCount;
 
 	const indicatorColor =
-		failedCount > 0
+		terminalCount > 0
 			? "bg-destructive"
 			: executingCount > 0
 				? "bg-amber-400"
@@ -120,6 +120,9 @@ const CanvasTasksPanel = memo(() => {
 											const queued = tb.tasks.filter(
 												(t) => t.status === "QUEUED",
 											).length;
+											const cancelled = tb.tasks.filter(
+												(t) => t.status === "CANCELLED",
+											).length;
 											return (
 												<div
 													key={tb.id}
@@ -130,8 +133,9 @@ const CanvasTasksPanel = memo(() => {
 														<span className="text-xs font-medium tabular-nums">
 															{exec} Running
 														</span>
-														<span className="text-[10px] text-muted-foreground">
-															{queued} in queue
+														<span className="text-[10px] text-muted-foreground uppercase">
+															{queued} waiting{" "}
+															{cancelled > 0 && ` • ${cancelled} cancelled`}
 														</span>
 													</div>
 													<Button
@@ -191,15 +195,18 @@ const CanvasTasksPanel = memo(() => {
 								</section>
 							)}
 
-							{failedCount > 0 && (
+							{terminalCount > 0 && (
 								<section className="space-y-1.5">
 									<h5 className="text-[10px] font-bold text-destructive/70 uppercase px-1">
-										Incidents (Last 60m)
+										Incidents & Cancellations (Last 60m)
 									</h5>
 									<Accordion type="multiple" className="w-full space-y-1">
 										{sortedFailed.map((tb) => {
 											const failed = tb.tasks.filter(
 												(t) => t.status === "FAILED",
+											);
+											const cancelled = tb.tasks.filter(
+												(t) => t.status === "CANCELLED",
 											);
 											return (
 												<AccordionItem
@@ -209,9 +216,18 @@ const CanvasTasksPanel = memo(() => {
 												>
 													<AccordionTrigger className="py-2 hover:no-underline">
 														<div className="flex items-center gap-2 text-xs">
-															<AlertCircle className="h-3 w-3 text-destructive" />
+															{failed.length > 0 ? (
+																<AlertCircle className="h-3 w-3 text-destructive" />
+															) : (
+																<XCircle className="h-3 w-3 text-muted-foreground" />
+															)}
 															<span className="font-medium">
-																{failed.length} Nodes failed
+																{failed.length > 0 && `${failed.length} failed`}
+																{failed.length > 0 &&
+																	cancelled.length > 0 &&
+																	" • "}
+																{cancelled.length > 0 &&
+																	`${cancelled.length} cancelled`}
 															</span>
 														</div>
 													</AccordionTrigger>
@@ -227,6 +243,19 @@ const CanvasTasksPanel = memo(() => {
 																<p className="text-[11px] text-foreground/80 leading-snug">
 																	{(ft?.error as unknown as { message: string })
 																		?.message ?? "Execution aborted"}
+																</p>
+															</div>
+														))}
+														{cancelled.map((ct) => (
+															<div
+																key={ct.id}
+																className="pl-2 border-l-2 border-muted/30 py-1 space-y-0.5"
+															>
+																<p className="text-[10px] font-mono font-bold text-muted-foreground">
+																	ID: {ct.nodeId ?? "anonymous"}
+																</p>
+																<p className="text-[11px] text-muted-foreground/80 leading-snug">
+																	Process was cancelled
 																</p>
 															</div>
 														))}

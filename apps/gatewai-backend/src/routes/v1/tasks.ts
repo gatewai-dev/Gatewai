@@ -123,11 +123,6 @@ const tasksRouter = new Hono<{ Variables: AuthorizedHonoTypes }>({
 					return;
 				}
 
-				await tx.taskBatch.update({
-					where: { id: batchId },
-					data: { finishedAt: new Date() },
-				});
-
 				await tx.task.updateMany({
 					where: {
 						batchId,
