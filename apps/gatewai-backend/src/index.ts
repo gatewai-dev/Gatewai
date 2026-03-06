@@ -22,7 +22,7 @@ import { registerNodes } from "./register-nodes.js";
 
 // biome-ignore lint/suspicious/noExplicitAny: Smee
 let smeeProxy: any = null;
-if (process.env.NODE_ENV !== "production" && ENV_CONFIG.WEBHOOK_PROXY_URL) {
+if (ENV_CONFIG.NODE_ENV !== "production" && ENV_CONFIG.WEBHOOK_PROXY_URL) {
 	const smee = new SmeeClient({
 		source: ENV_CONFIG.WEBHOOK_PROXY_URL as string,
 		target: `${ENV_CONFIG.BASE_URL}/api/auth/polar/webhooks`,
@@ -38,7 +38,7 @@ const sleep = (time: number) =>
 registerBackendServices();
 
 // Sleep for 2 seconds to allow HMR for node builds on dev.
-if (process.env.NODE_ENV !== "production") {
+if (ENV_CONFIG.NODE_ENV !== "production") {
 	await sleep(2000);
 }
 
@@ -96,7 +96,7 @@ const app = new Hono<{
 		"/api/*",
 		cors({
 			origin: (origin) => {
-				if (process.env.NODE_ENV === "production") {
+				if (ENV_CONFIG.NODE_ENV === "production") {
 					return origin === ENV_CONFIG.BASE_URL ? origin : null;
 				}
 				return origin;

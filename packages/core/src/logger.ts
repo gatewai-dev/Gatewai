@@ -1,4 +1,5 @@
 import pino from "pino";
+import { ENV_CONFIG } from "./config.js";
 
 // Define a minimal interface to mock AsyncLocalStorage in the browser
 interface ALS {
@@ -37,7 +38,7 @@ export interface Logger {
 }
 
 export const logger: Logger = pino({
-	level: process.env.LOG_LEVEL || "debug",
+	level: ENV_CONFIG.LOG_LEVEL || "debug",
 	timestamp: pino.stdTimeFunctions.isoTime,
 	mixin() {
 		return loggerContext.getStore() || {};
@@ -53,7 +54,7 @@ export const logger: Logger = pino({
 		remove: true,
 	},
 	transport:
-		process.env.NODE_ENV !== "production"
+		ENV_CONFIG.NODE_ENV !== "production"
 			? {
 					target: "pino-pretty",
 					options: {

@@ -1,6 +1,7 @@
 import fs from "node:fs";
 import path from "node:path";
 import { fileURLToPath } from "node:url";
+import { ENV_CONFIG } from "@gatewai/core";
 
 const __filename = fileURLToPath(import.meta.url);
 const __dirname = path.dirname(__filename);
@@ -45,7 +46,7 @@ export async function discoverNodes() {
 
 				let entryPath = `${pkg.name}/server`;
 				const isDev =
-					process.env.NODE_ENV !== "production" ||
+					ENV_CONFIG.NODE_ENV !== "production" ||
 					process.env.npm_lifecycle_event === "dev";
 				const serverExports = pkg.exports?.["./server"];
 
