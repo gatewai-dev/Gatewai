@@ -1,6 +1,6 @@
 import assert from "node:assert";
 import { readFile, rm } from "node:fs/promises";
-import { type IMediaRendererService, logger } from "@gatewai/core";
+import { type EnvConfig, type IMediaRendererService, logger } from "@gatewai/core";
 import { TOKENS } from "@gatewai/core/di";
 import type { OutputItem, VirtualMediaData } from "@gatewai/core/types";
 import { DataType } from "@gatewai/db";
@@ -22,6 +22,7 @@ export class SpeechToTextProcessor implements NodeProcessor {
     constructor(
         @inject(TOKENS.STORAGE) private storage: StorageService,
         @inject(TOKENS.GRAPH_RESOLVERS) private graph: GraphResolvers,
+        @inject(TOKENS.ENV) private env: EnvConfig,
         @inject(TOKENS.AI_PROVIDER) private aiProvider: AIProvider,
         @inject(TOKENS.MEDIA_RENDERER) private renderer: IMediaRendererService,
     ) { }
@@ -93,6 +94,9 @@ export class SpeechToTextProcessor implements NodeProcessor {
                         fps: virtualMedia.metadata.fps ?? 30,
                         durationInFrames: (virtualMedia.metadata.durationMs ?? 1000) / 1000 * (virtualMedia.metadata.fps ?? 30),
                         codec: "mp3",
+                        envVariables: {
+                            VITE_BASE_URL: this.env.BASE_URL,
+                        },
                     });
 
                     tempFilePathToCleanup = renderResult.filePath;
