@@ -418,7 +418,9 @@ const CaptionsFromUrl: React.FC<CaptionsFromUrlProps> = ({
 }) => {
 	const [captions, setCaptions] = useState<Caption[] | null>(null);
 	const frame = useCurrentFrame();
-	const { fps, width: compositionWidth } = useVideoConfig();
+	const config = useVideoConfig();
+	const fps = Math.max(1, config.fps);
+	const compositionWidth = config.width;
 
 	useEffect(() => {
 		const handle = delayRender(`Loading Captions from: ${src}`);
@@ -853,6 +855,7 @@ export const SingleClipComposition: React.FC<{
 	volume?: number;
 	playbackRateOverride?: number;
 	trimStartOverride?: number;
+	trimEndOverride?: number; // ADDED: defensively strictly cap end of playing media
 	textStyle?: Partial<ExtendedLayer>;
 	containerWidth: number;
 	containerHeight: number;
@@ -861,11 +864,13 @@ export const SingleClipComposition: React.FC<{
 	volume = 1,
 	playbackRateOverride,
 	trimStartOverride,
+	trimEndOverride,
 	textStyle,
 	containerWidth,
 	containerHeight,
 }) => {
-	const { fps } = useVideoConfig();
+	const { fps: rawFps } = useVideoConfig();
+	const fps = Math.max(1, rawFps);
 	const op = virtualMedia?.operation;
 	if (!op) return null;
 
@@ -881,14 +886,14 @@ export const SingleClipComposition: React.FC<{
 
 							if (childOp.op === "layer") {
 								const lop = childOp;
-								const contentType = getMediaType(child.children[0]);
+								const contentType = getMediaType(child.children?.[0]);
 								return {
 									...textStyle, // Base inheritance MUST come first
 
 									// Structural overrides MUST be explicit to prevent overwrite bugs
 									id: `child-${index}`,
 									type: contentType,
-									virtualMedia: child.children[0],
+									virtualMedia: child.children?.[0],
 
 									// Use operation props if present, fallback to inherited textStyle safely
 									x: lop.x ?? textStyle?.x ?? 0,
@@ -935,7 +940,7 @@ export const SingleClipComposition: React.FC<{
 								} as ExtendedLayer;
 							}
 
-							// Handle other operations (crop, rotate, filter, flig, speed, cut, source, text)
+							// Handle other operations (crop, rotate, filter, flip, speed, cut, source, text)
 							const contentType = getMediaType(child);
 							const childMeta = getActiveMediaMetadata(child);
 							const childWidth = childMeta?.width ?? op.width;
@@ -968,7 +973,7 @@ export const SingleClipComposition: React.FC<{
 			/>
 		);
 		const trimFrames = trimStartOverride
-			? Math.floor(trimStartOverride * fps)
+			? Math.max(0, Math.floor(trimStartOverride * fps))
 			: 0;
 		if (trimFrames > 0)
 			return (
@@ -981,7 +986,6 @@ export const SingleClipComposition: React.FC<{
 
 	if (op.op === "source" || op.op === "text") {
 		const params = computeRenderParams(virtualMedia);
-
 		const mediaType = getMediaType(virtualMedia);
 
 		if (mediaType === "Text") {
@@ -1036,23 +1040,49 @@ export const SingleClipComposition: React.FC<{
 
 		if (!params.sourceUrl) return <AbsoluteFill />;
 
-		const finalPlaybackRate =
-			(Number(playbackRateOverride) || 1) * (Number(params.speed) || 1);
-		const effectiveTrimSec =
-			(trimStartOverride ?? 0) + (Number(params.trimStartSec) || 0);
+		const finalPlaybackRate = Math.max(
+			0.01,
+			(Number(playbackRateOverride) || 1) * (Number(params.speed) || 1),
+		);
+
+		const effectiveTrimSec = Math.max(
+			0,
+			(Number(trimStartOverride) || 0) + (Number(params.trimStartSec) || 0),
+		);
 		const startFrame = Math.floor(effectiveTrimSec * fps);
 
-		if (mediaType === "Audio")
+		// Defensively calculate actual end frame to slice media completely.
+		const mappedTrimEndParams =
+			params.trimEndSec !== undefined && params.trimEndSec !== null
+				? Number(params.trimEndSec)
+				: undefined;
+		const effectiveTrimEndSec = trimEndOverride ?? mappedTrimEndParams;
+
+		let endFrame: number | undefined;
+		if (
+			effectiveTrimEndSec !== undefined &&
+			!isNaN(effectiveTrimEndSec) &&
+			effectiveTrimEndSec > effectiveTrimSec
+		) {
+			endFrame = Math.max(
+				startFrame + 1,
+				Math.floor(effectiveTrimEndSec * fps),
+			);
+		}
+
+		if (mediaType === "Audio") {
 			return (
 				<Audio
 					src={params.sourceUrl}
 					trimBefore={startFrame}
+					endAt={endFrame} // Stops immediately at the required trim end
 					playbackRate={finalPlaybackRate}
 					volume={volume}
 				/>
 			);
+		}
 
-		if (isStaticVisualMedia(mediaType))
+		if (isStaticVisualMedia(mediaType)) {
 			return (
 				<Img
 					src={params.sourceUrl}
@@ -1066,12 +1096,14 @@ export const SingleClipComposition: React.FC<{
 					}}
 				/>
 			);
+		}
 
 		return (
 			<Video
 				src={params.sourceUrl}
 				playbackRate={finalPlaybackRate}
 				trimBefore={startFrame}
+				endAt={endFrame} // Freezes video frame correctly if wrapped sequence lives longer
 				volume={volume}
 				style={{
 					position: "absolute",
@@ -1087,7 +1119,7 @@ export const SingleClipComposition: React.FC<{
 	}
 
 	if (op.op === "speed") {
-		const childVideo = virtualMedia.children[0];
+		const childVideo = virtualMedia.children?.[0];
 		if (!childVideo) return null;
 		return (
 			<SingleClipComposition
@@ -1097,6 +1129,7 @@ export const SingleClipComposition: React.FC<{
 					(Number(playbackRateOverride) || 1) * (Number(op.rate) || 1)
 				}
 				trimStartOverride={trimStartOverride}
+				trimEndOverride={trimEndOverride}
 				textStyle={textStyle}
 				containerWidth={containerWidth}
 				containerHeight={containerHeight}
@@ -1105,14 +1138,24 @@ export const SingleClipComposition: React.FC<{
 	}
 
 	if (op.op === "cut") {
-		const childVideo = virtualMedia.children[0];
+		const childVideo = virtualMedia.children?.[0];
 		if (!childVideo) return null;
+
+		const effectiveStart =
+			(trimStartOverride ?? 0) + (Number(op.startSec) || 0);
+		// Defensively propagate inner end cut properly within bounds of any outer limit
+		const effectiveEnd =
+			op.endSec !== undefined
+				? (trimStartOverride ?? 0) + Number(op.endSec)
+				: trimEndOverride;
+
 		return (
 			<SingleClipComposition
 				virtualMedia={childVideo}
 				volume={volume}
 				playbackRateOverride={playbackRateOverride}
-				trimStartOverride={(trimStartOverride ?? 0) + (op.startSec ?? 0)}
+				trimStartOverride={effectiveStart}
+				trimEndOverride={effectiveEnd}
 				textStyle={textStyle}
 				containerWidth={containerWidth}
 				containerHeight={containerHeight}
@@ -1120,9 +1163,10 @@ export const SingleClipComposition: React.FC<{
 		);
 	}
 
-	const childVideo = virtualMedia.children[0];
+	const childVideo = virtualMedia.children?.[0];
 	let childContainerWidth = containerWidth;
 	let childContainerHeight = containerHeight;
+
 	if (op.op === "crop") {
 		const wp = Math.max(0.01, Number(op.widthPercentage) || 100);
 		const hp = Math.max(0.01, Number(op.heightPercentage) || 100);
@@ -1136,6 +1180,7 @@ export const SingleClipComposition: React.FC<{
 			volume={volume}
 			playbackRateOverride={playbackRateOverride}
 			trimStartOverride={trimStartOverride}
+			trimEndOverride={trimEndOverride}
 			textStyle={op.op === "layer" ? { ...textStyle, ...op } : textStyle}
 			containerWidth={childContainerWidth}
 			containerHeight={childContainerHeight}
@@ -1206,6 +1251,7 @@ const LayerContentRenderer: React.FC<{
 				volume={animVolume}
 				playbackRateOverride={layer.speed}
 				trimStartOverride={layer.trimStart}
+				trimEndOverride={layer.trimEnd}
 				textStyle={layer}
 				containerWidth={cWidth}
 				containerHeight={cHeight}
@@ -1219,6 +1265,7 @@ const LayerContentRenderer: React.FC<{
 					virtualMedia={layer.virtualMedia}
 					volume={animVolume}
 					trimStartOverride={layer.trimStart}
+					trimEndOverride={layer.trimEnd}
 					textStyle={layer}
 					containerWidth={cWidth}
 					containerHeight={cHeight}
@@ -1240,6 +1287,7 @@ const LayerContentRenderer: React.FC<{
 					volume={animVolume}
 					playbackRateOverride={layer.speed}
 					trimStartOverride={layer.trimStart}
+					trimEndOverride={layer.trimEnd}
 					textStyle={layer}
 					containerWidth={cWidth}
 					containerHeight={cHeight}
@@ -1255,6 +1303,7 @@ const LayerContentRenderer: React.FC<{
 					virtualMedia={layer.virtualMedia}
 					volume={animVolume}
 					trimStartOverride={layer.trimStart}
+					trimEndOverride={layer.trimEnd}
 					textStyle={layer}
 					containerWidth={cWidth}
 					containerHeight={cHeight}
@@ -1335,15 +1384,21 @@ export const LayerRenderer: React.FC<{
 	viewport: { w: number; h: number };
 }> = ({ layer, viewport }) => {
 	const frame = useCurrentFrame();
-	const { fps } = useVideoConfig();
-	const startFrame = layer.startFrame ?? 0;
+	const config = useVideoConfig();
+	const fps = Math.max(1, config.fps);
+	const startFrame = Math.max(0, layer.startFrame ?? 0);
 
-	// Use explicit duration, or intrinsic metadata duration, or fallback
-	const layerDurationMs =
+	// Use explicit duration, or intrinsic metadata duration, or fallback securely.
+	const layerDurationMs = Math.max(
+		1,
 		layer.durationInMS ||
-		layer.virtualMedia?.metadata?.durationMs ||
-		DEFAULT_DURATION_MS;
-	const duration = Math.round((layerDurationMs / 1000) * fps);
+			layer.virtualMedia?.metadata?.durationMs ||
+			DEFAULT_DURATION_MS,
+	);
+
+	// Defensive check: A Sequence cannot have a durationInFrames less than 1.
+	const duration = Math.max(1, Math.round((layerDurationMs / 1000) * fps));
+
 	const {
 		x: animX,
 		y: animY,
@@ -1546,7 +1601,8 @@ export const CompositionScene: React.FC<SceneProps> = ({
 	y,
 }) => {
 	const frame = useCurrentFrame();
-	const { fps } = useVideoConfig();
+	const config = useVideoConfig();
+	const fps = Math.max(1, config.fps);
 
 	useEnsureFontsLoaded(layers, virtualMedia);
 
@@ -1709,15 +1765,19 @@ export const CompositionScene: React.FC<SceneProps> = ({
 				}}
 			>
 				{layersToRender.map((layer) => {
-					const startFrame = layer.startFrame ?? 0;
-					const explicitLayerDuration =
+					const startFrame = Math.max(0, layer.startFrame ?? 0);
+					const explicitLayerDurationMs = Math.max(
+						1,
 						layer.durationInMS ||
-						layer.virtualMedia?.metadata?.durationMs ||
-						DEFAULT_DURATION_MS;
-					const layerNativeDuration = Math.round(
-						(explicitLayerDuration / 1000) * fps,
+							layer.virtualMedia?.metadata?.durationMs ||
+							DEFAULT_DURATION_MS,
+					);
+					const layerNativeDuration = Math.max(
+						1,
+						Math.round((explicitLayerDurationMs / 1000) * fps),
 					);
 					const endFrame = startFrame + layerNativeDuration;
+
 					if (frame < startFrame || frame >= endFrame) return null;
 					return (
 						<LayerRenderer key={layer.id} layer={layer} viewport={viewport} />

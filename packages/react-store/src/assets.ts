@@ -16,10 +16,26 @@ export const assetsAPI = createApi({
 		baseUrl: `/api/v1/assets`,
 	}),
 	endpoints: (build) => ({
-		getUserAssets: build.query<UserAssetsListRPC, UserAssetsListRPCParams>({
-			queryFn: async ({ query }) => {
+		getUserAssets: build.infiniteQuery<
+			UserAssetsListRPC,
+			UserAssetsListRPCParams,
+			number
+		>({
+			infiniteQueryOptions: {
+				initialPageParam: 0,
+				getNextPageParam: (lastPage) => {
+					const nextIndex = lastPage.pageIndex + 1;
+					const totalPages = Math.ceil(lastPage.total / lastPage.pageSize);
+					return nextIndex < totalPages ? nextIndex : undefined;
+				},
+			},
+			queryFn: async ({ queryArg, pageParam }) => {
 				const response = await appRPCClient.api.v1.assets.$get({
-					query,
+					query: {
+						...queryArg.query,
+						pageIndex: pageParam,
+						pageSize: queryArg.query.pageSize ?? 20,
+					},
 				});
 				const data = await response.json();
 				return { data };
@@ -89,7 +105,7 @@ export const assetsAPI = createApi({
 // Export hooks for usage in functional components, which are
 // auto-generated based on the defined endpoints
 export const {
-	useGetUserAssetsQuery,
+	useGetUserAssetsInfiniteQuery,
 	useUploadAssetMutation,
 	useUploadFileNodeAssetMutation,
 	useDeleteAssetMutation,

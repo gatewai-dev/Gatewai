@@ -316,26 +316,35 @@ const assetsRouter = new Hono<{ Variables: AuthorizedHonoTypes }>({
 
 		const where: FileAssetWhereInput = {
 			userId: user.id,
-			name: {
-				contains: q,
-				mode: "insensitive",
-			},
 		};
+
+		if (q && q.trim()) {
+			const words = q.trim().split(/\s+/);
+			if (words.length > 0) {
+				where.AND = words.map((word) => ({
+					name: { contains: word, mode: "insensitive" },
+				}));
+			}
+		}
 
 		if (type) {
 			if (type === "svg") {
 				where.mimeType = { startsWith: "image/svg" };
 			} else if (type === "caption") {
-				// Captions can be text/vtt, text/srt, text/csv etc.
-				where.mimeType = { startsWith: "text/" };
+				// Captions can be text/vtt, text/srt, text/csv, application/x-subrip etc.
+				where.OR = [
+					{ mimeType: { startsWith: "text/" } },
+					{ mimeType: "application/x-subrip" },
+				];
 			} else if (type === "other") {
-				// Everything else not captured by image, video, audio, application/json, text/
+				// Everything else not captured by image, video, audio, application/json, text/, application/x-subrip
 				where.NOT = [
 					{ mimeType: { startsWith: "image/" } },
 					{ mimeType: { startsWith: "video/" } },
 					{ mimeType: { startsWith: "audio/" } },
 					{ mimeType: { startsWith: "application/json" } },
 					{ mimeType: { startsWith: "text/" } },
+					{ mimeType: "application/x-subrip" },
 				];
 			} else if (type === "image") {
 				where.mimeType = {

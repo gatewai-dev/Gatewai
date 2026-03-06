@@ -92,6 +92,7 @@ import {
 	Blend,
 	Box,
 	ChevronDown,
+	ChevronRight,
 	EyeOff,
 	Film,
 	GripHorizontal,
@@ -100,6 +101,7 @@ import {
 	Image as ImageIcon,
 	Layers,
 	Link as LinkIcon,
+	Maximize2,
 	Minus,
 	MousePointer,
 	Move,
@@ -151,12 +153,6 @@ export type EditorLayer = ExtendedLayer & {
 	cropTranslatePercentageX?: number;
 	cropTranslatePercentageY?: number;
 	captionPreset?: "default" | "tiktok";
-	/**
-	 * When true, Text and Caption layers render their background using
-	 * createRoundedTextBox() — a pill-shaped SVG that hugs each text line.
-	 * The fill colour is layer.backgroundColor, padding is layer.padding,
-	 * and corner radius is layer.borderRadius.
-	 */
 	useRoundedTextBox?: boolean;
 };
 
@@ -167,12 +163,13 @@ type EditorMode = "select" | "pan";
 // Constants
 // ---------------------------------------------------------------------------
 
-const RULER_HEIGHT = 28;
-const TRACK_HEIGHT = 32;
+const RULER_HEIGHT = 32;
+const TRACK_HEIGHT = 34;
 const HEADER_WIDTH = 200;
-const DEFAULT_TIMELINE_HEIGHT = 208;
+const DEFAULT_TIMELINE_HEIGHT = 220;
 const MIN_TIMELINE_HEIGHT = 120;
-const MAX_TIMELINE_HEIGHT = 400;
+const MAX_TIMELINE_HEIGHT = 500;
+const OVERVIEW_HEIGHT = 20;
 
 const ASPECT_RATIOS = [
 	{ label: "Youtube / HD (16:9)", width: 1280, height: 720 },
@@ -185,66 +182,159 @@ const ASPECT_RATIOS = [
 const ANIMATION_CATEGORIES = [
 	{
 		label: "Entrance",
-		color: "text-green-400",
+		color: "text-emerald-400",
+		bgColor: "bg-emerald-500/10",
+		borderColor: "border-emerald-500/20",
+		dotColor: "bg-emerald-400",
 		animations: [
-			{ type: "fade-in" as AnimationType, label: "Fade In", icon: Sparkles },
+			{
+				type: "fade-in" as AnimationType,
+				label: "Fade In",
+				icon: Sparkles,
+				desc: "Smooth opacity fade",
+			},
 			{
 				type: "slide-in-left" as AnimationType,
 				label: "Slide Left",
 				icon: ArrowRight,
+				desc: "Enter from left",
 			},
 			{
 				type: "slide-in-right" as AnimationType,
 				label: "Slide Right",
 				icon: ArrowLeft,
+				desc: "Enter from right",
 			},
 			{
 				type: "slide-in-top" as AnimationType,
 				label: "Slide Down",
 				icon: ArrowDown,
+				desc: "Enter from top",
 			},
 			{
 				type: "slide-in-bottom" as AnimationType,
 				label: "Slide Up",
 				icon: ArrowUp,
+				desc: "Enter from bottom",
 			},
-			{ type: "zoom-in" as AnimationType, label: "Zoom In", icon: ZoomIn },
+			{
+				type: "zoom-in" as AnimationType,
+				label: "Zoom In",
+				icon: ZoomIn,
+				desc: "Scale up to full size",
+			},
 		],
 	},
 	{
 		label: "Exit",
-		color: "text-red-400",
+		color: "text-rose-400",
+		bgColor: "bg-rose-500/10",
+		borderColor: "border-rose-500/20",
+		dotColor: "bg-rose-400",
 		animations: [
-			{ type: "fade-out" as AnimationType, label: "Fade Out", icon: EyeOff },
-			{ type: "zoom-out" as AnimationType, label: "Zoom Out", icon: ZoomOut },
+			{
+				type: "fade-out" as AnimationType,
+				label: "Fade Out",
+				icon: EyeOff,
+				desc: "Fade to transparent",
+			},
+			{
+				type: "zoom-out" as AnimationType,
+				label: "Zoom Out",
+				icon: ZoomOut,
+				desc: "Scale down to nothing",
+			},
 		],
 	},
 	{
 		label: "Emphasis",
-		color: "text-yellow-400",
+		color: "text-amber-400",
+		bgColor: "bg-amber-500/10",
+		borderColor: "border-amber-500/20",
+		dotColor: "bg-amber-400",
 		animations: [
 			{
 				type: "rotate-cw" as AnimationType,
 				label: "Rotate CW",
 				icon: RotateCw,
+				desc: "Spin clockwise",
 			},
 			{
 				type: "rotate-ccw" as AnimationType,
 				label: "Rotate CCW",
 				icon: RotateCcw,
+				desc: "Spin counter-clockwise",
 			},
-			{ type: "bounce" as AnimationType, label: "Bounce", icon: ArrowUp },
-			{ type: "shake" as AnimationType, label: "Shake", icon: Move },
+			{
+				type: "bounce" as AnimationType,
+				label: "Bounce",
+				icon: ArrowUp,
+				desc: "Elastic bounce",
+			},
+			{
+				type: "shake" as AnimationType,
+				label: "Shake",
+				icon: Move,
+				desc: "Vibrate horizontally",
+			},
 		],
 	},
 ];
 
-// Default rounded-box values so the inspector reflects sensible initial state.
 const ROUNDED_BOX_DEFAULTS = {
 	backgroundColor: "rgba(0, 0, 0, 0.7)",
 	padding: 16,
 	borderRadius: 8,
 } as const;
+
+const SHADOW_PRESETS = [
+	{
+		label: "Soft",
+		icon: "◌",
+		val: "0px 4px 12px rgba(0,0,0,0.6)",
+		preview: "0px 4px 12px rgba(0,0,0,0.6)",
+	},
+	{
+		label: "Hard",
+		icon: "◼",
+		val: "3px 3px 0px rgba(0,0,0,0.9)",
+		preview: "3px 3px 0px rgba(0,0,0,0.9)",
+	},
+	{
+		label: "Glow",
+		icon: "✦",
+		val: "0px 0px 10px rgba(255,255,255,0.8)",
+		preview: "0px 0px 10px rgba(255,255,255,0.8)",
+	},
+	{
+		label: "Neon",
+		icon: "⚡",
+		val: "0px 0px 15px rgba(59,130,246,0.9)",
+		preview: "0px 0px 15px rgba(59,130,246,0.9)",
+	},
+];
+
+const TEXT_BOX_PRESETS = [
+	{
+		label: "Pill",
+		padding: 20,
+		borderRadius: 999,
+		backgroundColor: "rgba(0,0,0,0.75)",
+	},
+	{
+		label: "Chip",
+		padding: 12,
+		borderRadius: 6,
+		backgroundColor: "rgba(0,0,0,0.6)",
+	},
+	{ label: "Bold", padding: 16, borderRadius: 4, backgroundColor: "#000000" },
+	{
+		label: "Frosted",
+		padding: 18,
+		borderRadius: 16,
+		backgroundColor: "rgba(255,255,255,0.15)",
+	},
+];
 
 // ---------------------------------------------------------------------------
 // Helpers
@@ -423,6 +513,33 @@ const parseTextShadowStr = (shadowStr?: string) => {
 };
 
 // ---------------------------------------------------------------------------
+// Zoom helpers — log-scale mapping
+// ---------------------------------------------------------------------------
+
+/** Minimum pixels-per-second: 1 hour fits in ~900px → 0.25 px/sec */
+const TIMELINE_MIN_PPS = 0.25;
+/** Maximum pixels-per-second: 20px per frame at 30fps → 600 px/sec */
+const TIMELINE_MAX_PPS = 600;
+
+const ppsFromNorm = (norm: number) =>
+	TIMELINE_MIN_PPS *
+	(TIMELINE_MAX_PPS / TIMELINE_MIN_PPS) ** Math.max(0, Math.min(1, norm));
+
+const normFromPps = (pps: number) =>
+	Math.log(Math.max(TIMELINE_MIN_PPS, pps) / TIMELINE_MIN_PPS) /
+	Math.log(TIMELINE_MAX_PPS / TIMELINE_MIN_PPS);
+
+/** Returns a human-readable label for the current zoom level */
+const zoomScaleLabel = (pps: number): string => {
+	if (pps >= 200) return `${Math.round(1000 / pps)}ms`;
+	if (pps >= 10) return `${(1 / pps).toFixed(2)}s/px`;
+	if (pps >= 1) return `${(1 / pps).toFixed(1)}s/px`;
+	const minPerPx = 1 / pps / 60;
+	if (minPerPx < 1) return `${(1 / pps).toFixed(0)}s/px`;
+	return `${minPerPx.toFixed(1)}m/px`;
+};
+
+// ---------------------------------------------------------------------------
 // Context
 // ---------------------------------------------------------------------------
 
@@ -470,6 +587,8 @@ interface EditorContextType {
 	timelineHeight: number;
 	setTimelineHeight: Dispatch<SetStateAction<number>>;
 	initialLayersData: Map<string, OutputItem<any>>;
+	markLayerTrimmed: (id: string) => void;
+	isLayerTrimmed: (id: string) => boolean;
 }
 
 const EditorContext = createContext<EditorContextType | undefined>(undefined);
@@ -526,11 +645,8 @@ const TextShadowSection: React.FC<{
 	const isOn = !!layer.textShadow;
 
 	const handleToggle = (checked: boolean) => {
-		if (checked) {
-			update({ textShadow: "0px 4px 12px rgba(0,0,0,0.6)" });
-		} else {
-			update({ textShadow: undefined });
-		}
+		if (checked) update({ textShadow: "0px 4px 12px rgba(0,0,0,0.6)" });
+		else update({ textShadow: undefined });
 	};
 
 	const updateParam = (key: "x" | "y" | "blur" | "color", val: any) => {
@@ -574,7 +690,6 @@ const TextShadowSection: React.FC<{
 								onChange={(v) => updateParam("color", v)}
 							/>
 						</div>
-
 						<div className="grid grid-cols-3 gap-2">
 							<div className="space-y-1">
 								<span className="text-[9px] font-bold uppercase tracking-wider text-gray-500 block">
@@ -607,28 +722,40 @@ const TextShadowSection: React.FC<{
 								/>
 							</div>
 						</div>
-
 						<div className="space-y-1.5">
 							<span className="text-[9px] font-bold uppercase tracking-wider text-gray-500">
 								Quick Presets
 							</span>
-							<div className="flex gap-1.5 flex-wrap">
-								{[
-									{ label: "Soft", val: "0px 4px 12px rgba(0,0,0,0.6)" },
-									{ label: "Hard", val: "3px 3px 0px rgba(0,0,0,0.9)" },
-									{ label: "Glow", val: "0px 0px 10px rgba(255,255,255,0.8)" },
-									{ label: "Neon", val: "0px 0px 15px rgba(59,130,246,0.9)" },
-								].map((preset) => (
-									<Button
-										key={preset.label}
-										variant="outline"
-										size="sm"
-										className="h-6 text-[10px] px-2.5 border-white/10 bg-white/5 hover:bg-white/10 hover:border-white/20 text-gray-300 transition-colors"
-										onClick={() => update({ textShadow: preset.val })}
-									>
-										{preset.label}
-									</Button>
-								))}
+							<div className="grid grid-cols-4 gap-1.5">
+								{SHADOW_PRESETS.map((preset) => {
+									const isActive = layer.textShadow === preset.val;
+									return (
+										<button
+											key={preset.label}
+											type="button"
+											onClick={() => update({ textShadow: preset.val })}
+											className={cn(
+												"relative flex flex-col items-center gap-1.5 px-1 py-2.5 rounded-lg border transition-all duration-150 cursor-pointer",
+												isActive
+													? "border-purple-500/60 bg-purple-500/10 ring-1 ring-purple-500/30"
+													: "border-white/8 bg-white/3 hover:bg-white/8 hover:border-white/20",
+											)}
+										>
+											<span
+												className="text-sm font-bold text-white leading-none select-none"
+												style={{ textShadow: preset.preview }}
+											>
+												Aa
+											</span>
+											<span className="text-[9px] text-gray-400 font-medium leading-none">
+												{preset.label}
+											</span>
+											{isActive && (
+												<span className="absolute top-1 right-1 w-1.5 h-1.5 rounded-full bg-purple-400" />
+											)}
+										</button>
+									);
+								})}
 							</div>
 						</div>
 					</>
@@ -646,12 +773,12 @@ const AnimationsInspectorSection: React.FC<{
 	layer: EditorLayer;
 	update: (patch: Partial<EditorLayer>) => void;
 }> = ({ layer, update }) => {
-	const [addAnimOpen, setAddAnimOpen] = useState(false);
+	const [showPicker, setShowPicker] = useState(false);
+	const [hoveredType, setHoveredType] = useState<AnimationType | null>(null);
 
 	const addAnimation = (type: AnimationType) => {
 		const newAnimation: VideoAnimation = { id: generateId(), type, value: 1 };
 		update({ animations: [...(layer.animations || []), newAnimation] });
-		setAddAnimOpen(false);
 	};
 
 	const updateAnimation = (animId: string, patch: Partial<VideoAnimation>) => {
@@ -671,49 +798,56 @@ const AnimationsInspectorSection: React.FC<{
 	const getAnimMeta = (type: AnimationType) => {
 		for (const cat of ANIMATION_CATEGORIES) {
 			const found = cat.animations.find((a) => a.type === type);
-			if (found) return { ...found, catColor: cat.color };
+			if (found) return { ...found, catColor: cat.color, catBg: cat.bgColor };
 		}
-		return { label: type, icon: Zap, catColor: "text-gray-400" };
+		return {
+			label: type,
+			icon: Zap,
+			catColor: "text-gray-400",
+			catBg: "bg-gray-500/10",
+			desc: "",
+		};
 	};
+
+	const alreadyAdded = new Set((layer.animations || []).map((a) => a.type));
 
 	return (
 		<CollapsibleSection title="Animations" icon={Zap} defaultOpen>
-			<div className="space-y-3">
+			<div className="space-y-2.5">
 				{layer.animations && layer.animations.length > 0 && (
-					<div className="space-y-2">
+					<div className="space-y-1.5">
 						{layer.animations.map((anim) => {
 							const meta = getAnimMeta(anim.type);
 							const Icon = meta.icon;
 							return (
 								<div
 									key={anim.id}
-									className="group relative bg-black/20 border border-white/10 rounded-lg p-2.5 transition-all hover:bg-black/40 hover:border-white/20"
+									className="group relative flex flex-col gap-2 bg-black/25 border border-white/8 rounded-xl p-3 transition-all hover:border-white/15 hover:bg-black/35"
 								>
-									<div className="flex items-center justify-between mb-2">
-										<div className="flex items-center gap-2">
-											<div
-												className={cn(
-													"p-1.5 rounded-md bg-white/5",
-													meta.catColor,
-												)}
-											>
-												<Icon className="w-3.5 h-3.5" />
+									<div className="flex items-center justify-between">
+										<div className="flex items-center gap-2.5">
+											<div className={cn("p-2 rounded-lg", meta.catBg)}>
+												<Icon className={cn("w-3.5 h-3.5", meta.catColor)} />
 											</div>
-											<span className="text-[11px] font-medium text-gray-200">
-												{meta.label}
-											</span>
+											<div className="flex flex-col">
+												<span className="text-[11px] font-semibold text-gray-100 leading-tight">
+													{meta.label}
+												</span>
+												<span className="text-[9px] text-gray-500 leading-tight mt-0.5">
+													{meta.desc}
+												</span>
+											</div>
 										</div>
-										<Button
-											variant="ghost"
-											size="icon"
-											className="h-6 w-6 text-gray-500 hover:text-red-400 hover:bg-red-500/10 opacity-0 group-hover:opacity-100 transition-opacity"
+										<button
+											type="button"
+											className="w-6 h-6 flex items-center justify-center rounded-lg text-gray-600 hover:text-rose-400 hover:bg-rose-500/10 opacity-0 group-hover:opacity-100 transition-all"
 											onClick={() => removeAnimation(anim.id)}
 										>
 											<Trash2 className="w-3.5 h-3.5" />
-										</Button>
+										</button>
 									</div>
-									<div className="flex items-center gap-3 px-1">
-										<span className="text-[9px] font-bold uppercase tracking-wider text-gray-500">
+									<div className="flex items-center gap-2.5 px-0.5">
+										<span className="text-[9px] font-bold uppercase tracking-widest text-gray-600 w-12 shrink-0">
 											Duration
 										</span>
 										<Slider
@@ -726,7 +860,7 @@ const AnimationsInspectorSection: React.FC<{
 											}
 											className="flex-1"
 										/>
-										<span className="text-[10px] font-mono text-gray-400 w-6 text-right">
+										<span className="text-[10px] font-mono text-gray-400 w-8 text-right shrink-0">
 											{anim.value.toFixed(1)}s
 										</span>
 									</div>
@@ -736,57 +870,113 @@ const AnimationsInspectorSection: React.FC<{
 					</div>
 				)}
 
-				<Popover open={addAnimOpen} onOpenChange={setAddAnimOpen}>
-					<PopoverTrigger asChild>
-						<Button
-							variant="outline"
-							size="sm"
-							className="w-full h-8 border-dashed border-white/20 bg-transparent hover:bg-white/5 hover:border-white/30 text-gray-300 transition-colors"
-						>
-							<Plus className="w-3.5 h-3.5 mr-1.5" /> Add Animation
-						</Button>
-					</PopoverTrigger>
-					<PopoverContent
-						className="w-56 p-2 bg-neutral-900 border-white/10 shadow-xl"
-						align="center"
-						side="bottom"
-					>
-						<ScrollArea className="h-64 pr-2 -mr-2">
-							{ANIMATION_CATEGORIES.map((cat, idx) => (
-								<div
-									key={cat.label}
-									className={cn(
-										"mb-3 last:mb-0",
-										idx > 0 && "pt-3 border-t border-white/5",
-									)}
-								>
-									<div
+				<button
+					type="button"
+					onClick={() => setShowPicker((v) => !v)}
+					className={cn(
+						"w-full flex items-center justify-between h-9 px-3 rounded-xl border text-[11px] font-medium transition-all duration-150",
+						showPicker
+							? "border-blue-500/40 bg-blue-500/10 text-blue-300 hover:bg-blue-500/15"
+							: "border-dashed border-white/15 bg-transparent text-gray-400 hover:bg-white/5 hover:border-white/25 hover:text-gray-200",
+					)}
+				>
+					<span className="flex items-center gap-2">
+						<Plus
+							className={cn(
+								"w-3.5 h-3.5 transition-transform",
+								showPicker && "rotate-45",
+							)}
+						/>
+						{showPicker ? "Close picker" : "Add Animation"}
+					</span>
+					<ChevronRight
+						className={cn(
+							"w-3.5 h-3.5 transition-transform duration-200",
+							showPicker && "rotate-90",
+						)}
+					/>
+				</button>
+
+				{showPicker && (
+					<div className="rounded-xl border border-white/10 bg-black/30 overflow-hidden">
+						{ANIMATION_CATEGORIES.map((cat, catIdx) => (
+							<div
+								key={cat.label}
+								className={cn(catIdx > 0 && "border-t border-white/5")}
+							>
+								<div className="flex items-center gap-2 px-3 py-2 bg-black/20">
+									<span
 										className={cn(
-											"text-[10px] font-bold uppercase tracking-wider mb-1.5 px-2",
+											"w-1.5 h-1.5 rounded-full shrink-0",
+											cat.dotColor,
+										)}
+									/>
+									<span
+										className={cn(
+											"text-[10px] font-bold uppercase tracking-widest",
 											cat.color,
 										)}
 									>
 										{cat.label}
-									</div>
-									<div className="space-y-0.5">
-										{cat.animations.map((a) => (
-											<Button
-												key={a.type}
-												variant="ghost"
-												size="sm"
-												className="w-full justify-start h-7 px-2 text-[11px] font-medium text-gray-300 hover:text-white hover:bg-white/10"
-												onClick={() => addAnimation(a.type)}
-											>
-												<a.icon className={cn("w-3.5 h-3.5 mr-2", cat.color)} />
-												{a.label}
-											</Button>
-										))}
-									</div>
+									</span>
 								</div>
-							))}
-						</ScrollArea>
-					</PopoverContent>
-				</Popover>
+								<div className="grid grid-cols-3 gap-1.5 p-2">
+									{cat.animations.map((a) => {
+										const isAdded = alreadyAdded.has(a.type);
+										const isHovered = hoveredType === a.type;
+										return (
+											<button
+												key={a.type}
+												type="button"
+												disabled={isAdded}
+												onClick={() => addAnimation(a.type)}
+												onMouseEnter={() => setHoveredType(a.type)}
+												onMouseLeave={() => setHoveredType(null)}
+												className={cn(
+													"relative flex flex-col items-center gap-2 py-3 px-1.5 rounded-lg border transition-all duration-150 cursor-pointer group/card",
+													isAdded
+														? "border-white/5 bg-white/2 opacity-40 cursor-not-allowed"
+														: isHovered
+															? `${cat.borderColor} ${cat.bgColor}`
+															: "border-white/8 bg-white/3 hover:bg-white/6 hover:border-white/18",
+												)}
+											>
+												<div
+													className={cn(
+														"p-2.5 rounded-lg transition-colors",
+														isHovered && !isAdded ? cat.bgColor : "bg-white/5",
+													)}
+												>
+													<a.icon
+														className={cn(
+															"w-4 h-4 transition-colors",
+															isHovered && !isAdded
+																? cat.color
+																: "text-gray-400",
+														)}
+													/>
+												</div>
+												<div className="flex flex-col items-center gap-0.5">
+													<span className="text-[10px] font-semibold text-gray-200 text-center leading-tight">
+														{a.label}
+													</span>
+													<span className="text-[8.5px] text-gray-500 text-center leading-tight">
+														{a.desc}
+													</span>
+												</div>
+												{isAdded && (
+													<span className="absolute top-1.5 right-1.5 text-[8px] font-bold text-gray-500">
+														✓
+													</span>
+												)}
+											</button>
+										);
+									})}
+								</div>
+							</div>
+						))}
+					</div>
+				)}
 			</div>
 		</CollapsibleSection>
 	);
@@ -812,10 +1002,7 @@ const TextBoxSection: React.FC<{
 				borderRadius: layer.borderRadius ?? ROUNDED_BOX_DEFAULTS.borderRadius,
 			});
 		} else {
-			update({
-				useRoundedTextBox: false,
-				backgroundColor: undefined,
-			});
+			update({ useRoundedTextBox: false, backgroundColor: undefined });
 		}
 	};
 
@@ -849,7 +1036,6 @@ const TextBoxSection: React.FC<{
 								onChange={(v) => update({ backgroundColor: v })}
 							/>
 						</div>
-
 						<div className="grid grid-cols-2 gap-2">
 							<div className="space-y-1">
 								<span className="text-[9px] font-bold uppercase tracking-wider text-gray-500 block">
@@ -876,54 +1062,54 @@ const TextBoxSection: React.FC<{
 								/>
 							</div>
 						</div>
-
 						<div className="space-y-1.5">
 							<span className="text-[9px] font-bold uppercase tracking-wider text-gray-500">
 								Quick Presets
 							</span>
-							<div className="flex gap-1.5 flex-wrap">
-								{[
-									{
-										label: "Pill",
-										padding: 20,
-										borderRadius: 999,
-										backgroundColor: "rgba(0,0,0,0.75)",
-									},
-									{
-										label: "Chip",
-										padding: 12,
-										borderRadius: 6,
-										backgroundColor: "rgba(0,0,0,0.6)",
-									},
-									{
-										label: "Bold",
-										padding: 16,
-										borderRadius: 4,
-										backgroundColor: "#000000",
-									},
-									{
-										label: "Soft",
-										padding: 18,
-										borderRadius: 16,
-										backgroundColor: "rgba(255,255,255,0.15)",
-									},
-								].map((preset) => (
-									<Button
-										key={preset.label}
-										variant="outline"
-										size="sm"
-										className="h-6 text-[10px] px-2.5 border-white/10 bg-white/5 hover:bg-white/10 hover:border-white/20 text-gray-300"
-										onClick={() =>
-											update({
-												padding: preset.padding,
-												borderRadius: preset.borderRadius,
-												backgroundColor: preset.backgroundColor,
-											})
-										}
-									>
-										{preset.label}
-									</Button>
-								))}
+							<div className="grid grid-cols-2 gap-1.5">
+								{TEXT_BOX_PRESETS.map((preset) => {
+									const isActive =
+										layer.padding === preset.padding &&
+										layer.borderRadius === preset.borderRadius &&
+										layer.backgroundColor === preset.backgroundColor;
+									return (
+										<button
+											key={preset.label}
+											type="button"
+											onClick={() =>
+												update({
+													padding: preset.padding,
+													borderRadius: preset.borderRadius,
+													backgroundColor: preset.backgroundColor,
+												})
+											}
+											className={cn(
+												"relative flex flex-col items-center gap-2 py-3 px-2 rounded-lg border transition-all duration-150 cursor-pointer",
+												isActive
+													? "border-blue-500/50 bg-blue-500/8 ring-1 ring-blue-500/20"
+													: "border-white/8 bg-white/2 hover:bg-white/6 hover:border-white/18",
+											)}
+										>
+											<div
+												className="text-[10px] font-semibold text-white leading-none select-none"
+												style={{
+													backgroundColor: preset.backgroundColor,
+													borderRadius: Math.min(preset.borderRadius, 14),
+													padding: `4px ${Math.min(preset.padding * 0.45, 12)}px`,
+												}}
+											>
+												{preset.label}
+											</div>
+											<span className="text-[9px] text-gray-500 leading-none">
+												r={Math.min(preset.borderRadius, 999)} p=
+												{preset.padding}
+											</span>
+											{isActive && (
+												<span className="absolute top-1.5 right-1.5 w-1.5 h-1.5 rounded-full bg-blue-400" />
+											)}
+										</button>
+									);
+								})}
 							</div>
 						</div>
 					</>
@@ -934,56 +1120,91 @@ const TextBoxSection: React.FC<{
 };
 
 // ---------------------------------------------------------------------------
-// UnifiedClip
+// UnifiedClip — enhanced with duration label and better resize handles
 // ---------------------------------------------------------------------------
 
-const UnifiedClip: React.FC<{ layer: EditorLayer; isSelected: boolean }> = ({
-	layer,
-	isSelected,
-}) => {
+const UnifiedClip: React.FC<{
+	layer: EditorLayer;
+	isSelected: boolean;
+	pixelsPerSecond: number;
+	fps: number;
+}> = ({ layer, isSelected, pixelsPerSecond, fps }) => {
 	const handles = useAppSelector(handleSelectors.selectEntities);
 	const handleId = layer.inputHandleId ?? "";
 	const handle = handleId ? handles[handleId] : undefined;
 	const name = resolveLayerLabel(handle, layer);
 	const baseConfig = resolveColorConfig(layer);
 
+	const durationMs = layer.durationInMS ?? DEFAULT_DURATION_MS;
+	const durationSec = durationMs / 1000;
+	const clipWidthPx = durationSec * pixelsPerSecond;
+
+	// Only show duration when clip is wide enough (>60px)
+	const showDuration = clipWidthPx > 60;
+	const showName = clipWidthPx > 36;
+
+	const formatDuration = (ms: number) => {
+		const s = ms / 1000;
+		if (s < 60) return `${s.toFixed(1)}s`;
+		const m = Math.floor(s / 60);
+		const rem = (s % 60).toFixed(0).padStart(2, "0");
+		return `${m}:${rem}`;
+	};
+
 	return (
 		<div
-			className={`h-full w-full relative overflow-hidden rounded-md transition-all duration-75 border ${baseConfig.bg} ${baseConfig.border} ${
+			className={cn(
+				"h-full w-full relative overflow-hidden rounded-[5px] transition-all duration-75 border",
+				baseConfig.bg,
+				baseConfig.border,
 				isSelected
-					? "brightness-110 ring-2 ring-white/70 shadow-lg"
-					: "opacity-90 hover:opacity-100 hover:brightness-105"
-			}`}
+					? "brightness-125 ring-1 ring-white/80 shadow-[0_0_0_1px_rgba(255,255,255,0.15)]"
+					: "opacity-80 hover:opacity-100 hover:brightness-110",
+			)}
 		>
+			{/* Subtle diagonal texture */}
 			<div
-				className="absolute inset-0 opacity-10 pointer-events-none"
+				className="absolute inset-0 opacity-[0.07] pointer-events-none"
 				style={{
 					backgroundImage:
-						"linear-gradient(45deg,rgba(0,0,0,.1) 25%,transparent 25%,transparent 50%,rgba(0,0,0,.1) 50%,rgba(0,0,0,.1) 75%,transparent 75%,transparent)",
-					backgroundSize: "10px 10px",
+						"repeating-linear-gradient(45deg, rgba(255,255,255,0.3) 0px, rgba(255,255,255,0.3) 1px, transparent 1px, transparent 6px)",
 				}}
 			/>
+			{/* Left fade for visual depth */}
+			<div className="absolute left-0 top-0 bottom-0 w-3 bg-gradient-to-r from-black/20 to-transparent pointer-events-none" />
+
+			{/* Content */}
+			<div className="absolute inset-0 px-2 flex items-center justify-between gap-1 pointer-events-none overflow-hidden">
+				{showName && (
+					<div className="flex items-center gap-1.5 min-w-0 flex-1">
+						<LayerIcon
+							type={layer.type}
+							className="w-2.5 h-2.5 text-white/80 shrink-0"
+						/>
+						<span className="text-[10px] text-white font-semibold truncate drop-shadow select-none leading-none">
+							{name}
+						</span>
+					</div>
+				)}
+				{showDuration && (
+					<span className="text-[9px] font-mono text-white/50 shrink-0 select-none">
+						{formatDuration(durationMs)}
+					</span>
+				)}
+			</div>
+
+			{/* Indicators */}
 			{layer.useRoundedTextBox && (
-				<div className="absolute right-1 top-1/2 -translate-y-1/2 flex items-center gap-0.5 bg-blue-500/20 px-1 py-0.5 rounded text-[8px] font-bold text-blue-300 border border-blue-500/30 pointer-events-none">
+				<div className="absolute right-5 top-1/2 -translate-y-1/2 flex items-center bg-blue-500/20 px-1 py-0.5 rounded text-[7px] font-bold text-blue-300 border border-blue-500/30 pointer-events-none">
 					<Box className="w-2 h-2" />
-					BOX
 				</div>
 			)}
-			<div className="absolute inset-0 px-2 flex items-center justify-between pointer-events-none">
-				<div className="flex items-center gap-1.5 min-w-0">
-					<LayerIcon
-						type={layer.type}
-						className="w-3 h-3 text-white/90 shrink-0"
-					/>
-					<span className="text-[10px] text-white font-medium truncate drop-shadow-md select-none">
-						{name}
-					</span>
-				</div>
-			</div>
+
+			{/* Selection border indicators */}
 			{isSelected && (
 				<>
-					<div className="absolute left-0 top-0 bottom-0 w-1 bg-white/30" />
-					<div className="absolute right-0 top-0 bottom-0 w-1 bg-white/30" />
+					<div className="absolute left-0 top-0 bottom-0 w-0.5 bg-white/50 rounded-l" />
+					<div className="absolute right-0 top-0 bottom-0 w-0.5 bg-white/50 rounded-r" />
 				</>
 			)}
 		</div>
@@ -1115,9 +1336,7 @@ const InteractionOverlay: React.FC = () => {
 		if (anchor) {
 			setIsResizing(true);
 			setResizeAnchor(anchor);
-		} else {
-			setIsDragging(true);
-		}
+		} else setIsDragging(true);
 	};
 
 	const handleRotateStart = (e: React.MouseEvent, layerId: string) => {
@@ -1147,7 +1366,6 @@ const InteractionOverlay: React.FC = () => {
 			return;
 		}
 		if (!selectedId) return;
-
 		const dx = (e.clientX - dragStart.x) / zoom;
 		const dy = (e.clientY - dragStart.y) / zoom;
 
@@ -1213,7 +1431,6 @@ const InteractionOverlay: React.FC = () => {
 			const newHeight = Math.max(10, initialPos.height + changeH);
 			const diffW = newWidth - initialPos.width;
 			const diffH = newHeight - initialPos.height;
-
 			const localShiftX = effectiveAnchor.includes("r")
 				? diffW / 2
 				: effectiveAnchor.includes("l")
@@ -1304,9 +1521,7 @@ const InteractionOverlay: React.FC = () => {
 							if (e.key === "Enter") setSelectedId(layer.id);
 						}}
 						onMouseDown={(e: React.MouseEvent) => handleMouseDown(e, layer.id)}
-						className={`absolute group outline-none select-none p-0 m-0 border-0 bg-transparent text-left ${
-							selectedId === layer.id ? "z-50" : "z-auto"
-						}`}
+						className={`absolute group outline-none select-none p-0 m-0 border-0 bg-transparent text-left ${selectedId === layer.id ? "z-50" : "z-auto"}`}
 						style={{
 							left: layer.x,
 							top: layer.y,
@@ -1318,11 +1533,7 @@ const InteractionOverlay: React.FC = () => {
 						}}
 					>
 						<div
-							className={`absolute inset-0 pointer-events-none transition-all duration-150 ${
-								selectedId === layer.id
-									? "border-2 border-blue-500 shadow-[0_0_0_1px_rgba(59,130,246,0.2)]"
-									: "border border-transparent group-hover:border-blue-400/50"
-							}`}
+							className={`absolute inset-0 pointer-events-none transition-all duration-150 ${selectedId === layer.id ? "border-2 border-blue-500 shadow-[0_0_0_1px_rgba(59,130,246,0.2)]" : "border border-transparent group-hover:border-blue-400/50"}`}
 						/>
 						{selectedId === layer.id && (
 							<>
@@ -1333,9 +1544,7 @@ const InteractionOverlay: React.FC = () => {
 											key={pos}
 											role="button"
 											tabIndex={-1}
-											className={`absolute bg-white border border-blue-600 rounded-full shadow-sm z-50 transition-transform hover:scale-125 ${
-												pos.length === 1 ? "w-2.5 h-2.5" : "w-3 h-3"
-											} ${posClass} ${cursor}`}
+											className={`absolute bg-white border border-blue-600 rounded-full shadow-sm z-50 transition-transform hover:scale-125 ${pos.length === 1 ? "w-2.5 h-2.5" : "w-3 h-3"} ${posClass} ${cursor}`}
 											onMouseDown={(e: React.MouseEvent) =>
 												handleMouseDown(e, layer.id, pos)
 											}
@@ -1412,11 +1621,7 @@ const Toolbar: React.FC<{
 							<Button
 								variant="ghost"
 								size="icon"
-								className={`rounded-full w-9 h-9 transition-colors ${
-									isPlaying
-										? "bg-red-500/20 text-red-400 hover:bg-red-500/30"
-										: "hover:bg-white/10 text-white"
-								}`}
+								className={`rounded-full w-9 h-9 transition-colors ${isPlaying ? "bg-red-500/20 text-red-400 hover:bg-red-500/30" : "hover:bg-white/10 text-white"}`}
 								onClick={handlePlayPause}
 							>
 								{isPlaying ? (
@@ -1587,7 +1792,8 @@ const SortableTrackHeader: React.FC<{
 	layer: EditorLayer;
 	isSelected: boolean;
 	onSelect: () => void;
-}> = ({ layer, isSelected, onSelect }) => {
+	index: number;
+}> = ({ layer, isSelected, onSelect, index }) => {
 	const {
 		attributes,
 		listeners,
@@ -1613,60 +1819,83 @@ const SortableTrackHeader: React.FC<{
 				zIndex: isDragging ? 999 : "auto",
 			}}
 			type="button"
-			className={`w-full text-left p-0 m-0 bg-transparent border-0 border-b border-white/5 flex items-center pl-3 pr-2 text-xs gap-3 group outline-none transition-colors select-none ${
+			className={cn(
+				"w-full text-left p-0 m-0 bg-transparent border-0 border-b border-white/[0.04] flex items-center pl-2 pr-2 text-xs gap-2 group outline-none transition-all select-none",
 				isSelected
-					? "bg-white/5 text-blue-100"
-					: "hover:bg-white/5 text-gray-400"
-			} ${isDragging ? "opacity-50 bg-neutral-900" : ""}`}
+					? "bg-white/[0.06] text-blue-100"
+					: "hover:bg-white/[0.04] text-gray-400",
+				isDragging ? "opacity-50 bg-neutral-900" : "",
+				index % 2 === 0 ? "" : "bg-white/[0.015]",
+			)}
 			onClick={onSelect}
 		>
 			<div
 				{...attributes}
 				{...listeners}
-				className="cursor-grab active:cursor-grabbing p-1.5 text-gray-600 hover:text-gray-300 transition-colors rounded hover:bg-white/5"
+				className="cursor-grab active:cursor-grabbing p-1 text-gray-700 hover:text-gray-400 transition-colors rounded hover:bg-white/5 shrink-0"
 			>
-				<GripVertical className="h-3.5 w-3.5" />
+				<GripVertical className="h-3 w-3" />
 			</div>
-			<div className="flex-1 flex items-center gap-2.5 min-w-0">
-				<div
-					className={`w-6 h-6 rounded flex items-center justify-center ${
-						colorConfig ? `${colorConfig.bg}/20 ${colorConfig.text}` : ""
-					}`}
-				>
-					<LayerIcon type={layer.type} className="w-3.5 h-3.5" />
-				</div>
-				<span className="truncate font-medium text-[11px] leading-tight opacity-80">
-					{name}
-				</span>
+			<div
+				className={cn(
+					"w-5 h-5 rounded-[4px] flex items-center justify-center shrink-0",
+					colorConfig ? `${colorConfig.bg}/30` : "bg-white/10",
+				)}
+			>
+				<LayerIcon
+					type={layer.type}
+					className={cn("w-3 h-3", colorConfig?.text ?? "text-gray-300")}
+				/>
 			</div>
-			{layer.animations && layer.animations.length > 0 && (
-				<WithTooltip tip="Animations applied">
-					<div className="p-1 rounded bg-amber-500/10">
-						<Zap className="w-3 h-3 text-amber-400" />
-					</div>
-				</WithTooltip>
-			)}
-			{layer.useRoundedTextBox && (
-				<WithTooltip tip="Rounded text box active">
-					<div className="p-1 rounded bg-blue-500/10">
-						<Box className="w-3 h-3 text-blue-400" />
-					</div>
-				</WithTooltip>
-			)}
+			<span className="truncate font-medium text-[11px] leading-tight flex-1 min-w-0 opacity-75 group-hover:opacity-100 transition-opacity">
+				{name}
+			</span>
+			<div className="flex items-center gap-1 shrink-0">
+				{layer.animations && layer.animations.length > 0 && (
+					<WithTooltip tip="Animations">
+						<div className="w-4 h-4 flex items-center justify-center rounded bg-amber-500/10">
+							<Zap className="w-2.5 h-2.5 text-amber-400" />
+						</div>
+					</WithTooltip>
+				)}
+				{layer.useRoundedTextBox && (
+					<WithTooltip tip="Text box">
+						<div className="w-4 h-4 flex items-center justify-center rounded bg-blue-500/10">
+							<Box className="w-2.5 h-2.5 text-blue-400" />
+						</div>
+					</WithTooltip>
+				)}
+			</div>
 		</button>
 	);
 };
 
-const formatTimecode = (totalSeconds: number): string => {
+// ---------------------------------------------------------------------------
+// Timecode formatter
+// ---------------------------------------------------------------------------
+
+const formatTimecode = (
+	totalSeconds: number,
+	showSubSecond = false,
+): string => {
+	if (totalSeconds < 0) totalSeconds = 0;
 	const h = Math.floor(totalSeconds / 3600);
 	const m = Math.floor((totalSeconds % 3600) / 60);
 	const s = Math.floor(totalSeconds % 60);
-
+	const ms = Math.round((totalSeconds % 1) * 1000);
 	const pad = (n: number) => n.toString().padStart(2, "0");
 
+	if (showSubSecond && totalSeconds < 10) {
+		return `${s}.${ms.toString().padStart(3, "0")}`;
+	}
 	if (h > 0) return `${h}:${pad(m)}:${pad(s)}`;
-	return `${pad(m)}:${pad(s)}`;
+	if (m > 0) return `${pad(m)}:${pad(s)}`;
+	return `${s}s`;
 };
+
+// ---------------------------------------------------------------------------
+// TimelinePanel — completely redesigned
+// ---------------------------------------------------------------------------
 
 const TimelinePanel: React.FC = () => {
 	const {
@@ -1684,19 +1913,105 @@ const TimelinePanel: React.FC = () => {
 		timelineHeight,
 		setTimelineHeight,
 		initialLayersData,
+		markLayerTrimmed,
 	} = useEditor();
 
 	const playheadRef = useRef<HTMLDivElement>(null);
-	const [isPanningTimeline, setIsPanningTimeline] = useState(false);
-	const [dragStartX, setDragStartX] = useState(0);
-	const [initialScroll, setInitialScroll] = useState(0);
-	const [pixelsPerFrame, setPixelsPerFrame] = useState(10);
+	const rulerRef = useRef<HTMLDivElement>(null);
+	const overviewRef = useRef<HTMLDivElement>(null);
+	const trackAreaRef = useRef<HTMLDivElement>(null);
+
+	// --- Core zoom state (normalized 0-1, maps log to pixelsPerSecond) ---
+	const [zoomNorm, setZoomNorm] = useState(0.38);
+	const pixelsPerSecond = useMemo(() => ppsFromNorm(zoomNorm), [zoomNorm]);
+	const pixelsPerFrame = pixelsPerSecond / fps;
+
+	// --- UI state ---
 	const [isResizingTimeline, setIsResizingTimeline] = useState(false);
+	const [isDraggingPlayhead, setIsDraggingPlayhead] = useState(false);
+	const [cursorTimeSec, setCursorTimeSec] = useState<number | null>(null);
+	const [isHoveringRuler, setIsHoveringRuler] = useState(false);
+
+	// Track area width for overview calculations
+	const [trackAreaWidth, setTrackAreaWidth] = useState(0);
 
 	const sortedLayers = [...layers].sort(
 		(a, b) => (b.zIndex ?? 0) - (a.zIndex ?? 0),
 	);
 
+	const totalSeconds = durationInMS / 1000;
+	const totalTimelineWidth = Math.max(
+		trackAreaWidth,
+		totalSeconds * pixelsPerSecond + 400,
+	);
+
+	// Observe track area width
+	useEffect(() => {
+		const el = trackAreaRef.current;
+		if (!el) return;
+		const obs = new ResizeObserver((entries) =>
+			setTrackAreaWidth(entries[0].contentRect.width),
+		);
+		obs.observe(el);
+		return () => obs.disconnect();
+	}, []);
+
+	// --- Zoom helpers ---
+	const zoomInTimeline = useCallback(
+		() => setZoomNorm((z) => Math.min(1, z + 0.07)),
+		[],
+	);
+	const zoomOutTimeline = useCallback(
+		() => setZoomNorm((z) => Math.max(0, z - 0.07)),
+		[],
+	);
+
+	const fitToContent = useCallback(() => {
+		if (!scrollContainerRef.current) return;
+		const avail = scrollContainerRef.current.clientWidth - HEADER_WIDTH - 32;
+		if (avail <= 0 || totalSeconds <= 0) return;
+		const targetPps = avail / totalSeconds;
+		const clampedPps = Math.min(
+			TIMELINE_MAX_PPS,
+			Math.max(TIMELINE_MIN_PPS, targetPps),
+		);
+		setZoomNorm(normFromPps(clampedPps));
+	}, [totalSeconds, scrollContainerRef]);
+
+	// Fit on first mount
+	useEffect(() => {
+		fitToContent();
+	}, []);
+
+	// Scroll-wheel zoom on the timeline canvas (alt/ctrl held)
+	useEffect(() => {
+		const el = scrollContainerRef.current;
+		if (!el) return;
+		const handleWheel = (e: WheelEvent) => {
+			if (e.altKey || e.ctrlKey || e.metaKey) {
+				e.preventDefault();
+				e.stopPropagation();
+				const delta = -e.deltaY * 0.0015;
+				// Zoom centered on mouse position
+				const mouseX =
+					e.clientX - el.getBoundingClientRect().left - HEADER_WIDTH;
+				const timePosAtMouse = (el.scrollLeft + mouseX) / pixelsPerSecond;
+				setZoomNorm((z) => {
+					const newZ = Math.min(1, Math.max(0, z + delta));
+					const newPps = ppsFromNorm(newZ);
+					// Adjust scroll to keep the time position under the cursor
+					requestAnimationFrame(() => {
+						if (el) el.scrollLeft = timePosAtMouse * newPps - mouseX;
+					});
+					return newZ;
+				});
+			}
+		};
+		el.addEventListener("wheel", handleWheel, { passive: false });
+		return () => el.removeEventListener("wheel", handleWheel);
+	}, [pixelsPerSecond, scrollContainerRef]);
+
+	// --- DnD sensors ---
 	const sensors = useSensors(
 		useSensor(PointerSensor, { activationConstraint: { distance: 5 } }),
 		useSensor(KeyboardSensor, {
@@ -1710,10 +2025,7 @@ const TimelinePanel: React.FC = () => {
 		const oldIndex = sortedLayers.findIndex((l) => l.id === active.id);
 		const newIndex = sortedLayers.findIndex((l) => l.id === over.id);
 		const newSorted = arrayMove(sortedLayers, oldIndex, newIndex).map(
-			(l, idx, arr) => ({
-				...l,
-				zIndex: arr.length - idx,
-			}),
+			(l, idx, arr) => ({ ...l, zIndex: arr.length - idx }),
 		);
 		updateLayers((prev) => {
 			const updateMap = new Map(newSorted.map((l) => [l.id, l]));
@@ -1721,48 +2033,79 @@ const TimelinePanel: React.FC = () => {
 		});
 	};
 
+	// --- Playhead RAF sync ---
 	useEffect(() => {
 		let rafId: number | null = null;
 		const loop = () => {
 			if (playerRef.current) {
 				const frame = playerRef.current.getCurrentFrame();
 				if (playheadRef.current) {
-					playheadRef.current.style.transform = `translateX(${
-						frame * pixelsPerFrame
-					}px)`;
+					playheadRef.current.style.transform = `translateX(${frame * pixelsPerFrame}px)`;
 				}
 				if (isPlaying && scrollContainerRef.current) {
 					const x = frame * pixelsPerFrame;
 					const width = scrollContainerRef.current.clientWidth - HEADER_WIDTH;
 					const scroll = scrollContainerRef.current.scrollLeft;
-					if (x > scroll + width - 150)
-						scrollContainerRef.current.scrollLeft = x - 150;
+					if (x > scroll + width - 100)
+						scrollContainerRef.current.scrollLeft = x - 100;
 				}
 			}
 			rafId = requestAnimationFrame(loop);
 		};
-		if (isPlaying) {
-			loop();
-		} else if (playheadRef.current) {
-			playheadRef.current.style.transform = `translateX(${
-				currentFrame * pixelsPerFrame
-			}px)`;
+		if (isPlaying) loop();
+		else if (playheadRef.current) {
+			playheadRef.current.style.transform = `translateX(${currentFrame * pixelsPerFrame}px)`;
 		}
 		return () => {
 			if (rafId) cancelAnimationFrame(rafId);
 		};
 	}, [isPlaying, currentFrame, pixelsPerFrame, playerRef]);
 
-	const handleTimelineClick = (e: React.MouseEvent) => {
-		const rect = e.currentTarget.getBoundingClientRect();
-		const frame = Math.max(
-			0,
-			Math.floor((e.clientX - rect.left) / pixelsPerFrame),
-		);
-		playerRef.current?.seekTo(frame);
-		setCurrentFrame(frame);
+	// --- Ruler interaction ---
+	const seekToX = useCallback(
+		(clientX: number) => {
+			if (!rulerRef.current || !scrollContainerRef.current) return;
+			const rulerLeft = rulerRef.current.getBoundingClientRect().left;
+			const scrollLeft = scrollContainerRef.current.scrollLeft;
+			const x = clientX - rulerLeft + scrollLeft;
+			const frame = Math.max(0, Math.floor(x / pixelsPerFrame));
+			playerRef.current?.seekTo(frame);
+			setCurrentFrame(frame);
+		},
+		[pixelsPerFrame, playerRef, setCurrentFrame, scrollContainerRef],
+	);
+
+	const handleRulerMouseDown = (e: React.MouseEvent) => {
+		if (e.button !== 0) return;
+		e.preventDefault();
+		setIsDraggingPlayhead(true);
+		seekToX(e.clientX);
 	};
 
+	const handleRulerMouseMove = (e: React.MouseEvent) => {
+		if (!rulerRef.current || !scrollContainerRef.current) return;
+		const rulerLeft = rulerRef.current.getBoundingClientRect().left;
+		const scrollLeft = scrollContainerRef.current.scrollLeft;
+		const x = Math.max(0, e.clientX - rulerLeft + scrollLeft);
+		setCursorTimeSec(x / pixelsPerSecond);
+		if (isDraggingPlayhead) seekToX(e.clientX);
+	};
+
+	useEffect(() => {
+		if (!isDraggingPlayhead) return;
+		const onUp = () => setIsDraggingPlayhead(false);
+		const onMove = (e: MouseEvent) => {
+			if (isDraggingPlayhead) seekToX(e.clientX);
+		};
+		window.addEventListener("mouseup", onUp);
+		window.addEventListener("mousemove", onMove);
+		return () => {
+			window.removeEventListener("mouseup", onUp);
+			window.removeEventListener("mousemove", onMove);
+		};
+	}, [isDraggingPlayhead, seekToX]);
+
+	// --- Clip manipulation ---
 	const handleClipManipulation = (
 		e: React.MouseEvent,
 		layerId: string,
@@ -1796,10 +2139,10 @@ const TimelinePanel: React.FC = () => {
 					const metadata = getActiveMediaMetadata(
 						initialItem.data as VirtualMediaData,
 					);
-					if (metadata?.durationMs) {
+					if (metadata?.durationMs)
 						newDuration = Math.min(newDuration, metadata.durationMs);
-					}
 				}
+				markLayerTrimmed(layerId);
 				updateLayers((prev) =>
 					prev.map((l) =>
 						l.id === layerId ? { ...l, durationInMS: newDuration } : l,
@@ -1815,6 +2158,7 @@ const TimelinePanel: React.FC = () => {
 		window.addEventListener("mouseup", onUp);
 	};
 
+	// --- Timeline height resize ---
 	const handleTimelineResize = (e: React.MouseEvent) => {
 		e.preventDefault();
 		const startY = e.clientY;
@@ -1837,231 +2181,417 @@ const TimelinePanel: React.FC = () => {
 		window.addEventListener("mouseup", onUp);
 	};
 
-	// --- Dynamic Scaling Engine ---
-	const pixelsPerSecond = fps * pixelsPerFrame;
+	// --- Dynamic ruler tick calculation ---
+	const { majorTickSeconds, minorTickSeconds, showFrameTicks } = useMemo(() => {
+		const minMajorSpacingPx = 80;
+		const targetSeconds = minMajorSpacingPx / pixelsPerSecond;
 
-	const { majorTickSeconds, minorTickSeconds } = useMemo(() => {
-		const minSpacingPx = 90; // Minimum pixel gap between time labels to avoid crowding
-		const targetSeconds = minSpacingPx / pixelsPerSecond;
-
-		// Snappy, human-readable time intervals
 		const steps = [
+			1 / fps, // 1 frame
+			2 / fps,
+			5 / fps,
+			10 / fps,
 			0.5,
 			1,
 			2,
 			5,
 			10,
 			15,
-			30, // Seconds
+			30,
 			60,
 			120,
 			300,
 			600,
 			900,
-			1800, // 1m, 2m, 5m, 10m, 15m, 30m
+			1800,
 			3600,
-			7200, // 1h, 2h
+			7200,
 		];
 
-		// Find the most appropriate major tick step
 		const major =
 			steps.find((step) => step >= targetSeconds) || steps[steps.length - 1];
 
-		// Define minor divisions based on major step
-		let minor = major / 5; // Default division
-		if (major === 0.5) minor = 0.1;
+		let minor = major / 5;
+		if (major === 1 / fps) minor = major;
+		else if (major === 0.5) minor = 0.1;
 		else if (major === 1) minor = 0.25;
 		else if (major === 2) minor = 0.5;
 		else if (major === 15) minor = 5;
 		else if (major === 30) minor = 10;
 		else if (major >= 60) minor = major / 4;
 
-		return { majorTickSeconds: major, minorTickSeconds: minor };
-	}, [pixelsPerSecond]);
+		// Show frame ticks only when zoomed in enough (>4px per frame)
+		const showFrameTicks = pixelsPerFrame >= 4;
 
-	const totalSeconds = durationInMS / 1000;
-	const ticksCount = Math.ceil(totalSeconds / majorTickSeconds) + 2; // +2 for buffer
+		return { majorTickSeconds: major, minorTickSeconds: minor, showFrameTicks };
+	}, [pixelsPerSecond, fps, pixelsPerFrame]);
+
+	const ticksCount = Math.ceil(totalSeconds / majorTickSeconds) + 2;
 	const patternWidth = majorTickSeconds * pixelsPerSecond;
-	const subTicksCount = Math.round(majorTickSeconds / minorTickSeconds);
+	const subTicksCount = Math.max(
+		2,
+		Math.round(majorTickSeconds / minorTickSeconds),
+	);
+
+	// Scale label (for the zoom control)
+	const scaleLabel = useMemo(() => {
+		if (pixelsPerFrame >= 8) return `${Math.round(pixelsPerFrame)}px/f`;
+		if (pixelsPerSecond >= 100)
+			return `${(1000 / pixelsPerSecond).toFixed(0)}ms`;
+		if (pixelsPerSecond >= 1) return `${(1 / pixelsPerSecond).toFixed(1)}s/px`;
+		return `${(60 / pixelsPerSecond).toFixed(1)}m/px`;
+	}, [pixelsPerSecond, pixelsPerFrame]);
+
+	// Overview viewport indicator
+	const overviewViewport = useMemo(() => {
+		if (!scrollContainerRef.current || totalSeconds <= 0 || trackAreaWidth <= 0)
+			return null;
+		const scrollLeft = scrollContainerRef.current.scrollLeft;
+		const visibleWidth = scrollContainerRef.current.clientWidth - HEADER_WIDTH;
+		const timelineTotal = totalSeconds * pixelsPerSecond;
+		if (timelineTotal <= 0) return null;
+		const left = (scrollLeft / timelineTotal) * 100;
+		const width = (visibleWidth / timelineTotal) * 100;
+		return {
+			left: Math.max(0, Math.min(100, left)),
+			width: Math.max(1, Math.min(100, width)),
+		};
+	}, [
+		scrollContainerRef,
+		totalSeconds,
+		pixelsPerSecond,
+		trackAreaWidth,
+		currentFrame,
+	]);
+
+	// Current playhead position as % of total for overview
+	const playheadOverviewPct = useMemo(() => {
+		const totalFrames = (durationInMS / 1000) * fps;
+		if (totalFrames <= 0) return 0;
+		return (currentFrame / totalFrames) * 100;
+	}, [currentFrame, durationInMS, fps]);
 
 	return (
 		<div
-			className="flex flex-col border-t border-white/10 bg-[#0f0f0f] shrink-0 select-none z-30 shadow-[0_-5px_20px_rgba(0,0,0,0.5)]"
-			style={{ height: timelineHeight }}
+			className="flex flex-col border-t border-white/[0.07] bg-[#0c0c0c] shrink-0 select-none z-30"
+			style={{
+				height: timelineHeight,
+				boxShadow:
+					"0 -1px 0 rgba(255,255,255,0.04), 0 -8px 32px rgba(0,0,0,0.6)",
+			}}
 		>
+			{/* Resize handle */}
 			<div
-				className={`h-1.5 flex items-center justify-center cursor-ns-resize hover:bg-white/10 transition-colors group ${
-					isResizingTimeline ? "bg-blue-500/20" : ""
-				}`}
+				className={cn(
+					"h-1 flex items-center justify-center cursor-ns-resize group transition-colors shrink-0",
+					isResizingTimeline ? "bg-blue-500/30" : "hover:bg-white/[0.06]",
+				)}
 				onMouseDown={handleTimelineResize}
 			>
-				<GripHorizontal className="w-6 h-3 text-gray-600 group-hover:text-gray-400 transition-colors" />
+				<div
+					className={cn(
+						"w-8 h-0.5 rounded-full transition-colors",
+						isResizingTimeline
+							? "bg-blue-400"
+							: "bg-white/10 group-hover:bg-white/25",
+					)}
+				/>
 			</div>
 
-			<div className="h-8 border-b border-white/5 flex items-center justify-between px-3 bg-neutral-900 shrink-0 z-40">
-				<div className="text-[10px] font-bold text-neutral-400 tracking-wider flex items-center gap-1.5">
-					<Layers className="w-3.5 h-3.5" /> TIMELINE
-				</div>
+			{/* Header bar */}
+			<div className="h-9 border-b border-white/[0.05] flex items-center justify-between px-3 bg-[#0f0f0f] shrink-0">
+				{/* Left: label */}
 				<div className="flex items-center gap-2">
-					<Button
-						variant="ghost"
-						size="icon"
-						className="h-6 w-6 rounded hover:bg-white/10 text-gray-400"
-						onClick={() =>
-							setPixelsPerFrame((p) => Math.max(0.1, p - (p > 5 ? 2 : 0.5)))
-						}
+					<Layers className="w-3 h-3 text-neutral-600" />
+					<span className="text-[10px] font-semibold text-neutral-500 tracking-widest uppercase">
+						Timeline
+					</span>
+				</div>
+
+				{/* Center: zoom controls */}
+				<div className="flex items-center gap-1.5">
+					<TooltipProvider>
+						<Tooltip>
+							<TooltipTrigger asChild>
+								<button
+									type="button"
+									onClick={fitToContent}
+									className="h-6 w-6 flex items-center justify-center rounded text-gray-500 hover:text-gray-200 hover:bg-white/8 transition-all"
+								>
+									<Maximize2 className="w-3 h-3" />
+								</button>
+							</TooltipTrigger>
+							<TooltipContent>Fit to content</TooltipContent>
+						</Tooltip>
+					</TooltipProvider>
+
+					<button
+						type="button"
+						onClick={zoomOutTimeline}
+						className="h-6 w-6 flex items-center justify-center rounded text-gray-500 hover:text-gray-200 hover:bg-white/8 transition-all"
 					>
-						<Minus className="h-3 w-3" />
-					</Button>
-					<Slider
-						value={[pixelsPerFrame]}
-						min={0.1}
-						max={100}
-						step={0.1}
-						onValueChange={([v]) => setPixelsPerFrame(v)}
-						className="w-24"
-					/>
-					<Button
-						variant="ghost"
-						size="icon"
-						className="h-6 w-6 rounded hover:bg-white/10 text-gray-400"
-						onClick={() =>
-							setPixelsPerFrame((p) => Math.min(100, p + (p > 5 ? 2 : 0.5)))
-						}
+						<ZoomOut className="w-3 h-3" />
+					</button>
+
+					{/* Log-scale zoom slider */}
+					<div className="flex items-center gap-1.5 bg-white/[0.04] border border-white/[0.06] rounded-md px-2 py-1">
+						<input
+							type="range"
+							min={0}
+							max={1}
+							step={0.001}
+							value={zoomNorm}
+							onChange={(e) => setZoomNorm(Number(e.target.value))}
+							className="w-20 h-1 accent-blue-500 cursor-pointer"
+							style={{ accentColor: "#3b82f6" }}
+						/>
+						<span className="text-[9px] font-mono text-gray-500 w-12 text-right tabular-nums shrink-0">
+							{scaleLabel}
+						</span>
+					</div>
+
+					<button
+						type="button"
+						onClick={zoomInTimeline}
+						className="h-6 w-6 flex items-center justify-center rounded text-gray-500 hover:text-gray-200 hover:bg-white/8 transition-all"
 					>
-						<Plus className="h-3 w-3" />
-					</Button>
+						<ZoomIn className="w-3 h-3" />
+					</button>
+
+					<span className="text-[9px] text-gray-700 ml-1">
+						Alt+scroll to zoom
+					</span>
+				</div>
+
+				{/* Right: total duration */}
+				<div className="text-[10px] font-mono text-gray-600 tabular-nums">
+					{formatTimecode(totalSeconds)}
 				</div>
 			</div>
 
+			{/* Scrollable area */}
 			<div
 				ref={scrollContainerRef}
-				className="flex-1 overflow-auto bg-[#0a0a0a] timeline-scroll-area custom-scrollbar"
+				className="flex-1 overflow-auto min-h-0"
 				style={{
-					cursor: isPanningTimeline ? "grabbing" : "default",
 					scrollbarWidth: "thin",
-					scrollbarColor: "#333 #0a0a0a",
+					scrollbarColor: "#2a2a2a #0c0c0c",
 				}}
-				onMouseDown={(e: React.MouseEvent) => {
-					if (
-						e.button === 0 &&
-						(e.target as HTMLElement).classList.contains("timeline-bg")
-					) {
-						setIsPanningTimeline(true);
-						setDragStartX(e.clientX);
-						setInitialScroll(scrollContainerRef.current?.scrollLeft || 0);
-					}
-				}}
-				onMouseMove={(e: React.MouseEvent) => {
-					if (isPanningTimeline && scrollContainerRef.current) {
-						scrollContainerRef.current.scrollLeft =
-							initialScroll - (e.clientX - dragStartX);
-					}
-				}}
-				onMouseUp={() => setIsPanningTimeline(false)}
-				onMouseLeave={() => setIsPanningTimeline(false)}
-				role="button"
-				tabIndex={0}
 			>
 				<div
 					className="relative flex flex-col min-h-full"
 					style={{
 						width: Math.max(
 							scrollContainerRef.current?.clientWidth || 0,
-							HEADER_WIDTH + totalSeconds * pixelsPerSecond + 800,
+							HEADER_WIDTH + totalTimelineWidth,
 						),
 					}}
 				>
-					{/* Ruler */}
+					{/* ── Ruler ── */}
 					<div
 						className="sticky top-0 z-50 flex shrink-0"
 						style={{ height: RULER_HEIGHT }}
 					>
+						{/* Corner cell */}
 						<div
-							className="sticky left-0 z-50 border-r border-b border-white/5 bg-neutral-900 shrink-0 shadow-lg"
-							style={{ width: HEADER_WIDTH }}
-						/>
-						<div
-							className="flex-1 bg-neutral-900/90 backdrop-blur-sm border-b border-white/5 relative cursor-pointer"
-							onClick={handleTimelineClick}
+							className="sticky left-0 z-50 border-r border-b bg-[#0f0f0f] shrink-0"
+							style={{
+								width: HEADER_WIDTH,
+								borderColor: "rgba(255,255,255,0.05)",
+							}}
 						>
+							<div className="h-full flex items-center justify-center">
+								<span className="text-[9px] font-bold uppercase tracking-widest text-neutral-700">
+									Tracks
+								</span>
+							</div>
+						</div>
+
+						{/* Ruler track */}
+						<div
+							ref={rulerRef}
+							className="flex-1 relative select-none bg-[#0f0f0f] border-b"
+							style={{
+								borderColor: "rgba(255,255,255,0.05)",
+								cursor: isDraggingPlayhead ? "grabbing" : "crosshair",
+							}}
+							onMouseDown={handleRulerMouseDown}
+							onMouseMove={handleRulerMouseMove}
+							onMouseEnter={() => setIsHoveringRuler(true)}
+							onMouseLeave={() => {
+								setIsHoveringRuler(false);
+								setCursorTimeSec(null);
+							}}
+						>
+							{/* Tick marks via SVG pattern */}
 							<svg
-								role="img"
-								aria-label="ruler ticks"
-								className="absolute inset-0 w-full h-full pointer-events-none opacity-50"
+								className="absolute inset-0 pointer-events-none"
+								width="100%"
+								height="100%"
 							>
 								<defs>
 									<pattern
-										id="ruler-ticks"
+										id="ruler-major"
 										x="0"
 										y="0"
 										width={patternWidth}
 										height={RULER_HEIGHT}
 										patternUnits="userSpaceOnUse"
 									>
+										{/* Major tick */}
 										<line
 											x1="0.5"
 											y1={RULER_HEIGHT}
 											x2="0.5"
-											y2={RULER_HEIGHT - 12}
-											stroke="#666"
+											y2={RULER_HEIGHT - 16}
+											stroke="rgba(255,255,255,0.2)"
 											strokeWidth="1"
 										/>
+										{/* Minor ticks */}
 										{Array.from({ length: Math.max(0, subTicksCount - 1) }).map(
 											(_, i) => {
-												const x =
-													(i + 1) * minorTickSeconds * pixelsPerSecond + 0.5;
+												const x = ((i + 1) / subTicksCount) * patternWidth;
+												const isHalf = i + 1 === Math.floor(subTicksCount / 2);
 												return (
 													<line
 														key={i}
-														x1={x}
+														x1={x + 0.5}
 														y1={RULER_HEIGHT}
-														x2={x}
-														y2={RULER_HEIGHT - 6}
-														stroke="#333"
+														x2={x + 0.5}
+														y2={RULER_HEIGHT - (isHalf ? 8 : 5)}
+														stroke={
+															isHalf
+																? "rgba(255,255,255,0.12)"
+																: "rgba(255,255,255,0.07)"
+														}
 													/>
 												);
 											},
 										)}
 									</pattern>
 								</defs>
-								<rect width="100%" height="100%" fill="url(#ruler-ticks)" />
+								<rect width="100%" height="100%" fill="url(#ruler-major)" />
 							</svg>
 
-							{/* High Performance Label Rendering */}
+							{/* Major tick labels */}
 							{Array.from({ length: ticksCount }).map((_, i) => {
 								const sec = i * majorTickSeconds;
+								const x = sec * pixelsPerSecond;
+								// Skip if too close to left edge
+								if (x < 4) return null;
 								return (
 									<span
 										key={`label_${sec}`}
-										className="absolute top-1.5 text-[10px] font-mono text-gray-500 select-none pointer-events-none font-medium"
-										style={{ left: sec * pixelsPerSecond + 4 }}
+										className="absolute pointer-events-none select-none"
+										style={{
+											left: x + 4,
+											top: 6,
+											fontSize: "9px",
+											fontFamily: "ui-monospace, monospace",
+											color: "rgba(255,255,255,0.35)",
+											fontWeight: 500,
+											letterSpacing: "0.02em",
+											lineHeight: 1,
+											whiteSpace: "nowrap",
+										}}
 									>
 										{formatTimecode(sec)}
 									</span>
 								);
 							})}
 
+							{/* Frame tick labels when very zoomed in */}
+							{showFrameTicks &&
+								pixelsPerFrame >= 20 &&
+								Array.from({
+									length: Math.min(500, Math.ceil(totalSeconds * fps)),
+								}).map((_, i) => {
+									if (i % fps === 0) return null; // skip second marks (already shown)
+									const x = i * pixelsPerFrame;
+									return (
+										<span
+											key={`f_${i}`}
+											className="absolute pointer-events-none select-none"
+											style={{
+												left: x + 2,
+												bottom: 3,
+												fontSize: "7px",
+												fontFamily: "ui-monospace, monospace",
+												color: "rgba(255,255,255,0.2)",
+												lineHeight: 1,
+											}}
+										>
+											{i % fps}
+										</span>
+									);
+								})}
+
+							{/* Cursor time indicator */}
+							{isHoveringRuler &&
+								cursorTimeSec !== null &&
+								!isDraggingPlayhead && (
+									<div
+										className="absolute top-0 bottom-0 pointer-events-none z-10"
+										style={{ left: cursorTimeSec * pixelsPerSecond }}
+									>
+										<div className="absolute w-px h-full bg-white/20" />
+										<div
+											className="absolute -top-0 text-[8px] font-mono text-white/70 bg-neutral-900/90 border border-white/10 rounded px-1 py-0.5 whitespace-nowrap"
+											style={{ left: 4, top: 4 }}
+										>
+											{formatTimecode(cursorTimeSec, true)}
+										</div>
+									</div>
+								)}
+
+							{/* Playhead marker on ruler */}
 							<div
 								ref={playheadRef}
-								className="absolute top-0 bottom-0 z-60 pointer-events-none h-screen will-change-transform"
+								className="absolute top-0 bottom-0 z-20 pointer-events-none will-change-transform"
+								style={{ height: "100vh" }}
 							>
-								<div className="absolute -translate-x-1/2 top-0 w-3 h-3 text-blue-500 fill-current filter drop-shadow-md">
-									<svg viewBox="0 0 12 12" className="w-full h-full">
-										<title>Playhead</title>
-										<path d="M0,0 L12,0 L12,8 L6,12 L0,8 Z" />
+								{/* Triangle head */}
+								<div className="absolute -translate-x-1/2 top-0 pointer-events-none">
+									<svg
+										width="11"
+										height="12"
+										viewBox="0 0 11 12"
+										className="overflow-visible"
+									>
+										<polygon points="0,0 11,0 11,8 5.5,12 0,8" fill="#3b82f6" />
 									</svg>
 								</div>
-								<div className="w-px h-full bg-blue-500 absolute left-0 shadow-[0_0_4px_rgba(59,130,246,0.5)]" />
+								{/* Stem */}
+								<div
+									className="absolute top-0 h-full"
+									style={{
+										left: "0.5px",
+										width: "1px",
+										background: "rgba(59,130,246,0.7)",
+										boxShadow: "0 0 4px rgba(59,130,246,0.4)",
+									}}
+								/>
+								{/* Time label on playhead */}
+								<div
+									className="absolute top-3 left-2 text-[8px] font-mono text-blue-300/80 whitespace-nowrap pointer-events-none"
+									style={{ textShadow: "0 1px 2px rgba(0,0,0,0.8)" }}
+								>
+									{formatTimecode(currentFrame / fps, true)}
+								</div>
 							</div>
 						</div>
 					</div>
 
-					{/* Tracks */}
+					{/* ── Track rows ── */}
 					<div className="flex relative flex-1">
+						{/* Sticky track headers */}
 						<div
-							className="sticky left-0 z-30 bg-[#0f0f0f] border-r border-white/5 shrink-0"
-							style={{ width: HEADER_WIDTH }}
+							className="sticky left-0 z-30 shrink-0 border-r"
+							style={{
+								width: HEADER_WIDTH,
+								borderColor: "rgba(255,255,255,0.05)",
+								background: "#0e0e0e",
+							}}
 						>
 							<DndContext
 								sensors={sensors}
@@ -2072,54 +2602,68 @@ const TimelinePanel: React.FC = () => {
 									items={sortedLayers.map((l) => l.id)}
 									strategy={verticalListSortingStrategy}
 								>
-									{sortedLayers.map((layer) => (
+									{sortedLayers.map((layer, idx) => (
 										<SortableTrackHeader
 											key={layer.id}
 											layer={layer}
 											isSelected={layer.id === selectedId}
 											onSelect={() => setSelectedId(layer.id)}
+											index={idx}
 										/>
 									))}
 								</SortableContext>
 							</DndContext>
 						</div>
 
-						<div className="flex-1 relative timeline-bg min-h-full bg-[#0a0a0a]">
-							{/* Synchronized Background Grid */}
+						{/* Track canvas */}
+						<div
+							ref={trackAreaRef}
+							className="flex-1 relative min-h-full"
+							style={{ background: "#0a0a0a" }}
+						>
+							{/* Vertical grid lines (major ticks) */}
 							<div
-								className="absolute inset-0 pointer-events-none opacity-[0.03]"
+								className="absolute inset-0 pointer-events-none"
 								style={{
-									backgroundImage:
-										"linear-gradient(90deg, #fff 1px, transparent 1px)",
+									backgroundImage: `repeating-linear-gradient(90deg, rgba(255,255,255,0.025) 0px, rgba(255,255,255,0.025) 1px, transparent 1px, transparent ${patternWidth}px)`,
 									backgroundSize: `${patternWidth}px 100%`,
 								}}
 							/>
-							{sortedLayers.map((layer) => {
+
+							{sortedLayers.map((layer, idx) => {
 								const durationMS = layer.durationInMS ?? DEFAULT_DURATION_MS;
 								const isSelected = layer.id === selectedId;
+								const clipLeft = (layer.startFrame ?? 0) * pixelsPerFrame;
+								const clipWidth = Math.max(
+									6,
+									(durationMS / 1000) * fps * pixelsPerFrame,
+								);
+
 								return (
 									<div
 										key={layer.id}
 										style={{ height: TRACK_HEIGHT }}
-										className={`border-b border-white/5 relative group/track ${
-											isSelected ? "bg-white/2" : ""
-										}`}
+										className={cn(
+											"border-b relative",
+											idx % 2 === 1 ? "bg-white/[0.008]" : "",
+											isSelected ? "bg-blue-500/[0.04]" : "",
+										)}
+										style={{
+											height: TRACK_HEIGHT,
+											borderColor: "rgba(255,255,255,0.03)",
+										}}
 									>
+										{/* Clip button */}
 										<button
 											type="button"
-											onKeyDown={(e: React.KeyboardEvent) => {
-												if (e.key === "Enter") setSelectedId(layer.id);
-											}}
-											className={`absolute top-1 bottom-1 rounded-md text-left p-0 m-0 border-0 bg-transparent flex items-center overflow-hidden cursor-move outline-none ${
-												isSelected ? "z-20" : "z-10"
-											}`}
+											className={cn(
+												"absolute top-1.5 bottom-1.5 rounded-[5px] cursor-move outline-none p-0 m-0 border-0 bg-transparent overflow-visible",
+												isSelected ? "z-20" : "z-10",
+											)}
 											style={{
-												left: (layer.startFrame ?? 0) * pixelsPerFrame,
-												width: Math.max(
-													10,
-													(durationMS / 1000) * fps * pixelsPerFrame,
-												),
-												minWidth: "10px",
+												left: clipLeft,
+												width: clipWidth,
+												minWidth: "6px",
 											}}
 											onMouseDown={(e: React.MouseEvent) =>
 												handleClipManipulation(e, layer.id, "move")
@@ -2128,22 +2672,139 @@ const TimelinePanel: React.FC = () => {
 												e.stopPropagation();
 												setSelectedId(layer.id);
 											}}
+											onKeyDown={(e: React.KeyboardEvent) => {
+												if (e.key === "Enter") setSelectedId(layer.id);
+											}}
 										>
-											<UnifiedClip layer={layer} isSelected={isSelected} />
+											<UnifiedClip
+												layer={layer}
+												isSelected={isSelected}
+												pixelsPerSecond={pixelsPerSecond}
+												fps={fps}
+											/>
+
+											{/* Trim handle — right edge */}
 											<div
-												className="absolute right-0 top-0 bottom-0 w-3 cursor-e-resize z-30 group/handle"
-												onMouseDown={(e: React.MouseEvent) =>
-													handleClipManipulation(e, layer.id, "trim")
-												}
+												className="absolute -right-1 top-0 bottom-0 w-4 cursor-e-resize z-30 flex items-center justify-end pr-0.5 group/trim"
+												onMouseDown={(e: React.MouseEvent) => {
+													e.stopPropagation();
+													handleClipManipulation(e, layer.id, "trim");
+												}}
 											>
-												<div className="absolute right-0.5 top-1/2 -translate-y-1/2 w-1 h-4 bg-black/20 rounded-full group-hover/handle:bg-white/50 transition-colors" />
+												<div className="w-1 h-5 rounded-full bg-white/10 group-hover/trim:bg-white/40 transition-colors" />
 											</div>
 										</button>
 									</div>
 								);
 							})}
+
+							{/* Empty state */}
+							{sortedLayers.length === 0 && (
+								<div className="absolute inset-0 flex items-center justify-center pointer-events-none">
+									<span className="text-[11px] text-gray-700">
+										No layers — add media to get started
+									</span>
+								</div>
+							)}
 						</div>
 					</div>
+				</div>
+			</div>
+
+			{/* ── Overview / Minimap bar ── */}
+			<div
+				ref={overviewRef}
+				className="shrink-0 border-t relative overflow-hidden"
+				style={{
+					height: OVERVIEW_HEIGHT,
+					borderColor: "rgba(255,255,255,0.04)",
+					background: "#080808",
+				}}
+			>
+				<div
+					className="absolute left-0 top-0 bottom-0"
+					style={{
+						width: HEADER_WIDTH,
+						borderRight: "1px solid rgba(255,255,255,0.04)",
+						background: "#090909",
+					}}
+				>
+					<div className="h-full flex items-center px-3">
+						<span className="text-[8px] uppercase tracking-widest font-bold text-neutral-700">
+							Overview
+						</span>
+					</div>
+				</div>
+
+				<div
+					className="absolute top-0 bottom-0 right-0"
+					style={{ left: HEADER_WIDTH }}
+				>
+					{/* Layer bars in overview */}
+					{sortedLayers.map((layer, idx) => {
+						const colorConfig = resolveColorConfig(layer);
+						const startFrac =
+							((layer.startFrame ?? 0) * pixelsPerFrame) /
+							Math.max(1, totalSeconds * pixelsPerSecond);
+						const widthFrac =
+							(((layer.durationInMS ?? DEFAULT_DURATION_MS) / 1000) *
+								fps *
+								pixelsPerFrame) /
+							Math.max(1, totalSeconds * pixelsPerSecond);
+						return (
+							<div
+								key={layer.id}
+								className={cn("absolute rounded-sm opacity-60", colorConfig.bg)}
+								style={{
+									left: `${Math.max(0, startFrac * 100)}%`,
+									width: `${Math.max(0.2, widthFrac * 100)}%`,
+									top: 3 + (idx % 3) * 4,
+									height: 3,
+								}}
+							/>
+						);
+					})}
+
+					{/* Viewport window indicator */}
+					{overviewViewport && (
+						<div
+							className="absolute top-0 bottom-0 border border-blue-500/40 bg-blue-500/10 rounded-sm pointer-events-none"
+							style={{
+								left: `${overviewViewport.left}%`,
+								width: `${overviewViewport.width}%`,
+							}}
+						/>
+					)}
+
+					{/* Playhead position on overview */}
+					<div
+						className="absolute top-0 bottom-0 w-px bg-blue-500/60 pointer-events-none"
+						style={{ left: `${playheadOverviewPct}%` }}
+					/>
+
+					{/* Clickable overview */}
+					<div
+						className="absolute inset-0 cursor-pointer"
+						role="button"
+						tabIndex={-1}
+						onClick={(e) => {
+							const rect = e.currentTarget.getBoundingClientRect();
+							const frac = (e.clientX - rect.left) / rect.width;
+							const frame = Math.round(frac * (durationInMS / 1000) * fps);
+							playerRef.current?.seekTo(frame);
+							setCurrentFrame(frame);
+							// Also scroll the timeline to show this position
+							if (scrollContainerRef.current) {
+								const targetScrollLeft =
+									frac * totalSeconds * pixelsPerSecond -
+									(scrollContainerRef.current.clientWidth - HEADER_WIDTH) / 2;
+								scrollContainerRef.current.scrollLeft = Math.max(
+									0,
+									targetScrollLeft,
+								);
+							}
+						}}
+					/>
 				</div>
 			</div>
 		</div>
@@ -2269,7 +2930,6 @@ const InspectorPanel: React.FC = () => {
 									/>
 								</div>
 							</div>
-							{/* NEW: Background Colour Control */}
 							<div className="space-y-1.5">
 								<Label className="text-[10px] text-gray-500 uppercase font-bold tracking-wider">
 									Background Colour
@@ -2280,8 +2940,6 @@ const InspectorPanel: React.FC = () => {
 									onChange={setBackgroundColor}
 								/>
 							</div>
-
-							{/* NEW: Frame Rate (FPS) Control */}
 							<div className="space-y-1.5">
 								<Label className="text-[10px] text-gray-500 uppercase font-bold tracking-wider">
 									Frame Rate
@@ -2296,9 +2954,7 @@ const InspectorPanel: React.FC = () => {
 									<SelectContent className="bg-neutral-800 border-white/10 text-gray-300">
 										{[24, 25, 30, 50, 60].map((rate) => (
 											<SelectItem key={rate} value={rate.toString()}>
-												<span className="flex items-center justify-between w-full gap-6">
-													<span>{rate} FPS</span>
-												</span>
+												{rate} FPS
 											</SelectItem>
 										))}
 									</SelectContent>
@@ -2328,7 +2984,6 @@ const InspectorPanel: React.FC = () => {
 		selectedLayer.type === "Video" &&
 		selectedLayer.videoNaturalWidth != null &&
 		selectedLayer.videoNaturalHeight != null;
-
 	const showAutoDimensions =
 		(selectedLayer.type === "Image" ||
 			selectedLayer.type === "SVG" ||
@@ -2340,18 +2995,18 @@ const InspectorPanel: React.FC = () => {
 			update({ autoDimensions: false });
 			return;
 		}
-		const newW = selectedLayer.width;
-		const newH = selectedLayer.height;
-		update({ autoDimensions: true, width: newW, height: newH });
+		update({
+			autoDimensions: true,
+			width: selectedLayer.width,
+			height: selectedLayer.height,
+		});
 	};
 
 	const autoDimensionsTooltip = hasCropDimensions
 		? "Sync dimensions with cropped source media"
 		: "Sync dimensions with source media";
-
 	const suppressSizeInputs =
 		selectedLayer.type === "Text" || isCaptionLayer(selectedLayer.type);
-
 	const isTextOrCaption =
 		selectedLayer.type === "Text" || selectedLayer.type === "Caption";
 	const roundedBoxActive = isTextOrCaption && selectedLayer.useRoundedTextBox;
@@ -2514,12 +3169,9 @@ const InspectorPanel: React.FC = () => {
 						<AnimationsInspectorSection layer={selectedLayer} update={update} />
 					)}
 
-					{/* ── Text Box (rounded pill background) ────────────────────── */}
 					{isTextOrCaption && (
 						<TextBoxSection layer={selectedLayer} update={update} />
 					)}
-
-					{/* ── Text Shadow Section ────────────────────── */}
 					{isTextOrCaption && (
 						<TextShadowSection layer={selectedLayer} update={update} />
 					)}
@@ -2704,10 +3356,15 @@ export const VideoDesignerEditor: React.FC<VideoDesignerEditorProps> = ({
 	const timeRef = useRef<HTMLDivElement>(null);
 	const lastModeRef = useRef<EditorMode>("select");
 	const timelineScrollRef = useRef<HTMLDivElement>(null);
+	const trimmedLayerIdsRef = useRef<Set<string>>(new Set());
 
-	// ---------------------------------------------------------------------------
-	// Derived helpers bound to initialLayers
-	// ---------------------------------------------------------------------------
+	const markLayerTrimmed = useCallback((id: string) => {
+		trimmedLayerIdsRef.current.add(id);
+	}, []);
+	const isLayerTrimmed = useCallback(
+		(id: string) => trimmedLayerIdsRef.current.has(id),
+		[],
+	);
 
 	const getTextData = (id: string) => {
 		const item = initialLayers.get(id);
@@ -2737,10 +3394,6 @@ export const VideoDesignerEditor: React.FC<VideoDesignerEditorProps> = ({
 		return fileData.entity?.duration ?? fileData?.processData?.duration;
 	};
 
-	// ---------------------------------------------------------------------------
-	// Layer management
-	// ---------------------------------------------------------------------------
-
 	const updateLayersHandler = (
 		updater: SetStateAction<EditorLayer[]>,
 		isUserChange = true,
@@ -2754,10 +3407,6 @@ export const VideoDesignerEditor: React.FC<VideoDesignerEditorProps> = ({
 		if (selectedId === id) setSelectedId(null);
 		setIsDirty(true);
 	};
-
-	// ---------------------------------------------------------------------------
-	// Viewport
-	// ---------------------------------------------------------------------------
 
 	const recomputeVideoCrops = (prev: EditorLayer[]) =>
 		prev.map((layer) => {
@@ -2779,10 +3428,6 @@ export const VideoDesignerEditor: React.FC<VideoDesignerEditorProps> = ({
 		setLayers(recomputeVideoCrops);
 		setIsDirty(true);
 	};
-
-	// ---------------------------------------------------------------------------
-	// Playback
-	// ---------------------------------------------------------------------------
 
 	const setIsPlaying = (p: boolean) => {
 		setIsPlayingState(p);
@@ -2806,10 +3451,6 @@ export const VideoDesignerEditor: React.FC<VideoDesignerEditorProps> = ({
 		playerRef.current?.seekTo(frame);
 	};
 
-	// ---------------------------------------------------------------------------
-	// Zoom / pan
-	// ---------------------------------------------------------------------------
-
 	const zoomIn = () => setZoom((z) => Math.min(3, z + 0.1));
 	const zoomOut = () => setZoom((z) => Math.max(0.1, z - 0.1));
 	const zoomTo = (val: number) => setZoom(val);
@@ -2828,25 +3469,18 @@ export const VideoDesignerEditor: React.FC<VideoDesignerEditorProps> = ({
 		});
 	}, [containerSize, viewportWidth, viewportHeight]);
 
-	// ---------------------------------------------------------------------------
-	// Save
-	// ---------------------------------------------------------------------------
-
 	const handleSave = () => {
 		onSave({
 			layerUpdates: serializeLayersForSave(layers),
 			width: viewportWidth,
 			height: viewportHeight,
 			FPS: fps,
-			backgroundColor: backgroundColor,
+			backgroundColor,
 		});
 		setIsDirty(false);
 	};
 
-	// ---------------------------------------------------------------------------
-	// Effects
-	// ---------------------------------------------------------------------------
-
+	// Load initial layers
 	useEffect(() => {
 		const loadInitialLayers = async () => {
 			const layerUpdates = { ...nodeConfig?.layerUpdates };
@@ -2896,7 +3530,6 @@ export const VideoDesignerEditor: React.FC<VideoDesignerEditorProps> = ({
 					durationMs =
 						fileData.entity?.duration ?? fileData.processData?.duration ?? 0;
 					src = getAssetUrl(id);
-
 					if (item.type !== "Caption") {
 						const initialW =
 							fileData.processData?.width ??
@@ -2924,6 +3557,10 @@ export const VideoDesignerEditor: React.FC<VideoDesignerEditorProps> = ({
 				const calculatedDurationMS = hasNativeDuration
 					? durationMs
 					: DEFAULT_DURATION_MS;
+				const resolvedDurationMS =
+					isLayerTrimmed(id) && saved?.durationInMS != null
+						? saved.durationInMS
+						: (saved?.durationInMS ?? calculatedDurationMS);
 
 				const base: Partial<EditorLayer> = {
 					id,
@@ -2935,7 +3572,7 @@ export const VideoDesignerEditor: React.FC<VideoDesignerEditorProps> = ({
 					opacity: 1,
 					zIndex: saved?.zIndex ?? ++maxZ,
 					startFrame: 0,
-					durationInMS: saved?.durationInMS ?? calculatedDurationMS,
+					durationInMS: resolvedDurationMS,
 					volume: 1,
 					animations: saved?.animations ?? [],
 					...saved,
@@ -2991,29 +3628,22 @@ export const VideoDesignerEditor: React.FC<VideoDesignerEditorProps> = ({
 					const lHeight =
 						saved?.lineHeight ?? (CAPTION_LAYER_DEFAULTS.lineHeight as number);
 					const pad = saved?.padding ?? 0;
-
-					// Compute an auto-height sufficient for ~3 subtitle lines to prevent interaction blocking.
 					const autoHeight = Math.round(fSize * lHeight * 3 + pad * 2);
-
-					// Compute standard bottom positioning.
 					const defaultY = Math.max(
 						0,
 						viewportHeight - autoHeight - Math.round(viewportHeight * 0.1),
 					);
-
-					// If the saved state had full legacy viewport height, reset to default placement to unblock interactions.
 					const isLegacyFullscreen =
 						saved?.height !== undefined &&
 						saved?.height >= viewportHeight * 0.9;
 					const initialY = isLegacyFullscreen
 						? defaultY
 						: (saved?.y ?? defaultY);
-
-					const captionLayer: EditorLayer = {
+					loaded.push({
 						...base,
 						type: "Caption",
-						width: viewportWidth, // Always force full width
-						height: autoHeight, // Dynamic auto height based on font size
+						width: viewportWidth,
+						height: autoHeight,
 						y: initialY,
 						fontSize: fSize,
 						fontFamily: saved?.fontFamily ?? "Inter",
@@ -3022,10 +3652,8 @@ export const VideoDesignerEditor: React.FC<VideoDesignerEditorProps> = ({
 						captionPreset: saved?.captionPreset ?? "default",
 						lockAspect: false,
 						autoDimensions: false,
-					} as EditorLayer;
-					loaded.push(captionLayer);
-
-					if (src && !saved?.durationInMS) {
+					} as EditorLayer);
+					if (src && !isLayerTrimmed(id) && !saved?.durationInMS) {
 						const captionSrc = src;
 						const layerId = id;
 						asyncTasks.push(
@@ -3033,11 +3661,8 @@ export const VideoDesignerEditor: React.FC<VideoDesignerEditorProps> = ({
 								if (!srtDurationMs) return;
 								setLayers((prev) =>
 									prev.map((l) =>
-										l.id === layerId
-											? {
-													...l,
-													durationInMS: srtDurationMs,
-												}
+										l.id === layerId && !isLayerTrimmed(l.id)
+											? { ...l, durationInMS: srtDurationMs }
 											: l,
 									),
 								);
@@ -3074,7 +3699,6 @@ export const VideoDesignerEditor: React.FC<VideoDesignerEditorProps> = ({
 			await Promise.all([...fontPromises, ...asyncTasks]);
 			setLayers(loaded);
 		};
-
 		loadInitialLayers();
 	}, [initialLayers, nodeConfig]);
 
@@ -3109,18 +3733,16 @@ export const VideoDesignerEditor: React.FC<VideoDesignerEditorProps> = ({
 					try {
 						if (layer.type === "Video" && layer.virtualMedia) {
 							const metadata = getActiveMediaMetadata(layer.virtualMedia);
-							if (metadata) {
-								if (
-									metadata.width != null &&
-									metadata.height != null &&
-									(layer.width !== metadata.width ||
-										layer.height !== metadata.height)
-								) {
-									updates.set(layer.id, {
-										width: metadata.width,
-										height: metadata.height,
-									});
-								}
+							if (
+								metadata?.width != null &&
+								metadata?.height != null &&
+								(layer.width !== metadata.width ||
+									layer.height !== metadata.height)
+							) {
+								updates.set(layer.id, {
+									width: metadata.width,
+									height: metadata.height,
+								});
 							}
 							return;
 						}
@@ -3137,12 +3759,8 @@ export const VideoDesignerEditor: React.FC<VideoDesignerEditorProps> = ({
 								img.naturalHeight > 0
 									? img.naturalHeight
 									: (layer.height ?? 400);
-							if (layer.width !== naturalW || layer.height !== naturalH) {
-								updates.set(layer.id, {
-									width: naturalW,
-									height: naturalH,
-								});
-							}
+							if (layer.width !== naturalW || layer.height !== naturalH)
+								updates.set(layer.id, { width: naturalW, height: naturalH });
 						} else if (layer.type === "Video" && url) {
 							const video = document.createElement("video");
 							video.src = url;
@@ -3183,9 +3801,8 @@ export const VideoDesignerEditor: React.FC<VideoDesignerEditorProps> = ({
 							if (
 								Math.abs((layer.width ?? 0) - newW) > 1 ||
 								Math.abs((layer.height ?? 0) - newH) > 1
-							) {
+							)
 								updates.set(layer.id, { width: newW, height: newH });
-							}
 						}
 					} catch {
 						updates.set(layer.id, {
@@ -3196,13 +3813,12 @@ export const VideoDesignerEditor: React.FC<VideoDesignerEditorProps> = ({
 					}
 				}),
 			);
-			if (mounted && updates.size > 0) {
+			if (mounted && updates.size > 0)
 				setLayers((prev) =>
 					prev.map((l) =>
 						updates.has(l.id) ? { ...l, ...updates.get(l.id) } : l,
 					),
 				);
-			}
 		};
 		measure();
 		return () => {
@@ -3210,7 +3826,6 @@ export const VideoDesignerEditor: React.FC<VideoDesignerEditorProps> = ({
 		};
 	}, [measurementSignature]);
 
-	// Keep Caption layers in sync with canvas resolution.
 	useEffect(() => {
 		setLayers((prev) =>
 			prev.map((l) => {
@@ -3218,11 +3833,11 @@ export const VideoDesignerEditor: React.FC<VideoDesignerEditorProps> = ({
 					const fSize = l.fontSize ?? 48;
 					const lHeight = l.lineHeight ?? 1.2;
 					const pad = l.padding ?? 0;
-
-					// Maintain dynamic auto height to prevent fullscreen blocking
-					const autoHeight = Math.round(fSize * lHeight * 3 + pad * 2);
-
-					return { ...l, width: viewportWidth, height: autoHeight };
+					return {
+						...l,
+						width: viewportWidth,
+						height: Math.round(fSize * lHeight * 3 + pad * 2),
+					};
 				}
 				return l;
 			}),
@@ -3236,12 +3851,12 @@ export const VideoDesignerEditor: React.FC<VideoDesignerEditorProps> = ({
 	useEffect(() => {
 		const el = containerRef.current;
 		if (!el) return;
-		const observer = new ResizeObserver((entries) => {
+		const observer = new ResizeObserver((entries) =>
 			setContainerSize({
 				width: entries[0].contentRect.width,
 				height: entries[0].contentRect.height,
-			});
-		});
+			}),
+		);
 		observer.observe(el);
 		return () => observer.disconnect();
 	}, []);
@@ -3300,10 +3915,7 @@ export const VideoDesignerEditor: React.FC<VideoDesignerEditorProps> = ({
 		}
 	}, []);
 
-	// ---------------------------------------------------------------------------
 	// Hotkeys
-	// ---------------------------------------------------------------------------
-
 	useHotkeys("v", () => setMode("select"));
 	useHotkeys("h", () => setMode("pan"));
 	useHotkeys("=,+", () => zoomIn());
@@ -3362,6 +3974,7 @@ export const VideoDesignerEditor: React.FC<VideoDesignerEditorProps> = ({
 					),
 				)
 			: DEFAULT_DURATION_MS;
+
 	const contextValue: EditorContextType = {
 		layers,
 		updateLayers: updateLayersHandler,
@@ -3407,6 +4020,8 @@ export const VideoDesignerEditor: React.FC<VideoDesignerEditorProps> = ({
 		timelineHeight,
 		setTimelineHeight,
 		initialLayersData: initialLayers,
+		markLayerTrimmed,
+		isLayerTrimmed,
 	};
 
 	return (
@@ -3418,10 +4033,10 @@ export const VideoDesignerEditor: React.FC<VideoDesignerEditorProps> = ({
 						className="flex-1 relative overflow-hidden"
 						onMouseDown={() => setSelectedId(null)}
 						style={{
-							backgroundColor: "#1a1a1a",
+							backgroundColor: "#161616",
 							backgroundImage:
-								"radial-gradient(circle at 1px 1px, rgba(255,255,255,0.12) 1px, transparent 0)",
-							backgroundSize: "24px 24px",
+								"radial-gradient(circle at 1px 1px, rgba(255,255,255,0.09) 1px, transparent 0)",
+							backgroundSize: "20px 20px",
 						}}
 						role="button"
 						tabIndex={0}
@@ -3436,7 +4051,7 @@ export const VideoDesignerEditor: React.FC<VideoDesignerEditorProps> = ({
 							}}
 						>
 							<div
-								className="shadow-[0_0_100px_rgba(0,0,0,0.9)] media-container relative bg-[#0a0a0a] ring-2 ring-white/15 rounded-sm"
+								className="shadow-[0_0_80px_rgba(0,0,0,0.95)] media-container relative bg-[#0a0a0a] ring-1 ring-white/10 rounded-sm"
 								style={{ width: viewportWidth, height: viewportHeight }}
 							>
 								{selectedId && (

@@ -67,7 +67,14 @@ const TRANSITION_SPRING = {
 
 export function AssetsSection({ isCollapsed }: AssetsSectionProps) {
 	const [isOpen, setIsOpen] = useState(false);
-	const { assets: assetsData, isLoading, setQueryParams } = useUserAssets();
+	const {
+		assets: assetsData,
+		isLoading,
+		setQueryParams,
+		fetchNextPage,
+		hasNextPage,
+		isFetchingNextPage,
+	} = useUserAssets();
 
 	const [searchValue, setSearchValue] = useState("");
 	const [activeFilter, setActiveFilter] = useState<AssetTypeFilter>("all");
@@ -120,7 +127,7 @@ export function AssetsSection({ isCollapsed }: AssetsSectionProps) {
 								Your Assets
 							</span>
 							<span className="text-[10px] text-muted-foreground tabular-nums">
-								{isLoading ? "Updating..." : `${assets.length} items`}
+								{isLoading ? "Updating..." : `${assetsData?.total ?? 0} items`}
 							</span>
 						</div>
 					)}
@@ -202,7 +209,7 @@ export function AssetsSection({ isCollapsed }: AssetsSectionProps) {
 					<div className="flex-1 overflow-hidden bg-muted/5">
 						<ScrollArea className="h-full">
 							<div className="p-4">
-								{isLoading ? (
+								{isLoading && assets.length === 0 ? (
 									<div className="flex min-h-100 flex-col items-center justify-center gap-3">
 										<Loader2 className="h-6 w-6 animate-spin text-primary/60" />
 										<p className="text-xs font-medium text-muted-foreground">
@@ -210,25 +217,53 @@ export function AssetsSection({ isCollapsed }: AssetsSectionProps) {
 										</p>
 									</div>
 								) : assets.length > 0 ? (
-									<div className="grid grid-cols-2 gap-3">
-										<AnimatePresence mode="popLayout" initial={false}>
-											{assets.map((asset, index) => (
-												<motion.div
-													key={asset.id}
-													layout
-													initial={{ opacity: 0, y: 10 }}
-													animate={{ opacity: 1, y: 0 }}
-													exit={{ opacity: 0, scale: 0.95 }}
-													transition={{
-														...TRANSITION_SPRING,
-														delay: Math.min(index * 0.03, 0.3), // Stagger limited to first 10 items
-													}}
-												>
-													<AssetItem asset={asset} />
-												</motion.div>
-											))}
-										</AnimatePresence>
-									</div>
+									<>
+										<div className="grid grid-cols-2 gap-3">
+											<AnimatePresence mode="popLayout" initial={false}>
+												{assets.map((asset, index) => (
+													<motion.div
+														key={asset.id}
+														layout
+														initial={{ opacity: 0, y: 10 }}
+														animate={{ opacity: 1, y: 0 }}
+														exit={{ opacity: 0, scale: 0.95 }}
+														transition={{
+															...TRANSITION_SPRING,
+															delay: Math.min(index * 0.03, 0.3), // Stagger limited to first 10 items
+														}}
+													>
+														<AssetItem asset={asset} />
+													</motion.div>
+												))}
+											</AnimatePresence>
+										</div>
+
+										{/* Infinite Scroll Trigger */}
+										<div
+											ref={(el) => {
+												if (!el) return;
+												const observer = new IntersectionObserver(
+													(entries) => {
+														if (
+															entries[0].isIntersecting &&
+															hasNextPage &&
+															!isFetchingNextPage
+														) {
+															fetchNextPage();
+														}
+													},
+													{ threshold: 0.1 },
+												);
+												observer.observe(el);
+												return () => observer.disconnect();
+											}}
+											className="flex h-20 items-center justify-center pt-4"
+										>
+											{isFetchingNextPage && (
+												<Loader2 className="h-5 w-5 animate-spin text-primary/40" />
+											)}
+										</div>
+									</>
 								) : (
 									<motion.div
 										initial={{ opacity: 0 }}
@@ -271,7 +306,7 @@ export function AssetsSection({ isCollapsed }: AssetsSectionProps) {
 							</span>
 						</div>
 						<span className="text-[10px] font-medium tabular-nums text-muted-foreground">
-							{assets.length} items
+							{assetsData?.total ?? 0} items
 						</span>
 					</footer>
 				</div>
