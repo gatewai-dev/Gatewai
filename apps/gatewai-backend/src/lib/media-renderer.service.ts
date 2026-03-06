@@ -1,9 +1,11 @@
 import { randomUUID } from "node:crypto";
 import os from "node:os";
 import path from "node:path";
-import type { IMediaRendererService, MediaRenderOptions } from "@gatewai/core";
+import type { EnvConfig, IMediaRendererService, MediaRenderOptions } from "@gatewai/core";
 import { logger } from "@gatewai/core";
-import { injectable } from "inversify";
+import { TOKENS } from "@gatewai/core/di";
+import { inject, injectable } from "inversify";
+import pLimit from "p-limit";
 
 /**
  * Server-side media renderer backed by @remotion/renderer.
@@ -17,6 +19,13 @@ import { injectable } from "inversify";
 @injectable()
 export class MediaRendererService implements IMediaRendererService {
 	private bundlePath: string | null = null;
+	private limit: ReturnType<typeof pLimit>;
+
+	constructor(
+		@inject(TOKENS.ENV) private env: EnvConfig
+	) {
+		this.limit = pLimit(this.env.MAX_CONCURRENT_RENDERING_JOBS);
+	}
 
 	private resolveBundlePath(): string {
 		if (this.bundlePath) return this.bundlePath;
@@ -48,86 +57,88 @@ export class MediaRendererService implements IMediaRendererService {
 	async renderComposition(
 		options: MediaRenderOptions,
 	): Promise<{ filePath: string }> {
-		// Dynamic import so @remotion/renderer is only loaded when rendering
-		const { renderMedia, selectComposition } = await import(
-			"@remotion/renderer"
-		);
+		return this.limit(async () => {
+			// Dynamic import so @remotion/renderer is only loaded when rendering
+			const { renderMedia, selectComposition } = await import(
+				"@remotion/renderer"
+			);
 
-		const serveUrl = this.resolveBundlePath();
+			const serveUrl = this.resolveBundlePath();
 
-		logger.info(
-			`[MediaRenderer] Starting render: ${options.compositionId} (${options.width}x${options.height} @ ${options.fps}fps)`,
-		);
+			logger.info(
+				`[MediaRenderer] [Queue: ${this.limit.activeCount}/${this.limit.pendingCount}] Starting render: ${options.compositionId} (${options.width}x${options.height} @ ${options.fps}fps)`,
+			);
 
-		// Select the composition — this opens a headless browser to evaluate it
-		const composition = await selectComposition({
-			serveUrl,
-			id: options.compositionId,
-			inputProps: options.inputProps,
-			logLevel: "verbose",
-			...(options.envVariables ? { envVariables: options.envVariables } : {}),
+			// Select the composition — this opens a headless browser to evaluate it
+			const composition = await selectComposition({
+				serveUrl,
+				id: options.compositionId,
+				inputProps: options.inputProps,
+				logLevel: "verbose",
+				...(options.envVariables ? { envVariables: options.envVariables } : {}),
+			});
+
+			// Override composition metadata with caller-specified values
+			composition.width = Math.round(options.width);
+			composition.height = Math.round(options.height);
+			composition.fps = options.fps;
+
+			// Remotion expects duration and frame limits to be strict integers.
+			// A decimal durationInFrames causes RangeError when creating frame arrays.
+			const safeDurationInFrames = Math.max(
+				1,
+				Math.round(options.durationInFrames),
+			);
+			composition.durationInFrames = safeDurationInFrames;
+
+			// Convert startMS / endMS to frame range
+			let frameRange: [number, number] | null = null;
+			if (options.startMS != null || options.endMS != null) {
+				const startFrame = options.startMS
+					? Math.floor((options.startMS / 1000) * options.fps)
+					: 0;
+				const endFrame = options.endMS
+					? Math.ceil((options.endMS / 1000) * options.fps) - 1
+					: safeDurationInFrames - 1;
+				frameRange = [
+					Math.max(0, startFrame),
+					Math.min(endFrame, safeDurationInFrames - 1),
+				];
+			}
+
+			// Determine codec → file extension
+			const codecExtMap: Record<string, string> = {
+				h264: "mp4",
+				h265: "mp4",
+				vp8: "webm",
+				vp9: "webm",
+				mp3: "mp3",
+				wav: "wav",
+				aac: "aac",
+			};
+			const codec = options.codec ?? "h264";
+			const ext = codecExtMap[codec] ?? "mp4";
+
+			// Output to temp directory
+			const outputPath = path.join(
+				os.tmpdir(),
+				`gatewai-render-${randomUUID()}.${ext}`,
+			);
+
+			await renderMedia({
+				composition,
+				serveUrl,
+				codec,
+				outputLocation: outputPath,
+				inputProps: options.inputProps,
+				...(frameRange ? { frameRange } : {}),
+				...(options.envVariables ? { envVariables: options.envVariables } : {}),
+				onProgress: options.onProgress,
+			});
+
+			logger.info(`[MediaRenderer] Render complete → ${outputPath}`);
+
+			return { filePath: outputPath };
 		});
-
-		// Override composition metadata with caller-specified values
-		composition.width = Math.round(options.width);
-		composition.height = Math.round(options.height);
-		composition.fps = options.fps;
-
-		// Remotion expects duration and frame limits to be strict integers.
-		// A decimal durationInFrames causes RangeError when creating frame arrays.
-		const safeDurationInFrames = Math.max(
-			1,
-			Math.round(options.durationInFrames),
-		);
-		composition.durationInFrames = safeDurationInFrames;
-
-		// Convert startMS / endMS to frame range
-		let frameRange: [number, number] | null = null;
-		if (options.startMS != null || options.endMS != null) {
-			const startFrame = options.startMS
-				? Math.floor((options.startMS / 1000) * options.fps)
-				: 0;
-			const endFrame = options.endMS
-				? Math.ceil((options.endMS / 1000) * options.fps) - 1
-				: safeDurationInFrames - 1;
-			frameRange = [
-				Math.max(0, startFrame),
-				Math.min(endFrame, safeDurationInFrames - 1),
-			];
-		}
-
-		// Determine codec → file extension
-		const codecExtMap: Record<string, string> = {
-			h264: "mp4",
-			h265: "mp4",
-			vp8: "webm",
-			vp9: "webm",
-			mp3: "mp3",
-			wav: "wav",
-			aac: "aac",
-		};
-		const codec = options.codec ?? "h264";
-		const ext = codecExtMap[codec] ?? "mp4";
-
-		// Output to temp directory
-		const outputPath = path.join(
-			os.tmpdir(),
-			`gatewai-render-${randomUUID()}.${ext}`,
-		);
-
-		await renderMedia({
-			composition,
-			serveUrl,
-			codec,
-			outputLocation: outputPath,
-			inputProps: options.inputProps,
-			...(frameRange ? { frameRange } : {}),
-			...(options.envVariables ? { envVariables: options.envVariables } : {}),
-			onProgress: options.onProgress,
-		});
-
-		logger.info(`[MediaRenderer] Render complete → ${outputPath}`);
-
-		return { filePath: outputPath };
 	}
 }

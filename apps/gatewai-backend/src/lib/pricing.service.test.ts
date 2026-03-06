@@ -26,6 +26,9 @@ vi.mock("@gatewai/core", () => ({
 	TOKENS: {
 		PRISMA: Symbol.for("PRISMA"),
 	},
+	ENV_CONFIG: {
+		ENABLE_PRICING: true,
+	},
 }));
 
 // We need to mock the dynamic import in pricing.service.ts
