@@ -30,12 +30,7 @@ const VideoCompositorNodeComponent = memo((props: NodeProps) => {
 	return (
 		<BaseNode selected={props.selected} id={props.id} dragging={props.dragging}>
 			<div className="flex flex-col w-full">
-				<div
-					className="relative"
-					style={{
-						minHeight: hasInputs ? "120px" : "120px",
-					}}
-				>
+				<div className="relative media-container">
 					{result && node ? (
 						<MediaContent node={node} />
 					) : (

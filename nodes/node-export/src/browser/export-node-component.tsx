@@ -88,7 +88,7 @@ const ExportNodeComponent = memo((props: NodeProps) => {
 				const content = String(data);
 				const filename = `export-${props.id}-${Date.now()}.txt`;
 				await downloadAsText(content, filename);
-			} else if (type === "Video") {
+			} else if (type === "Video" || type === "Audio") {
 				const vv = data as VirtualMediaData;
 				const blob = await renderVirtualMedia(vv);
 				const url = URL.createObjectURL(blob);

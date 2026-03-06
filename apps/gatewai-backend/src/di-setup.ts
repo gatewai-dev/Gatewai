@@ -8,8 +8,8 @@ import {
 } from "@gatewai/graph-engine";
 import { GoogleGenAI } from "@google/genai";
 import { getAgentModel } from "./agent/agent-model";
+import { MediaRendererService } from "./lib/media-renderer.service";
 import { PricingService } from "./lib/pricing.service";
-import { VideoRendererService } from "./lib/video-renderer.service";
 
 /**
  * Register backend-specific services into the DI container.
@@ -50,10 +50,10 @@ export function registerBackendServices() {
 			.inSingletonScope();
 	}
 
-	// Register Video Renderer
+	// Register Media Renderer
 	container
-		.bind(TOKENS.VIDEO_RENDERER)
-		.to(VideoRendererService)
+		.bind(TOKENS.MEDIA_RENDERER)
+		.to(MediaRendererService)
 		.inSingletonScope();
 
 	return container;

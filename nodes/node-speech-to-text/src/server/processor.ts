@@ -1,6 +1,8 @@
-import { logger } from "@gatewai/core";
+import assert from "node:assert";
+import { readFile, rm } from "node:fs/promises";
+import { type IMediaRendererService, logger } from "@gatewai/core";
 import { TOKENS } from "@gatewai/core/di";
-import type { OutputItem } from "@gatewai/core/types";
+import type { OutputItem, VirtualMediaData } from "@gatewai/core/types";
 import { DataType } from "@gatewai/db";
 import type {
     AIProvider,
@@ -21,12 +23,14 @@ export class SpeechToTextProcessor implements NodeProcessor {
         @inject(TOKENS.STORAGE) private storage: StorageService,
         @inject(TOKENS.GRAPH_RESOLVERS) private graph: GraphResolvers,
         @inject(TOKENS.AI_PROVIDER) private aiProvider: AIProvider,
+        @inject(TOKENS.MEDIA_RENDERER) private renderer: IMediaRendererService,
     ) { }
 
     async process({
         node,
         data,
     }: BackendNodeProcessorCtx): Promise<BackendNodeProcessorResult<SpeechToTextResult>> {
+        let tempFilePathToCleanup: string | undefined;
         try {
             const userPrompt = this.graph.getInputValue(data, node.id, false, {
                 dataType: DataType.Text,
@@ -42,27 +46,64 @@ export class SpeechToTextProcessor implements NodeProcessor {
 
             let fileBlob: Blob;
             let mimeType: string;
-            if (audioInput?.entity) {
-                const buffer = await this.storage.getFromStorage(
-                    audioInput.entity.key,
-                    audioInput.entity.bucket,
-                );
-                fileBlob = new Blob([new Uint8Array(buffer)], {
-                    type: audioInput.entity.mimeType,
-                });
-                mimeType = audioInput.entity.mimeType;
-            } else if (audioInput?.processData?.tempKey) {
-                const buffer = await this.storage.getFromStorage(
-                    audioInput?.processData.tempKey,
-                );
-                fileBlob = new Blob([new Uint8Array(buffer)], {
-                    type: audioInput?.processData.mimeType,
-                });
-                mimeType = audioInput?.processData.mimeType ?? "audio/wav";
+
+            if (audioInput?.operation) {
+                const virtualMedia = audioInput as unknown as VirtualMediaData;
+                const operation = virtualMedia.operation;
+
+                if (operation.op === "source") {
+                    // Optimization: If it's just a source, use it directly
+                    const source = operation.source;
+                    if (source.entity) {
+                        const buffer = await this.storage.getFromStorage(
+                            source.entity.key,
+                        );
+                        assert(source.entity.mimeType, "Mime type is missing");
+                        fileBlob = new Blob([new Uint8Array(buffer)], {
+                            type: source.entity.mimeType,
+                        });
+                        mimeType = source.entity.mimeType;
+                    } else if (source.processData?.tempKey) {
+                        const buffer = await this.storage.getFromStorage(
+                            source.processData.tempKey,
+                        );
+                        assert(source.processData.mimeType, "Mime type is missing");
+                        fileBlob = new Blob([new Uint8Array(buffer)], {
+                            type: source.processData.mimeType,
+                        });
+                        mimeType = source.processData.mimeType;
+                    } else {
+                        return {
+                            success: false,
+                            error: "VirtualMedia source data could not be resolved",
+                        };
+                    }
+                } else {
+                    // It's a complex operation, render it
+                    const renderResult = await this.renderer.renderComposition({
+                        compositionId: "CompositionScene",
+                        inputProps: {
+                            virtualMedia,
+                            viewportWidth: 1, // Not used for audio
+                            viewportHeight: 1,
+                            type: "Audio",
+                        },
+                        width: 1,
+                        height: 1,
+                        fps: virtualMedia.metadata.fps ?? 30,
+                        durationInFrames: (virtualMedia.metadata.durationMs ?? 1000) / 1000 * (virtualMedia.metadata.fps ?? 30),
+                        codec: "mp3",
+                    });
+
+                    tempFilePathToCleanup = renderResult.filePath;
+                    const buffer = await readFile(renderResult.filePath);
+                    fileBlob = new Blob([new Uint8Array(buffer)], { type: "audio/mp3" });
+                    mimeType = "audio/mp3";
+                }
             } else {
                 return {
                     success: false,
-                    error: "Input audio data could not be resolved",
+                    error: "Input audio data could not be resolved, expected VirtualMediaData",
                 };
             }
             const genAI = this.aiProvider.getGemini<GoogleGenAI>();
@@ -88,7 +129,7 @@ export class SpeechToTextProcessor implements NodeProcessor {
             }
 
             const response = await genAI.models.generateContent({
-                model: nodeConfig.model ?? "gemini-2.5-flash",
+                model: nodeConfig.model,
                 contents: createUserContent(userContentItems),
             });
 
@@ -121,11 +162,16 @@ export class SpeechToTextProcessor implements NodeProcessor {
 
             return { success: true, newResult };
         } catch (err: unknown) {
-            logger.error(err instanceof Error ? err.message : "TTS Failed");
+            const errMessage = err instanceof Error ? err.message : "TTS Failed";
+            logger.error(errMessage);
             return {
                 success: false,
                 error: "AudioUnderstanding processing failed",
             };
+        } finally {
+            if (tempFilePathToCleanup) {
+                await rm(tempFilePathToCleanup, { force: true }).catch(() => { });
+            }
         }
     }
 }

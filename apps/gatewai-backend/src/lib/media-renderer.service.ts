@@ -1,12 +1,12 @@
 import { randomUUID } from "node:crypto";
 import os from "node:os";
 import path from "node:path";
-import type { IVideoRendererService, VideoRenderOptions } from "@gatewai/core";
+import type { IMediaRendererService, MediaRenderOptions } from "@gatewai/core";
 import { logger } from "@gatewai/core";
 import { injectable } from "inversify";
 
 /**
- * Server-side video renderer backed by @remotion/renderer.
+ * Server-side media renderer backed by @remotion/renderer.
  *
  * Expects a pre-built Remotion bundle at the path specified by
  * `@gatewai/remotion-compositions` package's dist/remotion-bundle directory.
@@ -15,7 +15,7 @@ import { injectable } from "inversify";
  * for uploading / moving the file afterwards.
  */
 @injectable()
-export class VideoRendererService implements IVideoRendererService {
+export class MediaRendererService implements IMediaRendererService {
 	private bundlePath: string | null = null;
 
 	private resolveBundlePath(): string {
@@ -46,7 +46,7 @@ export class VideoRendererService implements IVideoRendererService {
 	}
 
 	async renderComposition(
-		options: VideoRenderOptions,
+		options: MediaRenderOptions,
 	): Promise<{ filePath: string }> {
 		// Dynamic import so @remotion/renderer is only loaded when rendering
 		const { renderMedia, selectComposition } = await import(
@@ -56,7 +56,7 @@ export class VideoRendererService implements IVideoRendererService {
 		const serveUrl = this.resolveBundlePath();
 
 		logger.info(
-			`[VideoRenderer] Starting render: ${options.compositionId} (${options.width}x${options.height} @ ${options.fps}fps)`,
+			`[MediaRenderer] Starting render: ${options.compositionId} (${options.width}x${options.height} @ ${options.fps}fps)`,
 		);
 
 		// Select the composition — this opens a headless browser to evaluate it
@@ -102,6 +102,9 @@ export class VideoRendererService implements IVideoRendererService {
 			h265: "mp4",
 			vp8: "webm",
 			vp9: "webm",
+			mp3: "mp3",
+			wav: "wav",
+			aac: "aac",
 		};
 		const codec = options.codec ?? "h264";
 		const ext = codecExtMap[codec] ?? "mp4";
@@ -123,7 +126,7 @@ export class VideoRendererService implements IVideoRendererService {
 			onProgress: options.onProgress,
 		});
 
-		logger.info(`[VideoRenderer] Render complete → ${outputPath}`);
+		logger.info(`[MediaRenderer] Render complete → ${outputPath}`);
 
 		return { filePath: outputPath };
 	}

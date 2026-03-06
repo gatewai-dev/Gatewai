@@ -1,11 +1,7 @@
 import assert from "node:assert";
-import { container, TOKENS } from "@gatewai/core/di";
-import type { ExportResult } from "../shared/index.js";
-
-;
-
 import { readFile, rm } from "node:fs/promises";
-import { type EnvConfig, type IVideoRendererService, logger } from "@gatewai/core";
+import { type EnvConfig, type IMediaRendererService, logger } from "@gatewai/core";
+import { container, TOKENS } from "@gatewai/core/di";
 import type { VirtualMediaData } from "@gatewai/core/types";
 import type { PrismaClient } from "@gatewai/db";
 import type {
@@ -15,6 +11,7 @@ import type {
     NodeProcessor, StorageService
 } from "@gatewai/node-sdk/server";
 import { inject, injectable } from "inversify";
+import type { ExportResult } from "../shared/index.js";
 
 @injectable()
 export class ExportServerProcessor implements NodeProcessor {
@@ -40,7 +37,7 @@ export class ExportServerProcessor implements NodeProcessor {
             };
 
             let dataToPass = inputValue.data;
-            const rendererSerice = container.get<IVideoRendererService>(TOKENS.VIDEO_RENDERER);
+            const rendererSerice = container.get<IMediaRendererService>(TOKENS.MEDIA_RENDERER);
             // If the input value is VirtualMediaData, render it
             if (inputValue.type === "Video") {
                 const virtualMedia = inputValue.data as VirtualMediaData;
@@ -48,7 +45,7 @@ export class ExportServerProcessor implements NodeProcessor {
                     throw new Error("VirtualMediaData must have width, height, fps and durationInFrames");
                 }
 
-                let renderedVideo;
+                let renderedVideo: { filePath: string } | undefined;
                 try {
                     renderedVideo = await rendererSerice.renderComposition({
                         compositionId: "CompositionScene",
@@ -70,6 +67,7 @@ export class ExportServerProcessor implements NodeProcessor {
                     console.error({ errorW: error })
                     throw error;
                 }
+                if (!renderedVideo) throw new Error("Render produced no output");
                 logger.info(`Rendered video: ${renderedVideo.filePath}`);
                 const contentType = "video/mp4";
                 const fileBuffer = await readFile(renderedVideo.filePath);
@@ -99,13 +97,13 @@ export class ExportServerProcessor implements NodeProcessor {
                 const asset = await this.prisma.fileAsset.create({
                     data: {
                         name: fileName,
-                        userId: (data.canvas as unknown as { userId: string }).userId,
+                        userId: data.canvas.userId,
                         bucket: this.env.GCS_ASSETS_BUCKET,
                         key,
                         size: fileBuffer.length,
                         width: virtualMedia.metadata.width ?? 1920,
                         height: virtualMedia.metadata.height ?? 1080,
-                        fps: Math.round(fps),
+                        fps,
                         duration: durationMs,
                         mimeType: contentType,
                     },

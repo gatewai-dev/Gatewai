@@ -10,5 +10,5 @@ export const TOKENS = {
 	GRAPH_RESOLVERS: Symbol.for("GRAPH_RESOLVERS"),
 	AI_PROVIDER: Symbol.for("AI_PROVIDER"),
 	PRICING_SERVICE: Symbol.for("PRICING_SERVICE"),
-	VIDEO_RENDERER: Symbol.for("VIDEO_RENDERER"),
+	MEDIA_RENDERER: Symbol.for("MEDIA_RENDERER"),
 } as const;
