@@ -498,6 +498,9 @@ function EmptyState({
 function CanvasHome() {
 	return (
 		<CanvasListProvider>
+			<Helmet>
+				<title>Workspace - Gatewai</title>
+			</Helmet>
 			<CanvasHomeImpl />
 		</CanvasListProvider>
 	);

@@ -325,12 +325,13 @@ export const polarPlugin = ENV_CONFIG.ENABLE_PRICING
 				createCustomerOnSignUp: true,
 				use: [
 					checkout({
-						products: initialProducts.then((products) =>
-							products.map((p) => ({
+						products: async () => {
+							const products = await initialProducts;
+							return products.map((p) => ({
 								productId: p.id,
 								slug: p.name.toLowerCase(),
-							})),
-						),
+							}));
+						},
 						successUrl: "/success?checkout_id={CHECKOUT_ID}",
 						authenticatedUsersOnly: true,
 					}),

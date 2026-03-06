@@ -318,7 +318,8 @@ export async function triggerNextTask(
 			.filter(
 				(t) =>
 					(t.status && t.status === TaskStatus.COMPLETED) ||
-					t.status === TaskStatus.FAILED,
+					t.status === TaskStatus.FAILED ||
+					t.status === TaskStatus.CANCELLED,
 			)
 			.map((t) => t.id),
 	);
@@ -341,7 +342,7 @@ export async function triggerNextTask(
 			selectionMap,
 			apiKey,
 		},
-		{ jobId: nextTaskId }, // FIX #1: consistent job ID for deduplication
+		{ jobId: nextTaskId },
 	);
 }
 

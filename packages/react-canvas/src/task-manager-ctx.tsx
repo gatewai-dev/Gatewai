@@ -6,6 +6,7 @@ import type {
 import {
 	addBatchToPoll,
 	assetsAPI,
+	clearTasks,
 	getBatchDetails,
 	getInitialBatches,
 	selectAllBatches,
@@ -104,6 +105,7 @@ const TaskManagerProvider = ({
 	};
 
 	useEffect(() => {
+		dispatch(clearTasks());
 		dispatch(getInitialBatches({ canvasId }));
 	}, [dispatch, canvasId]);
 

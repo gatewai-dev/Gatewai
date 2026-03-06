@@ -101,6 +101,12 @@ const tasksSlice = createSlice({
 			}
 			state.pollingInterval = 3000;
 		},
+		clearTasks: (state) => {
+			batchAdapter.removeAll(state);
+			state.batchIdsToPoll = [];
+			state.pollingInterval = 0;
+			state.latestTasksFetchTime = null;
+		},
 	},
 	extraReducers: (builder) => {
 		builder
@@ -160,23 +166,31 @@ const tasksSlice = createSlice({
 			})
 			.addCase(stopBatch.fulfilled, (state, action) => {
 				const { batchId } = action.meta.arg;
-				batchAdapter.updateOne(state, {
-					id: batchId,
-					changes: {
-						finishedAt: new Date().toISOString(),
-					},
-				});
-				state.batchIdsToPoll = state.batchIdsToPoll.filter(
-					(id) => id !== batchId,
-				);
-				if (state.batchIdsToPoll.length === 0) {
-					state.pollingInterval = 0;
+				const batch = state.entities[batchId];
+				if (batch) {
+					const updatedTasks = batch.tasks.map((t) => {
+						if (t.status === "QUEUED") {
+							return {
+								...t,
+								status: "CANCELLED" as any,
+								finishedAt: new Date().toISOString(),
+							};
+						}
+						return t;
+					});
+					batchAdapter.updateOne(state, {
+						id: batchId,
+						changes: {
+							tasks: updatedTasks,
+						},
+					});
 				}
 			});
 	},
 });
 
-export const { setPollingInterval, addBatchToPoll } = tasksSlice.actions;
+export const { setPollingInterval, addBatchToPoll, clearTasks } =
+	tasksSlice.actions;
 
 export const tasksReducer = tasksSlice.reducer;
 
