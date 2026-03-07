@@ -5,6 +5,7 @@ import { apiRunRoutes } from "./api-run.js";
 import { assetsPublicRouter, assetsRouter } from "./assets.js";
 import { billingRouter } from "./billing.js";
 import { canvasRoutes } from "./canvas.js";
+import { exportRouter } from "./export.js";
 import { fontsRouter } from "./fonts.js";
 import { nodeTemplatesRoutes } from "./node-templates.js";
 import { nodesRouter } from "./nodes.js";
@@ -25,6 +26,7 @@ const v1Router = new Hono()
 	.route("/api-run", apiRunRoutes)
 	.route("/api-keys", apiKeysRoutes)
 	.route("/canvas", canvasRoutes)
-	.route("/billing", billingRouter);
+	.route("/billing", billingRouter)
+	.route("/export", exportRouter);
 
 export { v1Router };
