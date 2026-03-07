@@ -1532,7 +1532,7 @@ export const LayerRenderer: React.FC<{
 		borderWidth: useRoundedBox ? undefined : layer.borderWidth,
 		borderRadius: useRoundedBox ? undefined : layer.borderRadius,
 		borderStyle: !useRoundedBox && layer.borderWidth ? "solid" : undefined,
-		overflow: "hidden",
+		overflow: layer.type === "Caption" ? "visible" : "hidden",
 		boxSizing: "border-box",
 	};
 
