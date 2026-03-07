@@ -291,14 +291,14 @@ const SHADOW_PRESETS = [
 	{
 		label: "Soft",
 		icon: "◌",
-		val: "0px 4px 12px rgba(0,0,0,0.6)",
-		preview: "0px 4px 12px rgba(0,0,0,0.6)",
+		val: "0px 4px 12px rgba(255,255,255,0.25)",
+		preview: "0px 4px 12px rgba(255,255,255,0.25)",
 	},
 	{
 		label: "Hard",
 		icon: "◼",
-		val: "3px 3px 0px rgba(0,0,0,0.9)",
-		preview: "3px 3px 0px rgba(0,0,0,0.9)",
+		val: "3px 3px 0px rgba(255,255,255,0.7)",
+		preview: "3px 3px 0px rgba(255,255,255,0.7)",
 	},
 	{
 		label: "Glow",
@@ -319,20 +319,25 @@ const TEXT_BOX_PRESETS = [
 		label: "Pill",
 		padding: 20,
 		borderRadius: 999,
-		backgroundColor: "rgba(0,0,0,0.75)",
+		backgroundColor: "rgba(255,255,255,0.15)", // Subtle translucent white
 	},
 	{
 		label: "Chip",
 		padding: 12,
 		borderRadius: 6,
-		backgroundColor: "rgba(0,0,0,0.6)",
+		backgroundColor: "rgba(59,130,246,0.8)", // Bright blue
 	},
-	{ label: "Bold", padding: 16, borderRadius: 4, backgroundColor: "#000000" },
+	{
+		label: "Bold",
+		padding: 16,
+		borderRadius: 4,
+		backgroundColor: "#374151", // Solid dark gray, contrasts well with black
+	},
 	{
 		label: "Frosted",
 		padding: 18,
 		borderRadius: 16,
-		backgroundColor: "rgba(255,255,255,0.15)",
+		backgroundColor: "rgba(255,255,255,0.25)", // Stronger translucent white
 	},
 ];
 
@@ -696,7 +701,8 @@ const TextShadowSection: React.FC<{
 									X Offset
 								</span>
 								<DraggableNumberInput
-									label="px"
+									label="X"
+									icon={MoveHorizontal}
 									value={shadowParams.x}
 									onChange={(v) => updateParam("x", v)}
 								/>
@@ -706,7 +712,8 @@ const TextShadowSection: React.FC<{
 									Y Offset
 								</span>
 								<DraggableNumberInput
-									label="px"
+									label="Y"
+									icon={MoveVertical}
 									value={shadowParams.y}
 									onChange={(v) => updateParam("y", v)}
 								/>
@@ -717,6 +724,7 @@ const TextShadowSection: React.FC<{
 								</span>
 								<DraggableNumberInput
 									label="px"
+									icon={Blend}
 									value={shadowParams.blur}
 									onChange={(v) => updateParam("blur", Math.max(0, v))}
 								/>
@@ -1039,11 +1047,11 @@ const TextBoxSection: React.FC<{
 						<div className="grid grid-cols-2 gap-2">
 							<div className="space-y-1">
 								<span className="text-[9px] font-bold uppercase tracking-wider text-gray-500 block">
-									H-Padding
+									Padding
 								</span>
 								<DraggableNumberInput
 									label="px"
-									icon={MoveHorizontal}
+									icon={Maximize2}
 									value={layer.padding ?? ROUNDED_BOX_DEFAULTS.padding}
 									onChange={(v) => update({ padding: Math.max(0, v) })}
 								/>
@@ -2855,12 +2863,17 @@ const InspectorPanel: React.FC = () => {
 						nextLayer.height = dims.height;
 					}
 				} else if (nextLayer.type === "Caption") {
-					const captionProps = ["fontSize", "lineHeight", "padding"];
+					const captionProps = [
+						"fontSize",
+						"lineHeight",
+						"padding",
+						"useRoundedTextBox",
+					];
 					if (captionProps.some((prop) => prop in patch)) {
 						const fSize = nextLayer.fontSize ?? 48;
 						const lHeight = nextLayer.lineHeight ?? 1.2;
 						const pad = nextLayer.padding ?? 0;
-						nextLayer.height = Math.round(fSize * lHeight * 3 + pad * 2);
+						nextLayer.height = Math.ceil(fSize * lHeight * 3 + pad * 2);
 					}
 				}
 				return nextLayer;
@@ -3622,11 +3635,14 @@ export const VideoDesignerEditor: React.FC<VideoDesignerEditorProps> = ({
 					const lHeight =
 						saved?.lineHeight ?? (CAPTION_LAYER_DEFAULTS.lineHeight as number);
 					const pad = saved?.padding ?? 0;
-					const autoHeight = Math.round(fSize * lHeight * 3 + pad * 2);
+					const autoHeight = Math.ceil(fSize * lHeight * 3 + pad * 2);
 					const defaultY = Math.max(
 						0,
 						viewportHeight - autoHeight - Math.round(viewportHeight * 0.1),
 					);
+					const defaultWidth = Math.round(viewportWidth * 0.8);
+					const defaultX = Math.round(viewportWidth * 0.1);
+
 					const isLegacyFullscreen =
 						saved?.height !== undefined &&
 						saved?.height >= viewportHeight * 0.9;
@@ -3636,8 +3652,9 @@ export const VideoDesignerEditor: React.FC<VideoDesignerEditorProps> = ({
 					loaded.push({
 						...base,
 						type: "Caption",
-						width: viewportWidth,
+						width: defaultWidth,
 						height: autoHeight,
+						x: saved?.x ?? defaultX,
 						y: initialY,
 						fontSize: fSize,
 						fontFamily: saved?.fontFamily ?? "Inter",
@@ -3827,10 +3844,13 @@ export const VideoDesignerEditor: React.FC<VideoDesignerEditorProps> = ({
 					const fSize = l.fontSize ?? 48;
 					const lHeight = l.lineHeight ?? 1.2;
 					const pad = l.padding ?? 0;
+					const newWidth = Math.round(viewportWidth * 0.8);
+					const newX = Math.round(viewportWidth * 0.1);
 					return {
 						...l,
-						width: viewportWidth,
-						height: Math.round(fSize * lHeight * 3 + pad * 2),
+						width: newWidth,
+						x: newX,
+						height: Math.ceil(fSize * lHeight * 3 + pad * 2),
 					};
 				}
 				return l;
