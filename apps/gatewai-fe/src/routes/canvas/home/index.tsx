@@ -105,17 +105,17 @@ function CanvasHomeImpl() {
 	return (
 		<div className="min-h-screen bg-[#FAFAFA] dark:bg-[#09090B] selection:bg-primary/10">
 			<Helmet>
-				<title>Canvases - Gatewai</title>
+				<title>Studio - Gatewai</title>
 			</Helmet>
 			<div className="max-w-7xl mx-auto px-6 py-12 lg:px-12 space-y-12">
 				{/* Apple-style Hero Header */}
 				<header className="flex flex-col md:flex-row justify-between items-end gap-6">
 					<div className="space-y-2">
 						<h1 className="text-4xl font-semibold tracking-tight text-foreground">
-							Canvases
+							Studio
 						</h1>
 						<p className="text-lg text-muted-foreground font-medium">
-							Your creative engine, organized.
+							Your creative engine.
 						</p>
 					</div>
 				</header>
