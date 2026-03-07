@@ -5,7 +5,7 @@ import type {
 	VirtualMediaData,
 } from "@gatewai/core/types";
 import type { Caption } from "@remotion/captions";
-import { parseSrt } from "@remotion/captions";
+import { createTikTokStyleCaptions, parseSrt } from "@remotion/captions";
 import { measureText } from "@remotion/layout-utils";
 import { Audio, Video } from "@remotion/media";
 import { createRoundedTextBox } from "@remotion/rounded-text-box";
@@ -57,7 +57,57 @@ interface RoundedTextRendererProps {
 	backgroundColor?: string;
 	stroke?: string;
 	strokeWidth?: number;
+	maxWidth?: number;
 }
+
+const wrapTextLines = (
+	text: string,
+	maxWidth: number,
+	fontFamily: string,
+	fontSize: number,
+	fontWeight: string,
+	fontStyle: string,
+): string[] => {
+	const lines: string[] = [];
+	const measure = (t: string) =>
+		measureText({
+			text: t,
+			fontFamily,
+			fontSize,
+			fontVariantNumeric: "normal",
+			fontWeight,
+			letterSpacing: "normal",
+			textTransform: "none",
+			additionalStyles: { fontStyle, whiteSpace: "pre" },
+		} as Parameters<typeof measureText>[0]).width;
+
+	const paragraphs = text.split("\n");
+	for (const para of paragraphs) {
+		const tokens = para.split(" ");
+		let currentTokens: string[] = [];
+		let currentWidth = 0;
+
+		for (const token of tokens) {
+			const wordW = measure(token);
+			const addW = currentTokens.length > 0 ? measure(" ") + wordW : wordW;
+
+			if (currentTokens.length > 0 && currentWidth + addW > maxWidth) {
+				lines.push(currentTokens.join(" "));
+				currentTokens = [token];
+				currentWidth = wordW;
+			} else {
+				currentTokens.push(token);
+				currentWidth += addW;
+			}
+		}
+
+		if (currentTokens.length > 0) {
+			lines.push(currentTokens.join(" "));
+		}
+	}
+
+	return lines;
+};
 
 const RoundedTextRenderer: React.FC<RoundedTextRendererProps> = ({
 	text,
@@ -66,7 +116,6 @@ const RoundedTextRenderer: React.FC<RoundedTextRendererProps> = ({
 	fontFamily = "Inter",
 	fontWeight = "normal",
 	fontStyle = "normal",
-	textShadow,
 	textDecoration = "none",
 	lineHeight = 1.2,
 	letterSpacing,
@@ -76,40 +125,46 @@ const RoundedTextRenderer: React.FC<RoundedTextRendererProps> = ({
 	backgroundColor = "rgba(0,0,0,0.7)",
 	stroke,
 	strokeWidth,
+	textShadow,
+	maxWidth,
 }) => {
 	const fw = String(fontWeight);
-	const lines = text.split("\n");
 
-	const textMeasurements = useMemo(
-		() =>
-			lines.map((line) =>
-				measureText({
-					text: line || "\u00A0",
-					fontFamily,
-					fontSize,
-					fontVariantNumeric: "normal",
-					fontWeight: fw,
-					letterSpacing: letterSpacing ? `${letterSpacing}px` : "normal",
-					textTransform: "none",
-					additionalStyles: {
-						fontStyle,
-						lineHeight: String(lineHeight),
-						textDecoration,
-					},
-				} as Parameters<typeof measureText>[0]),
-			),
-		[
-			text,
-			fontFamily,
-			fontSize,
-			fw,
-			fontStyle,
-			lineHeight,
-			letterSpacing,
-			textDecoration,
-			lines.map,
-		],
-	);
+	const lines = useMemo(() => {
+		if (maxWidth) {
+			return wrapTextLines(text, maxWidth, fontFamily, fontSize, fw, fontStyle);
+		}
+		return text.split("\n");
+	}, [text, maxWidth, fontFamily, fontSize, fw, fontStyle]);
+
+	const textMeasurements = useMemo(() => {
+		return lines.map((line) =>
+			measureText({
+				text: line || "\u00A0",
+				fontFamily,
+				fontSize,
+				fontVariantNumeric: "normal",
+				fontWeight: fw,
+				letterSpacing: letterSpacing ? `${letterSpacing}px` : "normal",
+				textTransform: "none",
+				additionalStyles: {
+					fontStyle,
+					lineHeight: String(lineHeight),
+					textDecoration,
+					whiteSpace: "pre",
+				},
+			} as Parameters<typeof measureText>[0]),
+		);
+	}, [
+		lines,
+		fontFamily,
+		fontSize,
+		fw,
+		fontStyle,
+		lineHeight,
+		letterSpacing,
+		textDecoration,
+	]);
 
 	const { d, boundingBox } = useMemo(
 		() =>
@@ -121,9 +176,6 @@ const RoundedTextRenderer: React.FC<RoundedTextRendererProps> = ({
 			}),
 		[textMeasurements, align, padding, borderRadius],
 	);
-
-	const alignItems =
-		align === "right" ? "flex-end" : align === "left" ? "flex-start" : "center";
 
 	const lineStyle: React.CSSProperties = {
 		fontSize,
@@ -152,7 +204,12 @@ const RoundedTextRenderer: React.FC<RoundedTextRendererProps> = ({
 				height: "100%",
 				display: "flex",
 				flexDirection: "column",
-				alignItems,
+				alignItems:
+					align === "right"
+						? "flex-end"
+						: align === "left"
+							? "flex-start"
+							: "center",
 				justifyContent: "flex-start",
 			}}
 		>
@@ -205,7 +262,7 @@ function buildLines(
 			fontWeight,
 			letterSpacing: "normal",
 			textTransform: "none",
-			additionalStyles: { fontStyle },
+			additionalStyles: { fontStyle, whiteSpace: "pre" },
 		} as Parameters<typeof measureText>[0]).width;
 
 	const spaceW = measure(" ");
@@ -301,6 +358,7 @@ const TikTokCaptionPage: React.FC<TikTokCaptionPageProps> = ({
 						lineHeight: String(lineHeight),
 						fontStyle,
 						textDecoration,
+						whiteSpace: "pre",
 					},
 					fontVariantNumeric: "normal",
 					fontWeight,
@@ -368,7 +426,7 @@ const TikTokCaptionPage: React.FC<TikTokCaptionPageProps> = ({
 							textAlign: "center",
 							paddingLeft: horizontalPadding,
 							paddingRight: horizontalPadding,
-							whiteSpace: "nowrap",
+							whiteSpace: "pre",
 						}}
 					>
 						{line.tokens.map((token, tokenIdx) => {
@@ -418,19 +476,21 @@ const CaptionsFromUrl: React.FC<CaptionsFromUrlProps> = ({
 }) => {
 	const [captions, setCaptions] = useState<Caption[] | null>(null);
 	const frame = useCurrentFrame();
-	const { fps, width: compositionWidth } = useVideoConfig();
+	const config = useVideoConfig();
+	const fps = Math.max(1, config.fps);
+	const compositionWidth = config.width;
 
 	useEffect(() => {
 		const handle = delayRender(`Loading Captions from: ${src}`);
-		let cancelled = false;
+		let isCancelled = false;
 
 		fetch(src)
-			.then((res) => res.text())
+			.then((res) => {
+				if (!res.ok) throw new Error(`HTTP ${res.status}`);
+				return res.text();
+			})
 			.then((text) => {
-				if (cancelled) {
-					continueRender(handle);
-					return;
-				}
+				if (isCancelled) return;
 				try {
 					const { captions: parsed } = parseSrt({ input: text });
 					setCaptions(parsed);
@@ -438,20 +498,58 @@ const CaptionsFromUrl: React.FC<CaptionsFromUrlProps> = ({
 					console.error("Failed to parse SRT", e);
 					setCaptions([]);
 				}
-				continueRender(handle);
 			})
 			.catch((err) => {
-				if (cancelled) {
-					continueRender(handle);
-					return;
+				if (!isCancelled) {
+					cancelRender(err instanceof Error ? err : new Error(String(err)));
 				}
-				cancelRender(err instanceof Error ? err : new Error(String(err)));
+			})
+			.finally(() => {
+				continueRender(handle);
 			});
 
 		return () => {
-			cancelled = true;
+			isCancelled = true;
 		};
 	}, [src]);
+
+	const tikTokPages = useMemo(() => {
+		if (!captions || preset !== "tiktok") return null;
+		if (captions.length === 0) return [];
+
+		const totalWords = captions.reduce(
+			(acc, c) => acc + c.text.trim().split(/\s+/).filter(Boolean).length,
+			0,
+		);
+		const isWordLevel = totalWords / captions.length < 2.5;
+
+		if (isWordLevel) {
+			const { pages } = createTikTokStyleCaptions({
+				captions,
+				combineTokensWithinMilliseconds: 1200,
+			});
+			return pages;
+		}
+
+		return captions.map((c) => {
+			const words = c.text.trim().split(/\s+/).filter(Boolean);
+			const durationMs = c.endMs - c.startMs;
+			const timePerWord = durationMs / Math.max(1, words.length);
+
+			const tokens = words.map((word, i) => ({
+				text: word,
+				fromMs: c.startMs + i * timePerWord,
+				toMs: c.startMs + (i + 1) * timePerWord,
+			}));
+
+			return {
+				startMs: c.startMs,
+				durationMs: durationMs,
+				text: c.text,
+				tokens,
+			};
+		});
+	}, [captions, preset]);
 
 	if (!captions) return null;
 
@@ -474,31 +572,16 @@ const CaptionsFromUrl: React.FC<CaptionsFromUrlProps> = ({
 		const activeColor = style?.color || "#FFFC00";
 		const textColor = "white";
 		const backgroundColor = style?.backgroundColor ?? "rgba(0,0,0,0.72)";
-		const horizontalPadding = 22;
-		const borderRadius = 12;
+		const horizontalPadding =
+			style?.padding !== undefined ? Number(style.padding) : 22;
+		const borderRadius =
+			style?.borderRadius !== undefined ? Number(style.borderRadius) : 12;
 
-		const currentCaption = captions.find(
-			(c) => currentTimeMs >= c.startMs && currentTimeMs < c.endMs,
+		const page = tikTokPages?.find(
+			(p) =>
+				currentTimeMs >= p.startMs && currentTimeMs < p.startMs + p.durationMs,
 		);
-		if (!currentCaption) return null;
-
-		const words = currentCaption.text.trim().split(/\s+/).filter(Boolean);
-		const entryDuration = currentCaption.endMs - currentCaption.startMs;
-		const wordDurationMs =
-			words.length > 0 ? entryDuration / words.length : entryDuration;
-
-		const tokens: TikTokToken[] = words.map((word, i) => ({
-			text: word,
-			fromMs: currentCaption.startMs + i * wordDurationMs,
-			toMs: currentCaption.startMs + (i + 1) * wordDurationMs,
-		}));
-
-		const page = {
-			tokens,
-			text: words.join(" "),
-			startMs: currentCaption.startMs,
-			durationMs: entryDuration,
-		};
+		if (!page) return null;
 
 		const maxWidth = compositionWidth * 0.8 - horizontalPadding * 2;
 
@@ -509,7 +592,7 @@ const CaptionsFromUrl: React.FC<CaptionsFromUrlProps> = ({
 					flexDirection: "column",
 					alignItems: hAlign,
 					justifyContent: "flex-end",
-					padding: style?.padding,
+					// Removed the padding line here!
 					pointerEvents: "none",
 				}}
 			>
@@ -554,7 +637,8 @@ const CaptionsFromUrl: React.FC<CaptionsFromUrlProps> = ({
 		const padding = style?.padding
 			? Number.parseFloat(String(style.padding))
 			: 16;
-		const borderRadius = 8;
+		const borderRadius =
+			style?.borderRadius !== undefined ? Number(style.borderRadius) : 8; // Use the dynamic value
 		const align = (style?.textAlign as "left" | "center" | "right") ?? "center";
 		const stroke = style?.WebkitTextStroke
 			? String(style.WebkitTextStroke).split(" ").slice(1).join(" ")
@@ -562,6 +646,7 @@ const CaptionsFromUrl: React.FC<CaptionsFromUrlProps> = ({
 		const strokeWidth = style?.WebkitTextStroke
 			? Number.parseFloat(String(style.WebkitTextStroke))
 			: undefined;
+		const maxWidthVal = compositionWidth * 0.8 - padding * 2;
 
 		return (
 			<AbsoluteFill
@@ -590,6 +675,7 @@ const CaptionsFromUrl: React.FC<CaptionsFromUrlProps> = ({
 					backgroundColor={backgroundColor}
 					stroke={stroke}
 					strokeWidth={strokeWidth}
+					maxWidth={maxWidthVal}
 				/>
 			</AbsoluteFill>
 		);
@@ -614,6 +700,7 @@ const CaptionsFromUrl: React.FC<CaptionsFromUrlProps> = ({
 					textDecoration: style?.textDecoration,
 					textShadow: style?.textShadow,
 					WebkitTextStroke: style?.WebkitTextStroke,
+					whiteSpace: "pre-wrap",
 				}}
 			>
 				{currentCaption.text}
@@ -639,7 +726,19 @@ const buildLayerTextStyle = (
 	WebkitTextStroke:
 		s.strokeWidth && s.stroke ? `${s.strokeWidth}px ${s.stroke}` : undefined,
 	paintOrder: "stroke fill",
+	whiteSpace: "pre",
 });
+
+export const resolveLayerDuration = (
+	layerDurationInMS?: number,
+	metaDurationMs?: number,
+	defaultDuration: number = DEFAULT_DURATION_MS,
+): number => {
+	if (layerDurationInMS && metaDurationMs) {
+		return Math.min(layerDurationInMS, metaDurationMs);
+	}
+	return layerDurationInMS || metaDurationMs || defaultDuration;
+};
 
 export const calculateLayerTransform = (
 	layer: ExtendedLayer,
@@ -654,10 +753,13 @@ export const calculateLayerTransform = (
 	let rotation = layer.rotation;
 	let opacity = layer.opacity ?? 1;
 	const volume = layer.volume ?? 1;
-	const layerDurationMs =
-		layer.durationInMS ||
-		layer.virtualMedia?.metadata?.durationMs ||
-		DEFAULT_DURATION_MS;
+
+	const layerDurationMs = resolveLayerDuration(
+		layer.durationInMS,
+		layer.virtualMedia?.metadata?.durationMs,
+		DEFAULT_DURATION_MS,
+	);
+
 	const duration = Math.round((layerDurationMs / 1000) * fps);
 	const animations = layer.animations ?? [];
 	if (animations.length === 0)
@@ -853,6 +955,7 @@ export const SingleClipComposition: React.FC<{
 	volume?: number;
 	playbackRateOverride?: number;
 	trimStartOverride?: number;
+	trimEndOverride?: number;
 	textStyle?: Partial<ExtendedLayer>;
 	containerWidth: number;
 	containerHeight: number;
@@ -861,11 +964,13 @@ export const SingleClipComposition: React.FC<{
 	volume = 1,
 	playbackRateOverride,
 	trimStartOverride,
+	trimEndOverride,
 	textStyle,
 	containerWidth,
 	containerHeight,
 }) => {
-	const { fps } = useVideoConfig();
+	const { fps: rawFps } = useVideoConfig();
+	const fps = Math.max(1, rawFps);
 	const op = virtualMedia?.operation;
 	if (!op) return null;
 
@@ -881,16 +986,17 @@ export const SingleClipComposition: React.FC<{
 
 							if (childOp.op === "layer") {
 								const lop = childOp;
-								const contentType = getMediaType(child.children[0]);
-								return {
-									...textStyle, // Base inheritance MUST come first
+								const childVirtualMedia = child.children?.[0];
+								const contentType = getMediaType(childVirtualMedia);
+								const childMeta = getActiveMediaMetadata(childVirtualMedia);
 
-									// Structural overrides MUST be explicit to prevent overwrite bugs
+								return {
+									...textStyle,
+
 									id: `child-${index}`,
 									type: contentType,
-									virtualMedia: child.children[0],
+									virtualMedia: childVirtualMedia,
 
-									// Use operation props if present, fallback to inherited textStyle safely
 									x: lop.x ?? textStyle?.x ?? 0,
 									y: lop.y ?? textStyle?.y ?? 0,
 									width: lop.width ?? textStyle?.width,
@@ -899,7 +1005,13 @@ export const SingleClipComposition: React.FC<{
 									scale: lop.scale ?? textStyle?.scale ?? 1,
 									opacity: lop.opacity ?? textStyle?.opacity ?? 1,
 									startFrame: lop.startFrame ?? textStyle?.startFrame ?? 0,
-									durationInMS: lop.durationInMS || composeDuration,
+
+									durationInMS: resolveLayerDuration(
+										lop.durationInMS ?? textStyle?.durationInMS,
+										childMeta?.durationMs,
+										composeDuration,
+									),
+
 									zIndex: lop.zIndex ?? textStyle?.zIndex ?? index,
 									trimStart: lop.trimStart ?? textStyle?.trimStart,
 									trimEnd: lop.trimEnd ?? textStyle?.trimEnd,
@@ -935,13 +1047,15 @@ export const SingleClipComposition: React.FC<{
 								} as ExtendedLayer;
 							}
 
-							// Handle other operations (crop, rotate, filter, flig, speed, cut, source, text)
 							const contentType = getMediaType(child);
 							const childMeta = getActiveMediaMetadata(child);
 							const childWidth = childMeta?.width ?? op.width;
 							const childHeight = childMeta?.height ?? op.height;
-							const childDuration =
-								childMeta?.durationMs ?? composeDuration ?? DEFAULT_DURATION_MS;
+							const childDuration = resolveLayerDuration(
+								undefined,
+								childMeta?.durationMs,
+								composeDuration ?? DEFAULT_DURATION_MS,
+							);
 
 							return {
 								id: `child-${index}`,
@@ -965,10 +1079,11 @@ export const SingleClipComposition: React.FC<{
 				viewportHeight={op.height}
 				containerWidth={containerWidth}
 				containerHeight={containerHeight}
+				backgroundColor={op.backgroundColor}
 			/>
 		);
 		const trimFrames = trimStartOverride
-			? Math.floor(trimStartOverride * fps)
+			? Math.max(0, Math.floor(trimStartOverride * fps))
 			: 0;
 		if (trimFrames > 0)
 			return (
@@ -981,7 +1096,6 @@ export const SingleClipComposition: React.FC<{
 
 	if (op.op === "source" || op.op === "text") {
 		const params = computeRenderParams(virtualMedia);
-
 		const mediaType = getMediaType(virtualMedia);
 
 		if (mediaType === "Text") {
@@ -1026,7 +1140,6 @@ export const SingleClipComposition: React.FC<{
 						flexDirection: "column",
 						alignItems: "stretch",
 						justifyContent: "flex-start",
-						whiteSpace: "pre",
 					}}
 				>
 					{textContent}
@@ -1036,23 +1149,48 @@ export const SingleClipComposition: React.FC<{
 
 		if (!params.sourceUrl) return <AbsoluteFill />;
 
-		const finalPlaybackRate =
-			(Number(playbackRateOverride) || 1) * (Number(params.speed) || 1);
-		const effectiveTrimSec =
-			(trimStartOverride ?? 0) + (Number(params.trimStartSec) || 0);
+		const finalPlaybackRate = Math.max(
+			0.01,
+			(Number(playbackRateOverride) || 1) * (Number(params.speed) || 1),
+		);
+
+		const effectiveTrimSec = Math.max(
+			0,
+			(Number(trimStartOverride) || 0) + (Number(params.trimStartSec) || 0),
+		);
 		const startFrame = Math.floor(effectiveTrimSec * fps);
 
-		if (mediaType === "Audio")
+		const mappedTrimEndParams =
+			params.trimEndSec !== undefined && params.trimEndSec !== null
+				? Number(params.trimEndSec)
+				: undefined;
+		const effectiveTrimEndSec = trimEndOverride ?? mappedTrimEndParams;
+
+		let endFrame: number | undefined;
+		if (
+			effectiveTrimEndSec !== undefined &&
+			!isNaN(effectiveTrimEndSec) &&
+			effectiveTrimEndSec > effectiveTrimSec
+		) {
+			endFrame = Math.max(
+				startFrame + 1,
+				Math.floor(effectiveTrimEndSec * fps),
+			);
+		}
+
+		if (mediaType === "Audio") {
 			return (
 				<Audio
 					src={params.sourceUrl}
-					trimBefore={startFrame}
+					startFrom={startFrame}
+					endAt={endFrame}
 					playbackRate={finalPlaybackRate}
 					volume={volume}
 				/>
 			);
+		}
 
-		if (isStaticVisualMedia(mediaType))
+		if (isStaticVisualMedia(mediaType)) {
 			return (
 				<Img
 					src={params.sourceUrl}
@@ -1066,12 +1204,14 @@ export const SingleClipComposition: React.FC<{
 					}}
 				/>
 			);
+		}
 
 		return (
 			<Video
 				src={params.sourceUrl}
 				playbackRate={finalPlaybackRate}
-				trimBefore={startFrame}
+				startFrom={startFrame}
+				endAt={endFrame}
 				volume={volume}
 				style={{
 					position: "absolute",
@@ -1087,7 +1227,7 @@ export const SingleClipComposition: React.FC<{
 	}
 
 	if (op.op === "speed") {
-		const childVideo = virtualMedia.children[0];
+		const childVideo = virtualMedia.children?.[0];
 		if (!childVideo) return null;
 		return (
 			<SingleClipComposition
@@ -1097,6 +1237,7 @@ export const SingleClipComposition: React.FC<{
 					(Number(playbackRateOverride) || 1) * (Number(op.rate) || 1)
 				}
 				trimStartOverride={trimStartOverride}
+				trimEndOverride={trimEndOverride}
 				textStyle={textStyle}
 				containerWidth={containerWidth}
 				containerHeight={containerHeight}
@@ -1105,14 +1246,23 @@ export const SingleClipComposition: React.FC<{
 	}
 
 	if (op.op === "cut") {
-		const childVideo = virtualMedia.children[0];
+		const childVideo = virtualMedia.children?.[0];
 		if (!childVideo) return null;
+
+		const effectiveStart =
+			(trimStartOverride ?? 0) + (Number(op.startSec) || 0);
+		const effectiveEnd =
+			op.endSec !== undefined
+				? (trimStartOverride ?? 0) + Number(op.endSec)
+				: trimEndOverride;
+
 		return (
 			<SingleClipComposition
 				virtualMedia={childVideo}
 				volume={volume}
 				playbackRateOverride={playbackRateOverride}
-				trimStartOverride={(trimStartOverride ?? 0) + (op.startSec ?? 0)}
+				trimStartOverride={effectiveStart}
+				trimEndOverride={effectiveEnd}
 				textStyle={textStyle}
 				containerWidth={containerWidth}
 				containerHeight={containerHeight}
@@ -1120,9 +1270,10 @@ export const SingleClipComposition: React.FC<{
 		);
 	}
 
-	const childVideo = virtualMedia.children[0];
+	const childVideo = virtualMedia.children?.[0];
 	let childContainerWidth = containerWidth;
 	let childContainerHeight = containerHeight;
+
 	if (op.op === "crop") {
 		const wp = Math.max(0.01, Number(op.widthPercentage) || 100);
 		const hp = Math.max(0.01, Number(op.heightPercentage) || 100);
@@ -1136,6 +1287,7 @@ export const SingleClipComposition: React.FC<{
 			volume={volume}
 			playbackRateOverride={playbackRateOverride}
 			trimStartOverride={trimStartOverride}
+			trimEndOverride={trimEndOverride}
 			textStyle={op.op === "layer" ? { ...textStyle, ...op } : textStyle}
 			containerWidth={childContainerWidth}
 			containerHeight={childContainerHeight}
@@ -1171,6 +1323,7 @@ export const SingleClipComposition: React.FC<{
 
 	let transformStr: string | undefined;
 	let cssFilterString: string | undefined;
+
 	if (op.op === "rotate") {
 		transformStr = `rotate(${op.degrees}deg)`;
 	} else if (op.op === "flip") {
@@ -1178,7 +1331,7 @@ export const SingleClipComposition: React.FC<{
 		if (op.horizontal) transforms.push("scaleX(-1)");
 		if (op.vertical) transforms.push("scaleY(-1)");
 		transformStr = transforms.length ? transforms.join(" ") : undefined;
-	} else if (op.op === "filter") {
+	} else if (op.op === "filter" && op.filters?.cssFilters) {
 		cssFilterString = buildCSSFilterString(op.filters.cssFilters);
 	}
 
@@ -1206,6 +1359,7 @@ const LayerContentRenderer: React.FC<{
 				volume={animVolume}
 				playbackRateOverride={layer.speed}
 				trimStartOverride={layer.trimStart}
+				trimEndOverride={layer.trimEnd}
 				textStyle={layer}
 				containerWidth={cWidth}
 				containerHeight={cHeight}
@@ -1219,6 +1373,7 @@ const LayerContentRenderer: React.FC<{
 					virtualMedia={layer.virtualMedia}
 					volume={animVolume}
 					trimStartOverride={layer.trimStart}
+					trimEndOverride={layer.trimEnd}
 					textStyle={layer}
 					containerWidth={cWidth}
 					containerHeight={cHeight}
@@ -1240,6 +1395,7 @@ const LayerContentRenderer: React.FC<{
 					volume={animVolume}
 					playbackRateOverride={layer.speed}
 					trimStartOverride={layer.trimStart}
+					trimEndOverride={layer.trimEnd}
 					textStyle={layer}
 					containerWidth={cWidth}
 					containerHeight={cHeight}
@@ -1255,6 +1411,7 @@ const LayerContentRenderer: React.FC<{
 					virtualMedia={layer.virtualMedia}
 					volume={animVolume}
 					trimStartOverride={layer.trimStart}
+					trimEndOverride={layer.trimEnd}
 					textStyle={layer}
 					containerWidth={cWidth}
 					containerHeight={cHeight}
@@ -1293,7 +1450,6 @@ const LayerContentRenderer: React.FC<{
 					display: "flex",
 					flexDirection: "column",
 					justifyContent: "flex-start",
-					whiteSpace: "pre",
 				}}
 			>
 				{layer.text}
@@ -1316,10 +1472,9 @@ const LayerContentRenderer: React.FC<{
 					style={
 						{
 							...buildLayerTextStyle(layer),
-							...(layer.backgroundColor
-								? { captionBackgroundColor: layer.backgroundColor }
-								: {}),
-						} as React.CSSProperties
+							backgroundColor: layer.backgroundColor,
+							borderRadius: layer.borderRadius, // Add this line
+						} as React.CSSProperties & { borderRadius?: number }
 					}
 					preset={preset}
 				/>
@@ -1335,15 +1490,21 @@ export const LayerRenderer: React.FC<{
 	viewport: { w: number; h: number };
 }> = ({ layer, viewport }) => {
 	const frame = useCurrentFrame();
-	const { fps } = useVideoConfig();
-	const startFrame = layer.startFrame ?? 0;
+	const config = useVideoConfig();
+	const fps = Math.max(1, config.fps);
+	const startFrame = Math.max(0, layer.startFrame ?? 0);
 
-	// Use explicit duration, or intrinsic metadata duration, or fallback
-	const layerDurationMs =
-		layer.durationInMS ||
-		layer.virtualMedia?.metadata?.durationMs ||
-		DEFAULT_DURATION_MS;
-	const duration = Math.round((layerDurationMs / 1000) * fps);
+	const layerDurationMs = Math.max(
+		1,
+		resolveLayerDuration(
+			layer.durationInMS,
+			layer.virtualMedia?.metadata?.durationMs,
+			DEFAULT_DURATION_MS,
+		),
+	);
+
+	const duration = Math.max(1, Math.round((layerDurationMs / 1000) * fps));
+
 	const {
 		x: animX,
 		y: animY,
@@ -1371,7 +1532,7 @@ export const LayerRenderer: React.FC<{
 		borderWidth: useRoundedBox ? undefined : layer.borderWidth,
 		borderRadius: useRoundedBox ? undefined : layer.borderRadius,
 		borderStyle: !useRoundedBox && layer.borderWidth ? "solid" : undefined,
-		overflow: "hidden",
+		overflow: layer.type === "Caption" ? "visible" : "hidden",
 		boxSizing: "border-box",
 	};
 
@@ -1440,8 +1601,6 @@ function useEnsureFontsLoaded(
 ) {
 	const [loaded, setLoaded] = useState(false);
 
-	// FIX: Generate a stable primitive string instead of passing an unstable layer mapping
-	// Every frame re-render of SingleClipComposition produced a new array causing infinite re-fetching.
 	const fontsToLoad = useMemo(() => {
 		const fonts = extractFonts(layers, virtualMedia);
 		return fonts.sort().join(",");
@@ -1454,50 +1613,53 @@ function useEnsureFontsLoaded(
 		}
 
 		const fonts = fontsToLoad.split(",");
-
 		const handle = delayRender(`Loading custom fonts for: ${fontsToLoad}`);
 		let isCancelled = false;
 
-		Promise.all(
-			fonts.map(async (fontFamily) => {
-				const cleanFontFamily = fontFamily
-					.split(",")[0]
-					.replace(/['"]/g, "")
-					.trim();
-				// Basic generic fallback fonts filter
-				if (
-					[
-						"sans-serif",
-						"serif",
-						"monospace",
-						"cursive",
-						"fantasy",
-						"system-ui",
-					].includes(cleanFontFamily.toLowerCase())
-				) {
-					return;
-				}
+		const loadFonts = async () => {
+			try {
+				await Promise.all(
+					fonts.map(async (fontFamily) => {
+						const cleanFontFamily = fontFamily
+							.split(",")[0]
+							.replace(/['"]/g, "")
+							.trim();
 
-				try {
-					const fontUrl = GetFontAssetUrl(cleanFontFamily.replace(/\s+/g, "_"));
-					const font = new FontFace(cleanFontFamily, `url('${fontUrl}')`);
-					await font.load();
-					if (!isCancelled) document.fonts.add(font);
-				} catch (err) {
-					console.warn(`Failed to load font ${cleanFontFamily}`, err);
-				}
-			}),
-		).then(() => {
-			if (!isCancelled) {
-				setLoaded(true);
+						if (
+							[
+								"sans-serif",
+								"serif",
+								"monospace",
+								"cursive",
+								"fantasy",
+								"system-ui",
+							].includes(cleanFontFamily.toLowerCase())
+						) {
+							return;
+						}
+
+						const fontUrl = GetFontAssetUrl(
+							cleanFontFamily.replace(/\s+/g, "_"),
+						);
+						const font = new FontFace(cleanFontFamily, `url('${fontUrl}')`);
+						await font.load();
+						if (!isCancelled) document.fonts.add(font);
+					}),
+				);
+			} catch (err) {
+				console.warn(`Failed to load font`, err);
+			} finally {
+				if (!isCancelled) setLoaded(true);
 				continueRender(handle);
 			}
-		});
+		};
+
+		loadFonts();
 
 		return () => {
 			isCancelled = true;
 		};
-	}, [fontsToLoad]); // Strict reliance on primitive string to break the freeze.
+	}, [fontsToLoad]);
 
 	return loaded;
 }
@@ -1546,9 +1708,10 @@ export const CompositionScene: React.FC<SceneProps> = ({
 	y,
 }) => {
 	const frame = useCurrentFrame();
-	const { fps } = useVideoConfig();
+	const config = useVideoConfig();
+	const fps = Math.max(1, config.fps);
 
-	useEnsureFontsLoaded(layers, virtualMedia);
+	const fontsLoaded = useEnsureFontsLoaded(layers, virtualMedia);
 
 	const resolvedLayers = (() => {
 		if (layers.length > 0) return layers;
@@ -1559,18 +1722,22 @@ export const CompositionScene: React.FC<SceneProps> = ({
 
 		if (src || virtualMedia || type === "Text" || type === "Caption") {
 			const resolvedType = type || (isAudio ? "Audio" : "Video");
-			let resolvedDurationInMS = durationInMS;
-			if (!resolvedDurationInMS && virtualMedia) {
-				const activeMeta = getActiveMediaMetadata(virtualMedia);
-				if (activeMeta?.durationMs)
-					resolvedDurationInMS = activeMeta.durationMs;
-			}
 			const isCaption = resolvedType === "Caption";
 			const isText = resolvedType === "Text";
 			const isVisualMedia =
 				resolvedType === "Image" ||
 				resolvedType === "SVG" ||
 				resolvedType === "Video";
+
+			const activeMeta = virtualMedia
+				? getActiveMediaMetadata(virtualMedia)
+				: null;
+
+			const resolvedDurationInMS = resolveLayerDuration(
+				durationInMS,
+				activeMeta?.durationMs,
+				durationInMS,
+			);
 
 			let defaultWidth: number | string | undefined = viewportWidth;
 			let defaultHeight: number | string | undefined = viewportHeight;
@@ -1579,12 +1746,12 @@ export const CompositionScene: React.FC<SceneProps> = ({
 				defaultWidth = undefined;
 				defaultHeight = undefined;
 			} else if (isVisualMedia) {
-				const activeMeta = virtualMedia
-					? getActiveMediaMetadata(virtualMedia)
-					: null;
 				defaultWidth = activeMeta?.width ?? DEFAULT_MEDIA_DIMENSION;
 				defaultHeight = activeMeta?.height ?? DEFAULT_MEDIA_DIMENSION;
 			}
+
+			const captionWidth = Math.round(viewportWidth * (2 / 3));
+			const captionX = Math.round(viewportWidth / 6);
 
 			return [
 				{
@@ -1598,6 +1765,7 @@ export const CompositionScene: React.FC<SceneProps> = ({
 							: data?.text || JSON.stringify(data),
 					width: defaultWidth,
 					height: defaultHeight,
+					durationInMS: resolvedDurationInMS,
 					...(typeof data === "object" && data !== null ? data : {}),
 					animations,
 					opacity,
@@ -1612,7 +1780,8 @@ export const CompositionScene: React.FC<SceneProps> = ({
 					...(isCaption
 						? {
 								...CAPTION_LAYER_DEFAULTS,
-								// Dynamic default Y position based on viewport
+								x: captionX,
+								width: captionWidth,
 								y: Math.max(
 									0,
 									viewportHeight -
@@ -1623,13 +1792,11 @@ export const CompositionScene: React.FC<SceneProps> = ({
 										) -
 										Math.round(viewportHeight * 0.1),
 								),
-								// Auto height for ~3 lines
 								height: Math.round(
 									(CAPTION_LAYER_DEFAULTS.fontSize as number) *
 										(CAPTION_LAYER_DEFAULTS.lineHeight as number) *
 										3,
 								),
-								width: viewportWidth,
 							}
 						: {}),
 				} as ExtendedLayer,
@@ -1645,6 +1812,12 @@ export const CompositionScene: React.FC<SceneProps> = ({
 		containerWidth !== undefined ? containerWidth / resolvedViewportW : 1;
 	const scaleY =
 		containerHeight !== undefined ? containerHeight / resolvedViewportH : 1;
+
+	// Critically defers rendering text layers utilizing `measureText` until fonts safely load.
+	// Resolves layout-shifting logic issues rendering bounding boxes based on fallback fonts.
+	if (!fontsLoaded) {
+		return null;
+	}
 
 	if (resolvedLayers === null && virtualMedia?.operation?.op === "compose") {
 		return (
@@ -1709,15 +1882,22 @@ export const CompositionScene: React.FC<SceneProps> = ({
 				}}
 			>
 				{layersToRender.map((layer) => {
-					const startFrame = layer.startFrame ?? 0;
-					const explicitLayerDuration =
-						layer.durationInMS ||
-						layer.virtualMedia?.metadata?.durationMs ||
-						DEFAULT_DURATION_MS;
-					const layerNativeDuration = Math.round(
-						(explicitLayerDuration / 1000) * fps,
+					const startFrame = Math.max(0, layer.startFrame ?? 0);
+
+					const explicitLayerDurationMs = Math.max(
+						1,
+						resolveLayerDuration(
+							layer.durationInMS,
+							layer.virtualMedia?.metadata?.durationMs,
+							DEFAULT_DURATION_MS,
+						),
+					);
+					const layerNativeDuration = Math.max(
+						1,
+						Math.round((explicitLayerDurationMs / 1000) * fps),
 					);
 					const endFrame = startFrame + layerNativeDuration;
+
 					if (frame < startFrame || frame >= endFrame) return null;
 					return (
 						<LayerRenderer key={layer.id} layer={layer} viewport={viewport} />

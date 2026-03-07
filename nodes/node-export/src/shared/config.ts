@@ -1,6 +1,8 @@
 import { AnyOutputUnionSchema } from "@gatewai/core/types";
 import { z } from "zod";
 
+export const RENDER_COST = 10;
+
 export const ExportNodeConfigSchema = z.object({}).strict();
 
 export type ExportNodeConfig = z.infer<typeof ExportNodeConfigSchema>;

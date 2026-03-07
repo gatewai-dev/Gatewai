@@ -31,6 +31,7 @@ const envSchema = z.object({
 		.default("false"),
 	MAX_CONCURRENT_ASSISTANT_JOBS: z.coerce.number().default(15),
 	MAX_CONCURRENT_WORKFLOW_JOBS: z.coerce.number().default(5),
+	MAX_CONCURRENT_RENDERING_JOBS: z.coerce.number().default(1),
 
 	DEFAULT_FREE_TOKENS: z.coerce.number().default(20),
 	ENABLE_PRICING: z.coerce.boolean().default(false),

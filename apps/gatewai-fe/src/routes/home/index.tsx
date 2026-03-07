@@ -102,7 +102,7 @@ const HomePage = () => {
 					>
 						<Sparkles className="size-4 text-primary" />
 						<span className="text-xs font-mono text-neutral-300">
-							GATEWAI ENGINE V2.0 LIVE
+							GATEWAI ENGINE V0.1 - BETA
 						</span>
 					</motion.div>
 

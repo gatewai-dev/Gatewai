@@ -1,15 +1,17 @@
-import { isFileData } from "@gatewai/core/browser";
+import { BASE_URL, isFileData } from "@gatewai/core/browser";
 import type { VirtualMediaData } from "@gatewai/core/types";
 import {
 	BaseNode,
 	type NodeProps,
+	useCanvasCtx,
 	useDownloadFileData,
 	useNodeResult,
 } from "@gatewai/react-canvas";
-import { renderVirtualMedia } from "@gatewai/remotion-compositions";
 import { Alert, AlertDescription, Button, Separator } from "@gatewai/ui-kit";
-import { AlertCircle, Download, InfoIcon, Loader2 } from "lucide-react";
+import { AlertCircle, Coins, Download, InfoIcon, Loader2 } from "lucide-react";
 import { memo, useState } from "react";
+
+const RENDER_COST = 10;
 
 function ExportNodeHandbook({ nodeId }: { nodeId: string }) {
 	return (
@@ -36,8 +38,19 @@ function ExportNodeHandbook({ nodeId }: { nodeId: string }) {
 	);
 }
 
+const isVirtualMediaData = (data: unknown): data is VirtualMediaData => {
+	return (
+		typeof data === "object" &&
+		data !== null &&
+		"metadata" in data &&
+		"operation" in data &&
+		"children" in data
+	);
+};
+
 const ExportNodeComponent = memo((props: NodeProps) => {
 	const { result } = useNodeResult(props.id);
+	const { canvas } = useCanvasCtx();
 	const [isDownloading, setIsDownloading] = useState(false);
 	const [error, setError] = useState<string | null>(null);
 
@@ -88,21 +101,56 @@ const ExportNodeComponent = memo((props: NodeProps) => {
 				const content = String(data);
 				const filename = `export-${props.id}-${Date.now()}.txt`;
 				await downloadAsText(content, filename);
-			} else if (type === "Video") {
-				const vv = data as VirtualMediaData;
-				const blob = await renderVirtualMedia(vv);
-				const url = URL.createObjectURL(blob);
+			} else if (type === "Video" || type === "Audio") {
+				if (isFileData(data)) {
+					await downloadFileData(data, type);
+				} else if (isVirtualMediaData(data)) {
+					const canvasId = canvas?.id;
+					if (!canvasId) {
+						throw new Error("Canvas ID not found");
+					}
 
-				const link = document.createElement("a");
-				link.href = url;
-				link.download = `export-${props.id}-${Date.now()}.mp4`;
-				link.style.display = "none";
+					const response = await fetch(`${BASE_URL}/api/v1/export/render`, {
+						method: "POST",
+						headers: {
+							"Content-Type": "application/json",
+						},
+						body: JSON.stringify({
+							canvasId,
+							nodeId: props.id,
+							data,
+							type,
+						}),
+					});
 
-				document.body.appendChild(link);
-				link.click();
-				document.body.removeChild(link);
+					if (!response.ok) {
+						const errorData = await response.json();
+						throw new Error(errorData.error || "Failed to render video");
+					}
 
-				setTimeout(() => URL.revokeObjectURL(url), 100);
+					const { fileUrl, mimeType } = await response.json();
+
+					const fileResponse = await fetch(fileUrl);
+					if (!fileResponse.ok) {
+						throw new Error("Failed to download rendered file");
+					}
+					const blob = await fileResponse.blob();
+					const url = URL.createObjectURL(blob);
+
+					const extension = mimeType === "video/mp4" ? "mp4" : "mp3";
+					const link = document.createElement("a");
+					link.href = url;
+					link.download = `export-${props.id}-${Date.now()}.${extension}`;
+					link.style.display = "none";
+
+					document.body.appendChild(link);
+					link.click();
+					document.body.removeChild(link);
+
+					setTimeout(() => URL.revokeObjectURL(url), 100);
+				} else {
+					throw new Error("Invalid data format for Video/Audio");
+				}
 			} else if (isFileData(data)) {
 				await downloadFileData(data, type);
 			} else {
@@ -125,6 +173,22 @@ const ExportNodeComponent = memo((props: NodeProps) => {
 		result.outputs &&
 		result.outputs[result.selectedOutputIndex]?.items.length > 0;
 
+	const needsRendering = (() => {
+		if (!hasResult) return false;
+		const selectedOutput = result.outputs[result.selectedOutputIndex];
+		if (!selectedOutput || !selectedOutput.items.length) return false;
+		const { type, data } = selectedOutput.items[0];
+		if (type !== "Video" && type !== "Audio") return false;
+		if (isFileData(data)) return false;
+		return isVirtualMediaData(data);
+	})();
+
+	const buttonLabel = isDownloading
+		? "Rendering..."
+		: needsRendering
+			? `Render (${RENDER_COST} tokens)`
+			: "Download";
+
 	return (
 		<BaseNode selected={props.selected} id={props.id} dragging={props.dragging}>
 			<div className="flex flex-col gap-3">
@@ -144,16 +208,13 @@ const ExportNodeComponent = memo((props: NodeProps) => {
 					className="w-full"
 				>
 					{isDownloading ? (
-						<>
-							<Loader2 className="size-3 mr-2 animate-spin" />
-							Downloading...
-						</>
+						<Loader2 className="size-3 mr-2 animate-spin" />
+					) : needsRendering ? (
+						<Coins className="size-3 mr-2" />
 					) : (
-						<>
-							<Download className="size-3 mr-2" />
-							Download
-						</>
+						<Download className="size-3 mr-2" />
 					)}
+					{buttonLabel}
 				</Button>
 
 				{!hasResult && !error && (

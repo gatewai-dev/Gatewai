@@ -19,8 +19,8 @@ const isOutputItemFileData = (data: OutputItem<DataType>): data is FileData => {
 
 const isOutputItemVirtualMediaData = (
 	item: OutputItem<DataType>,
-): item is VirtualMediaData => {
-	return typeof data === "object" && "source" in data;
+): item is OutputItem<DataType> => {
+	return typeof item === "object" && "operation" in item;
 };
 
 async function overrideFileResult(data: FileData | VirtualMediaData) {

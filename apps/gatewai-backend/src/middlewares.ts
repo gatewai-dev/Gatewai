@@ -1,4 +1,4 @@
-import { logger } from "@gatewai/core";
+import { ENV_CONFIG, logger } from "@gatewai/core";
 import type { Context, Next } from "hono";
 import { HTTPException } from "hono/http-exception";
 import { assertIsError } from "./utils/misc.js";
@@ -33,7 +33,7 @@ export const loggerMiddleware = async (c: Context, next: Next) => {
 				url,
 				duration,
 				err: err.message,
-				stack: process.env.NODE_ENV === "production" ? undefined : err.stack,
+				stack: ENV_CONFIG.NODE_ENV === "production" ? undefined : err.stack,
 			},
 			"💥 Request Failed with Exception",
 		);
@@ -50,7 +50,7 @@ export const errorHandler = (err: Error, c: Context) => {
 	logger.error(
 		{
 			err: err.message,
-			stack: process.env.NODE_ENV === "production" ? undefined : err.stack,
+			stack: ENV_CONFIG.NODE_ENV === "production" ? undefined : err.stack,
 			url: c.req.url,
 			status,
 		},

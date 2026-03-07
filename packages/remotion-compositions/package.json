@@ -39,7 +39,7 @@
 	"devDependencies": {
 		"@gatewai/core": "workspace:*",
 		"@gatewai/tsconfig": "workspace:*",
-		"@remotion/bundler": "4.0.431",
+		"@remotion/bundler": "4.0.434",
 		"@types/react": "^19.2.4",
 		"tsdown": "^0.19.0",
 		"tsx": "^4.20.3",
@@ -51,7 +51,6 @@
 		"@remotion/captions": "*",
 		"@remotion/web-renderer": "*",
 		"@remotion/rounded-text-box": "*",
-		"@remotion/three": "*",
 		"@remotion/layout-utils": "*",
 		"react": "^19.2.4",
 		"remotion": "*"

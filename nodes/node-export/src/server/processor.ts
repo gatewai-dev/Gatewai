@@ -1,20 +1,17 @@
 import assert from "node:assert";
+import { type EnvConfig, logger } from "@gatewai/core";
 import { container, TOKENS } from "@gatewai/core/di";
-import type { ExportResult } from "../shared/index.js";
-
-;
-
-import { readFile, rm } from "node:fs/promises";
-import { type EnvConfig, type IVideoRendererService, logger } from "@gatewai/core";
 import type { VirtualMediaData } from "@gatewai/core/types";
 import type { PrismaClient } from "@gatewai/db";
 import type {
     BackendNodeProcessorCtx,
     BackendNodeProcessorResult,
     GraphResolvers,
-    NodeProcessor, StorageService
+    NodeProcessor,
+    StorageService
 } from "@gatewai/node-sdk/server";
 import { inject, injectable } from "inversify";
+import type { ExportResult } from "../shared/index.js";
 
 @injectable()
 export class ExportServerProcessor implements NodeProcessor {
@@ -39,81 +36,7 @@ export class ExportServerProcessor implements NodeProcessor {
                 selectedOutputIndex: 0,
             };
 
-            let dataToPass = inputValue.data;
-            const rendererSerice = container.get<IVideoRendererService>(TOKENS.VIDEO_RENDERER);
-            // If the input value is VirtualMediaData, render it
-            if (inputValue.type === "Video") {
-                const virtualMedia = inputValue.data as VirtualMediaData;
-                if (!virtualMedia.metadata.width || !virtualMedia.metadata.height || !virtualMedia.metadata.fps || !virtualMedia.metadata.durationMs) {
-                    throw new Error("VirtualMediaData must have width, height, fps and durationInFrames");
-                }
-
-                let renderedVideo;
-                try {
-                    renderedVideo = await rendererSerice.renderComposition({
-                        compositionId: "CompositionScene",
-                        inputProps: {
-                            virtualMedia,
-                            viewportWidth: virtualMedia.metadata.width,
-                            viewportHeight: virtualMedia.metadata.height,
-                            type: "Video",
-                        },
-                        width: virtualMedia.metadata.width,
-                        height: virtualMedia.metadata.height,
-                        fps: virtualMedia.metadata.fps,
-                        durationInFrames: virtualMedia.metadata.durationMs / 1000 * virtualMedia.metadata.fps,
-                        envVariables: {
-                            VITE_BASE_URL: this.env.BASE_URL,
-                        },
-                    });
-                } catch (error) {
-                    console.error({ errorW: error })
-                    throw error;
-                }
-                logger.info(`Rendered video: ${renderedVideo.filePath}`);
-                const contentType = "video/mp4";
-                const fileBuffer = await readFile(renderedVideo.filePath);
-
-                const fileName = `render-export-${data.task?.id ?? node.id}-${new Date().getDate()}.mp4`;
-                const key = `assets/exports/${fileName}`;
-
-                // Upload to storage
-                await this.storage.uploadToStorage(
-                    fileBuffer,
-                    key,
-                    contentType,
-                    this.env.GCS_ASSETS_BUCKET
-                );
-
-                // Clean up temp file
-                try {
-                    await rm(renderedVideo.filePath, { force: true });
-                } catch (cleanupErr) {
-                    logger.warn(`Failed to cleanup temp file: ${renderedVideo.filePath}`);
-                }
-
-                // Calculate duration properly
-                const fps = virtualMedia.metadata.fps ?? 30;
-                const durationMs = virtualMedia.metadata.durationMs ?? 1000;
-
-                const asset = await this.prisma.fileAsset.create({
-                    data: {
-                        name: fileName,
-                        userId: (data.canvas as unknown as { userId: string }).userId,
-                        bucket: this.env.GCS_ASSETS_BUCKET,
-                        key,
-                        size: fileBuffer.length,
-                        width: virtualMedia.metadata.width ?? 1920,
-                        height: virtualMedia.metadata.height ?? 1080,
-                        fps: Math.round(fps),
-                        duration: durationMs,
-                        mimeType: contentType,
-                    },
-                });
-
-                // Set the asset into the input value's data so it passes down correctly to the output
-                dataToPass = { entity: asset };
-            }
+            const dataToPass = inputValue.data;
 
             const newGeneration: ExportResult["outputs"][number] = {
                 items: [

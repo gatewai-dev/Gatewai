@@ -340,8 +340,6 @@ model FileAsset {
   size         Int
   mimeType     String
   key          String
-  signedUrl    String?
-  signedUrlExp DateTime?
 
   // Whether or not user is uploaded (true) or AI generated/System generated (false)
   isUploaded Boolean @default(true)

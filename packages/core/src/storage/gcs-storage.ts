@@ -113,13 +113,7 @@ export class GCSStorageService implements StorageService {
 			mimeType,
 			this.assetsBucketName,
 		);
-		const expiresIn = 3600 * 24 * 1.9; // A bit less than 2 days
-		const signedUrl = await this.generateSignedUrl(
-			keyToUse,
-			this.assetsBucketName,
-			expiresIn,
-		);
-		return { signedUrl, key: keyToUse };
+		return { key: keyToUse };
 	}
 
 	// Helper specific to Node streams, might be needed by Hono

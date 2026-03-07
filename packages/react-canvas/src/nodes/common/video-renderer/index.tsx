@@ -27,6 +27,11 @@ const VideoPlayer = memo(
 				durationMs={durationMs}
 				className={className}
 				overlay={overlay}
+				backgroundColor={
+					virtualMedia?.operation?.op === "compose"
+						? virtualMedia.operation.backgroundColor
+						: undefined
+				}
 			>
 				{children}
 			</MediaPlayer>

@@ -118,6 +118,7 @@ export class ImageCompositorProcessor implements NodeProcessor {
 					x: 0,
 					y: 0,
 					opacity: 1,
+					autoDimensions: true,
 					rotation: 0,
 					zIndex: ++maxZ,
 					blendMode: "source-over",
@@ -189,7 +190,7 @@ export class ImageCompositorProcessor implements NodeProcessor {
 
 			const dimensions = this.media.getImageDimensions(resultBuffer);
 			const key = `${(data.task ?? node).id}/${Date.now()}.png`;
-			const { signedUrl, key: tempKey } =
+			const { key: tempKey } =
 				await this.storage.uploadToTemporaryStorageFolder(
 					resultBuffer,
 					"image/png",
@@ -209,7 +210,6 @@ export class ImageCompositorProcessor implements NodeProcessor {
 								type: DataType.Image,
 								data: {
 									processData: {
-										dataUrl: signedUrl,
 										mimeType: "image/png",
 										tempKey,
 										...dimensions,

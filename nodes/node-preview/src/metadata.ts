@@ -11,11 +11,11 @@ export default defineMetadata({
 	configSchema: PreviewNodeConfigSchema,
 	isTerminal: false,
 	isTransient: true,
-	showInQuickAccess: true,
+	showInQuickAccess: false,
 	handles: {
 		inputs: [
 			{
-				dataTypes: ["Video", "Image", "Text", "Audio"],
+				dataTypes: ["Video", "Image", "Text", "Audio", "SVG"],
 				required: true,
 				label: "Input",
 				order: 0,

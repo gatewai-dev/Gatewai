@@ -140,13 +140,13 @@ export function AuthLayout({ children, title, subtitle }: AuthLayoutProps) {
 					className="relative z-10 space-y-5"
 				>
 					<p className="text-[11px] tracking-[0.2em] uppercase text-white/25 font-medium">
-						Multi-modal AI
+						Unleash your creativity
 					</p>
 
 					<h2 className="text-[2.6rem] font-bold leading-[1.1] tracking-tight">
-						Build workflows
+						Multi-modal & Agentic
 						<br />
-						<span className="text-[#b7ea48]">visually.</span>
+						<span className="text-[#b7ea48]">infinite canvas.</span>
 					</h2>
 
 					<p className="text-sm text-white/35 leading-relaxed max-w-[260px] font-light">

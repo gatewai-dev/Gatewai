@@ -1,5 +1,6 @@
 import { defineMetadata } from "@gatewai/node-sdk";
 import {
+	type SpeechToTextNodeConfig,
 	SpeechToTextNodeConfigSchema,
 	SpeechToTextResultSchema,
 } from "./shared/index.js";
@@ -24,5 +25,12 @@ export default defineMetadata({
 		outputs: [{ dataTypes: ["Text"], label: "Result", order: 0 }],
 	},
 	defaultConfig: { model: "gemini-3-flash-preview" },
-	pricing: () => 10,
+	pricing: (config: SpeechToTextNodeConfig) => {
+		const MODEL_TOKEN_PRICING: Record<SpeechToTextNodeConfig["model"], number> =
+			{
+				"gemini-3-pro-preview": 30,
+				"gemini-3-flash-preview": 10,
+			};
+		return MODEL_TOKEN_PRICING[config.model];
+	},
 });

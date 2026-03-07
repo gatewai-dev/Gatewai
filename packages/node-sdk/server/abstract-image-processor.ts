@@ -81,7 +81,7 @@ export abstract class AbstractImageProcessor implements NodeProcessor {
 			};
 
 			const key = `${(data.task ?? node).id}/${Date.now()}.png`;
-			const { signedUrl, key: tempKey } =
+			const { key: tempKey } =
 				await this.storage.uploadToTemporaryStorageFolder(
 					uploadBuffer,
 					mimeType,
@@ -94,7 +94,6 @@ export abstract class AbstractImageProcessor implements NodeProcessor {
 						type: DataType.Image,
 						data: {
 							processData: {
-								dataUrl: signedUrl,
 								tempKey,
 								mimeType,
 								...dimensions,

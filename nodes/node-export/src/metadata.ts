@@ -1,7 +1,11 @@
 import { defineMetadata } from "@gatewai/node-sdk";
-import { ExportNodeConfigSchema, ExportResultSchema } from "./shared/index.js";
+import {
+	ExportNodeConfigSchema,
+	ExportResultSchema,
+	RENDER_COST,
+} from "./shared/index.js";
 
-export { ExportNodeConfigSchema, ExportResultSchema };
+export { ExportNodeConfigSchema, ExportResultSchema, RENDER_COST };
 
 export default defineMetadata({
 	type: "Export",
@@ -13,6 +17,7 @@ export default defineMetadata({
 	isTerminal: true,
 	isTransient: false,
 	showInQuickAccess: true,
+	pricing: () => 0,
 	handles: {
 		inputs: [
 			{

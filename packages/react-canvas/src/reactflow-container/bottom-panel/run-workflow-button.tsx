@@ -1,4 +1,5 @@
 import {
+	makeSelectAllEdges,
 	makeSelectAllNodes,
 	selectSelectedNodes,
 	useAppSelector,
@@ -16,6 +17,17 @@ import { useCanvasCtx } from "../../canvas-ctx";
 import { useNodeRegistry } from "../../node-registry-ctx";
 import { useTaskManagerCtx } from "../../task-manager-ctx";
 
+const RENDER_COST = 10;
+
+const VIDEO_AUDIO_OUTPUT_NODE_TYPES = new Set([
+	"VideoGen",
+	"VideoCompositor",
+	"MediaCut",
+	"Crop",
+	"VideoGenFirstLastFrame",
+	"TextToSpeech",
+]);
+
 const RunWorkflowButton = memo(() => {
 	const { runNodes } = useCanvasCtx();
 	const { isAnyTaskRunning } = useTaskManagerCtx();
@@ -23,6 +35,7 @@ const RunWorkflowButton = memo(() => {
 
 	const selectedNodes = useAppSelector(selectSelectedNodes);
 	const nodes = useAppSelector(makeSelectAllNodes);
+	const edges = useAppSelector(makeSelectAllEdges);
 
 	const selectedTerminalNodes = selectedNodes?.filter(
 		(f) => f.template.isTerminalNode,
@@ -34,7 +47,27 @@ const RunWorkflowButton = memo(() => {
 		[nodes],
 	);
 
-	// Calculate total workflow cost
+	const exportNodesNeedRendering = useMemo(() => {
+		const terminalNodes = selectedTerminalNodes?.length
+			? selectedTerminalNodes
+			: nodes.filter((n) => n.template.isTerminalNode);
+
+		const exportNodes = terminalNodes.filter((n) => n.type === "Export");
+		if (exportNodes.length === 0) return false;
+
+		for (const exportNode of exportNodes) {
+			const incomingEdges = edges.filter((e) => e.target === exportNode.id);
+			for (const edge of incomingEdges) {
+				const sourceNode = nodes.find((n) => n.id === edge.source);
+				if (sourceNode && VIDEO_AUDIO_OUTPUT_NODE_TYPES.has(sourceNode.type)) {
+					return true;
+				}
+			}
+		}
+		return false;
+	}, [nodes, edges, selectedTerminalNodes]);
+
+	// Calculate total workflow cost (Export node pricing is 0, render cost shown separately)
 	const totalCost = useMemo(() => {
 		const terminalNodes = selectedTerminalNodes?.length
 			? selectedTerminalNodes
@@ -98,6 +131,14 @@ const RunWorkflowButton = memo(() => {
 				<span className="inline-flex items-center gap-0.5 text-[10px] opacity-70 ml-0.5">
 					<Coins className="size-3" />
 					{totalCost}
+				</span>
+			)}
+			{exportNodesNeedRendering && (
+				<span
+					className="inline-flex items-center gap-0.5 text-[10px] text-amber-600 ml-0.5"
+					title={`Export render will cost ${RENDER_COST} tokens when downloading`}
+				>
+					(+{RENDER_COST})
 				</span>
 			)}
 		</Button>

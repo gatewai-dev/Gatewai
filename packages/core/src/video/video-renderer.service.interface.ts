@@ -27,14 +27,14 @@ export interface SceneProps {
 
 export type RenderMediaOnProgress = (progress: RenderMediaProgress) => void;
 
-export interface VideoRenderOptions {
+export interface MediaRenderOptions {
 	compositionId: string;
 	inputProps: SceneProps;
 	width: number;
 	height: number;
 	fps: number;
 	durationInFrames: number;
-	codec?: "h264" | "h265" | "vp8" | "vp9";
+	codec?: "h264" | "h265" | "vp8" | "vp9" | "mp3" | "wav" | "aac";
 	/** Render from this time (inclusive). Omit to start from beginning. */
 	startMS?: number;
 	/** Render up to this time (exclusive). Omit to render until end. */
@@ -43,6 +43,6 @@ export interface VideoRenderOptions {
 	envVariables?: Record<string, string>;
 }
 
-export interface IVideoRendererService {
-	renderComposition(options: VideoRenderOptions): Promise<{ filePath: string }>;
+export interface IMediaRendererService {
+	renderComposition(options: MediaRenderOptions): Promise<{ filePath: string }>;
 }

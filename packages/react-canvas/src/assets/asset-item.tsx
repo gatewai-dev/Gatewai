@@ -17,15 +17,17 @@ import {
 	DropdownMenuTrigger,
 } from "@gatewai/ui-kit";
 import { motion } from "framer-motion";
-import {
-	FileImage,
-	Loader2,
-	MoreHorizontal,
-	Music,
-	Trash2,
-} from "lucide-react";
 import { memo, useEffect, useRef, useState } from "react";
 import { createPortal } from "react-dom";
+import {
+	PiDotsThreeCircle,
+	PiFileDashed,
+	PiImageSquare,
+	PiMusicNotesSimple,
+	PiSpinnerGap,
+	PiSubtitles,
+	PiTrash,
+} from "react-icons/pi";
 import { toast } from "sonner";
 import { useCanvasCtx } from "../canvas-ctx";
 import { cn } from "../lib/utils";
@@ -42,10 +44,13 @@ const DragOverlay = ({
 }) => {
 	const thumbnail = GetAssetThumbnailEndpoint(asset);
 	const isAudio = asset.mimeType?.startsWith("audio/");
+	const isSrt =
+		asset.name?.toLowerCase().endsWith(".srt") ||
+		asset.mimeType === "application/x-subrip";
 
 	return createPortal(
 		<div
-			className="fixed z-9999 pointer-events-none"
+			className="fixed z-[9999] pointer-events-none"
 			style={{
 				left: position.x,
 				top: position.y,
@@ -54,17 +59,21 @@ const DragOverlay = ({
 		>
 			<div
 				className={cn(
-					"flex items-center gap-3 p-2 pr-4",
-					"bg-background/90 backdrop-blur-xl border border-primary/20",
-					"rounded-xl shadow-2xl",
-					"w-52 ring-1 ring-primary/30",
+					"flex items-center gap-3 p-2.5 pr-5",
+					"bg-background/70 backdrop-blur-2xl border border-border/40",
+					"rounded-2xl shadow-[0_8px_30px_rgb(0,0,0,0.12)]",
+					"w-56",
 				)}
 			>
 				{/* Thumbnail Preview */}
-				<div className="h-12 w-12 shrink-0 overflow-hidden rounded-lg bg-muted border border-border/50">
-					{isAudio ? (
-						<div className="flex h-full w-full items-center justify-center bg-primary/5">
-							<Music className="h-4 w-4 text-primary/70" />
+				<div className="h-12 w-12 shrink-0 overflow-hidden rounded-xl bg-muted/50 border border-border/30">
+					{isSrt ? (
+						<div className="flex h-full w-full items-center justify-center">
+							<PiSubtitles className="h-5 w-5 text-muted-foreground" />
+						</div>
+					) : isAudio ? (
+						<div className="flex h-full w-full items-center justify-center">
+							<PiMusicNotesSimple className="h-5 w-5 text-muted-foreground" />
 						</div>
 					) : thumbnail ? (
 						<img
@@ -75,16 +84,16 @@ const DragOverlay = ({
 						/>
 					) : (
 						<div className="flex h-full w-full items-center justify-center">
-							<FileImage className="h-4 w-4 text-muted-foreground/60" />
+							<PiImageSquare className="h-5 w-5 text-muted-foreground" />
 						</div>
 					)}
 				</div>
 				<div className="flex flex-col overflow-hidden">
-					<span className="text-sm font-semibold text-foreground truncate">
+					<span className="text-sm font-medium text-foreground truncate tracking-tight">
 						{asset.name}
 					</span>
-					<span className="text-[10px] text-muted-foreground font-medium">
-						Drop to add file
+					<span className="text-xs text-muted-foreground/70 font-medium mt-0.5">
+						Drop to add node
 					</span>
 				</div>
 			</div>
@@ -105,15 +114,20 @@ export const AssetItem = memo(({ asset }: AssetItemProps) => {
 	const [isDragging, setIsDragging] = useState(false);
 	const [cursorPos, setCursorPos] = useState({ x: 0, y: 0 });
 	const itemRef = useRef<HTMLDivElement>(null);
+
 	const thumbnail = GetAssetThumbnailEndpoint(asset);
 	const [deleteAsset, { isLoading: isDeleting }] = useDeleteAssetMutation();
 	const [showDeleteDialog, setShowDeleteDialog] = useState(false);
+
 	const isAudio = asset.mimeType?.startsWith("audio/");
+	const isSrt =
+		asset.name?.toLowerCase().endsWith(".srt") ||
+		asset.mimeType === "application/x-subrip";
 
 	const handleDelete = async () => {
 		try {
 			await deleteAsset(asset.id).unwrap();
-			toast.success("Asset deleted");
+			toast.success("Asset deleted successfully");
 		} catch (error) {
 			toast.error("Failed to delete asset");
 			console.error(error);
@@ -167,12 +181,8 @@ export const AssetItem = memo(({ asset }: AssetItemProps) => {
 									data: {
 										entity: {
 											...asset,
-											// Ts date strings to Date objects - eww
 											createdAt: new Date(asset.createdAt),
 											updatedAt: new Date(asset.updatedAt),
-											signedUrlExp: asset.signedUrlExp
-												? new Date(asset.signedUrlExp)
-												: null,
 										},
 									} as FileData,
 									outputHandleId: undefined,
@@ -209,27 +219,29 @@ export const AssetItem = memo(({ asset }: AssetItemProps) => {
 				layoutId={`asset-item-${asset.id}`}
 				className={cn(
 					"group relative flex w-full select-none items-center gap-3",
-					"rounded-lg border border-transparent p-1.5 transition-all duration-100",
-					"hover:bg-muted/50 hover:border-border/40",
-					isDragging ? "opacity-30 grayscale" : "opacity-100",
+					"rounded-xl border border-transparent p-2 transition-all duration-300 ease-out",
+					"hover:bg-muted/60 hover:border-border/40",
+					isDragging ? "opacity-40 grayscale scale-[0.98]" : "opacity-100",
 				)}
-				whileHover={{ scale: 1.02 }}
-				whileTap={{ scale: 0.98 }}
 			>
 				<div
 					onMouseDown={handleMouseDown}
-					className="flex flex-1 items-center gap-3 cursor-grab active:cursor-grabbing min-w-0"
+					className="flex flex-1 items-center gap-3.5 cursor-grab active:cursor-grabbing min-w-0"
 				>
 					{/* Thumbnail */}
 					<div
 						className={cn(
-							"relative h-9 w-9 shrink-0 overflow-hidden rounded-md border border-border/40 bg-muted",
-							"transition-colors duration-300 group-hover:border-primary/20",
+							"relative h-10 w-10 shrink-0 overflow-hidden rounded-lg border border-border/30 bg-muted/40",
+							"transition-colors duration-300 group-hover:border-border/60",
 						)}
 					>
-						{isAudio ? (
-							<div className="flex h-full w-full items-center justify-center bg-primary/5">
-								<Music className="h-4 w-4 text-primary/70" />
+						{isSrt ? (
+							<div className="flex h-full w-full items-center justify-center bg-muted/20">
+								<PiSubtitles className="h-5 w-5 text-muted-foreground/80" />
+							</div>
+						) : isAudio ? (
+							<div className="flex h-full w-full items-center justify-center bg-muted/20">
+								<PiMusicNotesSimple className="h-5 w-5 text-muted-foreground/80" />
 							</div>
 						) : thumbnail ? (
 							<img
@@ -239,22 +251,31 @@ export const AssetItem = memo(({ asset }: AssetItemProps) => {
 								loading="lazy"
 							/>
 						) : (
-							<div className="flex h-full w-full items-center justify-center">
-								<FileImage className="h-4 w-4 text-muted-foreground/60" />
+							<div className="flex h-full w-full items-center justify-center bg-muted/20">
+								<PiFileDashed className="h-5 w-5 text-muted-foreground/60" />
 							</div>
 						)}
 					</div>
 
 					{/* Info */}
 					<div className="flex flex-1 flex-col overflow-hidden">
-						<span className="truncate text-xs font-medium text-foreground/90">
+						<span className="truncate text-sm font-medium text-foreground tracking-tight">
 							{asset.name}
 						</span>
-						<div>
-							<span className="truncate text-[10px] text-muted-foreground">
-								{asset.mimeType || "Unknown type"}
+						<div className="flex items-center gap-1.5 mt-0.5">
+							<span className="truncate text-[11px] font-medium text-muted-foreground/70 uppercase tracking-wider">
+								{asset.mimeType?.split("/")[1] || "Unknown"}
 							</span>
-							{asset.duration && <span>{}</span>}
+							{asset.duration && (
+								<>
+									<span className="text-muted-foreground/40 text-[10px]">
+										•
+									</span>
+									<span className="text-[11px] text-muted-foreground/70">
+										{/* Duration formatting goes here */}
+									</span>
+								</>
+							)}
 						</div>
 					</div>
 				</div>
@@ -263,42 +284,55 @@ export const AssetItem = memo(({ asset }: AssetItemProps) => {
 					<DropdownMenuTrigger asChild>
 						<button
 							type="button"
-							className="opacity-0 group-hover:opacity-100 transition-opacity p-1 hover:bg-muted rounded-md focus:opacity-100 outline-none"
+							className={cn(
+								"opacity-0 group-hover:opacity-100 transition-all duration-200",
+								"p-1.5 hover:bg-background rounded-lg focus:opacity-100 outline-none border border-transparent",
+								"hover:border-border/50 shadow-sm hover:shadow-md",
+							)}
 						>
 							{isDeleting ? (
-								<Loader2 className="h-4 w-4 animate-spin text-muted-foreground" />
+								<PiSpinnerGap className="h-4 w-4 animate-spin text-muted-foreground" />
 							) : (
-								<MoreHorizontal className="h-4 w-4 text-muted-foreground" />
+								<PiDotsThreeCircle className="h-[18px] w-[18px] text-muted-foreground hover:text-foreground transition-colors" />
 							)}
 						</button>
 					</DropdownMenuTrigger>
-					<DropdownMenuContent align="end" className="w-40">
+					<DropdownMenuContent
+						align="end"
+						className="w-44 rounded-xl shadow-lg"
+					>
 						<DropdownMenuItem
-							className="focus:bg-destructive/10 cursor-pointer gap-2"
+							className="focus:bg-destructive/10 text-destructive focus:text-destructive cursor-pointer gap-2.5 rounded-lg m-1 transition-colors"
 							onClick={(e) => {
 								e.stopPropagation();
 								setShowDeleteDialog(true);
 							}}
 							onSelect={(e) => e.preventDefault()}
 						>
-							<Trash2 className="h-4 w-4" />
-							<span>Delete Asset</span>
+							<PiTrash className="h-[18px] w-[18px]" />
+							<span className="font-medium text-sm">Delete Asset</span>
 						</DropdownMenuItem>
 					</DropdownMenuContent>
 				</DropdownMenu>
 
 				<AlertDialog open={showDeleteDialog} onOpenChange={setShowDeleteDialog}>
-					<AlertDialogContent>
+					<AlertDialogContent className="rounded-2xl">
 						<AlertDialogHeader>
-							<AlertDialogTitle>Are you sure?</AlertDialogTitle>
-							<AlertDialogDescription>
-								This will permanently delete the asset "{asset.name}". Any nodes
-								using this asset will lose their data. This action cannot be
-								undone.
+							<AlertDialogTitle>Delete Asset</AlertDialogTitle>
+							<AlertDialogDescription className="text-muted-foreground mt-2">
+								Are you sure you want to delete{" "}
+								<span className="font-medium text-foreground">
+									"{asset.name}"
+								</span>
+								? Any nodes currently using this asset will lose their data.
+								This action cannot be undone.
 							</AlertDialogDescription>
 						</AlertDialogHeader>
-						<AlertDialogFooter>
-							<AlertDialogCancel onClick={(e) => e.stopPropagation()}>
+						<AlertDialogFooter className="mt-6">
+							<AlertDialogCancel
+								className="rounded-xl border-border/50 hover:bg-muted/50 transition-colors"
+								onClick={(e) => e.stopPropagation()}
+							>
 								Cancel
 							</AlertDialogCancel>
 							<AlertDialogAction
@@ -306,9 +340,9 @@ export const AssetItem = memo(({ asset }: AssetItemProps) => {
 									e.stopPropagation();
 									handleDelete();
 								}}
-								className="bg-destructive hover:bg-destructive/90 text-destructive-foreground"
+								className="rounded-xl bg-destructive hover:bg-destructive/90 text-destructive-foreground transition-colors"
 							>
-								{isDeleting ? "Deleting..." : "Delete"}
+								{isDeleting ? "Deleting..." : "Delete Permanently"}
 							</AlertDialogAction>
 						</AlertDialogFooter>
 					</AlertDialogContent>
