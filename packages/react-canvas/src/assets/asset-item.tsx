@@ -183,9 +183,6 @@ export const AssetItem = memo(({ asset }: AssetItemProps) => {
 											...asset,
 											createdAt: new Date(asset.createdAt),
 											updatedAt: new Date(asset.updatedAt),
-											signedUrlExp: asset.signedUrlExp
-												? new Date(asset.signedUrlExp)
-												: null,
 										},
 									} as FileData,
 									outputHandleId: undefined,

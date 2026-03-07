@@ -86,7 +86,7 @@ export class PaintProcessor implements NodeProcessor {
             const now = Date.now();
 
             const imageKey = `${node.id}/${now}.png`;
-            const { signedUrl: imageSignedUrl, key: tempImageKey } =
+            const { key: tempImageKey } =
                 await this.storage.uploadToTemporaryStorageFolder(
                     imageBuffer,
                     imageMimeType,
@@ -94,7 +94,7 @@ export class PaintProcessor implements NodeProcessor {
                 );
 
             const maskKey = `${node.id}/${now}_mask.png`;
-            const { signedUrl: maskSignedUrl, key: tempMaskKey } =
+            const { key: tempMaskKey } =
                 await this.storage.uploadToTemporaryStorageFolder(
                     maskBuffer,
                     maskMimeType,
@@ -102,13 +102,11 @@ export class PaintProcessor implements NodeProcessor {
                 );
 
             const imageProcessData = {
-                dataUrl: imageSignedUrl,
                 tempKey: tempImageKey,
                 mimeType: imageMimeType,
                 ...imageDimensions,
             };
             const maskProcessData = {
-                dataUrl: maskSignedUrl,
                 tempKey: tempMaskKey,
                 mimeType: maskMimeType,
                 ...maskDimensions,

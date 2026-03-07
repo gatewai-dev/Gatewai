@@ -6,7 +6,7 @@ export interface StorageService {
 		buffer: Buffer,
 		mimeType: string,
 		key: string,
-	) => Promise<{ signedUrl: string; key: string }>;
+	) => Promise<{ key: string }>;
 
 	uploadToStorage: (
 		buffer: Buffer,

@@ -2136,11 +2136,11 @@ const TimelinePanel: React.FC = () => {
 					initialItem &&
 					(initialItem.type === "Video" || initialItem.type === "Audio")
 				) {
-					const metadata = getActiveMediaMetadata(
-						initialItem.data as VirtualMediaData,
-					);
-					if (metadata?.durationMs)
-						newDuration = Math.min(newDuration, metadata.durationMs);
+					const virtualMedia = initialItem.data as VirtualMediaData;
+					const metadata = getActiveMediaMetadata(virtualMedia);
+					const cutDurationMs = getEffectiveDurationMs(virtualMedia);
+					const maxDuration = cutDurationMs ?? metadata?.durationMs;
+					if (maxDuration) newDuration = Math.min(newDuration, maxDuration);
 				}
 				markLayerTrimmed(layerId);
 				updateLayers((prev) =>
@@ -2642,7 +2642,6 @@ const TimelinePanel: React.FC = () => {
 								return (
 									<div
 										key={layer.id}
-										style={{ height: TRACK_HEIGHT }}
 										className={cn(
 											"border-b relative",
 											idx % 2 === 1 ? "bg-white/[0.008]" : "",
@@ -3325,6 +3324,7 @@ export const VideoDesignerEditor: React.FC<VideoDesignerEditorProps> = ({
 	onClose,
 	onSave,
 }) => {
+	console.log({ initialLayers });
 	const nodeConfig = node.config;
 	const handles = useAppSelector(handleSelectors.selectEntities);
 
@@ -3556,10 +3556,16 @@ export const VideoDesignerEditor: React.FC<VideoDesignerEditorProps> = ({
 				const calculatedDurationMS = hasNativeDuration
 					? durationMs
 					: DEFAULT_DURATION_MS;
-				const resolvedDurationMS =
+				let resolvedDurationMS =
 					isLayerTrimmed(id) && saved?.durationInMS != null
 						? saved.durationInMS
 						: (saved?.durationInMS ?? calculatedDurationMS);
+
+				// CRITICAL FIX: Enforce clipping `resolvedDurationMS` to the native `durationMs` boundary
+				// to ensure that dragging out trims cannot magically extend past a hard crop operation.
+				if (hasNativeDuration) {
+					resolvedDurationMS = Math.min(resolvedDurationMS, durationMs);
+				}
 
 				const base: Partial<EditorLayer> = {
 					id,

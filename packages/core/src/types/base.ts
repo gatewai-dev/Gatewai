@@ -35,9 +35,6 @@ export const FileAssetSchema = z.object({
 	mimeType: z.string(),
 	key: z.string(),
 
-	signedUrl: z.string().url().nullable().optional(),
-	signedUrlExp: z.date().or(z.string().datetime()).nullable().optional(),
-
 	isUploaded: z.boolean().default(true),
 
 	// Duration in milliseconds

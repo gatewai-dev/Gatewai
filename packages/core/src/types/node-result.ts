@@ -7,9 +7,12 @@ import type { VirtualMediaData } from "./video/virtual-video.js";
  * Typing for non-terminal processing
  */
 export const ProcessDataSchema = z.object({
-	dataUrl: z.string(),
 	/**
-	 * Bucket key of temporary file
+	 * Data URL - URL of object - should be used by frontend processors
+	 */
+	dataUrl: z.string().optional(),
+	/**
+	 * Bucket key of temporary file - should be used by backend processors
 	 */
 	tempKey: z.string().optional(),
 	mimeType: z.string().optional(),
