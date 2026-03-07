@@ -3407,24 +3407,13 @@ export const VideoDesignerEditor: React.FC<VideoDesignerEditorProps> = ({
 		setIsDirty(true);
 	};
 
-	const recomputeVideoCrops = (prev: EditorLayer[]) =>
-		prev.map((layer) => {
-			if (layer.type !== "Video" || !layer.virtualMedia) return layer;
-			return {
-				...layer,
-				...(computeVideoCropRenderProps(layer.virtualMedia) ?? {}),
-			};
-		});
-
 	const updateViewportWidth = (w: number) => {
 		setViewportWidth(roundToEven(Math.max(2, w)));
-		setLayers(recomputeVideoCrops);
 		setIsDirty(true);
 	};
 
 	const updateViewportHeight = (h: number) => {
 		setViewportHeight(roundToEven(Math.max(2, h)));
-		setLayers(recomputeVideoCrops);
 		setIsDirty(true);
 	};
 
