@@ -1004,6 +1004,7 @@ export const SingleClipComposition: React.FC<{
 				viewportHeight={op.height}
 				containerWidth={containerWidth}
 				containerHeight={containerHeight}
+				backgroundColor={op.backgroundColor}
 			/>
 		);
 		const trimFrames = trimStartOverride

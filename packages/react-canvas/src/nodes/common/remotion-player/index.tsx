@@ -383,6 +383,7 @@ export interface MediaPlayerProps {
 	rotation?: number;
 	x?: number;
 	y?: number;
+	backgroundColor?: string;
 }
 
 export const MediaPlayer = ({
@@ -405,12 +406,18 @@ export const MediaPlayer = ({
 	rotation,
 	x,
 	y,
+	backgroundColor: backgroundColorProp,
 }: MediaPlayerProps) => {
 	const playerRef = useRef<PlayerRef>(null);
 	const wrapperRef = useRef<HTMLDivElement>(null);
 	const resolvedType = type || (isAudio ? "Audio" : "Video");
 
 	const activeMeta = virtualMedia ? getActiveMediaMetadata(virtualMedia) : null;
+	const backgroundColor =
+		backgroundColorProp ??
+		(virtualMedia?.operation?.op === "compose"
+			? virtualMedia.operation.backgroundColor
+			: undefined);
 
 	const isSvgType = resolvedType === "SVG";
 	const isImageType = resolvedType === "Image";
@@ -471,6 +478,7 @@ export const MediaPlayer = ({
 						rotation,
 						x,
 						y,
+						backgroundColor,
 					}}
 					durationInFrames={durationInFrames}
 					fps={fps}
